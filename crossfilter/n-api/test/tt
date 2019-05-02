@@ -1,0 +1,16 @@
+../feature_cast.cpp:10:3: error: template-id ‘cast_feature<>’ for ‘
+cross::feature<long int, long int, cross::dimension<js_array<long int>, void*, cross::iterable>, true>& cast_feature(void*)’ does not match any template declaration
+                    cast_feature(void *ptr) {  return static_cast<feature_holder<key_type,value_type,cross::dimension<typename std::conditional<std::is_same<is_iterable,cross::iterable>::value, js_array<dim_type>, dim_type>::type,void*, is_iterable>,is_group_all>*>(ptr)->feature;}
+
+../feature_cast.hpp:12:1: note: candidate is: ‘
+template<class K, class V, class D, bool is_group_all, class I>
+cross::feature<K, V, cross::dimension<typename std::conditional<std::is_same<I, cross::iterable>::value, js_array<D>, D>::type, void*, I>, is_group_all>& cast_feature(void*)’
+ cast_feature(void *ptr) {
+
+
+template <> cross::feature<int64_t,int64_t,
+                           cross::dimension< typename std::conditional<std::is_same<cross::iterable,cross::iterable>::value,
+                                                                       js_array<int64_t>,
+                                                                       int64_t>::type,
+                                             void*, cross::iterable>, true> &
+    cast_feature(void *ptr) { return static_cast<feature_holder<int64_t,int64_t,cross::dimension<typename std::conditional<std::is_same<cross::iterable,cross::iterable>::value, js_array<int64_t>, int64_t>::type,void*, cross::iterable>,true>*>(ptr)->feature;};
