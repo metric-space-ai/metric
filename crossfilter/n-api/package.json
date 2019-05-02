@@ -1,0 +1,28 @@
+{
+  "name": "crossfilter",
+  "version": "1.0.0",
+  "description": "Crossfilter Node.js Addon",
+  "main": "./lib/index.js",
+  "private": true,
+  "dependencies": {
+    "bindings": "~1.2.1",
+    "vows": "0.7.0",
+    "node-pre-gyp": "0.6.x"
+  },
+  "devDependencies": {
+    "aws-sdk": "2.x",
+    "d3": "3.5"
+  },
+  "binary": {
+    "module_name": "crossfilter",
+    "module_path": "./lib/binding/{configuration}/{node_abi}-{platform}-{arch}/",
+    "remote_path": "./{module_name}/v{version}/{configuration}/",
+    "package_name": "{module_name}-v{version}-{node_abi}-{platform}-{arch}.tar.gz",
+    "host": "https://your_module.s3-us-west-1.amazonaws.com"
+  },
+  "scripts": {
+    "install": "node-pre-gyp install --build-from-source",
+    "test": "node test/test.js"
+  },
+  "gypfile": true
+}
