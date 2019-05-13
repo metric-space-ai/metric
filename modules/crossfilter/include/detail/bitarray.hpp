@@ -127,7 +127,7 @@ class BitArray {
     one.flip(bitIndex);
 
     for (std::size_t i = 0; i < bits.size(); i++) {
-      u_int8_t v = (i == offset) ? one.to_ulong() : 0;
+      uint8_t v = (i == offset) ? one.to_ulong() : 0;
 
       if (bits[i][index] != v)
         return false;
