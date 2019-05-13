@@ -1,15 +1,41 @@
-# metric_distance
-A templated, header only C++14 implementation of a Metric Distance Functions. 
+# METRIC | DISTANCE
+*A templated, header only C++14 implementation of a Metric Distance Functions.*
 
-## Standart metrics
+## Overview
 
-Suppose we have a table with two records:
+If we can assign each column a metric, we have won. Then all algorithms run on the table without the need for further restrictions or special features. 
+
+There are a lot of metrics in the world, that can be grouped to:
+- **k-related**: number of entries in column is always the same and the metric applied to the corresponding 
+entries in the compared records. You can switch the entries order pairwise without changing the resulting metric. 
+And metric calculated as costs to adapt one value to the other. It calls a *scale function* in METRIC terms. 
+Then all adapt costs reduce to a single metric value. It calls a *reduce function* in METRIC terms.
+- **k-structured**: number of entries in column can be various and it has a structure. The metric is calculated 
+between all entries with *cost matrix*, that represents entries structure. *Scale function* and *costs matrix* gives 
+costs of transforming one record to the other. 
+- **k-random**: opposing entries not related, they are just sampled. It's the same as others, but more abstract. 
+It's about the costs of transforming one bunch of samples to the other, with pure scale information.
+
+In **METRIC** framework terms a metric is the cost to transform one record to the other record!
+
+And framework thinks about all the metrics as one metric with a *scale function*, a *reduce function* or a *cost matrix*. 
+
+**METRIC** framework have one universal metric factory function. To specify needed metric the user should only specify a 
+*scale function*, a *reduce function* or a *cost matrix*. And of course framework provide the common metrics by name.
+
+The framework’s metric factory backes the metric, which is than just a function. 
+
+## Examples
+
+### Standard metrics
+
+Suppose we have a table with two records, where each columns is simple one-dimensional entry of double value:
 ```cpp
 std::vector<double> v0 = { 0, 1, 1, 1, 1, 1, 2, 3 };
 std::vector<double> v1 = { 1, 1, 1, 1, 1, 2, 3, 4 };
 ```
 
-Using **METRIC** framework we can calculate a set of standart metrics for this records. 
+Using **METRIC** framework we can calculate a set of standard metrics for this records. 
 
 **Euclidian (L2) Metric**
 ``` cpp
@@ -61,10 +87,10 @@ std::cout << "result: " << result_5 << std::endl;
 // result: 0.970143
 ```
 
-## Euclidean Distance metric
+### Euclidean Distance metric
 
-## Edit Distance metric (for strings)
+### Edit Distance metric (for strings)
 
-## Time Warp Elastic Distance metric (for curves)
+### Time Warp Elastic Distance metric (for curves)
 
-## Structural Similartiy metric (for images)
+### Structural Similartiy metric (for images)
