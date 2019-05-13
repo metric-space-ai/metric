@@ -2,7 +2,7 @@
 #include <iostream>
 #include <chrono>
 #include "assets/test_data.cpp"
-#include "../metric_distance.hpp"
+#include "../metric_distance.cpp"
 //#include "../details/Edit.hpp"
 
 template <typename T>
@@ -97,7 +97,7 @@ int main()
 
     auto t1 = std::chrono::steady_clock::now();
 
-    // geht davon aus, dass i0 und i2 serialisierte Vectoren der Bildmatrizen sind und cost_mat eine passende Distanzematrix enthält, die jedoch die orgiginalen Pixelpositionen berücksichtigt.
+    // geht davon aus, dass i1 und i2 serialisierte Vectoren der Bildmatrizen sind und cost_mat eine passende Distanzematrix enthält, die jedoch die orgiginalen Pixelpositionen berücksichtigt.
     auto result1 = distance2(i1, i2);
     auto t2 = std::chrono::steady_clock::now();
     std::cout << "-------r" << std::endl;
@@ -129,6 +129,7 @@ int main()
     auto result3 = distance3(str1, str2);
 
     std::cout << "result3: " << result3 << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t4 - t3).count()) / 1000000 << "s)" << std::endl;
+
 
     return 0;
 }
