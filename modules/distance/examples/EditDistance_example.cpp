@@ -12,8 +12,8 @@ int main()
 	std::cout << "we have started" << std::endl;
 	std::cout << "" << std::endl;
 
-	std::string str1 = "1011001100110011001111110011001100110011011110011001100110011001110001100110011001101";
-	std::string str2 = "1000011001100110011011100110011001100110111001100110011001100111000110011001100110011";
+	std::string str1 = "1011001100110011001111111";
+	std::string str2 = "1000011001100110011011100";
 	std::string str3 = "Absolutly different string";
 
 	metric::distance::Edit<std::string> distance;

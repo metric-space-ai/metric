@@ -37,53 +37,53 @@ std::vector<double> v1 = { 1, 1, 1, 1, 1, 2, 3, 4 };
 
 Using **METRIC** framework we can calculate a set of standard metrics for this records. 
 
-- **Euclidean (L2) Metric**
+- **Euclidean (L2) metric**
 ``` cpp
 metric::distance::Euclidian<double> euclidianL2Distance;
 auto result_1 = euclidianL2Distance(v0, v1);
 std::cout << "result: " << result_1 << std::endl;
 // out:
-// Euclidean (L2) Metric
+// Euclidean (L2) metric
 // result: 2
 ```
 
-- **Euclidean Threshold Metric**
+- **Euclidean Threshold metric**
 ``` cpp
 metric::distance::Euclidian_thresholded<double> euclidianThresholdDistance(1000.0, 3000.0);
 auto result_2 = euclidianThresholdDistance(v0, v1);
 std::cout << "result: " << result_2 << std::endl;
 // out:
-// Euclidean Threshold
+// Euclidean Threshold metric
 // result: 1000
 ```
 
-- **Manhatten/Cityblock (L1) Metric**
+- **Manhatten/Cityblock (L1) metric**
 ``` cpp
 metric::distance::Manhatten<double> manhattenL1Distance;
 auto result_3 = manhattenL1Distance(v0, v1);
 std::cout << "result: " << result_3 << std::endl;
 // out:
-// Manhatten/Cityblock (L1) Metric
+// Manhatten/Cityblock (L1) metric
 // result: 4
 ```
 
-- **Minkowski (L general) Metric**
+- **Minkowski (L general) metric**
 ``` cpp
 metric::distance::P_norm<double> pNormDistance(2);
 auto result_4 = pNormDistance(v0, v1);
 std::cout << "result: " << result_4 << std::endl;
 // out:
-// Minkowski (L general) Metric
+// Minkowski (L general) metric
 // result: 2
 ```
 
-- **Cosine Metric**
+- **Cosine metric**
 ``` cpp
 metric::distance::Cosine<double> cosineDistance;
 auto result_5 = cosineDistance(v0, v1);
 std::cout << "result: " << result_5 << std::endl;
 // out:
-// Cosine Metric
+// Cosine metric
 // result: 0.970143
 ```
 ---
@@ -129,12 +129,31 @@ metric::distance::EMD<edm_Type> distance(cost_mat, maxCost);
 auto result = distance(i1, i2);
 std::cout << "result: " << result << std::endl;
 // out:
-// Earth Mover Distance Metric
+// Earth Mover Distance metric
 // result: 4531000
 ```
 ---
 
 ### Edit Distance metric (for strings)
+
+Suppose we have two strings:
+
+```cpp
+std::string str1 = "1011001100110011001111111";
+std::string str2 = "1000011001100110011011100";
+```
+We can use Edit Distance metric for compare that strings:
+
+```cpp
+metric::distance::Edit<std::string> distance;
+
+auto result = distance(str1, str2);
+std::cout << "result: " << result << std::endl;
+// out:
+// Edit Distance metric
+// result: 5
+```
+
 ---
 
 ### Time Warp Elastic Distance metric (for curves)
