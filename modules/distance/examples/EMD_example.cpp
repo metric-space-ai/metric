@@ -18,8 +18,6 @@ int main()
 	// serialize_mat2vec
 	std::vector<edm_Type> i1;
 	std::vector<edm_Type> i2;
-	std::vector<edm_Type> i3;
-	std::vector<edm_Type> i4;
 
 	for (size_t i = 0; i < im1_R; ++i)
 	{

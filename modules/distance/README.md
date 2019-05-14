@@ -37,17 +37,17 @@ std::vector<double> v1 = { 1, 1, 1, 1, 1, 2, 3, 4 };
 
 Using **METRIC** framework we can calculate a set of standard metrics for this records. 
 
-**Euclidian (L2) Metric**
+- **Euclidean (L2) Metric**
 ``` cpp
 metric::distance::Euclidian<double> euclidianL2Distance;
 auto result_1 = euclidianL2Distance(v0, v1);
 std::cout << "result: " << result_1 << std::endl;
 // out:
-// Euclidian (L2) Metric
+// Euclidean (L2) Metric
 // result: 2
 ```
 
-**Euclidian Threshold Metric**
+- **Euclidian Threshold Metric**
 ``` cpp
 metric::distance::Euclidian_thresholded<double> euclidianThresholdDistance(1000.0, 3000.0);
 auto result_2 = euclidianThresholdDistance(v0, v1);
@@ -57,7 +57,7 @@ std::cout << "result: " << result_2 << std::endl;
 // result: 1000
 ```
 
-**Manhatten/Cityblock (L1) Metric**
+- **Manhatten/Cityblock (L1) Metric**
 ``` cpp
 metric::distance::Manhatten<double> manhattenL1Distance;
 auto result_3 = manhattenL1Distance(v0, v1);
@@ -67,7 +67,7 @@ std::cout << "result: " << result_3 << std::endl;
 // result: 4
 ```
 
-**Minkowski (L general) Metric**
+- **Minkowski (L general) Metric**
 ``` cpp
 metric::distance::P_norm<double> pNormDistance(2);
 auto result_4 = pNormDistance(v0, v1);
@@ -77,7 +77,7 @@ std::cout << "result: " << result_4 << std::endl;
 // result: 2
 ```
 
-**Cosine Metric**
+- **Cosine Metric**
 ``` cpp
 metric::distance::Cosine<double> cosineDistance;
 auto result_5 = cosineDistance(v0, v1);
@@ -86,14 +86,60 @@ std::cout << "result: " << result_5 << std::endl;
 // Cosine Metric
 // result: 0.970143
 ```
+---
 
-### Euclidean Distance metric
+### Earth Mover Distance metric
+
+Suppose we have an images as matrices: `img1`, `img2`.
+
+Now we can reshape matrices to vectors:
+```cpp
+typedef int edm_Type;
+
+size_t im1_R = img1.size() / 6;
+size_t im1_C = img1[0].size() / 6;
+
+// serialize_mat2vec
+std::vector<edm_Type> i1;
+std::vector<edm_Type> i2;
+
+for (size_t i = 0; i < im1_R; ++i)
+{
+	for (size_t j = 0; j < im1_C; ++j)
+	{
+		i1.push_back(img1[i][j]);
+		i2.push_back(img2[i][j]);
+	}
+}
+```
+
+And now we can compare two vectors using Earth Mover Distance. 
+
+First we should calculate a cost matrix: 
+
+```cpp
+auto cost_mat = metric::distance::EMD_details::ground_distance_matrix_of_2dgrid<edm_Type>(im1_C, im1_R);
+auto maxCost = metric::distance::EMD_details::max_in_distance_matrix(cost_mat);
+```
+Then declare EMD (Earth Mover Distance) metric and use it:
+
+```cpp
+metric::distance::EMD<edm_Type> distance(cost_mat, maxCost);
+
+auto result = distance(i1, i2);
+std::cout << "result: " << result << std::endl;
+```
+---
 
 ### Edit Distance metric (for strings)
+---
 
 ### Time Warp Elastic Distance metric (for curves)
+---
 
-### Structural Similartiy metric (for images)
+
+### Structural Similarity metric (for images)
+---
 
 ## Run
 *You need STL and C++14 support to compile.*
