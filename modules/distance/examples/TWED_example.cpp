@@ -6,7 +6,7 @@
 
 int main()
 {
-	/******************** examples for Time Warp Elastic Distance (for curves) **************************/
+	/******************** examples for Time Warp Elastic Distance (for curves, series or time-series) **************************/
 	// example for curve
 
 	std::cout << "we have started" << std::endl;

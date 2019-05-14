@@ -156,9 +156,26 @@ std::cout << "result: " << result << std::endl;
 
 ---
 
-### Time Warp Elastic Distance metric (for curves)
----
+### Time Warp Elastic Distance metric (for curves, series or time-series)
 
+Suppose we have two series:
+
+```cpp
+std::vector<double> v0 = { 0, 1, 1, 1, 1, 1, 2, 3 };
+std::vector<double> v1 = { 1, 1, 1, 1, 1, 2, 3, 4 };
+```
+We can use Time Warp Elastic Distance metric for compare that series:
+
+```cpp
+metric::distance::TWED<double> distance;
+
+auto result = distance(v0, v1);
+std::cout << "result: " << result << std::endl;
+// out:
+// Time Warp Elastic Distance metric
+// result: 7
+```
+---
 
 ### Structural Similarity metric (for images)
 ---
