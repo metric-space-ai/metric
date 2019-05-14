@@ -7,7 +7,7 @@
 
 int main()
 {
-	/******************** examples for Euclidean Distance **************************/
+	/******************** examples for Earth Mover Distance **************************/
 	// example for picture
 
 	typedef int edm_Type;
