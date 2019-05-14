@@ -128,6 +128,9 @@ metric::distance::EMD<edm_Type> distance(cost_mat, maxCost);
 
 auto result = distance(i1, i2);
 std::cout << "result: " << result << std::endl;
+// out:
+// Earth Mover Distance Metric
+// result: 4531000
 ```
 ---
 
