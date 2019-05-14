@@ -47,13 +47,13 @@ std::cout << "result: " << result_1 << std::endl;
 // result: 2
 ```
 
-- **Euclidian Threshold Metric**
+- **Euclidean Threshold Metric**
 ``` cpp
 metric::distance::Euclidian_thresholded<double> euclidianThresholdDistance(1000.0, 3000.0);
 auto result_2 = euclidianThresholdDistance(v0, v1);
 std::cout << "result: " << result_2 << std::endl;
 // out:
-// Euclidian Threshold
+// Euclidean Threshold
 // result: 1000
 ```
 
