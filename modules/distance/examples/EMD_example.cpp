@@ -3,41 +3,12 @@
 #include <chrono>
 #include "assets/test_data.cpp"
 #include "../metric_distance.cpp"
-//#include "../details/Edit.hpp"
 
-template <typename T>
-void matrix_print(const std::vector<std::vector<T>> &mat)
-{
-
-	std::cout << "[";
-	for (int i = 0; i < mat.size(); i++)
-	{
-		for (int j = 0; j < mat[i].size() - 1; j++)
-		{
-			std::cout << mat[i][j] << ", ";
-		}
-		std::cout << mat[i][mat[i].size() - 1] << " ]" << std::endl;
-		;
-	}
-}
-
-template <typename T>
-void vector_print(const std::vector<T> &vec)
-{
-
-	std::cout << "[";
-	for (int i = 0; i < vec.size(); i++)
-	{
-		std::cout << vec[i] << ", ";
-	}
-	std::cout << vec[vec.size() - 1] << " ]" << std::endl;
-}
 
 int main()
 {
 	/******************** examples for Euclidean Distance **************************/
 	// example for picture
-
 
 	typedef int edm_Type;
 
@@ -64,8 +35,6 @@ int main()
 
 	std::cout << "we have started" << std::endl;
 	std::cout << "" << std::endl;
-
-	//matrix_print(cost_mat);
 
 	metric::distance::EMD<edm_Type> distance(cost_mat, maxCost);
 

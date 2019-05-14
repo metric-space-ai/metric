@@ -1,65 +1,33 @@
 #include <vector>
 #include <iostream>
 #include <chrono>
-#include "assets/test_data.cpp"
 #include "../metric_distance.cpp"
-//#include "../details/Edit.hpp"
 
-template <typename T>
-void matrix_print(const std::vector<std::vector<T>> &mat)
-{
-
-	std::cout << "[";
-	for (int i = 0; i < mat.size(); i++)
-	{
-		for (int j = 0; j < mat[i].size() - 1; j++)
-		{
-			std::cout << mat[i][j] << ", ";
-		}
-		std::cout << mat[i][mat[i].size() - 1] << " ]" << std::endl;
-		;
-	}
-}
-
-template <typename T>
-void vector_print(const std::vector<T> &vec)
-{
-
-	std::cout << "[";
-	for (int i = 0; i < vec.size(); i++)
-	{
-		std::cout << vec[i] << ", ";
-	}
-	std::cout << vec[vec.size() - 1] << " ]" << std::endl;
-}
 
 int main()
 {
+	/******************** examples for Edit distance (for strings) **************************/
+	// example for string
+
+	std::cout << "we have started" << std::endl;
+	std::cout << "" << std::endl;
 
 	std::string str1 = "1011001100110011001111110011001100110011011110011001100110011001110001100110011001101";
 	std::string str2 = "1000011001100110011011100110011001100110111001100110011001100111000110011001100110011";
+	std::string str3 = "Absolutly different string";
 
-	// std::vector<int> vec2 = {1,2,3,4,5,6,7,8,9,10};
-	// std::vector<int> vec1 = {};
+	metric::distance::Edit<std::string> distance;
 
-	metric::distance::Edit<std::string> distance3;
+	auto t1 = std::chrono::steady_clock::now();
+	auto result1 = distance(str1, str2);
+	auto t2 = std::chrono::steady_clock::now();
+	std::cout << "result for close strings: " << result1 << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000 << " ms)" << std::endl;
+	std::cout << "" << std::endl;
 
+	auto result2 = distance(str1, str3);
 	auto t3 = std::chrono::steady_clock::now();
-	auto result3 = distance3(str1, str2);
-	auto t4 = std::chrono::steady_clock::now();
-
-	std::cout << "result3: " << result3 << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t4 - t3).count()) / 1000000 << "s)" << std::endl;
-
-
-	/******************** examples for Edit distance (for strings) **************************/
-	// example for number
-	// example for string
-	// example for date
-	// example for array
-	// example for curve
-	// example for sentence
-	// example for soundwave
-	// example for picture
-
+	std::cout << "result for different strings: " << result2 << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t3 - t2).count()) / 1000 << " ms)" << std::endl;
+	std::cout << "" << std::endl;
+	
 	return 0;
 }
