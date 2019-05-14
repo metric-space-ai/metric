@@ -6,3 +6,5 @@
 /modules/distance/examples/*.exe
 /modules/distance/examples/build
 /modules/mapping/examples/build
+/modules/mapping/*.exe
+/modules/mapping/examples/*.exe

@@ -67,6 +67,8 @@ void printDataInfo(const json& data)
 
 int main()
 {
+	std::cout << "we started" << std::endl;
+
     unsigned int iterations = 1000;
     // double start_learn_rate = 0.9;
     // double final_learn_rate = 0.4;
@@ -86,12 +88,23 @@ int main()
 	
 	/* Load data */
 
-	std::ifstream dataFile("..\\assets\\data.json");
+	std::cout << "load data" << std::endl;
+	std::ifstream dataFile(".\\assets\\data.json");
 	
 	json data;
 
-	dataFile >> data;
+	try
+	{
+		dataFile >> data;
+	}
+	catch (const std::exception& e) {
+		std::cout << "Error: " << e.what() << std::endl;
+	}
+	catch (...) {
+		std::cout << "Error: unknown" << std::endl;
+	}
 
+	std::cout << "print json" << std::endl;
 	printDataInfo(data);
 
 	const auto img1 = data["img1"].get<std::vector<std::vector<double>>>();
