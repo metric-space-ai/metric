@@ -6,7 +6,7 @@
 #include <chrono>
 
 #include "assets/json.hpp"
-#include "../metric_mapping.hpp"
+#include "../metric_mapping.cpp"
 
 
 using json = nlohmann::json;
@@ -65,13 +65,8 @@ void printDataInfo(const json& data)
 	}
 }
 
-int main(int argc, char* argv[])
+int main()
 {
-	if (argc < 2) {
-		std::cout << "usage: " << argv[0] << " data" << std::endl;
-		return -1;
-	}
-
     unsigned int iterations = 1000;
     // double start_learn_rate = 0.9;
     // double final_learn_rate = 0.4;
@@ -90,7 +85,9 @@ int main(int argc, char* argv[])
 
 	
 	/* Load data */
-	std::ifstream dataFile(argv[1]);
+
+	std::ifstream dataFile("..\\assets\\data.json");
+	
 	json data;
 
 	dataFile >> data;
