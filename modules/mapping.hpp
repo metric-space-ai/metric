@@ -24,4 +24,4 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #pragma once
 
 
-#include "mapping/metric_mapping.cpp"
+#include "mapping/metric_mapping.hpp"

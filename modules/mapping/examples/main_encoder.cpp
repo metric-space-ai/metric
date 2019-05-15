@@ -1,7 +1,9 @@
 #include <iostream>
 
-#include "../details/encoder.hpp"
+#include "../details/encoder.hpp"  // for usage independently on the entire lib
+//#include "metric.hpp"  // for usage as a part of the lib
 
+#include "include/mat2bmp.hpp"
 #include "include/dct.hpp"
 
 

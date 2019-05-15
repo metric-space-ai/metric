@@ -6,7 +6,7 @@
 #include <chrono>
 
 #include "assets/json.hpp"
-#include "../metric_mapping.cpp"
+#include "../metric_mapping.hpp"
 
 
 using json = nlohmann::json;
