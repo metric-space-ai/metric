@@ -1,6 +1,5 @@
 #include <iostream>
-#include "details/graph.hpp"
-
+#include "include/graph/graph.hpp"
 
 
 
