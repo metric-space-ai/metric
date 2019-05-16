@@ -22,6 +22,6 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #ifndef _METRIC_SPACE_HPP
 #define _METRIC_SPACE_HPP
 
-#include "space/metric_space.cpp"
+#include "space/metric_space.hpp"
 
 #endif

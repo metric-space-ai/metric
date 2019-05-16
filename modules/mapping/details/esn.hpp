@@ -3,7 +3,7 @@
 
 #include "blaze/Blaze.h"
 
-//#include "details/graph.hpp" // for create_W only // TODO enable if considered to use graph
+//#include "include/graph/graph.hpp" // for create_W only // TODO enable if considered to use graph
 
 
 
