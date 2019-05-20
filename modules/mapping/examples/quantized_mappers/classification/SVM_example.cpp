@@ -1,35 +1,54 @@
-
-#include "../details/classification/metric_classification.hpp"
-
-#include "assets/helpers.cpp" // csv reader
-
 #include <variant>
-
+#include <chrono>
 #include <deque> // for Record test
 
+#include "../details/classification/metric_classification.hpp"
+#include "assets/helpers.cpp" // csv reader
 #include "../details/classification/details/correlation_weighted_accuracy.hpp"
 
 
+template <typename T>
+void vector_print(const std::vector<T> &vec)
+{
+
+	std::cout << "[";
+	for (size_t i = 0; i < vec.size(); i++)
+	{
+		if (i < vec.size() - 1)
+		{
+			std::cout << vec[i] << ", ";
+		}
+		else
+		{
+			std::cout << vec[i] << "]" << std::endl;
+		}
+	}
+}
 
 
-//template<class T>
-//using Record = std::vector<T>;
+template <typename T>
+void matrix_print(const std::vector<std::vector<T>> &mat)
+{
 
-
-//template<class T>
-//using IrisRec = std::deque<T>;
+	std::cout << "[";
+	for (int i = 0; i < mat.size(); i++)
+	{
+		for (int j = 0; j < mat[i].size() - 1; j++)
+		{
+			std::cout << mat[i][j] << ", ";
+		}
+		std::cout << mat[i][mat[i].size() - 1] << " ]" << std::endl;
+		;
+	}
+}
 
 
 int main()
 {
-
-	//*
-	typedef std::vector<std::variant<int, double, std::string, std::vector<std::string>, std::vector<double> > > Record1;
-
+	std::cout << "we have started" << std::endl;
+	std::cout << '\n';
 
 	using Record = std::vector<double>;  // may be of arbitrary type, with appropriate accessors
-
-
 
 	std::vector<Record> payments = {
 		{0,3,5,0},
@@ -38,15 +57,13 @@ int main()
 		{3,6,2,1}
 	};
 
-	std::vector<std::function<double(Record)> > features;
-
+	std::vector<std::function<double(Record)>> features;
 
 	for (int i = 0; i < (int)payments[0].size() - 1; ++i) {
 		features.push_back(
 			[=](auto r) { return r[i]; }  // we need closure: [=] instead of [&]   !! THIS DIFFERS FROM API !!
 		);
 	}
-
 
 	std::function<bool(Record)> response = [](Record r) {
 		if (r[r.size() - 1] >= 0.5)
@@ -55,19 +72,31 @@ int main()
 			return false;
 	};
 
+	std::vector<Record> test_sample = {
+		{0,3,5,0},
+		{3,6,2,1}
+	};
 
-	std::vector<Record> test_sample = { {3,6,2, 1} };
 
+	std::vector<bool> prediction;
+	auto startTime = std::chrono::steady_clock::now();
+	auto endTime = std::chrono::steady_clock::now();
 
+	// test on int vector 
 
-	// Usage of RUSBoost
+	std::cout << "SVM on int vector: " << std::endl;
+	startTime = std::chrono::steady_clock::now();
+	metric::classification::edmClassifier<Record, CSVM> svmModel_1 = metric::classification::edmClassifier<Record, CSVM>();
+	std::cout << "training... " << std::endl;
+	svmModel_1.train(payments, features, response);
+	endTime = std::chrono::steady_clock::now();
+	std::cout << "trained (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count()) / 1000000 << " s)" << std::endl;
 
-	metric::classification::edmClassifier<Record, CSVM> wl8 = metric::classification::edmClassifier<Record, CSVM>();
-	wl8.train(payments, features, response);
-	std::vector<bool> r8;
-	wl8.predict(test_sample, features, r8);
-	std::cout << "\nSVM predict: " << r8[0] << std::endl;
+	svmModel_1.predict(test_sample, features, prediction);
+	std::cout << "prediction: " << std::endl;	
+	vector_print(prediction);
 
+	std::cout << "\n";
 
 	//*/
 
@@ -84,35 +113,16 @@ int main()
 	iris_strD.erase(iris_strD.begin()); // remove headers
 
 
-
 	std::vector<IrisRec> IrisTestRec = { iris_str[5] }; // 1
 	std::deque<IrisRec> IrisTestRecD = { iris_strD[5] }; // 1
 
 	std::vector<IrisRec> IrisTestMultipleRec = { iris_str[5], iris_str[8], iris_str[112] }; // 1, 1, 0
-
-	std::cout << iris_str.size() << std::endl;
-	std::cout << iris_str[0].size() << std::endl;
-
-
+	   
 	std::vector<std::function<double(IrisRec)> > features_iris;
-	for (int i = 1; i < (int)iris_str[0].size() - 1; ++i) { // skip 1st column
-		if (i < (int)iris_str[0].size() - 1) {
-			features_iris.push_back(
-				[=](auto r) { return std::stod(r[i]); }  // we need closure: [=] instead of [&]
-			);
-		}
-		else { // TODO remove in order to test response accessor
-			features_iris.push_back(
-				[=](auto r) {
-				if (r[i] == "\"setosa\"") {
-					//                        cout << r[i] << ", " << i << endl;
-					return 1.0;
-				}
-				else
-					return 0.0;
-			}
-			);
-		}
+	for (int i = 1; i < (int)iris_str[0].size() - 1; ++i) { // skip 1st and last column (it is index  and label)
+		features_iris.push_back(
+			[=](auto r) { return std::stod(r[i]); }  // we need closure: [=] instead of [&]
+		);
 	}
 
 	std::function<bool(IrisRec)> response_iris = [](IrisRec r) {
@@ -121,32 +131,68 @@ int main()
 		else
 			return false;
 	};
+	
+	//
+	// using SVM
+	std::cout << "SVM on Iris: " << std::endl;
+	startTime = std::chrono::steady_clock::now();
+	auto svmModel_2 = metric::classification::edmClassifier<IrisRec, CSVM>();
+	std::cout << "training... " << std::endl;
+	svmModel_2.train(iris_str, features_iris, response_iris);
+	endTime = std::chrono::steady_clock::now();
+	std::cout << "trained (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count()) / 1000000 << " s)" << std::endl;
 
+	svmModel_2.predict(IrisTestRec, features_iris, prediction);
+	std::cout << "SVM prediction on single Iris: " << std::endl;
+	vector_print(prediction);
 
-	for (size_t i = 0; i < iris_str[0].size() - 2; i++)
-		std::cout << features_iris[i](iris_str[10]) << ", ";
-	std::cout << std::endl;
+	svmModel_2.predict(IrisTestMultipleRec, features_iris, prediction);
+	std::cout << "SVM prediction on multiple Iris: " << std::endl;
+	vector_print(prediction);
 
+	std::cout << "\n";
 
+	//
+	// using SVM with default metaparams
+	std::cout << "Boost SVM on Iris: " << std::endl;
+	startTime = std::chrono::steady_clock::now();
+	auto svmModel_3 = metric::classification::edmClassifier<IrisRec, CSVM>();
+	auto boostSvmModel_3 = metric::classification::Boosting<IrisRec, metric::classification::edmClassifier<IrisRec, CSVM>, metric::classification::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, svmModel_3);
+	std::cout << "training... " << std::endl;
+	boostSvmModel_3.train(iris_str, features_iris, response_iris, true);
+	endTime = std::chrono::steady_clock::now();
+	std::cout << "trained (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count()) / 1000000 << " s)" << std::endl;
 
-	//*
+	boostSvmModel_3.predict(IrisTestRec, features_iris, prediction);
+	std::cout << "Boost SVM predict on single Iris: " << std::endl;
+	vector_print(prediction);
 
-	// using CSVM with default metaparams
-	auto wl25 = metric::classification::edmClassifier<IrisRec, CSVM>();
-	auto cntnr25 = metric::classification::Boosting<IrisRec, metric::classification::edmClassifier<IrisRec, CSVM>, metric::classification::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, wl25);
-	cntnr25.train(iris_str, features_iris, response_iris, true);
-	std::vector<bool> r25;
-	cntnr25.predict(IrisTestRec, features_iris, r25);
-	std::cout << "\nstrong on CSVM iris predict: " << r25[0] << std::endl;
+	boostSvmModel_3.predict(IrisTestMultipleRec, features_iris, prediction);
+	std::cout << "Boost SVM predict on multiple Iris: " << std::endl;
+	vector_print(prediction);
 
+	std::cout << "\n";
 
-	// using CSVM with metaparams
-	auto weak35 = metric::classification::edmSVM<IrisRec>(C_SVC, RBF, 3, 0, 100, 0.001, 1, 0, NULL, NULL, 0.5, 0.1, 1, 0);
-	auto strong35 = metric::classification::Boosting<IrisRec, metric::classification::edmSVM<IrisRec>, metric::classification::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, weak35);
-	strong35.train(iris_str, features_iris, response_iris, true);
-	std::vector<bool> r35;
-	strong35.predict(IrisTestRec, features_iris, r35);
-	std::cout << "\nstrong on specialized SVM iris predict: " << r35[0] << std::endl;
+	//
+	// using SVM with metaparams
+	std::cout << "Boost specialized SVM on Iris: " << std::endl;
+	startTime = std::chrono::steady_clock::now();
+	auto svmModel_4 = metric::classification::edmSVM<IrisRec>(C_SVC, RBF, 3, 0, 100, 0.001, 1, 0, NULL, NULL, 0.5, 0.1, 1, 0);
+	auto boostSvmModel_4 = metric::classification::Boosting<IrisRec, metric::classification::edmSVM<IrisRec>, metric::classification::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, svmModel_4);
+	std::cout << "training... " << std::endl;
+	boostSvmModel_4.train(iris_str, features_iris, response_iris, true);
+	endTime = std::chrono::steady_clock::now();
+	std::cout << "trained (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count()) / 1000000 << " s)" << std::endl;
+
+	boostSvmModel_4.predict(IrisTestRec, features_iris, prediction);
+	std::cout << "Boost specialized SVM predict on single Iris: " << std::endl;
+	vector_print(prediction);
+
+	boostSvmModel_4.predict(IrisTestMultipleRec, features_iris, prediction);
+	std::cout << "Boost specialized SVM predict on multiple Iris: " << std::endl;
+	vector_print(prediction);
+
+	std::cout << "\n";
 	
 	return 0;
 

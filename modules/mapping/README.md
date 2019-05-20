@@ -64,10 +64,10 @@ auto[assignments, seeds, counts] = clustering::kmedoids(data, 4);
 //assignments:
 //2, 0, 3, 0, 1, 0
 
-//seeds :
+//seeds:
 //5, 4, 0, 2
 
-//counts :
+//counts:
 //3, 1, 1, 1
 ```
 
@@ -100,7 +100,7 @@ auto[assignments, means, counts] = clustering::kmeans(data, 4);
 //4.00673, 4.26089, 3.72081, 96.1618, 96.1618
 //3.4824, 8.15624, -0.185407, 83.5776, 83.5776
 
-//counts :
+//counts:
 //2, 1, 2, 1
 ```
 
@@ -127,10 +127,10 @@ auto[assignments, seeds, counts] = clustering::dbscan(data, (float) 64.0, 1);
 //assignments:
 //1, 1, 2, 1, 3, 1
 
-//seeds :
+//seeds:
 //0, 2, 4
 
-//counts :
+//counts:
 //4, 1, 1
 ```
 
@@ -157,10 +157,10 @@ auto[assignments, exemplars, counts] = clustering::affprop(data);
 //assignments:
 //1, 1, 0, 1, 0, 1
 
-//exemplars :
+//exemplars:
 //4, 5
 
-//counts :
+//counts:
 //2, 4
 ```
 
