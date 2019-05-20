@@ -3,7 +3,7 @@
 #include <boost/test/unit_test.hpp>
 #include <iostream>
 #include <vector>
-#include "metric_space.hpp"
+#include "../metric_space.hpp"
 template<typename T>
 struct distance {
     T operator()( const T &lhs,  const T &rhs) const {
