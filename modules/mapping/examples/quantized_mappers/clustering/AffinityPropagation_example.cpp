@@ -17,6 +17,16 @@ int main()
 		   {2.57927000000000, 2.63399000000000, 2.46802000000000, 61.9026000000000, 61.9026000000000} };
 
 	auto[assignments, exemplars, counts] = clustering::affprop(data);
+	// out:
+
+	//assignments:
+	//1, 1, 0, 1, 0, 1
+
+	//exemplars :
+	//4, 5
+
+	//counts :
+	//2, 4
 
 
 	std::cout << "assignments:" << std::endl;

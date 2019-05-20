@@ -15,7 +15,17 @@ int main()
 		   {5.81414000000000, 8.14015000000000, 3.22950000000000, 139.539000000000, 139.539000000000},
 		   {2.57927000000000, 2.63399000000000, 2.46802000000000, 61.9026000000000, 61.9026000000000} };
 
-	auto[assignments, seeds, counts] = clustering::dbscan(data, (float) 64.0, 1); 
+	auto[assignments, seeds, counts] = clustering::dbscan(data, (float) 64.0, 1);
+	// out:
+
+	//assignments:
+	//1, 1, 2, 1, 3, 1
+
+	//seeds :
+	//0, 2, 4
+
+	//counts :
+	//4, 1, 1
 
 
 	std::cout << "assignments:" << std::endl;

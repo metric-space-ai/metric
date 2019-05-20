@@ -15,17 +15,7 @@ int main()
 		   {5.81414000000000, 8.14015000000000, 3.22950000000000, 139.539000000000, 139.539000000000},
 		   {2.57927000000000, 2.63399000000000, 2.46802000000000, 61.9026000000000, 61.9026000000000} };
 
-	auto[assignments, seeds, counts] = clustering::kmedoids(data, 4);
-	// out:
-
-	//assignments:
-	//2, 0, 3, 0, 1, 0
-
-	//seeds :
-	//5, 4, 0, 2
-
-	//counts :
-	//3, 1, 1, 1
+	auto[assignments, seeds, counts] = clustering::hierarchClustering(data, 4);
 
 
 	std::cout << "assignments:" << std::endl;

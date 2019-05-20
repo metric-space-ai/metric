@@ -670,7 +670,7 @@ namespace affprop_functions {
 } // end namespace affprop_functions
 
 /*
-A Affinity Propagtaion implementation based on a similarity matrix.
+A Affinity Propagation implementation based on a similarity matrix.
 */
     //   Reference:
     //       Clustering by Passing Messages Between Data Points.
