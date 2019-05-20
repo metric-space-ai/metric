@@ -25,6 +25,7 @@ endif(MSVC)
 add_executable(KMedoids_example quantized_mappers/clustering/KMedoids_example.cpp)
 add_executable(KMeans_example quantized_mappers/clustering/KMeans_example.cpp)
 add_executable(DBScan_example quantized_mappers/clustering/DBScan_example.cpp)
+add_executable(AffinityPropagtaion_example quantized_mappers/clustering/AffinityPropagtaion_example.cpp)
 
 # quantized_mappers / constraint
 
