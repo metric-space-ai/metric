@@ -319,7 +319,7 @@ namespace kmeans_functions{
         std::vector<int> assignments(data.size());
         // Calculate new meansData until convergence is reached
         int t = 0;
-        int updated_number_of_means;
+        int updated_number_of_means = 0;
         std::vector<int> counts(k, int(0));
         do
         {

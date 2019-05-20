@@ -2,7 +2,7 @@
 #include <vector>
 #include <iostream>
 
-#include "details/correlation_weighted_accuracy.hpp"
+#include "../details/classification/details/correlation_weighted_accuracy.hpp"
 
 int main()
 {

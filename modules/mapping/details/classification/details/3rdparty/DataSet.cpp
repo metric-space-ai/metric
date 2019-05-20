@@ -51,6 +51,8 @@ using namespace libedm;
 #include "DataSet.h"
 #include "RandSequence.h"
 
+#include <time.h>
+
 
 CDataset &CDataset::operator +=(const CDataset &b)
 {

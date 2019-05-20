@@ -14,8 +14,6 @@ set (CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-omit-frame-pointer ${G
 set (CMAKE_LINKER_FLAGS_DEBUG "${CMAKE_STATIC_LINKER_FLAGS_DEBUG} -fno-omit-frame-pointer -pthread -fsanitize=address")
 
 
-
-
 add_executable(simple_example simple_example.cpp)
 add_executable(StandartMetrics_example StandartMetrics_example.cpp)
 add_executable(EMD_example EMD_example.cpp)

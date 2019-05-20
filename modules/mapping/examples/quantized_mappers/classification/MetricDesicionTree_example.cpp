@@ -8,10 +8,10 @@
 
 
 
-#include "../details/metric_dt_classifier.hpp"
+#include "../details/classification/details/metric_dt_classifier.hpp"
 
 #include "assets/helpers.cpp" // csv reader
-#include "assets/metric_distance/metric_distance.hpp"
+#include "../../distance/metric_distance.cpp"
 
 
 using namespace std;

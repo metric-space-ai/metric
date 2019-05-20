@@ -1,13 +1,13 @@
 
-#include "../metric_classification.hpp"
+#include "../details/classification/metric_classification.hpp"
 
-#include "../examples/assets/helpers.cpp" // csv reader
+#include "assets/helpers.cpp" // csv reader
 
 #include <variant>
 
 #include <deque> // for Record test
 
-#include "../details/correlation_weighted_accuracy.hpp"
+#include "../details/classification/details/correlation_weighted_accuracy.hpp"
 
     int test_CWA()
     {
@@ -215,27 +215,31 @@ int main()
     strong30.predict(IrisTestRec, features_iris, r35);
     std::cout << "\nstrong on specialized SVM iris predict: " << r35[0] << std::endl;
 
+	//------------------------
+	// Bagging_tuple throws an error
 
-    // using Bagging with tuples
-    using WeakLrnTuple1 = std::tuple<metric::classification::edmC45<IrisRec>, metric::classification::edmClassifier<IrisRec, CC45> >;
-    WeakLrnTuple1 clSet = WeakLrnTuple1(weak30, wl20);
-    auto strong40 = metric::classification::Bagging_tuple<IrisRec, WeakLrnTuple1, metric::classification::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, {0.5, 0.5}, clSet);
-    strong40.train(iris_str, features_iris, response_iris, true);
-    std::vector<bool> r40;
-    strong40.predict(IrisTestRec, features_iris, r40);
-    std::cout << "\nbagging_tuple on both specialized and default c45 iris predict: " << r40[0] << std::endl;
+    //// using Bagging with tuples
+    //using WeakLrnTuple1 = std::tuple<metric::classification::edmC45<IrisRec>, metric::classification::edmClassifier<IrisRec, CC45> >;
+    //WeakLrnTuple1 clSet = WeakLrnTuple1(weak30, wl20);
+    //auto strong40 = metric::classification::Bagging_tuple<IrisRec, WeakLrnTuple1, metric::classification::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, {0.5, 0.5}, clSet);
+    //strong40.train(iris_str, features_iris, response_iris, true);
+    //std::vector<bool> r40;
+    //strong40.predict(IrisTestRec, features_iris, r40);
+    //std::cout << "\nbagging_tuple on both specialized and default c45 iris predict: " << r40[0] << std::endl;
 
+	//------------------------
+	// Bagging_tuple throws an error
 
-    // test tree of learners (boosting strong learner in the role of weak)
-    using WeakLrnTupleTree = std::tuple< metric::classification::Boosting< IrisRec, metric::classification::edmC45<IrisRec>, metric::classification::SubsampleRUS<IrisRec> >, metric::classification::edmC45<IrisRec>, metric::classification::edmClassifier<IrisRec, CC45> >;
-    WeakLrnTupleTree clTree = WeakLrnTupleTree(strong30, weak30, wl20);
-    auto strong50 = metric::classification::Bagging_tuple<IrisRec, WeakLrnTupleTree, metric::classification::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, {0.5, 0.5}, clTree);
-    strong50.train(iris_str, features_iris, response_iris, true);
-    std::vector<bool> r50;
-    strong50.predict(IrisTestRec, features_iris, r50);
-    std::cout << "\nbagging on both boosting and c45 iris predict: " << r50[0] << std::endl;
-    strong50.predict(IrisTestMultipleRec, features_iris, r50);
-    std::cout << "\nbagging_tuple on both boosting and c45 iris predict multiple: " << r50[0] << ", " << r50[1] << ", " << r50[2] << std::endl; // IrisTestMultipleRec
+    //// test tree of learners (boosting strong learner in the role of weak)
+    //using WeakLrnTupleTree = std::tuple< metric::classification::Boosting< IrisRec, metric::classification::edmC45<IrisRec>, metric::classification::SubsampleRUS<IrisRec> >, metric::classification::edmC45<IrisRec>, metric::classification::edmClassifier<IrisRec, CC45> >;
+    //WeakLrnTupleTree clTree = WeakLrnTupleTree(strong30, weak30, wl20);
+    //auto strong50 = metric::classification::Bagging_tuple<IrisRec, WeakLrnTupleTree, metric::classification::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, {0.5, 0.5}, clTree);
+    //strong50.train(iris_str, features_iris, response_iris, true);
+    //std::vector<bool> r50;
+    //strong50.predict(IrisTestRec, features_iris, r50);
+    //std::cout << "\nbagging on both boosting and c45 iris predict: " << r50[0] << std::endl;
+    //strong50.predict(IrisTestMultipleRec, features_iris, r50);
+    //std::cout << "\nbagging_tuple on both boosting and c45 iris predict multiple: " << r50[0] << ", " << r50[1] << ", " << r50[2] << std::endl; // IrisTestMultipleRec
 
     //* //   correct code, may be enables
     using WeakLrnVariant = std::variant<metric::classification::edmC45<IrisRec>, metric::classification::edmClassifier<IrisRec, CC45> >;
