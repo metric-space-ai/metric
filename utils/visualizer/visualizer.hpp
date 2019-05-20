@@ -1,5 +1,5 @@
-#ifndef MAT2BMP
-#define MAT2BMP
+#ifndef VISUALIZER
+#define VISUALIZER
 
 #include "blaze/Blaze.h"
 #include <string.h>
@@ -17,6 +17,6 @@ void blaze2bmp_norm(BlazeMatrix m, std::string filename);
 }
 
 
-#include "mat2bmp.cpp"
+#include "visualizer.cpp"
 
-#endif // MAT2BMP
+#endif // VISUALIZER

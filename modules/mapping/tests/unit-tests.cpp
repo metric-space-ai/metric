@@ -2,7 +2,7 @@
 
 #include "../details/metric.tpp"
 //#include "../details/graph.hpp"
-#include "include/graph/graph.hpp"
+#include "utils/graph/graph.hpp"
 
 #define BOOST_TEST_MODULE Main
 #define BOOST_TEST_DYN_LINK

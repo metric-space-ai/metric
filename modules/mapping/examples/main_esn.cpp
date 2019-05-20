@@ -1,7 +1,7 @@
 #include <iostream>
 #include "../details/esn.hpp"
 
-#include "include/helpers/mat2bmp.hpp"
+#include "utils/visualizer/visualizer.hpp"
 
 int main()
 {

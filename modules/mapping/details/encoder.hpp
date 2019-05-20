@@ -3,7 +3,7 @@
 
 #include "blaze/Blaze.h"
 
-//#include "include/mat2bmp.hpp" // TODO remove visualizer calls and this line
+//#include "utils/visualizer/visualizer.hpp" // TODO remove visualizer calls and this line
 
 
 

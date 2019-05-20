@@ -1,5 +1,5 @@
 
-#include "mat2bmp.hpp"
+#include "visualizer.hpp"
 
 
 namespace mat2bmp

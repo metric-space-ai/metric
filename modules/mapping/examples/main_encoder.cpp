@@ -3,8 +3,8 @@
 #include "../details/encoder.hpp"  // for usage independently on the entire lib
 //#include "metric.hpp"  // for usage as a part of the lib
 
-#include "include/helpers/mat2bmp.hpp"
-#include "include/helpers/dct.hpp"
+#include "utils/visualizer/visualizer.hpp"
+#include "modules/transformers/discrete_cosine/discrete_cosine.hpp"
 
 
 
