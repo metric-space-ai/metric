@@ -368,6 +368,181 @@ boostSvmModel_4.predict(IrisTestMultipleRec, features_iris, prediction);
 ---
 
 #### C4.5
+
+
+*First example*
+
+Suppose we have set of payments data, where each payment is set of ints:
+```cpp
+using Record = std::vector<int>;
+
+std::vector<Record> payments = {
+	{0,3,5,0},
+	{1,4,5,0},
+	{2,5,2,1},
+	{3,6,2,1}
+};
+```
+
+Then we defined features and responce (first three elements is features, last one is a label):
+
+```cpp
+std::vector<std::function<double(Record)>> features;
+
+for (int i = 0; i < (int)payments[0].size() - 1; ++i) {
+	features.push_back(
+		[=](auto r) { return r[i]; }  // we need closure: [=] instead of [&]   !! THIS DIFFERS FROM API !!
+	);
+}
+
+std::function<bool(Record)> response = [](Record r) {
+	if (r[r.size() - 1] >= 0.5)
+		return true;
+	else
+		return false;
+};
+```
+
+And we can define and train C4.5 model:
+
+```cpp
+metric::classification::edmClassifier<Record, CC45> c45Model_1 = metric::classification::edmClassifier<Record, CC45>();
+c45Model_1.train(payments, features, response);
+```
+
+Once model will been trained we can make predict on a test sample:
+
+```cpp
+std::vector<Record> test_sample = {
+	{0,3,5,0},
+	{3,6,2,1}
+};
+
+c45Model_1.predict(test_sample, features, prediction);
+// out
+// C4.5 prediction:
+// [0, 1]
+```
+
+*Second example*
+
+We can run C4.5 on famous Iris dataset.
+
+Here is our loaded dataset:
+
+```cpp
+using IrisRec = std::vector<std::string>;
+
+std::vector<IrisRec> iris_str = read_csv<std::vector<IrisRec>>("./assets/iris.csv");
+std::deque<IrisRec> iris_strD = read_csv<std::deque<IrisRec>>("./assets/iris.csv");
+
+iris_str.erase(iris_str.begin()); // remove headers
+iris_strD.erase(iris_strD.begin()); // remove headers
+```
+
+Here will be our test samples, one is a single sample and another is multiple samples:
+
+```cpp
+std::vector<IrisRec> IrisTestRec = { iris_str[5] }; // 1
+std::deque<IrisRec> IrisTestRecD = { iris_strD[5] }; // 1
+
+std::vector<IrisRec> IrisTestMultipleRec = { iris_str[5], iris_str[8], iris_str[112] }; // 1, 1, 0
+std::deque<IrisRec> IrisTestMultipleRecD = { iris_str[5], iris_str[8], iris_str[112] }; // 1, 1, 0
+```
+
+Then we should define features and responce (first except last elements is features, last one is a label):
+
+```cpp
+std::vector<std::function<double(IrisRec)> > features_iris;
+for (int i = 1; i < (int)iris_str[0].size() - 1; ++i) { // skip 1st and last column (it is index  and label)
+	features_iris.push_back(
+		[=](auto r) { return std::stod(r[i]); }  // we need closure: [=] instead of [&]
+	);
+}
+
+std::function<bool(IrisRec)> response_iris = [](IrisRec r) {
+	if (r[r.size() - 1] == "\"setosa\"")
+		return true;
+	else
+		return false;
+};
+```
+
+C4.5 with default metaparams
+```cpp
+auto boostC45Model_2 = metric::classification::Boosting<IrisRec, metric::classification::edmClassifier<IrisRec, CC45>, metric::classification::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, c45Model_2);
+boostC45Model_2.train(iris_str, features_iris, response_iris, true);
+
+boostC45Model_2.predict(IrisTestRec, features_iris, prediction);
+// out
+// Boost C4.5 predict on single Iris:
+// [1]
+
+boostC45Model_2.predict(IrisTestMultipleRec, features_iris, prediction);
+// out
+// Boost C4.5 predict on multiple Iris:
+// [1, 1, 0]
+```
+
+C4.5 with metaparams
+```cpp
+auto c45Model_3 = metric::classification::edmC45<IrisRec>(2, 1e-3, 0.25, true);
+auto boostC45Model_3 = metric::classification::Boosting<IrisRec, metric::classification::edmC45<IrisRec>, metric::classification::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, c45Model_3);
+boostC45Model_3.train(iris_str, features_iris, response_iris, true);
+
+boostC45Model_3.predict(IrisTestRec, features_iris, prediction);
+// out
+// Boost specialized C4.5 predict on single Iris:
+// [1]
+
+boostC45Model_3.predict(IrisTestMultipleRec, features_iris, prediction);
+// out
+// Boost specialized C4.5 predict on multiple Iris:
+// [1, 1, 0]
+```
+
+Vector with defined models
+```cpp
+using WeakLrnVariant = std::variant<metric::classification::edmC45<IrisRec>, metric::classification::edmClassifier<IrisRec, CC45> >;
+std::vector<WeakLrnVariant> models_1 = {};
+WeakLrnVariant c45Model_4 = metric::classification::edmC45<IrisRec>(2, 1e-3, 0.25, true);
+WeakLrnVariant c45Model_5 = metric::classification::edmClassifier<IrisRec, CC45>();
+models_1.push_back(c45Model_4);
+models_1.push_back(c45Model_5);
+```
+
+Bagging on both specialized and default C4.5
+```cpp
+auto baggingC45model_1 = metric::classification::Bagging<IrisRec, WeakLrnVariant, metric::classification::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, { 0.3, 0.7 }, models_1); // 30% of first weak learner type, 70% of second
+baggingC45model_1.train(iris_str, features_iris, response_iris, true);
+
+baggingC45model_1.predict(IrisTestRec, features_iris, prediction);
+// out
+// Bagging C4.5 predict on single Iris:
+// [1]
+
+baggingC45model_1.predict(IrisTestMultipleRec, features_iris, prediction);
+// out
+// Bagging C4.5 predict on multiple Iris:
+// [1, 1, 0]
+```
+
+Bagging on both specialized and default C4.5 with deque
+```cpp
+auto baggingC45model_2 = metric::classification::Bagging<IrisRec, WeakLrnVariant, metric::classification::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, { 0.3, 0.7 }, models_1); // 30% of first weak learner type, 70% of second
+baggingC45model_2.train(iris_strD, features_iris, response_iris, true);
+
+baggingC45model_2.predict(IrisTestRecD, features_iris, prediction);
+// out
+// Bagging C4.5 predict on single deque Iris:
+// [1]
+
+baggingC45model_2.predict(IrisTestMultipleRecD, features_iris, prediction);
+// out
+// Bagging C4.5 predict on multiple deque Iris:
+// [1, 1, 0]
+```
+
 ---
 
 #### SOM
