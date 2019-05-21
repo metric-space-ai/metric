@@ -48,7 +48,7 @@ int main()
 	std::cout << "we have started" << std::endl;
 	std::cout << '\n';
 
-	using Record = std::vector<double>;  // may be of arbitrary type, with appropriate accessors
+	using Record = std::vector<int>;  // may be of arbitrary type, with appropriate accessors
 
 	std::vector<Record> payments = {
 		{0,3,5,0},
