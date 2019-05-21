@@ -119,14 +119,14 @@ int main()
 	std::vector<IrisRec> IrisTestMultipleRec = { iris_str[5], iris_str[8], iris_str[112] }; // 1, 1, 0
 	   
 	std::vector<std::function<double(IrisRec)> > features_iris;
-	for (int i = 1; i < (int)iris_str[0].size() - 1; ++i) { // skip 1st and last column (it is index  and label)
+	for (int i = 1; i < (int)iris_str[0].size() - 1; ++i) { // skip 1st and last column (it is index and label)
 		features_iris.push_back(
 			[=](auto r) { return std::stod(r[i]); }  // we need closure: [=] instead of [&]
 		);
 	}
 
 	std::function<bool(IrisRec)> response_iris = [](IrisRec r) {
-		if (r[r.size() - 1] == "\"setosa\"") // (std::stod(r[r.size() - 1]) >= 0.5)
+		if (r[r.size() - 1] == "\"setosa\"")
 			return true;
 		else
 			return false;
