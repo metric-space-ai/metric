@@ -164,39 +164,41 @@ int main()
          V((double)1)
         }
     };
-
-    typedef double InternalType;
-
+	   
 
     // vector of accessors for field 0
-    auto field0accessors = [] (const Record & r) {
-                               return std::get<double>(r[0]);
-                           };
+    auto field0accessors = [] (const Record & r) 
+	{
+        return std::get<double>(r[0]);
+    };
 
     // vector of accessors for field 1
-    auto field1accessors = [] (const Record & r) {
-                               std::vector<double> v(std::get<std::vector<double>>(r[1]));
-                               v.resize(4);
-                               return v;
-                           };
-
-
+    auto field1accessors = [] (const Record & r) 
+	{
+        std::vector<double> v(std::get<std::vector<double>>(r[1]));
+        v.resize(4);
+        return v;
+    };
+	
     // vector of accessors for field 2
-    auto field2accessors = [] (const Record & r) {
-                               std::vector<double> v(std::get<std::vector<double>>(r[2]));
-                               v.resize(8);
-                               return v;
-                           };
+    auto field2accessors = [] (const Record & r) 
+	{
+        std::vector<double> v(std::get<std::vector<double>>(r[2]));
+        v.resize(8);
+        return v;
+    };
 
     // vector of accessors for field 3
-    auto field3accessors = [] (const Record & r) {
-                               return std::get<std::vector<std::vector<double>>>(r[3]);
-                           };
+    auto field3accessors = [] (const Record & r) 
+	{
+        return std::get<std::vector<std::vector<double>>>(r[3]);
+    };
 
     // vector of accessors for field 4
-    auto field4accessors = [] (const Record & r) {
-                               return std::get<std::string>(r[4]);
-                           };
+    auto field4accessors = [] (const Record & r) 
+	{
+        return std::get<std::string>(r[4]);
+    };
 
 
     // label accessor (for single record)
@@ -208,6 +210,7 @@ int main()
 	   
     // build dimension and Dimension objects
 
+	typedef double InternalType;
     namespace md = metric::distance;
 
 	// features
@@ -240,7 +243,8 @@ int main()
         > VariantType;
 	
     std::vector<VariantType> dims = {dim0, dim1, dim2, dim3, dim4, dim5, dim6, dim7, dim10};
-	
+
+	std::vector<Record> test_sample = { selection[0], selection[2], selection[6] };
 
 	std::vector<int> prediction;
 	auto startTime = std::chrono::steady_clock::now();
@@ -255,7 +259,7 @@ int main()
 	std::cout << "\n";
 	std::cout << "Metric Desicion Tree trained (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count()) / 1000000 << " s)" << std::endl;
 
-	model.predict(selection, dims, prediction);
+	model.predict(test_sample, dims, prediction);
 	std::cout << "\n";
 	std::cout << "Metric Desicion Tree prediction: " << std::endl;
 	vector_print(prediction);
@@ -282,73 +286,7 @@ int main()
 
     std::cout << "\nSSIM distance: " << SSIM_dist << "\n";
 	
-
-    // test EMD separately
-
-    typedef float InputType;
-
-    typedef std::variant<double, std::vector<int>, int> F; // field type
-    typedef std::vector<F> R;
-    std::vector<R> dataset = {
-        {F(std::vector<int>({1, 0, 0})),
-         F((int)0) // label
-        },
-        {F(std::vector<int>({0, 2, 0})), // from example
-         F((int)1)
-        }
-    };
-
-
-    auto a0 = [](const R & r) {
-                  auto & v = std::get<std::vector<int>>(r[0]);
-                  return std::vector<InputType>(v.begin(),v.end());
-              };
-
-    // label accessor (for single record)
-    std::function<int(R)> resp = [](R r)
-    {
-        return (int)std::abs(std::get<int>(r[1]));
-    };
-
-
-    std::vector<std::vector<InputType>> C = {{0, 10, 20}, {10, 0, 10}, {20, 10, 0}}; // symmetric
-
-
-
-    metric::Dimension<R, metric::distance::EMD<InputType>, decltype(a0)> dimEMD(a0, md::EMD<InputType>(3,3));
-    auto emd_dist = dimEMD.get_distance(dataset[0], dataset[1]);
-
-    metric::distance::EMD<InputType> EMD_functor(C);
-
-    auto v1i = std::get<std::vector<int>>(dataset[0][0]);
-    auto v2i = std::get<std::vector<int>>(dataset[1][0]);
-    std::vector<InputType> v1t(v1i.begin(), v1i.end());
-    std::vector<InputType> v2t(v2i.begin(), v2i.end());
-
-    auto emd_dist_C = EMD_functor(v1t, v2t);
-
-    std::cout << "\nEMD distance 1: " << emd_dist << " " << emd_dist_C << "\n";
-
-
-
-
-
-    //    test EMD separately
 	
-    std::vector<InputType> v1 = {0, 2, 0, 0, 0, 0};
-    std::vector<InputType> v2 = {2, 0, 1, 0, 0, 0};
-    std::vector<std::vector<InputType>> CC = {{0, 10, 20, 30, 40, 50},
-                                             {10, 0, 10, 20, 30, 40},
-                                             {20, 10, 0, 10, 20, 30},
-                                             {30, 20, 10, 0, 10, 20},
-                                             {40, 30, 20, 10, 0, 10},
-                                             {50, 40, 30, 20, 10, 0}}; // symmetric
-    auto emd_dist_2 = metric::distance::EMD<InputType>(CC)(v1, v2);
-
-    auto emd_dist_3 = metric::distance::EMD<InputType>(6,6)(v1, v2);
-
-    std::cout << "\nEMD distance 2 : " << emd_dist_2 << " " << emd_dist_3 << "\n";
-
 
     return 0;
 }
