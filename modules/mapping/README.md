@@ -22,11 +22,11 @@
 
 
 3. Training data
+    - SVM
+    - C4.5
     - Bagging
     - Boosting
     - Metric Decision Tree
-    - SVM
-    - C4.5
 
 
 ##### Continuous mapper (encoder/decoder)
@@ -178,18 +178,13 @@ t.b.d.
 #### Aggregate
 ---
 
-#### Bagging
----
-
-#### Boosting
----
 
 #### Metric Decision Tree
 ---
 
 #### SVM
 
-*First example*
+#### *First example*
 
 Suppose we have set of payments data, where each payment is set of ints:
 ```cpp
@@ -243,7 +238,7 @@ svmModel_1.predict(test_sample, features, prediction);
 // [0, 1]
 ```
 
-*Second example*
+#### *Iris example*
 
 We can run SVM on famous Iris dataset.
 
@@ -283,26 +278,18 @@ std::function<bool(IrisRec)> response_iris = [](IrisRec r) {
 ```
 
 
-##### Simple SVM model
+###### Simple model
 
 So, we are ready to define and train simple SVM model: 
 ```cpp
 auto svmModel_2 = metric::classification::edmClassifier<IrisRec, CSVM>();
 svmModel_2.train(iris_str, features_iris, response_iris);
-```
 
-Once model will been trained we can make predict on a single test sample:
-
-```cpp
 svmModel_2.predict(IrisTestRec, features_iris, prediction);
 // out
 // SVM prediction on single Iris:
 // [1]
-```
 
-Or on multiple test samples:
-
-```cpp
 svmModel_2.predict(IrisTestMultipleRec, features_iris, prediction);
 // out
 // SVM prediction on multiple Iris:
@@ -310,27 +297,21 @@ svmModel_2.predict(IrisTestMultipleRec, features_iris, prediction);
 ```
  
  
-##### Boost SVM model
+###### Boosting
 
-On the same Iris dataset we can define and train Boost SVM model:
+On the same Iris dataset we can define and train Boosting model.
+
+SVM with default metaparams:
 ```cpp
 auto svmModel_3 = metric::classification::edmClassifier<IrisRec, CSVM>();
 auto boostSvmModel_3 = metric::classification::Boosting<IrisRec, metric::classification::edmClassifier<IrisRec, CSVM>, metric::classification::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, svmModel_3);
 boostSvmModel_3.train(iris_str, features_iris, response_iris, true);
-```
 
-Once model will been trained we can make predict on a single test sample:
-
-```cpp
 boostSvmModel_3.predict(IrisTestRec, features_iris, prediction);
 // out
 // Boost SVM predict on single Iris:
 // [1]
-```
 
-Or on multiple test samples:
-
-```cpp
 boostSvmModel_3.predict(IrisTestMultipleRec, features_iris, prediction);
 // out
 // Boost SVM predict on multiple Iris:
@@ -338,30 +319,65 @@ boostSvmModel_3.predict(IrisTestMultipleRec, features_iris, prediction);
 ```
  
  
-##### Boost specialized SVM model
 
-On the same Iris dataset we can define and train Boost specialized SVM model:
+SVM with specialized metaparams:
 ```cpp
 auto svmModel_4 = metric::classification::edmSVM<IrisRec>(C_SVC, RBF, 3, 0, 100, 0.001, 1, 0, NULL, NULL, 0.5, 0.1, 1, 0);
 auto boostSvmModel_4 = metric::classification::Boosting<IrisRec, metric::classification::edmSVM<IrisRec>, metric::classification::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, svmModel_4);
 boostSvmModel_4.train(iris_str, features_iris, response_iris, true);
-```
 
-Once model will been trained we can make predict on a single test sample:
-
-```cpp
 boostSvmModel_4.predict(IrisTestRec, features_iris, prediction);
 // out
 // Boost specialized SVM predict on single Iris:
 // [1]
-```
 
-Or on multiple test samples:
-
-```cpp
 boostSvmModel_4.predict(IrisTestMultipleRec, features_iris, prediction);
 // out
 // Boost specialized SVM predict on multiple Iris:
+// [1, 1, 0]
+```
+
+###### Bagging
+
+Vector with defined models
+```cpp
+using WeakLrnVariant = std::variant<metric::classification::edmSVM<IrisRec>, metric::classification::edmClassifier<IrisRec, CSVM> >;
+std::vector<WeakLrnVariant> models_1 = {};
+WeakLrnVariant svmModel_5 = metric::classification::edmSVM<IrisRec>(C_SVC, RBF, 3, 0, 100, 0.001, 1, 0, NULL, NULL, 0.5, 0.1, 1, 0);
+WeakLrnVariant svmModel_6 = metric::classification::edmClassifier<IrisRec, CSVM>();
+models_1.push_back(svmModel_5);
+models_1.push_back(svmModel_6);
+```
+
+Bagging on both specialized and default SVM
+```cpp
+auto baggingSVMmodel_1 = metric::classification::Bagging<IrisRec, WeakLrnVariant, metric::classification::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, { 0.3, 0.7 }, models_1); // 30% of first weak learner type, 70% of second
+baggingSVMmodel_1.train(iris_str, features_iris, response_iris, true);
+
+baggingSVMmodel_1.predict(IrisTestRec, features_iris, prediction);
+// out
+// Bagging SVM predict on single Iris:
+// [1]
+
+baggingSVMmodel_1.predict(IrisTestMultipleRec, features_iris, prediction);
+// out
+// Bagging SVM predict on multiple Iris:
+// [1, 1, 0]
+```
+
+Bagging on both specialized and default SVM with deque
+```cpp
+auto baggingSVMmodel_2 = metric::classification::Bagging<IrisRec, WeakLrnVariant, metric::classification::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, { 0.3, 0.7 }, models_1); // 30% of first weak learner type, 70% of second
+baggingSVMmodel_2.train(iris_strD, features_iris, response_iris, true);
+
+baggingSVMmodel_2.predict(IrisTestRecD, features_iris, prediction);
+// out
+// Bagging SVM predict on single deque Iris:
+// [1]
+
+baggingSVMmodel_2.predict(IrisTestMultipleRecD, features_iris, prediction);
+// out
+// Bagging SVM predict on multiple deque Iris:
 // [1, 1, 0]
 ```
 
@@ -370,7 +386,7 @@ boostSvmModel_4.predict(IrisTestMultipleRec, features_iris, prediction);
 #### C4.5
 
 
-*First example*
+#### *First example*
 
 Suppose we have set of payments data, where each payment is set of ints:
 ```cpp
@@ -424,7 +440,7 @@ c45Model_1.predict(test_sample, features, prediction);
 // [0, 1]
 ```
 
-*Second example*
+#### *Iris example*
 
 We can run C4.5 on famous Iris dataset.
 
@@ -468,6 +484,26 @@ std::function<bool(IrisRec)> response_iris = [](IrisRec r) {
 };
 ```
 
+###### Simple model
+
+So, we are ready to define and train simple SVM model: 
+```cpp
+auto c45Model_2 = metric::classification::edmClassifier<IrisRec, libedm::CC45>();
+c45Model_2.train(iris_str, features_iris, response_iris);
+
+c45Model_2.predict(IrisTestRec, features_iris, prediction);
+// out
+// C4.5 prediction on single Iris:
+// [1]
+
+c45Model_2.predict(IrisTestMultipleRec, features_iris, prediction);
+// out
+// C4.5 prediction on multiple Iris:
+// [1, 1, 0]
+```
+
+###### Boosting
+
 C4.5 with default metaparams
 ```cpp
 auto boostC45Model_2 = metric::classification::Boosting<IrisRec, metric::classification::edmClassifier<IrisRec, CC45>, metric::classification::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, c45Model_2);
@@ -484,7 +520,7 @@ boostC45Model_2.predict(IrisTestMultipleRec, features_iris, prediction);
 // [1, 1, 0]
 ```
 
-C4.5 with metaparams
+C4.5 with specialized metaparams
 ```cpp
 auto c45Model_3 = metric::classification::edmC45<IrisRec>(2, 1e-3, 0.25, true);
 auto boostC45Model_3 = metric::classification::Boosting<IrisRec, metric::classification::edmC45<IrisRec>, metric::classification::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, c45Model_3);
@@ -500,6 +536,8 @@ boostC45Model_3.predict(IrisTestMultipleRec, features_iris, prediction);
 // Boost specialized C4.5 predict on multiple Iris:
 // [1, 1, 0]
 ```
+
+###### Bagging
 
 Vector with defined models
 ```cpp
