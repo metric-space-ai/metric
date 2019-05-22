@@ -1,12 +1,9 @@
 #include <iostream>
-
 #include <vector>
 #include <deque>
+#include <chrono>
 #include <functional>
-
 #include <variant>
-
-
 
 #include "../details/classification/details/metric_dt_classifier.hpp"
 
@@ -16,11 +13,28 @@
 
 using namespace std;
 
-int main()
+template <typename T>
+void vector_print(const std::vector<T> &vec)
 {
 
+	std::cout << "[";
+	for (size_t i = 0; i < vec.size(); i++)
+	{
+		if (i < vec.size() - 1)
+		{
+			std::cout << vec[i] << ", ";
+		}
+		else
+		{
+			std::cout << vec[i] << "]" << std::endl;
+		}
+	}
+}
 
-
+int main()
+{
+	std::cout << "we have started" << std::endl;
+	std::cout << '\n';
 
     typedef std::variant<double, std::vector<double>, std::vector<std::vector<double>>, std::string> V; // field type
     typedef std::vector<V> Record;
@@ -152,40 +166,14 @@ int main()
     };
 
     typedef double InternalType;
-        //typedef double DistanceType;
-
-    //typedef std::vector<double> ContainerType;
 
 
     // vector of accessors for field 0
-    // std::function<InternalType(Record)> field0accessor0 = [](Record r)
-    // {
-    //     return (InternalType)std::get<double>(r[0]);
-    // };
-
-//    std::vector<std::function<InternalType(Record)>> field0accessors = {field0accessor0};
     auto field0accessors = [] (const Record & r) {
                                return std::get<double>(r[0]);
                            };
-    std::function<double(const Record &)> field01accessors = [] (const Record & r) {
-                                                return std::get<double>(r[0]);
-                                            };
 
     // vector of accessors for field 1
-    // std::vector<std::function<InternalType(Record)> > field1accessors;
-    // for (size_t i=0; i<5; i++)
-    // {
-    //     field1accessors.push_back(
-    //         [=](Record r)
-    //         {
-    //             auto v = std::get<std::vector<double>>(r[1]);
-    //             if (v.size() > i)
-    //                 return (InternalType)v[i];
-    //             else
-    //                 return (InternalType)0; // 0 if no data
-    //         }
-    //     );
-    // }
     auto field1accessors = [] (const Record & r) {
                                std::vector<double> v(std::get<std::vector<double>>(r[1]));
                                v.resize(4);
@@ -194,17 +182,6 @@ int main()
 
 
     // vector of accessors for field 2
-    // std::vector<std::function<InternalType(Record)> > field2accessors;
-    // for (size_t i=0; i<8; i++)
-    // {
-    //     field2accessors.push_back(
-    //         [=](Record r)
-    //         {
-    //             auto v = std::get<std::vector<double>>(r[2]);
-    //             return (InternalType)v[i];
-    //         }
-    //     );
-    // }
     auto field2accessors = [] (const Record & r) {
                                std::vector<double> v(std::get<std::vector<double>>(r[2]));
                                v.resize(8);
@@ -212,102 +189,43 @@ int main()
                            };
 
     // vector of accessors for field 3
-    // std::vector<std::function<std::vector<InternalType>(Record)> > field3accessors;
-    // for (size_t i=0; i<23; i++) //
-    // {
-    //     field3accessors.push_back(
-    //         [=](Record r)
-    //         {
-    //             auto v = std::get<std::vector<std::vector<double>>>(r[3]);
-    //             std::vector<InternalType> result = {};
-    //             for (size_t j=0; j<v[i].size(); j++)
-    //             {
-    //                 result.push_back((InternalType)v[i][j]);
-    //             }
-    //             return result;
-    //         }
-    //     );
-    // }
     auto field3accessors = [] (const Record & r) {
                                return std::get<std::vector<std::vector<double>>>(r[3]);
                            };
 
     // vector of accessors for field 4
-    // std::vector<std::function<char(Record)> > field4accessors;
-    // // determine string size??
-    // for (size_t i=0; i<8; i++) // TODO refactor in order to remove limit and get able to represent field of arbitrary length!
-    // {
-    //     field4accessors.push_back(
-    //         [=](Record r)
-    //         {
-    //             auto v = std::get<std::string>(r[4]);
-    //             if (v.size() < i)
-    //                 return (char)v[i];
-    //             else
-    //                 return (char)0;
-    //         }
-    //     );
-    // }
-
     auto field4accessors = [] (const Record & r) {
                                return std::get<std::string>(r[4]);
                            };
+
+
     // label accessor (for single record)
-    std::function<int(Record)> response = [](const Record & a)
+    std::function<int(Record)> response = [](const Record & r)
     {
-        return (int)std::abs(std::get<double>(a[5]));
+        return (int)std::abs(std::get<double>(r[5]));
     };
 
-
-
-
+	   
     // build dimension and Dimension objects
 
-
-    // metric::Dimension<Record, metric::distance::Euclidian<InternalType>, std::function<> dim0(field0accessors);
-    // metric::Dimension<Record, metric::distance::Manhatten<std::vector<InternalType>>> dim1(field1accessors);
-    // metric::Dimension<Record, metric::distance::P_norm<std::vector<InternalType>>> dim2(field2accessors);
-    // metric::Dimension<Record, metric::distance::Euclidian_thresholded<std::vector<InternalType>>> dim3(field2accessors);
-    // metric::Dimension<Record, metric::distance::Cosine<std::vector<InternalType>>> dim4(field2accessors);
-    // metric::Dimension<Record, metric::distance::SSIM<std::vector<std::vector<InternalType>>>> dim5(field3accessors);
-    // metric::Dimension<Record, metric::distance::TWED<std::vector<InternalType>>> dim6(field2accessors);
-    // metric::Dimension<Record, metric::distance::Edit<std::string>> dim7(field4accessors);
-    // metric::Dimension<Record, metric::distance::EMD<std::vector<InternalType>>> dim10(field2accessors);
     namespace md = metric::distance;
 
+	// features
     using a0_type = decltype(field0accessors);
     using a1_type = decltype(field1accessors);
     using a2_type = decltype(field2accessors);
     using a3_type = decltype(field3accessors);
     using a4_type = decltype(field4accessors);
+
     auto dim0 = metric::make_dimension(md::Euclidian<InternalType>(), field0accessors);
     auto dim1 = metric::make_dimension(md::Manhatten<InternalType>(), field1accessors);
     auto dim2 = metric::make_dimension(md::P_norm<InternalType>(), field2accessors);
     auto dim3 = metric::make_dimension(md::Euclidian_thresholded<InternalType>(), field2accessors);
-    auto dim4 = metric::make_dimension( md::Cosine<InternalType>(), field2accessors);
+    auto dim4 = metric::make_dimension(md::Cosine<InternalType>(), field2accessors);
     auto dim5 = metric::make_dimension(md::SSIM<std::vector<InternalType>>(), field3accessors);
     auto dim6 = metric::make_dimension(md::TWED<InternalType>(), field2accessors);
     auto dim7 = metric::make_dimension(md::Edit<char>(), field4accessors);
     auto dim10 = metric::make_dimension(md::EMD<InternalType>(8,8), field2accessors);
-// ---
-//     metric::Dimension<Record, md::Euclidian<InternalType>, a0_type> dim0(field0accessors, md::Euclidian<InternalType>());
-
-//     metric::Dimension<Record, md::Manhatten<InternalType>, a1_type> dim1(field1accessors, md::Manhatten<InternalType>());
-//     metric::Dimension<Record, md::P_norm<InternalType>, a2_type> dim2(field2accessors, md::P_norm<InternalType>());
-//     metric::Dimension<Record, md::Euclidian_thresholded<InternalType>, a2_type> dim3(field2accessors, md::Euclidian_thresholded<InternalType>());
-//     metric::Dimension<Record, md::Cosine<InternalType>, a2_type> dim4(field2accessors, md::Cosine<InternalType>());
-//     metric::Dimension<Record, md::SSIM<std::vector<InternalType>>,a3_type> dim5(field3accessors, md::SSIM<std::vector<InternalType>>());
-//     metric::Dimension<Record, md::TWED<InternalType>, a2_type> dim6(field2accessors, md::TWED<InternalType>());
-//     metric::Dimension<Record, md::Edit<char>, a4_type> dim7(field4accessors, md::Edit<char>());
-//     metric::Dimension<Record, md::EMD<InternalType>, a2_type> dim10(field2accessors, md::EMD<InternalType>(8,8));
-
-    // metric::Dimension<Record, metric::distance::P_norm<std::vector<InternalType>>> dim2(field2accessors);
-    // metric::Dimension<Record, metric::distance::Euclidian_thresholded<std::vector<InternalType>>> dim3(field2accessors);
-    // metric::Dimension<Record, metric::distance::Cosine<std::vector<InternalType>>> dim4(field2accessors);
-    // metric::Dimension<Record, metric::distance::SSIM<std::vector<std::vector<InternalType>>>> dim5(field3accessors);
-    // metric::Dimension<Record, metric::distance::TWED<std::vector<InternalType>>> dim6(field2accessors);
-    // metric::Dimension<Record, metric::distance::Edit<std::string>> dim7(field4accessors);
-    //metric::Dimension<Record, metric::distance::EMD<std::vector<InternalType>>> dim10(field2accessors);
 
     typedef  std::variant<
         metric::Dimension<Record, metric::distance::Euclidian<InternalType>, a0_type>,
@@ -320,33 +238,34 @@ int main()
         metric::Dimension<Record, metric::distance::EMD<InternalType>, a2_type>, // matrix C is temporary created inside functor
         metric::Dimension<Record, metric::distance::Edit<std::string::value_type>, a4_type>
         > VariantType;
-
-    // typedef  std::variant<
-    //   metric::Dimension<Record, metric::distance::Euclidian<std::vector<InternalType>>>,
-    //   metric::Dimension<Record, metric::distance::Manhatten<std::vector<InternalType>>>,
-    //   metric::Dimension<Record, metric::distance::P_norm<std::vector<InternalType>>>,
-    //   metric::Dimension<Record, metric::distance::Euclidian_thresholded<std::vector<InternalType>>>,
-    //   metric::Dimension<Record, metric::distance::Cosine<std::vector<InternalType>>>,
-    //   metric::Dimension<Record, metric::distance::SSIM<std::vector<std::vector<InternalType>>>>,
-    //   metric::Dimension<Record, metric::distance::TWED<std::vector<InternalType>>>,
-    //   metric::Dimension<Record, metric::distance::EMD<std::vector<InternalType>>>, // matrix C is temporary created inside functor
-    //   metric::Dimension<Record, metric::distance::Edit<std::string>>
-    // > VariantType;
-
+	
     std::vector<VariantType> dims = {dim0, dim1, dim2, dim3, dim4, dim5, dim6, dim7, dim10};
+	
 
-//    auto t = dim0.get_distance(selection[0], selection[1]);
+	std::vector<int> prediction;
+	auto startTime = std::chrono::steady_clock::now();
+	auto endTime = std::chrono::steady_clock::now();
 
-    auto dl2 = metric::classification::MetricDT<Record>();
+	std::cout << "Metric Desicion Tree: " << std::endl;
+	startTime = std::chrono::steady_clock::now();
+	auto model = metric::classification::MetricDT<Record>();
+	std::cout << "Metric Desicion Tree training... " << std::endl;
+	model.train(selection, dims, response);
+	endTime = std::chrono::steady_clock::now();
+	std::cout << "\n";
+	std::cout << "Metric Desicion Tree trained (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count()) / 1000000 << " s)" << std::endl;
 
-    dl2.train(selection, dims, response);
+	model.predict(selection, dims, prediction);
+	std::cout << "\n";
+	std::cout << "Metric Desicion Tree prediction: " << std::endl;
+	vector_print(prediction);
 
-    std::vector<int> pr2;
+	std::cout << "\n";
 
-    dl2.predict(selection, dims, pr2);
+	   
 
-
-
+	std::cout << "Distances separately: " << std::endl;
+	
 
     // test Edit separately
 
@@ -356,57 +275,39 @@ int main()
     std::cout << "\nEdit distance: " << edit_dist << "\n";
 
 
-
-    // test SSIM separately
+	// test SSIM separately
 
     metric::distance::SSIM<std::vector<double>> SSIM_functor;
     auto SSIM_dist = SSIM_functor(img1, img2);
 
     std::cout << "\nSSIM distance: " << SSIM_dist << "\n";
-
-
-
+	
 
     // test EMD separately
 
- //    typedef int InputType;
-     typedef float InputType;
+    typedef float InputType;
 
     typedef std::variant<double, std::vector<int>, int> F; // field type
     typedef std::vector<F> R;
     std::vector<R> dataset = {
-        {F((double)2), // not used
-         F(std::vector<int>({1, 0, 0})),
+        {F(std::vector<int>({1, 0, 0})),
          F((int)0) // label
         },
-        {F((double)2),
-         F(std::vector<int>({0, 2, 0})), // from example
-         //F(std::vector<int>({0, 1, 0})),
+        {F(std::vector<int>({0, 2, 0})), // from example
          F((int)1)
         }
     };
 
-    // vector of accessors for field 1
-    // std::vector<std::function<InputType(R)>> a1;
-    // for (size_t i=0; i<3; i++)
-    // {
-    //     a1.push_back(
-    //         [=](R r)
-    //         {
-    //             auto v = std::get<std::vector<int>>(r[1]);
-    //             return (InputType)v[i];
-    //         }
-    //     );
-    // }
-    auto a1 = [](const R & r) {
-                  auto & v = std::get<std::vector<int>>(r[1]);
+
+    auto a0 = [](const R & r) {
+                  auto & v = std::get<std::vector<int>>(r[0]);
                   return std::vector<InputType>(v.begin(),v.end());
               };
 
     // label accessor (for single record)
-    std::function<int(R)> resp = [](R a)
+    std::function<int(R)> resp = [](R r)
     {
-        return (int)std::abs(std::get<int>(a[2]));
+        return (int)std::abs(std::get<int>(r[1]));
     };
 
 
@@ -414,13 +315,13 @@ int main()
 
 
 
-    metric::Dimension<R, metric::distance::EMD<InputType>, decltype(a1)> dimEMD(a1, md::EMD<InputType>(3,3));
+    metric::Dimension<R, metric::distance::EMD<InputType>, decltype(a0)> dimEMD(a0, md::EMD<InputType>(3,3));
     auto emd_dist = dimEMD.get_distance(dataset[0], dataset[1]);
 
     metric::distance::EMD<InputType> EMD_functor(C);
 
-    auto v1i = std::get<std::vector<int>>(dataset[0][1]);
-    auto v2i = std::get<std::vector<int>>(dataset[1][1]);
+    auto v1i = std::get<std::vector<int>>(dataset[0][0]);
+    auto v2i = std::get<std::vector<int>>(dataset[1][0]);
     std::vector<InputType> v1t(v1i.begin(), v1i.end());
     std::vector<InputType> v2t(v2i.begin(), v2i.end());
 
@@ -432,13 +333,8 @@ int main()
 
 
 
-//    //    test EMD separately
-
-
-
-    //std::vector<InputType> v1 = {1, 0, 0};
-    //std::vector<InputType> v2 = {0, 2, 0}; // from example
-
+    //    test EMD separately
+	
     std::vector<InputType> v1 = {0, 2, 0, 0, 0, 0};
     std::vector<InputType> v2 = {2, 0, 1, 0, 0, 0};
     std::vector<std::vector<InputType>> CC = {{0, 10, 20, 30, 40, 50},
@@ -451,19 +347,9 @@ int main()
 
     auto emd_dist_3 = metric::distance::EMD<InputType>(6,6)(v1, v2);
 
-    std::cout << "\nEMD distance 2 : " << emd_dist_2 << " | " << emd_dist_3 << "\n";
+    std::cout << "\nEMD distance 2 : " << emd_dist_2 << " " << emd_dist_3 << "\n";
 
-
-
-
-
-
-
-
-    std::cout << "\nmain() code executed\n";
 
     return 0;
-
-
 }
 
