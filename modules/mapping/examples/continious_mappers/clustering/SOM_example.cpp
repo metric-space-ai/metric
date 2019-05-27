@@ -76,7 +76,7 @@ int main()
 
     using Vector = std::vector<double>;
     using Metric = metric::mapping::SOM_details::default_euclidian<Vector>;
-    using Graph = metric::mapping::SOM_details::Grid6;
+    using Graph = metric::graph::Grid6; // replaced mapping::SOM_details with graph by Max F, 2019-05-16
 
     metric::mapping::SOM<Vector, Metric, Graph> DR(6, 5);
 

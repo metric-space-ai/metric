@@ -22,7 +22,7 @@ W. Natita, W. Wiboonsak, and S. Dusadee
 #include <numeric>
 
 #include "metric.tpp"
-#include "graph.hpp"
+#include "utils/graph/graph.hpp"
 
 #ifndef M_PI
 #define M_PI (3.14159265358979323846)
@@ -34,8 +34,8 @@ namespace metric
 
 namespace mapping
 {
-	template <typename recType, class Metric = SOM_details::default_euclidian<recType>, 
-			 					class Graph = SOM_details::Grid8>
+        template <typename recType, class Metric = SOM_details::default_euclidian<recType>,
+                                                                class Graph = graph::Grid8> // replaced SOM_details with graph by Max F, 2019-05-16
 	class SOM
 	{
 		typedef typename recType::value_type T;

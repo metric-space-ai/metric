@@ -1,1 +1,1 @@
-#include "include/detail/crossfilter.hpp"
+#include "include/crossfilter.hpp"
