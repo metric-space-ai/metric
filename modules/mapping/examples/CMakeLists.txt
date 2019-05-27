@@ -1,8 +1,13 @@
 cmake_minimum_required(VERSION 3.14)
 #find_package (Boost COMPONENTS date_time REQUIRED)
+
+# add_compile_definitions(BLAZE_WIN64_PLATFORM 1)
+
 include_directories(
     ${PROJECT_SOURCE_DIR}
     ${PROJECT_SOURCE_DIR}/assets
+    ${PROJECT_SOURCE_DIR}/../../..
+    ${PROJECT_SOURCE_DIR}/../../../3rdparty
     )
 	
 file(COPY "assets" DESTINATION ".")
@@ -15,6 +20,7 @@ set (CMAKE_LINKER_FLAGS "${CMAKE_STATIC_LINKER_FLAGS} -fno-omit-frame-pointer -p
 
 set (CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-omit-frame-pointer ${GCC_WARNING} -std=c++17 -pthread -fsanitize=address")
 set (CMAKE_LINKER_FLAGS_DEBUG "${CMAKE_STATIC_LINKER_FLAGS_DEBUG} -fno-omit-frame-pointer -pthread -fsanitize=address")
+
 
 # for Visual Studio
 if(MSVC)
