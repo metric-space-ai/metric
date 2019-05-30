@@ -857,6 +857,13 @@ auto SSIM_dist = SSIM_functor(img1, img2);
 
 METRIC | space works headonly. Just include the header into your project.
 
+If you are using cmake then you should specify x64 platform:
+```bash
+mkdir build
+cd build
+cmake .. -A x64
+```
+
 For example, include this in `main.cpp` (can be found in the examples dir):
 ```cpp
 #include "metric_mapping.cpp"

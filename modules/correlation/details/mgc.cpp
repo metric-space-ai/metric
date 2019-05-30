@@ -10,7 +10,14 @@ You are not allowed to use or edit the code without license. */
 #include <numeric>
 #include <iterator>
 #include <assert.h>
-#include <x86intrin.h>
+
+#if defined(_MSC_VER)
+	 /* Microsoft C/C++-compatible compiler */
+	#include <intrin.h>
+#else
+	#include <x86intrin.h>
+#endif
+
 #include <math.h>
 #include <random>
 

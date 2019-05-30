@@ -8,3 +8,4 @@
 /modules/mapping/examples/build
 /modules/mapping/*.exe
 /modules/mapping/examples/*.exe
+/modules/correlation/examples/build
