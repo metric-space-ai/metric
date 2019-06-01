@@ -23,6 +23,6 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #ifndef _METRIC_DISTANCE_HPP
 #define _METRIC_DISTANCE_HPP
 
-#include "distance/metric_distance.cpp" // include the implementation
+#include "distance/metric_distance.hpp" // include the implementation
 
 #endif //_METRIC_DISTANCE_HPP
