@@ -3,7 +3,7 @@
 #include <chrono>
 #include "assets/test_data.cpp"
 #include "../metric_distance.hpp"
-//#include "../details/Edit.hpp"
+//#include "../details/k-random/Edit.hpp"
 
 template <typename T>
 void matrix_print(const std::vector<std::vector<T>> &mat)
