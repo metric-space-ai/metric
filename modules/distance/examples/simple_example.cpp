@@ -130,5 +130,22 @@ int main()
 
     std::cout << "result3: " << result3 << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t4 - t3).count()) / 1000000 << "s)" << std::endl;
 
+
+
+    // test simple k-related distanses
+
+    typedef double V_type;
+
+    std::vector<V_type> obj1 = {0, 1, 2};
+    std::vector<V_type> obj2 = {0, 1, 3};
+
+    metric::distance::Sorensen<V_type> sor;
+//    metric::distance::Sorensen<double> sor;
+    std::cout << "sorensen metric result: " << sor(obj1, obj2) << "\n";
+
+
+
+
+
     return 0;
 }
