@@ -37,6 +37,18 @@ if(MSVC)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++17")
 endif(MSVC)
 
+
+#find_package(blaze CONFIG REQUIRED)
+#find_package(blaze CONFIG REQUIRED)
+#if( blaze_FOUND )
+#    message("Blaze was found")
+#   #add_library( blaze_target INTERFACE )
+#   target_link_libraries(main PRIVATE blaze::blaze)
+#   #target_link_libraries( blaze_target INTERFACE blaze::blaze )
+#else()
+#    message("Blaze was not found!")
+#endif()
+
 # quantized_mappers / clustering
 add_executable(KMedoids_example quantized_mappers/clustering/KMedoids_example.cpp)
 add_executable(KMeans_example quantized_mappers/clustering/KMeans_example.cpp)
