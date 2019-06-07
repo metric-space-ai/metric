@@ -47,8 +47,6 @@ int main()
 
     metric::distance::P_norm<double> distance(2);
 
-    metric::distance::SSIM<std::vector<int>> ssimFactor;
-
     //-----------------------------------------------
     // The ground distance - thresholded Euclidean distance.
     // Since everything is ints, we multiply by COST_MULT_FACTOR.
@@ -112,11 +110,20 @@ int main()
 
     //    // std::cout << "result1: " << double(result1)/1e8 << ",  result2: " << double(result2)/1e8 << std::endl;
     // std::cout << "result2: " << result2 << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t3 - t2).count()) / 1000000 << "s)" << std::endl;
-    // auto result3 = ssimFactor(img1, img2);
-    // auto result4 = ssimFactor(img1, img3);
 
-    // std::cout << "result3: " << result3 << ",  result4: " << result4 << std::endl;
 
+
+    // SSIM
+    metric::distance::SSIM<std::vector<int>> ssimFactor;
+
+    auto result3_SSIM = ssimFactor(img1, img2);
+    auto result4_SSIM = ssimFactor(img1, img3);
+
+    std::cout << "result3_SSIM: " << result3_SSIM << ",  result4_SSIM: " << result4_SSIM << std::endl;
+
+
+
+    // Edit
     std::string str1 = "1011001100110011001111110011001100110011011110011001100110011001110001100110011001101";
     std::string str2 = "1000011001100110011011100110011001100110111001100110011001100111000110011001100110011";
 
@@ -126,13 +133,15 @@ int main()
     metric::distance::Edit<std::string> distance3;
 
     auto t4 = std::chrono::steady_clock::now();
-    auto result3 = distance3(str1, str2);
+    auto result5_EDIT = distance3(str1, str2);
 
-    std::cout << "result3: " << result3 << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t4 - t3).count()) / 1000000 << "s)" << std::endl;
+    std::cout << "result5_EDIT: " << result5_EDIT << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t4 - t3).count()) / 1000000 << "s)" << std::endl;
+
 
 
 
     // test simple k-related distanses
+    std::cout << "\nk-related metrics: \n";
 
     typedef double V_type;
 
