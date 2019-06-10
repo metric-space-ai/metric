@@ -4,7 +4,7 @@
 #include "math_functions.hpp"
 #include "distributions/Normal.hpp"
 #include "distributions/Weibull.hpp"
-#include "distributions/Binomial.hpp"
+//#include "distributions/Binomial.hpp"
 #include "distributions/Discrete.hpp"
 #include <iostream>
 #include <random>

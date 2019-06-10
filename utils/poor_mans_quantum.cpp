@@ -2,7 +2,8 @@
 
 #include <limits>
 #include <random>
-#include "3dparty/blaze/Math.h"
+//#include "3dparty/blaze/Math.h"
+#include "3rdparty/blaze/Math.h"
 
 #ifdef USE_VECTOR_SORT
 #include "3dparty/vector_sort.hpp"
