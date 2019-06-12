@@ -56,12 +56,13 @@ totals.filter(90); 	// filter out every record, where total is 90
 
 ```C++
 auto filtered_results = payments.all_filtered();
-    // "2011-11-14T16:30:43Z", 2, 90, 1, "tab", {"001", "002"}
-    // "2011-11-14T16:48:46Z", 2, 90, 2, "tab", {"005"}
-    // "2011-11-14T16:53:41Z", 2, 90, 3, "tab", {"001", "004", "005"}
-    // "2011-11-14T16:58:03Z", 2, 90, 5, "visa", {"001"}
-    // "2011-11-14T17:07:21Z", 2, 90, 6, "tab", {"004", "005"}
-    // "2011-11-14T17:22:59Z", 2, 90, 7, "tab", {"001", "002", "004", "005"}
+//
+// "2011-11-14T16:30:43Z", 2, 90, 1, "tab", {"001", "002"}
+// "2011-11-14T16:48:46Z", 2, 90, 2, "tab", {"005"}
+// "2011-11-14T16:53:41Z", 2, 90, 3, "tab", {"001", "004", "005"}
+// "2011-11-14T16:58:03Z", 2, 90, 5, "visa", {"001"}
+// "2011-11-14T17:07:21Z", 2, 90, 6, "tab", {"004", "005"}
+// "2011-11-14T17:22:59Z", 2, 90, 7, "tab", {"001", "002", "004", "005"}
 ```
 
 Now, lets add another dimension and filter and get the combined results of both filters
@@ -69,10 +70,11 @@ Now, lets add another dimension and filter and get the combined results of both 
 auto tips = payments.dimension([](auto r) { return r.tip; });
 tips.filter(2, 7);                              // filter by range (2 ...... 6.999)
 filtered_results = payments.all_filtered();
-    // "2011-11-14T16:48:46Z", 2, 90, 2, "tab", {"005"}
-    // "2011-11-14T16:53:41Z", 2, 90, 3, "tab", {"001", "004", "005"}
-    // "2011-11-14T16:58:03Z", 2, 90, 5, "tab", {"001"}
-    // "2011-11-14T17:07:21Z", 2, 90, 6, "visa", {"004", "005"}
+//
+// "2011-11-14T16:48:46Z", 2, 90, 2, "tab", {"005"}
+// "2011-11-14T16:53:41Z", 2, 90, 3, "tab", {"001", "004", "005"}
+// "2011-11-14T16:58:03Z", 2, 90, 5, "tab", {"001"}
+// "2011-11-14T17:07:21Z", 2, 90, 6, "visa", {"004", "005"}
 ```
 
 A dimension can be a combination of different entries as long the accessor function returs a sortable type. However, you can make type conversion on the fly.
@@ -81,8 +83,9 @@ A dimension can be a combination of different entries as long the accessor funct
 auto products = payments.dimension([](auto r) { return r.productIDS.size(); });
 products.filter([](auto d) { return d >= 2; });     // filter by custom function
 filtered_results = payments.all_filtered();
-    // "2011-11-14T16:53:41Z", 2, 90, 3, "tab", {"001", "004", "005"}
-    // "2011-11-14T17:07:21Z", 2, 90, 6, "visa", {"004", "005"}
+//
+// "2011-11-14T16:53:41Z", 2, 90, 3, "tab", {"001", "004", "005"}
+// "2011-11-14T17:07:21Z", 2, 90, 6, "visa", {"004", "005"}
 ```
 
 If you have a type, which is not sortable but you are just interested on specific entries you can use a workaroud to make them formal sortable.
@@ -91,7 +94,7 @@ If you have a type, which is not sortable but you are just interested on specifi
 auto no_tabs = payments.dimension([](auto r) { return r.type != std::string("tab") ? 1 : 0; });
 no_tabs.filter(1); 
 filtered_results = payments.all_filtered();
-    // "2011-11-14T17:07:21Z", 2, 90, 6, "visa", {"004", "005"}
+// "2011-11-14T17:07:21Z", 2, 90, 6, "visa", {"004", "005"}
 
 ```
 
@@ -101,8 +104,9 @@ Ok, that is just simple filtering, but the real power of cross::filter keeps tra
 ```C++
 payments.add({"2011-11-14T17:20:20Z", 4, 90, 2, "cash", {"001", "002"}});
 filtered_results = payments.all_filtered();
-    // "2011-11-14T17:07:21Z", 2, 90, 6, "visa", {"004", "005"}
-    // "2011-11-14T17:20:20Z", 4, 90, 2, "cash", {"001", "002"}
+//
+// "2011-11-14T17:07:21Z", 2, 90, 6, "visa", {"004", "005"}
+// "2011-11-14T17:20:20Z", 4, 90, 2, "cash", {"001", "002"}
 ```
 
 ## define dimensions
@@ -136,15 +140,15 @@ If you only want the top or the bottom ones, you can use specific methods. But f
 
 ```C++
 auto top_filtered1 = totals.top(2);
-    //                           ^
-    // "2011-11-14T16:54:06Z" 1 100 4 cash {"001", "002", "003", "004", "005"}
-    // "2011-11-14T17:20:20Z" 4 90 2 cash {"001", "002"}
+//                           
+// "2011-11-14T16:54:06Z" 1 100 4 cash {"001", "002", "003", "004", "005"}
+// "2011-11-14T17:20:20Z" 4 90 2 cash {"001", "002"}
 
 auto top_filtered2 = tips.bottom(3);
-    //                             `´
-    // "2011-11-14T17:20:20Z" 4 90 2 cash {"001", "002"}
-    // "2011-11-14T16:53:41Z" 2 90 3 tab {"001", "004", "005"}
-    // "2011-11-14T16:54:06Z" 1 100 4 cash {"001", "002", "003", "004", "005"}
+//                             
+// "2011-11-14T17:20:20Z" 4 90 2 cash {"001", "002"}
+// "2011-11-14T16:53:41Z" 2 90 3 tab {"001", "004", "005"}
+// "2011-11-14T16:54:06Z" 1 100 4 cash {"001", "002", "003", "004", "005"}
 
 ```
 
@@ -162,8 +166,8 @@ You can reset the individual filter or change it every time
 no_tabs.filter();   // reset
 totals.filter(100); // change total filter to 100
 
- filtered_results = payments.all_filtered();
-    // "2011-11-14T16:54:06Z", 1, 100, 4, "cash", {"001", "002", "003", "004", "005"}
+filtered_results = payments.all_filtered();
+// "2011-11-14T16:54:06Z", 1, 100, 4, "cash", {"001", "002", "003", "004", "005"}
 
 ```
 
@@ -181,8 +185,18 @@ cross::filter works headonly. just include the header into your project
 
 and compile for example with
 ```terminal
-$ clang++ ./demo/demo1.cpp -std=c++14
+$ clang++ Crossfilter_example.cpp -std=c++14
 $ ./a.out
+```
+
+or build project for clang and x64 platform
+
+_Windows_:
+ (required instllaed LLVM: http://llvm.org/builds/)
+```terminal
+$ mkdir build
+$ cd build
+$ cmake -T"llvm" -A x64 ..
 ```
 
 
