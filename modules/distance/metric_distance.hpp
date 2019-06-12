@@ -6,8 +6,10 @@ License. You are not allowed to use or edit the code without license. */
 
 #include "../distance.hpp" // back reference for header only use
 
-#include "details/Standards.hpp"
-#include "details/SSIM.hpp"
-#include "details/TWED.hpp"
-#include "details/EMD.hpp"
-#include "details/Edit.hpp"
+#include "details/k-related/Standards.hpp"
+#include "details/k-structured/SSIM.hpp"
+#include "details/k-random/TWED.hpp"
+#include "details/k-structured/EMD.hpp"
+#include "details/k-random/Edit.hpp"
+
+#include "details/k-related/L1.hpp"
