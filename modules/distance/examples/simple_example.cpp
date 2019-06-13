@@ -101,7 +101,7 @@ int main()
 
     auto t1 = std::chrono::steady_clock::now();
 
-    // geht davon aus, dass i0 und i2 serialisierte Vectoren der Bildmatrizen sind und cost_mat eine passende Distanzematrix enthält, die jedoch die orgiginalen Pixelpositionen berücksichtigt.
+    // geht davon aus, dass i1 und i2 serialisierte Vectoren der Bildmatrizen sind und cost_mat eine passende Distanzematrix enthält, die jedoch die orgiginalen Pixelpositionen berücksichtigt.
     auto result1 = distance2(i1, i2);
     auto t2 = std::chrono::steady_clock::now();
     std::cout << "-------r" << std::endl;
@@ -205,6 +205,7 @@ int main()
 
 
     //
+
 
 
     return 0;

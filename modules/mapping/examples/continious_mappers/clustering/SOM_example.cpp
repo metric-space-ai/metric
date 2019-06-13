@@ -65,12 +65,9 @@ void printDataInfo(const json& data)
 	}
 }
 
-int main(int argc, char* argv[])
+int main()
 {
-	if (argc < 2) {
-		std::cout << "usage: " << argv[0] << " data" << std::endl;
-		return -1;
-	}
+	std::cout << "we started" << std::endl;
 
     unsigned int iterations = 1000;
     // double start_learn_rate = 0.9;
@@ -90,11 +87,24 @@ int main(int argc, char* argv[])
 
 	
 	/* Load data */
-	std::ifstream dataFile(argv[1]);
+
+	std::cout << "load data" << std::endl;
+	std::ifstream dataFile(".\\assets\\data.json");
+	
 	json data;
 
-	dataFile >> data;
+	try
+	{
+		dataFile >> data;
+	}
+	catch (const std::exception& e) {
+		std::cout << "Error: " << e.what() << std::endl;
+	}
+	catch (...) {
+		std::cout << "Error: unknown" << std::endl;
+	}
 
+	std::cout << "print json" << std::endl;
 	printDataInfo(data);
 
 	const auto img1 = data["img1"].get<std::vector<std::vector<double>>>();

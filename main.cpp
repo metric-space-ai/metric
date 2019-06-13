@@ -37,9 +37,9 @@ int main() {
     std::cout << tree.size() << std::endl;
     tree.print();
     // distribution is a vector of percents of number of elements
-    std::vector<double> distribution = {0.1,0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8};
+    std::vector<double> distribution = {0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8};
 
-    std::vector<int> points = {-1,0,1};
+    std::vector<int> points = {-1, 0, 1};
 
     // points is a arbitrary data.
     // make clusters around points neighbour according to distribution
@@ -49,7 +49,7 @@ int main() {
     print_clusters(distribution, clusters, tree);
     std::cout << std::endl;
 
-    std::vector<std::size_t> ids = {0,1,2};
+    std::vector<std::size_t> ids = {0, 1, 2};
     // ids is set of indexes of data array
     // make clusters around neighbour of elements of the data with indexes from ids  according to distribution
     auto clusters2 = tree.clustering(distribution, ids, data);

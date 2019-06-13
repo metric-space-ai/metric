@@ -1,9 +1,27 @@
+cmake_minimum_required(VERSION 3.14)
 #find_package (Boost COMPONENTS date_time REQUIRED)
+
+project(Correlation_example)
+
+if(CMAKE_SYSTEM_NAME MATCHES Windows)
+    if(CMAKE_SYSTEM_PROCESSOR MATCHES ".*64$")
+        message("Build architecture: x64")
+        set(CMAKE_GENERATOR_PLATFORM x64)
+    else()
+        message("Build architecture: x86")
+        set(CMAKE_GENERATOR_PLATFORM Win32)
+    endif()
+endif()
+
 include_directories(
     ${PROJECT_SOURCE_DIR}
-    ${PROJECT_SOURCE_DIR}/metric_distance
-    ${PROJECT_SOURCE_DIR}/metric_clustering
+    ${PROJECT_SOURCE_DIR}/assets
+    ${PROJECT_SOURCE_DIR}/../../..
+    ${PROJECT_SOURCE_DIR}/../../../3rdparty
     )
+	
+file(COPY "assets" DESTINATION ".")
+
 #set (GCC_WARNING "-Wall -Wpedantic -Wextra -Wcast-align -Wcast-qual -Wvla -Wsuggest-attribute=const -Wmissing-format-attribute -Wuninitialized -Winit-self -Wdouble-promotion -Wstrict-aliasing -Weffc++ -Wno-unused-local-typedefs")
 #set (GCC_WARNING "-Wall -Wextra -Wpedantic -Wcast-align -Wcast-qual -Wvla -Wsuggest-attribute=const -Wuninitialized -Winit-self -Wdouble-promotion -Wstrict-aliasing -Wno-unused-local-typedefs")
 set (GCC_WARNING "-Wall")
@@ -13,12 +31,18 @@ set (CMAKE_LINKER_FLAGS "${CMAKE_STATIC_LINKER_FLAGS} -fno-omit-frame-pointer -p
 set (CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-omit-frame-pointer ${GCC_WARNING} -std=c++17 -pthread -fsanitize=address")
 set (CMAKE_LINKER_FLAGS_DEBUG "${CMAKE_STATIC_LINKER_FLAGS_DEBUG} -fno-omit-frame-pointer -pthread -fsanitize=address")
 
+set(CMAKE_GENERATOR_PLATFORM "x64")
 
-add_executable(simple_example simple_example.cpp)
-add_executable(StandartMetrics_example StandartMetrics_example.cpp)
-add_executable(EMD_example EMD_example.cpp)
-add_executable(TWED_example TWED_example.cpp)
-add_executable(SSIM_example SSIM_example.cpp)
-add_executable(EditDistance_example EditDistance_example.cpp)
-#set_target_properties(simple_example PROPERTIES   RUNTIME_OUTPUT_DIRECTORY  "${PROJECT_SOURCE_DIR}/bin")
+
+# for Visual Studio
+if(MSVC)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++17")
+endif(MSVC)
+
+add_executable(Correlation_example Correlation_example.cpp)
+
+
+
+
+
 

@@ -9,7 +9,7 @@
 #include <chrono>
 
 #include "../metric_correlation.hpp"
-#include "../libs/blaze/Math.h"
+#include "blaze/Math.h"
 
 template <typename T>
 void matrix_print(const std::vector<std::vector<T>> &mat)
@@ -75,7 +75,7 @@ std::vector<std::vector<double>> read_csv(const std::string filename, const long
     std::string record;
     while (std::getline(in, record))
     {
-        if ((length > 0) and (count++ >= length))
+        if ((length > 0) && (count++ >= length))
         {
             break;
         }
@@ -95,20 +95,17 @@ std::vector<std::vector<double>> read_csv(const std::string filename, const long
     return v;
 }
 
-int main(int argc, char *argv[])
+int main()
 {
+	std::cout << "we have started" << std::endl;
+	std::cout << '\n';
+
     using RecType = std::vector<double>;
     using RecType2 = blaze::DynamicVector<double>;
 
-    if (argc < 4)
-    {
-        std::cout << "usage: " << argv[0] << " data-1.csv data-2.csv limit" << std::endl;
-        return EXIT_FAILURE;
-    }
-
-    std::vector<RecType> data1 = read_csv(argv[1], atoi(argv[3]));
-    std::vector<RecType> data2 = read_csv(argv[2], atoi(argv[3]));
-    if (data1.empty() or data2.empty())
+    std::vector<RecType> data1 = read_csv("assets/dataset1.csv", atoi("limit"));
+    std::vector<RecType> data2 = read_csv("assets/dataset2.csv", atoi("limit"));
+    if (data1.empty() || data2.empty())
     {
         return EXIT_FAILURE;
     }
@@ -153,13 +150,72 @@ int main(int argc, char *argv[])
     // double result2= metric::correlation::MGC_direct()(dist1,dist2);
 
     /* Compute and benchmark */
-    auto t1 = std::chrono::steady_clock::now();
-    //auto result = mgc_corr(data1, data2); // A1 = std::vector<...>, A2 = std::deque<...>
-    auto result = mgc_corr.estimate(data1, data2, 0, 0, 0); // A1 = std::vector<...>, A2 = std::deque<...>
-    //auto result = metric::correlation::MGC()(data1, data2);
-    //auto result = metric::correlation::MGC<RecType2, Met2, RecType2, Met2>()(d1, d2);
-    auto t2 = std::chrono::steady_clock::now();
-    std::cout << result << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000 << "s)" << std::endl;
+	auto t1 = std::chrono::steady_clock::now();
+	auto result = mgc_corr.estimate(data1, data2, 100, 1.0, 100); // A1 = std::vector<...>, A2 = std::deque<...>
+	auto t2 = std::chrono::steady_clock::now();
+	std::cout << result << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000 << "s)" << std::endl;
+
+	// out: 
+
+	// (Time for Center Matrices = 0.004921s)
+	// (Time for Center ranked distance Matrices = 0.066706s)
+	// (Time for Transpose Matrices = 0.006052s)
+	// (Time for Covariance Matrices = 0.01338s)
+	// (Time for clean up Matrices = 0.000603s)
+	// (Time for normalize Matrices = 0.005805s)
+	// (Time for clean up Matrices = 0.000181s)
+	// (Time for significane Matrices = 0.070254s)
+	// (Time for optimal Matrices = 0.002556s)
+	// 1 - nan(ind) 0.653303 0.653303
+	// (Time for Center Matrices = 0.004444s)
+	// (Time for Center ranked distance Matrices = 0.053503s)
+	// (Time for Transpose Matrices = 0.001877s)
+	// (Time for Covariance Matrices = 0.005545s)
+	// (Time for clean up Matrices = 0.000778s)
+	// (Time for normalize Matrices = 0.001573s)
+	// (Time for clean up Matrices = 2.3e-05s)
+	// (Time for significane Matrices = 0.062688s)
+	// (Time for optimal Matrices = 0.005361s)
+	// 2 0.5 0.648665 0.650984
+	// 0.650984 (Time = 0.528097s)
+
+
+	t1 = std::chrono::steady_clock::now();
+	result = mgc_corr(data1, data2);
+	t2 = std::chrono::steady_clock::now();
+	std::cout << result << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000 << "s)" << std::endl;
+
+	// out:
+
+	// (Time for Center Matrices = 9.1524s)
+	// (Time for Center ranked distance Matrices = 396.751s)
+	// (Time for Transpose Matrices = 112.499s)
+	// (Time for Covariance Matrices = 163.922s)
+	// (Time for clean up Matrices = 13.7064s)
+	// (Time for normalize Matrices = 8.96766s)
+	// (Time for clean up Matrices = 0.142683s)
+	// (Time for significane Matrices = 184.483s)
+	// (Time for optimal Matrices = 5.64593s)
+	// 0.65593 (Time = 1020.32s)
+
+
+	t1 = std::chrono::steady_clock::now();
+	result = metric::correlation::MGC<RecType2, Met2, RecType2, Met2>()(d1, d2);
+	t2 = std::chrono::steady_clock::now();
+	std::cout << result << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000 << "s)" << std::endl;
+	 
+	// out:
+
+	// (Time for Center Matrices = 7.02497s)
+	// (Time for Center ranked distance Matrices = 324.589s)
+	// (Time for Transpose Matrices = 104.01s)
+	// (Time for Covariance Matrices = 176.117s)
+	// (Time for clean up Matrices = 12.7903s)
+	// (Time for normalize Matrices = 12.0978s)
+	// (Time for clean up Matrices = 0.326226s)
+	// (Time for significane Matrices = 218.289s)
+	// (Time for optimal Matrices = 6.77513s)
+	// 0.65593 (Time = 928.156s)
 
     return 0;
 }

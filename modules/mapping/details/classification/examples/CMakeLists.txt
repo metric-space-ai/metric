@@ -16,8 +16,8 @@ set (CMAKE_LINKER_FLAGS_DEBUG "${CMAKE_STATIC_LINKER_FLAGS_DEBUG} -fno-omit-fram
 
 
 
-add_executable(main main.cpp)
-set_target_properties(main PROPERTIES   RUNTIME_OUTPUT_DIRECTORY  "${PROJECT_SOURCE_DIR}/examples")
+add_executable(Boosting_example Boosting_example.cpp)
+set_target_properties(Boosting_example PROPERTIES   RUNTIME_OUTPUT_DIRECTORY  "${PROJECT_SOURCE_DIR}/examples")
 
 add_executable(CWA_demo CWA_demo.cpp)
 set_target_properties(CWA_demo PROPERTIES   RUNTIME_OUTPUT_DIRECTORY  "${PROJECT_SOURCE_DIR}/examples")

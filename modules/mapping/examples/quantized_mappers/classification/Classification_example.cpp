@@ -1,13 +1,14 @@
 
-#include "../metric_classification.hpp"
+#include "../details/classification/metric_classification.hpp"
 
-#include "../examples/assets/helpers.cpp" // csv reader
+#include "assets/helpers.cpp" // csv reader
 
 #include <variant>
 
 #include <deque> // for Record test
 
-#include "../details/correlation_weighted_accuracy.hpp"
+#include "../details/classification/details/correlation_weighted_accuracy.hpp"
+#include "../../distance/metric_distance.cpp"
 
     int test_CWA()
     {
@@ -215,27 +216,31 @@ int main()
     strong30.predict(IrisTestRec, features_iris, r35);
     std::cout << "\nstrong on specialized SVM iris predict: " << r35[0] << std::endl;
 
+	//------------------------
+	// Bagging_tuple throws an error
 
-    // using Bagging with tuples
-    using WeakLrnTuple1 = std::tuple<metric::classification::edmC45<IrisRec>, metric::classification::edmClassifier<IrisRec, CC45> >;
-    WeakLrnTuple1 clSet = WeakLrnTuple1(weak30, wl20);
-    auto strong40 = metric::classification::Bagging_tuple<IrisRec, WeakLrnTuple1, metric::classification::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, {0.5, 0.5}, clSet);
-    strong40.train(iris_str, features_iris, response_iris, true);
-    std::vector<bool> r40;
-    strong40.predict(IrisTestRec, features_iris, r40);
-    std::cout << "\nbagging_tuple on both specialized and default c45 iris predict: " << r40[0] << std::endl;
+    //// using Bagging with tuples
+    //using WeakLrnTuple1 = std::tuple<metric::classification::edmC45<IrisRec>, metric::classification::edmClassifier<IrisRec, CC45> >;
+    //WeakLrnTuple1 clSet = WeakLrnTuple1(weak30, wl20);
+    //auto strong40 = metric::classification::Bagging_tuple<IrisRec, WeakLrnTuple1, metric::classification::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, {0.5, 0.5}, clSet);
+    //strong40.train(iris_str, features_iris, response_iris, true);
+    //std::vector<bool> r40;
+    //strong40.predict(IrisTestRec, features_iris, r40);
+    //std::cout << "\nbagging_tuple on both specialized and default c45 iris predict: " << r40[0] << std::endl;
 
+	//------------------------
+	// Bagging_tuple throws an error
 
-    // test tree of learners (boosting strong learner in the role of weak)
-    using WeakLrnTupleTree = std::tuple< metric::classification::Boosting< IrisRec, metric::classification::edmC45<IrisRec>, metric::classification::SubsampleRUS<IrisRec> >, metric::classification::edmC45<IrisRec>, metric::classification::edmClassifier<IrisRec, CC45> >;
-    WeakLrnTupleTree clTree = WeakLrnTupleTree(strong30, weak30, wl20);
-    auto strong50 = metric::classification::Bagging_tuple<IrisRec, WeakLrnTupleTree, metric::classification::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, {0.5, 0.5}, clTree);
-    strong50.train(iris_str, features_iris, response_iris, true);
-    std::vector<bool> r50;
-    strong50.predict(IrisTestRec, features_iris, r50);
-    std::cout << "\nbagging on both boosting and c45 iris predict: " << r50[0] << std::endl;
-    strong50.predict(IrisTestMultipleRec, features_iris, r50);
-    std::cout << "\nbagging_tuple on both boosting and c45 iris predict multiple: " << r50[0] << ", " << r50[1] << ", " << r50[2] << std::endl; // IrisTestMultipleRec
+    //// test tree of learners (boosting strong learner in the role of weak)
+    //using WeakLrnTupleTree = std::tuple< metric::classification::Boosting< IrisRec, metric::classification::edmC45<IrisRec>, metric::classification::SubsampleRUS<IrisRec> >, metric::classification::edmC45<IrisRec>, metric::classification::edmClassifier<IrisRec, CC45> >;
+    //WeakLrnTupleTree clTree = WeakLrnTupleTree(strong30, weak30, wl20);
+    //auto strong50 = metric::classification::Bagging_tuple<IrisRec, WeakLrnTupleTree, metric::classification::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, {0.5, 0.5}, clTree);
+    //strong50.train(iris_str, features_iris, response_iris, true);
+    //std::vector<bool> r50;
+    //strong50.predict(IrisTestRec, features_iris, r50);
+    //std::cout << "\nbagging on both boosting and c45 iris predict: " << r50[0] << std::endl;
+    //strong50.predict(IrisTestMultipleRec, features_iris, r50);
+    //std::cout << "\nbagging_tuple on both boosting and c45 iris predict multiple: " << r50[0] << ", " << r50[1] << ", " << r50[2] << std::endl; // IrisTestMultipleRec
 
     //* //   correct code, may be enables
     using WeakLrnVariant = std::variant<metric::classification::edmC45<IrisRec>, metric::classification::edmClassifier<IrisRec, CC45> >;
@@ -329,6 +334,74 @@ int main()
     }
 
     */
+
+
+
+	// test EMD separately
+
+	typedef float InputType;
+
+	typedef std::variant<double, std::vector<int>, int> F; // field type
+	typedef std::vector<F> R;
+	std::vector<R> dataset = {
+		{F(std::vector<int>({1, 0, 0})),
+		 F((int)0) // label
+		},
+		{F(std::vector<int>({0, 2, 0})), // from example
+		 F((int)1)
+		}
+	};
+
+
+	auto a0 = [](const R & r) {
+		auto & v = std::get<std::vector<int>>(r[0]);
+		return std::vector<InputType>(v.begin(), v.end());
+	};
+
+	// label accessor (for single record)
+	std::function<int(R)> resp = [](R r)
+	{
+		return (int)std::abs(std::get<int>(r[1]));
+	};
+
+
+	std::vector<std::vector<InputType>> C = { {0, 10, 20}, {10, 0, 10}, {20, 10, 0} }; // symmetric
+
+
+
+	metric::Dimension<R, metric::distance::EMD<InputType>, decltype(a0)> dimEMD(a0, md::EMD<InputType>(3, 3));
+	auto emd_dist = dimEMD.get_distance(dataset[0], dataset[1]);
+
+	metric::distance::EMD<InputType> EMD_functor(C);
+
+	auto v1i = std::get<std::vector<int>>(dataset[0][0]);
+	auto v2i = std::get<std::vector<int>>(dataset[1][0]);
+	std::vector<InputType> v1t(v1i.begin(), v1i.end());
+	std::vector<InputType> v2t(v2i.begin(), v2i.end());
+
+	auto emd_dist_C = EMD_functor(v1t, v2t);
+
+	std::cout << "\nEMD distance 1: " << emd_dist << " " << emd_dist_C << "\n";
+
+
+
+
+
+	//    test EMD separately
+
+	std::vector<InputType> v1 = { 0, 2, 0, 0, 0, 0 };
+	std::vector<InputType> v2 = { 2, 0, 1, 0, 0, 0 };
+	std::vector<std::vector<InputType>> CC = { {0, 10, 20, 30, 40, 50},
+											 {10, 0, 10, 20, 30, 40},
+											 {20, 10, 0, 10, 20, 30},
+											 {30, 20, 10, 0, 10, 20},
+											 {40, 30, 20, 10, 0, 10},
+											 {50, 40, 30, 20, 10, 0} }; // symmetric
+	auto emd_dist_2 = metric::distance::EMD<InputType>(CC)(v1, v2);
+
+	auto emd_dist_3 = metric::distance::EMD<InputType>(6, 6)(v1, v2);
+
+	std::cout << "\nEMD distance 2 : " << emd_dist_2 << " " << emd_dist_3 << "\n";
 
     return 0;
 
