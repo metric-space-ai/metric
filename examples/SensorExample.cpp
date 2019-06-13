@@ -10,11 +10,14 @@
 #include <sstream>
 #include <codecvt>
 #include <random>
+#include <math.h>  
 
 #include <string.h>
 #include <libpq-fe.h>
 
 //#include "utils/poor_mans_quantum.hpp"
+
+#include "modules/crossfilter.hpp"
 
 #include "modules/mapping/details/classification/metric_classification.hpp"
 //#include "../details/classification/details/correlation_weighted_accuracy.hpp"
@@ -27,11 +30,11 @@ std::ostream & operator<< (std::ostream & s,
 }
 
 template <typename T>
-void vector_print(const std::vector<T> &vec)
+void vector_print(const std::vector<T> &vec, int maxRows = -1)
 {
 
 	std::cout << "[";
-	for (size_t i = 0; i < vec.size(); i++)
+	for (auto i = 0; i < vec.size(); i++)
 	{
 		if (i < vec.size() - 1)
 		{
@@ -41,34 +44,58 @@ void vector_print(const std::vector<T> &vec)
 		{
 			std::cout << vec[i] << "]" << std::endl;
 		}
+
+		if (maxRows >= 0 && i >= maxRows - 1)
+		{
+			if (vec.size() > maxRows)
+			{
+				std::cout << " ... " << "]" << std::endl;
+			}
+			break;
+		}
 	}
 }
 
 
 template <typename T>
-void matrix_print(const std::vector<std::vector<T>> &mat, int maxRows = -1)
+void matrix_print(const std::vector<std::vector<T>> &mat, int maxRows = -1, int maxCols = -1)
 {
 
 	std::cout << "[" << std::endl;
-	for (int i = 0; i < mat.size(); i++)
+	for (auto i = 0; i < mat.size(); i++)
 	{
 		std::cout << "  [ ";
-		for (int j = 0; j < mat[i].size() - 1; j++)
+		for (auto j = 0; j < mat[i].size(); j++)
 		{
-			std::cout << mat[i][j] << ", ";
+			std::cout << mat[i][j];
+			if (j < mat[i].size() - 1)
+			{
+				std::cout << ", ";
+			}
+			if (maxCols >= 0 && j >= maxCols - 1)
+			{
+				if (mat[i].size() > maxCols)
+				{
+					std::cout << " ... ";
+				}
+				break;
+			}
 		}
-		std::cout << mat[i][mat[i].size() - 1] << " ]" << std::endl;
+		std::cout << " ]" << std::endl;
 
-		if (maxRows >= 0 && i > maxRows)
+		if (maxRows >= 0 && i >= maxRows - 1)
 		{
-			std::cout << "  ..." << std::endl;
+			if (mat.size() > maxRows)
+			{
+				std::cout << "  ... ";
+			}
 			break;
 		}
 	}
 	std::cout << "]" << std::endl;
 }
 
-void query_print(PGresult *res)
+void query_print(PGresult *res, int maxRows = -1)
 {
 	int ncols = PQnfields(res);
 	printf("There are %d columns:", ncols);
@@ -83,14 +110,23 @@ void query_print(PGresult *res)
 	printf("\n");
 
 	int nrows = PQntuples(res);
-	for (int i = 0; i < nrows; i++)
+	for (auto i = 0; i < nrows; i++)
 	{
-		for (int j = 0; j < ncols; j++)
+		for (auto j = 0; j < ncols; j++)
 		{
 			char* v = PQgetvalue(res, i, j);
 			printf("%s | ", v);
 		}
 		printf("\n");
+
+		if (maxRows >= 0 && i >= maxRows - 1)
+		{
+			if (nrows > maxRows)
+			{
+				std::cout << "  ... ";
+			}
+			break;
+		}
 	}
 	printf("\n");
 
@@ -169,37 +205,233 @@ PGconn *ConnectDB()
 }
 
 //typedef std::vector< std::variant<bool, int, long int, double, std::string> > Record;
-typedef std::vector<long int> Record;
-std::vector<Record> getSensorData(PGconn *conn, const char *queryString)
+typedef std::vector< double > Record;
+
+struct Feature
+{
+	int index;
+	std::string id;
+	std::string bezeichnung;
+};
+
+int lookupFeatureIndex(std::string id, const std::vector<Feature> &features)
+{
+	for (auto j = 0; j < features.size(); j++)
+	{
+		if ((id.compare(features[j].id)) == 0)
+		{
+			return features[j].index;
+		}
+	}
+
+	return -1;
+}
+
+int countFeatures(PGconn *conn)
 {
 	// Execute with sql statement
 	PGresult *res = NULL;
 
-	res = PQexec(conn, queryString);
+	res = PQexec(conn, "SELECT COUNT(*) FROM public.sensormetadata");
 	if (PQresultStatus(res) != PGRES_TUPLES_OK)
 		CloseConn(conn);
 
-	int date_fnum = PQfnumber(res, "date");
-	int value_fnum = PQfnumber(res, "value");
+	int numFeatures = atoi(PQgetvalue(res, 0, 0));
+
+	// Clear result
+	PQclear(res);
+
+	return numFeatures;
+}
+
+std::vector<std::string> getTimestamps(PGconn *conn, const int limit = 100)
+{
+	// Execute with sql statement
+	PGresult *res = NULL;
+
+	std::string queryString = "SELECT DISTINCT date FROM public.sensordata ORDER BY date ASC LIMIT " + std::to_string(limit);
+
+	res = PQexec(conn, queryString.c_str());
+	if (PQresultStatus(res) != PGRES_TUPLES_OK)
+		CloseConn(conn);
+
+	std::vector<std::string> stamps;
 
 	int nrows = PQntuples(res);
-
-	long int t;
-	long int b;
-
-	std::vector<Record> dataSet;
 	for (int i = 0; i < nrows; i++)
 	{
-		t = static_cast<long int> (getEpochTime(PQgetvalue(res, i, date_fnum)));
-		b = static_cast<long int> (!strcmp(PQgetvalue(res, i, value_fnum), "1"));
-
-		dataSet.push_back({ t, b });
+		stamps.push_back(std::string(PQgetvalue(res, i, 0)));
 	}
 
 	// Clear result
 	PQclear(res);
 
-	return dataSet;
+	return stamps;
+}
+
+std::vector<Feature> getFeatures(PGconn *conn, const int limit = 0)
+{
+	// Execute with sql statement
+	PGresult *res = NULL;
+
+	std::string queryString = "SELECT id, bezeichnung FROM public.sensormetadata";
+	if (limit > 0)
+	{
+		queryString += " LIMIT " + std::to_string(limit);
+	} 
+
+	res = PQexec(conn, queryString.c_str());
+	if (PQresultStatus(res) != PGRES_TUPLES_OK)
+		CloseConn(conn);
+
+	std::vector<Feature> features;
+
+	int nrows = PQntuples(res);
+	for (int i = 0; i < nrows; i++)
+	{
+		features.push_back( { i, std::string(PQgetvalue(res, i, 0)), std::string(PQgetvalue(res, i, 1)) } );
+	}
+
+	// Clear result
+	PQclear(res);
+
+	return features;
+}
+
+Record getSensorRecord(PGconn *conn, const std::string date, const std::vector<Feature> &features)
+{
+	// Execute with sql statement
+	PGresult *res = NULL;
+
+	std::string queryString = "SELECT * FROM public.sensordata WHERE date = '" + date + "'";
+
+	res = PQexec(conn, queryString.c_str());
+	if (PQresultStatus(res) != PGRES_TUPLES_OK)
+		CloseConn(conn);
+
+	int value_fnum = PQfnumber(res, "value");
+	int feature_fnum = PQfnumber(res, "metaid");
+
+	int hasFeatures = PQntuples(res);
+
+	Record row(features.size(), -1);
+
+	double value;
+	std::string feature;
+	int featureIndex;
+
+	for (int i = 0; i < hasFeatures; ++i)
+	{
+		value = atof(PQgetvalue(res, i, value_fnum));
+		feature = std::string(PQgetvalue(res, i, feature_fnum));
+		featureIndex = lookupFeatureIndex(feature, features);
+		if (featureIndex >= 0)
+		{
+			row[featureIndex] = value;
+		}
+	}
+
+	return row;
+}
+
+struct CrossRecord
+{
+	std::string date;
+	int quantity;
+	int total;
+	int tip;
+	std::string type;
+	std::vector<std::string> productIDS;
+};
+
+void printCrossRecord(const std::vector<CrossRecord> &vec)
+{
+	for (int i = 0; i < vec.size(); ++i)
+	{
+		std::cout << "\"" << vec[i].date << "\"" << " " << vec[i].quantity << " " << vec[i].total << " " << vec[i].tip << " " << vec[i].type << " "
+			<< "{\"";
+		for (auto j = 0; j < vec[i].productIDS.size() - 1; ++j)
+		{
+			std::cout << vec[i].productIDS[j] << "\", \"";
+		}
+		std::cout << vec[i].productIDS[vec[i].productIDS.size() - 1] << "\"}" << std::endl;
+	}
+}
+
+void printRecords(const std::vector<Record> &mat, const std::vector<std::string> &timestamps, const std::vector<Feature> &features, int maxRows = -1, int maxCols = -1, int maxStringSize = 10)
+{
+	std::string str;
+	maxStringSize = maxStringSize - 3;
+	int startStrSize = ceil(maxStringSize/2) + 1;
+	int endStrSize = floor(maxStringSize / 2);
+	for (auto i = 0; i < features.size(); ++i)
+	{
+		str = features[i].bezeichnung;
+		std::cout << str.replace(str.begin() + startStrSize, str.end() - endStrSize, "...");
+		if (i < features.size() - 1)
+		{
+			std::cout << " | ";
+		}
+
+		if (maxCols >= 0 && i >= maxCols - 1)
+		{
+			if (features.size() > maxCols)
+			{
+				std::cout << " ... ";
+			}
+			break;
+		}
+	}
+	std::cout << std::endl;
+
+	for (auto i = 0; i < mat.size(); ++i)
+	{
+		std::cout << timestamps[i] << " -> { ";
+		for (auto j = 0; j < mat[i].size(); j++)
+		{
+			std::cout << mat[i][j];
+			if (j < mat[i].size() - 1)
+			{
+				std::cout << " | ";
+			}
+			if (maxCols >= 0 && j >= maxCols - 1)
+			{
+				if (mat[i].size() > maxCols)
+				{
+					std::cout << " ... ";
+				}
+				break;
+			}
+		}
+		std::cout << " }" << std::endl;
+
+		if (maxRows >= 0 && i >= maxRows - 1)
+		{
+			if (mat.size() > maxRows)
+			{
+				std::cout << " ... " << std::endl;
+			}
+			break;
+		}
+	}
+	std::cout << " Total rows: " << mat.size() << ", total features: " << features.size() << std::endl;
+}
+
+void printFeatures(const std::vector<Feature> &vec, int maxRows = -1)
+{
+	for (auto i = 0; i < vec.size(); ++i)
+	{
+		std::cout << "{ id: " << vec[i].id << ", bezeichnung: " << vec[i].bezeichnung << " }" << std::endl;
+
+		if (maxRows >= 0 && i >= maxRows - 1)
+		{
+			if (vec.size() > maxRows)
+			{
+				std::cout << " ... " << std::endl;
+			}
+			break;
+		}
+	}
 }
 
 int main()
@@ -210,78 +442,71 @@ int main()
 	PGconn     *conn = NULL;
 
 	conn = ConnectDB();
-	auto dataset_0 = getSensorData(conn, "SELECT * FROM public.sensordata WHERE metaid @> '{1,7,8}'::int[] LIMIT 10000");
+
+	auto numFeatures = countFeatures(conn);
+
+	std::cout << "num features: " << numFeatures << std::endl;
+
+	auto timestamps = getTimestamps(conn, 100);
+
+	vector_print(timestamps, 5);
+
+	auto features = getFeatures(conn);
+
+	printFeatures(features, 5);
+
+	//
+
+	std::vector<Record> records;
+
+	const auto t1 = std::chrono::steady_clock::now();
+	for (int i = 0; i < timestamps.size(); ++i)
+	{
+		records.push_back(getSensorRecord(conn, timestamps[i], features));
+	}
+	const auto t2 = std::chrono::steady_clock::now();
+
+	std::cout << '\n';
+	std::cout << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000 << " s)" << std::endl;
+	std::cout << '\n';
+
+	printRecords(records, timestamps, features, 10, 10, 15);
+	
+	//auto dataset_0 = getSensorData(conn, "SELECT * FROM public.sensordata WHERE date = '2018-12-10 23:43:15' LIMIT 100", features);
+	//auto dataset_0 = getSensorData(conn, "SELECT * FROM public.sensordata WHERE metaid @> '{1,7,8}'::int[] LIMIT 10000");
 	//auto dataset_1 = getSensorData(conn, "SELECT * FROM public.sensordata WHERE metaid @> '{1,7,8}'::int[] AND value = '1' LIMIT 100");
 	CloseConn(conn);
 
 
-	matrix_print(dataset_0, 10);
+	std::cout << '\n';
+
+
+	cross::filter<Record> recordsFilter(records);
+	std::vector<Record> filtered_results;
+	static const int featureGutproduktionIndex = lookupFeatureIndex("{1,7,8}", features);
+	std::cout << "feature Gutproduktion index: " << featureGutproduktionIndex << std::endl;
+	auto feature_Gutproduktion = recordsFilter.dimension([](Record r) { return r[featureGutproduktionIndex]; });
+	feature_Gutproduktion.filter(0);
+	//feature_Gutproduktion.filter([](auto d) { return d == 0; });
+	auto dataset_0 = recordsFilter.all_filtered();
+	std::cout << '\n';
+	std::cout << "Gutproduktion == 0\n";
+	printRecords(dataset_0, timestamps, features, 10, 10, 15);
+
+	feature_Gutproduktion.filter();
+	feature_Gutproduktion.filter(1);
+	auto dataset_1 = recordsFilter.all_filtered();
+	std::cout << "Gutproduktion == 1\n";
+	printRecords(dataset_1, timestamps, features, 10, 10, 15);
+
+
+	//printRecord(dataset_0, 10);
+	//matrix_print(dataset_0, 10);
 	//matrix_print(dataset_1, 10);
 
 	//PMQ set0(dataset_0);
 	//PMQ set1(dataset_1);
 	//float SignificantDifferent = (set1 != set0); // values between 0...1
-
-	//using Record1 = std::vector<int>;  // may be of arbitrary type, with appropriate accessors
-
-	/*std::vector<Record1> payments = {
-		{0,3,5,0},
-		{1,4,5,0},
-		{2,5,2,1},
-		{3,6,2,1}
-	};*/
-
-	std::vector<std::function<double(Record)>> features;
-
-	for (int i = 0; i < (int)dataset_0[0].size() - 1; ++i) {
-		features.push_back(
-			[=](auto r) { return r[i]; }  // we need closure: [=] instead of [&]   !! THIS DIFFERS FROM API !!
-		);
-	}
-
-	std::function<bool(Record)> response = [](Record r) {
-		if (r[r.size() - 1] > 0.5)
-			return true;
-		else
-			return false;
-	};
-
-
-	std::random_device rd;     // only used once to initialise (seed) engine
-	std::mt19937 rng(rd());    // random-number engine used (Mersenne-Twister in this case)
-	std::uniform_int_distribution<int> uni(0, dataset_0.size()); // guaranteed unbiased
-
-	auto random_integer = uni(rng);
-	std::vector<Record> test_sample = {
-		dataset_0[uni(rng)],
-		dataset_0[uni(rng)],
-		dataset_0[uni(rng)],
-		dataset_0[uni(rng)],
-		dataset_0[uni(rng)]
-	};
-
-
-	std::vector<bool> prediction;
-	auto startTime = std::chrono::steady_clock::now();
-	auto endTime = std::chrono::steady_clock::now();
-
-	// test on int vector 
-
-	std::cout << "SVM on int vector: " << std::endl;
-	startTime = std::chrono::steady_clock::now();
-	metric::classification::edmClassifier<Record, CSVM> svmModel_1 = metric::classification::edmClassifier<Record, CSVM>();
-	std::cout << "training... " << std::endl;
-	svmModel_1.train(dataset_0, features, response);
-	endTime = std::chrono::steady_clock::now();
-	std::cout << "trained (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count()) / 1000000 << " s)" << std::endl;
-
-	svmModel_1.predict(test_sample, features, prediction);
-	std::cout << "test sample: " << std::endl;
-	matrix_print(test_sample);
-	std::cout << "prediction: " << std::endl;
-	vector_print(prediction);
-
-	std::cout << "\n";
 
 	return 0;
 
