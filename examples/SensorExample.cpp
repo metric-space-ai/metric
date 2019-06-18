@@ -204,8 +204,8 @@ PGconn *ConnectDB()
 	return conn;
 }
 
-//typedef std::vector< std::variant<bool, int, long int, double, std::string> > Record;
-typedef std::vector< double > Record;
+typedef std::vector< std::variant<bool, int, long int, double, std::string> > Record;
+//typedef std::vector< double > Record;
 
 struct Feature
 {
@@ -250,6 +250,35 @@ std::vector<std::string> getTimestamps(PGconn *conn, const int limit = 100)
 	PGresult *res = NULL;
 
 	std::string queryString = "SELECT DISTINCT date FROM public.sensordata ORDER BY date ASC LIMIT " + std::to_string(limit);
+
+	res = PQexec(conn, queryString.c_str());
+	if (PQresultStatus(res) != PGRES_TUPLES_OK)
+		CloseConn(conn);
+
+	std::vector<std::string> stamps;
+
+	int nrows = PQntuples(res);
+	for (int i = 0; i < nrows; i++)
+	{
+		stamps.push_back(std::string(PQgetvalue(res, i, 0)));
+	}
+
+	// Clear result
+	PQclear(res);
+
+	return stamps;
+}
+
+std::vector<std::string> getGutproduktionTimestamps(PGconn *conn, const int limit = 0)
+{
+	// Execute with sql statement
+	PGresult *res = NULL;
+
+	std::string queryString = "SELECT * FROM ( SELECT DISTINCT date, metaid FROM public.sensordata WHERE metaid @> '{1,7,8}'::int[]) AS extended WHERE metaid::varchar(8) = '{1,7,8}' ORDER BY date ASC";
+	if (limit > 0)
+	{
+		queryString += " LIMIT " + std::to_string(limit);
+	}
 
 	res = PQexec(conn, queryString.c_str());
 	if (PQresultStatus(res) != PGRES_TUPLES_OK)
@@ -334,6 +363,75 @@ Record getSensorRecord(PGconn *conn, const std::string date, const std::vector<F
 	return row;
 }
 
+std::vector<Record> getAllSensorRecords(PGconn *conn, const std::vector<Feature> &features, const std::vector<std::string> dates)
+{
+	// Execute with sql statement
+	PGresult *res = NULL;
+
+	std::string queryString = "SELECT * FROM public.sensordata WHERE date IN (";
+	for (int i = 0; i < dates.size(); ++i)
+	{
+		if (i == dates.size() - 1) {
+			queryString += "'" + dates[i] + "'";
+		}
+		else
+		{
+			queryString += "'" + dates[i] + "', ";
+		}
+	}
+	queryString += ") ORDER BY date ASC";
+
+	//std::string queryString = "SELECT * FROM public.sensordata WHERE date BETWEEN '" + dates[0] + "' AND '" + dates[dates.size() - 1] + "' ORDER BY date ASC";
+
+	//std::cout << queryString << std::endl;
+
+	res = PQexec(conn, queryString.c_str());
+	if (PQresultStatus(res) != PGRES_TUPLES_OK)
+		CloseConn(conn);
+
+	int date_fnum = PQfnumber(res, "date");
+	int value_fnum = PQfnumber(res, "value");
+	int feature_fnum = PQfnumber(res, "metaid");
+
+	int nRows = PQntuples(res);
+
+	Record row(features.size() + 1, -1);
+	std::vector<Record> rows;
+
+	double value;
+	std::string feature;
+	std::string date;
+	std::string currentDate = "";
+	int featureIndex;
+
+	for (int i = 0; i < nRows; ++i)
+	{
+		date = std::string(PQgetvalue(res, i, date_fnum));
+		if (currentDate.compare("") == 0) {
+			currentDate = date;
+		}
+
+		if (currentDate.compare(date) != 0) {
+			currentDate = date;
+			rows.push_back(row);
+			row.clear();
+			row.assign(features.size() + 1, -1);
+			row[features.size()] = currentDate;
+		}
+		value = atof(PQgetvalue(res, i, value_fnum));
+		feature = std::string(PQgetvalue(res, i, feature_fnum));
+		featureIndex = lookupFeatureIndex(feature, features);
+		if (featureIndex >= 0)
+		{
+			row[featureIndex] = value;
+		}
+	}
+	// add last row, it is not added when for cycle ends
+	rows.push_back(row);
+
+	return rows;
+}
+
 struct CrossRecord
 {
 	std::string date;
@@ -358,7 +456,7 @@ void printCrossRecord(const std::vector<CrossRecord> &vec)
 	}
 }
 
-void printRecords(const std::vector<Record> &mat, const std::vector<std::string> &timestamps, const std::vector<Feature> &features, int maxRows = -1, int maxCols = -1, int maxStringSize = 10)
+void printRecords(const std::vector<Record> &mat, const std::vector<Feature> &features, int maxRows = -1, int maxCols = -1, int maxStringSize = 10)
 {
 	std::string str;
 	maxStringSize = maxStringSize - 3;
@@ -386,7 +484,7 @@ void printRecords(const std::vector<Record> &mat, const std::vector<std::string>
 
 	for (auto i = 0; i < mat.size(); ++i)
 	{
-		std::cout << timestamps[i] << " -> { ";
+		std::cout << mat[i][mat[i].size() - 1] << " -> { ";
 		for (auto j = 0; j < mat[i].size(); j++)
 		{
 			std::cout << mat[i][j];
@@ -447,7 +545,7 @@ int main()
 
 	std::cout << "num features: " << numFeatures << std::endl;
 
-	auto timestamps = getTimestamps(conn, 100);
+	auto timestamps = getGutproduktionTimestamps(conn);
 
 	vector_print(timestamps, 5);
 
@@ -460,17 +558,19 @@ int main()
 	std::vector<Record> records;
 
 	const auto t1 = std::chrono::steady_clock::now();
-	for (int i = 0; i < timestamps.size(); ++i)
+	/*for (int i = 0; i < timestamps.size(); ++i)
 	{
 		records.push_back(getSensorRecord(conn, timestamps[i], features));
-	}
+	}*/
+	std::vector<std::string> cuttimestamps(timestamps.begin() + 5500, timestamps.begin() + 5550);
+	records = getAllSensorRecords(conn, features, cuttimestamps);
 	const auto t2 = std::chrono::steady_clock::now();
 
 	std::cout << '\n';
 	std::cout << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000 << " s)" << std::endl;
 	std::cout << '\n';
 
-	printRecords(records, timestamps, features, 10, 10, 15);
+	printRecords(records, features, 10, 10, 15);
 	
 	//auto dataset_0 = getSensorData(conn, "SELECT * FROM public.sensordata WHERE date = '2018-12-10 23:43:15' LIMIT 100", features);
 	//auto dataset_0 = getSensorData(conn, "SELECT * FROM public.sensordata WHERE metaid @> '{1,7,8}'::int[] LIMIT 10000");
@@ -479,6 +579,7 @@ int main()
 
 
 	std::cout << '\n';
+	std::cout << '\n';
 
 
 	cross::filter<Record> recordsFilter(records);
@@ -486,18 +587,21 @@ int main()
 	static const int featureGutproduktionIndex = lookupFeatureIndex("{1,7,8}", features);
 	std::cout << "feature Gutproduktion index: " << featureGutproduktionIndex << std::endl;
 	auto feature_Gutproduktion = recordsFilter.dimension([](Record r) { return r[featureGutproduktionIndex]; });
-	feature_Gutproduktion.filter(0);
-	//feature_Gutproduktion.filter([](auto d) { return d == 0; });
+	//feature_Gutproduktion.filter(0);
+	feature_Gutproduktion.filter([](auto d) { return std::get<double>(d) == 0; });
 	auto dataset_0 = recordsFilter.all_filtered();
 	std::cout << '\n';
+	std::cout << '\n';
 	std::cout << "Gutproduktion == 0\n";
-	printRecords(dataset_0, timestamps, features, 10, 10, 15);
+	printRecords(dataset_0, features, 10, 10, 15);
 
 	feature_Gutproduktion.filter();
-	feature_Gutproduktion.filter(1);
+	feature_Gutproduktion.filter([](auto d) { return std::get<double>(d) == 1; });
 	auto dataset_1 = recordsFilter.all_filtered();
+	std::cout << '\n';
+	std::cout << '\n';
 	std::cout << "Gutproduktion == 1\n";
-	printRecords(dataset_1, timestamps, features, 10, 10, 15);
+	printRecords(dataset_1, features, 10, 10, 15);
 
 
 	//printRecord(dataset_0, 10);
