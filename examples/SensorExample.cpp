@@ -15,7 +15,7 @@
 #include <string.h>
 #include <libpq-fe.h>
 
-//#include "utils/poor_mans_quantum.hpp"
+#include "utils/poor_mans_quantum.hpp"
 
 #include "modules/crossfilter.hpp"
 
@@ -204,8 +204,8 @@ PGconn *ConnectDB()
 	return conn;
 }
 
-typedef std::vector< std::variant<bool, int, long int, double, std::string> > Record;
-//typedef std::vector< double > Record;
+//typedef std::vector< std::variant<bool, int, long int, double, std::string> > Record;
+typedef std::vector< double > Record;
 
 struct Feature
 {
@@ -363,7 +363,7 @@ Record getSensorRecord(PGconn *conn, const std::string date, const std::vector<F
 	return row;
 }
 
-std::vector<Record> getAllSensorRecords(PGconn *conn, const std::vector<Feature> &features, const std::vector<std::string> dates)
+std::tuple < std::vector<Record>, std::vector<std::string> > getAllSensorRecords(PGconn *conn, const std::vector<Feature> &features, const std::vector<std::string> dates)
 {
 	// Execute with sql statement
 	PGresult *res = NULL;
@@ -395,8 +395,9 @@ std::vector<Record> getAllSensorRecords(PGconn *conn, const std::vector<Feature>
 
 	int nRows = PQntuples(res);
 
-	Record row(features.size() + 1, -1);
+	Record row(features.size(), -1);
 	std::vector<Record> rows;
+	std::vector<std::string> existDates;
 
 	double value;
 	std::string feature;
@@ -412,11 +413,11 @@ std::vector<Record> getAllSensorRecords(PGconn *conn, const std::vector<Feature>
 		}
 
 		if (currentDate.compare(date) != 0) {
+			existDates.push_back(currentDate);
 			currentDate = date;
 			rows.push_back(row);
 			row.clear();
-			row.assign(features.size() + 1, -1);
-			row[features.size()] = currentDate;
+			row.assign(features.size(), -1);
 		}
 		value = atof(PQgetvalue(res, i, value_fnum));
 		feature = std::string(PQgetvalue(res, i, feature_fnum));
@@ -427,9 +428,10 @@ std::vector<Record> getAllSensorRecords(PGconn *conn, const std::vector<Feature>
 		}
 	}
 	// add last row, it is not added when for cycle ends
+	existDates.push_back(currentDate);
 	rows.push_back(row);
 
-	return rows;
+	return std::make_tuple(rows, existDates);
 }
 
 struct CrossRecord
@@ -456,7 +458,7 @@ void printCrossRecord(const std::vector<CrossRecord> &vec)
 	}
 }
 
-void printRecords(const std::vector<Record> &mat, const std::vector<Feature> &features, int maxRows = -1, int maxCols = -1, int maxStringSize = 10)
+void printRecords(const std::vector<Record> &mat, const std::vector<Feature> &features, const std::vector<std::string> &dates, int maxRows = -1, int maxCols = -1, int maxStringSize = 10)
 {
 	std::string str;
 	maxStringSize = maxStringSize - 3;
@@ -484,7 +486,7 @@ void printRecords(const std::vector<Record> &mat, const std::vector<Feature> &fe
 
 	for (auto i = 0; i < mat.size(); ++i)
 	{
-		std::cout << mat[i][mat[i].size() - 1] << " -> { ";
+		std::cout << dates[i] << " -> { ";
 		for (auto j = 0; j < mat[i].size(); j++)
 		{
 			std::cout << mat[i][j];
@@ -556,6 +558,7 @@ int main()
 	//
 
 	std::vector<Record> records;
+	std::vector<std::string> recordDates;
 
 	const auto t1 = std::chrono::steady_clock::now();
 	/*for (int i = 0; i < timestamps.size(); ++i)
@@ -563,14 +566,14 @@ int main()
 		records.push_back(getSensorRecord(conn, timestamps[i], features));
 	}*/
 	std::vector<std::string> cuttimestamps(timestamps.begin() + 5500, timestamps.begin() + 5550);
-	records = getAllSensorRecords(conn, features, cuttimestamps);
+	std::tie(records, recordDates) = getAllSensorRecords(conn, features, cuttimestamps);
 	const auto t2 = std::chrono::steady_clock::now();
 
 	std::cout << '\n';
 	std::cout << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000 << " s)" << std::endl;
 	std::cout << '\n';
 
-	printRecords(records, features, 10, 10, 15);
+	printRecords(records, features, recordDates, 10, 10, 15);
 	
 	//auto dataset_0 = getSensorData(conn, "SELECT * FROM public.sensordata WHERE date = '2018-12-10 23:43:15' LIMIT 100", features);
 	//auto dataset_0 = getSensorData(conn, "SELECT * FROM public.sensordata WHERE metaid @> '{1,7,8}'::int[] LIMIT 10000");
@@ -587,30 +590,48 @@ int main()
 	static const int featureGutproduktionIndex = lookupFeatureIndex("{1,7,8}", features);
 	std::cout << "feature Gutproduktion index: " << featureGutproduktionIndex << std::endl;
 	auto feature_Gutproduktion = recordsFilter.dimension([](Record r) { return r[featureGutproduktionIndex]; });
-	//feature_Gutproduktion.filter(0);
-	feature_Gutproduktion.filter([](auto d) { return std::get<double>(d) == 0; });
+	feature_Gutproduktion.filter(0);
+	//feature_Gutproduktion.filter([](auto d) { return std::get<double>(d) == 0; });
 	auto dataset_0 = recordsFilter.all_filtered();
 	std::cout << '\n';
 	std::cout << '\n';
 	std::cout << "Gutproduktion == 0\n";
-	printRecords(dataset_0, features, 10, 10, 15);
+	printRecords(dataset_0, features, recordDates, 10, 10, 15);
 
 	feature_Gutproduktion.filter();
-	feature_Gutproduktion.filter([](auto d) { return std::get<double>(d) == 1; });
+	feature_Gutproduktion.filter(1);
+	//feature_Gutproduktion.filter([](auto d) { return std::get<double>(d) == 1; });
 	auto dataset_1 = recordsFilter.all_filtered();
 	std::cout << '\n';
 	std::cout << '\n';
 	std::cout << "Gutproduktion == 1\n";
-	printRecords(dataset_1, features, 10, 10, 15);
+	printRecords(dataset_1, features, recordDates, 10, 10, 15);
 
 
 	//printRecord(dataset_0, 10);
 	//matrix_print(dataset_0, 10);
 	//matrix_print(dataset_1, 10);
 
-	//PMQ set0(dataset_0);
-	//PMQ set1(dataset_1);
-	//float SignificantDifferent = (set1 != set0); // values between 0...1
+	std::vector<double> datasetColumn_0;
+	std::vector<double> datasetColumn_1;
+	int featureIndex = 0;
+	for (auto i = 0; i < dataset_0.size(); ++i)
+	{
+		datasetColumn_0.push_back(dataset_0[i][featureIndex]);
+	}
+	for (auto i = 0; i < dataset_1.size(); ++i)
+	{
+		datasetColumn_1.push_back(dataset_1[i][featureIndex]);
+	}
+
+	PMQ set0(datasetColumn_0);
+	PMQ set1(datasetColumn_1);
+	float significantDifferent = (set1 != set0); // values between 0...1
+	std::cout << '\n';
+	std::cout << '\n';
+	std::cout << "significantDifferent:\n" << significantDifferent;
+	std::cout << '\n';
+	std::cout << '\n';
 
 	return 0;
 
