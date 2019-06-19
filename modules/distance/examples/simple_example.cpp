@@ -5,6 +5,8 @@
 #include "../metric_distance.hpp"
 //#include "../details/k-random/Edit.hpp"
 
+#include "blaze/Blaze.h"
+
 template <typename T>
 void matrix_print(const std::vector<std::vector<T>> &mat)
 {
@@ -83,6 +85,8 @@ int main()
     }
 
     auto cost_mat = metric::distance::EMD_details::ground_distance_matrix_of_2dgrid<edm_Type>(im1_C, im1_R);
+//    auto cost_mat = metric::distance::EMD_details::ground_distance_matrix_of_2dgrid<long>(im1_C, im1_R); // not matching types
+
     auto maxCost = metric::distance::EMD_details::max_in_distance_matrix(cost_mat);
 
     std::cout << "bis hier" << std::endl;
@@ -90,6 +94,8 @@ int main()
     //matrix_print(cost_mat);
 
     metric::distance::EMD<edm_Type> distance2(cost_mat, maxCost);
+//    metric::distance::EMD<long> distance2(cost_mat, maxCost);  // not matching types
+
 
     //auto result1 = distance(v0, v2);
 
@@ -145,15 +151,60 @@ int main()
 
     typedef double V_type;
 
-    std::vector<V_type> obj1 = {0, 1, 2};
-    std::vector<V_type> obj2 = {0, 1, 3};
-
-    metric::distance::Sorensen<V_type> sor;
-//    metric::distance::Sorensen<double> sor;
-    std::cout << "sorensen metric result: " << sor(obj1, obj2) << "\n";
+    V_type vt0 = 0;
+    V_type vt1 = 1;
+    V_type vt2 = 2;
+    V_type vt21 = 3;
 
 
+    std::vector<V_type> obj1 = {vt0, vt1, vt2, vt0};
+    std::vector<V_type> obj2 = {vt0, vt1, vt21, vt0};
+    std::vector<V_type> obj3 = {vt0, vt1, vt21};
 
+
+
+//    metric::distance::Sorensen_t<V_type> sor;
+//    std::cout << "sorensen metric result: " << sor(obj1, obj2) << "\n";
+
+//    metric::distance::Sorensen_s sor2;
+//    std::cout << "sorensen metric result: " << sor2(obj1, obj2) << "\n";
+
+//    metric::distance::Sorensen<V_type> sor3;
+//    std::cout << "sorensen metric result: " << sor3(obj1, obj3) << "\n";
+
+    // blaze vectors
+    blaze::DynamicVector<V_type> bdv1 {vt0, vt1, vt2, vt0};
+    blaze::DynamicVector<V_type> bdv3 {vt0, vt1, vt21};
+//    std::cout << "sorensen metric result on DynamicVector: " << sor3(bdv1, bdv3) << "\n";
+
+    blaze::StaticVector<V_type, 4UL> bsv1 {vt0, vt1, vt2, vt0};
+    blaze::StaticVector<V_type, 4UL> bsv2 {vt0, vt1, vt21, vt0}; // static vectros cannot be of different length!!
+//    std::cout << "sorensen metric result on StaticVector: " << sor3(bsv1, bsv2) << "\n";
+
+    blaze::HybridVector<V_type, 4UL> bhv1 {vt0, vt1, vt2, vt0};
+    blaze::HybridVector<V_type, 4UL> bhv2 {vt0, vt1, vt21, vt0}; // static vectros cannot be of different length!!
+//    std::cout << "sorensen metric result on HybridVector: " << sor3(bhv1, bhv2) << "\n";
+
+    blaze::CompressedVector<V_type> bcv1 {vt0, vt1, vt2, vt0};
+    blaze::CompressedVector<V_type> bcv3 {vt0, vt1, vt21};
+//    std::cout << "sorensen metric result on CompressedVector: " << sor3(bcv1, bcv3) << "\n";
+
+    std::cout << "sorensen metric result from function on CompressedVector: " << metric::distance::sorensen(bcv1, bcv3) << "\n";
+    std::cout << "sorensen metric result from function on STL Vector: " << metric::distance::sorensen(obj1, obj3) << "\n";
+    std::cout << "sorensen metric result from function on DynamicVector: " << metric::distance::sorensen(bdv1, bdv3) << "\n";
+    std::cout << "sorensen metric result from function on StativVector: " << metric::distance::sorensen(bsv1, bsv2) << "\n";
+    std::cout << "sorensen metric result from function on HybridVector: " << metric::distance::sorensen(bhv1, bhv2) << "\n";
+
+    // TODO test STL deque etc
+
+
+    // test for template parameters of existing metrics
+
+    metric::distance::Euclidian<float> eu;
+    std::cout << "euclidean metric result: " << eu(obj1, obj2) << "\n";
+
+
+    //
 
 
 
