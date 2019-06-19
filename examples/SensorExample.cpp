@@ -15,12 +15,11 @@
 #include <string.h>
 #include <libpq-fe.h>
 
-#include "utils/poor_mans_quantum.hpp"
-
 #include "modules/crossfilter.hpp"
 
-#include "modules/mapping/details/classification/metric_classification.hpp"
-//#include "../details/classification/details/correlation_weighted_accuracy.hpp"
+//#include "modules/mapping/details/classification/metric_classification.hpp"
+
+#include "utils/poor_mans_quantum.hpp"
 
 template <typename T0, typename ... Ts>
 std::ostream & operator<< (std::ostream & s,
