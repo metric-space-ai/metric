@@ -559,14 +559,14 @@ int main()
 	std::vector<Record> records;
 	std::vector<std::string> recordDates;
 
-	const auto t1 = std::chrono::steady_clock::now();
+	auto t1 = std::chrono::steady_clock::now();
 	/*for (int i = 0; i < timestamps.size(); ++i)
 	{
 		records.push_back(getSensorRecord(conn, timestamps[i], features));
 	}*/
 	std::vector<std::string> cuttimestamps(timestamps.begin() + 5500, timestamps.begin() + 5550);
 	std::tie(records, recordDates) = getAllSensorRecords(conn, features, cuttimestamps);
-	const auto t2 = std::chrono::steady_clock::now();
+	auto t2 = std::chrono::steady_clock::now();
 
 	std::cout << '\n';
 	std::cout << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000 << " s)" << std::endl;
@@ -611,24 +611,41 @@ int main()
 	//matrix_print(dataset_0, 10);
 	//matrix_print(dataset_1, 10);
 
+	std::vector<double> significantDifferents;
 	std::vector<double> datasetColumn_0;
 	std::vector<double> datasetColumn_1;
-	int featureIndex = 0;
-	for (auto i = 0; i < dataset_0.size(); ++i)
-	{
-		datasetColumn_0.push_back(dataset_0[i][featureIndex]);
-	}
-	for (auto i = 0; i < dataset_1.size(); ++i)
-	{
-		datasetColumn_1.push_back(dataset_1[i][featureIndex]);
-	}
+	int featureIndex = 1;
+	double significantDifferent;
 
-	PMQ set0(datasetColumn_0);
-	PMQ set1(datasetColumn_1);
-	float significantDifferent = (set1 != set0); // values between 0...1
+	for (int featureIndex = 0; featureIndex < features.size(); ++featureIndex)
+	{
+		t1 = std::chrono::steady_clock::now();
+		datasetColumn_0.clear();
+		for (auto i = 0; i < dataset_0.size(); ++i)
+		{
+			datasetColumn_0.push_back(dataset_0[i][featureIndex]);
+		}
+		datasetColumn_1.clear();
+		for (auto i = 0; i < dataset_1.size(); ++i)
+		{
+			datasetColumn_1.push_back(dataset_1[i][featureIndex]);
+		}
+
+		utils::PMQ set0(datasetColumn_0);
+		utils::PMQ set1(datasetColumn_1);
+		significantDifferent = (set1 != set0);
+		significantDifferents.push_back(significantDifferent);
+		t2 = std::chrono::steady_clock::now();
+		std::cout << features[featureIndex].bezeichnung << ": " << significantDifferent << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000 << " s)" << std::endl;
+	}
 	std::cout << '\n';
 	std::cout << '\n';
-	std::cout << "significantDifferent:\n" << significantDifferent;
+	//std::cout << "significantDifferent = " << significantDifferent;
+	Record r(significantDifferents);
+	std::vector<Record> significantDifferentsAsRecord;
+	significantDifferentsAsRecord.push_back(r);
+	std::vector<std::string> d = {"all"};
+	printRecords(significantDifferentsAsRecord, features, d, 10, 10, 15);
 	std::cout << '\n';
 	std::cout << '\n';
 
