@@ -13,12 +13,22 @@ if(CMAKE_SYSTEM_NAME MATCHES Windows)
     endif()
 endif()
 
-include_directories(
-    ${PROJECT_SOURCE_DIR}
-    ${PROJECT_SOURCE_DIR}/assets
-    ${PROJECT_SOURCE_DIR}/../../..
-    ${PROJECT_SOURCE_DIR}/../../../3rdparty
-    )
+if(CMAKE_SYSTEM_NAME MATCHES Windows)
+	include_directories(
+		${PROJECT_SOURCE_DIR}
+		${PROJECT_SOURCE_DIR}/assets
+		${PROJECT_SOURCE_DIR}/../../..
+		${PROJECT_SOURCE_DIR}/../../../3rdparty
+		${PROJECT_SOURCE_DIR}/../../../mkl/include
+	)
+else()	
+	include_directories(
+		${PROJECT_SOURCE_DIR}
+		${PROJECT_SOURCE_DIR}/assets
+		${PROJECT_SOURCE_DIR}/../../..
+		${PROJECT_SOURCE_DIR}/../../../3rdparty
+	)
+endif()
 	
 file(COPY "assets" DESTINATION ".")
 
@@ -26,10 +36,10 @@ file(COPY "assets" DESTINATION ".")
 #set (GCC_WARNING "-Wall -Wextra -Wpedantic -Wcast-align -Wcast-qual -Wvla -Wsuggest-attribute=const -Wuninitialized -Winit-self -Wdouble-promotion -Wstrict-aliasing -Wno-unused-local-typedefs")
 set (GCC_WARNING "-Wall")
 set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-omit-frame-pointer ${GCC_WARNING} -g -std=c++17 -O3 -pthread")
-set (CMAKE_LINKER_FLAGS "${CMAKE_STATIC_LINKER_FLAGS} -fno-omit-frame-pointer -pthread -fsanitize=address")
+set (CMAKE_LINKER_FLAGS "${CMAKE_STATIC_LINKER_FLAGS} -fno-omit-frame-pointer -pthread")
 
-set (CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-omit-frame-pointer ${GCC_WARNING} -std=c++17 -pthread -fsanitize=address")
-set (CMAKE_LINKER_FLAGS_DEBUG "${CMAKE_STATIC_LINKER_FLAGS_DEBUG} -fno-omit-frame-pointer -pthread -fsanitize=address")
+set (CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-omit-frame-pointer ${GCC_WARNING} -std=c++17 -pthread")
+set (CMAKE_LINKER_FLAGS_DEBUG "${CMAKE_STATIC_LINKER_FLAGS_DEBUG} -fno-omit-frame-pointer -pthread")
 
 
 # for Visual Studio
@@ -69,6 +79,11 @@ add_executable(MetricDesicionTree_example quantized_mappers/classification/Metri
 
 # continious_mappers / clustering
 add_executable(SOM_example continious_mappers/clustering/SOM_example.cpp)
+
+if(CMAKE_SYSTEM_NAME MATCHES Windows)
+	target_link_directories(SOM_example PRIVATE ${PROJECT_SOURCE_DIR}/../../../mkl/lib/intel64_win)
+	target_link_libraries(SOM_example PRIVATE mkl_core.lib mkl_sequential.lib mkl_intel_lp64.lib)
+endif()
 
 # continious_mappers / classification
 
