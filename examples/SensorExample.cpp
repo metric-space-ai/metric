@@ -617,6 +617,7 @@ int main()
 	int featureIndex = 1;
 	double significantDifferent;
 
+	auto total_t1 = std::chrono::steady_clock::now();
 	for (int featureIndex = 0; featureIndex < features.size(); ++featureIndex)
 	{
 		t1 = std::chrono::steady_clock::now();
@@ -638,6 +639,7 @@ int main()
 		t2 = std::chrono::steady_clock::now();
 		std::cout << features[featureIndex].bezeichnung << ": " << significantDifferent << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000 << " s)" << std::endl;
 	}
+	auto total_t2 = std::chrono::steady_clock::now();
 	std::cout << '\n';
 	std::cout << '\n';
 	//std::cout << "significantDifferent = " << significantDifferent;
@@ -646,6 +648,7 @@ int main()
 	significantDifferentsAsRecord.push_back(r);
 	std::vector<std::string> d = {"all"};
 	printRecords(significantDifferentsAsRecord, features, d, 10, 10, 15);
+	std::cout << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(total_t2 - total_t1).count()) / 1000000 << " s)" << std::endl;
 	std::cout << '\n';
 	std::cout << '\n';
 
