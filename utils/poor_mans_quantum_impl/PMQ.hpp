@@ -9,6 +9,7 @@
 #include <iostream>
 #include <random>
 
+namespace utils{
 template <typename Distribution = Discrete<float>, typename T = float>
 class PMQ
 {
@@ -731,4 +732,5 @@ PMQ<Distribution, T>::out_confidence(const mT1 & set_left, const mT2 & set_right
     return float(num_out) / float(_dist._data.size());
 }
 
+} //end namespace
 #endif // header guard

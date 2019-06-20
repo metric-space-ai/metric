@@ -10,3 +10,4 @@
 /modules/mapping/examples/*.exe
 /modules/correlation/examples/build
 /examples/build
+/modules/crossfilter/examples/build

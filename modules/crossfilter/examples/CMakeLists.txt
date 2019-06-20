@@ -1,8 +1,6 @@
 cmake_minimum_required(VERSION 3.14)
 
-project(SensorExample)
-
-find_package(PostgreSQL REQUIRED)
+project(CrossfilterExample)
 
 if(CMAKE_SYSTEM_NAME MATCHES Windows)
     if(CMAKE_SYSTEM_PROCESSOR MATCHES ".*64$")
@@ -16,12 +14,12 @@ endif()
 
 include_directories(
     ${PROJECT_SOURCE_DIR}
-    ${PROJECT_SOURCE_DIR}/..
     )
-	
-
 #set (GCC_WARNING "-Wall -Wpedantic -Wextra -Wcast-align -Wcast-qual -Wvla -Wsuggest-attribute=const -Wmissing-format-attribute -Wuninitialized -Winit-self -Wdouble-promotion -Wstrict-aliasing -Weffc++ -Wno-unused-local-typedefs")
 #set (GCC_WARNING "-Wall -Wextra -Wpedantic -Wcast-align -Wcast-qual -Wvla -Wsuggest-attribute=const -Wuninitialized -Winit-self -Wdouble-promotion -Wstrict-aliasing -Wno-unused-local-typedefs")
+
+#set (CMAKE_C_COMPILER /usr/bin/gcc-8)
+#set (CMAKE_CXX_COMPILER /usr/bin/g++-8)
 set (GCC_WARNING "-Wall")
 set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-omit-frame-pointer ${GCC_WARNING} -g -std=c++17 -O3 -pthread")
 set (CMAKE_LINKER_FLAGS "${CMAKE_STATIC_LINKER_FLAGS} -fno-omit-frame-pointer -pthread")
@@ -29,29 +27,10 @@ set (CMAKE_LINKER_FLAGS "${CMAKE_STATIC_LINKER_FLAGS} -fno-omit-frame-pointer -p
 set (CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-omit-frame-pointer ${GCC_WARNING} -std=c++17 -pthread")
 set (CMAKE_LINKER_FLAGS_DEBUG "${CMAKE_STATIC_LINKER_FLAGS_DEBUG} -fno-omit-frame-pointer -pthread")
 
-
 # for Visual Studio
 if(MSVC)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++17")
 endif(MSVC)
 
-add_executable(${PROJECT_NAME} SensorExample.cpp)
-
-target_include_directories(${PROJECT_NAME} PRIVATE ${PostgreSQL_INCLUDE_DIRS})
-
-target_link_libraries(${PROJECT_NAME} PRIVATE ${PostgreSQL_LIBRARIES})
-
-# Copy PostgreSQL .dll files on bin folder if we are on Windows
-if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
-  # It prints C:\Program Files\PostgreSQL\9.4\lib
-  message (STATUS "paths are ${PostgreSQL_LIBRARY_DIRS}")
-  # It prints  C:/Program Files/PostgreSQL/9.4/lib/libpq.lib
-  message (STATUS "libraries are ${PostgreSQL_LIBRARIES}")
-  add_custom_command (TARGET ${PROJECT_NAME} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different ${PostgreSQL_LIBRARY_DIRS}/libpq.dll $<TARGET_FILE_DIR:${PROJECT_NAME}>)
-  # I need to copy also dll's needed to libpq.dll
-endif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
-
-
-
-
+add_executable(${PROJECT_NAME} Crossfilter_example.cpp)
 
