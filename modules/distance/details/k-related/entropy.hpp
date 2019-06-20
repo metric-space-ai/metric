@@ -62,17 +62,22 @@ T entropy(std::vector<std::vector<T>> data, std::size_t k = 3, T logbase = 2, Me
         return 0;
     }
     double p = 1;
-    if constexpr ( std::is_same<Metric, typename metric::distance::Euclidian<T>>::value) {
+    double N = data.size();
+    double d = data[0].size();
+    double cb = d * log(logbase,2.0);
+
+    if constexpr (!std::is_same<Metric, typename metric::distance::Chebyshev<T>>::value) {
+        if constexpr ( std::is_same<Metric, typename metric::distance::Euclidian<T>>::value) {
             p = 2;
         } else if constexpr (std::is_same<Metric, typename metric::distance::P_norm<T>>::value) {
             p = metric.p;
         }
+        cb = cb + d*log(logbase, std::tgamma(1+1/p)) - log(logbase, std::tgamma(1+d/p));
+    }
 
-    double N = data.size();
-    double d = data[0].size();
     add_noise(data);
     metric_space::Tree<std::vector<T>, Metric> tree(data,-1, metric);
-    double cb = d * log(logbase,2.0) + d*log(logbase, std::tgamma(1+1/p)) - log(logbase, std::tgamma(1+d/p));
+    //double cb = d * log(logbase,2.0) + d*log(logbase, std::tgamma(1+1/p)) - log(logbase, std::tgamma(1+d/p));
     double entropyEstimate = boost::math::digamma(N) - boost::math::digamma(k)
         + cb + d * log(logbase, 2.0);
     for(std::size_t i = 0; i < N; i++) {
