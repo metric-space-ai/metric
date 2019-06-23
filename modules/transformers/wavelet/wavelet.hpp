@@ -12,7 +12,7 @@
 //#include <numeric>
 #include <algorithm>
 #include <functional>
-//#include <deque>
+#include <deque>
 #include "../../../3rdparty/blaze/Math.h"
 
 
