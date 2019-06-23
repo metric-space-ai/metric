@@ -564,8 +564,9 @@ int main()
 	{
 		records.push_back(getSensorRecord(conn, timestamps[i], features));
 	}*/
-	std::vector<std::string> cuttimestamps(timestamps.begin(), timestamps.begin() + 5550);
-	std::tie(records, recordDates) = getAllSensorRecords(conn, features, cuttimestamps);
+	std::vector<std::string> cuttimestamps(timestamps.begin() + 5500, timestamps.begin() + 5550);
+	//std::tie(records, recordDates) = getAllSensorRecords(conn, features, cuttimestamps);
+	std::tie(records, recordDates) = getAllSensorRecords(conn, features, timestamps);
 	auto t2 = std::chrono::steady_clock::now();
 
 	std::cout << '\n';
