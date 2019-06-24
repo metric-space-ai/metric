@@ -12,24 +12,30 @@ namespace distance
         using value_type = V;
         using distance_type = value_type;
 
-        std::vector< std::vector< value_type > > C;
+        mutable std::vector< std::vector< value_type > > C;
         value_type extra_mass_penalty = -1;
-        std::vector< std::vector< value_type > > * F;
+        std::vector< std::vector< value_type > > * F = nullptr;
+        mutable bool is_C_initialized = false;
 
-        explicit EMD(): EMD() {}
-        explicit EMD(std::vector<std::vector<value_type>> && C_): C(C_) {}
+        explicit EMD()  {}
+        explicit EMD(std::vector<std::vector<value_type>> && C_): C(C_), is_C_initialized(true) {}
         EMD(std::size_t rows, std::size_t cols,
             const value_type & extra_mass_penalty_ = -1,
             std::vector<std::vector<value_type>> *F_ = nullptr):
-            C(default_ground_matrix(rows, cols)), extra_mass_penalty(extra_mass_penalty_), F(F_) {}
+            C(default_ground_matrix(rows, cols)), extra_mass_penalty(extra_mass_penalty_), F(F_),  is_C_initialized(true) {}
         EMD(const std::vector<std::vector<value_type>> & C_,
             const value_type & extra_mass_penalty_ = -1, std::vector<std::vector<value_type>> *F_ = nullptr):
-            C(C_), extra_mass_penalty(extra_mass_penalty_), F(F_) {}
+            C(C_), extra_mass_penalty(extra_mass_penalty_), F(F_),  is_C_initialized(true) {}
 
         template<typename Container>
         distance_type  operator()(const Container &Pc, const Container &Qc) const;
 
-        std::vector<std::vector<value_type>> default_ground_matrix(std::size_t rows, std::size_t cols);
+        std::vector<std::vector<value_type>> default_ground_matrix(std::size_t rows, std::size_t cols) const ;
+
+        EMD(EMD &&) = default;
+        EMD(const EMD &) = default;
+        EMD & operator = (const EMD &) = default;
+        EMD & operator = (EMD &&) = default;
     };
 
 //#ifndef _METRIC_DISTANCE_HPP
