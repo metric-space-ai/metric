@@ -179,6 +179,9 @@ template<typename T, typename Hash> struct filter_impl {
 
   template<typename ...Ts>
   std::vector<T> all_filtered(Ts&... dimension) const;
+    template<typename ...Ts>
+    std::vector<T> all_filtered_by(Ts&... dimension) const;
+
   std::vector<T> all_filtered_except_mask(const std::vector<uint8_t> & mask) const;
 
   template<typename ...Ts>
