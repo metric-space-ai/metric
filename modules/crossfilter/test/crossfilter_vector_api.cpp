@@ -1,7 +1,7 @@
 #define BOOST_TEST_DYN_LINK
 #define BOOST_TEST_MODULE CrossFilterDupTest
 #include <boost/test/unit_test.hpp>
-#include "crossfilter.hpp"
+
 #include <vector>
 #include <list>
 #include <string>
@@ -12,6 +12,9 @@
 //#include <cstddef>
 #include "utils.hpp"
 
+#include "detail/crossfilter.hpp"
+#include "detail/dimension.hpp"
+#include "detail/feature.hpp"
 auto Infinity = std::numeric_limits<int>::max();
 
 struct Record2 {

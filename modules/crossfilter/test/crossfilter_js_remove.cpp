@@ -1,4 +1,3 @@
-// PVS-Studio Static Code Analyzer for C, C++ and C#: http://www.viva64.com
 #define BOOST_TEST_DYN_LINK
 #define BOOST_TEST_MODULE CrossfilterJSRemove
 #include "utils.hpp"
@@ -10,7 +9,9 @@
 #include <utility>
 #include <algorithm>
 #include <cmath>
-#include "crossfilter.hpp"
+#include "detail/crossfilter.hpp"
+#include "detail/dimension.hpp"
+#include "detail/feature.hpp"
 
 
 auto Infinity = std::numeric_limits<int>::max();

@@ -4,7 +4,9 @@
 #include <random>
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/date_time/gregorian/greg_date.hpp>
-#include "crossfilter.hpp"
+#include "detail/crossfilter.hpp"
+#include "detail/dimension.hpp"
+#include "detail/feature.hpp"
 // #include "spdlog/spdlog.h"
 // #include "spdlog/async.h"
 // #include "spdlog/sinks/stdout_sinks.h"

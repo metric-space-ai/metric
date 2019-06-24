@@ -9,8 +9,10 @@
 #include <utility>
 #include <algorithm>
 #include <cmath>
-#include "crossfilter.hpp"
 
+#include "detail/crossfilter.hpp"
+#include "detail/dimension.hpp"
+#include "detail/feature.hpp"
 
 auto Infinity = std::numeric_limits<int>::max();
 
