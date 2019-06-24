@@ -164,6 +164,9 @@ template <typename V, typename T, typename I,  typename H> struct dimension_impl
         dispose_dimension_signal(std::move(dim.dispose_dimension_signal)),
         add_signal(std::move(dim.add_signal))
   {
+      dim.low = 0;
+      dim.high = 0;
+
     slot_add =  [this](std::size_t index, data_iterator begin, data_iterator end) {
                   this->add(index, begin, end); };
 
@@ -196,6 +199,8 @@ template <typename V, typename T, typename I,  typename H> struct dimension_impl
     dimension_bit_index = dim.dimension_bit_index;
     low = dim.low;
     high = dim.high;
+    dim.low = 0;
+    dim.high = 0;
     iterables_index_count = std::move(dim.iterables_index_count);
     iterables_empty_rows = std::move(dim.iterables_empty_rows);
     refilter = std::move(dim.refilter);
@@ -235,6 +240,22 @@ template <typename V, typename T, typename I,  typename H> struct dimension_impl
         });
     //    spdlog::get("console")->info("operator = (dim &&) = {:x}" , (uint64_t)add_signal.signal.get());
     return *this;
+  }
+  void init_slots() {
+    slot_add = [this](std::size_t index, data_iterator begin,
+                      data_iterator end) { this->add(index, begin, end); };
+
+    slot_remove = [this](const std::vector<int64_t> &re_index) {
+      this->remove_data(re_index);
+    };
+    slot_post_add = [this](std::size_t new_data_size) {
+      add_signal(new_values, new_indexes, old_data_size, new_data_size);
+      new_values.clear();
+    };
+
+    connection_add = crossfilter->connect_add_slot(slot_add);
+    connection_remove = crossfilter->connect_remove_slot(slot_remove);
+    connection_post_add = crossfilter->connect_post_add_slot(slot_post_add);
   }
 
   void clear();

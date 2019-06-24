@@ -243,6 +243,16 @@ template <typename T, typename Hash = trivial_hash<T>> struct filter: private im
     (void)lk; // avoid AppleClang warning about unused variable;
     return impl_type_t::all_filtered(dimensions...);
   }
+    /**
+       Returns all of the raw records in the crossfilter, with filters of selected dfimensions applied.
+    */
+    template<typename ...Ts>
+    std::vector<T> all_filtered_by(Ts&... dimensions) const {
+        reader_lock_t lk(mutex);
+        (void)lk; // avoid AppleClang warning about unused variable;
+        return impl_type_t::all_filtered_by(dimensions...);
+    }
+
   /**
      auxilary method for n-api. analog of all_filtered
    */
