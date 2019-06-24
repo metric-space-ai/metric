@@ -22,7 +22,7 @@ W. Natita, W. Wiboonsak, and S. Dusadee
 #include <numeric>
 
 #include "metric.tpp"
-#include "utils/graph/graph.hpp"
+#include "../../../utils/graph/graph.hpp"
 
 #ifndef M_PI
 #define M_PI (3.14159265358979323846)

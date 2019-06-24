@@ -9,9 +9,9 @@
 #include <boost/functional/hash.hpp>
 
 //#include "3dparty/metric_space/details/tree.hpp"
-#include "space/details/tree.hpp"
+#include "../../../space/details/tree.hpp"
 //#include "3dparty/metric_distance/details/Standards.hpp"
-#include "distance/details/k-related/Standards.hpp"
+#include "../../../distance/details/k-related/Standards.hpp"
 //#include "3dparty/metric_distance/details/chebyshev.hpp"
 #include "chebyshev.hpp"
 

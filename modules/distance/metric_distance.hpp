@@ -13,3 +13,4 @@ License. You are not allowed to use or edit the code without license. */
 #include "details/k-random/Edit.hpp"
 
 #include "details/k-related/L1.hpp"
+#include "details/k-related/entropy.hpp"

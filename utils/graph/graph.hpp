@@ -11,7 +11,7 @@ Signal Empowering Technology ®Michael Welsch
 
 
 //#include "Blaze.h"
-#include "blaze/Blaze.h"
+#include "../../3rdparty/blaze/Blaze.h"
 
 #include <stack>
 #include <type_traits>

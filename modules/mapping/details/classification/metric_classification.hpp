@@ -250,4 +250,5 @@ class Bagging
 
 #include "metric_classification.cpp"
 #include "details/metric_dt_classifier.hpp"
+#include "details/dimension.hpp"
 #endif // CLASSIFIERS_HPP
