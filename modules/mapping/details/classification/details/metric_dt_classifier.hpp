@@ -82,7 +82,7 @@ class MetricDT
         // std::vector<std::function<NumType(Record)>> & features,  // (old) code for accessors
         //DimSet & dimensions, // code for DimensionSet
         std::vector<VariantType>,
-        std::function<int(Record)> & response);
+        std::function<int(const Record&)> & response);
 
 
     //template <typename ConType, typename DimSet>// code for DimensionSet

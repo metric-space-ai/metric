@@ -137,7 +137,7 @@ void MetricDT<Record>::train(
         // std::vector<std::function<NumType(Record)>> & features,  // (old) code for accessors
         // DimSet & dimensions, // code for DimensionSet
         std::vector<VariantType> dimensions,
-        std::function<int(Record)> & response)
+        std::function<int(const Record&)> & response)
 {
     //typedef typename DimSet::DistanceType NumType; // code for DimensionSet
     typedef double NumType; // TODO replace hardcode
@@ -164,7 +164,7 @@ void MetricDT<Record>::train(
                 //    return d.DistanceFunctor(field1, field2);
                 //};
                 //matrix[i][j] = matrix[j][i] = (NumType)std::visit(d_dist_vis, dimensions[f]);
-                auto d_dist_vis = [&, payments, i, j](auto & d)
+                auto d_dist_vis = [&payments, i, j](auto & d)
                 {
                     return (NumType)d.get_distance(payments[i], payments[j]);
                 };
@@ -230,12 +230,12 @@ void MetricDT<Record>::train(
         // new style code
         auto [new_subsets, new_entropies, new_medoids, field, entropy_weighted_sum] = split_subset(*unit.subset, distances, payments, response);
 
-        std::cout << "\nStart processing unit " << unit.debug_id << ", queue length is " << subset_queue.size();
-        std::cout << "\nObtained subsets: " << new_subsets.size() << ", " << new_entropies.size() << ", " << new_medoids.size() << "\n";
+        //        std::cout << "\nStart processing unit " << unit.debug_id << ", queue length is " << subset_queue.size();
+        //        std::cout << "\nObtained subsets: " << new_subsets.size() << ", " << new_entropies.size() << ", " << new_medoids.size() << "\n";
 
         // gain-based condition check
         double gain = unit.entropy - entropy_weighted_sum;
-        std::cout << "entropy: " << unit.entropy << ", w sum: " << entropy_weighted_sum << ", gain: " << gain << "\n";
+        //        std::cout << "entropy: " << unit.entropy << ", w sum: " << entropy_weighted_sum << ", gain: " << gain << "\n";
         if (gain <= gain_threshold)
         {
             // add leaf without processing subsets
@@ -258,14 +258,14 @@ void MetricDT<Record>::train(
                     if ((*(new_subsets[i])).size() > 0)
                     {
                         // add non-stohastic leaf node
-                        std::cout << "\nAdding leaf node. Now " << unit.node->children.size() << " childten in current node\n";
+                        //                        std::cout << "\nAdding leaf node. Now " << unit.node->children.size() << " childten in current node\n";
                         new_node->predicted_class = response(payments[ (*(new_subsets[i]))[0] ]); // call label accessor for the first element
                         // assume subset is not empty and all labels are equal (because of zero entropy)
                     }
                     else
                     {
                         // empty subset ocurred, add stohastic equally-distributed node
-                        std::cout << "\nAdding stohastic equally-distributed leaf node due to EMPTY SUBSET. Now " << unit.node->children.size() << " childten in current node\n";
+                        //                        std::cout << "\nAdding stohastic equally-distributed leaf node due to EMPTY SUBSET. Now " << unit.node->children.size() << " childten in current node\n";
                         for (size_t l=0; l<unique_labels.size(); l++)
                             new_node->prediction_distribution.push_back(1);
                     }
@@ -273,7 +273,7 @@ void MetricDT<Record>::train(
                 }
                 else
                 {
-                    std::cout << "\nAdding stohastic leaf node. Now " << unit.node->children.size() << " childten in current node\n";
+                    //                    std::cout << "\nAdding stohastic leaf node. Now " << unit.node->children.size() << " childten in current node\n";
                     add_distribution_to_node(payments, response, new_subsets[i], new_node); // changes *new_node
                 }
                 unit.node->children.push_back(new_node); // set pointer to the newly created child in the current node
@@ -281,7 +281,7 @@ void MetricDT<Record>::train(
             else
             {
                 // enqueue regular node (add subset to queue and node to tree)
-                std::cout << "\nAdding regular node. Now " << unit.node->children.size() << " childten in current node\n";
+                //                std::cout << "\nAdding regular node. Now " << unit.node->children.size() << " childten in current node\n";
                 NodeDataUnit new_unit;
                 new_unit.node = std::make_shared<Node>(); // create new empty node within queue unit
                 new_unit.subset = new_subsets[i]; // pointer to vector of subset indices
@@ -289,7 +289,7 @@ void MetricDT<Record>::train(
                 unit.node->children.push_back(new_unit.node); // set pointer to the newly created child in the current node
                 new_unit.debug_id = ++unit_debug_id; // for debuf porpose, TODO disable
                 subset_queue.push(new_unit); // enqueue new data unit;
-                std::cout << "\nenqueued subset " << unit_debug_id << "\n";
+                //                std::cout << "\nenqueued subset " << unit_debug_id << "\n";
             }
         }
         // std::cout << "\n - last in queue: " << subset_queue.back().debug_id;
@@ -334,7 +334,7 @@ void MetricDT<Record>::predict(
     //for (size_t i=0; i<data[0].size(); i++) // input data item loop  (old) code for accessors
     for (size_t i=0; i<input_data.size(); i++) // input data item loop  (new) code for dimensions
     {
-        std::cout << "\nstart prediction for record " << i << "\n";
+        //        std::cout << "\nstart prediction for record " << i << "\n";
         std::shared_ptr<Node> current_node = root;
         while (current_node->children.size() > 0) //predicted_class == -1) // go through tree until leaf is reached
         {
@@ -358,7 +358,7 @@ void MetricDT<Record>::predict(
                 //};
                 //NumType distance = (NumType)std::visit(d_dist_vis, dimensions[current_node->field_index]);
 
-                auto d_dist_vis = [&, input_data, i, r](auto & d)
+                auto d_dist_vis = [&input_data, i, r](auto & d)
                 {
                     return (NumType)d.get_distance(input_data[i], r);
                 };
@@ -375,7 +375,7 @@ void MetricDT<Record>::predict(
             // here we have nearest medoid index, so we can chose the child, assuming order of childs is same as order of medoids
 
             current_node = current_node->children[nearese_medoid_index];
-            std::cout << "processind node with predicted_class " << current_node->predicted_class << "\n";
+            //            std::cout << "processind node with predicted_class " << current_node->predicted_class << "\n";
         }
         if (current_node->predicted_class != -1)
             predictions.push_back(current_node->predicted_class);
