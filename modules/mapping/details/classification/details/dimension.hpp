@@ -16,7 +16,6 @@ namespace metric
 
 
     template <
-        typename Record,
         typename MetricType,
         typename Accessor
         >
@@ -38,8 +37,8 @@ namespace metric
         template<typename A, typename M>
         Dimension(A accessor_, const M & m): DistanceFunctor(m),
                                              accessor(accessor_) {}
-
-        ReturnValueType get_distance(Record r1, Record r2)
+	template<typename Record>
+        ReturnValueType get_distance(const Record &r1, const Record &r2)
         {
             return DistanceFunctor(accessor(r1), accessor(r2));
         }
@@ -78,8 +77,8 @@ namespace metric
     };
 
     template<typename Accessor, typename Metric>
-    inline auto make_dimension(Metric && m, Accessor a) -> Dimension<typename first_argument<Accessor>::type,Metric,Accessor> {
-        return Dimension<typename first_argument<Accessor>::type,Metric,Accessor>(a,m);
+    inline auto make_dimension(Metric && m, Accessor a) -> Dimension<Metric,Accessor> {
+        return Dimension<Metric,Accessor>(a,m);
     }
 
     // template<typename Accessor, typename Metric>
