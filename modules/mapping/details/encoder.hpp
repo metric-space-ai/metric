@@ -1,7 +1,7 @@
 #ifndef ENCODER_HPP
 #define ENCODER_HPP
 
-#include "blaze/Blaze.h"
+#include "../../../3rdparty/blaze/Blaze.h"
 
 //#include "utils/visualizer/visualizer.hpp" // TODO remove visualizer calls and this line
 

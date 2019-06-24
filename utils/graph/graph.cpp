@@ -1,6 +1,6 @@
 #include "graph.hpp"
 //#include "graph/connected_components.hpp"
-
+#include <unordered_map>
 
 
 namespace metric {

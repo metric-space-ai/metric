@@ -1,7 +1,7 @@
 #ifndef _METRIC_DISTANCE_L1_HPP
 #define _METRIC_DISTANCE_L1_HPP
 
-#include "blaze/Blaze.h"
+#include "../../../../3rdparty/blaze/Blaze.h"
 
 
 namespace metric
