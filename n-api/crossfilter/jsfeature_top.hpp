@@ -3,7 +3,7 @@ This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
 file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-Dmitry Vinokurov (c) 2018.
+Copyright (c) 2019 Panda Team
 */
 #ifndef JSFEATURE_TOP_H_GUARD
 #define JSFEATURE_TOP_H_GUARD

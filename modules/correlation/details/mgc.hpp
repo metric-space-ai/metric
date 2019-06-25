@@ -1,5 +1,5 @@
-/* Signal Empowering Technology   
-                       
+/* Panda presents
+
 presents
 
 ███╗   ███╗ ██████╗  ██████╗
@@ -7,9 +7,9 @@ presents
 ██╔████╔██║██║  ███╗██║     
 ██║╚██╔╝██║██║   ██║██║     
 ██║ ╚═╝ ██║╚██████╔╝╚██████╗
-╚═╝     ╚═╝ ╚═════╝  ╚═════╝                     
+╚═╝     ╚═╝ ╚═════╝  ╚═════╝
                 Michael Welsch (c) 2018.
-                                                                                                   
+
 a library for nonlinear correlation
 MGC - Multiscale Graph Correlation
 a correlation coefficient with finds nonlinear dependencies in data sets and is optimized for small sample sizes.
@@ -17,9 +17,11 @@ a correlation coefficient with finds nonlinear dependencies in data sets and is 
 Multiscale Graph Correlation, Bridgeford, Eric W and Shen, Censheng and Wang, Shangsi and Vogelstein, Joshua, 
 2018, doi = 10.5281/ZENODO.1246967
 
-This Source Code Form is subject to the terms of the PANDA GmbH
-License. You are not allowed to use or edit the code without license.
+This Source Code Form is subject to the terms of the Mozilla Public
+License, v. 2.0. If a copy of the MPL was not distributed with this
+file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+Copyright (c) 2018, Michael Welsch
 */
 
 #ifndef _METRIC_CORRELATION_MGC_HPP

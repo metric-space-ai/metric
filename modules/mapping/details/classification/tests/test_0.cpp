@@ -1,4 +1,13 @@
-// clang++ tests/test_0.cpp -std=c++17 -o run.o -Ofast -l boost_unit_test_framework
+/*
+This Source Code Form is subject to the terms of the Mozilla Public
+License, v. 2.0. If a copy of the MPL was not distributed with this
+file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+Copyright (c) 2018 Panda Team
+*/
+
+// clang++ tests/test_0.cpp -std=c++17 -o run.o -Ofast -l
+// boost_unit_test_framework
 #define BOOST_TEST_DYN_LINK
 #define BOOST_TEST_MODULE MetricClassificationTest
 #include <boost/test/unit_test.hpp>
