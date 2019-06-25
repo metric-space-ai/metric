@@ -1,8 +1,12 @@
-/* This Source Code Form is subject to the terms of the PANDA GmbH
-License. You are not allowed to use or edit the code without license. */
-
 #ifndef _METRIC_GRAPH_CONNECTED_COMPONENTS_HPP
 #define _METRIC_GRAPH_CONNECTED_COMPONENTS_HPP
+/*
+This Source Code Form is subject to the terms of the Mozilla Public
+License, v. 2.0. If a copy of the MPL was not distributed with this
+file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+Copyright (c) 2018 Panda Team
+*/
 
 /* 
 

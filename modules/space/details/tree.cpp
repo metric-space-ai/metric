@@ -1,7 +1,9 @@
 /*This Source Code Form is subject to the terms of the Mozilla Public
   License, v. 2.0. If a copy of the MPL was not distributed with this
-  file, You can obtain one at http://mozilla.org/MPL/2.0/.*/
-/* Michael Welsch (c) 2018 */
+  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+Copyright (c) 2018 Michael Welsch
+*/
 
 #include "tree.hpp" // back reference for header only use
 #include <algorithm>
