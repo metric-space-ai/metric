@@ -688,11 +688,22 @@ void nonlambda()
 	mu.unlock();
 }
 
-int main()
+int main(int argc, char *argv[])
 {
-	const bool FROM_CSV = true;
+	bool FROM_CSV = false;
+	std::string sensorDataCsvFilename = "sensorsData.csv";
+	std::cout << argc << std::endl;
+	if (argc > 1)
+	{
+		FROM_CSV = true;
+		sensorDataCsvFilename = argv[1];
+		std::cout << "we have started, load from csv: " << sensorDataCsvFilename << std::endl;
+	}
+	else 
+	{
+		std::cout << "we have started, load from postgres" << std::endl;
+	}
 
-	std::cout << "we have started" << std::endl;
 	std::cout << '\n';
 
 	std::vector<std::string> timestamps;
@@ -706,7 +717,7 @@ int main()
 	{
 		auto t1 = std::chrono::steady_clock::now();
 
-		std::tie(records, recordDates, features) = readCsvData("sensorsData.csv");
+		std::tie(records, recordDates, features) = readCsvData(sensorDataCsvFilename);
 
 		auto t2 = std::chrono::steady_clock::now();
 
@@ -741,15 +752,15 @@ int main()
 			records.push_back(getSensorRecord(conn, timestamps[i], features));
 		}*/
 		std::vector<std::string> cuttimestamps(timestamps.begin() + 5500, timestamps.begin() + 5550);
-		std::tie(records, recordDates) = getAllSensorRecords(conn, features, cuttimestamps);
-		//std::tie(records, recordDates) = getAllSensorRecords(conn, features, timestamps);
+		//std::tie(records, recordDates) = getAllSensorRecords(conn, features, cuttimestamps);
+		std::tie(records, recordDates) = getAllSensorRecords(conn, features, timestamps);
 		auto t2 = std::chrono::steady_clock::now();
 
 		std::cout << '\n';
 		std::cout << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000 << " s)" << std::endl;
 		std::cout << '\n';
 
-		saveToCsv("sensorsData.csv", records, features, recordDates);
+		saveToCsv(sensorDataCsvFilename, records, features, recordDates);
 
 		//auto dataset_0 = getSensorData(conn, "SELECT * FROM public.sensordata WHERE date = '2018-12-10 23:43:15' LIMIT 100", features);
 		//auto dataset_0 = getSensorData(conn, "SELECT * FROM public.sensordata WHERE metaid @> '{1,7,8}'::int[] LIMIT 10000");
