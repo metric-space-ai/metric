@@ -12,7 +12,7 @@
 #include <codecvt>
 #include <random>
 #include <math.h>  
-//#include <ppl.h>
+#include <ppl.h>
 //#include <windows.h>
 
 #include <string.h>
@@ -604,7 +604,7 @@ double runPMQ(int featureIndex, std::vector<Record> dataset_0, std::vector<Recor
 	significantDifferent = (set1 != set0);
 
 	auto t2 = std::chrono::steady_clock::now();
-	std::cout << featureIndex << ": " << significantDifferent << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000 << " s)" << std::endl;
+	std::wcout << featureIndex << ": " << significantDifferent << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000 << " s)" << std::endl;
 
 	return significantDifferent;
 }
@@ -786,14 +786,14 @@ int main()
 
 	//auto total_t1 = std::chrono::steady_clock::now();
 	//for (int featureIndex = 0; featureIndex < features.size(); ++featureIndex)
-	/*auto elapsed = time_call([&]
+	auto elapsed = time_call([&]
 	{
 		concurrency::parallel_for(size_t(0), size_t(features.size()), [&](int featureIndex)
 			{
 				significantDifferents.at(featureIndex) = runPMQ(featureIndex, dataset_0, dataset_1);
 			}
 		);
-	});*/
+	});
 	//auto total_t2 = std::chrono::steady_clock::now();
 	std::wcout << "PMQ ends";
 	std::wcout << '\n';
@@ -805,7 +805,7 @@ int main()
 	significantDifferentsAsRecord.push_back(r);
 	std::vector<std::string> d = {"all"};
 	printRecords(significantDifferentsAsRecord, features, d, 10, 10, 15);
-	//std::wcout << " (Total time = " << elapsed / 1000000 << " s)" << std::endl;
+	std::wcout << " (Total time = " << elapsed / 1000000 << " s)" << std::endl;
 	std::wcout << '\n';
 	std::wcout << '\n';
 
