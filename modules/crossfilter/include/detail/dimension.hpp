@@ -57,6 +57,9 @@ struct  dimension : private impl::dimension_impl<V, T, I, H> {
   dimension(dimension<V, T, I, H> && dim)
       :impl::dimension_impl<V, T, I, H>(std::move(dim)) {  }
 
+  ~dimension() {
+    dispose();
+  }
   dimension & operator = (dimension && dim) {
     if (this == &dim)
       return *this;

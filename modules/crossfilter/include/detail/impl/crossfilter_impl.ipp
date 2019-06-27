@@ -78,6 +78,7 @@ auto filter_impl<T,H>::dimension(G getter)
   auto dimension_filter = add_row_to_filters();
   cross::dimension<decltype(getter(std::declval<record_type_t>())), T, cross::non_iterable, H> dim(this, std::get<0>(dimension_filter), std::get<1>(dimension_filter), getter);
   dim.add(0,data.begin(), data.end());
+  //  dim.init_slots();
   return dim;
 }
 
@@ -88,6 +89,7 @@ auto filter_impl<T,H>::iterable_dimension(G getter) -> cross::dimension<V, T, cr
   auto dimension_filter = add_row_to_filters();
   cross::dimension<V, T, cross::iterable, H> dim(this, std::get<0>(dimension_filter), std::get<1>(dimension_filter), getter);
   dim.add(0, data.begin(), data.end());
+  //  dim.init_slots();
   return dim;
 }
 
@@ -136,6 +138,22 @@ std::vector<T> filter_impl<T,H>::all_filtered(Ts&... dimensions) const {
   // return result;
   return all_filtered_except_mask(mask);
 }
+    template<typename T, typename H>
+    template<typename ...Ts>
+    inline
+    std::vector<T> filter_impl<T,H>::all_filtered_by(Ts&... dimensions) const {
+        std::vector<uint8_t> mask(filters.size());
+        mask_for_dimension(mask, dimensions...);
+        std::vector<T> result;
+
+        for (std::size_t i = 0; i < data.size(); i++) {
+            if (filters.zero_only_mask(i, mask))
+                result.push_back(data[i]);
+        }
+        return result;
+        //return all_filtered_except_mask(mask);
+    }
+
 template<typename T, typename H>
 inline
 std::vector<T> filter_impl<T,H>::all_filtered_except_mask(const std::vector<uint8_t> & mask) const {

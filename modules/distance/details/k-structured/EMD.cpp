@@ -1,3 +1,11 @@
+/*
+This Source Code Form is subject to the terms of the Mozilla Public
+License, v. 2.0. If a copy of the MPL was not distributed with this
+file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+Copyright (c) 2018 Michael Welsch
+*/
+
 #include "EMD.hpp"
 
 /*Fast and Robust Earth Mover's Distances
@@ -126,16 +134,16 @@ max_in_distance_matrix(const Container &C)
 
 /// returns the flow from/to transhipment vertex given flow F which was computed using
 /// FLOW_TYPE_T of kind WITHOUT_TRANSHIPMENT_FLOW.
-            template <typename T>
+            template <typename T, typename C>
             void return_flow_from_to_transhipment_vertex(const std::vector<std::vector<T>> &F,
-                                                         const std::vector<T> &P,
-                                                         const std::vector<T> &Q,
+                                                         const C &P,
+                                                         const C &Q,
                                                          std::vector<T> &flow_from_P_to_transhipment,
                                                          std::vector<T> &flow_from_transhipment_to_Q)
             {
 
-                flow_from_P_to_transhipment = P;
-                flow_from_transhipment_to_Q = Q;
+                flow_from_P_to_transhipment.assign(std::begin(P), std::end(P));
+                flow_from_transhipment_to_Q.assign(std::begin(Q), std::end(Q));
                 for (size_t i = 0; i < P.size(); ++i)
                 {
                     for (size_t j = 0; j < P.size(); ++j)
@@ -150,10 +158,10 @@ max_in_distance_matrix(const Container &C)
 /// Transforms the given flow F which was computed using FLOW_TYPE_T of kind WITHOUT_TRANSHIPMENT_FLOW,
 /// to a flow which can be computed using WITHOUT_EXTRA_MASS_FLOW. If you want the flow to the extra mass,
 /// you can use return_flow_from_to_transhipment_vertex on the returned F.
-            template <typename T>
+            template <typename T, typename C>
             void transform_flow_to_regular(std::vector<std::vector<T>> &F,
-                                           const std::vector<T> &P,
-                                           const std::vector<T> &Q)
+                                           const C &P,
+                                           const C &Q)
             {
             
                 const size_t N = P.size();
@@ -695,8 +703,8 @@ max_in_distance_matrix(const Container &C)
             {
                 typedef typename Container::value_type T;
                 T operator()(
-                    const std::vector<T> &POrig, const std::vector<T> &QOrig,
-                    const std::vector<T> &Pc, const std::vector<T> &Qc, // P, Q, C replaced with Pc, Qc, Cc by Max F
+                    const Container &POrig, const Container &QOrig,
+                    const Container &Pc, const Container &Qc, // P, Q, C replaced with Pc, Qc, Cc by Max F
                     const std::vector<std::vector<T>> &Cc,
                     //T maxC, // disabled by MaxF //now updated inside
                     T extra_mass_penalty,
@@ -725,8 +733,8 @@ max_in_distance_matrix(const Container &C)
                     bool needToSwapFlow= false;
                     if (sum_Q>sum_P) {
                         needToSwapFlow= true;
-                        P= Qc;
-                        Q= Pc;
+                        P.assign(std::begin(Qc), std::end(Qc));
+                        Q.assign(std::begin(Pc), std::end(Pc));
                         // transpose C
                         for (std::size_t i=0; i<N; ++i) {
                             for (std::size_t j=0; j<N; ++j) {
@@ -735,8 +743,8 @@ max_in_distance_matrix(const Container &C)
                         }
                         abs_diff_sum_P_sum_Q= sum_Q-sum_P;
                     } else {
-                        P= Pc;
-                        Q= Qc;
+                        P.assign(std::begin(Pc), std::end(Pc));
+                        Q.assign(std::begin(Qc), std::end(Qc));
                         abs_diff_sum_P_sum_Q= sum_P-sum_Q;
                     }
                     //if (needToSwapFlow) cout << "needToSwapFlow" << endl;
@@ -1144,15 +1152,20 @@ max_in_distance_matrix(const Container &C)
         // }
         template<typename V>
         inline auto
-        EMD<V>::default_ground_matrix(std::size_t rows, std::size_t cols) -> std::vector<std::vector<value_type>> {
-            std::vector<std::vector<value_type>> C(rows, std::vector<value_type>(cols, 0));
+        EMD<V>::default_ground_matrix(std::size_t rows, std::size_t cols) const  -> std::vector<std::vector<value_type>> {
+            std::vector<std::vector<value_type>> matrix(rows, std::vector<value_type>(cols, 0));
+            if(rows == 1 && cols == 1) {
+                matrix[0][0] = 1;
+                return matrix;
+            }
             int t = std::min(rows, cols) / 2; // by default, ground distance saturates at the half of maximum distance possible
+
             for (size_t i = 0; i < rows; i++) {
                 for (size_t j = 0; j < cols; j++) {
-                        C[i][j] = std::min(t, std::abs((int)(i - j))); // non-square matrix is supported here, BUT IS NOT SUPPORTED IN THE EMD IMPL
+                    matrix[i][j] = std::min(t, std::abs((int)(i - j))); // non-square matrix is supported here, BUT IS NOT SUPPORTED IN THE EMD IMPL
                 }
             }
-            return C;
+            return matrix;
         }
         template <typename V>
         template <typename Container>
@@ -1164,6 +1177,10 @@ max_in_distance_matrix(const Container &C)
                                    // typename Container::value_type extra_mass_penalty,
                                    // std::vector<std::vector<typename Container::value_type>> *F) const
         {
+            if(!is_C_initialized) {
+                C = default_ground_matrix(Pc.size(), Pc.size());
+                is_C_initialized = true;
+            }
             //typedef typename Container::value_type T;
             using T = value_type;
             const EMD_details::FLOW_TYPE_T FLOW_TYPE = EMD_details::NO_FLOW;
@@ -1179,8 +1196,8 @@ max_in_distance_matrix(const Container &C)
 
             assert((F != NULL) || (FLOW_TYPE == EMD_details::NO_FLOW));
 
-            std::vector<T> P = Pc;
-            std::vector<T> Q = Qc;
+            std::vector<T> P(std::begin(Pc), std::end(Pc));
+            std::vector<T> Q(std::begin(Qc), std::end(Qc));
 
             // Assuming metric property we can pre-flow 0-cost edges
             {
@@ -1229,7 +1246,7 @@ max_in_distance_matrix(const Container &C)
 //    T abs_diff_sum_P_sum_Q = 0; // temporary added by MAx F // TODO remove
 
 //    return EMD_details::emd_impl<std::vector<T>, FLOW_TYPE>()(Pc, Qc, P, Q, C, maxC, extra_mass_penalty, F, abs_diff_sum_P_sum_Q);
-            return EMD_details::emd_impl<std::vector<T>, FLOW_TYPE>()(Pc, Qc, P, Q, C, extra_mass_penalty, F); // turned to original state by Max F
+            return EMD_details::emd_impl<Container, FLOW_TYPE>()(Pc, Qc, P, Q, C, extra_mass_penalty, F); // turned to original state by Max F
 
         }; // EMD
 

@@ -163,6 +163,15 @@ class BitArray {
     }
     return true;
   }
+    bool zero_only_mask(std::size_t index, const std::vector<uint8_t> & mask) const {
+        //    read_lock_t lk(mutex);
+        for (std::size_t i = 0; i < bits.size(); i++) {
+            auto v = bits[i][index];
+            if (v != 0 && (v & mask[i]) != 0)
+                return false;
+        }
+        return true;
+    }
 
   bool only_except(std::size_t index, std::size_t offset1, int bitIndex1, std::size_t offset2, int bitIndex2) {
     //    read_lock_t lk(mutex);

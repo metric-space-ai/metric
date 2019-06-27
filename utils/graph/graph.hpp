@@ -3,7 +3,7 @@ This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
 file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-Signal Empowering Technology ®Michael Welsch
+Copyright (c) 2019 Michael Welsch
 */
 
 #ifndef _METRIC_GRAPH_HPP
@@ -11,7 +11,7 @@ Signal Empowering Technology ®Michael Welsch
 
 
 //#include "Blaze.h"
-#include "blaze/Blaze.h"
+#include "../../3rdparty/blaze/Blaze.h"
 
 #include <stack>
 #include <type_traits>

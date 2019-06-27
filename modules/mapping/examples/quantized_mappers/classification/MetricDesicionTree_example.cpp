@@ -1,3 +1,10 @@
+/*
+This Source Code Form is subject to the terms of the Mozilla Public
+License, v. 2.0. If a copy of the MPL was not distributed with this
+file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+Copyright (c) 2019 Max Filippov
+*/
 #include <iostream>
 #include <vector>
 #include <deque>
@@ -8,7 +15,7 @@
 #include "../details/classification/details/metric_dt_classifier.hpp"
 
 #include "assets/helpers.cpp" // csv reader
-#include "../../distance/metric_distance.cpp"
+#include "../../distance/metric_distance.hpp"
 
 
 using namespace std;

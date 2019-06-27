@@ -1,5 +1,11 @@
-/* This Source Code Form is subject to the terms of the PANDA GmbH
-License. You are not allowed to use or edit the code without license. */
+/*
+This Source Code Form is subject to the terms of the Mozilla Public
+License, v. 2.0. If a copy of the MPL was not distributed with this
+file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+Copyright (c) 2019 Michael Welsch
+*/
+
 
 #include <type_traits>
 #include <algorithm>
@@ -13,3 +19,4 @@ License. You are not allowed to use or edit the code without license. */
 #include "details/k-random/Edit.hpp"
 
 #include "details/k-related/L1.hpp"
+#include "details/k-related/entropy.hpp"

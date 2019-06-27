@@ -35,7 +35,7 @@ static inline double powi(double base, int times)
 }
 #define INF HUGE_VAL
 #define TAU 1e-12
-#define Malloc(type,n) (type *)malloc((n)*sizeof(type))
+#define MallocSVM(type,n) (type *)malloc((n)*sizeof(type))
 
 static void print_string_stdout(const char *s)
 {
@@ -1647,7 +1647,7 @@ static decision_function svm_train_one(
 	const svm_problem *prob, const svm_parameter *param,
 	double Cp, double Cn)
 {
-	double *alpha = Malloc(double,prob->l);
+	double *alpha = MallocSVM(double,prob->l);
 	Solver::SolutionInfo si;
 	switch(param->svm_type)
 	{
@@ -1718,7 +1718,7 @@ static void sigmoid_train(
 	double eps=1e-5;
 	double hiTarget=(prior1+1.0)/(prior1+2.0);
 	double loTarget=1/(prior0+2.0);
-	double *t=Malloc(double,l);
+	double *t=MallocSVM(double,l);
 	double fApB,p,q,h11,h22,h21,g1,g2,det,dA,dB,gd,stepsize;
 	double newA,newB,newf,d1,d2;
 	int iter; 
@@ -1829,14 +1829,14 @@ static void multiclass_probability(int k, double **r, double *p)
 {
 	int t,j;
 	int iter = 0, max_iter=max(100,k);
-	double **Q=Malloc(double *,k);
-	double *Qp=Malloc(double,k);
+	double **Q=MallocSVM(double *,k);
+	double *Qp=MallocSVM(double,k);
 	double pQp, eps=0.005/k;
 	
 	for (t=0;t<k;t++)
 	{
 		p[t]=1.0/k;  // Valid if k = 1
-		Q[t]=Malloc(double,k);
+		Q[t]=MallocSVM(double,k);
 		Q[t][t]=0;
 		for (j=0;j<t;j++)
 		{
@@ -1895,8 +1895,8 @@ static void svm_binary_svc_probability(
 {
 	int i;
 	int nr_fold = 5;
-	int *perm = Malloc(int,prob->l);
-	double *dec_values = Malloc(double,prob->l);
+	int *perm = MallocSVM(int,prob->l);
+	double *dec_values = MallocSVM(double,prob->l);
 
 	// random shuffle
 	for(i=0;i<prob->l;i++) perm[i]=i;
@@ -1913,8 +1913,8 @@ static void svm_binary_svc_probability(
 		struct svm_problem subprob;
 
 		subprob.l = prob->l-(end-begin);
-		subprob.x = Malloc(struct svm_node*,subprob.l);
-		subprob.y = Malloc(double,subprob.l);
+		subprob.x = MallocSVM(struct svm_node*,subprob.l);
+		subprob.y = MallocSVM(double,subprob.l);
 			
 		k=0;
 		for(j=0;j<begin;j++)
@@ -1951,8 +1951,8 @@ static void svm_binary_svc_probability(
 			subparam.probability=0;
 			subparam.C=1.0;
 			subparam.nr_weight=2;
-			subparam.weight_label = Malloc(int,2);
-			subparam.weight = Malloc(double,2);
+			subparam.weight_label = MallocSVM(int,2);
+			subparam.weight = MallocSVM(double,2);
 			subparam.weight_label[0]=+1;
 			subparam.weight_label[1]=-1;
 			subparam.weight[0]=Cp;
@@ -1981,7 +1981,7 @@ static double svm_svr_probability(
 {
 	int i;
 	int nr_fold = 5;
-	double *ymv = Malloc(double,prob->l);
+	double *ymv = MallocSVM(double,prob->l);
 	double mae = 0;
 
 	svm_parameter newparam = *param;
@@ -2015,9 +2015,9 @@ static void svm_group_classes(const svm_problem *prob, int *nr_class_ret, int **
 	int l = prob->l;
 	int max_nr_class = 16;
 	int nr_class = 0;
-	int *label = Malloc(int,max_nr_class);
-	int *count = Malloc(int,max_nr_class);
-	int *data_label = Malloc(int,l);	
+	int *label = MallocSVM(int,max_nr_class);
+	int *count = MallocSVM(int,max_nr_class);
+	int *data_label = MallocSVM(int,l);	
 	int i;
 
 	for(i=0;i<l;i++)
@@ -2047,7 +2047,7 @@ static void svm_group_classes(const svm_problem *prob, int *nr_class_ret, int **
 		}
 	}
 
-	int *start = Malloc(int,nr_class);
+	int *start = MallocSVM(int,nr_class);
 	start[0] = 0;
 	for(i=1;i<nr_class;i++)
 		start[i] = start[i-1]+count[i-1];
@@ -2072,7 +2072,7 @@ static void svm_group_classes(const svm_problem *prob, int *nr_class_ret, int **
 //
 svm_model *svm_train(const svm_problem *prob, const svm_parameter *param)
 {
-	svm_model *model = Malloc(svm_model,1);
+	svm_model *model = MallocSVM(svm_model,1);
 	model->param = *param;
 	model->free_sv = 0;	// XXX
 
@@ -2085,18 +2085,18 @@ svm_model *svm_train(const svm_problem *prob, const svm_parameter *param)
 		model->label = NULL;
 		model->nSV = NULL;
 		model->probA = NULL; model->probB = NULL;
-		model->sv_coef = Malloc(double *,1);
+		model->sv_coef = MallocSVM(double *,1);
 
 		if(param->probability && 
 		   (param->svm_type == EPSILON_SVR ||
 		    param->svm_type == NU_SVR))
 		{
-			model->probA = Malloc(double,1);
+			model->probA = MallocSVM(double,1);
 			model->probA[0] = svm_svr_probability(prob,param);
 		}
 
 		decision_function f = svm_train_one(prob,param,0,0);
-		model->rho = Malloc(double,1);
+		model->rho = MallocSVM(double,1);
 		model->rho[0] = f.rho;
 
 		int nSV = 0;
@@ -2104,8 +2104,8 @@ svm_model *svm_train(const svm_problem *prob, const svm_parameter *param)
 		for(i=0;i<prob->l;i++)
 			if(fabs(f.alpha[i]) > 0) ++nSV;
 		model->l = nSV;
-		model->SV = Malloc(svm_node *,nSV);
-		model->sv_coef[0] = Malloc(double,nSV);
+		model->SV = MallocSVM(svm_node *,nSV);
+		model->sv_coef[0] = MallocSVM(double,nSV);
 		int j = 0;
 		for(i=0;i<prob->l;i++)
 			if(fabs(f.alpha[i]) > 0)
@@ -2125,21 +2125,21 @@ svm_model *svm_train(const svm_problem *prob, const svm_parameter *param)
 		int *label = NULL;
 		int *start = NULL;
 		int *count = NULL;
-		int *perm = Malloc(int,l);
+		int *perm = MallocSVM(int,l);
 
 		// group training data of the same class
 		svm_group_classes(prob,&nr_class,&label,&start,&count,perm);
 		if(nr_class == 1) 
 			info("WARNING: training data in only one class. See README for details.\n");
 		
-		svm_node **x = Malloc(svm_node *,l);
+		svm_node **x = MallocSVM(svm_node *,l);
 		int i;
 		for(i=0;i<l;i++)
 			x[i] = prob->x[perm[i]];
 
 		// calculate weighted C
 
-		double *weighted_C = Malloc(double, nr_class);
+		double *weighted_C = MallocSVM(double, nr_class);
 		for(i=0;i<nr_class;i++)
 			weighted_C[i] = param->C;
 		for(i=0;i<param->nr_weight;i++)
@@ -2156,16 +2156,16 @@ svm_model *svm_train(const svm_problem *prob, const svm_parameter *param)
 
 		// train k*(k-1)/2 models
 		
-		bool *nonzero = Malloc(bool,l);
+		bool *nonzero = MallocSVM(bool,l);
 		for(i=0;i<l;i++)
 			nonzero[i] = false;
-		decision_function *f = Malloc(decision_function,nr_class*(nr_class-1)/2);
+		decision_function *f = MallocSVM(decision_function,nr_class*(nr_class-1)/2);
 
 		double *probA=NULL,*probB=NULL;
 		if (param->probability)
 		{
-			probA=Malloc(double,nr_class*(nr_class-1)/2);
-			probB=Malloc(double,nr_class*(nr_class-1)/2);
+			probA=MallocSVM(double,nr_class*(nr_class-1)/2);
+			probB=MallocSVM(double,nr_class*(nr_class-1)/2);
 		}
 
 		int p = 0;
@@ -2176,8 +2176,8 @@ svm_model *svm_train(const svm_problem *prob, const svm_parameter *param)
 				int si = start[i], sj = start[j];
 				int ci = count[i], cj = count[j];
 				sub_prob.l = ci+cj;
-				sub_prob.x = Malloc(svm_node *,sub_prob.l);
-				sub_prob.y = Malloc(double,sub_prob.l);
+				sub_prob.x = MallocSVM(svm_node *,sub_prob.l);
+				sub_prob.y = MallocSVM(double,sub_prob.l);
 				int k;
 				for(k=0;k<ci;k++)
 				{
@@ -2209,18 +2209,18 @@ svm_model *svm_train(const svm_problem *prob, const svm_parameter *param)
 
 		model->nr_class = nr_class;
 		
-		model->label = Malloc(int,nr_class);
+		model->label = MallocSVM(int,nr_class);
 		for(i=0;i<nr_class;i++)
 			model->label[i] = label[i];
 		
-		model->rho = Malloc(double,nr_class*(nr_class-1)/2);
+		model->rho = MallocSVM(double,nr_class*(nr_class-1)/2);
 		for(i=0;i<nr_class*(nr_class-1)/2;i++)
 			model->rho[i] = f[i].rho;
 
 		if(param->probability)
 		{
-			model->probA = Malloc(double,nr_class*(nr_class-1)/2);
-			model->probB = Malloc(double,nr_class*(nr_class-1)/2);
+			model->probA = MallocSVM(double,nr_class*(nr_class-1)/2);
+			model->probB = MallocSVM(double,nr_class*(nr_class-1)/2);
 			for(i=0;i<nr_class*(nr_class-1)/2;i++)
 			{
 				model->probA[i] = probA[i];
@@ -2234,8 +2234,8 @@ svm_model *svm_train(const svm_problem *prob, const svm_parameter *param)
 		}
 
 		int total_sv = 0;
-		int *nz_count = Malloc(int,nr_class);
-		model->nSV = Malloc(int,nr_class);
+		int *nz_count = MallocSVM(int,nr_class);
+		model->nSV = MallocSVM(int,nr_class);
 		for(i=0;i<nr_class;i++)
 		{
 			int nSV = 0;
@@ -2252,19 +2252,19 @@ svm_model *svm_train(const svm_problem *prob, const svm_parameter *param)
 		info("Total nSV = %d\n",total_sv);
 
 		model->l = total_sv;
-		model->SV = Malloc(svm_node *,total_sv);
+		model->SV = MallocSVM(svm_node *,total_sv);
 		p = 0;
 		for(i=0;i<l;i++)
 			if(nonzero[i]) model->SV[p++] = x[i];
 
-		int *nz_start = Malloc(int,nr_class);
+		int *nz_start = MallocSVM(int,nr_class);
 		nz_start[0] = 0;
 		for(i=1;i<nr_class;i++)
 			nz_start[i] = nz_start[i-1]+nz_count[i-1];
 
-		model->sv_coef = Malloc(double *,nr_class-1);
+		model->sv_coef = MallocSVM(double *,nr_class-1);
 		for(i=0;i<nr_class-1;i++)
-			model->sv_coef[i] = Malloc(double,total_sv);
+			model->sv_coef[i] = MallocSVM(double,total_sv);
 
 		p = 0;
 		for(i=0;i<nr_class;i++)
@@ -2313,9 +2313,9 @@ svm_model *svm_train(const svm_problem *prob, const svm_parameter *param)
 void svm_cross_validation(const svm_problem *prob, const svm_parameter *param, int nr_fold, double *target)
 {
 	int i;
-	int *fold_start = Malloc(int,nr_fold+1);
+	int *fold_start = MallocSVM(int,nr_fold+1);
 	int l = prob->l;
-	int *perm = Malloc(int,l);
+	int *perm = MallocSVM(int,l);
 	int nr_class;
 
 	// stratified cv may not give leave-one-out rate
@@ -2329,9 +2329,9 @@ void svm_cross_validation(const svm_problem *prob, const svm_parameter *param, i
 		svm_group_classes(prob,&nr_class,&label,&start,&count,perm);
 
 		// random shuffle and then data grouped by fold using the array perm
-		int *fold_count = Malloc(int,nr_fold);
+		int *fold_count = MallocSVM(int,nr_fold);
 		int c;
-		int *index = Malloc(int,l);
+		int *index = MallocSVM(int,l);
 		for(i=0;i<l;i++)
 			index[i]=perm[i];
 		for (c=0; c<nr_class; c++) 
@@ -2389,8 +2389,8 @@ void svm_cross_validation(const svm_problem *prob, const svm_parameter *param, i
 		struct svm_problem subprob;
 
 		subprob.l = l-(end-begin);
-		subprob.x = Malloc(struct svm_node*,subprob.l);
-		subprob.y = Malloc(double,subprob.l);
+		subprob.x = MallocSVM(struct svm_node*,subprob.l);
+		subprob.y = MallocSVM(double,subprob.l);
 			
 		k=0;
 		for(j=0;j<begin;j++)
@@ -2409,7 +2409,7 @@ void svm_cross_validation(const svm_problem *prob, const svm_parameter *param, i
 		if(param->probability && 
 		   (param->svm_type == C_SVC || param->svm_type == NU_SVC))
 		{
-			double *prob_estimates=Malloc(double,svm_get_nr_class(submodel));
+			double *prob_estimates=MallocSVM(double,svm_get_nr_class(submodel));
 			for(j=begin;j<end;j++)
 				target[perm[j]] = svm_predict_probability(submodel,prob->x[perm[j]],prob_estimates);
 			free(prob_estimates);			
@@ -2479,16 +2479,16 @@ double svm_predict_values(const svm_model *model, const svm_node *x, double* dec
 		int nr_class = model->nr_class;
 		int l = model->l;
 		
-		double *kvalue = Malloc(double,l);
+		double *kvalue = MallocSVM(double,l);
 		for(i=0;i<l;i++)
 			kvalue[i] = Kernel::k_function(x,model->SV[i],model->param);
 
-		int *start = Malloc(int,nr_class);
+		int *start = MallocSVM(int,nr_class);
 		start[0] = 0;
 		for(i=1;i<nr_class;i++)
 			start[i] = start[i-1]+model->nSV[i-1];
 
-		int *vote = Malloc(int,nr_class);
+		int *vote = MallocSVM(int,nr_class);
 		for(i=0;i<nr_class;i++)
 			vote[i] = 0;
 
@@ -2538,9 +2538,9 @@ double svm_predict(const svm_model *model, const svm_node *x)
 	if(model->param.svm_type == ONE_CLASS ||
 	   model->param.svm_type == EPSILON_SVR ||
 	   model->param.svm_type == NU_SVR)
-		dec_values = Malloc(double, 1);
+		dec_values = MallocSVM(double, 1);
 	else 
-		dec_values = Malloc(double, nr_class*(nr_class-1)/2);
+		dec_values = MallocSVM(double, nr_class*(nr_class-1)/2);
 	double pred_result = svm_predict_values(model, x, dec_values);
 	free(dec_values);
 	return pred_result;
@@ -2554,13 +2554,13 @@ double svm_predict_probability(
 	{
 		int i;
 		int nr_class = model->nr_class;
-		double *dec_values = Malloc(double, nr_class*(nr_class-1)/2);
+		double *dec_values = MallocSVM(double, nr_class*(nr_class-1)/2);
 		svm_predict_values(model, x, dec_values);
 
 		double min_prob=1e-7;
-		double **pairwise_prob=Malloc(double *,nr_class);
+		double **pairwise_prob=MallocSVM(double *,nr_class);
 		for(i=0;i<nr_class;i++)
-			pairwise_prob[i]=Malloc(double,nr_class);
+			pairwise_prob[i]=MallocSVM(double,nr_class);
 		int k=0;
 		for(i=0;i<nr_class;i++)
 			for(int j=i+1;j<nr_class;j++)
@@ -2710,7 +2710,7 @@ svm_model *svm_load_model(const char *model_file_name)
 	
 	// read parameters
 
-	svm_model *model = Malloc(svm_model,1);
+	svm_model *model = MallocSVM(svm_model,1);
 	svm_parameter& param = model->param;
 	model->rho = NULL;
 	model->probA = NULL;
@@ -2780,35 +2780,35 @@ svm_model *svm_load_model(const char *model_file_name)
 		else if(strcmp(cmd,"rho")==0)
 		{
 			int n = model->nr_class * (model->nr_class-1)/2;
-			model->rho = Malloc(double,n);
+			model->rho = MallocSVM(double,n);
 			for(int i=0;i<n;i++)
 				fscanf(fp,"%lf",&model->rho[i]);
 		}
 		else if(strcmp(cmd,"label")==0)
 		{
 			int n = model->nr_class;
-			model->label = Malloc(int,n);
+			model->label = MallocSVM(int,n);
 			for(int i=0;i<n;i++)
 				fscanf(fp,"%d",&model->label[i]);
 		}
 		else if(strcmp(cmd,"probA")==0)
 		{
 			int n = model->nr_class * (model->nr_class-1)/2;
-			model->probA = Malloc(double,n);
+			model->probA = MallocSVM(double,n);
 			for(int i=0;i<n;i++)
 				fscanf(fp,"%lf",&model->probA[i]);
 		}
 		else if(strcmp(cmd,"probB")==0)
 		{
 			int n = model->nr_class * (model->nr_class-1)/2;
-			model->probB = Malloc(double,n);
+			model->probB = MallocSVM(double,n);
 			for(int i=0;i<n;i++)
 				fscanf(fp,"%lf",&model->probB[i]);
 		}
 		else if(strcmp(cmd,"nr_sv")==0)
 		{
 			int n = model->nr_class;
-			model->nSV = Malloc(int,n);
+			model->nSV = MallocSVM(int,n);
 			for(int i=0;i<n;i++)
 				fscanf(fp,"%d",&model->nSV[i]);
 		}
@@ -2838,7 +2838,7 @@ svm_model *svm_load_model(const char *model_file_name)
 	long pos = ftell(fp);
 
 	max_line_len = 1024;
-	line = Malloc(char,max_line_len);
+	line = MallocSVM(char,max_line_len);
 	char *p,*endptr,*idx,*val;
 
 	while(readline(fp)!=NULL)
@@ -2858,13 +2858,13 @@ svm_model *svm_load_model(const char *model_file_name)
 
 	int m = model->nr_class - 1;
 	int l = model->l;
-	model->sv_coef = Malloc(double *,m);
+	model->sv_coef = MallocSVM(double *,m);
 	int i;
 	for(i=0;i<m;i++)
-		model->sv_coef[i] = Malloc(double,l);
-	model->SV = Malloc(svm_node*,l);
+		model->sv_coef[i] = MallocSVM(double,l);
+	model->SV = MallocSVM(svm_node*,l);
 	svm_node *x_space = NULL;
-	if(l>0) x_space = Malloc(svm_node,elements);
+	if(l>0) x_space = MallocSVM(svm_node,elements);
 
 	int j=0;
 	for(i=0;i<l;i++)
@@ -3023,8 +3023,8 @@ const char *svm_check_parameter(const svm_problem *prob, const svm_parameter *pa
 		int l = prob->l;
 		int max_nr_class = 16;
 		int nr_class = 0;
-		int *label = Malloc(int,max_nr_class);
-		int *count = Malloc(int,max_nr_class);
+		int *label = MallocSVM(int,max_nr_class);
+		int *count = MallocSVM(int,max_nr_class);
 
 		int i;
 		for(i=0;i<l;i++)

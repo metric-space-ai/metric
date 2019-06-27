@@ -6,7 +6,9 @@
 
 #include <numeric>
 #include <unordered_map>
-#include "../../detail/crossfilter.hpp"
+#include "../crossfilter.hpp"
+#include "../dimension.hpp"
+#include "../feature.hpp"
 //#define USE_STD_SORT
 #ifndef USE_STD_SORT
 #include "../../detail/impl/dual_pivot_sort2.hpp"
@@ -23,23 +25,7 @@ dimension_impl<V, T, I, H>::dimension_impl(cross::impl::filter_impl<T,H> *cf, st
 
   dimension_offset = offset;
   dimension_bit_index = bit_num;
-  slot_add =  [this](std::size_t index, data_iterator begin, data_iterator end) {
-                this->add(index,begin, end);
-              };
-
-  slot_remove = [this] (const std::vector<int64_t> &re_index) {
-                  this->remove_data(re_index);
-                };
-  slot_post_add = [this](std::size_t new_data_size) {
-                    add_signal(new_values, new_indexes, old_data_size, new_data_size);
-                    new_values.clear();
-                  };
-
-
-  connection_add = crossfilter->connect_add_slot(slot_add);
-  connection_remove = crossfilter->connect_remove_slot(slot_remove);
-  connection_post_add = crossfilter->connect_post_add_slot(slot_post_add);
-
+  init_slots();
   refilter = [](const std::vector<value_type_t> &val) {
                return std::make_tuple<std::size_t, std::size_t>(0, val.size());
              };
@@ -67,7 +53,9 @@ void  dimension_impl<V, T, I, H>::dispose() {
   dispose_dimension_signal();
   connection_add.disconnect();
   connection_remove.disconnect();
-  filter_all();
+  connection_post_add.disconnect();
+  if(crossfilter != nullptr)
+      filter_all();
 }
 
 template<typename V, typename T, typename I, typename H>

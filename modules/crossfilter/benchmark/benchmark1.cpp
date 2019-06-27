@@ -1,10 +1,19 @@
+/*
+  This Source Code Form is subject to the terms of the Mozilla Public
+  License, v. 2.0. If a copy of the MPL was not distributed with this
+  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+  Copyright (c) 2019 Panda Team
+*/
 #include <chrono>
 #include <functional>
 #include <cstdlib>
 #include <random>
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/date_time/gregorian/greg_date.hpp>
-#include "crossfilter.hpp"
+#include "detail/crossfilter.hpp"
+#include "detail/dimension.hpp"
+#include "detail/feature.hpp"
 // #include "spdlog/spdlog.h"
 // #include "spdlog/async.h"
 // #include "spdlog/sinks/stdout_sinks.h"

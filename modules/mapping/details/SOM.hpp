@@ -1,3 +1,12 @@
+#pragma once
+/*
+This Source Code Form is subject to the terms of the Mozilla Public
+License, v. 2.0. If a copy of the MPL was not distributed with this
+file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+Copyright (c) 2019 Panda Team
+*/
+
 /*
 for specific setting check:
 Appropriate Learning Rate and Neighborhood Function of Self-organizing Map (SOM) ...
@@ -6,7 +15,7 @@ W. Natita, W. Wiboonsak, and S. Dusadee
 */
 
 
-#pragma once
+
 
 
 #include <assert.h>
@@ -22,7 +31,7 @@ W. Natita, W. Wiboonsak, and S. Dusadee
 #include <numeric>
 
 #include "metric.tpp"
-#include "utils/graph/graph.hpp"
+#include "../../../utils/graph/graph.hpp"
 
 #ifndef M_PI
 #define M_PI (3.14159265358979323846)

@@ -1,5 +1,12 @@
 #ifndef DIMENSION_HPP
 #define DIMENSION_HPP
+/*
+This Source Code Form is subject to the terms of the Mozilla Public
+License, v. 2.0. If a copy of the MPL was not distributed with this
+file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+Copyright (c) 2018 Panda Team
+*/
 
 #include <vector>
 #include <variant> // for DimensionSet
@@ -16,7 +23,6 @@ namespace metric
 
 
     template <
-        typename Record,
         typename MetricType,
         typename Accessor
         >
@@ -38,8 +44,8 @@ namespace metric
         template<typename A, typename M>
         Dimension(A accessor_, const M & m): DistanceFunctor(m),
                                              accessor(accessor_) {}
-
-        ReturnValueType get_distance(Record r1, Record r2)
+	template<typename Record>
+        ReturnValueType get_distance(const Record &r1, const Record &r2)
         {
             return DistanceFunctor(accessor(r1), accessor(r2));
         }
@@ -78,8 +84,8 @@ namespace metric
     };
 
     template<typename Accessor, typename Metric>
-    inline auto make_dimension(Metric && m, Accessor a) -> Dimension<typename first_argument<Accessor>::type,Metric,Accessor> {
-        return Dimension<typename first_argument<Accessor>::type,Metric,Accessor>(a,m);
+    inline auto make_dimension(Metric && m, Accessor a) -> Dimension<Metric,Accessor> {
+        return Dimension<Metric,Accessor>(a,m);
     }
 
     // template<typename Accessor, typename Metric>

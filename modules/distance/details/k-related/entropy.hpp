@@ -1,3 +1,13 @@
+#ifndef _METRIC_DISTANCE_ENTROPY_HPP
+#define _METRIC_DISTANCE_ENTROPY_HPP
+/*
+This Source Code Form is subject to the terms of the Mozilla Public
+License, v. 2.0. If a copy of the MPL was not distributed with this
+file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+Copyright (c) 2019 Panda Team
+*/
+
 #include <vector>
 #include <random>
 #include <cmath>
@@ -9,9 +19,9 @@
 #include <boost/functional/hash.hpp>
 
 //#include "3dparty/metric_space/details/tree.hpp"
-#include "space/details/tree.hpp"
+#include "../../../space/details/tree.hpp"
 //#include "3dparty/metric_distance/details/Standards.hpp"
-#include "distance/details/k-related/Standards.hpp"
+#include "../../../distance/details/k-related/Standards.hpp"
 //#include "3dparty/metric_distance/details/chebyshev.hpp"
 #include "chebyshev.hpp"
 
@@ -248,3 +258,4 @@ T mutualInformation(const std::vector<std::vector<T>> & Xc,
 // }
 // return abs(entropyEstimate)
 //                     }
+#endif

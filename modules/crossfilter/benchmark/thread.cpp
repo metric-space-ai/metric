@@ -1,3 +1,10 @@
+/*
+  This Source Code Form is subject to the terms of the Mozilla Public
+  License, v. 2.0. If a copy of the MPL was not distributed with this
+  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+  Copyright (c) 2019 Panda Team
+*/
 #include <type_traits>
 #include <chrono>
 #include <condition_variable>
@@ -12,8 +19,10 @@
 // #include "spdlog/sinks/stdout_sinks.h"
 // #include "spdlog/sinks/basic_file_sink.h"
 // #include "spdlog/sinks/daily_file_sink.h"
-#include "../include/crossfilter.hpp"
-
+//#include "../include/crossfilter.hpp"
+#include "detail/crossfilter.hpp"
+#include "detail/dimension.hpp"
+#include "detail/feature.hpp"
 
 template<std::intmax_t resolution>
 std::ostream &operator<<(
