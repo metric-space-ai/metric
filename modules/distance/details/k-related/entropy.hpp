@@ -140,7 +140,7 @@ void combine (const std::vector<std::vector<T>> & X, const std::vector<std::vect
         }
     }
 }
-template<typename T, typename Metric>
+template<typename T, typename Metric = metric::distance::Chebyshev<T>>
 T mutualInformation(const std::vector<std::vector<T>> & Xc,
                     const std::vector<std::vector<T>> & Yc,
                     int k = 3,  Metric metric = Metric(), int version = 2) {
@@ -165,23 +165,25 @@ T mutualInformation(const std::vector<std::vector<T>> & Xc,
     // }
     metric_space::Tree<std::vector<T>, Metric> tree(XY,-1,metric);
     auto entropyEstimate = boost::math::digamma(k) + boost::math::digamma(N);
-    std::cout << "entropyEstimate1=" << entropyEstimate << std::endl;
+    //std::cout << "entropyEstimate1=" << entropyEstimate << std::endl;
     if(version == 2) {
         entropyEstimate -= 1/static_cast<double>(k);
     }
-    std::cout << "entropyEstimate2=" << entropyEstimate << std::endl;
+    //std::cout << "entropyEstimate2=" << entropyEstimate << std::endl;
     metric_space::Tree<std::vector<T>, Metric> xTree(X,-1,metric);
-    metric_space::Tree<std::vector<T>, Metric> yTree(Y,-1,metric);
+//    metric_space::Tree<std::vector<T>, Metric> yTree(Y,-1,metric); // never used, disabled by Max F
     for(std::size_t i = 0; i < N; i++) {
         auto res = tree.knn(XY[i],k+1);
         auto neighbor = res.back().first;
         auto dist = res.back().second;
         std::size_t nx = 0;
         if(version == 1) {
-            nx = xTree.rnn(X[i],dist).size();
+            auto dist_eps = std::nextafter(dist, std::numeric_limits<decltype(dist)>::max()); // this is instead of replacing < with <= in Tree // added by Max F in order to match Julia code logic without updating Tree
+            nx = xTree.rnn(X[i], dist_eps).size(); // replaced dist by dist_eps by Max F
         } else if(version == 2) {
             auto ex = metric(X[neighbor->ID],X[i]);
-            nx = xTree.rnn(X[i],ex).size();
+            auto ex_eps = std::nextafter(ex, std::numeric_limits<decltype(ex)>::max()); // this it to include the most distant point into the sphere // added by Max F in order to match Julia code logic without updating Tree
+            nx = xTree.rnn(X[i], ex_eps).size(); // replaced ex by ex_eps by Max F
             //            std::cout << "X[neighbor]="; print_vec(X[neighbor->ID]); std::cout << std::endl;
             //            std::cout << "ex=" << ex << std::endl;
             //            nx = nx1.size();
@@ -198,15 +200,18 @@ T mutualInformation(const std::vector<std::vector<T>> & Xc,
     }
     return entropyEstimate;
 }
-template<typename T>
-T mutualInformation(const std::vector<std::vector<T>> & Xc,
-                    const std::vector<std::vector<T>> & Yc, T logbase = 2.0) {
-    std::vector<std::vector<T>> XY;
-    combine(Xc,Yc,XY);
-    using Cheb = metric::distance::Chebyshev<T>;
-    return entropy<T,Cheb>(Xc, 3, logbase, Cheb()) + entropy<T,Cheb>(Yc, 3, logbase, Cheb())
-        - entropy<T, Cheb>(XY, 3, logbase, Cheb());
-}
+
+
+// temporarily disabled by Max F. TODO add check for integer type and enable
+//template<typename T>
+//T mutualInformation(const std::vector<std::vector<T>> & Xc,
+//                    const std::vector<std::vector<T>> & Yc, T logbase = 2.0) {
+//    std::vector<std::vector<T>> XY;
+//    combine(Xc,Yc,XY);
+//    using Cheb = metric::distance::Chebyshev<T>;
+//    return entropy<T,Cheb>(Xc, 3, logbase, Cheb()) + entropy<T,Cheb>(Yc, 3, logbase, Cheb())
+//        - entropy<T, Cheb>(XY, 3, logbase, Cheb());
+//}
 
 
 // template<typename T, typename Metric>

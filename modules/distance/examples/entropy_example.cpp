@@ -22,9 +22,10 @@
 
 
 int main() {
-    std::vector<std::vector<double>> v = {{1,1}, {2,2}, {3,3}, {5,5}};
+    std::vector<std::vector<double>> v = {{5,5}, {2,2}, {3,3}, {5,5}};
 //    std::vector<std::vector<double>> v = {{1,1}, {2,2}, {3,3}, {5}};
 //    std::vector<std::vector<double>> v = {{1}, {2}, {3}, {5}};
+//    std::vector<std::vector<double>> v = {{1}, {2}, {3}, {2}};
 
     //auto e = entropy<double,metric::distance::Euclidian<double>>(v);
     auto e = entropy<double, metric::distance::Chebyshev<double>>(v, 3, 2, metric::distance::Chebyshev<double>());
@@ -46,28 +47,47 @@ int main() {
     std::cout << "Manhatten: " << e << std::endl;
 
 
-    return 0; // TODO remove
-
     std::vector<std::vector<double>> v1 = {{5,5}, {2,2}, {3,3}, {5,5}};
-    std::vector<std::vector<double>> v2 = {{5,5}, {2,2}, {3,3}, {5,5}};
+    std::vector<std::vector<double>> v2 = {{5,5}, {2,2}, {3,3}, {1,1}};
 //    std::vector<std::vector<double>> v1 = {{5,5}, {2,2}, {3,3}, {5}};
 //    std::vector<std::vector<double>> v2 = {{5,5}, {2,2}, {3,3}};
 
 //    std::vector<std::vector<double>> v1 = {{5}, {2}, {3}, {5}};
 //    std::vector<std::vector<double>> v2 = {{5}, {2}, {3}, {5}};
 
-    auto pe = pluginEstimator(v1);
+//    auto pe = pluginEstimator(v1);
+    auto pe = pluginEstimator(v);
     for(auto & d : pe.first) {
         std::cout << d << ", ";
     }
     std::cout << std::endl;
 
-    return 0; // TODO remove
 
+    std::cout << "\n";
 
-    auto e1 = mutualInformation<double, metric::distance::Chebyshev<double>>(v1,v2);
+    auto e1 = mutualInformation<double, metric::distance::Chebyshev<double>>(v1,v1);
     std::cout<< e1 << std::endl;
-
+    std::cout<< mutualInformation<double, metric::distance::Chebyshev<double>>(v1, v1, 3, metric::distance::Chebyshev<double>(), 1) << std::endl;
+    std::cout << mutualInformation<double>(v2, v2) << std::endl;
+    std::cout<< mutualInformation<double, metric::distance::Chebyshev<double>>(v2, v2, 3, metric::distance::Chebyshev<double>(), 1) << std::endl;
     std::cout << mutualInformation<double>(v1, v2) << std::endl;
+    std::cout<< mutualInformation<double, metric::distance::Chebyshev<double>>(v1, v2, 3, metric::distance::Chebyshev<double>(), 1) << std::endl;
+
+
+
+    return 0;
+
+    // TODO remove
+    long int i = 1;
+    double f = 1;
+    auto i_eps = std::nextafter(i, std::numeric_limits<decltype(i)>::max());
+    auto f_eps = std::nextafter(f, std::numeric_limits<decltype(f)>::max());
+    std::cout << i_eps - 1 << "\n";
+    std::cout << f_eps - 1 << "\n";
+    if (i_eps == 1)
+        std::cout << "i\n";
+    if (f_eps == 1)
+        std::cout << "f\n";
+
     return 0;
 }
