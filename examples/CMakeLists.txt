@@ -40,7 +40,6 @@ add_executable(${PROJECT_NAME} SensorExample.cpp)
 target_include_directories(${PROJECT_NAME} PRIVATE ${PostgreSQL_INCLUDE_DIRS})
 
 target_link_libraries(${PROJECT_NAME} PRIVATE ${PostgreSQL_LIBRARIES})
-#target_link_libraries(${PROJECT_NAME} PRIVATE pthread)
 
 # Copy PostgreSQL .dll files on bin folder if we are on Windows
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
