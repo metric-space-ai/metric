@@ -869,6 +869,7 @@ mkdir build
 cd build
 cmake .. -A x64 -T llvm
 ```
+Then open solution in the Microsoft Visual Studio
 
 _Linux_
 
@@ -876,7 +877,8 @@ Just run cmake
 ```bash
 mkdir build
 cd build
-cmake .. -A x64
+cmake ..
+make
 ```
 
 #### Directly, using compiler
