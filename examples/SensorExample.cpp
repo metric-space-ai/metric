@@ -12,11 +12,12 @@
 #include <codecvt>
 #include <random>
 #include <math.h>  
-#include <ppl.h>
-//#include <windows.h>
-
 #include <string.h>
+
 #include <libpq-fe.h>
+
+#include "ThreadPool.cpp"
+#include "Semaphore.h"
 
 #include "modules/crossfilter.hpp"
 
@@ -581,6 +582,8 @@ void saveToCsv(std::string filename, const std::vector<Record> &mat, const std::
 	outputFile.close();
 }
 
+std::mutex mu;
+
 double runPMQ(int featureIndex, std::vector<Record> dataset_0, std::vector<Record> dataset_1)
 {
 	std::vector<double> datasetColumn_0;
@@ -604,7 +607,9 @@ double runPMQ(int featureIndex, std::vector<Record> dataset_0, std::vector<Recor
 	significantDifferent = (set1 != set0);
 
 	auto t2 = std::chrono::steady_clock::now();
+	mu.lock();
 	std::wcout << featureIndex << ": " << significantDifferent << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000 << " s)" << std::endl;
+	mu.unlock();
 
 	return significantDifferent;
 }
@@ -676,6 +681,13 @@ std::tuple < std::vector<Record>, std::vector<std::string>, std::vector<Feature>
 	return std::make_tuple(rows, existDates, features);
 }
 
+void nonlambda()
+{
+	mu.lock();
+	std::cout << "Thread " << std::endl;
+	mu.unlock();
+}
+
 int main()
 {
 	const bool FROM_CSV = true;
@@ -729,8 +741,8 @@ int main()
 			records.push_back(getSensorRecord(conn, timestamps[i], features));
 		}*/
 		std::vector<std::string> cuttimestamps(timestamps.begin() + 5500, timestamps.begin() + 5550);
-		//std::tie(records, recordDates) = getAllSensorRecords(conn, features, cuttimestamps);
-		std::tie(records, recordDates) = getAllSensorRecords(conn, features, timestamps);
+		std::tie(records, recordDates) = getAllSensorRecords(conn, features, cuttimestamps);
+		//std::tie(records, recordDates) = getAllSensorRecords(conn, features, timestamps);
 		auto t2 = std::chrono::steady_clock::now();
 
 		std::cout << '\n';
@@ -772,29 +784,35 @@ int main()
 	auto dataset_1 = recordsFilter.all_filtered();
 	std::cout << '\n';
 	std::cout << '\n';
-	std::cout << "Gutproduktion == 1\n";
+	std::cout << "Gutproduktion == 1" << std::endl;
 	printRecords(dataset_1, features, recordDates, 10, 10, 15);
 
 
-	//printRecord(dataset_0, 10);
-	//matrix_print(dataset_0, 10);
-	//matrix_print(dataset_1, 10);
-
-	int featureIndex = 1;
 	std::vector<double> significantDifferents(features.size(), -1);
-	std::vector<std::thread> threads;
 
-	//auto total_t1 = std::chrono::steady_clock::now();
-	//for (int featureIndex = 0; featureIndex < features.size(); ++featureIndex)
-	auto elapsed = time_call([&]
+	auto total_t1 = std::chrono::steady_clock::now();
+
+	unsigned concurentThreadsSupported = std::thread::hardware_concurrency();
+	std::cout << "Num cores: " << concurentThreadsSupported  << std::endl;
+	ThreadPool pool(concurentThreadsSupported);
+	const int count = features.size();
+	Semaphore sem;
+
+	for (int featureIndex = 0; featureIndex < count; ++featureIndex) 
 	{
-		concurrency::parallel_for(size_t(0), size_t(features.size()), [&](int featureIndex)
-			{
-				significantDifferents.at(featureIndex) = runPMQ(featureIndex, dataset_0, dataset_1);
-			}
-		);
-	});
-	//auto total_t2 = std::chrono::steady_clock::now();
+		pool.execute([featureIndex, &sem, &significantDifferents, &dataset_0, &dataset_1]() {
+			significantDifferents.at(featureIndex) = runPMQ(featureIndex, dataset_0, dataset_1);
+			sem.notify();
+		});
+	}	
+	for (int i = 0; i < count; ++i)
+	{
+		sem.wait();
+	}
+	pool.close();
+
+	auto total_t2 = std::chrono::steady_clock::now();
+	auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(total_t2 - total_t1).count();
 	std::wcout << "PMQ ends";
 	std::wcout << '\n';
 	std::wcout << '\n';
