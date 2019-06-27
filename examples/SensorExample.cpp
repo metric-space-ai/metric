@@ -631,27 +631,23 @@ std::tuple < std::vector<Record>, std::vector<std::string>, std::vector<Feature>
 	// Read the Data from the file 
 	// as String Vector 
 	Record row;
-	std::string line, word, temp;
+	std::string line, word;
 
 	std::vector<Feature> features;
 	std::vector<Record> rows;
 	std::vector<std::string> existDates;
 	std::string currentDate = "";
 
-	//fin >> temp;
-	//std::cout << temp << std::endl;
 	getline(fin, line);
 	std::stringstream s(line);
 	// omit 'date' feature
 	getline(s, word, ';');
-	std::cout << word << std::endl;
 	int i = 0;
 	while (getline(s, word, ';')) 
 	{
 		Feature feature {i++, "", word};
 		features.push_back(feature);
 	}
-	//std::cout << line.replace(line.begin() + 40, line.end() - 15, "...") << std::endl;
 
 	// read an entire row and 
 	// store it in a string variable 'line' 
@@ -682,7 +678,7 @@ std::tuple < std::vector<Record>, std::vector<std::string>, std::vector<Feature>
 
 int main()
 {
-	const bool FROM_CSV = false;
+	const bool FROM_CSV = true;
 
 	std::cout << "we have started" << std::endl;
 	std::cout << '\n';
@@ -696,12 +692,15 @@ int main()
 
 	if (FROM_CSV)
 	{
-		std::tie(records, recordDates, features) = readCsvData("sensorsData.csv");
-		//std::vector<Record> rs(records.begin() + 5500, records.begin() + 5550);
-		//std::vector<std::string> rds(recordDates.begin() + 5500, recordDates.begin() + 5550);
+		auto t1 = std::chrono::steady_clock::now();
 
-		//records = rs;
-		//recordDates = rds;
+		std::tie(records, recordDates, features) = readCsvData("sensorsData.csv");
+
+		auto t2 = std::chrono::steady_clock::now();
+
+		std::cout << '\n';
+		std::cout << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000 << " s)" << std::endl;
+		std::cout << '\n';
 	}
 	else
 	{
