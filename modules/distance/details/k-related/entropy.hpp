@@ -66,8 +66,12 @@ void print(const std::vector<std::pair<Node_ptr,Distance>> & data) {
     }
     std::cout << "]" << std::endl;
 }
+
+
+
 template <typename T, typename Metric>
-T entropy(std::vector<std::vector<T>> data, std::size_t k = 3, T logbase = 2, Metric metric = metric::distance::Euclidian<T>()) {
+typename std::enable_if<!std::is_integral<T>::value, T>::type  // replaced T with conditional type by Max F
+entropy(std::vector<std::vector<T>> data, std::size_t k = 3, T logbase = 2, Metric metric = metric::distance::Euclidian<T>()) {
     if(data.empty() || data[0].empty()) {
         return 0;
     }
@@ -102,6 +106,15 @@ T entropy(std::vector<std::vector<T>> data, std::size_t k = 3, T logbase = 2, Me
 }
 
 
+// overload for integer types // added by Max F
+template<typename T>
+typename std::enable_if<std::is_integral<T>::value, T>::type
+entropy(std::vector<std::vector<T>> data, T logbase = 2)
+{
+    throw std::logic_error("entropy function is not implemented yet for integer data types");
+    //return 0;
+    // TODO implement using pluginEstimator
+}
 
 
 template<typename T>
@@ -115,11 +128,13 @@ std::vector<T> unique(const std::vector<T> & data) {
                  });
     return result;
 }
+
+
 template<typename T>
-std::pair<std::vector<T>,std::vector<std::vector<T>>>
+std::pair<std::vector<double>,std::vector<std::vector<T>>> // T replaced with double by Max F
 pluginEstimator(const std::vector<std::vector<T>> & Y) {
     std::vector<std::vector<T>> uniqueVal = unique(Y);
-    std::vector<T> counts(uniqueVal.size());
+    std::vector<double> counts(uniqueVal.size()); // T replaced with double by Max F in order to divide correctly in transform's lambda
     for(std::size_t i = 0; i < counts.size(); i++) {
         for(std::size_t j = 0; j < Y.size(); j++) {
             if(Y[j] == uniqueVal[i])
@@ -135,9 +150,9 @@ pluginEstimator(const std::vector<std::vector<T>> & Y) {
 
 template <typename T>
 void combine (const std::vector<std::vector<T>> & X, const std::vector<std::vector<T>> & Y, std::vector<std::vector<T>> &XY) {
-    T N = X.size();
-    T dx = X[0].size();
-    T dy = Y[0].size();
+    std::size_t N = X.size(); // replaced T with size_t by Max F
+    std::size_t dx = X[0].size();
+    std::size_t dy = Y[0].size();
     XY.resize(N);
     for(std::size_t i = 0; i < N; i++) {
         XY[i].resize(dx+dy);
@@ -150,8 +165,12 @@ void combine (const std::vector<std::vector<T>> & X, const std::vector<std::vect
         }
     }
 }
+
+
+
 template<typename T, typename Metric = metric::distance::Chebyshev<T>>
-T mutualInformation(const std::vector<std::vector<T>> & Xc,
+typename std::enable_if<!std::is_integral<T>::value, T>::type // added by Max F
+mutualInformation(const std::vector<std::vector<T>> & Xc,
                     const std::vector<std::vector<T>> & Yc,
                     int k = 3,  Metric metric = Metric(), int version = 2) {
     T N = Xc.size();
@@ -212,16 +231,20 @@ T mutualInformation(const std::vector<std::vector<T>> & Xc,
 }
 
 
-// temporarily disabled by Max F. TODO add check for integer type and enable
-//template<typename T>
-//T mutualInformation(const std::vector<std::vector<T>> & Xc,
-//                    const std::vector<std::vector<T>> & Yc, T logbase = 2.0) {
-//    std::vector<std::vector<T>> XY;
-//    combine(Xc,Yc,XY);
-//    using Cheb = metric::distance::Chebyshev<T>;
+
+template<typename T>
+typename std::enable_if<std::is_integral<T>::value, T>::type // added by Max F
+mutualInformation(const std::vector<std::vector<T>> & Xc,
+                  const std::vector<std::vector<T>> & Yc, T logbase = 2.0) {
+    std::vector<std::vector<T>> XY;
+    combine(Xc,Yc,XY);
+//    using Cheb = metric::distance::Chebyshev<T>; // replaced by Max F
 //    return entropy<T,Cheb>(Xc, 3, logbase, Cheb()) + entropy<T,Cheb>(Yc, 3, logbase, Cheb())
 //        - entropy<T, Cheb>(XY, 3, logbase, Cheb());
-//}
+    return entropy<T>(Xc, logbase) + entropy<T>(Yc, logbase) // entropy overload fot integers is not implemented yet
+        - entropy<T>(XY, logbase);
+
+}
 
 
 // template<typename T, typename Metric>
