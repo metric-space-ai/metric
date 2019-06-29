@@ -29,7 +29,8 @@ template<typename T>
 void add_noise(std::vector<std::vector<T>> & data) {
     std::random_device rd;
     std::mt19937 gen(rd());
-    std::uniform_real_distribution<> dis(0, 1);
+    //std::uniform_real_distribution<> dis(0, 1);
+    std::normal_distribution<T> dis(0, 1);
     double c = 1e-10;
     for(auto & v : data) {
         std::transform(v.begin(), v.end(), v.begin(),
@@ -75,10 +76,11 @@ entropy(std::vector<std::vector<T>> data, std::size_t k = 3, T logbase = 2, Metr
     if(data.empty() || data[0].empty()) {
         return 0;
     }
-    double p = 1;
-    double N = data.size();
-    double d = data[0].size();
-    double cb = d * log(logbase,2.0);
+    T p = 1; // replaced double with T by Max F
+    T N = data.size();
+    T d = data[0].size();
+    T two = 2.0; // this is in order to make types match the log template function
+    T cb = d * log(logbase, two);
 
     if constexpr (!std::is_same<Metric, typename metric::distance::Chebyshev<T>>::value) {
         if constexpr ( std::is_same<Metric, typename metric::distance::Euclidian<T>>::value) {
@@ -92,8 +94,8 @@ entropy(std::vector<std::vector<T>> data, std::size_t k = 3, T logbase = 2, Metr
     add_noise(data);
     metric_space::Tree<std::vector<T>, Metric> tree(data,-1, metric);
     //double cb = d * log(logbase,2.0) + d*log(logbase, std::tgamma(1+1/p)) - log(logbase, std::tgamma(1+d/p));
-    double entropyEstimate = boost::math::digamma(N) - boost::math::digamma(k)
-        + cb + d * log(logbase, 2.0);
+    T entropyEstimate = boost::math::digamma(N) - boost::math::digamma(k) // replaced double with T by Max F
+        + cb + d * log(logbase, two);
     for(std::size_t i = 0; i < N; i++) {
         auto res = tree.knn(data[i],k+1);
         // print(res);
@@ -218,6 +220,15 @@ mutualInformation(const std::vector<std::vector<T>> & Xc,
             //            nx = nx1.size();
             //            std::cout << "rnn=" ; print_vec(nx1) ; std::cout << std::endl;
             //            std::cout << "X[i]="; print_vec(X[i]) ; std::cout << std::endl;
+            // debug code
+            if (nx == 0)
+            {
+                nx = 1; // TODO update with true bugfix!!
+                auto dot1 = X[neighbor->ID];
+                auto dot2 = X[i];
+
+                std::cout << "zero distance\n";
+            }
         } else {
             throw std::runtime_error("this version not allowed");
         }
