@@ -29,7 +29,8 @@ template<typename T>
 void add_noise(std::vector<std::vector<T>> & data) {
     std::random_device rd;
     std::mt19937 gen(rd());
-    std::uniform_real_distribution<> dis(0, 1);
+    //std::uniform_real_distribution<> dis(0, 1);
+    std::normal_distribution<T> dis(0, 1);
     double c = 1e-10;
     for(auto & v : data) {
         std::transform(v.begin(), v.end(), v.begin(),
@@ -66,15 +67,20 @@ void print(const std::vector<std::pair<Node_ptr,Distance>> & data) {
     }
     std::cout << "]" << std::endl;
 }
+
+
+
 template <typename T, typename Metric>
-T entropy(std::vector<std::vector<T>> data, std::size_t k = 3, T logbase = 2, Metric metric = metric::distance::Euclidian<T>()) {
+typename std::enable_if<!std::is_integral<T>::value, T>::type  // replaced T with conditional type by Max F
+entropy(std::vector<std::vector<T>> data, std::size_t k = 3, T logbase = 2, Metric metric = metric::distance::Euclidian<T>()) {
     if(data.empty() || data[0].empty()) {
         return 0;
     }
-    double p = 1;
-    double N = data.size();
-    double d = data[0].size();
-    double cb = d * log(logbase,2.0);
+    T p = 1; // replaced double with T by Max F
+    T N = data.size();
+    T d = data[0].size();
+    T two = 2.0; // this is in order to make types match the log template function
+    T cb = d * log(logbase, two);
 
     if constexpr (!std::is_same<Metric, typename metric::distance::Chebyshev<T>>::value) {
         if constexpr ( std::is_same<Metric, typename metric::distance::Euclidian<T>>::value) {
@@ -88,8 +94,8 @@ T entropy(std::vector<std::vector<T>> data, std::size_t k = 3, T logbase = 2, Me
     add_noise(data);
     metric_space::Tree<std::vector<T>, Metric> tree(data,-1, metric);
     //double cb = d * log(logbase,2.0) + d*log(logbase, std::tgamma(1+1/p)) - log(logbase, std::tgamma(1+d/p));
-    double entropyEstimate = boost::math::digamma(N) - boost::math::digamma(k)
-        + cb + d * log(logbase, 2.0);
+    T entropyEstimate = boost::math::digamma(N) - boost::math::digamma(k) // replaced double with T by Max F
+        + cb + d * log(logbase, two);
     for(std::size_t i = 0; i < N; i++) {
         auto res = tree.knn(data[i],k+1);
         // print(res);
@@ -102,6 +108,15 @@ T entropy(std::vector<std::vector<T>> data, std::size_t k = 3, T logbase = 2, Me
 }
 
 
+// overload for integer types // added by Max F
+template<typename T>
+typename std::enable_if<std::is_integral<T>::value, T>::type
+entropy(std::vector<std::vector<T>> data, T logbase = 2)
+{
+    throw std::logic_error("entropy function is not implemented yet for integer data types");
+    //return 0;
+    // TODO implement using pluginEstimator
+}
 
 
 template<typename T>
@@ -115,11 +130,13 @@ std::vector<T> unique(const std::vector<T> & data) {
                  });
     return result;
 }
+
+
 template<typename T>
-std::pair<std::vector<T>,std::vector<std::vector<T>>>
+std::pair<std::vector<double>,std::vector<std::vector<T>>> // T replaced with double by Max F
 pluginEstimator(const std::vector<std::vector<T>> & Y) {
     std::vector<std::vector<T>> uniqueVal = unique(Y);
-    std::vector<T> counts(uniqueVal.size());
+    std::vector<double> counts(uniqueVal.size()); // T replaced with double by Max F in order to divide correctly in transform's lambda
     for(std::size_t i = 0; i < counts.size(); i++) {
         for(std::size_t j = 0; j < Y.size(); j++) {
             if(Y[j] == uniqueVal[i])
@@ -135,9 +152,9 @@ pluginEstimator(const std::vector<std::vector<T>> & Y) {
 
 template <typename T>
 void combine (const std::vector<std::vector<T>> & X, const std::vector<std::vector<T>> & Y, std::vector<std::vector<T>> &XY) {
-    T N = X.size();
-    T dx = X[0].size();
-    T dy = Y[0].size();
+    std::size_t N = X.size(); // replaced T with size_t by Max F
+    std::size_t dx = X[0].size();
+    std::size_t dy = Y[0].size();
     XY.resize(N);
     for(std::size_t i = 0; i < N; i++) {
         XY[i].resize(dx+dy);
@@ -150,8 +167,12 @@ void combine (const std::vector<std::vector<T>> & X, const std::vector<std::vect
         }
     }
 }
+
+
+
 template<typename T, typename Metric = metric::distance::Chebyshev<T>>
-T mutualInformation(const std::vector<std::vector<T>> & Xc,
+typename std::enable_if<!std::is_integral<T>::value, T>::type // added by Max F
+mutualInformation(const std::vector<std::vector<T>> & Xc,
                     const std::vector<std::vector<T>> & Yc,
                     int k = 3,  Metric metric = Metric(), int version = 2) {
     T N = Xc.size();
@@ -199,6 +220,15 @@ T mutualInformation(const std::vector<std::vector<T>> & Xc,
             //            nx = nx1.size();
             //            std::cout << "rnn=" ; print_vec(nx1) ; std::cout << std::endl;
             //            std::cout << "X[i]="; print_vec(X[i]) ; std::cout << std::endl;
+            // debug code
+            if (nx == 0)
+            {
+                nx = 1; // TODO update with true bugfix!!
+                auto dot1 = X[neighbor->ID];
+                auto dot2 = X[i];
+
+                std::cout << "zero distance\n";
+            }
         } else {
             throw std::runtime_error("this version not allowed");
         }
@@ -212,16 +242,20 @@ T mutualInformation(const std::vector<std::vector<T>> & Xc,
 }
 
 
-// temporarily disabled by Max F. TODO add check for integer type and enable
-//template<typename T>
-//T mutualInformation(const std::vector<std::vector<T>> & Xc,
-//                    const std::vector<std::vector<T>> & Yc, T logbase = 2.0) {
-//    std::vector<std::vector<T>> XY;
-//    combine(Xc,Yc,XY);
-//    using Cheb = metric::distance::Chebyshev<T>;
+
+template<typename T>
+typename std::enable_if<std::is_integral<T>::value, T>::type // added by Max F
+mutualInformation(const std::vector<std::vector<T>> & Xc,
+                  const std::vector<std::vector<T>> & Yc, T logbase = 2.0) {
+    std::vector<std::vector<T>> XY;
+    combine(Xc,Yc,XY);
+//    using Cheb = metric::distance::Chebyshev<T>; // replaced by Max F
 //    return entropy<T,Cheb>(Xc, 3, logbase, Cheb()) + entropy<T,Cheb>(Yc, 3, logbase, Cheb())
 //        - entropy<T, Cheb>(XY, 3, logbase, Cheb());
-//}
+    return entropy<T>(Xc, logbase) + entropy<T>(Yc, logbase) // entropy overload fot integers is not implemented yet
+        - entropy<T>(XY, logbase);
+
+}
 
 
 // template<typename T, typename Metric>
