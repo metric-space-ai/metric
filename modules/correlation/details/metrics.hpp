@@ -1,5 +1,3 @@
-#ifndef _METRICS_MGC_HPP
-#define _METRICS_MGC_HPP
 /*
   This Source Code Form is subject to the terms of the Mozilla Public
   License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -7,6 +5,8 @@
 
   Copyright (c) 2019 Panda Team
 */
+#ifndef _METRICS_CORRELATION_DETAILS_METRICS_HPP
+#define _METRICS_CORRELATION_DETAILS_METRICS_HPP
 
 #include <cmath>
 

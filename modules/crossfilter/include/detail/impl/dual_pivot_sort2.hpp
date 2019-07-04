@@ -4,8 +4,9 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 Copyright (c) 2018 Dmitry Vinokurov */
 
-#ifndef DUAL_PIVOT_SORT2_H_GUARD
-#define DUAL_PIVOT_SORT2_H_GUARD
+#ifndef _METRIC_CROSSFILTER_DETAILS_IMPL_DUAL_PIVOT_SORT2_HPP
+#define _METRIC_CROSSFILTER_DETAILS_IMPL_DUAL_PIVOT_SORT2_HPP
+
 #include <vector>
 #include <functional>
 #include <algorithm>

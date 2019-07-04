@@ -5,8 +5,8 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 Copyright (c) 2018 Dmitry Vinokurov */
 
 
-#ifndef BITARRAY_H_GUARD
-#define BITARRAY_H_GUARD
+#ifndef _METRIC_CROSSFILTER_DETAILS_BITARRAY_HPP
+#define _METRIC_CROSSFILTER_DETAILS_BITARRAY_HPP
 #include <vector>
 #include <tuple>
 #include <bitset>

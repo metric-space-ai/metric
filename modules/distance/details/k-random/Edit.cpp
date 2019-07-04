@@ -5,6 +5,8 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 Copyright (c) 2018 Michael Welsch
 */
+#ifndef _METRIC_DISTANCE_DETAILS_K_RANDOM_EDIT_CPP
+#define _METRIC_DISTANCE_DETAILS_K_RANDOM_EDIT_CPP
 
 #include "Edit.hpp"
 #include <vector>
@@ -74,3 +76,5 @@ auto Edit<V>::operator()(const Container &str1, const Container &str2) const -> 
 
 } // namespace distance
 } // namespace metric
+
+#endif

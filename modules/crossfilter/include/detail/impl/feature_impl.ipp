@@ -1,3 +1,5 @@
+#ifndef _METRIC_CROSSFILTER_DETAILS_IMPL_FEATURE_IMPL_IPP
+#define _METRIC_CROSSFILTER_DETAILS_IMPL_FEATURE_IMPL_IPP
 /*This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
 file, You can obtain one at http://mozilla.org/MPL/2.0/.
@@ -374,3 +376,4 @@ feature_impl<Key, Reduce, Dimension, is_group_all>::order(OrderFunc value) noexc
                         [&value](const group_type_t& g) { return value(g.second);});
   return *this;
 }
+#endif

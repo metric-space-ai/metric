@@ -5,7 +5,8 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 Copyright (c) 2018 Michael Welsch
 */
-
+#ifndef _METRIC_DISTANCE_DETAILS_K_STRUCTURED_EMD_CPP
+#define _METRIC_DISTANCE_DETAILS_K_STRUCTURED_EMD_CPP
 #include "EMD.hpp"
 
 /*Fast and Robust Earth Mover's Distances
@@ -1252,3 +1253,5 @@ max_in_distance_matrix(const Container &C)
 
     } // namespace distance
 } // namespace metric
+
+#endif

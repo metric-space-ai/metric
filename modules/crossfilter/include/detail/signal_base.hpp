@@ -4,8 +4,8 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 Copyright (c) 2018 Dmitry Vinokurov */
 
-#ifndef SIGNAL_BASE_H_GUARD
-#define  SIGNAL_BASE_H_GUARD
+#ifndef _METRIC_CROSSFILTER_DETAILS_SIGNAL_BASE_HPP
+#define _METRIC_CROSSFILTER_DETAILS_SIGNAL_BASE_HPP
 #define USE_NOD_SIGNALS = 1
 #include <tuple>
 #include <memory>

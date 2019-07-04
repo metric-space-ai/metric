@@ -1,3 +1,7 @@
+#pragma once
+#ifndef _METRIC_MAPPING_HPP
+#define _METRIC_MAPPING_HPP
+
 /*
                        
 PANDA presents
@@ -22,7 +26,6 @@ Copyright (c) 2018 Michael Welsch
 */
 
 
-#pragma once
-
 
 #include "mapping/metric_mapping.hpp"
+#endif

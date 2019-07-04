@@ -6,8 +6,8 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 Copyright (c) 2019 Panda Team
 */
 
-#ifndef ENCODER_HPP
-#define ENCODER_HPP
+#ifndef _METRIC_MAPPING_DETAILS_ENCODER_HPP
+#define _METRIC_MAPPING_DETAILS_ENCODER_HPP
 
 #include "../../../3rdparty/blaze/Blaze.h"
 
@@ -58,4 +58,4 @@ public:
 
 #include "encoder.cpp"
 
-#endif // ENCODER_HPP
+#endif // _METRIC_MAPPING_DETAILS_ENCODER_HPP

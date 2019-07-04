@@ -5,6 +5,8 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 Copyright (c) 2018 Michael Welsch
 */
+#ifndef _METRIC_DISTANCE_DETAILS_K_RELATED_STANDARDS_CPP
+#define _METRIC_DISTANCE_DETAILS_K_RELATED_STANDARDS_CPP
 
 #include "Standards.hpp"
 
@@ -115,3 +117,4 @@ auto Cosine<V>::operator()(const Container &A, const Container &B) const -> dist
 
 } // namespace distance
 } // namespace metric
+#endif

@@ -7,8 +7,8 @@ Copyright (c) 2018, Michael Welsch
 
 */
 
-#ifndef _METRIC_SPACE_TREE_HPP
-#define _METRIC_SPACE_TREE_HPP
+#ifndef _METRIC_SPACE_DETAILS_TREE_HPP
+#define _METRIC_SPACE_DETAILS_TREE_HPP
 
 #include <atomic>
 #include <fstream>

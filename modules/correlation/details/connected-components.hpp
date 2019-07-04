@@ -16,7 +16,8 @@ Alessandro Lulli, Emanuele Carlini, Patrizio Dazzi, Claudio Lucchese, and Laura 
 2016
 https://doi.org/10.1109/TPDS.2016.2591038
 */
-
+#ifndef _METRIC_CORRELATION_DETAILS_CONNECTED_COMPONENTS_HPP
+#define _METRIC_CORRELATION_DETAILS_CONNECTED_COMPONENTS_HPP
 
 #include <vector>
 #include <list>

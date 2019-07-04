@@ -1,3 +1,5 @@
+#ifndef _METRIC_CROSSFILTER_DETAILS_IMPL_DIMENSION_IMPL_IPP
+#define _METRIC_CROSSFILTER_DETAILS_IMPL_DIMENSION_IMPL_IPP
 /*This Source Code Form is subject to the terms of the Mozilla Public
   License, v. 2.0. If a copy of the MPL was not distributed with this
   file, You can obtain one at http://mozilla.org/MPL/2.0/.
@@ -888,3 +890,4 @@ dimension_impl<V, T, I, H>::feature_all(cross::dimension<V,T,I,H> *base,
 
 } //namespace impl
 } //namespace cross
+#endif

@@ -1,5 +1,5 @@
-#ifndef _METRIC_GRAPH_CONNECTED_COMPONENTS_HPP
-#define _METRIC_GRAPH_CONNECTED_COMPONENTS_HPP
+#ifndef _METRIC_SPACE_DETAILS_GRAPH_CONNECTED_COMPONENTS_HPP
+#define _METRIC_SPACE_DETAILS_GRAPH_CONNECTED_COMPONENTS_HPP
 /*
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this

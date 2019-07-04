@@ -7,8 +7,8 @@ Copyright (c) 2018 Michael Welsch
 
 */
 
-#ifndef _METRIC_SPACE_MATRIX_HPP
-#define _METRIC_SPACE_MATRIX_HPP
+#ifndef _METRIC_SPACE_DETAILS_MATRIX_HPP
+#define _METRIC_SPACE_DETAILS_MATRIX_HPP
 
 
 #include "matrix.cpp"

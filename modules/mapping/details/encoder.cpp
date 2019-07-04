@@ -5,6 +5,8 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 Copyright (c) 2019 Panda Team
 */
+#ifndef _METRIC_MAPPING_DETAILS_ENCODER_CPP
+#define _METRIC_MAPPING_DETAILS_ENCODER_CPP
 
 #include "encoder.hpp"
 
@@ -126,3 +128,4 @@ blaze::DynamicMatrix<double> DirectMapping::decompress(
 
 } // namespace linear_compressor
 
+#endif

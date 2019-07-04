@@ -1,6 +1,3 @@
-#include "SSIM.hpp"
-#include <cmath>
-#include <vector>
 /*
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -8,6 +5,11 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 Copyright (c) 2018 Michael Welsch
 */
+#ifndef _METRIC_DISTANCE_DETAILS_K_STRUCTURED_SSIM_CPP
+#define _METRIC_DISTANCE_DETAILS_K_STRUCTURED_SSIM_CPP
+#include "SSIM.hpp"
+#include <cmath>
+#include <vector>
 
 #ifndef M_PI
 #define M_PI 3.14159326
@@ -177,3 +179,5 @@ auto SSIM<V>::operator()(const Container &img1, const Container &img2) const -> 
 
 } // namespace distance
 } // namespace metric
+
+#endif

@@ -5,6 +5,8 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 Copyright (c) 2019 Panda Team
 */
+#ifndef METRIC_MAPPING_METRIC_MAPPING_HPP
+#define METRIC_MAPPING_METRIC_MAPPING_HPP
 
 #include "../mapping.hpp"
 
@@ -12,3 +14,4 @@ Copyright (c) 2019 Panda Team
 #include "details/encoder.hpp"
 #include "details/classification/metric_classification.hpp"
 #include "details/classification/metric_classification.hpp"
+#endif

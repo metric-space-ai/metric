@@ -4,8 +4,8 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 Copyright (c) 2018 Dmitry Vinokurov */
 
-#ifndef CROSSFILTER_DETAIL_H_GUARD
-#define CROSSFILTER_DETAIL_H_GUARD
+#ifndef _METRIC_CROSSFILTER_DETAILS_CROSSFILTER_HPP
+#define _METRIC_CROSSFILTER_DETAILS_CROSSFILTER_HPP
 #include <functional>
 #include <vector>
 #include <type_traits>

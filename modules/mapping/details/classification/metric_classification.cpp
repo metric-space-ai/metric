@@ -5,7 +5,8 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 Copyright (c) 2019 Panda Team
 */
-
+#ifndef _METRIC_MAPPING_DETAILS_CLASSIFICATION_METRIC_CLASSIFICATION_CPP
+#define _METRIC_MAPPING_DETAILS_CLASSIFICATION_METRIC_CLASSIFICATION_CPP
 #include "metric_classification.hpp"
 #include <variant>
 #include <vector>
@@ -708,3 +709,4 @@ Bagging<Record, WeakLearnerVariant, Subsampler>::clone()
 
 } // namespace classification
 } // namespace metric
+#endif
