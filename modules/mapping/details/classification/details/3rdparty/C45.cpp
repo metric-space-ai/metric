@@ -51,7 +51,11 @@ using namespace libedm;
 //const string CC45::StaticName=MyName;
 
 static const double Log2=0.69314718055994530942;
-#define Log(x) ((x)<=0 ? 0.0 : log((double)x)/Log2)
+//#define Log(x) ((x)<=0 ? 0.0 : log((double)x)/Log2)
+template<typename T>
+inline T Log(T x) {
+    return x <= 0 ? 0.0 : log((double)x)/Log2;
+}
 
 CC45::~CC45()
 {
