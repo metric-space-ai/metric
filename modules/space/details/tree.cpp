@@ -731,7 +731,8 @@ namespace metric_space {
         for (const auto &child_idx : idx) {
             Node_ptr child = current->children[child_idx];
             Distance dist_child = dists[child_idx];
-            if (distance > dist_child - child->parent_dist)
+            // if (distance > dist_child - child->parent_dist) // bug
+            if (dist_child < distance + child->covdist())   // ++ changes
                 rnn_(child, dist_child, p, distance, nnList);
         }
     }
