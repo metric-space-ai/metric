@@ -32,6 +32,9 @@ Copyright (c) 2019 Panda Team
 
 
 int main() {
+
+    std::cout << "entropies for {{5,5}, {2,2}, {3,3}, {5,5}}:\n";
+
     std::vector<std::vector<double>> v = {{5,5}, {2,2}, {3,3}, {5,5}};
 //    std::vector<std::vector<double>> v = {{1,1}, {2,2}, {3,3}, {5}};
 //    std::vector<std::vector<double>> v = {{1}, {2}, {3}, {5}};
@@ -69,6 +72,7 @@ int main() {
 
     std::vector<std::vector<int>> v_int = {{5,5}, {2,2}, {3,3}, {5,5}};
     auto pe = pluginEstimator(v_int);
+    std::cout << "\n\npluginEstimator results for {{5,5}, {2,2}, {3,3}, {5,5}}:\n";
     for(auto & d : pe.first) {
         std::cout << d << ", ";
     }
@@ -77,15 +81,43 @@ int main() {
 
     std::cout << "\n";
 
-    auto e1 = mutualInformation<double>(v1,v1);
-    std::cout<< e1 << std::endl << std::endl;
+    std::cout << "MI for v1 = {{5,5}, {2,2}, {3,3}, {5,5}}, v2 = {{5,5}, {2,2}, {3,3}, {1,1}}:\n";
+    std::cout << "v2 MI for v1, v1: " << mutualInformation<double>(v1, v1) << std::endl;
+    std::cout << "v1 MI for v1, v1: " << mutualInformation<double, metric::distance::Chebyshev<double>>(v1, v1, 3, metric::distance::Chebyshev<double>(), 1) << std::endl;
+    std::cout << "v2 MI for v2, v2: " << mutualInformation<double>(v2, v2) << std::endl;
+    std::cout << "v1 MI for v2, v2: " << mutualInformation<double, metric::distance::Chebyshev<double>>(v2, v2, 3, metric::distance::Chebyshev<double>(), 1) << std::endl;
+    std::cout << "v2 MI for v1, v2: " << mutualInformation<double>(v1, v2) << std::endl;
+    std::cout << "v1 MI for v1, v2: " << mutualInformation<double, metric::distance::Chebyshev<double>>(v1, v2, 3, metric::distance::Chebyshev<double>(), 1) << std::endl;
+    std::cout << "v2 MI for v2, v1: " << mutualInformation<double>(v2, v1) << std::endl;
+    std::cout << "v1 MI for v2, v1: " << mutualInformation<double, metric::distance::Chebyshev<double>>(v2, v1, 3, metric::distance::Chebyshev<double>(), 1) << std::endl;
 
-    std::cout << mutualInformation<double>(v1, v1) << std::endl;
-    std::cout<< mutualInformation<double, metric::distance::Chebyshev<double>>(v1, v1, 3, metric::distance::Chebyshev<double>(), 1) << std::endl;
-    std::cout << mutualInformation<double>(v2, v2) << std::endl;
-    std::cout<< mutualInformation<double, metric::distance::Chebyshev<double>>(v2, v2, 3, metric::distance::Chebyshev<double>(), 1) << std::endl;
-    std::cout << mutualInformation<double>(v1, v2) << std::endl;
-    std::cout<< mutualInformation<double, metric::distance::Chebyshev<double>>(v1, v2, 3, metric::distance::Chebyshev<double>(), 1) << std::endl;
+
+
+    std::cout << "\n";
+
+    std::cout << "MI repetitive test:\n";
+    for (size_t i = 0; i<30; i++)
+        std::cout << "v2 MI for v1, v2: " << mutualInformation<double>(v1, v2) << std::endl;
+
+    std::vector<std::vector<double>> v_rt = {
+        {2.007415917194179447, 4.01552913751076210507},
+        {2.01867557968358818333, 2.99022722115945258558},
+        {2.0126611855337706422, 3.99494123454067399004},
+        {2.00761037750748919345, 4.00121675026966979426},
+        {1.00484312155070253504, 4.0057914046244738099}
+    };
+    std::vector<std::vector<double>> v_rt_2 = {
+        {2.01494079076453558763, 0.997948417393070972962},
+        {0.990392453844131542199, 2.00376926963403764531},
+        {1.97447010238119510708, 2.00653618788061233235},
+        {2.99757850501772919998, 3.01514391302774881383},
+        {2.00045758502432601098, 3.99812816215996605796}
+    };
+
+    std::cout << std::endl;
+
+    for (size_t i = 0; i<30; i++)
+        std::cout << "v2 MI for v_rt, v_rt_2: " << mutualInformation<double>(v_rt, v_rt_2) << std::endl;
 
 
 //    std::cout << "\n";
@@ -121,13 +153,15 @@ int main() {
     //std::cout << entropy<double, metric::distance::Chebyshev<double>>(rnd, 3, 2, metric::distance::Chebyshev<double>()) << std::endl;
 
 
+    std::cout << "\n";
+
     std::cout << "random array mutualInformation test\n";
 
     std::vector<std::vector<long double>> rnd2; // second independent vector with same distribution
     for (size_t i = 0; i < 5000; i++)
         rnd2.push_back({cases1[uni(rng)], cases2[uni(rng)]});
 
-    for (size_t i = 0; i<10; i++)
+    for (size_t i = 0; i < 10; i++)
         std::cout << mutualInformation<long double>(rnd, rnd2) << std::endl;
 
 

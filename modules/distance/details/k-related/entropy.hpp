@@ -29,9 +29,9 @@ template<typename T>
 void add_noise(std::vector<std::vector<T>> & data) {
     std::random_device rd;
     std::mt19937 gen(rd());
-    //std::uniform_real_distribution<> dis(0, 1);
+//    std::uniform_real_distribution<> dis(0, 1);
     std::normal_distribution<T> dis(0, 1);
-    double c = 1e-7; //1e-10; // TODO restore
+    double c = 1e-10;
     for(auto & v : data) {
         std::transform(v.begin(), v.end(), v.begin(),
                        [&gen,c, &dis] (T e) {
@@ -171,7 +171,7 @@ void combine (const std::vector<std::vector<T>> & X, const std::vector<std::vect
 
 
 template<typename T, typename Metric = metric::distance::Chebyshev<T>>
-typename std::enable_if<!std::is_integral<T>::value, T>::type // added by Max F
+typename std::enable_if<!std::is_integral<T>::value, T>::type // line added by Max F
 mutualInformation(const std::vector<std::vector<T>> & Xc,
                     const std::vector<std::vector<T>> & Yc,
                     int k = 3,  Metric metric = Metric(), int version = 2) {
