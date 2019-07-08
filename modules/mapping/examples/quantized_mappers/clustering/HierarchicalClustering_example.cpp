@@ -7,6 +7,7 @@ Copyright (c) 2019 Panda Team
 */
 
 #include "../details/classification/details/3rdparty/metric_clustering/clustering.hpp"
+#include "../details/classification/details/3rdparty/metric_clustering/hierarchClustering.cpp"
 
 
 
@@ -23,50 +24,58 @@ int main()
 		   {5.81414000000000, 8.14015000000000, 3.22950000000000, 139.539000000000, 139.539000000000},
 		   {2.57927000000000, 2.63399000000000, 2.46802000000000, 61.9026000000000, 61.9026000000000} };
 
-	auto[assignments, seeds, counts] = clustering::hierarchClustering(data, 4);
 
 
-	std::cout << "assignments:" << std::endl;
-	for (size_t i = 0; i < assignments.size(); i++)
-	{
-		if (i < assignments.size() - 1)
-		{
-			std::cout << assignments[i] << ", ";
-		}
-		else
-		{
-			std::cout << assignments[i] << std::endl;
-		}
-	}
-	std::cout << '\n';
 
-	std::cout << "seeds:" << std::endl;
-	for (size_t i = 0; i < seeds.size(); i++)
-	{
-		if (i < seeds.size() - 1)
-		{
-			std::cout << seeds[i] << ", ";
-		}
-		else
-		{
-			std::cout << seeds[i] << std::endl;
-		}
-	}
-	std::cout << '\n';
+	auto hc = HierarchicalClustering(data, 3);
+	auto current_clusters = hc.hierarchical_clustering();
 
-	std::cout << "counts:" << std::endl;
-	for (size_t i = 0; i < counts.size(); i++)
-	{
-		if (i < counts.size() - 1)
-		{
-			std::cout << counts[i] << ", ";
-		}
-		else
-		{
-			std::cout << counts[i] << std::endl;
-		}
-	}
-	std::cout << '\n' << std::endl;
+
+
+	//auto[assignments, seeds, counts] = clustering::hierarchClustering(data, 4);
+
+
+	//std::cout << "assignments:" << std::endl;
+	//for (size_t i = 0; i < assignments.size(); i++)
+	//{
+	//	if (i < assignments.size() - 1)
+	//	{
+	//		std::cout << assignments[i] << ", ";
+	//	}
+	//	else
+	//	{
+	//		std::cout << assignments[i] << std::endl;
+	//	}
+	//}
+	//std::cout << '\n';
+
+	//std::cout << "seeds:" << std::endl;
+	//for (size_t i = 0; i < seeds.size(); i++)
+	//{
+	//	if (i < seeds.size() - 1)
+	//	{
+	//		std::cout << seeds[i] << ", ";
+	//	}
+	//	else
+	//	{
+	//		std::cout << seeds[i] << std::endl;
+	//	}
+	//}
+	//std::cout << '\n';
+
+	//std::cout << "counts:" << std::endl;
+	//for (size_t i = 0; i < counts.size(); i++)
+	//{
+	//	if (i < counts.size() - 1)
+	//	{
+	//		std::cout << counts[i] << ", ";
+	//	}
+	//	else
+	//	{
+	//		std::cout << counts[i] << std::endl;
+	//	}
+	//}
+	//std::cout << '\n' << std::endl;
 
 	return 0;
 

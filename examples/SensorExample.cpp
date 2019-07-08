@@ -28,6 +28,9 @@ Copyright (c) 2019 Panda Team
 #include "Semaphore.h"
 
 #include "modules/crossfilter.hpp"
+#include "distance/details/k-related/entropy.hpp"
+#include "distance/details/k-related/Standards.hpp"
+#include "distance/details/k-related/chebyshev.hpp"
 
 //#include "modules/mapping/details/classification/metric_classification.hpp"
 
@@ -660,6 +663,10 @@ std::tuple < std::vector<Record>, std::vector<std::string>, std::vector<Feature>
 	{
 		Feature feature {i++, "", word};
 		features.push_back(feature);
+		if (i > 4500)
+		{
+			//break;
+		}
 	}
 
 	// read an entire row and 
@@ -673,6 +680,7 @@ std::tuple < std::vector<Record>, std::vector<std::string>, std::vector<Feature>
 
 		getline(s, currentDate, ';');
 
+		i = 0;
 		// read every column data of a row and 
 		// store it in a string variable, 'word' 
 		while (getline(s, word, ';')) {
@@ -680,6 +688,12 @@ std::tuple < std::vector<Record>, std::vector<std::string>, std::vector<Feature>
 			// add all the column data 
 			// of a row to a vector 
 			row.push_back(std::stod(word));
+
+			i++;
+			if (i > 4500)
+			{
+				//break;
+			}
 		}
 
 		existDates.push_back(currentDate);
@@ -689,11 +703,32 @@ std::tuple < std::vector<Record>, std::vector<std::string>, std::vector<Feature>
 	return std::make_tuple(rows, existDates, features);
 }
 
-void nonlambda()
+template <typename T>
+std::vector<std::vector<T>> resample(std::vector<std::vector<T>> source, int destinationRows)
 {
-	mu.lock();
-	std::cout << "Thread " << std::endl;
-	mu.unlock();
+	auto columns = source[0].size();
+	auto x = linspace<T>(0, 1, source.size());
+	auto xi = linspace<T>(0, 1, destinationRows);
+	std::vector<T> y;
+	std::vector<T> yi;
+	std::vector<std::vector<T>> resampled(destinationRows, std::vector<T>(columns));
+
+	for (auto f = 0; f < columns; ++f)
+	{
+		y.clear();
+		yi.clear();
+		for (auto i = 0; i < source.size(); ++i)
+		{
+			y.push_back(source[i][f]);
+		}
+		yi = akimaInterp1(x, y, xi);
+		for (auto i = 0; i < yi.size(); ++i)
+		{
+			resampled[i][f] = yi[i];
+		}
+	}
+
+	return resampled;
 }
 
 int main(int argc, char *argv[])
@@ -760,8 +795,8 @@ int main(int argc, char *argv[])
 			records.push_back(getSensorRecord(conn, timestamps[i], features));
 		}*/
 		std::vector<std::string> cuttimestamps(timestamps.begin() + 5500, timestamps.begin() + 5550);
-		//std::tie(records, recordDates) = getAllSensorRecords(conn, features, cuttimestamps);
-		std::tie(records, recordDates) = getAllSensorRecords(conn, features, timestamps);
+		std::tie(records, recordDates) = getAllSensorRecords(conn, features, cuttimestamps);
+		//std::tie(records, recordDates) = getAllSensorRecords(conn, features, timestamps);
 		auto t2 = std::chrono::steady_clock::now();
 
 		std::cout << '\n';
@@ -785,69 +820,122 @@ int main(int argc, char *argv[])
 
 	cross::filter<Record> recordsFilter(records);
 	std::vector<Record> filtered_results;
-	static const int featureGutproduktionIndex = lookupFeatureIndex("Gutproduktion", features);
-	std::cout << "feature Gutproduktion index: " << featureGutproduktionIndex << std::endl;
-	std::cout << "feature Gutproduktion label: " << features[featureGutproduktionIndex].bezeichnung << std::endl;
+	//std::string featureName = "Sammelabriss";
+	std::string featureName = "Gutproduktion";
+	static const int featureGutproduktionIndex = lookupFeatureIndex(featureName, features);
+	std::cout << "feature " << featureName << " index: " << featureGutproduktionIndex << std::endl;
+	std::cout << "feature " << featureName << " label: " << features[featureGutproduktionIndex].bezeichnung << std::endl;
 	auto feature_Gutproduktion = recordsFilter.dimension([](Record r) { return r[featureGutproduktionIndex]; });
 	feature_Gutproduktion.filter(0);
-	//feature_Gutproduktion.filter([](auto d) { return std::get<double>(d) == 0; });
+	//feature_Gutproduktion.filter([](auto d) { return d >= 80; });
 	auto dataset_0 = recordsFilter.all_filtered();
 	std::cout << '\n';
 	std::cout << '\n';
-	std::cout << "Gutproduktion == 0\n";
+	std::cout << featureName << " == 0\n";
 	printRecords(dataset_0, features, recordDates, 10, 10, 15);
 
 	feature_Gutproduktion.filter();
 	feature_Gutproduktion.filter(1);
-	//feature_Gutproduktion.filter([](auto d) { return std::get<double>(d) == 1; });
+	//feature_Gutproduktion.filter([](auto d) { return d < 80; });
 	auto dataset_1 = recordsFilter.all_filtered();
 	std::cout << '\n';
 	std::cout << '\n';
-	std::cout << "Gutproduktion == 1" << std::endl;
+	std::cout << featureName << " == 1" << std::endl;
 	printRecords(dataset_1, features, recordDates, 10, 10, 15);
 
+	////////////////////
 
-	std::vector<double> significantDifferents(features.size(), -1);
+	std::cout << '\n';
+	std::cout << '\n';
+	std::cout <<  "Resampled:" << std::endl;
+	auto dataset_0_i = resample<double>(dataset_0, 1000);
+	auto dataset_1_i = resample<double>(dataset_1, 1000);
 
-	auto total_t1 = std::chrono::steady_clock::now();
+	std::cout << '\n';
+	std::cout << '\n';
+	std::cout << featureName << " == 0, resampled\n";
+	printRecords(dataset_0_i, features, recordDates, 10, 10, 15);
 
-	unsigned concurentThreadsSupported = std::thread::hardware_concurrency();
-	std::cout << "Num cores: " << concurentThreadsSupported  << std::endl;
-	ThreadPool pool(concurentThreadsSupported);
-	const int count = features.size();
-	Semaphore sem;
-
-	for (int featureIndex = 0; featureIndex < count; ++featureIndex) 
-	{
-		pool.execute([featureIndex, &sem, &significantDifferents, &dataset_0, &dataset_1]() {
-			significantDifferents.at(featureIndex) = runPMQ(featureIndex, dataset_0, dataset_1);
-			sem.notify();
-		});
-	}	
-	for (int i = 0; i < count; ++i)
-	{
-		sem.wait();
-	}
-	pool.close();
-
-	auto total_t2 = std::chrono::steady_clock::now();
-	auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(total_t2 - total_t1).count();
-	std::wcout << "PMQ ends";
-	std::wcout << '\n';
-	std::wcout << '\n';
-	std::wcout << '\n';
-	//std::cout << "significantDifferent = " << significantDifferent;
-	Record r(significantDifferents);
-	std::vector<Record> significantDifferentsAsRecord;
-	significantDifferentsAsRecord.push_back(r);
-	std::vector<std::string> d = {"all"};
-	printRecords(significantDifferentsAsRecord, features, d, 10, 10, 15);
-	std::wcout << " (Total time = " << elapsed / 1000000 << " s)" << std::endl;
-	std::wcout << '\n';
-	std::wcout << '\n';
+	std::cout << '\n';
+	std::cout << '\n';
+	std::cout << featureName << " == 1, resampled\n";
+	printRecords(dataset_1_i, features, recordDates, 10, 10, 15);
+	std::cout << '\n';
+	std::cout << '\n';
 
 
-	saveToCsv("PMQResult.csv", significantDifferentsAsRecord, features, d);
+	auto e = entropy<double, metric::distance::Chebyshev<double>>(dataset_0_i, 3, 2, metric::distance::Chebyshev<double>());
+	std::cout << "Chebyshev: " << e << std::endl;
+
+	e = entropy<double, metric::distance::P_norm<double>>(dataset_0_i, 3, 2, metric::distance::P_norm<double>(3));
+	std::cout << "General Minkowsky, 3: " << e << std::endl;
+
+	e = entropy<double, metric::distance::P_norm<double>>(dataset_0_i, 3, 2, metric::distance::P_norm<double>(2));
+	std::cout << "General Minkowsky, 2: " << e << std::endl;
+
+	e = entropy<double, metric::distance::Euclidian<double>>(dataset_0_i, 3, 2, metric::distance::Euclidian<double>());
+	std::cout << "Euclidean: " << e << std::endl;
+
+	e = entropy<double, metric::distance::P_norm<double>>(dataset_0_i, 3, 2, metric::distance::P_norm<double>(1));
+	std::cout << "General Minkowsky, 1: " << e << std::endl;
+
+	e = entropy<double, metric::distance::Manhatten<double>>(dataset_0_i, 3, 2, metric::distance::Manhatten<double>());
+	std::cout << "Manhatten: " << e << std::endl;
+
+
+	std::cout << "\n";
+
+	std::cout << "I(X,X) " << mutualInformation<double>(dataset_0_i, dataset_0_i) << std::endl;
+	//std::cout << "I(X,X) " << mutualInformation<double, metric::distance::Chebyshev<double>>(dataset_0, dataset_0, 3, metric::distance::Chebyshev<double>(), 1) << std::endl;
+	std::cout << "I(Y,Y) " << mutualInformation<double>(dataset_1_i, dataset_1_i) << std::endl;
+	//std::cout << "I(Y,Y) " << mutualInformation<double, metric::distance::Chebyshev<double>>(dataset_1, dataset_1, 3, metric::distance::Chebyshev<double>(), 1) << std::endl;
+	std::cout << "I(X,Y) " << mutualInformation<double>(dataset_0_i, dataset_1_i) << std::endl;
+	//std::cout << "I(X,Y) " << mutualInformation<double, metric::distance::Chebyshev<double>>(dataset_0, dataset_1, 3, metric::distance::Chebyshev<double>(), 1) << std::endl;
+
+	////////////////////
+
+
+	//std::vector<double> significantDifferents(features.size(), -1);
+
+	//auto total_t1 = std::chrono::steady_clock::now();
+
+	//unsigned concurentThreadsSupported = std::thread::hardware_concurrency();
+	//std::cout << "Num cores: " << concurentThreadsSupported  << std::endl;
+	//ThreadPool pool(concurentThreadsSupported);
+	//const int count = features.size();
+	//Semaphore sem;
+
+	//for (int featureIndex = 0; featureIndex < count; ++featureIndex) 
+	//{
+	//	pool.execute([featureIndex, &sem, &significantDifferents, &dataset_0, &dataset_1]() {
+	//		significantDifferents.at(featureIndex) = runPMQ(featureIndex, dataset_0, dataset_1);
+	//		sem.notify();
+	//	});
+	//}	
+	//for (int i = 0; i < count; ++i)
+	//{
+	//	sem.wait();
+	//}
+	//pool.close();
+
+	//auto total_t2 = std::chrono::steady_clock::now();
+	//auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(total_t2 - total_t1).count();
+	//std::wcout << "PMQ ends";
+	//std::wcout << '\n';
+	//std::wcout << '\n';
+	//std::wcout << '\n';
+	////std::cout << "significantDifferent = " << significantDifferent;
+	//Record r(significantDifferents);
+	//std::vector<Record> significantDifferentsAsRecord;
+	//significantDifferentsAsRecord.push_back(r);
+	//std::vector<std::string> d = {"all"};
+	//printRecords(significantDifferentsAsRecord, features, d, 10, 10, 15);
+	//std::wcout << " (Total time = " << elapsed / 1000000 << " s)" << std::endl;
+	//std::wcout << '\n';
+	//std::wcout << '\n';
+
+
+	//saveToCsv("PMQResult.csv", significantDifferentsAsRecord, features, d);
 
 	return 0;
 
