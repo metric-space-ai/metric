@@ -848,8 +848,8 @@ int main(int argc, char *argv[])
 	std::cout << '\n';
 	std::cout << '\n';
 	std::cout <<  "Resampled:" << std::endl;
-	auto dataset_0_i = resample<double>(dataset_0, 1000);
-	auto dataset_1_i = resample<double>(dataset_1, 1000);
+	auto dataset_0_i = resample<double>(dataset_0, 10000);
+	auto dataset_1_i = resample<double>(dataset_1, 10000);
 
 	std::cout << '\n';
 	std::cout << '\n';
@@ -864,34 +864,39 @@ int main(int argc, char *argv[])
 	std::cout << '\n';
 
 
-	auto e = entropy<double, metric::distance::Chebyshev<double>>(dataset_0_i, 3, 2, metric::distance::Chebyshev<double>());
-	std::cout << "Chebyshev: " << e << std::endl;
 
-	e = entropy<double, metric::distance::P_norm<double>>(dataset_0_i, 3, 2, metric::distance::P_norm<double>(3));
-	std::cout << "General Minkowsky, 3: " << e << std::endl;
+	auto e = entropy<double, metric::distance::P_norm<double>>(dataset_0_i, 3, 2, metric::distance::P_norm<double>(3));
+	std::cout << "H(X,Y) General Minkowsky, 3: " << e << std::endl;
 
 	e = entropy<double, metric::distance::P_norm<double>>(dataset_0_i, 3, 2, metric::distance::P_norm<double>(2));
-	std::cout << "General Minkowsky, 2: " << e << std::endl;
+	std::cout << "H(X,Y) General Minkowsky, 2: " << e << std::endl;
 
 	e = entropy<double, metric::distance::Euclidian<double>>(dataset_0_i, 3, 2, metric::distance::Euclidian<double>());
-	std::cout << "Euclidean: " << e << std::endl;
+	std::cout << "H(X,Y) Euclidean: " << e << std::endl;
 
 	e = entropy<double, metric::distance::P_norm<double>>(dataset_0_i, 3, 2, metric::distance::P_norm<double>(1));
-	std::cout << "General Minkowsky, 1: " << e << std::endl;
+	std::cout << "H(X,Y) General Minkowsky, 1: " << e << std::endl;
 
 	e = entropy<double, metric::distance::Manhatten<double>>(dataset_0_i, 3, 2, metric::distance::Manhatten<double>());
-	std::cout << "Manhatten: " << e << std::endl;
+	std::cout << "H(X,Y) Manhatten: " << e << std::endl;
+
+	e = entropy<double, metric::distance::Chebyshev<double>>(dataset_0_i, 3, 2, metric::distance::Chebyshev<double>());
+	std::cout << "H(X,Y) Chebyshev: " << e << std::endl;
 
 
 	std::cout << "\n";
+
 
 	std::cout << "I(X,X) " << mutualInformation<double>(dataset_0_i, dataset_0_i) << std::endl;
 	//std::cout << "I(X,X) " << mutualInformation<double, metric::distance::Chebyshev<double>>(dataset_0, dataset_0, 3, metric::distance::Chebyshev<double>(), 1) << std::endl;
 	std::cout << "I(Y,Y) " << mutualInformation<double>(dataset_1_i, dataset_1_i) << std::endl;
 	//std::cout << "I(Y,Y) " << mutualInformation<double, metric::distance::Chebyshev<double>>(dataset_1, dataset_1, 3, metric::distance::Chebyshev<double>(), 1) << std::endl;
-	std::cout << "I(X,Y) " << mutualInformation<double>(dataset_0_i, dataset_1_i) << std::endl;
+
+	auto mi = mutualInformation<double>(dataset_0_i, dataset_1_i);
+	std::cout << "I(X,Y) " << mi << std::endl;
 	//std::cout << "I(X,Y) " << mutualInformation<double, metric::distance::Chebyshev<double>>(dataset_0, dataset_1, 3, metric::distance::Chebyshev<double>(), 1) << std::endl;
 
+	std::cout << "VOI = " << e - mi << std::endl;
 	////////////////////
 
 
