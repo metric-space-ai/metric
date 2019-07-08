@@ -848,8 +848,8 @@ int main(int argc, char *argv[])
 	std::cout << '\n';
 	std::cout << '\n';
 	std::cout <<  "Resampled:" << std::endl;
-	auto dataset_0_i = resample<double>(dataset_0, 1000);
-	auto dataset_1_i = resample<double>(dataset_1, 1000);
+	auto dataset_0_i = resample<double>(dataset_0, 5000);
+	auto dataset_1_i = resample<double>(dataset_1, 5000);
 
 	std::cout << '\n';
 	std::cout << '\n';
@@ -895,15 +895,17 @@ int main(int argc, char *argv[])
 
 	auto total_t1 = std::chrono::steady_clock::now();
 
-	e = entropy<double, metric::distance::Chebyshev<double>>(dataset_0_i, 3, 2, metric::distance::Chebyshev<double>());
+	auto eX = entropy<double, metric::distance::Chebyshev<double>>(dataset_0_i, 3, 2, metric::distance::Chebyshev<double>());
+	auto eY = entropy<double, metric::distance::Chebyshev<double>>(dataset_1_i, 3, 2, metric::distance::Chebyshev<double>());
 
 	auto mi = mutualInformation<double>(dataset_0_i, dataset_1_i);
 	std::cout << "I(X,Y) " << mi << std::endl;
 	//std::cout << "I(X,Y) " << mutualInformation<double, metric::distance::Chebyshev<double>>(dataset_0, dataset_1, 3, metric::distance::Chebyshev<double>(), 1) << std::endl;
 
+	auto voi = eX + eY - 2 * mi;
 	std::cout << "\n";
 	std::cout << "\n";
-	std::cout << "VOI = " << e - mi << std::endl;
+	std::cout << "VOI = " << voi << std::endl;
 
 	auto total_t2 = std::chrono::steady_clock::now();
 	auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(total_t2 - total_t1).count();
