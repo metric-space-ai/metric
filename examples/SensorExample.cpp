@@ -848,8 +848,8 @@ int main(int argc, char *argv[])
 	std::cout << '\n';
 	std::cout << '\n';
 	std::cout <<  "Resampled:" << std::endl;
-	auto dataset_0_i = resample<double>(dataset_0, 10000);
-	auto dataset_1_i = resample<double>(dataset_1, 10000);
+	auto dataset_0_i = resample<double>(dataset_0, 5000);
+	auto dataset_1_i = resample<double>(dataset_1, 5000);
 
 	std::cout << '\n';
 	std::cout << '\n';
@@ -880,6 +880,9 @@ int main(int argc, char *argv[])
 	e = entropy<double, metric::distance::Manhatten<double>>(dataset_0_i, 3, 2, metric::distance::Manhatten<double>());
 	std::cout << "H(X,Y) Manhatten: " << e << std::endl;
 
+
+	auto total_t1 = std::chrono::steady_clock::now();
+
 	e = entropy<double, metric::distance::Chebyshev<double>>(dataset_0_i, 3, 2, metric::distance::Chebyshev<double>());
 	std::cout << "H(X,Y) Chebyshev: " << e << std::endl;
 
@@ -899,6 +902,11 @@ int main(int argc, char *argv[])
 	std::cout << "\n";
 	std::cout << "\n";
 	std::cout << "VOI = " << e - mi << std::endl;
+
+	auto total_t2 = std::chrono::steady_clock::now();
+	auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(total_t2 - total_t1).count();
+	std::cout << " (Total time = " << elapsed / 1000000 << " s)" << std::endl;
+
 	////////////////////
 
 
