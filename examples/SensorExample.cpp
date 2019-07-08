@@ -820,8 +820,8 @@ int main(int argc, char *argv[])
 
 	cross::filter<Record> recordsFilter(records);
 	std::vector<Record> filtered_results;
-	//std::string featureName = "Sammelabriss";
-	std::string featureName = "Gutproduktion";
+	std::string featureName = "Sammelabriss";
+	//std::string featureName = "Gutproduktion";
 	static const int featureGutproduktionIndex = lookupFeatureIndex(featureName, features);
 	std::cout << "feature " << featureName << " index: " << featureGutproduktionIndex << std::endl;
 	std::cout << "feature " << featureName << " label: " << features[featureGutproduktionIndex].bezeichnung << std::endl;
