@@ -848,8 +848,8 @@ int main(int argc, char *argv[])
 	std::cout << '\n';
 	std::cout << '\n';
 	std::cout <<  "Resampled:" << std::endl;
-	auto dataset_0_i = resample<double>(dataset_0, 5000);
-	auto dataset_1_i = resample<double>(dataset_1, 5000);
+	auto dataset_0_i = resample<double>(dataset_0, 1000);
+	auto dataset_1_i = resample<double>(dataset_1, 1000);
 
 	std::cout << '\n';
 	std::cout << '\n';
