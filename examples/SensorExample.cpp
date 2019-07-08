@@ -880,9 +880,6 @@ int main(int argc, char *argv[])
 	e = entropy<double, metric::distance::Manhatten<double>>(dataset_0_i, 3, 2, metric::distance::Manhatten<double>());
 	std::cout << "H(X,Y) Manhatten: " << e << std::endl;
 
-
-	auto total_t1 = std::chrono::steady_clock::now();
-
 	e = entropy<double, metric::distance::Chebyshev<double>>(dataset_0_i, 3, 2, metric::distance::Chebyshev<double>());
 	std::cout << "H(X,Y) Chebyshev: " << e << std::endl;
 
@@ -894,6 +891,11 @@ int main(int argc, char *argv[])
 	//std::cout << "I(X,X) " << mutualInformation<double, metric::distance::Chebyshev<double>>(dataset_0, dataset_0, 3, metric::distance::Chebyshev<double>(), 1) << std::endl;
 	std::cout << "I(Y,Y) " << mutualInformation<double>(dataset_1_i, dataset_1_i) << std::endl;
 	//std::cout << "I(Y,Y) " << mutualInformation<double, metric::distance::Chebyshev<double>>(dataset_1, dataset_1, 3, metric::distance::Chebyshev<double>(), 1) << std::endl;
+
+
+	auto total_t1 = std::chrono::steady_clock::now();
+
+	e = entropy<double, metric::distance::Chebyshev<double>>(dataset_0_i, 3, 2, metric::distance::Chebyshev<double>());
 
 	auto mi = mutualInformation<double>(dataset_0_i, dataset_1_i);
 	std::cout << "I(X,Y) " << mi << std::endl;
