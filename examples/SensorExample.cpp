@@ -866,22 +866,25 @@ int main(int argc, char *argv[])
 
 
 	auto e = entropy<double, metric::distance::P_norm<double>>(dataset_0_i, 3, 2, metric::distance::P_norm<double>(3));
-	std::cout << "H(X,Y) General Minkowsky, 3: " << e << std::endl;
+	std::cout << "H(X) General Minkowsky, 3: " << e << std::endl;
 
 	e = entropy<double, metric::distance::P_norm<double>>(dataset_0_i, 3, 2, metric::distance::P_norm<double>(2));
-	std::cout << "H(X,Y) General Minkowsky, 2: " << e << std::endl;
+	std::cout << "H(X) General Minkowsky, 2: " << e << std::endl;
 
 	e = entropy<double, metric::distance::Euclidian<double>>(dataset_0_i, 3, 2, metric::distance::Euclidian<double>());
-	std::cout << "H(X,Y) Euclidean: " << e << std::endl;
+	std::cout << "H(X) Euclidean: " << e << std::endl;
 
 	e = entropy<double, metric::distance::P_norm<double>>(dataset_0_i, 3, 2, metric::distance::P_norm<double>(1));
-	std::cout << "H(X,Y) General Minkowsky, 1: " << e << std::endl;
+	std::cout << "H(X) General Minkowsky, 1: " << e << std::endl;
 
 	e = entropy<double, metric::distance::Manhatten<double>>(dataset_0_i, 3, 2, metric::distance::Manhatten<double>());
-	std::cout << "H(X,Y) Manhatten: " << e << std::endl;
+	std::cout << "H(X) Manhatten: " << e << std::endl;
 
 	e = entropy<double, metric::distance::Chebyshev<double>>(dataset_0_i, 3, 2, metric::distance::Chebyshev<double>());
-	std::cout << "H(X,Y) Chebyshev: " << e << std::endl;
+	std::cout << "H(X) Chebyshev: " << e << std::endl;
+
+	e = entropy<double, metric::distance::Chebyshev<double>>(dataset_1_i, 3, 2, metric::distance::Chebyshev<double>());
+	std::cout << "H(Y) Chebyshev: " << e << std::endl;
 
 
 	std::cout << "\n";
