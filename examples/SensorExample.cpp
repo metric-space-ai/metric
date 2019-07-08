@@ -896,6 +896,8 @@ int main(int argc, char *argv[])
 	std::cout << "I(X,Y) " << mi << std::endl;
 	//std::cout << "I(X,Y) " << mutualInformation<double, metric::distance::Chebyshev<double>>(dataset_0, dataset_1, 3, metric::distance::Chebyshev<double>(), 1) << std::endl;
 
+	std::cout << "\n";
+	std::cout << "\n";
 	std::cout << "VOI = " << e - mi << std::endl;
 	////////////////////
 
