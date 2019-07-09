@@ -595,7 +595,7 @@ void saveToCsv(std::string filename, const std::vector<Record> &mat, const std::
 
 std::mutex mu;
 
-double runPMQ(int featureIndex, std::vector<Record> dataset_0, std::vector<Record> dataset_1)
+double runOOC(int featureIndex, std::vector<Record> dataset_0, std::vector<Record> dataset_1)
 {
 	std::vector<double> datasetColumn_0;
 	std::vector<double> datasetColumn_1;
@@ -619,7 +619,7 @@ double runPMQ(int featureIndex, std::vector<Record> dataset_0, std::vector<Recor
 
 	auto t2 = std::chrono::steady_clock::now();
 	mu.lock();
-	std::wcout << featureIndex << ": " << significantDifferent << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000 << " s)" << std::endl;
+	std::wcout << featureIndex << ": PMQ = " << significantDifferent << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000 << " s)" << std::endl;
 	mu.unlock();
 
 	return significantDifferent;
@@ -731,6 +731,62 @@ std::vector<std::vector<T>> resample(std::vector<std::vector<T>> source, int des
 	return resampled;
 }
 
+template <typename T>
+std::vector<std::vector<T>> resampleFeature(std::vector<std::vector<T>> source, int featureIndex, int destinationRows)
+{
+	auto x = linspace<T>(0, 1, source.size());
+	auto xi = linspace<T>(0, 1, destinationRows);
+	std::vector<T> y;
+	std::vector<T> yi;
+	std::vector<std::vector<T>> resampled(destinationRows, std::vector<T>(1));
+
+	y.clear();
+	yi.clear();
+	for (auto i = 0; i < source.size(); ++i)
+	{
+		y.push_back(source[i][featureIndex]);
+	}
+	yi = akimaInterp1(x, y, xi);
+	for (auto i = 0; i < yi.size(); ++i)
+	{
+		resampled[i][0] = yi[i];
+	}
+
+	return resampled;
+}
+
+double runVOI(int featureIndex, std::vector<Record> dataset_0, std::vector<Record> dataset_1)
+{
+	auto t1 = std::chrono::steady_clock::now();
+	auto resampledFeature_0 = resampleFeature<double>(dataset_0, featureIndex, 5000);
+	auto resampledFeature_1 = resampleFeature<double>(dataset_1, featureIndex, 5000);
+
+	auto eX = entropy<double, metric::distance::Chebyshev<double>>(resampledFeature_0, 3, 2, metric::distance::Chebyshev<double>());
+	auto eY = entropy<double, metric::distance::Chebyshev<double>>(resampledFeature_1, 3, 2, metric::distance::Chebyshev<double>());
+
+	auto mi = mutualInformation<double>(resampledFeature_0, resampledFeature_1);
+
+	auto voi = eX + eY - 2 * mi;
+
+	auto t2 = std::chrono::steady_clock::now();
+	mu.lock();
+	std::wcout << featureIndex << ": VOI = " << voi << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000 << " s)" << std::endl;
+	mu.unlock();
+
+	return voi;
+}
+
+double runImportance(int featureIndex, std::vector<Record> dataset_0, std::vector<Record> dataset_1)
+{
+	std::cout << "start feature #" << featureIndex << std::endl;
+
+	auto voi = runVOI(featureIndex, dataset_0, dataset_1);
+
+	auto ooc = runOOC(featureIndex, dataset_0, dataset_1);
+
+	return voi * ooc;
+}
+
 int main(int argc, char *argv[])
 {
 	bool FROM_CSV = false;
@@ -820,8 +876,8 @@ int main(int argc, char *argv[])
 
 	cross::filter<Record> recordsFilter(records);
 	std::vector<Record> filtered_results;
-	std::string featureName = "Sammelabriss";
-	//std::string featureName = "Gutproduktion";
+	//std::string featureName = "Sammelabriss";
+	std::string featureName = "Gutproduktion";
 	static const int featureGutproduktionIndex = lookupFeatureIndex(featureName, features);
 	std::cout << "feature " << featureName << " index: " << featureGutproduktionIndex << std::endl;
 	std::cout << "feature " << featureName << " label: " << features[featureGutproduktionIndex].bezeichnung << std::endl;
@@ -848,8 +904,8 @@ int main(int argc, char *argv[])
 	std::cout << '\n';
 	std::cout << '\n';
 	std::cout <<  "Resampled:" << std::endl;
-	auto dataset_0_i = resample<double>(dataset_0, 5000);
-	auto dataset_1_i = resample<double>(dataset_1, 5000);
+	auto dataset_0_i = resample<double>(dataset_0, 100);
+	auto dataset_1_i = resample<double>(dataset_1, 100);
 
 	std::cout << '\n';
 	std::cout << '\n';
@@ -916,48 +972,54 @@ int main(int argc, char *argv[])
 
 	////////////////////
 
+	/*double ooc;
+	std::vector<double> vois;
+	std::vector<double> ooces;
+	std::vector<double> importantes;
+	std::vector<std::vector<double>> resampledFeature_0;
+	std::vector<std::vector<double>> resampledFeature_1;*/
 
-	//std::vector<double> significantDifferents(features.size(), -1);
+	std::vector<double> importances(features.size(), -1);
 
-	//auto total_t1 = std::chrono::steady_clock::now();
+	total_t1 = std::chrono::steady_clock::now();
 
-	//unsigned concurentThreadsSupported = std::thread::hardware_concurrency();
-	//std::cout << "Num cores: " << concurentThreadsSupported  << std::endl;
-	//ThreadPool pool(concurentThreadsSupported);
-	//const int count = features.size();
-	//Semaphore sem;
+	unsigned concurentThreadsSupported = std::thread::hardware_concurrency();
+	std::cout << "Num cores: " << concurentThreadsSupported  << std::endl;
+	ThreadPool pool(concurentThreadsSupported);
+	const int count = features.size();
+	Semaphore sem;
 
-	//for (int featureIndex = 0; featureIndex < count; ++featureIndex) 
-	//{
-	//	pool.execute([featureIndex, &sem, &significantDifferents, &dataset_0, &dataset_1]() {
-	//		significantDifferents.at(featureIndex) = runPMQ(featureIndex, dataset_0, dataset_1);
-	//		sem.notify();
-	//	});
-	//}	
-	//for (int i = 0; i < count; ++i)
-	//{
-	//	sem.wait();
-	//}
-	//pool.close();
+	for (int featureIndex = 0; featureIndex < count; ++featureIndex) 
+	{
+		pool.execute([featureIndex, &sem, &importances, &dataset_0, &dataset_1]() {
+			importances.at(featureIndex) = runImportance(featureIndex, dataset_0, dataset_1);
+			sem.notify();
+		});
+	}	
+	for (int i = 0; i < count; ++i)
+	{
+		sem.wait();
+	}
+	pool.close();
 
-	//auto total_t2 = std::chrono::steady_clock::now();
-	//auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(total_t2 - total_t1).count();
-	//std::wcout << "PMQ ends";
-	//std::wcout << '\n';
-	//std::wcout << '\n';
-	//std::wcout << '\n';
-	////std::cout << "significantDifferent = " << significantDifferent;
-	//Record r(significantDifferents);
-	//std::vector<Record> significantDifferentsAsRecord;
-	//significantDifferentsAsRecord.push_back(r);
-	//std::vector<std::string> d = {"all"};
-	//printRecords(significantDifferentsAsRecord, features, d, 10, 10, 15);
-	//std::wcout << " (Total time = " << elapsed / 1000000 << " s)" << std::endl;
-	//std::wcout << '\n';
-	//std::wcout << '\n';
+	total_t2 = std::chrono::steady_clock::now();
+	elapsed = std::chrono::duration_cast<std::chrono::microseconds>(total_t2 - total_t1).count();
+	std::wcout << "PMQ and VOI ends";
+	std::wcout << '\n';
+	std::wcout << '\n';
+	std::wcout << '\n';
+
+	Record r(importances);
+	std::vector<Record> importancesAsRecord;
+	importancesAsRecord.push_back(r);
+	std::vector<std::string> d = {"all"};
+	printRecords(importancesAsRecord, features, d, 10, 10, 15);
+	std::wcout << " (Total time = " << elapsed / 1000000 << " s)" << std::endl;
+	std::wcout << '\n';
+	std::wcout << '\n';
 
 
-	//saveToCsv("PMQResult.csv", significantDifferentsAsRecord, features, d);
+	saveToCsv("PMQxVOI_result.csv", importancesAsRecord, features, d);
 
 	return 0;
 
