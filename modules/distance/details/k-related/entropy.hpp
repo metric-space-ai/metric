@@ -29,7 +29,7 @@ template<typename T>
 void add_noise(std::vector<std::vector<T>> & data) {
     std::random_device rd;
     std::mt19937 gen(rd());
-    //std::uniform_real_distribution<> dis(0, 1);
+//    std::uniform_real_distribution<> dis(0, 1);
     std::normal_distribution<T> dis(0, 1);
     double c = 1e-10;
     for(auto & v : data) {
@@ -171,7 +171,7 @@ void combine (const std::vector<std::vector<T>> & X, const std::vector<std::vect
 
 
 template<typename T, typename Metric = metric::distance::Chebyshev<T>>
-typename std::enable_if<!std::is_integral<T>::value, T>::type // added by Max F
+typename std::enable_if<!std::is_integral<T>::value, T>::type // line added by Max F
 mutualInformation(const std::vector<std::vector<T>> & Xc,
                     const std::vector<std::vector<T>> & Yc,
                     int k = 3,  Metric metric = Metric(), int version = 2) {
@@ -214,21 +214,39 @@ mutualInformation(const std::vector<std::vector<T>> & Xc,
         } else if(version == 2) {
             auto ex = metric(X[neighbor->ID],X[i]);
             auto ex_eps = std::nextafter(ex, std::numeric_limits<decltype(ex)>::max()); // this it to include the most distant point into the sphere // added by Max F in order to match Julia code logic without updating Tree
-            nx = xTree.rnn(X[i], ex_eps).size(); // replaced ex by ex_eps by Max F
+            //nx = xTree.rnn(X[i], ex_eps).size(); // replaced ex by ex_eps by Max F //    TODO ebable
+
+            //  debug code
+            auto rnn_set = xTree.rnn(X[i], ex_eps);
+            nx = rnn_set.size(); // replaced ex by ex_eps by Max F
+
+
             //            std::cout << "X[neighbor]="; print_vec(X[neighbor->ID]); std::cout << std::endl;
             //            std::cout << "ex=" << ex << std::endl;
             //            nx = nx1.size();
             //            std::cout << "rnn=" ; print_vec(nx1) ; std::cout << std::endl;
             //            std::cout << "X[i]="; print_vec(X[i]) ; std::cout << std::endl;
-            // debug code
-            if (nx == 0)
-            {
-                nx = 1; // TODO update with true bugfix!!
-                auto dot1 = X[neighbor->ID];
-                auto dot2 = X[i];
 
-                std::cout << "zero distance\n";
-            }
+            // debug code, TODO remove
+//            if (nx == 0)
+//            {
+//                nx = 1; // TODO update with true bugfix!!
+//                auto dot1 = X[neighbor->ID];
+//                auto dot2 = X[i];
+
+//                auto dist_eps_d = std::nextafter(dist, std::numeric_limits<decltype(dist)>::max()); // this is instead of replacing < with <= in Tree // added by Max F in order to match Julia code logic without updating Tree
+
+//                auto rnn_set_test = xTree.rnn(X[i], ex_eps);
+//                auto rnn_set_test_2 = xTree.rnn(X[i], ex_eps + 1e-07);
+//                auto rnn_set_test_2_2 = xTree.rnn(X[i], ex_eps + 1e-07);
+//                auto rnn_set_test_3 = xTree.rnn(X[neighbor->ID], ex_eps);
+//                auto rnn_set_test_4 = tree.rnn(XY[neighbor->ID], dist_eps_d);
+//                auto rnn_set_test_5 = tree.rnn(XY[i], dist_eps_d);
+//                auto knn_res_set_test = tree.knn(XY[i],k+1); // repeats well
+//                auto knn_res_set_test_4 = tree.knn(XY[neighbor->ID],k+1); // repeats well
+
+//                std::cout << "zero distance\n";
+//            }
         } else {
             throw std::runtime_error("this version not allowed");
         }
@@ -252,7 +270,7 @@ mutualInformation(const std::vector<std::vector<T>> & Xc,
 //    using Cheb = metric::distance::Chebyshev<T>; // replaced by Max F
 //    return entropy<T,Cheb>(Xc, 3, logbase, Cheb()) + entropy<T,Cheb>(Yc, 3, logbase, Cheb())
 //        - entropy<T, Cheb>(XY, 3, logbase, Cheb());
-    return entropy<T>(Xc, logbase) + entropy<T>(Yc, logbase) // entropy overload fot integers is not implemented yet
+    return entropy<T>(Xc, logbase) + entropy<T>(Yc, logbase) // entropy overload for integers is not implemented yet
         - entropy<T>(XY, logbase);
 
 }
