@@ -778,7 +778,9 @@ double runVOI(int featureIndex, std::vector<Record> dataset_0, std::vector<Recor
 
 double runImportance(int featureIndex, std::vector<Record> dataset_0, std::vector<Record> dataset_1)
 {
+	mu.lock();
 	std::cout << "start feature #" << featureIndex << std::endl;
+	mu.unlock();
 
 	auto voi = runVOI(featureIndex, dataset_0, dataset_1);
 
