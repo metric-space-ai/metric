@@ -291,16 +291,23 @@ std::vector<std::string> getTimestamps(PGconn *conn, const int limit = 100)
 	return stamps;
 }
 
-std::vector<std::string> getGutproduktionTimestamps(PGconn *conn, const int limit = 0)
+std::vector<std::string> getTargetTimestamps(PGconn *conn, std::string metaid, const int limit = 0)
 {
 	// Execute with sql statement
 	PGresult *res = NULL;
 
-	std::string queryString = "SELECT * FROM ( SELECT DISTINCT date, metaid FROM public.sensordata WHERE metaid @> '{1,7,8}'::int[]) AS extended WHERE metaid::varchar(8) = '{1,7,8}' ORDER BY date ASC";
+	std::string queryString = "SELECT * FROM ( SELECT DISTINCT date, metaid FROM public.sensordata WHERE metaid @> '" + 
+		metaid + 
+		"'::int[]) AS extended WHERE metaid::varchar(" + 
+		std::to_string(metaid.size()) + ") = '" + 
+		metaid + 
+		"' ORDER BY date ASC";
+
 	if (limit > 0)
 	{
 		queryString += " LIMIT " + std::to_string(limit);
 	}
+	std::cout << queryString << std::endl;
 
 	res = PQexec(conn, queryString.c_str());
 	if (PQresultStatus(res) != PGRES_TUPLES_OK)
@@ -385,12 +392,13 @@ Record getSensorRecord(PGconn *conn, const std::string date, const std::vector<F
 	return row;
 }
 
-std::tuple < std::vector<Record>, std::vector<std::string> > getAllSensorRecords(PGconn *conn, const std::vector<Feature> &features, const std::vector<std::string> dates)
+std::vector<Record> getAllSensorRecords(PGconn *conn, const std::vector<Feature> &features, const std::vector<std::string> &dates)
 {
 	// Execute with sql statement
 	PGresult *res = NULL;
+	std::string queryString;
 
-	std::string queryString = "SELECT * FROM public.sensordata WHERE date IN (";
+	/*std::string queryString = "SELECT * FROM public.sensordata WHERE date IN (";
 	for (int i = 0; i < dates.size(); ++i)
 	{
 		if (i == dates.size() - 1) {
@@ -401,11 +409,16 @@ std::tuple < std::vector<Record>, std::vector<std::string> > getAllSensorRecords
 			queryString += "'" + dates[i] + "', ";
 		}
 	}
-	queryString += ") ORDER BY date ASC";
+	queryString += ") ORDER BY date ASC";*/
 
-	//std::string queryString = "SELECT * FROM public.sensordata WHERE date BETWEEN '" + dates[0] + "' AND '" + dates[dates.size() - 1] + "' ORDER BY date ASC";
+	if (dates.size() > 0) {
+		queryString = "SELECT * FROM public.sensordata WHERE date BETWEEN '" + dates[0] + "' AND '" + dates[dates.size() - 1] + "' ORDER BY date ASC";
+	}
+	else {
+		std::string queryString = "SELECT * FROM public.sensordata ORDER BY date ASC";
+	}
 
-	//std::cout << queryString << std::endl;
+	std::cout << queryString << std::endl;
 
 	res = PQexec(conn, queryString.c_str());
 	if (PQresultStatus(res) != PGRES_TUPLES_OK)
@@ -417,9 +430,9 @@ std::tuple < std::vector<Record>, std::vector<std::string> > getAllSensorRecords
 
 	int nRows = PQntuples(res);
 
-	Record row(features.size(), -1);
+	Record row(features.size() + 1, -INFINITY);
 	std::vector<Record> rows;
-	std::vector<std::string> existDates;
+	//std::vector<std::string> existDates;
 
 	double value;
 	std::string feature;
@@ -435,11 +448,12 @@ std::tuple < std::vector<Record>, std::vector<std::string> > getAllSensorRecords
 		}
 
 		if (currentDate.compare(date) != 0) {
-			existDates.push_back(currentDate);
+			row[row.size() - 1] = double(getEpochTime(currentDate.c_str()));
+			//existDates.push_back(currentDate);
 			currentDate = date;
 			rows.push_back(row);
 			row.clear();
-			row.assign(features.size(), -1);
+			row.assign(features.size() + 1, -INFINITY);
 		}
 		value = atof(PQgetvalue(res, i, value_fnum));
 		feature = std::string(PQgetvalue(res, i, feature_fnum));
@@ -450,10 +464,11 @@ std::tuple < std::vector<Record>, std::vector<std::string> > getAllSensorRecords
 		}
 	}
 	// add last row, it is not added when for cycle ends
-	existDates.push_back(currentDate);
+	//existDates.push_back(currentDate);
+	row[row.size() - 1] = double(getEpochTime(currentDate.c_str()));
 	rows.push_back(row);
 
-	return std::make_tuple(rows, existDates);
+	return rows;
 }
 
 struct CrossRecord
@@ -480,7 +495,7 @@ void printCrossRecord(const std::vector<CrossRecord> &vec)
 	}
 }
 
-void printRecords(const std::vector<Record> &mat, const std::vector<Feature> &features, const std::vector<std::string> &dates, int maxRows = -1, int maxCols = -1, int maxStringSize = 10)
+void printRecords(const std::vector<Record> &mat, const std::vector<Feature> &features, int maxRows = -1, int maxCols = -1, int maxStringSize = 10)
 {
 	std::string str;
 	maxStringSize = maxStringSize - 3;
@@ -506,10 +521,16 @@ void printRecords(const std::vector<Record> &mat, const std::vector<Feature> &fe
 	}
 	std::cout << std::endl;
 
+
 	for (auto i = 0; i < mat.size(); ++i)
 	{
-		std::cout << dates[i] << " -> { ";
-		for (auto j = 0; j < mat[i].size(); j++)
+		// last item in the mat is date
+		char buff[20];
+		time_t date = mat[i][mat[i].size() - 1];
+		std::cout << date << std::endl;
+		strftime(buff, 20, "%Y-%m-%d %H:%M:%S", localtime(&date));
+		std::cout << buff << " -> { ";
+		for (auto j = 0; j < mat[i].size() - 1; j++)
 		{
 			std::cout << mat[i][j];
 			if (j < mat[i].size() - 1)
@@ -556,7 +577,7 @@ void printFeatures(const std::vector<Feature> &vec, int maxRows = -1)
 	}
 }
 
-void saveToCsv(std::string filename, const std::vector<Record> &mat, const std::vector<Feature> &features, const std::vector<std::string> &dates)
+void saveToCsv(std::string filename, const std::vector<Record> &mat, const std::vector<Feature> &features)
 {
 	std::ofstream outputFile;
 
@@ -564,26 +585,32 @@ void saveToCsv(std::string filename, const std::vector<Record> &mat, const std::
 	outputFile.open(filename);
 
 	// write the file headers
-	outputFile << "date;";
 	for (auto i = 0; i < features.size(); ++i)
 	{
 		outputFile << features[i].bezeichnung;
-		if (i < features.size() - 1)
-		{
-			outputFile << ";";
-		}
+		outputFile << ";";
 	}
+	outputFile << "date";
 	outputFile << std::endl;
 
+	// last item in the mat is date
 	for (auto i = 0; i < mat.size(); ++i)
 	{
-		outputFile << dates[i] << ";";
+		//outputFile << dates[i] << ";";
 		for (auto j = 0; j < mat[i].size(); j++)
 		{
 			outputFile << mat[i][j];
 			if (j < mat[i].size() - 1)
 			{
 				outputFile << ";";
+			}
+			else
+			{
+				char buff[20];
+				time_t date = mat[i][j];
+				std::cout << date << std::endl;
+				strftime(buff, 20, "%Y-%m-%d %H:%M:%S", localtime(&date));
+				std::cout << i << " " << mat[i][j] << " " << buff << std::endl;
 			}
 		}
 		outputFile << std::endl;
@@ -634,10 +661,8 @@ double time_call(Function&& f)
 	return double(std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count());
 }
 
-std::tuple < std::vector<Record>, std::vector<std::string>, std::vector<Feature> > readCsvData(std::string filename)
+std::tuple < std::vector<Record>, std::vector<Feature> > readCsvData(std::string filename)
 {
-	std::vector<std::string> timestamps;
-
 	// File pointer 
 	std::fstream fin;
 
@@ -651,23 +676,19 @@ std::tuple < std::vector<Record>, std::vector<std::string>, std::vector<Feature>
 
 	std::vector<Feature> features;
 	std::vector<Record> rows;
-	std::vector<std::string> existDates;
-	std::string currentDate = "";
 
 	getline(fin, line);
 	std::stringstream s(line);
 	// omit 'date' feature
-	getline(s, word, ';');
+	//getline(s, word, ';');
 	int i = 0;
 	while (getline(s, word, ';')) 
 	{
 		Feature feature {i++, "", word};
 		features.push_back(feature);
-		if (i > 4500)
-		{
-			//break;
-		}
 	}
+	// omit 'date' feature
+	features.erase(features.end() - 1);
 
 	// read an entire row and 
 	// store it in a string variable 'line' 
@@ -678,9 +699,8 @@ std::tuple < std::vector<Record>, std::vector<std::string>, std::vector<Feature>
 		// used for breaking words 
 		std::stringstream s(line);
 
-		getline(s, currentDate, ';');
+		//getline(s, currentDate, ';');
 
-		i = 0;
 		// read every column data of a row and 
 		// store it in a string variable, 'word' 
 		while (getline(s, word, ';')) {
@@ -688,27 +708,20 @@ std::tuple < std::vector<Record>, std::vector<std::string>, std::vector<Feature>
 			// add all the column data 
 			// of a row to a vector 
 			row.push_back(std::stod(word));
-
-			i++;
-			if (i > 4500)
-			{
-				//break;
-			}
 		}
 
-		existDates.push_back(currentDate);
 		rows.push_back(row);
 	}
 
-	return std::make_tuple(rows, existDates, features);
+	return std::make_tuple(rows, features);
 }
 
 template <typename T>
 std::vector<std::vector<T>> resample(std::vector<std::vector<T>> source, int destinationRows)
 {
 	auto columns = source[0].size();
-	auto x = linspace<T>(0, 1, source.size());
-	auto xi = linspace<T>(0, 1, destinationRows);
+	std::vector<T> x;
+	auto xi = linspace<T>(source[0][source[0].size() - 1], source[source.size() - 1][source[0].size() - 1], destinationRows);
 	std::vector<T> y;
 	std::vector<T> yi;
 	std::vector<std::vector<T>> resampled(destinationRows, std::vector<T>(columns));
@@ -716,15 +729,32 @@ std::vector<std::vector<T>> resample(std::vector<std::vector<T>> source, int des
 	for (auto f = 0; f < columns; ++f)
 	{
 		y.clear();
+		x.clear();
 		yi.clear();
 		for (auto i = 0; i < source.size(); ++i)
 		{
+			if (source[i][f] == -INFINITY) {
+				//std::cout << "omit " << i << " = " << source[i][featureIndex] << std::endl;
+				continue;
+			}
+			// last feature is the date
+			x.push_back(source[i][source[i].size() - 1]);
 			y.push_back(source[i][f]);
 		}
-		yi = akimaInterp1(x, y, xi);
-		for (auto i = 0; i < yi.size(); ++i)
+		if (y.size() > 0)
 		{
-			resampled[i][f] = yi[i];
+			yi = akimaInterp1(x, y, xi);
+			for (auto i = 0; i < yi.size(); ++i)
+			{
+				resampled[i][f] = yi[i];
+			}
+		}
+		else
+		{
+			for (auto i = 0; i < xi.size(); ++i)
+			{
+				resampled[i][f] = 0;
+			}
 		}
 	}
 
@@ -734,8 +764,8 @@ std::vector<std::vector<T>> resample(std::vector<std::vector<T>> source, int des
 template <typename T>
 std::vector<std::vector<T>> resampleFeature(std::vector<std::vector<T>> source, int featureIndex, int destinationRows)
 {
-	auto x = linspace<T>(0, 1, source.size());
-	auto xi = linspace<T>(0, 1, destinationRows);
+	std::vector<T> x;
+	auto xi = linspace<T>(source[0][source[0].size() - 1], source[source.size() - 1][source[0].size() - 1], destinationRows);
 	std::vector<T> y;
 	std::vector<T> yi;
 	std::vector<std::vector<T>> resampled(destinationRows, std::vector<T>(1));
@@ -744,6 +774,12 @@ std::vector<std::vector<T>> resampleFeature(std::vector<std::vector<T>> source, 
 	yi.clear();
 	for (auto i = 0; i < source.size(); ++i)
 	{
+		if (source[i][featureIndex] == -INFINITY) {
+			//std::cout << "omit " << i << " = " << source[i][featureIndex] << std::endl;
+			continue;
+		}
+		// last feature is the date
+		x.push_back(source[i][source[i].size() - 1]);
 		y.push_back(source[i][featureIndex]);
 	}
 	yi = akimaInterp1(x, y, xi);
@@ -811,20 +847,28 @@ int main(int argc, char *argv[])
 	std::vector<Feature> features;
 
 	std::vector<Record> records;
-	std::vector<std::string> recordDates;
-
+	//std::vector<std::string> recordDates;
+	
+	static int targetFeatureIndex;
+	//std::string featureName = "Sammelabriss";
+	std::string featureName = "Gutproduktion";
 
 	if (FROM_CSV)
 	{
 		auto t1 = std::chrono::steady_clock::now();
 
-		std::tie(records, recordDates, features) = readCsvData(sensorDataCsvFilename);
+		std::tie(records, features) = readCsvData(sensorDataCsvFilename);
 
 		auto t2 = std::chrono::steady_clock::now();
 
 		std::cout << '\n';
 		std::cout << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000 << " s)" << std::endl;
 		std::cout << '\n';
+
+
+		std::cout << "num features: " << features.size() << std::endl;
+
+		targetFeatureIndex = lookupFeatureIndex(featureName, features);
 	}
 	else
 	{
@@ -837,13 +881,17 @@ int main(int argc, char *argv[])
 
 		std::cout << "num features: " << numFeatures << std::endl;
 
-		timestamps = getGutproduktionTimestamps(conn);
-
-		vector_print(timestamps, 5);
-
 		features = getFeatures(conn);
 
 		printFeatures(features, 5);
+
+		targetFeatureIndex = lookupFeatureIndex(featureName, features);
+
+		std::cout << "feature " << featureName << " id: " << features[targetFeatureIndex].id << std::endl;
+
+		timestamps = getTargetTimestamps(conn, features[targetFeatureIndex].id);
+
+		vector_print(timestamps, 5);
 
 		//
 
@@ -853,15 +901,15 @@ int main(int argc, char *argv[])
 			records.push_back(getSensorRecord(conn, timestamps[i], features));
 		}*/
 		std::vector<std::string> cuttimestamps(timestamps.begin() + 5500, timestamps.begin() + 5550);
-		std::tie(records, recordDates) = getAllSensorRecords(conn, features, cuttimestamps);
-		//std::tie(records, recordDates) = getAllSensorRecords(conn, features, timestamps);
+		records = getAllSensorRecords(conn, features, cuttimestamps);
+		//records = getAllSensorRecords(conn, features, timestamps);
 		auto t2 = std::chrono::steady_clock::now();
 
 		std::cout << '\n';
 		std::cout << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000 << " s)" << std::endl;
 		std::cout << '\n';
 
-		saveToCsv(sensorDataCsvFilename, records, features, recordDates);
+		saveToCsv(sensorDataCsvFilename, records, features);
 
 		//auto dataset_0 = getSensorData(conn, "SELECT * FROM public.sensordata WHERE date = '2018-12-10 23:43:15' LIMIT 100", features);
 		//auto dataset_0 = getSensorData(conn, "SELECT * FROM public.sensordata WHERE metaid @> '{1,7,8}'::int[] LIMIT 10000");
@@ -869,28 +917,25 @@ int main(int argc, char *argv[])
 		CloseConn(conn);
 	}
 
-	printRecords(records, features, recordDates, 10, 10, 15);
+	printRecords(records, features, 10, 10, 15);
 
 
 	std::cout << '\n';
 	std::cout << '\n';
 
+	std::cout << "feature " << featureName << " index: " << targetFeatureIndex << std::endl;
+	std::cout << "feature " << featureName << " label: " << features[targetFeatureIndex].bezeichnung << std::endl;
 
 	cross::filter<Record> recordsFilter(records);
 	std::vector<Record> filtered_results;
-	std::string featureName = "Sammelabriss";
-	//std::string featureName = "Gutproduktion";
-	static const int featureGutproduktionIndex = lookupFeatureIndex(featureName, features);
-	std::cout << "feature " << featureName << " index: " << featureGutproduktionIndex << std::endl;
-	std::cout << "feature " << featureName << " label: " << features[featureGutproduktionIndex].bezeichnung << std::endl;
-	auto feature_Gutproduktion = recordsFilter.dimension([](Record r) { return r[featureGutproduktionIndex]; });
+	auto feature_Gutproduktion = recordsFilter.dimension([](Record r) { return r[targetFeatureIndex]; });
 	feature_Gutproduktion.filter(0);
 	//feature_Gutproduktion.filter([](auto d) { return d >= 80; });
 	auto dataset_0 = recordsFilter.all_filtered();
 	std::cout << '\n';
 	std::cout << '\n';
 	std::cout << featureName << " == 0\n";
-	printRecords(dataset_0, features, recordDates, 10, 10, 15);
+	printRecords(dataset_0, features, 10, 10, 15);
 
 	feature_Gutproduktion.filter();
 	feature_Gutproduktion.filter(1);
@@ -899,7 +944,7 @@ int main(int argc, char *argv[])
 	std::cout << '\n';
 	std::cout << '\n';
 	std::cout << featureName << " == 1" << std::endl;
-	printRecords(dataset_1, features, recordDates, 10, 10, 15);
+	printRecords(dataset_1, features, 10, 10, 15);
 
 	////////////////////
 
@@ -912,12 +957,12 @@ int main(int argc, char *argv[])
 	std::cout << '\n';
 	std::cout << '\n';
 	std::cout << featureName << " == 0, resampled\n";
-	printRecords(dataset_0_i, features, recordDates, 10, 10, 15);
+	printRecords(dataset_0_i, features, 10, 10, 15);
 
 	std::cout << '\n';
 	std::cout << '\n';
 	std::cout << featureName << " == 1, resampled\n";
-	printRecords(dataset_1_i, features, recordDates, 10, 10, 15);
+	printRecords(dataset_1_i, features, 10, 10, 15);
 	std::cout << '\n';
 	std::cout << '\n';
 
@@ -981,7 +1026,7 @@ int main(int argc, char *argv[])
 	std::vector<std::vector<double>> resampledFeature_0;
 	std::vector<std::vector<double>> resampledFeature_1;*/
 
-	std::vector<double> importances(features.size(), -1);
+	std::vector<double> importances(features.size() + 1, -1);
 
 	total_t1 = std::chrono::steady_clock::now();
 
@@ -1015,13 +1060,13 @@ int main(int argc, char *argv[])
 	std::vector<Record> importancesAsRecord;
 	importancesAsRecord.push_back(r);
 	std::vector<std::string> d = {"all"};
-	printRecords(importancesAsRecord, features, d, 10, 10, 15);
+	printRecords(importancesAsRecord, features, 10, 10, 15);
 	std::wcout << " (Total time = " << elapsed / 1000000 << " s)" << std::endl;
 	std::wcout << '\n';
 	std::wcout << '\n';
 
 
-	saveToCsv("PMQxVOI_result.csv", importancesAsRecord, features, d);
+	saveToCsv("PMQxVOI_result.csv", importancesAsRecord, features);
 
 	return 0;
 
