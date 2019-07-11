@@ -13,6 +13,7 @@ Copyright (c) 2018 Dmitry Vinokurov */
 #include <limits>
 #include <tuple>
 #include <type_traits>
+#include <utility>
 #include <unordered_map>
 #include "../detail/signal_base.hpp"
 #include "../detail/bitarray.hpp"
@@ -148,20 +149,20 @@ template<typename T, typename Hash> struct filter_impl {
   template<typename Iterator>
   filter_impl<T,Hash> & add(Iterator first, Iterator last,  bool allow_duplicates);
 
-  template<bool B = true>
-  typename std::enable_if<std::is_same<Hash,cross::trivial_hash<T>>::value && B, std::size_t>::type
+  template<bool B = std::is_same<Hash, cross::trivial_hash<T>>::value>
+  typename std::enable_if<B, std::size_t>::type
   do_add_one(std::size_t pos, const T & new_data,  bool allow_duplicates);
 
-  template<bool B = true>
-  typename std::enable_if<!std::is_same<Hash,cross::trivial_hash<T>>::value && B, std::size_t>::type
+  template<bool B = std::is_same<Hash, cross::trivial_hash<T>>::value >
+  typename std::enable_if<!B, std::size_t>::type
   do_add_one(std::size_t pos, const T & new_data,  bool allow_duplicates);
 
-  template<typename Iterator, bool B = true>
-  typename std::enable_if<std::is_same<Hash,cross::trivial_hash<T>>::value && B, std::size_t>::type
+  template<typename Iterator, bool B = std::is_same<Hash, cross::trivial_hash<T>>::value >
+  typename std::enable_if<B, std::size_t>::type
   do_add_range(std::size_t pos, Iterator first, Iterator last,  bool allow_duplicates);
 
-  template<typename Iterator, bool B = true>
-  typename std::enable_if<!std::is_same<Hash,cross::trivial_hash<T>>::value && B, std::size_t>::type
+  template<typename Iterator, bool B = std::is_same<Hash, cross::trivial_hash<T>>::value>
+  typename std::enable_if<!B, std::size_t>::type
   do_add_range(std::size_t pos, Iterator first, Iterator last,  bool allow_duplicates);
 
   template<typename... _Args> std::size_t emplace (std::size_t position, _Args &&... args);
@@ -189,7 +190,15 @@ template<typename T, typename Hash> struct filter_impl {
   bool is_element_filtered_except_mask(std::size_t index, const std::vector<uint8_t> & mask) const;
 
   template<typename G>
-  auto dimension(G getter) -> cross::dimension<decltype(getter(std::declval<record_type_t>())), T, cross::non_iterable, Hash>;
+  auto dimension(G getter)->cross::dimension<decltype(getter(std::declval<T>())), T, cross::non_iterable, Hash>;
+ // {
+	//auto dimension_filter = add_row_to_filters();
+	//cross::dimension<decltype(getter(std::declval<record_type_t>())), T, cross::non_iterable, Hash> dim(this, std::get<0>(dimension_filter), std::get<1>(dimension_filter), getter);
+	//dim.add(0,data.begin(), data.end());
+	////  dim.init_slots();
+	//return dim;
+
+ // }
 
   template<typename V, typename G>
   auto iterable_dimension(G getter) -> cross::dimension<V, T, cross::iterable, Hash>;
@@ -226,12 +235,12 @@ template<typename T, typename Hash> struct filter_impl {
   std::tuple<data_iterator, data_iterator>
   get_data_iterators_for_indexes(std::size_t low, std::size_t high);
 
-  template <bool B = true>
-  typename std::enable_if<!std::is_same<Hash,cross::trivial_hash<T>>::value && B, void>::type
+  template <bool B = std::is_same<Hash, cross::trivial_hash<T>>::value>
+  typename std::enable_if<!B, void>::type
   update_hash_on_remove(std::size_t index);
 
-  template <bool B = true>
-  typename std::enable_if<std::is_same<Hash,cross::trivial_hash<T>>::value && B, void>::type
+  template <bool B = std::is_same<Hash, cross::trivial_hash<T>>::value >
+  typename std::enable_if<B, void>::type
   update_hash_on_remove(std::size_t index);
 
   template<typename P>

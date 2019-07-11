@@ -26,7 +26,7 @@ class BitArray {
     auto bs = std::bitset<8>(value);
     for ( std::size_t i = 0; i < bs.size(); i++ ) {
       if ( bs[i] == 0 )
-        return i;
+        return static_cast<int8_t>(i);
     }
     return -1;
   }
@@ -85,7 +85,7 @@ class BitArray {
         if (k >= 0) {
           auto b = std::bitset<8>(mask[i]);
           b.set(k, true);
-          mask[i] = b.to_ulong();
+          mask[i] = static_cast<uint8_t>(b.to_ulong());
           return std::make_tuple<std::size_t, int>(std::move(i), std::move(k));
         }
       }
@@ -127,7 +127,7 @@ class BitArray {
     one.flip(bitIndex);
 
     for (std::size_t i = 0; i < bits.size(); i++) {
-      uint8_t v = (i == offset) ? one.to_ulong() : 0;
+      uint8_t v = (i == offset) ? static_cast<uint8_t>(one.to_ulong()) : 0;
 
       if (bits[i][index] != v)
         return false;
@@ -199,7 +199,7 @@ class BitArray {
   void flip_st(std::size_t index, std::size_t offset, int bitIndex) {
     auto b = std::bitset<8>(bits[offset][index]);
     b.flip(bitIndex);
-    bits[offset][index] = b.to_ulong();
+    bits[offset][index] = static_cast<uint8_t>(b.to_ulong());
   }
   void flip(std::size_t index, std::size_t offset, int bitIndex) {
     write_lock_t lk(mutex);

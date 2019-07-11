@@ -90,16 +90,16 @@ void feature_impl<Key, Reduce, Dimension, is_group_all>::update_one(std::size_t 
     return;
   std::for_each(added.begin(), added.end(),
                 [this](auto i) {
-                  if(dimension->zero_except(i))
+                  if(this->dimension->zero_except(i))
                     groups[0].second = add_func(groups[0].second,dimension->get_raw(i),false);
                 });
   std::for_each(removed.begin(), removed.end(),
                 [this, filter_offset, filter_bit_index, not_filter] (auto i) {
                   if(filter_bit_index < 0) {
-                    if(dimension->zero_except(i))
+                    if(this->dimension->zero_except(i))
                       groups[0].second = remove_func(groups[0].second,dimension->get_raw(i),not_filter);
                   } else {
-                    if(dimension->only_except(i,filter_offset, filter_bit_index))
+                    if(this->dimension->only_except(i,filter_offset, filter_bit_index))
                       groups[0].second = remove_func(groups[0].second,dimension->get_raw(i),not_filter);
                   }
                 });

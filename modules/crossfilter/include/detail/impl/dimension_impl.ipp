@@ -115,7 +115,7 @@ dimension_impl<V, T, I, H>::connect_dispose_slot(std::function<void()> slot) {
 template<typename V, typename T, typename I, typename H>
 template<bool Enable>
 inline
-std::enable_if_t<dimension_impl<V,T,I,H>::isIterable && Enable>
+std::enable_if_t<Enable>
 dimension_impl<V, T, I, H>::add(std::size_t insert_point, data_iterator begin, data_iterator end) {
   // auto logger = spdlog::get("console");
   // if(logger) logger->info("dimension_iter _add start");
@@ -263,7 +263,7 @@ dimension_impl<V, T, I, H>::add(std::size_t insert_point, data_iterator begin, d
 template<typename V, typename T, typename I, typename H>
 template<bool Enable>
 inline
-std::enable_if_t<!dimension_impl<V,T,I,H>::isIterable && Enable>
+std::enable_if_t<!Enable>
 dimension_impl<V, T, I, H>::add(std::size_t insert_point, data_iterator begin, data_iterator end) {
   //  auto logger = spdlog::get("console");
   //  if(logger) logger->info("dimension _add start");
@@ -487,7 +487,7 @@ dimension_impl<V, T, I, H>::refilter_exact(const value_type_t & value,
 template<typename V, typename T, typename I, typename H>
 template<bool Enable>
 inline
-std::enable_if_t<dimension_impl<V,T,I,H>::isIterable && Enable>
+std::enable_if_t<Enable>
 dimension_impl<V, T, I, H>::do_filter(std::size_t filter_low_index, std::size_t filter_high_index) {
   std::unordered_map<std::size_t, std::size_t> filter_status_added;
   std::unordered_map<std::size_t, std::size_t> filter_status_removed;
@@ -619,7 +619,7 @@ inline void dimension_impl<V, T, I, H>::filter2(std::vector<std::size_t> & added
 template<typename V, typename T, typename I, typename H>
 template<bool Enable>
 inline
-std::enable_if_t<!dimension_impl<V,T,I,H>::isIterable && Enable>
+std::enable_if_t<!Enable>
 dimension_impl<V, T, I, H>::do_filter(std::size_t filter_low_index, std::size_t filter_high_index) {
   // std::vector<std::size_t> added;
   // std::vector<std::size_t> removed;
