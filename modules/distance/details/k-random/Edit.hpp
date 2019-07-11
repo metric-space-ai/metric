@@ -8,7 +8,7 @@ Copyright (c) 2018 Michael Welsch
 
 #ifndef _METRIC_DISTANCE_DETAILS_K_RANDOM_EDIT_HPP
 #define _METRIC_DISTANCE_DETAILS_K_RANDOM_EDIT_HPP
-
+#include <string_view>
 namespace metric
 {
 

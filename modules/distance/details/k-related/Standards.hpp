@@ -92,9 +92,20 @@ namespace metric
             template<typename Container>
             distance_type  operator()(const Container &a, const Container &b) const;
         };
+/*** Chebyshev Metric ***/
+    template <typename V> struct Chebyshev {
+      using value_type = V;
+      using distance_type = value_type;
+
+      explicit Chebyshev() = default;
+
+      template <typename Container>
+      distance_type operator()(const Container &lhs, const Container &rhs) const;
+    };
 
 
     } // namespace distance
+
 
 } // namespace metric
 

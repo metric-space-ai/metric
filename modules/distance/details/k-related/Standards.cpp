@@ -115,6 +115,18 @@ auto Cosine<V>::operator()(const Container &A, const Container &B) const -> dist
   return dot / (std::sqrt(denom_a) * std::sqrt(denom_b));
 }
 
+template <typename V>
+template <typename Container>
+V Chebyshev<V>::operator()(const Container &lhs, const Container &rhs) const {
+  distance_type res = 0;
+  for (std::size_t i = 0; i < lhs.size(); i++) {
+    auto m = std::abs(lhs[i] - rhs[i]);
+    if (m > res)
+      res = m;
+  }
+  return res;
+}
+
 } // namespace distance
 } // namespace metric
 #endif

@@ -7,6 +7,7 @@ Copyright (c) 2018 Michael Welsch
 */
 #ifndef _METRIC_DISTANCE_DETAILS_K_STRUCTURED_EMD_HPP
 #define _METRIC_DISTANCE_DETAILS_K_STRUCTURED_EMD_HPP
+#include <vector>
 
 namespace metric
 {

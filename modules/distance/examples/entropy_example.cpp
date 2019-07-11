@@ -9,11 +9,11 @@ Copyright (c) 2019 Panda Team
 #include <vector>
 #include <random>
 #include <cmath>
-#include "distance/details/k-related/entropy.hpp"
-#include "distance/details/k-related/Standards.hpp"
+//#include "distance/details/k-related/entropy.hpp"
+#include "../metric_distance.hpp"
 #include <iostream>
-
-#include "distance/details/k-related/chebyshev.hpp"
+#include <fstream>
+//#include "distance/details/k-related/chebyshev.hpp"
 
 #include <random> // for random vector generation
 
@@ -367,7 +367,7 @@ int main() {
         rnd2.push_back({cases1[uni(rng)], cases2[uni(rng)]});
 
     for (size_t i = 0; i < 10; i++)
-        std::cout << mutualInformation<long double>(rnd1, rnd2) << std::endl;
+        std::cout << metric::distance::mutualInformation<long double>(rnd1, rnd2) << std::endl;
 
     //save_ds(rnd1, "rnd_i5000_1.csv");
     //save_ds(rnd2, "rnd_i5000_2.csv");
@@ -392,7 +392,7 @@ int main() {
         rnd4.push_back({cases1[uni(rng)], cases2[uni(rng)]});
 
     for (size_t i = 0; i < 10; i++)
-        std::cout << mutualInformation<long double>(rnd3, rnd4) << std::endl;
+        std::cout << metric::distance::mutualInformation<long double>(rnd3, rnd4) << std::endl;
 
 
 
@@ -408,7 +408,7 @@ int main() {
         rnd8.push_back({cases1[uni(rng)], cases2[uni(rng)]});
 
     for (size_t i = 0; i < 10; i++)
-        std::cout << mutualInformation<long double>(rnd7, rnd8) << std::endl;
+        std::cout << metric::distance::mutualInformation<long double>(rnd7, rnd8) << std::endl;
 
     //*/
 
@@ -435,7 +435,7 @@ int main() {
 //        std::cout << "rnd_r500_1, value " << i << ": " << rnd_r500_1[i][0] << " " << rnd_r500_1[i][1] << "\n";
 
     for (size_t i = 0; i < 10; i++)
-        std::cout << mutualInformation<long double>(rnd_r500_1, rnd_r500_2) << std::endl;
+        std::cout << metric::distance::mutualInformation<long double>(rnd_r500_1, rnd_r500_2) << std::endl;
 
     //save_ds(rnd_r500_1, "rnd_r500_1.csv");
     //save_ds(rnd_r500_2, "rnd_r500_2.csv");
@@ -465,7 +465,7 @@ int main() {
         std::cout << "rnd_r5000_1, value " << i << ": " << rnd_r5000_1[i][0] << " " << rnd_r5000_1[i][1] << "\n";
 
     for (size_t i = 0; i < 10; i++)
-        std::cout << mutualInformation<long double>(rnd_r5000_1, rnd_r5000_2) << std::endl;
+        std::cout << metric::distance::mutualInformation<long double>(rnd_r5000_1, rnd_r5000_2) << std::endl;
 
     //save_ds(rnd_r5000_1, "rnd_r5000_1.csv");
     //save_ds(rnd_r5000_2, "rnd_r5000_2.csv");
@@ -493,7 +493,7 @@ int main() {
         std::cout << "rnd_r50000_1, value " << i << ": " << rnd_r50000_1[i][0] << " " << rnd_r50000_1[i][1] << "\n";
 
     for (size_t i = 0; i < 10; i++)
-        std::cout << mutualInformation<long double>(rnd_r50000_1, rnd_r50000_2) << std::endl;
+        std::cout << metric::distance::mutualInformation<long double>(rnd_r50000_1, rnd_r50000_2) << std::endl;
 
     //save_ds(rnd_r50000_1, "rnd_r50000_1.csv");
     //save_ds(rnd_r50000_2, "rnd_r50000_2.csv");
@@ -549,7 +549,7 @@ int main() {
 
 
     for (size_t i = 0; i < 10; i++)
-        std::cout << mutualInformation<long double>(f_1_csv, f_2_csv) << std::endl;
+        std::cout << metric::distance::mutualInformation<long double>(f_1_csv, f_2_csv) << std::endl;
 
     //*/
 
