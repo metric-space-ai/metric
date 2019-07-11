@@ -13,49 +13,38 @@ Copyright (c) 2019 Panda Team
 
 //#include "utils/visualizer/visualizer.hpp" // TODO remove visualizer calls and this line
 
-
-
-
-namespace linear_compressor
-{
-    
-
+namespace metric {
+namespace mapping {
+namespace linear_compressor {
 template <class BlazeMatrix>
-blaze::DynamicMatrix<double> PCA(const BlazeMatrix In, int n_components, bool visualize=false);
-
+blaze::DynamicMatrix<double> PCA(const BlazeMatrix In, int n_components,
+                                 bool visualize = false);
 
 // simple linear encoder based on PCA
 
-class DirectMapping
-{
+class DirectMapping {
 
 private:
-    blaze::DynamicMatrix<double> W_decode;
-    blaze::DynamicMatrix<double> W_encode;
-    bool visualize = false;
-    std::default_random_engine rgen;
+  blaze::DynamicMatrix<double> W_decode;
+  blaze::DynamicMatrix<double> W_encode;
+  bool visualize = false;
+  std::default_random_engine rgen;
 
 public:
+  DirectMapping(bool visualize_ = false);
 
-    DirectMapping(bool visualize_ = false);
+  void train(const blaze::DynamicMatrix<double> &Slices, size_t n_features = 1);
 
-    void train(const blaze::DynamicMatrix<double> & Slices, size_t n_features = 1);
+  blaze::DynamicMatrix<double>
+  compress(const blaze::DynamicMatrix<double> &Slices);
 
-
-    blaze::DynamicMatrix<double> compress(
-            const blaze::DynamicMatrix<double> & Slices
-            );
-
-    blaze::DynamicMatrix<double> decompress(
-            const blaze::DynamicMatrix<double> & Codes
-            );
+  blaze::DynamicMatrix<double>
+  decompress(const blaze::DynamicMatrix<double> &Codes);
 };
 
-
 } // namespace linear_compressor
-
-
-
+} // namespace mapping
+} // namespace metric
 #include "encoder.cpp"
 
 #endif // _METRIC_MAPPING_DETAILS_ENCODER_HPP

@@ -11,6 +11,8 @@ Copyright (c) 2019 Panda Team
 #include "esn.hpp"
 
 
+namespace metric {
+namespace mapping {
 
 namespace esn
 {
@@ -236,5 +238,6 @@ blaze::DynamicMatrix<double> ridge(
 
 
 } // namespace esn
-
+} // namespace mapping
+} // namespace metric
 #endif

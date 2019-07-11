@@ -14,7 +14,8 @@ Copyright (c) 2019 Panda Team
 //#include "utils/graph/graph.hpp" // for create_W only // TODO enable if considered to use graph
 
 
-
+namespace metric {
+namespace mapping {
 namespace esn
 {
     
@@ -84,7 +85,8 @@ public:
 
 
 } // namespace esn
-
+} // namespace mapping
+} // namespace metric
 
 #include "esn.cpp"
 

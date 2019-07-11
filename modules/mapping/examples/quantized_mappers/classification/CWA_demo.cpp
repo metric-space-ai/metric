@@ -9,7 +9,7 @@ Copyright (c) 2019 Panda Team
 #include <vector>
 #include <iostream>
 
-#include "../details/classification/details/correlation_weighted_accuracy.hpp"
+#include "../../../details/classification/details/correlation_weighted_accuracy.hpp"
 
 int main()
 {

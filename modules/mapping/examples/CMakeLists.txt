@@ -46,9 +46,17 @@ if(LAPACK_LIBRARIES)
 	# continious_mappers / clustering
 	add_executable(SOM_example continious_mappers/clustering/SOM_example.cpp)
 	target_link_libraries(SOM_example PRIVATE ${LAPACK_LIBRARIES})
+	
+	add_executable(main_encoder main_encoder.cpp)
+	target_link_libraries(main_encoder PRIVATE ${LAPACK_LIBRARIES})
+	
+	add_executable(main_esn main_esn.cpp)
+	target_link_libraries(main_esn PRIVATE ${LAPACK_LIBRARIES})
 endif(LAPACK_LIBRARIES)
 
 # continious_mappers / classification
+
+
 
 
 

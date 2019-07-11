@@ -108,7 +108,7 @@ int main()
         mat2bmp::blaze2bmp(TestSlicesSine, "TestSlicesSine.bmp");
     }
 
-    auto direct_sine = linear_compressor::DirectMapping(true);
+    auto direct_sine = metric::mapping::linear_compressor::DirectMapping(true);
     direct_sine.train(SlicesSine, 8); // dataset, compressed_code_length
 
     //std::cout << "trained direct mapping\n";
@@ -173,7 +173,7 @@ int main()
         mat2bmp::blaze2bmp(TestSlicesSine, "TestSlicesSine_DCT.bmp");
     }
 
-    auto direct_sine_DCT = linear_compressor::DirectMapping(visualize);
+    auto direct_sine_DCT = metric::mapping::linear_compressor::DirectMapping(visualize);
     direct_sine_DCT.train(SlicesSine, 8); // dataset, compressed_code_length
 
     //std::cout << "trained direct mapping after DCT applied\n";

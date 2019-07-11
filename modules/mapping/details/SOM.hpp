@@ -33,7 +33,8 @@ W. Natita, W. Wiboonsak, and S. Dusadee
 #include <cmath>
 #include <numeric>
 
-#include "metric.tpp"
+//#include "metric.tpp"
+#include "../../distance.hpp"
 #include "../../../utils/graph/graph.hpp"
 
 #ifndef M_PI
@@ -46,7 +47,7 @@ namespace metric
 
 namespace mapping
 {
-        template <typename recType, class Metric = SOM_details::default_euclidian<recType>,
+    template <typename recType, class Metric = metric::distance::Euclidian<typename recType::value_type>,
                                                                 class Graph = graph::Grid8> // replaced SOM_details with graph by Max F, 2019-05-16
 	class SOM
 	{
@@ -55,7 +56,7 @@ namespace mapping
 	  public:
 		explicit SOM(size_t nodesNumber, Metric metric = Metric());
 		SOM(size_t nodesWidth, size_t nodesHeight, Metric metric = Metric());
-		~SOM();
+		~SOM() = default;
 
 		bool isValid();
 
