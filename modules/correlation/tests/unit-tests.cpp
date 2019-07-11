@@ -7,9 +7,10 @@
 */
 #include <algorithm>
 #include <deque>
-#include "details/mgc.hpp"
-#include "details/metrics.hpp"
-#include "details/connected-components.hpp"
+#include "../details/mgc.hpp"
+//#include "details/metrics.hpp"
+#include "../../distance/metric_distance.hpp"
+#include "../details/connected-components.hpp"
 
 #define BOOST_TEST_MODULE Main
 #define BOOST_TEST_DYN_LINK
@@ -68,8 +69,8 @@ BOOST_AUTO_TEST_CASE(Metrics)
 {
 	auto vectorNull = generateVector<double>(0);
 
-	metric::generic_euclidian<std::vector<double>> euclidian;
-	metric::generic_manhatten<std::vector<double>> manhatten;
+	metric::distance::Euclidian<double> euclidian;
+	metric::distance::Manhatten<double> manhatten;
 
 	BOOST_CHECK_EQUAL(euclidian(vectorNull, vectorNull), 0);
 	BOOST_CHECK_EQUAL(manhatten(vectorNull, vectorNull), 0);
@@ -170,8 +171,8 @@ BOOST_AUTO_TEST_CASE(MGC)
     typedef std::vector<double> Rec1;
     typedef std::array<float, 1> Rec2;
 
-    typedef metric::generic_euclidian<Rec1> Met1;
-    typedef metric::generic_manhatten<Rec2> Met2;
+    typedef metric::distance::Euclidian<double> Met1;
+    typedef metric::distance::Manhatten<float> Met2;
 
 
     auto mgc_corr = metric::correlation::MGC<Rec1, Met1, Rec2, Met2>();
@@ -213,7 +214,7 @@ BOOST_AUTO_TEST_CASE(MGC_Estimate)
 	}
 
 	typedef std::vector<double> Rec;
-	typedef metric::generic_euclidian<Rec> Met;
+	typedef metric::distance::Euclidian<double> Met;
 
 
 	auto mgc = metric::correlation::MGC<Rec, Met, Rec, Met>();
