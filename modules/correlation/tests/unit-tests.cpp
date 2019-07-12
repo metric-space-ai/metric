@@ -95,7 +95,7 @@ BOOST_AUTO_TEST_CASE(CRACKER)
 	blaze::DynamicMatrix<bool> M(10, 10, true);
 	blaze::row(M, 2) = false;
 
-	auto result = largest_connected_component(M)[0];
+	auto result = metric::correlation::largest_connected_component(M)[0];
 }
 
 BOOST_AUTO_TEST_CASE(MGC)
