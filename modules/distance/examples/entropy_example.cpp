@@ -83,6 +83,14 @@ int main() {
     typedef std::numeric_limits<long double> ldbl;
     std::cout.precision(ldbl::max_digits10);
 
+    std::random_device rd;
+    std::mt19937 rng(rd());
+    std::uniform_int_distribution<int> uni(0, 4);
+    std::uniform_real_distribution<long double> uni_real(-1, 1);     // interval [a, b)
+
+    std::vector<long double> cases1{1,3,2,4,2};
+    std::vector<long double> cases2{4,3,2,1,4};
+
 
 
 
@@ -115,6 +123,72 @@ int main() {
     std::cout << "Manhatten: " << e << std::endl;
 
     //*/
+
+
+
+
+
+    /* // entropy on fixed random integer arrays
+
+
+    std::cout << "\n";
+
+    std::cout << "random array entropy test 5000\n";
+
+    std::vector<std::vector<long double>> rnd21;
+    for (size_t i = 0; i < 5000; i++)
+        rnd21.push_back({cases1[uni(rng)], cases2[uni(rng)]});
+
+
+    for (size_t i = 0; i < 10; i++)
+        std::cout << entropy<long double, metric::distance::Euclidian<long double>>(rnd21) << std::endl;
+
+    save_ds(rnd21, "rnd_i5000.csv");
+
+    //*/
+
+
+
+    //* // entropy on fixed random real arrays
+
+
+    std::cout << "\n";
+
+    std::cout << "random array entropy test 5000\n";
+
+    std::vector<std::vector<long double>> rnd22;
+    for (size_t i = 0; i < 5000; i++)
+        rnd22.push_back({uni_real(rng), uni_real(rng)});
+
+
+    for (size_t i = 0; i < 10; i++)
+        //std::cout << entropy<long double, metric::distance::Euclidian<long double>>(rnd22, 3, 2, metric::distance::Euclidian<long double>()) << std::endl;
+        std::cout << entropy<long double, metric::distance::Chebyshev<long double>>(rnd22, 3, 2, metric::distance::Chebyshev<long double>()) << std::endl;
+
+    save_ds(rnd22, "rnd_r5000.csv");
+
+    //*/
+
+
+
+    //* // entropy on fixed random dataset read from .csv
+
+    std::cout << "\n";
+    std::cout << "dataset from .csv\n";
+
+    auto f_1_csv = load_ds<long double>("rnd_r5000.csv");
+
+    for (size_t i = 0; i < 10; i++)
+        std::cout << "rnd_f_1_scv, value " << i << ": " << f_1_csv[i][0] << " " << f_1_csv[i][1] << "\n";
+
+
+    for (size_t i = 0; i < 10; i++)
+        //std::cout << entropy<long double, metric::distance::Euclidian<long double>>(f_1_csv, 3, 2, metric::distance::Euclidian<long double>()) << std::endl;
+        std::cout << entropy<long double, metric::distance::Chebyshev<long double>>(f_1_csv, 3, 2, metric::distance::Chebyshev<long double>()) << std::endl;
+
+    //*/
+
+
 
 
 
@@ -206,17 +280,10 @@ int main() {
 //        std::cout << entropy<double, metric::distance::Chebyshev<double>>(v, 3, 2, metric::distance::Chebyshev<double>()) << "\n";
 
 
-    std::random_device rd;
-    std::mt19937 rng(rd());
 
 
-    std::uniform_int_distribution<int> uni(0, 4);
 
-    std::vector<long double> cases1{1,3,2,4,2};
-    std::vector<long double> cases2{4,3,2,1,4};
-
-
-    /* // random array entropy test
+    /* // random array entropy test // TODO
 
     std::cout << "\n";
 
@@ -327,7 +394,6 @@ int main() {
 
 
 
-    std::uniform_real_distribution<long double> uni_real(-1, 1);     // interval [a, b)
 
 
     /* //
@@ -416,9 +482,9 @@ int main() {
 
 
 
-    //* // correlated datasets
+    /* // correlated datasets
 
-    long double pearson_r = 0.4;  // set the desired value of Pearson coeff here
+    long double pearson_r = 0.99;  // set the desired value of Pearson coeff here
 
     std::normal_distribution<long double> dis(0, 1);
 
@@ -448,7 +514,7 @@ int main() {
 
 
 
-    //* // fixed random dataset
+    /* // MI on fixed random dataset read from .csv
 
     std::cout << "\n";
     std::cout << "dataset from .csv\n";

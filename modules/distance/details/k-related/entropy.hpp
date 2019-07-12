@@ -31,7 +31,7 @@ void add_noise(std::vector<std::vector<T>> & data) {
     std::mt19937 gen(rd());
 //    std::uniform_real_distribution<> dis(0, 1);
     std::normal_distribution<T> dis(0, 1);
-    double c = 1e-10;
+    T c = 1e-10;
     for(auto & v : data) {
         std::transform(v.begin(), v.end(), v.begin(),
                        [&gen,c, &dis] (T e) {
