@@ -242,7 +242,7 @@ int main() {
 
 
 
-    /* // random array MI test 50000
+    /* // random array of int values - MI test 50000
 
     std::cout << "\n";
 
@@ -263,7 +263,7 @@ int main() {
 
 
 
-    //* // // random array MI test 5000
+    /* // // random array of int values - MI test 5000
 
     std::cout << "\n";
 
@@ -280,8 +280,8 @@ int main() {
     for (size_t i = 0; i < 10; i++)
         std::cout << mutualInformation<long double>(rnd1, rnd2) << std::endl;
 
-    save_ds(rnd1, "rnd_i5000_1.csv");
-    save_ds(rnd2, "rnd_i5000_2.csv");
+    //save_ds(rnd1, "rnd_i5000_1.csv");
+    //save_ds(rnd2, "rnd_i5000_2.csv");
 
     //*/
 
@@ -289,11 +289,11 @@ int main() {
 
 
 
-    /* // // random array MI test 50, 5
+    /* // // random array of int values - MI test 50, 5
 
     std::cout << "\n";
 
-    std::cout << "random array mutualInformation test 500\n";
+    std::cout << "random array of int values - mutualInformation test 500\n";
 
     std::vector<std::vector<long double>> rnd3; // smaller vector with same distribution
     for (size_t i = 0; i < 500; i++)
@@ -309,7 +309,7 @@ int main() {
 
     std::cout << "\n";
 
-    std::cout << "random array mutualInformation test 50\n";
+    std::cout << "random array of int values -  mutualInformation test 50\n";
 
     std::vector<std::vector<long double>> rnd7; // smaller vector with same distribution
     for (size_t i = 0; i < 50; i++)
@@ -414,13 +414,47 @@ int main() {
 
 
 
+
+
+    //* // correlated datasets
+
+    long double pearson_r = 0.4;  // set the desired value of Pearson coeff here
+
+    std::normal_distribution<long double> dis(0, 1);
+
+    // for simplicity of adjusting or making arbitrary changes in the code we first generate independent vectors, then mix
+    std::vector<std::vector<long double>> rnd_corr_r5000_1;
+    for (size_t i = 0; i < 5000; i++)
+        rnd_corr_r5000_1.push_back({dis(rng), dis(rng)});
+    std::vector<std::vector<long double>> rnd_normal2;
+    for (size_t i = 0; i < 5000; i++)
+        rnd_normal2.push_back({dis(rng), dis(rng)});
+
+    // mixing
+    long double mixing_pair = sqrt(1 - pearson_r*pearson_r);
+    std::vector<std::vector<long double>> rnd_corr_r5000_2;
+    for (size_t i = 0; i < rnd_corr_r5000_1.size(); i++)
+    {
+        rnd_corr_r5000_2.push_back({mixing_pair*rnd_normal2[i][0] + pearson_r*rnd_corr_r5000_1[i][0],
+                                    mixing_pair*rnd_normal2[i][1] + pearson_r*rnd_corr_r5000_1[i][1]});
+    }
+
+    save_ds(rnd_corr_r5000_1, "rnd_corr_r5000_1.csv");
+    save_ds(rnd_corr_r5000_2, "rnd_corr_r5000_2.csv");
+
+    //*/
+
+
+
+
+
     //* // fixed random dataset
 
     std::cout << "\n";
     std::cout << "dataset from .csv\n";
 
-    auto f_1_csv = load_ds<long double>("rnd_i5000_1.csv");
-    auto f_2_csv = load_ds<long double>("rnd_i5000_2.csv");
+    auto f_1_csv = load_ds<long double>("rnd_corr_r5000_1.csv");
+    auto f_2_csv = load_ds<long double>("rnd_corr_r5000_2.csv");
 
     for (size_t i = 0; i < 10; i++)
         std::cout << "rnd_f_1_scv, value " << i << ": " << f_1_csv[i][0] << " " << f_1_csv[i][1] << "\n";
