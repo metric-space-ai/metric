@@ -191,7 +191,7 @@ struct metric_search_js {
     int metric_type;
 
     napi_ref wrapper_ = nullptr;
-    metric_space::Tree<MetricWrapper::metric_input_type_t,MetricWrapper> tree;
+    metric::space::Tree<MetricWrapper::metric_input_type_t,MetricWrapper> tree;
 
     metric_search_js(napi_env e, napi_value this_, int metric_type_):env_(e),
                                                                      js_this(this_),

@@ -5,8 +5,14 @@ include_directories(
     ${PROJECT_SOURCE_DIR}
     ${Boost_INCLUDE_DIRS}
     )
-message("Boost_test_lib=${BOOST_TEST_LIB}")
-message("Boost_ser=${Boost_LIBRARIES}")
+
+
+
+if(UNIX)
+    set(THREADS_PREFER_PTHREAD_FLAG ON)
+    find_package(Threads REQUIRED)
+endif(UNIX)
+
 AUX_SOURCE_DIRECTORY(. TEST_SRCS)
 #Run through each source
 foreach(testSrc ${TEST_SRCS})
@@ -24,6 +30,9 @@ foreach(testSrc ${TEST_SRCS})
 	endif()
         target_link_libraries(${testName} ${Boost_LIBRARIES})
         target_link_libraries(${testName} ${BOOST_TEST_LIB})
+	if(UNIX)
+	    target_link_libraries(${testName} Threads::Threads)
+	endif(UNIX)
         #I like to move testing binaries into a testBin directory
 #        set_target_properties(${testName} PROPERTIES RUNTIME_OUTPUT_DIRECTORY  ${CMAKE_CURRENT_SOURCE_DIR})
         #Finally add it to test execution - 
