@@ -30,8 +30,8 @@ void add_noise(std::vector<std::vector<T>> & data) {
     std::random_device rd;
     std::mt19937 gen(rd());
 //    std::uniform_real_distribution<> dis(0, 1);
-    std::normal_distribution<T> dis(0, 1);
-    double c = 1e-10;
+    std::normal_distribution<T> dis(0, 1); // replaced by Max F according to Julia code
+    T c = 1e-10;
     for(auto & v : data) {
         std::transform(v.begin(), v.end(), v.begin(),
                        [&gen,c, &dis] (T e) {
@@ -101,6 +101,7 @@ entropy(std::vector<std::vector<T>> data, std::size_t k = 3, T logbase = 2, Metr
         // print(res);
         // std::cout << "entropyEstimate=" << entropyEstimate << std::endl;
         // std::cout << "last_dist=" << res.back().second << std::endl;
+        //std::cout << " -- " <<  res.back().second << "\n"; // TODO remove
 
         entropyEstimate += d/N*log(logbase,res.back().second);
     }
