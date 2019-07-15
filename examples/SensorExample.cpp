@@ -21,6 +21,7 @@ Copyright (c) 2019 Panda Team
 #include <random>
 #include <math.h>  
 #include <string.h>
+#include <algorithm>
 
 #include <libpq-fe.h>
 
@@ -642,7 +643,7 @@ void saveToCsv(std::string filename, const std::vector<Record> &mat, const std::
 std::mutex mu;
 
 template <typename T>
-std::vector<T> getFeatureVector(std::vector<std::vector<T>> source, int featureIndex)
+std::vector<T> getFeatureVector(std::vector<std::vector<T>> source, int featureIndex, bool withNorm = false)
 {
 	std::vector<T> resampled;
 
@@ -654,6 +655,32 @@ std::vector<T> getFeatureVector(std::vector<std::vector<T>> source, int featureI
 		resampled.push_back(source[i][featureIndex]);
 	}
 
+	if(withNorm)
+	{
+		double min = resampled[0];
+		double max = resampled[0];
+		for (auto i = 0; i < resampled.size(); ++i)
+		{
+			if (resampled[i] > max)
+			{
+				max = resampled[i];
+			}
+			if (resampled[i] < min)
+			{
+				min = resampled[i];
+			}
+		}
+		double range = max - min;
+		if (range == 0)
+		{
+			range = 1;
+		}
+		for (auto i = 0; i < resampled.size(); ++i)
+		{
+			resampled[i] = (resampled[i] - min) / range;
+		}
+	}
+
 	return resampled;
 }
 
@@ -662,8 +689,8 @@ double runOOC(int featureIndex, std::vector<Record> dataset_0, std::vector<Recor
 	double significantDifferent;
 
 	auto t1 = std::chrono::steady_clock::now();
-	auto featureVector_0 = getFeatureVector<double>(dataset_0, featureIndex);
-	auto featureVector_1 = getFeatureVector<double>(dataset_1, featureIndex);
+	auto featureVector_0 = getFeatureVector<double>(dataset_0, featureIndex, true);
+	auto featureVector_1 = getFeatureVector<double>(dataset_1, featureIndex, true);
 
 	utils::PMQ set0(featureVector_0);
 	utils::PMQ set1(featureVector_1);
@@ -819,8 +846,8 @@ std::vector<std::vector<T>> resampleFeature(std::vector<std::vector<T>> source, 
 double runVOI(int featureIndex, std::vector<Record> dataset_0, std::vector<Record> dataset_1)
 {
 	auto t1 = std::chrono::steady_clock::now();
-	auto featureVector_0 = getFeatureVector<double>(dataset_0, featureIndex);
-	auto featureVector_1 = getFeatureVector<double>(dataset_1, featureIndex);
+	auto featureVector_0 = getFeatureVector<double>(dataset_0, featureIndex, true);
+	auto featureVector_1 = getFeatureVector<double>(dataset_1, featureIndex, true);
 
 	std::vector<std::vector<double>> featureVector_resh_0(featureVector_0.size(), std::vector<double>(1));
 	std::vector<std::vector<double>> featureVector_resh_1(featureVector_1.size(), std::vector<double>(1));
