@@ -1086,7 +1086,7 @@ int main(int argc, char *argv[])
 	unsigned concurentThreadsSupported = std::thread::hardware_concurrency();
 	std::cout << "Num cores: " << concurentThreadsSupported  << std::endl;
 	ThreadPool pool(concurentThreadsSupported);
-	const int count = 8;// features.size();
+	const int count = features.size();
 	Semaphore sem;
 
 	for (int featureIndex = 0; featureIndex < count; ++featureIndex)
