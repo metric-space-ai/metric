@@ -194,11 +194,34 @@ void CloseConn(PGconn *conn)
 /* Establish connection to database */
 PGconn *ConnectDB()
 {
-	std::string m_dbhost = "95.216.78.62";
-	int         m_dbport = 5432;
-	std::string m_dbname = "DAA";
-	std::string m_dbuser = "stepan";
-	std::string m_dbpass = "Ghokle73";
+	std::fstream fin;
+	fin.open("db_creditinals.csv", std::ios::in);
+
+	std::vector<std::string> creds;
+	std::string line, word;
+
+	getline(fin, line);
+	std::stringstream s(line);
+	while (getline(s, word, ','))
+	{
+	}
+
+	while (getline(fin, line)) {
+
+		std::stringstream s(line);
+		while (getline(s, word, ',')) {
+
+			creds.push_back(word);
+		}
+	}
+
+	std::string m_dbhost = creds[0];
+	int         m_dbport = atoi(creds[1].c_str());
+	std::string m_dbname = creds[2];
+	std::string m_dbuser = creds[3];
+	std::string m_dbpass = creds[4];
+
+	////
 
 	PGconn *conn = NULL;
 
