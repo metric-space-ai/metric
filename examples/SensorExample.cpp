@@ -869,7 +869,7 @@ double runVOI(int featureIndex, std::vector<Record> dataset_0, std::vector<Recor
 
 	auto t2 = std::chrono::steady_clock::now();
 	mu.lock();
-	for (auto i = 0; i < featureVector_resh_0.size(); ++i)
+	/*for (auto i = 0; i < featureVector_resh_0.size(); ++i)
 	{
 		std::wcout << featureVector_resh_0[i][0] << " ";
 	}
@@ -879,10 +879,7 @@ double runVOI(int featureIndex, std::vector<Record> dataset_0, std::vector<Recor
 	{
 		std::wcout << featureVector_resh_1[i][0] << " ";
 	}
-	std::wcout << std::endl;
-	std::wcout << "eX = " << eX << std::endl;
-	std::wcout << "eY = " << eY << std::endl;
-	std::wcout << "mi = " << mi << std::endl;
+	std::wcout << std::endl;*/
 	std::wcout << "feature #" << featureIndex << ": VOI = " << voi << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000 << " s)" << std::endl;
 	mu.unlock();
 
@@ -931,8 +928,8 @@ int main(int argc, char *argv[])
 	//std::vector<std::string> recordDates;
 	
 	static int targetFeatureIndex;
-	//std::string featureName = "Sammelabriss";
-	std::string featureName = "Gutproduktion";
+	std::string featureName = "Sammelabriss";
+	//std::string featureName = "Gutproduktion";
 
 	if (FROM_CSV)
 	{
@@ -1046,32 +1043,6 @@ int main(int argc, char *argv[])
 	printRecords(dataset_1_i, features, 10, 10, 15);
 	std::cout << '\n';
 	std::cout << '\n';
-	std::cout << '\n';
-	std::cout << '\n';
-	std::cout << '\n';
-	std::cout << '\n';
-
-	std::vector<std::vector<double>> v1 = { {0}, {0}, {0} };
-	std::vector<std::vector<double>> v2 = { {0}, {0}, {0} };
-
-	auto eX = entropy<double, metric::distance::Chebyshev<double>>(v1, 3, 2, metric::distance::Chebyshev<double>());
-	auto eY = entropy<double, metric::distance::Chebyshev<double>>(v2, 3, 2, metric::distance::Chebyshev<double>());
-
-	auto mi = mutualInformation<double>(v1, v2);
-
-	auto voi = eX + eY - 2 * mi;
-
-	std::wcout << "eX = " << eX << std::endl;
-	std::wcout << "eY = " << eY << std::endl;
-	std::wcout << "mi = " << mi << std::endl;
-
-
-	std::cout << '\n';
-	std::cout << '\n';
-	std::cout << '\n';
-	std::cout << '\n';
-	std::cout << '\n';
-	std::cout << '\n';
 
 
 
@@ -1142,7 +1113,7 @@ int main(int argc, char *argv[])
 	unsigned concurentThreadsSupported = std::thread::hardware_concurrency();
 	std::cout << "Num cores: " << concurentThreadsSupported  << std::endl;
 	ThreadPool pool(concurentThreadsSupported);
-	const int count = 2;// features.size();
+	const int count = features.size();
 	Semaphore sem;
 
 	for (int featureIndex = 0; featureIndex < count; ++featureIndex)
