@@ -96,9 +96,9 @@ int main() {
 
     /* // entropies for fixed vector
 
-    std::cout << "entropies for {{5,5}, {2,2}, {3,3}, {5,5}}:\n";
+    std::cout << "entropies for {{5,5}, {2,2}, {3,3}, {5,1}}:\n";
 
-    std::vector<std::vector<double>> v = {{5,5}, {2,2}, {3,3}, {5,5}};
+    std::vector<std::vector<double>> v = {{5,5}, {2,2}, {3,3}, {5,1}};
 //    std::vector<std::vector<double>> v = {{1,1}, {2,2}, {3,3}, {5}};
 //    std::vector<std::vector<double>> v = {{1}, {2}, {3}, {5}};
 //    std::vector<std::vector<double>> v = {{1}, {2}, {3}, {2}};
@@ -121,6 +121,12 @@ int main() {
 
     e = entropy<double, metric::distance::Manhatten<double>>(v, 3, 2, metric::distance::Manhatten<double>());
     std::cout << "Manhatten: " << e << std::endl;
+
+//    std::cout << "\nnoise test:\n";
+//    v = {{0,0}, {0,0}, {0,0}, {0,0}};
+//    add_noise(v);
+//    for (size_t i = 0; i<v.size(); i++)
+//        std::cout << v[i][0] << ", " << v[i][1] << "\n";
 
     //*/
 
@@ -149,15 +155,20 @@ int main() {
 
 
 
+
+    int ds_len = 20;
+
     //* // entropy on fixed random real arrays
 
 
     std::cout << "\n";
 
-    std::cout << "random array entropy test 5000\n";
+
+
+    std::cout << "random array entropy test " << ds_len << "\n";
 
     std::vector<std::vector<long double>> rnd22;
-    for (size_t i = 0; i < 5000; i++)
+    for (size_t i = 0; i < ds_len; i++)
         rnd22.push_back({uni_real(rng), uni_real(rng)});
 
 
@@ -165,7 +176,7 @@ int main() {
         //std::cout << entropy<long double, metric::distance::Euclidian<long double>>(rnd22, 3, 2, metric::distance::Euclidian<long double>()) << std::endl;
         std::cout << entropy<long double, metric::distance::Chebyshev<long double>>(rnd22, 3, 2, metric::distance::Chebyshev<long double>()) << std::endl;
 
-    save_ds(rnd22, "rnd_r5000.csv");
+    save_ds(rnd22, "rnd_r.csv");
 
     //*/
 
@@ -176,7 +187,7 @@ int main() {
     std::cout << "\n";
     std::cout << "dataset from .csv\n";
 
-    auto f_1_csv = load_ds<long double>("rnd_r5000.csv");
+    auto f_1_csv = load_ds<long double>("rnd_r.csv");
 
     for (size_t i = 0; i < 10; i++)
         std::cout << "rnd_f_1_scv, value " << i << ": " << f_1_csv[i][0] << " " << f_1_csv[i][1] << "\n";
@@ -187,6 +198,8 @@ int main() {
         std::cout << entropy<long double, metric::distance::Chebyshev<long double>>(f_1_csv, 3, 2, metric::distance::Chebyshev<long double>()) << std::endl;
 
     //*/
+
+
 
 
 
