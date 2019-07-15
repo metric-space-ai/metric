@@ -1086,7 +1086,7 @@ int main(int argc, char *argv[])
 	unsigned concurentThreadsSupported = std::thread::hardware_concurrency();
 	std::cout << "Num cores: " << concurentThreadsSupported  << std::endl;
 	ThreadPool pool(concurentThreadsSupported);
-	const int count = features.size();
+	const int count = 8;// features.size();
 	Semaphore sem;
 
 	for (int featureIndex = 0; featureIndex < count; ++featureIndex)
@@ -1096,17 +1096,30 @@ int main(int argc, char *argv[])
 			sem.notify();
 		});*/
 		pool.execute([featureIndex, &sem, &vois, &oocs, &dataset_0_i, &dataset_1_i]() {
-			double voi;
-			double ooc;
-			std::tie(voi, ooc) = runImportance(featureIndex, dataset_0_i, dataset_1_i);
+			double voi = -INFINITY;
+			double ooc = -INFINITY;
+
+			try {
+				std::tie(voi, ooc) = runImportance(featureIndex, dataset_0_i, dataset_1_i);
+			}
+			catch (const std::runtime_error& e) {
+				std::cout << "feature #" << featureIndex << ": runtime error: " << e.what() << std::endl;
+			}
+			catch (const std::exception& e) {
+				std::cout << "feature #" << featureIndex << ": exception: " << e.what() << std::endl;
+			}
+			catch (...) {
+				std::cout << "feature #" << featureIndex << ": unknown error" << std::endl;
+			}
 
 			oocs.at(featureIndex) = ooc;
 			vois.at(featureIndex) = voi;
 
-			sem.notify();
 			mu.lock();
 			std::cout << "feature #" << featureIndex << ": finished" << std::endl;
 			mu.unlock();
+
+			sem.notify();
 		});
 
 		//auto imp = runImportance(featureIndex, dataset_0_i, dataset_1_i);
