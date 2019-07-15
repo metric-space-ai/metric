@@ -1165,8 +1165,8 @@ int main(int argc, char *argv[])
 	std::wcout << '\n';
 	std::wcout << '\n';
 
-	vois.push_back(0);
-	oocs.push_back(1);
+	vois[vois.size() - 1] = 0;
+	oocs[oocs.size() - 1] = 1;
 
 	std::vector<Record> importancesAsRecord;
 	Record voi_r(vois);
