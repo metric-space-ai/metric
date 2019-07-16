@@ -177,7 +177,6 @@ mutualInformation(const std::vector<std::vector<T>> &Xc,
                   Metric metric, int version) {
     T N = Xc.size();
 
-<<<<<<< HEAD
     if (N < k + 1 || Yc.size() < k + 1)
         throw std::invalid_argument("number of points in dataset must be larger than k");
 
@@ -203,84 +202,6 @@ mutualInformation(const std::vector<std::vector<T>> &Xc,
     //std::cout << "entropyEstimate1=" << entropyEstimate << std::endl;
     if(version == 2) {
         entropyEstimate -= 1/static_cast<double>(k);
-=======
-  auto X = Xc;
-  auto Y = Yc;
-  add_noise(X);
-  add_noise(Y);
-  std::vector<std::vector<T>> XY;
-  combine(X, Y, XY);
-  metric::space::Tree<std::vector<T>, Metric> tree(XY, -1, metric);
-  auto entropyEstimate = boost::math::digamma(k) + boost::math::digamma(N);
-  // std::cout << "entropyEstimate1=" << entropyEstimate << std::endl;
-  if (version == 2) {
-    entropyEstimate -= 1 / static_cast<double>(k);
-  }
-  // std::cout << "entropyEstimate2=" << entropyEstimate << std::endl;
-  metric::space::Tree<std::vector<T>, Metric> xTree(X, -1, metric);
-  //    metric::space::Tree<std::vector<T>, Metric> yTree(Y,-1,metric); // never
-  //    used, disabled by Max F
-  for (std::size_t i = 0; i < N; i++) {
-    auto res = tree.knn(XY[i], k + 1);
-    auto neighbor = res.back().first;
-    auto dist = res.back().second;
-    std::size_t nx = 0;
-    if (version == 1) {
-      auto dist_eps = std::nextafter(
-          dist, std::numeric_limits<decltype(
-                    dist)>::max()); // this is instead of replacing < with <= in
-                                    // Tree // added by Max F in order to match
-                                    // Julia code logic without updating Tree
-      nx = xTree.rnn(X[i], dist_eps)
-               .size(); // replaced dist by dist_eps by Max F
-    } else if (version == 2) {
-      auto ex = metric(X[neighbor->ID], X[i]);
-      auto ex_eps = std::nextafter(
-          ex, std::numeric_limits<decltype(
-                  ex)>::max()); // this it to include the most distant point
-                                // into the sphere // added by Max F in order to
-                                // match Julia code logic without updating Tree
-      // nx = xTree.rnn(X[i], ex_eps).size(); // replaced ex by ex_eps by Max F
-      // //    TODO ebable
-
-      //  debug code
-      auto rnn_set = xTree.rnn(X[i], ex_eps);
-      nx = rnn_set.size(); // replaced ex by ex_eps by Max F
-
-      //            std::cout << "X[neighbor]="; print_vec(X[neighbor->ID]);
-      //            std::cout << std::endl; std::cout << "ex=" << ex <<
-      //            std::endl; nx = nx1.size(); std::cout << "rnn=" ;
-      //            print_vec(nx1) ; std::cout << std::endl; std::cout <<
-      //            "X[i]="; print_vec(X[i]) ; std::cout << std::endl;
-
-      // debug code, TODO remove
-      //            if (nx == 0)
-      //            {
-      //                nx = 1; // TODO update with true bugfix!!
-      //                auto dot1 = X[neighbor->ID];
-      //                auto dot2 = X[i];
-
-      //                auto dist_eps_d = std::nextafter(dist,
-      //                std::numeric_limits<decltype(dist)>::max()); // this is
-      //                instead of replacing < with <= in Tree // added by Max F
-      //                in order to match Julia code logic without updating Tree
-
-      //                auto rnn_set_test = xTree.rnn(X[i], ex_eps);
-      //                auto rnn_set_test_2 = xTree.rnn(X[i], ex_eps + 1e-07);
-      //                auto rnn_set_test_2_2 = xTree.rnn(X[i], ex_eps + 1e-07);
-      //                auto rnn_set_test_3 = xTree.rnn(X[neighbor->ID],
-      //                ex_eps); auto rnn_set_test_4 =
-      //                tree.rnn(XY[neighbor->ID], dist_eps_d); auto
-      //                rnn_set_test_5 = tree.rnn(XY[i], dist_eps_d); auto
-      //                knn_res_set_test = tree.knn(XY[i],k+1); // repeats well
-      //                auto knn_res_set_test_4 =
-      //                tree.knn(XY[neighbor->ID],k+1); // repeats well
-
-      //                std::cout << "zero distance\n";
-      //            }
-    } else {
-      throw std::runtime_error("this version not allowed");
->>>>>>> organize space module
     }
     //std::cout << "entropyEstimate2=" << entropyEstimate << std::endl;
     metric::space::Tree<std::vector<T>, Metric> xTree(X,-1,metric);
