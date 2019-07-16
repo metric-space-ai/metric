@@ -158,7 +158,7 @@ int main() {
 
     int ds_len = 20;
 
-    //* // entropy on fixed random real arrays
+    /* // entropy on fixed random real arrays
 
 
     std::cout << "\n";
@@ -182,7 +182,7 @@ int main() {
 
 
 
-    //* // entropy on fixed random dataset read from .csv
+    /* // entropy on fixed random dataset read from .csv
 
     std::cout << "\n";
     std::cout << "dataset from .csv\n";
@@ -552,8 +552,8 @@ int main() {
 	std::cout << "negative entropy" << std::endl;
 	std::cout << std::endl;
 
-	std::vector<std::vector<double>> v1 = { {0}, {0}, {0} };
-	std::vector<std::vector<double>> v2 = { {0}, {0}, {0} };
+    std::vector<std::vector<double>> v1 = { {0}, {0}, {0}, {0} };
+    std::vector<std::vector<double>> v2 = { {0}, {0}, {0} };
 
 	auto eX = entropy<double, metric::distance::Manhatten<double>>(v1, 3, 2, metric::distance::Manhatten<double>());
 	auto eY = entropy<double, metric::distance::Manhatten<double>>(v2, 3, 2, metric::distance::Manhatten<double>());
