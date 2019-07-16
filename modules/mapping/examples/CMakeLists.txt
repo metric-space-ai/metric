@@ -1,5 +1,15 @@
 cmake_minimum_required(VERSION 3.14)
-#find_package (Boost COMPONENTS date_time REQUIRED)
+
+set(Boost_DEBUG on) 
+ 
+find_package(Boost)
+ 
+if(Boost_FOUND) 
+    message(STATUS "BOOST found!")
+else()
+    message(STATUS "Fail to find BOOST!")
+endif()
+
 
 project(MappingExamples)
 
@@ -58,6 +68,8 @@ endif(MSVC)
 #else()
 #    message("Blaze was not found!")
 #endif()
+
+include_directories(${Boost_INCLUDE_DIRS})
 
 # quantized_mappers / clustering
 add_executable(KMedoids_example quantized_mappers/clustering/KMedoids_example.cpp)
