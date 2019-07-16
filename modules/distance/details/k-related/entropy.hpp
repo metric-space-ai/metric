@@ -269,7 +269,7 @@ mutualInformation(const std::vector<std::vector<T>> & Xc,
 
 
 template<typename T>
-typename std::enable_if<std::is_integral<T>::value, T>::type // added by Max F
+typename std::enable_if<std::is_integral<T>::value, T>::type // line added by Max F
 mutualInformation(const std::vector<std::vector<T>> & Xc,
                   const std::vector<std::vector<T>> & Yc, T logbase = 2.0) {
     std::vector<std::vector<T>> XY;
@@ -317,4 +317,32 @@ mutualInformation(const std::vector<std::vector<T>> & Xc,
 // }
 // return abs(entropyEstimate)
 //                     }
+
+
+
+
+template<typename T>
+typename std::enable_if<!std::is_integral<T>::value, T>::type
+variationOfInformation(const std::vector<std::vector<T>> & Xc,
+                  const std::vector<std::vector<T>> & Yc, int k = 3, T logbase = 2.0)
+{
+    using Cheb = metric::distance::Chebyshev<T>;
+    return entropy<T,Cheb>(Xc, k, logbase, Cheb()) + entropy<T,Cheb>(Yc, k, logbase, Cheb())
+         - 2 * mutualInformation<T>(Xc, Yc, k);
+}
+
+
+template<typename T>
+typename std::enable_if<!std::is_integral<T>::value, T>::type
+variationOfInformation_normalized(const std::vector<std::vector<T>> & Xc,
+                  const std::vector<std::vector<T>> & Yc, int k = 3, T logbase = 2.0)
+{
+    using Cheb = metric::distance::Chebyshev<T>;
+    auto mi = mutualInformation<T>(Xc, Yc, k);
+    return 1 - ( mi / (entropy<T,Cheb>(Xc, k, logbase, Cheb()) + entropy<T,Cheb>(Yc, k, logbase, Cheb()) - mi) );
+}
+
+
+
+
 #endif

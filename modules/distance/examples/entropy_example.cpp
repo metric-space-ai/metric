@@ -553,7 +553,7 @@ int main() {
 	std::cout << std::endl;
 
     std::vector<std::vector<double>> v1 = { {0}, {0}, {0}, {0} };
-    std::vector<std::vector<double>> v2 = { {0}, {0}, {0} };
+    std::vector<std::vector<double>> v2 = { {0}, {0}, {0}, {0} };
 
 	auto eX = entropy<double, metric::distance::Chebyshev<double>>(v1, 3, 2, metric::distance::Chebyshev<double>());
 	auto eY = entropy<double, metric::distance::Chebyshev<double>>(v2, 3, 2, metric::distance::Chebyshev<double>());
@@ -564,8 +564,13 @@ int main() {
 
 	std::cout << "eX = " << eX << std::endl;
 	std::cout << "eY = " << eY << std::endl;
-	std::cout << "mi = " << mi << std::endl;
-	std::cout << "voi = " << voi << std::endl;
+    std::cout << "mi = " << mi << std::endl;
+    std::cout << "voi = " << voi << std::endl;
+    for (size_t i = 0; i<5; i++)
+        std::cout << "voi = " << variationOfInformation(v1, v2) << std::endl;
+    for (size_t i = 0; i<5; i++)
+        std::cout << "voi_normalized = " << variationOfInformation_normalized(v1, v2) << std::endl;
+
 
 
 
