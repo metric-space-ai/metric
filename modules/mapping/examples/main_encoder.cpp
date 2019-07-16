@@ -7,6 +7,11 @@ Copyright (c) 2019 Panda Team
 */
 
 #include <iostream>
+#ifndef M_PI
+	// MSVC does not define M_PI
+    #define M_PI 3.14159265358979323846
+#endif
+
 
 #include "../details/encoder.hpp"  // for usage independently on the entire lib
 //#include "metric.hpp"  // for usage as a part of the lib
