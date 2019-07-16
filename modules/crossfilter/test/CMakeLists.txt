@@ -27,6 +27,6 @@ foreach(testSrc ${TEST_SRCS})
         #Finally add it to test execution - 
         #Notice the WORKING_DIRECTORY and COMMAND
         add_test(NAME ${testName} 
-                 WORKING_DIRECTORY ${DESTINATION} 
-                 COMMAND ${testName} )
+                 WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR} 
+                 COMMAND ${CMAKE_CURRENT_BINARY_DIR}/${testName} )
 endforeach(testSrc)
