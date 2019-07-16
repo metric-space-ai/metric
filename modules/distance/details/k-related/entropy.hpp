@@ -76,6 +76,9 @@ entropy(std::vector<std::vector<T>> data, std::size_t k = 3, T logbase = 2, Metr
     if(data.empty() || data[0].empty()) {
         return 0;
     }
+    if (data.size() < k + 1)
+        throw std::invalid_argument("number of points in dataset must be larger than k");
+
     T p = 1; // replaced double with T by Max F
     T N = data.size();
     T d = data[0].size();
@@ -177,6 +180,9 @@ mutualInformation(const std::vector<std::vector<T>> & Xc,
                     const std::vector<std::vector<T>> & Yc,
                     int k = 3,  Metric metric = Metric(), int version = 2) {
     T N = Xc.size();
+
+    if (N < k + 1 || Yc.size() < k + 1)
+        throw std::invalid_argument("number of points in dataset must be larger than k");
 
     auto X = Xc;
     auto Y = Yc;
