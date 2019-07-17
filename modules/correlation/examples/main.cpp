@@ -11,7 +11,7 @@
 #include <iostream>
 #include <chrono>
 
-#include "metric_correlation.hpp"
+#include "../metric_correlation.hpp"
 
 template <typename T>
 void matrix_print(const std::vector<std::vector<T>> &mat)
@@ -148,7 +148,7 @@ int main()
     typedef std::vector<double> Rec1;
     typedef std::array<float, 1> Rec2;
     typedef simple_user_euclidian Met1;
-    typedef metric::correlation::mgc_details::generic_manhatten<Rec2> Met2;
+    typedef metric::distance::Manhatten<float> Met2;
 
     // set up the correlation function
     auto mgc_corr = metric::correlation::MGC<Rec1, Met1, Rec2, Met2>();

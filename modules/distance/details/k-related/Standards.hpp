@@ -1,5 +1,3 @@
-#ifndef _METRIC_DISTANCE_STANDARDS_HPP
-#define _METRIC_DISTANCE_STANDARDS_HPP
 /*
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -7,6 +5,8 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 Copyright (c) 2018 Michael Welsch
 */
+#ifndef _METRIC_DISTANCE_DETAILS_K_RELATED_STANDARDS_HPP
+#define _METRIC_DISTANCE_DETAILS_K_RELATED_STANDARDS_HPP
 
 #define DECLARE_METRIC_TYPES                            \
     using value_type = typename Container::value_type;  \
@@ -92,9 +92,20 @@ namespace metric
             template<typename Container>
             distance_type  operator()(const Container &a, const Container &b) const;
         };
+/*** Chebyshev Metric ***/
+    template <typename V> struct Chebyshev {
+      using value_type = V;
+      using distance_type = value_type;
+
+      explicit Chebyshev() = default;
+
+      template <typename Container>
+      distance_type operator()(const Container &lhs, const Container &rhs) const;
+    };
 
 
     } // namespace distance
+
 
 } // namespace metric
 

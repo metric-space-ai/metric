@@ -1,5 +1,3 @@
-#ifndef EDM_WRAPPERS_HPP
-#define EDM_WRAPPERS_HPP
 /*
   This Source Code Form is subject to the terms of the Mozilla Public
   License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -7,6 +5,8 @@
 
   Copyright (c) 2018 Panda Team
 */
+#ifndef _METRIC_MAPPING_DETAILS_CLASSIFICATION_DETAILS_EDM_WRAPPERS_HPP
+#define _METRIC_MAPPING_DETAILS_CLASSIFICATION_DETAILS_EDM_WRAPPERS_HPP
 
 #include "3rdparty/DataSet.h"
 #include "3rdparty/Classifier.h"

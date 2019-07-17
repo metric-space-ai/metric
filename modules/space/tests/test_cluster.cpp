@@ -30,7 +30,7 @@ namespace std {
 }
 BOOST_AUTO_TEST_CASE(cluster1) {
     std::vector<int> data = {7,8,9,10,11,12,13};
-    metric_space::Tree<int,distance<int>> tree;
+    metric::space::Tree<int,distance<int>> tree;
     tree.insert(data);
     tree.print();
     std::vector<double> distribution = {0.1, 0.2, 0.3, 0.5};
@@ -55,7 +55,7 @@ BOOST_AUTO_TEST_CASE(cluster1) {
 
 BOOST_AUTO_TEST_CASE(cluster2) {
     std::vector<int> data = {7,8,9,10,11,12,13};
-    metric_space::Tree<int,distance<int>> tree;
+    metric::space::Tree<int,distance<int>> tree;
     tree.insert(data);
     tree.print();
     std::vector<double> distribution = {0.1, 0.2, 0.3, 0.5};
@@ -79,7 +79,7 @@ BOOST_AUTO_TEST_CASE(cluster2) {
 
 BOOST_AUTO_TEST_CASE(cluster3) {
     std::vector<int> data = {7,8,9,10,11,12,13};
-    metric_space::Tree<int,distance<int>> tree;
+    metric::space::Tree<int,distance<int>> tree;
     tree.insert(data);
     tree.print();
     std::vector<double> distribution = {0.1, 0.2, 0.5, 0.9};
@@ -103,17 +103,17 @@ BOOST_AUTO_TEST_CASE(cluster3) {
 
 BOOST_AUTO_TEST_CASE(cluster_exception_unsorted) {
     std::vector<int> data = {7,8,9,10,11,12,13};
-    metric_space::Tree<int,distance<int>> tree;
+    metric::space::Tree<int,distance<int>> tree;
     tree.insert(data);
     std::vector<double> distribution1 = {0.9, 0.1, 0.2, 0.5, 0.9};
     std::vector<double> distribution2 = {0.1, 0.2, 0.5, 0.9};
     std::vector<double> distribution3 = {0.1, 0.2, 0.5, 0.9, 1,5};
     std::vector<std::size_t>  IDS = {3};
     std::vector<int>  points = {10};
-    BOOST_CHECK_THROW(tree.clustering(distribution1, IDS, data), metric_space::unsorted_distribution_exception);
-    BOOST_CHECK_THROW(tree.clustering(distribution1, points), metric_space::unsorted_distribution_exception);
-    BOOST_CHECK_THROW(tree.clustering(distribution3, IDS, data), metric_space::bad_distribution_exception);
-    BOOST_CHECK_THROW(tree.clustering(distribution3, points), metric_space::bad_distribution_exception);
+    BOOST_CHECK_THROW(tree.clustering(distribution1, IDS, data), metric::space::unsorted_distribution_exception);
+    BOOST_CHECK_THROW(tree.clustering(distribution1, points), metric::space::unsorted_distribution_exception);
+    BOOST_CHECK_THROW(tree.clustering(distribution3, IDS, data), metric::space::bad_distribution_exception);
+    BOOST_CHECK_THROW(tree.clustering(distribution3, points), metric::space::bad_distribution_exception);
     BOOST_REQUIRE_NO_THROW(tree.clustering(distribution2, IDS, data));
     BOOST_REQUIRE_NO_THROW(tree.clustering(distribution2, points));
     

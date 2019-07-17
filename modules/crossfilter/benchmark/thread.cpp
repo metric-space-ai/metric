@@ -20,9 +20,7 @@
 // #include "spdlog/sinks/basic_file_sink.h"
 // #include "spdlog/sinks/daily_file_sink.h"
 //#include "../include/crossfilter.hpp"
-#include "detail/crossfilter.hpp"
-#include "detail/dimension.hpp"
-#include "detail/feature.hpp"
+#include "../crossfilter.hpp"
 
 template<std::intmax_t resolution>
 std::ostream &operator<<(

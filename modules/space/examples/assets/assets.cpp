@@ -7,7 +7,7 @@ Copyright (c) 2018 Panda Team
 */
 
 #include <vector>
-#include <blaze/Math.h>
+//#include <blaze/Math.h>
 
 namespace assets
 {

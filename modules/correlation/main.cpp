@@ -13,7 +13,7 @@
 #include <random>
 
 //#include "metric_correlation.hpp"
-#include "details/metrics.hpp"
+//#include "details/metrics.hpp"
 #include "details/mgc.hpp"
 
 
@@ -153,8 +153,8 @@ int main()
     typedef std::array<float, 1> Rec2;
 
     //typedef simple_user_euclidian Met1;
-    typedef metric::generic_euclidian<Rec1> Met1;
-    typedef metric::generic_manhatten<Rec2> Met2;
+    typedef metric::distance::Euclidian<double> Met1;
+    typedef metric::distance::Manhatten<float> Met2;
 
     /* Set up the correlation function */
     auto mgc_corr = metric::correlation::MGC<Rec1, Met1, Rec2, Met2>();

@@ -8,7 +8,7 @@
 #include <iostream>
 #include <vector>
 #include <string>
-#include "../details/Connected_Components.hpp"
+#include "../details/connected-components.hpp"
 
 
 
@@ -17,18 +17,28 @@ class Matrix {
 	std::vector<std::vector<T>> mx;
 
 public:
+	using ElementType = T;
 	Matrix() {}
 
 	Matrix(size_t size) : mx(size, std::vector<T>(size)){
-
 	}
+	
+	Matrix(size_t size, size_t, bool): mx(size, std::vector<T>(size)) {}
 
 	 typedef T value_type;
 
 	size_t size() const {
 		return mx.size();
 	}
-
+	void resize(size_t new_size, size_t) {
+	    mx.resize(new_size);
+	    for(auto & v : mx) {
+		v.resize(new_size);
+	    }
+	}
+	size_t rows() const {
+	    return mx.size();
+	}
 	std::vector<T>& operator[](const size_t row) {
 		return mx[row];
 	}
@@ -37,6 +47,15 @@ public:
 		return mx[row];
 	}
 	
+	T & operator()(size_t row, size_t col)  {
+	    return mx[row][col];
+	}
+	
+	T operator()(size_t row, size_t col) const {
+	    return mx[row][col];
+	}
+	
+
 
 	void reset() {
 		for (auto& e : mx)

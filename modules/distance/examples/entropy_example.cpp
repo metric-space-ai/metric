@@ -9,11 +9,11 @@ Copyright (c) 2019 Panda Team
 #include <vector>
 #include <random>
 #include <cmath>
-#include "distance/details/k-related/entropy.hpp"
-#include "distance/details/k-related/Standards.hpp"
+//#include "distance/details/k-related/entropy.hpp"
+#include "../metric_distance.hpp"
 #include <iostream>
-
-#include "distance/details/k-related/chebyshev.hpp"
+#include <fstream>
+//#include "distance/details/k-related/chebyshev.hpp"
 
 #include <random> // for random vector generation
 
@@ -128,7 +128,7 @@ int main() {
 //    for (size_t i = 0; i<v.size(); i++)
 //        std::cout << v[i][0] << ", " << v[i][1] << "\n";
 
-    e = entropy(v);
+    e = metric::distance::entropy(v);
     std::cout << "Default: " << e << std::endl;
 
     for (size_t i = 0; i < 10; i++)
@@ -156,7 +156,7 @@ int main() {
 
 
     for (size_t i = 0; i < 10; i++)
-        std::cout << entropy<long double, metric::distance::Euclidian<long double>>(rnd21) << std::endl;
+        std::cout << metric::distance::entropy<long double, metric::distance::Euclidian<long double>>(rnd21) << std::endl;
 
     save_ds(rnd21, "rnd_i5000.csv");
 
@@ -182,8 +182,8 @@ int main() {
 
 
     for (size_t i = 0; i < 10; i++)
-        //std::cout << entropy<long double, metric::distance::Euclidian<long double>>(rnd22, 3, 2, metric::distance::Euclidian<long double>()) << std::endl;
-        std::cout << entropy<long double, metric::distance::Chebyshev<long double>>(rnd22, 3, 2, metric::distance::Chebyshev<long double>()) << std::endl;
+        //std::cout << metric::distance::entropy<long double, metric::distance::Euclidian<long double>>(rnd22, 3, 2, metric::distance::Euclidian<long double>()) << std::endl;
+        std::cout << metric::distance::entropy<long double, metric::distance::Chebyshev<long double>>(rnd22, 3, 2, metric::distance::Chebyshev<long double>()) << std::endl;
 
     save_ds(rnd22, "rnd_r.csv");
 
@@ -203,8 +203,8 @@ int main() {
 
 
     for (size_t i = 0; i < 10; i++)
-        //std::cout << entropy<long double, metric::distance::Euclidian<long double>>(f_1_csv, 3, 2, metric::distance::Euclidian<long double>()) << std::endl;
-        std::cout << entropy<long double, metric::distance::Chebyshev<long double>>(f_1_csv, 3, 2, metric::distance::Chebyshev<long double>()) << std::endl;
+        //std::cout << metric::distance::entropy<long double, metric::distance::Euclidian<long double>>(f_1_csv, 3, 2, metric::distance::Euclidian<long double>()) << std::endl;
+        std::cout << metric::distance::entropy<long double, metric::distance::Chebyshev<long double>>(f_1_csv, 3, 2, metric::distance::Chebyshev<long double>()) << std::endl;
 
     //*/
 
@@ -246,14 +246,14 @@ int main() {
 //    std::vector<std::vector<double>> v1 = {{5}, {2}, {3}, {5}};
 //    std::vector<std::vector<double>> v2 = {{5}, {2}, {3}, {5}};
     std::cout << "MI for v1 = {{5,5}, {2,2}, {3,3}, {5,5}}, v2 = {{5,5}, {2,2}, {3,3}, {1,1}}:\n";
-    std::cout << "v2 MI for v1, v1: " << mutualInformation<double>(v1, v1) << std::endl;
-    std::cout << "v1 MI for v1, v1: " << mutualInformation<double, metric::distance::Chebyshev<double>>(v1, v1, 3, metric::distance::Chebyshev<double>(), 1) << std::endl;
-    std::cout << "v2 MI for v2, v2: " << mutualInformation<double>(v2, v2) << std::endl;
-    std::cout << "v1 MI for v2, v2: " << mutualInformation<double, metric::distance::Chebyshev<double>>(v2, v2, 3, metric::distance::Chebyshev<double>(), 1) << std::endl;
-    std::cout << "v2 MI for v1, v2: " << mutualInformation<double>(v1, v2) << std::endl;
-    std::cout << "v1 MI for v1, v2: " << mutualInformation<double, metric::distance::Chebyshev<double>>(v1, v2, 3, metric::distance::Chebyshev<double>(), 1) << std::endl;
-    std::cout << "v2 MI for v2, v1: " << mutualInformation<double>(v2, v1) << std::endl;
-    std::cout << "v1 MI for v2, v1: " << mutualInformation<double, metric::distance::Chebyshev<double>>(v2, v1, 3, metric::distance::Chebyshev<double>(), 1) << std::endl;
+    std::cout << "v2 MI for v1, v1: " << metric::distance::mutualInformation<double>(v1, v1) << std::endl;
+    std::cout << "v1 MI for v1, v1: " << metric::distance::mutualInformation<double, metric::distance::Chebyshev<double>>(v1, v1, 3, metric::distance::Chebyshev<double>(), 1) << std::endl;
+    std::cout << "v2 MI for v2, v2: " << metric::distance::mutualInformation<double>(v2, v2) << std::endl;
+    std::cout << "v1 MI for v2, v2: " << metric::distance::mutualInformation<double, metric::distance::Chebyshev<double>>(v2, v2, 3, metric::distance::Chebyshev<double>(), 1) << std::endl;
+    std::cout << "v2 MI for v1, v2: " << metric::distance::mutualInformation<double>(v1, v2) << std::endl;
+    std::cout << "v1 MI for v1, v2: " << metric::distance::mutualInformation<double, metric::distance::Chebyshev<double>>(v1, v2, 3, metric::distance::Chebyshev<double>(), 1) << std::endl;
+    std::cout << "v2 MI for v2, v1: " << metric::distance::mutualInformation<double>(v2, v1) << std::endl;
+    std::cout << "v1 MI for v2, v1: " << metric::distance::mutualInformation<double, metric::distance::Chebyshev<double>>(v2, v1, 3, metric::distance::Chebyshev<double>(), 1) << std::endl;
 
 
     //*/
@@ -268,7 +268,7 @@ int main() {
 
     std::cout << "MI repetitive test:\n";
     for (size_t i = 0; i<30; i++)
-        std::cout << "v2 MI for v1, v2: " << mutualInformation<double>(v1, v2) << std::endl;
+        std::cout << "v2 MI for v1, v2: " << metric::distance::mutualInformation<double>(v1, v2) << std::endl;
 
     std::vector<std::vector<long double>> v_rt = {
         {2.007415917194179447, 4.01552913751076210507},
@@ -288,7 +288,7 @@ int main() {
     std::cout << std::endl;
 
     for (size_t i = 0; i<30; i++)
-        std::cout << "v2 MI for v_rt, v_rt_2: " << mutualInformation<long double>(v_rt, v_rt_2) << std::endl;
+        std::cout << "v2 MI for v_rt, v_rt_2: " << metric::distance::mutualInformation<long double>(v_rt, v_rt_2) << std::endl;
 
     //*/
 
@@ -299,7 +299,7 @@ int main() {
 
 //    std::cout << "comparing distributions of results for simple input vector\n";
 //    for (size_t i = 0; i<30; i++)
-//        std::cout << entropy<double, metric::distance::Chebyshev<double>>(v, 3, 2, metric::distance::Chebyshev<double>()) << "\n";
+//        std::cout << metric::distance::entropy<double, metric::distance::Chebyshev<double>>(v, 3, 2, metric::distance::Chebyshev<double>()) << "\n";
 
 
 
@@ -311,7 +311,7 @@ int main() {
 
     //std::vector<std::vector<int>> i1 = {{5,5}, {2,2}, {3,3}, {5,5}};
     //std::vector<std::vector<int>> i2 = {{5,5}, {2,2}, {3,3}, {1,1}};
-    //std::cout << mutualInformation<int>(i1, i2) << std::endl; // now this overload only raises the logic_error exception with "Not implemented" message
+    //std::cout << metric::distance::mutualInformation<int>(i1, i2) << std::endl; // now this overload only raises the logic_error exception with "Not implemented" message
 
 
     std::cout << "random array entropy test\n";
@@ -322,8 +322,8 @@ int main() {
 
 
     for (size_t i = 0; i < 10; i++)
-        std::cout << entropy<long double, metric::distance::Chebyshev<long double>>(rnd, 3, 2, metric::distance::Chebyshev<long double>()) << std::endl;
-    //std::cout << entropy<double, metric::distance::Chebyshev<double>>(rnd, 3, 2, metric::distance::Chebyshev<double>()) << std::endl;
+        std::cout << metric::distance::entropy<long double, metric::distance::Chebyshev<long double>>(rnd, 3, 2, metric::distance::Chebyshev<long double>()) << std::endl;
+    //std::cout << metric::distance::entropy<double, metric::distance::Chebyshev<double>>(rnd, 3, 2, metric::distance::Chebyshev<double>()) << std::endl;
 
     //*/
 
@@ -367,7 +367,7 @@ int main() {
         rnd2.push_back({cases1[uni(rng)], cases2[uni(rng)]});
 
     for (size_t i = 0; i < 10; i++)
-        std::cout << mutualInformation<long double>(rnd1, rnd2) << std::endl;
+        std::cout << metric::distance::mutualInformation<long double>(rnd1, rnd2) << std::endl;
 
     //save_ds(rnd1, "rnd_i5000_1.csv");
     //save_ds(rnd2, "rnd_i5000_2.csv");
@@ -392,7 +392,7 @@ int main() {
         rnd4.push_back({cases1[uni(rng)], cases2[uni(rng)]});
 
     for (size_t i = 0; i < 10; i++)
-        std::cout << mutualInformation<long double>(rnd3, rnd4) << std::endl;
+        std::cout << metric::distance::mutualInformation<long double>(rnd3, rnd4) << std::endl;
 
 
 
@@ -408,7 +408,7 @@ int main() {
         rnd8.push_back({cases1[uni(rng)], cases2[uni(rng)]});
 
     for (size_t i = 0; i < 10; i++)
-        std::cout << mutualInformation<long double>(rnd7, rnd8) << std::endl;
+        std::cout << metric::distance::mutualInformation<long double>(rnd7, rnd8) << std::endl;
 
     //*/
 
@@ -435,7 +435,7 @@ int main() {
 //        std::cout << "rnd_r500_1, value " << i << ": " << rnd_r500_1[i][0] << " " << rnd_r500_1[i][1] << "\n";
 
     for (size_t i = 0; i < 10; i++)
-        std::cout << mutualInformation<long double>(rnd_r500_1, rnd_r500_2) << std::endl;
+        std::cout << metric::distance::mutualInformation<long double>(rnd_r500_1, rnd_r500_2) << std::endl;
 
     //save_ds(rnd_r500_1, "rnd_r500_1.csv");
     //save_ds(rnd_r500_2, "rnd_r500_2.csv");
@@ -465,7 +465,7 @@ int main() {
         std::cout << "rnd_r5000_1, value " << i << ": " << rnd_r5000_1[i][0] << " " << rnd_r5000_1[i][1] << "\n";
 
     for (size_t i = 0; i < 10; i++)
-        std::cout << mutualInformation<long double>(rnd_r5000_1, rnd_r5000_2) << std::endl;
+        std::cout << metric::distance::mutualInformation<long double>(rnd_r5000_1, rnd_r5000_2) << std::endl;
 
     //save_ds(rnd_r5000_1, "rnd_r5000_1.csv");
     //save_ds(rnd_r5000_2, "rnd_r5000_2.csv");
@@ -493,7 +493,7 @@ int main() {
         std::cout << "rnd_r50000_1, value " << i << ": " << rnd_r50000_1[i][0] << " " << rnd_r50000_1[i][1] << "\n";
 
     for (size_t i = 0; i < 10; i++)
-        std::cout << mutualInformation<long double>(rnd_r50000_1, rnd_r50000_2) << std::endl;
+        std::cout << metric::distance::mutualInformation<long double>(rnd_r50000_1, rnd_r50000_2) << std::endl;
 
     //save_ds(rnd_r50000_1, "rnd_r50000_1.csv");
     //save_ds(rnd_r50000_2, "rnd_r50000_2.csv");
@@ -549,7 +549,7 @@ int main() {
 
 
     for (size_t i = 0; i < 10; i++)
-        std::cout << mutualInformation<long double>(f_1_csv, f_2_csv) << std::endl;
+        std::cout << metric::distance::mutualInformation<long double>(f_1_csv, f_2_csv) << std::endl;
 
     //*/
 
@@ -567,7 +567,7 @@ int main() {
 	auto eX = entropy<double, metric::distance::Manhatten<double>>(v1, 3, 2, metric::distance::Manhatten<double>());
 	auto eY = entropy<double, metric::distance::Manhatten<double>>(v2, 3, 2, metric::distance::Manhatten<double>());
 
-	auto mi = mutualInformation<double>(v1, v2);
+    auto mi = metric::distance::mutualInformation<double>(v1, v2);
 
 	auto voi = eX + eY - 2 * mi;
 

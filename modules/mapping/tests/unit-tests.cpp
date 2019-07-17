@@ -7,9 +7,9 @@
 */
 #include <algorithm>
 
-#include "../details/metric.tpp"
+#include "../../distance.hpp"
 //#include "../details/graph.hpp"
-#include "utils/graph/graph.hpp"
+#include "../../../utils/graph/graph.hpp"
 
 #define BOOST_TEST_MODULE Main
 #define BOOST_TEST_DYN_LINK
@@ -20,7 +20,7 @@
 BOOST_AUTO_TEST_CASE(Metric)
 {
 	using Vector = std::vector<double>;
-	metric::mapping::SOM_details::default_euclidian<Vector> metric;
+	metric::distance::Euclidian<double> metric;
 
 	Vector vNull = {};
 	Vector v0 = {0, 0, 0, 0, 0};

@@ -49,7 +49,7 @@ bool test(int array_size) {
   for(int i = 0; i < array_size; i++) {
     data.push_back(dgen());
   }
-  metric_space::Tree<float,distance<float>> tr;
+  metric::space::Tree<float,distance<float>> tr;
   for(auto i : data) {
     tr.insert(i);
     if(!tr.check_covering()) {
@@ -59,7 +59,7 @@ bool test(int array_size) {
   std::ostringstream os;
   serialize::oarchive<std::ostringstream> oar(os);
   tr.serialize(oar);
-  metric_space::Tree<float,distance<float>> tr1;
+  metric::space::Tree<float,distance<float>> tr1;
   std::istringstream is(os.str());
   serialize::iarchive<std::istringstream> iar(is);
   tr1.deserialize(iar,is);

@@ -12,8 +12,8 @@ Copyright (c) 2019 Panda Team
 
 #include <chrono>
 
-#include "assets/json.hpp"
-#include "../metric_mapping.hpp"
+#include "../../assets/json.hpp"
+#include "../../../metric_mapping.hpp"
 
 
 using json = nlohmann::json;
@@ -82,7 +82,7 @@ int main()
     // double neighborhoodSize = 1.2;
 
     using Vector = std::vector<double>;
-    using Metric = metric::mapping::SOM_details::default_euclidian<Vector>;
+    using Metric = metric::distance::Euclidian<Vector::value_type>;
     using Graph = metric::graph::Grid6; // replaced mapping::SOM_details with graph by Max F, 2019-05-16
 
     metric::mapping::SOM<Vector, Metric, Graph> DR(6, 5);

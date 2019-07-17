@@ -6,6 +6,8 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 Copyright (c) 2019 Michael Welsch
 */
 
+#ifndef _METRIC_DISTANCE_METRIC_DISTANCE_HPP
+#define _METRIC_DISTANCE_METRIC_DISTANCE_HPP
 
 #include <type_traits>
 #include <algorithm>
@@ -20,3 +22,5 @@ Copyright (c) 2019 Michael Welsch
 
 #include "details/k-related/L1.hpp"
 #include "details/k-related/entropy.hpp"
+
+#endif

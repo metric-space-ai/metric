@@ -30,7 +30,8 @@
 #include "../../../3rdparty/blaze/Math.h"
 //#include "../libs/blaze/math/Row.h"
 
-#include "metrics.hpp"
+//#include "metrics.hpp"
+#include "../../distance/metric_distance.hpp"
 #include "connected-components.hpp"
 
 
@@ -47,7 +48,7 @@ Container distance_matrix(const Container &data)
     typedef typename Row::value_type T;
     Container matrix(data.size(), Row(data.size())); //initialize
 
-    auto distance_function = generic_euclidian<Row>(); // functor
+    auto distance_function = metric::distance::Euclidian<T>(); //generic_euclidian<Row>(); // functor
     for (size_t i = 0; i < data.size(); ++i)
     {
         matrix[i][i] = 0;
