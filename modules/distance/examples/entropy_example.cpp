@@ -104,22 +104,22 @@ int main() {
 //    std::vector<std::vector<double>> v = {{1}, {2}, {3}, {2}};
 
     //auto e = entropy<double,metric::distance::Euclidian<double>>(v);
-    auto e = entropy<double, metric::distance::Chebyshev<double>>(v, 3, 2, metric::distance::Chebyshev<double>());
+    auto e = entropy(v, 3, 2.0, metric::distance::Chebyshev<double>());
     std::cout << "Chebyshev: " << e << std::endl;
 
-    e = entropy<double, metric::distance::P_norm<double>>(v, 3, 2, metric::distance::P_norm<double>(3));
+    e = entropy(v, 3, 2.0, metric::distance::P_norm<double>(3));
     std::cout << "General Minkowsky, 3: " << e << std::endl;
 
-    e = entropy<double, metric::distance::P_norm<double>>(v, 3, 2, metric::distance::P_norm<double>(2));
+    e = entropy(v, 3, 2.0, metric::distance::P_norm<double>(2));
     std::cout << "General Minkowsky, 2: " << e << std::endl;
 
-    e = entropy<double, metric::distance::Euclidian<double>>(v, 3, 2, metric::distance::Euclidian<double>());
+    e = entropy(v, 3, 2.0, metric::distance::Euclidian<double>());
     std::cout << "Euclidean: " << e << std::endl;
 
-    e = entropy<double, metric::distance::P_norm<double>>(v, 3, 2, metric::distance::P_norm<double>(1));
+    e = entropy(v, 3, 2.0, metric::distance::P_norm<double>(1));
     std::cout << "General Minkowsky, 1: " << e << std::endl;
 
-    e = entropy<double, metric::distance::Manhatten<double>>(v, 3, 2, metric::distance::Manhatten<double>());
+    e = entropy(v, 3, 2.0, metric::distance::Manhatten<double>());
     std::cout << "Manhatten: " << e << std::endl;
 
 //    std::cout << "\nnoise test:\n";
