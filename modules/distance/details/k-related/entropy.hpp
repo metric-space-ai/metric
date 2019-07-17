@@ -70,7 +70,7 @@ void print(const std::vector<std::pair<Node_ptr,Distance>> & data) {
 
 
 
-template <typename T, typename Metric>
+template <typename T, typename Metric = metric::distance::Euclidian<T>>
 typename std::enable_if<!std::is_integral<T>::value, T>::type  // replaced T with conditional type by Max F
 entropy(std::vector<std::vector<T>> data, std::size_t k = 3, T logbase = 2, Metric metric = metric::distance::Euclidian<T>()) {
     if(data.empty() || data[0].empty()) {

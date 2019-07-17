@@ -94,7 +94,7 @@ int main() {
 
 
 
-    /* // entropies for fixed vector
+    //* // entropies for fixed vector
 
     std::cout << "entropies for {{5,5}, {2,2}, {3,3}, {5,1}}:\n";
 
@@ -127,6 +127,15 @@ int main() {
 //    add_noise(v);
 //    for (size_t i = 0; i<v.size(); i++)
 //        std::cout << v[i][0] << ", " << v[i][1] << "\n";
+
+    e = entropy(v);
+    std::cout << "Default: " << e << std::endl;
+
+    for (size_t i = 0; i < 10; i++)
+    {
+        e = entropy(v, 3, 2.0, metric::distance::P_norm<double>(3));
+        std::cout << "General Minkowsky, 3: " << e << std::endl;
+    }
 
     //*/
 
@@ -546,7 +555,7 @@ int main() {
 
 
 
-	//* // negative entropy 
+    /* // VOI, normalized VOI
 
 	std::cout << std::endl;
 	std::cout << "negative entropy" << std::endl;
@@ -571,7 +580,7 @@ int main() {
     for (size_t i = 0; i<5; i++)
         std::cout << "voi_normalized = " << variationOfInformation_normalized(v1, v2) << std::endl;
 
-
+    //*/
 
 
     return 0;
