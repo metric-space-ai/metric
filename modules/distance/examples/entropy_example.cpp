@@ -128,7 +128,7 @@ int main() {
 //    for (size_t i = 0; i<v.size(); i++)
 //        std::cout << v[i][0] << ", " << v[i][1] << "\n";
 
-    e = entropy(v);
+    e = metric::distance::entropy(v);
     std::cout << "Default: " << e << std::endl;
 
     for (size_t i = 0; i < 10; i++)
@@ -564,13 +564,8 @@ int main() {
     std::vector<std::vector<double>> v1 = { {0}, {0}, {0}, {0} };
     std::vector<std::vector<double>> v2 = { {0}, {0}, {0}, {0} };
 
-<<<<<<< HEAD
 	auto eX = entropy<double, metric::distance::Manhatten<double>>(v1, 3, 2, metric::distance::Manhatten<double>());
 	auto eY = entropy<double, metric::distance::Manhatten<double>>(v2, 3, 2, metric::distance::Manhatten<double>());
-=======
-    auto eX = metric::distance::entropy<double, metric::distance::Chebyshev<double>>(v1, 3, 2, metric::distance::Chebyshev<double>());
-    auto eY = metric::distance::entropy<double, metric::distance::Chebyshev<double>>(v2, 3, 2, metric::distance::Chebyshev<double>());
->>>>>>> fix merge conflicts
 
     auto mi = metric::distance::mutualInformation<double>(v1, v2);
 

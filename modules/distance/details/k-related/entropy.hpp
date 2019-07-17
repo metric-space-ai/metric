@@ -15,7 +15,7 @@ Copyright (c) 2019 Panda Team
 
 
 namespace metric {
-    namespace distance {
+namespace distance {
 
 
 
@@ -48,70 +48,20 @@ template<typename T>
 typename std::enable_if<std::is_integral<T>::value, T>::type // line added by Max F
 mutualInformation(const std::vector<std::vector<T>> & Xc,
                   const std::vector<std::vector<T>> & Yc, T logbase = 2.0);
-    }
-}
-
-
-// template<typename T, typename Metric>
-// T mutualInformation(const std::vector<std::vector<T>> & Xc,
-//                     const std::vector<std::vector<T>> & Yc,
-//                     int k = 3, T logbase=2 ,
-//                     Metric metric = Metric(), int version = 2) {
-//     T N = Xc.size();
-//     T dx = Xc[0].size();
-//     T dy = Yc[0].size();
-
-//     auto X = Xc;
-//     auto Y = Yc;
-//     add_noise(X);
-//     auto pe =  pluginEstimator(Y);
-//     auto pEstimate = pe.first;
-//     auto yVals = pe.second;
-//     auto Nxgy =pEstimate*N ;
-//     auto eeXgY = boost::math::digamma(k) + boost::math::digamma(Nxgy);
-//     auto entropyEstimate = entropy<T,Metric>(X,k,logbase, metric);
-
-//     if (dy>1) {
-//         Yp = [data[:,i] for i=1:size(data, 2)];
-//         for(std::size_t i = 0; i < pEstimate.size(); i++) {
-//             for(std::size_t j = 0; j < Yp.size(); j++) {
-//                 tmp = pEstimate[i]*entropy(X[:, Yp[j]==yVals[i]]);
-//                 entropyEstimate-=pEstimate[i]*entropy(X[:, Yp[j]==yVals[i]]);
-//             }
-//         }
-//     } else
-//         for(std::size_t i = 0; i < pEstimate.size(); i++) {
-//             entropyEstimate-=pEstimate[i]*entropy(X[:, reshape(Y.==yVals[i],(:))], k=k, logbase=logbase, treeType=treeType)
-//                 }
-// }
-// return abs(entropyEstimate)
-//                     }
-
-
 
 
 template<typename T>
 typename std::enable_if<!std::is_integral<T>::value, T>::type
 variationOfInformation(const std::vector<std::vector<T>> & Xc,
-                  const std::vector<std::vector<T>> & Yc, int k = 3, T logbase = 2.0)
-{
-    using Cheb = metric::distance::Chebyshev<T>;
-    return entropy<T,Cheb>(Xc, k, logbase, Cheb()) + entropy<T,Cheb>(Yc, k, logbase, Cheb())
-         - 2 * mutualInformation<T>(Xc, Yc, k);
-}
-
-
-template<typename T>
+                       const std::vector<std::vector<T>> & Yc, int k = 3, T logbase = 2.0);
+template <typename T>
 typename std::enable_if<!std::is_integral<T>::value, T>::type
-variationOfInformation_normalized(const std::vector<std::vector<T>> & Xc,
-                  const std::vector<std::vector<T>> & Yc, int k = 3, T logbase = 2.0)
-{
-    using Cheb = metric::distance::Chebyshev<T>;
-    auto mi = mutualInformation<T>(Xc, Yc, k);
-    return 1 - ( mi / (entropy<T,Cheb>(Xc, k, logbase, Cheb()) + entropy<T,Cheb>(Yc, k, logbase, Cheb()) - mi) );
-}
+variationOfInformation_normalized(const std::vector<std::vector<T>> &Xc,
+                                  const std::vector<std::vector<T>> &Yc,
+                                  int k = 3, T logbase = 2.0);
 
+} // namespace distance
+} // namespace metric
 
-
-
+#include "entropy.cpp"
 #endif
