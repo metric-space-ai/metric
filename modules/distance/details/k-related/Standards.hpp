@@ -20,7 +20,7 @@ namespace metric
     namespace distance
     {
 /*** Euclidian (L2) Metric ***/
-        template <typename V>
+        template <typename V = double>
         struct Euclidian
         {
             using value_type = V;
@@ -29,7 +29,7 @@ namespace metric
             explicit Euclidian() = default;
 
             template<typename Container>
-            typename std::enable_if<!std::is_same<Container,V>::value,distance_type>::type
+            typename std::enable_if<!std::is_same<Container,V>::value, distance_type>::type
             operator()(const Container &a, const Container &b) const;
 
             distance_type operator()(const V &a, const V &b) const;
@@ -37,7 +37,7 @@ namespace metric
         };
 
 /***  Manhatten/Cityblock (L1) Metric ***/
-        template <typename V>
+        template <typename V = double>
         struct Manhatten
         {
             using value_type = V;
@@ -50,7 +50,7 @@ namespace metric
         };
 
 /*** Minkowski (L general) Metric ***/
-        template <typename V>
+        template <typename V = double>
         struct P_norm
         {
             using value_type = V;
@@ -66,7 +66,7 @@ namespace metric
         };
 
 /*** Minkowski Metric (L... / P_Norm) ***/
-        template <typename V>
+        template <typename V = double>
         struct Euclidian_thresholded
         {
             using value_type = V;
@@ -83,7 +83,7 @@ namespace metric
         };
 
 /*** Cosine Metric ***/
-        template <typename V>
+        template <typename V = double>
         struct Cosine
         {
             using value_type = V;

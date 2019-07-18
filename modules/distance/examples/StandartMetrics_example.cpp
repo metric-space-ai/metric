@@ -72,7 +72,8 @@ int main()
 
 	/******************** examples for Cosine Metric **************************/
 	std::cout << "Cosine Metric" << std::endl;
-	metric::distance::Cosine<double> cosineDistance;
+    //metric::distance::Cosine<double> cosineDistance;
+    auto cosineDistance = metric::distance::Cosine(); // default return type is double, so we do not need to set <double> explicitely
 	auto startTime_5 = std::chrono::steady_clock::now();
 	auto result_5 = cosineDistance(v0, v1);
 	auto endTime_5 = std::chrono::steady_clock::now();

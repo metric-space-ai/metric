@@ -11,7 +11,7 @@ Copyright (c) 2019 Panda Team
 #include <cstdlib>
 namespace  metric {
     namespace distance {
-        template<typename V>
+        template<typename V = double>
         struct Chebyshev {
             using value_type = V;
             using distance_type = value_type;

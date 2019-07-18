@@ -131,9 +131,11 @@ int main() {
     e = entropy(v);
     std::cout << "Default: " << e << std::endl;
 
+    std::vector<std::vector<long double>> v_ld = {{5,5}, {2,2}, {3,3}, {5,1}};
     for (size_t i = 0; i < 10; i++)
     {
-        e = entropy(v, 3, 2.0, metric::distance::P_norm<double>(3));
+        long double lb   = 2;
+        e = entropy(v_ld, 3, lb, metric::distance::P_norm<long double>(3));
         std::cout << "General Minkowsky, 3: " << e << std::endl;
     }
 
@@ -579,6 +581,18 @@ int main() {
         std::cout << "voi = " << variationOfInformation(v1, v2) << std::endl;
     for (size_t i = 0; i<5; i++)
         std::cout << "voi_normalized = " << variationOfInformation_normalized(v1, v2) << std::endl;
+
+    //*/
+
+
+    //* // some distance tests, TODO remove
+
+    std::vector<long double> el1 = {5, 2, 3, 5};
+    std::vector<long double> el2 = {5, 2, 3, 1};
+    auto cheb = metric::distance::Chebyshev(); // default return type is double
+    //metric::distance::Chebyshev<float> cheb;   // non-default
+    auto cheb_val = cheb(el1, el2);
+    std::cout << "\n\ncheb_test: " << cheb_val << std::endl;
 
     //*/
 
