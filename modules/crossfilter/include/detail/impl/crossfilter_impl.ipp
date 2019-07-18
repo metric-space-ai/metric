@@ -1,3 +1,5 @@
+#ifndef _METRIC_CROSSFILTER_DETAILS_IMPL_CROSSFILTER_IMPL_IPP
+#define _METRIC_CROSSFILTER_DETAILS_IMPL_CROSSFILTER_IMPL_IPP
 /*This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
 file, You can obtain one at http://mozilla.org/MPL/2.0/.
@@ -281,7 +283,7 @@ filter_impl<T,H>::add(const C &new_data,  bool allow_duplicates) {
 template<typename T, typename H>
 template<bool B>
 inline
-typename std::enable_if<!std::is_same<H,cross::trivial_hash<T>>::value && B, std::size_t>::type
+typename std::enable_if<!B, std::size_t>::type
 filter_impl<T,H>::do_add_one(std::size_t pos, const T &new_data,bool allow_duplicates) {
   auto h = hash(new_data);
   auto lp = data.begin() + pos;
@@ -306,9 +308,9 @@ filter_impl<T,H>::do_add_one(std::size_t pos, const T &new_data,bool allow_dupli
 }
 
 template<typename T, typename H>
-template<bool B>
+template<bool B >
 inline
-typename std::enable_if<std::is_same<H,cross::trivial_hash<T>>::value && B, std::size_t>::type
+typename std::enable_if<B, std::size_t>::type
 filter_impl<T,H>::do_add_one(std::size_t pos, const T &new_data,bool) {
   if(pos == data.size()) {
     data.push_back(new_data);
@@ -322,7 +324,7 @@ filter_impl<T,H>::do_add_one(std::size_t pos, const T &new_data,bool) {
 template<typename T, typename H>
 template<typename Iterator, bool B>
 inline
-typename std::enable_if<!std::is_same<H,cross::trivial_hash<T>>::value && B, std::size_t>::type
+typename std::enable_if<!B, std::size_t>::type
 filter_impl<T,H>::do_add_range(std::size_t index, Iterator first, Iterator last,  bool allow_duplicates) {
   auto new_data_size = std::distance(first, last);
   auto insert_index = data.begin();
@@ -370,7 +372,7 @@ filter_impl<T,H>::do_add_range(std::size_t index, Iterator first, Iterator last,
 template<typename T, typename H>
 template<typename Iterator, bool B>
 inline
-typename std::enable_if<std::is_same<H,cross::trivial_hash<T>>::value && B, std::size_t>::type
+typename std::enable_if< B, std::size_t>::type
 filter_impl<T,H>::do_add_range(std::size_t index, Iterator first, Iterator last,  bool) {
 
   auto new_data_size = std::distance(first, last);
@@ -503,7 +505,7 @@ filter_impl<T,H>::get_data_iterators_for_indexes(std::size_t low, std::size_t hi
 template<typename T, typename H>
 template <bool B>
 inline
-typename std::enable_if<!std::is_same<H,cross::trivial_hash<T>>::value && B, void>::type
+typename std::enable_if<!B, void>::type
 filter_impl<T,H>::update_hash_on_remove(std::size_t index) {
   //writer_lock_t lk(mutex);
   auto h = hash(data[index]);
@@ -516,7 +518,7 @@ filter_impl<T,H>::update_hash_on_remove(std::size_t index) {
 template<typename T, typename H>
 template <bool B>
 inline
-typename std::enable_if<std::is_same<H,cross::trivial_hash<T>>::value && B, void>::type
+typename std::enable_if<B, void>::type
 filter_impl<T,H>::update_hash_on_remove(std::size_t) { }
 
 template<typename T, typename H>
@@ -662,3 +664,4 @@ auto  filter_impl<T,H>::feature(
 
 } //namespace impl
 } //namespace cross
+#endif

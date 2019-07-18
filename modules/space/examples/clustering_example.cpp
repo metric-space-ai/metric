@@ -35,7 +35,7 @@ void print_clusters(const::std::vector<double> & distribution, const std::vector
 }
 int main() {
 
-    metric_space::Tree<int,distance<int>> tree;
+    metric::space::Tree<int,distance<int>> tree;
     std::vector<int> data(20);
     std::iota(data.begin(), data.end(), 0);
     tree.insert(data);

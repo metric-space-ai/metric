@@ -5,7 +5,7 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 Copyright (c) 2019 Panda Team
 */
-#include "../details/classification/details/3rdparty/metric_clustering/clustering.hpp"
+#include "../../../details/classification/details/3rdparty/metric_clustering/clustering.hpp"
 
 
 
@@ -14,7 +14,7 @@ int main()
 	std::cout << "we have started" << std::endl;
 	std::cout << '\n';
 
-	std::vector<std::vector<float>> data{
+	std::vector<std::vector<double>> data{
 		   {0, 0, 0, 0, 0},
 		   {1.74120000000000, 4.07812000000000, -0.0927036000000, 41.7888000000000, 41.7888000000000},
 		   {7.75309000000000, 16.2466000000000, 3.03956000000000, 186.074000000000, 186.074000000000},

@@ -1,5 +1,5 @@
-#ifndef _METRIC_DISTANCE_L1_HPP
-#define _METRIC_DISTANCE_L1_HPP
+#ifndef _METRIC_DISTANCE_DETAILS_K_RELATED_L1_HPP
+#define _METRIC_DISTANCE_DETAILS_K_RELATED_L1_HPP
 /*
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this

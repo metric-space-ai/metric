@@ -10,9 +10,9 @@ Copyright (c) 2019 Panda Team
 #include <chrono>
 #include <deque> // for Record test
 
-#include "../details/classification/metric_classification.hpp"
-#include "assets/helpers.cpp" // csv reader
-#include "../details/classification/details/correlation_weighted_accuracy.hpp"
+#include "../../../details/classification/metric_classification.hpp"
+#include "../../assets/helpers.cpp" // csv reader
+#include "../../../details/classification/details/correlation_weighted_accuracy.hpp"
 
 
 template <typename T>

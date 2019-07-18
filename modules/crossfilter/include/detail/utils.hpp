@@ -4,8 +4,8 @@
 
   Copyright (c) 2018 Dmitry Vinokurov */
 
-#ifndef FILTERUTILS_H_GUARD
-#define FILTERUTILS_H_GUARD
+#ifndef _METRIC_CROSSFILTER_DETAILS_UTILS_HPP
+#define _METRIC_CROSSFILTER_DETAILS_UTILS_HPP
 #include <type_traits>
 #include <iterator>
 

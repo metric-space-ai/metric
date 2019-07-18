@@ -6,9 +6,13 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 Copyright (c) 2019 Panda Team
 */
 
+#ifndef _METRIC_MAPPING_DETAILS_ESN_CPP
+#define _METRIC_MAPPING_DETAILS_ESN_CPP
 #include "esn.hpp"
 
 
+namespace metric {
+namespace mapping {
 
 namespace esn
 {
@@ -234,4 +238,6 @@ blaze::DynamicMatrix<double> ridge(
 
 
 } // namespace esn
-
+} // namespace mapping
+} // namespace metric
+#endif

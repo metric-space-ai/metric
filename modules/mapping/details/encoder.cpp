@@ -5,13 +5,15 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 Copyright (c) 2019 Panda Team
 */
+#ifndef _METRIC_MAPPING_DETAILS_ENCODER_CPP
+#define _METRIC_MAPPING_DETAILS_ENCODER_CPP
 
 #include "encoder.hpp"
 
 
-namespace linear_compressor
-{
-
+namespace metric {
+namespace mapping {
+namespace linear_compressor {
 
 
 template <class BlazeMatrix>
@@ -89,7 +91,7 @@ DirectMapping::DirectMapping(bool visualize_)
 void DirectMapping::train(const blaze::DynamicMatrix<double> & Slices, size_t n_features)
 {
 
-    W_encode = linear_compressor::PCA(Slices, n_features, visualize);
+    W_encode = metric::mapping::linear_compressor::PCA(Slices, n_features, visualize);
 
     auto encoded = compress(Slices);
 
@@ -114,15 +116,12 @@ blaze::DynamicMatrix<double> DirectMapping::compress(
     //return evaluate(W_encode * Slices);
 }
 
-
-blaze::DynamicMatrix<double> DirectMapping::decompress(
-        const blaze::DynamicMatrix<double> & Codes
-        )
-{
-    return W_decode * Codes;
+blaze::DynamicMatrix<double>
+DirectMapping::decompress(const blaze::DynamicMatrix<double> &Codes) {
+  return W_decode * Codes;
 }
 
-
-
 } // namespace linear_compressor
-
+} // namespace mapping
+} // namespace metric
+#endif

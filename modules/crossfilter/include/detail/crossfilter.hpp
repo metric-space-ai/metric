@@ -4,8 +4,8 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 Copyright (c) 2018 Dmitry Vinokurov */
 
-#ifndef CROSSFILTER_DETAIL_H_GUARD
-#define CROSSFILTER_DETAIL_H_GUARD
+#ifndef _METRIC_CROSSFILTER_DETAILS_CROSSFILTER_HPP
+#define _METRIC_CROSSFILTER_DETAILS_CROSSFILTER_HPP
 #include <functional>
 #include <vector>
 #include <type_traits>
@@ -30,8 +30,8 @@ template <typename T, typename Hash = trivial_hash<T>> struct filter: private im
   using impl_type_t = impl::filter_impl<T,Hash>;
   using record_type_t = typename impl::filter_impl<T,Hash>::record_type_t;
   using value_type_t = typename impl::filter_impl<T,Hash>::value_type_t;
-  template<typename U> using dimension_t = dimension<U, T, cross::non_iterable, Hash>;
-  template<typename U> using iterable_dimension_t = dimension<U, T, cross::iterable, Hash>;
+  template<typename U> using dimension_t = cross::dimension<U, T, cross::non_iterable, Hash>;
+  template<typename U> using iterable_dimension_t = cross::dimension<U, T, cross::iterable, Hash>;
   using data_iterator = typename impl::filter_impl<T,Hash>::data_iterator;
   using base_type_t = impl::filter_impl<T,Hash>;
   using connection_type_t = typename impl::filter_impl<T,Hash>::connection_type_t;
@@ -319,7 +319,7 @@ template <typename T, typename Hash = trivial_hash<T>> struct filter: private im
   feature(
       AddFunc add_func_,
       RemoveFunc remove_func_,
-      InitialFunc initial_func_) -> feature<std::size_t,
+      InitialFunc initial_func_) -> cross::feature<std::size_t,
                                             decltype(initial_func_()), this_type_t, true>;
 
   /**

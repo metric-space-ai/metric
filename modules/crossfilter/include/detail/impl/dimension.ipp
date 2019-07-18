@@ -1,3 +1,5 @@
+#ifndef _METRIC_CROSSFILTER_DETAILS_IMPL_DIMENSION_IPP
+#define _METRIC_CROSSFILTER_DETAILS_IMPL_DIMENSION_IPP
 /*This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
 file, You can obtain one at http://mozilla.org/MPL/2.0/.
@@ -205,3 +207,4 @@ auto dimension<V, T, I, H>::feature_all_sum(G value) noexcept
 }
 
 } //namespace cross
+#endif

@@ -5,7 +5,7 @@
 
   Copyright (c) 2019 Panda Team
 */
-#include "../index.hpp"
+#include "../crossfilter.hpp"
 #include <vector>
 #include <iostream>
 

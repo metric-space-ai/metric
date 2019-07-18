@@ -5,6 +5,8 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 Copyright (c) 2018 Michael Welsch
 */
+#ifndef _METRIC_DISTANCE_DETAILS_K_RELATED_STANDARDS_CPP
+#define _METRIC_DISTANCE_DETAILS_K_RELATED_STANDARDS_CPP
 
 #include "Standards.hpp"
 
@@ -113,5 +115,18 @@ auto Cosine<V>::operator()(const Container &A, const Container &B) const -> dist
   return dot / (std::sqrt(denom_a) * std::sqrt(denom_b));
 }
 
+template <typename V>
+template <typename Container>
+V Chebyshev<V>::operator()(const Container &lhs, const Container &rhs) const {
+  distance_type res = 0;
+  for (std::size_t i = 0; i < lhs.size(); i++) {
+    auto m = std::abs(lhs[i] - rhs[i]);
+    if (m > res)
+      res = m;
+  }
+  return res;
+}
+
 } // namespace distance
 } // namespace metric
+#endif
