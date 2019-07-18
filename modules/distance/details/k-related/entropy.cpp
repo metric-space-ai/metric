@@ -66,7 +66,7 @@ template <typename T>
 void combine(const std::vector<std::vector<T>> &X,
              const std::vector<std::vector<T>> &Y,
              std::vector<std::vector<T>> &XY) {
-  std::size_t N = X.size(); // replaced T with size_t by Max F
+  std::size_t N = X.size();
   std::size_t dx = X[0].size();
   std::size_t dy = Y[0].size();
   XY.resize(N);
@@ -95,8 +95,7 @@ template <typename T> std::vector<T> unique(const std::vector<T> &data) {
 } // namespace
 
 template <typename T, typename Metric>
-typename std::enable_if<!std::is_integral<T>::value,
-                        T>::type // replaced T with conditional type by Max F
+typename std::enable_if<!std::is_integral<T>::value, T>::type
 entropy(std::vector<std::vector<T>> data, std::size_t k, T logbase,
         Metric metric) {
   if (data.empty() || data[0].empty()) {
@@ -105,7 +104,7 @@ entropy(std::vector<std::vector<T>> data, std::size_t k, T logbase,
   if (data.size() < k + 1)
     throw std::invalid_argument("number of points in dataset must be larger than k");
 
-  T p = 1; // replaced double with T by Max F
+  T p = 1;
   T N = data.size();
   T d = data[0].size();
   T two = 2.0; // this is in order to make types match the log template function
@@ -125,7 +124,7 @@ entropy(std::vector<std::vector<T>> data, std::size_t k, T logbase,
   // double cb = d * log(logbase,2.0) + d*log(logbase, std::tgamma(1+1/p)) -
   // log(logbase, std::tgamma(1+d/p));
   T entropyEstimate = boost::math::digamma(N) -
-                      boost::math::digamma(k) // replaced double with T by Max F
+                      boost::math::digamma(k)
                       + cb + d * log(logbase, two);
   for (std::size_t i = 0; i < N; i++) {
     auto res = tree.knn(data[i], k + 1);
@@ -138,7 +137,7 @@ entropy(std::vector<std::vector<T>> data, std::size_t k, T logbase,
   return entropyEstimate;
 }
 
-// overload for integer types // added by Max F
+// overload for integer types
 template <typename T>
 typename std::enable_if<std::is_integral<T>::value, T>::type
 entropy(std::vector<std::vector<T>> data, T logbase) {
@@ -150,12 +149,10 @@ entropy(std::vector<std::vector<T>> data, T logbase) {
 
 template <typename T>
 std::pair<std::vector<double>,
-          std::vector<std::vector<T>>> // T replaced with double by Max F
+          std::vector<std::vector<T>>>
 pluginEstimator(const std::vector<std::vector<T>> &Y) {
   std::vector<std::vector<T>> uniqueVal = unique(Y);
-  std::vector<double> counts(
-      uniqueVal.size()); // T replaced with double by Max F in order to divide
-                         // correctly in transform's lambda
+  std::vector<double> counts(uniqueVal.size());
   for (std::size_t i = 0; i < counts.size(); i++) {
     for (std::size_t j = 0; j < Y.size(); j++) {
       if (Y[j] == uniqueVal[i])
@@ -170,8 +167,7 @@ pluginEstimator(const std::vector<std::vector<T>> &Y) {
 }
 
 template <typename T, typename Metric>
-typename std::enable_if<!std::is_integral<T>::value,
-                        T>::type // line added by Max F
+typename std::enable_if<!std::is_integral<T>::value, T>::type
 mutualInformation(const std::vector<std::vector<T>> &Xc,
                   const std::vector<std::vector<T>> &Yc, int k,
                   Metric metric, int version) {
@@ -205,7 +201,7 @@ mutualInformation(const std::vector<std::vector<T>> &Xc,
     }
     //std::cout << "entropyEstimate2=" << entropyEstimate << std::endl;
     metric::space::Tree<std::vector<T>, Metric> xTree(X,-1,metric);
-//    metric_space::Tree<std::vector<T>, Metric> yTree(Y,-1,metric); // never used, disabled by Max F
+//    metric_space::Tree<std::vector<T>, Metric> yTree(Y,-1,metric); // never used! and so in Julia code
     for(std::size_t i = 0; i < N; i++) {
         auto res = tree.knn(XY[i],k+1);
         auto neighbor = res.back().first;
@@ -213,17 +209,15 @@ mutualInformation(const std::vector<std::vector<T>> &Xc,
         std::size_t nx = 0;
         if(version == 1) {
             auto dist_eps = std::nextafter(dist, std::numeric_limits<decltype(dist)>::max()); // this is instead of replacing < with <= in Tree // added by Max F in order to match Julia code logic without updating Tree
-            nx = xTree.rnn(X[i], dist_eps).size(); // replaced dist by dist_eps by Max F
+            nx = xTree.rnn(X[i], dist_eps).size(); // we include points that lay on the sphere
         } else if(version == 2) {
             auto ex = metric(X[neighbor->ID],X[i]);
             auto ex_eps = std::nextafter(ex, std::numeric_limits<decltype(ex)>::max()); // this it to include the most distant point into the sphere // added by Max F in order to match Julia code logic without updating Tree
-            //nx = xTree.rnn(X[i], ex_eps).size(); // replaced ex by ex_eps by Max F //    TODO ebable
-
-            //  debug code
+            //nx = xTree.rnn(X[i], ex_eps).size();
             auto rnn_set = xTree.rnn(X[i], ex_eps);
             nx = rnn_set.size(); // replaced ex by ex_eps by Max F
 
-
+            //  debug code
             //            std::cout << "X[neighbor]="; print_vec(X[neighbor->ID]); std::cout << std::endl;
             //            std::cout << "ex=" << ex << std::endl;
             //            nx = nx1.size();
@@ -264,12 +258,12 @@ mutualInformation(const std::vector<std::vector<T>> &Xc,
 }
 
 template <typename T>
-typename std::enable_if<std::is_integral<T>::value, T>::type // added by Max F
+typename std::enable_if<std::is_integral<T>::value, T>::type
 mutualInformation(const std::vector<std::vector<T>> &Xc,
                   const std::vector<std::vector<T>> &Yc, T logbase) {
   std::vector<std::vector<T>> XY;
   combine(Xc, Yc, XY);
-  //    using Cheb = metric::distance::Chebyshev<T>; // replaced by Max F
+  //    using Cheb = metric::distance::Chebyshev<T>;
   //    return entropy<T,Cheb>(Xc, 3, logbase, Cheb()) + entropy<T,Cheb>(Yc, 3,
   //    logbase, Cheb())
   //        - entropy<T, Cheb>(XY, 3, logbase, Cheb());
@@ -316,6 +310,31 @@ mutualInformation(const std::vector<std::vector<T>> &Xc,
 // }
 // return abs(entropyEstimate)
 //                     }
+
+
+template<typename T>
+typename std::enable_if<!std::is_integral<T>::value, T>::type
+variationOfInformation(const std::vector<std::vector<T>> & Xc,
+                  const std::vector<std::vector<T>> & Yc, int k, T logbase)
+{
+    using Cheb = metric::distance::Chebyshev<T>;
+    return entropy<T,Cheb>(Xc, k, logbase, Cheb()) + entropy<T,Cheb>(Yc, k, logbase, Cheb())
+         - 2 * mutualInformation<T>(Xc, Yc, k);
+}
+
+
+template<typename T>
+typename std::enable_if<!std::is_integral<T>::value, T>::type
+variationOfInformation_normalized(const std::vector<std::vector<T>> & Xc,
+                  const std::vector<std::vector<T>> & Yc, int k, T logbase)
+{
+    using Cheb = metric::distance::Chebyshev<T>;
+    auto mi = mutualInformation<T>(Xc, Yc, k);
+    return 1 - ( mi / (entropy<T,Cheb>(Xc, k, logbase, Cheb()) + entropy<T,Cheb>(Yc, k, logbase, Cheb()) - mi) );
+}
+
+
+
 
 } // namespace distance
 } // namespace metric

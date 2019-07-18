@@ -20,11 +20,11 @@ namespace distance {
 
 
 template <typename T, typename Metric = metric::distance::Euclidian<T>>
-typename std::enable_if<!std::is_integral<T>::value, T>::type  // replaced T with conditional type by Max F
+typename std::enable_if<!std::is_integral<T>::value, T>::type
 entropy(std::vector<std::vector<T>> data, std::size_t k = 3, T logbase = 2,
         Metric metric = metric::distance::Euclidian<T>());
 
-// overload for integer types // added by Max F
+// overload for integer types
 template<typename T>
 typename std::enable_if<std::is_integral<T>::value, T>::type
 entropy(std::vector<std::vector<T>> data, T logbase = 2);
@@ -32,29 +32,30 @@ entropy(std::vector<std::vector<T>> data, T logbase = 2);
 
 
 template<typename T>
-std::pair<std::vector<double>,std::vector<std::vector<T>>> // T replaced with double by Max F
+std::pair<std::vector<double>,std::vector<std::vector<T>>>
 pluginEstimator(const std::vector<std::vector<T>> & Y);
 
 
 
 template<typename T, typename Metric = metric::distance::Chebyshev<T>>
-typename std::enable_if<!std::is_integral<T>::value, T>::type // line added by Max F
+typename std::enable_if<!std::is_integral<T>::value, T>::type
 mutualInformation(const std::vector<std::vector<T>> & Xc,
                   const std::vector<std::vector<T>> & Yc,
                   int k = 3,  Metric metric = Metric(), int version = 2);
 
 
 template<typename T>
-typename std::enable_if<std::is_integral<T>::value, T>::type // line added by Max F
+typename std::enable_if<std::is_integral<T>::value, T>::type
 mutualInformation(const std::vector<std::vector<T>> & Xc,
                   const std::vector<std::vector<T>> & Yc, T logbase = 2.0);
 
 
-template<typename T>
+template<typename T = double>
 typename std::enable_if<!std::is_integral<T>::value, T>::type
 variationOfInformation(const std::vector<std::vector<T>> & Xc,
                        const std::vector<std::vector<T>> & Yc, int k = 3, T logbase = 2.0);
-template <typename T>
+
+template <typename T = double>
 typename std::enable_if<!std::is_integral<T>::value, T>::type
 variationOfInformation_normalized(const std::vector<std::vector<T>> &Xc,
                                   const std::vector<std::vector<T>> &Yc,
