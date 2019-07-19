@@ -80,7 +80,7 @@ int main() {
 
 
 
-    //* // entropies for fixed vector
+    /* // entropies for fixed vector
 
     std::cout << "entropies for {{5,5}, {2,2}, {3,3}, {5,1}}:\n";
 
@@ -543,7 +543,7 @@ int main() {
     auto eX = entropy(v31, 3, 2.0, metric::distance::Chebyshev<double>());
     auto eY = entropy(v32, 3, 2.0, metric::distance::Chebyshev<double>());
 
-    auto mi = metric::distance::mutualInformation(v1, v2);
+    auto mi = metric::distance::mutualInformation(v31, v32);
 
 	auto voi = eX + eY - 2 * mi;
 
@@ -555,6 +555,11 @@ int main() {
         std::cout << "voi = " << metric::distance::variationOfInformation(v31, v32) << std::endl;
     for (size_t i = 0; i<5; i++)
         std::cout << "voi_normalized = " << metric::distance::variationOfInformation_normalized(v31, v32) << std::endl;
+
+    metric::distance::VOI<double> f_voi = metric::distance::VOI(3, 2.0);
+    for (size_t i = 0; i<5; i++)
+        std::cout << "voi_functor = " << f_voi(v31, v32) << std::endl;
+
 
     //*/
 

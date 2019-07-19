@@ -335,6 +335,18 @@ variationOfInformation_normalized(const std::vector<std::vector<T>> & Xc,
 
 
 
+template <typename V>
+template<template<class, class> class Container, class Allocator_inner, class Allocator_outer, class El>
+typename std::enable_if<!std::is_integral<El>::value, V>::type
+VOI<V>::operator()(const Container<Container<El, Allocator_inner>, Allocator_outer> &a,
+                   const Container<Container<El, Allocator_inner>, Allocator_outer> &b) const
+{
+    using Cheb = metric::distance::Chebyshev<V>;
+    return entropy<V, Cheb>(a, k, logbase, Cheb()) + entropy<V, Cheb>(b, k, logbase, Cheb()) // TODO use container's element type
+         - 2 * mutualInformation<V>(a, b, k);
+}
+
+
 
 } // namespace distance
 } // namespace metric
