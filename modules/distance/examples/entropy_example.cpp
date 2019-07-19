@@ -80,7 +80,7 @@ int main() {
 
 
 
-    /* // entropies for fixed vector
+    //* // entropies for fixed vector
 
     std::cout << "entropies for {{5,5}, {2,2}, {3,3}, {5,1}}:\n";
 
@@ -219,7 +219,7 @@ int main() {
     std::vector<std::vector<double>> v2 = {{5,5}, {2,2}, {3,3}, {1,1}};
 
 
-    /* // MI for short fixed vectors
+    //* // MI for short fixed vectors
 
     std::cout << "\n";
 
@@ -537,11 +537,11 @@ int main() {
 	std::cout << "negative entropy" << std::endl;
 	std::cout << std::endl;
 
-    std::vector<std::vector<double>> v31 = { {0}, {0}, {0}, {0} };
-    std::vector<std::vector<double>> v32 = { {0}, {0}, {0}, {0} };
+    std::vector<std::vector<float>> v31 = { {0}, {0}, {0}, {0} };
+    std::vector<std::vector<float>> v32 = { {0}, {0}, {0}, {0} };
 
-    auto eX = entropy(v31, 3, 2.0, metric::distance::Chebyshev<double>());
-    auto eY = entropy(v32, 3, 2.0, metric::distance::Chebyshev<double>());
+    auto eX = entropy(v31, 3, 2.0f, metric::distance::Chebyshev<long double>());
+    auto eY = entropy(v32, 3, 2.0f, metric::distance::Chebyshev<long double>());
 
     auto mi = metric::distance::mutualInformation(v31, v32);
 
@@ -560,7 +560,7 @@ int main() {
     for (size_t i = 0; i<5; i++)
         std::cout << "voi_functor = " << f_voi(v31, v32) << std::endl;
 
-    metric::distance::VOI_normalized<double> f_voi_norm = metric::distance::VOI_normalized(3, 2.0);
+    auto f_voi_norm = metric::distance::VOI_normalized(3, 2.0);
     for (size_t i = 0; i<5; i++)
         std::cout << "voi_norm_functor = " << f_voi_norm(v31, v32) << std::endl;
 

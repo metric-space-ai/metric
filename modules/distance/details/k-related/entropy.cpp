@@ -41,7 +41,8 @@ template <typename T> void add_noise(std::vector<std::vector<T>> &data) {
     });
   }
 }
-template <typename T> T log(T logbase, T x) {
+
+template <typename T1, typename T2> T1 log(T1 logbase, T2 x) {
   return std::log(x) / std::log(logbase);
 }
 
