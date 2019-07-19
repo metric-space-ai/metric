@@ -62,6 +62,7 @@ variationOfInformation_normalized(const std::vector<std::vector<T>> &Xc,
                                   int k = 3, T logbase = 2.0);
 
 
+
 template <typename V = double>
 struct VOI
 {
@@ -73,6 +74,23 @@ struct VOI
 
     explicit VOI() = default;
     explicit VOI(int k_ = 3, V logbase_ = 2): k(k_), logbase(logbase_) {}
+
+    template<template<class, class> class Container, class Allocator_inner, class Allocator_outer, class El>
+    typename std::enable_if<!std::is_integral<El>::value, V>::type  // only real values are accepted
+    operator()(const Container<Container<El, Allocator_inner>, Allocator_outer> &a,
+               const Container<Container<El, Allocator_inner>, Allocator_outer> &b) const;
+
+    // TODO add support of 1D random values passed in simple containers
+
+};
+
+
+
+template <typename V = double>
+struct VOI_normalized : VOI<V>
+{
+    explicit VOI_normalized() : VOI<V>() {}
+    explicit VOI_normalized(int k_ = 3, V logbase_ = 2): VOI<V>(k_, logbase_) {}
 
     template<template<class, class> class Container, class Allocator_inner, class Allocator_outer, class El>
     typename std::enable_if<!std::is_integral<El>::value, V>::type  // only real values are accepted

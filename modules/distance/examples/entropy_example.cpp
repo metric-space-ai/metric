@@ -560,6 +560,10 @@ int main() {
     for (size_t i = 0; i<5; i++)
         std::cout << "voi_functor = " << f_voi(v31, v32) << std::endl;
 
+    metric::distance::VOI_normalized<double> f_voi_norm = metric::distance::VOI_normalized(3, 2.0);
+    for (size_t i = 0; i<5; i++)
+        std::cout << "voi_norm_functor = " << f_voi_norm(v31, v32) << std::endl;
+
 
     //*/
 
