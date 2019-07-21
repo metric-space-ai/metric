@@ -95,9 +95,9 @@ template <typename T> std::vector<T> unique(const std::vector<T> &data) {
 
 } // namespace
 
-template <typename T, typename Metric>
+template <typename T, typename Metric, typename L>
 typename std::enable_if<!std::is_integral<T>::value, T>::type
-entropy(std::vector<std::vector<T>> data, std::size_t k, T logbase,
+entropy(std::vector<std::vector<T>> data, std::size_t k, L logbase,
         Metric metric) {
   if (data.empty() || data[0].empty()) {
     return 0;
@@ -139,9 +139,9 @@ entropy(std::vector<std::vector<T>> data, std::size_t k, T logbase,
 }
 
 // overload for integer types
-template <typename T>
+template <typename T, typename L>
 typename std::enable_if<std::is_integral<T>::value, T>::type
-entropy(std::vector<std::vector<T>> data, T logbase) {
+entropy(std::vector<std::vector<T>> data, L logbase) {
   throw std::logic_error(
       "entropy function is not implemented yet for integer data types");
   // return 0;

@@ -19,15 +19,16 @@ namespace distance {
 
 
 
-template <typename T, typename Metric = metric::distance::Euclidian<T>>
+template <typename T, typename Metric = metric::distance::Euclidian<T>, typename L = double>
 typename std::enable_if<!std::is_integral<T>::value, T>::type
-entropy(std::vector<std::vector<T>> data, std::size_t k = 3, T logbase = 2,
+entropy(std::vector<std::vector<T>> data, std::size_t k = 3, L logbase = 2,
         Metric metric = metric::distance::Euclidian<T>());
 
+
 // overload for integer types
-template<typename T>
+template<typename T, typename L = double>
 typename std::enable_if<std::is_integral<T>::value, T>::type
-entropy(std::vector<std::vector<T>> data, T logbase = 2);
+entropy(std::vector<std::vector<T>> data, L logbase = 2);
 
 
 
@@ -72,8 +73,8 @@ struct VOI
     int k = 3;
     V logbase = 2;
 
-    explicit VOI() = default;
-    explicit VOI(int k_ = 3, V logbase_ = 2): k(k_), logbase(logbase_) {}
+    //explicit VOI() = default;
+    explicit VOI(int k_ = 3, V logbase_ = 2) : k(k_), logbase(logbase_) {}
 
     template<template<class, class> class Container, class Allocator_inner, class Allocator_outer, class El>
     typename std::enable_if<!std::is_integral<El>::value, V>::type  // only real values are accepted
@@ -84,12 +85,14 @@ struct VOI
 
 };
 
+template <typename V>
+VOI(int, V) -> VOI<double>;
 
 
 template <typename V = double>
 struct VOI_normalized : VOI<V>
 {
-    explicit VOI_normalized() : VOI<V>() {}
+    //explicit VOI_normalized() : VOI<V>() {}
     explicit VOI_normalized(int k_ = 3, V logbase_ = 2): VOI<V>(k_, logbase_) {}
 
     template<template<class, class> class Container, class Allocator_inner, class Allocator_outer, class El>
@@ -100,6 +103,9 @@ struct VOI_normalized : VOI<V>
     // TODO add support of 1D random values passed in simple containers
 
 };
+
+template <typename V>
+VOI_normalized(int, V) -> VOI_normalized<double>;
 
 
 

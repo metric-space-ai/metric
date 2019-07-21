@@ -90,7 +90,7 @@ int main() {
 //    std::vector<std::vector<double>> v = {{1}, {2}, {3}, {2}};
 
     //auto e = entropy<double,metric::distance::Euclidian<double>>(v);
-    auto e = entropy(v, 3, 2.0, metric::distance::Chebyshev<double>());
+    auto e = entropy(v, 3, 2.0, metric::distance::Chebyshev<double>()); // TODO fix logbase default type!!!!
     std::cout << "Chebyshev: " << e << std::endl;
 
     e = entropy(v, 3, 2.0, metric::distance::P_norm<double>(3));
@@ -230,13 +230,14 @@ int main() {
 //    std::vector<std::vector<double>> v2 = {{5}, {2}, {3}, {5}};
     std::cout << "MI for v1 = {{5,5}, {2,2}, {3,3}, {5,5}}, v2 = {{5,5}, {2,2}, {3,3}, {1,1}}:\n";
     std::cout << "v2 MI for v1, v1: " << metric::distance::mutualInformation(v1, v1) << std::endl;
-    std::cout << "v1 MI for v1, v1: " << metric::distance::mutualInformation<double, metric::distance::Chebyshev<double>>(v1, v1, 3, metric::distance::Chebyshev<double>(), 1) << std::endl;
+    std::cout << "v1 MI for v1, v1: " << metric::distance::mutualInformation(v1, v1, 3, metric::distance::Chebyshev<double>(), 1) << std::endl;
     std::cout << "v2 MI for v2, v2: " << metric::distance::mutualInformation(v2, v2) << std::endl;
-    std::cout << "v1 MI for v2, v2: " << metric::distance::mutualInformation<double, metric::distance::Chebyshev<double>>(v2, v2, 3, metric::distance::Chebyshev<double>(), 1) << std::endl;
+    std::cout << "v1 MI for v2, v2: " << metric::distance::mutualInformation(v2, v2, 3, metric::distance::Chebyshev<double>(), 1) << std::endl;
     std::cout << "v2 MI for v1, v2: " << metric::distance::mutualInformation(v1, v2) << std::endl;
-    std::cout << "v1 MI for v1, v2: " << metric::distance::mutualInformation<double, metric::distance::Chebyshev<double>>(v1, v2, 3, metric::distance::Chebyshev<double>(), 1) << std::endl;
+    std::cout << "v1 MI for v1, v2: " << metric::distance::mutualInformation(v1, v2, 3, metric::distance::Chebyshev<double>(), 1) << std::endl;
     std::cout << "v2 MI for v2, v1: " << metric::distance::mutualInformation(v2, v1) << std::endl;
-    std::cout << "v1 MI for v2, v1: " << metric::distance::mutualInformation<double, metric::distance::Chebyshev<double>>(v2, v1, 3, metric::distance::Chebyshev<double>(), 1) << std::endl;
+    //std::cout << "v1 MI for v2, v1: " << metric::distance::mutualInformation<double, metric::distance::Chebyshev<double>>(v2, v1, 3, metric::distance::Chebyshev<double>(), 1) << std::endl;
+    std::cout << "v1 MI for v2, v1: " << metric::distance::mutualInformation(v2, v1, 3, metric::distance::Chebyshev<double>(), 1) << std::endl;
 
 
     //*/
@@ -556,11 +557,11 @@ int main() {
     for (size_t i = 0; i<5; i++)
         std::cout << "voi_normalized = " << metric::distance::variationOfInformation_normalized(v31, v32) << std::endl;
 
-    metric::distance::VOI<double> f_voi = metric::distance::VOI(3, 2.0);
+    auto f_voi = metric::distance::VOI<long double>();
     for (size_t i = 0; i<5; i++)
         std::cout << "voi_functor = " << f_voi(v31, v32) << std::endl;
 
-    auto f_voi_norm = metric::distance::VOI_normalized(3, 2.0);
+    auto f_voi_norm = metric::distance::VOI_normalized();
     for (size_t i = 0; i<5; i++)
         std::cout << "voi_norm_functor = " << f_voi_norm(v31, v32) << std::endl;
 
