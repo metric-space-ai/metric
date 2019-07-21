@@ -1,4 +1,9 @@
+cmake_minimum_required(VERSION 3.12)
+
 find_package(PostgreSQL REQUIRED)
+
+set(Boost_DEBUG on)  
+find_package(Boost)
 
 if(CMAKE_SYSTEM_NAME MATCHES Windows)
     if(CMAKE_SYSTEM_PROCESSOR MATCHES ".*64$")
@@ -14,8 +19,14 @@ include_directories(
     ${PROJECT_SOURCE_DIR}
 )
 	
+# for Visual Studio
+if(MSVC)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++17")
+endif(MSVC)
 	
 file(COPY "db_creditinals.csv" DESTINATION ".") 
+
+include_directories(${Boost_INCLUDE_DIRS})
 
 set(EXAMPLE_NAME SensorExample)
 add_executable(${EXAMPLE_NAME} SensorExample.cpp)
@@ -26,6 +37,8 @@ endif(UNIX)
 
 target_include_directories(${EXAMPLE_NAME} PRIVATE ${PostgreSQL_INCLUDE_DIRS})
 target_link_libraries(${EXAMPLE_NAME} PRIVATE ${PostgreSQL_LIBRARIES})
+
+target_link_libraries(${EXAMPLE_NAME} PRIVATE ${Boost_LIBRARIES})
 
 # Copy PostgreSQL .dll files on bin folder if we are on Windows
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")

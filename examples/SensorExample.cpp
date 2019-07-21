@@ -28,14 +28,14 @@ Copyright (c) 2019 Panda Team
 #include "ThreadPool.cpp"
 #include "Semaphore.h"
 
-#include "modules/crossfilter.hpp"
-#include "modules/distance/details/k-related/entropy.hpp"
-#include "modules/distance/details/k-related/Standards.hpp"
+#include "../modules/crossfilter.hpp"
+#include "../modules/distance/details/k-related/entropy.hpp"
+#include "../modules/distance/details/k-related/Standards.hpp"
 
 
 //#include "modules/mapping/details/classification/metric_classification.hpp"
 
-#include "utils/poor_mans_quantum.hpp"
+#include "../utils/poor_mans_quantum.hpp"
 
 template <typename T0, typename ... Ts>
 std::ostream & operator<< (std::ostream & s,
@@ -860,12 +860,14 @@ double runVOI(int featureIndex, std::vector<Record> dataset_0, std::vector<Recor
 		featureVector_resh_1[i][0] = featureVector_1[i];
 	}
 
-	auto eX = metric::distance::entropy<double, metric::distance::Chebyshev<double>>(featureVector_resh_0, 3, 2, metric::distance::Chebyshev<double>());
-	auto eY = metric::distance::entropy<double, metric::distance::Chebyshev<double>>(featureVector_resh_1, 3, 2, metric::distance::Chebyshev<double>());
+	//auto eX = metric::distance::entropy<double, metric::distance::Chebyshev<double>>(featureVector_resh_0, 3, 2, metric::distance::Chebyshev<double>());
+	//auto eY = metric::distance::entropy<double, metric::distance::Chebyshev<double>>(featureVector_resh_1, 3, 2, metric::distance::Chebyshev<double>());
 
-	auto mi = metric::distance::mutualInformation<double>(featureVector_resh_0, featureVector_resh_1);
+	//auto mi = metric::distance::mutualInformation<double>(featureVector_resh_0, featureVector_resh_1);
 
-	auto voi = eX + eY - 2 * mi;
+	//auto voi = eX + eY - 2 * mi;
+
+	auto voi = metric::distance::variationOfInformation_normalized(featureVector_resh_0, featureVector_resh_1);
 
 	auto t2 = std::chrono::steady_clock::now();
 	mu.lock();
