@@ -862,7 +862,7 @@ double runVOI(int featureIndex, std::vector<Record> dataset_0, std::vector<Recor
 	for (auto i = 0; i < featureVector_1.size(); ++i)
 	{
 		featureVector_resh_1[i][0] = featureVector_1[i];
-		featureVector_resh_both[last_i + i][0] = featureVector_1[i];
+		featureVector_resh_both[last_i + 1 + i][0] = featureVector_1[i];
 	}
 
 	auto eX = metric::distance::entropy<double, metric::distance::Chebyshev<double>>(featureVector_resh_0, 3, 2, metric::distance::Chebyshev<double>());
