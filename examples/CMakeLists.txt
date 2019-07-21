@@ -21,7 +21,7 @@ include_directories(
 	
 # for Visual Studio
 if(MSVC)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++17")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++17")
 endif(MSVC)
 	
 file(COPY "db_creditinals.csv" DESTINATION ".") 
@@ -33,6 +33,8 @@ add_executable(${EXAMPLE_NAME} SensorExample.cpp)
 if(UNIX)
     target_compile_options(${EXAMPLE_NAME} PRIVATE -pthread)
     set_target_properties(${EXAMPLE_NAME} PROPERTIES LINK_FLAGS -pthread)
+
+	set_target_properties(${EXAMPLE_NAME} PROPERTIES CXX_STANDARD 17)
 endif(UNIX)
 
 target_include_directories(${EXAMPLE_NAME} PRIVATE ${PostgreSQL_INCLUDE_DIRS})
