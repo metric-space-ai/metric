@@ -1,5 +1,5 @@
-#ifndef DCT_HPP
-#define DCT_HPP
+#ifndef _METRIC_TRANSFORMATION_DISCRETE_COSINE_DISCRETE_COSINE_HPP
+#define _METRIC_TRANSFORMATION_DISCRETE_COSINE_DISCRETE_COSINE_HPP
 /*
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -8,7 +8,7 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 Copyright (c) 2019 Panda Team
 */
 
-#include "DCT/fast-dct-lee.c"
+#include "../../../3rdparty/DCT/fast-dct-lee.c"
 
 namespace dct
 {
@@ -62,4 +62,4 @@ bool apply_DCT(BlazeMatrix & Slices, bool inverse = false)
 
 } // namespace dct
 
-#endif // DCT_HPP
+#endif //  _METRIC_TRANSFORMATION_DISCRETE_COSINE_DISCRETE_COSINE_HPP

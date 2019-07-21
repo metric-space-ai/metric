@@ -7,8 +7,8 @@
 
   Copyright (c) 2019 Panda Team
 */
-#include "blaze/Blaze.h"
-#include <string.h>
+
+#include <string>
 
 
 namespace mat2bmp

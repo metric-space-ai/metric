@@ -4,7 +4,8 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 Copyright (c) 2018 Dmitry Vinokurov */
 
-#ifndef HEAP_H_GUARD
+#ifndef _METRIC_CROSSFILTER_DETAILS_HEAP_HPP
+#define _METRIC_CROSSFILTER_DETAILS_HEAP_HPP
 #include <vector>
 #include <functional>
 #include <algorithm>

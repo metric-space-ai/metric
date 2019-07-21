@@ -13,7 +13,7 @@ Copyright (c) 2019 Panda Team
 #include "../metric_distance.hpp"
 //#include "../details/k-random/Edit.hpp"
 
-#include "blaze/Blaze.h"
+//#include "blaze/Blaze.h"
 
 template <typename T>
 void matrix_print(const std::vector<std::vector<T>> &mat)

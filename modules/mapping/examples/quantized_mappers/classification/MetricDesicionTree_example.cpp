@@ -12,10 +12,10 @@ Copyright (c) 2019 Max Filippov
 #include <functional>
 #include <variant>
 
-#include "../details/classification/details/metric_dt_classifier.hpp"
+#include "../../../details/classification/details/metric_dt_classifier.hpp"
 
-#include "assets/helpers.cpp" // csv reader
-#include "../../distance/metric_distance.hpp"
+#include "../../assets/helpers.cpp" // csv reader
+#include "../../../../distance.hpp"
 
 
 using namespace std;
@@ -209,7 +209,7 @@ int main()
 
 
     // label accessor (for single record)
-    std::function<int(Record)> response = [](const Record & r)
+    std::function<int(const Record&)> response = [](const Record & r)
     {
         return (int)std::abs(std::get<double>(r[5]));
     };
@@ -238,15 +238,15 @@ int main()
     auto dim10 = metric::make_dimension(md::EMD<InternalType>(8,8), field2accessors);
 
     typedef  std::variant<
-        metric::Dimension<Record, metric::distance::Euclidian<InternalType>, a0_type>,
-        metric::Dimension<Record, metric::distance::Manhatten<InternalType>, a1_type>,
-        metric::Dimension<Record, metric::distance::P_norm<InternalType>, a2_type>,
-        metric::Dimension<Record, metric::distance::Euclidian_thresholded<InternalType>, a2_type>,
-        metric::Dimension<Record, metric::distance::Cosine<InternalType>, a2_type>,
-        metric::Dimension<Record, metric::distance::SSIM<std::vector<InternalType>> ,a3_type>,
-        metric::Dimension<Record, metric::distance::TWED<InternalType>, a2_type>,
-        metric::Dimension<Record, metric::distance::EMD<InternalType>, a2_type>, // matrix C is temporary created inside functor
-        metric::Dimension<Record, metric::distance::Edit<std::string::value_type>, a4_type>
+        metric::Dimension< metric::distance::Euclidian<InternalType>, a0_type>,
+        metric::Dimension< metric::distance::Manhatten<InternalType>, a1_type>,
+        metric::Dimension< metric::distance::P_norm<InternalType>, a2_type>,
+        metric::Dimension< metric::distance::Euclidian_thresholded<InternalType>, a2_type>,
+        metric::Dimension< metric::distance::Cosine<InternalType>, a2_type>,
+        metric::Dimension< metric::distance::SSIM<std::vector<InternalType>> ,a3_type>,
+        metric::Dimension< metric::distance::TWED<InternalType>, a2_type>,
+        metric::Dimension< metric::distance::EMD<InternalType>, a2_type>, // matrix C is temporary created inside functor
+        metric::Dimension< metric::distance::Edit<std::string::value_type>, a4_type>
         > VariantType;
 	
     std::vector<VariantType> dims = {dim0, dim1, dim2, dim3, dim4, dim5, dim6, dim7, dim10};

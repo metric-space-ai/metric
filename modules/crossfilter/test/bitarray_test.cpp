@@ -10,7 +10,7 @@
 #include <boost/test/unit_test.hpp>
 #include <vector>
 #include <iostream>
-#include "detail/bitarray.hpp"
+#include "../include/detail/bitarray.hpp"
 
 BOOST_AUTO_TEST_CASE (constructor_test) {
   BitArray ba;

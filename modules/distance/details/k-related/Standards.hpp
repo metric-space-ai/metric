@@ -1,5 +1,3 @@
-#ifndef _METRIC_DISTANCE_STANDARDS_HPP
-#define _METRIC_DISTANCE_STANDARDS_HPP
 /*
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -7,6 +5,8 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 Copyright (c) 2018 Michael Welsch
 */
+#ifndef _METRIC_DISTANCE_DETAILS_K_RELATED_STANDARDS_HPP
+#define _METRIC_DISTANCE_DETAILS_K_RELATED_STANDARDS_HPP
 
 #define DECLARE_METRIC_TYPES                            \
     using value_type = typename Container::value_type;  \
@@ -20,7 +20,7 @@ namespace metric
     namespace distance
     {
 /*** Euclidian (L2) Metric ***/
-        template <typename V>
+        template <typename V = double>
         struct Euclidian
         {
             using value_type = V;
@@ -29,7 +29,7 @@ namespace metric
             explicit Euclidian() = default;
 
             template<typename Container>
-            typename std::enable_if<!std::is_same<Container,V>::value,distance_type>::type
+            typename std::enable_if<!std::is_same<Container,V>::value, distance_type>::type
             operator()(const Container &a, const Container &b) const;
 
             distance_type operator()(const V &a, const V &b) const;
@@ -37,7 +37,7 @@ namespace metric
         };
 
 /***  Manhatten/Cityblock (L1) Metric ***/
-        template <typename V>
+        template <typename V = double>
         struct Manhatten
         {
             using value_type = V;
@@ -50,7 +50,7 @@ namespace metric
         };
 
 /*** Minkowski (L general) Metric ***/
-        template <typename V>
+        template <typename V = double>
         struct P_norm
         {
             using value_type = V;
@@ -66,7 +66,7 @@ namespace metric
         };
 
 /*** Minkowski Metric (L... / P_Norm) ***/
-        template <typename V>
+        template <typename V = double>
         struct Euclidian_thresholded
         {
             using value_type = V;
@@ -83,7 +83,7 @@ namespace metric
         };
 
 /*** Cosine Metric ***/
-        template <typename V>
+        template <typename V = double>
         struct Cosine
         {
             using value_type = V;
@@ -93,8 +93,20 @@ namespace metric
             distance_type  operator()(const Container &a, const Container &b) const;
         };
 
+/*** Chebyshev Metric ***/
+    template <typename V = double> struct Chebyshev {
+      using value_type = V;
+      using distance_type = value_type;
+
+      explicit Chebyshev() = default;
+
+      template <typename Container>
+      distance_type operator()(const Container &lhs, const Container &rhs) const;
+    };
+
 
     } // namespace distance
+
 
 } // namespace metric
 

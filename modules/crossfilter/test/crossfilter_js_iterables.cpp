@@ -16,9 +16,7 @@
 #include <iostream>
 #include <utility>
 #include <cmath>
-#include "detail/crossfilter.hpp"
-#include "detail/dimension.hpp"
-#include "detail/feature.hpp"
+#include "../crossfilter.hpp"
 
 
 auto Infinity = std::numeric_limits<int>::max();
@@ -817,7 +815,7 @@ BOOST_AUTO_TEST_CASE(returns_the_top_k_groups_by_reduce_value_in_descending_orde
 BOOST_AUTO_TEST_CASE(observes_the_specified_order) {
   Fixture data;
   auto all = data.tags.feature_count();
-  all.order([](auto d) { return  -d;});
+  all.order([](int d) { return  -d;});
   
   BOOST_TEST(all.top(3) == (std::vector<std::pair<int,std::size_t>>{
         {0,1 },

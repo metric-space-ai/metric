@@ -1,5 +1,3 @@
-#ifndef _METRIC_CLASSIFICATION_HPP
-#define _METRIC_CLASSIFICATION_HPP
 /*
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -7,6 +5,9 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 Copyright (c) 2019 Panda Team
 */
+
+#ifndef _METRIC_MAPPING_DETAILS_CLASSIFICATION_METRIC_CLASSIFICATION_HPP
+#define _METRIC_MAPPING_DETAILS_CLASSIFICATION_METRIC_CLASSIFICATION_HPP
 
 #include <vector>
 #include <functional>
@@ -258,4 +259,4 @@ class Bagging
 #include "metric_classification.cpp"
 #include "details/metric_dt_classifier.hpp"
 #include "details/dimension.hpp"
-#endif // CLASSIFIERS_HPP
+#endif // _METRIC_MAPPING_DETAILS_CLASSIFICATION_METRIC_CLASSIFICATION_HPP

@@ -7,7 +7,7 @@ Copyright (c) 2019 Panda Team
 */
 
 #include <iostream>
-#include "utils/graph/graph.hpp"
+#include "../../../utils/graph/graph.hpp"
 
 
 
@@ -37,7 +37,7 @@ std::vector<std::pair<size_t, size_t>> createGrid4(size_t width, size_t height)
 
             for (int ii = ii0; ii <= ii1; ++ii) {
                 for (int jj = jj0; jj <= jj1; ++jj) {
-                    if ((ii == 0) or (jj == 0)) {
+                    if ((ii == 0)|| (jj == 0)) {
                         edgesPairs.emplace_back(i * width + j, (i + ii) * width + (j + jj));
                     }
                 }

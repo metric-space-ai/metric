@@ -366,7 +366,7 @@ void Grid4::construct(size_t width, size_t height)
 
             for (int ii = ii0; ii <= ii1; ++ii) {
                 for (int jj = jj0; jj <= jj1; ++jj) {
-                    if ((ii == 0) or (jj == 0)) {
+                    if ((ii == 0) || (jj == 0)) {
                         edgesPairs.emplace_back(i * width + j, (i + ii) * width + (j + jj));
                     }
                 }
@@ -447,7 +447,7 @@ void Grid6::construct(size_t width, size_t height)
                 edgesPairs.emplace_back(i * width + j, (i + 0) * width + (j + 1));
             }
 
-            if (!odd and left) {
+            if (!odd && left) {
                 if (up) {
                     edgesPairs.emplace_back(i * width + j, (i - 1) * width + (j - 1));
                 }
@@ -456,7 +456,7 @@ void Grid6::construct(size_t width, size_t height)
                 }
             }
 
-            if (odd and right) {
+            if (odd && right) {
                 if (up) {
                     edgesPairs.emplace_back(i * width + j, (i - 1) * width + (j + 1));
                 }
@@ -521,7 +521,7 @@ void Grid8::construct(size_t width, size_t height)
 
             for (int ii = ii0; ii <= ii1; ++ii) {
                 for (int jj = jj0; jj <= jj1; ++jj) {
-                    if ((ii != 0) or (jj != 0)) {
+                    if ((ii != 0) || (jj != 0)) {
                         edgesPairs.emplace_back(i * width + j, (i + ii) * width + (j + jj));
                     }
                 }

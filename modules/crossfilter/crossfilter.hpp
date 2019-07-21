@@ -5,4 +5,10 @@
 
   Copyright (c) 2019 Panda Team
 */
+#ifndef _METRIC_CROSSFILTER_CROSSFILTER_HPP
+
 #include "include/detail/crossfilter.hpp"
+#include "include/detail/dimension.hpp"
+#include "include/detail/feature.hpp"
+
+#endif

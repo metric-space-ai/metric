@@ -28,8 +28,8 @@ Copyright (c) 2018 Michael Welsch
 #endif
 #endif
 
-namespace metric_space {
-
+namespace metric {
+namespace space {
 /*
   __ \          _|                |  |         \  |        |         _)
   |   |   _ \  |     _` |  |   |  |  __|      |\/ |   _ \  __|   __|  |   __|
@@ -1507,4 +1507,5 @@ namespace metric_space {
         ostr << "]}" << std::endl;
         return ostr.str();
     }
-} // namespace metric_search
+} // namespace space
+} // namespace metric

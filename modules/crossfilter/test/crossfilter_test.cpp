@@ -13,9 +13,7 @@
 #include <deque>
 #include <set>
 
-#include "detail/crossfilter.hpp"
-#include "detail/dimension.hpp"
-#include "detail/feature.hpp"
+#include "../crossfilter.hpp"
 
 struct Record {
   int a;

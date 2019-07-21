@@ -6,7 +6,7 @@
   Copyright (c) 2019 Panda Team
 */
 #include "visualizer.hpp"
-
+#include <cstring>
 
 namespace mat2bmp
 {
@@ -26,7 +26,7 @@ void blaze2bmp(BlazeMatrix m, std::string filename)
     int filesize = 54 + 3*w*h;
 
     img = (unsigned char *)malloc(3*w*h);
-    memset(img,0,3*w*h);
+    std::memset(img,0,3*w*h);
 
     for(int i=0; i<w; i++)
     {

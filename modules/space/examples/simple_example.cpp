@@ -23,7 +23,7 @@ int main()
     std::vector<double> v7 = {3, 7, 2, 1, 0, 0, 0, 0};
 
     /*** initialize the tree ***/
-    metric_space::Tree<std::vector<double>> cTree;
+    metric::space::Tree<std::vector<double>> cTree;
 
     /*** add data records ***/
     cTree.insert(v0);
@@ -54,7 +54,7 @@ int main()
         {5, 3, 2, 1, 0, 0, 0, 0},
         {4, 6, 2, 2, 1, 1, 0, 0},};
 
-    metric_space::Tree<std::vector<double>> cTree2(table);
+    metric::space::Tree<std::vector<double>> cTree2(table);
 
     std::vector<std::vector<double>> table2 = {
         {3, 7, 2, 1, 0, 0, 0, 0},

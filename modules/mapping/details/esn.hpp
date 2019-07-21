@@ -1,5 +1,3 @@
-#ifndef ESN_HPP
-#define ESN_HPP
 /*
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -8,12 +6,16 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 Copyright (c) 2019 Panda Team
 */
 
-#include "blaze/Blaze.h"
+#ifndef _METRIC_MAPPING_DETAILS_ESN_HPP
+#define _METRIC_MAPPING_DETAILS_ESN_HPP
+
+#include "../../../3rdparty/blaze/Blaze.h"
 
 //#include "utils/graph/graph.hpp" // for create_W only // TODO enable if considered to use graph
 
 
-
+namespace metric {
+namespace mapping {
 namespace esn
 {
     
@@ -83,8 +85,9 @@ public:
 
 
 } // namespace esn
-
+} // namespace mapping
+} // namespace metric
 
 #include "esn.cpp"
 
-#endif // ESN_HPP
+#endif // _METRIC_MAPPING_DETAILS_ESN_HPP

@@ -4,8 +4,8 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 Copyright (c) 2018 Dmitry Vinokurov */
 
-#ifndef DIMENSION_IMPL_H_GUARD
-#define DIMENSION_IMPL_H_GUARD
+#ifndef _METRIC_CROSSFILTER_DETAILS_DIMENSION_IMPL_HPP
+#define _METRIC_CROSSFILTER_DETAILS_DIMENSION_IMPL_HPP
 #include <vector>
 #include <functional>
 #include <utility>
@@ -86,11 +86,11 @@ template <typename V, typename T, typename I,  typename H> struct dimension_impl
   signal_type_t<void(const std::vector<value_type_t> &,
                                const std::vector<std::size_t> &, std::size_t, std::size_t)>  add_signal;
 
-  template<bool Enable = true>
-  std::enable_if_t<isIterable && Enable> add(std::size_t insert_point, data_iterator begin, data_iterator end);
+  template<bool Enable =isIterable>
+  std::enable_if_t<Enable> add(std::size_t insert_point, data_iterator begin, data_iterator end);
 
-  template<bool Enable = true>
-  std::enable_if_t<!isIterable && Enable> add(std::size_t insert_point, data_iterator begin, data_iterator end);
+  template<bool Enable = isIterable>
+  std::enable_if_t<!Enable> add(std::size_t insert_point, data_iterator begin, data_iterator end);
 
   bool zero_except(std::size_t index) ;
 
@@ -133,12 +133,12 @@ template <typename V, typename T, typename I,  typename H> struct dimension_impl
   std::tuple<std::size_t, std::size_t>
   refilter_exact(const value_type_t &value, const std::vector<value_type_t> &data);
 
-  template<bool Enable = true>
-  std::enable_if_t<isIterable && Enable>
+  template<bool Enable = isIterable>
+  std::enable_if_t<Enable>
   do_filter(std::size_t filter_low_index, std::size_t filter_high_index);
 
-  template<bool Enable = true>
-  std::enable_if_t<!isIterable && Enable>
+  template<bool Enable = isIterable>
+  std::enable_if_t<!Enable>
   do_filter(std::size_t filter_low_index, std::size_t filter_high_index);
 
  public:

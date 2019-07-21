@@ -5,16 +5,16 @@
 
   Copyright (c) 2019 Panda Team
 */
-#include "../details/classification/metric_classification.hpp"
+#include "../../../details/classification/metric_classification.hpp"
 
-#include "assets/helpers.cpp" // csv reader
+#include "../../assets/helpers.cpp" // csv reader
 
 #include <variant>
 
 #include <deque> // for Record test
 
-#include "../details/classification/details/correlation_weighted_accuracy.hpp"
-#include "../../distance/metric_distance.cpp"
+#include "../../../details/classification/details/correlation_weighted_accuracy.hpp"
+#include "../../../../distance.hpp"
 
     int test_CWA()
     {
@@ -375,7 +375,7 @@ int main()
 
 
 
-	metric::Dimension<R, metric::distance::EMD<InputType>, decltype(a0)> dimEMD(a0, md::EMD<InputType>(3, 3));
+	metric::Dimension<metric::distance::EMD<InputType>, decltype(a0)> dimEMD(a0, metric::distance::EMD<InputType>(3, 3));
 	auto emd_dist = dimEMD.get_distance(dataset[0], dataset[1]);
 
 	metric::distance::EMD<InputType> EMD_functor(C);

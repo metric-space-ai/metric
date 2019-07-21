@@ -6,7 +6,8 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 Copyright (c) 2019 Panda Team
 */
-
+#ifndef _METRIC_DISTANCE_DETAILS_K_RELATED_L1_CPP
+#define _METRIC_DISTANCE_DETAILS_K_RELATED_L1_CPP
 //#include <cmath>
 
 namespace metric
@@ -243,3 +244,4 @@ double sorensen(blaze::CompressedVector<Value> &a, blaze::CompressedVector<Value
 
 } // namespace distance
 } // namespace metric
+#endif
