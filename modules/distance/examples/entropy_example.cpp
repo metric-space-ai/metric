@@ -84,7 +84,8 @@ int main() {
 
     std::cout << "entropies for {{5,5}, {2,2}, {3,3}, {5,1}}:\n";
 
-    std::vector<std::vector<double>> v = {{5,5}, {2,2}, {3,3}, {5,1}};
+	std::vector<std::vector<double>> v = { {5,5}, {2,2}, {3,3}, {5,1} };
+	//std::vector<std::vector<double>> v = { {0}, {0}, {0}, {0} };
 //    std::vector<std::vector<double>> v = {{1,1}, {2,2}, {3,3}, {5}};
 //    std::vector<std::vector<double>> v = {{1}, {2}, {3}, {5}};
 //    std::vector<std::vector<double>> v = {{1}, {2}, {3}, {2}};
@@ -538,7 +539,7 @@ int main() {
 	std::cout << std::endl;
 
     std::vector<std::vector<float>> v31 = { {0}, {0}, {0}, {0} };
-    std::vector<std::vector<float>> v32 = { {0}, {0}, {0}, {0} };
+    std::vector<std::vector<float>> v32 = { {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0} };
 
     auto eX = entropy(v31, 3, 2.0f, metric::distance::Chebyshev<long double>());
     auto eY = entropy(v32, 3, 2.0f, metric::distance::Chebyshev<long double>());
@@ -556,11 +557,11 @@ int main() {
     for (size_t i = 0; i<5; i++)
         std::cout << "voi_normalized = " << metric::distance::variationOfInformation_normalized(v31, v32) << std::endl;
 
-    metric::distance::VOI<double> f_voi = metric::distance::VOI(3, 2.0);
+    metric::distance::VOI<double> f_voi = metric::distance::VOI<double>(3, 2.0);
     for (size_t i = 0; i<5; i++)
         std::cout << "voi_functor = " << f_voi(v31, v32) << std::endl;
 
-    auto f_voi_norm = metric::distance::VOI_normalized(3, 2.0);
+    auto f_voi_norm = metric::distance::VOI_normalized<double>(3, 2.0);
     for (size_t i = 0; i<5; i++)
         std::cout << "voi_norm_functor = " << f_voi_norm(v31, v32) << std::endl;
 
