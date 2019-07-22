@@ -873,7 +873,7 @@ double runVOI(int featureIndex, std::vector<Record> dataset_0, std::vector<Recor
 
 	//auto voi = eX + eY - 2 * mi;
 
-	auto voi = metric::distance::variationOfInformation(featureVector_resh_0, featureVector_resh_1);
+	auto voi = metric::distance::variationOfInformation<double, metric::distance::Euclidian<double>>(featureVector_resh_0, featureVector_resh_1);
 
 	//auto voi = sqrt(0.5 * (eXY - (eX + eY)));
 

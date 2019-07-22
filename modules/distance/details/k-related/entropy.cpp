@@ -313,13 +313,12 @@ mutualInformation(const std::vector<std::vector<T>> &Xc,
 //                     }
 
 
-template<typename T>
+template<typename T, typename Metric>
 typename std::enable_if<!std::is_integral<T>::value, T>::type
 variationOfInformation(const std::vector<std::vector<T>> & Xc,
                   const std::vector<std::vector<T>> & Yc, int k, T logbase)
 {
-    using Cheb = metric::distance::Chebyshev<T>;
-    return entropy<T,Cheb>(Xc, k, logbase, Cheb()) + entropy<T,Cheb>(Yc, k, logbase, Cheb())
+    return entropy<T, Metric>(Xc, k, logbase, Metric()) + entropy<T, Metric>(Yc, k, logbase, Metric())
          - 2 * mutualInformation<T>(Xc, Yc, k);
 }
 
