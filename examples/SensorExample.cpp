@@ -924,7 +924,7 @@ std::vector<T> getEvents(std::vector<Record> dataset, int featureIndex)
 		if (waitForMailfunction && dataset[i][featureIndex] == 1)
 		{
 			// last feature is date
-			events.push_back(dataset[i][dataset[i].size() - 1]);
+			events.push_back(dataset[i - 1][dataset[i].size() - 1]);
 			waitForMailfunction = false;
 		}
 		if (dataset[i][featureIndex] == 0)
@@ -934,6 +934,34 @@ std::vector<T> getEvents(std::vector<Record> dataset, int featureIndex)
 	}
 
 	return events;
+}
+
+std::tuple <std::vector<Record>, std::vector<Record>> splitMailfunctionValues(std::vector<Record> dataset, std::vector<double> events, int seconds)
+{
+	int currentEventIndex = 0;
+	auto currentDateTime = events[currentEventIndex];
+	std::vector<Record> mailfuncted;
+	std::vector<Record> valid;
+	for (auto i = 0; i < dataset.size(); ++i)
+	{
+		// last feature is date
+		if (dataset[i][dataset[i].size() - 1] < currentDateTime - seconds)
+		{
+			valid.push_back(dataset[i]);
+		}
+		else
+		{
+			mailfuncted.push_back(dataset[i]);
+		}
+
+		if (dataset[i][dataset[i].size() - 1] >= currentDateTime)
+		{
+			currentEventIndex++;
+			currentDateTime = events[currentEventIndex];
+		}
+	}
+
+	return std::make_tuple(mailfuncted, valid);
 }
 
 int main(int argc, char *argv[])
@@ -961,8 +989,8 @@ int main(int argc, char *argv[])
 	//std::vector<std::string> recordDates;
 	
 	static int targetFeatureIndex;
-	//std::string featureName = "Sammelabriss";
-	std::string featureName = "Gutproduktion";
+	std::string featureName = "Sammelabriss";
+	//std::string featureName = "Gutproduktion";
 
 	if (FROM_CSV)
 	{
@@ -1061,34 +1089,24 @@ int main(int argc, char *argv[])
 
 	std::cout << '\n';
 	std::cout << '\n';
-	std::cout << "mailfunction events" << std::endl;
-	auto event = getEvents<double>(records, targetFeatureIndex);
-	vector_print(event);
-	std::cout << '\n';
-	std::cout << '\n';
+	auto events = getEvents<double>(records, targetFeatureIndex);
+	std::cout << "mailfunction events: " << events.size() << std::endl;
+
+	////////////////////
+
+	std::vector<Record> mailfunctedDataset;
+	std::vector<Record> validDataset;
+
+	std::tie(mailfunctedDataset, validDataset) = splitMailfunctionValues(dataset_0, events, 60);
 
 	////////////////////
 
 	std::cout << '\n';
 	std::cout << '\n';
 	std::cout <<  "Resampled:" << std::endl;
-	auto dataset_0_i = resample<double>(dataset_0, 100);
-	auto dataset_1_i = dataset_0_i;
-	//auto dataset_1_i = resample<double>(dataset_1, 100);
-
-	std::cout << '\n';
-	std::cout << '\n';
-	std::cout << featureName << " == 0, resampled\n";
-	printRecords(dataset_0_i, features, 10, 10, 15);
-
-	std::cout << '\n';
-	std::cout << '\n';
-	std::cout << featureName << " == 1, resampled\n";
-	printRecords(dataset_1_i, features, 10, 10, 15);
-	std::cout << '\n';
-	std::cout << '\n';
-
-
+	auto dataset_0_i = resample<double>(mailfunctedDataset, 100);
+	auto dataset_1_i = resample<double>(validDataset, 100);
+	   
 
 	/*auto e = entropy<double, metric::distance::P_norm<double>>(dataset_0_i, 3, 2, metric::distance::P_norm<double>(3));
 	std::cout << "H(X) General Minkowsky, 3: " << e << std::endl;
