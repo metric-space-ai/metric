@@ -1097,15 +1097,15 @@ int main(int argc, char *argv[])
 	std::vector<Record> mailfunctedDataset;
 	std::vector<Record> validDataset;
 
-	std::tie(mailfunctedDataset, validDataset) = splitMailfunctionValues(dataset_0, events, 600);
+	std::tie(mailfunctedDataset, validDataset) = splitMailfunctionValues(dataset_0, events, 3600);
 
 	////////////////////
 
 	std::cout << '\n';
 	std::cout << '\n';
 	std::cout <<  "Resampled:" << std::endl;
-	auto dataset_0_i = resample<double>(mailfunctedDataset, 100);
-	auto dataset_1_i = resample<double>(validDataset, 100);
+	auto dataset_0_i = resample<double>(mailfunctedDataset, 1000);
+	auto dataset_1_i = resample<double>(validDataset, 1000);
 	   
 
 	/*auto e = entropy<double, metric::distance::P_norm<double>>(dataset_0_i, 3, 2, metric::distance::P_norm<double>(3));
