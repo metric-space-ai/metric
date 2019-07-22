@@ -623,7 +623,7 @@ namespace space {
             Node_ptr child = current->children[child_idx];
             Distance dist_child = dists[child_idx];
 
-            if (nn.second > dist_child - child->parent_dist)
+            if (nn.second > dist_child - 2*child->covdist())
                 nn_(child, dist_child, p, nn);
         }
     }
@@ -685,7 +685,7 @@ namespace space {
         for (const auto &child_idx : idx) {
             Node_ptr child = current->children[child_idx];
             Distance dist_child = dists[child_idx];
-            if (nnList.back().second > dist_child - child->parent_dist)
+            if (nnList.back().second > dist_child - 2*child->covdist())
                 nnSize = knn_(child, dist_child, p, nnList, nnSize);
         }
         return nnSize;
@@ -732,7 +732,7 @@ namespace space {
             Node_ptr child = current->children[child_idx];
             Distance dist_child = dists[child_idx];
             // if (distance > dist_child - child->parent_dist) // bug
-            if (dist_child < distance + child->covdist())   // ++ changes
+            if (dist_child < distance + 2*child->covdist())   // ++ changes
                 rnn_(child, dist_child, p, distance, nnList);
         }
     }
