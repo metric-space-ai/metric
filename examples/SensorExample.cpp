@@ -865,17 +865,17 @@ double runVOI(int featureIndex, std::vector<Record> dataset_0, std::vector<Recor
 		featureVector_resh_both[last_i + 1 + i][0] = featureVector_1[i];
 	}
 
-	auto eX = metric::distance::entropy<double, metric::distance::Chebyshev<double>>(featureVector_resh_0, 3, 2, metric::distance::Chebyshev<double>());
-	auto eY = metric::distance::entropy<double, metric::distance::Chebyshev<double>>(featureVector_resh_1, 3, 2, metric::distance::Chebyshev<double>());
-	auto eXY = metric::distance::entropy<double, metric::distance::Chebyshev<double>>(featureVector_resh_both, 3, 2, metric::distance::Chebyshev<double>());
+	auto eX = metric::distance::entropy<double, metric::distance::Euclidian<double>>(featureVector_resh_0, 3, 2, metric::distance::Euclidian<double>());
+	auto eY = metric::distance::entropy<double, metric::distance::Euclidian<double>>(featureVector_resh_1, 3, 2, metric::distance::Euclidian<double>());
+	//auto eXY = metric::distance::entropy<double, metric::distance::Chebyshev<double>>(featureVector_resh_both, 3, 2, metric::distance::Chebyshev<double>());
 
-	//auto mi = metric::distance::mutualInformation<double>(featureVector_resh_0, featureVector_resh_1);
+	auto mi = metric::distance::mutualInformation<double>(featureVector_resh_0, featureVector_resh_1);
 
-	//auto voi = eX + eY - 2 * mi;
+	auto voi = eX + eY - 2 * mi;
 
 	//auto voi = metric::distance::variationOfInformation(featureVector_resh_0, featureVector_resh_1);
 
-	auto voi = sqrt(0.5 * (eXY - (eX + eY)));
+	//auto voi = sqrt(0.5 * (eXY - (eX + eY)));
 
 	auto t2 = std::chrono::steady_clock::now();
 	mu.lock();
@@ -913,6 +913,29 @@ std::tuple <double, double> runImportance(int featureIndex, std::vector<Record> 
 	return std::make_tuple(voi, ooc);
 }
 
+template <typename T>
+std::vector<T> getEvents(std::vector<Record> dataset, int featureIndex)
+{
+	std::vector<T> events;
+
+	bool waitForMailfunction = false;
+	for (auto i = 0; i < dataset.size(); ++i)
+	{
+		if (waitForMailfunction && dataset[i][featureIndex] == 1)
+		{
+			// last feature is date
+			events.push_back(dataset[i][dataset[i].size() - 1]);
+			waitForMailfunction = false;
+		}
+		if (dataset[i][featureIndex] == 0)
+		{
+			waitForMailfunction = true;
+		}
+	}
+
+	return events;
+}
+
 int main(int argc, char *argv[])
 {
 	bool FROM_CSV = false;
@@ -938,8 +961,8 @@ int main(int argc, char *argv[])
 	//std::vector<std::string> recordDates;
 	
 	static int targetFeatureIndex;
-	std::string featureName = "Sammelabriss";
-	//std::string featureName = "Gutproduktion";
+	//std::string featureName = "Sammelabriss";
+	std::string featureName = "Gutproduktion";
 
 	if (FROM_CSV)
 	{
@@ -1016,23 +1039,33 @@ int main(int argc, char *argv[])
 
 	cross::filter<Record> recordsFilter(records);
 	std::vector<Record> filtered_results;
-	auto feature_Gutproduktion = recordsFilter.dimension([](Record r) { return r[targetFeatureIndex]; });
-	feature_Gutproduktion.filter(0);
-	//feature_Gutproduktion.filter([](auto d) { return d >= 80; });
+	auto featureFilter = recordsFilter.dimension([](Record r) { return r[targetFeatureIndex]; });
+	featureFilter.filter(0);
+	//featureFilter.filter([](auto d) { return d >= 80; });
 	auto dataset_0 = recordsFilter.all_filtered();
 	std::cout << '\n';
 	std::cout << '\n';
 	std::cout << featureName << " == 0" << std::endl;
 	printRecords(dataset_0, features, 10, 10, 15);
 
-	feature_Gutproduktion.filter();
-	feature_Gutproduktion.filter(1);
-	//feature_Gutproduktion.filter([](auto d) { return d < 80; });
-	auto dataset_1 = recordsFilter.all_filtered();
+	//featureFilter.filter();
+	//featureFilter.filter(1);
+	////featureFilter.filter([](auto d) { return d < 80; });
+	//auto dataset_1 = recordsFilter.all_filtered();
+	//std::cout << '\n';
+	//std::cout << '\n';
+	//std::cout << featureName << " == 1" << std::endl;
+	//printRecords(dataset_1, features, 10, 10, 15);
+
+	////////////////////
+
 	std::cout << '\n';
 	std::cout << '\n';
-	std::cout << featureName << " == 1" << std::endl;
-	printRecords(dataset_1, features, 10, 10, 15);
+	std::cout << "mailfunction events" << std::endl;
+	auto event = getEvents<double>(records, targetFeatureIndex);
+	vector_print(event);
+	std::cout << '\n';
+	std::cout << '\n';
 
 	////////////////////
 
@@ -1040,7 +1073,8 @@ int main(int argc, char *argv[])
 	std::cout << '\n';
 	std::cout <<  "Resampled:" << std::endl;
 	auto dataset_0_i = resample<double>(dataset_0, 100);
-	auto dataset_1_i = resample<double>(dataset_1, 100);
+	auto dataset_1_i = dataset_0_i;
+	//auto dataset_1_i = resample<double>(dataset_1, 100);
 
 	std::cout << '\n';
 	std::cout << '\n';

@@ -538,18 +538,26 @@ int main() {
 	std::cout << "negative entropy" << std::endl;
 	std::cout << std::endl;
 
-    std::vector<std::vector<float>> v31 = { {0}, {0}, {0}, {0} };
-    std::vector<std::vector<float>> v32 = { {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0} };
+    std::vector<std::vector<float>> v31 = { {0}, {0}, {0}, {1} };
+	std::vector<std::vector<float>> v32 = { {0}, {0}, {0}, {1} };
+	std::vector<std::vector<float>> v33;
+
+	v33.insert(v33.end(), v31.begin(), v31.end());
+	v33.insert(v33.end(), v32.begin(), v32.end());
 
     auto eX = entropy(v31, 3, 2.0f, metric::distance::Chebyshev<long double>());
-    auto eY = entropy(v32, 3, 2.0f, metric::distance::Chebyshev<long double>());
+	auto eY = entropy(v32, 3, 2.0f, metric::distance::Chebyshev<long double>());
+	auto eXY = entropy(v33, 3, 2.0f, metric::distance::Chebyshev<long double>());
 
     auto mi = metric::distance::mutualInformation(v31, v32);
 
-	auto voi = eX + eY - 2 * mi;
+	//auto voi = eX + eY - 2 * mi;
+	auto voi = sqrt(0.5 * (eXY - (eX + eY)));
+	auto voi = sqrt(0.5 * (eXY - (eX + eY)));
 
 	std::cout << "eX = " << eX << std::endl;
 	std::cout << "eY = " << eY << std::endl;
+	std::cout << "eXY = " << eXY << std::endl;
     std::cout << "mi = " << mi << std::endl;
     std::cout << "voi = " << voi << std::endl;
     for (size_t i = 0; i<5; i++)
