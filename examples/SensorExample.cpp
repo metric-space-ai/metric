@@ -1097,7 +1097,7 @@ int main(int argc, char *argv[])
 	std::vector<Record> mailfunctedDataset;
 	std::vector<Record> validDataset;
 
-	std::tie(mailfunctedDataset, validDataset) = splitMailfunctionValues(dataset_0, events, 60);
+	std::tie(mailfunctedDataset, validDataset) = splitMailfunctionValues(dataset_0, events, 180);
 
 	////////////////////
 
