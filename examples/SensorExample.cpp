@@ -851,29 +851,29 @@ double runVOI(int featureIndex, std::vector<Record> dataset_0, std::vector<Recor
 
 	std::vector<std::vector<double>> featureVector_resh_0(featureVector_0.size(), std::vector<double>(1));
 	std::vector<std::vector<double>> featureVector_resh_1(featureVector_1.size(), std::vector<double>(1));
-	std::vector<std::vector<double>> featureVector_resh_both(featureVector_0.size() + featureVector_1.size(), std::vector<double>(1));
+	//std::vector<std::vector<double>> featureVector_resh_both(featureVector_0.size() + featureVector_1.size(), std::vector<double>(1));
 	auto last_i = 0;
 	for (auto i = 0; i < featureVector_0.size(); ++i)
 	{
 		last_i = i;
 		featureVector_resh_0[i][0] = featureVector_0[i];
-		featureVector_resh_both[last_i][0] = featureVector_0[i];
+		//featureVector_resh_both[last_i][0] = featureVector_0[i];
 	}
 	for (auto i = 0; i < featureVector_1.size(); ++i)
 	{
 		featureVector_resh_1[i][0] = featureVector_1[i];
-		featureVector_resh_both[last_i + 1 + i][0] = featureVector_1[i];
+		//featureVector_resh_both[last_i + 1 + i][0] = featureVector_1[i];
 	}
 
-	auto eX = metric::distance::entropy<double, metric::distance::Euclidian<double>>(featureVector_resh_0, 3, 2, metric::distance::Euclidian<double>());
-	auto eY = metric::distance::entropy<double, metric::distance::Euclidian<double>>(featureVector_resh_1, 3, 2, metric::distance::Euclidian<double>());
+	//auto eX = metric::distance::entropy<double, metric::distance::Euclidian<double>>(featureVector_resh_0, 3, 2, metric::distance::Euclidian<double>());
+	//auto eY = metric::distance::entropy<double, metric::distance::Euclidian<double>>(featureVector_resh_1, 3, 2, metric::distance::Euclidian<double>());
 	//auto eXY = metric::distance::entropy<double, metric::distance::Chebyshev<double>>(featureVector_resh_both, 3, 2, metric::distance::Chebyshev<double>());
 
-	auto mi = metric::distance::mutualInformation<double>(featureVector_resh_0, featureVector_resh_1);
+	//auto mi = metric::distance::mutualInformation<double>(featureVector_resh_0, featureVector_resh_1);
 
-	auto voi = eX + eY - 2 * mi;
+	//auto voi = eX + eY - 2 * mi;
 
-	//auto voi = metric::distance::variationOfInformation(featureVector_resh_0, featureVector_resh_1);
+	auto voi = metric::distance::variationOfInformation(featureVector_resh_0, featureVector_resh_1);
 
 	//auto voi = sqrt(0.5 * (eXY - (eX + eY)));
 
