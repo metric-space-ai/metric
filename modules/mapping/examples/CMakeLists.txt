@@ -1,3 +1,9 @@
+cmake_minimum_required(VERSION 3.12)
+
+set(Boost_DEBUG on)  
+find_package(Boost)
+
+project(MappingExamples)
 
 if(CMAKE_SYSTEM_NAME MATCHES Windows)
 	include_directories(
@@ -18,6 +24,13 @@ endif()
 	
 file(COPY "assets" DESTINATION ".")
 
+include_directories(${Boost_INCLUDE_DIRS})
+	
+# for Visual Studio
+if(MSVC)
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++17")
+endif(MSVC)
+
 
 include_directories(${Boost_INCLUDE_DIRS})
 
@@ -27,8 +40,7 @@ add_executable(KMeans_example quantized_mappers/clustering/KMeans_example.cpp)
 add_executable(DBScan_example quantized_mappers/clustering/DBScan_example.cpp)
 add_executable(AffinityPropagation_example quantized_mappers/clustering/AffinityPropagation_example.cpp)
 
-#FIXME HierarchicalClustering_example don't compile
-#add_executable(HierarchicalClustering_example quantized_mappers/clustering/HierarchicalClustering_example.cpp) 
+add_executable(HierarchicalClustering_example quantized_mappers/clustering/HierarchicalClustering_example.cpp) 
 
 # quantized_mappers / constraint
 
@@ -57,7 +69,16 @@ if(LAPACK_LIBRARIES)
 	target_link_libraries(main_esn PRIVATE ${LAPACK_LIBRARIES})
 endif(LAPACK_LIBRARIES)
 
+if(CMAKE_SYSTEM_NAME MATCHES Windows)
+	# continious_mappers / clustering
+	add_executable(SOM_example continious_mappers/clustering/SOM_example.cpp)
+	target_link_directories(SOM_example PRIVATE ${PROJECT_SOURCE_DIR}/mkl/lib/intel64_win)
+	target_link_libraries(SOM_example PRIVATE mkl_core.lib mkl_sequential.lib mkl_intel_lp64.lib)
+	target_link_libraries(SOM_example PRIVATE ${Boost_LIBRARIES})
+endif()
+
 # continious_mappers / classification
+
 
 
 

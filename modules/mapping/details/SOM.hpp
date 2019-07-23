@@ -73,6 +73,8 @@ namespace mapping
 		/* Best matching unit */
 		size_t BMU(const recType &sample) const;
 
+		std::vector<std::vector<recType::value_type>> nodes();
+
 	  private:
 		bool valid;
 		size_t D; // dimensions of inputs vector

@@ -173,7 +173,12 @@ std::vector<double> SOM<recType, Metric, Graph>::reduce(const recType &sample) {
 
 template <class recType, class Metric, class Graph>
 size_t SOM<recType, Metric, Graph>::size() {
-  return graph.getNodesNumber();
+	return graph.getNodesNumber();
+}
+
+template <class recType, class Metric, class Graph>
+std::vector<std::vector<recType::value_type>> SOM<recType, Metric, Graph>::nodes() {
+	return weights;
 }
 
 /** Best matching unit **/

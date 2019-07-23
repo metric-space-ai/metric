@@ -29,6 +29,7 @@ Copyright (c) 2019 Panda Team
 #include "Semaphore.h"
 
 #include "../modules/crossfilter.hpp"
+#include "../modules/mapping/metric_mapping.hpp"
 #include "../modules/distance/details/k-related/entropy.hpp"
 #include "../modules/distance/details/k-related/Standards.hpp"
 
@@ -957,7 +958,14 @@ std::tuple <std::vector<Record>, std::vector<Record>> splitMailfunctionValues(st
 		if (dataset[i][dataset[i].size() - 1] >= currentDateTime)
 		{
 			currentEventIndex++;
-			currentDateTime = events[currentEventIndex];
+			if (currentEventIndex < events.size())
+			{
+				currentDateTime = events[currentEventIndex];
+			}
+			else
+			{
+				break;
+			}
 		}
 	}
 
@@ -1039,9 +1047,9 @@ int main(int argc, char *argv[])
 		{
 			records.push_back(getSensorRecord(conn, timestamps[i], features));
 		}*/
-		std::vector<std::string> cuttimestamps(timestamps.begin() + 5500, timestamps.begin() + 5550);
-		//records = getAllSensorRecords(conn, features, cuttimestamps);
-		records = getAllSensorRecords(conn, features, timestamps);
+		std::vector<std::string> cuttimestamps(timestamps.begin() + 2000, timestamps.begin() + 2170);
+		records = getAllSensorRecords(conn, features, cuttimestamps);
+		//records = getAllSensorRecords(conn, features, timestamps);
 		auto t2 = std::chrono::steady_clock::now();
 
 		std::cout << '\n';
@@ -1266,6 +1274,82 @@ int main(int argc, char *argv[])
 
 
 	saveToCsv("PMQxVOI_result.csv", importancesAsRecord, features);
+
+	/////////////////
+
+
+	unsigned int iterations = 1000;
+
+	using Vector = std::vector<double>;
+	using Metric = metric::distance::Euclidian<Vector::value_type>;
+	using Graph = metric::graph::Grid6; // replaced mapping::SOM_details with graph by Max F, 2019-05-16
+
+	int dimensionX = 5;
+
+	metric::mapping::SOM<Vector, Metric, Graph> DR(dimensionX, dimensionX);
+
+	if (!DR.isValid()) {
+		std::cout << "SOM is not valid" << std::endl;
+		return EXIT_FAILURE;
+	}
+
+
+	std::vector<Record> VOIxOOCdata;
+	std::tie(VOIxOOCdata, features) = readCsvData("PMQxVOI_result.csv");
+
+	std::vector<std::vector<double>> somSpace;
+	std::vector<std::vector<int>> clusters(dimensionX * dimensionX, std::vector<int>());
+	
+	for (auto i = 0; i < VOIxOOCdata[0].size(); ++i)
+	{
+		if (VOIxOOCdata[0][i] != -INF && VOIxOOCdata[1][i] != -INF)
+		{
+			somSpace.push_back({ VOIxOOCdata[0][i], VOIxOOCdata[1][i] });
+		}
+	}
+
+	//somSpace.push_back({ 0, 0 });
+	//somSpace.push_back({ 0, 1 });
+	//somSpace.push_back({ 1, 0 });
+	//somSpace.push_back({ 1, 1 });
+	//somSpace.push_back({ 5, 5 });
+	//somSpace.push_back({ 5, 6 });
+	//somSpace.push_back({ 6, 5 });
+	//somSpace.push_back({ 6, 6 });
+
+	/* Train */
+	const auto t1 = std::chrono::steady_clock::now();
+	DR.train(somSpace, iterations);
+	const auto t2 = std::chrono::steady_clock::now();
+
+	std::cout << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000 << "s)" << std::endl;
+
+	std::cout << "size = " << DR.size() << std::endl;
+
+	for (auto i = 0; i < somSpace.size(); ++i)
+	{
+		int cluster = DR.BMU(somSpace[i]);
+		clusters[cluster].push_back(i);
+	}
+
+	std::cout << "Nodes " << std::endl;
+	auto nodes = DR.nodes();
+	std::vector<double> topRightNode = nodes[0];
+	int topRightNodeIndex = 0;
+	for (auto i = 0; i < nodes.size(); ++i)
+	{
+		if (nodes[i][0] > topRightNode[0] || nodes[i][1] > topRightNode[1])
+		{
+			topRightNode = nodes[i];
+			topRightNodeIndex = i;
+		}
+		vector_print(nodes[i]);
+		std::cout << "Cluster #" << i << " size: " << clusters[i].size() << std::endl;
+	}
+	std::cout << "Top right cluster, feature indexes: " << topRightNodeIndex << std::endl;
+	std::cout << "Cluster size: " << clusters[topRightNodeIndex].size() << std::endl;
+
+	vector_print(clusters[topRightNodeIndex]);
 
 	return 0;
 

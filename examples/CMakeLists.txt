@@ -30,6 +30,7 @@ include_directories(${Boost_INCLUDE_DIRS})
 
 set(EXAMPLE_NAME SensorExample)
 add_executable(${EXAMPLE_NAME} SensorExample.cpp)
+
 if(UNIX)
     target_compile_options(${EXAMPLE_NAME} PRIVATE -pthread)
     set_target_properties(${EXAMPLE_NAME} PROPERTIES LINK_FLAGS -pthread)
@@ -51,6 +52,11 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
   add_custom_command (TARGET ${EXAMPLE_NAME} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different ${PostgreSQL_LIBRARY_DIRS}/libpq.dll $<TARGET_FILE_DIR:${EXAMPLE_NAME}>)
   # I need to copy also dll's needed to libpq.dll
 endif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+
+if(CMAKE_SYSTEM_NAME MATCHES Windows)
+	target_link_directories(${EXAMPLE_NAME} PRIVATE ${PROJECT_SOURCE_DIR}/../mkl/lib/intel64_win)
+	target_link_libraries(${EXAMPLE_NAME} PRIVATE mkl_core.lib mkl_sequential.lib mkl_intel_lp64.lib)
+endif()
 
 
 
