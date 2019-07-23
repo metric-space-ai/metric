@@ -1097,15 +1097,15 @@ int main(int argc, char *argv[])
 	std::vector<Record> mailfunctedDataset;
 	std::vector<Record> validDataset;
 
-	std::tie(mailfunctedDataset, validDataset) = splitMailfunctionValues(dataset_0, events, 3600);
+	std::tie(mailfunctedDataset, validDataset) = splitMailfunctionValues(dataset_0, events, 60);
 
 	////////////////////
 
 	std::cout << '\n';
 	std::cout << '\n';
 	std::cout <<  "Resampled:" << std::endl;
-	auto dataset_0_i = resample<double>(mailfunctedDataset, 1000);
-	auto dataset_1_i = resample<double>(validDataset, 1000);
+	auto dataset_0_i = resample<double>(mailfunctedDataset, 100);
+	auto dataset_1_i = resample<double>(validDataset, 100);
 	   
 
 	/*auto e = entropy<double, metric::distance::P_norm<double>>(dataset_0_i, 3, 2, metric::distance::P_norm<double>(3));
@@ -1219,6 +1219,30 @@ int main(int argc, char *argv[])
 		sem.wait();
 	}
 	pool.close();
+
+
+	double min = vois[0];
+	double max = vois[0];
+	for (auto i = 0; i < vois.size(); ++i)
+	{
+		if (vois[i] > max)
+		{
+			max = vois[i];
+		}
+		if (vois[i] < min)
+		{
+			min = vois[i];
+		}
+	}
+	double range = max - min;
+	if (range == 0)
+	{
+		range = 1;
+	}
+	for (auto i = 0; i < vois.size(); ++i)
+	{
+		vois[i] = (vois[i] - min) / range;
+	}
 
 	auto total_t2 = std::chrono::steady_clock::now();
 	auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(total_t2 - total_t1).count();

@@ -50,7 +50,7 @@ mutualInformation(const std::vector<std::vector<T>> & Xc,
                   const std::vector<std::vector<T>> & Yc, T logbase = 2.0);
 
 
-template<typename T = double, typename Metric>
+template<typename T = double, typename Metric = metric::distance::Chebyshev<T>>
 typename std::enable_if<!std::is_integral<T>::value, T>::type
 variationOfInformation(const std::vector<std::vector<T>> & Xc,
                        const std::vector<std::vector<T>> & Yc, int k = 3, T logbase = 2.0);
