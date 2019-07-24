@@ -58,6 +58,10 @@ if(CMAKE_SYSTEM_NAME MATCHES Windows)
 	target_link_libraries(${EXAMPLE_NAME} PRIVATE mkl_core.lib mkl_sequential.lib mkl_intel_lp64.lib)
 endif()
 
+if(LAPACK_LIBRARIES)
+	target_link_libraries(${EXAMPLE_NAME} PRIVATE ${LAPACK_LIBRARIES})
+endif(LAPACK_LIBRARIES)
+
 
 
 
