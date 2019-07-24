@@ -62,7 +62,7 @@ if(LAPACK_LIBRARIES)
     message("LAPACK exists")
 	target_link_libraries(${EXAMPLE_NAME} PRIVATE ${LAPACK_LIBRARIES})
 else()
-    message("LAPACK does not exists")
+    message("LAPACK does not exists, please, install LAPACK")
 endif(LAPACK_LIBRARIES)
 
 
