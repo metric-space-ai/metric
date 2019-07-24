@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.12)
 
-find_package(PostgreSQL REQUIRED)
+find_package(PostgreSQL)
+
+find_package(LAPACK)
 
 set(Boost_DEBUG on)  
 find_package(Boost)
