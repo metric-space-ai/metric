@@ -59,7 +59,10 @@ if(CMAKE_SYSTEM_NAME MATCHES Windows)
 endif()
 
 if(LAPACK_LIBRARIES)
+    message("LAPACK exists")
 	target_link_libraries(${EXAMPLE_NAME} PRIVATE ${LAPACK_LIBRARIES})
+else()
+    message("LAPACK does not exists")
 endif(LAPACK_LIBRARIES)
 
 
