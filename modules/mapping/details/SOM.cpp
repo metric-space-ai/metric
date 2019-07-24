@@ -177,7 +177,7 @@ size_t SOM<recType, Metric, Graph>::size() {
 }
 
 template <class recType, class Metric, class Graph>
-std::vector<std::vector<recType::value_type>> SOM<recType, Metric, Graph>::nodes() {
+std::vector<std::vector<typename recType::value_type>> SOM<recType, Metric, Graph>::nodes() {
 	return weights;
 }
 
