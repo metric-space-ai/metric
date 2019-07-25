@@ -974,7 +974,10 @@ std::tuple <std::vector<Record>, std::vector<Record>> splitMailfunctionValues(st
 	for (auto i = 0; i < validByEvents.size(); ++i)
 	{
 		std::cout << "Observed variables for event #" << i << ": " << validByEvents[i].size() << std::endl;
-		valid.insert(valid.end(), validByEvents[i].begin(), validByEvents[i].end() - 5);
+		if (validByEvents[i].size() > 5)
+		{
+			valid.insert(valid.end(), validByEvents[i].begin(), validByEvents[i].end() - 5);
+		}
 	}
 	std::cout << "Total observed variables: " << valid.size() << std::endl;
 
