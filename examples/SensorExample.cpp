@@ -943,18 +943,18 @@ std::tuple <std::vector<Record>, std::vector<Record>> splitMailfunctionValues(st
 	auto currentDateTime = events[currentEventIndex];
 	std::vector<Record> mailfuncted;
 	std::vector<Record> valid;
-	std::vector<std::vector<Record>> validByEvents(events.size(), std::vector<Record>());
+	std::vector<std::vector<Record>> mailfunctedByEvents(events.size(), std::vector<Record>());
 	for (auto i = 0; i < dataset.size(); ++i)
 	{
 		// last feature is date
 		if (dataset[i][dataset[i].size() - 1] < currentDateTime - seconds)
 		{
-			//valid.push_back(dataset[i]);
-			validByEvents[currentEventIndex].push_back(dataset[i]);
+			valid.push_back(dataset[i]);
 		}
 		else
 		{
-			mailfuncted.push_back(dataset[i]);
+			//mailfuncted.push_back(dataset[i]);
+			mailfunctedByEvents[currentEventIndex].push_back(dataset[i]);
 		}
 
 		if (dataset[i][dataset[i].size() - 1] >= currentDateTime)
@@ -971,15 +971,15 @@ std::tuple <std::vector<Record>, std::vector<Record>> splitMailfunctionValues(st
 		}
 	}
 
-	for (auto i = 0; i < validByEvents.size(); ++i)
+	for (auto i = 0; i < mailfunctedByEvents.size(); ++i)
 	{
-		std::cout << "Observed variables for event #" << i << ": " << validByEvents[i].size() << std::endl;
-		if (validByEvents[i].size() > 5)
+		std::cout << "Observed variables for event #" << i << ": " << mailfunctedByEvents[i].size() << std::endl;
+		if (mailfunctedByEvents[i].size() > 5)
 		{
-			valid.insert(valid.end(), validByEvents[i].begin(), validByEvents[i].end() - 5);
+			mailfuncted.insert(mailfuncted.end(), mailfunctedByEvents[i].begin(), mailfunctedByEvents[i].end() - 5);
 		}
 	}
-	std::cout << "Total observed variables: " << valid.size() << std::endl;
+	std::cout << "Total observed variables: " << mailfuncted.size() << std::endl;
 
 	return std::make_tuple(mailfuncted, valid);
 }
