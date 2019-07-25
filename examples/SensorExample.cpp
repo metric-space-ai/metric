@@ -943,12 +943,14 @@ std::tuple <std::vector<Record>, std::vector<Record>> splitMailfunctionValues(st
 	auto currentDateTime = events[currentEventIndex];
 	std::vector<Record> mailfuncted;
 	std::vector<Record> valid;
+	std::vector<std::vector<Record>> validByEvents(events.size(), std::vector<Record>());
 	for (auto i = 0; i < dataset.size(); ++i)
 	{
 		// last feature is date
 		if (dataset[i][dataset[i].size() - 1] < currentDateTime - seconds)
 		{
-			valid.push_back(dataset[i]);
+			//valid.push_back(dataset[i]);
+			validByEvents[currentEventIndex].push_back(dataset[i]);
 		}
 		else
 		{
@@ -968,6 +970,13 @@ std::tuple <std::vector<Record>, std::vector<Record>> splitMailfunctionValues(st
 			}
 		}
 	}
+
+	for (auto i = 0; i < validByEvents.size(); ++i)
+	{
+		std::cout << "Observed variables for event #" << i << ": " << validByEvents[i].size() << std::endl;
+		valid.insert(valid.end(), validByEvents[i].begin(), validByEvents[i].end() - 5);
+	}
+	std::cout << "Total observed variables: " << valid.size() << std::endl;
 
 	return std::make_tuple(mailfuncted, valid);
 }
