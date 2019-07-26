@@ -1132,6 +1132,9 @@ int main(int argc, char *argv[])
 
 		std::tie(mailfunctedDataset, validDataset) = splitMailfunctionValues(dataset_0, events, 60);
 
+
+		saveToCsv("mailfunctedDataset.csv", mailfunctedDataset, features);
+
 		////////////////////
 
 		std::cout << '\n';
