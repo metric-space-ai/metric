@@ -1254,28 +1254,28 @@ int main(int argc, char *argv[])
 		pool.close();
 
 
-		double min = vois[0];
-		double max = vois[0];
-		for (auto i = 0; i < vois.size(); ++i)
-		{
-			if (vois[i] > max)
-			{
-				max = vois[i];
-			}
-			if (vois[i] < min)
-			{
-				min = vois[i];
-			}
-		}
-		double range = max - min;
-		if (range == 0)
-		{
-			range = 1;
-		}
-		for (auto i = 0; i < vois.size(); ++i)
-		{
-			vois[i] = (vois[i] - min) / range;
-		}
+		//double min = vois[0];
+		//double max = vois[0];
+		//for (auto i = 0; i < vois.size(); ++i)
+		//{
+		//	if (vois[i] > max)
+		//	{
+		//		max = vois[i];
+		//	}
+		//	if (vois[i] < min)
+		//	{
+		//		min = vois[i];
+		//	}
+		//}
+		//double range = max - min;
+		//if (range == 0)
+		//{
+		//	range = 1;
+		//}
+		//for (auto i = 0; i < vois.size(); ++i)
+		//{
+		//	vois[i] = (vois[i] - min) / range;
+		//}
 
 		auto total_t2 = std::chrono::steady_clock::now();
 		auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(total_t2 - total_t1).count();
