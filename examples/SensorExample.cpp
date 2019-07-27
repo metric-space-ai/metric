@@ -1143,6 +1143,9 @@ int main(int argc, char *argv[])
 		auto dataset_0_i = resample<double>(mailfunctedDataset, 100);
 		auto dataset_1_i = resample<double>(validDataset, 100);
 
+		auto records_i = resample<double>(records, 1000);
+		saveToCsv("sensorsRecords_1000.csv", records_i, features);
+
 
 		/*auto e = entropy<double, metric::distance::P_norm<double>>(dataset_0_i, 3, 2, metric::distance::P_norm<double>(3));
 		std::cout << "H(X) General Minkowsky, 3: " << e << std::endl;
