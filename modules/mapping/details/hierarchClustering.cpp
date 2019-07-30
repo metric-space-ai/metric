@@ -46,7 +46,7 @@ namespace clustering
 
 		std::vector<std::vector<double>> distanceMatrix;
 		std::vector<Cluster<T>> newClusters;
-		std::vector<std::vector<T>> newData;
+		std::vector<T> newData;
 		std::vector<int> mergedIndexes;
 		int closest;
 		std::pair<bool, int> loockupResultX;

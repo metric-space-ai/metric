@@ -32,6 +32,7 @@ Copyright (c) 2019 Panda Team
 #include "../modules/mapping/metric_mapping.hpp"
 #include "../modules/distance/details/k-related/entropy.hpp"
 #include "../modules/distance/details/k-related/Standards.hpp"
+#include "../modules/mapping/details/hierarchClustering.hpp"
 
 
 //#include "modules/mapping/details/classification/metric_classification.hpp"
@@ -1143,7 +1144,7 @@ int main(int argc, char *argv[])
 		auto dataset_0_i = resample<double>(mailfunctedDataset, 100);
 		auto dataset_1_i = resample<double>(validDataset, 100);
 
-		//auto records_i = resample<double>(records, 10000);
+		//auto records_i = resample<double>(records, 5000);
 		//saveToCsv("sensorsRecords_1000.csv", records_i, features);
 
 
@@ -1408,6 +1409,9 @@ int main(int argc, char *argv[])
 	}
 
 	matrix_print(sensorNamesDistanceMatrix);
+
+	auto hc = clustering::HierarchicalClustering<std::string, metric::distance::Edit<std::string>>(sensorNames, 3);
+	hc.hierarchical_clustering();
 
 
 	/*df['importance'] = df[df.columns[0]] * df[df.columns[1]]

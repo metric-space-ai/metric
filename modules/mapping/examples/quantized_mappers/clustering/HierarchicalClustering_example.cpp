@@ -26,10 +26,20 @@ int main()
 		   {2.57927000000000, 2.63399000000000, 2.46802000000000, 61.9026000000000, 61.9026000000000}
 	};
 
+	std::vector<std::string> str_data{
+		   "1011001100110011001111111",
+		   "1000011001100110011011100",
+		   "Absolutly different string 1",
+		   "Absolutly different string 2",
+		   "Test string 1",
+		   "Test string 2",
+		   "Test string 3"
+	};
 
 
 
-	auto hc = clustering::HierarchicalClustering<float, metric::distance::Euclidian<float>>(data, 3);
+
+	auto hc = clustering::HierarchicalClustering<std::vector<float>, metric::distance::Euclidian<float>>(data, 3);
 	hc.hierarchical_clustering();
 
 	for (size_t i = 0; i < hc.clusters.size(); i++)
@@ -42,6 +52,22 @@ int main()
 				std::cout << hc.clusters[i].data[j][k] << " ";
 			}
 			std::cout << std::endl;
+		}
+		std::cout << std::endl;
+	}
+
+
+
+
+	auto hc2 = clustering::HierarchicalClustering<std::string, metric::distance::Edit<std::string>>(str_data, 4);
+	hc2.hierarchical_clustering();
+
+	for (size_t i = 0; i < hc2.clusters.size(); i++)
+	{
+		std::cout << "cluster #" << i << std::endl;
+		for (size_t j = 0; j < hc2.clusters[i].data.size(); j++)
+		{
+			std::cout << hc2.clusters[i].data[j] << std::endl; 
 		}
 		std::cout << std::endl;
 	}

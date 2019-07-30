@@ -13,17 +13,18 @@ namespace clustering
 	template <typename T>
 	class Cluster {
 	public:
-		std::vector<std::vector<T>> data;
-		std::vector<T> centroid;
+		std::vector<T> data;
+		T centroid;
 
-		Cluster(const std::vector<std::vector<T>> &d)
+		Cluster(const std::vector<T> &d)
 		{
 			data = d;
 			calculateCentroid();
 		}
 
 		void calculateCentroid() {
-			centroid = std::vector<T>(data[0].size());
+			centroid = data[0];
+			/*centroid = std::vector<T>(data[0].size());
 			T sum;
 			for (size_t i = 0; i < data[0].size(); i++)
 			{
@@ -33,7 +34,7 @@ namespace clustering
 					sum += data[j][i];
 				}
 				centroid[i] = (T) sum / data.size();
-			}
+			}*/
 		}
 	};
 	
@@ -47,11 +48,11 @@ namespace clustering
 
 	public:
 		std::vector<Cluster<T>> clusters;
-		std::vector<std::vector<T>> sourceData;
+		std::vector<T> sourceData;
 		int clustersNum;
 
 		HierarchicalClustering(
-			const std::vector<std::vector<T>> &data,
+			const std::vector<T> &data,
 			const int &k)
 		{
 			sourceData = data;
