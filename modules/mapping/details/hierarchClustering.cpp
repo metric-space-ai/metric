@@ -63,11 +63,11 @@ namespace clustering
 
 			while ((int) mergedIndexes.size() / 2 < (int) clusters.size() / 2)
 			{
-				std::tie(x, y) = getMinPosition(distanceMatrix);
+				std::tie(x, y) = clustering::getMinPosition(distanceMatrix);
 				distanceMatrix[x][y] = std::numeric_limits<double>::max();
 
-				loockupResultX = findInVector<int>(mergedIndexes, x);
-				loockupResultY = findInVector<int>(mergedIndexes, y);
+				loockupResultX = clustering::findInVector<int>(mergedIndexes, x);
+				loockupResultY = clustering::findInVector<int>(mergedIndexes, y);
 				if (!loockupResultX.first && !loockupResultY.first)
 				{
 					mergedIndexes.push_back(x);
@@ -92,7 +92,7 @@ namespace clustering
 
 				for (size_t i = 0; i < clusters.size(); i++)
 				{
-					loockupResultX = findInVector<int>(mergedIndexes, i);
+					loockupResultX = clustering::findInVector<int>(mergedIndexes, i);
 					if (!loockupResultX.first)
 					{
 						mergedIndexes.push_back(i);
@@ -146,7 +146,7 @@ namespace clustering
 	}
 
 	template < typename T>
-	std::pair<bool, int > findInVector(const std::vector<T>  & vecOfElements, const T  & element)
+	std::pair<bool, int> findInVector(const std::vector<T>  & vecOfElements, const T  & element)
 	{
 		std::pair<bool, int > result;
 
