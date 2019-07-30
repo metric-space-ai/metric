@@ -1423,7 +1423,7 @@ int main(int argc, char *argv[])
 			{
 				auto it2 = std::find(existSensorNames.begin(), existSensorNames.end(), sensorNames[k]);
 				if (it2 != existSensorNames.end()) {
-					if (sensorNamesDistanceMatrix[i][k] < 15)
+					if (sensorNamesDistanceMatrix[i][k] < 10)
 					{
 						cluster.push_back(sensorNames[k]);
 						existSensorNames.erase(it2);
