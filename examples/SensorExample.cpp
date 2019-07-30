@@ -32,6 +32,7 @@ Copyright (c) 2019 Panda Team
 #include "../modules/mapping/metric_mapping.hpp"
 #include "../modules/distance/details/k-related/entropy.hpp"
 #include "../modules/distance/details/k-related/Standards.hpp"
+#include "../modules/mapping/details/hierarchClustering.hpp"
 
 
 //#include "modules/mapping/details/classification/metric_classification.hpp"
@@ -1143,8 +1144,8 @@ int main(int argc, char *argv[])
 		auto dataset_0_i = resample<double>(mailfunctedDataset, 100);
 		auto dataset_1_i = resample<double>(validDataset, 100);
 
-		auto records_i = resample<double>(records, 1000);
-		saveToCsv("sensorsRecords_1000.csv", records_i, features);
+		//auto records_i = resample<double>(records, 10000);
+		//saveToCsv("sensorsRecords_1000.csv", records_i, features);
 
 
 		/*auto e = entropy<double, metric::distance::P_norm<double>>(dataset_0_i, 3, 2, metric::distance::P_norm<double>(3));
@@ -1386,13 +1387,35 @@ int main(int argc, char *argv[])
 
 	vector_print(clusters[topRightNodeIndex]);
 
+	std::vector<std::string> sensorNames;
 	std::wcout << '\n';
 	std::wcout << '\n';
 	std::cout << "Top right cluster features: " << std::endl;
 	for (auto i = 0; i < clusters[topRightNodeIndex].size(); ++i)
 	{
 		std::cout << features[clusters[topRightNodeIndex][i]].bezeichnung << " " << features[clusters[topRightNodeIndex][i]].id << std::endl;
+		sensorNames.push_back(features[clusters[topRightNodeIndex][i]].bezeichnung);
 	}
+
+	metric::distance::Edit<std::string> distance;
+	std::vector<std::vector<double>> sensorNamesDistanceMatrix(sensorNames.size(), std::vector<double>(sensorNames.size()));
+
+	for (auto i = 0; i < sensorNames.size(); ++i)
+	{
+		for (auto j = 0; j < sensorNames.size(); ++j)
+		{
+			sensorNamesDistanceMatrix[i][j] = distance(sensorNames[i], sensorNames[j]);
+		}
+	}
+
+	matrix_print(sensorNamesDistanceMatrix);
+
+
+	/*df['importance'] = df[df.columns[0]] * df[df.columns[1]]
+
+		df = df.sort_values(by = ['importance'], ascending = False)
+
+		top10 = df.index[1:11].tolist()*/
 
 	return 0;
 
