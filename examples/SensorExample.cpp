@@ -32,7 +32,6 @@ Copyright (c) 2019 Panda Team
 #include "../modules/mapping/metric_mapping.hpp"
 #include "../modules/distance/details/k-related/entropy.hpp"
 #include "../modules/distance/details/k-related/Standards.hpp"
-#include "../modules/mapping/details/hierarchClustering.hpp"
 
 
 //#include "modules/mapping/details/classification/metric_classification.hpp"
