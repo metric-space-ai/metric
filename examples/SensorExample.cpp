@@ -1397,7 +1397,7 @@ int main(int argc, char *argv[])
 		sensorNames.push_back(features[clusters[topRightNodeIndex][i]].bezeichnung);
 	}
 
-	metric::distance::Edit<std::string> distance;
+	/*metric::distance::Edit<std::string> distance;
 	std::vector<std::vector<double>> sensorNamesDistanceMatrix(sensorNames.size(), std::vector<double>(sensorNames.size()));
 
 	for (auto i = 0; i < sensorNames.size(); ++i)
@@ -1408,17 +1408,20 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	matrix_print(sensorNamesDistanceMatrix);
+	matrix_print(sensorNamesDistanceMatrix);*/
 
-	auto hc = clustering::HierarchicalClustering<std::string, metric::distance::Edit<std::string>>(sensorNames, 3);
+	auto hc = clustering::HierarchicalClustering<std::string, metric::distance::Edit<std::string>>(sensorNames, 10);
 	hc.hierarchical_clustering();
 
-
-	/*df['importance'] = df[df.columns[0]] * df[df.columns[1]]
-
-		df = df.sort_values(by = ['importance'], ascending = False)
-
-		top10 = df.index[1:11].tolist()*/
+	for (size_t i = 0; i < hc.clusters.size(); i++)
+	{
+		std::cout << "cluster #" << i << std::endl;
+		for (size_t j = 0; j < hc.clusters[i].data.size(); j++)
+		{
+			std::cout << hc.clusters[i].data[j] << std::endl;
+		}
+		std::cout << std::endl;
+	}
 
 	return 0;
 
