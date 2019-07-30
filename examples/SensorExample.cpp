@@ -1002,12 +1002,12 @@ int main(int argc, char *argv[])
 			VOIxOOCcsvFilename = argv[2];
 			std::cout << "we have started, start clustering on the data from: " << VOIxOOCcsvFilename << std::endl;
 		}
-		else 
+		else
 		{
 			std::cout << "we have started, load from csv: " << sensorDataCsvFilename << std::endl;
 		}
 	}
-	else 
+	else
 	{
 		std::cout << "we have started, load from postgres" << std::endl;
 	}
@@ -1018,7 +1018,7 @@ int main(int argc, char *argv[])
 
 	std::vector<Record> records;
 	//std::vector<std::string> recordDates;
-	
+
 	static int targetFeatureIndex;
 	std::string featureName = "Sammelabriss";
 	//std::string featureName = "Gutproduktion";
@@ -1315,7 +1315,7 @@ int main(int argc, char *argv[])
 
 	using Vector = std::vector<double>;
 	using Metric = metric::distance::Euclidian<Vector::value_type>;
-	using Graph = metric::graph::Grid6; 
+	using Graph = metric::graph::Grid6;
 
 	int dimensionX = 5;
 
@@ -1332,7 +1332,7 @@ int main(int argc, char *argv[])
 
 	std::vector<std::vector<double>> somSpace;
 	std::vector<std::vector<int>> clusters(dimensionX * dimensionX, std::vector<int>());
-	
+
 	for (auto i = 0; i < VOIxOOCdata[0].size(); ++i)
 	{
 		if (VOIxOOCdata[0][i] != -INF && VOIxOOCdata[1][i] != -INF)
@@ -1397,7 +1397,7 @@ int main(int argc, char *argv[])
 		sensorNames.push_back(features[clusters[topRightNodeIndex][i]].bezeichnung);
 	}
 
-	/*metric::distance::Edit<std::string> distance;
+	metric::distance::Edit<std::string> distance;
 	std::vector<std::vector<double>> sensorNamesDistanceMatrix(sensorNames.size(), std::vector<double>(sensorNames.size()));
 
 	for (auto i = 0; i < sensorNames.size(); ++i)
@@ -1408,20 +1408,55 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	matrix_print(sensorNamesDistanceMatrix);*/
+	std::vector<std::vector<std::string>> sensorsClusters;
+	std::vector<std::string> existSensorNames = sensorNames;
+	for (auto i = 0; i < sensorNames.size(); ++i)
+	{
+		auto it = std::find(existSensorNames.begin(), existSensorNames.end(), sensorNames[i]);
+		if (it != existSensorNames.end()) {
 
-	auto hc = clustering::HierarchicalClustering<std::string, metric::distance::Edit<std::string>>(sensorNames, 10);
-	hc.hierarchical_clustering();
+			std::vector<std::string> cluster;
+			cluster.push_back(sensorNames[i]);
+			existSensorNames.erase(it);
 
-	for (size_t i = 0; i < hc.clusters.size(); i++)
+			for (auto k = i + 1; k < sensorNames.size(); ++k)
+			{
+				auto it2 = std::find(existSensorNames.begin(), existSensorNames.end(), sensorNames[k]);
+				if (it2 != existSensorNames.end()) {
+					if (sensorNamesDistanceMatrix[i][k] < 10)
+					{
+						cluster.push_back(sensorNames[k]);
+						existSensorNames.erase(it2);
+					}
+				}
+			}
+			sensorsClusters.push_back(cluster);
+		}
+	}
+
+	for (auto i = 0; i < sensorsClusters.size(); ++i)
 	{
 		std::cout << "cluster #" << i << std::endl;
-		for (size_t j = 0; j < hc.clusters[i].data.size(); j++)
+		for (size_t j = 0; j < sensorsClusters[i].size(); j++)
 		{
-			std::cout << hc.clusters[i].data[j] << std::endl;
+			std::cout << sensorsClusters[i][j] << std::endl;
 		}
 		std::cout << std::endl;
 	}
+
+
+	//auto hc = clustering::HierarchicalClustering<std::string, metric::distance::Edit<std::string>>(sensorNames, 10);
+	//hc.hierarchical_clustering();
+
+	//for (size_t i = 0; i < hc.clusters.size(); i++)
+	//{
+	//	std::cout << "cluster #" << i << std::endl;
+	//	for (size_t j = 0; j < hc.clusters[i].data.size(); j++)
+	//	{
+	//		std::cout << hc.clusters[i].data[j] << std::endl;
+	//	}
+	//	std::cout << std::endl;
+	//}
 
 	return 0;
 
