@@ -12,6 +12,54 @@
 
 namespace clustering
 {
+
+
+	std::tuple <int, int> getMinPosition(std::vector<std::vector<double>> &distanceMatrix)
+	{
+		int minX = 0;
+		int minY = 1;
+		double dist = std::numeric_limits<double>::max();
+
+		for (size_t i = 0; i < distanceMatrix.size(); i++)
+		{
+			for (size_t j = i + 1; j < distanceMatrix.size(); j++)
+			{
+				if (distanceMatrix[i][j] < dist)
+				{
+					dist = distanceMatrix[i][j];
+					minX = i;
+					minY = j;
+				}
+			}
+		}
+
+		return std::make_tuple(minX, minY);
+	}
+
+	template < typename T>
+	std::pair<bool, int> findInVector(const std::vector<T>  & vecOfElements, const T  & element)
+	{
+		std::pair<bool, int > result;
+
+		// Find given element in vector
+		auto it = std::find(vecOfElements.begin(), vecOfElements.end(), element);
+
+		if (it != vecOfElements.end())
+		{
+			result.second = distance(vecOfElements.begin(), it);
+			result.first = true;
+		}
+		else
+		{
+			result.first = false;
+			result.second = -1;
+		}
+
+		return result;
+	}
+
+	/////////////////////////////////////////////////////////////
+
 	template <typename T, typename Distance>
 	void HierarchicalClustering<T, Distance>::initialize()
 	{
@@ -120,50 +168,5 @@ namespace clustering
 
 			clusters = newClusters;
 		}
-	}
-
-
-	std::tuple <int, int>  getMinPosition(std::vector<std::vector<double>> &distanceMatrix)
-	{
-		int minX = 0;
-		int minY = 1;
-		double dist = std::numeric_limits<double>::max();
-
-		for (size_t i = 0; i < distanceMatrix.size(); i++)
-		{
-			for (size_t j = i + 1; j < distanceMatrix.size(); j++)
-			{
-				if (distanceMatrix[i][j] < dist)
-				{
-					dist = distanceMatrix[i][j];
-					minX = i;
-					minY = j;
-				}
-			}
-		}
-
-		return std::make_tuple(minX, minY);
-	}
-
-	template < typename T>
-	std::pair<bool, int> findInVector(const std::vector<T>  & vecOfElements, const T  & element)
-	{
-		std::pair<bool, int > result;
-
-		// Find given element in vector
-		auto it = std::find(vecOfElements.begin(), vecOfElements.end(), element);
-
-		if (it != vecOfElements.end())
-		{
-			result.second = distance(vecOfElements.begin(), it);
-			result.first = true;
-		}
-		else
-		{
-			result.first = false;
-			result.second = -1;
-		}
-
-		return result;
 	}
 }

@@ -10,6 +10,14 @@
 
 namespace clustering
 {
+
+	std::tuple <int, int> getMinPosition(std::vector<std::vector<double>> &distanceMatrix);
+
+	template <typename T>
+	std::pair<bool, int> findInVector(const std::vector<T>  & vecOfElements, const T  & element);
+
+	///////////////////////
+
 	template <typename T>
 	class Cluster {
 	public:
