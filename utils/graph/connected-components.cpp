@@ -5,11 +5,11 @@
 
   Copyright (c) 2019 Panda Team
 */
-#ifndef _METRIC_CORRELATION_DETAILS_CONNECTED_COMPONENTS_CPP
-#define _METRIC_CORRELATION_DETAILS_CONNECTED_COMPONENTS_CPP
+#ifndef _METRIC_UTILS_CONNECTED_COMPONENTS_CPP
+#define _METRIC_UTILS_CONNECTED_COMPONENTS_CPP
 #include "connected-components.hpp"
 namespace metric {
-namespace correlation {
+namespace graph {
 
 template<typename Matrix>
 void Cracker<Matrix>::ProcessGraph(Matrix &tempGraph)
@@ -225,7 +225,7 @@ inline std::vector<Matrix> largest_connected_component(const Matrix &input) {
   return CA.GetAllComponents(input, size_t(1));
 }
 
-} // namespace correlation
+} // namespace graph
 } // namespace metric
 
 #endif
