@@ -1445,7 +1445,7 @@ int main(int argc, char *argv[])
 	std::cout << "Top right cluster features: " << std::endl;
 	for (auto i = 0; i < clusters[topRightNodeIndex].size(); ++i)
 	{
-		std::cout << features[clusters[topRightNodeIndex][i]].bezeichnung << " " << features[clusters[topRightNodeIndex][i]].id << std::endl;
+		std::cout << i + 1 << "/" << clusters[topRightNodeIndex].size() << " -> feature name: " << features[clusters[topRightNodeIndex][i]].bezeichnung << " " << features[clusters[topRightNodeIndex][i]].id << std::endl;
 		sensorNames.push_back(features[clusters[topRightNodeIndex][i]].bezeichnung);
 
 		//for (auto k = i + 1; k < clusters[topRightNodeIndex].size(); ++k)
@@ -1453,12 +1453,12 @@ int main(int argc, char *argv[])
 		//	sensorsCorrelations[i][k] = runCorrelation(clusters[topRightNodeIndex][i], clusters[topRightNodeIndex][k], dataset_0_i);
 		//}
 	}
-	std::wcout << '\n';
-	std::wcout << '\n';
-	std::cout << "Sensors correlation matrix: " << std::endl;
-	matrix_print(sensorsCorrelations);
-	std::wcout << '\n';
-	std::wcout << '\n';
+	//std::wcout << '\n';
+	//std::wcout << '\n';
+	//std::cout << "Sensors correlation matrix: " << std::endl;
+	//matrix_print(sensorsCorrelations);
+	//std::wcout << '\n';
+	//std::wcout << '\n';
 
 	metric::distance::Edit<std::string> distance;
 	std::vector<std::vector<double>> sensorNamesDistanceMatrix(sensorNames.size(), std::vector<double>(sensorNames.size()));
