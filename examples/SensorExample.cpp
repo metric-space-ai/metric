@@ -913,11 +913,11 @@ struct simple_user_euclidian
 	}
 };
 
-double runCorrelation(int featureIndex, std::vector<Record> dataset_0, std::vector<Record> dataset_1)
+double runCorrelation(int featureIndex1, int featureIndex2, std::vector<Record> dataset)
 {
 	auto t1 = std::chrono::steady_clock::now();
-	auto featureVector_0 = getFeatureVector<double>(dataset_0, featureIndex, true);
-	auto featureVector_1 = getFeatureVector<double>(dataset_1, featureIndex, true);
+	auto featureVector_0 = getFeatureVector<double>(dataset, featureIndex1, true);
+	auto featureVector_1 = getFeatureVector<double>(dataset, featureIndex2, true);
 
 	std::vector<std::vector<double>> featureVector_resh_0(featureVector_0.size(), std::vector<double>(1));
 	std::vector<std::vector<double>> featureVector_resh_1(featureVector_1.size(), std::vector<double>(1));
@@ -946,7 +946,7 @@ double runCorrelation(int featureIndex, std::vector<Record> dataset_0, std::vect
 
 	auto t2 = std::chrono::steady_clock::now();
 	mu.lock();
-	std::wcout << "feature #" << featureIndex << ": Correlation = " << result << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000 << " s)" << std::endl;
+	std::wcout << "features #" << featureIndex1 << " <-> #" << featureIndex2 << " correlation = " << result << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000 << " s)" << std::endl;
 	mu.unlock();
 
 	return result;
@@ -1450,7 +1450,7 @@ int main(int argc, char *argv[])
 
 		for (auto k = i + 1; k < clusters[topRightNodeIndex].size(); ++k)
 		{
-			sensorsCorrelations[i][k] = runCorrelation(clusters[topRightNodeIndex][i], dataset_0_i, dataset_1_i);
+			sensorsCorrelations[i][k] = runCorrelation(clusters[topRightNodeIndex][i], clusters[topRightNodeIndex][k], dataset_0_i);
 		}
 	}
 	std::wcout << '\n';
