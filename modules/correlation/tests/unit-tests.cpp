@@ -10,7 +10,7 @@
 #include "../details/mgc.hpp"
 //#include "details/metrics.hpp"
 #include "../../distance/metric_distance.hpp"
-#include "../details/connected-components.hpp"
+#include "../../../utils/graph/connected-components.hpp"
 
 #define BOOST_TEST_MODULE Main
 #define BOOST_TEST_DYN_LINK
@@ -95,7 +95,7 @@ BOOST_AUTO_TEST_CASE(CRACKER)
 	blaze::DynamicMatrix<bool> M(10, 10, true);
 	blaze::row(M, 2) = false;
 
-	auto result = metric::correlation::largest_connected_component(M)[0];
+	auto result = metric::graph::largest_connected_component(M)[0];
 }
 
 BOOST_AUTO_TEST_CASE(MGC)

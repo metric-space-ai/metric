@@ -16,18 +16,18 @@ Alessandro Lulli, Emanuele Carlini, Patrizio Dazzi, Claudio Lucchese, and Laura 
 2016
 https://doi.org/10.1109/TPDS.2016.2591038
 */
-#ifndef _METRIC_CORRELATION_DETAILS_CONNECTED_COMPONENTS_HPP
-#define _METRIC_CORRELATION_DETAILS_CONNECTED_COMPONENTS_HPP
+#ifndef _METRIC_UTILS_CONNECTED_COMPONENTS_HPP
+#define _METRIC_UTILS_CONNECTED_COMPONENTS_HPP
 
 #include <vector>
 #include <list>
 
 #include <iostream>
 
-#include "../../../3rdparty/blaze/Math.h"
+#include "../../3rdparty/blaze/Math.h"
 
 namespace metric {
-namespace correlation {
+namespace graph {
 template <typename Matrix> class Cracker {
 
   typedef typename Matrix::ElementType Ty;
@@ -65,7 +65,7 @@ std::vector<Matrix> all_connected_components(const Matrix &input);
 template <typename Matrix>
 std::vector<Matrix> largest_connected_component(const Matrix &input);
 
-} // namespace correlation
+} // namespace graph
 } // namespace metric
 #include "connected-components.cpp"
 #endif
