@@ -421,15 +421,15 @@ T MGC_direct::operator()(const DistanceMatrix<T> &X, const DistanceMatrix<T> &Y)
 
 	auto t9 = std::chrono::steady_clock::now();
 
-    std::cout << " (Time for Center Matrices = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t11 - t1).count()) / 1000000 << "s)" << std::endl;
-    std::cout << " (Time for Center ranked distance Matrices = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t11).count()) / 1000000 << "s)" << std::endl;
-    std::cout << " (Time for Transpose Matrices = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t3 - t2).count()) / 1000000 << "s)" << std::endl;
-    std::cout << " (Time for Covariance Matrices = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t4 - t3).count()) / 1000000 << "s)" << std::endl;
-    std::cout << " (Time for clean up Matrices = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t5 - t4).count()) / 1000000 << "s)" << std::endl;
-    std::cout << " (Time for normalize Matrices = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t6 - t5).count()) / 1000000 << "s)" << std::endl;
-    std::cout << " (Time for clean up Matrices = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t7 - t6).count()) / 1000000 << "s)" << std::endl;
-    std::cout << " (Time for significane Matrices = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t8 - t7).count()) / 1000000 << "s)" << std::endl;
-std::cout << " (Time for optimal Matrices = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t9 - t8).count()) / 1000000 << "s)" << std::endl;
+ //   std::cout << " (Time for Center Matrices = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t11 - t1).count()) / 1000000 << "s)" << std::endl;
+ //   std::cout << " (Time for Center ranked distance Matrices = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t11).count()) / 1000000 << "s)" << std::endl;
+ //   std::cout << " (Time for Transpose Matrices = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t3 - t2).count()) / 1000000 << "s)" << std::endl;
+ //   std::cout << " (Time for Covariance Matrices = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t4 - t3).count()) / 1000000 << "s)" << std::endl;
+ //   std::cout << " (Time for clean up Matrices = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t5 - t4).count()) / 1000000 << "s)" << std::endl;
+ //   std::cout << " (Time for normalize Matrices = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t6 - t5).count()) / 1000000 << "s)" << std::endl;
+ //   std::cout << " (Time for clean up Matrices = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t7 - t6).count()) / 1000000 << "s)" << std::endl;
+ //   std::cout << " (Time for significane Matrices = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t8 - t7).count()) / 1000000 << "s)" << std::endl;
+	//std::cout << " (Time for optimal Matrices = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t9 - t8).count()) / 1000000 << "s)" << std::endl;
     
 
     return result;
@@ -553,7 +553,7 @@ double MGC<recType1, Metric1, recType2, Metric2>::estimate(const Container1 &a, 
 
 
         auto convergence = peak2ems(diff) / n;
-	    std::cout << n << " " << convergence << " " << mgc << " " << mu << std::endl;
+	    //std::cout << n << " " << convergence << " " << mgc << " " << mu << std::endl;
 
 		if (convergence < threshold) {
 			return mu;

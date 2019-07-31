@@ -945,9 +945,9 @@ double runCorrelation(int featureIndex1, int featureIndex2, std::vector<Record> 
 
 
 	auto t2 = std::chrono::steady_clock::now();
-	mu.lock();
-	std::wcout << "features #" << featureIndex1 << " <-> #" << featureIndex2 << " correlation = " << result << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000 << " s)" << std::endl;
-	mu.unlock();
+	//mu.lock();
+	//std::wcout << "features #" << featureIndex1 << " <-> #" << featureIndex2 << " correlation = " << result << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000 << " s)" << std::endl;
+	//mu.unlock();
 
 	return result;
 }
