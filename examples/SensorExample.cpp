@@ -1445,8 +1445,19 @@ int main(int argc, char *argv[])
 	std::cout << "Top right cluster features: " << std::endl;
 	for (auto i = 0; i < clusters[topRightNodeIndex].size(); ++i)
 	{
-		std::cout << i + 1 << "/" << clusters[topRightNodeIndex].size() << " -> feature name: " << features[clusters[topRightNodeIndex][i]].bezeichnung << " " << features[clusters[topRightNodeIndex][i]].id << std::endl;
-		sensorNames.push_back(features[clusters[topRightNodeIndex][i]].bezeichnung);
+		try {
+			std::cout << i + 1 << "/" << clusters[topRightNodeIndex].size() << " -> feature name: " << features[clusters[topRightNodeIndex][i]].bezeichnung << " " << features[clusters[topRightNodeIndex][i]].id << std::endl;
+			sensorNames.push_back(features[clusters[topRightNodeIndex][i]].bezeichnung);
+		}
+		catch (const std::runtime_error& e) {
+			std::cout << "feature #" << i << ": runtime error: " << e.what() << std::endl;
+		}
+		catch (const std::exception& e) {
+			std::cout << "feature #" << i << ": exception: " << e.what() << std::endl;
+		}
+		catch (...) {
+			std::cout << "feature #" << i << ": unknown error" << std::endl;
+		}
 
 		//for (auto k = i + 1; k < clusters[topRightNodeIndex].size(); ++k)
 		//{
@@ -1457,8 +1468,9 @@ int main(int argc, char *argv[])
 	//std::wcout << '\n';
 	//std::cout << "Sensors correlation matrix: " << std::endl;
 	//matrix_print(sensorsCorrelations);
-	//std::wcout << '\n';
-	//std::wcout << '\n';
+	std::wcout << '\n';
+	std::wcout << '\n';
+	std::cout << "sensor Names Distance Matrix:" << std::endl;
 
 	metric::distance::Edit<std::string> distance;
 	std::vector<std::vector<double>> sensorNamesDistanceMatrix(sensorNames.size(), std::vector<double>(sensorNames.size()));
@@ -1470,6 +1482,10 @@ int main(int argc, char *argv[])
 			sensorNamesDistanceMatrix[i][j] = distance(sensorNames[i], sensorNames[j]);
 		}
 	}
+	std::wcout << '\n';
+	std::wcout << '\n';
+	std::cout << "sensor Clusters:" << std::endl;
+
 
 	std::vector<std::vector<std::string>> sensorsClusters;
 	std::vector<std::string> existSensorNames = sensorNames;
