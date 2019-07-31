@@ -1448,10 +1448,10 @@ int main(int argc, char *argv[])
 		std::cout << features[clusters[topRightNodeIndex][i]].bezeichnung << " " << features[clusters[topRightNodeIndex][i]].id << std::endl;
 		sensorNames.push_back(features[clusters[topRightNodeIndex][i]].bezeichnung);
 
-		for (auto k = i + 1; k < clusters[topRightNodeIndex].size(); ++k)
-		{
-			sensorsCorrelations[i][k] = runCorrelation(clusters[topRightNodeIndex][i], clusters[topRightNodeIndex][k], dataset_0_i);
-		}
+		//for (auto k = i + 1; k < clusters[topRightNodeIndex].size(); ++k)
+		//{
+		//	sensorsCorrelations[i][k] = runCorrelation(clusters[topRightNodeIndex][i], clusters[topRightNodeIndex][k], dataset_0_i);
+		//}
 	}
 	std::wcout << '\n';
 	std::wcout << '\n';
@@ -1500,10 +1500,21 @@ int main(int argc, char *argv[])
 	for (auto i = 0; i < sensorsClusters.size(); ++i)
 	{
 		std::cout << "cluster #" << i << std::endl;
+		std::vector<std::vector<double>> correlations(sensorsClusters[i].size(), std::vector<double>(sensorsClusters[i].size()));
 		for (size_t j = 0; j < sensorsClusters[i].size(); j++)
 		{
 			std::cout << sensorsClusters[i][j] << std::endl;
+			int feature1 = lookupFeatureIndex(sensorsClusters[i][j], features);
+			int feature2;
+
+			for (auto k = j + 1; k < sensorsClusters[i].size(); ++k)
+			{
+				feature2 = lookupFeatureIndex(sensorsClusters[i][k], features);
+				correlations[j][k] = runCorrelation(feature1, feature2, dataset_0_i);
+			}
 		}
+		std::cout << "Sensors correlation matrix: " << std::endl;
+		matrix_print(correlations);
 		std::cout << std::endl;
 	}
 
