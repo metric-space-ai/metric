@@ -33,6 +33,7 @@ Copyright (c) 2019 Panda Team
 #include "../modules/distance/details/k-related/entropy.hpp"
 #include "../modules/distance/details/k-related/Standards.hpp"
 #include "../modules/mapping/details/hierarchClustering.hpp"
+#include "../modules/correlation/metric_correlation.hpp"
 
 
 //#include "modules/mapping/details/classification/metric_classification.hpp"
@@ -898,6 +899,45 @@ double runVOI(int featureIndex, std::vector<Record> dataset_0, std::vector<Recor
 	return voi;
 }
 
+double runCorrelation(int featureIndex, std::vector<Record> dataset_0, std::vector<Record> dataset_1)
+{
+	auto t1 = std::chrono::steady_clock::now();
+	auto featureVector_0 = getFeatureVector<double>(dataset_0, featureIndex, true);
+	auto featureVector_1 = getFeatureVector<double>(dataset_1, featureIndex, true);
+
+	std::vector<std::vector<double>> featureVector_resh_0(featureVector_0.size(), std::vector<double>(1));
+	std::vector<std::vector<double>> featureVector_resh_1(featureVector_1.size(), std::vector<double>(1));
+	//std::vector<std::vector<double>> featureVector_resh_both(featureVector_0.size() + featureVector_1.size(), std::vector<double>(1));
+	auto last_i = 0;
+	for (auto i = 0; i < featureVector_0.size(); ++i)
+	{
+		last_i = i;
+		featureVector_resh_0[i][0] = featureVector_0[i];
+		//featureVector_resh_both[last_i][0] = featureVector_0[i];
+	}
+	for (auto i = 0; i < featureVector_1.size(); ++i)
+	{
+		featureVector_resh_1[i][0] = featureVector_1[i];
+		//featureVector_resh_both[last_i + 1 + i][0] = featureVector_1[i];
+	}
+
+
+	/* Set up the correlation function */
+	using RecType = std::vector<double>;
+	/* Build functors (function objects) with user types and metrics */
+	typedef simple_user_euclidian Met;
+	auto mgc_corr = metric::correlation::MGC<RecType, Met, RecType, Met>();
+	auto result = mgc_corr.estimate(featureVector_resh_0, featureVector_resh_1, 100, 1.0, 100);
+
+
+	auto t2 = std::chrono::steady_clock::now();
+	mu.lock();
+	std::wcout << "feature #" << featureIndex << ": Correlation = " << result << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000 << " s)" << std::endl;
+	mu.unlock();
+
+	return result;
+}
+
 std::tuple <double, double> runImportance(int featureIndex, std::vector<Record> dataset_0, std::vector<Record> dataset_1)
 {
 	mu.lock();
@@ -984,6 +1024,19 @@ std::tuple <std::vector<Record>, std::vector<Record>> splitMailfunctionValues(st
 
 	return std::make_tuple(mailfuncted, valid);
 }
+
+struct simple_user_euclidian
+{
+	double operator()(const std::vector<double> &a, const std::vector<double> &b) const
+	{
+		double sum = 0;
+		for (size_t i = 0; i < a.size(); ++i)
+		{
+			sum += (a[i] - b[i]) * (a[i] - b[i]);
+		}
+		return std::sqrt(sum);
+	}
+};
 
 int main(int argc, char *argv[])
 {
@@ -1388,6 +1441,7 @@ int main(int argc, char *argv[])
 	vector_print(clusters[topRightNodeIndex]);
 
 	std::vector<std::string> sensorNames;
+	std::vector<std::vector<double>> sensorsCorrelations(clusters[topRightNodeIndex].size(), std::vector<double>(clusters[topRightNodeIndex].size()));
 	std::wcout << '\n';
 	std::wcout << '\n';
 	std::cout << "Top right cluster features: " << std::endl;
@@ -1395,7 +1449,18 @@ int main(int argc, char *argv[])
 	{
 		std::cout << features[clusters[topRightNodeIndex][i]].bezeichnung << " " << features[clusters[topRightNodeIndex][i]].id << std::endl;
 		sensorNames.push_back(features[clusters[topRightNodeIndex][i]].bezeichnung);
+
+		for (auto k = i + 1; k < clusters[topRightNodeIndex].size(); ++k)
+		{
+			sensorsCorrelations[i][k] = runCorrelation(topRightNodeIndex][i]].index, dataset_0_i, dataset_1_i);
+		}
 	}
+	std::wcout << '\n';
+	std::wcout << '\n';
+	std::cout << "Sensors correlation matrix: " << std::endl;
+	matrix_print(sensorsCorrelations);
+	std::wcout << '\n';
+	std::wcout << '\n';
 
 	metric::distance::Edit<std::string> distance;
 	std::vector<std::vector<double>> sensorNamesDistanceMatrix(sensorNames.size(), std::vector<double>(sensorNames.size()));
@@ -1443,6 +1508,7 @@ int main(int argc, char *argv[])
 		}
 		std::cout << std::endl;
 	}
+
 
 
 	//auto hc = clustering::HierarchicalClustering<std::string, metric::distance::Edit<std::string>>(sensorNames, 10);
