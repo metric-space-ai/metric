@@ -899,6 +899,20 @@ double runVOI(int featureIndex, std::vector<Record> dataset_0, std::vector<Recor
 	return voi;
 }
 
+
+struct simple_user_euclidian
+{
+	double operator()(const std::vector<double> &a, const std::vector<double> &b) const
+	{
+		double sum = 0;
+		for (size_t i = 0; i < a.size(); ++i)
+		{
+			sum += (a[i] - b[i]) * (a[i] - b[i]);
+		}
+		return std::sqrt(sum);
+	}
+};
+
 double runCorrelation(int featureIndex, std::vector<Record> dataset_0, std::vector<Record> dataset_1)
 {
 	auto t1 = std::chrono::steady_clock::now();
@@ -1025,19 +1039,6 @@ std::tuple <std::vector<Record>, std::vector<Record>> splitMailfunctionValues(st
 	return std::make_tuple(mailfuncted, valid);
 }
 
-struct simple_user_euclidian
-{
-	double operator()(const std::vector<double> &a, const std::vector<double> &b) const
-	{
-		double sum = 0;
-		for (size_t i = 0; i < a.size(); ++i)
-		{
-			sum += (a[i] - b[i]) * (a[i] - b[i]);
-		}
-		return std::sqrt(sum);
-	}
-};
-
 int main(int argc, char *argv[])
 {
 	bool FROM_CSV = false;
@@ -1077,289 +1078,286 @@ int main(int argc, char *argv[])
 	//std::string featureName = "Gutproduktion";
 
 
-	if (!CLUSTERING_FROM_VOI_OOC)
+	if (FROM_CSV)
 	{
-		if (FROM_CSV)
-		{
-			auto t1 = std::chrono::steady_clock::now();
+		auto t1 = std::chrono::steady_clock::now();
 
-			std::tie(records, features) = readCsvData(sensorDataCsvFilename);
+		std::tie(records, features) = readCsvData(sensorDataCsvFilename);
 
-			auto t2 = std::chrono::steady_clock::now();
-
-			std::cout << '\n';
-			std::cout << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000 << " s)" << std::endl;
-			std::cout << '\n';
-
-
-			std::cout << "num features: " << features.size() << std::endl;
-
-			targetFeatureIndex = lookupFeatureIndex(featureName, features);
-		}
-		else
-		{
-
-			PGconn     *conn = NULL;
-
-			conn = ConnectDB();
-
-			auto numFeatures = countFeatures(conn);
-
-			std::cout << "num features: " << numFeatures << std::endl;
-
-			features = getFeatures(conn);
-
-			printFeatures(features, 5);
-
-			targetFeatureIndex = lookupFeatureIndex(featureName, features);
-
-			std::cout << "feature " << featureName << " id: " << features[targetFeatureIndex].id << std::endl;
-
-			timestamps = getTargetTimestamps(conn, features[targetFeatureIndex].id);
-
-			vector_print(timestamps, 5);
-
-			//
-
-			auto t1 = std::chrono::steady_clock::now();
-			/*for (int i = 0; i < timestamps.size(); ++i)
-			{
-				records.push_back(getSensorRecord(conn, timestamps[i], features));
-			}*/
-			std::vector<std::string> cuttimestamps(timestamps.begin() + 2000, timestamps.begin() + 2170);
-			records = getAllSensorRecords(conn, features, cuttimestamps);
-			//records = getAllSensorRecords(conn, features, timestamps);
-			auto t2 = std::chrono::steady_clock::now();
-
-			std::cout << '\n';
-			std::cout << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000 << " s)" << std::endl;
-			std::cout << '\n';
-
-			saveToCsv(sensorDataCsvFilename, records, features);
-
-			//auto dataset_0 = getSensorData(conn, "SELECT * FROM public.sensordata WHERE date = '2018-12-10 23:43:15' LIMIT 100", features);
-			//auto dataset_0 = getSensorData(conn, "SELECT * FROM public.sensordata WHERE metaid @> '{1,7,8}'::int[] LIMIT 10000");
-			//auto dataset_1 = getSensorData(conn, "SELECT * FROM public.sensordata WHERE metaid @> '{1,7,8}'::int[] AND value = '1' LIMIT 100");
-			CloseConn(conn);
-		}
-
-		printRecords(records, features, 10, 10, 15);
-
+		auto t2 = std::chrono::steady_clock::now();
 
 		std::cout << '\n';
+		std::cout << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000 << " s)" << std::endl;
 		std::cout << '\n';
 
-		std::cout << "feature " << featureName << " index: " << targetFeatureIndex << std::endl;
-		std::cout << "feature " << featureName << " label: " << features[targetFeatureIndex].bezeichnung << std::endl;
 
-		cross::filter<Record> recordsFilter(records);
-		std::vector<Record> filtered_results;
-		auto featureFilter = recordsFilter.dimension([](Record r) { return r[targetFeatureIndex]; });
-		featureFilter.filter(0);
-		//featureFilter.filter([](auto d) { return d >= 80; });
-		auto dataset_0 = recordsFilter.all_filtered();
-		std::cout << '\n';
-		std::cout << '\n';
-		std::cout << featureName << " == 0" << std::endl;
-		printRecords(dataset_0, features, 10, 10, 15);
+		std::cout << "num features: " << features.size() << std::endl;
 
-		//featureFilter.filter();
-		//featureFilter.filter(1);
-		////featureFilter.filter([](auto d) { return d < 80; });
-		//auto dataset_1 = recordsFilter.all_filtered();
-		//std::cout << '\n';
-		//std::cout << '\n';
-		//std::cout << featureName << " == 1" << std::endl;
-		//printRecords(dataset_1, features, 10, 10, 15);
-
-		////////////////////
-
-		std::cout << '\n';
-		std::cout << '\n';
-		auto events = getEvents<double>(records, targetFeatureIndex);
-		std::cout << "mailfunction events: " << events.size() << std::endl;
-
-		////////////////////
-
-		std::vector<Record> mailfunctedDataset;
-		std::vector<Record> validDataset;
-
-		std::tie(mailfunctedDataset, validDataset) = splitMailfunctionValues(dataset_0, events, 300);
-
-
-		saveToCsv("mailfunctedDataset.csv", mailfunctedDataset, features);
-
-		////////////////////
-
-		std::cout << '\n';
-		std::cout << '\n';
-		std::cout << "Resampled:" << std::endl;
-		auto dataset_0_i = resample<double>(mailfunctedDataset, 100);
-		auto dataset_1_i = resample<double>(validDataset, 100);
-
-		//auto records_i = resample<double>(records, 5000);
-		//saveToCsv("sensorsRecords_1000.csv", records_i, features);
-
-
-		/*auto e = entropy<double, metric::distance::P_norm<double>>(dataset_0_i, 3, 2, metric::distance::P_norm<double>(3));
-		std::cout << "H(X) General Minkowsky, 3: " << e << std::endl;
-
-	  e = metric::distance::entropy<double, metric::distance::P_norm<double>>(dataset_0_i, 3, 2, metric::distance::P_norm<double>(2));
-	  std::cout << "H(X) General Minkowsky, 2: " << e << std::endl;
-
-		e = metric::distance::entropy<double, metric::distance::Euclidian<double>>(dataset_0_i, 3, 2, metric::distance::Euclidian<double>());
-		std::cout << "H(X) Euclidean: " << e << std::endl;
-
-		e = metric::distance::entropy<double, metric::distance::P_norm<double>>(dataset_0_i, 3, 2, metric::distance::P_norm<double>(1));
-		std::cout << "H(X) General Minkowsky, 1: " << e << std::endl;
-
-		e = metric::distance::entropy<double, metric::distance::Manhatten<double>>(dataset_0_i, 3, 2, metric::distance::Manhatten<double>());
-		std::cout << "H(X) Manhatten: " << e << std::endl;
-
-		e = metric::distance::entropy<double, metric::distance::Chebyshev<double>>(dataset_0_i, 3, 2, metric::distance::Chebyshev<double>());
-		std::cout << "H(X) Chebyshev: " << e << std::endl;
-
-		e = metric::distance::entropy<double, metric::distance::Chebyshev<double>>(dataset_1_i, 3, 2, metric::distance::Chebyshev<double>());
-		std::cout << "H(Y) Chebyshev: " << e << std::endl;
-
-
-		std::cout << "\n";*/
-
-
-		//std::cout << "I(X,X) " << mutualInformation<double>(dataset_0_i, dataset_0_i) << std::endl;
-		//std::cout << "I(X,X) " << mutualInformation<double, metric::distance::Chebyshev<double>>(dataset_0, dataset_0, 3, metric::distance::Chebyshev<double>(), 1) << std::endl;
-		//std::cout << "I(Y,Y) " << mutualInformation<double>(dataset_1_i, dataset_1_i) << std::endl;
-		//std::cout << "I(Y,Y) " << mutualInformation<double, metric::distance::Chebyshev<double>>(dataset_1, dataset_1, 3, metric::distance::Chebyshev<double>(), 1) << std::endl;
-
-
-		//auto total_t1 = std::chrono::steady_clock::now();
-
-		//auto eX = entropy<double, metric::distance::Chebyshev<double>>(dataset_0_i, 3, 2, metric::distance::Chebyshev<double>());
-		//auto eY = entropy<double, metric::distance::Chebyshev<double>>(dataset_1_i, 3, 2, metric::distance::Chebyshev<double>());
-
-		//auto mi = mutualInformation<double>(dataset_0_i, dataset_1_i);
-		//std::cout << "I(X,Y) " << mi << std::endl;
-		////std::cout << "I(X,Y) " << mutualInformation<double, metric::distance::Chebyshev<double>>(dataset_0, dataset_1, 3, metric::distance::Chebyshev<double>(), 1) << std::endl;
-
-		//auto voi = eX + eY - 2 * mi;
-		//std::cout << "\n";
-		//std::cout << "\n";
-		//std::cout << "VOI = " << voi << std::endl;
-
-		//auto total_t2 = std::chrono::steady_clock::now();
-		//auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(total_t2 - total_t1).count();
-		//std::cout << " (Total time = " << elapsed / 1000000 << " s)" << std::endl;
-
-		////////////////////
-
-		/*double ooc;
-		std::vector<double> vois;
-		std::vector<double> ooces;
-		std::vector<double> importantes;
-		std::vector<std::vector<double>> resampledFeature_0;
-		std::vector<std::vector<double>> resampledFeature_1;*/
-
-		std::vector<double> importances(features.size() + 1, -1);
-		std::vector<double> vois(features.size() + 1, -1);
-		std::vector<double> oocs(features.size() + 1, -1);
-
-		auto total_t1 = std::chrono::steady_clock::now();
-
-		unsigned concurentThreadsSupported = std::thread::hardware_concurrency();
-		std::cout << "Num cores: " << concurentThreadsSupported << std::endl;
-		ThreadPool pool(concurentThreadsSupported);
-		const int count = features.size();
-		Semaphore sem;
-
-		for (int featureIndex = 0; featureIndex < count; ++featureIndex)
-		{
-			/*pool.execute([featureIndex, &sem, &importances, &dataset_0, &dataset_1]() {
-				importances.at(featureIndex) = runImportance(featureIndex, dataset_0, dataset_1);
-				sem.notify();
-			});*/
-			pool.execute([featureIndex, &sem, &vois, &oocs, &dataset_0_i, &dataset_1_i]() {
-				double voi = -INFINITY;
-				double ooc = -INFINITY;
-
-				try {
-					std::tie(voi, ooc) = runImportance(featureIndex, dataset_0_i, dataset_1_i);
-				}
-				catch (const std::runtime_error& e) {
-					std::cout << "feature #" << featureIndex << ": runtime error: " << e.what() << std::endl;
-				}
-				catch (const std::exception& e) {
-					std::cout << "feature #" << featureIndex << ": exception: " << e.what() << std::endl;
-				}
-				catch (...) {
-					std::cout << "feature #" << featureIndex << ": unknown error" << std::endl;
-				}
-
-				oocs.at(featureIndex) = ooc;
-				vois.at(featureIndex) = voi;
-
-				mu.lock();
-				std::cout << "feature #" << featureIndex << ": finished" << std::endl;
-				mu.unlock();
-
-				sem.notify();
-			});
-
-			//auto imp = runImportance(featureIndex, dataset_0_i, dataset_1_i);
-			//std::wcout << "PMQ and VOI ends, imp = " << imp << std::endl;
-		}
-		for (int i = 0; i < count; ++i)
-		{
-			sem.wait();
-		}
-		pool.close();
-
-
-		double min = vois[0];
-		double max = vois[0];
-		for (auto i = 0; i < vois.size(); ++i)
-		{
-			if (vois[i] > max)
-			{
-				max = vois[i];
-			}
-			if (vois[i] < min)
-			{
-				min = vois[i];
-			}
-		}
-		double range = max - min;
-		if (range == 0)
-		{
-			range = 1;
-		}
-		for (auto i = 0; i < vois.size(); ++i)
-		{
-			vois[i] = (vois[i] - min) / range;
-		}
-
-		auto total_t2 = std::chrono::steady_clock::now();
-		auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(total_t2 - total_t1).count();
-		std::wcout << "PMQ and VOI ends";
-		std::wcout << '\n';
-		std::wcout << '\n';
-		std::wcout << '\n';
-
-		vois[vois.size() - 1] = 0;
-		oocs[oocs.size() - 1] = 1;
-
-		std::vector<Record> importancesAsRecord;
-		Record voi_r(vois);
-		importancesAsRecord.push_back(voi_r);
-		Record ooc_r(oocs);
-		importancesAsRecord.push_back(ooc_r);
-		printRecords(importancesAsRecord, features, 10, 10, 15);
-		std::wcout << " (Total time = " << elapsed / 1000000 << " s)" << std::endl;
-		std::wcout << '\n';
-		std::wcout << '\n';
-
-
-		saveToCsv("PMQxVOI_result.csv", importancesAsRecord, features);
+		targetFeatureIndex = lookupFeatureIndex(featureName, features);
 	}
+	else
+	{
+
+		PGconn     *conn = NULL;
+
+		conn = ConnectDB();
+
+		auto numFeatures = countFeatures(conn);
+
+		std::cout << "num features: " << numFeatures << std::endl;
+
+		features = getFeatures(conn);
+
+		printFeatures(features, 5);
+
+		targetFeatureIndex = lookupFeatureIndex(featureName, features);
+
+		std::cout << "feature " << featureName << " id: " << features[targetFeatureIndex].id << std::endl;
+
+		timestamps = getTargetTimestamps(conn, features[targetFeatureIndex].id);
+
+		vector_print(timestamps, 5);
+
+		//
+
+		auto t1 = std::chrono::steady_clock::now();
+		/*for (int i = 0; i < timestamps.size(); ++i)
+		{
+			records.push_back(getSensorRecord(conn, timestamps[i], features));
+		}*/
+		std::vector<std::string> cuttimestamps(timestamps.begin() + 2000, timestamps.begin() + 2170);
+		records = getAllSensorRecords(conn, features, cuttimestamps);
+		//records = getAllSensorRecords(conn, features, timestamps);
+		auto t2 = std::chrono::steady_clock::now();
+
+		std::cout << '\n';
+		std::cout << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000 << " s)" << std::endl;
+		std::cout << '\n';
+
+		saveToCsv(sensorDataCsvFilename, records, features);
+
+		//auto dataset_0 = getSensorData(conn, "SELECT * FROM public.sensordata WHERE date = '2018-12-10 23:43:15' LIMIT 100", features);
+		//auto dataset_0 = getSensorData(conn, "SELECT * FROM public.sensordata WHERE metaid @> '{1,7,8}'::int[] LIMIT 10000");
+		//auto dataset_1 = getSensorData(conn, "SELECT * FROM public.sensordata WHERE metaid @> '{1,7,8}'::int[] AND value = '1' LIMIT 100");
+		CloseConn(conn);
+	}
+
+	printRecords(records, features, 10, 10, 15);
+
+
+	std::cout << '\n';
+	std::cout << '\n';
+
+	std::cout << "feature " << featureName << " index: " << targetFeatureIndex << std::endl;
+	std::cout << "feature " << featureName << " label: " << features[targetFeatureIndex].bezeichnung << std::endl;
+
+	cross::filter<Record> recordsFilter(records);
+	std::vector<Record> filtered_results;
+	auto featureFilter = recordsFilter.dimension([](Record r) { return r[targetFeatureIndex]; });
+	featureFilter.filter(0);
+	//featureFilter.filter([](auto d) { return d >= 80; });
+	auto dataset_0 = recordsFilter.all_filtered();
+	std::cout << '\n';
+	std::cout << '\n';
+	std::cout << featureName << " == 0" << std::endl;
+	printRecords(dataset_0, features, 10, 10, 15);
+
+	//featureFilter.filter();
+	//featureFilter.filter(1);
+	////featureFilter.filter([](auto d) { return d < 80; });
+	//auto dataset_1 = recordsFilter.all_filtered();
+	//std::cout << '\n';
+	//std::cout << '\n';
+	//std::cout << featureName << " == 1" << std::endl;
+	//printRecords(dataset_1, features, 10, 10, 15);
+
+	////////////////////
+
+	std::cout << '\n';
+	std::cout << '\n';
+	auto events = getEvents<double>(records, targetFeatureIndex);
+	std::cout << "mailfunction events: " << events.size() << std::endl;
+
+	////////////////////
+
+	std::vector<Record> mailfunctedDataset;
+	std::vector<Record> validDataset;
+
+	std::tie(mailfunctedDataset, validDataset) = splitMailfunctionValues(dataset_0, events, 300);
+
+
+	saveToCsv("mailfunctedDataset.csv", mailfunctedDataset, features);
+
+	////////////////////
+
+	std::cout << '\n';
+	std::cout << '\n';
+	std::cout << "Resampled:" << std::endl;
+	auto dataset_0_i = resample<double>(mailfunctedDataset, 100);
+	auto dataset_1_i = resample<double>(validDataset, 100);
+
+	//auto records_i = resample<double>(records, 5000);
+	//saveToCsv("sensorsRecords_1000.csv", records_i, features);
+
+
+	/*auto e = entropy<double, metric::distance::P_norm<double>>(dataset_0_i, 3, 2, metric::distance::P_norm<double>(3));
+	std::cout << "H(X) General Minkowsky, 3: " << e << std::endl;
+
+	e = metric::distance::entropy<double, metric::distance::P_norm<double>>(dataset_0_i, 3, 2, metric::distance::P_norm<double>(2));
+	std::cout << "H(X) General Minkowsky, 2: " << e << std::endl;
+
+	e = metric::distance::entropy<double, metric::distance::Euclidian<double>>(dataset_0_i, 3, 2, metric::distance::Euclidian<double>());
+	std::cout << "H(X) Euclidean: " << e << std::endl;
+
+	e = metric::distance::entropy<double, metric::distance::P_norm<double>>(dataset_0_i, 3, 2, metric::distance::P_norm<double>(1));
+	std::cout << "H(X) General Minkowsky, 1: " << e << std::endl;
+
+	e = metric::distance::entropy<double, metric::distance::Manhatten<double>>(dataset_0_i, 3, 2, metric::distance::Manhatten<double>());
+	std::cout << "H(X) Manhatten: " << e << std::endl;
+
+	e = metric::distance::entropy<double, metric::distance::Chebyshev<double>>(dataset_0_i, 3, 2, metric::distance::Chebyshev<double>());
+	std::cout << "H(X) Chebyshev: " << e << std::endl;
+
+	e = metric::distance::entropy<double, metric::distance::Chebyshev<double>>(dataset_1_i, 3, 2, metric::distance::Chebyshev<double>());
+	std::cout << "H(Y) Chebyshev: " << e << std::endl;
+
+
+	std::cout << "\n";*/
+
+
+	//std::cout << "I(X,X) " << mutualInformation<double>(dataset_0_i, dataset_0_i) << std::endl;
+	//std::cout << "I(X,X) " << mutualInformation<double, metric::distance::Chebyshev<double>>(dataset_0, dataset_0, 3, metric::distance::Chebyshev<double>(), 1) << std::endl;
+	//std::cout << "I(Y,Y) " << mutualInformation<double>(dataset_1_i, dataset_1_i) << std::endl;
+	//std::cout << "I(Y,Y) " << mutualInformation<double, metric::distance::Chebyshev<double>>(dataset_1, dataset_1, 3, metric::distance::Chebyshev<double>(), 1) << std::endl;
+
+
+	//auto total_t1 = std::chrono::steady_clock::now();
+
+	//auto eX = entropy<double, metric::distance::Chebyshev<double>>(dataset_0_i, 3, 2, metric::distance::Chebyshev<double>());
+	//auto eY = entropy<double, metric::distance::Chebyshev<double>>(dataset_1_i, 3, 2, metric::distance::Chebyshev<double>());
+
+	//auto mi = mutualInformation<double>(dataset_0_i, dataset_1_i);
+	//std::cout << "I(X,Y) " << mi << std::endl;
+	////std::cout << "I(X,Y) " << mutualInformation<double, metric::distance::Chebyshev<double>>(dataset_0, dataset_1, 3, metric::distance::Chebyshev<double>(), 1) << std::endl;
+
+	//auto voi = eX + eY - 2 * mi;
+	//std::cout << "\n";
+	//std::cout << "\n";
+	//std::cout << "VOI = " << voi << std::endl;
+
+	//auto total_t2 = std::chrono::steady_clock::now();
+	//auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(total_t2 - total_t1).count();
+	//std::cout << " (Total time = " << elapsed / 1000000 << " s)" << std::endl;
+
+	////////////////////
+
+	/*double ooc;
+	std::vector<double> vois;
+	std::vector<double> ooces;
+	std::vector<double> importantes;
+	std::vector<std::vector<double>> resampledFeature_0;
+	std::vector<std::vector<double>> resampledFeature_1;*/
+
+	std::vector<double> importances(features.size() + 1, -1);
+	std::vector<double> vois(features.size() + 1, -1);
+	std::vector<double> oocs(features.size() + 1, -1);
+
+	auto total_t1 = std::chrono::steady_clock::now();
+
+	unsigned concurentThreadsSupported = std::thread::hardware_concurrency();
+	std::cout << "Num cores: " << concurentThreadsSupported << std::endl;
+	ThreadPool pool(concurentThreadsSupported);
+	const int count = features.size();
+	Semaphore sem;
+
+	for (int featureIndex = 0; featureIndex < count; ++featureIndex)
+	{
+		/*pool.execute([featureIndex, &sem, &importances, &dataset_0, &dataset_1]() {
+			importances.at(featureIndex) = runImportance(featureIndex, dataset_0, dataset_1);
+			sem.notify();
+		});*/
+		pool.execute([featureIndex, &sem, &vois, &oocs, &dataset_0_i, &dataset_1_i]() {
+			double voi = -INFINITY;
+			double ooc = -INFINITY;
+
+			try {
+				std::tie(voi, ooc) = runImportance(featureIndex, dataset_0_i, dataset_1_i);
+			}
+			catch (const std::runtime_error& e) {
+				std::cout << "feature #" << featureIndex << ": runtime error: " << e.what() << std::endl;
+			}
+			catch (const std::exception& e) {
+				std::cout << "feature #" << featureIndex << ": exception: " << e.what() << std::endl;
+			}
+			catch (...) {
+				std::cout << "feature #" << featureIndex << ": unknown error" << std::endl;
+			}
+
+			oocs.at(featureIndex) = ooc;
+			vois.at(featureIndex) = voi;
+
+			mu.lock();
+			std::cout << "feature #" << featureIndex << ": finished" << std::endl;
+			mu.unlock();
+
+			sem.notify();
+		});
+
+		//auto imp = runImportance(featureIndex, dataset_0_i, dataset_1_i);
+		//std::wcout << "PMQ and VOI ends, imp = " << imp << std::endl;
+	}
+	for (int i = 0; i < count; ++i)
+	{
+		sem.wait();
+	}
+	pool.close();
+
+
+	double min = vois[0];
+	double max = vois[0];
+	for (auto i = 0; i < vois.size(); ++i)
+	{
+		if (vois[i] > max)
+		{
+			max = vois[i];
+		}
+		if (vois[i] < min)
+		{
+			min = vois[i];
+		}
+	}
+	double range = max - min;
+	if (range == 0)
+	{
+		range = 1;
+	}
+	for (auto i = 0; i < vois.size(); ++i)
+	{
+		vois[i] = (vois[i] - min) / range;
+	}
+
+	auto total_t2 = std::chrono::steady_clock::now();
+	auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(total_t2 - total_t1).count();
+	std::wcout << "PMQ and VOI ends";
+	std::wcout << '\n';
+	std::wcout << '\n';
+	std::wcout << '\n';
+
+	vois[vois.size() - 1] = 0;
+	oocs[oocs.size() - 1] = 1;
+
+	std::vector<Record> importancesAsRecord;
+	Record voi_r(vois);
+	importancesAsRecord.push_back(voi_r);
+	Record ooc_r(oocs);
+	importancesAsRecord.push_back(ooc_r);
+	printRecords(importancesAsRecord, features, 10, 10, 15);
+	std::wcout << " (Total time = " << elapsed / 1000000 << " s)" << std::endl;
+	std::wcout << '\n';
+	std::wcout << '\n';
+
+
+	saveToCsv("PMQxVOI_result.csv", importancesAsRecord, features);
 
 	/////////////////
 
@@ -1452,7 +1450,7 @@ int main(int argc, char *argv[])
 
 		for (auto k = i + 1; k < clusters[topRightNodeIndex].size(); ++k)
 		{
-			sensorsCorrelations[i][k] = runCorrelation(topRightNodeIndex][i]].index, dataset_0_i, dataset_1_i);
+			sensorsCorrelations[i][k] = runCorrelation(clusters[topRightNodeIndex][i], dataset_0_i, dataset_1_i);
 		}
 	}
 	std::wcout << '\n';
