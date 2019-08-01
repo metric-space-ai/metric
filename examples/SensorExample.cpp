@@ -22,6 +22,7 @@ Copyright (c) 2019 Panda Team
 #include <math.h>  
 #include <string.h>
 #include <algorithm>
+#include <numeric>      // std::iota
 
 #include <libpq-fe.h>
 
@@ -1039,6 +1040,20 @@ std::tuple <std::vector<Record>, std::vector<Record>> splitMailfunctionValues(st
 	return std::make_tuple(mailfuncted, valid);
 }
 
+template <typename T>
+std::vector<size_t> sort_indexes(const std::vector<T> &v) {
+
+	// initialize original index locations
+	std::vector<size_t> idx(v.size());
+	iota(idx.begin(), idx.end(), 0);
+
+	// sort indexes based on comparing values in v
+	std::sort(idx.begin(), idx.end(),
+		[&v](size_t i1, size_t i2) {return v[i1] > v[i2]; });
+
+	return idx;
+}
+
 int main(int argc, char *argv[])
 {
 	bool FROM_CSV = false;
@@ -1359,95 +1374,110 @@ int main(int argc, char *argv[])
 
 	saveToCsv("PMQxVOI_result.csv", importancesAsRecord, features);
 
+	for (size_t i = 0; i < vois.size() - 1; i++)
+	{
+		importances[i] = vois[i] * oocs[i];
+	}
+
+	auto importances_indexes = sort_indexes(importances);
+
+	std::vector<Feature> top_200;
+
+	for (size_t i = 0; i < 200; i++)
+	{
+		top_200.push_back(features[importances_indexes[i]]);
+		std::cout << "Importance = " << importances[importances_indexes[i]] << std::endl;
+	}
+
 	/////////////////
 
 
-	unsigned int iterations = 1000;
+	//unsigned int iterations = 1000;
 
-	using Vector = std::vector<double>;
-	using Metric = metric::distance::Euclidian<Vector::value_type>;
-	using Graph = metric::graph::Grid6;
+	//using Vector = std::vector<double>;
+	//using Metric = metric::distance::Euclidian<Vector::value_type>;
+	//using Graph = metric::graph::Grid6;
 
-	int dimensionX = 5;
+	//int dimensionX = 5;
 
-	metric::mapping::SOM<Vector, Metric, Graph> DR(dimensionX, dimensionX);
+	//metric::mapping::SOM<Vector, Metric, Graph> DR(dimensionX, dimensionX);
 
-	if (!DR.isValid()) {
-		std::cout << "SOM is not valid" << std::endl;
-		return EXIT_FAILURE;
-	}
+	//if (!DR.isValid()) {
+	//	std::cout << "SOM is not valid" << std::endl;
+	//	return EXIT_FAILURE;
+	//}
 
 
-	std::vector<Record> VOIxOOCdata;
-	std::tie(VOIxOOCdata, features) = readCsvData(VOIxOOCcsvFilename);
+	//std::vector<Record> VOIxOOCdata;
+	//std::tie(VOIxOOCdata, features) = readCsvData(VOIxOOCcsvFilename);
 
-	std::vector<std::vector<double>> somSpace;
-	std::vector<std::vector<int>> clusters(dimensionX * dimensionX, std::vector<int>());
+	//std::vector<std::vector<double>> somSpace;
+	//std::vector<std::vector<int>> clusters(dimensionX * dimensionX, std::vector<int>());
 
-	for (auto i = 0; i < VOIxOOCdata[0].size(); ++i)
-	{
-		if (VOIxOOCdata[0][i] != -INF && VOIxOOCdata[1][i] != -INF)
-		{
-			somSpace.push_back({ VOIxOOCdata[0][i], VOIxOOCdata[1][i] });
-		}
-	}
+	//for (auto i = 0; i < VOIxOOCdata[0].size(); ++i)
+	//{
+	//	if (VOIxOOCdata[0][i] != -INF && VOIxOOCdata[1][i] != -INF)
+	//	{
+	//		somSpace.push_back({ VOIxOOCdata[0][i], VOIxOOCdata[1][i] });
+	//	}
+	//}
 
-	//somSpace.push_back({ 0, 0 });
-	//somSpace.push_back({ 0, 1 });
-	//somSpace.push_back({ 1, 0 });
-	//somSpace.push_back({ 1, 1 });
-	//somSpace.push_back({ 5, 5 });
-	//somSpace.push_back({ 5, 6 });
-	//somSpace.push_back({ 6, 5 });
-	//somSpace.push_back({ 6, 6 });
+	////somSpace.push_back({ 0, 0 });
+	////somSpace.push_back({ 0, 1 });
+	////somSpace.push_back({ 1, 0 });
+	////somSpace.push_back({ 1, 1 });
+	////somSpace.push_back({ 5, 5 });
+	////somSpace.push_back({ 5, 6 });
+	////somSpace.push_back({ 6, 5 });
+	////somSpace.push_back({ 6, 6 });
 
-	/* Train */
-	const auto t1 = std::chrono::steady_clock::now();
-	DR.train(somSpace, iterations);
-	const auto t2 = std::chrono::steady_clock::now();
+	///* Train */
+	//const auto t1 = std::chrono::steady_clock::now();
+	//DR.train(somSpace, iterations);
+	//const auto t2 = std::chrono::steady_clock::now();
 
-	std::cout << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000 << "s)" << std::endl;
+	//std::cout << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000 << "s)" << std::endl;
 
-	std::cout << "size = " << DR.size() << std::endl;
+	//std::cout << "size = " << DR.size() << std::endl;
 
-	for (auto i = 0; i < somSpace.size(); ++i)
-	{
-		int cluster = DR.BMU(somSpace[i]);
-		clusters[cluster].push_back(i);
-	}
+	//for (auto i = 0; i < somSpace.size(); ++i)
+	//{
+	//	int cluster = DR.BMU(somSpace[i]);
+	//	clusters[cluster].push_back(i);
+	//}
 
-	std::cout << "Nodes " << std::endl;
-	auto nodes = DR.nodes();
-	std::vector<double> topRightNode = nodes[0];
-	int topRightNodeIndex = 0;
-	for (auto i = 0; i < nodes.size(); ++i)
-	{
-		if (nodes[i][0] > topRightNode[0] || nodes[i][1] > topRightNode[1])
-		{
-			topRightNode = nodes[i];
-			topRightNodeIndex = i;
-		}
-		vector_print(nodes[i]);
-		std::cout << "Cluster #" << i << " size: " << clusters[i].size() << std::endl;
-	}
-	std::wcout << '\n';
-	std::wcout << '\n';
-	std::cout << "Top right cluster, feature indexes: " << topRightNodeIndex << std::endl;
-	std::cout << "Cluster size: " << clusters[topRightNodeIndex].size() << std::endl;
-	std::cout << "Top right cluster indexes: " << std::endl;
+	//std::cout << "Nodes " << std::endl;
+	//auto nodes = DR.nodes();
+	//std::vector<double> topRightNode = nodes[0];
+	//int topRightNodeIndex = 0;
+	//for (auto i = 0; i < nodes.size(); ++i)
+	//{
+	//	if (nodes[i][0] > topRightNode[0] || nodes[i][1] > topRightNode[1])
+	//	{
+	//		topRightNode = nodes[i];
+	//		topRightNodeIndex = i;
+	//	}
+	//	vector_print(nodes[i]);
+	//	std::cout << "Cluster #" << i << " size: " << clusters[i].size() << std::endl;
+	//}
+	//std::wcout << '\n';
+	//std::wcout << '\n';
+	//std::cout << "Top right cluster, feature indexes: " << topRightNodeIndex << std::endl;
+	//std::cout << "Cluster size: " << clusters[topRightNodeIndex].size() << std::endl;
+	//std::cout << "Top right cluster indexes: " << std::endl;
 
-	vector_print(clusters[topRightNodeIndex]);
+	//vector_print(clusters[topRightNodeIndex]);
 
 	std::vector<std::string> sensorNames;
-	std::vector<std::vector<double>> sensorsCorrelations(clusters[topRightNodeIndex].size(), std::vector<double>(clusters[topRightNodeIndex].size()));
+	std::vector<std::vector<double>> sensorsCorrelations(top_200.size(), std::vector<double>(top_200.size()));
 	std::wcout << '\n';
 	std::wcout << '\n';
 	std::cout << "Top right cluster features: " << std::endl;
-	for (auto i = 0; i < clusters[topRightNodeIndex].size(); ++i)
+	for (auto i = 0; i < top_200.size(); ++i)
 	{
 		try {
-			std::cout << i + 1 << "/" << clusters[topRightNodeIndex].size() << " -> feature name: " << features[clusters[topRightNodeIndex][i]].bezeichnung << " " << features[clusters[topRightNodeIndex][i]].id << std::endl;
-			sensorNames.push_back(features[clusters[topRightNodeIndex][i]].bezeichnung);
+			std::cout << i + 1 << "/" << top_200.size() << " -> feature name: " << top_200[i].bezeichnung << " " << top_200[i].id << std::endl;
+			sensorNames.push_back(top_200[i].bezeichnung);
 		}
 		catch (const std::runtime_error& e) {
 			std::cout << "feature #" << i << ": runtime error: " << e.what() << std::endl;
