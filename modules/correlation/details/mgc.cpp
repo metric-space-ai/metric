@@ -32,7 +32,7 @@
 
 //#include "metrics.hpp"
 #include "../../distance/metric_distance.hpp"
-#include "connected-components.hpp"
+#include "../../../utils/graph/connected-components.hpp"
 
 
 namespace metric
@@ -234,7 +234,7 @@ blaze::DynamicMatrix<bool> MGC_direct::significant_local_correlation(const blaze
 	R = blaze::map(localCorr, [thres](T e){ return e > thres ? true : false;  });
 
 
-	auto components = largest_connected_component(R);
+	auto components = metric::graph::largest_connected_component(R);
 
 	if (components.empty()) {
 		return blaze::DynamicMatrix<bool>(R.rows(), R.columns(), false);
