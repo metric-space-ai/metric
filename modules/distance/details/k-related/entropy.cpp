@@ -17,8 +17,10 @@ Copyright (c) 2019 Panda Team
 
 //#include <boost/container_hash/hash.hpp> // replaced with <boost/functional/hash.hpp>, TODO check
 #include <boost/functional/hash.hpp>
-// for digamma function
+
 #include <boost/math/special_functions/digamma.hpp>
+#include <boost/math/special_functions/gamma.hpp>
+#include <boost/math/constants/constants.hpp>
 
 #include "../../../space/details/tree.hpp"
 #include "entropy.hpp"
@@ -95,6 +97,7 @@ template <typename T> std::vector<T> unique(const std::vector<T> &data) {
 
 } // namespace
 
+
 template <typename T, typename Metric, typename L>
 typename std::enable_if<!std::is_integral<T>::value, T>::type
 entropy(std::vector<std::vector<T>> data, std::size_t k, L logbase,
@@ -147,6 +150,51 @@ entropy(std::vector<std::vector<T>> data, L logbase) {
   // return 0;
   // TODO implement using pluginEstimator
 }
+
+
+
+
+// Kozachenko-Leonenko estimator based on https://hal.archives-ouvertes.fr/hal-00331300/document (Shannon diff. entropy, q = 1)
+
+template <typename T, typename Metric = metric::distance::Euclidian<T>, typename L = T> // TODO check if L = T is correct
+typename std::enable_if<!std::is_integral<T>::value, T>::type
+entropy_kl(std::vector<std::vector<T>> data, std::size_t k = 3, L logbase = 2, Metric metric = Metric())
+{
+    if (data.empty() || data[0].empty())
+        return 0;
+    if (data.size() < k + 1)
+        throw std::invalid_argument("number of points in dataset must be larger than k");
+    if constexpr (!std::is_same<Metric, typename metric::distance::Euclidian<T>>::value)
+        throw std::logic_error("entropy function is now implemented only for Euclidean distance");
+
+    metric::space::Tree<std::vector<T>, Metric> tree(data, -1, metric);
+
+    size_t N = data.size();
+    size_t m = data[0].size();
+    T two = 2.0; // this is in order to make types match the log template function
+    T sum = 0;
+    auto Pi = boost::math::constants::pi<T>();
+    T half_m = m/two;
+    auto coeff =
+            (N - 1)
+            * exp(-boost::math::digamma(k + 1))
+            * std::pow(Pi, half_m) / boost::math::tgamma(half_m + 1);
+
+    for (std::size_t i = 0; i < N; i++)
+    {
+        auto neighbors = tree.knn(data[i], k + 1);
+        auto ro = neighbors.back().second;
+        sum = sum + log(logbase, coeff * std::pow(ro, m));
+    }
+
+    return sum;
+
+}
+
+
+
+
+
 
 template <typename T>
 std::pair<std::vector<double>,
@@ -359,6 +407,39 @@ VOI_normalized<V>::operator()(const Container<Container<El, Allocator_inner>, Al
     using Cheb = metric::distance::Chebyshev<El>;
     auto mi = mutualInformation<El>(a, b, this->k);
     return 1 - ( mi / (entropy<El, Cheb>(a, this->k, this->logbase, Cheb()) + entropy<El, Cheb>(b, this->k, this->logbase, Cheb()) - mi) );
+}
+
+
+
+
+// VOI based on Kozachenko-Leonenko entropy estimator
+
+template <typename V>
+template <template<class, class> class Container, class Allocator_inner, class Allocator_outer, class El>
+typename std::enable_if<!std::is_integral<El>::value, V>::type
+VOI_kl<V>::operator()(const Container<Container<El, Allocator_inner>, Allocator_outer> &a,
+                   const Container<Container<El, Allocator_inner>, Allocator_outer> &b) const
+{
+    std::vector<std::vector<El>> ab;
+    combine(a, b, ab);
+    return  2 * entropy_kl(ab) - entropy_kl(a) - entropy_kl(b);
+}
+
+
+
+template <typename V>
+template <template<class, class> class Container, class Allocator_inner, class Allocator_outer, class El>
+typename std::enable_if<!std::is_integral<El>::value, V>::type
+VOI_normalized_kl<V>::operator()(const Container<Container<El, Allocator_inner>, Allocator_outer> &a,
+                   const Container<Container<El, Allocator_inner>, Allocator_outer> &b) const
+{
+    auto entropy_a = entropy_kl(a);
+    auto entropy_b = entropy_kl(b);
+    std::vector<std::vector<El>> ab;
+    combine(a, b, ab);
+    auto joint_entropy = entropy_kl(ab);
+    auto mi = entropy_a + entropy_b - joint_entropy;
+    return 1 - ( mi / (entropy_a + entropy_b - mi) );
 }
 
 

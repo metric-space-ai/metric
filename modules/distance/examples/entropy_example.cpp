@@ -102,6 +102,9 @@ int main() {
     e = entropy(v, 3, 2.0, metric::distance::Euclidian<double>());
     std::cout << "Euclidean: " << e << std::endl;
 
+    e = entropy_kl(v, 3, 2.0, metric::distance::Euclidian<double>());
+    std::cout << "Euclidean Kozachenko-Leonenko: " << e << std::endl;
+
     e = entropy(v, 3, 2.0, metric::distance::P_norm<double>(1));
     std::cout << "General Minkowsky, 1: " << e << std::endl;
 
@@ -219,7 +222,7 @@ int main() {
     std::vector<std::vector<double>> v2 = {{5,5}, {2,2}, {3,3}, {1,1}};
 
 
-    //* // MI for short fixed vectors
+    /* // MI for short fixed vectors
 
     std::cout << "\n";
 
@@ -552,6 +555,7 @@ int main() {
 	std::cout << "eY = " << eY << std::endl;
     std::cout << "mi = " << mi << std::endl;
     std::cout << "voi = " << voi << std::endl;
+
     for (size_t i = 0; i<5; i++)
         std::cout << "voi = " << metric::distance::variationOfInformation(v31, v32) << std::endl;
     for (size_t i = 0; i<5; i++)
@@ -565,6 +569,14 @@ int main() {
     for (size_t i = 0; i<5; i++)
         std::cout << "voi_norm_functor = " << f_voi_norm(v31, v32) << std::endl;
 
+
+    auto f_voi_kl = metric::distance::VOI_kl<long double>();
+    for (size_t i = 0; i<5; i++)
+        std::cout << "KL voi_functor = " << f_voi_kl(v31, v32) << std::endl;
+
+    auto f_voi_norm_kl = metric::distance::VOI_normalized_kl();
+    for (size_t i = 0; i<5; i++)
+        std::cout << "KL voi_norm_functor = " << f_voi_norm_kl(v31, v32) << std::endl;
 
     //*/
 

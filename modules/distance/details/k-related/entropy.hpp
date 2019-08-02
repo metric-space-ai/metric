@@ -109,6 +109,52 @@ VOI_normalized(int, V) -> VOI_normalized<double>;
 
 
 
+
+
+// VOI based on Kozachenko-Leonenko entropy estimator
+
+template <typename V = double>
+struct VOI_kl
+{
+    using distance_type = V;
+
+    int k = 3;
+    V logbase = 2;
+
+    explicit VOI_kl(int k_ = 3, V logbase_ = 2) : k(k_), logbase(logbase_) {}
+
+    template<template<class, class> class Container, class Allocator_inner, class Allocator_outer, class El>
+    typename std::enable_if<!std::is_integral<El>::value, V>::type  // only real values are accepted
+    operator()(const Container<Container<El, Allocator_inner>, Allocator_outer> &a,
+               const Container<Container<El, Allocator_inner>, Allocator_outer> &b) const;
+
+    // TODO add support of 1D random values passed in simple containers
+
+};
+
+template <typename V>
+VOI_kl(int, V) -> VOI_kl<double>;
+
+
+template <typename V = double>
+struct VOI_normalized_kl : VOI_kl<V>
+{
+    explicit VOI_normalized_kl(int k_ = 3, V logbase_ = 2): VOI_kl<V>(k_, logbase_) {}
+
+    template<template<class, class> class Container, class Allocator_inner, class Allocator_outer, class El>
+    typename std::enable_if<!std::is_integral<El>::value, V>::type  // only real values are accepted
+    operator()(const Container<Container<El, Allocator_inner>, Allocator_outer> &a,
+               const Container<Container<El, Allocator_inner>, Allocator_outer> &b) const;
+
+    // TODO add support of 1D random values passed in simple containers
+
+};
+
+template <typename V>
+VOI_normalized_kl(int, V) -> VOI_normalized_kl<double>;
+
+
+
 } // namespace distance
 } // namespace metric
 
