@@ -1546,7 +1546,9 @@ int main(int argc, char *argv[])
 	for (auto i = 0; i < sensorsClusters.size(); ++i)
 	{
 		std::cout << "cluster #" << i << std::endl;
-		std::vector<std::vector<double>> correlations(sensorsClusters[i].size(), std::vector<double>(sensorsClusters[i].size()));
+		std::vector<std::vector<double>> correlationsMailfuncted(sensorsClusters[i].size(), std::vector<double>(sensorsClusters[i].size()));
+		std::vector<std::vector<double>> correlationsAll(sensorsClusters[i].size(), std::vector<double>(sensorsClusters[i].size()));
+		std::vector<std::vector<double>> correlationsDifference(sensorsClusters[i].size(), std::vector<double>(sensorsClusters[i].size()));
 		for (size_t j = 0; j < sensorsClusters[i].size(); j++)
 		{
 			std::cout << sensorsClusters[i][j] << std::endl;
@@ -1556,11 +1558,17 @@ int main(int argc, char *argv[])
 			for (auto k = j + 1; k < sensorsClusters[i].size(); ++k)
 			{
 				feature2 = lookupFeatureIndex(sensorsClusters[i][k], features);
-				correlations[j][k] = runCorrelation(feature1, feature2, dataset_0_i);
+				correlationsMailfuncted[j][k] = runCorrelation(feature1, feature2, dataset_0_i);
+				correlationsAll[j][k] = runCorrelation(feature1, feature2, dataset_1_i);
+				correlationsDifference[j][k] = correlationsAll[j][k] - correlationsMailfuncted[j][k];
 			}
 		}
-		std::cout << "Sensors correlation matrix: " << std::endl;
-		matrix_print(correlations);
+		std::cout << "Sensors correlation for mailfuncted data matrix: " << std::endl;
+		matrix_print(correlationsMailfuncted);
+		std::cout << "Sensors correlation for all data matrix: " << std::endl;
+		matrix_print(correlationsAll);
+		std::cout << "Difference netween correlations matrix: " << std::endl;
+		matrix_print(correlationsDifference);
 		std::cout << std::endl;
 	}
 
