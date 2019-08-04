@@ -1206,7 +1206,7 @@ int main(int argc, char *argv[])
 
 	std::tie(mailfunctedDatasetByEvent, validDatasetByEvent, mailfunctedDataset, validDataset) = splitMailfunctionValues(dataset_0, events, 600, 6);
 
-	for (int i = 0; i < mailfunctedDataset.size(); ++i)
+	for (int i = 0; i < mailfunctedDatasetByEvent.size(); ++i)
 	{
 		saveToCsv("mailfunctedDataset_event_" + std::to_string(i) + ".csv", mailfunctedDatasetByEvent[i], features);
 		saveToCsv("allDataset_event_" + std::to_string(i) + ".csv", validDatasetByEvent[i], features);
