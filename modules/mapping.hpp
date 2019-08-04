@@ -29,7 +29,7 @@ Copyright (c) PANDA Team
 // #include "mapping/affprop.hpp"
 // #include "mapping/dbscan.hpp"
 // #include "mapping/kmeans.hpp"
-// #include "mapping/kmedoids.hpp"
+#include "mapping/kmedoids.hpp"
 
 
 #endif

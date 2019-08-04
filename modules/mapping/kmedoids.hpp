@@ -1,43 +1,25 @@
-/*This Source Code Form is subject to the terms of the Mozilla Public
+/*
+This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
 file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-Copyright (c) 2018 M.Welsch <michael@welsch.one> */
+Copyright (c) 2018 M.Welsch */
 
 
 #ifndef _METRIC_KMEDOIDS_HPP
 #define _METRIC_KMEDOIDS_HPP
 
+#include <tuple>
+#include <vector>
+
 
 namespace metric 
 {
-    
       namespace kmedoids_details {
         
-        // computes the (pairwaise) distance matrix
-            template <typename T>
-            std::tuple<std::vector<std::vector<T>> ,T>
-            distance_matrix(const std::vector<std::vector<T>> &data){
-                
-                    T sum = 0;
-                std::vector<std::vector<T>> matrix(data.size(), std::vector<T>(data.size())); //initialize
-                for (int i=0;i<data.size();++i){
-                    for (int j=i;j<data.size();++j){
-                        auto distance_function = metric::Euclidian<T>(); //generic_euclidian<Row>(); // functor
-                        T distance = distance_function(data[i],data[j]);
-                        matrix[i][j]= distance;
-                        matrix[j][i]= distance;
-                        if (i != j)
-                        sum += 2 * distance;
-                        else
-                        sum += distance;
-                    }
-                }
-                return {matrix,sum};
-            }
-            template <typename T>
-            T 
-            update_cluster(const std::vector<std::vector<T>> &D,
+            template <typename recType, typename Metric, typename T>
+            T
+            update_cluster(metric::Matrix<recType,Metric,T> &DM,
                 std::vector<int> &seeds,
                 std::vector<int> &assignments, 
                 std::vector<int> &sec_nearest,
@@ -52,13 +34,13 @@ namespace metric
     
                 
                 for (int i=0; i < assignments.size(); i++) {
-                    T    d1, d2;  // smallest, second smallest distance to medoid, respectively
+                    T   d1, d2;  // smallest, second smallest distance to medoid, respectively
                     int m1, m2;  // index of medoids with distances d1, d2 from object i, respectively
     
                     d1 = d2 = std::numeric_limits<T>::max();
                     m1 = m2 = seeds.size();
                     for (int m=0; m < seeds.size(); m++) {
-                        T d = D[i][seeds[m]];
+                        T d = DM(i,seeds[m]);
                         if (d < d1 || seeds[m] == i) {  // prefer the medoid in case of ties.
                             d2 = d1;  m2 = m1;
                             d1 = d;   m1 = m;
@@ -75,9 +57,9 @@ namespace metric
                 return total_distance;
             }
 
-            template <typename T>
+            template <typename recType, typename Metric, typename T>
             void 
-            init_medoids(int k, const std::vector<std::vector<T>> &D,     
+            init_medoids(int k, metric::Matrix<recType,Metric,T> &DM,     
                 std::vector<int> &seeds,
                 std::vector<int> &assignments, 
                 std::vector<int> &sec_nearest,
@@ -87,10 +69,10 @@ namespace metric
                 // find first object: object minimum distance to others
                 int first_medoid = 0;
                 T min_dissim = std::numeric_limits<T>::max();
-                for (int i=0; i < D[0].size(); i++) {
+                for (int i=0; i < DM.size(); i++) {
                     T total = 0;
-                    for (int j=0; j < D.size(); j++) {
-                        total += D[i][j];
+                    for (int j=0; j < DM.size(); j++) {
+                        total += DM(i,j);
                     }
                     if (total < min_dissim) {
                         min_dissim   = total;
@@ -99,20 +81,20 @@ namespace metric
                 }
                 // add first object to medoids and compute medoid ids.
                 seeds.push_back(first_medoid);
-                kmedoids_details::update_cluster(D,seeds,assignments,sec_nearest,counts);
+                kmedoids_details::update_cluster(DM,seeds,assignments,sec_nearest,counts);
     
                 // now select next k-1 objects according to KR's BUILD algorithm
                 for (int cur_k = 1; cur_k < k; cur_k++) {
                     int best_obj = 0;
                     T max_gain = 0;
-                    for (int i=0; i < D[0].size(); i++) {
+                    for (int i=0; i < DM.size(); i++) {
                         if (seeds[assignments[i]] == i) continue;
     
                         T gain = 0;
                         
-                        for (int j=0; j < D[0].size(); j++) {
-                            T Dj = D[j][seeds[assignments[j]]];  // D from j to its medoid
-                            gain += std::max(Dj - D[i][j], T(0));                 // gain from selecting i  
+                        for (int j=0; j < DM.size(); j++) {
+                            T DMj = DM(j,seeds[assignments[j]]);  // D from j to its medoid
+                            gain += std::max(DMj - DM(i,j), T(0));                 // gain from selecting i  
                         }
     
                         if (gain >= max_gain) {   // set the next medoid to the object that 
@@ -122,13 +104,13 @@ namespace metric
                     }
     
                     seeds.push_back(best_obj);
-                    kmedoids_details::update_cluster(D,seeds,assignments,sec_nearest,counts);
+                    kmedoids_details::update_cluster(DM,seeds,assignments,sec_nearest,counts);
                 }
             }
 
-            template <typename T>
+            template <typename recType, typename Metric,typename T>
             T 
-            cost(int i, int h, const std::vector<std::vector<T>> &D,
+            cost(int i, int h, metric::Matrix<recType,Metric,T> &DM,
                                 std::vector<int> &seeds,
                                 std::vector<int> &assignments, 
                                 std::vector<int> &sec_nearest){
@@ -136,17 +118,17 @@ namespace metric
                                     T total = 0;
                 for (int j = 0; j < assignments.size(); j++) {
                     int mi  = seeds[i];                // object id of medoid i
-                    T    dhj = D[h][j];               // distance between object h and object j
+                    T    dhj = DM(h,j);               // distance between object h and object j
     
                     int mj1 = seeds[assignments[j]];   // object id of j's nearest medoid
-                    T    dj1 = D[mj1][j];             // distance to j's nearest medoid
+                    T    dj1 = DM(mj1,j);             // distance to j's nearest medoid
     
                     // check if D bt/w medoid i and j is same as j's current nearest medoid.
-                    if (D[mi][j] == dj1) {
+                    if (DM(mi,j) == dj1) {
                         T dj2 = std::numeric_limits<T>::max();
                         if (seeds.size() > 1) {   // look at 2nd nearest if there's more than one medoid.
                             int mj2 = seeds[sec_nearest[j]];  // object id of j's 2nd-nearest medoid
-                            dj2 = D[mj2][j];                      // D to j's 2nd-nearest medoid
+                            dj2 = DM(mj2,j);                      // D to j's 2nd-nearest medoid
                         }
                         total += std::min(dj2, dhj) - dj1;
     
@@ -160,41 +142,49 @@ namespace metric
     
     } // namespace kmedoids_details
 
-    template <typename T>
-    std::tuple<std::vector<int>,std::vector<int>,std::vector<int>>
-    kmedoids(const std::vector<std::vector<T>> &data, 
-        int k){
+template <typename recType, typename Metric,typename T>
+std::tuple<std::vector<int>,std::vector<int>,std::vector<int>>
+kmedoids(metric::Matrix<recType,Metric,T> &DM, int k){
 
 
         // check arguments
-        int n = data.size();
+        size_t n = DM.size();
         
         assert(n >= 2); // error("There must be at least two points.")
         assert(k <= n); // Attempt to run PAM with more clusters than data.
         
-        auto distance_function = metric::Euclidian<T>(); //generic_euclidian<Row>(); // functor
-        // build the (pairwaise) distance matrix
-        auto [D,Dsum] = kmedoids_details::distance_matrix(data);
-        
+        //auto distance_function = Metric(); //generic_euclidian<Row>(); // functor
+        // sum up the distance matrix
+        T Dsum = 0;
+        for (int i=0;i<DM.size();++i){
+            for (int j=i;j<DM.size();++j){
+                auto distance = DM(i,j);
+                if (i != j)
+                    Dsum += 2 * distance;
+                else
+                    Dsum += distance;
+                    }
+        }
+
         std::vector<int> seeds(k);
         std::vector<int> counts(k,0);
         std::vector<int> assignments(n,0); 
-        std::vector<int> sec_nearest(n,0);      /// Index of second closest medoids.  Used by PAM.
-        T total_distance;              /// Total distance tp their medoid
-        T epsilon =  1e-15;                          /// Normalized sensitivity for convergence
+        std::vector<int> sec_nearest(n,0);      // Index of second closest medoids.  Used by PAM.
+        T total_distance;                       // Total distance tp their medoid
+        T epsilon =  1e-15;                     // Normalized sensitivity for convergence
 
 
         // set initianl medoids
-        kmedoids_details::init_medoids(k, D,seeds,assignments,sec_nearest,counts);
+        kmedoids_details::init_medoids(k, DM, seeds,assignments,sec_nearest,counts);
 
-        T tolerance = epsilon * Dsum / (D[0].size() * D.size());
+        T tolerance = epsilon * Dsum / (DM.size() * DM.size());
 
         while (true) {
             // initial cluster
             for (int i=0; i<counts.size();++i){
                 counts[i]=0;
             }
-            total_distance = kmedoids_details::update_cluster(D,seeds,assignments,sec_nearest,counts);
+            total_distance = kmedoids_details::update_cluster(DM,seeds,assignments,sec_nearest,counts);
 
             //vars to keep track of minimum
             T minTotalCost = std::numeric_limits<T>::max();
@@ -208,7 +198,7 @@ namespace metric
                     if (seeds[assignments[h]] == h) continue;
 
                     //see if the total cost of swapping i & h was less than min
-                    T curCost = kmedoids_details::cost(i, h, D,seeds,assignments,sec_nearest);
+                    T curCost = kmedoids_details::cost(i, h, DM,seeds,assignments,sec_nearest);
                     if (curCost < minTotalCost) {
                         minTotalCost = curCost;
                         minMedoid = i;
@@ -228,6 +218,7 @@ namespace metric
 
         return {assignments, seeds, counts};
     }
+
 
 
 // TO DO: dublicate version

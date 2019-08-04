@@ -14,14 +14,13 @@ Copyright (c) 2018 Michael Welsch
 
 namespace metric {
 
-    template <typename recType, typename Metric = metric::Euclidian<typename recType::value_type>,
-              typename distType = float>
+template <typename recType, typename Metric = metric::Euclidian<typename recType::value_type>, typename distType = float>
 class Matrix
 {
   private:
     /*** Properties ***/
     Metric metric_;
-    blaze::SymmetricMatrix<blaze::DynamicMatrix<distType>> D_;
+    blaze::SymmetricMatrix< blaze::DynamicMatrix<distType> > D_;
     std::vector<recType> data_;
 
   public:
@@ -29,7 +28,7 @@ class Matrix
     Matrix(Metric d = Metric());                                // empty Matrix
     Matrix(const recType &p, Metric d = Metric());              // Matrix with one data record
     Matrix(const std::vector<recType> &p, Metric d = Metric()); // with a vector of data records
-    ~Matrix();                                                  // destuctor
+    ~Matrix(){};                                                  // destuctor
 
     /*** Access Operations ***/
     bool append(const recType &p);                              // append data record into the Matix
@@ -40,6 +39,10 @@ class Matrix
     bool set(size_t id, const recType &p);                      // change data record by ID
     recType operator[](size_t id);                              // access a data record by ID
     distType operator()(size_t i, size_t j);                    // access a distance by two IDs
+
+    /*** information ***/
+    size_t size();
+
 };
 
 

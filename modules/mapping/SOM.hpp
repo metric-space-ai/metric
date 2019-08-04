@@ -43,7 +43,6 @@ W. Natita, W. Wiboonsak, and S. Dusadee
 
 namespace metric
 {
-
     template <typename recType, class Metric = metric::Euclidian<typename recType::value_type>,
                                                                 class Graph = metric::Grid8> // replaced SOM_details with graph by Max F, 2019-05-16
 	class SOM
