@@ -993,12 +993,14 @@ std::vector<T> getEvents(std::vector<Record> dataset, int featureIndex)
 	return events;
 }
 
-std::tuple <std::vector<Record>, std::vector<Record>> splitMailfunctionValues(std::vector<Record> dataset, std::vector<double> events, int seconds)
+std::tuple <std::vector<std::vector<Record>>, std::vector<std::vector<Record>>, std::vector<Record>, std::vector<Record>> 
+splitMailfunctionValues(std::vector<Record> dataset, std::vector<double> events, int seconds, int omitLastNumber)
 {
 	int currentEventIndex = 0;
 	auto currentDateTime = events[currentEventIndex];
 	std::vector<Record> mailfuncted;
 	std::vector<Record> valid;
+	std::vector<std::vector<Record>> validByEvents(events.size(), std::vector<Record>());
 	std::vector<std::vector<Record>> mailfunctedByEvents(events.size(), std::vector<Record>());
 	for (auto i = 0; i < dataset.size(); ++i)
 	{
@@ -1012,6 +1014,7 @@ std::tuple <std::vector<Record>, std::vector<Record>> splitMailfunctionValues(st
 			//mailfuncted.push_back(dataset[i]);
 			mailfunctedByEvents[currentEventIndex].push_back(dataset[i]);
 		}
+		validByEvents[currentEventIndex].push_back(dataset[i]);
 
 		if (dataset[i][dataset[i].size() - 1] >= currentDateTime)
 		{
@@ -1032,12 +1035,13 @@ std::tuple <std::vector<Record>, std::vector<Record>> splitMailfunctionValues(st
 		std::cout << "Observed variables for event #" << i << ": " << mailfunctedByEvents[i].size() << std::endl;
 		if (mailfunctedByEvents[i].size() > 5)
 		{
-			mailfuncted.insert(mailfuncted.end(), mailfunctedByEvents[i].begin(), mailfunctedByEvents[i].end() - 5);
+			mailfuncted.insert(mailfuncted.end(), mailfunctedByEvents[i].begin(), mailfunctedByEvents[i].end() - omitLastNumber);
+			mailfunctedByEvents[i] = std::vector<Record>(mailfunctedByEvents[i].begin(), mailfunctedByEvents[i].end() - omitLastNumber);
 		}
 	}
 	std::cout << "Total observed variables: " << mailfuncted.size() << std::endl;
 
-	return std::make_tuple(mailfuncted, valid);
+	return std::make_tuple(mailfunctedByEvents, validByEvents, mailfuncted, valid);
 }
 
 template <typename T>
@@ -1197,11 +1201,16 @@ int main(int argc, char *argv[])
 
 	std::vector<Record> mailfunctedDataset;
 	std::vector<Record> validDataset;
+	std::vector<std::vector<Record>> mailfunctedDatasetByEvent;
+	std::vector<std::vector<Record>> validDatasetByEvent;
 
-	std::tie(mailfunctedDataset, validDataset) = splitMailfunctionValues(dataset_0, events, 300);
+	std::tie(mailfunctedDatasetByEvent, validDatasetByEvent, mailfunctedDataset, validDataset) = splitMailfunctionValues(dataset_0, events, 600, 6);
 
-
-	saveToCsv("mailfunctedDataset.csv", mailfunctedDataset, features);
+	for (int i = 0; i < mailfunctedDataset.size(); ++i)
+	{
+		saveToCsv("mailfunctedDataset_event_" + std::to_string(i) + ".csv", mailfunctedDatasetByEvent[i], features);
+		saveToCsv("allDataset_event_" + std::to_string(i) + ".csv", validDatasetByEvent[i], features);
+	}
 
 	////////////////////
 
