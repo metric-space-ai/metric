@@ -1033,7 +1033,7 @@ splitMailfunctionValues(std::vector<Record> dataset, std::vector<double> events,
 	for (auto i = 0; i < mailfunctedByEvents.size(); ++i)
 	{
 		std::cout << "Observed variables for event #" << i << ": " << mailfunctedByEvents[i].size() << std::endl;
-		if (mailfunctedByEvents[i].size() > 5)
+		if (mailfunctedByEvents[i].size() > omitLastNumber)
 		{
 			mailfuncted.insert(mailfuncted.end(), mailfunctedByEvents[i].begin(), mailfunctedByEvents[i].end() - omitLastNumber);
 			mailfunctedByEvents[i] = std::vector<Record>(mailfunctedByEvents[i].begin(), mailfunctedByEvents[i].end() - omitLastNumber);
