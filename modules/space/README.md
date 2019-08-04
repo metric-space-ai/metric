@@ -23,7 +23,7 @@ std::vector<double> v6 = {4, 6, 2, 2, 1, 1, 0, 0};
 std::vector<double> v7 = {3, 7, 2, 1, 0, 0, 0, 0};
 
 /*** initialize the tree ***/
-metric_space::Tree<std::vector<double>> cTree;
+metric::Tree<std::vector<double>> cTree;
 
 /*** add data records ***/
 cTree.insert(v0);
@@ -69,12 +69,12 @@ typedef std::vector<double> recType;
 typedef std::vector<recType> recList
 
 /*** Tree with default L2 metric (Euclidian distance measure) ***/ 
-metric_space::Tree<recType> cTree; //empty tree
-metric_space::Tree<recType> cTree(recType v1); // with one data record
-metric_space::Tree<recType> cTree(recList m1); // a container with records.
+metric::Tree<recType> cTree; //empty tree
+metric::Tree<recType> cTree(recType v1); // with one data record
+metric::Tree<recType> cTree(recList m1); // a container with records.
 
 /** A Tree with a custom metric. ***/
-metric_space::Tree<recType,customMetric> cTree; 
+metric::Tree<recType,customMetric> cTree; 
 // ...
 ```
 
@@ -135,7 +135,7 @@ struct recMetric
 };
 
 int main(){
-metric_space::Tree<recType,recMetric> cTree;
+metric::Tree<recType,recMetric> cTree;
 // the rest is the same like in the simple example
 
 return 0;
@@ -166,7 +166,7 @@ struct recMetric_Blaze
 
 /*** simulation helper functions ***/
 template <class recType, class Metric>
-void insert_random(metric_space::Tree<recType, Metric> &cTree,int samples, int dimension)
+void insert_random(metric::Tree<recType, Metric> &cTree,int samples, int dimension)
 {
     // random generator
     std::random_device rnd_device;
@@ -187,7 +187,7 @@ void insert_random(metric_space::Tree<recType, Metric> &cTree,int samples, int d
 /*** fill a tree with 1 Mio records and search for nearest neighbour **/
 int main(){
 
-metric_space::Tree<blaze::CompressedVector<double>, recMetric_Blaze<double>> cTree;
+metric::Tree<blaze::CompressedVector<double>, recMetric_Blaze<double>> cTree;
     
 int rec_count = 250000;
 int rec_dim = 100;
@@ -230,7 +230,7 @@ that means in comparsion to a binary search tree an additionally "covering" dist
 
 Benefits in comparsion to a brute force search over all data
 ```
-            std::vector<data_record>  metric_space::tree<data_record>
+            std::vector<data_record>  metric::tree<data_record>
 add record:      0                       log(n)
 find nn record:  n                       log(n)
 ```
