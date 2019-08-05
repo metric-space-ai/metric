@@ -1204,7 +1204,7 @@ int main(int argc, char *argv[])
 	std::vector<std::vector<Record>> mailfunctedDatasetByEvent;
 	std::vector<std::vector<Record>> validDatasetByEvent;
 
-	std::tie(mailfunctedDatasetByEvent, validDatasetByEvent, mailfunctedDataset, validDataset) = splitMailfunctionValues(dataset_0, events, 600, 6);
+	std::tie(mailfunctedDatasetByEvent, validDatasetByEvent, mailfunctedDataset, validDataset) = splitMailfunctionValues(records, events, 600, 6);
 
 	for (int i = 0; i < mailfunctedDatasetByEvent.size(); ++i)
 	{
