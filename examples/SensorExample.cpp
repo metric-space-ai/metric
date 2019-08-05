@@ -1507,8 +1507,8 @@ int main(int argc, char *argv[])
 			for (auto k = i; k < top_200.size(); ++k)
 			{
 				feature2 = top_200[k].index;
-				correlationsMailfuncted[i][k] = runCorrelation(feature1, feature2, mailfunctedDataset);
-				correlationsAll[i][k] = runCorrelation(feature1, feature2, validDataset);
+				correlationsMailfuncted[i][k] = runCorrelation(feature1, feature2, dataset_0_i);
+				correlationsAll[i][k] = runCorrelation(feature1, feature2, dataset_1_i);
 				correlationsDifference[i][k] = correlationsAll[i][k] - correlationsMailfuncted[i][k];
 			}
 		}
@@ -1581,7 +1581,7 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	for (auto i = 0; i < sensorsClusters.size(); ++i)
+	/*for (auto i = 0; i < sensorsClusters.size(); ++i)
 	{
 		std::cout << "cluster #" << i << std::endl;
 		std::vector<std::vector<double>> correlationsMailfuncted(sensorsClusters[i].size(), std::vector<double>(sensorsClusters[i].size()));
@@ -1608,7 +1608,7 @@ int main(int argc, char *argv[])
 		std::cout << "Difference netween correlations matrix: " << std::endl;
 		matrix_print(correlationsDifference);
 		std::cout << std::endl;
-	}
+	}*/
 
 
 
