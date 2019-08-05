@@ -1510,6 +1510,10 @@ int main(int argc, char *argv[])
 				correlationsMailfuncted[i][k] = runCorrelation(feature1, feature2, dataset_0_i);
 				correlationsAll[i][k] = runCorrelation(feature1, feature2, dataset_1_i);
 				correlationsDifference[i][k] = correlationsAll[i][k] - correlationsMailfuncted[i][k];
+
+				correlationsMailfuncted[k][i] = correlationsMailfuncted[i][k];
+				correlationsAll[k][i] = correlationsAll[i][k];
+				correlationsDifference[k][i] = correlationsDifference[i][k];
 			}
 		}
 		catch (const std::runtime_error& e) {
@@ -1581,7 +1585,7 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	/*for (auto i = 0; i < sensorsClusters.size(); ++i)
+	for (auto i = 0; i < sensorsClusters.size(); ++i)
 	{
 		std::cout << "cluster #" << i << std::endl;
 		std::vector<std::vector<double>> correlationsMailfuncted(sensorsClusters[i].size(), std::vector<double>(sensorsClusters[i].size()));
@@ -1608,7 +1612,7 @@ int main(int argc, char *argv[])
 		std::cout << "Difference netween correlations matrix: " << std::endl;
 		matrix_print(correlationsDifference);
 		std::cout << std::endl;
-	}*/
+	}
 
 
 
