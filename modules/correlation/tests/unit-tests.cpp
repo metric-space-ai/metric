@@ -7,9 +7,9 @@
 */
 #include <algorithm>
 #include <deque>
-#include "../details/mgc.hpp"
+#include "../mgc.hpp"
 //#include "details/metrics.hpp"
-#include "../../distance/metric_distance.hpp"
+#include "../../distance/distance.hpp"
 #include "../../../utils/graph/connected-components.hpp"
 
 #define BOOST_TEST_MODULE Main

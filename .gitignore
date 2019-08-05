@@ -2,7 +2,7 @@
 
 .vscode
 /*.exe
-/modules/crossfilter/*.exe
+/utils/crossfilter/*.exe
 /modules/distance/examples/*.exe
 /modules/distance/examples/build
 /modules/mapping/examples/build
