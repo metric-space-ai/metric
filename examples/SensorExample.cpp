@@ -1225,6 +1225,8 @@ int main(int argc, char *argv[])
 	std::cout << "Resampled:" << std::endl;
 	auto dataset_0_i = resample<double>(mailfunctedDataset, 100);
 	auto dataset_1_i = resample<double>(validDataset, 100);
+	auto dataset_all_i = resample<double>(validDataset, 10000);
+	saveToCsv("allDataset_10000.csv", dataset_all_i, features);
 
 	//auto records_i = resample<double>(records, 5000);
 	//saveToCsv("sensorsRecords_1000.csv", records_i, features);
