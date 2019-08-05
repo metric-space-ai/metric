@@ -1490,11 +1490,27 @@ int main(int argc, char *argv[])
 	std::wcout << '\n';
 	std::wcout << '\n';
 	std::cout << "Top right cluster features: " << std::endl;
+
+	std::vector<std::vector<double>> correlationsMailfuncted(top_200.size(), std::vector<double>(top_200.size()));
+	std::vector<std::vector<double>> correlationsAll(top_200.size(), std::vector<double>(top_200.size()));
+	std::vector<std::vector<double>> correlationsDifference(top_200.size(), std::vector<double>(top_200.size()));
+
 	for (auto i = 0; i < top_200.size(); ++i)
 	{
 		try {
 			std::cout << i + 1 << "/" << top_200.size() << " -> feature name: " << top_200[i].bezeichnung << " " << top_200[i].id << std::endl;
 			sensorNames.push_back(top_200[i].bezeichnung);
+			
+			int feature1 = top_200[i].index;
+			int feature2;
+
+			for (auto k = i; k < top_200.size(); ++k)
+			{
+				feature2 = top_200[k].index;
+				correlationsMailfuncted[i][k] = runCorrelation(feature1, feature2, mailfunctedDataset);
+				correlationsAll[i][k] = runCorrelation(feature1, feature2, validDataset);
+				correlationsDifference[i][k] = correlationsAll[i][k] - correlationsMailfuncted[i][k];
+			}
 		}
 		catch (const std::runtime_error& e) {
 			std::cout << "feature #" << i << ": runtime error: " << e.what() << std::endl;
@@ -1511,6 +1527,11 @@ int main(int argc, char *argv[])
 		//	sensorsCorrelations[i][k] = runCorrelation(clusters[topRightNodeIndex][i], clusters[topRightNodeIndex][k], dataset_0_i);
 		//}
 	}
+
+	saveToCsv("correlationsMailfuncted.csv", correlationsMailfuncted, top_200);
+	saveToCsv("correlationsAll.csv", correlationsAll, top_200);
+	saveToCsv("correlationsDifference.csv", correlationsDifference, top_200);
+
 	//std::wcout << '\n';
 	//std::wcout << '\n';
 	//std::cout << "Sensors correlation matrix: " << std::endl;
@@ -1556,7 +1577,7 @@ int main(int argc, char *argv[])
 					}
 				}
 			}
-			sensorsClusters.push_back(cluster);
+			sensorsClusters.push_back(cluster); 
 		}
 	}
 
