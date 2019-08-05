@@ -994,10 +994,10 @@ std::vector<T> getEvents(std::vector<Record> dataset, int featureIndex)
 }
 
 std::tuple <std::vector<std::vector<Record>>, std::vector<std::vector<Record>>, std::vector<Record>, std::vector<Record>> 
-splitMailfunctionValues(std::vector<Record> dataset, std::vector<double> events, int seconds, int omitLastNumber)
+splitMailfunctionValues(std::vector<Record> dataset, std::vector<double> events, int malfunctedSeconds, int omitLastNumber, int allSeconds)
 {
 	int currentEventIndex = 0;
-	auto currentDateTime = events[currentEventIndex];
+	auto currentEventDateTime = events[currentEventIndex];
 	std::vector<Record> mailfuncted;
 	std::vector<Record> valid;
 	std::vector<std::vector<Record>> validByEvents(events.size(), std::vector<Record>());
@@ -1005,23 +1005,27 @@ splitMailfunctionValues(std::vector<Record> dataset, std::vector<double> events,
 	for (auto i = 0; i < dataset.size(); ++i)
 	{
 		// last feature is date
-		if (dataset[i][dataset[i].size() - 1] < currentDateTime - seconds)
-		{
-			valid.push_back(dataset[i]);
-		}
-		else
+		if (dataset[i][dataset[i].size() - 1] > currentEventDateTime - malfunctedSeconds)
 		{
 			//mailfuncted.push_back(dataset[i]);
 			mailfunctedByEvents[currentEventIndex].push_back(dataset[i]);
 		}
-		validByEvents[currentEventIndex].push_back(dataset[i]);
+		else
+		{
+			valid.push_back(dataset[i]);
+		}
 
-		if (dataset[i][dataset[i].size() - 1] >= currentDateTime)
+		if (dataset[i][dataset[i].size() - 1] > currentEventDateTime - allSeconds)
+		{
+			validByEvents[currentEventIndex].push_back(dataset[i]);
+		}
+
+		if (dataset[i][dataset[i].size() - 1] >= currentEventDateTime)
 		{
 			currentEventIndex++;
 			if (currentEventIndex < events.size())
 			{
-				currentDateTime = events[currentEventIndex];
+				currentEventDateTime = events[currentEventIndex];
 			}
 			else
 			{
@@ -1204,7 +1208,7 @@ int main(int argc, char *argv[])
 	std::vector<std::vector<Record>> mailfunctedDatasetByEvent;
 	std::vector<std::vector<Record>> validDatasetByEvent;
 
-	std::tie(mailfunctedDatasetByEvent, validDatasetByEvent, mailfunctedDataset, validDataset) = splitMailfunctionValues(records, events, 600, 6);
+	std::tie(mailfunctedDatasetByEvent, validDatasetByEvent, mailfunctedDataset, validDataset) = splitMailfunctionValues(records, events, 300, 6, 4 * 3600);
 
 	for (int i = 0; i < mailfunctedDatasetByEvent.size(); ++i)
 	{
