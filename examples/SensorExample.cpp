@@ -1215,6 +1215,8 @@ int main(int argc, char *argv[])
 		saveToCsv("mailfunctedDataset_event_" + std::to_string(i) + ".csv", mailfunctedDatasetByEvent[i], features);
 		saveToCsv("allDataset_event_" + std::to_string(i) + ".csv", validDatasetByEvent[i], features);
 	}
+	saveToCsv("allDataset.csv", records, features);
+	saveToCsv("mailfunctedDataset.csv", mailfunctedDataset, features);
 
 	////////////////////
 
