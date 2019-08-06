@@ -1673,7 +1673,7 @@ int main(int argc, char *argv[])
 	}
 
 	calculateVariances(features, events, records, "all_features_variances.csv");
-	calculateVariances(features, events, records, "top_200_features_variances.csv");
+	calculateVariances(top_200, events, records, "top_200_features_variances.csv");
 
 
 	//auto hc = clustering::HierarchicalClustering<std::string, metric::distance::Edit<std::string>>(sensorNames, 10);
