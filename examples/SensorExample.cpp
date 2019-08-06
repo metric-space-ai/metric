@@ -1,4 +1,4 @@
-/*
+﻿/*
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
 file, You can obtain one at http://mozilla.org/MPL/2.0/.
@@ -1062,6 +1062,64 @@ std::vector<size_t> sort_indexes(const std::vector<T> &v) {
 	return idx;
 }
 
+void calculateVariances(const std::vector<Feature> &features, std::vector<double> events, std::vector<Record> dataset, std::string name) {
+
+
+	// select Düsenbefeuchter Stellglied
+	// and calculate variances along time
+
+	//std::cout << "Düsenbefeuchter Stellglied features: " << std::endl;
+	cross::filter<Feature> featuresFilter(features);
+	auto ds_featureFilter = featuresFilter.dimension([](Feature f) { return f.bezeichnung; });
+	ds_featureFilter.filter([](auto d) { return d.rfind("Düsenbefeuchter Stellglied", 0) == 0; });
+	auto ds_features = featuresFilter.all_filtered();
+
+	std::vector<std::vector<double>> dsAlongTime;
+	std::vector<std::vector<double>> variances;
+	int currentEventIndex = 0;
+	auto currentEventDateTime = events[currentEventIndex];
+	for (auto r = 0; r < dataset.size(); ++r)
+	{
+		std::vector<double> timeVec;
+		for (auto i = 0; i < ds_features.size(); ++i)
+		{
+			//std::cout << ds_features[i].bezeichnung << std::endl;
+			timeVec.push_back(dataset[r][ds_features[i].index]);
+		}
+		dsAlongTime.push_back(timeVec);
+
+		utils::PMQ pmq(timeVec);
+		auto variance = pmq.variance();
+
+		if (!std::isnan(variance)) {
+			// 1 if observations in range 300 seconds before event
+			double isBeforeEvent = 0;
+			if (dataset[r][dataset[r].size() - 1] > currentEventDateTime - 300)
+			{
+				isBeforeEvent = 1;
+			}
+			variances.push_back({ variance,  isBeforeEvent, dataset[r][dataset[r].size() - 1] });
+		}
+
+		if (dataset[r][dataset[r].size() - 1] >= currentEventDateTime)
+		{
+			currentEventIndex++;
+			if (currentEventIndex < events.size())
+			{
+				currentEventDateTime = events[currentEventIndex];
+			}
+			else
+			{
+				break;
+			}
+		}
+	}
+
+	Feature varianceName = { 0, "0", "variance" };
+	Feature isEventName = { 1, "1", "isBeforeEvent" };
+	saveToCsv(name, variances, { varianceName, isEventName });
+}
+
 int main(int argc, char *argv[])
 {
 	bool FROM_CSV = false;
@@ -1194,14 +1252,14 @@ int main(int argc, char *argv[])
 	//std::cout << featureName << " == 1" << std::endl;
 	//printRecords(dataset_1, features, 10, 10, 15);
 
-	////////////////////
+	//////////////////////
 
 	std::cout << '\n';
 	std::cout << '\n';
 	auto events = getEvents<double>(records, targetFeatureIndex);
 	std::cout << "mailfunction events: " << events.size() << std::endl;
 
-	////////////////////
+	//////////////////////
 
 	std::vector<Record> mailfunctedDataset;
 	std::vector<Record> validDataset;
@@ -1614,6 +1672,8 @@ int main(int argc, char *argv[])
 		std::cout << std::endl;
 	}
 
+	calculateVariances(features, events, records, "all_features_variances.csv");
+	calculateVariances(features, events, records, "top_200_features_variances.csv");
 
 
 	//auto hc = clustering::HierarchicalClustering<std::string, metric::distance::Edit<std::string>>(sensorNames, 10);
