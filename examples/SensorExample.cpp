@@ -1075,6 +1075,7 @@ void calculateVariances(const std::vector<Feature> &features, std::vector<double
 	auto ds_features = featuresFilter.all_filtered();
 
 	std::vector<std::vector<double>> dsAlongTime;
+	std::vector<std::vector<Record>> variancesByEvents(events.size(), std::vector<Record>());
 	std::vector<std::vector<double>> variances;
 	int currentEventIndex = 0;
 	auto currentEventDateTime = events[currentEventIndex];
@@ -1099,6 +1100,13 @@ void calculateVariances(const std::vector<Feature> &features, std::vector<double
 				isBeforeEvent = 1;
 			}
 			variances.push_back({ variance,  isBeforeEvent, dataset[r][dataset[r].size() - 1] });
+			
+
+			if (dataset[r][dataset[r].size() - 1] > currentEventDateTime - 4 * 3600)
+			{
+				variancesByEvents[currentEventIndex].push_back({ variance,  isBeforeEvent, dataset[r][dataset[r].size() - 1] });
+			}
+
 		}
 
 		if (dataset[r][dataset[r].size() - 1] >= currentEventDateTime)
@@ -1118,6 +1126,12 @@ void calculateVariances(const std::vector<Feature> &features, std::vector<double
 	Feature varianceName = { 0, "0", "variance" };
 	Feature isEventName = { 1, "1", "isBeforeEvent" };
 	saveToCsv(name, variances, { varianceName, isEventName });
+
+
+	for (auto r = 0; r < variancesByEvents.size(); ++r)
+	{
+		saveToCsv("event_" + std::to_string(r) + "_" + name, variancesByEvents[r], { varianceName, isEventName });
+	}
 }
 
 int main(int argc, char *argv[])
@@ -1672,7 +1686,7 @@ int main(int argc, char *argv[])
 		std::cout << std::endl;
 	}
 
-	calculateVariances(features, events, records, "all_features_variances.csv");
+	//calculateVariances(features, events, records, "all_features_variances.csv");
 	calculateVariances(top_200, events, records, "top_200_features_variances.csv");
 
 
