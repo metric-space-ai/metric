@@ -5,7 +5,9 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 Copyright (c) 2019 Panda Team
 */
-#include "../../../details/classification/details/3rdparty/metric_clustering/clustering.hpp"
+#include <vector>
+
+#include "modules/mapping.hpp"
 
 
 
@@ -22,7 +24,7 @@ int main()
 		   {5.81414000000000, 8.14015000000000, 3.22950000000000, 139.539000000000, 139.539000000000},
 		   {2.57927000000000, 2.63399000000000, 2.46802000000000, 61.9026000000000, 61.9026000000000} };
 
-	auto[assignments, means, counts] = clustering::kmeans(data, 4); // clusters the data in 4 groups.
+	auto[assignments, means, counts] = metric::kmeans(data, 4); // clusters the data in 4 groups.
 	// out:
 
 	//assignments:

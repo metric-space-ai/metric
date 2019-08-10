@@ -5,7 +5,7 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 Copyright (c) 2019 Panda Team
 */
-#include "../../../details/classification/metric_classification.hpp"
+#include "modules/mapping/ensembles.hpp"
 
 #include "../../assets/helpers.cpp" // csv reader
 
@@ -13,7 +13,7 @@ Copyright (c) 2019 Panda Team
 
 #include <deque> // for Record test
 
-#include "../../../details/classification/details/correlation_weighted_accuracy.hpp"
+
 
 
 
@@ -125,14 +125,14 @@ int main()
 
 	//*
 
-	metric::classification::TestCl<Record> wl4 = metric::classification::TestCl<Record>(0, false);
+	metric::TestCl<Record> wl4 = metric::TestCl<Record>(0, false);
 
 	wl4.train(payments, features, response);
 	std::vector<bool> r4;
 	wl4.predict(test_sample, features, r4);
 	std::cout << "\nweak predict: " << r4[0] << std::endl << std::endl;
 
-	auto cntnr4 = metric::classification::Boosting<Record, metric::classification::TestCl<Record>, metric::classification::SubsampleRUS<Record> >(10, 0.75, 0.5, wl4);
+	auto cntnr4 = metric::Boosting<Record, metric::TestCl<Record>, metric::SubsampleRUS<Record> >(10, 0.75, 0.5, wl4);
 	cntnr4.train(payments, features, response);
 	std::vector<bool> r5;
 	cntnr4.predict(test_sample, features, r5);

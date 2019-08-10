@@ -9,7 +9,8 @@ Copyright (c) 2019 Panda Team
 #ifndef _METRIC_MAPPING_DETAILS_ESN_HPP
 #define _METRIC_MAPPING_DETAILS_ESN_HPP
 
-#include "3rdparty/blaze/Blaze.h"
+#include "../../3rdparty/blaze/Blaze.h"
+
 
 //#include "utils/graph/graph.hpp" // for create_W only // TODO enable if considered to use graph
 

@@ -16,7 +16,7 @@ Copyright (c) 2018 Panda Team
 
 
 
-#include "../metric_classification.hpp"
+#include "modules/mapping.hpp"
 
 #include "assets/helpers.cpp" // csv reader
 
@@ -321,7 +321,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_boosting_V, Learner, weak_types )
                 for (int idx3 = 0; idx3<10; idx3++)
                 {
                     // boosting with weak learner of Learner type
-                    auto boosting = metric::classification::Boosting<TypeV, Learner, metric::classification::SubsampleRUS<TypeV> >(ens_len[idx1], share[idx2], share_minor[idx3], wl);
+                    auto boosting = metric::Boosting<TypeV, Learner, metric::SubsampleRUS<TypeV> >(ens_len[idx1], share[idx2], share_minor[idx3], wl);
                     // test traing
                     BOOST_CHECK_NO_THROW( boosting.train(ds.data, ds.features, ds.response); );
                     // l.train(ds.data, ds.features, ds.response);
@@ -341,7 +341,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_boosting_V, Learner, weak_types )
                         WeakLrnVariant weak2 = Learner();
                         clSet2.push_back(weak1);
                         clSet2.push_back(weak2);
-                        auto bagging = metric::classification::Bagging<TypeV, WeakLrnVariant, metric::classification::SubsampleRUS<TypeV> >(ens_len[idx1], share[idx2], share_minor[idx3], {share_learner_type[idx3], 1.0-share_learner_type[idx3]}, clSet2);
+                        auto bagging = metric::Bagging<TypeV, WeakLrnVariant, metric::SubsampleRUS<TypeV> >(ens_len[idx1], share[idx2], share_minor[idx3], {share_learner_type[idx3], 1.0-share_learner_type[idx3]}, clSet2);
                         // test traing
                         BOOST_CHECK_NO_THROW( bagging.train(ds.data, ds.features, ds.response); );
                         // l.train(ds.data, ds.features, ds.response);
@@ -372,8 +372,8 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_subsamplers, ContainerType, container_types 
     for (auto ds : DS.dataset)
     {
         ContainerType subset = {};
-        metric::classification::Subsample<TypeD> sSimple;
-        metric::classification::SubsampleRUS<TypeD> sRUS;
+        metric::Subsample<TypeD> sSimple;
+        metric::SubsampleRUS<TypeD> sRUS;
 
         int ens_len [6] = {0, 1, 2, 10}; // ensemble length
         for (int idx1 = 0; idx1<6; idx1++)

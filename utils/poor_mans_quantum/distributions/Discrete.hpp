@@ -9,7 +9,7 @@
 */
 #include "../math_functions.hpp"
 
-namespace metric{
+namespace metric {
 
 template <typename T = float>
 class Discrete

@@ -367,7 +367,7 @@ DT<Record>::split_subset(
         // new code style
         auto [feature_dist_table, feature_dist_orig_idx] = distance_matrix_of_subset(subset, distances[f]);
 
-        auto results = metric::kmedoids_(feature_dist_table, unique_labels.size());
+        auto results = metric::kmedoids_(feature_dist_table, unique_labels.size(), 1000);
         auto medoids = std::get<1>(results); // medoid indices in feature_dist_table; original indices can be obtained via feature_dist_orig_idx
 
         // for (auto medoid : medoids)

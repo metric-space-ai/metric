@@ -12,15 +12,10 @@ Copyright (c) 2019 Panda Team
     #define M_PI 3.14159265358979323846
 #endif
 
+#include "modules/mapping.hpp"  // for usage independently on the entire lib
+//#include "metric.hpp"  // for usage as a part of the lib
 
-//#include "mapping.hpp"  // TODO fix DT.cpp and enable
-
-//#include "../details/encoder.hpp"
-#include "mapping/PCAnet.hpp" // temporary // for usage independently on the entire lib
-
-//#include "utils/visualizer/visualizer.hpp"
-#include "../utils/visualizer.hpp"
-
+#include "utils/visualizer.hpp"
 #include "modules/transform/discrete_cosine.hpp"
 
 

@@ -11,7 +11,7 @@ Copyright (c) 2018 Dmitry Vinokurov
 #include <algorithm>
 #include <random>
 #include "assets/3dparty/serialize/archive.h"
-#include "../metric_space.hpp"
+#include "modules/space.hpp"
 
 // Make fuzzy testing
 
@@ -49,7 +49,7 @@ bool test(int array_size) {
   for(int i = 0; i < array_size; i++) {
     data.push_back(dgen());
   }
-  metric::space::Tree<float,distance<float>> tr;
+  metric::Tree<float,distance<float>> tr;
   for(auto i : data) {
     tr.insert(i);
     if(!tr.check_covering()) {
@@ -59,7 +59,7 @@ bool test(int array_size) {
   std::ostringstream os;
   serialize::oarchive<std::ostringstream> oar(os);
   tr.serialize(oar);
-  metric::space::Tree<float,distance<float>> tr1;
+  metric::Tree<float,distance<float>> tr1;
   std::istringstream is(os.str());
   serialize::iarchive<std::istringstream> iar(is);
   tr1.deserialize(iar,is);

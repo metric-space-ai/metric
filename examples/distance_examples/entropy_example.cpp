@@ -9,7 +9,7 @@ Copyright (c) 2019 Panda Team
 #include <vector>
 #include <random>
 #include <cmath>
-#include "distance.hpp"
+#include "modules/distance.hpp"
 #include <iostream>
 #include <fstream>
 
@@ -583,8 +583,8 @@ int main() {
 
     std::vector<long double> el1 = {5, 2, 3, 5};
     std::vector<long double> el2 = {5, 2, 3, 1};
-    auto cheb = metric::distance::Chebyshev(); // default return type is double
-    //metric::distance::Chebyshev<float> cheb;   // non-default
+    auto cheb = metric::Chebyshev(); // default return type is double
+    //metric::Chebyshev<float> cheb;   // non-default
     auto cheb_val = cheb(el1, el2);
     std::cout << "\n\ncheb_test: " << cheb_val << std::endl;
 

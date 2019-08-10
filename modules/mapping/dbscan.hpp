@@ -21,6 +21,9 @@ A DBSCAN implementation based on distance matrix.
 //       in large spatial databases with noise. 1996.
 
 
+#include <vector>
+#include <string>
+#include "../distance/k-related/Standards.hpp"
 namespace metric 
 {
 
@@ -29,6 +32,27 @@ namespace metric
 // --------------------------------------------------------------
 namespace dbscan_details
 {
+    std::string default_measure(void) {
+        return "euclidian";
+    }
+        template <typename T>
+    T distance(const std::vector<T> &a,
+               const std::vector<T> &b,
+               std::string distance_measure){
+
+        assert(a.size() == b.size()); // data vectors have not the same length
+        if (distance_measure.compare("euclidian") == 0)
+            return metric::Euclidian<T>()(a,b);
+        else if (distance_measure.compare("rms") == 0) {
+            T val = metric::Euclidian<T>()(a, b);
+            return val * val;
+        } else if (distance_measure.compare("manhatten") == 0)
+            return metric::Manhatten<T>()(a,b);
+        else {
+            std::cout << "distance measure not found, using default (euclidian)" << std::endl;
+            return metric::Euclidian<T>()(a,b);
+        }
+    }
 // computes the distance matrix (pairwaise)
     template <typename T>
     std::vector<std::vector<T>> 
@@ -38,7 +62,7 @@ namespace dbscan_details
         std::vector<std::vector<T>> matrix(data.size(), std::vector<T>(data.size())); //initialize
         for (int i=0;i<data.size();++i){
             for (int j=i;j<data.size();++j){
-                T distance = distance_functions::distance(data[i],data[j], distance_measure);
+                T distance = dbscan_details::distance(data[i],data[j], distance_measure);
                 matrix[i][j]= distance;
                 matrix[j][i]= distance;
             }
@@ -110,7 +134,7 @@ std::tuple<std::vector<int>,std::vector<int>,std::vector<int>>
 dbscan(const std::vector<std::vector<T>> &data, 
     T eps, 
     int minpts,
-    std::string distance_measure = distance_functions::default_measure()){
+    std::string distance_measure = dbscan_details::default_measure()){
 
         // check arguments
         int n = data.size();
@@ -120,7 +144,7 @@ dbscan(const std::vector<std::vector<T>> &data,
         assert(minpts >= 1); // error("minpts must be a positive integer.")
         
         // build the (pairwaise) distance matrix
-        auto D = dbscan_functions::distance_matrix(data,distance_measure);
+        auto D = dbscan_details::distance_matrix(data,distance_measure);
     
     // initialize
     std::vector<int> seeds;
@@ -135,10 +159,10 @@ dbscan(const std::vector<std::vector<T>> &data,
     for (int p : visitseq){
         if (assignments[p] == 0 && !visited[p]){
             visited[p] = true;
-            auto nbs = dbscan_functions::region_query(D, p, eps);
+            auto nbs = dbscan_details::region_query(D, p, eps);
             if (nbs.size() >= minpts){
                 k += 1;
-                auto cnt = dbscan_functions::update_cluster(D, k, p,  eps, minpts,nbs, assignments, visited);
+                auto cnt = dbscan_details::update_cluster(D, k, p,  eps, minpts,nbs, assignments, visited);
                 seeds.push_back(p);
                 counts.push_back(cnt);
             }

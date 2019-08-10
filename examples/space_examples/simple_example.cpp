@@ -8,7 +8,7 @@ Copyright (c) 2018 Panda Team
 
 #include <vector>
 #include <iostream>
-#include "../metric_space.hpp"
+#include "modules/space.hpp"
 
 int main()
 {
@@ -23,7 +23,7 @@ int main()
     std::vector<double> v7 = {3, 7, 2, 1, 0, 0, 0, 0};
 
     /*** initialize the tree ***/
-    metric::space::Tree<std::vector<double>> cTree;
+    metric::Tree<std::vector<double>> cTree;
 
     /*** add data records ***/
     cTree.insert(v0);
@@ -54,7 +54,7 @@ int main()
         {5, 3, 2, 1, 0, 0, 0, 0},
         {4, 6, 2, 2, 1, 1, 0, 0},};
 
-    metric::space::Tree<std::vector<double>> cTree2(table);
+    metric::Tree<std::vector<double>> cTree2(table);
 
     std::vector<std::vector<double>> table2 = {
         {3, 7, 2, 1, 0, 0, 0, 0},

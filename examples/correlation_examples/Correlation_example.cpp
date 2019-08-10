@@ -15,7 +15,7 @@
 
 #include <chrono>
 
-#include "../metric_correlation.hpp"
+#include "modules/correlation.hpp"
 //#include "blaze/Math.h"
 
 template <typename T>
@@ -148,7 +148,7 @@ int main()
     typedef blaze_euclidean Met2;
 
     /* Set up the correlation function */
-    auto mgc_corr = metric::correlation::MGC<RecType, Met, RecType, Met>();
+    auto mgc_corr = metric::MGC<RecType, Met, RecType, Met>();
 
     /* Compute distance matrix 1 */
     // auto dist1= metric::correlation::blaze_distance_matrix<Met2>()(d1);
@@ -207,7 +207,7 @@ int main()
 
 
 	t1 = std::chrono::steady_clock::now();
-	result = metric::correlation::MGC<RecType2, Met2, RecType2, Met2>()(d1, d2);
+	result = metric::MGC<RecType2, Met2, RecType2, Met2>()(d1, d2);
 	t2 = std::chrono::steady_clock::now();
 	std::cout << result << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000 << "s)" << std::endl;
 	 

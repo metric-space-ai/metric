@@ -19,12 +19,30 @@ A Affinity Propagation implementation based on a similarity matrix.
     //
 
 
+#include "../distance.hpp"
 namespace metric 
 {
 
 
 namespace affprop_details {
-
+    template <typename T>
+    T distance(const std::vector<T> &a,
+               const std::vector<T> &b,
+               std::string distance_measure){
+        
+        assert(a.size() == b.size()); // data vectors have not the same length
+        if (distance_measure.compare("euclidian") == 0)
+            return metric::Euclidian<T>()(a,b);
+        else if (distance_measure.compare("rms") == 0) {
+            T val = metric::Euclidian<T>()(a, b);
+            return val * val;
+        } else if (distance_measure.compare("manhatten") == 0)
+            return metric::Manhatten<T>()(a,b);
+        else {
+            std::cout << "distance measure not found, using default (euclidian)" << std::endl;
+            return metric::Euclidian<T>()(a,b);
+        }
+    }
     //build similarity matrix
     template <typename T>
     std::vector<std::vector<T>> 
@@ -38,7 +56,7 @@ namespace affprop_details {
         for (int i=0;i<n;++i){
             for (int j=i;j<n;++j){
          
-                T distance = distance_functions::distance(data[i],data[j], distance_measure);
+                T distance = affprop_details::distance(data[i],data[j], distance_measure);
                 T similarity = -distance;
                 if (similarity < pmin)
                     pmin=similarity;
@@ -228,7 +246,7 @@ namespace affprop_details {
     std::tuple<std::vector<int>,std::vector<int>,std::vector<int>>
     affprop(const std::vector<std::vector<T>> &data,
                         T preference = 0.5,
-                        std::string distance_measure = distance_functions::default_measure(),
+                        std::string distance_measure = "euclidian",
                         int maxiter =200,
                         T tol =1.0e-6,
                         T damp = 0.5){

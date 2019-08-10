@@ -5,16 +5,14 @@
 
   Copyright (c) 2019 Panda Team
 */
-#include "../../../details/classification/metric_classification.hpp"
-
+#include "modules/mapping.hpp"
+#include "modules/mapping/ensembles/DT/correlation_weighted_accuracy.hpp"
 #include "../../assets/helpers.cpp" // csv reader
 
 #include <variant>
 
 #include <deque> // for Record test
 
-#include "../../../details/classification/details/correlation_weighted_accuracy.hpp"
-#include "../../../../distance.hpp"
 
     int test_CWA()
     {
@@ -22,7 +20,7 @@
         std::vector<int> g1 = {3, 2, 2, 3, 1, 1}; // Known groups
         std::vector<int> g2 = {4, 2, 2, 2, 1, 1}; // Predicted groups
 
-        double cwa = metric::classification::correlation_weighted_accuracy(g1,g2);
+        double cwa = metric::correlation_weighted_accuracy(g1,g2);
 
         std::cout << cwa << std::endl;
 
@@ -81,14 +79,14 @@ int main()
 
     // Usage of RUSBoost
 
-    metric::classification::TestCl<Record> wl4 = metric::classification::TestCl<Record>(0, false);
+    metric::TestCl<Record> wl4 = metric::TestCl<Record>(0, false);
 
     wl4.train(payments, features, response);
     std::vector<bool> r4;
     wl4.predict(test_sample, features, r4);
     std::cout << "\nweak predict: " << r4[0] << std::endl << std::endl;
 
-    auto cntnr4 = metric::classification::Boosting<Record, metric::classification::TestCl<Record>, metric::classification::SubsampleRUS<Record> >(10, 0.75, 0.5, wl4);
+    auto cntnr4 = metric::Boosting<Record, metric::TestCl<Record>, metric::SubsampleRUS<Record> >(10, 0.75, 0.5, wl4);
     cntnr4.train(payments, features, response);
     std::vector<bool> r5;
     cntnr4.predict(test_sample, features, r5);
@@ -107,7 +105,7 @@ int main()
     wl8.predict(test_sample, features, r8);
     std::cout << "\nSVM predict: " << r8[0] << std::endl;
 
-    auto cntnr10 = metric::classification::Boosting<Record, metric::classification::edmClassifier<Record, CC45>, metric::classification::SubsampleRUS<Record> >(10, 0.75, 0.5, wl7);
+    auto cntnr10 = metric::Boosting<Record, metric::classification::edmClassifier<Record, CC45>, metric::SubsampleRUS<Record> >(10, 0.75, 0.5, wl7);
     cntnr10.train(payments, features, response);
     std::vector<bool> r10;
     cntnr10.predict(test_sample, features, r10);
@@ -186,7 +184,7 @@ int main()
     }
 
     // using CC45 with default metaparams
-    auto cntnr20 = metric::classification::Boosting<IrisRec, metric::classification::edmClassifier<IrisRec, CC45>, metric::classification::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, wl20);
+    auto cntnr20 = metric::Boosting<IrisRec, metric::classification::edmClassifier<IrisRec, CC45>, metric::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, wl20);
     cntnr20.train(iris_str, features_iris, response_iris, true);
     std::vector<bool> r21;
     cntnr20.predict(IrisTestRec, features_iris, r21);
@@ -198,7 +196,7 @@ int main()
 
     // using CSVM with default metaparams
     auto wl25 = metric::classification::edmClassifier<IrisRec, CSVM>();
-    auto cntnr25 = metric::classification::Boosting<IrisRec, metric::classification::edmClassifier<IrisRec, CSVM>, metric::classification::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, wl25);
+    auto cntnr25 = metric::Boosting<IrisRec, metric::classification::edmClassifier<IrisRec, CSVM>, metric::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, wl25);
     cntnr25.train(iris_str, features_iris, response_iris, true);
     std::vector<bool> r25;
     cntnr20.predict(IrisTestRec, features_iris, r25);
@@ -207,7 +205,7 @@ int main()
 
     // using CC45 with metaparams
     auto weak30 = metric::classification::edmC45<IrisRec>(2, 1e-3, 0.25, true);
-    auto strong30 = metric::classification::Boosting<IrisRec, metric::classification::edmC45<IrisRec>, metric::classification::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, weak30);
+    auto strong30 = metric::Boosting<IrisRec, metric::classification::edmC45<IrisRec>, metric::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, weak30);
     strong30.train(iris_str, features_iris, response_iris, true);
     std::vector<bool> r30;
     strong30.predict(IrisTestRec, features_iris, r30);
@@ -216,7 +214,7 @@ int main()
 
     // using CSVM with metaparams
     auto weak35 = metric::classification::edmSVM<IrisRec>(C_SVC, RBF, 3, 0, 100, 0.001, 1, 0, NULL, NULL, 0.5, 0.1, 1, 0);
-    auto strong35 = metric::classification::Boosting<IrisRec, metric::classification::edmSVM<IrisRec>, metric::classification::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, weak35);
+    auto strong35 = metric::Boosting<IrisRec, metric::classification::edmSVM<IrisRec>, metric::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, weak35);
     strong35.train(iris_str, features_iris, response_iris, true);
     std::vector<bool> r35;
     strong30.predict(IrisTestRec, features_iris, r35);
@@ -255,7 +253,7 @@ int main()
     WeakLrnVariant wl20_60 = metric::classification::edmClassifier<IrisRec, CC45>();
     clSet2.push_back(weak30_60);
     clSet2.push_back(wl20_60);
-    auto strong60 = metric::classification::Bagging<IrisRec, WeakLrnVariant, metric::classification::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, {0.3, 0.7}, clSet2); // 30% of first weak learner type, 70% of second
+    auto strong60 = metric::Bagging<IrisRec, WeakLrnVariant, metric::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, {0.3, 0.7}, clSet2); // 30% of first weak learner type, 70% of second
     strong60.train(iris_str, features_iris, response_iris, true);
     std::vector<bool> r60;
     strong60.predict(IrisTestRec, features_iris, r60);
@@ -270,7 +268,7 @@ int main()
     WeakLrnVariantD wl20_65 = metric::classification::edmClassifier<IrisRec, CC45>();
     clSet3.push_back(weak30_65);
     clSet3.push_back(wl20_65);
-    auto strong65 = metric::classification::Bagging<IrisRec, WeakLrnVariantD, metric::classification::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, {0.3, 0.7}, clSet3); // 30% of first weak learner type, 70% of second
+    auto strong65 = metric::Bagging<IrisRec, WeakLrnVariantD, metric::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, {0.3, 0.7}, clSet3); // 30% of first weak learner type, 70% of second
     strong65.train(iris_strD, features_iris, response_iris, true);
     std::vector<bool> r65;
     strong65.predict(IrisTestRecD, features_iris, r65);
@@ -375,10 +373,10 @@ int main()
 
 
 
-	metric::Dimension<metric::distance::EMD<InputType>, decltype(a0)> dimEMD(a0, metric::distance::EMD<InputType>(3, 3));
+	metric::Dimension<metric::EMD<InputType>, decltype(a0)> dimEMD(a0, metric::EMD<InputType>(3, 3));
 	auto emd_dist = dimEMD.get_distance(dataset[0], dataset[1]);
 
-	metric::distance::EMD<InputType> EMD_functor(C);
+	metric::EMD<InputType> EMD_functor(C);
 
 	auto v1i = std::get<std::vector<int>>(dataset[0][0]);
 	auto v2i = std::get<std::vector<int>>(dataset[1][0]);
@@ -403,9 +401,9 @@ int main()
 											 {30, 20, 10, 0, 10, 20},
 											 {40, 30, 20, 10, 0, 10},
 											 {50, 40, 30, 20, 10, 0} }; // symmetric
-	auto emd_dist_2 = metric::distance::EMD<InputType>(CC)(v1, v2);
+	auto emd_dist_2 = metric::EMD<InputType>(CC)(v1, v2);
 
-	auto emd_dist_3 = metric::distance::EMD<InputType>(6, 6)(v1, v2);
+	auto emd_dist_3 = metric::EMD<InputType>(6, 6)(v1, v2);
 
 	std::cout << "\nEMD distance 2 : " << emd_dist_2 << " " << emd_dist_3 << "\n";
 

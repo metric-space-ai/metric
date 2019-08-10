@@ -28,9 +28,9 @@ Copyright (c) 2019 Panda Team
 #include "ThreadPool.cpp"
 #include "Semaphore.h"
 
-#include "modules/crossfilter.hpp"
-#include "modules/distance/details/k-related/entropy.hpp"
-#include "modules/distance/details/k-related/Standards.hpp"
+#include "utils/crossfilter.hpp"
+#include "modules/distance/k-random/entropy.hpp"
+#include "modules/distance/k-related/Standards.hpp"
 
 
 //#include "modules/mapping/details/classification/metric_classification.hpp"
@@ -692,8 +692,8 @@ double runOOC(int featureIndex, std::vector<Record> dataset_0, std::vector<Recor
 	auto featureVector_0 = getFeatureVector<double>(dataset_0, featureIndex, true);
 	auto featureVector_1 = getFeatureVector<double>(dataset_1, featureIndex, true);
 
-	utils::PMQ set0(featureVector_0);
-	utils::PMQ set1(featureVector_1);
+	metric::PMQ set0(featureVector_0);
+	metric::PMQ set1(featureVector_1);
 	significantDifferent = (set1 != set0);
 
 	auto t2 = std::chrono::steady_clock::now();
@@ -773,7 +773,7 @@ std::vector<std::vector<T>> resample(std::vector<std::vector<T>> source, int des
 {
 	auto columns = source[0].size();
 	std::vector<T> x;
-	auto xi = linspace<T>(source[0][source[0].size() - 1], source[source.size() - 1][source[0].size() - 1], destinationRows);
+	auto xi = metric::linspace<T>(source[0][source[0].size() - 1], source[source.size() - 1][source[0].size() - 1], destinationRows);
 	std::vector<T> y;
 	std::vector<T> yi;
 	std::vector<std::vector<T>> resampled(destinationRows, std::vector<T>(columns));
@@ -795,7 +795,7 @@ std::vector<std::vector<T>> resample(std::vector<std::vector<T>> source, int des
 		}
 		if (y.size() > 0)
 		{
-			yi = akimaInterp1(x, y, xi);
+        yi = metric::akimaInterp1(x, y, xi);
 			for (auto i = 0; i < yi.size(); ++i)
 			{
 				resampled[i][f] = yi[i];
@@ -817,7 +817,7 @@ template <typename T>
 std::vector<std::vector<T>> resampleFeature(std::vector<std::vector<T>> source, int featureIndex, int destinationRows)
 {
 	std::vector<T> x;
-	auto xi = linspace<T>(source[0][source[0].size() - 1], source[source.size() - 1][source[0].size() - 1], destinationRows);
+	auto xi = metric::linspace<T>(source[0][source[0].size() - 1], source[source.size() - 1][source[0].size() - 1], destinationRows);
 	std::vector<T> y;
 	std::vector<T> yi;
 	std::vector<std::vector<T>> resampled(destinationRows, std::vector<T>(1));
@@ -860,10 +860,10 @@ double runVOI(int featureIndex, std::vector<Record> dataset_0, std::vector<Recor
 		featureVector_resh_1[i][0] = featureVector_1[i];
 	}
 
-	auto eX = metric::distance::entropy<double, metric::distance::Chebyshev<double>>(featureVector_resh_0, 3, 2, metric::distance::Chebyshev<double>());
-	auto eY = metric::distance::entropy<double, metric::distance::Chebyshev<double>>(featureVector_resh_1, 3, 2, metric::distance::Chebyshev<double>());
+	auto eX = metric::entropy<double, metric::Chebyshev<double>>(featureVector_resh_0, 3, 2, metric::Chebyshev<double>());
+	auto eY = metric::entropy<double, metric::Chebyshev<double>>(featureVector_resh_1, 3, 2, metric::Chebyshev<double>());
 
-	auto mi = metric::distance::mutualInformation<double>(featureVector_resh_0, featureVector_resh_1);
+	auto mi = metric::mutualInformation<double>(featureVector_resh_0, featureVector_resh_1);
 
 	auto voi = eX + eY - 2 * mi;
 

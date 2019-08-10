@@ -7,9 +7,9 @@
 */
 #include <algorithm>
 
-#include "../../distance.hpp"
-//#include "../details/graph.hpp"
-#include "../../../utils/graph.hpp"
+#include "modules/distance.hpp"
+
+#include "utils/graph.hpp"
 
 #define BOOST_TEST_MODULE Main
 #define BOOST_TEST_DYN_LINK
@@ -20,7 +20,7 @@
 BOOST_AUTO_TEST_CASE(Metric)
 {
 	using Vector = std::vector<double>;
-	metric::distance::Euclidian<double> metric;
+	metric::Euclidian<double> metric;
 
 	Vector vNull = {};
 	Vector v0 = {0, 0, 0, 0, 0};
@@ -36,14 +36,14 @@ BOOST_AUTO_TEST_CASE(Metric)
 }
 
 BOOST_AUTO_TEST_CASE(Grid4) {
-    metric::graph::Grid4 grid5(5); // replaced everywhere mapping::SOM_details with graph by Max F, 2019-05-16
+    metric::Grid4 grid5(5); // replaced everywhere mapping::SOM_details with graph by Max F, 2019-05-16
 	BOOST_CHECK(!grid5.isValid());
 
-    metric::graph::Grid4 grid25(25);
+    metric::Grid4 grid25(25);
 	BOOST_CHECK(grid25.isValid());
 	BOOST_CHECK_EQUAL(grid25.getNodesNumber(), 25);
 
-    metric::graph::Grid4 grid32(3, 2);
+    metric::Grid4 grid32(3, 2);
 	BOOST_CHECK(grid32.isValid());
 	BOOST_CHECK_EQUAL(grid32.getNodesNumber(), 6);
 
@@ -66,14 +66,14 @@ BOOST_AUTO_TEST_CASE(Grid4) {
 }
 
 BOOST_AUTO_TEST_CASE(Grid6) {
-    metric::graph::Grid6 grid5(5);
+    metric::Grid6 grid5(5);
 	BOOST_CHECK(!grid5.isValid());
 
-    metric::graph::Grid6 grid25(25);
+    metric::Grid6 grid25(25);
 	BOOST_CHECK(grid25.isValid());
 	BOOST_CHECK_EQUAL(grid25.getNodesNumber(), 25);
 
-    metric::graph::Grid6 grid30(6, 5);
+    metric::Grid6 grid30(6, 5);
 	BOOST_CHECK(grid30.isValid());
 	BOOST_CHECK_EQUAL(grid30.getNodesNumber(), 30);
 
@@ -96,14 +96,14 @@ BOOST_AUTO_TEST_CASE(Grid6) {
 }
 BOOST_AUTO_TEST_CASE(Grid8)
 {
-    metric::graph::Grid8 grid5(5);
+    metric::Grid8 grid5(5);
 	BOOST_CHECK(!grid5.isValid());
 
-    metric::graph::Grid8 grid25(25);
+    metric::Grid8 grid25(25);
 	BOOST_CHECK(grid25.isValid());
 	BOOST_CHECK_EQUAL(grid25.getNodesNumber(), 25);
 
-    metric::graph::Grid8 grid6(3, 2);
+    metric::Grid8 grid6(3, 2);
 	BOOST_CHECK(grid6.isValid());
 	BOOST_CHECK_EQUAL(grid6.getNodesNumber(), 6);
 
@@ -132,10 +132,10 @@ BOOST_AUTO_TEST_CASE(Grid8)
 
 BOOST_AUTO_TEST_CASE(LPS)
 {
-    metric::graph::LPS lps5(5);
+    metric::LPS lps5(5);
 	BOOST_CHECK_EQUAL(lps5.isValid(), true);
 
-    metric::graph::LPS lps(11);
+    metric::LPS lps(11);
 	BOOST_CHECK_EQUAL(lps.isValid(), true);
 
 	auto neighboursList = lps.getNeighbours(9, 2);
@@ -156,7 +156,7 @@ BOOST_AUTO_TEST_CASE(LPS)
 	                              neighbours2.begin(), neighbours2.end());
 
 	/* LPS(41) */
-    metric::graph::LPS lps41(41);
+    metric::LPS lps41(41);
 	BOOST_CHECK_EQUAL(lps41.isValid(), true);
 
 	neighboursList = lps41.getNeighbours(9, 2);
@@ -179,10 +179,10 @@ BOOST_AUTO_TEST_CASE(LPS)
 
 BOOST_AUTO_TEST_CASE(Paley)
 {
-    metric::graph::Paley paley12(12);
+    metric::Paley paley12(12);
 	BOOST_CHECK_EQUAL(paley12.isValid(), false);
 
-    metric::graph::Paley paley13(13);
+    metric::Paley paley13(13);
 	BOOST_CHECK_EQUAL(paley13.isValid(), true);
 
 	auto neighboursList = paley13.getNeighbours(9, 1);
@@ -202,10 +202,10 @@ BOOST_AUTO_TEST_CASE(Paley)
 
 BOOST_AUTO_TEST_CASE(Margulis)
 {
-    metric::graph::Margulis margulis5(5);
+    metric::Margulis margulis5(5);
 	BOOST_CHECK_EQUAL(margulis5.isValid(), false);
 
-    metric::graph::Margulis margulis25(25);
+    metric::Margulis margulis25(25);
 	BOOST_CHECK_EQUAL(margulis25.isValid(), true);
 
 	auto neighboursList = margulis25.getNeighbours(7, 1);

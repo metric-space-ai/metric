@@ -9,9 +9,9 @@ Copyright (c) 2018 Panda Team
 #include <chrono>
 #include <deque> // for Record test
 
-#include "../../../details/classification/metric_classification.hpp"
+#include "modules/mapping.hpp"
 #include "../../assets/helpers.cpp" // csv reader
-#include "../../../details/classification/details/correlation_weighted_accuracy.hpp"
+
 
 
 template <typename T>
@@ -165,7 +165,7 @@ int main()
 	std::cout << "Boost SVM on Iris: " << std::endl;
 	startTime = std::chrono::steady_clock::now();
 	auto svmModel_3 = metric::classification::edmClassifier<IrisRec, CSVM>();
-	auto boostSvmModel_3 = metric::classification::Boosting<IrisRec, metric::classification::edmClassifier<IrisRec, CSVM>, metric::classification::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, svmModel_3);
+	auto boostSvmModel_3 = metric::Boosting<IrisRec, metric::classification::edmClassifier<IrisRec, CSVM>, metric::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, svmModel_3);
 	std::cout << "training... " << std::endl;
 	boostSvmModel_3.train(iris_str, features_iris, response_iris, true);
 	endTime = std::chrono::steady_clock::now();
@@ -186,7 +186,7 @@ int main()
 	std::cout << "Boost specialized SVM on Iris: " << std::endl;
 	startTime = std::chrono::steady_clock::now();
 	auto svmModel_4 = metric::classification::edmSVM<IrisRec>(C_SVC, RBF, 3, 0, 100, 0.001, 1, 0, NULL, NULL, 0.5, 0.1, 1, 0);
-	auto boostSvmModel_4 = metric::classification::Boosting<IrisRec, metric::classification::edmSVM<IrisRec>, metric::classification::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, svmModel_4);
+	auto boostSvmModel_4 = metric::Boosting<IrisRec, metric::classification::edmSVM<IrisRec>, metric::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, svmModel_4);
 	std::cout << "training... " << std::endl;
 	boostSvmModel_4.train(iris_str, features_iris, response_iris, true);
 	endTime = std::chrono::steady_clock::now();
@@ -218,7 +218,7 @@ int main()
 	WeakLrnVariant svmModel_6 = metric::classification::edmClassifier<IrisRec, CSVM>();
 	models_1.push_back(svmModel_5);
 	models_1.push_back(svmModel_6);
-	auto baggingSVMmodel_1 = metric::classification::Bagging<IrisRec, WeakLrnVariant, metric::classification::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, { 0.3, 0.7 }, models_1); // 30% of first weak learner type, 70% of second
+	auto baggingSVMmodel_1 = metric::Bagging<IrisRec, WeakLrnVariant, metric::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, { 0.3, 0.7 }, models_1); // 30% of first weak learner type, 70% of second
 	std::cout << "training... " << std::endl;
 	baggingSVMmodel_1.train(iris_str, features_iris, response_iris, true);
 	endTime = std::chrono::steady_clock::now();
@@ -239,7 +239,7 @@ int main()
 	// using Bagging on both specialized and default SVM with deque
 	std::cout << "Bagging on both specialized and default SVM on deque Iris: " << std::endl;
 	startTime = std::chrono::steady_clock::now();
-	auto baggingSVMmodel_2 = metric::classification::Bagging<IrisRec, WeakLrnVariant, metric::classification::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, { 0.3, 0.7 }, models_1); // 30% of first weak learner type, 70% of second
+	auto baggingSVMmodel_2 = metric::Bagging<IrisRec, WeakLrnVariant, metric::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, { 0.3, 0.7 }, models_1); // 30% of first weak learner type, 70% of second
 	std::cout << "training... " << std::endl;
 	baggingSVMmodel_2.train(iris_strD, features_iris, response_iris, true);
 	endTime = std::chrono::steady_clock::now();

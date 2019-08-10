@@ -12,11 +12,9 @@ Copyright (c) 2019 Max Filippov
 #include <functional>
 #include <variant>
 
-#include "../../../details/classification/details/metric_dt_classifier.hpp"
-
 #include "../../assets/helpers.cpp" // csv reader
-#include "../../../../distance.hpp"
-
+#include "modules/mapping.hpp"
+#include "modules/distance.hpp"
 
 using namespace std;
 
@@ -218,7 +216,7 @@ int main()
     // build dimension and Dimension objects
 
 	typedef double InternalType;
-    namespace md = metric::distance;
+  namespace md = metric;
 
 	// features
     using a0_type = decltype(field0accessors);
@@ -233,20 +231,20 @@ int main()
     auto dim3 = metric::make_dimension(md::Euclidian_thresholded<InternalType>(), field2accessors);
     auto dim4 = metric::make_dimension(md::Cosine<InternalType>(), field2accessors);
     auto dim5 = metric::make_dimension(md::SSIM<std::vector<InternalType>>(), field3accessors);
-    auto dim6 = metric::make_dimension(md::TWED<InternalType>(), field2accessors);
+    auto dim6 = metric::make_dimension(md::TWED<InternalType>(0, 1), field2accessors);
     auto dim7 = metric::make_dimension(md::Edit<char>(), field4accessors);
     auto dim10 = metric::make_dimension(md::EMD<InternalType>(8,8), field2accessors);
 
     typedef  std::variant<
-        metric::Dimension< metric::distance::Euclidian<InternalType>, a0_type>,
-        metric::Dimension< metric::distance::Manhatten<InternalType>, a1_type>,
-        metric::Dimension< metric::distance::P_norm<InternalType>, a2_type>,
-        metric::Dimension< metric::distance::Euclidian_thresholded<InternalType>, a2_type>,
-        metric::Dimension< metric::distance::Cosine<InternalType>, a2_type>,
-        metric::Dimension< metric::distance::SSIM<std::vector<InternalType>> ,a3_type>,
-        metric::Dimension< metric::distance::TWED<InternalType>, a2_type>,
-        metric::Dimension< metric::distance::EMD<InternalType>, a2_type>, // matrix C is temporary created inside functor
-        metric::Dimension< metric::distance::Edit<std::string::value_type>, a4_type>
+        metric::Dimension< metric::Euclidian<InternalType>, a0_type>,
+        metric::Dimension< metric::Manhatten<InternalType>, a1_type>,
+        metric::Dimension< metric::P_norm<InternalType>, a2_type>,
+        metric::Dimension< metric::Euclidian_thresholded<InternalType>, a2_type>,
+        metric::Dimension< metric::Cosine<InternalType>, a2_type>,
+        metric::Dimension< metric::SSIM<std::vector<InternalType>> ,a3_type>,
+        metric::Dimension< metric::TWED<InternalType>, a2_type>,
+        metric::Dimension< metric::EMD<InternalType>, a2_type>, // matrix C is temporary created inside functor
+        metric::Dimension< metric::Edit<std::string::value_type>, a4_type>
         > VariantType;
 	
     std::vector<VariantType> dims = {dim0, dim1, dim2, dim3, dim4, dim5, dim6, dim7, dim10};
@@ -259,7 +257,7 @@ int main()
 
 	std::cout << "Metric Desicion Tree: " << std::endl;
 	startTime = std::chrono::steady_clock::now();
-	auto model = metric::classification::MetricDT<Record>();
+	auto model = metric::DT<Record>();
 	std::cout << "Metric Desicion Tree training... " << std::endl;
 	model.train(selection, dims, response);
 	endTime = std::chrono::steady_clock::now();
@@ -272,7 +270,13 @@ int main()
 	vector_print(prediction);
 
 	std::cout << "\n";
+	prediction.clear();
+	model.predict(test_sample, dims, prediction);
+	std::cout << "\n";
+	std::cout << "Metric Desicion Tree prediction2: " << std::endl;
+	vector_print(prediction);
 
+	std::cout << "\n";
 	   
 
 	std::cout << "Distances separately: " << std::endl;
@@ -280,7 +284,7 @@ int main()
 
     // test Edit separately
 
-    metric::distance::Edit<char> edit_functor;
+    metric::Edit<char> edit_functor;
     auto edit_dist = edit_functor("AAAB", "AAC");
 
     std::cout << "\nEdit distance: " << edit_dist << "\n";
@@ -288,7 +292,7 @@ int main()
 
 	// test SSIM separately
 
-    metric::distance::SSIM<std::vector<double>> SSIM_functor;
+    metric::SSIM<std::vector<double>> SSIM_functor;
     auto SSIM_dist = SSIM_functor(img1, img2);
 
     std::cout << "\nSSIM distance: " << SSIM_dist << "\n";

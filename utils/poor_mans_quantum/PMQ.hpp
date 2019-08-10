@@ -17,7 +17,7 @@
 #include <iostream>
 #include <random>
 
-namespace metric{
+namespace metric {
 template <typename Distribution = Discrete<float>, typename T = float>
 class PMQ
 {
@@ -211,9 +211,9 @@ T PMQ<Distribution, T>::pdf(T x)
 }
 
 /*** addition ***/
-template <typename mT1, typename mT2>
+template <typename T1, typename T2>
 PMQ<Discrete<float>>
-operator+(mT1 rv1, mT2 rv2)
+operator+(PMQ<T1> rv1, PMQ<T2> rv2)
 {
     size_t n = (rv1._dist._data.size() + rv2._dist._data.size()) / 2;
     std::vector<float> y(RV_SAMPLES);
@@ -227,7 +227,7 @@ operator+(mT1 rv1, mT2 rv2)
 
 template <typename mT>
 PMQ<Discrete<float>>
-operator+(mT rv, float x)
+operator+(PMQ<mT> rv, float x)
 {
     size_t n = rv._dist._data.size();
     std::vector<float> y(n);
@@ -241,7 +241,7 @@ operator+(mT rv, float x)
 
 template <typename mT>
 PMQ<Discrete<float>>
-operator+(float x, mT rv)
+operator+(float x, PMQ<mT> rv)
 {
     size_t n = rv._dist._data.size();
     std::vector<float> y(n);
@@ -255,7 +255,7 @@ operator+(float x, mT rv)
 
 template <typename mT>
 PMQ<Discrete<float>>
-operator+(mT rv, double x)
+operator+(PMQ<mT> rv, double x)
 {
     size_t n = rv._dist._data.size();
     std::vector<float> y(n);
@@ -269,7 +269,7 @@ operator+(mT rv, double x)
 
 template <typename mT>
 PMQ<Discrete<float>>
-operator+(double x, mT rv)
+operator+(double x, PMQ<mT> rv)
 {
     size_t n = rv._dist._data.size();
     std::vector<float> y(n);
@@ -284,7 +284,7 @@ operator+(double x, mT rv)
 /*** substraction ***/
 template <typename mT1, typename mT2>
 PMQ<Discrete<float>>
-operator-(mT1 rv1, mT2 rv2)
+operator-(PMQ<mT1> rv1, PMQ<mT2> rv2)
 {
     size_t n = (rv1._dist._data.size() + rv2._dist._data.size()) / 2;
     std::vector<float> y(RV_SAMPLES);
@@ -298,7 +298,7 @@ operator-(mT1 rv1, mT2 rv2)
 
 template <typename mT>
 PMQ<Discrete<float>>
-operator-(mT rv, float x)
+operator-(PMQ<mT> rv, float x)
 {
     size_t n = rv._dist._data.size();
     std::vector<float> y(n);
@@ -312,7 +312,7 @@ operator-(mT rv, float x)
 
 template <typename mT>
 PMQ<Discrete<float>>
-operator-(float x, mT rv)
+operator-(float x, PMQ<mT> rv)
 {
     size_t n = rv._dist._data.size();
     std::vector<float> y(n);
@@ -326,7 +326,7 @@ operator-(float x, mT rv)
 
 template <typename mT>
 PMQ<Discrete<float>>
-operator-(mT rv, double x)
+operator-(PMQ<mT> rv, double x)
 {
     size_t n = rv._dist._data.size();
     std::vector<float> y(n);
@@ -340,7 +340,7 @@ operator-(mT rv, double x)
 
 template <typename mT>
 PMQ<Discrete<float>>
-operator-(double x, mT rv)
+operator-(double x, PMQ<mT> rv)
 {
     size_t n = rv._dist._data.size();
     std::vector<float> y(n);
@@ -355,7 +355,7 @@ operator-(double x, mT rv)
 /*** multiplication ***/
 template <typename mT1, typename mT2>
 PMQ<Discrete<float>>
-operator*(mT1 rv1, mT2 rv2)
+operator*(PMQ<mT1> rv1, PMQ<mT2> rv2)
 {
     size_t n = (rv1._dist._data.size() + rv2._dist._data.size()) / 2;
     std::vector<float> y(RV_SAMPLES);
@@ -369,7 +369,7 @@ operator*(mT1 rv1, mT2 rv2)
 
 template <typename mT>
 PMQ<Discrete<float>>
-operator*(mT rv, float x)
+operator*(PMQ<mT> rv, float x)
 {
     size_t n = rv._dist._data.size();
     std::vector<float> y(n);
@@ -383,7 +383,7 @@ operator*(mT rv, float x)
 
 template <typename mT>
 PMQ<Discrete<float>>
-operator*(float x, mT rv)
+operator*(float x, PMQ<mT> rv)
 {
     size_t n = rv._dist._data.size();
     std::vector<float> y(n);
@@ -397,7 +397,7 @@ operator*(float x, mT rv)
 
 template <typename mT>
 PMQ<Discrete<float>>
-operator*(mT rv, double x)
+operator*(PMQ<mT> rv, double x)
 {
     size_t n = rv._dist._data.size();
     std::vector<float> y(n);
@@ -411,7 +411,7 @@ operator*(mT rv, double x)
 
 template <typename mT>
 PMQ<Discrete<float>>
-operator*(double x, mT rv)
+operator*(double x, PMQ<mT> rv)
 {
     size_t n = rv._dist._data.size();
     std::vector<float> y(n);
@@ -426,7 +426,7 @@ operator*(double x, mT rv)
 /*** division ***/
 template <typename mT1, typename mT2>
 PMQ<Discrete<float>>
-operator/(mT1 rv1, mT2 rv2)
+operator/(PMQ<mT1> rv1, PMQ<mT2> rv2)
 {
     size_t n = (rv1._dist._data.size() + rv2._dist._data.size()) / 2;
     std::vector<float> y(RV_SAMPLES);
@@ -440,7 +440,7 @@ operator/(mT1 rv1, mT2 rv2)
 
 template <typename mT>
 PMQ<Discrete<float>>
-operator/(mT rv, float x)
+operator/(PMQ<mT> rv, float x)
 {
     size_t n = rv._dist._data.size();
     std::vector<float> y(n);
@@ -454,7 +454,7 @@ operator/(mT rv, float x)
 
 template <typename mT>
 PMQ<Discrete<float>>
-operator/(float x, mT rv)
+operator/(float x, PMQ<mT> rv)
 {
     size_t n = rv._dist._data.size();
     std::vector<float> y(n);
@@ -468,7 +468,7 @@ operator/(float x, mT rv)
 
 template <typename mT>
 PMQ<Discrete<float>>
-operator/(mT rv, double x)
+operator/(PMQ<mT> rv, double x)
 {
     size_t n = rv._dist._data.size();
     std::vector<float> y(n);
@@ -482,7 +482,7 @@ operator/(mT rv, double x)
 
 template <typename mT>
 PMQ<Discrete<float>>
-operator/(double x, mT rv)
+operator/(double x, PMQ<mT> rv)
 {
     size_t n = rv._dist._data.size();
     std::vector<float> y(n);
@@ -498,7 +498,7 @@ operator/(double x, mT rv)
 // significance test
 template <typename mT1, typename mT2>
 float
-operator==(const mT1 & rv0, const mT2 & rv1)
+operator==(const PMQ<mT1> & rv0, const PMQ<mT2> & rv1)
 {
     auto [rv0_l, rv0_r] = rv0.confidence(1 - RV_ERROR);
     auto [rv01_l, rv01_r] = rv1.merged_confidence(rv0_l, rv0_r, 1 - RV_ERROR);
@@ -515,7 +515,7 @@ operator==(const mT1 & rv0, const mT2 & rv1)
 // significance test
 template <typename mT1, typename mT2>
 float
-operator!=(const mT1 & rv0, const mT2  & rv1)
+operator!=(const PMQ<mT1> & rv0, const PMQ<mT2>  & rv1)
 {
     auto [rv0_l, rv0_r] = rv0.confidence(1 - RV_ERROR);
     auto [rv01_l, rv01_r] = rv1.merged_confidence(rv0_l, rv0_r, 1 - RV_ERROR);
@@ -530,7 +530,7 @@ operator!=(const mT1 & rv0, const mT2  & rv1)
 
 template <typename T1, typename T2>
 PMQ<Discrete<float>>
-merge(T1 rv1, T2 rv2)
+merge(PMQ<T1> rv1, PMQ<T2> rv2)
 {
     size_t n = rv1._dist._data.size() + rv2._dist._data.size();
     std::vector<float> y(rv1._dist._data);
@@ -541,7 +541,7 @@ merge(T1 rv1, T2 rv2)
 
 template <typename T1>
 std::tuple<PMQ<Discrete<float>>, PMQ<Discrete<float>>>
-split(T1 rv)
+split(PMQ<T1> rv)
 {
     size_t n = rv._dist._data.size() / 2;
     std::vector<float> y1(RV_SAMPLES);

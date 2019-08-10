@@ -10,12 +10,8 @@
 #include <array>
 #include <iostream>
 #include <chrono>
-#include <random>
 
-//#include "metric_correlation.hpp"
-//#include "details/metrics.hpp"
-#include "details/mgc.hpp"
-
+#include "modules/correlation.hpp"
 
 template <typename T>
 void matrix_print(const std::vector<std::vector<T>> &mat)
@@ -44,6 +40,7 @@ void vector_print(const std::vector<T> &vec)
     }
     std::cout << vec[vec.size() - 1] << " ]" << std::endl;
 }
+
 
 struct simple_user_euclidian
 {
@@ -147,24 +144,20 @@ int main()
                                            {1.52144482984914},
                                            {3.43908991254968}};
     
-	
-    /* Build functors (function objects) with user types and metrics */
+    // build functors (function objects) with user types and metrics
     typedef std::vector<double> Rec1;
     typedef std::array<float, 1> Rec2;
+    typedef simple_user_euclidian Met1;
+    typedef metric::Manhatten<float> Met2;
 
-    //typedef simple_user_euclidian Met1;
-    typedef metric::distance::Euclidian<double> Met1;
-    typedef metric::distance::Manhatten<float> Met2;
+    // set up the correlation function
+    auto mgc_corr = metric::MGC<Rec1, Met1, Rec2, Met2>();
 
-    /* Set up the correlation function */
-    auto mgc_corr = metric::correlation::MGC<Rec1, Met1, Rec2, Met2>();
-
-    /*  Compute and benchmark */
+    // compute and benchmark
     auto t1 = std::chrono::steady_clock::now();
     auto result = mgc_corr(A1, B1); // A1 = std::vector<...>, A2 = std::deque<...>
     auto t2 = std::chrono::steady_clock::now();
-    std::cout << result << " (Time total = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000 << "s)" << std::endl;
-
+    std::cout << result << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000 << "s)" << std::endl;
 
     return 0;
 }

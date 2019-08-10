@@ -7,7 +7,7 @@ Copyright (c) 2019 Panda Team
 */
 
 #include <iostream>
-#include "../../../utils/graph/graph.hpp"
+#include "utils/graph.hpp"
 
 
 
@@ -101,7 +101,7 @@ int main()
     std::cout << "Testing Graph_blaze\n";
 
 
-    auto g = metric::graph::Grid4(h, w);
+    auto g = metric::Grid4(h, w);
 //    auto g = metric::graph::Grid6(h, w);
 //    auto g = metric::graph::Grid8(h, w);
 //    auto g = metric::graph::Margulis(h*w);
@@ -134,7 +134,7 @@ int main()
 //    edges.emplace_back(2, 0);
     std::vector<std::pair<size_t, size_t>> edges = createGrid4(h, w);
 
-    auto g_custom = metric::graph::Graph<char, true, false>(edges); // edge value type = bool, isDense = false, isSymmetric = true
+    auto g_custom = metric::Graph<char, true, false>(edges); // edge value type = bool, isDense = false, isSymmetric = true
 //    g_custom.buildEdges(edges);
 
     std::cout << "\ncustom graph:\n";
@@ -151,7 +151,7 @@ int main()
     std::cout << "\ntesting factory\n";
 
     auto m = createGrid4Matrix(edges);
-    auto g_custom_m = metric::graph::make_graph(std::move(m));
+    auto g_custom_m = metric::make_graph(std::move(m));
     std::cout << g_custom_m.get_matrix() << "\n";
 
     return 0;

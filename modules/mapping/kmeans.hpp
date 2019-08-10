@@ -26,14 +26,36 @@ Copyright (c) 2018 M.Welsch <michael@welsch.one>
     */
 
 
+#include <vector>
+#include <string>
+#include <random>
+#include <cassert>
+#include "../distance/k-related/Standards.hpp"
 namespace metric 
 {
 
 
 namespace kmeans_details{
-  
-    
-    
+std::string default_measure(void) { return "euclidian"; }
+template <typename T>
+T distance(const std::vector<T> &a, const std::vector<T> &b,
+           std::string distance_measure) {
+
+  assert(a.size() == b.size()); // data vectors have not the same length
+  if (distance_measure.compare("euclidian") == 0)
+    return metric::Euclidian<T>()(a, b);
+  else if (distance_measure.compare("rms") == 0) {
+    T val = metric::Euclidian<T>()(a, b);
+    return val * val;
+  } else if (distance_measure.compare("manhatten") == 0)
+    return metric::Manhatten<T>()(a, b);
+  else {
+    std::cout << "distance measure not found, using default (euclidian)"
+              << std::endl;
+    return metric::Euclidian<T>()(a, b);
+  }
+}
+
     /*
     closest distance between datapoints and means.
     */
@@ -49,10 +71,10 @@ namespace kmeans_details{
         distances.reserve(k);
         for (auto &d : datapoints)
         {
-            T closest = distance_details::distance(d, means[0], distance_measure);
+            T closest = kmeans_details::distance(d, means[0], distance_measure);
             for (auto &m : means)
             {
-                T distance = distance_details::distance(d, m, distance_measure);
+                T distance = kmeans_details::distance(d, m, distance_measure);
                 if (distance < closest)
                     closest = distance;
             }
@@ -107,13 +129,13 @@ namespace kmeans_details{
     {
         assert(!means.empty());
     
-        T smallest_distance = distance_details::distance(datapoint, means[0],distance_measure);
+        T smallest_distance = kmeans_details::distance(datapoint, means[0],distance_measure);
         //typename std::vector<T>::size_type index = 0;
         int index = 0;
         T distance;
         for (int i = 1; i < means.size(); ++i)
         {
-            distance = distance_details::distance(datapoint, means[i],distance_measure);
+            distance = kmeans_details::distance(datapoint, means[i],distance_measure);
             if (distance < smallest_distance)
             {
                 smallest_distance = distance;
@@ -228,14 +250,14 @@ namespace kmeans_details{
         const std::vector<std::vector<T>> &data,
         const int &k,
         const int &maxiter = 200,
-        std::string distance_measure = distance_details::default_measure())
+        std::string distance_measure = kmeans_details::default_measure())
     {
         static_assert(std::is_arithmetic<T>::value && std::is_signed<T>::value,
                       "kmeans_lloyd requires the template parameter T to be a signed arithmetic type (e.g. float, double, int)");
         assert(k > 0);            // k must be greater than zero
         assert(data.size() >= k); // there must be at least k data points
         
-        std::vector<std::vector<T>> means = kmeans_functions::random_init(data, k, distance_measure);
+        std::vector<std::vector<T>> means = kmeans_details::random_init(data, k, distance_measure);
     
         //std::vector<std::vector<T>> old_means;
         std::vector<int> assignments(data.size());
@@ -245,14 +267,14 @@ namespace kmeans_details{
         std::vector<int> counts(k, int(0));
         do
         {
-            kmeans_functions::update_assignments(assignments, data, means, distance_measure);
-            auto [updated_counts, updated_number_of_means] = kmeans_functions::update_means(means, data, assignments, k);
+            kmeans_details::update_assignments(assignments, data, means, distance_measure);
+            auto [updated_counts, updated_number_of_means] = kmeans_details::update_means(means, data, assignments, k);
             counts = updated_counts;
             ++t;
         } 
         while (updated_number_of_means != int(0) && t < maxiter);
     
-        kmeans_functions::rearrange_assignments(assignments);
+        kmeans_details::rearrange_assignments(assignments);
         return {assignments,means,counts};
     }
         

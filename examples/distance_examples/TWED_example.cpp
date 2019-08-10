@@ -9,7 +9,7 @@ Copyright (c) 2019 Panda Team
 #include <vector>
 #include <iostream>
 #include <chrono>
-#include "../metric_distance.hpp"
+#include "modules/distance.hpp"
 
 
 int main()
@@ -25,7 +25,7 @@ int main()
 	std::vector<double> v1 = { 1, 1, 1, 1, 1, 2, 3, 4 };
 	std::vector<double> v2 = { 2, 2, 2, 2, 2, 2, 2, 2 };
 
-	metric::distance::TWED<double> distance;
+	metric::TWED<double> distance(0,1);
 
 	auto t1 = std::chrono::steady_clock::now();
 	auto result1 = distance(v0, v1);

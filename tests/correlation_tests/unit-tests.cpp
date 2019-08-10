@@ -7,10 +7,10 @@
 */
 #include <algorithm>
 #include <deque>
-#include "../mgc.hpp"
+#include "modules/correlation.hpp"
 //#include "details/metrics.hpp"
-#include "../../distance/distance.hpp"
-#include "../../../utils/graph/connected-components.hpp"
+#include "modules/distance.hpp"
+#include "utils/graph/connected-components.hpp"
 
 #define BOOST_TEST_MODULE Main
 #define BOOST_TEST_DYN_LINK
@@ -69,8 +69,8 @@ BOOST_AUTO_TEST_CASE(Metrics)
 {
 	auto vectorNull = generateVector<double>(0);
 
-	metric::distance::Euclidian<double> euclidian;
-	metric::distance::Manhatten<double> manhatten;
+	metric::Euclidian<double> euclidian;
+	metric::Manhatten<double> manhatten;
 
 	BOOST_CHECK_EQUAL(euclidian(vectorNull, vectorNull), 0);
 	BOOST_CHECK_EQUAL(manhatten(vectorNull, vectorNull), 0);
@@ -171,21 +171,21 @@ BOOST_AUTO_TEST_CASE(MGC)
     typedef std::vector<double> Rec1;
     typedef std::array<float, 1> Rec2;
 
-    typedef metric::distance::Euclidian<double> Met1;
-    typedef metric::distance::Manhatten<float> Met2;
+    typedef metric::Euclidian<double> Met1;
+    typedef metric::Manhatten<float> Met2;
 
 
-    auto mgc_corr = metric::correlation::MGC<Rec1, Met1, Rec2, Met2>();
+    auto mgc_corr = metric::MGC<Rec1, Met1, Rec2, Met2>();
 
     auto result = mgc_corr(A1, B1);
 	BOOST_CHECK_CLOSE(result, 0.28845660296530595, t);
 
-    auto mgc_corr2 = metric::correlation::MGC<Rec2, Met2, Rec1, Met1>();
+    auto mgc_corr2 = metric::MGC<Rec2, Met2, Rec1, Met1>();
     result = mgc_corr2(B1, A1);
 	BOOST_CHECK_CLOSE(result, 0.28845660296530595, t);
 
 	typedef std::vector<double> Rec;
-	auto mgc = metric::correlation::MGC<Rec, Met1, Rec, Met1>();
+	auto mgc = metric::MGC<Rec, Met1, Rec, Met1>();
 	auto m1 = generateMatrix<double>(4, 4);
 	auto m2 = generateMatrix<double>(4, 4);
 	mgc(m1, m2);
@@ -214,10 +214,10 @@ BOOST_AUTO_TEST_CASE(MGC_Estimate)
 	}
 
 	typedef std::vector<double> Rec;
-	typedef metric::distance::Euclidian<double> Met;
+	typedef metric::Euclidian<double> Met;
 
 
-	auto mgc = metric::correlation::MGC<Rec, Met, Rec, Met>();
+	auto mgc = metric::MGC<Rec, Met, Rec, Met>();
 
 	auto result = mgc.estimate(dataX, dataY);
 	std::cout << result << std::endl;

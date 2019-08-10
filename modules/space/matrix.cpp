@@ -34,19 +34,19 @@ Matrix<recType, Metric, distType>::Matrix(const std::vector<recType> &p,
 
 template <typename recType, typename Metric, typename distType>
 distType 
-Matrix<recType, Metric, distType>::operator()(size_t i, size_t j) {
+Matrix<recType, Metric, distType>::operator()(size_t i, size_t j) const {
   return D_(i,j);
 }
 
 template <typename recType, typename Metric, typename distType>
 recType 
-Matrix<recType, Metric, distType>::operator[](size_t id) {
+Matrix<recType, Metric, distType>::operator[](size_t id) const{
   return (data_(id));
 }
 
 template <typename recType, typename Metric, typename distType>
 size_t 
-Matrix<recType, Metric, distType>::size() {
+Matrix<recType, Metric, distType>::size() const {
   return data_.size();
 }
 

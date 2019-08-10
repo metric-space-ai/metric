@@ -9,7 +9,7 @@ Copyright (c) 2019 Panda Team
 #include <vector>
 #include <iostream>
 #include <chrono>
-#include "../metric_distance.hpp"
+#include "modules/distance.hpp"
 
 
 int main()
@@ -24,7 +24,7 @@ int main()
 	std::string str2 = "1000011001100110011011100";
 	std::string str3 = "Absolutly different string";
 
-	metric::distance::Edit<std::string> distance;
+	metric::Edit<std::string> distance;
 
 	auto t1 = std::chrono::steady_clock::now();
 	auto result1 = distance(str1, str2);

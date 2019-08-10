@@ -37,11 +37,11 @@ class Matrix
     bool append_if(const std::vector<recType> &p,distType treshold); // append a vector of records into the Matrix only if distance bigger than a treshold
     bool erase(size_t id);                                      // erase data record from Matrix by ID
     bool set(size_t id, const recType &p);                      // change data record by ID
-    recType operator[](size_t id);                              // access a data record by ID
-    distType operator()(size_t i, size_t j);                    // access a distance by two IDs
+    recType operator[](size_t id) const;                              // access a data record by ID
+    distType operator()(size_t i, size_t j) const;                    // access a distance by two IDs
 
     /*** information ***/
-    size_t size();
+    size_t size() const;
 
 };
 

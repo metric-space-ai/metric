@@ -10,7 +10,7 @@
 #include "../PMQ.hpp"
 #include <iostream>
 
-namespace metric{
+namespace metric {
 
 class Normal
 {

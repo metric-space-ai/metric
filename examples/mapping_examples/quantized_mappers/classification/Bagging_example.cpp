@@ -6,7 +6,7 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 Copyright (c) 2019 Panda Team
 */
 
-#include "../../../details/classification/metric_classification.hpp"
+#include "modules/mapping.hpp"
 
 #include "../../assets/helpers.cpp" // csv reader
 
@@ -14,7 +14,7 @@ Copyright (c) 2019 Panda Team
 
 #include <deque> // for Record test
 
-#include "../../../details/classification/details/correlation_weighted_accuracy.hpp"
+
 
 
 

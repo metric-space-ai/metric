@@ -23,9 +23,13 @@ include_directories(${Boost_INCLUDE_DIRS})
 
 # quantized_mappers / clustering
 add_executable(KMedoids_example quantized_mappers/clustering/KMedoids_example.cpp)
+target_link_libraries(KMedoids_example PRIVATE ${LAPACK_LIBRARIES})
 add_executable(KMeans_example quantized_mappers/clustering/KMeans_example.cpp)
+target_link_libraries(KMeans_example PRIVATE ${LAPACK_LIBRARIES})
 add_executable(DBScan_example quantized_mappers/clustering/DBScan_example.cpp)
+target_link_libraries(DBScan_example PRIVATE ${LAPACK_LIBRARIES})
 add_executable(AffinityPropagation_example quantized_mappers/clustering/AffinityPropagation_example.cpp)
+target_link_libraries(AffinityPropagation_example PRIVATE ${LAPACK_LIBRARIES})
 
 #FIXME HierarchicalClustering_example don't compile
 #add_executable(HierarchicalClustering_example quantized_mappers/clustering/HierarchicalClustering_example.cpp) 
@@ -34,16 +38,19 @@ add_executable(AffinityPropagation_example quantized_mappers/clustering/Affinity
 
 # quantized_mappers / classification
 add_executable(Classification_example quantized_mappers/classification/Classification_example.cpp)
+target_link_libraries(Classification_example PRIVATE ${LAPACK_LIBRARIES})
 add_executable(SVM_example quantized_mappers/classification/SVM_example.cpp)
+target_link_libraries(SVM_example PRIVATE ${LAPACK_LIBRARIES})
 add_executable(C45_example quantized_mappers/classification/C45_example.cpp)
 if(UNIX)
     target_compile_options(C45_example PRIVATE -pthread)
 endif(UNIX)
 add_executable(Boosting_example quantized_mappers/classification/Boosting_example.cpp)
 add_executable(Bagging_example quantized_mappers/classification/Bagging_example.cpp)
+target_link_libraries(Bagging_example PRIVATE ${LAPACK_LIBRARIES})
 add_executable(CWA_demo quantized_mappers/classification/CWA_demo.cpp)
 add_executable(MetricDesicionTree_example quantized_mappers/classification/MetricDesicionTree_example.cpp)
-
+target_link_libraries(MetricDesicionTree_example PRIVATE ${LAPACK_LIBRARIES})
 
 if(LAPACK_LIBRARIES)
 	# continious_mappers / clustering
@@ -55,6 +62,10 @@ if(LAPACK_LIBRARIES)
 	
 	add_executable(main_esn main_esn.cpp)
 	target_link_libraries(main_esn PRIVATE ${LAPACK_LIBRARIES})
+
+
+	target_link_libraries(main_esn PRIVATE ${LAPACK_LIBRARIES})
+	
 endif(LAPACK_LIBRARIES)
 
 # continious_mappers / classification
