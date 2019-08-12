@@ -12,10 +12,14 @@ Copyright (c) 2019 Panda Team
     #define M_PI 3.14159265358979323846
 #endif
 
-#include "../details/esn.hpp"
+//#include "../details/esn.hpp"
 
-#include "utils/visualizer/visualizer.hpp"
+//#include "mapping.hpp"  // TODO fix DT.cpp and enable
+#include "mapping/PCAnet.hpp" // temporary
+#include "mapping/ESN.hpp" // temporary
 
+//#include "utils/visualizer/visualizer.hpp"
+#include "../utils/visualizer.hpp" // ../utils/visualizer.hpp"
 
 int main()
 {
@@ -61,7 +65,7 @@ int main()
     }
 
 //    auto esn = esn::ESN(500, 4, 0, 1, 0, 0.9); // no echo, predicts better in this case because on no dependencies along time in it
-    auto esn = metric::mapping::esn::ESN(500, 4, 0.99, 0.5, 5, 0.9); // echo
+    auto esn = metric::ESN(500, 4, 0.99, 0.5, 5, 0.9); // echo
     // ctor input: w_size=500, w_connections=10, w_sr=0.6, alpha=0.5, washout=1, beta=0.5
     esn.train(SlicesR, TargetR);
 
@@ -138,7 +142,7 @@ int main()
     }
 
 
-    auto esn_sine = metric::mapping::esn::ESN(500, 10, 0, 1, 0, 0.9); // reservoir disabled: w_sr=0, alpha=1, washout=0
+    auto esn_sine = metric::ESN(500, 10, 0, 1, 0, 0.9); // reservoir disabled: w_sr=0, alpha=1, washout=0
     // ctor input: w_size=500, w_connections=10, w_sr=0.6, alpha=0.5, washout=1, beta=0.5
     esn_sine.train(SlicesSine, TargetSine);
 

@@ -6,15 +6,15 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 Copyright (c) 2019 Panda Team
 */
 
-#ifndef _METRIC_MAPPING_DETAILS_ESN_CPP
-#define _METRIC_MAPPING_DETAILS_ESN_CPP
+//#ifndef _METRIC_MAPPING_DETAILS_ESN_CPP
+//#define _METRIC_MAPPING_DETAILS_ESN_CPP
 #include "ESN.hpp"
 
 
 namespace metric {
 
 
-namespace eESN_details
+namespace ESN_details
 {
 
 
@@ -199,14 +199,14 @@ blaze::DynamicMatrix<double> ridge(
                 W_in(r_row, r_col) = uniform_double(rgen);
             }
 
-        blaze::DynamicMatrix<double> Readout = esn::get_readout(
+        blaze::DynamicMatrix<double> Readout = ESN_details::get_readout(
                     Slices, // input signal
                     W_in, // input weights
                     W, // reservoir internal weights (square matrix)
                     alpha, washout // leak rate, number of slices excluded from output for washout
                     );
 
-        W_out = esn::ridge(
+        W_out = ESN_details::ridge(
                     submatrix(Target, 0UL, washout, Target.rows(), Target.columns() - washout),
                     Readout,
                     beta
@@ -224,7 +224,7 @@ blaze::DynamicMatrix<double> ridge(
     {
         assert(trained);
 
-        blaze::DynamicMatrix<double> Readout = esn::get_readout(
+        blaze::DynamicMatrix<double> Readout = ESN_details::get_readout(
                     Slices, // input signal
                     W_in, // input weights
                     W, // reservoir internal weights (square matrix)
@@ -236,4 +236,4 @@ blaze::DynamicMatrix<double> ridge(
 
 
 } // namespace metric
-#endif // header guard
+//#endif // header guard

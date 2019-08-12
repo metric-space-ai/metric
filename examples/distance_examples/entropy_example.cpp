@@ -9,13 +9,11 @@ Copyright (c) 2019 Panda Team
 #include <vector>
 #include <random>
 #include <cmath>
-//#include "distance/details/k-related/entropy.hpp"
-#include "../metric_distance.hpp"
+#include "distance.hpp"
 #include <iostream>
 #include <fstream>
-//#include "distance/details/k-related/chebyshev.hpp"
 
-#include <random> // for random vector generation
+#include <random>
 
 
 
@@ -90,34 +88,34 @@ int main() {
 //    std::vector<std::vector<double>> v = {{1}, {2}, {3}, {2}};
 
     //auto e = entropy<double,metric::distance::Euclidian<double>>(v);
-    auto e = entropy(v, 3, 2.0, metric::distance::Chebyshev<double>()); // TODO fix logbase default type!!!!
+    auto e = entropy(v, 3, 2.0, metric::Chebyshev<double>()); // TODO fix logbase default type!!!!
     std::cout << "Chebyshev: " << e << std::endl;
 
-    e = entropy(v, 3, 2.0, metric::distance::P_norm<double>(3));
+    e = entropy(v, 3, 2.0, metric::P_norm<double>(3));
     std::cout << "General Minkowsky, 3: " << e << std::endl;
 
-    e = entropy(v, 3, 2.0, metric::distance::P_norm<double>(2));
+    e = entropy(v, 3, 2.0, metric::P_norm<double>(2));
     std::cout << "General Minkowsky, 2: " << e << std::endl;
 
-    e = entropy(v, 3, 2.0, metric::distance::Euclidian<double>());
+    e = entropy(v, 3, 2.0, metric::Euclidian<double>());
     std::cout << "Euclidean: " << e << std::endl;
 
-    e = entropy_kl(v, 3, 2.0, metric::distance::Euclidian<double>());
+    e = entropy_kl(v, 3, 2.0, metric::Euclidian<double>());
     std::cout << "Euclidean Kozachenko-Leonenko: " << e << std::endl;
 
-    e = entropy(v, 3, 2.0, metric::distance::P_norm<double>(1));
+    e = entropy(v, 3, 2.0, metric::P_norm<double>(1));
     std::cout << "General Minkowsky, 1: " << e << std::endl;
 
-    e = entropy(v, 3, 2.0, metric::distance::Manhatten<double>());
+    e = entropy(v, 3, 2.0, metric::Manhatten<double>());
     std::cout << "Manhatten: " << e << std::endl;
 
-    e = metric::distance::entropy(v);
+    e = metric::entropy(v);
     std::cout << "Default: " << e << std::endl;
 
     std::vector<std::vector<long double>> v_ld = {{5,5}, {2,2}, {3,3}, {5,1}};
     for (size_t i = 0; i < 10; i++)
     {
-        e = entropy(v_ld, 3, 2.0L, metric::distance::P_norm<long double>(3));
+        e = entropy(v_ld, 3, 2.0L, metric::P_norm<long double>(3));
         std::cout << "General Minkowsky, 3: " << e << std::endl;
     }
 
@@ -544,10 +542,10 @@ int main() {
     std::vector<std::vector<float>> v31 = { {0}, {0}, {0}, {0} };
     std::vector<std::vector<float>> v32 = { {0}, {0}, {0}, {0} };
 
-    auto eX = entropy(v31, 3, 2.0f, metric::distance::Chebyshev<long double>());
-    auto eY = entropy(v32, 3, 2.0f, metric::distance::Chebyshev<long double>());
+    auto eX = entropy(v31, 3, 2.0f, metric::Chebyshev<long double>());
+    auto eY = entropy(v32, 3, 2.0f, metric::Chebyshev<long double>());
 
-    auto mi = metric::distance::mutualInformation(v31, v32);
+    auto mi = metric::mutualInformation(v31, v32);
 
 	auto voi = eX + eY - 2 * mi;
 
@@ -557,24 +555,24 @@ int main() {
     std::cout << "voi = " << voi << std::endl;
 
     for (size_t i = 0; i<5; i++)
-        std::cout << "voi = " << metric::distance::variationOfInformation(v31, v32) << std::endl;
+        std::cout << "voi = " << metric::variationOfInformation(v31, v32) << std::endl;
     for (size_t i = 0; i<5; i++)
-        std::cout << "voi_normalized = " << metric::distance::variationOfInformation_normalized(v31, v32) << std::endl;
+        std::cout << "voi_normalized = " << metric::variationOfInformation_normalized(v31, v32) << std::endl;
 
-    auto f_voi = metric::distance::VOI<long double>();
+    auto f_voi = metric::VOI<long double>();
     for (size_t i = 0; i<5; i++)
         std::cout << "voi_functor = " << f_voi(v31, v32) << std::endl;
 
-    auto f_voi_norm = metric::distance::VOI_normalized();
+    auto f_voi_norm = metric::VOI_normalized();
     for (size_t i = 0; i<5; i++)
         std::cout << "voi_norm_functor = " << f_voi_norm(v31, v32) << std::endl;
 
 
-    auto f_voi_kl = metric::distance::VOI_kl<long double>();
+    auto f_voi_kl = metric::VOI_kl<long double>();
     for (size_t i = 0; i<5; i++)
         std::cout << "KL voi_functor = " << f_voi_kl(v31, v32) << std::endl;
 
-    auto f_voi_norm_kl = metric::distance::VOI_normalized_kl();
+    auto f_voi_norm_kl = metric::VOI_normalized_kl();
     for (size_t i = 0; i<5; i++)
         std::cout << "KL voi_norm_functor = " << f_voi_norm_kl(v31, v32) << std::endl;
 

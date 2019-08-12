@@ -13,10 +13,14 @@ Copyright (c) 2019 Panda Team
 #endif
 
 
-#include "../details/encoder.hpp"  // for usage independently on the entire lib
-//#include "metric.hpp"  // for usage as a part of the lib
+//#include "mapping.hpp"  // TODO fix DT.cpp and enable
 
-#include "utils/visualizer/visualizer.hpp"
+//#include "../details/encoder.hpp"
+#include "mapping/PCAnet.hpp" // temporary // for usage independently on the entire lib
+
+//#include "utils/visualizer/visualizer.hpp"
+#include "../utils/visualizer.hpp"
+
 #include "modules/transform/discrete_cosine.hpp"
 
 
@@ -113,7 +117,7 @@ int main()
         mat2bmp::blaze2bmp(TestSlicesSine, "TestSlicesSine.bmp");
     }
 
-    auto direct_sine = metric::mapping::linear_compressor::DirectMapping(true);
+    auto direct_sine = metric::PCAnet(true);
     direct_sine.train(SlicesSine, 8); // dataset, compressed_code_length
 
     //std::cout << "trained direct mapping\n";
@@ -178,7 +182,7 @@ int main()
         mat2bmp::blaze2bmp(TestSlicesSine, "TestSlicesSine_DCT.bmp");
     }
 
-    auto direct_sine_DCT = metric::mapping::linear_compressor::DirectMapping(visualize);
+    auto direct_sine_DCT = metric::PCAnet(visualize);
     direct_sine_DCT.train(SlicesSine, 8); // dataset, compressed_code_length
 
     //std::cout << "trained direct mapping after DCT applied\n";
