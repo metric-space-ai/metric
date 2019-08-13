@@ -1,4 +1,4 @@
-﻿/*
+/*
                        
 PANDA presents
 
@@ -8,8 +8,8 @@ PANDA presents
 ██║╚██╔╝██║██╔══╝     ██║   ██╔══██╗██║██║         ██║  ██║██║╚════██║   ██║   ██╔══██║██║╚██╗██║██║     ██╔══╝      
 ██║ ╚═╝ ██║███████╗   ██║   ██║  ██║██║╚██████╗    ██████╔╝██║███████║   ██║   ██║  ██║██║ ╚████║╚██████╗███████╗    
 ╚═╝     ╚═╝╚══════╝   ╚═╝   ╚═╝  ╚═╝╚═╝ ╚═════╝    ╚═════╝ ╚═╝╚══════╝   ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═══╝ ╚═════╝╚══════╝   
-                                                                                            Licensed under MPL 2.0.                                                                                                                                       
-                                                                                                   
+                                                                                            Licensed under MPL 2.0.
+
 a library for metrics / distance functions
 
 
@@ -31,6 +31,6 @@ Copyright (c) PANDA Team
 #include "distance/k-structured/Edit.hpp"
 
 #include "distance/k-related/L1.hpp"
-#include "distance/k-random/entropy.hpp"
+#include "distance/k-random/VOI.hpp"
 
 #endif //_METRIC_DISTANCE_HPP
