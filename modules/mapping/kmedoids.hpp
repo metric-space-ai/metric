@@ -12,6 +12,8 @@ Copyright (c) 2018 M.Welsch */
 #include <tuple>
 #include <vector>
 
+#include "../space/matrix.hpp"
+
 
 namespace metric 
 {
