@@ -20,7 +20,7 @@ A Affinity Propagation implementation based on a similarity matrix.
 
 #include <vector>
 #include <tuple>
-
+#include <algorithm>
 #include "affprop.cpp"
 namespace metric {
 /**
