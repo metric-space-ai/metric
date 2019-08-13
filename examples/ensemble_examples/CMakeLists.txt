@@ -8,4 +8,4 @@ endfunction()
 
 MakeExample(Boosting_example)
 MakeExample(CWA_demo)
-MakeExample(MetricDecisionTree)
+MakeExample(MetricDecisionTree_example)
