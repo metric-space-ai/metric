@@ -11,12 +11,10 @@ foreach(exampleSrc ${EXAMPLE_SRCS})
   #Add compile target
   add_executable(${exampleName} ${exampleSrc})
  
-  #link to Boost libraries AND your targets and dependencies
-
-#  target_link_libraries(${exampleName} ${LAPACK_LIBRARIES})
   if(UNIX)
     target_compile_options(${exampleName} PRIVATE -pthread)
     set_target_properties(${exampleName} PROPERTIES LINK_FLAGS -pthread)
   endif(UNIX)
 
+  set_target_properties(${exampleName} PROPERTIES   RUNTIME_OUTPUT_DIRECTORY  "${PROJECT_SOURCE_DIR}/examples")
 endforeach(exampleSrc)

@@ -6,8 +6,8 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 Copyright (c) 2019 Panda Team
 */
 
-#ifndef _METRIC_MAPPING_DETAILS_SOM_HPP
-#define _METRIC_MAPPING_DETAILS_SOM_HPP
+#ifndef _METRIC_MAPPING_SOM_HPP
+#define _METRIC_MAPPING_SOM_HPP
 
 /*
 for specific setting check:
@@ -15,10 +15,6 @@ Appropriate Learning Rate and Neighborhood Function of Self-organizing Map (SOM)
 International Journal of Modeling and Optimization, Vol. 6, No. 1, February 2016
 W. Natita, W. Wiboonsak, and S. Dusadee
 */
-
-
-
-
 
 #include <assert.h>
 
@@ -34,59 +30,97 @@ W. Natita, W. Wiboonsak, and S. Dusadee
 
 //#include "metric.tpp"
 #include "../distance.hpp"
-#include "../../utils/graph.hpp"
+#include "../utils/graph.hpp"
 
 #ifndef M_PI
 #define M_PI (3.14159265358979323846)
 #endif
 
+namespace metric {
+/**
+	 * @class SOM
+	 * 
+	 *@brief 
+	 * 
+	 */
+template <typename recType, class Metric = metric::Euclidian<typename recType::value_type>, class Graph = metric::Grid8>
+class SOM {
+    typedef typename recType::value_type T;
 
-namespace metric
-{
-    template <typename recType, class Metric = metric::Euclidian<typename recType::value_type>,
-                                                                class Graph = metric::Grid8> // replaced SOM_details with graph by Max F, 2019-05-16
-	class SOM
-	{
-		typedef typename recType::value_type T;
+public:
+    /**
+	     * @brief Construct a new SOM object
+	     * 
+	     * @param nodesNumber 
+	     * @param metric 
+	     */
+    explicit SOM(size_t nodesNumber, Metric metric = Metric());
+    /**
+		 * @brief Construct a new SOM object
+		 * 
+		 * @param nodesWidth 
+		 * @param nodesHeight 
+		 * @param metric 
+		 */
+    SOM(size_t nodesWidth, size_t nodesHeight, Metric metric = Metric());
 
-	  public:
-		explicit SOM(size_t nodesNumber, Metric metric = Metric());
-		SOM(size_t nodesWidth, size_t nodesHeight, Metric metric = Metric());
-		~SOM() = default;
+    /**
+		 * @brief Destroy the SOM object
+		 * 
+		 */
+    ~SOM() = default;
+    /**
+		 * @brief 
+		 * 
+		 * @return true 
+		 * @return false 
+		 */
+    bool isValid();
 
-		bool isValid();
+    /**
+		 * @brief 
+		 * 
+		 * @param samples 
+		 * @param iterations 
+		 * @param s_learn_rate 
+		 * @param f_learn_rate 
+		 */
+    void train(const std::vector<std::vector<T>>& samples, size_t iterations = 10000, double s_learn_rate = 1.2,
+        double f_learn_rate = 0.4);
 
-		void train(const std::vector<std::vector<T>> &samples,
-		           size_t iterations = 10000, double s_learn_rate = 1.2, double f_learn_rate = 0.4);
+    /**
+		 * @brief 
+		 * 
+		 * @param sample 
+		 * @return
+		 */
+    std::vector<double> reduce(const recType& sample);
 
-		std::vector<double> reduce(const recType &sample);
+    /**
+		 * @brief 
+		 * 
+		 * @return
+		 */
+    size_t size();
 
+    /**
+		 * @brief Best matching unit
+		 * 
+		 * @param sample 
+		 * @return size_t 
+		 */
+    size_t BMU(const recType& sample) const;
 
-		//recType weightsAt(size_t i, size_t j) const;
+private:
+    bool valid;
+    size_t D;  // dimensions of inputs vector
 
-		size_t size();
+    Metric metric;
+    Graph graph;
 
-		/* Best matching unit */
-		size_t BMU(const recType &sample) const;
+    std::vector<std::vector<T>> weights;  // nodes of SOM
+};
 
-	  private:
-		bool valid;
-		size_t D; // dimensions of inputs vector
-
-		Metric metric;
-		Graph graph;
-
-		std::vector<std::vector<T>> weights; // nodes of SOM
-											 // T calcGaussian(T mean, T stdDev, T x) const;
-
-		// T calcGaussian2D(T meanX, T meanY,
-		// 				 T sigmaX, T sigmaY, T x, T y) const;
-
-
-		//double calcGaussian2D(size_t meanX, size_t meanY, T sigma, size_t x, size_t y) const;
-
-	};
-
-} // namespace metric
+}  // namespace metric
 #include "SOM.cpp"
 #endif

@@ -26,10 +26,10 @@ Copyright (c) PANDA Team
 #include "mapping/SOM.hpp"
 #include "mapping/PCAnet.hpp"
 #include "mapping/ensembles.hpp"
-// #include "mapping/affprop.hpp"
-// #include "mapping/dbscan.hpp"
-// #include "mapping/kmeans.hpp"
+#include "mapping/affprop.hpp"
+#include "mapping/dbscan.hpp"
+#include "mapping/kmeans.hpp"
 #include "mapping/kmedoids.hpp"
-
+#include "mapping/hierarchClustering.hpp"
 
 #endif
