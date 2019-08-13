@@ -5,16 +5,12 @@
 
   Copyright (c) 2019 Michael Welsch
 */
-#include "graph.hpp"
+#include "../graph.hpp"
 //#include "graph/connected_components.hpp"
 #include <unordered_map>
 
 
 namespace metric {
-namespace graph {
-
-
-
 
 
 // Graph based on blaze-lib
@@ -819,7 +815,4 @@ Graph<ValueType, true, true> make_graph(blaze::SymmetricMatrix<blaze::DynamicMat
 
 
 
-
-
-}
-}
+} // end namespace metric

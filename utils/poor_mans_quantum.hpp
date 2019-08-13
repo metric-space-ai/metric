@@ -36,6 +36,6 @@ Copyright (c) 2019 Michael Welsch
 
 // #define USE_VECTOR_SORT 1
 
-#include "poor_mans_quantum.cpp"
+#include "poor_mans_quantum/poor_mans_quantum.cpp"
 
 #endif // headerguard

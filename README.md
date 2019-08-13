@@ -13,6 +13,6 @@ METRIC | SPACE stores and organizes distances. It provides classes to connect an
  
 METRIC | MAPPING provides algorithms to operate on these distance-representations directly or indirectly. In general, you can regard all of the algorithms in METRIC | MAPPING as mapper from one metric space into a new one, usually with the goal to reduce complexity (like clustering or classifying) or to fill missing information (like predicting). Basically these functions models the dependencies for you out of the given metric space, but you can provide different levels of a priori information like labels. Also you can combine different metric spaces. 
  
-METRIC | TRANSFORMATION provides algorithm to transform data in a pure deterministic fashion. This is often useful for complexity reduction as pre processing step. This functions are not driven by the metric space structure and map records only 1:1
+METRIC | TRANSFORM provides algorithm to transform data in a pure deterministic fashion. This is often useful for complexity reduction as pre processing step. This functions are not driven by the metric space structure and map records only 1:1
  
 METRIC | CORRELATION provide algorithm to compute correlations between metric spaces, to check whether it is promising to map this dependencies. When MAPPING is used to quantify and measure relations in data, CORRELATION is used to find relations between metric spaces at all. 

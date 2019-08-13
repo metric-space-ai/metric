@@ -58,7 +58,7 @@ std::vector<std::vector<float>> data{
 
 And here is example of how can be found clusters using K-Medoids:
 ```cpp
-auto[assignments, seeds, counts] = clustering::kmedoids(data, 4);
+auto[assignments, seeds, counts] = metric::kmedoids(data, 4);
 // out:
 
 //assignments:
@@ -88,7 +88,7 @@ std::vector<std::vector<float>> data{
 
 And here is example of how can be found clusters using K-Means:
 ```cpp
-auto[assignments, means, counts] = clustering::kmeans(data, 4); 
+auto[assignments, means, counts] = metric::kmeans(data, 4); 
 // out:
 
 //assignments:
@@ -121,7 +121,7 @@ std::vector<std::vector<float>> data{
 
 And here is example of how can be found clusters using DBSCAN:
 ```cpp
-auto[assignments, seeds, counts] = clustering::dbscan(data, (float) 64.0, 1); 
+auto[assignments, seeds, counts] = metric::dbscan(data, (float) 64.0, 1); 
 // out:
 
 //assignments:
@@ -151,7 +151,7 @@ std::vector<std::vector<float>> data{
 
 And here is example of how can be found clusters using Affinity Propagation:
 ```cpp
-auto[assignments, exemplars, counts] = clustering::affprop(data);
+auto[assignments, exemplars, counts] = metric::affprop(data);
 // out:
 
 //assignments:
@@ -220,7 +220,7 @@ std::function<bool(Record)> response = [](Record r) {
 And we can define and train SVM model:
 
 ```cpp
-metric::classification::edmClassifier<Record, CSVM> svmModel_1 = metric::classification::edmClassifier<Record, CSVM>();
+metric::edmClassifier<Record, CSVM> svmModel_1 = metric::edmClassifier<Record, CSVM>();
 svmModel_1.train(payments, features, response);
 ```
 
@@ -282,7 +282,7 @@ std::function<bool(IrisRec)> response_iris = [](IrisRec r) {
 
 So, we are ready to define and train simple SVM model: 
 ```cpp
-auto svmModel_2 = metric::classification::edmClassifier<IrisRec, CSVM>();
+auto svmModel_2 = metric::edmClassifier<IrisRec, CSVM>();
 svmModel_2.train(iris_str, features_iris, response_iris);
 
 svmModel_2.predict(IrisTestRec, features_iris, prediction);
@@ -303,8 +303,8 @@ On the same Iris dataset we can define and train Boosting model.
 
 SVM with default metaparams:
 ```cpp
-auto svmModel_3 = metric::classification::edmClassifier<IrisRec, CSVM>();
-auto boostSvmModel_3 = metric::classification::Boosting<IrisRec, metric::classification::edmClassifier<IrisRec, CSVM>, metric::classification::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, svmModel_3);
+auto svmModel_3 = metric::edmClassifier<IrisRec, CSVM>();
+auto boostSvmModel_3 = metric::Boosting<IrisRec, metric::edmClassifier<IrisRec, CSVM>, metric::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, svmModel_3);
 boostSvmModel_3.train(iris_str, features_iris, response_iris, true);
 
 boostSvmModel_3.predict(IrisTestRec, features_iris, prediction);
@@ -322,8 +322,8 @@ boostSvmModel_3.predict(IrisTestMultipleRec, features_iris, prediction);
 
 SVM with specialized metaparams:
 ```cpp
-auto svmModel_4 = metric::classification::edmSVM<IrisRec>(C_SVC, RBF, 3, 0, 100, 0.001, 1, 0, NULL, NULL, 0.5, 0.1, 1, 0);
-auto boostSvmModel_4 = metric::classification::Boosting<IrisRec, metric::classification::edmSVM<IrisRec>, metric::classification::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, svmModel_4);
+auto svmModel_4 = metric::edmSVM<IrisRec>(C_SVC, RBF, 3, 0, 100, 0.001, 1, 0, NULL, NULL, 0.5, 0.1, 1, 0);
+auto boostSvmModel_4 = metric::Boosting<IrisRec, metric::edmSVM<IrisRec>, metric::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, svmModel_4);
 boostSvmModel_4.train(iris_str, features_iris, response_iris, true);
 
 boostSvmModel_4.predict(IrisTestRec, features_iris, prediction);
@@ -341,17 +341,17 @@ boostSvmModel_4.predict(IrisTestMultipleRec, features_iris, prediction);
 
 Vector with defined models
 ```cpp
-using WeakLrnVariant = std::variant<metric::classification::edmSVM<IrisRec>, metric::classification::edmClassifier<IrisRec, CSVM> >;
+using WeakLrnVariant = std::variant<metric::edmSVM<IrisRec>, metric::edmClassifier<IrisRec, CSVM> >;
 std::vector<WeakLrnVariant> models_1 = {};
-WeakLrnVariant svmModel_5 = metric::classification::edmSVM<IrisRec>(C_SVC, RBF, 3, 0, 100, 0.001, 1, 0, NULL, NULL, 0.5, 0.1, 1, 0);
-WeakLrnVariant svmModel_6 = metric::classification::edmClassifier<IrisRec, CSVM>();
+WeakLrnVariant svmModel_5 = metric::edmSVM<IrisRec>(C_SVC, RBF, 3, 0, 100, 0.001, 1, 0, NULL, NULL, 0.5, 0.1, 1, 0);
+WeakLrnVariant svmModel_6 = metric::edmClassifier<IrisRec, CSVM>();
 models_1.push_back(svmModel_5);
 models_1.push_back(svmModel_6);
 ```
 
 Bagging on both specialized and default SVM
 ```cpp
-auto baggingSVMmodel_1 = metric::classification::Bagging<IrisRec, WeakLrnVariant, metric::classification::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, { 0.3, 0.7 }, models_1); // 30% of first weak learner type, 70% of second
+auto baggingSVMmodel_1 = metric::Bagging<IrisRec, WeakLrnVariant, metric::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, { 0.3, 0.7 }, models_1); // 30% of first weak learner type, 70% of second
 baggingSVMmodel_1.train(iris_str, features_iris, response_iris, true);
 
 baggingSVMmodel_1.predict(IrisTestRec, features_iris, prediction);
@@ -367,7 +367,7 @@ baggingSVMmodel_1.predict(IrisTestMultipleRec, features_iris, prediction);
 
 Bagging on both specialized and default SVM with deque
 ```cpp
-auto baggingSVMmodel_2 = metric::classification::Bagging<IrisRec, WeakLrnVariant, metric::classification::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, { 0.3, 0.7 }, models_1); // 30% of first weak learner type, 70% of second
+auto baggingSVMmodel_2 = metric::Bagging<IrisRec, WeakLrnVariant, metric::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, { 0.3, 0.7 }, models_1); // 30% of first weak learner type, 70% of second
 baggingSVMmodel_2.train(iris_strD, features_iris, response_iris, true);
 
 baggingSVMmodel_2.predict(IrisTestRecD, features_iris, prediction);
@@ -422,7 +422,7 @@ std::function<bool(Record)> response = [](Record r) {
 And we can define and train C4.5 model:
 
 ```cpp
-metric::classification::edmClassifier<Record, CC45> c45Model_1 = metric::classification::edmClassifier<Record, CC45>();
+metric::edmClassifier<Record, CC45> c45Model_1 = metric::edmClassifier<Record, CC45>();
 c45Model_1.train(payments, features, response);
 ```
 
@@ -488,7 +488,7 @@ std::function<bool(IrisRec)> response_iris = [](IrisRec r) {
 
 So, we are ready to define and train simple SVM model: 
 ```cpp
-auto c45Model_2 = metric::classification::edmClassifier<IrisRec, libedm::CC45>();
+auto c45Model_2 = metric::edmClassifier<IrisRec, libedm::CC45>();
 c45Model_2.train(iris_str, features_iris, response_iris);
 
 c45Model_2.predict(IrisTestRec, features_iris, prediction);
@@ -506,7 +506,7 @@ c45Model_2.predict(IrisTestMultipleRec, features_iris, prediction);
 
 C4.5 with default metaparams
 ```cpp
-auto boostC45Model_2 = metric::classification::Boosting<IrisRec, metric::classification::edmClassifier<IrisRec, CC45>, metric::classification::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, c45Model_2);
+auto boostC45Model_2 = metric::Boosting<IrisRec, metric::edmClassifier<IrisRec, CC45>, metric::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, c45Model_2);
 boostC45Model_2.train(iris_str, features_iris, response_iris, true);
 
 boostC45Model_2.predict(IrisTestRec, features_iris, prediction);
@@ -522,8 +522,8 @@ boostC45Model_2.predict(IrisTestMultipleRec, features_iris, prediction);
 
 C4.5 with specialized metaparams
 ```cpp
-auto c45Model_3 = metric::classification::edmC45<IrisRec>(2, 1e-3, 0.25, true);
-auto boostC45Model_3 = metric::classification::Boosting<IrisRec, metric::classification::edmC45<IrisRec>, metric::classification::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, c45Model_3);
+auto c45Model_3 = metric::edmC45<IrisRec>(2, 1e-3, 0.25, true);
+auto boostC45Model_3 = metric::Boosting<IrisRec, metric::edmC45<IrisRec>, metric::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, c45Model_3);
 boostC45Model_3.train(iris_str, features_iris, response_iris, true);
 
 boostC45Model_3.predict(IrisTestRec, features_iris, prediction);
@@ -541,17 +541,17 @@ boostC45Model_3.predict(IrisTestMultipleRec, features_iris, prediction);
 
 Vector with defined models
 ```cpp
-using WeakLrnVariant = std::variant<metric::classification::edmC45<IrisRec>, metric::classification::edmClassifier<IrisRec, CC45> >;
+using WeakLrnVariant = std::variant<metric::edmC45<IrisRec>, metric::edmClassifier<IrisRec, CC45> >;
 std::vector<WeakLrnVariant> models_1 = {};
-WeakLrnVariant c45Model_4 = metric::classification::edmC45<IrisRec>(2, 1e-3, 0.25, true);
-WeakLrnVariant c45Model_5 = metric::classification::edmClassifier<IrisRec, CC45>();
+WeakLrnVariant c45Model_4 = metric::edmC45<IrisRec>(2, 1e-3, 0.25, true);
+WeakLrnVariant c45Model_5 = metric::edmClassifier<IrisRec, CC45>();
 models_1.push_back(c45Model_4);
 models_1.push_back(c45Model_5);
 ```
 
 Bagging on both specialized and default C4.5
 ```cpp
-auto baggingC45model_1 = metric::classification::Bagging<IrisRec, WeakLrnVariant, metric::classification::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, { 0.3, 0.7 }, models_1); // 30% of first weak learner type, 70% of second
+auto baggingC45model_1 = metric::Bagging<IrisRec, WeakLrnVariant, metric::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, { 0.3, 0.7 }, models_1); // 30% of first weak learner type, 70% of second
 baggingC45model_1.train(iris_str, features_iris, response_iris, true);
 
 baggingC45model_1.predict(IrisTestRec, features_iris, prediction);
@@ -567,7 +567,7 @@ baggingC45model_1.predict(IrisTestMultipleRec, features_iris, prediction);
 
 Bagging on both specialized and default C4.5 with deque
 ```cpp
-auto baggingC45model_2 = metric::classification::Bagging<IrisRec, WeakLrnVariant, metric::classification::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, { 0.3, 0.7 }, models_1); // 30% of first weak learner type, 70% of second
+auto baggingC45model_2 = metric::Bagging<IrisRec, WeakLrnVariant, metric::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, { 0.3, 0.7 }, models_1); // 30% of first weak learner type, 70% of second
 baggingC45model_2.train(iris_strD, features_iris, response_iris, true);
 
 baggingC45model_2.predict(IrisTestRecD, features_iris, prediction);
@@ -812,7 +812,7 @@ And finally we can make a model:
 std::vector<Record> test_sample = { selection[0], selection[2], selection[6] };
 std::vector<int> prediction;
 
-auto model = metric::classification::MetricDT<Record>();
+auto model = metric::MetricDT<Record>();
 model.train(selection, dims, response);
 
 model.predict(test_sample, dims, prediction);

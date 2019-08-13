@@ -21,7 +21,7 @@ Copyright (c) 2018 Dmitry Vinokurov
 
 #include <iostream>
 #include <vector>
-#include "../metric_space.hpp"
+#include "../../space.hpp"
 template<typename T>
 struct distance {
   int operator()( const T &lhs,  const T &rhs) const {

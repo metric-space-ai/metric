@@ -19,14 +19,19 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 Copyright (c) 2018 Michael Welsch
 */
 
+
+/*
+blaze need additional linking to blas.
+clang++ -std=c++17 main.cpp -o run.o -Ofast -L/usr/local/Cellar/openblas/0.3.5/lib -L/usr/local/Cellar/openblas/0.3.5/include -lopenblas
+ */
+
 #ifndef _PANDA_METRIC_HPP
 #define _PANDA_METRIC_HPP
 
 #include "modules/distance.hpp"
 #include "modules/space.hpp"
-#include "modules/mapping.hpp"
 #include "modules/correlation.hpp"
-#include "modules/crossfilter.hpp"
-//#include "modules/transformation.hpp"
+#include "modules/transform.hpp"
+#include "modules/mapping.hpp"
 
 #endif

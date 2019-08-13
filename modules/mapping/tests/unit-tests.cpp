@@ -9,7 +9,7 @@
 
 #include "../../distance.hpp"
 //#include "../details/graph.hpp"
-#include "../../../utils/graph/graph.hpp"
+#include "../../../utils/graph.hpp"
 
 #define BOOST_TEST_MODULE Main
 #define BOOST_TEST_DYN_LINK

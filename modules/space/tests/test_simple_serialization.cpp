@@ -9,10 +9,10 @@ Copyright (c) 2018 Dmitry Vinokurov
 #define BOOST_TEST_DYN_LINK
 #define BOOST_TEST_MODULE test_boost_serialization
 #include <boost/test/unit_test.hpp>
-#include "../examples/assets/3dparty/serialize/archive.h"
+#include "../../../examples/space_examples/assets/3dparty/serialize/archive.h"
 #include <iostream>
 #include <vector>
-#include "../metric_space.hpp"
+#include "../../space.hpp"
 template<typename T>
 struct distance {
   int operator()( const T &lhs,  const T &rhs) const {
