@@ -7,7 +7,7 @@ Copyright (c) 2019 Panda Team
 */
 #include "modules/mapping/ensembles.hpp"
 
-#include "../../assets/helpers.cpp"  // csv reader
+#include "../mapping_examples/assets/helpers.cpp"  // csv reader
 
 #include <variant>
 

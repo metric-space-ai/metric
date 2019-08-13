@@ -12,7 +12,7 @@ Copyright (c) 2019 Max Filippov
 #include <functional>
 #include <variant>
 
-#include "../../assets/helpers.cpp"  // csv reader
+#include "../mapping_examples/assets/helpers.cpp"  // csv reader
 #include "modules/mapping.hpp"
 #include "modules/distance.hpp"
 
