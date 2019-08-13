@@ -26,6 +26,7 @@ endif(UNIX)
 
 target_include_directories(${EXAMPLE_NAME} PRIVATE ${PostgreSQL_INCLUDE_DIRS})
 target_link_libraries(${EXAMPLE_NAME} PRIVATE ${PostgreSQL_LIBRARIES})
+set_target_properties(${EXAMPLE_NAME} PROPERTIES   RUNTIME_OUTPUT_DIRECTORY  "${PROJECT_SOURCE_DIR}/examples")
 
 # Copy PostgreSQL .dll files on bin folder if we are on Windows
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
