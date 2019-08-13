@@ -10,7 +10,7 @@ Copyright (c) 2019 Panda Team
 #include <iostream>
 #include <chrono>
 #include "assets/test_data.cpp"
-#include "../metric_distance.hpp"
+#include "../../modules/distance.hpp"
 
 
 int main()
@@ -36,13 +36,13 @@ int main()
 		}
 	}
 
-	auto cost_mat = metric::distance::EMD_details::ground_distance_matrix_of_2dgrid<edm_Type>(im1_C, im1_R);
-	auto maxCost = metric::distance::EMD_details::max_in_distance_matrix(cost_mat);
+	auto cost_mat = metric::EMD_details::ground_distance_matrix_of_2dgrid<edm_Type>(im1_C, im1_R);
+	auto maxCost = metric::EMD_details::max_in_distance_matrix(cost_mat);
 
 	std::cout << "we have started" << std::endl;
 	std::cout << "" << std::endl;
 
-	metric::distance::EMD<edm_Type> distance(cost_mat, maxCost);
+	metric::EMD<edm_Type> distance(cost_mat, maxCost);
 
 	// assumes that i1 and i2 are serialized vectors of the image matrices, and cost_mat contains a distance matrix that takes into account the original pixel locations.
 	auto t1 = std::chrono::steady_clock::now();

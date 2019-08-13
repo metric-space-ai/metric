@@ -9,7 +9,7 @@ Copyright (c) 2019 Panda Team
 #include <vector>
 #include <iostream>
 #include <chrono>
-#include "../metric_distance.hpp"
+#include "../../modules/distance.hpp"
 
 
 int main()
@@ -24,7 +24,7 @@ int main()
 
 	/******************** examples for Euclidian (L2) Metric **************************/
 	std::cout << "Euclidian (L2) Metric" << std::endl;
-	metric::distance::Euclidian<double> euclidianL2Distance;
+	metric::Euclidian<double> euclidianL2Distance;
 	auto startTime_1 = std::chrono::steady_clock::now();
 	auto result_1 = euclidianL2Distance(v0, v1);
 	auto endTime_1 = std::chrono::steady_clock::now();
@@ -36,7 +36,7 @@ int main()
 
 	/******************** examples for Euclidian Threshold **************************/
 	std::cout << "Euclidian Threshold" << std::endl;
-	metric::distance::Euclidian_thresholded<double> euclidianThresholdDistance(1000.0, 3000.0);
+	metric::Euclidian_thresholded<double> euclidianThresholdDistance(1000.0, 3000.0);
 	auto startTime_2 = std::chrono::steady_clock::now();
 	auto result_2 = euclidianThresholdDistance(v0, v1);
 	auto endTime_2 = std::chrono::steady_clock::now();
@@ -48,7 +48,7 @@ int main()
 
 	/******************** examples for Manhatten/Cityblock (L1) Metric **************************/
 	std::cout << "Manhatten/Cityblock (L1) Metric" << std::endl;
-	metric::distance::Manhatten<double> manhattenL1Distance;
+	metric::Manhatten<double> manhattenL1Distance;
 	auto startTime_3 = std::chrono::steady_clock::now();
 	auto result_3 = manhattenL1Distance(v0, v1);
 	auto endTime_3 = std::chrono::steady_clock::now();
@@ -60,7 +60,7 @@ int main()
 
 	/******************** examples for Minkowski (L general) Metric **************************/
 	std::cout << "Minkowski (L general) Metric" << std::endl;
-	metric::distance::P_norm<double> pNormDistance(2);
+	metric::P_norm<double> pNormDistance(2);
 	auto startTime_4 = std::chrono::steady_clock::now();
 	auto result_4 = pNormDistance(v0, v1);
 	auto endTime_4 = std::chrono::steady_clock::now();
@@ -73,7 +73,7 @@ int main()
 	/******************** examples for Cosine Metric **************************/
 	std::cout << "Cosine Metric" << std::endl;
     //metric::distance::Cosine<double> cosineDistance;
-    auto cosineDistance = metric::distance::Cosine<double>(); // default return type is double, so we do not need to set <double> explicitely
+    auto cosineDistance = metric::Cosine<double>(); // default return type is double, so we do not need to set <double> explicitely
 	auto startTime_5 = std::chrono::steady_clock::now();
 	auto result_5 = cosineDistance(v0, v1);
 	auto endTime_5 = std::chrono::steady_clock::now();

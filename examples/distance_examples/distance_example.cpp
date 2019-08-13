@@ -10,7 +10,7 @@ Copyright (c) 2019 Panda Team
 #include <iostream>
 #include <chrono>
 #include "assets/test_data.cpp"
-#include "../metric_distance.hpp"
+#include "../../modules/distance.hpp"
 //#include "../details/k-random/Edit.hpp"
 
 //#include "blaze/Blaze.h"
@@ -55,7 +55,7 @@ int main()
     std::vector<double> v6 = {4, 6, 2, 2, 1, 1, 0, 0};
     std::vector<double> v7 = {3, 7, 2, 1, 0, 0, 0, 0};
 
-    metric::distance::P_norm<double> distance(2);
+    metric::P_norm<double> distance(2);
 
     //-----------------------------------------------
     // The ground distance - thresholded Euclidean distance.
@@ -92,16 +92,16 @@ int main()
         }
     }
 
-    auto cost_mat = metric::distance::EMD_details::ground_distance_matrix_of_2dgrid<edm_Type>(im1_C, im1_R);
+    auto cost_mat = metric::EMD_details::ground_distance_matrix_of_2dgrid<edm_Type>(im1_C, im1_R);
 //    auto cost_mat = metric::distance::EMD_details::ground_distance_matrix_of_2dgrid<long>(im1_C, im1_R); // not matching types
 
-    auto maxCost = metric::distance::EMD_details::max_in_distance_matrix(cost_mat);
+    auto maxCost = metric::EMD_details::max_in_distance_matrix(cost_mat);
 
     std::cout << "bis hier" << std::endl;
 
     //matrix_print(cost_mat);
 
-    metric::distance::EMD<edm_Type> distance2(cost_mat, maxCost);
+    metric::EMD<edm_Type> distance2(cost_mat, maxCost);
 //    metric::distance::EMD<long> distance2(cost_mat, maxCost);  // not matching types
 
 
@@ -128,7 +128,7 @@ int main()
 
 
     // SSIM
-    metric::distance::SSIM<std::vector<int>> ssimFactor;
+    metric::SSIM<std::vector<int>> ssimFactor;
 
     auto result3_SSIM = ssimFactor(img1, img2);
     auto result4_SSIM = ssimFactor(img1, img3);
@@ -144,7 +144,7 @@ int main()
     // std::vector<int> vec2 = {1,2,3,4,5,6,7,8,9,10};
     // std::vector<int> vec1 = {};
 
-    metric::distance::Edit<std::string> distance3;
+    metric::Edit<std::string> distance3;
 
     auto t4 = std::chrono::steady_clock::now();
     auto result5_EDIT = distance3(str1, str2);
@@ -197,18 +197,18 @@ int main()
     blaze::CompressedVector<V_type> bcv3 {vt0, vt1, vt21};
 //    std::cout << "sorensen metric result on CompressedVector: " << sor3(bcv1, bcv3) << "\n";
 
-    std::cout << "sorensen metric result from function on CompressedVector: " << metric::distance::sorensen(bcv1, bcv3) << "\n";
-    std::cout << "sorensen metric result from function on STL Vector: " << metric::distance::sorensen(obj1, obj3) << "\n";
-    std::cout << "sorensen metric result from function on DynamicVector: " << metric::distance::sorensen(bdv1, bdv3) << "\n";
-    std::cout << "sorensen metric result from function on StativVector: " << metric::distance::sorensen(bsv1, bsv2) << "\n";
-    std::cout << "sorensen metric result from function on HybridVector: " << metric::distance::sorensen(bhv1, bhv2) << "\n";
+    std::cout << "sorensen metric result from function on CompressedVector: " << metric::sorensen(bcv1, bcv3) << "\n";
+    std::cout << "sorensen metric result from function on STL Vector: " << metric::sorensen(obj1, obj3) << "\n";
+    std::cout << "sorensen metric result from function on DynamicVector: " << metric::sorensen(bdv1, bdv3) << "\n";
+    std::cout << "sorensen metric result from function on StativVector: " << metric::sorensen(bsv1, bsv2) << "\n";
+    std::cout << "sorensen metric result from function on HybridVector: " << metric::sorensen(bhv1, bhv2) << "\n";
 
     // TODO test STL deque etc
 
 
     // test for template parameters of existing metrics
 
-    metric::distance::Euclidian<float> eu;
+    metric::Euclidian<float> eu;
     std::cout << "euclidean metric result: " << eu(obj1, obj2) << "\n";
 
 

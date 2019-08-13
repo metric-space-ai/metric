@@ -9,7 +9,7 @@ Copyright (c) 2019 Panda Team
 #include <vector>
 #include <random>
 #include <cmath>
-#include "distance.hpp"
+#include "../../modules/distance.hpp"
 #include <iostream>
 #include <fstream>
 
@@ -540,16 +540,16 @@ int main() {
 	std::cout << "negative entropy" << std::endl;
 	std::cout << std::endl;
 
-    std::vector<std::vector<float>> v31 = { {0}, {0}, {0}, {1} };
-	std::vector<std::vector<float>> v32 = { {0}, {0}, {0}, {1} };
-	std::vector<std::vector<float>> v33;
+    std::vector<std::vector<double>> v31 = { {0}, {0}, {0}, {1} };
+	std::vector<std::vector<double>> v32 = { {0}, {0}, {0}, {1} };
+	std::vector<std::vector<double>> v33;
 
-v33.insert(v33.end(), v31.begin(), v31.end());
+	v33.insert(v33.end(), v31.begin(), v31.end());
 	v33.insert(v33.end(), v32.begin(), v32.end());
 
-    auto eX = entropy(v31, 3, 2.0f, metric::distance::Chebyshev<long double>());
-	auto eY = entropy(v32, 3, 2.0f, metric::distance::Chebyshev<long double>());
-	auto eXY = entropy(v33, 3, 2.0f, metric::distance::Chebyshev<long double>());
+    auto eX = entropy(v31, 3, 2.0f, metric::Chebyshev<long double>());
+	auto eY = entropy(v32, 3, 2.0f, metric::Chebyshev<long double>());
+	auto eXY = entropy(v33, 3, 2.0f, metric::Chebyshev<long double>());
     auto mi = metric::mutualInformation(v31, v32);
 
 	//auto voi = eX + eY - 2 * mi;
@@ -563,42 +563,44 @@ v33.insert(v33.end(), v31.begin(), v31.end());
 	std::cout << "---" << std::endl;
 	v31 = { {0}, {0}, {0}, {0} };
 	v32 = { {0}, {0}, {0}, {0} };
-	std::cout << "voi = " << metric::distance::variationOfInformation(v31, v32) << std::endl;
-	std::cout << "voi norm = " << metric::distance::variationOfInformation_normalized(v31, v32) << std::endl;
+	std::cout << "voi = " << metric::variationOfInformation(v31, v32) << std::endl;
+	std::cout << "voi norm = " << metric::variationOfInformation_normalized(v31, v32) << std::endl;
 	v31 = { {0}, {0}, {0}, {0} };
 	v32 = { {0}, {0}, {0}, {1} };
-	std::cout << "voi = " << metric::distance::variationOfInformation(v31, v32) << std::endl;
-	std::cout << "voi norm = " << metric::distance::variationOfInformation_normalized(v31, v32) << std::endl;
+	std::cout << "voi = " << metric::variationOfInformation(v31, v32) << std::endl;
+	std::cout << "voi norm = " << metric::variationOfInformation_normalized(v31, v32) << std::endl;
 	v31 = { {0}, {0}, {0}, {0} };
 	v32 = { {0}, {0}, {1}, {1} };
-	std::cout << "voi = " << metric::distance::variationOfInformation(v31, v32) << std::endl;
-	std::cout << "voi norm = " << metric::distance::variationOfInformation_normalized(v31, v32) << std::endl;
+	std::cout << "voi = " << metric::variationOfInformation(v31, v32) << std::endl;
+	std::cout << "voi norm = " << metric::variationOfInformation_normalized(v31, v32) << std::endl;
 	v31 = { {0}, {0}, {0}, {0} };
 	v32 = { {0}, {1}, {1}, {1} };
-	std::cout << "voi = " << metric::distance::variationOfInformation(v31, v32) << std::endl;
-	std::cout << "voi norm = " << metric::distance::variationOfInformation_normalized(v31, v32) << std::endl;
+	std::cout << "voi = " << metric::variationOfInformation(v31, v32) << std::endl;
+	std::cout << "voi norm = " << metric::variationOfInformation_normalized(v31, v32) << std::endl;
 	v31 = { {0}, {0}, {0}, {1} };
 	v32 = { {0}, {1}, {1}, {1} };
-	std::cout << "voi = " << metric::distance::variationOfInformation(v31, v32) << std::endl;
-	std::cout << "voi norm = " << metric::distance::variationOfInformation_normalized(v31, v32) << std::endl;
+	std::cout << "voi = " << metric::variationOfInformation(v31, v32) << std::endl;
+	std::cout << "voi norm = " << metric::variationOfInformation_normalized(v31, v32) << std::endl;
 	v31 = { {0}, {0}, {1}, {1} };
 	v32 = { {0}, {1}, {1}, {1} };
-	std::cout << "voi = " << metric::distance::variationOfInformation(v31, v32) << std::endl;
-	std::cout << "voi norm = " << metric::distance::variationOfInformation_normalized(v31, v32) << std::endl;
+	std::cout << "voi = " << metric::variationOfInformation(v31, v32) << std::endl;
+	std::cout << "voi norm = " << metric::variationOfInformation_normalized(v31, v32) << std::endl;
 	v31 = { {0}, {1}, {1}, {1} };
 	v32 = { {0}, {1}, {1}, {1} };
-	std::cout << "voi = " << metric::distance::variationOfInformation(v31, v32) << std::endl;
-	std::cout << "voi norm = " << metric::distance::variationOfInformation_normalized(v31, v32) << std::endl;
+	std::cout << "voi = " << metric::variationOfInformation(v31, v32) << std::endl;
+	std::cout << "voi norm = " << metric::variationOfInformation_normalized(v31, v32) << std::endl;
 	v31 = { {0}, {0}, {1}, {1} };
 	v32 = { {0}, {0}, {1}, {1} };
-	std::cout << "voi = " << metric::distance::variationOfInformation(v31, v32) << std::endl;
-	std::cout << "voi norm = " << metric::distance::variationOfInformation_normalized(v31, v32) << std::endl;
+	std::cout << "voi = " << metric::variationOfInformation(v31, v32) << std::endl;
+	std::cout << "voi norm = " << metric::variationOfInformation_normalized(v31, v32) << std::endl;
 	v31 = { {0}, {0}, {0}, {1} };
 	v32 = { {0}, {0}, {0}, {1} };
-	std::cout << "voi = " << metric::distance::variationOfInformation(v31, v32) << std::endl;
-	std::cout << "voi norm = " << metric::distance::variationOfInformation_normalized(v31, v32) << std::endl;
+	std::cout << "voi = " << metric::variationOfInformation(v31, v32) << std::endl;
+	std::cout << "voi norm = " << metric::variationOfInformation_normalized(v31, v32) << std::endl;
 	std::cout << "---" << std::endl;
 
+	v31 = { {0}, {0}, {0}, {1} };
+	v32 = { {0}, {1}, {1}, {1} };
     for (size_t i = 0; i<5; i++)
         std::cout << "voi = " << metric::variationOfInformation(v31, v32) << std::endl;
     for (size_t i = 0; i<5; i++)
@@ -608,7 +610,7 @@ v33.insert(v33.end(), v31.begin(), v31.end());
     for (size_t i = 0; i<5; i++)
         std::cout << "voi_functor = " << f_voi(v31, v32) << std::endl;
 
-    auto f_voi_norm = metric::VOI_normalized();
+    auto f_voi_norm = metric::VOI_normalized<long double>();
     for (size_t i = 0; i<5; i++)
         std::cout << "voi_norm_functor = " << f_voi_norm(v31, v32) << std::endl;
 
@@ -617,7 +619,7 @@ v33.insert(v33.end(), v31.begin(), v31.end());
     for (size_t i = 0; i<5; i++)
         std::cout << "KL voi_functor = " << f_voi_kl(v31, v32) << std::endl;
 
-    auto f_voi_norm_kl = metric::VOI_normalized_kl();
+    auto f_voi_norm_kl = metric::VOI_normalized_kl<long double>();
     for (size_t i = 0; i<5; i++)
         std::cout << "KL voi_norm_functor = " << f_voi_norm_kl(v31, v32) << std::endl;
 

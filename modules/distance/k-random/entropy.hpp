@@ -50,12 +50,12 @@ mutualInformation(const std::vector<std::vector<T>> & Xc,
                   const std::vector<std::vector<T>> & Yc, T logbase = 2.0);
 
 
-template<typename T = double, typename Metric = metric::distance::Chebyshev<T>>
+template<typename T = double, typename Metric = metric::Chebyshev<T>>
 typename std::enable_if<!std::is_integral<T>::value, T>::type
 variationOfInformation(const std::vector<std::vector<T>> & Xc,
                        const std::vector<std::vector<T>> & Yc, int k = 3, T logbase = 2.0);
 
-template <typename T = double>
+template <typename T = double, typename Metric = metric::Chebyshev<T>>
 typename std::enable_if<!std::is_integral<T>::value, T>::type
 variationOfInformation_normalized(const std::vector<std::vector<T>> &Xc,
                                   const std::vector<std::vector<T>> &Yc,
@@ -84,8 +84,8 @@ struct VOI
 
 };
 
-template <typename V>
-VOI(int, V) -> VOI<double>;
+//template <typename V>
+//VOI(int, V) -> VOI<double>;
 
 
 template <typename V = double>
@@ -103,8 +103,8 @@ struct VOI_normalized : VOI<V>
 
 };
 
-template <typename V>
-VOI_normalized(int, V) -> VOI_normalized<double>;
+//template <typename V>
+//VOI_normalized(int, V) -> VOI_normalized<double>;
 
 
 
@@ -131,8 +131,8 @@ struct VOI_kl
 
 };
 
-template <typename V>
-VOI_kl(int, V) -> VOI_kl<double>;
+//template <typename V>
+//VOI_kl(int, V) -> VOI_kl<double>;
 
 
 template <typename V = double>
@@ -149,8 +149,8 @@ struct VOI_normalized_kl : VOI_kl<V>
 
 };
 
-template <typename V>
-VOI_normalized_kl(int, V) -> VOI_normalized_kl<double>;
+//template <typename V>
+//VOI_normalized_kl(int, V) -> VOI_normalized_kl<double>;
 
 
 } // namespace metric
