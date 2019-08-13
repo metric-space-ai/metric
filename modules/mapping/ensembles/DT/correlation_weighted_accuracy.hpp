@@ -12,17 +12,22 @@ correlation weighted accuracy
 
 */
 
-#ifndef _METRIC_MAPPING_DETAILS_CLASSIFICATION_DETAILS_CWA_HPP
-#define _METRIC_MAPPING_DETAILS_CLASSIFICATION_DETAILS_CWA_HPP
+#ifndef _METRIC_MAPPING_ENSEMBLES_DT_CWA_HPP
+#define _METRIC_MAPPING_ENSEMBLES_DT_CWA_HPP
 
-namespace metric
-{
+namespace metric {
 
+/**
+ * @brief Correlation weighted accuracy
+ *
+ * @param a
+ * @param b
+ * @return
+ */
 template <typename Container>
 double correlation_weighted_accuracy(Container a, Container b);
 
-
-} // namespace metric
+}  // namespace metric
 
 #include "correlation_weighted_accuracy.cpp"
 

@@ -11,23 +11,23 @@
 #include <vector>
 #include <string>
 
-
 template <class ContainerType>
-ContainerType read_csv(std::string filename) {
+ContainerType read_csv(std::string filename)
+{
     typedef typename ContainerType::value_type LINE;
     std::string line;
     int pos;
     ContainerType array = {};
     std::ifstream in(filename);
-    if(!in.is_open()) {
+    if (!in.is_open()) {
         std::cout << "Failed to open file" << std::endl;
         return array;
     }
-    while( getline(in,line) ) {
+    while (getline(in, line)) {
         LINE ln;
-        while( (pos = line.find(',')) >= 0)	{
-            std::string field = line.substr(0,pos);
-            line = line.substr(pos+1);
+        while ((pos = line.find(',')) >= 0) {
+            std::string field = line.substr(0, pos);
+            line = line.substr(pos + 1);
             ln.push_back(field);
         }
         ln.push_back(line);
@@ -35,5 +35,3 @@ ContainerType read_csv(std::string filename) {
     }
     return array;
 }
-
-
