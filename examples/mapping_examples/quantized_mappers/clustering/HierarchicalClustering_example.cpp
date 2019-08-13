@@ -6,8 +6,8 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 Copyright (c) 2019 Panda Team
 */
 
-#include "../details/classification/details/3rdparty/metric_clustering/clustering.hpp"
-#include "../details/hierarchClustering.hpp"
+#include "../../modules/mapping/hierarchClustering.hpp"
+#include "../../modules/distance.hpp"
 
 
 
@@ -39,7 +39,7 @@ int main()
 
 
 
-	auto hc = clustering::HierarchicalClustering<std::vector<float>, metric::distance::Euclidian<float>>(data, 3);
+	auto hc = metric::HierarchicalClustering<std::vector<float>, metric::Euclidian<float>>(data, 3);
 	hc.hierarchical_clustering();
 
 	for (size_t i = 0; i < hc.clusters.size(); i++)
@@ -59,7 +59,7 @@ int main()
 
 
 
-	auto hc2 = clustering::HierarchicalClustering<std::string, metric::distance::Edit<std::string>>(str_data, 4);
+	auto hc2 = metric::HierarchicalClustering<std::string, metric::Edit<std::string>>(str_data, 4);
 	hc2.hierarchical_clustering();
 
 	for (size_t i = 0; i < hc2.clusters.size(); i++)

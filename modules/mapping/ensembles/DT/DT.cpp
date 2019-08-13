@@ -365,9 +365,14 @@ DT<Record>::split_subset(
         //auto feature_dist_table = std::get<0>(feature_dist_tuple); // this table is created only in order to reuse kmedoids code
         //auto feature_dist_orig_idx = std::get<1>(feature_dist_tuple); // this is needed to decode indices returned by kmedoid
         // new code style
+		// auto[feature_dist_table, feature_dist_orig_idx] = distance_matrix_of_subset(subset, distances[f]);
+		// auto results = metric::kmedoids_(feature_dist_table, unique_labels.size());
+        //  clustering via kmedoids - updated Stepan Mamontov
+        // new code style
         auto [feature_dist_table, feature_dist_orig_idx] = distance_matrix_of_subset(subset, distances[f]);
 
-        auto results = metric::kmedoids_(feature_dist_table, unique_labels.size());
+		metric::Matrix<std::vector<NumType>, metric::Euclidian<NumType>, NumType> matrix(feature_dist_table);
+        auto results = metric::kmedoids(matrix, unique_labels.size());
         auto medoids = std::get<1>(results); // medoid indices in feature_dist_table; original indices can be obtained via feature_dist_orig_idx
 
         // for (auto medoid : medoids)

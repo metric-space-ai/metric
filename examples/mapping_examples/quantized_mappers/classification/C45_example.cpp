@@ -10,9 +10,8 @@ Copyright (c) 2019 Panda Team
 #include <chrono>
 #include <deque> // for Record test
 
-#include "../../../details/classification/metric_classification.hpp"
 #include "../../assets/helpers.cpp" // csv reader
-#include "../../../details/classification/details/correlation_weighted_accuracy.hpp"
+#include "../../modules/mapping/ensembles.hpp"
 
 
 template <typename T>
@@ -183,7 +182,7 @@ int main()
 	// using C4.5 with default metaparams
 	std::cout << "Boosting C4.5 on Iris: " << std::endl;
 	startTime = std::chrono::steady_clock::now();
-	auto boostC45Model_2 = metric::classification::Boosting<IrisRec, metric::classification::edmClassifier<IrisRec, CC45>, metric::classification::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, c45Model_2);
+	auto boostC45Model_2 = metric::Boosting<IrisRec, metric::classification::edmClassifier<IrisRec, CC45>, metric::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, c45Model_2);
 	std::cout << "training... " << std::endl;
 	boostC45Model_2.train(iris_str, features_iris, response_iris, true);
 	endTime = std::chrono::steady_clock::now();
@@ -205,7 +204,7 @@ int main()
 	std::cout << "Boosting with metaparams C4.5 on Iris: " << std::endl;
 	startTime = std::chrono::steady_clock::now();
 	auto c45Model_3 = metric::classification::edmC45<IrisRec>(2, 1e-3, 0.25, true);
-	auto boostC45Model_3 = metric::classification::Boosting<IrisRec, metric::classification::edmC45<IrisRec>, metric::classification::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, c45Model_3);
+	auto boostC45Model_3 = metric::Boosting<IrisRec, metric::classification::edmC45<IrisRec>, metric::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, c45Model_3);
 	std::cout << "training... " << std::endl;
 	boostC45Model_3.train(iris_str, features_iris, response_iris, true);
 	endTime = std::chrono::steady_clock::now();
@@ -232,7 +231,7 @@ int main()
 	WeakLrnVariant c45Model_5 = metric::classification::edmClassifier<IrisRec, CC45>();
 	models_1.push_back(c45Model_4);
 	models_1.push_back(c45Model_5);
-	auto baggingC45model_1 = metric::classification::Bagging<IrisRec, WeakLrnVariant, metric::classification::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, { 0.3, 0.7 }, models_1); // 30% of first weak learner type, 70% of second
+	auto baggingC45model_1 = metric::Bagging<IrisRec, WeakLrnVariant, metric::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, { 0.3, 0.7 }, models_1); // 30% of first weak learner type, 70% of second
 	std::cout << "training... " << std::endl;
 	baggingC45model_1.train(iris_str, features_iris, response_iris, true);
 	endTime = std::chrono::steady_clock::now();
@@ -253,7 +252,7 @@ int main()
 	// using Bagging on both specialized and default C4.5 with deque
 	std::cout << "Bagging on both specialized and default C4.5 on deque Iris: " << std::endl;
 	startTime = std::chrono::steady_clock::now();
-	auto baggingC45model_2 = metric::classification::Bagging<IrisRec, WeakLrnVariant, metric::classification::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, { 0.3, 0.7 }, models_1); // 30% of first weak learner type, 70% of second
+	auto baggingC45model_2 = metric::Bagging<IrisRec, WeakLrnVariant, metric::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, { 0.3, 0.7 }, models_1); // 30% of first weak learner type, 70% of second
 	std::cout << "training... " << std::endl;
 	baggingC45model_2.train(iris_strD, features_iris, response_iris, true);
 	endTime = std::chrono::steady_clock::now();

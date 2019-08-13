@@ -26,6 +26,9 @@ Copyright (c) 2018 M.Welsch <michael@welsch.one>
     */
 
 
+#include <vector>
+#include "../distance.hpp"
+
 namespace metric 
 {
 
@@ -37,22 +40,22 @@ namespace kmeans_details{
     /*
     closest distance between datapoints and means.
     */
-    template <typename T>
+    template <typename T, typename Metric>
     std::vector<T>
     closest_distance(
         const std::vector<std::vector<T>> &means,
         const std::vector<std::vector<T>> &datapoints,
         int k,
-        std::string distance_measure)
+		Metric distance_measure)
     {
         std::vector<T> distances;
         distances.reserve(k);
         for (auto &d : datapoints)
         {
-            T closest = distance_details::distance(d, means[0], distance_measure);
+            T closest = distance_measure(d, means[0]);
             for (auto &m : means)
             {
-                T distance = distance_details::distance(d, m, distance_measure);
+                T distance = distance_measure(d, m);
                 if (distance < closest)
                     closest = distance;
             }
@@ -64,10 +67,11 @@ namespace kmeans_details{
     /*
     means initialization based on the [kmeans++](https://en.wikipedia.org/wiki/K-means%2B%2B) algorithm.
     */
-    template <typename T>
+    template <typename T, typename Metric>
     std::vector<std::vector<T>>
     random_init(const std::vector<std::vector<T>> &data,
-                int k,std::string distance_measure)
+                int k, 
+				Metric distance_measure)
     {
         assert(k > 0);
         using input_size_t = typename std::vector<T>::size_type;
@@ -87,7 +91,7 @@ namespace kmeans_details{
         for (int count = 1; count < k; ++count)
         {
             // Calculate the distance to the closest mean for each data point
-            auto distances = closest_distance(means, data, k,distance_measure);
+            auto distances = closest_distance(means, data, k, distance_measure);
             // Pick a random point weighted by the distance from existing means
             // TODO: This might convert floating point weights to ints, distorting the distribution for small weights
             std::discrete_distribution<size_t> generator(distances.begin(), distances.end());
@@ -99,21 +103,21 @@ namespace kmeans_details{
     /*
     find closest mean for a data point
     */
-    template <typename T>
+    template <typename T, typename Metric>
     int
     findClosestMean(const std::vector<T> &datapoint,
                     const std::vector<std::vector<T>> &means,
-                    std::string distance_measure)
+					Metric distance_measure)
     {
         assert(!means.empty());
     
-        T smallest_distance = distance_details::distance(datapoint, means[0],distance_measure);
+        T smallest_distance = distance_measure(datapoint, means[0]);
         //typename std::vector<T>::size_type index = 0;
         int index = 0;
         T distance;
         for (int i = 1; i < means.size(); ++i)
         {
-            distance = distance_details::distance(datapoint, means[i],distance_measure);
+            distance = distance_measure(datapoint, means[i]);
             if (distance < smallest_distance)
             {
                 smallest_distance = distance;
@@ -126,16 +130,16 @@ namespace kmeans_details{
     /*
     index of the closest means
     */
-    template <typename T>
+    template <typename T, typename Metric>
     void
     update_assignments(
         std::vector<int> &assignments,
         const std::vector<std::vector<T>> &data,
-            const std::vector<std::vector<T>> &means,
-            std::string distance_measure)
+        const std::vector<std::vector<T>> &means,
+		Metric distance_measure)
     {
         for (int i=0;i<data.size();++i){
-            assignments[i]=findClosestMean(data[i], means, distance_measure);
+            assignments[i] = findClosestMean(data[i], means, distance_measure);
         }
     }
     
@@ -222,20 +226,20 @@ namespace kmeans_details{
 } // end namespace kmeans_details
     
 
-    template <typename T>
+    template <typename T, typename Metric = metric::Euclidian<T>>
     std::tuple<std::vector<int>,std::vector<std::vector<T>>,std::vector<int>>
     kmeans(
         const std::vector<std::vector<T>> &data,
         const int &k,
         const int &maxiter = 200,
-        std::string distance_measure = distance_details::default_measure())
+		Metric distance_measure = Metric())
     {
         static_assert(std::is_arithmetic<T>::value && std::is_signed<T>::value,
                       "kmeans_lloyd requires the template parameter T to be a signed arithmetic type (e.g. float, double, int)");
         assert(k > 0);            // k must be greater than zero
         assert(data.size() >= k); // there must be at least k data points
         
-        std::vector<std::vector<T>> means = kmeans_functions::random_init(data, k, distance_measure);
+        std::vector<std::vector<T>> means = kmeans_details::random_init(data, k, distance_measure);
     
         //std::vector<std::vector<T>> old_means;
         std::vector<int> assignments(data.size());
@@ -245,14 +249,14 @@ namespace kmeans_details{
         std::vector<int> counts(k, int(0));
         do
         {
-            kmeans_functions::update_assignments(assignments, data, means, distance_measure);
-            auto [updated_counts, updated_number_of_means] = kmeans_functions::update_means(means, data, assignments, k);
+			kmeans_details::update_assignments(assignments, data, means, distance_measure);
+            auto [updated_counts, updated_number_of_means] = kmeans_details::update_means(means, data, assignments, k);
             counts = updated_counts;
             ++t;
         } 
         while (updated_number_of_means != int(0) && t < maxiter);
     
-        kmeans_functions::rearrange_assignments(assignments);
+		kmeans_details::rearrange_assignments(assignments);
         return {assignments,means,counts};
     }
         

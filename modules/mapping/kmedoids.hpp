@@ -11,6 +11,8 @@ Copyright (c) 2018 M.Welsch */
 
 #include <tuple>
 #include <vector>
+#include "../distance.hpp"
+#include "../space/matrix.hpp"
 
 
 namespace metric 
@@ -19,7 +21,7 @@ namespace metric
         
             template <typename recType, typename Metric, typename T>
             T
-            update_cluster(metric::Matrix<recType,Metric,T> &DM,
+            update_cluster(metric::Matrix<recType, Metric, T> &DM,
                 std::vector<int> &seeds,
                 std::vector<int> &assignments, 
                 std::vector<int> &sec_nearest,
@@ -59,7 +61,7 @@ namespace metric
 
             template <typename recType, typename Metric, typename T>
             void 
-            init_medoids(int k, metric::Matrix<recType,Metric,T> &DM,     
+            init_medoids(int k, metric::Matrix<recType, Metric, T> &DM,     
                 std::vector<int> &seeds,
                 std::vector<int> &assignments, 
                 std::vector<int> &sec_nearest,
@@ -110,7 +112,7 @@ namespace metric
 
             template <typename recType, typename Metric,typename T>
             T 
-            cost(int i, int h, metric::Matrix<recType,Metric,T> &DM,
+            cost(int i, int h, metric::Matrix<recType, Metric, T> &DM,
                                 std::vector<int> &seeds,
                                 std::vector<int> &assignments, 
                                 std::vector<int> &sec_nearest){
@@ -142,9 +144,9 @@ namespace metric
     
     } // namespace kmedoids_details
 
-template <typename recType, typename Metric,typename T>
-std::tuple<std::vector<int>,std::vector<int>,std::vector<int>>
-kmedoids(metric::Matrix<recType,Metric,T> &DM, int k){
+template <typename recType, typename Metric, typename T>
+std::tuple<std::vector<int>, std::vector<int>, std::vector<int>>
+kmedoids(metric::Matrix<recType, Metric, T> &DM, int k){
 
 
         // check arguments
@@ -175,7 +177,7 @@ kmedoids(metric::Matrix<recType,Metric,T> &DM, int k){
 
 
         // set initianl medoids
-        kmedoids_details::init_medoids(k, DM, seeds,assignments,sec_nearest,counts);
+        kmedoids_details::init_medoids(k, DM, seeds, assignments, sec_nearest, counts);
 
         T tolerance = epsilon * Dsum / (DM.size() * DM.size());
 
@@ -184,7 +186,7 @@ kmedoids(metric::Matrix<recType,Metric,T> &DM, int k){
             for (int i=0; i<counts.size();++i){
                 counts[i]=0;
             }
-            total_distance = kmedoids_details::update_cluster(DM,seeds,assignments,sec_nearest,counts);
+            total_distance = kmedoids_details::update_cluster(DM, seeds, assignments, sec_nearest, counts);
 
             //vars to keep track of minimum
             T minTotalCost = std::numeric_limits<T>::max();
@@ -198,7 +200,7 @@ kmedoids(metric::Matrix<recType,Metric,T> &DM, int k){
                     if (seeds[assignments[h]] == h) continue;
 
                     //see if the total cost of swapping i & h was less than min
-                    T curCost = kmedoids_details::cost(i, h, DM,seeds,assignments,sec_nearest);
+                    T curCost = kmedoids_details::cost(i, h, DM, seeds, assignments, sec_nearest);
                     if (curCost < minTotalCost) {
                         minTotalCost = curCost;
                         minMedoid = i;

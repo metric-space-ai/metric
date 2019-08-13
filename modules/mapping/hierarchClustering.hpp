@@ -27,13 +27,13 @@ namespace metric
 		Cluster(const std::vector<T> &d)
 		{
 			data = d;
-			calculateCentroid();
+			calculateCentroid(data);
 		}
 
-		void calculateCentroid() {
-			centroid = data[0];
-			/*centroid = std::vector<T>(data[0].size());
-			T sum;
+		template<typename T>
+		void calculateCentroid(const std::vector<T> &d) {
+			centroid = T(data[0].size());
+			typename T::value_type sum;
 			for (size_t i = 0; i < data[0].size(); i++)
 			{
 				sum = 0;
@@ -41,12 +41,17 @@ namespace metric
 				{
 					sum += data[j][i];
 				}
-				centroid[i] = (T) sum / data.size();
-			}*/
+				centroid[i] = (typename T::value_type) sum / data.size();
+			}
+		}
+
+		template<>
+		void calculateCentroid(const std::vector<std::string> &d) {
+			centroid = data[0];
 		}
 	};
 	
-	template <typename T, typename Distance>
+	template <typename T, typename Metric>
 	class HierarchicalClustering {
 	private:
 

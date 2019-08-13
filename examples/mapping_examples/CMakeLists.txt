@@ -54,7 +54,7 @@ endif(UNIX)
 add_executable(Boosting_example quantized_mappers/classification/Boosting_example.cpp)
 add_executable(Bagging_example quantized_mappers/classification/Bagging_example.cpp)
 add_executable(CWA_demo quantized_mappers/classification/CWA_demo.cpp)
-add_executable(MetricDesicionTree_example quantized_mappers/classification/MetricDesicionTree_example.cpp)
+add_executable(DesicionTree_example quantized_mappers/classification/DesicionTree_example.cpp)
 
 
 if(LAPACK_LIBRARIES)

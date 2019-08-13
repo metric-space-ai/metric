@@ -20,6 +20,8 @@ A DBSCAN implementation based on distance matrix.
 //       A density-based algorithm for discovering clusters
 //       in large spatial databases with noise. 1996.
 
+#include <vector>
+#include "../distance.hpp"
 
 namespace metric 
 {
@@ -33,12 +35,12 @@ namespace dbscan_details
     template <typename T>
     std::vector<std::vector<T>> 
     distance_matrix(const std::vector<std::vector<T>> &data,
-        std::string distance_measure){
+		Metric distance_measure = Metric()){
 
         std::vector<std::vector<T>> matrix(data.size(), std::vector<T>(data.size())); //initialize
         for (int i=0;i<data.size();++i){
             for (int j=i;j<data.size();++j){
-                T distance = distance_functions::distance(data[i],data[j], distance_measure);
+                T distance = distance_measure(data[i], data[j]);
                 matrix[i][j]= distance;
                 matrix[j][i]= distance;
             }
@@ -105,12 +107,12 @@ update_cluster(const std::vector<std::vector<T>> &D,                      // dis
 
 
 // main algorithm
-template <typename T>
+template <typename T, typename Metric = metric::Euclidian<T>>
 std::tuple<std::vector<int>,std::vector<int>,std::vector<int>>
 dbscan(const std::vector<std::vector<T>> &data, 
     T eps, 
     int minpts,
-    std::string distance_measure = distance_functions::default_measure()){
+	Metric distance_measure = Metric()){
 
         // check arguments
         int n = data.size();
@@ -120,7 +122,7 @@ dbscan(const std::vector<std::vector<T>> &data,
         assert(minpts >= 1); // error("minpts must be a positive integer.")
         
         // build the (pairwaise) distance matrix
-        auto D = dbscan_functions::distance_matrix(data,distance_measure);
+        auto D = dbscan_functions::distance_matrix(data, distance_measure);
     
     // initialize
     std::vector<int> seeds;

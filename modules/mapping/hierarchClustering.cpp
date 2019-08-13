@@ -8,60 +8,62 @@
 
 #include <vector>
 #include <limits>
-#include "../../distance/metric_distance.hpp"
 
 namespace metric
 {
 
-
-	std::tuple <int, int> getMinPosition(std::vector<std::vector<double>> &distanceMatrix)
+	namespace hierarchical_clustering_details
 	{
-		int minX = 0;
-		int minY = 1;
-		double dist = std::numeric_limits<double>::max();
 
-		for (size_t i = 0; i < distanceMatrix.size(); i++)
+		std::tuple <int, int> getMinPosition(std::vector<std::vector<double>> &distanceMatrix)
 		{
-			for (size_t j = i + 1; j < distanceMatrix.size(); j++)
+			int minX = 0;
+			int minY = 1;
+			double dist = std::numeric_limits<double>::max();
+
+			for (size_t i = 0; i < distanceMatrix.size(); i++)
 			{
-				if (distanceMatrix[i][j] < dist)
+				for (size_t j = i + 1; j < distanceMatrix.size(); j++)
 				{
-					dist = distanceMatrix[i][j];
-					minX = i;
-					minY = j;
+					if (distanceMatrix[i][j] < dist)
+					{
+						dist = distanceMatrix[i][j];
+						minX = i;
+						minY = j;
+					}
 				}
 			}
+
+			return std::make_tuple(minX, minY);
 		}
 
-		return std::make_tuple(minX, minY);
-	}
-
-	template < typename T>
-	std::pair<bool, int> findInVector(const std::vector<T>  & vecOfElements, const T  & element)
-	{
-		std::pair<bool, int > result;
-
-		// Find given element in vector
-		auto it = std::find(vecOfElements.begin(), vecOfElements.end(), element);
-
-		if (it != vecOfElements.end())
+		template <typename T>
+		std::pair<bool, int> findInVector(const std::vector<T>  & vecOfElements, const T  & element)
 		{
-			result.second = distance(vecOfElements.begin(), it);
-			result.first = true;
-		}
-		else
-		{
-			result.first = false;
-			result.second = -1;
-		}
+			std::pair<bool, int > result;
 
-		return result;
-	}
+			// Find given element in vector
+			auto it = std::find(vecOfElements.begin(), vecOfElements.end(), element);
+
+			if (it != vecOfElements.end())
+			{
+				result.second = distance(vecOfElements.begin(), it);
+				result.first = true;
+			}
+			else
+			{
+				result.first = false;
+				result.second = -1;
+			}
+
+			return result;
+		}
+	} // end namespace hierarchical_clustering_details
 
 	/////////////////////////////////////////////////////////////
 
-	template <typename T, typename Distance>
-	void HierarchicalClustering<T, Distance>::initialize()
+	template <typename T, typename Metric>
+	void HierarchicalClustering<T, Metric>::initialize()
 	{
 		for (size_t i = 0; i < sourceData.size(); i++)
 		{
@@ -70,11 +72,11 @@ namespace metric
 		}
 	}
 
-	template <typename T, typename Distance>
-	std::vector<std::vector<double>> HierarchicalClustering<T, Distance>::calculateDistances()
+	template <typename T, typename Metric>
+	std::vector<std::vector<double>> HierarchicalClustering<T, Metric>::calculateDistances()
 	{
 		std::vector<std::vector<double>> distanceMatrix(clusters.size(), std::vector<double>(clusters.size()));
-		Distance distancer;
+		Metric distancer;
 
 		for (size_t i = 0; i < clusters.size(); i++)
 		{
@@ -87,8 +89,8 @@ namespace metric
 		return distanceMatrix;
 	}
 
-	template <typename T, typename Distance>
-	void HierarchicalClustering<T, Distance>::hierarchical_clustering()
+	template <typename T, typename Metric>
+	void HierarchicalClustering<T, Metric>::hierarchical_clustering()
 	{
 		initialize();
 
@@ -111,11 +113,11 @@ namespace metric
 
 			while ((int) mergedIndexes.size() / 2 < (int) clusters.size() / 2)
 			{
-				std::tie(x, y) = clustering::getMinPosition(distanceMatrix);
+				std::tie(x, y) = hierarchical_clustering_details::getMinPosition(distanceMatrix);
 				distanceMatrix[x][y] = std::numeric_limits<double>::max();
 
-				loockupResultX = clustering::findInVector<int>(mergedIndexes, x);
-				loockupResultY = clustering::findInVector<int>(mergedIndexes, y);
+				loockupResultX = hierarchical_clustering_details::findInVector<int>(mergedIndexes, x);
+				loockupResultY = hierarchical_clustering_details::findInVector<int>(mergedIndexes, y);
 				if (!loockupResultX.first && !loockupResultY.first)
 				{
 					mergedIndexes.push_back(x);
@@ -140,7 +142,7 @@ namespace metric
 
 				for (size_t i = 0; i < clusters.size(); i++)
 				{
-					loockupResultX = clustering::findInVector<int>(mergedIndexes, i);
+					loockupResultX = hierarchical_clustering_details::findInVector<int>(mergedIndexes, i);
 					if (!loockupResultX.first)
 					{
 						mergedIndexes.push_back(i);
