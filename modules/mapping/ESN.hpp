@@ -6,48 +6,53 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 Copyright (c) 2019 Panda Team
 */
 
-#ifndef _METRIC_MAPPING_DETAILS_ESN_HPP
-#define _METRIC_MAPPING_DETAILS_ESN_HPP
+#ifndef _METRIC_MAPPING_ESN_HPP
+#define _METRIC_MAPPING_ESN_HPP
 
 #include "../../3rdparty/blaze/Blaze.h"
 
-
-//#include "utils/graph/graph.hpp" // for create_W only // TODO enable if considered to use graph
-
-
 namespace metric {
 
-namespace ESN_details
-{
-    
-
-
-// ---------------------------------  math functions:
-
-blaze::DynamicMatrix<double> get_readout_no_echo( // for ESN with disables echo
-        const blaze::DynamicMatrix<double> & Slices,
-        const blaze::DynamicMatrix<double> & W_in
-        );
-
-blaze::DynamicMatrix<double> get_readout( // echo mode
-        const blaze::DynamicMatrix<double> & Slices,
-        const blaze::DynamicMatrix<double> & W_in,
-        const blaze::DynamicMatrix<double> & W, // TODO make sparse
-        double alpha = 0.5,
-        size_t washout = 0
-        );
-
-blaze::DynamicMatrix<double> ridge(
-        const blaze::DynamicMatrix<double> & Target,
-        const blaze::DynamicMatrix<double> & Readout,
-        double beta = 0.5
-        );
-
-
-}
-// -------------------------------- caller class:
-
+/**
+ * @class ESN
+ * 
+ * @brief 
+ */
 class ESN {
+public:
+    /**
+     * @brief Construct a new ESN object
+     * 
+     * @param w_size 
+     * @param w_connections 
+     * @param w_sr 
+     * @param alpha_ 
+     * @param washout_ 
+     * @param beta_ 
+     */
+    ESN(size_t w_size = 500,  // number of elements in reservoir
+        double w_connections = 10,  // number of interconnections (for each reservoir element)
+        double w_sr = 0.6,  // desired spectral radius of the reservoir
+        double alpha_ = 0.5,  // leak rate, number of slices excluded from output for washout
+        size_t washout_ = 1,
+        double beta_ = 0.5  // ridge solver metaparameter
+    );
+
+    /**
+     * @brief 
+     * 
+     * @param Slices 
+     * @param Target 
+     */
+    void train(const blaze::DynamicMatrix<double>& Slices, const blaze::DynamicMatrix<double>& Target);
+
+    /**
+     * @brief 
+     * 
+     * @param Slices 
+     * @return 
+     */
+    blaze::DynamicMatrix<double> predict(const blaze::DynamicMatrix<double>& Slices);
 
 private:
     blaze::DynamicMatrix<double> W_in;
@@ -61,32 +66,10 @@ private:
 
     void create_W(size_t w_size, double w_connections, double w_sr);
 
-public:
+};  // class ESN
 
-    ESN(
-            size_t w_size = 500, // number of elements in reservoir
-            double w_connections = 10, // number of interconnections (for each reservoir element)
-            double w_sr = 0.6, // desired spectral radius of the reservoir
-            double alpha_ = 0.5, // leak rate, number of slices excluded from output for washout
-            size_t washout_ = 1,
-            double beta_ = 0.5 // ridge solver metaparameter
-            );
-
-    void train(
-            const blaze::DynamicMatrix<double> & Slices,
-            const blaze::DynamicMatrix<double> & Target
-            );
-
-
-    blaze::DynamicMatrix<double> predict(
-            const blaze::DynamicMatrix<double> & Slices
-            );
-
-}; // class ESN
-
-
-} // namespace metric
+}  // namespace metric
 
 #include "ESN.cpp"
 
-#endif // _METRIC_MAPPING_DETAILS_ESN_HPP
+#endif  // _METRIC_MAPPING_DETAILS_ESN_HPP

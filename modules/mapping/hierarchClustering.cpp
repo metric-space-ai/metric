@@ -8,162 +8,137 @@
 
 #include <vector>
 #include <limits>
-#include "../../distance/metric_distance.hpp"
+#include <algorithm>
+#include <tuple>
 
-namespace metric
+//#include "../../distance/metric_distance.hpp"
+
+namespace metric {
+
+std::tuple<int, int> getMinPosition(std::vector<std::vector<double>>& distanceMatrix)
 {
-	template <typename T, typename Distance>
-	void HierarchicalClustering<T, Distance>::initialize()
-	{
-		for (size_t i = 0; i < sourceData.size(); i++)
-		{
-			auto cluster = Cluster<T>({ sourceData[i] });
-			clusters.push_back(cluster);
-		}
-	}
+    int minX = 0;
+    int minY = 1;
+    double dist = std::numeric_limits<double>::max();
 
-	template <typename T, typename Distance>
-	std::vector<std::vector<double>> HierarchicalClustering<T, Distance>::calculateDistances()
-	{
-		std::vector<std::vector<double>> distanceMatrix(clusters.size(), std::vector<double>(clusters.size()));
-		Distance distancer;
+    for (size_t i = 0; i < distanceMatrix.size(); i++) {
+        for (size_t j = i + 1; j < distanceMatrix.size(); j++) {
+            if (distanceMatrix[i][j] < dist) {
+                dist = distanceMatrix[i][j];
+                minX = i;
+                minY = j;
+            }
+        }
+    }
 
-		for (size_t i = 0; i < clusters.size(); i++)
-		{
-			for (size_t j = 0; j < clusters.size(); j++)
-			{
-				distanceMatrix[i][j] = distancer(clusters[i].centroid, clusters[j].centroid);
-			}
-		}
+    return std::make_tuple(minX, minY);
+}
 
-		return distanceMatrix;
-	}
+template <typename T>
+std::pair<bool, int> findInVector(const std::vector<T>& vecOfElements, const T& element)
+{
+    std::pair<bool, int> result;
 
-	template <typename T, typename Distance>
-	void HierarchicalClustering<T, Distance>::hierarchical_clustering()
-	{
-		initialize();
+    // Find given element in vector
+    auto it = std::find(vecOfElements.begin(), vecOfElements.end(), element);
 
-		std::vector<std::vector<double>> distanceMatrix;
-		std::vector<Cluster<T>> newClusters;
-		std::vector<std::vector<T>> newData;
-		std::vector<int> mergedIndexes;
-		int closest;
-		std::pair<bool, int> loockupResultX;
-		std::pair<bool, int> loockupResultY;
+    if (it != vecOfElements.end()) {
+        result.second = distance(vecOfElements.begin(), it);
+        result.first = true;
+    } else {
+        result.first = false;
+        result.second = -1;
+    }
 
-		int x;
-		int y;
+    return result;
+}
 
-		while (clusters.size() > clustersNum)
-		{
-			distanceMatrix = calculateDistances();
-			newClusters.clear();
-			mergedIndexes.clear();
+template <typename T, typename Distance>
+void HierarchicalClustering<T, Distance>::initialize()
+{
+    for (size_t i = 0; i < sourceData.size(); i++) {
+        auto cluster = Cluster<T>({ sourceData[i] });
+        clusters.push_back(cluster);
+    }
+}
 
-			while ((int) mergedIndexes.size() / 2 < (int) clusters.size() / 2)
-			{
-				std::tie(x, y) = getMinPosition(distanceMatrix);
-				distanceMatrix[x][y] = std::numeric_limits<double>::max();
+template <typename T, typename Distance>
+std::vector<std::vector<double>> HierarchicalClustering<T, Distance>::calculateDistances()
+{
+    std::vector<std::vector<double>> distanceMatrix(clusters.size(), std::vector<double>(clusters.size()));
+    Distance distancer;
 
-				loockupResultX = findInVector<int>(mergedIndexes, x);
-				loockupResultY = findInVector<int>(mergedIndexes, y);
-				if (!loockupResultX.first && !loockupResultY.first)
-				{
-					mergedIndexes.push_back(x);
-					mergedIndexes.push_back(y);
-					newData.clear();
-					for (size_t i = 0; i < clusters[x].data.size(); i++)
-					{
-						newData.push_back(clusters[x].data[i]);
-					}
-					for (size_t i = 0; i < clusters[y].data.size(); i++)
-					{
-						newData.push_back(clusters[y].data[i]);
-					}
+    for (size_t i = 0; i < clusters.size(); i++) {
+        for (size_t j = 0; j < clusters.size(); j++) {
+            distanceMatrix[i][j] = distancer(clusters[i].centroid, clusters[j].centroid);
+        }
+    }
 
-					auto cluster = Cluster<T>(newData);
-					newClusters.push_back(cluster);
-				}
-			}
+    return distanceMatrix;
+}
 
-			// get the last element
-			if (mergedIndexes.size() < clusters.size()) {
+template <typename T, typename Distance>
+void HierarchicalClustering<T, Distance>::hierarchical_clustering()
+{
+    initialize();
 
-				for (size_t i = 0; i < clusters.size(); i++)
-				{
-					loockupResultX = findInVector<int>(mergedIndexes, i);
-					if (!loockupResultX.first)
-					{
-						mergedIndexes.push_back(i);
-						newData.clear();
-						for (size_t j = 0; j < clusters[i].data.size(); j++)
-						{
-							newData.push_back(clusters[i].data[j]);
-						}
+    std::vector<std::vector<double>> distanceMatrix;
+    std::vector<Cluster<T>> newClusters;
+    std::vector<std::vector<T>> newData;
+    std::vector<int> mergedIndexes;
+    int closest;
+    std::pair<bool, int> loockupResultX;
+    std::pair<bool, int> loockupResultY;
 
-						auto cluster = Cluster<T>(newData);
-						newClusters.push_back(cluster);
-					}
-				}
-			}
+    int x;
+    int y;
 
-			//std::cout << newClusters.size() << std::endl;
-			//for (size_t i = 0; i < newClusters.size(); i++)
-			//{
-			//	for (size_t j = 0; j < newClusters[i].data.size(); j++)
-			//	{
-			//		//std::cout << newClusters[i].data[j];
-			//	}
-			//	std::cout << newClusters[i].data.size() << std::endl;
-			//}
+    while (clusters.size() > clustersNum) {
+        distanceMatrix = calculateDistances();
+        newClusters.clear();
+        mergedIndexes.clear();
 
-			clusters = newClusters;
-		}
-	}
+        while ((int)mergedIndexes.size() / 2 < (int)clusters.size() / 2) {
+            std::tie(x, y) = getMinPosition(distanceMatrix);
+            distanceMatrix[x][y] = std::numeric_limits<double>::max();
 
+            loockupResultX = findInVector<int>(mergedIndexes, x);
+            loockupResultY = findInVector<int>(mergedIndexes, y);
+            if (!loockupResultX.first && !loockupResultY.first) {
+                mergedIndexes.push_back(x);
+                mergedIndexes.push_back(y);
+                newData.clear();
+                for (size_t i = 0; i < clusters[x].data.size(); i++) {
+                    newData.push_back(clusters[x].data[i]);
+                }
+                for (size_t i = 0; i < clusters[y].data.size(); i++) {
+                    newData.push_back(clusters[y].data[i]);
+                }
 
-	std::tuple <int, int>  getMinPosition(std::vector<std::vector<double>> &distanceMatrix)
-	{
-		int minX = 0;
-		int minY = 1;
-		double dist = std::numeric_limits<double>::max();
+                auto cluster = Cluster<T>(newData);
+                newClusters.push_back(cluster);
+            }
+        }
 
-		for (size_t i = 0; i < distanceMatrix.size(); i++)
-		{
-			for (size_t j = i + 1; j < distanceMatrix.size(); j++)
-			{
-				if (distanceMatrix[i][j] < dist)
-				{
-					dist = distanceMatrix[i][j];
-					minX = i;
-					minY = j;
-				}
-			}
-		}
+        // get the last element
+        if (mergedIndexes.size() < clusters.size()) {
 
-		return std::make_tuple(minX, minY);
-	}
+            for (size_t i = 0; i < clusters.size(); i++) {
+                loockupResultX = findInVector<int>(mergedIndexes, i);
+                if (!loockupResultX.first) {
+                    mergedIndexes.push_back(i);
+                    newData.clear();
+                    for (size_t j = 0; j < clusters[i].data.size(); j++) {
+                        newData.push_back(clusters[i].data[j]);
+                    }
 
-	template < typename T>
-	std::pair<bool, int > findInVector(const std::vector<T>  & vecOfElements, const T  & element)
-	{
-		std::pair<bool, int > result;
+                    auto cluster = Cluster<T>(newData);
+                    newClusters.push_back(cluster);
+                }
+            }
+        }
+      clusters = newClusters;
+    }
+}
 
-		// Find given element in vector
-		auto it = std::find(vecOfElements.begin(), vecOfElements.end(), element);
-
-		if (it != vecOfElements.end())
-		{
-			result.second = distance(vecOfElements.begin(), it);
-			result.first = true;
-		}
-		else
-		{
-			result.first = false;
-			result.second = -1;
-		}
-
-		return result;
-	}
 }

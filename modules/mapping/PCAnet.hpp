@@ -6,42 +6,72 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 Copyright (c) 2019 Panda Team
 */
 
-#ifndef _METRIC_MAPPING_DETAILS_ENCODER_HPP
-#define _METRIC_MAPPING_DETAILS_ENCODER_HPP
+#ifndef _METRIC_MAPPING_PCANET_HPP
+#define _METRIC_MAPPING_PCANET_HPP
 
 #include "../../3rdparty/blaze/Blaze.h"
 
-//#include "utils/visualizer/visualizer.hpp" // TODO remove visualizer calls and this line
-
 namespace metric {
 
+/**
+ * @brief 
+ * 
+ * @param In 
+ * @param n_components 
+ * @param visualize 
+ * @return 
+ */
 template <class BlazeMatrix>
-blaze::DynamicMatrix<double> PCA(const BlazeMatrix In, int n_components,
-                                 bool visualize = false);
+blaze::DynamicMatrix<double> PCA(const BlazeMatrix In, int n_components, bool visualize = false);
 
-// simple linear encoder based on PCA
-
+/**
+ * @class PCAnet
+ * 
+ *@brief simple linear encoder based on PCA
+ * 
+ */
 class PCAnet {
 
-private:
-  blaze::DynamicMatrix<double> W_decode;
-  blaze::DynamicMatrix<double> W_encode;
-  bool visualize = false;
-  std::default_random_engine rgen;
-
 public:
-  PCAnet(bool visualize_ = false);
+    /**
+   * @brief Construct a new PCAnet object
+   * 
+   * @param visualize_ 
+   */
+    PCAnet(bool visualize_ = false);
 
-  void train(const blaze::DynamicMatrix<double> &Slices, size_t n_features = 1);
+    /**
+   * @brief 
+   * 
+   * @param Slices 
+   * @param n_features 
+   */
+    void train(const blaze::DynamicMatrix<double>& Slices, size_t n_features = 1);
 
-  blaze::DynamicMatrix<double>
-  compress(const blaze::DynamicMatrix<double> &Slices);
+    /**
+   * @brief 
+   * 
+   * @param Slices 
+   * @return
+   */
+    blaze::DynamicMatrix<double> compress(const blaze::DynamicMatrix<double>& Slices);
 
-  blaze::DynamicMatrix<double>
-  decompress(const blaze::DynamicMatrix<double> &Codes);
+    /**
+   * @brief 
+   * 
+   * @param Codes 
+   * @return blaze::DynamicMatrix<double> 
+   */
+    blaze::DynamicMatrix<double> decompress(const blaze::DynamicMatrix<double>& Codes);
+
+private:
+    blaze::DynamicMatrix<double> W_decode;
+    blaze::DynamicMatrix<double> W_encode;
+    bool visualize = false;
+    std::default_random_engine rgen;
 };
 
-} // namespace metric
+}  // namespace metric
 #include "PCAnet.cpp"
 
-#endif // _METRIC_MAPPING_DETAILS_ENCODER_HPP
+#endif  // _METRIC_MAPPING_DETAILS_ENCODER_HPP
