@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.12)
 
 set(Boost_DEBUG on)  
 find_package(Boost)
+find_package(libjpeg)
 
 include_directories(
     ${PROJECT_SOURCE_DIR}
@@ -34,6 +35,10 @@ if(UNIX)
 	set_target_properties(entropy_example PROPERTIES CXX_STANDARD 17)
 endif(UNIX)
 #set_target_properties(simple_example PROPERTIES   RUNTIME_OUTPUT_DIRECTORY  "${PROJECT_SOURCE_DIR}/bin") 
+
+if(UNIX)
+	target_link_libraries(EMD_example libjpeg) 
+endif(UNIX)
 
 target_link_libraries(entropy_example ${Boost_LIBRARIES})
 target_link_libraries(EMD_example ${Boost_LIBRARIES})
