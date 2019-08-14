@@ -1,0 +1,1 @@
+Here should be compiled jpeg.lib for uusing platform
