@@ -24,8 +24,14 @@ if(UNIX)
     set(THREADS_PREFER_PTHREAD_FLAG ON)
     find_package(Threads REQUIRED)
     target_link_libraries(entropy_example Threads::Threads)
-
+	
+	set_target_properties(distance_example PROPERTIES CXX_STANDARD 17)
+	set_target_properties(StandartMetrics_example PROPERTIES CXX_STANDARD 17)
 	set_target_properties(EMD_example PROPERTIES CXX_STANDARD 17)
+	set_target_properties(TWED_example PROPERTIES CXX_STANDARD 17)
+	set_target_properties(SSIM_example PROPERTIES CXX_STANDARD 17)
+	set_target_properties(EditDistance_example PROPERTIES CXX_STANDARD 17)
+	set_target_properties(entropy_example PROPERTIES CXX_STANDARD 17)
 endif(UNIX)
 #set_target_properties(simple_example PROPERTIES   RUNTIME_OUTPUT_DIRECTORY  "${PROJECT_SOURCE_DIR}/bin") 
 
