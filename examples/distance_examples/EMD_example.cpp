@@ -11,7 +11,7 @@ Copyright (c) 2019 Panda Team
 #include <chrono>
 #include "assets/test_data.cpp"
 #include "../../modules/distance.hpp"
-#include <boost/gil_all.hpp>
+#include <boost/gil/gil_all.hpp> 
 #include <boost/gil/extension/io/jpeg_io.hpp>
 
 
