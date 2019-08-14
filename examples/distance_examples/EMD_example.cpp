@@ -25,11 +25,11 @@ void saveToCsv(std::string filename, const std::vector<std::vector<T>> &mat, con
 	outputFile.open(filename);
 
 	// write the file headers
-	outputFile << ";";
+	outputFile << ",";
 	for (auto i = 0; i < features.size(); ++i)
 	{
 		outputFile << features[i];
-		outputFile << ";";
+		outputFile << ",";
 	}
 	//outputFile << "date";
 	outputFile << std::endl;
@@ -37,11 +37,11 @@ void saveToCsv(std::string filename, const std::vector<std::vector<T>> &mat, con
 	// last item in the mat is date
 	for (auto i = 0; i < mat.size(); ++i)
 	{
-		outputFile << features[i];
-		//outputFile << dates[i] << ";";
+		outputFile << features[i]; << ",";
+		//outputFile << dates[i] << ",";
 		for (auto j = 0; j < mat[i].size(); j++)
 		{
-			outputFile << mat[i][j] << ";";
+			outputFile << mat[i][j] << ",";
 		}
 		outputFile << std::endl;
 	}
