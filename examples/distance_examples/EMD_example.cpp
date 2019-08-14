@@ -11,8 +11,8 @@ Copyright (c) 2019 Panda Team
 #include <chrono>
 #include "assets/test_data.cpp"
 #include "../../modules/distance.hpp"
-#include <boost/gil.hpp>
-#include <boost/gil/extension/io/jpeg.hpp>
+#include <boost/gil_all.hpp>
+#include <boost/gil/extension/io/jpeg_io.hpp>
 
 
 int main()
@@ -21,13 +21,13 @@ int main()
 	// example for picture
 
 
-	std::cout << "we have started" << std::endl;
+	std::cout << "we have started" << std::endl; 
 	std::cout << "" << std::endl;
 
 	boost::gil::rgb8_image_t img1;
 	boost::gil::rgb8_image_t img2;
-	boost::gil::read_image("assets/sample0.jpg_resized.jpg", img1, boost::gil::jpeg_tag());
-	boost::gil::read_image("assets/sample1.jpg_resized.jpg", img2, boost::gil::jpeg_tag());
+	boost::gil::jpeg_read_image("assets/sample0.jpg_resized.jpg", img1);
+	boost::gil::jpeg_read_image("assets/sample1.jpg_resized.jpg", img2);
 	std::cout << "Read complete, got an image " << img1.width()
 		<< " by " << img1.height() << " pixels\n";
 	std::cout << "Read complete, got an image " << img2.width()
