@@ -59,7 +59,7 @@ int main()
 	std::cout << "we have started" << std::endl; 
 	std::cout << "" << std::endl;
 
-	int num_images = 2;
+	int num_images = 20;
 	typedef int edm_Type;
 
 	std::vector<std::string> names(num_images);
