@@ -3,12 +3,16 @@ cmake_minimum_required(VERSION 3.12)
 set(Boost_DEBUG on)  
 find_package(Boost)
 
+set(CMAKE_CXX_FLAGS "-O3")
+
 include_directories(
     ${PROJECT_SOURCE_DIR}
     ${PROJECT_SOURCE_DIR}/../../3rdparty/jpeglib 
     )
 
 include_directories(${Boost_INCLUDE_DIRS})
+
+
 	
 file(COPY "assets" DESTINATION ".")
 
