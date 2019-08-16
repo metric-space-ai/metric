@@ -74,11 +74,11 @@ int main()
 		boost::gil::read_image("assets/sample" + std::to_string(i) + ".jpg_resized.jpg", jpegs[i], boost::gil::jpeg_tag());
 		//boost::gil::jpeg_read_image("assets/sample" + std::to_string(i) + ".jpg_resized.jpg", jpegs[i]);
 
-		boost::gil::rgb8_image_t squareScaled(30, 30);
+		boost::gil::rgb8_image_t squareScaled(50, 50);
 		boost::gil::resize_view(const_view(jpegs[i]), view(squareScaled), boost::gil::bilinear_sampler());
 
-		//auto gray = boost::gil::color_converted_view<boost::gil::gray8_pixel_t>(const_view(jpegs[i]));
-		auto gray = boost::gil::color_converted_view<boost::gil::gray8_pixel_t>(const_view(squareScaled));
+		auto gray = boost::gil::color_converted_view<boost::gil::gray8_pixel_t>(const_view(jpegs[i]));
+		//auto gray = boost::gil::color_converted_view<boost::gil::gray8_pixel_t>(const_view(squareScaled));
 		//for (size_t j = 0; j < 1000; ++j)
 		for (size_t j = 0; j < gray.size(); ++j)
 		{
