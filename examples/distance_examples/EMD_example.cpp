@@ -12,10 +12,10 @@ Copyright (c) 2019 Panda Team
 #include "assets/test_data.cpp"
 #include "../../modules/distance.hpp"
 #include "../../modules/space.hpp"
-#include <boost/gil/gil_all.hpp> 
-#include <boost/gil/extension/io/jpeg_io.hpp>
-//#include <boost/gil.hpp> 
-//#include <boost/gil/extension/io/jpeg.hpp>
+//#include <boost/gil/gil_all.hpp> 
+//#include <boost/gil/extension/io/jpeg_io.hpp>
+#include <boost/gil.hpp> 
+#include <boost/gil/extension/io/jpeg.hpp>
 #include <boost/gil/extension/numeric/sampler.hpp>
 #include <boost/gil/extension/numeric/resample.hpp>
 
@@ -71,8 +71,8 @@ int main()
 	for (size_t i = 0; i < num_images; ++i)
 	{
 		names[i] = "sample_" + std::to_string(i);
-		//boost::gil::read_image("assets/sample" + std::to_string(i) + ".jpg_resized.jpg", jpegs[i], boost::gil::jpeg_tag());
-		boost::gil::jpeg_read_image("assets/sample" + std::to_string(i) + ".jpg_resized.jpg", jpegs[i]);
+		boost::gil::read_image("assets/sample" + std::to_string(i) + ".jpg_resized.jpg", jpegs[i], boost::gil::jpeg_tag());
+		//boost::gil::jpeg_read_image("assets/sample" + std::to_string(i) + ".jpg_resized.jpg", jpegs[i]);
 
 		boost::gil::rgb8_image_t squareScaled(50, 50);
 		boost::gil::resize_view(const_view(jpegs[i]), view(squareScaled), boost::gil::bilinear_sampler());
