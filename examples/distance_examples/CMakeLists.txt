@@ -3,8 +3,6 @@ cmake_minimum_required(VERSION 3.12)
 set(Boost_DEBUG on)  
 find_package(Boost)
 
-set(CMAKE_CXX_FLAGS "-O3")
-
 include_directories(
     ${PROJECT_SOURCE_DIR}
     ${PROJECT_SOURCE_DIR}/../../3rdparty/jpeglib 
@@ -26,6 +24,8 @@ add_executable(EditDistance_example EditDistance_example.cpp)
 add_executable(entropy_example entropy_example.cpp)
 if(UNIX)
     set(THREADS_PREFER_PTHREAD_FLAG ON)
+	set(CMAKE_CXX_FLAGS "-O3")
+
     find_package(Threads REQUIRED)
     target_link_libraries(entropy_example Threads::Threads)
     target_link_libraries(distance_example Threads::Threads)
