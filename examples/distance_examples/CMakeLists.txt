@@ -24,6 +24,7 @@ if(UNIX)
     set(THREADS_PREFER_PTHREAD_FLAG ON)
     find_package(Threads REQUIRED)
     target_link_libraries(entropy_example Threads::Threads)
+    target_link_libraries(distance_example Threads::Threads)
 	
 	set_target_properties(distance_example PROPERTIES CXX_STANDARD 17)
 	set_target_properties(StandartMetrics_example PROPERTIES CXX_STANDARD 17)
