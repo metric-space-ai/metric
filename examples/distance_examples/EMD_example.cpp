@@ -78,7 +78,7 @@ int main()
 		//boost::gil::resize_view(const_view(jpegs[i]), view(squareScaled), boost::gil::bilinear_sampler());
 
 		//auto gray = boost::gil::color_converted_view<boost::gil::gray8_pixel_t>(const_view(jpegs[i]));
-		auto gray = boost::gil::color_converted_view<boost::gil::gray8_pixel_t>(const_view(jpegs[i])));
+		auto gray = boost::gil::color_converted_view<boost::gil::gray8_pixel_t>(const_view(jpegs[i]));
 		//for (size_t j = 0; j < 1000; ++j)
 		for (size_t j = 0; j < gray.size(); ++j)
 		{
