@@ -40,7 +40,7 @@ int main()
     auto nn = cTree.nn(v8);
     std::cout << "nn of v8 is v" << nn->ID << std::endl;
 
-    //cTree.insert(v8);
+    cTree.insert(v8);
 
     cTree.print();
 
@@ -62,7 +62,7 @@ int main()
 
     cTree2.insert(table2);
 
-    //cTree2.print();
+    cTree2.print();
 
     return 0;
 }

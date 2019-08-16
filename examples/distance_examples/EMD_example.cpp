@@ -12,10 +12,10 @@ Copyright (c) 2019 Panda Team
 #include "assets/test_data.cpp"
 #include "../../modules/distance.hpp"
 #include "../../modules/space.hpp"
-#include <boost/gil/gil_all.hpp> 
-#include <boost/gil/extension/io/jpeg_io.hpp>
-//#include <boost/gil.hpp> 
-//#include <boost/gil/extension/io/jpeg.hpp>
+//#include <boost/gil/gil_all.hpp> 
+//#include <boost/gil/extension/io/jpeg_io.hpp>
+#include <boost/gil.hpp> 
+#include <boost/gil/extension/io/jpeg.hpp>
 
 template <typename T>
 void saveToCsv(std::string filename, const std::vector<std::vector<T>> &mat, const std::vector<std::string> &features)
@@ -69,10 +69,11 @@ int main()
 	for (size_t i = 0; i < num_images; ++i)
 	{
 		names[i] = "sample_" + std::to_string(i);
-		//boost::gil::read_image("assets/sample" + std::to_string(i) + ".jpg_resized.jpg", jpegs[i], boost::gil::jpeg_tag());
-		boost::gil::jpeg_read_image("assets/sample" + std::to_string(i) + ".jpg_resized.jpg", jpegs[i]);
+		boost::gil::read_image("assets/sample" + std::to_string(i) + ".jpg_resized.jpg", jpegs[i], boost::gil::jpeg_tag());
+		//boost::gil::jpeg_read_image("assets/sample" + std::to_string(i) + ".jpg_resized.jpg", jpegs[i]);
 		auto gray = boost::gil::color_converted_view<boost::gil::gray8_pixel_t>(const_view(jpegs[i]));
-		for (size_t j = 0; j < gray.size(); ++j)
+		for (size_t j = 0; j < 1000; ++j)
+		//for (size_t j = 0; j < gray.size(); ++j)
 		{
 			grayJpegs[i].push_back(gray[j]);
 		}
@@ -137,9 +138,11 @@ int main()
 		{
 			cTree.print();
 		}
+		auto t1 = std::chrono::steady_clock::now();
 		std::cout << "insert " << i << std::endl;
 		cTree.insert(grayJpegs[i]);
-		std::cout << "inserted " << i << std::endl;
+		auto t2 = std::chrono::steady_clock::now();
+		std::cout << "inserted " << i << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000 << " s)" << std::endl;
 
 	}
 	cTree.print();
