@@ -33,12 +33,14 @@ if(UNIX)
 	set_target_properties(SSIM_example PROPERTIES CXX_STANDARD 17)
 	set_target_properties(EditDistance_example PROPERTIES CXX_STANDARD 17)
 	set_target_properties(entropy_example PROPERTIES CXX_STANDARD 17)
+	
+	target_link_libraries(EMD_example /usr/local/lib/libjpeg.a) 
+    target_compile_options(EMD_example PRIVATE -pthread)
+    set_target_properties(EMD_example PROPERTIES LINK_FLAGS -pthread)
+
 endif(UNIX)
 #set_target_properties(simple_example PROPERTIES   RUNTIME_OUTPUT_DIRECTORY  "${PROJECT_SOURCE_DIR}/bin") 
 
-if(UNIX)
-	target_link_libraries(EMD_example /usr/local/lib/libjpeg.a) 
-endif(UNIX)
 
 target_link_libraries(entropy_example ${Boost_LIBRARIES})
 target_link_libraries(EMD_example ${Boost_LIBRARIES})
