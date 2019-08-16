@@ -11,6 +11,7 @@ Copyright (c) 2019 Panda Team
 #include <chrono>
 #include "assets/test_data.cpp"
 #include "../../modules/distance.hpp"
+#include "../../modules/space.hpp"
 #include <boost/gil/gil_all.hpp> 
 #include <boost/gil/extension/io/jpeg_io.hpp>
 //#include <boost/gil.hpp> 
@@ -122,35 +123,52 @@ int main()
 	//	}
 	//}
 
-	std::vector < std::vector < edm_Type > > distance_matrix(num_images, std::vector < edm_Type >(num_images));
 
-	std::cout << "create distance matrix" << std::endl;
-	auto cost_mat = metric::EMD_details::ground_distance_matrix_of_2dgrid<edm_Type>(im1_C, im1_R);
-	std::cout << "create max distance matrix" << std::endl;
-	auto maxCost = metric::EMD_details::max_in_distance_matrix(cost_mat);
 
-	std::cout << "we have started" << std::endl;
-	std::cout << "" << std::endl;
+	/*** initialize the tree ***/
+	metric::Tree<std::vector < edm_Type >, metric::EMD<edm_Type>> cTree;
+	std::cout << "tree created" << std::endl;
 
-	metric::EMD<edm_Type> distance(cost_mat, maxCost);
+	/*** add data records ***/
 
-	for (size_t i = 0; i < num_images; ++i)
+	for (size_t i = 0; i < grayJpegs.size(); ++i)
 	{
-		for (size_t j = i + 1; j < num_images; ++j)
-		{
-			// assumes that i1 and i2 are serialized vectors of the image matrices, and cost_mat contains a distance matrix that takes into account the original pixel locations.
-			auto t1 = std::chrono::steady_clock::now();
-			auto result1 = distance(grayJpegs[i], grayJpegs[j]);
-			auto t2 = std::chrono::steady_clock::now();
-			std::cout << "result for " << i << " <-> " << j << " is:" << result1 << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000 << " s)" << std::endl;
-			std::cout << "" << std::endl;
-
-			distance_matrix[i][j] = result1;
-			distance_matrix[j][i] = result1;
-		}
+		std::cout << "insert " << i << std::endl;
+		cTree.insert(grayJpegs[i]);
+		std::cout << "inserted " << i << std::endl;
 	}
+	cTree.print();
 
-	saveToCsv("distances.csv", distance_matrix, names);
+
+	//std::vector < std::vector < edm_Type > > distance_matrix(num_images, std::vector < edm_Type >(num_images));
+
+	//std::cout << "create distance matrix" << std::endl;
+	//auto cost_mat = metric::EMD_details::ground_distance_matrix_of_2dgrid<edm_Type>(im1_C, im1_R);
+	//std::cout << "create max distance matrix" << std::endl;
+	//auto maxCost = metric::EMD_details::max_in_distance_matrix(cost_mat);
+
+	//std::cout << "we have started" << std::endl;
+	//std::cout << "" << std::endl;
+
+	//metric::EMD<edm_Type> distance(cost_mat, maxCost);
+
+	//for (size_t i = 0; i < num_images; ++i)
+	//{
+	//	for (size_t j = i + 1; j < num_images; ++j)
+	//	{
+	//		// assumes that i1 and i2 are serialized vectors of the image matrices, and cost_mat contains a distance matrix that takes into account the original pixel locations.
+	//		auto t1 = std::chrono::steady_clock::now();
+	//		auto result1 = distance(grayJpegs[i], grayJpegs[j]);
+	//		auto t2 = std::chrono::steady_clock::now();
+	//		std::cout << "result for " << i << " <-> " << j << " is:" << result1 << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000 << " s)" << std::endl;
+	//		std::cout << "" << std::endl;
+
+	//		distance_matrix[i][j] = result1;
+	//		distance_matrix[j][i] = result1;
+	//	}
+	//}
+
+	//saveToCsv("distances.csv", distance_matrix, names);
 
 	/*std::cout << "swap records and calculate again" << std::endl;
 	std::cout << "" << std::endl;
