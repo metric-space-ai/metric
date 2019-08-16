@@ -16,6 +16,8 @@ Copyright (c) 2019 Panda Team
 #include <boost/gil/extension/io/jpeg_io.hpp>
 //#include <boost/gil.hpp> 
 //#include <boost/gil/extension/io/jpeg.hpp>
+#include <boost/gil/extension/numeric/sampler.hpp>
+#include <boost/gil/extension/numeric/resample.hpp>
 
 template <typename T>
 void saveToCsv(std::string filename, const std::vector<std::vector<T>> &mat, const std::vector<std::string> &features)
@@ -71,15 +73,21 @@ int main()
 		names[i] = "sample_" + std::to_string(i);
 		//boost::gil::read_image("assets/sample" + std::to_string(i) + ".jpg_resized.jpg", jpegs[i], boost::gil::jpeg_tag());
 		boost::gil::jpeg_read_image("assets/sample" + std::to_string(i) + ".jpg_resized.jpg", jpegs[i]);
-		auto gray = boost::gil::color_converted_view<boost::gil::gray8_pixel_t>(const_view(jpegs[i]));
-		for (size_t j = 0; j < 1000; ++j)
-		//for (size_t j = 0; j < gray.size(); ++j)
+
+		boost::gil::rgb8_image_t squareScaled(50, 50);
+		boost::gil::resize_view(const_view(jpegs[i]), view(squareScaled), boost::gil::bilinear_sampler());
+
+		//auto gray = boost::gil::color_converted_view<boost::gil::gray8_pixel_t>(const_view(jpegs[i]));
+		auto gray = boost::gil::color_converted_view<boost::gil::gray8_pixel_t>(const_view(squareScaled));
+		//for (size_t j = 0; j < 1000; ++j)
+		for (size_t j = 0; j < gray.size(); ++j)
 		{
 			grayJpegs[i].push_back(gray[j]);
 		}
 	}
 	std::cout << "Read complete, got an image " << jpegs[0].width()
 		<< " by " << jpegs[0].height() << " pixels\n";
+	std::cout << "And grayscaled and size scaled image ready " << grayJpegs[0].size() << " items\n";
 
 	boost::gil::rgb8_pixel_t px = *const_view(jpegs[0]).at(5, 10);
 	std::cout << "The pixel at 5,10 is "
