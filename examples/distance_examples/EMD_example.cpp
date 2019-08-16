@@ -133,9 +133,14 @@ int main()
 
 	for (size_t i = 0; i < grayJpegs.size(); ++i)
 	{
+		if (i == 5 || i == 10)
+		{
+			cTree.print();
+		}
 		std::cout << "insert " << i << std::endl;
 		cTree.insert(grayJpegs[i]);
 		std::cout << "inserted " << i << std::endl;
+
 	}
 	cTree.print();
 
