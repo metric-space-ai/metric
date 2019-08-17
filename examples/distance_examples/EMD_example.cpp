@@ -134,57 +134,53 @@ int main()
 
 
 
-	/*** initialize the tree ***/
-	metric::Tree<std::vector < edm_Type >, metric::EMD<edm_Type>> cTree;
-	std::cout << "tree created" << std::endl;
+	std::vector < std::vector < edm_Type > > distance_matrix(num_images, std::vector < edm_Type >(num_images));
 
-	/*** add data records ***/
+	std::cout << "create distance matrix" << std::endl;
+	auto cost_mat = metric::EMD_details::ground_distance_matrix_of_2dgrid<edm_Type>(im1_C, im1_R);
+	std::cout << "create max distance matrix" << std::endl;
+	auto maxCost = metric::EMD_details::max_in_distance_matrix(cost_mat);
 
-	for (size_t i = 0; i < grayJpegs.size(); ++i)
+	std::cout << "we have started" << std::endl;
+	std::cout << "" << std::endl;
+
+	metric::EMD<edm_Type> distance(cost_mat, maxCost);
+
+	for (size_t i = 0; i < num_images; ++i)
 	{
-		if (i == 5 || i == 10)
+		for (size_t j = i + 1; j < num_images; ++j)
 		{
-			cTree.print();
+			// assumes that i1 and i2 are serialized vectors of the image matrices, and cost_mat contains a distance matrix that takes into account the original pixel locations.
+			auto t1 = std::chrono::steady_clock::now();
+			auto result1 = distance(grayJpegs[i], grayJpegs[j]);
+			auto t2 = std::chrono::steady_clock::now();
+			std::cout << "result for " << i << " <-> " << j << " is:" << result1 << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000 << " s)" << std::endl;
+			std::cout << "" << std::endl;
+
+			distance_matrix[i][j] = result1;
+			distance_matrix[j][i] = result1;
 		}
-		auto t1 = std::chrono::steady_clock::now();
-		std::cout << "insert " << i << std::endl;
-		cTree.insert(grayJpegs[i]);
-		auto t2 = std::chrono::steady_clock::now();
-		std::cout << "inserted " << i << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000 << " s)" << std::endl;
-
 	}
-	cTree.print();
+
+	saveToCsv("distances.csv", distance_matrix, names);
 
 
-	//std::vector < std::vector < edm_Type > > distance_matrix(num_images, std::vector < edm_Type >(num_images));
 
-	//std::cout << "create distance matrix" << std::endl;
-	//auto cost_mat = metric::EMD_details::ground_distance_matrix_of_2dgrid<edm_Type>(im1_C, im1_R);
-	//std::cout << "create max distance matrix" << std::endl;
-	//auto maxCost = metric::EMD_details::max_in_distance_matrix(cost_mat);
 
-	//std::cout << "we have started" << std::endl;
-	//std::cout << "" << std::endl;
+	/*** initialize the tree ***/
+	std::vector<std::vector<int>> grayJpegs5(grayJpegs.begin(), grayJpegs.begin() + 5);
+	metric::Tree<std::vector < edm_Type >, metric::EMD<edm_Type>> cTree5(grayJpegs5);
+	std::cout << "tree for 5 pictures has created" << std::endl;
+	cTree5.print();
 
-	//metric::EMD<edm_Type> distance(cost_mat, maxCost);
+	std::vector<std::vector<int>> grayJpegs10(grayJpegs.begin(), grayJpegs.begin() + 10);
+	metric::Tree<std::vector < edm_Type >, metric::EMD<edm_Type>> cTree10(grayJpegs10);
+	std::cout << "tree for 10 pictures has created" << std::endl;
+	cTree10.print();
 
-	//for (size_t i = 0; i < num_images; ++i)
-	//{
-	//	for (size_t j = i + 1; j < num_images; ++j)
-	//	{
-	//		// assumes that i1 and i2 are serialized vectors of the image matrices, and cost_mat contains a distance matrix that takes into account the original pixel locations.
-	//		auto t1 = std::chrono::steady_clock::now();
-	//		auto result1 = distance(grayJpegs[i], grayJpegs[j]);
-	//		auto t2 = std::chrono::steady_clock::now();
-	//		std::cout << "result for " << i << " <-> " << j << " is:" << result1 << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000 << " s)" << std::endl;
-	//		std::cout << "" << std::endl;
-
-	//		distance_matrix[i][j] = result1;
-	//		distance_matrix[j][i] = result1;
-	//	}
-	//}
-
-	//saveToCsv("distances.csv", distance_matrix, names);
+	metric::Tree<std::vector < edm_Type >, metric::EMD<edm_Type>> cTree20(grayJpegs);
+	std::cout << "tree for 20 pictures has created" << std::endl;
+	cTree20.print();
 
 	/*std::cout << "swap records and calculate again" << std::endl;
 	std::cout << "" << std::endl;
