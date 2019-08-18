@@ -21,22 +21,21 @@ A DBSCAN implementation based on distance matrix.
 
 #include <vector>
 #include <string>
-
+#include "../space/matrix.hpp"
 namespace metric {
 
 /**
- * @brief 
+ * @brief Density-based spatial clustering of applications with noise (DBSCAN)
  * 
-
- * @param data 
- * @param eps 
- * @param minpts 
- * @param distance_measure 
- * @return 
+ * @param dm distance matrix
+ * @param eps the maximum distance between neighbor objects
+ * @param minpts minimum number of neighboring objects needed to form a cluster
+ * @return three vectors in a tuple, first vector of size N ( size of initial dataset) contains number of the cluster
+ *          of corresponding source point, second contains indices of center points of clusters, third vector contains
+ *          size of corresponding cluster.
  */
-template <typename T>
-std::tuple<std::vector<int>, std::vector<int>, std::vector<int>> dbscan(
-    const std::vector<std::vector<T>>& data, T eps, int minpts, std::string distance_measure = "euclidian");
+template <typename recType, typename Metric, typename T>
+std::tuple<std::vector<int>, std::vector<int>, std::vector<int>> dbscan(const metric::Matrix<recType, Metric, T>& dm, T eps, std::size_t minpts);
 
 }  // namespace metric
 
