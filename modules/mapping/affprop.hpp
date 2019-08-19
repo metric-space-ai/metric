@@ -3,274 +3,78 @@ This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
 file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-Copyright (c) 2018 M.Welsch <michael@welsch.one> 
+Copyright (c) 2018 M.Welsch
 */
 
-#ifndef _METRIC_AFFPROP_HPP
-#define _METRIC_AFFPROP_HPP
+#ifndef _METRIC_MAPPING_AFFPROP_HPP
+#define _METRIC_MAPPING_AFFPROP_HPP
 
 /*
 A Affinity Propagation implementation based on a similarity matrix.
 */
-    //   Reference:
-    //       Clustering by Passing Messages Between Data Points.
-    //       Brendan J. Frey and Delbert Dueck
-    //       Science, vol 315, pages 972-976, 2007.
-    //
+//   Reference:
+//       Clustering by Passing Messages Between Data Points.
+//       Brendan J. Frey and Delbert Dueck
+//       Science, vol 315, pages 972-976, 2007.
+//
 
-
-namespace metric 
+#include <vector>
+#include <tuple>
+#include <algorithm>
+#include "affprop.cpp"
+namespace metric {
+/**
+     * @brief
+     *
+     * @param data
+     * @param preference
+     * @param distance_measure
+     * @param maxiter
+     * @param tol
+     * @param damp
+     * @return
+     */
+template <typename T>
+std::tuple<std::vector<int>, std::vector<int>, std::vector<int>> affprop(const std::vector<std::vector<T>>& data,
+    T preference = 0.5, std::string distance_measure = "euclidian", int maxiter = 200, T tol = 1.0e-6, T damp = 0.5)
 {
 
+    // check arguments
+    int n = data.size();
 
-namespace affprop_details {
+    assert(n >= 2);  //the number of samples must be at least 2.
+    assert(tol > 0);  //tol must be a positive value.
+    assert(0 <= damp && damp < 1);  // damp must be between 0 and 1.
+    assert(0 <= preference && preference < 1);  // preference must be between 0 and 1.
 
-    //build similarity matrix
-    template <typename T>
-    std::vector<std::vector<T>> 
-    similarity_matrix(const std::vector<std::vector<T>> &data,
-                        const T preference,
-                        std::string distance_measure){
-        int n = data.size();
-        T pmin = 0;
-        T pmax= -2e21;
-        std::vector<std::vector<T>> matrix(n, std::vector<T>(n)); //initialize
-        for (int i=0;i<n;++i){
-            for (int j=i;j<n;++j){
-         
-                T distance = distance_functions::distance(data[i],data[j], distance_measure);
-                T similarity = -distance;
-                if (similarity < pmin)
-                    pmin=similarity;
-                    if (similarity > pmax)
-                    pmax = similarity;
-                matrix[i][j]= similarity;
-                matrix[j][i]= similarity;
-            }
-        }
+    // build similarity matrix with preference
+    std::vector<std::vector<T>> S = metric::affprop_details::similarity_matrix(data, preference, distance_measure);
 
-        
-        for (int i=0;i<n;++i){
-            matrix[i][i] = preference * pmax + (1-preference)*pmin; 
-        }
+    // initialize messages
+    std::vector<std::vector<T>> R(n, std::vector<T>(n, 0));
+    std::vector<std::vector<T>> A(n, std::vector<T>(n, 0));
 
+    // main loop
+    int t = 0;
+    bool isConverged = false;
+    while (!isConverged && t < maxiter) {
+        t += 1;
 
+        // compute new messages
+        T maxabsR = metric::affprop_details::update_responsibilities(R, S, A, damp);
+        T maxabsA = metric::affprop_details::update_availabilities(A, R, damp);
 
-        return matrix;
+        // determine convergence
+        T ch = std::max(maxabsA, maxabsR) / (1 - damp);
+        isConverged = (ch < tol);
     }
- 
-    // compute responsibilities
-    template <typename T>
-    T
-    update_responsibilities(std::vector<std::vector<T>> &R,const std::vector<std::vector<T>> &S,const std::vector<std::vector<T>> &A, const T &damp){
-        int n = S.size();
-        T maxabs = 0;
-    
-        std::vector<int> I1(n);  // I1[i] is the column index of the maximum element in (A+S) vector
-        std::vector<T> Y1(n);    // Y1[i] is the maximum element in (A+S) vector
-        std::vector<T> Y2(n);     // Y2[i] is the second maximum element in (A+S) vector
-            
-        // Find the first and second maximum elements along each row
-        for (int i = 0 ;i<n; ++i){
-            T v1 = A[i][0] + S[i][0];
-            T v2 = A[i][1] + S[i][1];
-            if (v1 > v2){
-                I1[i] = 0;
-                Y1[i] = v1;
-                Y2[i] = v2;
-            }
-            else{
-                I1[i] = 1;
-                Y1[i] = v2;
-                Y2[i] = v1;
-            }
-        }
-        for (int j = 2; j<n;++j){
-            for (int i = 0; i<n; ++i){
-                T v = A[i][j] + S[i][j];
-                if (v > Y2[i]){
-                    if (v > Y1[i]){
-                        Y2[i] = Y1[i];
-                        I1[i] = j;
-                        Y1[i] = v;
-                    }
-                    else
-                        Y2[i] = v;
+    // extract exemplars and assignments
+    auto exemplars = metric::affprop_details::extract_exemplars(A, R);
+    auto [assignments, counts] = metric::affprop_details::get_assignments(S, exemplars);
 
-                }
-            }
-        }
+    return { assignments, exemplars, counts };
+}
 
-    
-        // update R values
-        for (int j=0; j<n; ++j){
-            for (int i=0; i<n; ++i){
-                T Rij_old=R[i][j];
-                T mv = (j == I1[i] ? Y2[i] : Y1[i]);
-                T Rij_new = S[i][j] - mv;
-
-                // update
-                R[i][j] = damp * Rij_old + (1-damp) * Rij_new;
-
-                // compute convergenze criteria
-                T abs_ij = std::abs(Rij_old-Rij_new);
-                if (abs_ij > maxabs)
-                    maxabs = abs_ij;
-        }
-    }
-    
-       return maxabs;
-    }
-    
-    // compute availabilities
-    template <typename T>
-    T
-    update_availabilities(std::vector<std::vector<T>> &A, const std::vector<std::vector<T>> &R, const T &damp){
-        int n = R.size();
-        T maxabs = 0;
-        for (int j = 0; j<n; ++j){
-            T rjj = R[j][j];
-    
-            // compute sum
-            T sum = 0;
-            for (int i = 0;i<n;++i){
-                if (i != j){
-                    T r = R[i][j];
-                    if (r > 0)
-                        sum += r;
-                }
-            }
-    
-            for (int i = 0; i<n; ++i){
-                T Aij_old = A[i][j];
-                T Aij_new;
-                if (i == j)
-                    Aij_new = sum;
-                else{
-                    T r = R[i][j];
-                    T u = rjj + sum;
-                    if (r > 0)
-                        u -= r;
-                    Aij_new = (u < 0 ? u : 0);
-                }
-                
-                // update
-                A[i][j] = damp * Aij_old + (1-damp) * Aij_new;
-
-                // compute convergenze criteria
-                T abs_ij = std::abs(Aij_old-Aij_new);
-                if (abs_ij > maxabs)
-                    maxabs = abs_ij;
-            }
-        }
-       return maxabs;
-    }
-        
-
-    
-    // extract all exemplars
-    template <typename T>
-    std::vector<int>
-    extract_exemplars(const std::vector<std::vector<T>> &A, const std::vector<std::vector<T>> &R){
-        int n = A.size();
-        std::vector<int> r;
-        for (int i = 0;i<n;++i){
-            if (A[i][i] + R[i][i] > 0)
-                r.push_back(i);
-        }
-        return r;
-      }
-    
-    // get assignments
-    template <typename T>
-    std::tuple<std::vector<int>,std::vector<int>>
-    get_assignments(const std::vector<std::vector<T>> &S, const std::vector<int> &exemplars){
-        int n = S.size();
-        int k = exemplars.size();
-        std::vector<std::vector<T>> Se;
-        for (int i=0;i<k;++i){
-            Se.push_back(S[exemplars[i]]);
-        }
-        std::vector<int> a(n);
-        std::vector<int> cnts(k,0);
-        
-        for (int j = 0; j<n;++j){
-            int p = 0;
-            T v = Se[0][j];
-            for (int i = 1;i<k;++i){
-                T s = Se[i][j];
-
-                if (s > v){
-                    v = s;
-                    p = i;
-                }
-            }
-            a[j] = p;
-        }
-       
-        for (int i = 0;i<k;++i){
-            a[exemplars[i]] = i;
-        }
-
-        for (int i = 0;i<n;++i){
-            cnts[a[i]] += 1;
-        }
-
-        return {a, cnts};
-    }    
-
-
-} // end namespace affprop_details
-
-
-
-    template <typename T>
-    std::tuple<std::vector<int>,std::vector<int>,std::vector<int>>
-    affprop(const std::vector<std::vector<T>> &data,
-                        T preference = 0.5,
-                        std::string distance_measure = distance_functions::default_measure(),
-                        int maxiter =200,
-                        T tol =1.0e-6,
-                        T damp = 0.5){
-
-                            // check arguments
-                            int n = data.size();
-                            
-                            assert(n >= 2); //the number of samples must be at least 2.
-                            assert(tol > 0); //tol must be a positive value.
-                            assert (0 <= damp && damp < 1); // damp must be between 0 and 1.
-                            assert (0 <= preference && preference < 1); // preference must be between 0 and 1.
-        
-        // build similarity matrix with preference                   
-        std::vector<std::vector<T>> S = affprop_details::similarity_matrix(data,preference,distance_measure);
-    
-        // initialize messages
-        std::vector<std::vector<T>> R(n, std::vector<T>(n, 0));
-        std::vector<std::vector<T>> A(n, std::vector<T>(n, 0));
-    
-        // main loop
-        int t = 0;
-        bool isConverged = false;
-        while (!isConverged && t < maxiter){
-            t += 1;
-    
-            // compute new messages
-            T maxabsR = affprop_details::update_responsibilities(R, S, A, damp);        
-            T maxabsA = affprop_details::update_availabilities(A, R, damp);
-               
-            // determine convergence
-            T ch = std::max(maxabsA , maxabsR ) / (1 - damp);
-            isConverged = (ch < tol);
-    
-        }
-        // extract exemplars and assignments
-        auto exemplars = affprop_details::extract_exemplars(A, R);
-        auto [assignments, counts] = affprop_details::get_assignments(S, exemplars);
-        
-        return {assignments, exemplars, counts};
-      }
-       
-
-} // namespace metric
+}  // namespace metric
 
 #endif

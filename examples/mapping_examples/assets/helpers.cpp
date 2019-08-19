@@ -24,7 +24,6 @@ template <typename T> T convert_to(const std::string & str)
 
 
 
-
 template <class ContainerType>
 ContainerType read_csv(std::string filename, std::string sep=",")
 {  // works with string, does not convert to numbers
@@ -33,11 +32,11 @@ ContainerType read_csv(std::string filename, std::string sep=",")
     int pos;
     ContainerType array = {};
     std::ifstream in(filename);
-    if(!in.is_open()) {
+    if (!in.is_open()) {
         std::cout << "Failed to open file" << std::endl;
         return array;
     }
-    while( getline(in,line) ) {
+    while (getline(in, line)) {
         LINE ln;
         while( (pos = line.find(sep)) >= 0)	{
             std::string field = line.substr(0, pos);
