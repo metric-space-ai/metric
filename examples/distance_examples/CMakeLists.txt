@@ -48,10 +48,12 @@ endforeach(exampleSrc)
 
 if(UNIX)
 	target_link_libraries(EMD_example /usr/local/lib/libjpeg.a) 
+	target_link_libraries(Complex_EMD_example /usr/local/lib/libjpeg.a) 
 endif(UNIX)
 
 if(CMAKE_SYSTEM_NAME MATCHES Windows)
 	target_link_libraries(EMD_example ${PROJECT_SOURCE_DIR}/../../3rdparty/jpeglib/Release/jpeg.lib) 
+	target_link_libraries(Complex_EMD_example ${PROJECT_SOURCE_DIR}/../../3rdparty/jpeglib/Release/jpeg.lib) 
 endif()
 
 
