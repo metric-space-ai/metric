@@ -167,6 +167,7 @@ int main()
     dct::apply_DCT(TestSliceSine_DCT_restored, true);
     if (visualize)
     {
+        mat2bmp::blaze2bmp(TestSlicesSine, "TestSlicesSine_DCT_applied.bmp");
         mat2bmp::blaze2bmp(TestSliceSine_DCT_restored, "TestSlicesSine_DCT_restored.bmp");
     }
 

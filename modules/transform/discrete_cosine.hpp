@@ -10,6 +10,9 @@ Copyright (c) 2019 Panda Team
 #define _METRIC_TRANSFORMATION_DISCRETE_COSINE_DISCRETE_COSINE_HPP
 
 #include "../../3rdparty/DCT/fast-dct-lee.c"
+#include "../../3rdparty/blaze/Blaze.h"
+
+
 
 namespace dct
 {
@@ -59,6 +62,33 @@ bool apply_DCT(BlazeMatrix & Slices, bool inverse = false)
     //std::cout << "maxval: " << maxval << "\n";
     return return_value;
 }
+
+
+
+//// looks like totally incorrect attempt: we can not hope to restore well due to cumulative error // TODO remove
+//// precompressor based on multiple sequential application of DCT
+
+//template <template <class, bool> class BlazeContainerType, bool SO, class ValueType>
+//BlazeContainerType<ValueType, blaze::columnMajor> compress_mDCT(
+//        BlazeContainerType<ValueType, SO> & input,
+//        size_t blocksize_uncompressed,
+//        size_t blocksize_compressed,
+//        size_t steps
+//        )
+//{
+//    BlazeContainerType<ValueType, blaze::columnMajor> output();
+//    // TODO assert blocksizes and blocksize_uncompressed/blocksize_compressed are degrees of 2
+
+//    for (size_t step=0; step<steps; ++steps) {
+//        for (size_t block=0; block<blocksize_compressed; ++block) {
+              // TODO continue
+//        }
+//
+//    }
+
+//    return output;
+//}
+
 
 
 } // namespace dct

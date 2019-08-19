@@ -26,7 +26,8 @@ template <typename T> T convert_to(const std::string & str)
 
 
 template <class ContainerType>
-ContainerType read_csv(std::string filename, std::string sep=",") {
+ContainerType read_csv(std::string filename, std::string sep=",")
+{  // works with string, does not convert to numbers
     typedef typename ContainerType::value_type LINE;
     std::string line;
     int pos;
@@ -52,29 +53,30 @@ ContainerType read_csv(std::string filename, std::string sep=",") {
 
 
 
-//template <class ValueType>
-//std::vector<std::vector<ValueType>> read_csv_num(std::string filename, std::string sep=";") {
-//    typedef typename std::vector<ValueType> LINE;
-//    std::string line;
-//    int pos;
-//    std::vector<std::vector<ValueType>> array = {};
-//    std::ifstream in(filename);
-//    if(!in.is_open()) {
-//        std::cout << "Failed to open file" << std::endl;
-//        return array;
-//    }
-//    while( getline(in,line) ) {
-//        LINE ln;
-//        while( (pos = line.find(sep)) >= 0)	{
-//            std::string field = line.substr(0, pos);
-//            line = line.substr(pos+1);
-//            ln.push_back(convert_to<ValueType>(field));
-//        }
-//        ln.push_back(convert_to<ValueType>(line));
-//        array.push_back(ln);
-//    }
-//    return array;
-//}
+template <class ValueType>
+std::vector<std::vector<ValueType>> read_csv_num(std::string filename, std::string sep=";")
+{ // code dubbing with read_csv, TODO unify and remove one of these functions
+    typedef typename std::vector<ValueType> LINE;
+    std::string line;
+    int pos;
+    std::vector<std::vector<ValueType>> array = {};
+    std::ifstream in(filename);
+    if(!in.is_open()) {
+        std::cout << "Failed to open file" << std::endl;
+        return array;
+    }
+    while( getline(in,line) ) {
+        LINE ln;
+        while( (pos = line.find(sep)) >= 0)	{
+            std::string field = line.substr(0, pos);
+            line = line.substr(pos+1);
+            ln.push_back(convert_to<ValueType>(field));
+        }
+        ln.push_back(convert_to<ValueType>(line));
+        array.push_back(ln);
+    }
+    return array;
+}
 
 
 
@@ -84,12 +86,8 @@ blaze::DynamicMatrix<ValueType, blaze::rowMajor> read_csv_blaze(const std::strin
     auto array = read_csv<std::vector<std::vector<std::string>>>(filename, ";");
     auto m = blaze::DynamicMatrix<ValueType, blaze::rowMajor>(array.size(), array[0].size());
     for (size_t i=0; i<array.size(); ++i)
-    {
         for (size_t j=0; j<array[0].size(); ++j)
-        {
             m(i, j) = convert_to<ValueType>(array[i][j]);
-        }
-    }
     return m;
 }
 
