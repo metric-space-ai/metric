@@ -13,7 +13,7 @@ Copyright (c) 2019 Panda Team
 #include <chrono>
 
 #include "../../assets/json.hpp"
-#include "../../../metric_mapping.hpp"
+#include "../../modules/mapping.hpp"
 
 
 using json = nlohmann::json;
@@ -82,10 +82,10 @@ int main()
     // double neighborhoodSize = 1.2;
 
     using Vector = std::vector<double>;
-    using Metric = metric::distance::Euclidian<Vector::value_type>;
-    using Graph = metric::graph::Grid6; // replaced mapping::SOM_details with graph by Max F, 2019-05-16
+    using Metric = metric::Euclidian<Vector::value_type>;
+    using Graph = metric::Grid6; // replaced mapping::SOM_details with graph by Max F, 2019-05-16
 
-    metric::mapping::SOM<Vector, Metric, Graph> DR(6, 5);
+    metric::SOM<Vector, Metric, Graph> DR(6, 5);
 
     if (!DR.isValid()) {
     	std::cout << "SOM is not valid" << std::endl;

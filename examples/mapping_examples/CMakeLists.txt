@@ -3,24 +3,12 @@ cmake_minimum_required(VERSION 3.12)
 set(Boost_DEBUG on)  
 find_package(Boost)
 
-project(MappingExamples)
+project(mapping_examples)
 
-if(CMAKE_SYSTEM_NAME MATCHES Windows)
-	include_directories(
-		${PROJECT_SOURCE_DIR}
-#		${PROJECT_SOURCE_DIR}/assets
-#		${PROJECT_SOURCE_DIR}/../../..
-#		${PROJECT_SOURCE_DIR}/../../../3rdparty
-#		${PROJECT_SOURCE_DIR}/../../../mkl/include
-	)
-else()	
-	include_directories(
-		${PROJECT_SOURCE_DIR}
-#		${PROJECT_SOURCE_DIR}/assets
-#		${PROJECT_SOURCE_DIR}/../../..
-#		${PROJECT_SOURCE_DIR}/../../../3rdparty
-	)
-endif()
+
+include_directories(
+	${PROJECT_SOURCE_DIR}
+)
 	
 file(COPY "assets" DESTINATION ".")
 
@@ -39,42 +27,64 @@ add_executable(KMedoids_example quantized_mappers/clustering/KMedoids_example.cp
 add_executable(KMeans_example quantized_mappers/clustering/KMeans_example.cpp)
 add_executable(DBScan_example quantized_mappers/clustering/DBScan_example.cpp)
 add_executable(AffinityPropagation_example quantized_mappers/clustering/AffinityPropagation_example.cpp)
-
 add_executable(HierarchicalClustering_example quantized_mappers/clustering/HierarchicalClustering_example.cpp) 
 
 # quantized_mappers / constraint
 
 # quantized_mappers / classification
-add_executable(Classification_example quantized_mappers/classification/Classification_example.cpp)
 add_executable(SVM_example quantized_mappers/classification/SVM_example.cpp)
 add_executable(C45_example quantized_mappers/classification/C45_example.cpp)
 if(UNIX)
     target_compile_options(C45_example PRIVATE -pthread)
 endif(UNIX)
-add_executable(Boosting_example quantized_mappers/classification/Boosting_example.cpp)
-add_executable(Bagging_example quantized_mappers/classification/Bagging_example.cpp)
-add_executable(CWA_demo quantized_mappers/classification/CWA_demo.cpp)
 add_executable(DesicionTree_example quantized_mappers/classification/DesicionTree_example.cpp)
 
+# continious_mappers / clustering
+add_executable(SOM_example continious_mappers/clustering/SOM_example.cpp)
+add_executable(PCAnet_example continious_mappers/clustering/PCAnet_example.cpp)
+
+# continious_mappers / classification
+add_executable(ESN_example continious_mappers/classification/ESN_example.cpp)
 
 if(LAPACK_LIBRARIES)
-	# continious_mappers / clustering
-	add_executable(SOM_example continious_mappers/clustering/SOM_example.cpp)
+	target_link_libraries(KMeans_example PRIVATE ${LAPACK_LIBRARIES})
+	
+	target_link_libraries(DBScan_example PRIVATE ${LAPACK_LIBRARIES})
+	
+	target_link_libraries(AffinityPropagation_example PRIVATE ${LAPACK_LIBRARIES})
+	
 	target_link_libraries(SOM_example PRIVATE ${LAPACK_LIBRARIES})
 	
-	add_executable(main_encoder main_encoder.cpp)
-	target_link_libraries(main_encoder PRIVATE ${LAPACK_LIBRARIES})
+	target_link_libraries(PCAnet_example PRIVATE ${LAPACK_LIBRARIES})
 	
-	add_executable(main_esn main_esn.cpp)
-	target_link_libraries(main_esn PRIVATE ${LAPACK_LIBRARIES})
+	target_link_libraries(ESN_example PRIVATE ${LAPACK_LIBRARIES})
 endif(LAPACK_LIBRARIES)
 
 if(CMAKE_SYSTEM_NAME MATCHES Windows)
-	# continious_mappers / clustering
-	add_executable(SOM_example continious_mappers/clustering/SOM_example.cpp)
-	target_link_directories(SOM_example PRIVATE ${PROJECT_SOURCE_DIR}/mkl/lib/intel64_win)
+
+	target_link_directories(KMeans_example PRIVATE ${PROJECT_SOURCE_DIR}/../../mkl/lib/intel64_win)
+	target_link_libraries(KMeans_example PRIVATE mkl_core.lib mkl_sequential.lib mkl_intel_lp64.lib)
+	target_link_libraries(KMeans_example PRIVATE ${Boost_LIBRARIES})
+
+	target_link_directories(DBScan_example PRIVATE ${PROJECT_SOURCE_DIR}/../../mkl/lib/intel64_win)
+	target_link_libraries(DBScan_example PRIVATE mkl_core.lib mkl_sequential.lib mkl_intel_lp64.lib)
+	target_link_libraries(DBScan_example PRIVATE ${Boost_LIBRARIES})
+
+	target_link_directories(AffinityPropagation_example PRIVATE ${PROJECT_SOURCE_DIR}/../../mkl/lib/intel64_win)
+	target_link_libraries(AffinityPropagation_example PRIVATE mkl_core.lib mkl_sequential.lib mkl_intel_lp64.lib)
+	target_link_libraries(AffinityPropagation_example PRIVATE ${Boost_LIBRARIES})
+
+	target_link_directories(SOM_example PRIVATE ${PROJECT_SOURCE_DIR}/../../mkl/lib/intel64_win)
 	target_link_libraries(SOM_example PRIVATE mkl_core.lib mkl_sequential.lib mkl_intel_lp64.lib)
 	target_link_libraries(SOM_example PRIVATE ${Boost_LIBRARIES})
+
+	target_link_directories(PCAnet_example PRIVATE ${PROJECT_SOURCE_DIR}/../../mkl/lib/intel64_win)
+	target_link_libraries(PCAnet_example PRIVATE mkl_core.lib mkl_sequential.lib mkl_intel_lp64.lib)
+	target_link_libraries(PCAnet_example PRIVATE ${Boost_LIBRARIES})
+
+	target_link_directories(ESN_example PRIVATE ${PROJECT_SOURCE_DIR}/../../mkl/lib/intel64_win)
+	target_link_libraries(ESN_example PRIVATE mkl_core.lib mkl_sequential.lib mkl_intel_lp64.lib)
+	target_link_libraries(ESN_example PRIVATE ${Boost_LIBRARIES})
 endif()
 
 # continious_mappers / classification

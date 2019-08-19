@@ -1,4 +1,4 @@
-# METRIC | SPACE
+# METRIC | MAPPING
 
 ## Overview
 
@@ -24,8 +24,6 @@
 3. Training data
     - SVM
     - C4.5
-    - Bagging
-    - Boosting
     - Decision Tree
 
 

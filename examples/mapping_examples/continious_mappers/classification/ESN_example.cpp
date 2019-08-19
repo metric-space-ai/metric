@@ -12,14 +12,9 @@ Copyright (c) 2019 Panda Team
     #define M_PI 3.14159265358979323846
 #endif
 
-//#include "../details/esn.hpp"
+#include "../../modules/mapping.hpp"
 
-//#include "mapping.hpp"  // TODO fix DT.cpp and enable
-#include "mapping/PCAnet.hpp" // temporary
-#include "mapping/ESN.hpp" // temporary
-
-//#include "utils/visualizer/visualizer.hpp"
-#include "../utils/visualizer.hpp" // ../utils/visualizer.hpp"
+#include "../../utils/visualizer.hpp"
 
 int main()
 {

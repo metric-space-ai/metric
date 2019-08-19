@@ -32,7 +32,7 @@ namespace metric
 namespace dbscan_details
 {
 // computes the distance matrix (pairwaise)
-    template <typename T>
+    template <typename T, typename Metric = metric::Euclidian<T>>
     std::vector<std::vector<T>> 
     distance_matrix(const std::vector<std::vector<T>> &data,
 		Metric distance_measure = Metric()){
@@ -122,7 +122,7 @@ dbscan(const std::vector<std::vector<T>> &data,
         assert(minpts >= 1); // error("minpts must be a positive integer.")
         
         // build the (pairwaise) distance matrix
-        auto D = dbscan_functions::distance_matrix(data, distance_measure);
+        auto D = dbscan_details::distance_matrix(data, distance_measure);
     
     // initialize
     std::vector<int> seeds;
@@ -137,10 +137,10 @@ dbscan(const std::vector<std::vector<T>> &data,
     for (int p : visitseq){
         if (assignments[p] == 0 && !visited[p]){
             visited[p] = true;
-            auto nbs = dbscan_functions::region_query(D, p, eps);
+            auto nbs = dbscan_details::region_query(D, p, eps);
             if (nbs.size() >= minpts){
                 k += 1;
-                auto cnt = dbscan_functions::update_cluster(D, k, p,  eps, minpts,nbs, assignments, visited);
+                auto cnt = dbscan_details::update_cluster(D, k, p,  eps, minpts,nbs, assignments, visited);
                 seeds.push_back(p);
                 counts.push_back(cnt);
             }

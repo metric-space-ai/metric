@@ -1449,7 +1449,7 @@ template< typename Type  // Data type of the vector
         , bool TF >      // Transpose flag
 inline void DynamicVector<Type,TF>::resize( size_t n, bool preserve )
 {
-   using std::swap;
+   //using std::swap;
 
    if( n > capacity_ )
    {
@@ -1468,7 +1468,7 @@ inline void DynamicVector<Type,TF>::resize( size_t n, bool preserve )
       }
 
       // Replacing the old array
-      swap( v_, tmp );
+	  std::swap( v_, tmp );
       deallocate( tmp );
       capacity_ = newCapacity;
    }
