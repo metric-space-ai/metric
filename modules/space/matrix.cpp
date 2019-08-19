@@ -15,8 +15,9 @@ namespace metric {
 template <typename recType, typename Metric, typename distType>
 Matrix<recType, Metric, distType>::Matrix(const std::vector<recType>& p, Metric d)
     : metric_(d)
-    , data_(p)
     , D_(p.size())
+    , data_(p)
+
 {
     for (size_t i = 0; i < D_.columns(); ++i) {
         D_(i, i) = 0;

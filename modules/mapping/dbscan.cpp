@@ -19,48 +19,13 @@ namespace metric {
 // DBSCAN
 // --------------------------------------------------------------
 namespace dbscan_details {
-    std::string default_measure(void) { return "euclidian"; }
-    template <typename T>
-    T distance(const std::vector<T>& a, const std::vector<T>& b, std::string distance_measure)
-    {
-
-        assert(a.size() == b.size());  // data vectors have not the same length
-        if (distance_measure.compare("euclidian") == 0)
-            return metric::Euclidian<T>()(a, b);
-        else if (distance_measure.compare("rms") == 0) {
-            T val = metric::Euclidian<T>()(a, b);
-            return val * val;
-        } else if (distance_measure.compare("manhatten") == 0)
-            return metric::Manhatten<T>()(a, b);
-        else {
-
-            return metric::Euclidian<T>()(a, b);
-        }
-    }
-    // computes the distance matrix (pairwaise)
-    template <typename T>
-    std::vector<std::vector<T>> distance_matrix(const std::vector<std::vector<T>>& data, std::string distance_measure)
-    {
-
-        std::vector<std::vector<T>> matrix(data.size(), std::vector<T>(data.size()));  //initialize
-        for (int i = 0; i < data.size(); ++i) {
-            for (int j = i; j < data.size(); ++j) {
-                T distance = dbscan_details::distance(data[i], data[j], distance_measure);
-                matrix[i][j] = distance;
-                matrix[j][i] = distance;
-            }
-        }
-        return matrix;
-    }
-
     // key steps
-    template <typename T>
-    std::deque<int> region_query(std::vector<std::vector<T>> D, int p, T eps)
+    template <typename T, typename DistanceMatrix>
+    std::deque<int> region_query(const DistanceMatrix& D, int p, T eps)
     {
-
         std::deque<int> nbs;
-        for (int i = 0; i < D.size(); ++i) {
-            if (D[p][i] < eps) {
+        for (std::size_t i = 0; i < D.size(); ++i) {
+            if (D(p, i) < eps) {
                 nbs.push_back(i);
             }
         }
@@ -68,8 +33,8 @@ namespace dbscan_details {
     }
 
     // a changing arguments function
-    template <typename T>
-    int update_cluster(const std::vector<std::vector<T>>& D,  // distance matrix
+    template <typename T, typename DistanceMatrix>
+    int update_cluster(const DistanceMatrix& D,  // distance matrix
         const int& k,  // the index of current cluster
         const int& p,  // the index of seeding point
         const T& eps,  // radius of neighborhood
@@ -105,20 +70,17 @@ namespace dbscan_details {
 }  //namespace dbscan_details
 
 // main algorithm
-template <typename T>
-std::tuple<std::vector<int>, std::vector<int>, std::vector<int>> dbscan(
-    const std::vector<std::vector<T>>& data, T eps, int minpts, std::string distance_measure)
+template <typename recType, typename Metric, typename T>
+std::tuple<std::vector<int>, std::vector<int>, std::vector<int>> dbscan(const Matrix<recType, Metric, T>& DM,
+                                                                        T eps, std::size_t minpts)
 {
 
     // check arguments
-    int n = data.size();
+    auto n = DM.size();
 
     assert(n >= 2);  // error("There must be at least two points.")
     assert(eps > 0);  // error("eps must be a positive real value.")
     assert(minpts >= 1);  // error("minpts must be a positive integer.")
-
-    // build the (pairwaise) distance matrix
-    auto D = dbscan_details::distance_matrix(data, distance_measure);
 
     // initialize
     std::vector<int> seeds;
@@ -133,10 +95,10 @@ std::tuple<std::vector<int>, std::vector<int>, std::vector<int>> dbscan(
     for (int p : visitseq) {
         if (assignments[p] == 0 && !visited[p]) {
             visited[p] = true;
-            auto nbs = dbscan_details::region_query(D, p, eps);
+            auto nbs = dbscan_details::region_query(DM, p, eps);
             if (nbs.size() >= minpts) {
                 k += 1;
-                auto cnt = dbscan_details::update_cluster(D, k, p, eps, minpts, nbs, assignments, visited);
+                auto cnt = dbscan_details::update_cluster(DM, k, p, eps, minpts, nbs, assignments, visited);
                 seeds.push_back(p);
                 counts.push_back(cnt);
             }

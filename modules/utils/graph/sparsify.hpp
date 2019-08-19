@@ -19,23 +19,17 @@ to implement dynamic graphs this way.
 https://github.com/danspielman/Laplacians.jl
 */
 
-#pragma once
+#ifndef _METRIC_UTILS_GRAPH_SPRSIFY_HPP
+#define _METRIC_UTILS_GRAPH_SPRSIFY_HPP
 
 #include <cmath>
 #include "../../../3rdparty/blaze/Math.h"
 #include <vector>
 #include <algorithm>
 #include <chrono>
-#include "../../../utils/solver/solvertypes.h"
-#include "../../../utils/solver/approxchol.h"
-#include "../../../utils/solver/graphalgs.h"
-//#include "crandom.h"
+#include "../solver/solver.hpp"
 
-using namespace std;
-using blaze::CompressedMatrix;
-using blaze::DynamicMatrix;
-using blaze::DynamicVector;
-
+namespace metric {
 /*
 	Just implements Spielman-Srivastava
 		as = sparsify(a; ep=0.5)
@@ -44,12 +38,19 @@ using blaze::DynamicVector;
 	`ep` should be less than 1.
 */
 
-
-namespace laplacians {
-
-	template<typename Tv>
-	CompressedMatrix<Tv, blaze::columnMajor> sparsify(const CompressedMatrix<Tv, blaze::columnMajor>& a,
-		float ep = 0.3F, float matrixConcConst = 4.0F, float JLfac = 4.0F);
+/**
+ * @brief Apply Spielman-Srivastava sparsification: sampling by effective resistances.
+ * 
+ * @param a 
+ * @param ep 
+ * @param matrixConcConst 
+ * @param JLfac 
+ * @return
+ */
+template <typename Tv>
+blaze::CompressedMatrix<Tv, blaze::columnMajor> sparsify(
+    const blaze::CompressedMatrix<Tv, blaze::columnMajor>& a, float ep = 0.3F, float matrixConcConst = 4.0F, float JLfac = 4.0F);
 }
 
 #include "sparsify.cpp"
+#endif
