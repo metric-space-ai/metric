@@ -10,6 +10,8 @@ Copyright (c) 2019 Panda Team
 #include <string>
 #include <vector>
 #include "modules/mapping/affprop.hpp"
+#include "modules/space/matrix.hpp"
+#include "modules/distance.hpp"
 int main()
 {
     std::cout << "we have started" << std::endl;
@@ -21,8 +23,9 @@ int main()
         { 2.85493000000000, 3.25380000000000, 2.50559000000000, 68.5184000000000, 68.5184000000000 },
         { 5.81414000000000, 8.14015000000000, 3.22950000000000, 139.539000000000, 139.539000000000 },
         { 2.57927000000000, 2.63399000000000, 2.46802000000000, 61.9026000000000, 61.9026000000000 } };
-
-    auto [assignments, exemplars, counts] = metric::affprop(data);
+    metric::Matrix<std::vector<double>, metric::Euclidian<double>> distance_matrix(data);
+    
+    auto [assignments, exemplars, counts] = metric::affprop(distance_matrix);
     // out:
 
     //assignments:
