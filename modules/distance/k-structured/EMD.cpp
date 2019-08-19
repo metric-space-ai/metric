@@ -1177,7 +1177,9 @@ max_in_distance_matrix(const Container &C)
                                    // std::vector<std::vector<typename Container::value_type>> *F) const
         {
             if(!is_C_initialized) {
-                C = default_ground_matrix(Pc.size(), Pc.size());
+                //C = default_ground_matrix(Pc.size(), Pc.size());
+				size_t n = std::round(std::sqrt(Pc.size()));
+				C = default_ground_matrix(n, n);
                 is_C_initialized = true;
             }
             //typedef typename Container::value_type T;
