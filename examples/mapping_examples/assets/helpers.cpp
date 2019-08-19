@@ -52,6 +52,28 @@ ContainerType read_csv(std::string filename, std::string sep=",")
 
 
 
+
+
+
+
+template <class ContainerType>
+void write_csv(ContainerType data, std::string filename, std::string sep=",")  // container of containers expected, TODO add check
+{
+    std::ofstream outputFile;
+    outputFile.open(filename);
+        for (auto i=0; i<data.size(); ++i) {
+            for (auto j = 0; j < data[i].size(); j++) {
+                outputFile << std::to_string(data[i][j]) << sep;
+            }
+            outputFile << std::endl;
+        }
+        outputFile.close();
+} // TODO add return flag
+
+
+
+
+
 template <class ValueType>
 std::vector<std::vector<ValueType>> read_csv_num(std::string filename, std::string sep=";")
 { // code dubbing with read_csv, TODO unify and remove one of these functions
