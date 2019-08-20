@@ -3,16 +3,15 @@ This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
 file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-Copyright (c) 2018 M.Welsch <michael@welsch.one> 
+Copyright (c) 2018 M.Welsch
 */
 
-#ifndef _METRIC_DBSCAN_HPP
-#define _METRIC_DBSCAN_HPP
+#ifndef _METRIC_MAPPING_DBSCAN_HPP
+#define _METRIC_MAPPING_DBSCAN_HPP
 
 /*
 A DBSCAN implementation based on distance matrix.
 */
-
 
 //   References:
 //
@@ -21,139 +20,24 @@ A DBSCAN implementation based on distance matrix.
 //       in large spatial databases with noise. 1996.
 
 #include <vector>
-#include "../distance.hpp"
+#include <string>
+#include "../space/matrix.hpp"
+namespace metric {
 
-namespace metric 
-{
+/**
+ * @brief Density-based spatial clustering of applications with noise (DBSCAN)
+ * 
+ * @param dm distance matrix
+ * @param eps the maximum distance between neighbor objects
+ * @param minpts minimum number of neighboring objects needed to form a cluster
+ * @return three vectors in a tuple, first vector of size N ( size of initial dataset) contains number of the cluster
+ *          of corresponding source point, second contains indices of center points of clusters, third vector contains
+ *          size of corresponding cluster.
+ */
+template <typename recType, typename Metric, typename T>
+std::tuple<std::vector<int>, std::vector<int>, std::vector<int>> dbscan(const metric::Matrix<recType, Metric, T>& dm, T eps, std::size_t minpts);
 
-// --------------------------------------------------------------
-// DBSCAN
-// --------------------------------------------------------------
-namespace dbscan_details
-{
-// computes the distance matrix (pairwaise)
-    template <typename T, typename Metric = metric::Euclidian<T>>
-    std::vector<std::vector<T>> 
-    distance_matrix(const std::vector<std::vector<T>> &data,
-		Metric distance_measure = Metric()){
+}  // namespace metric
 
-        std::vector<std::vector<T>> matrix(data.size(), std::vector<T>(data.size())); //initialize
-        for (int i=0;i<data.size();++i){
-            for (int j=i;j<data.size();++j){
-                T distance = distance_measure(data[i], data[j]);
-                matrix[i][j]= distance;
-                matrix[j][i]= distance;
-            }
-        }
-        return matrix;
-    }
-
-// key steps
-template <typename T>
-std::deque<int>
-region_query(std::vector<std::vector<T>> D, int p, T eps){
-
-    std::deque<int> nbs;
-    for (int i = 0; i<D.size(); ++i){
-        if (D[p][i] < eps){
-            nbs.push_back(i);
-        }
-    }
-    return nbs;
-}
-
-// a changing arguments function
-template <typename T>
-int 
-update_cluster(const std::vector<std::vector<T>> &D,                      // distance matrix
-                                       const int &k,                      // the index of current cluster
-                                       const int &p,                      // the index of seeding point
-                                       const T &eps,                      // radius of neighborhood
-                                       const int &minpts,                 // minimum number of neighbors of a density point
-                                       std::deque<int> &nbs,              // eps-neighborhood of p
-                                       std::vector<int> &assignments,     // assignment vector
-                                       std::vector<bool> &visited){       // visited indicators
-    assignments[p] = k;
-    int cnt = 1;
-    while (!std::empty(nbs)){
-        //q = shift!(nbs)
-        int q = nbs[0];
-        nbs.pop_front();
-        if (!visited[q]){
-            visited[q] = true;
-            auto qnbs = region_query(D, q, eps);
-            if (qnbs.size() >= minpts){
-                for (auto x : qnbs){
-                    if (assignments[x] == 0)
-                        nbs.push_back(x);
-                    
-                }
-            }
-        }
-        if (assignments[q] == 0){
-            assignments[q] = k;
-            cnt += 1;
-        }
-    }
-    return cnt;
-}
-
-
-
-} //namespace dbscan_details
-
-
-
-
-
-// main algorithm
-template <typename T, typename Metric = metric::Euclidian<T>>
-std::tuple<std::vector<int>,std::vector<int>,std::vector<int>>
-dbscan(const std::vector<std::vector<T>> &data, 
-    T eps, 
-    int minpts,
-	Metric distance_measure = Metric()){
-
-        // check arguments
-        int n = data.size();
-        
-        assert(n >= 2); // error("There must be at least two points.")
-        assert(eps > 0); // error("eps must be a positive real value.")
-        assert(minpts >= 1); // error("minpts must be a positive integer.")
-        
-        // build the (pairwaise) distance matrix
-        auto D = dbscan_details::distance_matrix(data, distance_measure);
-    
-    // initialize
-    std::vector<int> seeds;
-    std::vector<int> counts;
-    std::vector<int> assignments(n,int(0));
-    std::vector<bool> visited(n,false);
-    std::vector<int> visitseq(n);
-    std::iota(visitseq.begin(), visitseq.end(), 0);  // (generates a linear index vector [0, 1, 2, ...])
-    
-    // main loop
-    int k = 0;
-    for (int p : visitseq){
-        if (assignments[p] == 0 && !visited[p]){
-            visited[p] = true;
-            auto nbs = dbscan_details::region_query(D, p, eps);
-            if (nbs.size() >= minpts){
-                k += 1;
-                auto cnt = dbscan_details::update_cluster(D, k, p,  eps, minpts,nbs, assignments, visited);
-                seeds.push_back(p);
-                counts.push_back(cnt);
-            }
-        }
-    }
-
-
-
-    // make output
-    return {assignments, seeds, counts};
-}
-        
-
-} // namespace metric
-
+#include "dbscan.cpp"
 #endif

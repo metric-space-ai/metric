@@ -5,71 +5,94 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 Copyright (c) 2018 Michael Welsch
 */
-#ifndef _METRIC_DISTANCE_DETAILS_K_STRUCTURED_EMD_HPP
-#define _METRIC_DISTANCE_DETAILS_K_STRUCTURED_EMD_HPP
+#ifndef _METRIC_DISTANCE_K_STRUCTURED_EMD_HPP
+#define _METRIC_DISTANCE_K_STRUCTURED_EMD_HPP
 #include <vector>
 
-namespace metric
-{
+namespace metric {
 
+/**
+ * @class EMD
+ *
+ * @brief Earth mover's distance
+ *
+ */
+template <typename V>
+struct EMD {
+    using value_type = V;
+    using distance_type = value_type;
 
-    template <typename V>
-    struct EMD{
-        using value_type = V;
-        using distance_type = value_type;
+    explicit EMD() {}
+    /**
+     * @brief Construct a new EMD object with cost matrix
+     *
+     * @param C_ cost matrix
+     */
+    explicit EMD(std::vector<std::vector<value_type>>&& C_)
+        : C(C_)
+        , is_C_initialized(true)
+    {
+    }
 
-        mutable std::vector< std::vector< value_type > > C;
-        value_type extra_mass_penalty = -1;
-        std::vector< std::vector< value_type > > * F = nullptr;
-        mutable bool is_C_initialized = false;
+    /**
+     * @brief Construct a new EMD object
+     *
+     * @param rows, cols size of cost matrix
+     * @param extra_mass_penalty_
+     * @param F_
+     */
+    EMD(std::size_t rows, std::size_t cols, const value_type& extra_mass_penalty_ = -1,
+        std::vector<std::vector<value_type>>* F_ = nullptr)
+        : C(default_ground_matrix(rows, cols))
+        , extra_mass_penalty(extra_mass_penalty_)
+        , F(F_)
+        , is_C_initialized(true)
+    {
+    }
 
-        explicit EMD()  {}
-        explicit EMD(std::vector<std::vector<value_type>> && C_): C(C_), is_C_initialized(true) {}
-        EMD(std::size_t rows, std::size_t cols,
-            const value_type & extra_mass_penalty_ = -1,
-            std::vector<std::vector<value_type>> *F_ = nullptr):
-            C(default_ground_matrix(rows, cols)), extra_mass_penalty(extra_mass_penalty_), F(F_),  is_C_initialized(true) {}
-        EMD(const std::vector<std::vector<value_type>> & C_,
-            const value_type & extra_mass_penalty_ = -1, std::vector<std::vector<value_type>> *F_ = nullptr):
-            C(C_), extra_mass_penalty(extra_mass_penalty_), F(F_),  is_C_initialized(true) {}
+    /**
+     * @brief Construct a new EMD object
+     *
+     * @param C_  cost matrix
+     * @param extra_mass_penalty_
+     * @param F_
+     */
+    EMD(const std::vector<std::vector<value_type>>& C_, const value_type& extra_mass_penalty_ = -1,
+        std::vector<std::vector<value_type>>* F_ = nullptr)
+        : C(C_)
+        , extra_mass_penalty(extra_mass_penalty_)
+        , F(F_)
+        , is_C_initialized(true)
+    {
+    }
 
-        template<typename Container>
-        distance_type  operator()(const Container &Pc, const Container &Qc) const;
+    /**
+     * @brief Calculate EMD distance between Pc and Qc
+     *
+     * @tparam Container
+     * @param Pc
+     * @param Qc
+     * @return
+     */
+    template <typename Container>
+    distance_type operator()(const Container& Pc, const Container& Qc) const;
 
-        std::vector<std::vector<value_type>> default_ground_matrix(std::size_t rows, std::size_t cols) const ;
+    EMD(EMD&&) = default;
+    EMD(const EMD&) = default;
+    EMD& operator=(const EMD&) = default;
+    EMD& operator=(EMD&&) = default;
 
-        EMD(EMD &&) = default;
-        EMD(const EMD &) = default;
-        EMD & operator = (const EMD &) = default;
-        EMD & operator = (EMD &&) = default;
-    };
+private:
+    mutable std::vector<std::vector<value_type>> C;
+    value_type extra_mass_penalty = -1;
+    std::vector<std::vector<value_type>>* F = nullptr;
+    mutable bool is_C_initialized = false;
 
-//#ifndef _METRIC_DISTANCE_HPP
-/*** structural similartiy (for images) ***/
-// template <typename Container>
-// struct EMD{
-//     typename Container::value_type
-//     operator()(const Container &Pc,
-//                const Container &Qc,
-//                //const std::vector<std::vector<typename Container::value_type>> &C,
-//                //typename Container::value_type maxC = std::numeric_limits<typename Container::value_type>::min(), // disabled my Max F
-//                typename Container::value_type extra_mass_penalty = -1,
-//                std::vector<std::vector<typename Container::value_type>> *F = NULL) const;
-//     typename Container::value_type
-//     operator()(const Container &Pc,
-//                const Container &Qc,
-//                const std::vector<std::vector<typename Container::value_type>> &C,
-//                //typename Container::value_type maxC = std::numeric_limits<typename Container::value_type>::min(), // disabled my Max F
-//                typename Container::value_type extra_mass_penalty = -1,
-//                std::vector<std::vector<typename Container::value_type>> *F = NULL) const;
-//     typedef Container value_type; // added by Max F 2018-12-04
-// };
-//#endif
+    std::vector<std::vector<value_type>> default_ground_matrix(std::size_t rows, std::size_t cols) const;
+};
 
-
-} // namespace metric
+}  // namespace metric
 
 #include "EMD.cpp"
 
-
-#endif // Header Guard
+#endif  // Header Guard

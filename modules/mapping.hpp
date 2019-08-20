@@ -31,6 +31,6 @@ Copyright (c) PANDA Team
 #include "mapping/dbscan.hpp"
 #include "mapping/kmeans.hpp"
 #include "mapping/kmedoids.hpp"
-
+#include "mapping/hierarchClustering.hpp"
 
 #endif

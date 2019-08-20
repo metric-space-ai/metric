@@ -6,79 +6,115 @@
   Copyright (c) 2019 Panda Team
 */
 
+#ifndef _METRIC_MAPPING_HIERARCHCLUSTERING_HPP
+#define _METRIC_MAPPING_HIERARCHCLUSTERING_HPP
 #include <vector>
 
-namespace metric
-{
+namespace metric {
+/**
+ * @class Cluster
+ * 
+ * @brief
+ */
+template <typename T>
+class Cluster {
+public:
+    /**
+     * @brief Construct a new Cluster object
+     *
+     * @param d 
+     */
+    Cluster(const std::vector<std::vector<T>>& d)
+    {
+        data = d;
+        calculateCentroid();
+    }
 
-	std::tuple <int, int> getMinPosition(std::vector<std::vector<double>> &distanceMatrix);
+    /**
+     * @brief
+     *
+     */
+    void calculateCentroid()
+    {
+        centroid = std::vector<T>(data[0].size());
+        T sum;
+        for (size_t i = 0; i < data[0].size(); i++) {
+            sum = 0;
+            for (size_t j = 0; j < data.size(); j++) {
+                sum += data[j][i];
+            }
+            centroid[i] = (T)sum / data.size();
+        }
+    }
+    /**
+     * @brief 
+     * 
+     */
+    std::vector<std::vector<T>> data;
 
-	template <typename T>
-	std::pair<bool, int> findInVector(const std::vector<T>  & vecOfElements, const T  & element);
+    /**
+     * @brief 
+     * 
+     */
+    std::vector<T> centroid;
+};
 
-	///////////////////////
+/**
+ * @class HierarchicalClustering
+ * 
+ * @brief 
+ * 
+ */
+template <typename T, typename Distance>
+class HierarchicalClustering {
+public:
+    /**
+     * @brief Construct a new Hierarchical Clustering object
+     * 
+     * @param data 
+     * @param k 
+     */
+    HierarchicalClustering(const std::vector<std::vector<T>>& data, const int& k)
+    {
+        sourceData = data;
+        clustersNum = k;
+    }
 
-	template <typename T>
-	class Cluster {
-	public:
-		std::vector<T> data;
-		T centroid;
+    /**
+     * @brief 
+     * 
+     */
+    void initialize();
 
-		Cluster(const std::vector<T> &d)
-		{
-			data = d;
-			calculateCentroid(data);
-		}
+    /**
+     * @brief 
+     * 
+     */
+    void hierarchical_clustering();
 
-		template<typename T>
-		void calculateCentroid(const std::vector<T> &d) {
-			centroid = T(data[0].size());
-			typename T::value_type sum;
-			for (size_t i = 0; i < data[0].size(); i++)
-			{
-				sum = 0;
-				for (size_t j = 0; j < data.size(); j++)
-				{
-					sum += data[j][i];
-				}
-				centroid[i] = (typename T::value_type) sum / data.size();
-			}
-		}
+    /**
+     * @brief 
+     * 
+     */
+    std::vector<Cluster<T>> clusters;
 
-		template<>
-		void calculateCentroid(const std::vector<std::string> &d) {
-			centroid = data[0];
-		}
-	};
-	
-	template <typename T, typename Metric>
-	class HierarchicalClustering {
-	private:
+    /**
+     * @brief 
+     * 
+     */
+    std::vector<std::vector<T>> sourceData;
 
-		std::vector<std::vector<double>> calculateDistances();
+    /**
+     * @brief 
+     * 
+     */
+    int clustersNum;
 
-	protected:
+private:
+    std::vector<std::vector<double>> calculateDistances();
+}; 
 
-	public:
-		std::vector<Cluster<T>> clusters;
-		std::vector<T> sourceData;
-		int clustersNum;
-
-		HierarchicalClustering(
-			const std::vector<T> &data,
-			const int &k)
-		{
-			sourceData = data;
-			clustersNum = k;
-		}
-
-		void initialize();
-
-		void hierarchical_clustering();
-
-	}; // class HierarchicalClustering
-
-
-} // namespace clustering
+}  // namespace clustering
 
 #include "hierarchClustering.cpp"
+#endif
