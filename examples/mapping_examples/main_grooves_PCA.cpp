@@ -27,6 +27,8 @@ int main()
 
     mat2bmp::blaze2bmp_norm(training_dataset, "training_dataset.bmp");
     mat2bmp::blaze2bmp_norm(test_data, "test_data.bmp");
+    blaze_dm_to_csv(training_dataset, "training_dataset.csv");
+    blaze_dm_to_csv(test_data, "test_data.csv");
 
     auto model = metric::PCAnet(true);
     model.train(training_dataset, 8); // dataset, compressed_code_length
@@ -34,10 +36,12 @@ int main()
     auto compressed = model.compress(test_data);
 
     mat2bmp::blaze2bmp_norm(compressed, "compressed.bmp");
+    blaze_dm_to_csv(compressed, "compressed.csv");
 
     auto restored = model.decompress(compressed);
 
     mat2bmp::blaze2bmp_norm(restored, "restored.bmp");
+    blaze_dm_to_csv(restored, "restored.csv");
 
     return 0;
 }

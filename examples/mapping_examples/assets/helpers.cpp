@@ -72,6 +72,20 @@ void write_csv(ContainerType data, std::string filename, std::string sep=",")  /
 
 
 
+template <class ValueType>
+void blaze_dm_to_csv(blaze::DynamicMatrix<ValueType> data, std::string filename, std::string sep=",")  // container of containers expected, TODO add check
+{
+    std::ofstream outputFile;
+    outputFile.open(filename);
+        for (auto i=0; i<data.rows(); ++i) {
+            for (auto j = 0; j < data.columns(); j++) {
+                outputFile << std::to_string(data(i, j)) << sep;
+            }
+            outputFile << std::endl;
+        }
+        outputFile.close();
+} // TODO add return flag
+
 
 
 template <class ValueType>
