@@ -11,7 +11,7 @@ Copyright (c) 2019 Panda Team
 
 int main()
 {
-	std::cout << "we have started" << std::endl;
+	std::cout << "KMedoids example have started" << std::endl;
 	std::cout << '\n';
 
 	std::vector<std::vector<float>> data{

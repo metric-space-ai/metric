@@ -24,7 +24,7 @@ public:
      *
      * @param d 
      */
-    Cluster(const std::vector<std::vector<T>>& d)
+    Cluster(const std::vector<T>& d)
     {
         data = d;
         calculateCentroid();
@@ -34,29 +34,40 @@ public:
      * @brief
      *
      */
+	template <typename VecType, typename T = std::vector<VecType>>
     void calculateCentroid()
     {
-        centroid = std::vector<T>(data[0].size());
-        T sum;
+        centroid = T(data[0].size());
+        T::value_type sum;
         for (size_t i = 0; i < data[0].size(); i++) {
             sum = 0;
             for (size_t j = 0; j < data.size(); j++) {
                 sum += data[j][i];
             }
-            centroid[i] = (T)sum / data.size();
+            centroid[i] = sum / data.size();
         }
     }
+
     /**
-     * @brief 
-     * 
+     * @brief
+     *
      */
-    std::vector<std::vector<T>> data;
+    void calculateCentroid()
+    {
+        centroid = data[0];
+    }
 
     /**
      * @brief 
      * 
      */
-    std::vector<T> centroid;
+    std::vector<T> data;
+
+    /**
+     * @brief 
+     * 
+     */
+    T centroid;
 };
 
 /**
@@ -74,7 +85,7 @@ public:
      * @param data 
      * @param k 
      */
-    HierarchicalClustering(const std::vector<std::vector<T>>& data, const int& k)
+    HierarchicalClustering(const std::vector<T>& data, const int& k)
     {
         sourceData = data;
         clustersNum = k;
@@ -102,7 +113,7 @@ public:
      * @brief 
      * 
      */
-    std::vector<std::vector<T>> sourceData;
+    std::vector<T> sourceData;
 
     /**
      * @brief 

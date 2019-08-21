@@ -51,7 +51,7 @@ void matrix_print(const std::vector<std::vector<T>> &mat)
 
 int main()
 {
-	std::cout << "we have started" << std::endl;
+	std::cout << "C4.5 example have started" << std::endl;
 	std::cout << '\n';
 
 	using Record = std::vector<int>;  // may be of arbitrary type, with appropriate accessors
@@ -92,7 +92,7 @@ int main()
 	
 	std::cout << "C4.5 on int vector: " << std::endl;
 	startTime = std::chrono::steady_clock::now();
-	metric::classification::edmClassifier<Record, CC45> c45Model_1 = metric::classification::edmClassifier<Record, CC45>();
+	metric::edmClassifier<Record, CC45> c45Model_1 = metric::edmClassifier<Record, CC45>();
 	std::cout << "training... " << std::endl;
 	c45Model_1.train(payments, features, response);
 	endTime = std::chrono::steady_clock::now();
@@ -160,7 +160,7 @@ int main()
 	// using C4.5
 	std::cout << "C4.5 on Iris: " << std::endl;
 	startTime = std::chrono::steady_clock::now();
-	auto c45Model_2 = metric::classification::edmClassifier<IrisRec, libedm::CC45>();
+	auto c45Model_2 = metric::edmClassifier<IrisRec, libedm::CC45>();
 	// usage of weak without strong. Training does not affect further usage of wl20 in strong classifiers!
 	std::cout << "training... " << std::endl;
 	c45Model_2.train(iris_str, features_iris, response_iris);
@@ -182,7 +182,7 @@ int main()
 	// using C4.5 with default metaparams
 	std::cout << "Boosting C4.5 on Iris: " << std::endl;
 	startTime = std::chrono::steady_clock::now();
-	auto boostC45Model_2 = metric::Boosting<IrisRec, metric::classification::edmClassifier<IrisRec, CC45>, metric::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, c45Model_2);
+	auto boostC45Model_2 = metric::Boosting<IrisRec, metric::edmClassifier<IrisRec, CC45>, metric::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, c45Model_2);
 	std::cout << "training... " << std::endl;
 	boostC45Model_2.train(iris_str, features_iris, response_iris, true);
 	endTime = std::chrono::steady_clock::now();
@@ -203,8 +203,8 @@ int main()
 	// using C4.5 with metaparams
 	std::cout << "Boosting with metaparams C4.5 on Iris: " << std::endl;
 	startTime = std::chrono::steady_clock::now();
-	auto c45Model_3 = metric::classification::edmC45<IrisRec>(2, 1e-3, 0.25, true);
-	auto boostC45Model_3 = metric::Boosting<IrisRec, metric::classification::edmC45<IrisRec>, metric::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, c45Model_3);
+	auto c45Model_3 = metric::edmC45<IrisRec>(2, 1e-3, 0.25, true);
+	auto boostC45Model_3 = metric::Boosting<IrisRec, metric::edmC45<IrisRec>, metric::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, c45Model_3);
 	std::cout << "training... " << std::endl;
 	boostC45Model_3.train(iris_str, features_iris, response_iris, true);
 	endTime = std::chrono::steady_clock::now();
@@ -225,10 +225,10 @@ int main()
 	// using Bagging on both specialized and default C4.5
 	std::cout << "Bagging on both specialized and default C4.5 on Iris: " << std::endl;
 	startTime = std::chrono::steady_clock::now();
-	using WeakLrnVariant = std::variant<metric::classification::edmC45<IrisRec>, metric::classification::edmClassifier<IrisRec, CC45> >;
+	using WeakLrnVariant = std::variant<metric::edmC45<IrisRec>, metric::edmClassifier<IrisRec, CC45> >;
 	std::vector<WeakLrnVariant> models_1 = {};
-	WeakLrnVariant c45Model_4 = metric::classification::edmC45<IrisRec>(2, 1e-3, 0.25, true);
-	WeakLrnVariant c45Model_5 = metric::classification::edmClassifier<IrisRec, CC45>();
+	WeakLrnVariant c45Model_4 = metric::edmC45<IrisRec>(2, 1e-3, 0.25, true);
+	WeakLrnVariant c45Model_5 = metric::edmClassifier<IrisRec, CC45>();
 	models_1.push_back(c45Model_4);
 	models_1.push_back(c45Model_5);
 	auto baggingC45model_1 = metric::Bagging<IrisRec, WeakLrnVariant, metric::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, { 0.3, 0.7 }, models_1); // 30% of first weak learner type, 70% of second

@@ -38,7 +38,7 @@ void vector_print(const std::vector<T> &vec)
 
 int main()
 {
-	std::cout << "we have started" << std::endl;
+	std::cout << "Desicion Tree example have started" << std::endl;
 	std::cout << '\n';
 
     typedef std::variant<double, std::vector<double>, std::vector<std::vector<double>>, std::string> V; // field type

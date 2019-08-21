@@ -13,10 +13,16 @@ Copyright (c) 2019 Panda Team
 
 int main()
 {
-	std::cout << "we have started" << std::endl;
+	std::cout << "Hierarchical Clustering example have started" << std::endl;
 	std::cout << '\n';
 
-	std::vector<std::vector<float>> data{
+
+	std::cout << "Data as records (vector of floats)" << std::endl;
+	std::cout << '\n';
+
+	using Record =  std::vector<float>;
+
+	std::vector<Record> data{
 		   {0, 0, 0, 0, 0},
 		   {1, 1, 1, 1, 1},
 		   {1.74120000000000, 4.07812000000000, -0.0927036000000, 41.7888000000000, 41.7888000000000},
@@ -25,21 +31,8 @@ int main()
 		   {5.81414000000000, 8.14015000000000, 3.22950000000000, 139.539000000000, 139.539000000000},
 		   {2.57927000000000, 2.63399000000000, 2.46802000000000, 61.9026000000000, 61.9026000000000}
 	};
-
-	std::vector<std::string> str_data{
-		   "1011001100110011001111111",
-		   "1000011001100110011011100",
-		   "Absolutly different string 1",
-		   "Absolutly different string 2",
-		   "Test string 1",
-		   "Test string 2",
-		   "Test string 3"
-	};
-
-
-
-
-	auto hc = metric::HierarchicalClustering<std::vector<float>, metric::Euclidian<float>>(data, 3);
+	   	 
+	auto hc = metric::HierarchicalClustering<Record, metric::Euclidian<Record::value_type>>(data, 3);
 	hc.hierarchical_clustering();
 
 	for (size_t i = 0; i < hc.clusters.size(); i++)
@@ -57,7 +50,20 @@ int main()
 	}
 
 
+	// clustering on strings
+	
+	std::cout << "Data as strings" << std::endl;
+	std::cout << '\n';
 
+	std::vector<std::string> str_data{
+		   "1011001100110011001111111",
+		   "1000011001100110011011100",
+		   "Absolutly different string 1",
+		   "Absolutly different string 2",
+		   "Test string 1",
+		   "Test string 2",
+		   "Test string 3"
+	};
 
 	auto hc2 = metric::HierarchicalClustering<std::string, metric::Edit<std::string>>(str_data, 4);
 	hc2.hierarchical_clustering();
@@ -71,53 +77,6 @@ int main()
 		}
 		std::cout << std::endl;
 	}
-
-
-
-	//auto[assignments, seeds, counts] = clustering::hierarchClustering(data, 4);
-
-
-	//std::cout << "assignments:" << std::endl;
-	//for (size_t i = 0; i < assignments.size(); i++)
-	//{
-	//	if (i < assignments.size() - 1)
-	//	{
-	//		std::cout << assignments[i] << ", ";
-	//	}
-	//	else
-	//	{
-	//		std::cout << assignments[i] << std::endl;
-	//	}
-	//}
-	//std::cout << '\n';
-
-	//std::cout << "seeds:" << std::endl;
-	//for (size_t i = 0; i < seeds.size(); i++)
-	//{
-	//	if (i < seeds.size() - 1)
-	//	{
-	//		std::cout << seeds[i] << ", ";
-	//	}
-	//	else
-	//	{
-	//		std::cout << seeds[i] << std::endl;
-	//	}
-	//}
-	//std::cout << '\n';
-
-	//std::cout << "counts:" << std::endl;
-	//for (size_t i = 0; i < counts.size(); i++)
-	//{
-	//	if (i < counts.size() - 1)
-	//	{
-	//		std::cout << counts[i] << ", ";
-	//	}
-	//	else
-	//	{
-	//		std::cout << counts[i] << std::endl;
-	//	}
-	//}
-	//std::cout << '\n' << std::endl;
 
 	return 0;
 

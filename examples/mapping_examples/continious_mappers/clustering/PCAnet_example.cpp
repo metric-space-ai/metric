@@ -14,7 +14,7 @@ Copyright (c) 2019 Panda Team
 
 #include "../../modules/mapping.hpp"
 
-#include "../../utils/visualizer.hpp"
+#include "../../modules/utils/visualizer.hpp"
 
 #include "../../modules/transform/discrete_cosine.hpp"
 
@@ -42,6 +42,8 @@ double mean_square_error(MatrixType1 M1, MatrixType2 M2)
 
 int main()
 {
+	std::cout << "PCAnet example have started" << std::endl;
+	std::cout << '\n';
 
 	bool visualize = false;
 
@@ -155,11 +157,11 @@ int main()
 	blaze::DynamicMatrix<double> TestSlicesSineOriginal = TestSlicesSine; // saved for computation of error
 
 	// apply DCT to input
-	dct::apply_DCT(SlicesSine);
-	dct::apply_DCT(TestSlicesSine);
+	metric::apply_DCT(SlicesSine);
+	metric::apply_DCT(TestSlicesSine);
 
 	blaze::DynamicMatrix<double> TestSliceSine_DCT_restored = TestSlicesSine;
-	dct::apply_DCT(TestSliceSine_DCT_restored, true);
+	metric::apply_DCT(TestSliceSine_DCT_restored, true);
 	if (visualize)
 	{
 		mat2bmp::blaze2bmp(TestSliceSine_DCT_restored, "TestSlicesSine_DCT_restored.bmp");
@@ -203,7 +205,7 @@ int main()
 
 	visualize = true;
 
-	dct::apply_DCT(direct_restored_sine_DCT, true);
+	metric::apply_DCT(direct_restored_sine_DCT, true);
 	if (visualize)
 	{
 		mat2bmp::blaze2bmp(direct_restored_sine_DCT, "restored_unDCT.bmp");

@@ -50,7 +50,7 @@ void matrix_print(const std::vector<std::vector<T>> &mat)
 
 int main()
 {
-	std::cout << "we have started" << std::endl;
+	std::cout << "SVN example have started" << std::endl;
 	std::cout << '\n';
 
 	using Record = std::vector<int>;  // may be of arbitrary type, with appropriate accessors
@@ -91,7 +91,7 @@ int main()
 
 	std::cout << "SVM on int vector: " << std::endl;
 	startTime = std::chrono::steady_clock::now();
-	metric::classification::edmClassifier<Record, CSVM> svmModel_1 = metric::classification::edmClassifier<Record, CSVM>();
+	metric::edmClassifier<Record, CSVM> svmModel_1 = metric::edmClassifier<Record, CSVM>();
 	std::cout << "training... " << std::endl;
 	svmModel_1.train(payments, features, response);
 	endTime = std::chrono::steady_clock::now();
@@ -142,7 +142,7 @@ int main()
 	// using SVM
 	std::cout << "SVM on Iris: " << std::endl;
 	startTime = std::chrono::steady_clock::now();
-	auto svmModel_2 = metric::classification::edmClassifier<IrisRec, CSVM>();
+	auto svmModel_2 = metric::edmClassifier<IrisRec, CSVM>();
 	std::cout << "training... " << std::endl;
 	svmModel_2.train(iris_str, features_iris, response_iris);
 	endTime = std::chrono::steady_clock::now();
@@ -162,8 +162,8 @@ int main()
 	// using SVM with default metaparams
 	std::cout << "Boost SVM on Iris: " << std::endl;
 	startTime = std::chrono::steady_clock::now();
-	auto svmModel_3 = metric::classification::edmClassifier<IrisRec, CSVM>();
-	auto boostSvmModel_3 = metric::Boosting<IrisRec, metric::classification::edmClassifier<IrisRec, CSVM>, metric::SubsampleRUS<IrisRec>>(10, 0.75, 0.5, svmModel_3);
+	auto svmModel_3 = metric::edmClassifier<IrisRec, CSVM>();
+	auto boostSvmModel_3 = metric::Boosting<IrisRec, metric::edmClassifier<IrisRec, CSVM>, metric::SubsampleRUS<IrisRec>>(10, 0.75, 0.5, svmModel_3);
 	std::cout << "training... " << std::endl;
 	boostSvmModel_3.train(iris_str, features_iris, response_iris, true);
 	endTime = std::chrono::steady_clock::now();
@@ -183,8 +183,8 @@ int main()
 	// using SVM with metaparams
 	std::cout << "Boost specialized SVM on Iris: " << std::endl;
 	startTime = std::chrono::steady_clock::now();
-	auto svmModel_4 = metric::classification::edmSVM<IrisRec>(C_SVC, RBF, 3, 0, 100, 0.001, 1, 0, NULL, NULL, 0.5, 0.1, 1, 0);
-	auto boostSvmModel_4 = metric::Boosting<IrisRec, metric::classification::edmSVM<IrisRec>, metric::SubsampleRUS<IrisRec>>(10, 0.75, 0.5, svmModel_4);
+	auto svmModel_4 = metric::edmSVM<IrisRec>(C_SVC, RBF, 3, 0, 100, 0.001, 1, 0, NULL, NULL, 0.5, 0.1, 1, 0);
+	auto boostSvmModel_4 = metric::Boosting<IrisRec, metric::edmSVM<IrisRec>, metric::SubsampleRUS<IrisRec>>(10, 0.75, 0.5, svmModel_4);
 	std::cout << "training... " << std::endl;
 	boostSvmModel_4.train(iris_str, features_iris, response_iris, true);
 	endTime = std::chrono::steady_clock::now();
@@ -210,10 +210,10 @@ int main()
 	// using Bagging on both specialized and default SVM
 	std::cout << "Bagging on both specialized and default SVM on Iris: " << std::endl;
 	startTime = std::chrono::steady_clock::now();
-	using WeakLrnVariant = std::variant<metric::classification::edmSVM<IrisRec>, metric::classification::edmClassifier<IrisRec, CSVM> >;
+	using WeakLrnVariant = std::variant<metric::edmSVM<IrisRec>, metric::edmClassifier<IrisRec, CSVM> >;
 	std::vector<WeakLrnVariant> models_1 = {};
-	WeakLrnVariant svmModel_5 = metric::classification::edmSVM<IrisRec>(C_SVC, RBF, 3, 0, 100, 0.001, 1, 0, NULL, NULL, 0.5, 0.1, 1, 0);
-	WeakLrnVariant svmModel_6 = metric::classification::edmClassifier<IrisRec, CSVM>();
+	WeakLrnVariant svmModel_5 = metric::edmSVM<IrisRec>(C_SVC, RBF, 3, 0, 100, 0.001, 1, 0, NULL, NULL, 0.5, 0.1, 1, 0);
+	WeakLrnVariant svmModel_6 = metric::edmClassifier<IrisRec, CSVM>();
 	models_1.push_back(svmModel_5);
 	models_1.push_back(svmModel_6);
 	auto baggingSVMmodel_1 = metric::Bagging<IrisRec, WeakLrnVariant, metric::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, { 0.3, 0.7 }, models_1); // 30% of first weak learner type, 70% of second

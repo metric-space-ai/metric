@@ -14,10 +14,12 @@ Copyright (c) 2019 Panda Team
 
 #include "../../modules/mapping.hpp"
 
-#include "../../utils/visualizer.hpp"
+#include "../../modules/utils/visualizer.hpp"
 
 int main()
 {
+	std::cout << "ESN example have started" << std::endl;
+	std::cout << '\n';
 
     bool visualize = false;
 
