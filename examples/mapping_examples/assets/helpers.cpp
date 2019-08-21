@@ -102,9 +102,9 @@ std::vector<std::vector<ValueType>> read_csv_num(std::string filename, std::stri
 
 
 template <class ValueType>
-blaze::DynamicMatrix<ValueType, blaze::rowMajor> read_csv_blaze(const std::string & filename)
+blaze::DynamicMatrix<ValueType, blaze::rowMajor> read_csv_blaze(const std::string & filename, std::string sep = ";")
 {
-    auto array = read_csv<std::vector<std::vector<std::string>>>(filename, ";");
+    auto array = read_csv<std::vector<std::vector<std::string>>>(filename, sep);
     auto m = blaze::DynamicMatrix<ValueType, blaze::rowMajor>(array.size(), array[0].size());
     for (size_t i=0; i<array.size(); ++i)
         for (size_t j=0; j<array[0].size(); ++j)

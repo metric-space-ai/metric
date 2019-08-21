@@ -263,7 +263,7 @@ int main() {
 
     // DWT first
 
-    auto all_vibration_ts = read_csv_num<float>("Pt01_Ch01_Grooves_1_to_7.csv");
+    auto all_vibration_ts = read_csv_num<float>("Pt01_Ch01_Grooves_1_to_7_and_9.csv");
     auto transposed = transpose_timeseries(all_vibration_ts);
     auto subband_waveforms = apply_seq_DWT(transposed);
     for (size_t i=0; i<subband_waveforms.size(); ++i) {
