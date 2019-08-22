@@ -57,6 +57,7 @@ if(UNIX)
 	set_target_properties(SOM_example_2 PROPERTIES CXX_STANDARD 17)
 	set_target_properties(PCAnet_example PROPERTIES CXX_STANDARD 17)
 	set_target_properties(ESN_example PROPERTIES CXX_STANDARD 17)
+	set_target_properties(DesicionTree_example PROPERTIES CXX_STANDARD 17)
 endif(UNIX)
 
 find_package(LAPACK)
