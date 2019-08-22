@@ -19,6 +19,9 @@ if(MSVC)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++17")
 endif(MSVC)
 
+if(UNIX)
+	set(CXX_STANDARD 17)
+endif(UNIX)
 
 include_directories(${Boost_INCLUDE_DIRS})
 
@@ -42,9 +45,6 @@ add_executable(DesicionTree_example quantized_mappers/classification/DesicionTre
 # continious_mappers / clustering
 add_executable(SOM_example continious_mappers/clustering/SOM_example.cpp)
 add_executable(SOM_example_2 continious_mappers/clustering/SOM_example_2.cpp)
-if(UNIX)
-	set_target_properties(SOM_example_2 PROPERTIES CXX_STANDARD 17)
-endif(UNIX)
 add_executable(PCAnet_example continious_mappers/clustering/PCAnet_example.cpp)
 
 # continious_mappers / classification
