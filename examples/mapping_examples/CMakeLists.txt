@@ -3,8 +3,6 @@ cmake_minimum_required(VERSION 3.12)
 set(Boost_DEBUG on)  
 find_package(Boost)
 
-set(BLA_VENDOR OpenBLAS)
-find_package(LAPACK)
 
 project(mapping_examples)
 
@@ -50,6 +48,18 @@ add_executable(PCAnet_example continious_mappers/clustering/PCAnet_example.cpp)
 # continious_mappers / classification
 add_executable(ESN_example continious_mappers/classification/ESN_example.cpp)
 
+
+if(UNIX)
+	set_target_properties(KMeans_example PROPERTIES CXX_STANDARD 17)
+	set_target_properties(DBScan_example PROPERTIES CXX_STANDARD 17)
+	set_target_properties(AffinityPropagation_example PROPERTIES CXX_STANDARD 17)
+	set_target_properties(SOM_example PROPERTIES CXX_STANDARD 17)
+	set_target_properties(SOM_example_2 PROPERTIES CXX_STANDARD 17)
+	set_target_properties(PCAnet_example PROPERTIES CXX_STANDARD 17)
+	set_target_properties(ESN_example PROPERTIES CXX_STANDARD 17)
+endif(UNIX)
+
+find_package(LAPACK)
 if(LAPACK_FOUND)
 	message("LAPACK found!")
 else()
@@ -66,16 +76,6 @@ if(LAPACK_LIBRARIES)
 	target_link_libraries(PCAnet_example PRIVATE ${LAPACK_LIBRARIES})	
 	target_link_libraries(ESN_example PRIVATE ${LAPACK_LIBRARIES})
 endif(LAPACK_LIBRARIES)
-
-if(UNIX)
-	set_target_properties(KMeans_example PROPERTIES CXX_STANDARD 17)
-	set_target_properties(DBScan_example PROPERTIES CXX_STANDARD 17)
-	set_target_properties(AffinityPropagation_example PROPERTIES CXX_STANDARD 17)
-	set_target_properties(SOM_example PROPERTIES CXX_STANDARD 17)
-	set_target_properties(SOM_example_2 PROPERTIES CXX_STANDARD 17)
-	set_target_properties(PCAnet_example PROPERTIES CXX_STANDARD 17)
-	set_target_properties(ESN_example PROPERTIES CXX_STANDARD 17)
-endif(UNIX)
 
 if(CMAKE_SYSTEM_NAME MATCHES Windows)
 
