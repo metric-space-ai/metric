@@ -1,8 +1,9 @@
 cmake_minimum_required(VERSION 3.12)
 
+#CLEAR_CMAKE_REQUIRED()
+find_package(LAPACK)
 set(Boost_DEBUG on)  
 find_package(Boost)
-find_package(LAPACK)
 
 project(mapping_examples)
 
