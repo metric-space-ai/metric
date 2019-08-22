@@ -15,6 +15,9 @@
 
 int main()
 {
+
+    size_t n_features = 8;
+
     //auto m = blaze::DynamicMatrix<double>(2, 3);
     //read_csv_blaze<blaze::DynamicMatrix, double>("testdata.csv", m, ";");
 //    auto m = read_csv_blaze<double>("testdata.csv");
@@ -31,7 +34,7 @@ int main()
     blaze_dm_to_csv(test_data, "test_data.csv");
 
     auto model = metric::PCAnet(true);
-    model.train(training_dataset, 8); // dataset, compressed_code_length
+    model.train(training_dataset, n_features); // dataset, compressed_code_length
 
     auto compressed = model.compress(test_data);
 
@@ -42,6 +45,28 @@ int main()
 
     mat2bmp::blaze2bmp_norm(restored, "restored.bmp");
     blaze_dm_to_csv(restored, "restored.csv");
+
+
+    // also making feature output for the training dataset
+
+    auto all_features = model.compress(training_dataset);
+
+    mat2bmp::blaze2bmp_norm(all_features, "all_features.bmp");
+    blaze_dm_to_csv(all_features, "all_features.csv");
+
+
+    // view contribution of each feature
+
+    auto I = blaze::IdentityMatrix<float>(n_features);
+
+    for (size_t feature_idx=0; feature_idx<n_features; ++feature_idx) {
+        blaze::DynamicMatrix<float> unit_feature = submatrix(I, 0, feature_idx, I.rows(), 1);
+        auto unit_waveform = model.decompress(unit_feature);
+        mat2bmp::blaze2bmp_norm(unit_waveform, "unit_waveform_" + std::to_string(feature_idx) + ".bmp");
+        blaze_dm_to_csv(unit_waveform, "unit_waveform_" + std::to_string(feature_idx) + ".csv");
+    }
+
+
 
     return 0;
 }
