@@ -20,6 +20,9 @@ if(MSVC)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++17")
 endif(MSVC)
 
+if(UNIX)
+	set(CXX_STANDARD 17)
+endif(UNIX)
 
 include_directories(${Boost_INCLUDE_DIRS})
 
@@ -49,16 +52,6 @@ add_executable(PCAnet_example continious_mappers/clustering/PCAnet_example.cpp)
 add_executable(ESN_example continious_mappers/classification/ESN_example.cpp)
 
 
-if(UNIX)
-	set_target_properties(KMeans_example PROPERTIES CXX_STANDARD 17)
-	set_target_properties(DBScan_example PROPERTIES CXX_STANDARD 17)
-	set_target_properties(AffinityPropagation_example PROPERTIES CXX_STANDARD 17)
-	set_target_properties(SOM_example PROPERTIES CXX_STANDARD 17)
-	set_target_properties(SOM_example_2 PROPERTIES CXX_STANDARD 17)
-	set_target_properties(PCAnet_example PROPERTIES CXX_STANDARD 17)
-	set_target_properties(ESN_example PROPERTIES CXX_STANDARD 17)
-	set_target_properties(DesicionTree_example PROPERTIES CXX_STANDARD 17)
-endif(UNIX)
 
 find_package(LAPACK)
 if(LAPACK_FOUND)
