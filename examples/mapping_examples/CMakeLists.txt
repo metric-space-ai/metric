@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.12)
 
 set(Boost_DEBUG on)  
 find_package(Boost)
+find_package(LAPACK)
 
 project(mapping_examples)
 
@@ -46,6 +47,13 @@ add_executable(PCAnet_example continious_mappers/clustering/PCAnet_example.cpp)
 
 # continious_mappers / classification
 add_executable(ESN_example continious_mappers/classification/ESN_example.cpp)
+
+if(LAPACK_FOUND)
+	message("LAPACK found!")
+else()
+	message("LAPACK not found!")
+endif(LAPACK_FOUND)
+
 
 if(LAPACK_LIBRARIES)
 	target_link_libraries(KMeans_example PRIVATE ${LAPACK_LIBRARIES})	
