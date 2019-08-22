@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.12)
 set(Boost_DEBUG on)  
 find_package(Boost)
 
-set(BLA_VENDOR Intel10_64lp)
+set(BLA_VENDOR OpenBLAS)
 find_package(LAPACK)
 
 project(mapping_examples)
