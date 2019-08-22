@@ -34,10 +34,10 @@ public:
      * @brief
      *
      */
-	template <typename VecType, typename T = std::vector<VecType>>
+	template <typename VecType, typename SampleType = std::vector<VecType>>
     void calculateCentroid()
     {
-        centroid = T(data[0].size());
+        centroid = SampleType (data[0].size());
         T::value_type sum;
         for (size_t i = 0; i < data[0].size(); i++) {
             sum = 0;
