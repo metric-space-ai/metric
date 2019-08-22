@@ -3,21 +3,8 @@ cmake_minimum_required(VERSION 3.12)
 set(Boost_DEBUG on)  
 find_package(Boost)
 
-# LAPACK (& BLAS).
-find_package(LAPACK QUIET)
-if (LAPACK_FOUND)
-	message("-- Found LAPACK library: ${LAPACK_LIBRARIES}")
-else (LAPACK_FOUND)
-	message("-- Did not find LAPACK library, disabling LAPACK support.")
-endif (LAPACK_FOUND)
-
-find_package(BLAS QUIET)
-if (BLAS_FOUND)
-	message("-- Found BLAS library: ${BLAS_LIBRARIES}")
-else (BLAS_FOUND)
-	message("-- Did not find BLAS library, disabling LAPACK support.")
-endif (BLAS_FOUND)
-
+set(BLA_VENDOR Intel10_64lp)
+find_package(LAPACK)
 
 project(mapping_examples)
 
