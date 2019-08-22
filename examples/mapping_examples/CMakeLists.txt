@@ -19,9 +19,6 @@ if(MSVC)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++17")
 endif(MSVC)
 
-if(UNIX)
-	set(CXX_STANDARD 17)
-endif(UNIX)
 
 include_directories(${Boost_INCLUDE_DIRS})
 
@@ -51,20 +48,24 @@ add_executable(PCAnet_example continious_mappers/clustering/PCAnet_example.cpp)
 add_executable(ESN_example continious_mappers/classification/ESN_example.cpp)
 
 if(LAPACK_LIBRARIES)
-	target_link_libraries(KMeans_example PRIVATE ${LAPACK_LIBRARIES})
-	
-	target_link_libraries(DBScan_example PRIVATE ${LAPACK_LIBRARIES})
-	
-	target_link_libraries(AffinityPropagation_example PRIVATE ${LAPACK_LIBRARIES})
-	
-	target_link_libraries(SOM_example PRIVATE ${LAPACK_LIBRARIES})
-	
-	target_link_libraries(SOM_example_2 PRIVATE ${LAPACK_LIBRARIES})
-	
-	target_link_libraries(PCAnet_example PRIVATE ${LAPACK_LIBRARIES})
-	
+	target_link_libraries(KMeans_example PRIVATE ${LAPACK_LIBRARIES})	
+	target_link_libraries(DBScan_example PRIVATE ${LAPACK_LIBRARIES})	
+	target_link_libraries(AffinityPropagation_example PRIVATE ${LAPACK_LIBRARIES})	
+	target_link_libraries(SOM_example PRIVATE ${LAPACK_LIBRARIES})	
+	target_link_libraries(SOM_example_2 PRIVATE ${LAPACK_LIBRARIES})	
+	target_link_libraries(PCAnet_example PRIVATE ${LAPACK_LIBRARIES})	
 	target_link_libraries(ESN_example PRIVATE ${LAPACK_LIBRARIES})
 endif(LAPACK_LIBRARIES)
+
+if(UNIX)
+	set_target_properties(KMeans_example PROPERTIES CXX_STANDARD 17)
+	set_target_properties(DBScan_example PROPERTIES CXX_STANDARD 17)
+	set_target_properties(AffinityPropagation_example PROPERTIES CXX_STANDARD 17)
+	set_target_properties(SOM_example PROPERTIES CXX_STANDARD 17)
+	set_target_properties(SOM_example_2 PROPERTIES CXX_STANDARD 17)
+	set_target_properties(PCAnet_example PROPERTIES CXX_STANDARD 17)
+	set_target_properties(ESN_example PROPERTIES CXX_STANDARD 17)
+endif(UNIX)
 
 if(CMAKE_SYSTEM_NAME MATCHES Windows)
 
