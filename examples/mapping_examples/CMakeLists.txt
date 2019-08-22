@@ -22,7 +22,7 @@ endif(MSVC)
 
 include_directories(${Boost_INCLUDE_DIRS})
 
-# quantized_mappers / clustering
+# quantized_mappers / clustering 
 add_executable(KMedoids_example quantized_mappers/clustering/KMedoids_example.cpp)
 add_executable(KMeans_example quantized_mappers/clustering/KMeans_example.cpp)
 add_executable(DBScan_example quantized_mappers/clustering/DBScan_example.cpp)
@@ -41,6 +41,7 @@ add_executable(DesicionTree_example quantized_mappers/classification/DesicionTre
 
 # continious_mappers / clustering
 add_executable(SOM_example continious_mappers/clustering/SOM_example.cpp)
+add_executable(SOM_example_2 continious_mappers/clustering/SOM_example_2.cpp)
 add_executable(PCAnet_example continious_mappers/clustering/PCAnet_example.cpp)
 
 # continious_mappers / classification
@@ -54,6 +55,8 @@ if(LAPACK_LIBRARIES)
 	target_link_libraries(AffinityPropagation_example PRIVATE ${LAPACK_LIBRARIES})
 	
 	target_link_libraries(SOM_example PRIVATE ${LAPACK_LIBRARIES})
+	
+	target_link_libraries(SOM_example_2 PRIVATE ${LAPACK_LIBRARIES})
 	
 	target_link_libraries(PCAnet_example PRIVATE ${LAPACK_LIBRARIES})
 	
@@ -77,6 +80,10 @@ if(CMAKE_SYSTEM_NAME MATCHES Windows)
 	target_link_directories(SOM_example PRIVATE ${PROJECT_SOURCE_DIR}/../../mkl/lib/intel64_win)
 	target_link_libraries(SOM_example PRIVATE mkl_core.lib mkl_sequential.lib mkl_intel_lp64.lib)
 	target_link_libraries(SOM_example PRIVATE ${Boost_LIBRARIES})
+
+	target_link_directories(SOM_example_2 PRIVATE ${PROJECT_SOURCE_DIR}/../../mkl/lib/intel64_win)
+	target_link_libraries(SOM_example_2 PRIVATE mkl_core.lib mkl_sequential.lib mkl_intel_lp64.lib)
+	target_link_libraries(SOM_example_2 PRIVATE ${Boost_LIBRARIES})
 
 	target_link_directories(PCAnet_example PRIVATE ${PROJECT_SOURCE_DIR}/../../mkl/lib/intel64_win)
 	target_link_libraries(PCAnet_example PRIVATE mkl_core.lib mkl_sequential.lib mkl_intel_lp64.lib)
