@@ -52,7 +52,7 @@ void SOM<recType, Metric, Graph>::train(
         D = samples[0].size();
 
         /* Set sample dimension */
-        std::cout << "Set sample dimension" << std::endl;
+        std::cout << "Set sample dimension " << nodesNumber << " " << D << std::endl;
         weights = std::vector<std::vector<T>>(nodesNumber, std::vector<T>(D));
 
         /* Create uniform distribution */
