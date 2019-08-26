@@ -48,12 +48,15 @@ void SOM<recType, Metric, Graph>::train(
         std::cout << "initial training" << std::endl;
 
         /* Set sample dimension */
+        std::cout << "Set sample dimension" << std::endl;
         D = samples[0].size();
 
-        /* Initialize weights */
+        /* Set sample dimension */
+        std::cout << "Set sample dimension" << std::endl;
         weights = std::vector<std::vector<T>>(nodesNumber, std::vector<T>(D));
 
         /* Create uniform distribution */
+        std::cout << "Create uniform distribution" << std::endl;
         const auto seed = std::chrono::system_clock::now().time_since_epoch().count();
         std::default_random_engine random_generator(seed);
         std::uniform_real_distribution<T> distribution(-1, 1);
