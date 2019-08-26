@@ -113,7 +113,7 @@ int main()
 	std::cout << '\n';
 
 	/* Load data */
-	auto speeds = readData(".\\assets\\energies_speed_190820.log");
+	auto speeds = readData("assets/energies_speed_190820.log");
 	
 	for (size_t s = 0; s < 5; s++)
 	{
