@@ -45,23 +45,18 @@ void SOM<recType, Metric, Graph>::train(
 
     // initialize weight matrix at first training call
     if (D == 0) {
-        std::cout << "initial training" << std::endl;
 
         /* Set sample dimension */
-        std::cout << "Set sample dimension " << samples.size() << std::endl;
         D = samples[0].size();
 
         /* Set sample dimension */
-        std::cout << "Set sample dimension " << nodesNumber << " " << D << std::endl;
         weights = std::vector<std::vector<T>>(nodesNumber, std::vector<T>(D));
 
         /* Create uniform distribution */
-        std::cout << "Create uniform distribution" << std::endl;
         const auto seed = std::chrono::system_clock::now().time_since_epoch().count();
         std::default_random_engine random_generator(seed);
         std::uniform_real_distribution<T> distribution(-1, 1);
 		
-        std::cout << "weights distribution" << std::endl;
         /* Fill weights by uniform distributed values */
         for (auto& weight : weights) {
             for (auto& w : weight) {
@@ -69,8 +64,6 @@ void SOM<recType, Metric, Graph>::train(
             }
         }
 
-    } else {
-        std::cout << "further training" << std::endl;
     }
 
     assert(D == samples[0].size());
@@ -87,7 +80,6 @@ void SOM<recType, Metric, Graph>::train(
     //   less_samples = true;
     //}
 	
-	std::cout << "Random updating" << std::endl;
     /* Random updating */
     std::vector<size_t> randomized_samples(samples.size());
     std::iota(randomized_samples.begin(), randomized_samples.end(), 0);
