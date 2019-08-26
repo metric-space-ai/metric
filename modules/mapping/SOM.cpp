@@ -57,7 +57,8 @@ void SOM<recType, Metric, Graph>::train(
         const auto seed = std::chrono::system_clock::now().time_since_epoch().count();
         std::default_random_engine random_generator(seed);
         std::uniform_real_distribution<T> distribution(-1, 1);
-
+		
+        std::cout << "weights distribution" << std::endl;
         /* Fill weights by uniform distributed values */
         for (auto& weight : weights) {
             for (auto& w : weight) {
@@ -82,7 +83,8 @@ void SOM<recType, Metric, Graph>::train(
     // if (samples.size() < iterations) {
     //   less_samples = true;
     //}
-
+	
+	std::cout << "Random updating" << std::endl;
     /* Random updating */
     std::vector<size_t> randomized_samples(samples.size());
     std::iota(randomized_samples.begin(), randomized_samples.end(), 0);
