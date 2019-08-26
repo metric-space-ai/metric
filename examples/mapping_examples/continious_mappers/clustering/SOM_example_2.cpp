@@ -88,7 +88,7 @@ std::vector<std::vector<double>> readData(std::string filename)
 	while (getline(fin, line))
 	{
 		i++;
-		//std::cout << "row " << i << std::endl;
+		std::cout << "row " << i << std::endl;
 		std::stringstream s(line);
 		char asciiChar = 9;
 		getline(s, word, asciiChar);

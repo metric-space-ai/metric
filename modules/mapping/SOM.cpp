@@ -48,7 +48,7 @@ void SOM<recType, Metric, Graph>::train(
         std::cout << "initial training" << std::endl;
 
         /* Set sample dimension */
-        std::cout << "Set sample dimension" << std::endl;
+        std::cout << "Set sample dimension " << samples.size() << std::endl;
         D = samples[0].size();
 
         /* Set sample dimension */
