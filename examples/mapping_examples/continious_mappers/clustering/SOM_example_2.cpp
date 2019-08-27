@@ -118,6 +118,13 @@ double runConfiguration(int i, std::vector<std::vector<T>> data, Metric distance
 	unsigned int iterations, double start_learn_rate, double final_learn_rate, double neighborhoodSize, double neigbour_range_decay, long long random_seed)
 {
 	
+	mu.lock();
+	std::cout << "configuration #" << i << " started" << std::endl;
+	std::cout << "  Graph: " << typeid(graph).name() << std::endl;
+	std::cout << "  Distance: " << typeid(distance).name() << std::endl;
+	std::cout << "  Distribution: " << typeid(distribution).name() << std::endl;
+	mu.unlock();
+
 	auto t1 = std::chrono::steady_clock::now();
 
 	metric::SOM<std::vector<T>, Metric, Graph, Distribution> DR(distance, graph, distribution, neighborhoodSize, neigbour_range_decay, random_seed);
@@ -196,7 +203,7 @@ int main()
 	
 	std::vector<std::string> graph_type_names = {"Grid4", "Grid6", "Grid8", "Paley", "LPS", "Margulis"};
 	std::vector<std::string> metric_type_names = {"Euclidian", "Manhatten", "P_norm", "Euclidian_thresholded", "Cosine", "Chebyshev"};
-	std::vector<std::string> distribution_type_names = {"uniform_real_distribution", "exponential_distribution", "normal_distribution"};
+	std::vector<std::string> distribution_type_names = {"uniform_real_distribution", "normal_distribution", "exponential_distribution"};
 
 	//
 	const int count = graph_types.size() * metric_types.size() * distribution_types.size() * 
@@ -231,7 +238,6 @@ int main()
 
 												double score;
 
-
 												try {
 
 													if (graph_type == 0)
@@ -253,15 +259,15 @@ int main()
 															}
 															else if (distribution_type == 1)
 															{
-																// exponential_distribution
-																std::exponential_distribution<double> distribution(1);
+																// normal_distribution
+																std::normal_distribution<double> distribution(-1, 1);
 
 																score = runConfiguration(i, speeds, distance, graph, distribution, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 															}
 															else if (distribution_type == 2)
 															{
-																// normal_distribution
-																std::normal_distribution<double> distribution(-1, 1);
+																// exponential_distribution
+																std::exponential_distribution<double> distribution(1);
 
 																score = runConfiguration(i, speeds, distance, graph, distribution, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 															}
@@ -280,15 +286,15 @@ int main()
 															}
 															else if (distribution_type == 1)
 															{
-																// exponential_distribution
-																std::exponential_distribution<double> distribution(1);
+																// normal_distribution
+																std::normal_distribution<double> distribution(-1, 1);
 
 																score = runConfiguration(i, speeds, distance, graph, distribution, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 															}
 															else if (distribution_type == 2)
 															{
-																// normal_distribution
-																std::normal_distribution<double> distribution(-1, 1);
+																// exponential_distribution
+																std::exponential_distribution<double> distribution(1);
 
 																score = runConfiguration(i, speeds, distance, graph, distribution, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 															}
@@ -307,15 +313,15 @@ int main()
 															}
 															else if (distribution_type == 1)
 															{
-																// exponential_distribution
-																std::exponential_distribution<double> distribution(1);
+																// normal_distribution
+																std::normal_distribution<double> distribution(-1, 1);
 
 																score = runConfiguration(i, speeds, distance, graph, distribution, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 															}
 															else if (distribution_type == 2)
 															{
-																// normal_distribution
-																std::normal_distribution<double> distribution(-1, 1);
+																// exponential_distribution
+																std::exponential_distribution<double> distribution(1);
 
 																score = runConfiguration(i, speeds, distance, graph, distribution, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 															}
@@ -334,15 +340,15 @@ int main()
 															}
 															else if (distribution_type == 1)
 															{
-																// exponential_distribution
-																std::exponential_distribution<double> distribution(1);
+																// normal_distribution
+																std::normal_distribution<double> distribution(-1, 1);
 
 																score = runConfiguration(i, speeds, distance, graph, distribution, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 															}
 															else if (distribution_type == 2)
 															{
-																// normal_distribution
-																std::normal_distribution<double> distribution(-1, 1);
+																// exponential_distribution
+																std::exponential_distribution<double> distribution(1);
 
 																score = runConfiguration(i, speeds, distance, graph, distribution, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 															}
@@ -361,15 +367,15 @@ int main()
 															}
 															else if (distribution_type == 1)
 															{
-																// exponential_distribution
-																std::exponential_distribution<double> distribution(1);
+																// normal_distribution
+																std::normal_distribution<double> distribution(-1, 1);
 
 																score = runConfiguration(i, speeds, distance, graph, distribution, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 															}
 															else if (distribution_type == 2)
 															{
-																// normal_distribution
-																std::normal_distribution<double> distribution(-1, 1);
+																// exponential_distribution
+																std::exponential_distribution<double> distribution(1);
 
 																score = runConfiguration(i, speeds, distance, graph, distribution, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 															}
@@ -388,15 +394,15 @@ int main()
 															}
 															else if (distribution_type == 1)
 															{
-																// exponential_distribution
-																std::exponential_distribution<double> distribution(1);
+																// normal_distribution
+																std::normal_distribution<double> distribution(-1, 1);
 
 																score = runConfiguration(i, speeds, distance, graph, distribution, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 															}
 															else if (distribution_type == 2)
 															{
-																// normal_distribution
-																std::normal_distribution<double> distribution(-1, 1);
+																// exponential_distribution
+																std::exponential_distribution<double> distribution(1);
 
 																score = runConfiguration(i, speeds, distance, graph, distribution, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 															}
@@ -421,15 +427,15 @@ int main()
 															}
 															else if (distribution_type == 1)
 															{
-																// exponential_distribution
-																std::exponential_distribution<double> distribution(1);
+																// normal_distribution
+																std::normal_distribution<double> distribution(-1, 1);
 
 																score = runConfiguration(i, speeds, distance, graph, distribution, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 															}
 															else if (distribution_type == 2)
 															{
-																// normal_distribution
-																std::normal_distribution<double> distribution(-1, 1);
+																// exponential_distribution
+																std::exponential_distribution<double> distribution(1);
 
 																score = runConfiguration(i, speeds, distance, graph, distribution, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 															}
@@ -448,15 +454,15 @@ int main()
 															}
 															else if (distribution_type == 1)
 															{
-																// exponential_distribution
-																std::exponential_distribution<double> distribution(1);
+																// normal_distribution
+																std::normal_distribution<double> distribution(-1, 1);
 
 																score = runConfiguration(i, speeds, distance, graph, distribution, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 															}
 															else if (distribution_type == 2)
 															{
-																// normal_distribution
-																std::normal_distribution<double> distribution(-1, 1);
+																// exponential_distribution
+																std::exponential_distribution<double> distribution(1);
 
 																score = runConfiguration(i, speeds, distance, graph, distribution, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 															}
@@ -475,15 +481,15 @@ int main()
 															}
 															else if (distribution_type == 1)
 															{
-																// exponential_distribution
-																std::exponential_distribution<double> distribution(1);
+																// normal_distribution
+																std::normal_distribution<double> distribution(-1, 1);
 
 																score = runConfiguration(i, speeds, distance, graph, distribution, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 															}
 															else if (distribution_type == 2)
 															{
-																// normal_distribution
-																std::normal_distribution<double> distribution(-1, 1);
+																// exponential_distribution
+																std::exponential_distribution<double> distribution(1);
 
 																score = runConfiguration(i, speeds, distance, graph, distribution, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 															}
@@ -502,15 +508,15 @@ int main()
 															}
 															else if (distribution_type == 1)
 															{
-																// exponential_distribution
-																std::exponential_distribution<double> distribution(1);
+																// normal_distribution
+																std::normal_distribution<double> distribution(-1, 1);
 
 																score = runConfiguration(i, speeds, distance, graph, distribution, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 															}
 															else if (distribution_type == 2)
 															{
-																// normal_distribution
-																std::normal_distribution<double> distribution(-1, 1);
+																// exponential_distribution
+																std::exponential_distribution<double> distribution(1);
 
 																score = runConfiguration(i, speeds, distance, graph, distribution, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 															}
@@ -529,15 +535,15 @@ int main()
 															}
 															else if (distribution_type == 1)
 															{
-																// exponential_distribution
-																std::exponential_distribution<double> distribution(1);
+																// normal_distribution
+																std::normal_distribution<double> distribution(-1, 1);
 
 																score = runConfiguration(i, speeds, distance, graph, distribution, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 															}
 															else if (distribution_type == 2)
 															{
-																// normal_distribution
-																std::normal_distribution<double> distribution(-1, 1);
+																// exponential_distribution
+																std::exponential_distribution<double> distribution(1);
 
 																score = runConfiguration(i, speeds, distance, graph, distribution, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 															}
@@ -556,15 +562,15 @@ int main()
 															}
 															else if (distribution_type == 1)
 															{
-																// exponential_distribution
-																std::exponential_distribution<double> distribution(1);
+																// normal_distribution
+																std::normal_distribution<double> distribution(-1, 1);
 
 																score = runConfiguration(i, speeds, distance, graph, distribution, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 															}
 															else if (distribution_type == 2)
 															{
-																// normal_distribution
-																std::normal_distribution<double> distribution(-1, 1);
+																// exponential_distribution
+																std::exponential_distribution<double> distribution(1);
 
 																score = runConfiguration(i, speeds, distance, graph, distribution, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 															}
@@ -589,15 +595,15 @@ int main()
 															}
 															else if (distribution_type == 1)
 															{
-																// exponential_distribution
-																std::exponential_distribution<double> distribution(1);
+																// normal_distribution
+																std::normal_distribution<double> distribution(-1, 1);
 
 																score = runConfiguration(i, speeds, distance, graph, distribution, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 															}
 															else if (distribution_type == 2)
 															{
-																// normal_distribution
-																std::normal_distribution<double> distribution(-1, 1);
+																// exponential_distribution
+																std::exponential_distribution<double> distribution(1);
 
 																score = runConfiguration(i, speeds, distance, graph, distribution, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 															}
@@ -616,15 +622,15 @@ int main()
 															}
 															else if (distribution_type == 1)
 															{
-																// exponential_distribution
-																std::exponential_distribution<double> distribution(1);
+																// normal_distribution
+																std::normal_distribution<double> distribution(-1, 1);
 
 																score = runConfiguration(i, speeds, distance, graph, distribution, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 															}
 															else if (distribution_type == 2)
 															{
-																// normal_distribution
-																std::normal_distribution<double> distribution(-1, 1);
+																// exponential_distribution
+																std::exponential_distribution<double> distribution(1);
 
 																score = runConfiguration(i, speeds, distance, graph, distribution, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 															}
@@ -643,15 +649,15 @@ int main()
 															}
 															else if (distribution_type == 1)
 															{
-																// exponential_distribution
-																std::exponential_distribution<double> distribution(1);
+																// normal_distribution
+																std::normal_distribution<double> distribution(-1, 1);
 
 																score = runConfiguration(i, speeds, distance, graph, distribution, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 															}
 															else if (distribution_type == 2)
 															{
-																// normal_distribution
-																std::normal_distribution<double> distribution(-1, 1);
+																// exponential_distribution
+																std::exponential_distribution<double> distribution(1);
 
 																score = runConfiguration(i, speeds, distance, graph, distribution, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 															}
@@ -670,15 +676,15 @@ int main()
 															}
 															else if (distribution_type == 1)
 															{
-																// exponential_distribution
-																std::exponential_distribution<double> distribution(1);
+																// normal_distribution
+																std::normal_distribution<double> distribution(-1, 1);
 
 																score = runConfiguration(i, speeds, distance, graph, distribution, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 															}
 															else if (distribution_type == 2)
 															{
-																// normal_distribution
-																std::normal_distribution<double> distribution(-1, 1);
+																// exponential_distribution
+																std::exponential_distribution<double> distribution(1);
 
 																score = runConfiguration(i, speeds, distance, graph, distribution, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 															}
@@ -697,15 +703,15 @@ int main()
 															}
 															else if (distribution_type == 1)
 															{
-																// exponential_distribution
-																std::exponential_distribution<double> distribution(1);
+																// normal_distribution
+																std::normal_distribution<double> distribution(-1, 1);
 
 																score = runConfiguration(i, speeds, distance, graph, distribution, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 															}
 															else if (distribution_type == 2)
 															{
-																// normal_distribution
-																std::normal_distribution<double> distribution(-1, 1);
+																// exponential_distribution
+																std::exponential_distribution<double> distribution(1);
 
 																score = runConfiguration(i, speeds, distance, graph, distribution, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 															}
@@ -724,15 +730,15 @@ int main()
 															}
 															else if (distribution_type == 1)
 															{
-																// exponential_distribution
-																std::exponential_distribution<double> distribution(1);
+																// normal_distribution
+																std::normal_distribution<double> distribution(-1, 1);
 
 																score = runConfiguration(i, speeds, distance, graph, distribution, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 															}
 															else if (distribution_type == 2)
 															{
-																// normal_distribution
-																std::normal_distribution<double> distribution(-1, 1);
+																// exponential_distribution
+																std::exponential_distribution<double> distribution(1);
 
 																score = runConfiguration(i, speeds, distance, graph, distribution, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 															}
@@ -757,15 +763,15 @@ int main()
 															}
 															else if (distribution_type == 1)
 															{
-																// exponential_distribution
-																std::exponential_distribution<double> distribution(1);
+																// normal_distribution
+																std::normal_distribution<double> distribution(-1, 1);
 
 																score = runConfiguration(i, speeds, distance, graph, distribution, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 															}
 															else if (distribution_type == 2)
 															{
-																// normal_distribution
-																std::normal_distribution<double> distribution(-1, 1);
+																// exponential_distribution
+																std::exponential_distribution<double> distribution(1);
 
 																score = runConfiguration(i, speeds, distance, graph, distribution, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 															}
@@ -784,15 +790,15 @@ int main()
 															}
 															else if (distribution_type == 1)
 															{
-																// exponential_distribution
-																std::exponential_distribution<double> distribution(1);
+																// normal_distribution
+																std::normal_distribution<double> distribution(-1, 1);
 
 																score = runConfiguration(i, speeds, distance, graph, distribution, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 															}
 															else if (distribution_type == 2)
 															{
-																// normal_distribution
-																std::normal_distribution<double> distribution(-1, 1);
+																// exponential_distribution
+																std::exponential_distribution<double> distribution(1);
 
 																score = runConfiguration(i, speeds, distance, graph, distribution, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 															}
@@ -811,15 +817,15 @@ int main()
 															}
 															else if (distribution_type == 1)
 															{
-																// exponential_distribution
-																std::exponential_distribution<double> distribution(1);
+																// normal_distribution
+																std::normal_distribution<double> distribution(-1, 1);
 
 																score = runConfiguration(i, speeds, distance, graph, distribution, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 															}
 															else if (distribution_type == 2)
 															{
-																// normal_distribution
-																std::normal_distribution<double> distribution(-1, 1);
+																// exponential_distribution
+																std::exponential_distribution<double> distribution(1);
 
 																score = runConfiguration(i, speeds, distance, graph, distribution, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 															}
@@ -838,15 +844,15 @@ int main()
 															}
 															else if (distribution_type == 1)
 															{
-																// exponential_distribution
-																std::exponential_distribution<double> distribution(1);
+																// normal_distribution
+																std::normal_distribution<double> distribution(-1, 1);
 
 																score = runConfiguration(i, speeds, distance, graph, distribution, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 															}
 															else if (distribution_type == 2)
 															{
-																// normal_distribution
-																std::normal_distribution<double> distribution(-1, 1);
+																// exponential_distribution
+																std::exponential_distribution<double> distribution(1);
 
 																score = runConfiguration(i, speeds, distance, graph, distribution, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 															}
@@ -865,15 +871,15 @@ int main()
 															}
 															else if (distribution_type == 1)
 															{
-																// exponential_distribution
-																std::exponential_distribution<double> distribution(1);
+																// normal_distribution
+																std::normal_distribution<double> distribution(-1, 1);
 
 																score = runConfiguration(i, speeds, distance, graph, distribution, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 															}
 															else if (distribution_type == 2)
 															{
-																// normal_distribution
-																std::normal_distribution<double> distribution(-1, 1);
+																// exponential_distribution
+																std::exponential_distribution<double> distribution(1);
 
 																score = runConfiguration(i, speeds, distance, graph, distribution, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 															}
@@ -892,15 +898,15 @@ int main()
 															}
 															else if (distribution_type == 1)
 															{
-																// exponential_distribution
-																std::exponential_distribution<double> distribution(1);
+																// normal_distribution
+																std::normal_distribution<double> distribution(-1, 1);
 
 																score = runConfiguration(i, speeds, distance, graph, distribution, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 															}
 															else if (distribution_type == 2)
 															{
-																// normal_distribution
-																std::normal_distribution<double> distribution(-1, 1);
+																// exponential_distribution
+																std::exponential_distribution<double> distribution(1);
 
 																score = runConfiguration(i, speeds, distance, graph, distribution, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 															}
@@ -925,15 +931,15 @@ int main()
 															}
 															else if (distribution_type == 1)
 															{
-																// exponential_distribution
-																std::exponential_distribution<double> distribution(1);
+																// normal_distribution
+																std::normal_distribution<double> distribution(-1, 1);
 
 																score = runConfiguration(i, speeds, distance, graph, distribution, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 															}
 															else if (distribution_type == 2)
 															{
-																// normal_distribution
-																std::normal_distribution<double> distribution(-1, 1);
+																// exponential_distribution
+																std::exponential_distribution<double> distribution(1);
 
 																score = runConfiguration(i, speeds, distance, graph, distribution, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 															}
@@ -952,15 +958,15 @@ int main()
 															}
 															else if (distribution_type == 1)
 															{
-																// exponential_distribution
-																std::exponential_distribution<double> distribution(1);
+																// normal_distribution
+																std::normal_distribution<double> distribution(-1, 1);
 
 																score = runConfiguration(i, speeds, distance, graph, distribution, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 															}
 															else if (distribution_type == 2)
 															{
-																// normal_distribution
-																std::normal_distribution<double> distribution(-1, 1);
+																// exponential_distribution
+																std::exponential_distribution<double> distribution(1);
 
 																score = runConfiguration(i, speeds, distance, graph, distribution, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 															}
@@ -979,15 +985,15 @@ int main()
 															}
 															else if (distribution_type == 1)
 															{
-																// exponential_distribution
-																std::exponential_distribution<double> distribution(1);
+																// normal_distribution
+																std::normal_distribution<double> distribution(-1, 1);
 
 																score = runConfiguration(i, speeds, distance, graph, distribution, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 															}
 															else if (distribution_type == 2)
 															{
-																// normal_distribution
-																std::normal_distribution<double> distribution(-1, 1);
+																// exponential_distribution
+																std::exponential_distribution<double> distribution(1);
 
 																score = runConfiguration(i, speeds, distance, graph, distribution, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 															}
@@ -1006,15 +1012,15 @@ int main()
 															}
 															else if (distribution_type == 1)
 															{
-																// exponential_distribution
-																std::exponential_distribution<double> distribution(1);
+																// normal_distribution
+																std::normal_distribution<double> distribution(-1, 1);
 
 																score = runConfiguration(i, speeds, distance, graph, distribution, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 															}
 															else if (distribution_type == 2)
 															{
-																// normal_distribution
-																std::normal_distribution<double> distribution(-1, 1);
+																// exponential_distribution
+																std::exponential_distribution<double> distribution(1);
 
 																score = runConfiguration(i, speeds, distance, graph, distribution, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 															}
@@ -1033,15 +1039,15 @@ int main()
 															}
 															else if (distribution_type == 1)
 															{
-																// exponential_distribution
-																std::exponential_distribution<double> distribution(1);
+																// normal_distribution
+																std::normal_distribution<double> distribution(-1, 1);
 
 																score = runConfiguration(i, speeds, distance, graph, distribution, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 															}
 															else if (distribution_type == 2)
 															{
-																// normal_distribution
-																std::normal_distribution<double> distribution(-1, 1);
+																// exponential_distribution
+																std::exponential_distribution<double> distribution(1);
 
 																score = runConfiguration(i, speeds, distance, graph, distribution, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 															}
@@ -1060,15 +1066,15 @@ int main()
 															}
 															else if (distribution_type == 1)
 															{
-																// exponential_distribution
-																std::exponential_distribution<double> distribution(1);
+																// normal_distribution
+																std::normal_distribution<double> distribution(-1, 1);
 
 																score = runConfiguration(i, speeds, distance, graph, distribution, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 															}
 															else if (distribution_type == 2)
 															{
-																// normal_distribution
-																std::normal_distribution<double> distribution(-1, 1);
+																// exponential_distribution
+																std::exponential_distribution<double> distribution(1);
 
 																score = runConfiguration(i, speeds, distance, graph, distribution, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 															}
@@ -1093,15 +1099,15 @@ int main()
 															}
 															else if (distribution_type == 1)
 															{
-																// exponential_distribution
-																std::exponential_distribution<double> distribution(1);
+																// normal_distribution
+																std::normal_distribution<double> distribution(-1, 1);
 
 																score = runConfiguration(i, speeds, distance, graph, distribution, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 															}
 															else if (distribution_type == 2)
 															{
-																// normal_distribution
-																std::normal_distribution<double> distribution(-1, 1);
+																// exponential_distribution
+																std::exponential_distribution<double> distribution(1);
 
 																score = runConfiguration(i, speeds, distance, graph, distribution, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 															}
@@ -1120,15 +1126,15 @@ int main()
 															}
 															else if (distribution_type == 1)
 															{
-																// exponential_distribution
-																std::exponential_distribution<double> distribution(1);
+																// normal_distribution
+																std::normal_distribution<double> distribution(-1, 1);
 
 																score = runConfiguration(i, speeds, distance, graph, distribution, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 															}
 															else if (distribution_type == 2)
 															{
-																// normal_distribution
-																std::normal_distribution<double> distribution(-1, 1);
+																// exponential_distribution
+																std::exponential_distribution<double> distribution(1);
 
 																score = runConfiguration(i, speeds, distance, graph, distribution, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 															}
@@ -1147,15 +1153,15 @@ int main()
 															}
 															else if (distribution_type == 1)
 															{
-																// exponential_distribution
-																std::exponential_distribution<double> distribution(1);
+																// normal_distribution
+																std::normal_distribution<double> distribution(-1, 1);
 
 																score = runConfiguration(i, speeds, distance, graph, distribution, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 															}
 															else if (distribution_type == 2)
 															{
-																// normal_distribution
-																std::normal_distribution<double> distribution(-1, 1);
+																// exponential_distribution
+																std::exponential_distribution<double> distribution(1);
 
 																score = runConfiguration(i, speeds, distance, graph, distribution, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 															}
@@ -1174,15 +1180,15 @@ int main()
 															}
 															else if (distribution_type == 1)
 															{
-																// exponential_distribution
-																std::exponential_distribution<double> distribution(1);
+																// normal_distribution
+																std::normal_distribution<double> distribution(-1, 1);
 
 																score = runConfiguration(i, speeds, distance, graph, distribution, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 															}
 															else if (distribution_type == 2)
 															{
-																// normal_distribution
-																std::normal_distribution<double> distribution(-1, 1);
+																// exponential_distribution
+																std::exponential_distribution<double> distribution(1);
 
 																score = runConfiguration(i, speeds, distance, graph, distribution, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 															}
@@ -1201,15 +1207,15 @@ int main()
 															}
 															else if (distribution_type == 1)
 															{
-																// exponential_distribution
-																std::exponential_distribution<double> distribution(1);
+																// normal_distribution
+																std::normal_distribution<double> distribution(-1, 1);
 
 																score = runConfiguration(i, speeds, distance, graph, distribution, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 															}
 															else if (distribution_type == 2)
 															{
-																// normal_distribution
-																std::normal_distribution<double> distribution(-1, 1);
+																// exponential_distribution
+																std::exponential_distribution<double> distribution(1);
 
 																score = runConfiguration(i, speeds, distance, graph, distribution, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 															}
@@ -1228,15 +1234,15 @@ int main()
 															}
 															else if (distribution_type == 1)
 															{
-																// exponential_distribution
-																std::exponential_distribution<double> distribution(1);
+																// normal_distribution
+																std::normal_distribution<double> distribution(-1, 1);
 
 																score = runConfiguration(i, speeds, distance, graph, distribution, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 															}
 															else if (distribution_type == 2)
 															{
-																// normal_distribution
-																std::normal_distribution<double> distribution(-1, 1);
+																// exponential_distribution
+																std::exponential_distribution<double> distribution(1);
 
 																score = runConfiguration(i, speeds, distance, graph, distribution, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 															}
