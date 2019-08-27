@@ -199,7 +199,8 @@ int main()
 	std::vector<std::string> distribution_type_names = {"uniform_real_distribution", "exponential_distribution", "normal_distribution"};
 
 	//
-	const int count = graph_types.size() * metric_types.size() * distribution_types.size();
+	const int count = graph_types.size() * metric_types.size() * distribution_types.size() * 
+		grid_sizes.size() * s_learn_rates.size() * f_learn_rates.size() * initial_neighbour_sizes.size() * neigbour_range_decays.size() * random_seeds.size() * iterations_all.size();
 
 	std::vector<double> results(count, INFINITY);
 
