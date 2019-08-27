@@ -173,9 +173,9 @@ int main()
 
 	//
 	
-	std::vector<int> graph_types = {0, 1, 2, 3, 4, 5};
-	std::vector<int> metric_types = {0, 1, 2, 3, 4, 5};
-	std::vector<int> distribution_types = {0, 1, 2};
+	std::vector<int> graph_types = {0, 1};
+	std::vector<int> metric_types = {0, 1};
+	std::vector<int> distribution_types = {0, 1};
 	
 	std::vector<size_t> grid_sizes = {4, 6, 9, 12, 16, 25, 30, 36, 42, 49};
 	std::vector<double> s_learn_rates = {0.2, 0.5, 0.8, 1, 1.2};
@@ -211,6 +211,7 @@ int main()
 		grid_sizes.size() * s_learn_rates.size() * f_learn_rates.size() * initial_neighbour_sizes.size() * neigbour_range_decays.size() * random_seeds.size() * iterations_all.size();
 
 	std::vector<double> results(count, INFINITY);
+	std::cout << "Num configurations: " << count << std::endl;
 
 	int i = 0;
 	for (auto grid_size : grid_sizes)
