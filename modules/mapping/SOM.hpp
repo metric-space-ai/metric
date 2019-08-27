@@ -43,7 +43,7 @@ namespace metric {
 	 *@brief 
 	 * 
 	 */
-template <typename recType, class Metric = metric::Euclidian<typename recType::value_type>, class Graph = metric::Grid8, class Distribution = std::uniform_real_distribution<recType::value_type>>
+template <typename recType, class Metric = metric::Euclidian<typename recType::value_type>, class Graph = metric::Grid8, class Distribution = std::uniform_real_distribution<typename recType::value_type>>
 class SOM {
     typedef typename recType::value_type T;
 
