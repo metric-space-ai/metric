@@ -123,6 +123,7 @@ double runConfiguration(int i, std::vector<std::vector<T>> data, Metric distance
 	std::cout << "  Graph: " << typeid(graph).name() << std::endl;
 	std::cout << "  Distance: " << typeid(distance).name() << std::endl;
 	std::cout << "  Distribution: " << typeid(distribution).name() << std::endl;
+	std::cout << std::endl;
 	mu.unlock();
 
 	auto t1 = std::chrono::steady_clock::now();
@@ -174,7 +175,7 @@ int main()
 	
 	std::vector<int> graph_types = {0, 1, 2, 3, 4, 5};
 	std::vector<int> metric_types = {0, 1, 2, 3, 4, 5};
-	std::vector<int> distribution_types = {0, 2, 3};
+	std::vector<int> distribution_types = {0, 1, 2};
 	
 	std::vector<size_t> grid_sizes = {4, 6, 9, 12, 16, 25, 30, 36, 42, 49};
 	std::vector<double> s_learn_rates = {0.2, 0.5, 0.8, 1, 1.2};
