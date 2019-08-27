@@ -173,17 +173,17 @@ int main()
 
 	//
 	
-	std::vector<int> graph_types = {0, 1, 2, 3, 4, 5};
-	std::vector<int> metric_types = {0, 1};
+	std::vector<int> graph_types = {0, 1, 2};
+	std::vector<int> metric_types = {0, 1, 2, 3, 4, 5};
 	std::vector<int> distribution_types = {0, 1, 2};
 	
-	std::vector<size_t> grid_sizes = {4, 6, 9, 12, 16, 25, 30, 36, 42, 49};
+	std::vector<size_t> grid_sizes = {4, 9, 16, 25, 36, 49};
 	std::vector<double> s_learn_rates = {0.2, 0.5, 0.8, 1, 1.2};
 	std::vector<double> f_learn_rates = {0.2, 0.5, 0.7, 0.9};
-	std::vector<double> initial_neighbour_sizes = {0.2, 0.5, 0.7, 0.9};
-	std::vector<double> neigbour_range_decays = {0.1, 0.2, 0.3, 0.5};
-	std::vector<long long> random_seeds = {0, 100, 10000, 10000000};
-	std::vector<unsigned int> iterations_all = {100, 1000, 10000, 100000};
+	std::vector<double> initial_neighbour_sizes = {0.5, 0.7, 0.9};
+	std::vector<double> neigbour_range_decays = {0.2, 0.3, 0.5};
+	std::vector<long long> random_seeds = {0, 100, 10000};
+	std::vector<unsigned int> iterations_all = {100, 1000, 10000};
 				
 	//size_t grid_size = 25;
 
