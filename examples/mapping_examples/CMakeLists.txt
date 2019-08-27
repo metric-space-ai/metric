@@ -45,6 +45,7 @@ add_executable(SOM_example continious_mappers/clustering/SOM_example.cpp)
 add_executable(SOM_example_2 continious_mappers/clustering/SOM_example_2.cpp)
 if(UNIX)
     target_compile_options(SOM_example_2 PRIVATE -pthread)
+    set_target_properties(SOM_example_2 PROPERTIES LINK_FLAGS -pthread)
 endif(UNIX)
 add_executable(PCAnet_example continious_mappers/clustering/PCAnet_example.cpp)
 
