@@ -36,7 +36,7 @@ int main()
 	}
 
 
-	std::cout << "we have started" << std::endl;
+	std::cout << "SSIM example have started" << std::endl;
 	std::cout << "" << std::endl;
 	
 	metric::SSIM<std::vector<edm_Type>> distance;

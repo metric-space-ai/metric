@@ -14,11 +14,11 @@ include_directories(
     ${PROJECT_SOURCE_DIR}/../../3rdparty/jpeglib 
     )
 
-include_directories(${Boost_INCLUDE_DIRS}) 
+include_directories(${Boost_INCLUDE_DIRS})
 	
 file(COPY "assets" DESTINATION ".")
 
-file(GLOB EXAMPLE_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.cpp) 
+file(GLOB EXAMPLE_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.cpp)
 
 #Run through each source
 foreach(exampleSrc ${EXAMPLE_SRCS})
@@ -47,13 +47,13 @@ foreach(exampleSrc ${EXAMPLE_SRCS})
 endforeach(exampleSrc)
 
 if(UNIX)
-	target_link_libraries(earth_mover_distance_example /usr/local/lib/libjpeg.a) 
-	target_link_libraries(earth_mover_distance_2_example /usr/local/lib/libjpeg.a) 
+	target_link_libraries(EMD_example /usr/local/lib/libjpeg.a) 
+	target_link_libraries(Complex_EMD_example /usr/local/lib/libjpeg.a) 
 endif(UNIX)
 
 if(CMAKE_SYSTEM_NAME MATCHES Windows)
-	target_link_libraries(earth_mover_distance_example ${PROJECT_SOURCE_DIR}/../../3rdparty/jpeglib/Release/jpeg.lib) 
-	target_link_libraries(earth_mover_distance_2_example ${PROJECT_SOURCE_DIR}/../../3rdparty/jpeglib/Release/jpeg.lib) 
+	target_link_libraries(EMD_example ${PROJECT_SOURCE_DIR}/../../3rdparty/jpeglib/Release/jpeg.lib) 
+	target_link_libraries(Complex_EMD_example ${PROJECT_SOURCE_DIR}/../../3rdparty/jpeglib/Release/jpeg.lib) 
 endif()
 
 

@@ -69,11 +69,6 @@ if(UNIX)
 endif(UNIX)
 
 find_package(LAPACK)
-if(LAPACK_FOUND)
-	message("LAPACK found!")
-else()
-	message("LAPACK not found!")
-endif(LAPACK_FOUND)
 
 
 if(LAPACK_LIBRARIES)

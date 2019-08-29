@@ -59,7 +59,7 @@ int main()
 	// example for picture
 
 
-	std::cout << "we have started" << std::endl; 
+	std::cout << "EMD example have started" << std::endl; 
 	std::cout << "" << std::endl;
 
 	int num_images = 20;

@@ -17,7 +17,7 @@ int main()
 	/******************** examples for Edit distance (for strings) **************************/
 	// example for string
 
-	std::cout << "we have started" << std::endl;
+	std::cout << "Edit distance example have started" << std::endl;
 	std::cout << "" << std::endl;
 
 	std::string str1 = "1011001100110011001111111";
