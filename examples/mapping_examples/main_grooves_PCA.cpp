@@ -22,7 +22,10 @@ int main()
     //read_csv_blaze<blaze::DynamicMatrix, double>("testdata.csv", m, ";");
 //    auto m = read_csv_blaze<double>("testdata.csv");
 
-    auto all_data = read_csv_blaze<float>("Pt01_AllGrooves_energy_5.csv", ",");
+    //auto all_data = read_csv_blaze<float>("Pt01_AllGrooves_energy_5.csv", ","); // part 1
+    //auto all_data = read_csv_blaze<float>("Pt02_AllGrooves_energy_0.csv", ","); // part 2
+    //auto all_data = read_csv_blaze<float>("Pt03_AllGrooves_energy_0.csv", ","); // part 3
+    auto all_data = read_csv_blaze<float>("PtAll_AllGrooves_energy_5.csv", ","); // all parts  all unmixed channels
     blaze::DynamicMatrix<float> training_dataset = submatrix(all_data, 0, 1, all_data.rows(), all_data.columns()-2);
     // std::cout << training_dataset << "\n";
 

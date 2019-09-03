@@ -22,7 +22,12 @@ namespace metric {
  * @return 
  */
 template <class BlazeMatrix>
-blaze::DynamicMatrix<double> PCA(const BlazeMatrix In, int n_components, bool visualize = false);
+blaze::DynamicMatrix<double> PCA(
+        const BlazeMatrix & In,
+        int n_components,
+        blaze::DynamicVector<double> & averages,
+        bool visualize = false
+        );
 
 /**
  * @class PCAnet
@@ -30,7 +35,7 @@ blaze::DynamicMatrix<double> PCA(const BlazeMatrix In, int n_components, bool vi
  *@brief simple linear encoder based on PCA
  * 
  */
-class PCAnet {
+class PCFA {
 
 public:
     /**
@@ -38,7 +43,7 @@ public:
    * 
    * @param visualize_ 
    */
-    PCAnet(bool visualize_ = false);
+    PCFA(bool visualize_ = false);
 
     /**
    * @brief 
@@ -67,6 +72,7 @@ public:
 private:
     blaze::DynamicMatrix<double> W_decode;
     blaze::DynamicMatrix<double> W_encode;
+    blaze::DynamicVector<double> averages;
     bool visualize = false;
     std::default_random_engine rgen;
 };

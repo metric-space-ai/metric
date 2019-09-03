@@ -5,22 +5,24 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 Copyright (c) 2019 Panda Team
 */
-#ifndef _METRIC_MAPPING_PCANET_CPP
-#define _METRIC_MAPPING_PCANET_CPP
+//#ifndef _METRIC_MAPPING_PCANET_CPP
+//#define _METRIC_MAPPING_PCANET_CPP
 
 #include "PCAnet.hpp"
+
+//#include "modules/utils/visualizer.hpp" // TODO remove
 
 namespace metric {
 
 template <class BlazeMatrix>
-blaze::DynamicMatrix<double> PCA(const BlazeMatrix In, int n_components, bool visualize)
+blaze::DynamicMatrix<double> PCA(const BlazeMatrix & In, int n_components, blaze::DynamicVector<double> & averages, bool visualize)
 {
     auto Result = blaze::DynamicMatrix<double>(n_components, In.rows(), 0);
 
-    auto avgs = blaze::sum<blaze::rowwise>(In) / In.columns();
+    averages = blaze::sum<blaze::rowwise>(In) / In.columns();
     auto CenteredInput = blaze::DynamicMatrix<double>(In.rows(), In.columns(), 0);
     for (size_t col = 0; col < In.columns(); col++)
-        column(CenteredInput, col) = column(In, col) - avgs;
+        column(CenteredInput, col) = column(In, col) - averages;
 
     blaze::SymmetricMatrix<blaze::DynamicMatrix<double>> CovMat = blaze::evaluate(CenteredInput * trans(CenteredInput));
 
@@ -57,21 +59,32 @@ blaze::DynamicMatrix<double> PCA(const BlazeMatrix In, int n_components, bool vi
 
 // simple linear encoder based on PCA
 
-PCAnet::PCAnet(bool visualize_) { visualize = visualize_; }
+PCFA::PCFA(bool visualize_) { visualize = visualize_; }
 
-void PCAnet::train(const blaze::DynamicMatrix<double>& Slices, size_t n_features)
+void PCFA::train(const blaze::DynamicMatrix<double>& Slices, size_t n_features)
 {
 
-    W_encode = metric::PCA(Slices, n_features, visualize);
+//    auto avg = blaze::DynamicVector<double>();
+    W_encode = metric::PCA(Slices, n_features, averages, visualize);
 
     auto encoded = compress(Slices);
 
     W_decode = trans(W_encode);
+
+//    if (visualize) // TODO remove
+////        mat2bmp::blaze2bmp_norm(averages, "averages.bmp");
+//        std::cout << averages << "\n";
 }
 
-blaze::DynamicMatrix<double> PCAnet::compress(const blaze::DynamicMatrix<double>& Slices) { return W_encode * Slices; }
+blaze::DynamicMatrix<double> PCFA::compress(const blaze::DynamicMatrix<double>& Slices) { return W_encode * Slices; }
 
-blaze::DynamicMatrix<double> PCAnet::decompress(const blaze::DynamicMatrix<double>& Codes) { return W_decode * Codes; }
+blaze::DynamicMatrix<double> PCFA::decompress(const blaze::DynamicMatrix<double>& Codes) {
+    auto Noncentered = W_decode * Codes;
+    auto Centered = blaze::DynamicMatrix<double>(Noncentered.rows(), Noncentered.columns());
+    for (size_t col = 0; col < Noncentered.columns(); col++)
+        column(Centered, col) = column(Noncentered, col) - averages;
+    return Centered;
+}
 
 }  // namespace metric
-#endif
+//#endif

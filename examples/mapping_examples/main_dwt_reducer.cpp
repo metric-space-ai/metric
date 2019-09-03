@@ -263,11 +263,15 @@ int main() {
 
     // DWT first
 
-    auto all_vibration_ts = read_csv_num<float>("Pt01_Ch01_Grooves_1_to_7_and_9.csv");
+    //auto all_vibration_ts = read_csv_num<float>("Pt01_Ch01_Grooves_1_to_7_and_9.csv"); // Part1
+    //auto all_vibration_ts = read_csv_num<float>("Pt02_ChAll_GroovesAll.csv"); // Part2
+    //auto all_vibration_ts = read_csv_num<float>("Pt03_ChAll_GroovesAll.csv"); // Part3
+    auto all_vibration_ts = read_csv_num<float>("PtAll_ChAll_GroovesAll.csv"); // all parts
     auto transposed = transpose_timeseries(all_vibration_ts);
     auto subband_waveforms = apply_seq_DWT(transposed);
     for (size_t i=0; i<subband_waveforms.size(); ++i) {
-        write_csv(subband_waveforms[i], "filtered_waveform_groove_" + std::to_string(i) + ".csv");
+        //write_csv(subband_waveforms[i], "filtered_waveform_groove_p3_" + std::to_string(i) + ".csv"); // Part3
+        write_csv(subband_waveforms[i], "filtered_waveform_groove_pAll_" + std::to_string(i) + ".csv"); // all parts
     }
 
 
