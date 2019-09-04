@@ -110,6 +110,36 @@ std::vector<std::vector<double>> readData(std::string filename)
 	return rows;
 }
 
+void saveToCsv(std::string filename, const std::vector<std::vector<std::string>> &mat, const std::vector<std::string> &features)
+{
+	std::ofstream outputFile;
+
+	// create and open the .csv file
+	outputFile.open(filename);
+
+	// write the file headers
+	for (auto i = 0; i < features.size(); ++i)
+	{
+		outputFile << features[i];
+		outputFile << ",";
+	}
+	outputFile << std::endl;
+
+	// last item in the mat is date
+	for (auto i = 0; i < mat.size(); ++i)
+	{
+		//outputFile << dates[i] << ";";
+		for (auto j = 0; j < mat[i].size(); j++)
+		{
+			outputFile << mat[i][j] << ",";
+		}
+		outputFile << std::endl;
+	}
+
+	// close the output file
+	outputFile.close();
+}
+
 
 std::mutex mu;
 
@@ -206,6 +236,11 @@ int main()
 	std::vector<std::string> metric_type_names = {"Euclidian", "Manhatten", "P_norm", "Euclidian_thresholded", "Cosine", "Chebyshev"};
 	std::vector<std::string> distribution_type_names = {"uniform_real_distribution", "normal_distribution", "exponential_distribution"};
 
+	
+	std::vector<std::string> metaparams_grid = {"grid_size", "s_learn_rate", "f_learn_rate", "initial_neighbour_size", "neigbour_range_decay",
+		"random_seed", "iterations", "distribution_type", "metric_type", "graph_type", "score"};
+	std::vector<std::vector<std::string>> results_grid;
+
 	//
 	const int count = graph_types.size() * metric_types.size() * distribution_types.size() * 
 		grid_sizes.size() * s_learn_rates.size() * f_learn_rates.size() * initial_neighbour_sizes.size() * neigbour_range_decays.size() * random_seeds.size() * iterations_all.size();
@@ -236,7 +271,8 @@ int main()
 										{
 
 											pool.execute([i, &sem, &results, &speeds, graph_type, metric_type, distribution_type, 
-												iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, grid_size, random_seed]() {
+												iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, grid_size, random_seed, &results_grid, &metaparams_grid,
+												&graph_type_names, &metric_type_names, &distribution_type_names]() {
 
 												double score;
 
@@ -1262,6 +1298,22 @@ int main()
 												catch (...) {
 													std::cout << "configuration #" << i << ": unknown error" << std::endl;
 												}
+												
+												mu.lock();
+												
+												std::vector<std::string> current_result = {std::to_string(grid_size), std::to_string(s_learn_rate), std::to_string(f_learn_rate), 
+																							std::to_string(initial_neighbour_size), std::to_string(neigbour_range_decay),
+																							std::to_string(random_seed), std::to_string(iterations), 
+																							distribution_type_names[distribution_type], metric_type_names[metric_type], graph_type_names[graph_type], 
+																							std::to_string(score)};
+
+												results_grid.push_back(current_result);
+
+												if (i % 10000 == 0) {
+													saveToCsv("SOM_example_2_checkpoint_" + std::to_string(i) + ".csv", results_grid, metaparams_grid);
+												}
+
+												mu.unlock();
 
 												results.at(i) = score;
 
