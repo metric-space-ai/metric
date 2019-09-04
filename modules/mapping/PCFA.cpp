@@ -5,17 +5,17 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 Copyright (c) 2019 Panda Team
 */
-//#ifndef _METRIC_MAPPING_PCANET_CPP
-//#define _METRIC_MAPPING_PCANET_CPP
+#ifndef _METRIC_MAPPING_PCFA_CPP
+#define _METRIC_MAPPING_PCFA_CPP
 
-#include "PCAnet.hpp"
+#include "PCFA.hpp"
 
 //#include "modules/utils/visualizer.hpp" // TODO remove
 
 namespace metric {
 
 template <class BlazeMatrix>
-blaze::DynamicMatrix<double> PCA(const BlazeMatrix & In, int n_components, blaze::DynamicVector<double> & averages, bool visualize)
+blaze::DynamicMatrix<double> PCA(const BlazeMatrix & In, int n_components, blaze::DynamicVector<double> & averages)
 {
     auto Result = blaze::DynamicMatrix<double>(n_components, In.rows(), 0);
 
@@ -59,32 +59,31 @@ blaze::DynamicMatrix<double> PCA(const BlazeMatrix & In, int n_components, blaze
 
 // simple linear encoder based on PCA
 
-PCFA::PCFA(bool visualize_) { visualize = visualize_; }
+PCFA::PCFA() {}
 
 void PCFA::train(const blaze::DynamicMatrix<double>& Slices, size_t n_features)
 {
-
-//    auto avg = blaze::DynamicVector<double>();
-    W_encode = metric::PCA(Slices, n_features, averages, visualize);
-
-    auto encoded = compress(Slices);
-
+    W_encode = metric::PCA(Slices, n_features, averages);
+    auto encoded = encode(Slices);
     W_decode = trans(W_encode);
-
-//    if (visualize) // TODO remove
-////        mat2bmp::blaze2bmp_norm(averages, "averages.bmp");
-//        std::cout << averages << "\n";
 }
 
-blaze::DynamicMatrix<double> PCFA::compress(const blaze::DynamicMatrix<double>& Slices) { return W_encode * Slices; }
+blaze::DynamicMatrix<double> PCFA::encode(const blaze::DynamicMatrix<double>& Slices) {
+    return W_encode * Slices;
+}
 
-blaze::DynamicMatrix<double> PCFA::decompress(const blaze::DynamicMatrix<double>& Codes) {
-    auto Noncentered = W_decode * Codes;
-    auto Centered = blaze::DynamicMatrix<double>(Noncentered.rows(), Noncentered.columns());
-    for (size_t col = 0; col < Noncentered.columns(); col++)
-        column(Centered, col) = column(Noncentered, col) - averages;
-    return Centered;
+blaze::DynamicMatrix<double> PCFA::decode(const blaze::DynamicMatrix<double>& Codes, bool unshift) {
+    if (unshift) {
+        auto Noncentered = W_decode * Codes;
+        auto Centered = blaze::DynamicMatrix<double>(Noncentered.rows(), Noncentered.columns());
+        for (size_t col = 0; col < Noncentered.columns(); col++)
+            column(Centered, col) = column(Noncentered, col) - averages;
+        return Centered;
+    } else {
+        return W_decode * Codes;
+    }
+
 }
 
 }  // namespace metric
-//#endif
+#endif

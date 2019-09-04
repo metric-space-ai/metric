@@ -6,8 +6,8 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 Copyright (c) 2019 Panda Team
 */
 
-#ifndef _METRIC_MAPPING_PCANET_HPP
-#define _METRIC_MAPPING_PCANET_HPP
+#ifndef _METRIC_MAPPING_PCFA_HPP
+#define _METRIC_MAPPING_PCFA_HPP
 
 #include "../../3rdparty/blaze/Blaze.h"
 
@@ -17,16 +17,15 @@ namespace metric {
  * @brief 
  * 
  * @param In 
- * @param n_components 
- * @param visualize 
+ * @param n_components
+ * @param averages - outputs average curve
  * @return 
  */
 template <class BlazeMatrix>
 blaze::DynamicMatrix<double> PCA(
         const BlazeMatrix & In,
         int n_components,
-        blaze::DynamicVector<double> & averages,
-        bool visualize = false
+        blaze::DynamicVector<double> & averages
         );
 
 /**
@@ -40,10 +39,9 @@ class PCFA {
 public:
     /**
    * @brief Construct a new PCAnet object
-   * 
-   * @param visualize_ 
+   *
    */
-    PCFA(bool visualize_ = false);
+    PCFA();
 
     /**
    * @brief 
@@ -59,15 +57,16 @@ public:
    * @param Slices 
    * @return
    */
-    blaze::DynamicMatrix<double> compress(const blaze::DynamicMatrix<double>& Slices);
+    blaze::DynamicMatrix<double> encode(const blaze::DynamicMatrix<double>& Slices);
 
     /**
    * @brief 
    * 
    * @param Codes 
+   * @parem unshift - flag for adding average curve to each decoded one
    * @return blaze::DynamicMatrix<double> 
    */
-    blaze::DynamicMatrix<double> decompress(const blaze::DynamicMatrix<double>& Codes);
+    blaze::DynamicMatrix<double> decode(const blaze::DynamicMatrix<double>& Codes, bool unshift=true);
 
 private:
     blaze::DynamicMatrix<double> W_decode;
@@ -78,6 +77,7 @@ private:
 };
 
 }  // namespace metric
-#include "PCAnet.cpp"
 
-#endif  // _METRIC_MAPPING_DETAILS_ENCODER_HPP
+#endif  // _METRIC_MAPPING_PCFA_HPP
+
+#include "PCFA.cpp"

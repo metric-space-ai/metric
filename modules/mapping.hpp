@@ -24,7 +24,7 @@ Copyright (c) PANDA Team
 #define _METRIC_MAPPING_HPP
 
 #include "mapping/SOM.hpp"
-#include "mapping/PCAnet.hpp"
+#include "mapping/PCFA.hpp"
 #include "mapping/ensembles.hpp"
 #include "mapping/affprop.hpp"
 #include "mapping/dbscan.hpp"
