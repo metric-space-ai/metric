@@ -22,10 +22,10 @@ namespace metric {
  * @return 
  */
 template <class BlazeMatrix>
-blaze::DynamicMatrix<double> PCA(
+blaze::DynamicMatrix<typename BlazeMatrix::ElementType> PCA(
         const BlazeMatrix & In,
         int n_components,
-        blaze::DynamicVector<double> & averages
+        blaze::DynamicVector<typename BlazeMatrix::ElementType> & averages
         );
 
 /**
@@ -34,22 +34,19 @@ blaze::DynamicMatrix<double> PCA(
  *@brief simple linear encoder based on PCA
  * 
  */
+template <typename V>
 class PCFA {
 
 public:
-    /**
-   * @brief Construct a new PCAnet object
-   *
-   */
-    PCFA();
+    using value_type = V;
 
     /**
-   * @brief 
+   * @brief Construct a new PCAnet object
    * 
    * @param Slices 
    * @param n_features 
    */
-    void train(const blaze::DynamicMatrix<double>& Slices, size_t n_features = 1);
+    PCFA(const blaze::DynamicMatrix<value_type>& Slices, size_t n_features = 1);
 
     /**
    * @brief 
@@ -57,22 +54,21 @@ public:
    * @param Slices 
    * @return
    */
-    blaze::DynamicMatrix<double> encode(const blaze::DynamicMatrix<double>& Slices);
+    blaze::DynamicMatrix<value_type> encode(const blaze::DynamicMatrix<value_type>& Slices);
 
     /**
    * @brief 
    * 
    * @param Codes 
    * @parem unshift - flag for adding average curve to each decoded one
-   * @return blaze::DynamicMatrix<double> 
+   * @return blaze::DynamicMatrix<value_type>
    */
-    blaze::DynamicMatrix<double> decode(const blaze::DynamicMatrix<double>& Codes, bool unshift=true);
+    blaze::DynamicMatrix<value_type> decode(const blaze::DynamicMatrix<value_type>& Codes, bool unshift=true);
 
 private:
-    blaze::DynamicMatrix<double> W_decode;
-    blaze::DynamicMatrix<double> W_encode;
-    blaze::DynamicVector<double> averages;
-    bool visualize = false;
+    blaze::DynamicMatrix<value_type> W_decode;
+    blaze::DynamicMatrix<value_type> W_encode;
+    blaze::DynamicVector<value_type> averages;
     std::default_random_engine rgen;
 };
 

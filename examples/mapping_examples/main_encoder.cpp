@@ -97,8 +97,7 @@ int main()
         mat2bmp::blaze2bmp(TestSlicesSine, "TestSlicesSine.bmp");
     }
 
-    auto direct_sine = metric::PCFA();
-    direct_sine.train(SlicesSine, 8);  // dataset, compressed_code_length
+    auto direct_sine = metric::PCFA(SlicesSine, 8);  // dataset, compressed_code_length
 
     auto direct_compressed_sine = direct_sine.encode(TestSlicesSine);
 
@@ -146,8 +145,7 @@ int main()
         mat2bmp::blaze2bmp(TestSlicesSine, "TestSlicesSine_DCT.bmp");
     }
 
-    auto direct_sine_DCT = metric::PCFA();
-    direct_sine_DCT.train(SlicesSine, 8);  // dataset, compressed_code_length
+    auto direct_sine_DCT = metric::PCFA(SlicesSine, 8);  // dataset, compressed_code_length
 
     auto direct_compressed_sine_DCT = direct_sine_DCT.encode(TestSlicesSine);
 

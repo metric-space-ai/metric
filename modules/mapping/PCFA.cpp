@@ -15,19 +15,19 @@ Copyright (c) 2019 Panda Team
 namespace metric {
 
 template <class BlazeMatrix>
-blaze::DynamicMatrix<double> PCA(const BlazeMatrix & In, int n_components, blaze::DynamicVector<double> & averages)
+blaze::DynamicMatrix<typename BlazeMatrix::ElementType> PCA(const BlazeMatrix & In, int n_components, blaze::DynamicVector<typename BlazeMatrix::ElementType> & averages)
 {
-    auto Result = blaze::DynamicMatrix<double>(n_components, In.rows(), 0);
+    auto Result = blaze::DynamicMatrix<typename BlazeMatrix::ElementType>(n_components, In.rows(), 0);
 
     averages = blaze::sum<blaze::rowwise>(In) / In.columns();
-    auto CenteredInput = blaze::DynamicMatrix<double>(In.rows(), In.columns(), 0);
+    auto CenteredInput = blaze::DynamicMatrix<typename BlazeMatrix::ElementType>(In.rows(), In.columns(), 0);
     for (size_t col = 0; col < In.columns(); col++)
         column(CenteredInput, col) = column(In, col) - averages;
 
-    blaze::SymmetricMatrix<blaze::DynamicMatrix<double>> CovMat = blaze::evaluate(CenteredInput * trans(CenteredInput));
+    blaze::SymmetricMatrix<blaze::DynamicMatrix<typename BlazeMatrix::ElementType>> CovMat = blaze::evaluate(CenteredInput * trans(CenteredInput));
 
-    blaze::DynamicVector<double, blaze::columnVector> w(In.rows());  // for eigenvalues
-    blaze::DynamicMatrix<double, blaze::rowMajor> V(In.rows(), In.rows());  // for eigenvectors
+    blaze::DynamicVector<typename BlazeMatrix::ElementType, blaze::columnVector> w(In.rows());  // for eigenvalues
+    blaze::DynamicMatrix<typename BlazeMatrix::ElementType, blaze::rowMajor> V(In.rows(), In.rows());  // for eigenvectors
 
     eigen(CovMat, w, V);
 
@@ -37,7 +37,7 @@ blaze::DynamicMatrix<double> PCA(const BlazeMatrix & In, int n_components, blaze
     // sort and select
     size_t lower_idx = 0;
     size_t upper_idx = w.size() - 1;
-    double spectral_radius;  // also we get spectral radius for normalization: we process the first eigenvalue specially
+    typename BlazeMatrix::ElementType spectral_radius;  // also we get spectral radius for normalization: we process the first eigenvalue specially
     if ((-w[lower_idx] > w[upper_idx]))
         spectral_radius = w[lower_idx];
     else
@@ -58,24 +58,24 @@ blaze::DynamicMatrix<double> PCA(const BlazeMatrix & In, int n_components, blaze
 }
 
 // simple linear encoder based on PCA
-
-PCFA::PCFA() {}
-
-void PCFA::train(const blaze::DynamicMatrix<double>& Slices, size_t n_features)
+template <typename V>
+PCFA<V>::PCFA(const blaze::DynamicMatrix<value_type>& Slices, size_t n_features)
 {
     W_encode = metric::PCA(Slices, n_features, averages);
     auto encoded = encode(Slices);
     W_decode = trans(W_encode);
 }
 
-blaze::DynamicMatrix<double> PCFA::encode(const blaze::DynamicMatrix<double>& Slices) {
+template <typename V>
+blaze::DynamicMatrix<typename PCFA<V>::value_type> PCFA<V>::encode(const blaze::DynamicMatrix<PCFA<V>::value_type>& Slices) {
     return W_encode * Slices;
 }
 
-blaze::DynamicMatrix<double> PCFA::decode(const blaze::DynamicMatrix<double>& Codes, bool unshift) {
+template <typename V>
+blaze::DynamicMatrix<typename PCFA<V>::value_type> PCFA<V>::decode(const blaze::DynamicMatrix<PCFA<V>::value_type>& Codes, bool unshift) {
     if (unshift) {
         auto Noncentered = W_decode * Codes;
-        auto Centered = blaze::DynamicMatrix<double>(Noncentered.rows(), Noncentered.columns());
+        auto Centered = blaze::DynamicMatrix<typename PCFA<V>::value_type>(Noncentered.rows(), Noncentered.columns());
         for (size_t col = 0; col < Noncentered.columns(); col++)
             column(Centered, col) = column(Noncentered, col) - averages;
         return Centered;

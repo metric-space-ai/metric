@@ -16,20 +16,15 @@
 int main()
 {
 
+    using V = float; // double;
+
     size_t n_features = 8;
 
-    //auto m = blaze::DynamicMatrix<double>(2, 3);
-    //read_csv_blaze<blaze::DynamicMatrix, double>("testdata.csv", m, ";");
-//    auto m = read_csv_blaze<double>("testdata.csv");
-
-    //auto all_data = read_csv_blaze<float>("Pt01_AllGrooves_energy_5.csv", ","); // part 1
-    //auto all_data = read_csv_blaze<float>("Pt02_AllGrooves_energy_0.csv", ","); // part 2
-    //auto all_data = read_csv_blaze<float>("Pt03_AllGrooves_energy_0.csv", ","); // part 3
-    auto all_data = read_csv_blaze<float>("PtAll_AllGrooves_energy_5.csv", ","); // all parts  all unmixed channels
-    blaze::DynamicMatrix<float> training_dataset = submatrix(all_data, 0, 1, all_data.rows(), all_data.columns()-2);
+    auto all_data = read_csv_blaze<V>("PtAll_AllGrooves_energy_5.csv", ","); // all parts  all unmixed channels
+    blaze::DynamicMatrix<V> training_dataset = submatrix(all_data, 0, 1, all_data.rows(), all_data.columns()-2);
     // std::cout << training_dataset << "\n";
 
-    blaze::DynamicMatrix<float> test_data = read_csv_blaze<float>("test_data_input.csv", ",");
+    blaze::DynamicMatrix<V> test_data = read_csv_blaze<V>("test_data_input.csv", ",");
 
 //    blaze::DynamicMatrix<float> test_data = submatrix(all_data, 0, all_data.columns()-1, all_data.rows(), 1);
 
@@ -38,8 +33,7 @@ int main()
     blaze_dm_to_csv(training_dataset, "training_dataset.csv");
     blaze_dm_to_csv(test_data, "test_data.csv");
 
-    auto model = metric::PCFA();
-    model.train(training_dataset, n_features); // dataset, compressed_code_length
+    auto model = metric::PCFA<V>    (training_dataset, n_features); // dataset, compressed_code_length
 
     auto compressed = model.encode(test_data);
 
@@ -62,10 +56,10 @@ int main()
 
     // view contribution of each feature
 
-    auto I = blaze::IdentityMatrix<float>(n_features);
+    auto I = blaze::IdentityMatrix<V>(n_features);
 
     for (size_t feature_idx=0; feature_idx<n_features; ++feature_idx) {
-        blaze::DynamicMatrix<float> unit_feature = submatrix(I, 0, feature_idx, I.rows(), 1);
+        blaze::DynamicMatrix<V> unit_feature = submatrix(I, 0, feature_idx, I.rows(), 1);
         auto unit_waveform = model.decode(unit_feature, false);
         mat2bmp::blaze2bmp_norm(unit_waveform, "unit_waveform_" + std::to_string(feature_idx) + ".bmp");
         blaze_dm_to_csv(unit_waveform, "unit_waveform_" + std::to_string(feature_idx) + ".csv");
