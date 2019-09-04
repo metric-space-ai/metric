@@ -67,64 +67,76 @@ clang++ ./main.cpp -o ./main  -std=c++14
 Construct an empty tree or fill it directly with data records.
 ```c++
 typedef std::vector<double> recType;
-typedef std::vector<recType> recList
+typedef std::vector<recType> recList;
 
-    /*** Tree with default L2 metric (Euclidian distance measure) ***/
-    metric::Tree<recType>
-        cTree;                           // empty tree
+/*** Tree with default L2 metric (Euclidian distance measure) ***/
+metric::Tree<recType> cTree;             // empty tree
 metric::Tree<recType> cTree(recType v1); // with one data record
 metric::Tree<recType> cTree(recList m1); // a container with records.
 
 /** A Tree with a custom metric. ***/
 metric::Tree<recType, customMetric> cTree;
-// ...
 ```
 
-    ##search options
+ ## search options
 ```c++
-    /*** logarithmic complexity ***/
-    auto nn = cTree.nn()              // finds the nearest neighbour.
-              auto knn = cTree.knn(5) // finds the fives nearest neighbours
-                         auto rnn = cTree
-                                        .rnn(a_record, a_distance) // finds all neigbours in a_distance to a_record.
+/*** logarithmic complexity ***/
+auto nn = cTree.nn();                       // finds the nearest neighbour.
+auto knn = cTree.knn(5);                    // finds the fives nearest neighbours
+auto rnn = cTree.rnn(a_record, a_distance); // finds all neigbours in a_distance to a_record.
 
-                                    /*** linear complexity***/
-                                    // when data.sum() gives the sum of the data records elements  ...
-                                    cTree.traverse([&](auto node_p) {
-                                        if (4 < node_p->data.sum() && node_p->data.sum() <= 5)
-                                            std::cout << "ID: " << node_p->ID << std::endl;
-                                    };);
+/*** linear complexity***/
+// when data.sum() gives the sum of the data records elements  ...
+cTree.traverse([&](auto node_p) {
+    if (4 < node_p->data.sum() && node_p->data.sum() <= 5)
+        std::cout << "ID: " << node_p->ID << std::endl;
+};);
 
 ```
 
-    ##access the nodes
+## access the nodes
 ```c++
-    /*** access through dereference to the underlying data ***/
-    nn->ID                      // gives the ID of the record. the ID is counted up like an vector index.
-        nn->data                // gives the data record of a node (every node contains data)
-            nn->parent          // gives the parent node in the tree
-                nn->children[0] // gives the first child node. (children is a std::vector)
-    nn->parent_dist             // gives the distance to the parent.
-        nn->level               // gives the level of the node postion (higher is nearer to the root)
+/*** access through dereference to the underlying data ***/
+// nn->ID;          // gives the ID of the record. the ID is counted up like an vector index.
+// nn->data;        // gives the data record of a node (every node contains data)
+// nn->parent;      // gives the parent node in the tree
+// nn->children[0]; // gives the first child node. (children is a std::vector)
+// nn->parent_dist; // gives the distance to the parent.
+// nn->level;       // gives the level of the node postion (higher is nearer to the root)
 
-    /*** print the siblings IDs ***/
-    for (auto q : nn->parent->children)
+std::cout << "nearest neighbour of a_record info: " << std::endl;
+std::cout << "  ID: " << nn->ID << std::endl;
+std::cout << "  parent->ID: " << nn->parent->ID << std::endl;
+std::cout << "  num children: " << nn->children.size() << std::endl;
+std::cout << "  num siblings: " << nn->parent->children.size() << std::endl;
+std::cout << "  distance to the parent: " << nn->parent_dist << std::endl;
+std::cout << "  level of the node postion in the tree: " << nn->level << std::endl;
+std::cout << "  siblings IDs: ";
+/*** print the siblings IDs ***/
+for (auto q : nn->parent->children)
 {
-    std::cout << q->ID << std::endl;
+	std::cout << q->ID << " ";
 }
 
 /*** access a single node by index ***/
 auto data_record = cTree[1]; // internaly it just traverse throuh the tree and gives back the corresponding data record
                              // in linear complexity, avoid this.
+
+std::cout << "data record #1: {";
+for (auto i = 0; i < data_record.size() - 1; i++) 
+{
+	std::cout << data_record[i] << ", ";
+}
+std::cout << data_record[data_record.size() - 1] << "}" << std::endl;
 ```
 
-    ##use a custom container with custom metric use an "Eigen" Vector and L1 metric.
+## use a custom container with custom metric use an "Eigen" Vector and L1 metric.
 
 ```c++
 #include "metric_space.hpp"
 #include <eigen3/Eigen/Core>
 
-    using recType = Eigen::VectorXd;
+using recType = Eigen::VectorXd;
 
 template <typename T>
 struct recMetric {
@@ -141,7 +153,11 @@ int main()
 
     return 0;
 }
-``` ##advanced example Find one similar curve under 1 Mio Curves.Use a time elastic distance
+``` 
+
+## advanced example 
+
+Find one similar curve under 1 Mio Curves. Use a time elastic distance
     metric(a sparsed TWED variant->see rts reporsitory) and
     parallel insert
 
@@ -154,9 +170,9 @@ int main()
 #include <thread>
 #include <vector>
 
-    /*** define custom metric ***/
-    template <typename T>
-    struct recMetric_Blaze {
+/*** define custom metric ***/
+template <typename T>
+struct recMetric_Blaze {
     T operator()(const blaze::CompressedVector<T> &p, const blaze::CompressedVector<T> &q) const
     {
         return assets::sed(assets::zeroPad(p), assets::zeroPad(q), T(0), T(1));

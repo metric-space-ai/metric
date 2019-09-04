@@ -7,7 +7,7 @@ Copyright (c) 2019 Panda Team
 */
 
 #include <iostream>
-#include "modules/utils/graph.hpp"
+#include "../../modules/utils/graph.hpp"
 
 std::vector<std::pair<size_t, size_t>> createGrid4(size_t width, size_t height)
 {
@@ -72,7 +72,6 @@ MType createGrid4Matrix(const std::vector<std::pair<size_t, size_t>>& edgesPairs
     for (const auto& [i, j] : edgesPairs) {
         if (i != j) {
             m(i, j) = 1;
-            // std::cout << "adding to matrix: i=" << i << ", j=" << j << "\n";
         }
     }
 
@@ -81,23 +80,20 @@ MType createGrid4Matrix(const std::vector<std::pair<size_t, size_t>>& edgesPairs
 
 int main()
 {
+	std::cout << "Graph space example have started" << std::endl;
+	std::cout << "" << std::endl;
 
     size_t w = 3;  //15;
     size_t h = 3;  //15;
     size_t node = 1;
     size_t max_depth = 4;
-
-    //*
-    std::cout << "Testing Graph_blaze\n";
-
+	
     auto g = metric::Grid4(h, w);
-    //    auto g = metric::graph::Grid6(h, w);
-    //    auto g = metric::graph::Grid8(h, w);
-    //    auto g = metric::graph::Margulis(h*w);
-    //    auto g = metric::graph::Paley(h*w);
-    //    auto g = metric::graph::LPS(h*w); // TODO FIX: no nodes in graph
-
-    //std::cout << g.get_matrix() << "\n";
+    // auto g = metric::Grid6(h, w);
+    // auto g = metric::Grid8(h, w);
+    // auto g = metric::Margulis(h*w);
+    // auto g = metric::Paley(h*w);
+    // auto g = metric::LPS(h*w); // TODO FIX: no nodes in graph
 
     std::cout << "based on stack:\n";
 
@@ -105,6 +101,7 @@ int main()
     for (size_t i = 0; i < neighbors.size(); i++)
         for (size_t j = 0; j < neighbors[i].size(); j++)
             std::cout << i << " | " << neighbors[i][j] << "\n";
+    std::cout << std::endl;
 
     std::cout << "based on vector swap:\n";
 
@@ -113,17 +110,11 @@ int main()
         for (size_t j = 0; j < neighborsNew[i].size(); j++)
             std::cout << i << " | " << neighborsNew[i][j] << "\n";
 
-    // testing template parameters
+    // custom graph
 
-    //    std::vector<std::pair<size_t, size_t>> edges;
-    //    edges.emplace_back(0, 1);
-    //    edges.emplace_back(1, 2);
-    //    edges.emplace_back(2, 0);
     std::vector<std::pair<size_t, size_t>> edges = createGrid4(h, w);
 
-    auto g_custom
-        = metric::Graph<char, true, false>(edges);  // edge value type = bool, isDense = false, isSymmetric = true
-    //    g_custom.buildEdges(edges);
+    auto g_custom = metric::Graph<char, true, false>(edges);  // edge value type = bool, isDense = false, isSymmetric = true
 
     std::cout << "\ncustom graph:\n";
     std::cout << g_custom.get_matrix() << "\n";

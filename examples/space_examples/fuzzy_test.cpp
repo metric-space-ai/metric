@@ -11,7 +11,7 @@ Copyright (c) 2018 Dmitry Vinokurov
 #include <algorithm>
 #include <random>
 #include "assets/3dparty/serialize/archive.h"
-#include "modules/space.hpp"
+#include "../../modules/space.hpp"
 
 // Make fuzzy testing
 

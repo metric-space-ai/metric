@@ -10,9 +10,9 @@ Copyright (c) 2018 Michael Welsch
 #include <vector>
 #include <random>
 #include <thread>
-#include "3rdparty/blaze/Math.h"
+#include "../../3rdparty/blaze/Math.h"
 #include "assets/assets.cpp"
-#include "modules/space.hpp"
+#include "../../modules/space.hpp"
 
 /*** define custom metric ***/
 template <typename T>
@@ -45,11 +45,13 @@ void insert_random(metric::Tree<recType, Metric>& cTree, int samples, int dimens
 /*** fill a tree with 1 Mio records and search for nearest neighbour **/
 int main()
 {
+	std::cout << "Advanced space example have started" << std::endl;
+	std::cout << "" << std::endl;
 
     metric::Tree<blaze::CompressedVector<double>, recMetric_Blaze<double>> cTree;
 
-    int n_records = 25000;
-    int rec_dim = 100;
+    int n_records = 250;
+    int rec_dim = 10;
     int threads = 4;
 
     /*** parallel insert ***/
@@ -66,12 +68,29 @@ int main()
 
     /*** search for a similar data record ***/
     std::vector<double> vec1 = assets::linspace(0.3, -0.3, rec_dim);
-    auto comp_vec = assets::smoothDenoise(vec1, 0.1);
-    auto nn = cTree.nn(comp_vec);  // nearest neigbour
+    auto a_record = assets::smoothDenoise(vec1, 0.1);
+    auto nn = cTree.nn(a_record);  // nearest neigbour
     (void)nn;
     std::chrono::high_resolution_clock::time_point t3 = std::chrono::high_resolution_clock::now();  // end searching
     auto insert_time = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
     auto nn_time = std::chrono::duration_cast<std::chrono::microseconds>(t3 - t2).count();
+	
+    std::cout << "nearest neighbour of a_record info: " << std::endl;
+	std::cout << "  ID: " << nn->ID << std::endl;
+	std::cout << "  parent->ID: " << nn->parent->ID << std::endl;
+	std::cout << "  num children: " << nn->children.size() << std::endl;
+	std::cout << "  num siblings: " << nn->parent->children.size() << std::endl;
+	std::cout << "  distance to the parent: " << nn->parent_dist << std::endl;
+	std::cout << "  level of the node postion in the tree: " << nn->level << std::endl;
+	
+	std::cout << "  siblings IDs: ";
+	/*** print the siblings IDs ***/
+	for (auto q : nn->parent->children)
+	{
+		std::cout << q->ID << " ";
+	}
+    std::cout << std::endl;
+    std::cout << std::endl;
 
     std::cout << "tree of " << (n_records * threads) << " curves build in " << insert_time / 1000.0 / 1000.0
               << " seconds, "
