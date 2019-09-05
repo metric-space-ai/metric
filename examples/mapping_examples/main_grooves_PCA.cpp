@@ -33,7 +33,7 @@ int main()
     blaze_dm_to_csv(training_dataset, "training_dataset.csv");
     blaze_dm_to_csv(test_data, "test_data.csv");
 
-    auto model = metric::PCFA<V>    (training_dataset, n_features); // dataset, compressed_code_length
+    auto model = metric::PCFA_factory(training_dataset, n_features); // dataset, compressed_code_length
 
     auto compressed = model.encode(test_data);
 

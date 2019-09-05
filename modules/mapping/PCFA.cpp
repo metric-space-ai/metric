@@ -5,8 +5,8 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 Copyright (c) 2019 Panda Team
 */
-#ifndef _METRIC_MAPPING_PCFA_CPP
-#define _METRIC_MAPPING_PCFA_CPP
+//#ifndef _METRIC_MAPPING_PCFA_CPP
+//#define _METRIC_MAPPING_PCFA_CPP
 
 #include "PCFA.hpp"
 
@@ -59,16 +59,16 @@ blaze::DynamicMatrix<typename BlazeMatrix::ElementType> PCA(const BlazeMatrix & 
 
 // simple linear encoder based on PCA
 template <typename V>
-PCFA<V>::PCFA(const blaze::DynamicMatrix<value_type>& Slices, size_t n_features)
+PCFA<V>::PCFA(const blaze::DynamicMatrix<value_type>& TrainingData, size_t n_features)
 {
-    W_encode = metric::PCA(Slices, n_features, averages);
-    auto encoded = encode(Slices);
+    W_encode = metric::PCA(TrainingData, n_features, averages);
+    auto encoded = encode(TrainingData);
     W_decode = trans(W_encode);
 }
 
 template <typename V>
-blaze::DynamicMatrix<typename PCFA<V>::value_type> PCFA<V>::encode(const blaze::DynamicMatrix<PCFA<V>::value_type>& Slices) {
-    return W_encode * Slices;
+blaze::DynamicMatrix<typename PCFA<V>::value_type> PCFA<V>::encode(const blaze::DynamicMatrix<PCFA<V>::value_type>& Data) {
+    return W_encode * Data;
 }
 
 template <typename V>
@@ -86,4 +86,4 @@ blaze::DynamicMatrix<typename PCFA<V>::value_type> PCFA<V>::decode(const blaze::
 }
 
 }  // namespace metric
-#endif
+//#endif

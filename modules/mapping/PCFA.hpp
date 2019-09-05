@@ -41,26 +41,26 @@ public:
     using value_type = V;
 
     /**
-   * @brief Construct a new PCAnet object
+   * @brief Construct a new PCFA object
    * 
-   * @param Slices 
+   * @param TrainingData
    * @param n_features 
    */
-    PCFA(const blaze::DynamicMatrix<value_type>& Slices, size_t n_features = 1);
+    PCFA(const blaze::DynamicMatrix<value_type>& TrainingData, size_t n_features = 1);
 
     /**
    * @brief 
    * 
-   * @param Slices 
+   * @param Data
    * @return
    */
-    blaze::DynamicMatrix<value_type> encode(const blaze::DynamicMatrix<value_type>& Slices);
+    blaze::DynamicMatrix<value_type> encode(const blaze::DynamicMatrix<value_type>& Data);
 
     /**
    * @brief 
    * 
    * @param Codes 
-   * @parem unshift - flag for adding average curve to each decoded one
+   * @param unshift - flag for adding average curve to each decoded one
    * @return blaze::DynamicMatrix<value_type>
    */
     blaze::DynamicMatrix<value_type> decode(const blaze::DynamicMatrix<value_type>& Codes, bool unshift=true);
@@ -72,8 +72,21 @@ private:
     std::default_random_engine rgen;
 };
 
+/**
+* @brief Creates a new PCFA object
+*
+* @param TrainingData
+* @param n_features
+*/
+template <typename BlazeMatrix>
+PCFA<typename BlazeMatrix::ElementType> PCFA_factory(const BlazeMatrix & TrainingData, size_t n_features = 1)
+{ // TODO move to .cpp
+    return PCFA<typename BlazeMatrix::ElementType>(TrainingData, n_features);
+};
+
+
 }  // namespace metric
 
-#endif  // _METRIC_MAPPING_PCFA_HPP
-
 #include "PCFA.cpp"
+
+#endif  // _METRIC_MAPPING_PCFA_HPP
