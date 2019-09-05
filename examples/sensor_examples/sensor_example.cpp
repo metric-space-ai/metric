@@ -26,20 +26,15 @@ Copyright (c) 2019 Panda Team
 
 #include <libpq-fe.h>
 
-#include "ThreadPool.cpp"
-#include "Semaphore.h"
+#include "../../modules/utils/ThreadPool.cpp"
+#include "../../modules/utils/Semaphore.h"
 
-#include "../modules/crossfilter.hpp"
-#include "../modules/mapping/metric_mapping.hpp"
-#include "../modules/distance/details/k-related/entropy.hpp"
-#include "../modules/distance/details/k-related/Standards.hpp"
-#include "../modules/mapping/details/hierarchClustering.hpp"
-#include "../modules/correlation/metric_correlation.hpp"
+#include "../../modules/utils/crossfilter.hpp"
+#include "../../modules/mapping.hpp"
+#include "../../modules/distance/k-related/Standards.hpp"
+#include "../../modules/correlation.hpp"
 
-
-//#include "modules/mapping/details/classification/metric_classification.hpp"
-
-#include "../utils/poor_mans_quantum.hpp"
+#include "../../modules/utils/poor_mans_quantum.hpp"
 
 template <typename T0, typename ... Ts>
 std::ostream & operator<< (std::ostream & s,
@@ -696,8 +691,8 @@ double runOOC(int featureIndex, std::vector<Record> dataset_0, std::vector<Recor
 	auto featureVector_0 = getFeatureVector<double>(dataset_0, featureIndex, true);
 	auto featureVector_1 = getFeatureVector<double>(dataset_1, featureIndex, true);
 
-	utils::PMQ set0(featureVector_0);
-	utils::PMQ set1(featureVector_1);
+	metric::PMQ set0(featureVector_0);
+	metric::PMQ set1(featureVector_1);
 	significantDifferent = (set1 != set0);
 
 	auto t2 = std::chrono::steady_clock::now();
@@ -777,7 +772,7 @@ std::vector<std::vector<T>> resample(std::vector<std::vector<T>> source, int des
 {
 	auto columns = source[0].size();
 	std::vector<T> x;
-	auto xi = linspace<T>(source[0][source[0].size() - 1], source[source.size() - 1][source[0].size() - 1], destinationRows);
+	auto xi = metric::linspace<T>(source[0][source[0].size() - 1], source[source.size() - 1][source[0].size() - 1], destinationRows);
 	std::vector<T> y;
 	std::vector<T> yi;
 	std::vector<std::vector<T>> resampled(destinationRows, std::vector<T>(columns));
@@ -799,7 +794,7 @@ std::vector<std::vector<T>> resample(std::vector<std::vector<T>> source, int des
 		}
 		if (y.size() > 0)
 		{
-			yi = akimaInterp1(x, y, xi);
+			yi = metric::akimaInterp1(x, y, xi);
 			for (auto i = 0; i < yi.size(); ++i)
 			{
 				resampled[i][f] = yi[i];
@@ -877,7 +872,7 @@ double runVOI(int featureIndex, std::vector<Record> dataset_0, std::vector<Recor
 
 	//auto voi = eX + eY - 2 * mi;
 
-	auto voi = metric::distance::variationOfInformation<double, metric::distance::Euclidian<double>>(featureVector_resh_0, featureVector_resh_1);
+	auto voi = metric::variationOfInformation<double, metric::Euclidian<double>>(featureVector_resh_0, featureVector_resh_1);
 
 	//auto voi = sqrt(0.5 * (eXY - (eX + eY)));
 
@@ -941,7 +936,7 @@ double runCorrelation(int featureIndex1, int featureIndex2, std::vector<Record> 
 	using RecType = std::vector<double>;
 	/* Build functors (function objects) with user types and metrics */
 	typedef simple_user_euclidian Met;
-	auto mgc_corr = metric::correlation::MGC<RecType, Met, RecType, Met>();
+	auto mgc_corr = metric::MGC<RecType, Met, RecType, Met>();
 	auto result = mgc_corr.estimate(featureVector_resh_0, featureVector_resh_1, 100, 1.0, 100);
 
 
@@ -1089,7 +1084,7 @@ void calculateVariances(const std::vector<Feature> &features, std::vector<double
 		}
 		dsAlongTime.push_back(timeVec);
 
-		utils::PMQ pmq(timeVec);
+		metric::PMQ pmq(timeVec);
 		auto variance = pmq.variance();
 
 		if (!std::isnan(variance)) {
@@ -1616,7 +1611,7 @@ int main(int argc, char *argv[])
 	std::wcout << '\n';
 	std::cout << "sensor Names Distance Matrix:" << std::endl;
 
-	metric::distance::Edit<std::string> distance;
+	metric::Edit<std::string> distance;
 	std::vector<std::vector<double>> sensorNamesDistanceMatrix(sensorNames.size(), std::vector<double>(sensorNames.size()));
 
 	for (auto i = 0; i < sensorNames.size(); ++i)

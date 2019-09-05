@@ -64,7 +64,7 @@ typename std::enable_if<std::is_integral<T>::value, T>::type mutualInformation(
  * @param logbase
  * @return
  */
-template <typename T = double>
+template <typename T = double, typename Metric = metric::Chebyshev<T>>
 typename std::enable_if<!std::is_integral<T>::value, T>::type variationOfInformation(
     const std::vector<std::vector<T>>& Xc, const std::vector<std::vector<T>>& Yc, int k = 3, T logbase = 2.0);
 
