@@ -15,7 +15,7 @@
 
 #include <chrono>
 
-#include "modules/correlation.hpp"
+#include "../../modules/correlation.hpp"
 #include "../../3rdparty/blaze/Math.h"
 
 template <typename T>
@@ -88,8 +88,8 @@ std::vector<std::vector<double>> read_csv(const std::string filename, const long
 
 int main()
 {
-    std::cout << "we have started" << std::endl;
-    std::cout << '\n';
+	std::cout << "Advanced correlations example have started" << std::endl;
+	std::cout << "" << std::endl;
 
     using RecType = std::vector<double>;
     using RecType2 = blaze::DynamicVector<double>;
@@ -100,8 +100,9 @@ int main()
         return EXIT_FAILURE;
     }
 
-    std::cout << "rows: " << data1.size() << ", cols: " << data1[0].size() << std::endl;
-    std::cout << "rows: " << data2.size() << ", cols: " << data2[0].size() << std::endl;
+    std::cout << "dataset1 rows: " << data1.size() << ", cols: " << data1[0].size() << std::endl;
+    std::cout << "dataset2 rows: " << data2.size() << ", cols: " << data2[0].size() << std::endl;
+	std::cout << "" << std::endl;
 
     std::vector<RecType2> d1(data1.size());
     std::vector<RecType2> d2(data2.size());
@@ -130,12 +131,15 @@ int main()
     auto mgc_corr = metric::MGC<RecType, Met, RecType, Met>();
 
     /* Compute and benchmark */
+    std::cout << "estimating correlation..." << std::endl;
     auto t1 = std::chrono::steady_clock::now();
-    auto result = mgc_corr.estimate(data1, data2, 100, 1.0, 100);  // A1 = std::vector<...>, A2 = std::deque<...>
+    auto result = mgc_corr.estimate(data1, data2, 100, 1.0, 100);
     auto t2 = std::chrono::steady_clock::now();
-    std::cout << result
+    std::cout << "Multiscale graph correlation estimate: " 
+              << result
               << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000
               << "s)" << std::endl;
+	std::cout << std::endl;
 
     // out:
 
@@ -160,13 +164,16 @@ int main()
     // (Time for optimal Matrices = 0.005361s)
     // 2 0.5 0.648665 0.650984
     // 0.650984 (Time = 0.528097s)
-
+	
+    std::cout << "computing correlation..." << std::endl;
     t1 = std::chrono::steady_clock::now();
     result = mgc_corr(data1, data2);
-    t2 = std::chrono::steady_clock::now();
-    std::cout << result
+    t2 = std::chrono::steady_clock::now();    
+    std::cout << "Multiscale graph correlation: " 
+		      << result
               << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000
               << "s)" << std::endl;
+	std::cout << std::endl;
 
     // out:
 
@@ -180,13 +187,16 @@ int main()
     // (Time for significane Matrices = 184.483s)
     // (Time for optimal Matrices = 5.64593s)
     // 0.65593 (Time = 1020.32s)
-
+	
+    std::cout << "computing correlation (for blaze)..." << std::endl;
     t1 = std::chrono::steady_clock::now();
     result = metric::MGC<RecType2, Met2, RecType2, Met2>()(d1, d2);
     t2 = std::chrono::steady_clock::now();
-    std::cout << result
+    std::cout << "Multiscale graph correlation (for blaze): " 
+		      << result
               << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000
               << "s)" << std::endl;
+	std::cout << std::endl;
 
     // out:
 

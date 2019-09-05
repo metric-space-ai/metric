@@ -11,32 +11,8 @@
 #include <iostream>
 #include <chrono>
 
-#include "modules/correlation.hpp"
+#include "../../modules/correlation.hpp"
 
-template <typename T>
-void matrix_print(const std::vector<std::vector<T>>& mat)
-{
-
-    std::cout << "[";
-    for (int i = 0; i < mat.size(); i++) {
-        for (int j = 0; j < mat[i].size() - 1; j++) {
-            std::cout << mat[i][j] << ", ";
-        }
-        std::cout << mat[i][mat[i].size() - 1] << " ]" << std::endl;
-        ;
-    }
-}
-
-template <typename T>
-void vector_print(const std::vector<T>& vec)
-{
-
-    std::cout << "[";
-    for (int i = 0; i < vec.size(); i++) {
-        std::cout << vec[i] << ", ";
-    }
-    std::cout << vec[vec.size() - 1] << " ]" << std::endl;
-}
 
 struct simple_user_euclidian {
 
@@ -52,6 +28,8 @@ struct simple_user_euclidian {
 
 int main()
 {
+	std::cout << "Simple Correlation example have started" << std::endl;
+	std::cout << "" << std::endl;
 
     // some data
     std::vector<std::vector<double>> A = { { -0.991021875880222 }, { -0.768275252129114 }, { -0.526359355330172 },
@@ -83,19 +61,36 @@ int main()
     // build functors (function objects) with user types and metrics
     typedef std::vector<double> Rec1;
     typedef std::array<float, 1> Rec2;
+	// custom distance metric
     typedef simple_user_euclidian Met1;
+	// predefined distance metric
     typedef metric::Manhatten<float> Met2;
 
     // set up the correlation function
-    auto mgc_corr = metric::MGC<Rec1, Met1, Rec2, Met2>();
+    auto mgc_corr_1 = metric::MGC<Rec1, Met1, Rec2, Met2>();
 
     // compute and benchmark
     auto t1 = std::chrono::steady_clock::now();
-    auto result = mgc_corr(A1, B1);  // A1 = std::vector<...>, A2 = std::deque<...>
+    auto result = mgc_corr_1(A, B);  // A = std::vector<...>, B = std::vector<...>
     auto t2 = std::chrono::steady_clock::now();
-    std::cout << result
+    std::cout << "Multiscale graph correlation (for vector and vector): " 
+			  << result
               << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000
               << "s)" << std::endl;
+    std::cout << std::endl;
+
+    // set up the correlation function
+    auto mgc_corr_2 = metric::MGC<Rec1, Met1, Rec2, Met2>();
+
+    // compute and benchmark
+    t1 = std::chrono::steady_clock::now();
+    result = mgc_corr_2(A1, B1);  // A1 = std::vector<...>, B1 = std::deque<...>
+    t2 = std::chrono::steady_clock::now();
+    std::cout << "Multiscale graph correlation (for vector and deque): " 
+			  << result
+              << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000
+              << "s)" << std::endl;
+    std::cout << std::endl;
 
     return 0;
 }

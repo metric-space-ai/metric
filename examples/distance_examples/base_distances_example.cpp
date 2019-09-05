@@ -14,7 +14,7 @@ Copyright (c) 2019 Panda Team
 
 int main()
 {
-	std::cout << "Standart Distances example have started" << std::endl;
+	std::cout << "Base Distances example have started" << std::endl;
 	std::cout << "" << std::endl;
 
 	/*** here are some data records ***/
