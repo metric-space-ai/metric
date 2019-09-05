@@ -55,5 +55,3 @@ if(CMAKE_SYSTEM_NAME MATCHES Windows)
 	target_link_libraries(earth_mover_distance_example ${PROJECT_SOURCE_DIR}/../../3rdparty/jpeglib/Release/jpeg.lib) 
 	target_link_libraries(earth_mover_distance_2_example ${PROJECT_SOURCE_DIR}/../../3rdparty/jpeglib/Release/jpeg.lib) 
 endif()
-
-
