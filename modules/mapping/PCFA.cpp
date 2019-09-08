@@ -5,12 +5,11 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 Copyright (c) 2019 Panda Team
 */
-//#ifndef _METRIC_MAPPING_PCFA_CPP
-//#define _METRIC_MAPPING_PCFA_CPP
+#ifndef _METRIC_MAPPING_PCFA_CPP
+#define _METRIC_MAPPING_PCFA_CPP
 
 #include "PCFA.hpp"
 
-//#include "modules/utils/visualizer.hpp" // TODO remove
 
 namespace metric {
 
@@ -77,7 +76,7 @@ blaze::DynamicMatrix<typename PCFA<V>::value_type> PCFA<V>::decode(const blaze::
         auto Noncentered = W_decode * Codes;
         auto Centered = blaze::DynamicMatrix<typename PCFA<V>::value_type>(Noncentered.rows(), Noncentered.columns());
         for (size_t col = 0; col < Noncentered.columns(); col++)
-            column(Centered, col) = column(Noncentered, col) - averages;
+            column(Centered, col) = column(Noncentered, col) + averages;
         return Centered;
     } else {
         return W_decode * Codes;
@@ -86,4 +85,4 @@ blaze::DynamicMatrix<typename PCFA<V>::value_type> PCFA<V>::decode(const blaze::
 }
 
 }  // namespace metric
-//#endif
+#endif
