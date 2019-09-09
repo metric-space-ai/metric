@@ -66,7 +66,9 @@ auto TWED<V>::operator()(const Container& As, const Container& Bs) const -> dist
             C3 = D0[j - 1] + std::abs(A[i] - B[j]) + std::abs(A[i - 1] - B[j - 1])
                 + elastic * (std::abs(timeA[i] - timeB[j]) + std::abs(timeA[i - 1] - timeB[j - 1]));
             Di[j] = (C1 < ((C2 < C3) ? C2 : C3)) ? C1 : ((C2 < C3) ? C2 : C3);  // Di[j] = std::min({C1,C2,C3});
+            //std::cout << Di[j] << " [" << C1 << " " << C2 << " " << C3 << "] |  "; // code for debug, added by Max F
         }
+        //std::cout << "\n"; // code for debug, added by Max F
         std::swap(D0, Di);
     }
 

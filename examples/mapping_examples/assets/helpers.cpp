@@ -72,6 +72,20 @@ void write_csv(ContainerType data, std::string filename, std::string sep=",")  /
 
 
 
+template <class ValueType>
+void blaze_dm_to_csv(blaze::DynamicMatrix<ValueType> data, std::string filename, std::string sep=",")  // container of containers expected, TODO add check
+{
+    std::ofstream outputFile;
+    outputFile.open(filename);
+        for (auto i=0; i<data.rows(); ++i) {
+            for (auto j = 0; j < data.columns(); j++) {
+                outputFile << std::to_string(data(i, j)) << sep;
+            }
+            outputFile << std::endl;
+        }
+        outputFile.close();
+} // TODO add return flag
+
 
 
 template <class ValueType>
@@ -102,9 +116,9 @@ std::vector<std::vector<ValueType>> read_csv_num(std::string filename, std::stri
 
 
 template <class ValueType>
-blaze::DynamicMatrix<ValueType, blaze::rowMajor> read_csv_blaze(const std::string & filename)
+blaze::DynamicMatrix<ValueType, blaze::rowMajor> read_csv_blaze(const std::string & filename, std::string sep = ";")
 {
-    auto array = read_csv<std::vector<std::vector<std::string>>>(filename, ";");
+    auto array = read_csv<std::vector<std::vector<std::string>>>(filename, sep);
     auto m = blaze::DynamicMatrix<ValueType, blaze::rowMajor>(array.size(), array[0].size());
     for (size_t i=0; i<array.size(); ++i)
         for (size_t j=0; j<array[0].size(); ++j)

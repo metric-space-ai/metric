@@ -2,10 +2,10 @@
 //#include "mapping.hpp"  // TODO fix DT.cpp and enable
 
 //#include "../details/encoder.hpp"
-#include "mapping/PCAnet.hpp" // temporary // for usage independently on the entire lib
+#include "mapping/PCFA.hpp" // temporary // for usage independently on the entire lib
 
-//#include "utils/visualizer/visualizer.hpp"
-#include "../utils/visualizer.hpp"
+#include "utils/visualizer.hpp"
+//#include "../utils/visualizer.hpp"
 
 
 #include "examples/mapping_examples/assets/helpers.cpp"
@@ -15,28 +15,57 @@
 
 int main()
 {
-    //auto m = blaze::DynamicMatrix<double>(2, 3);
-    //read_csv_blaze<blaze::DynamicMatrix, double>("testdata.csv", m, ";");
-//    auto m = read_csv_blaze<double>("testdata.csv");
 
-    auto training_dataset = read_csv_blaze<float>("Pt01_Ch01_Grooves_1_to_7.csv");
+    using V = float; // double;
+
+    size_t n_features = 8;
+
+    auto all_data = read_csv_blaze<V>("PtAll_AllGrooves_energy_5.csv", ","); // all parts  all unmixed channels
+    blaze::DynamicMatrix<V> training_dataset = submatrix(all_data, 0, 1, all_data.rows(), all_data.columns()-2);
     // std::cout << training_dataset << "\n";
 
-    auto test_data = read_csv_blaze<float>("Pt01_Ch01_Groove09.csv");
+    blaze::DynamicMatrix<V> test_data = read_csv_blaze<V>("test_data_input.csv", ",");
 
-    mat2bmp::blaze2bmp(training_dataset, "training_dataset.bmp");
-    mat2bmp::blaze2bmp(test_data, "test_data.bmp");
+//    blaze::DynamicMatrix<float> test_data = submatrix(all_data, 0, all_data.columns()-1, all_data.rows(), 1);
 
-    auto model = metric::PCAnet(true);
-    model.train(training_dataset, 8); // dataset, compressed_code_length
+    mat2bmp::blaze2bmp_norm(training_dataset, "training_dataset.bmp");
+    mat2bmp::blaze2bmp_norm(test_data, "test_data.bmp");
+    blaze_dm_to_csv(training_dataset, "training_dataset.csv");
+    blaze_dm_to_csv(test_data, "test_data.csv");
 
-    auto compressed = model.compress(test_data);
+    auto model = metric::PCFA_factory(training_dataset, n_features); // dataset, compressed_code_length
 
-    mat2bmp::blaze2bmp(compressed, "compressed.bmp");
+    auto compressed = model.encode(test_data);
 
-    auto restored = model.decompress(compressed);
+    mat2bmp::blaze2bmp_norm(compressed, "compressed.bmp");
+    blaze_dm_to_csv(compressed, "compressed.csv");
 
-    mat2bmp::blaze2bmp(restored, "restored.bmp");
+    auto restored = model.decode(compressed);
+
+    mat2bmp::blaze2bmp_norm(restored, "restored.bmp");
+    blaze_dm_to_csv(restored, "restored.csv");
+
+
+    // also making feature output for the training dataset
+
+    auto all_features = model.encode(training_dataset);
+
+    mat2bmp::blaze2bmp_norm(all_features, "all_features.bmp");
+    blaze_dm_to_csv(all_features, "all_features.csv");
+
+
+    // view contribution of each feature
+
+    auto I = blaze::IdentityMatrix<V>(n_features);
+
+    for (size_t feature_idx=0; feature_idx<n_features; ++feature_idx) {
+        blaze::DynamicMatrix<V> unit_feature = submatrix(I, 0, feature_idx, I.rows(), 1);
+        auto unit_waveform = model.decode(unit_feature, false);
+        mat2bmp::blaze2bmp_norm(unit_waveform, "unit_waveform_" + std::to_string(feature_idx) + ".bmp");
+        blaze_dm_to_csv(unit_waveform, "unit_waveform_" + std::to_string(feature_idx) + ".csv");
+    }
+
+
 
     return 0;
 }
