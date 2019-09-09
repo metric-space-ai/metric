@@ -56,9 +56,9 @@ struct is_vec_of_vec : decltype(detail::test_vec_of_vec<T>(0)) {
 };
 
 /*** distance measure for imagges by structural similarity. ***/
-template <typename V>
+template <typename D, typename V>
 template <typename Container>
-auto SSIM<V>::operator()(const Container& img1, const Container& img2) const -> distance_type
+auto SSIM<D, V>::operator()(const Container& img1, const Container& img2) const -> distance_type
 {
     if constexpr (is_vec_of_vec<Container>() != true) {
         static_assert(true, "container should be 2D");
@@ -149,7 +149,7 @@ auto SSIM<V>::operator()(const Container& img1, const Container& img2) const -> 
                 sum += std::sqrt(2 - S1 - S2);
             }
         }
-
+		
         return sum / ((img1.size() - n + 1) * (img1[0].size() - n + 1));  // normalize the sum
     }
     return distance_type {};

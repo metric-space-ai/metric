@@ -17,10 +17,10 @@ namespace metric {
  * @brief structural similarity (for images)
  *
  */
-template <typename V>
+template <typename D, typename V> // added D as distance_type (to get f.e. double distance for int values of pixels) -> Stepan Mamontov
 struct SSIM {
     using value_type = V;
-    using distance_type = typename V::value_type;
+    using distance_type = D;
 
     explicit SSIM() = default;
 

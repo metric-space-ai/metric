@@ -20,14 +20,14 @@ int main()
     std::cout << "EMD example have started" << std::endl;
     std::cout << "" << std::endl;
 
-    typedef int edm_Type;
+    typedef int emd_Type;
 
     size_t im1_R = img1.size() / 6;
     size_t im1_C = img1[0].size() / 6;
 
     // serialize_mat2vec
-    std::vector<edm_Type> i1;
-    std::vector<edm_Type> i2;
+    std::vector<emd_Type> i1;
+    std::vector<emd_Type> i2;
 
     for (size_t i = 0; i < im1_R; ++i) {
         for (size_t j = 0; j < im1_C; ++j) {
@@ -36,12 +36,12 @@ int main()
         }
     }
 
-    auto cost_mat = metric::EMD_details::ground_distance_matrix_of_2dgrid<edm_Type>(im1_C, im1_R);
+    auto cost_mat = metric::EMD_details::ground_distance_matrix_of_2dgrid<emd_Type>(im1_C, im1_R);
     auto maxCost = metric::EMD_details::max_in_distance_matrix(cost_mat);
 
     std::cout << "" << std::endl;
 
-    metric::EMD<edm_Type> distance(cost_mat, maxCost);
+    metric::EMD<emd_Type> distance(cost_mat, maxCost);
 
     // assumes that i1 and i2 are serialized vectors of the image matrices, and cost_mat contains a distance matrix that takes into account the original pixel locations.
     auto t1 = std::chrono::steady_clock::now();
