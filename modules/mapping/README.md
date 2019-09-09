@@ -1,4 +1,4 @@
-# METRIC | SPACE
+# METRIC | MAPPING
 
 ## Overview
 
@@ -13,7 +13,7 @@
     - kmedoids (with kmeans as specialization) | based on d-full matrices
     - DBSCAN | based on d-full matrices
     - Affinity propagation | based on d-full matrices
-    - Hierarchical Clustering (t.b.d., should be easy) | based on d-minimal tree
+    - Hierarchical Clustering | based on d-minimal tree
 
 
 2. Few constrains
@@ -24,9 +24,7 @@
 3. Training data
     - SVM
     - C4.5
-    - Bagging
-    - Boosting
-    - Metric Decision Tree
+    - Decision Tree
 
 
 ##### Continuous mapper (encoder/decoder)

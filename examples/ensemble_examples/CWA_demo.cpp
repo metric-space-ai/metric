@@ -9,13 +9,13 @@ Copyright (c) 2019 Panda Team
 #include <vector>
 #include <iostream>
 
-#include "modules/mapping/ensembles/DT/correlation_weighted_accuracy.hpp"
+#include "../../modules/mapping/ensembles/DT/correlation_weighted_accuracy.hpp"
 
 int main()
 {
 
-    std::vector<int> g1 = { 3, 2, 2, 3, 1, 1 };  // Known groups
-    std::vector<int> g2 = { 4, 2, 2, 2, 1, 1 };  // Predicted groups
+    std::vector<int> g1 = {3, 2, 2, 3, 1, 1}; // Known groups
+    std::vector<int> g2 = {4, 2, 2, 2, 1, 1}; // Predicted groups
 
     double cwa = metric::correlation_weighted_accuracy(g1, g2);
 

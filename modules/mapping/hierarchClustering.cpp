@@ -11,7 +11,6 @@
 #include <algorithm>
 #include <tuple>
 
-//#include "../../distance/metric_distance.hpp"
 
 namespace metric {
 
@@ -84,7 +83,7 @@ void HierarchicalClustering<T, Distance>::hierarchical_clustering()
 
     std::vector<std::vector<double>> distanceMatrix;
     std::vector<Cluster<T>> newClusters;
-    std::vector<std::vector<T>> newData;
+    std::vector<T> newData;
     std::vector<int> mergedIndexes;
     int closest;
     std::pair<bool, int> loockupResultX;

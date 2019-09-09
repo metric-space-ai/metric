@@ -1,70 +1,119 @@
+cmake_minimum_required(VERSION 3.12)
+
+set(Boost_DEBUG on)  
+find_package(Boost)
+
+
+project(mapping_examples)
+
 
 include_directories(
-		${PROJECT_SOURCE_DIR}
-	)
+	${PROJECT_SOURCE_DIR}
+)
+	
+file(COPY "assets" DESTINATION ".")
 
-#file(COPY "assets" DESTINATION ".")
+include_directories(${Boost_INCLUDE_DIRS}) 
+	
+# for Visual Studio
+if(MSVC) 
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++17")
+endif(MSVC)
 
-
+ 
 include_directories(${Boost_INCLUDE_DIRS})
 
-# quantized_mappers / clustering
+# quantized_mappers / clustering 
 add_executable(KMedoids_example quantized_mappers/clustering/KMedoids_example.cpp)
-target_link_libraries(KMedoids_example PRIVATE ${LAPACK_LIBRARIES})
-set_target_properties(KMedoids_example PROPERTIES   RUNTIME_OUTPUT_DIRECTORY  "${PROJECT_SOURCE_DIR}/examples")
-
 add_executable(KMeans_example quantized_mappers/clustering/KMeans_example.cpp)
-target_link_libraries(KMeans_example PRIVATE ${LAPACK_LIBRARIES})
-set_target_properties(KMeans_example PROPERTIES   RUNTIME_OUTPUT_DIRECTORY  "${PROJECT_SOURCE_DIR}/examples")
-
 add_executable(DBScan_example quantized_mappers/clustering/DBScan_example.cpp)
-target_link_libraries(DBScan_example PRIVATE ${LAPACK_LIBRARIES})
-set_target_properties(DBScan_example PROPERTIES   RUNTIME_OUTPUT_DIRECTORY  "${PROJECT_SOURCE_DIR}/examples")
-
 add_executable(AffinityPropagation_example quantized_mappers/clustering/AffinityPropagation_example.cpp)
-target_link_libraries(AffinityPropagation_example PRIVATE ${LAPACK_LIBRARIES})
-set_target_properties(AffinityPropagation_example PROPERTIES   RUNTIME_OUTPUT_DIRECTORY  "${PROJECT_SOURCE_DIR}/examples")
-
 add_executable(HierarchicalClustering_example quantized_mappers/clustering/HierarchicalClustering_example.cpp) 
-target_link_libraries(HierarchicalClustering_example PRIVATE ${LAPACK_LIBRARIES})
-set_target_properties(HierarchicalClustering_example PROPERTIES   RUNTIME_OUTPUT_DIRECTORY  "${PROJECT_SOURCE_DIR}/examples")
 
+# quantized_mappers / constraint
 
 # quantized_mappers / classification
-add_executable(Classification_example quantized_mappers/classification/Classification_example.cpp)
-target_link_libraries(Classification_example PRIVATE ${LAPACK_LIBRARIES})
-set_target_properties(Classification_example PROPERTIES   RUNTIME_OUTPUT_DIRECTORY  "${PROJECT_SOURCE_DIR}/examples")
-
 add_executable(SVM_example quantized_mappers/classification/SVM_example.cpp)
-target_link_libraries(SVM_example PRIVATE ${LAPACK_LIBRARIES})
-set_target_properties(SVM_example PROPERTIES   RUNTIME_OUTPUT_DIRECTORY  "${PROJECT_SOURCE_DIR}/examples")
-
 add_executable(C45_example quantized_mappers/classification/C45_example.cpp)
-set_target_properties(C45_example PROPERTIES   RUNTIME_OUTPUT_DIRECTORY  "${PROJECT_SOURCE_DIR}/examples")
 if(UNIX)
     target_compile_options(C45_example PRIVATE -pthread)
 endif(UNIX)
-
-add_executable(Bagging_example quantized_mappers/classification/Bagging_example.cpp)
-target_link_libraries(Bagging_example PRIVATE ${LAPACK_LIBRARIES})
-set_target_properties(Bagging_example PROPERTIES   RUNTIME_OUTPUT_DIRECTORY  "${PROJECT_SOURCE_DIR}/examples")
+add_executable(DesicionTree_example quantized_mappers/classification/DesicionTree_example.cpp)
 
 # continious_mappers / clustering
 add_executable(SOM_example continious_mappers/clustering/SOM_example.cpp)
-target_link_libraries(SOM_example PRIVATE ${LAPACK_LIBRARIES})
-set_target_properties(SOM_example PROPERTIES   RUNTIME_OUTPUT_DIRECTORY  "${PROJECT_SOURCE_DIR}/examples")
-
-add_executable(main_encoder main_encoder.cpp)
-target_link_libraries(main_encoder PRIVATE ${LAPACK_LIBRARIES})
-set_target_properties(main_encoder PROPERTIES   RUNTIME_OUTPUT_DIRECTORY  "${PROJECT_SOURCE_DIR}/examples")
-
-add_executable(main_esn main_esn.cpp)
-target_link_libraries(main_esn PRIVATE ${LAPACK_LIBRARIES})
-set_target_properties(main_esn PROPERTIES   RUNTIME_OUTPUT_DIRECTORY  "${PROJECT_SOURCE_DIR}/examples")
-
-target_link_libraries(main_esn PRIVATE ${LAPACK_LIBRARIES})
+add_executable(SOM_example_2 continious_mappers/clustering/SOM_example_2.cpp)
+if(UNIX)
+    target_compile_options(SOM_example_2 PRIVATE -pthread)
+    set_target_properties(SOM_example_2 PROPERTIES LINK_FLAGS -pthread)
+endif(UNIX)
+add_executable(PCFA_example continious_mappers/clustering/PCFA_example.cpp)
 
 # continious_mappers / classification
+add_executable(ESN_example continious_mappers/classification/ESN_example.cpp)
+
+
+if(UNIX)
+	set_target_properties(KMedoids_example PROPERTIES CXX_STANDARD 17)
+	set_target_properties(KMeans_example PROPERTIES CXX_STANDARD 17)
+	set_target_properties(DBScan_example PROPERTIES CXX_STANDARD 17)
+	set_target_properties(AffinityPropagation_example PROPERTIES CXX_STANDARD 17)
+	set_target_properties(HierarchicalClustering_example PROPERTIES CXX_STANDARD 17)
+	set_target_properties(SVM_example PROPERTIES CXX_STANDARD 17)
+	set_target_properties(C45_example PROPERTIES CXX_STANDARD 17)
+	set_target_properties(DesicionTree_example PROPERTIES CXX_STANDARD 17)
+	set_target_properties(SOM_example PROPERTIES CXX_STANDARD 17)
+	set_target_properties(SOM_example_2 PROPERTIES CXX_STANDARD 17)
+	set_target_properties(PCFA_example PROPERTIES CXX_STANDARD 17)
+	set_target_properties(ESN_example PROPERTIES CXX_STANDARD 17)
+endif(UNIX)
+
+find_package(LAPACK)
+
+
+if(LAPACK_LIBRARIES)
+	target_link_libraries(KMeans_example PRIVATE ${LAPACK_LIBRARIES})	
+	target_link_libraries(DBScan_example PRIVATE ${LAPACK_LIBRARIES})	
+	target_link_libraries(AffinityPropagation_example PRIVATE ${LAPACK_LIBRARIES})	
+	target_link_libraries(SOM_example PRIVATE ${LAPACK_LIBRARIES})	
+	target_link_libraries(SOM_example_2 PRIVATE ${LAPACK_LIBRARIES})	
+	target_link_libraries(PCFA_example PRIVATE ${LAPACK_LIBRARIES})	
+	target_link_libraries(ESN_example PRIVATE ${LAPACK_LIBRARIES})
+endif(LAPACK_LIBRARIES)
+
+if(CMAKE_SYSTEM_NAME MATCHES Windows)
+
+	target_link_directories(KMeans_example PRIVATE ${PROJECT_SOURCE_DIR}/../../mkl/lib/intel64_win)
+	target_link_libraries(KMeans_example PRIVATE mkl_core.lib mkl_sequential.lib mkl_intel_lp64.lib)
+	target_link_libraries(KMeans_example PRIVATE ${Boost_LIBRARIES})
+
+	target_link_directories(DBScan_example PRIVATE ${PROJECT_SOURCE_DIR}/../../mkl/lib/intel64_win)
+	target_link_libraries(DBScan_example PRIVATE mkl_core.lib mkl_sequential.lib mkl_intel_lp64.lib)
+	target_link_libraries(DBScan_example PRIVATE ${Boost_LIBRARIES})
+
+	target_link_directories(AffinityPropagation_example PRIVATE ${PROJECT_SOURCE_DIR}/../../mkl/lib/intel64_win)
+	target_link_libraries(AffinityPropagation_example PRIVATE mkl_core.lib mkl_sequential.lib mkl_intel_lp64.lib)
+	target_link_libraries(AffinityPropagation_example PRIVATE ${Boost_LIBRARIES})
+
+	target_link_directories(SOM_example PRIVATE ${PROJECT_SOURCE_DIR}/../../mkl/lib/intel64_win)
+	target_link_libraries(SOM_example PRIVATE mkl_core.lib mkl_sequential.lib mkl_intel_lp64.lib)
+	target_link_libraries(SOM_example PRIVATE ${Boost_LIBRARIES})
+
+	target_link_directories(SOM_example_2 PRIVATE ${PROJECT_SOURCE_DIR}/../../mkl/lib/intel64_win)
+	target_link_libraries(SOM_example_2 PRIVATE mkl_core.lib mkl_sequential.lib mkl_intel_lp64.lib)
+	target_link_libraries(SOM_example_2 PRIVATE ${Boost_LIBRARIES})
+
+	target_link_directories(PCFA_example PRIVATE ${PROJECT_SOURCE_DIR}/../../mkl/lib/intel64_win)
+	target_link_libraries(PCFA_example PRIVATE mkl_core.lib mkl_sequential.lib mkl_intel_lp64.lib)
+	target_link_libraries(PCFA_example PRIVATE ${Boost_LIBRARIES})
+
+	target_link_directories(ESN_example PRIVATE ${PROJECT_SOURCE_DIR}/../../mkl/lib/intel64_win)
+	target_link_libraries(ESN_example PRIVATE mkl_core.lib mkl_sequential.lib mkl_intel_lp64.lib)
+	target_link_libraries(ESN_example PRIVATE ${Boost_LIBRARIES})
+endif()
+
+# continious_mappers / classification
+
 
 
 

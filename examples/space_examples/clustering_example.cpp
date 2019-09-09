@@ -6,17 +6,18 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 Copyright (c) 2019 Dmitry Vinokurov
 */
 
-#include "modules/space.hpp"
 #include <vector>
 #include <iostream>
 #include <algorithm>
+#include "../../modules/space.hpp"
+
 template <typename T>
 struct distance {
     int operator()(const T& lhs, const T& rhs) const { return std::abs(lhs - rhs); }
 };
+
 template <typename T>
-void print_clusters(
-    const ::std::vector<double>& distribution, const std::vector<std::vector<std::size_t>>& clusters, T& tree)
+void print_clusters(const ::std::vector<double>& distribution, const std::vector<std::vector<std::size_t>>& clusters, T& tree)
 {
     // clusters is a vector of vectors with ID's from tree
     // clusters.size() is always equals to distribution.size()
@@ -32,8 +33,11 @@ void print_clusters(
         std::cout << " }" << std::endl;
     }
 }
+
 int main()
 {
+	std::cout << "Clustering space example have started" << std::endl;
+	std::cout << "" << std::endl;
 
     metric::Tree<int, distance<int>> tree;
     std::vector<int> data(20);
@@ -42,6 +46,7 @@ int main()
 
     std::cout << tree.size() << std::endl;
     tree.print();
+    std::cout << std::endl;
     // distribution is a vector of percents of number of elements
     std::vector<double> distribution = { 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8 };
 

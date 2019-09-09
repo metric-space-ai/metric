@@ -43,7 +43,7 @@ namespace metric {
 	 *@brief 
 	 * 
 	 */
-template <typename recType, class Metric = metric::Euclidian<typename recType::value_type>, class Graph = metric::Grid8>
+template <typename recType, class Metric = metric::Euclidian<typename recType::value_type>, class Graph = metric::Grid8, class Distribution = std::uniform_real_distribution<typename recType::value_type>>
 class SOM {
     typedef typename recType::value_type T;
 
@@ -55,6 +55,7 @@ public:
 	     * @param metric 
 	     */
     explicit SOM(size_t nodesNumber, Metric metric = Metric());
+
     /**
 		 * @brief Construct a new SOM object
 		 * 
@@ -63,6 +64,15 @@ public:
 		 * @param metric 
 		 */
     SOM(size_t nodesWidth, size_t nodesHeight, Metric metric = Metric());
+
+    /**
+	     * @brief Construct a new SOM object
+	     * 
+	     * @param metric 
+	     * @param graph 
+	     * @param distribution 
+	     */
+    SOM(Metric metric, Graph graph, Distribution distribution, double neighborhoodSize, double neigbour_range_decay, long long random_seed);
 
     /**
 		 * @brief Destroy the SOM object
@@ -117,6 +127,11 @@ private:
 
     Metric metric;
     Graph graph;
+    Distribution distribution;
+
+	double neighborhoodSize;
+	double neigbour_range_decay;
+	long long random_seed;
 
     std::vector<std::vector<T>> weights;  // nodes of SOM
 };
