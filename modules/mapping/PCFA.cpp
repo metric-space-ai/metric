@@ -67,7 +67,11 @@ PCFA<V>::PCFA(const blaze::DynamicMatrix<value_type>& TrainingData, size_t n_fea
 
 template <typename V>
 blaze::DynamicMatrix<typename PCFA<V>::value_type> PCFA<V>::encode(const blaze::DynamicMatrix<PCFA<V>::value_type>& Data) {
-    return W_encode * Data;
+    auto CenteredInput = blaze::DynamicMatrix<PCFA<V>::value_type>(Data.rows(), Data.columns(), 0);
+    for (size_t col = 0; col < Data.columns(); col++)
+        column(CenteredInput, col) = column(Data, col) - averages;
+    return W_encode * CenteredInput;
+    //return W_encode * Data;
 }
 
 template <typename V>
