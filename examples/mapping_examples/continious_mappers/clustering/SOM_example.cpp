@@ -86,9 +86,9 @@ int main()
     using Metric = metric::Euclidian<Vector::value_type>;
     using Graph = metric::Grid6; // replaced mapping::SOM_details with graph by Max F, 2019-05-16
 
-    metric::SOM<Vector, Metric, Graph> DR(6, 5);
+    metric::SOM<Vector, Metric, Graph> som_model(6, 5);
 
-    if (!DR.isValid()) {
+    if (!som_model.isValid()) {
     	std::cout << "SOM is not valid" << std::endl;
     	return EXIT_FAILURE;
     }
@@ -121,24 +121,31 @@ int main()
 
 	/* Train with img1 */
     const auto t1 = std::chrono::steady_clock::now();
-    DR.train(img1, iterations);
+    som_model.train(img1, iterations);
     const auto t2 = std::chrono::steady_clock::now();
 
     std::cout << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000 << "s)" << std::endl;
+	std::cout << std::endl;
 
 
-    auto dimR = DR.reduce(img1[0]);
-
-    //vector_print(dimR);
+    auto dimR = som_model.reduce(img1[0]);
 	vector_print(dimR, 6, 5);
+	std::cout << std::endl;
+
+	auto bmu = som_model.BMU(img1[0]);
+	std::cout << "Best matching unit: " << bmu << std::endl;
+	std::cout << std::endl;
 
 
 	/* Train with img2 */
-    DR.train(img2, iterations);
+    som_model.train(img2, iterations);
 
-    dimR = DR.reduce(img1[0]);
-    //vector_print(dimR);
+    dimR = som_model.reduce(img1[0]);
 	vector_print(dimR, 6, 5);
+	std::cout << std::endl;
+
+	bmu = som_model.BMU(img1[0]);
+	std::cout << "Best matching unit: " << bmu << std::endl;
 
     std::cout << std::endl;
 

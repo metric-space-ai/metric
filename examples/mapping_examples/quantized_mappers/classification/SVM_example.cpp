@@ -10,7 +10,7 @@ Copyright (c) 2018 Panda Team
 #include <deque> // for Record test
 
 #include "../../assets/helpers.cpp" // csv reader
-#include "../../modules/mapping/ensembles.hpp"
+#include "../../modules/mapping.hpp"
 
 template <typename T>
 void vector_print(const std::vector<T> &vec)
@@ -27,23 +27,6 @@ void vector_print(const std::vector<T> &vec)
 		{
 			std::cout << vec[i] << "]" << std::endl;
 		}
-	}
-}
-
-
-template <typename T>
-void matrix_print(const std::vector<std::vector<T>> &mat)
-{
-
-	std::cout << "[";
-	for (int i = 0; i < mat.size(); i++)
-	{
-		for (int j = 0; j < mat[i].size() - 1; j++)
-		{
-			std::cout << mat[i][j] << ", ";
-		}
-		std::cout << mat[i][mat[i].size() - 1] << " ]" << std::endl;
-		;
 	}
 }
 
@@ -138,8 +121,7 @@ int main()
 			return false;
 	};
 	
-	//
-	// using SVM
+
 	std::cout << "SVM on Iris: " << std::endl;
 	startTime = std::chrono::steady_clock::now();
 	auto svmModel_2 = metric::edmClassifier<IrisRec, CSVM>();
@@ -158,100 +140,6 @@ int main()
 
 	std::cout << "\n";
 
-	////
-	// using SVM with default metaparams
-	std::cout << "Boost SVM on Iris: " << std::endl;
-	startTime = std::chrono::steady_clock::now();
-	auto svmModel_3 = metric::edmClassifier<IrisRec, CSVM>();
-	auto boostSvmModel_3 = metric::Boosting<IrisRec, metric::edmClassifier<IrisRec, CSVM>, metric::SubsampleRUS<IrisRec>>(10, 0.75, 0.5, svmModel_3);
-	std::cout << "training... " << std::endl;
-	boostSvmModel_3.train(iris_str, features_iris, response_iris, true);
-	endTime = std::chrono::steady_clock::now();
-	std::cout << "trained (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count()) / 1000000 << " s)" << std::endl;
-
-	boostSvmModel_3.predict(IrisTestRec, features_iris, prediction);
-	std::cout << "Boost SVM predict on single Iris: " << std::endl;
-	vector_print(prediction);
-
-	boostSvmModel_3.predict(IrisTestMultipleRec, features_iris, prediction);
-	std::cout << "Boost SVM predict on multiple Iris: " << std::endl;
-	vector_print(prediction);
-
-	std::cout << "\n";
-
-	////
-	// using SVM with metaparams
-	std::cout << "Boost specialized SVM on Iris: " << std::endl;
-	startTime = std::chrono::steady_clock::now();
-	auto svmModel_4 = metric::edmSVM<IrisRec>(C_SVC, RBF, 3, 0, 100, 0.001, 1, 0, NULL, NULL, 0.5, 0.1, 1, 0);
-	auto boostSvmModel_4 = metric::Boosting<IrisRec, metric::edmSVM<IrisRec>, metric::SubsampleRUS<IrisRec>>(10, 0.75, 0.5, svmModel_4);
-	std::cout << "training... " << std::endl;
-	boostSvmModel_4.train(iris_str, features_iris, response_iris, true);
-	endTime = std::chrono::steady_clock::now();
-	std::cout << "trained (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count()) / 1000000 << " s)" << std::endl;
-
-	boostSvmModel_4.predict(IrisTestRec, features_iris, prediction);
-	std::cout << "Boost specialized SVM predict on single Iris: " << std::endl;
-	vector_print(prediction);
-
-	boostSvmModel_4.predict(IrisTestMultipleRec, features_iris, prediction);
-	std::cout << "Boost specialized SVM predict on multiple Iris: " << std::endl;
-	vector_print(prediction);
-
-	std::cout << "\n";
-
-
-	//////////////////////////////////////////////
-
-
-
-
-	////
-	// using Bagging on both specialized and default SVM
-	std::cout << "Bagging on both specialized and default SVM on Iris: " << std::endl;
-	startTime = std::chrono::steady_clock::now();
-	using WeakLrnVariant = std::variant<metric::edmSVM<IrisRec>, metric::edmClassifier<IrisRec, CSVM> >;
-	std::vector<WeakLrnVariant> models_1 = {};
-	WeakLrnVariant svmModel_5 = metric::edmSVM<IrisRec>(C_SVC, RBF, 3, 0, 100, 0.001, 1, 0, NULL, NULL, 0.5, 0.1, 1, 0);
-	WeakLrnVariant svmModel_6 = metric::edmClassifier<IrisRec, CSVM>();
-	models_1.push_back(svmModel_5);
-	models_1.push_back(svmModel_6);
-	auto baggingSVMmodel_1 = metric::Bagging<IrisRec, WeakLrnVariant, metric::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, { 0.3, 0.7 }, models_1); // 30% of first weak learner type, 70% of second
-	std::cout << "training... " << std::endl;
-	baggingSVMmodel_1.train(iris_str, features_iris, response_iris, true);
-	endTime = std::chrono::steady_clock::now();
-	std::cout << "trained (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count()) / 1000000 << " s)" << std::endl;
-
-	baggingSVMmodel_1.predict(IrisTestRec, features_iris, prediction);
-	std::cout << "Bagging on both specialized and default SVM predict on single Iris: " << std::endl;
-	vector_print(prediction);
-
-	baggingSVMmodel_1.predict(IrisTestMultipleRec, features_iris, prediction);
-	std::cout << "Bagging on both specialized and default SVM predict on multiple Iris: " << std::endl;
-	vector_print(prediction);
-
-	std::cout << "\n";
-
-
-	////
-	// using Bagging on both specialized and default SVM with deque
-	std::cout << "Bagging on both specialized and default SVM on deque Iris: " << std::endl;
-	startTime = std::chrono::steady_clock::now();
-	auto baggingSVMmodel_2 = metric::Bagging<IrisRec, WeakLrnVariant, metric::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, { 0.3, 0.7 }, models_1); // 30% of first weak learner type, 70% of second
-	std::cout << "training... " << std::endl;
-	baggingSVMmodel_2.train(iris_strD, features_iris, response_iris, true);
-	endTime = std::chrono::steady_clock::now();
-	std::cout << "trained (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count()) / 1000000 << " s)" << std::endl;
-
-	baggingSVMmodel_2.predict(IrisTestRecD, features_iris, prediction);
-	std::cout << "Bagging on both specialized and default SVM predict on single deque Iris: " << std::endl;
-	vector_print(prediction);
-
-	baggingSVMmodel_2.predict(IrisTestMultipleRecD, features_iris, prediction);
-	std::cout << "Bagging on both specialized and default SVM predict on multiple deque Iris: " << std::endl;
-	vector_print(prediction);
-
-	std::cout << "\n";
 	
 	return 0;
 

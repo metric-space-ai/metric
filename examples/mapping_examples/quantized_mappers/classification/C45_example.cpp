@@ -11,7 +11,7 @@ Copyright (c) 2019 Panda Team
 #include <deque> // for Record test
 
 #include "../../assets/helpers.cpp" // csv reader
-#include "../../modules/mapping/ensembles.hpp"
+#include "../../modules/mapping.hpp"
 
 
 template <typename T>
@@ -32,22 +32,6 @@ void vector_print(const std::vector<T> &vec)
 	}
 }
 
-
-template <typename T>
-void matrix_print(const std::vector<std::vector<T>> &mat)
-{
-
-	std::cout << "[";
-	for (int i = 0; i < mat.size(); i++)
-	{
-		for (int j = 0; j < mat[i].size() - 1; j++)
-		{
-			std::cout << mat[i][j] << ", ";
-		}
-		std::cout << mat[i][mat[i].size() - 1] << " ]" << std::endl;
-		;
-	}
-}
 
 int main()
 {
@@ -154,10 +138,7 @@ int main()
 	};
 
 
-
-
 	//
-	// using C4.5
 	std::cout << "C4.5 on Iris: " << std::endl;
 	startTime = std::chrono::steady_clock::now();
 	auto c45Model_2 = metric::edmClassifier<IrisRec, libedm::CC45>();
@@ -173,97 +154,6 @@ int main()
 
 	c45Model_2.predict(IrisTestMultipleRec, features_iris, prediction);
 	std::cout << "C4.5 prediction on multiple Iris: " << std::endl;
-	vector_print(prediction);
-
-	std::cout << "\n";
-
-
-	//
-	// using C4.5 with default metaparams
-	std::cout << "Boosting C4.5 on Iris: " << std::endl;
-	startTime = std::chrono::steady_clock::now();
-	auto boostC45Model_2 = metric::Boosting<IrisRec, metric::edmClassifier<IrisRec, CC45>, metric::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, c45Model_2);
-	std::cout << "training... " << std::endl;
-	boostC45Model_2.train(iris_str, features_iris, response_iris, true);
-	endTime = std::chrono::steady_clock::now();
-	std::cout << "trained (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count()) / 1000000 << " s)" << std::endl;
-
-	boostC45Model_2.predict(IrisTestRec, features_iris, prediction);
-	std::cout << "Boosting C4.5 predict on single Iris: " << std::endl;
-	vector_print(prediction);
-
-	boostC45Model_2.predict(IrisTestMultipleRec, features_iris, prediction);
-	std::cout << "Boosting C4.5 predict on multiple Iris: " << std::endl;
-	vector_print(prediction);
-
-	std::cout << "\n";
-	   
-
-	//
-	// using C4.5 with metaparams
-	std::cout << "Boosting with metaparams C4.5 on Iris: " << std::endl;
-	startTime = std::chrono::steady_clock::now();
-	auto c45Model_3 = metric::edmC45<IrisRec>(2, 1e-3, 0.25, true);
-	auto boostC45Model_3 = metric::Boosting<IrisRec, metric::edmC45<IrisRec>, metric::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, c45Model_3);
-	std::cout << "training... " << std::endl;
-	boostC45Model_3.train(iris_str, features_iris, response_iris, true);
-	endTime = std::chrono::steady_clock::now();
-	std::cout << "trained (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count()) / 1000000 << " s)" << std::endl;
-
-	boostC45Model_3.predict(IrisTestRec, features_iris, prediction);
-	std::cout << "Boosting with metaparams C4.5 predict on single Iris: " << std::endl;
-	vector_print(prediction);
-
-	boostC45Model_3.predict(IrisTestMultipleRec, features_iris, prediction);
-	std::cout << "Boosting with metaparams C4.5 predict on multiple Iris: " << std::endl;
-	vector_print(prediction);
-
-	std::cout << "\n";
-
-	
-	//
-	// using Bagging on both specialized and default C4.5
-	std::cout << "Bagging on both specialized and default C4.5 on Iris: " << std::endl;
-	startTime = std::chrono::steady_clock::now();
-	using WeakLrnVariant = std::variant<metric::edmC45<IrisRec>, metric::edmClassifier<IrisRec, CC45> >;
-	std::vector<WeakLrnVariant> models_1 = {};
-	WeakLrnVariant c45Model_4 = metric::edmC45<IrisRec>(2, 1e-3, 0.25, true);
-	WeakLrnVariant c45Model_5 = metric::edmClassifier<IrisRec, CC45>();
-	models_1.push_back(c45Model_4);
-	models_1.push_back(c45Model_5);
-	auto baggingC45model_1 = metric::Bagging<IrisRec, WeakLrnVariant, metric::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, { 0.3, 0.7 }, models_1); // 30% of first weak learner type, 70% of second
-	std::cout << "training... " << std::endl;
-	baggingC45model_1.train(iris_str, features_iris, response_iris, true);
-	endTime = std::chrono::steady_clock::now();
-	std::cout << "trained (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count()) / 1000000 << " s)" << std::endl;
-	
-	baggingC45model_1.predict(IrisTestRec, features_iris, prediction);
-	std::cout << "Bagging on both specialized and default C4.5 predict on single Iris: " << std::endl;
-	vector_print(prediction);
-
-	baggingC45model_1.predict(IrisTestMultipleRec, features_iris, prediction);
-	std::cout << "Bagging on both specialized and default C4.5 predict on multiple Iris: " << std::endl;
-	vector_print(prediction);
-
-	std::cout << "\n";
-
-
-	//
-	// using Bagging on both specialized and default C4.5 with deque
-	std::cout << "Bagging on both specialized and default C4.5 on deque Iris: " << std::endl;
-	startTime = std::chrono::steady_clock::now();
-	auto baggingC45model_2 = metric::Bagging<IrisRec, WeakLrnVariant, metric::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, { 0.3, 0.7 }, models_1); // 30% of first weak learner type, 70% of second
-	std::cout << "training... " << std::endl;
-	baggingC45model_2.train(iris_strD, features_iris, response_iris, true);
-	endTime = std::chrono::steady_clock::now();
-	std::cout << "trained (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count()) / 1000000 << " s)" << std::endl;
-
-	baggingC45model_2.predict(IrisTestRecD, features_iris, prediction);
-	std::cout << "Bagging on both specialized and default C4.5 predict on single deque Iris: " << std::endl;
-	vector_print(prediction);
-
-	baggingC45model_2.predict(IrisTestMultipleRecD, features_iris, prediction);
-	std::cout << "Bagging on both specialized and default C4.5 predict on multiple deque Iris: " << std::endl;
 	vector_print(prediction);
 
 	std::cout << "\n";

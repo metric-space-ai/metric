@@ -123,20 +123,98 @@ int main()
 
 
 
-	//*
+	// SVM
+	
 
-	metric::classification::TestCl<Record> wl4 = metric::classification::TestCl<Record>(0, false);
 
-	wl4.train(payments, features, response);
-	std::vector<bool> r4;
-	wl4.predict(test_sample, features, r4);
-	std::cout << "\nweak predict: " << r4[0] << std::endl << std::endl;
+	////
+	// using SVM with default metaparams
+	std::cout << "Boost SVM on Iris: " << std::endl;
+	startTime = std::chrono::steady_clock::now();
+	auto svmModel_3 = metric::edmClassifier<IrisRec, CSVM>();
+	auto boostSvmModel_3 = metric::Boosting<IrisRec, metric::edmClassifier<IrisRec, CSVM>, metric::SubsampleRUS<IrisRec>>(10, 0.75, 0.5, svmModel_3);
+	std::cout << "training... " << std::endl;
+	boostSvmModel_3.train(iris_str, features_iris, response_iris, true);
+	endTime = std::chrono::steady_clock::now();
+	std::cout << "trained (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count()) / 1000000 << " s)" << std::endl;
 
-	auto cntnr4 = metric::classification::Boosting<Record, metric::classification::TestCl<Record>, metric::classification::SubsampleRUS<Record> >(10, 0.75, 0.5, wl4);
-	cntnr4.train(payments, features, response);
-	std::vector<bool> r5;
-	cntnr4.predict(test_sample, features, r5);
-	std::cout << "\nstrong predict: " << r5[0] << std::endl;
+	boostSvmModel_3.predict(IrisTestRec, features_iris, prediction);
+	std::cout << "Boost SVM predict on single Iris: " << std::endl;
+	vector_print(prediction);
+
+	boostSvmModel_3.predict(IrisTestMultipleRec, features_iris, prediction);
+	std::cout << "Boost SVM predict on multiple Iris: " << std::endl;
+	vector_print(prediction);
+
+	std::cout << "\n";
+
+	////
+	// using SVM with metaparams
+	std::cout << "Boost specialized SVM on Iris: " << std::endl;
+	startTime = std::chrono::steady_clock::now();
+	auto svmModel_4 = metric::edmSVM<IrisRec>(C_SVC, RBF, 3, 0, 100, 0.001, 1, 0, NULL, NULL, 0.5, 0.1, 1, 0);
+	auto boostSvmModel_4 = metric::Boosting<IrisRec, metric::edmSVM<IrisRec>, metric::SubsampleRUS<IrisRec>>(10, 0.75, 0.5, svmModel_4);
+	std::cout << "training... " << std::endl;
+	boostSvmModel_4.train(iris_str, features_iris, response_iris, true);
+	endTime = std::chrono::steady_clock::now();
+	std::cout << "trained (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count()) / 1000000 << " s)" << std::endl;
+
+	boostSvmModel_4.predict(IrisTestRec, features_iris, prediction);
+	std::cout << "Boost specialized SVM predict on single Iris: " << std::endl;
+	vector_print(prediction);
+
+	boostSvmModel_4.predict(IrisTestMultipleRec, features_iris, prediction);
+	std::cout << "Boost specialized SVM predict on multiple Iris: " << std::endl;
+	vector_print(prediction);
+
+	std::cout << "\n";
+
+
+	// C4.5
+
+	
+
+	//
+	// using C4.5 with default metaparams
+	std::cout << "Boosting C4.5 on Iris: " << std::endl;
+	startTime = std::chrono::steady_clock::now();
+	auto boostC45Model_2 = metric::Boosting<IrisRec, metric::edmClassifier<IrisRec, CC45>, metric::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, c45Model_2);
+	std::cout << "training... " << std::endl;
+	boostC45Model_2.train(iris_str, features_iris, response_iris, true);
+	endTime = std::chrono::steady_clock::now();
+	std::cout << "trained (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count()) / 1000000 << " s)" << std::endl;
+
+	boostC45Model_2.predict(IrisTestRec, features_iris, prediction);
+	std::cout << "Boosting C4.5 predict on single Iris: " << std::endl;
+	vector_print(prediction);
+
+	boostC45Model_2.predict(IrisTestMultipleRec, features_iris, prediction);
+	std::cout << "Boosting C4.5 predict on multiple Iris: " << std::endl;
+	vector_print(prediction);
+
+	std::cout << "\n";
+	   
+
+	//
+	// using C4.5 with metaparams
+	std::cout << "Boosting with metaparams C4.5 on Iris: " << std::endl;
+	startTime = std::chrono::steady_clock::now();
+	auto c45Model_3 = metric::edmC45<IrisRec>(2, 1e-3, 0.25, true);
+	auto boostC45Model_3 = metric::Boosting<IrisRec, metric::edmC45<IrisRec>, metric::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, c45Model_3);
+	std::cout << "training... " << std::endl;
+	boostC45Model_3.train(iris_str, features_iris, response_iris, true);
+	endTime = std::chrono::steady_clock::now();
+	std::cout << "trained (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count()) / 1000000 << " s)" << std::endl;
+
+	boostC45Model_3.predict(IrisTestRec, features_iris, prediction);
+	std::cout << "Boosting with metaparams C4.5 predict on single Iris: " << std::endl;
+	vector_print(prediction);
+
+	boostC45Model_3.predict(IrisTestMultipleRec, features_iris, prediction);
+	std::cout << "Boosting with metaparams C4.5 predict on multiple Iris: " << std::endl;
+	vector_print(prediction);
+
+	std::cout << "\n";
 
 	return 0;
 

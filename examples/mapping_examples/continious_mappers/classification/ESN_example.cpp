@@ -61,9 +61,7 @@ int main()
         mat2bmp::blaze2bmp(SlicesTestR, "ESN_SlicesTestR.bmp");
     }
 
-//    auto esn = esn::ESN(500, 4, 0, 1, 0, 0.9); // no echo, predicts better in this case because on no dependencies along time in it
     auto esn = metric::ESN(500, 4, 0.99, 0.5, 5, 0.9); // echo
-    // ctor input: w_size=500, w_connections=10, w_sr=0.6, alpha=0.5, washout=1, beta=0.5
     esn.train(SlicesR, TargetR);
 
     auto prediction = esn.predict(SlicesTestR);

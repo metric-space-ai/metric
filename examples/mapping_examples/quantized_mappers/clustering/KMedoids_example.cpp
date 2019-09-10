@@ -5,7 +5,7 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 Copyright (c) 2019 Panda Team
 */
-#include "../../modules/mapping/kmedoids.hpp"
+#include "../../modules/mapping.hpp"
 
 
 
