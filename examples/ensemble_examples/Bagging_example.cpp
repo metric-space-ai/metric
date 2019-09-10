@@ -6,16 +6,37 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 Copyright (c) 2019 Panda Team
 */
 
-#include "modules/mapping.hpp"
+#include "../../modules/mapping.hpp"
 
-#include "../../assets/helpers.cpp"  // csv reader
+#include "assets/helpers.cpp"  // csv reader
 
 #include <variant>
 
 #include <deque>  // for Record test
 
+template <typename T>
+void vector_print(const std::vector<T> &vec)
+{
+
+	std::cout << "[";
+	for (size_t i = 0; i < vec.size(); i++)
+	{
+		if (i < vec.size() - 1)
+		{
+			std::cout << vec[i] << ", ";
+		}
+		else
+		{
+			std::cout << vec[i] << "]" << std::endl;
+		}
+	}
+}
+
 int main()
 {
+    std::cout << "Bagging example have started" << std::endl;
+    std::cout << '\n';
+
     typedef std::vector<std::variant<int, double, std::string, std::vector<std::string>, std::vector<double>>> Record1;
 
     using Record = std::vector<double>;  // may be of arbitrary type, with appropriate accessors
@@ -52,7 +73,8 @@ int main()
     std::vector<IrisRec> IrisTestRec = { iris_str[5] };  // 1
     std::deque<IrisRec> IrisTestRecD = { iris_strD[5] };  // 1
 
-    std::vector<IrisRec> IrisTestMultipleRec = { iris_str[5], iris_str[8], iris_str[112] };  // 1, 1, 0
+    std::vector<IrisRec> IrisTestMultipleRec = { iris_str[5], iris_str[8], iris_str[112] }; // 1, 1, 0
+	std::deque<IrisRec> IrisTestMultipleRecD = { iris_strD[5], iris_strD[8], iris_strD[112] }; // 1, 1, 0
 
     std::cout << iris_str.size() << std::endl;
     std::cout << iris_str[0].size() << std::endl;
@@ -82,7 +104,8 @@ int main()
     for (size_t i = 0; i < iris_str[0].size() - 2; i++)
         std::cout << features_iris[i](iris_str[10]) << ", ";
     std::cout << std::endl;
-
+	
+	std::vector<bool> prediction;
 	
 	// SVM
 
@@ -90,17 +113,17 @@ int main()
 	////
 	// using Bagging on both specialized and default SVM
 	std::cout << "Bagging on both specialized and default SVM on Iris: " << std::endl;
-	startTime = std::chrono::steady_clock::now();
-	using WeakLrnVariant = std::variant<metric::edmSVM<IrisRec>, metric::edmClassifier<IrisRec, CSVM> >;
-	std::vector<WeakLrnVariant> models_1 = {};
-	WeakLrnVariant svmModel_5 = metric::edmSVM<IrisRec>(C_SVC, RBF, 3, 0, 100, 0.001, 1, 0, NULL, NULL, 0.5, 0.1, 1, 0);
-	WeakLrnVariant svmModel_6 = metric::edmClassifier<IrisRec, CSVM>();
-	models_1.push_back(svmModel_5);
-	models_1.push_back(svmModel_6);
-	auto baggingSVMmodel_1 = metric::Bagging<IrisRec, WeakLrnVariant, metric::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, { 0.3, 0.7 }, models_1); // 30% of first weak learner type, 70% of second
+	auto startTime = std::chrono::steady_clock::now();
+	using SVMWeakLrnVariant = std::variant<metric::edmSVM<IrisRec>, metric::edmClassifier<IrisRec, CSVM> >;
+	std::vector<SVMWeakLrnVariant> svm_models_1 = {};
+	SVMWeakLrnVariant svmModel_5 = metric::edmSVM<IrisRec>(C_SVC, RBF, 3, 0, 100, 0.001, 1, 0, NULL, NULL, 0.5, 0.1, 1, 0);
+	SVMWeakLrnVariant svmModel_6 = metric::edmClassifier<IrisRec, CSVM>();
+	svm_models_1.push_back(svmModel_5);
+	svm_models_1.push_back(svmModel_6);
+	auto baggingSVMmodel_1 = metric::Bagging<IrisRec, SVMWeakLrnVariant, metric::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, { 0.3, 0.7 }, svm_models_1); // 30% of first weak learner type, 70% of second
 	std::cout << "training... " << std::endl;
 	baggingSVMmodel_1.train(iris_str, features_iris, response_iris, true);
-	endTime = std::chrono::steady_clock::now();
+	auto endTime = std::chrono::steady_clock::now();
 	std::cout << "trained (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count()) / 1000000 << " s)" << std::endl;
 
 	baggingSVMmodel_1.predict(IrisTestRec, features_iris, prediction);
@@ -118,7 +141,7 @@ int main()
 	// using Bagging on both specialized and default SVM with deque
 	std::cout << "Bagging on both specialized and default SVM on deque Iris: " << std::endl;
 	startTime = std::chrono::steady_clock::now();
-	auto baggingSVMmodel_2 = metric::Bagging<IrisRec, WeakLrnVariant, metric::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, { 0.3, 0.7 }, models_1); // 30% of first weak learner type, 70% of second
+	auto baggingSVMmodel_2 = metric::Bagging<IrisRec, SVMWeakLrnVariant, metric::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, { 0.3, 0.7 }, svm_models_1); // 30% of first weak learner type, 70% of second
 	std::cout << "training... " << std::endl;
 	baggingSVMmodel_2.train(iris_strD, features_iris, response_iris, true);
 	endTime = std::chrono::steady_clock::now();
@@ -134,22 +157,20 @@ int main()
 
 	std::cout << "\n";
 
+
 	// C4.5
-	
-
-
 	
 	//
 	// using Bagging on both specialized and default C4.5
 	std::cout << "Bagging on both specialized and default C4.5 on Iris: " << std::endl;
 	startTime = std::chrono::steady_clock::now();
-	using WeakLrnVariant = std::variant<metric::edmC45<IrisRec>, metric::edmClassifier<IrisRec, CC45> >;
-	std::vector<WeakLrnVariant> models_1 = {};
-	WeakLrnVariant c45Model_4 = metric::edmC45<IrisRec>(2, 1e-3, 0.25, true);
-	WeakLrnVariant c45Model_5 = metric::edmClassifier<IrisRec, CC45>();
-	models_1.push_back(c45Model_4);
-	models_1.push_back(c45Model_5);
-	auto baggingC45model_1 = metric::Bagging<IrisRec, WeakLrnVariant, metric::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, { 0.3, 0.7 }, models_1); // 30% of first weak learner type, 70% of second
+	using C45WeakLrnVariant = std::variant<metric::edmC45<IrisRec>, metric::edmClassifier<IrisRec, CC45> >;
+	std::vector<C45WeakLrnVariant> c45_models_1 = {};
+	C45WeakLrnVariant c45Model_4 = metric::edmC45<IrisRec>(2, 1e-3, 0.25, true);
+	C45WeakLrnVariant c45Model_5 = metric::edmClassifier<IrisRec, CC45>();
+	c45_models_1.push_back(c45Model_4);
+	c45_models_1.push_back(c45Model_5);
+	auto baggingC45model_1 = metric::Bagging<IrisRec, C45WeakLrnVariant, metric::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, { 0.3, 0.7 }, c45_models_1); // 30% of first weak learner type, 70% of second
 	std::cout << "training... " << std::endl;
 	baggingC45model_1.train(iris_str, features_iris, response_iris, true);
 	endTime = std::chrono::steady_clock::now();
@@ -170,7 +191,7 @@ int main()
 	// using Bagging on both specialized and default C4.5 with deque
 	std::cout << "Bagging on both specialized and default C4.5 on deque Iris: " << std::endl;
 	startTime = std::chrono::steady_clock::now();
-	auto baggingC45model_2 = metric::Bagging<IrisRec, WeakLrnVariant, metric::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, { 0.3, 0.7 }, models_1); // 30% of first weak learner type, 70% of second
+	auto baggingC45model_2 = metric::Bagging<IrisRec, C45WeakLrnVariant, metric::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, { 0.3, 0.7 }, c45_models_1); // 30% of first weak learner type, 70% of second
 	std::cout << "training... " << std::endl;
 	baggingC45model_2.train(iris_strD, features_iris, response_iris, true);
 	endTime = std::chrono::steady_clock::now();

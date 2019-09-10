@@ -484,10 +484,7 @@ auto predictions = esn.predict(SlicesTestR);
 ---
 ## Ensembling
 
-#### Boosting
-
-###### SVM
-We can run SVM on famous Iris dataset.
+For all below examples of the bagging and boosting suppose we have Iris dataset:
 
 Here is our loaded dataset:
 
@@ -524,20 +521,26 @@ std::function<bool(IrisRec)> response_iris = [](IrisRec r) {
 };
 ```
 
+
+
+#### Boosting
+
+###### SVM
+
 On the same Iris dataset we can define and train Boosting model.
 
 SVM with default metaparams:
 ```cpp
-auto svmModel_3 = metric::edmClassifier<IrisRec, CSVM>();
-auto boostSvmModel_3 = metric::Boosting<IrisRec, metric::edmClassifier<IrisRec, CSVM>, metric::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, svmModel_3);
-boostSvmModel_3.train(iris_str, features_iris, response_iris, true);
+auto svmModel = metric::edmClassifier<IrisRec, CSVM>();
+auto boostSvmModel = metric::Boosting<IrisRec, metric::edmClassifier<IrisRec, CSVM>, metric::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, svmModel);
+boostSvmModel.train(iris_str, features_iris, response_iris, true);
 
-boostSvmModel_3.predict(IrisTestRec, features_iris, prediction);
+boostSvmModel.predict(IrisTestRec, features_iris, prediction);
 // out
 // Boost SVM predict on single Iris:
 // [1]
 
-boostSvmModel_3.predict(IrisTestMultipleRec, features_iris, prediction);
+boostSvmModel.predict(IrisTestMultipleRec, features_iris, prediction);
 // out
 // Boost SVM predict on multiple Iris:
 // [1, 1, 0]
@@ -547,16 +550,16 @@ boostSvmModel_3.predict(IrisTestMultipleRec, features_iris, prediction);
 
 SVM with specialized metaparams:
 ```cpp
-auto svmModel_4 = metric::edmSVM<IrisRec>(C_SVC, RBF, 3, 0, 100, 0.001, 1, 0, NULL, NULL, 0.5, 0.1, 1, 0);
-auto boostSvmModel_4 = metric::Boosting<IrisRec, metric::edmSVM<IrisRec>, metric::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, svmModel_4);
-boostSvmModel_4.train(iris_str, features_iris, response_iris, true);
+auto svmModel = metric::edmSVM<IrisRec>(C_SVC, RBF, 3, 0, 100, 0.001, 1, 0, NULL, NULL, 0.5, 0.1, 1, 0);
+auto boostSvmModel = metric::Boosting<IrisRec, metric::edmSVM<IrisRec>, metric::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, svmModel);
+boostSvmModel.train(iris_str, features_iris, response_iris, true);
 
-boostSvmModel_4.predict(IrisTestRec, features_iris, prediction);
+boostSvmModel.predict(IrisTestRec, features_iris, prediction);
 // out
 // Boost specialized SVM predict on single Iris:
 // [1]
 
-boostSvmModel_4.predict(IrisTestMultipleRec, features_iris, prediction);
+boostSvmModel.predict(IrisTestMultipleRec, features_iris, prediction);
 // out
 // Boost specialized SVM predict on multiple Iris:
 // [1, 1, 0]
@@ -568,15 +571,16 @@ boostSvmModel_4.predict(IrisTestMultipleRec, features_iris, prediction);
 
 C4.5 with default metaparams
 ```cpp
-auto boostC45Model_2 = metric::Boosting<IrisRec, metric::edmClassifier<IrisRec, CC45>, metric::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, c45Model_2);
-boostC45Model_2.train(iris_str, features_iris, response_iris, true);
+auto c45Model = metric::edmClassifier<IrisRec, libedm::CC45>();
+auto boostC45Model = metric::Boosting<IrisRec, metric::edmClassifier<IrisRec, CC45>, metric::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, c45Model);
+boostC45Model.train(iris_str, features_iris, response_iris, true);
 
-boostC45Model_2.predict(IrisTestRec, features_iris, prediction);
+boostC45Model.predict(IrisTestRec, features_iris, prediction);
 // out
 // Boost C4.5 predict on single Iris:
 // [1]
 
-boostC45Model_2.predict(IrisTestMultipleRec, features_iris, prediction);
+boostC45Model.predict(IrisTestMultipleRec, features_iris, prediction);
 // out
 // Boost C4.5 predict on multiple Iris:
 // [1, 1, 0]
@@ -584,16 +588,16 @@ boostC45Model_2.predict(IrisTestMultipleRec, features_iris, prediction);
 
 C4.5 with specialized metaparams
 ```cpp
-auto c45Model_3 = metric::edmC45<IrisRec>(2, 1e-3, 0.25, true);
-auto boostC45Model_3 = metric::Boosting<IrisRec, metric::edmC45<IrisRec>, metric::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, c45Model_3);
-boostC45Model_3.train(iris_str, features_iris, response_iris, true);
+auto c45Model = metric::edmC45<IrisRec>(2, 1e-3, 0.25, true);
+auto boostC45Model = metric::Boosting<IrisRec, metric::edmC45<IrisRec>, metric::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, c45Model);
+boostC45Model.train(iris_str, features_iris, response_iris, true);
 
-boostC45Model_3.predict(IrisTestRec, features_iris, prediction);
+boostC45Model.predict(IrisTestRec, features_iris, prediction);
 // out
 // Boost specialized C4.5 predict on single Iris:
 // [1]
 
-boostC45Model_3.predict(IrisTestMultipleRec, features_iris, prediction);
+boostC45Model.predict(IrisTestMultipleRec, features_iris, prediction);
 // out
 // Boost specialized C4.5 predict on multiple Iris:
 // [1, 1, 0]
@@ -607,42 +611,26 @@ boostC45Model_3.predict(IrisTestMultipleRec, features_iris, prediction);
 Vector with defined models
 ```cpp
 using WeakLrnVariant = std::variant<metric::edmSVM<IrisRec>, metric::edmClassifier<IrisRec, CSVM> >;
-std::vector<WeakLrnVariant> models_1 = {};
-WeakLrnVariant svmModel_5 = metric::edmSVM<IrisRec>(C_SVC, RBF, 3, 0, 100, 0.001, 1, 0, NULL, NULL, 0.5, 0.1, 1, 0);
-WeakLrnVariant svmModel_6 = metric::edmClassifier<IrisRec, CSVM>();
-models_1.push_back(svmModel_5);
-models_1.push_back(svmModel_6);
+std::vector<WeakLrnVariant> svmModels = {};
+WeakLrnVariant svmModel_1 = metric::edmSVM<IrisRec>(C_SVC, RBF, 3, 0, 100, 0.001, 1, 0, NULL, NULL, 0.5, 0.1, 1, 0);
+WeakLrnVariant svmModel_2 = metric::edmClassifier<IrisRec, CSVM>();
+svmModels.push_back(svmModel_1);
+svmModels.push_back(svmModel_2);
 ```
 
 Bagging on both specialized and default SVM
 ```cpp
-auto baggingSVMmodel_1 = metric::Bagging<IrisRec, WeakLrnVariant, metric::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, { 0.3, 0.7 }, models_1); // 30% of first weak learner type, 70% of second
-baggingSVMmodel_1.train(iris_str, features_iris, response_iris, true);
+auto baggingSVMmodel = metric::Bagging<IrisRec, WeakLrnVariant, metric::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, { 0.3, 0.7 }, svmModels); // 30% of first weak learner type, 70% of second
+baggingSVMmodel.train(iris_str, features_iris, response_iris, true);
 
-baggingSVMmodel_1.predict(IrisTestRec, features_iris, prediction);
+baggingSVMmodel.predict(IrisTestRec, features_iris, prediction);
 // out
 // Bagging SVM predict on single Iris:
 // [1]
 
-baggingSVMmodel_1.predict(IrisTestMultipleRec, features_iris, prediction);
+baggingSVMmodel.predict(IrisTestMultipleRec, features_iris, prediction);
 // out
 // Bagging SVM predict on multiple Iris:
-// [1, 1, 0]
-```
-
-Bagging on both specialized and default SVM with deque
-```cpp
-auto baggingSVMmodel_2 = metric::Bagging<IrisRec, WeakLrnVariant, metric::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, { 0.3, 0.7 }, models_1); // 30% of first weak learner type, 70% of second
-baggingSVMmodel_2.train(iris_strD, features_iris, response_iris, true);
-
-baggingSVMmodel_2.predict(IrisTestRecD, features_iris, prediction);
-// out
-// Bagging SVM predict on single deque Iris:
-// [1]
-
-baggingSVMmodel_2.predict(IrisTestMultipleRecD, features_iris, prediction);
-// out
-// Bagging SVM predict on multiple deque Iris:
 // [1, 1, 0]
 ```
 
@@ -653,44 +641,49 @@ baggingSVMmodel_2.predict(IrisTestMultipleRecD, features_iris, prediction);
 Vector with defined models
 ```cpp
 using WeakLrnVariant = std::variant<metric::edmC45<IrisRec>, metric::edmClassifier<IrisRec, CC45> >;
-std::vector<WeakLrnVariant> models_1 = {};
-WeakLrnVariant c45Model_4 = metric::edmC45<IrisRec>(2, 1e-3, 0.25, true);
-WeakLrnVariant c45Model_5 = metric::edmClassifier<IrisRec, CC45>();
-models_1.push_back(c45Model_4);
-models_1.push_back(c45Model_5);
+std::vector<WeakLrnVariant> c45Models = {};
+WeakLrnVariant c45Model_1 = metric::edmC45<IrisRec>(2, 1e-3, 0.25, true);
+WeakLrnVariant c45Model_2 = metric::edmClassifier<IrisRec, CC45>();
+c45Models.push_back(c45Model_1);
+c45Models.push_back(c45Model_2);
 ```
 
 Bagging on both specialized and default C4.5
 ```cpp
-auto baggingC45model_1 = metric::Bagging<IrisRec, WeakLrnVariant, metric::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, { 0.3, 0.7 }, models_1); // 30% of first weak learner type, 70% of second
-baggingC45model_1.train(iris_str, features_iris, response_iris, true);
+auto baggingC45model = metric::Bagging<IrisRec, WeakLrnVariant, metric::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, { 0.3, 0.7 }, c45Models); // 30% of first weak learner type, 70% of second
+baggingC45model.train(iris_str, features_iris, response_iris, true);
 
-baggingC45model_1.predict(IrisTestRec, features_iris, prediction);
+baggingC45model.predict(IrisTestRec, features_iris, prediction);
 // out
 // Bagging C4.5 predict on single Iris:
 // [1]
 
-baggingC45model_1.predict(IrisTestMultipleRec, features_iris, prediction);
+baggingC45model.predict(IrisTestMultipleRec, features_iris, prediction);
 // out
 // Bagging C4.5 predict on multiple Iris:
 // [1, 1, 0]
 ```
 
-Bagging on both specialized and default C4.5 with deque
+---
+
+#### Correlation Weighted Accuracy
+
+
+Suppose we have the following sets:
 ```cpp
-auto baggingC45model_2 = metric::Bagging<IrisRec, WeakLrnVariant, metric::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, { 0.3, 0.7 }, models_1); // 30% of first weak learner type, 70% of second
-baggingC45model_2.train(iris_strD, features_iris, response_iris, true);
-
-baggingC45model_2.predict(IrisTestRecD, features_iris, prediction);
-// out
-// Bagging C4.5 predict on single deque Iris:
-// [1]
-
-baggingC45model_2.predict(IrisTestMultipleRecD, features_iris, prediction);
-// out
-// Bagging C4.5 predict on multiple deque Iris:
-// [1, 1, 0]
+std::vector<int> g1 = {3, 2, 2, 3, 1, 1}; // Known groups
+std::vector<int> g2 = {4, 2, 2, 2, 1, 1}; // Predicted groups
 ```
+
+We can calculate Correlation Weighted Accuracy for that:
+```cpp
+double cwa = metric::correlation_weighted_accuracy(g1, g2);
+// out
+// Correlation Weighted Accuracy:
+// 0.637323
+```
+
+---
 
 ---
 

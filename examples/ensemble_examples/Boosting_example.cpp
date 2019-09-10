@@ -5,29 +5,37 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 Copyright (c) 2019 Panda Team
 */
-#include "../../../details/classification/metric_classification.hpp"
+#include "../../modules/mapping.hpp"
 
-#include "../../assets/helpers.cpp" // csv reader
+#include "assets/helpers.cpp" // csv reader
 
 #include <variant>
 
 #include <deque> // for Record test
 
-#include "../../../details/classification/details/correlation_weighted_accuracy.hpp"
 
+template <typename T>
+void vector_print(const std::vector<T> &vec)
+{
 
-
-
-//template<class T>
-//using Record = std::vector<T>;
-
-
-//template<class T>
-//using IrisRec = std::deque<T>;
-
+	std::cout << "[";
+	for (size_t i = 0; i < vec.size(); i++)
+	{
+		if (i < vec.size() - 1)
+		{
+			std::cout << vec[i] << ", ";
+		}
+		else
+		{
+			std::cout << vec[i] << "]" << std::endl;
+		}
+	}
+}
 
 int main()
 {
+    std::cout << "Boosting example have started" << std::endl;
+    std::cout << '\n';
 
 	//*
 	typedef std::vector<std::variant<int, double, std::string, std::vector<std::string>, std::vector<double> > > Record1;
@@ -120,7 +128,8 @@ int main()
 	for (size_t i = 0; i < iris_str[0].size() - 2; i++)
 		std::cout << features_iris[i](iris_str[10]) << ", ";
 	std::cout << std::endl;
-
+	
+	std::vector<bool> prediction;
 
 
 	// SVM
@@ -130,12 +139,12 @@ int main()
 	////
 	// using SVM with default metaparams
 	std::cout << "Boost SVM on Iris: " << std::endl;
-	startTime = std::chrono::steady_clock::now();
+	auto startTime = std::chrono::steady_clock::now();
 	auto svmModel_3 = metric::edmClassifier<IrisRec, CSVM>();
 	auto boostSvmModel_3 = metric::Boosting<IrisRec, metric::edmClassifier<IrisRec, CSVM>, metric::SubsampleRUS<IrisRec>>(10, 0.75, 0.5, svmModel_3);
 	std::cout << "training... " << std::endl;
 	boostSvmModel_3.train(iris_str, features_iris, response_iris, true);
-	endTime = std::chrono::steady_clock::now();
+	auto endTime = std::chrono::steady_clock::now();
 	std::cout << "trained (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count()) / 1000000 << " s)" << std::endl;
 
 	boostSvmModel_3.predict(IrisTestRec, features_iris, prediction);
@@ -178,6 +187,7 @@ int main()
 	// using C4.5 with default metaparams
 	std::cout << "Boosting C4.5 on Iris: " << std::endl;
 	startTime = std::chrono::steady_clock::now();
+	auto c45Model_2 = metric::edmClassifier<IrisRec, libedm::CC45>();
 	auto boostC45Model_2 = metric::Boosting<IrisRec, metric::edmClassifier<IrisRec, CC45>, metric::SubsampleRUS<IrisRec> >(10, 0.75, 0.5, c45Model_2);
 	std::cout << "training... " << std::endl;
 	boostC45Model_2.train(iris_str, features_iris, response_iris, true);
