@@ -1,29 +1,57 @@
+cmake_minimum_required(VERSION 3.12)
+
+project(distance_examples)
+
+set(Boost_DEBUG on)  
+find_package(Boost)
+
+if(UNIX)
+    find_package(Threads REQUIRED)
+endif(UNIX)
 
 include_directories(
     ${PROJECT_SOURCE_DIR}
+    ${PROJECT_SOURCE_DIR}/../../3rdparty/jpeglib 
     )
 
-include_directories(${Boost_INCLUDE_DIRS})
+include_directories(${Boost_INCLUDE_DIRS}) 
+	
+file(COPY "assets" DESTINATION ".")
 
-add_executable(distance_example distance_example.cpp)
-set_target_properties(distance_example PROPERTIES   RUNTIME_OUTPUT_DIRECTORY  "${PROJECT_SOURCE_DIR}/examples")
-add_executable(StandartMetrics_example StandartMetrics_example.cpp)
-set_target_properties(StandartMetrics_example PROPERTIES   RUNTIME_OUTPUT_DIRECTORY  "${PROJECT_SOURCE_DIR}/examples")
-add_executable(EMD_example EMD_example.cpp)
-set_target_properties(EMD_example PROPERTIES   RUNTIME_OUTPUT_DIRECTORY  "${PROJECT_SOURCE_DIR}/examples")
-add_executable(TWED_example TWED_example.cpp)
-set_target_properties(TWED_example PROPERTIES   RUNTIME_OUTPUT_DIRECTORY  "${PROJECT_SOURCE_DIR}/examples")
-add_executable(SSIM_example SSIM_example.cpp)
-set_target_properties(SSIM_example PROPERTIES   RUNTIME_OUTPUT_DIRECTORY  "${PROJECT_SOURCE_DIR}/examples")
-add_executable(EditDistance_example EditDistance_example.cpp)
-set_target_properties(EditDistance_example PROPERTIES   RUNTIME_OUTPUT_DIRECTORY  "${PROJECT_SOURCE_DIR}/examples")
+file(GLOB EXAMPLE_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.cpp) 
 
-add_executable(entropy_example entropy_example.cpp)
-set_target_properties(entropy_example PROPERTIES   RUNTIME_OUTPUT_DIRECTORY  "${PROJECT_SOURCE_DIR}/examples")
+#Run through each source
+foreach(exampleSrc ${EXAMPLE_SRCS})
+
+	#Extract the filename without an extension (NAME_WE)
+	get_filename_component(exampleName ${exampleSrc} NAME_WE)
+
+	#Add compile target
+	add_executable(${exampleName} ${exampleSrc})
+ 
+	#link to Boost libraries AND your targets and dependencies
+	target_link_libraries(${exampleName} ${Boost_LIBRARIES})
+	set_target_properties(${exampleName} PROPERTIES CXX_STANDARD 17)
+
+#  target_link_libraries(${exampleName} ${LAPACK_LIBRARIES})
+	if(UNIX)
+		set(THREADS_PREFER_PTHREAD_FLAG ON)
+		set(CMAKE_CXX_FLAGS "-O3")
+
+		target_link_libraries(${exampleName} Threads::Threads)
+
+		target_compile_options(${exampleName} PRIVATE -pthread)
+		set_target_properties(${exampleName} PROPERTIES LINK_FLAGS -pthread)
+	endif(UNIX)
+
+endforeach(exampleSrc)
+
 if(UNIX)
-    set(THREADS_PREFER_PTHREAD_FLAG ON)
-    find_package(Threads REQUIRED)
-    target_link_libraries(entropy_example Threads::Threads)
+	target_link_libraries(earth_mover_distance_example /usr/local/lib/libjpeg.a) 
+	target_link_libraries(earth_mover_distance_2_example /usr/local/lib/libjpeg.a) 
 endif(UNIX)
-target_link_libraries(entropy_example ${Boost_LIBRARIES})
 
+if(CMAKE_SYSTEM_NAME MATCHES Windows)
+	target_link_libraries(earth_mover_distance_example ${PROJECT_SOURCE_DIR}/../../3rdparty/jpeglib/Release/jpeg.lib) 
+	target_link_libraries(earth_mover_distance_2_example ${PROJECT_SOURCE_DIR}/../../3rdparty/jpeglib/Release/jpeg.lib) 
+endif()

@@ -1,8 +1,31 @@
-add_executable(correlation_example correlation_example.cpp)
-set_target_properties(correlation_example PROPERTIES RUNTIME_OUTPUT_DIRECTORY  ${PROJECT_SOURCE_DIR}/examples)
-add_executable(simple_correlation simple_correlation.cpp)
-set_target_properties(simple_correlation PROPERTIES RUNTIME_OUTPUT_DIRECTORY  ${PROJECT_SOURCE_DIR}/examples)
+cmake_minimum_required(VERSION 3.12)
 
+project(correlation_examples)
 
+set(Boost_DEBUG on)  
+find_package(Boost)
 
+include_directories(
+    ${PROJECT_SOURCE_DIR}
+    )
 
+include_directories(${Boost_INCLUDE_DIRS}) 
+
+file(GLOB EXAMPLE_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.cpp) 
+
+file(COPY "assets" DESTINATION ".")
+
+#Run through each source
+foreach(exampleSrc ${EXAMPLE_SRCS})
+
+	#Extract the filename without an extension (NAME_WE)
+	get_filename_component(exampleName ${exampleSrc} NAME_WE)
+
+	#Add compile target
+	add_executable(${exampleName} ${exampleSrc})
+ 
+	#link to Boost libraries AND your targets and dependencies
+	target_link_libraries(${exampleName} ${Boost_LIBRARIES})
+	set_target_properties(${exampleName} PROPERTIES CXX_STANDARD 17)
+
+endforeach(exampleSrc)

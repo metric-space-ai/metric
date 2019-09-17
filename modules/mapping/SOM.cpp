@@ -10,20 +10,41 @@ Copyright (c) 2019 Panda Team
 #include "SOM.hpp"
 namespace metric {
 
-template <class recType, class Metric, class Graph>
-SOM<recType, Metric, Graph>::SOM(size_t nodesNumber, Metric metric)
+template <class recType, class Metric, class Graph, class Distribution>
+SOM<recType, Metric, Graph, Distribution>::SOM(size_t nodesNumber, Metric metric)
     : D(0)
     , metric(metric)
     , graph(nodesNumber)
+    , distribution(-1, 1)
+	, neighborhoodSize(-1)
+	, neigbour_range_decay(-1)
+	, random_seed(-1)
 {
     valid = graph.isValid();
 }
 
-template <class recType, class Metric, class Graph>
-SOM<recType, Metric, Graph>::SOM(size_t nodesWidth, size_t nodesHeight, Metric metric)
+template <class recType, class Metric, class Graph, class Distribution>
+SOM<recType, Metric, Graph, Distribution>::SOM(size_t nodesWidth, size_t nodesHeight, Metric metric)
     : D(0)
     , metric(metric)
     , graph(nodesWidth, nodesHeight)
+    , distribution(-1, 1)
+	, neighborhoodSize(-1)
+	, neigbour_range_decay(-1)
+	, random_seed(-1)
+{
+    valid = graph.isValid();
+}
+
+template <class recType, class Metric, class Graph, class Distribution>
+SOM<recType, Metric, Graph, Distribution>::SOM(Metric metric, Graph graph, Distribution distribution, double neighborhoodSize, double neigbour_range_decay, long long random_seed)
+    : D(0)
+    , metric(metric)
+    , graph(graph)
+    , distribution(distribution)
+	, neighborhoodSize(neighborhoodSize)
+	, neigbour_range_decay(neigbour_range_decay)
+	, random_seed(random_seed)
 {
     valid = graph.isValid();
 }
@@ -31,33 +52,35 @@ SOM<recType, Metric, Graph>::SOM(size_t nodesWidth, size_t nodesHeight, Metric m
 //template <class recType, class Metric, class Graph>
 //SOM<recType, Metric, Graph>::~SOM() = default;
 
-template <class recType, class Metric, class Graph>
-bool SOM<recType, Metric, Graph>::isValid()
+template <class recType, class Metric, class Graph, class Distribution>
+bool SOM<recType, Metric, Graph, Distribution>::isValid()
 {
     return valid;
 }
 
-template <class recType, class Metric, class Graph>
-void SOM<recType, Metric, Graph>::train(
+template <class recType, class Metric, class Graph, class Distribution>
+void SOM<recType, Metric, Graph, Distribution>::train(
     const std::vector<std::vector<T>>& samples, size_t iterations, double s_learn_rate, double f_learn_rate)
 {
     const size_t nodesNumber = graph.getNodesNumber();
 
     // initialize weight matrix at first training call
     if (D == 0) {
-        std::cout << "initial training" << std::endl;
 
         /* Set sample dimension */
         D = samples[0].size();
 
-        /* Initialize weights */
+        /* Set sample dimension */
         weights = std::vector<std::vector<T>>(nodesNumber, std::vector<T>(D));
 
         /* Create uniform distribution */
-        const auto seed = std::chrono::system_clock::now().time_since_epoch().count();
-        std::default_random_engine random_generator(seed);
-        std::uniform_real_distribution<T> distribution(-1, 1);
-
+        // const auto seed = std::chrono::system_clock::now().time_since_epoch().count(); // hide by Stepan Mamontov
+		if (random_seed == -1)
+		{
+			random_seed = std::chrono::system_clock::now().time_since_epoch().count();
+		}
+        std::default_random_engine random_generator(random_seed);
+		
         /* Fill weights by uniform distributed values */
         for (auto& weight : weights) {
             for (auto& w : weight) {
@@ -65,8 +88,6 @@ void SOM<recType, Metric, Graph>::train(
             }
         }
 
-    } else {
-        std::cout << "further training" << std::endl;
     }
 
     assert(D == samples[0].size());
@@ -82,7 +103,7 @@ void SOM<recType, Metric, Graph>::train(
     // if (samples.size() < iterations) {
     //   less_samples = true;
     //}
-
+	
     /* Random updating */
     std::vector<size_t> randomized_samples(samples.size());
     std::iota(randomized_samples.begin(), randomized_samples.end(), 0);
@@ -107,8 +128,12 @@ void SOM<recType, Metric, Graph>::train(
         // diffLR *=  std:exp(idx / double(iterations); // Power Series
 
         double curr_learn_rate = f_learn_rate + diffLR;
-
-        double neighborhoodSize = (1.0 - idx / double(iterations + 1)) * std::sqrt(double(nodesNumber));
+		
+		//double neighborhoodSize = (1.0 - idx / double(iterations + 1)) * std::sqrt(double(nodesNumber)); // hide by Stepan Mamontov
+		if (neighborhoodSize == -1)
+		{
+			neighborhoodSize = (1.0 - idx / double(iterations + 1)) * std::sqrt(double(nodesNumber));
+		}
 
         size_t samples_idx = randomized_samples[idx_r];
 
@@ -138,7 +163,14 @@ void SOM<recType, Metric, Graph>::train(
 
                 T factor = 1;  // uniform
                 if (nSI != 0) {
-                    const T sigma = T(neighborhoodSize / 2.0);
+					
+                    // const T sigma = T(neighborhoodSize / 2.0); // hide by Stepan Mamontov
+					if (neigbour_range_decay == -1)
+					{
+						neigbour_range_decay = (neighborhoodSize / 2.0);
+					}
+
+					const T sigma = T (neigbour_range_decay);
                     factor = std::exp(T(deep * deep) / T(-2 * sigma * sigma));
                     // factor = std::exp((T((j - bmu_idx[1]) * (j - bmu_idx[1]) + (i -
                     // bmu_idx[0]) * (i - bmu_idx[0]))) / T(- 2 * sigma * sigma));
@@ -160,8 +192,8 @@ void SOM<recType, Metric, Graph>::train(
     }
 }
 
-template <class recType, class Metric, class Graph>
-std::vector<double> SOM<recType, Metric, Graph>::reduce(const recType& sample)
+template <class recType, class Metric, class Graph, class Distribution>
+std::vector<double> SOM<recType, Metric, Graph, Distribution>::reduce(const recType& sample)
 {
     std::vector<double> dim_reduced(graph.getNodesNumber());
 
@@ -172,15 +204,15 @@ std::vector<double> SOM<recType, Metric, Graph>::reduce(const recType& sample)
     return dim_reduced;
 }
 
-template <class recType, class Metric, class Graph>
-size_t SOM<recType, Metric, Graph>::size()
+template <class recType, class Metric, class Graph, class Distribution>
+size_t SOM<recType, Metric, Graph, Distribution>::size()
 {
     return graph.getNodesNumber();
 }
 
 /** Best matching unit **/
-template <class recType, class Metric, class Graph>
-size_t SOM<recType, Metric, Graph>::BMU(const recType& sample) const
+template <class recType, class Metric, class Graph, class Distribution>
+size_t SOM<recType, Metric, Graph, Distribution>::BMU(const recType& sample) const
 {
     assert(sample.size() == D);  // input sample has not same size than SOM;
 

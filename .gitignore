@@ -13,3 +13,6 @@
 /modules/crossfilter/examples/build
 /mkl
 /examples/db_creditinals.csv
+mkl
+build
+/3rdparty/jpeglib/Release/jpeg.lib

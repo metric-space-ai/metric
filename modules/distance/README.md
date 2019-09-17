@@ -23,7 +23,7 @@ And framework thinks about all the metrics as one metric with a *scale function*
 **METRIC** framework have one universal metric factory function. To specify needed metric the user should only specify a 
 *scale function*, a *reduce function* or a *cost matrix*. And of course framework provide the common metrics by name.
 
-The framework�s metric factory backes the metric, which is than just a function. 
+The framework's metric factory backes the metric, which is than just a function. 
 
 ## Examples
 
@@ -94,14 +94,14 @@ Suppose we have an images as matrices: `img1`, `img2`.
 
 Now we can reshape matrices to vectors:
 ```cpp
-typedef int edm_Type;
+typedef int emd_Type;
 
-size_t im1_R = img1.size() / 6;
-size_t im1_C = img1[0].size() / 6;
+size_t im1_R = img1.size();
+size_t im1_C = img1[0].size();
 
 // serialize_mat2vec
-std::vector<edm_Type> i1;
-std::vector<edm_Type> i2;
+std::vector<emd_Type> i1;
+std::vector<emd_Type> i2;
 
 for (size_t i = 0; i < im1_R; ++i)
 {
@@ -118,13 +118,13 @@ And now we can compare two vectors using Earth Mover Distance.
 First we should calculate a cost matrix: 
 
 ```cpp
-auto cost_mat = metric::EMD_details::ground_distance_matrix_of_2dgrid<edm_Type>(im1_C, im1_R);
+auto cost_mat = metric::EMD_details::ground_distance_matrix_of_2dgrid<emd_Type>(im1_C, im1_R);
 auto maxCost = metric::EMD_details::max_in_distance_matrix(cost_mat);
 ```
 Then declare EMD (Earth Mover Distance) metric and use it:
 
 ```cpp
-metric::EMD<edm_Type> distance(cost_mat, maxCost);
+metric::EMD<emd_Type> distance(cost_mat, maxCost);
 
 auto result = distance(i1, i2);
 std::cout << "result: " << result << std::endl;
@@ -178,6 +178,211 @@ std::cout << "result: " << result << std::endl;
 ---
 
 ### Structural Similarity metric (for images)
+
+Suppose we have two images `img1` and `img2` as `std::vector<std::vector<int>>`.
+Then we can use Structural Similarity metric for compare that images:
+
+```cpp
+metric::SSIM<double, std::vector<int>> distance;
+
+auto result = distance(img1, img2);
+std::cout << "result: " << result << std::endl;
+// out:
+// Structural Similarity metric
+// result: 0.0907458
+```
+---
+
+### Sorensen
+Suppose we have a set of values:
+
+```cpp
+typedef double V_type;
+
+V_type vt0 = 0;
+V_type vt1 = 1;
+V_type vt2 = 2;
+V_type vt3 = 3;
+```
+
+Then we can calculate Sorensen distances various vector types.
+
+`STL`:
+```cpp
+std::vector<V_type> obj1 = {vt0, vt1, vt2, vt0};
+std::vector<V_type> obj2 = {vt0, vt1, vt3};
+	
+auto result = metric::sorensen(obj1, obj2);
+std::cout << "result: " << result << std::endl;
+// out:
+// Sorensen distance for std::vector
+// result: 0.142857
+```
+
+`blaze::DynamicVector`:
+```cpp
+blaze::DynamicVector<V_type> bdv1 {vt0, vt1, vt2, vt0};
+blaze::DynamicVector<V_type> bdv2 {vt0, vt1, vt3};
+	
+auto result = metric::sorensen(bdv1, bdv2);
+std::cout << "result: " << result << std::endl;
+// out:
+// Sorensen distance for blaze::DynamicVector
+// result: 0.142857
+```
+
+`blaze::StaticVector`:
+```cpp
+blaze::StaticVector<V_type, 4UL> bsv1 {vt0, vt1, vt2, vt0};
+blaze::StaticVector<V_type, 4UL> bsv2 {vt0, vt1, vt3, vt0};
+	
+auto result = metric::sorensen(bsv1, bsv2);
+std::cout << "result: " << result << std::endl;
+// out:
+// Sorensen distance for blaze::StaticVector
+// result: 0.142857
+```
+
+`blaze::HybridVector`:
+```cpp
+blaze::HybridVector<V_type, 4UL> bhv1 {vt0, vt1, vt2, vt0};
+blaze::HybridVector<V_type, 4UL> bhv2 {vt0, vt1, vt3, vt0};
+	
+auto result = metric::sorensen(bhv1, bhv2);
+std::cout << "result: " << result << std::endl;
+// out:
+// Sorensen distance for blaze::HybridVector
+// result: 0.142857
+```
+
+`blaze::CompressedVector`:
+```cpp
+blaze::CompressedVector<V_type> bcv1 {vt0, vt1, vt2, vt0};
+blaze::CompressedVector<V_type> bcv2 {vt0, vt1, vt3};
+	
+auto result = metric::sorensen(bcv1, bcv2);
+std::cout << "result: " << result << std::endl;
+// out:
+// Sorensen distance for blaze::CompressedVector
+// result: 0.142857
+```
+
+---
+
+### Entropy, Mutual Information and Variation of Information
+Suppose we have a some data:
+
+```cpp
+std::vector<std::vector<double>> v = { {5,5}, {2,2}, {3,3}, {5,1} };
+```
+
+Then we can calculate the entropy of the given data:
+```cpp
+auto result = metric::entropy(v);
+std::cout << "result: " << result << std::endl;
+// out:
+// Entropy using default distance metric
+// result: 7.81979
+```
+
+Of cause, we can calculate entropy using any distance metric:
+```cpp
+auto result = entropy(v, 3, 2.0, metric::Manhatten<double>());
+std::cout << "result: " << result << std::endl;
+// out:
+// Entropy using Manhatten distance metric
+// result: 7.9183
+```
+
+And now suppose we have two vectors with a data:
+
+```cpp
+std::vector<std::vector<double>> v1 = {{5,5}, {2,2}, {3,3}, {5,5}};
+std::vector<std::vector<double>> v2 = {{5,5}, {2,2}, {3,3}, {1,1}};
+```
+
+Then we can calculate Mutual Information:
+```cpp
+auto result = metric::mutualInformation(v1, v2);
+std::cout << "result: " << result << std::endl;
+// out:
+// Mutual Information using default distance metric
+// result: 1.00612
+```
+
+Of cause we can specify distance metric:
+```cpp
+auto result = metric::mutualInformation(v1, v2, 3, metric::Chebyshev<double>());
+std::cout << "result: " << result << std::endl;
+// out:
+// Mutual Information using Chebyshev distance metric
+// result: 1.08945 
+```
+
+For the same data we can calculate Variation of Information:
+```cpp
+auto result = metric::variationOfInformation(v1, v2);
+std::cout << "result: " << result << std::endl;
+// out:
+// Variation of Information using default distance metric
+// result: 12.6577
+```
+
+Again we can specify distance metric:
+```cpp
+auto result = metric::variationOfInformation<double, metric::Manhatten<double>>(v1, v2);
+std::cout << "result: " << result << std::endl;
+// out:
+// Variation of Information Information using Manhatten distance metric
+// result: 14.8244
+```
+
+We can calculate normalized Variation of Information:
+```cpp
+auto result = metric::variationOfInformation_normalized(v1, v2);
+std::cout << "result: " << result << std::endl;
+// out:
+// normalized Variation of Information
+// result: 0.920751
+```
+
+Instead function we can use functor for Variation of Information:
+```cpp
+auto f_voi = metric::VOI<long double>();
+auto result = f_voi(v1, v2);
+std::cout << "result: " << result << std::endl;
+// out:
+// Variation of Information as functor
+// result: 12.6577
+```
+Normalized functor:
+```cpp
+auto f_voi_norm = metric::VOI_normalized<long double>();
+auto result = f_voi_norm(v1, v2);
+std::cout << "result: " << result << std::endl;
+// out:
+// normalized Variation of Information as normalized functor
+// result: 0.927254
+```
+KL functor:
+```cpp
+auto f_voi_kl = metric::VOI_kl<long double>();
+auto result = f_voi_kl(v1, v2);
+std::cout << "result: " << result << std::endl;
+// out:
+// Variation of Information as KL functor
+// result: 49.8917
+```
+Normalized KL functor:
+```cpp
+auto f_voi_norm_kl = metric::VOI_normalized_kl<long double>();
+auto result = f_voi_norm_kl(v1, v2);
+std::cout << "result: " << result << std::endl;
+// out:
+// Variation of Information as normalized KL functor
+// result: 1.06191
+```
+
 ---
 
 ## Run
@@ -186,11 +391,11 @@ std::cout << "result: " << result << std::endl;
 METRIC | distance works headonly. Just include the header into your project.
 
 ```cpp
-#include "metric_distance.cpp"
+#include "modules/distance.hpp"
 ```
 
 and compile for example with
 
 ```bash
-$ clang++ ./examples/StandartMetrics_example.cpp -std=c++14
+$ clang++ ./examples/distance_examples/standart_distances_example.cpp -std=c++14
 ```
