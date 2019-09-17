@@ -35,6 +35,10 @@ int main()
 
     auto model = metric::PCFA_factory(training_dataset, n_features); // dataset, compressed_code_length
 
+    auto avg = model.get_average();
+    mat2bmp::blaze2bmp_norm(avg, "averages.bmp");
+    blaze_dm_to_csv(avg, "averages.csv");
+
     auto compressed = model.encode(test_data);
 
     mat2bmp::blaze2bmp_norm(compressed, "compressed.bmp");

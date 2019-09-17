@@ -65,6 +65,15 @@ public:
    */
     blaze::DynamicMatrix<value_type> decode(const blaze::DynamicMatrix<value_type>& Codes, bool unshift=true);
 
+    /**
+   * @brief returns the average curve of training dataset, used for center shift
+   *
+   * @return blaze::DynamicMatrix<value_type>
+   */
+    blaze::DynamicMatrix<value_type> get_average();
+
+
+
 private:
     blaze::DynamicMatrix<value_type> W_decode;
     blaze::DynamicMatrix<value_type> W_encode;
@@ -79,11 +88,7 @@ private:
 * @param n_features
 */
 template <typename BlazeMatrix>
-PCFA<typename BlazeMatrix::ElementType> PCFA_factory(const BlazeMatrix & TrainingData, size_t n_features = 1)
-{ // TODO move to .cpp
-    return PCFA<typename BlazeMatrix::ElementType>(TrainingData, n_features);
-};
-
+PCFA<typename BlazeMatrix::ElementType> PCFA_factory(const BlazeMatrix & TrainingData, size_t n_features = 1);
 
 }  // namespace metric
 

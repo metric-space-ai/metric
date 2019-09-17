@@ -18,6 +18,9 @@ Copyright (c) 2019 Panda Team
 #include "modules/utils/visualizer.hpp"
 #include "modules/transform/discrete_cosine.hpp"
 
+#include "examples/mapping_examples/assets/helpers.cpp"  // for .csv output
+
+
 template <typename MatrixType1, typename MatrixType2>
 double mean_square_error(MatrixType1 M1, MatrixType2 M2)
 {
@@ -95,20 +98,32 @@ int main()
     if (visualize) {
         mat2bmp::blaze2bmp(SlicesSine, "SlicesSine.bmp");
         mat2bmp::blaze2bmp(TestSlicesSine, "TestSlicesSine.bmp");
+        blaze_dm_to_csv(blaze::DynamicMatrix<double, blaze::rowMajor>(SlicesSine), "training_dataset.csv");
+        blaze_dm_to_csv(blaze::DynamicMatrix<double, blaze::rowMajor>(TestSlicesSine), "test_data.csv");
     }
 
 //    auto direct_sine = metric::PCFA<double>(SlicesSine, 8);  // ctor needs element type specification
     auto direct_sine = metric::PCFA_factory(SlicesSine, 8);  // factory deduces type
 
+    if (visualize) {
+        auto avg = direct_sine.get_average();
+        mat2bmp::blaze2bmp(avg, "averages.bmp");
+        blaze_dm_to_csv(avg, "averages.csv");
+    }
+
     auto direct_compressed_sine = direct_sine.encode(TestSlicesSine);
 
-    if (visualize)
+    if (visualize) {
         mat2bmp::blaze2bmp_norm(direct_compressed_sine, "compressed.bmp");
+        blaze_dm_to_csv(direct_compressed_sine, "compressed.csv");
+    }
 
     auto direct_restored_sine = direct_sine.decode(direct_compressed_sine);
 
-    if (visualize)
+    if (visualize) {
         mat2bmp::blaze2bmp(direct_restored_sine, "restored.bmp");
+        blaze_dm_to_csv(direct_restored_sine, "restored.csv");
+    }
 
     std::cout << "avg error: " << mean_square_error(direct_restored_sine, TestSlicesSine) << "\n";
     std::cout << "compare visually restored.bmp to TestSliceSine.bmp\n";

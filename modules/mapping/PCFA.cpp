@@ -30,24 +30,24 @@ blaze::DynamicMatrix<typename BlazeMatrix::ElementType> PCA(const BlazeMatrix & 
 
     eigen(CovMat, w, V);
 
-    for (size_t row = 0; row < V.rows(); row++)
-        blaze::row(V, row) = blaze::row(V, row) * w[row];
+//    for (size_t row = 0; row < V.rows(); row++)
+//        blaze::row(V, row) = blaze::row(V, row) * w[row];
 
     // sort and select
     size_t lower_idx = 0;
     size_t upper_idx = w.size() - 1;
-    typename BlazeMatrix::ElementType spectral_radius;  // also we get spectral radius for normalization: we process the first eigenvalue specially
-    if ((-w[lower_idx] > w[upper_idx]))
-        spectral_radius = w[lower_idx];
-    else
-        spectral_radius = w[upper_idx];
+//    typename BlazeMatrix::ElementType spectral_radius;  // also we get spectral radius for normalization: we process the first eigenvalue specially
+//    if ((-w[lower_idx] > w[upper_idx]))
+//        spectral_radius = w[lower_idx];
+//    else
+//        spectral_radius = w[upper_idx];
     int count = 0;
     while (count < n_components && upper_idx > lower_idx) {
         if (-w[lower_idx] > w[upper_idx]) {
-            blaze::row(Result, count) = blaze::row(V, lower_idx) / spectral_radius;  // add eigenpair
+            blaze::row(Result, count) = blaze::row(V, lower_idx); // / spectral_radius;  // add eigenpair
             lower_idx++;
         } else {
-            blaze::row(Result, count) = blaze::row(V, upper_idx) / spectral_radius;  // add eigenpair
+            blaze::row(Result, count) = blaze::row(V, upper_idx); // / spectral_radius;  // add eigenpair
             upper_idx--;
         }
         count++;
@@ -62,7 +62,7 @@ PCFA<V>::PCFA(const blaze::DynamicMatrix<value_type>& TrainingData, size_t n_fea
 {
     W_encode = metric::PCA(TrainingData, n_features, averages);
     auto encoded = encode(TrainingData);
-    W_decode = trans(W_encode);
+    W_decode = trans(W_encode); // computed once and saved
 }
 
 template <typename V>
@@ -75,7 +75,9 @@ blaze::DynamicMatrix<typename PCFA<V>::value_type> PCFA<V>::encode(const blaze::
 }
 
 template <typename V>
-blaze::DynamicMatrix<typename PCFA<V>::value_type> PCFA<V>::decode(const blaze::DynamicMatrix<PCFA<V>::value_type>& Codes, bool unshift) {
+blaze::DynamicMatrix<typename PCFA<V>::value_type> PCFA<V>::decode(
+        const blaze::DynamicMatrix<PCFA<V>::value_type>& Codes,
+        bool unshift) {
     if (unshift) {
         auto Noncentered = W_decode * Codes;
         auto Centered = blaze::DynamicMatrix<typename PCFA<V>::value_type>(Noncentered.rows(), Noncentered.columns());
@@ -87,6 +89,21 @@ blaze::DynamicMatrix<typename PCFA<V>::value_type> PCFA<V>::decode(const blaze::
     }
 
 }
+
+template <typename V>
+blaze::DynamicMatrix<typename PCFA<V>::value_type> PCFA<V>::get_average() {
+    auto avg = blaze::DynamicMatrix<typename PCFA<V>::value_type>(averages.size(), 1);
+    column(avg, 0) = averages;
+    return avg;
+    //return expand(averages, 1);
+}
+
+
+template <typename BlazeMatrix>
+PCFA<typename BlazeMatrix::ElementType> PCFA_factory(const BlazeMatrix & TrainingData, size_t n_features)
+{
+    return PCFA<typename BlazeMatrix::ElementType>(TrainingData, n_features);
+};
 
 }  // namespace metric
 #endif
