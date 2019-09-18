@@ -76,22 +76,38 @@ void printDataInfo(const json& data)
 }
 
 
-std::string readData(std::string filename)
+std::vector<std::vector<double>> readData(std::string filename)
 {
 	std::fstream fin;
-	std::string str = "";
 
 	fin.open(filename, std::ios::in);
 	
-	std::string line;
+	std::vector<double> row;
+	std::string line, word, w;
 
+	std::vector<std::vector<double>> rows;
+
+	// int i = 0;
 	while (getline(fin, line))
 	{
-		// std::cout << line << std::endl;
-		str += line;
+		// i++;
+		//std::cout << "row " << i << std::endl;
+		std::stringstream s(line);
+		char asciiChar = 9;
+		getline(s, word, asciiChar);
+		//std::cout << " time: " << word << std::endl;
+
+		row.clear();
+		while (getline(s, word, asciiChar))
+		{
+			//std::cout << " -> " << word << std::endl;
+			row.push_back(std::stod(word));
+		}
+
+		rows.push_back(row);
 	}
 
-	return str;
+	return rows;
 }
 
 void saveToCsv(std::string filename, const std::vector<std::vector<std::string>> &mat, const std::vector<std::string> &features)
@@ -312,6 +328,9 @@ int main()
 	std::cout << '\n';
 
 	/* Load data */
+
+	readData("assets/energies_speed_190820.log");
+
 	std::ifstream in("assets/reference_data.json.txt");
 	json speeds_json;
 	in >> speeds_json;
@@ -324,7 +343,6 @@ int main()
 			std::cout << "  name: " << value2["name"] << "\n";
 			std::cout << "  position: " << value2["position"].size() << "\n";
 			std::cout << "  border: " << value2["border"].size() << "\n";
-			std::cout << "  quant: " << value2["quant"].size() << "\n";
 			std::cout << "  quant: " << value2["quant"].size() << "x" << value2["quant"][0].size() << "x" << value2["quant"][0][0].size() << "\n";
 			
 			for (auto& [key3, value3] : value2["quant"][0][0].items()) {
