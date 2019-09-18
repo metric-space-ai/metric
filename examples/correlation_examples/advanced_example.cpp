@@ -92,7 +92,6 @@ int main()
 	std::cout << "" << std::endl;
 
     using RecType = std::vector<double>;
-    using RecType2 = blaze::DynamicVector<double>;
 
     std::vector<RecType> data1 = read_csv("assets/dataset1.csv", atoi("limit"));
     std::vector<RecType> data2 = read_csv("assets/dataset2.csv", atoi("limit"));
@@ -103,6 +102,46 @@ int main()
     std::cout << "dataset1 rows: " << data1.size() << ", cols: " << data1[0].size() << std::endl;
     std::cout << "dataset2 rows: " << data2.size() << ", cols: " << data2[0].size() << std::endl;
 	std::cout << "" << std::endl;
+
+    /* Build functors (function objects) with user types and metrics */
+    typedef simple_user_euclidian Met;
+
+    /* Set up the correlation function */
+    auto mgc_corr = metric::MGC<RecType, Met, RecType, Met>();
+
+    /* Compute and benchmark */
+    std::cout << "estimating correlation..." << std::endl;
+    auto t1 = std::chrono::steady_clock::now();
+    auto result = mgc_corr.estimate(data1, data2, 100, 1.0, 100);
+    auto t2 = std::chrono::steady_clock::now();
+    std::cout << "Multiscale graph correlation estimate: " 
+              << result
+              << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000
+              << "s)" << std::endl;
+	std::cout << std::endl;
+
+    // out:
+	// 1 -nan(ind) 0.653303 0.653303
+	// 2 0.5 0.648665 0.650984
+	// Multiscale graph correlation estimate: 0.650984 (Time = 0.823063s)
+	
+    std::cout << "computing correlation..." << std::endl;
+    t1 = std::chrono::steady_clock::now();
+    result = mgc_corr(data1, data2);
+    t2 = std::chrono::steady_clock::now();    
+    std::cout << "Multiscale graph correlation: " 
+		      << result
+              << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000
+              << "s)" << std::endl;
+	std::cout << std::endl;
+
+    // out:
+    // Multiscale graph correlation: 0.65593 (Time = 418.153s)
+
+	// for blaze 
+
+    using RecType2 = blaze::DynamicVector<double>;
+    typedef blaze_euclidean Met2;
 
     std::vector<RecType2> d1(data1.size());
     std::vector<RecType2> d2(data2.size());
@@ -122,75 +161,46 @@ int main()
         }
         d2[i] = tmp;
     }
-
-    /* Build functors (function objects) with user types and metrics */
-    typedef simple_user_euclidian Met;
-    typedef blaze_euclidean Met2;
-
-    /* Set up the correlation function */
-    auto mgc_corr = metric::MGC<RecType, Met, RecType, Met>();
-
-    /* Compute and benchmark */
-    std::cout << "estimating correlation..." << std::endl;
-    auto t1 = std::chrono::steady_clock::now();
-    auto result = mgc_corr.estimate(data1, data2, 100, 1.0, 100);
-    auto t2 = std::chrono::steady_clock::now();
-    std::cout << "Multiscale graph correlation estimate: " 
-              << result
-              << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000
-              << "s)" << std::endl;
-	std::cout << std::endl;
-
-    // out:
-
-    // (Time for Center Matrices = 0.004921s)
-    // (Time for Center ranked distance Matrices = 0.066706s)
-    // (Time for Transpose Matrices = 0.006052s)
-    // (Time for Covariance Matrices = 0.01338s)
-    // (Time for clean up Matrices = 0.000603s)
-    // (Time for normalize Matrices = 0.005805s)
-    // (Time for clean up Matrices = 0.000181s)
-    // (Time for significane Matrices = 0.070254s)
-    // (Time for optimal Matrices = 0.002556s)
-    // 1 - nan(ind) 0.653303 0.653303
-    // (Time for Center Matrices = 0.004444s)
-    // (Time for Center ranked distance Matrices = 0.053503s)
-    // (Time for Transpose Matrices = 0.001877s)
-    // (Time for Covariance Matrices = 0.005545s)
-    // (Time for clean up Matrices = 0.000778s)
-    // (Time for normalize Matrices = 0.001573s)
-    // (Time for clean up Matrices = 2.3e-05s)
-    // (Time for significane Matrices = 0.062688s)
-    // (Time for optimal Matrices = 0.005361s)
-    // 2 0.5 0.648665 0.650984
-    // 0.650984 (Time = 0.528097s)
 	
-    std::cout << "computing correlation..." << std::endl;
+    /* Set up the correlation function */
+    auto mgc_corr_blaze = metric::MGC<RecType2, Met2, RecType2, Met2>();
+
+    std::cout << "estimating correlation (for blaze)..." << std::endl;
     t1 = std::chrono::steady_clock::now();
-    result = mgc_corr(data1, data2);
-    t2 = std::chrono::steady_clock::now();    
-    std::cout << "Multiscale graph correlation: " 
+    result = mgc_corr_blaze.estimate(d1, d2);
+    t2 = std::chrono::steady_clock::now();
+    std::cout << "Multiscale graph correlation estimate (for blaze): " 
 		      << result
               << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000
               << "s)" << std::endl;
 	std::cout << std::endl;
 
     // out:
+	// 1 -nan(ind) 0.66177 0.66177
+	// 2 0.5 0.651861 0.656815
+	// 3 0.417722 0.640442 0.651357
+	// 4 0.359967 0.649279 0.650838
+	// 5 0.322612 0.656676 0.652006
+	// 6 0.262383 0.669431 0.65491
+	// 7 0.250356 0.64777 0.65389
+	// 8 0.197723 0.668255 0.655686
+	// 9 0.19001 0.658393 0.655986
+	// 10 0.177464 0.653838 0.655772
+	// 11 0.1615 0.650828 0.655322
+	// 12 0.15152 0.652565 0.655092
+	// 13 0.146486 0.655824 0.655149
+	// 14 0.143091 0.659013 0.655425
+	// 15 0.139359 0.661811 0.65585
+	// 16 0.136373 0.659662 0.656089
+	// 17 0.125772 0.649607 0.655707
+	// 18 0.120311 0.652674 0.655539
+	// 19 0.117996 0.660476 0.655799
+	// 20 0.115587 0.656575 0.655837
+	// Multiscale graph correlation estimate (for blaze): 0.655837 (Time = 5.03296s)
 
-    // (Time for Center Matrices = 9.1524s)
-    // (Time for Center ranked distance Matrices = 396.751s)
-    // (Time for Transpose Matrices = 112.499s)
-    // (Time for Covariance Matrices = 163.922s)
-    // (Time for clean up Matrices = 13.7064s)
-    // (Time for normalize Matrices = 8.96766s)
-    // (Time for clean up Matrices = 0.142683s)
-    // (Time for significane Matrices = 184.483s)
-    // (Time for optimal Matrices = 5.64593s)
-    // 0.65593 (Time = 1020.32s)
-	
     std::cout << "computing correlation (for blaze)..." << std::endl;
     t1 = std::chrono::steady_clock::now();
-    result = metric::MGC<RecType2, Met2, RecType2, Met2>()(d1, d2);
+    result = mgc_corr_blaze(d1, d2);
     t2 = std::chrono::steady_clock::now();
     std::cout << "Multiscale graph correlation (for blaze): " 
 		      << result
@@ -199,17 +209,7 @@ int main()
 	std::cout << std::endl;
 
     // out:
-
-    // (Time for Center Matrices = 7.02497s)
-    // (Time for Center ranked distance Matrices = 324.589s)
-    // (Time for Transpose Matrices = 104.01s)
-    // (Time for Covariance Matrices = 176.117s)
-    // (Time for clean up Matrices = 12.7903s)
-    // (Time for normalize Matrices = 12.0978s)
-    // (Time for clean up Matrices = 0.326226s)
-    // (Time for significane Matrices = 218.289s)
-    // (Time for optimal Matrices = 6.77513s)
-    // 0.65593 (Time = 928.156s)
+    // Multiscale graph correlation (for blaze): 0.65593 (Time = 399.995s)
 
     return 0;
 }

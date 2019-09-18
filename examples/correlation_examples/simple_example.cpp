@@ -67,7 +67,9 @@ int main()
               << "s)" << std::endl;
     std::cout << std::endl;
 
-	//
+	// out:
+	// Multiscale graph correlation: 0.626877 (Time = 0.000823s)
+
 
     // some data
     std::vector<std::vector<double>> A1 = { { -0.991021875880222 }, { -0.768275252129114 }, { -0.526359355330172 },
@@ -96,7 +98,9 @@ int main()
               << "s)" << std::endl;
     std::cout << std::endl;
 	
-	//
+	// out:
+	// Multiscale graph correlation (for vector and vector): 0.040945 (Time = 0.000433s)
+
 	
     // some data
     std::vector<std::vector<double>> A2 = { { -1.08661677587398 }, { -1.00699896410939 }, { -0.814135753976830 },
@@ -133,6 +137,9 @@ int main()
               << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000
               << "s)" << std::endl;
     std::cout << std::endl;
+
+	// out:
+	// Multiscale graph correlation (for vector and deque): 0.288457 (Time = 0.002829s)
 
     return 0;
 }

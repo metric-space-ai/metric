@@ -12,13 +12,6 @@ as correlation coefficient to find nonlinear dependencies in data sets. It is op
 ## Simple use 
 
 Compute the mgc correlation based on two datasets A and B.
-```C++
-typedef std::vector<int> Record;
-typedef metric::Euclidian<double> Distance;
-
-auto mgc_corr = metric::MGC<Record, Distance, Record, Distance>();
-auto result = mgc_corr(A, B);
-```
 
 If you don't have distance matrices, yo can build them at first (euclidian metric will be used with this embedded functions).
 
@@ -26,6 +19,40 @@ If you don't have distance matrices, yo can build them at first (euclidian metri
 auto A = metric::distance_matrix(dataset) // std::vector<std::vector<double> dataset 
 ```
 
+Then just create MGC object and call `()` operator:
+
+```C++
+typedef std::vector<int> Record;
+typedef metric::Euclidian<double> Distance;
+
+auto mgc_corr = metric::MGC<Record, Distance, Record, Distance>();
+auto result = mgc_corr(A, B);
+
+// out:
+// result: 0.626877
+```
+
+*For a full example and more details see `examples/correlation_examples/simple_example.cpp`*
+
+
+
+## Estimate
+
+For large datasets computing of the correlation can take a lot of time, then MGC has the `estimate()` method, 
+which will save a lot of time. For use it just call `estimate()` on MGC object:
+
+```C++
+typedef std::vector<int> Record;
+typedef metric::Euclidian<double> Distance;
+
+auto mgc_corr = metric::MGC<Record, Distance, Record, Distance>();
+auto result = mgc_corr.estimate(A, B);
+
+// out:
+// result: 0.626877
+```
+
+*For a full example and more details see `examples/correlation_examples/advanced_example.cpp`*
 
 But the real power with mgc is to compare different types and different metrics. Therefor use mgc as functor.
 
@@ -58,3 +85,5 @@ auto mgc_corr = metric::MGC<Rec1, Met1, Rec2, Met2>();
 auto result2 = mgc_corr(dataset1, dataset2);
 ```
 dataset1 and dataset2 could be different containers, but must correspond to the same data record IDs of course, so they must have same sizes.
+
+*For a full example and more details see `examples/correlation_examples/advanced_example.cpp`*
