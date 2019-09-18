@@ -35,7 +35,7 @@ int main()
 
     auto model = metric::PCFA_factory(training_dataset, n_features); // dataset, compressed_code_length
 
-    auto avg = model.get_average();
+    auto avg = model.average();
     mat2bmp::blaze2bmp_norm(avg, "averages.bmp");
     blaze_dm_to_csv(avg, "averages.csv");
 
@@ -70,7 +70,7 @@ int main()
     }
 
     // same using eigenmodes getter
-    auto Eigenmodes = model.get_eigenmodes();
+    auto Eigenmodes = model.eigenmodes();
     blaze_dm_to_csv(Eigenmodes, "eigenmodes.csv");
 
 

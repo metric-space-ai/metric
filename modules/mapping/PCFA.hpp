@@ -70,14 +70,14 @@ public:
    *
    * @return blaze::DynamicMatrix<value_type>
    */
-    blaze::DynamicMatrix<value_type> get_average();
+    blaze::DynamicMatrix<value_type> average();
 
     /**
    * @brief returns the encoder matrix concatenated with the average curve of training dataset, used for center shift
    *
    * @return blaze::DynamicMatrix<value_type>
    */
-    blaze::DynamicMatrix<value_type> get_eigenmodes();
+    blaze::DynamicMatrix<value_type> eigenmodes();
 
 private:
     blaze::DynamicMatrix<value_type> W_decode;

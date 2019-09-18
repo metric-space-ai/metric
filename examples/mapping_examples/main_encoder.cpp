@@ -106,7 +106,7 @@ int main()
     auto direct_sine = metric::PCFA_factory(SlicesSine, 8);  // factory deduces type
 
     if (visualize) {
-        auto avg = direct_sine.get_average();
+        auto avg = direct_sine.average();
         mat2bmp::blaze2bmp(avg, "averages.bmp");
         blaze_dm_to_csv(avg, "averages.csv");
     }
@@ -129,7 +129,7 @@ int main()
     std::cout << "compare visually restored.bmp to TestSliceSine.bmp\n";
 
     if (visualize) {
-        auto Eigenmodes = direct_sine.get_eigenmodes();
+        auto Eigenmodes = direct_sine.eigenmodes();
         //std::cout << "Eigenmodes:\n" << Eigenmodes << "\n";
         blaze_dm_to_csv(Eigenmodes, "eigenmodes.csv");
         mat2bmp::blaze2bmp(Eigenmodes, "eigenmodes.bmp");

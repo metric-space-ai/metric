@@ -88,7 +88,7 @@ blaze::DynamicMatrix<typename PCFA<V>::value_type> PCFA<V>::decode(
 }
 
 template <typename V>
-blaze::DynamicMatrix<typename PCFA<V>::value_type> PCFA<V>::get_average() {
+blaze::DynamicMatrix<typename PCFA<V>::value_type> PCFA<V>::average() {
     auto avg = blaze::DynamicMatrix<typename PCFA<V>::value_type>(averages.size(), 1);
     column(avg, 0) = averages;
     return avg;
@@ -96,7 +96,7 @@ blaze::DynamicMatrix<typename PCFA<V>::value_type> PCFA<V>::get_average() {
 }
 
 template <typename V>
-blaze::DynamicMatrix<typename PCFA<V>::value_type> PCFA<V>::get_eigenmodes() {
+blaze::DynamicMatrix<typename PCFA<V>::value_type> PCFA<V>::eigenmodes() {
     auto Eigenmodes = blaze::DynamicMatrix<typename PCFA<V>::value_type>(W_decode.rows(), W_decode.columns() + 1);
     column(Eigenmodes, 0) = averages;
     submatrix(Eigenmodes, 0, 1, W_decode.rows(), W_decode.columns()) = W_decode;;;
