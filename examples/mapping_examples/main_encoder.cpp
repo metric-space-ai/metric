@@ -128,6 +128,13 @@ int main()
     std::cout << "avg error: " << mean_square_error(direct_restored_sine, TestSlicesSine) << "\n";
     std::cout << "compare visually restored.bmp to TestSliceSine.bmp\n";
 
+    if (visualize) {
+        auto Eigenmodes = direct_sine.get_eigenmodes();
+        //std::cout << "Eigenmodes:\n" << Eigenmodes << "\n";
+        blaze_dm_to_csv(Eigenmodes, "eigenmodes.csv");
+        mat2bmp::blaze2bmp(Eigenmodes, "eigenmodes.bmp");
+    }
+
     //* // with DCT
 
     // turning data to frequence domain: enable to run DirectMapping in frequences
@@ -183,9 +190,10 @@ int main()
         mat2bmp::blaze2bmp(direct_restored_sine_DCT, "restored_unDCT.bmp");
     }
 
-    std::cout << "\nwith DCT: avg error: " << mean_square_error(direct_restored_sine_DCT, TestSlicesSineOriginal)
-              << "\n";
+    std::cout << "\nwith DCT: avg error: " << mean_square_error(direct_restored_sine_DCT, TestSlicesSineOriginal) << "\n";
     std::cout << "compare visually restored_unDCT.bmp to TestSliceSine_original.bmp\n";
+
+    std::cout << "\n";
 
     return 0;
 }

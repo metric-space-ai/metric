@@ -69,6 +69,9 @@ int main()
         blaze_dm_to_csv(unit_waveform, "unit_waveform_" + std::to_string(feature_idx) + ".csv");
     }
 
+    // same using eigenmodes getter
+    auto Eigenmodes = model.get_eigenmodes();
+    blaze_dm_to_csv(Eigenmodes, "eigenmodes.csv");
 
 
     return 0;

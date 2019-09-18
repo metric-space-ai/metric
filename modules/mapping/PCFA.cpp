@@ -30,17 +30,14 @@ blaze::DynamicMatrix<typename BlazeMatrix::ElementType> PCA(const BlazeMatrix & 
 
     eigen(CovMat, w, V);
 
-//    for (size_t row = 0; row < V.rows(); row++)
-//        blaze::row(V, row) = blaze::row(V, row) * w[row];
-
     // sort and select
     size_t lower_idx = 0;
     size_t upper_idx = w.size() - 1;
-//    typename BlazeMatrix::ElementType spectral_radius;  // also we get spectral radius for normalization: we process the first eigenvalue specially
-//    if ((-w[lower_idx] > w[upper_idx]))
-//        spectral_radius = w[lower_idx];
-//    else
-//        spectral_radius = w[upper_idx];
+    //typename BlazeMatrix::ElementType spectral_radius;  // also we get spectral radius for normalization: we process the first eigenvalue specially
+    //if ((-w[lower_idx] > w[upper_idx]))
+    //    spectral_radius = w[lower_idx];
+    //else
+    //    spectral_radius = w[upper_idx];
     int count = 0;
     while (count < n_components && upper_idx > lower_idx) {
         if (-w[lower_idx] > w[upper_idx]) {
@@ -95,9 +92,16 @@ blaze::DynamicMatrix<typename PCFA<V>::value_type> PCFA<V>::get_average() {
     auto avg = blaze::DynamicMatrix<typename PCFA<V>::value_type>(averages.size(), 1);
     column(avg, 0) = averages;
     return avg;
-    //return expand(averages, 1);
+    //return expand(averages, 1);  // expand absents in local version of Blaze-lib
 }
 
+template <typename V>
+blaze::DynamicMatrix<typename PCFA<V>::value_type> PCFA<V>::get_eigenmodes() {
+    auto Eigenmodes = blaze::DynamicMatrix<typename PCFA<V>::value_type>(W_decode.rows(), W_decode.columns() + 1);
+    column(Eigenmodes, 0) = averages;
+    submatrix(Eigenmodes, 0, 1, W_decode.rows(), W_decode.columns()) = W_decode;;;
+    return Eigenmodes;
+}
 
 template <typename BlazeMatrix>
 PCFA<typename BlazeMatrix::ElementType> PCFA_factory(const BlazeMatrix & TrainingData, size_t n_features)
