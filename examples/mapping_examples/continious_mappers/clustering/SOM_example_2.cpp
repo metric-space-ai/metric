@@ -602,6 +602,19 @@ void printDataInfo(const json& data)
 	}
 }
 
+bool get_hex_bounds(std::vector<size_t> assignments, int checking_cluster_index, int near_cluster_index)
+{		
+	if (near_cluster_index >= 0 && near_cluster_index < assignments.size())
+	{
+		if (assignments[checking_cluster_index] != assignments[near_cluster_index])
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
 
 std::vector<std::vector<std::string>> readCsvData(std::string filename, char delimeter)
 {
@@ -1335,6 +1348,106 @@ int main(int argc, char *argv[])
 		}
 	}
 
+	// calculate borders and positions of each cluster
+
+	std::vector<std::vector<int>> positions(counts.size());
+	std::vector<std::vector<int>> borders(counts.size());
+	int len = sqrt((double)best_grid_size);
+	for (int i = 0; i < assignments.size(); i++)
+	{
+		positions[assignments[i]].push_back(i);
+
+		
+		int row = i / len;
+		int near_cluster_index;
+		int near_cluster_index_row;
+
+		near_cluster_index = i - 1;
+		near_cluster_index_row = near_cluster_index / len;
+		if(row == near_cluster_index_row)
+			if (get_hex_bounds(assignments, i, near_cluster_index))
+			{
+				borders[assignments[i]].push_back(near_cluster_index);
+				borders[assignments[i]].push_back(i);
+			}
+
+		near_cluster_index = i + 1;
+		near_cluster_index_row = near_cluster_index / len;
+		if(row == near_cluster_index_row)
+			if (get_hex_bounds(assignments, i, near_cluster_index))
+			{
+				borders[assignments[i]].push_back(i);
+				borders[assignments[i]].push_back(near_cluster_index);
+			}
+
+		near_cluster_index = i - len;
+		near_cluster_index_row = near_cluster_index / len;
+		if(row - 1 == near_cluster_index_row)
+			if (get_hex_bounds(assignments, i, near_cluster_index))
+			{
+				borders[assignments[i]].push_back(near_cluster_index);
+				borders[assignments[i]].push_back(i);
+			}
+
+		near_cluster_index = i + len;
+		near_cluster_index_row = near_cluster_index / len;
+		if(row + 1 == near_cluster_index_row)
+			if (get_hex_bounds(assignments, i, near_cluster_index))
+			{
+				borders[assignments[i]].push_back(i);
+				borders[assignments[i]].push_back(near_cluster_index);
+			}
+
+		if (row % 2 == 0)
+		{
+			near_cluster_index = i - len - 1;
+			near_cluster_index_row = near_cluster_index / len;
+			if(row - 1 == near_cluster_index_row)
+				if (get_hex_bounds(assignments, i, near_cluster_index))
+				{
+					borders[assignments[i]].push_back(near_cluster_index);
+					borders[assignments[i]].push_back(i);
+				}
+
+			near_cluster_index = i + len - 1;
+			near_cluster_index_row = near_cluster_index / len;
+			if(row + 1 == near_cluster_index_row)
+				if (get_hex_bounds(assignments, i, near_cluster_index))
+				{
+					borders[assignments[i]].push_back(i);
+					borders[assignments[i]].push_back(near_cluster_index);
+				}
+		}
+		else
+		{
+			near_cluster_index = i - len + 1;
+			near_cluster_index_row = near_cluster_index / len;
+			if(row - 1 == near_cluster_index_row)
+				if (get_hex_bounds(assignments, i, near_cluster_index))
+				{
+					borders[assignments[i]].push_back(near_cluster_index);
+					borders[assignments[i]].push_back(i);
+				}
+
+			near_cluster_index = i + len + 1;
+			near_cluster_index_row = near_cluster_index / len;
+			if(row + 1 == near_cluster_index_row)
+				if (get_hex_bounds(assignments, i, near_cluster_index))
+				{
+					borders[assignments[i]].push_back(i);
+					borders[assignments[i]].push_back(near_cluster_index);
+				}
+		} 
+	}
+	
+	std::cout << "positions:" << std::endl;
+	matrix_print(positions);
+	std::cout << std::endl;
+
+	std::cout << "borders:" << std::endl;
+	matrix_print(borders);
+	std::cout << std::endl;
+
 	// calculate confs based on clustered energies and fill the result json
 
 	std::vector<std::vector<std::vector<std::vector<std::vector<double>>>>> sensors(8, std::vector<std::vector<std::vector<std::vector<double>>>>(7));
@@ -1345,20 +1458,24 @@ int main(int argc, char *argv[])
 	uint32_t samples = 5;
 	double confidencelevel = 1.0;
 	
+	std::cout << "---:" << std::endl;
 	json reference_data;
 	int sensor_index = 0;
 	for (auto sensor_data : clustered_energies)
 	{		
+		std::cout << "  ---:" << std::endl;
 		std::vector<json> energies_json;
 		int level_index = 0;
 		for (auto energy_data : sensor_data)
 		{			
+			std::cout << "    ---:" << std::endl;
 			std::vector<json> clusters_json;
 			for (auto cluster_data : energy_data)
 			{
 				// metric::PMQ set_0(energy_data);
 			
 				// returns quants for a single cluster
+				//std::cout << "      ---:" << std::endl;
 				std::vector<std::vector<std::vector<double>>> multiquants = set2multiconf(cluster_data, windowSizes, samples, confidencelevel);
 					
 				json cluster_json;
@@ -1374,9 +1491,10 @@ int main(int argc, char *argv[])
 				clusters_json.push_back(cluster_json);
 			}
 			json energy_json = {
-				{"name", "level" + std::to_string(level_index)}, 						
-				{"border", {}},
-				{"position", {}},
+				{"name", "level" + std::to_string(level_index)}, 		
+				// TODO: looks like borders and positions should be on the one level down, inside clusters data
+				{"border", borders[0]},
+				{"position", positions[0]},
 				{"quant", clusters_json}
 			};
 			energies_json.push_back(energy_json);
@@ -1393,6 +1511,7 @@ int main(int argc, char *argv[])
 	std::ofstream outputFile("assets/reference_data.json");
 	outputFile << std::setw(4) << reference_data << std::endl;
 	outputFile.close();	
+	std::cout << "---:" << std::endl;
 
 
     return 0;
