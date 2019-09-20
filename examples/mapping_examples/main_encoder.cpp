@@ -103,7 +103,7 @@ int main()
     }
 
 //    auto direct_sine = metric::PCFA<double>(SlicesSine, 8);  // ctor needs element type specification
-    auto direct_sine = metric::PCFA_factory(SlicesSine, 8);  // factory deduces type
+    auto direct_sine = metric::PCFA_col_factory(SlicesSine, 8);  // factory deduces type
 
     if (visualize) {
         auto avg = direct_sine.average();
@@ -169,7 +169,7 @@ int main()
     }
 
     // auto direct_sine_DCT = metric::PCFA<double>(SlicesSine, 8);
-    auto direct_sine_DCT = metric::PCFA_factory(SlicesSine, 8);
+    auto direct_sine_DCT = metric::PCFA_col_factory(SlicesSine, 8);
 
     auto direct_compressed_sine_DCT = direct_sine_DCT.encode(TestSlicesSine);
 

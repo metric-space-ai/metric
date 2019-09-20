@@ -13,6 +13,8 @@ Copyright (c) 2019 Panda Team
 
 namespace metric {
 
+
+
 /**
  * @brief 
  * 
@@ -22,31 +24,51 @@ namespace metric {
  * @return 
  */
 template <class BlazeMatrix>
-blaze::DynamicMatrix<typename BlazeMatrix::ElementType> PCA(
+blaze::DynamicMatrix<typename BlazeMatrix::ElementType> PCA_col(
         const BlazeMatrix & In,
         int n_components,
         blaze::DynamicVector<typename BlazeMatrix::ElementType> & averages
         );
 
+
 /**
- * @class PCAnet
+ * @brief
+ *
+ * @param In
+ * @param n_components
+ * @param averages - outputs average curve
+ * @return
+ */
+template <class BlazeMatrix>
+blaze::DynamicMatrix<typename BlazeMatrix::ElementType> PCA(
+        const BlazeMatrix & In,
+        int n_components,
+        blaze::DynamicVector<typename BlazeMatrix::ElementType, blaze::rowVector> & averages
+        );
+
+
+
+
+
+/**
+ * @class PCFA_col
  * 
- *@brief simple linear encoder based on PCA
+ *@brief simple linear encoder based on PCA for data organized by columns
  * 
  */
 template <typename V>
-class PCFA {
+class PCFA_col {
 
 public:
     using value_type = V;
 
     /**
-   * @brief Construct a new PCFA object
+   * @brief Construct a new PCFA_col object
    * 
-   * @param TrainingData
-   * @param n_features 
+   * @param TrainingData - training dataset with curves in columns
+   * @param n_features - desired length of compressed code
    */
-    PCFA(const blaze::DynamicMatrix<value_type>& TrainingData, size_t n_features = 1);
+    PCFA_col(const blaze::DynamicMatrix<value_type>& TrainingData, size_t n_features = 1);
 
     /**
    * @brief 
@@ -86,6 +108,80 @@ private:
     std::default_random_engine rgen;
 };
 
+
+
+
+/**
+ * @class PCFA
+ *
+ *@brief simple linear encoder based on PCA
+ *
+ */
+template <typename V>
+class PCFA {
+
+public:
+    using value_type = V;
+
+    /**
+   * @brief Construct a new PCFA object
+   *
+   * @param TrainingData - training dataset with curves in rows
+   * @param n_features - desired length of compressed code
+   */
+    PCFA(const blaze::DynamicMatrix<value_type> & TrainingData, size_t n_features = 1);
+
+    /**
+   * @brief
+   *
+   * @param Data
+   * @return
+   */
+    blaze::DynamicMatrix<value_type> encode(const blaze::DynamicMatrix<value_type> & Data);
+
+    /**
+   * @brief
+   *
+   * @param Codes
+   * @param unshift - flag for adding average curve to each decoded one
+   * @return blaze::DynamicMatrix<value_type>
+   */
+    blaze::DynamicMatrix<value_type> decode(const blaze::DynamicMatrix<value_type>& Codes, bool unshift=true);
+
+    /**
+   * @brief returns the average curve of training dataset, used for center shift
+   *
+   * @return blaze::DynamicMatrix<value_type>
+   */
+    blaze::DynamicMatrix<value_type> average();
+
+    /**
+   * @brief returns the encoder matrix concatenated with the average curve of training dataset, used for center shift
+   *
+   * @return blaze::DynamicMatrix<value_type>
+   */
+    blaze::DynamicMatrix<value_type> eigenmodes();
+
+private:
+    blaze::DynamicMatrix<value_type> W_decode;
+    blaze::DynamicMatrix<value_type> W_encode;
+    blaze::DynamicVector<value_type, blaze::rowVector> averages;
+    std::default_random_engine rgen;
+};
+
+
+
+
+/**
+* @brief Creates a new PCFA_col object
+*
+* @param TrainingData
+* @param n_features
+*/
+template <typename BlazeMatrix>
+PCFA_col<typename BlazeMatrix::ElementType> PCFA_col_factory(const BlazeMatrix & TrainingData, size_t n_features = 1);
+
+
 /**
 * @brief Creates a new PCFA object
 *
@@ -94,6 +190,9 @@ private:
 */
 template <typename BlazeMatrix>
 PCFA<typename BlazeMatrix::ElementType> PCFA_factory(const BlazeMatrix & TrainingData, size_t n_features = 1);
+
+
+
 
 }  // namespace metric
 
