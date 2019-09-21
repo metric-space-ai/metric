@@ -901,6 +901,329 @@ set2multiconf(std::vector<T> set_0, std::vector<uint32_t> windowSizes, size_t sa
 }
 
 
+template <typename T, typename Metric, typename Graph>
+double iterateThroughDistributions(int distribution_type, int i, std::vector<std::vector<T>> speeds, Metric distance, Graph graph,
+	unsigned int iterations, double s_learn_rate, double f_learn_rate, double initial_neighbour_size, double neigbour_range_decay, long long random_seed)
+{
+	double score;
+
+	if (distribution_type == 0)
+	{
+		// uniform_real_distribution
+		std::uniform_real_distribution<double> distribution(-1, 1);
+
+		score = runConfiguration(i, speeds, distance, graph, distribution, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
+	}
+	else if (distribution_type == 1)
+	{
+		// normal_distribution
+		std::normal_distribution<double> distribution(-1, 1);
+
+		score = runConfiguration(i, speeds, distance, graph, distribution, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
+	}
+	else if (distribution_type == 2)
+	{
+		// exponential_distribution
+		std::exponential_distribution<double> distribution(1);
+
+		score = runConfiguration(i, speeds, distance, graph, distribution, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
+	}
+
+	return score;
+}
+
+
+template <typename T, typename Graph>
+double iterateThroughDistances(int metric_type, int distribution_type, int i, std::vector<std::vector<T>> speeds, Graph graph,
+	unsigned int iterations, double s_learn_rate, double f_learn_rate, double initial_neighbour_size, double neigbour_range_decay, long long random_seed)
+{
+	double score;
+
+	if (metric_type == 0)
+	{
+		// Euclidian
+		metric::Euclidian<double> distance;
+		score = iterateThroughDistributions(distribution_type, i, speeds, distance, graph, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
+	}
+	else if (metric_type == 1)
+	{
+		// Manhatten
+		metric::Manhatten<double> distance;
+		score = iterateThroughDistributions(distribution_type, i, speeds, distance, graph, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
+	}
+	else if (metric_type == 2)
+	{
+		// P_norm
+		metric::P_norm<double> distance;
+		score = iterateThroughDistributions(distribution_type, i, speeds, distance, graph, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
+	}
+	else if (metric_type == 3)
+	{
+		// Euclidian_thresholded
+		metric::Euclidian_thresholded<double> distance;
+		score = iterateThroughDistributions(distribution_type, i, speeds, distance, graph, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
+	}
+	else if (metric_type == 4)
+	{
+		// Cosine
+		metric::Cosine<double> distance;
+		score = iterateThroughDistributions(distribution_type, i, speeds, distance, graph, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
+	}
+	else if (metric_type == 5)
+	{
+		// Chebyshev
+		metric::Chebyshev<double> distance;
+		score = iterateThroughDistributions(distribution_type, i, speeds, distance, graph, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
+	}
+
+	return score;
+}
+
+
+template <typename T>
+double iterateThroughGraphs(int grid_size, int graph_type, int metric_type, int distribution_type, int i, std::vector<std::vector<T>> speeds,
+	unsigned int iterations, double s_learn_rate, double f_learn_rate, double initial_neighbour_size, double neigbour_range_decay, long long random_seed)
+{
+	double score;
+	
+	if (graph_type == 0)
+	{
+		// Grid4
+		metric::Grid4 graph(grid_size);
+		score = iterateThroughDistances(metric_type, distribution_type, i, speeds, graph, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
+	}
+	else if (graph_type == 1)
+	{
+		// Grid6
+		metric::Grid6 graph(grid_size);
+		score = iterateThroughDistances(metric_type, distribution_type, i, speeds, graph, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
+	}
+	else if (graph_type == 2)
+	{
+		// Grid8
+		metric::Grid8 graph(grid_size);
+		score = iterateThroughDistances(metric_type, distribution_type, i, speeds, graph, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
+	}
+	else if (graph_type == 3)
+	{
+		// Paley
+		metric::Paley graph(grid_size);
+		score = iterateThroughDistances(metric_type, distribution_type, i, speeds, graph, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
+	}
+	else if (graph_type == 4)
+	{
+		// LPS
+		metric::LPS graph(grid_size);
+		score = iterateThroughDistances(metric_type, distribution_type, i, speeds, graph, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
+	}
+	else if (graph_type == 5)
+	{
+		// Margulis
+		metric::Margulis graph(grid_size);
+		score = iterateThroughDistances(metric_type, distribution_type, i, speeds, graph, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
+	}
+
+	return score;
+}
+
+
+template <typename T, typename Metric, typename Graph, typename Distribution>
+
+std::tuple<std::vector<std::size_t>, std::vector<std::size_t>, std::vector<std::vector<std::vector<std::vector<double>>>>> 
+get_weights_from_som(int grid_size, std::vector<std::vector<T>> speeds, Metric distance, Graph graph, Distribution distribution,
+	unsigned int iterations, double s_learn_rate, double f_learn_rate, double initial_neighbour_size, double neigbour_range_decay, long long random_seed)
+{
+	std::cout << "  SOM Graph: " << typeid(graph).name() << std::endl;
+	std::cout << "  SOM Distance: " << typeid(distance).name() << std::endl;
+	std::cout << "  SOM Distribution: " << typeid(distribution).name() << std::endl;
+	std::cout << std::endl;
+
+	metric::SOM<std::vector<T>, Metric, Graph, Distribution> som(
+		distance, 
+		graph, 
+		distribution, 
+		initial_neighbour_size, 
+		neigbour_range_decay, 
+		random_seed
+	);	
+	
+	som.train(speeds, iterations, s_learn_rate, f_learn_rate);
+
+	auto nodes_data = som.get_weights();
+	
+	json nodes_data_json(nodes_data);
+
+	std::ofstream som_output("assets/som" + std::to_string(grid_size) + ".json");
+	som_output << std::setw(4) << nodes_data_json << std::endl;
+	som_output.close();	
+	
+	// clustering on the reduced data
+	
+    metric::Matrix<std::vector<double>, metric::Cosine<double>> distance_matrix(nodes_data);
+
+    auto [assignments, exemplars, counts] = metric::affprop(distance_matrix, (float)0.66);
+
+
+	std::cout << "assignments:" << std::endl;
+	vector_print(assignments);
+	std::cout << std::endl;
+
+	std::cout << "counts:" << std::endl;
+	vector_print(counts);
+	std::cout << std::endl;
+
+
+	// split and reshape raw data by clusters [cluster -> sensor -> energy -> values]
+	
+	std::vector<std::vector<std::vector<std::vector<double>>>> clustered_energies(8, std::vector<std::vector<std::vector<double>>>(7, std::vector<std::vector<double>>(counts.size())));
+	int num_sensors = 8;
+	int num_levels = 7;
+
+	for (auto record : speeds)
+	{
+		// find cluster id for a record
+		auto bmu = som.BMU(record);
+		auto cluster_index = assignments[bmu];
+		for (int i = 0; i < num_sensors; i++)
+		{			
+			for (int j = 0; j < num_levels; j++)
+			{
+				clustered_energies[i][j][cluster_index].push_back(record[i*num_levels + j]);
+			}
+		}
+	}
+	
+    return { assignments, counts, clustered_energies };
+}
+
+
+template <typename T, typename Metric, typename Graph>
+std::tuple<std::vector<std::size_t>, std::vector<std::size_t>, std::vector<std::vector<std::vector<std::vector<double>>>>> 
+iterateThroughDistributionsBest(int grid_size, int distribution_type, std::vector<std::vector<T>> speeds, Metric distance, Graph graph,
+	unsigned int iterations, double s_learn_rate, double f_learn_rate, double initial_neighbour_size, double neigbour_range_decay, long long random_seed)
+{
+
+	if (distribution_type == 0)
+	{
+		// uniform_real_distribution
+		std::uniform_real_distribution<double> distribution(-1, 1);
+
+		return get_weights_from_som(grid_size, speeds, distance, graph, distribution, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
+	}
+	else if (distribution_type == 1)
+	{
+		// normal_distribution
+		std::normal_distribution<double> distribution(-1, 1);
+		
+		return get_weights_from_som(grid_size, speeds, distance, graph, distribution, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
+	}
+	else if (distribution_type == 2)
+	{
+		// exponential_distribution
+		std::exponential_distribution<double> distribution(1);
+		
+		return get_weights_from_som(grid_size, speeds, distance, graph, distribution, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
+	}
+	
+    return std::tuple<std::vector<std::size_t>, std::vector<std::size_t>, std::vector<std::vector<std::vector<std::vector<double>>>>>();
+}
+
+
+template <typename T, typename Graph>
+std::tuple<std::vector<std::size_t>, std::vector<std::size_t>, std::vector<std::vector<std::vector<std::vector<double>>>>> 
+iterateThroughDistancesBest(int grid_size, int metric_type, int distribution_type, std::vector<std::vector<T>> speeds, Graph graph,
+	unsigned int iterations, double s_learn_rate, double f_learn_rate, double initial_neighbour_size, double neigbour_range_decay, long long random_seed)
+{
+
+	if (metric_type == 0)
+	{
+		// Euclidian
+		metric::Euclidian<double> distance;
+		return iterateThroughDistributionsBest(grid_size, distribution_type, speeds, distance, graph, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
+	}
+	else if (metric_type == 1)
+	{
+		// Manhatten
+		metric::Manhatten<double> distance;
+		return iterateThroughDistributionsBest(grid_size, distribution_type, speeds, distance, graph, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
+	}
+	else if (metric_type == 2)
+	{
+		// P_norm
+		metric::P_norm<double> distance;
+		return iterateThroughDistributionsBest(grid_size, distribution_type, speeds, distance, graph, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
+	}
+	else if (metric_type == 3)
+	{
+		// Euclidian_thresholded
+		metric::Euclidian_thresholded<double> distance;
+		return iterateThroughDistributionsBest(grid_size, distribution_type, speeds, distance, graph, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
+	}
+	else if (metric_type == 4)
+	{
+		// Cosine
+		metric::Cosine<double> distance;
+		return iterateThroughDistributionsBest(grid_size, distribution_type, speeds, distance, graph, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
+	}
+	else if (metric_type == 5)
+	{
+		// Chebyshev
+		metric::Chebyshev<double> distance;
+		return iterateThroughDistributionsBest(grid_size, distribution_type, speeds, distance, graph, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
+	}
+
+	
+    return std::tuple<std::vector<std::size_t>, std::vector<std::size_t>, std::vector<std::vector<std::vector<std::vector<double>>>>>();
+}
+
+
+template <typename T>
+std::tuple<std::vector<std::size_t>, std::vector<std::size_t>, std::vector<std::vector<std::vector<std::vector<double>>>>> 
+iterateThroughGraphsBest(int grid_size, int graph_type, int metric_type, int distribution_type, std::vector<std::vector<T>> speeds,
+	unsigned int iterations, double s_learn_rate, double f_learn_rate, double initial_neighbour_size, double neigbour_range_decay, long long random_seed)
+{
+	
+	if (graph_type == 0)
+	{
+		// Grid4
+		metric::Grid4 graph(grid_size);
+		return iterateThroughDistancesBest(grid_size, metric_type, distribution_type, speeds, graph, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
+	}
+	else if (graph_type == 1)
+	{
+		// Grid6
+		metric::Grid6 graph(grid_size);
+		return iterateThroughDistancesBest(grid_size, metric_type, distribution_type, speeds, graph, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
+	}
+	else if (graph_type == 2)
+	{
+		// Grid8
+		metric::Grid8 graph(grid_size);
+		return iterateThroughDistancesBest(grid_size, metric_type, distribution_type, speeds, graph, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
+	}
+	else if (graph_type == 3)
+	{
+		// Paley
+		metric::Paley graph(grid_size);
+		return iterateThroughDistancesBest(grid_size, metric_type, distribution_type, speeds, graph, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
+	}
+	else if (graph_type == 4)
+	{
+		// LPS
+		metric::LPS graph(grid_size);
+		return iterateThroughDistancesBest(grid_size, metric_type, distribution_type, speeds, graph, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
+	}
+	else if (graph_type == 5)
+	{
+		// Margulis
+		metric::Margulis graph(grid_size);
+		return iterateThroughDistancesBest(grid_size, metric_type, distribution_type, speeds, graph, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
+	}
+	
+    return std::tuple<std::vector<std::size_t>, std::vector<std::size_t>, std::vector<std::vector<std::vector<std::vector<double>>>>>();
+}
+
+
 int main(int argc, char *argv[])
 {
 	std::cout << "SOM example have started" << std::endl;
@@ -928,56 +1251,40 @@ int main(int argc, char *argv[])
 	std::cout << "Num values in the record: " << speeds[0].size() << std::endl;
 
 
-	//unsigned concurentThreadsSupported = std::thread::hardware_concurrency();
-	//std::cout << "Num cores: " << concurentThreadsSupported << std::endl;
-	//ThreadPool pool(concurentThreadsSupported);
-	//Semaphore sem;
-	//
-	//
-	//typedef std::variant<metric::Grid4, metric::Grid4, metric::Grid6, metric::Grid8, metric::Paley, metric::LPS, metric::Margulis> Grid;
-	//typedef std::variant<metric::Euclidian<double>, metric::Manhatten<double>, metric::P_norm<double>, metric::Euclidian_thresholded<double>, metric::Cosine<double>, metric::Chebyshev<double>> Distance;
-	//typedef std::variant<std::uniform_real_distribution<double>, std::normal_distribution<double>, std::exponential_distribution<double>> Distribution;
-
-	//std::vector<int> graph_types = {0, 1, 2};
-
-	//std::vector<std::any> metric_types;
-	//metric_types.push_back(metric::Euclidian<double>());
-	//metric_types.push_back(metric::Manhatten<double>());
-	//metric_types.push_back(metric::P_norm<double>());
-	//metric_types.push_back(metric::Euclidian_thresholded<double>());
-	//metric_types.push_back(metric::Cosine<double>());
-	//metric_types.push_back(metric::Chebyshev<double>());
-
-	//std::vector<Distribution> distribution_types;
-	//distribution_types.push_back(std::uniform_real_distribution<double>(-1, 1));
-	//distribution_types.push_back(std::normal_distribution<double>(-1, 1));
-	//distribution_types.push_back(std::exponential_distribution<double>(1));
+	unsigned concurentThreadsSupported = std::thread::hardware_concurrency();
+	std::cout << "Num cores: " << concurentThreadsSupported << std::endl;
+	ThreadPool pool(concurentThreadsSupported);
+	Semaphore sem;
+	
+	std::vector<int> graph_types = {0, 1, 2};
+	std::vector<int> metric_types = {0, 1, 2, 3, 4, 5};
+	std::vector<int> distribution_types = {0, 1, 2};
 
 	
-	//std::vector<size_t> grid_sizes = {4, 9, 16, 25, 36, 49};
-	//std::vector<double> s_learn_rates = {0.2, 0.5, 0.8, 1, 1.2};
-	//std::vector<double> f_learn_rates = {0.2, 0.5, 0.7, 0.9};
-	//std::vector<double> initial_neighbour_sizes = {0.5, 0.7, 0.9};
-	//std::vector<double> neigbour_range_decays = {0.2, 0.3, 0.5};
-	//std::vector<long long> random_seeds = {0, 100, 10000};
-	//std::vector<unsigned int> iterations_all = {100, 1000, 10000};
-	//			
-	////size_t grid_size = 25;
+	std::vector<size_t> grid_sizes = {4, 9, 16, 25, 36, 49};
+	std::vector<double> s_learn_rates = {0.2, 0.5, 0.8, 1, 1.2};
+	std::vector<double> f_learn_rates = {0.2, 0.5, 0.7, 0.9};
+	std::vector<double> initial_neighbour_sizes = {0.5, 0.7, 0.9};
+	std::vector<double> neigbour_range_decays = {0.2, 0.3, 0.5};
+	std::vector<long long> random_seeds = {0, 100, 10000};
+	std::vector<unsigned int> iterations_all = {100, 1000, 10000};
+				
+	//size_t grid_size = 25;
 
-	////double s_learn_rate = 0.9;
-	////double f_learn_rate = 0.4;
-	//			
-	////double initial_neighbour_size = 1.2;
+	//double s_learn_rate = 0.9;
+	//double f_learn_rate = 0.4;
+				
+	//double initial_neighbour_size = 1.2;
 
-	////double neigbour_range_decay = 0;
+	//double neigbour_range_decay = 0;
 
-	////long long random_seed = 0;
+	//long long random_seed = 0;
 
-	////batch_training
+	//batch_training
 
-	////unsigned int iterations = 1000;
+	//unsigned int iterations = 1000;
 
-	//int epochs = 1;
+	int epochs = 1;
 	//
 	std::vector<std::string> graph_type_names = {"Grid4", "Grid6", "Grid8", "Paley", "LPS", "Margulis"};
 	std::vector<std::string> metric_type_names = {"Euclidian", "Manhatten", "P_norm", "Euclidian_thresholded", "Cosine", "Chebyshev"};
@@ -1007,234 +1314,195 @@ int main(int argc, char *argv[])
 	////
 	if (hyperparams_tune)
 	{
-	//	std::vector<std::string> metaparams_grid = {"grid_size", "s_learn_rate", "f_learn_rate", "initial_neighbour_size", "neigbour_range_decay",
-	//		"random_seed", "iterations", "distribution_type", "metric_type", "graph_type", "score"};
-	//	std::vector<std::vector<std::string>> results_grid;
+		std::vector<std::string> metaparams_grid = {"grid_size", "s_learn_rate", "f_learn_rate", "initial_neighbour_size", "neigbour_range_decay",
+			"random_seed", "iterations", "distribution_type", "metric_type", "graph_type", "score"};
+		std::vector<std::vector<std::string>> results_grid;
 
-	//	//
-	//	const int count = graph_types.size() * metric_types.size() * distribution_types.size() * 
-	//		grid_sizes.size() * s_learn_rates.size() * f_learn_rates.size() * initial_neighbour_sizes.size() * neigbour_range_decays.size() * random_seeds.size() * iterations_all.size();
+		//
+		const int count = graph_types.size() * metric_types.size() * distribution_types.size() * 
+			grid_sizes.size() * s_learn_rates.size() * f_learn_rates.size() * initial_neighbour_sizes.size() * neigbour_range_decays.size() * random_seeds.size() * iterations_all.size();
 
-	//	std::vector<double> results(count, INFINITY);
-	//	std::cout << "Num configurations: " << count << std::endl;
+		std::vector<double> results(count, INFINITY);
+		std::cout << "Num configurations: " << count << std::endl;
 
-	//	int i = 0;
-	//	for (auto grid_size : grid_sizes)
-	//	{
-	//		for (auto s_learn_rate : s_learn_rates)
-	//		{
-	//			for (auto f_learn_rate : f_learn_rates)
-	//			{
-	//				for (auto initial_neighbour_size : initial_neighbour_sizes)
-	//				{
-	//					for (auto neigbour_range_decay : neigbour_range_decays)
-	//					{
-	//						for (auto random_seed : random_seeds)
-	//						{
-	//							for (auto iterations : iterations_all)
-	//							{
-	//								for (int distribution_index = 0; distribution_index < distribution_types.size(); distribution_index++)
-	//								{
-	//									for (int metric_index = 0; metric_index < metric_types.size(); metric_index++)
-	//									{
-	//										for (auto graph_type : graph_types)
-	//										{
-	//											auto distribution_type = distribution_types[distribution_index];
-	//											auto metric_type = metric_types[metric_index];
+		int i = 0;
+		for (auto grid_size : grid_sizes)
+		{
+			for (auto s_learn_rate : s_learn_rates)
+			{
+				for (auto f_learn_rate : f_learn_rates)
+				{
+					for (auto initial_neighbour_size : initial_neighbour_sizes)
+					{
+						for (auto neigbour_range_decay : neigbour_range_decays)
+						{
+							for (auto random_seed : random_seeds)
+							{
+								for (auto iterations : iterations_all)
+								{
+									for (auto distribution_type : distribution_types)
+									{
+										for (auto metric_type : metric_types)
+										{
+											for (auto graph_type : graph_types)
+											{
 
-	//											pool.execute([i, &sem, &results, &speeds, graph_type, metric_type, metric_index, distribution_type, distribution_index,
-	//												iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, grid_size, random_seed, &results_grid, &metaparams_grid,
-	//												&graph_type_names, &metric_type_names, &distribution_type_names]() {
+												pool.execute([i, &sem, &results, &speeds, graph_type, metric_type, distribution_type, 
+													iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, grid_size, random_seed, &results_grid, &metaparams_grid,
+													&graph_type_names, &metric_type_names, &distribution_type_names]() {
 
-	//												double score;
+													double score;
 
-	//												try {								
-	//													if (graph_type == 0)
-	//													{
-	//														// Grid4
-	//														metric::Grid4 graph(grid_size);
-	//														score = runConfiguration(i, speeds, metric_type, graph, distribution_type, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
-	//													}
-	//													else if (graph_type == 1)
-	//													{
-	//														// Grid6
-	//														metric::Grid6 graph(grid_size);
-	//														score = runConfiguration(i, speeds, metric_type, graph, distribution_type, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
-	//													}
-	//													else if (graph_type == 2)
-	//													{
-	//														// Grid8
-	//														metric::Grid8 graph(grid_size);
-	//														score = runConfiguration(i, speeds, metric_type, graph, distribution_type, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
-	//													}
-	//													else if (graph_type == 3)
-	//													{
-	//														// LPS
-	//														metric::LPS graph(grid_size);
-	//														score = runConfiguration(i, speeds, metric_type, graph, distribution_type, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
-	//													}
-	//													else if (graph_type == 4)
-	//													{
-	//														// Margulis
-	//														metric::Margulis graph(grid_size);
-	//														score = runConfiguration(i, speeds, metric_type, graph, distribution_type, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
-	//													}
-	//														
+													try {
 
+														iterateThroughGraphs(grid_size, graph_type, metric_type, distribution_type, i, speeds, 
+															iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 
-	//												}
-	//												catch (const std::runtime_error& e) {
-	//													std::cout << "configuration #" << i << ": runtime error: " << e.what() << std::endl;
-	//												}
-	//												catch (const std::exception& e) {
-	//													std::cout << "configuration #" << i << ": exception: " << e.what() << std::endl;
-	//												}
-	//												catch (...) {
-	//													std::cout << "configuration #" << i << ": unknown error" << std::endl;
-	//												}
-	//											
-	//												mu.lock();
-	//												
-	//												
-	//												auto graph_type_name = graph_type_names[graph_type];
-	//												
-	//												auto distribution_type_name = distribution_type_names[distribution_index];
+													}
+													catch (const std::runtime_error& e) {
+														std::cout << "configuration #" << i << ": runtime error: " << e.what() << std::endl;
+													}
+													catch (const std::exception& e) {
+														std::cout << "configuration #" << i << ": exception: " << e.what() << std::endl;
+													}
+													catch (...) {
+														std::cout << "configuration #" << i << ": unknown error" << std::endl;
+													}
+												
+													mu.lock();
+												
+													std::vector<std::string> current_result = {std::to_string(grid_size), std::to_string(s_learn_rate), std::to_string(f_learn_rate), 
+																								std::to_string(initial_neighbour_size), std::to_string(neigbour_range_decay),
+																								std::to_string(random_seed), std::to_string(iterations), 
+																								distribution_type_names[distribution_type], metric_type_names[metric_type], graph_type_names[graph_type], 
+																								std::to_string(score)};
 
-	//												auto metric_type_name = metric_type_names[metric_index];
-	//											
-	//												std::vector<std::string> current_result = {std::to_string(grid_size), std::to_string(s_learn_rate), std::to_string(f_learn_rate), 
-	//																							std::to_string(initial_neighbour_size), std::to_string(neigbour_range_decay),
-	//																							std::to_string(random_seed), std::to_string(iterations), 
-	//																							distribution_type_name, metric_type_name, graph_type_name, 
-	//																							std::to_string(score)};
+													results_grid.push_back(current_result);
 
-	//												results_grid.push_back(current_result);
+													if (i % 10000 == 0) {
+														saveToCsv("SOM_example_2_checkpoint_" + std::to_string(i) + ".csv", results_grid, metaparams_grid);
+													}
 
-	//												if (i % 10000 == 0) {
-	//													saveToCsv("SOM_example_2_checkpoint_" + std::to_string(i) + ".csv", results_grid, metaparams_grid);
-	//												}
+													mu.unlock();
 
-	//												mu.unlock();
+													results.at(i) = score;
 
-	//												results.at(i) = score;
+													sem.notify();
+												});
 
-	//												sem.notify();
-	//											});
+												i++;
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	
+		for (auto grid_size : grid_sizes)
+		{
+			for (auto s_learn_rate : s_learn_rates)
+			{
+				for (auto f_learn_rate : f_learn_rates)
+				{
+					for (auto initial_neighbour_size : initial_neighbour_sizes)
+					{
+						for (auto neigbour_range_decay : neigbour_range_decays)
+						{
+							for (auto random_seed : random_seeds)
+							{
+								for (auto iterations : iterations_all)
+								{
+									for (auto distribution_type : distribution_types)
+									{
+										for (auto metric_type : metric_types)
+										{
+											for (auto graph_type : graph_types)
+											{
+												sem.wait();
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		pool.close();
+	
+		saveToCsv("SOM_example_2_final.csv", results_grid, metaparams_grid);
+	
+		double minimal_score = INFINITY;
 
-	//											i++;
-	//										}
-	//									}
-	//								}
-	//							}
-	//						}
-	//					}
-	//				}
-	//			}
-	//		}
-	//	}
-	//
-	//	for (auto grid_size : grid_sizes)
-	//	{
-	//		for (auto s_learn_rate : s_learn_rates)
-	//		{
-	//			for (auto f_learn_rate : f_learn_rates)
-	//			{
-	//				for (auto initial_neighbour_size : initial_neighbour_sizes)
-	//				{
-	//					for (auto neigbour_range_decay : neigbour_range_decays)
-	//					{
-	//						for (auto random_seed : random_seeds)
-	//						{
-	//							for (auto iterations : iterations_all)
-	//							{
-	//								for (auto distribution_type : distribution_types)
-	//								{
-	//									for (auto metric_type : metric_types)
-	//									{
-	//										for (auto graph_type : graph_types)
-	//										{
-	//											sem.wait();
-	//										}
-	//									}
-	//								}
-	//							}
-	//						}
-	//					}
-	//				}
-	//			}
-	//		}
-	//	}
-	//	pool.close();
-	//
-	//
-	//	double minimal_score = INFINITY;
+		i = 0;
+		for (auto grid_size : grid_sizes)
+		{
+			for (auto s_learn_rate : s_learn_rates)
+			{
+				for (auto f_learn_rate : f_learn_rates)
+				{
+					for (auto initial_neighbour_size : initial_neighbour_sizes)
+					{
+						for (auto neigbour_range_decay : neigbour_range_decays)
+						{
+							for (auto random_seed : random_seeds)
+							{
+								for (auto iterations : iterations_all)
+								{
+									for (auto distribution_type : distribution_types)
+									{
+										for (auto metric_type : metric_types)
+										{
+											for (auto graph_type : graph_types)
+											{
+												if (results[i] < minimal_score)
+												{
+													minimal_score = results[i];
+													best_grid_size = grid_size;
+													
+													best_graph = graph_type;
+													best_metric = metric_type;
+													best_distribution = distribution_type;
+												
+													best_s_learn_rate = s_learn_rate;
+													best_f_learn_rate = f_learn_rate;
+													best_initial_neighbour_size = initial_neighbour_size;
+													best_neigbour_range_decay = neigbour_range_decay;
+													best_random_seed = random_seed;
+													best_iterations = iterations;
+												}
+												i++;
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
 
-	//	i = 0;
-	//	for (auto grid_size : grid_sizes)
-	//	{
-	//		for (auto s_learn_rate : s_learn_rates)
-	//		{
-	//			for (auto f_learn_rate : f_learn_rates)
-	//			{
-	//				for (auto initial_neighbour_size : initial_neighbour_sizes)
-	//				{
-	//					for (auto neigbour_range_decay : neigbour_range_decays)
-	//					{
-	//						for (auto random_seed : random_seeds)
-	//						{
-	//							for (auto iterations : iterations_all)
-	//							{
-	//								for (auto distribution_type : distribution_types)
-	//								{
-	//									for (auto metric_type : metric_types)
-	//									{
-	//										for (auto graph_type : graph_types)
-	//										{
-	//											if (results[i] < minimal_score)
-	//											{
-	//												minimal_score = results[i];
-	//												best_grid_size = grid_size;
-	//												
-	//												best_graph = graph_type;
-
-	//												best_metric = metric_type;
-	//												best_distribution = distribution_type;
-	//											
-	//												best_s_learn_rate = s_learn_rate;
-	//												best_f_learn_rate = f_learn_rate;
-	//												best_initial_neighbour_size = initial_neighbour_size;
-	//												best_neigbour_range_decay = neigbour_range_decay;
-	//												best_random_seed = random_seed;
-	//												best_iterations = iterations;
-	//											}
-	//											i++;
-	//										}
-	//									}
-	//								}
-	//							}
-	//						}
-	//					}
-	//				}
-	//			}
-	//		}
-	//	}
-
-	//
-	//	std::cout << std::endl;
-	//	std::cout << std::endl;
-	//	std::cout << "The best configuration: " << std::endl;
-	//	std::cout << "  Score: " << minimal_score << std::endl;
-	//	auto best_graph_type = graph_type_names[best_graph];
-	//	std::cout << "  Graph: " << best_graph_type << std::endl;
-	//	std::cout << "  Distance: " << typeid(best_metric).name() << std::endl;
-	//	std::cout << "  Distribution: " << typeid(best_distribution).name() << std::endl;
-	//	std::cout << "  Grid size: " << best_grid_size << std::endl;
-	//	std::cout << "  Iterations: " << best_iterations << std::endl;
-	//	std::cout << "  Start learn rate: " << best_s_learn_rate << std::endl;
-	//	std::cout << "  Final learn rate: " << best_f_learn_rate << std::endl;
-	//	std::cout << "  Initial neighbour size: " << best_initial_neighbour_size << std::endl;
-	//	std::cout << "  Neigbour range decay: " << best_neigbour_range_decay << std::endl;
-	//	std::cout << "  Random seeds: " << best_random_seed << std::endl;
+	
+		std::cout << std::endl;
+		std::cout << std::endl;
+		std::cout << "The best configuration: " << std::endl;
+		std::cout << "  Score: " << minimal_score << std::endl;
+		std::cout << "  Graph: " << graph_type_names[best_graph] << std::endl;
+		std::cout << "  Distance: " << metric_type_names[best_metric] << std::endl;
+		std::cout << "  Distribution: " << distribution_type_names[best_distribution] << std::endl;
+		std::cout << "  Grid size: " << best_grid_size << std::endl;
+		std::cout << "  Iterations: " << best_iterations << std::endl;
+		std::cout << "  Start learn rate: " << best_s_learn_rate << std::endl;
+		std::cout << "  Final learn rate: " << best_f_learn_rate << std::endl;
+		std::cout << "  Initial neighbour size: " << best_initial_neighbour_size << std::endl;
+		std::cout << "  Neigbour range decay: " << best_neigbour_range_decay << std::endl;
+		std::cout << "  Random seeds: " << best_random_seed << std::endl;
 	}
 	else
 	{
@@ -1289,64 +1557,11 @@ int main(int argc, char *argv[])
 		std::cout << std::endl;
 	}
 
-	// create, train SOM over the raw data and reduce the data
-
-	metric::Cosine<double> distance;
-	std::normal_distribution<double> distribution(-1, 1);
-	metric::Grid6 graph(best_grid_size);
-
-	metric::SOM<std::vector<double>, metric::Cosine<double>, metric::Grid6, std::normal_distribution<double>> som(
-		distance, 
-		graph, 
-		distribution, 
-		best_initial_neighbour_size, 
-		best_neigbour_range_decay, 
-		best_random_seed
-	);	
-	
-	som.train(speeds, best_iterations, best_s_learn_rate, best_f_learn_rate);
-	
+	// create, train SOM over the raw data and reduce the data	
 	// clustering on the reduced data
 
-	auto nodes_data = som.get_weights();
-	json nodes_data_json(nodes_data);
-	std::ofstream som_output("assets/som" + std::to_string(best_grid_size) + ".json");
-	som_output << std::setw(4) << nodes_data_json << std::endl;
-	som_output.close();	
-	
-    metric::Matrix<std::vector<double>, metric::Cosine<double>> distance_matrix(nodes_data);
-
-    auto [assignments, exemplars, counts] = metric::affprop(distance_matrix, (float)0.66);
-
-	
-	std::cout << "assignments:" << std::endl;
-	vector_print(assignments);
-	std::cout << '\n';
-
-	std::cout << "counts:" << std::endl;
-	vector_print(counts);
-	std::cout << '\n' << std::endl;
-
-
-	// split and reshape raw data by clusters [cluster -> sensor -> energy -> values]
-	
-	std::vector<std::vector<std::vector<std::vector<double>>>> clustered_energies(8, std::vector<std::vector<std::vector<double>>>(7, std::vector<std::vector<double>>(counts.size())));
-	int num_sensors = 8;
-	int num_levels = 7;
-
-	for (auto record : speeds)
-	{
-		// find cluster id for a record
-		auto bmu = som.BMU(record);
-		auto cluster_index = assignments[bmu];
-		for (int i = 0; i < num_sensors; i++)
-		{			
-			for (int j = 0; j < num_levels; j++)
-			{
-				clustered_energies[i][j][cluster_index].push_back(record[i*num_levels + j]);
-			}
-		}
-	}
+	auto [assignments, counts, clustered_energies] = iterateThroughGraphsBest(best_grid_size, best_graph, best_metric, best_distribution, speeds, 
+		best_iterations, best_s_learn_rate, best_f_learn_rate, best_initial_neighbour_size, best_neigbour_range_decay, best_random_seed);
 
 	// calculate borders and positions of each cluster
 
@@ -1474,8 +1689,8 @@ int main(int argc, char *argv[])
 			{
 				// metric::PMQ set_0(energy_data);
 			
+				std::cout << "      ---:" << std::endl;
 				// returns quants for a single cluster
-				//std::cout << "      ---:" << std::endl;
 				std::vector<std::vector<std::vector<double>>> multiquants = set2multiconf(cluster_data, windowSizes, samples, confidencelevel);
 					
 				json cluster_json;
