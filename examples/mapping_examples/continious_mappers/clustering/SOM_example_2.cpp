@@ -1726,7 +1726,7 @@ int main(int argc, char *argv[])
 		sensor_index++;
 		std::cout << "  ---:" << std::endl;
 	}
-	std::ofstream outputFile("assets/reference_data.json");
+	std::ofstream outputFile("reference_data.json");
 	outputFile << std::setw(4) << reference_data << std::endl;
 	outputFile.close();	
 	std::cout << "---:" << std::endl;
