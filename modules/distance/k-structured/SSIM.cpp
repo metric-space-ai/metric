@@ -146,10 +146,13 @@ auto SSIM<D, V>::operator()(const Container& img1, const Container& img2) const 
                 S2 = (2.0 * sigma12 + C2) / (sigma1 + sigma2 + C2);
 
                 // sum up the local ssim_distance
-                sum += std::sqrt(2 - S1 - S2);
+                double value = 2.0 - S1 - S2;
+                if (value > 0.0) {
+                    sum += std::sqrt(value);
+                }
             }
         }
-		
+
         return sum / ((img1.size() - n + 1) * (img1[0].size() - n + 1));  // normalize the sum
     }
     return distance_type {};
