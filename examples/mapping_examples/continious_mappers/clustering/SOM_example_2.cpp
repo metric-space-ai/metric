@@ -1692,6 +1692,7 @@ int main(int argc, char *argv[])
 				std::cout << "      --->" << std::endl;
 				// returns quants for a single cluster
 				std::vector<std::vector<std::vector<double>>> multiquants = set2multiconf(cluster_data, windowSizes, samples, confidencelevel);
+				std::cout << "      --->>" << std::endl;
 
 				json cluster_json;
 				for (auto window : multiquants)
