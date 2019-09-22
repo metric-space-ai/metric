@@ -1673,37 +1673,38 @@ int main(int argc, char *argv[])
 	uint32_t samples = 5;
 	double confidencelevel = 1.0;
 	
-	std::cout << "---:" << std::endl;
+	std::cout << "--->" << std::endl;
 	json reference_data;
 	int sensor_index = 0;
 	for (auto sensor_data : clustered_energies)
 	{		
-		std::cout << "  ---:" << std::endl;
+		std::cout << "  --->" << std::endl;
 		std::vector<json> energies_json;
 		int level_index = 0;
 		for (auto energy_data : sensor_data)
 		{			
-			std::cout << "    ---:" << std::endl;
+			std::cout << "    --->" << std::endl;
 			std::vector<json> clusters_json;
 			for (auto cluster_data : energy_data)
 			{
 				// metric::PMQ set_0(energy_data);
 			
-				std::cout << "      ---:" << std::endl;
+				std::cout << "      --->" << std::endl;
 				// returns quants for a single cluster
 				std::vector<std::vector<std::vector<double>>> multiquants = set2multiconf(cluster_data, windowSizes, samples, confidencelevel);
-					
+
 				json cluster_json;
 				for (auto window : multiquants)
 				{
 					json window_json = {
-						{"conf_l", window[0]}, 						
+						{"conf_l", window[0]},
 						{"conf_m", window[1]},
 						{"conf_r", window[2]}
 					};
 					cluster_json.push_back(window_json);
 				}
 				clusters_json.push_back(cluster_json);
+				std::cout << "      ---:" << std::endl;
 			}
 			json energy_json = {
 				{"name", "level" + std::to_string(level_index)}, 		
@@ -1714,6 +1715,7 @@ int main(int argc, char *argv[])
 			};
 			energies_json.push_back(energy_json);
 			level_index++;
+			std::cout << "    ---:" << std::endl;
 		}
 		
 		json sensor_json = {
@@ -1722,6 +1724,7 @@ int main(int argc, char *argv[])
 		};
 		reference_data.push_back(sensor_json);
 		sensor_index++;
+		std::cout << "  ---:" << std::endl;
 	}
 	std::ofstream outputFile("assets/reference_data.json");
 	outputFile << std::setw(4) << reference_data << std::endl;
