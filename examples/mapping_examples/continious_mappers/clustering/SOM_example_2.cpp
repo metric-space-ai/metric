@@ -1261,7 +1261,7 @@ int main(int argc, char *argv[])
 	std::vector<int> distribution_types = {0, 1, 2};
 
 	
-	std::vector<size_t> grid_sizes = {4, 9, 16, 25, 36, 49};
+	std::vector<size_t> grid_sizes = {25, 100, 225, 400};
 	std::vector<double> s_learn_rates = {0.2, 0.5, 0.8, 1, 1.2};
 	std::vector<double> f_learn_rates = {0.2, 0.5, 0.7, 0.9};
 	std::vector<double> initial_neighbour_sizes = {0.5, 0.7, 0.9};
