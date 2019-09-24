@@ -80,13 +80,13 @@ struct P_norm {
     using value_type = V;
     using distance_type = value_type;
 
-    P_norm() = default;
+    //P_norm() = default;
     /**
      * @brief Construct a new P_norm object
      *
      * @param p_
      */
-    explicit P_norm(const value_type& p_)
+    explicit P_norm(const value_type& p_ = 1)
         : p(p_)
     {
     }

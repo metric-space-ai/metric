@@ -22,7 +22,7 @@ int main()
 	std::cout << "SSIM example have started" << std::endl;
 	std::cout << "" << std::endl;
 	
-	metric::SSIM<double, std::vector<edm_Type>> distance;
+	metric::SSIM<double, std::vector<uint8_t>> distance;
 
 	// assumes that i1 and i2 are serialized vectors of the image matrices.
 	auto t1 = std::chrono::steady_clock::now();
