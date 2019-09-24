@@ -11,10 +11,150 @@
 #include "examples/mapping_examples/assets/helpers.cpp"
 
 
+// toy class template
+/*
+
+template <typename ElementType>
+class ToyClass
+{
+
+  public:
+
+    template <template <typename, typename> typename ContainerType, typename Allocator>
+    ToyClass(std::vector<ContainerType<ElementType, Allocator>> in) {
+        blaze::DynamicMatrix<ElementType> blaze_in(in.size(), in[0].size(), 0);
+        for (size_t i = 0; i < in.size(); ++i)
+            for (size_t j = 0; j < in[0].size(); ++j)
+                blaze_in(i, j) = in[i][j];
+        blaze::DynamicVector<ElementType, blaze::rowVector> avgs;
+        inner_data = metric::PCA(blaze_in, 4, avgs);
+    }
+
+    //template <template <typename, bool> typename ContainerType
+
+    blaze::DynamicMatrix<ElementType> get_inner_data() {
+        return inner_data;
+    }
+
+  private:
+    blaze::DynamicMatrix<ElementType> inner_data;
+
+};
+
+
+
+template <typename ContainerType>
+class ToyClass2
+{
+
+  private:
+
+    template<typename>
+    struct determine_element_type  // TODO replace with value_type/ElementTypew field detector!
+    {
+        using type = void;
+    };
+
+    template <typename ValueType, typename Allocator>
+    struct determine_element_type<std::vector<ValueType, Allocator>>
+    {
+        using type = typename std::vector<ValueType, Allocator>::value_type;
+    };
+
+    template <typename ValueType, bool F>
+    struct determine_element_type<blaze::DynamicVector<ValueType, F>>
+    {
+        using type = typename blaze::DynamicVector<ValueType, F>::ElementType;
+    };
+
+
+    template <typename ValueType, bool F>
+    struct determine_element_type<blaze::DynamicMatrix<ValueType, F>>
+    {
+        using type = typename blaze::DynamicMatrix<ValueType, F>::ElementType;
+    };
+
+
+  public:
+
+    //using ElementType = typename ContainerType::value_type;
+    using ElementType = typename determine_element_type<ContainerType>::type;
+
+    ToyClass2(std::vector<ContainerType> in) {
+        blaze::DynamicMatrix<ElementType> blaze_in(in.size(), in[0].size(), 0);
+        for (size_t i = 0; i < in.size(); ++i)
+            for (size_t j = 0; j < in[0].size(); ++j)
+                blaze_in(i, j) = in[i][j];
+        blaze::DynamicVector<ElementType, blaze::rowVector> avgs;
+        inner_data = metric::PCA(blaze_in, 4, avgs);
+    }
+
+    ToyClass2(blaze::DynamicMatrix<ElementType> in) {
+        blaze::DynamicVector<ElementType, blaze::rowVector> avgs;
+        inner_data = metric::PCA(in, 4, avgs);
+    }
+
+    blaze::DynamicMatrix<ElementType> get_inner_data() {
+        return inner_data;
+    }
+
+  private:
+    blaze::DynamicMatrix<ElementType> inner_data;
+
+};
+
+
+template <typename ContainerType>
+ToyClass2<ContainerType> ToyClass2_factory(std::vector<ContainerType> in)
+{
+    return ToyClass2<ContainerType>(in);
+}
+
+template <typename ElementType>
+ToyClass2<blaze::DynamicMatrix<ElementType>> ToyClass2_factory(blaze::DynamicMatrix<ElementType> in)
+{
+    return ToyClass2<blaze::DynamicMatrix<ElementType>>(in);
+}
+
+//*/
+
+
 
 
 int main()
 {
+
+    // toy calls
+    /*
+
+    std::vector<float> d0 = {0, 1, 2};
+    std::vector<float> d1 = {0, 1, 3};
+    auto d = std::vector{d0, d1};
+
+    //auto toy_object = ToyClass<float>(d);
+    //auto toy_object = ToyClass2<std::vector<float>>(d);
+    auto toy_object = ToyClass2_factory(d);
+    //auto toy_object = ToyClass<determine_element_type<std::vector<float>>::type>(d);
+    std::cout << toy_object.get_inner_data() << "\n";
+
+    std::cout << "\n";
+
+    blaze::DynamicVector<float, blaze::rowVector> d0_blaze {0, 1, 2};
+    blaze::DynamicVector<float, blaze::rowVector> d1_blaze {0, 1, 3};
+    auto d_blaze = std::vector{d0_blaze, d1_blaze};
+    //auto toy_object_blaze = ToyClass2<blaze::DynamicVector<float, blaze::rowVector>>(d_blaze);
+    auto toy_object_blaze = ToyClass2_factory(d_blaze);
+    std::cout << toy_object_blaze.get_inner_data() << "\n";
+
+    std::cout << "\n";
+
+    blaze::DynamicMatrix<float, blaze::rowMajor> d_blaze_matrix {{0, 1, 2}, {0, 1, 3}};
+    auto toy_object_blaze_matrix = ToyClass2_factory(d_blaze_matrix);
+    std::cout << toy_object_blaze_matrix.get_inner_data() << "\n";
+
+    return 0;
+    //*/
+
 
     using V = float; // double;
 
@@ -93,7 +233,8 @@ int main()
     blaze_dm_to_csv(training_dataset_r, "training_dataset_r.csv");
     blaze_dm_to_csv(test_data_r, "test_data_r.csv");
 
-    auto model_r = metric::PCFA_factory(trans(training_dataset_r), n_features); // dataset, compressed_code_length
+    blaze::DynamicMatrix<V, blaze::rowMajor> training_dataset_r_t = trans(training_dataset_r);
+    auto model_r = metric::PCFA_factory(training_dataset_r_t, n_features); // dataset, compressed_code_length
 
     blaze::DynamicMatrix<V> avg_r_out = trans(model_r.average());
     mat2bmp::blaze2bmp_norm(avg_r_out, "averages_r.bmp");

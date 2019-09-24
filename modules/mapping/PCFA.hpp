@@ -117,19 +117,57 @@ private:
  *@brief simple linear encoder based on PCA
  *
  */
-template <typename V>
+template <typename recType, typename Metric>
 class PCFA {
 
+private:
+
+    template<typename>
+    struct determine_element_type  // TODO replace with value_type/ElementTypew field detector!
+    {
+        using type = void;
+    };
+
+    template <typename ValueType, typename Allocator>
+    struct determine_element_type<std::vector<ValueType, Allocator>>
+    {
+        using type = typename std::vector<ValueType, Allocator>::value_type;
+    };
+
+    template <typename ValueType, bool F>
+    struct determine_element_type<blaze::DynamicVector<ValueType, F>>
+    {
+        using type = typename blaze::DynamicVector<ValueType, F>::ElementType;
+    };
+
+
+    template <typename ValueType, bool F>
+    struct determine_element_type<blaze::DynamicMatrix<ValueType, F>>
+    {
+        using type = typename blaze::DynamicMatrix<ValueType, F>::ElementType;
+    };
+
+
 public:
-    using value_type = V;
+
+    using value_type = typename determine_element_type<recType>::type;
 
     /**
-   * @brief Construct a new PCFA object
+   * @brief Construct a new PCFA object from dataset in blaze DynamicMatrix
    *
    * @param TrainingData - training dataset with curves in rows
    * @param n_features - desired length of compressed code
    */
     PCFA(const blaze::DynamicMatrix<value_type> & TrainingData, size_t n_features = 1);
+
+    /**
+   * @brief Construct a new PCFA object vrom vector of records
+   *
+   * @param TrainingData - training dataset, vector of records
+   * @param n_features - desired length of compressed code
+   */
+    PCFA(std::vector<recType> & TrainingData, size_t n_features = 1);
+
 
     /**
    * @brief
@@ -189,7 +227,7 @@ PCFA_col<typename BlazeMatrix::ElementType> PCFA_col_factory(const BlazeMatrix &
 * @param n_features
 */
 template <typename BlazeMatrix>
-PCFA<typename BlazeMatrix::ElementType> PCFA_factory(const BlazeMatrix & TrainingData, size_t n_features = 1);
+PCFA<typename BlazeMatrix::ElementType, void> PCFA_factory(const BlazeMatrix & TrainingData, size_t n_features = 1);
 
 
 
