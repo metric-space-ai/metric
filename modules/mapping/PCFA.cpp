@@ -164,7 +164,7 @@ template <typename recType, typename Metric>
 PCFA<recType, Metric>::PCFA(std::vector<recType> & TrainingData, size_t n_features)
 {
     blaze::DynamicMatrix<value_type> blaze_in(TrainingData.size(), TrainingData[0].size(), 0);
-    for (size_t i = 0; i < TrainingData.size(); ++i) // TODO optimize using iterators!!
+    for (size_t i = 0; i < TrainingData.size(); ++i) // TODO optimize using iterators!! // TODO replace with call of converter
         for (size_t j = 0; j < TrainingData[0].size(); ++j)
             blaze_in(i, j) = TrainingData[i][j];
     blaze::DynamicVector<value_type, blaze::rowVector> avgs;
@@ -184,6 +184,19 @@ PCFA<recType, Metric>::encode(
     return CenteredInput * W_encode;
 }
 
+
+
+template <typename recType, typename Metric>
+std::vector<recType>
+PCFA<recType, Metric>::encode(const std::vector<recType> & Data) {
+    auto DataBlaze = vector_to_blaze(Data);
+    auto CenteredInput = blaze::DynamicMatrix<PCFA<recType, Metric>::value_type>(DataBlaze.rows(), DataBlaze.columns(), 0);
+    for (size_t row_idx = 0; row_idx < DataBlaze.rows(); row_idx++)
+        blaze::row(CenteredInput, row_idx) = blaze::row(DataBlaze, row_idx) - averages;
+    return blaze_to_vector(CenteredInput * W_encode);
+}
+
+
 template <typename recType, typename Metric>
 blaze::DynamicMatrix<typename PCFA<recType, Metric>::value_type>
 PCFA<recType, Metric>::decode(
@@ -200,6 +213,27 @@ PCFA<recType, Metric>::decode(
     }
 
 }
+
+
+
+template <typename recType, typename Metric>
+std::vector<recType>
+PCFA<recType, Metric>::decode(
+        const std::vector<recType> & Codes,
+        bool unshift) {
+    auto CodesBlaze = vector_to_blaze(Codes);
+    if (unshift) {
+        auto Noncentered = CodesBlaze * W_decode;
+        auto Centered = blaze::DynamicMatrix<typename PCFA<recType, Metric>::value_type>(Noncentered.rows(), Noncentered.columns());
+        for (size_t row_idx = 0; row_idx < Noncentered.rows(); row_idx++)
+            blaze::row(Centered, row_idx) = blaze::row(Noncentered, row_idx) + averages;
+        return Centered;
+    } else {
+        return blaze_to_vector(CodesBlaze * W_decode);
+    }
+
+}
+
 
 template <typename recType, typename Metric>
 blaze::DynamicMatrix<typename PCFA<recType, Metric>::value_type>
@@ -220,7 +254,57 @@ PCFA<recType, Metric>::eigenmodes() {
 }
 
 
+template <typename recType, typename Metric>
+blaze::DynamicMatrix<typename PCFA<recType, Metric>::value_type>
+PCFA<recType, Metric>::vector_to_blaze(std::vector<recType> & In) {
+    blaze::DynamicMatrix<value_type> Out(In.size(), In[0].size(), 0);
+    for (size_t i = 0; i < In.size(); ++i) // TODO optimize using iterators!!
+        for (size_t j = 0; j < In[0].size(); ++j)
+            Out(i, j) = In[i][j];
+    return Out;
+}
 
+
+template <typename recType, typename Metric>
+template <typename R>
+std::enable_if <
+ std::is_same<
+  R,
+  std::vector<typename PCFA<R, Metric>::value_type>
+ >::value,
+ std::vector<R>
+> // here we support only STL vector
+PCFA<recType, Metric>::blaze_to_vector(blaze::DynamicMatrix<typename PCFA<R, Metric>::value_type> & In) { // TODO support arbitrary type!
+    std::vector<recType> Out();
+    for (size_t i = 0; i < In.rows(); ++i) {  // TODO optimize using iterators!!
+        recType rec();
+        for (size_t j = 0; j < In[0].size(); ++j)
+            rec.push_back(In[i][j]);
+        Out.push_back(rec);
+    }
+    return Out;
+}
+
+
+template <typename recType, typename Metric>
+template <typename R>
+std::enable_if<
+ std::is_same<
+  R,
+  blaze::DynamicVector<typename PCFA<R, Metric>::value_type, blaze::rowVector>
+ >::value,
+ blaze::DynamicVector<typename PCFA<R, Metric>::value_type, blaze::rowVector>
+>
+PCFA<recType, Metric>::blaze_to_vector(blaze::DynamicMatrix<typename PCFA<R, Metric>::value_type> & In) { // only blaze row-vector
+    std::vector<recType> Out();
+    for (size_t i = 0; i < In.rows(); ++i) {  // TODO optimize using iterators!!
+        recType rec(In.rows()); // blaze specific
+        for (size_t j = 0; j < In[0].size(); ++j)
+            rec[j] = In[i][j];  // blaze specific
+        Out.push_back(rec);
+    }
+    return Out;
+}
 
 
 template <typename BlazeMatrix>

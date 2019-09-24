@@ -180,11 +180,29 @@ public:
     /**
    * @brief
    *
+   * @param Data
+   * @return
+   */
+    std::vector<recType> encode(const std::vector<recType> & Data);
+
+
+    /**
+   * @brief
+   *
    * @param Codes
    * @param unshift - flag for adding average curve to each decoded one
    * @return blaze::DynamicMatrix<value_type>
    */
     blaze::DynamicMatrix<value_type> decode(const blaze::DynamicMatrix<value_type>& Codes, bool unshift=true);
+
+    /**
+   * @brief
+   *
+   * @param Data
+   * @return
+   */
+    std::vector<recType> decode(const std::vector<recType> & Data, bool unshift=true);
+
 
     /**
    * @brief returns the average curve of training dataset, used for center shift
@@ -194,17 +212,55 @@ public:
     blaze::DynamicMatrix<value_type> average();
 
     /**
+   * @brief returns the average curve of training dataset, used for center shift
+   *
+   * @return blaze::DynamicMatrix<value_type>
+   */
+    std::vector<recType> average_rec();
+
+    /**
    * @brief returns the encoder matrix concatenated with the average curve of training dataset, used for center shift
    *
    * @return blaze::DynamicMatrix<value_type>
    */
     blaze::DynamicMatrix<value_type> eigenmodes();
 
+    /**
+   * @brief returns the encoder matrix concatenated with the average curve of training dataset, used for center shift
+   *
+   * @return blaze::DynamicMatrix<value_type>
+   */
+    std::vector<recType> eigenmodes_rec();
+
+
 private:
     blaze::DynamicMatrix<value_type> W_decode;
     blaze::DynamicMatrix<value_type> W_encode;
     blaze::DynamicVector<value_type, blaze::rowVector> averages;
     std::default_random_engine rgen;
+
+    blaze::DynamicMatrix<value_type> vector_to_blaze(std::vector<recType> & In);
+
+    template <typename R> // this template prevents from repeating the signature
+    std::enable_if <
+     std::is_same<
+      R,
+      std::vector<typename PCFA<R, Metric>::value_type>
+     >::value,
+     std::vector<R>
+    >
+    blaze_to_vector(blaze::DynamicMatrix<typename PCFA<R, Metric>::value_type> & In);
+
+    //std::enable_if <std::is_same<recType, blaze::DynamicVector<typename PCFA<recType, Metric>::value_type>, blaze::rowVector>::value, std::vector<recType>>
+    template <typename R> // this template prevents from repeating the signature
+    std::enable_if<
+     std::is_same<
+      R,
+      blaze::DynamicVector<typename PCFA<R, Metric>::value_type, blaze::rowVector>
+     >::value,
+     blaze::DynamicVector<typename PCFA<R, Metric>::value_type, blaze::rowVector>
+    >
+    blaze_to_vector(blaze::DynamicMatrix<typename PCFA<R, Metric>::value_type> & In);
 };
 
 
