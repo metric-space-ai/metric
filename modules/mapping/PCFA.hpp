@@ -9,6 +9,7 @@ Copyright (c) 2019 Panda Team
 #ifndef _METRIC_MAPPING_PCFA_HPP
 #define _METRIC_MAPPING_PCFA_HPP
 
+#include <type_traits>
 #include "../../3rdparty/blaze/Blaze.h"
 
 namespace metric {
@@ -239,28 +240,66 @@ private:
     blaze::DynamicVector<value_type, blaze::rowVector> averages;
     std::default_random_engine rgen;
 
-    blaze::DynamicMatrix<value_type> vector_to_blaze(std::vector<recType> & In);
+    blaze::DynamicMatrix<value_type> vector_to_blaze(const std::vector<recType> & In);
+
+//    template <typename R> // this template prevents from repeating the signature
+//    std::enable_if <
+//     std::is_same<
+//      R,
+//      std::vector<typename PCFA<R, Metric>::value_type>
+//     >::value,
+//     std::vector<R>
+//    >
+//    blaze_to_vector(const blaze::DynamicMatrix<typename PCFA<R, Metric>::value_type> & In);
+
+//    //std::enable_if <std::is_same<recType, blaze::DynamicVector<typename PCFA<recType, Metric>::value_type>, blaze::rowVector>::value, std::vector<recType>>
+//    template <typename R> // this template prevents from repeating the signature
+//    std::enable_if<
+//     std::is_same<
+//      R,
+//      blaze::DynamicVector<typename PCFA<R, Metric>::value_type, blaze::rowVector>
+//     >::value,
+//     blaze::DynamicVector<typename PCFA<R, Metric>::value_type, blaze::rowVector>
+//    >
+//    blaze_to_vector(const blaze::DynamicMatrix<typename PCFA<R, Metric>::value_type> & In);
 
     template <typename R> // this template prevents from repeating the signature
-    std::enable_if <
+    typename std::enable_if <
      std::is_same<
       R,
       std::vector<typename PCFA<R, Metric>::value_type>
      >::value,
      std::vector<R>
-    >
-    blaze_to_vector(blaze::DynamicMatrix<typename PCFA<R, Metric>::value_type> & In);
+    >::type
+    blaze_to_vector(const blaze::DynamicMatrix<typename PCFA<R, Metric>::value_type> & In);
 
     //std::enable_if <std::is_same<recType, blaze::DynamicVector<typename PCFA<recType, Metric>::value_type>, blaze::rowVector>::value, std::vector<recType>>
     template <typename R> // this template prevents from repeating the signature
-    std::enable_if<
+    typename std::enable_if<
      std::is_same<
       R,
       blaze::DynamicVector<typename PCFA<R, Metric>::value_type, blaze::rowVector>
      >::value,
-     blaze::DynamicVector<typename PCFA<R, Metric>::value_type, blaze::rowVector>
-    >
-    blaze_to_vector(blaze::DynamicMatrix<typename PCFA<R, Metric>::value_type> & In);
+     std::vector<R>
+    >::type
+    blaze_to_vector(const blaze::DynamicMatrix<typename PCFA<R, Metric>::value_type> & In);
+
+//    template <typename R> // this prevents from ambiguity
+//    std::enable_if <
+//     (
+//      not std::is_same<
+//       R,
+//       std::vector<typename PCFA<R, Metric>::value_type>
+//      >::value
+//     ) and (
+//      not std::is_same<
+//       R,
+//       blaze::DynamicVector<typename PCFA<R, Metric>::value_type, blaze::rowVector>
+//      >::value
+//     ),
+//     std::vector<R>
+//    >::type
+//    blaze_to_vector(const blaze::DynamicMatrix<typename PCFA<R, Metric>::value_type> & In);
 };
 
 
