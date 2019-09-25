@@ -167,9 +167,7 @@ PCFA<recType, Metric>::PCFA(std::vector<recType> & TrainingData, size_t n_featur
     for (size_t i = 0; i < TrainingData.size(); ++i) // TODO optimize using iterators!! // TODO replace with call of converter
         for (size_t j = 0; j < TrainingData[0].size(); ++j)
             blaze_in(i, j) = TrainingData[i][j];
-    blaze::DynamicVector<value_type, blaze::rowVector> avgs;
-
-    W_decode = metric::PCA(blaze_in, 4, avgs);
+    W_decode = metric::PCA(blaze_in, n_features, averages);
     W_encode = trans(W_decode); // computed once and saved
 }
 
@@ -303,7 +301,7 @@ typename std::enable_if<
 PCFA<recType, Metric>::blaze_to_vector(const blaze::DynamicMatrix<typename PCFA<R, Metric>::value_type> & In) { // only blaze row-vector
     std::vector<recType> Out;
     for (size_t i = 0; i < In.rows(); ++i) {  // TODO optimize using iterators!!
-        recType rec(In.rows()); // blaze specific
+        recType rec(In.columns()); // blaze specific
         for (size_t j = 0; j < In.columns(); ++j)
             rec[j] = In(i, j);  // blaze specific
         Out.push_back(rec);
