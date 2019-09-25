@@ -33,7 +33,7 @@ ContainerType read_csv(std::string filename, std::string sep=",")
     ContainerType array = {};
     std::ifstream in(filename);
     if (!in.is_open()) {
-        std::cout << "Failed to open file" << std::endl;
+        std::cout << "Failed to open file: " << filename << std::endl;
         return array;
     }
     while (getline(in, line)) {
