@@ -267,7 +267,7 @@ private:
     typename std::enable_if <
      std::is_same<
       R,
-      std::vector<typename PCFA<R, Metric>::value_type>
+      std::vector<typename PCFA<R, Metric>::value_type, typename std::allocator<typename PCFA<R, Metric>::value_type>>
      >::value,
      std::vector<R>
     >::type

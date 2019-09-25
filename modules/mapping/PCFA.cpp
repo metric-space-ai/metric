@@ -273,7 +273,7 @@ template <typename R>
 typename std::enable_if <
  std::is_same<
   R,
-  std::vector<typename PCFA<R, Metric>::value_type>
+  std::vector<typename PCFA<R, Metric>::value_type, typename std::allocator<typename PCFA<R, Metric>::value_type>>
  >::value,
  std::vector<R>
 >::type // here we support only STL vector
@@ -281,8 +281,8 @@ PCFA<recType, Metric>::blaze_to_vector(const blaze::DynamicMatrix<typename PCFA<
     std::vector<recType> Out;
     for (size_t i = 0; i < In.rows(); ++i) {  // TODO optimize using iterators!!
         recType rec;
-        for (size_t j = 0; j < In[0].size(); ++j)
-            rec.push_back(In[i][j]);
+        for (size_t j = 0; j < In.columns(); ++j)
+            rec.push_back(In(i, j));
         Out.push_back(rec);
     }
     return Out;
