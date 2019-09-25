@@ -22,7 +22,7 @@ foreach(exampleSrc ${EXAMPLE_SRCS})
 	get_filename_component(exampleName ${exampleSrc} NAME_WE)
 
 	#Add compile target
-	add_executable(${exampleName} ${exampleSrc})
+	add_executable(${exampleName} ${exampleSrc}) 
  
 	#link to Boost libraries AND your targets and dependencies
 	target_link_libraries(${exampleName} ${Boost_LIBRARIES})
