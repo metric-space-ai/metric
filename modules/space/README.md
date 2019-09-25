@@ -39,9 +39,10 @@ std::vector<double> v4 = {2, 8, 2, 1, 0, 0, 0, 0};
 auto nn = cTree.nn(v4);
 std::cout << "nn for v4 is v" << nn->ID << std::endl;
 // nn for v8 is v3
-
-
 ```
+
+*For a full example and more details see `examples/space_examples/simple_example.cpp`*
+
 
 
 ## Initialize a Tree
@@ -72,11 +73,15 @@ cTree.traverse([&](auto node_p) {
     if (4 < node_p->data.sum() && node_p->data.sum() <= 5)
         std::cout << "ID: " << node_p->ID << std::endl;
 };);
-
 ```
+
+*For a full example and more details see `examples/space_examples/search_and_access_example.cpp`*
+
+
 
 ## Access the nodes
 ```c++
+
 /*** access through dereference to the underlying data ***/
 // nn->ID;          // gives the ID of the record. the ID is counted up like an vector index.
 // nn->data;        // gives the data record of a node (every node contains data)
@@ -111,6 +116,9 @@ for (auto i = 0; i < data_record.size() - 1; i++)
 std::cout << data_record[data_record.size() - 1] << "}" << std::endl;
 ```
 
+*For a full example and more details see `examples/space_examples/search_and_access_example.cpp`*
+
+
 ## Use a custom container with custom metric use an "Eigen" Vector and L1 metric.
 
 ```c++
@@ -135,6 +143,8 @@ int main()
     return 0;
 }
 ``` 
+
+*For a full example and more details see `examples/space_examples/eigen_example.cpp`*
 
 ## Details
 - `data record` is a set of values, a row in a table, a data point, etc. All records contain the same paramters, but with different values.
@@ -166,3 +176,54 @@ The overhead of every data records is ca. 64 Byte to handle the nodes.
 - https://gitlab.com/christoph-conrads/cover-tree
 - https://github.com/DNCrane/Cover-Tree
 - https://github.com/manzilzaheer/CoverTree
+
+
+
+---
+
+## Run
+*You need STL and C++14 support to compile.*
+
+METRIC | SPACE works headonly. Just include the header into your project.
+
+```cpp
+#include "modules/space.hpp"
+```
+
+or directly include one of specified distance from the following:
+
+```cpp
+#include "modules/space/tree.hpp"
+#include "modules/space/matrix.hpp"
+```
+
+
+
+#### CMake compilation
+
+Inside folder with your cpp file or inside `examples/space_examples/` run the following commands:
+
+_Windows_
+
+```bash
+mkdir build
+cd build
+cmake .. -A x64 -T llvm
+```
+Then open solution in the Microsoft Visual Studio
+
+_Linux_
+
+Just run cmake
+```bash
+mkdir build
+cd build
+cmake ..
+make
+```
+
+#### Direct compilation, using compiler
+
+```bash
+$ clang++ ./examples/space_examples/simple_example.cpp -std=c++14
+```

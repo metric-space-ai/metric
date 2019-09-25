@@ -94,7 +94,7 @@ dataset1 and dataset2 could be different containers, but must correspond to the 
 ## Run
 *You need STL and C++14 support to compile.*
 
-METRIC | correlation works headonly. Just include the header into your project.
+METRIC | CORRELATION works headonly. Just include the header into your project.
 
 ```cpp
 #include "modules/correlation.hpp"

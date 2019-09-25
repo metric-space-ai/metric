@@ -408,7 +408,7 @@ std::cout << "result: " << result << std::endl;
 ## Run
 *You need STL and C++14 support to compile.*
 
-METRIC | distance works headonly. Just include the header into your project.
+METRIC | DISTANCE works headonly. Just include the header into your project.
 
 ```cpp
 #include "modules/distance.hpp"
