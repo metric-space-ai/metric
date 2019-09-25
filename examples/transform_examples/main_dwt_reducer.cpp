@@ -1,11 +1,16 @@
 
-#include "modules/transform/discrete_cosine.hpp"
+#ifndef M_PI
+// MSVC does not define M_PI
+#define M_PI 3.14159265358979323846
+#endif
 
-#include "modules/utils/visualizer.hpp"
-#include "examples/mapping_examples/assets/helpers.cpp"
+#include "../../modules/transform.hpp"
+
+#include "../../modules/utils/visualizer.hpp"
+
+#include "assets/helpers.cpp"
 
 
-#include "modules/transform/wavelet.hpp"
 #include <vector>
 #include <iostream>
 #include <chrono>
@@ -211,8 +216,11 @@ Container<Container<Container<ValueType, A1>, A2>, A3> apply_energy_extractor_se
 
 
 int main() {
+	
+	std::cout << "DWT reducer example have started" << std::endl;
+	std::cout << '\n';
 
-    /*
+    
     auto x = wavelet::linspace(0.0, 1.0, 3200);
 
     std::cout << wavelet::wmaxlev(x.size(), 5) << std::endl;
@@ -231,7 +239,6 @@ int main() {
     }
     std::cout<< energies[energies.size()-1] <<  "]"<< std::endl;
 
-    return 0;
     //*/
 
 
@@ -262,15 +269,11 @@ int main() {
 //    }
 
     // DWT first
-
-    //auto all_vibration_ts = read_csv_num<float>("Pt01_Ch01_Grooves_1_to_7_and_9.csv"); // Part1
-    //auto all_vibration_ts = read_csv_num<float>("Pt02_ChAll_GroovesAll.csv"); // Part2
-    //auto all_vibration_ts = read_csv_num<float>("Pt03_ChAll_GroovesAll.csv"); // Part3
-    auto all_vibration_ts = read_csv_num<float>("PtAll_ChAll_GroovesAll.csv"); // all parts
+	
+    auto all_vibration_ts = read_csv_num<float>("assets/PtAll_AllGrooves_energy_5.csv"); // all parts
     auto transposed = transpose_timeseries(all_vibration_ts);
     auto subband_waveforms = apply_seq_DWT(transposed);
     for (size_t i=0; i<subband_waveforms.size(); ++i) {
-        //write_csv(subband_waveforms[i], "filtered_waveform_groove_p3_" + std::to_string(i) + ".csv"); // Part3
         write_csv(subband_waveforms[i], "filtered_waveform_groove_pAll_" + std::to_string(i) + ".csv"); // all parts
     }
 
