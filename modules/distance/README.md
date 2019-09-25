@@ -417,15 +417,15 @@ METRIC | distance works headonly. Just include the header into your project.
 or directly include one of specified distance from the following:
 
 ```cpp
-#include "distance/k-related/Standards.hpp"
-#include "distance/k-related/L1.hpp"
+#include "modules/distance/k-related/Standards.hpp"
+#include "modules/distance/k-related/L1.hpp"
 
-#include "distance/k-structured/SSIM.hpp"
-#include "distance/k-structured/TWED.hpp"
-#include "distance/k-structured/EMD.hpp"
-#include "distance/k-structured/Edit.hpp"
+#include "modules/distance/k-structured/SSIM.hpp"
+#include "modules/distance/k-structured/TWED.hpp"
+#include "modules/distance/k-structured/EMD.hpp"
+#include "modules/distance/k-structured/Edit.hpp"
 
-#include "distance/k-random/VOI.hpp"
+#include "modules/distance/k-random/VOI.hpp"
 ```
 
 
