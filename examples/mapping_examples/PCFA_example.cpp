@@ -6,8 +6,8 @@
 int main()
 {
 
-//    using recType = blaze::DynamicVector<float, blaze::rowVector>;
-    using recType = std::vector<float>;
+    using recType = blaze::DynamicVector<float, blaze::rowVector>;
+//    using recType = std::vector<float>;
 
 
     recType d0_blaze {0, 1, 2};
@@ -22,17 +22,25 @@ int main()
 
     auto d_compressed = pcfa.encode(d_test);
 
-//    std::cout << "compressed:\n"; // << d_compressed << "\n";
-//    for (size_t i = 0; i<d_compressed.size(); i++)
-//        std::cout << d_compressed[i];
-//    std::cout << "\n";
+    std::cout << "compressed:\n"; // << d_compressed << "\n";
+    for (size_t i = 0; i<d_compressed.size(); i++) {
+        for (size_t j = 0; j<d_compressed[i].size(); j++) {
+            std::cout << d_compressed[i][j] << " ";
+        }
+        std::cout << "\n";
+    }
+    std::cout << "\n";
 
     auto d_restored = pcfa.decode(d_compressed);
 
-//    std::cout << "restored:\n"; // << d_restored << "\n";
-//    for (size_t i = 0; i<d_restored.size(); i++)
-//        std::cout << d_restored[i];
-//    std::cout << "\n";
+    std::cout << "restored:\n";
+    for (size_t i = 0; i<d_restored.size(); i++) {
+        for (size_t j = 0; j<d_restored[i].size(); j++) {
+            std::cout << d_restored[i][j] << " ";
+        }
+        std::cout << "\n";
+    }
+    std::cout << "\n";
 
     return 0;
 }
