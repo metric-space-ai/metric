@@ -28,7 +28,7 @@ struct TWED {
      * @param penalty_
      * @param elastic_
      */
-    TWED(const value_type& penalty_, const value_type& elastic_)
+    TWED(const value_type& penalty_ = 0, const value_type& elastic_ = 1)
         : penalty(penalty_)
         , elastic(elastic_)
     {
