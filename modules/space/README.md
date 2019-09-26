@@ -7,7 +7,8 @@ A Search Tree works like a std-container to store data of some structure. Basica
 
 It can be used to find similar sets of data in millions of data sets, each containing hundreds of single values in only a few milliseconds.
 
-## Simple example
+## Tree
+#### Simple example
 Build the tree, search for a data record and investigate the tree structure.
 ```c++
 
@@ -45,7 +46,7 @@ std::cout << "nn for v4 is v" << nn->ID << std::endl;
 
 
 
-## Initialize a Tree
+#### Initialize a Tree
 Construct an empty tree or fill it directly with data records.
 ```c++
 typedef std::vector<double> recType;
@@ -60,7 +61,7 @@ metric::Tree<recType> cTree(recList m1); // a container with records.
 metric::Tree<recType, customMetric> cTree;
 ```
 
- ## Search options
+ #### Search options
 ```c++
 /*** logarithmic complexity ***/
 auto nn = cTree.nn();                       // finds the nearest neighbour.
@@ -79,7 +80,7 @@ cTree.traverse([&](auto node_p) {
 
 
 
-## Access the nodes
+#### Access the nodes
 ```c++
 
 /*** access through dereference to the underlying data ***/
@@ -119,10 +120,10 @@ std::cout << data_record[data_record.size() - 1] << "}" << std::endl;
 *For a full example and more details see `examples/space_examples/search_and_access_example.cpp`*
 
 
-## Use a custom container with custom metric use an "Eigen" Vector and L1 metric.
+#### Use a custom container with custom metric use an "Eigen" Vector and L1 metric.
 
 ```c++
-#include "metric_space.hpp"
+#include "modules/space.hpp"
 #include <eigen3/Eigen/Core>
 
 using recType = Eigen::VectorXd;
@@ -146,7 +147,7 @@ int main()
 
 *For a full example and more details see `examples/space_examples/eigen_example.cpp`*
 
-## Details
+#### Details
 - `data record` is a set of values, a row in a table, a data point, etc. All records contain the same paramters, but with different values.
 
 - `n` is a number of data records.
@@ -165,7 +166,7 @@ add record:      0                       log(n)
 find nn record:  n                       log(n)
 ```
 
-## Implementation Cons
+#### Implementation Cons
 The Tree is currently not balanced and can grow degenerative by building single long branches or bushy levels. In both extreme cases it is not better than simple brute force over an array.
 
 I'm working on a balancing, which hopefully solves this issue. For pratice check the tree.max_level or print the tree to check the growing. The max_level should not be much bigger than log(n).
@@ -178,6 +179,109 @@ The overhead of every data records is ca. 64 Byte to handle the nodes.
 - https://github.com/manzilzaheer/CoverTree
 
 
+## Graph
+
+#### Simple example
+
+
+```c++
+size_t w = 3; 
+size_t h = 3; 
+	
+auto g1 = metric::Grid4(h, w);
+auto g2 = metric::Grid6(h, w);
+auto g3 = metric::Grid8(h, w);
+auto g4 = metric::Margulis(h * w);
+auto g5 = metric::Paley(h * w);
+auto g6 = metric::LPS(h * w);
+
+```
+
+#### Access the nodes
+
+```c++
+size_t node = 1;
+size_t max_depth = 4;
+
+std::vector<std::vector<size_t>> neighbors = g1.getNeighbours(node, max_depth);
+
+// out
+// 0 | 1
+// 1 | 0
+// 1 | 2
+// 1 | 4
+// 2 | 3
+// 2 | 5
+// 2 | 7
+// 3 | 6
+// 3 | 8
+
+```
+
+#### Custom Graph
+
+Suppose we have a function that creates grid's vector:
+
+```c++    
+std::vector<std::pair<size_t, size_t>> createGrid4(size_t width, size_t height)
+{
+    std::vector<std::pair<size_t, size_t>> edgesPairs;
+
+    for (size_t i = 0; i < height; ++i) {
+        for (size_t j = 0; j < width; ++j) {
+
+            int ii0 = 0, ii1 = 0;
+            int jj0 = 0, jj1 = 0;
+
+            if (i > 0) {
+                ii0 = -1;
+            }
+            if (j > 0) {
+                jj0 = -1;
+            }
+
+            if (i < height - 1) {
+                ii1 = 1;
+            }
+            if (j < width - 1) {
+                jj1 = 1;
+            }
+
+            for (int ii = ii0; ii <= ii1; ++ii) {
+                for (int jj = jj0; jj <= jj1; ++jj) {
+                    if ((ii == 0) || (jj == 0)) {
+                        edgesPairs.emplace_back(i * width + j, (i + ii) * width + (j + jj));
+                    }
+                }
+            }
+        }
+    }
+    return edgesPairs;
+}
+```
+
+Then we can create Graph object from custom values:
+
+```c++    
+
+std::vector<std::pair<size_t, size_t>> edges = createGrid4(h, w);
+
+auto g_custom = metric::Graph<char, true, false>(edges);  // edge value type = bool, isDense = false, isSymmetric = true
+
+std::cout << g_custom.get_matrix() << std::endl;
+
+// out
+// ( 0 1 0 1 0 0 0 0 0 )
+// ( 1 0 1 0 1 0 0 0 0 )
+// ( 0 1 0 0 0 1 0 0 0 )
+// ( 1 0 0 0 1 0 1 0 0 )
+// ( 0 1 0 1 0 1 0 1 0 )
+// ( 0 0 1 0 1 0 0 0 1 )
+// ( 0 0 0 1 0 0 0 1 0 )
+// ( 0 0 0 0 1 0 1 0 1 )
+// ( 0 0 0 0 0 1 0 1 0 )
+
+```
 
 ---
 
