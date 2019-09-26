@@ -44,15 +44,73 @@ double mean_square_error(MatrixType1 M1, MatrixType2 M2)
 
 int main()
 {
-	std::cout << "PCAnet example have started" << std::endl;
+	std::cout << "PCFAnet example have started" << std::endl;
 	std::cout << '\n';
 
+
+	// simple data
+    std::cout << "\n";
+    std::cout << "\n";
+	std::cout << "simple data" << std::endl;
+	std::cout << '\n';
+	
+    using recType = std::vector<float>;
+
+    recType d0_blaze {0, 1, 2};
+    recType d1_blaze {0, 1, 3};
+    std::vector<recType> d_train = {d0_blaze, d1_blaze};
+
+    auto pcfa = metric::PCFA<recType, void>(d_train, 2);
+
+    recType d2_blaze {0, 1, 4};
+    recType d3_blaze {0, 2, 2};
+    std::vector<recType> d_test = {d0_blaze, d2_blaze, d3_blaze};
+
+    auto d_compressed = pcfa.encode(d_test);
+
+    std::cout << "compressed:\n";
+    for (size_t i = 0; i<d_compressed.size(); i++) {
+        for (size_t j = 0; j<d_compressed[i].size(); j++) {
+            std::cout << d_compressed[i][j] << " ";
+        }
+        std::cout << "\n";
+    }
+    std::cout << "\n";
+
+    auto d_restored = pcfa.decode(d_compressed);
+
+    std::cout << "restored:\n";
+    for (size_t i = 0; i<d_restored.size(); i++) {
+        for (size_t j = 0; j<d_restored[i].size(); j++) {
+            std::cout << d_restored[i][j] << " ";
+        }
+        std::cout << "\n";
+    }
+    std::cout << "\n";
+
+    auto d_eigenmodes = pcfa.eigenmodes();
+
+    std::cout << "eigenmodes:\n";
+    for (size_t i = 0; i<d_eigenmodes.size(); i++) {
+        for (size_t j = 0; j<d_eigenmodes[i].size(); j++) {
+            std::cout << d_eigenmodes[i][j] << " ";
+        }
+        std::cout << "\n";
+    }
+    std::cout << "\n";
+
+
+	//
+
 	bool visualize = false;
+	   
 
-
-
-	//*
 	// sine dataset
+
+    std::cout << "\n";
+    std::cout << "\n";
+	std::cout << "sine dataset" << std::endl;
+	std::cout << '\n';
 
 	visualize = false;
 
@@ -99,160 +157,174 @@ int main()
 		idx++;
 	}
 
-	// */
+	//
 
-
-
-	//* // minimal direct linear mapping
+	// minimal direct linear mapping
 
 	visualize = true;
+	
+    if (visualize) {
+        mat2bmp::blaze2bmp(SlicesSine, "SlicesSine.bmp");
+        mat2bmp::blaze2bmp(TestSlicesSine, "TestSlicesSine.bmp");
+        blaze_dm_to_csv(blaze::DynamicMatrix<double, blaze::rowMajor>(SlicesSine), "training_dataset.csv");
+        blaze_dm_to_csv(blaze::DynamicMatrix<double, blaze::rowMajor>(TestSlicesSine), "test_data.csv");
+    }
 
-	if (visualize)
-	{
-		mat2bmp::blaze2bmp(SlicesSine, "SlicesSine.bmp");
-		mat2bmp::blaze2bmp(TestSlicesSine, "TestSlicesSine.bmp");
-	}
+    auto direct_sine = metric::PCFA_col_factory(SlicesSine, 8);  // factory deduces type
 
-	auto direct_sine = metric::PCFA<double>(SlicesSine, 8); // dataset, compressed_code_length
+    if (visualize) {
+        auto avg = direct_sine.average();
+        mat2bmp::blaze2bmp(avg, "averages.bmp");
+        blaze_dm_to_csv(avg, "averages.csv");
+    }
 
-	auto direct_compressed_sine = direct_sine.encode(TestSlicesSine);
+    auto direct_compressed_sine = direct_sine.encode(TestSlicesSine);
 
-	if (visualize)
-		mat2bmp::blaze2bmp_norm(direct_compressed_sine, "compressed.bmp");
+    if (visualize) {
+        mat2bmp::blaze2bmp_norm(direct_compressed_sine, "compressed.bmp");
+        blaze_dm_to_csv(direct_compressed_sine, "compressed.csv");
+    }
 
-	auto direct_restored_sine = direct_sine.decode(direct_compressed_sine);
+    auto direct_restored_sine = direct_sine.decode(direct_compressed_sine);
 
-	if (visualize)
-		mat2bmp::blaze2bmp(direct_restored_sine, "restored.bmp");
+    if (visualize) {
+        mat2bmp::blaze2bmp(direct_restored_sine, "restored.bmp");
+        blaze_dm_to_csv(direct_restored_sine, "restored.csv");
+    }
 
-	std::cout << "avg error: " << mean_square_error(direct_restored_sine, TestSlicesSine) << "\n";
-	std::cout << "compare visually restored.bmp to TestSliceSine.bmp\n";
+    std::cout << "avg error: " << mean_square_error(direct_restored_sine, TestSlicesSine) << "\n";
+    std::cout << "compare visually restored.bmp to TestSliceSine.bmp\n";
+    std::cout << "\n";
 
+    if (visualize) {
+        auto Eigenmodes = direct_sine.eigenmodes();
+        blaze_dm_to_csv(Eigenmodes, "eigenmodes.csv");
+        mat2bmp::blaze2bmp(Eigenmodes, "eigenmodes.bmp");
+    }
 
-	//*/
+	//
 
+    // with DCT
+	
+    std::cout << "\n";
+    std::cout << "\n";
+	std::cout << "using DCT" << std::endl;
+	std::cout << '\n';
 
+    // turning data to frequence domain: enable to run DirectMapping in frequences
 
+    visualize = true;
 
-	//* // with DCT
+    if (visualize) {
+        mat2bmp::blaze2bmp(SlicesSine, "SlicesSine_original.bmp");
+        mat2bmp::blaze2bmp(TestSlicesSine, "TestSlicesSine_original.bmp");
+    }
 
-	// turning data to frequence domain: enable to run DirectMapping in frequences
+    blaze::DynamicMatrix<double> TestSlicesSineOriginal = TestSlicesSine;  // saved for computation of error
 
-	visualize = true;
+    // apply DCT to input
+    metric::apply_DCT(SlicesSine);
+    metric::apply_DCT(TestSlicesSine);
 
-	if (visualize)
-	{
-		mat2bmp::blaze2bmp(SlicesSine, "SlicesSine_original.bmp");
-		mat2bmp::blaze2bmp(TestSlicesSine, "TestSlicesSine_original.bmp");
-	}
+    blaze::DynamicMatrix<double> TestSliceSine_DCT_restored = TestSlicesSine;
 
-	blaze::DynamicMatrix<double> TestSlicesSineOriginal = TestSlicesSine; // saved for computation of error
+    metric::apply_DCT(TestSliceSine_DCT_restored, true);
+    if (visualize) {
+        mat2bmp::blaze2bmp(TestSliceSine_DCT_restored, "TestSlicesSine_DCT_restored.bmp");
+    }
 
-	// apply DCT to input
-	metric::apply_DCT(SlicesSine);
-	metric::apply_DCT(TestSlicesSine);
+    // direct linear mapping on spectrum
 
-	blaze::DynamicMatrix<double> TestSliceSine_DCT_restored = TestSlicesSine;
-	metric::apply_DCT(TestSliceSine_DCT_restored, true);
-	if (visualize)
-	{
-		mat2bmp::blaze2bmp(TestSliceSine_DCT_restored, "TestSlicesSine_DCT_restored.bmp");
-	}
+    visualize = false;
 
+    if (visualize) {
+        mat2bmp::blaze2bmp(SlicesSine, "SlicesSine_DCT.bmp");
+        mat2bmp::blaze2bmp(TestSlicesSine, "TestSlicesSine_DCT.bmp");
+    }
 
+    // auto direct_sine_DCT = metric::PCFA<double>(SlicesSine, 8);
+    auto direct_sine_DCT = metric::PCFA_col_factory(SlicesSine, 8);
 
-	// direct linear mapping on spectrum
+    auto direct_compressed_sine_DCT = direct_sine_DCT.encode(TestSlicesSine);
 
-	visualize = false;
+    if (visualize)
+        mat2bmp::blaze2bmp_norm(direct_compressed_sine_DCT, "compressed_DCT.bmp");
 
-	if (visualize)
-	{
-		mat2bmp::blaze2bmp(SlicesSine, "SlicesSine_DCT.bmp");
-		mat2bmp::blaze2bmp(TestSlicesSine, "TestSlicesSine_DCT.bmp");
-	}
+    auto direct_restored_sine_DCT = direct_sine_DCT.decode(direct_compressed_sine_DCT);
 
-	auto direct_sine_DCT = metric::PCFA<double>(SlicesSine, 8); // dataset, compressed_code_length
+    if (visualize)
+        mat2bmp::blaze2bmp(direct_restored_sine_DCT, "restored_DCT.bmp");
 
-	auto direct_compressed_sine_DCT = direct_sine_DCT.encode(TestSlicesSine);
+    // convert back to time domain: enable if DCT is applied
 
-	if (visualize)
-		mat2bmp::blaze2bmp_norm(direct_compressed_sine_DCT, "compressed_DCT.bmp");
+    visualize = true;
 
-	auto direct_restored_sine_DCT = direct_sine_DCT.decode(direct_compressed_sine_DCT);
+    metric::apply_DCT(direct_restored_sine_DCT, true);
+    if (visualize) {
+        mat2bmp::blaze2bmp(direct_restored_sine_DCT, "restored_unDCT.bmp");
+    }
 
-	if (visualize)
-		mat2bmp::blaze2bmp(direct_restored_sine_DCT, "restored_DCT.bmp");
+    std::cout << "with DCT: avg error: " << mean_square_error(direct_restored_sine_DCT, TestSlicesSineOriginal) << "\n";
+    std::cout << "compare visually restored_unDCT.bmp to TestSliceSine_original.bmp\n";
 
+    std::cout << "\n";
 
-
-	// convert back to time domain: enable if DCT is applied
-
-	visualize = true;
-
-	metric::apply_DCT(direct_restored_sine_DCT, true);
-	if (visualize)
-	{
-		mat2bmp::blaze2bmp(direct_restored_sine_DCT, "restored_unDCT.bmp");
-	}
-
-	std::cout << "\nwith DCT: avg error: " << mean_square_error(direct_restored_sine_DCT, TestSlicesSineOriginal) << "\n";
-	std::cout << "compare visually restored_unDCT.bmp to TestSliceSine_original.bmp\n";
-
-	//*/
-
-
+	//
 
 	// Using PCFA_factory
 
-    using V = float; // double;
+	//std::cout << "using factory" << std::endl;
+	//std::cout << '\n';
 
-    size_t n_features = 8;
+ //   using V = float; // double;
 
-    auto all_data = read_csv_blaze<V>("assets/PtAll_AllGrooves_energy_5.csv", ","); // all parts  all unmixed channels
-    blaze::DynamicMatrix<V> training_dataset = submatrix(all_data, 0, 1, all_data.rows(), all_data.columns()-2);
+ //   size_t n_features = 8;
 
-    blaze::DynamicMatrix<V> test_data = read_csv_blaze<V>("assets/test_data_input.csv", ",");
+ //   auto all_data = read_csv_blaze<V>("assets/PtAll_AllGrooves_energy_5.csv", ","); // all parts  all unmixed channels
+ //   blaze::DynamicMatrix<V> training_dataset = submatrix(all_data, 0, 1, all_data.rows(), all_data.columns()-2);
 
-    mat2bmp::blaze2bmp_norm(training_dataset, "training_dataset.bmp");
-    mat2bmp::blaze2bmp_norm(test_data, "test_data.bmp");
-    blaze_dm_to_csv(training_dataset, "training_dataset.csv");
-    blaze_dm_to_csv(test_data, "test_data.csv");
+ //   blaze::DynamicMatrix<V> test_data = read_csv_blaze<V>("assets/test_data_input.csv", ",");
 
-    auto model = metric::PCFA_factory(training_dataset, n_features); // dataset, compressed_code_length
+ //   mat2bmp::blaze2bmp_norm(training_dataset, "training_dataset.bmp");
+ //   mat2bmp::blaze2bmp_norm(test_data, "test_data.bmp");
+ //   blaze_dm_to_csv(training_dataset, "training_dataset.csv");
+ //   blaze_dm_to_csv(test_data, "test_data.csv");
 
-    auto avg = model.get_average();
-    mat2bmp::blaze2bmp_norm(avg, "averages.bmp");
-    blaze_dm_to_csv(avg, "averages.csv");
+ //   auto model = metric::PCFA_factory(training_dataset, n_features); // dataset, compressed_code_length
 
-    auto compressed = model.encode(test_data);
+ //   auto avg = model.average();
+ //   mat2bmp::blaze2bmp_norm(avg, "averages.bmp");
+ //   blaze_dm_to_csv(avg, "averages.csv");
 
-    mat2bmp::blaze2bmp_norm(compressed, "compressed.bmp");
-    blaze_dm_to_csv(compressed, "compressed.csv");
+ //   auto compressed = model.encode(test_data);
 
-    auto restored = model.decode(compressed);
+ //   mat2bmp::blaze2bmp_norm(compressed, "compressed.bmp");
+ //   blaze_dm_to_csv(compressed, "compressed.csv");
 
-    mat2bmp::blaze2bmp_norm(restored, "restored.bmp");
-    blaze_dm_to_csv(restored, "restored.csv");
+ //   auto restored = model.decode(compressed);
 
-
-    // also making feature output for the training dataset
-
-    auto all_features = model.encode(training_dataset);
-
-    mat2bmp::blaze2bmp_norm(all_features, "all_features.bmp");
-    blaze_dm_to_csv(all_features, "all_features.csv");
+ //   mat2bmp::blaze2bmp_norm(restored, "restored.bmp");
+ //   blaze_dm_to_csv(restored, "restored.csv");
 
 
-    // view contribution of each feature
+ //   // also making feature output for the training dataset
 
-    auto I = blaze::IdentityMatrix<V>(n_features);
+ //   auto all_features = model.encode(training_dataset);
 
-    for (size_t feature_idx=0; feature_idx<n_features; ++feature_idx) {
-        blaze::DynamicMatrix<V> unit_feature = submatrix(I, 0, feature_idx, I.rows(), 1);
-        auto unit_waveform = model.decode(unit_feature, false);
-        mat2bmp::blaze2bmp_norm(unit_waveform, "unit_waveform_" + std::to_string(feature_idx) + ".bmp");
-        blaze_dm_to_csv(unit_waveform, "unit_waveform_" + std::to_string(feature_idx) + ".csv");
-    }
+ //   mat2bmp::blaze2bmp_norm(all_features, "all_features.bmp");
+ //   blaze_dm_to_csv(all_features, "all_features.csv");
+
+
+ //   // view contribution of each feature
+
+ //   auto I = blaze::IdentityMatrix<V>(n_features);
+
+ //   for (size_t feature_idx=0; feature_idx<n_features; ++feature_idx) {
+ //       blaze::DynamicMatrix<V> unit_feature = submatrix(I, 0, feature_idx, I.rows(), 1);
+ //       auto unit_waveform = model.decode(unit_feature, false);
+ //       mat2bmp::blaze2bmp_norm(unit_waveform, "unit_waveform_" + std::to_string(feature_idx) + ".bmp");
+ //       blaze_dm_to_csv(unit_waveform, "unit_waveform_" + std::to_string(feature_idx) + ".csv");
+ //   }
 
 
 
