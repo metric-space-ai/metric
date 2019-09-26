@@ -122,27 +122,41 @@ std::cout << data_record[data_record.size() - 1] << "}" << std::endl;
 
 #### Use a custom container with custom metric use an "Eigen" Vector and L1 metric.
 
+Custom metric:
 ```c++
-#include "modules/space.hpp"
-#include <eigen3/Eigen/Core>
-
 using recType = Eigen::VectorXd;
 
 template <typename T>
 struct recMetric {
     T operator()(const Eigen::VectorXd &p, const Eigen::VectorXd &q) const
     {
-        return (p - q).cwise().abs().sum(); // L1 norm
+        return (p - q).lpNorm<1>(); // L1 norm
     }
 };
+``` 
 
-int main()
-{
-    metric::Tree<recType, recMetric> cTree;
-    // the rest is the same like in the simple example
+Then we can create the data and the tree:
+```c++
+recType x(8);
+	
+std::vector<recType> table;
 
-    return 0;
-}
+x << 0, 1, 1, 1, 1, 1, 2, 3;
+table.push_back(x);
+x << 1, 1, 1, 1, 1, 2, 3, 4;
+table.push_back(x);
+x << 2, 2, 2, 1, 1, 2, 0, 0;
+table.push_back(x);
+x << 3, 3, 2, 2, 1, 1, 0, 0;
+table.push_back(x);
+x << 4, 3, 2, 1, 0, 0, 0, 0;
+table.push_back(x);
+x << 5, 3, 2, 1, 0, 0, 0, 0;
+table.push_back(x);
+x << 4, 6, 2, 2, 1, 1, 0, 0;
+table.push_back(x);
+		
+metric::Tree<recType, recMetric<double>> cTree(table);
 ``` 
 
 *For a full example and more details see `examples/space_examples/eigen_example.cpp`*
