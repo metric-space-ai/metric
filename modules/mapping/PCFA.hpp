@@ -102,6 +102,7 @@ public:
    */
     blaze::DynamicMatrix<value_type> eigenmodes();
 
+
 private:
     blaze::DynamicMatrix<value_type> W_decode;
     blaze::DynamicMatrix<value_type> W_encode;
@@ -210,28 +211,28 @@ public:
    *
    * @return blaze::DynamicMatrix<value_type>
    */
-    blaze::DynamicMatrix<value_type> average();
+    blaze::DynamicMatrix<value_type> average_mat();
 
     /**
    * @brief returns the average curve of training dataset, used for center shift
    *
    * @return blaze::DynamicMatrix<value_type>
    */
-    std::vector<recType> average_rec();
+    std::vector<recType> average();
 
     /**
    * @brief returns the encoder matrix concatenated with the average curve of training dataset, used for center shift
    *
    * @return blaze::DynamicMatrix<value_type>
    */
-    blaze::DynamicMatrix<value_type> eigenmodes();
+    blaze::DynamicMatrix<value_type> eigenmodes_mat();
 
     /**
    * @brief returns the encoder matrix concatenated with the average curve of training dataset, used for center shift
    *
    * @return blaze::DynamicMatrix<value_type>
    */
-    std::vector<recType> eigenmodes_rec();
+    std::vector<recType> eigenmodes();
 
 
 private:

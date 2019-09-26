@@ -5,8 +5,8 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 Copyright (c) 2019 Panda Team
 */
-//#ifndef _METRIC_MAPPING_PCFA_CPP
-//#define _METRIC_MAPPING_PCFA_CPP
+#ifndef _METRIC_MAPPING_PCFA_CPP
+#define _METRIC_MAPPING_PCFA_CPP
 
 #include "PCFA.hpp"
 
@@ -220,27 +220,29 @@ std::vector<recType>
 PCFA<recType, Metric>::decode(
         const std::vector<recType> & Codes,
         bool unshift) {
-    blaze::DynamicMatrix<typename PCFA<recType, Metric>::value_type> Out;  // TODO optimize
+    //blaze::DynamicMatrix<typename PCFA<recType, Metric>::value_type> Out;
     auto CodesBlaze = vector_to_blaze(Codes);
     if (unshift) {
         auto Noncentered = CodesBlaze * W_decode;
-        blaze::DynamicMatrix<typename PCFA<recType, Metric>::value_type> Centered = blaze::DynamicMatrix<typename PCFA<recType, Metric>::value_type>(Noncentered.rows(), Noncentered.columns());
+        auto Centered = blaze::DynamicMatrix<typename PCFA<recType, Metric>::value_type>(Noncentered.rows(), Noncentered.columns());
         for (size_t row_idx = 0; row_idx < Noncentered.rows(); row_idx++)
             blaze::row(Centered, row_idx) = blaze::row(Noncentered, row_idx) + averages;
-        Out = Centered;
+        //Out = Centered;
         //return blaze_to_vector(Out);
+        return blaze_to_vector<recType>(Centered);
     } else {
-        Out = CodesBlaze * W_decode;
+        //Out = CodesBlaze * W_decode;
         //return blaze_to_vector(Out);
+        return blaze_to_vector<recType>(CodesBlaze * W_decode);
     }
-    return blaze_to_vector<recType>(Out);
+    //return blaze_to_vector<recType>(Out);
 
 }
 
 
 template <typename recType, typename Metric>
 blaze::DynamicMatrix<typename PCFA<recType, Metric>::value_type>
-PCFA<recType, Metric>::average() {
+PCFA<recType, Metric>::average_mat() {
     auto avg = blaze::DynamicMatrix<typename PCFA<recType, Metric>::value_type>(1, averages.size());
     blaze::row(avg, 0) = averages;
     return avg;
@@ -249,11 +251,21 @@ PCFA<recType, Metric>::average() {
 
 template <typename recType, typename Metric>
 blaze::DynamicMatrix<typename PCFA<recType, Metric>::value_type>
-PCFA<recType, Metric>::eigenmodes() {
+PCFA<recType, Metric>::eigenmodes_mat() {
     auto Eigenmodes = blaze::DynamicMatrix<typename PCFA<recType, Metric>::value_type>(W_decode.rows() + 1, W_decode.columns());
     blaze::row(Eigenmodes, 0) = averages;
     submatrix(Eigenmodes, 1, 0, W_decode.rows(), W_decode.columns()) = W_decode;
     return Eigenmodes;
+}
+
+
+template <typename recType, typename Metric>
+std::vector<recType>
+PCFA<recType, Metric>::eigenmodes() {
+//    auto Eigenmodes = blaze::DynamicMatrix<typename PCFA<recType, Metric>::value_type>(W_decode.rows() + 1, W_decode.columns());
+//    blaze::row(Eigenmodes, 0) = averages;
+//    submatrix(Eigenmodes, 1, 0, W_decode.rows(), W_decode.columns()) = W_decode;
+    return blaze_to_vector<recType>(eigenmodes_mat());
 }
 
 
@@ -314,7 +326,7 @@ template <typename BlazeMatrix>
 PCFA_col<typename BlazeMatrix::ElementType> PCFA_col_factory(const BlazeMatrix & TrainingData, size_t n_features)
 {
     return PCFA_col<typename BlazeMatrix::ElementType>(TrainingData, n_features);
-};
+}
 
 
 //template <typename BlazeMatrix>
@@ -334,4 +346,4 @@ PCFA<blaze::DynamicMatrix<ElementType>, void> PCFA_factory(
 
 
 }  // namespace metric
-//#endif
+#endif

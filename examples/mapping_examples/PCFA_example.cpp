@@ -6,8 +6,8 @@
 int main()
 {
 
-    using recType = blaze::DynamicVector<float, blaze::rowVector>;
-//    using recType = std::vector<float>;
+//    using recType = blaze::DynamicVector<float, blaze::rowVector>;
+    using recType = std::vector<float>;
 
 
     recType d0_blaze {0, 1, 2};
@@ -37,6 +37,17 @@ int main()
     for (size_t i = 0; i<d_restored.size(); i++) {
         for (size_t j = 0; j<d_restored[i].size(); j++) {
             std::cout << d_restored[i][j] << " ";
+        }
+        std::cout << "\n";
+    }
+    std::cout << "\n";
+
+    auto d_eigenmodes = pcfa.eigenmodes();
+
+    std::cout << "eigenmodes:\n";
+    for (size_t i = 0; i<d_eigenmodes.size(); i++) {
+        for (size_t j = 0; j<d_eigenmodes[i].size(); j++) {
+            std::cout << d_eigenmodes[i][j] << " ";
         }
         std::cout << "\n";
     }
