@@ -20,6 +20,8 @@ Copyright (c) 2019 Panda Team
 
 #include "assets/helpers.cpp"
 
+#include "../../3rdparty/blaze/Blaze.h"
+
 
 
 template <typename MatrixType1, typename MatrixType2>
@@ -174,22 +176,22 @@ int main()
 
     if (visualize) {
         auto avg = direct_sine.average();
-        mat2bmp::blaze2bmp(avg, "averages.bmp");
-        blaze_dm_to_csv(avg, "averages.csv");
+        mat2bmp::blaze2bmp(avg, "TestSliceSine_averages.bmp");
+        blaze_dm_to_csv(avg, "TestSliceSine_averages.csv");
     }
 
     auto direct_compressed_sine = direct_sine.encode(TestSlicesSine);
 
     if (visualize) {
-        mat2bmp::blaze2bmp_norm(direct_compressed_sine, "compressed.bmp");
-        blaze_dm_to_csv(direct_compressed_sine, "compressed.csv");
+        mat2bmp::blaze2bmp_norm(direct_compressed_sine, "TestSliceSine_compressed.bmp");
+        blaze_dm_to_csv(direct_compressed_sine, "TestSliceSine_compressed.csv");
     }
 
     auto direct_restored_sine = direct_sine.decode(direct_compressed_sine);
 
     if (visualize) {
-        mat2bmp::blaze2bmp(direct_restored_sine, "restored.bmp");
-        blaze_dm_to_csv(direct_restored_sine, "restored.csv");
+        mat2bmp::blaze2bmp(direct_restored_sine, "TestSliceSine_restored.bmp");
+        blaze_dm_to_csv(direct_restored_sine, "TestSliceSine_restored.csv");
     }
 
     std::cout << "avg error: " << mean_square_error(direct_restored_sine, TestSlicesSine) << "\n";
@@ -198,8 +200,8 @@ int main()
 
     if (visualize) {
         auto Eigenmodes = direct_sine.eigenmodes();
-        blaze_dm_to_csv(Eigenmodes, "eigenmodes.csv");
-        mat2bmp::blaze2bmp(Eigenmodes, "eigenmodes.bmp");
+        blaze_dm_to_csv(Eigenmodes, "TestSliceSine_eigenmodes.csv");
+        mat2bmp::blaze2bmp(Eigenmodes, "TestSliceSine_eigenmodes.bmp");
     }
 
 	//
@@ -242,18 +244,17 @@ int main()
         mat2bmp::blaze2bmp(TestSlicesSine, "TestSlicesSine_DCT.bmp");
     }
 
-    // auto direct_sine_DCT = metric::PCFA<double>(SlicesSine, 8);
     auto direct_sine_DCT = metric::PCFA_col_factory(SlicesSine, 8);
 
     auto direct_compressed_sine_DCT = direct_sine_DCT.encode(TestSlicesSine);
 
     if (visualize)
-        mat2bmp::blaze2bmp_norm(direct_compressed_sine_DCT, "compressed_DCT.bmp");
+        mat2bmp::blaze2bmp_norm(direct_compressed_sine_DCT, "TestSliceSine_compressed_DCT.bmp");
 
     auto direct_restored_sine_DCT = direct_sine_DCT.decode(direct_compressed_sine_DCT);
 
     if (visualize)
-        mat2bmp::blaze2bmp(direct_restored_sine_DCT, "restored_DCT.bmp");
+        mat2bmp::blaze2bmp(direct_restored_sine_DCT, "TestSliceSine_restored_DCT.bmp");
 
     // convert back to time domain: enable if DCT is applied
 
@@ -261,70 +262,121 @@ int main()
 
     metric::apply_DCT(direct_restored_sine_DCT, true);
     if (visualize) {
-        mat2bmp::blaze2bmp(direct_restored_sine_DCT, "restored_unDCT.bmp");
+        mat2bmp::blaze2bmp(direct_restored_sine_DCT, "TestSliceSine_restored_unDCT.bmp");
     }
 
     std::cout << "with DCT: avg error: " << mean_square_error(direct_restored_sine_DCT, TestSlicesSineOriginal) << "\n";
-    std::cout << "compare visually restored_unDCT.bmp to TestSliceSine_original.bmp\n";
+    std::cout << "compare visually TestSliceSine_restored_unDCT.bmp to TestSliceSine_original.bmp\n";
 
-    std::cout << "\n";
 
 	//
 
-	// Using PCFA_factory
+	// grooves energy data
+	
+    std::cout << "\n";
+    std::cout << "\n";
+	std::cout << "grooves energy data" << std::endl;
+	std::cout << '\n';
 
-	//std::cout << "using factory" << std::endl;
-	//std::cout << '\n';
+    using V = float; // double;
 
- //   using V = float; // double;
+    size_t n_features = 8;
 
- //   size_t n_features = 8;
+    auto all_data = read_csv_blaze<V>("assets/PtAll_AllGrooves_energy_5.csv", ","); // all parts  all unmixed channels
+    blaze::DynamicMatrix<V> training_dataset = submatrix(all_data, 0, 1, all_data.rows(), all_data.columns()-2);
 
- //   auto all_data = read_csv_blaze<V>("assets/PtAll_AllGrooves_energy_5.csv", ","); // all parts  all unmixed channels
- //   blaze::DynamicMatrix<V> training_dataset = submatrix(all_data, 0, 1, all_data.rows(), all_data.columns()-2);
+    blaze::DynamicMatrix<V> test_data = read_csv_blaze<V>("assets/test_data_input.csv", ",");
 
- //   blaze::DynamicMatrix<V> test_data = read_csv_blaze<V>("assets/test_data_input.csv", ",");
+    mat2bmp::blaze2bmp_norm(training_dataset, "groove_training_dataset.bmp");
+    mat2bmp::blaze2bmp_norm(test_data, "groove_test_data.bmp");
+    blaze_dm_to_csv(training_dataset, "groove_training_dataset.csv");
+    blaze_dm_to_csv(test_data, "groove_test_data.csv");
+	
+    auto model = metric::PCFA_col_factory(training_dataset, n_features); 
 
- //   mat2bmp::blaze2bmp_norm(training_dataset, "training_dataset.bmp");
- //   mat2bmp::blaze2bmp_norm(test_data, "test_data.bmp");
- //   blaze_dm_to_csv(training_dataset, "training_dataset.csv");
- //   blaze_dm_to_csv(test_data, "test_data.csv");
+    auto avg = model.average();
+    mat2bmp::blaze2bmp_norm(avg, "groove_averages.bmp");
+    blaze_dm_to_csv(avg, "groove_averages.csv");
 
- //   auto model = metric::PCFA_factory(training_dataset, n_features); // dataset, compressed_code_length
+    auto compressed = model.encode(test_data);
 
- //   auto avg = model.average();
- //   mat2bmp::blaze2bmp_norm(avg, "averages.bmp");
- //   blaze_dm_to_csv(avg, "averages.csv");
+    mat2bmp::blaze2bmp_norm(compressed, "groove_compressed.bmp");
+    blaze_dm_to_csv(compressed, "groove_compressed.csv");
 
- //   auto compressed = model.encode(test_data);
+    auto restored = model.decode(compressed);
 
- //   mat2bmp::blaze2bmp_norm(compressed, "compressed.bmp");
- //   blaze_dm_to_csv(compressed, "compressed.csv");
+    mat2bmp::blaze2bmp_norm(restored, "groove_restored.bmp");
+    blaze_dm_to_csv(restored, "groove_restored.csv");
 
- //   auto restored = model.decode(compressed);
+    // also making feature output for the training dataset
 
- //   mat2bmp::blaze2bmp_norm(restored, "restored.bmp");
- //   blaze_dm_to_csv(restored, "restored.csv");
+    auto all_features = model.encode(training_dataset);
+
+    mat2bmp::blaze2bmp_norm(all_features, "groove_all_features.bmp");
+    blaze_dm_to_csv(all_features, "groove_all_features.csv");
+	
+
+    // view contribution of each feature
+
+    auto I = blaze::IdentityMatrix<V>(n_features);
+
+    for (size_t feature_idx=0; feature_idx<n_features; ++feature_idx) {
+        blaze::DynamicMatrix<V> unit_feature = submatrix(I, 0, feature_idx, I.rows(), 1);
+        auto unit_waveform = model.decode(unit_feature, false);
+        mat2bmp::blaze2bmp_norm(unit_waveform, "groove_unit_waveform_" + std::to_string(feature_idx) + ".bmp");
+        blaze_dm_to_csv(unit_waveform, "groove_unit_waveform_" + std::to_string(feature_idx) + ".csv");
+    }
+
+    // same using eigenmodes getter
+    auto Eigenmodes = model.eigenmodes();
+    blaze_dm_to_csv(Eigenmodes, "groove_eigenmodes.csv");
+
+	//
+
+    // row_wise PCFA with trans() on each input and output
+	
+    std::cout << "\n";
+    std::cout << "\n";
+	std::cout << "grooves energy data with trans()" << std::endl;
+	std::cout << '\n';
+
+    auto all_data_r = read_csv_blaze<V>("assets/PtAll_AllGrooves_energy_5.csv", ","); // all parts  all unmixed channels
+    blaze::DynamicMatrix<V> training_dataset_r = submatrix(all_data_r, 0, 1, all_data_r.rows(), all_data_r.columns()-2);
+
+    blaze::DynamicMatrix<V> test_data_r = read_csv_blaze<V>("assets/test_data_input.csv", ",");
+
+    mat2bmp::blaze2bmp_norm(training_dataset_r, "groove_training_dataset_r.bmp");
+    mat2bmp::blaze2bmp_norm(test_data_r, "groove_test_data_r.bmp");
+    blaze_dm_to_csv(training_dataset_r, "groove_training_dataset_r.csv");
+    blaze_dm_to_csv(test_data_r, "groove_test_data_r.csv");
+
+    blaze::DynamicMatrix<V, blaze::rowMajor> training_dataset_r_t = trans(training_dataset_r);
+    auto model_r = metric::PCFA_col_factory(training_dataset_r_t, n_features); 
+
+    blaze::DynamicMatrix<V> avg_r_out = trans(model_r.average());
+    mat2bmp::blaze2bmp_norm(avg_r_out, "groove_averages_r.bmp");
+    blaze_dm_to_csv(avg_r_out, "groove_averages_r.csv");
+
+    auto compressed_r = model_r.encode(trans(test_data_r));
+
+    blaze::DynamicMatrix<V> compressed_r_out = trans(compressed_r);
+    mat2bmp::blaze2bmp_norm(compressed_r_out, "groove_compressed_r.bmp");
+    blaze_dm_to_csv(compressed_r_out, "groove_compressed_r.csv");
+
+    auto restored_r = model_r.decode(compressed_r);
+
+    blaze::DynamicMatrix<V> restored_r_out = trans(restored_r);
+    mat2bmp::blaze2bmp_norm(restored_r_out, "groove_restored_r.bmp");
+    blaze_dm_to_csv(restored_r_out, "groove_restored_r.csv");
 
 
- //   // also making feature output for the training dataset
+    // also making feature output for the training dataset
 
- //   auto all_features = model.encode(training_dataset);
+    auto all_features_r = model_r.encode(trans(training_dataset_r));
 
- //   mat2bmp::blaze2bmp_norm(all_features, "all_features.bmp");
- //   blaze_dm_to_csv(all_features, "all_features.csv");
-
-
- //   // view contribution of each feature
-
- //   auto I = blaze::IdentityMatrix<V>(n_features);
-
- //   for (size_t feature_idx=0; feature_idx<n_features; ++feature_idx) {
- //       blaze::DynamicMatrix<V> unit_feature = submatrix(I, 0, feature_idx, I.rows(), 1);
- //       auto unit_waveform = model.decode(unit_feature, false);
- //       mat2bmp::blaze2bmp_norm(unit_waveform, "unit_waveform_" + std::to_string(feature_idx) + ".bmp");
- //       blaze_dm_to_csv(unit_waveform, "unit_waveform_" + std::to_string(feature_idx) + ".csv");
- //   }
+    blaze::DynamicMatrix<V> all_features_r_out = trans(all_features_r);
+    mat2bmp::blaze2bmp_norm(all_features_r_out, "groove_all_features_r.bmp");
+    blaze_dm_to_csv(all_features_r_out, "groove_all_features_r.csv");
 
 
 

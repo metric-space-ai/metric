@@ -390,63 +390,51 @@ auto bmu = som_model.BMU(img1[0]);
 
 #### PCFA
 
-First of all let's create two sine datasets - for train and test:
+First of all let's create a simple datasets:
 
 ```cpp
-size_t n_freq_steps = 10;
-size_t n_slices_per_step = 100;
-size_t waveform_length = 64;
+using recType = std::vector<float>;
 
-blaze::DynamicMatrix<double, blaze::columnMajor>  SlicesSine(waveform_length, n_freq_steps*n_slices_per_step, 0.0);
-blaze::DynamicMatrix<double, blaze::columnMajor>  TestSlicesSine(waveform_length, n_freq_steps, 0.0);
+recType d0_blaze {0, 1, 2};
+recType d1_blaze {0, 1, 3};
+std::vector<recType> d_train = {d0_blaze, d1_blaze};
 
-double frequenz; // based on original test case code
-double phase = 0;
-double delta_T = 0.05;
-
-// sine generator
-size_t idx = 0;
-for (size_t ii = 1; ii <= n_freq_steps; ii++) // frequency change steps
-{
-	frequenz = double(ii) / double(n_freq_steps);
-	for (size_t i = 0; i < n_slices_per_step; ++i) // slices with same freq and random phases (within each freq step)
-	{
-		phase = (double)rand() / RAND_MAX * 0.9 + 0.1;
-		for (size_t t = 0; t < waveform_length; t++) // draw waveform: 100 points in each slice
-		{
-			SlicesSine(t, idx) = sin(2 * M_PI * (frequenz * double(t) * delta_T + phase));
-		}
-		idx++;
-	}
-}
-
-idx = 0;
-for (size_t i = 1; i <= n_freq_steps; i++) // frequency steps
-{
-	frequenz = double(i) / double(n_freq_steps);
-	phase = 0; //(double)rand()/RAND_MAX; // 0;
-	for (size_t t = 0; t < waveform_length; t++) // draw waveform: 100 points in each slice
-	{
-		TestSlicesSine(t, idx) = sin(2 * M_PI * (frequenz * double(t) * delta_T + phase));
-	}
-	idx++;
-}
+recType d2_blaze {0, 1, 4};
+recType d3_blaze {0, 2, 2};
+std::vector<recType> d_test = {d0_blaze, d2_blaze, d3_blaze};
 ```
 
-And now we can create PCFA model:
+And now we can create PCFA model on train data:
 
 ```cpp
-auto direct_sine = metric::PCFA<double>(SlicesSine, 8);
+auto pcfa = metric::PCFA<recType, void>(d_train, 2);
 ```
 
-With PCFA model we are ready to encode `TestSlicesSine`:
+With PCFA model we are ready to encode test data:
 ```cpp
-auto direct_compressed_sine = direct_sine.encode(TestSlicesSine);
+auto d_compressed = pcfa.encode(d_test);
+// out
+// -0.5 0
+// 1.5 0
+// -0.5 1
 ```
 
 And decode back:
 ```cpp
-auto direct_restored_sine = direct_sine.decode(direct_compressed_sine);
+auto d_restored = pcfa.decode(d_compressed);
+// out
+// 0 1 2
+// 0 1 4
+// 0 2 2
+```
+
+Eigenmodes:
+```cpp
+auto d_eigenmodes = pcfa.eigenmodes();
+// out
+// 0 1 2.5
+// 0 0 1
+// 0 1 0
 ```
 
 *For a full example and more details see `examples/mapping_examples/PCFA_example.cpp`*
