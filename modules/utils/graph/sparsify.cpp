@@ -33,7 +33,7 @@ blaze::CompressedMatrix<Tv, blaze::columnMajor> sparsify(
     SolverB<Tv> f = approxchol_lap(a, pcgIts, 1e-2F);
 
     size_t n = a.rows();
-    size_t k = (size_t)round(JLfac * log(n));  //number of dims for JL
+    size_t k = (size_t)round(JLfac * std::log(n));  //number of dims for JL
 
     blaze::CompressedMatrix<Tv, blaze::columnMajor> U = wtedEdgeVertexMat(a);
 
@@ -76,7 +76,7 @@ blaze::CompressedMatrix<Tv, blaze::columnMajor> sparsify(
         vi = index(V, i, idx);
         vj = index(V, j, idx);
         Tv nr = std::pow(norm(vi - vj), 2) / k;
-        Tv tmp = av[h] * nr * matrixConcConst * log(n) / std::pow(ep, 2);
+        Tv tmp = av[h] * nr * matrixConcConst * std::log(n) / std::pow(ep, 2);
         prs[h] = (1 < tmp) ? 1 : tmp;
     }
 
