@@ -8,9 +8,8 @@ Copyright (c) 2018 Panda Team
 
 #include <vector>
 #include <iostream>
-#include <Eigen/Dense>
+#include "../../3rdparty/Eigen/Dense"
 #include "../../modules/space.hpp"
-//#include "../../3rdparty/eigen/Core/Matrix.h"
 
 using recType = Eigen::VectorXd;
 
@@ -18,7 +17,7 @@ template <typename T>
 struct recMetric {
     T operator()(const Eigen::VectorXd &p, const Eigen::VectorXd &q) const
     {
-        return (p - q).cwise().abs().sum(); // L1 norm
+        return (p - q).lpNorm<1>(); // L1 norm
     }
 };
 
@@ -27,20 +26,36 @@ int main()
 	std::cout << "Eigen space example have started" << std::endl;
 	std::cout << "" << std::endl;
 
-    /*** batch insert ***/
-    std::vector<std::vector<double>> table = {
-        { 0, 1, 1, 1, 1, 1, 2, 3 },
-        { 1, 1, 1, 1, 1, 2, 3, 4 },
-        { 2, 2, 2, 1, 1, 2, 0, 0 },
-        { 3, 3, 2, 2, 1, 1, 0, 0 },
-        { 4, 3, 2, 1, 0, 0, 0, 0 },
-        { 5, 3, 2, 1, 0, 0, 0, 0 },
-        { 4, 6, 2, 2, 1, 1, 0, 0 },
-    };
-	
-    metric::Tree<recType, recMetric> cTree(table);
 
-    std::vector<std::vector<double>> table2 = { { 3, 7, 2, 1, 0, 0, 0, 0 }, { 2, 8, 2, 1, 0, 0, 0, 0 } };
+	recType x(8);
+	
+	std::vector<recType> table;
+
+	x << 0, 1, 1, 1, 1, 1, 2, 3;
+	table.push_back(x);
+	x << 1, 1, 1, 1, 1, 2, 3, 4;
+	table.push_back(x);
+	x << 2, 2, 2, 1, 1, 2, 0, 0;
+	table.push_back(x);
+	x << 3, 3, 2, 2, 1, 1, 0, 0;
+	table.push_back(x);
+	x << 4, 3, 2, 1, 0, 0, 0, 0;
+	table.push_back(x);
+	x << 5, 3, 2, 1, 0, 0, 0, 0;
+	table.push_back(x);
+	x << 4, 6, 2, 2, 1, 1, 0, 0;
+	table.push_back(x);
+		
+    metric::Tree<recType, recMetric<double>> cTree(table);
+
+	//
+
+	std::vector<recType> table2;
+	
+	x << 3, 7, 2, 1, 0, 0, 0, 0;
+	table2.push_back(x);
+	x << 2, 8, 2, 1, 0, 0, 0, 0;
+	table2.push_back(x);
 
     cTree.insert(table2);
 
