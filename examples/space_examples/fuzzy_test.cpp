@@ -41,6 +41,7 @@ struct random_uniform_real {
     }
     float operator()() { return d(gen); }
 };
+
 bool test(int array_size)
 {
     //    random_uniform_int dgen(std::numeric_limits<float>::min()/2,std::numeric_limits<float>::max()/2);
@@ -50,6 +51,8 @@ bool test(int array_size)
     for (int i = 0; i < array_size; i++) {
         data.push_back(dgen());
     }
+
+
     metric::Tree<float, distance<float>> tr;
     for (auto i : data) {
         tr.insert(i);
@@ -60,10 +63,14 @@ bool test(int array_size)
     std::ostringstream os;
     serialize::oarchive<std::ostringstream> oar(os);
     tr.serialize(oar);
+
+	//
+
     metric::Tree<float, distance<float>> tr1;
     std::istringstream is(os.str());
     serialize::iarchive<std::istringstream> iar(is);
     tr1.deserialize(iar, is);
+
     if (!tr1.check_covering())
         return false;
     if (!(tr1 == tr))
@@ -87,7 +94,10 @@ int main(int argc, char** argv)
     int iterations = 1;
     if (argc == 2)
         iterations = std::stoi(argv[1]);
+
     random_uniform_int len_gen(1, 1000);
+	
+
     for (int i = 0; i < iterations; i++) {
         int array_size = len_gen();
         bool result = test(array_size);
