@@ -32,6 +32,7 @@ using json = nlohmann::json;
 const int ENERGY_SCALE = 100000000;
 std::string RAW_DATA_FILENAME = "assets/data";
 const std::string FILENAME_SUFFIX = "";
+int CLUSTERS_NUM = 7;
 
 ////////////////////////////////////////////////////////
 
@@ -726,7 +727,6 @@ std::vector<std::vector<double>> readEnergies(std::string dirname)
 
 				row.push_back(std::stold(word));
 			}
-			std::cout << "5 " << std::endl;
 			// erase last element
 			double speed = row[row.size() - 1];
 			speeds.push_back(speed);
@@ -737,7 +737,7 @@ std::vector<std::vector<double>> readEnergies(std::string dirname)
 			{
 				for (auto k = 0; k < row.size(); k++)
 				{
-					row[k] = ENERGY_SCALE * row[k] / speed;
+					row[k] = ENERGY_SCALE * sqrt(row[k]);
 				}
 			}
 			else
@@ -1131,7 +1131,7 @@ get_weights_from_som(int w_grid_size, int h_grid_size, std::vector<std::vector<T
     //metric::Matrix<std::vector<double>, metric::Cosine<double>> distance_matrix(nodes_data);
 	
     //auto [assignments, exemplars, counts] = metric::affprop(distance_matrix, (float)0.25);
-    auto [assignments, exemplars, counts] = metric::kmeans(nodes_data, 7, 1000);
+    auto [assignments, exemplars, counts] = metric::kmeans(nodes_data, CLUSTERS_NUM, 1000);
 
 
 	std::cout << "assignments:" << std::endl;
@@ -1393,6 +1393,11 @@ int main(int argc, char *argv[])
 	{
 		best_w_grid_size = std::stod(argv[2]);
 		best_h_grid_size = std::stod(argv[3]);
+	}
+	
+	if (argc > 4)
+	{
+		CLUSTERS_NUM = std::stod(argv[4]);
 	}
 
 	double best_s_learn_rate;
