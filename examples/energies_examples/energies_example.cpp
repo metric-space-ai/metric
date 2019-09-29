@@ -1126,7 +1126,7 @@ get_weights_from_som(int w_grid_size, int h_grid_size, std::vector<std::vector<T
 	
 	json nodes_data_json(nodes_data);
 		
-	std::ofstream som_output(RAW_DATA_FILENAME + "result/som_" + std::to_string(w_grid_size) + "x" + std::to_string(h_grid_size) + FILENAME_SUFFIX + ".json");
+	std::ofstream som_output(RAW_DATA_FILENAME + "/result/som_" + std::to_string(w_grid_size) + "x" + std::to_string(h_grid_size) + FILENAME_SUFFIX + ".json");
 	som_output << std::setw(4) << nodes_data_json << std::endl;
 	som_output.close();	
 	
