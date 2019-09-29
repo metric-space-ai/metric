@@ -681,7 +681,7 @@ std::vector<std::vector<double>> readEnergies(std::string dirname)
 
 	std::vector<std::vector<double>> rows;
 
-	for (const auto & entry : std::filesystem::directory_iterator(dirname))
+	for (const auto & entry : std::experimental::filesystem::directory_iterator(dirname))
 	{
 		std::cout << "reading data from " << entry.path() << "... " << std::endl;
 

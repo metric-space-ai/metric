@@ -16,8 +16,6 @@ file(COPY "assets" DESTINATION ".")
 include_directories(${Boost_INCLUDE_DIRS}) 
 
 set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
 	
 # for Visual Studio
 if(MSVC) 
