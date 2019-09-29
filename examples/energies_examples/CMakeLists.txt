@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.12)
 
 set(Boost_DEBUG on)  
-find_package(Boost)
+find_package(Boost REQUIRED COMPONENTS filesystem)
 
 
 project(energies_examples)
