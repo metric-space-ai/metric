@@ -16,6 +16,7 @@ file(COPY "assets" DESTINATION ".")
 include_directories(${Boost_INCLUDE_DIRS}) 
 
 set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 	
 # for Visual Studio
 if(MSVC) 
@@ -29,8 +30,12 @@ add_executable(energies_example energies_example.cpp)
 
 
 if(UNIX)
+    target_compile_features(energies_example PUBLIC cxx_std_17)
     target_compile_options(energies_example PRIVATE -pthread)
     set_target_properties(energies_example PROPERTIES LINK_FLAGS -pthread)
+	
+    set_target_properties(energies_example PROPERTIES COMPILE_FLAGS "-stdlib=libc++ -pthread")
+    target_link_libraries(energies_example c++experimental pthread)
 endif(UNIX)
 
 find_package(LAPACK)
