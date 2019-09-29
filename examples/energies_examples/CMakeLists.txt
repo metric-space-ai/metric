@@ -36,6 +36,7 @@ if(UNIX)
     set_target_properties(energies_example PROPERTIES LINK_FLAGS -pthread)
 	
     # set_target_properties(energies_example PROPERTIES COMPILE_FLAGS "-stdlib=libc++ -pthread")
+	target_link_libraries(energies_example PRIVATE stdc++fs)
     target_link_libraries(energies_example PRIVATE c++experimental pthread)
 endif(UNIX)
 
