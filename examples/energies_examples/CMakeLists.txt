@@ -14,16 +14,14 @@ include_directories(
 file(COPY "assets" DESTINATION ".")
 
 include_directories(${Boost_INCLUDE_DIRS}) 
+
+set(CMAKE_CXX_STANDARD 17)
 	
 # for Visual Studio
 if(MSVC) 
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++17")
 endif(MSVC)
 
-
-if(UNIX)
-	set_target_properties(energies_example PROPERTIES CXX_STANDARD 17)
-endif(UNIX)
  
 include_directories(${Boost_INCLUDE_DIRS})
 
