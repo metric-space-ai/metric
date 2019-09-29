@@ -6,14 +6,14 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 Copyright (c) 2019 Panda Team
 */
 //#include <boost/filesystem.hpp>
-#include <dirent.h>
+//#include <dirent.h>
 
 #include <vector>
 #include <any>
 
 #include <iostream>
 #include <fstream>
-//#include <filesystem>
+#include <filesystem>
 
 #include <chrono>
 
@@ -29,7 +29,11 @@ using json = nlohmann::json;
 
 ///////////////////////////////////////////////////////
 
+<<<<<<< HEAD
 const int ENERGY_SCALE = 1;
+=======
+//const int ENERGY_SCALE = 1;
+>>>>>>> 37bd35a29b1d9dcaa8470d8270106cc23cc3eff2
 std::string RAW_DATA_FILENAME = "assets/data";
 const std::string FILENAME_SUFFIX = "";
 int CLUSTERS_NUM = 7;
@@ -708,6 +712,7 @@ std::vector<std::vector<double>> readEnergies(std::string dirname)
 	// end windows
 	for (auto filename : files)
     {
+		//auto filename = entry.path();
 		std::cout << "reading data from " << filename << "... " << std::endl;
 
 		std::fstream fin;
@@ -741,7 +746,7 @@ std::vector<std::vector<double>> readEnergies(std::string dirname)
 			{
 				for (auto k = 0; k < row.size(); k++)
 				{
-					row[k] = ENERGY_SCALE * sqrt(row[k]);
+					row[k] = sqrt(row[k]);
 				}
 			}
 			else
@@ -1897,10 +1902,10 @@ int main(int argc, char *argv[])
 					//for (auto energy_subband_data : cluster_data)
 				{
 					auto energy_subband_data = cluster_data[ci];
-					for (int cdi = 0; cdi < energy_subband_data.size(); cdi++)
-					{
-						energy_subband_data[cdi] /= ENERGY_SCALE;
-					}
+					//for (int cdi = 0; cdi < energy_subband_data.size(); cdi++)
+					//{
+					//	energy_subband_data[cdi] /= ENERGY_SCALE;
+					//}
 					//if (energy_subband_data.size() > 1) 
 					{
 						// metric::PMQ set_0(cluster_data);
