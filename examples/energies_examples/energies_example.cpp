@@ -1101,7 +1101,7 @@ get_weights_from_som(int w_grid_size, int h_grid_size, std::vector<std::vector<T
 	
 	json nodes_data_json(nodes_data);
 		
-	std::ofstream som_output(RAW_DATA_FILENAME + "/som_" + std::to_string(w_grid_size) + "x" + std::to_string(h_grid_size) + FILENAME_SUFFIX + ".json");
+	std::ofstream som_output(RAW_DATA_FILENAME + "result/som_" + std::to_string(w_grid_size) + "x" + std::to_string(h_grid_size) + FILENAME_SUFFIX + ".json");
 	som_output << std::setw(4) << nodes_data_json << std::endl;
 	som_output.close();	
 	
@@ -1365,8 +1365,14 @@ int main(int argc, char *argv[])
 	int best_metric;
 	int best_distribution;
 				
-	size_t best_w_grid_size;
-	size_t best_h_grid_size;
+	size_t best_w_grid_size = 30;
+	size_t best_h_grid_size = 20;
+	
+	if (argc > 3)
+	{
+		best_w_grid_size = std::stod(argv[2]);
+		best_h_grid_size = std::stod(argv[3]);
+	}
 
 	double best_s_learn_rate;
 	double best_f_learn_rate;
@@ -1617,8 +1623,8 @@ int main(int argc, char *argv[])
 		//best_neigbour_range_decay = std::stod(metaparams_grid[minElementIndex][4]);
 		//best_random_seed = std::stod(metaparams_grid[minElementIndex][5]);
 		//best_iterations = std::stod(metaparams_grid[minElementIndex][6]);
-		best_w_grid_size = 5;
-		best_h_grid_size = 5;
+		//best_w_grid_size = 5;
+		//best_h_grid_size = 5;
 		best_s_learn_rate = 1.2;
 		best_f_learn_rate = 0.4;
 		best_initial_neighbour_size = -1; // use default
@@ -1921,7 +1927,7 @@ int main(int argc, char *argv[])
 		sensor_index++;
 		std::cout << "  ---:" << std::endl;
 	}
-	std::ofstream outputFile(RAW_DATA_FILENAME + "/reference_data_" + std::to_string(best_w_grid_size) + "x" + std::to_string(best_h_grid_size) + FILENAME_SUFFIX + ".json");
+	std::ofstream outputFile(RAW_DATA_FILENAME + "/result/reference_data_" + std::to_string(best_w_grid_size) + "x" + std::to_string(best_h_grid_size) + FILENAME_SUFFIX + ".json");
 	outputFile << std::setw(4) << reference_data << std::endl;
 	outputFile.close();	
 	std::cout << "---:" << std::endl;
