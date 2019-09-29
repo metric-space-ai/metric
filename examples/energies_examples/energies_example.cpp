@@ -687,7 +687,7 @@ std::vector<std::vector<double>> readEnergies(std::string dirname)
     }
 
     while ((dirp = readdir(dp)) != NULL) {
-        files.push_back(std::string(dirp->d_name));
+        files.push_back(dirname + "/" +std::string(dirp->d_name));
     }
     closedir(dp);
 	// end unix
@@ -706,10 +706,8 @@ std::vector<std::vector<double>> readEnergies(std::string dirname)
 		std::cout << "reading data from " << filename << "... " << std::endl;
 
 		std::fstream fin;
-		std::cout << "1 " << std::endl;
 
 		fin.open(filename, std::ios::in);
-		std::cout << "2 " << std::endl;
 
 		char delimeter = 9;
 
@@ -717,12 +715,10 @@ std::vector<std::vector<double>> readEnergies(std::string dirname)
 		while (getline(fin, line))
 		{
 			std::stringstream s(line);
-			std::cout << "3 " << std::endl;
 
 			row.clear();
 			// omit first digit
 			getline(s, word, delimeter);
-			std::cout << "4 " << std::endl;
 
 			while (getline(s, word, delimeter))
 			{
@@ -735,7 +731,6 @@ std::vector<std::vector<double>> readEnergies(std::string dirname)
 			double speed = row[row.size() - 1];
 			speeds.push_back(speed);
 			
-			std::cout << "6 " << std::endl;
 			row.pop_back();
 
 			if (speed >= 1)
@@ -752,7 +747,6 @@ std::vector<std::vector<double>> readEnergies(std::string dirname)
 					row[k] = 0;
 				}
 			}
-			std::cout << "7 " << std::endl;
 
 			rows.push_back(row);
 		}
