@@ -5,13 +5,14 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 Copyright (c) 2019 Panda Team
 */
+#include <boost/filesystem.hpp>
+
 #include <vector>
 #include <any>
 
 #include <iostream>
 #include <fstream>
 //#include <filesystem>
-#include <filesystem>
 
 #include <chrono>
 
@@ -682,13 +683,17 @@ std::vector<std::vector<double>> readEnergies(std::string dirname)
 
 	std::vector<std::vector<double>> rows;
 
-	for (const auto & entry : std::filesystem::directory_iterator(dirname))
-	{
-		std::cout << "reading data from " << entry.path() << "... " << std::endl;
+	
+    boost::filesystem::path p(dirname);
+
+	//for (const auto & entry : std::filesystem::directory_iterator(dirname))
+	for (auto f_i = boost::filesystem::directory_iterator(p); f_i != boost::filesystem::directory_iterator(); f_i++)
+    {
+		std::cout << "reading data from " << f_i->path().string() << "... " << std::endl;
 
 		std::fstream fin;
 
-		fin.open(entry.path(), std::ios::in);
+		fin.open(f_i->path().string(), std::ios::in);
 
 		char delimeter = 9;
 
