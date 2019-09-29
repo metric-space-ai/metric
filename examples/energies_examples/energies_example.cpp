@@ -680,9 +680,9 @@ std::vector<std::vector<double>> readEnergies(std::string dirname)
 	std::vector<std::string> files;
 	DIR *dp;
     struct dirent *dirp;
-    if((dp  = opendir(dir.c_str())) == NULL) {
-        cout << "Error(" << errno << ") opening " << dir << endl;
-        return errno;
+    if((dp  = opendir(dirname.c_str())) == NULL) {
+        std::cout << "Error(" << errno << ") opening " << dirname << std::endl;
+        return std::vector<std::vector<double>>();
     }
 
     while ((dirp = readdir(dp)) != NULL) {
