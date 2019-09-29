@@ -6,14 +6,14 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 Copyright (c) 2019 Panda Team
 */
 //#include <boost/filesystem.hpp>
-#include <dirent.h>
+//#include <dirent.h>
 
 #include <vector>
 #include <any>
 
 #include <iostream>
 #include <fstream>
-//#include <filesystem>
+#include <filesystem>
 
 #include <chrono>
 
@@ -29,7 +29,7 @@ using json = nlohmann::json;
 
 ///////////////////////////////////////////////////////
 
-const int ENERGY_SCALE = 100000000;
+//const int ENERGY_SCALE = 1;
 std::string RAW_DATA_FILENAME = "assets/data";
 const std::string FILENAME_SUFFIX = "";
 int CLUSTERS_NUM = 7;
@@ -679,22 +679,22 @@ std::vector<std::vector<std::string>> readCsvData(std::string filename, char del
 std::vector<std::vector<double>> readEnergies(std::string dirname)
 {
 	// unix
-	std::vector<std::string> files;
-	DIR *dp;
-    struct dirent *dirp;
-    if((dp  = opendir(dirname.c_str())) == NULL) {
-        std::cout << "Error(" << errno << ") opening " << dirname << std::endl;
-        return std::vector<std::vector<double>>();
-    }
+	//std::vector<std::string> files;
+	//DIR *dp;
+ //   struct dirent *dirp;
+ //   if((dp  = opendir(dirname.c_str())) == NULL) {
+ //       std::cout << "Error(" << errno << ") opening " << dirname << std::endl;
+ //       return std::vector<std::vector<double>>();
+ //   }
 
-    while ((dirp = readdir(dp)) != NULL) {
-		std::string fn = std::string(dirp->d_name);
-		if (fn.size() > 4 && fn.substr(fn.size() - 4) == ".log")
-		{
-			files.push_back(dirname + "/" + fn);
-		}
-    }
-    closedir(dp);
+ //   while ((dirp = readdir(dp)) != NULL) {
+	//	std::string fn = std::string(dirp->d_name);
+	//	if (fn.size() > 4 && fn.substr(fn.size() - 4) == ".log")
+	//	{
+	//		files.push_back(dirname + "/" + fn);
+	//	}
+ //   }
+ //   closedir(dp);
 	// end unix
 	
 	std::vector<double> row;
@@ -704,10 +704,11 @@ std::vector<std::vector<double>> readEnergies(std::string dirname)
 	std::vector<std::vector<double>> rows;
 	
 	// windows
-	//for (const auto & entry : std::filesystem::directory_iterator(dirname))
+	for (const auto & entry : std::filesystem::directory_iterator(dirname))
 	// end windows
-	for (auto filename : files)
+	//for (auto filename : files)
     {
+		auto filename = entry.path();
 		std::cout << "reading data from " << filename << "... " << std::endl;
 
 		std::fstream fin;
@@ -741,7 +742,7 @@ std::vector<std::vector<double>> readEnergies(std::string dirname)
 			{
 				for (auto k = 0; k < row.size(); k++)
 				{
-					row[k] = ENERGY_SCALE * sqrt(row[k]);
+					row[k] = sqrt(row[k]);
 				}
 			}
 			else
@@ -1897,10 +1898,10 @@ int main(int argc, char *argv[])
 					//for (auto energy_subband_data : cluster_data)
 				{
 					auto energy_subband_data = cluster_data[ci];
-					for (int cdi = 0; cdi < energy_subband_data.size(); cdi++)
-					{
-						energy_subband_data[cdi] /= ENERGY_SCALE;
-					}
+					//for (int cdi = 0; cdi < energy_subband_data.size(); cdi++)
+					//{
+					//	energy_subband_data[cdi] /= ENERGY_SCALE;
+					//}
 					//if (energy_subband_data.size() > 1) 
 					{
 						// metric::PMQ set_0(cluster_data);
