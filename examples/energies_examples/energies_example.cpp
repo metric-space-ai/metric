@@ -29,7 +29,7 @@ using json = nlohmann::json;
 
 ///////////////////////////////////////////////////////
 
-const int ENERGY_SCALE = 100000000;
+const int ENERGY_SCALE = 1;
 std::string RAW_DATA_FILENAME = "assets/data";
 const std::string FILENAME_SUFFIX = "";
 int CLUSTERS_NUM = 7;
@@ -1925,7 +1925,7 @@ int main(int argc, char *argv[])
 					}
 				}
 				json cluster_json = {
-					{"name", "level" + std::to_string(ei)},
+					{"name", "Level" + std::to_string(ei)},
 					{"border", borders[ei]},
 					{"position", positions[ei]},
 					{"quant", energy_subbands_json}
