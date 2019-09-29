@@ -10,9 +10,10 @@ Copyright (c) 2019 Panda Team
 
 #include <iostream>
 #include <fstream>
-#include <filesystem>
 
 #include <chrono>
+
+#include "boost/filesystem.hpp"
 
 #include "../../modules/utils/ThreadPool.cpp"
 #include "../../modules/utils/Semaphore.h"
@@ -680,58 +681,81 @@ std::vector<std::vector<double>> readEnergies(std::string dirname)
 	std::string line, word, w;
 
 	std::vector<std::vector<double>> rows;
+	
+    boost::filesystem::path full_path = boost::filesystem::system_complete( boost::filesystem::path( dirname ) );
+	std::cout << "\nIn directory: "
+              << full_path.relative_path() << "\n\n";
 
-	for (const auto & entry : std::experimental::filesystem::directory_iterator(dirname))
-	{
-		std::cout << "reading data from " << entry.path() << "... " << std::endl;
+     boost::filesystem::directory_iterator end_iter;
 
-		std::fstream fin;
+    for (  boost::filesystem::directory_iterator dir_itr( full_path );
+          dir_itr != end_iter;
+          ++dir_itr )
+    {
+      try
+      {
+        if (  boost::filesystem::is_regular_file( dir_itr->status() ) )
+        {
 
-		fin.open(entry.path(), std::ios::in);
-
-		char delimeter = 9;
-
-		int i = 0;
-		while (getline(fin, line))
-		{
-			std::stringstream s(line);
-
-			row.clear();
-			// omit first digit
-			getline(s, word, delimeter);
-
-			while (getline(s, word, delimeter))
+			//for (const auto & entry : std::experimental::filesystem::directory_iterator(dirname))
 			{
-				// std::cout << " -> " << word << std::endl;
+				std::cout << "reading data from " << dir_itr->path() << "... " << std::endl;
 
-				row.push_back(std::stold(word));
-			}
-			// erase last element
-			double speed = row[row.size() - 1];
-			speeds.push_back(speed);
+				std::fstream fin;
 
-			row.pop_back();
+				fin.open(dir_itr->path(), std::ios::in);
 
-			if (speed >= 1)
-			{
-				for (auto k = 0; k < row.size(); k++)
+				char delimeter = 9;
+
+				int i = 0;
+				while (getline(fin, line))
 				{
-					row[k] = ENERGY_SCALE * row[k] / speed;
-				}
-			}
-			else
-			{
-				for (auto k = 0; k < row.size(); k++)
-				{
-					row[k] = 0;
-				}
-			}
+					std::stringstream s(line);
 
-			rows.push_back(row);
-		}
+					row.clear();
+					// omit first digit
+					getline(s, word, delimeter);
 
-		rows.pop_back();
-	}
+					while (getline(s, word, delimeter))
+					{
+						// std::cout << " -> " << word << std::endl;
+
+						row.push_back(std::stold(word));
+					}
+					// erase last element
+					double speed = row[row.size() - 1];
+					speeds.push_back(speed);
+
+					row.pop_back();
+
+					if (speed >= 1)
+					{
+						for (auto k = 0; k < row.size(); k++)
+						{
+							row[k] = ENERGY_SCALE * row[k] / speed;
+						}
+					}
+					else
+					{
+						for (auto k = 0; k < row.size(); k++)
+						{
+							row[k] = 0;
+						}
+					}
+
+					rows.push_back(row);
+				}
+
+				rows.pop_back();
+			}
+        }
+
+      }
+      catch ( const std::exception & ex )
+      {
+        std::cout << dir_itr->path().filename() << " " << ex.what() << std::endl;
+      }
+    }
 
 	return rows;
 }

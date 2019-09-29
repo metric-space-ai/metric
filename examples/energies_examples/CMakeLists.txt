@@ -20,7 +20,7 @@ set(CMAKE_CXX_STANDARD 17)
 # for Visual Studio
 if(MSVC) 
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++17")
-endif(MSVC)
+endif(MSVC) 
 
  
 include_directories(${Boost_INCLUDE_DIRS})
