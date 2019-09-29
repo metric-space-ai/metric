@@ -20,11 +20,11 @@ graphs. It would be very slow to implement dynamic graphs this way.
 https://github.com/danspielman/Laplacians.jl
 */
 
-#include "3rdparty/blaze/Math.h"
-#include "modules/utils/solver/approxchol.hpp"
-#include "modules//utils/solver/helper/ijvstruct.hpp"
-#include "modules/utils/solver/helper/lapwrappers.hpp"
-#include "modules/utils/solver/pcg.hpp"
+//#include "../../3rdparty/blaze/Math.h"
+#include "../../modules/utils/solver/approxchol.hpp"
+#include "../../modules//utils/solver/helper/ijvstruct.hpp"
+#include "../../modules/utils/solver/helper/lapwrappers.hpp"
+#include "../../modules/utils/solver/pcg.hpp"
 #include <cassert>
 #include <functional>
 #include <iostream>

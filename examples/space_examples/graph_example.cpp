@@ -114,7 +114,7 @@ int main()
 
     std::vector<std::pair<size_t, size_t>> edges = createGrid4(h, w);
 
-    auto g_custom = metric::Graph<char, true, false>(edges);  // edge value type = bool, isDense = false, isSymmetric = true
+    auto g_custom = metric::Graph<bool, true, false>(edges);  // edge value type = bool, isDense = true, isSymmetric = false
 
     std::cout << "\ncustom graph:\n";
     std::cout << g_custom.get_matrix() << "\n";

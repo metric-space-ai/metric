@@ -86,6 +86,10 @@ std::cout << "result: " << result_5 << std::endl;
 // Cosine metric
 // result: 0.970143
 ```
+
+
+*For a full example and more details see `examples/distance_examples/standart_distances_example.cpp`*
+
 ---
 
 ### Earth Mover Distance metric
@@ -132,6 +136,10 @@ std::cout << "result: " << result << std::endl;
 // Earth Mover Distance metric
 // result: 4531000
 ```
+
+
+*For a full example and more details see `examples/distance_examples/earth_mover_distance_example.cpp` and `examples/distance_examples/earth_mover_distance_2_example.cpp`*
+
 ---
 
 ### Edit Distance metric (for strings)
@@ -154,6 +162,8 @@ std::cout << "result: " << result << std::endl;
 // result: 5
 ```
 
+*For a full example and more details see `examples/distance_examples/edit_distance_example.cpp`*
+
 ---
 
 ### Time Warp Elastic Distance metric (for curves, series or time-series)
@@ -175,6 +185,9 @@ std::cout << "result: " << result << std::endl;
 // Time Warp Elastic Distance metric
 // result: 7
 ```
+
+*For a full example and more details see `examples/distance_examples/time_warp_elastic_distance_example.cpp`*
+
 ---
 
 ### Structural Similarity metric (for images)
@@ -191,6 +204,9 @@ std::cout << "result: " << result << std::endl;
 // Structural Similarity metric
 // result: 0.0907458
 ```
+
+*For a full example and more details see `examples/distance_examples/structural_similarity_example.cpp`*
+
 ---
 
 ### Sorensen
@@ -266,6 +282,8 @@ std::cout << "result: " << result << std::endl;
 // Sorensen distance for blaze::CompressedVector
 // result: 0.142857
 ```
+
+*For a full example and more details see `examples/distance_examples/sorensen_distance_example.cpp`*
 
 ---
 
@@ -383,18 +401,59 @@ std::cout << "result: " << result << std::endl;
 // result: 1.06191
 ```
 
+*For a full example and more details see `examples/distance_examples/entropy_example.cpp`*
+
 ---
 
 ## Run
 *You need STL and C++14 support to compile.*
 
-METRIC | distance works headonly. Just include the header into your project.
+METRIC | DISTANCE works headonly. Just include the header into your project.
 
 ```cpp
 #include "modules/distance.hpp"
 ```
 
-and compile for example with
+or directly include one of specified distance from the following:
+
+```cpp
+#include "modules/distance/k-related/Standards.hpp"
+#include "modules/distance/k-related/L1.hpp"
+
+#include "modules/distance/k-structured/SSIM.hpp"
+#include "modules/distance/k-structured/TWED.hpp"
+#include "modules/distance/k-structured/EMD.hpp"
+#include "modules/distance/k-structured/Edit.hpp"
+
+#include "modules/distance/k-random/VOI.hpp"
+```
+
+
+
+#### CMake compilation
+
+Inside folder with your cpp file or inside `examples/distance_examples/` run the following commands:
+
+_Windows_
+
+```bash
+mkdir build
+cd build
+cmake .. -A x64 -T llvm
+```
+Then open solution in the Microsoft Visual Studio
+
+_Linux_
+
+Just run cmake
+```bash
+mkdir build
+cd build
+cmake ..
+make
+```
+
+#### Direct compilation, using compiler
 
 ```bash
 $ clang++ ./examples/distance_examples/standart_distances_example.cpp -std=c++14

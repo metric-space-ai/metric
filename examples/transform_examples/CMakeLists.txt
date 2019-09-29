@@ -13,6 +13,8 @@ include_directories(${Boost_INCLUDE_DIRS})
 
 file(GLOB EXAMPLE_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.cpp) 
 
+file(COPY "assets" DESTINATION ".")
+
 #Run through each source
 foreach(exampleSrc ${EXAMPLE_SRCS})
 
@@ -20,7 +22,7 @@ foreach(exampleSrc ${EXAMPLE_SRCS})
 	get_filename_component(exampleName ${exampleSrc} NAME_WE)
 
 	#Add compile target
-	add_executable(${exampleName} ${exampleSrc})
+	add_executable(${exampleName} ${exampleSrc}) 
  
 	#link to Boost libraries AND your targets and dependencies
 	target_link_libraries(${exampleName} ${Boost_LIBRARIES})

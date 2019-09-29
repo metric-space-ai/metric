@@ -20,9 +20,10 @@ graphs. It would be very slow to implement dynamic graphs this way.
 https://github.com/danspielman/Laplacians.jl
 */
 
-#include "3rdparty/blaze/Math.h"
-#include "modules/utils/graph/sparsify.hpp"
-#include "modules/utils/solver/helper/graphalgs.hpp"
+//#include "../../3rdparty/blaze/Math.h"
+#include "../../modules/utils/graph/sparsify.hpp"
+#include "../../modules/utils/solver/helper/graphalgs.hpp"
+#include "../../modules/distance.hpp"
 #include <chrono>
 #include <iostream>
 

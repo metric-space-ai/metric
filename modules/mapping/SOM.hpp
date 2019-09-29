@@ -121,6 +121,16 @@ public:
 		 */
     size_t BMU(const recType& sample) const;
 
+    /**
+		 * @brief added by Stepan Mamontov 18 09 2019
+		 * 
+		 * @return
+		 */
+	std::vector<std::vector<T>> get_weights()
+	{
+		return weights;
+	}
+
 private:
     bool valid;
     size_t D;  // dimensions of inputs vector

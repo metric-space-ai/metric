@@ -87,3 +87,52 @@ auto result2 = mgc_corr(dataset1, dataset2);
 dataset1 and dataset2 could be different containers, but must correspond to the same data record IDs of course, so they must have same sizes.
 
 *For a full example and more details see `examples/correlation_examples/advanced_example.cpp`*
+
+
+---
+
+## Run
+*You need STL and C++14 support to compile.*
+
+METRIC | CORRELATION works headonly. Just include the header into your project.
+
+```cpp
+#include "modules/correlation.hpp"
+```
+
+or directly include one of specified distance from the following:
+
+```cpp
+#include "modules/correlation/mgc.hpp"
+```
+
+
+
+#### CMake compilation
+
+Inside folder with your cpp file or inside `examples/correlation_examples/` run the following commands:
+
+_Windows_
+
+```bash
+mkdir build
+cd build
+cmake .. -A x64 -T llvm
+```
+Then open solution in the Microsoft Visual Studio
+
+_Linux_
+
+Just run cmake
+```bash
+mkdir build
+cd build
+cmake ..
+make
+```
+
+#### Direct compilation, using compiler
+
+```bash
+$ clang++ ./examples/correlation_examples/simple_example.cpp -std=c++14
+```
