@@ -35,7 +35,7 @@ if(UNIX)
     # set_target_properties(energies_example PROPERTIES LINK_FLAGS -pthread)
 	
     set_target_properties(energies_example PROPERTIES COMPILE_FLAGS "-stdlib=libc++ -pthread")
-    target_link_libraries(energies_example c++experimental pthread)
+    # target_link_libraries(energies_example c++experimental pthread)
 endif(UNIX)
 
 find_package(LAPACK)
