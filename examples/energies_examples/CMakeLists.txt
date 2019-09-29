@@ -27,6 +27,9 @@ add_executable(energies_example energies_example.cpp)
 
 
 if(UNIX)
+    target_compile_options(energies_example PRIVATE -pthread)
+    set_target_properties(energies_example PROPERTIES LINK_FLAGS -pthread)
+
 	set_target_properties(energies_example PROPERTIES CXX_STANDARD 17)
 endif(UNIX)
 
@@ -41,8 +44,9 @@ if(CMAKE_SYSTEM_NAME MATCHES Windows)
 
 	target_link_directories(energies_example PRIVATE ${PROJECT_SOURCE_DIR}/../../mkl/lib/intel64_win)
 	target_link_libraries(energies_example PRIVATE mkl_core.lib mkl_sequential.lib mkl_intel_lp64.lib)
-	target_link_libraries(energies_example PRIVATE ${Boost_LIBRARIES})
 endif()
+
+target_link_libraries(energies_example PRIVATE ${Boost_LIBRARIES})
 
 
 
