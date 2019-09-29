@@ -20,6 +20,10 @@ if(MSVC)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++17")
 endif(MSVC)
 
+
+if(UNIX)
+	set_target_properties(energies_example PROPERTIES CXX_STANDARD 17)
+endif(UNIX)
  
 include_directories(${Boost_INCLUDE_DIRS})
 
@@ -29,8 +33,6 @@ add_executable(energies_example energies_example.cpp)
 if(UNIX)
     target_compile_options(energies_example PRIVATE -pthread)
     set_target_properties(energies_example PROPERTIES LINK_FLAGS -pthread)
-
-	set_target_properties(energies_example PROPERTIES CXX_STANDARD 17)
 endif(UNIX)
 
 find_package(LAPACK)
