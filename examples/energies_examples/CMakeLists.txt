@@ -31,12 +31,12 @@ add_executable(energies_example energies_example.cpp)
 
 if(UNIX)
     target_compile_features(energies_example PUBLIC cxx_std_17)
-    target_compile_options(energies_example PRIVATE -pthread)
-    set_target_properties(energies_example PROPERTIES LINK_FLAGS -stdlib=libc++)
-    set_target_properties(energies_example PROPERTIES LINK_FLAGS -pthread)
+    # target_compile_options(energies_example PRIVATE -pthread)
+    # set_target_properties(energies_example PROPERTIES LINK_FLAGS -stdlib=libc++)
+    # set_target_properties(energies_example PROPERTIES LINK_FLAGS -pthread)
 	
-    # set_target_properties(energies_example PROPERTIES COMPILE_FLAGS "-stdlib=libc++ -pthread")
-	target_link_libraries(energies_example PRIVATE stdc++fs)
+    set_target_properties(energies_example PROPERTIES COMPILE_FLAGS "-stdlib=libc++ -pthread")
+	# target_link_libraries(energies_example PRIVATE stdc++fs)
     target_link_libraries(energies_example PRIVATE c++experimental pthread)
 endif(UNIX)
 
