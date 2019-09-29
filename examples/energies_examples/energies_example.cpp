@@ -5,7 +5,8 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 Copyright (c) 2019 Panda Team
 */
-#include <boost/filesystem.hpp>
+//#include <boost/filesystem.hpp>
+#include <dirent.h>
 
 #include <vector>
 #include <any>
@@ -676,24 +677,33 @@ std::vector<std::vector<std::string>> readCsvData(std::string filename, char del
 
 std::vector<std::vector<double>> readEnergies(std::string dirname)
 {
+	std::vector<std::string> files;
+	DIR *dp;
+    struct dirent *dirp;
+    if((dp  = opendir(dir.c_str())) == NULL) {
+        cout << "Error(" << errno << ") opening " << dir << endl;
+        return errno;
+    }
+
+    while ((dirp = readdir(dp)) != NULL) {
+        files.push_back(std::string(dirp->d_name));
+    }
+    closedir(dp);
 	
 	std::vector<double> row;
 	std::vector<double> speeds;
 	std::string line, word, w;
 
 	std::vector<std::vector<double>> rows;
-
 	
-    boost::filesystem::path p(dirname);
-
 	//for (const auto & entry : std::filesystem::directory_iterator(dirname))
-	for (auto f_i = boost::filesystem::directory_iterator(p); f_i != boost::filesystem::directory_iterator(); f_i++)
+	for (auto filename : files)
     {
-		std::cout << "reading data from " << f_i->path().string() << "... " << std::endl;
+		std::cout << "reading data from " << filename << "... " << std::endl;
 
 		std::fstream fin;
 
-		fin.open(f_i->path().string(), std::ios::in);
+		fin.open(filename, std::ios::in);
 
 		char delimeter = 9;
 
