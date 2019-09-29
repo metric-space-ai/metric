@@ -10,6 +10,7 @@ Copyright (c) 2019 Panda Team
 
 #include <iostream>
 #include <fstream>
+#include <filesystem>
 
 #include <chrono>
 
@@ -24,6 +25,12 @@ Copyright (c) 2019 Panda Team
 using json = nlohmann::json;
 
 ///////////////////////////////////////////////////////
+
+const int ENERGY_SCALE = 100000000;
+std::string RAW_DATA_FILENAME = "assets/data";
+const std::string FILENAME_SUFFIX = "";
+
+////////////////////////////////////////////////////////
 
 
 namespace ooc_functions
@@ -602,7 +609,21 @@ void printDataInfo(const json& data)
 	}
 }
 
-bool get_hex_bounds(std::vector<size_t> assignments, int checking_cluster_index, int near_cluster_index)
+template <typename T>
+std::vector<size_t> sort_indexes(const std::vector<T> &v) {
+
+  // initialize original index locations
+  std::vector<size_t> idx(v.size());
+  std::iota(idx.begin(), idx.end(), 0);
+
+  // sort indexes based on comparing values in v
+  std::sort(idx.begin(), idx.end(),
+       [&v](size_t i1, size_t i2) {return v[i1] > v[i2];});
+
+  return idx;
+}
+
+bool get_hex_bounds(std::vector<int> assignments, int checking_cluster_index, int near_cluster_index)
 {		
 	if (near_cluster_index >= 0 && near_cluster_index < assignments.size())
 	{
@@ -651,39 +672,65 @@ std::vector<std::vector<std::string>> readCsvData(std::string filename, char del
 	return rows;
 }
 
-
-std::vector<std::vector<double>> readEnergies(std::string filename)
+std::vector<std::vector<double>> readEnergies(std::string dirname)
 {
-	std::fstream fin;
-
-	fin.open(filename, std::ios::in);
 	
 	std::vector<double> row;
+	std::vector<double> speeds;
 	std::string line, word, w;
 
 	std::vector<std::vector<double>> rows;
 
-	char delimeter = 9;
-
-	int i = 0;
-	while (getline(fin, line))
+	for (const auto & entry : std::filesystem::directory_iterator(dirname))
 	{
-		std::stringstream s(line);
+		std::cout << "reading data from " << entry.path() << "... " << std::endl;
 
-		row.clear();
-		// omit first digit
-		getline(s, word, delimeter);
+		std::fstream fin;
 
-		while (getline(s, word, delimeter))
+		fin.open(entry.path(), std::ios::in);
+
+		char delimeter = 9;
+
+		int i = 0;
+		while (getline(fin, line))
 		{
-			// std::cout << " -> " << word << std::endl;
-			
-			row.push_back(std::stold(word));
-		}
-		// erase last element
-		row.pop_back();
+			std::stringstream s(line);
 
-		rows.push_back(row);
+			row.clear();
+			// omit first digit
+			getline(s, word, delimeter);
+
+			while (getline(s, word, delimeter))
+			{
+				// std::cout << " -> " << word << std::endl;
+
+				row.push_back(std::stold(word));
+			}
+			// erase last element
+			double speed = row[row.size() - 1];
+			speeds.push_back(speed);
+
+			row.pop_back();
+
+			if (speed >= 1)
+			{
+				for (auto k = 0; k < row.size(); k++)
+				{
+					row[k] = ENERGY_SCALE * row[k] / speed;
+				}
+			}
+			else
+			{
+				for (auto k = 0; k < row.size(); k++)
+				{
+					row[k] = 0;
+				}
+			}
+
+			rows.push_back(row);
+		}
+
+		rows.pop_back();
 	}
 
 	return rows;
@@ -981,7 +1028,7 @@ double iterateThroughDistances(int metric_type, int distribution_type, int i, st
 
 
 template <typename T>
-double iterateThroughGraphs(int grid_size, int graph_type, int metric_type, int distribution_type, int i, std::vector<std::vector<T>> speeds,
+double iterateThroughGraphs(int w_grid_size, int h_grid_size, int graph_type, int metric_type, int distribution_type, int i, std::vector<std::vector<T>> speeds,
 	unsigned int iterations, double s_learn_rate, double f_learn_rate, double initial_neighbour_size, double neigbour_range_decay, long long random_seed)
 {
 	double score;
@@ -989,37 +1036,37 @@ double iterateThroughGraphs(int grid_size, int graph_type, int metric_type, int 
 	if (graph_type == 0)
 	{
 		// Grid4
-		metric::Grid4 graph(grid_size);
+		metric::Grid4 graph(w_grid_size, h_grid_size);
 		score = iterateThroughDistances(metric_type, distribution_type, i, speeds, graph, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 	}
 	else if (graph_type == 1)
 	{
 		// Grid6
-		metric::Grid6 graph(grid_size);
+		metric::Grid6 graph(w_grid_size, h_grid_size);
 		score = iterateThroughDistances(metric_type, distribution_type, i, speeds, graph, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 	}
 	else if (graph_type == 2)
 	{
 		// Grid8
-		metric::Grid8 graph(grid_size);
+		metric::Grid8 graph(w_grid_size, h_grid_size);
 		score = iterateThroughDistances(metric_type, distribution_type, i, speeds, graph, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 	}
 	else if (graph_type == 3)
 	{
 		// Paley
-		metric::Paley graph(grid_size);
+		metric::Paley graph(w_grid_size * h_grid_size);
 		score = iterateThroughDistances(metric_type, distribution_type, i, speeds, graph, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 	}
 	else if (graph_type == 4)
 	{
 		// LPS
-		metric::LPS graph(grid_size);
+		metric::LPS graph(w_grid_size * h_grid_size);
 		score = iterateThroughDistances(metric_type, distribution_type, i, speeds, graph, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 	}
 	else if (graph_type == 5)
 	{
 		// Margulis
-		metric::Margulis graph(grid_size);
+		metric::Margulis graph(w_grid_size * h_grid_size);
 		score = iterateThroughDistances(metric_type, distribution_type, i, speeds, graph, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 	}
 
@@ -1029,8 +1076,8 @@ double iterateThroughGraphs(int grid_size, int graph_type, int metric_type, int 
 
 template <typename T, typename Metric, typename Graph, typename Distribution>
 
-std::tuple<std::vector<std::size_t>, std::vector<std::size_t>, std::vector<std::vector<std::vector<std::vector<double>>>>> 
-get_weights_from_som(int grid_size, std::vector<std::vector<T>> speeds, Metric distance, Graph graph, Distribution distribution,
+std::tuple<std::vector<int>, std::vector<int>, std::vector<std::vector<std::vector<std::vector<double>>>>> 
+get_weights_from_som(int w_grid_size, int h_grid_size, std::vector<std::vector<T>> speeds, Metric distance, Graph graph, Distribution distribution,
 	unsigned int iterations, double s_learn_rate, double f_learn_rate, double initial_neighbour_size, double neigbour_range_decay, long long random_seed)
 {
 	std::cout << "  SOM Graph: " << typeid(graph).name() << std::endl;
@@ -1048,24 +1095,26 @@ get_weights_from_som(int grid_size, std::vector<std::vector<T>> speeds, Metric d
 	);	
 	
 	som.train(speeds, iterations, s_learn_rate, f_learn_rate);
+	//som.train(speeds);
 
 	auto nodes_data = som.get_weights();
 	
 	json nodes_data_json(nodes_data);
-
-	std::ofstream som_output("assets/som" + std::to_string(grid_size) + ".json");
+		
+	std::ofstream som_output(RAW_DATA_FILENAME + "/som_" + std::to_string(w_grid_size) + "x" + std::to_string(h_grid_size) + FILENAME_SUFFIX + ".json");
 	som_output << std::setw(4) << nodes_data_json << std::endl;
 	som_output.close();	
 	
 	// clustering on the reduced data
 	
-    metric::Matrix<std::vector<double>, metric::Cosine<double>> distance_matrix(nodes_data);
-
-    auto [assignments, exemplars, counts] = metric::affprop(distance_matrix, (float)0.66);
+    //metric::Matrix<std::vector<double>, metric::Cosine<double>> distance_matrix(nodes_data);
+	
+    //auto [assignments, exemplars, counts] = metric::affprop(distance_matrix, (float)0.25);
+    auto [assignments, exemplars, counts] = metric::kmeans(nodes_data, 7, 1000);
 
 
 	std::cout << "assignments:" << std::endl;
-	vector_print(assignments);
+	vector_print(assignments, w_grid_size, h_grid_size);
 	std::cout << std::endl;
 
 	std::cout << "counts:" << std::endl;
@@ -1073,33 +1122,46 @@ get_weights_from_som(int grid_size, std::vector<std::vector<T>> speeds, Metric d
 	std::cout << std::endl;
 
 
-	// split and reshape raw data by clusters [cluster -> sensor -> energy -> values]
+	// split and reshape raw data by clusters [sensor -> energy -> cluster -> values]
 	
-	std::vector<std::vector<std::vector<std::vector<double>>>> clustered_energies(8, std::vector<std::vector<std::vector<double>>>(7, std::vector<std::vector<double>>(counts.size())));
+	std::vector<std::vector<std::vector<std::vector<double>>>> clustered_energies(8, std::vector<std::vector<std::vector<double>>>(counts.size(), std::vector<std::vector<double>>(7)));
 	int num_sensors = 8;
 	int num_levels = 7;
 
+	std::vector<int> total(assignments.size());
 	for (auto record : speeds)
 	{
 		// find cluster id for a record
 		auto bmu = som.BMU(record);
 		auto cluster_index = assignments[bmu];
+		total[bmu]++;
 		for (int i = 0; i < num_sensors; i++)
 		{			
 			for (int j = 0; j < num_levels; j++)
 			{
-				clustered_energies[i][j][cluster_index].push_back(record[i*num_levels + j]);
+				clustered_energies[i][cluster_index][j].push_back(record[i*num_levels + j]);
 			}
 		}
 	}
+	
+	std::cout << "cluster sizes:" << std::endl;
+	for (int k = 0; k < clustered_energies[0].size(); k++)
+	{
+		std::cout << "cluster_index: " << k << ", size: "<< clustered_energies[0][k][0].size() << std::endl;
+	}
+	std::cout << std::endl;
+	
+	std::cout << "som nodes sizes:" << std::endl;
+	vector_print(total, w_grid_size, h_grid_size);
+	std::cout << std::endl;
 	
     return { assignments, counts, clustered_energies };
 }
 
 
 template <typename T, typename Metric, typename Graph>
-std::tuple<std::vector<std::size_t>, std::vector<std::size_t>, std::vector<std::vector<std::vector<std::vector<double>>>>> 
-iterateThroughDistributionsBest(int grid_size, int distribution_type, std::vector<std::vector<T>> speeds, Metric distance, Graph graph,
+std::tuple<std::vector<int>, std::vector<int>, std::vector<std::vector<std::vector<std::vector<double>>>>> 
+iterateThroughDistributionsBest(int w_grid_size, int h_grid_size, int distribution_type, std::vector<std::vector<T>> speeds, Metric distance, Graph graph,
 	unsigned int iterations, double s_learn_rate, double f_learn_rate, double initial_neighbour_size, double neigbour_range_decay, long long random_seed)
 {
 
@@ -1108,30 +1170,30 @@ iterateThroughDistributionsBest(int grid_size, int distribution_type, std::vecto
 		// uniform_real_distribution
 		std::uniform_real_distribution<double> distribution(-1, 1);
 
-		return get_weights_from_som(grid_size, speeds, distance, graph, distribution, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
+		return get_weights_from_som(w_grid_size, h_grid_size, speeds, distance, graph, distribution, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 	}
 	else if (distribution_type == 1)
 	{
 		// normal_distribution
 		std::normal_distribution<double> distribution(-1, 1);
 		
-		return get_weights_from_som(grid_size, speeds, distance, graph, distribution, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
+		return get_weights_from_som(w_grid_size, h_grid_size, speeds, distance, graph, distribution, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 	}
 	else if (distribution_type == 2)
 	{
 		// exponential_distribution
 		std::exponential_distribution<double> distribution(1);
 		
-		return get_weights_from_som(grid_size, speeds, distance, graph, distribution, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
+		return get_weights_from_som(w_grid_size, h_grid_size, speeds, distance, graph, distribution, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 	}
 	
-    return std::tuple<std::vector<std::size_t>, std::vector<std::size_t>, std::vector<std::vector<std::vector<std::vector<double>>>>>();
+    return std::tuple<std::vector<int>, std::vector<int>, std::vector<std::vector<std::vector<std::vector<double>>>>>();
 }
 
 
 template <typename T, typename Graph>
-std::tuple<std::vector<std::size_t>, std::vector<std::size_t>, std::vector<std::vector<std::vector<std::vector<double>>>>> 
-iterateThroughDistancesBest(int grid_size, int metric_type, int distribution_type, std::vector<std::vector<T>> speeds, Graph graph,
+std::tuple<std::vector<int>, std::vector<int>, std::vector<std::vector<std::vector<std::vector<double>>>>> 
+iterateThroughDistancesBest(int w_grid_size, int h_grid_size, int metric_type, int distribution_type, std::vector<std::vector<T>> speeds, Graph graph,
 	unsigned int iterations, double s_learn_rate, double f_learn_rate, double initial_neighbour_size, double neigbour_range_decay, long long random_seed)
 {
 
@@ -1139,88 +1201,91 @@ iterateThroughDistancesBest(int grid_size, int metric_type, int distribution_typ
 	{
 		// Euclidian
 		metric::Euclidian<double> distance;
-		return iterateThroughDistributionsBest(grid_size, distribution_type, speeds, distance, graph, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
+		return iterateThroughDistributionsBest(w_grid_size, h_grid_size, distribution_type, speeds, distance, graph, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 	}
 	else if (metric_type == 1)
 	{
 		// Manhatten
 		metric::Manhatten<double> distance;
-		return iterateThroughDistributionsBest(grid_size, distribution_type, speeds, distance, graph, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
+		return iterateThroughDistributionsBest(w_grid_size, h_grid_size, distribution_type, speeds, distance, graph, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 	}
 	else if (metric_type == 2)
 	{
 		// P_norm
 		metric::P_norm<double> distance;
-		return iterateThroughDistributionsBest(grid_size, distribution_type, speeds, distance, graph, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
+		return iterateThroughDistributionsBest(w_grid_size, h_grid_size, distribution_type, speeds, distance, graph, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 	}
 	else if (metric_type == 3)
 	{
 		// Euclidian_thresholded
 		metric::Euclidian_thresholded<double> distance;
-		return iterateThroughDistributionsBest(grid_size, distribution_type, speeds, distance, graph, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
+		return iterateThroughDistributionsBest(w_grid_size, h_grid_size, distribution_type, speeds, distance, graph, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 	}
 	else if (metric_type == 4)
 	{
 		// Cosine
 		metric::Cosine<double> distance;
-		return iterateThroughDistributionsBest(grid_size, distribution_type, speeds, distance, graph, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
+		return iterateThroughDistributionsBest(w_grid_size, h_grid_size, distribution_type, speeds, distance, graph, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 	}
 	else if (metric_type == 5)
 	{
 		// Chebyshev
 		metric::Chebyshev<double> distance;
-		return iterateThroughDistributionsBest(grid_size, distribution_type, speeds, distance, graph, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
+		return iterateThroughDistributionsBest(w_grid_size, h_grid_size, distribution_type, speeds, distance, graph, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 	}
 
 	
-    return std::tuple<std::vector<std::size_t>, std::vector<std::size_t>, std::vector<std::vector<std::vector<std::vector<double>>>>>();
+    return std::tuple<std::vector<int>, std::vector<int>, std::vector<std::vector<std::vector<std::vector<double>>>>>();
 }
 
 
 template <typename T>
-std::tuple<std::vector<std::size_t>, std::vector<std::size_t>, std::vector<std::vector<std::vector<std::vector<double>>>>> 
-iterateThroughGraphsBest(int grid_size, int graph_type, int metric_type, int distribution_type, std::vector<std::vector<T>> speeds,
+std::tuple<std::vector<int>, std::vector<int>, std::vector<std::vector<std::vector<std::vector<double>>>>> 
+iterateThroughGraphsBest(int w_grid_size, int h_grid_size, int graph_type, int metric_type, int distribution_type, std::vector<std::vector<T>> speeds,
 	unsigned int iterations, double s_learn_rate, double f_learn_rate, double initial_neighbour_size, double neigbour_range_decay, long long random_seed)
 {
 	
 	if (graph_type == 0)
 	{
 		// Grid4
-		metric::Grid4 graph(grid_size);
-		return iterateThroughDistancesBest(grid_size, metric_type, distribution_type, speeds, graph, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
+		// TODO: dont forget return back to grid_size
+		metric::Grid4 graph(w_grid_size, h_grid_size);
+		return iterateThroughDistancesBest(w_grid_size, h_grid_size, metric_type, distribution_type, speeds, graph, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 	}
 	else if (graph_type == 1)
 	{
 		// Grid6
-		metric::Grid6 graph(grid_size);
-		return iterateThroughDistancesBest(grid_size, metric_type, distribution_type, speeds, graph, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
+		// TODO: dont forget return back to grid_size
+		metric::Grid6 graph(w_grid_size, h_grid_size);
+		return iterateThroughDistancesBest(w_grid_size, h_grid_size, metric_type, distribution_type, speeds, graph, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 	}
 	else if (graph_type == 2)
 	{
 		// Grid8
-		metric::Grid8 graph(grid_size);
-		return iterateThroughDistancesBest(grid_size, metric_type, distribution_type, speeds, graph, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
+		// TODO: dont forget return back to grid_size
+		metric::Grid8 graph(w_grid_size, h_grid_size);
+		return iterateThroughDistancesBest(w_grid_size, h_grid_size, metric_type, distribution_type, speeds, graph, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 	}
 	else if (graph_type == 3)
 	{
 		// Paley
-		metric::Paley graph(grid_size);
-		return iterateThroughDistancesBest(grid_size, metric_type, distribution_type, speeds, graph, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
+		metric::Paley graph(w_grid_size * h_grid_size);
+		return iterateThroughDistancesBest(w_grid_size, h_grid_size, metric_type, distribution_type, speeds, graph, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 	}
 	else if (graph_type == 4)
 	{
 		// LPS
-		metric::LPS graph(grid_size);
-		return iterateThroughDistancesBest(grid_size, metric_type, distribution_type, speeds, graph, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
+		metric::LPS graph(w_grid_size * h_grid_size);
+		return iterateThroughDistancesBest(w_grid_size, h_grid_size, metric_type, distribution_type, speeds, graph, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 	}
 	else if (graph_type == 5)
 	{
 		// Margulis
-		metric::Margulis graph(grid_size);
-		return iterateThroughDistancesBest(grid_size, metric_type, distribution_type, speeds, graph, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
+		metric::Margulis graph(w_grid_size * h_grid_size);
+		return iterateThroughDistancesBest(w_grid_size, h_grid_size, metric_type, distribution_type, speeds, graph, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 	}
 	
-    return std::tuple<std::vector<std::size_t>, std::vector<std::size_t>, std::vector<std::vector<std::vector<std::vector<double>>>>>();
+    return std::tuple<std::vector<int>, std::vector<int>, std::vector<std::vector<std::vector<std::vector<double>>>>>();
 }
 
 
@@ -1229,7 +1294,9 @@ int main(int argc, char *argv[])
 	std::cout << "SOM example have started" << std::endl;
 	std::cout << '\n';
 
-	bool hyperparams_tune = true;
+	auto t1 = std::chrono::steady_clock::now();
+
+	bool hyperparams_tune = false;
 	std::string hyperparams_scores_filename;
 
 	if (argc > 1)
@@ -1241,12 +1308,14 @@ int main(int argc, char *argv[])
 		}
 		else 
 		{
-			hyperparams_scores_filename = argv[1];
+			//hyperparams_scores_filename = argv[1];
+			RAW_DATA_FILENAME = argv[1];
 		}
 	}
 
 	/* Load data */
-	auto speeds = readEnergies("assets/energies_speed_190820.log");
+	auto speeds = readEnergies(RAW_DATA_FILENAME);
+	std::cout << "" << std::endl;
 	std::cout << "Num records: " << speeds.size() << std::endl;
 	std::cout << "Num values in the record: " << speeds[0].size() << std::endl;
 
@@ -1261,7 +1330,7 @@ int main(int argc, char *argv[])
 	std::vector<int> distribution_types = {0, 1, 2};
 
 	
-	std::vector<size_t> grid_sizes = {25, 100, 225, 400};
+	std::vector<std::vector<size_t>> grid_sizes = { {5, 5}, {10, 10}, {15, 15}, {20, 20} };
 	std::vector<double> s_learn_rates = {0.2, 0.5, 0.8, 1, 1.2};
 	std::vector<double> f_learn_rates = {0.2, 0.5, 0.7, 0.9};
 	std::vector<double> initial_neighbour_sizes = {0.5, 0.7, 0.9};
@@ -1296,7 +1365,8 @@ int main(int argc, char *argv[])
 	int best_metric;
 	int best_distribution;
 				
-	size_t best_grid_size;
+	size_t best_w_grid_size;
+	size_t best_h_grid_size;
 
 	double best_s_learn_rate;
 	double best_f_learn_rate;
@@ -1314,7 +1384,7 @@ int main(int argc, char *argv[])
 	////
 	if (hyperparams_tune)
 	{
-		std::vector<std::string> metaparams_grid = {"grid_size", "s_learn_rate", "f_learn_rate", "initial_neighbour_size", "neigbour_range_decay",
+		std::vector<std::string> metaparams_grid = {"w_grid_size", "h_grid_size", "s_learn_rate", "f_learn_rate", "initial_neighbour_size", "neigbour_range_decay",
 			"random_seed", "iterations", "distribution_type", "metric_type", "graph_type", "score"};
 		std::vector<std::vector<std::string>> results_grid;
 
@@ -1355,7 +1425,7 @@ int main(int argc, char *argv[])
 
 													try {
 
-														iterateThroughGraphs(grid_size, graph_type, metric_type, distribution_type, i, speeds, 
+														iterateThroughGraphs(grid_size[0], grid_size[1], graph_type, metric_type, distribution_type, i, speeds, 
 															iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 
 													}
@@ -1371,7 +1441,8 @@ int main(int argc, char *argv[])
 												
 													mu.lock();
 												
-													std::vector<std::string> current_result = {std::to_string(grid_size), std::to_string(s_learn_rate), std::to_string(f_learn_rate), 
+													std::vector<std::string> current_result = {std::to_string(grid_size[0]), std::to_string(grid_size[1]), std::to_string(s_learn_rate), 
+																								std::to_string(f_learn_rate), 
 																								std::to_string(initial_neighbour_size), std::to_string(neigbour_range_decay),
 																								std::to_string(random_seed), std::to_string(iterations), 
 																								distribution_type_names[distribution_type], metric_type_names[metric_type], graph_type_names[graph_type], 
@@ -1463,7 +1534,8 @@ int main(int argc, char *argv[])
 												if (results[i] < minimal_score)
 												{
 													minimal_score = results[i];
-													best_grid_size = grid_size;
+													best_w_grid_size = grid_size[0];
+													best_h_grid_size = grid_size[1];
 													
 													best_graph = graph_type;
 													best_metric = metric_type;
@@ -1496,7 +1568,7 @@ int main(int argc, char *argv[])
 		std::cout << "  Graph: " << graph_type_names[best_graph] << std::endl;
 		std::cout << "  Distance: " << metric_type_names[best_metric] << std::endl;
 		std::cout << "  Distribution: " << distribution_type_names[best_distribution] << std::endl;
-		std::cout << "  Grid size: " << best_grid_size << std::endl;
+		std::cout << "  Grid size: " << best_w_grid_size << "x" << best_h_grid_size << std::endl;
 		std::cout << "  Iterations: " << best_iterations << std::endl;
 		std::cout << "  Start learn rate: " << best_s_learn_rate << std::endl;
 		std::cout << "  Final learn rate: " << best_f_learn_rate << std::endl;
@@ -1508,46 +1580,59 @@ int main(int argc, char *argv[])
 	{
 		// load metaparms tune results and shood the best (with the lowets score)
 
-		auto metaparams_grid = readCsvData(hyperparams_scores_filename, ',');
-		
-		std::vector<double> scores;
+		//auto metaparams_grid = readCsvData(hyperparams_scores_filename, ',');
+		//
+		//std::vector<double> scores;
 
-		for (auto row : metaparams_grid)
-		{
-			scores.push_back(std::stod(row[10]));
-		}
-		
-		std::cout << std::endl;
-		std::cout << "Num scores: " << scores.size() << std::endl;
+		//for (auto row : metaparams_grid)
+		//{
+		//	scores.push_back(std::stod(row[10]));
+		//}
+		//
+		//std::cout << std::endl;
+		//std::cout << "Num scores: " << scores.size() << std::endl;
 
-		int minElementIndex = std::min_element(scores.begin(), scores.end()) - scores.begin();
+		//int minElementIndex = std::min_element(scores.begin(), scores.end()) - scores.begin();
+		//
+		//std::cout << "The best metaparams index: " << minElementIndex << std::endl;
 		
-		std::cout << "The best metaparams index: " << minElementIndex << std::endl;
+		//auto it = std::find (graph_type_names.begin(), graph_type_names.end(), metaparams_grid[minElementIndex][9]); 
+		//best_graph = std::distance(graph_type_names.begin(), it);
+		best_graph = 0;
 		
-		auto it = std::find (graph_type_names.begin(), graph_type_names.end(), metaparams_grid[minElementIndex][9]); 
-		best_graph = std::distance(graph_type_names.begin(), it);
+		//it = std::find (metric_type_names.begin(), metric_type_names.end(), metaparams_grid[minElementIndex][8]); 
+		//best_metric = std::distance(metric_type_names.begin(), it);
+		best_metric = 0;
 		
-		it = std::find (metric_type_names.begin(), metric_type_names.end(), metaparams_grid[minElementIndex][8]); 
-		best_metric = std::distance(metric_type_names.begin(), it);
-		
-		it = std::find (distribution_type_names.begin(), distribution_type_names.end(), metaparams_grid[minElementIndex][7]); 
-		best_distribution = std::distance(distribution_type_names.begin(), it);
-												
-		best_grid_size = std::stod(metaparams_grid[minElementIndex][0]);
-		best_s_learn_rate = std::stod(metaparams_grid[minElementIndex][1]);
-		best_f_learn_rate = std::stod(metaparams_grid[minElementIndex][2]);
-		best_initial_neighbour_size = std::stod(metaparams_grid[minElementIndex][3]);
-		best_neigbour_range_decay = std::stod(metaparams_grid[minElementIndex][4]);
-		best_random_seed = std::stod(metaparams_grid[minElementIndex][5]);
-		best_iterations = std::stod(metaparams_grid[minElementIndex][6]);
+		//it = std::find (distribution_type_names.begin(), distribution_type_names.end(), metaparams_grid[minElementIndex][7]); 
+		//best_distribution = std::distance(distribution_type_names.begin(), it);
+		best_distribution = 0;
+						
+		// todo: update with new metaparams result file structure 
+		//best_w_grid_size = std::sqrt(std::stod(metaparams_grid[minElementIndex][0]));
+		//best_h_grid_size = std::sqrt(std::stod(metaparams_grid[minElementIndex][0]));
+		//best_s_learn_rate = std::stod(metaparams_grid[minElementIndex][1]);
+		//best_f_learn_rate = std::stod(metaparams_grid[minElementIndex][2]);
+		//best_initial_neighbour_size = std::stod(metaparams_grid[minElementIndex][3]);
+		//best_neigbour_range_decay = std::stod(metaparams_grid[minElementIndex][4]);
+		//best_random_seed = std::stod(metaparams_grid[minElementIndex][5]);
+		//best_iterations = std::stod(metaparams_grid[minElementIndex][6]);
+		best_w_grid_size = 5;
+		best_h_grid_size = 5;
+		best_s_learn_rate = 1.2;
+		best_f_learn_rate = 0.4;
+		best_initial_neighbour_size = -1; // use default
+		best_neigbour_range_decay = -1; // use default
+		best_random_seed = 0;
+		best_iterations = 10000;
 	
 		std::cout << std::endl;
 		std::cout << "The best configuration: " << std::endl;
-		std::cout << "  Score: " << scores[minElementIndex] << std::endl;
+		//std::cout << "  Score: " << scores[minElementIndex] << std::endl;
 		std::cout << "  Graph: " << graph_type_names[best_graph] << std::endl;
 		std::cout << "  Distance: " << metric_type_names[best_metric] << std::endl;
 		std::cout << "  Distribution: " << distribution_type_names[best_distribution] << std::endl;
-		std::cout << "  Grid size: " << best_grid_size << std::endl;
+		std::cout << "  Grid size: " << best_w_grid_size << "x" << best_h_grid_size << std::endl;
 		std::cout << "  Iterations: " << best_iterations << std::endl;
 		std::cout << "  Start learn rate: " << best_s_learn_rate << std::endl;
 		std::cout << "  Final learn rate: " << best_f_learn_rate << std::endl;
@@ -1560,14 +1645,16 @@ int main(int argc, char *argv[])
 	// create, train SOM over the raw data and reduce the data	
 	// clustering on the reduced data
 
-	auto [assignments, counts, clustered_energies] = iterateThroughGraphsBest(best_grid_size, best_graph, best_metric, best_distribution, speeds, 
+	auto [assignments, counts, clustered_energies] = iterateThroughGraphsBest(best_w_grid_size, best_h_grid_size, best_graph, best_metric, best_distribution, speeds, 
 		best_iterations, best_s_learn_rate, best_f_learn_rate, best_initial_neighbour_size, best_neigbour_range_decay, best_random_seed);
 
 	// calculate borders and positions of each cluster
 
 	std::vector<std::vector<int>> positions(counts.size());
+	//std::vector<std::vector<std::vector<int>>> borders(counts.size());
 	std::vector<std::vector<int>> borders(counts.size());
-	int len = sqrt((double)best_grid_size);
+	//int len = sqrt((double)best_grid_size);
+	int len = best_w_grid_size;
 	for (int i = 0; i < assignments.size(); i++)
 	{
 		positions[assignments[i]].push_back(i);
@@ -1577,11 +1664,61 @@ int main(int argc, char *argv[])
 		int near_cluster_index;
 		int near_cluster_index_row;
 
+		// prev row
+
+		if (row % 2 == 0)
+		{
+			near_cluster_index = i - len - 1;
+			near_cluster_index_row = near_cluster_index / len;
+			if(row - 1 == near_cluster_index_row)
+				if (get_hex_bounds(assignments, i, near_cluster_index))
+				{
+					//borders[assignments[i]].push_back(std::vector<int> {near_cluster_index, i});
+					borders[assignments[i]].push_back(near_cluster_index);
+					borders[assignments[i]].push_back(i);
+				}
+
+			near_cluster_index = i - len;
+			near_cluster_index_row = near_cluster_index / len;
+			if(row - 1 == near_cluster_index_row)
+				if (get_hex_bounds(assignments, i, near_cluster_index))
+				{
+					//borders[assignments[i]].push_back(std::vector<int> {near_cluster_index, i});
+					borders[assignments[i]].push_back(near_cluster_index);
+					borders[assignments[i]].push_back(i);
+				}
+		}
+		else
+		{
+			near_cluster_index = i - len;
+			near_cluster_index_row = near_cluster_index / len;
+			if(row - 1 == near_cluster_index_row)
+				if (get_hex_bounds(assignments, i, near_cluster_index))
+				{
+					//borders[assignments[i]].push_back(std::vector<int> {near_cluster_index, i});
+					borders[assignments[i]].push_back(near_cluster_index);
+					borders[assignments[i]].push_back(i);
+				}
+
+			near_cluster_index = i - len + 1;
+			near_cluster_index_row = near_cluster_index / len;
+			if(row - 1 == near_cluster_index_row)
+				if (get_hex_bounds(assignments, i, near_cluster_index))
+				{
+					//borders[assignments[i]].push_back(std::vector<int> {near_cluster_index, i});
+					borders[assignments[i]].push_back(near_cluster_index);
+					borders[assignments[i]].push_back(i);
+				}
+		} 
+
+		// current row
+
 		near_cluster_index = i - 1;
 		near_cluster_index_row = near_cluster_index / len;
 		if(row == near_cluster_index_row)
 			if (get_hex_bounds(assignments, i, near_cluster_index))
 			{
+				//borders[assignments[i]].push_back(std::vector<int> {near_cluster_index, i});
 				borders[assignments[i]].push_back(near_cluster_index);
 				borders[assignments[i]].push_back(i);
 			}
@@ -1591,57 +1728,45 @@ int main(int argc, char *argv[])
 		if(row == near_cluster_index_row)
 			if (get_hex_bounds(assignments, i, near_cluster_index))
 			{
+				//borders[assignments[i]].push_back(std::vector<int> {i, near_cluster_index});
 				borders[assignments[i]].push_back(i);
 				borders[assignments[i]].push_back(near_cluster_index);
 			}
 
-		near_cluster_index = i - len;
-		near_cluster_index_row = near_cluster_index / len;
-		if(row - 1 == near_cluster_index_row)
-			if (get_hex_bounds(assignments, i, near_cluster_index))
-			{
-				borders[assignments[i]].push_back(near_cluster_index);
-				borders[assignments[i]].push_back(i);
-			}
-
-		near_cluster_index = i + len;
-		near_cluster_index_row = near_cluster_index / len;
-		if(row + 1 == near_cluster_index_row)
-			if (get_hex_bounds(assignments, i, near_cluster_index))
-			{
-				borders[assignments[i]].push_back(i);
-				borders[assignments[i]].push_back(near_cluster_index);
-			}
-
+		// next row 
+		
 		if (row % 2 == 0)
 		{
-			near_cluster_index = i - len - 1;
-			near_cluster_index_row = near_cluster_index / len;
-			if(row - 1 == near_cluster_index_row)
-				if (get_hex_bounds(assignments, i, near_cluster_index))
-				{
-					borders[assignments[i]].push_back(near_cluster_index);
-					borders[assignments[i]].push_back(i);
-				}
-
 			near_cluster_index = i + len - 1;
 			near_cluster_index_row = near_cluster_index / len;
 			if(row + 1 == near_cluster_index_row)
 				if (get_hex_bounds(assignments, i, near_cluster_index))
 				{
+					//borders[assignments[i]].push_back(std::vector<int> {i, near_cluster_index});
+					borders[assignments[i]].push_back(i);
+					borders[assignments[i]].push_back(near_cluster_index);
+				}
+
+			near_cluster_index = i + len;
+			near_cluster_index_row = near_cluster_index / len;
+			if(row + 1 == near_cluster_index_row)
+				if (get_hex_bounds(assignments, i, near_cluster_index))
+				{
+					//borders[assignments[i]].push_back(std::vector<int> {i, near_cluster_index});
 					borders[assignments[i]].push_back(i);
 					borders[assignments[i]].push_back(near_cluster_index);
 				}
 		}
 		else
 		{
-			near_cluster_index = i - len + 1;
+			near_cluster_index = i + len;
 			near_cluster_index_row = near_cluster_index / len;
-			if(row - 1 == near_cluster_index_row)
+			if(row + 1 == near_cluster_index_row)
 				if (get_hex_bounds(assignments, i, near_cluster_index))
 				{
-					borders[assignments[i]].push_back(near_cluster_index);
+					//borders[assignments[i]].push_back(std::vector<int> {i, near_cluster_index});
 					borders[assignments[i]].push_back(i);
+					borders[assignments[i]].push_back(near_cluster_index);
 				}
 
 			near_cluster_index = i + len + 1;
@@ -1649,6 +1774,7 @@ int main(int argc, char *argv[])
 			if(row + 1 == near_cluster_index_row)
 				if (get_hex_bounds(assignments, i, near_cluster_index))
 				{
+					//borders[assignments[i]].push_back(std::vector<int> {i, near_cluster_index});
 					borders[assignments[i]].push_back(i);
 					borders[assignments[i]].push_back(near_cluster_index);
 				}
@@ -1660,12 +1786,51 @@ int main(int argc, char *argv[])
 	std::cout << std::endl;
 
 	std::cout << "borders:" << std::endl;
+	for (auto i = 0; i < borders.size(); i++)
+	{
+		//std::sort(b.begin(), b.end());
+		//matrix_print(b);
+		//auto last = std::unique(borders[i].begin(), borders[i].end());
+		//borders[i].erase(last, borders[i].end());
+		//matrix_print(borders[i]);
+	}
 	matrix_print(borders);
 	std::cout << std::endl;
 
-	// calculate confs based on clustered energies and fill the result json
+	// sort clusters by mean energies
+		
+	std::vector<double> energy_means(clustered_energies[0].size());
+	std::vector<size_t> energy_means_sorted_indexes;
+	std::vector<std::vector<double>> energy_for_means(clustered_energies[0].size());
+	for (int i = 0; i < clustered_energies.size(); i++)
+	{
+		for (int j = 0; j < clustered_energies[i].size(); j++)
+		{
+			for (int k = 0; k < clustered_energies[i][j].size(); k++)
+			{
+				for (int p = 0; p < clustered_energies[i][j][k].size(); p++)
+				{
+					energy_for_means[j].push_back(clustered_energies[i][j][k][p]);
+				}
+			}
+		}
+	}
+	for (int i = 0; i < energy_for_means.size(); i++)
+	{
+		energy_means[i] = std::accumulate( energy_for_means[i].begin(), energy_for_means[i].end(), 0.0) / energy_for_means[i].size();
+	}
 
-	std::vector<std::vector<std::vector<std::vector<std::vector<double>>>>> sensors(8, std::vector<std::vector<std::vector<std::vector<double>>>>(7));
+	energy_means_sorted_indexes = sort_indexes(energy_means);
+	
+	std::cout << "energy means:" << std::endl;
+	vector_print(energy_means);
+	std::cout << std::endl;
+	
+	std::cout << "energy means sorted indexs:" << std::endl;
+	vector_print(energy_means_sorted_indexes);
+	std::cout << std::endl;
+
+	// calculate confs based on clustered energies and fill the result json
 	
 	std::vector<std::string> conf_names = {"conf_l", "conf_m", "conf_r"};
 	std::vector<std::string> sensor_names = {"vorne_li-1", "vorne_li-2", "vorne_li-3", "hinten_re-1", "vorne_re-1", "vorne_re-2", "vorne_re-3", "hinten_re-2"};
@@ -1678,59 +1843,92 @@ int main(int argc, char *argv[])
 	int sensor_index = 0;
 	for (auto sensor_data : clustered_energies)
 	{		
-		std::cout << "  --->" << std::endl;
-		std::vector<json> energies_json;
-		int level_index = 0;
-		for (auto energy_data : sensor_data)
+		std::cout << "  ---> sensor " << sensor_index << std::endl;
+		std::vector<json> clusters_json;
+		//for (int ei = 0; ei < sensor_data.size(); ei++)
+		//for (auto cluster_data : sensor_data)
+		// get cluster index from sorted by energy means
+		for(auto ei : energy_means_sorted_indexes)
 		{			
-			std::cout << "    --->" << std::endl;
-			std::vector<json> clusters_json;
-			for (auto cluster_data : energy_data)
+			auto cluster_data = sensor_data[ei];
+			std::cout << "    ---> cluster " << ei << std::endl;
+			// if there are data in the cluster (size of subbands is equal, so we look at the first subband size)
+			if (cluster_data[0].size() > 1)
 			{
-				// metric::PMQ set_0(energy_data);
-			
-				std::cout << "      --->" << std::endl;
-				// returns quants for a single cluster
-				std::vector<std::vector<std::vector<double>>> multiquants = set2multiconf(cluster_data, windowSizes, samples, confidencelevel);
-				std::cout << "      --->>" << std::endl;
+				std::vector<json> energy_subbands_json;
 
-				json cluster_json;
-				for (auto window : multiquants)
+				for (int ci = 0; ci < cluster_data.size(); ci++)
+					//for (auto energy_subband_data : cluster_data)
 				{
-					json window_json = {
-						{"conf_l", window[0]},
-						{"conf_m", window[1]},
-						{"conf_r", window[2]}
-					};
-					cluster_json.push_back(window_json);
+					auto energy_subband_data = cluster_data[ci];
+					for (int cdi = 0; cdi < energy_subband_data.size(); cdi++)
+					{
+						energy_subband_data[cdi] /= ENERGY_SCALE;
+					}
+					//if (energy_subband_data.size() > 1) 
+					{
+						// metric::PMQ set_0(cluster_data);
+
+						//std::cout << "      --->" << std::endl;
+						// returns quants for a single cluster
+						std::vector<std::vector<std::vector<double>>> multiquants = set2multiconf(energy_subband_data, windowSizes, samples, confidencelevel);
+						//std::cout << "      --->>" << std::endl;
+
+						json energy_subband_json;
+						for (auto window : multiquants)
+						{
+							json window_json = {
+								{"conf_l", window[0]},
+								{"conf_m", window[1]},
+								{"conf_r", window[2]}
+							};
+							energy_subband_json.push_back(window_json);
+						}
+						energy_subbands_json.push_back(energy_subband_json);
+						//std::cout << "      ---:" << std::endl;
+					}
 				}
+				json cluster_json = {
+					{"name", "level" + std::to_string(ei)},
+					{"border", borders[ei]},
+					{"position", positions[ei]},
+					{"quant", energy_subbands_json}
+				};
 				clusters_json.push_back(cluster_json);
-				std::cout << "      ---:" << std::endl;
+				//if (ei < borders.size())
+				//{
+				//}
+				//else
+				//{
+				//	json cluster_json = {
+				//		{"name", "level" + std::to_string(level_index)},
+				//		// TODO: looks like borders and positions should be on the one level down, inside clusters data
+				//		{"border", {}},
+				//		{"position", {}},
+				//		{"quant", clusters_json}
+				//	};
+				//	clusters_json.push_back(cluster_json);
+				//}
+				//std::cout << "    ---:" << std::endl;
 			}
-			json energy_json = {
-				{"name", "level" + std::to_string(level_index)}, 		
-				// TODO: looks like borders and positions should be on the one level down, inside clusters data
-				{"border", borders[0]},
-				{"position", positions[0]},
-				{"quant", clusters_json}
-			};
-			energies_json.push_back(energy_json);
-			level_index++;
-			std::cout << "    ---:" << std::endl;
 		}
 		
 		json sensor_json = {
 			{"id", sensor_names[sensor_index]}, 		
-			{"data", energies_json}
+			{"data", clusters_json}
 		};
 		reference_data.push_back(sensor_json);
 		sensor_index++;
 		std::cout << "  ---:" << std::endl;
 	}
-	std::ofstream outputFile("reference_data.json");
+	std::ofstream outputFile(RAW_DATA_FILENAME + "/reference_data_" + std::to_string(best_w_grid_size) + "x" + std::to_string(best_h_grid_size) + FILENAME_SUFFIX + ".json");
 	outputFile << std::setw(4) << reference_data << std::endl;
 	outputFile.close();	
 	std::cout << "---:" << std::endl;
+
+	auto t2 = std::chrono::steady_clock::now();
+	std::cout << "(Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000 << " s)" << std::endl;
+	std::cout << "" << std::endl;
 
 
     return 0;
