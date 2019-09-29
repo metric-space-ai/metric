@@ -53,5 +53,10 @@ int main()
     }
     std::cout << "\n";
 
+
+
+    std::cout << "type code: " << typeid(d_restored).name() << "\n";
+    std::cout << "\n";
+
     return 0;
 }

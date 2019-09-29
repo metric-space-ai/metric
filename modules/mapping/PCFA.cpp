@@ -35,18 +35,13 @@ blaze::DynamicMatrix<typename BlazeMatrix::ElementType> PCA_col(const BlazeMatri
     // sort and select
     size_t lower_idx = 0;
     size_t upper_idx = w.size() - 1;
-    //typename BlazeMatrix::ElementType spectral_radius;  // also we get spectral radius for normalization: we process the first eigenvalue specially
-    //if ((-w[lower_idx] > w[upper_idx]))
-    //    spectral_radius = w[lower_idx];
-    //else
-    //    spectral_radius = w[upper_idx];
     int count = 0;
     while (count < n_components && upper_idx > lower_idx) {
         if (-w[lower_idx] > w[upper_idx]) {
-            blaze::row(Result, count) = blaze::row(V, lower_idx); // / spectral_radius;  // add eigenpair
+            blaze::row(Result, count) = blaze::row(V, lower_idx); // add eigenpair
             lower_idx++;
         } else {
-            blaze::row(Result, count) = blaze::row(V, upper_idx); // / spectral_radius;  // add eigenpair
+            blaze::row(Result, count) = blaze::row(V, upper_idx); // add eigenpair
             upper_idx--;
         }
         count++;
@@ -103,7 +98,6 @@ template <typename V>
 PCFA_col<V>::PCFA_col(const blaze::DynamicMatrix<value_type>& TrainingData, size_t n_features)
 {
     W_encode = metric::PCA_col(TrainingData, n_features, averages);
-    //auto encoded = encode(TrainingData);
     W_decode = trans(W_encode); // computed once and saved
 }
 
@@ -220,23 +214,16 @@ std::vector<recType>
 PCFA<recType, Metric>::decode(
         const std::vector<recType> & Codes,
         bool unshift) {
-    //blaze::DynamicMatrix<typename PCFA<recType, Metric>::value_type> Out;
     auto CodesBlaze = vector_to_blaze(Codes);
     if (unshift) {
         auto Noncentered = CodesBlaze * W_decode;
         auto Centered = blaze::DynamicMatrix<typename PCFA<recType, Metric>::value_type>(Noncentered.rows(), Noncentered.columns());
         for (size_t row_idx = 0; row_idx < Noncentered.rows(); row_idx++)
             blaze::row(Centered, row_idx) = blaze::row(Noncentered, row_idx) + averages;
-        //Out = Centered;
-        //return blaze_to_vector(Out);
         return blaze_to_vector<recType>(Centered);
     } else {
-        //Out = CodesBlaze * W_decode;
-        //return blaze_to_vector(Out);
         return blaze_to_vector<recType>(CodesBlaze * W_decode);
     }
-    //return blaze_to_vector<recType>(Out);
-
 }
 
 
@@ -262,9 +249,6 @@ PCFA<recType, Metric>::eigenmodes_mat() {
 template <typename recType, typename Metric>
 std::vector<recType>
 PCFA<recType, Metric>::eigenmodes() {
-//    auto Eigenmodes = blaze::DynamicMatrix<typename PCFA<recType, Metric>::value_type>(W_decode.rows() + 1, W_decode.columns());
-//    blaze::row(Eigenmodes, 0) = averages;
-//    submatrix(Eigenmodes, 1, 0, W_decode.rows(), W_decode.columns()) = W_decode;
     return blaze_to_vector<recType>(eigenmodes_mat());
 }
 
@@ -283,10 +267,11 @@ PCFA<recType, Metric>::vector_to_blaze(const std::vector<recType> & In) {
 template <typename recType, typename Metric>
 template <typename R>
 typename std::enable_if <
- std::is_same<
-  R,
-  std::vector<typename PCFA<R, Metric>::value_type, typename std::allocator<typename PCFA<R, Metric>::value_type>>
- >::value,
+// std::is_same<
+//  R,
+//  std::vector<typename PCFA<R, Metric>::value_type, typename std::allocator<typename PCFA<R, Metric>::value_type>>
+// >::value,
+ PCFA<recType, Metric>:: template determine_container_type<R>::code == 1,
  std::vector<R>
 >::type // here we support only STL vector
 PCFA<recType, Metric>::blaze_to_vector(const blaze::DynamicMatrix<typename PCFA<R, Metric>::value_type> & In) { // TODO support arbitrary type!
@@ -304,10 +289,11 @@ PCFA<recType, Metric>::blaze_to_vector(const blaze::DynamicMatrix<typename PCFA<
 template <typename recType, typename Metric>
 template <typename R>
 typename std::enable_if<
- std::is_same<
-  R,
-  blaze::DynamicVector<typename PCFA<R, Metric>::value_type, blaze::rowVector>
- >::value,
+// std::is_same<
+//  R,
+//  blaze::DynamicVector<typename PCFA<R, Metric>::value_type, blaze::rowVector>
+// >::value,
+ PCFA<recType, Metric>:: template determine_container_type<R>::code == 2,
  std::vector<R>
 >::type
 PCFA<recType, Metric>::blaze_to_vector(const blaze::DynamicMatrix<typename PCFA<R, Metric>::value_type> & In) { // only blaze row-vector

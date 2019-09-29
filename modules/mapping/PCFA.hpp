@@ -124,35 +124,81 @@ class PCFA {
 
 private:
 
-    template<typename>
-    struct determine_element_type  // TODO replace with value_type/ElementTypew field detector!
+
+    template <typename>
+    struct determine_container_type
+    {
+        constexpr static int code = 0;
+    };
+
+    template <template <typename, typename> class Container, typename ValueType, typename Allocator>
+    struct determine_container_type<Container<ValueType, Allocator>>
+    {
+        constexpr static int code = 1;
+    };
+
+    template <template <typename, bool> class Container, typename ValueType, bool F>
+    struct determine_container_type<Container<ValueType, F>>
+    {
+        constexpr static int code = 2;
+    };
+
+
+
+
+
+//    template<typename>
+//    struct determine_element_type  // TODO replace with value_type/ElementType field detector!
+//    {
+//        using type = void;
+//    };
+
+//    template <typename ValueType, typename Allocator>
+//    struct determine_element_type<std::vector<ValueType, Allocator>>
+//    {
+//        using type = typename std::vector<ValueType, Allocator>::value_type;
+//    };
+
+//    template <typename ValueType, bool F>
+//    struct determine_element_type<blaze::DynamicVector<ValueType, F>>
+//    {
+//        using type = typename blaze::DynamicVector<ValueType, F>::ElementType;
+//    };
+
+
+//    template <typename ValueType, bool F>
+//    struct determine_element_type<blaze::DynamicMatrix<ValueType, F>>
+//    {
+//        using type = typename blaze::DynamicMatrix<ValueType, F>::ElementType;
+//    };
+
+
+
+    template<typename C, int = determine_container_type<C>::code>
+    struct determine_element_type
     {
         using type = void;
     };
 
-    template <typename ValueType, typename Allocator>
-    struct determine_element_type<std::vector<ValueType, Allocator>>
+    template<typename C>
+    struct determine_element_type<C, 1>
     {
-        using type = typename std::vector<ValueType, Allocator>::value_type;
+        using type = typename C::value_type;
     };
 
-    template <typename ValueType, bool F>
-    struct determine_element_type<blaze::DynamicVector<ValueType, F>>
+    template<typename C>
+    struct determine_element_type<C, 2>
     {
-        using type = typename blaze::DynamicVector<ValueType, F>::ElementType;
+        using type = typename C::ElementType;
     };
 
-
-    template <typename ValueType, bool F>
-    struct determine_element_type<blaze::DynamicMatrix<ValueType, F>>
-    {
-        using type = typename blaze::DynamicMatrix<ValueType, F>::ElementType;
-    };
 
 
 public:
 
     using value_type = typename determine_element_type<recType>::type;
+
+    //constexpr static int ContainerCode = determine_container_type<recType>::code;
 
     /**
    * @brief Construct a new PCFA object from dataset in blaze DynamicMatrix
@@ -243,33 +289,14 @@ private:
 
     blaze::DynamicMatrix<value_type> vector_to_blaze(const std::vector<recType> & In);
 
-//    template <typename R> // this template prevents from repeating the signature
-//    std::enable_if <
-//     std::is_same<
-//      R,
-//      std::vector<typename PCFA<R, Metric>::value_type>
-//     >::value,
-//     std::vector<R>
-//    >
-//    blaze_to_vector(const blaze::DynamicMatrix<typename PCFA<R, Metric>::value_type> & In);
-
-//    //std::enable_if <std::is_same<recType, blaze::DynamicVector<typename PCFA<recType, Metric>::value_type>, blaze::rowVector>::value, std::vector<recType>>
-//    template <typename R> // this template prevents from repeating the signature
-//    std::enable_if<
-//     std::is_same<
-//      R,
-//      blaze::DynamicVector<typename PCFA<R, Metric>::value_type, blaze::rowVector>
-//     >::value,
-//     blaze::DynamicVector<typename PCFA<R, Metric>::value_type, blaze::rowVector>
-//    >
-//    blaze_to_vector(const blaze::DynamicMatrix<typename PCFA<R, Metric>::value_type> & In);
 
     template <typename R> // this template prevents from repeating the signature
     typename std::enable_if <
-     std::is_same<
-      R,
-      std::vector<typename PCFA<R, Metric>::value_type, typename std::allocator<typename PCFA<R, Metric>::value_type>>
-     >::value,
+//     std::is_same<
+//      R,
+//      std::vector<typename PCFA<R, Metric>::value_type, typename std::allocator<typename PCFA<R, Metric>::value_type>>
+//     >::value,
+     determine_container_type<R>::code == 1,
      std::vector<R>
     >::type
     blaze_to_vector(const blaze::DynamicMatrix<typename PCFA<R, Metric>::value_type> & In);
@@ -277,15 +304,16 @@ private:
     //std::enable_if <std::is_same<recType, blaze::DynamicVector<typename PCFA<recType, Metric>::value_type>, blaze::rowVector>::value, std::vector<recType>>
     template <typename R> // this template prevents from repeating the signature
     typename std::enable_if<
-     std::is_same<
-      R,
-      blaze::DynamicVector<typename PCFA<R, Metric>::value_type, blaze::rowVector>
-     >::value,
+//     std::is_same<
+//      R,
+//      blaze::DynamicVector<typename PCFA<R, Metric>::value_type, blaze::rowVector>
+//     >::value,
+     determine_container_type<R>::code == 2,
      std::vector<R>
     >::type
     blaze_to_vector(const blaze::DynamicMatrix<typename PCFA<R, Metric>::value_type> & In);
 
-//    template <typename R> // this prevents from ambiguity
+//    template <typename R>  // for any other type
 //    std::enable_if <
 //     (
 //      not std::is_same<
