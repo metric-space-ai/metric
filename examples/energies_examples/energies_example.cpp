@@ -679,22 +679,22 @@ std::vector<std::vector<std::string>> readCsvData(std::string filename, char del
 std::vector<std::vector<double>> readEnergies(std::string dirname)
 {
 	// unix
-	//std::vector<std::string> files;
-	//DIR *dp;
- //   struct dirent *dirp;
- //   if((dp  = opendir(dirname.c_str())) == NULL) {
- //       std::cout << "Error(" << errno << ") opening " << dirname << std::endl;
- //       return std::vector<std::vector<double>>();
- //   }
+	std::vector<std::string> files;
+	DIR *dp;
+    struct dirent *dirp;
+    if((dp  = opendir(dirname.c_str())) == NULL) {
+        std::cout << "Error(" << errno << ") opening " << dirname << std::endl;
+        return std::vector<std::vector<double>>();
+    }
 
- //   while ((dirp = readdir(dp)) != NULL) {
-	//	std::string fn = std::string(dirp->d_name);
-	//	if (fn.size() > 4 && fn.substr(fn.size() - 4) == ".log")
-	//	{
-	//		files.push_back(dirname + "/" + fn);
-	//	}
- //   }
- //   closedir(dp);
+    while ((dirp = readdir(dp)) != NULL) {
+		std::string fn = std::string(dirp->d_name);
+		if (fn.size() > 4 && fn.substr(fn.size() - 4) == ".log")
+		{
+			files.push_back(dirname + "/" + fn);
+		}
+    }
+    closedir(dp);
 	// end unix
 	
 	std::vector<double> row;
@@ -704,11 +704,11 @@ std::vector<std::vector<double>> readEnergies(std::string dirname)
 	std::vector<std::vector<double>> rows;
 	
 	// windows
-	for (const auto & entry : std::filesystem::directory_iterator(dirname))
+	//for (const auto & entry : std::filesystem::directory_iterator(dirname))
 	// end windows
-	//for (auto filename : files)
+	for (auto filename : files)
     {
-		auto filename = entry.path();
+		//auto filename = entry.path();
 		std::cout << "reading data from " << filename << "... " << std::endl;
 
 		std::fstream fin;
