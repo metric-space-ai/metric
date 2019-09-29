@@ -688,7 +688,11 @@ std::vector<std::vector<double>> readEnergies(std::string dirname)
     }
 
     while ((dirp = readdir(dp)) != NULL) {
-        files.push_back(dirname + "/" +std::string(dirp->d_name));
+		std::string fn = std::string(dirp->d_name);
+		if (fn.substr(fn.size() - 4) == ".log")
+		{
+			files.push_back(dirname + "/" + fn);
+		}
     }
     closedir(dp);
 	// end unix
