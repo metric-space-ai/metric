@@ -622,7 +622,7 @@ std::vector<size_t> sort_indexes(const std::vector<T> &v) {
 
   // sort indexes based on comparing values in v
   std::sort(idx.begin(), idx.end(),
-       [&v](size_t i1, size_t i2) {return v[i1] > v[i2];});
+       [&v](size_t i1, size_t i2) {return v[i1] < v[i2];});
 
   return idx;
 }
@@ -1635,7 +1635,7 @@ int main(int argc, char *argv[])
 		
 		//auto it = std::find (graph_type_names.begin(), graph_type_names.end(), metaparams_grid[minElementIndex][9]); 
 		//best_graph = std::distance(graph_type_names.begin(), it);
-		best_graph = 0;
+		best_graph = 1;
 		
 		//it = std::find (metric_type_names.begin(), metric_type_names.end(), metaparams_grid[minElementIndex][8]); 
 		//best_metric = std::distance(metric_type_names.begin(), it);
@@ -1872,8 +1872,8 @@ int main(int argc, char *argv[])
 	std::vector<std::string> conf_names = {"conf_l", "conf_m", "conf_r"};
 	std::vector<std::string> sensor_names = {"vorne_li-1", "vorne_li-2", "vorne_li-3", "hinten_re-1", "vorne_re-1", "vorne_re-2", "vorne_re-3", "hinten_re-2"};
 	std::vector<uint32_t> windowSizes = {12, 24, 48, 96, 192, 384};
-	uint32_t samples = 5;
-	double confidencelevel = 1.0;
+	uint32_t samples = 1000;
+	double confidencelevel = 0.99;
 	
 	std::cout << "--->" << std::endl;
 	json reference_data;
@@ -1926,7 +1926,7 @@ int main(int argc, char *argv[])
 					}
 				}
 				json cluster_json = {
-					{"name", "level" + std::to_string(ei)},
+					{"name", "Level" + std::to_string(ei)},
 					{"border", borders[ei]},
 					{"position", positions[ei]},
 					{"quant", energy_subbands_json}

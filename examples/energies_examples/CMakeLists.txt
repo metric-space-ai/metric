@@ -29,7 +29,7 @@ add_executable(energies_example energies_example.cpp)
 
 if(UNIX)
     target_compile_features(energies_example PUBLIC cxx_std_17)
-    target_compile_options(energies_example PRIVATE -pthread)
+    target_compile_options(energies_example PRIVATE -pthread -O3)
     set_target_properties(energies_example PROPERTIES LINK_FLAGS -pthread)
 	
     # set_target_properties(energies_example PROPERTIES COMPILE_FLAGS "-stdlib=libc++ -pthread")
