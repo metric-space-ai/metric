@@ -12,15 +12,15 @@ Copyright (c) 2019 Panda Team
 #define M_PI 3.14159265358979323846
 #endif
 
-#include "../../modules/mapping.hpp"
+#include "../../../../modules/mapping.hpp"
 
-#include "../../modules/utils/visualizer.hpp"
+#include "../../../../modules/utils/visualizer.hpp"
 
-#include "../../modules/transform/discrete_cosine.hpp"
+#include "../../../../modules/transform/discrete_cosine.hpp"
 
-#include "assets/helpers.cpp"
+#include "../../assets/helpers.cpp"
 
-#include "../../3rdparty/blaze/Blaze.h"
+#include "../../../../3rdparty/blaze/Blaze.h"
 
 
 
@@ -55,8 +55,12 @@ int main()
     std::cout << "\n";
 	std::cout << "simple data" << std::endl;
 	std::cout << '\n';
-	
-    using recType = std::vector<float>;
+
+    // // PCFA works ok with arbitrary Blaze vector and STL container type with appropriate interface, for example:
+    // using recType = blaze::DynamicVector<float, blaze::rowVector>;
+    // using recType = blaze::DynamicVector<float, blaze::columnVector>;
+    // using recType = std::vector<float>;
+    using recType = std::deque<double>;
 
     recType d0_blaze {0, 1, 2};
     recType d1_blaze {0, 1, 3};
@@ -101,6 +105,10 @@ int main()
     }
     std::cout << "\n";
 
+
+    std::cout << "type code of compressed: " << typeid(d_compressed).name() << "\n";
+    std::cout << "type code of restored:   " << typeid(d_restored).name() << "\n";
+    std::cout << "\n";
 
 	//
 
@@ -351,9 +359,9 @@ int main()
     blaze_dm_to_csv(test_data_r, "groove_test_data_r.csv");
 
     blaze::DynamicMatrix<V, blaze::rowMajor> training_dataset_r_t = trans(training_dataset_r);
-    auto model_r = metric::PCFA_col_factory(training_dataset_r_t, n_features); 
+    auto model_r = metric::PCFA_factory(training_dataset_r_t, n_features); 
 
-    blaze::DynamicMatrix<V> avg_r_out = trans(model_r.average());
+    blaze::DynamicMatrix<V> avg_r_out = blaze::trans(model_r.average_mat());
     mat2bmp::blaze2bmp_norm(avg_r_out, "groove_averages_r.bmp");
     blaze_dm_to_csv(avg_r_out, "groove_averages_r.csv");
 
