@@ -324,10 +324,21 @@ PCFA_col<typename BlazeMatrix::ElementType> PCFA_col_factory(const BlazeMatrix &
 
 template <typename ElementType>
 PCFA<blaze::DynamicMatrix<ElementType>, void> PCFA_factory(
-        blaze::DynamicMatrix<ElementType> in,
+        blaze::DynamicMatrix<ElementType> TrainingData,
         size_t n_features) // special factory for Blaze matrix
 {
-    return PCFA<blaze::DynamicMatrix<ElementType>, void>(in, n_features);
+    return PCFA<blaze::DynamicMatrix<ElementType>, void>(TrainingData, n_features);
+}
+
+
+// TODO add
+template <template <typename, typename> class Container, typename ValueType, typename Allocator>
+PCFA<Container<ValueType, Allocator>, void> PCFA_factory(
+        const Container<ValueType, Allocator> & TrainingData,
+        size_t n_features
+        )
+{
+    return PCFA<Container<ValueType, Allocator>, void>(TrainingData, n_features);
 }
 
 

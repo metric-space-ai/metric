@@ -126,7 +126,7 @@ private:
 
 
     template <typename>
-    struct determine_container_type
+    struct determine_container_type  // checks whether container is STL container (1) or Blaze vector (2)
     {
         constexpr static int code = 0;
     };
@@ -148,7 +148,7 @@ private:
 
 
 //    template<typename>
-//    struct determine_element_type  // TODO replace with value_type/ElementType field detector!
+//    struct determine_element_type  // old version, replaced with value_type/ElementType field detector!
 //    {
 //        using type = void;
 //    };
@@ -175,7 +175,7 @@ private:
 
 
     template<typename C, int = determine_container_type<C>::code>
-    struct determine_element_type
+    struct determine_element_type  // determines type of element both for STL containers and Blaze vectors
     {
         using type = void;
     };
@@ -290,7 +290,7 @@ private:
     blaze::DynamicMatrix<value_type> vector_to_blaze(const std::vector<recType> & In);
 
 
-    template <typename R> // this template prevents from repeating the signature
+    template <typename R>
     typename std::enable_if <
 //     std::is_same<
 //      R,
@@ -301,8 +301,7 @@ private:
     >::type
     blaze_to_vector(const blaze::DynamicMatrix<typename PCFA<R, Metric>::value_type> & In);
 
-    //std::enable_if <std::is_same<recType, blaze::DynamicVector<typename PCFA<recType, Metric>::value_type>, blaze::rowVector>::value, std::vector<recType>>
-    template <typename R> // this template prevents from repeating the signature
+    template <typename R>
     typename std::enable_if<
 //     std::is_same<
 //      R,
@@ -313,29 +312,13 @@ private:
     >::type
     blaze_to_vector(const blaze::DynamicMatrix<typename PCFA<R, Metric>::value_type> & In);
 
-//    template <typename R>  // for any other type
-//    std::enable_if <
-//     (
-//      not std::is_same<
-//       R,
-//       std::vector<typename PCFA<R, Metric>::value_type>
-//      >::value
-//     ) and (
-//      not std::is_same<
-//       R,
-//       blaze::DynamicVector<typename PCFA<R, Metric>::value_type, blaze::rowVector>
-//      >::value
-//     ),
-//     std::vector<R>
-//    >::type
-//    blaze_to_vector(const blaze::DynamicMatrix<typename PCFA<R, Metric>::value_type> & In);
 };
 
 
 
 
 /**
-* @brief Creates a new PCFA_col object
+* @brief Creates a new PCFA_col object from dataset of Blaze Matrix type
 *
 * @param TrainingData
 * @param n_features
@@ -345,7 +328,7 @@ PCFA_col<typename BlazeMatrix::ElementType> PCFA_col_factory(const BlazeMatrix &
 
 
 /**
-* @brief Creates a new PCFA object
+* @brief Creates a new PCFA object from dataset of Blaze Matrix type
 *
 * @param TrainingData
 * @param n_features
@@ -353,6 +336,32 @@ PCFA_col<typename BlazeMatrix::ElementType> PCFA_col_factory(const BlazeMatrix &
 template <typename BlazeMatrix>
 PCFA<typename BlazeMatrix::ElementType, void> PCFA_factory(const BlazeMatrix & TrainingData, size_t n_features = 1);
 
+
+/**
+* @brief Creates a new PCFA object from vector of STL containers as dataset
+*
+* @param TrainingData
+* @param n_features
+*/
+template <template <typename, typename> class Container, typename ValueType, typename Allocator>
+PCFA<Container<ValueType, Allocator>, void> PCFA_factory(
+        const Container<ValueType, Allocator> & TrainingData,
+        size_t n_features = 1
+        );
+
+
+
+/**
+* @brief Creates a new PCFA object from vector of Blaze vectors as dataset
+*
+* @param TrainingData
+* @param n_features
+*/
+template <template <typename, bool> class Container, typename ValueType, bool F>
+PCFA<Container<ValueType, F>, void> PCFA_factory(
+        const Container<ValueType, F> & TrainingData,
+        size_t n_features = 1
+        );
 
 
 
