@@ -5,15 +5,20 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 Copyright (c) 2019 Panda Team
 */
-//#include <boost/filesystem.hpp>
-#include <dirent.h>
+
+#if defined(__linux__)
+	#include <dirent.h>
+#endif
 
 #include <vector>
 #include <any>
 
 #include <iostream>
 #include <fstream>
-//#include <filesystem>
+
+#if defined(_WIN64)
+	#include <filesystem>
+#endif
 
 #include <chrono>
 
@@ -678,24 +683,24 @@ std::vector<std::vector<std::string>> readCsvData(std::string filename, char del
 
 std::vector<std::vector<double>> readEnergies(std::string dirname)
 {
-	// unix
-	std::vector<std::string> files;
-	DIR *dp;
-    struct dirent *dirp;
-    if((dp  = opendir(dirname.c_str())) == NULL) {
-        std::cout << "Error(" << errno << ") opening " << dirname << std::endl;
-        return std::vector<std::vector<double>>();
-    }
-
-    while ((dirp = readdir(dp)) != NULL) {
-		std::string fn = std::string(dirp->d_name);
-		if (fn.size() > 4 && fn.substr(fn.size() - 4) == ".log")
-		{
-			files.push_back(dirname + "/" + fn);
+	#if defined(__linux__)
+		std::vector<std::string> files;
+		DIR *dp;
+		struct dirent *dirp;
+		if((dp  = opendir(dirname.c_str())) == NULL) {
+			std::cout << "Error(" << errno << ") opening " << dirname << std::endl;
+			return std::vector<std::vector<double>>();
 		}
-    }
-    closedir(dp);
-	// end unix
+
+		while ((dirp = readdir(dp)) != NULL) {
+			std::string fn = std::string(dirp->d_name);
+			if (fn.size() > 4 && fn.substr(fn.size() - 4) == ".log")
+			{
+				files.push_back(dirname + "/" + fn);
+			}
+		}
+		closedir(dp);
+	#endif
 	
 	std::vector<double> row;
 	std::vector<double> speeds;
@@ -703,12 +708,16 @@ std::vector<std::vector<double>> readEnergies(std::string dirname)
 
 	std::vector<std::vector<double>> rows;
 	
-	// windows
-	//for (const auto & entry : std::filesystem::directory_iterator(dirname))
-	// end windows
-	for (auto filename : files)
+	#if defined(_WIN64)
+		for (const auto & entry : std::filesystem::directory_iterator(dirname))
+	#endif
+	#if defined(__linux__)
+		for (auto filename : files)
+	#endif
     {
-		//auto filename = entry.path();
+		#if defined(_WIN64)
+			auto filename = entry.path();
+		#endif
 		std::cout << "reading data from " << filename << "... " << std::endl;
 
 		std::fstream fin;
