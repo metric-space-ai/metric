@@ -68,35 +68,44 @@ public:
     /**
 	     * @brief Construct a new SOM object
 	     * 
-	     * @param metric 
 	     * @param graph 
+	     * @param metric 
+		 * @param s_learn_rate 
+		 * @param f_learn_rate 
+		 * @param iterations 
 	     * @param distribution 
 	     */
-    SOM(Metric metric, Graph graph, Distribution distribution, double neighborhoodSize, double neigbour_range_decay, long long random_seed);
+    SOM(Graph graph, Metric metric = Metric(), double start_learn_rate = 1.2, double finish_learn_rate = 0.4, size_t iterations = 10000, 
+		Distribution distribution = Distribution(-1, 1));
+
+    /**
+	     * @brief Construct a new SOM object
+	     * 
+	     * @param graph 
+	     * @param metric 
+		 * @param s_learn_rate 
+		 * @param f_learn_rate 
+		 * @param iterations 
+	     * @param distribution 
+		 * @param neighborhood_start_size 
+		 * @param neigbour_range_decay 
+		 * @param random_seed 
+	     */
+    SOM(Graph graph, Metric metric, double start_learn_rate, double finish_learn_rate, size_t iterations, 
+		Distribution distribution, double neighborhood_start_size, double neigbour_range_decay, long long random_seed);
 
     /**
 		 * @brief Destroy the SOM object
 		 * 
 		 */
     ~SOM() = default;
-    /**
-		 * @brief 
-		 * 
-		 * @return true 
-		 * @return false 
-		 */
-    bool isValid();
 
     /**
 		 * @brief 
 		 * 
 		 * @param samples 
-		 * @param iterations 
-		 * @param s_learn_rate 
-		 * @param f_learn_rate 
 		 */
-    void train(const std::vector<std::vector<T>>& samples, size_t iterations = 10000, double s_learn_rate = 1.2,
-        double f_learn_rate = 0.4);
+    void train(const std::vector<std::vector<T>>& samples);
 
     /**
 		 * @brief 
@@ -104,14 +113,7 @@ public:
 		 * @param sample 
 		 * @return
 		 */
-    std::vector<double> reduce(const recType& sample);
-
-    /**
-		 * @brief 
-		 * 
-		 * @return
-		 */
-    size_t size();
+    std::vector<double> encode(const recType& sample);
 
     /**
 		 * @brief Best matching unit
@@ -120,6 +122,27 @@ public:
 		 * @return size_t 
 		 */
     size_t BMU(const recType& sample) const;
+
+    /**
+		 * @brief 
+		 * 
+		 * @return true 
+		 * @return false 
+		 */
+	bool isValid()
+	{
+		return valid;
+	}
+
+    /**
+		 * @brief 
+		 * 
+		 * @return
+		 */
+    size_t getNodesNumber()
+	{
+		return graph.getNodesNumber();
+	}
 
     /**
 		 * @brief added by Stepan Mamontov 18 09 2019
@@ -139,7 +162,11 @@ private:
     Graph graph;
     Distribution distribution;
 
-	double neighborhoodSize;
+	double start_learn_rate;
+	double finish_learn_rate; 
+	size_t iterations;
+
+	double neighborhood_start_size;
 	double neigbour_range_decay;
 	long long random_seed;
 
