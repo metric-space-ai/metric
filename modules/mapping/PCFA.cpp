@@ -331,14 +331,23 @@ PCFA<blaze::DynamicMatrix<ElementType>, void> PCFA_factory(
 }
 
 
-// TODO add
 template <template <typename, typename> class Container, typename ValueType, typename Allocator>
 PCFA<Container<ValueType, Allocator>, void> PCFA_factory(
-        const Container<ValueType, Allocator> & TrainingData,
+        std::vector<Container<ValueType, Allocator>> & TrainingData,
         size_t n_features
         )
 {
     return PCFA<Container<ValueType, Allocator>, void>(TrainingData, n_features);
+}
+
+
+template <template <typename, bool> class Container, typename ValueType, bool F>
+PCFA<Container<ValueType, F>, void> PCFA_factory(
+        std::vector<Container<ValueType, F>> & TrainingData,
+        size_t n_features
+        )
+{
+    return PCFA<Container<ValueType, F>, void>(TrainingData, n_features);
 }
 
 

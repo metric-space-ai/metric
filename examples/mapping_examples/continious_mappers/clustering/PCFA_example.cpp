@@ -67,6 +67,7 @@ int main()
     std::vector<recType> d_train = {d0_blaze, d1_blaze};
 
     auto pcfa = metric::PCFA<recType, void>(d_train, 2);
+    // auto pcfa = metric::PCFA_factory(d_train, 2);  // we also can use factory for autodeduction
 
     recType d2_blaze {0, 1, 4};
     recType d3_blaze {0, 2, 2};
