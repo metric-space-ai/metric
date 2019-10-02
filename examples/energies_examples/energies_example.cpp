@@ -845,30 +845,33 @@ double runConfiguration(int i, std::vector<std::vector<T>> data, Metric distance
 
 	metric::SOM<std::vector<T>, Graph, Metric, Distribution> som_model(graph, distance, start_learn_rate, final_learn_rate, iterations, distribution, neighborhoodSize, neigbour_range_decay, random_seed);
 	
-
-	/* Train */
 	som_model.train(data);
-
+	
+	// we will calculate std deviation
 	double total_distances = 0;
+	double std_deviation = 0;
+	double closest_distance;
+
+	total_distances = 0;
 	for (size_t i = 0; i < data.size(); i++)
 	{
 		auto dimR = som_model.encode(data[i]);
 		auto bmu = som_model.BMU(data[i]);
-		total_distances += std::abs(dimR[bmu]);
+		// dimR[bmu] - is distance to the closest node, we use it as difference of value and mean of the values
+		closest_distance = dimR[bmu] * dimR[bmu];
+		total_distances += closest_distance;
 	}
+
+	std_deviation = sqrt(total_distances / data.size());
 		
 	auto t2 = std::chrono::steady_clock::now();
 	mu.lock();
 	std::cout << "configuration #" << i << " finished" << std::endl;
-	std::cout << "  Graph: " << typeid(graph).name() << std::endl;
-	std::cout << "  Distance: " << typeid(distance).name() << std::endl;
-	std::cout << "  Distribution: " << typeid(distribution).name() << std::endl;
-	std::cout << "Total distances: " << total_distances << 
-		" mean distance: " << total_distances / data.size() << 
+	std::cout << "deviation: " << std_deviation << 
 		" (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000 << "s)" << std::endl << std::endl;
 	mu.unlock();
 
-	return total_distances;
+	return std_deviation;
 }
 
 template <typename T>
@@ -1496,7 +1499,6 @@ int main(int argc, char *argv[])
 
 	if (argc > 1)
 	{
-		hyperparams_tune = false;
 		if (argv[1] == std::string("hyperparams_tune"))
 		{
 			hyperparams_tune = true;
@@ -1520,18 +1522,18 @@ int main(int argc, char *argv[])
 	ThreadPool pool(concurentThreadsSupported);
 	Semaphore sem;
 	
-	std::vector<int> graph_types = {0, 1, 2};
-	std::vector<int> metric_types = {0, 1, 2, 3, 4, 5};
+	std::vector<int> graph_types = {1};
+	std::vector<int> metric_types = {0};
 	std::vector<int> distribution_types = {0, 1, 2};
 
 	
-	std::vector<std::vector<size_t>> grid_sizes = { {5, 5}, {10, 10}, {15, 15}, {20, 20} };
-	std::vector<double> s_learn_rates = {0.2, 0.5, 0.8, 1, 1.2};
-	std::vector<double> f_learn_rates = {0.2, 0.5, 0.7, 0.9};
-	std::vector<double> initial_neighbour_sizes = {0.5, 0.7, 0.9};
-	std::vector<double> neigbour_range_decays = {0.2, 0.3, 0.5};
-	std::vector<long long> random_seeds = {0, 100, 10000};
-	std::vector<unsigned int> iterations_all = {100, 1000, 10000};
+	std::vector<std::vector<size_t>> grid_sizes = { {5, 5}, {10, 10}, {15, 15}, {20, 20}, {30, 30} };
+	std::vector<double> s_learn_rates = {0.2, 0.5, 0.8, 1.0};
+	std::vector<double> f_learn_rates = {0.0, 0.2, 0.5, 0.7};
+	std::vector<double> initial_neighbour_sizes = {5, 10, 15, 20, 25};
+	std::vector<double> neigbour_range_decays = {1.5, 2.0, 3.0};
+	std::vector<long long> random_seeds = {0};
+	std::vector<unsigned int> iterations_all = {100, 1000, 5000, 10000};
 				
 	//size_t grid_size = 25;
 
@@ -1657,7 +1659,7 @@ int main(int argc, char *argv[])
 													results_grid.push_back(current_result);
 
 													if (i % 10000 == 0) {
-														saveToCsv("SOM_example_2_checkpoint_" + std::to_string(i) + ".csv", results_grid, metaparams_grid);
+														saveToCsv("metaparams_checkpoint_" + std::to_string(i) + ".csv", results_grid, metaparams_grid);
 													}
 
 													mu.unlock();
@@ -1712,7 +1714,7 @@ int main(int argc, char *argv[])
 		}
 		pool.close();
 	
-		saveToCsv("SOM_example_2_final.csv", results_grid, metaparams_grid);
+		saveToCsv("metaparams_checkpoint_final.csv", results_grid, metaparams_grid);
 	
 		double minimal_score = INFINITY;
 
