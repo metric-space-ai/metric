@@ -356,18 +356,17 @@ Then we can create and train SOM (reduce dimensions):
 
 ```cpp
 using Vector = std::vector<double>;
-using Metric = metric::Euclidian<Vector::value_type>;
 using Graph = metric::Grid6;
+using Metric = metric::Euclidian<Vector::value_type>;
 
-metric::SOM<Vector, Metric, Graph> som_model(6, 5);
+metric::SOM<Vector, Graph, Metric> som_model(6, 5);
 
-unsigned int iterations = 1000;
-som_model.train(img1, iterations);
+som_model.train(img1);
 ```
 After train we can find distances for the record (f.e. row from image matrix) for all SOM nodes:
 
 ```cpp
-auto dimR = som_model.reduce(img1[0]);
+auto dimR = som_model.encode(img1[0]);
 // out
 // dimR:
 // 510.852 481.27 463.812 474.718 518.213 547.852
@@ -848,7 +847,7 @@ model.predict(test_sample, dims, prediction);
 ---
 
 ## Run
-*You need STL and C++14 support to compile.*
+*You need STL and C++17 support to compile.*
 
 METRIC | MAPPING works headonly. Just include the header into your project.
 
@@ -895,5 +894,5 @@ make
 
 
 ```bash
-$ clang++ ./examples/mapping_examples/KMeans_example.cpp -std=c++14
+$ clang++ ./examples/mapping_examples/KMeans_example.cpp -std=c++17
 ```

@@ -76,17 +76,12 @@ int main()
 {
 	std::cout << "SOM example have started" << std::endl;
 	std::cout << '\n';
-
-    unsigned int iterations = 1000;
-    // double start_learn_rate = 0.9;
-    // double final_learn_rate = 0.4;
-    // double neighborhoodSize = 1.2;
-
+	
     using Vector = std::vector<double>;
     using Metric = metric::Euclidian<Vector::value_type>;
-    using Graph = metric::Grid6; // replaced mapping::SOM_details with graph by Max F, 2019-05-16
+    using Graph = metric::Grid6; 
 
-    metric::SOM<Vector, Metric, Graph> som_model(6, 5);
+    metric::SOM<Vector, Graph, Metric> som_model(6, 5);
 
     if (!som_model.isValid()) {
     	std::cout << "SOM is not valid" << std::endl;
@@ -121,14 +116,14 @@ int main()
 
 	/* Train with img1 */
     const auto t1 = std::chrono::steady_clock::now();
-    som_model.train(img1, iterations);
+    som_model.train(img1);
     const auto t2 = std::chrono::steady_clock::now();
 
     std::cout << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000 << "s)" << std::endl;
 	std::cout << std::endl;
 
 
-    auto dimR = som_model.reduce(img1[0]);
+    auto dimR = som_model.encode(img1[0]);
 	vector_print(dimR, 6, 5);
 	std::cout << std::endl;
 
@@ -138,9 +133,9 @@ int main()
 
 
 	/* Train with img2 */
-    som_model.train(img2, iterations);
+    som_model.train(img2);
 
-    dimR = som_model.reduce(img1[0]);
+    dimR = som_model.encode(img1[0]);
 	vector_print(dimR, 6, 5);
 	std::cout << std::endl;
 

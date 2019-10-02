@@ -1,5 +1,5 @@
 # METRIC | CORRELATION
-*A templated, header only C++14 library for nonlinear correlation of arbitrary data structures and types.*
+*A templated, header only C++17 library for nonlinear correlation of arbitrary data structures and types.*
 
 ## Overview
 
@@ -134,5 +134,5 @@ make
 #### Direct compilation, using compiler
 
 ```bash
-$ clang++ ./examples/correlation_examples/simple_example.cpp -std=c++14
+$ clang++ ./examples/correlation_examples/simple_example.cpp -std=c++17
 ```
