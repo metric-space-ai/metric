@@ -1,5 +1,5 @@
 # METRIC | SPACE
-*A templated, header only C++14 implementation of a Metric Search Tree.*
+*A templated, header only C++17 implementation of a Metric Search Tree.*
 
 ## Overview
 
@@ -300,7 +300,7 @@ std::cout << g_custom.get_matrix() << std::endl;
 ---
 
 ## Run
-*You need STL and C++14 support to compile.*
+*You need STL and C++17 support to compile.*
 
 METRIC | SPACE works headonly. Just include the header into your project.
 
@@ -343,5 +343,5 @@ make
 #### Direct compilation, using compiler
 
 ```bash
-$ clang++ ./examples/space_examples/simple_example.cpp -std=c++14
+$ clang++ ./examples/space_examples/simple_example.cpp -std=c++17
 ```

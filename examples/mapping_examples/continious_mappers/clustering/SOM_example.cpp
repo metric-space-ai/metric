@@ -76,12 +76,7 @@ int main()
 {
 	std::cout << "SOM example have started" << std::endl;
 	std::cout << '\n';
-
-    unsigned int iterations = 1000;
-    // double start_learn_rate = 0.9;
-    // double final_learn_rate = 0.4;
-    // double neighborhoodSize = 1.2;
-
+	
     using Vector = std::vector<double>;
     using Metric = metric::Euclidian<Vector::value_type>;
     using Graph = metric::Grid6; 
