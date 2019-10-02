@@ -830,20 +830,20 @@ std::mutex mu;
 
 template <typename T, typename Metric, typename Graph, typename Distribution>
 double runConfiguration(int i, std::vector<std::vector<T>> data, Metric distance, Graph graph, Distribution distribution, 
-	unsigned int iterations, double start_learn_rate, double final_learn_rate, double neighborhoodSize, double neigbour_range_decay, long long random_seed)
+	unsigned int iterations, double start_learn_rate, double final_learn_rate, double neighborhood_start_size, double neigbour_range_decay, long long random_seed)
 {
 	
 	mu.lock();
 	std::cout << "configuration #" << i << " started" << std::endl;
-	std::cout << "  Graph: " << typeid(graph).name() << std::endl;
-	std::cout << "  Distance: " << typeid(distance).name() << std::endl;
 	std::cout << "  Distribution: " << typeid(distribution).name() << std::endl;
+	std::cout << "  iterations: " << iterations << "  start_learn_rate: " << start_learn_rate << "  final_learn_rate: " 
+		<< final_learn_rate << "  neighborhood_start_size: " << neighborhood_start_size << "  neigbour_range_decay: " << neigbour_range_decay << std::endl;
 	std::cout << std::endl;
 	mu.unlock();
 
 	auto t1 = std::chrono::steady_clock::now();
 
-	metric::SOM<std::vector<T>, Graph, Metric, Distribution> som_model(graph, distance, start_learn_rate, final_learn_rate, iterations, distribution, neighborhoodSize, neigbour_range_decay, random_seed);
+	metric::SOM<std::vector<T>, Graph, Metric, Distribution> som_model(graph, distance, start_learn_rate, final_learn_rate, iterations, distribution, neighborhood_start_size, neigbour_range_decay, random_seed);
 	
 	som_model.train(data);
 	
@@ -867,6 +867,9 @@ double runConfiguration(int i, std::vector<std::vector<T>> data, Metric distance
 	auto t2 = std::chrono::steady_clock::now();
 	mu.lock();
 	std::cout << "configuration #" << i << " finished" << std::endl;
+	std::cout << "  Distribution: " << typeid(distribution).name() << std::endl;
+	std::cout << "  iterations: " << iterations << "  start_learn_rate: " << start_learn_rate << "  final_learn_rate: " 
+		<< final_learn_rate << "  neighborhood_start_size: " << neighborhood_start_size << "  neigbour_range_decay: " << neigbour_range_decay << std::endl;
 	std::cout << "deviation: " << std_deviation << 
 		" (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000 << "s)" << std::endl << std::endl;
 	mu.unlock();
