@@ -86,7 +86,7 @@ int main()
     using Metric = metric::Euclidian<Vector::value_type>;
     using Graph = metric::Grid6; 
 
-    metric::SOM<Vector, Metric, Graph> som_model(6, 5);
+    metric::SOM<Vector, Graph, Metric> som_model(6, 5);
 
     if (!som_model.isValid()) {
     	std::cout << "SOM is not valid" << std::endl;

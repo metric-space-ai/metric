@@ -43,7 +43,7 @@ namespace metric {
 	 *@brief 
 	 * 
 	 */
-template <typename recType, class Metric = metric::Euclidian<typename recType::value_type>, class Graph = metric::Grid8, class Distribution = std::uniform_real_distribution<typename recType::value_type>>
+template <typename recType, class Graph = metric::Grid6, class Metric = metric::Euclidian<typename recType::value_type>, class Distribution = std::uniform_real_distribution<typename recType::value_type>>
 class SOM {
     typedef typename recType::value_type T;
 
@@ -145,7 +145,7 @@ public:
 	}
 
     /**
-		 * @brief added by Stepan Mamontov 18 09 2019
+		 * @brief
 		 * 
 		 * @return
 		 */
@@ -156,7 +156,7 @@ public:
 
 private:
     bool valid;
-    size_t D;  // dimensions of inputs vector
+    size_t input_dimensions;  // dimensions of inputs vector
 
     Metric metric;
     Graph graph;
@@ -170,7 +170,7 @@ private:
 	double neigbour_range_decay;
 	long long random_seed;
 
-    std::vector<std::vector<T>> weights;  // nodes of SOM
+    std::vector<std::vector<T>> weights;  // coordinates in the input_dimensions space 
 };
 
 }  // namespace metric

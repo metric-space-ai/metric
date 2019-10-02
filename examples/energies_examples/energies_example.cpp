@@ -843,17 +843,17 @@ double runConfiguration(int i, std::vector<std::vector<T>> data, Metric distance
 
 	auto t1 = std::chrono::steady_clock::now();
 
-	metric::SOM<std::vector<T>, Metric, Graph, Distribution> DR(distance, graph, distribution, neighborhoodSize, neigbour_range_decay, random_seed);
+	metric::SOM<std::vector<T>, Graph, Metric, Distribution> som_model(graph, distance, start_learn_rate, final_learn_rate, iterations, distribution, neighborhoodSize, neigbour_range_decay, random_seed);
 	
 
 	/* Train */
-	DR.train(data, iterations, start_learn_rate, final_learn_rate);
+	som_model.train(data);
 
 	double total_distances = 0;
 	for (size_t i = 0; i < data.size(); i++)
 	{
-		auto dimR = DR.reduce(data[i]);
-		auto bmu = DR.BMU(data[i]);
+		auto dimR = som_model.encode(data[i]);
+		auto bmu = som_model.BMU(data[i]);
 		total_distances += std::abs(dimR[bmu]);
 	}
 		
@@ -1144,16 +1144,19 @@ get_weights_from_som(int w_grid_size, int h_grid_size, std::vector<std::vector<T
 	std::cout << "  SOM Distribution: " << typeid(distribution).name() << std::endl;
 	std::cout << std::endl;
 
-	metric::SOM<std::vector<T>, Metric, Graph, Distribution> som(
-		distance, 
+	metric::SOM<std::vector<T>, Graph, Metric, Distribution> som(		
 		graph, 
+		distance, 
+		s_learn_rate, 
+		f_learn_rate, 
+		iterations, 
 		distribution, 
 		initial_neighbour_size, 
 		neigbour_range_decay, 
 		random_seed
 	);	
 	
-	som.train(speeds, iterations, s_learn_rate, f_learn_rate);
+	som.train(speeds);
 
 	auto nodes_data = som.get_weights();
 	
@@ -1824,8 +1827,8 @@ int main(int argc, char *argv[])
 		//best_h_grid_size = 5;
 		best_s_learn_rate = 1.2;
 		best_f_learn_rate = 0.4;
-		best_initial_neighbour_size = -1; // use default
-		best_neigbour_range_decay = -1; // use default
+		best_initial_neighbour_size = std::sqrt(double(best_w_grid_size * best_h_grid_size)); // use default
+		best_neigbour_range_decay = 2.0; // use default
 		best_random_seed = 0;
 		best_iterations = 10000;
 	
