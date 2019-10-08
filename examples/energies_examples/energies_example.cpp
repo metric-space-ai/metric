@@ -1498,7 +1498,6 @@ int main(int argc, char *argv[])
 	auto t1 = std::chrono::steady_clock::now();
 
 	bool hyperparams_tune = false;
-	std::string hyperparams_scores_filename;
 
 	if (argc > 1)
 	{
@@ -1508,7 +1507,6 @@ int main(int argc, char *argv[])
 		}
 		else 
 		{
-			//hyperparams_scores_filename = argv[1];
 			RAW_DATA_DIRNAME = argv[1];
 		}
 	}
@@ -1530,13 +1528,13 @@ int main(int argc, char *argv[])
 	std::vector<int> distribution_types = {0, 1, 2};
 
 	
-	std::vector<std::vector<size_t>> grid_sizes = { {5, 5}, {10, 10}, {15, 15}, {20, 20}, {30, 30} };
-	std::vector<double> s_learn_rates = {0.2, 0.5, 0.8, 1.0};
-	std::vector<double> f_learn_rates = {0.0, 0.2, 0.5, 0.7};
-	std::vector<double> initial_neighbour_sizes = {5, 10, 15, 20, 25};
-	std::vector<double> neigbour_range_decays = {1.5, 2.0, 3.0};
+	std::vector<std::vector<size_t>> grid_sizes = { {5, 5}, {10, 10}, {15, 15}, {20, 20}, {30, 30}, {40, 40}, {50, 50} };
+	std::vector<double> s_learn_rates = {0.2, 0.4, 0.6, 0.8, 1.0};
+	std::vector<double> f_learn_rates = {0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.7};
+	std::vector<double> initial_neighbour_sizes = {1, 3, 5, 10, 15, 20, 25};
+	std::vector<double> neigbour_range_decays = {1.5, 2.0, 3.0, 4.0};
 	std::vector<long long> random_seeds = {0};
-	std::vector<unsigned int> iterations_all = {100, 1000, 5000, 10000};
+	std::vector<unsigned int> iterations_all = {100, 1000, 5000, 10000, 20000};
 				
 	//size_t grid_size = 25;
 
@@ -1565,19 +1563,8 @@ int main(int argc, char *argv[])
 	int best_metric;
 	int best_distribution;
 				
-	size_t best_w_grid_size = 30;
-	size_t best_h_grid_size = 20;
-	
-	if (argc > 3)
-	{
-		best_w_grid_size = std::stod(argv[2]);
-		best_h_grid_size = std::stod(argv[3]);
-	}
-	
-	if (argc > 4)
-	{
-		CLUSTERS_NUM = std::stod(argv[4]);
-	}
+	size_t best_w_grid_size;
+	size_t best_h_grid_size;
 
 	double best_s_learn_rate;
 	double best_f_learn_rate;
@@ -1791,55 +1778,56 @@ int main(int argc, char *argv[])
 	{
 		// load metaparms tune results and shood the best (with the lowets score)
 
-		//auto metaparams_grid = readCsvData(hyperparams_scores_filename, ',');
-		//
-		//std::vector<double> scores;
+		auto metaparams_grid = readCsvData("metaparams_checkpoint_final.csv", ',');
+		
+		std::vector<double> scores;
 
-		//for (auto row : metaparams_grid)
-		//{
-		//	scores.push_back(std::stod(row[10]));
-		//}
-		//
-		//std::cout << std::endl;
-		//std::cout << "Num scores: " << scores.size() << std::endl;
+		for (auto row : metaparams_grid)
+		{
+			scores.push_back(std::stod(row[11]));
+		}
+		
+		std::cout << std::endl;
+		std::cout << "Num scores: " << scores.size() << std::endl;
 
-		//int minElementIndex = std::min_element(scores.begin(), scores.end()) - scores.begin();
+		int minElementIndex = std::min_element(scores.begin(), scores.end()) - scores.begin();
 		//
 		//std::cout << "The best metaparams index: " << minElementIndex << std::endl;
 		
-		//auto it = std::find (graph_type_names.begin(), graph_type_names.end(), metaparams_grid[minElementIndex][9]); 
+		//auto it = std::find (graph_type_names.begin(), graph_type_names.end(), metaparams_grid[minElementIndex][10]); 
 		//best_graph = std::distance(graph_type_names.begin(), it);
 		best_graph = 1;
 		
-		//it = std::find (metric_type_names.begin(), metric_type_names.end(), metaparams_grid[minElementIndex][8]); 
+		//it = std::find (metric_type_names.begin(), metric_type_names.end(), metaparams_grid[minElementIndex][9]); 
 		//best_metric = std::distance(metric_type_names.begin(), it);
 		best_metric = 0;
 		
-		//it = std::find (distribution_type_names.begin(), distribution_type_names.end(), metaparams_grid[minElementIndex][7]); 
-		//best_distribution = std::distance(distribution_type_names.begin(), it);
-		best_distribution = 0;
+		auto it = std::find (distribution_type_names.begin(), distribution_type_names.end(), metaparams_grid[minElementIndex][8]); 
+		best_distribution = std::distance(distribution_type_names.begin(), it);
+		//best_distribution = 0;
 						
-		// todo: update with new metaparams result file structure 
-		//best_w_grid_size = std::sqrt(std::stod(metaparams_grid[minElementIndex][0]));
-		//best_h_grid_size = std::sqrt(std::stod(metaparams_grid[minElementIndex][0]));
-		//best_s_learn_rate = std::stod(metaparams_grid[minElementIndex][1]);
-		//best_f_learn_rate = std::stod(metaparams_grid[minElementIndex][2]);
-		//best_initial_neighbour_size = std::stod(metaparams_grid[minElementIndex][3]);
-		//best_neigbour_range_decay = std::stod(metaparams_grid[minElementIndex][4]);
-		//best_random_seed = std::stod(metaparams_grid[minElementIndex][5]);
-		//best_iterations = std::stod(metaparams_grid[minElementIndex][6]);
+		best_w_grid_size = std::sqrt(std::stod(metaparams_grid[minElementIndex][0]));
+		best_h_grid_size = std::sqrt(std::stod(metaparams_grid[minElementIndex][1]));
+		best_s_learn_rate = std::stod(metaparams_grid[minElementIndex][2]);
+		best_f_learn_rate = std::stod(metaparams_grid[minElementIndex][3]);
+		best_initial_neighbour_size = std::stod(metaparams_grid[minElementIndex][4]);
+		best_neigbour_range_decay = std::stod(metaparams_grid[minElementIndex][5]);
+		best_random_seed = std::stod(metaparams_grid[minElementIndex][6]);
+		best_iterations = std::stod(metaparams_grid[minElementIndex][7]);
+
+		// defaults
 		//best_w_grid_size = 5;
 		//best_h_grid_size = 5;
-		best_s_learn_rate = 1.2;
-		best_f_learn_rate = 0.4;
-		best_initial_neighbour_size = std::sqrt(double(best_w_grid_size * best_h_grid_size)); // use default
-		best_neigbour_range_decay = 2.0; // use default
-		best_random_seed = 0;
-		best_iterations = 10000;
+		//best_s_learn_rate = 1.2;
+		//best_f_learn_rate = 0.4;
+		//best_initial_neighbour_size = std::sqrt(double(best_w_grid_size * best_h_grid_size)); // use default
+		//best_neigbour_range_decay = 2.0; // use default
+		//best_random_seed = 0;
+		//best_iterations = 10000;
 	
 		std::cout << std::endl;
 		std::cout << "The best configuration: " << std::endl;
-		//std::cout << "  Score: " << scores[minElementIndex] << std::endl;
+		std::cout << "  Score: " << scores[minElementIndex] << std::endl;
 		std::cout << "  Graph: " << graph_type_names[best_graph] << std::endl;
 		std::cout << "  Distance: " << metric_type_names[best_metric] << std::endl;
 		std::cout << "  Distribution: " << distribution_type_names[best_distribution] << std::endl;
@@ -1851,6 +1839,19 @@ int main(int argc, char *argv[])
 		std::cout << "  Neigbour range decay: " << best_neigbour_range_decay << std::endl;
 		std::cout << "  Random seeds: " << best_random_seed << std::endl;
 		std::cout << std::endl;
+	}
+
+	// if overrided from arguments
+	
+	if (argc > 3)
+	{
+		best_w_grid_size = std::stod(argv[2]);
+		best_h_grid_size = std::stod(argv[3]);
+	}
+	
+	if (argc > 4)
+	{
+		CLUSTERS_NUM = std::stod(argv[4]);
 	}
 
 	// create, train SOM over the raw data and reduce the data	
