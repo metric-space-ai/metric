@@ -866,7 +866,7 @@ double runConfiguration(int i, std::vector<std::vector<T>> data, Metric distance
 		
 	auto t2 = std::chrono::steady_clock::now();
 	mu.lock();
-	std::cout << "configuration #" << i << " finished" << std::endl;
+	std::cout << "configuration #" << i << " finished, score: " << std_deviation << std::endl;
 	std::cout << "  Distribution: " << typeid(distribution).name() << std::endl;
 	std::cout << "  iterations: " << iterations << "  start_learn_rate: " << start_learn_rate << "  final_learn_rate: " 
 		<< final_learn_rate << "  neighborhood_start_size: " << neighborhood_start_size << "  neigbour_range_decay: " << neigbour_range_decay << std::endl;
@@ -1632,11 +1632,11 @@ int main(int argc, char *argv[])
 													iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, grid_size, random_seed, &results_grid, &metaparams_grid,
 													&graph_type_names, &metric_type_names, &distribution_type_names]() {
 
-													double score;
+													double score = INF;
 
 													try {
 
-														iterateThroughGraphs(grid_size[0], grid_size[1], graph_type, metric_type, distribution_type, i, speeds, 
+														score = iterateThroughGraphs(grid_size[0], grid_size[1], graph_type, metric_type, distribution_type, i, speeds, 
 															iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 
 													}
