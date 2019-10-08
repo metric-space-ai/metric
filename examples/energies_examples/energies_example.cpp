@@ -1806,8 +1806,8 @@ int main(int argc, char *argv[])
 		best_distribution = std::distance(distribution_type_names.begin(), it);
 		//best_distribution = 0;
 						
-		best_w_grid_size = std::sqrt(std::stod(metaparams_grid[minElementIndex][0]));
-		best_h_grid_size = std::sqrt(std::stod(metaparams_grid[minElementIndex][1]));
+		best_w_grid_size = std::stod(metaparams_grid[minElementIndex][0]);
+		best_h_grid_size = std::stod(metaparams_grid[minElementIndex][1]);
 		best_s_learn_rate = std::stod(metaparams_grid[minElementIndex][2]);
 		best_f_learn_rate = std::stod(metaparams_grid[minElementIndex][3]);
 		best_initial_neighbour_size = std::stod(metaparams_grid[minElementIndex][4]);
