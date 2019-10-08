@@ -46,7 +46,7 @@ double mean_square_error(MatrixType1 M1, MatrixType2 M2)
 
 int main()
 {
-	std::cout << "PCFAnet example have started" << std::endl;
+    std::cout << "PCFA example have started" << std::endl;
 	std::cout << '\n';
 
 
@@ -56,7 +56,7 @@ int main()
 	std::cout << "simple data" << std::endl;
 	std::cout << '\n';
 
-    // // PCFA works ok with arbitrary Blaze vector and STL container type with appropriate interface, for example:
+    // // PCFA works with arbitrary Blaze vector or STL container type that has appropriate interface, for example:
     // using recType = blaze::DynamicVector<float, blaze::rowVector>;
     // using recType = blaze::DynamicVector<float, blaze::columnVector>;
     // using recType = std::vector<float>;
@@ -111,7 +111,10 @@ int main()
     std::cout << "type code of restored:   " << typeid(d_restored).name() << "\n";
     std::cout << "\n";
 
-	//
+    // end of simple data test
+
+
+
 
 	bool visualize = false;
 	   
@@ -134,7 +137,7 @@ int main()
 	blaze::DynamicMatrix<double, blaze::columnMajor>  TestSlicesSine(waveform_length, n_freq_steps, 0.0);
 	blaze::DynamicMatrix<double, blaze::columnMajor>  TestTargetSine(1, n_freq_steps, 0.0);
 
-	double frequenz; // based on original test case code
+    double frequenz; // based on original ESN test case code
 	double phase = 0;
 	double delta_T = 0.05;
 
@@ -237,12 +240,12 @@ int main()
     metric::apply_DCT(SlicesSine);
     metric::apply_DCT(TestSlicesSine);
 
-    blaze::DynamicMatrix<double> TestSliceSine_DCT_restored = TestSlicesSine;
+//    blaze::DynamicMatrix<double> TestSliceSine_DCT_restored = TestSlicesSine;
 
-    metric::apply_DCT(TestSliceSine_DCT_restored, true);
-    if (visualize) {
-        mat2bmp::blaze2bmp(TestSliceSine_DCT_restored, "TestSlicesSine_DCT_restored.bmp");
-    }
+//    metric::apply_DCT(TestSliceSine_DCT_restored, true);
+//    if (visualize) {
+//        mat2bmp::blaze2bmp(TestSliceSine_DCT_restored, "TestSlicesSine_DCT_restored.bmp");
+//    }
 
     // direct linear mapping on spectrum
 
@@ -264,8 +267,6 @@ int main()
 
     if (visualize)
         mat2bmp::blaze2bmp(direct_restored_sine_DCT, "TestSliceSine_restored_DCT.bmp");
-
-    // convert back to time domain: enable if DCT is applied
 
     visualize = true;
 
@@ -388,6 +389,7 @@ int main()
     blaze_dm_to_csv(all_features_r_out, "groove_all_features_r.csv");
 
 
+    std::cout << "\n\n\n";
 
 	return 0;
 

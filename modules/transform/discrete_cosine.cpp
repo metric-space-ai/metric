@@ -50,6 +50,55 @@ bool apply_DCT(BlazeMatrix& Slices, bool inverse)
     return return_value;
 }
 
+
+
+
+template <
+ template <typename, typename> class OuterContainer,
+ typename OuterAllocator,
+ template <typename, typename> class InnerContainer,
+ typename InnerAllocator,
+ typename ValueType >
+bool apply_DCT_STL(
+        OuterContainer<InnerContainer<ValueType, InnerAllocator>, OuterAllocator> & Slices, bool inverse)
+{
+    OuterContainer<InnerContainer<ValueType, InnerAllocator>, OuterAllocator> Slices_out;
+    bool return_value = true;
+    size_t n = 0;
+    double* sample = new double[Slices[0].size()];
+    double maxval = 0;
+    for (n = 0; n < Slices.size(); n++) {
+        auto current_slice = Slices[n];
+        size_t idx = 0;
+        for (auto it = current_slice.begin(); it != current_slice.end(); ++it) {
+            sample[idx++] = *it;
+        }
+        bool success = false;
+        if (inverse)
+            success = FastDctLee_inverseTransform(sample, idx);
+        else
+            success = FastDctLee_transform(sample, idx);
+        if (success) {
+            idx = 0;
+            for (auto it = current_slice.begin(); it != current_slice.end(); ++it) {
+                *it = sample[idx++];
+                if (abs(*it) > maxval)
+                    maxval = *it;
+            }
+        } else
+            return_value = false;  // flag is dropped in case of any failure
+        Slices_out.push_back(current_slice);
+    }
+
+    delete[] sample;
+//    if (maxval > 1)
+//        Slices = evaluate(Slices / maxval);  // TODO consider enabling
+    Slices = Slices_out;
+    return return_value;
+}
+
+
+
 }
 
 #endif
