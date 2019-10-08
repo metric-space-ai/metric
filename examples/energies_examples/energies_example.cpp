@@ -1496,8 +1496,9 @@ int main(int argc, char *argv[])
 	std::cout << '\n';
 
 	auto t1 = std::chrono::steady_clock::now();
-
+	
 	bool hyperparams_tune = false;
+	bool default_hyperparams = false;
 
 	if (argc > 1)
 	{
@@ -1505,7 +1506,11 @@ int main(int argc, char *argv[])
 		{
 			hyperparams_tune = true;
 		}
-		else 
+		else if (argv[1] == std::string("default"))
+		{
+			default_hyperparams = true;
+		}
+		else
 		{
 			RAW_DATA_DIRNAME = argv[1];
 		}
@@ -1804,7 +1809,6 @@ int main(int argc, char *argv[])
 		
 		auto it = std::find (distribution_type_names.begin(), distribution_type_names.end(), metaparams_grid[minElementIndex][8]); 
 		best_distribution = std::distance(distribution_type_names.begin(), it);
-		//best_distribution = 0;
 						
 		best_w_grid_size = std::stod(metaparams_grid[minElementIndex][0]);
 		best_h_grid_size = std::stod(metaparams_grid[minElementIndex][1]);
@@ -1816,14 +1820,18 @@ int main(int argc, char *argv[])
 		best_iterations = std::stod(metaparams_grid[minElementIndex][7]);
 
 		// defaults
-		//best_w_grid_size = 5;
-		//best_h_grid_size = 5;
-		//best_s_learn_rate = 1.2;
-		//best_f_learn_rate = 0.4;
-		//best_initial_neighbour_size = std::sqrt(double(best_w_grid_size * best_h_grid_size)); // use default
-		//best_neigbour_range_decay = 2.0; // use default
-		//best_random_seed = 0;
-		//best_iterations = 10000;
+		if (default_hyperparams)
+		{
+			best_distribution = 0;
+			best_w_grid_size = 5;
+			best_h_grid_size = 5;
+			best_s_learn_rate = 1.2;
+			best_f_learn_rate = 0.4;
+			best_initial_neighbour_size = std::sqrt(double(best_w_grid_size * best_h_grid_size)); // use default
+			best_neigbour_range_decay = 2.0; // use default
+			best_random_seed = 0;
+			best_iterations = 10000;
+		}
 	
 		std::cout << std::endl;
 		std::cout << "The best configuration: " << std::endl;
