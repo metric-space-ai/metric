@@ -43,7 +43,7 @@ namespace metric {
 	 *@brief 
 	 * 
 	 */
-template <typename recType, class Metric = metric::Euclidian<typename recType::value_type>, class Graph = metric::Grid8, class Distribution = std::uniform_real_distribution<typename recType::value_type>>
+template <typename recType, class Graph = metric::Grid6, class Metric = metric::Euclidian<typename recType::value_type>, class Distribution = std::uniform_real_distribution<typename recType::value_type>>
 class SOM {
     typedef typename recType::value_type T;
 
@@ -68,35 +68,44 @@ public:
     /**
 	     * @brief Construct a new SOM object
 	     * 
-	     * @param metric 
 	     * @param graph 
+	     * @param metric 
+		 * @param s_learn_rate 
+		 * @param f_learn_rate 
+		 * @param iterations 
 	     * @param distribution 
 	     */
-    SOM(Metric metric, Graph graph, Distribution distribution, double neighborhoodSize, double neigbour_range_decay, long long random_seed);
+    SOM(Graph graph, Metric metric = Metric(), double start_learn_rate = 1.2, double finish_learn_rate = 0.4, size_t iterations = 10000, 
+		Distribution distribution = Distribution(-1, 1));
+
+    /**
+	     * @brief Construct a new SOM object
+	     * 
+	     * @param graph 
+	     * @param metric 
+		 * @param s_learn_rate 
+		 * @param f_learn_rate 
+		 * @param iterations 
+	     * @param distribution 
+		 * @param neighborhood_start_size 
+		 * @param neigbour_range_decay 
+		 * @param random_seed 
+	     */
+    SOM(Graph graph, Metric metric, double start_learn_rate, double finish_learn_rate, size_t iterations, 
+		Distribution distribution, double neighborhood_start_size, double neigbour_range_decay, long long random_seed);
 
     /**
 		 * @brief Destroy the SOM object
 		 * 
 		 */
     ~SOM() = default;
-    /**
-		 * @brief 
-		 * 
-		 * @return true 
-		 * @return false 
-		 */
-    bool isValid();
 
     /**
 		 * @brief 
 		 * 
 		 * @param samples 
-		 * @param iterations 
-		 * @param s_learn_rate 
-		 * @param f_learn_rate 
 		 */
-    void train(const std::vector<std::vector<T>>& samples, size_t iterations = 10000, double s_learn_rate = 1.2,
-        double f_learn_rate = 0.4);
+    void train(const std::vector<std::vector<T>>& samples);
 
     /**
 		 * @brief 
@@ -104,14 +113,7 @@ public:
 		 * @param sample 
 		 * @return
 		 */
-    std::vector<double> reduce(const recType& sample);
-
-    /**
-		 * @brief 
-		 * 
-		 * @return
-		 */
-    size_t size();
+    std::vector<double> encode(const recType& sample);
 
     /**
 		 * @brief Best matching unit
@@ -122,7 +124,28 @@ public:
     size_t BMU(const recType& sample) const;
 
     /**
-		 * @brief added by Stepan Mamontov 18 09 2019
+		 * @brief 
+		 * 
+		 * @return true 
+		 * @return false 
+		 */
+	bool isValid()
+	{
+		return valid;
+	}
+
+    /**
+		 * @brief 
+		 * 
+		 * @return
+		 */
+    size_t getNodesNumber()
+	{
+		return graph.getNodesNumber();
+	}
+
+    /**
+		 * @brief
 		 * 
 		 * @return
 		 */
@@ -133,17 +156,21 @@ public:
 
 private:
     bool valid;
-    size_t D;  // dimensions of inputs vector
+    size_t input_dimensions;  // dimensions of inputs vector
 
     Metric metric;
     Graph graph;
     Distribution distribution;
 
-	double neighborhoodSize;
+	double start_learn_rate;
+	double finish_learn_rate; 
+	size_t iterations;
+
+	double neighborhood_start_size;
 	double neigbour_range_decay;
 	long long random_seed;
 
-    std::vector<std::vector<T>> weights;  // nodes of SOM
+    std::vector<std::vector<T>> weights;  // coordinates in the input_dimensions space 
 };
 
 }  // namespace metric

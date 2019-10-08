@@ -1,5 +1,5 @@
 # METRIC | DISTANCE
-*A templated, header only C++14 implementation of a Metric Distance Functions.*
+*A templated, header only C++17 implementation of a Metric Distance Functions.*
 
 ## Overview
 
@@ -406,7 +406,7 @@ std::cout << "result: " << result << std::endl;
 ---
 
 ## Run
-*You need STL and C++14 support to compile.*
+*You need STL and C++17 support to compile.*
 
 METRIC | DISTANCE works headonly. Just include the header into your project.
 
@@ -456,5 +456,5 @@ make
 #### Direct compilation, using compiler
 
 ```bash
-$ clang++ ./examples/distance_examples/standart_distances_example.cpp -std=c++14
+$ clang++ ./examples/distance_examples/standart_distances_example.cpp -std=c++17
 ```

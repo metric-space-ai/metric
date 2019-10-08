@@ -34,9 +34,7 @@ using json = nlohmann::json;
 
 ///////////////////////////////////////////////////////
 
-//const int ENERGY_SCALE = 1;
-std::string RAW_DATA_FILENAME = "assets/data";
-const std::string FILENAME_SUFFIX = "";
+std::string RAW_DATA_DIRNAME = "assets/data";
 int CLUSTERS_NUM = 7;
 
 ////////////////////////////////////////////////////////
@@ -600,8 +598,34 @@ void vector_print(const std::vector<T> &vec,const size_t width, const size_t hei
 		std::cout << "width * height != vector.size()" << std::endl;
 		return;
 	}
+	
+	int max_digits = 1;
+	for (auto index = 0; index < vec.size(); ++index) {
+		int pos = 10;
+		int digits_num = 1;
+		while (vec[index] / pos >= 1)
+		{
+			digits_num++;
+			pos *= 10;
+		}
+		if (digits_num > max_digits)
+		{
+			max_digits = digits_num;
+		}
+	}
 
 	for (auto index = 0; index < vec.size(); ++index) {
+		
+		int pos = 10;
+		int digits_num = 1;
+		while (vec[index] / pos >= 1)
+		{
+			digits_num++;
+			pos *= 10;
+		}
+		for (auto i = 0; i < max_digits - digits_num; ++i) {
+			std::cout << " ";
+		}
 		std::cout << vec[index] << " ";
 
 		if ((index + 1) % width == 0) {
@@ -819,17 +843,17 @@ double runConfiguration(int i, std::vector<std::vector<T>> data, Metric distance
 
 	auto t1 = std::chrono::steady_clock::now();
 
-	metric::SOM<std::vector<T>, Metric, Graph, Distribution> DR(distance, graph, distribution, neighborhoodSize, neigbour_range_decay, random_seed);
+	metric::SOM<std::vector<T>, Graph, Metric, Distribution> som_model(graph, distance, start_learn_rate, final_learn_rate, iterations, distribution, neighborhoodSize, neigbour_range_decay, random_seed);
 	
 
 	/* Train */
-	DR.train(data, iterations, start_learn_rate, final_learn_rate);
+	som_model.train(data);
 
 	double total_distances = 0;
 	for (size_t i = 0; i < data.size(); i++)
 	{
-		auto dimR = DR.reduce(data[i]);
-		auto bmu = DR.BMU(data[i]);
+		auto dimR = som_model.encode(data[i]);
+		auto bmu = som_model.BMU(data[i]);
 		total_distances += std::abs(dimR[bmu]);
 	}
 		
@@ -1120,30 +1144,31 @@ get_weights_from_som(int w_grid_size, int h_grid_size, std::vector<std::vector<T
 	std::cout << "  SOM Distribution: " << typeid(distribution).name() << std::endl;
 	std::cout << std::endl;
 
-	metric::SOM<std::vector<T>, Metric, Graph, Distribution> som(
-		distance, 
+	metric::SOM<std::vector<T>, Graph, Metric, Distribution> som(		
 		graph, 
+		distance, 
+		s_learn_rate, 
+		f_learn_rate, 
+		iterations, 
 		distribution, 
 		initial_neighbour_size, 
 		neigbour_range_decay, 
 		random_seed
 	);	
 	
-	som.train(speeds, iterations, s_learn_rate, f_learn_rate);
-	//som.train(speeds);
+	som.train(speeds);
 
 	auto nodes_data = som.get_weights();
 	
 	json nodes_data_json(nodes_data);
 		
-	std::ofstream som_output(RAW_DATA_FILENAME + "/result/som_" + std::to_string(w_grid_size) + "x" + std::to_string(h_grid_size) + FILENAME_SUFFIX + ".json");
+	std::ofstream som_output(RAW_DATA_DIRNAME + "/result/som_" + std::to_string(w_grid_size) + "x" + std::to_string(h_grid_size) + ".json");
 	som_output << std::setw(4) << nodes_data_json << std::endl;
 	som_output.close();	
 	
 	// clustering on the reduced data
 	
-    //metric::Matrix<std::vector<double>, metric::Cosine<double>> distance_matrix(nodes_data);
-	
+    //metric::Matrix<std::vector<double>, metric::Cosine<double>> distance_matrix(nodes_data);	
     //auto [assignments, exemplars, counts] = metric::affprop(distance_matrix, (float)0.25);
     auto [assignments, exemplars, counts] = metric::kmeans(nodes_data, CLUSTERS_NUM, 1000);
 
@@ -1323,6 +1348,141 @@ iterateThroughGraphsBest(int w_grid_size, int h_grid_size, int graph_type, int m
     return std::tuple<std::vector<int>, std::vector<int>, std::vector<std::vector<std::vector<std::vector<double>>>>>();
 }
 
+std::tuple<std::vector<std::vector<int>>, std::vector<std::vector<int>>> 
+getPositionsAndBorders(std::vector<int> assignments, int clusters_num, int row_len)
+{
+	std::vector<std::vector<int>> positions(clusters_num);
+	//std::vector<std::vector<std::vector<int>>> borders(counts.size());
+	std::vector<std::vector<int>> borders(clusters_num);
+	for (int i = 0; i < assignments.size(); i++)
+	{
+		positions[assignments[i]].push_back(i);
+
+		//
+
+		int row = i / row_len;
+		int near_cluster_index;
+		int near_cluster_index_row;
+
+		// prev row
+
+		if (row % 2 == 0)
+		{
+			near_cluster_index = i - row_len - 1;
+			near_cluster_index_row = near_cluster_index / row_len;
+			if(row - 1 == near_cluster_index_row)
+				if (get_hex_bounds(assignments, i, near_cluster_index))
+				{
+					//borders[assignments[i]].push_back(std::vector<int> {near_cluster_index, i});
+					borders[assignments[i]].push_back(near_cluster_index);
+					borders[assignments[i]].push_back(i);
+				}
+
+			near_cluster_index = i - row_len;
+			near_cluster_index_row = near_cluster_index / row_len;
+			if(row - 1 == near_cluster_index_row)
+				if (get_hex_bounds(assignments, i, near_cluster_index))
+				{
+					//borders[assignments[i]].push_back(std::vector<int> {near_cluster_index, i});
+					borders[assignments[i]].push_back(near_cluster_index);
+					borders[assignments[i]].push_back(i);
+				}
+		}
+		else
+		{
+			near_cluster_index = i - row_len;
+			near_cluster_index_row = near_cluster_index / row_len;
+			if(row - 1 == near_cluster_index_row)
+				if (get_hex_bounds(assignments, i, near_cluster_index))
+				{
+					//borders[assignments[i]].push_back(std::vector<int> {near_cluster_index, i});
+					borders[assignments[i]].push_back(near_cluster_index);
+					borders[assignments[i]].push_back(i);
+				}
+
+			near_cluster_index = i - row_len + 1;
+			near_cluster_index_row = near_cluster_index / row_len;
+			if(row - 1 == near_cluster_index_row)
+				if (get_hex_bounds(assignments, i, near_cluster_index))
+				{
+					//borders[assignments[i]].push_back(std::vector<int> {near_cluster_index, i});
+					borders[assignments[i]].push_back(near_cluster_index);
+					borders[assignments[i]].push_back(i);
+				}
+		} 
+
+		// current row
+
+		near_cluster_index = i - 1;
+		near_cluster_index_row = near_cluster_index / row_len;
+		if(row == near_cluster_index_row)
+			if (get_hex_bounds(assignments, i, near_cluster_index))
+			{
+				//borders[assignments[i]].push_back(std::vector<int> {near_cluster_index, i});
+				borders[assignments[i]].push_back(near_cluster_index);
+				borders[assignments[i]].push_back(i);
+			}
+
+		near_cluster_index = i + 1;
+		near_cluster_index_row = near_cluster_index / row_len;
+		if(row == near_cluster_index_row)
+			if (get_hex_bounds(assignments, i, near_cluster_index))
+			{
+				//borders[assignments[i]].push_back(std::vector<int> {i, near_cluster_index});
+				borders[assignments[i]].push_back(i);
+				borders[assignments[i]].push_back(near_cluster_index);
+			}
+
+		// next row 
+		
+		if (row % 2 == 0)
+		{
+			near_cluster_index = i + row_len - 1;
+			near_cluster_index_row = near_cluster_index / row_len;
+			if(row + 1 == near_cluster_index_row)
+				if (get_hex_bounds(assignments, i, near_cluster_index))
+				{
+					//borders[assignments[i]].push_back(std::vector<int> {i, near_cluster_index});
+					borders[assignments[i]].push_back(i);
+					borders[assignments[i]].push_back(near_cluster_index);
+				}
+
+			near_cluster_index = i + row_len;
+			near_cluster_index_row = near_cluster_index / row_len;
+			if(row + 1 == near_cluster_index_row)
+				if (get_hex_bounds(assignments, i, near_cluster_index))
+				{
+					//borders[assignments[i]].push_back(std::vector<int> {i, near_cluster_index});
+					borders[assignments[i]].push_back(i);
+					borders[assignments[i]].push_back(near_cluster_index);
+				}
+		}
+		else
+		{
+			near_cluster_index = i + row_len;
+			near_cluster_index_row = near_cluster_index / row_len;
+			if(row + 1 == near_cluster_index_row)
+				if (get_hex_bounds(assignments, i, near_cluster_index))
+				{
+					//borders[assignments[i]].push_back(std::vector<int> {i, near_cluster_index});
+					borders[assignments[i]].push_back(i);
+					borders[assignments[i]].push_back(near_cluster_index);
+				}
+
+			near_cluster_index = i + row_len + 1;
+			near_cluster_index_row = near_cluster_index / row_len;
+			if(row + 1 == near_cluster_index_row)
+				if (get_hex_bounds(assignments, i, near_cluster_index))
+				{
+					//borders[assignments[i]].push_back(std::vector<int> {i, near_cluster_index});
+					borders[assignments[i]].push_back(i);
+					borders[assignments[i]].push_back(near_cluster_index);
+				}
+		} 
+	}
+
+	return {positions, borders};
+}
 
 int main(int argc, char *argv[])
 {
@@ -1344,12 +1504,12 @@ int main(int argc, char *argv[])
 		else 
 		{
 			//hyperparams_scores_filename = argv[1];
-			RAW_DATA_FILENAME = argv[1];
+			RAW_DATA_DIRNAME = argv[1];
 		}
 	}
 
 	/* Load data */
-	auto speeds = readEnergies(RAW_DATA_FILENAME);
+	auto speeds = readEnergies(RAW_DATA_DIRNAME);
 	std::cout << "" << std::endl;
 	std::cout << "Num records: " << speeds.size() << std::endl;
 	std::cout << "Num values in the record: " << speeds[0].size() << std::endl;
@@ -1667,8 +1827,8 @@ int main(int argc, char *argv[])
 		//best_h_grid_size = 5;
 		best_s_learn_rate = 1.2;
 		best_f_learn_rate = 0.4;
-		best_initial_neighbour_size = -1; // use default
-		best_neigbour_range_decay = -1; // use default
+		best_initial_neighbour_size = std::sqrt(double(best_w_grid_size * best_h_grid_size)); // use default
+		best_neigbour_range_decay = 2.0; // use default
 		best_random_seed = 0;
 		best_iterations = 10000;
 	
@@ -1689,157 +1849,20 @@ int main(int argc, char *argv[])
 	}
 
 	// create, train SOM over the raw data and reduce the data	
-	// clustering on the reduced data
+	// then make clustering on the reduced data
 
 	auto [assignments, counts, clustered_energies] = iterateThroughGraphsBest(best_w_grid_size, best_h_grid_size, best_graph, best_metric, best_distribution, speeds, 
 		best_iterations, best_s_learn_rate, best_f_learn_rate, best_initial_neighbour_size, best_neigbour_range_decay, best_random_seed);
 
 	// calculate borders and positions of each cluster
 
-	std::vector<std::vector<int>> positions(counts.size());
-	//std::vector<std::vector<std::vector<int>>> borders(counts.size());
-	std::vector<std::vector<int>> borders(counts.size());
-	//int len = sqrt((double)best_grid_size);
-	int len = best_w_grid_size;
-	for (int i = 0; i < assignments.size(); i++)
-	{
-		positions[assignments[i]].push_back(i);
-
-		
-		int row = i / len;
-		int near_cluster_index;
-		int near_cluster_index_row;
-
-		// prev row
-
-		if (row % 2 == 0)
-		{
-			near_cluster_index = i - len - 1;
-			near_cluster_index_row = near_cluster_index / len;
-			if(row - 1 == near_cluster_index_row)
-				if (get_hex_bounds(assignments, i, near_cluster_index))
-				{
-					//borders[assignments[i]].push_back(std::vector<int> {near_cluster_index, i});
-					borders[assignments[i]].push_back(near_cluster_index);
-					borders[assignments[i]].push_back(i);
-				}
-
-			near_cluster_index = i - len;
-			near_cluster_index_row = near_cluster_index / len;
-			if(row - 1 == near_cluster_index_row)
-				if (get_hex_bounds(assignments, i, near_cluster_index))
-				{
-					//borders[assignments[i]].push_back(std::vector<int> {near_cluster_index, i});
-					borders[assignments[i]].push_back(near_cluster_index);
-					borders[assignments[i]].push_back(i);
-				}
-		}
-		else
-		{
-			near_cluster_index = i - len;
-			near_cluster_index_row = near_cluster_index / len;
-			if(row - 1 == near_cluster_index_row)
-				if (get_hex_bounds(assignments, i, near_cluster_index))
-				{
-					//borders[assignments[i]].push_back(std::vector<int> {near_cluster_index, i});
-					borders[assignments[i]].push_back(near_cluster_index);
-					borders[assignments[i]].push_back(i);
-				}
-
-			near_cluster_index = i - len + 1;
-			near_cluster_index_row = near_cluster_index / len;
-			if(row - 1 == near_cluster_index_row)
-				if (get_hex_bounds(assignments, i, near_cluster_index))
-				{
-					//borders[assignments[i]].push_back(std::vector<int> {near_cluster_index, i});
-					borders[assignments[i]].push_back(near_cluster_index);
-					borders[assignments[i]].push_back(i);
-				}
-		} 
-
-		// current row
-
-		near_cluster_index = i - 1;
-		near_cluster_index_row = near_cluster_index / len;
-		if(row == near_cluster_index_row)
-			if (get_hex_bounds(assignments, i, near_cluster_index))
-			{
-				//borders[assignments[i]].push_back(std::vector<int> {near_cluster_index, i});
-				borders[assignments[i]].push_back(near_cluster_index);
-				borders[assignments[i]].push_back(i);
-			}
-
-		near_cluster_index = i + 1;
-		near_cluster_index_row = near_cluster_index / len;
-		if(row == near_cluster_index_row)
-			if (get_hex_bounds(assignments, i, near_cluster_index))
-			{
-				//borders[assignments[i]].push_back(std::vector<int> {i, near_cluster_index});
-				borders[assignments[i]].push_back(i);
-				borders[assignments[i]].push_back(near_cluster_index);
-			}
-
-		// next row 
-		
-		if (row % 2 == 0)
-		{
-			near_cluster_index = i + len - 1;
-			near_cluster_index_row = near_cluster_index / len;
-			if(row + 1 == near_cluster_index_row)
-				if (get_hex_bounds(assignments, i, near_cluster_index))
-				{
-					//borders[assignments[i]].push_back(std::vector<int> {i, near_cluster_index});
-					borders[assignments[i]].push_back(i);
-					borders[assignments[i]].push_back(near_cluster_index);
-				}
-
-			near_cluster_index = i + len;
-			near_cluster_index_row = near_cluster_index / len;
-			if(row + 1 == near_cluster_index_row)
-				if (get_hex_bounds(assignments, i, near_cluster_index))
-				{
-					//borders[assignments[i]].push_back(std::vector<int> {i, near_cluster_index});
-					borders[assignments[i]].push_back(i);
-					borders[assignments[i]].push_back(near_cluster_index);
-				}
-		}
-		else
-		{
-			near_cluster_index = i + len;
-			near_cluster_index_row = near_cluster_index / len;
-			if(row + 1 == near_cluster_index_row)
-				if (get_hex_bounds(assignments, i, near_cluster_index))
-				{
-					//borders[assignments[i]].push_back(std::vector<int> {i, near_cluster_index});
-					borders[assignments[i]].push_back(i);
-					borders[assignments[i]].push_back(near_cluster_index);
-				}
-
-			near_cluster_index = i + len + 1;
-			near_cluster_index_row = near_cluster_index / len;
-			if(row + 1 == near_cluster_index_row)
-				if (get_hex_bounds(assignments, i, near_cluster_index))
-				{
-					//borders[assignments[i]].push_back(std::vector<int> {i, near_cluster_index});
-					borders[assignments[i]].push_back(i);
-					borders[assignments[i]].push_back(near_cluster_index);
-				}
-		} 
-	}
+	auto [positions, borders] = getPositionsAndBorders(assignments, counts.size(), best_w_grid_size);
 	
 	std::cout << "positions:" << std::endl;
 	matrix_print(positions);
 	std::cout << std::endl;
 
 	std::cout << "borders:" << std::endl;
-	for (auto i = 0; i < borders.size(); i++)
-	{
-		//std::sort(b.begin(), b.end());
-		//matrix_print(b);
-		//auto last = std::unique(borders[i].begin(), borders[i].end());
-		//borders[i].erase(last, borders[i].end());
-		//matrix_print(borders[i]);
-	}
 	matrix_print(borders);
 	std::cout << std::endl;
 
@@ -1891,8 +1914,7 @@ int main(int argc, char *argv[])
 	{		
 		std::cout << "  ---> sensor " << sensor_index << std::endl;
 		std::vector<json> clusters_json;
-		//for (int ei = 0; ei < sensor_data.size(); ei++)
-		//for (auto cluster_data : sensor_data)
+
 		// get cluster index from sorted by energy means
 		for(auto ei : energy_means_sorted_indexes)
 		{			
@@ -1904,35 +1926,24 @@ int main(int argc, char *argv[])
 				std::vector<json> energy_subbands_json;
 
 				for (int ci = 0; ci < cluster_data.size(); ci++)
-					//for (auto energy_subband_data : cluster_data)
 				{
 					auto energy_subband_data = cluster_data[ci];
-					//for (int cdi = 0; cdi < energy_subband_data.size(); cdi++)
-					//{
-					//	energy_subband_data[cdi] /= ENERGY_SCALE;
-					//}
-					//if (energy_subband_data.size() > 1) 
+
+					// returns quants for a single subbund
+					std::vector<std::vector<std::vector<double>>> multiquants = set2multiconf(energy_subband_data, windowSizes, samples, confidencelevel);
+
+					json energy_subband_json;
+					for (auto window : multiquants)
 					{
-						// metric::PMQ set_0(cluster_data);
-
-						//std::cout << "      --->" << std::endl;
-						// returns quants for a single cluster
-						std::vector<std::vector<std::vector<double>>> multiquants = set2multiconf(energy_subband_data, windowSizes, samples, confidencelevel);
-						//std::cout << "      --->>" << std::endl;
-
-						json energy_subband_json;
-						for (auto window : multiquants)
-						{
-							json window_json = {
-								{"conf_l", window[0]},
-								{"conf_m", window[1]},
-								{"conf_r", window[2]}
-							};
-							energy_subband_json.push_back(window_json);
-						}
-						energy_subbands_json.push_back(energy_subband_json);
-						//std::cout << "      ---:" << std::endl;
+						json window_json = {
+							{"conf_l", window[0]},
+							{"conf_m", window[1]},
+							{"conf_r", window[2]}
+						};
+						energy_subband_json.push_back(window_json);
 					}
+					energy_subbands_json.push_back(energy_subband_json);
+					//std::cout << "      ---:" << std::endl;
 				}
 				json cluster_json = {
 					{"name", "Level" + std::to_string(ei)},
@@ -1941,20 +1952,6 @@ int main(int argc, char *argv[])
 					{"quant", energy_subbands_json}
 				};
 				clusters_json.push_back(cluster_json);
-				//if (ei < borders.size())
-				//{
-				//}
-				//else
-				//{
-				//	json cluster_json = {
-				//		{"name", "level" + std::to_string(level_index)},
-				//		// TODO: looks like borders and positions should be on the one level down, inside clusters data
-				//		{"border", {}},
-				//		{"position", {}},
-				//		{"quant", clusters_json}
-				//	};
-				//	clusters_json.push_back(cluster_json);
-				//}
 				//std::cout << "    ---:" << std::endl;
 			}
 		}
@@ -1967,7 +1964,7 @@ int main(int argc, char *argv[])
 		sensor_index++;
 		std::cout << "  ---:" << std::endl;
 	}
-	std::ofstream outputFile(RAW_DATA_FILENAME + "/result/reference_data_" + std::to_string(best_w_grid_size) + "x" + std::to_string(best_h_grid_size) + FILENAME_SUFFIX + ".json");
+	std::ofstream outputFile(RAW_DATA_DIRNAME + "/result/reference_data_" + std::to_string(best_w_grid_size) + "x" + std::to_string(best_h_grid_size) + ".json");
 	outputFile << std::setw(4) << reference_data << std::endl;
 	outputFile.close();	
 	std::cout << "---:" << std::endl;
