@@ -61,9 +61,17 @@ public:
    */
     std::vector<recType> decode(const std::vector<recType> & Codes);
 
-    std::vector<std::vector<recType>> test_public_wrapper(const std::vector<recType> & Curves) { // TODO remove
+
+
+    std::vector<std::vector<recType>> test_public_wrapper_encode(const std::vector<recType> & Curves) { // TODO remove
         return outer_encode(Curves);
-    };
+    }
+
+    std::vector<recType> test_public_wrapper_decode(const std::vector<std::vector<recType>> & TimeFreqMixedData) {
+      return outer_decode(TimeFreqMixedData);
+    }
+
+
 
 private:
     std::vector<metric::PCFA<recType, Metric>> PCA_models;
