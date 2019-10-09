@@ -119,7 +119,7 @@ void SOM<recType, Graph, Metric, Distribution>::train(
         finish_learn_rate = 0;
     }
 
-    double learn_rate_decay = start_learn_rate - finish_learn_rate;
+    double learn_rate_base = start_learn_rate - finish_learn_rate;
 		
     // Random updating 
     std::vector<size_t> randomized_samples(samples.size());
@@ -141,13 +141,13 @@ void SOM<recType, Graph, Metric, Distribution>::train(
             idx_r++;
         }
 
-        // learn_rate_decay *= 1.0 / double(idx); // Linear
-        // learn_rate_decay *= 1.0 - idx / double(iterations);  // Inverse of Time Learnrate
-        // learn_rate_decay *=  std:exp(idx / double(iterations); // Power Series
+        // learn_rate_base *= 1.0 / double(idx); // Linear
+        // learn_rate_base *= 1.0 - idx / double(iterations);  // Inverse of Time Learnrate
+        // learn_rate_base *=  std:exp(idx / double(iterations); // Power Series
 
 		double progress_invert_stage = (1.0 - idx / double(iterations));
 
-        double curr_learn_rate = progress_invert_stage * learn_rate_decay + finish_learn_rate;
+        double curr_learn_rate = progress_invert_stage * learn_rate_base + finish_learn_rate;
 		
 		double neighborhood_size = progress_invert_stage * neighborhood_start_size;
 
