@@ -4,6 +4,15 @@
 //#include "../../../../modules/mapping.hpp"
 #include "../../../../modules/mapping/combined_dwt_dct_pcfa.hpp"
 
+template <typename Container>
+void print_table(Container table) {
+    for (size_t rec_idx = 0; rec_idx<table.size(); ++rec_idx) {
+        for (size_t el_idx = 0; el_idx<table[0].size(); ++el_idx)
+            std::cout << table[rec_idx][el_idx] << " ";
+        std::cout << "\n";
+    }
+}
+
 
 int main()
 {
@@ -15,11 +24,19 @@ int main()
 
     auto bundle = metric::PCFA_combined<recType, void>(d, 2, 0.5, 0.5);
 
-    auto pre_encoded = bundle.test_public_wrapper_encode(d);
-    auto pre_decoded = bundle.test_public_wrapper_decode(pre_encoded);
+    //auto pre_encoded = bundle.test_public_wrapper_encode(d);
+    //auto pre_decoded = bundle.test_public_wrapper_decode(pre_encoded);
 
     auto encoded = bundle.encode(d);
     auto decoded = bundle.decode(encoded);
+
+    std::cout << "\noriginal:\n";
+    print_table(d);
+
+    std::cout << "\ndecoded:\n";
+    print_table(decoded);
+
+    std::cout << "\n";
 
     return 0;
 }
