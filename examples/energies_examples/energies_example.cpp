@@ -1541,22 +1541,7 @@ int main(int argc, char *argv[])
 	std::vector<long long> random_seeds = {0};
 	std::vector<unsigned int> iterations_all = {100, 1000, 5000, 10000, 20000};
 				
-	//size_t grid_size = 25;
 
-	//double s_learn_rate = 0.9;
-	//double f_learn_rate = 0.4;
-				
-	//double initial_neighbour_size = 1.2;
-
-	//double neigbour_range_decay = 0;
-
-	//long long random_seed = 0;
-
-	//batch_training
-
-	//unsigned int iterations = 1000;
-
-	int epochs = 1;
 	//
 	std::vector<std::string> graph_type_names = {"Grid4", "Grid6", "Grid8", "Paley", "LPS", "Margulis"};
 	std::vector<std::string> metric_type_names = {"Euclidian", "Manhatten", "P_norm", "Euclidian_thresholded", "Cosine", "Chebyshev"};
