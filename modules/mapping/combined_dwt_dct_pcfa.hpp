@@ -50,7 +50,7 @@ public:
    * @param Data - waveforms of same length and format as TrainingDataset 
    * @return
    */
-    std::vector<recType> encode(const std::vector<recType> & Data);
+    std::vector<std::vector<recType>> encode(const std::vector<recType> & Data);
 
 
     /**
@@ -59,15 +59,15 @@ public:
    * @param Codes - compressed codes
    * @return
    */
-    std::vector<recType> decode(const std::vector<recType> & Codes);
+    std::vector<recType> decode(const std::vector<std::vector<recType>> & Codes);
 
 
 
-    std::vector<std::vector<recType>> test_public_wrapper_encode(const std::vector<recType> & Curves) { // TODO remove
+    std::vector<std::vector<recType>> test_public_wrapper_encode(const std::vector<recType> & Curves) { // TODO remove when tested
         return outer_encode(Curves);
     }
 
-    std::vector<recType> test_public_wrapper_decode(const std::vector<std::vector<recType>> & TimeFreqMixedData) {
+    std::vector<recType> test_public_wrapper_decode(const std::vector<std::vector<recType>> & TimeFreqMixedData) { // TODO remove when tested
       return outer_decode(TimeFreqMixedData);
     }
 
@@ -75,6 +75,7 @@ public:
 
 private:
     std::vector<metric::PCFA<recType, Metric>> PCA_models;
+    //size_t n_features;
     std::default_random_engine rgen;
 
 

@@ -20,6 +20,7 @@ PCFA_combined<recType, Metric>::PCFA_combined(
     auto PreEncoded = outer_encode(TrainingDataset);
     for (size_t subband_idx = 0; subband_idx<PreEncoded.size(); ++subband_idx) {
         PCA_models.push_back(metric::PCFA<recType, void>(PreEncoded[subband_idx], n_features_));
+    //n_features = n_features_;
     }
 }
 
@@ -48,7 +49,6 @@ PCFA_combined<recType, Metric>::outer_encode(
         std::deque<std::vector<ElementType>> current_rec_subbands_freqdomain(current_rec_subbands_timedomain);
         metric::apply_DCT_STL(current_rec_subbands_freqdomain, false); // transform all subbands at once
         for (size_t subband_idx = 0; subband_idx<current_rec_subbands_timedomain.size(); ++subband_idx) {
-            std::cout << record_idx << " " << subband_idx << "\n";
             recType subband_mixed = current_rec_subbands_timedomain[subband_idx];  // here we possibly drop support of containers oyher than std::vector
             recType subband_freqdomain = current_rec_subbands_freqdomain[subband_idx]; // TODO remove intermediate var
             subband_mixed.insert(
@@ -96,6 +96,37 @@ PCFA_combined<recType, Metric>::outer_decode(const std::vector<std::vector<recTy
     }
     return Curves;
 }
+
+
+
+
+template <typename recType, typename Metric>
+std::vector<std::vector<recType>>
+PCFA_combined<recType, Metric>::encode(const std::vector<recType> & Data) {
+    std::vector<std::vector<recType>> Encoded;
+    auto PreEncoded = outer_encode(Data);
+    for (size_t subband_idx = 0; subband_idx<PreEncoded.size(); ++subband_idx) {
+        auto encoded_subband = PCA_models[subband_idx].encode(PreEncoded[subband_idx]);
+        Encoded.push_back(encoded_subband);
+    }
+    return Encoded; // TODO add rearrangement procedure
+}
+
+
+template <typename recType, typename Metric>
+std::vector<recType>
+PCFA_combined<recType, Metric>::decode(const std::vector<std::vector<recType>> & Codes) {
+    // TODO add rearrangement procedure
+    std::vector<std::vector<recType>> PreDecoded;
+    for (size_t subband_idx = 0; subband_idx<Codes.size(); ++subband_idx) {
+        auto  decoded_subband = PCA_models[subband_idx].decode(Codes[subband_idx]);
+        PreDecoded.push_back(decoded_subband);
+    }
+    std::vector<recType> Decoded = outer_decode(PreDecoded);
+    return Decoded;
+}
+
+
 
 
 

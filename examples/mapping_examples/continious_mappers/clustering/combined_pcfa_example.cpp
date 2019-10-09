@@ -16,7 +16,10 @@ int main()
     auto bundle = metric::PCFA_combined<recType, void>(d, 2, 0.5, 0.5);
 
     auto pre_encoded = bundle.test_public_wrapper_encode(d);
-    auto decoded = bundle.test_public_wrapper_decode(pre_encoded);
+    auto pre_decoded = bundle.test_public_wrapper_decode(pre_encoded);
+
+    auto encoded = bundle.encode(d);
+    auto decoded = bundle.decode(encoded);
 
     return 0;
 }
