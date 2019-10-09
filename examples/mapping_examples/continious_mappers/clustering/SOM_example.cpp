@@ -23,16 +23,18 @@ template <typename T>
 void matrix_print(const std::vector<std::vector<T>> &mat)
 {
 
-    std::cout << "[";
+    std::cout << "[ " << std::endl;
     for (int i = 0; i < mat.size(); i++)
     {
+		std::cout << "  [ ";
         for (int j = 0; j < mat[i].size() - 1; j++)
         {
             std::cout << mat[i][j] << ", ";
         }
         std::cout << mat[i][mat[i].size() - 1] << " ]" << std::endl;
-        ;
+        
     }
+    std::cout << "]" << std::endl;
     std::cout << std::endl;
 }
 
