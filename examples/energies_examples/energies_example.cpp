@@ -848,21 +848,7 @@ double runConfiguration(int i, std::vector<std::vector<T>> data, Metric distance
 	som_model.train(data);
 	
 	// we will calculate std deviation
-	double total_distances = 0;
-	double std_deviation = 0;
-	double closest_distance;
-
-	total_distances = 0;
-	for (size_t i = 0; i < data.size(); i++)
-	{
-		auto dimR = som_model.encode(data[i]);
-		auto bmu = som_model.BMU(data[i]);
-		// dimR[bmu] - is distance to the closest node, we use it as difference of value and mean of the values
-		closest_distance = dimR[bmu] * dimR[bmu];
-		total_distances += closest_distance;
-	}
-
-	std_deviation = sqrt(total_distances / data.size());
+	auto std_deviation = som_model.std_deviation(data);
 		
 	auto t2 = std::chrono::steady_clock::now();
 	mu.lock();
@@ -1188,11 +1174,11 @@ get_weights_from_som(int w_grid_size, int h_grid_size, std::vector<std::vector<T
 	std::cout << std::endl;
 
 
-	// split and reshape raw data by clusters [sensor -> energy -> cluster -> values]
+	// split and reshape raw data by clusters [sensor -> cluster -> energy -> values]
 	
-	std::vector<std::vector<std::vector<std::vector<double>>>> clustered_energies(8, std::vector<std::vector<std::vector<double>>>(counts.size(), std::vector<std::vector<double>>(7)));
 	int num_sensors = 8;
 	int num_levels = 7;
+	std::vector<std::vector<std::vector<std::vector<double>>>> clustered_energies(num_sensors, std::vector<std::vector<std::vector<double>>>(counts.size(), std::vector<std::vector<double>>(num_levels)));
 
 	std::vector<int> total(assignments.size());
 	for (auto record : speeds)
