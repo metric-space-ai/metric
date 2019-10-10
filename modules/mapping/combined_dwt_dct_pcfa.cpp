@@ -17,11 +17,6 @@ PCFA_combined<recType, Metric>::PCFA_combined(
         float DCT_cutoff_
         ) {
 
-    auto PreEncoded = outer_encode(TrainingDataset);
-    for (size_t subband_idx = 0; subband_idx<PreEncoded.size(); ++subband_idx) {
-        PCA_models.push_back(metric::PCFA<recType, void>(PreEncoded[subband_idx], n_features_));
-        //n_features = n_features_;
-    }
 
     // computing 2^n value nearest to given time-freq mix factor
     size_t rec_length = TrainingDataset[0].size(); // TODO check existence of [0]
@@ -46,6 +41,13 @@ PCFA_combined<recType, Metric>::PCFA_combined(
     }
 
     std::cout << "\n" << mix_idx << "\n"; // TODO remove
+
+    auto PreEncoded = outer_encode(TrainingDataset);
+    for (size_t subband_idx = 0; subband_idx<PreEncoded.size(); ++subband_idx) {
+        PCA_models.push_back(metric::PCFA<recType, void>(PreEncoded[subband_idx], n_features_));
+        //n_features = n_features_;
+    }
+
 }
 
 
@@ -73,12 +75,18 @@ PCFA_combined<recType, Metric>::outer_encode(
         std::deque<std::vector<ElementType>> current_rec_subbands_freqdomain(current_rec_subbands_timedomain);
         metric::apply_DCT_STL(current_rec_subbands_freqdomain, false); // transform all subbands at once
         for (size_t subband_idx = 0; subband_idx<current_rec_subbands_timedomain.size(); ++subband_idx) {
-            recType subband_mixed = current_rec_subbands_timedomain[subband_idx];  // here we possibly drop support of containers oyher than std::vector
-            recType subband_freqdomain = current_rec_subbands_freqdomain[subband_idx]; // TODO remove intermediate var
+            recType subband_freqdomain = current_rec_subbands_freqdomain[subband_idx];  // here we possibly drop support of containers oyher than std::vector
+            recType subband_timedomain = current_rec_subbands_timedomain[subband_idx]; // TODO remove intermediate var
+            recType subband_mixed;
             subband_mixed.insert(
                         subband_mixed.end(),
                         std::make_move_iterator(subband_freqdomain.begin()),
-                        std::make_move_iterator(subband_freqdomain.end())
+                        std::make_move_iterator(subband_freqdomain.begin() + mix_idx)
+                        );
+            subband_mixed.insert(
+                        subband_mixed.end(),
+                        std::make_move_iterator(subband_timedomain.begin() + mix_idx),
+                        std::make_move_iterator(subband_timedomain.end())
                         );
             // TODO mix time and freq properly
             TimeFreqMixData[subband_idx][record_idx] = subband_mixed;
@@ -104,16 +112,36 @@ PCFA_combined<recType, Metric>::outer_decode(const std::vector<std::vector<recTy
 
     std::vector<recType> Curves;
     for (size_t record_idx = 0; record_idx<TimeFreqMixedData[0].size(); ++record_idx) { // TODO check if [0] element exists
-        std::deque<recType> current_rec_subbands_time_domain;
+        std::deque<recType> current_rec_subbands_timedomain;
+        std::deque<recType> current_rec_subbands_freqdomain;
         for (size_t subband_idx = 0; subband_idx<TimeFreqMixedData.size(); ++subband_idx) {
             auto subband_mixed = TimeFreqMixedData[subband_idx][record_idx];
-            int time_domain_part_length = subband_mixed.size()/2; // TODO update
-            std::vector<ElementType> subband_time_domain(subband_mixed.begin(), subband_mixed.begin() + time_domain_part_length);
-            std::vector<ElementType> subband_freq_domain(subband_mixed.begin() + time_domain_part_length, subband_mixed.end());
-            // Here we concatenate them instead of taking only time_domain, TODO implement
-            current_rec_subbands_time_domain.push_back(subband_time_domain);
+            //int time_domain_part_length = subband_mixed.size()/2; // TODO update
+            std::vector<ElementType> subband_freqdomain(subband_mixed.begin(), subband_mixed.begin() + mix_idx);
+            std::vector<ElementType> subband_timedomain(subband_mixed.begin() + mix_idx, subband_mixed.end());
+            current_rec_subbands_timedomain.push_back(subband_timedomain);
+            current_rec_subbands_freqdomain.push_back(subband_freqdomain);
         }
-        std::vector<ElementType> restored_waveform = wavelet::waverec(current_rec_subbands_time_domain, 5);
+        metric::apply_DCT_STL(current_rec_subbands_freqdomain, true);
+        //std::vector<ElementType> restored_waveform = wavelet::waverec(current_rec_subbands_timedomain, 5); // TODO mix!!
+        //std::vector<ElementType> restored_waveform = wavelet::waverec(current_rec_subbands_freqdomain, 5);
+        std::deque<recType> current_rec_subbands_mixed;
+        for (size_t subband_idx = 0; subband_idx<TimeFreqMixedData.size(); ++subband_idx) { //TODO optimize!!
+            // TODO move to function!!
+            recType subband_mixed;
+            subband_mixed.insert(
+                        subband_mixed.end(),
+                        std::make_move_iterator(current_rec_subbands_freqdomain[subband_idx].begin()),
+                        std::make_move_iterator(current_rec_subbands_freqdomain[subband_idx].begin() + mix_idx)
+                        );
+            subband_mixed.insert(
+                        subband_mixed.end(),
+                        std::make_move_iterator(current_rec_subbands_timedomain[subband_idx].begin() + mix_idx),
+                        std::make_move_iterator(current_rec_subbands_timedomain[subband_idx].end())
+                        );
+            current_rec_subbands_mixed.push_back(subband_mixed);
+        }
+        std::vector<ElementType> restored_waveform = wavelet::waverec(current_rec_subbands_mixed, 5);
         recType restored_waveform_out;
         for (size_t el_idx = 0; el_idx<restored_waveform.size(); ++el_idx) {
             restored_waveform_out.push_back(restored_waveform[el_idx]);

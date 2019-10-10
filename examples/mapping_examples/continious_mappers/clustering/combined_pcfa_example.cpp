@@ -22,7 +22,7 @@ int main()
     recType d1 {0, 1, 2, 3, 4, 5, 6, 7, 100};
     std::vector<recType> d = {d0, d1};
 
-    auto bundle = metric::PCFA_combined<recType, void>(d, 2, 0.5, 0.5);
+    auto bundle = metric::PCFA_combined<recType, void>(d, 2, 0, 0.5);
 
     //auto pre_encoded = bundle.test_public_wrapper_encode(d);
     //auto pre_decoded = bundle.test_public_wrapper_decode(pre_encoded);
