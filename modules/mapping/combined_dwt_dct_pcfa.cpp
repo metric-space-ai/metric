@@ -20,8 +20,32 @@ PCFA_combined<recType, Metric>::PCFA_combined(
     auto PreEncoded = outer_encode(TrainingDataset);
     for (size_t subband_idx = 0; subband_idx<PreEncoded.size(); ++subband_idx) {
         PCA_models.push_back(metric::PCFA<recType, void>(PreEncoded[subband_idx], n_features_));
-    //n_features = n_features_;
+        //n_features = n_features_;
     }
+
+    // computing 2^n value nearest to given time-freq mix factor
+    size_t rec_length = TrainingDataset[0].size(); // TODO check existence of [0]
+    float mix_factor = time_freq_balance_ * rec_length; // TODO check in time_freq_balance_ is in [0, 1]
+    size_t n = 4; // we skip 2^1 // TODO try 2
+    size_t n_prev = 0;
+    mix_idx = 0;
+    while (true) {
+        if (n > mix_factor) {
+            if (n > rec_length) { // overrun
+                mix_idx = n_prev;
+                break;
+            }
+            if (mix_factor - n_prev > n - mix_factor) // we stick to n_prev or to n, not greater than max index
+                mix_idx = n;
+            else
+                mix_idx = n_prev;
+            break;
+        }
+        n_prev = n;
+        n = n*2; // n is ever degree of 2
+    }
+
+    std::cout << "\n" << mix_idx << "\n"; // TODO remove
 }
 
 
@@ -56,13 +80,15 @@ PCFA_combined<recType, Metric>::outer_encode(
                         std::make_move_iterator(subband_freqdomain.begin()),
                         std::make_move_iterator(subband_freqdomain.end())
                         );
+            // TODO mix time and freq properly
             TimeFreqMixData[subband_idx][record_idx] = subband_mixed;
+
 //            std::copy(
 //                  subband_mixed.begin(),
 //                  subband_mixed.end(),
 //                  std::ostream_iterator<int>(std::cout, "\n")
 //                );
-            // TODO combine wave and sprctrum
+
 //            std::cout << record_idx << " " << subband_idx << "\n";
         }
     }

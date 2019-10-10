@@ -18,8 +18,8 @@ int main()
 {
     using recType = std::vector<double>;
 
-    recType d0 {0, 1, 2};
-    recType d1 {0, 1, 3};
+    recType d0 {0, 1, 2, 3, 4, 5, 6, 7, 8};
+    recType d1 {0, 1, 2, 3, 4, 5, 6, 7, 100};
     std::vector<recType> d = {d0, d1};
 
     auto bundle = metric::PCFA_combined<recType, void>(d, 2, 0.5, 0.5);

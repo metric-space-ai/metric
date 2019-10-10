@@ -75,6 +75,7 @@ public:
 
 private:
     std::vector<metric::PCFA<recType, Metric>> PCA_models;
+    size_t mix_idx;
     //size_t n_features;
     std::default_random_engine rgen;
 
