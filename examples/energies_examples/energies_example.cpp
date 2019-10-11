@@ -1521,8 +1521,8 @@ int main(int argc, char *argv[])
 	
 	std::vector<std::vector<size_t>> grid_sizes = { {15, 15}, {20, 20}, {30, 30} };
 	std::vector<double> s_learn_rates = {0.2, 0.4, 0.6, 0.8, 1.0};
-	std::vector<double> f_learn_rates = {0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.7};
-	std::vector<double> initial_neighbour_sizes = {1, 3, 5, 10, 15, 20, 25};
+	std::vector<double> f_learn_rates = {0.0, 0.1, 0.2, 0.3, 0.5, 0.7};
+	std::vector<double> initial_neighbour_sizes = {1, 3, 5, 10, 20};
 	std::vector<double> neigbour_range_decays = {1.5, 2.0, 3.0, 4.0};
 	std::vector<long long> random_seeds = {0};
 	std::vector<unsigned int> iterations_all = {1, 5, 10, 20};
