@@ -22,7 +22,8 @@ int main()
     recType d1 {0, 1, 2, 3, 4, 5, 6, 7, 100};
     std::vector<recType> d = {d0, d1};
 
-    auto bundle = metric::PCFA_combined<recType, void>(d, 2, 0.8, 0.5);
+    float freq_time_balance = 0.5; // try values from 0 to 1 (e g 0, 0.5, 1) to get the following portions of freq-domain: 0, 4/9, 8/9
+    auto bundle = metric::PCFA_combined<recType, void>(d, 2, freq_time_balance, 0.5);
 
     //auto pre_encoded = bundle.test_public_wrapper_encode(d);
     //auto pre_decoded = bundle.test_public_wrapper_decode(pre_encoded);
@@ -34,7 +35,7 @@ int main()
     print_table(d);
 
     std::cout << "\ndecoded:\n";
-    print_table(decoded);
+    print_table(decoded); // some normalization issue when using DCT persists..
 
     std::cout << "\n";
 

@@ -94,8 +94,13 @@ bool apply_DCT_STL(
     }
 
     delete[] sample;
-//    if (maxval > 1)
-//        Slices = evaluate(Slices / maxval);  // TODO consider enabling
+
+    for (n = 0; n < Slices.size(); n++) {   // TODO optimize by using iterators
+        for (size_t m = 0; m < slice_len; m++) {
+            Slices[n][m] = Slices[n][m] / maxval;
+        }
+    }
+
     Slices = Slices_out;
     return return_value;
 }
