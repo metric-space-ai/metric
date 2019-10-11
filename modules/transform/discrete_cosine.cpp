@@ -60,17 +60,20 @@ template <
  typename InnerAllocator,
  typename ValueType >
 bool apply_DCT_STL(
-        OuterContainer<InnerContainer<ValueType, InnerAllocator>, OuterAllocator> & Slices, bool inverse)
+        OuterContainer<InnerContainer<ValueType, InnerAllocator>, OuterAllocator> & Slices, bool inverse, size_t cutoff_length = 0)
 {
     OuterContainer<InnerContainer<ValueType, InnerAllocator>, OuterAllocator> Slices_out;
     bool return_value = true;
+    size_t slice_len = Slices[0].size();
+    if (cutoff_length!=0)
+        slice_len = cutoff_length;
     size_t n = 0;
-    double* sample = new double[Slices[0].size()];
+    double* sample = new double[slice_len];
     double maxval = 0;
     for (n = 0; n < Slices.size(); n++) {
         auto current_slice = Slices[n];
         size_t idx = 0;
-        for (auto it = current_slice.begin(); it != current_slice.end(); ++it) {
+        for (auto it = current_slice.begin(); it != current_slice.begin()+slice_len; ++it) {
             sample[idx++] = *it;
         }
         bool success = false;
@@ -80,7 +83,7 @@ bool apply_DCT_STL(
             success = FastDctLee_transform(sample, idx);
         if (success) {
             idx = 0;
-            for (auto it = current_slice.begin(); it != current_slice.end(); ++it) {
+            for (auto it = current_slice.begin(); it != current_slice.begin()+slice_len; ++it) {
                 *it = sample[idx++];
                 if (abs(*it) > maxval)
                     maxval = *it;

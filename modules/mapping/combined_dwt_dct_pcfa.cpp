@@ -74,7 +74,7 @@ PCFA_combined<recType, Metric>::outer_encode(
         std::deque<std::vector<ElementType>> current_rec_subbands_timedomain = wavelet::wavedec<ElementType>(Curves[record_idx], 8, 5);
         std::deque<std::vector<ElementType>> current_rec_subbands_freqdomain(current_rec_subbands_timedomain);
         // TODO crop subband waveform here
-        metric::apply_DCT_STL(current_rec_subbands_freqdomain, false); // transform all subbands at once
+        metric::apply_DCT_STL(current_rec_subbands_freqdomain, false, mix_idx); // transform all subbands at once
         for (size_t subband_idx = 0; subband_idx<current_rec_subbands_timedomain.size(); ++subband_idx) {
             recType subband_freqdomain = current_rec_subbands_freqdomain[subband_idx];  // here we possibly drop support of containers other than std::vector
             recType subband_timedomain = current_rec_subbands_timedomain[subband_idx]; // TODO remove intermediate var
@@ -117,14 +117,13 @@ PCFA_combined<recType, Metric>::outer_decode(const std::vector<std::vector<recTy
         std::deque<recType> subbands_freqdomain;
         for (size_t subband_idx = 0; subband_idx<TimeFreqMixedData.size(); ++subband_idx) {
             auto subband_mixed = TimeFreqMixedData[subband_idx][record_idx];
-            //int time_domain_part_length = subband_mixed.size()/2; // TODO update
             recType current_subband_freqdomain(subband_mixed.begin(), subband_mixed.begin() + mix_idx);
             recType current_subband_timedomain(subband_mixed.begin() + mix_idx, subband_mixed.end());
             subbands_timedomain.push_back(current_subband_timedomain);
             subbands_freqdomain.push_back(current_subband_freqdomain);
         }
         metric::apply_DCT_STL(subbands_freqdomain, true);
-        //std::vector<ElementType> restored_waveform = wavelet::waverec(current_rec_subbands_timedomain, 5); // TODO mix!!
+        //std::vector<ElementType> restored_waveform = wavelet::waverec(current_rec_subbands_timedomain, 5);
         //std::vector<ElementType> restored_waveform = wavelet::waverec(current_rec_subbands_freqdomain, 5);
         std::deque<recType> current_rec_subbands_mixed;
         for (size_t subband_idx = 0; subband_idx<TimeFreqMixedData.size(); ++subband_idx) { //TODO optimize!!
