@@ -73,8 +73,7 @@ PCFA_combined<recType, Metric>::outer_encode(
     for (size_t record_idx = 0; record_idx<Curves.size(); ++record_idx) {
         std::deque<std::vector<ElementType>> current_rec_subbands_timedomain = wavelet::wavedec<ElementType>(Curves[record_idx], 8, 5);
         std::deque<std::vector<ElementType>> current_rec_subbands_freqdomain(current_rec_subbands_timedomain);
-        // TODO crop subband waveform here
-        metric::apply_DCT_STL(current_rec_subbands_freqdomain, false, mix_idx); // transform all subbands at once
+        metric::apply_DCT_STL(current_rec_subbands_freqdomain, false, mix_idx); // transform snd cuts all subbands at once, TODO refactor cutting!!
         for (size_t subband_idx = 0; subband_idx<current_rec_subbands_timedomain.size(); ++subband_idx) {
             recType subband_freqdomain = current_rec_subbands_freqdomain[subband_idx];  // here we possibly drop support of containers other than std::vector
             recType subband_timedomain = current_rec_subbands_timedomain[subband_idx]; // TODO remove intermediate var
