@@ -75,7 +75,7 @@ public:
 		 * @param iterations 
 	     * @param distribution 
 	     */
-    SOM(Graph graph, Metric metric = Metric(), double start_learn_rate = 1.2, double finish_learn_rate = 0.4, size_t iterations = 10000, 
+    SOM(Graph graph, Metric metric = Metric(), double start_learn_rate = 0.8, double finish_learn_rate = 0.0, size_t iterations = 20, 
 		Distribution distribution = Distribution(-1, 1));
 
     /**

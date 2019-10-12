@@ -20,7 +20,7 @@ SOM<recType, Graph, Metric, Distribution>::SOM(size_t nodesNumber, Metric metric
     valid = graph.isValid();
 
 	start_learn_rate = 0.8;
-	finish_learn_rate = 0.2;
+	finish_learn_rate = 0.0;
 	iterations = 20;
 	
 	random_seed = std::chrono::system_clock::now().time_since_epoch().count();
@@ -39,7 +39,7 @@ SOM<recType, Graph, Metric, Distribution>::SOM(size_t nodesWidth, size_t nodesHe
     valid = graph.isValid();
 
 	start_learn_rate = 0.8;
-	finish_learn_rate = 0.2;
+	finish_learn_rate = 0.0;
 	iterations = 20;
 
 	random_seed = std::chrono::system_clock::now().time_since_epoch().count();
