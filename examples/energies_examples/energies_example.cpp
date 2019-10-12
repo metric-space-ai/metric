@@ -1794,14 +1794,14 @@ int main(int argc, char *argv[])
 		if (default_hyperparams)
 		{
 			best_distribution = 0;
-			best_w_grid_size = 5;
-			best_h_grid_size = 5;
-			best_s_learn_rate = 1.2;
-			best_f_learn_rate = 0.4;
+			best_w_grid_size = 30;
+			best_h_grid_size = 20;
+			best_s_learn_rate = 0.8;
+			best_f_learn_rate = 0.0;
 			best_initial_neighbour_size = std::sqrt(double(best_w_grid_size * best_h_grid_size)); // use default
 			best_neigbour_range_decay = 2.0; // use default
 			best_random_seed = 0;
-			best_iterations = 10000;
+			best_iterations = 20;
 		}
 	
 		std::cout << std::endl;
