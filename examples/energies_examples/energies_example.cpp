@@ -1625,7 +1625,7 @@ int main(int argc, char *argv[])
 													results_grid.push_back(current_result);
 
 													if (i % 10000 == 0) {
-														saveToCsv("metaparams_checkpoint_" + std::to_string(i) + ".csv", results_grid, metaparams_grid);
+														saveToCsv("assets/metaparams_checkpoint_" + std::to_string(i) + ".csv", results_grid, metaparams_grid);
 													}
 
 													mu.unlock();
@@ -1680,7 +1680,7 @@ int main(int argc, char *argv[])
 		}
 		pool.close();
 	
-		saveToCsv("metaparams_checkpoint_final.csv", results_grid, metaparams_grid);
+		saveToCsv("assets/metaparams_checkpoint_final.csv", results_grid, metaparams_grid);
 	
 		double minimal_score = INFINITY;
 
@@ -1754,7 +1754,7 @@ int main(int argc, char *argv[])
 	{
 		// load metaparms tune results and shood the best (with the lowets score)
 
-		auto metaparams_grid = readCsvData("metaparams_checkpoint_final.csv", ',');
+		auto metaparams_grid = readCsvData("assets/metaparams_checkpoint_final.csv", ',');
 		
 		std::vector<double> scores;
 
