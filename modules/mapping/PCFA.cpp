@@ -271,7 +271,7 @@ typename std::enable_if <
 //  R,
 //  std::vector<typename PCFA<R, Metric>::value_type, typename std::allocator<typename PCFA<R, Metric>::value_type>>
 // >::value,
- PCFA<recType, Metric>:: template determine_container_type<R>::code == 1,
+ PCFA<recType, Metric>::determine_container_type<R>::code == 1,
  std::vector<R>
 >::type // here we support only STL vector
 PCFA<recType, Metric>::blaze_to_vector(const blaze::DynamicMatrix<typename PCFA<R, Metric>::value_type> & In) { // TODO support arbitrary type!
@@ -293,7 +293,7 @@ typename std::enable_if<
 //  R,
 //  blaze::DynamicVector<typename PCFA<R, Metric>::value_type, blaze::rowVector>
 // >::value,
- PCFA<recType, Metric>:: template determine_container_type<R>::code == 2,
+ PCFA<recType, Metric>::determine_container_type<R>::code == 2,
  std::vector<R>
 >::type
 PCFA<recType, Metric>::blaze_to_vector(const blaze::DynamicMatrix<typename PCFA<R, Metric>::value_type> & In) { // only blaze row-vector
