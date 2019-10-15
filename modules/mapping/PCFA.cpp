@@ -266,6 +266,9 @@ PCFA<recType, Metric>::vector_to_blaze(const std::vector<recType> & In) {
 
 template <typename recType, typename Metric>
 template <typename R>
+
+#if defined(_WIN64)
+
 typename std::enable_if <
 // std::is_same<
 //  R,
@@ -274,6 +277,19 @@ typename std::enable_if <
  PCFA<recType, Metric>::determine_container_type<R>::code == 1,
  std::vector<R>
 >::type // here we support only STL vector
+
+#elif
+
+typename std::enable_if <
+// std::is_same<
+//  R,
+//  std::vector<typename PCFA<R, Metric>::value_type, typename std::allocator<typename PCFA<R, Metric>::value_type>>
+// >::value,
+ PCFA<recType, Metric>:: template determine_container_type<R>::code == 1,
+ std::vector<R>
+>::type // here we support only STL vector
+
+#endif
 PCFA<recType, Metric>::blaze_to_vector(const blaze::DynamicMatrix<typename PCFA<R, Metric>::value_type> & In) { // TODO support arbitrary type!
     std::vector<recType> Out;
     for (size_t i = 0; i < In.rows(); ++i) {  // TODO optimize using iterators!!
@@ -288,6 +304,9 @@ PCFA<recType, Metric>::blaze_to_vector(const blaze::DynamicMatrix<typename PCFA<
 
 template <typename recType, typename Metric>
 template <typename R>
+
+#if defined(_WIN64)
+
 typename std::enable_if<
 // std::is_same<
 //  R,
@@ -296,6 +315,19 @@ typename std::enable_if<
  PCFA<recType, Metric>::determine_container_type<R>::code == 2,
  std::vector<R>
 >::type
+
+#elif
+
+typename std::enable_if<
+// std::is_same<
+//  R,
+//  blaze::DynamicVector<typename PCFA<R, Metric>::value_type, blaze::rowVector>
+// >::value,
+ PCFA<recType, Metric>:: template determine_container_type<R>::code == 2,
+ std::vector<R>
+>::type
+
+#endif
 PCFA<recType, Metric>::blaze_to_vector(const blaze::DynamicMatrix<typename PCFA<R, Metric>::value_type> & In) { // only blaze row-vector
     std::vector<recType> Out;
     for (size_t i = 0; i < In.rows(); ++i) {  // TODO optimize using iterators!!
