@@ -94,7 +94,7 @@ int main()
 	/* Load data */
 
 	std::cout << "load data" << std::endl;
-	std::ifstream dataFile(".\\assets\\data.json");
+	std::ifstream dataFile("assets/data.json");
 	
 	json data;
 
