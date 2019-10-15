@@ -17,37 +17,40 @@ DSPCC<recType, Metric>::DSPCC(
         float DCT_cutoff_
         ) {
 
+    time_freq_balance = time_freq_balance_;
+    mix_idx = 0;
 
     // computing 2^n value nearest to given time-freq mix factor
-    size_t rec_length = TrainingDataset[0].size(); // TODO check existence of [0]
-    float mix_factor = time_freq_balance_ * rec_length; // TODO check in time_freq_balance_ is in [0, 1]
-    size_t n = 4; // we skip 2^1 // TODO try 2
-    size_t n_prev = 0;
-    mix_idx = 0;
-    while (true) {
-        if (n > mix_factor) {
-            if (n > rec_length) { // overrun
-                mix_idx = n_prev;
-                break;
-            }
-            if (mix_factor - n_prev > n - mix_factor) // we stick to n_prev or to n, not greater than max index
-                mix_idx = n;
-            else
-                mix_idx = n_prev;
-            break;
-        }
-        n_prev = n;
-        n = n*2; // n is ever degree of 2
-    }
+    //mix_idx = mix_index(TrainingDataset[0].size(), time_freq_balance_);
 
-    std::cout << "\n" << mix_idx << "\n"; // TODO remove
+//    size_t rec_length = TrainingDataset[0].size(); // TODO check existence of [0]
+//    float mix_factor = time_freq_balance_ * rec_length; // TODO check in time_freq_balance_ is in [0, 1]
+//    size_t n = 4; // we skip 2^1 // TODO try 2
+//    size_t n_prev = 0;
+//    mix_idx = 0;
+//    while (true) {
+//        if (n > mix_factor) {
+//            if (n > rec_length) { // overrun
+//                mix_idx = n_prev;
+//                break;
+//            }
+//            if (mix_factor - n_prev > n - mix_factor) // we stick to n_prev or to n, not greater than max index
+//                mix_idx = n;
+//            else
+//                mix_idx = n_prev;
+//            break;
+//        }
+//        n_prev = n;
+//        n = n*2; // n is ever degree of 2
+//    }
+
+    //std::cout << "\n" << mix_idx << "\n"; // TODO remove
 
     auto PreEncoded = outer_encode(TrainingDataset);
     for (size_t subband_idx = 0; subband_idx<PreEncoded.size(); ++subband_idx) {
         PCA_models.push_back(metric::PCFA<recType, void>(PreEncoded[subband_idx], n_features_));
         //n_features = n_features_;
     }
-
 }
 
 
@@ -71,9 +74,11 @@ DSPCC<recType, Metric>::outer_encode(
     }
 
     for (size_t record_idx = 0; record_idx<Curves.size(); ++record_idx) {
-        std::deque<std::vector<ElementType>> current_rec_subbands_timedomain = wavelet::wavedec<ElementType>(Curves[record_idx], 8, 5);
+        std::deque<std::vector<ElementType>> current_rec_subbands_timedomain = wavelet::wavedec<ElementType>(Curves[record_idx], 8, 5); // TODO update 8
+        if (mix_idx==0)
+            mix_idx = mix_index(current_rec_subbands_timedomain[0].size(), time_freq_balance);
         std::deque<std::vector<ElementType>> current_rec_subbands_freqdomain(current_rec_subbands_timedomain);
-        metric::apply_DCT_STL(current_rec_subbands_freqdomain, false, mix_idx); // transform snd cuts all subbands at once, TODO refactor cutting!!
+        metric::apply_DCT_STL(current_rec_subbands_freqdomain, false, mix_idx); // transform and cuts all subbands at once, TODO refactor cutting!!
         for (size_t subband_idx = 0; subband_idx<current_rec_subbands_timedomain.size(); ++subband_idx) {
             recType subband_freqdomain = current_rec_subbands_freqdomain[subband_idx];  // here we possibly drop support of containers other than std::vector
             recType subband_timedomain = current_rec_subbands_timedomain[subband_idx]; // TODO remove intermediate var
@@ -90,6 +95,7 @@ DSPCC<recType, Metric>::outer_encode(
                         );
             // TODO mix time and freq properly
             TimeFreqMixData[subband_idx][record_idx] = subband_mixed;
+            //TimeFreqMixData[subband_idx].push_back(subband_mixed); // TODO consider
 
 //            std::copy(
 //                  subband_mixed.begin(),
@@ -180,7 +186,32 @@ DSPCC<recType, Metric>::decode(const std::vector<std::vector<recType>> & Codes) 
 }
 
 
-
+template <typename recType, typename Metric>
+size_t
+DSPCC<recType, Metric>::mix_index(size_t length, float time_freq_balance) {
+    // computing 2^n value nearest to given time-freq mix factor
+    //size_t length = TrainingDataset[0].size(); // TODO check existence of [0]
+    float mix_factor = time_freq_balance * length; // TODO check in time_freq_balance_ is in [0, 1]
+    size_t n = 4; // we skip 2^1 // TODO try 2
+    size_t n_prev = 0;
+    size_t mix_index = 0;
+    while (true) {
+        if (n > mix_factor) {
+            if (n > length) { // overrun
+                mix_index = n_prev;
+                break;
+            }
+            if (mix_factor - n_prev > n - mix_factor) // we stick to n_prev or to n, not greater than max index
+                mix_index = n;
+            else
+                mix_index = n_prev;
+            break;
+        }
+        n_prev = n;
+        n = n*2; // n is ever degree of 2
+    }
+    return mix_index;
+}
 
 
 }  // namespace metric

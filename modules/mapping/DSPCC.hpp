@@ -71,11 +71,16 @@ public:
       return outer_decode(TimeFreqMixedData);
     }
 
+    size_t get_mix_idx() {
+        return mix_idx;
+    }
+
 
 
 private:
     std::vector<metric::PCFA<recType, Metric>> PCA_models;
     size_t mix_idx;
+    float time_freq_balance;
     //size_t n_features;
     std::default_random_engine rgen;
 
@@ -114,6 +119,14 @@ private:
    */
     std::vector<std::vector<recType>> rearrange_to_subbands(const std::vector<recType> & Codes_by_records);
 
+
+    /**
+   * @brief determines break index using given length of the subband waveform
+   *
+   * @param length - length of the filtered suband waveform
+   * @return - index to be used to break the subband waveform apart for separate time domain and frequency domain compression
+   */
+    size_t mix_index(size_t length, float time_freq_balance);
 
 };
 
