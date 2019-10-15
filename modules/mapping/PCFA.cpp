@@ -278,7 +278,7 @@ typename std::enable_if <
  std::vector<R>
 >::type // here we support only STL vector
 
-#elif
+#else
 
 typename std::enable_if <
 // std::is_same<
@@ -316,7 +316,7 @@ typename std::enable_if<
  std::vector<R>
 >::type
 
-#elif
+#else
 
 typename std::enable_if<
 // std::is_same<
