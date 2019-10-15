@@ -23,16 +23,15 @@ foreach(exampleSrc ${EXAMPLE_SRCS})
 
   #Add compile target
   add_executable(${exampleName} ${exampleSrc})
+  
+ 
+  #link to Boost libraries AND your targets and dependencies
+  target_link_libraries(${exampleName} ${Boost_LIBRARIES})
+  set_target_properties(${exampleName} PROPERTIES CXX_STANDARD 17)
  
   if(UNIX)
     target_compile_options(${exampleName} PRIVATE -pthread)
     set_target_properties(${exampleName} PROPERTIES LINK_FLAGS -pthread) 
   endif(UNIX)
-
-  
-if(CMAKE_SYSTEM_NAME MATCHES Windows)
-
-	target_link_libraries(${exampleName} PRIVATE ${Boost_LIBRARIES})
-endif()
 
 endforeach(exampleSrc)
