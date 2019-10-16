@@ -62,7 +62,7 @@ int main()
 	std::cout << "EMD example have started" << std::endl; 
 	std::cout << "" << std::endl;
 
-	int num_images = 20;
+	int num_images = 2;
 	typedef int edm_Type;
 
 	std::vector<std::string> names(num_images);
