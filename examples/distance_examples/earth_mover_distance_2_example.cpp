@@ -174,7 +174,7 @@ int main()
 	std::cout << grayJpegs.size() <<  std::endl;
 	std::vector<std::vector<edm_Type>> grayJpegs5(grayJpegs.begin(), grayJpegs.begin() + 2);
 	std::cout << grayJpegs.size() <<  " " << grayJpegs5.size() <<  std::endl;
-	metric::Tree<std::vector < edm_Type >, metric::EMD<edm_Type>> cTree5(grayJpegs5);
+	metric::Tree<std::vector < edm_Type >, metric::Euclidian<double>> cTree5(grayJpegs5);
 	std::cout << "tree for 5 pictures has created" << std::endl;
 	cTree5.print();
 

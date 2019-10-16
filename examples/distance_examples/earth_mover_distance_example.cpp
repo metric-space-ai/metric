@@ -22,8 +22,8 @@ int main()
 
     typedef int emd_Type;
 
-    size_t im1_R = img1.size();
-    size_t im1_C = img1[0].size();
+    size_t im1_R = img1.size() / 6;
+    size_t im1_C = img1[0].size() / 6;
 
     // serialize_mat2vec
     std::vector<emd_Type> i1;
@@ -61,6 +61,14 @@ int main()
               << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t3 - t2).count()) / 1000000
               << " s)" << std::endl;
     std::cout << "" << std::endl;
+
+	
+    metric::Tree<std::vector<emd_Type>, metric::Euclidian<double>> cTree;
+
+    /*** add data records ***/
+    cTree.insert(i1);
+    cTree.insert(i2);
+    cTree.print();
 
     return 0;
 }
