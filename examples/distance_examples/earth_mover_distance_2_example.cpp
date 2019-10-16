@@ -62,7 +62,7 @@ int main()
 	std::cout << "EMD example have started" << std::endl; 
 	std::cout << "" << std::endl;
 
-	int num_images = 2;
+	int num_images = 4;
 	typedef int edm_Type;
 
 	std::vector<std::string> names(num_images);
@@ -170,13 +170,13 @@ int main()
 	/*** initialize the tree ***/
 	std::cout << "tree for 5 pictures been creating" << std::endl;
 	std::cout << grayJpegs.size() <<  std::endl;
-	std::vector<std::vector<int>> grayJpegs5(grayJpegs.begin(), grayJpegs.begin() + 5);
+	std::vector<std::vector<edm_Type>> grayJpegs5(grayJpegs.begin(), grayJpegs.begin() + 2);
 	std::cout << grayJpegs.size() <<  " " << grayJpegs5.size() <<  std::endl;
 	metric::Tree<std::vector < edm_Type >, metric::EMD<edm_Type>> cTree5(grayJpegs5);
 	std::cout << "tree for 5 pictures has created" << std::endl;
 	cTree5.print();
 
-	std::vector<std::vector<int>> grayJpegs10(grayJpegs.begin(), grayJpegs.begin() + 10);
+	std::vector<std::vector<edm_Type>> grayJpegs10(grayJpegs.begin(), grayJpegs.begin() + 10);
 	metric::Tree<std::vector < edm_Type >, metric::EMD<edm_Type>> cTree10(grayJpegs10);
 	std::cout << "tree for 10 pictures has created" << std::endl;
 	cTree10.print();
