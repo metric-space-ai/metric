@@ -62,13 +62,5 @@ int main()
               << " s)" << std::endl;
     std::cout << "" << std::endl;
 
-	
-    metric::Tree<std::vector<emd_Type>, metric::Euclidian<double>> cTree;
-
-    /*** add data records ***/
-    cTree.insert(i1);
-    cTree.insert(i2);
-    cTree.print();
-
     return 0;
 }
