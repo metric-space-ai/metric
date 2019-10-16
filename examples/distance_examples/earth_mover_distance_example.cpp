@@ -22,8 +22,8 @@ int main()
 
     typedef int emd_Type;
 
-    size_t im1_R = img1.size() / 6;
-    size_t im1_C = img1[0].size() / 6;
+    size_t im1_R = img1.size();
+    size_t im1_C = img1[0].size();
 
     // serialize_mat2vec
     std::vector<emd_Type> i1;

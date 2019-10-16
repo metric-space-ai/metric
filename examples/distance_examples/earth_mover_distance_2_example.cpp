@@ -165,7 +165,9 @@ int main()
 	saveToCsv("distances.csv", distance_matrix, names);
 
 
-
+	
+    metric::Tree<std::vector<edm_Type>, metric::Euclidian<double>> cTree2(grayJpegs);
+	cTree2.print();
 
 	/*** initialize the tree ***/
 	std::cout << "tree for 5 pictures been creating" << std::endl;
@@ -185,13 +187,6 @@ int main()
 	std::cout << "tree for 20 pictures has created" << std::endl;
 	cTree20.print();
 
-	/*std::cout << "swap records and calculate again" << std::endl;
-	std::cout << "" << std::endl;
-
-	auto result2 = distance(i2, i1);
-	auto t3 = std::chrono::steady_clock::now();
-	std::cout << "result2: " << result2 << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t3 - t2).count()) / 1000000 << " s)" << std::endl;
-	std::cout << "" << std::endl;*/
 	
 	return 0;
 }
