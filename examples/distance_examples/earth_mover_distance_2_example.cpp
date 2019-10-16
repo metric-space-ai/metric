@@ -169,6 +169,7 @@ int main()
 
 	/*** initialize the tree ***/
 	std::cout << "tree for 5 pictures been creating" << std::endl;
+	std::cout << grayJpegs.size() <<  std::endl;
 	std::vector<std::vector<int>> grayJpegs5(grayJpegs.begin(), grayJpegs.begin() + 5);
 	std::cout << grayJpegs.size() <<  " " << grayJpegs5.size() <<  std::endl;
 	metric::Tree<std::vector < edm_Type >, metric::EMD<edm_Type>> cTree5(grayJpegs5);
