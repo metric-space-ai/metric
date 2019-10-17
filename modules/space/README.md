@@ -181,9 +181,7 @@ find nn record:  n                       log(n)
 ```
 
 #### Implementation Cons
-The Tree is currently not balanced and can grow degenerative by building single long branches or bushy levels. In both extreme cases it is not better than simple brute force over an array.
-
-I'm working on a balancing, which hopefully solves this issue. For pratice check the tree.max_level or print the tree to check the growing. The max_level should not be much bigger than log(n).
+The Tree is currently balanced by ideas of http://proceedings.mlr.press/v37/izbicki15.pdf. However, it can still grow degenerative by building single long branches or bushy levels if the distance values are too small << 0.1. One can avoid it by simple rescaling the distance by a constant factor. If all distances are somewhere in the range of 0.1 ... 100 it works best.
 
 The overhead of every data records is ca. 64 Byte to handle the nodes.
 
