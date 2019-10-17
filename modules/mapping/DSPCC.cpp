@@ -48,6 +48,46 @@ std::vector<T> sequential_iDWT(std::deque<std::vector<T>> in)
 
 
 
+//// recursive split for arbitrary depth
+
+//template <typename T>
+//std::deque<std::vector<T>> DWT_split(std::deque<std::vector<T>> x, int wavelet_type) {
+//    std::deque<std::vector<T>> output;
+//    for (size_t el = 0; e<x.size(); ++el) {
+//        auto split = wavelet::dwt(x[el], 5);
+//        output.push_back(std::get<0>(split));
+//        output.push_back(std::get<1>(split));
+//    }
+//    return output;
+//}
+
+
+//template <typename T>
+//std::deque<std::vector<T>> DWT_unsplit(std::deque<std::vector<T>> in, int wavelet_type) {
+//    std::deque<std::vector<T>> x;
+//    for (size_t el = 0; e<x.size(); el+=2) { // we assume size of deque is even, TODO check
+//        x.push_back(wavelet::idwt(in[el], in[el+1], wavelet_type, in[el].size()));
+//    }
+//    return x;
+//}
+
+
+//template <typename T>
+//std::deque<std::vector<T>>
+//sequential_DWT(std::vector<T> x, size_t depth) {
+//    std::deque<std::vector<T>> subbands;
+
+//    // TODO implement
+
+
+
+//    return subbands;
+//}
+
+
+
+
+
 
 template <typename recType, typename Metric>
 DSPCC<recType, Metric>::DSPCC(
@@ -104,7 +144,7 @@ DSPCC<recType, Metric>::outer_encode(
     using ElementType = typename recType::value_type;
 
     std::vector<std::vector<recType>> TimeFreqMixData;
-    for (size_t subband_idx = 0; subband_idx<(8+2); ++subband_idx) { // TODO update 8
+    for (size_t subband_idx = 0; subband_idx<(8); ++subband_idx) { // TODO update 8
         std::vector<recType> TimeFreqMixSubbandData;
         for (size_t record_idx = 0; record_idx<Curves.size(); ++record_idx) {
             recType rec = {0};
