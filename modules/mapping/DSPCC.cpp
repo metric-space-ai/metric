@@ -48,42 +48,52 @@ std::vector<T> sequential_iDWT(std::deque<std::vector<T>> in)
 
 
 
-//// recursive split for arbitrary depth
+// recursive split for arbitrary depth
 
-//template <typename T>
-//std::deque<std::vector<T>> DWT_split(std::deque<std::vector<T>> x, int wavelet_type) {
-//    std::deque<std::vector<T>> output;
-//    for (size_t el = 0; e<x.size(); ++el) {
-//        auto split = wavelet::dwt(x[el], 5);
-//        output.push_back(std::get<0>(split));
-//        output.push_back(std::get<1>(split));
-//    }
-//    return output;
-//}
-
-
-//template <typename T>
-//std::deque<std::vector<T>> DWT_unsplit(std::deque<std::vector<T>> in, int wavelet_type) {
-//    std::deque<std::vector<T>> x;
-//    for (size_t el = 0; e<x.size(); el+=2) { // we assume size of deque is even, TODO check
-//        x.push_back(wavelet::idwt(in[el], in[el+1], wavelet_type, in[el].size()));
-//    }
-//    return x;
-//}
+template <typename T>
+std::deque<std::vector<T>> DWT_split(std::deque<std::vector<T>> x, int wavelet_type, size_t subbands_num) {
+    std::deque<std::vector<T>> out;
+    if (x.size()*2 <= subbands_num) {
+        for (size_t el = 0; el<x.size(); ++el) {
+            auto split = wavelet::dwt(x[el], wavelet_type);
+            out.push_back(std::get<0>(split));
+            out.push_back(std::get<1>(split));
+        }
+        return DWT_split(out, wavelet_type, subbands_num);
+    } else {
+        return x;
+    }
+}
 
 
-//template <typename T>
-//std::deque<std::vector<T>>
-//sequential_DWT(std::vector<T> x, size_t depth) {
-//    std::deque<std::vector<T>> subbands;
+template <typename T>
+std::deque<std::vector<T>> DWT_unsplit(std::deque<std::vector<T>> in, int wavelet_type) { // TODO pass stack of sizes!!
+    std::deque<std::vector<T>> x;
+    if (in.size() > 1) {
+        for (size_t el = 0; el<in.size(); el+=2) { // we assume size of deque is even, TODO check
+            x.push_back(wavelet::idwt(in[el], in[el+1], wavelet_type, in[el].size())); // FIXME size value is wrong!! TODO use from stack of sizes
+        }
+        return DWT_unsplit(x, wavelet_type);
+    } else {
+        return in;
+    }
+}
 
-//    // TODO implement
+
+template <typename T>
+std::deque<std::vector<T>>
+sequential_DWT(std::vector<T> x, int wavelet_type, size_t depth) {
+    std::deque<std::vector<T>> deque_x = {x};
+    return DWT_split(deque_x, wavelet_type, depth);
+}
 
 
-
-//    return subbands;
-//}
-
+template <typename T>
+std::vector<T>
+sequential_iDWT(std::deque<std::vector<T>> in, int wavelet_type) {
+    std::deque<std::vector<T>> deque_out = DWT_unsplit(in, wavelet_type);
+    return deque_out[0];
+}
 
 
 
