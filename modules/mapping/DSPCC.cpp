@@ -9,6 +9,46 @@
 namespace metric {
 
 
+
+
+template <typename T>
+std::deque<std::vector<T>>
+sequential_DWT(std::vector<T> x) // TODO add parameters, replace hardcoded depth by recursion
+{
+    auto [x1, x2] = wavelet::dwt(x, 5);
+    auto [x11, x12] = wavelet::dwt(x1, 5);
+    auto [x21, x22] = wavelet::dwt(x2, 5);
+    auto [x111, x112] = wavelet::dwt(x11, 5);
+    auto [x121, x122] = wavelet::dwt(x12, 5);
+    auto [x211, x212] = wavelet::dwt(x21, 5);
+    auto [x221, x222] = wavelet::dwt(x22, 5);
+    std::deque<std::vector<T>> subbands = {x111, x112, x121, x122, x211, x212, x221, x222};
+    return subbands;
+}
+
+
+template <typename T>
+std::vector<T> sequential_iDWT(std::deque<std::vector<T>> in)
+{
+    std::vector<T> x;
+    size_t len = 0;
+    if (in.size() > 0) {
+        len = in[0].size();
+        auto x22 = wavelet::idwt(in[6], in[7], 5, len);
+        auto x21 = wavelet::idwt(in[4], in[5], 5, len);
+        auto x12 = wavelet::idwt(in[2], in[3], 5, len);
+        auto x11 = wavelet::idwt(in[0], in[1], 5, len);
+        auto x2 = wavelet::idwt(x21, x22, 5, len);
+        auto x1 = wavelet::idwt(x11, x12, 5, len);
+        x = wavelet::idwt(x1, x2, 5, len);
+    }
+    return x;
+
+}
+
+
+
+
 template <typename recType, typename Metric>
 DSPCC<recType, Metric>::DSPCC(
         const std::vector<recType> & TrainingDataset,
@@ -74,7 +114,9 @@ DSPCC<recType, Metric>::outer_encode(
     }
 
     for (size_t record_idx = 0; record_idx<Curves.size(); ++record_idx) {
-        std::deque<std::vector<ElementType>> current_rec_subbands_timedomain = wavelet::wavedec<ElementType>(Curves[record_idx], 8, 5); // TODO update 8
+        //std::deque<std::vector<ElementType>> current_rec_subbands_timedomain = wavelet::wavedec<ElementType>(Curves[record_idx], 8, 5); // TODO update 8
+        std::deque<std::vector<ElementType>> current_rec_subbands_timedomain = sequential_DWT<ElementType>(Curves[record_idx]); // TODO update 8
+
         if (mix_idx==0)
             mix_idx = mix_index(current_rec_subbands_timedomain[0].size(), time_freq_balance);
         std::deque<std::vector<ElementType>> current_rec_subbands_freqdomain(current_rec_subbands_timedomain);
@@ -146,7 +188,8 @@ DSPCC<recType, Metric>::outer_decode(const std::vector<std::vector<recType>> & T
                         );
             current_rec_subbands_mixed.push_back(subband_mixed);
         }
-        std::vector<ElementType> restored_waveform = wavelet::waverec(current_rec_subbands_mixed, 5);
+        //std::vector<ElementType> restored_waveform = wavelet::waverec(current_rec_subbands_mixed, 5);
+        std::vector<ElementType> restored_waveform = sequential_iDWT(current_rec_subbands_mixed);
         recType restored_waveform_out;
         for (size_t el_idx = 0; el_idx<restored_waveform.size(); ++el_idx) {
             restored_waveform_out.push_back(restored_waveform[el_idx]);

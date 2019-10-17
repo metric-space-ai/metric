@@ -1,8 +1,35 @@
 
 #include <iostream>
 
-//#include "../../../../modules/mapping.hpp"
 #include "../../../../modules/mapping/DSPCC.hpp"
+
+#include "examples/mapping_examples/assets/helpers.cpp" // for .csv reader
+
+
+
+
+template <template <class, class> class Container, class ValueType, class A1, class A2>
+Container<Container<ValueType, A1>, A2> transpose_timeseries(
+        Container<Container<ValueType, A1>, A2> ts) // the workaround thing. TODO remove and update csv reader this way
+{
+    auto output = Container<Container<ValueType, A1>, A2>();
+    size_t n_values = ts[0].size();
+    for (size_t j=0; j<n_values; ++j) // loop of timeseries
+    {
+        output.push_back(Container<ValueType, A1>());
+    }
+    for (size_t i=0; i<ts.size(); ++i) // loop of values in original timeseries
+    {
+        for (size_t j=0; j<n_values; ++j) // loop of timeseries
+            output[j].push_back(ts[i][j]);
+    }
+    return output;
+}
+
+
+
+
+
 
 template <typename Container>
 void print_table(Container table) {
@@ -16,51 +43,9 @@ void print_table(Container table) {
 
 int main()
 {
-    // temporary
 
-    //double arr[16] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
-
-//    double * arr = new double[16];
-//    for (size_t v = 0; v < 16; v++)
-//        arr[v] = (double)v;
-
-//    FastDctLee_inverseTransform(arr, 16);
-
-//    free(arr);
-
-    //return 0;
-
-
-    // trying to reproduce mem corruption
-
-//    std::vector<double> dt0 {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
-//    std::deque<std::vector<double>> subbands = wavelet::wavedec<double>(dt0, 8, 5);
-//    //std::deque<std::vector<double>> subbands2(subbands);
-
-    //metric::apply_DCT_STL(subbands, false, 16);
-
-//    double * sample = new double[16];
-
-//    size_t idx = 0;
-//    for (auto it = dt0.begin(); it != dt0.begin()+16; ++it) {
-//        sample[idx++] = *it;
-//    }
-
-//    FastDctLee_inverseTransform(sample, 16);
-
-//    idx = 0;
-//    for (auto it = dt0.begin(); it != dt0.begin()+16; ++it) {
-//        *it = sample[idx++];
-//    }
-
-//    delete[] sample;
-
-
-
-//    return 0;
-
-
-    // main
+    // small dataset
+    /*
 
     using recType = std::vector<double>;
 
@@ -85,7 +70,29 @@ int main()
 
     std::cout << "\nmix_index: " << bundle.get_mix_idx() << "\n";
 
-    std::cout << "\ndone\n";
+    std::cout << "\nsimple test done\n";
+
+    //return 0;
+
+    //*/
+
+
+    // vibration example
+    //*
+
+    auto raw_vdata = read_csv_num<double>("vibration.csv", ";");
+    auto vdata =  transpose_timeseries(raw_vdata);
+    auto vDSPCC = metric::DSPCC<std::vector<double>, void>(vdata, 2, 0.5, 0.5);
+
+    auto v_encoded = vDSPCC.encode(vdata);
+    auto V_decoded = vDSPCC.decode(v_encoded);
+
+
+    std::cout << "\nvibration test done\n";
+
+    //*/
+
 
     return 0;
+
 }
