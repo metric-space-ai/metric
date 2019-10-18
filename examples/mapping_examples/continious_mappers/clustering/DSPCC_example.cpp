@@ -1,6 +1,6 @@
 
 #include <iostream>
-#include <stack>
+//#include <stack>
 
 #include "../../../../modules/mapping/DSPCC.hpp"
 
@@ -84,11 +84,11 @@ int main()
     auto raw_vdata = read_csv_num<double>("vibration.csv", ";");
     auto vdata =  transpose_timeseries(raw_vdata);
 
-    std::stack<size_t> length_stack;
-    auto decomposed = metric::sequential_DWT(vdata[0], length_stack, 5, 8);
-    auto restored = metric::sequential_iDWT(decomposed, length_stack, 5);
+//    std::stack<size_t> length_stack;
+//    auto decomposed = metric::sequential_DWT(vdata[0], length_stack, 5, 8);
+//    auto restored = metric::sequential_iDWT(decomposed, length_stack, 5);
 
-    return 0;
+//    return 0;
 
     auto vDSPCC = metric::DSPCC<std::vector<double>, void>(vdata, 2, 0.5, 0.5);
 
