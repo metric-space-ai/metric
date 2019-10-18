@@ -1,7 +1,8 @@
 # metric
 
 PANDA | METRIC is a framework for processing arbitrary data 
- 
+
+check the whitepaper for more infos.
 https://github.com/panda-official/metric/blob/master/whitepaper_PANDA_METRIC_EN_07102019.pdf
  
  
