@@ -9,6 +9,8 @@ Copyright (c) 2019 Panda Team
 #ifndef _METRIC_DSPCC_HPP
 #define _METRIC_DSPCC_HPP
 
+#include <stack>
+
 #include "../../3rdparty/blaze/Blaze.h"
 #include "../../modules/mapping/PCFA.hpp"
 
@@ -79,6 +81,7 @@ public:
 
 private:
     std::vector<metric::PCFA<recType, Metric>> PCA_models;
+    std::stack<size_t> subband_length;
     size_t mix_idx;
     float time_freq_balance;
     //size_t n_features;

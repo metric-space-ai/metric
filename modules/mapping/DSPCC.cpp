@@ -49,9 +49,14 @@ std::vector<T> sequential_iDWT(std::deque<std::vector<T>> in)
 
 
 // recursive split for arbitrary depth
+// TODO consider creating special class for DWT split in tree order (with stack encaplulated)
 
 template <typename T>
-std::deque<std::vector<T>> DWT_split(std::deque<std::vector<T>> x, int wavelet_type, size_t subbands_num) {
+std::deque<std::vector<T>> DWT_split(
+        std::deque<std::vector<T>> x,
+        std::stack<size_t> & subband_length,
+        int wavelet_type, size_t subbands_num
+        ) {
     std::deque<std::vector<T>> out;
     if (x.size()*2 <= subbands_num) {
         for (size_t el = 0; el<x.size(); ++el) {
@@ -59,7 +64,8 @@ std::deque<std::vector<T>> DWT_split(std::deque<std::vector<T>> x, int wavelet_t
             out.push_back(std::get<0>(split));
             out.push_back(std::get<1>(split));
         }
-        return DWT_split(out, wavelet_type, subbands_num);
+        subband_length.push(x[0].size());
+        return DWT_split(out, subband_length, wavelet_type, subbands_num);
     } else {
         return x;
     }
@@ -67,13 +73,18 @@ std::deque<std::vector<T>> DWT_split(std::deque<std::vector<T>> x, int wavelet_t
 
 
 template <typename T>
-std::deque<std::vector<T>> DWT_unsplit(std::deque<std::vector<T>> in, int wavelet_type) { // TODO pass stack of sizes!!
+std::deque<std::vector<T>> DWT_unsplit(
+        std::deque<std::vector<T>> in,
+        std::stack<size_t> & subband_length,
+        int wavelet_type
+        ) { // TODO pass stack of sizes!!
     std::deque<std::vector<T>> x;
     if (in.size() > 1) {
         for (size_t el = 0; el<in.size(); el+=2) { // we assume size of deque is even, TODO check
-            x.push_back(wavelet::idwt(in[el], in[el+1], wavelet_type, in[el].size())); // FIXME size value is wrong!! TODO use from stack of sizes
+            x.push_back(wavelet::idwt(in[el], in[el+1], wavelet_type, subband_length.top())); // FIXME size value is wrong!! TODO use from stack of sizes
         }
-        return DWT_unsplit(x, wavelet_type);
+        subband_length.pop();
+        return DWT_unsplit(x, subband_length, wavelet_type);
     } else {
         return in;
     }
@@ -82,16 +93,25 @@ std::deque<std::vector<T>> DWT_unsplit(std::deque<std::vector<T>> in, int wavele
 
 template <typename T>
 std::deque<std::vector<T>>
-sequential_DWT(std::vector<T> x, int wavelet_type, size_t depth) {
+sequential_DWT(
+        std::vector<T> x,
+        std::stack<size_t> & subband_length,
+        int wavelet_type,
+        size_t depth
+        ) {
     std::deque<std::vector<T>> deque_x = {x};
-    return DWT_split(deque_x, wavelet_type, depth);
+    return DWT_split(deque_x, subband_length, wavelet_type, depth);
 }
 
 
 template <typename T>
 std::vector<T>
-sequential_iDWT(std::deque<std::vector<T>> in, int wavelet_type) {
-    std::deque<std::vector<T>> deque_out = DWT_unsplit(in, wavelet_type);
+sequential_iDWT(
+        std::deque<std::vector<T>> in,
+        std::stack<size_t> & subband_length,
+        int wavelet_type
+        ) {
+    std::deque<std::vector<T>> deque_out = DWT_unsplit(in, subband_length, wavelet_type);
     return deque_out[0];
 }
 
