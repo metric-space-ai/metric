@@ -1,6 +1,10 @@
 # metric
 
 PANDA | METRIC is a framework for processing arbitrary data 
+
+check the whitepaper for more infos.
+https://github.com/panda-official/metric/blob/master/whitepaper_PANDA_METRIC_EN_07102019.pdf
+ 
  
 PANDA | METRIC is located in the area of machine learning and artificial intelligence, but offers more than a loose collection of optimized and high class algorithms, because Metric combines these different algorithms seamless. 
 Data Science is no magic, it is all about Information, statistics and optimization and METRIC provides all you need to generate data-driven added values. All the algorithms in data science seems like a huge loosely connected family. This framework provides a universal approach that makes it easy to combine these techniques. To do so it brings all these algorithm under one roof together and guides, how to combine them.  
