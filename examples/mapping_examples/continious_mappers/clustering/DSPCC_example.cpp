@@ -55,7 +55,7 @@ int main()
     std::vector<recType> d = {d0, d1};
 
     float freq_time_balance = 1; // try values from 0 to 1 (e g 0, 0.5, 1) to get the following portions of freq-domain: 0, 4/9, 8/9
-    auto bundle = metric::DSPCC<recType, void>(d, 2, freq_time_balance, 0.5);
+    auto bundle = metric::DSPCC<recType, void>(d, 2, 4, freq_time_balance, 0.5);
 
     //auto pre_encoded = bundle.test_public_wrapper_encode(d);
     //auto pre_decoded = bundle.test_public_wrapper_decode(pre_encoded);
@@ -90,7 +90,7 @@ int main()
 
 //    return 0;
 
-    auto vDSPCC = metric::DSPCC<std::vector<double>, void>(vdata, 2, 0.5, 0.5);
+    auto vDSPCC = metric::DSPCC<std::vector<double>, void>(vdata, 2, 16, 0.5, 0);
 
     auto v_encoded = vDSPCC.encode(vdata);
     auto V_decoded = vDSPCC.decode(v_encoded);

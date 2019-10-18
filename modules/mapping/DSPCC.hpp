@@ -31,10 +31,17 @@ public:
    * 
    * @param TrainingDataset - Blaze matrix with timeseries in columns
    * @param n_features_ - desired number of features to extract
+   * @param n_subbands_ - maximum number of DWT subbands
    * @param time_freq_balance_ - contrinution of time domain data in mixed time-freqency PCFA input, values from 0 to 1
    * @param DCT_cutoff  - the share of waveform allowed to be cut off when making the length of waveform equal to the degree of 2
    */
-    DSPCC(const std::vector<recType> & TrainingDataset, size_t n_features_ = 1, float time_freq_balance_ = 0.5, float DCT_cutoff_ = 0);
+    DSPCC(
+            const std::vector<recType> & TrainingDataset,
+            size_t n_features_ = 1,
+            size_t n_subbands_ = 4,
+            float time_freq_balance_ = 0.5,
+            float DCT_cutoff_ = 0
+            );
 
     /**
    * @brief Construct a new VibrationFeatureExtractor object without DCT step
@@ -82,6 +89,7 @@ public:
 private:
     std::vector<metric::PCFA<recType, Metric>> PCA_models;
     std::stack<size_t> subband_length;
+    size_t n_subbands;
     size_t mix_idx;
     float time_freq_balance;
     //size_t n_features;
