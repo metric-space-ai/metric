@@ -3,7 +3,12 @@
 
 ## Overview
 
-Uses MGC (Multiscale Graph Correlation)
+Module offers functions
+to calculate a correlation coefficient of two metric spaces
+and thus to determine the dependency of two arbitrary
+data sets. METRIC | CORRELATION is used to find relations between metric spaces at all. 
+
+Use MGC (Multiscale Graph Correlation)
 as correlation coefficient to find nonlinear dependencies in data sets. It is optimized for small data set sizes.
 
 *Multiscale Graph Correlation, Bridgeford, Eric W and Shen, Censheng and Wang, Shangsi and Vogelstein, Joshua, 
