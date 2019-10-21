@@ -75,7 +75,7 @@ public:
 		 * @param iterations 
 	     * @param distribution 
 	     */
-    SOM(Graph graph, Metric metric = Metric(), double start_learn_rate = 1.2, double finish_learn_rate = 0.4, size_t iterations = 10000, 
+    SOM(Graph graph, Metric metric = Metric(), double start_learn_rate = 0.8, double finish_learn_rate = 0.0, size_t iterations = 20, 
 		Distribution distribution = Distribution(-1, 1));
 
     /**
@@ -110,6 +110,13 @@ public:
     /**
 		 * @brief 
 		 * 
+		 * @param samples 
+		 */
+    void estimate(const std::vector<std::vector<T>>& samples, const size_t sampleSize);
+
+    /**
+		 * @brief 
+		 * 
 		 * @param sample 
 		 * @return
 		 */
@@ -133,6 +140,15 @@ public:
 	{
 		return valid;
 	}
+
+    /**
+		 * @brief 
+		 * 
+		 * @param samples 
+		 * 
+		 * @return double 
+		 */
+	double std_deviation(const std::vector<std::vector<T>>& samples);
 
     /**
 		 * @brief 
@@ -171,6 +187,14 @@ private:
 	long long random_seed;
 
     std::vector<std::vector<T>> weights;  // coordinates in the input_dimensions space 
+
+
+    /**
+		 * @brief 
+		 * 
+		 * @param samples 
+		 */
+    void subsampled_train_(const std::vector<std::vector<T>>& samples, const size_t sampleSize);
 };
 
 }  // namespace metric

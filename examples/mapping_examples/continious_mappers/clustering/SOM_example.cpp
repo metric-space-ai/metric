@@ -83,7 +83,7 @@ int main()
     using Metric = metric::Euclidian<Vector::value_type>;
     using Graph = metric::Grid6; 
 
-    metric::SOM<Vector, Graph, Metric> som_model(6, 5);
+    metric::SOM<Vector, Graph, Metric> som_model(Graph(6, 5), Metric(), 0.8, 0.2, 20);
 
     if (!som_model.isValid()) {
     	std::cout << "SOM is not valid" << std::endl;
@@ -94,7 +94,7 @@ int main()
 	/* Load data */
 
 	std::cout << "load data" << std::endl;
-	std::ifstream dataFile(".\\assets\\data.json");
+	std::ifstream dataFile("assets/data.json");
 	
 	json data;
 
@@ -111,17 +111,23 @@ int main()
 
 	std::cout << "print json" << std::endl;
 	printDataInfo(data);
+	std::cout << std::endl;
 
 	const auto img1 = data["img1"].get<std::vector<std::vector<double>>>();
 	const auto img2 = data["img2"].get<std::vector<std::vector<double>>>();
+	
+	//
 
+	/* Estimate with img1 */
+    std::cout << "Estimate started..." << std::endl;
+    auto t1 = std::chrono::steady_clock::now();
+    som_model.estimate(img1, 50);
+    auto t2 = std::chrono::steady_clock::now();
 
-	/* Train with img1 */
-    const auto t1 = std::chrono::steady_clock::now();
-    som_model.train(img1);
-    const auto t2 = std::chrono::steady_clock::now();
+    std::cout << "Estimate ended (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000 << "s)" << std::endl;
 
-    std::cout << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000 << "s)" << std::endl;
+	auto std_deviation = som_model.std_deviation(img1);
+	std::cout << "std deviation: " << std_deviation << std::endl;
 	std::cout << std::endl;
 
 
@@ -131,8 +137,34 @@ int main()
 
 	auto bmu = som_model.BMU(img1[0]);
 	std::cout << "Best matching unit: " << bmu << std::endl;
+
 	std::cout << std::endl;
 
+	//
+
+	/* Train with img1 */
+    std::cout << "Full train started..." << std::endl;
+    t1 = std::chrono::steady_clock::now();
+    som_model.train(img1);
+    t2 = std::chrono::steady_clock::now();
+
+    std::cout << "Full train ended (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000 << "s)" << std::endl;
+
+	std_deviation = som_model.std_deviation(img1);
+	std::cout << "std deviation: " << std_deviation << std::endl;
+	std::cout << std::endl;
+
+
+    dimR = som_model.encode(img1[0]);
+	vector_print(dimR, 6, 5);
+	std::cout << std::endl;
+
+	bmu = som_model.BMU(img1[0]);
+	std::cout << "Best matching unit: " << bmu << std::endl;
+
+	std::cout << std::endl;
+
+	//
 
 	/* Train with img2 */
     som_model.train(img2);
@@ -143,6 +175,9 @@ int main()
 
 	bmu = som_model.BMU(img1[0]);
 	std::cout << "Best matching unit: " << bmu << std::endl;
+
+	std_deviation = som_model.std_deviation(img2);
+	std::cout << "std deviation: " << std_deviation << std::endl;
 
     std::cout << std::endl;
 
