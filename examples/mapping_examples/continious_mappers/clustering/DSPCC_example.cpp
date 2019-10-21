@@ -6,6 +6,8 @@
 
 #include "examples/mapping_examples/assets/helpers.cpp" // for .csv reader
 
+//#include "../../../../modules/utils/visualizer.hpp"
+
 
 
 
@@ -81,8 +83,9 @@ int main()
     // vibration example
     //*
 
-    auto raw_vdata = read_csv_num<double>("vibration.csv", ";");
+    auto raw_vdata = read_csv_num<double>("vibration.csv", ",");
     auto vdata =  transpose_timeseries(raw_vdata);
+
 
 //    std::stack<size_t> length_stack;
 //    auto decomposed = metric::sequential_DWT(vdata[0], length_stack, 5, 8);
@@ -93,10 +96,21 @@ int main()
     auto vDSPCC = metric::DSPCC<std::vector<double>, void>(vdata, 2, 16, 0.5, 0);
 
     auto v_encoded = vDSPCC.encode(vdata);
-    auto V_decoded = vDSPCC.decode(v_encoded);
+    auto v_decoded = vDSPCC.decode(v_encoded);
+
+    write_csv(transpose_timeseries(v_decoded), "decoded.csv", ";");
 
 
-    std::cout << "\nvibration test done\n";
+    std::cout << "\nmain vibration test done, decoded data saved\n";
+
+    std::cout << "\ncomputing pre-encoded and pre_decoded vibration data...\n";
+
+    auto v_pre_encoded = vDSPCC.test_public_wrapper_encode(vdata);
+    auto v_pre_decoded = vDSPCC.test_public_wrapper_decode(v_pre_encoded);
+
+    write_csv(transpose_timeseries(v_pre_decoded), "pre_decoded.csv", ";");
+
+    std::cout << "\ndone, pre_decoded data saved\n";
 
     //*/
 
