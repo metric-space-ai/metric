@@ -848,21 +848,7 @@ double runConfiguration(int i, std::vector<std::vector<T>> data, Metric distance
 	som_model.train(data);
 	
 	// we will calculate std deviation
-	double total_distances = 0;
-	double std_deviation = 0;
-	double closest_distance;
-
-	total_distances = 0;
-	for (size_t i = 0; i < data.size(); i++)
-	{
-		auto dimR = som_model.encode(data[i]);
-		auto bmu = som_model.BMU(data[i]);
-		// dimR[bmu] - is distance to the closest node, we use it as difference of value and mean of the values
-		closest_distance = dimR[bmu] * dimR[bmu];
-		total_distances += closest_distance;
-	}
-
-	std_deviation = sqrt(total_distances / data.size());
+	auto std_deviation = som_model.std_deviation(data);
 		
 	auto t2 = std::chrono::steady_clock::now();
 	mu.lock();
@@ -1188,11 +1174,11 @@ get_weights_from_som(int w_grid_size, int h_grid_size, std::vector<std::vector<T
 	std::cout << std::endl;
 
 
-	// split and reshape raw data by clusters [sensor -> energy -> cluster -> values]
+	// split and reshape raw data by clusters [sensor -> cluster -> energy -> values]
 	
-	std::vector<std::vector<std::vector<std::vector<double>>>> clustered_energies(8, std::vector<std::vector<std::vector<double>>>(counts.size(), std::vector<std::vector<double>>(7)));
 	int num_sensors = 8;
 	int num_levels = 7;
+	std::vector<std::vector<std::vector<std::vector<double>>>> clustered_energies(num_sensors, std::vector<std::vector<std::vector<double>>>(counts.size(), std::vector<std::vector<double>>(num_levels)));
 
 	std::vector<int> total(assignments.size());
 	for (auto record : speeds)
@@ -1533,13 +1519,13 @@ int main(int argc, char *argv[])
 	std::vector<int> distribution_types = {0, 1, 2};
 
 	
-	std::vector<std::vector<size_t>> grid_sizes = { {5, 5}, {10, 10}, {15, 15}, {20, 20}, {30, 30}, {40, 40}, {50, 50} };
+	std::vector<std::vector<size_t>> grid_sizes = { {15, 15}, {20, 20}, {30, 30} };
 	std::vector<double> s_learn_rates = {0.2, 0.4, 0.6, 0.8, 1.0};
-	std::vector<double> f_learn_rates = {0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.7};
-	std::vector<double> initial_neighbour_sizes = {1, 3, 5, 10, 15, 20, 25};
+	std::vector<double> f_learn_rates = {0.0, 0.1, 0.2, 0.3, 0.5, 0.7};
+	std::vector<double> initial_neighbour_sizes = {1, 3, 5, 10, 20};
 	std::vector<double> neigbour_range_decays = {1.5, 2.0, 3.0, 4.0};
 	std::vector<long long> random_seeds = {0};
-	std::vector<unsigned int> iterations_all = {100, 1000, 5000, 10000, 20000};
+	std::vector<unsigned int> iterations_all = {1, 5, 10, 20};
 				
 
 	//
@@ -1639,7 +1625,7 @@ int main(int argc, char *argv[])
 													results_grid.push_back(current_result);
 
 													if (i % 10000 == 0) {
-														saveToCsv("metaparams_checkpoint_" + std::to_string(i) + ".csv", results_grid, metaparams_grid);
+														saveToCsv("assets/metaparams_checkpoint_" + std::to_string(i) + ".csv", results_grid, metaparams_grid);
 													}
 
 													mu.unlock();
@@ -1694,7 +1680,7 @@ int main(int argc, char *argv[])
 		}
 		pool.close();
 	
-		saveToCsv("metaparams_checkpoint_final.csv", results_grid, metaparams_grid);
+		saveToCsv("assets/metaparams_checkpoint_final.csv", results_grid, metaparams_grid);
 	
 		double minimal_score = INFINITY;
 
@@ -1768,7 +1754,7 @@ int main(int argc, char *argv[])
 	{
 		// load metaparms tune results and shood the best (with the lowets score)
 
-		auto metaparams_grid = readCsvData("metaparams_checkpoint_final.csv", ',');
+		auto metaparams_grid = readCsvData("assets/metaparams_checkpoint_final.csv", ',');
 		
 		std::vector<double> scores;
 
@@ -1808,14 +1794,14 @@ int main(int argc, char *argv[])
 		if (default_hyperparams)
 		{
 			best_distribution = 0;
-			best_w_grid_size = 5;
-			best_h_grid_size = 5;
-			best_s_learn_rate = 1.2;
-			best_f_learn_rate = 0.4;
+			best_w_grid_size = 30;
+			best_h_grid_size = 20;
+			best_s_learn_rate = 0.8;
+			best_f_learn_rate = 0.0;
 			best_initial_neighbour_size = std::sqrt(double(best_w_grid_size * best_h_grid_size)); // use default
 			best_neigbour_range_decay = 2.0; // use default
 			best_random_seed = 0;
-			best_iterations = 10000;
+			best_iterations = 20;
 		}
 	
 		std::cout << std::endl;

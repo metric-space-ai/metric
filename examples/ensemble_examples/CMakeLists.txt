@@ -5,6 +5,10 @@ project(ensemble_examples)
 set(Boost_DEBUG on)  
 find_package(Boost)
 
+if(UNIX)
+    find_package(Threads REQUIRED)
+endif(UNIX)
+
 include_directories(
     ${PROJECT_SOURCE_DIR}
 )
@@ -12,6 +16,8 @@ include_directories(
 file(COPY "assets" DESTINATION ".")
 
 include_directories(${Boost_INCLUDE_DIRS}) 
+
+find_package(LAPACK)
 
 file(GLOB EXAMPLE_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.cpp) 
 
@@ -32,5 +38,15 @@ foreach(exampleSrc ${EXAMPLE_SRCS})
 	target_link_libraries(${exampleName} ${Boost_LIBRARIES})
 	target_link_libraries(${exampleName} ${LAPACK_LIBRARIES})
 	set_target_properties(${exampleName} PROPERTIES CXX_STANDARD 17)	
+	
+	if(UNIX)
+		set(THREADS_PREFER_PTHREAD_FLAG ON)
+		set(CMAKE_CXX_FLAGS "-O3")
+
+		target_link_libraries(${exampleName} Threads::Threads)
+
+		target_compile_options(${exampleName} PRIVATE -pthread)
+		set_target_properties(${exampleName} PROPERTIES LINK_FLAGS -pthread)
+	endif(UNIX)
 
 endforeach(exampleSrc)

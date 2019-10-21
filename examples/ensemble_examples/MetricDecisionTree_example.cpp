@@ -13,7 +13,7 @@ Copyright (c) 2019 Max Filippov
 #include <variant>
 
 #include "assets/helpers.cpp"  // csv reader
-#include "../../modules/mapping.hpp"
+#include "../../modules/mapping/ensembles.hpp"
 #include "../../modules/distance.hpp"
 
 template <typename T>
