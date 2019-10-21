@@ -3,9 +3,23 @@
 
 ## Overview
 
-A Search Tree works like a std-container to store data of some structure. Basically a Metric Search Tree has the same principle as a binary search tree or a kd-tree, but it works for arbitrary (!) data structures. This Metric Search Tree is basically a Cover Tree Implementation. Additionally to the distiance (or similarity) between the data, a covering distance from level to level decides how the tree grows.
+Module provides classes for the
+representation of metric spaces including basic operations
+such as the search for neighboring elements.
 
-It can be used to find similar sets of data in millions of data sets, each containing hundreds of single values in only a few milliseconds.
+
+## Space types
+
+- **Tree**.
+A Search Tree works like a std-container to store data of some structure. 
+Basically a Metric Search Tree has the same principle as a binary search tree or a kd-tree, 
+but it works for arbitrary data structures. This Metric Search Tree is basically a Cover Tree Implementation. 
+Additionally to the distiance (or similarity) between the data, a covering distance from level to 
+level decides how the tree grows.
+
+- **Graph**. Graph is a general concept for the explicit representation of a metric
+space for matrix and tree.
+The edges in this graph represent the distances between the individual elements.
 
 ## Tree
 #### Simple example
