@@ -6,7 +6,7 @@
 
 #include "examples/mapping_examples/assets/helpers.cpp" // for .csv reader
 
-//#include "../../../../modules/utils/visualizer.hpp"
+#include "../../../../modules/utils/visualizer.hpp"
 
 
 
@@ -83,9 +83,12 @@ int main()
     // vibration example
     //*
 
-    auto raw_vdata = read_csv_num<double>("vibration.csv", ",");
+    float magnitude = 80;
+
+    auto raw_vdata = read_csv_num<double>("vibration_smaller.csv", ",");
     auto vdata =  transpose_timeseries(raw_vdata);
 
+    mat2bmp::blaze2bmp_norm(vdata, "input.bmp", magnitude);
 
 //    std::stack<size_t> length_stack;
 //    auto decomposed = metric::sequential_DWT(vdata[0], length_stack, 5, 8);
@@ -93,12 +96,16 @@ int main()
 
 //    return 0;
 
-    auto vDSPCC = metric::DSPCC<std::vector<double>, void>(vdata, 2, 16, 0.5, 0);
+    auto vDSPCC = metric::DSPCC<std::vector<double>, void>(vdata, 8, 8, 0.1, 0);
 
     auto v_encoded = vDSPCC.encode(vdata);
     auto v_decoded = vDSPCC.decode(v_encoded);
 
+    mat2bmp::blaze2bmp_norm(v_decoded, "decoded.bmp", magnitude);
     write_csv(transpose_timeseries(v_decoded), "decoded.csv", ";");
+
+    std::cout << "\nmix_index:     " << vDSPCC.get_mix_idx() << "\n";
+    std::cout << "record length:  " << vdata[0].size() << "\n";
 
 
     std::cout << "\nmain vibration test done, decoded data saved\n";
@@ -109,6 +116,7 @@ int main()
     auto v_pre_decoded = vDSPCC.test_public_wrapper_decode(v_pre_encoded);
 
     write_csv(transpose_timeseries(v_pre_decoded), "pre_decoded.csv", ";");
+    mat2bmp::blaze2bmp_norm(v_pre_decoded, "pre_decoded.bmp", magnitude);
 
     std::cout << "\ndone, pre_decoded data saved\n";
 

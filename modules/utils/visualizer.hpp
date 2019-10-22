@@ -10,6 +10,7 @@
 #define _METRIC_UTILS_VISUALIZER_HPP
 
 #include <string>
+#include "../../3rdparty/blaze/Blaze.h"
 
 namespace mat2bmp
 {
