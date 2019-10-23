@@ -14,9 +14,10 @@ namespace metric {
 
 	
 	template <typename Record, typename Graph>
-	std::string MetricAutoDetector::detect(Graph &graph, std::vector<Record> dataset, bool isEstimate)
+	std::string MetricAutoDetector::detect(Graph &graph, int graph_w, int graph_h, std::vector<Record> dataset, bool isEstimate)
 	{
-		std::vector<std::string> metric_type_names = {"Euclidian", "Manhatten", "P_norm", "Euclidian_thresholded", "Cosine", "Chebyshev"};
+		std::vector<std::string> metric_type_names = {"Euclidian", "Manhatten", "P_norm", "Euclidian_thresholded", "Cosine", "Chebyshev", 
+			"Earth Mover Distance", "SSIM", "TWED"};
 
 		// Random updating 
 		std::vector<size_t> randomized_indexes(dataset.size());
@@ -63,6 +64,26 @@ namespace metric {
 				// Chebyshev
 				metric::Chebyshev<double> distance;
 				relative_diff_mean = get_mean_distance_difference<Record, Graph, metric::Chebyshev<double>>(graph, distance, dataset, randomized_indexes, isEstimate);
+			}
+			else if (metric_type == "Earth Mover Distance")
+			{
+				// Earth Mover Distance
+				auto cost_mat = metric::EMD_details::ground_distance_matrix_of_2dgrid<double>(graph_w, graph_h);
+				auto maxCost = metric::EMD_details::max_in_distance_matrix(cost_mat);
+				metric::EMD<double> distance(cost_mat, maxCost);
+				relative_diff_mean = get_mean_distance_difference<Record, Graph, metric::EMD<double>>(graph, distance, dataset, randomized_indexes, isEstimate);
+			}
+			else if (metric_type == "SSIM")
+			{
+				// SSIM
+				metric::SSIM<double, Record> distance;
+				relative_diff_mean = get_mean_distance_difference<Record, Graph, metric::SSIM<double, Record>>(graph, distance, dataset, randomized_indexes, isEstimate);
+			}
+			else if (metric_type == "TWED")
+			{
+				// TWED
+				metric::TWED<double> distance(0, 1);
+				relative_diff_mean = get_mean_distance_difference<Record, Graph, metric::TWED<double>>(graph, distance, dataset, randomized_indexes, isEstimate);
 			}
 			relative_diff_means.push_back(relative_diff_mean);
 

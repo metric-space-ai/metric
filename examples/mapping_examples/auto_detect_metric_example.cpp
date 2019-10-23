@@ -164,12 +164,14 @@ int main()
 	
 	//
 
-	Graph graph(3, 2);
+	int graph_w = 3;
+	int graph_h = 2;
+	Graph graph(graph_w, graph_h);
 	metric::MetricAutoDetector adm;
 
 	adm.set_verbose(true);
 
-	auto best_metric = adm.detect<Record, Graph>(graph, dataset, false);
+	auto best_metric = adm.detect<Record, Graph>(graph, graph_w, graph_h, dataset, false);
 	
 	if (best_metric == "Euclidian")
 	{
@@ -211,6 +213,27 @@ int main()
 		// Chebyshev
 		using Metric = metric::Chebyshev<double>;
 		metric::SOM<Record, Graph, Metric> som_model(graph, Metric(), 0.8, 0.2, 20);
+		checkSOM(som_model, dataset);
+	}
+	else if (best_metric == "Earth Mover Distance")
+	{
+		// Earth Mover Distance
+		using Metric = metric::EMD<double>;
+		metric::SOM<Record, Graph, Metric> som_model(graph, Metric(), 0.8, 0.2, 20);
+		checkSOM(som_model, dataset);
+	}
+	else if (best_metric == "SSIM")
+	{
+		// SSIM
+		using Metric = metric::SSIM<double, Record>;
+		metric::SOM<Record, Graph, Metric> som_model(graph, Metric(), 0.8, 0.2, 20);
+		checkSOM(som_model, dataset);
+	}
+	else if (best_metric == "TWED")
+	{
+		// TWED
+		using Metric = metric::TWED<double>;
+		metric::SOM<Record, Graph, Metric> som_model(graph, Metric(0, 1), 0.8, 0.2, 20);
 		checkSOM(som_model, dataset);
 	}
 	

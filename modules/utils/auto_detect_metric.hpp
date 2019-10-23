@@ -30,7 +30,7 @@ namespace metric {
 		 *
 		 */
 		template <typename Record, typename Graph>
-		std::string detect(Graph &graph, std::vector<Record> dataset, bool isEstimate = true);
+		std::string detect(Graph &graph, int graph_w, int graph_h, std::vector<Record> dataset, bool isEstimate = true);
 
 		/**
 		 * @brief
