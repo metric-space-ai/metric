@@ -3,6 +3,14 @@
 
 ## Overview
 
+Module provides deterministic algorithms that transfer data
+element by element into another metric space, e.g. from
+the time to the frequency domain.
+This is often useful for complexity reduction as preprocessing step. A distinction can be
+made between lossy compression and completely reversible
+methods. In general, however, these are proven,
+deterministic methods such as wavelets.
+
 ## Examples
 
 Suppose we have a linespace data:

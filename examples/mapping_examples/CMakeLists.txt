@@ -46,6 +46,9 @@ add_executable(PCFA_example continious_mappers/clustering/PCFA_example.cpp)
 # continious_mappers / classification
 add_executable(ESN_example continious_mappers/classification/ESN_example.cpp)
 
+# other
+add_executable(auto_detect_metric_example auto_detect_metric_example.cpp)
+
 
 if(UNIX)
 	set_target_properties(KMedoids_example PROPERTIES CXX_STANDARD 17)
@@ -58,6 +61,7 @@ if(UNIX)
 	set_target_properties(SOM_example PROPERTIES CXX_STANDARD 17)
 	set_target_properties(PCFA_example PROPERTIES CXX_STANDARD 17)
 	set_target_properties(ESN_example PROPERTIES CXX_STANDARD 17)
+	set_target_properties(auto_detect_metric_example PROPERTIES CXX_STANDARD 17)
 endif(UNIX)
 
 find_package(LAPACK)
@@ -74,6 +78,7 @@ if(LAPACK_LIBRARIES)
 	target_link_libraries(SOM_example PRIVATE ${LAPACK_LIBRARIES})	
 	target_link_libraries(PCFA_example PRIVATE ${LAPACK_LIBRARIES})	
 	target_link_libraries(ESN_example PRIVATE ${LAPACK_LIBRARIES})
+	target_link_libraries(auto_detect_metric_example PRIVATE ${LAPACK_LIBRARIES})
 endif(LAPACK_LIBRARIES)
 
 if(CMAKE_SYSTEM_NAME MATCHES Windows)
@@ -117,9 +122,11 @@ if(CMAKE_SYSTEM_NAME MATCHES Windows)
 	target_link_directories(ESN_example PRIVATE ${PROJECT_SOURCE_DIR}/../../mkl/lib/intel64_win)
 	target_link_libraries(ESN_example PRIVATE mkl_core.lib mkl_sequential.lib mkl_intel_lp64.lib)
 	target_link_libraries(ESN_example PRIVATE ${Boost_LIBRARIES})
-endif()
 
-# continious_mappers / classification
+	target_link_directories(auto_detect_metric_example PRIVATE ${PROJECT_SOURCE_DIR}/../../mkl/lib/intel64_win)
+	target_link_libraries(auto_detect_metric_example PRIVATE mkl_core.lib mkl_sequential.lib mkl_intel_lp64.lib)
+	target_link_libraries(auto_detect_metric_example PRIVATE ${Boost_LIBRARIES})
+endif()
 
 
 

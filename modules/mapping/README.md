@@ -2,8 +2,36 @@
 
 ## Overview
 
+Module contains various algorithms that can
+‘calculate’ metric spaces or map them into equivalent
+metric spaces. 
+In general, you can regard all of the algorithms in METRIC | MAPPING as mapper from one metric space into 
+a new one, usually with the goal to reduce complexity (like clustering or classifying) or to fill missing 
+information (like predicting). Also values can be bidirectionally reconstructed from
+reduced space using the reverse decoder. In addition, unwanted features can be removed from the space
+for further evaluation. In this way, the user brings in his
+a priori knowledge and understandings and on the other hand
+his a priori influence causes instead of causing a loss
+of information by an autonomous programming of this
+knowledge. 
 
-##### Quantized mapper (encoder only) 
+If, for example, a camera takes pictures of
+a scene in which one door opens and closes. If this
+additionaly always happens under different lighting
+conditions, the set of elements initially receives millions
+of extensions analogous to the number of pixels. All pixels
+differ from image to image. In reality, however, there are
+only two degress of freedom: the opening angle of the
+door and the brightness of the light source. A mapping
+algorithm can for instance now calculate these features
+and transfer the millions of dimensions of the original
+metric space to a metric space with only two dimensions
+per element. 
+
+
+#### Mapper types
+
+##### Quantized mappers (encoder only) 
 
 
 
@@ -24,7 +52,7 @@
     - C4.5
 
 
-##### Continuous mapper (encoder/decoder)
+##### Continuous mappers (encoder/decoder)
 
 
 
@@ -37,6 +65,8 @@
     - ESN (k-structured space to k-related space)
 
 ---
+
+## Examples
 
 #### K-Medoids
 

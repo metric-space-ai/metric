@@ -3,7 +3,16 @@
 
 ## Overview
 
-If we can assign each column a metric, we have won. Then all algorithms run on the table without the need for further restrictions or special features. 
+METRIC | DISTANCE provide a extensive collection of metrics,
+including factory functions for configuring complex metrics.  
+They are organized into severals levels of complexity and aprio knowledge about the data. 
+Basically the user give a priori information, how the data should be connected for reason, like 
+a picuture is a 2d array of pixels. A metric type is basically a function, which compares 
+two samples of data and gives back the numeric distance between them.
+
+If we can assign each feature from the data a metric, we have won. Then all algorithms run on the dataset without the need for 
+further restrictions or special features. 
+
 
 There are a lot of metrics in the world, that can be grouped to:
 - **k-related**: number of entries in column is always the same and the metric applied to the corresponding 
