@@ -57,7 +57,7 @@ int main()
     std::vector<recType> d = {d0, d1};
 
     float freq_time_balance = 1; // try values from 0 to 1 (e g 0, 0.5, 1) to get the following portions of freq-domain: 0, 4/9, 8/9
-    auto bundle = metric::DSPCC<recType, void>(d, 2, 4, freq_time_balance, 0.5);
+    auto bundle = metric::DSPCC1<recType, void>(d, 2, 4, freq_time_balance, 0.5);
 
     //auto pre_encoded = bundle.test_public_wrapper_encode(d);
     //auto pre_decoded = bundle.test_public_wrapper_decode(pre_encoded);
@@ -104,7 +104,7 @@ int main()
     mat2bmp::blaze2bmp_norm(v_decoded, "decoded.bmp", magnitude);
     write_csv(transpose_timeseries(v_decoded), "decoded.csv", ";");
 
-    std::cout << "\nmix_index:     " << vDSPCC.get_mix_idx() << "\n";
+    std::cout << "\nmix_index:     " << vDSPCC.get_crop_idx() << "\n";
     std::cout << "record length:  " << vdata[0].size() << "\n";
 
 
