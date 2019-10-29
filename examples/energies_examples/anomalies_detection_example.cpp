@@ -363,6 +363,7 @@ int main(int argc, char *argv[])
 	
 	std::vector<double> entropies;
 	std::vector<double> closest;
+	double closest_sum = 0;
 	for (size_t i = 0; i < speeds.size(); i++)
 	{
 		std::vector<std::vector<double>> dimR;
@@ -373,6 +374,7 @@ int main(int argc, char *argv[])
 		}
 		auto bmu = som.BMU(speeds[i]);
 		closest.push_back(dimRRR[bmu]);
+		closest_sum += dimRRR[bmu];
 		
 		auto e = entropy(dimR, 3, 2.0, metric::Euclidian<double>());
 		entropies.push_back(e);
@@ -382,6 +384,7 @@ int main(int argc, char *argv[])
 	std::cout << "min closest is : " << closest[std::distance(closest.begin(), result)] << std::endl;
 	result = std::max_element(closest.begin(), closest.end());		
 	std::cout << "max closest is : " << closest[std::distance(closest.begin(), result)] << std::endl;
+	std::cout << "mean closest is : " << closest_sum / closest.size() << std::endl;
 	std::cout << std::endl;
 	
 	result = std::min_element(entropies.begin(), entropies.end());		
