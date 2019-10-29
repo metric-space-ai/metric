@@ -323,7 +323,7 @@ int main(int argc, char *argv[])
 	auto random_integer = uni(rng);
 	test_samples.push_back(speeds[random_integer]);
 
-	auto anomalies = som.check_if_anomaly(test_samples);
+	auto anomalies = som.check_if_anomaly(test_samples, 0.001);
 	
 	std::cout << std::endl;
 	std::cout << "anomalies:" << std::endl;
