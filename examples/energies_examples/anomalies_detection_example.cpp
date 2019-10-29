@@ -236,8 +236,8 @@ int main(int argc, char *argv[])
 	ThreadPool pool(concurentThreadsSupported);
 	Semaphore sem;
 				
-	size_t best_w_grid_size = 12;
-	size_t best_h_grid_size = 10;
+	size_t best_w_grid_size = 30;
+	size_t best_h_grid_size = 20;
 
 	// if overrided from arguments
 	
@@ -257,7 +257,7 @@ int main(int argc, char *argv[])
 	metric::Euclidian<double> distance;
 	std::uniform_real_distribution<double> distribution;
 	metric::SOM<std::vector<double>, metric::Grid4, metric::Euclidian<double>, std::uniform_real_distribution<double>> 
-		som(graph, distance, 0.8, 0.0, 2, distribution);	
+		som(graph, distance, 0.8, 0.0, 20, distribution);	
 
 	som.train(speeds);
 
@@ -361,37 +361,43 @@ int main(int argc, char *argv[])
 	//std::cout << std::endl;
 	
 	
+	std::vector<double> entropies;
 	std::vector<double> closest;
 	for (size_t i = 0; i < speeds.size(); i++)
 	{
 		std::vector<std::vector<double>> dimR;
 		auto dimRRR = som.encode(speeds[i]);
-		std::vector<double> dimRR;
 		for (auto d : dimRRR)
 		{
 			dimR.push_back({ d });
 		}
-		//auto bmu = som.BMU(speeds[i]);
+		auto bmu = som.BMU(speeds[i]);
+		closest.push_back(dimRRR[bmu]);
 		
 		auto e = entropy(dimR, 3, 2.0, metric::Euclidian<double>());
-
-		closest.push_back(e);
+		entropies.push_back(e);
 	}
 	
 	std::vector<double>::iterator result = std::min_element(closest.begin(), closest.end());		
-	std::cout << "min entropy is : " << closest[std::distance(closest.begin(), result)] << std::endl;
+	std::cout << "min closest is : " << closest[std::distance(closest.begin(), result)] << std::endl;
 	result = std::max_element(closest.begin(), closest.end());		
-	std::cout << "max entropy is : " << closest[std::distance(closest.begin(), result)] << std::endl;
+	std::cout << "max closest is : " << closest[std::distance(closest.begin(), result)] << std::endl;
+	std::cout << std::endl;
+	
+	result = std::min_element(entropies.begin(), entropies.end());		
+	std::cout << "min entropy is : " << entropies[std::distance(entropies.begin(), result)] << std::endl;
+	result = std::max_element(entropies.begin(), entropies.end());		
+	std::cout << "max entropy is : " << entropies[std::distance(entropies.begin(), result)] << std::endl;
 
 	
 	std::vector<std::vector<double>> dimR;
 	auto dimRRR = som.encode(test_sample);
-	std::vector<double> dimRR;
 	for (auto d : dimRRR)
 	{
 		dimR.push_back({ d });
 	}
-	//auto bmu = som.BMU(speeds[i]);
+	auto bmu = som.BMU(test_sample);
+	std::cout << "closest : " << dimRRR[bmu] << std::endl;
 		
 	auto e = entropy(dimR, 3, 2.0, metric::Euclidian<double>());
 	std::cout << "entropy : " << e << std::endl;
