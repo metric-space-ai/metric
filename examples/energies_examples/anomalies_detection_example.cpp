@@ -224,13 +224,6 @@ int main(int argc, char *argv[])
 		RAW_DATA_DIRNAME = argv[1];
 	}
 
-	
-
-	std::vector<std::vector<double>> v = { {5}, {2}, {3}, {5} };
-
-    auto e = entropy(v, 3, 2.0, metric::Euclidian<double>());
-    std::cout << "using Euclidean: " << e << std::endl;
-
 	/* Load data */
 	auto speeds = readEnergies(RAW_DATA_DIRNAME);
 	std::cout << "" << std::endl;
@@ -353,12 +346,12 @@ int main(int argc, char *argv[])
 	std::vector<std::vector<double>> test_samples;
 
 	
-	//std::vector<double> test_sample;
-	//for (auto i = 0; i < 7 * 8; i++)
-	//{
-	//	test_sample.push_back(((double) rand() / (RAND_MAX)));
-	//}
-	//test_samples.push_back(test_sample);
+	std::vector<double> test_sample;
+	for (auto i = 0; i < 7 * 8; i++)
+	{
+		test_sample.push_back(((double) rand() / (RAND_MAX)));
+	}
+	test_samples.push_back(test_sample);
 
 	//auto anomalies = som.check_if_anomaly(test_samples);
 	//
@@ -367,9 +360,6 @@ int main(int argc, char *argv[])
 	//vector_print(anomalies);
 	//std::cout << std::endl;
 	
-
-    e = entropy(speeds, 3, 2.0, metric::Euclidian<double>());
-    std::cout << "using Euclidean: " << e << std::endl;
 	
 	std::vector<double> closest;
 	for (size_t i = 0; i < speeds.size(); i++)
@@ -392,6 +382,19 @@ int main(int argc, char *argv[])
 	std::cout << "min entropy is : " << closest[std::distance(closest.begin(), result)] << std::endl;
 	result = std::max_element(closest.begin(), closest.end());		
 	std::cout << "max entropy is : " << closest[std::distance(closest.begin(), result)] << std::endl;
+
+	
+	std::vector<std::vector<double>> dimR;
+	auto dimRRR = som.encode(test_sample);
+	std::vector<double> dimRR;
+	for (auto d : dimRRR)
+	{
+		dimR.push_back({ d });
+	}
+	//auto bmu = som.BMU(speeds[i]);
+		
+	auto e = entropy(dimR, 3, 2.0, metric::Euclidian<double>());
+	std::cout << "entropy : " << e << std::endl;
 
 	auto t2 = std::chrono::steady_clock::now();
 	std::cout << "(Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000 << " s)" << std::endl;
