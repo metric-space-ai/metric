@@ -349,7 +349,7 @@ int main(int argc, char *argv[])
 	std::vector<double> test_sample;
 	for (auto i = 0; i < 7 * 8; i++)
 	{
-		test_sample.push_back(((double) rand() / (RAND_MAX)));
+		test_sample.push_back(((double) rand() / (RAND_MAX)) + 5);
 	}
 	test_samples.push_back(test_sample);
 
