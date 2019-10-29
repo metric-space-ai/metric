@@ -169,7 +169,6 @@ std::vector<bool> SOM<recType, Graph, Metric, Distribution>::check_if_anomaly(co
 	{
 		threshold_index--;
 	}
-	std::cout << threshold_index << " " << closest_distances.size() << " " << closest_distances[threshold_index] << " " << std::endl;
 
 	for (size_t i = 0; i < samples.size(); i++)
 	{
