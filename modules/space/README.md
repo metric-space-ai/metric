@@ -173,8 +173,6 @@ table.push_back(x);
 metric::Tree<recType, recMetric<double>> cTree(table);
 ``` 
 
-*For a full example and more details see `examples/space_examples/eigen_example.cpp`*
-
 #### Details
 - `data record` is a set of values, a row in a table, a data point, etc. All records contain the same paramters, but with different values.
 
