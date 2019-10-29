@@ -266,11 +266,8 @@ int main(int argc, char *argv[])
 	while (min_cluster_size <= 1)
 	{
 		// clustering on the reduced data
-	
-		//metric::Matrix<std::vector<double>, metric::Cosine<double>> distance_matrix(nodes_data);	
-		//auto [assignments, exemplars, counts] = metric::affprop(distance_matrix, (float)0.25);
-		auto [assignments, exemplars, counts] = metric::kmeans(nodes_data, num_clusters, 1000);
 
+		auto [assignments, exemplars, counts] = metric::kmeans(nodes_data, num_clusters, 1000);
 
 		std::cout << "assignments:" << std::endl;
 		vector_print(assignments, best_w_grid_size, best_h_grid_size);
@@ -279,40 +276,6 @@ int main(int argc, char *argv[])
 		std::cout << "counts:" << std::endl;
 		vector_print(counts);
 		std::cout << std::endl;
-
-
-		// split and reshape raw data by clusters [sensor -> cluster -> energy -> values]
-	
-		//int num_sensors = 8;
-		//int num_levels = 7;
-		//std::vector<std::vector<std::vector<std::vector<double>>>> clustered_energies(num_sensors, std::vector<std::vector<std::vector<double>>>(counts.size(), std::vector<std::vector<double>>(num_levels)));
-
-		//std::vector<int> total(assignments.size());
-		//for (auto record : speeds)
-		//{
-		//	// find cluster id for a record
-		//	auto bmu = som.BMU(record);
-		//	auto cluster_index = assignments[bmu];
-		//	total[bmu]++;
-		//	for (int i = 0; i < num_sensors; i++)
-		//	{			
-		//		for (int j = 0; j < num_levels; j++)
-		//		{
-		//			clustered_energies[i][cluster_index][j].push_back(record[i*num_levels + j]);
-		//		}
-		//	}
-		//}
-	
-		//std::cout << "cluster sizes:" << std::endl;
-		//for (int k = 0; k < clustered_energies[0].size(); k++)
-		//{
-		//	std::cout << "cluster_index: " << k << ", size: "<< clustered_energies[0][k][0].size() << std::endl;
-		//}
-		//std::cout << std::endl;
-		//
-		//std::cout << "som nodes sizes:" << std::endl;
-		//vector_print(total, w_grid_size, h_grid_size);
-		//std::cout << std::endl;
 		
 		std::vector<int>::iterator result = std::min_element(counts.begin(), counts.end());
 		min_cluster_size = counts[std::distance(counts.begin(), result)];	
@@ -342,9 +305,9 @@ int main(int argc, char *argv[])
 			break;
 	}
 
-	
-	std::vector<std::vector<double>> test_samples;
+	//
 
+	std::vector<std::vector<double>> test_samples;
 	
 	std::vector<double> test_sample;
 	for (auto i = 0; i < 7 * 8; i++)
@@ -353,68 +316,19 @@ int main(int argc, char *argv[])
 	}
 	test_samples.push_back(test_sample);
 
-	//auto anomalies = som.check_if_anomaly(test_samples);
-	//
-	//std::cout << std::endl;
-	//std::cout << "anomalies:" << std::endl;
-	//vector_print(anomalies);
-	//std::cout << std::endl;
-	
-	
-	std::vector<double> entropies;
-	std::vector<double> closest;
-	double closest_sum = 0;
-	for (size_t i = 0; i < speeds.size(); i++)
-	{
-		std::vector<std::vector<double>> dimR;
-		auto dimRRR = som.encode(speeds[i]);
-		for (auto d : dimRRR)
-		{
-			dimR.push_back({ d });
-		}
-		auto bmu = som.BMU(speeds[i]);
-		closest.push_back(dimRRR[bmu]);
-		closest_sum += dimRRR[bmu];
-		
-		auto e = entropy(dimR, 3, 2.0, metric::Euclidian<double>());
-		entropies.push_back(e);
-	}
-	
-    std::sort(closest.begin(), closest.end());
-    std::sort(entropies.begin(), entropies.end());
-	
-	std::vector<double>::iterator result = std::min_element(closest.begin(), closest.end());		
-	std::cout << "min closest is : " << closest[std::distance(closest.begin(), result)] << std::endl;
-	result = std::max_element(closest.begin(), closest.end());		
-	std::cout << "max closest is : " << closest[std::distance(closest.begin(), result)] << std::endl;
-	std::cout << "mean closest is : " << closest_sum / closest.size() << std::endl;
-	for (auto i = closest.size() - 10; i < closest.size(); i++)
-	{
-		std::cout << "last closest is : " << closest[i] << std::endl;
-	}
-	std::cout << std::endl;
-	
-	result = std::min_element(entropies.begin(), entropies.end());		
-	std::cout << "min entropy is : " << entropies[std::distance(entropies.begin(), result)] << std::endl;
-	result = std::max_element(entropies.begin(), entropies.end());		
-	std::cout << "max entropy is : " << entropies[std::distance(entropies.begin(), result)] << std::endl;
-	for (auto i = entropies.size() - 10; i < entropies.size(); i++)
-	{
-		std::cout << "last entropy is : " << entropies[i] << std::endl;
-	}
+	std::random_device rd;     // only used once to initialise (seed) engine
+	std::mt19937 rng(rd());    // random-number engine used (Mersenne-Twister in this case)
+	std::uniform_int_distribution<int> uni(0, speeds.size()); // guaranteed unbiased
 
+	auto random_integer = uni(rng);
+	test_samples.push_back(speeds[random_integer]);
+
+	auto anomalies = som.check_if_anomaly(test_samples);
 	
-	std::vector<std::vector<double>> dimR;
-	auto dimRRR = som.encode(test_sample);
-	for (auto d : dimRRR)
-	{
-		dimR.push_back({ d });
-	}
-	auto bmu = som.BMU(test_sample);
-	std::cout << "closest : " << dimRRR[bmu] << std::endl;
-		
-	auto e = entropy(dimR, 3, 2.0, metric::Euclidian<double>());
-	std::cout << "entropy : " << e << std::endl;
+	std::cout << std::endl;
+	std::cout << "anomalies:" << std::endl;
+	vector_print(anomalies);
+	std::cout << std::endl;
 
 	auto t2 = std::chrono::steady_clock::now();
 	std::cout << "(Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000 << " s)" << std::endl;

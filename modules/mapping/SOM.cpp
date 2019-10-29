@@ -93,6 +93,7 @@ void SOM<recType, Graph, Metric, Distribution>::train(
     const std::vector<std::vector<T>>& samples)
 {
 	subsampled_train_(samples, samples.size());
+	parse_distances(samples);
 }
 
 
@@ -100,6 +101,7 @@ template <class recType, class Graph, class Metric, class Distribution>
 void SOM<recType, Graph, Metric, Distribution>::estimate(const std::vector<std::vector<T>>& samples, const size_t sampleSize)
 {
 	subsampled_train_(samples, sampleSize);
+	parse_distances(samples);
 }
 
 template <class recType, class Graph, class Metric, class Distribution>
@@ -158,22 +160,23 @@ double SOM<recType, Graph, Metric, Distribution>::std_deviation(const std::vecto
 
 
 template <class recType, class Graph, class Metric, class Distribution>
-std::vector<bool> SOM<recType, Graph, Metric, Distribution>::check_if_anomaly(const std::vector<std::vector<T>>& samples)
+std::vector<bool> SOM<recType, Graph, Metric, Distribution>::check_if_anomaly(const std::vector<std::vector<T>>& samples, double samples_threshold)
 {
 	std::vector<bool> result;
+	
+	int threshold_index = closest_distances.size() * (1 - samples_threshold);
+	if (threshold_index == closest_distances.size())
+	{
+		threshold_index--;
+	}
+	std::cout << threshold_index << " " << closest_distances.size() << " " << closest_distances[threshold_index] << " " << std::endl;
 
 	for (size_t i = 0; i < samples.size(); i++)
 	{
-		std::vector<std::vector<double>> dimR;
-		auto dimRR = encode(samples[i]);
-		dimR.push_back(dimRR);
-		//auto bmu = BMU(samples[i]);
-		//std::cout << dimR[bmu] << std::endl;
-		
-		auto e = entropy(dimR, 3, 2.0, metric::Euclidian<double>());
-		std::cout << "entropy: " << e << std::endl;
+		auto dimR = encode(samples[i]);
+		auto bmu = BMU(samples[i]);
 
-		result.push_back(true);
+		result.push_back(dimR[bmu] > closest_distances[threshold_index]);
 	}
 
 	return result;
@@ -286,6 +289,21 @@ void SOM<recType, Graph, Metric, Distribution>::subsampled_train_(const std::vec
 		++idx;		
 
     }
+}
+
+
+
+template <class recType, class Graph, class Metric, class Distribution>
+void SOM<recType, Graph, Metric, Distribution>::parse_distances(const std::vector<std::vector<T>>& samples)
+{
+	for (size_t i = 0; i < samples.size(); i++)
+	{
+		auto dimR = encode(samples[i]);
+		auto bmu = BMU(samples[i]);
+		closest_distances.push_back(dimR[bmu]);
+	}
+	
+    std::sort(closest_distances.begin(), closest_distances.end());
 }
 
 }  // namespace metric
