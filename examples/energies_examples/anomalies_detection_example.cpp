@@ -380,17 +380,28 @@ int main(int argc, char *argv[])
 		entropies.push_back(e);
 	}
 	
+    std::sort(closest.begin(), closest.end());
+    std::sort(entropies.begin(), entropies.end());
+	
 	std::vector<double>::iterator result = std::min_element(closest.begin(), closest.end());		
 	std::cout << "min closest is : " << closest[std::distance(closest.begin(), result)] << std::endl;
 	result = std::max_element(closest.begin(), closest.end());		
 	std::cout << "max closest is : " << closest[std::distance(closest.begin(), result)] << std::endl;
 	std::cout << "mean closest is : " << closest_sum / closest.size() << std::endl;
+	for (auto i = closest.size() - 10; i < closest.size(); i++)
+	{
+		std::cout << "last closest is : " << closest[i] << std::endl;
+	}
 	std::cout << std::endl;
 	
 	result = std::min_element(entropies.begin(), entropies.end());		
 	std::cout << "min entropy is : " << entropies[std::distance(entropies.begin(), result)] << std::endl;
 	result = std::max_element(entropies.begin(), entropies.end());		
 	std::cout << "max entropy is : " << entropies[std::distance(entropies.begin(), result)] << std::endl;
+	for (auto i = entropies.size() - 10; i < entropies.size(); i++)
+	{
+		std::cout << "last entropy is : " << entropies[i] << std::endl;
+	}
 
 	
 	std::vector<std::vector<double>> dimR;
