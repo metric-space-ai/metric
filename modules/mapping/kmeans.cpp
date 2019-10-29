@@ -228,7 +228,7 @@ std::tuple<std::vector<int>, std::vector<std::vector<T>>, std::vector<int>> kmea
         ++t;
     } while (updated_number_of_means != int(0) && t < maxiter);
 
-    kmeans_details::rearrange_assignments(assignments);
+    //kmeans_details::rearrange_assignments(assignments); // hide by Stepan Mmaontov 28 10 2019 - rearranging asssignments does not reflect with counts and means
     return { assignments, means, counts };
 }
 

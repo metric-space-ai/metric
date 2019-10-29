@@ -156,6 +156,29 @@ double SOM<recType, Graph, Metric, Distribution>::std_deviation(const std::vecto
 	return sqrt(total_distances / samples.size());
 }
 
+
+template <class recType, class Graph, class Metric, class Distribution>
+std::vector<bool> SOM<recType, Graph, Metric, Distribution>::check_if_anomaly(const std::vector<std::vector<T>>& samples)
+{
+	std::vector<bool> result;
+
+	for (size_t i = 0; i < samples.size(); i++)
+	{
+		std::vector<std::vector<double>> dimR;
+		auto dimRR = encode(samples[i]);
+		dimR.push_back(dimRR);
+		//auto bmu = BMU(samples[i]);
+		//std::cout << dimR[bmu] << std::endl;
+		
+		auto e = entropy(dimR, 3, 2.0, metric::Euclidian<double>());
+		std::cout << "entropy: " << e << std::endl;
+
+		result.push_back(true);
+	}
+
+	return result;
+}
+
 // PRIVATE
 
 template <class recType, class Graph, class Metric, class Distribution>

@@ -22,35 +22,40 @@ if(MSVC)
 endif(MSVC) 
 
 include_directories(${Boost_INCLUDE_DIRS}) 
+ 
 
+file(GLOB EXAMPLE_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.cpp) 
 
-add_executable(energies_example energies_example.cpp)
+#Run through each source
+foreach(exampleSrc ${EXAMPLE_SRCS})
 
-
-if(UNIX)
-    target_compile_features(energies_example PUBLIC cxx_std_17)
-    target_compile_options(energies_example PRIVATE -pthread -O3)
-    set_target_properties(energies_example PROPERTIES LINK_FLAGS -pthread)
+	#Extract the filename without an extension (NAME_WE)
+	get_filename_component(exampleName ${exampleSrc} NAME_WE)
 	
-    # set_target_properties(energies_example PROPERTIES COMPILE_FLAGS "-stdlib=libc++ -pthread")
-	# target_link_libraries(energies_example PRIVATE stdc++fs)
-    # target_link_libraries(energies_example PRIVATE c++experimental pthread)
-endif(UNIX)
-
-find_package(LAPACK)
+	add_executable(${exampleName} ${exampleSrc})
 
 
-if(LAPACK_LIBRARIES)
-	target_link_libraries(energies_example PRIVATE ${LAPACK_LIBRARIES})	
-endif(LAPACK_LIBRARIES)
+	if(UNIX)
+		target_compile_features(${exampleName} PUBLIC cxx_std_17)
+		target_compile_options(${exampleName} PRIVATE -pthread -O3)
+		set_target_properties(${exampleName} PROPERTIES LINK_FLAGS -pthread)
+	endif(UNIX)
 
-if(CMAKE_SYSTEM_NAME MATCHES Windows)
+	find_package(LAPACK)
 
-	target_link_directories(energies_example PRIVATE ${PROJECT_SOURCE_DIR}/../../mkl/lib/intel64_win)
-	target_link_libraries(energies_example PRIVATE mkl_core.lib mkl_sequential.lib mkl_intel_lp64.lib)
-endif()
 
-target_link_libraries(energies_example PRIVATE ${Boost_LIBRARIES})
+	if(LAPACK_LIBRARIES)
+		target_link_libraries(${exampleName} PRIVATE ${LAPACK_LIBRARIES})	
+	endif(LAPACK_LIBRARIES)
+
+	if(CMAKE_SYSTEM_NAME MATCHES Windows)
+
+		target_link_directories(${exampleName} PRIVATE ${PROJECT_SOURCE_DIR}/../../mkl/lib/intel64_win)
+		target_link_libraries(${exampleName} PRIVATE mkl_core.lib mkl_sequential.lib mkl_intel_lp64.lib)
+	endif()
+
+	target_link_libraries(${exampleName} PRIVATE ${Boost_LIBRARIES})
+endforeach(exampleSrc)
 
 
 

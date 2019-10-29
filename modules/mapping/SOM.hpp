@@ -153,6 +153,15 @@ public:
     /**
 		 * @brief 
 		 * 
+		 * @param samples 
+		 * 
+		 * @return std::vector<bool> 
+		 */
+	std::vector<bool> check_if_anomaly(const std::vector<std::vector<T>>& samples);
+
+    /**
+		 * @brief 
+		 * 
 		 * @return
 		 */
     size_t getNodesNumber()
