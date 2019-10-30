@@ -106,10 +106,10 @@ namespace metric {
 		return metric_type_names[best_index];
 	}
 	
-	template <typename Record, typename Graph, typename Metric = metric::Euclidian<double>>
-	double get_mean_distance_difference(Graph &graph, Metric distance, std::vector<Record> dataset, std::vector<size_t> randomized_indexes, bool isEstimate)
+	template <typename Record, typename Graph, typename Metric>
+	double MetricAutoDetector::get_mean_distance_difference(Graph &graph, Metric distance, std::vector<Record> dataset, std::vector<size_t> randomized_indexes, bool isEstimate)
 	{		
-		metric::SOM<Record, Graph, Metric> som(graph, Metric());
+		metric::SOM<Record, Graph, Metric> som(graph, distance);
 		if (isEstimate)
 		{
 			som.estimate(dataset, 50);
