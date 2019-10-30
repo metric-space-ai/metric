@@ -211,7 +211,7 @@ private:
 		 * 
 		 * @param samples 
 		 */
-    void parse_distances(const std::vector<std::vector<T>>& samples);
+    void parse_distances(const std::vector<std::vector<T>>& samples, const size_t sampleSize);
 };
 
 }  // namespace metric

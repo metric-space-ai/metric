@@ -10,7 +10,7 @@ project(mapping_examples)
 include_directories(
 	${PROJECT_SOURCE_DIR}
 )
-	
+	 
 file(COPY "assets" DESTINATION ".")
 
 include_directories(${Boost_INCLUDE_DIRS}) 
@@ -42,6 +42,7 @@ endif(UNIX)
 # continious_mappers / clustering
 add_executable(SOM_example continious_mappers/clustering/SOM_example.cpp)
 add_executable(PCFA_example continious_mappers/clustering/PCFA_example.cpp)
+add_executable(SOM_and_MNIST_example continious_mappers/clustering/SOM_and_MNIST_example.cpp)
 
 # continious_mappers / classification
 add_executable(ESN_example continious_mappers/classification/ESN_example.cpp)
@@ -60,6 +61,7 @@ if(UNIX)
 	set_target_properties(C45_example PROPERTIES CXX_STANDARD 17)
 	set_target_properties(SOM_example PROPERTIES CXX_STANDARD 17)
 	set_target_properties(PCFA_example PROPERTIES CXX_STANDARD 17)
+	set_target_properties(SOM_and_MNIST_example PROPERTIES CXX_STANDARD 17)
 	set_target_properties(ESN_example PROPERTIES CXX_STANDARD 17)
 	set_target_properties(auto_detect_metric_example PROPERTIES CXX_STANDARD 17)
 endif(UNIX)
@@ -77,6 +79,7 @@ if(LAPACK_LIBRARIES)
 	target_link_libraries(C45_example PRIVATE ${LAPACK_LIBRARIES})	
 	target_link_libraries(SOM_example PRIVATE ${LAPACK_LIBRARIES})	
 	target_link_libraries(PCFA_example PRIVATE ${LAPACK_LIBRARIES})	
+	target_link_libraries(SOM_and_MNIST_example PRIVATE ${LAPACK_LIBRARIES})	
 	target_link_libraries(ESN_example PRIVATE ${LAPACK_LIBRARIES})
 	target_link_libraries(auto_detect_metric_example PRIVATE ${LAPACK_LIBRARIES})
 endif(LAPACK_LIBRARIES)
@@ -118,6 +121,10 @@ if(CMAKE_SYSTEM_NAME MATCHES Windows)
 	target_link_directories(PCFA_example PRIVATE ${PROJECT_SOURCE_DIR}/../../mkl/lib/intel64_win)
 	target_link_libraries(PCFA_example PRIVATE mkl_core.lib mkl_sequential.lib mkl_intel_lp64.lib)
 	target_link_libraries(PCFA_example PRIVATE ${Boost_LIBRARIES})
+
+	target_link_directories(SOM_and_MNIST_example PRIVATE ${PROJECT_SOURCE_DIR}/../../mkl/lib/intel64_win)
+	target_link_libraries(SOM_and_MNIST_example PRIVATE mkl_core.lib mkl_sequential.lib mkl_intel_lp64.lib)
+	target_link_libraries(SOM_and_MNIST_example PRIVATE ${Boost_LIBRARIES})
 
 	target_link_directories(ESN_example PRIVATE ${PROJECT_SOURCE_DIR}/../../mkl/lib/intel64_win)
 	target_link_libraries(ESN_example PRIVATE mkl_core.lib mkl_sequential.lib mkl_intel_lp64.lib)

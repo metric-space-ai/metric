@@ -93,7 +93,7 @@ void SOM<recType, Graph, Metric, Distribution>::train(
     const std::vector<std::vector<T>>& samples)
 {
 	subsampled_train_(samples, samples.size());
-	parse_distances(samples);
+	parse_distances(samples, samples.size());
 }
 
 
@@ -101,7 +101,7 @@ template <class recType, class Graph, class Metric, class Distribution>
 void SOM<recType, Graph, Metric, Distribution>::estimate(const std::vector<std::vector<T>>& samples, const size_t sampleSize)
 {
 	subsampled_train_(samples, sampleSize);
-	parse_distances(samples);
+	parse_distances(samples, sampleSize);
 }
 
 template <class recType, class Graph, class Metric, class Distribution>
@@ -293,12 +293,21 @@ void SOM<recType, Graph, Metric, Distribution>::subsampled_train_(const std::vec
 
 
 template <class recType, class Graph, class Metric, class Distribution>
-void SOM<recType, Graph, Metric, Distribution>::parse_distances(const std::vector<std::vector<T>>& samples)
-{
-	for (size_t i = 0; i < samples.size(); i++)
+void SOM<recType, Graph, Metric, Distribution>::parse_distances(const std::vector<std::vector<T>>& samples, const size_t sampleSize)
+{		
+    // Random samples 
+    std::vector<size_t> randomized_samples(samples.size());
+    std::iota(randomized_samples.begin(), randomized_samples.end(), 0);
+
+	// shuffle samples after all was processed		
+    std::shuffle(randomized_samples.begin(), randomized_samples.end(), std::mt19937 { std::random_device {}() });
+
+	for (size_t i = 0; i < sampleSize; i++)
 	{
-		auto dimR = encode(samples[i]);
-		auto bmu = BMU(samples[i]);
+		size_t sample_idx = randomized_samples[i];
+
+		auto dimR = encode(samples[sample_idx]);
+		auto bmu = BMU(samples[sample_idx]);
 		closest_distances.push_back(dimR[bmu]);
 	}
 	
