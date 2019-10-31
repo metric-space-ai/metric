@@ -85,7 +85,7 @@ int main()
 
     float magnitude = 80;
 
-    auto raw_vdata = read_csv_num<double>("vibration_smaller.csv", ",");
+    auto raw_vdata = read_csv_num<double>("vibration_smaller_3.csv", ",");
     auto vdata =  transpose_timeseries(raw_vdata);
 
     mat2bmp::blaze2bmp_norm(vdata, "input.bmp", magnitude);
@@ -96,7 +96,8 @@ int main()
 
 //    return 0;
 
-    auto vDSPCC = metric::DSPCC<std::vector<double>, void>(vdata, 8, 8, 0.1, 0);
+//    auto vDSPCC = metric::DSPCC_single_PCFA<std::vector<double>, void>(vdata, 8, 8, 0.5, 0); // dataset, PCFA features, DWT subbands, freq share
+    auto vDSPCC = metric::DSPCC<std::vector<double>, void>(vdata, 8, 8, 0.5, 0); // dataset, PCFA features, DWT subbands, freq share
 
     auto v_encoded = vDSPCC.encode(vdata);
     auto v_decoded = vDSPCC.decode(v_encoded);

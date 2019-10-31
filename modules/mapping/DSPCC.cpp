@@ -58,7 +58,7 @@ std::vector<T> sequential_iDWT(std::deque<std::vector<T>> in)
 // recursive split for arbitrary depth
 // TODO consider creating special class for DWT split in tree order (with stack encaplulated)
 
-template <typename T>
+template <typename T> // TODO add container template parameter!! (we need to support any recType!)
 std::deque<std::vector<T>> DWT_split(
         std::deque<std::vector<T>> x,
         std::stack<size_t> & subband_length,
@@ -80,13 +80,13 @@ std::deque<std::vector<T>> DWT_split(
 }
 
 
-template <typename T>
-std::deque<std::vector<T>> DWT_unsplit(
-        std::deque<std::vector<T>> in,
+template <template <typename, typename> class Container, typename ValueType, typename Allocator>
+Container<std::vector<ValueType>, Allocator> DWT_unsplit(
+        Container<std::vector<ValueType>, Allocator> in,
         std::stack<size_t> & subband_length,
         int wavelet_type
         ) {
-    std::deque<std::vector<T>> x;
+    Container<std::vector<ValueType>, Allocator> x;
     if (in.size() > 1) {
         for (size_t el = 0; el<in.size(); el+=2) { // we assume size of deque is even, TODO check
             x.push_back(wavelet::idwt(in[el], in[el+1], wavelet_type, subband_length.top()));
@@ -99,7 +99,7 @@ std::deque<std::vector<T>> DWT_unsplit(
 }
 
 
-template <typename T>
+template <typename T> // TODO add container template parameter!! (we need to support any recType!)
 std::deque<std::vector<T>>
 sequential_DWT(
         std::vector<T> x,
@@ -112,14 +112,14 @@ sequential_DWT(
 }
 
 
-template <typename T>
-std::vector<T>
+template <template <typename, typename> class Container, typename ValueType, typename Allocator>
+std::vector<ValueType>
 sequential_iDWT(
-        std::deque<std::vector<T>> in,
+        Container<std::vector<ValueType>, Allocator> in,
         std::stack<size_t> & subband_length,
         int wavelet_type
         ) {
-    std::deque<std::vector<T>> deque_out = DWT_unsplit(in, subband_length, wavelet_type);
+    Container<std::vector<ValueType>, Allocator> deque_out = DWT_unsplit(in, subband_length, wavelet_type);
     return deque_out[0];
 }
 
@@ -324,7 +324,7 @@ DSPCC1<recType, Metric>::mix_index(size_t length, float time_freq_balance) {
 
 
 template <typename recType, typename Metric>
-DSPCC<recType, Metric>::DSPCC(
+DSPCC_single_PCFA<recType, Metric>::DSPCC_single_PCFA(
         const std::vector<recType> & TrainingDataset,
         size_t n_features_,
         size_t n_subbands_,
@@ -347,7 +347,7 @@ DSPCC<recType, Metric>::DSPCC(
 
 template <typename recType, typename Metric>
 std::vector<std::vector<recType>>
-DSPCC<recType, Metric>::outer_encode(
+DSPCC_single_PCFA<recType, Metric>::outer_encode(
         const std::vector<recType> & Curves
         ) {
 
@@ -408,7 +408,7 @@ DSPCC<recType, Metric>::outer_encode(
 
 template <typename recType, typename Metric>
 std::vector<recType>
-DSPCC<recType, Metric>::outer_decode(const std::vector<std::vector<recType>> & TimeFreqMixedData) {
+DSPCC_single_PCFA<recType, Metric>::outer_decode(const std::vector<std::vector<recType>> & TimeFreqMixedData) {
 
     using ElementType = typename recType::value_type;
 
@@ -447,7 +447,7 @@ DSPCC<recType, Metric>::outer_decode(const std::vector<std::vector<recType>> & T
 
 template <typename recType, typename Metric>
 std::vector<std::vector<recType>>
-DSPCC<recType, Metric>::encode(const std::vector<recType> & Data) {
+DSPCC_single_PCFA<recType, Metric>::encode(const std::vector<recType> & Data) {
     std::vector<std::vector<recType>> Encoded;
     auto PreEncoded = outer_encode(Data);
     for (size_t subband_idx = 0; subband_idx<PreEncoded.size(); ++subband_idx) {
@@ -460,7 +460,7 @@ DSPCC<recType, Metric>::encode(const std::vector<recType> & Data) {
 
 template <typename recType, typename Metric>
 std::vector<recType>
-DSPCC<recType, Metric>::decode(const std::vector<std::vector<recType>> & Codes) {
+DSPCC_single_PCFA<recType, Metric>::decode(const std::vector<std::vector<recType>> & Codes) {
     // TODO add rearrangement procedure
     std::vector<std::vector<recType>> PreDecoded;
     for (size_t subband_idx = 0; subband_idx<Codes.size(); ++subband_idx) {
@@ -469,6 +469,236 @@ DSPCC<recType, Metric>::decode(const std::vector<std::vector<recType>> & Codes) 
     }
     std::vector<recType> Decoded = outer_decode(PreDecoded);
     return Decoded;
+}
+
+
+template <typename recType, typename Metric>
+size_t
+DSPCC_single_PCFA<recType, Metric>::mix_index(size_t length, float time_freq_balance) {
+    // computing 2^n value nearest to given time-freq mix factor
+    //size_t length = TrainingDataset[0].size(); // TODO check existence of [0]
+    float mix_factor = time_freq_balance * length; // TODO check in time_freq_balance_ is in [0, 1]
+    size_t n = 4; // we skip 2^1 // TODO try 2
+    size_t n_prev = 0;
+    size_t mix_index = 0;
+    while (true) {
+        if (n > mix_factor) {
+            if (n > length) { // overrun
+                mix_index = n_prev;
+                break;
+            }
+            if (mix_factor - n_prev > n - mix_factor) // we stick to n_prev or to n, not greater than max index
+                mix_index = n;
+            else
+                mix_index = n_prev;
+            break;
+        }
+        n_prev = n;
+        n = n*2; // n is ever degree of 2
+    }
+    return mix_index;
+}
+
+
+
+template <typename recType, typename Metric>
+size_t
+DSPCC_single_PCFA<recType, Metric>::subband_size(size_t original_size, size_t depth, size_t wavelet_length) {
+    size_t n = 1;
+    size_t sum = 0;
+    for (size_t i=1; i<=depth; ++i){
+        n = n*2;
+        sum += (wavelet_length - 2)/n;
+    }
+    return original_size/n + sum;
+}
+
+
+template <typename recType, typename Metric>
+size_t
+DSPCC_single_PCFA<recType, Metric>::original_size(size_t subband_size, size_t depth, size_t wavelet_length) {
+    size_t n = 1;
+    size_t sum = 0;
+    for (size_t i=1; i<=depth; ++i){
+        n = n*2;
+        sum += (wavelet_length - 2)/n;
+    }
+    return n*(subband_size - sum);
+}
+
+
+
+
+
+
+
+// ------------------------------------------
+// version of DSPCC with post-PCFA mixing
+
+
+
+
+
+template <typename recType, typename Metric>
+DSPCC<recType, Metric>::DSPCC(
+        const std::vector<recType> & TrainingDataset,
+        size_t n_features_,
+        size_t n_subbands_,
+        float time_freq_balance_,
+        float DCT_cutoff_ // TODO remove
+        ) {
+
+    time_freq_balance = time_freq_balance_;
+    crop_idx = 0;
+    n_features = n_features_; // number of features selected from both PCFAs
+    n_features_freq = std::round(n_features_*time_freq_balance_);
+    n_features_time = n_features_ - n_features_freq;
+    for (size_t n = 4; n<=n_subbands_; n = n*2)
+        n_subbands = n;
+
+    auto PreEncoded = outer_encode(TrainingDataset);
+    for (size_t subband_idx = 0; subband_idx<std::get<0>(PreEncoded).size(); ++subband_idx) {
+        freq_PCA_models.push_back(metric::PCFA<recType, void>(std::get<0>(PreEncoded)[subband_idx], n_features_freq));
+        time_PCA_models.push_back(metric::PCFA<recType, void>(std::get<1>(PreEncoded)[subband_idx], n_features_time));
+    }
+}
+
+
+
+template <typename recType, typename Metric>
+std::tuple<std::deque<std::vector<recType>>, std::deque<std::vector<recType>>>
+DSPCC<recType, Metric>::outer_encode(
+        const std::vector<recType> & Curves
+        ) {
+
+    using ElementType = typename recType::value_type;
+
+    std::deque<std::vector<recType>> FreqData;
+    std::deque<std::vector<recType>> TimeData;
+    for (size_t subband_idx = 0; subband_idx<(n_subbands); ++subband_idx) {
+        std::vector<recType> SubbandData;
+        for (size_t record_idx = 0; record_idx<Curves.size(); ++record_idx) {
+            recType rec = {0};
+            SubbandData.push_back(rec); // TODO optimize
+        }
+        TimeData.push_back(SubbandData);
+        FreqData.push_back(SubbandData);
+    }
+
+    for (size_t record_idx = 0; record_idx<Curves.size(); ++record_idx) {
+        std::stack<size_t> subband_length_local;
+
+        // compute size and crop input
+        size_t depth = (size_t)std::floor(std::log2(n_subbands));
+        size_t max_subband_size = subband_size(Curves[0].size(), depth); // TODO check if not empty
+        size_t appropriate_subband_size = mix_index(max_subband_size, 1);
+        size_t crop_size = original_size(appropriate_subband_size, depth);
+
+        recType cropped_record(Curves[record_idx].begin(), Curves[record_idx].begin() + crop_size);
+
+        std::deque<std::vector<ElementType>> current_rec_subbands_timedomain = sequential_DWT<ElementType>(cropped_record, subband_length_local, 5, n_subbands); // TODO replace 5!! // TODO support different recType types
+        if (crop_idx==0) { // only during the first run
+            crop_idx = mix_index(current_rec_subbands_timedomain[0].size(), 1); // max n^2, no dependence on time_freq_balance here!
+            subband_length = subband_length_local;
+        }
+        std::deque<std::vector<ElementType>> current_rec_subbands_freqdomain(current_rec_subbands_timedomain);
+        metric::apply_DCT_STL(current_rec_subbands_freqdomain, false, crop_idx); // transform all subbands at once (only first mix_idx values are replaced, the rest is left unchanged!), TODO refactor cutting!!
+        for (size_t subband_idx = 0; subband_idx<current_rec_subbands_timedomain.size(); ++subband_idx) {
+            TimeData[subband_idx][record_idx] = current_rec_subbands_timedomain[subband_idx];
+            FreqData[subband_idx][record_idx] = current_rec_subbands_freqdomain[subband_idx];
+        }
+    }
+    return std::make_tuple(FreqData, TimeData);
+}
+
+
+template <typename recType, typename Metric>
+std::vector<recType>
+DSPCC<recType, Metric>::outer_decode(const std::tuple<std::deque<std::vector<recType>>, std::deque<std::vector<recType>>> & TimeFreqData) {
+
+    using ElementType = typename recType::value_type;
+
+    std::deque<std::vector<recType>> FreqData = std::get<0>(TimeFreqData);
+    std::deque<std::vector<recType>> TimeData = std::get<1>(TimeFreqData);
+
+    std::vector<recType> Curves;
+    for (size_t record_idx = 0; record_idx<TimeData[0].size(); ++record_idx) { // TODO check if [0] element exists
+        std::vector<recType> subbands_freqdomain;
+        std::vector<recType> subbands_timedomain;
+        for (size_t subband_idx = 0; subband_idx<TimeData.size(); ++subband_idx) {
+//            auto subband_mixed = TimeFreqMixedData[subband_idx][record_idx];
+//            recType current_subband_freqdomain(subband_mixed.begin(), subband_mixed.begin() + crop_idx);
+//            recType current_subband_timedomain(subband_mixed.begin() + crop_idx, subband_mixed.end());
+            subbands_timedomain.push_back(TimeData[subband_idx][record_idx]);
+            subbands_freqdomain.push_back(FreqData[subband_idx][record_idx]);
+        }
+        metric::apply_DCT_STL(subbands_freqdomain, true);
+
+        std::stack<size_t> subband_length_copy(subband_length);
+        std::vector<ElementType> restored_waveform_freq = sequential_iDWT(subbands_freqdomain, subband_length_copy, 5);
+        subband_length_copy = subband_length;
+        std::vector<ElementType> restored_waveform_time = sequential_iDWT(subbands_timedomain, subband_length_copy, 5);
+        recType restored_waveform_out;
+        for (size_t el_idx = 0; el_idx<restored_waveform_freq.size(); ++el_idx) {
+            restored_waveform_out.push_back( (restored_waveform_freq[el_idx]*time_freq_balance + restored_waveform_time[el_idx]*(1 - time_freq_balance)) / 2 );
+        }
+        Curves.push_back(restored_waveform_out);
+    }
+    return Curves;
+}
+
+
+
+
+template <typename recType, typename Metric>
+std::vector<std::vector<recType>>
+DSPCC<recType, Metric>::encode(const std::vector<recType> & Data) {
+    std::vector<std::vector<recType>> Encoded;
+    auto PreEncoded = outer_encode(Data);
+    for (size_t subband_idx = 0; subband_idx<std::get<0>(PreEncoded).size(); ++subband_idx) {
+        auto freq_encoded_subband = freq_PCA_models[subband_idx].encode(std::get<0>(PreEncoded)[subband_idx]);
+        auto time_encoded_subband = time_PCA_models[subband_idx].encode(std::get<1>(PreEncoded)[subband_idx]);
+        // here we crop and concatenate codes
+        std::vector<recType> encoded_subband;
+        for (size_t record_idx = 0; record_idx<Data.size(); ++record_idx)  {
+            recType mixed_codes;
+            for (size_t el_idx = 0; el_idx<n_features_freq; ++el_idx) {
+                mixed_codes.push_back(freq_encoded_subband[record_idx][el_idx]);
+            }
+            for (size_t el_idx = 0; el_idx<n_features_time; ++el_idx) {
+                mixed_codes.push_back(time_encoded_subband[record_idx][el_idx]); // we concatenate all features to single vector
+            }
+            encoded_subband.push_back(mixed_codes);
+        }
+        Encoded.push_back(encoded_subband);
+    }
+    return Encoded; // TODO add rearrangement procedure and top-level PCFA
+}
+
+
+template <typename recType, typename Metric>
+std::vector<recType>
+DSPCC<recType, Metric>::decode(const std::vector<std::vector<recType>> & Codes) {
+    // TODO add rearrangement procedure
+
+    std::deque<std::vector<recType>> FreqData;
+    std::deque<std::vector<recType>> TimeData;
+    for (size_t subband_idx = 0; subband_idx<Codes.size(); ++subband_idx) {
+        // TODO here divide each vector of codes into freq and time parts
+        std::vector<recType> freq_codes;
+        std::vector<recType> time_codes;
+        for (size_t record_idx = 0; record_idx<Codes[subband_idx].size(); ++record_idx) {
+            recType freq_code_part(Codes[subband_idx][record_idx].begin(), Codes[subband_idx][record_idx].begin() + n_features_freq);
+            recType time_code_part(Codes[subband_idx][record_idx].begin() + n_features_freq, Codes[subband_idx][record_idx].end());
+            freq_codes.push_back(freq_code_part);
+            time_codes.push_back(time_code_part);
+        }
+        auto decoded_subband_freq = freq_PCA_models[subband_idx].decode(freq_codes);
+        auto decoded_subband_time = freq_PCA_models[subband_idx].decode(time_codes);
+        FreqData.push_back(decoded_subband_freq);
+        TimeData.push_back(decoded_subband_time);
+    }
+    return outer_decode(std::make_tuple(FreqData, TimeData));
 }
 
 
@@ -525,6 +755,10 @@ DSPCC<recType, Metric>::original_size(size_t subband_size, size_t depth, size_t 
     }
     return n*(subband_size - sum);
 }
+
+
+
+
 
 
 
