@@ -64,6 +64,9 @@ blaze::DynamicMatrix<typename BlazeMatrix::ElementType> PCA(
     for (size_t row_idx = 0; row_idx < In.rows(); row_idx++)
         blaze::row(CenteredInput, row_idx) = blaze::row(In, row_idx) - averages;
 
+    if (n_components < 1)
+        return Result;
+
     blaze::SymmetricMatrix<blaze::DynamicMatrix<typename BlazeMatrix::ElementType>> CovMat = blaze::evaluate(trans(CenteredInput) * CenteredInput);
 
     blaze::DynamicVector<typename BlazeMatrix::ElementType, blaze::columnVector> w(CovMat.rows());  // for eigenvalues

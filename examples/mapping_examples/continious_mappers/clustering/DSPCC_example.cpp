@@ -97,7 +97,7 @@ int main()
 //    return 0;
 
 //    auto vDSPCC = metric::DSPCC_single_PCFA<std::vector<double>, void>(vdata, 8, 8, 0.5, 0); // dataset, PCFA features, DWT subbands, freq share
-    auto vDSPCC = metric::DSPCC<std::vector<double>, void>(vdata, 8, 8, 0.8, 0); // dataset, PCFA features, DWT subbands, freq share
+    auto vDSPCC = metric::DSPCC<std::vector<double>, void>(vdata, 8, 8, 0.5, 0); // dataset, PCFA features, DWT subbands, freq share
 
     auto v_encoded = vDSPCC.encode(vdata);
     auto v_decoded = vDSPCC.decode(v_encoded);
