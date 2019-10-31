@@ -626,9 +626,6 @@ DSPCC<recType, Metric>::outer_decode(const std::tuple<std::deque<std::vector<rec
         std::vector<recType> subbands_freqdomain;
         std::vector<recType> subbands_timedomain;
         for (size_t subband_idx = 0; subband_idx<TimeData.size(); ++subband_idx) {
-//            auto subband_mixed = TimeFreqMixedData[subband_idx][record_idx];
-//            recType current_subband_freqdomain(subband_mixed.begin(), subband_mixed.begin() + crop_idx);
-//            recType current_subband_timedomain(subband_mixed.begin() + crop_idx, subband_mixed.end());
             subbands_timedomain.push_back(TimeData[subband_idx][record_idx]);
             subbands_freqdomain.push_back(FreqData[subband_idx][record_idx]);
         }
@@ -672,19 +669,18 @@ DSPCC<recType, Metric>::encode(const std::vector<recType> & Data) {
         }
         Encoded.push_back(encoded_subband);
     }
-    return Encoded; // TODO add rearrangement procedure and top-level PCFA
+    return Encoded; // TODO add top-level PCFA
 }
 
 
 template <typename recType, typename Metric>
 std::vector<recType>
 DSPCC<recType, Metric>::decode(const std::vector<std::vector<recType>> & Codes) {
-    // TODO add rearrangement procedure
 
     std::deque<std::vector<recType>> FreqData;
     std::deque<std::vector<recType>> TimeData;
     for (size_t subband_idx = 0; subband_idx<Codes.size(); ++subband_idx) {
-        // TODO here divide each vector of codes into freq and time parts
+        // here we divide each vector of codes into freq and time parts
         std::vector<recType> freq_codes;
         std::vector<recType> time_codes;
         for (size_t record_idx = 0; record_idx<Codes[subband_idx].size(); ++record_idx) {
@@ -694,7 +690,7 @@ DSPCC<recType, Metric>::decode(const std::vector<std::vector<recType>> & Codes) 
             time_codes.push_back(time_code_part);
         }
         auto decoded_subband_freq = freq_PCA_models[subband_idx].decode(freq_codes);
-        auto decoded_subband_time = freq_PCA_models[subband_idx].decode(time_codes);
+        auto decoded_subband_time = time_PCA_models[subband_idx].decode(time_codes);
         FreqData.push_back(decoded_subband_freq);
         TimeData.push_back(decoded_subband_time);
     }
