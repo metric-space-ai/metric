@@ -153,6 +153,15 @@ public:
     /**
 		 * @brief 
 		 * 
+		 * @param samples 
+		 * 
+		 * @return std::vector<bool> 
+		 */
+	std::vector<bool> check_if_anomaly(const std::vector<std::vector<T>>& samples, double samples_threshold = 0.0);
+
+    /**
+		 * @brief 
+		 * 
 		 * @return
 		 */
     size_t getNodesNumber()
@@ -185,16 +194,24 @@ private:
 	double neighborhood_start_size;
 	double neigbour_range_decay;
 	long long random_seed;
-
+	
     std::vector<std::vector<T>> weights;  // coordinates in the input_dimensions space 
+    std::vector<T> closest_distances;  // closest distances to the nodes for each sample from train dataset
 
-
+	
     /**
 		 * @brief 
 		 * 
 		 * @param samples 
 		 */
     void subsampled_train_(const std::vector<std::vector<T>>& samples, const size_t sampleSize);
+
+    /**
+		 * @brief 
+		 * 
+		 * @param samples 
+		 */
+    void parse_distances(const std::vector<std::vector<T>>& samples);
 };
 
 }  // namespace metric
