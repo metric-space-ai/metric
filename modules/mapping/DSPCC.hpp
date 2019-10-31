@@ -58,7 +58,7 @@ public:
    *
    * @param TrainingDataset - Blaze matrix with timeseries in columns
    * @param n_features_ - desired number of features to extract
-   * @param time_freq_balance_ - contrinution of time domain data in mixed time-freqency PCFA input, values from 0 to 1
+   * @param time_freq_balance_ - contribution of time domain data in mixed time-freqency PCFA input, values from 0 to 1
    */
     DSPCC1(const std::vector<recType> & TrainingDataset, size_t n_features_ = 1, float time_freq_balance_ = 0.5);
 
@@ -189,7 +189,7 @@ public:
    * @param TrainingDataset - Blaze matrix with timeseries in columns
    * @param n_features_ - desired number of features to extract
    * @param n_subbands_ - maximum number of DWT subbands
-   * @param time_freq_balance_ - contrinution of time domain data in mixed time-freqency PCFA input, values from 0 to 1
+   * @param time_freq_balance_ - contribution of time domain data in mixed time-freqency PCFA input, values from 0 to 1
    * @param DCT_cutoff  - the share of waveform allowed to be cut off when making the length of waveform equal to the degree of 2
    */
     DSPCC_single_PCFA(
@@ -343,7 +343,7 @@ public:
             size_t n_features_ = 1,
             size_t n_subbands_ = 4,
             float time_freq_balance_ = 0.5,
-            float DCT_cutoff_ = 0 // TODDDO remove
+            float DCT_cutoff_ = 0 // TODO remove
             );
 
     /**

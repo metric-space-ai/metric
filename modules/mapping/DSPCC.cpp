@@ -20,7 +20,7 @@ namespace metric {
 
 template <typename T>
 std::deque<std::vector<T>>
-sequential_DWT(std::vector<T> x) // TODO add parameters, replace hardcoded depth by recursion
+sequential_DWT(std::vector<T> x)
 {
     auto [x1, x2] = wavelet::dwt(x, 5);
     auto [x11, x12] = wavelet::dwt(x1, 5);
@@ -58,7 +58,7 @@ std::vector<T> sequential_iDWT(std::deque<std::vector<T>> in)
 // recursive split for arbitrary depth
 // TODO consider creating special class for DWT split in tree order (with stack encaplulated)
 
-template <typename T> // TODO add container template parameter!! (we need to support any recType!)
+template <typename T> // TODO add container template parameter (we need to support any recType!)
 std::deque<std::vector<T>> DWT_split(
         std::deque<std::vector<T>> x,
         std::stack<size_t> & subband_length,
@@ -99,7 +99,7 @@ Container<std::vector<ValueType>, Allocator> DWT_unsplit(
 }
 
 
-template <typename T> // TODO add container template parameter!! (we need to support any recType!)
+template <typename T> // TODO add container template parameter (we need to support any recType!)
 std::deque<std::vector<T>>
 sequential_DWT(
         std::vector<T> x,
@@ -175,8 +175,6 @@ DSPCC1<recType, Metric>::outer_encode(
     }
 
     for (size_t record_idx = 0; record_idx<Curves.size(); ++record_idx) {
-        //std::deque<std::vector<ElementType>> current_rec_subbands_timedomain = wavelet::wavedec<ElementType>(Curves[record_idx], 8, 5); // TODO update 8
-        //std::deque<std::vector<ElementType>> current_rec_subbands_timedomain = sequential_DWT<ElementType>(Curves[record_idx]); // TODO update 8
         std::stack<size_t> subband_length_local;
         std::deque<std::vector<ElementType>> current_rec_subbands_timedomain = sequential_DWT<ElementType>(Curves[record_idx], subband_length_local, 5, n_subbands); // TODO replace 5!!
         if (mix_idx==0) { // only during the first run
@@ -186,7 +184,7 @@ DSPCC1<recType, Metric>::outer_encode(
         std::deque<std::vector<ElementType>> current_rec_subbands_freqdomain(current_rec_subbands_timedomain);
         metric::apply_DCT_STL(current_rec_subbands_freqdomain, false, mix_idx); // transform all subbands at once (only first mix_idx values are replaced, the rest is left unchanged!), TODO refactor cutting!!
         for (size_t subband_idx = 0; subband_idx<current_rec_subbands_timedomain.size(); ++subband_idx) {
-            recType subband_freqdomain = current_rec_subbands_freqdomain[subband_idx];  // here we possibly drop support of containers other than std::vector
+            recType subband_freqdomain = current_rec_subbands_freqdomain[subband_idx];  // here we drop support of containers other than std::vector
             recType subband_timedomain = current_rec_subbands_timedomain[subband_idx]; // TODO remove intermediate var
             recType subband_mixed;
             subband_mixed.insert(
@@ -225,8 +223,6 @@ DSPCC1<recType, Metric>::outer_decode(const std::vector<std::vector<recType>> & 
             subbands_freqdomain.push_back(current_subband_freqdomain);
         }
         metric::apply_DCT_STL(subbands_freqdomain, true);
-        //std::vector<ElementType> restored_waveform = wavelet::waverec(current_rec_subbands_timedomain, 5);
-        //std::vector<ElementType> restored_waveform = wavelet::waverec(current_rec_subbands_freqdomain, 5);
         std::deque<recType> current_rec_subbands_mixed;
         for (size_t subband_idx = 0; subband_idx<TimeFreqMixedData.size(); ++subband_idx) { //TODO optimize!!
             // TODO move to function!!
@@ -243,8 +239,6 @@ DSPCC1<recType, Metric>::outer_decode(const std::vector<std::vector<recType>> & 
                         );
             current_rec_subbands_mixed.push_back(subband_mixed);
         }
-        //std::vector<ElementType> restored_waveform = wavelet::waverec(current_rec_subbands_mixed, 5);
-        //std::vector<ElementType> restored_waveform = sequential_iDWT(current_rec_subbands_mixed);
         std::stack<size_t> subband_length_copy(subband_length);
         std::vector<ElementType> restored_waveform = sequential_iDWT(current_rec_subbands_mixed, subband_length_copy, 5);
         recType restored_waveform_out;
@@ -364,8 +358,6 @@ DSPCC_single_PCFA<recType, Metric>::outer_encode(
     }
 
     for (size_t record_idx = 0; record_idx<Curves.size(); ++record_idx) {
-        //std::deque<std::vector<ElementType>> current_rec_subbands_timedomain = wavelet::wavedec<ElementType>(Curves[record_idx], 8, 5); // TODO update 8
-        //std::deque<std::vector<ElementType>> current_rec_subbands_timedomain = sequential_DWT<ElementType>(Curves[record_idx]); // TODO update 8
         std::stack<size_t> subband_length_local;
 
         // compute size and crop input
@@ -385,7 +377,7 @@ DSPCC_single_PCFA<recType, Metric>::outer_encode(
         std::deque<std::vector<ElementType>> current_rec_subbands_freqdomain(current_rec_subbands_timedomain);
         metric::apply_DCT_STL(current_rec_subbands_freqdomain, false, crop_idx); // transform all subbands at once (only first mix_idx values are replaced, the rest is left unchanged!), TODO refactor cutting!!
         for (size_t subband_idx = 0; subband_idx<current_rec_subbands_timedomain.size(); ++subband_idx) {
-            recType subband_freqdomain = current_rec_subbands_freqdomain[subband_idx];  // here we possibly drop support of containers other than std::vector
+            recType subband_freqdomain = current_rec_subbands_freqdomain[subband_idx];  // here we drop support of containers other than std::vector
             recType subband_timedomain = current_rec_subbands_timedomain[subband_idx]; // TODO remove intermediate var
             recType subband_mixed;
             subband_mixed.insert(
@@ -424,11 +416,6 @@ DSPCC_single_PCFA<recType, Metric>::outer_decode(const std::vector<std::vector<r
             subbands_freqdomain.push_back(current_subband_freqdomain);
         }
         metric::apply_DCT_STL(subbands_freqdomain, true);
-        //std::vector<ElementType> restored_waveform = wavelet::waverec(current_rec_subbands_timedomain, 5);
-        //std::vector<ElementType> restored_waveform = wavelet::waverec(current_rec_subbands_freqdomain, 5);
-
-        //std::vector<ElementType> restored_waveform = wavelet::waverec(current_rec_subbands_mixed, 5);
-        //std::vector<ElementType> restored_waveform = sequential_iDWT(current_rec_subbands_mixed);
         std::stack<size_t> subband_length_copy(subband_length);
         std::vector<ElementType> restored_waveform_freq = sequential_iDWT(subbands_freqdomain, subband_length_copy, 5);
         subband_length_copy = subband_length;
@@ -679,8 +666,7 @@ DSPCC<recType, Metric>::decode(const std::vector<std::vector<recType>> & Codes) 
 
     std::deque<std::vector<recType>> FreqData;
     std::deque<std::vector<recType>> TimeData;
-    for (size_t subband_idx = 0; subband_idx<Codes.size(); ++subband_idx) {
-        // here we divide each vector of codes into freq and time parts
+    for (size_t subband_idx = 0; subband_idx<Codes.size(); ++subband_idx) { // divide each vector of codes into freq and time parts and rearrange data by subbands
         std::vector<recType> freq_codes;
         std::vector<recType> time_codes;
         for (size_t record_idx = 0; record_idx<Codes[subband_idx].size(); ++record_idx) {
