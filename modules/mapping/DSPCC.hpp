@@ -357,12 +357,22 @@ public:
 
 
     /**
-   * @brief get features for arbitrary waveforms
+   * @brief get features for arbitrary waveforms by subbands
    *
    * @param Data - waveforms of same length and format as TrainingDataset
    * @return
    */
-    std::vector<std::vector<recType>> encode(const std::vector<recType> & Data);
+    std::vector<std::vector<recType>> time_freq_PCFA_encode(const std::vector<recType> & Data);
+
+
+    /**
+   * @brief get features for arbitrary waveforms by subbands
+   *
+   * @param Data - waveforms of same length and format as TrainingDataset
+   * @return
+   */
+    std::vector<std::vector<recType>> time_freq_PCFA_encode(const std::tuple<std::deque<std::vector<recType>>, std::deque<std::vector<recType>>> & PreEncoded);
+
 
 
     /**
@@ -371,7 +381,49 @@ public:
    * @param Codes - compressed codes
    * @return
    */
-    std::vector<recType> decode(const std::vector<std::vector<recType>> & Codes);
+    std::vector<recType> time_freq_PCFA_decode(const std::vector<std::vector<recType>> & Codes);
+
+
+
+
+    /**
+   * @brief get features for arbitrary waveforms
+   *
+   * @param Data - waveforms of same length and format as TrainingDataset
+   * @return
+   */
+    std::vector<recType> mixed_code_serialize(const std::vector<std::vector<recType>> & PCFA_encoded);
+
+
+
+    /**
+   * @brief restores waveforms
+   *
+   * @param Codes - compressed codes
+   * @return
+   */
+    std::vector<std::vector<recType>> mized_code_deserialize(const std::vector<recType> & Codes);
+
+
+
+
+    /**
+   * @brief get features for arbitrary waveforms
+   *
+   * @param Data - waveforms of same length and format as TrainingDataset
+   * @return
+   */
+    std::vector<recType> encode(const std::vector<recType> & Data);
+
+
+
+    /**
+   * @brief restores waveforms
+   *
+   * @param Codes - compressed codes
+   * @return
+   */
+    std::vector<recType> decode(const std::vector<recType> & Codes);
 
 
 

@@ -99,8 +99,8 @@ int main()
 //    auto vDSPCC = metric::DSPCC_single_PCFA<std::vector<double>, void>(vdata, 8, 8, 0.5, 0); // dataset, PCFA features, DWT subbands, freq share
     auto vDSPCC = metric::DSPCC<std::vector<double>, void>(vdata, 8, 8, 0.5, 0); // dataset, PCFA features, DWT subbands, freq share
 
-    auto v_encoded = vDSPCC.encode(vdata);
-    auto v_decoded = vDSPCC.decode(v_encoded);
+    auto v_encoded = vDSPCC.time_freq_PCFA_encode(vdata);
+    auto v_decoded = vDSPCC.time_freq_PCFA_decode(v_encoded);
 
     mat2bmp::blaze2bmp_norm(v_decoded, "decoded.bmp", magnitude);
     write_csv(transpose_timeseries(v_decoded), "decoded.csv", ";");
