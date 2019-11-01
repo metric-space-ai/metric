@@ -97,7 +97,7 @@ int main()
 //    return 0;
 
 //    auto vDSPCC = metric::DSPCC_single_PCFA<std::vector<double>, void>(vdata, 8, 8, 0.5, 0); // dataset, PCFA features, DWT subbands, freq share
-    auto vDSPCC = metric::DSPCC<std::vector<double>, void>(vdata, 8, 8, 0.5, 0); // dataset, PCFA features, DWT subbands, freq share
+    auto vDSPCC = metric::DSPCC<std::vector<double>, void>(vdata, 8, 8, 0.5, 50); // dataset, number of features of freq and time PCFAs, DWT subbands, top PCFA features
 
     auto v_encoded = vDSPCC.time_freq_PCFA_encode(vdata);
     auto v_decoded = vDSPCC.time_freq_PCFA_decode(v_encoded);
@@ -120,6 +120,16 @@ int main()
     mat2bmp::blaze2bmp_norm(v_pre_decoded, "pre_decoded.bmp", magnitude);
 
     std::cout << "\ndone, pre_decoded data saved\n";
+
+    auto v_encoded2 = vDSPCC.encode(vdata);
+//    auto v_decoded2 = vDSPCC.decode(v_encoded2);
+
+    mat2bmp::blaze2bmp_norm(v_encoded2, "encoded2.bmp", magnitude);
+    write_csv(transpose_timeseries(v_encoded2), "encoded2.csv", ";");
+//    mat2bmp::blaze2bmp_norm(v_decoded2, "decoded2.bmp", magnitude);
+//    write_csv(transpose_timeseries(v_decoded2), "de coded2.csv", ";");
+
+    std::cout << "\ncompletely encoded data saved\n";
 
     //*/
 

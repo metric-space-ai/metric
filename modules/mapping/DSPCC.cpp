@@ -552,8 +552,6 @@ DSPCC<recType, Metric>::DSPCC(
     std::vector<std::vector<recType>> time_freq_PCFA_encoded = time_freq_PCFA_encode(PreEncoded);
     std::vector<recType> series = mixed_code_serialize(time_freq_PCFA_encoded);
     top_PCA_model.push_back(metric::PCFA<recType, void>(series, n_top_subbands));
-
-    // TODO train single top PCFA
 }
 
 
@@ -717,7 +715,6 @@ DSPCC<recType, Metric>::mixed_code_serialize(const std::vector<std::vector<recTy
                         std::make_move_iterator(PCFA_encoded[subband_idx][record_idx].end())
                         );
         }
-
         serialized_dataset.push_back(serialized_record);
     }
     return serialized_dataset;
@@ -727,11 +724,33 @@ DSPCC<recType, Metric>::mixed_code_serialize(const std::vector<std::vector<recTy
 
 
 template <typename recType, typename Metric>
+std::vector<std::vector<recType>>
+DSPCC<recType, Metric>::mixed_code_deserialize(const std::vector<recType> & Codes) {
+    std::vector<std::vector<recType>> deserialized;
+    for (size_t record_idx = 0; record_idx<Codes.size(); ++record_idx) {
+        size_t current_idx = 0;
+        std::vector<recType> deserialized_subband;
+        for (size_t subband_idx = 0; subband_idx<freq_PCA_models.size(); ++subband_idx) {
+            recType mixed_code(Codes[record_idx].begin() + current_idx, Codes[record_idx].begin() + current_idx + n_features_freq);
+            current_idx += n_features_freq;
+            mixed_code.insert(mixed_code.begin(), Codes[record_idx].begin() + current_idx, Codes[record_idx].begin() + current_idx + n_features_time);
+            current_idx += n_features_time;
+            deserialized_subband.push_back(mixed_code);
+        }
+        deserialized.push_back(deserialized_subband);
+    }
+    return deserialized;
+}
+
+
+
+template <typename recType, typename Metric>
 std::vector<recType>
 DSPCC<recType, Metric>::encode(const std::vector<recType> & Data) {
     std::vector<recType> Codes;
-    // TODO implement
-    return Codes;
+    std::vector<std::vector<recType>> time_freq_PCFA_encoded = time_freq_PCFA_encode(Data);
+    std::vector<recType> series = mixed_code_serialize(time_freq_PCFA_encoded);
+    return top_PCA_model[0].encode(series);
 }
 
 
@@ -741,9 +760,8 @@ DSPCC<recType, Metric>::encode(const std::vector<recType> & Data) {
 template <typename recType, typename Metric>
 std::vector<recType>
 DSPCC<recType, Metric>::decode(const std::vector<recType> & Codes) {
-    std::vector<recType> Decoded;
-    // TODO implement
-    return Decoded;
+    std::vector<std::vector<recType>> deserialized = mixed_code_deserialize(top_PCA_model[0].decode(Codes));
+    return time_freq_PCFA_decode(deserialized);
 }
 
 
