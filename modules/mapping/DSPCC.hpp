@@ -343,7 +343,7 @@ public:
             size_t n_features_ = 1,
             size_t n_subbands_ = 4,
             float time_freq_balance_ = 0.5,
-            float DCT_cutoff_ = 0 // TODO remove
+            size_t n_top_subbands_ = 16
             );
 
     /**
@@ -387,9 +387,9 @@ public:
 
 
     /**
-   * @brief get features for arbitrary waveforms
+   * @brief
    *
-   * @param Data - waveforms of same length and format as TrainingDataset
+   * @param
    * @return
    */
     std::vector<recType> mixed_code_serialize(const std::vector<std::vector<recType>> & PCFA_encoded);
@@ -397,12 +397,12 @@ public:
 
 
     /**
-   * @brief restores waveforms
+   * @brief
    *
-   * @param Codes - compressed codes
+   * @param
    * @return
    */
-    std::vector<std::vector<recType>> mized_code_deserialize(const std::vector<recType> & Codes);
+    std::vector<std::vector<recType>> mixed_code_deserialize(const std::vector<recType> & Codes);
 
 
 
@@ -446,6 +446,7 @@ public:
 private:
     std::vector<metric::PCFA<recType, Metric>> freq_PCA_models;
     std::vector<metric::PCFA<recType, Metric>> time_PCA_models;
+    std::vector<metric::PCFA<recType, Metric>> top_PCA_model; // TODO solve initialization issue, remove wrapping vector
     std::stack<size_t> subband_length;
     size_t n_subbands;
     size_t crop_idx;
@@ -453,6 +454,7 @@ private:
     size_t n_features;
     size_t n_features_freq;
     size_t n_features_time;
+    size_t n_top_subbands;
     std::default_random_engine rgen;
 
 

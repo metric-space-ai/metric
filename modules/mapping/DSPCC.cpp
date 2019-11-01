@@ -532,7 +532,7 @@ DSPCC<recType, Metric>::DSPCC(
         size_t n_features_,
         size_t n_subbands_,
         float time_freq_balance_,
-        float DCT_cutoff_ // TODO remove
+        size_t n_top_subbands_
         ) {
 
     time_freq_balance = time_freq_balance_;
@@ -542,15 +542,18 @@ DSPCC<recType, Metric>::DSPCC(
     n_features_time = n_features_ - n_features_freq;
     for (size_t n = 4; n<=n_subbands_; n = n*2)
         n_subbands = n;
+    n_top_subbands = n_top_subbands_;
 
     auto PreEncoded = outer_encode(TrainingDataset);
     for (size_t subband_idx = 0; subband_idx<std::get<0>(PreEncoded).size(); ++subband_idx) {
         freq_PCA_models.push_back(metric::PCFA<recType, void>(std::get<0>(PreEncoded)[subband_idx], n_features_freq));
         time_PCA_models.push_back(metric::PCFA<recType, void>(std::get<1>(PreEncoded)[subband_idx], n_features_time));
     }
-    auto time_freq_PCFA_encoded = time_freq_PCFA_encode(PreEncoded);
+    std::vector<std::vector<recType>> time_freq_PCFA_encoded = time_freq_PCFA_encode(PreEncoded);
+    std::vector<recType> series = mixed_code_serialize(time_freq_PCFA_encoded);
+    top_PCA_model.push_back(metric::PCFA<recType, void>(series, n_top_subbands));
 
-    // TODO train top PCFA
+    // TODO train single top PCFA
 }
 
 
@@ -719,6 +722,19 @@ DSPCC<recType, Metric>::mixed_code_serialize(const std::vector<std::vector<recTy
     }
     return serialized_dataset;
 }
+
+
+
+
+template <typename recType, typename Metric>
+std::vector<recType>
+DSPCC<recType, Metric>::encode(const std::vector<recType> & Data) {
+    std::vector<recType> Codes;
+    // TODO implement
+    return Codes;
+}
+
+
 
 
 
