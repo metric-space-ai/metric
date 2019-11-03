@@ -122,12 +122,12 @@ int main()
     std::cout << "\ndone, pre_decoded data saved\n";
 
     auto v_encoded2 = vDSPCC.encode(vdata);
-//    auto v_decoded2 = vDSPCC.decode(v_encoded2);
+    auto v_decoded2 = vDSPCC.decode(v_encoded2);
 
     mat2bmp::blaze2bmp_norm(v_encoded2, "encoded2.bmp", magnitude);
     write_csv(transpose_timeseries(v_encoded2), "encoded2.csv", ";");
-//    mat2bmp::blaze2bmp_norm(v_decoded2, "decoded2.bmp", magnitude);
-//    write_csv(transpose_timeseries(v_decoded2), "de coded2.csv", ";");
+    mat2bmp::blaze2bmp_norm(v_decoded2, "decoded2.bmp", magnitude);
+    write_csv(transpose_timeseries(v_decoded2), "de coded2.csv", ";");
 
     std::cout << "\ncompletely encoded data saved\n";
 

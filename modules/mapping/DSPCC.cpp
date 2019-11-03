@@ -727,17 +727,26 @@ template <typename recType, typename Metric>
 std::vector<std::vector<recType>>
 DSPCC<recType, Metric>::mixed_code_deserialize(const std::vector<recType> & Codes) {
     std::vector<std::vector<recType>> deserialized;
+    for (size_t subband_idx = 0; subband_idx<(n_subbands); ++subband_idx) {
+        std::vector<recType> SubbandData;
+        for (size_t record_idx = 0; record_idx<Codes.size(); ++record_idx) {
+            recType rec = {0};
+            SubbandData.push_back(rec); // TODO optimize
+        }
+        deserialized.push_back(SubbandData);
+    }
+
     for (size_t record_idx = 0; record_idx<Codes.size(); ++record_idx) {
         size_t current_idx = 0;
-        std::vector<recType> deserialized_subband;
+        //std::vector<recType> deserialized_subband;
         for (size_t subband_idx = 0; subband_idx<freq_PCA_models.size(); ++subband_idx) {
             recType mixed_code(Codes[record_idx].begin() + current_idx, Codes[record_idx].begin() + current_idx + n_features_freq);
             current_idx += n_features_freq;
-            mixed_code.insert(mixed_code.begin(), Codes[record_idx].begin() + current_idx, Codes[record_idx].begin() + current_idx + n_features_time);
+            mixed_code.insert(mixed_code.end(), Codes[record_idx].begin() + current_idx, Codes[record_idx].begin() + current_idx + n_features_time);
             current_idx += n_features_time;
-            deserialized_subband.push_back(mixed_code);
+            //deserialized_subband.push_back(mixed_code);
+            deserialized[subband_idx][record_idx] = mixed_code;
         }
-        deserialized.push_back(deserialized_subband);
     }
     return deserialized;
 }
