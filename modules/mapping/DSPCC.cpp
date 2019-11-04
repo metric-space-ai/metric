@@ -532,7 +532,7 @@ DSPCC<recType, Metric>::DSPCC(
         size_t n_features_,
         size_t n_subbands_,
         float time_freq_balance_,
-        size_t n_top_subbands_
+        size_t n_top_features_
         ) {
 
     time_freq_balance = time_freq_balance_;
@@ -542,7 +542,7 @@ DSPCC<recType, Metric>::DSPCC(
     n_features_time = n_features_ - n_features_freq;
     for (size_t n = 4; n<=n_subbands_; n = n*2)
         n_subbands = n;
-    n_top_subbands = n_top_subbands_;
+    n_top_subbands = n_top_features_;
 
     auto PreEncoded = outer_encode(TrainingDataset);
     for (size_t subband_idx = 0; subband_idx<std::get<0>(PreEncoded).size(); ++subband_idx) {

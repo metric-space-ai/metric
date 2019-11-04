@@ -330,30 +330,31 @@ class DSPCC {
 
 public:
     /**
-   * @brief Construct a new VibrationFeatureExtractor object with the DCT step
+   * @brief
    *
-   * @param TrainingDataset - Blaze matrix with timeseries in columns
-   * @param n_features_ - desired number of features to extract
-   * @param n_subbands_ - maximum number of DWT subbands
-   * @param time_freq_balance_ - contribution of time domain data in mixed time-freqency PCFA input, values from 0 to 1
-   * @param DCT_cutoff  - the share of waveform allowed to be cut off when making the length of waveform equal to the degree of 2
+   * @param TrainingDataset - training dataset
+   * @param n_features_ - desired number of features of frequency and time PCFAs
+   * @param n_subbands_ - (maximum) number of DWT subbands
+   * @param time_freq_balance_ - share of frequency domain data in mixed PCFA output codes, values from 0 to 1
+   * @param n_top_features_ - number of featores of top PCFA
    */
     DSPCC(
             const std::vector<recType> & TrainingDataset,
             size_t n_features_ = 1,
             size_t n_subbands_ = 4,
             float time_freq_balance_ = 0.5,
-            size_t n_top_subbands_ = 16
+            size_t n_top_features_ = 16
             );
 
-    /**
-   * @brief Construct a new VibrationFeatureExtractor object without DCT step
-   *
-   * @param TrainingDataset - Blaze matrix with timeseries in columns
-   * @param n_features_ - desired number of features to extract
-   * @param time_freq_balance_ - contrinution of time domain data in mixed time-freqency PCFA input, values from 0 to 1
-   */
-    DSPCC(const std::vector<recType> & TrainingDataset, size_t n_features_ = 1, float time_freq_balance_ = 0.5);
+//    /**
+//   * @brief Construct a new VibrationFeatureExtractor object without DCT step
+//   *
+//   * @param TrainingDataset - Blaze matrix with timeseries in columns
+//   * @param n_features_ - desired number of features of frequency and time PCFAs
+//   * @param time_freq_balance_ - contrinution of time domain data in mixed PCFA output codes, values from 0 to 1
+//   * @param n_top_features_ - number of featores of top PCFA
+//   */
+//    DSPCC(const std::vector<recType> & TrainingDataset, size_t n_features_ = 1, float time_freq_balance_ = 0.5);
 
 
     /**
