@@ -97,7 +97,7 @@ int main()
 //    return 0;
 
 //    auto vDSPCC = metric::DSPCC_single_PCFA<std::vector<double>, void>(vdata, 8, 8, 0.5, 0); // dataset, PCFA features, DWT subbands, freq share
-    auto vDSPCC = metric::DSPCC<std::vector<double>, void>(vdata, 8, 10, 0.2, 50); // dataset, number of features of freq and time PCFAs, DWT subbands, share of freq features in the mixed code, top PCFA features
+    auto vDSPCC = metric::DSPCC<std::vector<double>, void>(vdata, 8, 10, 0.06, 50); // dataset, number of features of freq and time PCFAs, DWT subbands, share of freq features in the mixed code, top PCFA features
 
     auto v_encoded = vDSPCC.time_freq_PCFA_encode(vdata);
     auto v_decoded = vDSPCC.time_freq_PCFA_decode(v_encoded);

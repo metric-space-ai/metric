@@ -95,11 +95,20 @@ bool apply_DCT_STL(
 
     delete[] sample;
 
-    for (n = 0; n < Slices.size(); n++) {   // TODO optimize by using iterators
-        for (size_t m = 0; m < slice_len; m++) {
-            Slices[n][m] = Slices[n][m] / maxval;
+//    for (n = 0; n < Slices_out.size(); n++) {   // TODO optimize by using iterators
+//        for (size_t m = 0; m < slice_len; m++) {
+//            Slices_out[n][m] = Slices[n][m] / maxval;
+//        }
+//    }
+
+    if (inverse) {
+        for (n = 0; n < Slices_out.size(); n++) {   // TODO optimize by using iterators
+            for (size_t m = 0; m < slice_len; m++) {
+                Slices_out[n][m] /= slice_len / 2.0;
+            }
         }
     }
+
 
     Slices = Slices_out;
     return return_value;
