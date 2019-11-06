@@ -145,7 +145,7 @@ int main()
 	//
 	
 	int grid_w = 5;
-	int grid_h = 2;
+	int grid_h = 4;
 	
     using Vector = std::vector<double>;
     using Metric = metric::Euclidian<double>;
