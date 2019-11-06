@@ -30,9 +30,9 @@ void matrix_print(const std::vector<std::vector<T>> &mat)
 		std::cout << "  [ ";
         for (int j = 0; j < mat[i].size() - 1; j++)
         {
-            std::cout << mat[i][j] << ", ";
+            std::cout << static_cast<unsigned int>(mat[i][j]) << ", ";
         }
-        std::cout << mat[i][mat[i].size() - 1] << " ]" << std::endl;
+        std::cout << static_cast<unsigned int>(mat[i][mat[i].size() - 1]) << " ]" << std::endl;
         
     }
     std::cout << "]" << std::endl;
@@ -147,11 +147,47 @@ int main()
 	int grid_w = 5;
 	int grid_h = 4;
 	
-    using Vector = std::vector<double>;
+    using Vector = std::vector<std::vector<double>>;
     //using Metric = metric::Euclidian<double>;
-    using Metric = metric::SSIM<double, std::vector<uint8_t>>;
+    using Metric = metric::SSIM<double, std::vector<double>>;
     using Graph = metric::Grid6; 
 	std::uniform_real_distribution<double> distr(0, 255);
+
+
+	Metric distance;
+	
+	
+	std::vector<std::vector<std::vector<double>>> train_images;
+	for (auto i = 0; i < 5; i++)
+	{
+		std::vector<std::vector<double>> image(28, std::vector<double>());
+		for (auto p = 0; p < dataset.training_images[i].size(); p++)
+		{
+			image[(int) (p / 28)].push_back(dataset.training_images[i][p]);
+		}
+		train_images.push_back(image);
+	}
+	
+	
+	std::vector<std::vector<std::vector<double>>> test_images;
+	for (auto i = 0; i < 5; i++)
+	{
+		std::vector<std::vector<double>> image(28, std::vector<double>());
+		for (auto p = 0; p < dataset.test_images[i].size(); p++)
+		{
+			image[(int) (p / 28)].push_back(dataset.test_images[i][p]);
+		}
+		test_images.push_back(image);
+	}
+	
+	//std::cout << std::hex;
+	//matrix_print(train_images[0]);
+	//matrix_print(train_images[1]);
+	//std::cout << std::dec << std::endl;
+
+	std::cout << "result: " << distance(train_images[0], train_images[1]) << std::endl;
+	std::cout << "" << std::endl;
+
 
     metric::SOM<Vector, Graph, Metric> som_model(Graph(grid_w, grid_h), Metric(), 0.8, 0.2, 20, distr);
 
@@ -173,23 +209,10 @@ int main()
 	/* Train with img1 */
     std::cout << "Full train started..." << std::endl;
     auto t1 = std::chrono::steady_clock::now();
-    som_model.train(dataset.training_images);
+    som_model.train(train_images);
     auto t2 = std::chrono::steady_clock::now();
 
     std::cout << "Full train ended (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000 << "s)" << std::endl;
-
-
-    auto dimR = som_model.encode(dataset.training_images[2]);
-	vector_print(dimR, grid_w, grid_h);
-	std::cout << std::endl;
-
-	for (auto i = 0; i < 20; i++)
-	{
-		auto bmu = som_model.BMU(dataset.training_images[i]);
-		std::cout << "Best matching unit " << i << " = " << bmu << std::endl;
-	}
-
-	std::cout << std::endl;
 
 	auto nodes_data = som_model.get_weights();
 	
@@ -210,9 +233,9 @@ int main()
 
 	std::vector<std::vector<double>> result(grid_w * grid_h, std::vector<double>(10, 0));
 
-	for (auto i = 0; i < dataset.training_images.size(); i++)
+	for (auto i = 0; i < train_images.size(); i++)
 	{
-		auto bmu = som_model.BMU(dataset.training_images[i]);
+		auto bmu = som_model.BMU(train_images[i]);
 		result[bmu][dataset.training_labels[i]]++;
 	}
 
@@ -228,9 +251,9 @@ int main()
 
 	int matches = 0;
 	int errors = 0;
-	for (auto i = 0; i < dataset.test_images.size(); i++)
+	for (auto i = 0; i < test_images.size(); i++)
 	{
-		auto bmu = som_model.BMU(dataset.test_images[i]);
+		auto bmu = som_model.BMU(test_images[i]);
 		if (digits[bmu] == dataset.test_labels[i])
 		{
 			matches++;
@@ -242,7 +265,7 @@ int main()
 	}
 	std::cout << "matches: " << matches << " errors: " << errors << " accuracy: " << (double) matches / ((double) matches + (double) errors) << std::endl;
 
-	////
+	//
 
 	///* Train with img1 */
  //   std::cout << "Full train started..." << std::endl;
