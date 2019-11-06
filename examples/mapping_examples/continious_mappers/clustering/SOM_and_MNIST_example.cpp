@@ -144,11 +144,12 @@ int main()
 
 	//
 	
-	int grid_w = 15;
-	int grid_h = 15;
+	int grid_w = 5;
+	int grid_h = 4;
 	
     using Vector = std::vector<double>;
-    using Metric = metric::Euclidian<double>;
+    //using Metric = metric::Euclidian<double>;
+    using Metric = metric::SSIM<double, std::vector<uint8_t>>;
     using Graph = metric::Grid6; 
 	std::uniform_real_distribution<double> distr(0, 255);
 
