@@ -162,6 +162,18 @@ public:
     /**
 		 * @brief 
 		 * 
+		 * @param sample_1
+		 * @param sample_2
+		 * @param graph_w
+		 * @param graph_h
+		 * 
+		 * @return T
+		 */
+	double kohonen_distance(const std::vector<T>& sample_1, const std::vector<T>& sample_2);
+
+    /**
+		 * @brief 
+		 * 
 		 * @return
 		 */
     size_t getNodesNumber()
@@ -204,14 +216,14 @@ private:
 		 * 
 		 * @param samples 
 		 */
-    void subsampled_train_(const std::vector<std::vector<T>>& samples, const size_t sampleSize);
+    void subsampled_train_(const std::vector<std::vector<T>>& samples, int sampleSize);
 
     /**
 		 * @brief 
 		 * 
 		 * @param samples 
 		 */
-    void parse_distances(const std::vector<std::vector<T>>& samples, const size_t sampleSize);
+    void parse_distances(const std::vector<std::vector<T>>& samples, int sampleSize);
 };
 
 }  // namespace metric

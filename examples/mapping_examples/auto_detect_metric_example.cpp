@@ -44,7 +44,7 @@ void vector_print(const std::vector<T> &vec)
 {
 
     std::cout << "[";
-    for (int i = 0; i < vec.size(); i++)
+    for (int i = 0; i < vec.size() - 1; i++)
     {
         std::cout << vec[i] << ", ";
     }
@@ -97,11 +97,11 @@ int checkSOM(SOM &som_model, std::vector<Record> dataset)
 	std::cout << std::endl;
 
 
-    auto dimR = som_model.encode(dataset[0]);
+    auto dimR = som_model.encode(dataset[2]);
 	vector_print(dimR, 3, 2);
 	std::cout << std::endl;
 
-	auto bmu = som_model.BMU(dataset[0]);
+	auto bmu = som_model.BMU(dataset[2]);
 	std::cout << "Best matching unit: " << bmu << std::endl;
 
 	std::cout << std::endl;
@@ -121,11 +121,11 @@ int checkSOM(SOM &som_model, std::vector<Record> dataset)
 	std::cout << std::endl;
 
 
-    dimR = som_model.encode(dataset[0]);
+    dimR = som_model.encode(dataset[4]);
 	vector_print(dimR, 3, 2);
 	std::cout << std::endl;
 
-	bmu = som_model.BMU(dataset[0]);
+	bmu = som_model.BMU(dataset[4]);
 	std::cout << "Best matching unit: " << bmu << std::endl;
 
 	std::cout << std::endl;
@@ -161,6 +161,22 @@ int main()
 		{8, 9, 5, 8},
 		{9, 9, 9, 8},
 	};
+	
+	//std::vector<Record> dataset = {
+	//	{0, 0, 0},
+	//	{0, 0, 0},
+	//	{0, 0, 0},
+	//	{2, 2, 2},
+	//	{2, 2, 2},
+	//	{2, 2, 2},
+	//	{0, 0, 4},
+	//	{0, 0, 4},
+	//	{0, 0, 4},
+	//	{8, 0, 0},
+	//	{8, 0, 0},
+	//	{8, 0, 0},
+	//};
+
 	
 	//
 

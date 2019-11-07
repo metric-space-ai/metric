@@ -16,8 +16,10 @@ namespace metric {
 	template <typename Record, typename Graph>
 	std::string MetricAutoDetector::detect(Graph &graph, int graph_w, int graph_h, std::vector<Record> dataset, bool isEstimate)
 	{
-		std::vector<std::string> metric_type_names = {"Euclidian", "Manhatten", "P_norm", "Euclidian_thresholded", "Cosine", "Chebyshev", 
-			"Earth Mover Distance", "SSIM", "TWED"};
+		//std::vector<std::string> metric_type_names = {"Euclidian", "Manhatten", "P_norm", "Euclidian_thresholded", "Cosine", "Chebyshev", 
+		//	"Earth Mover Distance", "SSIM", "TWED"};
+		std::vector<std::string> metric_type_names = {"Euclidian", "Manhatten", "P_norm", "Cosine", "Chebyshev"};
+		//std::vector<std::string> metric_type_names = {"Euclidian", "Manhatten"};
 
 		// Random updating 
 		std::vector<size_t> randomized_indexes(dataset.size());
@@ -130,22 +132,18 @@ namespace metric {
 			for (auto j = 0; j < iterations; j++)
 			{
 				if (i != j)
-				{
-					auto dimR_1 = som.encode(dataset[randomized_indexes[i]]);
-					auto bmu_1 = som.BMU(dataset[randomized_indexes[i]]);
-
-					auto dimR_2 = som.encode(dataset[randomized_indexes[j]]);
-					auto bmu_2 = som.BMU(dataset[randomized_indexes[j]]);
-						
+				{						
 					// we get the same bmu for both records
-					auto som_distance_1 = dimR_1[bmu_1] + dimR_2[bmu_1];
-					auto som_distance_2 = dimR_1[bmu_2] + dimR_2[bmu_2];
-					auto som_distance = min(som_distance_1, som_distance_2);
+					auto kohonen_distance = som.kohonen_distance(dataset[randomized_indexes[i]], dataset[randomized_indexes[j]]);
 					auto direct_distance = distance(dataset[randomized_indexes[i]], dataset[randomized_indexes[j]]);
-					auto diff = abs(abs(som_distance) - abs(direct_distance));
+					auto diff = abs(abs(kohonen_distance) - abs(direct_distance));
 					auto relative_diff = diff / abs(direct_distance);
-					relative_diffs.push_back(relative_diff);
-					//std::cout << "som_distance: " << som_distance << " direct_distance: " << direct_distance << " diff: " << diff << " relative_diff: " << relative_diff << std::endl;
+					if (direct_distance != 0)
+					{
+						relative_diffs.push_back(relative_diff);
+					}
+					
+					//std::cout << " kohonen_distance: " << kohonen_distance << " direct_distance: " << direct_distance << " diff: " << diff << " relative_diff: " << relative_diff << std::endl;
 				}
 			}
 		}
