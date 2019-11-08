@@ -7,6 +7,10 @@
 #include "examples/mapping_examples/assets/helpers.cpp" // for .csv reader
 
 #include "../../../../modules/utils/visualizer.hpp"
+#include "../../../../modules/utils/metric_err.cpp"
+
+#include "../../../../modules/distance/k-related/Standards.hpp" // we use Euclidean metric for mean squared error evaluation
+
 
 
 
@@ -32,8 +36,6 @@ Container<Container<ValueType, A1>, A2> transpose_timeseries(
 
 
 
-
-
 template <typename Container>
 void print_table(Container table) {
     for (size_t rec_idx = 0; rec_idx<table.size(); ++rec_idx) {
@@ -42,6 +44,37 @@ void print_table(Container table) {
         std::cout << "\n";
     }
 }
+
+
+
+
+template <
+ template <typename, typename> class OuterContainer,
+ typename OuterAllocator,
+ template <typename, typename> class InnerContainer,
+ typename InnerAllocator,
+ typename ValueType >
+double mean_square_error(
+        const OuterContainer<InnerContainer<ValueType, InnerAllocator>, OuterAllocator> & M1,
+        const OuterContainer<InnerContainer<ValueType, InnerAllocator>, OuterAllocator> & M2
+        )
+{
+    double overall_sum = 0;
+    double row_sum;
+    size_t row, col;
+    for (row = 0; row < M1.size(); row++)  // we assume all inner vectors both in M1 and M2 are of the same langth
+    {
+        row_sum = 0;
+        for (col = 0; col < M1[0].size(); col++)  // we assume M1 and M2 are of the same langth too
+            row_sum += pow(M1[row][col] - M2[row][col], 2);
+        overall_sum += sqrt(row_sum / M1[0].size());
+    }
+    return overall_sum / M1.size();
+}
+
+
+
+
 
 
 int main()
@@ -97,7 +130,7 @@ int main()
 //    return 0;
 
 //    auto vDSPCC = metric::DSPCC_single_PCFA<std::vector<double>, void>(vdata, 8, 8, 0.5, 0); // dataset, PCFA features, DWT subbands, freq share
-    auto vDSPCC = metric::DSPCC<std::vector<double>, void>(vdata, 8, 10, 0.06, 50); // dataset, number of features of freq and time PCFAs, DWT subbands, share of freq features in the mixed code, top PCFA features
+    auto vDSPCC = metric::DSPCC<std::vector<double>, void>(vdata, 8, 10, 1, 50); // dataset, number of features of freq and time PCFAs, DWT subbands, share of freq features in the mixed code, top PCFA features
 
     auto v_encoded = vDSPCC.time_freq_PCFA_encode(vdata);
     auto v_decoded = vDSPCC.time_freq_PCFA_decode(v_encoded);
@@ -130,6 +163,21 @@ int main()
     write_csv(transpose_timeseries(v_decoded2), "decoded2.csv", ";");
 
     std::cout << "\ncompletely encoded data saved\n";
+    std::cout << "average MSE = " << mean_square_error(v_decoded2, vdata) << "\n";
+
+//    std::vector<double> errors;
+//    for (size_t i = 0; i<v_decoded2.size(); ++i) {
+//        auto err = normalized_error<metric::Euclidian<double>>(vdata[i], v_decoded2[i]);
+//        std::cout << err << "\n";
+//        errors.push_back(err);
+//    }
+
+    auto errors2 = normalized_errors<metric::Euclidian<double>>(vdata, v_decoded2);
+    std::cout << "sqrt(MSE)/norm per record:\n";
+    for (size_t i = 0; i< errors2.size(); ++i) {
+        std::cout << errors2[i] << "\n";
+    }
+
 
     //*/
 
