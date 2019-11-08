@@ -93,7 +93,7 @@ void SOM<recType, Graph, Metric, Distribution>::train(
     const std::vector<std::vector<T>>& samples)
 {
 	subsampled_train_(samples, samples.size());
-	parse_distances(samples, samples.size());
+	//parse_distances(samples, samples.size());
 }
 
 
@@ -101,7 +101,7 @@ template <class recType, class Graph, class Metric, class Distribution>
 void SOM<recType, Graph, Metric, Distribution>::estimate(const std::vector<std::vector<T>>& samples, const size_t sampleSize)
 {
 	subsampled_train_(samples, sampleSize);
-	parse_distances(samples, sampleSize);
+	//parse_distances(samples, sampleSize);
 }
 
 template <class recType, class Graph, class Metric, class Distribution>
@@ -156,29 +156,6 @@ double SOM<recType, Graph, Metric, Distribution>::std_deviation(const std::vecto
 	}
 
 	return sqrt(total_distances / samples.size());
-}
-
-
-template <class recType, class Graph, class Metric, class Distribution>
-std::vector<bool> SOM<recType, Graph, Metric, Distribution>::check_if_anomaly(const std::vector<std::vector<T>>& samples, double samples_threshold)
-{
-	std::vector<bool> result;
-	
-	int threshold_index = closest_distances.size() * (1 - samples_threshold);
-	if (threshold_index == closest_distances.size())
-	{
-		threshold_index--;
-	}
-
-	for (size_t i = 0; i < samples.size(); i++)
-	{
-		auto dimR = encode(samples[i]);
-		auto bmu = BMU(samples[i]);
-
-		result.push_back(dimR[bmu] > closest_distances[threshold_index]);
-	}
-
-	return result;
 }
 
 
@@ -309,34 +286,6 @@ void SOM<recType, Graph, Metric, Distribution>::subsampled_train_(const std::vec
 		++idx;		
 
     }
-}
-
-
-
-template <class recType, class Graph, class Metric, class Distribution>
-void SOM<recType, Graph, Metric, Distribution>::parse_distances(const std::vector<std::vector<T>>& samples, int sampleSize)
-{		
-	if (sampleSize > samples.size())
-	{
-		sampleSize = samples.size();
-	}
-    // Random samples 
-    std::vector<size_t> randomized_samples(samples.size());
-    std::iota(randomized_samples.begin(), randomized_samples.end(), 0);
-
-	// shuffle samples after all was processed		
-    std::shuffle(randomized_samples.begin(), randomized_samples.end(), std::mt19937 { std::random_device {}() });
-
-	for (size_t i = 0; i < sampleSize; i++)
-	{
-		size_t sample_idx = randomized_samples[i];
-		
-		auto dimR = encode(samples[sample_idx]);
-		auto bmu = BMU(samples[sample_idx]);
-		closest_distances.push_back(dimR[bmu]);
-	}
-	
-    std::sort(closest_distances.begin(), closest_distances.end());
 }
 
 }  // namespace metric
