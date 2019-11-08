@@ -32,5 +32,6 @@ Copyright (c) PANDA Team
 #include "mapping/kmeans.hpp"
 #include "mapping/kmedoids.hpp"
 #include "mapping/hierarchClustering.hpp"
+#include "mapping/KOC.hpp"
 
 #endif

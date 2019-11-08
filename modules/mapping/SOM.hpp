@@ -105,14 +105,14 @@ public:
 		 * 
 		 * @param samples 
 		 */
-    void train(const std::vector<std::vector<T>>& samples);
+    virtual void train(const std::vector<std::vector<T>>& samples);
 
     /**
 		 * @brief 
 		 * 
 		 * @param samples 
 		 */
-    void estimate(const std::vector<std::vector<T>>& samples, const size_t sampleSize);
+    virtual void estimate(const std::vector<std::vector<T>>& samples, const size_t sampleSize);
 
     /**
 		 * @brief 
@@ -120,7 +120,7 @@ public:
 		 * @param sample 
 		 * @return
 		 */
-    std::vector<double> encode(const recType& sample);
+    virtual std::vector<double> encode(const recType& sample);
 
     /**
 		 * @brief Best matching unit
@@ -128,7 +128,7 @@ public:
 		 * @param sample 
 		 * @return size_t 
 		 */
-    size_t BMU(const recType& sample) const;
+    virtual size_t BMU(const recType& sample) const;
 
     /**
 		 * @brief 
@@ -153,11 +153,14 @@ public:
     /**
 		 * @brief 
 		 * 
-		 * @param samples 
+		 * @param sample_1
+		 * @param sample_2
+		 * @param graph_w
+		 * @param graph_h
 		 * 
-		 * @return std::vector<bool> 
+		 * @return T
 		 */
-	std::vector<bool> check_if_anomaly(const std::vector<std::vector<T>>& samples, double samples_threshold = 0.0);
+	double kohonen_distance(const std::vector<T>& sample_1, const std::vector<T>& sample_2);
 
     /**
 		 * @brief 
@@ -179,8 +182,7 @@ public:
 		return weights;
 	}
 
-private:
-    bool valid;
+protected:
     size_t input_dimensions;  // dimensions of inputs vector
 
     Metric metric;
@@ -195,23 +197,16 @@ private:
 	double neigbour_range_decay;
 	long long random_seed;
 	
-    std::vector<std::vector<T>> weights;  // coordinates in the input_dimensions space 
-    std::vector<T> closest_distances;  // closest distances to the nodes for each sample from train dataset
-
+    /**
+		 * @brief 
+		 * 
+		 * @param samples 
+		 */
+    void subsampled_train_(const std::vector<std::vector<T>>& samples, int sampleSize);
 	
-    /**
-		 * @brief 
-		 * 
-		 * @param samples 
-		 */
-    void subsampled_train_(const std::vector<std::vector<T>>& samples, const size_t sampleSize);
-
-    /**
-		 * @brief 
-		 * 
-		 * @param samples 
-		 */
-    void parse_distances(const std::vector<std::vector<T>>& samples);
+private:
+    bool valid;
+    std::vector<std::vector<T>> weights;  // coordinates in the input_dimensions space 
 };
 
 }  // namespace metric

@@ -1300,21 +1300,18 @@ iterateThroughGraphsBest(int w_grid_size, int h_grid_size, int graph_type, int m
 	if (graph_type == 0)
 	{
 		// Grid4
-		// TODO: dont forget return back to grid_size
 		metric::Grid4 graph(w_grid_size, h_grid_size);
 		return iterateThroughDistancesBest(w_grid_size, h_grid_size, metric_type, distribution_type, speeds, graph, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 	}
 	else if (graph_type == 1)
 	{
 		// Grid6
-		// TODO: dont forget return back to grid_size
 		metric::Grid6 graph(w_grid_size, h_grid_size);
 		return iterateThroughDistancesBest(w_grid_size, h_grid_size, metric_type, distribution_type, speeds, graph, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 	}
 	else if (graph_type == 2)
 	{
 		// Grid8
-		// TODO: dont forget return back to grid_size
 		metric::Grid8 graph(w_grid_size, h_grid_size);
 		return iterateThroughDistancesBest(w_grid_size, h_grid_size, metric_type, distribution_type, speeds, graph, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 	}
