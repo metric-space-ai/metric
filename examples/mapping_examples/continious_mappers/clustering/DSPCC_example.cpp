@@ -178,6 +178,18 @@ int main()
         std::cout << errors2[i] << "\n";
     }
 
+    std::cout << "\n";
+
+    auto stats = normalized_err_stats<metric::Euclidian<double>>(vdata, v_decoded2);
+    std::cout << "    average norm of original waveforms : " << std::get<0>(stats) << "\n";
+    std::cout << "         original waveform norm stddev : " << std::get<1>(stats) << "\n";
+    std::cout << "         average absolute error (RMSE) : " << std::get<2>(stats) << "\n";
+    std::cout << "       stddev of absolute error (RMSE) : " << std::get<3>(stats) << "\n";
+    std::cout << "  average normalized error (RMSE/norm) : " << std::get<4>(stats) << "\n";
+    std::cout << "stddev of normalized error (RMSE/norm) : " << std::get<5>(stats) << "\n";
+
+    std::cout << "\n";
+
 
     //*/
 
