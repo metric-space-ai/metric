@@ -44,6 +44,10 @@ namespace metric {
 	private:
 
 		bool verbose = false;
+
+		
+		template <typename Record, typename Graph, typename Metric>
+		double get_mean_distance_difference(Graph &graph, Metric distance, std::vector<Record> dataset, std::vector<size_t> randomized_indexes, bool isEstimate);
 	};
 
 

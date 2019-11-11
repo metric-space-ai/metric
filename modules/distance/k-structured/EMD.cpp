@@ -118,6 +118,21 @@ namespace EMD_details {
         return distM;
     }
 
+    template <typename T, typename Metric = Euclidian_thresholded_EMD_default<std::vector<double>>>
+    std::vector<std::vector<T>> ground_distance_matrix_of_2dgrid(std::vector<std::vector<T>> grid)
+    {
+        size_t n = grid.size();
+        Metric distance;
+        std::vector<std::vector<T>> distM(n, std::vector<T>(n));
+
+        for (size_t c1 = 0; c1 < grid.size(); ++c1) {
+            for (size_t c2 = 0; c2 < grid.size(); ++c2) {
+				distM[c1][c2] = distance(grid[c1], grid[c2]);
+            }
+        }
+        return distM;
+    }
+
     enum FLOW_TYPE_T { NO_FLOW = 0, WITHOUT_TRANSHIPMENT_FLOW, WITHOUT_EXTRA_MASS_FLOW };
 
     /// returns the flow from/to transhipment vertex given flow F which was computed using

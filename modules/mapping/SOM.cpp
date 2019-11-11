@@ -93,7 +93,7 @@ void SOM<recType, Graph, Metric, Distribution>::train(
     const std::vector<std::vector<T>>& samples)
 {
 	subsampled_train_(samples, samples.size());
-	parse_distances(samples);
+	//parse_distances(samples, samples.size());
 }
 
 
@@ -101,7 +101,7 @@ template <class recType, class Graph, class Metric, class Distribution>
 void SOM<recType, Graph, Metric, Distribution>::estimate(const std::vector<std::vector<T>>& samples, const size_t sampleSize)
 {
 	subsampled_train_(samples, sampleSize);
-	parse_distances(samples);
+	//parse_distances(samples, sampleSize);
 }
 
 template <class recType, class Graph, class Metric, class Distribution>
@@ -160,31 +160,29 @@ double SOM<recType, Graph, Metric, Distribution>::std_deviation(const std::vecto
 
 
 template <class recType, class Graph, class Metric, class Distribution>
-std::vector<bool> SOM<recType, Graph, Metric, Distribution>::check_if_anomaly(const std::vector<std::vector<T>>& samples, double samples_threshold)
+double SOM<recType, Graph, Metric, Distribution>::kohonen_distance(const std::vector<T>& sample_1, const std::vector<T>& sample_2)
 {
-	std::vector<bool> result;
+	int graph_w = 3;
+	int graph_h = 2;
 	
-	int threshold_index = closest_distances.size() * (1 - samples_threshold);
-	if (threshold_index == closest_distances.size())
-	{
-		threshold_index--;
-	}
+    size_t n = graph_w * graph_h;
+	// calculate ground distance matrix between SOM nodes
+	auto cost_mat = metric::EMD_details::ground_distance_matrix_of_2dgrid<T, Metric>(weights);
+	auto maxCost = metric::EMD_details::max_in_distance_matrix(cost_mat);
+	metric::EMD<double> emd_distance(cost_mat, maxCost);
 
-	for (size_t i = 0; i < samples.size(); i++)
-	{
-		auto dimR = encode(samples[i]);
-		auto bmu = BMU(samples[i]);
+	// then we calculate distributions over SOM space for samples	
+	auto reduced_1 = encode(sample_1);
+	auto reduced_2 = encode(sample_2);
 
-		result.push_back(dimR[bmu] > closest_distances[threshold_index]);
-	}
-
-	return result;
+	// and finally calculate EDM distance for samples distributions over SOM space
+	return emd_distance(reduced_1, reduced_2);
 }
 
 // PRIVATE
 
 template <class recType, class Graph, class Metric, class Distribution>
-void SOM<recType, Graph, Metric, Distribution>::subsampled_train_(const std::vector<std::vector<T>>& samples, const size_t sampleSize)
+void SOM<recType, Graph, Metric, Distribution>::subsampled_train_(const std::vector<std::vector<T>>& samples, int sampleSize)
 {
 	
     // initialize weight matrix at first training call
@@ -288,21 +286,6 @@ void SOM<recType, Graph, Metric, Distribution>::subsampled_train_(const std::vec
 		++idx;		
 
     }
-}
-
-
-
-template <class recType, class Graph, class Metric, class Distribution>
-void SOM<recType, Graph, Metric, Distribution>::parse_distances(const std::vector<std::vector<T>>& samples)
-{
-	for (size_t i = 0; i < samples.size(); i++)
-	{
-		auto dimR = encode(samples[i]);
-		auto bmu = BMU(samples[i]);
-		closest_distances.push_back(dimR[bmu]);
-	}
-	
-    std::sort(closest_distances.begin(), closest_distances.end());
 }
 
 }  // namespace metric
