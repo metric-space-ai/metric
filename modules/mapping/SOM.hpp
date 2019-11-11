@@ -155,8 +155,6 @@ public:
 		 * 
 		 * @param sample_1
 		 * @param sample_2
-		 * @param graph_w
-		 * @param graph_h
 		 * 
 		 * @return T
 		 */
