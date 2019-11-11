@@ -65,12 +65,25 @@ double mean_square_error(
     for (row = 0; row < M1.size(); row++)  // we assume all inner vectors both in M1 and M2 are of the same langth
     {
         row_sum = 0;
-        for (col = 0; col < M1[0].size(); col++)  // we assume M1 and M2 are of the same langth too
+        for (col = 0; col < M1[0].size(); col++)  // we assume M1 and M2 are of the same length too
             row_sum += pow(M1[row][col] - M2[row][col], 2);
         overall_sum += sqrt(row_sum / M1[0].size());
     }
     return overall_sum / M1.size();
 }
+
+
+
+void print_stats(std::tuple<double, double, double, double, double, double> stats) {
+    std::cout << " average norm of original waveforms : " << std::get<0>(stats) << "\n";
+    std::cout << "      original waveform norm stddev : " << std::get<1>(stats) << "\n";
+    std::cout << "             average absolute error : " << std::get<2>(stats) << "\n";
+    std::cout << "           stddev of absolute error : " << std::get<3>(stats) << "\n";
+    std::cout << "           average normalized error : " << std::get<4>(stats) << "\n";
+    std::cout << "         stddev of normalized error : " << std::get<5>(stats) << "\n";
+    std::cout << "\n";
+}
+
 
 
 
@@ -89,8 +102,8 @@ int main()
     recType d1 {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 100};
     std::vector<recType> d = {d0, d1};
 
-    float freq_time_balance = 1; // try values from 0 to 1 (e g 0, 0.5, 1) to get the following portions of freq-domain: 0, 4/9, 8/9
-    auto bundle = metric::DSPCC1<recType, void>(d, 2, 4, freq_time_balance, 0.5);
+    float freq_time_balance = 0.5; // try values from 0 to 1 (e g 0, 0.5, 1) to get the following portions of freq-domain: 0, 4/9, 8/9
+    auto bundle = metric::DSPCC1<recType, void>(d, 4, 4, freq_time_balance, 4);
 
     //auto pre_encoded = bundle.test_public_wrapper_encode(d);
     //auto pre_decoded = bundle.test_public_wrapper_decode(pre_encoded);
@@ -107,10 +120,43 @@ int main()
     std::cout << "\nmix_index: " << bundle.get_mix_idx() << "\n";
 
     std::cout << "\nsimple test done\n";
+    auto err_full_1 = normalized_err_stats<metric::Euclidian<double>>(d, decoded);
+    print_stats(err_full_1);
+    std::cout << "average RMSE = " << mean_square_error(d, decoded) << "\n";
 
     //return 0;
 
     //*/
+
+
+    // RMSE and mectric error check
+    /*
+
+    using recType = std::vector<double>;
+
+    recType d0 {0, 1, 2, 3};
+    recType d1 {0, 1, 2, 3};
+    std::vector<recType> d = {d0, d1};
+
+    auto d_upd = d;
+    d_upd[0][3] = 5;
+
+    std::cout << "\nd:\n";
+    print_table(d); // some normalization issue when using DCT persists..
+
+    std::cout << "\nd_upd:\n";
+    print_table(d_upd); // some normalization issue when using DCT persists..
+
+    print_stats(normalized_err_stats<metric::Euclidian<double>>(d, d_upd));
+
+    std::cout << "average RMSE = " << mean_square_error(d, d_upd) << "\n";
+
+    //return 0;
+
+    // */
+
+
+
 
 
     // vibration example
@@ -129,66 +175,99 @@ int main()
 
 //    return 0;
 
-//    auto vDSPCC = metric::DSPCC_single_PCFA<std::vector<double>, void>(vdata, 8, 8, 0.5, 0); // dataset, PCFA features, DWT subbands, freq share
-    auto vDSPCC = metric::DSPCC<std::vector<double>, void>(vdata, 8, 10, 1, 50); // dataset, number of features of freq and time PCFAs, DWT subbands, share of freq features in the mixed code, top PCFA features
 
-    auto v_encoded = vDSPCC.time_freq_PCFA_encode(vdata);
-    auto v_decoded = vDSPCC.time_freq_PCFA_decode(v_encoded);
+    std::vector<double> errs_pre, errs_tf, errs_full;
 
-    mat2bmp::blaze2bmp_norm(v_decoded, "decoded.bmp", magnitude);
-    write_csv(transpose_timeseries(v_decoded), "decoded.csv", ";");
+    bool visualize = false;
 
-    std::cout << "\nmix_index:     " << vDSPCC.get_crop_idx() << "\n";
-    std::cout << "record length:  " << vdata[0].size() << "\n";
+    for (float mix = 0; mix<=1; mix+=0.25) {
 
 
-    std::cout << "\nmain vibration test done, decoded data saved\n";
+        if (mix == 0.5)
+            visualize = true;
+        else
+            visualize = false;
 
-    std::cout << "\ncomputing pre-encoded and pre_decoded vibration data...\n";
 
-    auto v_pre_encoded = vDSPCC.test_public_wrapper_encode(vdata);
-    auto v_pre_decoded = vDSPCC.test_public_wrapper_decode(v_pre_encoded);
+        auto vDSPCC = metric::DSPCC<std::vector<double>, void>(vdata, 30, 8, mix, 50);
+        // dataset,
+        // number of features of freq and time PCFAs,
+        // DWT subbands, share of freq features in the mixed code,
+        // top PCFA features
 
-    write_csv(transpose_timeseries(v_pre_decoded), "pre_decoded.csv", ";");
-    mat2bmp::blaze2bmp_norm(v_pre_decoded, "pre_decoded.bmp", magnitude);
 
-    std::cout << "\ndone, pre_decoded data saved\n";
 
-    auto v_encoded2 = vDSPCC.encode(vdata);
-    auto v_decoded2 = vDSPCC.decode(v_encoded2);
+        auto v_encoded = vDSPCC.time_freq_PCFA_encode(vdata);
+        auto v_decoded = vDSPCC.time_freq_PCFA_decode(v_encoded);
 
-    mat2bmp::blaze2bmp_norm(v_encoded2, "encoded2.bmp", magnitude);
-    write_csv(transpose_timeseries(v_encoded2), "encoded2.csv", ";");
-    mat2bmp::blaze2bmp_norm(v_decoded2, "decoded2.bmp", magnitude);
-    write_csv(transpose_timeseries(v_decoded2), "decoded2.csv", ";");
+        if (visualize) {
+            mat2bmp::blaze2bmp_norm(v_decoded, "decoded.bmp", magnitude);
+            write_csv(transpose_timeseries(v_decoded), "decoded.csv", ";");
+        }
 
-    std::cout << "\ncompletely encoded data saved\n";
-    std::cout << "average MSE = " << mean_square_error(v_decoded2, vdata) << "\n";
+        std::cout << "\nmix_index:     " << vDSPCC.get_crop_idx() << "\n";
+        std::cout << "record length:  " << vdata[0].size() << "\n";
 
-//    std::vector<double> errors;
-//    for (size_t i = 0; i<v_decoded2.size(); ++i) {
-//        auto err = normalized_error<metric::Euclidian<double>>(vdata[i], v_decoded2[i]);
-//        std::cout << err << "\n";
-//        errors.push_back(err);
-//    }
+        std::cout << "\ndecompression with only time-freq PSFAs done, decoded data saved\n";
+        auto err_tf = normalized_err_stats<metric::Euclidian<double>>(vdata, v_decoded);
+        print_stats(err_tf);
+        errs_tf.push_back(std::get<4>(err_tf));
 
-    auto errors2 = normalized_errors<metric::Euclidian<double>>(vdata, v_decoded2);
-    std::cout << "sqrt(MSE)/norm per record:\n";
-    for (size_t i = 0; i< errors2.size(); ++i) {
-        std::cout << errors2[i] << "\n";
+
+
+        //std::cout << "\ncomputing pre-encoded and pre_decoded vibration data...\n";
+
+        auto v_pre_encoded = vDSPCC.test_public_wrapper_encode(vdata);
+        auto v_pre_decoded = vDSPCC.test_public_wrapper_decode(v_pre_encoded);
+
+        if (visualize) {
+            write_csv(transpose_timeseries(v_pre_decoded), "pre_decoded.csv", ";");
+            mat2bmp::blaze2bmp_norm(v_pre_decoded, "pre_decoded.bmp", magnitude);
+        }
+
+        std::cout << "\ntest of pre-compression done, pre-decoded data saved\n";
+        auto err_pre = normalized_err_stats<metric::Euclidian<double>>(vdata, v_pre_decoded);
+        print_stats(err_pre);
+        errs_pre.push_back(std::get<4>(err_pre));
+
+
+
+
+        auto v_encoded2 = vDSPCC.encode(vdata);
+        auto v_decoded2 = vDSPCC.decode(v_encoded2);
+
+        if (visualize) {
+            mat2bmp::blaze2bmp_norm(v_encoded2, "encoded2.bmp", magnitude);
+            write_csv(transpose_timeseries(v_encoded2), "encoded2.csv", ";");
+            mat2bmp::blaze2bmp_norm(v_decoded2, "decoded2.bmp", magnitude);
+            write_csv(transpose_timeseries(v_decoded2), "decoded2.csv", ";");
+        }
+
+
+        std::cout << "\ncompletely encoded data saved\n";
+        auto err_full = normalized_err_stats<metric::Euclidian<double>>(vdata, v_decoded2);
+        print_stats(err_full);
+        errs_full.push_back(std::get<4>(err_full));
+
+        std::cout << "average RMSE = " << mean_square_error(v_decoded2, vdata) << "\n";
+
+
+//        auto errors2 = normalized_errors<metric::Euclidian<double>>(vdata, v_decoded2);
+//        std::cout << "err/norm per record:\n";
+//        for (size_t i = 0; i< errors2.size(); ++i) {
+//            std::cout << errors2[i] << "\n";
+//        }
+
+        std::cout << "\n";
+
     }
 
-    std::cout << "\n";
+    std::cout << "\nOverall results:\n      pre\t      tf\t      full\n";
+    for (size_t i = 0; i<errs_full.size(); ++i) {
+        std::cout << errs_pre[i] << "\t" << errs_tf[i] << "\t" << errs_full[i] << "\n";
+    }
 
-    auto stats = normalized_err_stats<metric::Euclidian<double>>(vdata, v_decoded2);
-    std::cout << "    average norm of original waveforms : " << std::get<0>(stats) << "\n";
-    std::cout << "         original waveform norm stddev : " << std::get<1>(stats) << "\n";
-    std::cout << "         average absolute error (RMSE) : " << std::get<2>(stats) << "\n";
-    std::cout << "       stddev of absolute error (RMSE) : " << std::get<3>(stats) << "\n";
-    std::cout << "  average normalized error (RMSE/norm) : " << std::get<4>(stats) << "\n";
-    std::cout << "stddev of normalized error (RMSE/norm) : " << std::get<5>(stats) << "\n";
 
-    std::cout << "\n";
 
 
     //*/
