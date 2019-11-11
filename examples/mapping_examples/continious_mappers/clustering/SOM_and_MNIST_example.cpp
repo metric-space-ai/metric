@@ -147,9 +147,9 @@ int main()
 	int grid_w = 5;
 	int grid_h = 4;
 	
-    using Vector = std::vector<std::vector<double>>;
-    //using Metric = metric::Euclidian<double>;
-    using Metric = metric::SSIM<double, std::vector<double>>;
+    using Vector = std::vector<double>;
+    using Metric = metric::Euclidian<double>;
+    //using Metric = metric::SSIM<double, std::vector<double>>;
     using Graph = metric::Grid6; 
 	std::uniform_real_distribution<double> distr(0, 255);
 
@@ -157,28 +157,31 @@ int main()
 	Metric distance;
 	
 	
-	std::vector<std::vector<std::vector<double>>> train_images;
-	for (auto i = 0; i < 5; i++)
-	{
-		std::vector<std::vector<double>> image(28, std::vector<double>());
-		for (auto p = 0; p < dataset.training_images[i].size(); p++)
-		{
-			image[(int) (p / 28)].push_back(dataset.training_images[i][p]);
-		}
-		train_images.push_back(image);
-	}
+	std::vector<std::vector<double>> train_images = dataset.training_images;
+	//std::vector<std::vector<std::vector<double>>> train_images;
+	//
+	//for (auto i = 0; i < 5; i++)
+	//{
+	//	std::vector<std::vector<double>> image(28, std::vector<double>());
+	//	for (auto p = 0; p < dataset.training_images[i].size(); p++)
+	//	{
+	//		image[(int) (p / 28)].push_back(dataset.training_images[i][p]);
+	//	}
+	//	train_images.push_back(image);
+	//}
 	
 	
-	std::vector<std::vector<std::vector<double>>> test_images;
-	for (auto i = 0; i < 5; i++)
-	{
-		std::vector<std::vector<double>> image(28, std::vector<double>());
-		for (auto p = 0; p < dataset.test_images[i].size(); p++)
-		{
-			image[(int) (p / 28)].push_back(dataset.test_images[i][p]);
-		}
-		test_images.push_back(image);
-	}
+	std::vector<std::vector<double>> test_images = dataset.test_images;
+	//std::vector<std::vector<std::vector<double>>> test_images;
+	//for (auto i = 0; i < 5; i++)
+	//{
+	//	std::vector<std::vector<double>> image(28, std::vector<double>());
+	//	for (auto p = 0; p < dataset.test_images[i].size(); p++)
+	//	{
+	//		image[(int) (p / 28)].push_back(dataset.test_images[i][p]);
+	//	}
+	//	test_images.push_back(image);
+	//}
 	
 	//std::cout << std::hex;
 	//matrix_print(train_images[0]);
