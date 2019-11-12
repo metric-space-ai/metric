@@ -29,7 +29,7 @@ foreach(exampleSrc ${EXAMPLE_SRCS})
 	#Add compile target
 	add_executable(${exampleName} ${exampleSrc})
  
-	#link to Boost libraries AND your targets and dependencies
+	#link to Boost libraries AND your targets and dependencies 
 	target_link_libraries(${exampleName} ${Boost_LIBRARIES})
 	set_target_properties(${exampleName} PROPERTIES CXX_STANDARD 17)
 
@@ -42,7 +42,7 @@ foreach(exampleSrc ${EXAMPLE_SRCS})
 
 		target_compile_options(${exampleName} PRIVATE -pthread)
 		set_target_properties(${exampleName} PROPERTIES LINK_FLAGS -pthread)
-	endif(UNIX)
+	endif(UNIX) 
 
 endforeach(exampleSrc)
 

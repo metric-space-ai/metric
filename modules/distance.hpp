@@ -29,6 +29,7 @@ Copyright (c) PANDA Team
 #include "distance/k-structured/TWED.hpp"
 #include "distance/k-structured/EMD.hpp"
 #include "distance/k-structured/Edit.hpp"
+#include "distance/k-structured/kohonen_distance.hpp"
 
 #include "distance/k-related/L1.hpp"
 #include "distance/k-random/VOI.hpp"
