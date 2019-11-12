@@ -540,7 +540,7 @@ DSPCC<recType, Metric>::DSPCC(
     n_features = n_features_; // number of features selected from both PCFAs
     n_features_freq = std::round(n_features_*time_freq_balance_);
     n_features_time = n_features_ - n_features_freq;
-    for (size_t n = 4; n<=n_subbands_; n = n*2)
+    for (size_t n = 2; n<=n_subbands_; n = n*2)
         n_subbands = n;
     n_top_subbands = n_top_features_;
 
