@@ -326,9 +326,11 @@ int main(int argc, char *argv[])
 	
 	std::vector<double> entropies;
 	double entropies_sum = 0;
+	metric::SOM<Record, metric::Grid4, metric::Euclidian<double>, std::uniform_real_distribution<double>>& som_version = koc;
 	for (size_t i = 0; i < speeds.size(); i++)
 	{
-		auto reduced = koc.metric::SOM<Record, metric::Grid4, metric::Euclidian<double>, std::uniform_real_distribution<double>>::encode(speeds[i]);
+
+		auto reduced = som_version.encode(speeds[i]);
 		std::sort(reduced.begin(), reduced.end());	
 
 		std::vector<Record> reduced_reshaped;
@@ -357,7 +359,7 @@ int main(int argc, char *argv[])
 
 	for (size_t i = 0; i < test_samples.size(); i++)
 	{
-		auto reduced = koc.metric::SOM<Record, metric::Grid4, metric::Euclidian<double>, std::uniform_real_distribution<double>>::encode(test_samples[i]);
+		auto reduced = som_version.encode(test_samples[i]);
 		std::sort(reduced.begin(), reduced.end());	
 
 		std::vector<Record> reduced_reshaped;
