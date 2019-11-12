@@ -71,8 +71,7 @@ if(UNIX)
 	set_target_properties(auto_detect_metric_example PROPERTIES CXX_STANDARD 17)
 
 	set_target_properties(kohonen_outliers_clustering_example PROPERTIES CXX_STANDARD 17)
-	target_link_libraries(kohonen_outliers_clustering_example Threads::Threads)
-	target_compile_options(kohonen_outliers_clustering_example} PRIVATE -pthread)
+	target_compile_options(kohonen_outliers_clustering_example PRIVATE -pthread)
 	set_target_properties(kohonen_outliers_clustering_example PROPERTIES LINK_FLAGS -pthread)
 endif(UNIX)
 
