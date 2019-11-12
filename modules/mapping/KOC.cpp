@@ -162,9 +162,9 @@ template <class recType, class Graph, class Metric, class Distribution>
 std::vector<int> KOC<recType, Graph, Metric, Distribution>::clusterize_nodes()
 {
 	int min_cluster_size = 0;
-	int num_clusters = getNodesNumber();
+	int num_clusters = KOC<recType, Graph, Metric, Distribution>::getNodesNumber();
 
-	auto nodes_data = get_weights();
+	auto nodes_data = KOC<recType, Graph, Metric, Distribution>::get_weights();
 
 	while (min_cluster_size <= 1)
 	{

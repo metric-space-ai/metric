@@ -127,8 +127,8 @@ int main()
 
 	//
 	
-	int grid_w = 20;
-	int grid_h = 10;
+	int grid_w = 6;
+	int grid_h = 4;
 	
     using Vector = std::vector<double>;
     using Metric = metric::Euclidian<double>;
