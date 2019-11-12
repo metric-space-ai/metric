@@ -113,7 +113,7 @@ int main()
             visualize = false;
 
 
-        auto vDSPCC = metric::DSPCC<std::vector<double>, void>(vdata, 5, 2, mix, 5);
+        auto vDSPCC = metric::DSPCC<std::vector<double>, void>(vdata, 5, 4, mix, 5);
         // dataset,
         // number of features of freq and time PCFAs,
         // DWT subbands, share of freq features in the mixed code,
@@ -129,8 +129,9 @@ int main()
             write_csv(transpose_timeseries(v_decoded), "decoded.csv", ";");
         }
 
-        std::cout << "\nmix_index:     " << vDSPCC.get_crop_idx() << "\n";
-        std::cout << "record length:  " << vdata[0].size() << "\n";
+        std::cout << "\n        subband_length:  " << vDSPCC.get_subband_size() << "\n";
+        std::cout << "original record length:  " << vdata[0].size() << "\n";
+        std::cout << " decoded record length:  " << v_decoded[0].size() << "\n";
 
         std::cout << "\ndecompression with only time-freq PSFAs done, decoded data saved\n";
         auto err_tf = normalized_err_stats<metric::Euclidian<double>>(vdata, v_decoded);

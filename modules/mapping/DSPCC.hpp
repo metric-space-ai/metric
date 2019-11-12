@@ -438,8 +438,8 @@ public:
       return outer_decode(TimeFreqMixedData);
     }
 
-    size_t get_crop_idx() {
-        return crop_idx;
+    size_t get_subband_size() {
+        return resulting_subband_length;
     }
 
 
@@ -450,7 +450,7 @@ private:
     std::vector<metric::PCFA<recType, Metric>> top_PCA_model; // TODO solve initialization issue, remove wrapping vector
     std::stack<size_t> subband_length;
     size_t n_subbands;
-    size_t crop_idx;
+    size_t resulting_subband_length;
     float time_freq_balance; // TODO remove
     size_t n_features;
     size_t n_features_freq;

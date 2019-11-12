@@ -536,7 +536,7 @@ DSPCC<recType, Metric>::DSPCC(
         ) {
 
     time_freq_balance = time_freq_balance_;
-    crop_idx = 0;
+    resulting_subband_length = 0;
     n_features = n_features_; // number of features selected from both PCFAs
     n_features_freq = std::round(n_features_*time_freq_balance_);
     n_features_time = n_features_ - n_features_freq;
@@ -576,24 +576,25 @@ DSPCC<recType, Metric>::outer_encode(
         FreqData.push_back(SubbandData);
     }
 
+
+    // compute size and crop input
+    size_t depth = (size_t)std::floor(std::log2(n_subbands));
+    size_t max_subband_size = subband_size(Curves[0].size(), depth); // TODO check if not empty
+    size_t appropriate_subband_size = mix_index(max_subband_size, 1);
+    size_t crop_size = original_size(appropriate_subband_size, depth);
+
     for (size_t record_idx = 0; record_idx<Curves.size(); ++record_idx) {
         std::stack<size_t> subband_length_local;
-
-        // compute size and crop input
-        size_t depth = (size_t)std::floor(std::log2(n_subbands));
-        size_t max_subband_size = subband_size(Curves[0].size(), depth); // TODO check if not empty
-        size_t appropriate_subband_size = mix_index(max_subband_size, 1);
-        size_t crop_size = original_size(appropriate_subband_size, depth);
-
         recType cropped_record(Curves[record_idx].begin(), Curves[record_idx].begin() + crop_size);
 
         std::deque<std::vector<ElementType>> current_rec_subbands_timedomain = sequential_DWT<ElementType>(cropped_record, subband_length_local, 5, n_subbands); // TODO replace 5!! // TODO support different recType types
-        if (crop_idx==0) { // only during the first run
-            crop_idx = mix_index(current_rec_subbands_timedomain[0].size(), 1); // max n^2, no dependence on time_freq_balance here!
+        if (resulting_subband_length==0) { // only during the first run
+            resulting_subband_length = current_rec_subbands_timedomain[0].size();
+            //resulting_subband_length = mix_index(current_rec_subbands_timedomain[0].size(), 1); // max n^2 (here not needed), no dependence on time_freq_balance here!
             subband_length = subband_length_local;
         }
         std::deque<std::vector<ElementType>> current_rec_subbands_freqdomain(current_rec_subbands_timedomain);
-        metric::apply_DCT_STL(current_rec_subbands_freqdomain, false, crop_idx); // transform all subbands at once (only first mix_idx values are replaced, the rest is left unchanged!), TODO refactor cutting!!
+        metric::apply_DCT_STL(current_rec_subbands_freqdomain, false, resulting_subband_length); // transform all subbands at once (only first mix_idx values are replaced, the rest is left unchanged!), TODO refactor cutting!!
         for (size_t subband_idx = 0; subband_idx<current_rec_subbands_timedomain.size(); ++subband_idx) {
             TimeData[subband_idx][record_idx] = current_rec_subbands_timedomain[subband_idx];
             FreqData[subband_idx][record_idx] = current_rec_subbands_freqdomain[subband_idx];
