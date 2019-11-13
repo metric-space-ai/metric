@@ -85,9 +85,8 @@ int main()
     using Metric = metric::Euclidian<double>;
     using Graph = metric::Grid6; 
     using Distribution = std::uniform_real_distribution<double>; 
-	Distribution distr(-1, 1);
 
-	Metric distance;	
+	Distribution distr(-1, 1);
 
     metric::SOM<Vector, Graph, Metric> som_model(Graph(grid_w, grid_h), Metric(), 0.8, 0.2, 20, distr);
 

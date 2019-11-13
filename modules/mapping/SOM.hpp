@@ -153,16 +153,6 @@ public:
     /**
 		 * @brief 
 		 * 
-		 * @param sample_1
-		 * @param sample_2
-		 * 
-		 * @return T
-		 */
-	double kohonen_distance(const std::vector<T>& sample_1, const std::vector<T>& sample_2);
-
-    /**
-		 * @brief 
-		 * 
 		 * @return
 		 */
     size_t getNodesNumber()
