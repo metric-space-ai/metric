@@ -22,7 +22,7 @@ namespace metric {
  * 
  * The egdes of the SOM graph (distances between nodes) are the ground distance for the EMD.
  * Then for every record, to get a vector of distances between all SOM nodes, it is weights for ground distances.
- * Having the vectors and ground distances we can compute EMD. It it is a Kohonen distance.
+ * Having the vectors and ground distances we can compute EMD. It is a Kohonen distance.
  *
  */
 template <typename D, typename Sample, typename Graph = metric::Grid4, typename Metric = metric::Euclidian<D>, 
