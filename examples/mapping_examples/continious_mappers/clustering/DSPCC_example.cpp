@@ -164,7 +164,7 @@ int main()
 
     float magnitude = 80;
 
-    auto raw_vdata = read_csv_num<double>("vibration_smaller_3.csv", ",");
+    auto raw_vdata = read_csv_num<double>("assets/vibration_smaller_3.csv", ",");
     auto vdata =  transpose_timeseries(raw_vdata);
 
     mat2bmp::blaze2bmp_norm(vdata, "input.bmp", magnitude);
@@ -205,8 +205,9 @@ int main()
             write_csv(transpose_timeseries(v_decoded), "decoded.csv", ";");
         }
 
-        std::cout << "\nmix_index:     " << vDSPCC.get_crop_idx() << "\n";
-        std::cout << "record length:  " << vdata[0].size() << "\n";
+        std::cout << "\n        subband_length:  " << vDSPCC.get_subband_size() << "\n";
+        std::cout << "original record length:  " << vdata[0].size() << "\n";
+        std::cout << " decoded record length:  " << v_decoded[0].size() << "\n";
 
         std::cout << "\ndecompression with only time-freq PSFAs done, decoded data saved\n";
         auto err_tf = normalized_err_stats<metric::Euclidian<double>>(vdata, v_decoded);
