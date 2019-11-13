@@ -296,6 +296,67 @@ std::cout << "result: " << result << std::endl;
 
 ---
 
+### Kohonen distance
+The idea of the Kohonen distance is: to train a SOM on a dataset and then compute the EMD for two records in the Kohonen space.
+ 
+Suppose we have a set of values:
+
+```cpp
+std::vector<std::vector<double>> train_dataset = {
+    { 26.75,	22.15 },
+    { 29.8,	22.15 },
+    { 31.55,	21.1 },
+    { 27.7,	20.85 }
+};
+```
+
+Then we can create Kohonen distance object and calculate distance. When dataset is passed to the constructor, 
+Kohonen distance object will train incapsulated SOM on that dataset. 
+
+```cpp
+int grid_w = 6;
+int grid_h = 4;
+
+metric::kohonen_distance<double, std::vector<double>> distance(train_dataset, grid_w, grid_h);
+
+auto result = distance(train_dataset[0], train_dataset[1]);
+std::cout << "result: " << result << std::endl;
+// out:
+// Kohonen metric
+// result: 824.567
+```
+
+Other way to initialize Kohonen distance object is to pass pretrained SOM object to the constructor:
+
+```cpp	
+int grid_w = 6;
+int grid_h = 4;
+	
+using Vector = std::vector<double>;
+using Metric = metric::Euclidian<double>;
+using Graph = metric::Grid6; 
+using Distribution = std::uniform_real_distribution<double>; 
+
+Distribution distr(-1, 1);
+
+metric::SOM<Vector, Graph, Metric> som_model(Graph(grid_w, grid_h), Metric(), 0.8, 0.2, 20, distr);
+som_model.train(train_dataset);
+	
+metric::kohonen_distance<double, Vector, Graph, Metric> distance(som_model);
+
+auto result = distance(train_dataset[0], train_dataset[1]);
+std::cout << "result: " << result << std::endl;
+// out:
+// Kohonen metric
+// result: 772.109
+```
+*For a full example and more details see `examples/distance_examples/kohonen_distance_example.cpp`*
+
+
+
+---
+
+
 ### Entropy, Mutual Information and Variation of Information
 Suppose we have a some data:
 
