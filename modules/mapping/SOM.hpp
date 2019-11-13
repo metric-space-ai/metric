@@ -29,7 +29,8 @@ W. Natita, W. Wiboonsak, and S. Dusadee
 #include <numeric>
 
 //#include "metric.tpp"
-#include "../distance.hpp"
+//#include "../distance.hpp"
+#include "../distance/k-related/Standards.hpp"
 #include "../utils/graph.hpp"
 
 #ifndef M_PI

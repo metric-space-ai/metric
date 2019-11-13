@@ -29,8 +29,8 @@ W. Natita, W. Wiboonsak, and S. Dusadee
 #include <numeric>
 
 #include "SOM.hpp"
-#include "../distance.hpp"
-#include "../utils/graph.hpp"
+//#include "../distance.hpp"
+//#include "../utils/graph.hpp"
 
 #ifndef M_PI
 #define M_PI (3.14159265358979323846)

@@ -26,8 +26,8 @@ Copyright (c) 2019 Panda Team
 #include "../../modules/utils/Semaphore.h"
 
 #include "assets/json.hpp"
+//#include "../../modules/distance.hpp"
 #include "../../modules/mapping.hpp"
-#include "../../modules/distance.hpp"
 
 
 using json = nlohmann::json;
