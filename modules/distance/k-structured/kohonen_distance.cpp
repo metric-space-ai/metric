@@ -28,7 +28,8 @@ kohonen_distance<D, Sample, Graph, Metric, Distribution>::kohonen_distance(metri
 	
 
 template <typename D, typename Sample, typename Graph, typename Metric, typename Distribution>
-kohonen_distance<D, Sample, Graph, Metric, Distribution>::kohonen_distance(std::vector<Sample>& samples, size_t nodesWidth, size_t nodesHeight) : som_model_(Graph(nodesWidth, nodesHeight), Metric(), 0.8, 0.2, 20)
+kohonen_distance<D, Sample, Graph, Metric, Distribution>::kohonen_distance(std::vector<Sample>& samples, size_t nodesWidth, size_t nodesHeight) : 
+	som_model_(Graph(nodesWidth, nodesHeight), Metric(), 0.8, 0.2, 20)
 {
 	som_model_.train(samples);
 	
@@ -40,9 +41,9 @@ kohonen_distance<D, Sample, Graph, Metric, Distribution>::kohonen_distance(std::
 	
 
 template <typename D, typename Sample, typename Graph, typename Metric, typename Distribution>
-kohonen_distance<D, Sample, Graph, Metric, Distribution>::kohonen_distance(std::vector<Sample>& samples, Graph graph, Metric metric = Metric(), 
-	double start_learn_rate = 0.8, double finish_learn_rate = 0.0, size_t iterations = 20, 
-		Distribution distribution = Distribution(-1, 1)) : som_model_(graph, metric, start_learn_rate, finish_learn_rate, iterations, distribution)
+kohonen_distance<D, Sample, Graph, Metric, Distribution>::kohonen_distance(std::vector<Sample>& samples, Graph graph, Metric metric, 
+	double start_learn_rate, double finish_learn_rate, size_t iterations, Distribution distribution) : 
+	som_model_(graph, metric, start_learn_rate, finish_learn_rate, iterations, distribution)
 {
 	som_model_.train(samples);
 
