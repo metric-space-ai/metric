@@ -67,8 +67,11 @@ int main()
 
 	/* Load data */
 	auto [train_dataset, labels] = readData("assets/Compound.txt");
+
+	int grid_w = 6;
+	int grid_h = 4;
 	
-	metric::kohonen_distance<double, std::vector<double>> distance_1(train_dataset, 5, 6);
+	metric::kohonen_distance<double, std::vector<double>> distance_1(train_dataset, grid_w, grid_h);
 
 	auto t1 = std::chrono::steady_clock::now();
 	auto result = distance_1(train_dataset[0], train_dataset[1]);
@@ -76,18 +79,14 @@ int main()
 	std::cout << "result: " << result << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000 << " s)" << std::endl;
 	std::cout << "" << std::endl;
 
-	
-	
-	int grid_w = 6;
-	int grid_h = 4;
+	//
 	
     using Vector = std::vector<double>;
     using Metric = metric::Euclidian<double>;
     using Graph = metric::Grid6; 
     using Distribution = std::uniform_real_distribution<double>; 
-	Distribution distr(-1, 1);
 
-	Metric distance;	
+	Distribution distr(-1, 1);
 
     metric::SOM<Vector, Graph, Metric> som_model(Graph(grid_w, grid_h), Metric(), 0.8, 0.2, 20, distr);
 

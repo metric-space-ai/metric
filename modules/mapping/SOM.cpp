@@ -158,27 +158,6 @@ double SOM<recType, Graph, Metric, Distribution>::std_deviation(const std::vecto
 	return sqrt(total_distances / samples.size());
 }
 
-
-template <class recType, class Graph, class Metric, class Distribution>
-double SOM<recType, Graph, Metric, Distribution>::kohonen_distance(const std::vector<T>& sample_1, const std::vector<T>& sample_2)
-{
-	int graph_w = 3;
-	int graph_h = 2;
-	
-    size_t n = graph_w * graph_h;
-	// calculate ground distance matrix between SOM nodes
-	auto cost_mat = metric::EMD_details::ground_distance_matrix_of_2dgrid<T, Metric>(weights);
-	auto maxCost = metric::EMD_details::max_in_distance_matrix(cost_mat);
-	metric::EMD<double> emd_distance(cost_mat, maxCost);
-
-	// then we calculate distributions over SOM space for samples	
-	auto reduced_1 = encode(sample_1);
-	auto reduced_2 = encode(sample_2);
-
-	// and finally calculate EDM distance for samples distributions over SOM space
-	return emd_distance(reduced_1, reduced_2);
-}
-
 // PRIVATE
 
 template <class recType, class Graph, class Metric, class Distribution>

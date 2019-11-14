@@ -29,7 +29,8 @@ W. Natita, W. Wiboonsak, and S. Dusadee
 #include <numeric>
 
 //#include "metric.tpp"
-#include "../distance.hpp"
+//#include "../distance.hpp"
+#include "../distance/k-related/Standards.hpp"
 #include "../utils/graph.hpp"
 
 #ifndef M_PI
@@ -149,16 +150,6 @@ public:
 		 * @return double 
 		 */
 	double std_deviation(const std::vector<std::vector<T>>& samples);
-
-    /**
-		 * @brief 
-		 * 
-		 * @param sample_1
-		 * @param sample_2
-		 * 
-		 * @return T
-		 */
-	double kohonen_distance(const std::vector<T>& sample_1, const std::vector<T>& sample_2);
 
     /**
 		 * @brief 

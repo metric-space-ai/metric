@@ -120,6 +120,7 @@ namespace metric {
 		{
 			som.train(dataset);
 		}
+		metric::kohonen_distance<double, Record, Graph, Metric> kohonen_distance_object(som);
 			
 		auto iterations = 20;
 		if (iterations > dataset.size())
@@ -134,7 +135,7 @@ namespace metric {
 				if (i != j)
 				{						
 					// we get the same bmu for both records
-					auto kohonen_distance = som.kohonen_distance(dataset[randomized_indexes[i]], dataset[randomized_indexes[j]]);
+					auto kohonen_distance = kohonen_distance_object(dataset[randomized_indexes[i]], dataset[randomized_indexes[j]]);
 					auto direct_distance = distance(dataset[randomized_indexes[i]], dataset[randomized_indexes[j]]);
 					auto diff = abs(abs(kohonen_distance) - abs(direct_distance));
 					auto relative_diff = diff / abs(direct_distance);
