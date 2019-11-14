@@ -813,12 +813,14 @@ template <typename recType, typename Metric>
 size_t
 DSPCC<recType, Metric>::subband_size(size_t original_size, size_t depth, size_t wavelet_length) {
     size_t n = 1;
-    size_t sum = 0;
+    //size_t sum = 0;
+    float sum = 0;
     for (size_t i=1; i<=depth; ++i){
         n = n*2;
-        sum += (wavelet_length - 2)/n;
+        //sum += (wavelet_length - 2)/n;
+        sum += (wavelet_length - 2)/(float)n;
     }
-    return original_size/n + sum;
+    return original_size/(float)n + sum;
 }
 
 
@@ -826,10 +828,12 @@ template <typename recType, typename Metric>
 size_t
 DSPCC<recType, Metric>::original_size(size_t subband_size, size_t depth, size_t wavelet_length) {
     size_t n = 1;
-    size_t sum = 0;
+    //size_t sum = 0;
+    float sum = 0;
     for (size_t i=1; i<=depth; ++i){
         n = n*2;
-        sum += (wavelet_length - 2)/n;
+        //sum += (wavelet_length - 2)/n;
+        sum += (wavelet_length - 2)/(float)n;
     }
     return n*(subband_size - sum);
 }

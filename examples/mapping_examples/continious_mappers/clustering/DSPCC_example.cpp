@@ -189,7 +189,7 @@ int main()
             visualize = false;
 
 
-        auto vDSPCC = metric::DSPCC<std::vector<double>, void>(vdata, 60, 8, mix, 60);
+        auto vDSPCC = metric::DSPCC<std::vector<double>, void>(vdata, 60, 64, mix, 60);
         // dataset,
         // number of features of freq and time PCFAs,
         // DWT subbands, share of freq features in the mixed code,
