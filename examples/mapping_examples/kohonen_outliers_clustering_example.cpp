@@ -233,15 +233,6 @@ int main(int argc, char *argv[])
 	// create, train KOC over the raw data and reduce the data	
 	// then make clustering on the reduced data
 	
-	
-	metric::Grid4 graph(best_w_grid_size, best_h_grid_size);
-	metric::Euclidian<double> distance;
-	std::uniform_real_distribution<double> distribution;
-
-	metric::KOC<Record, metric::Grid4, metric::Euclidian<double>, std::uniform_real_distribution<double>> 
-		simple_koc(graph, distance, 0.8, 0.0, 20, distribution);	
-	
-	
 	std::vector<Record> dataset = {
 		{0, 0, 0},
 		{0, 1, 0},
@@ -263,23 +254,30 @@ int main(int argc, char *argv[])
 		{0, 0, 3},
 		{5, 5, 5},
 	};
+
+	metric::KOC_factory<Record> simple_koc_factory;    
+	auto simple_koc = simple_koc_factory(dataset); 
+	//auto [assignments, seeds, counts] = clust_1.result();
+
+	//metric::KOC<Record, metric::Grid4, metric::Euclidian<double>, std::uniform_real_distribution<double>> 
+	//	simple_koc(best_w_grid_size, best_h_grid_size, 0.8, 0.0, 20);	
 	
-	simple_koc.train(dataset);
+	//simple_koc.train(dataset);
 
-	simple_koc.set_anomaly_threshold(0.01);
+	double anomaly_threshold = 0.01;
 
-	auto anomalies = simple_koc.check_if_anomaly(test_samples_1);	
+	auto anomalies = simple_koc.check_if_anomaly(test_samples_1, anomaly_threshold);	
 	std::cout << std::endl;
 	std::cout << "anomalies:" << std::endl;
 	vector_print(anomalies);
 	std::cout << std::endl;
 	
-	std::vector<int> clusters_grid = simple_koc.get_clusters();	
+	auto [clusters_grid, seeds, counts] = simple_koc.result();	
 	std::cout << std::endl;
 	std::cout << "clusters grid:" << std::endl;
-	vector_print(clusters_grid, best_w_grid_size, best_h_grid_size);
+	vector_print(clusters_grid, 5, 4);
 
-	auto assigned_clusters = simple_koc.encode(test_samples_1);	
+	auto assigned_clusters = simple_koc.encode(test_samples_1, anomaly_threshold);	
 	std::cout << std::endl;
 	std::cout << "assigned clusters:" << std::endl;
 	vector_print(assigned_clusters);
@@ -300,10 +298,10 @@ int main(int argc, char *argv[])
 	std::cout << "Num records: " << speeds.size() << std::endl;
 	std::cout << "Num values in the record: " << speeds[0].size() << std::endl;
 
-	metric::KOC<Record, metric::Grid4, metric::Euclidian<double>, std::uniform_real_distribution<double>> 
-		koc(graph, distance, 0.8, 0.0, 20, distribution);	
-
-	koc.train(speeds);
+	metric::KOC_factory<Record, metric::Grid4, metric::Euclidian<double>, std::uniform_real_distribution<double>> 
+		koc_factory(best_w_grid_size, best_h_grid_size, 0.8, 0.0, 20);	
+	
+	auto koc = koc_factory(speeds); 
 
 	//
 
@@ -319,6 +317,10 @@ int main(int argc, char *argv[])
 	std::random_device rd;     // only used once to initialise (seed) engine
 	std::mt19937 rng(rd());    // random-number engine used (Mersenne-Twister in this case)
 	std::uniform_int_distribution<int> uni(0, speeds.size()); // guaranteed unbiased
+	
+	//metric::Grid4 graph(best_w_grid_size, best_h_grid_size);
+	metric::Euclidian<double> distance;
+	//std::uniform_real_distribution<double> distribution;
 
 	auto random_integer = uni(rng);
 	test_samples.push_back(speeds[random_integer]);
@@ -372,20 +374,20 @@ int main(int argc, char *argv[])
 	}
 	std::cout << "" << std::endl;
 	
-	koc.set_anomaly_threshold(-0.1);
-	anomalies = koc.check_if_anomaly(test_samples);
+	anomaly_threshold = -0.1;
+	anomalies = koc.check_if_anomaly(test_samples, anomaly_threshold);
 	
 	std::cout << std::endl;
 	std::cout << "anomalies:" << std::endl;
 	vector_print(anomalies);
 	std::cout << std::endl;
 	
-	clusters_grid = koc.get_clusters();	
+	std::tie(clusters_grid, seeds, counts) = koc.result();	
 	std::cout << std::endl;
 	std::cout << "clusters grid:" << std::endl;
 	vector_print(clusters_grid, best_w_grid_size, best_h_grid_size);
 
-	assigned_clusters = koc.encode(test_samples);	
+	assigned_clusters = koc.encode(test_samples, anomaly_threshold);	
 	std::cout << std::endl;
 	std::cout << "assigned clusters:" << std::endl;
 	vector_print(assigned_clusters);
