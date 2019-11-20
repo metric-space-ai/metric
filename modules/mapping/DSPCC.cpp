@@ -705,7 +705,6 @@ DSPCC<recType, Metric>::mixed_code_serialize(const std::vector<std::vector<recTy
     using ElementType = typename recType::value_type;
 
     //auto PCFA_encoded = time_freq_PCFA_encode(Data);
-    // TODO serialize and feed to PCFA
     std::vector<recType> serialized_dataset;
     for (size_t record_idx = 0; record_idx<PCFA_encoded[0].size(); ++record_idx) {
         std::vector<ElementType> serialized_record;
@@ -820,6 +819,7 @@ DSPCC<recType, Metric>::subband_size(size_t original_size, size_t depth, size_t 
         //sum += (wavelet_length - 2)/n;
         sum += (wavelet_length - 2)/(float)n;
     }
+    //return original_size/n + sum;
     return original_size/(float)n + sum;
 }
 

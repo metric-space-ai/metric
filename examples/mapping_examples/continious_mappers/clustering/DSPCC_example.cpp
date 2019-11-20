@@ -165,6 +165,8 @@ int main()
     float magnitude = 80;
 
     auto raw_vdata = read_csv_num<double>("assets/vibration_smaller_3.csv", ",");
+//    auto raw_vdata = read_csv_num<double>("assets/vibration_smaller_3_no_peaks.csv", ",");
+//    auto raw_vdata = read_csv_num<double>("assets/vibration_smaller_3_added_peaks.csv", ",");
     auto vdata =  transpose_timeseries(raw_vdata);
 
     mat2bmp::blaze2bmp_norm(vdata, "input.bmp", magnitude);
@@ -181,6 +183,8 @@ int main()
     bool visualize = false;
 
     for (float mix = 0; mix<=1; mix+=0.25) {
+    //float mix  = 0.5; {
+
 
 
         if (mix == 0.5)
@@ -189,7 +193,7 @@ int main()
             visualize = false;
 
 
-        auto vDSPCC = metric::DSPCC<std::vector<double>, void>(vdata, 60, 64, mix, 60);
+        auto vDSPCC = metric::DSPCC<std::vector<double>, void>(vdata, 10, 16, mix, 10);
         // dataset,
         // number of features of freq and time PCFAs,
         // DWT subbands, share of freq features in the mixed code,
