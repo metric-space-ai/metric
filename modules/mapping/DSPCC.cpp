@@ -126,21 +126,38 @@ sequential_DWT( // old overload
 }
 
 
+//template <
+//        template <typename, typename> class OuterContainer,
+//        template <typename, typename> class InnerContainer,
+//        typename ValueType,
+//        typename OuterAllocator,
+//        typename InnerAllocator// = std::allocator<ValueType>
+//        >
+//OuterContainer<InnerContainer<ValueType, InnerAllocator>, OuterAllocator> // TODO better use -> for deduction by return value
+//sequential_DWT(
+//        InnerContainer<ValueType, InnerAllocator> x,
+//        std::stack<size_t> & subband_length,
+//        int wavelet_type,
+//        size_t subbands_num
+//        ) {
+//    OuterContainer<InnerContainer<ValueType, InnerAllocator>, OuterAllocator> deque_x = {x};
+//    return DWT_split(deque_x, subband_length, wavelet_type, subbands_num);
+//}
+
+
 template <
         template <typename, typename> class OuterContainer,
-        template <typename, typename> class InnerContainer,
-        typename ValueType,
-        typename OuterAllocator,
-        typename InnerAllocator// = std::allocator<ValueType>
+        class InnerContainer,
+        typename OuterAllocator
         >
-OuterContainer<InnerContainer<ValueType, InnerAllocator>, OuterAllocator> // TODO better use -> for deduction by return value
+OuterContainer<InnerContainer, OuterAllocator> // TODO better use -> for deduction by return value
 sequential_DWT(
-        InnerContainer<ValueType, InnerAllocator> x,
+        InnerContainer x,
         std::stack<size_t> & subband_length,
         int wavelet_type,
         size_t subbands_num
         ) {
-    OuterContainer<InnerContainer<ValueType, InnerAllocator>, OuterAllocator> deque_x = {x};
+    OuterContainer<InnerContainer, OuterAllocator> deque_x = {x};
     return DWT_split(deque_x, subband_length, wavelet_type, subbands_num);
 }
 
@@ -627,13 +644,14 @@ DSPCC<recType, Metric>::outer_encode(
         std::stack<size_t> subband_length_local;
         recType cropped_record(Curves[record_idx].begin(), Curves[record_idx].begin() + crop_size);
 
-        std::deque<std::vector<ElementType>> current_rec_subbands_timedomain = sequential_DWT<ElementType>(cropped_record, subband_length_local, 5, n_subbands); // TODO replace 5!! // TODO support different recType types
+        //std::deque<std::vector<ElementType>> current_rec_subbands_timedomain = sequential_DWT<ElementType>(cropped_record, subband_length_local, 5, n_subbands); // TODO replace 5!!
+        std::deque<recType> current_rec_subbands_timedomain = sequential_DWT<std::deque, recType, std::allocator<recType>>(cropped_record, subband_length_local, 5, n_subbands); // TODO replace 5!! // TODO support different recType types
         if (resulting_subband_length==0) { // only during the first run
             resulting_subband_length = current_rec_subbands_timedomain[0].size();
             //resulting_subband_length = mix_index(current_rec_subbands_timedomain[0].size(), 1); // max n^2 (here not needed), no dependence on time_freq_balance here!
             subband_length = subband_length_local;
         }
-        std::deque<std::vector<ElementType>> current_rec_subbands_freqdomain(current_rec_subbands_timedomain);
+        std::deque<recType> current_rec_subbands_freqdomain(current_rec_subbands_timedomain);
         metric::apply_DCT_STL(current_rec_subbands_freqdomain, false, resulting_subband_length); // transform all subbands at once (only first mix_idx values are replaced, the rest is left unchanged!), TODO refactor cutting!!
         for (size_t subband_idx = 0; subband_idx<current_rec_subbands_timedomain.size(); ++subband_idx) {
             TimeData[subband_idx][record_idx] = current_rec_subbands_timedomain[subband_idx];
@@ -664,9 +682,11 @@ DSPCC<recType, Metric>::outer_decode(const std::tuple<std::deque<std::vector<rec
         metric::apply_DCT_STL(subbands_freqdomain, true);
 
         std::stack<size_t> subband_length_copy(subband_length);
-        std::vector<ElementType> restored_waveform_freq = sequential_iDWT(subbands_freqdomain, subband_length_copy, 5);
+        //std::vector<ElementType> restored_waveform_freq = sequential_iDWT(subbands_freqdomain, subband_length_copy, 5);
+        recType restored_waveform_freq = sequential_iDWT(subbands_freqdomain, subband_length_copy, 5);
         subband_length_copy = subband_length;
-        std::vector<ElementType> restored_waveform_time = sequential_iDWT(subbands_timedomain, subband_length_copy, 5);
+        //std::vector<ElementType> restored_waveform_time = sequential_iDWT(subbands_timedomain, subband_length_copy, 5);
+        recType restored_waveform_time = sequential_iDWT(subbands_timedomain, subband_length_copy, 5);
         recType restored_waveform_out;
         for (size_t el_idx = 0; el_idx<restored_waveform_freq.size(); ++el_idx) {
             restored_waveform_out.push_back( (restored_waveform_freq[el_idx]*time_freq_balance + restored_waveform_time[el_idx]*(1 - time_freq_balance)) );
@@ -747,7 +767,8 @@ DSPCC<recType, Metric>::mixed_code_serialize(const std::vector<std::vector<recTy
     //auto PCFA_encoded = time_freq_PCFA_encode(Data);
     std::vector<recType> serialized_dataset;
     for (size_t record_idx = 0; record_idx<PCFA_encoded[0].size(); ++record_idx) {
-        std::vector<ElementType> serialized_record;
+        //std::vector<ElementType> serialized_record;
+        recType serialized_record;
         for (size_t subband_idx = 0; subband_idx<PCFA_encoded.size(); ++subband_idx) {
             serialized_record.insert(
                         serialized_record.end(),
