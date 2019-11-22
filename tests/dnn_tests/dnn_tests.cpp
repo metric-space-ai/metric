@@ -9,7 +9,6 @@
 #include <blaze/Math.h>
 
 
-using namespace std;
 using namespace MiniDNN;
 
 using Matrix = blaze::DynamicMatrix<double, blaze::columnMajor>;
@@ -90,8 +89,6 @@ BOOST_AUTO_TEST_CASE(fullyconnected)
 	Matrix input{ {0}, {1}, {2}, {3}};
 	fc.forward(input);
 
-	//cout << fc.output() << endl;
-
 	Matrix output{{6.5}, {6.5}};
 
 	BOOST_CHECK_EQUAL(fc.output(), output);
@@ -113,8 +110,6 @@ BOOST_AUTO_TEST_CASE(convolutional)
 	blaze::DynamicMatrix<double, blaze::columnMajor> Y {{19, 25, 37, 43}};
 	blaze::transpose(Y);
 
-	cout << convLayer.output() << endl;
-
 	BOOST_CHECK_EQUAL(convLayer.output(), Y);
 }
 
@@ -132,8 +127,6 @@ BOOST_AUTO_TEST_CASE(deconvolutional)
 
 	blaze::DynamicMatrix<double, blaze::columnMajor> Y {{1, 4, 4, 6, 20, 16, 9, 24, 16}};
 	blaze::transpose(Y);
-
-	cout << convTransposeLayer.output() << endl;
 
 	BOOST_CHECK_EQUAL(convTransposeLayer.output(), Y);
 }
