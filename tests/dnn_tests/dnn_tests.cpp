@@ -5,8 +5,7 @@
 #include <limits>
 
 #include <iostream>
-#include <MiniDNN.h>
-#include <blaze/Math.h>
+#include "modules/dnn.hpp"
 
 
 using namespace MiniDNN;
@@ -41,10 +40,10 @@ BOOST_AUTO_TEST_CASE(identity)
 
 BOOST_AUTO_TEST_CASE(relu)
 {
-	Identity<double> relu;
+	ReLU<double> relu;
 	Matrix input{ {-2}, {-1}, {0}, {1}, {2}, {3}, {4}, {5}};
 	Matrix output{ {0}, {0}, {0}, {1}, {2}, {3}, {4}, {5}};
-	Matrix result;
+	Matrix result(input.rows(), input.columns());
 
 	relu.activate(input, result);
 	BOOST_CHECK_EQUAL(result, output);

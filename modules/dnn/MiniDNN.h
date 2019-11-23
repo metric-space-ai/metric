@@ -1,6 +1,7 @@
 #ifndef MINIDNN_H_
 #define MINIDNN_H_
 
+#include "../../3rdparty/blaze/Math.h"
 
 #include "RNG.h"
 
@@ -9,7 +10,6 @@
 #include "Layer/Convolutional.h"
 #include "Layer/Conv2d-transpose.h"
 #include "Layer/MaxPooling.h"
-#include "EigenStream.h"
 
 #include "Activation/ReLU.h"
 #include "Activation/Identity.h"

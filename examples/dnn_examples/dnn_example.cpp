@@ -1,12 +1,10 @@
-#include <MiniDNN.h>
-#include <Utils/Random.h>
+#include "../../modules/dnn.hpp"
+#include "../../modules/dnn/Utils/Random.h"
+#include "../../modules/dnn/Utils/datasets.cpp"
+#include "../../modules/dnn/autoencoder.hpp"
 
 #include <iostream>
 #include <chrono>
-
-#include "Utils/datasets.cpp"
-
-#include "../include/autoencoder.hpp"
 
 
 using namespace std;
