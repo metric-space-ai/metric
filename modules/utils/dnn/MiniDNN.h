@@ -8,7 +8,7 @@
 
 #include "Layer.h"
 #include "Layer/FullyConnected.h"
-#include "Layer/Convolutional.h"
+#include "Layer/Conv2d.h"
 #include "Layer/Conv2d-transpose.h"
 #include "Layer/MaxPooling.h"
 

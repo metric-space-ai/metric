@@ -20,7 +20,7 @@ namespace MiniDNN
 /// Currently only supports the "valid" rule of convolution.
 ///
 template <typename Scalar, typename Activation>
-class Convolutional: public Layer<Scalar>
+class Conv2d: public Layer<Scalar>
 {
     private:
 		using Matrix = blaze::DynamicMatrix<Scalar, blaze::columnMajor>;
@@ -66,9 +66,9 @@ class Convolutional: public Layer<Scalar>
         /// \param kernelWidth  Width of the filter.
         /// \param kernelHeight Height of the filter.
         ///
-        Convolutional(const int inputWidth, const int inputHeight,
-                      const int inputChannels, const int outputChannels,
-                      const int kernelWidth, const int kernelHeight) :
+        Conv2d(const int inputWidth, const int inputHeight,
+               const int inputChannels, const int outputChannels,
+               const int kernelWidth, const int kernelHeight) :
 							Layer<Scalar>(inputWidth * inputHeight * inputChannels,
 										  (inputWidth - kernelWidth + 1) * (inputHeight - kernelHeight + 1) * outputChannels),
 							m_dim(inputChannels, outputChannels, inputHeight, inputWidth, kernelHeight,

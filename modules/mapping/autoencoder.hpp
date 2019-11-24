@@ -55,7 +55,7 @@ namespace MiniDNN
 		/* Create layers */
 		//net.addLayer(FullyConnected<Scalar, ReLU<Scalar>>(featuresLength, LATENT_VECTOR_SIZE));
 		//net.addLayer(FullyConnected<Scalar, Sigmoid<Scalar>>(LATENT_VECTOR_SIZE, featuresLength));
-		net.addLayer(Convolutional<Scalar, ReLU<Scalar>>(28, 28, 1, 1, 5, 5));
+		net.addLayer(Conv2d<Scalar, ReLU<Scalar>>(28, 28, 1, 1, 5, 5));
 		net.addLayer(Conv2dTranspose<Scalar, Sigmoid<Scalar>>(24, 24, 1, 1, 5, 5));
 
 		net.setCallback(VerboseCallback<Scalar>());
