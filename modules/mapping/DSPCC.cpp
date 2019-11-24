@@ -1,7 +1,7 @@
 
 #include "DSPCC.hpp"
 
-#include "../../modules/transform/wavelet.hpp"
+#include "../../modules/transform/wavelet_new.hpp"
 #include "../../modules/transform/discrete_cosine.hpp"
 
 
