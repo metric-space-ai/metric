@@ -1,4 +1,4 @@
-#include <MiniDNN.h>
+#include "../utils/dnn.hpp"
 
 
 namespace MiniDNN
