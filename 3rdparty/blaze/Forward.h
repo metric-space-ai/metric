@@ -1,7 +1,7 @@
 //=================================================================================================
 /*!
-//  \file blaze/Blaze.h
-//  \brief Primary include file of the Blaze library
+//  \file blaze/Forward.h
+//  \brief Header file for all forward declarations of the Blaze library
 //
 //  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
 //
@@ -32,30 +32,16 @@
 */
 //=================================================================================================
 
-#ifndef _BLAZE_BLAZE_H_
-#define _BLAZE_BLAZE_H_
+#ifndef _BLAZE_FORWARD_H_
+#define _BLAZE_FORWARD_H_
 
 
 //*************************************************************************************************
 // Includes
 //*************************************************************************************************
 
-#include "Math.h"
-#include "system/Version.h"
-#include "Util.h"
-
-
-
-
-//=================================================================================================
-//
-//  DOXYGEN DOCUMENTATION
-//
-//=================================================================================================
-
-//*************************************************************************************************
-//! Namespace of the \b Blaze C++ math library.
-namespace blaze {}
-//*************************************************************************************************
+#include "math/Forward.h"
+#include "system/StorageOrder.h"
+#include "system/TransposeFlag.h"
 
 #endif
