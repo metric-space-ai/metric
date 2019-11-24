@@ -6,7 +6,6 @@
 #include "../Utils/Convolution.h"
 #include "../Utils/Random.h"
 
-using namespace std;
 
 namespace MiniDNN
 {
@@ -38,8 +37,8 @@ class Conv2d: public Layer<Scalar>
 		size_t outputWidth;
 		size_t outputHeight;
 
-		vector<size_t> jDeltas;
-		vector<size_t> iDeltas;
+		std::vector<size_t> jDeltas;
+		std::vector<size_t> iDeltas;
 
         Vector m_filter_data;           // Filter parameters. Total length is
         // (in_channels x out_channels x filter_rows x filter_cols)
