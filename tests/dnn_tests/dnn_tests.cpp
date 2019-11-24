@@ -5,7 +5,7 @@
 #include <limits>
 
 #include <iostream>
-#include "modules/dnn.hpp"
+#include "modules/utils/dnn.hpp"
 
 
 using namespace MiniDNN;

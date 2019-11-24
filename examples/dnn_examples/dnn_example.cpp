@@ -1,7 +1,7 @@
-#include "../../modules/dnn.hpp"
-#include "../../modules/dnn/Utils/Random.h"
-#include "../../modules/dnn/Utils/datasets.cpp"
-#include "../../modules/dnn/autoencoder.hpp"
+#include "../../modules/utils/dnn.hpp"
+#include "../../modules/utils/dnn/Utils/Random.h"
+#include "../../modules/utils/dnn/Utils/datasets.cpp"
+#include "../../modules/mapping/autoencoder.hpp"
 
 #include <iostream>
 #include <chrono>

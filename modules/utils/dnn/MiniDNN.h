@@ -1,7 +1,8 @@
 #ifndef MINIDNN_H_
 #define MINIDNN_H_
 
-#include "../../3rdparty/blaze/Math.h"
+//#include "../../3rdparty/blaze/Math.h"
+#include <blaze/Math.h>
 
 #include "RNG.h"
 
