@@ -3,7 +3,7 @@
 //  \file blaze/math/lapack/clapack/gesv.h
 //  \brief Header file for the CLAPACK gesv wrapper functions
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -55,9 +55,9 @@
 #if !defined(INTEL_MKL_VERSION)
 extern "C" {
 
-void sgesv_( int* n, int* nrhs, float* A, int* lda, int* ipiv, float* b, int* ldb, int* info );
+void sgesv_( int* n, int* nrhs, float*  A, int* lda, int* ipiv, float*  b, int* ldb, int* info );
 void dgesv_( int* n, int* nrhs, double* A, int* lda, int* ipiv, double* b, int* ldb, int* info );
-void cgesv_( int* n, int* nrhs, float* A, int* lda, int* ipiv, float* b, int* ldb, int* info );
+void cgesv_( int* n, int* nrhs, float*  A, int* lda, int* ipiv, float*  b, int* ldb, int* info );
 void zgesv_( int* n, int* nrhs, double* A, int* lda, int* ipiv, double* b, int* ldb, int* info );
 
 }
@@ -79,13 +79,13 @@ namespace blaze {
 //*************************************************************************************************
 /*!\name LAPACK general linear system functions (gesv) */
 //@{
-void gesv( int n, int nrhs, float* A, int lda, int* ipiv, float* B, int ldb, int* info );
+inline void gesv( int n, int nrhs, float* A, int lda, int* ipiv, float* B, int ldb, int* info );
 
-void gesv( int n, int nrhs, double* A, int lda, int* ipiv, double* B, int ldb, int* info );
+inline void gesv( int n, int nrhs, double* A, int lda, int* ipiv, double* B, int ldb, int* info );
 
-void gesv( int n, int nrhs, complex<float>* A, int lda, int* ipiv, complex<float>* B, int ldb, int* info );
+inline void gesv( int n, int nrhs, complex<float>* A, int lda, int* ipiv, complex<float>* B, int ldb, int* info );
 
-void gesv( int n, int nrhs, complex<double>* A, int lda, int* ipiv, complex<double>* B, int ldb, int* info );
+inline void gesv( int n, int nrhs, complex<double>* A, int lda, int* ipiv, complex<double>* B, int ldb, int* info );
 //@}
 //*************************************************************************************************
 

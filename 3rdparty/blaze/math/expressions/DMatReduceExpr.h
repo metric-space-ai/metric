@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/DMatReduceExpr.h
 //  \brief Header file for the dense matrix reduce expression
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -63,14 +63,9 @@
 #include "../../math/shims/Serial.h"
 #include "../../math/SIMD.h"
 #include "../../math/traits/ReduceTrait.h"
-#include "../../math/typetraits/HasLoad.h"
 #include "../../math/typetraits/IsExpression.h"
-#include "../../math/typetraits/IsPadded.h"
-#include "../../math/typetraits/IsSIMDEnabled.h"
-#include "../../math/typetraits/IsUniform.h"
 #include "../../math/typetraits/RequiresEvaluation.h"
 #include "../../math/views/Check.h"
-#include "../../system/HostDevice.h"
 #include "../../system/Thresholds.h"
 #include "../../util/Assert.h"
 #include "../../util/DisableIf.h"
@@ -78,6 +73,7 @@
 #include "../../util/FunctionTrace.h"
 #include "../../util/mpl/If.h"
 #include "../../util/StaticAssert.h"
+#include "../../util/Template.h"
 #include "../../util/Types.h"
 #include "../../util/typetraits/HasMember.h"
 #include "../../util/typetraits/IsSame.h"
@@ -93,7 +89,7 @@ namespace blaze {
 //=================================================================================================
 
 //*************************************************************************************************
-/*!\brief Base template for row-major dense matrix partial reduction operations.
+/*!\brief Base template for row-major dense matrix reduction operations.
 // \ingroup dense_vector_expression
 //
 // The DMatReduceExpr class represents the compile time expression for partial reduction operations
@@ -150,7 +146,6 @@ class DMatReduceExpr<MT,OP,columnwise>
  public:
    //**Type definitions****************************************************************************
    using This          = DMatReduceExpr<MT,OP,columnwise>;  //!< Type of this DMatReduceExpr instance.
-   using BaseType      = DenseVector<This,true>;            //!< Base type of this DMatReduceExpr instance.
    using ResultType    = ReduceTrait_t<RT,OP,columnwise>;   //!< Result type for expression template evaluations.
    using TransposeType = TransposeType_t<ResultType>;       //!< Transpose type for expression template evaluations.
    using ElementType   = ElementType_t<ResultType>;         //!< Resulting element type.
@@ -804,7 +799,6 @@ class DMatReduceExpr<MT,OP,rowwise>
  public:
    //**Type definitions****************************************************************************
    using This          = DMatReduceExpr<MT,OP,rowwise>;  //!< Type of this DMatReduceExpr instance.
-   using BaseType      = DenseVector<This,false>;        //!< Base type of this DMatReduceExpr instance.
    using ResultType    = ReduceTrait_t<RT,OP,rowwise>;   //!< Result type for expression template evaluations.
    using TransposeType = TransposeType_t<ResultType>;    //!< Transpose type for expression template evaluations.
    using ElementType   = ElementType_t<ResultType>;      //!< Resulting element type.
@@ -862,7 +856,7 @@ class DMatReduceExpr<MT,OP,rowwise>
       // \param inc The increment of the iterator.
       // \return The incremented iterator.
       */
-      inline BLAZE_DEVICE_CALLABLE ConstIterator& operator+=( size_t inc ) {
+      inline ConstIterator& operator+=( size_t inc ) {
          index_ += inc;
          return *this;
       }
@@ -874,7 +868,7 @@ class DMatReduceExpr<MT,OP,rowwise>
       // \param dec The decrement of the iterator.
       // \return The decremented iterator.
       */
-      inline BLAZE_DEVICE_CALLABLE ConstIterator& operator-=( size_t dec ) {
+      inline ConstIterator& operator-=( size_t dec ) {
          index_ -= dec;
          return *this;
       }
@@ -885,7 +879,7 @@ class DMatReduceExpr<MT,OP,rowwise>
       //
       // \return Reference to the incremented iterator.
       */
-      inline BLAZE_DEVICE_CALLABLE ConstIterator& operator++() {
+      inline ConstIterator& operator++() {
          ++index_;
          return *this;
       }
@@ -896,7 +890,7 @@ class DMatReduceExpr<MT,OP,rowwise>
       //
       // \return The previous position of the iterator.
       */
-      inline BLAZE_DEVICE_CALLABLE const ConstIterator operator++( int ) {
+      inline const ConstIterator operator++( int ) {
          return ConstIterator( index_++ );
       }
       //*******************************************************************************************
@@ -906,7 +900,7 @@ class DMatReduceExpr<MT,OP,rowwise>
       //
       // \return Reference to the decremented iterator.
       */
-      inline BLAZE_DEVICE_CALLABLE ConstIterator& operator--() {
+      inline ConstIterator& operator--() {
          --index_;
          return *this;
       }
@@ -917,7 +911,7 @@ class DMatReduceExpr<MT,OP,rowwise>
       //
       // \return The previous position of the iterator.
       */
-      inline BLAZE_DEVICE_CALLABLE const ConstIterator operator--( int ) {
+      inline const ConstIterator operator--( int ) {
          return ConstIterator( index_-- );
       }
       //*******************************************************************************************
@@ -1520,12 +1514,27 @@ struct DMatReduceExprHelper
 
    //! Element type of the dense matrix expression.
    using ET = ElementType_t<CT>;
+
+   //! Definition of the HasSIMDEnabled type trait.
+   BLAZE_CREATE_HAS_DATA_OR_FUNCTION_MEMBER_TYPE_TRAIT( HasSIMDEnabled, simdEnabled );
+
+   //! Definition of the HasLoad type trait.
+   BLAZE_CREATE_HAS_DATA_OR_FUNCTION_MEMBER_TYPE_TRAIT( HasLoad, load );
+   //**********************************************************************************************
+
+   //**SIMD support detection**********************************************************************
+   //! Helper structure for the detection of the SIMD capabilities of the given custom operation.
+   struct UseSIMDEnabledFlag {
+      static constexpr bool test( bool (*fnc)() ) { return fnc(); }
+      static constexpr bool test( bool b ) { return b; }
+      static constexpr bool value = test( OP::BLAZE_TEMPLATE simdEnabled<ET,ET> );
+   };
    //**********************************************************************************************
 
    //**********************************************************************************************
    static constexpr bool value =
       ( CT::simdEnabled &&
-        If_t< HasSIMDEnabled_v<OP>, GetSIMDEnabled<OP,ET,ET>, HasLoad<OP> >::value );
+        If_t< HasSIMDEnabled_v<OP>, UseSIMDEnabledFlag, HasLoad<OP> >::value );
    //**********************************************************************************************
 };
 /*! \endcond */
@@ -1919,48 +1928,6 @@ inline auto dmatreduce( const DenseMatrix<MT,false>& dm, Add /*op*/ )
 
 //*************************************************************************************************
 /*! \cond BLAZE_INTERNAL */
-/*!\brief Optimized backend implementation of the minimum evaluation of a uniform dense matrix.
-// \ingroup dense_matrix
-//
-// \param dm The given dense matrix.
-// \return The smallest dense matrix element.
-//
-// This function implements the performance optimized minimum evaluation for a given uniform
-// dense matrix.
-*/
-template< typename MT >  // Type of the dense matrix
-inline auto dmatreduce( const DenseMatrix<MT,false>& dm, Min /*op*/ )
-   -> EnableIf_t< IsUniform_v<MT>, ElementType_t<MT> >
-{
-   return (~dm)(0UL,0UL);
-}
-/*! \endcond */
-//*************************************************************************************************
-
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-/*!\brief Optimized backend implementation of the maximum evaluation of a uniform dense matrix.
-// \ingroup dense_matrix
-//
-// \param dm The given dense matrix.
-// \return The smallest dense matrix element.
-//
-// This function implements the performance optimized maximum evaluation for a given uniform
-// dense matrix.
-*/
-template< typename MT >  // Type of the dense matrix
-inline auto dmatreduce( const DenseMatrix<MT,false>& dm, Max /*op*/ )
-   -> EnableIf_t< IsUniform_v<MT>, ElementType_t<MT> >
-{
-   return (~dm)(0UL,0UL);
-}
-/*! \endcond */
-//*************************************************************************************************
-
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
 /*!\brief Default backend implementation of the reduction of a column-major dense matrix.
 // \ingroup dense_matrix
 //
@@ -2037,8 +2004,7 @@ template< size_t RF      // Reduction flag
         , typename OP >  // Type of the reduction operation
 inline const DMatReduceExpr<MT,OP,RF> reduce_backend( const DenseMatrix<MT,false>& dm, OP op )
 {
-   using ReturnType = const DMatReduceExpr<MT,OP,RF>;
-   return ReturnType( ~dm, op );
+   return DMatReduceExpr<MT,OP,RF>( ~dm, op );
 }
 /*! \endcond */
 //*************************************************************************************************

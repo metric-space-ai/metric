@@ -3,7 +3,7 @@
 //  \file blaze/math/sparse/CompressedMatrix.h
 //  \brief Implementation of a compressed MxN matrix
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -58,8 +58,6 @@
 #include "../../math/traits/AddTrait.h"
 #include "../../math/traits/ColumnsTrait.h"
 #include "../../math/traits/DivTrait.h"
-#include "../../math/traits/ExpandTrait.h"
-#include "../../math/traits/KronTrait.h"
 #include "../../math/traits/MapTrait.h"
 #include "../../math/traits/MultTrait.h"
 #include "../../math/traits/RowsTrait.h"
@@ -80,7 +78,6 @@
 #include "../../math/typetraits/IsStrictlyLower.h"
 #include "../../math/typetraits/IsStrictlyUpper.h"
 #include "../../math/typetraits/IsUpper.h"
-#include "../../math/typetraits/IsZero.h"
 #include "../../math/typetraits/LowType.h"
 #include "../../math/typetraits/StorageOrder.h"
 #include "../../system/StorageOrder.h"
@@ -96,7 +93,6 @@
 #include "../../util/constraints/SameSize.h"
 #include "../../util/constraints/Volatile.h"
 #include "../../util/EnableIf.h"
-#include "../../util/IntegralConstant.h"
 #include "../../util/Memory.h"
 #include "../../util/Types.h"
 #include "../../util/typetraits/IsFloatingPoint.h"
@@ -362,7 +358,7 @@ class CompressedMatrix
    explicit inline CompressedMatrix( size_t m, size_t n );
    explicit inline CompressedMatrix( size_t m, size_t n, size_t nonzeros );
    explicit        CompressedMatrix( size_t m, size_t n, const std::vector<size_t>& nonzeros );
-            inline CompressedMatrix( initializer_list< initializer_list<Type> > list );
+   explicit inline CompressedMatrix( initializer_list< initializer_list<Type> > list );
 
    inline CompressedMatrix( const CompressedMatrix& sm );
    inline CompressedMatrix( CompressedMatrix&& sm ) noexcept;
@@ -646,7 +642,7 @@ CompressedMatrix<Type,SO>::CompressedMatrix( size_t m, size_t n, const std::vect
    BLAZE_USER_ASSERT( nonzeros.size() == m, "Size of capacity vector and number of rows don't match" );
 
    size_t newCapacity( 0UL );
-   for( auto it=nonzeros.begin(); it!=nonzeros.end(); ++it )
+   for( std::vector<size_t>::const_iterator it=nonzeros.begin(); it!=nonzeros.end(); ++it )
       newCapacity += *it;
 
    begin_[0UL] = end_[0UL] = allocate<Element>( newCapacity );
@@ -899,7 +895,7 @@ inline typename CompressedMatrix<Type,SO>::ConstReference
 //
 // This function returns a reference to the accessed value at position (\a i,\a j). In case the
 // compressed matrix does not yet store an element at position (\a i,\a j) , a new element is
-// inserted into the compressed matrix. In contrast to the function call operator this function
+// inserted into the compressed matrix. In contrast to the subscript operator this function
 // always performs a check of the given access indices.
 */
 template< typename Type  // Data type of the matrix
@@ -926,7 +922,7 @@ inline typename CompressedMatrix<Type,SO>::Reference
 // \return Reference to the accessed value.
 // \exception std::out_of_range Invalid matrix access index.
 //
-// In contrast to the function call operator this function always performs a check of the given
+// In contrast to the subscript operator this function always performs a check of the given
 // access indices.
 */
 template< typename Type  // Data type of the matrix
@@ -1285,10 +1281,7 @@ inline CompressedMatrix<Type,SO>&
    else {
       resize( (~rhs).rows(), (~rhs).columns(), false );
       reset();
-
-      if( !IsZero_v<MT> ) {
-         assign( *this, ~rhs );
-      }
+      assign( *this, ~rhs );
    }
 
    return *this;
@@ -1319,10 +1312,7 @@ inline CompressedMatrix<Type,SO>&
       BLAZE_THROW_INVALID_ARGUMENT( "Matrix sizes do not match" );
    }
 
-   if( !IsZero_v<MT> ) {
-      addAssign( *this, ~rhs );
-   }
-
+   addAssign( *this, ~rhs );
    return *this;
 }
 //*************************************************************************************************
@@ -1350,10 +1340,7 @@ inline CompressedMatrix<Type,SO>& CompressedMatrix<Type,SO>::operator-=( const M
       BLAZE_THROW_INVALID_ARGUMENT( "Matrix sizes do not match" );
    }
 
-   if( !IsZero_v<MT> ) {
-      subAssign( *this, ~rhs );
-   }
-
+   subAssign( *this, ~rhs );
    return *this;
 }
 //*************************************************************************************************
@@ -1419,13 +1406,8 @@ inline CompressedMatrix<Type,SO>&
       BLAZE_THROW_INVALID_ARGUMENT( "Matrix sizes do not match" );
    }
 
-   if( !IsZero_v<MT> ) {
-      CompressedMatrix tmp( *this % (~rhs) );
-      swap( tmp );
-   }
-   else {
-      reset();
-   }
+   CompressedMatrix tmp( *this % (~rhs) );
+   swap( tmp );
 
    return *this;
 }
@@ -2630,7 +2612,7 @@ template< typename Other >  // Data type of the scalar value
 inline CompressedMatrix<Type,SO>& CompressedMatrix<Type,SO>::scale( const Other& scalar )
 {
    for( size_t i=0UL; i<m_; ++i )
-      for( auto element=begin_[i]; element!=end_[i]; ++element )
+      for( Iterator element=begin_[i]; element!=end_[i]; ++element )
          element->value_ *= scalar;
 
    return *this;
@@ -2822,10 +2804,12 @@ inline void CompressedMatrix<Type,SO>::assign( const SparseMatrix<MT,!SO>& rhs )
    BLAZE_INTERNAL_ASSERT( nonZeros() == 0UL, "Invalid non-zero elements detected" );
    BLAZE_INTERNAL_ASSERT( capacity() >= (~rhs).nonZeros(), "Invalid capacity detected" );
 
+   using RhsIterator = ConstIterator_t<MT>;
+
    // Counting the number of elements per row
    std::vector<size_t> rowLengths( m_, 0UL );
    for( size_t j=0UL; j<n_; ++j ) {
-      for( auto element=(~rhs).begin(j); element!=(~rhs).end(j); ++element )
+      for( RhsIterator element=(~rhs).begin(j); element!=(~rhs).end(j); ++element )
          ++rowLengths[element->index()];
    }
 
@@ -2836,7 +2820,7 @@ inline void CompressedMatrix<Type,SO>::assign( const SparseMatrix<MT,!SO>& rhs )
 
    // Appending the elements to the rows of the compressed matrix
    for( size_t j=0UL; j<n_; ++j ) {
-      for( auto element=(~rhs).begin(j); element!=(~rhs).end(j); ++element )
+      for( RhsIterator element=(~rhs).begin(j); element!=(~rhs).end(j); ++element )
          append( element->index(), j, element->value() );
    }
 }
@@ -2971,7 +2955,7 @@ inline void CompressedMatrix<Type,SO>::schurAssign( const DenseMatrix<MT,SO2>& r
 
    for( size_t i=0UL; i<m_; ++i ) {
       const Iterator last( end(i) );
-      for( auto element=begin(i); element!=last; ++element )
+      for( Iterator element=begin(i); element!=last; ++element )
          element->value_ *= (~rhs)(i,element->index_);
    }
 }
@@ -3009,6 +2993,7 @@ class CompressedMatrix<Type,true>
    //**********************************************************************************************
 
    //**Private class Element***********************************************************************
+   /*! \cond BLAZE_INTERNAL */
    /*!\brief Value-index-pair for the CompressedMatrix class.
    //
    // This struct grants access to the data members of the base class and adapts the copy and
@@ -3075,12 +3060,15 @@ class CompressedMatrix<Type,true>
       friend class CompressedMatrix;
       //*******************************************************************************************
    };
+   /*! \endcond */
    //**********************************************************************************************
 
    //**Private class Uninitialized*****************************************************************
+   /*! \cond BLAZE_INTERNAL */
    /*!\brief Auxiliary helper class for the construction of compressed matrices.
    */
    struct Uninitialized {};
+   /*! \endcond */
    //**********************************************************************************************
 
  public:
@@ -3133,7 +3121,7 @@ class CompressedMatrix<Type,true>
    explicit inline CompressedMatrix( size_t m, size_t n );
    explicit inline CompressedMatrix( size_t m, size_t n, size_t nonzeros );
    explicit        CompressedMatrix( size_t m, size_t n, const std::vector<size_t>& nonzeros );
-            inline CompressedMatrix( initializer_list< initializer_list<Type> > list );
+   explicit inline CompressedMatrix( initializer_list< initializer_list<Type> > list );
 
    inline CompressedMatrix( const CompressedMatrix& sm );
    inline CompressedMatrix( CompressedMatrix&& sm ) noexcept;
@@ -3310,11 +3298,13 @@ class CompressedMatrix<Type,true>
    //**********************************************************************************************
 
    //**Compile time checks*************************************************************************
+   /*! \cond BLAZE_INTERNAL */
    BLAZE_CONSTRAINT_MUST_NOT_BE_POINTER_TYPE  ( Type );
    BLAZE_CONSTRAINT_MUST_NOT_BE_REFERENCE_TYPE( Type );
    BLAZE_CONSTRAINT_MUST_NOT_BE_CONST         ( Type );
    BLAZE_CONSTRAINT_MUST_NOT_BE_VOLATILE      ( Type );
    BLAZE_CONSTRAINT_MUST_HAVE_SAME_SIZE       ( ElementBase, Element );
+   /*! \endcond */
    //**********************************************************************************************
 };
 /*! \endcond */
@@ -3418,7 +3408,7 @@ CompressedMatrix<Type,true>::CompressedMatrix( size_t m, size_t n, const std::ve
    BLAZE_USER_ASSERT( nonzeros.size() == n, "Size of capacity vector and number of columns don't match" );
 
    size_t newCapacity( 0UL );
-   for( auto it=nonzeros.begin(); it!=nonzeros.end(); ++it )
+   for( std::vector<size_t>::const_iterator it=nonzeros.begin(); it!=nonzeros.end(); ++it )
       newCapacity += *it;
 
    begin_[0UL] = end_[0UL] = allocate<Element>( newCapacity );
@@ -4059,10 +4049,7 @@ inline CompressedMatrix<Type,true>&
    else {
       resize( (~rhs).rows(), (~rhs).columns(), false );
       reset();
-
-      if( !IsZero_v<MT> ) {
-         assign( *this, ~rhs );
-      }
+      assign( *this, ~rhs );
    }
 
    return *this;
@@ -4093,10 +4080,7 @@ inline CompressedMatrix<Type,true>& CompressedMatrix<Type,true>::operator+=( con
       BLAZE_THROW_INVALID_ARGUMENT( "Matrix sizes do not match" );
    }
 
-   if( !IsZero_v<MT> ) {
-      addAssign( *this, ~rhs );
-   }
-
+   addAssign( *this, ~rhs );
    return *this;
 }
 /*! \endcond */
@@ -4125,10 +4109,7 @@ inline CompressedMatrix<Type,true>& CompressedMatrix<Type,true>::operator-=( con
       BLAZE_THROW_INVALID_ARGUMENT( "Matrix sizes do not match" );
    }
 
-   if( !IsZero_v<MT> ) {
-      subAssign( *this, ~rhs );
-   }
-
+   subAssign( *this, ~rhs );
    return *this;
 }
 /*! \endcond */
@@ -4196,13 +4177,8 @@ inline CompressedMatrix<Type,true>&
       BLAZE_THROW_INVALID_ARGUMENT( "Matrix sizes do not match" );
    }
 
-   if( !IsZero_v<MT> ) {
-      CompressedMatrix tmp( *this % (~rhs) );
-      swap( tmp );
-   }
-   else {
-      reset();
-   }
+   CompressedMatrix tmp( *this % (~rhs) );
+   swap( tmp );
 
    return *this;
 }
@@ -5407,7 +5383,7 @@ template< typename Other >  // Data type of the scalar value
 inline CompressedMatrix<Type,true>& CompressedMatrix<Type,true>::scale( const Other& scalar )
 {
    for( size_t j=0UL; j<n_; ++j )
-      for( auto element=begin_[j]; element!=end_[j]; ++element )
+      for( Iterator element=begin_[j]; element!=end_[j]; ++element )
          element->value_ *= scalar;
 
    return *this;
@@ -5605,10 +5581,12 @@ inline void CompressedMatrix<Type,true>::assign( const SparseMatrix<MT,false>& r
    BLAZE_INTERNAL_ASSERT( nonZeros() == 0UL, "Invalid non-zero elements detected" );
    BLAZE_INTERNAL_ASSERT( capacity() >= (~rhs).nonZeros(), "Invalid capacity detected" );
 
+   using RhsIterator = ConstIterator_t<MT>;
+
    // Counting the number of elements per column
    std::vector<size_t> columnLengths( n_, 0UL );
    for( size_t i=0UL; i<m_; ++i ) {
-      for( auto element=(~rhs).begin(i); element!=(~rhs).end(i); ++element )
+      for( RhsIterator element=(~rhs).begin(i); element!=(~rhs).end(i); ++element )
          ++columnLengths[element->index()];
    }
 
@@ -5619,7 +5597,7 @@ inline void CompressedMatrix<Type,true>::assign( const SparseMatrix<MT,false>& r
 
    // Appending the elements to the columns of the compressed matrix
    for( size_t i=0UL; i<m_; ++i ) {
-      for( auto element=(~rhs).begin(i); element!=(~rhs).end(i); ++element )
+      for( RhsIterator element=(~rhs).begin(i); element!=(~rhs).end(i); ++element )
          append( i, element->index(), element->value() );
    }
 }
@@ -5759,7 +5737,7 @@ inline void CompressedMatrix<Type,true>::schurAssign( const DenseMatrix<MT,SO>& 
 
    for( size_t j=0UL; j<n_; ++j ) {
       const Iterator last( end(j) );
-      for( auto element=begin(j); element!=last; ++element )
+      for( Iterator element=begin(j); element!=last; ++element )
          element->value_ *= (~rhs)(element->index_,j);
    }
 }
@@ -5783,22 +5761,22 @@ inline void CompressedMatrix<Type,true>::schurAssign( const DenseMatrix<MT,SO>& 
 /*!\name CompressedMatrix operators */
 //@{
 template< typename Type, bool SO >
-void reset( CompressedMatrix<Type,SO>& m );
+inline void reset( CompressedMatrix<Type,SO>& m );
 
 template< typename Type, bool SO >
-void reset( CompressedMatrix<Type,SO>& m, size_t i );
+inline void reset( CompressedMatrix<Type,SO>& m, size_t i );
 
 template< typename Type, bool SO >
-void clear( CompressedMatrix<Type,SO>& m );
+inline void clear( CompressedMatrix<Type,SO>& m );
 
 template< bool RF, typename Type, bool SO >
-bool isDefault( const CompressedMatrix<Type,SO>& m );
+inline bool isDefault( const CompressedMatrix<Type,SO>& m );
 
 template< typename Type, bool SO >
-bool isIntact( const CompressedMatrix<Type,SO>& m );
+inline bool isIntact( const CompressedMatrix<Type,SO>& m );
 
 template< typename Type, bool SO >
-void swap( CompressedMatrix<Type,SO>& a, CompressedMatrix<Type,SO>& b ) noexcept;
+inline void swap( CompressedMatrix<Type,SO>& a, CompressedMatrix<Type,SO>& b ) noexcept;
 //@}
 //*************************************************************************************************
 
@@ -6116,34 +6094,6 @@ struct MultTraitEval2< T1, T2
 
 //=================================================================================================
 //
-//  KRONTRAIT SPECIALIZATIONS
-//
-//=================================================================================================
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-template< typename T1    // Type of the left-hand side operand
-        , typename T2 >  // Type of the right-hand side operand
-struct KronTraitEval2< T1, T2
-                     , EnableIf_t< IsMatrix_v<T1> &&
-                                   IsMatrix_v<T2> &&
-                                   ( IsSparseMatrix_v<T1> || IsSparseMatrix_v<T2> ) > >
-{
-   using ET1 = ElementType_t<T1>;
-   using ET2 = ElementType_t<T2>;
-
-   static constexpr bool SO = ( IsDenseMatrix_v<T2> ? StorageOrder_v<T1> : StorageOrder_v<T2> );
-
-   using Type = CompressedMatrix< MultTrait_t<ET1,ET2>, SO >;
-};
-/*! \endcond */
-//*************************************************************************************************
-
-
-
-
-//=================================================================================================
-//
 //  DIVTRAIT SPECIALIZATIONS
 //
 //=================================================================================================
@@ -6179,29 +6129,6 @@ struct UnaryMapTraitEval2< T, OP
    using ET = ElementType_t<T>;
 
    using Type = CompressedMatrix< MapTrait_t<ET,OP>, StorageOrder_v<T> >;
-};
-/*! \endcond */
-//*************************************************************************************************
-
-
-
-
-//=================================================================================================
-//
-//  EXPANDTRAIT SPECIALIZATIONS
-//
-//=================================================================================================
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-template< typename T  // Type to be expanded
-        , size_t E >  // Compile time expansion
-struct ExpandTraitEval2< T, E
-                       , EnableIf_t< IsSparseVector_v<T> > >
-{
-   static constexpr bool TF = ( IsColumnVector_v<T> ? columnMajor : rowMajor );
-
-   using Type = CompressedMatrix< ElementType_t<T>, TF >;
 };
 /*! \endcond */
 //*************************************************************************************************
@@ -6279,7 +6206,7 @@ template< typename MT, size_t M >
 struct RowsTraitEval2< MT, M
                      , EnableIf_t< IsSparseMatrix_v<MT> > >
 {
-   using Type = CompressedMatrix< RemoveConst_t< ElementType_t<MT> >, false >;
+   using Type = CompressedMatrix< ElementType_t<MT>, false >;
 };
 /*! \endcond */
 //*************************************************************************************************
@@ -6299,7 +6226,7 @@ template< typename MT, size_t N >
 struct ColumnsTraitEval2< MT, N
                         , EnableIf_t< IsSparseMatrix_v<MT> > >
 {
-   using Type = CompressedMatrix< RemoveConst_t< ElementType_t<MT> >, true >;
+   using Type = CompressedMatrix< ElementType_t<MT>, true >;
 };
 /*! \endcond */
 //*************************************************************************************************

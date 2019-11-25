@@ -3,7 +3,7 @@
 //  \file blaze/math/views/band/Dense.h
 //  \brief Band specialization for dense matrices
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -59,7 +59,6 @@
 #include "../../../math/InitializerList.h"
 #include "../../../math/shims/Clear.h"
 #include "../../../math/shims/IsDefault.h"
-#include "../../../math/shims/Reset.h"
 #include "../../../math/traits/BandTrait.h"
 #include "../../../math/traits/CrossTrait.h"
 #include "../../../math/typetraits/HasMutableDataAccess.h"
@@ -81,7 +80,6 @@
 #include "../../../math/views/band/BaseTemplate.h"
 #include "../../../math/views/Check.h"
 #include "../../../system/Thresholds.h"
-#include "../../../util/algorithms/Min.h"
 #include "../../../util/Assert.h"
 #include "../../../util/constraints/Pointer.h"
 #include "../../../util/constraints/Reference.h"
@@ -520,9 +518,6 @@ class Band<MT,TF,true,false,CBAs...>
 
    //! Compilation switch for the expression template assignment strategy.
    static constexpr bool smpAssignable = MT::smpAssignable;
-
-   //! Compilation switch for the expression template evaluation strategy.
-   static constexpr bool compileTimeArgs = DataType::compileTimeArgs;
    //**********************************************************************************************
 
    //**Constructors********************************************************************************
@@ -530,16 +525,12 @@ class Band<MT,TF,true,false,CBAs...>
    //@{
    template< typename... RBAs >
    explicit inline Band( MT& matrix, RBAs... args );
-
-   Band( const Band& ) = default;
+   // No explicitly declared copy constructor.
    //@}
    //**********************************************************************************************
 
    //**Destructor**********************************************************************************
-   /*!\name Destructor */
-   //@{
-   ~Band() = default;
-   //@}
+   // No explicitly declared destructor.
    //**********************************************************************************************
 
    //**Data access functions***********************************************************************
@@ -2145,9 +2136,6 @@ class Band<MT,TF,true,true,CBAs...>
 
    //! Compilation switch for the expression template assignment strategy.
    static constexpr bool smpAssignable = false;
-
-   //! Compilation switch for the expression template evaluation strategy.
-   static constexpr bool compileTimeArgs = DataType::compileTimeArgs;
    //**********************************************************************************************
 
    //**Constructor*********************************************************************************

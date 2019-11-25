@@ -3,7 +3,7 @@
 //  \file blaze/math/simd/Set.h
 //  \brief Header file for the SIMD set functionality
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -74,7 +74,7 @@ BLAZE_ALWAYS_INLINE const EnableIf_t< IsIntegral_v<T> && HasSize_v<T,1UL>
                                     , If_t< IsSigned_v<T>, SIMDint8, SIMDuint8 > >
    set( T value ) noexcept
 {
-#if BLAZE_AVX512F_MODE
+#if BLAZE_AVX512BW_MODE
    return _mm512_set1_epi8( value );
 #elif BLAZE_AVX2_MODE
    return _mm256_set1_epi8( value );
@@ -99,8 +99,10 @@ BLAZE_ALWAYS_INLINE const EnableIf_t< IsIntegral_v<T> && HasSize_v<T,1UL>
                                     , If_t< IsSigned_v<T>, SIMDcint8, SIMDcuint8 > >
    set( complex<T> value ) noexcept
 {
-#if BLAZE_AVX512F_MODE
-   return _mm512_set1_epi16( reinterpret_cast<const int16_t&>( value ) );
+#if BLAZE_AVX512BW_MODE
+   __m512i dst( _mm512_maskz_set1_epi8( 0XAAAAAAAA, value.imag() ) );
+   dst = _mm512_maskz_set1_epi8( 0x55555555, value.real() );
+   return dst;
 #elif BLAZE_AVX2_MODE
    return _mm256_set_epi8( value.imag(), value.real(), value.imag(), value.real(),
                            value.imag(), value.real(), value.imag(), value.real(),
@@ -143,7 +145,7 @@ BLAZE_ALWAYS_INLINE const EnableIf_t< IsIntegral_v<T> && HasSize_v<T,2UL>
                                     , If_t< IsSigned_v<T>, SIMDint16, SIMDuint16 > >
    set( T value ) noexcept
 {
-#if BLAZE_AVX512F_MODE
+#if BLAZE_AVX512BW_MODE
    return _mm512_set1_epi16( value );
 #elif BLAZE_AVX2_MODE
    return _mm256_set1_epi16( value );
@@ -168,8 +170,10 @@ BLAZE_ALWAYS_INLINE const EnableIf_t< IsIntegral_v<T> && HasSize_v<T,2UL>
                                     , If_t< IsSigned_v<T>, SIMDcint16, SIMDcuint16 > >
    set( complex<T> value ) noexcept
 {
-#if BLAZE_AVX512F_MODE
-   return _mm512_set1_epi32( reinterpret_cast<const int32_t&>( value ) );
+#if BLAZE_AVX512BW_MODE
+   __m512i dst( _mm512_maskz_set1_epi16( 0XAAAA, value.imag() ) );
+   dst = _mm512_maskz_set1_epi16( 0x5555, value.real() );
+   return dst;
 #elif BLAZE_AVX2_MODE
    return _mm256_set_epi16( value.imag(), value.real(), value.imag(), value.real(),
                             value.imag(), value.real(), value.imag(), value.real(),
@@ -231,7 +235,11 @@ BLAZE_ALWAYS_INLINE const EnableIf_t< IsIntegral_v<T> && HasSize_v<T,4UL>
                                     , If_t< IsSigned_v<T>, SIMDcint32, SIMDcuint32 > >
    set( complex<T> value ) noexcept
 {
-#if BLAZE_AVX512F_MODE || BLAZE_MIC_MODE
+#if BLAZE_AVX512F_MODE
+   __m512i dst( _mm512_maskz_set1_epi32( 0xAA, value.imag() ) );
+   dst = _mm512_maskz_set1_epi32( 0x55, value.real() );
+   return dst;
+#elif BLAZE_MIC_MODE
    return _mm512_set_epi32( value.imag(), value.real(), value.imag(), value.real(),
                             value.imag(), value.real(), value.imag(), value.real(),
                             value.imag(), value.real(), value.imag(), value.real(),
@@ -274,7 +282,7 @@ BLAZE_ALWAYS_INLINE const EnableIf_t< IsIntegral_v<T> && HasSize_v<T,8UL>
 #elif BLAZE_AVX2_MODE
    return _mm256_set1_epi64x( value );
 #elif BLAZE_SSE2_MODE
-   return _mm_set1_epi64x( value );
+   return _mm_set1_epi64( value );
 #else
    return value;
 #endif
@@ -294,13 +302,17 @@ BLAZE_ALWAYS_INLINE const EnableIf_t< IsIntegral_v<T> && HasSize_v<T,8UL>
                                     , If_t< IsSigned_v<T>, SIMDcint64, SIMDcuint64 > >
    set( complex<T> value ) noexcept
 {
-#if BLAZE_AVX512F_MODE || BLAZE_MIC_MODE
+#if BLAZE_AVX512F_MODE
+   __m512i dst( _mm512_maskz_set1_epi64( 0xA, value.imag() ) );
+   dst = _mm512_maskz_set1_epi32( 0x5, value.real() );
+   return dst;
+#elif BLAZE_MIC_MODE
    return _mm512_set_epi64( value.imag(), value.real(), value.imag(), value.real(),
                             value.imag(), value.real(), value.imag(), value.real() );
 #elif BLAZE_AVX2_MODE
-   return _mm256_set_epi64x( value.imag(), value.real(), value.imag(), value.real() );
+   return _mm256_set_epi64( value.imag(), value.real(), value.imag(), value.real() );
 #elif BLAZE_SSE2_MODE
-   return _mm_set_epi64x( value.imag(), value.real() );
+   return _mm_set_epi64( value.imag(), value.real() );
 #else
    return value;
 #endif

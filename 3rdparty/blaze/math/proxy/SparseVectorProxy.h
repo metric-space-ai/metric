@@ -3,7 +3,7 @@
 //  \file blaze/math/proxy/SparseVectorProxy.h
 //  \brief Header file for the SparseVectorProxy class
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -51,6 +51,7 @@
 #include "../../util/DisableIf.h"
 #include "../../util/Types.h"
 #include "../../util/typetraits/IsIntegral.h"
+#include "../../util/Unused.h"
 
 
 namespace blaze {
@@ -765,38 +766,38 @@ inline typename SparseVectorProxy<PT,VT>::Iterator
 /*!\name SparseVectorProxy global functions */
 //@{
 template< typename PT, typename VT >
-typename SparseVectorProxy<PT,VT>::Iterator
+BLAZE_ALWAYS_INLINE typename SparseVectorProxy<PT,VT>::Iterator
    begin( const SparseVectorProxy<PT,VT>& proxy );
 
 template< typename PT, typename VT >
-typename SparseVectorProxy<PT,VT>::ConstIterator
+BLAZE_ALWAYS_INLINE typename SparseVectorProxy<PT,VT>::ConstIterator
    cbegin( const SparseVectorProxy<PT,VT>& proxy );
 
 template< typename PT, typename VT >
-typename SparseVectorProxy<PT,VT>::Iterator
+BLAZE_ALWAYS_INLINE typename SparseVectorProxy<PT,VT>::Iterator
    end( const SparseVectorProxy<PT,VT>& proxy );
 
 template< typename PT, typename VT >
-typename SparseVectorProxy<PT,VT>::ConstIterator
+BLAZE_ALWAYS_INLINE typename SparseVectorProxy<PT,VT>::ConstIterator
    cend( const SparseVectorProxy<PT,VT>& proxy );
 
 template< typename PT, typename VT >
-size_t size( const SparseVectorProxy<PT,VT>& proxy );
+BLAZE_ALWAYS_INLINE size_t size( const SparseVectorProxy<PT,VT>& proxy );
 
 template< typename PT, typename VT >
-size_t capacity( const SparseVectorProxy<PT,VT>& proxy );
+BLAZE_ALWAYS_INLINE size_t capacity( const SparseVectorProxy<PT,VT>& proxy );
 
 template< typename PT, typename VT >
-size_t nonZeros( const SparseVectorProxy<PT,VT>& proxy );
+BLAZE_ALWAYS_INLINE size_t nonZeros( const SparseVectorProxy<PT,VT>& proxy );
 
 template< typename PT, typename VT >
-void resize( const SparseVectorProxy<PT,VT>& proxy, size_t n, bool preserve=true );
+BLAZE_ALWAYS_INLINE void resize( const SparseVectorProxy<PT,VT>& proxy, size_t n, bool preserve=true );
 
 template< typename PT, typename VT >
-void reset( const SparseVectorProxy<PT,VT>& proxy );
+BLAZE_ALWAYS_INLINE void reset( const SparseVectorProxy<PT,VT>& proxy );
 
 template< typename PT, typename VT >
-void clear( const SparseVectorProxy<PT,VT>& proxy );
+BLAZE_ALWAYS_INLINE void clear( const SparseVectorProxy<PT,VT>& proxy );
 //@}
 //*************************************************************************************************
 

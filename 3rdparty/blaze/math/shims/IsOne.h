@@ -3,7 +3,7 @@
 //  \file blaze/math/shims/IsOne.h
 //  \brief Header file for the isOne shim
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -45,8 +45,8 @@
 #include "../../system/Inline.h"
 #include "../../util/DisableIf.h"
 #include "../../util/EnableIf.h"
-#include "../../util/MaybeUnused.h"
 #include "../../util/typetraits/IsNumeric.h"
+#include "../../util/Unused.h"
 
 
 namespace blaze {
@@ -122,7 +122,7 @@ template< bool RF          // Relaxation flag
         , typename Type >  // Type of the given value/object
 BLAZE_ALWAYS_INLINE DisableIf_t< IsNumeric_v<Type>, bool > isOne( const Type& v ) noexcept
 {
-   MAYBE_UNUSED( v );
+   UNUSED_PARAMETER( v );
 
    return false;
 }

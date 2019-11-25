@@ -3,7 +3,7 @@
 //  \file blaze/math/Epsilon.h
 //  \brief Numerical epsilon value for floating point data types
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -74,20 +74,17 @@ class NegativeEpsilon
    //**********************************************************************************************
 
  private:
-   //**Constructors********************************************************************************
-   /*!\name Constructors */
+   //**Constructor*********************************************************************************
+   /*!\name Constructor */
    //@{
    explicit inline constexpr NegativeEpsilon();
-   NegativeEpsilon( const NegativeEpsilon& ) = default;
+   // No explicitly declared copy constructor.
    //@}
    //**********************************************************************************************
 
  public:
    //**Destructor**********************************************************************************
-   /*!\name Destructor */
-   //@{
-   ~NegativeEpsilon() = default;
-   //@}
+   // No explicitly declared destructor.
    //**********************************************************************************************
 
    //**Unary plus/minus operators******************************************************************
@@ -106,15 +103,15 @@ class NegativeEpsilon
    //@}
    //**********************************************************************************************
 
+ private:
    //**Forbidden operations************************************************************************
    /*!\name Forbidden operations */
    //@{
-   NegativeEpsilon& operator=( const NegativeEpsilon& ) = delete;
-   void* operator&() const = delete;
+   NegativeEpsilon& operator=( const NegativeEpsilon& );  //!< Copy assignment operator (private & undefined)
+   void* operator&() const;                               //!< Address operator (private & undefined)
    //@}
    //**********************************************************************************************
 
- private:
    //**Friend declarations*************************************************************************
    /*! \cond BLAZE_INTERNAL */
    friend class Epsilon;
@@ -128,7 +125,7 @@ class NegativeEpsilon
 
 //=================================================================================================
 //
-//  CONSTRUCTORS
+//  CONSTRUCTOR
 //
 //=================================================================================================
 
@@ -211,28 +208,28 @@ inline constexpr NegativeEpsilon<E>::operator const T() const
 /*!\name NegativeEpsilon operators */
 //@{
 template< typename E, typename T >
-constexpr bool operator==( const NegativeEpsilon<E>& lhs, const T& rhs );
+inline constexpr bool operator==( const NegativeEpsilon<E>& lhs, const T& rhs );
 
 template< typename E, typename T >
-constexpr bool operator==( const T& lhs, const NegativeEpsilon<E>& rhs );
+inline constexpr bool operator==( const T& lhs, const NegativeEpsilon<E>& rhs );
 
 template< typename E, typename T >
-constexpr bool operator!=( const NegativeEpsilon<E>& lhs, const T& rhs );
+inline constexpr bool operator!=( const NegativeEpsilon<E>& lhs, const T& rhs );
 
 template< typename E, typename T >
-constexpr bool operator!=( const T& lhs, const NegativeEpsilon<E>& rhs );
+inline constexpr bool operator!=( const T& lhs, const NegativeEpsilon<E>& rhs );
 
 template< typename E, typename T >
-constexpr bool operator<( const NegativeEpsilon<E>& lhs, const T& rhs );
+inline constexpr bool operator<( const NegativeEpsilon<E>& lhs, const T& rhs );
 
 template< typename E, typename T >
-constexpr bool operator<( const T& lhs, const NegativeEpsilon<E>& rhs );
+inline constexpr bool operator<( const T& lhs, const NegativeEpsilon<E>& rhs );
 
 template< typename E, typename T >
-constexpr bool operator>( const NegativeEpsilon<E>& lhs, const T& rhs );
+inline constexpr bool operator>( const NegativeEpsilon<E>& lhs, const T& rhs );
 
 template< typename E, typename T >
-constexpr bool operator>( const T& lhs, const NegativeEpsilon<E>& rhs );
+inline constexpr bool operator>( const T& lhs, const NegativeEpsilon<E>& rhs );
 //@}
 //*************************************************************************************************
 
@@ -504,19 +501,16 @@ class Epsilon
    using NegativeType = NegativeEpsilon<Epsilon>;  //!< The negative epsilon type.
    //**********************************************************************************************
 
-   //**Constructors********************************************************************************
-   /*!\name Constructors */
+   //**Constructor*********************************************************************************
+   /*!\name Constructor */
    //@{
    explicit inline constexpr Epsilon();
-   Epsilon( const Epsilon& ) = default;
+   // No explicitly declared copy constructor.
    //@}
    //**********************************************************************************************
 
    //**Destructor**********************************************************************************
-   /*!\name Destructor */
-   //@{
-   ~Epsilon() = default;
-   //@}
+   // No explicitly declared destructor.
    //**********************************************************************************************
 
    //**Unary plus/minus operators******************************************************************
@@ -535,11 +529,12 @@ class Epsilon
    //@}
    //**********************************************************************************************
 
+ private:
    //**Forbidden operations************************************************************************
    /*!\name Forbidden operations */
    //@{
-   Epsilon& operator=( const Epsilon& ) = delete;
-   void* operator&() const = delete;
+   Epsilon& operator=( const Epsilon& );  //!< Copy assignment operator (private & undefined)
+   void* operator&() const;               //!< Address operator (private & undefined)
    //@}
    //**********************************************************************************************
 };
@@ -550,7 +545,7 @@ class Epsilon
 
 //=================================================================================================
 //
-//  CONSTRUCTORS
+//  CONSTRUCTOR
 //
 //=================================================================================================
 
@@ -629,40 +624,40 @@ inline constexpr Epsilon::operator const T() const
 /*!\name Epsilon operators */
 //@{
 template< typename T >
-constexpr bool operator==( const Epsilon& lhs, const T& rhs );
+inline constexpr bool operator==( const Epsilon& lhs, const T& rhs );
 
 template< typename T >
-constexpr bool operator==( const T& lhs, const Epsilon& rhs );
+inline constexpr bool operator==( const T& lhs, const Epsilon& rhs );
 
 template< typename T >
-constexpr bool operator!=( const Epsilon& lhs, const T& rhs );
+inline constexpr bool operator!=( const Epsilon& lhs, const T& rhs );
 
 template< typename T >
-constexpr bool operator!=( const T& lhs, const Epsilon& rhs );
+inline constexpr bool operator!=( const T& lhs, const Epsilon& rhs );
 
 template< typename T >
-constexpr bool operator<( const Epsilon& lhs, const T& rhs );
+inline constexpr bool operator<( const Epsilon& lhs, const T& rhs );
 
 template< typename T >
-constexpr bool operator<( const T& lhs, const Epsilon& rhs );
+inline constexpr bool operator<( const T& lhs, const Epsilon& rhs );
 
 template< typename T >
-constexpr bool operator>( const Epsilon& lhs, const T& rhs );
+inline constexpr bool operator>( const Epsilon& lhs, const T& rhs );
 
 template< typename T >
-constexpr bool operator>( const T& lhs, const Epsilon& rhs );
+inline constexpr bool operator>( const T& lhs, const Epsilon& rhs );
 
 template< typename T >
-constexpr bool operator<=( const Epsilon& lhs, const T& rhs );
+inline constexpr bool operator<=( const Epsilon& lhs, const T& rhs );
 
 template< typename T >
-constexpr bool operator<=( const T& lhs, const Epsilon& rhs );
+inline constexpr bool operator<=( const T& lhs, const Epsilon& rhs );
 
 template< typename T >
-constexpr bool operator>=( const Epsilon& lhs, const T& rhs );
+inline constexpr bool operator>=( const Epsilon& lhs, const T& rhs );
 
 template< typename T >
-constexpr bool operator>=( const T& lhs, const Epsilon& rhs );
+inline constexpr bool operator>=( const T& lhs, const Epsilon& rhs );
 //@}
 //*************************************************************************************************
 

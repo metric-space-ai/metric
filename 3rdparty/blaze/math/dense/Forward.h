@@ -3,7 +3,7 @@
 //  \file blaze/math/dense/Forward.h
 //  \brief Header file for all forward declarations for dense vectors and matrices
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -59,8 +59,6 @@ template< typename, size_t, size_t, bool > class HybridMatrix;
 template< typename, size_t, bool > class HybridVector;
 template< typename, size_t, size_t, bool > class StaticMatrix;
 template< typename, size_t, bool > class StaticVector;
-template< typename, bool > class UniformMatrix;
-template< typename, bool > class UniformVector;
 
 } // namespace blaze
 

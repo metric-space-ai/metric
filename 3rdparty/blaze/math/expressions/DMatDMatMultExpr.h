@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/DMatDMatMultExpr.h
 //  \brief Header file for the dense matrix/dense matrix multiplication expression
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -69,11 +69,6 @@
 #include "../../math/shims/Reset.h"
 #include "../../math/shims/Serial.h"
 #include "../../math/SIMD.h"
-#include "../../math/traits/DeclDiagTrait.h"
-#include "../../math/traits/DeclHermTrait.h"
-#include "../../math/traits/DeclLowTrait.h"
-#include "../../math/traits/DeclSymTrait.h"
-#include "../../math/traits/DeclUppTrait.h"
 #include "../../math/traits/MultTrait.h"
 #include "../../math/typetraits/HasConstDataAccess.h"
 #include "../../math/typetraits/HasMutableDataAccess.h"
@@ -86,16 +81,17 @@
 #include "../../math/typetraits/IsContiguous.h"
 #include "../../math/typetraits/IsDiagonal.h"
 #include "../../math/typetraits/IsExpression.h"
+#include "../../math/typetraits/IsHermitian.h"
 #include "../../math/typetraits/IsLower.h"
-#include "../../math/typetraits/IsPadded.h"
 #include "../../math/typetraits/IsResizable.h"
-#include "../../math/typetraits/IsRowMajorMatrix.h"
 #include "../../math/typetraits/IsSIMDCombinable.h"
 #include "../../math/typetraits/IsStrictlyLower.h"
 #include "../../math/typetraits/IsStrictlyTriangular.h"
 #include "../../math/typetraits/IsStrictlyUpper.h"
 #include "../../math/typetraits/IsSymmetric.h"
 #include "../../math/typetraits/IsTriangular.h"
+#include "../../math/typetraits/IsUniLower.h"
+#include "../../math/typetraits/IsUniUpper.h"
 #include "../../math/typetraits/IsUpper.h"
 #include "../../math/typetraits/RequiresEvaluation.h"
 #include "../../math/typetraits/Size.h"
@@ -116,6 +112,7 @@
 #include "../../util/FunctionTrace.h"
 #include "../../util/IntegralConstant.h"
 #include "../../util/mpl/If.h"
+#include "../../util/TrueType.h"
 #include "../../util/Types.h"
 #include "../../util/typetraits/IsBuiltin.h"
 #include "../../util/typetraits/IsComplex.h"
@@ -268,22 +265,7 @@ class DMatDMatMultExpr
    //! Type of this DMatDMatMultExpr instance.
    using This = DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF>;
 
-   //! Base type of this DMatDMatMultExpr instance.
-   using BaseType = DenseMatrix<This,false>;
-
-   //! Result type for expression template evaluations.
-   using ResultType = typename If_t< HERM
-                                   , DeclHermTrait< MultTrait_t<RT1,RT2> >
-                                   , If_t< SYM
-                                         , DeclSymTrait< MultTrait_t<RT1,RT2> >
-                                         , If_t< LOW
-                                               , If_t< UPP
-                                                     , DeclDiagTrait< MultTrait_t<RT1,RT2> >
-                                                     , DeclLowTrait< MultTrait_t<RT1,RT2> > >
-                                               , If_t< UPP
-                                                     , DeclUppTrait< MultTrait_t<RT1,RT2> >
-                                                     , MultTrait<RT1,RT2> > > > >::Type;
-
+   using ResultType    = MultTrait_t<RT1,RT2>;         //!< Result type for expression template evaluations.
    using OppositeType  = OppositeType_t<ResultType>;   //!< Result type with opposite storage order for expression template evaluations.
    using TransposeType = TransposeType_t<ResultType>;  //!< Transpose type for expression template evaluations.
    using ElementType   = ElementType_t<ResultType>;    //!< Resulting element type.
@@ -513,8 +495,8 @@ class DMatDMatMultExpr
    */
    template< typename MT  // Type of the target dense matrix
            , bool SO >    // Storage order of the target dense matrix
-   friend inline auto assign( DenseMatrix<MT,SO>& lhs, const DMatDMatMultExpr& rhs )
-      -> DisableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
+   friend inline DisableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
+      assign( DenseMatrix<MT,SO>& lhs, const DMatDMatMultExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -587,8 +569,8 @@ class DMatDMatMultExpr
    template< typename MT3    // Type of the left-hand side target matrix
            , typename MT4    // Type of the left-hand side matrix operand
            , typename MT5 >  // Type of the right-hand side matrix operand
-   static inline auto selectDefaultAssignKernel( MT3& C, const MT4& A, const MT5& B )
-      -> EnableIf_t< !IsDiagonal_v<MT4> && !IsDiagonal_v<MT5> >
+   static inline EnableIf_t< !IsDiagonal_v<MT4> && !IsDiagonal_v<MT5> >
+      selectDefaultAssignKernel( MT3& C, const MT4& A, const MT5& B )
    {
       const size_t M( A.rows()    );
       const size_t N( B.columns() );
@@ -699,8 +681,8 @@ class DMatDMatMultExpr
    template< typename MT3    // Type of the left-hand side target matrix
            , typename MT4    // Type of the left-hand side matrix operand
            , typename MT5 >  // Type of the right-hand side matrix operand
-   static inline auto selectDefaultAssignKernel( MT3& C, const MT4& A, const MT5& B )
-      -> EnableIf_t< !IsDiagonal_v<MT4> && IsDiagonal_v<MT5> >
+   static inline EnableIf_t< !IsDiagonal_v<MT4> && IsDiagonal_v<MT5> >
+      selectDefaultAssignKernel( MT3& C, const MT4& A, const MT5& B )
    {
       BLAZE_CONSTRAINT_MUST_BE_ROW_MAJOR_MATRIX_TYPE( MT3 );
 
@@ -752,8 +734,8 @@ class DMatDMatMultExpr
    template< typename MT3    // Type of the left-hand side target matrix
            , typename MT4    // Type of the left-hand side matrix operand
            , typename MT5 >  // Type of the right-hand side matrix operand
-   static inline auto selectDefaultAssignKernel( MT3& C, const MT4& A, const MT5& B )
-      -> EnableIf_t< IsDiagonal_v<MT4> && !IsDiagonal_v<MT5> >
+   static inline EnableIf_t< IsDiagonal_v<MT4> && !IsDiagonal_v<MT5> >
+      selectDefaultAssignKernel( MT3& C, const MT4& A, const MT5& B )
    {
       BLAZE_CONSTRAINT_MUST_BE_ROW_MAJOR_MATRIX_TYPE( MT3 );
 
@@ -805,8 +787,8 @@ class DMatDMatMultExpr
    template< typename MT3    // Type of the left-hand side target matrix
            , typename MT4    // Type of the left-hand side matrix operand
            , typename MT5 >  // Type of the right-hand side matrix operand
-   static inline auto selectDefaultAssignKernel( MT3& C, const MT4& A, const MT5& B )
-      -> EnableIf_t< IsDiagonal_v<MT4> && IsDiagonal_v<MT5> >
+   static inline EnableIf_t< IsDiagonal_v<MT4> && IsDiagonal_v<MT5> >
+      selectDefaultAssignKernel( MT3& C, const MT4& A, const MT5& B )
    {
       BLAZE_CONSTRAINT_MUST_BE_ROW_MAJOR_MATRIX_TYPE( MT3 );
 
@@ -835,8 +817,8 @@ class DMatDMatMultExpr
    template< typename MT3    // Type of the left-hand side target matrix
            , typename MT4    // Type of the left-hand side matrix operand
            , typename MT5 >  // Type of the right-hand side matrix operand
-   static inline auto selectSmallAssignKernel( MT3& C, const MT4& A, const MT5& B )
-      -> DisableIf_t< UseVectorizedDefaultKernel_v<MT3,MT4,MT5> >
+   static inline DisableIf_t< UseVectorizedDefaultKernel_v<MT3,MT4,MT5> >
+      selectSmallAssignKernel( MT3& C, const MT4& A, const MT5& B )
    {
       selectDefaultAssignKernel( C, A, B );
    }
@@ -861,8 +843,8 @@ class DMatDMatMultExpr
    template< typename MT3    // Type of the left-hand side target matrix
            , typename MT4    // Type of the left-hand side matrix operand
            , typename MT5 >  // Type of the right-hand side matrix operand
-   static inline auto selectSmallAssignKernel( MT3& C, const MT4& A, const MT5& B )
-      -> EnableIf_t< IsRowMajorMatrix_v<MT3> && UseVectorizedDefaultKernel_v<MT3,MT4,MT5> >
+   static inline EnableIf_t< UseVectorizedDefaultKernel_v<MT3,MT4,MT5> >
+      selectSmallAssignKernel( DenseMatrix<MT3,false>& C, const MT4& A, const MT5& B )
    {
       constexpr bool remainder( !IsPadded_v<MT3> || !IsPadded_v<MT5> );
 
@@ -875,12 +857,60 @@ class DMatDMatMultExpr
       const size_t jpos( remainder ? ( N & size_t(-SIMDSIZE) ) : N );
       BLAZE_INTERNAL_ASSERT( !remainder || ( N - ( N % SIMDSIZE ) ) == jpos, "Invalid end calculation" );
 
-      size_t j( 0UL );
+      if( LOW && UPP && N > SIMDSIZE*3UL ) {
+         reset( ~C );
+      }
 
-      if( IsIntegral_v<ElementType> )
       {
-         for( ; !SYM && !HERM && !LOW && !UPP && (j+SIMDSIZE*7UL) < jpos; j+=SIMDSIZE*8UL ) {
-            for( size_t i=0UL; i<M; ++i )
+         size_t j( 0UL );
+
+         if( IsIntegral_v<ElementType> )
+         {
+            for( ; !SYM && !HERM && !LOW && !UPP && (j+SIMDSIZE*7UL) < jpos; j+=SIMDSIZE*8UL ) {
+               for( size_t i=0UL; i<M; ++i )
+               {
+                  const size_t kbegin( ( IsUpper_v<MT4> )
+                                       ?( ( IsLower_v<MT5> )
+                                          ?( max( ( IsStrictlyUpper_v<MT4> ? i+1UL : i ), j ) )
+                                          :( IsStrictlyUpper_v<MT4> ? i+1UL : i ) )
+                                       :( IsLower_v<MT5> ? j : 0UL ) );
+                  const size_t kend( ( IsLower_v<MT4> )
+                                     ?( ( IsUpper_v<MT5> )
+                                        ?( min( ( IsStrictlyLower_v<MT4> ? i : i+1UL ), j+SIMDSIZE*8UL, K ) )
+                                        :( IsStrictlyLower_v<MT4> ? i : i+1UL ) )
+                                     :( IsUpper_v<MT5> ? min( j+SIMDSIZE*8UL, K ) : K ) );
+
+                  SIMDType xmm1, xmm2, xmm3, xmm4, xmm5, xmm6, xmm7, xmm8;
+
+                  for( size_t k=kbegin; k<kend; ++k ) {
+                     const SIMDType a1( set( A(i,k) ) );
+                     xmm1 += a1 * B.load(k,j             );
+                     xmm2 += a1 * B.load(k,j+SIMDSIZE    );
+                     xmm3 += a1 * B.load(k,j+SIMDSIZE*2UL);
+                     xmm4 += a1 * B.load(k,j+SIMDSIZE*3UL);
+                     xmm5 += a1 * B.load(k,j+SIMDSIZE*4UL);
+                     xmm6 += a1 * B.load(k,j+SIMDSIZE*5UL);
+                     xmm7 += a1 * B.load(k,j+SIMDSIZE*6UL);
+                     xmm8 += a1 * B.load(k,j+SIMDSIZE*7UL);
+                  }
+
+                  (~C).store( i, j             , xmm1 );
+                  (~C).store( i, j+SIMDSIZE    , xmm2 );
+                  (~C).store( i, j+SIMDSIZE*2UL, xmm3 );
+                  (~C).store( i, j+SIMDSIZE*3UL, xmm4 );
+                  (~C).store( i, j+SIMDSIZE*4UL, xmm5 );
+                  (~C).store( i, j+SIMDSIZE*5UL, xmm6 );
+                  (~C).store( i, j+SIMDSIZE*6UL, xmm7 );
+                  (~C).store( i, j+SIMDSIZE*7UL, xmm8 );
+               }
+            }
+         }
+
+         for( ; !SYM && !HERM && !LOW && !UPP && (j+SIMDSIZE*4UL) < jpos; j+=SIMDSIZE*5UL )
+         {
+            size_t i( 0UL );
+
+            for( ; (i+2UL) <= M; i+=2UL )
             {
                const size_t kbegin( ( IsUpper_v<MT4> )
                                     ?( ( IsLower_v<MT5> )
@@ -889,11 +919,54 @@ class DMatDMatMultExpr
                                     :( IsLower_v<MT5> ? j : 0UL ) );
                const size_t kend( ( IsLower_v<MT4> )
                                   ?( ( IsUpper_v<MT5> )
-                                     ?( min( ( IsStrictlyLower_v<MT4> ? i : i+1UL ), j+SIMDSIZE*8UL, K ) )
-                                     :( IsStrictlyLower_v<MT4> ? i : i+1UL ) )
-                                  :( IsUpper_v<MT5> ? min( j+SIMDSIZE*8UL, K ) : K ) );
+                                     ?( min( ( IsStrictlyLower_v<MT4> ? i+1UL : i+2UL ), j+SIMDSIZE*5UL, K ) )
+                                     :( IsStrictlyLower_v<MT4> ? i+1UL : i+2UL ) )
+                                  :( IsUpper_v<MT5> ? min( j+SIMDSIZE*5UL, K ) : K ) );
 
-               SIMDType xmm1, xmm2, xmm3, xmm4, xmm5, xmm6, xmm7, xmm8;
+               SIMDType xmm1, xmm2, xmm3, xmm4, xmm5, xmm6, xmm7, xmm8, xmm9, xmm10;
+
+               for( size_t k=kbegin; k<kend; ++k ) {
+                  const SIMDType a1( set( A(i    ,k) ) );
+                  const SIMDType a2( set( A(i+1UL,k) ) );
+                  const SIMDType b1( B.load(k,j             ) );
+                  const SIMDType b2( B.load(k,j+SIMDSIZE    ) );
+                  const SIMDType b3( B.load(k,j+SIMDSIZE*2UL) );
+                  const SIMDType b4( B.load(k,j+SIMDSIZE*3UL) );
+                  const SIMDType b5( B.load(k,j+SIMDSIZE*4UL) );
+                  xmm1  += a1 * b1;
+                  xmm2  += a1 * b2;
+                  xmm3  += a1 * b3;
+                  xmm4  += a1 * b4;
+                  xmm5  += a1 * b5;
+                  xmm6  += a2 * b1;
+                  xmm7  += a2 * b2;
+                  xmm8  += a2 * b3;
+                  xmm9  += a2 * b4;
+                  xmm10 += a2 * b5;
+               }
+
+               (~C).store( i    , j             , xmm1  );
+               (~C).store( i    , j+SIMDSIZE    , xmm2  );
+               (~C).store( i    , j+SIMDSIZE*2UL, xmm3  );
+               (~C).store( i    , j+SIMDSIZE*3UL, xmm4  );
+               (~C).store( i    , j+SIMDSIZE*4UL, xmm5  );
+               (~C).store( i+1UL, j             , xmm6  );
+               (~C).store( i+1UL, j+SIMDSIZE    , xmm7  );
+               (~C).store( i+1UL, j+SIMDSIZE*2UL, xmm8  );
+               (~C).store( i+1UL, j+SIMDSIZE*3UL, xmm9  );
+               (~C).store( i+1UL, j+SIMDSIZE*4UL, xmm10 );
+            }
+
+            if( i < M )
+            {
+               const size_t kbegin( ( IsUpper_v<MT4> )
+                                    ?( ( IsLower_v<MT5> )
+                                       ?( max( ( IsStrictlyUpper_v<MT4> ? i+1UL : i ), j ) )
+                                       :( IsStrictlyUpper_v<MT4> ? i+1UL : i ) )
+                                    :( IsLower_v<MT5> ? j : 0UL ) );
+               const size_t kend( ( IsUpper_v<MT5> )?( min( j+SIMDSIZE*5UL, K ) ):( K ) );
+
+               SIMDType xmm1, xmm2, xmm3, xmm4, xmm5;
 
                for( size_t k=kbegin; k<kend; ++k ) {
                   const SIMDType a1( set( A(i,k) ) );
@@ -902,714 +975,531 @@ class DMatDMatMultExpr
                   xmm3 += a1 * B.load(k,j+SIMDSIZE*2UL);
                   xmm4 += a1 * B.load(k,j+SIMDSIZE*3UL);
                   xmm5 += a1 * B.load(k,j+SIMDSIZE*4UL);
-                  xmm6 += a1 * B.load(k,j+SIMDSIZE*5UL);
-                  xmm7 += a1 * B.load(k,j+SIMDSIZE*6UL);
-                  xmm8 += a1 * B.load(k,j+SIMDSIZE*7UL);
                }
 
-               C.store( i, j             , xmm1 );
-               C.store( i, j+SIMDSIZE    , xmm2 );
-               C.store( i, j+SIMDSIZE*2UL, xmm3 );
-               C.store( i, j+SIMDSIZE*3UL, xmm4 );
-               C.store( i, j+SIMDSIZE*4UL, xmm5 );
-               C.store( i, j+SIMDSIZE*5UL, xmm6 );
-               C.store( i, j+SIMDSIZE*6UL, xmm7 );
-               C.store( i, j+SIMDSIZE*7UL, xmm8 );
+               (~C).store( i, j             , xmm1 );
+               (~C).store( i, j+SIMDSIZE    , xmm2 );
+               (~C).store( i, j+SIMDSIZE*2UL, xmm3 );
+               (~C).store( i, j+SIMDSIZE*3UL, xmm4 );
+               (~C).store( i, j+SIMDSIZE*4UL, xmm5 );
+            }
+         }
+
+         for( ; !( LOW && UPP ) && (j+SIMDSIZE*3UL) < jpos; j+=SIMDSIZE*4UL )
+         {
+            const size_t iend( SYM || HERM || UPP ? min(j+SIMDSIZE*4UL,M) : M );
+            size_t i( LOW ? j : 0UL );
+
+            for( ; (i+2UL) <= iend; i+=2UL )
+            {
+               const size_t kbegin( ( IsUpper_v<MT4> )
+                                    ?( ( IsLower_v<MT5> )
+                                       ?( max( ( IsStrictlyUpper_v<MT4> ? i+1UL : i ), j ) )
+                                       :( IsStrictlyUpper_v<MT4> ? i+1UL : i ) )
+                                    :( IsLower_v<MT5> ? j : 0UL ) );
+               const size_t kend( ( IsLower_v<MT4> )
+                                  ?( ( IsUpper_v<MT5> )
+                                     ?( min( ( IsStrictlyLower_v<MT4> ? i+1UL : i+2UL ), j+SIMDSIZE*4UL, K ) )
+                                     :( IsStrictlyLower_v<MT4> ? i+1UL : i+2UL ) )
+                                  :( IsUpper_v<MT5> ? min( j+SIMDSIZE*4UL, K ) : K ) );
+
+               SIMDType xmm1, xmm2, xmm3, xmm4, xmm5, xmm6, xmm7, xmm8;
+
+               for( size_t k=kbegin; k<kend; ++k ) {
+                  const SIMDType a1( set( A(i    ,k) ) );
+                  const SIMDType a2( set( A(i+1UL,k) ) );
+                  const SIMDType b1( B.load(k,j             ) );
+                  const SIMDType b2( B.load(k,j+SIMDSIZE    ) );
+                  const SIMDType b3( B.load(k,j+SIMDSIZE*2UL) );
+                  const SIMDType b4( B.load(k,j+SIMDSIZE*3UL) );
+                  xmm1 += a1 * b1;
+                  xmm2 += a1 * b2;
+                  xmm3 += a1 * b3;
+                  xmm4 += a1 * b4;
+                  xmm5 += a2 * b1;
+                  xmm6 += a2 * b2;
+                  xmm7 += a2 * b3;
+                  xmm8 += a2 * b4;
+               }
+
+               (~C).store( i    , j             , xmm1 );
+               (~C).store( i    , j+SIMDSIZE    , xmm2 );
+               (~C).store( i    , j+SIMDSIZE*2UL, xmm3 );
+               (~C).store( i    , j+SIMDSIZE*3UL, xmm4 );
+               (~C).store( i+1UL, j             , xmm5 );
+               (~C).store( i+1UL, j+SIMDSIZE    , xmm6 );
+               (~C).store( i+1UL, j+SIMDSIZE*2UL, xmm7 );
+               (~C).store( i+1UL, j+SIMDSIZE*3UL, xmm8 );
+            }
+
+            if( i < iend )
+            {
+               const size_t kbegin( ( IsUpper_v<MT4> )
+                                    ?( ( IsLower_v<MT5> )
+                                       ?( max( ( IsStrictlyUpper_v<MT4> ? i+1UL : i ), j ) )
+                                       :( IsStrictlyUpper_v<MT4> ? i+1UL : i ) )
+                                    :( IsLower_v<MT5> ? j : 0UL ) );
+               const size_t kend( ( IsUpper_v<MT5> )?( min( j+SIMDSIZE*4UL, K ) ):( K ) );
+
+               SIMDType xmm1, xmm2, xmm3, xmm4;
+
+               for( size_t k=kbegin; k<kend; ++k ) {
+                  const SIMDType a1( set( A(i,k) ) );
+                  xmm1 += a1 * B.load(k,j             );
+                  xmm2 += a1 * B.load(k,j+SIMDSIZE    );
+                  xmm3 += a1 * B.load(k,j+SIMDSIZE*2UL);
+                  xmm4 += a1 * B.load(k,j+SIMDSIZE*3UL);
+               }
+
+               (~C).store( i, j             , xmm1 );
+               (~C).store( i, j+SIMDSIZE    , xmm2 );
+               (~C).store( i, j+SIMDSIZE*2UL, xmm3 );
+               (~C).store( i, j+SIMDSIZE*3UL, xmm4 );
+            }
+         }
+
+         for( ; (j+SIMDSIZE*2UL) < jpos; j+=SIMDSIZE*3UL )
+         {
+            const size_t iend( SYM || HERM || UPP ? min(j+SIMDSIZE*3UL,M) : M );
+            size_t i( LOW ? j : 0UL );
+
+            for( ; (i+2UL) <= iend; i+=2UL )
+            {
+               const size_t kbegin( ( IsUpper_v<MT4> )
+                                    ?( ( IsLower_v<MT5> )
+                                       ?( max( ( IsStrictlyUpper_v<MT4> ? i+1UL : i ), j ) )
+                                       :( IsStrictlyUpper_v<MT4> ? i+1UL : i ) )
+                                    :( IsLower_v<MT5> ? j : 0UL ) );
+               const size_t kend( ( IsLower_v<MT4> )
+                                  ?( ( IsUpper_v<MT5> )
+                                     ?( min( ( IsStrictlyLower_v<MT4> ? i+1UL : i+2UL ), j+SIMDSIZE*3UL, K ) )
+                                     :( IsStrictlyLower_v<MT4> ? i+1UL : i+2UL ) )
+                                  :( IsUpper_v<MT5> ? min( j+SIMDSIZE*3UL, K ) : K ) );
+
+               SIMDType xmm1, xmm2, xmm3, xmm4, xmm5, xmm6;
+
+               for( size_t k=kbegin; k<kend; ++k ) {
+                  const SIMDType a1( set( A(i    ,k) ) );
+                  const SIMDType a2( set( A(i+1UL,k) ) );
+                  const SIMDType b1( B.load(k,j             ) );
+                  const SIMDType b2( B.load(k,j+SIMDSIZE    ) );
+                  const SIMDType b3( B.load(k,j+SIMDSIZE*2UL) );
+                  xmm1 += a1 * b1;
+                  xmm2 += a1 * b2;
+                  xmm3 += a1 * b3;
+                  xmm4 += a2 * b1;
+                  xmm5 += a2 * b2;
+                  xmm6 += a2 * b3;
+               }
+
+               (~C).store( i    , j             , xmm1 );
+               (~C).store( i    , j+SIMDSIZE    , xmm2 );
+               (~C).store( i    , j+SIMDSIZE*2UL, xmm3 );
+               (~C).store( i+1UL, j             , xmm4 );
+               (~C).store( i+1UL, j+SIMDSIZE    , xmm5 );
+               (~C).store( i+1UL, j+SIMDSIZE*2UL, xmm6 );
+            }
+
+            if( i < iend )
+            {
+               const size_t kbegin( ( IsUpper_v<MT4> )
+                                    ?( ( IsLower_v<MT5> )
+                                       ?( max( ( IsStrictlyUpper_v<MT4> ? i+1UL : i ), j ) )
+                                       :( IsStrictlyUpper_v<MT4> ? i+1UL : i ) )
+                                    :( IsLower_v<MT5> ? j : 0UL ) );
+               const size_t kend( ( IsUpper_v<MT5> )?( min( j+SIMDSIZE*3UL, K ) ):( K ) );
+
+               SIMDType xmm1, xmm2, xmm3;
+
+               for( size_t k=kbegin; k<kend; ++k ) {
+                  const SIMDType a1( set( A(i,k) ) );
+                  xmm1 += a1 * B.load(k,j             );
+                  xmm2 += a1 * B.load(k,j+SIMDSIZE    );
+                  xmm3 += a1 * B.load(k,j+SIMDSIZE*2UL);
+               }
+
+               (~C).store( i, j             , xmm1 );
+               (~C).store( i, j+SIMDSIZE    , xmm2 );
+               (~C).store( i, j+SIMDSIZE*2UL, xmm3 );
+            }
+         }
+
+         for( ; (j+SIMDSIZE) < jpos; j+=SIMDSIZE*2UL )
+         {
+            const size_t iend( SYM || HERM || UPP ? min(j+SIMDSIZE*2UL,M) : M );
+            size_t i( LOW ? j : 0UL );
+
+            for( ; (i+4UL) <= iend; i+=4UL )
+            {
+               const size_t kbegin( ( IsUpper_v<MT4> )
+                                    ?( ( IsLower_v<MT5> )
+                                       ?( max( ( IsStrictlyUpper_v<MT4> ? i+1UL : i ), j ) )
+                                       :( IsStrictlyUpper_v<MT4> ? i+1UL : i ) )
+                                    :( IsLower_v<MT5> ? j : 0UL ) );
+               const size_t kend( ( IsLower_v<MT4> )
+                                  ?( ( IsUpper_v<MT5> )
+                                     ?( min( ( IsStrictlyLower_v<MT4> ? i+3UL : i+4UL ), j+SIMDSIZE*2UL, K ) )
+                                     :( IsStrictlyLower_v<MT4> ? i+3UL : i+4UL ) )
+                                  :( IsUpper_v<MT5> ? min( j+SIMDSIZE*2UL, K ) : K ) );
+
+               SIMDType xmm1, xmm2, xmm3, xmm4, xmm5, xmm6, xmm7, xmm8;
+
+               for( size_t k=kbegin; k<kend; ++k ) {
+                  const SIMDType a1( set( A(i    ,k) ) );
+                  const SIMDType a2( set( A(i+1UL,k) ) );
+                  const SIMDType a3( set( A(i+2UL,k) ) );
+                  const SIMDType a4( set( A(i+3UL,k) ) );
+                  const SIMDType b1( B.load(k,j         ) );
+                  const SIMDType b2( B.load(k,j+SIMDSIZE) );
+                  xmm1 += a1 * b1;
+                  xmm2 += a1 * b2;
+                  xmm3 += a2 * b1;
+                  xmm4 += a2 * b2;
+                  xmm5 += a3 * b1;
+                  xmm6 += a3 * b2;
+                  xmm7 += a4 * b1;
+                  xmm8 += a4 * b2;
+               }
+
+               (~C).store( i    , j         , xmm1 );
+               (~C).store( i    , j+SIMDSIZE, xmm2 );
+               (~C).store( i+1UL, j         , xmm3 );
+               (~C).store( i+1UL, j+SIMDSIZE, xmm4 );
+               (~C).store( i+2UL, j         , xmm5 );
+               (~C).store( i+2UL, j+SIMDSIZE, xmm6 );
+               (~C).store( i+3UL, j         , xmm7 );
+               (~C).store( i+3UL, j+SIMDSIZE, xmm8 );
+            }
+
+            for( ; (i+3UL) <= iend; i+=3UL )
+            {
+               const size_t kbegin( ( IsUpper_v<MT4> )
+                                    ?( ( IsLower_v<MT5> )
+                                       ?( max( ( IsStrictlyUpper_v<MT4> ? i+1UL : i ), j ) )
+                                       :( IsStrictlyUpper_v<MT4> ? i+1UL : i ) )
+                                    :( IsLower_v<MT5> ? j : 0UL ) );
+               const size_t kend( ( IsLower_v<MT4> )
+                                  ?( ( IsUpper_v<MT5> )
+                                     ?( min( ( IsStrictlyLower_v<MT4> ? i+2UL : i+3UL ), j+SIMDSIZE*2UL, K ) )
+                                     :( IsStrictlyLower_v<MT4> ? i+2UL : i+3UL ) )
+                                  :( IsUpper_v<MT5> ? min( j+SIMDSIZE*2UL, K ) : K ) );
+
+               SIMDType xmm1, xmm2, xmm3, xmm4, xmm5, xmm6;
+
+               for( size_t k=kbegin; k<kend; ++k ) {
+                  const SIMDType a1( set( A(i    ,k) ) );
+                  const SIMDType a2( set( A(i+1UL,k) ) );
+                  const SIMDType a3( set( A(i+2UL,k) ) );
+                  const SIMDType b1( B.load(k,j         ) );
+                  const SIMDType b2( B.load(k,j+SIMDSIZE) );
+                  xmm1 += a1 * b1;
+                  xmm2 += a1 * b2;
+                  xmm3 += a2 * b1;
+                  xmm4 += a2 * b2;
+                  xmm5 += a3 * b1;
+                  xmm6 += a3 * b2;
+               }
+
+               (~C).store( i    , j         , xmm1 );
+               (~C).store( i    , j+SIMDSIZE, xmm2 );
+               (~C).store( i+1UL, j         , xmm3 );
+               (~C).store( i+1UL, j+SIMDSIZE, xmm4 );
+               (~C).store( i+2UL, j         , xmm5 );
+               (~C).store( i+2UL, j+SIMDSIZE, xmm6 );
+            }
+
+            for( ; (i+2UL) <= iend; i+=2UL )
+            {
+               const size_t kbegin( ( IsUpper_v<MT4> )
+                                    ?( ( IsLower_v<MT5> )
+                                       ?( max( ( IsStrictlyUpper_v<MT4> ? i+1UL : i ), j ) )
+                                       :( IsStrictlyUpper_v<MT4> ? i+1UL : i ) )
+                                    :( IsLower_v<MT5> ? j : 0UL ) );
+               const size_t kend( ( IsLower_v<MT4> )
+                                  ?( ( IsUpper_v<MT5> )
+                                     ?( min( ( IsStrictlyLower_v<MT4> ? i+1UL : i+2UL ), j+SIMDSIZE*2UL, K ) )
+                                     :( IsStrictlyLower_v<MT4> ? i+1UL : i+2UL ) )
+                                  :( IsUpper_v<MT5> ? min( j+SIMDSIZE*2UL, K ) : K ) );
+
+               SIMDType xmm1, xmm2, xmm3, xmm4, xmm5, xmm6, xmm7, xmm8;
+               size_t k( kbegin );
+
+               for( ; (k+2UL) <= kend; k+=2UL ) {
+                  const SIMDType a1( set( A(i    ,k    ) ) );
+                  const SIMDType a2( set( A(i+1UL,k    ) ) );
+                  const SIMDType a3( set( A(i    ,k+1UL) ) );
+                  const SIMDType a4( set( A(i+1UL,k+1UL) ) );
+                  const SIMDType b1( B.load(k    ,j         ) );
+                  const SIMDType b2( B.load(k    ,j+SIMDSIZE) );
+                  const SIMDType b3( B.load(k+1UL,j         ) );
+                  const SIMDType b4( B.load(k+1UL,j+SIMDSIZE) );
+                  xmm1 += a1 * b1;
+                  xmm2 += a1 * b2;
+                  xmm3 += a2 * b1;
+                  xmm4 += a2 * b2;
+                  xmm5 += a3 * b3;
+                  xmm6 += a3 * b4;
+                  xmm7 += a4 * b3;
+                  xmm8 += a4 * b4;
+               }
+
+               for( ; k<kend; ++k ) {
+                  const SIMDType a1( set( A(i    ,k) ) );
+                  const SIMDType a2( set( A(i+1UL,k) ) );
+                  const SIMDType b1( B.load(k,j         ) );
+                  const SIMDType b2( B.load(k,j+SIMDSIZE) );
+                  xmm1 += a1 * b1;
+                  xmm2 += a1 * b2;
+                  xmm3 += a2 * b1;
+                  xmm4 += a2 * b2;
+               }
+
+               (~C).store( i    , j         , xmm1+xmm5 );
+               (~C).store( i    , j+SIMDSIZE, xmm2+xmm6 );
+               (~C).store( i+1UL, j         , xmm3+xmm7 );
+               (~C).store( i+1UL, j+SIMDSIZE, xmm4+xmm8 );
+            }
+
+            if( i < iend )
+            {
+               const size_t kbegin( ( IsUpper_v<MT4> )
+                                    ?( ( IsLower_v<MT5> )
+                                       ?( max( ( IsStrictlyUpper_v<MT4> ? i+1UL : i ), j ) )
+                                       :( IsStrictlyUpper_v<MT4> ? i+1UL : i ) )
+                                    :( IsLower_v<MT5> ? j : 0UL ) );
+               const size_t kend( ( IsUpper_v<MT5> )?( min( j+SIMDSIZE*2UL, K ) ):( K ) );
+
+               SIMDType xmm1, xmm2, xmm3, xmm4;
+               size_t k( kbegin );
+
+               for( ; (k+2UL) <= kend; k+=2UL ) {
+                  const SIMDType a1( set( A(i,k    ) ) );
+                  const SIMDType a2( set( A(i,k+1UL) ) );
+                  xmm1 += a1 * B.load(k    ,j         );
+                  xmm2 += a1 * B.load(k    ,j+SIMDSIZE);
+                  xmm3 += a2 * B.load(k+1UL,j         );
+                  xmm4 += a2 * B.load(k+1UL,j+SIMDSIZE);
+               }
+
+               for( ; k<kend; ++k ) {
+                  const SIMDType a1( set( A(i,k) ) );
+                  xmm1 += a1 * B.load(k,j         );
+                  xmm2 += a1 * B.load(k,j+SIMDSIZE);
+               }
+
+               (~C).store( i, j         , xmm1+xmm3 );
+               (~C).store( i, j+SIMDSIZE, xmm2+xmm4 );
+            }
+         }
+
+         for( ; j<jpos; j+=SIMDSIZE )
+         {
+            const size_t iend( SYM || HERM || UPP ? min(j+SIMDSIZE,M) : M );
+            size_t i( LOW ? j : 0UL );
+
+            for( ; (i+4UL) <= iend; i+=4UL )
+            {
+               const size_t kbegin( ( IsUpper_v<MT4> )
+                                    ?( ( IsLower_v<MT5> )
+                                       ?( max( ( IsStrictlyUpper_v<MT4> ? i+1UL : i ), j ) )
+                                       :( IsStrictlyUpper_v<MT4> ? i+1UL : i ) )
+                                    :( IsLower_v<MT5> ? j : 0UL ) );
+               const size_t kend( ( IsLower_v<MT4> )
+                                  ?( IsStrictlyLower_v<MT4> ? i+3UL : i+4UL )
+                                  :( K ) );
+
+               SIMDType xmm1, xmm2, xmm3, xmm4, xmm5, xmm6, xmm7, xmm8;
+               size_t k( kbegin );
+
+               for( ; (k+2UL) <= kend; k+=2UL ) {
+                  const SIMDType b1( B.load(k    ,j) );
+                  const SIMDType b2( B.load(k+1UL,j) );
+                  xmm1 += set( A(i    ,k    ) ) * b1;
+                  xmm2 += set( A(i+1UL,k    ) ) * b1;
+                  xmm3 += set( A(i+2UL,k    ) ) * b1;
+                  xmm4 += set( A(i+3UL,k    ) ) * b1;
+                  xmm5 += set( A(i    ,k+1UL) ) * b2;
+                  xmm6 += set( A(i+1UL,k+1UL) ) * b2;
+                  xmm7 += set( A(i+2UL,k+1UL) ) * b2;
+                  xmm8 += set( A(i+3UL,k+1UL) ) * b2;
+               }
+
+               for( ; k<kend; ++k ) {
+                  const SIMDType b1( B.load(k,j) );
+                  xmm1 += set( A(i    ,k) ) * b1;
+                  xmm2 += set( A(i+1UL,k) ) * b1;
+                  xmm3 += set( A(i+2UL,k) ) * b1;
+                  xmm4 += set( A(i+3UL,k) ) * b1;
+               }
+
+               (~C).store( i    , j, xmm1+xmm5 );
+               (~C).store( i+1UL, j, xmm2+xmm6 );
+               (~C).store( i+2UL, j, xmm3+xmm7 );
+               (~C).store( i+3UL, j, xmm4+xmm8 );
+            }
+
+            for( ; (i+3UL) <= iend; i+=3UL )
+            {
+               const size_t kbegin( ( IsUpper_v<MT4> )
+                                    ?( ( IsLower_v<MT5> )
+                                       ?( max( ( IsStrictlyUpper_v<MT4> ? i+1UL : i ), j ) )
+                                       :( IsStrictlyUpper_v<MT4> ? i+1UL : i ) )
+                                    :( IsLower_v<MT5> ? j : 0UL ) );
+               const size_t kend( ( IsLower_v<MT4> )
+                                  ?( IsStrictlyLower_v<MT4> ? i+2UL : i+3UL )
+                                  :( K ) );
+
+               SIMDType xmm1, xmm2, xmm3, xmm4, xmm5, xmm6;
+               size_t k( kbegin );
+
+               for( ; (k+2UL) <= kend; k+=2UL ) {
+                  const SIMDType b1( B.load(k    ,j) );
+                  const SIMDType b2( B.load(k+1UL,j) );
+                  xmm1 += set( A(i    ,k    ) ) * b1;
+                  xmm2 += set( A(i+1UL,k    ) ) * b1;
+                  xmm3 += set( A(i+2UL,k    ) ) * b1;
+                  xmm4 += set( A(i    ,k+1UL) ) * b2;
+                  xmm5 += set( A(i+1UL,k+1UL) ) * b2;
+                  xmm6 += set( A(i+2UL,k+1UL) ) * b2;
+               }
+
+               for( ; k<kend; ++k ) {
+                  const SIMDType b1( B.load(k,j) );
+                  xmm1 += set( A(i    ,k) ) * b1;
+                  xmm2 += set( A(i+1UL,k) ) * b1;
+                  xmm3 += set( A(i+2UL,k) ) * b1;
+               }
+
+               (~C).store( i    , j, xmm1+xmm4 );
+               (~C).store( i+1UL, j, xmm2+xmm5 );
+               (~C).store( i+2UL, j, xmm3+xmm6 );
+            }
+
+            for( ; (i+2UL) <= iend; i+=2UL )
+            {
+               const size_t kbegin( ( IsUpper_v<MT4> )
+                                    ?( ( IsLower_v<MT5> )
+                                       ?( max( ( IsStrictlyUpper_v<MT4> ? i+1UL : i ), j ) )
+                                       :( IsStrictlyUpper_v<MT4> ? i+1UL : i ) )
+                                    :( IsLower_v<MT5> ? j : 0UL ) );
+               const size_t kend( ( IsLower_v<MT4> )
+                                  ?( IsStrictlyLower_v<MT4> ? i+1UL : i+2UL )
+                                  :( K ) );
+
+               SIMDType xmm1, xmm2, xmm3, xmm4;
+               size_t k( kbegin );
+
+               for( ; (k+2UL) <= kend; k+=2UL ) {
+                  const SIMDType b1( B.load(k    ,j) );
+                  const SIMDType b2( B.load(k+1UL,j) );
+                  xmm1 += set( A(i    ,k    ) ) * b1;
+                  xmm2 += set( A(i+1UL,k    ) ) * b1;
+                  xmm3 += set( A(i    ,k+1UL) ) * b2;
+                  xmm4 += set( A(i+1UL,k+1UL) ) * b2;
+               }
+
+               for( ; k<kend; ++k ) {
+                  const SIMDType b1( B.load(k,j) );
+                  xmm1 += set( A(i    ,k) ) * b1;
+                  xmm2 += set( A(i+1UL,k) ) * b1;
+               }
+
+               (~C).store( i    , j, xmm1+xmm3 );
+               (~C).store( i+1UL, j, xmm2+xmm4 );
+            }
+
+            if( i < iend )
+            {
+               const size_t kbegin( ( IsUpper_v<MT4> )
+                                    ?( ( IsLower_v<MT5> )
+                                       ?( max( ( IsStrictlyUpper_v<MT4> ? i+1UL : i ), j ) )
+                                       :( IsStrictlyUpper_v<MT4> ? i+1UL : i ) )
+                                    :( IsLower_v<MT5> ? j : 0UL ) );
+
+               SIMDType xmm1, xmm2;
+               size_t k( kbegin );
+
+               for( ; (k+2UL) <= K; k+=2UL ) {
+                  xmm1 += set( A(i,k    ) ) * B.load(k    ,j);
+                  xmm2 += set( A(i,k+1UL) ) * B.load(k+1UL,j);
+               }
+
+               for( ; k<K; ++k ) {
+                  xmm1 += set( A(i,k) ) * B.load(k,j);
+               }
+
+               (~C).store( i, j, xmm1+xmm2 );
+            }
+         }
+
+         for( ; remainder && j<N; ++j )
+         {
+            size_t i( LOW && UPP ? j : 0UL );
+
+            for( ; (i+2UL) <= M; i+=2UL )
+            {
+               const size_t kbegin( ( IsUpper_v<MT4> )
+                                    ?( ( IsLower_v<MT5> )
+                                       ?( max( ( IsStrictlyUpper_v<MT4> ? i+1UL : i ), j ) )
+                                       :( IsStrictlyUpper_v<MT4> ? i+1UL : i ) )
+                                    :( IsLower_v<MT5> ? j : 0UL ) );
+               const size_t kend( ( IsLower_v<MT4> )
+                                  ?( IsStrictlyLower_v<MT4> ? i+1UL : i+2UL )
+                                  :( K ) );
+
+               ElementType value1{};
+               ElementType value2{};
+
+               for( size_t k=kbegin; k<kend; ++k ) {
+                  value1 += A(i    ,k) * B(k,j);
+                  value2 += A(i+1UL,k) * B(k,j);
+               }
+
+               (~C)(i    ,j) = value1;
+               (~C)(i+1UL,j) = value2;
+            }
+
+            if( i < M )
+            {
+               const size_t kbegin( ( IsUpper_v<MT4> )
+                                    ?( ( IsLower_v<MT5> )
+                                       ?( max( ( IsStrictlyUpper_v<MT4> ? i+1UL : i ), j ) )
+                                       :( IsStrictlyUpper_v<MT4> ? i+1UL : i ) )
+                                    :( IsLower_v<MT5> ? j : 0UL ) );
+
+               ElementType value{};
+
+               for( size_t k=kbegin; k<K; ++k ) {
+                  value += A(i,k) * B(k,j);
+               }
+
+               (~C)(i,j) = value;
             }
          }
       }
 
-      for( ; !SYM && !HERM && !LOW && !UPP && (j+SIMDSIZE*4UL) < jpos; j+=SIMDSIZE*5UL )
-      {
-         size_t i( 0UL );
-
-         for( ; (i+2UL) <= M; i+=2UL )
-         {
-            const size_t kbegin( ( IsUpper_v<MT4> )
-                                 ?( ( IsLower_v<MT5> )
-                                    ?( max( ( IsStrictlyUpper_v<MT4> ? i+1UL : i ), j ) )
-                                    :( IsStrictlyUpper_v<MT4> ? i+1UL : i ) )
-                                 :( IsLower_v<MT5> ? j : 0UL ) );
-            const size_t kend( ( IsLower_v<MT4> )
-                               ?( ( IsUpper_v<MT5> )
-                                  ?( min( ( IsStrictlyLower_v<MT4> ? i+1UL : i+2UL ), j+SIMDSIZE*5UL, K ) )
-                                  :( IsStrictlyLower_v<MT4> ? i+1UL : i+2UL ) )
-                               :( IsUpper_v<MT5> ? min( j+SIMDSIZE*5UL, K ) : K ) );
-
-            SIMDType xmm1, xmm2, xmm3, xmm4, xmm5, xmm6, xmm7, xmm8, xmm9, xmm10;
-
-            for( size_t k=kbegin; k<kend; ++k ) {
-               const SIMDType a1( set( A(i    ,k) ) );
-               const SIMDType a2( set( A(i+1UL,k) ) );
-               const SIMDType b1( B.load(k,j             ) );
-               const SIMDType b2( B.load(k,j+SIMDSIZE    ) );
-               const SIMDType b3( B.load(k,j+SIMDSIZE*2UL) );
-               const SIMDType b4( B.load(k,j+SIMDSIZE*3UL) );
-               const SIMDType b5( B.load(k,j+SIMDSIZE*4UL) );
-               xmm1  += a1 * b1;
-               xmm2  += a1 * b2;
-               xmm3  += a1 * b3;
-               xmm4  += a1 * b4;
-               xmm5  += a1 * b5;
-               xmm6  += a2 * b1;
-               xmm7  += a2 * b2;
-               xmm8  += a2 * b3;
-               xmm9  += a2 * b4;
-               xmm10 += a2 * b5;
-            }
-
-            C.store( i    , j             , xmm1  );
-            C.store( i    , j+SIMDSIZE    , xmm2  );
-            C.store( i    , j+SIMDSIZE*2UL, xmm3  );
-            C.store( i    , j+SIMDSIZE*3UL, xmm4  );
-            C.store( i    , j+SIMDSIZE*4UL, xmm5  );
-            C.store( i+1UL, j             , xmm6  );
-            C.store( i+1UL, j+SIMDSIZE    , xmm7  );
-            C.store( i+1UL, j+SIMDSIZE*2UL, xmm8  );
-            C.store( i+1UL, j+SIMDSIZE*3UL, xmm9  );
-            C.store( i+1UL, j+SIMDSIZE*4UL, xmm10 );
-         }
-
-         if( i < M )
-         {
-            const size_t kbegin( ( IsUpper_v<MT4> )
-                                 ?( ( IsLower_v<MT5> )
-                                    ?( max( ( IsStrictlyUpper_v<MT4> ? i+1UL : i ), j ) )
-                                    :( IsStrictlyUpper_v<MT4> ? i+1UL : i ) )
-                                 :( IsLower_v<MT5> ? j : 0UL ) );
-            const size_t kend( ( IsUpper_v<MT5> )?( min( j+SIMDSIZE*5UL, K ) ):( K ) );
-
-            SIMDType xmm1, xmm2, xmm3, xmm4, xmm5;
-
-            for( size_t k=kbegin; k<kend; ++k ) {
-               const SIMDType a1( set( A(i,k) ) );
-               xmm1 += a1 * B.load(k,j             );
-               xmm2 += a1 * B.load(k,j+SIMDSIZE    );
-               xmm3 += a1 * B.load(k,j+SIMDSIZE*2UL);
-               xmm4 += a1 * B.load(k,j+SIMDSIZE*3UL);
-               xmm5 += a1 * B.load(k,j+SIMDSIZE*4UL);
-            }
-
-            C.store( i, j             , xmm1 );
-            C.store( i, j+SIMDSIZE    , xmm2 );
-            C.store( i, j+SIMDSIZE*2UL, xmm3 );
-            C.store( i, j+SIMDSIZE*3UL, xmm4 );
-            C.store( i, j+SIMDSIZE*4UL, xmm5 );
-         }
-      }
-
-      for( ; !( LOW && UPP ) && (j+SIMDSIZE*3UL) < jpos; j+=SIMDSIZE*4UL )
-      {
-         const size_t iend( UPP ? min(j+SIMDSIZE*4UL,M) : M );
-         size_t i( 0UL );
-
-         if( SYM || HERM ) {
-            const size_t jjend( min(j+SIMDSIZE*4UL,N) );
-            for( ; i<j; ++i ) {
-               for( size_t jj=j; jj<jjend; ++jj ) {
-                  C(i,jj) = HERM ? conj( C(jj,i) ) : C(jj,i);
-               }
-            }
-         }
-         else if( LOW ) {
-            const size_t jjend( min(j+SIMDSIZE*4UL,N) );
-            for( ; i<j; ++i ) {
-               for( size_t jj=j; jj<jjend; ++jj ) {
-                  reset( C(i,jj) );
-               }
-            }
-         }
-
-         for( ; (i+2UL) <= iend; i+=2UL )
-         {
-            const size_t kbegin( ( IsUpper_v<MT4> )
-                                 ?( ( IsLower_v<MT5> )
-                                    ?( max( ( IsStrictlyUpper_v<MT4> ? i+1UL : i ), j ) )
-                                    :( IsStrictlyUpper_v<MT4> ? i+1UL : i ) )
-                                 :( IsLower_v<MT5> ? j : 0UL ) );
-            const size_t kend( ( IsLower_v<MT4> )
-                               ?( ( IsUpper_v<MT5> )
-                                  ?( min( ( IsStrictlyLower_v<MT4> ? i+1UL : i+2UL ), j+SIMDSIZE*4UL, K ) )
-                                  :( IsStrictlyLower_v<MT4> ? i+1UL : i+2UL ) )
-                               :( IsUpper_v<MT5> ? min( j+SIMDSIZE*4UL, K ) : K ) );
-
-            SIMDType xmm1, xmm2, xmm3, xmm4, xmm5, xmm6, xmm7, xmm8;
-
-            for( size_t k=kbegin; k<kend; ++k ) {
-               const SIMDType a1( set( A(i    ,k) ) );
-               const SIMDType a2( set( A(i+1UL,k) ) );
-               const SIMDType b1( B.load(k,j             ) );
-               const SIMDType b2( B.load(k,j+SIMDSIZE    ) );
-               const SIMDType b3( B.load(k,j+SIMDSIZE*2UL) );
-               const SIMDType b4( B.load(k,j+SIMDSIZE*3UL) );
-               xmm1 += a1 * b1;
-               xmm2 += a1 * b2;
-               xmm3 += a1 * b3;
-               xmm4 += a1 * b4;
-               xmm5 += a2 * b1;
-               xmm6 += a2 * b2;
-               xmm7 += a2 * b3;
-               xmm8 += a2 * b4;
-            }
-
-            C.store( i    , j             , xmm1 );
-            C.store( i    , j+SIMDSIZE    , xmm2 );
-            C.store( i    , j+SIMDSIZE*2UL, xmm3 );
-            C.store( i    , j+SIMDSIZE*3UL, xmm4 );
-            C.store( i+1UL, j             , xmm5 );
-            C.store( i+1UL, j+SIMDSIZE    , xmm6 );
-            C.store( i+1UL, j+SIMDSIZE*2UL, xmm7 );
-            C.store( i+1UL, j+SIMDSIZE*3UL, xmm8 );
-         }
-
-         if( i < iend )
-         {
-            const size_t kbegin( ( IsUpper_v<MT4> )
-                                 ?( ( IsLower_v<MT5> )
-                                    ?( max( ( IsStrictlyUpper_v<MT4> ? i+1UL : i ), j ) )
-                                    :( IsStrictlyUpper_v<MT4> ? i+1UL : i ) )
-                                 :( IsLower_v<MT5> ? j : 0UL ) );
-            const size_t kend( ( IsUpper_v<MT5> )?( min( j+SIMDSIZE*4UL, K ) ):( K ) );
-
-            SIMDType xmm1, xmm2, xmm3, xmm4;
-
-            for( size_t k=kbegin; k<kend; ++k ) {
-               const SIMDType a1( set( A(i,k) ) );
-               xmm1 += a1 * B.load(k,j             );
-               xmm2 += a1 * B.load(k,j+SIMDSIZE    );
-               xmm3 += a1 * B.load(k,j+SIMDSIZE*2UL);
-               xmm4 += a1 * B.load(k,j+SIMDSIZE*3UL);
-            }
-
-            C.store( i, j             , xmm1 );
-            C.store( i, j+SIMDSIZE    , xmm2 );
-            C.store( i, j+SIMDSIZE*2UL, xmm3 );
-            C.store( i, j+SIMDSIZE*3UL, xmm4 );
-
-            if( UPP ) ++i;
-         }
-
-         if( UPP ) {
-            const size_t jjend( min(j+SIMDSIZE*4UL,N) );
-            for( ; i<M; ++i ) {
-               for( size_t jj=j; jj<jjend; ++jj ) {
-                  reset( C(i,jj) );
-               }
+      if( ( SYM || HERM ) && ( N > SIMDSIZE*4UL ) ) {
+         for( size_t i=SIMDSIZE*4UL; i<M; ++i ) {
+            const size_t jend( ( SIMDSIZE*4UL ) * ( i / (SIMDSIZE*4UL) ) );
+            for( size_t j=0UL; j<jend; ++j ) {
+               (~C)(i,j) = HERM ? conj( (~C)(j,i) ) : (~C)(j,i);
             }
          }
       }
-
-      for( ; (j+SIMDSIZE*2UL) < jpos; j+=SIMDSIZE*3UL )
-      {
-         const size_t iend( UPP ? min(j+SIMDSIZE*3UL,M) : M );
-         size_t i( 0UL );
-
-         if( SYM || HERM ) {
-            const size_t jjend( min(j+SIMDSIZE*3UL,N) );
-            for( ; i<j; ++i ) {
-               for( size_t jj=j; jj<jjend; ++jj ) {
-                  C(i,jj) = HERM ? conj( C(jj,i) ) : C(jj,i);
-               }
-            }
-         }
-         else if( LOW ) {
-            const size_t jjend( min(j+SIMDSIZE*3UL,N) );
-            for( ; i<j; ++i ) {
-               for( size_t jj=j; jj<jjend; ++jj ) {
-                  reset( C(i,jj) );
-               }
-            }
-         }
-
-         for( ; (i+2UL) <= iend; i+=2UL )
-         {
-            const size_t kbegin( ( IsUpper_v<MT4> )
-                                 ?( ( IsLower_v<MT5> )
-                                    ?( max( ( IsStrictlyUpper_v<MT4> ? i+1UL : i ), j ) )
-                                    :( IsStrictlyUpper_v<MT4> ? i+1UL : i ) )
-                                 :( IsLower_v<MT5> ? j : 0UL ) );
-            const size_t kend( ( IsLower_v<MT4> )
-                               ?( ( IsUpper_v<MT5> )
-                                  ?( min( ( IsStrictlyLower_v<MT4> ? i+1UL : i+2UL ), j+SIMDSIZE*3UL, K ) )
-                                  :( IsStrictlyLower_v<MT4> ? i+1UL : i+2UL ) )
-                               :( IsUpper_v<MT5> ? min( j+SIMDSIZE*3UL, K ) : K ) );
-
-            SIMDType xmm1, xmm2, xmm3, xmm4, xmm5, xmm6;
-
-            for( size_t k=kbegin; k<kend; ++k ) {
-               const SIMDType a1( set( A(i    ,k) ) );
-               const SIMDType a2( set( A(i+1UL,k) ) );
-               const SIMDType b1( B.load(k,j             ) );
-               const SIMDType b2( B.load(k,j+SIMDSIZE    ) );
-               const SIMDType b3( B.load(k,j+SIMDSIZE*2UL) );
-               xmm1 += a1 * b1;
-               xmm2 += a1 * b2;
-               xmm3 += a1 * b3;
-               xmm4 += a2 * b1;
-               xmm5 += a2 * b2;
-               xmm6 += a2 * b3;
-            }
-
-            C.store( i    , j             , xmm1 );
-            C.store( i    , j+SIMDSIZE    , xmm2 );
-            C.store( i    , j+SIMDSIZE*2UL, xmm3 );
-            C.store( i+1UL, j             , xmm4 );
-            C.store( i+1UL, j+SIMDSIZE    , xmm5 );
-            C.store( i+1UL, j+SIMDSIZE*2UL, xmm6 );
-         }
-
-         if( i < iend )
-         {
-            const size_t kbegin( ( IsUpper_v<MT4> )
-                                 ?( ( IsLower_v<MT5> )
-                                    ?( max( ( IsStrictlyUpper_v<MT4> ? i+1UL : i ), j ) )
-                                    :( IsStrictlyUpper_v<MT4> ? i+1UL : i ) )
-                                 :( IsLower_v<MT5> ? j : 0UL ) );
-            const size_t kend( ( IsUpper_v<MT5> )?( min( j+SIMDSIZE*3UL, K ) ):( K ) );
-
-            SIMDType xmm1, xmm2, xmm3;
-
-            for( size_t k=kbegin; k<kend; ++k ) {
-               const SIMDType a1( set( A(i,k) ) );
-               xmm1 += a1 * B.load(k,j             );
-               xmm2 += a1 * B.load(k,j+SIMDSIZE    );
-               xmm3 += a1 * B.load(k,j+SIMDSIZE*2UL);
-            }
-
-            C.store( i, j             , xmm1 );
-            C.store( i, j+SIMDSIZE    , xmm2 );
-            C.store( i, j+SIMDSIZE*2UL, xmm3 );
-
-            if( UPP ) ++i;
-         }
-
-         if( UPP ) {
-            const size_t jjend( min(j+SIMDSIZE*3UL,N) );
-            for( ; i<M; ++i ) {
-               for( size_t jj=j; jj<jjend; ++jj ) {
-                  reset( C(i,jj) );
-               }
+      else if( LOW && !UPP && N > SIMDSIZE*4UL ) {
+         for( size_t j=SIMDSIZE*4UL; j<N; ++j ) {
+            const size_t iend( ( SIMDSIZE*4UL ) * ( j / (SIMDSIZE*4UL) ) );
+            for( size_t i=0UL; i<iend; ++i ) {
+               reset( (~C)(i,j) );
             }
          }
       }
-
-      for( ; (j+SIMDSIZE) < jpos; j+=SIMDSIZE*2UL )
-      {
-         const size_t iend( UPP ? min(j+SIMDSIZE*2UL,M) : M );
-         size_t i( 0UL );
-
-         if( SYM || HERM ) {
-            const size_t jjend( min(j+SIMDSIZE*2UL,N) );
-            for( ; i<j; ++i ) {
-               for( size_t jj=j; jj<jjend; ++jj ) {
-                  C(i,jj) = HERM ? conj( C(jj,i) ) : C(jj,i);
-               }
+      else if( !LOW && UPP && N > SIMDSIZE*4UL ) {
+         for( size_t i=SIMDSIZE*4UL; i<M; ++i ) {
+            const size_t jend( ( SIMDSIZE*4UL ) * ( i / (SIMDSIZE*4UL) ) );
+            for( size_t j=0UL; j<jend; ++j ) {
+               reset( (~C)(i,j) );
             }
-         }
-         else if( LOW ) {
-            const size_t jjend( min(j+SIMDSIZE*2UL,N) );
-            for( ; i<j; ++i ) {
-               for( size_t jj=j; jj<jjend; ++jj ) {
-                  reset( C(i,jj) );
-               }
-            }
-         }
-
-         for( ; (i+4UL) <= iend; i+=4UL )
-         {
-            const size_t kbegin( ( IsUpper_v<MT4> )
-                                 ?( ( IsLower_v<MT5> )
-                                    ?( max( ( IsStrictlyUpper_v<MT4> ? i+1UL : i ), j ) )
-                                    :( IsStrictlyUpper_v<MT4> ? i+1UL : i ) )
-                                 :( IsLower_v<MT5> ? j : 0UL ) );
-            const size_t kend( ( IsLower_v<MT4> )
-                               ?( ( IsUpper_v<MT5> )
-                                  ?( min( ( IsStrictlyLower_v<MT4> ? i+3UL : i+4UL ), j+SIMDSIZE*2UL, K ) )
-                                  :( IsStrictlyLower_v<MT4> ? i+3UL : i+4UL ) )
-                               :( IsUpper_v<MT5> ? min( j+SIMDSIZE*2UL, K ) : K ) );
-
-            SIMDType xmm1, xmm2, xmm3, xmm4, xmm5, xmm6, xmm7, xmm8;
-
-            for( size_t k=kbegin; k<kend; ++k ) {
-               const SIMDType a1( set( A(i    ,k) ) );
-               const SIMDType a2( set( A(i+1UL,k) ) );
-               const SIMDType a3( set( A(i+2UL,k) ) );
-               const SIMDType a4( set( A(i+3UL,k) ) );
-               const SIMDType b1( B.load(k,j         ) );
-               const SIMDType b2( B.load(k,j+SIMDSIZE) );
-               xmm1 += a1 * b1;
-               xmm2 += a1 * b2;
-               xmm3 += a2 * b1;
-               xmm4 += a2 * b2;
-               xmm5 += a3 * b1;
-               xmm6 += a3 * b2;
-               xmm7 += a4 * b1;
-               xmm8 += a4 * b2;
-            }
-
-            C.store( i    , j         , xmm1 );
-            C.store( i    , j+SIMDSIZE, xmm2 );
-            C.store( i+1UL, j         , xmm3 );
-            C.store( i+1UL, j+SIMDSIZE, xmm4 );
-            C.store( i+2UL, j         , xmm5 );
-            C.store( i+2UL, j+SIMDSIZE, xmm6 );
-            C.store( i+3UL, j         , xmm7 );
-            C.store( i+3UL, j+SIMDSIZE, xmm8 );
-         }
-
-         for( ; (i+3UL) <= iend; i+=3UL )
-         {
-            const size_t kbegin( ( IsUpper_v<MT4> )
-                                 ?( ( IsLower_v<MT5> )
-                                    ?( max( ( IsStrictlyUpper_v<MT4> ? i+1UL : i ), j ) )
-                                    :( IsStrictlyUpper_v<MT4> ? i+1UL : i ) )
-                                 :( IsLower_v<MT5> ? j : 0UL ) );
-            const size_t kend( ( IsLower_v<MT4> )
-                               ?( ( IsUpper_v<MT5> )
-                                  ?( min( ( IsStrictlyLower_v<MT4> ? i+2UL : i+3UL ), j+SIMDSIZE*2UL, K ) )
-                                  :( IsStrictlyLower_v<MT4> ? i+2UL : i+3UL ) )
-                               :( IsUpper_v<MT5> ? min( j+SIMDSIZE*2UL, K ) : K ) );
-
-            SIMDType xmm1, xmm2, xmm3, xmm4, xmm5, xmm6;
-
-            for( size_t k=kbegin; k<kend; ++k ) {
-               const SIMDType a1( set( A(i    ,k) ) );
-               const SIMDType a2( set( A(i+1UL,k) ) );
-               const SIMDType a3( set( A(i+2UL,k) ) );
-               const SIMDType b1( B.load(k,j         ) );
-               const SIMDType b2( B.load(k,j+SIMDSIZE) );
-               xmm1 += a1 * b1;
-               xmm2 += a1 * b2;
-               xmm3 += a2 * b1;
-               xmm4 += a2 * b2;
-               xmm5 += a3 * b1;
-               xmm6 += a3 * b2;
-            }
-
-            C.store( i    , j         , xmm1 );
-            C.store( i    , j+SIMDSIZE, xmm2 );
-            C.store( i+1UL, j         , xmm3 );
-            C.store( i+1UL, j+SIMDSIZE, xmm4 );
-            C.store( i+2UL, j         , xmm5 );
-            C.store( i+2UL, j+SIMDSIZE, xmm6 );
-         }
-
-         for( ; (i+2UL) <= iend; i+=2UL )
-         {
-            const size_t kbegin( ( IsUpper_v<MT4> )
-                                 ?( ( IsLower_v<MT5> )
-                                    ?( max( ( IsStrictlyUpper_v<MT4> ? i+1UL : i ), j ) )
-                                    :( IsStrictlyUpper_v<MT4> ? i+1UL : i ) )
-                                 :( IsLower_v<MT5> ? j : 0UL ) );
-            const size_t kend( ( IsLower_v<MT4> )
-                               ?( ( IsUpper_v<MT5> )
-                                  ?( min( ( IsStrictlyLower_v<MT4> ? i+1UL : i+2UL ), j+SIMDSIZE*2UL, K ) )
-                                  :( IsStrictlyLower_v<MT4> ? i+1UL : i+2UL ) )
-                               :( IsUpper_v<MT5> ? min( j+SIMDSIZE*2UL, K ) : K ) );
-
-            SIMDType xmm1, xmm2, xmm3, xmm4, xmm5, xmm6, xmm7, xmm8;
-            size_t k( kbegin );
-
-            for( ; (k+2UL) <= kend; k+=2UL ) {
-               const SIMDType a1( set( A(i    ,k    ) ) );
-               const SIMDType a2( set( A(i+1UL,k    ) ) );
-               const SIMDType a3( set( A(i    ,k+1UL) ) );
-               const SIMDType a4( set( A(i+1UL,k+1UL) ) );
-               const SIMDType b1( B.load(k    ,j         ) );
-               const SIMDType b2( B.load(k    ,j+SIMDSIZE) );
-               const SIMDType b3( B.load(k+1UL,j         ) );
-               const SIMDType b4( B.load(k+1UL,j+SIMDSIZE) );
-               xmm1 += a1 * b1;
-               xmm2 += a1 * b2;
-               xmm3 += a2 * b1;
-               xmm4 += a2 * b2;
-               xmm5 += a3 * b3;
-               xmm6 += a3 * b4;
-               xmm7 += a4 * b3;
-               xmm8 += a4 * b4;
-            }
-
-            for( ; k<kend; ++k ) {
-               const SIMDType a1( set( A(i    ,k) ) );
-               const SIMDType a2( set( A(i+1UL,k) ) );
-               const SIMDType b1( B.load(k,j         ) );
-               const SIMDType b2( B.load(k,j+SIMDSIZE) );
-               xmm1 += a1 * b1;
-               xmm2 += a1 * b2;
-               xmm3 += a2 * b1;
-               xmm4 += a2 * b2;
-            }
-
-            C.store( i    , j         , xmm1+xmm5 );
-            C.store( i    , j+SIMDSIZE, xmm2+xmm6 );
-            C.store( i+1UL, j         , xmm3+xmm7 );
-            C.store( i+1UL, j+SIMDSIZE, xmm4+xmm8 );
-         }
-
-         if( i < iend )
-         {
-            const size_t kbegin( ( IsUpper_v<MT4> )
-                                 ?( ( IsLower_v<MT5> )
-                                    ?( max( ( IsStrictlyUpper_v<MT4> ? i+1UL : i ), j ) )
-                                    :( IsStrictlyUpper_v<MT4> ? i+1UL : i ) )
-                                 :( IsLower_v<MT5> ? j : 0UL ) );
-            const size_t kend( ( IsUpper_v<MT5> )?( min( j+SIMDSIZE*2UL, K ) ):( K ) );
-
-            SIMDType xmm1, xmm2, xmm3, xmm4;
-            size_t k( kbegin );
-
-            for( ; (k+2UL) <= kend; k+=2UL ) {
-               const SIMDType a1( set( A(i,k    ) ) );
-               const SIMDType a2( set( A(i,k+1UL) ) );
-               xmm1 += a1 * B.load(k    ,j         );
-               xmm2 += a1 * B.load(k    ,j+SIMDSIZE);
-               xmm3 += a2 * B.load(k+1UL,j         );
-               xmm4 += a2 * B.load(k+1UL,j+SIMDSIZE);
-            }
-
-            for( ; k<kend; ++k ) {
-               const SIMDType a1( set( A(i,k) ) );
-               xmm1 += a1 * B.load(k,j         );
-               xmm2 += a1 * B.load(k,j+SIMDSIZE);
-            }
-
-            C.store( i, j         , xmm1+xmm3 );
-            C.store( i, j+SIMDSIZE, xmm2+xmm4 );
-
-            if( UPP ) ++i;
-         }
-
-         if( UPP ) {
-            const size_t jjend( min(j+SIMDSIZE*2UL,N) );
-            for( ; i<M; ++i ) {
-               for( size_t jj=j; jj<jjend; ++jj ) {
-                  reset( C(i,jj) );
-               }
-            }
-         }
-      }
-
-      for( ; j<jpos; j+=SIMDSIZE )
-      {
-         const size_t iend( UPP ? min(j+SIMDSIZE,M) : M );
-         size_t i( 0UL );
-
-         if( SYM || HERM ) {
-            const size_t jjend( min(j+SIMDSIZE,N) );
-            for( ; i<j; ++i ) {
-               for( size_t jj=j; jj<jjend; ++jj ) {
-                  C(i,jj) = HERM ? conj( C(jj,i) ) : C(jj,i);
-               }
-            }
-         }
-         else if( LOW ) {
-            const size_t jjend( min(j+SIMDSIZE,N) );
-            for( ; i<j; ++i ) {
-               for( size_t jj=j; jj<jjend; ++jj ) {
-                  reset( C(i,jj) );
-               }
-            }
-         }
-
-         for( ; (i+4UL) <= iend; i+=4UL )
-         {
-            const size_t kbegin( ( IsUpper_v<MT4> )
-                                 ?( ( IsLower_v<MT5> )
-                                    ?( max( ( IsStrictlyUpper_v<MT4> ? i+1UL : i ), j ) )
-                                    :( IsStrictlyUpper_v<MT4> ? i+1UL : i ) )
-                                 :( IsLower_v<MT5> ? j : 0UL ) );
-            const size_t kend( ( IsLower_v<MT4> )
-                               ?( IsStrictlyLower_v<MT4> ? i+3UL : i+4UL )
-                               :( K ) );
-
-            SIMDType xmm1, xmm2, xmm3, xmm4, xmm5, xmm6, xmm7, xmm8;
-            size_t k( kbegin );
-
-            for( ; (k+2UL) <= kend; k+=2UL ) {
-               const SIMDType b1( B.load(k    ,j) );
-               const SIMDType b2( B.load(k+1UL,j) );
-               xmm1 += set( A(i    ,k    ) ) * b1;
-               xmm2 += set( A(i+1UL,k    ) ) * b1;
-               xmm3 += set( A(i+2UL,k    ) ) * b1;
-               xmm4 += set( A(i+3UL,k    ) ) * b1;
-               xmm5 += set( A(i    ,k+1UL) ) * b2;
-               xmm6 += set( A(i+1UL,k+1UL) ) * b2;
-               xmm7 += set( A(i+2UL,k+1UL) ) * b2;
-               xmm8 += set( A(i+3UL,k+1UL) ) * b2;
-            }
-
-            for( ; k<kend; ++k ) {
-               const SIMDType b1( B.load(k,j) );
-               xmm1 += set( A(i    ,k) ) * b1;
-               xmm2 += set( A(i+1UL,k) ) * b1;
-               xmm3 += set( A(i+2UL,k) ) * b1;
-               xmm4 += set( A(i+3UL,k) ) * b1;
-            }
-
-            C.store( i    , j, xmm1+xmm5 );
-            C.store( i+1UL, j, xmm2+xmm6 );
-            C.store( i+2UL, j, xmm3+xmm7 );
-            C.store( i+3UL, j, xmm4+xmm8 );
-         }
-
-         for( ; (i+3UL) <= iend; i+=3UL )
-         {
-            const size_t kbegin( ( IsUpper_v<MT4> )
-                                 ?( ( IsLower_v<MT5> )
-                                    ?( max( ( IsStrictlyUpper_v<MT4> ? i+1UL : i ), j ) )
-                                    :( IsStrictlyUpper_v<MT4> ? i+1UL : i ) )
-                                 :( IsLower_v<MT5> ? j : 0UL ) );
-            const size_t kend( ( IsLower_v<MT4> )
-                               ?( IsStrictlyLower_v<MT4> ? i+2UL : i+3UL )
-                               :( K ) );
-
-            SIMDType xmm1, xmm2, xmm3, xmm4, xmm5, xmm6;
-            size_t k( kbegin );
-
-            for( ; (k+2UL) <= kend; k+=2UL ) {
-               const SIMDType b1( B.load(k    ,j) );
-               const SIMDType b2( B.load(k+1UL,j) );
-               xmm1 += set( A(i    ,k    ) ) * b1;
-               xmm2 += set( A(i+1UL,k    ) ) * b1;
-               xmm3 += set( A(i+2UL,k    ) ) * b1;
-               xmm4 += set( A(i    ,k+1UL) ) * b2;
-               xmm5 += set( A(i+1UL,k+1UL) ) * b2;
-               xmm6 += set( A(i+2UL,k+1UL) ) * b2;
-            }
-
-            for( ; k<kend; ++k ) {
-               const SIMDType b1( B.load(k,j) );
-               xmm1 += set( A(i    ,k) ) * b1;
-               xmm2 += set( A(i+1UL,k) ) * b1;
-               xmm3 += set( A(i+2UL,k) ) * b1;
-            }
-
-            C.store( i    , j, xmm1+xmm4 );
-            C.store( i+1UL, j, xmm2+xmm5 );
-            C.store( i+2UL, j, xmm3+xmm6 );
-         }
-
-         for( ; (i+2UL) <= iend; i+=2UL )
-         {
-            const size_t kbegin( ( IsUpper_v<MT4> )
-                                 ?( ( IsLower_v<MT5> )
-                                    ?( max( ( IsStrictlyUpper_v<MT4> ? i+1UL : i ), j ) )
-                                    :( IsStrictlyUpper_v<MT4> ? i+1UL : i ) )
-                                 :( IsLower_v<MT5> ? j : 0UL ) );
-            const size_t kend( ( IsLower_v<MT4> )
-                               ?( IsStrictlyLower_v<MT4> ? i+1UL : i+2UL )
-                               :( K ) );
-
-            SIMDType xmm1, xmm2, xmm3, xmm4;
-            size_t k( kbegin );
-
-            for( ; (k+2UL) <= kend; k+=2UL ) {
-               const SIMDType b1( B.load(k    ,j) );
-               const SIMDType b2( B.load(k+1UL,j) );
-               xmm1 += set( A(i    ,k    ) ) * b1;
-               xmm2 += set( A(i+1UL,k    ) ) * b1;
-               xmm3 += set( A(i    ,k+1UL) ) * b2;
-               xmm4 += set( A(i+1UL,k+1UL) ) * b2;
-            }
-
-            for( ; k<kend; ++k ) {
-               const SIMDType b1( B.load(k,j) );
-               xmm1 += set( A(i    ,k) ) * b1;
-               xmm2 += set( A(i+1UL,k) ) * b1;
-            }
-
-            C.store( i    , j, xmm1+xmm3 );
-            C.store( i+1UL, j, xmm2+xmm4 );
-         }
-
-         if( i < iend )
-         {
-            const size_t kbegin( ( IsUpper_v<MT4> )
-                                 ?( ( IsLower_v<MT5> )
-                                    ?( max( ( IsStrictlyUpper_v<MT4> ? i+1UL : i ), j ) )
-                                    :( IsStrictlyUpper_v<MT4> ? i+1UL : i ) )
-                                 :( IsLower_v<MT5> ? j : 0UL ) );
-
-            SIMDType xmm1, xmm2;
-            size_t k( kbegin );
-
-            for( ; (k+2UL) <= K; k+=2UL ) {
-               xmm1 += set( A(i,k    ) ) * B.load(k    ,j);
-               xmm2 += set( A(i,k+1UL) ) * B.load(k+1UL,j);
-            }
-
-            for( ; k<K; ++k ) {
-               xmm1 += set( A(i,k) ) * B.load(k,j);
-            }
-
-            C.store( i, j, xmm1+xmm2 );
-
-            if( UPP ) ++i;
-         }
-
-         if( UPP ) {
-            const size_t jjend( min(j+SIMDSIZE,N) );
-            for( ; i<M; ++i ) {
-               for( size_t jj=j; jj<jjend; ++jj ) {
-                  reset( C(i,jj) );
-               }
-            }
-         }
-      }
-
-      for( ; remainder && j<N; ++j )
-      {
-         size_t i( 0UL );
-
-         if( SYM || HERM ) {
-            for( ; i<j; ++i ) {
-               C(i,j) = HERM ? conj( C(j,i) ) : C(j,i);
-            }
-         }
-         else if( LOW ) {
-            for( ; i<j; ++i ) {
-               reset( C(i,j) );
-            }
-         }
-
-         for( ; (i+2UL) <= M; i+=2UL )
-         {
-            const size_t kbegin( ( IsUpper_v<MT4> )
-                                 ?( ( IsLower_v<MT5> )
-                                    ?( max( ( IsStrictlyUpper_v<MT4> ? i+1UL : i ), j ) )
-                                    :( IsStrictlyUpper_v<MT4> ? i+1UL : i ) )
-                                 :( IsLower_v<MT5> ? j : 0UL ) );
-            const size_t kend( ( IsLower_v<MT4> )
-                               ?( IsStrictlyLower_v<MT4> ? i+1UL : i+2UL )
-                               :( K ) );
-
-            ElementType value1{};
-            ElementType value2{};
-
-            for( size_t k=kbegin; k<kend; ++k ) {
-               value1 += A(i    ,k) * B(k,j);
-               value2 += A(i+1UL,k) * B(k,j);
-            }
-
-            C(i    ,j) = value1;
-            C(i+1UL,j) = value2;
-         }
-
-         if( i < M )
-         {
-            const size_t kbegin( ( IsUpper_v<MT4> )
-                                 ?( ( IsLower_v<MT5> )
-                                    ?( max( ( IsStrictlyUpper_v<MT4> ? i+1UL : i ), j ) )
-                                    :( IsStrictlyUpper_v<MT4> ? i+1UL : i ) )
-                                 :( IsLower_v<MT5> ? j : 0UL ) );
-
-            ElementType value{};
-
-            for( size_t k=kbegin; k<K; ++k ) {
-               value += A(i,k) * B(k,j);
-            }
-
-            C(i,j) = value;
          }
       }
    }
@@ -1634,8 +1524,8 @@ class DMatDMatMultExpr
    template< typename MT3    // Type of the left-hand side target matrix
            , typename MT4    // Type of the left-hand side matrix operand
            , typename MT5 >  // Type of the right-hand side matrix operand
-   static inline auto selectSmallAssignKernel( MT3& C, const MT4& A, const MT5& B )
-      -> EnableIf_t< IsColumnMajorMatrix_v<MT3> && UseVectorizedDefaultKernel_v<MT3,MT4,MT5> >
+   static inline EnableIf_t< UseVectorizedDefaultKernel_v<MT3,MT4,MT5> >
+      selectSmallAssignKernel( DenseMatrix<MT3,true>& C, const MT4& A, const MT5& B )
    {
       BLAZE_CONSTRAINT_MUST_NOT_BE_SYMMETRIC_MATRIX_TYPE( MT4 );
       BLAZE_CONSTRAINT_MUST_NOT_BE_SYMMETRIC_MATRIX_TYPE( MT5 );
@@ -1646,19 +1536,19 @@ class DMatDMatMultExpr
 
       if( !IsResizable_v<MT4> && IsResizable_v<MT5> ) {
          const OppositeType_t<MT4> tmp( serial( A ) );
-         assign( C, fwd( tmp * B ) );
+         assign( ~C, fwd( tmp * B ) );
       }
       else if( IsResizable_v<MT4> && !IsResizable_v<MT5> ) {
          const OppositeType_t<MT5> tmp( serial( B ) );
-         assign( C, fwd( A * tmp ) );
+         assign( ~C, fwd( A * tmp ) );
       }
       else if( A.rows() * A.columns() <= B.rows() * B.columns() ) {
          const OppositeType_t<MT4> tmp( serial( A ) );
-         assign( C, fwd( tmp * B ) );
+         assign( ~C, fwd( tmp * B ) );
       }
       else {
          const OppositeType_t<MT5> tmp( serial( B ) );
-         assign( C, fwd( A * tmp ) );
+         assign( ~C, fwd( A * tmp ) );
       }
    }
    /*! \endcond */
@@ -1680,8 +1570,8 @@ class DMatDMatMultExpr
    template< typename MT3    // Type of the left-hand side target matrix
            , typename MT4    // Type of the left-hand side matrix operand
            , typename MT5 >  // Type of the right-hand side matrix operand
-   static inline auto selectLargeAssignKernel( MT3& C, const MT4& A, const MT5& B )
-      -> DisableIf_t< UseVectorizedDefaultKernel_v<MT3,MT4,MT5> >
+   static inline DisableIf_t< UseVectorizedDefaultKernel_v<MT3,MT4,MT5> >
+      selectLargeAssignKernel( MT3& C, const MT4& A, const MT5& B )
    {
       selectDefaultAssignKernel( C, A, B );
    }
@@ -1705,8 +1595,8 @@ class DMatDMatMultExpr
    template< typename MT3    // Type of the left-hand side target matrix
            , typename MT4    // Type of the left-hand side matrix operand
            , typename MT5 >  // Type of the right-hand side matrix operand
-   static inline auto selectLargeAssignKernel( MT3& C, const MT4& A, const MT5& B )
-      -> EnableIf_t< UseVectorizedDefaultKernel_v<MT3,MT4,MT5> >
+   static inline EnableIf_t< UseVectorizedDefaultKernel_v<MT3,MT4,MT5> >
+      selectLargeAssignKernel( MT3& C, const MT4& A, const MT5& B )
    {
       if( SYM )
          smmm( C, A, B, ElementType(1) );
@@ -1738,8 +1628,8 @@ class DMatDMatMultExpr
    template< typename MT3    // Type of the left-hand side target matrix
            , typename MT4    // Type of the left-hand side matrix operand
            , typename MT5 >  // Type of the right-hand side matrix operand
-   static inline auto selectBlasAssignKernel( MT3& C, const MT4& A, const MT5& B )
-      -> DisableIf_t< UseBlasKernel_v<MT3,MT4,MT5> >
+   static inline DisableIf_t< UseBlasKernel_v<MT3,MT4,MT5> >
+      selectBlasAssignKernel( MT3& C, const MT4& A, const MT5& B )
    {
       selectLargeAssignKernel( C, A, B );
    }
@@ -1763,8 +1653,8 @@ class DMatDMatMultExpr
    template< typename MT3    // Type of the left-hand side target matrix
            , typename MT4    // Type of the left-hand side matrix operand
            , typename MT5 >  // Type of the right-hand side matrix operand
-   static inline auto selectBlasAssignKernel( MT3& C, const MT4& A, const MT5& B )
-      -> EnableIf_t< UseBlasKernel_v<MT3,MT4,MT5> >
+   static inline EnableIf_t< UseBlasKernel_v<MT3,MT4,MT5> >
+      selectBlasAssignKernel( MT3& C, const MT4& A, const MT5& B )
    {
       using ET = ElementType_t<MT3>;
 
@@ -1799,8 +1689,8 @@ class DMatDMatMultExpr
    */
    template< typename MT  // Type of the target sparse matrix
            , bool SO >    // Storage order of the target sparse matrix
-   friend inline auto assign( SparseMatrix<MT,SO>& lhs, const DMatDMatMultExpr& rhs )
-      -> DisableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
+   friend inline DisableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
+      assign( SparseMatrix<MT,SO>& lhs, const DMatDMatMultExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -1840,8 +1730,8 @@ class DMatDMatMultExpr
    // in case the symmetry of either of the two matrix operands can be exploited.
    */
    template< typename MT >  // Type of the target matrix
-   friend inline auto assign( Matrix<MT,true>& lhs, const DMatDMatMultExpr& rhs )
-      -> EnableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
+   friend inline EnableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
+      assign( Matrix<MT,true>& lhs, const DMatDMatMultExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -1877,8 +1767,8 @@ class DMatDMatMultExpr
    */
    template< typename MT  // Type of the target dense matrix
            , bool SO >    // Storage order of the target dense matrix
-   friend inline auto addAssign( DenseMatrix<MT,SO>& lhs, const DMatDMatMultExpr& rhs )
-      -> DisableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
+   friend inline DisableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
+      addAssign( DenseMatrix<MT,SO>& lhs, const DMatDMatMultExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -1947,8 +1837,8 @@ class DMatDMatMultExpr
    template< typename MT3    // Type of the left-hand side target matrix
            , typename MT4    // Type of the left-hand side matrix operand
            , typename MT5 >  // Type of the right-hand side matrix operand
-   static inline auto selectDefaultAddAssignKernel( MT3& C, const MT4& A, const MT5& B )
-      -> EnableIf_t< !IsDiagonal_v<MT4> && !IsDiagonal_v<MT5> >
+   static inline EnableIf_t< !IsDiagonal_v<MT4> && !IsDiagonal_v<MT5> >
+      selectDefaultAddAssignKernel( MT3& C, const MT4& A, const MT5& B )
    {
       const size_t M( A.rows()    );
       const size_t N( B.columns() );
@@ -2015,8 +1905,8 @@ class DMatDMatMultExpr
    template< typename MT3    // Type of the left-hand side target matrix
            , typename MT4    // Type of the left-hand side matrix operand
            , typename MT5 >  // Type of the right-hand side matrix operand
-   static inline auto selectDefaultAddAssignKernel( MT3& C, const MT4& A, const MT5& B )
-      -> EnableIf_t< !IsDiagonal_v<MT4> && IsDiagonal_v<MT5> >
+   static inline EnableIf_t< !IsDiagonal_v<MT4> && IsDiagonal_v<MT5> >
+      selectDefaultAddAssignKernel( MT3& C, const MT4& A, const MT5& B )
    {
       BLAZE_CONSTRAINT_MUST_BE_ROW_MAJOR_MATRIX_TYPE( MT3 );
 
@@ -2065,8 +1955,8 @@ class DMatDMatMultExpr
    template< typename MT3    // Type of the left-hand side target matrix
            , typename MT4    // Type of the left-hand side matrix operand
            , typename MT5 >  // Type of the right-hand side matrix operand
-   static inline auto selectDefaultAddAssignKernel( MT3& C, const MT4& A, const MT5& B )
-      -> EnableIf_t< IsDiagonal_v<MT4> && !IsDiagonal_v<MT5> >
+   static inline EnableIf_t< IsDiagonal_v<MT4> && !IsDiagonal_v<MT5> >
+      selectDefaultAddAssignKernel( MT3& C, const MT4& A, const MT5& B )
    {
       BLAZE_CONSTRAINT_MUST_BE_ROW_MAJOR_MATRIX_TYPE( MT3 );
 
@@ -2115,8 +2005,8 @@ class DMatDMatMultExpr
    template< typename MT3    // Type of the left-hand side target matrix
            , typename MT4    // Type of the left-hand side matrix operand
            , typename MT5 >  // Type of the right-hand side matrix operand
-   static inline auto selectDefaultAddAssignKernel( MT3& C, const MT4& A, const MT5& B )
-      -> EnableIf_t< IsDiagonal_v<MT4> && IsDiagonal_v<MT5> >
+   static inline EnableIf_t< IsDiagonal_v<MT4> && IsDiagonal_v<MT5> >
+      selectDefaultAddAssignKernel( MT3& C, const MT4& A, const MT5& B )
    {
       BLAZE_CONSTRAINT_MUST_BE_ROW_MAJOR_MATRIX_TYPE( MT3 );
 
@@ -2144,8 +2034,8 @@ class DMatDMatMultExpr
    template< typename MT3    // Type of the left-hand side target matrix
            , typename MT4    // Type of the left-hand side matrix operand
            , typename MT5 >  // Type of the right-hand side matrix operand
-   static inline auto selectSmallAddAssignKernel( MT3& C, const MT4& A, const MT5& B )
-      -> DisableIf_t< UseVectorizedDefaultKernel_v<MT3,MT4,MT5> >
+   static inline DisableIf_t< UseVectorizedDefaultKernel_v<MT3,MT4,MT5> >
+      selectSmallAddAssignKernel( MT3& C, const MT4& A, const MT5& B )
    {
       selectDefaultAddAssignKernel( C, A, B );
    }
@@ -2170,8 +2060,8 @@ class DMatDMatMultExpr
    template< typename MT3    // Type of the left-hand side target matrix
            , typename MT4    // Type of the left-hand side matrix operand
            , typename MT5 >  // Type of the right-hand side matrix operand
-   static inline auto selectSmallAddAssignKernel( MT3& C, const MT4& A, const MT5& B )
-      -> EnableIf_t< IsRowMajorMatrix_v<MT3> && UseVectorizedDefaultKernel_v<MT3,MT4,MT5> >
+   static inline EnableIf_t< UseVectorizedDefaultKernel_v<MT3,MT4,MT5> >
+      selectSmallAddAssignKernel( DenseMatrix<MT3,false>& C, const MT4& A, const MT5& B )
    {
       constexpr bool remainder( !IsPadded_v<MT3> || !IsPadded_v<MT5> );
 
@@ -2202,14 +2092,14 @@ class DMatDMatMultExpr
                                      :( IsStrictlyLower_v<MT4> ? i : i+1UL ) )
                                   :( IsUpper_v<MT5> ? min( j+SIMDSIZE*8UL, K ) : K ) );
 
-               SIMDType xmm1( C.load(i,j             ) );
-               SIMDType xmm2( C.load(i,j+SIMDSIZE    ) );
-               SIMDType xmm3( C.load(i,j+SIMDSIZE*2UL) );
-               SIMDType xmm4( C.load(i,j+SIMDSIZE*3UL) );
-               SIMDType xmm5( C.load(i,j+SIMDSIZE*4UL) );
-               SIMDType xmm6( C.load(i,j+SIMDSIZE*5UL) );
-               SIMDType xmm7( C.load(i,j+SIMDSIZE*6UL) );
-               SIMDType xmm8( C.load(i,j+SIMDSIZE*7UL) );
+               SIMDType xmm1( (~C).load(i,j             ) );
+               SIMDType xmm2( (~C).load(i,j+SIMDSIZE    ) );
+               SIMDType xmm3( (~C).load(i,j+SIMDSIZE*2UL) );
+               SIMDType xmm4( (~C).load(i,j+SIMDSIZE*3UL) );
+               SIMDType xmm5( (~C).load(i,j+SIMDSIZE*4UL) );
+               SIMDType xmm6( (~C).load(i,j+SIMDSIZE*5UL) );
+               SIMDType xmm7( (~C).load(i,j+SIMDSIZE*6UL) );
+               SIMDType xmm8( (~C).load(i,j+SIMDSIZE*7UL) );
 
                for( size_t k=kbegin; k<kend; ++k ) {
                   const SIMDType a1( set( A(i,k) ) );
@@ -2223,14 +2113,14 @@ class DMatDMatMultExpr
                   xmm8 += a1 * B.load(k,j+SIMDSIZE*7UL);
                }
 
-               C.store( i, j             , xmm1 );
-               C.store( i, j+SIMDSIZE    , xmm2 );
-               C.store( i, j+SIMDSIZE*2UL, xmm3 );
-               C.store( i, j+SIMDSIZE*3UL, xmm4 );
-               C.store( i, j+SIMDSIZE*4UL, xmm5 );
-               C.store( i, j+SIMDSIZE*5UL, xmm6 );
-               C.store( i, j+SIMDSIZE*6UL, xmm7 );
-               C.store( i, j+SIMDSIZE*7UL, xmm8 );
+               (~C).store( i, j             , xmm1 );
+               (~C).store( i, j+SIMDSIZE    , xmm2 );
+               (~C).store( i, j+SIMDSIZE*2UL, xmm3 );
+               (~C).store( i, j+SIMDSIZE*3UL, xmm4 );
+               (~C).store( i, j+SIMDSIZE*4UL, xmm5 );
+               (~C).store( i, j+SIMDSIZE*5UL, xmm6 );
+               (~C).store( i, j+SIMDSIZE*6UL, xmm7 );
+               (~C).store( i, j+SIMDSIZE*7UL, xmm8 );
             }
          }
       }
@@ -2252,16 +2142,16 @@ class DMatDMatMultExpr
                                   :( IsStrictlyLower_v<MT4> ? i+1UL : i+2UL ) )
                                :( IsUpper_v<MT5> ? min( j+SIMDSIZE*5UL, K ) : K ) );
 
-            SIMDType xmm1 ( C.load(i    ,j             ) );
-            SIMDType xmm2 ( C.load(i    ,j+SIMDSIZE    ) );
-            SIMDType xmm3 ( C.load(i    ,j+SIMDSIZE*2UL) );
-            SIMDType xmm4 ( C.load(i    ,j+SIMDSIZE*3UL) );
-            SIMDType xmm5 ( C.load(i    ,j+SIMDSIZE*4UL) );
-            SIMDType xmm6 ( C.load(i+1UL,j             ) );
-            SIMDType xmm7 ( C.load(i+1UL,j+SIMDSIZE    ) );
-            SIMDType xmm8 ( C.load(i+1UL,j+SIMDSIZE*2UL) );
-            SIMDType xmm9 ( C.load(i+1UL,j+SIMDSIZE*3UL) );
-            SIMDType xmm10( C.load(i+1UL,j+SIMDSIZE*4UL) );
+            SIMDType xmm1 ( (~C).load(i    ,j             ) );
+            SIMDType xmm2 ( (~C).load(i    ,j+SIMDSIZE    ) );
+            SIMDType xmm3 ( (~C).load(i    ,j+SIMDSIZE*2UL) );
+            SIMDType xmm4 ( (~C).load(i    ,j+SIMDSIZE*3UL) );
+            SIMDType xmm5 ( (~C).load(i    ,j+SIMDSIZE*4UL) );
+            SIMDType xmm6 ( (~C).load(i+1UL,j             ) );
+            SIMDType xmm7 ( (~C).load(i+1UL,j+SIMDSIZE    ) );
+            SIMDType xmm8 ( (~C).load(i+1UL,j+SIMDSIZE*2UL) );
+            SIMDType xmm9 ( (~C).load(i+1UL,j+SIMDSIZE*3UL) );
+            SIMDType xmm10( (~C).load(i+1UL,j+SIMDSIZE*4UL) );
 
             for( size_t k=kbegin; k<kend; ++k ) {
                const SIMDType a1( set( A(i    ,k) ) );
@@ -2283,16 +2173,16 @@ class DMatDMatMultExpr
                xmm10 += a2 * b5;
             }
 
-            C.store( i    , j             , xmm1  );
-            C.store( i    , j+SIMDSIZE    , xmm2  );
-            C.store( i    , j+SIMDSIZE*2UL, xmm3  );
-            C.store( i    , j+SIMDSIZE*3UL, xmm4  );
-            C.store( i    , j+SIMDSIZE*4UL, xmm5  );
-            C.store( i+1UL, j             , xmm6  );
-            C.store( i+1UL, j+SIMDSIZE    , xmm7  );
-            C.store( i+1UL, j+SIMDSIZE*2UL, xmm8  );
-            C.store( i+1UL, j+SIMDSIZE*3UL, xmm9  );
-            C.store( i+1UL, j+SIMDSIZE*4UL, xmm10 );
+            (~C).store( i    , j             , xmm1  );
+            (~C).store( i    , j+SIMDSIZE    , xmm2  );
+            (~C).store( i    , j+SIMDSIZE*2UL, xmm3  );
+            (~C).store( i    , j+SIMDSIZE*3UL, xmm4  );
+            (~C).store( i    , j+SIMDSIZE*4UL, xmm5  );
+            (~C).store( i+1UL, j             , xmm6  );
+            (~C).store( i+1UL, j+SIMDSIZE    , xmm7  );
+            (~C).store( i+1UL, j+SIMDSIZE*2UL, xmm8  );
+            (~C).store( i+1UL, j+SIMDSIZE*3UL, xmm9  );
+            (~C).store( i+1UL, j+SIMDSIZE*4UL, xmm10 );
          }
 
          if( i < M )
@@ -2304,11 +2194,11 @@ class DMatDMatMultExpr
                                  :( IsLower_v<MT5> ? j : 0UL ) );
             const size_t kend( ( IsUpper_v<MT5> )?( min( j+SIMDSIZE*5UL, K ) ):( K ) );
 
-            SIMDType xmm1( C.load(i,j             ) );
-            SIMDType xmm2( C.load(i,j+SIMDSIZE    ) );
-            SIMDType xmm3( C.load(i,j+SIMDSIZE*2UL) );
-            SIMDType xmm4( C.load(i,j+SIMDSIZE*3UL) );
-            SIMDType xmm5( C.load(i,j+SIMDSIZE*4UL) );
+            SIMDType xmm1( (~C).load(i,j             ) );
+            SIMDType xmm2( (~C).load(i,j+SIMDSIZE    ) );
+            SIMDType xmm3( (~C).load(i,j+SIMDSIZE*2UL) );
+            SIMDType xmm4( (~C).load(i,j+SIMDSIZE*3UL) );
+            SIMDType xmm5( (~C).load(i,j+SIMDSIZE*4UL) );
 
             for( size_t k=kbegin; k<kend; ++k ) {
                const SIMDType a1( set( A(i,k) ) );
@@ -2319,11 +2209,11 @@ class DMatDMatMultExpr
                xmm5 += a1 * B.load(k,j+SIMDSIZE*4UL);
             }
 
-            C.store( i, j             , xmm1 );
-            C.store( i, j+SIMDSIZE    , xmm2 );
-            C.store( i, j+SIMDSIZE*2UL, xmm3 );
-            C.store( i, j+SIMDSIZE*3UL, xmm4 );
-            C.store( i, j+SIMDSIZE*4UL, xmm5 );
+            (~C).store( i, j             , xmm1 );
+            (~C).store( i, j+SIMDSIZE    , xmm2 );
+            (~C).store( i, j+SIMDSIZE*2UL, xmm3 );
+            (~C).store( i, j+SIMDSIZE*3UL, xmm4 );
+            (~C).store( i, j+SIMDSIZE*4UL, xmm5 );
          }
       }
 
@@ -2344,14 +2234,14 @@ class DMatDMatMultExpr
                                   :( IsStrictlyLower_v<MT4> ? i+1UL : i+2UL ) )
                                :( IsUpper_v<MT5> ? min( j+SIMDSIZE*4UL, K ) : K ) );
 
-            SIMDType xmm1( C.load(i    ,j             ) );
-            SIMDType xmm2( C.load(i    ,j+SIMDSIZE    ) );
-            SIMDType xmm3( C.load(i    ,j+SIMDSIZE*2UL) );
-            SIMDType xmm4( C.load(i    ,j+SIMDSIZE*3UL) );
-            SIMDType xmm5( C.load(i+1UL,j             ) );
-            SIMDType xmm6( C.load(i+1UL,j+SIMDSIZE    ) );
-            SIMDType xmm7( C.load(i+1UL,j+SIMDSIZE*2UL) );
-            SIMDType xmm8( C.load(i+1UL,j+SIMDSIZE*3UL) );
+            SIMDType xmm1( (~C).load(i    ,j             ) );
+            SIMDType xmm2( (~C).load(i    ,j+SIMDSIZE    ) );
+            SIMDType xmm3( (~C).load(i    ,j+SIMDSIZE*2UL) );
+            SIMDType xmm4( (~C).load(i    ,j+SIMDSIZE*3UL) );
+            SIMDType xmm5( (~C).load(i+1UL,j             ) );
+            SIMDType xmm6( (~C).load(i+1UL,j+SIMDSIZE    ) );
+            SIMDType xmm7( (~C).load(i+1UL,j+SIMDSIZE*2UL) );
+            SIMDType xmm8( (~C).load(i+1UL,j+SIMDSIZE*3UL) );
 
             for( size_t k=kbegin; k<kend; ++k ) {
                const SIMDType a1( set( A(i    ,k) ) );
@@ -2370,14 +2260,14 @@ class DMatDMatMultExpr
                xmm8 += a2 * b4;
             }
 
-            C.store( i    , j             , xmm1 );
-            C.store( i    , j+SIMDSIZE    , xmm2 );
-            C.store( i    , j+SIMDSIZE*2UL, xmm3 );
-            C.store( i    , j+SIMDSIZE*3UL, xmm4 );
-            C.store( i+1UL, j             , xmm5 );
-            C.store( i+1UL, j+SIMDSIZE    , xmm6 );
-            C.store( i+1UL, j+SIMDSIZE*2UL, xmm7 );
-            C.store( i+1UL, j+SIMDSIZE*3UL, xmm8 );
+            (~C).store( i    , j             , xmm1 );
+            (~C).store( i    , j+SIMDSIZE    , xmm2 );
+            (~C).store( i    , j+SIMDSIZE*2UL, xmm3 );
+            (~C).store( i    , j+SIMDSIZE*3UL, xmm4 );
+            (~C).store( i+1UL, j             , xmm5 );
+            (~C).store( i+1UL, j+SIMDSIZE    , xmm6 );
+            (~C).store( i+1UL, j+SIMDSIZE*2UL, xmm7 );
+            (~C).store( i+1UL, j+SIMDSIZE*3UL, xmm8 );
          }
 
          if( i < M )
@@ -2389,10 +2279,10 @@ class DMatDMatMultExpr
                                  :( IsLower_v<MT5> ? j : 0UL ) );
             const size_t kend( ( IsUpper_v<MT5> )?( min( j+SIMDSIZE*4UL, K ) ):( K ) );
 
-            SIMDType xmm1( C.load(i,j             ) );
-            SIMDType xmm2( C.load(i,j+SIMDSIZE    ) );
-            SIMDType xmm3( C.load(i,j+SIMDSIZE*2UL) );
-            SIMDType xmm4( C.load(i,j+SIMDSIZE*3UL) );
+            SIMDType xmm1( (~C).load(i,j             ) );
+            SIMDType xmm2( (~C).load(i,j+SIMDSIZE    ) );
+            SIMDType xmm3( (~C).load(i,j+SIMDSIZE*2UL) );
+            SIMDType xmm4( (~C).load(i,j+SIMDSIZE*3UL) );
 
             for( size_t k=kbegin; k<kend; ++k ) {
                const SIMDType a1( set( A(i,k) ) );
@@ -2402,10 +2292,10 @@ class DMatDMatMultExpr
                xmm4 += a1 * B.load(k,j+SIMDSIZE*3UL);
             }
 
-            C.store( i, j             , xmm1 );
-            C.store( i, j+SIMDSIZE    , xmm2 );
-            C.store( i, j+SIMDSIZE*2UL, xmm3 );
-            C.store( i, j+SIMDSIZE*3UL, xmm4 );
+            (~C).store( i, j             , xmm1 );
+            (~C).store( i, j+SIMDSIZE    , xmm2 );
+            (~C).store( i, j+SIMDSIZE*2UL, xmm3 );
+            (~C).store( i, j+SIMDSIZE*3UL, xmm4 );
          }
       }
 
@@ -2426,12 +2316,12 @@ class DMatDMatMultExpr
                                   :( IsStrictlyLower_v<MT4> ? i+1UL : i+2UL ) )
                                :( IsUpper_v<MT5> ? min( j+SIMDSIZE*3UL, K ) : K ) );
 
-            SIMDType xmm1( C.load(i    ,j             ) );
-            SIMDType xmm2( C.load(i    ,j+SIMDSIZE    ) );
-            SIMDType xmm3( C.load(i    ,j+SIMDSIZE*2UL) );
-            SIMDType xmm4( C.load(i+1UL,j             ) );
-            SIMDType xmm5( C.load(i+1UL,j+SIMDSIZE    ) );
-            SIMDType xmm6( C.load(i+1UL,j+SIMDSIZE*2UL) );
+            SIMDType xmm1( (~C).load(i    ,j             ) );
+            SIMDType xmm2( (~C).load(i    ,j+SIMDSIZE    ) );
+            SIMDType xmm3( (~C).load(i    ,j+SIMDSIZE*2UL) );
+            SIMDType xmm4( (~C).load(i+1UL,j             ) );
+            SIMDType xmm5( (~C).load(i+1UL,j+SIMDSIZE    ) );
+            SIMDType xmm6( (~C).load(i+1UL,j+SIMDSIZE*2UL) );
 
             for( size_t k=kbegin; k<kend; ++k ) {
                const SIMDType a1( set( A(i    ,k) ) );
@@ -2447,12 +2337,12 @@ class DMatDMatMultExpr
                xmm6 += a2 * b3;
             }
 
-            C.store( i    , j             , xmm1 );
-            C.store( i    , j+SIMDSIZE    , xmm2 );
-            C.store( i    , j+SIMDSIZE*2UL, xmm3 );
-            C.store( i+1UL, j             , xmm4 );
-            C.store( i+1UL, j+SIMDSIZE    , xmm5 );
-            C.store( i+1UL, j+SIMDSIZE*2UL, xmm6 );
+            (~C).store( i    , j             , xmm1 );
+            (~C).store( i    , j+SIMDSIZE    , xmm2 );
+            (~C).store( i    , j+SIMDSIZE*2UL, xmm3 );
+            (~C).store( i+1UL, j             , xmm4 );
+            (~C).store( i+1UL, j+SIMDSIZE    , xmm5 );
+            (~C).store( i+1UL, j+SIMDSIZE*2UL, xmm6 );
          }
 
          if( i < M )
@@ -2464,9 +2354,9 @@ class DMatDMatMultExpr
                                  :( IsLower_v<MT5> ? j : 0UL ) );
             const size_t kend( ( IsUpper_v<MT5> )?( min( j+SIMDSIZE*3UL, K ) ):( K ) );
 
-            SIMDType xmm1( C.load(i,j             ) );
-            SIMDType xmm2( C.load(i,j+SIMDSIZE    ) );
-            SIMDType xmm3( C.load(i,j+SIMDSIZE*2UL) );
+            SIMDType xmm1( (~C).load(i,j             ) );
+            SIMDType xmm2( (~C).load(i,j+SIMDSIZE    ) );
+            SIMDType xmm3( (~C).load(i,j+SIMDSIZE*2UL) );
 
             for( size_t k=kbegin; k<kend; ++k ) {
                const SIMDType a1( set( A(i,k) ) );
@@ -2475,9 +2365,9 @@ class DMatDMatMultExpr
                xmm3 += a1 * B.load(k,j+SIMDSIZE*2UL);
             }
 
-            C.store( i, j             , xmm1 );
-            C.store( i, j+SIMDSIZE    , xmm2 );
-            C.store( i, j+SIMDSIZE*2UL, xmm3 );
+            (~C).store( i, j             , xmm1 );
+            (~C).store( i, j+SIMDSIZE    , xmm2 );
+            (~C).store( i, j+SIMDSIZE*2UL, xmm3 );
          }
       }
 
@@ -2499,14 +2389,14 @@ class DMatDMatMultExpr
                                   :( IsStrictlyLower_v<MT4> ? i+3UL : i+4UL ) )
                                :( IsUpper_v<MT5> ? min( j+SIMDSIZE*2UL, K ) : K ) );
 
-            SIMDType xmm1( C.load(i    ,j         ) );
-            SIMDType xmm2( C.load(i    ,j+SIMDSIZE) );
-            SIMDType xmm3( C.load(i+1UL,j         ) );
-            SIMDType xmm4( C.load(i+1UL,j+SIMDSIZE) );
-            SIMDType xmm5( C.load(i+2UL,j         ) );
-            SIMDType xmm6( C.load(i+2UL,j+SIMDSIZE) );
-            SIMDType xmm7( C.load(i+3UL,j         ) );
-            SIMDType xmm8( C.load(i+3UL,j+SIMDSIZE) );
+            SIMDType xmm1( (~C).load(i    ,j         ) );
+            SIMDType xmm2( (~C).load(i    ,j+SIMDSIZE) );
+            SIMDType xmm3( (~C).load(i+1UL,j         ) );
+            SIMDType xmm4( (~C).load(i+1UL,j+SIMDSIZE) );
+            SIMDType xmm5( (~C).load(i+2UL,j         ) );
+            SIMDType xmm6( (~C).load(i+2UL,j+SIMDSIZE) );
+            SIMDType xmm7( (~C).load(i+3UL,j         ) );
+            SIMDType xmm8( (~C).load(i+3UL,j+SIMDSIZE) );
 
             for( size_t k=kbegin; k<kend; ++k ) {
                const SIMDType a1( set( A(i    ,k) ) );
@@ -2525,14 +2415,14 @@ class DMatDMatMultExpr
                xmm8 += a4 * b2;
             }
 
-            C.store( i    , j         , xmm1 );
-            C.store( i    , j+SIMDSIZE, xmm2 );
-            C.store( i+1UL, j         , xmm3 );
-            C.store( i+1UL, j+SIMDSIZE, xmm4 );
-            C.store( i+2UL, j         , xmm5 );
-            C.store( i+2UL, j+SIMDSIZE, xmm6 );
-            C.store( i+3UL, j         , xmm7 );
-            C.store( i+3UL, j+SIMDSIZE, xmm8 );
+            (~C).store( i    , j         , xmm1 );
+            (~C).store( i    , j+SIMDSIZE, xmm2 );
+            (~C).store( i+1UL, j         , xmm3 );
+            (~C).store( i+1UL, j+SIMDSIZE, xmm4 );
+            (~C).store( i+2UL, j         , xmm5 );
+            (~C).store( i+2UL, j+SIMDSIZE, xmm6 );
+            (~C).store( i+3UL, j         , xmm7 );
+            (~C).store( i+3UL, j+SIMDSIZE, xmm8 );
          }
 
          for( ; (i+3UL) <= iend; i+=3UL )
@@ -2548,12 +2438,12 @@ class DMatDMatMultExpr
                                   :( IsStrictlyLower_v<MT4> ? i+2UL : i+3UL ) )
                                :( IsUpper_v<MT5> ? min( j+SIMDSIZE*2UL, K ) : K ) );
 
-            SIMDType xmm1( C.load(i    ,j         ) );
-            SIMDType xmm2( C.load(i    ,j+SIMDSIZE) );
-            SIMDType xmm3( C.load(i+1UL,j         ) );
-            SIMDType xmm4( C.load(i+1UL,j+SIMDSIZE) );
-            SIMDType xmm5( C.load(i+2UL,j         ) );
-            SIMDType xmm6( C.load(i+2UL,j+SIMDSIZE) );
+            SIMDType xmm1( (~C).load(i    ,j         ) );
+            SIMDType xmm2( (~C).load(i    ,j+SIMDSIZE) );
+            SIMDType xmm3( (~C).load(i+1UL,j         ) );
+            SIMDType xmm4( (~C).load(i+1UL,j+SIMDSIZE) );
+            SIMDType xmm5( (~C).load(i+2UL,j         ) );
+            SIMDType xmm6( (~C).load(i+2UL,j+SIMDSIZE) );
 
             for( size_t k=kbegin; k<kend; ++k ) {
                const SIMDType a1( set( A(i    ,k) ) );
@@ -2569,12 +2459,12 @@ class DMatDMatMultExpr
                xmm6 += a3 * b2;
             }
 
-            C.store( i    , j         , xmm1 );
-            C.store( i    , j+SIMDSIZE, xmm2 );
-            C.store( i+1UL, j         , xmm3 );
-            C.store( i+1UL, j+SIMDSIZE, xmm4 );
-            C.store( i+2UL, j         , xmm5 );
-            C.store( i+2UL, j+SIMDSIZE, xmm6 );
+            (~C).store( i    , j         , xmm1 );
+            (~C).store( i    , j+SIMDSIZE, xmm2 );
+            (~C).store( i+1UL, j         , xmm3 );
+            (~C).store( i+1UL, j+SIMDSIZE, xmm4 );
+            (~C).store( i+2UL, j         , xmm5 );
+            (~C).store( i+2UL, j+SIMDSIZE, xmm6 );
          }
 
          for( ; (i+2UL) <= iend; i+=2UL )
@@ -2590,10 +2480,10 @@ class DMatDMatMultExpr
                                   :( IsStrictlyLower_v<MT4> ? i+1UL : i+2UL ) )
                                :( IsUpper_v<MT5> ? min( j+SIMDSIZE*2UL, K ) : K ) );
 
-            SIMDType xmm1( C.load(i    ,j         ) );
-            SIMDType xmm2( C.load(i    ,j+SIMDSIZE) );
-            SIMDType xmm3( C.load(i+1UL,j         ) );
-            SIMDType xmm4( C.load(i+1UL,j+SIMDSIZE) );
+            SIMDType xmm1( (~C).load(i    ,j         ) );
+            SIMDType xmm2( (~C).load(i    ,j+SIMDSIZE) );
+            SIMDType xmm3( (~C).load(i+1UL,j         ) );
+            SIMDType xmm4( (~C).load(i+1UL,j+SIMDSIZE) );
             SIMDType xmm5, xmm6, xmm7, xmm8;
             size_t k( kbegin );
 
@@ -2627,10 +2517,10 @@ class DMatDMatMultExpr
                xmm4 += a2 * b2;
             }
 
-            C.store( i    , j         , xmm1+xmm5 );
-            C.store( i    , j+SIMDSIZE, xmm2+xmm6 );
-            C.store( i+1UL, j         , xmm3+xmm7 );
-            C.store( i+1UL, j+SIMDSIZE, xmm4+xmm8 );
+            (~C).store( i    , j         , xmm1+xmm5 );
+            (~C).store( i    , j+SIMDSIZE, xmm2+xmm6 );
+            (~C).store( i+1UL, j         , xmm3+xmm7 );
+            (~C).store( i+1UL, j+SIMDSIZE, xmm4+xmm8 );
          }
 
          if( i < iend )
@@ -2642,8 +2532,8 @@ class DMatDMatMultExpr
                                  :( IsLower_v<MT5> ? j : 0UL ) );
             const size_t kend( ( IsUpper_v<MT5> )?( min( j+SIMDSIZE*2UL, K ) ):( K ) );
 
-            SIMDType xmm1( C.load(i,j         ) );
-            SIMDType xmm2( C.load(i,j+SIMDSIZE) );
+            SIMDType xmm1( (~C).load(i,j         ) );
+            SIMDType xmm2( (~C).load(i,j+SIMDSIZE) );
             SIMDType xmm3, xmm4;
             size_t k( kbegin );
 
@@ -2662,8 +2552,8 @@ class DMatDMatMultExpr
                xmm2 += a1 * B.load(k,j+SIMDSIZE);
             }
 
-            C.store( i, j         , xmm1+xmm3 );
-            C.store( i, j+SIMDSIZE, xmm2+xmm4 );
+            (~C).store( i, j         , xmm1+xmm3 );
+            (~C).store( i, j+SIMDSIZE, xmm2+xmm4 );
          }
       }
 
@@ -2683,10 +2573,10 @@ class DMatDMatMultExpr
                                ?( IsStrictlyLower_v<MT4> ? i+3UL : i+4UL )
                                :( K ) );
 
-            SIMDType xmm1( C.load(i    ,j) );
-            SIMDType xmm2( C.load(i+1UL,j) );
-            SIMDType xmm3( C.load(i+2UL,j) );
-            SIMDType xmm4( C.load(i+3UL,j) );
+            SIMDType xmm1( (~C).load(i    ,j) );
+            SIMDType xmm2( (~C).load(i+1UL,j) );
+            SIMDType xmm3( (~C).load(i+2UL,j) );
+            SIMDType xmm4( (~C).load(i+3UL,j) );
             SIMDType xmm5, xmm6, xmm7, xmm8;
             size_t k( kbegin );
 
@@ -2711,10 +2601,10 @@ class DMatDMatMultExpr
                xmm4 += set( A(i+3UL,k) ) * b1;
             }
 
-            C.store( i    , j, xmm1+xmm5 );
-            C.store( i+1UL, j, xmm2+xmm6 );
-            C.store( i+2UL, j, xmm3+xmm7 );
-            C.store( i+3UL, j, xmm4+xmm8 );
+            (~C).store( i    , j, xmm1+xmm5 );
+            (~C).store( i+1UL, j, xmm2+xmm6 );
+            (~C).store( i+2UL, j, xmm3+xmm7 );
+            (~C).store( i+3UL, j, xmm4+xmm8 );
          }
 
          for( ; (i+3UL) <= iend; i+=3UL )
@@ -2728,9 +2618,9 @@ class DMatDMatMultExpr
                                ?( IsStrictlyLower_v<MT4> ? i+2UL : i+3UL )
                                :( K ) );
 
-            SIMDType xmm1( C.load(i    ,j) );
-            SIMDType xmm2( C.load(i+1UL,j) );
-            SIMDType xmm3( C.load(i+2UL,j) );
+            SIMDType xmm1( (~C).load(i    ,j) );
+            SIMDType xmm2( (~C).load(i+1UL,j) );
+            SIMDType xmm3( (~C).load(i+2UL,j) );
             SIMDType xmm4, xmm5, xmm6;
             size_t k( kbegin );
 
@@ -2752,9 +2642,9 @@ class DMatDMatMultExpr
                xmm3 += set( A(i+2UL,k) ) * b1;
             }
 
-            C.store( i    , j, xmm1+xmm4 );
-            C.store( i+1UL, j, xmm2+xmm5 );
-            C.store( i+2UL, j, xmm3+xmm6 );
+            (~C).store( i    , j, xmm1+xmm4 );
+            (~C).store( i+1UL, j, xmm2+xmm5 );
+            (~C).store( i+2UL, j, xmm3+xmm6 );
          }
 
          for( ; (i+2UL) <= iend; i+=2UL )
@@ -2768,8 +2658,8 @@ class DMatDMatMultExpr
                                ?( IsStrictlyLower_v<MT4> ? i+1UL : i+2UL )
                                :( K ) );
 
-            SIMDType xmm1( C.load(i    ,j) );
-            SIMDType xmm2( C.load(i+1UL,j) );
+            SIMDType xmm1( (~C).load(i    ,j) );
+            SIMDType xmm2( (~C).load(i+1UL,j) );
             SIMDType xmm3, xmm4;
             size_t k( kbegin );
 
@@ -2788,8 +2678,8 @@ class DMatDMatMultExpr
                xmm2 += set( A(i+1UL,k) ) * b1;
             }
 
-            C.store( i    , j, xmm1+xmm3 );
-            C.store( i+1UL, j, xmm2+xmm4 );
+            (~C).store( i    , j, xmm1+xmm3 );
+            (~C).store( i+1UL, j, xmm2+xmm4 );
          }
 
          if( i < iend )
@@ -2800,7 +2690,7 @@ class DMatDMatMultExpr
                                     :( IsStrictlyUpper_v<MT4> ? i+1UL : i ) )
                                  :( IsLower_v<MT5> ? j : 0UL ) );
 
-            SIMDType xmm1( C.load(i,j) );
+            SIMDType xmm1( (~C).load(i,j) );
             SIMDType xmm2;
             size_t k( kbegin );
 
@@ -2813,7 +2703,7 @@ class DMatDMatMultExpr
                xmm1 += set( A(i,k) ) * B.load(k,j);
             }
 
-            C.store( i, j, xmm1+xmm2 );
+            (~C).store( i, j, xmm1+xmm2 );
          }
       }
 
@@ -2833,16 +2723,16 @@ class DMatDMatMultExpr
                                ?( IsStrictlyLower_v<MT4> ? i+1UL : i+2UL )
                                :( K ) );
 
-            ElementType value1( C(i    ,j) );
-            ElementType value2( C(i+1UL,j) );;
+            ElementType value1( (~C)(i    ,j) );
+            ElementType value2( (~C)(i+1UL,j) );;
 
             for( size_t k=kbegin; k<kend; ++k ) {
                value1 += A(i    ,k) * B(k,j);
                value2 += A(i+1UL,k) * B(k,j);
             }
 
-            C(i    ,j) = value1;
-            C(i+1UL,j) = value2;
+            (~C)(i    ,j) = value1;
+            (~C)(i+1UL,j) = value2;
          }
 
          if( i < iend )
@@ -2853,13 +2743,13 @@ class DMatDMatMultExpr
                                     :( IsStrictlyUpper_v<MT4> ? i+1UL : i ) )
                                  :( IsLower_v<MT5> ? j : 0UL ) );
 
-            ElementType value( C(i,j) );
+            ElementType value( (~C)(i,j) );
 
             for( size_t k=kbegin; k<K; ++k ) {
                value += A(i,k) * B(k,j);
             }
 
-            C(i,j) = value;
+            (~C)(i,j) = value;
          }
       }
    }
@@ -2884,8 +2774,8 @@ class DMatDMatMultExpr
    template< typename MT3    // Type of the left-hand side target matrix
            , typename MT4    // Type of the left-hand side matrix operand
            , typename MT5 >  // Type of the right-hand side matrix operand
-   static inline auto selectSmallAddAssignKernel( MT3& C, const MT4& A, const MT5& B )
-      -> EnableIf_t< IsColumnMajorMatrix_v<MT3> && UseVectorizedDefaultKernel_v<MT3,MT4,MT5> >
+   static inline EnableIf_t< UseVectorizedDefaultKernel_v<MT3,MT4,MT5> >
+      selectSmallAddAssignKernel( DenseMatrix<MT3,true>& C, const MT4& A, const MT5& B )
    {
       BLAZE_CONSTRAINT_MUST_NOT_BE_SYMMETRIC_MATRIX_TYPE( MT4 );
       BLAZE_CONSTRAINT_MUST_NOT_BE_SYMMETRIC_MATRIX_TYPE( MT5 );
@@ -2896,19 +2786,19 @@ class DMatDMatMultExpr
 
       if( !IsResizable_v<MT4> && IsResizable_v<MT5> ) {
          const OppositeType_t<MT4> tmp( serial( A ) );
-         addAssign( C, fwd( tmp * B ) );
+         addAssign( ~C, fwd( tmp * B ) );
       }
       else if( IsResizable_v<MT4> && !IsResizable_v<MT5> ) {
          const OppositeType_t<MT5> tmp( serial( B ) );
-         addAssign( C, fwd( A * tmp ) );
+         addAssign( ~C, fwd( A * tmp ) );
       }
       else if( A.rows() * A.columns() <= B.rows() * B.columns() ) {
          const OppositeType_t<MT4> tmp( serial( A ) );
-         addAssign( C, fwd( tmp * B ) );
+         addAssign( ~C, fwd( tmp * B ) );
       }
       else {
          const OppositeType_t<MT5> tmp( serial( B ) );
-         addAssign( C, fwd( A * tmp ) );
+         addAssign( ~C, fwd( A * tmp ) );
       }
    }
    /*! \endcond */
@@ -2931,8 +2821,8 @@ class DMatDMatMultExpr
    template< typename MT3    // Type of the left-hand side target matrix
            , typename MT4    // Type of the left-hand side matrix operand
            , typename MT5 >  // Type of the right-hand side matrix operand
-   static inline auto selectLargeAddAssignKernel( MT3& C, const MT4& A, const MT5& B )
-      -> DisableIf_t< UseVectorizedDefaultKernel_v<MT3,MT4,MT5> >
+   static inline DisableIf_t< UseVectorizedDefaultKernel_v<MT3,MT4,MT5> >
+      selectLargeAddAssignKernel( MT3& C, const MT4& A, const MT5& B )
    {
       selectDefaultAddAssignKernel( C, A, B );
    }
@@ -2957,8 +2847,8 @@ class DMatDMatMultExpr
    template< typename MT3    // Type of the left-hand side target matrix
            , typename MT4    // Type of the left-hand side matrix operand
            , typename MT5 >  // Type of the right-hand side matrix operand
-   static inline auto selectLargeAddAssignKernel( MT3& C, const MT4& A, const MT5& B )
-      -> EnableIf_t< UseVectorizedDefaultKernel_v<MT3,MT4,MT5> >
+   static inline EnableIf_t< UseVectorizedDefaultKernel_v<MT3,MT4,MT5> >
+      selectLargeAddAssignKernel( MT3& C, const MT4& A, const MT5& B )
    {
       if( LOW )
          lmmm( C, A, B, ElementType(1), ElementType(1) );
@@ -2987,8 +2877,8 @@ class DMatDMatMultExpr
    template< typename MT3    // Type of the left-hand side target matrix
            , typename MT4    // Type of the left-hand side matrix operand
            , typename MT5 >  // Type of the right-hand side matrix operand
-   static inline auto selectBlasAddAssignKernel( MT3& C, const MT4& A, const MT5& B )
-      -> DisableIf_t< UseBlasKernel_v<MT3,MT4,MT5> >
+   static inline DisableIf_t< UseBlasKernel_v<MT3,MT4,MT5> >
+      selectBlasAddAssignKernel( MT3& C, const MT4& A, const MT5& B )
    {
       selectLargeAddAssignKernel( C, A, B );
    }
@@ -3013,8 +2903,8 @@ class DMatDMatMultExpr
    template< typename MT3    // Type of the left-hand side target matrix
            , typename MT4    // Type of the left-hand side matrix operand
            , typename MT5 >  // Type of the right-hand side matrix operand
-   static inline auto selectBlasAddAssignKernel( MT3& C, const MT4& A, const MT5& B )
-      -> EnableIf_t< UseBlasKernel_v<MT3,MT4,MT5> >
+   static inline EnableIf_t< UseBlasKernel_v<MT3,MT4,MT5> >
+      selectBlasAddAssignKernel( MT3& C, const MT4& A, const MT5& B )
    {
       using ET = ElementType_t<MT3>;
 
@@ -3052,8 +2942,8 @@ class DMatDMatMultExpr
    // in case the symmetry of either of the two matrix operands can be exploited.
    */
    template< typename MT >  // Type of the target matrix
-   friend inline auto addAssign( Matrix<MT,true>& lhs, const DMatDMatMultExpr& rhs )
-      -> EnableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
+   friend inline EnableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
+      addAssign( Matrix<MT,true>& lhs, const DMatDMatMultExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -3093,8 +2983,8 @@ class DMatDMatMultExpr
    */
    template< typename MT  // Type of the target dense matrix
            , bool SO >    // Storage order of the target dense matrix
-   friend inline auto subAssign( DenseMatrix<MT,SO>& lhs, const DMatDMatMultExpr& rhs )
-      -> DisableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
+   friend inline DisableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
+      subAssign( DenseMatrix<MT,SO>& lhs, const DMatDMatMultExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -3163,8 +3053,8 @@ class DMatDMatMultExpr
    template< typename MT3    // Type of the left-hand side target matrix
            , typename MT4    // Type of the left-hand side matrix operand
            , typename MT5 >  // Type of the right-hand side matrix operand
-   static inline auto selectDefaultSubAssignKernel( MT3& C, const MT4& A, const MT5& B )
-      -> EnableIf_t< !IsDiagonal_v<MT4> && !IsDiagonal_v<MT5> >
+   static inline EnableIf_t< !IsDiagonal_v<MT4> && !IsDiagonal_v<MT5> >
+      selectDefaultSubAssignKernel( MT3& C, const MT4& A, const MT5& B )
    {
       const size_t M( A.rows()    );
       const size_t N( B.columns() );
@@ -3231,8 +3121,8 @@ class DMatDMatMultExpr
    template< typename MT3    // Type of the left-hand side target matrix
            , typename MT4    // Type of the left-hand side matrix operand
            , typename MT5 >  // Type of the right-hand side matrix operand
-   static inline auto selectDefaultSubAssignKernel( MT3& C, const MT4& A, const MT5& B )
-      -> EnableIf_t< !IsDiagonal_v<MT4> && IsDiagonal_v<MT5> >
+   static inline EnableIf_t< !IsDiagonal_v<MT4> && IsDiagonal_v<MT5> >
+      selectDefaultSubAssignKernel( MT3& C, const MT4& A, const MT5& B )
    {
       BLAZE_CONSTRAINT_MUST_BE_ROW_MAJOR_MATRIX_TYPE( MT3 );
 
@@ -3281,8 +3171,8 @@ class DMatDMatMultExpr
    template< typename MT3    // Type of the left-hand side target matrix
            , typename MT4    // Type of the left-hand side matrix operand
            , typename MT5 >  // Type of the right-hand side matrix operand
-   static inline auto selectDefaultSubAssignKernel( MT3& C, const MT4& A, const MT5& B )
-      -> EnableIf_t< IsDiagonal_v<MT4> && !IsDiagonal_v<MT5> >
+   static inline EnableIf_t< IsDiagonal_v<MT4> && !IsDiagonal_v<MT5> >
+      selectDefaultSubAssignKernel( MT3& C, const MT4& A, const MT5& B )
    {
       BLAZE_CONSTRAINT_MUST_BE_ROW_MAJOR_MATRIX_TYPE( MT3 );
 
@@ -3331,8 +3221,8 @@ class DMatDMatMultExpr
    template< typename MT3    // Type of the left-hand side target matrix
            , typename MT4    // Type of the left-hand side matrix operand
            , typename MT5 >  // Type of the right-hand side matrix operand
-   static inline auto selectDefaultSubAssignKernel( MT3& C, const MT4& A, const MT5& B )
-      -> EnableIf_t< IsDiagonal_v<MT4> && IsDiagonal_v<MT5> >
+   static inline EnableIf_t< IsDiagonal_v<MT4> && IsDiagonal_v<MT5> >
+      selectDefaultSubAssignKernel( MT3& C, const MT4& A, const MT5& B )
    {
       BLAZE_CONSTRAINT_MUST_BE_ROW_MAJOR_MATRIX_TYPE( MT3 );
 
@@ -3360,8 +3250,8 @@ class DMatDMatMultExpr
    template< typename MT3    // Type of the left-hand side target matrix
            , typename MT4    // Type of the left-hand side matrix operand
            , typename MT5 >  // Type of the right-hand side matrix operand
-   static inline auto selectSmallSubAssignKernel( MT3& C, const MT4& A, const MT5& B )
-      -> DisableIf_t< UseVectorizedDefaultKernel_v<MT3,MT4,MT5> >
+   static inline DisableIf_t< UseVectorizedDefaultKernel_v<MT3,MT4,MT5> >
+      selectSmallSubAssignKernel( MT3& C, const MT4& A, const MT5& B )
    {
       selectDefaultSubAssignKernel( C, A, B );
    }
@@ -3386,8 +3276,8 @@ class DMatDMatMultExpr
    template< typename MT3    // Type of the left-hand side target matrix
            , typename MT4    // Type of the left-hand side matrix operand
            , typename MT5 >  // Type of the right-hand side matrix operand
-   static inline auto selectSmallSubAssignKernel( MT3& C, const MT4& A, const MT5& B )
-      -> EnableIf_t< IsRowMajorMatrix_v<MT3> && UseVectorizedDefaultKernel_v<MT3,MT4,MT5> >
+   static inline EnableIf_t< UseVectorizedDefaultKernel_v<MT3,MT4,MT5> >
+      selectSmallSubAssignKernel( DenseMatrix<MT3,false>& C, const MT4& A, const MT5& B )
    {
       constexpr bool remainder( !IsPadded_v<MT3> || !IsPadded_v<MT5> );
 
@@ -3418,14 +3308,14 @@ class DMatDMatMultExpr
                                      :( IsStrictlyLower_v<MT4> ? i : i+1UL ) )
                                   :( IsUpper_v<MT5> ? min( j+SIMDSIZE*8UL, K ) : K ) );
 
-               SIMDType xmm1( C.load(i,j             ) );
-               SIMDType xmm2( C.load(i,j+SIMDSIZE    ) );
-               SIMDType xmm3( C.load(i,j+SIMDSIZE*2UL) );
-               SIMDType xmm4( C.load(i,j+SIMDSIZE*3UL) );
-               SIMDType xmm5( C.load(i,j+SIMDSIZE*4UL) );
-               SIMDType xmm6( C.load(i,j+SIMDSIZE*5UL) );
-               SIMDType xmm7( C.load(i,j+SIMDSIZE*6UL) );
-               SIMDType xmm8( C.load(i,j+SIMDSIZE*7UL) );
+               SIMDType xmm1( (~C).load(i,j             ) );
+               SIMDType xmm2( (~C).load(i,j+SIMDSIZE    ) );
+               SIMDType xmm3( (~C).load(i,j+SIMDSIZE*2UL) );
+               SIMDType xmm4( (~C).load(i,j+SIMDSIZE*3UL) );
+               SIMDType xmm5( (~C).load(i,j+SIMDSIZE*4UL) );
+               SIMDType xmm6( (~C).load(i,j+SIMDSIZE*5UL) );
+               SIMDType xmm7( (~C).load(i,j+SIMDSIZE*6UL) );
+               SIMDType xmm8( (~C).load(i,j+SIMDSIZE*7UL) );
 
                for( size_t k=kbegin; k<kend; ++k ) {
                   const SIMDType a1( set( A(i,k) ) );
@@ -3439,14 +3329,14 @@ class DMatDMatMultExpr
                   xmm8 -= a1 * B.load(k,j+SIMDSIZE*7UL);
                }
 
-               C.store( i, j             , xmm1 );
-               C.store( i, j+SIMDSIZE    , xmm2 );
-               C.store( i, j+SIMDSIZE*2UL, xmm3 );
-               C.store( i, j+SIMDSIZE*3UL, xmm4 );
-               C.store( i, j+SIMDSIZE*4UL, xmm5 );
-               C.store( i, j+SIMDSIZE*5UL, xmm6 );
-               C.store( i, j+SIMDSIZE*6UL, xmm7 );
-               C.store( i, j+SIMDSIZE*7UL, xmm8 );
+               (~C).store( i, j             , xmm1 );
+               (~C).store( i, j+SIMDSIZE    , xmm2 );
+               (~C).store( i, j+SIMDSIZE*2UL, xmm3 );
+               (~C).store( i, j+SIMDSIZE*3UL, xmm4 );
+               (~C).store( i, j+SIMDSIZE*4UL, xmm5 );
+               (~C).store( i, j+SIMDSIZE*5UL, xmm6 );
+               (~C).store( i, j+SIMDSIZE*6UL, xmm7 );
+               (~C).store( i, j+SIMDSIZE*7UL, xmm8 );
             }
          }
       }
@@ -3468,16 +3358,16 @@ class DMatDMatMultExpr
                                   :( IsStrictlyLower_v<MT4> ? i+1UL : i+2UL ) )
                                :( IsUpper_v<MT5> ? min( j+SIMDSIZE*5UL, K ) : K ) );
 
-            SIMDType xmm1 ( C.load(i    ,j             ) );
-            SIMDType xmm2 ( C.load(i    ,j+SIMDSIZE    ) );
-            SIMDType xmm3 ( C.load(i    ,j+SIMDSIZE*2UL) );
-            SIMDType xmm4 ( C.load(i    ,j+SIMDSIZE*3UL) );
-            SIMDType xmm5 ( C.load(i    ,j+SIMDSIZE*4UL) );
-            SIMDType xmm6 ( C.load(i+1UL,j             ) );
-            SIMDType xmm7 ( C.load(i+1UL,j+SIMDSIZE    ) );
-            SIMDType xmm8 ( C.load(i+1UL,j+SIMDSIZE*2UL) );
-            SIMDType xmm9 ( C.load(i+1UL,j+SIMDSIZE*3UL) );
-            SIMDType xmm10( C.load(i+1UL,j+SIMDSIZE*4UL) );
+            SIMDType xmm1 ( (~C).load(i    ,j             ) );
+            SIMDType xmm2 ( (~C).load(i    ,j+SIMDSIZE    ) );
+            SIMDType xmm3 ( (~C).load(i    ,j+SIMDSIZE*2UL) );
+            SIMDType xmm4 ( (~C).load(i    ,j+SIMDSIZE*3UL) );
+            SIMDType xmm5 ( (~C).load(i    ,j+SIMDSIZE*4UL) );
+            SIMDType xmm6 ( (~C).load(i+1UL,j             ) );
+            SIMDType xmm7 ( (~C).load(i+1UL,j+SIMDSIZE    ) );
+            SIMDType xmm8 ( (~C).load(i+1UL,j+SIMDSIZE*2UL) );
+            SIMDType xmm9 ( (~C).load(i+1UL,j+SIMDSIZE*3UL) );
+            SIMDType xmm10( (~C).load(i+1UL,j+SIMDSIZE*4UL) );
 
             for( size_t k=kbegin; k<kend; ++k ) {
                const SIMDType a1( set( A(i    ,k) ) );
@@ -3499,16 +3389,16 @@ class DMatDMatMultExpr
                xmm10 -= a2 * b5;
             }
 
-            C.store( i    , j             , xmm1  );
-            C.store( i    , j+SIMDSIZE    , xmm2  );
-            C.store( i    , j+SIMDSIZE*2UL, xmm3  );
-            C.store( i    , j+SIMDSIZE*3UL, xmm4  );
-            C.store( i    , j+SIMDSIZE*4UL, xmm5  );
-            C.store( i+1UL, j             , xmm6  );
-            C.store( i+1UL, j+SIMDSIZE    , xmm7  );
-            C.store( i+1UL, j+SIMDSIZE*2UL, xmm8  );
-            C.store( i+1UL, j+SIMDSIZE*3UL, xmm9  );
-            C.store( i+1UL, j+SIMDSIZE*4UL, xmm10 );
+            (~C).store( i    , j             , xmm1  );
+            (~C).store( i    , j+SIMDSIZE    , xmm2  );
+            (~C).store( i    , j+SIMDSIZE*2UL, xmm3  );
+            (~C).store( i    , j+SIMDSIZE*3UL, xmm4  );
+            (~C).store( i    , j+SIMDSIZE*4UL, xmm5  );
+            (~C).store( i+1UL, j             , xmm6  );
+            (~C).store( i+1UL, j+SIMDSIZE    , xmm7  );
+            (~C).store( i+1UL, j+SIMDSIZE*2UL, xmm8  );
+            (~C).store( i+1UL, j+SIMDSIZE*3UL, xmm9  );
+            (~C).store( i+1UL, j+SIMDSIZE*4UL, xmm10 );
          }
 
          if( i < M )
@@ -3520,11 +3410,11 @@ class DMatDMatMultExpr
                                  :( IsLower_v<MT5> ? j : 0UL ) );
             const size_t kend( ( IsUpper_v<MT5> )?( min( j+SIMDSIZE*5UL, K ) ):( K ) );
 
-            SIMDType xmm1( C.load(i,j             ) );
-            SIMDType xmm2( C.load(i,j+SIMDSIZE    ) );
-            SIMDType xmm3( C.load(i,j+SIMDSIZE*2UL) );
-            SIMDType xmm4( C.load(i,j+SIMDSIZE*3UL) );
-            SIMDType xmm5( C.load(i,j+SIMDSIZE*4UL) );
+            SIMDType xmm1( (~C).load(i,j             ) );
+            SIMDType xmm2( (~C).load(i,j+SIMDSIZE    ) );
+            SIMDType xmm3( (~C).load(i,j+SIMDSIZE*2UL) );
+            SIMDType xmm4( (~C).load(i,j+SIMDSIZE*3UL) );
+            SIMDType xmm5( (~C).load(i,j+SIMDSIZE*4UL) );
 
             for( size_t k=kbegin; k<kend; ++k ) {
                const SIMDType a1( set( A(i,k) ) );
@@ -3535,11 +3425,11 @@ class DMatDMatMultExpr
                xmm5 -= a1 * B.load(k,j+SIMDSIZE*4UL);
             }
 
-            C.store( i, j             , xmm1 );
-            C.store( i, j+SIMDSIZE    , xmm2 );
-            C.store( i, j+SIMDSIZE*2UL, xmm3 );
-            C.store( i, j+SIMDSIZE*3UL, xmm4 );
-            C.store( i, j+SIMDSIZE*4UL, xmm5 );
+            (~C).store( i, j             , xmm1 );
+            (~C).store( i, j+SIMDSIZE    , xmm2 );
+            (~C).store( i, j+SIMDSIZE*2UL, xmm3 );
+            (~C).store( i, j+SIMDSIZE*3UL, xmm4 );
+            (~C).store( i, j+SIMDSIZE*4UL, xmm5 );
          }
       }
 
@@ -3560,14 +3450,14 @@ class DMatDMatMultExpr
                                   :( IsStrictlyLower_v<MT4> ? i+1UL : i+2UL ) )
                                :( IsUpper_v<MT5> ? min( j+SIMDSIZE*4UL, K ) : K ) );
 
-            SIMDType xmm1( C.load(i    ,j             ) );
-            SIMDType xmm2( C.load(i    ,j+SIMDSIZE    ) );
-            SIMDType xmm3( C.load(i    ,j+SIMDSIZE*2UL) );
-            SIMDType xmm4( C.load(i    ,j+SIMDSIZE*3UL) );
-            SIMDType xmm5( C.load(i+1UL,j             ) );
-            SIMDType xmm6( C.load(i+1UL,j+SIMDSIZE    ) );
-            SIMDType xmm7( C.load(i+1UL,j+SIMDSIZE*2UL) );
-            SIMDType xmm8( C.load(i+1UL,j+SIMDSIZE*3UL) );
+            SIMDType xmm1( (~C).load(i    ,j             ) );
+            SIMDType xmm2( (~C).load(i    ,j+SIMDSIZE    ) );
+            SIMDType xmm3( (~C).load(i    ,j+SIMDSIZE*2UL) );
+            SIMDType xmm4( (~C).load(i    ,j+SIMDSIZE*3UL) );
+            SIMDType xmm5( (~C).load(i+1UL,j             ) );
+            SIMDType xmm6( (~C).load(i+1UL,j+SIMDSIZE    ) );
+            SIMDType xmm7( (~C).load(i+1UL,j+SIMDSIZE*2UL) );
+            SIMDType xmm8( (~C).load(i+1UL,j+SIMDSIZE*3UL) );
 
             for( size_t k=kbegin; k<kend; ++k ) {
                const SIMDType a1( set( A(i    ,k) ) );
@@ -3586,14 +3476,14 @@ class DMatDMatMultExpr
                xmm8 -= a2 * b4;
             }
 
-            C.store( i    , j             , xmm1 );
-            C.store( i    , j+SIMDSIZE    , xmm2 );
-            C.store( i    , j+SIMDSIZE*2UL, xmm3 );
-            C.store( i    , j+SIMDSIZE*3UL, xmm4 );
-            C.store( i+1UL, j             , xmm5 );
-            C.store( i+1UL, j+SIMDSIZE    , xmm6 );
-            C.store( i+1UL, j+SIMDSIZE*2UL, xmm7 );
-            C.store( i+1UL, j+SIMDSIZE*3UL, xmm8 );
+            (~C).store( i    , j             , xmm1 );
+            (~C).store( i    , j+SIMDSIZE    , xmm2 );
+            (~C).store( i    , j+SIMDSIZE*2UL, xmm3 );
+            (~C).store( i    , j+SIMDSIZE*3UL, xmm4 );
+            (~C).store( i+1UL, j             , xmm5 );
+            (~C).store( i+1UL, j+SIMDSIZE    , xmm6 );
+            (~C).store( i+1UL, j+SIMDSIZE*2UL, xmm7 );
+            (~C).store( i+1UL, j+SIMDSIZE*3UL, xmm8 );
          }
 
          if( i < M )
@@ -3605,10 +3495,10 @@ class DMatDMatMultExpr
                                  :( IsLower_v<MT5> ? j : 0UL ) );
             const size_t kend( ( IsUpper_v<MT5> )?( min( j+SIMDSIZE*4UL, K ) ):( K ) );
 
-            SIMDType xmm1( C.load(i,j             ) );
-            SIMDType xmm2( C.load(i,j+SIMDSIZE    ) );
-            SIMDType xmm3( C.load(i,j+SIMDSIZE*2UL) );
-            SIMDType xmm4( C.load(i,j+SIMDSIZE*3UL) );
+            SIMDType xmm1( (~C).load(i,j             ) );
+            SIMDType xmm2( (~C).load(i,j+SIMDSIZE    ) );
+            SIMDType xmm3( (~C).load(i,j+SIMDSIZE*2UL) );
+            SIMDType xmm4( (~C).load(i,j+SIMDSIZE*3UL) );
 
             for( size_t k=kbegin; k<kend; ++k ) {
                const SIMDType a1( set( A(i,k) ) );
@@ -3618,10 +3508,10 @@ class DMatDMatMultExpr
                xmm4 -= a1 * B.load(k,j+SIMDSIZE*3UL);
             }
 
-            C.store( i, j             , xmm1 );
-            C.store( i, j+SIMDSIZE    , xmm2 );
-            C.store( i, j+SIMDSIZE*2UL, xmm3 );
-            C.store( i, j+SIMDSIZE*3UL, xmm4 );
+            (~C).store( i, j             , xmm1 );
+            (~C).store( i, j+SIMDSIZE    , xmm2 );
+            (~C).store( i, j+SIMDSIZE*2UL, xmm3 );
+            (~C).store( i, j+SIMDSIZE*3UL, xmm4 );
          }
       }
 
@@ -3642,12 +3532,12 @@ class DMatDMatMultExpr
                                   :( IsStrictlyLower_v<MT4> ? i+1UL : i+2UL ) )
                                :( IsUpper_v<MT5> ? min( j+SIMDSIZE*3UL, K ) : K ) );
 
-            SIMDType xmm1( C.load(i    ,j             ) );
-            SIMDType xmm2( C.load(i    ,j+SIMDSIZE    ) );
-            SIMDType xmm3( C.load(i    ,j+SIMDSIZE*2UL) );
-            SIMDType xmm4( C.load(i+1UL,j             ) );
-            SIMDType xmm5( C.load(i+1UL,j+SIMDSIZE    ) );
-            SIMDType xmm6( C.load(i+1UL,j+SIMDSIZE*2UL) );
+            SIMDType xmm1( (~C).load(i    ,j             ) );
+            SIMDType xmm2( (~C).load(i    ,j+SIMDSIZE    ) );
+            SIMDType xmm3( (~C).load(i    ,j+SIMDSIZE*2UL) );
+            SIMDType xmm4( (~C).load(i+1UL,j             ) );
+            SIMDType xmm5( (~C).load(i+1UL,j+SIMDSIZE    ) );
+            SIMDType xmm6( (~C).load(i+1UL,j+SIMDSIZE*2UL) );
 
             for( size_t k=kbegin; k<kend; ++k ) {
                const SIMDType a1( set( A(i    ,k) ) );
@@ -3663,12 +3553,12 @@ class DMatDMatMultExpr
                xmm6 -= a2 * b3;
             }
 
-            C.store( i    , j             , xmm1 );
-            C.store( i    , j+SIMDSIZE    , xmm2 );
-            C.store( i    , j+SIMDSIZE*2UL, xmm3 );
-            C.store( i+1UL, j             , xmm4 );
-            C.store( i+1UL, j+SIMDSIZE    , xmm5 );
-            C.store( i+1UL, j+SIMDSIZE*2UL, xmm6 );
+            (~C).store( i    , j             , xmm1 );
+            (~C).store( i    , j+SIMDSIZE    , xmm2 );
+            (~C).store( i    , j+SIMDSIZE*2UL, xmm3 );
+            (~C).store( i+1UL, j             , xmm4 );
+            (~C).store( i+1UL, j+SIMDSIZE    , xmm5 );
+            (~C).store( i+1UL, j+SIMDSIZE*2UL, xmm6 );
          }
 
          if( i < M )
@@ -3680,9 +3570,9 @@ class DMatDMatMultExpr
                                  :( IsLower_v<MT5> ? j : 0UL ) );
             const size_t kend( ( IsUpper_v<MT5> )?( min( j+SIMDSIZE*3UL, K ) ):( K ) );
 
-            SIMDType xmm1( C.load(i,j             ) );
-            SIMDType xmm2( C.load(i,j+SIMDSIZE    ) );
-            SIMDType xmm3( C.load(i,j+SIMDSIZE*2UL) );
+            SIMDType xmm1( (~C).load(i,j             ) );
+            SIMDType xmm2( (~C).load(i,j+SIMDSIZE    ) );
+            SIMDType xmm3( (~C).load(i,j+SIMDSIZE*2UL) );
 
             for( size_t k=kbegin; k<kend; ++k ) {
                const SIMDType a1( set( A(i,k) ) );
@@ -3691,9 +3581,9 @@ class DMatDMatMultExpr
                xmm3 -= a1 * B.load(k,j+SIMDSIZE*2UL);
             }
 
-            C.store( i, j             , xmm1 );
-            C.store( i, j+SIMDSIZE    , xmm2 );
-            C.store( i, j+SIMDSIZE*2UL, xmm3 );
+            (~C).store( i, j             , xmm1 );
+            (~C).store( i, j+SIMDSIZE    , xmm2 );
+            (~C).store( i, j+SIMDSIZE*2UL, xmm3 );
          }
       }
 
@@ -3715,14 +3605,14 @@ class DMatDMatMultExpr
                                   :( IsStrictlyLower_v<MT4> ? i+3UL : i+4UL ) )
                                :( IsUpper_v<MT5> ? min( j+SIMDSIZE*2UL, K ) : K ) );
 
-            SIMDType xmm1( C.load(i    ,j         ) );
-            SIMDType xmm2( C.load(i    ,j+SIMDSIZE) );
-            SIMDType xmm3( C.load(i+1UL,j         ) );
-            SIMDType xmm4( C.load(i+1UL,j+SIMDSIZE) );
-            SIMDType xmm5( C.load(i+2UL,j         ) );
-            SIMDType xmm6( C.load(i+2UL,j+SIMDSIZE) );
-            SIMDType xmm7( C.load(i+3UL,j         ) );
-            SIMDType xmm8( C.load(i+3UL,j+SIMDSIZE) );
+            SIMDType xmm1( (~C).load(i    ,j         ) );
+            SIMDType xmm2( (~C).load(i    ,j+SIMDSIZE) );
+            SIMDType xmm3( (~C).load(i+1UL,j         ) );
+            SIMDType xmm4( (~C).load(i+1UL,j+SIMDSIZE) );
+            SIMDType xmm5( (~C).load(i+2UL,j         ) );
+            SIMDType xmm6( (~C).load(i+2UL,j+SIMDSIZE) );
+            SIMDType xmm7( (~C).load(i+3UL,j         ) );
+            SIMDType xmm8( (~C).load(i+3UL,j+SIMDSIZE) );
 
             for( size_t k=kbegin; k<kend; ++k ) {
                const SIMDType a1( set( A(i    ,k) ) );
@@ -3741,14 +3631,14 @@ class DMatDMatMultExpr
                xmm8 -= a4 * b2;
             }
 
-            C.store( i    , j         , xmm1 );
-            C.store( i    , j+SIMDSIZE, xmm2 );
-            C.store( i+1UL, j         , xmm3 );
-            C.store( i+1UL, j+SIMDSIZE, xmm4 );
-            C.store( i+2UL, j         , xmm5 );
-            C.store( i+2UL, j+SIMDSIZE, xmm6 );
-            C.store( i+3UL, j         , xmm7 );
-            C.store( i+3UL, j+SIMDSIZE, xmm8 );
+            (~C).store( i    , j         , xmm1 );
+            (~C).store( i    , j+SIMDSIZE, xmm2 );
+            (~C).store( i+1UL, j         , xmm3 );
+            (~C).store( i+1UL, j+SIMDSIZE, xmm4 );
+            (~C).store( i+2UL, j         , xmm5 );
+            (~C).store( i+2UL, j+SIMDSIZE, xmm6 );
+            (~C).store( i+3UL, j         , xmm7 );
+            (~C).store( i+3UL, j+SIMDSIZE, xmm8 );
          }
 
          for( ; (i+3UL) <= iend; i+=3UL )
@@ -3764,12 +3654,12 @@ class DMatDMatMultExpr
                                   :( IsStrictlyLower_v<MT4> ? i+2UL : i+3UL ) )
                                :( IsUpper_v<MT5> ? min( j+SIMDSIZE*2UL, K ) : K ) );
 
-            SIMDType xmm1( C.load(i    ,j         ) );
-            SIMDType xmm2( C.load(i    ,j+SIMDSIZE) );
-            SIMDType xmm3( C.load(i+1UL,j         ) );
-            SIMDType xmm4( C.load(i+1UL,j+SIMDSIZE) );
-            SIMDType xmm5( C.load(i+2UL,j         ) );
-            SIMDType xmm6( C.load(i+2UL,j+SIMDSIZE) );
+            SIMDType xmm1( (~C).load(i    ,j         ) );
+            SIMDType xmm2( (~C).load(i    ,j+SIMDSIZE) );
+            SIMDType xmm3( (~C).load(i+1UL,j         ) );
+            SIMDType xmm4( (~C).load(i+1UL,j+SIMDSIZE) );
+            SIMDType xmm5( (~C).load(i+2UL,j         ) );
+            SIMDType xmm6( (~C).load(i+2UL,j+SIMDSIZE) );
 
             for( size_t k=kbegin; k<kend; ++k ) {
                const SIMDType a1( set( A(i    ,k) ) );
@@ -3785,12 +3675,12 @@ class DMatDMatMultExpr
                xmm6 -= a3 * b2;
             }
 
-            C.store( i    , j         , xmm1 );
-            C.store( i    , j+SIMDSIZE, xmm2 );
-            C.store( i+1UL, j         , xmm3 );
-            C.store( i+1UL, j+SIMDSIZE, xmm4 );
-            C.store( i+2UL, j         , xmm5 );
-            C.store( i+2UL, j+SIMDSIZE, xmm6 );
+            (~C).store( i    , j         , xmm1 );
+            (~C).store( i    , j+SIMDSIZE, xmm2 );
+            (~C).store( i+1UL, j         , xmm3 );
+            (~C).store( i+1UL, j+SIMDSIZE, xmm4 );
+            (~C).store( i+2UL, j         , xmm5 );
+            (~C).store( i+2UL, j+SIMDSIZE, xmm6 );
          }
 
          for( ; (i+2UL) <= iend; i+=2UL )
@@ -3806,10 +3696,10 @@ class DMatDMatMultExpr
                                   :( IsStrictlyLower_v<MT4> ? i+1UL : i+2UL ) )
                                :( IsUpper_v<MT5> ? min( j+SIMDSIZE*2UL, K ) : K ) );
 
-            SIMDType xmm1( C.load(i    ,j         ) );
-            SIMDType xmm2( C.load(i    ,j+SIMDSIZE) );
-            SIMDType xmm3( C.load(i+1UL,j         ) );
-            SIMDType xmm4( C.load(i+1UL,j+SIMDSIZE) );
+            SIMDType xmm1( (~C).load(i    ,j         ) );
+            SIMDType xmm2( (~C).load(i    ,j+SIMDSIZE) );
+            SIMDType xmm3( (~C).load(i+1UL,j         ) );
+            SIMDType xmm4( (~C).load(i+1UL,j+SIMDSIZE) );
             SIMDType xmm5, xmm6, xmm7, xmm8;
             size_t k( kbegin );
 
@@ -3843,10 +3733,10 @@ class DMatDMatMultExpr
                xmm4 -= a2 * b2;
             }
 
-            C.store( i    , j         , xmm1+xmm5 );
-            C.store( i    , j+SIMDSIZE, xmm2+xmm6 );
-            C.store( i+1UL, j         , xmm3+xmm7 );
-            C.store( i+1UL, j+SIMDSIZE, xmm4+xmm8 );
+            (~C).store( i    , j         , xmm1+xmm5 );
+            (~C).store( i    , j+SIMDSIZE, xmm2+xmm6 );
+            (~C).store( i+1UL, j         , xmm3+xmm7 );
+            (~C).store( i+1UL, j+SIMDSIZE, xmm4+xmm8 );
          }
 
          if( i < iend )
@@ -3858,8 +3748,8 @@ class DMatDMatMultExpr
                                  :( IsLower_v<MT5> ? j : 0UL ) );
             const size_t kend( ( IsUpper_v<MT5> )?( min( j+SIMDSIZE*2UL, K ) ):( K ) );
 
-            SIMDType xmm1( C.load(i,j         ) );
-            SIMDType xmm2( C.load(i,j+SIMDSIZE) );
+            SIMDType xmm1( (~C).load(i,j         ) );
+            SIMDType xmm2( (~C).load(i,j+SIMDSIZE) );
             SIMDType xmm3, xmm4;
             size_t k( kbegin );
 
@@ -3878,8 +3768,8 @@ class DMatDMatMultExpr
                xmm2 -= a1 * B.load(k,j+SIMDSIZE);
             }
 
-            C.store( i, j         , xmm1+xmm3 );
-            C.store( i, j+SIMDSIZE, xmm2+xmm4 );
+            (~C).store( i, j         , xmm1+xmm3 );
+            (~C).store( i, j+SIMDSIZE, xmm2+xmm4 );
          }
       }
 
@@ -3899,10 +3789,10 @@ class DMatDMatMultExpr
                                ?( IsStrictlyLower_v<MT4> ? i+3UL : i+4UL )
                                :( K ) );
 
-            SIMDType xmm1( C.load(i    ,j) );
-            SIMDType xmm2( C.load(i+1UL,j) );
-            SIMDType xmm3( C.load(i+2UL,j) );
-            SIMDType xmm4( C.load(i+3UL,j) );
+            SIMDType xmm1( (~C).load(i    ,j) );
+            SIMDType xmm2( (~C).load(i+1UL,j) );
+            SIMDType xmm3( (~C).load(i+2UL,j) );
+            SIMDType xmm4( (~C).load(i+3UL,j) );
             SIMDType xmm5, xmm6, xmm7, xmm8;
             size_t k( kbegin );
 
@@ -3927,10 +3817,10 @@ class DMatDMatMultExpr
                xmm4 -= set( A(i+3UL,k) ) * b1;
             }
 
-            C.store( i    , j, xmm1+xmm5 );
-            C.store( i+1UL, j, xmm2+xmm6 );
-            C.store( i+2UL, j, xmm3+xmm7 );
-            C.store( i+3UL, j, xmm4+xmm8 );
+            (~C).store( i    , j, xmm1+xmm5 );
+            (~C).store( i+1UL, j, xmm2+xmm6 );
+            (~C).store( i+2UL, j, xmm3+xmm7 );
+            (~C).store( i+3UL, j, xmm4+xmm8 );
          }
 
          for( ; (i+3UL) <= iend; i+=3UL )
@@ -3944,9 +3834,9 @@ class DMatDMatMultExpr
                                ?( IsStrictlyLower_v<MT4> ? i+2UL : i+3UL )
                                :( K ) );
 
-            SIMDType xmm1( C.load(i    ,j) );
-            SIMDType xmm2( C.load(i+1UL,j) );
-            SIMDType xmm3( C.load(i+2UL,j) );
+            SIMDType xmm1( (~C).load(i    ,j) );
+            SIMDType xmm2( (~C).load(i+1UL,j) );
+            SIMDType xmm3( (~C).load(i+2UL,j) );
             SIMDType xmm4, xmm5, xmm6;
             size_t k( kbegin );
 
@@ -3968,9 +3858,9 @@ class DMatDMatMultExpr
                xmm3 -= set( A(i+2UL,k) ) * b1;
             }
 
-            C.store( i    , j, xmm1+xmm4 );
-            C.store( i+1UL, j, xmm2+xmm5 );
-            C.store( i+2UL, j, xmm3+xmm6 );
+            (~C).store( i    , j, xmm1+xmm4 );
+            (~C).store( i+1UL, j, xmm2+xmm5 );
+            (~C).store( i+2UL, j, xmm3+xmm6 );
          }
 
          for( ; (i+2UL) <= iend; i+=2UL )
@@ -3984,8 +3874,8 @@ class DMatDMatMultExpr
                                ?( IsStrictlyLower_v<MT4> ? i+1UL : i+2UL )
                                :( K ) );
 
-            SIMDType xmm1( C.load(i    ,j) );
-            SIMDType xmm2( C.load(i+1UL,j) );
+            SIMDType xmm1( (~C).load(i    ,j) );
+            SIMDType xmm2( (~C).load(i+1UL,j) );
             SIMDType xmm3, xmm4;
             size_t k( kbegin );
 
@@ -4004,8 +3894,8 @@ class DMatDMatMultExpr
                xmm2 -= set( A(i+1UL,k) ) * b1;
             }
 
-            C.store( i    , j, xmm1+xmm3 );
-            C.store( i+1UL, j, xmm2+xmm4 );
+            (~C).store( i    , j, xmm1+xmm3 );
+            (~C).store( i+1UL, j, xmm2+xmm4 );
          }
 
          if( i < iend )
@@ -4016,7 +3906,7 @@ class DMatDMatMultExpr
                                     :( IsStrictlyUpper_v<MT4> ? i+1UL : i ) )
                                  :( IsLower_v<MT5> ? j : 0UL ) );
 
-            SIMDType xmm1( C.load(i,j) );
+            SIMDType xmm1( (~C).load(i,j) );
             SIMDType xmm2;
             size_t k( kbegin );
 
@@ -4029,7 +3919,7 @@ class DMatDMatMultExpr
                xmm1 -= set( A(i,k) ) * B.load(k,j);
             }
 
-            C.store( i, j, xmm1+xmm2 );
+            (~C).store( i, j, xmm1+xmm2 );
          }
       }
 
@@ -4049,16 +3939,16 @@ class DMatDMatMultExpr
                                ?( IsStrictlyLower_v<MT4> ? i+1UL : i+2UL )
                                :( K ) );
 
-            ElementType value1( C(i    ,j) );
-            ElementType value2( C(i+1UL,j) );
+            ElementType value1( (~C)(i    ,j) );
+            ElementType value2( (~C)(i+1UL,j) );
 
             for( size_t k=kbegin; k<kend; ++k ) {
                value1 -= A(i    ,k) * B(k,j);
                value2 -= A(i+1UL,k) * B(k,j);
             }
 
-            C(i    ,j) = value1;
-            C(i+1UL,j) = value2;
+            (~C)(i    ,j) = value1;
+            (~C)(i+1UL,j) = value2;
          }
 
          if( i < iend )
@@ -4069,13 +3959,13 @@ class DMatDMatMultExpr
                                     :( IsStrictlyUpper_v<MT4> ? i+1UL : i ) )
                                  :( IsLower_v<MT5> ? j : 0UL ) );
 
-            ElementType value( C(i,j) );
+            ElementType value( (~C)(i,j) );
 
             for( size_t k=kbegin; k<K; ++k ) {
                value -= A(i,k) * B(k,j);
             }
 
-            C(i,j) = value;
+            (~C)(i,j) = value;
          }
       }
    }
@@ -4100,8 +3990,8 @@ class DMatDMatMultExpr
    template< typename MT3    // Type of the left-hand side target matrix
            , typename MT4    // Type of the left-hand side matrix operand
            , typename MT5 >  // Type of the right-hand side matrix operand
-   static inline auto selectSmallSubAssignKernel( MT3& C, const MT4& A, const MT5& B )
-      -> EnableIf_t< IsColumnMajorMatrix_v<MT3> && UseVectorizedDefaultKernel_v<MT3,MT4,MT5> >
+   static inline EnableIf_t< UseVectorizedDefaultKernel_v<MT3,MT4,MT5> >
+      selectSmallSubAssignKernel( DenseMatrix<MT3,true>& C, const MT4& A, const MT5& B )
    {
       BLAZE_CONSTRAINT_MUST_NOT_BE_SYMMETRIC_MATRIX_TYPE( MT4 );
       BLAZE_CONSTRAINT_MUST_NOT_BE_SYMMETRIC_MATRIX_TYPE( MT5 );
@@ -4112,19 +4002,19 @@ class DMatDMatMultExpr
 
       if( !IsResizable_v<MT4> && IsResizable_v<MT5> ) {
          const OppositeType_t<MT4> tmp( serial( A ) );
-         subAssign( C, fwd( tmp * B ) );
+         subAssign( ~C, fwd( tmp * B ) );
       }
       else if( IsResizable_v<MT4> && !IsResizable_v<MT5> ) {
          const OppositeType_t<MT5> tmp( serial( B ) );
-         subAssign( C, fwd( A * tmp ) );
+         subAssign( ~C, fwd( A * tmp ) );
       }
       else if( A.rows() * A.columns() <= B.rows() * B.columns() ) {
          const OppositeType_t<MT4> tmp( serial( A ) );
-         subAssign( C, fwd( tmp * B ) );
+         subAssign( ~C, fwd( tmp * B ) );
       }
       else {
          const OppositeType_t<MT5> tmp( serial( B ) );
-         subAssign( C, fwd( A * tmp ) );
+         subAssign( ~C, fwd( A * tmp ) );
       }
    }
    /*! \endcond */
@@ -4147,8 +4037,8 @@ class DMatDMatMultExpr
    template< typename MT3    // Type of the left-hand side target matrix
            , typename MT4    // Type of the left-hand side matrix operand
            , typename MT5 >  // Type of the right-hand side matrix operand
-   static inline auto selectLargeSubAssignKernel( MT3& C, const MT4& A, const MT5& B )
-      -> DisableIf_t< UseVectorizedDefaultKernel_v<MT3,MT4,MT5> >
+   static inline DisableIf_t< UseVectorizedDefaultKernel_v<MT3,MT4,MT5> >
+      selectLargeSubAssignKernel( MT3& C, const MT4& A, const MT5& B )
    {
       selectDefaultSubAssignKernel( C, A, B );
    }
@@ -4173,8 +4063,8 @@ class DMatDMatMultExpr
    template< typename MT3    // Type of the left-hand side target matrix
            , typename MT4    // Type of the left-hand side matrix operand
            , typename MT5 >  // Type of the right-hand side matrix operand
-   static inline auto selectLargeSubAssignKernel( MT3& C, const MT4& A, const MT5& B )
-      -> EnableIf_t< UseVectorizedDefaultKernel_v<MT3,MT4,MT5> >
+   static inline EnableIf_t< UseVectorizedDefaultKernel_v<MT3,MT4,MT5> >
+      selectLargeSubAssignKernel( MT3& C, const MT4& A, const MT5& B )
    {
       if( LOW )
          lmmm( C, A, B, ElementType(-1), ElementType(1) );
@@ -4203,8 +4093,8 @@ class DMatDMatMultExpr
    template< typename MT3    // Type of the left-hand side target matrix
            , typename MT4    // Type of the left-hand side matrix operand
            , typename MT5 >  // Type of the right-hand side matrix operand
-   static inline auto selectBlasSubAssignKernel( MT3& C, const MT4& A, const MT5& B )
-      -> DisableIf_t< UseBlasKernel_v<MT3,MT4,MT5> >
+   static inline DisableIf_t< UseBlasKernel_v<MT3,MT4,MT5> >
+      selectBlasSubAssignKernel( MT3& C, const MT4& A, const MT5& B )
    {
       selectLargeSubAssignKernel( C, A, B );
    }
@@ -4229,8 +4119,8 @@ class DMatDMatMultExpr
    template< typename MT3    // Type of the left-hand side target matrix
            , typename MT4    // Type of the left-hand side matrix operand
            , typename MT5 >  // Type of the right-hand side matrix operand
-   static inline auto selectBlasSubAssignKernel( MT3& C, const MT4& A, const MT5& B )
-      -> EnableIf_t< UseBlasKernel_v<MT3,MT4,MT5> >
+   static inline EnableIf_t< UseBlasKernel_v<MT3,MT4,MT5> >
+      selectBlasSubAssignKernel( MT3& C, const MT4& A, const MT5& B )
    {
       using ET = ElementType_t<MT3>;
 
@@ -4268,8 +4158,8 @@ class DMatDMatMultExpr
    // case the symmetry of either of the two matrix operands can be exploited.
    */
    template< typename MT >  // Type of the target matrix
-   friend inline auto subAssign( Matrix<MT,true>& lhs, const DMatDMatMultExpr& rhs )
-      -> EnableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
+   friend inline EnableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
+      subAssign( Matrix<MT,true>& lhs, const DMatDMatMultExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -4355,8 +4245,8 @@ class DMatDMatMultExpr
    */
    template< typename MT  // Type of the target dense matrix
            , bool SO >    // Storage order of the target dense matrix
-   friend inline auto smpAssign( DenseMatrix<MT,SO>& lhs, const DMatDMatMultExpr& rhs )
-      -> EnableIf_t< IsEvaluationRequired_v<MT,MT1,MT2> >
+   friend inline EnableIf_t< IsEvaluationRequired_v<MT,MT1,MT2> >
+      smpAssign( DenseMatrix<MT,SO>& lhs, const DMatDMatMultExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -4403,8 +4293,8 @@ class DMatDMatMultExpr
    */
    template< typename MT  // Type of the target sparse matrix
            , bool SO >    // Storage order of the target sparse matrix
-   friend inline auto smpAssign( SparseMatrix<MT,SO>& lhs, const DMatDMatMultExpr& rhs )
-      -> EnableIf_t< IsEvaluationRequired_v<MT,MT1,MT2> >
+   friend inline EnableIf_t< IsEvaluationRequired_v<MT,MT1,MT2> >
+      smpAssign( SparseMatrix<MT,SO>& lhs, const DMatDMatMultExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -4444,8 +4334,8 @@ class DMatDMatMultExpr
    // case the symmetry of either of the two matrix operands can be exploited.
    */
    template< typename MT >  // Type of the target matrix
-   friend inline auto smpAssign( Matrix<MT,true>& lhs, const DMatDMatMultExpr& rhs )
-      -> EnableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
+   friend inline EnableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
+      smpAssign( Matrix<MT,true>& lhs, const DMatDMatMultExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -4484,8 +4374,8 @@ class DMatDMatMultExpr
    */
    template< typename MT  // Type of the target dense matrix
            , bool SO >    // Storage order of the target dense matrix
-   friend inline auto smpAddAssign( DenseMatrix<MT,SO>& lhs, const DMatDMatMultExpr& rhs )
-      -> EnableIf_t< IsEvaluationRequired_v<MT,MT1,MT2> >
+   friend inline EnableIf_t< IsEvaluationRequired_v<MT,MT1,MT2> >
+      smpAddAssign( DenseMatrix<MT,SO>& lhs, const DMatDMatMultExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -4527,8 +4417,8 @@ class DMatDMatMultExpr
    // case the symmetry of either of the two matrix operands can be exploited.
    */
    template< typename MT >  // Type of the target matrix
-   friend inline auto smpAddAssign( Matrix<MT,true>& lhs, const DMatDMatMultExpr& rhs )
-      -> EnableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
+   friend inline EnableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
+      smpAddAssign( Matrix<MT,true>& lhs, const DMatDMatMultExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -4571,8 +4461,8 @@ class DMatDMatMultExpr
    */
    template< typename MT  // Type of the target dense matrix
            , bool SO >    // Storage order of the target dense matrix
-   friend inline auto smpSubAssign( DenseMatrix<MT,SO>& lhs, const DMatDMatMultExpr& rhs )
-      -> EnableIf_t< IsEvaluationRequired_v<MT,MT1,MT2> >
+   friend inline EnableIf_t< IsEvaluationRequired_v<MT,MT1,MT2> >
+      smpSubAssign( DenseMatrix<MT,SO>& lhs, const DMatDMatMultExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -4614,8 +4504,8 @@ class DMatDMatMultExpr
    // compiler in case the symmetry of either of the two matrix operands can be exploited.
    */
    template< typename MT >  // Type of the target matrix
-   friend inline auto smpSubAssign( Matrix<MT,true>& lhs, const DMatDMatMultExpr& rhs )
-      -> EnableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
+   friend inline EnableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
+      smpSubAssign( Matrix<MT,true>& lhs, const DMatDMatMultExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -4836,22 +4726,7 @@ class DMatScalarMultExpr< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, ST, false >
    //! Type of this DMatScalarMultExpr instance.
    using This = DMatScalarMultExpr<MMM,ST,false>;
 
-   //! Base type of this DMatScalarMultExpr instance.
-   using BaseType = DenseMatrix<This,false>;
-
-   //! Result type for expression template evaluations.
-   using ResultType = typename If_t< HERM
-                                   , DeclHermTrait< MultTrait_t<RES,ST> >
-                                   , If_t< SYM
-                                         , DeclSymTrait< MultTrait_t<RES,ST> >
-                                         , If_t< LOW
-                                               , If_t< UPP
-                                                     , DeclDiagTrait< MultTrait_t<RES,ST> >
-                                                     , DeclLowTrait< MultTrait_t<RES,ST> > >
-                                               , If_t< UPP
-                                                     , DeclUppTrait< MultTrait_t<RES,ST> >
-                                                     , MultTrait<RES,ST> > > > >::Type;
-
+   using ResultType    = MultTrait_t<RES,ST>;          //!< Result type for expression template evaluations.
    using OppositeType  = OppositeType_t<ResultType>;   //!< Result type with opposite storage order for expression template evaluations.
    using TransposeType = TransposeType_t<ResultType>;  //!< Transpose type for expression template evaluations.
    using ElementType   = ElementType_t<ResultType>;    //!< Resulting element type.
@@ -5044,8 +4919,8 @@ class DMatScalarMultExpr< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, ST, false >
    */
    template< typename MT  // Type of the target dense matrix
            , bool SO >    // Storage order of the target dense matrix
-   friend inline auto assign( DenseMatrix<MT,SO>& lhs, const DMatScalarMultExpr& rhs )
-      -> DisableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
+   friend inline DisableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
+      assign( DenseMatrix<MT,SO>& lhs, const DMatScalarMultExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -5121,8 +4996,8 @@ class DMatScalarMultExpr< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, ST, false >
            , typename MT4    // Type of the left-hand side matrix operand
            , typename MT5    // Type of the right-hand side matrix operand
            , typename ST2 >  // Type of the scalar value
-   static inline auto selectDefaultAssignKernel( MT3& C, const MT4& A, const MT5& B, ST2 scalar )
-      -> EnableIf_t< !IsDiagonal_v<MT4> && !IsDiagonal_v<MT5> >
+   static inline EnableIf_t< !IsDiagonal_v<MT4> && !IsDiagonal_v<MT5> >
+      selectDefaultAssignKernel( MT3& C, const MT4& A, const MT5& B, ST2 scalar )
    {
       const size_t M( A.rows()    );
       const size_t N( B.columns() );
@@ -5249,8 +5124,8 @@ class DMatScalarMultExpr< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, ST, false >
            , typename MT4    // Type of the left-hand side matrix operand
            , typename MT5    // Type of the right-hand side matrix operand
            , typename ST2 >  // Type of the scalar value
-   static inline auto selectDefaultAssignKernel( MT3& C, const MT4& A, const MT5& B, ST2 scalar )
-      -> EnableIf_t< !IsDiagonal_v<MT4> && IsDiagonal_v<MT5> >
+   static inline EnableIf_t< !IsDiagonal_v<MT4> && IsDiagonal_v<MT5> >
+      selectDefaultAssignKernel( MT3& C, const MT4& A, const MT5& B, ST2 scalar )
    {
       BLAZE_CONSTRAINT_MUST_BE_ROW_MAJOR_MATRIX_TYPE( MT3 );
 
@@ -5302,8 +5177,8 @@ class DMatScalarMultExpr< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, ST, false >
            , typename MT4    // Type of the left-hand side matrix operand
            , typename MT5    // Type of the right-hand side matrix operand
            , typename ST2 >  // Type of the scalar value
-   static inline auto selectDefaultAssignKernel( MT3& C, const MT4& A, const MT5& B, ST2 scalar )
-      -> EnableIf_t< IsDiagonal_v<MT4> && !IsDiagonal_v<MT5> >
+   static inline EnableIf_t< IsDiagonal_v<MT4> && !IsDiagonal_v<MT5> >
+      selectDefaultAssignKernel( MT3& C, const MT4& A, const MT5& B, ST2 scalar )
    {
       BLAZE_CONSTRAINT_MUST_BE_ROW_MAJOR_MATRIX_TYPE( MT3 );
 
@@ -5355,8 +5230,8 @@ class DMatScalarMultExpr< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, ST, false >
            , typename MT4    // Type of the left-hand side matrix operand
            , typename MT5    // Type of the right-hand side matrix operand
            , typename ST2 >  // Type of the scalar value
-   static inline auto selectDefaultAssignKernel( MT3& C, const MT4& A, const MT5& B, ST2 scalar )
-      -> EnableIf_t< IsDiagonal_v<MT4> && IsDiagonal_v<MT5> >
+   static inline EnableIf_t< IsDiagonal_v<MT4> && IsDiagonal_v<MT5> >
+      selectDefaultAssignKernel( MT3& C, const MT4& A, const MT5& B, ST2 scalar )
    {
       BLAZE_CONSTRAINT_MUST_BE_ROW_MAJOR_MATRIX_TYPE( MT3 );
 
@@ -5386,8 +5261,8 @@ class DMatScalarMultExpr< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, ST, false >
            , typename MT4    // Type of the left-hand side matrix operand
            , typename MT5    // Type of the right-hand side matrix operand
            , typename ST2 >  // Type of the scalar value
-   static inline auto selectSmallAssignKernel( MT3& C, const MT4& A, const MT5& B, ST2 scalar )
-      -> DisableIf_t< UseVectorizedDefaultKernel_v<MT3,MT4,MT5,ST2> >
+   static inline DisableIf_t< UseVectorizedDefaultKernel_v<MT3,MT4,MT5,ST2> >
+      selectSmallAssignKernel( MT3& C, const MT4& A, const MT5& B, ST2 scalar )
    {
       selectDefaultAssignKernel( C, A, B, scalar );
    }
@@ -5412,8 +5287,8 @@ class DMatScalarMultExpr< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, ST, false >
            , typename MT4    // Type of the left-hand side matrix operand
            , typename MT5    // Type of the right-hand side matrix operand
            , typename ST2 >  // Type of the scalar value
-   static inline auto selectSmallAssignKernel( MT3& C, const MT4& A, const MT5& B, ST2 scalar )
-      -> EnableIf_t< IsRowMajorMatrix_v<MT3> && UseVectorizedDefaultKernel_v<MT3,MT4,MT5,ST2> >
+   static inline EnableIf_t< UseVectorizedDefaultKernel_v<MT3,MT4,MT5,ST2> >
+      selectSmallAssignKernel( DenseMatrix<MT3,false>& C, const MT4& A, const MT5& B, ST2 scalar )
    {
       constexpr bool remainder( !IsPadded_v<MT3> || !IsPadded_v<MT5> );
 
@@ -5428,12 +5303,60 @@ class DMatScalarMultExpr< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, ST, false >
 
       const SIMDType factor( set( scalar ) );
 
-      size_t j( 0UL );
+      if( LOW && UPP && N > SIMDSIZE*3UL ) {
+         reset( ~C );
+      }
 
-      if( IsIntegral_v<ElementType> )
       {
-         for( ; !SYM && !HERM && !LOW && !UPP && (j+SIMDSIZE*7UL) < jpos; j+=SIMDSIZE*8UL ) {
-            for( size_t i=0UL; i<M; ++i )
+         size_t j( 0UL );
+
+         if( IsIntegral_v<ElementType> )
+         {
+            for( ; !SYM && !HERM && !LOW && !UPP && (j+SIMDSIZE*7UL) < jpos; j+=SIMDSIZE*8UL ) {
+               for( size_t i=0UL; i<M; ++i )
+               {
+                  const size_t kbegin( ( IsUpper_v<MT4> )
+                                       ?( ( IsLower_v<MT5> )
+                                          ?( max( ( IsStrictlyUpper_v<MT4> ? i+1UL : i ), j ) )
+                                          :( IsStrictlyUpper_v<MT4> ? i+1UL : i ) )
+                                       :( IsLower_v<MT5> ? j : 0UL ) );
+                  const size_t kend( ( IsLower_v<MT4> )
+                                     ?( ( IsUpper_v<MT5> )
+                                        ?( min( ( IsStrictlyLower_v<MT4> ? i : i+1UL ), j+SIMDSIZE*8UL, K ) )
+                                        :( IsStrictlyLower_v<MT4> ? i : i+1UL ) )
+                                     :( IsUpper_v<MT5> ? min( j+SIMDSIZE*8UL, K ) : K ) );
+
+                  SIMDType xmm1, xmm2, xmm3, xmm4, xmm5, xmm6, xmm7, xmm8;
+
+                  for( size_t k=kbegin; k<kend; ++k ) {
+                     const SIMDType a1( set( A(i,k) ) );
+                     xmm1 += a1 * B.load(k,j             );
+                     xmm2 += a1 * B.load(k,j+SIMDSIZE    );
+                     xmm3 += a1 * B.load(k,j+SIMDSIZE*2UL);
+                     xmm4 += a1 * B.load(k,j+SIMDSIZE*3UL);
+                     xmm5 += a1 * B.load(k,j+SIMDSIZE*4UL);
+                     xmm6 += a1 * B.load(k,j+SIMDSIZE*5UL);
+                     xmm7 += a1 * B.load(k,j+SIMDSIZE*6UL);
+                     xmm8 += a1 * B.load(k,j+SIMDSIZE*7UL);
+                  }
+
+                  (~C).store( i, j             , xmm1 * factor );
+                  (~C).store( i, j+SIMDSIZE    , xmm2 * factor );
+                  (~C).store( i, j+SIMDSIZE*2UL, xmm3 * factor );
+                  (~C).store( i, j+SIMDSIZE*3UL, xmm4 * factor );
+                  (~C).store( i, j+SIMDSIZE*4UL, xmm5 * factor );
+                  (~C).store( i, j+SIMDSIZE*5UL, xmm6 * factor );
+                  (~C).store( i, j+SIMDSIZE*6UL, xmm7 * factor );
+                  (~C).store( i, j+SIMDSIZE*7UL, xmm8 * factor );
+               }
+            }
+         }
+
+         for( ; !SYM && !HERM && !LOW && !UPP && (j+SIMDSIZE*4UL) < jpos; j+=SIMDSIZE*5UL )
+         {
+            size_t i( 0UL );
+
+            for( ; (i+2UL) <= M; i+=2UL )
             {
                const size_t kbegin( ( IsUpper_v<MT4> )
                                     ?( ( IsLower_v<MT5> )
@@ -5442,11 +5365,54 @@ class DMatScalarMultExpr< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, ST, false >
                                     :( IsLower_v<MT5> ? j : 0UL ) );
                const size_t kend( ( IsLower_v<MT4> )
                                   ?( ( IsUpper_v<MT5> )
-                                     ?( min( ( IsStrictlyLower_v<MT4> ? i : i+1UL ), j+SIMDSIZE*8UL, K ) )
-                                     :( IsStrictlyLower_v<MT4> ? i : i+1UL ) )
-                                  :( IsUpper_v<MT5> ? min( j+SIMDSIZE*8UL, K ) : K ) );
+                                     ?( min( ( IsStrictlyLower_v<MT4> ? i+1UL : i+2UL ), j+SIMDSIZE*5UL, K ) )
+                                     :( IsStrictlyLower_v<MT4> ? i+1UL : i+2UL ) )
+                                  :( IsUpper_v<MT5> ? min( j+SIMDSIZE*5UL, K ) : K ) );
 
-               SIMDType xmm1, xmm2, xmm3, xmm4, xmm5, xmm6, xmm7, xmm8;
+               SIMDType xmm1, xmm2, xmm3, xmm4, xmm5, xmm6, xmm7, xmm8, xmm9, xmm10;
+
+               for( size_t k=kbegin; k<kend; ++k ) {
+                  const SIMDType a1( set( A(i    ,k) ) );
+                  const SIMDType a2( set( A(i+1UL,k) ) );
+                  const SIMDType b1( B.load(k,j             ) );
+                  const SIMDType b2( B.load(k,j+SIMDSIZE    ) );
+                  const SIMDType b3( B.load(k,j+SIMDSIZE*2UL) );
+                  const SIMDType b4( B.load(k,j+SIMDSIZE*3UL) );
+                  const SIMDType b5( B.load(k,j+SIMDSIZE*4UL) );
+                  xmm1  += a1 * b1;
+                  xmm2  += a1 * b2;
+                  xmm3  += a1 * b3;
+                  xmm4  += a1 * b4;
+                  xmm5  += a1 * b5;
+                  xmm6  += a2 * b1;
+                  xmm7  += a2 * b2;
+                  xmm8  += a2 * b3;
+                  xmm9  += a2 * b4;
+                  xmm10 += a2 * b5;
+               }
+
+               (~C).store( i    , j             , xmm1  * factor );
+               (~C).store( i    , j+SIMDSIZE    , xmm2  * factor );
+               (~C).store( i    , j+SIMDSIZE*2UL, xmm3  * factor );
+               (~C).store( i    , j+SIMDSIZE*3UL, xmm4  * factor );
+               (~C).store( i    , j+SIMDSIZE*4UL, xmm5  * factor );
+               (~C).store( i+1UL, j             , xmm6  * factor );
+               (~C).store( i+1UL, j+SIMDSIZE    , xmm7  * factor );
+               (~C).store( i+1UL, j+SIMDSIZE*2UL, xmm8  * factor );
+               (~C).store( i+1UL, j+SIMDSIZE*3UL, xmm9  * factor );
+               (~C).store( i+1UL, j+SIMDSIZE*4UL, xmm10 * factor );
+            }
+
+            if( i < M )
+            {
+               const size_t kbegin( ( IsUpper_v<MT4> )
+                                    ?( ( IsLower_v<MT5> )
+                                       ?( max( ( IsStrictlyUpper_v<MT4> ? i+1UL : i ), j ) )
+                                       :( IsStrictlyUpper_v<MT4> ? i+1UL : i ) )
+                                    :( IsLower_v<MT5> ? j : 0UL ) );
+               const size_t kend( ( IsUpper_v<MT5> )?( min( j+SIMDSIZE*5UL, K ) ):( K ) );
+
+               SIMDType xmm1, xmm2, xmm3, xmm4, xmm5;
 
                for( size_t k=kbegin; k<kend; ++k ) {
                   const SIMDType a1( set( A(i,k) ) );
@@ -5455,714 +5421,531 @@ class DMatScalarMultExpr< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, ST, false >
                   xmm3 += a1 * B.load(k,j+SIMDSIZE*2UL);
                   xmm4 += a1 * B.load(k,j+SIMDSIZE*3UL);
                   xmm5 += a1 * B.load(k,j+SIMDSIZE*4UL);
-                  xmm6 += a1 * B.load(k,j+SIMDSIZE*5UL);
-                  xmm7 += a1 * B.load(k,j+SIMDSIZE*6UL);
-                  xmm8 += a1 * B.load(k,j+SIMDSIZE*7UL);
                }
 
-               C.store( i, j             , xmm1 * factor );
-               C.store( i, j+SIMDSIZE    , xmm2 * factor );
-               C.store( i, j+SIMDSIZE*2UL, xmm3 * factor );
-               C.store( i, j+SIMDSIZE*3UL, xmm4 * factor );
-               C.store( i, j+SIMDSIZE*4UL, xmm5 * factor );
-               C.store( i, j+SIMDSIZE*5UL, xmm6 * factor );
-               C.store( i, j+SIMDSIZE*6UL, xmm7 * factor );
-               C.store( i, j+SIMDSIZE*7UL, xmm8 * factor );
+               (~C).store( i, j             , xmm1 * factor );
+               (~C).store( i, j+SIMDSIZE    , xmm2 * factor );
+               (~C).store( i, j+SIMDSIZE*2UL, xmm3 * factor );
+               (~C).store( i, j+SIMDSIZE*3UL, xmm4 * factor );
+               (~C).store( i, j+SIMDSIZE*4UL, xmm5 * factor );
+            }
+         }
+
+         for( ; !( LOW && UPP ) && (j+SIMDSIZE*3UL) < jpos; j+=SIMDSIZE*4UL )
+         {
+            const size_t iend( SYM || HERM || UPP ? min(j+SIMDSIZE*4UL,M) : M );
+            size_t i( LOW ? j : 0UL );
+
+            for( ; (i+2UL) <= iend; i+=2UL )
+            {
+               const size_t kbegin( ( IsUpper_v<MT4> )
+                                    ?( ( IsLower_v<MT5> )
+                                       ?( max( ( IsStrictlyUpper_v<MT4> ? i+1UL : i ), j ) )
+                                       :( IsStrictlyUpper_v<MT4> ? i+1UL : i ) )
+                                    :( IsLower_v<MT5> ? j : 0UL ) );
+               const size_t kend( ( IsLower_v<MT4> )
+                                  ?( ( IsUpper_v<MT5> )
+                                     ?( min( ( IsStrictlyLower_v<MT4> ? i+1UL : i+2UL ), j+SIMDSIZE*4UL, K ) )
+                                     :( IsStrictlyLower_v<MT4> ? i+1UL : i+2UL ) )
+                                  :( IsUpper_v<MT5> ? min( j+SIMDSIZE*4UL, K ) : K ) );
+
+               SIMDType xmm1, xmm2, xmm3, xmm4, xmm5, xmm6, xmm7, xmm8;
+
+               for( size_t k=kbegin; k<kend; ++k ) {
+                  const SIMDType a1( set( A(i    ,k) ) );
+                  const SIMDType a2( set( A(i+1UL,k) ) );
+                  const SIMDType b1( B.load(k,j             ) );
+                  const SIMDType b2( B.load(k,j+SIMDSIZE    ) );
+                  const SIMDType b3( B.load(k,j+SIMDSIZE*2UL) );
+                  const SIMDType b4( B.load(k,j+SIMDSIZE*3UL) );
+                  xmm1 += a1 * b1;
+                  xmm2 += a1 * b2;
+                  xmm3 += a1 * b3;
+                  xmm4 += a1 * b4;
+                  xmm5 += a2 * b1;
+                  xmm6 += a2 * b2;
+                  xmm7 += a2 * b3;
+                  xmm8 += a2 * b4;
+               }
+
+               (~C).store( i    , j             , xmm1 * factor );
+               (~C).store( i    , j+SIMDSIZE    , xmm2 * factor );
+               (~C).store( i    , j+SIMDSIZE*2UL, xmm3 * factor );
+               (~C).store( i    , j+SIMDSIZE*3UL, xmm4 * factor );
+               (~C).store( i+1UL, j             , xmm5 * factor );
+               (~C).store( i+1UL, j+SIMDSIZE    , xmm6 * factor );
+               (~C).store( i+1UL, j+SIMDSIZE*2UL, xmm7 * factor );
+               (~C).store( i+1UL, j+SIMDSIZE*3UL, xmm8 * factor );
+            }
+
+            if( i < iend )
+            {
+               const size_t kbegin( ( IsUpper_v<MT4> )
+                                    ?( ( IsLower_v<MT5> )
+                                       ?( max( ( IsStrictlyUpper_v<MT4> ? i+1UL : i ), j ) )
+                                       :( IsStrictlyUpper_v<MT4> ? i+1UL : i ) )
+                                    :( IsLower_v<MT5> ? j : 0UL ) );
+               const size_t kend( ( IsUpper_v<MT5> )?( min( j+SIMDSIZE*4UL, K ) ):( K ) );
+
+               SIMDType xmm1, xmm2, xmm3, xmm4;
+
+               for( size_t k=kbegin; k<kend; ++k ) {
+                  const SIMDType a1( set( A(i,k) ) );
+                  xmm1 += a1 * B.load(k,j             );
+                  xmm2 += a1 * B.load(k,j+SIMDSIZE    );
+                  xmm3 += a1 * B.load(k,j+SIMDSIZE*2UL);
+                  xmm4 += a1 * B.load(k,j+SIMDSIZE*3UL);
+               }
+
+               (~C).store( i, j             , xmm1 * factor );
+               (~C).store( i, j+SIMDSIZE    , xmm2 * factor );
+               (~C).store( i, j+SIMDSIZE*2UL, xmm3 * factor );
+               (~C).store( i, j+SIMDSIZE*3UL, xmm4 * factor );
+            }
+         }
+
+         for( ; (j+SIMDSIZE*2UL) < jpos; j+=SIMDSIZE*3UL )
+         {
+            const size_t iend( SYM || HERM || UPP ? min(j+SIMDSIZE*3UL,M) : M );
+            size_t i( LOW ? j : 0UL );
+
+            for( ; (i+2UL) <= iend; i+=2UL )
+            {
+               const size_t kbegin( ( IsUpper_v<MT4> )
+                                    ?( ( IsLower_v<MT5> )
+                                       ?( max( ( IsStrictlyUpper_v<MT4> ? i+1UL : i ), j ) )
+                                       :( IsStrictlyUpper_v<MT4> ? i+1UL : i ) )
+                                    :( IsLower_v<MT5> ? j : 0UL ) );
+               const size_t kend( ( IsLower_v<MT4> )
+                                  ?( ( IsUpper_v<MT5> )
+                                     ?( min( ( IsStrictlyLower_v<MT4> ? i+1UL : i+2UL ), j+SIMDSIZE*3UL, K ) )
+                                     :( IsStrictlyLower_v<MT4> ? i+1UL : i+2UL ) )
+                                  :( IsUpper_v<MT5> ? min( j+SIMDSIZE*3UL, K ) : K ) );
+
+               SIMDType xmm1, xmm2, xmm3, xmm4, xmm5, xmm6;
+
+               for( size_t k=kbegin; k<kend; ++k ) {
+                  const SIMDType a1( set( A(i    ,k) ) );
+                  const SIMDType a2( set( A(i+1UL,k) ) );
+                  const SIMDType b1( B.load(k,j             ) );
+                  const SIMDType b2( B.load(k,j+SIMDSIZE    ) );
+                  const SIMDType b3( B.load(k,j+SIMDSIZE*2UL) );
+                  xmm1 += a1 * b1;
+                  xmm2 += a1 * b2;
+                  xmm3 += a1 * b3;
+                  xmm4 += a2 * b1;
+                  xmm5 += a2 * b2;
+                  xmm6 += a2 * b3;
+               }
+
+               (~C).store( i    , j             , xmm1 * factor );
+               (~C).store( i    , j+SIMDSIZE    , xmm2 * factor );
+               (~C).store( i    , j+SIMDSIZE*2UL, xmm3 * factor );
+               (~C).store( i+1UL, j             , xmm4 * factor );
+               (~C).store( i+1UL, j+SIMDSIZE    , xmm5 * factor );
+               (~C).store( i+1UL, j+SIMDSIZE*2UL, xmm6 * factor );
+            }
+
+            if( i < iend )
+            {
+               const size_t kbegin( ( IsUpper_v<MT4> )
+                                    ?( ( IsLower_v<MT5> )
+                                       ?( max( ( IsStrictlyUpper_v<MT4> ? i+1UL : i ), j ) )
+                                       :( IsStrictlyUpper_v<MT4> ? i+1UL : i ) )
+                                    :( IsLower_v<MT5> ? j : 0UL ) );
+               const size_t kend( ( IsUpper_v<MT5> )?( min( j+SIMDSIZE*3UL, K ) ):( K ) );
+
+               SIMDType xmm1, xmm2, xmm3;
+
+               for( size_t k=kbegin; k<kend; ++k ) {
+                  const SIMDType a1( set( A(i,k) ) );
+                  xmm1 += a1 * B.load(k,j             );
+                  xmm2 += a1 * B.load(k,j+SIMDSIZE    );
+                  xmm3 += a1 * B.load(k,j+SIMDSIZE*2UL);
+               }
+
+               (~C).store( i, j             , xmm1 * factor );
+               (~C).store( i, j+SIMDSIZE    , xmm2 * factor );
+               (~C).store( i, j+SIMDSIZE*2UL, xmm3 * factor );
+            }
+         }
+
+         for( ; (j+SIMDSIZE) < jpos; j+=SIMDSIZE*2UL )
+         {
+            const size_t iend( SYM || HERM || UPP ? min(j+SIMDSIZE*2UL,M) : M );
+            size_t i( LOW ? j : 0UL );
+
+            for( ; (i+4UL) <= iend; i+=4UL )
+            {
+               const size_t kbegin( ( IsUpper_v<MT4> )
+                                    ?( ( IsLower_v<MT5> )
+                                       ?( max( ( IsStrictlyUpper_v<MT4> ? i+1UL : i ), j ) )
+                                       :( IsStrictlyUpper_v<MT4> ? i+1UL : i ) )
+                                    :( IsLower_v<MT5> ? j : 0UL ) );
+               const size_t kend( ( IsLower_v<MT4> )
+                                  ?( ( IsUpper_v<MT5> )
+                                     ?( min( ( IsStrictlyLower_v<MT4> ? i+3UL : i+4UL ), j+SIMDSIZE*2UL, K ) )
+                                     :( IsStrictlyLower_v<MT4> ? i+3UL : i+4UL ) )
+                                  :( IsUpper_v<MT5> ? min( j+SIMDSIZE*2UL, K ) : K ) );
+
+               SIMDType xmm1, xmm2, xmm3, xmm4, xmm5, xmm6, xmm7, xmm8;
+
+               for( size_t k=kbegin; k<kend; ++k ) {
+                  const SIMDType a1( set( A(i    ,k) ) );
+                  const SIMDType a2( set( A(i+1UL,k) ) );
+                  const SIMDType a3( set( A(i+2UL,k) ) );
+                  const SIMDType a4( set( A(i+3UL,k) ) );
+                  const SIMDType b1( B.load(k,j         ) );
+                  const SIMDType b2( B.load(k,j+SIMDSIZE) );
+                  xmm1 += a1 * b1;
+                  xmm2 += a1 * b2;
+                  xmm3 += a2 * b1;
+                  xmm4 += a2 * b2;
+                  xmm5 += a3 * b1;
+                  xmm6 += a3 * b2;
+                  xmm7 += a4 * b1;
+                  xmm8 += a4 * b2;
+               }
+
+               (~C).store( i    , j         , xmm1 * factor );
+               (~C).store( i    , j+SIMDSIZE, xmm2 * factor );
+               (~C).store( i+1UL, j         , xmm3 * factor );
+               (~C).store( i+1UL, j+SIMDSIZE, xmm4 * factor );
+               (~C).store( i+2UL, j         , xmm5 * factor );
+               (~C).store( i+2UL, j+SIMDSIZE, xmm6 * factor );
+               (~C).store( i+3UL, j         , xmm7 * factor );
+               (~C).store( i+3UL, j+SIMDSIZE, xmm8 * factor );
+            }
+
+            for( ; (i+3UL) <= iend; i+=3UL )
+            {
+               const size_t kbegin( ( IsUpper_v<MT4> )
+                                    ?( ( IsLower_v<MT5> )
+                                       ?( max( ( IsStrictlyUpper_v<MT4> ? i+1UL : i ), j ) )
+                                       :( IsStrictlyUpper_v<MT4> ? i+1UL : i ) )
+                                    :( IsLower_v<MT5> ? j : 0UL ) );
+               const size_t kend( ( IsLower_v<MT4> )
+                                  ?( ( IsUpper_v<MT5> )
+                                     ?( min( ( IsStrictlyLower_v<MT4> ? i+2UL : i+3UL ), j+SIMDSIZE*2UL, K ) )
+                                     :( IsStrictlyLower_v<MT4> ? i+2UL : i+3UL ) )
+                                  :( IsUpper_v<MT5> ? min( j+SIMDSIZE*2UL, K ) : K ) );
+
+               SIMDType xmm1, xmm2, xmm3, xmm4, xmm5, xmm6;
+
+               for( size_t k=kbegin; k<kend; ++k ) {
+                  const SIMDType a1( set( A(i    ,k) ) );
+                  const SIMDType a2( set( A(i+1UL,k) ) );
+                  const SIMDType a3( set( A(i+2UL,k) ) );
+                  const SIMDType b1( B.load(k,j         ) );
+                  const SIMDType b2( B.load(k,j+SIMDSIZE) );
+                  xmm1 += a1 * b1;
+                  xmm2 += a1 * b2;
+                  xmm3 += a2 * b1;
+                  xmm4 += a2 * b2;
+                  xmm5 += a3 * b1;
+                  xmm6 += a3 * b2;
+               }
+
+               (~C).store( i    , j         , xmm1 * factor );
+               (~C).store( i    , j+SIMDSIZE, xmm2 * factor );
+               (~C).store( i+1UL, j         , xmm3 * factor );
+               (~C).store( i+1UL, j+SIMDSIZE, xmm4 * factor );
+               (~C).store( i+2UL, j         , xmm5 * factor );
+               (~C).store( i+2UL, j+SIMDSIZE, xmm6 * factor );
+            }
+
+            for( ; (i+2UL) <= iend; i+=2UL )
+            {
+               const size_t kbegin( ( IsUpper_v<MT4> )
+                                    ?( ( IsLower_v<MT5> )
+                                       ?( max( ( IsStrictlyUpper_v<MT4> ? i+1UL : i ), j ) )
+                                       :( IsStrictlyUpper_v<MT4> ? i+1UL : i ) )
+                                    :( IsLower_v<MT5> ? j : 0UL ) );
+               const size_t kend( ( IsLower_v<MT4> )
+                                  ?( ( IsUpper_v<MT5> )
+                                     ?( min( ( IsStrictlyLower_v<MT4> ? i+1UL : i+2UL ), j+SIMDSIZE*2UL, K ) )
+                                     :( IsStrictlyLower_v<MT4> ? i+1UL : i+2UL ) )
+                                  :( IsUpper_v<MT5> ? min( j+SIMDSIZE*2UL, K ) : K ) );
+
+               SIMDType xmm1, xmm2, xmm3, xmm4, xmm5, xmm6, xmm7, xmm8;
+               size_t k( kbegin );
+
+               for( ; (k+2UL) <= kend; k+=2UL ) {
+                  const SIMDType a1( set( A(i    ,k    ) ) );
+                  const SIMDType a2( set( A(i+1UL,k    ) ) );
+                  const SIMDType a3( set( A(i    ,k+1UL) ) );
+                  const SIMDType a4( set( A(i+1UL,k+1UL) ) );
+                  const SIMDType b1( B.load(k    ,j         ) );
+                  const SIMDType b2( B.load(k    ,j+SIMDSIZE) );
+                  const SIMDType b3( B.load(k+1UL,j         ) );
+                  const SIMDType b4( B.load(k+1UL,j+SIMDSIZE) );
+                  xmm1 += a1 * b1;
+                  xmm2 += a1 * b2;
+                  xmm3 += a2 * b1;
+                  xmm4 += a2 * b2;
+                  xmm5 += a3 * b3;
+                  xmm6 += a3 * b4;
+                  xmm7 += a4 * b3;
+                  xmm8 += a4 * b4;
+               }
+
+               for( ; k<kend; ++k ) {
+                  const SIMDType a1( set( A(i    ,k) ) );
+                  const SIMDType a2( set( A(i+1UL,k) ) );
+                  const SIMDType b1( B.load(k,j         ) );
+                  const SIMDType b2( B.load(k,j+SIMDSIZE) );
+                  xmm1 += a1 * b1;
+                  xmm2 += a1 * b2;
+                  xmm3 += a2 * b1;
+                  xmm4 += a2 * b2;
+               }
+
+               (~C).store( i    , j         , (xmm1+xmm5) * factor );
+               (~C).store( i    , j+SIMDSIZE, (xmm2+xmm6) * factor );
+               (~C).store( i+1UL, j         , (xmm3+xmm7) * factor );
+               (~C).store( i+1UL, j+SIMDSIZE, (xmm4+xmm8) * factor );
+            }
+
+            if( i < iend )
+            {
+               const size_t kbegin( ( IsUpper_v<MT4> )
+                                    ?( ( IsLower_v<MT5> )
+                                       ?( max( ( IsStrictlyUpper_v<MT4> ? i+1UL : i ), j ) )
+                                       :( IsStrictlyUpper_v<MT4> ? i+1UL : i ) )
+                                    :( IsLower_v<MT5> ? j : 0UL ) );
+               const size_t kend( ( IsUpper_v<MT5> )?( min( j+SIMDSIZE*2UL, K ) ):( K ) );
+
+               SIMDType xmm1, xmm2, xmm3, xmm4;
+               size_t k( kbegin );
+
+               for( ; (k+2UL) <= kend; k+=2UL ) {
+                  const SIMDType a1( set( A(i,k    ) ) );
+                  const SIMDType a2( set( A(i,k+1UL) ) );
+                  xmm1 += a1 * B.load(k    ,j         );
+                  xmm2 += a1 * B.load(k    ,j+SIMDSIZE);
+                  xmm3 += a2 * B.load(k+1UL,j         );
+                  xmm4 += a2 * B.load(k+1UL,j+SIMDSIZE);
+               }
+
+               for( ; k<kend; ++k ) {
+                  const SIMDType a1( set( A(i,k) ) );
+                  xmm1 += a1 * B.load(k,j         );
+                  xmm2 += a1 * B.load(k,j+SIMDSIZE);
+               }
+
+               (~C).store( i, j         , (xmm1+xmm3) * factor );
+               (~C).store( i, j+SIMDSIZE, (xmm2+xmm4) * factor );
+            }
+         }
+
+         for( ; j<jpos; j+=SIMDSIZE )
+         {
+            const size_t iend( SYM || HERM || UPP ? min(j+SIMDSIZE,M) : M );
+            size_t i( LOW ? j : 0UL );
+
+            for( ; (i+4UL) <= iend; i+=4UL )
+            {
+               const size_t kbegin( ( IsUpper_v<MT4> )
+                                    ?( ( IsLower_v<MT5> )
+                                       ?( max( ( IsStrictlyUpper_v<MT4> ? i+1UL : i ), j ) )
+                                       :( IsStrictlyUpper_v<MT4> ? i+1UL : i ) )
+                                    :( IsLower_v<MT5> ? j : 0UL ) );
+               const size_t kend( ( IsLower_v<MT4> )
+                                  ?( IsStrictlyLower_v<MT4> ? i+3UL : i+4UL )
+                                  :( K ) );
+
+               SIMDType xmm1, xmm2, xmm3, xmm4, xmm5, xmm6, xmm7, xmm8;
+               size_t k( kbegin );
+
+               for( ; (k+2UL) <= kend; k+=2UL ) {
+                  const SIMDType b1( B.load(k    ,j) );
+                  const SIMDType b2( B.load(k+1UL,j) );
+                  xmm1 += set( A(i    ,k    ) ) * b1;
+                  xmm2 += set( A(i+1UL,k    ) ) * b1;
+                  xmm3 += set( A(i+2UL,k    ) ) * b1;
+                  xmm4 += set( A(i+3UL,k    ) ) * b1;
+                  xmm5 += set( A(i    ,k+1UL) ) * b2;
+                  xmm6 += set( A(i+1UL,k+1UL) ) * b2;
+                  xmm7 += set( A(i+2UL,k+1UL) ) * b2;
+                  xmm8 += set( A(i+3UL,k+1UL) ) * b2;
+               }
+
+               for( ; k<kend; ++k ) {
+                  const SIMDType b1( B.load(k,j) );
+                  xmm1 += set( A(i    ,k) ) * b1;
+                  xmm2 += set( A(i+1UL,k) ) * b1;
+                  xmm3 += set( A(i+2UL,k) ) * b1;
+                  xmm4 += set( A(i+3UL,k) ) * b1;
+               }
+
+               (~C).store( i    , j, (xmm1+xmm5) * factor );
+               (~C).store( i+1UL, j, (xmm2+xmm6) * factor );
+               (~C).store( i+2UL, j, (xmm3+xmm7) * factor );
+               (~C).store( i+3UL, j, (xmm4+xmm8) * factor );
+            }
+
+            for( ; (i+3UL) <= iend; i+=3UL )
+            {
+               const size_t kbegin( ( IsUpper_v<MT4> )
+                                    ?( ( IsLower_v<MT5> )
+                                       ?( max( ( IsStrictlyUpper_v<MT4> ? i+1UL : i ), j ) )
+                                       :( IsStrictlyUpper_v<MT4> ? i+1UL : i ) )
+                                    :( IsLower_v<MT5> ? j : 0UL ) );
+               const size_t kend( ( IsLower_v<MT4> )
+                                  ?( IsStrictlyLower_v<MT4> ? i+2UL : i+3UL )
+                                  :( K ) );
+
+               SIMDType xmm1, xmm2, xmm3, xmm4, xmm5, xmm6;
+               size_t k( kbegin );
+
+               for( ; (k+2UL) <= kend; k+=2UL ) {
+                  const SIMDType b1( B.load(k    ,j) );
+                  const SIMDType b2( B.load(k+1UL,j) );
+                  xmm1 += set( A(i    ,k    ) ) * b1;
+                  xmm2 += set( A(i+1UL,k    ) ) * b1;
+                  xmm3 += set( A(i+2UL,k    ) ) * b1;
+                  xmm4 += set( A(i    ,k+1UL) ) * b2;
+                  xmm5 += set( A(i+1UL,k+1UL) ) * b2;
+                  xmm6 += set( A(i+2UL,k+1UL) ) * b2;
+               }
+
+               for( ; k<kend; ++k ) {
+                  const SIMDType b1( B.load(k,j) );
+                  xmm1 += set( A(i    ,k) ) * b1;
+                  xmm2 += set( A(i+1UL,k) ) * b1;
+                  xmm3 += set( A(i+2UL,k) ) * b1;
+               }
+
+               (~C).store( i    , j, (xmm1+xmm4) * factor );
+               (~C).store( i+1UL, j, (xmm2+xmm5) * factor );
+               (~C).store( i+2UL, j, (xmm3+xmm6) * factor );
+            }
+
+            for( ; (i+2UL) <= iend; i+=2UL )
+            {
+               const size_t kbegin( ( IsUpper_v<MT4> )
+                                    ?( ( IsLower_v<MT5> )
+                                       ?( max( ( IsStrictlyUpper_v<MT4> ? i+1UL : i ), j ) )
+                                       :( IsStrictlyUpper_v<MT4> ? i+1UL : i ) )
+                                    :( IsLower_v<MT5> ? j : 0UL ) );
+               const size_t kend( ( IsLower_v<MT4> )
+                                  ?( IsStrictlyLower_v<MT4> ? i+1UL : i+2UL )
+                                  :( K ) );
+
+               SIMDType xmm1, xmm2, xmm3, xmm4;
+               size_t k( kbegin );
+
+               for( ; (k+2UL) <= kend; k+=2UL ) {
+                  const SIMDType b1( B.load(k    ,j) );
+                  const SIMDType b2( B.load(k+1UL,j) );
+                  xmm1 += set( A(i    ,k    ) ) * b1;
+                  xmm2 += set( A(i+1UL,k    ) ) * b1;
+                  xmm3 += set( A(i    ,k+1UL) ) * b2;
+                  xmm4 += set( A(i+1UL,k+1UL) ) * b2;
+               }
+
+               for( ; k<kend; ++k ) {
+                  const SIMDType b1( B.load(k,j) );
+                  xmm1 += set( A(i    ,k) ) * b1;
+                  xmm2 += set( A(i+1UL,k) ) * b1;
+               }
+
+               (~C).store( i    , j, (xmm1+xmm3) * factor );
+               (~C).store( i+1UL, j, (xmm2+xmm4) * factor );
+            }
+
+            if( i < iend )
+            {
+               const size_t kbegin( ( IsUpper_v<MT4> )
+                                    ?( ( IsLower_v<MT5> )
+                                       ?( max( ( IsStrictlyUpper_v<MT4> ? i+1UL : i ), j ) )
+                                       :( IsStrictlyUpper_v<MT4> ? i+1UL : i ) )
+                                    :( IsLower_v<MT5> ? j : 0UL ) );
+
+               SIMDType xmm1, xmm2;
+               size_t k( kbegin );
+
+               for( ; (k+2UL) <= K; k+=2UL ) {
+                  xmm1 += set( A(i,k    ) ) * B.load(k    ,j);
+                  xmm2 += set( A(i,k+1UL) ) * B.load(k+1UL,j);
+               }
+
+               for( ; k<K; ++k ) {
+                  xmm1 += set( A(i,k) ) * B.load(k,j);
+               }
+
+               (~C).store( i, j, (xmm1+xmm2) * factor );
+            }
+         }
+
+         for( ; remainder && j<N; ++j )
+         {
+            size_t i( LOW && UPP ? j : 0UL );
+
+            for( ; (i+2UL) <= M; i+=2UL )
+            {
+               const size_t kbegin( ( IsUpper_v<MT4> )
+                                    ?( ( IsLower_v<MT5> )
+                                       ?( max( ( IsStrictlyUpper_v<MT4> ? i+1UL : i ), j ) )
+                                       :( IsStrictlyUpper_v<MT4> ? i+1UL : i ) )
+                                    :( IsLower_v<MT5> ? j : 0UL ) );
+               const size_t kend( ( IsLower_v<MT4> )
+                                  ?( IsStrictlyLower_v<MT4> ? i+1UL : i+2UL )
+                                  :( K ) );
+
+               ElementType value1{};
+               ElementType value2{};
+
+               for( size_t k=kbegin; k<kend; ++k ) {
+                  value1 += A(i    ,k) * B(k,j);
+                  value2 += A(i+1UL,k) * B(k,j);
+               }
+
+               (~C)(i    ,j) = value1 * scalar;
+               (~C)(i+1UL,j) = value2 * scalar;
+            }
+
+            if( i < M )
+            {
+               const size_t kbegin( ( IsUpper_v<MT4> )
+                                    ?( ( IsLower_v<MT5> )
+                                       ?( max( ( IsStrictlyUpper_v<MT4> ? i+1UL : i ), j ) )
+                                       :( IsStrictlyUpper_v<MT4> ? i+1UL : i ) )
+                                    :( IsLower_v<MT5> ? j : 0UL ) );
+
+               ElementType value{};
+
+               for( size_t k=kbegin; k<K; ++k ) {
+                  value += A(i,k) * B(k,j);
+               }
+
+               (~C)(i,j) = value * scalar;
             }
          }
       }
 
-      for( ; !SYM && !HERM && !LOW && !UPP && (j+SIMDSIZE*4UL) < jpos; j+=SIMDSIZE*5UL )
-      {
-         size_t i( 0UL );
-
-         for( ; (i+2UL) <= M; i+=2UL )
-         {
-            const size_t kbegin( ( IsUpper_v<MT4> )
-                                 ?( ( IsLower_v<MT5> )
-                                    ?( max( ( IsStrictlyUpper_v<MT4> ? i+1UL : i ), j ) )
-                                    :( IsStrictlyUpper_v<MT4> ? i+1UL : i ) )
-                                 :( IsLower_v<MT5> ? j : 0UL ) );
-            const size_t kend( ( IsLower_v<MT4> )
-                               ?( ( IsUpper_v<MT5> )
-                                  ?( min( ( IsStrictlyLower_v<MT4> ? i+1UL : i+2UL ), j+SIMDSIZE*5UL, K ) )
-                                  :( IsStrictlyLower_v<MT4> ? i+1UL : i+2UL ) )
-                               :( IsUpper_v<MT5> ? min( j+SIMDSIZE*5UL, K ) : K ) );
-
-            SIMDType xmm1, xmm2, xmm3, xmm4, xmm5, xmm6, xmm7, xmm8, xmm9, xmm10;
-
-            for( size_t k=kbegin; k<kend; ++k ) {
-               const SIMDType a1( set( A(i    ,k) ) );
-               const SIMDType a2( set( A(i+1UL,k) ) );
-               const SIMDType b1( B.load(k,j             ) );
-               const SIMDType b2( B.load(k,j+SIMDSIZE    ) );
-               const SIMDType b3( B.load(k,j+SIMDSIZE*2UL) );
-               const SIMDType b4( B.load(k,j+SIMDSIZE*3UL) );
-               const SIMDType b5( B.load(k,j+SIMDSIZE*4UL) );
-               xmm1  += a1 * b1;
-               xmm2  += a1 * b2;
-               xmm3  += a1 * b3;
-               xmm4  += a1 * b4;
-               xmm5  += a1 * b5;
-               xmm6  += a2 * b1;
-               xmm7  += a2 * b2;
-               xmm8  += a2 * b3;
-               xmm9  += a2 * b4;
-               xmm10 += a2 * b5;
-            }
-
-            C.store( i    , j             , xmm1  * factor );
-            C.store( i    , j+SIMDSIZE    , xmm2  * factor );
-            C.store( i    , j+SIMDSIZE*2UL, xmm3  * factor );
-            C.store( i    , j+SIMDSIZE*3UL, xmm4  * factor );
-            C.store( i    , j+SIMDSIZE*4UL, xmm5  * factor );
-            C.store( i+1UL, j             , xmm6  * factor );
-            C.store( i+1UL, j+SIMDSIZE    , xmm7  * factor );
-            C.store( i+1UL, j+SIMDSIZE*2UL, xmm8  * factor );
-            C.store( i+1UL, j+SIMDSIZE*3UL, xmm9  * factor );
-            C.store( i+1UL, j+SIMDSIZE*4UL, xmm10 * factor );
-         }
-
-         if( i < M )
-         {
-            const size_t kbegin( ( IsUpper_v<MT4> )
-                                 ?( ( IsLower_v<MT5> )
-                                    ?( max( ( IsStrictlyUpper_v<MT4> ? i+1UL : i ), j ) )
-                                    :( IsStrictlyUpper_v<MT4> ? i+1UL : i ) )
-                                 :( IsLower_v<MT5> ? j : 0UL ) );
-            const size_t kend( ( IsUpper_v<MT5> )?( min( j+SIMDSIZE*5UL, K ) ):( K ) );
-
-            SIMDType xmm1, xmm2, xmm3, xmm4, xmm5;
-
-            for( size_t k=kbegin; k<kend; ++k ) {
-               const SIMDType a1( set( A(i,k) ) );
-               xmm1 += a1 * B.load(k,j             );
-               xmm2 += a1 * B.load(k,j+SIMDSIZE    );
-               xmm3 += a1 * B.load(k,j+SIMDSIZE*2UL);
-               xmm4 += a1 * B.load(k,j+SIMDSIZE*3UL);
-               xmm5 += a1 * B.load(k,j+SIMDSIZE*4UL);
-            }
-
-            C.store( i, j             , xmm1 * factor );
-            C.store( i, j+SIMDSIZE    , xmm2 * factor );
-            C.store( i, j+SIMDSIZE*2UL, xmm3 * factor );
-            C.store( i, j+SIMDSIZE*3UL, xmm4 * factor );
-            C.store( i, j+SIMDSIZE*4UL, xmm5 * factor );
-         }
-      }
-
-      for( ; !( LOW && UPP ) && (j+SIMDSIZE*3UL) < jpos; j+=SIMDSIZE*4UL )
-      {
-         const size_t iend( UPP ? min(j+SIMDSIZE*4UL,M) : M );
-         size_t i( 0UL );
-
-         if( SYM || HERM ) {
-            const size_t jjend( min(j+SIMDSIZE*4UL,N) );
-            for( ; i<j; ++i ) {
-               for( size_t jj=j; jj<jjend; ++jj ) {
-                  C(i,jj) = HERM ? conj( C(jj,i) ) : C(jj,i);
-               }
-            }
-         }
-         else if( LOW ) {
-            const size_t jjend( min(j+SIMDSIZE*4UL,N) );
-            for( ; i<j; ++i ) {
-               for( size_t jj=j; jj<jjend; ++jj ) {
-                  reset( C(i,jj) );
-               }
-            }
-         }
-
-         for( ; (i+2UL) <= iend; i+=2UL )
-         {
-            const size_t kbegin( ( IsUpper_v<MT4> )
-                                 ?( ( IsLower_v<MT5> )
-                                    ?( max( ( IsStrictlyUpper_v<MT4> ? i+1UL : i ), j ) )
-                                    :( IsStrictlyUpper_v<MT4> ? i+1UL : i ) )
-                                 :( IsLower_v<MT5> ? j : 0UL ) );
-            const size_t kend( ( IsLower_v<MT4> )
-                               ?( ( IsUpper_v<MT5> )
-                                  ?( min( ( IsStrictlyLower_v<MT4> ? i+1UL : i+2UL ), j+SIMDSIZE*4UL, K ) )
-                                  :( IsStrictlyLower_v<MT4> ? i+1UL : i+2UL ) )
-                               :( IsUpper_v<MT5> ? min( j+SIMDSIZE*4UL, K ) : K ) );
-
-            SIMDType xmm1, xmm2, xmm3, xmm4, xmm5, xmm6, xmm7, xmm8;
-
-            for( size_t k=kbegin; k<kend; ++k ) {
-               const SIMDType a1( set( A(i    ,k) ) );
-               const SIMDType a2( set( A(i+1UL,k) ) );
-               const SIMDType b1( B.load(k,j             ) );
-               const SIMDType b2( B.load(k,j+SIMDSIZE    ) );
-               const SIMDType b3( B.load(k,j+SIMDSIZE*2UL) );
-               const SIMDType b4( B.load(k,j+SIMDSIZE*3UL) );
-               xmm1 += a1 * b1;
-               xmm2 += a1 * b2;
-               xmm3 += a1 * b3;
-               xmm4 += a1 * b4;
-               xmm5 += a2 * b1;
-               xmm6 += a2 * b2;
-               xmm7 += a2 * b3;
-               xmm8 += a2 * b4;
-            }
-
-            C.store( i    , j             , xmm1 * factor );
-            C.store( i    , j+SIMDSIZE    , xmm2 * factor );
-            C.store( i    , j+SIMDSIZE*2UL, xmm3 * factor );
-            C.store( i    , j+SIMDSIZE*3UL, xmm4 * factor );
-            C.store( i+1UL, j             , xmm5 * factor );
-            C.store( i+1UL, j+SIMDSIZE    , xmm6 * factor );
-            C.store( i+1UL, j+SIMDSIZE*2UL, xmm7 * factor );
-            C.store( i+1UL, j+SIMDSIZE*3UL, xmm8 * factor );
-         }
-
-         if( i < iend )
-         {
-            const size_t kbegin( ( IsUpper_v<MT4> )
-                                 ?( ( IsLower_v<MT5> )
-                                    ?( max( ( IsStrictlyUpper_v<MT4> ? i+1UL : i ), j ) )
-                                    :( IsStrictlyUpper_v<MT4> ? i+1UL : i ) )
-                                 :( IsLower_v<MT5> ? j : 0UL ) );
-            const size_t kend( ( IsUpper_v<MT5> )?( min( j+SIMDSIZE*4UL, K ) ):( K ) );
-
-            SIMDType xmm1, xmm2, xmm3, xmm4;
-
-            for( size_t k=kbegin; k<kend; ++k ) {
-               const SIMDType a1( set( A(i,k) ) );
-               xmm1 += a1 * B.load(k,j             );
-               xmm2 += a1 * B.load(k,j+SIMDSIZE    );
-               xmm3 += a1 * B.load(k,j+SIMDSIZE*2UL);
-               xmm4 += a1 * B.load(k,j+SIMDSIZE*3UL);
-            }
-
-            C.store( i, j             , xmm1 * factor );
-            C.store( i, j+SIMDSIZE    , xmm2 * factor );
-            C.store( i, j+SIMDSIZE*2UL, xmm3 * factor );
-            C.store( i, j+SIMDSIZE*3UL, xmm4 * factor );
-
-            if( UPP ) ++i;
-         }
-
-         if( UPP ) {
-            const size_t jjend( min(j+SIMDSIZE*4UL,N) );
-            for( ; i<M; ++i ) {
-               for( size_t jj=j; jj<jjend; ++jj ) {
-                  reset( C(i,jj) );
-               }
+      if( ( SYM || HERM ) && ( N > SIMDSIZE*4UL ) ) {
+         for( size_t i=SIMDSIZE*4UL; i<M; ++i ) {
+            const size_t jend( ( SIMDSIZE*4UL ) * ( i / (SIMDSIZE*4UL) ) );
+            for( size_t j=0UL; j<jend; ++j ) {
+               (~C)(i,j) = HERM ? conj( (~C)(j,i) ) : (~C)(j,i);
             }
          }
       }
-
-      for( ; (j+SIMDSIZE*2UL) < jpos; j+=SIMDSIZE*3UL )
-      {
-         const size_t iend( UPP ? min(j+SIMDSIZE*3UL,M) : M );
-         size_t i( 0UL );
-
-         if( SYM || HERM ) {
-            const size_t jjend( min(j+SIMDSIZE*3UL,N) );
-            for( ; i<j; ++i ) {
-               for( size_t jj=j; jj<jjend; ++jj ) {
-                  C(i,jj) = HERM ? conj( C(jj,i) ) : C(jj,i);
-               }
-            }
-         }
-         else if( LOW ) {
-            const size_t jjend( min(j+SIMDSIZE*3UL,N) );
-            for( ; i<j; ++i ) {
-               for( size_t jj=j; jj<jjend; ++jj ) {
-                  reset( C(i,jj) );
-               }
-            }
-         }
-
-         for( ; (i+2UL) <= iend; i+=2UL )
-         {
-            const size_t kbegin( ( IsUpper_v<MT4> )
-                                 ?( ( IsLower_v<MT5> )
-                                    ?( max( ( IsStrictlyUpper_v<MT4> ? i+1UL : i ), j ) )
-                                    :( IsStrictlyUpper_v<MT4> ? i+1UL : i ) )
-                                 :( IsLower_v<MT5> ? j : 0UL ) );
-            const size_t kend( ( IsLower_v<MT4> )
-                               ?( ( IsUpper_v<MT5> )
-                                  ?( min( ( IsStrictlyLower_v<MT4> ? i+1UL : i+2UL ), j+SIMDSIZE*3UL, K ) )
-                                  :( IsStrictlyLower_v<MT4> ? i+1UL : i+2UL ) )
-                               :( IsUpper_v<MT5> ? min( j+SIMDSIZE*3UL, K ) : K ) );
-
-            SIMDType xmm1, xmm2, xmm3, xmm4, xmm5, xmm6;
-
-            for( size_t k=kbegin; k<kend; ++k ) {
-               const SIMDType a1( set( A(i    ,k) ) );
-               const SIMDType a2( set( A(i+1UL,k) ) );
-               const SIMDType b1( B.load(k,j             ) );
-               const SIMDType b2( B.load(k,j+SIMDSIZE    ) );
-               const SIMDType b3( B.load(k,j+SIMDSIZE*2UL) );
-               xmm1 += a1 * b1;
-               xmm2 += a1 * b2;
-               xmm3 += a1 * b3;
-               xmm4 += a2 * b1;
-               xmm5 += a2 * b2;
-               xmm6 += a2 * b3;
-            }
-
-            C.store( i    , j             , xmm1 * factor );
-            C.store( i    , j+SIMDSIZE    , xmm2 * factor );
-            C.store( i    , j+SIMDSIZE*2UL, xmm3 * factor );
-            C.store( i+1UL, j             , xmm4 * factor );
-            C.store( i+1UL, j+SIMDSIZE    , xmm5 * factor );
-            C.store( i+1UL, j+SIMDSIZE*2UL, xmm6 * factor );
-         }
-
-         if( i < iend )
-         {
-            const size_t kbegin( ( IsUpper_v<MT4> )
-                                 ?( ( IsLower_v<MT5> )
-                                    ?( max( ( IsStrictlyUpper_v<MT4> ? i+1UL : i ), j ) )
-                                    :( IsStrictlyUpper_v<MT4> ? i+1UL : i ) )
-                                 :( IsLower_v<MT5> ? j : 0UL ) );
-            const size_t kend( ( IsUpper_v<MT5> )?( min( j+SIMDSIZE*3UL, K ) ):( K ) );
-
-            SIMDType xmm1, xmm2, xmm3;
-
-            for( size_t k=kbegin; k<kend; ++k ) {
-               const SIMDType a1( set( A(i,k) ) );
-               xmm1 += a1 * B.load(k,j             );
-               xmm2 += a1 * B.load(k,j+SIMDSIZE    );
-               xmm3 += a1 * B.load(k,j+SIMDSIZE*2UL);
-            }
-
-            C.store( i, j             , xmm1 * factor );
-            C.store( i, j+SIMDSIZE    , xmm2 * factor );
-            C.store( i, j+SIMDSIZE*2UL, xmm3 * factor );
-
-            if( UPP ) ++i;
-         }
-
-         if( UPP ) {
-            const size_t jjend( min(j+SIMDSIZE*3UL,N) );
-            for( ; i<M; ++i ) {
-               for( size_t jj=j; jj<jjend; ++jj ) {
-                  reset( C(i,jj) );
-               }
+      else if( LOW && !UPP && N > SIMDSIZE*4UL ) {
+         for( size_t j=SIMDSIZE*4UL; j<N; ++j ) {
+            const size_t iend( ( SIMDSIZE*4UL ) * ( j / (SIMDSIZE*4UL) ) );
+            for( size_t i=0UL; i<iend; ++i ) {
+               reset( (~C)(i,j) );
             }
          }
       }
-
-      for( ; (j+SIMDSIZE) < jpos; j+=SIMDSIZE*2UL )
-      {
-         const size_t iend( UPP ? min(j+SIMDSIZE*2UL,M) : M );
-         size_t i( 0UL );
-
-         if( SYM || HERM ) {
-            const size_t jjend( min(j+SIMDSIZE*2UL,N) );
-            for( ; i<j; ++i ) {
-               for( size_t jj=j; jj<jjend; ++jj ) {
-                  C(i,jj) = HERM ? conj( C(jj,i) ) : C(jj,i);
-               }
+      else if( !LOW && UPP && N > SIMDSIZE*4UL ) {
+         for( size_t i=SIMDSIZE*4UL; i<M; ++i ) {
+            const size_t jend( ( SIMDSIZE*4UL ) * ( i / (SIMDSIZE*4UL) ) );
+            for( size_t j=0UL; j<jend; ++j ) {
+               reset( (~C)(i,j) );
             }
-         }
-         else if( LOW ) {
-            const size_t jjend( min(j+SIMDSIZE*2UL,N) );
-            for( ; i<j; ++i ) {
-               for( size_t jj=j; jj<jjend; ++jj ) {
-                  reset( C(i,jj) );
-               }
-            }
-         }
-
-         for( ; (i+4UL) <= iend; i+=4UL )
-         {
-            const size_t kbegin( ( IsUpper_v<MT4> )
-                                 ?( ( IsLower_v<MT5> )
-                                    ?( max( ( IsStrictlyUpper_v<MT4> ? i+1UL : i ), j ) )
-                                    :( IsStrictlyUpper_v<MT4> ? i+1UL : i ) )
-                                 :( IsLower_v<MT5> ? j : 0UL ) );
-            const size_t kend( ( IsLower_v<MT4> )
-                               ?( ( IsUpper_v<MT5> )
-                                  ?( min( ( IsStrictlyLower_v<MT4> ? i+3UL : i+4UL ), j+SIMDSIZE*2UL, K ) )
-                                  :( IsStrictlyLower_v<MT4> ? i+3UL : i+4UL ) )
-                               :( IsUpper_v<MT5> ? min( j+SIMDSIZE*2UL, K ) : K ) );
-
-            SIMDType xmm1, xmm2, xmm3, xmm4, xmm5, xmm6, xmm7, xmm8;
-
-            for( size_t k=kbegin; k<kend; ++k ) {
-               const SIMDType a1( set( A(i    ,k) ) );
-               const SIMDType a2( set( A(i+1UL,k) ) );
-               const SIMDType a3( set( A(i+2UL,k) ) );
-               const SIMDType a4( set( A(i+3UL,k) ) );
-               const SIMDType b1( B.load(k,j         ) );
-               const SIMDType b2( B.load(k,j+SIMDSIZE) );
-               xmm1 += a1 * b1;
-               xmm2 += a1 * b2;
-               xmm3 += a2 * b1;
-               xmm4 += a2 * b2;
-               xmm5 += a3 * b1;
-               xmm6 += a3 * b2;
-               xmm7 += a4 * b1;
-               xmm8 += a4 * b2;
-            }
-
-            C.store( i    , j         , xmm1 * factor );
-            C.store( i    , j+SIMDSIZE, xmm2 * factor );
-            C.store( i+1UL, j         , xmm3 * factor );
-            C.store( i+1UL, j+SIMDSIZE, xmm4 * factor );
-            C.store( i+2UL, j         , xmm5 * factor );
-            C.store( i+2UL, j+SIMDSIZE, xmm6 * factor );
-            C.store( i+3UL, j         , xmm7 * factor );
-            C.store( i+3UL, j+SIMDSIZE, xmm8 * factor );
-         }
-
-         for( ; (i+3UL) <= iend; i+=3UL )
-         {
-            const size_t kbegin( ( IsUpper_v<MT4> )
-                                 ?( ( IsLower_v<MT5> )
-                                    ?( max( ( IsStrictlyUpper_v<MT4> ? i+1UL : i ), j ) )
-                                    :( IsStrictlyUpper_v<MT4> ? i+1UL : i ) )
-                                 :( IsLower_v<MT5> ? j : 0UL ) );
-            const size_t kend( ( IsLower_v<MT4> )
-                               ?( ( IsUpper_v<MT5> )
-                                  ?( min( ( IsStrictlyLower_v<MT4> ? i+2UL : i+3UL ), j+SIMDSIZE*2UL, K ) )
-                                  :( IsStrictlyLower_v<MT4> ? i+2UL : i+3UL ) )
-                               :( IsUpper_v<MT5> ? min( j+SIMDSIZE*2UL, K ) : K ) );
-
-            SIMDType xmm1, xmm2, xmm3, xmm4, xmm5, xmm6;
-
-            for( size_t k=kbegin; k<kend; ++k ) {
-               const SIMDType a1( set( A(i    ,k) ) );
-               const SIMDType a2( set( A(i+1UL,k) ) );
-               const SIMDType a3( set( A(i+2UL,k) ) );
-               const SIMDType b1( B.load(k,j         ) );
-               const SIMDType b2( B.load(k,j+SIMDSIZE) );
-               xmm1 += a1 * b1;
-               xmm2 += a1 * b2;
-               xmm3 += a2 * b1;
-               xmm4 += a2 * b2;
-               xmm5 += a3 * b1;
-               xmm6 += a3 * b2;
-            }
-
-            C.store( i    , j         , xmm1 * factor );
-            C.store( i    , j+SIMDSIZE, xmm2 * factor );
-            C.store( i+1UL, j         , xmm3 * factor );
-            C.store( i+1UL, j+SIMDSIZE, xmm4 * factor );
-            C.store( i+2UL, j         , xmm5 * factor );
-            C.store( i+2UL, j+SIMDSIZE, xmm6 * factor );
-         }
-
-         for( ; (i+2UL) <= iend; i+=2UL )
-         {
-            const size_t kbegin( ( IsUpper_v<MT4> )
-                                 ?( ( IsLower_v<MT5> )
-                                    ?( max( ( IsStrictlyUpper_v<MT4> ? i+1UL : i ), j ) )
-                                    :( IsStrictlyUpper_v<MT4> ? i+1UL : i ) )
-                                 :( IsLower_v<MT5> ? j : 0UL ) );
-            const size_t kend( ( IsLower_v<MT4> )
-                               ?( ( IsUpper_v<MT5> )
-                                  ?( min( ( IsStrictlyLower_v<MT4> ? i+1UL : i+2UL ), j+SIMDSIZE*2UL, K ) )
-                                  :( IsStrictlyLower_v<MT4> ? i+1UL : i+2UL ) )
-                               :( IsUpper_v<MT5> ? min( j+SIMDSIZE*2UL, K ) : K ) );
-
-            SIMDType xmm1, xmm2, xmm3, xmm4, xmm5, xmm6, xmm7, xmm8;
-            size_t k( kbegin );
-
-            for( ; (k+2UL) <= kend; k+=2UL ) {
-               const SIMDType a1( set( A(i    ,k    ) ) );
-               const SIMDType a2( set( A(i+1UL,k    ) ) );
-               const SIMDType a3( set( A(i    ,k+1UL) ) );
-               const SIMDType a4( set( A(i+1UL,k+1UL) ) );
-               const SIMDType b1( B.load(k    ,j         ) );
-               const SIMDType b2( B.load(k    ,j+SIMDSIZE) );
-               const SIMDType b3( B.load(k+1UL,j         ) );
-               const SIMDType b4( B.load(k+1UL,j+SIMDSIZE) );
-               xmm1 += a1 * b1;
-               xmm2 += a1 * b2;
-               xmm3 += a2 * b1;
-               xmm4 += a2 * b2;
-               xmm5 += a3 * b3;
-               xmm6 += a3 * b4;
-               xmm7 += a4 * b3;
-               xmm8 += a4 * b4;
-            }
-
-            for( ; k<kend; ++k ) {
-               const SIMDType a1( set( A(i    ,k) ) );
-               const SIMDType a2( set( A(i+1UL,k) ) );
-               const SIMDType b1( B.load(k,j         ) );
-               const SIMDType b2( B.load(k,j+SIMDSIZE) );
-               xmm1 += a1 * b1;
-               xmm2 += a1 * b2;
-               xmm3 += a2 * b1;
-               xmm4 += a2 * b2;
-            }
-
-            C.store( i    , j         , (xmm1+xmm5) * factor );
-            C.store( i    , j+SIMDSIZE, (xmm2+xmm6) * factor );
-            C.store( i+1UL, j         , (xmm3+xmm7) * factor );
-            C.store( i+1UL, j+SIMDSIZE, (xmm4+xmm8) * factor );
-         }
-
-         if( i < iend )
-         {
-            const size_t kbegin( ( IsUpper_v<MT4> )
-                                 ?( ( IsLower_v<MT5> )
-                                    ?( max( ( IsStrictlyUpper_v<MT4> ? i+1UL : i ), j ) )
-                                    :( IsStrictlyUpper_v<MT4> ? i+1UL : i ) )
-                                 :( IsLower_v<MT5> ? j : 0UL ) );
-            const size_t kend( ( IsUpper_v<MT5> )?( min( j+SIMDSIZE*2UL, K ) ):( K ) );
-
-            SIMDType xmm1, xmm2, xmm3, xmm4;
-            size_t k( kbegin );
-
-            for( ; (k+2UL) <= kend; k+=2UL ) {
-               const SIMDType a1( set( A(i,k    ) ) );
-               const SIMDType a2( set( A(i,k+1UL) ) );
-               xmm1 += a1 * B.load(k    ,j         );
-               xmm2 += a1 * B.load(k    ,j+SIMDSIZE);
-               xmm3 += a2 * B.load(k+1UL,j         );
-               xmm4 += a2 * B.load(k+1UL,j+SIMDSIZE);
-            }
-
-            for( ; k<kend; ++k ) {
-               const SIMDType a1( set( A(i,k) ) );
-               xmm1 += a1 * B.load(k,j         );
-               xmm2 += a1 * B.load(k,j+SIMDSIZE);
-            }
-
-            C.store( i, j         , (xmm1+xmm3) * factor );
-            C.store( i, j+SIMDSIZE, (xmm2+xmm4) * factor );
-
-            if( UPP ) ++i;
-         }
-
-         if( UPP ) {
-            const size_t jjend( min(j+SIMDSIZE*2UL,N) );
-            for( ; i<M; ++i ) {
-               for( size_t jj=j; jj<jjend; ++jj ) {
-                  reset( C(i,jj) );
-               }
-            }
-         }
-      }
-
-      for( ; j<jpos; j+=SIMDSIZE )
-      {
-         const size_t iend( UPP ? min(j+SIMDSIZE,M) : M );
-         size_t i( 0UL );
-
-         if( SYM || HERM ) {
-            const size_t jjend( min(j+SIMDSIZE,N) );
-            for( ; i<j; ++i ) {
-               for( size_t jj=j; jj<jjend; ++jj ) {
-                  C(i,jj) = HERM ? conj( C(jj,i) ) : C(jj,i);
-               }
-            }
-         }
-         else if( LOW ) {
-            const size_t jjend( min(j+SIMDSIZE,N) );
-            for( ; i<j; ++i ) {
-               for( size_t jj=j; jj<jjend; ++jj ) {
-                  reset( C(i,jj) );
-               }
-            }
-         }
-
-         for( ; (i+4UL) <= iend; i+=4UL )
-         {
-            const size_t kbegin( ( IsUpper_v<MT4> )
-                                 ?( ( IsLower_v<MT5> )
-                                    ?( max( ( IsStrictlyUpper_v<MT4> ? i+1UL : i ), j ) )
-                                    :( IsStrictlyUpper_v<MT4> ? i+1UL : i ) )
-                                 :( IsLower_v<MT5> ? j : 0UL ) );
-            const size_t kend( ( IsLower_v<MT4> )
-                               ?( IsStrictlyLower_v<MT4> ? i+3UL : i+4UL )
-                               :( K ) );
-
-            SIMDType xmm1, xmm2, xmm3, xmm4, xmm5, xmm6, xmm7, xmm8;
-            size_t k( kbegin );
-
-            for( ; (k+2UL) <= kend; k+=2UL ) {
-               const SIMDType b1( B.load(k    ,j) );
-               const SIMDType b2( B.load(k+1UL,j) );
-               xmm1 += set( A(i    ,k    ) ) * b1;
-               xmm2 += set( A(i+1UL,k    ) ) * b1;
-               xmm3 += set( A(i+2UL,k    ) ) * b1;
-               xmm4 += set( A(i+3UL,k    ) ) * b1;
-               xmm5 += set( A(i    ,k+1UL) ) * b2;
-               xmm6 += set( A(i+1UL,k+1UL) ) * b2;
-               xmm7 += set( A(i+2UL,k+1UL) ) * b2;
-               xmm8 += set( A(i+3UL,k+1UL) ) * b2;
-            }
-
-            for( ; k<kend; ++k ) {
-               const SIMDType b1( B.load(k,j) );
-               xmm1 += set( A(i    ,k) ) * b1;
-               xmm2 += set( A(i+1UL,k) ) * b1;
-               xmm3 += set( A(i+2UL,k) ) * b1;
-               xmm4 += set( A(i+3UL,k) ) * b1;
-            }
-
-            C.store( i    , j, (xmm1+xmm5) * factor );
-            C.store( i+1UL, j, (xmm2+xmm6) * factor );
-            C.store( i+2UL, j, (xmm3+xmm7) * factor );
-            C.store( i+3UL, j, (xmm4+xmm8) * factor );
-         }
-
-         for( ; (i+3UL) <= iend; i+=3UL )
-         {
-            const size_t kbegin( ( IsUpper_v<MT4> )
-                                 ?( ( IsLower_v<MT5> )
-                                    ?( max( ( IsStrictlyUpper_v<MT4> ? i+1UL : i ), j ) )
-                                    :( IsStrictlyUpper_v<MT4> ? i+1UL : i ) )
-                                 :( IsLower_v<MT5> ? j : 0UL ) );
-            const size_t kend( ( IsLower_v<MT4> )
-                               ?( IsStrictlyLower_v<MT4> ? i+2UL : i+3UL )
-                               :( K ) );
-
-            SIMDType xmm1, xmm2, xmm3, xmm4, xmm5, xmm6;
-            size_t k( kbegin );
-
-            for( ; (k+2UL) <= kend; k+=2UL ) {
-               const SIMDType b1( B.load(k    ,j) );
-               const SIMDType b2( B.load(k+1UL,j) );
-               xmm1 += set( A(i    ,k    ) ) * b1;
-               xmm2 += set( A(i+1UL,k    ) ) * b1;
-               xmm3 += set( A(i+2UL,k    ) ) * b1;
-               xmm4 += set( A(i    ,k+1UL) ) * b2;
-               xmm5 += set( A(i+1UL,k+1UL) ) * b2;
-               xmm6 += set( A(i+2UL,k+1UL) ) * b2;
-            }
-
-            for( ; k<kend; ++k ) {
-               const SIMDType b1( B.load(k,j) );
-               xmm1 += set( A(i    ,k) ) * b1;
-               xmm2 += set( A(i+1UL,k) ) * b1;
-               xmm3 += set( A(i+2UL,k) ) * b1;
-            }
-
-            C.store( i    , j, (xmm1+xmm4) * factor );
-            C.store( i+1UL, j, (xmm2+xmm5) * factor );
-            C.store( i+2UL, j, (xmm3+xmm6) * factor );
-         }
-
-         for( ; (i+2UL) <= iend; i+=2UL )
-         {
-            const size_t kbegin( ( IsUpper_v<MT4> )
-                                 ?( ( IsLower_v<MT5> )
-                                    ?( max( ( IsStrictlyUpper_v<MT4> ? i+1UL : i ), j ) )
-                                    :( IsStrictlyUpper_v<MT4> ? i+1UL : i ) )
-                                 :( IsLower_v<MT5> ? j : 0UL ) );
-            const size_t kend( ( IsLower_v<MT4> )
-                               ?( IsStrictlyLower_v<MT4> ? i+1UL : i+2UL )
-                               :( K ) );
-
-            SIMDType xmm1, xmm2, xmm3, xmm4;
-            size_t k( kbegin );
-
-            for( ; (k+2UL) <= kend; k+=2UL ) {
-               const SIMDType b1( B.load(k    ,j) );
-               const SIMDType b2( B.load(k+1UL,j) );
-               xmm1 += set( A(i    ,k    ) ) * b1;
-               xmm2 += set( A(i+1UL,k    ) ) * b1;
-               xmm3 += set( A(i    ,k+1UL) ) * b2;
-               xmm4 += set( A(i+1UL,k+1UL) ) * b2;
-            }
-
-            for( ; k<kend; ++k ) {
-               const SIMDType b1( B.load(k,j) );
-               xmm1 += set( A(i    ,k) ) * b1;
-               xmm2 += set( A(i+1UL,k) ) * b1;
-            }
-
-            C.store( i    , j, (xmm1+xmm3) * factor );
-            C.store( i+1UL, j, (xmm2+xmm4) * factor );
-         }
-
-         if( i < iend )
-         {
-            const size_t kbegin( ( IsUpper_v<MT4> )
-                                 ?( ( IsLower_v<MT5> )
-                                    ?( max( ( IsStrictlyUpper_v<MT4> ? i+1UL : i ), j ) )
-                                    :( IsStrictlyUpper_v<MT4> ? i+1UL : i ) )
-                                 :( IsLower_v<MT5> ? j : 0UL ) );
-
-            SIMDType xmm1, xmm2;
-            size_t k( kbegin );
-
-            for( ; (k+2UL) <= K; k+=2UL ) {
-               xmm1 += set( A(i,k    ) ) * B.load(k    ,j);
-               xmm2 += set( A(i,k+1UL) ) * B.load(k+1UL,j);
-            }
-
-            for( ; k<K; ++k ) {
-               xmm1 += set( A(i,k) ) * B.load(k,j);
-            }
-
-            C.store( i, j, (xmm1+xmm2) * factor );
-
-            if( UPP ) ++i;
-         }
-
-         if( UPP ) {
-            const size_t jjend( min(j+SIMDSIZE,N) );
-            for( ; i<M; ++i ) {
-               for( size_t jj=j; jj<jjend; ++jj ) {
-                  reset( C(i,jj) );
-               }
-            }
-         }
-      }
-
-      for( ; remainder && j<N; ++j )
-      {
-         size_t i( 0UL );
-
-         if( SYM || HERM ) {
-            for( ; i<j; ++i ) {
-               C(i,j) = HERM ? conj( C(j,i) ) : C(j,i);
-            }
-         }
-         else if( LOW ) {
-            for( ; i<j; ++i ) {
-               reset( C(i,j) );
-            }
-         }
-
-         for( ; (i+2UL) <= M; i+=2UL )
-         {
-            const size_t kbegin( ( IsUpper_v<MT4> )
-                                 ?( ( IsLower_v<MT5> )
-                                    ?( max( ( IsStrictlyUpper_v<MT4> ? i+1UL : i ), j ) )
-                                    :( IsStrictlyUpper_v<MT4> ? i+1UL : i ) )
-                                 :( IsLower_v<MT5> ? j : 0UL ) );
-            const size_t kend( ( IsLower_v<MT4> )
-                               ?( IsStrictlyLower_v<MT4> ? i+1UL : i+2UL )
-                               :( K ) );
-
-            ElementType value1{};
-            ElementType value2{};
-
-            for( size_t k=kbegin; k<kend; ++k ) {
-               value1 += A(i    ,k) * B(k,j);
-               value2 += A(i+1UL,k) * B(k,j);
-            }
-
-            C(i    ,j) = value1 * scalar;
-            C(i+1UL,j) = value2 * scalar;
-         }
-
-         if( i < M )
-         {
-            const size_t kbegin( ( IsUpper_v<MT4> )
-                                 ?( ( IsLower_v<MT5> )
-                                    ?( max( ( IsStrictlyUpper_v<MT4> ? i+1UL : i ), j ) )
-                                    :( IsStrictlyUpper_v<MT4> ? i+1UL : i ) )
-                                 :( IsLower_v<MT5> ? j : 0UL ) );
-
-            ElementType value{};
-
-            for( size_t k=kbegin; k<K; ++k ) {
-               value += A(i,k) * B(k,j);
-            }
-
-            C(i,j) = value * scalar;
          }
       }
    }
@@ -6187,8 +5970,8 @@ class DMatScalarMultExpr< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, ST, false >
            , typename MT4    // Type of the left-hand side matrix operand
            , typename MT5    // Type of the right-hand side matrix operand
            , typename ST2 >  // Type of the scalar value
-   static inline auto selectSmallAssignKernel( MT3& C, const MT4& A, const MT5& B, ST2 scalar )
-      -> EnableIf_t< IsColumnMajorMatrix_v<MT3> && UseVectorizedDefaultKernel_v<MT3,MT4,MT5,ST2> >
+   static inline EnableIf_t< UseVectorizedDefaultKernel_v<MT3,MT4,MT5,ST2> >
+      selectSmallAssignKernel( DenseMatrix<MT3,true>& C, const MT4& A, const MT5& B, ST2 scalar )
    {
       BLAZE_CONSTRAINT_MUST_NOT_BE_SYMMETRIC_MATRIX_TYPE( MT4 );
       BLAZE_CONSTRAINT_MUST_NOT_BE_SYMMETRIC_MATRIX_TYPE( MT5 );
@@ -6199,19 +5982,19 @@ class DMatScalarMultExpr< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, ST, false >
 
       if( !IsResizable_v<MT4> && IsResizable_v<MT5> ) {
          const OppositeType_t<MT4> tmp( serial( A ) );
-         assign( C, fwd( tmp * B ) * scalar );
+         assign( ~C, fwd( tmp * B ) * scalar );
       }
       else if( IsResizable_v<MT4> && !IsResizable_v<MT5> ) {
          const OppositeType_t<MT5> tmp( serial( B ) );
-         assign( C, fwd( A * tmp ) * scalar );
+         assign( ~C, fwd( A * tmp ) * scalar );
       }
       else if( A.rows() * A.columns() <= B.rows() * B.columns() ) {
          const OppositeType_t<MT4> tmp( serial( A ) );
-         assign( C, fwd( tmp * B ) * scalar );
+         assign( ~C, fwd( tmp * B ) * scalar );
       }
       else {
          const OppositeType_t<MT5> tmp( serial( B ) );
-         assign( C, fwd( A * tmp ) * scalar );
+         assign( ~C, fwd( A * tmp ) * scalar );
       }
    }
    //**********************************************************************************************
@@ -6234,8 +6017,8 @@ class DMatScalarMultExpr< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, ST, false >
            , typename MT4    // Type of the left-hand side matrix operand
            , typename MT5    // Type of the right-hand side matrix operand
            , typename ST2 >  // Type of the scalar value
-   static inline auto selectLargeAssignKernel( MT3& C, const MT4& A, const MT5& B, ST2 scalar )
-      -> DisableIf_t< UseVectorizedDefaultKernel_v<MT3,MT4,MT5,ST2> >
+   static inline DisableIf_t< UseVectorizedDefaultKernel_v<MT3,MT4,MT5,ST2> >
+      selectLargeAssignKernel( MT3& C, const MT4& A, const MT5& B, ST2 scalar )
    {
       selectDefaultAssignKernel( C, A, B, scalar );
    }
@@ -6260,8 +6043,8 @@ class DMatScalarMultExpr< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, ST, false >
            , typename MT4    // Type of the left-hand side matrix operand
            , typename MT5    // Type of the right-hand side matrix operand
            , typename ST2 >  // Type of the scalar value
-   static inline auto selectLargeAssignKernel( MT3& C, const MT4& A, const MT5& B, ST2 scalar )
-      -> EnableIf_t< UseVectorizedDefaultKernel_v<MT3,MT4,MT5,ST2> >
+   static inline EnableIf_t< UseVectorizedDefaultKernel_v<MT3,MT4,MT5,ST2> >
+      selectLargeAssignKernel( MT3& C, const MT4& A, const MT5& B, ST2 scalar )
    {
       if( SYM )
          smmm( C, A, B, scalar );
@@ -6294,8 +6077,8 @@ class DMatScalarMultExpr< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, ST, false >
            , typename MT4    // Type of the left-hand side matrix operand
            , typename MT5    // Type of the right-hand side matrix operand
            , typename ST2 >  // Type of the scalar value
-   static inline auto selectBlasAssignKernel( MT3& C, const MT4& A, const MT5& B, ST2 scalar )
-      -> DisableIf_t< UseBlasKernel_v<MT3,MT4,MT5,ST2> >
+   static inline DisableIf_t< UseBlasKernel_v<MT3,MT4,MT5,ST2> >
+      selectBlasAssignKernel( MT3& C, const MT4& A, const MT5& B, ST2 scalar )
    {
       selectLargeAssignKernel( C, A, B, scalar );
    }
@@ -6320,8 +6103,8 @@ class DMatScalarMultExpr< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, ST, false >
            , typename MT4    // Type of the left-hand side matrix operand
            , typename MT5    // Type of the right-hand side matrix operand
            , typename ST2 >  // Type of the scalar value
-   static inline auto selectBlasAssignKernel( MT3& C, const MT4& A, const MT5& B, ST2 scalar )
-      -> EnableIf_t< UseBlasKernel_v<MT3,MT4,MT5,ST2> >
+   static inline EnableIf_t< UseBlasKernel_v<MT3,MT4,MT5,ST2> >
+      selectBlasAssignKernel( MT3& C, const MT4& A, const MT5& B, ST2 scalar )
    {
       using ET = ElementType_t<MT3>;
 
@@ -6354,8 +6137,8 @@ class DMatScalarMultExpr< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, ST, false >
    */
    template< typename MT  // Type of the target sparse matrix
            , bool SO >    // Storage order of the target sparse matrix
-   friend inline auto assign( SparseMatrix<MT,SO>& lhs, const DMatScalarMultExpr& rhs )
-      -> DisableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
+   friend inline DisableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
+      assign( SparseMatrix<MT,SO>& lhs, const DMatScalarMultExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -6393,8 +6176,8 @@ class DMatScalarMultExpr< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, ST, false >
    // case the symmetry of either of the two matrix operands can be exploited.
    */
    template< typename MT >  // Type of the target matrix
-   friend inline auto assign( Matrix<MT,true>& lhs, const DMatScalarMultExpr& rhs )
-      -> EnableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
+   friend inline EnableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
+      assign( Matrix<MT,true>& lhs, const DMatScalarMultExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -6431,8 +6214,8 @@ class DMatScalarMultExpr< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, ST, false >
    */
    template< typename MT  // Type of the target dense matrix
            , bool SO >    // Storage order of the target dense matrix
-   friend inline auto addAssign( DenseMatrix<MT,SO>& lhs, const DMatScalarMultExpr& rhs )
-      -> DisableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
+   friend inline DisableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
+      addAssign( DenseMatrix<MT,SO>& lhs, const DMatScalarMultExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -6504,8 +6287,8 @@ class DMatScalarMultExpr< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, ST, false >
            , typename MT4    // Type of the left-hand side matrix operand
            , typename MT5    // Type of the right-hand side matrix operand
            , typename ST2 >  // Type of the scalar value
-   static inline auto selectDefaultAddAssignKernel( MT3& C, const MT4& A, const MT5& B, ST2 scalar )
-      -> EnableIf_t< !IsDiagonal_v<MT4> && !IsDiagonal_v<MT5> >
+   static inline EnableIf_t< !IsDiagonal_v<MT4> && !IsDiagonal_v<MT5> >
+      selectDefaultAddAssignKernel( MT3& C, const MT4& A, const MT5& B, ST2 scalar )
    {
       const ResultType tmp( serial( A * B * scalar ) );
       addAssign( C, tmp );
@@ -6530,8 +6313,8 @@ class DMatScalarMultExpr< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, ST, false >
            , typename MT4    // Type of the left-hand side matrix operand
            , typename MT5    // Type of the right-hand side matrix operand
            , typename ST2 >  // Type of the scalar value
-   static inline auto selectDefaultAddAssignKernel( MT3& C, const MT4& A, const MT5& B, ST2 scalar )
-      -> EnableIf_t< !IsDiagonal_v<MT4> && IsDiagonal_v<MT5> >
+   static inline EnableIf_t< !IsDiagonal_v<MT4> && IsDiagonal_v<MT5> >
+      selectDefaultAddAssignKernel( MT3& C, const MT4& A, const MT5& B, ST2 scalar )
    {
       BLAZE_CONSTRAINT_MUST_BE_ROW_MAJOR_MATRIX_TYPE( MT3 );
 
@@ -6580,8 +6363,8 @@ class DMatScalarMultExpr< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, ST, false >
            , typename MT4    // Type of the left-hand side matrix operand
            , typename MT5    // Type of the right-hand side matrix operand
            , typename ST2 >  // Type of the scalar value
-   static inline auto selectDefaultAddAssignKernel( MT3& C, const MT4& A, const MT5& B, ST2 scalar )
-      -> EnableIf_t< IsDiagonal_v<MT4> && !IsDiagonal_v<MT5> >
+   static inline EnableIf_t< IsDiagonal_v<MT4> && !IsDiagonal_v<MT5> >
+      selectDefaultAddAssignKernel( MT3& C, const MT4& A, const MT5& B, ST2 scalar )
    {
       BLAZE_CONSTRAINT_MUST_BE_ROW_MAJOR_MATRIX_TYPE( MT3 );
 
@@ -6630,8 +6413,8 @@ class DMatScalarMultExpr< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, ST, false >
            , typename MT4    // Type of the left-hand side matrix operand
            , typename MT5    // Type of the right-hand side matrix operand
            , typename ST2 >  // Type of the scalar value
-   static inline auto selectDefaultAddAssignKernel( MT3& C, const MT4& A, const MT5& B, ST2 scalar )
-      -> EnableIf_t< IsDiagonal_v<MT4> && IsDiagonal_v<MT5> >
+   static inline EnableIf_t< IsDiagonal_v<MT4> && IsDiagonal_v<MT5> >
+      selectDefaultAddAssignKernel( MT3& C, const MT4& A, const MT5& B, ST2 scalar )
    {
       BLAZE_CONSTRAINT_MUST_BE_ROW_MAJOR_MATRIX_TYPE( MT3 );
 
@@ -6659,8 +6442,8 @@ class DMatScalarMultExpr< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, ST, false >
            , typename MT4    // Type of the left-hand side matrix operand
            , typename MT5    // Type of the right-hand side matrix operand
            , typename ST2 >  // Type of the scalar value
-   static inline auto selectSmallAddAssignKernel( MT3& C, const MT4& A, const MT5& B, ST2 scalar )
-      -> DisableIf_t< UseVectorizedDefaultKernel_v<MT3,MT4,MT5,ST2> >
+   static inline DisableIf_t< UseVectorizedDefaultKernel_v<MT3,MT4,MT5,ST2> >
+      selectSmallAddAssignKernel( MT3& C, const MT4& A, const MT5& B, ST2 scalar )
    {
       selectDefaultAddAssignKernel( C, A, B, scalar );
    }
@@ -6685,8 +6468,8 @@ class DMatScalarMultExpr< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, ST, false >
            , typename MT4    // Type of the left-hand side matrix operand
            , typename MT5    // Type of the right-hand side matrix operand
            , typename ST2 >  // Type of the scalar value
-   static inline auto selectSmallAddAssignKernel( MT3& C, const MT4& A, const MT5& B, ST2 scalar )
-      -> EnableIf_t< IsRowMajorMatrix_v<MT3> && UseVectorizedDefaultKernel_v<MT3,MT4,MT5,ST2> >
+   static inline EnableIf_t< UseVectorizedDefaultKernel_v<MT3,MT4,MT5,ST2> >
+      selectSmallAddAssignKernel( DenseMatrix<MT3,false>& C, const MT4& A, const MT5& B, ST2 scalar )
    {
       constexpr bool remainder( !IsPadded_v<MT3> || !IsPadded_v<MT5> );
 
@@ -6733,14 +6516,14 @@ class DMatScalarMultExpr< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, ST, false >
                   xmm8 += a1 * B.load(k,j+SIMDSIZE*7UL);
                }
 
-               C.store( i, j             , C.load(i,j             ) + xmm1 * factor );
-               C.store( i, j+SIMDSIZE    , C.load(i,j+SIMDSIZE    ) + xmm2 * factor );
-               C.store( i, j+SIMDSIZE*2UL, C.load(i,j+SIMDSIZE*2UL) + xmm3 * factor );
-               C.store( i, j+SIMDSIZE*3UL, C.load(i,j+SIMDSIZE*3UL) + xmm4 * factor );
-               C.store( i, j+SIMDSIZE*4UL, C.load(i,j+SIMDSIZE*4UL) + xmm5 * factor );
-               C.store( i, j+SIMDSIZE*5UL, C.load(i,j+SIMDSIZE*5UL) + xmm6 * factor );
-               C.store( i, j+SIMDSIZE*6UL, C.load(i,j+SIMDSIZE*6UL) + xmm7 * factor );
-               C.store( i, j+SIMDSIZE*7UL, C.load(i,j+SIMDSIZE*7UL) + xmm8 * factor );
+               (~C).store( i, j             , (~C).load(i,j             ) + xmm1 * factor );
+               (~C).store( i, j+SIMDSIZE    , (~C).load(i,j+SIMDSIZE    ) + xmm2 * factor );
+               (~C).store( i, j+SIMDSIZE*2UL, (~C).load(i,j+SIMDSIZE*2UL) + xmm3 * factor );
+               (~C).store( i, j+SIMDSIZE*3UL, (~C).load(i,j+SIMDSIZE*3UL) + xmm4 * factor );
+               (~C).store( i, j+SIMDSIZE*4UL, (~C).load(i,j+SIMDSIZE*4UL) + xmm5 * factor );
+               (~C).store( i, j+SIMDSIZE*5UL, (~C).load(i,j+SIMDSIZE*5UL) + xmm6 * factor );
+               (~C).store( i, j+SIMDSIZE*6UL, (~C).load(i,j+SIMDSIZE*6UL) + xmm7 * factor );
+               (~C).store( i, j+SIMDSIZE*7UL, (~C).load(i,j+SIMDSIZE*7UL) + xmm8 * factor );
             }
          }
       }
@@ -6784,16 +6567,16 @@ class DMatScalarMultExpr< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, ST, false >
                xmm10 += a2 * b5;
             }
 
-            C.store( i    , j             , C.load(i    ,j             ) + xmm1  * factor );
-            C.store( i    , j+SIMDSIZE    , C.load(i    ,j+SIMDSIZE    ) + xmm2  * factor );
-            C.store( i    , j+SIMDSIZE*2UL, C.load(i    ,j+SIMDSIZE*2UL) + xmm3  * factor );
-            C.store( i    , j+SIMDSIZE*3UL, C.load(i    ,j+SIMDSIZE*3UL) + xmm4  * factor );
-            C.store( i    , j+SIMDSIZE*4UL, C.load(i    ,j+SIMDSIZE*4UL) + xmm5  * factor );
-            C.store( i+1UL, j             , C.load(i+1UL,j             ) + xmm6  * factor );
-            C.store( i+1UL, j+SIMDSIZE    , C.load(i+1UL,j+SIMDSIZE    ) + xmm7  * factor );
-            C.store( i+1UL, j+SIMDSIZE*2UL, C.load(i+1UL,j+SIMDSIZE*2UL) + xmm8  * factor );
-            C.store( i+1UL, j+SIMDSIZE*3UL, C.load(i+1UL,j+SIMDSIZE*3UL) + xmm9  * factor );
-            C.store( i+1UL, j+SIMDSIZE*4UL, C.load(i+1UL,j+SIMDSIZE*4UL) + xmm10 * factor );
+            (~C).store( i    , j             , (~C).load(i    ,j             ) + xmm1  * factor );
+            (~C).store( i    , j+SIMDSIZE    , (~C).load(i    ,j+SIMDSIZE    ) + xmm2  * factor );
+            (~C).store( i    , j+SIMDSIZE*2UL, (~C).load(i    ,j+SIMDSIZE*2UL) + xmm3  * factor );
+            (~C).store( i    , j+SIMDSIZE*3UL, (~C).load(i    ,j+SIMDSIZE*3UL) + xmm4  * factor );
+            (~C).store( i    , j+SIMDSIZE*4UL, (~C).load(i    ,j+SIMDSIZE*4UL) + xmm5  * factor );
+            (~C).store( i+1UL, j             , (~C).load(i+1UL,j             ) + xmm6  * factor );
+            (~C).store( i+1UL, j+SIMDSIZE    , (~C).load(i+1UL,j+SIMDSIZE    ) + xmm7  * factor );
+            (~C).store( i+1UL, j+SIMDSIZE*2UL, (~C).load(i+1UL,j+SIMDSIZE*2UL) + xmm8  * factor );
+            (~C).store( i+1UL, j+SIMDSIZE*3UL, (~C).load(i+1UL,j+SIMDSIZE*3UL) + xmm9  * factor );
+            (~C).store( i+1UL, j+SIMDSIZE*4UL, (~C).load(i+1UL,j+SIMDSIZE*4UL) + xmm10 * factor );
          }
 
          if( i < M )
@@ -6816,11 +6599,11 @@ class DMatScalarMultExpr< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, ST, false >
                xmm5 += a1 * B.load(k,j+SIMDSIZE*4UL);
             }
 
-            C.store( i, j             , C.load(i,j             ) + xmm1 * factor );
-            C.store( i, j+SIMDSIZE    , C.load(i,j+SIMDSIZE    ) + xmm2 * factor );
-            C.store( i, j+SIMDSIZE*2UL, C.load(i,j+SIMDSIZE*2UL) + xmm3 * factor );
-            C.store( i, j+SIMDSIZE*3UL, C.load(i,j+SIMDSIZE*3UL) + xmm4 * factor );
-            C.store( i, j+SIMDSIZE*4UL, C.load(i,j+SIMDSIZE*4UL) + xmm5 * factor );
+            (~C).store( i, j             , (~C).load(i,j             ) + xmm1 * factor );
+            (~C).store( i, j+SIMDSIZE    , (~C).load(i,j+SIMDSIZE    ) + xmm2 * factor );
+            (~C).store( i, j+SIMDSIZE*2UL, (~C).load(i,j+SIMDSIZE*2UL) + xmm3 * factor );
+            (~C).store( i, j+SIMDSIZE*3UL, (~C).load(i,j+SIMDSIZE*3UL) + xmm4 * factor );
+            (~C).store( i, j+SIMDSIZE*4UL, (~C).load(i,j+SIMDSIZE*4UL) + xmm5 * factor );
          }
       }
 
@@ -6860,14 +6643,14 @@ class DMatScalarMultExpr< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, ST, false >
                xmm8 += a2 * b4;
             }
 
-            C.store( i    , j             , C.load(i    ,j             ) + xmm1 * factor );
-            C.store( i    , j+SIMDSIZE    , C.load(i    ,j+SIMDSIZE    ) + xmm2 * factor );
-            C.store( i    , j+SIMDSIZE*2UL, C.load(i    ,j+SIMDSIZE*2UL) + xmm3 * factor );
-            C.store( i    , j+SIMDSIZE*3UL, C.load(i    ,j+SIMDSIZE*3UL) + xmm4 * factor );
-            C.store( i+1UL, j             , C.load(i+1UL,j             ) + xmm5 * factor );
-            C.store( i+1UL, j+SIMDSIZE    , C.load(i+1UL,j+SIMDSIZE    ) + xmm6 * factor );
-            C.store( i+1UL, j+SIMDSIZE*2UL, C.load(i+1UL,j+SIMDSIZE*2UL) + xmm7 * factor );
-            C.store( i+1UL, j+SIMDSIZE*3UL, C.load(i+1UL,j+SIMDSIZE*3UL) + xmm8 * factor );
+            (~C).store( i    , j             , (~C).load(i    ,j             ) + xmm1 * factor );
+            (~C).store( i    , j+SIMDSIZE    , (~C).load(i    ,j+SIMDSIZE    ) + xmm2 * factor );
+            (~C).store( i    , j+SIMDSIZE*2UL, (~C).load(i    ,j+SIMDSIZE*2UL) + xmm3 * factor );
+            (~C).store( i    , j+SIMDSIZE*3UL, (~C).load(i    ,j+SIMDSIZE*3UL) + xmm4 * factor );
+            (~C).store( i+1UL, j             , (~C).load(i+1UL,j             ) + xmm5 * factor );
+            (~C).store( i+1UL, j+SIMDSIZE    , (~C).load(i+1UL,j+SIMDSIZE    ) + xmm6 * factor );
+            (~C).store( i+1UL, j+SIMDSIZE*2UL, (~C).load(i+1UL,j+SIMDSIZE*2UL) + xmm7 * factor );
+            (~C).store( i+1UL, j+SIMDSIZE*3UL, (~C).load(i+1UL,j+SIMDSIZE*3UL) + xmm8 * factor );
          }
 
          if( i < M )
@@ -6889,10 +6672,10 @@ class DMatScalarMultExpr< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, ST, false >
                xmm4 += a1 * B.load(k,j+SIMDSIZE*3UL);
             }
 
-            C.store( i, j             , C.load(i,j             ) + xmm1 * factor );
-            C.store( i, j+SIMDSIZE    , C.load(i,j+SIMDSIZE    ) + xmm2 * factor );
-            C.store( i, j+SIMDSIZE*2UL, C.load(i,j+SIMDSIZE*2UL) + xmm3 * factor );
-            C.store( i, j+SIMDSIZE*3UL, C.load(i,j+SIMDSIZE*3UL) + xmm4 * factor );
+            (~C).store( i, j             , (~C).load(i,j             ) + xmm1 * factor );
+            (~C).store( i, j+SIMDSIZE    , (~C).load(i,j+SIMDSIZE    ) + xmm2 * factor );
+            (~C).store( i, j+SIMDSIZE*2UL, (~C).load(i,j+SIMDSIZE*2UL) + xmm3 * factor );
+            (~C).store( i, j+SIMDSIZE*3UL, (~C).load(i,j+SIMDSIZE*3UL) + xmm4 * factor );
          }
       }
 
@@ -6929,12 +6712,12 @@ class DMatScalarMultExpr< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, ST, false >
                xmm6 += a2 * b3;
             }
 
-            C.store( i    , j             , C.load(i    ,j             ) + xmm1 * factor );
-            C.store( i    , j+SIMDSIZE    , C.load(i    ,j+SIMDSIZE    ) + xmm2 * factor );
-            C.store( i    , j+SIMDSIZE*2UL, C.load(i    ,j+SIMDSIZE*2UL) + xmm3 * factor );
-            C.store( i+1UL, j             , C.load(i+1UL,j             ) + xmm4 * factor );
-            C.store( i+1UL, j+SIMDSIZE    , C.load(i+1UL,j+SIMDSIZE    ) + xmm5 * factor );
-            C.store( i+1UL, j+SIMDSIZE*2UL, C.load(i+1UL,j+SIMDSIZE*2UL) + xmm6 * factor );
+            (~C).store( i    , j             , (~C).load(i    ,j             ) + xmm1 * factor );
+            (~C).store( i    , j+SIMDSIZE    , (~C).load(i    ,j+SIMDSIZE    ) + xmm2 * factor );
+            (~C).store( i    , j+SIMDSIZE*2UL, (~C).load(i    ,j+SIMDSIZE*2UL) + xmm3 * factor );
+            (~C).store( i+1UL, j             , (~C).load(i+1UL,j             ) + xmm4 * factor );
+            (~C).store( i+1UL, j+SIMDSIZE    , (~C).load(i+1UL,j+SIMDSIZE    ) + xmm5 * factor );
+            (~C).store( i+1UL, j+SIMDSIZE*2UL, (~C).load(i+1UL,j+SIMDSIZE*2UL) + xmm6 * factor );
          }
 
          if( i < M )
@@ -6955,9 +6738,9 @@ class DMatScalarMultExpr< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, ST, false >
                xmm3 += a1 * B.load(k,j+SIMDSIZE*2UL);
             }
 
-            C.store( i, j             , C.load(i,j             ) + xmm1 * factor );
-            C.store( i, j+SIMDSIZE    , C.load(i,j+SIMDSIZE    ) + xmm2 * factor );
-            C.store( i, j+SIMDSIZE*2UL, C.load(i,j+SIMDSIZE*2UL) + xmm3 * factor );
+            (~C).store( i, j             , (~C).load(i,j             ) + xmm1 * factor );
+            (~C).store( i, j+SIMDSIZE    , (~C).load(i,j+SIMDSIZE    ) + xmm2 * factor );
+            (~C).store( i, j+SIMDSIZE*2UL, (~C).load(i,j+SIMDSIZE*2UL) + xmm3 * factor );
          }
       }
 
@@ -6998,14 +6781,14 @@ class DMatScalarMultExpr< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, ST, false >
                xmm8 += a4 * b2;
             }
 
-            C.store( i    , j         , C.load(i    ,j         ) + xmm1 * factor );
-            C.store( i    , j+SIMDSIZE, C.load(i    ,j+SIMDSIZE) + xmm2 * factor );
-            C.store( i+1UL, j         , C.load(i+1UL,j         ) + xmm3 * factor );
-            C.store( i+1UL, j+SIMDSIZE, C.load(i+1UL,j+SIMDSIZE) + xmm4 * factor );
-            C.store( i+2UL, j         , C.load(i+2UL,j         ) + xmm5 * factor );
-            C.store( i+2UL, j+SIMDSIZE, C.load(i+2UL,j+SIMDSIZE) + xmm6 * factor );
-            C.store( i+3UL, j         , C.load(i+3UL,j         ) + xmm7 * factor );
-            C.store( i+3UL, j+SIMDSIZE, C.load(i+3UL,j+SIMDSIZE) + xmm8 * factor );
+            (~C).store( i    , j         , (~C).load(i    ,j         ) + xmm1 * factor );
+            (~C).store( i    , j+SIMDSIZE, (~C).load(i    ,j+SIMDSIZE) + xmm2 * factor );
+            (~C).store( i+1UL, j         , (~C).load(i+1UL,j         ) + xmm3 * factor );
+            (~C).store( i+1UL, j+SIMDSIZE, (~C).load(i+1UL,j+SIMDSIZE) + xmm4 * factor );
+            (~C).store( i+2UL, j         , (~C).load(i+2UL,j         ) + xmm5 * factor );
+            (~C).store( i+2UL, j+SIMDSIZE, (~C).load(i+2UL,j+SIMDSIZE) + xmm6 * factor );
+            (~C).store( i+3UL, j         , (~C).load(i+3UL,j         ) + xmm7 * factor );
+            (~C).store( i+3UL, j+SIMDSIZE, (~C).load(i+3UL,j+SIMDSIZE) + xmm8 * factor );
          }
 
          for( ; (i+3UL) <= iend; i+=3UL )
@@ -7037,12 +6820,12 @@ class DMatScalarMultExpr< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, ST, false >
                xmm6 += a3 * b2;
             }
 
-            C.store( i    , j         , C.load(i    ,j         ) + xmm1 * factor );
-            C.store( i    , j+SIMDSIZE, C.load(i    ,j+SIMDSIZE) + xmm2 * factor );
-            C.store( i+1UL, j         , C.load(i+1UL,j         ) + xmm3 * factor );
-            C.store( i+1UL, j+SIMDSIZE, C.load(i+1UL,j+SIMDSIZE) + xmm4 * factor );
-            C.store( i+2UL, j         , C.load(i+2UL,j         ) + xmm5 * factor );
-            C.store( i+2UL, j+SIMDSIZE, C.load(i+2UL,j+SIMDSIZE) + xmm6 * factor );
+            (~C).store( i    , j         , (~C).load(i    ,j         ) + xmm1 * factor );
+            (~C).store( i    , j+SIMDSIZE, (~C).load(i    ,j+SIMDSIZE) + xmm2 * factor );
+            (~C).store( i+1UL, j         , (~C).load(i+1UL,j         ) + xmm3 * factor );
+            (~C).store( i+1UL, j+SIMDSIZE, (~C).load(i+1UL,j+SIMDSIZE) + xmm4 * factor );
+            (~C).store( i+2UL, j         , (~C).load(i+2UL,j         ) + xmm5 * factor );
+            (~C).store( i+2UL, j+SIMDSIZE, (~C).load(i+2UL,j+SIMDSIZE) + xmm6 * factor );
          }
 
          for( ; (i+2UL) <= iend; i+=2UL )
@@ -7091,10 +6874,10 @@ class DMatScalarMultExpr< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, ST, false >
                xmm4 += a2 * b2;
             }
 
-            C.store( i    , j         , C.load(i    ,j         ) + (xmm1+xmm5) * factor );
-            C.store( i    , j+SIMDSIZE, C.load(i    ,j+SIMDSIZE) + (xmm2+xmm6) * factor );
-            C.store( i+1UL, j         , C.load(i+1UL,j         ) + (xmm3+xmm7) * factor );
-            C.store( i+1UL, j+SIMDSIZE, C.load(i+1UL,j+SIMDSIZE) + (xmm4+xmm8) * factor );
+            (~C).store( i    , j         , (~C).load(i    ,j         ) + (xmm1+xmm5) * factor );
+            (~C).store( i    , j+SIMDSIZE, (~C).load(i    ,j+SIMDSIZE) + (xmm2+xmm6) * factor );
+            (~C).store( i+1UL, j         , (~C).load(i+1UL,j         ) + (xmm3+xmm7) * factor );
+            (~C).store( i+1UL, j+SIMDSIZE, (~C).load(i+1UL,j+SIMDSIZE) + (xmm4+xmm8) * factor );
          }
 
          if( i < iend )
@@ -7124,8 +6907,8 @@ class DMatScalarMultExpr< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, ST, false >
                xmm2 += a1 * B.load(k,j+SIMDSIZE);
             }
 
-            C.store( i, j         , C.load(i,j         ) + (xmm1+xmm3) * factor );
-            C.store( i, j+SIMDSIZE, C.load(i,j+SIMDSIZE) + (xmm2+xmm4) * factor );
+            (~C).store( i, j         , (~C).load(i,j         ) + (xmm1+xmm3) * factor );
+            (~C).store( i, j+SIMDSIZE, (~C).load(i,j+SIMDSIZE) + (xmm2+xmm4) * factor );
          }
       }
 
@@ -7169,10 +6952,10 @@ class DMatScalarMultExpr< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, ST, false >
                xmm4 += set( A(i+3UL,k) ) * b1;
             }
 
-            C.store( i    , j, C.load(i    ,j) + (xmm1+xmm5) * factor );
-            C.store( i+1UL, j, C.load(i+1UL,j) + (xmm2+xmm6) * factor );
-            C.store( i+2UL, j, C.load(i+2UL,j) + (xmm3+xmm7) * factor );
-            C.store( i+3UL, j, C.load(i+3UL,j) + (xmm4+xmm8) * factor );
+            (~C).store( i    , j, (~C).load(i    ,j) + (xmm1+xmm5) * factor );
+            (~C).store( i+1UL, j, (~C).load(i+1UL,j) + (xmm2+xmm6) * factor );
+            (~C).store( i+2UL, j, (~C).load(i+2UL,j) + (xmm3+xmm7) * factor );
+            (~C).store( i+3UL, j, (~C).load(i+3UL,j) + (xmm4+xmm8) * factor );
          }
 
          for( ; (i+3UL) <= iend; i+=3UL )
@@ -7207,9 +6990,9 @@ class DMatScalarMultExpr< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, ST, false >
                xmm3 += set( A(i+2UL,k) ) * b1;
             }
 
-            C.store( i    , j, C.load(i    ,j) + (xmm1+xmm4) * factor );
-            C.store( i+1UL, j, C.load(i+1UL,j) + (xmm2+xmm5) * factor );
-            C.store( i+2UL, j, C.load(i+2UL,j) + (xmm3+xmm6) * factor );
+            (~C).store( i    , j, (~C).load(i    ,j) + (xmm1+xmm4) * factor );
+            (~C).store( i+1UL, j, (~C).load(i+1UL,j) + (xmm2+xmm5) * factor );
+            (~C).store( i+2UL, j, (~C).load(i+2UL,j) + (xmm3+xmm6) * factor );
          }
 
          for( ; (i+2UL) <= iend; i+=2UL )
@@ -7241,8 +7024,8 @@ class DMatScalarMultExpr< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, ST, false >
                xmm2 += set( A(i+1UL,k) ) * b1;
             }
 
-            C.store( i    , j, C.load(i    ,j) + (xmm1+xmm3) * factor );
-            C.store( i+1UL, j, C.load(i+1UL,j) + (xmm2+xmm4) * factor );
+            (~C).store( i    , j, (~C).load(i    ,j) + (xmm1+xmm3) * factor );
+            (~C).store( i+1UL, j, (~C).load(i+1UL,j) + (xmm2+xmm4) * factor );
          }
 
          if( i < iend )
@@ -7265,7 +7048,7 @@ class DMatScalarMultExpr< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, ST, false >
                xmm1 += set( A(i,k) ) * B.load(k,j);
             }
 
-            C.store( i, j, C.load(i,j) + (xmm1+xmm2) * factor );
+            (~C).store( i, j, (~C).load(i,j) + (xmm1+xmm2) * factor );
          }
       }
 
@@ -7293,8 +7076,8 @@ class DMatScalarMultExpr< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, ST, false >
                value2 += A(i+1UL,k) * B(k,j);
             }
 
-            C(i    ,j) += value1 * scalar;
-            C(i+1UL,j) += value2 * scalar;
+            (~C)(i    ,j) += value1 * scalar;
+            (~C)(i+1UL,j) += value2 * scalar;
          }
 
          if( i < iend )
@@ -7311,7 +7094,7 @@ class DMatScalarMultExpr< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, ST, false >
                value += A(i,k) * B(k,j);
             }
 
-            C(i,j) += value * scalar;
+            (~C)(i,j) += value * scalar;
          }
       }
    }
@@ -7336,8 +7119,8 @@ class DMatScalarMultExpr< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, ST, false >
            , typename MT4    // Type of the left-hand side matrix operand
            , typename MT5    // Type of the right-hand side matrix operand
            , typename ST2 >  // Type of the scalar value
-   static inline auto selectSmallAddAssignKernel( MT3& C, const MT4& A, const MT5& B, ST2 scalar )
-      -> EnableIf_t< IsColumnMajorMatrix_v<MT3> && UseVectorizedDefaultKernel_v<MT3,MT4,MT5,ST2> >
+   static inline EnableIf_t< UseVectorizedDefaultKernel_v<MT3,MT4,MT5,ST2> >
+      selectSmallAddAssignKernel( DenseMatrix<MT3,true>& C, const MT4& A, const MT5& B, ST2 scalar )
    {
       BLAZE_CONSTRAINT_MUST_NOT_BE_SYMMETRIC_MATRIX_TYPE( MT4 );
       BLAZE_CONSTRAINT_MUST_NOT_BE_SYMMETRIC_MATRIX_TYPE( MT5 );
@@ -7348,19 +7131,19 @@ class DMatScalarMultExpr< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, ST, false >
 
       if( !IsResizable_v<MT4> && IsResizable_v<MT5> ) {
          const OppositeType_t<MT4> tmp( serial( A ) );
-         addAssign( C, fwd( tmp * B ) * scalar );
+         addAssign( ~C, fwd( tmp * B ) * scalar );
       }
       else if( IsResizable_v<MT4> && !IsResizable_v<MT5> ) {
          const OppositeType_t<MT5> tmp( serial( B ) );
-         addAssign( C, fwd( A * tmp ) * scalar );
+         addAssign( ~C, fwd( A * tmp ) * scalar );
       }
       else if( A.rows() * A.columns() <= B.rows() * B.columns() ) {
          const OppositeType_t<MT4> tmp( serial( A ) );
-         addAssign( C, fwd( tmp * B ) * scalar );
+         addAssign( ~C, fwd( tmp * B ) * scalar );
       }
       else {
          const OppositeType_t<MT5> tmp( serial( B ) );
-         addAssign( C, fwd( A * tmp ) * scalar );
+         addAssign( ~C, fwd( A * tmp ) * scalar );
       }
    }
    //**********************************************************************************************
@@ -7383,8 +7166,8 @@ class DMatScalarMultExpr< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, ST, false >
            , typename MT4    // Type of the left-hand side matrix operand
            , typename MT5    // Type of the right-hand side matrix operand
            , typename ST2 >  // Type of the scalar value
-   static inline auto selectLargeAddAssignKernel( MT3& C, const MT4& A, const MT5& B, ST2 scalar )
-      -> DisableIf_t< UseVectorizedDefaultKernel_v<MT3,MT4,MT5,ST2> >
+   static inline DisableIf_t< UseVectorizedDefaultKernel_v<MT3,MT4,MT5,ST2> >
+      selectLargeAddAssignKernel( MT3& C, const MT4& A, const MT5& B, ST2 scalar )
    {
       selectDefaultAddAssignKernel( C, A, B, scalar );
    }
@@ -7409,8 +7192,8 @@ class DMatScalarMultExpr< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, ST, false >
            , typename MT4    // Type of the left-hand side matrix operand
            , typename MT5    // Type of the right-hand side matrix operand
            , typename ST2 >  // Type of the scalar value
-   static inline auto selectLargeAddAssignKernel( MT3& C, const MT4& A, const MT5& B, ST2 scalar )
-      -> EnableIf_t< UseVectorizedDefaultKernel_v<MT3,MT4,MT5,ST2> >
+   static inline EnableIf_t< UseVectorizedDefaultKernel_v<MT3,MT4,MT5,ST2> >
+      selectLargeAddAssignKernel( MT3& C, const MT4& A, const MT5& B, ST2 scalar )
    {
       if( LOW )
          lmmm( C, A, B, scalar, ST2(1) );
@@ -7439,8 +7222,8 @@ class DMatScalarMultExpr< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, ST, false >
            , typename MT4    // Type of the left-hand side matrix operand
            , typename MT5    // Type of the right-hand side matrix operand
            , typename ST2 >  // Type of the scalar value
-   static inline auto selectBlasAddAssignKernel( MT3& C, const MT4& A, const MT5& B, ST2 scalar )
-      -> DisableIf_t< UseBlasKernel_v<MT3,MT4,MT5,ST2> >
+   static inline DisableIf_t< UseBlasKernel_v<MT3,MT4,MT5,ST2> >
+      selectBlasAddAssignKernel( MT3& C, const MT4& A, const MT5& B, ST2 scalar )
    {
       selectLargeAddAssignKernel( C, A, B, scalar );
    }
@@ -7465,8 +7248,8 @@ class DMatScalarMultExpr< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, ST, false >
            , typename MT4    // Type of the left-hand side matrix operand
            , typename MT5    // Type of the right-hand side matrix operand
            , typename ST2 >  // Type of the scalar value
-   static inline auto selectBlasAddAssignKernel( MT3& C, const MT4& A, const MT5& B, ST2 scalar )
-      -> EnableIf_t< UseBlasKernel_v<MT3,MT4,MT5,ST2> >
+   static inline EnableIf_t< UseBlasKernel_v<MT3,MT4,MT5,ST2> >
+      selectBlasAddAssignKernel( MT3& C, const MT4& A, const MT5& B, ST2 scalar )
    {
       using ET = ElementType_t<MT3>;
 
@@ -7502,8 +7285,8 @@ class DMatScalarMultExpr< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, ST, false >
    // compiler in case the symmetry of either of the two matrix operands can be exploited.
    */
    template< typename MT >  // Type of the target matrix
-   friend inline auto addAssign( Matrix<MT,true>& lhs, const DMatScalarMultExpr& rhs )
-      -> EnableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
+   friend inline EnableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
+      addAssign( Matrix<MT,true>& lhs, const DMatScalarMultExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -7544,8 +7327,8 @@ class DMatScalarMultExpr< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, ST, false >
    */
    template< typename MT  // Type of the target dense matrix
            , bool SO >    // Storage order of the target dense matrix
-   friend inline auto subAssign( DenseMatrix<MT,SO>& lhs, const DMatScalarMultExpr& rhs )
-      -> DisableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
+   friend inline DisableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
+      subAssign( DenseMatrix<MT,SO>& lhs, const DMatScalarMultExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -7617,8 +7400,8 @@ class DMatScalarMultExpr< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, ST, false >
            , typename MT4    // Type of the left-hand side matrix operand
            , typename MT5    // Type of the right-hand side matrix operand
            , typename ST2 >  // Type of the scalar value
-   static inline auto selectDefaultSubAssignKernel( MT3& C, const MT4& A, const MT5& B, ST2 scalar )
-      -> EnableIf_t< !IsDiagonal_v<MT4> && !IsDiagonal_v<MT5> >
+   static inline EnableIf_t< !IsDiagonal_v<MT4> && !IsDiagonal_v<MT5> >
+      selectDefaultSubAssignKernel( MT3& C, const MT4& A, const MT5& B, ST2 scalar )
    {
       const ResultType tmp( serial( A * B * scalar ) );
       subAssign( C, tmp );
@@ -7643,8 +7426,8 @@ class DMatScalarMultExpr< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, ST, false >
            , typename MT4    // Type of the left-hand side matrix operand
            , typename MT5    // Type of the right-hand side matrix operand
            , typename ST2 >  // Type of the scalar value
-   static inline auto selectDefaultSubAssignKernel( MT3& C, const MT4& A, const MT5& B, ST2 scalar )
-      -> EnableIf_t< !IsDiagonal_v<MT4> && IsDiagonal_v<MT5> >
+   static inline EnableIf_t< !IsDiagonal_v<MT4> && IsDiagonal_v<MT5> >
+      selectDefaultSubAssignKernel( MT3& C, const MT4& A, const MT5& B, ST2 scalar )
    {
       BLAZE_CONSTRAINT_MUST_BE_ROW_MAJOR_MATRIX_TYPE( MT3 );
 
@@ -7693,8 +7476,8 @@ class DMatScalarMultExpr< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, ST, false >
            , typename MT4    // Type of the left-hand side matrix operand
            , typename MT5    // Type of the right-hand side matrix operand
            , typename ST2 >  // Type of the scalar value
-   static inline auto selectDefaultSubAssignKernel( MT3& C, const MT4& A, const MT5& B, ST2 scalar )
-      -> EnableIf_t< IsDiagonal_v<MT4> && !IsDiagonal_v<MT5> >
+   static inline EnableIf_t< IsDiagonal_v<MT4> && !IsDiagonal_v<MT5> >
+      selectDefaultSubAssignKernel( MT3& C, const MT4& A, const MT5& B, ST2 scalar )
    {
       BLAZE_CONSTRAINT_MUST_BE_ROW_MAJOR_MATRIX_TYPE( MT3 );
 
@@ -7743,8 +7526,8 @@ class DMatScalarMultExpr< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, ST, false >
            , typename MT4    // Type of the left-hand side matrix operand
            , typename MT5    // Type of the right-hand side matrix operand
            , typename ST2 >  // Type of the scalar value
-   static inline auto selectDefaultSubAssignKernel( MT3& C, const MT4& A, const MT5& B, ST2 scalar )
-      -> EnableIf_t< IsDiagonal_v<MT4> && IsDiagonal_v<MT5> >
+   static inline EnableIf_t< IsDiagonal_v<MT4> && IsDiagonal_v<MT5> >
+      selectDefaultSubAssignKernel( MT3& C, const MT4& A, const MT5& B, ST2 scalar )
    {
       BLAZE_CONSTRAINT_MUST_BE_ROW_MAJOR_MATRIX_TYPE( MT3 );
 
@@ -7772,8 +7555,8 @@ class DMatScalarMultExpr< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, ST, false >
            , typename MT4    // Type of the left-hand side matrix operand
            , typename MT5    // Type of the right-hand side matrix operand
            , typename ST2 >  // Type of the scalar value
-   static inline auto selectSmallSubAssignKernel( MT3& C, const MT4& A, const MT5& B, ST2 scalar )
-      -> DisableIf_t< UseVectorizedDefaultKernel_v<MT3,MT4,MT5,ST2> >
+   static inline DisableIf_t< UseVectorizedDefaultKernel_v<MT3,MT4,MT5,ST2> >
+      selectSmallSubAssignKernel( MT3& C, const MT4& A, const MT5& B, ST2 scalar )
    {
       selectDefaultSubAssignKernel( C, A, B, scalar );
    }
@@ -7798,8 +7581,8 @@ class DMatScalarMultExpr< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, ST, false >
            , typename MT4    // Type of the left-hand side matrix operand
            , typename MT5    // Type of the right-hand side matrix operand
            , typename ST2 >  // Type of the scalar value
-   static inline auto selectSmallSubAssignKernel( MT3& C, const MT4& A, const MT5& B, ST2 scalar )
-      -> EnableIf_t< IsRowMajorMatrix_v<MT3> && UseVectorizedDefaultKernel_v<MT3,MT4,MT5,ST2> >
+   static inline EnableIf_t< UseVectorizedDefaultKernel_v<MT3,MT4,MT5,ST2> >
+      selectSmallSubAssignKernel( DenseMatrix<MT3,false>& C, const MT4& A, const MT5& B, ST2 scalar )
    {
       constexpr bool remainder( !IsPadded_v<MT3> || !IsPadded_v<MT5> );
 
@@ -7846,14 +7629,14 @@ class DMatScalarMultExpr< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, ST, false >
                   xmm8 += a1 * B.load(k,j+SIMDSIZE*7UL);
                }
 
-               C.store( i, j             , C.load(i,j             ) - xmm1 * factor );
-               C.store( i, j+SIMDSIZE    , C.load(i,j+SIMDSIZE    ) - xmm2 * factor );
-               C.store( i, j+SIMDSIZE*2UL, C.load(i,j+SIMDSIZE*2UL) - xmm3 * factor );
-               C.store( i, j+SIMDSIZE*3UL, C.load(i,j+SIMDSIZE*3UL) - xmm4 * factor );
-               C.store( i, j+SIMDSIZE*4UL, C.load(i,j+SIMDSIZE*4UL) - xmm5 * factor );
-               C.store( i, j+SIMDSIZE*5UL, C.load(i,j+SIMDSIZE*5UL) - xmm6 * factor );
-               C.store( i, j+SIMDSIZE*6UL, C.load(i,j+SIMDSIZE*6UL) - xmm7 * factor );
-               C.store( i, j+SIMDSIZE*7UL, C.load(i,j+SIMDSIZE*7UL) - xmm8 * factor );
+               (~C).store( i, j             , (~C).load(i,j             ) - xmm1 * factor );
+               (~C).store( i, j+SIMDSIZE    , (~C).load(i,j+SIMDSIZE    ) - xmm2 * factor );
+               (~C).store( i, j+SIMDSIZE*2UL, (~C).load(i,j+SIMDSIZE*2UL) - xmm3 * factor );
+               (~C).store( i, j+SIMDSIZE*3UL, (~C).load(i,j+SIMDSIZE*3UL) - xmm4 * factor );
+               (~C).store( i, j+SIMDSIZE*4UL, (~C).load(i,j+SIMDSIZE*4UL) - xmm5 * factor );
+               (~C).store( i, j+SIMDSIZE*5UL, (~C).load(i,j+SIMDSIZE*5UL) - xmm6 * factor );
+               (~C).store( i, j+SIMDSIZE*6UL, (~C).load(i,j+SIMDSIZE*6UL) - xmm7 * factor );
+               (~C).store( i, j+SIMDSIZE*7UL, (~C).load(i,j+SIMDSIZE*7UL) - xmm8 * factor );
             }
          }
       }
@@ -7897,16 +7680,16 @@ class DMatScalarMultExpr< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, ST, false >
                xmm10 += a2 * b5;
             }
 
-            C.store( i    , j             , C.load(i    ,j             ) - xmm1  * factor );
-            C.store( i    , j+SIMDSIZE    , C.load(i    ,j+SIMDSIZE    ) - xmm2  * factor );
-            C.store( i    , j+SIMDSIZE*2UL, C.load(i    ,j+SIMDSIZE*2UL) - xmm3  * factor );
-            C.store( i    , j+SIMDSIZE*3UL, C.load(i    ,j+SIMDSIZE*3UL) - xmm4  * factor );
-            C.store( i    , j+SIMDSIZE*4UL, C.load(i    ,j+SIMDSIZE*4UL) - xmm5  * factor );
-            C.store( i+1UL, j             , C.load(i+1UL,j             ) - xmm6  * factor );
-            C.store( i+1UL, j+SIMDSIZE    , C.load(i+1UL,j+SIMDSIZE    ) - xmm7  * factor );
-            C.store( i+1UL, j+SIMDSIZE*2UL, C.load(i+1UL,j+SIMDSIZE*2UL) - xmm8  * factor );
-            C.store( i+1UL, j+SIMDSIZE*3UL, C.load(i+1UL,j+SIMDSIZE*3UL) - xmm9  * factor );
-            C.store( i+1UL, j+SIMDSIZE*4UL, C.load(i+1UL,j+SIMDSIZE*4UL) - xmm10 * factor );
+            (~C).store( i    , j             , (~C).load(i    ,j             ) - xmm1  * factor );
+            (~C).store( i    , j+SIMDSIZE    , (~C).load(i    ,j+SIMDSIZE    ) - xmm2  * factor );
+            (~C).store( i    , j+SIMDSIZE*2UL, (~C).load(i    ,j+SIMDSIZE*2UL) - xmm3  * factor );
+            (~C).store( i    , j+SIMDSIZE*3UL, (~C).load(i    ,j+SIMDSIZE*3UL) - xmm4  * factor );
+            (~C).store( i    , j+SIMDSIZE*4UL, (~C).load(i    ,j+SIMDSIZE*4UL) - xmm5  * factor );
+            (~C).store( i+1UL, j             , (~C).load(i+1UL,j             ) - xmm6  * factor );
+            (~C).store( i+1UL, j+SIMDSIZE    , (~C).load(i+1UL,j+SIMDSIZE    ) - xmm7  * factor );
+            (~C).store( i+1UL, j+SIMDSIZE*2UL, (~C).load(i+1UL,j+SIMDSIZE*2UL) - xmm8  * factor );
+            (~C).store( i+1UL, j+SIMDSIZE*3UL, (~C).load(i+1UL,j+SIMDSIZE*3UL) - xmm9  * factor );
+            (~C).store( i+1UL, j+SIMDSIZE*4UL, (~C).load(i+1UL,j+SIMDSIZE*4UL) - xmm10 * factor );
          }
 
          if( i < M )
@@ -7929,11 +7712,11 @@ class DMatScalarMultExpr< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, ST, false >
                xmm5 += a1 * B.load(k,j+SIMDSIZE*4UL);
             }
 
-            C.store( i, j             , C.load(i,j             ) - xmm1 * factor );
-            C.store( i, j+SIMDSIZE    , C.load(i,j+SIMDSIZE    ) - xmm2 * factor );
-            C.store( i, j+SIMDSIZE*2UL, C.load(i,j+SIMDSIZE*2UL) - xmm3 * factor );
-            C.store( i, j+SIMDSIZE*3UL, C.load(i,j+SIMDSIZE*3UL) - xmm4 * factor );
-            C.store( i, j+SIMDSIZE*4UL, C.load(i,j+SIMDSIZE*4UL) - xmm5 * factor );
+            (~C).store( i, j             , (~C).load(i,j             ) - xmm1 * factor );
+            (~C).store( i, j+SIMDSIZE    , (~C).load(i,j+SIMDSIZE    ) - xmm2 * factor );
+            (~C).store( i, j+SIMDSIZE*2UL, (~C).load(i,j+SIMDSIZE*2UL) - xmm3 * factor );
+            (~C).store( i, j+SIMDSIZE*3UL, (~C).load(i,j+SIMDSIZE*3UL) - xmm4 * factor );
+            (~C).store( i, j+SIMDSIZE*4UL, (~C).load(i,j+SIMDSIZE*4UL) - xmm5 * factor );
          }
       }
 
@@ -7973,14 +7756,14 @@ class DMatScalarMultExpr< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, ST, false >
                xmm8 += a2 * b4;
             }
 
-            C.store( i    , j             , C.load(i    ,j             ) - xmm1 * factor );
-            C.store( i    , j+SIMDSIZE    , C.load(i    ,j+SIMDSIZE    ) - xmm2 * factor );
-            C.store( i    , j+SIMDSIZE*2UL, C.load(i    ,j+SIMDSIZE*2UL) - xmm3 * factor );
-            C.store( i    , j+SIMDSIZE*3UL, C.load(i    ,j+SIMDSIZE*3UL) - xmm4 * factor );
-            C.store( i+1UL, j             , C.load(i+1UL,j             ) - xmm5 * factor );
-            C.store( i+1UL, j+SIMDSIZE    , C.load(i+1UL,j+SIMDSIZE    ) - xmm6 * factor );
-            C.store( i+1UL, j+SIMDSIZE*2UL, C.load(i+1UL,j+SIMDSIZE*2UL) - xmm7 * factor );
-            C.store( i+1UL, j+SIMDSIZE*3UL, C.load(i+1UL,j+SIMDSIZE*3UL) - xmm8 * factor );
+            (~C).store( i    , j             , (~C).load(i    ,j             ) - xmm1 * factor );
+            (~C).store( i    , j+SIMDSIZE    , (~C).load(i    ,j+SIMDSIZE    ) - xmm2 * factor );
+            (~C).store( i    , j+SIMDSIZE*2UL, (~C).load(i    ,j+SIMDSIZE*2UL) - xmm3 * factor );
+            (~C).store( i    , j+SIMDSIZE*3UL, (~C).load(i    ,j+SIMDSIZE*3UL) - xmm4 * factor );
+            (~C).store( i+1UL, j             , (~C).load(i+1UL,j             ) - xmm5 * factor );
+            (~C).store( i+1UL, j+SIMDSIZE    , (~C).load(i+1UL,j+SIMDSIZE    ) - xmm6 * factor );
+            (~C).store( i+1UL, j+SIMDSIZE*2UL, (~C).load(i+1UL,j+SIMDSIZE*2UL) - xmm7 * factor );
+            (~C).store( i+1UL, j+SIMDSIZE*3UL, (~C).load(i+1UL,j+SIMDSIZE*3UL) - xmm8 * factor );
          }
 
          if( i < M )
@@ -8002,10 +7785,10 @@ class DMatScalarMultExpr< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, ST, false >
                xmm4 += a1 * B.load(k,j+SIMDSIZE*3UL);
             }
 
-            C.store( i, j             , C.load(i,j             ) - xmm1 * factor );
-            C.store( i, j+SIMDSIZE    , C.load(i,j+SIMDSIZE    ) - xmm2 * factor );
-            C.store( i, j+SIMDSIZE*2UL, C.load(i,j+SIMDSIZE*2UL) - xmm3 * factor );
-            C.store( i, j+SIMDSIZE*3UL, C.load(i,j+SIMDSIZE*3UL) - xmm4 * factor );
+            (~C).store( i, j             , (~C).load(i,j             ) - xmm1 * factor );
+            (~C).store( i, j+SIMDSIZE    , (~C).load(i,j+SIMDSIZE    ) - xmm2 * factor );
+            (~C).store( i, j+SIMDSIZE*2UL, (~C).load(i,j+SIMDSIZE*2UL) - xmm3 * factor );
+            (~C).store( i, j+SIMDSIZE*3UL, (~C).load(i,j+SIMDSIZE*3UL) - xmm4 * factor );
          }
       }
 
@@ -8042,12 +7825,12 @@ class DMatScalarMultExpr< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, ST, false >
                xmm6 += a2 * b3;
             }
 
-            C.store( i    , j             , C.load(i    ,j             ) - xmm1 * factor );
-            C.store( i    , j+SIMDSIZE    , C.load(i    ,j+SIMDSIZE    ) - xmm2 * factor );
-            C.store( i    , j+SIMDSIZE*2UL, C.load(i    ,j+SIMDSIZE*2UL) - xmm3 * factor );
-            C.store( i+1UL, j             , C.load(i+1UL,j             ) - xmm4 * factor );
-            C.store( i+1UL, j+SIMDSIZE    , C.load(i+1UL,j+SIMDSIZE    ) - xmm5 * factor );
-            C.store( i+1UL, j+SIMDSIZE*2UL, C.load(i+1UL,j+SIMDSIZE*2UL) - xmm6 * factor );
+            (~C).store( i    , j             , (~C).load(i    ,j             ) - xmm1 * factor );
+            (~C).store( i    , j+SIMDSIZE    , (~C).load(i    ,j+SIMDSIZE    ) - xmm2 * factor );
+            (~C).store( i    , j+SIMDSIZE*2UL, (~C).load(i    ,j+SIMDSIZE*2UL) - xmm3 * factor );
+            (~C).store( i+1UL, j             , (~C).load(i+1UL,j             ) - xmm4 * factor );
+            (~C).store( i+1UL, j+SIMDSIZE    , (~C).load(i+1UL,j+SIMDSIZE    ) - xmm5 * factor );
+            (~C).store( i+1UL, j+SIMDSIZE*2UL, (~C).load(i+1UL,j+SIMDSIZE*2UL) - xmm6 * factor );
          }
 
          if( i < M )
@@ -8068,9 +7851,9 @@ class DMatScalarMultExpr< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, ST, false >
                xmm3 += a1 * B.load(k,j+SIMDSIZE*2UL);
             }
 
-            C.store( i, j             , C.load(i,j             ) - xmm1 * factor );
-            C.store( i, j+SIMDSIZE    , C.load(i,j+SIMDSIZE    ) - xmm2 * factor );
-            C.store( i, j+SIMDSIZE*2UL, C.load(i,j+SIMDSIZE*2UL) - xmm3 * factor );
+            (~C).store( i, j             , (~C).load(i,j             ) - xmm1 * factor );
+            (~C).store( i, j+SIMDSIZE    , (~C).load(i,j+SIMDSIZE    ) - xmm2 * factor );
+            (~C).store( i, j+SIMDSIZE*2UL, (~C).load(i,j+SIMDSIZE*2UL) - xmm3 * factor );
          }
       }
 
@@ -8111,14 +7894,14 @@ class DMatScalarMultExpr< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, ST, false >
                xmm8 += a4 * b2;
             }
 
-            C.store( i    , j         , C.load(i    ,j         ) - xmm1 * factor );
-            C.store( i    , j+SIMDSIZE, C.load(i    ,j+SIMDSIZE) - xmm2 * factor );
-            C.store( i+1UL, j         , C.load(i+1UL,j         ) - xmm3 * factor );
-            C.store( i+1UL, j+SIMDSIZE, C.load(i+1UL,j+SIMDSIZE) - xmm4 * factor );
-            C.store( i+2UL, j         , C.load(i+2UL,j         ) - xmm5 * factor );
-            C.store( i+2UL, j+SIMDSIZE, C.load(i+2UL,j+SIMDSIZE) - xmm6 * factor );
-            C.store( i+3UL, j         , C.load(i+3UL,j         ) - xmm7 * factor );
-            C.store( i+3UL, j+SIMDSIZE, C.load(i+3UL,j+SIMDSIZE) - xmm8 * factor );
+            (~C).store( i    , j         , (~C).load(i    ,j         ) - xmm1 * factor );
+            (~C).store( i    , j+SIMDSIZE, (~C).load(i    ,j+SIMDSIZE) - xmm2 * factor );
+            (~C).store( i+1UL, j         , (~C).load(i+1UL,j         ) - xmm3 * factor );
+            (~C).store( i+1UL, j+SIMDSIZE, (~C).load(i+1UL,j+SIMDSIZE) - xmm4 * factor );
+            (~C).store( i+2UL, j         , (~C).load(i+2UL,j         ) - xmm5 * factor );
+            (~C).store( i+2UL, j+SIMDSIZE, (~C).load(i+2UL,j+SIMDSIZE) - xmm6 * factor );
+            (~C).store( i+3UL, j         , (~C).load(i+3UL,j         ) - xmm7 * factor );
+            (~C).store( i+3UL, j+SIMDSIZE, (~C).load(i+3UL,j+SIMDSIZE) - xmm8 * factor );
          }
 
          for( ; (i+3UL) <= iend; i+=3UL )
@@ -8150,12 +7933,12 @@ class DMatScalarMultExpr< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, ST, false >
                xmm6 += a3 * b2;
             }
 
-            C.store( i    , j         , C.load(i    ,j         ) - xmm1 * factor );
-            C.store( i    , j+SIMDSIZE, C.load(i    ,j+SIMDSIZE) - xmm2 * factor );
-            C.store( i+1UL, j         , C.load(i+1UL,j         ) - xmm3 * factor );
-            C.store( i+1UL, j+SIMDSIZE, C.load(i+1UL,j+SIMDSIZE) - xmm4 * factor );
-            C.store( i+2UL, j         , C.load(i+2UL,j         ) - xmm5 * factor );
-            C.store( i+2UL, j+SIMDSIZE, C.load(i+2UL,j+SIMDSIZE) - xmm6 * factor );
+            (~C).store( i    , j         , (~C).load(i    ,j         ) - xmm1 * factor );
+            (~C).store( i    , j+SIMDSIZE, (~C).load(i    ,j+SIMDSIZE) - xmm2 * factor );
+            (~C).store( i+1UL, j         , (~C).load(i+1UL,j         ) - xmm3 * factor );
+            (~C).store( i+1UL, j+SIMDSIZE, (~C).load(i+1UL,j+SIMDSIZE) - xmm4 * factor );
+            (~C).store( i+2UL, j         , (~C).load(i+2UL,j         ) - xmm5 * factor );
+            (~C).store( i+2UL, j+SIMDSIZE, (~C).load(i+2UL,j+SIMDSIZE) - xmm6 * factor );
          }
 
          for( ; (i+2UL) <= iend; i+=2UL )
@@ -8204,10 +7987,10 @@ class DMatScalarMultExpr< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, ST, false >
                xmm4 += a2 * b2;
             }
 
-            C.store( i    , j         , C.load(i    ,j         ) - (xmm1+xmm5) * factor );
-            C.store( i    , j+SIMDSIZE, C.load(i    ,j+SIMDSIZE) - (xmm2+xmm6) * factor );
-            C.store( i+1UL, j         , C.load(i+1UL,j         ) - (xmm3+xmm7) * factor );
-            C.store( i+1UL, j+SIMDSIZE, C.load(i+1UL,j+SIMDSIZE) - (xmm4+xmm8) * factor );
+            (~C).store( i    , j         , (~C).load(i    ,j         ) - (xmm1+xmm5) * factor );
+            (~C).store( i    , j+SIMDSIZE, (~C).load(i    ,j+SIMDSIZE) - (xmm2+xmm6) * factor );
+            (~C).store( i+1UL, j         , (~C).load(i+1UL,j         ) - (xmm3+xmm7) * factor );
+            (~C).store( i+1UL, j+SIMDSIZE, (~C).load(i+1UL,j+SIMDSIZE) - (xmm4+xmm8) * factor );
          }
 
          if( i < iend )
@@ -8237,8 +8020,8 @@ class DMatScalarMultExpr< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, ST, false >
                xmm2 += a1 * B.load(k,j+SIMDSIZE);
             }
 
-            C.store( i, j         , C.load(i,j         ) - (xmm1+xmm3) * factor );
-            C.store( i, j+SIMDSIZE, C.load(i,j+SIMDSIZE) - (xmm2+xmm4) * factor );
+            (~C).store( i, j         , (~C).load(i,j         ) - (xmm1+xmm3) * factor );
+            (~C).store( i, j+SIMDSIZE, (~C).load(i,j+SIMDSIZE) - (xmm2+xmm4) * factor );
          }
       }
 
@@ -8282,10 +8065,10 @@ class DMatScalarMultExpr< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, ST, false >
                xmm4 += set( A(i+3UL,k) ) * b1;
             }
 
-            C.store( i    , j, C.load(i    ,j) - (xmm1+xmm5) * factor );
-            C.store( i+1UL, j, C.load(i+1UL,j) - (xmm2+xmm6) * factor );
-            C.store( i+2UL, j, C.load(i+2UL,j) - (xmm3+xmm7) * factor );
-            C.store( i+3UL, j, C.load(i+3UL,j) - (xmm4+xmm8) * factor );
+            (~C).store( i    , j, (~C).load(i    ,j) - (xmm1+xmm5) * factor );
+            (~C).store( i+1UL, j, (~C).load(i+1UL,j) - (xmm2+xmm6) * factor );
+            (~C).store( i+2UL, j, (~C).load(i+2UL,j) - (xmm3+xmm7) * factor );
+            (~C).store( i+3UL, j, (~C).load(i+3UL,j) - (xmm4+xmm8) * factor );
          }
 
          for( ; (i+3UL) <= iend; i+=3UL )
@@ -8320,9 +8103,9 @@ class DMatScalarMultExpr< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, ST, false >
                xmm3 += set( A(i+2UL,k) ) * b1;
             }
 
-            C.store( i    , j, C.load(i    ,j) - (xmm1+xmm4) * factor );
-            C.store( i+1UL, j, C.load(i+1UL,j) - (xmm2+xmm5) * factor );
-            C.store( i+2UL, j, C.load(i+2UL,j) - (xmm3+xmm6) * factor );
+            (~C).store( i    , j, (~C).load(i    ,j) - (xmm1+xmm4) * factor );
+            (~C).store( i+1UL, j, (~C).load(i+1UL,j) - (xmm2+xmm5) * factor );
+            (~C).store( i+2UL, j, (~C).load(i+2UL,j) - (xmm3+xmm6) * factor );
          }
 
          for( ; (i+2UL) <= iend; i+=2UL )
@@ -8354,8 +8137,8 @@ class DMatScalarMultExpr< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, ST, false >
                xmm2 += set( A(i+1UL,k) ) * b1;
             }
 
-            C.store( i    , j, C.load(i    ,j) - (xmm1+xmm3) * factor );
-            C.store( i+1UL, j, C.load(i+1UL,j) - (xmm2+xmm4) * factor );
+            (~C).store( i    , j, (~C).load(i    ,j) - (xmm1+xmm3) * factor );
+            (~C).store( i+1UL, j, (~C).load(i+1UL,j) - (xmm2+xmm4) * factor );
          }
 
          if( i < iend )
@@ -8378,7 +8161,7 @@ class DMatScalarMultExpr< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, ST, false >
                xmm1 += set( A(i,k) ) * B.load(k,j);
             }
 
-            C.store( i, j, C.load(i,j) - (xmm1+xmm2) * factor );
+            (~C).store( i, j, (~C).load(i,j) - (xmm1+xmm2) * factor );
          }
       }
 
@@ -8406,8 +8189,8 @@ class DMatScalarMultExpr< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, ST, false >
                value2 += A(i+1UL,k) * B(k,j);
             }
 
-            C(i    ,j) -= value1 * scalar;
-            C(i+1UL,j) -= value2 * scalar;
+            (~C)(i    ,j) -= value1 * scalar;
+            (~C)(i+1UL,j) -= value2 * scalar;
          }
 
          if( i < iend )
@@ -8424,13 +8207,12 @@ class DMatScalarMultExpr< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, ST, false >
                value += A(i,k) * B(k,j);
             }
 
-            C(i,j) -= value * scalar;
+            (~C)(i,j) -= value * scalar;
          }
       }
    }
    //**********************************************************************************************
 
-   //**********************************************************************************************
    //**Vectorized default subtraction assignment to column-major dense matrices (small matrices)***
    /*!\brief Vectorized default subtraction assignment of a small scaled dense matrix-dense matrix
    //        multiplication (\f$ C-=s*A*B \f$).
@@ -8449,8 +8231,8 @@ class DMatScalarMultExpr< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, ST, false >
            , typename MT4    // Type of the left-hand side matrix operand
            , typename MT5    // Type of the right-hand side matrix operand
            , typename ST2 >  // Type of the scalar value
-   static inline auto selectSmallSubAssignKernel( MT3& C, const MT4& A, const MT5& B, ST2 scalar )
-      -> EnableIf_t< IsColumnMajorMatrix_v<MT3> && UseVectorizedDefaultKernel_v<MT3,MT4,MT5,ST2> >
+   static inline EnableIf_t< UseVectorizedDefaultKernel_v<MT3,MT4,MT5,ST2> >
+      selectSmallSubAssignKernel( DenseMatrix<MT3,true>& C, const MT4& A, const MT5& B, ST2 scalar )
    {
       BLAZE_CONSTRAINT_MUST_NOT_BE_SYMMETRIC_MATRIX_TYPE( MT4 );
       BLAZE_CONSTRAINT_MUST_NOT_BE_SYMMETRIC_MATRIX_TYPE( MT5 );
@@ -8461,19 +8243,19 @@ class DMatScalarMultExpr< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, ST, false >
 
       if( !IsResizable_v<MT4> && IsResizable_v<MT5> ) {
          const OppositeType_t<MT4> tmp( serial( A ) );
-         subAssign( C, fwd( tmp * B ) * scalar );
+         subAssign( ~C, fwd( tmp * B ) * scalar );
       }
       else if( IsResizable_v<MT4> && !IsResizable_v<MT5> ) {
          const OppositeType_t<MT5> tmp( serial( B ) );
-         subAssign( C, fwd( A * tmp ) * scalar );
+         subAssign( ~C, fwd( A * tmp ) * scalar );
       }
       else if( A.rows() * A.columns() <= B.rows() * B.columns() ) {
          const OppositeType_t<MT4> tmp( serial( A ) );
-         subAssign( C, fwd( tmp * B ) * scalar );
+         subAssign( ~C, fwd( tmp * B ) * scalar );
       }
       else {
          const OppositeType_t<MT5> tmp( serial( B ) );
-         subAssign( C, fwd( A * tmp ) * scalar );
+         subAssign( ~C, fwd( A * tmp ) * scalar );
       }
    }
    //**********************************************************************************************
@@ -8496,8 +8278,8 @@ class DMatScalarMultExpr< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, ST, false >
            , typename MT4    // Type of the left-hand side matrix operand
            , typename MT5    // Type of the right-hand side matrix operand
            , typename ST2 >  // Type of the scalar value
-   static inline auto selectLargeSubAssignKernel( MT3& C, const MT4& A, const MT5& B, ST2 scalar )
-      -> DisableIf_t< UseVectorizedDefaultKernel_v<MT3,MT4,MT5,ST2> >
+   static inline DisableIf_t< UseVectorizedDefaultKernel_v<MT3,MT4,MT5,ST2> >
+      selectLargeSubAssignKernel( MT3& C, const MT4& A, const MT5& B, ST2 scalar )
    {
       selectDefaultSubAssignKernel( C, A, B, scalar );
    }
@@ -8522,8 +8304,8 @@ class DMatScalarMultExpr< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, ST, false >
            , typename MT4    // Type of the left-hand side matrix operand
            , typename MT5    // Type of the right-hand side matrix operand
            , typename ST2 >  // Type of the scalar value
-   static inline auto selectLargeSubAssignKernel( MT3& C, const MT4& A, const MT5& B, ST2 scalar )
-      -> EnableIf_t< UseVectorizedDefaultKernel_v<MT3,MT4,MT5,ST2> >
+   static inline EnableIf_t< UseVectorizedDefaultKernel_v<MT3,MT4,MT5,ST2> >
+      selectLargeSubAssignKernel( MT3& C, const MT4& A, const MT5& B, ST2 scalar )
    {
       if( LOW )
          lmmm( C, A, B, -scalar, ST2(1) );
@@ -8552,8 +8334,8 @@ class DMatScalarMultExpr< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, ST, false >
            , typename MT4    // Type of the left-hand side matrix operand
            , typename MT5    // Type of the right-hand side matrix operand
            , typename ST2 >  // Type of the scalar value
-   static inline auto selectBlasSubAssignKernel( MT3& C, const MT4& A, const MT5& B, ST2 scalar )
-      -> DisableIf_t< UseBlasKernel_v<MT3,MT4,MT5,ST2> >
+   static inline DisableIf_t< UseBlasKernel_v<MT3,MT4,MT5,ST2> >
+      selectBlasSubAssignKernel( MT3& C, const MT4& A, const MT5& B, ST2 scalar )
    {
       selectLargeSubAssignKernel( C, A, B, scalar );
    }
@@ -8578,8 +8360,8 @@ class DMatScalarMultExpr< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, ST, false >
            , typename MT4    // Type of the left-hand side matrix operand
            , typename MT5    // Type of the right-hand side matrix operand
            , typename ST2 >  // Type of the scalar value
-   static inline auto selectBlasSubAssignKernel( MT3& C, const MT4& A, const MT5& B, ST2 scalar )
-      -> EnableIf_t< UseBlasKernel_v<MT3,MT4,MT5,ST2> >
+   static inline EnableIf_t< UseBlasKernel_v<MT3,MT4,MT5,ST2> >
+      selectBlasSubAssignKernel( MT3& C, const MT4& A, const MT5& B, ST2 scalar )
    {
       using ET = ElementType_t<MT3>;
 
@@ -8615,8 +8397,8 @@ class DMatScalarMultExpr< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, ST, false >
    // compiler in case the symmetry of either of the two matrix operands can be exploited.
    */
    template< typename MT >  // Type of the target matrix
-   friend inline auto subAssign( Matrix<MT,true>& lhs, const DMatScalarMultExpr& rhs )
-      -> EnableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
+   friend inline EnableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
+      subAssign( Matrix<MT,true>& lhs, const DMatScalarMultExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -8702,8 +8484,8 @@ class DMatScalarMultExpr< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, ST, false >
    */
    template< typename MT  // Type of the target dense matrix
            , bool SO >    // Storage order of the target dense matrix
-   friend inline auto smpAssign( DenseMatrix<MT,SO>& lhs, const DMatScalarMultExpr& rhs )
-      -> EnableIf_t< IsEvaluationRequired_v<MT,MT1,MT2> >
+   friend inline EnableIf_t< IsEvaluationRequired_v<MT,MT1,MT2> >
+      smpAssign( DenseMatrix<MT,SO>& lhs, const DMatScalarMultExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -8752,8 +8534,8 @@ class DMatScalarMultExpr< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, ST, false >
    */
    template< typename MT  // Type of the target sparse matrix
            , bool SO >    // Storage order of the target sparse matrix
-   friend inline auto smpAssign( SparseMatrix<MT,SO>& lhs, const DMatScalarMultExpr& rhs )
-      -> EnableIf_t< IsEvaluationRequired_v<MT,MT1,MT2> >
+   friend inline EnableIf_t< IsEvaluationRequired_v<MT,MT1,MT2> >
+      smpAssign( SparseMatrix<MT,SO>& lhs, const DMatScalarMultExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -8791,8 +8573,8 @@ class DMatScalarMultExpr< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, ST, false >
    // the compiler in case the symmetry of either of the two matrix operands can be exploited.
    */
    template< typename MT >  // Type of the target matrix
-   friend inline auto smpAssign( Matrix<MT,true>& lhs, const DMatScalarMultExpr& rhs )
-      -> EnableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
+   friend inline EnableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
+      smpAssign( Matrix<MT,true>& lhs, const DMatScalarMultExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -8832,8 +8614,8 @@ class DMatScalarMultExpr< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, ST, false >
    */
    template< typename MT  // Type of the target dense matrix
            , bool SO >    // Storage order of the target dense matrix
-   friend inline auto smpAddAssign( DenseMatrix<MT,SO>& lhs, const DMatScalarMultExpr& rhs )
-      -> EnableIf_t< IsEvaluationRequired_v<MT,MT1,MT2> >
+   friend inline EnableIf_t< IsEvaluationRequired_v<MT,MT1,MT2> >
+      smpAddAssign( DenseMatrix<MT,SO>& lhs, const DMatScalarMultExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -8876,8 +8658,8 @@ class DMatScalarMultExpr< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, ST, false >
    // compiler in case the symmetry of either of the two matrix operands can be exploited.
    */
    template< typename MT >  // Type of the target matrix
-   friend inline auto smpAddAssign( Matrix<MT,true>& lhs, const DMatScalarMultExpr& rhs )
-      -> EnableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
+   friend inline EnableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
+      smpAddAssign( Matrix<MT,true>& lhs, const DMatScalarMultExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -8921,8 +8703,8 @@ class DMatScalarMultExpr< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, ST, false >
    */
    template< typename MT  // Type of the target dense matrix
            , bool SO >    // Storage order of the target dense matrix
-   friend inline auto smpSubAssign( DenseMatrix<MT,SO>& lhs, const DMatScalarMultExpr& rhs )
-      -> EnableIf_t< IsEvaluationRequired_v<MT,MT1,MT2> >
+   friend inline EnableIf_t< IsEvaluationRequired_v<MT,MT1,MT2> >
+      smpSubAssign( DenseMatrix<MT,SO>& lhs, const DMatScalarMultExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -8965,8 +8747,8 @@ class DMatScalarMultExpr< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, ST, false >
    // the compiler in case the symmetry of either of the two matrix operands can be exploited.
    */
    template< typename MT >  // Type of the target matrix
-   friend inline auto smpSubAssign( Matrix<MT,true>& lhs, const DMatScalarMultExpr& rhs )
-      -> EnableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
+   friend inline EnableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
+      smpSubAssign( Matrix<MT,true>& lhs, const DMatScalarMultExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -9366,6 +9148,166 @@ struct Size< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, 1UL >
 template< typename MT1, typename MT2, bool SF, bool HF, bool LF, bool UF >
 struct IsAligned< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF> >
    : public BoolConstant< IsAligned_v<MT1> && IsAligned_v<MT2> >
+{};
+/*! \endcond */
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
+//  ISSYMMETRIC SPECIALIZATIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+template< typename MT1, typename MT2, bool SF, bool HF, bool LF, bool UF >
+struct IsSymmetric< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF> >
+   : public BoolConstant< SF ||
+                          ( HF && IsBuiltin_v< ElementType_t< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF> > > ) ||
+                          ( LF && UF ) >
+{};
+/*! \endcond */
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
+//  ISHERMITIAN SPECIALIZATIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+template< typename MT1, typename MT2, bool SF, bool LF, bool UF >
+struct IsHermitian< DMatDMatMultExpr<MT1,MT2,SF,true,LF,UF> >
+   : public TrueType
+{};
+/*! \endcond */
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
+//  ISLOWER SPECIALIZATIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+template< typename MT1, typename MT2, bool SF, bool HF, bool LF, bool UF >
+struct IsLower< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF> >
+   : public BoolConstant< LF ||
+                          ( IsLower_v<MT1> && IsLower_v<MT2> ) ||
+                          ( ( SF || HF ) && IsUpper_v<MT1> && IsUpper_v<MT2> ) >
+{};
+/*! \endcond */
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
+//  ISUNILOWER SPECIALIZATIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+template< typename MT1, typename MT2, bool SF, bool HF, bool LF, bool UF >
+struct IsUniLower< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF> >
+   : public BoolConstant< ( IsUniLower_v<MT1> && IsUniLower_v<MT2> ) ||
+                          ( ( SF || HF ) && IsUniUpper_v<MT1> && IsUniUpper_v<MT2> ) >
+{};
+/*! \endcond */
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
+//  ISSTRICTLYLOWER SPECIALIZATIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+template< typename MT1, typename MT2, bool SF, bool HF, bool LF, bool UF >
+struct IsStrictlyLower< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF> >
+   : public BoolConstant< ( IsStrictlyLower_v<MT1> && IsLower_v<MT2> ) ||
+                          ( IsStrictlyLower_v<MT2> && IsLower_v<MT1> ) ||
+                          ( ( SF || HF ) &&
+                            ( ( IsStrictlyUpper_v<MT1> && IsUpper_v<MT2> ) ||
+                              ( IsStrictlyUpper_v<MT2> && IsUpper_v<MT1> ) ) ) >
+{};
+/*! \endcond */
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
+//  ISUPPER SPECIALIZATIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+template< typename MT1, typename MT2, bool SF, bool HF, bool LF, bool UF >
+struct IsUpper< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF> >
+   : public BoolConstant< UF ||
+                          ( IsUpper_v<MT1> && IsUpper_v<MT2> ) ||
+                          ( ( SF || HF ) && IsLower_v<MT1> && IsLower_v<MT2> ) >
+{};
+/*! \endcond */
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
+//  ISUNIUPPER SPECIALIZATIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+template< typename MT1, typename MT2, bool SF, bool HF, bool LF, bool UF >
+struct IsUniUpper< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF> >
+   : public BoolConstant< ( IsUniUpper_v<MT1> && IsUniUpper_v<MT2> ) ||
+                          ( ( SF || HF ) && IsUniLower_v<MT1> && IsUniLower_v<MT2> ) >
+{};
+/*! \endcond */
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
+//  ISSTRICTLYUPPER SPECIALIZATIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+template< typename MT1, typename MT2, bool SF, bool HF, bool LF, bool UF >
+struct IsStrictlyUpper< DMatDMatMultExpr<MT1,MT2,SF,HF,LF,UF> >
+   : public BoolConstant< ( IsStrictlyUpper_v<MT1> && IsUpper_v<MT2> ) ||
+                          ( IsStrictlyUpper_v<MT2> && IsUpper_v<MT1> ) ||
+                          ( ( SF || HF ) &&
+                            ( ( IsStrictlyLower_v<MT1> && IsLower_v<MT2> ) ||
+                              ( IsStrictlyLower_v<MT2> && IsLower_v<MT1> ) ) ) >
 {};
 /*! \endcond */
 //*************************************************************************************************

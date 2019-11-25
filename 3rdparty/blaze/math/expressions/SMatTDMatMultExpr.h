@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/SMatTDMatMultExpr.h
 //  \brief Header file for the sparse matrix/transpose dense matrix multiplication expression
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -48,7 +48,6 @@
 #include "../../math/constraints/RowMajorMatrix.h"
 #include "../../math/constraints/SparseMatrix.h"
 #include "../../math/constraints/StorageOrder.h"
-#include "../../math/constraints/Zero.h"
 #include "../../math/Exception.h"
 #include "../../math/expressions/Computation.h"
 #include "../../math/expressions/DenseMatrix.h"
@@ -63,25 +62,21 @@
 #include "../../math/shims/Conjugate.h"
 #include "../../math/shims/Reset.h"
 #include "../../math/shims/Serial.h"
-#include "../../math/traits/DeclDiagTrait.h"
-#include "../../math/traits/DeclHermTrait.h"
-#include "../../math/traits/DeclLowTrait.h"
-#include "../../math/traits/DeclSymTrait.h"
-#include "../../math/traits/DeclUppTrait.h"
 #include "../../math/traits/MultTrait.h"
 #include "../../math/typetraits/IsAligned.h"
 #include "../../math/typetraits/IsComputation.h"
 #include "../../math/typetraits/IsDiagonal.h"
 #include "../../math/typetraits/IsExpression.h"
-#include "../../math/typetraits/IsIdentity.h"
+#include "../../math/typetraits/IsHermitian.h"
 #include "../../math/typetraits/IsLower.h"
 #include "../../math/typetraits/IsResizable.h"
 #include "../../math/typetraits/IsStrictlyLower.h"
 #include "../../math/typetraits/IsStrictlyUpper.h"
 #include "../../math/typetraits/IsSymmetric.h"
 #include "../../math/typetraits/IsTriangular.h"
+#include "../../math/typetraits/IsUniLower.h"
+#include "../../math/typetraits/IsUniUpper.h"
 #include "../../math/typetraits/IsUpper.h"
-#include "../../math/typetraits/IsZero.h"
 #include "../../math/typetraits/RequiresEvaluation.h"
 #include "../../math/typetraits/Size.h"
 #include "../../math/views/Check.h"
@@ -94,10 +89,11 @@
 #include "../../util/EnableIf.h"
 #include "../../util/FunctionTrace.h"
 #include "../../util/IntegralConstant.h"
-#include "../../util/MaybeUnused.h"
 #include "../../util/mpl/If.h"
+#include "../../util/TrueType.h"
 #include "../../util/Types.h"
 #include "../../util/typetraits/IsBuiltin.h"
+#include "../../util/typetraits/RemoveReference.h"
 
 
 namespace blaze {
@@ -122,7 +118,7 @@ template< typename MT1  // Type of the left-hand side sparse matrix
         , bool LF       // Lower flag
         , bool UF >     // Upper flag
 class SMatTDMatMultExpr
-   : public MatMatMultExpr< DenseMatrix< SMatTDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, true > >
+   : public MatMatMultExpr< DenseMatrix< SMatTDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, false > >
    , private Computation
 {
  private:
@@ -214,22 +210,7 @@ class SMatTDMatMultExpr
    //! Type of this SMatTDMatMultExpr instance.
    using This = SMatTDMatMultExpr<MT1,MT2,SF,HF,LF,UF>;
 
-   //! Base type of this SMatTDMatMultExpr instance.
-   using BaseType = DenseMatrix<This,true>;
-
-   //! Result type for expression template evaluations.
-   using ResultType = typename If_t< HERM
-                                   , DeclHermTrait< MultTrait_t<RT1,RT2> >
-                                   , If_t< SYM
-                                         , DeclSymTrait< MultTrait_t<RT1,RT2> >
-                                         , If_t< LOW
-                                               , If_t< UPP
-                                                     , DeclDiagTrait< MultTrait_t<RT1,RT2> >
-                                                     , DeclLowTrait< MultTrait_t<RT1,RT2> > >
-                                               , If_t< UPP
-                                                     , DeclUppTrait< MultTrait_t<RT1,RT2> >
-                                                     , MultTrait<RT1,RT2> > > > >::Type;
-
+   using ResultType    = MultTrait_t<RT1,RT2>;         //!< Result type for expression template evaluations.
    using OppositeType  = OppositeType_t<ResultType>;   //!< Result type with opposite storage order for expression template evaluations.
    using TransposeType = TransposeType_t<ResultType>;  //!< Transpose type for expression template evaluations.
    using ElementType   = ElementType_t<ResultType>;    //!< Resulting element type.
@@ -444,8 +425,8 @@ class SMatTDMatMultExpr
    */
    template< typename MT  // Type of the target dense matrix
            , bool SO >    // Storage order of the target dense matrix
-   friend inline auto assign( DenseMatrix<MT,SO>& lhs, const SMatTDMatMultExpr& rhs )
-      -> DisableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
+   friend inline DisableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
+      assign( DenseMatrix<MT,SO>& lhs, const SMatTDMatMultExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -484,9 +465,11 @@ class SMatTDMatMultExpr
    template< typename MT3    // Type of the left-hand side target matrix
            , typename MT4    // Type of the left-hand side matrix operand
            , typename MT5 >  // Type of the right-hand side matrix operand
-   static inline auto selectAssignKernel( MT3& C, const MT4& A, const MT5& B )
-      -> DisableIf_t< UseOptimizedKernel_v<MT3,MT4,MT5> >
+   static inline DisableIf_t< UseOptimizedKernel_v<MT3,MT4,MT5> >
+      selectAssignKernel( MT3& C, const MT4& A, const MT5& B )
    {
+      using ConstIterator = ConstIterator_t<MT4>;
+
       const size_t M( A.rows()    );
       const size_t N( B.columns() );
 
@@ -498,12 +481,12 @@ class SMatTDMatMultExpr
          for( ; (j+4UL) <= N; j+=4UL ) {
             for( size_t i=( SYM || HERM || LOW ? j : 0UL ); i<( UPP ? j+4UL : M ); ++i )
             {
-               const auto end( ( IsUpper_v<MT5> )
-                               ?( IsStrictlyUpper_v<MT5> ? A.lowerBound(i,j+4UL) : A.upperBound(i,j+4UL) )
-                               :( A.end(i) ) );
-               auto element( ( IsLower_v<MT5> )
-                             ?( IsStrictlyLower_v<MT5> ? A.upperBound(i,j) : A.lowerBound(i,j) )
-                             :( A.begin(i) ) );
+               const ConstIterator end( ( IsUpper_v<MT5> )
+                                        ?( IsStrictlyUpper_v<MT5> ? A.lowerBound(i,j+4UL) : A.upperBound(i,j+4UL) )
+                                        :( A.end(i) ) );
+               ConstIterator element( ( IsLower_v<MT5> )
+                                      ?( IsStrictlyLower_v<MT5> ? A.upperBound(i,j) : A.lowerBound(i,j) )
+                                      :( A.begin(i) ) );
 
                if( element == end ) {
                   reset( C(i,j    ) );
@@ -530,12 +513,12 @@ class SMatTDMatMultExpr
          for( ; (j+2UL) <= N; j+=2UL ) {
             for( size_t i=( SYM || HERM || LOW ? j : 0UL ); i<( UPP ? j+2UL : M ); ++i )
             {
-               const auto end( ( IsUpper_v<MT5> )
-                               ?( IsStrictlyUpper_v<MT5> ? A.lowerBound(i,j+2UL) : A.upperBound(i,j+2UL) )
-                               :( A.end(i) ) );
-               auto element( ( IsLower_v<MT5> )
-                             ?( IsStrictlyLower_v<MT5> ? A.upperBound(i,j) : A.lowerBound(i,j) )
-                             :( A.begin(i) ) );
+               const ConstIterator end( ( IsUpper_v<MT5> )
+                                        ?( IsStrictlyUpper_v<MT5> ? A.lowerBound(i,j+2UL) : A.upperBound(i,j+2UL) )
+                                        :( A.end(i) ) );
+               ConstIterator element( ( IsLower_v<MT5> )
+                                      ?( IsStrictlyLower_v<MT5> ? A.upperBound(i,j) : A.lowerBound(i,j) )
+                                      :( A.begin(i) ) );
 
                if( element == end ) {
                   reset( C(i,j    ) );
@@ -556,12 +539,12 @@ class SMatTDMatMultExpr
          for( ; j<N; ++j ) {
             for( size_t i=( SYM || HERM || LOW ? j : 0UL ); i<( UPP ? j+1UL : M ); ++i )
             {
-               const auto end( ( IsUpper_v<MT5> )
-                               ?( IsStrictlyUpper_v<MT5> ? A.lowerBound(i,j) : A.upperBound(i,j) )
-                               :( A.end(i) ) );
-               auto element( ( IsLower_v<MT5> )
-                             ?( IsStrictlyLower_v<MT5> ? A.upperBound(i,j) : A.lowerBound(i,j) )
-                             :( A.begin(i) ) );
+               const ConstIterator end( ( IsUpper_v<MT5> )
+                                        ?( IsStrictlyUpper_v<MT5> ? A.lowerBound(i,j) : A.upperBound(i,j) )
+                                        :( A.end(i) ) );
+               ConstIterator element( ( IsLower_v<MT5> )
+                                      ?( IsStrictlyLower_v<MT5> ? A.upperBound(i,j) : A.lowerBound(i,j) )
+                                      :( A.begin(i) ) );
 
                if( element == end ) {
                   reset( C(i,j) );
@@ -619,9 +602,11 @@ class SMatTDMatMultExpr
    template< typename MT3    // Type of the left-hand side target matrix
            , typename MT4    // Type of the left-hand side matrix operand
            , typename MT5 >  // Type of the right-hand side matrix operand
-   static inline auto selectAssignKernel( MT3& C, const MT4& A, const MT5& B )
-      -> EnableIf_t< UseOptimizedKernel_v<MT3,MT4,MT5> >
+   static inline EnableIf_t< UseOptimizedKernel_v<MT3,MT4,MT5> >
+      selectAssignKernel( MT3& C, const MT4& A, const MT5& B )
    {
+      using ConstIterator = ConstIterator_t<MT4>;
+
       const size_t M( A.rows()    );
       const size_t N( B.columns() );
 
@@ -635,12 +620,12 @@ class SMatTDMatMultExpr
          for( ; (j+4UL) <= N; j+=4UL ) {
             for( size_t i=( SYM || HERM || LOW ? j : 0UL ); i<( UPP ? j+4UL : M ); ++i )
             {
-               const auto end( ( IsUpper_v<MT5> )
-                               ?( IsStrictlyUpper_v<MT5> ? A.lowerBound(i,j+4UL) : A.upperBound(i,j+4UL) )
-                               :( A.end(i) ) );
-               auto element( ( IsLower_v<MT5> )
-                             ?( IsStrictlyLower_v<MT5> ? A.upperBound(i,j) : A.lowerBound(i,j) )
-                             :( A.begin(i) ) );
+               const ConstIterator end( ( IsUpper_v<MT5> )
+                                        ?( IsStrictlyUpper_v<MT5> ? A.lowerBound(i,j+4UL) : A.upperBound(i,j+4UL) )
+                                        :( A.end(i) ) );
+               ConstIterator element( ( IsLower_v<MT5> )
+                                      ?( IsStrictlyLower_v<MT5> ? A.upperBound(i,j) : A.lowerBound(i,j) )
+                                      :( A.begin(i) ) );
 
                const size_t nonzeros( end - element );
                const size_t kpos( nonzeros & size_t(-4) );
@@ -685,12 +670,12 @@ class SMatTDMatMultExpr
          for( ; (j+2UL) <= N; j+=2UL ) {
             for( size_t i=( SYM || HERM || LOW ? j : 0UL ); i<( UPP ? j+2UL : M ); ++i )
             {
-               const auto end( ( IsUpper_v<MT5> )
-                               ?( IsStrictlyUpper_v<MT5> ? A.lowerBound(i,j+2UL) : A.upperBound(i,j+2UL) )
-                               :( A.end(i) ) );
-               auto element( ( IsLower_v<MT5> )
-                             ?( IsStrictlyLower_v<MT5> ? A.upperBound(i,j) : A.lowerBound(i,j) )
-                             :( A.begin(i) ) );
+               const ConstIterator end( ( IsUpper_v<MT5> )
+                                        ?( IsStrictlyUpper_v<MT5> ? A.lowerBound(i,j+2UL) : A.upperBound(i,j+2UL) )
+                                        :( A.end(i) ) );
+               ConstIterator element( ( IsLower_v<MT5> )
+                                      ?( IsStrictlyLower_v<MT5> ? A.upperBound(i,j) : A.lowerBound(i,j) )
+                                      :( A.begin(i) ) );
 
                const size_t nonzeros( end - element );
                const size_t kpos( nonzeros & size_t(-4) );
@@ -731,12 +716,12 @@ class SMatTDMatMultExpr
          for( ; j<N; ++j ) {
             for( size_t i=( SYM || HERM || LOW ? j : 0UL ); i<( UPP ? j+1UL : M ); ++i )
             {
-               const auto end( ( IsUpper_v<MT5> )
-                               ?( IsStrictlyUpper_v<MT5> ? A.lowerBound(i,j) : A.upperBound(i,j) )
-                               :( A.end(i) ) );
-               auto element( ( IsLower_v<MT5> )
-                             ?( IsStrictlyLower_v<MT5> ? A.upperBound(i,j) : A.lowerBound(i,j) )
-                             :( A.begin(i) ) );
+               const ConstIterator end( ( IsUpper_v<MT5> )
+                                        ?( IsStrictlyUpper_v<MT5> ? A.lowerBound(i,j) : A.upperBound(i,j) )
+                                        :( A.end(i) ) );
+               ConstIterator element( ( IsLower_v<MT5> )
+                                      ?( IsStrictlyLower_v<MT5> ? A.upperBound(i,j) : A.lowerBound(i,j) )
+                                      :( A.begin(i) ) );
 
                const size_t nonzeros( end - element );
                const size_t kpos( nonzeros & size_t(-4) );
@@ -799,17 +784,17 @@ class SMatTDMatMultExpr
    */
    template< typename MT  // Type of the target sparse matrix
            , bool SO >    // Storage order of the target sparse matrix
-   friend inline auto assign( SparseMatrix<MT,SO>& lhs, const SMatTDMatMultExpr& rhs )
-      -> DisableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
+   friend inline DisableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
+      assign( SparseMatrix<MT,SO>& lhs, const SMatTDMatMultExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
-      using TmpType = If_t< SO, ResultType, OppositeType >;
+      using TmpType = If_t< SO, OppositeType, ResultType >;
 
       BLAZE_CONSTRAINT_MUST_BE_DENSE_MATRIX_TYPE( ResultType );
       BLAZE_CONSTRAINT_MUST_BE_DENSE_MATRIX_TYPE( OppositeType );
-      BLAZE_CONSTRAINT_MUST_BE_COLUMN_MAJOR_MATRIX_TYPE( ResultType );
-      BLAZE_CONSTRAINT_MUST_BE_ROW_MAJOR_MATRIX_TYPE( OppositeType );
+      BLAZE_CONSTRAINT_MUST_BE_ROW_MAJOR_MATRIX_TYPE( ResultType );
+      BLAZE_CONSTRAINT_MUST_BE_COLUMN_MAJOR_MATRIX_TYPE( OppositeType );
       BLAZE_CONSTRAINT_MATRICES_MUST_HAVE_SAME_STORAGE_ORDER( MT, TmpType );
       BLAZE_CONSTRAINT_MUST_NOT_REQUIRE_EVALUATION( TmpType );
 
@@ -841,8 +826,8 @@ class SMatTDMatMultExpr
    */
    template< typename MT  // Type of the target matrix
            , bool SO >    // Storage order of the target matrix
-   friend inline auto assign( Matrix<MT,SO>& lhs, const SMatTDMatMultExpr& rhs )
-      -> EnableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
+   friend inline EnableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
+      assign( Matrix<MT,SO>& lhs, const SMatTDMatMultExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -871,8 +856,8 @@ class SMatTDMatMultExpr
    */
    template< typename MT  // Type of the target dense matrix
            , bool SO >    // Storage order of the target dense matrix
-   friend inline auto addAssign( DenseMatrix<MT,SO>& lhs, const SMatTDMatMultExpr& rhs )
-      -> DisableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
+   friend inline DisableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
+      addAssign( DenseMatrix<MT,SO>& lhs, const SMatTDMatMultExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -911,9 +896,11 @@ class SMatTDMatMultExpr
    template< typename MT3    // Type of the left-hand side target matrix
            , typename MT4    // Type of the left-hand side matrix operand
            , typename MT5 >  // Type of the right-hand side matrix operand
-   static inline auto selectAddAssignKernel( MT3& C, const MT4& A, const MT5& B )
-      -> DisableIf_t< UseOptimizedKernel_v<MT3,MT4,MT5> >
+   static inline DisableIf_t< UseOptimizedKernel_v<MT3,MT4,MT5> >
+      selectAddAssignKernel( MT3& C, const MT4& A, const MT5& B )
    {
+      using ConstIterator = ConstIterator_t<MT4>;
+
       const size_t M( A.rows()    );
       const size_t N( B.columns() );
 
@@ -925,12 +912,12 @@ class SMatTDMatMultExpr
          for( ; (j+4UL) <= N; j+=4UL ) {
             for( size_t i=( LOW ? j : 0UL ); i<( UPP ? j+4UL : M ); ++i )
             {
-               const auto end( ( IsUpper_v<MT5> )
-                               ?( IsStrictlyUpper_v<MT5> ? A.lowerBound(i,j+4UL) : A.upperBound(i,j+4UL) )
-                               :( A.end(i) ) );
-               auto element( ( IsLower_v<MT5> )
-                             ?( IsStrictlyLower_v<MT5> ? A.upperBound(i,j) : A.lowerBound(i,j) )
-                             :( A.begin(i) ) );
+               const ConstIterator end( ( IsUpper_v<MT5> )
+                                        ?( IsStrictlyUpper_v<MT5> ? A.lowerBound(i,j+4UL) : A.upperBound(i,j+4UL) )
+                                        :( A.end(i) ) );
+               ConstIterator element( ( IsLower_v<MT5> )
+                                      ?( IsStrictlyLower_v<MT5> ? A.upperBound(i,j) : A.lowerBound(i,j) )
+                                      :( A.begin(i) ) );
 
                for( ; element!=end; ++element ) {
                   C(i,j    ) += element->value() * B(element->index(),j    );
@@ -944,12 +931,12 @@ class SMatTDMatMultExpr
          for( ; (j+2UL) <= N; j+=2UL ) {
             for( size_t i=( LOW ? j : 0UL ); i<( UPP ? j+2UL : M ); ++i )
             {
-               const auto end( ( IsUpper_v<MT5> )
-                               ?( IsStrictlyUpper_v<MT5> ? A.lowerBound(i,j+2UL) : A.upperBound(i,j+2UL) )
-                               :( A.end(i) ) );
-               auto element( ( IsLower_v<MT5> )
-                             ?( IsStrictlyLower_v<MT5> ? A.upperBound(i,j) : A.lowerBound(i,j) )
-                             :( A.begin(i) ) );
+               const ConstIterator end( ( IsUpper_v<MT5> )
+                                        ?( IsStrictlyUpper_v<MT5> ? A.lowerBound(i,j+2UL) : A.upperBound(i,j+2UL) )
+                                        :( A.end(i) ) );
+               ConstIterator element( ( IsLower_v<MT5> )
+                                      ?( IsStrictlyLower_v<MT5> ? A.upperBound(i,j) : A.lowerBound(i,j) )
+                                      :( A.begin(i) ) );
 
                for( ; element!=end; ++element ) {
                   C(i,j    ) += element->value() * B(element->index(),j    );
@@ -961,12 +948,12 @@ class SMatTDMatMultExpr
          for( ; j<N; ++j ) {
             for( size_t i=( LOW ? j : 0UL ); i<( UPP ? j+1UL : M ); ++i )
             {
-               const auto end( ( IsUpper_v<MT5> )
-                               ?( IsStrictlyUpper_v<MT5> ? A.lowerBound(i,j) : A.upperBound(i,j) )
-                               :( A.end(i) ) );
-               auto element( ( IsLower_v<MT5> )
-                             ?( IsStrictlyLower_v<MT5> ? A.upperBound(i,j) : A.lowerBound(i,j) )
-                             :( A.begin(i) ) );
+               const ConstIterator end( ( IsUpper_v<MT5> )
+                                        ?( IsStrictlyUpper_v<MT5> ? A.lowerBound(i,j) : A.upperBound(i,j) )
+                                        :( A.end(i) ) );
+               ConstIterator element( ( IsLower_v<MT5> )
+                                      ?( IsStrictlyLower_v<MT5> ? A.upperBound(i,j) : A.lowerBound(i,j) )
+                                      :( A.begin(i) ) );
 
                for( ; element!=end; ++element ) {
                   C(i,j) += element->value() * B(element->index(),j);
@@ -995,9 +982,11 @@ class SMatTDMatMultExpr
    template< typename MT3    // Type of the left-hand side target matrix
            , typename MT4    // Type of the left-hand side matrix operand
            , typename MT5 >  // Type of the right-hand side matrix operand
-   static inline auto selectAddAssignKernel( MT3& C, const MT4& A, const MT5& B )
-      -> EnableIf_t< UseOptimizedKernel_v<MT3,MT4,MT5> >
+   static inline EnableIf_t< UseOptimizedKernel_v<MT3,MT4,MT5> >
+      selectAddAssignKernel( MT3& C, const MT4& A, const MT5& B )
    {
+      using ConstIterator = ConstIterator_t<MT4>;
+
       const size_t M( A.rows()    );
       const size_t N( B.columns() );
 
@@ -1009,12 +998,12 @@ class SMatTDMatMultExpr
          for( ; (j+4UL) <= N; j+=4UL ) {
             for( size_t i=( LOW ? j : 0UL ); i<( UPP ? j+4UL : M ); ++i )
             {
-               const auto end( ( IsUpper_v<MT5> )
-                               ?( IsStrictlyUpper_v<MT5> ? A.lowerBound(i,j+4UL) : A.upperBound(i,j+4UL) )
-                               :( A.end(i) ) );
-               auto element( ( IsLower_v<MT5> )
-                             ?( IsStrictlyLower_v<MT5> ? A.upperBound(i,j) : A.lowerBound(i,j) )
-                             :( A.begin(i) ) );
+               const ConstIterator end( ( IsUpper_v<MT5> )
+                                        ?( IsStrictlyUpper_v<MT5> ? A.lowerBound(i,j+4UL) : A.upperBound(i,j+4UL) )
+                                        :( A.end(i) ) );
+               ConstIterator element( ( IsLower_v<MT5> )
+                                      ?( IsStrictlyLower_v<MT5> ? A.upperBound(i,j) : A.lowerBound(i,j) )
+                                      :( A.begin(i) ) );
 
                const size_t nonzeros( end - element );
                const size_t kpos( nonzeros & size_t(-4) );
@@ -1059,12 +1048,12 @@ class SMatTDMatMultExpr
          for( ; (j+2UL) <= N; j+=2UL ) {
             for( size_t i=( LOW ? j : 0UL ); i<( UPP ? j+2UL : M ); ++i )
             {
-               const auto end( ( IsUpper_v<MT5> )
-                               ?( IsStrictlyUpper_v<MT5> ? A.lowerBound(i,j+2UL) : A.upperBound(i,j+2UL) )
-                               :( A.end(i) ) );
-               auto element( ( IsLower_v<MT5> )
-                             ?( IsStrictlyLower_v<MT5> ? A.upperBound(i,j) : A.lowerBound(i,j) )
-                             :( A.begin(i) ) );
+               const ConstIterator end( ( IsUpper_v<MT5> )
+                                        ?( IsStrictlyUpper_v<MT5> ? A.lowerBound(i,j+2UL) : A.upperBound(i,j+2UL) )
+                                        :( A.end(i) ) );
+               ConstIterator element( ( IsLower_v<MT5> )
+                                      ?( IsStrictlyLower_v<MT5> ? A.upperBound(i,j) : A.lowerBound(i,j) )
+                                      :( A.begin(i) ) );
 
                const size_t nonzeros( end - element );
                const size_t kpos( nonzeros & size_t(-4) );
@@ -1105,12 +1094,12 @@ class SMatTDMatMultExpr
          for( ; j<N; ++j ) {
             for( size_t i=( LOW ? j : 0UL ); i<( UPP ? j+1UL : M ); ++i )
             {
-               const auto end( ( IsUpper_v<MT5> )
-                               ?( IsStrictlyUpper_v<MT5> ? A.lowerBound(i,j) : A.upperBound(i,j) )
-                               :( A.end(i) ) );
-               auto element( ( IsLower_v<MT5> )
-                             ?( IsStrictlyLower_v<MT5> ? A.upperBound(i,j) : A.lowerBound(i,j) )
-                             :( A.begin(i) ) );
+               const ConstIterator end( ( IsUpper_v<MT5> )
+                                        ?( IsStrictlyUpper_v<MT5> ? A.lowerBound(i,j) : A.upperBound(i,j) )
+                                        :( A.end(i) ) );
+               ConstIterator element( ( IsLower_v<MT5> )
+                                      ?( IsStrictlyLower_v<MT5> ? A.upperBound(i,j) : A.lowerBound(i,j) )
+                                      :( A.begin(i) ) );
 
                const size_t nonzeros( end - element );
                const size_t kpos( nonzeros & size_t(-4) );
@@ -1167,8 +1156,8 @@ class SMatTDMatMultExpr
    */
    template< typename MT  // Type of the target matrix
            , bool SO >    // Storage order of the target matrix
-   friend inline auto addAssign( Matrix<MT,SO>& lhs, const SMatTDMatMultExpr& rhs )
-      -> EnableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
+   friend inline EnableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
+      addAssign( Matrix<MT,SO>& lhs, const SMatTDMatMultExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -1201,8 +1190,8 @@ class SMatTDMatMultExpr
    */
    template< typename MT  // Type of the target dense matrix
            , bool SO >    // Storage order of the target dense matrix
-   friend inline auto subAssign( DenseMatrix<MT,SO>& lhs, const SMatTDMatMultExpr& rhs )
-      -> DisableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
+   friend inline DisableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
+      subAssign( DenseMatrix<MT,SO>& lhs, const SMatTDMatMultExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -1241,9 +1230,11 @@ class SMatTDMatMultExpr
    template< typename MT3    // Type of the left-hand side target matrix
            , typename MT4    // Type of the left-hand side matrix operand
            , typename MT5 >  // Type of the right-hand side matrix operand
-   static inline auto selectSubAssignKernel( MT3& C, const MT4& A, const MT5& B )
-      -> DisableIf_t< UseOptimizedKernel_v<MT3,MT4,MT5> >
+   static inline DisableIf_t< UseOptimizedKernel_v<MT3,MT4,MT5> >
+      selectSubAssignKernel( MT3& C, const MT4& A, const MT5& B )
    {
+      using ConstIterator = ConstIterator_t<MT4>;
+
       const size_t M( A.rows()    );
       const size_t N( B.columns() );
 
@@ -1255,12 +1246,12 @@ class SMatTDMatMultExpr
          for( ; (j+4UL) <= N; j+=4UL ) {
             for( size_t i=( LOW ? j : 0UL ); i<( UPP ? j+4UL : M ); ++i )
             {
-               const auto end( ( IsUpper_v<MT5> )
-                               ?( IsStrictlyUpper_v<MT5> ? A.lowerBound(i,j+4UL) : A.upperBound(i,j+4UL) )
-                               :( A.end(i) ) );
-               auto element( ( IsLower_v<MT5> )
-                             ?( IsStrictlyLower_v<MT5> ? A.upperBound(i,j) : A.lowerBound(i,j) )
-                             :( A.begin(i) ) );
+               const ConstIterator end( ( IsUpper_v<MT5> )
+                                        ?( IsStrictlyUpper_v<MT5> ? A.lowerBound(i,j+4UL) : A.upperBound(i,j+4UL) )
+                                        :( A.end(i) ) );
+               ConstIterator element( ( IsLower_v<MT5> )
+                                      ?( IsStrictlyLower_v<MT5> ? A.upperBound(i,j) : A.lowerBound(i,j) )
+                                      :( A.begin(i) ) );
 
                for( ; element!=end; ++element ) {
                   C(i,j    ) -= element->value() * B(element->index(),j    );
@@ -1274,12 +1265,12 @@ class SMatTDMatMultExpr
          for( ; (j+2UL) <= N; j+=2UL ) {
             for( size_t i=( LOW ? j : 0UL ); i<( UPP ? j+2UL : M ); ++i )
             {
-               const auto end( ( IsUpper_v<MT5> )
-                               ?( IsStrictlyUpper_v<MT5> ? A.lowerBound(i,j+2UL) : A.upperBound(i,j+2UL) )
-                               :( A.end(i) ) );
-               auto element( ( IsLower_v<MT5> )
-                             ?( IsStrictlyLower_v<MT5> ? A.upperBound(i,j) : A.lowerBound(i,j) )
-                             :( A.begin(i) ) );
+               const ConstIterator end( ( IsUpper_v<MT5> )
+                                        ?( IsStrictlyUpper_v<MT5> ? A.lowerBound(i,j+2UL) : A.upperBound(i,j+2UL) )
+                                        :( A.end(i) ) );
+               ConstIterator element( ( IsLower_v<MT5> )
+                                      ?( IsStrictlyLower_v<MT5> ? A.upperBound(i,j) : A.lowerBound(i,j) )
+                                      :( A.begin(i) ) );
 
                for( ; element!=end; ++element ) {
                   C(i,j    ) -= element->value() * B(element->index(),j    );
@@ -1291,12 +1282,12 @@ class SMatTDMatMultExpr
          for( ; j<N; ++j ) {
             for( size_t i=( LOW ? j : 0UL ); i<( UPP ? j+1UL : M ); ++i )
             {
-               const auto end( ( IsUpper_v<MT5> )
-                               ?( IsStrictlyUpper_v<MT5> ? A.lowerBound(i,j) : A.upperBound(i,j) )
-                               :( A.end(i) ) );
-               auto element( ( IsLower_v<MT5> )
-                             ?( IsStrictlyLower_v<MT5> ? A.upperBound(i,j) : A.lowerBound(i,j) )
-                             :( A.begin(i) ) );
+               const ConstIterator end( ( IsUpper_v<MT5> )
+                                        ?( IsStrictlyUpper_v<MT5> ? A.lowerBound(i,j) : A.upperBound(i,j) )
+                                        :( A.end(i) ) );
+               ConstIterator element( ( IsLower_v<MT5> )
+                                      ?( IsStrictlyLower_v<MT5> ? A.upperBound(i,j) : A.lowerBound(i,j) )
+                                      :( A.begin(i) ) );
 
                for( ; element!=end; ++element ) {
                   C(i,j) -= element->value() * B(element->index(),j);
@@ -1325,9 +1316,11 @@ class SMatTDMatMultExpr
    template< typename MT3    // Type of the left-hand side target matrix
            , typename MT4    // Type of the left-hand side matrix operand
            , typename MT5 >  // Type of the right-hand side matrix operand
-   static inline auto selectSubAssignKernel( MT3& C, const MT4& A, const MT5& B )
-      -> EnableIf_t< UseOptimizedKernel_v<MT3,MT4,MT5> >
+   static inline EnableIf_t< UseOptimizedKernel_v<MT3,MT4,MT5> >
+      selectSubAssignKernel( MT3& C, const MT4& A, const MT5& B )
    {
+      using ConstIterator = ConstIterator_t<MT4>;
+
       const size_t M( A.rows()    );
       const size_t N( B.columns() );
 
@@ -1339,12 +1332,12 @@ class SMatTDMatMultExpr
          for( ; (j+4UL) <= N; j+=4UL ) {
             for( size_t i=( LOW ? j : 0UL ); i<( UPP ? j+4UL : M ); ++i )
             {
-               const auto end( ( IsUpper_v<MT5> )
-                               ?( IsStrictlyUpper_v<MT5> ? A.lowerBound(i,j+4UL) : A.upperBound(i,j+4UL) )
-                               :( A.end(i) ) );
-               auto element( ( IsLower_v<MT5> )
-                             ?( IsStrictlyLower_v<MT5> ? A.upperBound(i,j) : A.lowerBound(i,j) )
-                             :( A.begin(i) ) );
+               const ConstIterator end( ( IsUpper_v<MT5> )
+                                        ?( IsStrictlyUpper_v<MT5> ? A.lowerBound(i,j+4UL) : A.upperBound(i,j+4UL) )
+                                        :( A.end(i) ) );
+               ConstIterator element( ( IsLower_v<MT5> )
+                                      ?( IsStrictlyLower_v<MT5> ? A.upperBound(i,j) : A.lowerBound(i,j) )
+                                      :( A.begin(i) ) );
 
                const size_t nonzeros( end - element );
                const size_t kpos( nonzeros & size_t(-4) );
@@ -1389,12 +1382,12 @@ class SMatTDMatMultExpr
          for( ; (j+2UL) <= N; j+=2UL ) {
             for( size_t i=( LOW ? j : 0UL ); i<( UPP ? j+2UL : M ); ++i )
             {
-               const auto end( ( IsUpper_v<MT5> )
-                               ?( IsStrictlyUpper_v<MT5> ? A.lowerBound(i,j+2UL) : A.upperBound(i,j+2UL) )
-                               :( A.end(i) ) );
-               auto element( ( IsLower_v<MT5> )
-                             ?( IsStrictlyLower_v<MT5> ? A.upperBound(i,j) : A.lowerBound(i,j) )
-                             :( A.begin(i) ) );
+               const ConstIterator end( ( IsUpper_v<MT5> )
+                                        ?( IsStrictlyUpper_v<MT5> ? A.lowerBound(i,j+2UL) : A.upperBound(i,j+2UL) )
+                                        :( A.end(i) ) );
+               ConstIterator element( ( IsLower_v<MT5> )
+                                      ?( IsStrictlyLower_v<MT5> ? A.upperBound(i,j) : A.lowerBound(i,j) )
+                                      :( A.begin(i) ) );
 
                const size_t nonzeros( end - element );
                const size_t kpos( nonzeros & size_t(-4) );
@@ -1435,12 +1428,12 @@ class SMatTDMatMultExpr
          for( ; j<N; ++j ) {
             for( size_t i=( LOW ? j : 0UL ); i<( UPP ? j+1UL : M ); ++i )
             {
-               const auto end( ( IsUpper_v<MT5> )
-                               ?( IsStrictlyUpper_v<MT5> ? A.lowerBound(i,j) : A.upperBound(i,j) )
-                               :( A.end(i) ) );
-               auto element( ( IsLower_v<MT5> )
-                             ?( IsStrictlyLower_v<MT5> ? A.upperBound(i,j) : A.lowerBound(i,j) )
-                             :( A.begin(i) ) );
+               const ConstIterator end( ( IsUpper_v<MT5> )
+                                        ?( IsStrictlyUpper_v<MT5> ? A.lowerBound(i,j) : A.upperBound(i,j) )
+                                        :( A.end(i) ) );
+               ConstIterator element( ( IsLower_v<MT5> )
+                                      ?( IsStrictlyLower_v<MT5> ? A.upperBound(i,j) : A.lowerBound(i,j) )
+                                      :( A.begin(i) ) );
 
                const size_t nonzeros( end - element );
                const size_t kpos( nonzeros & size_t(-4) );
@@ -1497,8 +1490,8 @@ class SMatTDMatMultExpr
    */
    template< typename MT  // Type of the target matrix
            , bool SO >    // Storage order of the target matrix
-   friend inline auto subAssign( Matrix<MT,SO>& lhs, const SMatTDMatMultExpr& rhs )
-      -> EnableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
+   friend inline EnableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
+      subAssign( Matrix<MT,SO>& lhs, const SMatTDMatMultExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -1536,7 +1529,7 @@ class SMatTDMatMultExpr
       BLAZE_FUNCTION_TRACE;
 
       BLAZE_CONSTRAINT_MUST_BE_DENSE_MATRIX_TYPE( ResultType );
-      BLAZE_CONSTRAINT_MUST_BE_COLUMN_MAJOR_MATRIX_TYPE( ResultType );
+      BLAZE_CONSTRAINT_MUST_BE_ROW_MAJOR_MATRIX_TYPE( ResultType );
       BLAZE_CONSTRAINT_MUST_NOT_REQUIRE_EVALUATION( ResultType );
 
       BLAZE_INTERNAL_ASSERT( (~lhs).rows()    == rhs.rows()   , "Invalid number of rows"    );
@@ -1577,8 +1570,8 @@ class SMatTDMatMultExpr
    */
    template< typename MT  // Type of the target dense matrix
            , bool SO >    // Storage order of the target dense matrix
-   friend inline auto smpAssign( DenseMatrix<MT,SO>& lhs, const SMatTDMatMultExpr& rhs )
-      -> EnableIf_t< IsEvaluationRequired_v<MT,MT1,MT2> >
+   friend inline EnableIf_t< IsEvaluationRequired_v<MT,MT1,MT2> >
+      smpAssign( DenseMatrix<MT,SO>& lhs, const SMatTDMatMultExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -1617,17 +1610,17 @@ class SMatTDMatMultExpr
    */
    template< typename MT  // Type of the target sparse matrix
            , bool SO >    // Storage order of the target sparse matrix
-   friend inline auto smpAssign( SparseMatrix<MT,SO>& lhs, const SMatTDMatMultExpr& rhs )
-      -> EnableIf_t< IsEvaluationRequired_v<MT,MT1,MT2> >
+   friend inline EnableIf_t< IsEvaluationRequired_v<MT,MT1,MT2> >
+      smpAssign( SparseMatrix<MT,SO>& lhs, const SMatTDMatMultExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
-      using TmpType = If_t< SO, ResultType, OppositeType >;
+      using TmpType = If_t< SO, OppositeType, ResultType >;
 
       BLAZE_CONSTRAINT_MUST_BE_DENSE_MATRIX_TYPE( ResultType );
       BLAZE_CONSTRAINT_MUST_BE_DENSE_MATRIX_TYPE( OppositeType );
-      BLAZE_CONSTRAINT_MUST_BE_COLUMN_MAJOR_MATRIX_TYPE( ResultType );
-      BLAZE_CONSTRAINT_MUST_BE_ROW_MAJOR_MATRIX_TYPE( OppositeType );
+      BLAZE_CONSTRAINT_MUST_BE_ROW_MAJOR_MATRIX_TYPE( ResultType );
+      BLAZE_CONSTRAINT_MUST_BE_COLUMN_MAJOR_MATRIX_TYPE( OppositeType );
       BLAZE_CONSTRAINT_MATRICES_MUST_HAVE_SAME_STORAGE_ORDER( MT, TmpType );
       BLAZE_CONSTRAINT_MUST_NOT_REQUIRE_EVALUATION( TmpType );
 
@@ -1659,8 +1652,8 @@ class SMatTDMatMultExpr
    */
    template< typename MT  // Type of the target matrix
            , bool SO >    // Storage order of the target matrix
-   friend inline auto smpAssign( Matrix<MT,SO>& lhs, const SMatTDMatMultExpr& rhs )
-      -> EnableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
+   friend inline EnableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
+      smpAssign( Matrix<MT,SO>& lhs, const SMatTDMatMultExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -1692,8 +1685,8 @@ class SMatTDMatMultExpr
    */
    template< typename MT  // Type of the target dense matrix
            , bool SO >    // Storage order of the target dense matrix
-   friend inline auto smpAddAssign( DenseMatrix<MT,SO>& lhs, const SMatTDMatMultExpr& rhs )
-      -> EnableIf_t< IsEvaluationRequired_v<MT,MT1,MT2> >
+   friend inline EnableIf_t< IsEvaluationRequired_v<MT,MT1,MT2> >
+      smpAddAssign( DenseMatrix<MT,SO>& lhs, const SMatTDMatMultExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -1732,8 +1725,8 @@ class SMatTDMatMultExpr
    */
    template< typename MT  // Type of the target matrix
            , bool SO >    // Storage order of the target matrix
-   friend inline auto smpAddAssign( Matrix<MT,SO>& lhs, const SMatTDMatMultExpr& rhs )
-      -> EnableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
+   friend inline EnableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
+      smpAddAssign( Matrix<MT,SO>& lhs, const SMatTDMatMultExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -1769,8 +1762,8 @@ class SMatTDMatMultExpr
    */
    template< typename MT  // Type of the target dense matrix
            , bool SO >    // Storage order of the target dense matrix
-   friend inline auto smpSubAssign( DenseMatrix<MT,SO>& lhs, const SMatTDMatMultExpr& rhs )
-      -> EnableIf_t< IsEvaluationRequired_v<MT,MT1,MT2> >
+   friend inline EnableIf_t< IsEvaluationRequired_v<MT,MT1,MT2> >
+      smpSubAssign( DenseMatrix<MT,SO>& lhs, const SMatTDMatMultExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -1809,8 +1802,8 @@ class SMatTDMatMultExpr
    */
    template< typename MT  // Type of the target matrix
            , bool SO >    // Storage order of the target matrix
-   friend inline auto smpSubAssign( Matrix<MT,SO>& lhs, const SMatTDMatMultExpr& rhs )
-      -> EnableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
+   friend inline EnableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
+      smpSubAssign( Matrix<MT,SO>& lhs, const SMatTDMatMultExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -1848,7 +1841,7 @@ class SMatTDMatMultExpr
       BLAZE_FUNCTION_TRACE;
 
       BLAZE_CONSTRAINT_MUST_BE_DENSE_MATRIX_TYPE( ResultType );
-      BLAZE_CONSTRAINT_MUST_BE_COLUMN_MAJOR_MATRIX_TYPE( ResultType );
+      BLAZE_CONSTRAINT_MUST_BE_ROW_MAJOR_MATRIX_TYPE( ResultType );
       BLAZE_CONSTRAINT_MUST_NOT_REQUIRE_EVALUATION( ResultType );
 
       BLAZE_INTERNAL_ASSERT( (~lhs).rows()    == rhs.rows()   , "Invalid number of rows"    );
@@ -1876,7 +1869,6 @@ class SMatTDMatMultExpr
    /*! \cond BLAZE_INTERNAL */
    BLAZE_CONSTRAINT_MUST_BE_SPARSE_MATRIX_TYPE( MT1 );
    BLAZE_CONSTRAINT_MUST_BE_ROW_MAJOR_MATRIX_TYPE( MT1 );
-   BLAZE_CONSTRAINT_MUST_NOT_BE_ZERO_TYPE( MT1 );
    BLAZE_CONSTRAINT_MUST_BE_DENSE_MATRIX_TYPE( MT2 );
    BLAZE_CONSTRAINT_MUST_BE_COLUMN_MAJOR_MATRIX_TYPE( MT2 );
    BLAZE_CONSTRAINT_MUST_FORM_VALID_MATMATMULTEXPR( MT1, MT2 );
@@ -1893,104 +1885,6 @@ class SMatTDMatMultExpr
 //  GLOBAL BINARY ARITHMETIC OPERATORS
 //
 //=================================================================================================
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-/*!\brief Backend implementation of the multiplication between a row-major sparse matrix and a
-//        column-major dense matrix (\f$ A=B*C \f$).
-// \ingroup dense_matrix
-//
-// \param lhs The left-hand side sparse matrix for the multiplication.
-// \param rhs The right-hand side dense matrix for the multiplication.
-// \return The product of the two matrices.
-//
-// This function implements a performance optimized treatment of the multiplication between a
-// row-major sparse matrix and a column-major dense matrix.
-*/
-template< typename MT1  // Type of the left-hand side dense matrix
-        , typename MT2  // Type of the right-hand side sparse matrix
-        , DisableIf_t< ( IsIdentity_v<MT1> &&
-                         IsSame_v< ElementType_t<MT1>, ElementType_t<MT2> > ) ||
-                       IsZero_v<MT1> >* = nullptr >
-inline const SMatTDMatMultExpr<MT1,MT2,false,false,false,false>
-   smattdmatmult( const SparseMatrix<MT1,false>& lhs, const DenseMatrix<MT2,true>& rhs )
-{
-   BLAZE_FUNCTION_TRACE;
-
-   BLAZE_INTERNAL_ASSERT( (~lhs).columns() == (~rhs).rows(), "Invalid matrix sizes" );
-
-   return SMatTDMatMultExpr<MT1,MT2,false,false,false,false>( ~lhs, ~rhs );
-}
-/*! \endcond */
-//*************************************************************************************************
-
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-/*!\brief Backend implementation of the multiplication between a row-major identity matrix and
-//        a column-major dense matrix (\f$ A=B*C \f$).
-// \ingroup dense_matrix
-//
-// \param lhs The left-hand side identity matrix for the multiplication.
-// \param rhs The right-hand side dense matrix for the multiplication.
-// \return Reference to the right-hand side dense matrix.
-//
-// This function implements a performance optimized treatment of the multiplication between
-// a row-major identity matrix and a column-major dense matrix. It returns a reference to the
-// right-hand side dense matrix.
-*/
-template< typename MT1  // Type of the left-hand side sparse matrix
-        , typename MT2  // Type of the right-hand side dense matrix
-        , EnableIf_t< IsIdentity_v<MT1> &&
-                      IsSame_v< ElementType_t<MT1>, ElementType_t<MT2> > >* = nullptr >
-inline const MT2&
-   smattdmatmult( const SparseMatrix<MT1,false>& lhs, const DenseMatrix<MT2,true>& rhs )
-{
-   BLAZE_FUNCTION_TRACE;
-
-   MAYBE_UNUSED( lhs );
-
-   BLAZE_INTERNAL_ASSERT( (~lhs).columns() == (~rhs).rows(), "Invalid matrix sizes" );
-
-   return (~rhs);
-}
-/*! \endcond */
-//*************************************************************************************************
-
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-/*!\brief Backend implementation of the multiplication between a row-major zero matrix and a
-//        column-major dense matrix (\f$ A=B*C \f$).
-// \ingroup dense_matrix
-//
-// \param lhs The left-hand side zero matrix for the multiplication.
-// \param rhs The right-hand side dense matrix for the multiplication.
-// \return The resulting zero matrix.
-//
-// This function implements a performance optimized treatment of the multiplication between a
-// row-major zero matrix and a column-major dense matrix. It returns a zero matrix.
-*/
-template< typename MT1  // Type of the left-hand side dense matrix
-        , typename MT2  // Type of the right-hand side sparse matrix
-        , EnableIf_t< IsZero_v<MT1> >* = nullptr >
-inline decltype(auto)
-   smattdmatmult( const SparseMatrix<MT1,false>& lhs, const DenseMatrix<MT2,true>& rhs )
-{
-   BLAZE_FUNCTION_TRACE;
-
-   BLAZE_INTERNAL_ASSERT( (~lhs).columns() == (~rhs).rows(), "Invalid matrix sizes" );
-
-   using ReturnType = const MultTrait_t< ResultType_t<MT1>, ResultType_t<MT2> >;
-
-   BLAZE_CONSTRAINT_MUST_BE_ROW_MAJOR_MATRIX_TYPE( ReturnType );
-   BLAZE_CONSTRAINT_MUST_BE_ZERO_TYPE( ReturnType );
-
-   return ReturnType( (~lhs).rows(), (~rhs).columns() );
-}
-/*! \endcond */
-//*************************************************************************************************
-
 
 //*************************************************************************************************
 /*!\brief Multiplication operator for the multiplication of a row-major sparse matrix and a
@@ -2034,7 +1928,8 @@ inline decltype(auto)
       BLAZE_THROW_INVALID_ARGUMENT( "Matrix sizes do not match" );
    }
 
-   return smattdmatmult( ~lhs, ~rhs );
+   using ReturnType = const SMatTDMatMultExpr<MT1,MT2,false,false,false,false>;
+   return ReturnType( ~lhs, ~rhs );
 }
 //*************************************************************************************************
 
@@ -2318,6 +2213,166 @@ struct Size< SMatTDMatMultExpr<MT1,MT2,SF,HF,LF,UF>, 1UL >
 template< typename MT1, typename MT2, bool SF, bool HF, bool LF, bool UF >
 struct IsAligned< SMatTDMatMultExpr<MT1,MT2,SF,HF,LF,UF> >
    : public IsAligned<MT2>
+{};
+/*! \endcond */
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
+//  ISSYMMETRIC SPECIALIZATIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+template< typename MT1, typename MT2, bool SF, bool HF, bool LF, bool UF >
+struct IsSymmetric< SMatTDMatMultExpr<MT1,MT2,SF,HF,LF,UF> >
+   : public BoolConstant< SF ||
+                          ( HF && IsBuiltin_v< ElementType_t< SMatTDMatMultExpr<MT1,MT2,SF,HF,LF,UF> > > ) ||
+                          ( LF && UF ) >
+{};
+/*! \endcond */
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
+//  ISHERMITIAN SPECIALIZATIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+template< typename MT1, typename MT2, bool SF, bool LF, bool UF >
+struct IsHermitian< SMatTDMatMultExpr<MT1,MT2,SF,true,LF,UF> >
+   : public TrueType
+{};
+/*! \endcond */
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
+//  ISLOWER SPECIALIZATIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+template< typename MT1, typename MT2, bool SF, bool HF, bool LF, bool UF >
+struct IsLower< SMatTDMatMultExpr<MT1,MT2,SF,HF,LF,UF> >
+   : public BoolConstant< LF ||
+                          ( IsLower_v<MT1> && IsLower_v<MT2> ) ||
+                          ( ( SF || HF ) && IsUpper_v<MT1> && IsUpper_v<MT2> ) >
+{};
+/*! \endcond */
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
+//  ISUNILOWER SPECIALIZATIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+template< typename MT1, typename MT2, bool SF, bool HF, bool LF, bool UF >
+struct IsUniLower< SMatTDMatMultExpr<MT1,MT2,SF,HF,LF,UF> >
+   : public BoolConstant< ( IsUniLower_v<MT1> && IsUniLower_v<MT2> ) ||
+                          ( ( SF || HF ) && IsUniUpper_v<MT1> && IsUniUpper_v<MT2> ) >
+{};
+/*! \endcond */
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
+//  ISSTRICTLYLOWER SPECIALIZATIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+template< typename MT1, typename MT2, bool SF, bool HF, bool LF, bool UF >
+struct IsStrictlyLower< SMatTDMatMultExpr<MT1,MT2,SF,HF,LF,UF> >
+   : public BoolConstant< ( IsStrictlyLower_v<MT1> && IsLower_v<MT2> ) ||
+                          ( IsStrictlyLower_v<MT2> && IsLower_v<MT1> ) ||
+                          ( ( SF || HF ) &&
+                            ( ( IsStrictlyUpper_v<MT1> && IsUpper_v<MT2> ) ||
+                              ( IsStrictlyUpper_v<MT2> && IsUpper_v<MT1> ) ) ) >
+{};
+/*! \endcond */
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
+//  ISUPPER SPECIALIZATIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+template< typename MT1, typename MT2, bool SF, bool HF, bool LF, bool UF >
+struct IsUpper< SMatTDMatMultExpr<MT1,MT2,SF,HF,LF,UF> >
+   : public BoolConstant< UF ||
+                          ( IsUpper_v<MT1> && IsUpper_v<MT2> ) ||
+                          ( ( SF || HF ) && IsLower_v<MT1> && IsLower_v<MT2> ) >
+{};
+/*! \endcond */
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
+//  ISUNIUPPER SPECIALIZATIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+template< typename MT1, typename MT2, bool SF, bool HF, bool LF, bool UF >
+struct IsUniUpper< SMatTDMatMultExpr<MT1,MT2,SF,HF,LF,UF> >
+   : public BoolConstant< ( IsUniUpper_v<MT1> && IsUniUpper_v<MT2> ) ||
+                          ( ( SF || HF ) && IsUniLower_v<MT1> && IsUniLower_v<MT2> ) >
+{};
+/*! \endcond */
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
+//  ISSTRICTLYUPPER SPECIALIZATIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+template< typename MT1, typename MT2, bool SF, bool HF, bool LF, bool UF >
+struct IsStrictlyUpper< SMatTDMatMultExpr<MT1,MT2,SF,HF,LF,UF> >
+   : public BoolConstant< ( IsStrictlyUpper_v<MT1> && IsUpper_v<MT2> ) ||
+                          ( IsStrictlyUpper_v<MT2> && IsUpper_v<MT1> ) ||
+                          ( ( SF || HF ) &&
+                            ( ( IsStrictlyLower_v<MT1> && IsLower_v<MT2> ) ||
+                              ( IsStrictlyLower_v<MT2> && IsLower_v<MT1> ) ) ) >
 {};
 /*! \endcond */
 //*************************************************************************************************

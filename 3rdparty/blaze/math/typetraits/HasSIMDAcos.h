@@ -3,7 +3,7 @@
 //  \file blaze/math/typetraits/HasSIMDAcos.h
 //  \brief Header file for the HasSIMDAcos type trait
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -42,9 +42,9 @@
 
 #include "../../system/Vectorization.h"
 #include "../../util/IntegralConstant.h"
+#include "../../util/typetraits/Decay.h"
 #include "../../util/typetraits/IsDouble.h"
 #include "../../util/typetraits/IsFloat.h"
-#include "../../util/typetraits/RemoveCVRef.h"
 
 
 namespace blaze {
@@ -95,14 +95,14 @@ using HasSIMDAcosHelper =
 */
 template< typename T >  // Type of the operand
 struct HasSIMDAcos
-   : public BoolConstant< HasSIMDAcosHelper< RemoveCVRef_t<T> >::value >
+   : public BoolConstant< HasSIMDAcosHelper< Decay_t<T> >::value >
 {};
 //*************************************************************************************************
 
 
 //*************************************************************************************************
 /*!\brief Auxiliary variable template for the HasSIMDAcos type trait.
-// \ingroup math_type_traits
+// \ingroup type_traits
 //
 // The HasSIMDAcos_v variable template provides a convenient shortcut to access the nested
 // \a value of the HasSIMDAcos class template. For instance, given the type \a T the following

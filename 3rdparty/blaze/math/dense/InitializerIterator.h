@@ -3,7 +3,7 @@
 //  \file blaze/math/dense/InitializerIterator.h
 //  \brief Header file for the InitializerIterator class template
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //
@@ -76,25 +76,20 @@ class InitializerIterator
    //@{
    explicit inline InitializerIterator() noexcept;
    explicit inline InitializerIterator( size_t index, initializer_list<Type> list ) noexcept;
-
-   InitializerIterator( const InitializerIterator& ) = default;
+   // No explicitly declared copy constructor.
    //@}
    //**********************************************************************************************
 
    //**Destructor**********************************************************************************
-   /*!\name Destructor */
-   //@{
-   ~InitializerIterator() = default;
-   //@}
+   // No explicitly declared destructor.
    //**********************************************************************************************
 
    //**Assignment operators************************************************************************
    /*!\name Assignment operators */
    //@{
+   // No explicitly declared copy assignment operator.
    inline InitializerIterator& operator+=( ptrdiff_t inc ) noexcept;
    inline InitializerIterator& operator-=( ptrdiff_t dec ) noexcept;
-
-   InitializerIterator& operator=( const InitializerIterator& ) = default;
    //@}
    //**********************************************************************************************
 
@@ -387,34 +382,34 @@ inline initializer_list<Type> InitializerIterator<Type>::list() const noexcept
 /*!\name InitializerIterator operators */
 //@{
 template< typename Type >
-bool operator==( const InitializerIterator<Type>& lhs, const InitializerIterator<Type>& rhs ) noexcept;
+inline bool operator==( const InitializerIterator<Type>& lhs, const InitializerIterator<Type>& rhs ) noexcept;
 
 template< typename Type >
-bool operator!=( const InitializerIterator<Type>& lhs, const InitializerIterator<Type>& rhs ) noexcept;
+inline bool operator!=( const InitializerIterator<Type>& lhs, const InitializerIterator<Type>& rhs ) noexcept;
 
 template< typename Type >
-bool operator<( const InitializerIterator<Type>& lhs, const InitializerIterator<Type>& rhs ) noexcept;
+inline bool operator<( const InitializerIterator<Type>& lhs, const InitializerIterator<Type>& rhs ) noexcept;
 
 template< typename Type >
-bool operator>( const InitializerIterator<Type>& lhs, const InitializerIterator<Type>& rhs ) noexcept;
+inline bool operator>( const InitializerIterator<Type>& lhs, const InitializerIterator<Type>& rhs ) noexcept;
 
 template< typename Type >
-bool operator<=( const InitializerIterator<Type>& lhs, const InitializerIterator<Type>& rhs ) noexcept;
+inline bool operator<=( const InitializerIterator<Type>& lhs, const InitializerIterator<Type>& rhs ) noexcept;
 
 template< typename Type >
-bool operator>=( const InitializerIterator<Type>& lhs, const InitializerIterator<Type>& rhs ) noexcept;
+inline bool operator>=( const InitializerIterator<Type>& lhs, const InitializerIterator<Type>& rhs ) noexcept;
 
 template< typename Type >
-const InitializerIterator<Type> operator+( const InitializerIterator<Type>& it, ptrdiff_t inc ) noexcept;
+inline const InitializerIterator<Type> operator+( const InitializerIterator<Type>& it, ptrdiff_t inc ) noexcept;
 
 template< typename Type >
-const InitializerIterator<Type> operator+( ptrdiff_t inc, const InitializerIterator<Type>& it ) noexcept;
+inline const InitializerIterator<Type> operator+( ptrdiff_t inc, const InitializerIterator<Type>& it ) noexcept;
 
 template< typename Type >
-const InitializerIterator<Type> operator-( const InitializerIterator<Type>& it, ptrdiff_t dec ) noexcept;
+inline const InitializerIterator<Type> operator-( const InitializerIterator<Type>& it, ptrdiff_t dec ) noexcept;
 
 template< typename Type >
-ptrdiff_t operator-( const InitializerIterator<Type>& lhs, const InitializerIterator<Type>& rhs ) noexcept;
+inline ptrdiff_t operator-( const InitializerIterator<Type>& lhs, const InitializerIterator<Type>& rhs ) noexcept;
 //@}
 //*************************************************************************************************
 

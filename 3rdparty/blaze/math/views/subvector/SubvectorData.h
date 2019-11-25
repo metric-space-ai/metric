@@ -3,7 +3,7 @@
 //  \file blaze/math/views/subvector/SubvectorData.h
 //  \brief Header file for the implementation of the SubvectorData class template
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -40,8 +40,8 @@
 // Includes
 //*************************************************************************************************
 
-#include "../../../util/MaybeUnused.h"
 #include "../../../util/Types.h"
+#include "../../../util/Unused.h"
 
 
 namespace blaze {
@@ -61,7 +61,7 @@ namespace blaze {
 // number of compile time subvector arguments.
 */
 template< size_t... CSAs >  // Compile time subvector arguments
-class SubvectorData
+struct SubvectorData
 {};
 //*************************************************************************************************
 
@@ -84,40 +84,24 @@ class SubvectorData
 // compile time subvector arguments.
 */
 template<>
-class SubvectorData<>
+struct SubvectorData<>
 {
  public:
-   //**Compile time flags**************************************************************************
-   //! Compilation flag for compile time optimization.
-   /*! The \a compileTimeArgs compilation flag indicates whether the view has been created by
-       means of compile time arguments and whether these arguments can be queried at compile
-       time. In that case, the \a compileTimeArgs compilation flag is set to \a true, otherwise
-       it is set to \a false. */
-   static constexpr bool compileTimeArgs = false;
-   //**********************************************************************************************
-
    //**Constructors********************************************************************************
    /*!\name Constructors */
    //@{
    template< typename... RSAs >
    explicit inline SubvectorData( size_t index, size_t n, RSAs... args );
-
-   SubvectorData( const SubvectorData& ) = default;
+   // No explicitly declared copy constructor.
    //@}
    //**********************************************************************************************
 
    //**Destructor**********************************************************************************
-   /*!\name Destructor */
-   //@{
-   ~SubvectorData() = default;
-   //@}
+   // No explicitly declared destructor.
    //**********************************************************************************************
 
    //**Assignment operators************************************************************************
-   /*!\name Assignment operators */
-   //@{
    SubvectorData& operator=( const SubvectorData& ) = delete;
-   //@}
    //**********************************************************************************************
 
    //**Utility functions***************************************************************************
@@ -154,7 +138,7 @@ inline SubvectorData<>::SubvectorData( size_t index, size_t n, RSAs... args )
    : offset_( index )  // The offset of the subvector within the vector
    , size_  ( n     )  // The size of the subvector
 {
-   MAYBE_UNUSED( args... );
+   UNUSED_PARAMETER( args... );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -207,40 +191,24 @@ inline size_t SubvectorData<>::size() const noexcept
 */
 template< size_t I    // Index of the first element
         , size_t N >  // Number of elements
-class SubvectorData<I,N>
+struct SubvectorData<I,N>
 {
  public:
-   //**Compile time flags**************************************************************************
-   //! Compilation flag for compile time optimization.
-   /*! The \a compileTimeArgs compilation flag indicates whether the view has been created by
-       means of compile time arguments and whether these arguments can be queried at compile
-       time. In that case, the \a compileTimeArgs compilation flag is set to \a true, otherwise
-       it is set to \a false. */
-   static constexpr bool compileTimeArgs = true;
-   //**********************************************************************************************
-
    //**Constructors********************************************************************************
    /*!\name Constructors */
    //@{
    template< typename... RSAs >
    explicit inline SubvectorData( RSAs... args );
-
-   SubvectorData( const SubvectorData& ) = default;
+   // No explicitly declared copy constructor.
    //@}
    //**********************************************************************************************
 
    //**Destructor**********************************************************************************
-   /*!\name Destructor */
-   //@{
-   ~SubvectorData() = default;
-   //@}
+   // No explicitly declared destructor.
    //**********************************************************************************************
 
    //**Assignment operators************************************************************************
-   /*!\name Assignment operators */
-   //@{
    SubvectorData& operator=( const SubvectorData& ) = delete;
-   //@}
    //**********************************************************************************************
 
    //**Utility functions***************************************************************************
@@ -266,7 +234,7 @@ template< size_t I            // Index of the first element
 template< typename... RSAs >  // Optional subvector arguments
 inline SubvectorData<I,N>::SubvectorData( RSAs... args )
 {
-   MAYBE_UNUSED( args... );
+   UNUSED_PARAMETER( args... );
 }
 /*! \endcond */
 //*************************************************************************************************

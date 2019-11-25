@@ -3,7 +3,7 @@
 //  \file blaze/math/lapack/clapack/potrf.h
 //  \brief Header file for the CLAPACK potrf wrapper functions
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -42,7 +42,6 @@
 
 #include "../../../util/Complex.h"
 #include "../../../util/StaticAssert.h"
-#include "../../../util/Types.h"
 
 
 //=================================================================================================
@@ -56,10 +55,10 @@
 #if !defined(INTEL_MKL_VERSION)
 extern "C" {
 
-void spotrf_( char* uplo, int* n, float* A, int* lda, int* info, blaze::fortran_charlen_t nuplo );
-void dpotrf_( char* uplo, int* n, double* A, int* lda, int* info, blaze::fortran_charlen_t nuplo );
-void cpotrf_( char* uplo, int* n, float* A, int* lda, int* info, blaze::fortran_charlen_t nuplo );
-void zpotrf_( char* uplo, int* n, double* A, int* lda, int* info, blaze::fortran_charlen_t nuplo );
+void spotrf_( char* uplo, int* n, float*  A, int* lda, int* info );
+void dpotrf_( char* uplo, int* n, double* A, int* lda, int* info );
+void cpotrf_( char* uplo, int* n, float*  A, int* lda, int* info );
+void zpotrf_( char* uplo, int* n, double* A, int* lda, int* info );
 
 }
 #endif
@@ -80,13 +79,13 @@ namespace blaze {
 //*************************************************************************************************
 /*!\name LAPACK LLH (Cholesky) decomposition functions (potrf) */
 //@{
-void potrf( char uplo, int n, float* A, int lda, int* info );
+inline void potrf( char uplo, int n, float* A, int lda, int* info );
 
-void potrf( char uplo, int n, double* A, int lda, int* info );
+inline void potrf( char uplo, int n, double* A, int lda, int* info );
 
-void potrf( char uplo, int n, complex<float>* A, int lda, int* info );
+inline void potrf( char uplo, int n, complex<float>* A, int lda, int* info );
 
-void potrf( char uplo, int n, complex<double>* A, int lda, int* info );
+inline void potrf( char uplo, int n, complex<double>* A, int lda, int* info );
 //@}
 //*************************************************************************************************
 
@@ -135,7 +134,7 @@ inline void potrf( char uplo, int n, float* A, int lda, int* info )
    BLAZE_STATIC_ASSERT( sizeof( MKL_INT ) == sizeof( int ) );
 #endif
 
-   spotrf_( &uplo, &n, A, &lda, info, blaze::fortran_charlen_t(1) );
+   spotrf_( &uplo, &n, A, &lda, info );
 }
 //*************************************************************************************************
 
@@ -184,7 +183,7 @@ inline void potrf( char uplo, int n, double* A, int lda, int* info )
    BLAZE_STATIC_ASSERT( sizeof( MKL_INT ) == sizeof( int ) );
 #endif
 
-   dpotrf_( &uplo, &n, A, &lda, info, blaze::fortran_charlen_t(1) );
+   dpotrf_( &uplo, &n, A, &lda, info );
 }
 //*************************************************************************************************
 
@@ -238,7 +237,7 @@ inline void potrf( char uplo, int n, complex<float>* A, int lda, int* info )
    using ET = float;
 #endif
 
-   cpotrf_( &uplo, &n, reinterpret_cast<ET*>( A ), &lda, info, blaze::fortran_charlen_t(1) );
+   cpotrf_( &uplo, &n, reinterpret_cast<ET*>( A ), &lda, info );
 }
 //*************************************************************************************************
 
@@ -292,7 +291,7 @@ inline void potrf( char uplo, int n, complex<double>* A, int lda, int* info )
    using ET = double;
 #endif
 
-   zpotrf_( &uplo, &n, reinterpret_cast<ET*>( A ), &lda, info, blaze::fortran_charlen_t(1) );
+   zpotrf_( &uplo, &n, reinterpret_cast<ET*>( A ), &lda, info );
 }
 //*************************************************************************************************
 

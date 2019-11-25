@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/DVecScalarDivExpr.h
 //  \brief Header file for the dense vector/scalar division expression
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -67,7 +67,6 @@
 #include "../../math/typetraits/UnderlyingBuiltin.h"
 #include "../../math/typetraits/UnderlyingElement.h"
 #include "../../math/typetraits/UnderlyingNumeric.h"
-#include "../../system/HostDevice.h"
 #include "../../system/Inline.h"
 #include "../../system/Thresholds.h"
 #include "../../util/Assert.h"
@@ -161,7 +160,6 @@ class DVecScalarDivExpr
  public:
    //**Type definitions****************************************************************************
    using This          = DVecScalarDivExpr<VT,ST,TF>;  //!< Type of this DVecScalarDivExpr instance.
-   using BaseType      = DenseVector<This,TF>;         //!< Base type of this DVecScalarDivExpr instance.
    using ResultType    = DivTrait_t<RT,ST>;            //!< Result type for expression template evaluations.
    using TransposeType = TransposeType_t<ResultType>;  //!< Transpose type for expression template evaluations.
    using ElementType   = ElementType_t<ResultType>;    //!< Resulting element type.
@@ -221,7 +219,7 @@ class DVecScalarDivExpr
       // \param inc The increment of the iterator.
       // \return The incremented iterator.
       */
-      inline BLAZE_DEVICE_CALLABLE ConstIterator& operator+=( size_t inc ) {
+      inline ConstIterator& operator+=( size_t inc ) {
          iterator_ += inc;
          return *this;
       }
@@ -233,7 +231,7 @@ class DVecScalarDivExpr
       // \param dec The decrement of the iterator.
       // \return The decremented iterator.
       */
-      inline BLAZE_DEVICE_CALLABLE ConstIterator& operator-=( size_t dec ) {
+      inline ConstIterator& operator-=( size_t dec ) {
          iterator_ -= dec;
          return *this;
       }
@@ -244,7 +242,7 @@ class DVecScalarDivExpr
       //
       // \return Reference to the incremented iterator.
       */
-      inline BLAZE_DEVICE_CALLABLE ConstIterator& operator++() {
+      inline ConstIterator& operator++() {
          ++iterator_;
          return *this;
       }
@@ -255,8 +253,8 @@ class DVecScalarDivExpr
       //
       // \return The previous position of the iterator.
       */
-      inline BLAZE_DEVICE_CALLABLE const ConstIterator operator++( int ) {
-         return ConstIterator( iterator_++, scalar_ );
+      inline const ConstIterator operator++( int ) {
+         return ConstIterator( iterator_++ );
       }
       //*******************************************************************************************
 
@@ -265,7 +263,7 @@ class DVecScalarDivExpr
       //
       // \return Reference to the decremented iterator.
       */
-      inline BLAZE_DEVICE_CALLABLE ConstIterator& operator--() {
+      inline ConstIterator& operator--() {
          --iterator_;
          return *this;
       }
@@ -276,8 +274,8 @@ class DVecScalarDivExpr
       //
       // \return The previous position of the iterator.
       */
-      inline BLAZE_DEVICE_CALLABLE const ConstIterator operator--( int ) {
-         return ConstIterator( iterator_--, scalar_ );
+      inline const ConstIterator operator--( int ) {
+         return ConstIterator( iterator_-- );
       }
       //*******************************************************************************************
 
@@ -386,7 +384,7 @@ class DVecScalarDivExpr
       // \return The incremented iterator.
       */
       friend inline const ConstIterator operator+( const ConstIterator& it, size_t inc ) {
-         return ConstIterator( it.iterator_ + inc, it.scalar_ );
+         return ConstIterator( it.iterator_ + inc );
       }
       //*******************************************************************************************
 
@@ -398,7 +396,7 @@ class DVecScalarDivExpr
       // \return The incremented iterator.
       */
       friend inline const ConstIterator operator+( size_t inc, const ConstIterator& it ) {
-         return ConstIterator( it.iterator_ + inc, it.scalar_ );
+         return ConstIterator( it.iterator_ + inc );
       }
       //*******************************************************************************************
 
@@ -410,7 +408,7 @@ class DVecScalarDivExpr
       // \return The decremented iterator.
       */
       friend inline const ConstIterator operator-( const ConstIterator& it, size_t dec ) {
-         return ConstIterator( it.iterator_ - dec, it.scalar_ );
+         return ConstIterator( it.iterator_ - dec );
       }
       //*******************************************************************************************
 
@@ -604,8 +602,8 @@ class DVecScalarDivExpr
    // operand is a computation expression and requires an intermediate evaluation.
    */
    template< typename VT2 >  // Type of the target dense vector
-   friend inline auto assign( DenseVector<VT2,TF>& lhs, const DVecScalarDivExpr& rhs )
-      -> EnableIf_t< UseAssign_v<VT2> >
+   friend inline EnableIf_t< UseAssign_v<VT2> >
+      assign( DenseVector<VT2,TF>& lhs, const DVecScalarDivExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -632,8 +630,8 @@ class DVecScalarDivExpr
    // operand is a computation expression and requires an intermediate evaluation.
    */
    template< typename VT2 >  // Type of the target sparse vector
-   friend inline auto assign( SparseVector<VT2,TF>& lhs, const DVecScalarDivExpr& rhs )
-      -> EnableIf_t< UseAssign_v<VT2> >
+   friend inline EnableIf_t< UseAssign_v<VT2> >
+      assign( SparseVector<VT2,TF>& lhs, const DVecScalarDivExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -660,8 +658,8 @@ class DVecScalarDivExpr
    // operand is a computation expression and requires an intermediate evaluation.
    */
    template< typename VT2 >  // Type of the target dense vector
-   friend inline auto addAssign( DenseVector<VT2,TF>& lhs, const DVecScalarDivExpr& rhs )
-      -> EnableIf_t< UseAssign_v<VT2> >
+   friend inline EnableIf_t< UseAssign_v<VT2> >
+      addAssign( DenseVector<VT2,TF>& lhs, const DVecScalarDivExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -696,8 +694,8 @@ class DVecScalarDivExpr
    // a computation expression and requires an intermediate evaluation.
    */
    template< typename VT2 >  // Type of the target dense vector
-   friend inline auto subAssign( DenseVector<VT2,TF>& lhs, const DVecScalarDivExpr& rhs )
-      -> EnableIf_t< UseAssign_v<VT2> >
+   friend inline EnableIf_t< UseAssign_v<VT2> >
+      subAssign( DenseVector<VT2,TF>& lhs, const DVecScalarDivExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -732,8 +730,8 @@ class DVecScalarDivExpr
    // vector operand is a computation expression and requires an intermediate evaluation.
    */
    template< typename VT2 >  // Type of the target dense vector
-   friend inline auto multAssign( DenseVector<VT2,TF>& lhs, const DVecScalarDivExpr& rhs )
-      -> EnableIf_t< UseAssign_v<VT2> >
+   friend inline EnableIf_t< UseAssign_v<VT2> >
+      multAssign( DenseVector<VT2,TF>& lhs, const DVecScalarDivExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -768,8 +766,8 @@ class DVecScalarDivExpr
    // is a computation expression and requires an intermediate evaluation.
    */
    template< typename VT2 >  // Type of the target dense vector
-   friend inline auto divAssign( DenseVector<VT2,TF>& lhs, const DVecScalarDivExpr& rhs )
-      -> EnableIf_t< UseAssign_v<VT2> >
+   friend inline EnableIf_t< UseAssign_v<VT2> >
+      divAssign( DenseVector<VT2,TF>& lhs, const DVecScalarDivExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -804,8 +802,8 @@ class DVecScalarDivExpr
    // expression specific parallel evaluation strategy is selected.
    */
    template< typename VT2 >  // Type of the target dense vector
-   friend inline auto smpAssign( DenseVector<VT2,TF>& lhs, const DVecScalarDivExpr& rhs )
-      -> EnableIf_t< UseSMPAssign_v<VT2> >
+   friend inline EnableIf_t< UseSMPAssign_v<VT2> >
+      smpAssign( DenseVector<VT2,TF>& lhs, const DVecScalarDivExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -832,8 +830,8 @@ class DVecScalarDivExpr
    // expression specific parallel evaluation strategy is selected.
    */
    template< typename VT2 >  // Type of the target sparse vector
-   friend inline auto smpAssign( SparseVector<VT2,TF>& lhs, const DVecScalarDivExpr& rhs )
-      -> EnableIf_t< UseSMPAssign_v<VT2> >
+   friend inline EnableIf_t< UseSMPAssign_v<VT2> >
+      smpAssign( SparseVector<VT2,TF>& lhs, const DVecScalarDivExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -860,8 +858,8 @@ class DVecScalarDivExpr
    // the expression specific parallel evaluation strategy is selected.
    */
    template< typename VT2 >  // Type of the target dense vector
-   friend inline auto smpAddAssign( DenseVector<VT2,TF>& lhs, const DVecScalarDivExpr& rhs )
-      -> EnableIf_t< UseSMPAssign_v<VT2> >
+   friend inline EnableIf_t< UseSMPAssign_v<VT2> >
+      smpAddAssign( DenseVector<VT2,TF>& lhs, const DVecScalarDivExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -896,8 +894,8 @@ class DVecScalarDivExpr
    // expression specific parallel evaluation strategy is selected.
    */
    template< typename VT2 >  // Type of the target dense vector
-   friend inline auto smpSubAssign( DenseVector<VT2,TF>& lhs, const DVecScalarDivExpr& rhs )
-      -> EnableIf_t< UseSMPAssign_v<VT2> >
+   friend inline EnableIf_t< UseSMPAssign_v<VT2> >
+      smpSubAssign( DenseVector<VT2,TF>& lhs, const DVecScalarDivExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -932,8 +930,8 @@ class DVecScalarDivExpr
    // expression specific parallel evaluation strategy is selected.
    */
    template< typename VT2 >  // Type of the target dense vector
-   friend inline auto smpMultAssign( DenseVector<VT2,TF>& lhs, const DVecScalarDivExpr& rhs )
-      -> EnableIf_t< UseSMPAssign_v<VT2> >
+   friend inline EnableIf_t< UseSMPAssign_v<VT2> >
+      smpMultAssign( DenseVector<VT2,TF>& lhs, const DVecScalarDivExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -968,8 +966,8 @@ class DVecScalarDivExpr
    // expression specific parallel evaluation strategy is selected.
    */
    template< typename VT2 >  // Type of the target dense vector
-   friend inline auto smpDivAssign( DenseVector<VT2,TF>& lhs, const DVecScalarDivExpr& rhs )
-      -> EnableIf_t< UseSMPAssign_v<VT2> >
+   friend inline EnableIf_t< UseSMPAssign_v<VT2> >
+      smpDivAssign( DenseVector<VT2,TF>& lhs, const DVecScalarDivExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -1069,7 +1067,7 @@ struct DVecScalarDivExprHelper
 template< typename VT  // Type of the left-hand side dense vector
         , typename ST  // Type of the right-hand side scalar
         , bool TF      // Transpose flag
-        , EnableIf_t< IsNumeric_v<ST> >* = nullptr >
+        , typename = EnableIf_t< IsNumeric_v<ST> > >
 inline decltype(auto) operator/( const DenseVector<VT,TF>& vec, ST scalar )
 {
    BLAZE_FUNCTION_TRACE;
@@ -1114,7 +1112,7 @@ template< typename VT   // Type of the dense vector of the left-hand side expres
         , typename ST1  // Type of the scalar of the left-hand side expression
         , bool TF       // Transpose flag of the dense vector
         , typename ST2  // Type of the right-hand side scalar
-        , EnableIf_t< IsNumeric_v<ST2> && ( IsInvertible_v<ST1> || IsInvertible_v<ST2> ) >* = nullptr >
+        , typename = EnableIf_t< IsNumeric_v<ST2> && ( IsInvertible_v<ST1> || IsInvertible_v<ST2> ) > >
 inline decltype(auto) operator*( const DVecScalarDivExpr<VT,ST1,TF>& vec, ST2 scalar )
 {
    BLAZE_FUNCTION_TRACE;
@@ -1142,7 +1140,7 @@ template< typename ST1  // Type of the left-hand side scalar
         , typename VT   // Type of the dense vector of the right-hand side expression
         , typename ST2  // Type of the scalar of the right-hand side expression
         , bool TF       // Transpose flag of the dense vector
-        , EnableIf_t< IsNumeric_v<ST1> && ( IsInvertible_v<ST1> || IsInvertible_v<ST2> ) >* = nullptr >
+        , typename = EnableIf_t< IsNumeric_v<ST1> && ( IsInvertible_v<ST1> || IsInvertible_v<ST2> ) > >
 inline decltype(auto) operator*( ST1 scalar, const DVecScalarDivExpr<VT,ST2,TF>& vec )
 {
    BLAZE_FUNCTION_TRACE;
@@ -1170,7 +1168,7 @@ template< typename VT   // Type of the dense vector of the left-hand side expres
         , typename ST1  // Type of the scalar of the left-hand side expression
         , bool TF       // Transpose flag of the dense vector
         , typename ST2  // Type of the right-hand side scalar
-        , EnableIf_t< IsNumeric_v<ST2> >* = nullptr >
+        , typename = EnableIf_t< IsNumeric_v<ST2> > >
 inline decltype(auto) operator/( const DVecScalarDivExpr<VT,ST1,TF>& vec, ST2 scalar )
 {
    BLAZE_FUNCTION_TRACE;

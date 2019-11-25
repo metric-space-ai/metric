@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/TDMatTSMatMultExpr.h
 //  \brief Header file for the transpose dense matrix/transpose sparse matrix multiplication expression
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -48,7 +48,6 @@
 #include "../../math/constraints/RowMajorMatrix.h"
 #include "../../math/constraints/SparseMatrix.h"
 #include "../../math/constraints/StorageOrder.h"
-#include "../../math/constraints/Zero.h"
 #include "../../math/Exception.h"
 #include "../../math/expressions/Computation.h"
 #include "../../math/expressions/DenseMatrix.h"
@@ -65,11 +64,6 @@
 #include "../../math/shims/Reset.h"
 #include "../../math/shims/Serial.h"
 #include "../../math/SIMD.h"
-#include "../../math/traits/DeclDiagTrait.h"
-#include "../../math/traits/DeclHermTrait.h"
-#include "../../math/traits/DeclLowTrait.h"
-#include "../../math/traits/DeclSymTrait.h"
-#include "../../math/traits/DeclUppTrait.h"
 #include "../../math/traits/MultTrait.h"
 #include "../../math/typetraits/HasSIMDAdd.h"
 #include "../../math/typetraits/HasSIMDMult.h"
@@ -78,16 +72,17 @@
 #include "../../math/typetraits/IsComputation.h"
 #include "../../math/typetraits/IsDiagonal.h"
 #include "../../math/typetraits/IsExpression.h"
-#include "../../math/typetraits/IsIdentity.h"
+#include "../../math/typetraits/IsHermitian.h"
 #include "../../math/typetraits/IsLower.h"
-#include "../../math/typetraits/IsPadded.h"
 #include "../../math/typetraits/IsResizable.h"
 #include "../../math/typetraits/IsSIMDCombinable.h"
 #include "../../math/typetraits/IsStrictlyLower.h"
 #include "../../math/typetraits/IsStrictlyUpper.h"
+#include "../../math/typetraits/IsSymmetric.h"
 #include "../../math/typetraits/IsTriangular.h"
+#include "../../math/typetraits/IsUniLower.h"
+#include "../../math/typetraits/IsUniUpper.h"
 #include "../../math/typetraits/IsUpper.h"
-#include "../../math/typetraits/IsZero.h"
 #include "../../math/typetraits/RequiresEvaluation.h"
 #include "../../math/typetraits/Size.h"
 #include "../../math/views/Check.h"
@@ -96,14 +91,13 @@
 #include "../../util/algorithms/Max.h"
 #include "../../util/algorithms/Min.h"
 #include "../../util/Assert.h"
-#include "../../util/DisableIf.h"
 #include "../../util/EnableIf.h"
 #include "../../util/FunctionTrace.h"
 #include "../../util/IntegralConstant.h"
-#include "../../util/MaybeUnused.h"
 #include "../../util/mpl/If.h"
 #include "../../util/Types.h"
 #include "../../util/typetraits/IsBuiltin.h"
+#include "../../util/typetraits/RemoveReference.h"
 
 
 namespace blaze {
@@ -239,22 +233,7 @@ class TDMatTSMatMultExpr
    //! Type of this TDMatTSMatMultExpr instance.
    using This = TDMatTSMatMultExpr<MT1,MT2,SF,HF,LF,UF>;
 
-   //! Base type of this TDMatTSMatMultExpr instance.
-   using BaseType = DenseMatrix<This,true>;
-
-   //! Result type for expression template evaluations.
-   using ResultType = typename If_t< HERM
-                                   , DeclHermTrait< MultTrait_t<RT1,RT2> >
-                                   , If_t< SYM
-                                         , DeclSymTrait< MultTrait_t<RT1,RT2> >
-                                         , If_t< LOW
-                                               , If_t< UPP
-                                                     , DeclDiagTrait< MultTrait_t<RT1,RT2> >
-                                                     , DeclLowTrait< MultTrait_t<RT1,RT2> > >
-                                               , If_t< UPP
-                                                     , DeclUppTrait< MultTrait_t<RT1,RT2> >
-                                                     , MultTrait<RT1,RT2> > > > >::Type;
-
+   using ResultType    = MultTrait_t<RT1,RT2>;         //!< Result type for expression template evaluations.
    using OppositeType  = OppositeType_t<ResultType>;   //!< Result type with opposite storage order for expression template evaluations.
    using TransposeType = TransposeType_t<ResultType>;  //!< Transpose type for expression template evaluations.
    using ElementType   = ElementType_t<ResultType>;    //!< Resulting element type.
@@ -518,9 +497,11 @@ class TDMatTSMatMultExpr
    template< typename MT3    // Type of the left-hand side target matrix
            , typename MT4    // Type of the left-hand side matrix operand
            , typename MT5 >  // Type of the right-hand side matrix operand
-   static inline auto selectAssignKernel( MT3& C, const MT4& A, const MT5& B )
-      -> EnableIf_t< UseDefaultKernel_v<MT3,MT4,MT5> >
+   static inline EnableIf_t< UseDefaultKernel_v<MT3,MT4,MT5> >
+      selectAssignKernel( MT3& C, const MT4& A, const MT5& B )
    {
+      using ConstIterator = ConstIterator_t<MT5>;
+
       const size_t block( IsColumnMajorMatrix_v<MT3> || IsDiagonal_v<MT4> ? A.rows() : 64UL );
 
       reset( C );
@@ -531,8 +512,8 @@ class TDMatTSMatMultExpr
 
          for( size_t j=0UL; j<B.columns(); ++j )
          {
-            auto element( B.begin(j) );
-            const auto end( B.end(j) );
+            ConstIterator element( B.begin(j) );
+            const ConstIterator end( B.end(j) );
 
             for( ; element!=end; ++element )
             {
@@ -599,9 +580,11 @@ class TDMatTSMatMultExpr
    template< typename MT3    // Type of the left-hand side target matrix
            , typename MT4    // Type of the left-hand side matrix operand
            , typename MT5 >  // Type of the right-hand side matrix operand
-   static inline auto selectAssignKernel( MT3& C, const MT4& A, const MT5& B )
-      -> EnableIf_t< UseOptimizedKernel_v<MT3,MT4,MT5> >
+   static inline EnableIf_t< UseOptimizedKernel_v<MT3,MT4,MT5> >
+      selectAssignKernel( MT3& C, const MT4& A, const MT5& B )
    {
+      using ConstIterator = ConstIterator_t<MT5>;
+
       const size_t block( IsColumnMajorMatrix_v<MT3> ? A.rows() : 64UL );
 
       reset( C );
@@ -612,8 +595,8 @@ class TDMatTSMatMultExpr
 
          for( size_t j=0UL; j<B.columns(); ++j )
          {
-            const auto end( B.end(j) );
-            auto element( B.begin(j) );
+            const ConstIterator end( B.end(j) );
+            ConstIterator element( B.begin(j) );
 
             const size_t nonzeros( B.nonZeros(j) );
             const size_t kpos( nonzeros & size_t(-4) );
@@ -733,17 +716,19 @@ class TDMatTSMatMultExpr
    template< typename MT3    // Type of the left-hand side target matrix
            , typename MT4    // Type of the left-hand side matrix operand
            , typename MT5 >  // Type of the right-hand side matrix operand
-   static inline auto selectAssignKernel( MT3& C, const MT4& A, const MT5& B )
-      -> EnableIf_t< UseVectorizedKernel_v<MT3,MT4,MT5> >
+   static inline EnableIf_t< UseVectorizedKernel_v<MT3,MT4,MT5> >
+      selectAssignKernel( MT3& C, const MT4& A, const MT5& B )
    {
+      using ConstIterator = ConstIterator_t<MT5>;
+
       constexpr bool remainder( !IsPadded_v<MT3> || !IsPadded_v<MT4> );
 
       reset( C );
 
       for( size_t j=0UL; j<B.columns(); ++j )
       {
-         const auto end( B.end(j) );
-         auto element( B.begin(j) );
+         const ConstIterator end( B.end(j) );
+         ConstIterator element( B.begin(j) );
 
          const size_t nonzeros( B.nonZeros(j) );
          const size_t kpos( nonzeros & size_t(-4) );
@@ -933,9 +918,11 @@ class TDMatTSMatMultExpr
    template< typename MT3    // Type of the left-hand side target matrix
            , typename MT4    // Type of the left-hand side matrix operand
            , typename MT5 >  // Type of the right-hand side matrix operand
-   static inline auto selectAddAssignKernel( MT3& C, const MT4& A, const MT5& B )
-      -> EnableIf_t< UseDefaultKernel_v<MT3,MT4,MT5> >
+   static inline EnableIf_t< UseDefaultKernel_v<MT3,MT4,MT5> >
+      selectAddAssignKernel( MT3& C, const MT4& A, const MT5& B )
    {
+      using ConstIterator = ConstIterator_t<MT5>;
+
       const size_t block( IsColumnMajorMatrix_v<MT3> || IsDiagonal_v<MT4> ? A.rows() : 64UL );
 
       for( size_t ii=0UL; ii<A.rows(); ii+=block )
@@ -944,8 +931,8 @@ class TDMatTSMatMultExpr
 
          for( size_t j=0UL; j<B.columns(); ++j )
          {
-            auto element( B.begin(j) );
-            const auto end( B.end(j) );
+            ConstIterator element( B.begin(j) );
+            const ConstIterator end( B.end(j) );
 
             for( ; element!=end; ++element )
             {
@@ -1011,9 +998,11 @@ class TDMatTSMatMultExpr
    template< typename MT3    // Type of the left-hand side target matrix
            , typename MT4    // Type of the left-hand side matrix operand
            , typename MT5 >  // Type of the right-hand side matrix operand
-   static inline auto selectAddAssignKernel( MT3& C, const MT4& A, const MT5& B )
-      -> EnableIf_t< UseOptimizedKernel_v<MT3,MT4,MT5> >
+   static inline EnableIf_t< UseOptimizedKernel_v<MT3,MT4,MT5> >
+      selectAddAssignKernel( MT3& C, const MT4& A, const MT5& B )
    {
+      using ConstIterator = ConstIterator_t<MT5>;
+
       const size_t block( IsColumnMajorMatrix_v<MT3> ? A.rows() : 64UL );
 
       for( size_t ii=0UL; ii<A.rows(); ii+=block )
@@ -1022,8 +1011,8 @@ class TDMatTSMatMultExpr
 
          for( size_t j=0UL; j<B.columns(); ++j )
          {
-            const auto end( B.end(j) );
-            auto element( B.begin(j) );
+            const ConstIterator end( B.end(j) );
+            ConstIterator element( B.begin(j) );
 
             const size_t nonzeros( B.nonZeros(j) );
             const size_t kpos( nonzeros & size_t(-4) );
@@ -1135,15 +1124,17 @@ class TDMatTSMatMultExpr
    template< typename MT3    // Type of the left-hand side target matrix
            , typename MT4    // Type of the left-hand side matrix operand
            , typename MT5 >  // Type of the right-hand side matrix operand
-   static inline auto selectAddAssignKernel( MT3& C, const MT4& A, const MT5& B )
-      -> EnableIf_t< UseVectorizedKernel_v<MT3,MT4,MT5> >
+   static inline EnableIf_t< UseVectorizedKernel_v<MT3,MT4,MT5> >
+      selectAddAssignKernel( MT3& C, const MT4& A, const MT5& B )
    {
+      using ConstIterator = ConstIterator_t<MT5>;
+
       constexpr bool remainder( !IsPadded_v<MT3> || !IsPadded_v<MT4> );
 
       for( size_t j=0UL; j<B.columns(); ++j )
       {
-         const auto end( B.end(j) );
-         auto element( B.begin(j) );
+         const ConstIterator end( B.end(j) );
+         ConstIterator element( B.begin(j) );
 
          const size_t nonzeros( B.nonZeros(j) );
          const size_t kpos( nonzeros & size_t(-4) );
@@ -1290,9 +1281,11 @@ class TDMatTSMatMultExpr
    template< typename MT3    // Type of the left-hand side target matrix
            , typename MT4    // Type of the left-hand side matrix operand
            , typename MT5 >  // Type of the right-hand side matrix operand
-   static inline auto selectSubAssignKernel( MT3& C, const MT4& A, const MT5& B )
-      -> EnableIf_t< UseDefaultKernel_v<MT3,MT4,MT5> >
+   static inline EnableIf_t< UseDefaultKernel_v<MT3,MT4,MT5> >
+      selectSubAssignKernel( MT3& C, const MT4& A, const MT5& B )
    {
+      using ConstIterator = ConstIterator_t<MT5>;
+
       const size_t block( IsColumnMajorMatrix_v<MT3> || IsDiagonal_v<MT4> ? A.rows() : 64UL );
 
       for( size_t ii=0UL; ii<A.rows(); ii+=block )
@@ -1301,8 +1294,8 @@ class TDMatTSMatMultExpr
 
          for( size_t j=0UL; j<B.columns(); ++j )
          {
-            auto element( B.begin(j) );
-            const auto end( B.end(j) );
+            ConstIterator element( B.begin(j) );
+            const ConstIterator end( B.end(j) );
 
             for( ; element!=end; ++element )
             {
@@ -1368,9 +1361,11 @@ class TDMatTSMatMultExpr
    template< typename MT3    // Type of the left-hand side target matrix
            , typename MT4    // Type of the left-hand side matrix operand
            , typename MT5 >  // Type of the right-hand side matrix operand
-   static inline auto selectSubAssignKernel( MT3& C, const MT4& A, const MT5& B )
-      -> EnableIf_t< UseOptimizedKernel_v<MT3,MT4,MT5> >
+   static inline EnableIf_t< UseOptimizedKernel_v<MT3,MT4,MT5> >
+      selectSubAssignKernel( MT3& C, const MT4& A, const MT5& B )
    {
+      using ConstIterator = ConstIterator_t<MT5>;
+
       const size_t block( IsColumnMajorMatrix_v<MT3> ? A.rows() : 64UL );
 
       for( size_t ii=0UL; ii<A.rows(); ii+=block )
@@ -1379,8 +1374,8 @@ class TDMatTSMatMultExpr
 
          for( size_t j=0UL; j<B.columns(); ++j )
          {
-            const auto end( B.end(j) );
-            auto element( B.begin(j) );
+            const ConstIterator end( B.end(j) );
+            ConstIterator element( B.begin(j) );
 
             const size_t nonzeros( B.nonZeros(j) );
             const size_t kpos( nonzeros & size_t(-4) );
@@ -1492,15 +1487,17 @@ class TDMatTSMatMultExpr
    template< typename MT3    // Type of the left-hand side target matrix
            , typename MT4    // Type of the left-hand side matrix operand
            , typename MT5 >  // Type of the right-hand side matrix operand
-   static inline auto selectSubAssignKernel( MT3& C, const MT4& A, const MT5& B )
-      -> EnableIf_t< UseVectorizedKernel_v<MT3,MT4,MT5> >
+   static inline EnableIf_t< UseVectorizedKernel_v<MT3,MT4,MT5> >
+      selectSubAssignKernel( MT3& C, const MT4& A, const MT5& B )
    {
+      using ConstIterator = ConstIterator_t<MT5>;
+
       constexpr bool remainder( !IsPadded_v<MT3> || !IsPadded_v<MT4> );
 
       for( size_t j=0UL; j<B.columns(); ++j )
       {
-         const auto end( B.end(j) );
-         auto element( B.begin(j) );
+         const ConstIterator end( B.end(j) );
+         ConstIterator element( B.begin(j) );
 
          const size_t nonzeros( B.nonZeros(j) );
          const size_t kpos( nonzeros & size_t(-4) );
@@ -1654,8 +1651,8 @@ class TDMatTSMatMultExpr
    */
    template< typename MT  // Type of the target dense matrix
            , bool SO >    // Storage order of the target dense matrix
-   friend inline auto smpAssign( DenseMatrix<MT,SO>& lhs, const TDMatTSMatMultExpr& rhs )
-      -> EnableIf_t< IsEvaluationRequired_v<MT,MT1,MT2> >
+   friend inline EnableIf_t< IsEvaluationRequired_v<MT,MT1,MT2> >
+      smpAssign( DenseMatrix<MT,SO>& lhs, const TDMatTSMatMultExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -1694,8 +1691,8 @@ class TDMatTSMatMultExpr
    */
    template< typename MT  // Type of the target sparse matrix
            , bool SO >    // Storage order of the target sparse matrix
-   friend inline auto smpAssign( SparseMatrix<MT,SO>& lhs, const TDMatTSMatMultExpr& rhs )
-      -> EnableIf_t< IsEvaluationRequired_v<MT,MT1,MT2> >
+   friend inline EnableIf_t< IsEvaluationRequired_v<MT,MT1,MT2> >
+      smpAssign( SparseMatrix<MT,SO>& lhs, const TDMatTSMatMultExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -1736,8 +1733,8 @@ class TDMatTSMatMultExpr
    */
    template< typename MT  // Type of the target dense matrix
            , bool SO >    // Storage order of the target dense matrix
-   friend inline auto smpAddAssign( DenseMatrix<MT,SO>& lhs, const TDMatTSMatMultExpr& rhs )
-      -> EnableIf_t< IsEvaluationRequired_v<MT,MT1,MT2> >
+   friend inline EnableIf_t< IsEvaluationRequired_v<MT,MT1,MT2> >
+      smpAddAssign( DenseMatrix<MT,SO>& lhs, const TDMatTSMatMultExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -1780,8 +1777,8 @@ class TDMatTSMatMultExpr
    */
    template< typename MT  // Type of the target dense matrix
            , bool SO >    // Storage order of the target dense matrix
-   friend inline auto smpSubAssign( DenseMatrix<MT,SO>& lhs, const TDMatTSMatMultExpr& rhs )
-      -> EnableIf_t< IsEvaluationRequired_v<MT,MT1,MT2> >
+   friend inline EnableIf_t< IsEvaluationRequired_v<MT,MT1,MT2> >
+      smpSubAssign( DenseMatrix<MT,SO>& lhs, const TDMatTSMatMultExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -1857,7 +1854,6 @@ class TDMatTSMatMultExpr
    BLAZE_CONSTRAINT_MUST_BE_COLUMN_MAJOR_MATRIX_TYPE( MT1 );
    BLAZE_CONSTRAINT_MUST_BE_SPARSE_MATRIX_TYPE( MT2 );
    BLAZE_CONSTRAINT_MUST_BE_COLUMN_MAJOR_MATRIX_TYPE( MT2 );
-   BLAZE_CONSTRAINT_MUST_NOT_BE_ZERO_TYPE( MT2 );
    BLAZE_CONSTRAINT_MUST_FORM_VALID_MATMATMULTEXPR( MT1, MT2 );
    /*! \endcond */
    //**********************************************************************************************
@@ -1872,104 +1868,6 @@ class TDMatTSMatMultExpr
 //  GLOBAL BINARY ARITHMETIC OPERATORS
 //
 //=================================================================================================
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-/*!\brief Backend implementation of the multiplication between a column-major dense matrix and a
-//        column-major sparse matrix (\f$ A=B*C \f$).
-// \ingroup dense_matrix
-//
-// \param lhs The left-hand side dense matrix for the multiplication.
-// \param rhs The right-hand side sparse matrix for the multiplication.
-// \return The product of the two matrices.
-//
-// This function implements a performance optimized treatment of the multiplication between a
-// column-major dense matrix and a column-major sparse matrix.
-*/
-template< typename MT1  // Type of the left-hand side dense matrix
-        , typename MT2  // Type of the right-hand side sparse matrix
-        , DisableIf_t< ( IsIdentity_v<MT2> &&
-                         IsSame_v< ElementType_t<MT1>, ElementType_t<MT2> > ) ||
-                       IsZero_v<MT2> >* = nullptr >
-inline const TDMatTSMatMultExpr<MT1,MT2,false,false,false,false>
-   tdmattsmatmult( const DenseMatrix<MT1,true>& lhs, const SparseMatrix<MT2,true>& rhs )
-{
-   BLAZE_FUNCTION_TRACE;
-
-   BLAZE_INTERNAL_ASSERT( (~lhs).columns() == (~rhs).rows(), "Invalid matrix sizes" );
-
-   return TDMatTSMatMultExpr<MT1,MT2,false,false,false,false>( ~lhs, ~rhs );
-}
-/*! \endcond */
-//*************************************************************************************************
-
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-/*!\brief Backend implementation of the multiplication between a column-major dense matrix and a
-//        column-major identity matrix (\f$ A=B*C \f$).
-// \ingroup dense_matrix
-//
-// \param lhs The left-hand side dense matrix for the multiplication.
-// \param rhs The right-hand side identity matrix for the multiplication.
-// \return Reference to the left-hand side dense matrix.
-//
-// This function implements a performance optimized treatment of the multiplication between
-// a column-major dense matrix and a column-major identity matrix. It returns a reference to
-// the left-hand side dense matrix.
-*/
-template< typename MT1  // Type of the left-hand side dense matrix
-        , typename MT2  // Type of the right-hand side sparse matrix
-        , EnableIf_t< IsIdentity_v<MT2> &&
-                      IsSame_v< ElementType_t<MT1>, ElementType_t<MT2> > >* = nullptr >
-inline const MT1&
-   tdmattsmatmult( const DenseMatrix<MT1,true>& lhs, const SparseMatrix<MT2,true>& rhs )
-{
-   BLAZE_FUNCTION_TRACE;
-
-   MAYBE_UNUSED( rhs );
-
-   BLAZE_INTERNAL_ASSERT( (~lhs).columns() == (~rhs).rows(), "Invalid matrix sizes" );
-
-   return (~lhs);
-}
-/*! \endcond */
-//*************************************************************************************************
-
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-/*!\brief Backend implementation of the multiplication between a column-major dense matrix and a
-//        column-major zero matrix (\f$ A=B*C \f$).
-// \ingroup dense_matrix
-//
-// \param lhs The left-hand side dense matrix for the multiplication.
-// \param rhs The right-hand side zero matrix for the multiplication.
-// \return The resulting zero matrix.
-//
-// This function implements a performance optimized treatment of the multiplication between a
-// column-major dense matrix and a column-major zero matrix. It returns a zero matrix.
-*/
-template< typename MT1  // Type of the left-hand side dense matrix
-        , typename MT2  // Type of the right-hand side sparse matrix
-        , EnableIf_t< IsZero_v<MT2> >* = nullptr >
-inline decltype(auto)
-   tdmattsmatmult( const DenseMatrix<MT1,true>& lhs, const SparseMatrix<MT2,true>& rhs )
-{
-   BLAZE_FUNCTION_TRACE;
-
-   BLAZE_INTERNAL_ASSERT( (~lhs).columns() == (~rhs).rows(), "Invalid matrix sizes" );
-
-   using ReturnType = const MultTrait_t< ResultType_t<MT1>, ResultType_t<MT2> >;
-
-   BLAZE_CONSTRAINT_MUST_BE_COLUMN_MAJOR_MATRIX_TYPE( ReturnType );
-   BLAZE_CONSTRAINT_MUST_BE_ZERO_TYPE( ReturnType );
-
-   return ReturnType( (~lhs).rows(), (~rhs).columns() );
-}
-/*! \endcond */
-//*************************************************************************************************
-
 
 //*************************************************************************************************
 /*!\brief Multiplication operator for the multiplication of a column-major dense matrix and a
@@ -2011,7 +1909,8 @@ inline decltype(auto)
       BLAZE_THROW_INVALID_ARGUMENT( "Matrix sizes do not match" );
    }
 
-   return tdmattsmatmult( ~lhs, ~rhs );
+   using ReturnType = const TDMatTSMatMultExpr<MT1,MT2,false,false,false,false>;
+   return ReturnType( ~lhs, ~rhs );
 }
 //*************************************************************************************************
 
@@ -2285,6 +2184,166 @@ struct Size< TDMatTSMatMultExpr<MT1,MT2,SF,HF,LF,UF>, 1UL >
 template< typename MT1, typename MT2, bool SF, bool HF, bool LF, bool UF >
 struct IsAligned< TDMatTSMatMultExpr<MT1,MT2,SF,HF,LF,UF> >
    : public IsAligned<MT1>
+{};
+/*! \endcond */
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
+//  ISSYMMETRIC SPECIALIZATIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+template< typename MT1, typename MT2, bool SF, bool HF, bool LF, bool UF >
+struct IsSymmetric< TDMatTSMatMultExpr<MT1,MT2,SF,HF,LF,UF> >
+   : public BoolConstant< SF ||
+                          ( HF && IsBuiltin_v< ElementType_t< TDMatTSMatMultExpr<MT1,MT2,SF,HF,LF,UF> > > ) ||
+                          ( LF && UF ) >
+{};
+/*! \endcond */
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
+//  ISHERMITIAN SPECIALIZATIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+template< typename MT1, typename MT2, bool SF, bool LF, bool UF >
+struct IsHermitian< TDMatTSMatMultExpr<MT1,MT2,SF,true,LF,UF> >
+   : public TrueType
+{};
+/*! \endcond */
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
+//  ISLOWER SPECIALIZATIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+template< typename MT1, typename MT2, bool SF, bool HF, bool LF, bool UF >
+struct IsLower< TDMatTSMatMultExpr<MT1,MT2,SF,HF,LF,UF> >
+   : public BoolConstant< LF ||
+                          ( IsLower_v<MT1> && IsLower_v<MT2> ) ||
+                          ( ( SF || HF ) && IsUpper_v<MT1> && IsUpper_v<MT2> ) >
+{};
+/*! \endcond */
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
+//  ISUNILOWER SPECIALIZATIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+template< typename MT1, typename MT2, bool SF, bool HF, bool LF, bool UF >
+struct IsUniLower< TDMatTSMatMultExpr<MT1,MT2,SF,HF,LF,UF> >
+   : public BoolConstant< ( IsUniLower_v<MT1> && IsUniLower_v<MT2> ) ||
+                          ( ( SF || HF ) && IsUniUpper_v<MT1> && IsUniUpper_v<MT2> ) >
+{};
+/*! \endcond */
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
+//  ISSTRICTLYLOWER SPECIALIZATIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+template< typename MT1, typename MT2, bool SF, bool HF, bool LF, bool UF >
+struct IsStrictlyLower< TDMatTSMatMultExpr<MT1,MT2,SF,HF,LF,UF> >
+   : public BoolConstant< ( IsStrictlyLower_v<MT1> && IsLower_v<MT2> ) ||
+                          ( IsStrictlyLower_v<MT2> && IsLower_v<MT1> ) ||
+                          ( ( SF || HF ) &&
+                            ( ( IsStrictlyUpper_v<MT1> && IsUpper_v<MT2> ) ||
+                              ( IsStrictlyUpper_v<MT2> && IsUpper_v<MT1> ) ) ) >
+{};
+/*! \endcond */
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
+//  ISUPPER SPECIALIZATIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+template< typename MT1, typename MT2, bool SF, bool HF, bool LF, bool UF >
+struct IsUpper< TDMatTSMatMultExpr<MT1,MT2,SF,HF,LF,UF> >
+   : public BoolConstant< UF ||
+                          ( IsUpper_v<MT1> && IsUpper_v<MT2> ) ||
+                          ( ( SF || HF ) && IsLower_v<MT1> && IsLower_v<MT2> ) >
+{};
+/*! \endcond */
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
+//  ISUNIUPPER SPECIALIZATIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+template< typename MT1, typename MT2, bool SF, bool HF, bool LF, bool UF >
+struct IsUniUpper< TDMatTSMatMultExpr<MT1,MT2,SF,HF,LF,UF> >
+   : public BoolConstant< ( IsUniUpper_v<MT1> && IsUniUpper_v<MT2> ) ||
+                          ( ( SF || HF ) && IsUniLower_v<MT1> && IsUniLower_v<MT2> ) >
+{};
+/*! \endcond */
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
+//  ISSTRICTLYUPPER SPECIALIZATIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+template< typename MT1, typename MT2, bool SF, bool HF, bool LF, bool UF >
+struct IsStrictlyUpper< TDMatTSMatMultExpr<MT1,MT2,SF,HF,LF,UF> >
+   : public BoolConstant< ( IsStrictlyUpper_v<MT1> && IsUpper_v<MT2> ) ||
+                          ( IsStrictlyUpper_v<MT2> && IsUpper_v<MT1> ) ||
+                          ( ( SF || HF ) &&
+                            ( ( IsStrictlyLower_v<MT1> && IsLower_v<MT2> ) ||
+                              ( IsStrictlyLower_v<MT2> && IsLower_v<MT1> ) ) ) >
 {};
 /*! \endcond */
 //*************************************************************************************************

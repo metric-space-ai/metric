@@ -47,7 +47,7 @@ typename Metric::distance_type distance(Container obj1, Container obj2) {
 template <typename Metric, typename Container>
 typename Metric::distance_type normalized_error(Container original, Container predicted) {
     return distance<Metric>(original, predicted) / norm<Metric>(original);
-} // correct only for vectors of equal size!!
+}
 
 
 template <typename Metric, typename Container, template <typename, typename> class OuterContainer, typename OuterAllocator>
@@ -59,7 +59,7 @@ std::vector<typename Metric::distance_type> normalized_errors(OuterContainer<Con
         errors.push_back(err);
     }
     return errors;
-} // correct only for vectors of equal size!!
+}
 
 
 template <typename Metric, typename Container, template <typename, typename> class OuterContainer, typename OuterAllocator>
@@ -69,9 +69,7 @@ std::tuple<double, double, double, double, double, double> normalized_err_stats(
     std::vector<typename Metric::distance_type> errors;
     std::vector<typename Metric::distance_type> normalized_errors;
     for (size_t i = 0; i<predicted.size(); ++i) {
-        Container cropped_original(original[i].begin(), original[i].begin() + predicted[i].size());
-        //auto norm_original = norm<Metric>(original[i]);
-        auto norm_original = norm<Metric>(cropped_original);
+        auto norm_original = norm<Metric>(original[i]);
         auto err = distance<Metric>(original[i], predicted[i]);
         norms.push_back(norm_original);
         errors.push_back(err);

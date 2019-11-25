@@ -3,7 +3,7 @@
 //  \file blaze/math/views/band/Sparse.h
 //  \brief Band specialization for sparse matrices
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -82,13 +82,12 @@
 #include "../../../util/constraints/Pointer.h"
 #include "../../../util/constraints/Reference.h"
 #include "../../../util/DisableIf.h"
-#include "../../../util/MaybeUnused.h"
 #include "../../../util/mpl/If.h"
 #include "../../../util/TypeList.h"
 #include "../../../util/Types.h"
 #include "../../../util/typetraits/IsConst.h"
 #include "../../../util/typetraits/IsIntegral.h"
-#include "../../../util/typetraits/RemoveReference.h"
+#include "../../../util/Unused.h"
 
 
 namespace blaze {
@@ -470,9 +469,6 @@ class Band<MT,TF,false,false,CBAs...>
    //**Compilation flags***************************************************************************
    //! Compilation switch for the expression template assignment strategy.
    static constexpr bool smpAssignable = false;
-
-   //! Compilation switch for the expression template evaluation strategy.
-   static constexpr bool compileTimeArgs = DataType::compileTimeArgs;
    //**********************************************************************************************
 
    //**Constructors********************************************************************************
@@ -480,16 +476,12 @@ class Band<MT,TF,false,false,CBAs...>
    //@{
    template< typename... RBAs >
    explicit inline Band( MT& matrix, RBAs... args );
-
-   Band( const Band& ) = default;
+   // No explicitly declared copy constructor.
    //@}
    //**********************************************************************************************
 
    //**Destructor**********************************************************************************
-   /*!\name Destructor */
-   //@{
-   ~Band() = default;
-   //@}
+   // No explicitly declared destructor.
    //**********************************************************************************************
 
    //**Data access functions***********************************************************************
@@ -1456,7 +1448,7 @@ template< typename MT          // Type of the sparse matrix
         , ptrdiff_t... CBAs >  // Compile time band arguments
 void Band<MT,TF,false,false,CBAs...>::reserve( size_t n )
 {
-   MAYBE_UNUSED( n );
+   UNUSED_PARAMETER( n );
 
    return;
 }
@@ -2237,9 +2229,6 @@ class Band<MT,TF,false,true,CBAs...>
    //**Compilation flags***************************************************************************
    //! Compilation switch for the expression template assignment strategy.
    static constexpr bool smpAssignable = false;
-
-   //! Compilation switch for the expression template evaluation strategy.
-   static constexpr bool compileTimeArgs = DataType::compileTimeArgs;
    //**********************************************************************************************
 
    //**Constructor*********************************************************************************

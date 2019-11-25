@@ -3,7 +3,7 @@
 //  \file blaze/math/functors/Pow.h
 //  \brief Header file for the Pow functor
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -44,7 +44,6 @@
 #include "../../math/shims/Pow.h"
 #include "../../math/simd/Pow.h"
 #include "../../math/typetraits/HasSIMDPow.h"
-#include "../../system/HostDevice.h"
 #include "../../system/Inline.h"
 
 
@@ -62,6 +61,14 @@ namespace blaze {
 */
 struct Pow
 {
+ public:
+   //**********************************************************************************************
+   /*!\brief Constructor of the Pow functor.
+   */
+   explicit inline Pow()
+   {}
+   //**********************************************************************************************
+
    //**********************************************************************************************
    /*!\brief Returns the result of the pow() function for the given objects/values.
    //
@@ -70,7 +77,7 @@ struct Pow
    // \return The result of the pow() function for the given objects/values.
    */
    template< typename T1, typename T2 >
-   BLAZE_ALWAYS_INLINE BLAZE_DEVICE_CALLABLE decltype(auto) operator()( const T1& a, const T2& b ) const
+   BLAZE_ALWAYS_INLINE decltype(auto) operator()( const T1& a, const T2& b ) const
    {
       return pow( a, b );
    }
@@ -83,14 +90,6 @@ struct Pow
    */
    template< typename T1, typename T2 >
    static constexpr bool simdEnabled() { return HasSIMDPow_v<T1,T2>; }
-   //**********************************************************************************************
-
-   //**********************************************************************************************
-   /*!\brief Returns whether the operation supports padding, i.e. whether it can deal with zeros.
-   //
-   // \return \a true in case padding is supported, \a false if not.
-   */
-   static constexpr bool paddingEnabled() { return false; }
    //**********************************************************************************************
 
    //**********************************************************************************************

@@ -3,7 +3,7 @@
 //  \file blaze/math/Constraints.h
 //  \brief Header file for all mathematical constraints
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -50,12 +50,10 @@
 #include "../math/constraints/ColumnMajorMatrix.h"
 #include "../math/constraints/Columns.h"
 #include "../math/constraints/ColumnVector.h"
-#include "../math/constraints/Commutative.h"
 #include "../math/constraints/Computation.h"
 #include "../math/constraints/ConstDataAccess.h"
 #include "../math/constraints/Contiguous.h"
 #include "../math/constraints/CrossExpr.h"
-#include "../math/constraints/CUDAAssignable.h"
 #include "../math/constraints/Custom.h"
 #include "../math/constraints/Declaration.h"
 #include "../math/constraints/DeclDiagExpr.h"
@@ -70,20 +68,17 @@
 #include "../math/constraints/DivExpr.h"
 #include "../math/constraints/Elements.h"
 #include "../math/constraints/EvalExpr.h"
-#include "../math/constraints/ExpandExpr.h"
 #include "../math/constraints/Expression.h"
 #include "../math/constraints/General.h"
 #include "../math/constraints/Hermitian.h"
 #include "../math/constraints/Identity.h"
 #include "../math/constraints/Initializer.h"
 #include "../math/constraints/Invertible.h"
-#include "../math/constraints/KronExpr.h"
 #include "../math/constraints/Lower.h"
 #include "../math/constraints/MatEvalExpr.h"
 #include "../math/constraints/MatInvExpr.h"
 #include "../math/constraints/MatMapExpr.h"
 #include "../math/constraints/MatMatAddExpr.h"
-#include "../math/constraints/MatMatKronExpr.h"
 #include "../math/constraints/MatMatMapExpr.h"
 #include "../math/constraints/MatMatMultExpr.h"
 #include "../math/constraints/MatMatSubExpr.h"
@@ -101,7 +96,6 @@
 #include "../math/constraints/Operation.h"
 #include "../math/constraints/OpposedView.h"
 #include "../math/constraints/Padded.h"
-#include "../math/constraints/PaddingEnabled.h"
 #include "../math/constraints/Proxy.h"
 #include "../math/constraints/ReduceExpr.h"
 #include "../math/constraints/RequiresEvaluation.h"
@@ -143,7 +137,6 @@
 #include "../math/constraints/UniUpper.h"
 #include "../math/constraints/Upper.h"
 #include "../math/constraints/VecEvalExpr.h"
-#include "../math/constraints/VecExpandExpr.h"
 #include "../math/constraints/VecMapExpr.h"
 #include "../math/constraints/VecScalarDivExpr.h"
 #include "../math/constraints/VecScalarMultExpr.h"
@@ -153,11 +146,9 @@
 #include "../math/constraints/VecTVecMultExpr.h"
 #include "../math/constraints/VecVecAddExpr.h"
 #include "../math/constraints/VecVecDivExpr.h"
-#include "../math/constraints/VecVecKronExpr.h"
 #include "../math/constraints/VecVecMapExpr.h"
 #include "../math/constraints/VecVecMultExpr.h"
 #include "../math/constraints/VecVecSubExpr.h"
 #include "../math/constraints/View.h"
-#include "../math/constraints/Zero.h"
 
 #endif

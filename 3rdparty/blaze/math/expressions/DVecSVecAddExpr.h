@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/DVecSVecAddExpr.h
 //  \brief Header file for the dense vector/sparse vector addition expression
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -57,15 +57,11 @@
 #include "../../math/typetraits/IsComputation.h"
 #include "../../math/typetraits/IsExpression.h"
 #include "../../math/typetraits/IsTemporary.h"
-#include "../../math/typetraits/IsZero.h"
 #include "../../util/Assert.h"
-#include "../../util/DisableIf.h"
 #include "../../util/EnableIf.h"
 #include "../../util/FunctionTrace.h"
-#include "../../util/MaybeUnused.h"
 #include "../../util/mpl/If.h"
 #include "../../util/Types.h"
-#include "../../util/typetraits/IsSame.h"
 
 
 namespace blaze {
@@ -130,7 +126,6 @@ class DVecSVecAddExpr
  public:
    //**Type definitions****************************************************************************
    using This          = DVecSVecAddExpr<VT1,VT2,TF>;  //!< Type of this DVecSVecAddExpr instance.
-   using BaseType      = DenseVector<This,TF>;         //!< Base type of this DVecSVecAddExpr instance.
    using ResultType    = AddTrait_t<RT1,RT2>;          //!< Result type for expression template evaluations.
    using TransposeType = TransposeType_t<ResultType>;  //!< Transpose type for expression template evaluations.
    using ElementType   = ElementType_t<ResultType>;    //!< Resulting element type.
@@ -456,8 +451,8 @@ class DVecSVecAddExpr
    // specific parallel evaluation strategy is selected.
    */
    template< typename VT >  // Type of the target dense vector
-   friend inline auto smpAssign( DenseVector<VT,TF>& lhs, const DVecSVecAddExpr& rhs )
-      -> EnableIf_t< UseSMPAssign_v<VT> >
+   friend inline EnableIf_t< UseSMPAssign_v<VT> >
+      smpAssign( DenseVector<VT,TF>& lhs, const DVecSVecAddExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -489,8 +484,8 @@ class DVecSVecAddExpr
    // specific parallel evaluation strategy is selected.
    */
    template< typename VT >  // Type of the target sparse vector
-   friend inline auto smpAssign( SparseVector<VT,TF>& lhs, const DVecSVecAddExpr& rhs )
-      -> EnableIf_t< UseSMPAssign_v<VT> >
+   friend inline EnableIf_t< UseSMPAssign_v<VT> >
+      smpAssign( SparseVector<VT,TF>& lhs, const DVecSVecAddExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -521,8 +516,8 @@ class DVecSVecAddExpr
    // expression specific parallel evaluation strategy is selected.
    */
    template< typename VT >  // Type of the target dense vector
-   friend inline auto smpAddAssign( DenseVector<VT,TF>& lhs, const DVecSVecAddExpr& rhs )
-      -> EnableIf_t< UseSMPAssign_v<VT> >
+   friend inline EnableIf_t< UseSMPAssign_v<VT> >
+      smpAddAssign( DenseVector<VT,TF>& lhs, const DVecSVecAddExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -553,8 +548,8 @@ class DVecSVecAddExpr
    // specific parallel evaluation strategy is selected.
    */
    template< typename VT >  // Type of the target dense vector
-   friend inline auto smpSubAssign( DenseVector<VT,TF>& lhs, const DVecSVecAddExpr& rhs )
-      -> EnableIf_t< UseSMPAssign_v<VT> >
+   friend inline EnableIf_t< UseSMPAssign_v<VT> >
+      smpSubAssign( DenseVector<VT,TF>& lhs, const DVecSVecAddExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -586,8 +581,8 @@ class DVecSVecAddExpr
    // expression specific parallel evaluation strategy is selected.
    */
    template< typename VT >  // Type of the target dense vector
-   friend inline auto smpMultAssign( DenseVector<VT,TF>& lhs, const DVecSVecAddExpr& rhs )
-      -> EnableIf_t< UseSMPAssign_v<VT> >
+   friend inline EnableIf_t< UseSMPAssign_v<VT> >
+      smpMultAssign( DenseVector<VT,TF>& lhs, const DVecSVecAddExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -622,8 +617,8 @@ class DVecSVecAddExpr
    // specific parallel evaluation strategy is selected.
    */
    template< typename VT >  // Type of the target dense vector
-   friend inline auto smpDivAssign( DenseVector<VT,TF>& lhs, const DVecSVecAddExpr& rhs )
-      -> EnableIf_t< UseSMPAssign_v<VT> >
+   friend inline EnableIf_t< UseSMPAssign_v<VT> >
+      smpDivAssign( DenseVector<VT,TF>& lhs, const DVecSVecAddExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -665,70 +660,6 @@ class DVecSVecAddExpr
 //=================================================================================================
 
 //*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-/*!\brief Backend implementation of the addition between a dense vector and a sparse vector
-//        (\f$ \vec{a}=\vec{b}+\vec{c} \f$).
-// \ingroup dense_vector
-//
-// \param lhs The left-hand side dense vector for the vector addition.
-// \param rhs The right-hand side sparse vector for the vector addition.
-// \return The sum of the two vectors.
-//
-// This function implements a performance optimized treatment of the addition between a dense
-// vector and a sparse vector.
-*/
-template< typename VT1  // Type of the left-hand side dense vector
-        , typename VT2  // Type of the right-hand side sparse vector
-        , bool TF       // Transpose flag
-        , DisableIf_t< IsZero_v<VT2> &&
-                       IsSame_v< ElementType_t<VT1>, ElementType_t<VT2> > >* = nullptr >
-inline const DVecSVecAddExpr<VT1,VT2,TF>
-   dvecsvecadd( const DenseVector<VT1,TF>& lhs, const SparseVector<VT2,TF>& rhs )
-{
-   BLAZE_FUNCTION_TRACE;
-
-   BLAZE_INTERNAL_ASSERT( (~lhs).size() == (~rhs).size(), "Invalid vector sizes" );
-
-   return DVecSVecAddExpr<VT1,VT2,TF>( ~lhs, ~rhs );
-}
-/*! \endcond */
-//*************************************************************************************************
-
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-/*!\brief Backend implementation of the addition between a dense vector and a zero vector
-//        (\f$ \vec{a}=\vec{b}+\vec{c} \f$).
-// \ingroup dense_vector
-//
-// \param lhs The left-hand side dense vector for the vector addition.
-// \param rhs The right-hand side zero vector for the vector addition.
-// \return The sum of the two vectors.
-//
-// This function implements a performance optimized treatment of the addition between a dense
-// vector and a zero vector.
-*/
-template< typename VT1  // Type of the left-hand side dense vector
-        , typename VT2  // Type of the right-hand side sparse vector
-        , bool TF       // Transpose flag
-        , EnableIf_t< IsZero_v<VT2> &&
-                      IsSame_v< ElementType_t<VT1>, ElementType_t<VT2> > >* = nullptr >
-inline const VT1&
-   dvecsvecadd( const DenseVector<VT1,TF>& lhs, const SparseVector<VT2,TF>& rhs )
-{
-   BLAZE_FUNCTION_TRACE;
-
-   MAYBE_UNUSED( rhs );
-
-   BLAZE_INTERNAL_ASSERT( (~lhs).size() == (~rhs).size(), "Invalid vector sizes" );
-
-   return (~lhs);
-}
-/*! \endcond */
-//*************************************************************************************************
-
-
-//*************************************************************************************************
 /*!\brief Addition operator for the addition of a dense vector and a sparse vector
 //        (\f$ \vec{a}=\vec{b}+\vec{c} \f$).
 // \ingroup dense_vector
@@ -766,7 +697,8 @@ inline decltype(auto)
       BLAZE_THROW_INVALID_ARGUMENT( "Vector sizes do not match" );
    }
 
-   return dvecsvecadd( ~lhs, ~rhs );
+   using ReturnType = const DVecSVecAddExpr<VT1,VT2,TF>;
+   return ReturnType( ~lhs, ~rhs );
 }
 //*************************************************************************************************
 
@@ -809,7 +741,8 @@ inline decltype(auto)
       BLAZE_THROW_INVALID_ARGUMENT( "Vector sizes do not match" );
    }
 
-   return dvecsvecadd( ~rhs, ~lhs );
+   using ReturnType = const DVecSVecAddExpr<VT2,VT1,TF>;
+   return ReturnType( ~rhs, ~lhs );
 }
 //*************************************************************************************************
 

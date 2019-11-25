@@ -3,7 +3,7 @@
 //  \file blaze/math/dense/DynamicVector.h
 //  \brief Header file for the implementation of an arbitrarily sized vector
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -64,7 +64,6 @@
 #include "../../math/traits/CrossTrait.h"
 #include "../../math/traits/DivTrait.h"
 #include "../../math/traits/ElementsTrait.h"
-#include "../../math/traits/KronTrait.h"
 #include "../../math/traits/MapTrait.h"
 #include "../../math/traits/MultTrait.h"
 #include "../../math/traits/ReduceTrait.h"
@@ -91,7 +90,6 @@
 #include "../../math/typetraits/IsSIMDCombinable.h"
 #include "../../math/typetraits/IsSMPAssignable.h"
 #include "../../math/typetraits/IsSparseVector.h"
-#include "../../math/typetraits/IsSquare.h"
 #include "../../math/typetraits/IsVector.h"
 #include "../../math/typetraits/LowType.h"
 #include "../../math/typetraits/MaxSize.h"
@@ -115,6 +113,7 @@
 #include "../../util/EnableIf.h"
 #include "../../util/IntegralConstant.h"
 #include "../../util/Memory.h"
+#include "../../util/TrueType.h"
 #include "../../util/Types.h"
 #include "../../util/typetraits/IsNumeric.h"
 #include "../../util/typetraits/IsVectorizable.h"
@@ -257,7 +256,7 @@ class DynamicVector
    explicit inline DynamicVector() noexcept;
    explicit inline DynamicVector( size_t n );
    explicit inline DynamicVector( size_t n, const Type& init );
-            inline DynamicVector( initializer_list<Type> list );
+   explicit inline DynamicVector( initializer_list<Type> list );
 
    template< typename Other >
    explicit inline DynamicVector( size_t n, const Other* array );
@@ -586,7 +585,7 @@ inline DynamicVector<Type,TF>::DynamicVector( size_t n, const Type& init )
    \endcode
 
 // The vector is sized according to the size of the initializer list and all its elements are
-// (copy) assigned the elements of the given initializer list.
+// initialized by the non-zero elements of the given initializer list.
 */
 template< typename Type  // Data type of the vector
         , bool TF >      // Transpose flag
@@ -1000,7 +999,7 @@ inline DynamicVector<Type,TF>& DynamicVector<Type,TF>::operator=( const Type& rh
    \endcode
 
 // The vector is resized according to the size of the initializer list and all its elements are
-// (copy) assigned the values from the given initializer list.
+// assigned the values from the given initializer list.
 */
 template< typename Type  // Data type of the vector
         , bool TF >      // Transpose flag
@@ -1285,7 +1284,7 @@ inline DynamicVector<Type,TF>& DynamicVector<Type,TF>::operator%=( const Vector<
 {
    using blaze::assign;
 
-   BLAZE_CONSTRAINT_MUST_BE_VECTOR_WITH_TRANSPOSE_FLAG( ResultType_t<VT>, TF );
+   BLAZE_CONSTRAINT_MUST_BE_VECTOR_WITH_TRANSPOSE_FLAG( VT, TF );
    BLAZE_CONSTRAINT_MUST_NOT_REQUIRE_EVALUATION( ResultType_t<VT> );
 
    using CrossType = CrossTrait_t< This, ResultType_t<VT> >;
@@ -1450,7 +1449,7 @@ template< typename Type  // Data type of the vector
         , bool TF >      // Transpose flag
 inline void DynamicVector<Type,TF>::resize( size_t n, bool preserve )
 {
-   using std::swap;
+   //using std::swap;
 
    if( n > capacity_ )
    {
@@ -1469,7 +1468,7 @@ inline void DynamicVector<Type,TF>::resize( size_t n, bool preserve )
       }
 
       // Replacing the old array
-      swap( v_, tmp );
+	  std::swap( v_, tmp );
       deallocate( tmp );
       capacity_ = newCapacity;
    }
@@ -2071,7 +2070,7 @@ inline void DynamicVector<Type,TF>::assign( const SparseVector<VT,TF>& rhs )
 {
    BLAZE_INTERNAL_ASSERT( size_ == (~rhs).size(), "Invalid vector sizes" );
 
-   for( auto element=(~rhs).begin(); element!=(~rhs).end(); ++element )
+   for( ConstIterator_t<VT> element=(~rhs).begin(); element!=(~rhs).end(); ++element )
       v_[element->index()] = element->value();
 }
 //*************************************************************************************************
@@ -2173,7 +2172,7 @@ inline void DynamicVector<Type,TF>::addAssign( const SparseVector<VT,TF>& rhs )
 {
    BLAZE_INTERNAL_ASSERT( size_ == (~rhs).size(), "Invalid vector sizes" );
 
-   for( auto element=(~rhs).begin(); element!=(~rhs).end(); ++element )
+   for( ConstIterator_t<VT> element=(~rhs).begin(); element!=(~rhs).end(); ++element )
       v_[element->index()] += element->value();
 }
 //*************************************************************************************************
@@ -2275,7 +2274,7 @@ inline void DynamicVector<Type,TF>::subAssign( const SparseVector<VT,TF>& rhs )
 {
    BLAZE_INTERNAL_ASSERT( size_ == (~rhs).size(), "Invalid vector sizes" );
 
-   for( auto element=(~rhs).begin(); element!=(~rhs).end(); ++element )
+   for( ConstIterator_t<VT> element=(~rhs).begin(); element!=(~rhs).end(); ++element )
       v_[element->index()] -= element->value();
 }
 //*************************************************************************************************
@@ -2381,7 +2380,7 @@ inline void DynamicVector<Type,TF>::multAssign( const SparseVector<VT,TF>& rhs )
 
    reset();
 
-   for( auto element=(~rhs).begin(); element!=(~rhs).end(); ++element )
+   for( ConstIterator_t<VT> element=(~rhs).begin(); element!=(~rhs).end(); ++element )
       v_[element->index()] = tmp[element->index()] * element->value();
 }
 //*************************************************************************************************
@@ -2475,19 +2474,19 @@ inline auto DynamicVector<Type,TF>::divAssign( const DenseVector<VT,TF>& rhs )
 /*!\name DynamicVector operators */
 //@{
 template< typename Type, bool TF >
-void reset( DynamicVector<Type,TF>& v );
+inline void reset( DynamicVector<Type,TF>& v );
 
 template< typename Type, bool TF >
-void clear( DynamicVector<Type,TF>& v );
+inline void clear( DynamicVector<Type,TF>& v );
 
 template< bool RF, typename Type, bool TF >
-bool isDefault( const DynamicVector<Type,TF>& v );
+inline bool isDefault( const DynamicVector<Type,TF>& v );
 
 template< typename Type, bool TF >
-bool isIntact( const DynamicVector<Type,TF>& v ) noexcept;
+inline bool isIntact( const DynamicVector<Type,TF>& v ) noexcept;
 
 template< typename Type, bool TF >
-void swap( DynamicVector<Type,TF>& a, DynamicVector<Type,TF>& b ) noexcept;
+inline void swap( DynamicVector<Type,TF>& a, DynamicVector<Type,TF>& b ) noexcept;
 //@}
 //*************************************************************************************************
 
@@ -2876,34 +2875,6 @@ struct MultTraitEval2< T1, T2
 
 //=================================================================================================
 //
-//  KRONTRAIT SPECIALIZATIONS
-//
-//=================================================================================================
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-template< typename T1, typename T2 >
-struct KronTraitEval2< T1, T2
-                     , EnableIf_t< IsDenseVector_v<T1> &&
-                                   IsDenseVector_v<T2> &&
-                                   ( ( Size_v<T1,0UL> == DefaultSize_v ) ||
-                                     ( Size_v<T2,0UL> == DefaultSize_v ) ) &&
-                                   ( ( MaxSize_v<T1,0UL> == DefaultMaxSize_v ) ||
-                                     ( MaxSize_v<T2,0UL> == DefaultMaxSize_v ) ) > >
-{
-   using ET1 = ElementType_t<T1>;
-   using ET2 = ElementType_t<T2>;
-
-   using Type = DynamicVector< MultTrait_t<ET1,ET2>, TransposeFlag_v<T2> >;
-};
-/*! \endcond */
-//*************************************************************************************************
-
-
-
-
-//=================================================================================================
-//
 //  DIVTRAIT SPECIALIZATIONS
 //
 //=================================================================================================
@@ -3002,12 +2973,9 @@ struct PartialReduceTraitEval2< T, OP, RF
                                             ( MaxSize_v<T,0UL> == DefaultMaxSize_v ||
                                               MaxSize_v<T,1UL> == DefaultMaxSize_v ) > >
 {
-   using ET = ElementType_t<T>;
-   using RT = decltype( std::declval<OP>()( std::declval<ET>(), std::declval<ET>() ) );
-
    static constexpr bool TF = ( RF == 0UL );
 
-   using Type = DynamicVector<RT,TF>;
+   using Type = DynamicVector< ElementType_t<T>, TF >;
 };
 /*! \endcond */
 //*************************************************************************************************
@@ -3133,7 +3101,7 @@ struct ColumnTraitEval2< MT, I
                                      Size_v<MT,0UL> == DefaultSize_v &&
                                      MaxSize_v<MT,0UL> == DefaultMaxSize_v > >
 {
-   using Type = DynamicVector< RemoveConst_t< ElementType_t<MT> >, false >;
+   using Type = DynamicVector< ElementType_t<MT>, false >;
 };
 /*! \endcond */
 //*************************************************************************************************
@@ -3157,7 +3125,7 @@ struct BandTraitEval2< MT, I
                                    ( MaxSize_v<MT,0UL> == DefaultMaxSize_v ||
                                      MaxSize_v<MT,1UL> == DefaultMaxSize_v ) > >
 {
-   using Type = DynamicVector< RemoveConst_t< ElementType_t<MT> >, defaultTransposeFlag >;
+   using Type = DynamicVector< ElementType_t<MT>, defaultTransposeFlag >;
 };
 /*! \endcond */
 //*************************************************************************************************

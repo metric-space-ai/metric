@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/DVecDVecInnerExpr.h
 //  \brief Header file for the dense vector/dense vector inner product expression
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -121,9 +121,9 @@ struct DVecDVecInnerExprHelper
 */
 template< typename VT1    // Type of the left-hand side dense vector
         , typename VT2 >  // Type of the right-hand side dense vector
-inline auto dvecdvecinner( const DenseVector<VT1,true>& lhs, const DenseVector<VT2,false>& rhs )
-   -> DisableIf_t< DVecDVecInnerExprHelper<VT1,VT2>::value
-                 , const MultTrait_t< ElementType_t<VT1>, ElementType_t<VT2> > >
+inline DisableIf_t< DVecDVecInnerExprHelper<VT1,VT2>::value
+                  , const MultTrait_t< ElementType_t<VT1>, ElementType_t<VT2> > >
+   dvecdvecinner( const DenseVector<VT1,true>& lhs, const DenseVector<VT2,false>& rhs )
 {
    using CT1      = CompositeType_t<VT1>;
    using CT2      = CompositeType_t<VT2>;
@@ -177,9 +177,9 @@ inline auto dvecdvecinner( const DenseVector<VT1,true>& lhs, const DenseVector<V
 */
 template< typename VT1    // Type of the left-hand side dense vector
         , typename VT2 >  // Type of the right-hand side dense vector
-inline auto dvecdvecinner( const DenseVector<VT1,true>& lhs, const DenseVector<VT2,false>& rhs )
-   -> EnableIf_t< DVecDVecInnerExprHelper<VT1,VT2>::value
-                , const MultTrait_t< ElementType_t<VT1>, ElementType_t<VT2> > >
+inline EnableIf_t< DVecDVecInnerExprHelper<VT1,VT2>::value
+                 , const MultTrait_t< ElementType_t<VT1>, ElementType_t<VT2> > >
+   dvecdvecinner( const DenseVector<VT1,true>& lhs, const DenseVector<VT2,false>& rhs )
 {
    using CT1      = CompositeType_t<VT1>;
    using CT2      = CompositeType_t<VT2>;

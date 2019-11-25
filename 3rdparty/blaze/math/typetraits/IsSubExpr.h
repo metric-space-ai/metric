@@ -3,7 +3,7 @@
 //  \file blaze/math/typetraits/IsSubExpr.h
 //  \brief Header file for the IsSubExpr type trait class
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -40,8 +40,10 @@
 // Includes
 //*************************************************************************************************
 
+#include <utility>
 #include "../../math/expressions/SubExpr.h"
-#include "../../util/IntegralConstant.h"
+#include "../../util/FalseType.h"
+#include "../../util/TrueType.h"
 
 
 namespace blaze {
@@ -62,20 +64,18 @@ struct IsSubExprHelper
 {
  private:
    //**********************************************************************************************
-   static T* create();
+   template< typename U >
+   static TrueType test( const SubExpr<U>& );
 
    template< typename U >
-   static TrueType test( const SubExpr<U>* );
-
-   template< typename U >
-   static TrueType test( const volatile SubExpr<U>* );
+   static TrueType test( const volatile SubExpr<U>& );
 
    static FalseType test( ... );
    //**********************************************************************************************
 
  public:
    //**********************************************************************************************
-   using Type = decltype( test( create() ) );
+   using Type = decltype( test( std::declval<T&>() ) );
    //**********************************************************************************************
 };
 /*! \endcond */
@@ -102,21 +102,8 @@ struct IsSubExpr
 
 
 //*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-/*!\brief Specialization of the IsSubExpr type trait for references.
-// \ingroup math_type_traits
-*/
-template< typename T >
-struct IsSubExpr<T&>
-   : public FalseType
-{};
-/*! \endcond */
-//*************************************************************************************************
-
-
-//*************************************************************************************************
 /*!\brief Auxiliary variable template for the IsSubExpr type trait.
-// \ingroup math_type_traits
+// \ingroup type_traits
 //
 // The IsSubExpr_v variable template provides a convenient shortcut to access the nested \a value
 // of the IsSubExpr class template. For instance, given the type \a T the following two statements

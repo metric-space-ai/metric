@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/DVecDVecCrossExpr.h
 //  \brief Header file for the dense vector/dense vector cross product expression
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -114,7 +114,6 @@ class DVecDVecCrossExpr
  public:
    //**Type definitions****************************************************************************
    using This          = DVecDVecCrossExpr<VT1,VT2,TF>;  //!< Type of this DVecDVecCrossExpr instance.
-   using BaseType      = DenseVector<This,TF>;           //!< Base type of this DVecDVecCrossExpr instance.
    using ResultType    = CrossTrait_t<RT1,RT2>;          //!< Result type for expression template evaluations.
    using TransposeType = TransposeType_t<ResultType>;    //!< Transpose type for expression template evaluations.
    using ElementType   = ElementType_t<ResultType>;      //!< Resulting element type.

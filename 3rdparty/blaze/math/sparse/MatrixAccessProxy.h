@@ -3,7 +3,7 @@
 //  \file blaze/math/sparse/MatrixAccessProxy.h
 //  \brief Header file for the MatrixAccessProxy class
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -482,34 +482,34 @@ inline MatrixAccessProxy<MT>::operator RawReference() const noexcept
 /*!\name MatrixAccessProxy global functions */
 //@{
 template< typename MT >
-void reset( const MatrixAccessProxy<MT>& proxy );
+inline void reset( const MatrixAccessProxy<MT>& proxy );
 
 template< typename MT >
-void clear( const MatrixAccessProxy<MT>& proxy );
+inline void clear( const MatrixAccessProxy<MT>& proxy );
 
 template< bool RF, typename MT >
-bool isDefault( const MatrixAccessProxy<MT>& proxy );
+inline bool isDefault( const MatrixAccessProxy<MT>& proxy );
 
 template< bool RF, typename MT >
-bool isReal( const MatrixAccessProxy<MT>& proxy );
+inline bool isReal( const MatrixAccessProxy<MT>& proxy );
 
 template< bool RF, typename MT >
-bool isZero( const MatrixAccessProxy<MT>& proxy );
+inline bool isZero( const MatrixAccessProxy<MT>& proxy );
 
 template< bool RF, typename MT >
-bool isOne( const MatrixAccessProxy<MT>& proxy );
+inline bool isOne( const MatrixAccessProxy<MT>& proxy );
 
 template< typename MT >
-bool isnan( const MatrixAccessProxy<MT>& proxy );
+inline bool isnan( const MatrixAccessProxy<MT>& proxy );
 
 template< typename MT >
-void swap( const MatrixAccessProxy<MT>& a, const MatrixAccessProxy<MT>& b ) noexcept;
+inline void swap( const MatrixAccessProxy<MT>& a, const MatrixAccessProxy<MT>& b ) noexcept;
 
 template< typename MT, typename T >
-void swap( const MatrixAccessProxy<MT>& a, T& b ) noexcept;
+inline void swap( const MatrixAccessProxy<MT>& a, T& b ) noexcept;
 
 template< typename T, typename MT >
-void swap( T& a, const MatrixAccessProxy<MT>& v ) noexcept;
+inline void swap( T& a, const MatrixAccessProxy<MT>& v ) noexcept;
 //@}
 //*************************************************************************************************
 

@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/DMatDMatSubExpr.h
 //  \brief Header file for the dense matrix/dense matrix subtraction expression
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -58,11 +58,18 @@
 #include "../../math/typetraits/HasSIMDSub.h"
 #include "../../math/typetraits/IsAligned.h"
 #include "../../math/typetraits/IsExpression.h"
+#include "../../math/typetraits/IsHermitian.h"
+#include "../../math/typetraits/IsLower.h"
 #include "../../math/typetraits/IsOperation.h"
 #include "../../math/typetraits/IsPadded.h"
+#include "../../math/typetraits/IsStrictlyLower.h"
+#include "../../math/typetraits/IsStrictlyUpper.h"
+#include "../../math/typetraits/IsSymmetric.h"
 #include "../../math/typetraits/IsTemporary.h"
+#include "../../math/typetraits/IsUniLower.h"
+#include "../../math/typetraits/IsUniUpper.h"
+#include "../../math/typetraits/IsUpper.h"
 #include "../../math/typetraits/RequiresEvaluation.h"
-#include "../../system/HostDevice.h"
 #include "../../system/Inline.h"
 #include "../../system/Thresholds.h"
 #include "../../util/Assert.h"
@@ -155,7 +162,6 @@ class DMatDMatSubExpr
  public:
    //**Type definitions****************************************************************************
    using This          = DMatDMatSubExpr<MT1,MT2,SO>;  //!< Type of this DMatDMatSubExpr instance.
-   using BaseType      = DenseMatrix<This,SO>;         //!< Base type of this DMatDMatSubExpr instance.
    using ResultType    = SubTrait_t<RT1,RT2>;          //!< Result type for expression template evaluations.
    using OppositeType  = OppositeType_t<ResultType>;   //!< Result type with opposite storage order for expression template evaluations.
    using TransposeType = TransposeType_t<ResultType>;  //!< Transpose type for expression template evaluations.
@@ -207,7 +213,7 @@ class DMatDMatSubExpr
       // \param left Iterator to the initial left-hand side element.
       // \param right Iterator to the initial right-hand side element.
       */
-      explicit inline BLAZE_DEVICE_CALLABLE ConstIterator( LeftIteratorType left, RightIteratorType right )
+      explicit inline ConstIterator( LeftIteratorType left, RightIteratorType right )
          : left_ ( left  )  // Iterator to the current left-hand side element
          , right_( right )  // Iterator to the current right-hand side element
       {}
@@ -219,7 +225,7 @@ class DMatDMatSubExpr
       // \param inc The increment of the iterator.
       // \return The incremented iterator.
       */
-      inline BLAZE_DEVICE_CALLABLE ConstIterator& operator+=( size_t inc ) {
+      inline ConstIterator& operator+=( size_t inc ) {
          left_  += inc;
          right_ += inc;
          return *this;
@@ -232,7 +238,7 @@ class DMatDMatSubExpr
       // \param dec The decrement of the iterator.
       // \return The decremented iterator.
       */
-      inline BLAZE_DEVICE_CALLABLE ConstIterator& operator-=( size_t dec ) {
+      inline ConstIterator& operator-=( size_t dec ) {
          left_  -= dec;
          right_ -= dec;
          return *this;
@@ -244,7 +250,7 @@ class DMatDMatSubExpr
       //
       // \return Reference to the incremented iterator.
       */
-      inline BLAZE_DEVICE_CALLABLE ConstIterator& operator++() {
+      inline ConstIterator& operator++() {
          ++left_;
          ++right_;
          return *this;
@@ -256,7 +262,7 @@ class DMatDMatSubExpr
       //
       // \return The previous position of the iterator.
       */
-      inline BLAZE_DEVICE_CALLABLE const ConstIterator operator++( int ) {
+      inline const ConstIterator operator++( int ) {
          return ConstIterator( left_++, right_++ );
       }
       //*******************************************************************************************
@@ -266,7 +272,7 @@ class DMatDMatSubExpr
       //
       // \return Reference to the decremented iterator.
       */
-      inline BLAZE_DEVICE_CALLABLE ConstIterator& operator--() {
+      inline ConstIterator& operator--() {
          --left_;
          --right_;
          return *this;
@@ -278,7 +284,7 @@ class DMatDMatSubExpr
       //
       // \return The previous position of the iterator.
       */
-      inline BLAZE_DEVICE_CALLABLE const ConstIterator operator--( int ) {
+      inline const ConstIterator operator--( int ) {
          return ConstIterator( left_--, right_-- );
       }
       //*******************************************************************************************
@@ -309,7 +315,7 @@ class DMatDMatSubExpr
       // \param rhs The right-hand side iterator.
       // \return \a true if the iterators refer to the same element, \a false if not.
       */
-      inline BLAZE_DEVICE_CALLABLE bool operator==( const ConstIterator& rhs ) const {
+      inline bool operator==( const ConstIterator& rhs ) const {
          return left_ == rhs.left_;
       }
       //*******************************************************************************************
@@ -320,7 +326,7 @@ class DMatDMatSubExpr
       // \param rhs The right-hand side iterator.
       // \return \a true if the iterators don't refer to the same element, \a false if they do.
       */
-      inline BLAZE_DEVICE_CALLABLE bool operator!=( const ConstIterator& rhs ) const {
+      inline bool operator!=( const ConstIterator& rhs ) const {
          return left_ != rhs.left_;
       }
       //*******************************************************************************************
@@ -331,7 +337,7 @@ class DMatDMatSubExpr
       // \param rhs The right-hand side iterator.
       // \return \a true if the left-hand side iterator is smaller, \a false if not.
       */
-      inline BLAZE_DEVICE_CALLABLE bool operator<( const ConstIterator& rhs ) const {
+      inline bool operator<( const ConstIterator& rhs ) const {
          return left_ < rhs.left_;
       }
       //*******************************************************************************************
@@ -342,7 +348,7 @@ class DMatDMatSubExpr
       // \param rhs The right-hand side iterator.
       // \return \a true if the left-hand side iterator is greater, \a false if not.
       */
-      inline BLAZE_DEVICE_CALLABLE bool operator>( const ConstIterator& rhs ) const {
+      inline bool operator>( const ConstIterator& rhs ) const {
          return left_ > rhs.left_;
       }
       //*******************************************************************************************
@@ -353,7 +359,7 @@ class DMatDMatSubExpr
       // \param rhs The right-hand side iterator.
       // \return \a true if the left-hand side iterator is smaller or equal, \a false if not.
       */
-      inline BLAZE_DEVICE_CALLABLE bool operator<=( const ConstIterator& rhs ) const {
+      inline bool operator<=( const ConstIterator& rhs ) const {
          return left_ <= rhs.left_;
       }
       //*******************************************************************************************
@@ -364,7 +370,7 @@ class DMatDMatSubExpr
       // \param rhs The right-hand side iterator.
       // \return \a true if the left-hand side iterator is greater or equal, \a false if not.
       */
-      inline BLAZE_DEVICE_CALLABLE bool operator>=( const ConstIterator& rhs ) const {
+      inline bool operator>=( const ConstIterator& rhs ) const {
          return left_ >= rhs.left_;
       }
       //*******************************************************************************************
@@ -375,7 +381,7 @@ class DMatDMatSubExpr
       // \param rhs The right-hand side iterator.
       // \return The number of elements between the two iterators.
       */
-      inline BLAZE_DEVICE_CALLABLE DifferenceType operator-( const ConstIterator& rhs ) const {
+      inline DifferenceType operator-( const ConstIterator& rhs ) const {
          return left_ - rhs.left_;
       }
       //*******************************************************************************************
@@ -411,7 +417,7 @@ class DMatDMatSubExpr
       // \param dec The number of elements the iterator is decremented.
       // \return The decremented iterator.
       */
-      friend inline BLAZE_DEVICE_CALLABLE const ConstIterator operator-( const ConstIterator& it, size_t dec ) {
+      friend inline const ConstIterator operator-( const ConstIterator& it, size_t dec ) {
          return ConstIterator( it.left_ - dec, it.right_ - dec );
       }
       //*******************************************************************************************
@@ -632,8 +638,8 @@ class DMatDMatSubExpr
    */
    template< typename MT  // Type of the target dense matrix
            , bool SO2 >   // Storage order of the target dense matrix
-   friend inline auto assign( DenseMatrix<MT,SO2>& lhs, const DMatDMatSubExpr& rhs )
-      -> EnableIf_t< UseAssign_v<MT> >
+   friend inline EnableIf_t< UseAssign_v<MT> >
+      assign( DenseMatrix<MT,SO2>& lhs, const DMatDMatSubExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -642,11 +648,6 @@ class DMatDMatSubExpr
 
       if( !IsOperation_v<MT1> && isSame( ~lhs, rhs.lhs_ ) ) {
          subAssign( ~lhs, rhs.rhs_ );
-      }
-      else if( ( !IsOperation_v<MT2> && isSame( ~lhs, rhs.rhs_ ) ) ||
-               ( !RequiresEvaluation_v<MT2> && rhs.rhs_.isAliased( &(~lhs) ) ) ) {
-         assign   ( ~lhs, -rhs.rhs_ );
-         addAssign( ~lhs,  rhs.lhs_ );
       }
       else {
          assign   ( ~lhs, rhs.lhs_ );
@@ -672,8 +673,8 @@ class DMatDMatSubExpr
    */
    template< typename MT  // Type of the target sparse matrix
            , bool SO2 >   // Storage order of the target sparse matrix
-   friend inline auto assign( SparseMatrix<MT,SO2>& lhs, const DMatDMatSubExpr& rhs )
-      -> EnableIf_t< UseAssign_v<MT> >
+   friend inline EnableIf_t< UseAssign_v<MT> >
+      assign( SparseMatrix<MT,SO2>& lhs, const DMatDMatSubExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -711,22 +712,16 @@ class DMatDMatSubExpr
    */
    template< typename MT  // Type of the target dense matrix
            , bool SO2 >   // Storage order of the target dense matrix
-   friend inline auto addAssign( DenseMatrix<MT,SO2>& lhs, const DMatDMatSubExpr& rhs )
-      -> EnableIf_t< UseAssign_v<MT> >
+   friend inline EnableIf_t< UseAssign_v<MT> >
+      addAssign( DenseMatrix<MT,SO2>& lhs, const DMatDMatSubExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
       BLAZE_INTERNAL_ASSERT( (~lhs).rows()    == rhs.rows()   , "Invalid number of rows"    );
       BLAZE_INTERNAL_ASSERT( (~lhs).columns() == rhs.columns(), "Invalid number of columns" );
 
-      if( !RequiresEvaluation_v<MT2> ) {
-         subAssign( ~lhs, rhs.rhs_ );
-         addAssign( ~lhs, rhs.lhs_ );
-      }
-      else {
-         addAssign( ~lhs, rhs.lhs_ );
-         subAssign( ~lhs, rhs.rhs_ );
-      }
+      addAssign( ~lhs, rhs.lhs_ );
+      subAssign( ~lhs, rhs.rhs_ );
    }
    /*! \endcond */
    //**********************************************************************************************
@@ -751,22 +746,16 @@ class DMatDMatSubExpr
    */
    template< typename MT  // Type of the target dense matrix
            , bool SO2 >   // Storage order of the target dense matrix
-   friend inline auto subAssign( DenseMatrix<MT,SO2>& lhs, const DMatDMatSubExpr& rhs )
-      -> EnableIf_t< UseAssign_v<MT> >
+   friend inline EnableIf_t< UseAssign_v<MT> >
+      subAssign( DenseMatrix<MT,SO2>& lhs, const DMatDMatSubExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
       BLAZE_INTERNAL_ASSERT( (~lhs).rows()    == rhs.rows()   , "Invalid number of rows"    );
       BLAZE_INTERNAL_ASSERT( (~lhs).columns() == rhs.columns(), "Invalid number of columns" );
 
-      if( !RequiresEvaluation_v<MT2> ) {
-         addAssign( ~lhs, rhs.rhs_ );
-         subAssign( ~lhs, rhs.lhs_ );
-      }
-      else {
-         subAssign( ~lhs, rhs.lhs_ );
-         addAssign( ~lhs, rhs.rhs_ );
-      }
+      subAssign( ~lhs, rhs.lhs_ );
+      addAssign( ~lhs, rhs.rhs_ );
    }
    /*! \endcond */
    //**********************************************************************************************
@@ -791,8 +780,8 @@ class DMatDMatSubExpr
    */
    template< typename MT  // Type of the target dense matrix
            , bool SO2 >   // Storage order of the target dense matrix
-   friend inline auto schurAssign( DenseMatrix<MT,SO2>& lhs, const DMatDMatSubExpr& rhs )
-      -> EnableIf_t< UseAssign_v<MT> >
+   friend inline EnableIf_t< UseAssign_v<MT> >
+      schurAssign( DenseMatrix<MT,SO2>& lhs, const DMatDMatSubExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -837,8 +826,8 @@ class DMatDMatSubExpr
    */
    template< typename MT  // Type of the target dense matrix
            , bool SO2 >   // Storage order of the target dense matrix
-   friend inline auto smpAssign( DenseMatrix<MT,SO2>& lhs, const DMatDMatSubExpr& rhs )
-      -> EnableIf_t< UseSMPAssign_v<MT> >
+   friend inline EnableIf_t< UseSMPAssign_v<MT> >
+      smpAssign( DenseMatrix<MT,SO2>& lhs, const DMatDMatSubExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -847,11 +836,6 @@ class DMatDMatSubExpr
 
       if( !IsOperation_v<MT1> && isSame( ~lhs, rhs.lhs_ ) ) {
          smpSubAssign( ~lhs, rhs.rhs_ );
-      }
-      else if( ( !IsOperation_v<MT2> && isSame( ~lhs, rhs.rhs_ ) ) ||
-               ( !RequiresEvaluation_v<MT2> && rhs.rhs_.isAliased( &(~lhs) ) ) ) {
-         smpAssign   ( ~lhs, -rhs.rhs_ );
-         smpAddAssign( ~lhs,  rhs.lhs_ );
       }
       else {
          smpAssign   ( ~lhs, rhs.lhs_ );
@@ -877,8 +861,8 @@ class DMatDMatSubExpr
    */
    template< typename MT  // Type of the target sparse matrix
            , bool SO2 >   // Storage order of the target sparse matrix
-   friend inline auto smpAssign( SparseMatrix<MT,SO2>& lhs, const DMatDMatSubExpr& rhs )
-      -> EnableIf_t< UseSMPAssign_v<MT> >
+   friend inline EnableIf_t< UseSMPAssign_v<MT> >
+      smpAssign( SparseMatrix<MT,SO2>& lhs, const DMatDMatSubExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -916,22 +900,16 @@ class DMatDMatSubExpr
    */
    template< typename MT  // Type of the target dense matrix
            , bool SO2 >   // Storage order of the target dense matrix
-   friend inline auto smpAddAssign( DenseMatrix<MT,SO2>& lhs, const DMatDMatSubExpr& rhs )
-      -> EnableIf_t< UseAssign_v<MT> >
+   friend inline EnableIf_t< UseAssign_v<MT> >
+      smpAddAssign( DenseMatrix<MT,SO2>& lhs, const DMatDMatSubExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
       BLAZE_INTERNAL_ASSERT( (~lhs).rows()    == rhs.rows()   , "Invalid number of rows"    );
       BLAZE_INTERNAL_ASSERT( (~lhs).columns() == rhs.columns(), "Invalid number of columns" );
 
-      if( !RequiresEvaluation_v<MT2> ) {
-         smpSubAssign( ~lhs, rhs.rhs_ );
-         smpAddAssign( ~lhs, rhs.lhs_ );
-      }
-      else {
-         smpAddAssign( ~lhs, rhs.lhs_ );
-         smpSubAssign( ~lhs, rhs.rhs_ );
-      }
+      smpAddAssign( ~lhs, rhs.lhs_ );
+      smpSubAssign( ~lhs, rhs.rhs_ );
    }
    /*! \endcond */
    //**********************************************************************************************
@@ -956,22 +934,16 @@ class DMatDMatSubExpr
    */
    template< typename MT  // Type of the target dense matrix
            , bool SO2 >   // Storage order of the target dense matrix
-   friend inline auto smpSubAssign( DenseMatrix<MT,SO2>& lhs, const DMatDMatSubExpr& rhs )
-      -> EnableIf_t< UseSMPAssign_v<MT> >
+   friend inline EnableIf_t< UseSMPAssign_v<MT> >
+      smpSubAssign( DenseMatrix<MT,SO2>& lhs, const DMatDMatSubExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
       BLAZE_INTERNAL_ASSERT( (~lhs).rows()    == rhs.rows()   , "Invalid number of rows"    );
       BLAZE_INTERNAL_ASSERT( (~lhs).columns() == rhs.columns(), "Invalid number of columns" );
 
-      if( !RequiresEvaluation_v<MT2> ) {
-         smpAddAssign( ~lhs, rhs.rhs_ );
-         smpSubAssign( ~lhs, rhs.lhs_ );
-      }
-      else {
-         smpSubAssign( ~lhs, rhs.lhs_ );
-         smpAddAssign( ~lhs, rhs.rhs_ );
-      }
+      smpSubAssign( ~lhs, rhs.lhs_ );
+      smpAddAssign( ~lhs, rhs.rhs_ );
    }
    /*! \endcond */
    //**********************************************************************************************
@@ -997,8 +969,8 @@ class DMatDMatSubExpr
    */
    template< typename MT  // Type of the target dense matrix
            , bool SO2 >   // Storage order of the target dense matrix
-   friend inline auto smpSchurAssign( DenseMatrix<MT,SO2>& lhs, const DMatDMatSubExpr& rhs )
-      -> EnableIf_t< UseSMPAssign_v<MT> >
+   friend inline EnableIf_t< UseSMPAssign_v<MT> >
+      smpSchurAssign( DenseMatrix<MT,SO2>& lhs, const DMatDMatSubExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -1120,6 +1092,150 @@ struct IsAligned< DMatDMatSubExpr<MT1,MT2,SO> >
 template< typename MT1, typename MT2, bool SO >
 struct IsPadded< DMatDMatSubExpr<MT1,MT2,SO> >
    : public BoolConstant< IsPadded_v<MT1> && IsPadded_v<MT2> >
+{};
+/*! \endcond */
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
+//  ISSYMMETRIC SPECIALIZATIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+template< typename MT1, typename MT2, bool SO >
+struct IsSymmetric< DMatDMatSubExpr<MT1,MT2,SO> >
+   : public BoolConstant< IsSymmetric_v<MT1> && IsSymmetric_v<MT2> >
+{};
+/*! \endcond */
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
+//  ISHERMITIAN SPECIALIZATIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+template< typename MT1, typename MT2, bool SO >
+struct IsHermitian< DMatDMatSubExpr<MT1,MT2,SO> >
+   : public BoolConstant< IsHermitian_v<MT1> && IsHermitian_v<MT2> >
+{};
+/*! \endcond */
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
+//  ISLOWER SPECIALIZATIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+template< typename MT1, typename MT2, bool SO >
+struct IsLower< DMatDMatSubExpr<MT1,MT2,SO> >
+   : public BoolConstant< IsLower_v<MT1> && IsLower_v<MT2> >
+{};
+/*! \endcond */
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
+//  ISUNILOWER SPECIALIZATIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+template< typename MT1, typename MT2, bool SO >
+struct IsUniLower< DMatDMatSubExpr<MT1,MT2,SO> >
+   : public BoolConstant< IsUniLower_v<MT1> && IsStrictlyLower_v<MT2> >
+{};
+/*! \endcond */
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
+//  ISSTRICTLYLOWER SPECIALIZATIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+template< typename MT1, typename MT2, bool SO >
+struct IsStrictlyLower< DMatDMatSubExpr<MT1,MT2,SO> >
+   : public BoolConstant< IsStrictlyLower_v<MT1> && IsStrictlyLower_v<MT2> >
+{};
+/*! \endcond */
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
+//  ISUPPER SPECIALIZATIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+template< typename MT1, typename MT2, bool SO >
+struct IsUpper< DMatDMatSubExpr<MT1,MT2,SO> >
+   : public BoolConstant< IsUpper_v<MT1> && IsUpper_v<MT2> >
+{};
+/*! \endcond */
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
+//  ISUNIUPPER SPECIALIZATIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+template< typename MT1, typename MT2, bool SO >
+struct IsUniUpper< DMatDMatSubExpr<MT1,MT2,SO> >
+   : public BoolConstant< IsUniUpper_v<MT1> && IsStrictlyUpper_v<MT2> >
+{};
+/*! \endcond */
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
+//  ISSTRICTLYUPPER SPECIALIZATIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+template< typename MT1, typename MT2, bool SO >
+struct IsStrictlyUpper< DMatDMatSubExpr<MT1,MT2,SO> >
+   : public BoolConstant< IsStrictlyUpper_v<MT1> && IsStrictlyUpper_v<MT2> >
 {};
 /*! \endcond */
 //*************************************************************************************************

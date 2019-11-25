@@ -3,7 +3,7 @@
 //  \file blaze/math/views/Column.h
 //  \brief Header file for the implementation of the Column view
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -40,13 +40,11 @@
 // Includes
 //*************************************************************************************************
 
-#include "../../math/dense/UniformVector.h"
 #include "../../math/Exception.h"
 #include "../../math/expressions/DeclExpr.h"
 #include "../../math/expressions/MatEvalExpr.h"
 #include "../../math/expressions/MatMapExpr.h"
 #include "../../math/expressions/MatMatAddExpr.h"
-#include "../../math/expressions/MatMatKronExpr.h"
 #include "../../math/expressions/MatMatMapExpr.h"
 #include "../../math/expressions/MatMatMultExpr.h"
 #include "../../math/expressions/MatMatSubExpr.h"
@@ -56,7 +54,6 @@
 #include "../../math/expressions/MatSerialExpr.h"
 #include "../../math/expressions/MatTransExpr.h"
 #include "../../math/expressions/SchurExpr.h"
-#include "../../math/expressions/VecExpandExpr.h"
 #include "../../math/expressions/VecTVecMultExpr.h"
 #include "../../math/shims/IsDefault.h"
 #include "../../math/typetraits/HasConstDataAccess.h"
@@ -65,22 +62,20 @@
 #include "../../math/typetraits/IsColumnMajorMatrix.h"
 #include "../../math/typetraits/IsContiguous.h"
 #include "../../math/typetraits/IsOpposedView.h"
-#include "../../math/typetraits/IsPadded.h"
 #include "../../math/typetraits/IsSymmetric.h"
 #include "../../math/typetraits/MaxSize.h"
 #include "../../math/typetraits/Size.h"
 #include "../../math/views/Check.h"
 #include "../../math/views/column/BaseTemplate.h"
-#include "../../math/views/column/ColumnData.h"
 #include "../../math/views/column/Dense.h"
 #include "../../math/views/column/Sparse.h"
 #include "../../util/Assert.h"
-#include "../../util/EnableIf.h"
 #include "../../util/FunctionTrace.h"
 #include "../../util/IntegralConstant.h"
-#include "../../util/MaybeUnused.h"
+#include "../../util/TrueType.h"
 #include "../../util/TypeList.h"
 #include "../../util/Types.h"
+#include "../../util/Unused.h"
 
 
 namespace blaze {
@@ -456,44 +451,6 @@ inline decltype(auto) column( const MatMatMultExpr<MT>& matrix, RCAs... args )
 
 //*************************************************************************************************
 /*! \cond BLAZE_INTERNAL */
-/*!\brief Creating a view on a specific column of the given Kronecker product.
-// \ingroup column
-//
-// \param matrix The constant Kronecker product.
-// \param args The runtime column arguments.
-// \return View on the specified column of the Kronecker product.
-//
-// This function returns an expression representing the specified column of the given Kronecker
-// product.
-*/
-template< size_t... CCAs      // Compile time column arguments
-        , typename MT         // Matrix base type of the expression
-        , typename... RCAs >  // Runtime column arguments
-inline decltype(auto) column( const MatMatKronExpr<MT>& matrix, RCAs... args )
-{
-   BLAZE_FUNCTION_TRACE;
-
-   MAYBE_UNUSED( args... );
-
-   const ColumnData<CCAs...> cd( args... );
-
-   if( !Contains_v< TypeList<RCAs...>, Unchecked > ) {
-      if( (~matrix).columns() <= cd.column() ) {
-         BLAZE_THROW_INVALID_ARGUMENT( "Invalid column access index" );
-      }
-   }
-
-   const size_t columns( (~matrix).rightOperand().columns() );
-
-   return kron( column( (~matrix).leftOperand(), cd.column()/columns ),
-                column( (~matrix).rightOperand(), cd.column()%columns ) );
-}
-/*! \endcond */
-//*************************************************************************************************
-
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
 /*!\brief Creating a view on a specific column of the given outer product.
 // \ingroup column
 //
@@ -512,7 +469,7 @@ inline decltype(auto) column( const VecTVecMultExpr<MT>& matrix, RCAs... args )
 {
    BLAZE_FUNCTION_TRACE;
 
-   MAYBE_UNUSED( args... );
+   UNUSED_PARAMETER( args... );
 
    if( !Contains_v< TypeList<RCAs...>, Unchecked > ) {
       if( (~matrix).columns() <= I ) {
@@ -546,7 +503,7 @@ inline decltype(auto) column( const VecTVecMultExpr<MT>& matrix, size_t index, R
 {
    BLAZE_FUNCTION_TRACE;
 
-   MAYBE_UNUSED( args... );
+   UNUSED_PARAMETER( args... );
 
    if( !Contains_v< TypeList<RCAs...>, Unchecked > ) {
       if( (~matrix).columns() <= index ) {
@@ -757,66 +714,6 @@ inline decltype(auto) column( const MatTransExpr<MT>& matrix, RCAs... args )
    BLAZE_FUNCTION_TRACE;
 
    return trans( row<CCAs...>( (~matrix).operand(), args... ) );
-}
-/*! \endcond */
-//*************************************************************************************************
-
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-/*!\brief Creating a view on a specific column of the given column-major vector expansion operation.
-// \ingroup column
-//
-// \param matrix The constant vector expansion operation.
-// \param args The runtime column arguments
-// \return void
-//
-// This function returns an expression representing the specified column of the given column-major
-// vector expansion operation.
-*/
-template< size_t... CCAs      // Compile time column arguments
-        , typename MT         // Matrix base type of the expression
-        , size_t... CEAs      // Compile time expansion arguments
-        , typename... RCAs    // Runtime column arguments
-        , EnableIf_t< IsColumnMajorMatrix_v<MT> >* = nullptr >
-inline decltype(auto) column( const VecExpandExpr<MT,CEAs...>& matrix, RCAs... args )
-{
-   BLAZE_FUNCTION_TRACE;
-
-   MAYBE_UNUSED( args... );
-
-   return subvector( (~matrix).operand(), 0UL, (~matrix).rows() );
-}
-/*! \endcond */
-//*************************************************************************************************
-
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-/*!\brief Creating a view on a specific column of the given row-major vector expansion operation.
-// \ingroup column
-//
-// \param matrix The constant vector expansion operation.
-// \param args The runtime column arguments
-// \return void
-//
-// This function returns an expression representing the specified column of the given row-major
-// vector expansion operation.
-*/
-template< size_t... CCAs      // Compile time column arguments
-        , typename MT         // Matrix base type of the expression
-        , size_t... CEAs      // Compile time expansion arguments
-        , typename... RCAs    // Runtime column arguments
-        , EnableIf_t< !IsColumnMajorMatrix_v<MT> >* = nullptr >
-inline decltype(auto) column( const VecExpandExpr<MT,CEAs...>& matrix, RCAs... args )
-{
-   BLAZE_FUNCTION_TRACE;
-
-   using ET = ElementType_t< MatrixType_t<MT> >;
-
-   const ColumnData<CCAs...> cd( args... );
-
-   return UniformVector<ET,columnVector>( (~matrix).rows(), (~matrix).operand()[cd.column()] );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -1099,40 +996,6 @@ inline bool trySet( const Column<MT,SO,DF,SF,CCAs...>& column, size_t index, con
 
 //*************************************************************************************************
 /*! \cond BLAZE_INTERNAL */
-/*!\brief Predict invariant violations by setting a range of elements of a column.
-// \ingroup column
-//
-// \param column The target column.
-// \param index The index of the first element of the range to be modified.
-// \param size The number of elements of the range to be modified.
-// \param value The value to be set to the range of elements.
-// \return \a true in case the operation would be successful, \a false if not.
-//
-// This function must \b NOT be called explicitly! It is used internally for the performance
-// optimized evaluation of expression templates. Calling this function explicitly might result
-// in erroneous results and/or in compilation errors. Instead of using this function use the
-// assignment operator.
-*/
-template< typename MT     // Type of the matrix
-        , bool SO         // Storage order
-        , bool DF         // Density flag
-        , bool SF         // Symmetry flag
-        , size_t... CCAs  // Compile time column arguments
-        , typename ET >   // Type of the element
-BLAZE_ALWAYS_INLINE bool
-   trySet( const Column<MT,SO,DF,SF,CCAs...>& column, size_t index, size_t size, const ET& value )
-{
-   BLAZE_INTERNAL_ASSERT( index <= (~column).size(), "Invalid vector access index" );
-   BLAZE_INTERNAL_ASSERT( index + size <= (~column).size(), "Invalid range size" );
-
-   return trySet( column.operand(), index, column.column(), size, 1UL, value );
-}
-/*! \endcond */
-//*************************************************************************************************
-
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
 /*!\brief Predict invariant violations by adding to a single element of a column.
 // \ingroup column
 //
@@ -1164,40 +1027,6 @@ inline bool tryAdd( const Column<MT,SO,DF,SF,CCAs...>& column, size_t index, con
 
 //*************************************************************************************************
 /*! \cond BLAZE_INTERNAL */
-/*!\brief Predict invariant violations by adding to a range of elements of a column.
-// \ingroup column
-//
-// \param column The target column.
-// \param index The index of the first element of the range to be modified.
-// \param size The number of elements of the range to be modified.
-// \param value The value to be added to the range of elements.
-// \return \a true in case the operation would be successful, \a false if not.
-//
-// This function must \b NOT be called explicitly! It is used internally for the performance
-// optimized evaluation of expression templates. Calling this function explicitly might result
-// in erroneous results and/or in compilation errors. Instead of using this function use the
-// assignment operator.
-*/
-template< typename MT     // Type of the matrix
-        , bool SO         // Storage order
-        , bool DF         // Density flag
-        , bool SF         // Symmetry flag
-        , size_t... CCAs  // Compile time column arguments
-        , typename ET >   // Type of the element
-BLAZE_ALWAYS_INLINE bool
-   tryAdd( const Column<MT,SO,DF,SF,CCAs...>& column, size_t index, size_t size, const ET& value )
-{
-   BLAZE_INTERNAL_ASSERT( index <= (~column).size(), "Invalid vector access index" );
-   BLAZE_INTERNAL_ASSERT( index + size <= (~column).size(), "Invalid range size" );
-
-   return tryAdd( column.operand(), index, column.column(), size, 1UL, value );
-}
-/*! \endcond */
-//*************************************************************************************************
-
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
 /*!\brief Predict invariant violations by subtracting from a single element of a column.
 // \ingroup column
 //
@@ -1222,40 +1051,6 @@ inline bool trySub( const Column<MT,SO,DF,SF,CCAs...>& column, size_t index, con
    BLAZE_INTERNAL_ASSERT( index < column.size(), "Invalid vector access index" );
 
    return trySub( column.operand(), index, column.column(), value );
-}
-/*! \endcond */
-//*************************************************************************************************
-
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-/*!\brief Predict invariant violations by subtracting from a range of elements of a column.
-// \ingroup column
-//
-// \param column The target column.
-// \param index The index of the first element of the range to be modified.
-// \param size The number of elements of the range to be modified.
-// \param value The value to be subtracted from the range of elements.
-// \return \a true in case the operation would be successful, \a false if not.
-//
-// This function must \b NOT be called explicitly! It is used internally for the performance
-// optimized evaluation of expression templates. Calling this function explicitly might result
-// in erroneous results and/or in compilation errors. Instead of using this function use the
-// assignment operator.
-*/
-template< typename MT     // Type of the matrix
-        , bool SO         // Storage order
-        , bool DF         // Density flag
-        , bool SF         // Symmetry flag
-        , size_t... CCAs  // Compile time column arguments
-        , typename ET >   // Type of the element
-BLAZE_ALWAYS_INLINE bool
-   trySub( const Column<MT,SO,DF,SF,CCAs...>& column, size_t index, size_t size, const ET& value )
-{
-   BLAZE_INTERNAL_ASSERT( index <= (~column).size(), "Invalid vector access index" );
-   BLAZE_INTERNAL_ASSERT( index + size <= (~column).size(), "Invalid range size" );
-
-   return trySub( column.operand(), index, column.column(), size, 1UL, value );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -1313,7 +1108,7 @@ template< typename MT     // Type of the matrix
         , bool DF         // Density flag
         , bool SF         // Symmetry flag
         , size_t... CCAs  // Compile time column arguments
-        , typename ET >   // Type of the element
+        , typename ET >  // Type of the element
 BLAZE_ALWAYS_INLINE bool
    tryMult( const Column<MT,SO,DF,SF,CCAs...>& column, size_t index, size_t size, const ET& value )
 {
@@ -1378,7 +1173,7 @@ template< typename MT     // Type of the matrix
         , bool DF         // Density flag
         , bool SF         // Symmetry flag
         , size_t... CCAs  // Compile time column arguments
-        , typename ET >   // Type of the element
+        , typename ET >  // Type of the element
 BLAZE_ALWAYS_INLINE bool
    tryDiv( const Column<MT,SO,DF,SF,CCAs...>& column, size_t index, size_t size, const ET& value )
 {
@@ -1386,264 +1181,6 @@ BLAZE_ALWAYS_INLINE bool
    BLAZE_INTERNAL_ASSERT( index + size <= (~column).size(), "Invalid range size" );
 
    return tryDiv( column.operand(), index, column.column(), size, 1UL, value );
-}
-/*! \endcond */
-//*************************************************************************************************
-
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-/*!\brief Predict invariant violations by shifting a single element of a column.
-// \ingroup column
-//
-// \param sv The target column.
-// \param index The index of the element to be modified.
-// \param count The number of bits to shift the element.
-// \return \a true in case the operation would be successful, \a false if not.
-//
-// This function must \b NOT be called explicitly! It is used internally for the performance
-// optimized evaluation of expression templates. Calling this function explicitly might result
-// in erroneous results and/or in compilation errors. Instead of using this function use the
-// assignment operator.
-*/
-template< typename MT       // Type of the matrix
-        , bool SO           // Storage order
-        , bool DF           // Density flag
-        , bool SF           // Symmetry flag
-        , size_t... CCAs >  // Compile time column arguments
-inline bool tryShift( const Column<MT,SO,DF,SF,CCAs...>& column, size_t index, int count )
-{
-   BLAZE_INTERNAL_ASSERT( index < column.size(), "Invalid vector access index" );
-
-   return tryShift( column.operand(), index, column.column(), count );
-}
-/*! \endcond */
-//*************************************************************************************************
-
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-/*!\brief Predict invariant violations by shifting a range of elements of a column.
-// \ingroup column
-//
-// \param column The target column.
-// \param index The index of the first element of the range to be modified.
-// \param size The number of elements of the range to be modified.
-// \param count The number of bits to shift the range of elements.
-// \return \a true in case the operation would be successful, \a false if not.
-//
-// This function must \b NOT be called explicitly! It is used internally for the performance
-// optimized evaluation of expression templates. Calling this function explicitly might result
-// in erroneous results and/or in compilation errors. Instead of using this function use the
-// assignment operator.
-*/
-template< typename MT       // Type of the matrix
-        , bool SO           // Storage order
-        , bool DF           // Density flag
-        , bool SF           // Symmetry flag
-        , size_t... CCAs >  // Compile time column arguments
-BLAZE_ALWAYS_INLINE bool
-   tryShift( const Column<MT,SO,DF,SF,CCAs...>& column, size_t index, size_t size, int count )
-{
-   BLAZE_INTERNAL_ASSERT( index <= (~column).size(), "Invalid vector access index" );
-   BLAZE_INTERNAL_ASSERT( index + size <= (~column).size(), "Invalid range size" );
-
-   return tryShift( column.operand(), index, column.column(), size, 1UL, count );
-}
-/*! \endcond */
-//*************************************************************************************************
-
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-/*!\brief Predict invariant violations by a bitwise AND on a single element of a column.
-// \ingroup column
-//
-// \param sv The target column.
-// \param index The index of the element to be modified.
-// \param value The bit pattern to be used on the element.
-// \return \a true in case the operation would be successful, \a false if not.
-//
-// This function must \b NOT be called explicitly! It is used internally for the performance
-// optimized evaluation of expression templates. Calling this function explicitly might result
-// in erroneous results and/or in compilation errors. Instead of using this function use the
-// assignment operator.
-*/
-template< typename MT     // Type of the matrix
-        , bool SO         // Storage order
-        , bool DF         // Density flag
-        , bool SF         // Symmetry flag
-        , size_t... CCAs  // Compile time column arguments
-        , typename ET >   // Type of the element
-inline bool tryBitand( const Column<MT,SO,DF,SF,CCAs...>& column, size_t index, const ET& value )
-{
-   BLAZE_INTERNAL_ASSERT( index < column.size(), "Invalid vector access index" );
-
-   return tryBitand( column.operand(), index, column.column(), value );
-}
-/*! \endcond */
-//*************************************************************************************************
-
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-/*!\brief Predict invariant violations by a bitwise AND on a range of elements of a column.
-// \ingroup column
-//
-// \param column The target column.
-// \param index The index of the first element of the range to be modified.
-// \param size The number of elements of the range to be modified.
-// \param value The bit pattern to be used on the range of elements.
-// \return \a true in case the operation would be successful, \a false if not.
-//
-// This function must \b NOT be called explicitly! It is used internally for the performance
-// optimized evaluation of expression templates. Calling this function explicitly might result
-// in erroneous results and/or in compilation errors. Instead of using this function use the
-// assignment operator.
-*/
-template< typename MT     // Type of the matrix
-        , bool SO         // Storage order
-        , bool DF         // Density flag
-        , bool SF         // Symmetry flag
-        , size_t... CCAs  // Compile time column arguments
-        , typename ET >   // Type of the element
-BLAZE_ALWAYS_INLINE bool
-   tryBitand( const Column<MT,SO,DF,SF,CCAs...>& column, size_t index, size_t size, const ET& value )
-{
-   BLAZE_INTERNAL_ASSERT( index <= (~column).size(), "Invalid vector access index" );
-   BLAZE_INTERNAL_ASSERT( index + size <= (~column).size(), "Invalid range size" );
-
-   return tryBitand( column.operand(), index, column.column(), size, 1UL, value );
-}
-/*! \endcond */
-//*************************************************************************************************
-
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-/*!\brief Predict invariant violations by a bitwise OR on a single element of a column.
-// \ingroup column
-//
-// \param sv The target column.
-// \param index The index of the element to be modified.
-// \param value The bit pattern to be used on the element.
-// \return \a true in case the operation would be successful, \a false if not.
-//
-// This function must \b NOT be called explicitly! It is used internally for the performance
-// optimized evaluation of expression templates. Calling this function explicitly might result
-// in erroneous results and/or in compilation errors. Instead of using this function use the
-// assignment operator.
-*/
-template< typename MT     // Type of the matrix
-        , bool SO         // Storage order
-        , bool DF         // Density flag
-        , bool SF         // Symmetry flag
-        , size_t... CCAs  // Compile time column arguments
-        , typename ET >   // Type of the element
-inline bool tryBitor( const Column<MT,SO,DF,SF,CCAs...>& column, size_t index, const ET& value )
-{
-   BLAZE_INTERNAL_ASSERT( index < column.size(), "Invalid vector access index" );
-
-   return tryBitor( column.operand(), index, column.column(), value );
-}
-/*! \endcond */
-//*************************************************************************************************
-
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-/*!\brief Predict invariant violations by a bitwise OR on a range of elements of a column.
-// \ingroup column
-//
-// \param column The target column.
-// \param index The index of the first element of the range to be modified.
-// \param size The number of elements of the range to be modified.
-// \param value The bit pattern to be used on the range of elements.
-// \return \a true in case the operation would be successful, \a false if not.
-//
-// This function must \b NOT be called explicitly! It is used internally for the performance
-// optimized evaluation of expression templates. Calling this function explicitly might result
-// in erroneous results and/or in compilation errors. Instead of using this function use the
-// assignment operator.
-*/
-template< typename MT     // Type of the matrix
-        , bool SO         // Storage order
-        , bool DF         // Density flag
-        , bool SF         // Symmetry flag
-        , size_t... CCAs  // Compile time column arguments
-        , typename ET >   // Type of the element
-BLAZE_ALWAYS_INLINE bool
-   tryBitor( const Column<MT,SO,DF,SF,CCAs...>& column, size_t index, size_t size, const ET& value )
-{
-   BLAZE_INTERNAL_ASSERT( index <= (~column).size(), "Invalid vector access index" );
-   BLAZE_INTERNAL_ASSERT( index + size <= (~column).size(), "Invalid range size" );
-
-   return tryBitor( column.operand(), index, column.column(), size, 1UL, value );
-}
-/*! \endcond */
-//*************************************************************************************************
-
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-/*!\brief Predict invariant violations by a bitwise XOR on a single element of a column.
-// \ingroup column
-//
-// \param sv The target column.
-// \param index The index of the element to be modified.
-// \param value The bit pattern to be used on the element.
-// \return \a true in case the operation would be successful, \a false if not.
-//
-// This function must \b NOT be called explicitly! It is used internally for the performance
-// optimized evaluation of expression templates. Calling this function explicitly might result
-// in erroneous results and/or in compilation errors. Instead of using this function use the
-// assignment operator.
-*/
-template< typename MT     // Type of the matrix
-        , bool SO         // Storage order
-        , bool DF         // Density flag
-        , bool SF         // Symmetry flag
-        , size_t... CCAs  // Compile time column arguments
-        , typename ET >   // Type of the element
-inline bool tryBitxor( const Column<MT,SO,DF,SF,CCAs...>& column, size_t index, const ET& value )
-{
-   BLAZE_INTERNAL_ASSERT( index < column.size(), "Invalid vector access index" );
-
-   return tryBitxor( column.operand(), index, column.column(), value );
-}
-/*! \endcond */
-//*************************************************************************************************
-
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-/*!\brief Predict invariant violations by a bitwise XOR on a range of elements of a column.
-// \ingroup column
-//
-// \param column The target column.
-// \param index The index of the first element of the range to be modified.
-// \param size The number of elements of the range to be modified.
-// \param value The bit pattern to be used on the range of elements.
-// \return \a true in case the operation would be successful, \a false if not.
-//
-// This function must \b NOT be called explicitly! It is used internally for the performance
-// optimized evaluation of expression templates. Calling this function explicitly might result
-// in erroneous results and/or in compilation errors. Instead of using this function use the
-// assignment operator.
-*/
-template< typename MT     // Type of the matrix
-        , bool SO         // Storage order
-        , bool DF         // Density flag
-        , bool SF         // Symmetry flag
-        , size_t... CCAs  // Compile time column arguments
-        , typename ET >   // Type of the element
-BLAZE_ALWAYS_INLINE bool
-   tryBitxor( const Column<MT,SO,DF,SF,CCAs...>& column, size_t index, size_t size, const ET& value )
-{
-   BLAZE_INTERNAL_ASSERT( index <= (~column).size(), "Invalid vector access index" );
-   BLAZE_INTERNAL_ASSERT( index + size <= (~column).size(), "Invalid range size" );
-
-   return tryBitxor( column.operand(), index, column.column(), size, 1UL, value );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -1809,138 +1346,6 @@ inline bool tryDivAssign( const Column<MT,SO,DF,SF,CCAs...>& lhs,
    BLAZE_INTERNAL_ASSERT( index + (~rhs).size() <= lhs.size(), "Invalid vector size" );
 
    return tryDivAssign( lhs.operand(), ~rhs, index, lhs.column() );
-}
-/*! \endcond */
-//*************************************************************************************************
-
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-/*!\brief Predict invariant violations by the shift assignment of a vector to a column.
-// \ingroup column
-//
-// \param lhs The target left-hand side column.
-// \param rhs The right-hand side vector of bits to shift.
-// \param index The index of the first element to be modified.
-// \return \a true in case the assignment would be successful, \a false if not.
-//
-// This function must \b NOT be called explicitly! It is used internally for the performance
-// optimized evaluation of expression templates. Calling this function explicitly might result
-// in erroneous results and/or in compilation errors. Instead of using this function use the
-// assignment operator.
-*/
-template< typename MT     // Type of the matrix
-        , bool SO         // Storage order
-        , bool DF         // Density flag
-        , bool SF         // Symmetry flag
-        , size_t... CCAs  // Compile time column arguments
-        , typename VT >   // Type of the right-hand side vector
-inline bool tryShiftAssign( const Column<MT,SO,SF,SF,CCAs...>& lhs,
-                            const Vector<VT,false>& rhs, size_t index )
-{
-   BLAZE_INTERNAL_ASSERT( index <= lhs.size(), "Invalid vector access index" );
-   BLAZE_INTERNAL_ASSERT( index + (~rhs).size() <= lhs.size(), "Invalid vector size" );
-
-   return tryShiftAssign( lhs.operand(), ~rhs, index, lhs.column() );
-}
-/*! \endcond */
-//*************************************************************************************************
-
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-/*!\brief Predict invariant violations by the bitwise AND assignment of a vector to a column.
-// \ingroup column
-//
-// \param lhs The target left-hand side column.
-// \param rhs The right-hand side vector for the bitwise AND operation.
-// \param index The index of the first element to be modified.
-// \return \a true in case the assignment would be successful, \a false if not.
-//
-// This function must \b NOT be called explicitly! It is used internally for the performance
-// optimized evaluation of expression templates. Calling this function explicitly might result
-// in erroneous results and/or in compilation errors. Instead of using this function use the
-// assignment operator.
-*/
-template< typename MT     // Type of the matrix
-        , bool SO         // Storage order
-        , bool DF         // Density flag
-        , bool SF         // Symmetry flag
-        , size_t... CCAs  // Compile time column arguments
-        , typename VT >   // Type of the right-hand side vector
-inline bool tryBitandAssign( const Column<MT,SO,SF,SF,CCAs...>& lhs,
-                             const Vector<VT,false>& rhs, size_t index )
-{
-   BLAZE_INTERNAL_ASSERT( index <= lhs.size(), "Invalid vector access index" );
-   BLAZE_INTERNAL_ASSERT( index + (~rhs).size() <= lhs.size(), "Invalid vector size" );
-
-   return tryBitandAssign( lhs.operand(), ~rhs, index, lhs.column() );
-}
-/*! \endcond */
-//*************************************************************************************************
-
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-/*!\brief Predict invariant violations by the bitwise OR assignment of a vector to a column.
-// \ingroup column
-//
-// \param lhs The target left-hand side column.
-// \param rhs The right-hand side vector for the bitwise OR operation.
-// \param index The index of the first element to be modified.
-// \return \a true in case the assignment would be successful, \a false if not.
-//
-// This function must \b NOT be called explicitly! It is used internally for the performance
-// optimized evaluation of expression templates. Calling this function explicitly might result
-// in erroneous results and/or in compilation errors. Instead of using this function use the
-// assignment operator.
-*/
-template< typename MT     // Type of the matrix
-        , bool SO         // Storage order
-        , bool DF         // Density flag
-        , bool SF         // Symmetry flag
-        , size_t... CCAs  // Compile time column arguments
-        , typename VT >   // Type of the right-hand side vector
-inline bool tryBitorAssign( const Column<MT,SO,SF,SF,CCAs...>& lhs,
-                            const Vector<VT,false>& rhs, size_t index )
-{
-   BLAZE_INTERNAL_ASSERT( index <= lhs.size(), "Invalid vector access index" );
-   BLAZE_INTERNAL_ASSERT( index + (~rhs).size() <= lhs.size(), "Invalid vector size" );
-
-   return tryBitorAssign( lhs.operand(), ~rhs, index, lhs.column() );
-}
-/*! \endcond */
-//*************************************************************************************************
-
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-/*!\brief Predict invariant violations by the bitwise XOR assignment of a vector to a column.
-// \ingroup column
-//
-// \param lhs The target left-hand side column.
-// \param rhs The right-hand side vector for the bitwise XOR operation.
-// \param index The index of the first element to be modified.
-// \return \a true in case the assignment would be successful, \a false if not.
-//
-// This function must \b NOT be called explicitly! It is used internally for the performance
-// optimized evaluation of expression templates. Calling this function explicitly might result
-// in erroneous results and/or in compilation errors. Instead of using this function use the
-// assignment operator.
-*/
-template< typename MT     // Type of the matrix
-        , bool SO         // Storage order
-        , bool DF         // Density flag
-        , bool SF         // Symmetry flag
-        , size_t... CCAs  // Compile time column arguments
-        , typename VT >   // Type of the right-hand side vector
-inline bool tryBitxorAssign( const Column<MT,SO,SF,SF,CCAs...>& lhs,
-                             const Vector<VT,false>& rhs, size_t index )
-{
-   BLAZE_INTERNAL_ASSERT( index <= lhs.size(), "Invalid vector access index" );
-   BLAZE_INTERNAL_ASSERT( index + (~rhs).size() <= lhs.size(), "Invalid vector size" );
-
-   return tryBitxorAssign( lhs.operand(), ~rhs, index, lhs.column() );
 }
 /*! \endcond */
 //*************************************************************************************************

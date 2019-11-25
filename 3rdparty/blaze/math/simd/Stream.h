@@ -3,7 +3,7 @@
 //  \file blaze/math/simd/Stream.h
 //  \brief Header file for the SIMD stream functionality
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -76,7 +76,7 @@ BLAZE_ALWAYS_INLINE EnableIf_t< IsIntegral_v<T1> && HasSize_v<T1,1UL> >
    BLAZE_INTERNAL_ASSERT( checkAlignment( address ), "Invalid alignment detected" );
 
 #if BLAZE_AVX512BW_MODE
-   _mm512_stream_si512( reinterpret_cast<__m512i*>( address ), (~value).value );
+   _mm512_stream_si512( address, (~value).value );
 #elif BLAZE_AVX2_MODE
    _mm256_stream_si256( reinterpret_cast<__m256i*>( address ), (~value).value );
 #elif BLAZE_SSE2_MODE
@@ -105,7 +105,7 @@ BLAZE_ALWAYS_INLINE EnableIf_t< IsIntegral_v<T1> && HasSize_v<T1,1UL> >
    BLAZE_INTERNAL_ASSERT( checkAlignment( address ), "Invalid alignment detected" );
 
 #if BLAZE_AVX512BW_MODE
-   _mm512_stream_si512( reinterpret_cast<__m512i*>( address ), (~value).value );
+   _mm512_stream_si512( address, (~value).value );
 #elif BLAZE_AVX2_MODE
    _mm256_stream_si256( reinterpret_cast<__m256i*>( address ), (~value).value );
 #elif BLAZE_SSE2_MODE
@@ -141,7 +141,7 @@ BLAZE_ALWAYS_INLINE EnableIf_t< IsIntegral_v<T1> && HasSize_v<T1,2UL> >
    BLAZE_INTERNAL_ASSERT( checkAlignment( address ), "Invalid alignment detected" );
 
 #if BLAZE_AVX512BW_MODE
-   _mm512_stream_si512( reinterpret_cast<__m512i*>( address ), (~value).value );
+   _mm512_stream_si512( address, (~value).value );
 #elif BLAZE_AVX2_MODE
    _mm256_stream_si256( reinterpret_cast<__m256i*>( address ), (~value).value );
 #elif BLAZE_SSE2_MODE
@@ -170,7 +170,7 @@ BLAZE_ALWAYS_INLINE EnableIf_t< IsIntegral_v<T1> && HasSize_v<T1,2UL> >
    BLAZE_INTERNAL_ASSERT( checkAlignment( address ), "Invalid alignment detected" );
 
 #if BLAZE_AVX512BW_MODE
-   _mm512_stream_si512( reinterpret_cast<__m512i*>( address ), (~value).value );
+   _mm512_stream_si512( address, (~value).value );
 #elif BLAZE_AVX2_MODE
    _mm256_stream_si256( reinterpret_cast<__m256i*>( address ), (~value).value );
 #elif BLAZE_SSE2_MODE

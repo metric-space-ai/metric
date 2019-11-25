@@ -3,7 +3,7 @@
 //  \file blaze/math/lapack/clapack/heev.h
 //  \brief Header file for the CLAPACK heev wrapper functions
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -42,7 +42,6 @@
 
 #include "../../../util/Complex.h"
 #include "../../../util/StaticAssert.h"
-#include "../../../util/Types.h"
 
 
 //=================================================================================================
@@ -56,12 +55,8 @@
 #if !defined(INTEL_MKL_VERSION)
 extern "C" {
 
-void cheev_( char* jobz, char* uplo, int* n, float* A, int* lda, float* w,
-             float* work, int* lwork, float* rwork, int* info,
-             blaze::fortran_charlen_t njobz, blaze::fortran_charlen_t nuplo );
-void zheev_( char* jobz, char* uplo, int* n, double* A, int* lda, double* w,
-             double* work, int* lwork, double* rwork, int* info,
-             blaze::fortran_charlen_t njobz, blaze::fortran_charlen_t nuplo );
+void cheev_( char* jobz, char* uplo, int* n, float*  A, int* lda, float*  w, float*  work, int* lwork, float*  rwork, int* info );
+void zheev_( char* jobz, char* uplo, int* n, double* A, int* lda, double* w, double* work, int* lwork, double* rwork, int* info );
 
 }
 #endif
@@ -82,11 +77,11 @@ namespace blaze {
 //*************************************************************************************************
 /*!\name LAPACK Hermitian matrix eigenvalue functions (heev) */
 //@{
-void heev( char jobz, char uplo, int n, complex<float>* A, int lda,
-           float* w, complex<float>* work, int lwork, float* rwork, int* info );
+inline void heev( char jobz, char uplo, int n, complex<float>* A, int lda,
+                  float* w, complex<float>* work, int lwork, float* rwork, int* info );
 
-void heev( char jobz, char uplo, int n, complex<double>* A, int lda,
-           double* w, complex<double>* work, int lwork, double* rwork, int* info );
+inline void heev( char jobz, char uplo, int n, complex<double>* A, int lda,
+                  double* w, complex<double>* work, int lwork, float* rwork, int* info );
 //@}
 //*************************************************************************************************
 
@@ -145,8 +140,7 @@ inline void heev( char jobz, char uplo, int n, complex<float>* A, int lda,
 #endif
 
    cheev_( &jobz, &uplo, &n, reinterpret_cast<ET*>( A ), &lda, w,
-           reinterpret_cast<ET*>( work ), &lwork, rwork, info,
-           blaze::fortran_charlen_t(1), blaze::fortran_charlen_t(1) );
+           reinterpret_cast<ET*>( work ), &lwork, rwork, info );
 }
 //*************************************************************************************************
 
@@ -205,8 +199,7 @@ inline void heev( char jobz, char uplo, int n, complex<double>* A, int lda,
 #endif
 
    zheev_( &jobz, &uplo, &n, reinterpret_cast<ET*>( A ), &lda, w,
-           reinterpret_cast<ET*>( work ), &lwork, rwork, info,
-           blaze::fortran_charlen_t(1), blaze::fortran_charlen_t(1) );
+           reinterpret_cast<ET*>( work ), &lwork, rwork, info );
 }
 //*************************************************************************************************
 

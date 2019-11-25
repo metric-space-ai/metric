@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/SVecSerialExpr.h
 //  \brief Header file for the sparse vector serial evaluation expression
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -80,7 +80,6 @@ class SVecSerialExpr
  public:
    //**Type definitions****************************************************************************
    using This          = SVecSerialExpr<VT,TF>;  //!< Type of this SVecSerialExpr instance.
-   using BaseType      = SparseVector<This,TF>;  //!< Base type of this SVecSerialExpr instance.
    using ResultType    = ResultType_t<VT>;       //!< Result type for expression template evaluations.
    using TransposeType = TransposeType_t<VT>;    //!< Transpose type for expression template evaluations.
    using ElementType   = ElementType_t<VT>;      //!< Resulting element type.

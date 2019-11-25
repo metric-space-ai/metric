@@ -3,7 +3,7 @@
 //  \file blaze/math/functors/DeclDiag.h
 //  \brief Header file for the DeclDiag functor
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -40,7 +40,6 @@
 // Includes
 //*************************************************************************************************
 
-#include "../../system/HostDevice.h"
 #include "../../system/Inline.h"
 
 
@@ -59,13 +58,20 @@ namespace blaze {
 struct DeclDiag
 {
    //**********************************************************************************************
+   /*!\brief Default constructor of the DeclDiag functor.
+   */
+   explicit inline DeclDiag()
+   {}
+   //**********************************************************************************************
+
+   //**********************************************************************************************
    /*!\brief Returns the result of the decldiag() function for the given object/value.
    //
    // \param a The given object/value.
    // \return The result of the decldiag() function for the given object/value.
    */
    template< typename T >
-   BLAZE_ALWAYS_INLINE BLAZE_DEVICE_CALLABLE decltype(auto) operator()( const T& a ) const
+   BLAZE_ALWAYS_INLINE decltype(auto) operator()( const T& a ) const
    {
       return decldiag( a );
    }

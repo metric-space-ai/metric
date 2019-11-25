@@ -3,7 +3,7 @@
 //  \file blaze/math/views/row/RowData.h
 //  \brief Header file for the implementation of the RowData class template
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -40,8 +40,8 @@
 // Includes
 //*************************************************************************************************
 
-#include "../../../util/MaybeUnused.h"
 #include "../../../util/Types.h"
+#include "../../../util/Unused.h"
 
 
 namespace blaze {
@@ -61,7 +61,7 @@ namespace blaze {
 // of compile time row arguments.
 */
 template< size_t... CRAs >  // Compile time row arguments
-class RowData
+struct RowData
 {};
 //*************************************************************************************************
 
@@ -83,40 +83,24 @@ class RowData
 // time row arguments.
 */
 template<>
-class RowData<>
+struct RowData<>
 {
  public:
-   //**Compile time flags**************************************************************************
-   //! Compilation flag for compile time optimization.
-   /*! The \a compileTimeArgs compilation flag indicates whether the view has been created by
-       means of compile time arguments and whether these arguments can be queried at compile
-       time. In that case, the \a compileTimeArgs compilation flag is set to \a true, otherwise
-       it is set to \a false. */
-   static constexpr bool compileTimeArgs = false;
-   //**********************************************************************************************
-
    //**Constructors********************************************************************************
    /*!\name Constructors */
    //@{
    template< typename... RRAs >
    explicit inline RowData( size_t index, RRAs... args );
-
-   RowData( const RowData& ) = default;
+   // No explicitly declared copy constructor.
    //@}
    //**********************************************************************************************
 
    //**Destructor**********************************************************************************
-   /*!\name Destructor */
-   //@{
-   ~RowData() = default;
-   //@}
+   // No explicitly declared destructor.
    //**********************************************************************************************
 
    //**Assignment operators************************************************************************
-   /*!\name Assignment operators */
-   //@{
    RowData& operator=( const RowData& ) = delete;
-   //@}
    //**********************************************************************************************
 
    //**Utility functions***************************************************************************
@@ -149,7 +133,7 @@ template< typename... RRAs >  // Optional row arguments
 inline RowData<>::RowData( size_t index, RRAs... args )
    : row_( index )  // The index of the row in the matrix
 {
-   MAYBE_UNUSED( args... );
+   UNUSED_PARAMETER( args... );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -186,40 +170,24 @@ inline size_t RowData<>::row() const noexcept
 // compile time row argument.
 */
 template< size_t Index >  // Compile time row index
-class RowData<Index>
+struct RowData<Index>
 {
  public:
-   //**Compile time flags**************************************************************************
-   //! Compilation flag for compile time optimization.
-   /*! The \a compileTimeArgs compilation flag indicates whether the view has been created by
-       means of compile time arguments and whether these arguments can be queried at compile
-       time. In that case, the \a compileTimeArgs compilation flag is set to \a true, otherwise
-       it is set to \a false. */
-   static constexpr bool compileTimeArgs = true;
-   //**********************************************************************************************
-
    //**Constructors********************************************************************************
    /*!\name Constructors */
    //@{
    template< typename... RRAs >
    explicit inline RowData( RRAs... args );
-
-   RowData( const RowData& ) = default;
+   // No explicitly declared copy constructor.
    //@}
    //**********************************************************************************************
 
    //**Destructor**********************************************************************************
-   /*!\name Destructor */
-   //@{
-   ~RowData() = default;
-   //@}
+   // No explicitly declared destructor.
    //**********************************************************************************************
 
    //**Assignment operators************************************************************************
-   /*!\name Assignment operators */
-   //@{
    RowData& operator=( const RowData& ) = delete;
-   //@}
    //**********************************************************************************************
 
    //**Utility functions***************************************************************************
@@ -243,7 +211,7 @@ template< size_t Index >      // Compile time row index
 template< typename... RRAs >  // Optional row arguments
 inline RowData<Index>::RowData( RRAs... args )
 {
-   MAYBE_UNUSED( args... );
+   UNUSED_PARAMETER( args... );
 }
 /*! \endcond */
 //*************************************************************************************************

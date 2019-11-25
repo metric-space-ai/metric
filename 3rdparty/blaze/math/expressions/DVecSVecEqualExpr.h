@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/DVecSVecEqualExpr.h
 //  \brief Header file for the dense vector/sparse vector equality comparison expression
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -47,6 +47,7 @@
 #include "../../math/shims/Equal.h"
 #include "../../math/shims/IsDefault.h"
 #include "../../util/Types.h"
+#include "../../util/typetraits/RemoveReference.h"
 
 
 namespace blaze {
@@ -80,6 +81,7 @@ inline bool equal( const DenseVector<VT1,TF1>& lhs, const SparseVector<VT2,TF2>&
 {
    using CT1 = CompositeType_t<VT1>;
    using CT2 = CompositeType_t<VT2>;
+   using ConstIterator = ConstIterator_t< RemoveReference_t<CT2> >;
 
    // Early exit in case the vector sizes don't match
    if( (~lhs).size() != (~rhs).size() ) return false;
@@ -92,7 +94,7 @@ inline bool equal( const DenseVector<VT1,TF1>& lhs, const SparseVector<VT2,TF2>&
    // type are converted to the higher-order data type within the equal function.
    size_t i( 0UL );
 
-   for( auto element=b.begin(); element!=b.end(); ++element, ++i ) {
+   for( ConstIterator element=b.begin(); element!=b.end(); ++element, ++i ) {
       for( ; i<element->index(); ++i ) {
          if( !isDefault<RF>( a[i] ) ) return false;
       }

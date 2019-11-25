@@ -3,7 +3,7 @@
 //  \file blaze/math/lapack/clapack/geev.h
 //  \brief Header file for the CLAPACK geev wrapper functions
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -42,7 +42,6 @@
 
 #include "../../../util/Complex.h"
 #include "../../../util/StaticAssert.h"
-#include "../../../util/Types.h"
 
 
 //=================================================================================================
@@ -56,18 +55,10 @@
 #if !defined(INTEL_MKL_VERSION)
 extern "C" {
 
-void sgeev_( char* jobvl, char* jobvr, int* n, float* A, int* lda, float* wr, float* wi,
-             float* VL, int* ldvl, float* VR, int* ldvr, float* work, int* lwork, int* info,
-             blaze::fortran_charlen_t njobvl, blaze::fortran_charlen_t njobvr );
-void dgeev_( char* jobvl, char* jobvr, int* n, double* A, int* lda, double* wr, double* wi,
-             double* VL, int* ldvl, double* VR, int* ldvr, double* work, int* lwork, int* info,
-             blaze::fortran_charlen_t njobvl, blaze::fortran_charlen_t njobvr );
-void cgeev_( char* jobvl, char* jobvr, int* n, float* A, int* lda, float* w, float* VL,
-             int* ldvl, float* VR, int* ldvr, float* work, int* lwork, float* rwork,
-             int* info, blaze::fortran_charlen_t njobvl, blaze::fortran_charlen_t njobvr );
-void zgeev_( char* jobvl, char* jobvr, int* n, double* A, int* lda, double* w, double* VL,
-             int* ldvl, double* VR, int* ldvr, double* work, int* lwork, double* rwork,
-             int* info, blaze::fortran_charlen_t njobvl, blaze::fortran_charlen_t njobvr );
+void sgeev_( char* jobvl, char* jobvr, int* n, float*  A, int* lda, float*  wr, float*  wi, float*  VL, int* ldvl, float*  VR, int* ldvr, float*  work, int* lwork, int* info );
+void dgeev_( char* jobvl, char* jobvr, int* n, double* A, int* lda, double* wr, double* wi, double* VL, int* ldvl, double* VR, int* ldvr, double* work, int* lwork, int* info );
+void cgeev_( char* jobvl, char* jobvr, int* n, float*  A, int* lda, float*  w, float*  VL, int* ldvl, float*  VR, int* ldvr, float*  work, int* lwork, float*  rwork, int* info );
+void zgeev_( char* jobvl, char* jobvr, int* n, double* A, int* lda, double* w, double* VL, int* ldvl, double* VR, int* ldvr, double* work, int* lwork, double* rwork, int* info );
 
 }
 #endif
@@ -88,21 +79,21 @@ namespace blaze {
 //*************************************************************************************************
 /*!\name LAPACK general matrix eigenvalue functions (geev) */
 //@{
-void geev( char jobvl, char jobvr, int n, float* A, int lda,
-           float* wr, float* wi, float* VL, int ldvl, float* VR, int ldvr,
-           float* work, int lwork, int* info );
+inline void geev( char jobvl, char jobvr, int n, float* A, int lda,
+                  float* wr, float* wi, float* VL, int ldvl, float* VR, int ldvr,
+                  float* work, int lwork, int* info );
 
-void geev( char jobvl, char jobvr, int n, double* A, int lda,
-           double* wr, double* wi, double* VL, int ldvl, double* VR, int ldvr,
-           double* work, int lwork, int* info );
+inline void geev( char jobvl, char jobvr, int n, double* A, int lda,
+                  double* wr, double* wi, double* VL, int ldvl, double* VR, int ldvr,
+                  double* work, int lwork, int* info );
 
-void geev( char jobvl, char jobvr, int n, complex<float>* A, int lda,
-           complex<float>* w, complex<float>* VL, int ldvl, complex<float>* VR, int ldvr,
-           complex<float>* work, int lwork, float* rwork, int* info );
+inline void geev( char jobvl, char jobvr, int n, complex<float>* A, int lda,
+                  complex<float>* w, complex<float>* VL, int ldvl, complex<float>* VR, int ldvr,
+                  complex<float>* work, int lwork, float* rwork, int* info );
 
-void geev( char jobvl, char jobvr, int n, complex<double>* A, int lda,
-           complex<double>* w, complex<double>* VL, int ldvl, complex<double>* VR, int ldvr,
-           complex<double>* work, int lwork, double* rwork, int* info );
+inline void geev( char jobvl, char jobvr, int n, complex<double>* A, int lda,
+                  complex<double>* w, complex<double>* VL, int ldvl, complex<double>* VR, int ldvr,
+                  complex<double>* work, int lwork, double* rwork, int* info );
 //@}
 //*************************************************************************************************
 
@@ -177,8 +168,7 @@ inline void geev( char jobvl, char jobvr, int n, float* A, int lda,
    BLAZE_STATIC_ASSERT( sizeof( MKL_INT ) == sizeof( int ) );
 #endif
 
-   sgeev_( &jobvl, &jobvr, &n, A, &lda, wr, wi, VL, &ldvl, VR, &ldvr, work, &lwork, info,
-           blaze::fortran_charlen_t(1), blaze::fortran_charlen_t(1) );
+   sgeev_( &jobvl, &jobvr, &n, A, &lda, wr, wi, VL, &ldvl, VR, &ldvr, work, &lwork, info );
 }
 //*************************************************************************************************
 
@@ -253,8 +243,7 @@ inline void geev( char jobvl, char jobvr, int n, double* A, int lda,
    BLAZE_STATIC_ASSERT( sizeof( MKL_INT ) == sizeof( int ) );
 #endif
 
-   dgeev_( &jobvl, &jobvr, &n, A, &lda, wr, wi, VL, &ldvl, VR, &ldvr, work, &lwork, info,
-           blaze::fortran_charlen_t(1), blaze::fortran_charlen_t(1) );
+   dgeev_( &jobvl, &jobvr, &n, A, &lda, wr, wi, VL, &ldvl, VR, &ldvr, work, &lwork, info );
 }
 //*************************************************************************************************
 
@@ -336,8 +325,7 @@ inline void geev( char jobvl, char jobvr, int n, complex<float>* A, int lda,
 
    cgeev_( &jobvl, &jobvr, &n, reinterpret_cast<ET*>( A ), &lda, reinterpret_cast<ET*>( w ),
            reinterpret_cast<ET*>( VL ), &ldvl, reinterpret_cast<ET*>( VR ), &ldvr,
-           reinterpret_cast<ET*>( work ), &lwork, rwork, info,
-           blaze::fortran_charlen_t(1), blaze::fortran_charlen_t(1) );
+           reinterpret_cast<ET*>( work ), &lwork, rwork, info );
 }
 //*************************************************************************************************
 
@@ -419,8 +407,7 @@ inline void geev( char jobvl, char jobvr, int n, complex<double>* A, int lda,
 
    zgeev_( &jobvl, &jobvr, &n, reinterpret_cast<ET*>( A ), &lda, reinterpret_cast<ET*>( w ),
            reinterpret_cast<ET*>( VL ), &ldvl, reinterpret_cast<ET*>( VR ), &ldvr,
-           reinterpret_cast<ET*>( work ), &lwork, rwork, info,
-           blaze::fortran_charlen_t(1), blaze::fortran_charlen_t(1) );
+           reinterpret_cast<ET*>( work ), &lwork, rwork, info );
 }
 //*************************************************************************************************
 

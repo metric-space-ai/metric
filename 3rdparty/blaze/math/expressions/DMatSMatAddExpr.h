@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/DMatSMatAddExpr.h
 //  \brief Header file for the dense matrix/sparse matrix addition expression
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -55,18 +55,22 @@
 #include "../../math/shims/Serial.h"
 #include "../../math/traits/AddTrait.h"
 #include "../../math/typetraits/IsExpression.h"
+#include "../../math/typetraits/IsHermitian.h"
+#include "../../math/typetraits/IsLower.h"
 #include "../../math/typetraits/IsOperation.h"
+#include "../../math/typetraits/IsStrictlyLower.h"
+#include "../../math/typetraits/IsStrictlyUpper.h"
+#include "../../math/typetraits/IsSymmetric.h"
 #include "../../math/typetraits/IsTemporary.h"
-#include "../../math/typetraits/IsZero.h"
+#include "../../math/typetraits/IsUniLower.h"
+#include "../../math/typetraits/IsUniUpper.h"
+#include "../../math/typetraits/IsUpper.h"
 #include "../../util/Assert.h"
-#include "../../util/DisableIf.h"
 #include "../../util/EnableIf.h"
 #include "../../util/FunctionTrace.h"
 #include "../../util/IntegralConstant.h"
-#include "../../util/MaybeUnused.h"
 #include "../../util/mpl/If.h"
 #include "../../util/Types.h"
-#include "../../util/typetraits/IsSame.h"
 
 
 namespace blaze {
@@ -127,7 +131,6 @@ class DMatSMatAddExpr
  public:
    //**Type definitions****************************************************************************
    using This          = DMatSMatAddExpr<MT1,MT2,SO>;  //!< Type of this DMatSMatAddExpr instance.
-   using BaseType      = DenseMatrix<This,SO>;         //!< Base type of this DMatSMatAddExpr instance.
    using ResultType    = AddTrait_t<RT1,RT2>;          //!< Result type for expression template evaluations.
    using OppositeType  = OppositeType_t<ResultType>;   //!< Result type with opposite storage order for expression template evaluations.
    using TransposeType = TransposeType_t<ResultType>;  //!< Transpose type for expression template evaluations.
@@ -462,8 +465,8 @@ class DMatSMatAddExpr
    */
    template< typename MT  // Type of the target dense matrix
            , bool SO2 >   // Storage order of the target dense matrix
-   friend inline auto smpAssign( DenseMatrix<MT,SO2>& lhs, const DMatSMatAddExpr& rhs )
-      -> EnableIf_t< UseSMPAssign_v<MT> >
+   friend inline EnableIf_t< UseSMPAssign_v<MT> >
+      smpAssign( DenseMatrix<MT,SO2>& lhs, const DMatSMatAddExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -497,8 +500,8 @@ class DMatSMatAddExpr
    */
    template< typename MT  // Type of the target sparse matrix
            , bool SO2 >   // Storage order of the target sparse matrix
-   friend inline auto smpAssign( SparseMatrix<MT,SO2>& lhs, const DMatSMatAddExpr& rhs )
-      -> EnableIf_t< UseSMPAssign_v<MT> >
+   friend inline EnableIf_t< UseSMPAssign_v<MT> >
+      smpAssign( SparseMatrix<MT,SO2>& lhs, const DMatSMatAddExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -536,8 +539,8 @@ class DMatSMatAddExpr
    */
    template< typename MT  // Type of the target dense matrix
            , bool SO2 >   // Storage order of the target dense matrix
-   friend inline auto smpAddAssign( DenseMatrix<MT,SO2>& lhs, const DMatSMatAddExpr& rhs )
-      -> EnableIf_t< UseSMPAssign_v<MT> >
+   friend inline EnableIf_t< UseSMPAssign_v<MT> >
+      smpAddAssign( DenseMatrix<MT,SO2>& lhs, const DMatSMatAddExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -570,8 +573,8 @@ class DMatSMatAddExpr
    */
    template< typename MT  // Type of the target dense matrix
            , bool SO2 >   // Storage order of the target dense matrix
-   friend inline auto smpSubAssign( DenseMatrix<MT,SO2>& lhs, const DMatSMatAddExpr& rhs )
-      -> EnableIf_t< UseSMPAssign_v<MT> >
+   friend inline EnableIf_t< UseSMPAssign_v<MT> >
+      smpSubAssign( DenseMatrix<MT,SO2>& lhs, const DMatSMatAddExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -604,8 +607,8 @@ class DMatSMatAddExpr
    */
    template< typename MT  // Type of the target dense matrix
            , bool SO2 >   // Storage order of the target dense matrix
-   friend inline auto smpSchurAssign( DenseMatrix<MT,SO2>& lhs, const DMatSMatAddExpr& rhs )
-      -> EnableIf_t< UseSMPAssign_v<MT> >
+   friend inline EnableIf_t< UseSMPAssign_v<MT> >
+      smpSchurAssign( DenseMatrix<MT,SO2>& lhs, const DMatSMatAddExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -655,74 +658,8 @@ class DMatSMatAddExpr
 //=================================================================================================
 
 //*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-/*!\brief Backend implementation of the addition between a dense matrix and a sparse matrix
-//        with identical storage order (\f$ A=B+C \f$).
-// \ingroup dense_matrix
-//
-// \param lhs The left-hand side dense matrix for the addition.
-// \param rhs The right-hand side sparse matrix for the addition.
-// \return The sum of the two matrices.
-//
-// This function implements a performance optimized treatment of the addition between a dense
-// matrix and a sparse matrix.
-*/
-template< typename MT1  // Type of the left-hand side dense matrix
-        , typename MT2  // Type of the right-hand side sparse matrix
-        , bool SO       // Storage order
-        , DisableIf_t< IsZero_v<MT2> &&
-                       IsSame_v< ElementType_t<MT1>, ElementType_t<MT2> > >* = nullptr >
-inline const DMatSMatAddExpr<MT1,MT2,SO>
-   dmatsmatadd( const DenseMatrix<MT1,SO>& lhs, const SparseMatrix<MT2,SO>& rhs )
-{
-   BLAZE_FUNCTION_TRACE;
-
-   BLAZE_INTERNAL_ASSERT( (~lhs).rows()    == (~rhs).rows()   , "Invalid number of rows"    );
-   BLAZE_INTERNAL_ASSERT( (~lhs).columns() == (~rhs).columns(), "Invalid number of columns" );
-
-   return DMatSMatAddExpr<MT1,MT2,SO>( ~lhs, ~rhs );
-}
-/*! \endcond */
-//*************************************************************************************************
-
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-/*!\brief Backend implementation of the addition between a dense matrix and a zero matrix
-//        with identical storage order (\f$ A=B+C \f$).
-// \ingroup dense_matrix
-//
-// \param lhs The left-hand side dense matrix for the addition.
-// \param rhs The right-hand side zero matrix for the addition.
-// \return Reference to the left-hand side dense matrix.
-//
-// This function implements a performance optimized treatment of the addition between a dense
-// matrix and a zero matrix. It returns a reference to the left-hand side dense matrix.
-*/
-template< typename MT1  // Type of the left-hand side dense matrix
-        , typename MT2  // Type of the right-hand side sparse matrix
-        , bool SO       // Storage order
-        , EnableIf_t< IsZero_v<MT2> &&
-                      IsSame_v< ElementType_t<MT1>, ElementType_t<MT2> > >* = nullptr >
-inline const MT1&
-   dmatsmatadd( const DenseMatrix<MT1,SO>& lhs, const SparseMatrix<MT2,SO>& rhs )
-{
-   BLAZE_FUNCTION_TRACE;
-
-   MAYBE_UNUSED( rhs );
-
-   BLAZE_INTERNAL_ASSERT( (~lhs).rows()    == (~rhs).rows()   , "Invalid number of rows"    );
-   BLAZE_INTERNAL_ASSERT( (~lhs).columns() == (~rhs).columns(), "Invalid number of columns" );
-
-   return (~lhs);
-}
-/*! \endcond */
-//*************************************************************************************************
-
-
-//*************************************************************************************************
 /*!\brief Addition operator for the addition of a dense matrix and a sparse matrix
-//        with identical storage order (\f$ A=B+C \f$).
+//        (\f$ A=B+C \f$).
 // \ingroup dense_matrix
 //
 // \param lhs The left-hand side dense matrix for the matrix addition.
@@ -758,7 +695,8 @@ inline decltype(auto)
       BLAZE_THROW_INVALID_ARGUMENT( "Matrix sizes do not match" );
    }
 
-   return dmatsmatadd( ~lhs, ~rhs );
+   using ReturnType = const DMatSMatAddExpr<MT1,MT2,SO>;
+   return ReturnType( ~lhs, ~rhs );
 }
 //*************************************************************************************************
 
@@ -801,7 +739,8 @@ inline decltype(auto)
       BLAZE_THROW_INVALID_ARGUMENT( "Matrix sizes do not match" );
    }
 
-   return dmatsmatadd( ~rhs, ~lhs );
+   using ReturnType = const DMatSMatAddExpr<MT2,MT1,SO>;
+   return ReturnType( ~rhs, ~lhs );
 }
 //*************************************************************************************************
 
@@ -868,6 +807,152 @@ inline decltype(auto)
 
    return ( lhs.leftOperand() - (~rhs) ) + lhs.rightOperand();
 }
+/*! \endcond */
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
+//  ISSYMMETRIC SPECIALIZATIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+template< typename MT1, typename MT2, bool SO >
+struct IsSymmetric< DMatSMatAddExpr<MT1,MT2,SO> >
+   : public BoolConstant< IsSymmetric_v<MT1> && IsSymmetric_v<MT2> >
+{};
+/*! \endcond */
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
+//  ISHERMITIAN SPECIALIZATIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+template< typename MT1, typename MT2, bool SO >
+struct IsHermitian< DMatSMatAddExpr<MT1,MT2,SO> >
+   : public BoolConstant< IsHermitian_v<MT1> && IsHermitian_v<MT2> >
+{};
+/*! \endcond */
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
+//  ISLOWER SPECIALIZATIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+template< typename MT1, typename MT2, bool SO >
+struct IsLower< DMatSMatAddExpr<MT1,MT2,SO> >
+   : public BoolConstant< IsLower_v<MT1> && IsLower_v<MT2> >
+{};
+/*! \endcond */
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
+//  ISUNILOWER SPECIALIZATIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+template< typename MT1, typename MT2, bool SO >
+struct IsUniLower< DMatSMatAddExpr<MT1,MT2,SO> >
+   : public BoolConstant< ( IsUniLower_v<MT1> && IsStrictlyLower_v<MT2> ) ||
+                          ( IsUniLower_v<MT2> && IsStrictlyLower_v<MT1> ) >
+{};
+/*! \endcond */
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
+//  ISSTRICTLYLOWER SPECIALIZATIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+template< typename MT1, typename MT2, bool SO >
+struct IsStrictlyLower< DMatSMatAddExpr<MT1,MT2,SO> >
+   : public BoolConstant< IsStrictlyLower_v<MT1> && IsStrictlyLower_v<MT2> >
+{};
+/*! \endcond */
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
+//  ISUPPER SPECIALIZATIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+template< typename MT1, typename MT2, bool SO >
+struct IsUpper< DMatSMatAddExpr<MT1,MT2,SO> >
+   : public BoolConstant< IsUpper_v<MT1> && IsUpper_v<MT2> >
+{};
+/*! \endcond */
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
+//  ISUNIUPPER SPECIALIZATIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+template< typename MT1, typename MT2, bool SO >
+struct IsUniUpper< DMatSMatAddExpr<MT1,MT2,SO> >
+   : public BoolConstant< ( IsUniUpper_v<MT1> && IsStrictlyUpper_v<MT2> ) ||
+                          ( IsUniUpper_v<MT2> && IsStrictlyUpper_v<MT1> ) >
+{};
+/*! \endcond */
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
+//  ISSTRICTLYUPPER SPECIALIZATIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+template< typename MT1, typename MT2, bool SO >
+struct IsStrictlyUpper< DMatSMatAddExpr<MT1,MT2,SO> >
+   : public BoolConstant< IsStrictlyUpper_v<MT1> && IsStrictlyUpper_v<MT2> >
+{};
 /*! \endcond */
 //*************************************************************************************************
 

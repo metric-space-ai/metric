@@ -3,7 +3,7 @@
 //  \file blaze/math/typetraits/HasExp.h
 //  \brief Header file for the HasExp type trait
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -44,7 +44,8 @@
 #include "../../math/typetraits/IsMatrix.h"
 #include "../../math/typetraits/IsVector.h"
 #include "../../util/EnableIf.h"
-#include "../../util/IntegralConstant.h"
+#include "../../util/FalseType.h"
+#include "../../util/TrueType.h"
 #include "../../util/typetraits/Void.h"
 
 
@@ -138,7 +139,7 @@ struct HasExp< T, EnableIf_t< IsMatrix_v<T> > >
 
 //*************************************************************************************************
 /*!\brief Auxiliary variable template for the HasExp type trait.
-// \ingroup math_type_traits
+// \ingroup type_traits
 //
 // The HasExp_v variable template provides a convenient shortcut to access the nested \a value
 // of the HasExp class template. For instance, given the type \a T the following two statements

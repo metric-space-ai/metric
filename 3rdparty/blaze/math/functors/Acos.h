@@ -3,7 +3,7 @@
 //  \file blaze/math/functors/Acos.h
 //  \brief Header file for the Acos functor
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -46,11 +46,8 @@
 #include "../../math/typetraits/HasSIMDAcos.h"
 #include "../../math/typetraits/IsHermitian.h"
 #include "../../math/typetraits/IsSymmetric.h"
-#include "../../math/typetraits/IsUniform.h"
 #include "../../math/typetraits/YieldsHermitian.h"
 #include "../../math/typetraits/YieldsSymmetric.h"
-#include "../../math/typetraits/YieldsUniform.h"
-#include "../../system/HostDevice.h"
 #include "../../system/Inline.h"
 
 
@@ -69,13 +66,20 @@ namespace blaze {
 struct Acos
 {
    //**********************************************************************************************
+   /*!\brief Default constructor of the Acos functor.
+   */
+   explicit inline Acos()
+   {}
+   //**********************************************************************************************
+
+   //**********************************************************************************************
    /*!\brief Returns the result of the acos() function for the given object/value.
    //
    // \param a The given object/value.
    // \return The result of the acos() function for the given object/value.
    */
    template< typename T >
-   BLAZE_ALWAYS_INLINE BLAZE_DEVICE_CALLABLE decltype(auto) operator()( const T& a ) const
+   BLAZE_ALWAYS_INLINE decltype(auto) operator()( const T& a ) const
    {
       return acos( a );
    }
@@ -88,14 +92,6 @@ struct Acos
    */
    template< typename T >
    static constexpr bool simdEnabled() { return HasSIMDAcos_v<T>; }
-   //**********************************************************************************************
-
-   //**********************************************************************************************
-   /*!\brief Returns whether the operation supports padding, i.e. whether it can deal with zeros.
-   //
-   // \return \a true in case padding is supported, \a false if not.
-   */
-   static constexpr bool paddingEnabled() { return false; }
    //**********************************************************************************************
 
    //**********************************************************************************************
@@ -112,24 +108,6 @@ struct Acos
    }
    //**********************************************************************************************
 };
-//*************************************************************************************************
-
-
-
-
-//=================================================================================================
-//
-//  YIELDSUNIFORM SPECIALIZATIONS
-//
-//=================================================================================================
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-template< typename T >
-struct YieldsUniform<Acos,T>
-   : public IsUniform<T>
-{};
-/*! \endcond */
 //*************************************************************************************************
 
 

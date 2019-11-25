@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/TSVecTSMatMultExpr.h
 //  \brief Header file for the transpose sparse vector/transpose sparse matrix multiplication expression
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -49,7 +49,6 @@
 #include "../../math/constraints/SparseVector.h"
 #include "../../math/constraints/Symmetric.h"
 #include "../../math/constraints/TVecMatMultExpr.h"
-#include "../../math/constraints/Zero.h"
 #include "../../math/Exception.h"
 #include "../../math/expressions/Computation.h"
 #include "../../math/expressions/Forward.h"
@@ -61,9 +60,7 @@
 #include "../../math/traits/MultTrait.h"
 #include "../../math/typetraits/IsComputation.h"
 #include "../../math/typetraits/IsExpression.h"
-#include "../../math/typetraits/IsIdentity.h"
 #include "../../math/typetraits/IsSymmetric.h"
-#include "../../math/typetraits/IsZero.h"
 #include "../../math/typetraits/RequiresEvaluation.h"
 #include "../../math/views/Check.h"
 #include "../../system/Thresholds.h"
@@ -71,9 +68,9 @@
 #include "../../util/DisableIf.h"
 #include "../../util/EnableIf.h"
 #include "../../util/FunctionTrace.h"
-#include "../../util/MaybeUnused.h"
 #include "../../util/mpl/If.h"
 #include "../../util/Types.h"
+#include "../../util/typetraits/RemoveReference.h"
 
 
 namespace blaze {
@@ -129,7 +126,6 @@ class TSVecTSMatMultExpr
  public:
    //**Type definitions****************************************************************************
    using This          = TSVecTSMatMultExpr<VT,MT>;    //!< Type of this TSVecTSMatMultExpr instance.
-   using BaseType      = SparseVector<This,true>;      //!< Base type of this TSVecTSMatMultExpr instance.
    using ResultType    = MultTrait_t<VRT,MRT>;         //!< Result type for expression template evaluations.
    using TransposeType = TransposeType_t<ResultType>;  //!< Transpose type for expression template evaluations.
    using ElementType   = ElementType_t<ResultType>;    //!< Resulting element type.
@@ -337,16 +333,19 @@ class TSVecTSMatMultExpr
            , typename MT1 >  // Type of the right-hand side matrix operand
    static inline void selectAssignKernel( VT1& y, const VT2& x, const MT1& A )
    {
-      const auto vend( x.end() );
+      using VectorIterator = ConstIterator_t< RemoveReference_t<VT2> >;
+      using MatrixIterator = ConstIterator_t< RemoveReference_t<MT1> >;
+
+      const VectorIterator vend( x.end() );
 
       for( size_t j=0UL; j<A.columns(); ++j )
       {
-         const auto mend ( A.end(j)   );
-         auto       melem( A.begin(j) );
+         const MatrixIterator mend ( A.end(j)   );
+         MatrixIterator       melem( A.begin(j) );
 
          if( melem == mend ) continue;
 
-         auto velem( x.begin() );
+         VectorIterator velem( x.begin() );
 
          while( true ) {
             if( velem->index() < melem->index() ) {
@@ -410,6 +409,9 @@ class TSVecTSMatMultExpr
 
       BLAZE_INTERNAL_ASSERT( (~lhs).size() == rhs.size(), "Invalid vector sizes" );
 
+      using VectorIterator = ConstIterator_t< RemoveReference_t<LT> >;
+      using MatrixIterator = ConstIterator_t< RemoveReference_t<RT> >;
+
       // Evaluation of the left-hand side sparse vector operand
       LT x( serial( rhs.vec_ ) );
       if( x.nonZeros() == 0UL ) return;
@@ -425,16 +427,16 @@ class TSVecTSMatMultExpr
 
       // Performing the sparse vector-sparse matrix multiplication
       ElementType accu;
-      const auto vend( x.end() );
+      const VectorIterator vend( x.end() );
 
       for( size_t j=0UL; j<A.columns(); ++j )
       {
-         const auto mend ( A.end(j)   );
-         auto       melem( A.begin(j) );
+         const MatrixIterator mend ( A.end(j)   );
+         MatrixIterator       melem( A.begin(j) );
 
          if( melem == mend ) continue;
 
-         auto velem( x.begin() );
+         VectorIterator velem( x.begin() );
 
          reset( accu );
 
@@ -541,16 +543,19 @@ class TSVecTSMatMultExpr
            , typename MT1 >  // Type of the right-hand side matrix operand
    static inline void selectAddAssignKernel( VT1& y, const VT2& x, const MT1& A )
    {
-      const auto vend( x.end() );
+      using VectorIterator = ConstIterator_t< RemoveReference_t<VT2> >;
+      using MatrixIterator = ConstIterator_t< RemoveReference_t<MT1> >;
+
+      const VectorIterator vend( x.end() );
 
       for( size_t j=0UL; j<A.columns(); ++j )
       {
-         const auto mend ( A.end(j)   );
-         auto       melem( A.begin(j) );
+         const MatrixIterator mend ( A.end(j)   );
+         MatrixIterator       melem( A.begin(j) );
 
          if( melem == mend ) continue;
 
-         auto velem( x.begin() );
+         VectorIterator velem( x.begin() );
 
          while( true ) {
             if( velem->index() < melem->index() ) {
@@ -636,16 +641,19 @@ class TSVecTSMatMultExpr
            , typename MT1 >  // Type of the right-hand side matrix operand
    static inline void selectSubAssignKernel( VT1& y, const VT2& x, const MT1& A )
    {
-      const auto vend( x.end() );
+      using VectorIterator = ConstIterator_t< RemoveReference_t<VT2> >;
+      using MatrixIterator = ConstIterator_t< RemoveReference_t<MT1> >;
+
+      const VectorIterator vend( x.end() );
 
       for( size_t j=0UL; j<A.columns(); ++j )
       {
-         const auto mend ( A.end(j)   );
-         auto       melem( A.begin(j) );
+         const MatrixIterator mend ( A.end(j)   );
+         MatrixIterator       melem( A.begin(j) );
 
          if( melem == mend ) continue;
 
-         auto velem( x.begin() );
+         VectorIterator velem( x.begin() );
 
          while( true ) {
             if( velem->index() < melem->index() ) {
@@ -723,8 +731,8 @@ class TSVecTSMatMultExpr
    // compiler in case the expression specific parallel evaluation strategy is selected.
    */
    template< typename VT1 >  // Type of the target dense vector
-   friend inline auto smpAssign( DenseVector<VT1,true>& lhs, const TSVecTSMatMultExpr& rhs )
-      -> EnableIf_t< UseSMPAssign_v<VT1> >
+   friend inline EnableIf_t< UseSMPAssign_v<VT1> >
+      smpAssign( DenseVector<VT1,true>& lhs, const TSVecTSMatMultExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -772,8 +780,8 @@ class TSVecTSMatMultExpr
    // the compiler in case the expression specific parallel evaluation strategy is selected.
    */
    template< typename VT1 >  // Type of the target dense vector
-   friend inline auto smpAddAssign( DenseVector<VT1,true>& lhs, const TSVecTSMatMultExpr& rhs )
-      -> EnableIf_t< UseSMPAssign_v<VT1> >
+   friend inline EnableIf_t< UseSMPAssign_v<VT1> >
+      smpAddAssign( DenseVector<VT1,true>& lhs, const TSVecTSMatMultExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -818,8 +826,8 @@ class TSVecTSMatMultExpr
    // compiler in case the expression specific parallel evaluation strategy is selected.
    */
    template< typename VT1 >  // Type of the target dense vector
-   friend inline auto smpSubAssign( DenseVector<VT1,true>& lhs, const TSVecTSMatMultExpr& rhs )
-      -> EnableIf_t< UseSMPAssign_v<VT1> >
+   friend inline EnableIf_t< UseSMPAssign_v<VT1> >
+      smpSubAssign( DenseVector<VT1,true>& lhs, const TSVecTSMatMultExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -864,8 +872,8 @@ class TSVecTSMatMultExpr
    // by the compiler in case the expression specific parallel evaluation strategy is selected.
    */
    template< typename VT1 >  // Type of the target dense vector
-   friend inline auto smpMultAssign( DenseVector<VT1,true>& lhs, const TSVecTSMatMultExpr& rhs )
-      -> EnableIf_t< UseSMPAssign_v<VT1> >
+   friend inline EnableIf_t< UseSMPAssign_v<VT1> >
+      smpMultAssign( DenseVector<VT1,true>& lhs, const TSVecTSMatMultExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -888,12 +896,10 @@ class TSVecTSMatMultExpr
    //**Compile time checks*************************************************************************
    /*! \cond BLAZE_INTERNAL */
    BLAZE_CONSTRAINT_MUST_BE_SPARSE_VECTOR_TYPE( VT );
-   BLAZE_CONSTRAINT_MUST_BE_ROW_VECTOR_TYPE( VT );
-   BLAZE_CONSTRAINT_MUST_NOT_BE_ZERO_TYPE( VT );
+   BLAZE_CONSTRAINT_MUST_BE_ROW_VECTOR_TYPE   ( VT );
    BLAZE_CONSTRAINT_MUST_BE_SPARSE_MATRIX_TYPE( MT );
    BLAZE_CONSTRAINT_MUST_BE_COLUMN_MAJOR_MATRIX_TYPE( MT );
    BLAZE_CONSTRAINT_MUST_NOT_BE_SYMMETRIC_MATRIX_TYPE( MT );
-   BLAZE_CONSTRAINT_MUST_NOT_BE_ZERO_TYPE( MT );
    BLAZE_CONSTRAINT_MUST_FORM_VALID_TVECMATMULTEXPR( VT, MT );
    /*! \endcond */
    //**********************************************************************************************
@@ -920,11 +926,12 @@ class TSVecTSMatMultExpr
 // \return The resulting transpose vector.
 //
 // This function implements the performance optimized treatment of the multiplication of a
-// transpose sparse vector and a column-major sparse matrix.
+// transpose sparse vector and a column-major sparse matrix. It restructures the expression
+// \f$ \vec{y}^T=\vec{x}^T*A^T \f$ to the expression \f$ \vec{y}^T=\vec{x}^T*A \f$.
 */
 template< typename VT  // Type of the left-hand side sparse vector
         , typename MT  // Type of the right-hand side sparse matrix
-        , DisableIf_t< IsSymmetric_v<MT> || IsZero_v<MT> || IsZero_v<VT> >* = nullptr >
+        , typename = DisableIf_t< IsSymmetric_v<MT> > >
 inline const TSVecTSMatMultExpr<VT,MT>
    tsvectsmatmult( const SparseVector<VT,true>& vec, const SparseMatrix<MT,true>& mat )
 {
@@ -954,10 +961,7 @@ inline const TSVecTSMatMultExpr<VT,MT>
 */
 template< typename VT  // Type of the left-hand side sparse vector
         , typename MT  // Type of the right-hand side sparse matrix
-        , EnableIf_t< IsSymmetric_v<MT> &&
-                      !( IsIdentity_v<MT> &&
-                         IsSame_v< ElementType_t<VT>, ElementType_t<MT> > ) &&
-                      !( IsZero_v<MT> || IsZero_v<VT> ) >* = nullptr >
+        , typename = EnableIf_t< IsSymmetric_v<MT> > >
 inline decltype(auto)
    tsvectsmatmult( const SparseVector<VT,true>& vec, const SparseMatrix<MT,true>& mat )
 {
@@ -966,77 +970,6 @@ inline decltype(auto)
    BLAZE_INTERNAL_ASSERT( (~vec).size() == (~mat).rows(), "Invalid vector and matrix sizes" );
 
    return (~vec) * trans( ~mat );
-}
-/*! \endcond */
-//*************************************************************************************************
-
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-/*!\brief Backend implementation of the multiplication of a transpose sparse vector
-//        and a column-major identity matrix (\f$ \vec{a}=B*\vec{c} \f$).
-// \ingroup sparse_vector
-//
-// \param vec The left-hand side transpose sparse vector for the multiplication.
-// \param mat The right-hand side column-major identity matrix for the multiplication.
-// \return Reference to the given sparse vector.
-//
-// This function implements the performance optimized treatment of the multiplication of a
-// transpose sparse vector and a column-major identity matrix. It returns a reference to the
-// given sparse vector.
-*/
-template< typename VT  // Type of the left-hand side sparse vector
-        , typename MT  // Type of the right-hand side sparse matrix
-        , EnableIf_t< ( IsIdentity_v<MT> &&
-                        IsSame_v< ElementType_t<VT>, ElementType_t<MT> > ) &&
-                      !IsZero_v<VT> >* = nullptr >
-inline const VT&
-   tsvectsmatmult( const SparseVector<VT,true>& vec, const SparseMatrix<MT,true>& mat )
-{
-   BLAZE_FUNCTION_TRACE;
-
-   MAYBE_UNUSED( mat );
-
-   BLAZE_INTERNAL_ASSERT( (~vec).size() == (~mat).rows(), "Invalid vector and matrix sizes" );
-
-   return (~vec);
-}
-/*! \endcond */
-//*************************************************************************************************
-
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-/*!\brief Backend implementation of the multiplication of a transpose (zero) sparse vector and
-//        a column-major (zero) sparse matrix (\f$ \vec{a}=B*\vec{c} \f$).
-// \ingroup sparse_vector
-//
-// \param vec The left-hand side transpose sparse vector for the multiplication.
-// \param mat The right-hand side column-major sparse matrix for the multiplication.
-// \return The resulting zero vector.
-//
-// This function implements the performance optimized treatment of the multiplication of a
-// transpose (zero) sparse vector and a column-major (zero) sparse matrix. It returns a zero
-// vector.
-*/
-template< typename VT  // Type of the left-hand side sparse vector
-        , typename MT  // Type of the right-hand side sparse matrix
-        , EnableIf_t< IsZero_v<MT> || IsZero_v<VT> >* = nullptr >
-inline decltype(auto)
-   tsvectsmatmult( const SparseVector<VT,true>& vec, const SparseMatrix<MT,true>& mat )
-{
-   BLAZE_FUNCTION_TRACE;
-
-   MAYBE_UNUSED( vec );
-
-   BLAZE_INTERNAL_ASSERT( (~vec).size() == (~mat).rows(), "Invalid vector and matrix sizes" );
-
-   using ReturnType = const MultTrait_t< ResultType_t<VT>, ResultType_t<MT> >;
-
-   BLAZE_CONSTRAINT_MUST_BE_ROW_VECTOR_TYPE( ReturnType );
-   BLAZE_CONSTRAINT_MUST_BE_ZERO_TYPE( ReturnType );
-
-   return ReturnType( (~mat).columns() );
 }
 /*! \endcond */
 //*************************************************************************************************

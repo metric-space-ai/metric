@@ -3,7 +3,7 @@
 //  \file blaze/math/dense/CustomVector.h
 //  \brief Header file for the implementation of a customizable vector
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -89,13 +89,13 @@
 #include "../../util/constraints/Volatile.h"
 #include "../../util/DisableIf.h"
 #include "../../util/EnableIf.h"
-#include "../../util/IntegralConstant.h"
-#include "../../util/MaybeUnused.h"
 #include "../../util/StaticAssert.h"
+#include "../../util/TrueType.h"
 #include "../../util/Types.h"
 #include "../../util/typetraits/IsIntegral.h"
 #include "../../util/typetraits/IsVectorizable.h"
 #include "../../util/typetraits/RemoveConst.h"
+#include "../../util/Unused.h"
 
 
 namespace blaze {
@@ -466,10 +466,7 @@ class CustomVector
    //**********************************************************************************************
 
    //**Destructor**********************************************************************************
-   /*!\name Destructor */
-   //@{
-   ~CustomVector() = default;
-   //@}
+   // No explicitly declared destructor.
    //**********************************************************************************************
 
    //**Data access functions***********************************************************************
@@ -496,8 +493,8 @@ class CustomVector
    inline CustomVector& operator=( const Type& rhs );
    inline CustomVector& operator=( initializer_list<Type> list );
 
-   template< typename Other, size_t Dim >
-   inline CustomVector& operator=( const Other (&array)[Dim] );
+   template< typename Other, size_t N >
+   inline CustomVector& operator=( const Other (&array)[N] );
 
    inline CustomVector& operator=( const CustomVector& rhs );
    inline CustomVector& operator=( CustomVector&& rhs ) noexcept;
@@ -784,7 +781,7 @@ inline CustomVector<Type,AF,PF,TF,RT>::CustomVector( Type* ptr, size_t n, size_t
 {
    BLAZE_STATIC_ASSERT( PF == padded );
 
-   MAYBE_UNUSED( ptr, n, nn );
+   UNUSED_PARAMETER( ptr, n, nn );
 }
 //*************************************************************************************************
 
@@ -1188,15 +1185,15 @@ template< typename Type   // Data type of the vector
         , bool TF         // Transpose flag
         , typename RT >   // Result type
 template< typename Other  // Data type of the initialization array
-        , size_t Dim >    // Dimension of the initialization array
+        , size_t N >      // Dimension of the initialization array
 inline CustomVector<Type,AF,PF,TF,RT>&
-   CustomVector<Type,AF,PF,TF,RT>::operator=( const Other (&array)[Dim] )
+   CustomVector<Type,AF,PF,TF,RT>::operator=( const Other (&array)[N] )
 {
-   if( size_ != Dim ) {
+   if( size_ != N ) {
       BLAZE_THROW_INVALID_ARGUMENT( "Invalid array size" );
    }
 
-   for( size_t i=0UL; i<Dim; ++i )
+   for( size_t i=0UL; i<N; ++i )
       v_[i] = array[i];
 
    return *this;
@@ -1485,7 +1482,7 @@ inline CustomVector<Type,AF,PF,TF,RT>&
 {
    using blaze::assign;
 
-   BLAZE_CONSTRAINT_MUST_BE_VECTOR_WITH_TRANSPOSE_FLAG( ResultType_t<VT>, TF );
+   BLAZE_CONSTRAINT_MUST_BE_VECTOR_WITH_TRANSPOSE_FLAG( VT, TF );
    BLAZE_CONSTRAINT_MUST_NOT_REQUIRE_EVALUATION( ResultType_t<VT> );
 
    using CrossType = CrossTrait_t< ResultType, ResultType_t<VT> >;
@@ -1777,7 +1774,7 @@ inline void CustomVector<Type,AF,PF,TF,RT>::reset( Type* ptr, size_t n, size_t n
 {
    BLAZE_STATIC_ASSERT( PF == padded );
 
-   MAYBE_UNUSED( ptr, n, nn );
+   UNUSED_PARAMETER( ptr, n, nn );
 }
 //*************************************************************************************************
 
@@ -2183,7 +2180,7 @@ inline auto CustomVector<Type,AF,PF,TF,RT>::assign( const DenseVector<VT,TF>& rh
    }
    else
    {
-      const size_t i4way( size_ & size_t( -(SIMDSIZE*4UL) ) );
+      const size_t i4way( size_ & size_t(-SIMDSIZE*4) );
       BLAZE_INTERNAL_ASSERT( ( size_ - ( size_ % (SIMDSIZE*4UL) ) ) == i4way, "Invalid end calculation" );
       BLAZE_INTERNAL_ASSERT( i4way <= ipos, "Invalid end calculation" );
 
@@ -2228,7 +2225,7 @@ inline void CustomVector<Type,AF,PF,TF,RT>::assign( const SparseVector<VT,TF>& r
 {
    BLAZE_INTERNAL_ASSERT( size_ == (~rhs).size(), "Invalid vector sizes" );
 
-   for( auto element=(~rhs).begin(); element!=(~rhs).end(); ++element )
+   for( ConstIterator_t<VT> element=(~rhs).begin(); element!=(~rhs).end(); ++element )
       v_[element->index()] = element->value();
 }
 //*************************************************************************************************
@@ -2296,7 +2293,7 @@ inline auto CustomVector<Type,AF,PF,TF,RT>::addAssign( const DenseVector<VT,TF>&
    const size_t ipos( size_ & size_t(-SIMDSIZE) );
    BLAZE_INTERNAL_ASSERT( ( size_ - ( size_ % SIMDSIZE ) ) == ipos, "Invalid end calculation" );
 
-   const size_t i4way( size_ & size_t( -(SIMDSIZE*4UL) ) );
+   const size_t i4way( size_ & size_t(-SIMDSIZE*4) );
    BLAZE_INTERNAL_ASSERT( ( size_ - ( size_ % (SIMDSIZE*4UL) ) ) == i4way, "Invalid end calculation" );
    BLAZE_INTERNAL_ASSERT( i4way <= ipos, "Invalid end calculation" );
 
@@ -2340,7 +2337,7 @@ inline void CustomVector<Type,AF,PF,TF,RT>::addAssign( const SparseVector<VT,TF>
 {
    BLAZE_INTERNAL_ASSERT( size_ == (~rhs).size(), "Invalid vector sizes" );
 
-   for( auto element=(~rhs).begin(); element!=(~rhs).end(); ++element )
+   for( ConstIterator_t<VT> element=(~rhs).begin(); element!=(~rhs).end(); ++element )
       v_[element->index()] += element->value();
 }
 //*************************************************************************************************
@@ -2408,7 +2405,7 @@ inline auto CustomVector<Type,AF,PF,TF,RT>::subAssign( const DenseVector<VT,TF>&
    const size_t ipos( size_ & size_t(-SIMDSIZE) );
    BLAZE_INTERNAL_ASSERT( ( size_ - ( size_ % SIMDSIZE ) ) == ipos, "Invalid end calculation" );
 
-   const size_t i4way( size_ & size_t( -(SIMDSIZE*4UL) ) );
+   const size_t i4way( size_ & size_t(-SIMDSIZE*4) );
    BLAZE_INTERNAL_ASSERT( ( size_ - ( size_ % (SIMDSIZE*4UL) ) ) == i4way, "Invalid end calculation" );
    BLAZE_INTERNAL_ASSERT( i4way <= ipos, "Invalid end calculation" );
 
@@ -2452,7 +2449,7 @@ inline void CustomVector<Type,AF,PF,TF,RT>::subAssign( const SparseVector<VT,TF>
 {
    BLAZE_INTERNAL_ASSERT( size_ == (~rhs).size(), "Invalid vector sizes" );
 
-   for( auto element=(~rhs).begin(); element!=(~rhs).end(); ++element )
+   for( ConstIterator_t<VT> element=(~rhs).begin(); element!=(~rhs).end(); ++element )
       v_[element->index()] -= element->value();
 }
 //*************************************************************************************************
@@ -2520,7 +2517,7 @@ inline auto CustomVector<Type,AF,PF,TF,RT>::multAssign( const DenseVector<VT,TF>
    const size_t ipos( size_ & size_t(-SIMDSIZE) );
    BLAZE_INTERNAL_ASSERT( ( size_ - ( size_ % SIMDSIZE ) ) == ipos, "Invalid end calculation" );
 
-   const size_t i4way( size_ & size_t( -(SIMDSIZE*4UL) ) );
+   const size_t i4way( size_ & size_t(-SIMDSIZE*4) );
    BLAZE_INTERNAL_ASSERT( ( size_ - ( size_ % (SIMDSIZE*4UL) ) ) == i4way, "Invalid end calculation" );
    BLAZE_INTERNAL_ASSERT( i4way <= ipos, "Invalid end calculation" );
 
@@ -2568,7 +2565,7 @@ inline void CustomVector<Type,AF,PF,TF,RT>::multAssign( const SparseVector<VT,TF
 
    reset();
 
-   for( auto element=(~rhs).begin(); element!=(~rhs).end(); ++element )
+   for( ConstIterator_t<VT> element=(~rhs).begin(); element!=(~rhs).end(); ++element )
       v_[element->index()] = tmp[element->index()] * element->value();
 }
 //*************************************************************************************************
@@ -2636,7 +2633,7 @@ inline auto CustomVector<Type,AF,PF,TF,RT>::divAssign( const DenseVector<VT,TF>&
    const size_t ipos( size_ & size_t(-SIMDSIZE) );
    BLAZE_INTERNAL_ASSERT( ( size_ - ( size_ % SIMDSIZE ) ) == ipos, "Invalid end calculation" );
 
-   const size_t i4way( size_ & size_t( -(SIMDSIZE*4UL) ) );
+   const size_t i4way( size_ & size_t(-SIMDSIZE*4) );
    BLAZE_INTERNAL_ASSERT( ( size_ - ( size_ % (SIMDSIZE*4UL) ) ) == i4way, "Invalid end calculation" );
    BLAZE_INTERNAL_ASSERT( i4way <= ipos, "Invalid end calculation" );
 
@@ -2758,10 +2755,7 @@ class CustomVector<Type,AF,padded,TF,RT>
    //**********************************************************************************************
 
    //**Destructor**********************************************************************************
-   /*!\name Destructor */
-   //@{
-   ~CustomVector() = default;
-   //@}
+   // No explicitly declared destructor.
    //**********************************************************************************************
 
    //**Data access functions***********************************************************************
@@ -4461,7 +4455,7 @@ inline auto CustomVector<Type,AF,padded,TF,RT>::assign( const DenseVector<VT,TF>
    }
    else
    {
-      const size_t i4way( size_ & size_t( -(SIMDSIZE*4UL) ) );
+      const size_t i4way( size_ & size_t(-SIMDSIZE*4) );
       BLAZE_INTERNAL_ASSERT( ( size_ - ( size_ % (SIMDSIZE*4UL) ) ) == i4way, "Invalid end calculation" );
       BLAZE_INTERNAL_ASSERT( i4way <= ipos, "Invalid end calculation" );
 
@@ -4507,7 +4501,7 @@ inline void CustomVector<Type,AF,padded,TF,RT>::assign( const SparseVector<VT,TF
 {
    BLAZE_INTERNAL_ASSERT( size_ == (~rhs).size(), "Invalid vector sizes" );
 
-   for( auto element=(~rhs).begin(); element!=(~rhs).end(); ++element )
+   for( ConstIterator_t<VT> element=(~rhs).begin(); element!=(~rhs).end(); ++element )
       v_[element->index()] = element->value();
 }
 /*! \endcond */
@@ -4579,7 +4573,7 @@ inline auto CustomVector<Type,AF,padded,TF,RT>::addAssign( const DenseVector<VT,
    const size_t ipos( ( remainder )?( size_ & size_t(-SIMDSIZE) ):( size_ ) );
    BLAZE_INTERNAL_ASSERT( !remainder || ( size_ - ( size_ % SIMDSIZE ) ) == ipos, "Invalid end calculation" );
 
-   const size_t i4way( size_ & size_t( -(SIMDSIZE*4UL) ) );
+   const size_t i4way( size_ & size_t(-SIMDSIZE*4) );
    BLAZE_INTERNAL_ASSERT( ( size_ - ( size_ % (SIMDSIZE*4UL) ) ) == i4way, "Invalid end calculation" );
    BLAZE_INTERNAL_ASSERT( i4way <= ipos, "Invalid end calculation" );
 
@@ -4624,7 +4618,7 @@ inline void CustomVector<Type,AF,padded,TF,RT>::addAssign( const SparseVector<VT
 {
    BLAZE_INTERNAL_ASSERT( size_ == (~rhs).size(), "Invalid vector sizes" );
 
-   for( auto element=(~rhs).begin(); element!=(~rhs).end(); ++element )
+   for( ConstIterator_t<VT> element=(~rhs).begin(); element!=(~rhs).end(); ++element )
       v_[element->index()] += element->value();
 }
 /*! \endcond */
@@ -4696,7 +4690,7 @@ inline auto CustomVector<Type,AF,padded,TF,RT>::subAssign( const DenseVector<VT,
    const size_t ipos( ( remainder )?( size_ & size_t(-SIMDSIZE) ):( size_ ) );
    BLAZE_INTERNAL_ASSERT( !remainder || ( size_ - ( size_ % SIMDSIZE ) ) == ipos, "Invalid end calculation" );
 
-   const size_t i4way( size_ & size_t( -(SIMDSIZE*4UL) ) );
+   const size_t i4way( size_ & size_t(-SIMDSIZE*4) );
    BLAZE_INTERNAL_ASSERT( ( size_ - ( size_ % (SIMDSIZE*4UL) ) ) == i4way, "Invalid end calculation" );
    BLAZE_INTERNAL_ASSERT( i4way <= ipos, "Invalid end calculation" );
 
@@ -4741,7 +4735,7 @@ inline void CustomVector<Type,AF,padded,TF,RT>::subAssign( const SparseVector<VT
 {
    BLAZE_INTERNAL_ASSERT( size_ == (~rhs).size(), "Invalid vector sizes" );
 
-   for( auto element=(~rhs).begin(); element!=(~rhs).end(); ++element )
+   for( ConstIterator_t<VT> element=(~rhs).begin(); element!=(~rhs).end(); ++element )
       v_[element->index()] -= element->value();
 }
 /*! \endcond */
@@ -4813,7 +4807,7 @@ inline auto CustomVector<Type,AF,padded,TF,RT>::multAssign( const DenseVector<VT
    const size_t ipos( ( remainder )?( size_ & size_t(-SIMDSIZE) ):( size_ ) );
    BLAZE_INTERNAL_ASSERT( !remainder || ( size_ - ( size_ % SIMDSIZE ) ) == ipos, "Invalid end calculation" );
 
-   const size_t i4way( size_ & size_t( -(SIMDSIZE*4UL) ) );
+   const size_t i4way( size_ & size_t(-SIMDSIZE*4) );
    BLAZE_INTERNAL_ASSERT( ( size_ - ( size_ % (SIMDSIZE*4UL) ) ) == i4way, "Invalid end calculation" );
    BLAZE_INTERNAL_ASSERT( i4way <= ipos, "Invalid end calculation" );
 
@@ -4862,7 +4856,7 @@ inline void CustomVector<Type,AF,padded,TF,RT>::multAssign( const SparseVector<V
 
    reset();
 
-   for( auto element=(~rhs).begin(); element!=(~rhs).end(); ++element )
+   for( ConstIterator_t<VT> element=(~rhs).begin(); element!=(~rhs).end(); ++element )
       v_[element->index()] = tmp[element->index()] * element->value();
 }
 /*! \endcond */
@@ -4932,7 +4926,7 @@ inline auto CustomVector<Type,AF,padded,TF,RT>::divAssign( const DenseVector<VT,
    const size_t ipos( size_ & size_t(-SIMDSIZE) );
    BLAZE_INTERNAL_ASSERT( ( size_ - ( size_ % SIMDSIZE ) ) == ipos, "Invalid end calculation" );
 
-   const size_t i4way( size_ & size_t( -(SIMDSIZE*4UL) ) );
+   const size_t i4way( size_ & size_t(-SIMDSIZE*4) );
    BLAZE_INTERNAL_ASSERT( ( size_ - ( size_ % (SIMDSIZE*4UL) ) ) == i4way, "Invalid end calculation" );
    BLAZE_INTERNAL_ASSERT( i4way <= ipos, "Invalid end calculation" );
 
@@ -4972,19 +4966,19 @@ inline auto CustomVector<Type,AF,padded,TF,RT>::divAssign( const DenseVector<VT,
 /*!\name CustomVector operators */
 //@{
 template< typename Type, bool AF, bool PF, bool TF, typename RT >
-void reset( CustomVector<Type,AF,PF,TF,RT>& v );
+inline void reset( CustomVector<Type,AF,PF,TF,RT>& v );
 
 template< typename Type, bool AF, bool PF, bool TF, typename RT >
-void clear( CustomVector<Type,AF,PF,TF,RT>& v );
+inline void clear( CustomVector<Type,AF,PF,TF,RT>& v );
 
 template< bool RF, typename Type, bool AF, bool PF, bool TF, typename RT >
-bool isDefault( const CustomVector<Type,AF,PF,TF,RT>& v );
+inline bool isDefault( const CustomVector<Type,AF,PF,TF,RT>& v );
 
 template< typename Type, bool AF, bool PF, bool TF, typename RT >
-bool isIntact( const CustomVector<Type,AF,PF,TF,RT>& v ) noexcept;
+inline bool isIntact( const CustomVector<Type,AF,PF,TF,RT>& v ) noexcept;
 
 template< typename Type, bool AF, bool PF, bool TF, typename RT >
-void swap( CustomVector<Type,AF,PF,TF,RT>& a, CustomVector<Type,AF,PF,TF,RT>& b ) noexcept;
+inline void swap( CustomVector<Type,AF,PF,TF,RT>& a, CustomVector<Type,AF,PF,TF,RT>& b ) noexcept;
 //@}
 //*************************************************************************************************
 

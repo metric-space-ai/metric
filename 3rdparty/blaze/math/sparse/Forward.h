@@ -3,7 +3,7 @@
 //  \file blaze/math/sparse/Forward.h
 //  \brief Header file for all forward declarations for sparse vectors and matrices
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -47,8 +47,6 @@ namespace blaze {
 template< typename, bool > class CompressedMatrix;
 template< typename, bool > class CompressedVector;
 template< typename, bool > class IdentityMatrix;
-template< typename, bool > class ZeroMatrix;
-template< typename, bool > class ZeroVector;
 
 } // namespace blaze
 

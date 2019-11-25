@@ -3,7 +3,7 @@
 //  \file blaze/math/SparseMatrix.h
 //  \brief Header file for all basic SparseMatrix functionality
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -47,7 +47,6 @@
 #include "../math/adaptors/UpperMatrix.h"
 #include "../math/expressions/DenseMatrix.h"
 #include "../math/expressions/DMatSMatEqualExpr.h"
-#include "../math/expressions/DMatSMatKronExpr.h"
 #include "../math/expressions/DMatSMatSchurExpr.h"
 #include "../math/expressions/DMatTSMatSchurExpr.h"
 #include "../math/expressions/DVecSVecOuterExpr.h"
@@ -56,12 +55,10 @@
 #include "../math/expressions/SMatDeclLowExpr.h"
 #include "../math/expressions/SMatDeclSymExpr.h"
 #include "../math/expressions/SMatDeclUppExpr.h"
-#include "../math/expressions/SMatDMatKronExpr.h"
 #include "../math/expressions/SMatDMatSchurExpr.h"
 #include "../math/expressions/SMatDVecMultExpr.h"
 #include "../math/expressions/SMatEvalExpr.h"
 #include "../math/expressions/SMatMapExpr.h"
-#include "../math/expressions/SMatMeanExpr.h"
 #include "../math/expressions/SMatNormExpr.h"
 #include "../math/expressions/SMatReduceExpr.h"
 #include "../math/expressions/SMatScalarDivExpr.h"
@@ -69,19 +66,15 @@
 #include "../math/expressions/SMatSerialExpr.h"
 #include "../math/expressions/SMatSMatAddExpr.h"
 #include "../math/expressions/SMatSMatEqualExpr.h"
-#include "../math/expressions/SMatSMatKronExpr.h"
 #include "../math/expressions/SMatSMatMultExpr.h"
 #include "../math/expressions/SMatSMatSchurExpr.h"
 #include "../math/expressions/SMatSMatSubExpr.h"
-#include "../math/expressions/SMatStdDevExpr.h"
 #include "../math/expressions/SMatSVecMultExpr.h"
 #include "../math/expressions/SMatTransExpr.h"
 #include "../math/expressions/SMatTSMatAddExpr.h"
-#include "../math/expressions/SMatTSMatKronExpr.h"
 #include "../math/expressions/SMatTSMatMultExpr.h"
 #include "../math/expressions/SMatTSMatSchurExpr.h"
 #include "../math/expressions/SMatTSMatSubExpr.h"
-#include "../math/expressions/SMatVarExpr.h"
 #include "../math/expressions/SparseMatrix.h"
 #include "../math/expressions/SVecDVecOuterExpr.h"
 #include "../math/expressions/SVecSVecOuterExpr.h"
@@ -89,13 +82,11 @@
 #include "../math/expressions/TDVecTSMatMultExpr.h"
 #include "../math/expressions/TSMatDMatSchurExpr.h"
 #include "../math/expressions/TSMatDVecMultExpr.h"
-#include "../math/expressions/TSMatSMatKronExpr.h"
 #include "../math/expressions/TSMatSMatMultExpr.h"
 #include "../math/expressions/TSMatSMatSchurExpr.h"
 #include "../math/expressions/TSMatSMatSubExpr.h"
 #include "../math/expressions/TSMatSVecMultExpr.h"
 #include "../math/expressions/TSMatTSMatAddExpr.h"
-#include "../math/expressions/TSMatTSMatKronExpr.h"
 #include "../math/expressions/TSMatTSMatMultExpr.h"
 #include "../math/expressions/TSMatTSMatSchurExpr.h"
 #include "../math/expressions/TSMatTSMatSubExpr.h"

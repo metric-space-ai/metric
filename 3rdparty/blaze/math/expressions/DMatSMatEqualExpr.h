@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/DMatSMatEqualExpr.h
 //  \brief Header file for the dense matrix/sparse matrix equality comparison expression
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -47,6 +47,7 @@
 #include "../../math/shims/Equal.h"
 #include "../../math/shims/IsDefault.h"
 #include "../../util/Types.h"
+#include "../../util/typetraits/RemoveReference.h"
 
 
 namespace blaze {
@@ -79,6 +80,7 @@ inline bool equal( const DenseMatrix<MT1,SO>& lhs, const SparseMatrix<MT2,false>
 {
    using CT1 = CompositeType_t<MT1>;
    using CT2 = CompositeType_t<MT2>;
+   using ConstIterator = ConstIterator_t< RemoveReference_t<CT2> >;
 
    // Early exit in case the matrix sizes don't match
    if( (~lhs).rows() != (~rhs).rows() || (~lhs).columns() != (~rhs).columns() )
@@ -94,7 +96,7 @@ inline bool equal( const DenseMatrix<MT1,SO>& lhs, const SparseMatrix<MT2,false>
 
    for( size_t i=0UL; i<B.rows(); ++i ) {
       j = 0UL;
-      for( auto element=B.begin(i); element!=B.end(i); ++element, ++j ) {
+      for( ConstIterator element=B.begin(i); element!=B.end(i); ++element, ++j ) {
          for( ; j<element->index(); ++j ) {
             if( !isDefault<RF>( A(i,j) ) ) return false;
          }
@@ -133,6 +135,7 @@ inline bool equal( const DenseMatrix<MT1,SO>& lhs, const SparseMatrix<MT2,true>&
 {
    using CT1 = CompositeType_t<MT1>;
    using CT2 = CompositeType_t<MT2>;
+   using ConstIterator = ConstIterator_t< RemoveReference_t<CT2> >;
 
    // Early exit in case the matrix sizes don't match
    if( (~lhs).rows() != (~rhs).rows() || (~lhs).columns() != (~rhs).columns() )
@@ -148,7 +151,7 @@ inline bool equal( const DenseMatrix<MT1,SO>& lhs, const SparseMatrix<MT2,true>&
 
    for( size_t j=0UL; j<B.columns(); ++j ) {
       i = 0UL;
-      for( auto element=B.begin(j); element!=B.end(j); ++element, ++i ) {
+      for( ConstIterator element=B.begin(j); element!=B.end(j); ++element, ++i ) {
          for( ; i<element->index(); ++i ) {
             if( !isDefault<RF>( A(i,j) ) ) return false;
          }

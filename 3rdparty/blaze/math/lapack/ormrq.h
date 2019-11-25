@@ -3,7 +3,7 @@
 //  \file blaze/math/lapack/ormrq.h
 //  \brief Header file for the LAPACK functions to multiply Q from a RQ decomposition with a matrix (ormrq)
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -46,7 +46,6 @@
 #include "../../math/constraints/BLASCompatible.h"
 #include "../../math/constraints/Computation.h"
 #include "../../math/constraints/ConstDataAccess.h"
-#include "../../math/constraints/Contiguous.h"
 #include "../../math/constraints/MutableDataAccess.h"
 #include "../../math/Exception.h"
 #include "../../math/expressions/DenseMatrix.h"
@@ -71,8 +70,8 @@ namespace blaze {
 /*!\name LAPACK functions to multiply Q from a RQ decomposition with a matrix (ormrq) */
 //@{
 template< typename MT1, bool SO1, typename MT2, bool SO2 >
-void ormrq( DenseMatrix<MT1,SO1>& C, const DenseMatrix<MT2,SO2>& A,
-            char side, char trans, const ElementType_t<MT2>* tau );
+inline void ormrq( DenseMatrix<MT1,SO1>& C, const DenseMatrix<MT2,SO2>& A,
+                   char side, char trans, const ElementType_t<MT2>* tau );
 //@}
 //*************************************************************************************************
 
@@ -149,14 +148,12 @@ inline void ormrq( DenseMatrix<MT1,SO1>& C, const DenseMatrix<MT2,SO2>& A,
    BLAZE_CONSTRAINT_MUST_NOT_BE_ADAPTOR_TYPE( MT1 );
    BLAZE_CONSTRAINT_MUST_NOT_BE_COMPUTATION_TYPE( MT1 );
    BLAZE_CONSTRAINT_MUST_HAVE_MUTABLE_DATA_ACCESS( MT1 );
-   BLAZE_CONSTRAINT_MUST_BE_CONTIGUOUS_TYPE( MT1 );
    BLAZE_CONSTRAINT_MUST_BE_BLAS_COMPATIBLE_TYPE( ElementType_t<MT1> );
    BLAZE_CONSTRAINT_MUST_BE_BUILTIN_TYPE( ElementType_t<MT1> );
 
    BLAZE_CONSTRAINT_MUST_NOT_BE_ADAPTOR_TYPE( MT2 );
    BLAZE_CONSTRAINT_MUST_NOT_BE_COMPUTATION_TYPE( MT2 );
    BLAZE_CONSTRAINT_MUST_HAVE_CONST_DATA_ACCESS( MT2 );
-   BLAZE_CONSTRAINT_MUST_BE_CONTIGUOUS_TYPE( MT2 );
    BLAZE_CONSTRAINT_MUST_BE_BLAS_COMPATIBLE_TYPE( ElementType_t<MT2> );
    BLAZE_CONSTRAINT_MUST_BE_BUILTIN_TYPE( ElementType_t<MT2> );
 

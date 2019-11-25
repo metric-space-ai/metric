@@ -3,7 +3,7 @@
 //  \file blaze/math/lapack/clapack/sytrs.h
 //  \brief Header file for the CLAPACK sytrs wrapper functions
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -42,7 +42,6 @@
 
 #include "../../../util/Complex.h"
 #include "../../../util/StaticAssert.h"
-#include "../../../util/Types.h"
 
 
 //=================================================================================================
@@ -56,14 +55,10 @@
 #if !defined(INTEL_MKL_VERSION)
 extern "C" {
 
-void ssytrs_( char* uplo, int* n, int* nrhs, float* A, int* lda, int* ipiv,
-              float* B, int* ldb, int* info, blaze::fortran_charlen_t nuplo );
-void dsytrs_( char* uplo, int* n, int* nrhs, double* A, int* lda, int* ipiv,
-              double* B, int* ldb, int* info, blaze::fortran_charlen_t nuplo );
-void csytrs_( char* uplo, int* n, int* nrhs, float* A, int* lda, int* ipiv,
-              float* B, int* ldb, int* info, blaze::fortran_charlen_t nuplo );
-void zsytrs_( char* uplo, int* n, int* nrhs, double* A, int* lda, int* ipiv,
-              double* B, int* ldb, int* info, blaze::fortran_charlen_t nuplo );
+void ssytrs_( char* uplo, int* n, int* nrhs, float*  A, int* lda, int* ipiv, float*  B, int* ldb, int* info );
+void dsytrs_( char* uplo, int* n, int* nrhs, double* A, int* lda, int* ipiv, double* B, int* ldb, int* info );
+void csytrs_( char* uplo, int* n, int* nrhs, float*  A, int* lda, int* ipiv, float*  B, int* ldb, int* info );
+void zsytrs_( char* uplo, int* n, int* nrhs, double* A, int* lda, int* ipiv, double* B, int* ldb, int* info );
 
 }
 #endif
@@ -84,17 +79,17 @@ namespace blaze {
 //*************************************************************************************************
 /*!\name LAPACK LDLT-based substitution functions (sytrs) */
 //@{
-void sytrs( char uplo, int n, int nrhs, const float* A, int lda, const int* ipiv,
-            float* B, int ldb, int* info );
+inline void sytrs( char uplo, int n, int nrhs, const float* A, int lda, const int* ipiv,
+                   float* B, int ldb, int* info );
 
-void sytrs( char uplo, int n, int nrhs, const double* A, int lda, const int* ipiv,
-            double* B, int ldb, int* info );
+inline void sytrs( char uplo, int n, int nrhs, const double* A, int lda, const int* ipiv,
+                   double* B, int ldb, int* info );
 
-void sytrs( char uplo, int n, int nrhs, const complex<float>* A, int lda, const int* ipiv,
-            complex<float>* B, int ldb, int* info );
+inline void sytrs( char uplo, int n, int nrhs, const complex<float>* A, int lda, const int* ipiv,
+                   complex<float>* B, int ldb, int* info );
 
-void sytrs( char uplo, int n, int nrhs, const complex<double>* A, int lda, const int* ipiv,
-            complex<double>* B, int ldb, int* info );
+inline void sytrs( char uplo, int n, int nrhs, const complex<double>* A, int lda, const int* ipiv,
+                   complex<double>* B, int ldb, int* info );
 //@}
 //*************************************************************************************************
 
@@ -141,7 +136,7 @@ inline void sytrs( char uplo, int n, int nrhs, const float* A, int lda, const in
 #endif
 
    ssytrs_( &uplo, &n, &nrhs, const_cast<float*>( A ), &lda,
-            const_cast<int*>( ipiv ), B, &ldb, info, blaze::fortran_charlen_t(1) );
+            const_cast<int*>( ipiv ), B, &ldb, info );
 }
 //*************************************************************************************************
 
@@ -188,7 +183,7 @@ inline void sytrs( char uplo, int n, int nrhs, const double* A, int lda, const i
 #endif
 
    dsytrs_( &uplo, &n, &nrhs, const_cast<double*>( A ), &lda,
-            const_cast<int*>( ipiv ), B, &ldb, info, blaze::fortran_charlen_t(1) );
+            const_cast<int*>( ipiv ), B, &ldb, info );
 }
 //*************************************************************************************************
 
@@ -240,8 +235,7 @@ inline void sytrs( char uplo, int n, int nrhs, const complex<float>* A, int lda,
 #endif
 
    csytrs_( &uplo, &n, &nrhs, const_cast<ET*>( reinterpret_cast<const ET*>( A ) ),
-            &lda, const_cast<int*>( ipiv ), reinterpret_cast<ET*>( B ), &ldb, info,
-            blaze::fortran_charlen_t(1) );
+            &lda, const_cast<int*>( ipiv ), reinterpret_cast<ET*>( B ), &ldb, info );
 }
 //*************************************************************************************************
 
@@ -293,8 +287,7 @@ inline void sytrs( char uplo, int n, int nrhs, const complex<double>* A, int lda
 #endif
 
    zsytrs_( &uplo, &n, &nrhs, const_cast<ET*>( reinterpret_cast<const ET*>( A ) ),
-            &lda, const_cast<int*>( ipiv ), reinterpret_cast<ET*>( B ), &ldb, info,
-            blaze::fortran_charlen_t(1) );
+            &lda, const_cast<int*>( ipiv ), reinterpret_cast<ET*>( B ), &ldb, info );
 }
 //*************************************************************************************************
 

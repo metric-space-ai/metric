@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/SMatNormExpr.h
 //  \brief Header file for the sparse matrix norm expression
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -44,7 +44,6 @@
 #include "../../math/Aliases.h"
 #include "../../math/expressions/SparseMatrix.h"
 #include "../../math/functors/Abs.h"
-#include "../../math/functors/Bind2nd.h"
 #include "../../math/functors/Cbrt.h"
 #include "../../math/functors/L1Norm.h"
 #include "../../math/functors/L2Norm.h"
@@ -52,12 +51,12 @@
 #include "../../math/functors/L4Norm.h"
 #include "../../math/functors/LpNorm.h"
 #include "../../math/functors/Noop.h"
-#include "../../math/functors/Pow.h"
 #include "../../math/functors/Pow2.h"
 #include "../../math/functors/Pow3.h"
+#include "../../math/functors/Pow4.h"
 #include "../../math/functors/Qdrt.h"
-#include "../../math/functors/SqrAbs.h"
 #include "../../math/functors/Sqrt.h"
+#include "../../math/functors/UnaryPow.h"
 #include "../../math/shims/Evaluate.h"
 #include "../../math/shims/Invert.h"
 #include "../../math/shims/IsDefault.h"
@@ -71,6 +70,7 @@
 #include "../../util/StaticAssert.h"
 #include "../../util/TypeList.h"
 #include "../../util/Types.h"
+#include "../../util/typetraits/RemoveReference.h"
 
 
 namespace blaze {
@@ -107,6 +107,8 @@ inline decltype(auto) norm_backend( const SparseMatrix<MT,SO>& sm, Abs abs, Powe
    using ET = ElementType_t<MT>;
    using RT = decltype( evaluate( root( std::declval<ET>() ) ) );
 
+   using ConstIterator = ConstIterator_t< RemoveReference_t<CT> >;
+
    if( (~sm).rows() == 0UL || (~sm).columns() == 0UL ) return RT();
 
    CT tmp( ~sm );
@@ -117,8 +119,8 @@ inline decltype(auto) norm_backend( const SparseMatrix<MT,SO>& sm, Abs abs, Powe
 
    for( size_t i=0UL; i<N; ++i )
    {
-      const auto end( tmp.end(i) );
-      for( auto element=tmp.begin(i); element!=end; ++element ) {
+      const ConstIterator end( tmp.end(i) );
+      for( ConstIterator element=tmp.begin(i); element!=end; ++element ) {
          if( IsResizable_v<ET> && isDefault( norm ) )
             norm = power( abs( element->value() ) );
          else
@@ -153,7 +155,7 @@ decltype(auto) norm( const SparseMatrix<MT,SO>& sm )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return norm_backend( ~sm, SqrAbs(), Noop(), Sqrt() );
+   return norm_backend( ~sm, Noop(), Pow2(), Sqrt() );
 }
 //*************************************************************************************************
 
@@ -179,7 +181,7 @@ decltype(auto) sqrNorm( const SparseMatrix<MT,SO>& sm )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return norm_backend( ~sm, SqrAbs(), Noop(), Noop() );
+   return norm_backend( ~sm, Noop(), Pow2(), Noop() );
 }
 //*************************************************************************************************
 
@@ -231,7 +233,7 @@ decltype(auto) l2Norm( const SparseMatrix<MT,SO>& sm )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return norm_backend( ~sm, SqrAbs(), Noop(), Sqrt() );
+   return norm_backend( ~sm, Noop(), Pow2(), Sqrt() );
 }
 //*************************************************************************************************
 
@@ -283,7 +285,7 @@ decltype(auto) l4Norm( const SparseMatrix<MT,SO>& sm )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return norm_backend( ~sm, SqrAbs(), Pow2(), Qdrt() );
+   return norm_backend( ~sm, Noop(), Pow4(), Qdrt() );
 }
 //*************************************************************************************************
 
@@ -318,8 +320,7 @@ decltype(auto) lpNorm( const SparseMatrix<MT,SO>& sm, ST p )
    BLAZE_USER_ASSERT( !isZero( p ), "Invalid p for Lp norm detected" );
 
    using ScalarType = MultTrait_t< UnderlyingBuiltin_t<MT>, decltype( inv( p ) ) >;
-   using UnaryPow = Bind2nd<Pow,ScalarType>;
-   return norm_backend( ~sm, Abs(), UnaryPow( Pow(), p ), UnaryPow( Pow(), inv( p ) ) );
+   return norm_backend( ~sm, Abs(), UnaryPow<ScalarType>( p ), UnaryPow<ScalarType>( inv( p ) ) );
 }
 //*************************************************************************************************
 
@@ -359,32 +360,6 @@ inline decltype(auto) lpNorm( const SparseMatrix<MT,SO>& sm )
 
 
 //*************************************************************************************************
-/*!\brief Computes the infinity norm for the given sparse matrix.
-// \ingroup sparse_matrix
-//
-// \param sm The given sparse matrix for the norm computation.
-// \return The infinity norm of the given sparse matrix.
-//
-// This function computes the infinity norm of the given sparse matrix:
-
-   \code
-   blaze::CompressedMatrix<double> A;
-   // ... Resizing and initialization
-   const double linf = linfNorm( A );
-   \endcode
-*/
-template< typename MT  // Type of the sparse matrix
-        , bool SO >    // Storage order
-decltype(auto) linfNorm( const SparseMatrix<MT,SO>& sm )
-{
-   BLAZE_FUNCTION_TRACE;
-
-   return max( abs( ~sm ) );
-}
-//*************************************************************************************************
-
-
-//*************************************************************************************************
 /*!\brief Computes the maximum norm for the given sparse matrix.
 // \ingroup sparse_matrix
 //
@@ -405,7 +380,7 @@ decltype(auto) maxNorm( const SparseMatrix<MT,SO>& sm )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return linfNorm( ~sm );
+   return max( abs( ~sm ) );
 }
 //*************************************************************************************************
 

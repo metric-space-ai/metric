@@ -3,7 +3,7 @@
 //  \file blaze/math/LAPACK.h
 //  \brief Header file for the LAPACK functionality
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -60,13 +60,9 @@
 #include "../math/lapack/hetrf.h"
 #include "../math/lapack/hetri.h"
 #include "../math/lapack/hetrs.h"
-#include "../math/lapack/org2l.h"
-#include "../math/lapack/org2r.h"
-#include "../math/lapack/orgl2.h"
 #include "../math/lapack/orglq.h"
 #include "../math/lapack/orgql.h"
 #include "../math/lapack/orgqr.h"
-#include "../math/lapack/orgr2.h"
 #include "../math/lapack/orgrq.h"
 #include "../math/lapack/ormlq.h"
 #include "../math/lapack/ormql.h"
@@ -86,13 +82,9 @@
 #include "../math/lapack/trsv.h"
 #include "../math/lapack/trtri.h"
 #include "../math/lapack/trtrs.h"
-#include "../math/lapack/ung2l.h"
-#include "../math/lapack/ung2r.h"
-#include "../math/lapack/ungl2.h"
 #include "../math/lapack/unglq.h"
 #include "../math/lapack/ungql.h"
 #include "../math/lapack/ungqr.h"
-#include "../math/lapack/ungr2.h"
 #include "../math/lapack/ungrq.h"
 #include "../math/lapack/unmlq.h"
 #include "../math/lapack/unmql.h"

@@ -3,7 +3,7 @@
 //  \file blaze/math/views/submatrix/SubmatrixData.h
 //  \brief Header file for the implementation of the SubmatrixData class template
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -40,8 +40,8 @@
 // Includes
 //*************************************************************************************************
 
-#include "../../../util/MaybeUnused.h"
 #include "../../../util/Types.h"
+#include "../../../util/Unused.h"
 
 
 namespace blaze {
@@ -61,7 +61,7 @@ namespace blaze {
 // number of compile time submatrix arguments.
 */
 template< size_t... CSAs >  // Compile time submatrix arguments
-class SubmatrixData
+struct SubmatrixData
 {};
 //*************************************************************************************************
 
@@ -84,40 +84,24 @@ class SubmatrixData
 // compile time submatrix arguments.
 */
 template<>
-class SubmatrixData<>
+struct SubmatrixData<>
 {
  public:
-   //**Compile time flags**************************************************************************
-   //! Compilation flag for compile time optimization.
-   /*! The \a compileTimeArgs compilation flag indicates whether the view has been created by
-       means of compile time arguments and whether these arguments can be queried at compile
-       time. In that case, the \a compileTimeArgs compilation flag is set to \a true, otherwise
-       it is set to \a false. */
-   static constexpr bool compileTimeArgs = false;
-   //**********************************************************************************************
-
    //**Constructors********************************************************************************
    /*!\name Constructors */
    //@{
    template< typename... RSAs >
    explicit inline SubmatrixData( size_t rindex, size_t cindex, size_t m, size_t n, RSAs... args );
-
-   SubmatrixData( const SubmatrixData& ) = default;
+   // No explicitly declared copy constructor.
    //@}
    //**********************************************************************************************
 
    //**Destructor**********************************************************************************
-   /*!\name Destructor */
-   //@{
-   ~SubmatrixData() = default;
-   //@}
+   // No explicitly declared destructor.
    //**********************************************************************************************
 
    //**Assignment operators************************************************************************
-   /*!\name Assignment operators */
-   //@{
    SubmatrixData& operator=( const SubmatrixData& ) = delete;
-   //@}
    //**********************************************************************************************
 
    //**Utility functions***************************************************************************
@@ -162,7 +146,7 @@ inline SubmatrixData<>::SubmatrixData( size_t rindex, size_t cindex, size_t m, s
    , m_     ( m      )  // The number of rows of the submatrix
    , n_     ( n      )  // The number of columns of the submatrix
 {
-   MAYBE_UNUSED( args... );
+   UNUSED_PARAMETER( args... );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -245,40 +229,24 @@ template< size_t I    // Index of the first row
         , size_t J    // Index of the first column
         , size_t M    // Number of rows
         , size_t N >  // Number of columns
-class SubmatrixData<I,J,M,N>
+struct SubmatrixData<I,J,M,N>
 {
  public:
-   //**Compile time flags**************************************************************************
-   //! Compilation flag for compile time optimization.
-   /*! The \a compileTimeArgs compilation flag indicates whether the view has been created by
-       means of compile time arguments and whether these arguments can be queried at compile
-       time. In that case, the \a compileTimeArgs compilation flag is set to \a true, otherwise
-       it is set to \a false. */
-   static constexpr bool compileTimeArgs = true;
-   //**********************************************************************************************
-
    //**Constructors********************************************************************************
    /*!\name Constructors */
    //@{
    template< typename... RSAs >
    explicit inline SubmatrixData( RSAs... args );
-
-   SubmatrixData( const SubmatrixData& ) = default;
+   // No explicitly declared copy constructor.
    //@}
    //**********************************************************************************************
 
    //**Destructor**********************************************************************************
-   /*!\name Destructor */
-   //@{
-   ~SubmatrixData() = default;
-   //@}
+   // No explicitly declared destructor.
    //**********************************************************************************************
 
    //**Assignment operators************************************************************************
-   /*!\name Assignment operators */
-   //@{
    SubmatrixData& operator=( const SubmatrixData& ) = delete;
-   //@}
    //**********************************************************************************************
 
    //**Utility functions***************************************************************************
@@ -308,7 +276,7 @@ template< size_t I            // Index of the first row
 template< typename... RSAs >  // Optional submatrix arguments
 inline SubmatrixData<I,J,M,N>::SubmatrixData( RSAs... args )
 {
-   MAYBE_UNUSED( args... );
+   UNUSED_PARAMETER( args... );
 }
 /*! \endcond */
 //*************************************************************************************************

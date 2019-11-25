@@ -3,7 +3,7 @@
 //  \file blaze/math/adaptors/lowermatrix/Sparse.h
 //  \brief LowerMatrix specialization for sparse matrices
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -46,7 +46,7 @@
 #include "../../../math/adaptors/lowermatrix/BaseTemplate.h"
 #include "../../../math/adaptors/lowermatrix/LowerProxy.h"
 #include "../../../math/Aliases.h"
-#include "../../../math/constraints/Computation.h"
+#include "../../../math/constraints/Expression.h"
 #include "../../../math/constraints/Hermitian.h"
 #include "../../../math/constraints/Lower.h"
 #include "../../../math/constraints/Resizable.h"
@@ -54,9 +54,7 @@
 #include "../../../math/constraints/Static.h"
 #include "../../../math/constraints/StorageOrder.h"
 #include "../../../math/constraints/Symmetric.h"
-#include "../../../math/constraints/Transformation.h"
 #include "../../../math/constraints/Upper.h"
-#include "../../../math/constraints/View.h"
 #include "../../../math/dense/InitializerMatrix.h"
 #include "../../../math/Exception.h"
 #include "../../../math/expressions/SparseMatrix.h"
@@ -156,7 +154,7 @@ class LowerMatrix<MT,SO,false>
    explicit inline LowerMatrix( size_t n );
    explicit inline LowerMatrix( size_t n, size_t nonzeros );
    explicit inline LowerMatrix( size_t n, const std::vector<size_t>& nonzeros );
-            inline LowerMatrix( initializer_list< initializer_list<ElementType> > list );
+   explicit inline LowerMatrix( initializer_list< initializer_list<ElementType> > list );
 
    inline LowerMatrix( const LowerMatrix& m );
    inline LowerMatrix( LowerMatrix&& m ) noexcept;
@@ -167,10 +165,7 @@ class LowerMatrix<MT,SO,false>
    //**********************************************************************************************
 
    //**Destructor**********************************************************************************
-   /*!\name Destructor */
-   //@{
-   ~LowerMatrix() = default;
-   //@}
+   // No explicitly declared destructor.
    //**********************************************************************************************
 
    //**Data access functions***********************************************************************
@@ -341,9 +336,7 @@ class LowerMatrix<MT,SO,false>
    BLAZE_CONSTRAINT_MUST_NOT_BE_POINTER_TYPE         ( MT );
    BLAZE_CONSTRAINT_MUST_NOT_BE_CONST                ( MT );
    BLAZE_CONSTRAINT_MUST_NOT_BE_VOLATILE             ( MT );
-   BLAZE_CONSTRAINT_MUST_NOT_BE_VIEW_TYPE            ( MT );
-   BLAZE_CONSTRAINT_MUST_NOT_BE_COMPUTATION_TYPE     ( MT );
-   BLAZE_CONSTRAINT_MUST_NOT_BE_TRANSFORMATION_TYPE  ( MT );
+   BLAZE_CONSTRAINT_MUST_NOT_BE_EXPRESSION_TYPE      ( MT );
    BLAZE_CONSTRAINT_MUST_NOT_BE_SYMMETRIC_MATRIX_TYPE( MT );
    BLAZE_CONSTRAINT_MUST_NOT_BE_HERMITIAN_MATRIX_TYPE( MT );
    BLAZE_CONSTRAINT_MUST_NOT_BE_LOWER_MATRIX_TYPE    ( MT );
@@ -1612,15 +1605,13 @@ template< typename MT  // Type of the adapted dense matrix
         , bool SO >    // Storage order of the adapted dense matrix
 inline void LowerMatrix<MT,SO,false>::resetUpper()
 {
-   using blaze::erase;
-
    if( SO ) {
       for( size_t j=1UL; j<columns(); ++j )
-         erase( matrix_, j, matrix_.begin( j ), matrix_.lowerBound( j, j ) );
+         matrix_.erase( j, matrix_.begin( j ), matrix_.lowerBound( j, j ) );
    }
    else {
       for( size_t i=0UL; i<rows(); ++i )
-         erase( matrix_, i, matrix_.upperBound( i, i ), matrix_.end( i ) );
+         matrix_.erase( i, matrix_.upperBound( i, i ), matrix_.end( i ) );
    }
 }
 /*! \endcond */
@@ -1808,9 +1799,7 @@ template< typename MT  // Type of the adapted sparse matrix
         , bool SO >    // Storage order of the adapted sparse matrix
 inline void LowerMatrix<MT,SO,false>::erase( size_t i, size_t j )
 {
-   using blaze::erase;
-
-   erase( matrix_, i, j );
+   matrix_.erase( i, j );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -1833,9 +1822,7 @@ template< typename MT  // Type of the adapted sparse matrix
 inline typename LowerMatrix<MT,SO,false>::Iterator
    LowerMatrix<MT,SO,false>::erase( size_t i, Iterator pos )
 {
-   using blaze::erase;
-
-   return erase( matrix_, i, pos );
+   return matrix_.erase( i, pos );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -1859,9 +1846,7 @@ template< typename MT  // Type of the adapted sparse matrix
 inline typename LowerMatrix<MT,SO,false>::Iterator
    LowerMatrix<MT,SO,false>::erase( size_t i, Iterator first, Iterator last )
 {
-   using blaze::erase;
-
-   return erase( matrix_, i, first, last );
+   return matrix_.erase( i, first, last );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -1894,9 +1879,7 @@ template< typename MT      // Type of the adapted sparse matrix
 template< typename Pred >  // Type of the unary predicate
 inline void LowerMatrix<MT,SO,false>::erase( Pred predicate )
 {
-   using blaze::erase;
-
-   erase( matrix_, predicate );
+   matrix_.erase( predicate );
 
    BLAZE_INTERNAL_ASSERT( isIntact(), "Broken invariant detected" );
 }
@@ -1937,9 +1920,7 @@ template< typename MT      // Type of the adapted sparse matrix
 template< typename Pred >  // Type of the unary predicate
 inline void LowerMatrix<MT,SO,false>::erase( size_t i, Iterator first, Iterator last, Pred predicate )
 {
-   using blaze::erase;
-
-   erase( matrix_, i, first, last, predicate );
+   matrix_.erase( i, first, last, predicate );
 
    BLAZE_INTERNAL_ASSERT( isIntact(), "Broken invariant detected" );
 }

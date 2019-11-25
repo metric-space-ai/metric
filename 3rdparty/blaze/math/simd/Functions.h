@@ -3,7 +3,7 @@
 //  \file blaze/math/simd/Functions.h
 //  \brief Header file for all SIMD functions
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -49,9 +49,6 @@
 #include "../../math/simd/Atan.h"
 #include "../../math/simd/Atan2.h"
 #include "../../math/simd/Atanh.h"
-#include "../../math/simd/Bitand.h"
-#include "../../math/simd/Bitor.h"
-#include "../../math/simd/Bitxor.h"
 #include "../../math/simd/Cbrt.h"
 #include "../../math/simd/Ceil.h"
 #include "../../math/simd/Conj.h"
@@ -83,10 +80,6 @@
 #include "../../math/simd/Round.h"
 #include "../../math/simd/Set.h"
 #include "../../math/simd/Setzero.h"
-#include "../../math/simd/ShiftLI.h"
-#include "../../math/simd/ShiftLV.h"
-#include "../../math/simd/ShiftRI.h"
-#include "../../math/simd/ShiftRV.h"
 #include "../../math/simd/Sign.h"
 #include "../../math/simd/Sin.h"
 #include "../../math/simd/Sinh.h"

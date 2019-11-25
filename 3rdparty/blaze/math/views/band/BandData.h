@@ -3,7 +3,7 @@
 //  \file blaze/math/views/band/BandData.h
 //  \brief Header file for the implementation of the BandData class template
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -40,8 +40,8 @@
 // Includes
 //*************************************************************************************************
 
-#include "../../../util/MaybeUnused.h"
 #include "../../../util/Types.h"
+#include "../../../util/Unused.h"
 
 
 namespace blaze {
@@ -61,7 +61,7 @@ namespace blaze {
 // of compile time band arguments.
 */
 template< ptrdiff_t... CBAs >  // Compile time band arguments
-class BandData
+struct BandData
 {};
 //*************************************************************************************************
 
@@ -83,40 +83,24 @@ class BandData
 // time band arguments.
 */
 template<>
-class BandData<>
+struct BandData<>
 {
  public:
-   //**Compile time flags**************************************************************************
-   //! Compilation flag for compile time optimization.
-   /*! The \a compileTimeArgs compilation flag indicates whether the view has been created by
-       means of compile time arguments and whether these arguments can be queried at compile
-       time. In that case, the \a compileTimeArgs compilation flag is set to \a true, otherwise
-       it is set to \a false. */
-   static constexpr bool compileTimeArgs = false;
-   //**********************************************************************************************
-
    //**Constructors********************************************************************************
    /*!\name Constructors */
    //@{
    template< typename... RBAs >
    explicit inline BandData( ptrdiff_t index, RBAs... args );
-
-   BandData( const BandData& ) = default;
+   // No explicitly declared copy constructor.
    //@}
    //**********************************************************************************************
 
    //**Destructor**********************************************************************************
-   /*!\name Destructor */
-   //@{
-   ~BandData() = default;
-   //@}
+   // No explicitly declared destructor.
    //**********************************************************************************************
 
    //**Assignment operators************************************************************************
-   /*!\name Assignment operators */
-   //@{
    BandData& operator=( const BandData& ) = delete;
-   //@}
    //**********************************************************************************************
 
    //**Utility functions***************************************************************************
@@ -155,7 +139,7 @@ inline BandData<>::BandData( ptrdiff_t index, RBAs... args )
    , row_   ( index >= 0L ?   0UL : -index )  // The index of the row containing the first element of the band
    , column_( index >= 0L ? index :    0UL )  // The index of the column containing the first element of the band
 {
-   MAYBE_UNUSED( args... );
+   UNUSED_PARAMETER( args... );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -220,40 +204,24 @@ inline size_t BandData<>::column() const noexcept
 // compile time band argument.
 */
 template< ptrdiff_t I >  // Compile time band index
-class BandData<I>
+struct BandData<I>
 {
  public:
-   //**Compile time flags**************************************************************************
-   //! Compilation flag for compile time optimization.
-   /*! The \a compileTimeArgs compilation flag indicates whether the view has been created by
-       means of compile time arguments and whether these arguments can be queried at compile
-       time. In that case, the \a compileTimeArgs compilation flag is set to \a true, otherwise
-       it is set to \a false. */
-   static constexpr bool compileTimeArgs = true;
-   //**********************************************************************************************
-
    //**Constructors********************************************************************************
    /*!\name Constructors */
    //@{
    template< typename... RBAs >
    explicit inline BandData( RBAs... args );
-
-   BandData( const BandData& ) = default;
+   // No explicitly declared copy constructor.
    //@}
    //**********************************************************************************************
 
    //**Destructor**********************************************************************************
-   /*!\name Destructor */
-   //@{
-   ~BandData() = default;
-   //@}
+   // No explicitly declared destructor.
    //**********************************************************************************************
 
    //**Assignment operators************************************************************************
-   /*!\name Assignment operators */
-   //@{
    BandData& operator=( const BandData& ) = delete;
-   //@}
    //**********************************************************************************************
 
    //**Utility functions***************************************************************************
@@ -279,7 +247,7 @@ template< ptrdiff_t I >       // Compile time band index
 template< typename... RBAs >  // Optional band arguments
 inline BandData<I>::BandData( RBAs... args )
 {
-   MAYBE_UNUSED( args... );
+   UNUSED_PARAMETER( args... );
 }
 /*! \endcond */
 //*************************************************************************************************

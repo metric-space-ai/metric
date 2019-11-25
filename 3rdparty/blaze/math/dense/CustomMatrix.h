@@ -3,7 +3,7 @@
 //  \file blaze/math/dense/CustomMatrix.h
 //  \brief Header file for the implementation of a customizable matrix
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -95,10 +95,9 @@
 #include "../../util/constraints/Volatile.h"
 #include "../../util/DisableIf.h"
 #include "../../util/EnableIf.h"
-#include "../../util/IntegralConstant.h"
-#include "../../util/MaybeUnused.h"
 #include "../../util/Misalignment.h"
 #include "../../util/mpl/If.h"
+#include "../../util/TrueType.h"
 #include "../../util/Types.h"
 #include "../../util/typetraits/IsConst.h"
 #include "../../util/typetraits/IsIntegral.h"
@@ -106,6 +105,7 @@
 #include "../../util/typetraits/IsSame.h"
 #include "../../util/typetraits/IsVectorizable.h"
 #include "../../util/typetraits/RemoveConst.h"
+#include "../../util/Unused.h"
 
 
 namespace blaze {
@@ -483,10 +483,7 @@ class CustomMatrix
    //**********************************************************************************************
 
    //**Destructor**********************************************************************************
-   /*!\name Destructor */
-   //@{
-   ~CustomMatrix() = default;
-   //@}
+   // No explicitly declared destructor.
    //**********************************************************************************************
 
    //**Data access functions***********************************************************************
@@ -515,8 +512,8 @@ class CustomMatrix
    inline CustomMatrix& operator=( const Type& set );
    inline CustomMatrix& operator=( initializer_list< initializer_list<Type> > list );
 
-   template< typename Other, size_t Rows, size_t Cols >
-   inline CustomMatrix& operator=( const Other (&array)[Rows][Cols] );
+   template< typename Other, size_t M, size_t N >
+   inline CustomMatrix& operator=( const Other (&array)[M][N] );
 
    inline CustomMatrix& operator=( const CustomMatrix& rhs );
    inline CustomMatrix& operator=( CustomMatrix&& rhs ) noexcept;
@@ -1367,17 +1364,17 @@ template< typename Type   // Data type of the matrix
         , bool SO         // Storage order
         , typename RT >   // Result type
 template< typename Other  // Data type of the initialization array
-        , size_t Rows     // Number of rows of the initialization array
-        , size_t Cols >   // Number of columns of the initialization array
+        , size_t M        // Number of rows of the initialization array
+        , size_t N >      // Number of columns of the initialization array
 inline CustomMatrix<Type,AF,PF,SO,RT>&
-   CustomMatrix<Type,AF,PF,SO,RT>::operator=( const Other (&array)[Rows][Cols] )
+   CustomMatrix<Type,AF,PF,SO,RT>::operator=( const Other (&array)[M][N] )
 {
-   if( m_ != Rows || n_ != Cols ) {
+   if( m_ != M || n_ != N ) {
       BLAZE_THROW_INVALID_ARGUMENT( "Invalid array size" );
    }
 
-   for( size_t i=0UL; i<Rows; ++i )
-      for( size_t j=0UL; j<Cols; ++j )
+   for( size_t i=0UL; i<M; ++i )
+      for( size_t j=0UL; j<N; ++j )
          v_[i*nn_+j] = array[i][j];
 
    return *this;
@@ -1704,7 +1701,7 @@ template< typename Type  // Data type of the matrix
         , typename RT >  // Result type
 inline size_t CustomMatrix<Type,AF,PF,SO,RT>::capacity( size_t i ) const noexcept
 {
-   MAYBE_UNUSED( i );
+   UNUSED_PARAMETER( i );
    BLAZE_USER_ASSERT( i < rows(), "Invalid row access index" );
    return nn_;
 }
@@ -2575,7 +2572,7 @@ inline void CustomMatrix<Type,AF,PF,SO,RT>::assign( const SparseMatrix<MT,SO>& r
    BLAZE_INTERNAL_ASSERT( n_ == (~rhs).columns(), "Invalid number of columns" );
 
    for( size_t i=0UL; i<m_; ++i )
-      for( auto element=(~rhs).begin(i); element!=(~rhs).end(i); ++element )
+      for( ConstIterator_t<MT> element=(~rhs).begin(i); element!=(~rhs).end(i); ++element )
          v_[i*nn_+element->index()] = element->value();
 }
 //*************************************************************************************************
@@ -2606,7 +2603,7 @@ inline void CustomMatrix<Type,AF,PF,SO,RT>::assign( const SparseMatrix<MT,!SO>& 
    BLAZE_INTERNAL_ASSERT( n_ == (~rhs).columns(), "Invalid number of columns" );
 
    for( size_t j=0UL; j<n_; ++j )
-      for( auto element=(~rhs).begin(j); element!=(~rhs).end(j); ++element )
+      for( ConstIterator_t<MT> element=(~rhs).begin(j); element!=(~rhs).end(j); ++element )
          v_[element->index()*nn_+j] = element->value();
 }
 //*************************************************************************************************
@@ -2804,7 +2801,7 @@ inline void CustomMatrix<Type,AF,PF,SO,RT>::addAssign( const SparseMatrix<MT,SO>
    BLAZE_INTERNAL_ASSERT( n_ == (~rhs).columns(), "Invalid number of columns" );
 
    for( size_t i=0UL; i<m_; ++i )
-      for( auto element=(~rhs).begin(i); element!=(~rhs).end(i); ++element )
+      for( ConstIterator_t<MT> element=(~rhs).begin(i); element!=(~rhs).end(i); ++element )
          v_[i*nn_+element->index()] += element->value();
 }
 //*************************************************************************************************
@@ -2835,7 +2832,7 @@ inline void CustomMatrix<Type,AF,PF,SO,RT>::addAssign( const SparseMatrix<MT,!SO
    BLAZE_INTERNAL_ASSERT( n_ == (~rhs).columns(), "Invalid number of columns" );
 
    for( size_t j=0UL; j<n_; ++j )
-      for( auto element=(~rhs).begin(j); element!=(~rhs).end(j); ++element )
+      for( ConstIterator_t<MT> element=(~rhs).begin(j); element!=(~rhs).end(j); ++element )
          v_[element->index()*nn_+j] += element->value();
 }
 //*************************************************************************************************
@@ -3033,7 +3030,7 @@ inline void CustomMatrix<Type,AF,PF,SO,RT>::subAssign( const SparseMatrix<MT,SO>
    BLAZE_INTERNAL_ASSERT( n_ == (~rhs).columns(), "Invalid number of columns" );
 
    for( size_t i=0UL; i<m_; ++i )
-      for( auto element=(~rhs).begin(i); element!=(~rhs).end(i); ++element )
+      for( ConstIterator_t<MT> element=(~rhs).begin(i); element!=(~rhs).end(i); ++element )
          v_[i*nn_+element->index()] -= element->value();
 }
 //*************************************************************************************************
@@ -3064,7 +3061,7 @@ inline void CustomMatrix<Type,AF,PF,SO,RT>::subAssign( const SparseMatrix<MT,!SO
    BLAZE_INTERNAL_ASSERT( n_ == (~rhs).columns(), "Invalid number of columns" );
 
    for( size_t j=0UL; j<n_; ++j )
-      for( auto element=(~rhs).begin(j); element!=(~rhs).end(j); ++element )
+      for( ConstIterator_t<MT> element=(~rhs).begin(j); element!=(~rhs).end(j); ++element )
          v_[element->index()*nn_+j] -= element->value();
 }
 //*************************************************************************************************
@@ -3230,7 +3227,7 @@ inline void CustomMatrix<Type,AF,PF,SO,RT>::schurAssign( const SparseMatrix<MT,S
    reset();
 
    for( size_t i=0UL; i<m_; ++i )
-      for( auto element=(~rhs).begin(i); element!=(~rhs).end(i); ++element )
+      for( ConstIterator_t<MT> element=(~rhs).begin(i); element!=(~rhs).end(i); ++element )
          v_[i*nn_+element->index()] = tmp(i,element->index()) * element->value();
 }
 //*************************************************************************************************
@@ -3265,7 +3262,7 @@ inline void CustomMatrix<Type,AF,PF,SO,RT>::schurAssign( const SparseMatrix<MT,!
    reset();
 
    for( size_t j=0UL; j<n_; ++j )
-      for( auto element=(~rhs).begin(j); element!=(~rhs).end(j); ++element )
+      for( ConstIterator_t<MT> element=(~rhs).begin(j); element!=(~rhs).end(j); ++element )
          v_[element->index()*nn_+j] = tmp(element->index(),j) * element->value();
 }
 //*************************************************************************************************
@@ -3375,10 +3372,7 @@ class CustomMatrix<Type,AF,PF,true,RT>
    //**********************************************************************************************
 
    //**Destructor**********************************************************************************
-   /*!\name Destructor */
-   //@{
-   ~CustomMatrix() = default;
-   //@}
+   // No explicitly declared destructor.
    //**********************************************************************************************
 
    //**Data access functions***********************************************************************
@@ -3407,8 +3401,8 @@ class CustomMatrix<Type,AF,PF,true,RT>
    inline CustomMatrix& operator=( const Type& set );
    inline CustomMatrix& operator=( initializer_list< initializer_list<Type> > list );
 
-   template< typename Other, size_t Rows, size_t Cols >
-   inline CustomMatrix& operator=( const Other (&array)[Rows][Cols] );
+   template< typename Other, size_t M, size_t N >
+   inline CustomMatrix& operator=( const Other (&array)[M][N] );
 
    inline CustomMatrix& operator=( const CustomMatrix& rhs );
    inline CustomMatrix& operator=( CustomMatrix&& rhs ) noexcept;
@@ -4241,17 +4235,17 @@ template< typename Type   // Data type of the matrix
         , bool PF         // Padding flag
         , typename RT >   // Result type
 template< typename Other  // Data type of the initialization array
-        , size_t Rows     // Number of rows of the initialization array
-        , size_t Cols >   // Number of columns of the initialization array
+        , size_t M        // Number of rows of the initialization array
+        , size_t N >      // Number of columns of the initialization array
 inline CustomMatrix<Type,AF,PF,true,RT>&
-   CustomMatrix<Type,AF,PF,true,RT>::operator=( const Other (&array)[Rows][Cols] )
+   CustomMatrix<Type,AF,PF,true,RT>::operator=( const Other (&array)[M][N] )
 {
-   if( m_ != Rows || n_ != Cols ) {
+   if( m_ != M || n_ != N ) {
       BLAZE_THROW_INVALID_ARGUMENT( "Invalid array size" );
    }
 
-   for( size_t j=0UL; j<Cols; ++j )
-      for( size_t i=0UL; i<Rows; ++i )
+   for( size_t j=0UL; j<N; ++j )
+      for( size_t i=0UL; i<M; ++i )
          v_[i+j*mm_] = array[i][j];
 
    return *this;
@@ -4582,7 +4576,7 @@ template< typename Type  // Data type of the matrix
         , typename RT >  // Result type
 inline size_t CustomMatrix<Type,AF,PF,true,RT>::capacity( size_t j ) const noexcept
 {
-   MAYBE_UNUSED( j );
+   UNUSED_PARAMETER( j );
    BLAZE_USER_ASSERT( j < columns(), "Invalid column access index" );
    return mm_;
 }
@@ -5465,7 +5459,7 @@ inline void CustomMatrix<Type,AF,PF,true,RT>::assign( const SparseMatrix<MT,true
    BLAZE_INTERNAL_ASSERT( n_ == (~rhs).columns(), "Invalid number of columns" );
 
    for( size_t j=0UL; j<(~rhs).columns(); ++j )
-      for( auto element=(~rhs).begin(j); element!=(~rhs).end(j); ++element )
+      for( ConstIterator_t<MT> element=(~rhs).begin(j); element!=(~rhs).end(j); ++element )
          v_[element->index()+j*mm_] = element->value();
 }
 /*! \endcond */
@@ -5497,7 +5491,7 @@ inline void CustomMatrix<Type,AF,PF,true,RT>::assign( const SparseMatrix<MT,fals
    BLAZE_INTERNAL_ASSERT( n_ == (~rhs).columns(), "Invalid number of columns" );
 
    for( size_t i=0UL; i<(~rhs).rows(); ++i )
-      for( auto element=(~rhs).begin(i); element!=(~rhs).end(i); ++element )
+      for( ConstIterator_t<MT> element=(~rhs).begin(i); element!=(~rhs).end(i); ++element )
          v_[i+element->index()*mm_] = element->value();
 }
 /*! \endcond */
@@ -5699,7 +5693,7 @@ inline void CustomMatrix<Type,AF,PF,true,RT>::addAssign( const SparseMatrix<MT,t
    BLAZE_INTERNAL_ASSERT( n_ == (~rhs).columns(), "Invalid number of columns" );
 
    for( size_t j=0UL; j<(~rhs).columns(); ++j )
-      for( auto element=(~rhs).begin(j); element!=(~rhs).end(j); ++element )
+      for( ConstIterator_t<MT> element=(~rhs).begin(j); element!=(~rhs).end(j); ++element )
          v_[element->index()+j*mm_] += element->value();
 }
 /*! \endcond */
@@ -5731,7 +5725,7 @@ inline void CustomMatrix<Type,AF,PF,true,RT>::addAssign( const SparseMatrix<MT,f
    BLAZE_INTERNAL_ASSERT( n_ == (~rhs).columns(), "Invalid number of columns" );
 
    for( size_t i=0UL; i<(~rhs).rows(); ++i )
-      for( auto element=(~rhs).begin(i); element!=(~rhs).end(i); ++element )
+      for( ConstIterator_t<MT> element=(~rhs).begin(i); element!=(~rhs).end(i); ++element )
          v_[i+element->index()*mm_] += element->value();
 }
 /*! \endcond */
@@ -5934,7 +5928,7 @@ inline void CustomMatrix<Type,AF,PF,true,RT>::subAssign( const SparseMatrix<MT,t
    BLAZE_INTERNAL_ASSERT( n_ == (~rhs).columns(), "Invalid number of columns" );
 
    for( size_t j=0UL; j<(~rhs).columns(); ++j )
-      for( auto element=(~rhs).begin(j); element!=(~rhs).end(j); ++element )
+      for( ConstIterator_t<MT> element=(~rhs).begin(j); element!=(~rhs).end(j); ++element )
          v_[element->index()+j*mm_] -= element->value();
 }
 /*! \endcond */
@@ -5966,7 +5960,7 @@ inline void CustomMatrix<Type,AF,PF,true,RT>::subAssign( const SparseMatrix<MT,f
    BLAZE_INTERNAL_ASSERT( n_ == (~rhs).columns(), "Invalid number of columns" );
 
    for( size_t i=0UL; i<(~rhs).rows(); ++i )
-      for( auto element=(~rhs).begin(i); element!=(~rhs).end(i); ++element )
+      for( ConstIterator_t<MT> element=(~rhs).begin(i); element!=(~rhs).end(i); ++element )
          v_[i+element->index()*mm_] -= element->value();
 }
 /*! \endcond */
@@ -6137,7 +6131,7 @@ inline void CustomMatrix<Type,AF,PF,true,RT>::schurAssign( const SparseMatrix<MT
    reset();
 
    for( size_t j=0UL; j<(~rhs).columns(); ++j )
-      for( auto element=(~rhs).begin(j); element!=(~rhs).end(j); ++element )
+      for( ConstIterator_t<MT> element=(~rhs).begin(j); element!=(~rhs).end(j); ++element )
          v_[element->index()+j*mm_] = tmp(element->index(),j) * element->value();
 }
 /*! \endcond */
@@ -6173,7 +6167,7 @@ inline void CustomMatrix<Type,AF,PF,true,RT>::schurAssign( const SparseMatrix<MT
    reset();
 
    for( size_t i=0UL; i<(~rhs).rows(); ++i )
-      for( auto element=(~rhs).begin(i); element!=(~rhs).end(i); ++element )
+      for( ConstIterator_t<MT> element=(~rhs).begin(i); element!=(~rhs).end(i); ++element )
          v_[i+element->index()*mm_] = tmp(i,element->index()) * element->value();
 }
 /*! \endcond */
@@ -6196,22 +6190,22 @@ inline void CustomMatrix<Type,AF,PF,true,RT>::schurAssign( const SparseMatrix<MT
 /*!\name CustomMatrix operators */
 //@{
 template< typename Type, bool AF, bool PF, bool SO, typename RT >
-void reset( CustomMatrix<Type,AF,PF,SO,RT>& m );
+inline void reset( CustomMatrix<Type,AF,PF,SO,RT>& m );
 
 template< typename Type, bool AF, bool PF, bool SO, typename RT >
-void reset( CustomMatrix<Type,AF,PF,SO,RT>& m, size_t i );
+inline void reset( CustomMatrix<Type,AF,PF,SO,RT>& m, size_t i );
 
 template< typename Type, bool AF, bool PF, bool SO, typename RT >
-void clear( CustomMatrix<Type,AF,PF,SO,RT>& m );
+inline void clear( CustomMatrix<Type,AF,PF,SO,RT>& m );
 
 template< bool RF, typename Type, bool AF, bool PF, bool SO, typename RT >
-bool isDefault( const CustomMatrix<Type,AF,PF,SO,RT>& m );
+inline bool isDefault( const CustomMatrix<Type,AF,PF,SO,RT>& m );
 
 template< typename Type, bool AF, bool PF, bool SO, typename RT >
-bool isIntact( const CustomMatrix<Type,AF,PF,SO,RT>& m );
+inline bool isIntact( const CustomMatrix<Type,AF,PF,SO,RT>& m );
 
 template< typename Type, bool AF, bool PF, bool SO, typename RT >
-void swap( CustomMatrix<Type,AF,PF,SO,RT>& a, CustomMatrix<Type,AF,PF,SO,RT>& b ) noexcept;
+inline void swap( CustomMatrix<Type,AF,PF,SO,RT>& a, CustomMatrix<Type,AF,PF,SO,RT>& b ) noexcept;
 //@}
 //*************************************************************************************************
 

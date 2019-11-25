@@ -3,7 +3,7 @@
 //  \file blaze/math/lapack/clapack/gerqf.h
 //  \brief Header file for the CLAPACK gerqf wrapper functions
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -55,9 +55,9 @@
 #if !defined(INTEL_MKL_VERSION)
 extern "C" {
 
-void sgerqf_( int* m, int* n, float* A, int* lda, float* tau, float* work, int* lwork, int* info );
+void sgerqf_( int* m, int* n, float*  A, int* lda, float*  tau, float*  work, int* lwork, int* info );
 void dgerqf_( int* m, int* n, double* A, int* lda, double* tau, double* work, int* lwork, int* info );
-void cgerqf_( int* m, int* n, float* A, int* lda, float* tau, float* work, int* lwork, int* info );
+void cgerqf_( int* m, int* n, float*  A, int* lda, float*  tau, float*  work, int* lwork, int* info );
 void zgerqf_( int* m, int* n, double* A, int* lda, double* tau, double* work, int* lwork, int* info );
 
 }
@@ -79,17 +79,17 @@ namespace blaze {
 //*************************************************************************************************
 /*!\name LAPACK RQ decomposition functions (gerqf) */
 //@{
-void gerqf( int m, int n, float* A, int lda, float* tau,
-            float* work, int lwork, int* info );
+inline void gerqf( int m, int n, float* A, int lda, float* tau,
+                   float* work, int lwork, int* info );
 
-void gerqf( int m, int n, double* A, int lda, double* tau,
-            double* work, int lwork, int* info );
+inline void gerqf( int m, int n, double* A, int lda, double* tau,
+                   double* work, int lwork, int* info );
 
-void gerqf( int m, int n, complex<float>* A, int lda, complex<float>* tau,
-            complex<float>* work, int lwork, int* info );
+inline void gerqf( int m, int n, complex<float>* A, int lda, complex<float>* tau,
+                   complex<float>* work, int lwork, int* info );
 
-void gerqf( int m, int n, complex<double>* A, int lda, complex<double>* tau,
-            complex<double>* work, int lwork, int* info );
+inline void gerqf( int m, int n, complex<double>* A, int lda, complex<double>* tau,
+                   complex<double>* work, int lwork, int* info );
 //@}
 //*************************************************************************************************
 

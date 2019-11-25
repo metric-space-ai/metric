@@ -3,7 +3,7 @@
 //  \file blaze/math/smp/Functions.h
 //  \brief Header file for SMP utility functions
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -42,12 +42,12 @@
 
 #include "../../system/SMP.h"
 
-#if BLAZE_HPX_PARALLEL_MODE
-#include "../../math/smp/hpx/Functions.h"
+#if BLAZE_OPENMP_PARALLEL_MODE
+#include "../../math/smp/openmp/Functions.h"
 #elif BLAZE_CPP_THREADS_PARALLEL_MODE || BLAZE_BOOST_THREADS_PARALLEL_MODE
 #include "../../math/smp/threads/Functions.h"
-#elif BLAZE_OPENMP_PARALLEL_MODE
-#include "../../math/smp/openmp/Functions.h"
+#elif BLAZE_HPX_PARALLEL_MODE
+#include "../../math/smp/hpx/Functions.h"
 #else
 #include "../../math/smp/default/Functions.h"
 #endif

@@ -3,7 +3,7 @@
 //  \file blaze/math/lapack/clapack/unmql.h
 //  \brief Header file for the CLAPACK unmql wrapper functions
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -42,7 +42,6 @@
 
 #include "../../../util/Complex.h"
 #include "../../../util/StaticAssert.h"
-#include "../../../util/Types.h"
 
 
 //=================================================================================================
@@ -56,12 +55,8 @@
 #if !defined(INTEL_MKL_VERSION)
 extern "C" {
 
-void cunmql_( char* side, char* trans, int* m, int* n, int* k, float* A, int* lda,
-              float* tau, float* C, int* ldc, float* work, int* lwork, int* info,
-              blaze::fortran_charlen_t nside, blaze::fortran_charlen_t ntrans );
-void zunmql_( char* side, char* trans, int* m, int* n, int* k, double* A, int* lda,
-              double* tau, double* C, int* ldc, double* work, int* lwork, int* info,
-              blaze::fortran_charlen_t nside, blaze::fortran_charlen_t ntrans );
+void cunmql_( char* side, char* trans, int* m, int* n, int* k, float*  A, int* lda, float*  tau, float*  C, int* ldc, float*  work, int* lwork, int* info );
+void zunmql_( char* side, char* trans, int* m, int* n, int* k, double* A, int* lda, double* tau, double* C, int* ldc, double* work, int* lwork, int* info );
 
 }
 #endif
@@ -82,13 +77,13 @@ namespace blaze {
 //*************************************************************************************************
 /*!\name LAPACK functions to multiply Q from a QL decomposition with a matrix (unmql) */
 //@{
-void unmql( char side, char trans, int m, int n, int k, const complex<float>* A, int lda,
-            const complex<float>* tau, complex<float>* C, int ldc, complex<float>* work,
-            int lwork, int* info );
+inline void unmql( char side, char trans, int m, int n, int k, const complex<float>* A, int lda,
+                   const complex<float>* tau, complex<float>* C, int ldc, complex<float>* work,
+                   int lwork, int* info );
 
-void unmql( char side, char trans, int m, int n, int k, const complex<double>* A, int lda,
-            const complex<double>* tau, complex<double>* C, int ldc, complex<double>* work,
-            int lwork, int* info );
+inline void unmql( char side, char trans, int m, int n, int k, const complex<double>* A, int lda,
+                   const complex<double>* tau, complex<double>* C, int ldc, complex<double>* work,
+                   int lwork, int* info );
 //@}
 //*************************************************************************************************
 
@@ -157,7 +152,7 @@ inline void unmql( char side, char trans, int m, int n, int k, const complex<flo
             const_cast<ET*>( reinterpret_cast<const ET*>( A ) ), &lda,
             const_cast<ET*>( reinterpret_cast<const ET*>( tau ) ),
             reinterpret_cast<ET*>( C ), &ldc, reinterpret_cast<ET*>( work ),
-            &lwork, info, blaze::fortran_charlen_t(1), blaze::fortran_charlen_t(1) );
+            &lwork, info );
 }
 //*************************************************************************************************
 
@@ -226,7 +221,7 @@ inline void unmql( char side, char trans, int m, int n, int k, const complex<dou
             const_cast<ET*>( reinterpret_cast<const ET*>( A ) ), &lda,
             const_cast<ET*>( reinterpret_cast<const ET*>( tau ) ),
             reinterpret_cast<ET*>( C ), &ldc, reinterpret_cast<ET*>( work ),
-            &lwork, info, blaze::fortran_charlen_t(1), blaze::fortran_charlen_t(1) );
+            &lwork, info );
 }
 //*************************************************************************************************
 

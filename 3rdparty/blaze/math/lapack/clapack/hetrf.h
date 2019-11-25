@@ -3,7 +3,7 @@
 //  \file blaze/math/lapack/clapack/hetrf.h
 //  \brief Header file for the CLAPACK hetrf wrapper functions
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -42,7 +42,6 @@
 
 #include "../../../util/Complex.h"
 #include "../../../util/StaticAssert.h"
-#include "../../../util/Types.h"
 
 
 //=================================================================================================
@@ -56,10 +55,8 @@
 #if !defined(INTEL_MKL_VERSION)
 extern "C" {
 
-void chetrf_( char* uplo, int* n, float* A, int* lda, int* ipiv, float* work, int* lwork,
-              int* info, blaze::fortran_charlen_t nuplo );
-void zhetrf_( char* uplo, int* n, double* A, int* lda, int* ipiv, double* work, int* lwork,
-              int* info, blaze::fortran_charlen_t nuplo );
+void chetrf_( char* uplo, int* n, float*  A, int* lda, int* ipiv, float*  work, int* lwork, int* info );
+void zhetrf_( char* uplo, int* n, double* A, int* lda, int* ipiv, double* work, int* lwork, int* info );
 
 }
 #endif
@@ -80,11 +77,11 @@ namespace blaze {
 //*************************************************************************************************
 /*!\name LAPACK LDLH decomposition functions (hetrf) */
 //@{
-void hetrf( char uplo, int n, complex<float>* A, int lda, int* ipiv,
-            complex<float>* work, int lwork, int* info );
+inline void hetrf( char uplo, int n, complex<float>* A, int lda, int* ipiv,
+                   complex<float>* work, int lwork, int* info );
 
-void hetrf( char uplo, int n, complex<double>* A, int lda, int* ipiv,
-            complex<double>* work, int lwork, int* info );
+inline void hetrf( char uplo, int n, complex<double>* A, int lda, int* ipiv,
+                   complex<double>* work, int lwork, int* info );
 //@}
 //*************************************************************************************************
 
@@ -150,7 +147,7 @@ inline void hetrf( char uplo, int n, complex<float>* A, int lda, int* ipiv,
 #endif
 
    chetrf_( &uplo, &n, reinterpret_cast<ET*>( A ), &lda, ipiv,
-            reinterpret_cast<ET*>( work ), &lwork, info, blaze::fortran_charlen_t(1) );
+            reinterpret_cast<ET*>( work ), &lwork, info );
 }
 //*************************************************************************************************
 
@@ -216,7 +213,7 @@ inline void hetrf( char uplo, int n, complex<double>* A, int lda, int* ipiv,
 #endif
 
    zhetrf_( &uplo, &n, reinterpret_cast<ET*>( A ), &lda, ipiv,
-            reinterpret_cast<ET*>( work ), &lwork, info, blaze::fortran_charlen_t(1) );
+            reinterpret_cast<ET*>( work ), &lwork, info );
 }
 //*************************************************************************************************
 

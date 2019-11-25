@@ -3,7 +3,7 @@
 //  \file blaze/math/proxy/DenseVectorProxy.h
 //  \brief Header file for the DenseVectorProxy class
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -51,8 +51,8 @@
 #include "../../system/Inline.h"
 #include "../../util/DisableIf.h"
 #include "../../util/EnableIf.h"
-#include "../../util/MaybeUnused.h"
 #include "../../util/Types.h"
+#include "../../util/Unused.h"
 
 
 namespace blaze {
@@ -490,38 +490,38 @@ inline void DenseVectorProxy<PT,VT>::scale( const Other& scalar ) const
 /*!\name DenseVectorProxy global functions */
 //@{
 template< typename PT, typename VT >
-typename DenseVectorProxy<PT,VT>::Iterator
+BLAZE_ALWAYS_INLINE typename DenseVectorProxy<PT,VT>::Iterator
    begin( const DenseVectorProxy<PT,VT>& proxy );
 
 template< typename PT, typename VT >
-typename DenseVectorProxy<PT,VT>::ConstIterator
+BLAZE_ALWAYS_INLINE typename DenseVectorProxy<PT,VT>::ConstIterator
    cbegin( const DenseVectorProxy<PT,VT>& proxy );
 
 template< typename PT, typename VT >
-typename DenseVectorProxy<PT,VT>::Iterator
+BLAZE_ALWAYS_INLINE typename DenseVectorProxy<PT,VT>::Iterator
    end( const DenseVectorProxy<PT,VT>& proxy );
 
 template< typename PT, typename VT >
-typename DenseVectorProxy<PT,VT>::ConstIterator
+BLAZE_ALWAYS_INLINE typename DenseVectorProxy<PT,VT>::ConstIterator
    cend( const DenseVectorProxy<PT,VT>& proxy );
 
 template< typename PT, typename VT >
-size_t size( const DenseVectorProxy<PT,VT>& proxy );
+BLAZE_ALWAYS_INLINE size_t size( const DenseVectorProxy<PT,VT>& proxy );
 
 template< typename PT, typename VT >
-size_t capacity( const DenseVectorProxy<PT,VT>& proxy );
+BLAZE_ALWAYS_INLINE size_t capacity( const DenseVectorProxy<PT,VT>& proxy );
 
 template< typename PT, typename VT >
-size_t nonZeros( const DenseVectorProxy<PT,VT>& proxy );
+BLAZE_ALWAYS_INLINE size_t nonZeros( const DenseVectorProxy<PT,VT>& proxy );
 
 template< typename PT, typename VT >
-void resize( const DenseVectorProxy<PT,VT>& proxy, size_t n, bool preserve=true );
+BLAZE_ALWAYS_INLINE void resize( const DenseVectorProxy<PT,VT>& proxy, size_t n, bool preserve=true );
 
 template< typename PT, typename VT >
-void reset( const DenseVectorProxy<PT,VT>& proxy );
+BLAZE_ALWAYS_INLINE void reset( const DenseVectorProxy<PT,VT>& proxy );
 
 template< typename PT, typename VT >
-void clear( const DenseVectorProxy<PT,VT>& proxy );
+BLAZE_ALWAYS_INLINE void clear( const DenseVectorProxy<PT,VT>& proxy );
 //@}
 //*************************************************************************************************
 
@@ -665,7 +665,7 @@ template< typename PT    // Type of the proxy
 BLAZE_ALWAYS_INLINE DisableIf_t< IsResizable_v<VT> >
    resize_backend( const DenseVectorProxy<PT,VT>& proxy, size_t n, bool preserve )
 {
-   MAYBE_UNUSED( preserve );
+   UNUSED_PARAMETER( preserve );
 
    if( proxy.size() != n ) {
       BLAZE_THROW_INVALID_ARGUMENT( "Vector cannot be resized" );

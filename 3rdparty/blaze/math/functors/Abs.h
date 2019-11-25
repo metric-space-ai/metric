@@ -3,7 +3,7 @@
 //  \file blaze/math/functors/Abs.h
 //  \brief Header file for the Abs functor
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -49,21 +49,16 @@
 #include "../../math/typetraits/IsStrictlyLower.h"
 #include "../../math/typetraits/IsStrictlyUpper.h"
 #include "../../math/typetraits/IsSymmetric.h"
-#include "../../math/typetraits/IsUniform.h"
 #include "../../math/typetraits/IsUniLower.h"
 #include "../../math/typetraits/IsUniUpper.h"
 #include "../../math/typetraits/IsUpper.h"
-#include "../../math/typetraits/IsZero.h"
 #include "../../math/typetraits/YieldsLower.h"
 #include "../../math/typetraits/YieldsStrictlyLower.h"
 #include "../../math/typetraits/YieldsStrictlyUpper.h"
 #include "../../math/typetraits/YieldsSymmetric.h"
-#include "../../math/typetraits/YieldsUniform.h"
 #include "../../math/typetraits/YieldsUniLower.h"
 #include "../../math/typetraits/YieldsUniUpper.h"
 #include "../../math/typetraits/YieldsUpper.h"
-#include "../../math/typetraits/YieldsZero.h"
-#include "../../system/HostDevice.h"
 #include "../../system/Inline.h"
 #include "../../util/IntegralConstant.h"
 
@@ -83,13 +78,20 @@ namespace blaze {
 struct Abs
 {
    //**********************************************************************************************
+   /*!\brief Default constructor of the Abs functor.
+   */
+   explicit inline Abs()
+   {}
+   //**********************************************************************************************
+
+   //**********************************************************************************************
    /*!\brief Returns the result of the abs() function for the given object/value.
    //
    // \param a The given object/value.
    // \return The result of the abs() function for the given object/value.
    */
    template< typename T >
-   BLAZE_ALWAYS_INLINE BLAZE_DEVICE_CALLABLE decltype(auto) operator()( const T& a ) const
+   BLAZE_ALWAYS_INLINE decltype(auto) operator()( const T& a ) const
    {
       return abs( a );
    }
@@ -102,14 +104,6 @@ struct Abs
    */
    template< typename T >
    static constexpr bool simdEnabled() { return HasSIMDAbs_v<T>; }
-   //**********************************************************************************************
-
-   //**********************************************************************************************
-   /*!\brief Returns whether the operation supports padding, i.e. whether it can deal with zeros.
-   //
-   // \return \a true in case padding is supported, \a false if not.
-   */
-   static constexpr bool paddingEnabled() { return true; }
    //**********************************************************************************************
 
    //**********************************************************************************************
@@ -126,24 +120,6 @@ struct Abs
    }
    //**********************************************************************************************
 };
-//*************************************************************************************************
-
-
-
-
-//=================================================================================================
-//
-//  YIELDSUNIFORM SPECIALIZATIONS
-//
-//=================================================================================================
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-template< typename T >
-struct YieldsUniform<Abs,T>
-   : public IsUniform<T>
-{};
-/*! \endcond */
 //*************************************************************************************************
 
 
@@ -268,24 +244,6 @@ struct YieldsUniUpper<Abs,MT>
 template< typename MT >
 struct YieldsStrictlyUpper<Abs,MT>
    : public IsStrictlyUpper<MT>
-{};
-/*! \endcond */
-//*************************************************************************************************
-
-
-
-
-//=================================================================================================
-//
-//  YIELDSZERO SPECIALIZATIONS
-//
-//=================================================================================================
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-template< typename T >
-struct YieldsZero<Abs,T>
-   : public IsZero<T>
 {};
 /*! \endcond */
 //*************************************************************************************************

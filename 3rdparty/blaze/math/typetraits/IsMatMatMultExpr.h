@@ -3,7 +3,7 @@
 //  \file blaze/math/typetraits/IsMatMatMultExpr.h
 //  \brief Header file for the IsMatMatMultExpr type trait class
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -40,8 +40,10 @@
 // Includes
 //*************************************************************************************************
 
+#include <utility>
 #include "../../math/expressions/MatMatMultExpr.h"
-#include "../../util/IntegralConstant.h"
+#include "../../util/FalseType.h"
+#include "../../util/TrueType.h"
 
 
 namespace blaze {
@@ -62,20 +64,18 @@ struct IsMatMatMultExprHelper
 {
  private:
    //**********************************************************************************************
-   static T* create();
+   template< typename MT >
+   static TrueType test( const MatMatMultExpr<MT>& );
 
    template< typename MT >
-   static TrueType test( const MatMatMultExpr<MT>* );
-
-   template< typename MT >
-   static TrueType test( const volatile MatMatMultExpr<MT>* );
+   static TrueType test( const volatile MatMatMultExpr<MT>& );
 
    static FalseType test( ... );
    //**********************************************************************************************
 
  public:
    //**********************************************************************************************
-   using Type = decltype( test( create() ) );
+   using Type = decltype( test( std::declval<T&>() ) );
    //**********************************************************************************************
 };
 /*! \endcond */
@@ -103,21 +103,8 @@ struct IsMatMatMultExpr
 
 
 //*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-/*!\brief Specialization of the IsMatMatMultExpr type trait for references.
-// \ingroup math_type_traits
-*/
-template< typename T >
-struct IsMatMatMultExpr<T&>
-   : public FalseType
-{};
-/*! \endcond */
-//*************************************************************************************************
-
-
-//*************************************************************************************************
 /*!\brief Auxiliary variable template for the IsMatMatMultExpr type trait.
-// \ingroup math_type_traits
+// \ingroup type_traits
 //
 // The IsMatMatMultExpr_v variable template provides a convenient shortcut to access the nested
 // \a value of the IsMatMatMultExpr class template. For instance, given the type \a T the

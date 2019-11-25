@@ -3,7 +3,7 @@
 //  \file blaze/math/typetraits/IsSubvector.h
 //  \brief Header file for the IsSubvector type trait
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -41,7 +41,8 @@
 //*************************************************************************************************
 
 #include "../../math/views/Forward.h"
-#include "../../util/IntegralConstant.h"
+#include "../../util/FalseType.h"
+#include "../../util/TrueType.h"
 
 
 namespace blaze {
@@ -146,7 +147,7 @@ struct IsSubvector< const volatile Subvector<VT,AF,TF,DF,CSAs...> >
 
 //*************************************************************************************************
 /*!\brief Auxiliary variable template for the IsSubvector type trait.
-// \ingroup math_type_traits
+// \ingroup type_traits
 //
 // The IsSubvector_v variable template provides a convenient shortcut to access the nested
 // \a value of the IsSubvector class template. For instance, given the type \a T the following

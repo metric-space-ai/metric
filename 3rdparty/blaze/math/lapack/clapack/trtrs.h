@@ -3,7 +3,7 @@
 //  \file blaze/math/lapack/clapack/trtrs.h
 //  \brief Header file for the CLAPACK trtrs wrapper functions
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -42,7 +42,6 @@
 
 #include "../../../util/Complex.h"
 #include "../../../util/StaticAssert.h"
-#include "../../../util/Types.h"
 
 
 //=================================================================================================
@@ -56,18 +55,10 @@
 #if !defined(INTEL_MKL_VERSION)
 extern "C" {
 
-void strtrs_( char* uplo, char* trans, char* diag, int* n, int* nrhs, float* A, int* lda,
-              float* B, int* ldb, int* info, blaze::fortran_charlen_t nuplo,
-              blaze::fortran_charlen_t ntrans, blaze::fortran_charlen_t ndiag );
-void dtrtrs_( char* uplo, char* trans, char* diag, int* n, int* nrhs, double* A, int* lda,
-              double* B, int* ldb, int* info, blaze::fortran_charlen_t nuplo,
-              blaze::fortran_charlen_t ntrans, blaze::fortran_charlen_t ndiag );
-void ctrtrs_( char* uplo, char* trans, char* diag, int* n, int* nrhs, float* A, int* lda,
-              float* B, int* ldb, int* info, blaze::fortran_charlen_t nuplo,
-              blaze::fortran_charlen_t ntrans, blaze::fortran_charlen_t ndiag );
-void ztrtrs_( char* uplo, char* trans, char* diag, int* n, int* nrhs, double* A, int* lda,
-              double* B, int* ldb, int* info, blaze::fortran_charlen_t nuplo,
-              blaze::fortran_charlen_t ntrans, blaze::fortran_charlen_t ndiag );
+void strtrs_( char* uplo, char* trans, char* diag, int* n, int* nrhs, float*  A, int* lda, float*  B, int* ldb, int* info );
+void dtrtrs_( char* uplo, char* trans, char* diag, int* n, int* nrhs, double* A, int* lda, double* B, int* ldb, int* info );
+void ctrtrs_( char* uplo, char* trans, char* diag, int* n, int* nrhs, float*  A, int* lda, float*  B, int* ldb, int* info );
+void ztrtrs_( char* uplo, char* trans, char* diag, int* n, int* nrhs, double* A, int* lda, double* B, int* ldb, int* info );
 
 }
 #endif
@@ -88,17 +79,17 @@ namespace blaze {
 //*************************************************************************************************
 /*!\name LAPACK triangular substitution functions (trtrs) */
 //@{
-void trtrs( char uplo, char trans, char diag, int n, int nrhs, const float* A,
-            int lda, float* B, int ldb, int* info );
+inline void trtrs( char uplo, char trans, char diag, int n, int nrhs, const float* A,
+                   int lda, float* B, int ldb, int* info );
 
-void trtrs( char uplo, char trans, char diag, int n, int nrhs, const double* A,
-            int lda, double* B, int ldb, int* info );
+inline void trtrs( char uplo, char trans, char diag, int n, int nrhs, const double* A,
+                   int lda, double* B, int ldb, int* info );
 
-void trtrs( char uplo, char trans, char diag, int n, int nrhs, const complex<float>* A,
-            int lda, complex<float>* B, int ldb, int* info );
+inline void trtrs( char uplo, char trans, char diag, int n, int nrhs, const complex<float>* A,
+                   int lda, complex<float>* B, int ldb, int* info );
 
-void trtrs( char uplo, char trans, char diag, int n, int nrhs, const complex<double>* A,
-            int lda, complex<double>* B, int ldb, int* info );
+inline void trtrs( char uplo, char trans, char diag, int n, int nrhs, const complex<double>* A,
+                   int lda, complex<double>* B, int ldb, int* info );
 //@}
 //*************************************************************************************************
 
@@ -150,8 +141,7 @@ inline void trtrs( char uplo, char trans, char diag, int n, int nrhs, const floa
    BLAZE_STATIC_ASSERT( sizeof( MKL_INT ) == sizeof( int ) );
 #endif
 
-   strtrs_( &uplo, &trans, &diag, &n, &nrhs, const_cast<float*>( A ), &lda, B, &ldb, info,
-            blaze::fortran_charlen_t(1), blaze::fortran_charlen_t(1), blaze::fortran_charlen_t(1) );
+   strtrs_( &uplo, &trans, &diag, &n, &nrhs, const_cast<float*>( A ), &lda, B, &ldb, info );
 }
 //*************************************************************************************************
 
@@ -203,8 +193,7 @@ inline void trtrs( char uplo, char trans, char diag, int n, int nrhs, const doub
    BLAZE_STATIC_ASSERT( sizeof( MKL_INT ) == sizeof( int ) );
 #endif
 
-   dtrtrs_( &uplo, &trans, &diag, &n, &nrhs, const_cast<double*>( A ), &lda, B, &ldb, info,
-            blaze::fortran_charlen_t(1), blaze::fortran_charlen_t(1), blaze::fortran_charlen_t(1) );
+   dtrtrs_( &uplo, &trans, &diag, &n, &nrhs, const_cast<double*>( A ), &lda, B, &ldb, info );
 }
 //*************************************************************************************************
 
@@ -262,8 +251,7 @@ inline void trtrs( char uplo, char trans, char diag, int n, int nrhs, const comp
 #endif
 
    ctrtrs_( &uplo, &trans, &diag, &n, &nrhs, const_cast<ET*>( reinterpret_cast<const ET*>( A ) ),
-            &lda, reinterpret_cast<ET*>( B ), &ldb, info, blaze::fortran_charlen_t(1),
-            blaze::fortran_charlen_t(1), blaze::fortran_charlen_t(1) );
+            &lda, reinterpret_cast<ET*>( B ), &ldb, info );
 }
 //*************************************************************************************************
 
@@ -321,8 +309,7 @@ inline void trtrs( char uplo, char trans, char diag, int n, int nrhs, const comp
 #endif
 
    ztrtrs_( &uplo, &trans, &diag, &n, &nrhs, const_cast<ET*>( reinterpret_cast<const ET*>( A ) ),
-            &lda, reinterpret_cast<ET*>( B ), &ldb, info, blaze::fortran_charlen_t(1),
-            blaze::fortran_charlen_t(1), blaze::fortran_charlen_t(1) );
+            &lda, reinterpret_cast<ET*>( B ), &ldb, info );
 }
 //*************************************************************************************************
 

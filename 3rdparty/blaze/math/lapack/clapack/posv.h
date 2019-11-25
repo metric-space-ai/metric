@@ -3,7 +3,7 @@
 //  \file blaze/math/lapack/clapack/posv.h
 //  \brief Header file for the CLAPACK posv wrapper functions
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -42,7 +42,6 @@
 
 #include "../../../util/Complex.h"
 #include "../../../util/StaticAssert.h"
-#include "../../../util/Types.h"
 
 
 //=================================================================================================
@@ -56,14 +55,10 @@
 #if !defined(INTEL_MKL_VERSION)
 extern "C" {
 
-void sposv_( char* uplo, int* n, int* nrhs, float* A, int* lda, float* b, int* ldb,
-             int* info, blaze::fortran_charlen_t nuplo );
-void dposv_( char* uplo, int* n, int* nrhs, double* A, int* lda, double* b, int* ldb,
-             int* info, blaze::fortran_charlen_t nuplo );
-void cposv_( char* uplo, int* n, int* nrhs, float* A, int* lda, float* b, int* ldb,
-             int* info, blaze::fortran_charlen_t nuplo );
-void zposv_( char* uplo, int* n, int* nrhs, double* A, int* lda, double* b, int* ldb,
-             int* info, blaze::fortran_charlen_t nuplo );
+void sposv_( char* uplo, int* n, int* nrhs, float*  A, int* lda, float*  b, int* ldb, int* info );
+void dposv_( char* uplo, int* n, int* nrhs, double* A, int* lda, double* b, int* ldb, int* info );
+void cposv_( char* uplo, int* n, int* nrhs, float*  A, int* lda, float*  b, int* ldb, int* info );
+void zposv_( char* uplo, int* n, int* nrhs, double* A, int* lda, double* b, int* ldb, int* info );
 
 }
 #endif
@@ -84,13 +79,13 @@ namespace blaze {
 //*************************************************************************************************
 /*!\name LAPACK positive definite linear system functions (posv) */
 //@{
-void posv( char uplo, int n, int nrhs, float* A, int lda, float* B, int ldb, int* info );
+inline void posv( char uplo, int n, int nrhs, float* A, int lda, float* B, int ldb, int* info );
 
-void posv( char uplo, int n, int nrhs, double* A, int lda, double* B, int ldb, int* info );
+inline void posv( char uplo, int n, int nrhs, double* A, int lda, double* B, int ldb, int* info );
 
-void posv( char uplo, int n, int nrhs, complex<float>* A, int lda, complex<float>* B, int ldb, int* info );
+inline void posv( char uplo, int n, int nrhs, complex<float>* A, int lda, complex<float>* B, int ldb, int* info );
 
-void posv( char uplo, int n, int nrhs, complex<double>* A, int lda, complex<double>* B, int ldb, int* info );
+inline void posv( char uplo, int n, int nrhs, complex<double>* A, int lda, complex<double>* B, int ldb, int* info );
 //@}
 //*************************************************************************************************
 
@@ -146,7 +141,7 @@ inline void posv( char uplo, int n, int nrhs, float* A, int lda, float* B, int l
    BLAZE_STATIC_ASSERT( sizeof( MKL_INT ) == sizeof( int ) );
 #endif
 
-   sposv_( &uplo, &n, &nrhs, A, &lda, B, &ldb, info, blaze::fortran_charlen_t(1) );
+   sposv_( &uplo, &n, &nrhs, A, &lda, B, &ldb, info );
 }
 //*************************************************************************************************
 
@@ -202,7 +197,7 @@ inline void posv( char uplo, int n, int nrhs, double* A, int lda, double* B, int
    BLAZE_STATIC_ASSERT( sizeof( MKL_INT ) == sizeof( int ) );
 #endif
 
-   dposv_( &uplo, &n, &nrhs, A, &lda, B, &ldb, info, blaze::fortran_charlen_t(1) );
+   dposv_( &uplo, &n, &nrhs, A, &lda, B, &ldb, info );
 }
 //*************************************************************************************************
 
@@ -264,7 +259,7 @@ inline void posv( char uplo, int n, int nrhs, complex<float>* A, int lda, comple
 #endif
 
    cposv_( &uplo, &n, &nrhs, reinterpret_cast<ET*>( A ), &lda,
-           reinterpret_cast<ET*>( B ), &ldb, info, blaze::fortran_charlen_t(1) );
+           reinterpret_cast<ET*>( B ), &ldb, info );
 }
 //*************************************************************************************************
 
@@ -326,7 +321,7 @@ inline void posv( char uplo, int n, int nrhs, complex<double>* A, int lda, compl
 #endif
 
    zposv_( &uplo, &n, &nrhs, reinterpret_cast<ET*>( A ), &lda,
-           reinterpret_cast<ET*>( B ), &ldb, info, blaze::fortran_charlen_t(1) );
+           reinterpret_cast<ET*>( B ), &ldb, info );
 }
 //*************************************************************************************************
 

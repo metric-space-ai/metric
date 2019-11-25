@@ -3,7 +3,7 @@
 //  \file blaze/math/IntegerSequence.h
 //  \brief Header file for the integer_sequence and index_sequence aliases
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -32,8 +32,8 @@
 */
 //=================================================================================================
 
-#ifndef _BLAZE_MATH_INTEGERSEQUENCE_H_
-#define _BLAZE_MATH_INTEGERSEQUENCE_H_
+#ifndef _BLAZE_MATH_INDEXSEQUENCE_H_
+#define _BLAZE_MATH_INDEXSEQUENCE_H_
 
 
 //*************************************************************************************************
@@ -41,7 +41,6 @@
 //*************************************************************************************************
 
 #include <utility>
-#include "../util/MaybeUnused.h"
 
 
 namespace blaze {
@@ -92,70 +91,6 @@ using std::make_index_sequence;
 
 //=================================================================================================
 //
-//  GLOBAL OPERATORS
-//
-//=================================================================================================
-
-//*************************************************************************************************
-/*!\brief Equality operator for the comparison of two index sequences.
-// \ingroup math
-//
-// \param lhs The left-hand side index sequence for the comparison.
-// \param rhs The right-hand side index sequence for the comparison.
-// \return \a true if the two index sequences are equal, \a false if not.
-*/
-template< size_t... I1s, size_t... I2s >  //
-constexpr bool operator==( index_sequence<I1s...> lhs, index_sequence<I2s...> rhs ) noexcept
-{
-   MAYBE_UNUSED( lhs, rhs );
-
-   return false;
-}
-//*************************************************************************************************
-
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-/*!\brief Equality operator for the comparison of two identical index sequences.
-// \ingroup math
-//
-// \param lhs The left-hand side index sequence for the comparison.
-// \param rhs The right-hand side index sequence for the comparison.
-// \return \a true.
-*/
-template< size_t... I1s >  //
-constexpr bool operator==( index_sequence<I1s...> lhs, index_sequence<I1s...> rhs ) noexcept
-{
-   MAYBE_UNUSED( lhs, rhs );
-
-   return true;
-}
-/*! \endcond */
-//*************************************************************************************************
-
-
-//*************************************************************************************************
-/*!\brief Inequality operator for the comparison of two index sequences.
-// \ingroup math
-//
-// \param lhs The left-hand side index sequence for the comparison.
-// \param rhs The right-hand side index sequence for the comparison.
-// \return \a true if the two index sequences are not equal, \a false if they are equal.
-*/
-template< size_t... I1s, size_t... I2s >
-constexpr bool operator!=( index_sequence<I1s...> lhs, index_sequence<I2s...> rhs ) noexcept
-{
-   MAYBE_UNUSED( lhs, rhs );
-
-   return !( lhs == rhs );
-}
-//*************************************************************************************************
-
-
-
-
-//=================================================================================================
-//
 //  UTILITY FUNCTIONS
 //
 //=================================================================================================
@@ -170,10 +105,8 @@ constexpr bool operator!=( index_sequence<I1s...> lhs, index_sequence<I2s...> rh
 */
 template< size_t Offset   // The offset for the shift operation
         , size_t... Is >  // The sequence of indices
-constexpr decltype(auto) shift( std::index_sequence<Is...> sequence )
+constexpr decltype(auto) shift( std::index_sequence<Is...> /*sequence*/ )
 {
-   MAYBE_UNUSED( sequence );
-
    return std::index_sequence< ( Is + Offset )... >();
 }
 /*! \endcond */
@@ -190,10 +123,8 @@ constexpr decltype(auto) shift( std::index_sequence<Is...> sequence )
 */
 template< size_t... Is1    // The indices to be selected
         , size_t... Is2 >  // The sequence of indices
-constexpr decltype(auto) subsequence( std::index_sequence<Is2...> sequence )
+constexpr decltype(auto) subsequence( std::index_sequence<Is2...> /*sequence*/ )
 {
-   MAYBE_UNUSED( sequence );
-
    constexpr size_t indices[] = { Is2... };
    return std::index_sequence< indices[Is1]... >();
 }
@@ -238,7 +169,7 @@ using make_shifted_index_sequence = decltype( shift<Offset>( make_index_sequence
 
    \code
    // Creating the subsequence <3,6,8> from the index sequence <2,3,4,5,6,7,8>
-   using Type = make_shifted_index_subsequence<2UL,7UL,1UL,4UL,6UL>;
+   using Type = make_shifted_index_subsequence<2UL,6UL,1UL,4UL,6UL>;
    \endcode
 */
 template< size_t Offset    // The offset of the index sequence

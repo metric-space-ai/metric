@@ -3,7 +3,7 @@
 //  \file blaze/math/dense/InitializerVector.h
 //  \brief Header file for the implementation of a vector representation of an initializer list
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -58,9 +58,9 @@
 #include "../../util/constraints/Pointer.h"
 #include "../../util/constraints/Reference.h"
 #include "../../util/constraints/Volatile.h"
-#include "../../util/IntegralConstant.h"
-#include "../../util/MaybeUnused.h"
+#include "../../util/TrueType.h"
 #include "../../util/Types.h"
+#include "../../util/Unused.h"
 
 
 namespace blaze {
@@ -231,16 +231,12 @@ class InitializerVector
    //@{
    explicit inline InitializerVector( initializer_list<Type> list ) noexcept;
    explicit inline InitializerVector( initializer_list<Type> list, size_t n );
-
-   InitializerVector( const InitializerVector& ) = default;
+   // No explicitly declared copy constructor.
    //@}
    //**********************************************************************************************
 
    //**Destructor**********************************************************************************
-   /*!\name Destructor */
-   //@{
-   ~InitializerVector() = default;
-   //@}
+   // No explicitly declared destructor.
    //**********************************************************************************************
 
    //**Data access functions***********************************************************************
@@ -259,7 +255,7 @@ class InitializerVector
    //**Assignment operators************************************************************************
    /*!\name Assignment operators */
    //@{
-   InitializerVector& operator=( const InitializerVector& ) = delete;
+   InitializerVector( const InitializerVector& ) = delete;
    //@}
    //**********************************************************************************************
 
@@ -655,10 +651,10 @@ inline bool InitializerVector<Type,TF>::isAliased( const Other* alias ) const no
 /*!\name InitializerVector operators */
 //@{
 template< typename Type, bool TF >
-bool isIntact( const InitializerVector<Type,TF>& v ) noexcept;
+inline bool isIntact( const InitializerVector<Type,TF>& v ) noexcept;
 
 template< typename Type, bool TF >
-void swap( InitializerVector<Type,TF>& a, InitializerVector<Type,TF>& b ) noexcept;
+inline void swap( InitializerVector<Type,TF>& a, InitializerVector<Type,TF>& b ) noexcept;
 //@}
 //*************************************************************************************************
 
@@ -685,7 +681,7 @@ template< typename Type  // Data type of the vector
         , bool TF >      // Transpose flag
 inline bool isIntact( const InitializerVector<Type,TF>& v ) noexcept
 {
-   MAYBE_UNUSED( v );
+   UNUSED_PARAMETER( v );
 
    return true;
 }

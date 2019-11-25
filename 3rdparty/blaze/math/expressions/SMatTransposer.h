@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/SMatTransposer.h
 //  \brief Header file for the sparse matrix transposer
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -73,7 +73,6 @@ class SMatTransposer
  public:
    //**Type definitions****************************************************************************
    using This           = SMatTransposer<MT,SO>;  //!< Type of this SMatTransposer instance.
-   using BaseType       = SparseMatrix<This,SO>;  //!< Base type of this SMatTransposer instance.
    using ResultType     = TransposeType_t<MT>;    //!< Result type for expression template evaluations.
    using OppositeType   = MT;                     //!< Result type with opposite storage order for expression template evaluations.
    using TransposeType  = ResultType_t<MT>;       //!< Transpose type for expression template evaluations.

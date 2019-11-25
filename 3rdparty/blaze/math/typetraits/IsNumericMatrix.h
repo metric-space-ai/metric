@@ -3,7 +3,7 @@
 //  \file blaze/math/typetraits/IsNumericMatrix.h
 //  \brief Header file for the IsNumericMatrix type trait
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -90,7 +90,7 @@ struct IsNumericMatrix
 
 //*************************************************************************************************
 /*!\brief Auxiliary variable template for the IsNumericMatrix type trait.
-// \ingroup math_type_traits
+// \ingroup type_traits
 //
 // The IsNumericMatrix_v variable template provides a convenient shortcut to access the nested
 // \a value of the IsNumericMatrix class template. For instance, given the type \a T the

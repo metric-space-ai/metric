@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/SVecMapExpr.h
 //  \brief Header file for the sparse vector map expression
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -133,7 +133,6 @@ class SVecMapExpr
  public:
    //**Type definitions****************************************************************************
    using This          = SVecMapExpr<VT,OP,TF>;        //!< Type of this SVecMapExpr instance.
-   using BaseType      = SparseVector<This,TF>;        //!< Base type of this SVecMapExpr instance.
    using ResultType    = MapTrait_t<RT,OP>;            //!< Result type for expression template evaluations.
    using TransposeType = TransposeType_t<ResultType>;  //!< Transpose type for expression template evaluations.
    using ElementType   = ElementType_t<ResultType>;    //!< Resulting element type.
@@ -477,8 +476,8 @@ class SVecMapExpr
    // intermediate evaluation.
    */
    template< typename VT2 >  // Type of the target dense vector
-   friend inline auto assign( DenseVector<VT2,TF>& lhs, const SVecMapExpr& rhs )
-      -> EnableIf_t< UseAssign_v<VT2> >
+   friend inline EnableIf_t< UseAssign_v<VT2> >
+      assign( DenseVector<VT2,TF>& lhs, const SVecMapExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -510,18 +509,20 @@ class SVecMapExpr
    // target vector are identical.
    */
    template< typename VT2 >  // Type of the target sparse vector
-   friend inline auto assign( SparseVector<VT2,TF>& lhs, const SVecMapExpr& rhs )
-      -> EnableIf_t< UseAssign_v<VT2> &&
-                     IsSame_v< UnderlyingNumeric_t<VT>, UnderlyingNumeric_t<VT2> > >
+   friend inline EnableIf_t< UseAssign_v<VT2> &&
+                             IsSame_v< UnderlyingNumeric_t<VT>, UnderlyingNumeric_t<VT2> > >
+      assign( SparseVector<VT2,TF>& lhs, const SVecMapExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
       BLAZE_INTERNAL_ASSERT( (~lhs).size() == rhs.size(), "Invalid vector sizes" );
 
+      using Iterator = Iterator_t<VT2>;
+
       assign( ~lhs, rhs.sv_ );
 
-      const auto end( (~lhs).end() );
-      for( auto element=(~lhs).begin(); element!=end; ++element ) {
+      const Iterator end( (~lhs).end() );
+      for( Iterator element=(~lhs).begin(); element!=end; ++element ) {
          element->value() = rhs.op_( element->value() );
       }
    }
@@ -544,9 +545,9 @@ class SVecMapExpr
    // target vector differ.
    */
    template< typename VT2 >  // Type of the target sparse vector
-   friend inline auto assign( SparseVector<VT2,TF>& lhs, const SVecMapExpr& rhs )
-      -> EnableIf_t< UseAssign_v<VT2> &&
-                     !IsSame_v< UnderlyingNumeric_t<VT>, UnderlyingNumeric_t<VT2> > >
+   friend inline EnableIf_t< UseAssign_v<VT2> &&
+                             !IsSame_v< UnderlyingNumeric_t<VT>, UnderlyingNumeric_t<VT2> > >
+      assign( SparseVector<VT2,TF>& lhs, const SVecMapExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -578,8 +579,8 @@ class SVecMapExpr
    // intermediate evaluation.
    */
    template< typename VT2 >  // Type of the target dense vector
-   friend inline auto addAssign( DenseVector<VT2,TF>& lhs, const SVecMapExpr& rhs )
-      -> EnableIf_t< UseAssign_v<VT2> >
+   friend inline EnableIf_t< UseAssign_v<VT2> >
+      addAssign( DenseVector<VT2,TF>& lhs, const SVecMapExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -614,8 +615,8 @@ class SVecMapExpr
    // requires an intermediate evaluation.
    */
    template< typename VT2 >  // Type of the target dense vector
-   friend inline auto subAssign( DenseVector<VT2,TF>& lhs, const SVecMapExpr& rhs )
-      -> EnableIf_t< UseAssign_v<VT2> >
+   friend inline EnableIf_t< UseAssign_v<VT2> >
+      subAssign( DenseVector<VT2,TF>& lhs, const SVecMapExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -650,8 +651,8 @@ class SVecMapExpr
    // an intermediate evaluation.
    */
    template< typename VT2 >  // Type of the target dense vector
-   friend inline auto multAssign( DenseVector<VT2,TF>& lhs, const SVecMapExpr& rhs )
-      -> EnableIf_t< UseAssign_v<VT2> >
+   friend inline EnableIf_t< UseAssign_v<VT2> >
+      multAssign( DenseVector<VT2,TF>& lhs, const SVecMapExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -686,8 +687,8 @@ class SVecMapExpr
    // evaluation strategy is selected.
    */
    template< typename VT2 >  // Type of the target dense vector
-   friend inline auto smpAssign( DenseVector<VT2,TF>& lhs, const SVecMapExpr& rhs )
-      -> EnableIf_t< UseSMPAssign_v<VT2> >
+   friend inline EnableIf_t< UseSMPAssign_v<VT2> >
+      smpAssign( DenseVector<VT2,TF>& lhs, const SVecMapExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -722,8 +723,8 @@ class SVecMapExpr
    // specific parallel evaluation strategy is selected.
    */
    template< typename VT2 >  // Type of the target dense vector
-   friend inline auto smpAddAssign( DenseVector<VT2,TF>& lhs, const SVecMapExpr& rhs )
-      -> EnableIf_t< UseSMPAssign_v<VT2> >
+   friend inline EnableIf_t< UseSMPAssign_v<VT2> >
+      smpAddAssign( DenseVector<VT2,TF>& lhs, const SVecMapExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -758,8 +759,8 @@ class SVecMapExpr
    // specific parallel evaluation strategy is selected.
    */
    template< typename VT2 >  // Type of the target dense vector
-   friend inline auto smpSubAssign( DenseVector<VT2,TF>& lhs, const SVecMapExpr& rhs )
-      -> EnableIf_t< UseSMPAssign_v<VT2> >
+   friend inline EnableIf_t< UseSMPAssign_v<VT2> >
+      smpSubAssign( DenseVector<VT2,TF>& lhs, const SVecMapExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -794,8 +795,8 @@ class SVecMapExpr
    // expression specific parallel evaluation strategy is selected.
    */
    template< typename VT2 >  // Type of the target dense vector
-   friend inline auto smpMultAssign( DenseVector<VT2,TF>& lhs, const SVecMapExpr& rhs )
-      -> EnableIf_t< UseSMPAssign_v<VT2> >
+   friend inline EnableIf_t< UseSMPAssign_v<VT2> >
+      smpMultAssign( DenseVector<VT2,TF>& lhs, const SVecMapExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -889,7 +890,8 @@ inline decltype(auto) forEach( const SparseVector<VT,TF>& sv, OP op )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~sv, op );
+   using ReturnType = const SVecMapExpr<VT,OP,TF>;
+   return ReturnType( ~sv, op );
 }
 //*************************************************************************************************
 
@@ -917,7 +919,8 @@ inline decltype(auto) abs( const SparseVector<VT,TF>& sv )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~sv, Abs() );
+   using ReturnType = const SVecMapExpr<VT,Abs,TF>;
+   return ReturnType( ~sv, Abs() );
 }
 //*************************************************************************************************
 
@@ -945,7 +948,8 @@ inline decltype(auto) sign( const SparseVector<VT,TF>& sv )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~sv, Sign() );
+   using ReturnType = const SVecMapExpr<VT,Sign,TF>;
+   return ReturnType( ~sv, Sign() );
 }
 //*************************************************************************************************
 
@@ -973,7 +977,8 @@ inline decltype(auto) floor( const SparseVector<VT,TF>& sv )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~sv, Floor() );
+   using ReturnType = const SVecMapExpr<VT,Floor,TF>;
+   return ReturnType( ~sv, Floor() );
 }
 //*************************************************************************************************
 
@@ -1001,7 +1006,8 @@ inline decltype(auto) ceil( const SparseVector<VT,TF>& sv )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~sv, Ceil() );
+   using ReturnType = const SVecMapExpr<VT,Ceil,TF>;
+   return ReturnType( ~sv, Ceil() );
 }
 //*************************************************************************************************
 
@@ -1029,7 +1035,8 @@ inline decltype(auto) trunc( const SparseVector<VT,TF>& sv )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~sv, Trunc() );
+   using ReturnType = const SVecMapExpr<VT,Trunc,TF>;
+   return ReturnType( ~sv, Trunc() );
 }
 //*************************************************************************************************
 
@@ -1057,7 +1064,8 @@ inline decltype(auto) round( const SparseVector<VT,TF>& sv )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~sv, Round() );
+   using ReturnType = const SVecMapExpr<VT,Round,TF>;
+   return ReturnType( ~sv, Round() );
 }
 //*************************************************************************************************
 
@@ -1085,7 +1093,8 @@ inline decltype(auto) conj( const SparseVector<VT,TF>& sv )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~sv, Conj() );
+   using ReturnType = const SVecMapExpr<VT,Conj,TF>;
+   return ReturnType( ~sv, Conj() );
 }
 //*************************************************************************************************
 
@@ -1150,7 +1159,8 @@ inline decltype(auto) real( const SparseVector<VT,TF>& sv )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~sv, Real() );
+   using ReturnType = const SVecMapExpr<VT,Real,TF>;
+   return ReturnType( ~sv, Real() );
 }
 //*************************************************************************************************
 
@@ -1178,7 +1188,8 @@ inline decltype(auto) imag( const SparseVector<VT,TF>& sv )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~sv, Imag() );
+   using ReturnType = const SVecMapExpr<VT,Imag,TF>;
+   return ReturnType( ~sv, Imag() );
 }
 //*************************************************************************************************
 
@@ -1209,7 +1220,8 @@ inline decltype(auto) sqrt( const SparseVector<VT,TF>& sv )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~sv, Sqrt() );
+   using ReturnType = const SVecMapExpr<VT,Sqrt,TF>;
+   return ReturnType( ~sv, Sqrt() );
 }
 //*************************************************************************************************
 
@@ -1240,7 +1252,8 @@ inline decltype(auto) invsqrt( const SparseVector<VT,TF>& sv )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~sv, InvSqrt() );
+   using ReturnType = const SVecMapExpr<VT,InvSqrt,TF>;
+   return ReturnType( ~sv, InvSqrt() );
 }
 //*************************************************************************************************
 
@@ -1271,7 +1284,8 @@ inline decltype(auto) cbrt( const SparseVector<VT,TF>& sv )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~sv, Cbrt() );
+   using ReturnType = const SVecMapExpr<VT,Cbrt,TF>;
+   return ReturnType( ~sv, Cbrt() );
 }
 //*************************************************************************************************
 
@@ -1302,7 +1316,8 @@ inline decltype(auto) invcbrt( const SparseVector<VT,TF>& sv )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~sv, InvCbrt() );
+   using ReturnType = const SVecMapExpr<VT,InvCbrt,TF>;
+   return ReturnType( ~sv, InvCbrt() );
 }
 //*************************************************************************************************
 
@@ -1333,7 +1348,8 @@ inline decltype(auto) clamp( const SparseVector<VT,TF>& sv, const DT& min, const
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~sv, Clamp<DT>( min, max ) );
+   using ReturnType = const SVecMapExpr<VT,Clamp<DT>,TF>;
+   return ReturnType( ~sv, Clamp<DT>( min, max ) );
 }
 //*************************************************************************************************
 
@@ -1359,13 +1375,14 @@ inline decltype(auto) clamp( const SparseVector<VT,TF>& sv, const DT& min, const
 template< typename VT  // Type of the sparse vector
         , bool TF      // Transpose flag
         , typename ST  // Type of the scalar exponent
-        , EnableIf_t< IsNumeric_v<ST> >* = nullptr >
+        , typename = EnableIf_t< IsNumeric_v<ST> > >
 inline decltype(auto) pow( const SparseVector<VT,TF>& sv, ST exp )
 {
    BLAZE_FUNCTION_TRACE;
 
    using ScalarType = MultTrait_t< UnderlyingBuiltin_t<VT>, ST >;
-   return map( ~sv, blaze::bind2nd( Pow(), ScalarType( exp ) ) );
+   using ReturnType = const SVecMapExpr<VT,UnaryPow<ScalarType>,TF>;
+   return ReturnType( ~sv, UnaryPow<ScalarType>( exp ) );
 }
 //*************************************************************************************************
 
@@ -1393,7 +1410,8 @@ inline decltype(auto) exp( const SparseVector<VT,TF>& sv )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~sv, Exp() );
+   using ReturnType = const SVecMapExpr<VT,Exp,TF>;
+   return ReturnType( ~sv, Exp() );
 }
 //*************************************************************************************************
 
@@ -1421,7 +1439,8 @@ inline decltype(auto) exp2( const SparseVector<VT,TF>& sv )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~sv, Exp2() );
+   using ReturnType = const SVecMapExpr<VT,Exp2,TF>;
+   return ReturnType( ~sv, Exp2() );
 }
 //*************************************************************************************************
 
@@ -1449,7 +1468,8 @@ inline decltype(auto) exp10( const SparseVector<VT,TF>& sv )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~sv, Exp10() );
+   using ReturnType = const SVecMapExpr<VT,Exp10,TF>;
+   return ReturnType( ~sv, Exp10() );
 }
 //*************************************************************************************************
 
@@ -1480,7 +1500,8 @@ inline decltype(auto) log( const SparseVector<VT,TF>& sv )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~sv, Log() );
+   using ReturnType = const SVecMapExpr<VT,Log,TF>;
+   return ReturnType( ~sv, Log() );
 }
 //*************************************************************************************************
 
@@ -1511,7 +1532,8 @@ inline decltype(auto) log2( const SparseVector<VT,TF>& sv )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~sv, Log2() );
+   using ReturnType = const SVecMapExpr<VT,Log2,TF>;
+   return ReturnType( ~sv, Log2() );
 }
 //*************************************************************************************************
 
@@ -1542,7 +1564,8 @@ inline decltype(auto) log10( const SparseVector<VT,TF>& sv )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~sv, Log10() );
+   using ReturnType = const SVecMapExpr<VT,Log10,TF>;
+   return ReturnType( ~sv, Log10() );
 }
 //*************************************************************************************************
 
@@ -1570,7 +1593,8 @@ inline decltype(auto) sin( const SparseVector<VT,TF>& sv )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~sv, Sin() );
+   using ReturnType = const SVecMapExpr<VT,Sin,TF>;
+   return ReturnType( ~sv, Sin() );
 }
 //*************************************************************************************************
 
@@ -1601,7 +1625,8 @@ inline decltype(auto) asin( const SparseVector<VT,TF>& sv )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~sv, Asin() );
+   using ReturnType = const SVecMapExpr<VT,Asin,TF>;
+   return ReturnType( ~sv, Asin() );
 }
 //*************************************************************************************************
 
@@ -1629,7 +1654,8 @@ inline decltype(auto) sinh( const SparseVector<VT,TF>& sv )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~sv, Sinh() );
+   using ReturnType = const SVecMapExpr<VT,Sinh,TF>;
+   return ReturnType( ~sv, Sinh() );
 }
 //*************************************************************************************************
 
@@ -1657,7 +1683,8 @@ inline decltype(auto) asinh( const SparseVector<VT,TF>& sv )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~sv, Asinh() );
+   using ReturnType = const SVecMapExpr<VT,Asinh,TF>;
+   return ReturnType( ~sv, Asinh() );
 }
 //*************************************************************************************************
 
@@ -1685,7 +1712,8 @@ inline decltype(auto) cos( const SparseVector<VT,TF>& sv )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~sv, Cos() );
+   using ReturnType = const SVecMapExpr<VT,Cos,TF>;
+   return ReturnType( ~sv, Cos() );
 }
 //*************************************************************************************************
 
@@ -1716,7 +1744,8 @@ inline decltype(auto) acos( const SparseVector<VT,TF>& sv )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~sv, Acos() );
+   using ReturnType = const SVecMapExpr<VT,Acos,TF>;
+   return ReturnType( ~sv, Acos() );
 }
 //*************************************************************************************************
 
@@ -1744,7 +1773,8 @@ inline decltype(auto) cosh( const SparseVector<VT,TF>& sv )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~sv, Cosh() );
+   using ReturnType = const SVecMapExpr<VT,Cosh,TF>;
+   return ReturnType( ~sv, Cosh() );
 }
 //*************************************************************************************************
 
@@ -1775,7 +1805,8 @@ inline decltype(auto) acosh( const SparseVector<VT,TF>& sv )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~sv, Acosh() );
+   using ReturnType = const SVecMapExpr<VT,Acosh,TF>;
+   return ReturnType( ~sv, Acosh() );
 }
 //*************************************************************************************************
 
@@ -1803,7 +1834,8 @@ inline decltype(auto) tan( const SparseVector<VT,TF>& sv )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~sv, Tan() );
+   using ReturnType = const SVecMapExpr<VT,Tan,TF>;
+   return ReturnType( ~sv, Tan() );
 }
 //*************************************************************************************************
 
@@ -1831,7 +1863,8 @@ inline decltype(auto) atan( const SparseVector<VT,TF>& sv )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~sv, Atan() );
+   using ReturnType = const SVecMapExpr<VT,Atan,TF>;
+   return ReturnType( ~sv, Atan() );
 }
 //*************************************************************************************************
 
@@ -1862,7 +1895,8 @@ inline decltype(auto) tanh( const SparseVector<VT,TF>& sv )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~sv, Tanh() );
+   using ReturnType = const SVecMapExpr<VT,Tanh,TF>;
+   return ReturnType( ~sv, Tanh() );
 }
 //*************************************************************************************************
 
@@ -1893,7 +1927,8 @@ inline decltype(auto) atanh( const SparseVector<VT,TF>& sv )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~sv, Atanh() );
+   using ReturnType = const SVecMapExpr<VT,Atanh,TF>;
+   return ReturnType( ~sv, Atanh() );
 }
 //*************************************************************************************************
 
@@ -1921,7 +1956,8 @@ inline decltype(auto) erf( const SparseVector<VT,TF>& sv )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~sv, Erf() );
+   using ReturnType = const SVecMapExpr<VT,Erf,TF>;
+   return ReturnType( ~sv, Erf() );
 }
 //*************************************************************************************************
 
@@ -1949,7 +1985,8 @@ inline decltype(auto) erfc( const SparseVector<VT,TF>& sv )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~sv, Erfc() );
+   using ReturnType = const SVecMapExpr<VT,Erfc,TF>;
+   return ReturnType( ~sv, Erfc() );
 }
 //*************************************************************************************************
 
@@ -2154,7 +2191,8 @@ inline decltype(auto) conj( const SVecTransExpr<SVecMapExpr<VT,Conj,TF>,!TF>& sv
 {
    BLAZE_FUNCTION_TRACE;
 
-   return trans( sv.operand().operand() );
+   using ReturnType = const SVecTransExpr<VT,!TF>;
+   return ReturnType( sv.operand().operand() );
 }
 /*! \endcond */
 //*************************************************************************************************

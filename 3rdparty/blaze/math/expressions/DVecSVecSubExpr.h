@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/DVecSVecSubExpr.h
 //  \brief Header file for the dense vector/sparse vector subtraction expression
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -57,15 +57,11 @@
 #include "../../math/typetraits/IsComputation.h"
 #include "../../math/typetraits/IsExpression.h"
 #include "../../math/typetraits/IsTemporary.h"
-#include "../../math/typetraits/IsZero.h"
 #include "../../util/Assert.h"
-#include "../../util/DisableIf.h"
 #include "../../util/EnableIf.h"
 #include "../../util/FunctionTrace.h"
-#include "../../util/MaybeUnused.h"
 #include "../../util/mpl/If.h"
 #include "../../util/Types.h"
-#include "../../util/typetraits/IsSame.h"
 
 
 namespace blaze {
@@ -130,7 +126,6 @@ class DVecSVecSubExpr
  public:
    //**Type definitions****************************************************************************
    using This          = DVecSVecSubExpr<VT1,VT2,TF>;  //!< Type of this DVecSVecSubExpr instance.
-   using BaseType      = DenseVector<This,TF>;         //!< Base type of this DVecSVecSubExpr instance.
    using ResultType    = SubTrait_t<RT1,RT2>;          //!< Result type for expression template evaluations.
    using TransposeType = TransposeType_t<ResultType>;  //!< Transpose type for expression template evaluations.
    using ElementType   = ElementType_t<ResultType>;    //!< Resulting element type.
@@ -456,8 +451,8 @@ class DVecSVecSubExpr
    // specific parallel evaluation strategy is selected.
    */
    template< typename VT >  // Type of the target dense vector
-   friend inline auto smpAssign( DenseVector<VT,TF>& lhs, const DVecSVecSubExpr& rhs )
-      -> EnableIf_t< UseSMPAssign_v<VT> >
+   friend inline EnableIf_t< UseSMPAssign_v<VT> >
+      smpAssign( DenseVector<VT,TF>& lhs, const DVecSVecSubExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -489,8 +484,8 @@ class DVecSVecSubExpr
    // specific parallel evaluation strategy is selected.
    */
    template< typename VT >  // Type of the target sparse vector
-   friend inline auto smpAssign( SparseVector<VT,TF>& lhs, const DVecSVecSubExpr& rhs )
-      -> EnableIf_t< UseSMPAssign_v<VT> >
+   friend inline EnableIf_t< UseSMPAssign_v<VT> >
+      smpAssign( SparseVector<VT,TF>& lhs, const DVecSVecSubExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -521,8 +516,8 @@ class DVecSVecSubExpr
    // in case the expression specific parallel evaluation strategy is selected.
    */
    template< typename VT >  // Type of the target dense vector
-   friend inline auto smpAddAssign( DenseVector<VT,TF>& lhs, const DVecSVecSubExpr& rhs )
-      -> EnableIf_t< UseSMPAssign_v<VT> >
+   friend inline EnableIf_t< UseSMPAssign_v<VT> >
+      smpAddAssign( DenseVector<VT,TF>& lhs, const DVecSVecSubExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -554,8 +549,8 @@ class DVecSVecSubExpr
    // in case the expression specific parallel evaluation strategy is selected.
    */
    template< typename VT >  // Type of the target dense vector
-   friend inline auto smpSubAssign( DenseVector<VT,TF>& lhs, const DVecSVecSubExpr& rhs )
-      -> EnableIf_t< UseSMPAssign_v<VT> >
+   friend inline EnableIf_t< UseSMPAssign_v<VT> >
+      smpSubAssign( DenseVector<VT,TF>& lhs, const DVecSVecSubExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -587,8 +582,8 @@ class DVecSVecSubExpr
    // in case the expression specific parallel evaluation strategy is selected.
    */
    template< typename VT >  // Type of the target dense vector
-   friend inline auto smpMultAssign( DenseVector<VT,TF>& lhs, const DVecSVecSubExpr& rhs )
-      -> EnableIf_t< UseSMPAssign_v<VT> >
+   friend inline EnableIf_t< UseSMPAssign_v<VT> >
+      smpMultAssign( DenseVector<VT,TF>& lhs, const DVecSVecSubExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -623,8 +618,8 @@ class DVecSVecSubExpr
    // in case the expression specific parallel evaluation strategy is selected.
    */
    template< typename VT >  // Type of the target dense vector
-   friend inline auto smpDivAssign( DenseVector<VT,TF>& lhs, const DVecSVecSubExpr& rhs )
-      -> EnableIf_t< UseSMPAssign_v<VT> >
+   friend inline EnableIf_t< UseSMPAssign_v<VT> >
+      smpDivAssign( DenseVector<VT,TF>& lhs, const DVecSVecSubExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -666,70 +661,6 @@ class DVecSVecSubExpr
 //=================================================================================================
 
 //*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-/*!\brief Backend implementation of the subtraction between a dense vector and a sparse vector
-//        (\f$ \vec{a}=\vec{b}-\vec{c} \f$).
-// \ingroup dense_vector
-//
-// \param lhs The left-hand side dense vector for the vector subtraction.
-// \param rhs The right-hand side sparse vector for the vector subtraction.
-// \return The difference of the two vectors.
-//
-// This function implements a performance optimized treatment of the subtraction between a dense
-// vector and a sparse vector.
-*/
-template< typename VT1  // Type of the left-hand side dense vector
-        , typename VT2  // Type of the right-hand side sparse vector
-        , bool TF       // Transpose flag
-        , DisableIf_t< IsZero_v<VT2> &&
-                       IsSame_v< ElementType_t<VT1>, ElementType_t<VT2> > >* = nullptr >
-inline const DVecSVecSubExpr<VT1,VT2,TF>
-   dvecsvecsub( const DenseVector<VT1,TF>& lhs, const SparseVector<VT2,TF>& rhs )
-{
-   BLAZE_FUNCTION_TRACE;
-
-   BLAZE_INTERNAL_ASSERT( (~lhs).size() == (~rhs).size(), "Invalid vector sizes" );
-
-   return DVecSVecSubExpr<VT1,VT2,TF>( ~lhs, ~rhs );
-}
-/*! \endcond */
-//*************************************************************************************************
-
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-/*!\brief Backend implementation of the subtraction between a dense vector and a zero vector
-//        (\f$ \vec{a}=\vec{b}+\vec{c} \f$).
-// \ingroup dense_vector
-//
-// \param lhs The left-hand side dense vector for the vector subtraction.
-// \param rhs The right-hand side zero vector for the vector subtraction.
-// \return The difference of the two vectors.
-//
-// This function implements a performance optimized treatment of the subtraction between a
-// dense vector and a zero vector.
-*/
-template< typename VT1  // Type of the left-hand side dense vector
-        , typename VT2  // Type of the right-hand side sparse vector
-        , bool TF       // Transpose flag
-        , EnableIf_t< IsZero_v<VT2> &&
-                      IsSame_v< ElementType_t<VT1>, ElementType_t<VT2> > >* = nullptr >
-inline const VT1&
-   dvecsvecsub( const DenseVector<VT1,TF>& lhs, const SparseVector<VT2,TF>& rhs )
-{
-   BLAZE_FUNCTION_TRACE;
-
-   MAYBE_UNUSED( rhs );
-
-   BLAZE_INTERNAL_ASSERT( (~lhs).size() == (~rhs).size(), "Invalid vector sizes" );
-
-   return (~lhs);
-}
-/*! \endcond */
-//*************************************************************************************************
-
-
-//*************************************************************************************************
 /*!\brief Subtraction operator for the subtraction of a dense vector and a sparse vector
 //        (\f$ \vec{a}=\vec{b}-\vec{c} \f$).
 // \ingroup dense_vector
@@ -767,7 +698,8 @@ inline decltype(auto)
       BLAZE_THROW_INVALID_ARGUMENT( "Vector sizes do not match" );
    }
 
-   return dvecsvecsub( ~lhs, ~rhs );
+   using ReturnType = const DVecSVecSubExpr<VT1,VT2,TF>;
+   return ReturnType( ~lhs, ~rhs );
 }
 //*************************************************************************************************
 

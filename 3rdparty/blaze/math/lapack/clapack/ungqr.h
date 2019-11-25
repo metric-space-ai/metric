@@ -3,7 +3,7 @@
 //  \file blaze/math/lapack/clapack/ungqr.h
 //  \brief Header file for the CLAPACK ungqr wrapper functions
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -55,10 +55,8 @@
 #if !defined(INTEL_MKL_VERSION)
 extern "C" {
 
-void cungqr_( int* m, int* n, int* k, float* A, int* lda, float* tau,
-              float* work, int* lwork, int* info );
-void zungqr_( int* m, int* n, int* k, double* A, int* lda, double* tau,
-              double* work, int* lwork, int* info );
+void cungqr_( int* m, int* n, int* k, float*  A, int* lda, float*  tau, float*  work, int* lwork, int* info );
+void zungqr_( int* m, int* n, int* k, double* A, int* lda, double* tau, double* work, int* lwork, int* info );
 
 }
 #endif
@@ -79,11 +77,11 @@ namespace blaze {
 //*************************************************************************************************
 /*!\name LAPACK functions to reconstruct Q from a QR decomposition (ungqr) */
 //@{
-void ungqr( int m, int n, int k, complex<float>* A, int lda, const complex<float>* tau,
-            complex<float>* work, int lwork, int* info );
+inline void ungqr( int m, int n, int k, complex<float>* A, int lda, const complex<float>* tau,
+                   complex<float>* work, int lwork, int* info );
 
-void ungqr( int m, int n, int k, complex<double>* A, int lda, const complex<double>* tau,
-            complex<double>* work, int lwork, int* info );
+inline void ungqr( int m, int n, int k, complex<double>* A, int lda, const complex<double>* tau,
+                   complex<double>* work, int lwork, int* info );
 //@}
 //*************************************************************************************************
 

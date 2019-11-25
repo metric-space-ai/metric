@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/DVecMapExpr.h
 //  \brief Header file for the dense vector map expression
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -54,29 +54,22 @@
 #include "../../math/Functors.h"
 #include "../../math/shims/Serial.h"
 #include "../../math/SIMD.h"
-#include "../../math/traits/AddTrait.h"
-#include "../../math/traits/DivTrait.h"
 #include "../../math/traits/MapTrait.h"
 #include "../../math/traits/MultTrait.h"
-#include "../../math/traits/SubTrait.h"
-#include "../../math/typetraits/HasLoad.h"
 #include "../../math/typetraits/IsAligned.h"
-#include "../../math/typetraits/IsComputation.h"
 #include "../../math/typetraits/IsExpression.h"
 #include "../../math/typetraits/IsPadded.h"
-#include "../../math/typetraits/IsPaddingEnabled.h"
-#include "../../math/typetraits/IsSIMDEnabled.h"
 #include "../../math/typetraits/RequiresEvaluation.h"
 #include "../../math/typetraits/UnderlyingBuiltin.h"
 #include "../../math/typetraits/UnderlyingNumeric.h"
-#include "../../system/HostDevice.h"
 #include "../../system/Inline.h"
 #include "../../util/Assert.h"
 #include "../../util/EnableIf.h"
 #include "../../util/FunctionTrace.h"
-#include "../../util/IntegralConstant.h"
 #include "../../util/mpl/If.h"
+#include "../../util/Template.h"
 #include "../../util/Types.h"
+#include "../../util/typetraits/HasMember.h"
 #include "../../util/typetraits/IsNumeric.h"
 #include "../../util/typetraits/IsSame.h"
 
@@ -108,17 +101,23 @@ class DVecMapExpr
    using RT = ResultType_t<VT>;  //!< Result type of the dense vector expression.
    using ET = ElementType_t<VT>;  //!< Element type of the dense vector expression.
    using RN = ReturnType_t<VT>;  //!< Return type of the dense vector expression.
+
+   //! Definition of the HasSIMDEnabled type trait.
+   BLAZE_CREATE_HAS_DATA_OR_FUNCTION_MEMBER_TYPE_TRAIT( HasSIMDEnabled, simdEnabled );
+
+   //! Definition of the HasLoad type trait.
+   BLAZE_CREATE_HAS_DATA_OR_FUNCTION_MEMBER_TYPE_TRAIT( HasLoad, load );
    //**********************************************************************************************
 
    //**Serial evaluation strategy******************************************************************
    //! Compilation switch for the serial evaluation strategy of the map expression.
    /*! The \a useAssign compile time constant expression represents a compilation switch for
        the serial evaluation strategy of the map expression. In case the given dense vector
-       expression of type \a VT is a computation expression and requires an intermediate
-       evaluation, \a useAssign will be set to 1 and the map expression will be evaluated
-       via the \a assign function family. Otherwise \a useAssign will be set to 0 and the
-       expression will be evaluated via the subscript operator. */
-   static constexpr bool useAssign = ( IsComputation_v<VT> && RequiresEvaluation_v<VT> );
+       expression of type \a VT requires an intermediate evaluation, \a useAssign will be
+       set to 1 and the map expression will be evaluated via the \a assign function family.
+       Otherwise \a useAssign will be set to 0 and the expression will be evaluated via the
+       subscript operator. */
+   static constexpr bool useAssign = RequiresEvaluation_v<VT>;
 
    /*! \cond BLAZE_INTERNAL */
    //! Helper variable template for the explicit application of the SFINAE principle.
@@ -141,10 +140,20 @@ class DVecMapExpr
    /*! \endcond */
    //**********************************************************************************************
 
+   //**SIMD support detection**********************************************************************
+   /*! \cond BLAZE_INTERNAL */
+   //! Helper structure for the detection of the SIMD capabilities of the given custom operation.
+   struct UseSIMDEnabledFlag {
+      static constexpr bool test( bool (*fnc)() ) { return fnc(); }
+      static constexpr bool test( bool b ) { return b; }
+      static constexpr bool value = test( OP::BLAZE_TEMPLATE simdEnabled<ET> );
+   };
+   /*! \endcond */
+   //**********************************************************************************************
+
  public:
    //**Type definitions****************************************************************************
    using This          = DVecMapExpr<VT,OP,TF>;        //!< Type of this DVecMapExpr instance.
-   using BaseType      = DenseVector<This,TF>;         //!< Base type of this DVecMapExpr instance.
    using ResultType    = MapTrait_t<RT,OP>;            //!< Result type for expression template evaluations.
    using TransposeType = TransposeType_t<ResultType>;  //!< Transpose type for expression template evaluations.
    using ElementType   = ElementType_t<ResultType>;    //!< Resulting element type.
@@ -192,7 +201,7 @@ class DVecMapExpr
       // \param it Iterator to the initial vector element.
       // \param op The custom unary operation.
       */
-      explicit inline BLAZE_DEVICE_CALLABLE ConstIterator( IteratorType it, OP op )
+      explicit inline ConstIterator( IteratorType it, OP op )
          : it_( it )  // Iterator to the current vector element
          , op_( op )  // The custom unary operation
       {}
@@ -204,7 +213,7 @@ class DVecMapExpr
       // \param inc The increment of the iterator.
       // \return The incremented iterator.
       */
-      inline BLAZE_DEVICE_CALLABLE ConstIterator& operator+=( size_t inc ) {
+      inline ConstIterator& operator+=( size_t inc ) {
          it_ += inc;
          return *this;
       }
@@ -216,7 +225,7 @@ class DVecMapExpr
       // \param dec The decrement of the iterator.
       // \return The decremented iterator.
       */
-      inline BLAZE_DEVICE_CALLABLE ConstIterator& operator-=( size_t dec ) {
+      inline ConstIterator& operator-=( size_t dec ) {
          it_ -= dec;
          return *this;
       }
@@ -227,7 +236,7 @@ class DVecMapExpr
       //
       // \return Reference to the incremented iterator.
       */
-      inline BLAZE_DEVICE_CALLABLE ConstIterator& operator++() {
+      inline ConstIterator& operator++() {
          ++it_;
          return *this;
       }
@@ -238,7 +247,7 @@ class DVecMapExpr
       //
       // \return The previous position of the iterator.
       */
-      inline BLAZE_DEVICE_CALLABLE const ConstIterator operator++( int ) {
+      inline const ConstIterator operator++( int ) {
          return ConstIterator( it_++, op_ );
       }
       //*******************************************************************************************
@@ -248,7 +257,7 @@ class DVecMapExpr
       //
       // \return Reference to the decremented iterator.
       */
-      inline BLAZE_DEVICE_CALLABLE ConstIterator& operator--() {
+      inline ConstIterator& operator--() {
          --it_;
          return *this;
       }
@@ -259,7 +268,7 @@ class DVecMapExpr
       //
       // \return The previous position of the iterator.
       */
-      inline BLAZE_DEVICE_CALLABLE const ConstIterator operator--( int ) {
+      inline const ConstIterator operator--( int ) {
          return ConstIterator( it_--, op_ );
       }
       //*******************************************************************************************
@@ -269,7 +278,7 @@ class DVecMapExpr
       //
       // \return The resulting value.
       */
-      inline BLAZE_DEVICE_CALLABLE ReturnType operator*() const {
+      inline ReturnType operator*() const {
          return op_( *it_ );
       }
       //*******************************************************************************************
@@ -290,7 +299,7 @@ class DVecMapExpr
       // \param rhs The right-hand side iterator.
       // \return \a true if the iterators refer to the same element, \a false if not.
       */
-      inline BLAZE_DEVICE_CALLABLE bool operator==( const ConstIterator& rhs ) const {
+      inline bool operator==( const ConstIterator& rhs ) const {
          return it_ == rhs.it_;
       }
       //*******************************************************************************************
@@ -301,7 +310,7 @@ class DVecMapExpr
       // \param rhs The right-hand side iterator.
       // \return \a true if the iterators don't refer to the same element, \a false if they do.
       */
-      inline BLAZE_DEVICE_CALLABLE bool operator!=( const ConstIterator& rhs ) const {
+      inline bool operator!=( const ConstIterator& rhs ) const {
          return it_ != rhs.it_;
       }
       //*******************************************************************************************
@@ -312,7 +321,7 @@ class DVecMapExpr
       // \param rhs The right-hand side iterator.
       // \return \a true if the left-hand side iterator is smaller, \a false if not.
       */
-      inline BLAZE_DEVICE_CALLABLE bool operator<( const ConstIterator& rhs ) const {
+      inline bool operator<( const ConstIterator& rhs ) const {
          return it_ < rhs.it_;
       }
       //*******************************************************************************************
@@ -323,7 +332,7 @@ class DVecMapExpr
       // \param rhs The right-hand side iterator.
       // \return \a true if the left-hand side iterator is greater, \a false if not.
       */
-      inline BLAZE_DEVICE_CALLABLE bool operator>( const ConstIterator& rhs ) const {
+      inline bool operator>( const ConstIterator& rhs ) const {
          return it_ > rhs.it_;
       }
       //*******************************************************************************************
@@ -334,7 +343,7 @@ class DVecMapExpr
       // \param rhs The right-hand side iterator.
       // \return \a true if the left-hand side iterator is smaller or equal, \a false if not.
       */
-      inline BLAZE_DEVICE_CALLABLE bool operator<=( const ConstIterator& rhs ) const {
+      inline bool operator<=( const ConstIterator& rhs ) const {
          return it_ <= rhs.it_;
       }
       //*******************************************************************************************
@@ -345,7 +354,7 @@ class DVecMapExpr
       // \param rhs The right-hand side iterator.
       // \return \a true if the left-hand side iterator is greater or equal, \a false if not.
       */
-      inline BLAZE_DEVICE_CALLABLE bool operator>=( const ConstIterator& rhs ) const {
+      inline bool operator>=( const ConstIterator& rhs ) const {
          return it_ >= rhs.it_;
       }
       //*******************************************************************************************
@@ -356,7 +365,7 @@ class DVecMapExpr
       // \param rhs The right-hand side iterator.
       // \return The number of elements between the two iterators.
       */
-      inline BLAZE_DEVICE_CALLABLE DifferenceType operator-( const ConstIterator& rhs ) const {
+      inline DifferenceType operator-( const ConstIterator& rhs ) const {
          return it_ - rhs.it_;
       }
       //*******************************************************************************************
@@ -368,7 +377,7 @@ class DVecMapExpr
       // \param inc The number of elements the iterator is incremented.
       // \return The incremented iterator.
       */
-      friend inline BLAZE_DEVICE_CALLABLE const ConstIterator operator+( const ConstIterator& it, size_t inc ) {
+      friend inline const ConstIterator operator+( const ConstIterator& it, size_t inc ) {
          return ConstIterator( it.it_ + inc, it.op_ );
       }
       //*******************************************************************************************
@@ -380,7 +389,7 @@ class DVecMapExpr
       // \param it The iterator to be incremented.
       // \return The incremented iterator.
       */
-      friend inline BLAZE_DEVICE_CALLABLE const ConstIterator operator+( size_t inc, const ConstIterator& it ) {
+      friend inline const ConstIterator operator+( size_t inc, const ConstIterator& it ) {
          return ConstIterator( it.it_ + inc, it.op_ );
       }
       //*******************************************************************************************
@@ -392,7 +401,7 @@ class DVecMapExpr
       // \param dec The number of elements the iterator is decremented.
       // \return The decremented iterator.
       */
-      friend inline BLAZE_DEVICE_CALLABLE const ConstIterator operator-( const ConstIterator& it, size_t dec ) {
+      friend inline const ConstIterator operator-( const ConstIterator& it, size_t dec ) {
          return ConstIterator( it.it_ - dec, it.op_ );
       }
       //*******************************************************************************************
@@ -410,7 +419,7 @@ class DVecMapExpr
    //! Compilation switch for the expression template evaluation strategy.
    static constexpr bool simdEnabled =
       ( VT::simdEnabled &&
-        If_t< HasSIMDEnabled_v<OP>, GetSIMDEnabled<OP,ET>, HasLoad<OP> >::value );
+        If_t< HasSIMDEnabled_v<OP>, UseSIMDEnabledFlag, HasLoad<OP> >::value );
 
    //! Compilation switch for the expression template assignment strategy.
    static constexpr bool smpAssignable = VT::smpAssignable;
@@ -589,9 +598,9 @@ class DVecMapExpr
    // target vector are identical.
    */
    template< typename VT2 >  // Type of the target dense vector
-   friend inline auto assign( DenseVector<VT2,TF>& lhs, const DVecMapExpr& rhs )
-      -> EnableIf_t< UseAssign_v<VT2> &&
-                     IsSame_v< UnderlyingNumeric_t<VT>, UnderlyingNumeric_t<VT2> > >
+   friend inline EnableIf_t< UseAssign_v<VT2> &&
+                             IsSame_v< UnderlyingNumeric_t<VT>, UnderlyingNumeric_t<VT2> > >
+      assign( DenseVector<VT2,TF>& lhs, const DVecMapExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -619,9 +628,9 @@ class DVecMapExpr
    // target vector differ.
    */
    template< typename VT2 >  // Type of the target dense vector
-   friend inline auto assign( DenseVector<VT2,TF>& lhs, const DVecMapExpr& rhs )
-      -> EnableIf_t< UseAssign_v<VT2> &&
-                     !IsSame_v< UnderlyingNumeric_t<VT>, UnderlyingNumeric_t<VT2> > >
+   friend inline EnableIf_t< UseAssign_v<VT2> &&
+                             !IsSame_v< UnderlyingNumeric_t<VT>, UnderlyingNumeric_t<VT2> > >
+      assign( DenseVector<VT2,TF>& lhs, const DVecMapExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -652,8 +661,8 @@ class DVecMapExpr
    // intermediate evaluation.
    */
    template< typename VT2 >  // Type of the target sparse vector
-   friend inline auto assign( SparseVector<VT2,TF>& lhs, const DVecMapExpr& rhs )
-      -> EnableIf_t< UseAssign_v<VT2> >
+   friend inline EnableIf_t< UseAssign_v<VT2> >
+      assign( SparseVector<VT2,TF>& lhs, const DVecMapExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -684,8 +693,8 @@ class DVecMapExpr
    // intermediate evaluation.
    */
    template< typename VT2 >  // Type of the target dense vector
-   friend inline auto addAssign( DenseVector<VT2,TF>& lhs, const DVecMapExpr& rhs )
-      -> EnableIf_t< UseAssign_v<VT2> >
+   friend inline EnableIf_t< UseAssign_v<VT2> >
+      addAssign( DenseVector<VT2,TF>& lhs, const DVecMapExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -720,8 +729,8 @@ class DVecMapExpr
    // requires an intermediate evaluation.
    */
    template< typename VT2 >  // Type of the target dense vector
-   friend inline auto subAssign( DenseVector<VT2,TF>& lhs, const DVecMapExpr& rhs )
-      -> EnableIf_t< UseAssign_v<VT2> >
+   friend inline EnableIf_t< UseAssign_v<VT2> >
+      subAssign( DenseVector<VT2,TF>& lhs, const DVecMapExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -756,8 +765,8 @@ class DVecMapExpr
    // an intermediate evaluation.
    */
    template< typename VT2 >  // Type of the target dense vector
-   friend inline auto multAssign( DenseVector<VT2,TF>& lhs, const DVecMapExpr& rhs )
-      -> EnableIf_t< UseAssign_v<VT2> >
+   friend inline EnableIf_t< UseAssign_v<VT2> >
+      multAssign( DenseVector<VT2,TF>& lhs, const DVecMapExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -792,8 +801,8 @@ class DVecMapExpr
    // intermediate evaluation.
    */
    template< typename VT2 >  // Type of the target dense vector
-   friend inline auto divAssign( DenseVector<VT2,TF>& lhs, const DVecMapExpr& rhs )
-      -> EnableIf_t< UseAssign_v<VT2> >
+   friend inline EnableIf_t< UseAssign_v<VT2> >
+      divAssign( DenseVector<VT2,TF>& lhs, const DVecMapExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -829,16 +838,16 @@ class DVecMapExpr
    // target vector are identical
    */
    template< typename VT2 >  // Type of the target dense vector
-   friend inline auto smpAssign( DenseVector<VT2,TF>& lhs, const DVecMapExpr& rhs )
-      -> EnableIf_t< UseSMPAssign_v<VT2> &&
-                     IsSame_v< UnderlyingNumeric_t<VT>, UnderlyingNumeric_t<VT2> > >
+   friend inline EnableIf_t< UseSMPAssign_v<VT2> &&
+                             IsSame_v< UnderlyingNumeric_t<VT>, UnderlyingNumeric_t<VT2> > >
+      smpAssign( DenseVector<VT2,TF>& lhs, const DVecMapExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
       BLAZE_INTERNAL_ASSERT( (~lhs).size() == rhs.size(), "Invalid vector sizes" );
 
       smpAssign( ~lhs, rhs.dv_ );
-      smpAssign( ~lhs, map( ~lhs, rhs.op_ ) );
+      smpAssign( ~lhs, rhs.op_( ~lhs ) );
    }
    /*! \endcond */
    //**********************************************************************************************
@@ -859,9 +868,9 @@ class DVecMapExpr
    // target vector differ.
    */
    template< typename VT2 >  // Type of the target dense vector
-   friend inline auto smpAssign( DenseVector<VT2,TF>& lhs, const DVecMapExpr& rhs )
-      -> EnableIf_t< UseSMPAssign_v<VT2> &&
-                     !IsSame_v< UnderlyingNumeric_t<VT>, UnderlyingNumeric_t<VT2> > >
+   friend inline EnableIf_t< UseSMPAssign_v<VT2> &&
+                             !IsSame_v< UnderlyingNumeric_t<VT>, UnderlyingNumeric_t<VT2> > >
+      smpAssign( DenseVector<VT2,TF>& lhs, const DVecMapExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -892,8 +901,8 @@ class DVecMapExpr
    // evaluation strategy is selected.
    */
    template< typename VT2 >  // Type of the target sparse vector
-   friend inline auto smpAssign( SparseVector<VT2,TF>& lhs, const DVecMapExpr& rhs )
-      -> EnableIf_t< UseSMPAssign_v<VT2> >
+   friend inline EnableIf_t< UseSMPAssign_v<VT2> >
+      smpAssign( SparseVector<VT2,TF>& lhs, const DVecMapExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -924,8 +933,8 @@ class DVecMapExpr
    // specific parallel evaluation strategy is selected.
    */
    template< typename VT2 >  // Type of the target dense vector
-   friend inline auto smpAddAssign( DenseVector<VT2,TF>& lhs, const DVecMapExpr& rhs )
-      -> EnableIf_t< UseSMPAssign_v<VT2> >
+   friend inline EnableIf_t< UseSMPAssign_v<VT2> >
+      smpAddAssign( DenseVector<VT2,TF>& lhs, const DVecMapExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -960,8 +969,8 @@ class DVecMapExpr
    // specific parallel evaluation strategy is selected.
    */
    template< typename VT2 >  // Type of the target dense vector
-   friend inline auto smpSubAssign( DenseVector<VT2,TF>& lhs, const DVecMapExpr& rhs )
-      -> EnableIf_t< UseSMPAssign_v<VT2> >
+   friend inline EnableIf_t< UseSMPAssign_v<VT2> >
+      smpSubAssign( DenseVector<VT2,TF>& lhs, const DVecMapExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -996,8 +1005,8 @@ class DVecMapExpr
    // expression specific parallel evaluation strategy is selected.
    */
    template< typename VT2 >  // Type of the target dense vector
-   friend inline auto smpMultAssign( DenseVector<VT2,TF>& lhs, const DVecMapExpr& rhs )
-      -> EnableIf_t< UseSMPAssign_v<VT2> >
+   friend inline EnableIf_t< UseSMPAssign_v<VT2> >
+      smpMultAssign( DenseVector<VT2,TF>& lhs, const DVecMapExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -1032,8 +1041,8 @@ class DVecMapExpr
    // specific parallel evaluation strategy is selected.
    */
    template< typename VT2 >  // Type of the target dense vector
-   friend inline auto smpDivAssign( DenseVector<VT2,TF>& lhs, const DVecMapExpr& rhs )
-      -> EnableIf_t< UseSMPAssign_v<VT2> >
+   friend inline EnableIf_t< UseSMPAssign_v<VT2> >
+      smpDivAssign( DenseVector<VT2,TF>& lhs, const DVecMapExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -1127,7 +1136,8 @@ inline decltype(auto) forEach( const DenseVector<VT,TF>& dv, OP op )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~dv, op );
+   using ReturnType = const DVecMapExpr<VT,OP,TF>;
+   return ReturnType( ~dv, op );
 }
 //*************************************************************************************************
 
@@ -1155,7 +1165,8 @@ inline decltype(auto) abs( const DenseVector<VT,TF>& dv )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~dv, Abs() );
+   using ReturnType = const DVecMapExpr<VT,Abs,TF>;
+   return ReturnType( ~dv, Abs() );
 }
 //*************************************************************************************************
 
@@ -1183,7 +1194,8 @@ inline decltype(auto) sign( const DenseVector<VT,TF>& dv )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~dv, Sign() );
+   using ReturnType = const DVecMapExpr<VT,Sign,TF>;
+   return ReturnType( ~dv, Sign() );
 }
 //*************************************************************************************************
 
@@ -1211,7 +1223,8 @@ inline decltype(auto) floor( const DenseVector<VT,TF>& dv )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~dv, Floor() );
+   using ReturnType = const DVecMapExpr<VT,Floor,TF>;
+   return ReturnType( ~dv, Floor() );
 }
 //*************************************************************************************************
 
@@ -1239,7 +1252,8 @@ inline decltype(auto) ceil( const DenseVector<VT,TF>& dv )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~dv, Ceil() );
+   using ReturnType = const DVecMapExpr<VT,Ceil,TF>;
+   return ReturnType( ~dv, Ceil() );
 }
 //*************************************************************************************************
 
@@ -1267,7 +1281,8 @@ inline decltype(auto) trunc( const DenseVector<VT,TF>& dv )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~dv, Trunc() );
+   using ReturnType = const DVecMapExpr<VT,Trunc,TF>;
+   return ReturnType( ~dv, Trunc() );
 }
 //*************************************************************************************************
 
@@ -1295,7 +1310,8 @@ inline decltype(auto) round( const DenseVector<VT,TF>& dv )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~dv, Round() );
+   using ReturnType = const DVecMapExpr<VT,Round,TF>;
+   return ReturnType( ~dv, Round() );
 }
 //*************************************************************************************************
 
@@ -1323,7 +1339,8 @@ inline decltype(auto) conj( const DenseVector<VT,TF>& dv )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~dv, Conj() );
+   using ReturnType = const DVecMapExpr<VT,Conj,TF>;
+   return ReturnType( ~dv, Conj() );
 }
 //*************************************************************************************************
 
@@ -1388,7 +1405,8 @@ inline decltype(auto) real( const DenseVector<VT,TF>& dv )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~dv, Real() );
+   using ReturnType = const DVecMapExpr<VT,Real,TF>;
+   return ReturnType( ~dv, Real() );
 }
 //*************************************************************************************************
 
@@ -1416,7 +1434,8 @@ inline decltype(auto) imag( const DenseVector<VT,TF>& dv )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~dv, Imag() );
+   using ReturnType = const DVecMapExpr<VT,Imag,TF>;
+   return ReturnType( ~dv, Imag() );
 }
 //*************************************************************************************************
 
@@ -1447,7 +1466,8 @@ inline decltype(auto) sqrt( const DenseVector<VT,TF>& dv )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~dv, Sqrt() );
+   using ReturnType = const DVecMapExpr<VT,Sqrt,TF>;
+   return ReturnType( ~dv, Sqrt() );
 }
 //*************************************************************************************************
 
@@ -1478,7 +1498,8 @@ inline decltype(auto) invsqrt( const DenseVector<VT,TF>& dv )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~dv, InvSqrt() );
+   using ReturnType = const DVecMapExpr<VT,InvSqrt,TF>;
+   return ReturnType( ~dv, InvSqrt() );
 }
 //*************************************************************************************************
 
@@ -1509,7 +1530,8 @@ inline decltype(auto) cbrt( const DenseVector<VT,TF>& dv )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~dv, Cbrt() );
+   using ReturnType = const DVecMapExpr<VT,Cbrt,TF>;
+   return ReturnType( ~dv, Cbrt() );
 }
 //*************************************************************************************************
 
@@ -1540,7 +1562,8 @@ inline decltype(auto) invcbrt( const DenseVector<VT,TF>& dv )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~dv, InvCbrt() );
+   using ReturnType = const DVecMapExpr<VT,InvCbrt,TF>;
+   return ReturnType( ~dv, InvCbrt() );
 }
 //*************************************************************************************************
 
@@ -1571,7 +1594,8 @@ inline decltype(auto) clamp( const DenseVector<VT,TF>& dv, const DT& min, const 
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~dv, Clamp<DT>( min, max ) );
+   using ReturnType = const DVecMapExpr<VT,Clamp<DT>,TF>;
+   return ReturnType( ~dv, Clamp<DT>( min, max ) );
 }
 //*************************************************************************************************
 
@@ -1597,13 +1621,14 @@ inline decltype(auto) clamp( const DenseVector<VT,TF>& dv, const DT& min, const 
 template< typename VT  // Type of the dense vector
         , bool TF      // Transpose flag
         , typename ST  // Type of the scalar exponent
-        , EnableIf_t< IsNumeric_v<ST> >* = nullptr >
+        , typename = EnableIf_t< IsNumeric_v<ST> > >
 inline decltype(auto) pow( const DenseVector<VT,TF>& dv, ST exp )
 {
    BLAZE_FUNCTION_TRACE;
 
    using ScalarType = MultTrait_t< UnderlyingBuiltin_t<VT>, ST >;
-   return map( ~dv, blaze::bind2nd( Pow(), ScalarType( exp ) ) );
+   using ReturnType = const DVecMapExpr<VT,UnaryPow<ScalarType>,TF>;
+   return ReturnType( ~dv, UnaryPow<ScalarType>( exp ) );
 }
 //*************************************************************************************************
 
@@ -1631,7 +1656,8 @@ inline decltype(auto) exp( const DenseVector<VT,TF>& dv )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~dv, Exp() );
+   using ReturnType = const DVecMapExpr<VT,Exp,TF>;
+   return ReturnType( ~dv, Exp() );
 }
 //*************************************************************************************************
 
@@ -1659,7 +1685,8 @@ inline decltype(auto) exp2( const DenseVector<VT,TF>& dv )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~dv, Exp2() );
+   using ReturnType = const DVecMapExpr<VT,Exp2,TF>;
+   return ReturnType( ~dv, Exp2() );
 }
 //*************************************************************************************************
 
@@ -1687,7 +1714,8 @@ inline decltype(auto) exp10( const DenseVector<VT,TF>& dv )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~dv, Exp10() );
+   using ReturnType = const DVecMapExpr<VT,Exp10,TF>;
+   return ReturnType( ~dv, Exp10() );
 }
 //*************************************************************************************************
 
@@ -1718,7 +1746,8 @@ inline decltype(auto) log( const DenseVector<VT,TF>& dv )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~dv, Log() );
+   using ReturnType = const DVecMapExpr<VT,Log,TF>;
+   return ReturnType( ~dv, Log() );
 }
 //*************************************************************************************************
 
@@ -1749,7 +1778,8 @@ inline decltype(auto) log2( const DenseVector<VT,TF>& dv )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~dv, Log2() );
+   using ReturnType = const DVecMapExpr<VT,Log2,TF>;
+   return ReturnType( ~dv, Log2() );
 }
 //*************************************************************************************************
 
@@ -1780,7 +1810,8 @@ inline decltype(auto) log10( const DenseVector<VT,TF>& dv )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~dv, Log10() );
+   using ReturnType = const DVecMapExpr<VT,Log10,TF>;
+   return ReturnType( ~dv, Log10() );
 }
 //*************************************************************************************************
 
@@ -1808,7 +1839,8 @@ inline decltype(auto) sin( const DenseVector<VT,TF>& dv )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~dv, Sin() );
+   using ReturnType = const DVecMapExpr<VT,Sin,TF>;
+   return ReturnType( ~dv, Sin() );
 }
 //*************************************************************************************************
 
@@ -1839,7 +1871,8 @@ inline decltype(auto) asin( const DenseVector<VT,TF>& dv )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~dv, Asin() );
+   using ReturnType = const DVecMapExpr<VT,Asin,TF>;
+   return ReturnType( ~dv, Asin() );
 }
 //*************************************************************************************************
 
@@ -1867,7 +1900,8 @@ inline decltype(auto) sinh( const DenseVector<VT,TF>& dv )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~dv, Sinh() );
+   using ReturnType = const DVecMapExpr<VT,Sinh,TF>;
+   return ReturnType( ~dv, Sinh() );
 }
 //*************************************************************************************************
 
@@ -1895,7 +1929,8 @@ inline decltype(auto) asinh( const DenseVector<VT,TF>& dv )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~dv, Asinh() );
+   using ReturnType = const DVecMapExpr<VT,Asinh,TF>;
+   return ReturnType( ~dv, Asinh() );
 }
 //*************************************************************************************************
 
@@ -1923,7 +1958,8 @@ inline decltype(auto) cos( const DenseVector<VT,TF>& dv )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~dv, Cos() );
+   using ReturnType = const DVecMapExpr<VT,Cos,TF>;
+   return ReturnType( ~dv, Cos() );
 }
 //*************************************************************************************************
 
@@ -1954,7 +1990,8 @@ inline decltype(auto) acos( const DenseVector<VT,TF>& dv )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~dv, Acos() );
+   using ReturnType = const DVecMapExpr<VT,Acos,TF>;
+   return ReturnType( ~dv, Acos() );
 }
 //*************************************************************************************************
 
@@ -1982,7 +2019,8 @@ inline decltype(auto) cosh( const DenseVector<VT,TF>& dv )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~dv, Cosh() );
+   using ReturnType = const DVecMapExpr<VT,Cosh,TF>;
+   return ReturnType( ~dv, Cosh() );
 }
 //*************************************************************************************************
 
@@ -2013,7 +2051,8 @@ inline decltype(auto) acosh( const DenseVector<VT,TF>& dv )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~dv, Acosh() );
+   using ReturnType = const DVecMapExpr<VT,Acosh,TF>;
+   return ReturnType( ~dv, Acosh() );
 }
 //*************************************************************************************************
 
@@ -2041,7 +2080,8 @@ inline decltype(auto) tan( const DenseVector<VT,TF>& dv )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~dv, Tan() );
+   using ReturnType = const DVecMapExpr<VT,Tan,TF>;
+   return ReturnType( ~dv, Tan() );
 }
 //*************************************************************************************************
 
@@ -2069,7 +2109,8 @@ inline decltype(auto) atan( const DenseVector<VT,TF>& dv )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~dv, Atan() );
+   using ReturnType = const DVecMapExpr<VT,Atan,TF>;
+   return ReturnType( ~dv, Atan() );
 }
 //*************************************************************************************************
 
@@ -2100,7 +2141,8 @@ inline decltype(auto) tanh( const DenseVector<VT,TF>& dv )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~dv, Tanh() );
+   using ReturnType = const DVecMapExpr<VT,Tanh,TF>;
+   return ReturnType( ~dv, Tanh() );
 }
 //*************************************************************************************************
 
@@ -2131,7 +2173,8 @@ inline decltype(auto) atanh( const DenseVector<VT,TF>& dv )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~dv, Atanh() );
+   using ReturnType = const DVecMapExpr<VT,Atanh,TF>;
+   return ReturnType( ~dv, Atanh() );
 }
 //*************************************************************************************************
 
@@ -2159,7 +2202,8 @@ inline decltype(auto) erf( const DenseVector<VT,TF>& dv )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~dv, Erf() );
+   using ReturnType = const DVecMapExpr<VT,Erf,TF>;
+   return ReturnType( ~dv, Erf() );
 }
 //*************************************************************************************************
 
@@ -2187,7 +2231,8 @@ inline decltype(auto) erfc( const DenseVector<VT,TF>& dv )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~dv, Erfc() );
+   using ReturnType = const DVecMapExpr<VT,Erfc,TF>;
+   return ReturnType( ~dv, Erfc() );
 }
 //*************************************************************************************************
 
@@ -2392,7 +2437,8 @@ inline decltype(auto) conj( const DVecTransExpr<DVecMapExpr<VT,Conj,TF>,!TF>& dv
 {
    BLAZE_FUNCTION_TRACE;
 
-   return trans( dv.operand().operand() );
+   using ReturnType = const DVecTransExpr<VT,!TF>;
+   return ReturnType( dv.operand().operand() );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -2418,374 +2464,6 @@ inline decltype(auto) real( const DVecMapExpr<VT,Real,TF>& dv )
    return dv;
 }
 /*! \endcond */
-//*************************************************************************************************
-
-
-
-
-//=================================================================================================
-//
-//  GLOBAL ARITHMETIC OPERATORS
-//
-//=================================================================================================
-
-//*************************************************************************************************
-/*!\brief Addition operator for the addition of a dense vector and a scalar value
-//        (\f$ \vec{a}=\vec{b}+s \f$).
-// \ingroup dense_vector
-//
-// \param vec The left-hand side dense vector for the addition.
-// \param scalar The right-hand side scalar value for the addition.
-// \return The vector sum.
-//
-// This operator represents the elementwise addition of a dense vector and a uniform vector
-// represented by a scalar value:
-
-   \code
-   blaze::DynamicVector<double> a, b;
-   // ... Resizing and initialization
-   b = a + 1.25;
-   \endcode
-
-// The operator returns an expression representing a dense vector of the higher-order element type
-// of the involved data types \a VT::ElementType and \a ST. Both data types \a VT::ElementType and
-// \a ST have to be supported by the AddTrait class template. Note that this operator only works
-// for scalar values of built-in data type.
-*/
-template< typename VT  // Type of the left-hand side dense vector
-        , bool TF      // Transpose flag of the left-hand side dense vector
-        , typename ST  // Type of the right-hand side scalar
-        , EnableIf_t< IsNumeric_v<ST> >* = nullptr >
-inline decltype(auto) operator+( const DenseVector<VT,TF>& vec, ST scalar )
-{
-   BLAZE_FUNCTION_TRACE;
-
-   using ScalarType = AddTrait_t< UnderlyingBuiltin_t<VT>, ST >;
-   return map( ~vec, blaze::bind2nd( Add{}, ScalarType( scalar ) ) );
-}
-//*************************************************************************************************
-
-
-//*************************************************************************************************
-/*!\brief Addition operator for the addition of a scalar value and a dense vector
-//        (\f$ \vec{a}=s+\vec{b} \f$).
-// \ingroup dense_vector
-//
-// \param scalar The left-hand side scalar value for the addition.
-// \param vec The right-hand side dense vector for the addition.
-// \return The vector sum.
-//
-// This operator represents the elementwise addition of a uniform vector represented by a scalar
-// value and a dense vector:
-
-   \code
-   blaze::DynamicVector<double> a, b;
-   // ... Resizing and initialization
-   b = 1.25 + a;
-   \endcode
-
-// The operator returns an expression representing a dense vector of the higher-order element type
-// of the involved data types \a VT::ElementType and \a ST. Both data types \a VT::ElementType and
-// \a ST have to be supported by the AddTrait class template. Note that this operator only works
-// for scalar values of built-in data type.
-*/
-template< typename ST  // Type of the left-hand side scalar
-        , typename VT  // Type of the right-hand side dense vector
-        , bool TF      // Transpose flag of the right-hand side dense vector
-        , EnableIf_t< IsNumeric_v<ST> >* = nullptr >
-inline decltype(auto) operator+( ST scalar, const DenseVector<VT,TF>& vec )
-{
-   BLAZE_FUNCTION_TRACE;
-
-   using ScalarType = AddTrait_t< ST, UnderlyingBuiltin_t<VT> >;
-   return map( ~vec, blaze::bind1st( Add{}, ScalarType( scalar ) ) );
-}
-//*************************************************************************************************
-
-
-//*************************************************************************************************
-/*!\brief Subtraction operator for the subtraction of a dense vector and a scalar value
-//        (\f$ \vec{a}=\vec{b}-s \f$).
-// \ingroup dense_vector
-//
-// \param vec The left-hand side dense vector for the subtraction.
-// \param scalar The right-hand side scalar value for the subtraction.
-// \return The vector difference.
-//
-// This operator represents the elementwise subtraction of a uniform vector represented by a
-// scalar value from a dense vector:
-
-   \code
-   blaze::DynamicVector<double> a, b;
-   // ... Resizing and initialization
-   b = a - 1.25;
-   \endcode
-
-// The operator returns an expression representing a dense vector of the higher-order element type
-// of the involved data types \a VT::ElementType and \a ST. Both data types \a VT::ElementType and
-// \a ST have to be supported by the SubTrait class template. Note that this operator only works
-// for scalar values of built-in data type.
-*/
-template< typename VT  // Type of the left-hand side dense vector
-        , bool TF      // Transpose flag of the left-hand side dense vector
-        , typename ST  // Type of the right-hand side scalar
-        , EnableIf_t< IsNumeric_v<ST> >* = nullptr >
-inline decltype(auto) operator-( const DenseVector<VT,TF>& vec, ST scalar )
-{
-   BLAZE_FUNCTION_TRACE;
-
-   using ScalarType = SubTrait_t< UnderlyingBuiltin_t<VT>, ST >;
-   return map( ~vec, blaze::bind2nd( Sub{}, ScalarType( scalar ) ) );
-}
-//*************************************************************************************************
-
-
-//*************************************************************************************************
-/*!\brief Subtraction operator for the subtraction of a scalar value and a dense vector
-//        (\f$ \vec{a}=s-\vec{b} \f$).
-// \ingroup dense_vector
-//
-// \param scalar The left-hand side scalar value for the subtraction.
-// \param vec The right-hand side dense vector for the subtraction.
-// \return The vector difference.
-//
-// This operator represents the elementwise subtraction of a dense vector from a uniform vector
-// represented by a scalar value:
-
-   \code
-   blaze::DynamicVector<double> a, b;
-   // ... Resizing and initialization
-   b = 1.25 - a;
-   \endcode
-
-// The operator returns an expression representing a dense vector of the higher-order element type
-// of the involved data types \a VT::ElementType and \a ST. Both data types \a VT::ElementType and
-// \a ST have to be supported by the SubTrait class template. Note that this operator only works
-// for scalar values of built-in data type.
-*/
-template< typename ST  // Type of the left-hand side scalar
-        , typename VT  // Type of the right-hand side dense vector
-        , bool TF      // Transpose flag of the right-hand side dense vector
-        , EnableIf_t< IsNumeric_v<ST> >* = nullptr >
-inline decltype(auto) operator-( ST scalar, const DenseVector<VT,TF>& vec )
-{
-   BLAZE_FUNCTION_TRACE;
-
-   using ScalarType = SubTrait_t< ST, UnderlyingBuiltin_t<VT> >;
-   return map( ~vec, blaze::bind1st( Sub{}, ScalarType( scalar ) ) );
-}
-//*************************************************************************************************
-
-
-//*************************************************************************************************
-/*!\brief Division operator for the division of a scalar value and a dense vector
-//        (\f$ \vec{a}=s/\vec{b} \f$).
-// \ingroup dense_vector
-//
-// \param scalar The left-hand side scalar value for the division.
-// \param vec The right-hand side dense vector for the division.
-// \return The vector quotient.
-//
-// This operator represents the elementwise division of a uniform vector represented by a scalar
-// value and a dense vector:
-
-   \code
-   blaze::DynamicVector<double> a, b;
-   // ... Resizing and initialization
-   b = 1.25 / a;
-   \endcode
-
-// The operator returns an expression representing a dense vector of the higher-order element type
-// of the involved data types \a VT::ElementType and \a ST. Both data types \a VT::ElementType and
-// \a ST have to be supported by the DivTrait class template. Note that this operator only works
-// for scalar values of built-in data type.
-*/
-template< typename ST  // Type of the left-hand side scalar
-        , typename VT  // Type of the right-hand side dense vector
-        , bool TF      // Transpose flag of the right-hand side dense vector
-        , EnableIf_t< IsNumeric_v<ST> >* = nullptr >
-inline decltype(auto) operator/( ST scalar, const DenseVector<VT,TF>& vec )
-{
-   BLAZE_FUNCTION_TRACE;
-
-   using ScalarType = DivTrait_t< UnderlyingBuiltin_t<VT>, ST >;
-   return map( ~vec, blaze::bind1st( Div{}, ScalarType( scalar ) ) );
-}
-//*************************************************************************************************
-
-
-//*************************************************************************************************
-/*!\brief Left-shift operator for the uniform left-shift of a dense vector.
-// \ingroup dense_vector
-//
-// \param vec The dense vector for the uniform left-shift operation.
-// \param count The number of bits to shift all vector elements.
-// \return The resulting vector.
-//
-// This operator represents the uniform left-shift of all elements of a dense vector:
-
-   \code
-   blaze::DynamicVector<unsigned int> a, b;
-   // ... Resizing and initialization
-   b = a << 3;
-   \endcode
-*/
-template< typename VT  // Type of the dense vector
-        , bool TF >    // Transpose flag
-inline decltype(auto) operator<<( const DenseVector<VT,TF>& vec, int count )
-{
-   BLAZE_FUNCTION_TRACE;
-
-   return map( ~vec, ShiftLI( count ) );
-}
-//*************************************************************************************************
-
-
-//*************************************************************************************************
-/*!\brief Right-shift operator for the uniform right-shift of a dense vector.
-// \ingroup dense_vector
-//
-// \param vec The dense vector for the uniform right-shift operation.
-// \param count The number of bits to shift all vector elements.
-// \return The resulting vector.
-//
-// This operator represents the uniform right-shift of all elements of a dense vector:
-
-   \code
-   blaze::DynamicVector<unsigned int> a, b;
-   // ... Resizing and initialization
-   b = a >> 3;
-   \endcode
-*/
-template< typename VT  // Type of the dense vector
-        , bool TF >    // Transpose flag
-inline decltype(auto) operator>>( const DenseVector<VT,TF>& vec, int count )
-{
-   BLAZE_FUNCTION_TRACE;
-
-   return map( ~vec, ShiftRI( count ) );
-}
-//*************************************************************************************************
-
-
-//*************************************************************************************************
-/*!\brief Bitwise AND operator for the bitwise AND of a dense vector and a scalar value.
-// \ingroup dense_vector
-//
-// \param vec The left-hand side dense vector for the bitwise AND.
-// \param scalar The right-hand side scalar value for the bitwise AND.
-// \return The resulting vector.
-//
-// This operator represents the bitwise AND of a scalar value with all elements of a dense vector:
-
-   \code
-   blaze::DynamicVector<unsigned int> a, b;
-   // ... Resizing and initialization
-   b = a & 7U;
-   \endcode
-*/
-template< typename VT  // Type of the left-hand side dense vector
-        , bool TF      // Transpose flag
-        , typename ST  // Type of the right-hand side scalar
-        , EnableIf_t< IsNumeric_v<ST> >* = nullptr >
-inline decltype(auto) operator&( const DenseVector<VT,TF>& vec, ST scalar )
-{
-   BLAZE_FUNCTION_TRACE;
-
-   return map( ~vec, blaze::bind2nd( Bitand{}, scalar ) );
-}
-//*************************************************************************************************
-
-
-//*************************************************************************************************
-/*!\brief Bitwise OR operator for the bitwise OR of a dense vector and a scalar value.
-// \ingroup dense_vector
-//
-// \param vec The left-hand side dense vector for the bitwise OR.
-// \param scalar The right-hand side scalar value for the bitwise OR.
-// \return The resulting vector.
-//
-// This operator represents the bitwise OR of a scalar value with all elements of a dense vector:
-
-   \code
-   blaze::DynamicVector<unsigned int> a, b;
-   // ... Resizing and initialization
-   b = a | 7U;
-   \endcode
-*/
-template< typename VT  // Type of the left-hand side dense vector
-        , bool TF      // Transpose flag
-        , typename ST  // Type of the right-hand side scalar
-        , EnableIf_t< IsNumeric_v<ST> >* = nullptr >
-inline decltype(auto) operator|( const DenseVector<VT,TF>& vec, ST scalar )
-{
-   BLAZE_FUNCTION_TRACE;
-
-   return map( ~vec, blaze::bind2nd( Bitor{}, scalar ) );
-}
-//*************************************************************************************************
-
-
-//*************************************************************************************************
-/*!\brief Bitwise XOR operator for the bitwise XOR of a dense vector and a scalar value.
-// \ingroup dense_vector
-//
-// \param vec The left-hand side dense vector for the bitwise XOR.
-// \param scalar The right-hand side scalar value for the bitwise XOR.
-// \return The resulting vector.
-//
-// This operator represents the bitwise XOR of a scalar value with all elements of a dense vector:
-
-   \code
-   blaze::DynamicVector<unsigned int> a, b;
-   // ... Resizing and initialization
-   b = a ^ 7U;
-   \endcode
-*/
-template< typename VT  // Type of the left-hand side dense vector
-        , bool TF      // Transpose flag
-        , typename ST  // Type of the right-hand side scalar
-        , EnableIf_t< IsNumeric_v<ST> >* = nullptr >
-inline decltype(auto) operator^( const DenseVector<VT,TF>& vec, ST scalar )
-{
-   BLAZE_FUNCTION_TRACE;
-
-   return map( ~vec, blaze::bind2nd( Bitxor{}, scalar ) );
-}
-//*************************************************************************************************
-
-
-
-
-//=================================================================================================
-//
-//  GLOBAL LOGICAL OPERATORS
-//
-//=================================================================================================
-
-//*************************************************************************************************
-/*!\brief Logical NOT operator for the logical NOT of a dense vector.
-// \ingroup dense_vector
-//
-// \param vec The dense vector for the logical NOT.
-// \return The negated vector.
-//
-// This operator represents the logical NOT of all elements of a dense vector:
-
-   \code
-   blaze::DynamicVector<bool> a, b;
-   // ... Resizing and initialization
-   b = !a;
-   \endcode
-*/
-template< typename VT  // Type of the dense vector
-        , bool TF >    // Transpose flag
-inline decltype(auto) operator!( const DenseVector<VT,TF>& vec )
-{
-   BLAZE_FUNCTION_TRACE;
-
-   return map( ~vec, Not{} );
-}
 //*************************************************************************************************
 
 
@@ -2819,7 +2497,7 @@ struct IsAligned< DVecMapExpr<VT,OP,TF> >
 /*! \cond BLAZE_INTERNAL */
 template< typename VT, typename OP, bool TF >
 struct IsPadded< DVecMapExpr<VT,OP,TF> >
-   : public BoolConstant< IsPadded_v<VT> && IsPaddingEnabled_v<OP> >
+   : public IsPadded<VT>
 {};
 /*! \endcond */
 //*************************************************************************************************

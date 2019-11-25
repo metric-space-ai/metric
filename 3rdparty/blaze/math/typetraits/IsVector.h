@@ -3,7 +3,7 @@
 //  \file blaze/math/typetraits/IsVector.h
 //  \brief Header file for the IsVector type trait
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -40,8 +40,10 @@
 // Includes
 //*************************************************************************************************
 
-#include "../../math/expressions/Forward.h"
-#include "../../util/IntegralConstant.h"
+#include <utility>
+#include "../../math/expressions/Vector.h"
+#include "../../util/FalseType.h"
+#include "../../util/TrueType.h"
 
 
 namespace blaze {
@@ -62,20 +64,18 @@ struct IsVectorHelper
 {
  private:
    //**********************************************************************************************
-   static T* create();
+   template< typename VT, bool TF >
+   static TrueType test( const Vector<VT,TF>& );
 
    template< typename VT, bool TF >
-   static TrueType test( const Vector<VT,TF>* );
-
-   template< typename VT, bool TF >
-   static TrueType test( const volatile Vector<VT,TF>* );
+   static TrueType test( const volatile Vector<VT,TF>& );
 
    static FalseType test( ... );
    //**********************************************************************************************
 
  public:
    //**********************************************************************************************
-   using Type = decltype( test( create() ) );
+   using Type = decltype( test( std::declval<T&>() ) );
    //**********************************************************************************************
 };
 /*! \endcond */
@@ -110,21 +110,8 @@ struct IsVector
 
 
 //*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-/*!\brief Specialization of the IsVector type trait for references.
-// \ingroup math_type_traits
-*/
-template< typename T >
-struct IsVector<T&>
-   : public FalseType
-{};
-/*! \endcond */
-//*************************************************************************************************
-
-
-//*************************************************************************************************
 /*!\brief Auxiliary variable template for the IsVector type trait.
-// \ingroup math_type_traits
+// \ingroup type_traits
 //
 // The IsVector_v variable template provides a convenient shortcut to access the nested \a value
 // of the IsVector class template. For instance, given the type \a T the following two statements

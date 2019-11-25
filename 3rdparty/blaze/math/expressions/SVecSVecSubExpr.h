@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/SVecSVecSubExpr.h
 //  \brief Header file for the sparse vector/sparse vector subtraction expression
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -46,7 +46,6 @@
 #include "../../math/constraints/SparseVector.h"
 #include "../../math/constraints/TransposeFlag.h"
 #include "../../math/constraints/VecVecSubExpr.h"
-#include "../../math/constraints/Zero.h"
 #include "../../math/Exception.h"
 #include "../../math/expressions/Computation.h"
 #include "../../math/expressions/Forward.h"
@@ -59,16 +58,14 @@
 #include "../../math/typetraits/IsExpression.h"
 #include "../../math/typetraits/IsResizable.h"
 #include "../../math/typetraits/IsTemporary.h"
-#include "../../math/typetraits/IsZero.h"
 #include "../../util/algorithms/Min.h"
 #include "../../util/Assert.h"
 #include "../../util/DisableIf.h"
 #include "../../util/EnableIf.h"
 #include "../../util/FunctionTrace.h"
-#include "../../util/MaybeUnused.h"
 #include "../../util/mpl/If.h"
 #include "../../util/Types.h"
-#include "../../util/typetraits/IsSame.h"
+#include "../../util/typetraits/RemoveReference.h"
 
 
 namespace blaze {
@@ -131,7 +128,6 @@ class SVecSVecSubExpr
  public:
    //**Type definitions****************************************************************************
    using This          = SVecSVecSubExpr<VT1,VT2,TF>;  //!< Type of this SVecSVecSubExpr instance.
-   using BaseType      = SparseVector<This,TF>;        //!< Base type of this SVecSVecSubExpr instance.
    using ResultType    = SubTrait_t<RT1,RT2>;          //!< Result type for expression template evaluations.
    using TransposeType = TransposeType_t<ResultType>;  //!< Transpose type for expression template evaluations.
    using ElementType   = ElementType_t<ResultType>;    //!< Resulting element type.
@@ -276,12 +272,15 @@ class SVecSVecSubExpr
    // type is resizable.
    */
    template< typename VT >  // Type of the target dense vector
-   friend inline auto assign( DenseVector<VT,TF>& lhs, const SVecSVecSubExpr& rhs )
-      -> EnableIf_t< IsResizable_v< ElementType_t<VT> > >
+   friend inline EnableIf_t< IsResizable_v< ElementType_t<VT> > >
+      assign( DenseVector<VT,TF>& lhs, const SVecSVecSubExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
       BLAZE_INTERNAL_ASSERT( (~lhs).size() == rhs.size(), "Invalid vector sizes" );
+
+      using LeftIterator  = ConstIterator_t< RemoveReference_t<CT1> >;
+      using RightIterator = ConstIterator_t< RemoveReference_t<CT2> >;
 
       CT1 x( serial( rhs.lhs_ ) );  // Evaluation of the left-hand side sparse vector operand
       CT2 y( serial( rhs.rhs_ ) );  // Evaluation of the right-hand side sparse vector operand
@@ -290,14 +289,14 @@ class SVecSVecSubExpr
       BLAZE_INTERNAL_ASSERT( y.size() == rhs.rhs_.size(), "Invalid vector size" );
       BLAZE_INTERNAL_ASSERT( x.size() == (~lhs).size()  , "Invalid vector size" );
 
-      const auto lend( x.end() );
-      const auto rend( y.end() );
+      const LeftIterator  lend( x.end() );
+      const RightIterator rend( y.end() );
 
-      for( auto l=x.begin(); l!=lend; ++l ) {
+      for( LeftIterator l=x.begin(); l!=lend; ++l ) {
          (~lhs)[l->index()] = l->value();
       }
 
-      for( auto r=y.begin(); r!=rend; ++r ) {
+      for( RightIterator r=y.begin(); r!=rend; ++r ) {
          if( isDefault( (~lhs)[r->index()] ) )
             (~lhs)[r->index()] = -r->value();
          else
@@ -321,12 +320,15 @@ class SVecSVecSubExpr
    // type is not resizable.
    */
    template< typename VT >  // Type of the target dense vector
-   friend inline auto assign( DenseVector<VT,TF>& lhs, const SVecSVecSubExpr& rhs )
-      -> DisableIf_t< IsResizable_v< ElementType_t<VT> > >
+   friend inline DisableIf_t< IsResizable_v< ElementType_t<VT> > >
+      assign( DenseVector<VT,TF>& lhs, const SVecSVecSubExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
       BLAZE_INTERNAL_ASSERT( (~lhs).size() == rhs.size(), "Invalid vector sizes" );
+
+      using LeftIterator  = ConstIterator_t< RemoveReference_t<CT1> >;
+      using RightIterator = ConstIterator_t< RemoveReference_t<CT2> >;
 
       CT1 x( serial( rhs.lhs_ ) );  // Evaluation of the left-hand side sparse vector operand
       CT2 y( serial( rhs.rhs_ ) );  // Evaluation of the right-hand side sparse vector operand
@@ -335,14 +337,14 @@ class SVecSVecSubExpr
       BLAZE_INTERNAL_ASSERT( y.size() == rhs.rhs_.size(), "Invalid vector size" );
       BLAZE_INTERNAL_ASSERT( x.size() == (~lhs).size()  , "Invalid vector size" );
 
-      const auto lend( x.end() );
-      const auto rend( y.end() );
+      const LeftIterator  lend( x.end() );
+      const RightIterator rend( y.end() );
 
-      for( auto l=x.begin(); l!=lend; ++l ) {
+      for( LeftIterator l=x.begin(); l!=lend; ++l ) {
          (~lhs)[l->index()] = l->value();
       }
 
-      for( auto r=y.begin(); r!=rend; ++r ) {
+      for( RightIterator r=y.begin(); r!=rend; ++r ) {
          (~lhs)[r->index()] -= r->value();
       }
    }
@@ -368,6 +370,9 @@ class SVecSVecSubExpr
 
       BLAZE_INTERNAL_ASSERT( (~lhs).size() == rhs.size(), "Invalid vector sizes" );
 
+      using LeftIterator  = ConstIterator_t< RemoveReference_t<CT1> >;
+      using RightIterator = ConstIterator_t< RemoveReference_t<CT2> >;
+
       CT1 x( serial( rhs.lhs_ ) );  // Evaluation of the left-hand side sparse vector operand
       CT2 y( serial( rhs.rhs_ ) );  // Evaluation of the right-hand side sparse vector operand
 
@@ -379,11 +384,11 @@ class SVecSVecSubExpr
       (~lhs).reserve( min( x.size(), x.nonZeros() + y.nonZeros() ) );
 
       // Performing the vector subtraction
-      const auto lend( x.end() );
-      const auto rend( y.end() );
+      const LeftIterator  lend( x.end() );
+      const RightIterator rend( y.end() );
 
-      auto l( x.begin() );
-      auto r( y.begin() );
+      LeftIterator  l( x.begin() );
+      RightIterator r( y.begin() );
 
       while( l != lend && r != rend )
       {
@@ -529,8 +534,8 @@ class SVecSVecSubExpr
    // expression specific parallel evaluation strategy is selected.
    */
    template< typename VT >  // Type of the target dense vector
-   friend inline auto smpAddAssign( DenseVector<VT,TF>& lhs, const SVecSVecSubExpr& rhs )
-      -> EnableIf_t< UseSMPAssign_v<VT> >
+   friend inline EnableIf_t< UseSMPAssign_v<VT> >
+      smpAddAssign( DenseVector<VT,TF>& lhs, const SVecSVecSubExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -562,8 +567,8 @@ class SVecSVecSubExpr
    // expression specific parallel evaluation strategy is selected.
    */
    template< typename VT >  // Type of the target dense vector
-   friend inline auto smpSubAssign( DenseVector<VT,TF>& lhs, const SVecSVecSubExpr& rhs )
-      -> EnableIf_t< UseSMPAssign_v<VT> >
+   friend inline EnableIf_t< UseSMPAssign_v<VT> >
+      smpSubAssign( DenseVector<VT,TF>& lhs, const SVecSVecSubExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -595,8 +600,8 @@ class SVecSVecSubExpr
    // expression specific parallel evaluation strategy is selected.
    */
    template< typename VT >  // Type of the target dense vector
-   friend inline auto smpMultAssign( DenseVector<VT,TF>& lhs, const SVecSVecSubExpr& rhs )
-      -> EnableIf_t< UseSMPAssign_v<VT> >
+   friend inline EnableIf_t< UseSMPAssign_v<VT> >
+      smpMultAssign( DenseVector<VT,TF>& lhs, const SVecSVecSubExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -638,139 +643,6 @@ class SVecSVecSubExpr
 //=================================================================================================
 
 //*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-/*!\brief Backend implementation of the subtraction of two sparse vectors (\f$ \vec{a}=\vec{b}-\vec{c} \f$).
-// \ingroup sparse_vector
-//
-// \param lhs The left-hand side sparse vector for the subtraction.
-// \param rhs The right-hand side sparse vector for the subtraction.
-// \return The difference of the two vectors.
-//
-// This function implements a performance optimized treatment of the subtraction between two
-// sparse vectors.
-*/
-template< typename VT1  // Type of the left-hand side sparse vector
-        , typename VT2  // Type of the right-hand side sparse vector
-        , bool TF       // Transpose flag
-        , DisableIf_t< ( ( IsZero_v<VT1> || IsZero_v<VT2> ) &&
-                         IsSame_v< ElementType_t<VT1>, ElementType_t<VT2> > ) ||
-                       ( IsZero_v<VT1> && IsZero_v<VT2> ) >* = nullptr >
-inline const SVecSVecSubExpr<VT1,VT2,TF>
-   svecsvecsub( const SparseVector<VT1,TF>& lhs, const SparseVector<VT2,TF>& rhs )
-{
-   BLAZE_FUNCTION_TRACE;
-
-   BLAZE_INTERNAL_ASSERT( (~lhs).size() == (~rhs).size(), "Invalid vector sizes" );
-
-   return SVecSVecSubExpr<VT1,VT2,TF>( ~lhs, ~rhs );
-}
-/*! \endcond */
-//*************************************************************************************************
-
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-/*!\brief Backend implementation of the subtraction between a sparse vector and a zero vector
-//        (\f$ \vec{a}=\vec{b}-\vec{c} \f$).
-// \ingroup sparse_vector
-//
-// \param lhs The left-hand side sparse vector for the subtraction.
-// \param rhs The right-hand side zero vector for the subtraction.
-// \return The difference of the two vectors.
-//
-// This function implements a performance optimized treatment of the subtraction between a
-// sparse vector and a zero vector.
-*/
-template< typename VT1  // Type of the left-hand side sparse vector
-        , typename VT2  // Type of the right-hand side sparse vector
-        , bool TF       // Transpose flag
-        , EnableIf_t< !IsZero_v<VT1> && IsZero_v<VT2> &&
-                      IsSame_v< ElementType_t<VT1>, ElementType_t<VT2> > >* = nullptr >
-inline const VT1&
-   svecsvecsub( const SparseVector<VT1,TF>& lhs, const SparseVector<VT2,TF>& rhs )
-{
-   BLAZE_FUNCTION_TRACE;
-
-   MAYBE_UNUSED( rhs );
-
-   BLAZE_INTERNAL_ASSERT( (~lhs).size() == (~rhs).size(), "Invalid vector sizes" );
-
-   return (~lhs);
-}
-/*! \endcond */
-//*************************************************************************************************
-
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-/*!\brief Backend implementation of the subtraction between a zero vector and a sparse vector
-//        (\f$ \vec{a}=\vec{b}-\vec{c} \f$).
-// \ingroup sparse_vector
-//
-// \param lhs The left-hand side zero vector for the subtraction.
-// \param rhs The right-hand side sparse vector for the subtraction.
-// \return The difference of the two vectors.
-//
-// This function implements a performance optimized treatment of the subtraction between a zero
-// vector and a sparse vector.
-*/
-template< typename VT1  // Type of the left-hand side sparse vector
-        , typename VT2  // Type of the right-hand side sparse vector
-        , bool TF       // Transpose flag
-        , EnableIf_t< IsZero_v<VT1> && !IsZero_v<VT2> &&
-                      IsSame_v< ElementType_t<VT1>, ElementType_t<VT2> > >* = nullptr >
-inline decltype(auto)
-   svecsvecsub( const SparseVector<VT1,TF>& lhs, const SparseVector<VT2,TF>& rhs )
-{
-   BLAZE_FUNCTION_TRACE;
-
-   MAYBE_UNUSED( lhs );
-
-   BLAZE_INTERNAL_ASSERT( (~lhs).size() == (~rhs).size(), "Invalid vector sizes" );
-
-   return -(~rhs);
-}
-/*! \endcond */
-//*************************************************************************************************
-
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-/*!\brief Backend implementation of the subtraction of two zero vectors (\f$ \vec{a}=\vec{b}-\vec{c} \f$).
-// \ingroup sparse_vector
-//
-// \param lhs The left-hand side zero vector for the subtraction.
-// \param rhs The right-hand side zero vector for the subtraction.
-// \return The resulting zero vector.
-//
-// This function implements a performance optimized treatment of the subtraction between two zero
-// vectors. It returns a zero vector.
-*/
-template< typename VT1  // Type of the left-hand side sparse vector
-        , typename VT2  // Type of the right-hand side sparse vector
-        , bool TF       // Transpose flag
-        , EnableIf_t< IsZero_v<VT1> && IsZero_v<VT2> >* = nullptr >
-inline decltype(auto)
-   svecsvecsub( const SparseVector<VT1,TF>& lhs, const SparseVector<VT2,TF>& rhs )
-{
-   BLAZE_FUNCTION_TRACE;
-
-   MAYBE_UNUSED( rhs );
-
-   BLAZE_INTERNAL_ASSERT( (~lhs).size() == (~rhs).size(), "Invalid vector sizes" );
-
-   using ReturnType = const SubTrait_t< ResultType_t<VT1>, ResultType_t<VT2> >;
-
-   BLAZE_CONSTRAINT_MUST_BE_VECTOR_WITH_TRANSPOSE_FLAG( ReturnType, TF );
-   BLAZE_CONSTRAINT_MUST_BE_ZERO_TYPE( ReturnType );
-
-   return ReturnType( (~lhs).size() );
-}
-/*! \endcond */
-//*************************************************************************************************
-
-
-//*************************************************************************************************
 /*!\brief Subtraction operator for the subtraction of two sparse vectors (\f$ \vec{a}=\vec{b}-\vec{c} \f$).
 // \ingroup sparse_vector
 //
@@ -806,7 +678,8 @@ inline decltype(auto)
       BLAZE_THROW_INVALID_ARGUMENT( "Vector sizes do not match" );
    }
 
-   return svecsvecsub( ~lhs, ~rhs );
+   using ReturnType = const SVecSVecSubExpr<VT1,VT2,TF>;
+   return ReturnType( ~lhs, ~rhs );
 }
 //*************************************************************************************************
 

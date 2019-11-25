@@ -3,7 +3,7 @@
 //  \file blaze/math/lapack/hetri.h
 //  \brief Header file for the LAPACK Hermitian matrix inversion functionality (hetri)
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -45,7 +45,6 @@
 #include "../../math/constraints/Adaptor.h"
 #include "../../math/constraints/BLASCompatible.h"
 #include "../../math/constraints/Computation.h"
-#include "../../math/constraints/Contiguous.h"
 #include "../../math/constraints/MutableDataAccess.h"
 #include "../../math/Exception.h"
 #include "../../math/expressions/DenseMatrix.h"
@@ -68,7 +67,7 @@ namespace blaze {
 /*!\name LAPACK LDLH-based inversion functions (hetri) */
 //@{
 template< typename MT, bool SO >
-void hetri( DenseMatrix<MT,SO>& A, char uplo, const int* ipiv );
+inline void hetri( DenseMatrix<MT,SO>& A, char uplo, const int* ipiv );
 //@}
 //*************************************************************************************************
 
@@ -118,7 +117,6 @@ inline void hetri( DenseMatrix<MT,SO>& A, char uplo, const int* ipiv )
    BLAZE_CONSTRAINT_MUST_NOT_BE_ADAPTOR_TYPE( MT );
    BLAZE_CONSTRAINT_MUST_NOT_BE_COMPUTATION_TYPE( MT );
    BLAZE_CONSTRAINT_MUST_HAVE_MUTABLE_DATA_ACCESS( MT );
-   BLAZE_CONSTRAINT_MUST_BE_CONTIGUOUS_TYPE( MT );
    BLAZE_CONSTRAINT_MUST_BE_BLAS_COMPATIBLE_TYPE( ElementType_t<MT> );
 
    using ET = ElementType_t<MT>;

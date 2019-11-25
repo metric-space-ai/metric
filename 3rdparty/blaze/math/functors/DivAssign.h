@@ -3,7 +3,7 @@
 //  \file blaze/math/functors/DivAssign.h
 //  \brief Header file for the DivAssign functor
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -40,7 +40,6 @@
 // Includes
 //*************************************************************************************************
 
-#include "../../system/HostDevice.h"
 #include "../../system/Inline.h"
 
 
@@ -53,22 +52,29 @@ namespace blaze {
 //=================================================================================================
 
 //*************************************************************************************************
-/*!\brief Generic wrapper for division assignment.
+/*!\brief Generic wrapper for the divAssign() function.
 // \ingroup functors
 */
 struct DivAssign
 {
    //**********************************************************************************************
-   /*!\brief Performs a division assignment with the given objects/values.
+   /*!\brief Default constructor of the DivAssign functor.
+   */
+   explicit inline DivAssign()
+   {}
+   //**********************************************************************************************
+
+   //**********************************************************************************************
+   /*!\brief Calls the divAssign() function with the given objects/values.
    //
    // \param a The target left-hand side object/value.
    // \param b The right-hand side object/value divisor.
    // \return void
    */
    template< typename T1, typename T2 >
-   BLAZE_ALWAYS_INLINE BLAZE_DEVICE_CALLABLE void operator()( T1& a, const T2& b ) const
+   BLAZE_ALWAYS_INLINE void operator()( T1& a, const T2& b ) const
    {
-      a /= b;
+      divAssign( a, b );
    }
    //**********************************************************************************************
 };

@@ -95,7 +95,7 @@ int main()
 
     float magnitude = 1;
 
-    auto vdata = read_csv_num<double>("assets/taxi_weekly.csv", ",");
+    auto vdata = read_csv_num<double>("assets/taxi_daily.csv", ",");
 
     mat2bmp::blaze2bmp_norm(vdata, "input.bmp", magnitude);
 
@@ -113,7 +113,7 @@ int main()
             visualize = false;
 
 
-        auto vDSPCC = metric::DSPCC<std::vector<double>, void>(vdata, 4, 2, mix, 4);
+        auto vDSPCC = metric::DSPCC<std::vector<double>, void>(vdata, 2, 16, mix, 2);
         // dataset,
         // number of features of freq and time PCFAs,
         // DWT subbands, share of freq features in the mixed code,

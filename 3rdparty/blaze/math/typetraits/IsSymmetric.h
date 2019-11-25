@@ -3,7 +3,7 @@
 //  \file blaze/math/typetraits/IsSymmetric.h
 //  \brief Header file for the IsSymmetric type trait
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -40,10 +40,8 @@
 // Includes
 //*************************************************************************************************
 
-#include "../../math/typetraits/IsExpression.h"
-#include "../../util/EnableIf.h"
-#include "../../util/IntegralConstant.h"
-#include "../../util/typetraits/IsSame.h"
+#include "../../util/FalseType.h"
+#include "../../util/TrueType.h"
 
 
 namespace blaze {
@@ -53,32 +51,6 @@ namespace blaze {
 //  CLASS DEFINITION
 //
 //=================================================================================================
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-template< typename T > struct IsSymmetric;
-/*! \endcond */
-//*************************************************************************************************
-
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-/*!\brief Auxiliary helper struct for the IsSymmetric type trait.
-// \ingroup math_traits
-*/
-template< typename T
-        , typename = void >
-struct IsSymmetricHelper
-   : public FalseType
-{};
-
-template< typename T >  // Type of the operand
-struct IsSymmetricHelper< T, EnableIf_t< IsExpression_v<T> && !IsSame_v<T,typename T::ResultType> > >
-   : public IsSymmetric< typename T::ResultType >::Type
-{};
-/*! \endcond */
-//*************************************************************************************************
-
 
 //*************************************************************************************************
 /*!\brief Compile time check for symmetric matrices.
@@ -111,7 +83,7 @@ struct IsSymmetricHelper< T, EnableIf_t< IsExpression_v<T> && !IsSame_v<T,typena
 */
 template< typename T >
 struct IsSymmetric
-   : public IsSymmetricHelper<T>
+   : public FalseType
 {};
 //*************************************************************************************************
 
@@ -157,7 +129,7 @@ struct IsSymmetric< const volatile T >
 
 //*************************************************************************************************
 /*!\brief Auxiliary variable template for the IsSymmetric type trait.
-// \ingroup math_type_traits
+// \ingroup type_traits
 //
 // The IsSymmetric_v variable template provides a convenient shortcut to access the nested
 // \a value of the IsSymmetric class template. For instance, given the type \a T the following

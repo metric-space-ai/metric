@@ -3,7 +3,7 @@
 //  \file blaze/math/typetraits/TransposeFlag.h
 //  \brief Header file for the TransposeFlag type trait
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -40,7 +40,10 @@
 // Includes
 //*************************************************************************************************
 
+#include <utility>
+#include "../../math/expressions/Vector.h"
 #include "../../util/IntegralConstant.h"
+#include "../../util/typetraits/RemoveCV.h"
 
 
 namespace blaze {
@@ -50,6 +53,29 @@ namespace blaze {
 //  CLASS DEFINITION
 //
 //=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Auxiliary helper struct for the TransposeFlag type trait.
+// \ingroup math_type_traits
+*/
+template< typename T >
+struct TransposeFlagHelper
+{
+ private:
+   //**********************************************************************************************
+   template< typename VT, bool TF >
+   static BoolConstant<TF> test( const Vector<VT,TF>& );
+   //**********************************************************************************************
+
+ public:
+   //**********************************************************************************************
+   using Type = decltype( test( std::declval< RemoveCV_t<T> >() ) );
+   //**********************************************************************************************
+};
+/*! \endcond */
+//*************************************************************************************************
+
 
 //*************************************************************************************************
 /*!\brief Evaluation of the transpose flag of a given matrix type.
@@ -71,14 +97,14 @@ namespace blaze {
 */
 template< typename T >
 struct TransposeFlag
-   : public BoolConstant< T::transposeFlag >
+   : public TransposeFlagHelper<T>::Type
 {};
 //*************************************************************************************************
 
 
 //*************************************************************************************************
 /*!\brief Auxiliary variable template for the TransposeFlag type trait.
-// \ingroup math_type_traits
+// \ingroup type_traits
 //
 // The TransposeFlag_v variable template provides a convenient shortcut to access the nested
 // \a value of the TransposeFlag class template. For instance, given the vector type \a T the
@@ -90,7 +116,7 @@ struct TransposeFlag
    \endcode
 */
 template< typename T >
-constexpr bool TransposeFlag_v = T::transposeFlag;
+constexpr bool TransposeFlag_v = TransposeFlag<T>::value;
 //*************************************************************************************************
 
 } // namespace blaze

@@ -3,7 +3,7 @@
 //  \file blaze/math/views/column/ColumnData.h
 //  \brief Header file for the implementation of the ColumnData class template
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -40,8 +40,8 @@
 // Includes
 //*************************************************************************************************
 
-#include "../../../util/MaybeUnused.h"
 #include "../../../util/Types.h"
+#include "../../../util/Unused.h"
 
 
 namespace blaze {
@@ -61,7 +61,7 @@ namespace blaze {
 // number of compile time column arguments.
 */
 template< size_t... CCAs >  // Compile time column arguments
-class ColumnData
+struct ColumnData
 {};
 //*************************************************************************************************
 
@@ -83,40 +83,24 @@ class ColumnData
 // time column arguments.
 */
 template<>
-class ColumnData<>
+struct ColumnData<>
 {
  public:
-   //**Compile time flags**************************************************************************
-   //! Compilation flag for compile time optimization.
-   /*! The \a compileTimeArgs compilation flag indicates whether the view has been created by
-       means of compile time arguments and whether these arguments can be queried at compile
-       time. In that case, the \a compileTimeArgs compilation flag is set to \a true, otherwise
-       it is set to \a false. */
-   static constexpr bool compileTimeArgs = false;
-   //**********************************************************************************************
-
    //**Constructors********************************************************************************
    /*!\name Constructors */
    //@{
    template< typename... RCAs >
    explicit inline ColumnData( size_t index, RCAs... args );
-
-   ColumnData( const ColumnData& ) = default;
+   // No explicitly declared copy constructor.
    //@}
    //**********************************************************************************************
 
    //**Destructor**********************************************************************************
-   /*!\name Destructor */
-   //@{
-   ~ColumnData() = default;
-   //@}
+   // No explicitly declared destructor.
    //**********************************************************************************************
 
    //**Assignment operators************************************************************************
-   /*!\name Assignment operators */
-   //@{
    ColumnData& operator=( const ColumnData& ) = delete;
-   //@}
    //**********************************************************************************************
 
    //**Utility functions***************************************************************************
@@ -149,7 +133,7 @@ template< typename... RCAs >  // Optional column arguments
 inline ColumnData<>::ColumnData( size_t index, RCAs... args )
    : column_( index )  // The index of the column in the matrix
 {
-   MAYBE_UNUSED( args... );
+   UNUSED_PARAMETER( args... );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -186,40 +170,24 @@ inline size_t ColumnData<>::column() const noexcept
 // compile time column argument.
 */
 template< size_t I >   // Compile time column index
-class ColumnData<I>
+struct ColumnData<I>
 {
  public:
-   //**Compile time flags**************************************************************************
-   //! Compilation flag for compile time optimization.
-   /*! The \a compileTimeArgs compilation flag indicates whether the view has been created by
-       means of compile time arguments and whether these arguments can be queried at compile
-       time. In that case, the \a compileTimeArgs compilation flag is set to \a true, otherwise
-       it is set to \a false. */
-   static constexpr bool compileTimeArgs = true;
-   //**********************************************************************************************
-
    //**Constructors********************************************************************************
    /*!\name Constructors */
    //@{
    template< typename... RCAs >
    explicit inline ColumnData( RCAs... args );
-
-   ColumnData( const ColumnData& ) = default;
+   // No explicitly declared copy constructor.
    //@}
    //**********************************************************************************************
 
    //**Destructor**********************************************************************************
-   /*!\name Destructor */
-   //@{
-   ~ColumnData() = default;
-   //@}
+   // No explicitly declared destructor.
    //**********************************************************************************************
 
    //**Assignment operators************************************************************************
-   /*!\name Assignment operators */
-   //@{
    ColumnData& operator=( const ColumnData& ) = delete;
-   //@}
    //**********************************************************************************************
 
    //**Utility functions***************************************************************************
@@ -243,7 +211,7 @@ template< size_t I >          // Compile time column index
 template< typename... RCAs >  // Optional column arguments
 inline ColumnData<I>::ColumnData( RCAs... args )
 {
-   MAYBE_UNUSED( args... );
+   UNUSED_PARAMETER( args... );
 }
 /*! \endcond */
 //*************************************************************************************************

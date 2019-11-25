@@ -3,7 +3,7 @@
 //  \file blaze/math/views/submatrix/Dense.h
 //  \brief Submatrix specialization for dense matrices
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -64,6 +64,7 @@
 #include "../../../math/SIMD.h"
 #include "../../../math/StorageOrder.h"
 #include "../../../math/traits/AddTrait.h"
+#include "../../../math/traits/MultTrait.h"
 #include "../../../math/traits/SchurTrait.h"
 #include "../../../math/traits/SubmatrixTrait.h"
 #include "../../../math/traits/SubTrait.h"
@@ -71,7 +72,6 @@
 #include "../../../math/typetraits/HasSIMDAdd.h"
 #include "../../../math/typetraits/HasSIMDMult.h"
 #include "../../../math/typetraits/HasSIMDSub.h"
-#include "../../../math/typetraits/IsContiguous.h"
 #include "../../../math/typetraits/IsDiagonal.h"
 #include "../../../math/typetraits/IsExpression.h"
 #include "../../../math/typetraits/IsHermitian.h"
@@ -104,12 +104,12 @@
 #include "../../../util/constraints/Vectorizable.h"
 #include "../../../util/DisableIf.h"
 #include "../../../util/EnableIf.h"
-#include "../../../util/MaybeUnused.h"
 #include "../../../util/mpl/If.h"
 #include "../../../util/TypeList.h"
 #include "../../../util/Types.h"
 #include "../../../util/typetraits/IsConst.h"
 #include "../../../util/typetraits/IsReference.h"
+#include "../../../util/Unused.h"
 
 
 namespace blaze {
@@ -385,12 +385,7 @@ class Submatrix<MT,unaligned,false,true,CSAs...>
       // result in erroneous results and/or in compilation errors.
       */
       inline void store( const SIMDType& value ) const {
-         if( isAligned_ ) {
-            storea( value );
-         }
-         else {
-            storeu( value );
-         }
+         storeu( value );
       }
       //*******************************************************************************************
 
@@ -422,7 +417,12 @@ class Submatrix<MT,unaligned,false,true,CSAs...>
       // might result in erroneous results and/or in compilation errors.
       */
       inline void storeu( const SIMDType& value ) const {
-         iterator_.storeu( value );
+         if( isAligned_ ) {
+            iterator_.storea( value );
+         }
+         else {
+            iterator_.storeu( value );
+         }
       }
       //*******************************************************************************************
 
@@ -597,9 +597,6 @@ class Submatrix<MT,unaligned,false,true,CSAs...>
 
    //! Compilation switch for the expression template assignment strategy.
    static constexpr bool smpAssignable = MT::smpAssignable;
-
-   //! Compilation switch for the expression template evaluation strategy.
-   static constexpr bool compileTimeArgs = DataType::compileTimeArgs;
    //**********************************************************************************************
 
    //**Constructors********************************************************************************
@@ -607,16 +604,12 @@ class Submatrix<MT,unaligned,false,true,CSAs...>
    //@{
    template< typename... RSAs >
    explicit inline Submatrix( MT& matrix, RSAs... args );
-
-   Submatrix( const Submatrix& ) = default;
+   // No explicitly declared copy constructor.
    //@}
    //**********************************************************************************************
 
    //**Destructor**********************************************************************************
-   /*!\name Destructor */
-   //@{
-   ~Submatrix() = default;
-   //@}
+   // No explicitly declared destructor.
    //**********************************************************************************************
 
    //**Data access functions***********************************************************************
@@ -890,8 +883,7 @@ template< typename... RSAs >  // Runtime submatrix arguments
 inline Submatrix<MT,unaligned,false,true,CSAs...>::Submatrix( MT& matrix, RSAs... args )
    : DataType  ( args... )  // Base class initialization
    , matrix_   ( matrix  )  // The matrix containing the submatrix
-   , isAligned_( simdEnabled && IsContiguous_v<MT> &&
-                 matrix.data() != nullptr && checkAlignment( data() ) &&
+   , isAligned_( simdEnabled && matrix.data() != nullptr && checkAlignment( data() ) &&
                  ( rows() < 2UL || ( matrix.spacing() & size_t(-SIMDSIZE) ) == 0UL ) )
 {
    if( !Contains_v< TypeList<RSAs...>, Unchecked > ) {
@@ -1881,7 +1873,7 @@ template< typename MT       // Type of the dense matrix
         , size_t... CSAs >  // Compile time submatrix arguments
 inline size_t Submatrix<MT,unaligned,false,true,CSAs...>::capacity( size_t i ) const noexcept
 {
-   MAYBE_UNUSED( i );
+   UNUSED_PARAMETER( i );
 
    BLAZE_USER_ASSERT( i < rows(), "Invalid row access index" );
 
@@ -2423,6 +2415,7 @@ BLAZE_ALWAYS_INLINE typename Submatrix<MT,unaligned,false,true,CSAs...>::SIMDTyp
    BLAZE_INTERNAL_ASSERT( i < rows(), "Invalid row access index" );
    BLAZE_INTERNAL_ASSERT( j < columns(), "Invalid column access index" );
    BLAZE_INTERNAL_ASSERT( j + SIMDSIZE <= columns(), "Invalid column access index" );
+   BLAZE_INTERNAL_ASSERT( j % SIMDSIZE == 0UL, "Invalid column access index" );
 
    return matrix_.loadu( row()+i, column()+j );
 }
@@ -2523,6 +2516,7 @@ BLAZE_ALWAYS_INLINE void
    BLAZE_INTERNAL_ASSERT( i < rows(), "Invalid row access index" );
    BLAZE_INTERNAL_ASSERT( j < columns(), "Invalid column access index" );
    BLAZE_INTERNAL_ASSERT( j + SIMDSIZE <= columns(), "Invalid column access index" );
+   BLAZE_INTERNAL_ASSERT( j % SIMDSIZE == 0UL, "Invalid column access index" );
 
    matrix_.storeu( row()+i, column()+j, value );
 }
@@ -3668,12 +3662,7 @@ class Submatrix<MT,unaligned,true,true,CSAs...>
       // result in erroneous results and/or in compilation errors.
       */
       inline void store( const SIMDType& value ) const {
-         if( isAligned_ ) {
-            storea( value );
-         }
-         else {
-            storeu( value );
-         }
+         storeu( value );
       }
       //*******************************************************************************************
 
@@ -3705,7 +3694,12 @@ class Submatrix<MT,unaligned,true,true,CSAs...>
       // might result in erroneous results and/or in compilation errors.
       */
       inline void storeu( const SIMDType& value ) const {
-         iterator_.storeu( value );
+         if( isAligned_ ) {
+            iterator_.storea( value );
+         }
+         else {
+            iterator_.storeu( value );
+         }
       }
       //*******************************************************************************************
 
@@ -3880,9 +3874,6 @@ class Submatrix<MT,unaligned,true,true,CSAs...>
 
    //! Compilation switch for the expression template assignment strategy.
    static constexpr bool smpAssignable = MT::smpAssignable;
-
-   //! Compilation switch for the expression template evaluation strategy.
-   static constexpr bool compileTimeArgs = DataType::compileTimeArgs;
    //**********************************************************************************************
 
    //**Constructors********************************************************************************
@@ -3890,16 +3881,12 @@ class Submatrix<MT,unaligned,true,true,CSAs...>
    //@{
    template< typename... RSAs >
    explicit inline Submatrix( MT& matrix, RSAs... args );
-
-   Submatrix( const Submatrix& ) = default;
+   // No explicitly declared copy constructor.
    //@}
    //**********************************************************************************************
 
    //**Destructor**********************************************************************************
-   /*!\name Destructor */
-   //@{
-   ~Submatrix() = default;
-   //@}
+   // No explicitly declared destructor.
    //**********************************************************************************************
 
    //**Data access functions***********************************************************************
@@ -4173,8 +4160,7 @@ template< typename... RSAs >  // Runtime submatrix arguments
 inline Submatrix<MT,unaligned,true,true,CSAs...>::Submatrix( MT& matrix, RSAs... args )
    : DataType  ( args... )  // Base class initialization
    , matrix_   ( matrix  )  // The matrix containing the submatrix
-   , isAligned_( simdEnabled && IsContiguous_v<MT> &&
-                 matrix.data() != nullptr && checkAlignment( data() ) &&
+   , isAligned_( simdEnabled && matrix.data() != nullptr && checkAlignment( data() ) &&
                  ( columns() < 2UL || ( matrix.spacing() & size_t(-SIMDSIZE) ) == 0UL ) )
 {
    if( !Contains_v< TypeList<RSAs...>, Unchecked > ) {
@@ -5136,7 +5122,7 @@ template< typename MT       // Type of the dense matrix
         , size_t... CSAs >  // Compile time submatrix arguments
 inline size_t Submatrix<MT,unaligned,true,true,CSAs...>::capacity( size_t j ) const noexcept
 {
-   MAYBE_UNUSED( j );
+   UNUSED_PARAMETER( j );
 
    BLAZE_USER_ASSERT( j < columns(), "Invalid column access index" );
 
@@ -5664,6 +5650,7 @@ BLAZE_ALWAYS_INLINE typename Submatrix<MT,unaligned,true,true,CSAs...>::SIMDType
 
    BLAZE_INTERNAL_ASSERT( i < rows(), "Invalid row access index" );
    BLAZE_INTERNAL_ASSERT( i + SIMDSIZE <= rows(), "Invalid row access index" );
+   BLAZE_INTERNAL_ASSERT( i % SIMDSIZE == 0UL, "Invalid row access index" );
    BLAZE_INTERNAL_ASSERT( j < columns(), "Invalid column access index" );
 
    return matrix_.loadu( row()+i, column()+j );
@@ -5761,6 +5748,7 @@ BLAZE_ALWAYS_INLINE void
 
    BLAZE_INTERNAL_ASSERT( i < rows(), "Invalid row access index" );
    BLAZE_INTERNAL_ASSERT( i + SIMDSIZE <= rows(), "Invalid row access index" );
+   BLAZE_INTERNAL_ASSERT( i % SIMDSIZE == 0UL, "Invalid row access index" );
    BLAZE_INTERNAL_ASSERT( j < columns(), "Invalid column access index" );
 
    matrix_.storeu( row()+i, column()+j, value );
@@ -6708,9 +6696,6 @@ class Submatrix<MT,aligned,false,true,CSAs...>
 
    //! Compilation switch for the expression template assignment strategy.
    static constexpr bool smpAssignable = MT::smpAssignable;
-
-   //! Compilation switch for the expression template evaluation strategy.
-   static constexpr bool compileTimeArgs = DataType::compileTimeArgs;
    //**********************************************************************************************
 
    //**Constructors********************************************************************************
@@ -6718,16 +6703,12 @@ class Submatrix<MT,aligned,false,true,CSAs...>
    //@{
    template< typename... RSAs >
    explicit inline Submatrix( MT& matrix, RSAs... args );
-
-   Submatrix( const Submatrix& ) = default;
+   // No explicitly declared copy constructor.
    //@}
    //**********************************************************************************************
 
    //**Destructor**********************************************************************************
-   /*!\name Destructor */
-   //@{
-   ~Submatrix() = default;
-   //@}
+   // No explicitly declared destructor.
    //**********************************************************************************************
 
    //**Data access functions***********************************************************************
@@ -6995,25 +6976,21 @@ inline Submatrix<MT,aligned,false,true,CSAs...>::Submatrix( MT& matrix, RSAs... 
    : DataType( args... )  // Base class initialization
    , matrix_ ( matrix  )  // The matrix containing the submatrix
 {
-   if( !Contains_v< TypeList<RSAs...>, Unchecked > )
-   {
+   if( !Contains_v< TypeList<RSAs...>, Unchecked > ) {
       if( ( row() + rows() > matrix_.rows() ) || ( column() + columns() > matrix_.columns() ) ) {
          BLAZE_THROW_INVALID_ARGUMENT( "Invalid submatrix specification" );
       }
-
-      if( simdEnabled && IsContiguous_v<MT> &&
-          ( !checkAlignment( data() ) ||
-            ( rows() > 1UL && matrix_.spacing() % SIMDSIZE != 0UL ) ) ) {
+      if( ( simdEnabled && matrix_.data() != nullptr && !checkAlignment( data() ) ) ||
+          ( rows() > 1UL && matrix_.spacing() % SIMDSIZE != 0UL ) ) {
          BLAZE_THROW_INVALID_ARGUMENT( "Invalid submatrix alignment" );
       }
    }
-   else
-   {
+   else {
       BLAZE_USER_ASSERT( row()    + rows()    <= matrix_.rows()   , "Invalid submatrix specification" );
       BLAZE_USER_ASSERT( column() + columns() <= matrix_.columns(), "Invalid submatrix specification" );
 
-      BLAZE_USER_ASSERT( !simdEnabled || !IsContiguous_v<MT> || checkAlignment( data() ), "Invalid submatrix alignment" );
-      BLAZE_USER_ASSERT( !simdEnabled || !IsContiguous_v<MT> || rows() <= 1UL || matrix_.spacing() % SIMDSIZE == 0UL, "Invalid submatrix alignment" );
+      BLAZE_USER_ASSERT( !simdEnabled || matrix_.data() == nullptr || checkAlignment( data() ), "Invalid submatrix alignment" );
+      BLAZE_USER_ASSERT( rows() <= 1UL || matrix_.spacing() % SIMDSIZE == 0UL, "Invalid submatrix alignment" );
    }
 }
 /*! \endcond */
@@ -7993,7 +7970,7 @@ template< typename MT       // Type of the dense matrix
         , size_t... CSAs >  // Compile time submatrix arguments
 inline size_t Submatrix<MT,aligned,false,true,CSAs...>::capacity( size_t i ) const noexcept
 {
-   MAYBE_UNUSED( i );
+   UNUSED_PARAMETER( i );
 
    BLAZE_USER_ASSERT( i < rows(), "Invalid row access index" );
 
@@ -8532,6 +8509,7 @@ BLAZE_ALWAYS_INLINE typename Submatrix<MT,aligned,false,true,CSAs...>::SIMDType
    BLAZE_INTERNAL_ASSERT( i < rows(), "Invalid row access index" );
    BLAZE_INTERNAL_ASSERT( j < columns(), "Invalid column access index" );
    BLAZE_INTERNAL_ASSERT( j + SIMDSIZE <= columns(), "Invalid column access index" );
+   BLAZE_INTERNAL_ASSERT( j % SIMDSIZE == 0UL, "Invalid column access index" );
 
    return matrix_.loadu( row()+i, column()+j );
 }
@@ -8629,6 +8607,7 @@ BLAZE_ALWAYS_INLINE void
    BLAZE_INTERNAL_ASSERT( i < rows(), "Invalid row access index" );
    BLAZE_INTERNAL_ASSERT( j < columns(), "Invalid column access index" );
    BLAZE_INTERNAL_ASSERT( j + SIMDSIZE <= columns(), "Invalid column access index" );
+   BLAZE_INTERNAL_ASSERT( j % SIMDSIZE == 0UL, "Invalid column access index" );
 
    matrix_.storeu( row()+i, column()+j, value );
 }
@@ -9572,9 +9551,6 @@ class Submatrix<MT,aligned,true,true,CSAs...>
 
    //! Compilation switch for the expression template assignment strategy.
    static constexpr bool smpAssignable = MT::smpAssignable;
-
-   //! Compilation switch for the expression template evaluation strategy.
-   static constexpr bool compileTimeArgs = DataType::compileTimeArgs;
    //**********************************************************************************************
 
    //**Constructors********************************************************************************
@@ -9582,16 +9558,12 @@ class Submatrix<MT,aligned,true,true,CSAs...>
    //@{
    template< typename... RSAs >
    explicit inline Submatrix( MT& matrix, RSAs... args );
-
-   Submatrix( const Submatrix& ) = default;
+   // No explicitly declared copy constructor.
    //@}
    //**********************************************************************************************
 
    //**Destructor**********************************************************************************
-   /*!\name Destructor */
-   //@{
-   ~Submatrix() = default;
-   //@}
+   // No explicitly declared destructor.
    //**********************************************************************************************
 
    //**Data access functions***********************************************************************
@@ -9865,19 +9837,17 @@ inline Submatrix<MT,aligned,true,true,CSAs...>::Submatrix( MT& matrix, RSAs... a
          BLAZE_THROW_INVALID_ARGUMENT( "Invalid submatrix specification" );
       }
 
-      if( simdEnabled && IsContiguous_v<MT> &&
-          ( !checkAlignment( data() ) ||
-            ( columns() > 1UL && matrix_.spacing() % SIMDSIZE != 0UL ) ) ) {
+      if( ( simdEnabled && matrix_.data() != nullptr && !checkAlignment( data() ) ) ||
+          ( columns() > 1UL && matrix_.spacing() % SIMDSIZE != 0UL ) ) {
          BLAZE_THROW_INVALID_ARGUMENT( "Invalid submatrix alignment" );
       }
    }
-   else
-   {
-      BLAZE_USER_ASSERT( row()    + rows()    <= matrix_.rows()   , "Invalid submatrix specification" );
-      BLAZE_USER_ASSERT( column() + columns() <= matrix_.columns(), "Invalid submatrix specification" );
+   else {
+      BLAZE_INTERNAL_ASSERT( row()    + rows()    <= matrix_.rows()   , "Invalid submatrix specification" );
+      BLAZE_INTERNAL_ASSERT( column() + columns() <= matrix_.columns(), "Invalid submatrix specification" );
 
-      BLAZE_USER_ASSERT( !simdEnabled || !IsContiguous_v<MT> || checkAlignment( data() ), "Invalid submatrix alignment" );
-      BLAZE_USER_ASSERT( !simdEnabled || !IsContiguous_v<MT> || columns() <= 1UL || matrix_.spacing() % SIMDSIZE == 0UL, "Invalid submatrix alignment" );
+      BLAZE_INTERNAL_ASSERT( !simdEnabled || matrix_.data() == nullptr || checkAlignment( data() ), "Invalid submatrix alignment" );
+      BLAZE_INTERNAL_ASSERT( columns() <= 1UL || matrix_.spacing() % SIMDSIZE == 0UL, "Invalid submatrix alignment" );
    }
 }
 /*! \endcond */
@@ -10828,7 +10798,7 @@ template< typename MT       // Type of the dense matrix
         , size_t... CSAs >  // Compile time submatrix arguments
 inline size_t Submatrix<MT,aligned,true,true,CSAs...>::capacity( size_t j ) const noexcept
 {
-   MAYBE_UNUSED( j );
+   UNUSED_PARAMETER( j );
 
    BLAZE_USER_ASSERT( j < columns(), "Invalid column access index" );
 
@@ -11353,6 +11323,7 @@ BLAZE_ALWAYS_INLINE typename Submatrix<MT,aligned,true,true,CSAs...>::SIMDType
 
    BLAZE_INTERNAL_ASSERT( i < rows(), "Invalid row access index" );
    BLAZE_INTERNAL_ASSERT( i + SIMDSIZE <= rows(), "Invalid row access index" );
+   BLAZE_INTERNAL_ASSERT( i % SIMDSIZE == 0UL, "Invalid row access index" );
    BLAZE_INTERNAL_ASSERT( j < columns(), "Invalid column access index" );
 
    return matrix_.loadu( row()+i, column()+j );
@@ -11447,6 +11418,7 @@ BLAZE_ALWAYS_INLINE void
 
    BLAZE_INTERNAL_ASSERT( i < rows(), "Invalid row access index" );
    BLAZE_INTERNAL_ASSERT( i + SIMDSIZE <= rows(), "Invalid row access index" );
+   BLAZE_INTERNAL_ASSERT( i % SIMDSIZE == 0UL, "Invalid row access index" );
    BLAZE_INTERNAL_ASSERT( j < columns(), "Invalid column access index" );
 
    matrix_.storeu( row()+i, column()+j, value );

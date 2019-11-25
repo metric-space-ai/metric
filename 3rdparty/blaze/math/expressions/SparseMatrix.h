@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/SparseMatrix.h
 //  \brief Header file for the SparseMatrix base class
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -46,7 +46,7 @@
 #include "../../util/algorithms/Min.h"
 #include "../../util/DisableIf.h"
 #include "../../util/EnableIf.h"
-#include "../../util/MaybeUnused.h"
+#include "../../util/Unused.h"
 
 
 namespace blaze {
@@ -99,7 +99,7 @@ struct SparseMatrix
 // matrix.
 */
 template< typename MT >  // Type of the matrix
-inline auto resetLower_backend( SparseMatrix<MT,false>& dm ) -> DisableIf_t< IsUpper_v<MT> >
+inline DisableIf_t< IsUpper_v<MT> > resetLower_backend( SparseMatrix<MT,false>& dm )
 {
    const size_t m( (~dm).rows() );
 
@@ -123,7 +123,7 @@ inline auto resetLower_backend( SparseMatrix<MT,false>& dm ) -> DisableIf_t< IsU
 // matrix.
 */
 template< typename MT >  // Type of the matrix
-inline auto resetLower_backend( SparseMatrix<MT,true>& dm ) -> DisableIf_t< IsUpper_v<MT> >
+inline DisableIf_t< IsUpper_v<MT> > resetLower_backend( SparseMatrix<MT,true>& dm )
 {
    const size_t m   ( (~dm).rows()    );
    const size_t n   ( (~dm).columns() );
@@ -149,9 +149,9 @@ inline auto resetLower_backend( SparseMatrix<MT,true>& dm ) -> DisableIf_t< IsUp
 */
 template< typename MT  // Type of the matrix
         , bool SO >    // Storage order of the matrix
-inline auto resetLower_backend( SparseMatrix<MT,SO>& dm ) -> EnableIf_t< IsUpper_v<MT> >
+inline EnableIf_t< IsUpper_v<MT> > resetLower_backend( SparseMatrix<MT,SO>& dm )
 {
-   MAYBE_UNUSED( dm );
+   UNUSED_PARAMETER( dm );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -189,7 +189,7 @@ inline void resetLower( SparseMatrix<MT,SO>& dm )
 // matrix.
 */
 template< typename MT >  // Type of the matrix
-inline auto resetUpper_backend( SparseMatrix<MT,false>& dm ) -> DisableIf_t< IsLower_v<MT> >
+inline DisableIf_t< IsLower_v<MT> > resetUpper_backend( SparseMatrix<MT,false>& dm )
 {
    const size_t m   ( (~dm).rows()    );
    const size_t n   ( (~dm).columns() );
@@ -215,7 +215,7 @@ inline auto resetUpper_backend( SparseMatrix<MT,false>& dm ) -> DisableIf_t< IsL
 // matrix.
 */
 template< typename MT >  // Type of the matrix
-inline auto resetUpper_backend( SparseMatrix<MT,true>& dm ) -> DisableIf_t< IsLower_v<MT> >
+inline DisableIf_t< IsLower_v<MT> > resetUpper_backend( SparseMatrix<MT,true>& dm )
 {
    const size_t n( (~dm).columns() );
 
@@ -239,9 +239,9 @@ inline auto resetUpper_backend( SparseMatrix<MT,true>& dm ) -> DisableIf_t< IsLo
 */
 template< typename MT  // Type of the matrix
         , bool SO >    // Storage order of the matrix
-inline auto resetUpper_backend( SparseMatrix<MT,SO>& dm ) -> EnableIf_t< IsLower_v<MT> >
+inline EnableIf_t< IsLower_v<MT> > resetUpper_backend( SparseMatrix<MT,SO>& dm )
 {
-   MAYBE_UNUSED( dm );
+   UNUSED_PARAMETER( dm );
 }
 /*! \endcond */
 //*************************************************************************************************

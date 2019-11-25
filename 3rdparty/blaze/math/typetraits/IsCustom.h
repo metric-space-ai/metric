@@ -3,7 +3,7 @@
 //  \file blaze/math/typetraits/IsCustom.h
 //  \brief Header file for the IsCustom type trait
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -40,7 +40,8 @@
 // Includes
 //*************************************************************************************************
 
-#include "../../util/IntegralConstant.h"
+#include "../../util/FalseType.h"
+#include "../../util/TrueType.h"
 
 
 namespace blaze {
@@ -130,7 +131,7 @@ struct IsCustom< const volatile T >
 
 //*************************************************************************************************
 /*!\brief Auxiliary variable template for the IsCustom type trait.
-// \ingroup math_type_traits
+// \ingroup type_traits
 //
 // The IsCustom_v variable template provides a convenient shortcut to access the nested \a value
 // of the IsCustom class template. For instance, given the type \a T the following two statements

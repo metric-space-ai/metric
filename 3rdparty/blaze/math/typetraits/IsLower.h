@@ -3,7 +3,7 @@
 //  \file blaze/math/typetraits/IsLower.h
 //  \brief Header file for the IsLower type trait
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -40,12 +40,9 @@
 // Includes
 //*************************************************************************************************
 
-#include "../../math/typetraits/IsExpression.h"
 #include "../../math/typetraits/IsStrictlyLower.h"
 #include "../../math/typetraits/IsUniLower.h"
-#include "../../util/EnableIf.h"
 #include "../../util/IntegralConstant.h"
-#include "../../util/typetraits/IsSame.h"
 
 
 namespace blaze {
@@ -55,32 +52,6 @@ namespace blaze {
 //  CLASS DEFINITION
 //
 //=================================================================================================
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-template< typename T > struct IsLower;
-/*! \endcond */
-//*************************************************************************************************
-
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-/*!\brief Auxiliary helper struct for the IsLower type trait.
-// \ingroup math_traits
-*/
-template< typename T
-        , typename = void >
-struct IsLowerHelper
-   : public BoolConstant< IsUniLower_v<T> || IsStrictlyLower_v<T> >
-{};
-
-template< typename T >  // Type of the operand
-struct IsLowerHelper< T, EnableIf_t< IsExpression_v<T> && !IsSame_v<T,typename T::ResultType> > >
-   : public IsLower< typename T::ResultType >::Type
-{};
-/*! \endcond */
-//*************************************************************************************************
-
 
 //*************************************************************************************************
 /*!\brief Compile time check for lower triangular matrices.
@@ -114,7 +85,7 @@ struct IsLowerHelper< T, EnableIf_t< IsExpression_v<T> && !IsSame_v<T,typename T
 */
 template< typename T >
 struct IsLower
-   : public IsLowerHelper<T>
+   : public BoolConstant< IsUniLower_v<T> || IsStrictlyLower_v<T> >
 {};
 //*************************************************************************************************
 
@@ -160,11 +131,11 @@ struct IsLower< const volatile T >
 
 //*************************************************************************************************
 /*!\brief Auxiliary variable template for the IsLower type trait.
-// \ingroup math_type_traits
+// \ingroup type_traits
 //
-// The IsLower_v variable template provides a convenient shortcut to access the nested
-// \a value of the IsLower class template. For instance, given the type \a T the following
-// two statements are identical:
+// The IsLower_v variable template provides a convenient shortcut to access the nested \a value
+// of the IsLower class template. For instance, given the type \a T the following two statements
+// are identical:
 
    \code
    constexpr bool value1 = blaze::IsLower<T>::value;

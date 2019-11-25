@@ -3,7 +3,7 @@
 //  \file blaze/math/views/submatrix/Sparse.h
 //  \brief Submatrix specialization for sparse matrices
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -67,6 +67,7 @@
 #include "../../../math/StorageOrder.h"
 #include "../../../math/sparse/SparseElement.h"
 #include "../../../math/traits/AddTrait.h"
+#include "../../../math/traits/MultTrait.h"
 #include "../../../math/traits/SchurTrait.h"
 #include "../../../math/traits/SubmatrixTrait.h"
 #include "../../../math/traits/SubTrait.h"
@@ -436,9 +437,6 @@ class Submatrix<MT,AF,false,false,CSAs...>
    //**Compilation flags***************************************************************************
    //! Compilation switch for the expression template assignment strategy.
    static constexpr bool smpAssignable = MT::smpAssignable;
-
-   //! Compilation switch for the expression template evaluation strategy.
-   static constexpr bool compileTimeArgs = DataType::compileTimeArgs;
    //**********************************************************************************************
 
    //**Constructors********************************************************************************
@@ -446,16 +444,12 @@ class Submatrix<MT,AF,false,false,CSAs...>
    //@{
    template< typename... RSAs >
    explicit inline Submatrix( MT& matrix, RSAs... args );
-
-   Submatrix( const Submatrix& ) = default;
+   // No explicitly declared copy constructor.
    //@}
    //**********************************************************************************************
 
    //**Destructor**********************************************************************************
-   /*!\name Destructor */
-   //@{
-   ~Submatrix() = default;
-   //@}
+   // No explicitly declared destructor.
    //**********************************************************************************************
 
    //**Data access functions***********************************************************************
@@ -2411,10 +2405,12 @@ inline void Submatrix<MT,AF,false,false,CSAs...>::assign( const SparseMatrix<MT2
    BLAZE_INTERNAL_ASSERT( rows()    == (~rhs).rows()   , "Invalid number of rows"    );
    BLAZE_INTERNAL_ASSERT( columns() == (~rhs).columns(), "Invalid number of columns" );
 
+   using RhsIterator = ConstIterator_t<MT2>;
+
    // Counting the number of elements per row
    std::vector<size_t> rowLengths( rows(), 0UL );
    for( size_t j=0UL; j<columns(); ++j ) {
-      for( auto element=(~rhs).begin(j); element!=(~rhs).end(j); ++element )
+      for( RhsIterator element=(~rhs).begin(j); element!=(~rhs).end(j); ++element )
          ++rowLengths[element->index()];
    }
 
@@ -2425,7 +2421,7 @@ inline void Submatrix<MT,AF,false,false,CSAs...>::assign( const SparseMatrix<MT2
 
    // Appending the elements to the rows of the sparse submatrix
    for( size_t j=0UL; j<columns(); ++j ) {
-      for( auto element=(~rhs).begin(j); element!=(~rhs).end(j); ++element )
+      for( RhsIterator element=(~rhs).begin(j); element!=(~rhs).end(j); ++element )
          if( IsSymmetric_v<MT> || IsHermitian_v<MT> ) {
             const ElementType& value( element->value() );
             if( !isDefault<strict>( value ) )
@@ -2889,9 +2885,6 @@ class Submatrix<MT,AF,true,false,CSAs...>
    //**Compilation flags***************************************************************************
    //! Compilation switch for the expression template assignment strategy.
    static constexpr bool smpAssignable = MT::smpAssignable;
-
-   //! Compilation switch for the expression template evaluation strategy.
-   static constexpr bool compileTimeArgs = DataType::compileTimeArgs;
    //**********************************************************************************************
 
    //**Constructors********************************************************************************
@@ -2899,16 +2892,12 @@ class Submatrix<MT,AF,true,false,CSAs...>
    //@{
    template< typename... RSAs >
    explicit inline Submatrix( MT& matrix, RSAs... args );
-
-   Submatrix( const Submatrix& ) = default;
+   // No explicitly declared copy constructor.
    //@}
    //**********************************************************************************************
 
    //**Destructor**********************************************************************************
-   /*!\name Destructor */
-   //@{
-   ~Submatrix() = default;
-   //@}
+   // No explicitly declared destructor.
    //**********************************************************************************************
 
    //**Data access functions***********************************************************************
@@ -4804,10 +4793,12 @@ inline void Submatrix<MT,AF,true,false,CSAs...>::assign( const SparseMatrix<MT2,
    BLAZE_INTERNAL_ASSERT( rows()    == (~rhs).rows()   , "Invalid number of rows"    );
    BLAZE_INTERNAL_ASSERT( columns() == (~rhs).columns(), "Invalid number of columns" );
 
+   using RhsIterator = ConstIterator_t<MT2>;
+
    // Counting the number of elements per column
    std::vector<size_t> columnLengths( columns(), 0UL );
    for( size_t i=0UL; i<rows(); ++i ) {
-      for( auto element=(~rhs).begin(i); element!=(~rhs).end(i); ++element )
+      for( RhsIterator element=(~rhs).begin(i); element!=(~rhs).end(i); ++element )
          ++columnLengths[element->index()];
    }
 
@@ -4818,7 +4809,7 @@ inline void Submatrix<MT,AF,true,false,CSAs...>::assign( const SparseMatrix<MT2,
 
    // Appending the elements to the columns of the sparse matrix
    for( size_t i=0UL; i<rows(); ++i ) {
-      for( auto element=(~rhs).begin(i); element!=(~rhs).end(i); ++element )
+      for( RhsIterator element=(~rhs).begin(i); element!=(~rhs).end(i); ++element )
          if( IsSymmetric_v<MT> || IsHermitian_v<MT> ) {
             const ElementType& value( element->value() );
             if( !isDefault<strict>( value ) )

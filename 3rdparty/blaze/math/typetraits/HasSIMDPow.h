@@ -3,7 +3,7 @@
 //  \file blaze/math/typetraits/HasSIMDPow.h
 //  \brief Header file for the HasSIMDPow type trait
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -43,10 +43,10 @@
 #include "../../system/Vectorization.h"
 #include "../../util/EnableIf.h"
 #include "../../util/IntegralConstant.h"
+#include "../../util/typetraits/Decay.h"
 #include "../../util/typetraits/IsDouble.h"
 #include "../../util/typetraits/IsFloat.h"
 #include "../../util/typetraits/IsSame.h"
-#include "../../util/typetraits/RemoveCVRef.h"
 
 
 namespace blaze {
@@ -100,14 +100,14 @@ using HasSIMDPowHelper =
 template< typename T1    // Type of the left-hand side operand
         , typename T2 >  // Type of the right-hand side operand
 struct HasSIMDPow
-   : public BoolConstant< HasSIMDPowHelper< RemoveCVRef_t<T1>, RemoveCVRef_t<T2> >::value >
+   : public BoolConstant< HasSIMDPowHelper< Decay_t<T1>, Decay_t<T2> >::value >
 {};
 //*************************************************************************************************
 
 
 //*************************************************************************************************
 /*!\brief Auxiliary variable template for the HasSIMDPow type trait.
-// \ingroup math_type_traits
+// \ingroup type_traits
 //
 // The HasSIMDPow_v variable template provides a convenient shortcut to access the nested
 // \a value of the HasSIMDPow class template. For instance, given the types \a T1 and \a T2

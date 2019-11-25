@@ -3,7 +3,7 @@
 //  \file blaze/math/proxy/DenseMatrixProxy.h
 //  \brief Header file for the DenseMatrixProxy class
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -52,8 +52,8 @@
 #include "../../system/Inline.h"
 #include "../../util/DisableIf.h"
 #include "../../util/EnableIf.h"
-#include "../../util/MaybeUnused.h"
 #include "../../util/Types.h"
+#include "../../util/Unused.h"
 
 
 namespace blaze {
@@ -689,50 +689,50 @@ inline void DenseMatrixProxy<PT,MT>::scale( const Other& scalar ) const
 /*!\name DenseMatrixProxy global functions */
 //@{
 template< typename PT, typename MT >
-typename DenseMatrixProxy<PT,MT>::Iterator
+BLAZE_ALWAYS_INLINE typename DenseMatrixProxy<PT,MT>::Iterator
    begin( const DenseMatrixProxy<PT,MT>& proxy, size_t i );
 
 template< typename PT, typename MT >
-typename DenseMatrixProxy<PT,MT>::ConstIterator
+BLAZE_ALWAYS_INLINE typename DenseMatrixProxy<PT,MT>::ConstIterator
    cbegin( const DenseMatrixProxy<PT,MT>& proxy, size_t i );
 
 template< typename PT, typename MT >
-typename DenseMatrixProxy<PT,MT>::Iterator
+BLAZE_ALWAYS_INLINE typename DenseMatrixProxy<PT,MT>::Iterator
    end( const DenseMatrixProxy<PT,MT>& proxy, size_t i );
 
 template< typename PT, typename MT >
-typename DenseMatrixProxy<PT,MT>::ConstIterator
+BLAZE_ALWAYS_INLINE typename DenseMatrixProxy<PT,MT>::ConstIterator
    cend( const DenseMatrixProxy<PT,MT>& proxy, size_t i );
 
 template< typename PT, typename MT >
-size_t rows( const DenseMatrixProxy<PT,MT>& proxy );
+BLAZE_ALWAYS_INLINE size_t rows( const DenseMatrixProxy<PT,MT>& proxy );
 
 template< typename PT, typename MT >
-size_t columns( const DenseMatrixProxy<PT,MT>& proxy );
+BLAZE_ALWAYS_INLINE size_t columns( const DenseMatrixProxy<PT,MT>& proxy );
 
 template< typename PT, typename MT >
-size_t capacity( const DenseMatrixProxy<PT,MT>& proxy );
+BLAZE_ALWAYS_INLINE size_t capacity( const DenseMatrixProxy<PT,MT>& proxy );
 
 template< typename PT, typename MT >
-size_t capacity( const DenseMatrixProxy<PT,MT>& proxy, size_t i );
+BLAZE_ALWAYS_INLINE size_t capacity( const DenseMatrixProxy<PT,MT>& proxy, size_t i );
 
 template< typename PT, typename MT >
-size_t nonZeros( const DenseMatrixProxy<PT,MT>& proxy );
+BLAZE_ALWAYS_INLINE size_t nonZeros( const DenseMatrixProxy<PT,MT>& proxy );
 
 template< typename PT, typename MT >
-size_t nonZeros( const DenseMatrixProxy<PT,MT>& proxy, size_t i );
+BLAZE_ALWAYS_INLINE size_t nonZeros( const DenseMatrixProxy<PT,MT>& proxy, size_t i );
 
 template< typename PT, typename MT >
-void resize( const DenseMatrixProxy<PT,MT>& proxy, size_t m, size_t n, bool preserve=true );
+BLAZE_ALWAYS_INLINE void resize( const DenseMatrixProxy<PT,MT>& proxy, size_t m, size_t n, bool preserve=true );
 
 template< typename PT, typename MT >
-void reset( const DenseMatrixProxy<PT,MT>& proxy );
+BLAZE_ALWAYS_INLINE void reset( const DenseMatrixProxy<PT,MT>& proxy );
 
 template< typename PT, typename MT >
-void reset( const DenseMatrixProxy<PT,MT>& proxy, size_t i );
+BLAZE_ALWAYS_INLINE void reset( const DenseMatrixProxy<PT,MT>& proxy, size_t i );
 
 template< typename PT, typename MT >
-void clear( const DenseMatrixProxy<PT,MT>& proxy );
+BLAZE_ALWAYS_INLINE void clear( const DenseMatrixProxy<PT,MT>& proxy );
 //@}
 //*************************************************************************************************
 
@@ -961,7 +961,7 @@ template< typename PT    // Type of the proxy
 BLAZE_ALWAYS_INLINE DisableIf_t< IsResizable_v<MT> >
    resize_backend( const DenseMatrixProxy<PT,MT>& proxy, size_t m, size_t n, bool preserve )
 {
-   MAYBE_UNUSED( preserve );
+   UNUSED_PARAMETER( preserve );
 
    if( proxy.rows() != m || proxy.columns() != n ) {
       BLAZE_THROW_INVALID_ARGUMENT( "Matrix cannot be resized" );

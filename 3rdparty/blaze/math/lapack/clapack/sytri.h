@@ -3,7 +3,7 @@
 //  \file blaze/math/lapack/clapack/sytri.h
 //  \brief Header file for the CLAPACK sytri wrapper functions
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -42,7 +42,6 @@
 
 #include "../../../util/Complex.h"
 #include "../../../util/StaticAssert.h"
-#include "../../../util/Types.h"
 
 
 //=================================================================================================
@@ -56,14 +55,10 @@
 #if !defined(INTEL_MKL_VERSION)
 extern "C" {
 
-void ssytri_( char* uplo, int* n, float* A, int* lda, int* ipiv, float* work,
-              int* info, blaze::fortran_charlen_t nuplo );
-void dsytri_( char* uplo, int* n, double* A, int* lda, int* ipiv, double* work,
-              int* info, blaze::fortran_charlen_t nuplo );
-void csytri_( char* uplo, int* n, float* A, int* lda, int* ipiv, float* work,
-              int* info, blaze::fortran_charlen_t nuplo );
-void zsytri_( char* uplo, int* n, double* A, int* lda, int* ipiv, double* work,
-              int* info, blaze::fortran_charlen_t nuplo );
+void ssytri_( char* uplo, int* n, float*  A, int* lda, int* ipiv, float*  work, int* info );
+void dsytri_( char* uplo, int* n, double* A, int* lda, int* ipiv, double* work, int* info );
+void csytri_( char* uplo, int* n, float*  A, int* lda, int* ipiv, float*  work, int* info );
+void zsytri_( char* uplo, int* n, double* A, int* lda, int* ipiv, double* work, int* info );
 
 }
 #endif
@@ -84,15 +79,15 @@ namespace blaze {
 //*************************************************************************************************
 /*!\name LAPACK LDLT-based inversion functions (sytri) */
 //@{
-void sytri( char uplo, int n, float* A, int lda, const int* ipiv, float* work, int* info );
+inline void sytri( char uplo, int n, float* A, int lda, const int* ipiv, float* work, int* info );
 
-void sytri( char uplo, int n, double* A, int lda, const int* ipiv, double* work, int* info );
+inline void sytri( char uplo, int n, double* A, int lda, const int* ipiv, double* work, int* info );
 
-void sytri( char uplo, int n, complex<float>* A, int lda,
-            const int* ipiv, complex<float>* work, int* info );
+inline void sytri( char uplo, int n, complex<float>* A, int lda,
+                   const int* ipiv, complex<float>* work, int* info );
 
-void sytri( char uplo, int n, complex<double>* A, int lda,
-            const int* ipiv, complex<double>* work, int* info );
+inline void sytri( char uplo, int n, complex<double>* A, int lda,
+                   const int* ipiv, complex<double>* work, int* info );
 //@}
 //*************************************************************************************************
 
@@ -135,7 +130,7 @@ inline void sytri( char uplo, int n, float* A, int lda, const int* ipiv, float* 
    BLAZE_STATIC_ASSERT( sizeof( MKL_INT ) == sizeof( int ) );
 #endif
 
-   ssytri_( &uplo, &n, A, &lda, const_cast<int*>( ipiv ), work, info, blaze::fortran_charlen_t(1) );
+   ssytri_( &uplo, &n, A, &lda, const_cast<int*>( ipiv ), work, info );
 }
 //*************************************************************************************************
 
@@ -178,7 +173,7 @@ inline void sytri( char uplo, int n, double* A, int lda, const int* ipiv, double
    BLAZE_STATIC_ASSERT( sizeof( MKL_INT ) == sizeof( int ) );
 #endif
 
-   dsytri_( &uplo, &n, A, &lda, const_cast<int*>( ipiv ), work, info, blaze::fortran_charlen_t(1) );
+   dsytri_( &uplo, &n, A, &lda, const_cast<int*>( ipiv ), work, info );
 }
 //*************************************************************************************************
 
@@ -228,8 +223,7 @@ inline void sytri( char uplo, int n, complex<float>* A, int lda,
 #endif
 
    csytri_( &uplo, &n, reinterpret_cast<ET*>( A ), &lda,
-            const_cast<int*>( ipiv ), reinterpret_cast<ET*>( work ),
-            info, blaze::fortran_charlen_t(1) );
+            const_cast<int*>( ipiv ), reinterpret_cast<ET*>( work ), info );
 }
 //*************************************************************************************************
 
@@ -279,8 +273,7 @@ inline void sytri( char uplo, int n, complex<double>* A, int lda,
 #endif
 
    zsytri_( &uplo, &n, reinterpret_cast<ET*>( A ), &lda,
-            const_cast<int*>( ipiv ), reinterpret_cast<ET*>( work ),
-            info, blaze::fortran_charlen_t(1) );
+            const_cast<int*>( ipiv ), reinterpret_cast<ET*>( work ), info );
 }
 //*************************************************************************************************
 

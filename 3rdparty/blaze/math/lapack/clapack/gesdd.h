@@ -3,7 +3,7 @@
 //  \file blaze/math/lapack/clapack/gesdd.h
 //  \brief Header file for the CLAPACK gesdd wrapper functions
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -42,7 +42,6 @@
 
 #include "../../../util/Complex.h"
 #include "../../../util/StaticAssert.h"
-#include "../../../util/Types.h"
 
 
 //=================================================================================================
@@ -56,18 +55,10 @@
 #if !defined(INTEL_MKL_VERSION)
 extern "C" {
 
-void sgesdd_( char* jobz, int* m, int* n, float* A, int* lda, float* s, float* U, int* ldu,
-              float* V, int* ldv, float* work, int* lwork, int* iwork, int* info,
-              blaze::fortran_charlen_t njobz );
-void dgesdd_( char* jobz, int* m, int* n, double* A, int* lda, double* s, double* U, int* ldu,
-              double* V, int* ldv, double* work, int* lwork, int* iwork, int* info,
-              blaze::fortran_charlen_t njobz );
-void cgesdd_( char* jobz, int* m, int* n, float* A, int* lda, float* s, float* U, int* ldu,
-              float* V, int* ldv, float* work, int* lwork, float* rwork, int* iwork, int* info,
-              blaze::fortran_charlen_t njobz );
-void zgesdd_( char* jobz, int* m, int* n, double* A, int* lda, double* s, double* U, int* ldu,
-              double* V, int* ldv, double* work, int* lwork, double* rwork, int* iwork, int* info,
-              blaze::fortran_charlen_t njobz );
+void sgesdd_( char* jobz, int* m, int* n, float*  A, int* lda, float*  s, float*  U, int* ldu, float*  V, int* ldv, float*  work, int* lwork, int* iwork, int* info );
+void dgesdd_( char* jobz, int* m, int* n, double* A, int* lda, double* s, double* U, int* ldu, double* V, int* ldv, double* work, int* lwork, int* iwork, int* info );
+void cgesdd_( char* jobz, int* m, int* n, float*  A, int* lda, float*  s, float*  U, int* ldu, float*  V, int* ldv, float*  work, int* lwork, float*  rwork, int* iwork, int* info );
+void zgesdd_( char* jobz, int* m, int* n, double* A, int* lda, double* s, double* U, int* ldu, double* V, int* ldv, double* work, int* lwork, double* rwork, int* iwork, int* info );
 
 }
 #endif
@@ -88,21 +79,21 @@ namespace blaze {
 //*************************************************************************************************
 /*!\name LAPACK SVD functions (gesdd) */
 //@{
-void gesdd( char jobz, int m, int n, float* A, int lda,
-            float* s, float* U, int ldu, float* V, int ldv,
-            float* work, int lwork, int* iwork, int* info );
+inline void gesdd( char jobz, int m, int n, float* A, int lda,
+                   float* s, float* U, int ldu, float* V, int ldv,
+                   float* work, int lwork, int* iwork, int* info );
 
-void gesdd( char jobz, int m, int n, double* A, int lda,
-            double* s, double* U, int ldu, double* V, int ldv,
-            double* work, int lwork, int* iwork, int* info );
+inline void gesdd( char jobz, int m, int n, double* A, int lda,
+                   double* s, double* U, int ldu, double* V, int ldv,
+                   double* work, int lwork, int* iwork, int* info );
 
-void gesdd( char jobz, int m, int n, complex<float>* A, int lda, float* s,
-            complex<float>* U, int ldu, complex<float>* V, int ldv,
-            complex<float>* work, int lwork, float* rwork, int* iwork, int* info );
+inline void gesdd( char jobz, int m, int n, complex<float>* A, int lda, float* s,
+                   complex<float>* U, int ldu, complex<float>* V, int ldv,
+                   complex<float>* work, int lwork, float* rwork, int* iwork, int* info );
 
-void gesdd( char jobz, int m, int n, complex<double>* A, int lda, double* s,
-            complex<double>* U, int ldu, complex<double>* V, int ldv,
-            complex<double>* work, int lwork, double* rwork, int* iwork, int* info );
+inline void gesdd( char jobz, int m, int n, complex<double>* A, int lda, double* s,
+                   complex<double>* U, int ldu, complex<double>* V, int ldv,
+                   complex<double>* work, int lwork, double* rwork, int* iwork, int* info );
 //@}
 //*************************************************************************************************
 
@@ -179,8 +170,7 @@ inline void gesdd( char jobz, int m, int n, float* A, int lda,
    BLAZE_STATIC_ASSERT( sizeof( MKL_INT ) == sizeof( int ) );
 #endif
 
-   sgesdd_( &jobz, &m, &n, A, &lda, s, U, &ldu, V, &ldv, work, &lwork, iwork, info,
-            blaze::fortran_charlen_t(1) );
+   sgesdd_( &jobz, &m, &n, A, &lda, s, U, &ldu, V, &ldv, work, &lwork, iwork, info );
 }
 //*************************************************************************************************
 
@@ -257,8 +247,7 @@ inline void gesdd( char jobz, int m, int n, double* A, int lda,
    BLAZE_STATIC_ASSERT( sizeof( MKL_INT ) == sizeof( int ) );
 #endif
 
-   dgesdd_( &jobz, &m, &n, A, &lda, s, U, &ldu, V, &ldv, work, &lwork, iwork, info,
-            blaze::fortran_charlen_t(1) );
+   dgesdd_( &jobz, &m, &n, A, &lda, s, U, &ldu, V, &ldv, work, &lwork, iwork, info );
 }
 //*************************************************************************************************
 
@@ -343,8 +332,7 @@ inline void gesdd( char jobz, int m, int n, complex<float>* A, int lda, float* s
 
    cgesdd_( &jobz, &m, &n, reinterpret_cast<ET*>( A ), &lda, s,
             reinterpret_cast<ET*>( U ), &ldu, reinterpret_cast<ET*>( V ), &ldv,
-            reinterpret_cast<ET*>( work ), &lwork, rwork, iwork, info,
-            blaze::fortran_charlen_t(1) );
+            reinterpret_cast<ET*>( work ), &lwork, rwork, iwork, info );
 }
 //*************************************************************************************************
 
@@ -429,8 +417,7 @@ inline void gesdd( char jobz, int m, int n, complex<double>* A, int lda, double*
 
    zgesdd_( &jobz, &m, &n, reinterpret_cast<ET*>( A ), &lda, s,
             reinterpret_cast<ET*>( U ), &ldu, reinterpret_cast<ET*>( V ), &ldv,
-            reinterpret_cast<ET*>( work ), &lwork, rwork, iwork, info,
-            blaze::fortran_charlen_t(1) );
+            reinterpret_cast<ET*>( work ), &lwork, rwork, iwork, info );
 }
 //*************************************************************************************************
 

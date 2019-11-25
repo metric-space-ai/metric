@@ -3,7 +3,7 @@
 //  \file blaze/math/lapack/clapack/syevx.h
 //  \brief Header file for the CLAPACK syevx wrapper functions
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -42,7 +42,6 @@
 
 #include "../../../util/Complex.h"
 #include "../../../util/StaticAssert.h"
-#include "../../../util/Types.h"
 
 
 //=================================================================================================
@@ -56,16 +55,8 @@
 #if !defined(INTEL_MKL_VERSION)
 extern "C" {
 
-void ssyevx_( char* jobz, char* range, char* uplo, int* n, float* A, int* lda, float* vl,
-              float* vu, int* il, int* iu, float* abstol, int* m, float* w, float* Z,
-              int* ldz, float* work, int* lwork, int* iwork, int* ifail, int* info,
-              blaze::fortran_charlen_t njobz, blaze::fortran_charlen_t nrange,
-              blaze::fortran_charlen_t nuplo );
-void dsyevx_( char* jobz, char* range, char* uplo, int* n, double* A, int* lda, double* vl,
-              double* vu, int* il, int* iu, double* abstol, int* m, double* w, double* Z,
-              int* ldz, double* work, int* lwork, int* iwork, int* ifail, int* info,
-              blaze::fortran_charlen_t njobz, blaze::fortran_charlen_t nrange,
-              blaze::fortran_charlen_t nuplo );
+void ssyevx_( char* jobz, char* range, char* uplo, int* n, float*  A, int* lda, float*  vl, float*  vu, int* il, int* iu, float*  abstol, int* m, float*  w, float*  Z, int* ldz, float*  work, int* lwork, int* iwork, int* ifail, int* info );
+void dsyevx_( char* jobz, char* range, char* uplo, int* n, double* A, int* lda, double* vl, double* vu, int* il, int* iu, double* abstol, int* m, double* w, double* Z, int* ldz, double* work, int* lwork, int* iwork, int* ifail, int* info );
 
 }
 #endif
@@ -86,13 +77,13 @@ namespace blaze {
 //*************************************************************************************************
 /*!\name LAPACK symmetric matrix eigenvalue functions (syevx) */
 //@{
-void syevx( char jobz, char range, char uplo, int n, float* A, int lda,
-            float vl, float vu, int il, int iu, float abstol, int* m, float* w,
-            float* Z, int ldz, float* work, int lwork, int* iwork, int* ifail, int* info );
+inline void syevx( char jobz, char range, char uplo, int n, float* A, int lda,
+                   float vl, float vu, int il, int iu, float abstol, int* m, float* w,
+                   float* Z, int ldz, float* work, int lwork, int* iwork, int* ifail, int* info );
 
-void syevx( char jobz, char range, char uplo, int n, double* A, int lda,
-            double vl, double vu, int il, int iu, double abstol, int* m, double* w,
-            double* Z, int ldz, double* work, int lwork, int* iwork, int* ifail, int* info );
+inline void syevx( char jobz, char range, char uplo, int n, double* A, int lda,
+                   double vl, double vu, int il, int iu, double abstol, int* m, double* w,
+                   double* Z, int ldz, double* work, int lwork, int* iwork, int* ifail, int* info );
 //@}
 //*************************************************************************************************
 
@@ -166,8 +157,7 @@ inline void syevx( char jobz, char range, char uplo, int n, float* A, int lda,
    ++iu;
 
    ssyevx_( &jobz, &range, &uplo, &n, A, &lda, &vl, &vu, &il, &iu,
-            &abstol, m, w, Z, &ldz, work, &lwork, iwork, ifail, info,
-            blaze::fortran_charlen_t(1), blaze::fortran_charlen_t(1), blaze::fortran_charlen_t(1) );
+            &abstol, m, w, Z, &ldz, work, &lwork, iwork, ifail, info );
 }
 //*************************************************************************************************
 
@@ -241,8 +231,7 @@ inline void syevx( char jobz, char range, char uplo, int n, double* A, int lda,
    ++iu;
 
    dsyevx_( &jobz, &range, &uplo, &n, A, &lda, &vl, &vu, &il, &iu,
-            &abstol, m, w, Z, &ldz, work, &lwork, iwork, ifail, info,
-            blaze::fortran_charlen_t(1), blaze::fortran_charlen_t(1), blaze::fortran_charlen_t(1) );
+            &abstol, m, w, Z, &ldz, work, &lwork, iwork, ifail, info );
 }
 //*************************************************************************************************
 

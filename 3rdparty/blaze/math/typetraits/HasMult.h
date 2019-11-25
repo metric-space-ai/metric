@@ -3,7 +3,7 @@
 //  \file blaze/math/typetraits/HasMult.h
 //  \brief Header file for the HasMult type trait
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -44,7 +44,8 @@
 #include "../../math/typetraits/IsMatrix.h"
 #include "../../math/typetraits/IsVector.h"
 #include "../../util/EnableIf.h"
-#include "../../util/IntegralConstant.h"
+#include "../../util/FalseType.h"
+#include "../../util/TrueType.h"
 #include "../../util/typetraits/Void.h"
 
 
@@ -163,7 +164,7 @@ struct HasMult< T1, T2, EnableIf_t< IsMatrix_v<T1> && IsMatrix_v<T2> > >
 
 //*************************************************************************************************
 /*!\brief Auxiliary variable template for the HasMult type trait.
-// \ingroup math_type_traits
+// \ingroup type_traits
 //
 // The HasMult_v variable template provides a convenient shortcut to access the nested \a value
 // of the HasMult class template. For instance, given the types \a T1 and \a T2 the following

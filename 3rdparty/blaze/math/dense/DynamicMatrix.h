@@ -3,7 +3,7 @@
 //  \file blaze/math/dense/DynamicMatrix.h
 //  \brief Header file for the implementation of a dynamic MxN matrix
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -61,8 +61,6 @@
 #include "../../math/traits/AddTrait.h"
 #include "../../math/traits/ColumnsTrait.h"
 #include "../../math/traits/DivTrait.h"
-#include "../../math/traits/ExpandTrait.h"
-#include "../../math/traits/KronTrait.h"
 #include "../../math/traits/MapTrait.h"
 #include "../../math/traits/MultTrait.h"
 #include "../../math/traits/RowsTrait.h"
@@ -90,7 +88,6 @@
 #include "../../math/typetraits/IsSIMDCombinable.h"
 #include "../../math/typetraits/IsSMPAssignable.h"
 #include "../../math/typetraits/IsSparseMatrix.h"
-#include "../../math/typetraits/IsSquare.h"
 #include "../../math/typetraits/IsStrictlyLower.h"
 #include "../../math/typetraits/IsStrictlyUpper.h"
 #include "../../math/typetraits/IsSymmetric.h"
@@ -120,13 +117,14 @@
 #include "../../util/DisableIf.h"
 #include "../../util/EnableIf.h"
 #include "../../util/IntegralConstant.h"
-#include "../../util/MaybeUnused.h"
 #include "../../util/Memory.h"
+#include "../../util/TrueType.h"
 #include "../../util/Types.h"
 #include "../../util/typetraits/IsNumeric.h"
 #include "../../util/typetraits/IsSame.h"
 #include "../../util/typetraits/IsVectorizable.h"
 #include "../../util/typetraits/RemoveConst.h"
+#include "../../util/Unused.h"
 
 
 namespace blaze {
@@ -282,7 +280,7 @@ class DynamicMatrix
    explicit inline DynamicMatrix() noexcept;
    explicit inline DynamicMatrix( size_t m, size_t n );
    explicit inline DynamicMatrix( size_t m, size_t n, const Type& init );
-            inline DynamicMatrix( initializer_list< initializer_list<Type> > list );
+   explicit inline DynamicMatrix( initializer_list< initializer_list<Type> > list );
 
    template< typename Other >
    explicit inline DynamicMatrix( size_t m, size_t n, const Other* array );
@@ -632,7 +630,7 @@ inline DynamicMatrix<Type,SO>::DynamicMatrix( size_t m, size_t n, const Type& in
    \endcode
 
 // The matrix is sized according to the size of the initializer list and all its elements are
-// (copy) assigned the values of the given initializer list. Missing values are initialized as
+// initialized by the values of the given initializer list. Missing values are initialized as
 // default (as e.g. the value 6 in the example).
 */
 template< typename Type  // Data type of the matrix
@@ -790,7 +788,11 @@ inline DynamicMatrix<Type,SO>::DynamicMatrix( const Matrix<MT,SO2>& m )
    : DynamicMatrix( (~m).rows(), (~m).columns() )
 {
    if( IsSparseMatrix_v<MT> ) {
-      reset();
+      for( size_t i=0UL; i<m_; ++i ) {
+         for( size_t j=0UL; j<n_; ++j ) {
+            v_[i*nn_+j] = Type();
+         }
+      }
    }
 
    smpAssign( *this, ~m );
@@ -1185,8 +1187,8 @@ inline DynamicMatrix<Type,SO>& DynamicMatrix<Type,SO>::operator=( const Type& rh
    \endcode
 
 // The matrix is resized according to the given initializer list and all its elements are
-// (copy) assigned the values from the given initializer list. Missing values are initialized
-// as default (as e.g. the value 6 in the example).
+// assigned the values from the given initializer list. Missing values are initialized as
+// default (as e.g. the value 6 in the example).
 */
 template< typename Type  // Data type of the matrix
         , bool SO >      // Storage order
@@ -1532,7 +1534,7 @@ template< typename Type  // Data type of the matrix
         , bool SO >      // Storage order
 inline size_t DynamicMatrix<Type,SO>::capacity( size_t i ) const noexcept
 {
-   MAYBE_UNUSED( i );
+   UNUSED_PARAMETER( i );
    BLAZE_USER_ASSERT( i < rows(), "Invalid row access index" );
    return nn_;
 }
@@ -2486,7 +2488,7 @@ inline void DynamicMatrix<Type,SO>::assign( const SparseMatrix<MT,SO>& rhs )
    BLAZE_INTERNAL_ASSERT( n_ == (~rhs).columns(), "Invalid number of columns" );
 
    for( size_t i=0UL; i<m_; ++i )
-      for( auto element=(~rhs).begin(i); element!=(~rhs).end(i); ++element )
+      for( ConstIterator_t<MT> element=(~rhs).begin(i); element!=(~rhs).end(i); ++element )
          v_[i*nn_+element->index()] = element->value();
 }
 //*************************************************************************************************
@@ -2514,7 +2516,7 @@ inline void DynamicMatrix<Type,SO>::assign( const SparseMatrix<MT,!SO>& rhs )
    BLAZE_INTERNAL_ASSERT( n_ == (~rhs).columns(), "Invalid number of columns" );
 
    for( size_t j=0UL; j<n_; ++j )
-      for( auto element=(~rhs).begin(j); element!=(~rhs).end(j); ++element )
+      for( ConstIterator_t<MT> element=(~rhs).begin(j); element!=(~rhs).end(j); ++element )
          v_[element->index()*nn_+j] = element->value();
 }
 //*************************************************************************************************
@@ -2700,7 +2702,7 @@ inline void DynamicMatrix<Type,SO>::addAssign( const SparseMatrix<MT,SO>& rhs )
    BLAZE_INTERNAL_ASSERT( n_ == (~rhs).columns(), "Invalid number of columns" );
 
    for( size_t i=0UL; i<m_; ++i )
-      for( auto element=(~rhs).begin(i); element!=(~rhs).end(i); ++element )
+      for( ConstIterator_t<MT> element=(~rhs).begin(i); element!=(~rhs).end(i); ++element )
          v_[i*nn_+element->index()] += element->value();
 }
 //*************************************************************************************************
@@ -2728,7 +2730,7 @@ inline void DynamicMatrix<Type,SO>::addAssign( const SparseMatrix<MT,!SO>& rhs )
    BLAZE_INTERNAL_ASSERT( n_ == (~rhs).columns(), "Invalid number of columns" );
 
    for( size_t j=0UL; j<n_; ++j )
-      for( auto element=(~rhs).begin(j); element!=(~rhs).end(j); ++element )
+      for( ConstIterator_t<MT> element=(~rhs).begin(j); element!=(~rhs).end(j); ++element )
          v_[element->index()*nn_+j] += element->value();
 }
 //*************************************************************************************************
@@ -2914,7 +2916,7 @@ inline void DynamicMatrix<Type,SO>::subAssign( const SparseMatrix<MT,SO>& rhs )
    BLAZE_INTERNAL_ASSERT( n_ == (~rhs).columns(), "Invalid number of columns" );
 
    for( size_t i=0UL; i<m_; ++i )
-      for( auto element=(~rhs).begin(i); element!=(~rhs).end(i); ++element )
+      for( ConstIterator_t<MT> element=(~rhs).begin(i); element!=(~rhs).end(i); ++element )
          v_[i*nn_+element->index()] -= element->value();
 }
 //*************************************************************************************************
@@ -2942,7 +2944,7 @@ inline void DynamicMatrix<Type,SO>::subAssign( const SparseMatrix<MT,!SO>& rhs )
    BLAZE_INTERNAL_ASSERT( n_ == (~rhs).columns(), "Invalid number of columns" );
 
    for( size_t j=0UL; j<n_; ++j )
-      for( auto element=(~rhs).begin(j); element!=(~rhs).end(j); ++element )
+      for( ConstIterator_t<MT> element=(~rhs).begin(j); element!=(~rhs).end(j); ++element )
          v_[element->index()*nn_+j] -= element->value();
 }
 //*************************************************************************************************
@@ -3097,7 +3099,7 @@ inline void DynamicMatrix<Type,SO>::schurAssign( const SparseMatrix<MT,SO>& rhs 
    {
       size_t j( 0UL );
 
-      for( auto element=(~rhs).begin(i); element!=(~rhs).end(i); ++element ) {
+      for( ConstIterator_t<MT> element=(~rhs).begin(i); element!=(~rhs).end(i); ++element ) {
          for( ; j<element->index(); ++j )
             reset( v_[i*nn_+j] );
          v_[i*nn_+j] *= element->value();
@@ -3139,7 +3141,7 @@ inline void DynamicMatrix<Type,SO>::schurAssign( const SparseMatrix<MT,!SO>& rhs
    {
       size_t i( 0UL );
 
-      for( auto element=(~rhs).begin(j); element!=(~rhs).end(j); ++element ) {
+      for( ConstIterator_t<MT> element=(~rhs).begin(j); element!=(~rhs).end(j); ++element ) {
          for( ; i<element->index(); ++i )
             reset( v_[i*nn_+j] );
          v_[i*nn_+j] *= element->value();
@@ -3239,7 +3241,7 @@ class DynamicMatrix<Type,true>
    explicit inline DynamicMatrix() noexcept;
    explicit inline DynamicMatrix( size_t m, size_t n );
    explicit inline DynamicMatrix( size_t m, size_t n, const Type& init );
-            inline DynamicMatrix( initializer_list< initializer_list<Type> > list );
+   explicit inline DynamicMatrix( initializer_list< initializer_list<Type> > list );
 
    template< typename Other > explicit inline DynamicMatrix( size_t m, size_t n, const Other* array );
 
@@ -3576,7 +3578,7 @@ inline DynamicMatrix<Type,true>::DynamicMatrix( size_t m, size_t n, const Type& 
    \endcode
 
 // The matrix is sized according to the size of the initializer list and all its elements are
-// (copy) assigned the values of the given initializer list. Missing values are initialized as
+// initialized by the values of the given initializer list. Missing values are initialized as
 // default (as e.g. the value 6 in the example).
 */
 template< typename Type >  // Data type of the matrix
@@ -3746,7 +3748,11 @@ inline DynamicMatrix<Type,true>::DynamicMatrix( const Matrix<MT,SO>& m )
    : DynamicMatrix( (~m).rows(), (~m).columns() )
 {
    if( IsSparseMatrix_v<MT> ) {
-      reset();
+      for( size_t j=0UL; j<n_; ++j ) {
+         for( size_t i=0UL; i<m_; ++i ) {
+            v_[i+j*mm_] = Type();
+         }
+      }
    }
 
    smpAssign( *this, ~m );
@@ -4127,8 +4133,8 @@ inline DynamicMatrix<Type,true>& DynamicMatrix<Type,true>::operator=( const Type
    \endcode
 
 // The matrix is resized according to the given initializer list and all its elements are
-// (copy) assigned the values from the given initializer list. Missing values are initialized
-// as default (as e.g. the value 6 in the example).
+// assigned the values from the given initializer list. Missing values are initialized as
+// default (as e.g. the value 6 in the example).
 */
 template< typename Type >  // Data type of the matrix
 inline DynamicMatrix<Type,true>&
@@ -4485,7 +4491,7 @@ inline size_t DynamicMatrix<Type,true>::capacity() const noexcept
 template< typename Type >  // Data type of the matrix
 inline size_t DynamicMatrix<Type,true>::capacity( size_t j ) const noexcept
 {
-   MAYBE_UNUSED( j );
+   UNUSED_PARAMETER( j );
    BLAZE_USER_ASSERT( j < columns(), "Invalid column access index" );
    return mm_;
 }
@@ -5455,7 +5461,7 @@ inline void DynamicMatrix<Type,true>::assign( const SparseMatrix<MT,true>& rhs )
    BLAZE_INTERNAL_ASSERT( n_ == (~rhs).columns(), "Invalid number of columns" );
 
    for( size_t j=0UL; j<(~rhs).columns(); ++j )
-      for( auto element=(~rhs).begin(j); element!=(~rhs).end(j); ++element )
+      for( ConstIterator_t<MT> element=(~rhs).begin(j); element!=(~rhs).end(j); ++element )
          v_[element->index()+j*mm_] = element->value();
 }
 /*! \endcond */
@@ -5484,7 +5490,7 @@ inline void DynamicMatrix<Type,true>::assign( const SparseMatrix<MT,false>& rhs 
    BLAZE_INTERNAL_ASSERT( n_ == (~rhs).columns(), "Invalid number of columns" );
 
    for( size_t i=0UL; i<(~rhs).rows(); ++i )
-      for( auto element=(~rhs).begin(i); element!=(~rhs).end(i); ++element )
+      for( ConstIterator_t<MT> element=(~rhs).begin(i); element!=(~rhs).end(i); ++element )
          v_[i+element->index()*mm_] = element->value();
 }
 /*! \endcond */
@@ -5674,7 +5680,7 @@ inline void DynamicMatrix<Type,true>::addAssign( const SparseMatrix<MT,true>& rh
    BLAZE_INTERNAL_ASSERT( n_ == (~rhs).columns(), "Invalid number of columns" );
 
    for( size_t j=0UL; j<(~rhs).columns(); ++j )
-      for( auto element=(~rhs).begin(j); element!=(~rhs).end(j); ++element )
+      for( ConstIterator_t<MT> element=(~rhs).begin(j); element!=(~rhs).end(j); ++element )
          v_[element->index()+j*mm_] += element->value();
 }
 /*! \endcond */
@@ -5703,7 +5709,7 @@ inline void DynamicMatrix<Type,true>::addAssign( const SparseMatrix<MT,false>& r
    BLAZE_INTERNAL_ASSERT( n_ == (~rhs).columns(), "Invalid number of columns" );
 
    for( size_t i=0UL; i<(~rhs).rows(); ++i )
-      for( auto element=(~rhs).begin(i); element!=(~rhs).end(i); ++element )
+      for( ConstIterator_t<MT> element=(~rhs).begin(i); element!=(~rhs).end(i); ++element )
          v_[i+element->index()*mm_] += element->value();
 }
 /*! \endcond */
@@ -5893,7 +5899,7 @@ inline void DynamicMatrix<Type,true>::subAssign( const SparseMatrix<MT,true>& rh
    BLAZE_INTERNAL_ASSERT( n_ == (~rhs).columns(), "Invalid number of columns" );
 
    for( size_t j=0UL; j<(~rhs).columns(); ++j )
-      for( auto element=(~rhs).begin(j); element!=(~rhs).end(j); ++element )
+      for( ConstIterator_t<MT> element=(~rhs).begin(j); element!=(~rhs).end(j); ++element )
          v_[element->index()+j*mm_] -= element->value();
 }
 /*! \endcond */
@@ -5922,7 +5928,7 @@ inline void DynamicMatrix<Type,true>::subAssign( const SparseMatrix<MT,false>& r
    BLAZE_INTERNAL_ASSERT( n_ == (~rhs).columns(), "Invalid number of columns" );
 
    for( size_t i=0UL; i<(~rhs).rows(); ++i )
-      for( auto element=(~rhs).begin(i); element!=(~rhs).end(i); ++element )
+      for( ConstIterator_t<MT> element=(~rhs).begin(i); element!=(~rhs).end(i); ++element )
          v_[i+element->index()*mm_] -= element->value();
 }
 /*! \endcond */
@@ -6081,7 +6087,7 @@ inline void DynamicMatrix<Type,true>::schurAssign( const SparseMatrix<MT,true>& 
    {
       size_t i( 0UL );
 
-      for( auto element=(~rhs).begin(j); element!=(~rhs).end(j); ++element ) {
+      for( ConstIterator_t<MT> element=(~rhs).begin(j); element!=(~rhs).end(j); ++element ) {
          for( ; i<element->index(); ++i )
             reset( v_[i+j*mm_] );
          v_[i+j*mm_] *= element->value();
@@ -6124,7 +6130,7 @@ inline void DynamicMatrix<Type,true>::schurAssign( const SparseMatrix<MT,false>&
    {
       size_t j( 0UL );
 
-      for( auto element=(~rhs).begin(i); element!=(~rhs).end(i); ++element ) {
+      for( ConstIterator_t<MT> element=(~rhs).begin(i); element!=(~rhs).end(i); ++element ) {
          for( ; j<element->index(); ++j )
             reset( v_[i+j*mm_] );
          v_[i+j*mm_] *= element->value();
@@ -6156,22 +6162,22 @@ inline void DynamicMatrix<Type,true>::schurAssign( const SparseMatrix<MT,false>&
 /*!\name DynamicMatrix operators */
 //@{
 template< typename Type, bool SO >
-void reset( DynamicMatrix<Type,SO>& m );
+inline void reset( DynamicMatrix<Type,SO>& m );
 
 template< typename Type, bool SO >
-void reset( DynamicMatrix<Type,SO>& m, size_t i );
+inline void reset( DynamicMatrix<Type,SO>& m, size_t i );
 
 template< typename Type, bool SO >
-void clear( DynamicMatrix<Type,SO>& m );
+inline void clear( DynamicMatrix<Type,SO>& m );
 
 template< bool RF, typename Type, bool SO >
-bool isDefault( const DynamicMatrix<Type,SO>& m );
+inline bool isDefault( const DynamicMatrix<Type,SO>& m );
 
 template< typename Type, bool SO >
-bool isIntact( const DynamicMatrix<Type,SO>& m ) noexcept;
+inline bool isIntact( const DynamicMatrix<Type,SO>& m ) noexcept;
 
 template< typename Type, bool SO >
-void swap( DynamicMatrix<Type,SO>& a, DynamicMatrix<Type,SO>& b ) noexcept;
+inline void swap( DynamicMatrix<Type,SO>& a, DynamicMatrix<Type,SO>& b ) noexcept;
 //@}
 //*************************************************************************************************
 
@@ -6454,10 +6460,10 @@ struct AddTraitEval2< T1, T2
                                   ( Size_v<T2,0UL> == DefaultSize_v ) &&
                                   ( Size_v<T1,1UL> == DefaultSize_v ) &&
                                   ( Size_v<T2,1UL> == DefaultSize_v ) &&
-                                  ( MaxSize_v<T1,0UL> == DefaultMaxSize_v ) &&
-                                  ( MaxSize_v<T2,0UL> == DefaultMaxSize_v ) &&
-                                  ( MaxSize_v<T1,1UL> == DefaultMaxSize_v ) &&
-                                  ( MaxSize_v<T2,1UL> == DefaultMaxSize_v ) > >
+                                  ( MaxSize_v<T1,0UL> == DefaultSize_v ) &&
+                                  ( MaxSize_v<T2,0UL> == DefaultSize_v ) &&
+                                  ( MaxSize_v<T1,1UL> == DefaultSize_v ) &&
+                                  ( MaxSize_v<T2,1UL> == DefaultSize_v ) > >
 {
    using ET1 = ElementType_t<T1>;
    using ET2 = ElementType_t<T2>;
@@ -6640,41 +6646,7 @@ struct MultTraitEval2< T1, T2
    using ET1 = ElementType_t<T1>;
    using ET2 = ElementType_t<T2>;
 
-   static constexpr bool SO = ( IsSparseMatrix_v<T1> ? StorageOrder_v<T2> : StorageOrder_v<T1> );
-
-   using Type = DynamicMatrix< MultTrait_t<ET1,ET2>, SO >;
-};
-/*! \endcond */
-//*************************************************************************************************
-
-
-
-
-//=================================================================================================
-//
-//  KRONTRAIT SPECIALIZATIONS
-//
-//=================================================================================================
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-template< typename T1, typename T2 >
-struct KronTraitEval2< T1, T2
-                     , EnableIf_t< IsDenseMatrix_v<T1> &&
-                                   IsDenseMatrix_v<T2> &&
-                                   ( ( Size_v<T1,0UL> == DefaultSize_v ) ||
-                                     ( Size_v<T2,0UL> == DefaultSize_v ) ||
-                                     ( Size_v<T1,1UL> == DefaultSize_v ) ||
-                                     ( Size_v<T2,1UL> == DefaultSize_v ) ) &&
-                                   ( ( MaxSize_v<T1,0UL> == DefaultMaxSize_v ) ||
-                                     ( MaxSize_v<T2,0UL> == DefaultMaxSize_v ) ||
-                                     ( MaxSize_v<T1,1UL> == DefaultMaxSize_v ) ||
-                                     ( MaxSize_v<T2,1UL> == DefaultMaxSize_v ) ) > >
-{
-   using ET1 = ElementType_t<T1>;
-   using ET2 = ElementType_t<T2>;
-
-   using Type = DynamicMatrix< MultTrait_t<ET1,ET2>, StorageOrder_v<T2> >;
+   using Type = DynamicMatrix< MultTrait_t<ET1,ET2>, StorageOrder_v<T1> >;
 };
 /*! \endcond */
 //*************************************************************************************************
@@ -6743,10 +6715,10 @@ struct BinaryMapTraitEval2< T1, T2, OP
                                         ( Size_v<T2,0UL> == DefaultSize_v ) &&
                                         ( Size_v<T1,1UL> == DefaultSize_v ) &&
                                         ( Size_v<T2,1UL> == DefaultSize_v ) &&
-                                        ( MaxSize_v<T1,0UL> == DefaultMaxSize_v ) &&
-                                        ( MaxSize_v<T2,0UL> == DefaultMaxSize_v ) &&
-                                        ( MaxSize_v<T1,1UL> == DefaultMaxSize_v ) &&
-                                        ( MaxSize_v<T2,1UL> == DefaultMaxSize_v ) > >
+                                        ( MaxSize_v<T1,0UL> == DefaultSize_v ) &&
+                                        ( MaxSize_v<T2,0UL> == DefaultSize_v ) &&
+                                        ( MaxSize_v<T1,1UL> == DefaultSize_v ) &&
+                                        ( MaxSize_v<T2,1UL> == DefaultSize_v ) > >
 {
    using ET1 = ElementType_t<T1>;
    using ET2 = ElementType_t<T2>;
@@ -6765,32 +6737,6 @@ struct BinaryMapTraitEval2< T1, T2, OP
                                     : SO2 ) );
 
    using Type = DynamicMatrix< MapTrait_t<ET1,ET2,OP>, SO >;
-};
-/*! \endcond */
-//*************************************************************************************************
-
-
-
-
-//=================================================================================================
-//
-//  EXPANDTRAIT SPECIALIZATIONS
-//
-//=================================================================================================
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-template< typename T  // Type to be expanded
-        , size_t E >  // Compile time expansion
-struct ExpandTraitEval2< T, E
-                       , EnableIf_t< IsDenseVector_v<T> &&
-                                     ( ( E == inf ) ||
-                                       ( ( Size_v<T,0UL> == DefaultSize_v ) &&
-                                         ( MaxSize_v<T,0UL> == DefaultMaxSize_v ) ) ) > >
-{
-   static constexpr bool TF = ( IsColumnVector_v<T> ? columnMajor : rowMajor );
-
-   using Type = DynamicMatrix< ElementType_t<T>, TF >;
 };
 /*! \endcond */
 //*************************************************************************************************
@@ -6874,7 +6820,7 @@ struct RowsTraitEval2< MT, M
                                    ( M == 0UL || Size_v<MT,1UL> == DefaultSize_v ) &&
                                    ( M == 0UL || MaxSize_v<MT,1UL> == DefaultMaxSize_v ) > >
 {
-   using Type = DynamicMatrix< RemoveConst_t< ElementType_t<MT> >, false >;
+   using Type = DynamicMatrix< ElementType_t<MT>, false >;
 };
 /*! \endcond */
 //*************************************************************************************************
@@ -6896,7 +6842,7 @@ struct ColumnsTraitEval2< MT, N
                                       ( N == 0UL || Size_v<MT,0UL> == DefaultSize_v ) &&
                                       ( N == 0UL || MaxSize_v<MT,0UL> == DefaultMaxSize_v ) > >
 {
-   using Type = DynamicMatrix< RemoveConst_t< ElementType_t<MT> >, true >;
+   using Type = DynamicMatrix< ElementType_t<MT>, true >;
 };
 /*! \endcond */
 //*************************************************************************************************

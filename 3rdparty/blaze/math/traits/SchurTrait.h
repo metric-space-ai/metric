@@ -3,7 +3,7 @@
 //  \file blaze/math/traits/SchurTrait.h
 //  \brief Header file for the Schur product trait
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -44,6 +44,7 @@
 #include "../../util/EnableIf.h"
 #include "../../util/InvalidType.h"
 #include "../../util/mpl/If.h"
+#include "../../util/typetraits/Decay.h"
 
 
 namespace blaze {

@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/DMatMapExpr.h
 //  \brief Header file for the dense matrix map expression
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -54,28 +54,36 @@
 #include "../../math/Functors.h"
 #include "../../math/shims/Serial.h"
 #include "../../math/SIMD.h"
-#include "../../math/traits/AddTrait.h"
-#include "../../math/traits/DivTrait.h"
 #include "../../math/traits/MapTrait.h"
 #include "../../math/traits/MultTrait.h"
-#include "../../math/traits/SubTrait.h"
-#include "../../math/typetraits/HasLoad.h"
 #include "../../math/typetraits/IsAligned.h"
-#include "../../math/typetraits/IsComputation.h"
 #include "../../math/typetraits/IsExpression.h"
+#include "../../math/typetraits/IsHermitian.h"
+#include "../../math/typetraits/IsLower.h"
 #include "../../math/typetraits/IsPadded.h"
-#include "../../math/typetraits/IsPaddingEnabled.h"
-#include "../../math/typetraits/IsSIMDEnabled.h"
+#include "../../math/typetraits/IsStrictlyLower.h"
+#include "../../math/typetraits/IsStrictlyUpper.h"
+#include "../../math/typetraits/IsSymmetric.h"
+#include "../../math/typetraits/IsUniLower.h"
+#include "../../math/typetraits/IsUniUpper.h"
+#include "../../math/typetraits/IsUpper.h"
 #include "../../math/typetraits/RequiresEvaluation.h"
 #include "../../math/typetraits/UnderlyingBuiltin.h"
 #include "../../math/typetraits/UnderlyingNumeric.h"
-#include "../../system/HostDevice.h"
+#include "../../math/typetraits/YieldsHermitian.h"
+#include "../../math/typetraits/YieldsLower.h"
+#include "../../math/typetraits/YieldsStrictlyLower.h"
+#include "../../math/typetraits/YieldsStrictlyUpper.h"
+#include "../../math/typetraits/YieldsSymmetric.h"
+#include "../../math/typetraits/YieldsUniLower.h"
+#include "../../math/typetraits/YieldsUniUpper.h"
+#include "../../math/typetraits/YieldsUpper.h"
 #include "../../system/Inline.h"
 #include "../../util/Assert.h"
 #include "../../util/EnableIf.h"
 #include "../../util/FunctionTrace.h"
-#include "../../util/IntegralConstant.h"
 #include "../../util/mpl/If.h"
+#include "../../util/Template.h"
 #include "../../util/Types.h"
 #include "../../util/typetraits/HasMember.h"
 #include "../../util/typetraits/IsBuiltin.h"
@@ -111,17 +119,23 @@ class DMatMapExpr
    using OT = OppositeType_t<MT>;  //!< Opposite type of the dense matrix expression.
    using ET = ElementType_t<MT>;   //!< Element type of the dense matrix expression.
    using RN = ReturnType_t<MT>;    //!< Return type of the dense matrix expression.
+
+   //! Definition of the HasSIMDEnabled type trait.
+   BLAZE_CREATE_HAS_DATA_OR_FUNCTION_MEMBER_TYPE_TRAIT( HasSIMDEnabled, simdEnabled );
+
+   //! Definition of the HasLoad type trait.
+   BLAZE_CREATE_HAS_DATA_OR_FUNCTION_MEMBER_TYPE_TRAIT( HasLoad, load );
    //**********************************************************************************************
 
    //**Serial evaluation strategy******************************************************************
    //! Compilation switch for the serial evaluation strategy of the map expression.
    /*! The \a useAssign compile time constant expression represents a compilation switch for
        the serial evaluation strategy of the map expression. In case the given dense matrix
-       expression of type \a MT is a computation expression and requires an intermediate
-       evaluation, \a useAssign will be set to 1 and the map expression will be evaluated
-       via the \a assign function family. Otherwise \a useAssign will be set to 0 and the
-       expression will be evaluated via the subscript operator. */
-   static constexpr bool useAssign = ( IsComputation_v<MT> && RequiresEvaluation_v<MT> );
+       expression of type \a MT requires an intermediate evaluation, \a useAssign will be
+       set to 1 and the map expression will be evaluated via the \a assign function family.
+       Otherwise \a useAssign will be set to 0 and the expression will be evaluated via the
+       subscript operator. */
+   static constexpr bool useAssign = RequiresEvaluation_v<MT>;
 
    /*! \cond BLAZE_INTERNAL */
    //! Helper variable template for the explicit application of the SFINAE principle.
@@ -144,10 +158,20 @@ class DMatMapExpr
    /*! \endcond */
    //**********************************************************************************************
 
+   //**SIMD support detection**********************************************************************
+   /*! \cond BLAZE_INTERNAL */
+   //! Helper structure for the detection of the SIMD capabilities of the given custom operation.
+   struct UseSIMDEnabledFlag {
+      static constexpr bool test( bool (*fnc)() ) { return fnc(); }
+      static constexpr bool test( bool b ) { return b; }
+      static constexpr bool value = test( OP::BLAZE_TEMPLATE simdEnabled<ET> );
+   };
+   /*! \endcond */
+   //**********************************************************************************************
+
  public:
    //**Type definitions****************************************************************************
    using This          = DMatMapExpr<MT,OP,SO>;        //!< Type of this DMatMapExpr instance.
-   using BaseType      = DenseMatrix<This,SO>;         //!< Base type of this DMatMapExpr instance.
    using ResultType    = MapTrait_t<RT,OP>;            //!< Result type for expression template evaluations.
    using OppositeType  = OppositeType_t<ResultType>;   //!< Result type with opposite storage order for expression template evaluations.
    using TransposeType = TransposeType_t<ResultType>;  //!< Transpose type for expression template evaluations.
@@ -196,7 +220,7 @@ class DMatMapExpr
       // \param it Iterator to the initial matrix element.
       // \param op The custom unary operation.
       */
-      explicit inline BLAZE_DEVICE_CALLABLE ConstIterator( IteratorType it, OP op )
+      explicit inline ConstIterator( IteratorType it, OP op )
          : it_( it )  // Iterator to the current matrix element
          , op_( op )  // The custom unary operation
       {}
@@ -208,7 +232,7 @@ class DMatMapExpr
       // \param inc The increment of the iterator.
       // \return The incremented iterator.
       */
-      inline BLAZE_DEVICE_CALLABLE ConstIterator& operator+=( size_t inc ) {
+      inline ConstIterator& operator+=( size_t inc ) {
          it_ += inc;
          return *this;
       }
@@ -220,7 +244,7 @@ class DMatMapExpr
       // \param dec The decrement of the iterator.
       // \return The decremented iterator.
       */
-      inline BLAZE_DEVICE_CALLABLE ConstIterator& operator-=( size_t dec ) {
+      inline ConstIterator& operator-=( size_t dec ) {
          it_ -= dec;
          return *this;
       }
@@ -231,7 +255,7 @@ class DMatMapExpr
       //
       // \return Reference to the incremented iterator.
       */
-      inline BLAZE_DEVICE_CALLABLE ConstIterator& operator++() {
+      inline ConstIterator& operator++() {
          ++it_;
          return *this;
       }
@@ -242,7 +266,7 @@ class DMatMapExpr
       //
       // \return The previous position of the iterator.
       */
-      inline BLAZE_DEVICE_CALLABLE const ConstIterator operator++( int ) {
+      inline const ConstIterator operator++( int ) {
          return ConstIterator( it_++, op_ );
       }
       //*******************************************************************************************
@@ -252,7 +276,7 @@ class DMatMapExpr
       //
       // \return Reference to the decremented iterator.
       */
-      inline BLAZE_DEVICE_CALLABLE ConstIterator& operator--() {
+      inline ConstIterator& operator--() {
          --it_;
          return *this;
       }
@@ -263,7 +287,7 @@ class DMatMapExpr
       //
       // \return The previous position of the iterator.
       */
-      inline BLAZE_DEVICE_CALLABLE const ConstIterator operator--( int ) {
+      inline const ConstIterator operator--( int ) {
          return ConstIterator( it_--, op_ );
       }
       //*******************************************************************************************
@@ -273,7 +297,7 @@ class DMatMapExpr
       //
       // \return The resulting value.
       */
-      inline BLAZE_DEVICE_CALLABLE ReturnType operator*() const {
+      inline ReturnType operator*() const {
          return op_( *it_ );
       }
       //*******************************************************************************************
@@ -294,7 +318,7 @@ class DMatMapExpr
       // \param rhs The right-hand side iterator.
       // \return \a true if the iterators refer to the same element, \a false if not.
       */
-      inline BLAZE_DEVICE_CALLABLE bool operator==( const ConstIterator& rhs ) const {
+      inline bool operator==( const ConstIterator& rhs ) const {
          return it_ == rhs.it_;
       }
       //*******************************************************************************************
@@ -305,7 +329,7 @@ class DMatMapExpr
       // \param rhs The right-hand side iterator.
       // \return \a true if the iterators don't refer to the same element, \a false if they do.
       */
-      inline BLAZE_DEVICE_CALLABLE bool operator!=( const ConstIterator& rhs ) const {
+      inline bool operator!=( const ConstIterator& rhs ) const {
          return it_ != rhs.it_;
       }
       //*******************************************************************************************
@@ -316,7 +340,7 @@ class DMatMapExpr
       // \param rhs The right-hand side iterator.
       // \return \a true if the left-hand side iterator is smaller, \a false if not.
       */
-      inline BLAZE_DEVICE_CALLABLE bool operator<( const ConstIterator& rhs ) const {
+      inline bool operator<( const ConstIterator& rhs ) const {
          return it_ < rhs.it_;
       }
       //*******************************************************************************************
@@ -327,7 +351,7 @@ class DMatMapExpr
       // \param rhs The right-hand side iterator.
       // \return \a true if the left-hand side iterator is greater, \a false if not.
       */
-      inline BLAZE_DEVICE_CALLABLE bool operator>( const ConstIterator& rhs ) const {
+      inline bool operator>( const ConstIterator& rhs ) const {
          return it_ > rhs.it_;
       }
       //*******************************************************************************************
@@ -338,7 +362,7 @@ class DMatMapExpr
       // \param rhs The right-hand side iterator.
       // \return \a true if the left-hand side iterator is smaller or equal, \a false if not.
       */
-      inline BLAZE_DEVICE_CALLABLE bool operator<=( const ConstIterator& rhs ) const {
+      inline bool operator<=( const ConstIterator& rhs ) const {
          return it_ <= rhs.it_;
       }
       //*******************************************************************************************
@@ -349,7 +373,7 @@ class DMatMapExpr
       // \param rhs The right-hand side iterator.
       // \return \a true if the left-hand side iterator is greater or equal, \a false if not.
       */
-      inline BLAZE_DEVICE_CALLABLE bool operator>=( const ConstIterator& rhs ) const {
+      inline bool operator>=( const ConstIterator& rhs ) const {
          return it_ >= rhs.it_;
       }
       //*******************************************************************************************
@@ -360,7 +384,7 @@ class DMatMapExpr
       // \param rhs The right-hand side iterator.
       // \return The number of elements between the two iterators.
       */
-      inline BLAZE_DEVICE_CALLABLE DifferenceType operator-( const ConstIterator& rhs ) const {
+      inline DifferenceType operator-( const ConstIterator& rhs ) const {
          return it_ - rhs.it_;
       }
       //*******************************************************************************************
@@ -372,7 +396,7 @@ class DMatMapExpr
       // \param inc The number of elements the iterator is incremented.
       // \return The incremented iterator.
       */
-      friend inline BLAZE_DEVICE_CALLABLE const ConstIterator operator+( const ConstIterator& it, size_t inc ) {
+      friend inline const ConstIterator operator+( const ConstIterator& it, size_t inc ) {
          return ConstIterator( it.it_ + inc, it.op_ );
       }
       //*******************************************************************************************
@@ -384,7 +408,7 @@ class DMatMapExpr
       // \param it The iterator to be incremented.
       // \return The incremented iterator.
       */
-      friend inline BLAZE_DEVICE_CALLABLE const ConstIterator operator+( size_t inc, const ConstIterator& it ) {
+      friend inline const ConstIterator operator+( size_t inc, const ConstIterator& it ) {
          return ConstIterator( it.it_ + inc, it.op_ );
       }
       //*******************************************************************************************
@@ -396,7 +420,7 @@ class DMatMapExpr
       // \param dec The number of elements the iterator is decremented.
       // \return The decremented iterator.
       */
-      friend inline BLAZE_DEVICE_CALLABLE const ConstIterator operator-( const ConstIterator& it, size_t dec ) {
+      friend inline const ConstIterator operator-( const ConstIterator& it, size_t dec ) {
          return ConstIterator( it.it_ - dec, it.op_ );
       }
       //*******************************************************************************************
@@ -413,7 +437,7 @@ class DMatMapExpr
    //! Compilation switch for the expression template evaluation strategy.
    static constexpr bool simdEnabled =
       ( MT::simdEnabled &&
-        If_t< HasSIMDEnabled_v<OP>, GetSIMDEnabled<OP,ET>, HasLoad<OP> >::value );
+        If_t< HasSIMDEnabled_v<OP>, UseSIMDEnabledFlag, HasLoad<OP> >::value );
 
    //! Compilation switch for the expression template assignment strategy.
    static constexpr bool smpAssignable = MT::smpAssignable;
@@ -614,9 +638,9 @@ class DMatMapExpr
    */
    template< typename MT2  // Type of the target dense matrix
            , bool SO2 >    // Storage order or the target dense matrix
-   friend inline auto assign( DenseMatrix<MT2,SO2>& lhs, const DMatMapExpr& rhs )
-      -> EnableIf_t< UseAssign_v<MT2> &&
-                     IsSame_v< UnderlyingNumeric_t<MT>, UnderlyingNumeric_t<MT2> > >
+   friend inline EnableIf_t< UseAssign_v<MT2> && IsSame_v< UnderlyingNumeric_t<MT>
+                           , UnderlyingNumeric_t<MT2> > >
+      assign( DenseMatrix<MT2,SO2>& lhs, const DMatMapExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -624,7 +648,7 @@ class DMatMapExpr
       BLAZE_INTERNAL_ASSERT( (~lhs).columns() == rhs.columns(), "Invalid number of columns" );
 
       assign( ~lhs, rhs.dm_ );
-      assign( ~lhs, map( ~lhs, rhs.op_ ) );
+      assign( ~lhs, rhs.op_( ~lhs ) );
    }
    /*! \endcond */
    //**********************************************************************************************
@@ -646,9 +670,9 @@ class DMatMapExpr
    */
    template< typename MT2  // Type of the target dense matrix
            , bool SO2 >    // Storage order or the target dense matrix
-   friend inline auto assign( DenseMatrix<MT2,SO2>& lhs, const DMatMapExpr& rhs )
-      -> EnableIf_t< UseAssign_v<MT2> &&
-                     !IsSame_v< UnderlyingNumeric_t<MT>, UnderlyingNumeric_t<MT2> > >
+   friend inline EnableIf_t< UseAssign_v<MT2> && !IsSame_v< UnderlyingNumeric_t<MT>
+                           , UnderlyingNumeric_t<MT2> > >
+      assign( DenseMatrix<MT2,SO2>& lhs, const DMatMapExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -681,8 +705,8 @@ class DMatMapExpr
    */
    template< typename MT2  // Type of the target sparse matrix
            , bool SO2 >    // Storage order or the target sparse matrix
-   friend inline auto assign( SparseMatrix<MT2,SO2>& lhs, const DMatMapExpr& rhs )
-      -> EnableIf_t< UseAssign_v<MT2> >
+   friend inline EnableIf_t< UseAssign_v<MT2> >
+      assign( SparseMatrix<MT2,SO2>& lhs, const DMatMapExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -699,7 +723,7 @@ class DMatMapExpr
       BLAZE_INTERNAL_ASSERT( (~lhs).columns() == rhs.columns(), "Invalid number of columns" );
 
       const TmpType tmp( serial( rhs.dm_ ) );
-      assign( ~lhs, map( tmp, rhs.op_ ) );
+      assign( ~lhs, rhs.op_( tmp ) );
    }
    /*! \endcond */
    //**********************************************************************************************
@@ -720,8 +744,8 @@ class DMatMapExpr
    */
    template< typename MT2  // Type of the target dense matrix
            , bool SO2 >    // Storage order of the target dense matrix
-   friend inline auto addAssign( DenseMatrix<MT2,SO2>& lhs, const DMatMapExpr& rhs )
-      -> EnableIf_t< UseAssign_v<MT2> >
+   friend inline EnableIf_t< UseAssign_v<MT2> >
+      addAssign( DenseMatrix<MT2,SO2>& lhs, const DMatMapExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -758,8 +782,8 @@ class DMatMapExpr
    */
    template< typename MT2  // Type of the target dense matrix
            , bool SO2 >    // Storage order of the target dense matrix
-   friend inline auto subAssign( DenseMatrix<MT2,SO2>& lhs, const DMatMapExpr& rhs )
-      -> EnableIf_t< UseAssign_v<MT2> >
+   friend inline EnableIf_t< UseAssign_v<MT2> >
+      subAssign( DenseMatrix<MT2,SO2>& lhs, const DMatMapExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -796,8 +820,8 @@ class DMatMapExpr
    */
    template< typename MT2  // Type of the target dense matrix
            , bool SO2 >    // Storage order of the target dense matrix
-   friend inline auto schurAssign( DenseMatrix<MT2,SO2>& lhs, const DMatMapExpr& rhs )
-      -> EnableIf_t< UseAssign_v<MT2> >
+   friend inline EnableIf_t< UseAssign_v<MT2> >
+      schurAssign( DenseMatrix<MT2,SO2>& lhs, const DMatMapExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -843,9 +867,9 @@ class DMatMapExpr
    */
    template< typename MT2  // Type of the target dense matrix
            , bool SO2 >    // Storage order or the target dense matrix
-   friend inline auto smpAssign( DenseMatrix<MT2,SO2>& lhs, const DMatMapExpr& rhs )
-      -> EnableIf_t< UseSMPAssign_v<MT2> &&
-                     IsSame_v< UnderlyingNumeric_t<MT>, UnderlyingNumeric_t<MT2> > >
+   friend inline EnableIf_t< UseSMPAssign_v<MT2> && IsSame_v< UnderlyingNumeric_t<MT>
+                           , UnderlyingNumeric_t<MT2> > >
+      smpAssign( DenseMatrix<MT2,SO2>& lhs, const DMatMapExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -853,7 +877,7 @@ class DMatMapExpr
       BLAZE_INTERNAL_ASSERT( (~lhs).columns() == rhs.columns(), "Invalid number of columns" );
 
       smpAssign( ~lhs, rhs.dm_ );
-      smpAssign( ~lhs, map( ~lhs, rhs.op_ ) );
+      smpAssign( ~lhs, rhs.op_( ~lhs ) );
    }
    /*! \endcond */
    //**********************************************************************************************
@@ -875,9 +899,9 @@ class DMatMapExpr
    */
    template< typename MT2  // Type of the target dense matrix
            , bool SO2 >    // Storage order or the target dense matrix
-   friend inline auto smpAssign( DenseMatrix<MT2,SO2>& lhs, const DMatMapExpr& rhs )
-      -> EnableIf_t< UseSMPAssign_v<MT2> &&
-                     !IsSame_v< UnderlyingNumeric_t<MT>, UnderlyingNumeric_t<MT2> > >
+   friend inline EnableIf_t< UseSMPAssign_v<MT2> && !IsSame_v< UnderlyingNumeric_t<MT>
+                           , UnderlyingNumeric_t<MT2> > >
+      smpAssign( DenseMatrix<MT2,SO2>& lhs, const DMatMapExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -910,8 +934,8 @@ class DMatMapExpr
    */
    template< typename MT2  // Type of the target sparse matrix
            , bool SO2 >    // Storage order or the target sparse matrix
-   friend inline auto smpAssign( SparseMatrix<MT2,SO2>& lhs, const DMatMapExpr& rhs )
-      -> EnableIf_t< UseSMPAssign_v<MT2> >
+   friend inline EnableIf_t< UseSMPAssign_v<MT2> >
+      smpAssign( SparseMatrix<MT2,SO2>& lhs, const DMatMapExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -928,7 +952,7 @@ class DMatMapExpr
       BLAZE_INTERNAL_ASSERT( (~lhs).columns() == rhs.columns(), "Invalid number of columns" );
 
       const TmpType tmp( rhs.dm_ );
-      smpAssign( ~lhs, map( tmp, rhs.op_ ) );
+      smpAssign( ~lhs, rhs.op_( tmp ) );
    }
    /*! \endcond */
    //**********************************************************************************************
@@ -949,8 +973,8 @@ class DMatMapExpr
    */
    template< typename MT2  // Type of the target dense matrix
            , bool SO2 >    // Storage order of the target dense matrix
-   friend inline auto smpAddAssign( DenseMatrix<MT2,SO2>& lhs, const DMatMapExpr& rhs )
-      -> EnableIf_t< UseSMPAssign_v<MT2> >
+   friend inline EnableIf_t< UseSMPAssign_v<MT2> >
+      smpAddAssign( DenseMatrix<MT2,SO2>& lhs, const DMatMapExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -987,8 +1011,8 @@ class DMatMapExpr
    */
    template< typename MT2  // Type of the target dense matrix
            , bool SO2 >    // Storage order of the target dense matrix
-   friend inline auto smpSubAssign( DenseMatrix<MT2,SO2>& lhs, const DMatMapExpr& rhs )
-      -> EnableIf_t< UseSMPAssign_v<MT2> >
+   friend inline EnableIf_t< UseSMPAssign_v<MT2> >
+      smpSubAssign( DenseMatrix<MT2,SO2>& lhs, const DMatMapExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -1025,8 +1049,8 @@ class DMatMapExpr
    */
    template< typename MT2  // Type of the target dense matrix
            , bool SO2 >    // Storage order of the target dense matrix
-   friend inline auto smpSchurAssign( DenseMatrix<MT2,SO2>& lhs, const DMatMapExpr& rhs )
-      -> EnableIf_t< UseSMPAssign_v<MT2> >
+   friend inline EnableIf_t< UseSMPAssign_v<MT2> >
+      smpSchurAssign( DenseMatrix<MT2,SO2>& lhs, const DMatMapExpr& rhs )
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -1129,7 +1153,8 @@ inline decltype(auto) forEach( const DenseMatrix<MT,SO>& dm, OP op )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~dm, op );
+   using ReturnType = const DMatMapExpr<MT,OP,SO>;
+   return ReturnType( ~dm, op );
 }
 //*************************************************************************************************
 
@@ -1157,7 +1182,8 @@ inline decltype(auto) abs( const DenseMatrix<MT,SO>& dm )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~dm, Abs() );
+   using ReturnType = const DMatMapExpr<MT,Abs,SO>;
+   return ReturnType( ~dm, Abs() );
 }
 //*************************************************************************************************
 
@@ -1185,7 +1211,8 @@ inline decltype(auto) sign( const DenseMatrix<MT,SO>& dm )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~dm, Sign() );
+   using ReturnType = const DMatMapExpr<MT,Sign,SO>;
+   return ReturnType( ~dm, Sign() );
 }
 //*************************************************************************************************
 
@@ -1213,7 +1240,8 @@ inline decltype(auto) floor( const DenseMatrix<MT,SO>& dm )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~dm, Floor() );
+   using ReturnType = const DMatMapExpr<MT,Floor,SO>;
+   return ReturnType( ~dm, Floor() );
 }
 //*************************************************************************************************
 
@@ -1241,7 +1269,8 @@ inline decltype(auto) ceil( const DenseMatrix<MT,SO>& dm )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~dm, Ceil() );
+   using ReturnType = const DMatMapExpr<MT,Ceil,SO>;
+   return ReturnType( ~dm, Ceil() );
 }
 //*************************************************************************************************
 
@@ -1269,7 +1298,8 @@ inline decltype(auto) trunc( const DenseMatrix<MT,SO>& dm )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~dm, Trunc() );
+   using ReturnType = const DMatMapExpr<MT,Trunc,SO>;
+   return ReturnType( ~dm, Trunc() );
 }
 //*************************************************************************************************
 
@@ -1297,7 +1327,8 @@ inline decltype(auto) round( const DenseMatrix<MT,SO>& dm )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~dm, Round() );
+   using ReturnType = const DMatMapExpr<MT,Round,SO>;
+   return ReturnType( ~dm, Round() );
 }
 //*************************************************************************************************
 
@@ -1325,7 +1356,8 @@ inline decltype(auto) conj( const DenseMatrix<MT,SO>& dm )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~dm, Conj() );
+   using ReturnType = const DMatMapExpr<MT,Conj,SO>;
+   return ReturnType( ~dm, Conj() );
 }
 //*************************************************************************************************
 
@@ -1390,7 +1422,8 @@ inline decltype(auto) real( const DenseMatrix<MT,SO>& dm )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~dm, Real() );
+   using ReturnType = const DMatMapExpr<MT,Real,SO>;
+   return ReturnType( ~dm, Real() );
 }
 //*************************************************************************************************
 
@@ -1418,7 +1451,8 @@ inline decltype(auto) imag( const DenseMatrix<MT,SO>& dm )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~dm, Imag() );
+   using ReturnType = const DMatMapExpr<MT,Imag,SO>;
+   return ReturnType( ~dm, Imag() );
 }
 //*************************************************************************************************
 
@@ -1449,7 +1483,8 @@ inline decltype(auto) sqrt( const DenseMatrix<MT,SO>& dm )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~dm, Sqrt() );
+   using ReturnType = const DMatMapExpr<MT,Sqrt,SO>;
+   return ReturnType( ~dm, Sqrt() );
 }
 //*************************************************************************************************
 
@@ -1480,7 +1515,8 @@ inline decltype(auto) invsqrt( const DenseMatrix<MT,SO>& dm )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~dm, InvSqrt() );
+   using ReturnType = const DMatMapExpr<MT,InvSqrt,SO>;
+   return ReturnType( ~dm, InvSqrt() );
 }
 //*************************************************************************************************
 
@@ -1511,7 +1547,8 @@ inline decltype(auto) cbrt( const DenseMatrix<MT,SO>& dm )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~dm, Cbrt() );
+   using ReturnType = const DMatMapExpr<MT,Cbrt,SO>;
+   return ReturnType( ~dm, Cbrt() );
 }
 //*************************************************************************************************
 
@@ -1542,7 +1579,8 @@ inline decltype(auto) invcbrt( const DenseMatrix<MT,SO>& dm )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~dm, InvCbrt() );
+   using ReturnType = const DMatMapExpr<MT,InvCbrt,SO>;
+   return ReturnType( ~dm, InvCbrt() );
 }
 //*************************************************************************************************
 
@@ -1573,7 +1611,8 @@ inline decltype(auto) clamp( const DenseMatrix<MT,SO>& dm, const DT& min, const 
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~dm, Clamp<DT>( min, max ) );
+   using ReturnType = const DMatMapExpr<MT,Clamp<DT>,SO>;
+   return ReturnType( ~dm, Clamp<DT>( min, max ) );
 }
 //*************************************************************************************************
 
@@ -1599,13 +1638,14 @@ inline decltype(auto) clamp( const DenseMatrix<MT,SO>& dm, const DT& min, const 
 template< typename MT  // Type of the dense matrix
         , bool SO      // Storage order
         , typename ST  // Type of the scalar exponent
-        , EnableIf_t< IsNumeric_v<ST> >* = nullptr >
+        , typename = EnableIf_t< IsNumeric_v<ST> > >
 inline decltype(auto) pow( const DenseMatrix<MT,SO>& dm, ST exp )
 {
    BLAZE_FUNCTION_TRACE;
 
    using ScalarType = MultTrait_t< UnderlyingBuiltin_t<MT>, ST >;
-   return map( ~dm, blaze::bind2nd( Pow(), ScalarType( exp ) ) );
+   using ReturnType = const DMatMapExpr<MT,UnaryPow<ScalarType>,SO>;
+   return ReturnType( ~dm, UnaryPow<ScalarType>( exp ) );
 }
 //*************************************************************************************************
 
@@ -1633,7 +1673,8 @@ inline decltype(auto) exp( const DenseMatrix<MT,SO>& dm )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~dm, Exp() );
+   using ReturnType = const DMatMapExpr<MT,Exp,SO>;
+   return ReturnType( ~dm, Exp() );
 }
 //*************************************************************************************************
 
@@ -1661,7 +1702,8 @@ inline decltype(auto) exp2( const DenseMatrix<MT,SO>& dm )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~dm, Exp2() );
+   using ReturnType = const DMatMapExpr<MT,Exp2,SO>;
+   return ReturnType( ~dm, Exp2() );
 }
 //*************************************************************************************************
 
@@ -1689,7 +1731,8 @@ inline decltype(auto) exp10( const DenseMatrix<MT,SO>& dm )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~dm, Exp10() );
+   using ReturnType = const DMatMapExpr<MT,Exp10,SO>;
+   return ReturnType( ~dm, Exp10() );
 }
 //*************************************************************************************************
 
@@ -1720,7 +1763,8 @@ inline decltype(auto) log( const DenseMatrix<MT,SO>& dm )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~dm, Log() );
+   using ReturnType = const DMatMapExpr<MT,Log,SO>;
+   return ReturnType( ~dm, Log() );
 }
 //*************************************************************************************************
 
@@ -1751,7 +1795,8 @@ inline decltype(auto) log2( const DenseMatrix<MT,SO>& dm )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~dm, Log2() );
+   using ReturnType = const DMatMapExpr<MT,Log2,SO>;
+   return ReturnType( ~dm, Log2() );
 }
 //*************************************************************************************************
 
@@ -1782,7 +1827,8 @@ inline decltype(auto) log10( const DenseMatrix<MT,SO>& dm )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~dm, Log10() );
+   using ReturnType = const DMatMapExpr<MT,Log10,SO>;
+   return ReturnType( ~dm, Log10() );
 }
 //*************************************************************************************************
 
@@ -1810,7 +1856,8 @@ inline decltype(auto) sin( const DenseMatrix<MT,SO>& dm )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~dm, Sin() );
+   using ReturnType = const DMatMapExpr<MT,Sin,SO>;
+   return ReturnType( ~dm, Sin() );
 }
 //*************************************************************************************************
 
@@ -1841,7 +1888,8 @@ inline decltype(auto) asin( const DenseMatrix<MT,SO>& dm )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~dm, Asin() );
+   using ReturnType = const DMatMapExpr<MT,Asin,SO>;
+   return ReturnType( ~dm, Asin() );
 }
 //*************************************************************************************************
 
@@ -1869,7 +1917,8 @@ inline decltype(auto) sinh( const DenseMatrix<MT,SO>& dm )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~dm, Sinh() );
+   using ReturnType = const DMatMapExpr<MT,Sinh,SO>;
+   return ReturnType( ~dm, Sinh() );
 }
 //*************************************************************************************************
 
@@ -1897,7 +1946,8 @@ inline decltype(auto) asinh( const DenseMatrix<MT,SO>& dm )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~dm, Asinh() );
+   using ReturnType = const DMatMapExpr<MT,Asinh,SO>;
+   return ReturnType( ~dm, Asinh() );
 }
 //*************************************************************************************************
 
@@ -1925,7 +1975,8 @@ inline decltype(auto) cos( const DenseMatrix<MT,SO>& dm )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~dm, Cos() );
+   using ReturnType = const DMatMapExpr<MT,Cos,SO>;
+   return ReturnType( ~dm, Cos() );
 }
 //*************************************************************************************************
 
@@ -1956,7 +2007,8 @@ inline decltype(auto) acos( const DenseMatrix<MT,SO>& dm )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~dm, Acos() );
+   using ReturnType = const DMatMapExpr<MT,Acos,SO>;
+   return ReturnType( ~dm, Acos() );
 }
 //*************************************************************************************************
 
@@ -1984,7 +2036,8 @@ inline decltype(auto) cosh( const DenseMatrix<MT,SO>& dm )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~dm, Cosh() );
+   using ReturnType = const DMatMapExpr<MT,Cosh,SO>;
+   return ReturnType( ~dm, Cosh() );
 }
 //*************************************************************************************************
 
@@ -2015,7 +2068,8 @@ inline decltype(auto) acosh( const DenseMatrix<MT,SO>& dm )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~dm, Acosh() );
+   using ReturnType = const DMatMapExpr<MT,Acosh,SO>;
+   return ReturnType( ~dm, Acosh() );
 }
 //*************************************************************************************************
 
@@ -2043,7 +2097,8 @@ inline decltype(auto) tan( const DenseMatrix<MT,SO>& dm )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~dm, Tan() );
+   using ReturnType = const DMatMapExpr<MT,Tan,SO>;
+   return ReturnType( ~dm, Tan() );
 }
 //*************************************************************************************************
 
@@ -2071,7 +2126,8 @@ inline decltype(auto) atan( const DenseMatrix<MT,SO>& dm )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~dm, Atan() );
+   using ReturnType = const DMatMapExpr<MT,Atan,SO>;
+   return ReturnType( ~dm, Atan() );
 }
 //*************************************************************************************************
 
@@ -2102,7 +2158,8 @@ inline decltype(auto) tanh( const DenseMatrix<MT,SO>& dm )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~dm, Tanh() );
+   using ReturnType = const DMatMapExpr<MT,Tanh,SO>;
+   return ReturnType( ~dm, Tanh() );
 }
 //*************************************************************************************************
 
@@ -2133,7 +2190,8 @@ inline decltype(auto) atanh( const DenseMatrix<MT,SO>& dm )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~dm, Atanh() );
+   using ReturnType = const DMatMapExpr<MT,Atanh,SO>;
+   return ReturnType( ~dm, Atanh() );
 }
 //*************************************************************************************************
 
@@ -2161,7 +2219,8 @@ inline decltype(auto) erf( const DenseMatrix<MT,SO>& dm )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~dm, Erf() );
+   using ReturnType = const DMatMapExpr<MT,Erf,SO>;
+   return ReturnType( ~dm, Erf() );
 }
 //*************************************************************************************************
 
@@ -2189,7 +2248,8 @@ inline decltype(auto) erfc( const DenseMatrix<MT,SO>& dm )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~dm, Erfc() );
+   using ReturnType = const DMatMapExpr<MT,Erfc,SO>;
+   return ReturnType( ~dm, Erfc() );
 }
 //*************************************************************************************************
 
@@ -2394,7 +2454,8 @@ inline decltype(auto) conj( const DMatTransExpr<DMatMapExpr<MT,Conj,SO>,!SO>& dm
 {
    BLAZE_FUNCTION_TRACE;
 
-   return trans( dm.operand().operand() );
+   using ReturnType = const DMatTransExpr<MT,!SO>;
+   return ReturnType( dm.operand().operand() );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -2420,366 +2481,6 @@ inline decltype(auto) real( const DMatMapExpr<MT,Real,SO>& dm )
    return dm;
 }
 /*! \endcond */
-//*************************************************************************************************
-
-
-
-
-//=================================================================================================
-//
-//  GLOBAL ARITHMETIC OPERATORS
-//
-//=================================================================================================
-
-//*************************************************************************************************
-/*!\brief Addition operator for the addition of a dense matrix and a scalar value (\f$ A=B+s \f$).
-// \ingroup dense_matrix
-//
-// \param mat The left-hand side dense matrix for the addition.
-// \param scalar The right-hand side scalar value for the addition.
-// \return The matrix sum.
-//
-// This operator represents the elementwise addition of a dense matrix and a uniform matrix
-// represented by a scalar value:
-
-   \code
-   blaze::DynamicMatrix<double> A, B;
-   // ... Resizing and initialization
-   B = A + 1.25;
-   \endcode
-
-// The operator returns an expression representing a dense matrix of the higher-order element
-// type of the involved data types \a MT::ElementType and \a ST. Note that this operator only
-// works for scalar values of built-in data type.
-*/
-template< typename MT  // Type of the left-hand side dense matrix
-        , bool SO      // Storage order of the left-hand side dense matrix
-        , typename ST  // Type of the right-hand side scalar
-        , EnableIf_t< IsNumeric_v<ST> >* = nullptr >
-inline decltype(auto) operator+( const DenseMatrix<MT,SO>& mat, ST scalar )
-{
-   BLAZE_FUNCTION_TRACE;
-
-   using ScalarType = AddTrait_t< UnderlyingBuiltin_t<MT>, ST >;
-   return map( ~mat, blaze::bind2nd( Add{}, ScalarType( scalar ) ) );
-}
-//*************************************************************************************************
-
-
-//*************************************************************************************************
-/*!\brief Addition operator for the addition of a scalar value and a dense matrix (\f$ A=s+B \f$).
-// \ingroup dense_matrix
-//
-// \param scalar The left-hand side scalar value for the addition.
-// \param mat The right-hand side dense matrix for the addition.
-// \return The matrix sum.
-//
-// This operator represents the elementwise addition of a uniform matrix represented by a scalar
-// value and a dense matrix:
-
-   \code
-   blaze::DynamicMatrix<double> A, B;
-   // ... Resizing and initialization
-   B = 1.25 + A;
-   \endcode
-
-// The operator returns an expression representing a dense matrix of the higher-order element
-// type of the involved data types \a MT::ElementType and \a ST. Note that this operator only
-// works for scalar values of built-in data type.
-*/
-template< typename ST  // Type of the left-hand side scalar
-        , typename MT  // Type of the right-hand side dense matrix
-        , bool SO      // Storage order of the right-hand side dense matrix
-        , EnableIf_t< IsNumeric_v<ST> >* = nullptr >
-inline decltype(auto) operator+( ST scalar, const DenseMatrix<MT,SO>& mat )
-{
-   BLAZE_FUNCTION_TRACE;
-
-   using ScalarType = AddTrait_t< ST, UnderlyingBuiltin_t<MT> >;
-   return map( ~mat, blaze::bind1st( Add{}, ScalarType( scalar ) ) );
-}
-//*************************************************************************************************
-
-
-//*************************************************************************************************
-/*!\brief Subtraction operator for the subtraction of a dense matrix and a scalar value
-//        (\f$ A=B-s \f$).
-// \ingroup dense_matrix
-//
-// \param mat The left-hand side dense matrix for the subtraction.
-// \param scalar The right-hand side scalar value for the subtraction.
-// \return The matrix difference.
-//
-// This operator represents the elementwise subtraction of a uniform matrix represented by a
-// scalar value from a dense matrix:
-
-   \code
-   blaze::DynamicMatrix<double> A, B;
-   // ... Resizing and initialization
-   B = A - 1.25;
-   \endcode
-
-// The operator returns an expression representing a dense matrix of the higher-order element
-// type of the involved data types \a MT::ElementType and \a ST. Note that this operator only
-// works for scalar values of built-in data type.
-*/
-template< typename MT  // Type of the left-hand side dense matrix
-        , bool SO      // Storage order of the left-hand side dense matrix
-        , typename ST  // Type of the right-hand side scalar
-        , EnableIf_t< IsNumeric_v<ST> >* = nullptr >
-inline decltype(auto) operator-( const DenseMatrix<MT,SO>& mat, ST scalar )
-{
-   BLAZE_FUNCTION_TRACE;
-
-   using ScalarType = SubTrait_t< UnderlyingBuiltin_t<MT>, ST >;
-   return map( ~mat, blaze::bind2nd( Sub{}, ScalarType( scalar ) ) );
-}
-//*************************************************************************************************
-
-
-//*************************************************************************************************
-/*!\brief Subtraction operator for the subtraction of a scalar value and a dense matrix
-//        (\f$ A=s-B \f$).
-// \ingroup dense_matrix
-//
-// \param scalar The left-hand side scalar value for the subtraction.
-// \param mat The right-hand side dense matrix for the subtraction.
-// \return The matrix difference.
-//
-// This operator represents the elementwise subtraction of a dense matrix from a uniform matrix
-// represented by a scalar value:
-
-   \code
-   blaze::DynamicMatrix<double> A, B;
-   // ... Resizing and initialization
-   B = 1.25 - A;
-   \endcode
-
-// The operator returns an expression representing a dense matrix of the higher-order element
-// type of the involved data types \a MT::ElementType and \a ST. Note that this operator only
-// works for scalar values of built-in data type.
-*/
-template< typename ST  // Type of the left-hand side scalar
-        , typename MT  // Type of the right-hand side dense matrix
-        , bool SO      // Storage order of the right-hand side dense matrix
-        , EnableIf_t< IsNumeric_v<ST> >* = nullptr >
-inline decltype(auto) operator-( ST scalar, const DenseMatrix<MT,SO>& mat )
-{
-   BLAZE_FUNCTION_TRACE;
-
-   using ScalarType = SubTrait_t< ST, UnderlyingBuiltin_t<MT> >;
-   return map( ~mat, blaze::bind1st( Sub{}, ScalarType( scalar ) ) );
-}
-//*************************************************************************************************
-
-
-//*************************************************************************************************
-/*!\brief Division operator for the division of a scalar value and a dense matrix (\f$ A=s/B \f$).
-// \ingroup dense_matrix
-//
-// \param scalar The left-hand side scalar value for the division.
-// \param mat The right-hand side dense matrix for the division.
-// \return The matrix quotient.
-//
-// This operator represents the elementwise division of a uniform matrix represented by a scalar
-// value and a dense matrix:
-
-   \code
-   blaze::DynamicMatrix<double> A, B;
-   // ... Resizing and initialization
-   B = 1.25 / A;
-   \endcode
-
-// The operator returns an expression representing a dense matrix of the higher-order element
-// type of the involved data types \a MT::ElementType and \a ST. Note that this operator only
-// works for scalar values of built-in data type.
-*/
-template< typename ST  // Type of the left-hand side scalar
-        , typename MT  // Type of the right-hand side dense matrix
-        , bool SO      // Storage order of the right-hand side dense matrix
-        , EnableIf_t< IsNumeric_v<ST> >* = nullptr >
-inline decltype(auto) operator/( ST scalar, const DenseMatrix<MT,SO>& mat )
-{
-   BLAZE_FUNCTION_TRACE;
-
-   using ScalarType = DivTrait_t< ST, UnderlyingBuiltin_t<MT> >;
-   return map( ~mat, blaze::bind1st( Div{}, ScalarType( scalar ) ) );
-}
-//*************************************************************************************************
-
-
-//*************************************************************************************************
-/*!\brief Left-shift operator for the uniform left-shift of a dense matrix.
-// \ingroup dense_matrix
-//
-// \param mat The dense matrix for the uniform left-shift operation.
-// \param count The number of bits to shift all matrix elements.
-// \return The resulting matrix.
-//
-// This operator represents the uniform left-shift of all elements of a dense matrix:
-
-   \code
-   blaze::DynamicMatrix<unsigned int> A, B;
-   // ... Resizing and initialization
-   B = A << 3;
-   \endcode
-*/
-template< typename MT  // Type of the dense matrix
-        , bool SO >    // Transpose flag
-inline decltype(auto) operator<<( const DenseMatrix<MT,SO>& mat, int count )
-{
-   BLAZE_FUNCTION_TRACE;
-
-   return map( ~mat, ShiftLI( count ) );
-}
-//*************************************************************************************************
-
-
-//*************************************************************************************************
-/*!\brief Right-shift operator for the uniform right-shift of a dense matrix.
-// \ingroup dense_matrix
-//
-// \param mat The dense matrix for the uniform right-shift operation.
-// \param count The number of bits to shift all matrix elements.
-// \return The resulting matrix.
-//
-// This operator represents the uniform right-shift of all elements of a dense matrix:
-
-   \code
-   blaze::DynamicMatrix<unsigned int> A, B;
-   // ... Resizing and initialization
-   B = A >> 3;
-   \endcode
-*/
-template< typename MT  // Type of the dense matrix
-        , bool SO >    // Transpose flag
-inline decltype(auto) operator>>( const DenseMatrix<MT,SO>& mat, int count )
-{
-   BLAZE_FUNCTION_TRACE;
-
-   return map( ~mat, ShiftRI( count ) );
-}
-//*************************************************************************************************
-
-
-//*************************************************************************************************
-/*!\brief Bitwise AND operator for the bitwise AND of a dense matrix and a scalar value.
-// \ingroup dense_matrix
-//
-// \param mat The left-hand side dense matrix for the bitwise AND.
-// \param scalar The right-hand side scalar value for the bitwise AND.
-// \return The resulting matrix.
-//
-// This operator represents the bitwise AND of a scalar value with all elements of a dense matrix:
-
-   \code
-   blaze::DynamicMatrix<unsigned int> A, B;
-   // ... Resizing and initialization
-   B = A & 7U;
-   \endcode
-*/
-template< typename MT  // Type of the left-hand side dense matrix
-        , bool SO      // Storage order of the left-hand side dense matrix
-        , typename ST  // Type of the right-hand side scalar
-        , EnableIf_t< IsNumeric_v<ST> >* = nullptr >
-inline decltype(auto) operator&( const DenseMatrix<MT,SO>& mat, ST scalar )
-{
-   BLAZE_FUNCTION_TRACE;
-
-   return map( ~mat, blaze::bind2nd( Bitand{}, scalar ) );
-}
-//*************************************************************************************************
-
-
-//*************************************************************************************************
-/*!\brief Bitwise OR operator for the bitwise OR of a dense matrix and a scalar value.
-// \ingroup dense_matrix
-//
-// \param mat The left-hand side dense matrix for the bitwise OR.
-// \param scalar The right-hand side scalar value for the bitwise OR.
-// \return The resulting matrix.
-//
-// This operator represents the bitwise OR of a scalar value with all elements of a dense matrix:
-
-   \code
-   blaze::DynamicMatrix<unsigned int> A, B;
-   // ... Resizing and initialization
-   B = A | 7U;
-   \endcode
-*/
-template< typename MT  // Type of the left-hand side dense matrix
-        , bool SO      // Storage order of the left-hand side dense matrix
-        , typename ST  // Type of the right-hand side scalar
-        , EnableIf_t< IsNumeric_v<ST> >* = nullptr >
-inline decltype(auto) operator|( const DenseMatrix<MT,SO>& mat, ST scalar )
-{
-   BLAZE_FUNCTION_TRACE;
-
-   return map( ~mat, blaze::bind2nd( Bitor{}, scalar ) );
-}
-//*************************************************************************************************
-
-
-//*************************************************************************************************
-/*!\brief Bitwise XOR operator for the bitwise XOR of a dense matrix and a scalar value.
-// \ingroup dense_matrix
-//
-// \param mat The left-hand side dense matrix for the bitwise XOR.
-// \param scalar The right-hand side scalar value for the bitwise XOR.
-// \return The resulting matrix.
-//
-// This operator represents the bitwise XOR of a scalar value with all elements of a dense matrix:
-
-   \code
-   blaze::DynamicMatrix<unsigned int> A, B;
-   // ... Resizing and initialization
-   B = A ^ 7U;
-   \endcode
-*/
-template< typename MT  // Type of the left-hand side dense matrix
-        , bool SO      // Storage order of the left-hand side dense matrix
-        , typename ST  // Type of the right-hand side scalar
-        , EnableIf_t< IsNumeric_v<ST> >* = nullptr >
-inline decltype(auto) operator^( const DenseMatrix<MT,SO>& mat, ST scalar )
-{
-   BLAZE_FUNCTION_TRACE;
-
-   return map( ~mat, blaze::bind2nd( Bitxor{}, scalar ) );
-}
-//*************************************************************************************************
-
-
-
-
-//=================================================================================================
-//
-//  GLOBAL LOGICAL OPERATORS
-//
-//=================================================================================================
-
-//*************************************************************************************************
-/*!\brief Logical NOT operator for the logical NOT of a dense matrix.
-// \ingroup dense_matrix
-//
-// \param mat The dense matrix for the logical NOT.
-// \return The negated matrix.
-//
-// This operator represents the logical NOT of all elements of a dense matrix:
-
-   \code
-   blaze::DynamicMatrix<bool> A, B;
-   // ... Resizing and initialization
-   B = !A;
-   \endcode
-*/
-template< typename MT  // Type of the dense matrix
-        , bool SO >    // Storage order of the dense matrix
-inline decltype(auto) operator!( const DenseMatrix<MT,SO>& mat )
-{
-   BLAZE_FUNCTION_TRACE;
-
-   return map( ~mat, Not{} );
-}
 //*************************************************************************************************
 
 
@@ -2813,7 +2514,151 @@ struct IsAligned< DMatMapExpr<MT,OP,SO> >
 /*! \cond BLAZE_INTERNAL */
 template< typename MT, typename OP, bool SO >
 struct IsPadded< DMatMapExpr<MT,OP,SO> >
-   : public BoolConstant< IsPadded_v<MT> && IsPaddingEnabled_v<OP> >
+   : public IsPadded<MT>
+{};
+/*! \endcond */
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
+//  ISSYMMETRIC SPECIALIZATIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+template< typename MT, typename OP, bool SO >
+struct IsSymmetric< DMatMapExpr<MT,OP,SO> >
+   : public YieldsSymmetric<OP,MT>
+{};
+/*! \endcond */
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
+//  ISHERMITIAN SPECIALIZATIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+template< typename MT, typename OP, bool SO >
+struct IsHermitian< DMatMapExpr<MT,OP,SO> >
+   : public YieldsHermitian<OP,MT>
+{};
+/*! \endcond */
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
+//  ISLOWER SPECIALIZATIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+template< typename MT, typename OP, bool SO >
+struct IsLower< DMatMapExpr<MT,OP,SO> >
+   : public YieldsLower<OP,MT>
+{};
+/*! \endcond */
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
+//  ISUNILOWER SPECIALIZATIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+template< typename MT, typename OP, bool SO >
+struct IsUniLower< DMatMapExpr<MT,OP,SO> >
+   : public YieldsUniLower<OP,MT>
+{};
+/*! \endcond */
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
+//  ISSTRICTLYLOWER SPECIALIZATIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+template< typename MT, typename OP, bool SO >
+struct IsStrictlyLower< DMatMapExpr<MT,OP,SO> >
+   : public YieldsStrictlyLower<OP,MT>
+{};
+/*! \endcond */
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
+//  ISUPPER SPECIALIZATIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+template< typename MT, typename OP, bool SO >
+struct IsUpper< DMatMapExpr<MT,OP,SO> >
+   : public YieldsUpper<OP,MT>
+{};
+/*! \endcond */
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
+//  ISUNIUPPER SPECIALIZATIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+template< typename MT, typename OP, bool SO >
+struct IsUniUpper< DMatMapExpr<MT,OP,SO> >
+   : public YieldsUniUpper<OP,MT>
+{};
+/*! \endcond */
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
+//  ISSTRICTLYUPPER SPECIALIZATIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+template< typename MT, typename OP, bool SO >
+struct IsStrictlyUpper< DMatMapExpr<MT,OP,SO> >
+   : public YieldsStrictlyUpper<OP,MT>
 {};
 /*! \endcond */
 //*************************************************************************************************

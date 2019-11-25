@@ -3,7 +3,7 @@
 //  \file blaze/math/typetraits/IsDeclLowExpr.h
 //  \brief Header file for the IsDeclLowExpr type trait class
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -40,8 +40,10 @@
 // Includes
 //*************************************************************************************************
 
+#include <utility>
 #include "../../math/expressions/DeclLowExpr.h"
-#include "../../util/IntegralConstant.h"
+#include "../../util/FalseType.h"
+#include "../../util/TrueType.h"
 
 
 namespace blaze {
@@ -62,20 +64,18 @@ struct IsDeclLowExprHelper
 {
  private:
    //**********************************************************************************************
-   static T* create();
+   template< typename MT >
+   static TrueType test( const DeclLowExpr<MT>& );
 
    template< typename MT >
-   static TrueType test( const DeclLowExpr<MT>* );
-
-   template< typename MT >
-   static TrueType test( const volatile DeclLowExpr<MT>* );
+   static TrueType test( const volatile DeclLowExpr<MT>& );
 
    static FalseType test( ... );
    //**********************************************************************************************
 
  public:
    //**********************************************************************************************
-   using Type = decltype( test( create() ) );
+   using Type = decltype( test( std::declval<T&>() ) );
    //**********************************************************************************************
 };
 /*! \endcond */
@@ -101,21 +101,8 @@ struct IsDeclLowExpr
 
 
 //*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-/*!\brief Specialization of the IsDeclLowExpr type trait for references.
-// \ingroup math_type_traits
-*/
-template< typename T >
-struct IsDeclLowExpr<T&>
-   : public FalseType
-{};
-/*! \endcond */
-//*************************************************************************************************
-
-
-//*************************************************************************************************
 /*!\brief Auxiliary variable template for the IsDeclLowExpr type trait.
-// \ingroup math_type_traits
+// \ingroup type_traits
 //
 // The IsDeclLowExpr_v variable template provides a convenient shortcut to access the nested
 // \a value of the IsDeclLowExpr class template. For instance, given the type \a T the
