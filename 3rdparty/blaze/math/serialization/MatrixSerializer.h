@@ -3,7 +3,7 @@
 //  \file blaze/math/serialization/MatrixSerializer.h
 //  \brief Serialization of dense and sparse matrices
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -195,20 +195,11 @@ class MatrixSerializer
    //**********************************************************************************************
 
  public:
-   //**Constructor*********************************************************************************
-   /*!\name Constructor */
+   //**Constructors********************************************************************************
+   /*!\name Constructors */
    //@{
    explicit inline MatrixSerializer();
-   // No explicitly declared copy constructor.
    //@}
-   //**********************************************************************************************
-
-   //**Destructor**********************************************************************************
-   // No explicitly declared destructor.
-   //**********************************************************************************************
-
-   //**Assignment operators************************************************************************
-   // No explicitly declared copy assignment operator.
    //**********************************************************************************************
 
    //**Serialization functions*********************************************************************
@@ -330,7 +321,7 @@ class MatrixSerializer
 
 //=================================================================================================
 //
-//  CONSTRUCTOR
+//  CONSTRUCTORS
 //
 //=================================================================================================
 
@@ -457,12 +448,10 @@ template< typename Archive  // Type of the archive
         , bool SO >         // Storage order
 void MatrixSerializer::serializeMatrix( Archive& archive, const SparseMatrix<MT,SO>& mat )
 {
-   using ConstIterator = ConstIterator_t<MT>;
-
    if( IsRowMajorMatrix_v<MT> ) {
       for( size_t i=0UL; i<(~mat).rows(); ++i ) {
          archive << uint64_t( (~mat).nonZeros( i ) );
-         for( ConstIterator element=(~mat).begin(i); element!=(~mat).end(i); ++element ) {
+         for( auto element=(~mat).begin(i); element!=(~mat).end(i); ++element ) {
             archive << element->index() << element->value();
          }
       }
@@ -470,7 +459,7 @@ void MatrixSerializer::serializeMatrix( Archive& archive, const SparseMatrix<MT,
    else {
       for( size_t j=0UL; j<(~mat).columns(); ++j ) {
          archive << uint64_t( (~mat).nonZeros( j ) );
-         for( ConstIterator element=(~mat).begin(j); element!=(~mat).end(j); ++element ) {
+         for( auto element=(~mat).begin(j); element!=(~mat).end(j); ++element ) {
             archive << element->index() << element->value();
          }
       }

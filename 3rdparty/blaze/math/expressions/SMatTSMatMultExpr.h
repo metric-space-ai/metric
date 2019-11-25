@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/SMatTSMatMultExpr.h
 //  \brief Header file for the sparse matrix/transpose sparse matrix multiplication expression
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -42,11 +42,13 @@
 
 #include "../../math/Aliases.h"
 #include "../../math/constraints/ColumnMajorMatrix.h"
+#include "../../math/constraints/Identity.h"
 #include "../../math/constraints/MatMatMultExpr.h"
 #include "../../math/constraints/RequiresEvaluation.h"
 #include "../../math/constraints/RowMajorMatrix.h"
 #include "../../math/constraints/SparseMatrix.h"
 #include "../../math/constraints/Symmetric.h"
+#include "../../math/constraints/Zero.h"
 #include "../../math/Exception.h"
 #include "../../math/expressions/Computation.h"
 #include "../../math/expressions/Forward.h"
@@ -57,14 +59,10 @@
 #include "../../math/typetraits/IsColumnMajorMatrix.h"
 #include "../../math/typetraits/IsComputation.h"
 #include "../../math/typetraits/IsExpression.h"
-#include "../../math/typetraits/IsLower.h"
+#include "../../math/typetraits/IsIdentity.h"
 #include "../../math/typetraits/IsRowMajorMatrix.h"
-#include "../../math/typetraits/IsStrictlyLower.h"
-#include "../../math/typetraits/IsStrictlyUpper.h"
 #include "../../math/typetraits/IsSymmetric.h"
-#include "../../math/typetraits/IsUniLower.h"
-#include "../../math/typetraits/IsUniUpper.h"
-#include "../../math/typetraits/IsUpper.h"
+#include "../../math/typetraits/IsZero.h"
 #include "../../math/typetraits/RequiresEvaluation.h"
 #include "../../math/views/Check.h"
 #include "../../system/Thresholds.h"
@@ -74,10 +72,9 @@
 #include "../../util/EnableIf.h"
 #include "../../util/FunctionTrace.h"
 #include "../../util/IntegralConstant.h"
+#include "../../util/MaybeUnused.h"
 #include "../../util/mpl/If.h"
 #include "../../util/Types.h"
-#include "../../util/typetraits/RemoveReference.h"
-#include "../../util/Unused.h"
 
 
 namespace blaze {
@@ -98,7 +95,7 @@ namespace blaze {
 template< typename MT1    // Type of the left-hand side sparse matrix
         , typename MT2 >  // Type of the right-hand side sparse matrix
 class SMatTSMatMultExpr
-   : public MatMatMultExpr< SparseMatrix< SMatTSMatMultExpr<MT1,MT2>, false > >
+   : public MatMatMultExpr< SparseMatrix< SMatTSMatMultExpr<MT1,MT2>, IsIdentity_v<MT1> > >
    , private Computation
 {
  private:
@@ -127,7 +124,12 @@ class SMatTSMatMultExpr
 
  public:
    //**Type definitions****************************************************************************
-   using This          = SMatTSMatMultExpr<MT1,MT2>;   //!< Type of this SMatTSMatMultExpr instance.
+   //! Type of this SMatTSMatMultExpr instance.
+   using This = SMatTSMatMultExpr<MT1,MT2>;
+
+   //! Base type of this SMatTSMatMultExpr instance.
+   using BaseType = SparseMatrix< This, IsIdentity_v<MT1> >;
+
    using ResultType    = MultTrait_t<RT1,RT2>;         //!< Result type for expression template evaluations.
    using OppositeType  = OppositeType_t<ResultType>;   //!< Result type with opposite storage order for expression template evaluations.
    using TransposeType = TransposeType_t<ResultType>;  //!< Transpose type for expression template evaluations.
@@ -232,7 +234,7 @@ class SMatTSMatMultExpr
    // \return The number of non-zero elements of row \a i.
    */
    inline size_t nonZeros( size_t i ) const noexcept {
-      UNUSED_PARAMETER( i );
+      MAYBE_UNUSED( i );
       return 0UL;
    }
    //**********************************************************************************************
@@ -311,8 +313,8 @@ class SMatTSMatMultExpr
    // sparse matrix multiplication expression to a row-major matrix.
    */
    template< typename MT >  // Type of the target matrix
-   friend inline DisableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
-      assign( Matrix<MT,false>& lhs, const SMatTSMatMultExpr& rhs )
+   friend inline auto assign( Matrix<MT,false>& lhs, const SMatTSMatMultExpr& rhs )
+      -> DisableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -343,8 +345,8 @@ class SMatTSMatMultExpr
    // case the symmetry of either of the two matrix operands can be exploited.
    */
    template< typename MT >  // Type of the target matrix
-   friend inline EnableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
-      assign( Matrix<MT,false>& lhs, const SMatTSMatMultExpr& rhs )
+   friend inline auto assign( Matrix<MT,false>& lhs, const SMatTSMatMultExpr& rhs )
+      -> EnableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -370,8 +372,8 @@ class SMatTSMatMultExpr
    // sparse matrix multiplication expression to a column-major matrix.
    */
    template< typename MT >  // Type of the target matrix
-   friend inline DisableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
-      assign( Matrix<MT,true>& lhs, const SMatTSMatMultExpr& rhs )
+   friend inline auto assign( Matrix<MT,true>& lhs, const SMatTSMatMultExpr& rhs )
+      -> DisableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -404,8 +406,8 @@ class SMatTSMatMultExpr
    // compiler in case the symmetry of either of the two matrix operands can be exploited.
    */
    template< typename MT >  // Type of the target matrix
-   friend inline EnableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
-      assign( Matrix<MT,true>& lhs, const SMatTSMatMultExpr& rhs )
+   friend inline auto assign( Matrix<MT,true>& lhs, const SMatTSMatMultExpr& rhs )
+      -> EnableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -433,8 +435,8 @@ class SMatTSMatMultExpr
    // transpose sparse matrix multiplication expression to a row-major dense matrix.
    */
    template< typename MT >  // Type of the target dense matrix
-   friend inline DisableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
-      addAssign( DenseMatrix<MT,false>& lhs, const SMatTSMatMultExpr& rhs )
+   friend inline auto addAssign( DenseMatrix<MT,false>& lhs, const SMatTSMatMultExpr& rhs )
+      -> DisableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -465,8 +467,8 @@ class SMatTSMatMultExpr
    // compiler in case the symmetry of either of the two matrix operands can be exploited.
    */
    template< typename MT >  // Type of the target matrix
-   friend inline EnableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
-      addAssign( Matrix<MT,false>& lhs, const SMatTSMatMultExpr& rhs )
+   friend inline auto addAssign( Matrix<MT,false>& lhs, const SMatTSMatMultExpr& rhs )
+      -> EnableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -492,8 +494,8 @@ class SMatTSMatMultExpr
    // transpose sparse matrix multiplication expression to a column-major dense matrix.
    */
    template< typename MT >  // Type of the target dense matrix
-   friend inline DisableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
-      addAssign( DenseMatrix<MT,true>& lhs, const SMatTSMatMultExpr& rhs )
+   friend inline auto addAssign( DenseMatrix<MT,true>& lhs, const SMatTSMatMultExpr& rhs )
+      -> DisableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -526,8 +528,8 @@ class SMatTSMatMultExpr
    // compiler in case the symmetry of either of the two matrix operands can be exploited.
    */
    template< typename MT >  // Type of the target matrix
-   friend inline EnableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
-      addAssign( Matrix<MT,true>& lhs, const SMatTSMatMultExpr& rhs )
+   friend inline auto addAssign( Matrix<MT,true>& lhs, const SMatTSMatMultExpr& rhs )
+      -> EnableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -559,8 +561,8 @@ class SMatTSMatMultExpr
    // transpose sparse matrix multiplication expression to a row-major dense matrix.
    */
    template< typename MT >  // Type of the target dense matrix
-   friend inline DisableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
-      subAssign( DenseMatrix<MT,false>& lhs, const SMatTSMatMultExpr& rhs )
+   friend inline auto subAssign( DenseMatrix<MT,false>& lhs, const SMatTSMatMultExpr& rhs )
+      -> DisableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -591,8 +593,8 @@ class SMatTSMatMultExpr
    // by the compiler in case the symmetry of either of the two matrix operands can be exploited.
    */
    template< typename MT >  // Type of the target matrix
-   friend inline EnableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
-      subAssign( Matrix<MT,false>& lhs, const SMatTSMatMultExpr& rhs )
+   friend inline auto subAssign( Matrix<MT,false>& lhs, const SMatTSMatMultExpr& rhs )
+      -> EnableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -618,8 +620,8 @@ class SMatTSMatMultExpr
    // transpose sparse matrix multiplication expression to a column-major dense matrix.
    */
    template< typename MT >  // Type of the target dense matrix
-   friend inline DisableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
-      subAssign( DenseMatrix<MT,true>& lhs, const SMatTSMatMultExpr& rhs )
+   friend inline auto subAssign( DenseMatrix<MT,true>& lhs, const SMatTSMatMultExpr& rhs )
+      -> DisableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -652,8 +654,8 @@ class SMatTSMatMultExpr
    // compiler in case the symmetry of either of the two matrix operands can be exploited.
    */
    template< typename MT >  // Type of the target matrix
-   friend inline EnableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
-      subAssign( Matrix<MT,true>& lhs, const SMatTSMatMultExpr& rhs )
+   friend inline auto subAssign( Matrix<MT,true>& lhs, const SMatTSMatMultExpr& rhs )
+      -> EnableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -691,7 +693,6 @@ class SMatTSMatMultExpr
       BLAZE_FUNCTION_TRACE;
 
       BLAZE_CONSTRAINT_MUST_BE_SPARSE_MATRIX_TYPE( ResultType );
-      BLAZE_CONSTRAINT_MUST_BE_ROW_MAJOR_MATRIX_TYPE( ResultType );
       BLAZE_CONSTRAINT_MUST_NOT_REQUIRE_EVALUATION( ResultType );
 
       BLAZE_INTERNAL_ASSERT( (~lhs).rows()    == rhs.rows()   , "Invalid number of rows"    );
@@ -731,8 +732,8 @@ class SMatTSMatMultExpr
    // compiler in case the symmetry of either of the two matrix operands can be exploited.
    */
    template< typename MT >  // Type of the target matrix
-   friend inline DisableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
-      smpAssign( Matrix<MT,false>& lhs, const SMatTSMatMultExpr& rhs )
+   friend inline auto smpAssign( Matrix<MT,false>& lhs, const SMatTSMatMultExpr& rhs )
+      -> DisableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -763,8 +764,8 @@ class SMatTSMatMultExpr
    // case the symmetry of either of the two matrix operands can be exploited.
    */
    template< typename MT >  // Type of the target matrix
-   friend inline EnableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
-      smpAssign( Matrix<MT,false>& lhs, const SMatTSMatMultExpr& rhs )
+   friend inline auto smpAssign( Matrix<MT,false>& lhs, const SMatTSMatMultExpr& rhs )
+      -> EnableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -792,8 +793,8 @@ class SMatTSMatMultExpr
    // compiler in case the symmetry of either of the two matrix operands can be exploited.
    */
    template< typename MT >  // Type of the target matrix
-   friend inline DisableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
-      smpAssign( Matrix<MT,true>& lhs, const SMatTSMatMultExpr& rhs )
+   friend inline auto smpAssign( Matrix<MT,true>& lhs, const SMatTSMatMultExpr& rhs )
+      -> DisableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -826,8 +827,8 @@ class SMatTSMatMultExpr
    // compiler in case the symmetry of either of the two matrix operands can be exploited.
    */
    template< typename MT >  // Type of the target matrix
-   friend inline EnableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
-      smpAssign( Matrix<MT,true>& lhs, const SMatTSMatMultExpr& rhs )
+   friend inline auto smpAssign( Matrix<MT,true>& lhs, const SMatTSMatMultExpr& rhs )
+      -> EnableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -857,8 +858,8 @@ class SMatTSMatMultExpr
    // by the compiler in case the symmetry of either of the two matrix operands can be exploited.
    */
    template< typename MT >  // Type of the target dense matrix
-   friend inline DisableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
-      smpAddAssign( DenseMatrix<MT,false>& lhs, const SMatTSMatMultExpr& rhs )
+   friend inline auto smpAddAssign( DenseMatrix<MT,false>& lhs, const SMatTSMatMultExpr& rhs )
+      -> DisableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -889,8 +890,8 @@ class SMatTSMatMultExpr
    // by the compiler in case the symmetry of either of the two matrix operands can be exploited.
    */
    template< typename MT >  // Type of the target dense matrix
-   friend inline DisableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
-      smpAddAssign( DenseMatrix<MT,true>& lhs, const SMatTSMatMultExpr& rhs )
+   friend inline auto smpAddAssign( DenseMatrix<MT,true>& lhs, const SMatTSMatMultExpr& rhs )
+      -> DisableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -923,8 +924,8 @@ class SMatTSMatMultExpr
    // by the compiler in case the symmetry of either of the two matrix operands can be exploited.
    */
    template< typename MT >  // Type of the target matrix
-   friend inline EnableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
-      smpAddAssign( Matrix<MT,false>& lhs, const SMatTSMatMultExpr& rhs )
+   friend inline auto smpAddAssign( Matrix<MT,false>& lhs, const SMatTSMatMultExpr& rhs )
+      -> EnableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -952,8 +953,8 @@ class SMatTSMatMultExpr
    // by the compiler in case the symmetry of either of the two matrix operands can be exploited.
    */
    template< typename MT >  // Type of the target matrix
-   friend inline EnableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
-      smpAddAssign( Matrix<MT,true>& lhs, const SMatTSMatMultExpr& rhs )
+   friend inline auto smpAddAssign( Matrix<MT,true>& lhs, const SMatTSMatMultExpr& rhs )
+      -> EnableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -987,8 +988,8 @@ class SMatTSMatMultExpr
    // the compiler in case the symmetry of either of the two matrix operands can be exploited.
    */
    template< typename MT >  // Type of the target dense matrix
-   friend inline DisableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
-      smpSubAssign( DenseMatrix<MT,false>& lhs, const SMatTSMatMultExpr& rhs )
+   friend inline auto smpSubAssign( DenseMatrix<MT,false>& lhs, const SMatTSMatMultExpr& rhs )
+      -> DisableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -1019,8 +1020,8 @@ class SMatTSMatMultExpr
    // by the compiler in case the symmetry of either of the two matrix operands can be exploited.
    */
    template< typename MT >  // Type of the target dense matrix
-   friend inline DisableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
-      smpSubAssign( DenseMatrix<MT,true>& lhs, const SMatTSMatMultExpr& rhs )
+   friend inline auto smpSubAssign( DenseMatrix<MT,true>& lhs, const SMatTSMatMultExpr& rhs )
+      -> DisableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -1053,8 +1054,8 @@ class SMatTSMatMultExpr
    // the compiler in case the symmetry of either of the two matrix operands can be exploited.
    */
    template< typename MT >  // Type of the target matrix
-   friend inline EnableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
-      smpSubAssign( Matrix<MT,false>& lhs, const SMatTSMatMultExpr& rhs )
+   friend inline auto smpSubAssign( Matrix<MT,false>& lhs, const SMatTSMatMultExpr& rhs )
+      -> EnableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -1082,8 +1083,8 @@ class SMatTSMatMultExpr
    // by the compiler in case the symmetry of either of the two matrix operands can be exploited.
    */
    template< typename MT >  // Type of the target matrix
-   friend inline EnableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
-      smpSubAssign( Matrix<MT,true>& lhs, const SMatTSMatMultExpr& rhs )
+   friend inline auto smpSubAssign( Matrix<MT,true>& lhs, const SMatTSMatMultExpr& rhs )
+      -> EnableIf_t< CanExploitSymmetry_v<MT,MT1,MT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -1121,7 +1122,6 @@ class SMatTSMatMultExpr
       BLAZE_FUNCTION_TRACE;
 
       BLAZE_CONSTRAINT_MUST_BE_SPARSE_MATRIX_TYPE( ResultType );
-      BLAZE_CONSTRAINT_MUST_BE_ROW_MAJOR_MATRIX_TYPE( ResultType );
       BLAZE_CONSTRAINT_MUST_NOT_REQUIRE_EVALUATION( ResultType );
 
       BLAZE_INTERNAL_ASSERT( (~lhs).rows()    == rhs.rows()   , "Invalid number of rows"    );
@@ -1149,8 +1149,10 @@ class SMatTSMatMultExpr
    /*! \cond BLAZE_INTERNAL */
    BLAZE_CONSTRAINT_MUST_BE_SPARSE_MATRIX_TYPE( MT1 );
    BLAZE_CONSTRAINT_MUST_BE_ROW_MAJOR_MATRIX_TYPE( MT1 );
+   BLAZE_CONSTRAINT_MUST_NOT_BE_ZERO_TYPE( MT1 );
    BLAZE_CONSTRAINT_MUST_BE_SPARSE_MATRIX_TYPE( MT2 );
    BLAZE_CONSTRAINT_MUST_BE_COLUMN_MAJOR_MATRIX_TYPE( MT2 );
+   BLAZE_CONSTRAINT_MUST_NOT_BE_ZERO_TYPE( MT2 );
    BLAZE_CONSTRAINT_MUST_FORM_VALID_MATMATMULTEXPR( MT1, MT2 );
    /*! \endcond */
    //**********************************************************************************************
@@ -1165,6 +1167,175 @@ class SMatTSMatMultExpr
 //  GLOBAL BINARY ARITHMETIC OPERATORS
 //
 //=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Backend implementation of the multiplication between a row-major sparse matrix and a
+//        column-major sparse matrix (\f$ A=B*C \f$).
+// \ingroup sparse_matrix
+//
+// \param lhs The left-hand side sparse matrix for the multiplication.
+// \param rhs The right-hand side sparse matrix for the multiplication.
+// \return The product of the two matrices.
+//
+// This function implements a performance optimized treatment of the multiplication between a
+// row-major sparse matrix and a column-major spares matrix.
+*/
+template< typename MT1  // Type of the left-hand side sparse matrix
+        , typename MT2  // Type of the right-hand side sparse matrix
+        , DisableIf_t< ( ( IsIdentity_v<MT1> || IsIdentity_v<MT2> ) &&
+                         IsSame_v< ElementType_t<MT1>, ElementType_t<MT2> > ) ||
+                       ( IsIdentity_v<MT1> && IsIdentity_v<MT2> ) ||
+                       ( IsZero_v<MT1> || IsZero_v<MT2> ) >* = nullptr >
+inline const SMatTSMatMultExpr<MT1,MT2>
+   smattsmatmult( const SparseMatrix<MT1,false>& lhs, const SparseMatrix<MT2,true>& rhs )
+{
+   BLAZE_FUNCTION_TRACE;
+
+   BLAZE_INTERNAL_ASSERT( (~lhs).columns() == (~rhs).rows(), "Invalid matrix sizes" );
+
+   return SMatTSMatMultExpr<MT1,MT2>( ~lhs, ~rhs );
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Backend implementation of the multiplication between a row-major sparse matrix and
+//        a column-major identity matrix (\f$ A=B*C \f$).
+// \ingroup sparse_matrix
+//
+// \param lhs The left-hand side sparse matrix for the multiplication.
+// \param rhs The right-hand side identity matrix for the multiplication.
+// \return Reference to the left-hand side sparse matrix.
+//
+// This function implements a performance optimized treatment of the multiplication between
+// a row-major sparse matrix and a column-major identity matrix. It returns a reference to the
+// left-hand side sparse matrix.
+*/
+template< typename MT1  // Type of the left-hand side sparse matrix
+        , typename MT2  // Type of the right-hand side sparse matrix
+        , EnableIf_t< !IsIdentity_v<MT1> && IsIdentity_v<MT2> &&
+                      IsSame_v< ElementType_t<MT1>, ElementType_t<MT2> > >* = nullptr >
+inline const MT1&
+   smattsmatmult( const SparseMatrix<MT1,false>& lhs, const SparseMatrix<MT2,true>& rhs )
+{
+   BLAZE_FUNCTION_TRACE;
+
+   MAYBE_UNUSED( rhs );
+
+   BLAZE_INTERNAL_ASSERT( (~lhs).columns() == (~rhs).rows(), "Invalid matrix sizes" );
+
+   return (~lhs);
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Backend implementation of the multiplication between a row-major identity matrix and
+//        a column-major sparse matrix (\f$ A=B*C \f$).
+// \ingroup sparse_matrix
+//
+// \param lhs The left-hand side identity matrix for the multiplication.
+// \param rhs The right-hand side sparse matrix for the multiplication.
+// \return Reference to the right-hand side sparse matrix.
+//
+// This function implements a performance optimized treatment of the multiplication between
+// a row-major identity matrix and a column-major sparse matrix. It returns a reference to the
+// right-hand side sparse matrix.
+*/
+template< typename MT1  // Type of the left-hand side sparse matrix
+        , typename MT2  // Type of the right-hand side sparse matrix
+        , EnableIf_t< IsIdentity_v<MT1> && !IsIdentity_v<MT2> &&
+                      IsSame_v< ElementType_t<MT1>, ElementType_t<MT2> > >* = nullptr >
+inline const MT2&
+   smattsmatmult( const SparseMatrix<MT1,false>& lhs, const SparseMatrix<MT2,true>& rhs )
+{
+   BLAZE_FUNCTION_TRACE;
+
+   MAYBE_UNUSED( lhs );
+
+   BLAZE_INTERNAL_ASSERT( (~lhs).columns() == (~rhs).rows(), "Invalid matrix sizes" );
+
+   return (~rhs);
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Backend implementation of the multiplication between a row-major identity matrix and
+//        a column-major identity matrix (\f$ A=B*C \f$).
+// \ingroup sparse_matrix
+//
+// \param lhs The left-hand side identity matrix for the multiplication.
+// \param rhs The right-hand side identity matrix for the multiplication.
+// \return The resulting identity matrix.
+//
+// This function implements a performance optimized treatment of the multiplication between a
+// row-major identity matrix and a column-major identity matrix. It returns an identity matrix.
+*/
+template< typename MT1  // Type of the left-hand side sparse matrix
+        , typename MT2  // Type of the right-hand side sparse matrix
+        , EnableIf_t< IsIdentity_v<MT1> && IsIdentity_v<MT2> >* = nullptr >
+inline decltype(auto)
+   smattsmatmult( const SparseMatrix<MT1,false>& lhs, const SparseMatrix<MT2,true>& rhs )
+{
+   BLAZE_FUNCTION_TRACE;
+
+   MAYBE_UNUSED( rhs );
+
+   BLAZE_INTERNAL_ASSERT( (~lhs).columns() == (~rhs).rows(), "Invalid matrix sizes" );
+
+   using ReturnType = const MultTrait_t< ResultType_t<MT1>, ResultType_t<MT2> >;
+
+   BLAZE_CONSTRAINT_MUST_BE_ROW_MAJOR_MATRIX_TYPE( ReturnType );
+   BLAZE_CONSTRAINT_MUST_BE_IDENTITY_MATRIX_TYPE( ReturnType );
+
+   return ReturnType( (~lhs).rows() );
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Backend implementation of the multiplication between a row-major (zero) sparse matrix
+//        and a column-major (zero) sparse matrix (\f$ A=B*C \f$).
+// \ingroup sparse_matrix
+//
+// \param lhs The left-hand side sparse matrix for the multiplication.
+// \param rhs The right-hand side sparse matrix for the multiplication.
+// \return The resulting zero matrix.
+//
+// This function implements a performance optimized treatment of the multiplication between a
+// row-major (zero) sparse matrix and a column-major (zero) sparse matrix. It returns a zero
+// matrix.
+*/
+template< typename MT1  // Type of the left-hand side sparse matrix
+        , typename MT2  // Type of the right-hand side sparse matrix
+        , EnableIf_t< IsZero_v<MT1> || IsZero_v<MT2> >* = nullptr >
+inline decltype(auto)
+   smattsmatmult( const SparseMatrix<MT1,false>& lhs, const SparseMatrix<MT2,true>& rhs )
+{
+   BLAZE_FUNCTION_TRACE;
+
+   BLAZE_INTERNAL_ASSERT( (~lhs).columns() == (~rhs).rows(), "Invalid matrix sizes" );
+
+   using ReturnType = const MultTrait_t< ResultType_t<MT1>, ResultType_t<MT2> >;
+
+   BLAZE_CONSTRAINT_MUST_BE_MATRIX_WITH_STORAGE_ORDER( ReturnType, !IsZero_v<MT1> );
+   BLAZE_CONSTRAINT_MUST_BE_ZERO_TYPE( ReturnType );
+
+   return ReturnType( (~lhs).rows(), (~rhs).columns() );
+}
+/*! \endcond */
+//*************************************************************************************************
+
 
 //*************************************************************************************************
 /*!\brief Multiplication operator for the multiplication of a row-major sparse matrix and a
@@ -1207,119 +1378,8 @@ inline decltype(auto)
       BLAZE_THROW_INVALID_ARGUMENT( "Matrix sizes do not match" );
    }
 
-   using ReturnType = const SMatTSMatMultExpr<MT1,MT2>;
-   return ReturnType( ~lhs, ~rhs );
+   return smattsmatmult( ~lhs, ~rhs );
 }
-//*************************************************************************************************
-
-
-
-
-//=================================================================================================
-//
-//  ISLOWER SPECIALIZATIONS
-//
-//=================================================================================================
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-template< typename MT1, typename MT2 >
-struct IsLower< SMatTSMatMultExpr<MT1,MT2> >
-   : public BoolConstant< IsLower_v<MT1> && IsLower_v<MT2> >
-{};
-/*! \endcond */
-//*************************************************************************************************
-
-
-
-
-//=================================================================================================
-//
-//  ISUNILOWER SPECIALIZATIONS
-//
-//=================================================================================================
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-template< typename MT1, typename MT2 >
-struct IsUniLower< SMatTSMatMultExpr<MT1,MT2> >
-   : public BoolConstant< IsUniLower_v<MT1> && IsUniLower_v<MT2> >
-{};
-/*! \endcond */
-//*************************************************************************************************
-
-
-
-
-//=================================================================================================
-//
-//  ISSTRICTLYLOWER SPECIALIZATIONS
-//
-//=================================================================================================
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-template< typename MT1, typename MT2 >
-struct IsStrictlyLower< SMatTSMatMultExpr<MT1,MT2> >
-   : public BoolConstant< ( IsStrictlyLower_v<MT1> && IsLower_v<MT2> ) ||
-                          ( IsStrictlyLower_v<MT2> && IsLower_v<MT1> ) >
-{};
-/*! \endcond */
-//*************************************************************************************************
-
-
-
-
-//=================================================================================================
-//
-//  ISUPPER SPECIALIZATIONS
-//
-//=================================================================================================
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-template< typename MT1, typename MT2 >
-struct IsUpper< SMatTSMatMultExpr<MT1,MT2> >
-   : public BoolConstant< IsUpper_v<MT1> && IsUpper_v<MT2> >
-{};
-/*! \endcond */
-//*************************************************************************************************
-
-
-
-
-//=================================================================================================
-//
-//  ISUNIUPPER SPECIALIZATIONS
-//
-//=================================================================================================
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-template< typename MT1, typename MT2 >
-struct IsUniUpper< SMatTSMatMultExpr<MT1,MT2> >
-   : public BoolConstant< IsUniUpper_v<MT1> && IsUniUpper_v<MT2> >
-{};
-/*! \endcond */
-//*************************************************************************************************
-
-
-
-
-//=================================================================================================
-//
-//  ISSTRICTLYUPPER SPECIALIZATIONS
-//
-//=================================================================================================
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-template< typename MT1, typename MT2 >
-struct IsStrictlyUpper< SMatTSMatMultExpr<MT1,MT2> >
-   : public BoolConstant< ( IsStrictlyUpper_v<MT1> && IsUpper_v<MT2> ) ||
-                          ( IsStrictlyUpper_v<MT2> && IsUpper_v<MT1> ) >
-{};
-/*! \endcond */
 //*************************************************************************************************
 
 } // namespace blaze

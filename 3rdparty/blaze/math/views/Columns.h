@@ -3,7 +3,7 @@
 //  \file blaze/math/views/Columns.h
 //  \brief Header file for the implementation of the Columns view
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -40,8 +40,8 @@
 // Includes
 //*************************************************************************************************
 
-#include <algorithm>
 #include <array>
+#include <utility>
 #include <vector>
 #include "../../math/Aliases.h"
 #include "../../math/AlignmentFlag.h"
@@ -52,6 +52,7 @@
 #include "../../math/expressions/MatEvalExpr.h"
 #include "../../math/expressions/MatMapExpr.h"
 #include "../../math/expressions/MatMatAddExpr.h"
+#include "../../math/expressions/MatMatKronExpr.h"
 #include "../../math/expressions/MatMatMapExpr.h"
 #include "../../math/expressions/MatMatMultExpr.h"
 #include "../../math/expressions/MatMatSubExpr.h"
@@ -63,6 +64,7 @@
 #include "../../math/expressions/MatTransExpr.h"
 #include "../../math/expressions/SchurExpr.h"
 #include "../../math/expressions/TVecMatMultExpr.h"
+#include "../../math/expressions/VecExpandExpr.h"
 #include "../../math/expressions/VecTVecMultExpr.h"
 #include "../../math/InitializerList.h"
 #include "../../math/IntegerSequence.h"
@@ -74,6 +76,8 @@
 #include "../../math/typetraits/HasConstDataAccess.h"
 #include "../../math/typetraits/HasMutableDataAccess.h"
 #include "../../math/typetraits/IsAligned.h"
+#include "../../math/typetraits/IsColumnMajorMatrix.h"
+#include "../../math/typetraits/IsColumns.h"
 #include "../../math/typetraits/IsRestricted.h"
 #include "../../math/typetraits/MaxSize.h"
 #include "../../math/typetraits/Size.h"
@@ -87,11 +91,13 @@
 #include "../../util/EnableIf.h"
 #include "../../util/DisableIf.h"
 #include "../../util/FunctionTrace.h"
-#include "../../util/mpl/PtrdiffT.h"
-#include "../../util/SmallVector.h"
+#include "../../util/IntegralConstant.h"
+#include "../../util/MaybeUnused.h"
+#include "../../util/SmallArray.h"
 #include "../../util/TypeList.h"
 #include "../../util/Types.h"
-#include "../../util/Unused.h"
+#include "../../util/typetraits/IsPointer.h"
+#include "../../util/typetraits/RemoveReference.h"
 
 
 namespace blaze {
@@ -146,7 +152,7 @@ inline decltype(auto) columns( Matrix<MT,SO>& matrix, RCAs... args )
 {
    BLAZE_FUNCTION_TRACE;
 
-   using ReturnType = Columns_<MT,I,Is...>;
+   using ReturnType = Columns_< MT, index_sequence<I,Is...> >;
    return ReturnType( ~matrix, args... );
 }
 //*************************************************************************************************
@@ -196,7 +202,7 @@ inline decltype(auto) columns( const Matrix<MT,SO>& matrix, RCAs... args )
 {
    BLAZE_FUNCTION_TRACE;
 
-   using ReturnType = const Columns_<const MT,I,Is...>;
+   using ReturnType = const Columns_< const MT, index_sequence<I,Is...> >;
    return ReturnType( ~matrix, args... );
 }
 //*************************************************************************************************
@@ -225,7 +231,7 @@ inline decltype(auto) columns( Matrix<MT,SO>&& matrix, RCAs... args )
 {
    BLAZE_FUNCTION_TRACE;
 
-   using ReturnType = Columns_<MT,I,Is...>;
+   using ReturnType = Columns_< MT, index_sequence<I,Is...> >;
    return ReturnType( ~matrix, args... );
 }
 //*************************************************************************************************
@@ -256,7 +262,7 @@ inline decltype(auto) columns( Matrix<MT,SO>&& matrix, RCAs... args )
    auto columns1 = columns( D, indices1.data(), indices1.size() );
 
    // Creating a view on the 4th and 2nd column of the sparse matrix S
-   const std::array<size_t,2uL> indices2{ 4UL, 2UL };
+   const std::array<size_t,2UL> indices2{ 4UL, 2UL };
    auto columns2 = columns( S, indices2.data(), indices2.size() );
    \endcode
 
@@ -274,7 +280,7 @@ template< typename MT         // Type of the matrix
         , bool SO             // Storage order
         , typename T          // Type of the column indices
         , typename... RCAs >  // Optional arguments
-inline decltype(auto) columns( Matrix<MT,SO>& matrix, const T* indices, size_t n, RCAs... args )
+inline decltype(auto) columns( Matrix<MT,SO>& matrix, T* indices, size_t n, RCAs... args )
 {
    BLAZE_FUNCTION_TRACE;
 
@@ -310,7 +316,7 @@ inline decltype(auto) columns( Matrix<MT,SO>& matrix, const T* indices, size_t n
    auto columns1 = columns( D, indices1.data(), indices1.size() );
 
    // Creating a view on the 4th and 2nd column of the sparse matrix S
-   const std::array<size_t,2uL> indices2{ 4UL, 2UL };
+   const std::array<size_t,2UL> indices2{ 4UL, 2UL };
    auto columns2 = columns( S, indices2.data(), indices2.size() );
    \endcode
 
@@ -328,7 +334,7 @@ template< typename MT         // Type of the matrix
         , bool SO             // Storage order
         , typename T          // Type of the column indices
         , typename... RCAs >  // Optional arguments
-inline decltype(auto) columns( const Matrix<MT,SO>& matrix, const T* indices, size_t n, RCAs... args )
+inline decltype(auto) columns( const Matrix<MT,SO>& matrix, T* indices, size_t n, RCAs... args )
 {
    BLAZE_FUNCTION_TRACE;
 
@@ -357,7 +363,7 @@ template< typename MT         // Type of the matrix
         , bool SO             // Storage order
         , typename T          // Type of the column indices
         , typename... RCAs >  // Optional arguments
-inline decltype(auto) columns( Matrix<MT,SO>&& matrix, const T* indices, size_t n, RCAs... args )
+inline decltype(auto) columns( Matrix<MT,SO>&& matrix, T* indices, size_t n, RCAs... args )
 {
    BLAZE_FUNCTION_TRACE;
 
@@ -368,7 +374,139 @@ inline decltype(auto) columns( Matrix<MT,SO>&& matrix, const T* indices, size_t 
 
 
 //*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
+/*!\brief Creating a view on a selection of columns of the given matrix.
+// \ingroup columns
+//
+// \param matrix The matrix containing the columns.
+// \param p Callable producing the indices.
+// \param n The total number of indices.
+// \param args Optional arguments.
+// \return View on the specified columns of the matrix.
+// \exception std::invalid_argument Invalid column access index.
+//
+// This function returns an expression representing a selection of columns of the given matrix.
+
+   \code
+   using blaze::columnMajor;
+
+   blaze::DynamicMatrix<double,columnMajor> D;
+   blaze::CompressedMatrix<double,columnMajor> S;
+   // ... Resizing and initialization
+
+   // Creating a view on the 1st and 3rd column of the dense matrix D
+   auto columns1 = columns( D, []( size_t i ){ return 2UL*i + 1UL; }, 2UL );
+
+   // Creating a view on the 4th and 2nd column of the sparse matrix S
+   auto columns2 = columns( S, []( size_t i ){ return 4UL - 2UL*i; }, 2UL );
+   \endcode
+
+// By default, the provided column indices are checked at runtime. In case any column is not
+// properly specified (i.e. if any specified index is greater than or equal to the total number
+// of columns in the given matrix) a \a std::invalid_argument exception is thrown. The checks
+// can be skipped by providing the optional \a blaze::unchecked argument.
+
+   \code
+   auto columns1 = columns( D, []( size_t i ){ return 2UL*i + 1UL; }, 2UL, unchecked );
+   auto columns2 = columns( S, []( size_t i ){ return 4UL - 2UL*i; }, 2UL, unchecked );
+   \endcode
+*/
+template< typename MT         // Type of the matrix
+        , bool SO             // Storage order
+        , typename P          // Type of the index producer
+        , typename... RCAs >  // Optional arguments
+inline decltype(auto) columns( Matrix<MT,SO>& matrix, P p, size_t n, RCAs... args )
+{
+   BLAZE_FUNCTION_TRACE;
+
+   using ReturnType = Columns_<MT,P>;
+   return ReturnType( ~matrix, p, n, args... );
+}
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*!\brief Creating a view on a selection of columns of the given constant matrix.
+// \ingroup columns
+//
+// \param matrix The constant matrix containing the columns.
+// \param p Callable producing the indices.
+// \param n The total number of indices.
+// \param args Optional arguments.
+// \return View on the specified columns of the matrix.
+// \exception std::invalid_argument Invalid column access index.
+//
+// This function returns an expression representing a selection of columns of the given constant
+// matrix.
+
+   \code
+   using blaze::columnMajor;
+
+   blaze::DynamicMatrix<double,columnMajor> D;
+   blaze::CompressedMatrix<double,columnMajor> S;
+   // ... Resizing and initialization
+
+   // Creating a view on the 1st and 3rd column of the dense matrix D
+   auto columns1 = columns( D, []( size_t i ){ return 2UL*i + 1UL; }, 2UL );
+
+   // Creating a view on the 4th and 2nd column of the sparse matrix S
+   const std::array<size_t,2UL> indices2{ 4UL, 2UL };
+   auto columns2 = columns( S, []( size_t i ){ return 4UL - 2UL*i; }, 2UL );
+   \endcode
+
+// By default, the provided column indices are checked at runtime. In case any column is not
+// properly specified (i.e. if any specified index is greater than or equal to the total number
+// of columns in the given matrix) a \a std::invalid_argument exception is thrown. The checks
+// can be skipped by providing the optional \a blaze::unchecked argument.
+
+   \code
+   auto columns1 = columns( D, []( size_t i ){ return 2UL*i + 1UL; }, 2UL, unchecked );
+   auto columns2 = columns( S, []( size_t i ){ return 4UL - 2UL*i; }, 2UL, unchecked );
+   \endcode
+*/
+template< typename MT         // Type of the matrix
+        , bool SO             // Storage order
+        , typename P          // Type of the index producer
+        , typename... RCAs >  // Optional arguments
+inline decltype(auto) columns( const Matrix<MT,SO>& matrix, P p, size_t n, RCAs... args )
+{
+   BLAZE_FUNCTION_TRACE;
+
+   using ReturnType = const Columns_<const MT,P>;
+   return ReturnType( ~matrix, p, n, args... );
+}
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*!\brief Creating a view on a selection of columns of the given temporary matrix.
+// \ingroup columns
+//
+// \param matrix The temporary matrix containing the columns.
+// \param p Callable producing the indices.
+// \param n The total number of indices.
+// \param args Optional arguments.
+// \exception std::invalid_argument Invalid column access index.
+//
+// This function returns an expression representing a selection of columns of the given temporary
+// matrix. In case any column is not properly specified (i.e. if any specified index is greater
+// than or equal to the total number of columns in the given matrix) a \a std::invalid_argument
+// exception is thrown.
+*/
+template< typename MT         // Type of the matrix
+        , bool SO             // Storage order
+        , typename P          // Type of the index producer
+        , typename... RCAs >  // Optional arguments
+inline decltype(auto) columns( Matrix<MT,SO>&& matrix, P p, size_t n, RCAs... args )
+{
+   BLAZE_FUNCTION_TRACE;
+
+   using ReturnType = Columns_<MT,P>;
+   return ReturnType( ~matrix, p, n, args... );
+}
+//*************************************************************************************************
+
+
+//*************************************************************************************************
 /*!\brief Creating a view on a selection of columns of the given matrix.
 // \ingroup columns
 //
@@ -379,9 +517,31 @@ inline decltype(auto) columns( Matrix<MT,SO>&& matrix, const T* indices, size_t 
 // \exception std::invalid_argument Invalid column access index.
 //
 // This function returns an expression representing a selection of columns of the given matrix.
-// In case any column is not properly specified (i.e. if any specified index is greater than or
-// equal to the total number of columns in the given matrix) a \a std::invalid_argument exception
-// is thrown.
+
+   \code
+   using blaze::columnMajor;
+   using blaze::index_sequence;
+
+   blaze::DynamicMatrix<double,columnMajor> D;
+   blaze::CompressedMatrix<double,columnMajor> S;
+   // ... Resizing and initialization
+
+   // Creating a view on the 1st and 3rd column of the dense matrix D
+   auto columns1 = columns( D, index_sequence<1UL,3UL>() );
+
+   // Creating a view on the 4th and 2nd column of the sparse matrix S
+   auto columns2 = columns( S, index_sequence<4UL,2UL>() );
+   \endcode
+
+// By default, the provided column indices are checked at runtime. In case any column is not
+// properly specified (i.e. if any specified index is greater than or equal to the total number
+// of columns in the given matrix) a \a std::invalid_argument exception is thrown. The checks
+// can be skipped by providing the optional \a blaze::unchecked argument.
+
+   \code
+   auto columns1 = columns( D, index_sequence<1UL,3UL>(), unchecked );
+   auto columns2 = columns( S, index_sequence<4UL,2UL>(), unchecked );
+   \endcode
 */
 template< typename MT         // Type of the matrix
         , size_t... Is        // Column indices
@@ -390,16 +550,14 @@ inline decltype(auto) columns( MT&& matrix, index_sequence<Is...> indices, RCAs.
 {
    BLAZE_FUNCTION_TRACE;
 
-   UNUSED_PARAMETER( indices );
+   MAYBE_UNUSED( indices );
 
    return columns<Is...>( std::forward<MT>( matrix ), args... );
 }
-/*! \endcond */
 //*************************************************************************************************
 
 
 //*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
 /*!\brief Creating a view on a selection of columns of the given matrix.
 // \ingroup columns
 //
@@ -410,9 +568,30 @@ inline decltype(auto) columns( MT&& matrix, index_sequence<Is...> indices, RCAs.
 // \exception std::invalid_argument Invalid column access index.
 //
 // This function returns an expression representing a selection of columns of the given matrix.
-// In case any column is not properly specified (i.e. if any specified index is greater than or
-// equal to the total number of columns in the given matrix) a \a std::invalid_argument exception
-// is thrown.
+
+   \code
+   using blaze::columnMajor;
+
+   blaze::DynamicMatrix<double,columnMajor> D;
+   blaze::CompressedMatrix<double,columnMajor> S;
+   // ... Resizing and initialization
+
+   // Creating a view on the 1st and 3rd column of the dense matrix D
+   auto columns1 = columns( D, { 1UL, 3UL } );
+
+   // Creating a view on the 4th and 2nd column of the sparse matrix S
+   auto columns2 = columns( S, { 4UL, 2UL } );
+   \endcode
+
+// By default, the provided column indices are checked at runtime. In case any column is not
+// properly specified (i.e. if any specified index is greater than or equal to the total number
+// of columns in the given matrix) a \a std::invalid_argument exception is thrown. The checks
+// can be skipped by providing the optional \a blaze::unchecked argument.
+
+   \code
+   auto columns1 = columns( D, { 1UL, 3UL }, unchecked );
+   auto columns2 = columns( S, { 4UL, 2UL }, unchecked );
+   \endcode
 */
 template< typename MT         // Type of the matrix
         , typename T          // Type of the column indices
@@ -423,12 +602,10 @@ inline decltype(auto) columns( MT&& matrix, initializer_list<T> indices, RCAs...
 
    return columns( std::forward<MT>( matrix ), indices.begin(), indices.size(), args... );
 }
-/*! \endcond */
 //*************************************************************************************************
 
 
 //*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
 /*!\brief Creating a view on a selection of columns of the given matrix.
 // \ingroup columns
 //
@@ -439,9 +616,32 @@ inline decltype(auto) columns( MT&& matrix, initializer_list<T> indices, RCAs...
 // \exception std::invalid_argument Invalid column access index.
 //
 // This function returns an expression representing a selection of columns of the given matrix.
-// In case any column is not properly specified (i.e. if any specified index is greater than or
-// equal to the total number of columns in the given matrix) a \a std::invalid_argument exception
-// is thrown.
+
+   \code
+   using blaze::columnMajor;
+
+   blaze::DynamicMatrix<double,columnMajor> D;
+   blaze::CompressedMatrix<double,columnMajor> S;
+   // ... Resizing and initialization
+
+   // Creating a view on the 1st and 3rd column of the dense matrix D
+   const std::array<size_t,2UL> indices1{ 1UL, 3UL };
+   auto columns1 = columns( D, indices1 );
+
+   // Creating a view on the 4th and 2nd column of the sparse matrix S
+   const std::array<size_t,2UL> indices2{ 4UL, 2UL };
+   auto columns2 = columns( S, indices2 );
+   \endcode
+
+// By default, the provided column indices are checked at runtime. In case any column is not
+// properly specified (i.e. if any specified index is greater than or equal to the total number
+// of columns in the given matrix) a \a std::invalid_argument exception is thrown. The checks
+// can be skipped by providing the optional \a blaze::unchecked argument.
+
+   \code
+   auto columns1 = columns( D, indices1, unchecked );
+   auto columns2 = columns( S, indices2, unchecked );
+   \endcode
 */
 template< typename MT         // Type of the matrix
         , typename T          // Type of the column indices
@@ -453,7 +653,56 @@ inline decltype(auto) columns( MT&& matrix, const std::array<T,N>& indices, RCAs
 
    return columns( std::forward<MT>( matrix ), indices.data(), N, args... );
 }
-/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*!\brief Creating a view on a selection of columns of the given matrix.
+// \ingroup columns
+//
+// \param matrix The matrix containing the columns.
+// \param indices The vector of column indices.
+// \param args Optional arguments.
+// \return View on the specified columns of the matrix.
+// \exception std::invalid_argument Invalid column access index.
+//
+// This function returns an expression representing a selection of columns of the given matrix.
+
+   \code
+   using blaze::columnMajor;
+
+   blaze::DynamicMatrix<double,columnMajor> D;
+   blaze::CompressedMatrix<double,columnMajor> S;
+   // ... Resizing and initialization
+
+   // Creating a view on the 1st and 3rd column of the dense matrix D
+   const std::vector<size_t> indices1{ 1UL, 3UL };
+   auto columns1 = columns( D, indices1 );
+
+   // Creating a view on the 4th and 2nd column of the sparse matrix S
+   const std::vector<size_t> indices2{ 4UL, 2UL };
+   auto columns2 = columns( S, indices2 );
+   \endcode
+
+// By default, the provided column indices are checked at runtime. In case any column is not
+// properly specified (i.e. if any specified index is greater than or equal to the total number
+// of columns in the given matrix) a \a std::invalid_argument exception is thrown. The checks
+// can be skipped by providing the optional \a blaze::unchecked argument.
+
+   \code
+   auto columns1 = columns( D, indices1, unchecked );
+   auto columns2 = columns( S, indices2, unchecked );
+   \endcode
+*/
+template< typename MT         // Type of the matrix
+        , typename T          // Type of the column indices
+        , typename... RCAs >  // Optional arguments
+inline decltype(auto) columns( MT&& matrix, const std::vector<T>& indices, RCAs... args )
+{
+   BLAZE_FUNCTION_TRACE;
+
+   return columns( std::forward<MT>( matrix ), indices.data(), indices.size(), args... );
+}
 //*************************************************************************************************
 
 
@@ -469,14 +718,38 @@ inline decltype(auto) columns( MT&& matrix, const std::array<T,N>& indices, RCAs
 // \exception std::invalid_argument Invalid column access index.
 //
 // This function returns an expression representing a selection of columns of the given matrix.
-// In case any column is not properly specified (i.e. if any specified index is greater than or
-// equal to the total number of columns in the given matrix) a \a std::invalid_argument exception
-// is thrown.
+
+   \code
+   using blaze::columnMajor;
+
+   blaze::DynamicMatrix<double,columnMajor> D;
+   blaze::CompressedMatrix<double,columnMajor> S;
+   // ... Resizing and initialization
+
+   // Creating a view on the 1st and 3rd column of the dense matrix D
+   blaze::SmallArray<size_t,2UL> indices1{ 1UL, 3UL };
+   auto columns1 = columns( D, indices1 );
+
+   // Creating a view on the 4th and 2nd column of the sparse matrix S
+   blaze::SmallArray<size_t,2UL> indices2{ 4UL, 2UL };
+   auto columns2 = columns( S, indices2 );
+   \endcode
+
+// By default, the provided column indices are checked at runtime. In case any column is not
+// properly specified (i.e. if any specified index is greater than or equal to the total number
+// of columns in the given matrix) a \a std::invalid_argument exception is thrown. The checks
+// can be skipped by providing the optional \a blaze::unchecked argument.
+
+   \code
+   auto columns1 = columns( D, indices1, unchecked );
+   auto columns2 = columns( S, indices2, unchecked );
+   \endcode
 */
 template< typename MT         // Type of the matrix
         , typename T          // Type of the column indices
+        , size_t N            // Number of preallocated elements
         , typename... RCAs >  // Optional arguments
-inline decltype(auto) columns( MT&& matrix, const std::vector<T>& indices, RCAs... args )
+inline decltype(auto) columns( MT&& matrix, const SmallArray<T,N>& indices, RCAs... args )
 {
    BLAZE_FUNCTION_TRACE;
 
@@ -492,7 +765,7 @@ inline decltype(auto) columns( MT&& matrix, const std::vector<T>& indices, RCAs.
 // \ingroup columns
 //
 // \param matrix The matrix containing the columns.
-// \param indices The vector of column indices.
+// \param pair The pair of arguments for the element selection.
 // \param args Optional arguments.
 // \return View on the specified columns of the matrix.
 // \exception std::invalid_argument Invalid column access index.
@@ -503,14 +776,14 @@ inline decltype(auto) columns( MT&& matrix, const std::vector<T>& indices, RCAs.
 // is thrown.
 */
 template< typename MT         // Type of the matrix
-        , typename T          // Type of the column indices
-        , size_t N            // Number of preallocated elements
-        , typename... RCAs >  // Optional arguments
-inline decltype(auto) columns( MT&& matrix, const SmallVector<T,N>& indices, RCAs... args )
+        , typename T1         // First type of the pair of arguments
+        , typename T2         // Second type of the pair of arguments
+        , typename... RRAs >  // Optional arguments
+inline decltype(auto) columns( MT&& matrix, const std::pair<T1,T2>& pair, RRAs... args )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return columns( std::forward<MT>( matrix ), indices.data(), indices.size(), args... );
+   return columns( std::forward<MT>( matrix ), pair.first, pair.second, args... );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -539,7 +812,7 @@ inline decltype(auto) columns( MT&& matrix, const SmallVector<T,N>& indices, RCA
 template< size_t... CCAs    // Compile time column arguments
         , typename MT       // Matrix base type of the expression
         , typename... RCAs  // Runtime column arguments
-        , typename = EnableIf_t< ( sizeof...( CCAs ) + sizeof...( RCAs ) > 0UL ) > >
+        , EnableIf_t< ( sizeof...( CCAs ) + sizeof...( RCAs ) > 0UL ) >* = nullptr >
 inline decltype(auto) columns( const MatMatAddExpr<MT>& matrix, RCAs... args )
 {
    BLAZE_FUNCTION_TRACE;
@@ -566,7 +839,7 @@ inline decltype(auto) columns( const MatMatAddExpr<MT>& matrix, RCAs... args )
 template< size_t... CCAs    // Compile time column arguments
         , typename MT       // Matrix base type of the expression
         , typename... RCAs  // Runtime column arguments
-        , typename = EnableIf_t< ( sizeof...( CCAs ) + sizeof...( RCAs ) > 0UL ) > >
+        , EnableIf_t< ( sizeof...( CCAs ) + sizeof...( RCAs ) > 0UL ) >* = nullptr >
 inline decltype(auto) columns( const MatMatSubExpr<MT>& matrix, RCAs... args )
 {
    BLAZE_FUNCTION_TRACE;
@@ -585,7 +858,7 @@ inline decltype(auto) columns( const MatMatSubExpr<MT>& matrix, RCAs... args )
 //
 // \param matrix The constant Schur product.
 // \param args The runtime column arguments.
-// \return View on the specified selection of columns on the subtraction.
+// \return View on the specified selection of columns on the Schur product.
 //
 // This function returns an expression representing the specified selection of columns on the
 // given Schur product.
@@ -593,7 +866,7 @@ inline decltype(auto) columns( const MatMatSubExpr<MT>& matrix, RCAs... args )
 template< size_t... CCAs    // Compile time column arguments
         , typename MT       // Matrix base type of the expression
         , typename... RCAs  // Runtime column arguments
-        , typename = EnableIf_t< ( sizeof...( CCAs ) + sizeof...( RCAs ) > 0UL ) > >
+        , EnableIf_t< ( sizeof...( CCAs ) + sizeof...( RCAs ) > 0UL ) >* = nullptr >
 inline decltype(auto) columns( const SchurExpr<MT>& matrix, RCAs... args )
 {
    BLAZE_FUNCTION_TRACE;
@@ -620,12 +893,149 @@ inline decltype(auto) columns( const SchurExpr<MT>& matrix, RCAs... args )
 template< size_t... CCAs    // Compile time column arguments
         , typename MT       // Matrix base type of the expression
         , typename... RCAs  // Runtime column arguments
-        , typename = EnableIf_t< ( sizeof...( CCAs ) + sizeof...( RCAs ) > 0UL ) > >
+        , EnableIf_t< ( sizeof...( CCAs ) + sizeof...( RCAs ) > 0UL ) >* = nullptr >
 inline decltype(auto) columns( const MatMatMultExpr<MT>& matrix, RCAs... args )
 {
    BLAZE_FUNCTION_TRACE;
 
    return (~matrix).leftOperand() * columns<CCAs...>( (~matrix).rightOperand(), args... );
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Creating a view on a selection of columns on the given Kronecker product.
+// \ingroup columns
+//
+// \param matrix The constant Kronecker product.
+// \param args Optional arguments.
+// \return View on the specified selection of columns on the Kronecker product.
+//
+// This function returns an expression representing the specified selection of columns on the
+// given Kronecker product.
+*/
+template< size_t I            // First column index
+        , size_t... Is        // Remaining column indices
+        , typename MT         // Matrix base type of the expression
+        , typename... RCAs >  // Optional arguments
+inline decltype(auto) columns( const MatMatKronExpr<MT>& matrix, RCAs... args )
+{
+   BLAZE_FUNCTION_TRACE;
+
+   decltype(auto) lhs( (~matrix).leftOperand()  );
+   decltype(auto) rhs( (~matrix).rightOperand() );
+
+   const size_t M( rhs.rows()    );
+   const size_t N( rhs.columns() );
+
+   const auto lhsRows( [M]( size_t i ){ return i / M; } );
+   const auto rhsRows( [M]( size_t i ){ return i % M; } );
+
+   const auto lhsColumns( [N]( size_t i ) {
+      static constexpr size_t indices[] = { I, Is... };
+      return indices[i] / N;
+   } );
+
+   const auto rhsColumns( [N]( size_t i ) {
+      static constexpr size_t indices[] = { I, Is... };
+      return indices[i] % N;
+   } );
+
+   return columns( rows( lhs, lhsRows, (~matrix).rows(), args... ), lhsColumns, sizeof...(Is)+1UL, args... ) %
+          columns( rows( rhs, rhsRows, (~matrix).rows(), args... ), rhsColumns, sizeof...(Is)+1UL, args... );
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Creating a view on a selection of columns on the given Kronecker product.
+// \ingroup columns
+//
+// \param matrix The constant Kronecker product.
+// \param indices Pointer to the first index of the selected columns.
+// \param n The total number of indices.
+// \param args Optional arguments.
+// \return View on the specified selection of columns on the Kronecker product.
+//
+// This function returns an expression representing the specified selection of columns on the
+// given Kronecker product.
+*/
+template< typename MT         // Matrix base type of the expression
+        , typename T          // Type of the column indices
+        , typename... RCAs >  // Optional arguments
+inline decltype(auto) columns( const MatMatKronExpr<MT>& matrix, T* indices, size_t n, RCAs... args )
+{
+   BLAZE_FUNCTION_TRACE;
+
+   decltype(auto) lhs( (~matrix).leftOperand()  );
+   decltype(auto) rhs( (~matrix).rightOperand() );
+
+   const size_t M( rhs.rows()    );
+   const size_t N( rhs.columns() );
+
+   const auto lhsRows( [M]( size_t i ){ return i / M; } );
+   const auto rhsRows( [M]( size_t i ){ return i % M; } );
+
+   SmallArray<size_t,128UL> lhsColumns;
+   lhsColumns.reserve( n );
+
+   for( size_t i=0UL; i<n; ++i ) {
+      lhsColumns.pushBack( indices[i] / N );
+   }
+
+   SmallArray<size_t,128UL> rhsColumns;
+   rhsColumns.reserve( n );
+
+   for( size_t i=0UL; i<n; ++i ) {
+      rhsColumns.pushBack( indices[i] % N );
+   }
+
+   return columns( rows( lhs, lhsRows, (~matrix).rows(), args... ), lhsColumns, n, args... ) %
+          columns( rows( rhs, rhsRows, (~matrix).rows(), args... ), rhsColumns, n, args... );
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Creating a view on a selection of columns on the given Kronecker product.
+// \ingroup columns
+//
+// \param matrix The constant Kronecker product.
+// \param p Callable producing the indices.
+// \param n The total number of indices.
+// \param args Optional arguments.
+// \return View on the specified selection of columns on the Kronecker product.
+//
+// This function returns an expression representing the specified selection of columns on the
+// given Kronecker product.
+*/
+template< typename MT         // Matrix base type of the expression
+        , typename P          // Type of the index producer
+        , typename... RCAs >  // Optional arguments
+inline decltype(auto) columns( const MatMatKronExpr<MT>& matrix, P p, size_t n, RCAs... args )
+{
+   BLAZE_FUNCTION_TRACE;
+
+   decltype(auto) lhs( (~matrix).leftOperand()  );
+   decltype(auto) rhs( (~matrix).rightOperand() );
+
+   const size_t M( rhs.rows()    );
+   const size_t N( rhs.columns() );
+
+   const auto lhsRows( [M]( size_t i ){ return i / M; } );
+   const auto rhsRows( [M]( size_t i ){ return i % M; } );
+
+   const auto lhsColumns( [p,N]( size_t i ) { return p(i) / N; } );
+   const auto rhsColumns( [p,N]( size_t i ) { return p(i) % N; } );
+
+   return columns( rows( lhs, lhsRows, (~matrix).rows(), args... ), lhsColumns, n, args... ) %
+          columns( rows( rhs, rhsRows, (~matrix).rows(), args... ), rhsColumns, n, args... );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -646,7 +1056,7 @@ inline decltype(auto) columns( const MatMatMultExpr<MT>& matrix, RCAs... args )
 template< size_t... CCAs    // Compile time column arguments
         , typename MT       // Matrix base type of the expression
         , typename... RCAs  // Runtime column arguments
-        , typename = EnableIf_t< ( sizeof...( CCAs ) + sizeof...( RCAs ) > 0UL ) > >
+        , EnableIf_t< ( sizeof...( CCAs ) + sizeof...( RCAs ) > 0UL ) >* = nullptr >
 inline decltype(auto) columns( const VecTVecMultExpr<MT>& matrix, RCAs... args )
 {
    BLAZE_FUNCTION_TRACE;
@@ -672,7 +1082,7 @@ inline decltype(auto) columns( const VecTVecMultExpr<MT>& matrix, RCAs... args )
 template< size_t... CCAs    // Compile time column arguments
         , typename MT       // Matrix base type of the expression
         , typename... RCAs  // Runtime column arguments
-        , typename = EnableIf_t< ( sizeof...( CCAs ) + sizeof...( RCAs ) > 0UL ) > >
+        , EnableIf_t< ( sizeof...( CCAs ) + sizeof...( RCAs ) > 0UL ) >* = nullptr >
 inline decltype(auto) columns( const MatScalarMultExpr<MT>& matrix, RCAs... args )
 {
    BLAZE_FUNCTION_TRACE;
@@ -698,7 +1108,7 @@ inline decltype(auto) columns( const MatScalarMultExpr<MT>& matrix, RCAs... args
 template< size_t... CCAs    // Compile time column arguments
         , typename MT       // Matrix base type of the expression
         , typename... RCAs  // Runtime column arguments
-        , typename = EnableIf_t< ( sizeof...( CCAs ) + sizeof...( RCAs ) > 0UL ) > >
+        , EnableIf_t< ( sizeof...( CCAs ) + sizeof...( RCAs ) > 0UL ) >* = nullptr >
 inline decltype(auto) columns( const MatScalarDivExpr<MT>& matrix, RCAs... args )
 {
    BLAZE_FUNCTION_TRACE;
@@ -716,7 +1126,7 @@ inline decltype(auto) columns( const MatScalarDivExpr<MT>& matrix, RCAs... args 
 //
 // \param matrix The constant unary matrix map operation.
 // \param args The runtime column arguments.
-// \return View on the specified selection of columns on the multiplication.
+// \return View on the specified selection of columns on the unary map operation.
 //
 // This function returns an expression representing the specified selection of columns on the
 // given unary matrix map operation.
@@ -724,7 +1134,7 @@ inline decltype(auto) columns( const MatScalarDivExpr<MT>& matrix, RCAs... args 
 template< size_t... CCAs    // Compile time column arguments
         , typename MT       // Matrix base type of the expression
         , typename... RCAs  // Runtime column arguments
-        , typename = EnableIf_t< ( sizeof...( CCAs ) + sizeof...( RCAs ) > 0UL ) > >
+        , EnableIf_t< ( sizeof...( CCAs ) + sizeof...( RCAs ) > 0UL ) >* = nullptr >
 inline decltype(auto) columns( const MatMapExpr<MT>& matrix, RCAs... args )
 {
    BLAZE_FUNCTION_TRACE;
@@ -742,7 +1152,7 @@ inline decltype(auto) columns( const MatMapExpr<MT>& matrix, RCAs... args )
 //
 // \param matrix The constant binary matrix map operation.
 // \param args The runtime column arguments.
-// \return View on the specified selection of columns on the multiplication.
+// \return View on the specified selection of columns on the binary map operation.
 //
 // This function returns an expression representing the specified selection of columns on the
 // given binary matrix map operation.
@@ -750,7 +1160,7 @@ inline decltype(auto) columns( const MatMapExpr<MT>& matrix, RCAs... args )
 template< size_t... CCAs    // Compile time column arguments
         , typename MT       // Matrix base type of the expression
         , typename... RCAs  // Runtime column arguments
-        , typename = EnableIf_t< ( sizeof...( CCAs ) + sizeof...( RCAs ) > 0UL ) > >
+        , EnableIf_t< ( sizeof...( CCAs ) + sizeof...( RCAs ) > 0UL ) >* = nullptr >
 inline decltype(auto) columns( const MatMatMapExpr<MT>& matrix, RCAs... args )
 {
    BLAZE_FUNCTION_TRACE;
@@ -770,7 +1180,7 @@ inline decltype(auto) columns( const MatMatMapExpr<MT>& matrix, RCAs... args )
 //
 // \param matrix The constant matrix evaluation operation.
 // \param args The runtime column arguments.
-// \return View on the specified selection of columns on the multiplication.
+// \return View on the specified selection of columns on the evaluation operation.
 //
 // This function returns an expression representing the specified selection of columns on the
 // given matrix evaluation operation.
@@ -778,7 +1188,7 @@ inline decltype(auto) columns( const MatMatMapExpr<MT>& matrix, RCAs... args )
 template< size_t... CCAs    // Compile time column arguments
         , typename MT       // Matrix base type of the expression
         , typename... RCAs  // Runtime column arguments
-        , typename = EnableIf_t< ( sizeof...( CCAs ) + sizeof...( RCAs ) > 0UL ) > >
+        , EnableIf_t< ( sizeof...( CCAs ) + sizeof...( RCAs ) > 0UL ) >* = nullptr >
 inline decltype(auto) columns( const MatEvalExpr<MT>& matrix, RCAs... args )
 {
    BLAZE_FUNCTION_TRACE;
@@ -796,7 +1206,7 @@ inline decltype(auto) columns( const MatEvalExpr<MT>& matrix, RCAs... args )
 //
 // \param matrix The constant matrix serialization operation.
 // \param args The runtime column arguments.
-// \return View on the specified selection of columns on the multiplication.
+// \return View on the specified selection of columns on the serialization operation.
 //
 // This function returns an expression representing the specified selection of columns on the
 // given matrix serialization operation.
@@ -804,7 +1214,7 @@ inline decltype(auto) columns( const MatEvalExpr<MT>& matrix, RCAs... args )
 template< size_t... CCAs    // Compile time column arguments
         , typename MT       // Matrix base type of the expression
         , typename... RCAs  // Runtime column arguments
-        , typename = EnableIf_t< ( sizeof...( CCAs ) + sizeof...( RCAs ) > 0UL ) > >
+        , EnableIf_t< ( sizeof...( CCAs ) + sizeof...( RCAs ) > 0UL ) >* = nullptr >
 inline decltype(auto) columns( const MatSerialExpr<MT>& matrix, RCAs... args )
 {
    BLAZE_FUNCTION_TRACE;
@@ -822,7 +1232,7 @@ inline decltype(auto) columns( const MatSerialExpr<MT>& matrix, RCAs... args )
 //
 // \param matrix The constant matrix declaration operation.
 // \param args The runtime column arguments.
-// \return View on the specified selection of columns on the multiplication.
+// \return View on the specified selection of columns on the declaration operation.
 //
 // This function returns an expression representing the specified selection of columns on the
 // given matrix declaration operation.
@@ -830,7 +1240,7 @@ inline decltype(auto) columns( const MatSerialExpr<MT>& matrix, RCAs... args )
 template< size_t... CCAs    // Compile time column arguments
         , typename MT       // Matrix base type of the expression
         , typename... RCAs  // Runtime column arguments
-        , typename = EnableIf_t< ( sizeof...( CCAs ) + sizeof...( RCAs ) > 0UL ) > >
+        , EnableIf_t< ( sizeof...( CCAs ) + sizeof...( RCAs ) > 0UL ) >* = nullptr >
 inline decltype(auto) columns( const DeclExpr<MT>& matrix, RCAs... args )
 {
    BLAZE_FUNCTION_TRACE;
@@ -848,7 +1258,7 @@ inline decltype(auto) columns( const DeclExpr<MT>& matrix, RCAs... args )
 //
 // \param matrix The constant matrix transpose operation.
 // \param args The runtime column arguments.
-// \return View on the specified selection of columns on the multiplication.
+// \return View on the specified selection of columns on the transpose operation.
 //
 // This function returns an expression representing the specified selection of columns on the
 // given matrix transpose operation.
@@ -856,7 +1266,7 @@ inline decltype(auto) columns( const DeclExpr<MT>& matrix, RCAs... args )
 template< size_t... CCAs    // Compile time column arguments
         , typename MT       // Matrix base type of the expression
         , typename... RCAs  // Runtime column arguments
-        , typename = EnableIf_t< ( sizeof...( CCAs ) + sizeof...( RCAs ) > 0UL ) > >
+        , EnableIf_t< ( sizeof...( CCAs ) + sizeof...( RCAs ) > 0UL ) >* = nullptr >
 inline decltype(auto) columns( const MatTransExpr<MT>& matrix, RCAs... args )
 {
    BLAZE_FUNCTION_TRACE;
@@ -869,6 +1279,105 @@ inline decltype(auto) columns( const MatTransExpr<MT>& matrix, RCAs... args )
 
 //*************************************************************************************************
 /*! \cond BLAZE_INTERNAL */
+/*!\brief Creating a view on a selection of columns on the given column-major vector expansion
+//        operation.
+// \ingroup columns
+//
+// \param matrix The constant vector expansion operation.
+// \param args The runtime column arguments.
+// \return void
+//
+// This function returns an expression representing the specified selection of columns of the
+// given column-major vector expansion operation.
+*/
+template< size_t... CCAs    // Compile time column arguments
+        , typename MT       // Matrix base type of the expression
+        , size_t... CEAs    // Compile time expansion arguments
+        , typename... RCAs  // Runtime column arguments
+        , EnableIf_t< ( sizeof...( CCAs ) > 0UL ) &&
+                      IsColumnMajorMatrix_v<MT> >* = nullptr >
+inline decltype(auto) columns( const VecExpandExpr<MT,CEAs...>& matrix, RCAs... args )
+{
+   BLAZE_FUNCTION_TRACE;
+
+   MAYBE_UNUSED( args... );
+
+   return expand< sizeof...( CCAs ) >( (~matrix).operand() );
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Creating a view on a selection of columns on the given column-major vector expansion
+//        operation.
+// \ingroup columns
+//
+// \param matrix The constant vector expansion operation.
+// \param indices Pointer to the first index of the selected columns or callable producing the indices.
+// \param n The total number of indices.
+// \param args The runtime column arguments.
+// \return void
+//
+// This function returns an expression representing the specified selection of columns of the
+// given column-major vector expansion operation.
+*/
+template< typename MT       // Matrix base type of the expression
+        , size_t... CEAs    // Compile time expansion arguments
+        , typename T        // Type of the column indices or index producer
+        , typename... RCAs  // Runtime column arguments
+        , EnableIf_t< IsColumnMajorMatrix_v<MT> >* = nullptr >
+inline decltype(auto) columns( const VecExpandExpr<MT,CEAs...>& matrix, T indices, size_t n, RCAs... args )
+{
+   BLAZE_FUNCTION_TRACE;
+
+   MAYBE_UNUSED( indices, args... );
+
+   return expand( (~matrix).operand(), n );
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Creating a view on a selection of columns on the given row-major vector expansion operation.
+// \ingroup columns
+//
+// \param matrix The constant vector expansion operation.
+// \param args The runtime column arguments.
+// \return void
+//
+// This function returns an expression representing the specified selection of columns of the
+// given row-major vector expansion operation.
+*/
+template< size_t... CCAs    // Compile time column arguments
+        , typename MT       // Matrix base type of the expression
+        , size_t... CEAs    // Compile time expansion arguments
+        , typename... RCAs  // Runtime column arguments
+        , EnableIf_t< ( sizeof...( CCAs ) + sizeof...( RCAs ) > 0UL ) &&
+                      !IsColumnMajorMatrix_v<MT> >* = nullptr >
+inline decltype(auto) columns( const VecExpandExpr<MT,CEAs...>& matrix, RCAs... args )
+{
+   BLAZE_FUNCTION_TRACE;
+
+   return expand<CEAs...>( elements<CCAs...>( (~matrix).operand(), args... ), (~matrix).expansion() );
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
+//  GLOBAL RESTRUCTURING FUNCTIONS (COLUMNS)
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
 /*!\brief Creating a view on specific columns of the given column selection.
 // \ingroup columns
 //
@@ -879,85 +1388,17 @@ inline decltype(auto) columns( const MatTransExpr<MT>& matrix, RCAs... args )
 // This function returns an expression representing the specified columns of the given column
 // selection.
 */
-template< size_t I1           // First required column index
-        , size_t... Is1       // Remaining required column indices
-        , typename MT         // Type of the matrix
-        , bool SO             // Storage order
-        , bool DF             // Density flag
-        , bool SF             // Symmetry flag
-        , size_t I2           // First present column index
-        , size_t... Is2       // Remaining present column indices
-        , typename... RCAs >  // Optional column arguments
-inline decltype(auto) columns( Columns<MT,SO,DF,SF,I2,Is2...>& c, RCAs... args )
+template< size_t I          // First required column index
+        , size_t... Is      // Remaining required column indices
+        , typename MT       // Type of the matrix
+        , typename... RCAs  // Optional column arguments
+        , EnableIf_t< IsColumns_v< RemoveReference_t<MT> > &&
+                      RemoveReference_t<MT>::compileTimeArgs >* = nullptr >
+inline decltype(auto) columns( MT&& c, RCAs... args )
 {
    BLAZE_FUNCTION_TRACE;
 
-   static constexpr size_t indices[] = { I2, Is2... };
-   return columns< indices[I1], indices[Is1]... >( c.operand(), args... );
-}
-/*! \endcond */
-//*************************************************************************************************
-
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-/*!\brief Creating a view on specific columns of the given constant column selection.
-// \ingroup columns
-//
-// \param c The constant selection of columns containing the columns.
-// \param args The optional column arguments.
-// \return View on the specified columns of the column selection.
-//
-// This function returns an expression representing the specified columns of the given constant
-// column selection.
-*/
-template< size_t I1           // First required column index
-        , size_t... Is1       // Remaining required column indices
-        , typename MT         // Type of the matrix
-        , bool SO             // Storage order
-        , bool DF             // Density flag
-        , bool SF             // Symmetry flag
-        , size_t I2           // First present column index
-        , size_t... Is2       // Remaining present column indices
-        , typename... RCAs >  // Optional column arguments
-inline decltype(auto) columns( const Columns<MT,SO,DF,SF,I2,Is2...>& c, RCAs... args )
-{
-   BLAZE_FUNCTION_TRACE;
-
-   static constexpr size_t indices[] = { I2, Is2... };
-   return columns< indices[I1], indices[Is1]... >( c.operand(), args... );
-}
-/*! \endcond */
-//*************************************************************************************************
-
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-/*!\brief Creating a view on specific columns of the given temporary column selection.
-// \ingroup columns
-//
-// \param c The temporary selection of columns containing the columns.
-// \param args The optional column arguments.
-// \return View on the specified columns of the column selection.
-//
-// This function returns an expression representing the specified columns of the given temporary
-// column selection.
-*/
-template< size_t I1           // First required column index
-        , size_t... Is1       // Remaining required column indices
-        , typename MT         // Type of the matrix
-        , bool SO             // Storage order
-        , bool DF             // Density flag
-        , bool SF             // Symmetry flag
-        , size_t I2           // First present column index
-        , size_t... Is2       // Remaining present column indices
-        , typename... RCAs >  // Optional column arguments
-inline decltype(auto) columns( Columns<MT,SO,DF,SF,I2,Is2...>&& c, RCAs... args )
-{
-   BLAZE_FUNCTION_TRACE;
-
-   static constexpr size_t indices[] = { I2, Is2... };
-   return columns< indices[I1], indices[Is1]... >( c.operand(), args... );
+   return columns( c.operand(), subsequence<I,Is...>( RemoveReference_t<MT>::idces() ), args... );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -976,15 +1417,13 @@ inline decltype(auto) columns( Columns<MT,SO,DF,SF,I2,Is2...>&& c, RCAs... args 
 // This function returns an expression representing the specified columns of the given column
 // selection.
 */
-template< size_t I            // First required column index
-        , size_t... Is        // Remaining required column indices
-        , typename MT         // Type of the matrix
-        , bool SO             // Storage order
-        , bool DF             // Density flag
-        , bool SF             // Symmetry flag
-        , size_t... CCAs      // Compile time column arguments
-        , typename... RCAs >  // Optional column arguments
-inline decltype(auto) columns( Columns<MT,SO,DF,SF,CCAs...>& c, RCAs... args )
+template< size_t I          // First required column index
+        , size_t... Is      // Remaining required column indices
+        , typename MT       // Type of the matrix
+        , typename... RCAs  // Optional column arguments
+        , EnableIf_t< IsColumns_v< RemoveReference_t<MT> > &&
+                      !RemoveReference_t<MT>::compileTimeArgs >* = nullptr >
+inline decltype(auto) columns( MT&& c, RCAs... args )
 {
    BLAZE_FUNCTION_TRACE;
 
@@ -999,94 +1438,7 @@ inline decltype(auto) columns( Columns<MT,SO,DF,SF,CCAs...>& c, RCAs... args )
       }
    }
 
-   decltype(auto) indices( c.idces() );
-   return columns( c.operand(), { indices[I], indices[Is]... }, args... );
-}
-/*! \endcond */
-//*************************************************************************************************
-
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-/*!\brief Creating a view on specific columns of the given constant column selection.
-// \ingroup columns
-//
-// \param c The constant selection of columns containing the columns.
-// \param args The optional column arguments.
-// \return View on the specified columns of the column selection.
-// \exception std::invalid_argument Invalid column access index.
-//
-// This function returns an expression representing the specified columns of the given constant
-// column selection.
-*/
-template< size_t I            // First required column index
-        , size_t... Is        // Remaining required column indices
-        , typename MT         // Type of the matrix
-        , bool SO             // Storage order
-        , bool DF             // Density flag
-        , bool SF             // Symmetry flag
-        , size_t... CCAs      // Compile time column arguments
-        , typename... RCAs >  // Optional column arguments
-inline decltype(auto) columns( const Columns<MT,SO,DF,SF,CCAs...>& c, RCAs... args )
-{
-   BLAZE_FUNCTION_TRACE;
-
-   constexpr bool isChecked( !Contains_v< TypeList<RCAs...>, Unchecked > );
-
-   if( isChecked ) {
-      static constexpr size_t indices[] = { I, Is... };
-      for( size_t i=0UL; i<sizeof...(Is)+1UL; ++i ) {
-         if( c.columns() <= indices[i] ) {
-            BLAZE_THROW_INVALID_ARGUMENT( "Invalid column access index" );
-         }
-      }
-   }
-
-   decltype(auto) indices( c.idces() );
-   return columns( c.operand(), { indices[I], indices[Is]... }, args... );
-}
-/*! \endcond */
-//*************************************************************************************************
-
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-/*!\brief Creating a view on specific columns of the given temporary column selection.
-// \ingroup columns
-//
-// \param c The temporary selection of columns containing the columns.
-// \param args The optional column arguments.
-// \return View on the specified columns of the column selection.
-// \exception std::invalid_argument Invalid column access index.
-//
-// This function returns an expression representing the specified columns of the given temporary
-// column selection.
-*/
-template< size_t I            // First required column index
-        , size_t... Is        // Remaining required column indices
-        , typename MT         // Type of the matrix
-        , bool SO             // Storage order
-        , bool DF             // Density flag
-        , bool SF             // Symmetry flag
-        , size_t... CCAs      // Compile time column arguments
-        , typename... RCAs >  // Optional column arguments
-inline decltype(auto) columns( Columns<MT,SO,DF,SF,CCAs...>&& c, RCAs... args )
-{
-   BLAZE_FUNCTION_TRACE;
-
-   constexpr bool isChecked( !Contains_v< TypeList<RCAs...>, Unchecked > );
-
-   if( isChecked ) {
-      static constexpr size_t indices[] = { I, Is... };
-      for( size_t i=0UL; i<sizeof...(Is)+1UL; ++i ) {
-         if( c.columns() <= indices[i] ) {
-            BLAZE_THROW_INVALID_ARGUMENT( "Invalid column access index" );
-         }
-      }
-   }
-
-   decltype(auto) indices( c.idces() );
-   return columns( c.operand(), { indices[I], indices[Is]... }, args... );
+   return columns( c.operand(), { c.idx(I), c.idx(Is)... }, args... );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -1107,14 +1459,11 @@ inline decltype(auto) columns( Columns<MT,SO,DF,SF,CCAs...>&& c, RCAs... args )
 // This function returns an expression representing the specified column of the given column
 // selection.
 */
-template< typename MT         // Type of the matrix
-        , bool SO             // Storage order
-        , bool DF             // Density flag
-        , bool SF             // Symmetry flag
-        , size_t... CCAs      // Compile time column arguments
-        , typename T          // Type of the column indices
-        , typename... RCAs >  // Optional column arguments
-inline decltype(auto) columns( Columns<MT,SO,DF,SF,CCAs...>& c, const T* indices, size_t n, RCAs... args )
+template< typename MT       // Type of the matrix
+        , typename T        // Type of the column indices
+        , typename... RCAs  // Optional column arguments
+        , EnableIf_t< IsColumns_v< RemoveReference_t<MT> > >* = nullptr >
+inline decltype(auto) columns( MT&& c, T* indices, size_t n, RCAs... args )
 {
    BLAZE_FUNCTION_TRACE;
 
@@ -1122,18 +1471,17 @@ inline decltype(auto) columns( Columns<MT,SO,DF,SF,CCAs...>& c, const T* indices
 
    if( isChecked ) {
       for( size_t i=0UL; i<n; ++i ) {
-         if( c.columns() <= indices[i] ) {
+         if( c.columns() <= size_t( indices[i] ) ) {
             BLAZE_THROW_INVALID_ARGUMENT( "Invalid column access index" );
          }
       }
    }
 
-   decltype(auto) oldIndices( c.idces() );
-   SmallVector<size_t,128UL> newIndices;
+   SmallArray<size_t,128UL> newIndices;
    newIndices.reserve( n );
 
    for( size_t i=0UL; i<n; ++i ) {
-      newIndices.pushBack( oldIndices[indices[i]] );
+      newIndices.pushBack( c.idx( indices[i] ) );
    }
 
    return columns( c.operand(), newIndices.data(), newIndices.size(), args... );
@@ -1144,27 +1492,24 @@ inline decltype(auto) columns( Columns<MT,SO,DF,SF,CCAs...>& c, const T* indices
 
 //*************************************************************************************************
 /*! \cond BLAZE_INTERNAL */
-/*!\brief Creating a view on specific columns of the given constant column selection.
+/*!\brief Creating a view on specific columns of the given column selection.
 // \ingroup columns
 //
-// \param c The constant selection of columns containing the columns.
-// \param indices Pointer to the first index of the selected columns.
+// \param c The selection of columns containing the columns.
+// \param p Callable producing the indices.
 // \param n The total number of indices.
 // \param args The optional column arguments.
 // \return View on the specified columns of the column selection.
 // \exception std::invalid_argument Invalid column access index.
 //
-// This function returns an expression representing the specified column of the given constant
-// column selection.
+// This function returns an expression representing the specified column of the given column
+// selection.
 */
-template< typename MT         // Type of the matrix
-        , bool SO             // Storage order
-        , bool DF             // Density flag
-        , bool SF             // Symmetry flag
-        , size_t... CCAs      // Compile time column arguments
-        , typename T          // Type of the column indices
-        , typename... RCAs >  // Optional column arguments
-inline decltype(auto) columns( const Columns<MT,SO,DF,SF,CCAs...>& c, const T* indices, size_t n, RCAs... args )
+template< typename MT       // Type of the matrix
+        , typename P        // Type of the index producer
+        , typename... RCAs  // Optional column arguments
+        , EnableIf_t< IsColumns_v< RemoveReference_t<MT> > && !IsPointer_v<P> >* = nullptr >
+inline decltype(auto) columns( MT&& c, P p, size_t n, RCAs... args )
 {
    BLAZE_FUNCTION_TRACE;
 
@@ -1172,68 +1517,17 @@ inline decltype(auto) columns( const Columns<MT,SO,DF,SF,CCAs...>& c, const T* i
 
    if( isChecked ) {
       for( size_t i=0UL; i<n; ++i ) {
-         if( c.columns() <= indices[i] ) {
+         if( c.columns() <= size_t( p(i) ) ) {
             BLAZE_THROW_INVALID_ARGUMENT( "Invalid column access index" );
          }
       }
    }
 
-   decltype(auto) oldIndices( c.idces() );
-   SmallVector<size_t,128UL> newIndices;
+   SmallArray<size_t,128UL> newIndices;
    newIndices.reserve( n );
 
    for( size_t i=0UL; i<n; ++i ) {
-      newIndices.pushBack( oldIndices[indices[i]] );
-   }
-
-   return columns( c.operand(), newIndices.data(), newIndices.size(), args... );
-}
-/*! \endcond */
-//*************************************************************************************************
-
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-/*!\brief Creating a view on specific columns of the given temporary column selection.
-// \ingroup columns
-//
-// \param c The temporary selection of columns containing the columns.
-// \param indices Pointer to the first index of the selected columns.
-// \param n The total number of indices.
-// \param args The optional column arguments.
-// \return View on the specified columns of the column selection.
-// \exception std::invalid_argument Invalid column access index.
-//
-// This function returns an expression representing the specified column of the given temporary
-// column selection.
-*/
-template< typename MT         // Type of the matrix
-        , bool SO             // Storage order
-        , bool DF             // Density flag
-        , bool SF             // Symmetry flag
-        , size_t... CCAs      // Compile time column arguments
-        , typename T          // Type of the column indices
-        , typename... RCAs >  // Optional column arguments
-inline decltype(auto) columns( Columns<MT,SO,DF,SF,CCAs...>&& c, const T* indices, size_t n, RCAs... args )
-{
-   BLAZE_FUNCTION_TRACE;
-
-   constexpr bool isChecked( !Contains_v< TypeList<RCAs...>, Unchecked > );
-
-   if( isChecked ) {
-      for( size_t i=0UL; i<n; ++i ) {
-         if( c.columns() <= indices[i] ) {
-            BLAZE_THROW_INVALID_ARGUMENT( "Invalid column access index" );
-         }
-      }
-   }
-
-   decltype(auto) oldIndices( c.idces() );
-   SmallVector<size_t,128UL> newIndices;
-   newIndices.reserve( n );
-
-   for( size_t i=0UL; i<n; ++i ) {
-      newIndices.pushBack( oldIndices[indices[i]] );
+      newIndices.pushBack( c.idx( p(i) ) );
    }
 
    return columns( c.operand(), newIndices.data(), newIndices.size(), args... );
@@ -1320,158 +1614,11 @@ inline decltype(auto) elements( const MatReduceExpr<VT,columnwise>& vector, REAs
 //
 // This function returns an expression representing the specified row of the given column selection.
 */
-template< size_t... CRAs      // Compile time row arguments
-        , typename MT         // Type of the matrix
-        , bool SO             // Storage order
-        , bool DF             // Density flag
-        , bool SF             // Symmetry flag
-        , size_t I            // First column index
-        , size_t... Is        // Remaining column indices
-        , typename... RRAs >  // Runtime row arguments
-inline decltype(auto) row( Columns<MT,SO,DF,SF,I,Is...>& columns, RRAs... args )
-{
-   BLAZE_FUNCTION_TRACE;
-
-   return elements<I,Is...>( row<CRAs...>( columns.operand(), args... ) );
-}
-/*! \endcond */
-//*************************************************************************************************
-
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-/*!\brief Creating a view on a specific row of the given constant column selection.
-// \ingroup columns
-//
-// \param columns The constant selection of columns containing the row.
-// \param args The runtime row arguments.
-// \return View on the specified row of the column selection.
-//
-// This function returns an expression representing the specified row of the given constant
-// column selection.
-*/
-template< size_t... CRAs      // Compile time row arguments
-        , typename MT         // Type of the matrix
-        , bool SO             // Storage order
-        , bool DF             // Density flag
-        , bool SF             // Symmetry flag
-        , size_t I            // First column index
-        , size_t... Is        // Remaining column indices
-        , typename... RRAs >  // Runtime row arguments
-inline decltype(auto) row( const Columns<MT,SO,DF,SF,I,Is...>& columns, RRAs... args )
-{
-   BLAZE_FUNCTION_TRACE;
-
-   return elements<I,Is...>( row<CRAs...>( columns.operand(), args... ) );
-}
-/*! \endcond */
-//*************************************************************************************************
-
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-/*!\brief Creating a view on a specific row of the given temporary column selection.
-// \ingroup columns
-//
-// \param columns The temporary selection of columns containing the row.
-// \param args The runtime row arguments.
-// \return View on the specified row of the column selection.
-//
-// This function returns an expression representing the specified row of the given temporary
-// column selection.
-*/
-template< size_t... CRAs      // Compile time row arguments
-        , typename MT         // Type of the matrix
-        , bool SO             // Storage order
-        , bool DF             // Density flag
-        , bool SF             // Symmetry flag
-        , size_t I            // First column index
-        , size_t... Is        // Remaining column indices
-        , typename... RRAs >  // Runtime row arguments
-inline decltype(auto) row( Columns<MT,SO,DF,SF,I,Is...>&& columns, RRAs... args )
-{
-   BLAZE_FUNCTION_TRACE;
-
-   return elements<I,Is...>( row<CRAs...>( columns.operand(), args... ) );
-}
-/*! \endcond */
-//*************************************************************************************************
-
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-/*!\brief Creating a view on a specific row of the given column selection.
-// \ingroup columns
-//
-// \param columns The selection of columns containing the row.
-// \param args The runtime row arguments.
-// \return View on the specified row of the column selection.
-//
-// This function returns an expression representing the specified row of the given column selection.
-*/
-template< size_t... CRAs      // Compile time row arguments
-        , typename MT         // Type of the matrix
-        , bool SO             // Storage order
-        , bool DF             // Density flag
-        , bool SF             // Symmetry flag
-        , typename... RRAs >  // Runtime row arguments
-inline decltype(auto) row( Columns<MT,SO,DF,SF>& columns, RRAs... args )
-{
-   BLAZE_FUNCTION_TRACE;
-
-   return elements( row<CRAs...>( columns.operand(), args... ), columns.idces() );
-}
-/*! \endcond */
-//*************************************************************************************************
-
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-/*!\brief Creating a view on a specific row of the given constant column selection.
-// \ingroup columns
-//
-// \param columns The constant selection of columns containing the row.
-// \param args The runtime row arguments.
-// \return View on the specified row of the column selection.
-//
-// This function returns an expression representing the specified row of the given constant
-// column selection.
-*/
-template< size_t... CRAs      // Compile time row arguments
-        , typename MT         // Type of the matrix
-        , bool SO             // Storage order
-        , bool DF             // Density flag
-        , bool SF             // Symmetry flag
-        , typename... RRAs >  // Runtime row arguments
-inline decltype(auto) row( const Columns<MT,SO,DF,SF>& columns, RRAs... args )
-{
-   BLAZE_FUNCTION_TRACE;
-
-   return elements( row<CRAs...>( columns.operand(), args... ), columns.idces() );
-}
-/*! \endcond */
-//*************************************************************************************************
-
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-/*!\brief Creating a view on a specific row of the given temporary column selection.
-// \ingroup columns
-//
-// \param columns The temporary selection of columns containing the row.
-// \param args The runtime row arguments.
-// \return View on the specified row of the column selection.
-//
-// This function returns an expression representing the specified row of the given temporary
-// column selection.
-*/
-template< size_t... CRAs      // Compile time row arguments
-        , typename MT         // Type of the matrix
-        , bool SO             // Storage order
-        , bool DF             // Density flag
-        , bool SF             // Symmetry flag
-        , typename... RRAs >  // Runtime row arguments
-inline decltype(auto) row( Columns<MT,SO,DF,SF>&& columns, RRAs... args )
+template< size_t... CRAs    // Compile time row arguments
+        , typename MT       // Type of the matrix
+        , typename... RRAs  // Runtime row arguments
+        , EnableIf_t< IsColumns_v< RemoveReference_t<MT> > >* = nullptr >
+inline decltype(auto) row( MT&& columns, RRAs... args )
 {
    BLAZE_FUNCTION_TRACE;
 
@@ -1501,82 +1648,16 @@ inline decltype(auto) row( Columns<MT,SO,DF,SF>&& columns, RRAs... args )
 // This function returns an expression representing the specified column of the given column
 // selection.
 */
-template< size_t I1           // Column index
-        , typename MT         // Type of the matrix
-        , bool SO             // Storage order
-        , bool DF             // Density flag
-        , bool SF             // Symmetry flag
-        , size_t I2           // First column index
-        , size_t... Is        // Remaining column indices
-        , typename... RCAs >  // Optional column arguments
-inline decltype(auto) column( Columns<MT,SO,DF,SF,I2,Is...>& columns, RCAs... args )
+template< size_t I          // Column index
+        , typename MT       // Type of the matrix
+        , typename... RCAs  // Optional column arguments
+        , EnableIf_t< IsColumns_v< RemoveReference_t<MT> > &&
+                      RemoveReference_t<MT>::compileTimeArgs >* = nullptr >
+inline decltype(auto) column( MT&& columns, RCAs... args )
 {
    BLAZE_FUNCTION_TRACE;
 
-   static constexpr size_t indices[] = { I2, Is... };
-   return column<indices[I1]>( columns.operand(), args... );
-}
-/*! \endcond */
-//*************************************************************************************************
-
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-/*!\brief Creating a view on a specific column of the given constant column selection.
-// \ingroup columns
-//
-// \param columns The constant selection of columns containing the column.
-// \param args The optional column arguments.
-// \return View on the specified column of the column selection.
-//
-// This function returns an expression representing the specified column of the given constant
-// column selection.
-*/
-template< size_t I1           // Column index
-        , typename MT         // Type of the matrix
-        , bool SO             // Storage order
-        , bool DF             // Density flag
-        , bool SF             // Symmetry flag
-        , size_t I2           // First column index
-        , size_t... Is        // Remaining column indices
-        , typename... RCAs >  // Optional column arguments
-inline decltype(auto) column( const Columns<MT,SO,DF,SF,I2,Is...>& columns, RCAs... args )
-{
-   BLAZE_FUNCTION_TRACE;
-
-   static constexpr size_t indices[] = { I2, Is... };
-   return column<indices[I1]>( columns.operand(), args... );
-}
-/*! \endcond */
-//*************************************************************************************************
-
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-/*!\brief Creating a view on a specific column of the given temporary column selection.
-// \ingroup columns
-//
-// \param columns The temporary selection of columns containing the column.
-// \param args The optional column arguments.
-// \return View on the specified column of the column selection.
-//
-// This function returns an expression representing the specified column of the given temporary
-// column selection.
-*/
-template< size_t I1           // Column index
-        , typename MT         // Type of the matrix
-        , bool SO             // Storage order
-        , bool DF             // Density flag
-        , bool SF             // Symmetry flag
-        , size_t I2           // First column index
-        , size_t... Is        // Remaining column indices
-        , typename... RCAs >  // Optional column arguments
-inline decltype(auto) column( Columns<MT,SO,DF,SF,I2,Is...>&& columns, RCAs... args )
-{
-   BLAZE_FUNCTION_TRACE;
-
-   static constexpr size_t indices[] = { I2, Is... };
-   return column<indices[I1]>( columns.operand(), args... );
+   return column< RemoveReference_t<MT>::idx(I) >( columns.operand(), args... );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -1595,111 +1676,26 @@ inline decltype(auto) column( Columns<MT,SO,DF,SF,I2,Is...>&& columns, RCAs... a
 // This function returns an expression representing the specified column of the given column
 // selection.
 */
-template< size_t... CCAs1     // Compile time column arguments
-        , typename MT         // Type of the matrix
-        , bool SO             // Storage order
-        , bool DF             // Density flag
-        , bool SF             // Symmetry flag
-        , size_t... CCAs2     // Compile time column arguments
-        , typename... RCAs >  // Runtime column arguments
-inline decltype(auto) column( Columns<MT,SO,DF,SF,CCAs2...>& columns, RCAs... args )
+template< size_t... CCAs    // Compile time column arguments
+        , typename MT       // Type of the matrix
+        , typename... RCAs  // Runtime column arguments
+        , EnableIf_t< IsColumns_v< RemoveReference_t<MT> > &&
+                      ( sizeof...( CCAs ) == 0UL || !RemoveReference_t<MT>::compileTimeArgs ) >* = nullptr >
+inline decltype(auto) column( MT&& columns, RCAs... args )
 {
    BLAZE_FUNCTION_TRACE;
 
-   const ColumnData<CCAs1...> cd( args... );
-   decltype(auto) indices( columns.idces() );
+   const ColumnData<CCAs...> cd( args... );
 
    constexpr bool isChecked( !Contains_v< TypeList<RCAs...>, Unchecked > );
 
    if( isChecked ) {
-      if( indices.size() <= cd.column() ) {
+      if( columns.columns() <= cd.column() ) {
          BLAZE_THROW_INVALID_ARGUMENT( "Invalid column access index" );
       }
    }
 
-   return column( columns.operand(), indices[cd.column()], args... );
-}
-/*! \endcond */
-//*************************************************************************************************
-
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-/*!\brief Creating a view on a specific column of the given constant column selection.
-// \ingroup columns
-//
-// \param columns The constant selection of columns containing the column.
-// \param args The runtime column arguments.
-// \return View on the specified column of the column selection.
-// \exception std::invalid_argument Invalid column access index.
-//
-// This function returns an expression representing the specified column of the given constant
-// column selection.
-*/
-template< size_t... CCAs1     // Compile time column arguments
-        , typename MT         // Type of the matrix
-        , bool SO             // Storage order
-        , bool DF             // Density flag
-        , bool SF             // Symmetry flag
-        , size_t... CCAs2     // Compile time column arguments
-        , typename... RCAs >  // Runtime column arguments
-inline decltype(auto) column( const Columns<MT,SO,DF,SF,CCAs2...>& columns, RCAs... args )
-{
-   BLAZE_FUNCTION_TRACE;
-
-   const ColumnData<CCAs1...> cd( args... );
-   decltype(auto) indices( columns.idces() );
-
-   constexpr bool isChecked( !Contains_v< TypeList<RCAs...>, Unchecked > );
-
-   if( isChecked ) {
-      if( indices.size() <= cd.column() ) {
-         BLAZE_THROW_INVALID_ARGUMENT( "Invalid column access index" );
-      }
-   }
-
-   return column( columns.operand(), indices[cd.column()], args... );
-}
-/*! \endcond */
-//*************************************************************************************************
-
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-/*!\brief Creating a view on a specific column of the given temporary column selection.
-// \ingroup columns
-//
-// \param columns The temporary selection of columns containing the column.
-// \param args The runtime column arguments.
-// \return View on the specified column of the column selection.
-// \exception std::invalid_argument Invalid column access index.
-//
-// This function returns an expression representing the specified column of the given temporary
-// column selection.
-*/
-template< size_t... CCAs1     // Compile time column arguments
-        , typename MT         // Type of the matrix
-        , bool SO             // Storage order
-        , bool DF             // Density flag
-        , bool SF             // Symmetry flag
-        , size_t... CCAs2     // Compile time column arguments
-        , typename... RCAs >  // Runtime column arguments
-inline decltype(auto) column( Columns<MT,SO,DF,SF,CCAs2...>&& columns, RCAs... args )
-{
-   BLAZE_FUNCTION_TRACE;
-
-   const ColumnData<CCAs1...> cd( args... );
-   decltype(auto) indices( columns.idces() );
-
-   constexpr bool isChecked( !Contains_v< TypeList<RCAs...>, Unchecked > );
-
-   if( isChecked ) {
-      if( indices.size() <= cd.column() ) {
-         BLAZE_THROW_INVALID_ARGUMENT( "Invalid column access index" );
-      }
-   }
-
-   return column( columns.operand(), indices[cd.column()], args... );
+   return column( columns.operand(), columns.idx( cd.column() ), args... );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -1721,11 +1717,11 @@ inline decltype(auto) column( Columns<MT,SO,DF,SF,CCAs2...>&& columns, RCAs... a
 // \param columns The column selection to be resetted.
 // \return void
 */
-template< typename MT       // Type of the matrix
-        , bool SO           // Storage order
-        , bool DF           // Density flag
-        , bool SF           // Symmetry flag
-        , size_t... CCAs >  // Compile time column arguments
+template< typename MT         // Type of the matrix
+        , bool SO             // Storage order
+        , bool DF             // Density flag
+        , bool SF             // Symmetry flag
+        , typename... CCAs >  // Compile time column arguments
 inline void reset( Columns<MT,SO,DF,SF,CCAs...>& columns )
 {
    columns.reset();
@@ -1742,11 +1738,11 @@ inline void reset( Columns<MT,SO,DF,SF,CCAs...>& columns )
 // \param columns The temporary column selection to be resetted.
 // \return void
 */
-template< typename MT       // Type of the matrix
-        , bool SO           // Storage order
-        , bool DF           // Density flag
-        , bool SF           // Symmetry flag
-        , size_t... CCAs >  // Compile time column arguments
+template< typename MT         // Type of the matrix
+        , bool SO             // Storage order
+        , bool DF             // Density flag
+        , bool SF             // Symmetry flag
+        , typename... CCAs >  // Compile time column arguments
 inline void reset( Columns<MT,SO,DF,SF,CCAs...>&& columns )
 {
    columns.reset();
@@ -1767,11 +1763,11 @@ inline void reset( Columns<MT,SO,DF,SF,CCAs...>&& columns )
 // This function resets the values in the specified column of the given column selection to their
 // default value. Note that the capacity of the column remains unchanged.
 */
-template< typename MT       // Type of the matrix
-        , bool SO           // Storage order
-        , bool DF           // Density flag
-        , bool SF           // Symmetry flag
-        , size_t... CCAs >  // Compile time column arguments
+template< typename MT         // Type of the matrix
+        , bool SO             // Storage order
+        , bool DF             // Density flag
+        , bool SF             // Symmetry flag
+        , typename... CCAs >  // Compile time column arguments
 inline void reset( Columns<MT,SO,DF,SF,CCAs...>& columns, size_t i )
 {
    columns.reset( i );
@@ -1790,11 +1786,11 @@ inline void reset( Columns<MT,SO,DF,SF,CCAs...>& columns, size_t i )
 //
 // Clearing a column selection is equivalent to resetting it via the reset() function.
 */
-template< typename MT       // Type of the matrix
-        , bool SO           // Storage order
-        , bool DF           // Density flag
-        , bool SF           // Symmetry flag
-        , size_t... CCAs >  // Compile time column arguments
+template< typename MT         // Type of the matrix
+        , bool SO             // Storage order
+        , bool DF             // Density flag
+        , bool SF             // Symmetry flag
+        , typename... CCAs >  // Compile time column arguments
 inline void clear( Columns<MT,SO,DF,SF,CCAs...>& columns )
 {
    columns.reset();
@@ -1813,11 +1809,11 @@ inline void clear( Columns<MT,SO,DF,SF,CCAs...>& columns )
 //
 // Clearing a column selection is equivalent to resetting it via the reset() function.
 */
-template< typename MT       // Type of the matrix
-        , bool SO           // Storage order
-        , bool DF           // Density flag
-        , bool SF           // Symmetry flag
-        , size_t... CCAs >  // Compile time column arguments
+template< typename MT         // Type of the matrix
+        , bool SO             // Storage order
+        , bool DF             // Density flag
+        , bool SF             // Symmetry flag
+        , typename... CCAs >  // Compile time column arguments
 inline void clear( Columns<MT,SO,DF,SF,CCAs...>&& columns )
 {
    columns.reset();
@@ -1852,11 +1848,11 @@ inline void clear( Columns<MT,SO,DF,SF,CCAs...>&& columns )
    if( isDefault<relaxed>( columns( A, { 2UL, 4UL, 6UL, 8UL } ) ) ) { ... }
    \endcode
 */
-template< bool RF           // Relaxation flag
-        , typename MT       // Type of the dense matrix
-        , bool SO           // Storage order
-        , bool SF           // Symmetry flag
-        , size_t... CCAs >  // Compile time column arguments
+template< bool RF             // Relaxation flag
+        , typename MT         // Type of the dense matrix
+        , bool SO             // Storage order
+        , bool SF             // Symmetry flag
+        , typename... CCAs >  // Compile time column arguments
 inline bool isDefault( const Columns<MT,SO,true,SF,CCAs...>& columns )
 {
    using blaze::isDefault;
@@ -1906,11 +1902,11 @@ inline bool isDefault( const Columns<MT,SO,true,SF,CCAs...>& columns )
    if( isDefault<relaxed>( columns( A, { 2UL, 4UL, 6UL, 8UL } ) ) ) { ... }
    \endcode
 */
-template< bool RF           // Relaxation flag
-        , typename MT       // Type of the dense matrix
-        , bool SO           // Storage order
-        , bool SF           // Symmetry flag
-        , size_t... CCAs >  // Compile time column arguments
+template< bool RF             // Relaxation flag
+        , typename MT         // Type of the dense matrix
+        , bool SO             // Storage order
+        , bool SF             // Symmetry flag
+        , typename... CCAs >  // Compile time column arguments
 inline bool isDefault( const Columns<MT,SO,false,SF,CCAs...>& columns )
 {
    using blaze::isDefault;
@@ -1944,11 +1940,11 @@ inline bool isDefault( const Columns<MT,SO,false,SF,CCAs...>& columns )
    if( isIntact( columns( A, { 2UL, 4UL, 6UL, 8UL } ) ) ) { ... }
    \endcode
 */
-template< typename MT       // Type of the matrix
-        , bool SO           // Storage order
-        , bool DF           // Density flag
-        , bool SF           // Symmetry flag
-        , size_t... CCAs >  // Compile time column arguments
+template< typename MT         // Type of the matrix
+        , bool SO             // Storage order
+        , bool DF             // Density flag
+        , bool SF             // Symmetry flag
+        , typename... CCAs >  // Compile time column arguments
 inline bool isIntact( const Columns<MT,SO,DF,SF,CCAs...>& columns ) noexcept
 {
    return ( columns.rows() == columns.operand().rows() &&
@@ -1972,20 +1968,19 @@ inline bool isIntact( const Columns<MT,SO,DF,SF,CCAs...>& columns ) noexcept
 // of the given matrix in ascending and consecutive order and by that represents the same observable
 // state. In this case, the function returns \a true, otherwise it returns \a false.
 */
-template< typename MT     // Type of the matrix
-        , bool SO1        // Storage order of the left-hand side column selection
-        , bool DF         // Density flag
-        , bool SF         // Symmetry flag
-        , size_t... CCAs  // Compile time column arguments
-        , bool SO2 >      // Storage order of the right-hand side matrix
+template< typename MT       // Type of the matrix
+        , bool SO1          // Storage order of the left-hand side column selection
+        , bool DF           // Density flag
+        , bool SF           // Symmetry flag
+        , typename... CCAs  // Compile time column arguments
+        , bool SO2 >        // Storage order of the right-hand side matrix
 inline bool isSame( const Columns<MT,SO1,DF,SF,CCAs...>& a, const Matrix<MT,SO2>& b ) noexcept
 {
    if( !isSame( a.operand(), ~b ) || ( a.rows() != (~b).rows() ) || ( a.columns() != (~b).columns() ) )
       return false;
 
-   decltype(auto) indices( a.idces() );
    for( size_t j=0UL; j<a.columns(); ++j ) {
-      if( indices[j] != j )
+      if( a.idx(j) != j )
          return false;
    }
 
@@ -2012,7 +2007,7 @@ template< typename MT       // Type of the matrix
         , bool SO1          // Storage order of the left-hand side matrix
         , bool DF           // Density flag
         , bool SF           // Symmetry flag
-        , size_t... CCAs    // Compile time column arguments
+        , typename... CCAs  // Compile time column arguments
         , bool SO2 >        // Storage order of the right-hand side column selection
 inline bool isSame( const Matrix<MT,SO1>& a, const Columns<MT,SO2,DF,SF,CCAs...>& b ) noexcept
 {
@@ -2039,7 +2034,7 @@ template< typename MT       // Type of the matrix
         , bool SO1          // Storage order of the left-hand side column selection
         , bool DF           // Density flag
         , bool SF           // Symmetry flag
-        , size_t... CCAs    // Compile time column arguments
+        , typename... CCAs  // Compile time column arguments
         , AlignmentFlag AF  // Alignment flag
         , bool SO2          // Storage order of the right-hand side submatrix
         , size_t... CSAs >  // Compile time submatrix arguments
@@ -2048,9 +2043,8 @@ inline bool isSame( const Columns<MT,SO1,DF,SF,CCAs...>& a, const Submatrix<MT,A
    if( !isSame( a.operand(), b.operand() ) || ( a.rows() != (~b).rows() ) || ( a.columns() != (~b).columns() ) )
       return false;
 
-   decltype(auto) indices( a.idces() );
    for( size_t j=0UL; j<a.columns(); ++j ) {
-      if( indices[j] != b.column()+j )
+      if( a.idx(j) != b.column()+j )
          return false;
    }
 
@@ -2073,14 +2067,14 @@ inline bool isSame( const Columns<MT,SO1,DF,SF,CCAs...>& a, const Submatrix<MT,A
 // as the given submatrix in ascending and consecutive order and by that represents the same
 // observable state. In this case, the function returns \a true, otherwise it returns \a false.
 */
-template< typename MT       // Type of the matrix
-        , AlignmentFlag AF  // Alignment flag
-        , bool SO1          // Storage order of the left-hand side submatrix
-        , bool DF           // Density flag
-        , size_t... CSAs    // Compile time submatrix arguments
-        , bool SO2          // Storage order of the right-hand side column selection
-        , bool SF           // Symmetry flag
-        , size_t... CCAs >  // Compile time column arguments
+template< typename MT         // Type of the matrix
+        , AlignmentFlag AF    // Alignment flag
+        , bool SO1            // Storage order of the left-hand side submatrix
+        , bool DF             // Density flag
+        , size_t... CSAs      // Compile time submatrix arguments
+        , bool SO2            // Storage order of the right-hand side column selection
+        , bool SF             // Symmetry flag
+        , typename... CCAs >  // Compile time column arguments
 inline bool isSame( const Submatrix<MT,AF,SO1,DF,CSAs...>& a, const Columns<MT,SO2,DF,SF,CCAs...>& b ) noexcept
 {
    return isSame( b, a );
@@ -2102,22 +2096,24 @@ inline bool isSame( const Submatrix<MT,AF,SO1,DF,CSAs...>& a, const Columns<MT,S
 // the same range of the same matrix. In case both selections represent the same observable
 // state, the function returns \a true, otherwise it returns \a false.
 */
-template< typename MT        // Type of the matrix
-        , bool SO            // Storage order
-        , bool DF            // Density flag
-        , bool SF            // Symmetry flag
-        , size_t... CCAs1    // Compile time column arguments of the left-hand side column selection
-        , size_t... CCAs2 >  // Compile time column arguments of the right-hand side column selection
+template< typename MT          // Type of the matrix
+        , bool SO              // Storage order
+        , bool DF              // Density flag
+        , bool SF              // Symmetry flag
+        , typename... CCAs1    // Compile time column arguments of the left-hand side column selection
+        , typename... CCAs2 >  // Compile time column arguments of the right-hand side column selection
 inline bool isSame( const Columns<MT,SO,DF,SF,CCAs1...>& a,
                     const Columns<MT,SO,DF,SF,CCAs2...>& b ) noexcept
 {
    if( !isSame( a.operand(), b.operand() ) || a.rows() != b.rows() || a.columns() != b.columns() )
       return false;
 
-   decltype(auto) indices1( a.idces() );
-   decltype(auto) indices2( b.idces() );
+   for( size_t i=0UL; i<a.columns(); ++i ) {
+      if( a.idx(i) != b.idx(i) )
+         return false;
+   }
 
-   return std::equal( indices1.begin(), indices1.end(), indices2.begin() );
+   return true;
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -2162,11 +2158,11 @@ inline bool isSame( const Columns<MT,SO,DF,SF,CCAs1...>& a,
 // \note This function does only provide the basic exception safety guarantee, i.e. in case of an
 // exception \a c may already have been modified.
 */
-template< InversionFlag IF  // Inversion algorithm
-        , typename MT       // Type of the dense matrix
-        , bool SO           // Storage order
-        , bool SF           // Symmetry flag
-        , size_t... CCAs >  // Compile time column arguments
+template< InversionFlag IF    // Inversion algorithm
+        , typename MT         // Type of the dense matrix
+        , bool SO             // Storage order
+        , bool SF             // Symmetry flag
+        , typename... CCAs >  // Compile time column arguments
 inline auto invert( Columns<MT,SO,true,SF,CCAs...>& c )
    -> DisableIf_t< HasMutableDataAccess_v<MT> >
 {
@@ -2199,18 +2195,63 @@ inline auto invert( Columns<MT,SO,true,SF,CCAs...>& c )
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename MT     // Type of the matrix
-        , bool SO         // Storage order
-        , bool DF         // Density flag
-        , bool SF         // Symmetry flag
-        , size_t... CCAs  // Compile time column arguments
-        , typename ET >   // Type of the element
+template< typename MT       // Type of the matrix
+        , bool SO           // Storage order
+        , bool DF           // Density flag
+        , bool SF           // Symmetry flag
+        , typename... CCAs  // Compile time column arguments
+        , typename ET >     // Type of the element
 inline bool trySet( const Columns<MT,SO,DF,SF,CCAs...>& c, size_t i, size_t j, const ET& value )
 {
    BLAZE_INTERNAL_ASSERT( i < c.rows(), "Invalid row access index" );
    BLAZE_INTERNAL_ASSERT( j < c.columns(), "Invalid column access index" );
 
    return trySet( c.operand(), c.idx(i), j, value );
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Predict invariant violations by setting a range of elements of a column selection.
+// \ingroup columns
+//
+// \param c The target column selection.
+// \param row The index of the first row of the range to be modified.
+// \param column The index of the first column of the range to be modified.
+// \param m The number of rows of the range to be modified.
+// \param n The number of columns of the range to be modified.
+// \param value The value to be set to the range of elements.
+// \return \a true in case the operation would be successful, \a false if not.
+//
+// This function must \b NOT be called explicitly! It is used internally for the performance
+// optimized evaluation of expression templates. Calling this function explicitly might result
+// in erroneous results and/or in compilation errors. Instead of using this function use the
+// assignment operator.
+*/
+template< typename MT       // Type of the matrix
+        , bool SO           // Storage order
+        , bool DF           // Density flag
+        , bool SF           // Symmetry flag
+        , typename... CCAs  // Compile time column arguments
+        , typename ET >     // Type of the element
+BLAZE_ALWAYS_INLINE bool
+   trySet( const Columns<MT,SO,DF,SF,CCAs...>& c, size_t row, size_t column, size_t m, size_t n, const ET& value )
+{
+   BLAZE_INTERNAL_ASSERT( row <= (~c).rows(), "Invalid row access index" );
+   BLAZE_INTERNAL_ASSERT( column <= (~c).columns(), "Invalid column access index" );
+   BLAZE_INTERNAL_ASSERT( row + m <= (~c).rows(), "Invalid number of rows" );
+   BLAZE_INTERNAL_ASSERT( column + n <= (~c).columns(), "Invalid number of columns" );
+
+   const size_t jend( column + n );
+
+   for( size_t j=column; j<jend; ++j ) {
+      if( !trySet( c.operand(), row, c.idx(j), m, 1UL, value ) )
+         return false;
+   }
+
+   return true;
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -2232,18 +2273,63 @@ inline bool trySet( const Columns<MT,SO,DF,SF,CCAs...>& c, size_t i, size_t j, c
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename MT     // Type of the matrix
-        , bool SO         // Storage order
-        , bool DF         // Density flag
-        , bool SF         // Symmetry flag
-        , size_t... CCAs  // Compile time column arguments
-        , typename ET >   // Type of the element
+template< typename MT       // Type of the matrix
+        , bool SO           // Storage order
+        , bool DF           // Density flag
+        , bool SF           // Symmetry flag
+        , typename... CCAs  // Compile time column arguments
+        , typename ET >     // Type of the element
 inline bool tryAdd( const Columns<MT,SO,DF,SF,CCAs...>& c, size_t i, size_t j, const ET& value )
 {
    BLAZE_INTERNAL_ASSERT( i < c.rows(), "Invalid row access index" );
    BLAZE_INTERNAL_ASSERT( j < c.columns(), "Invalid column access index" );
 
    return tryAdd( c.operand(), c.idx(i), j, value );
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Predict invariant violations by adding to a range of elements of a column selection.
+// \ingroup columns
+//
+// \param c The target column selection.
+// \param row The index of the first row of the range to be modified.
+// \param column The index of the first column of the range to be modified.
+// \param m The number of rows of the range to be modified.
+// \param n The number of columns of the range to be modified.
+// \param value The value to be added to the range of elements.
+// \return \a true in case the operation would be successful, \a false if not.
+//
+// This function must \b NOT be called explicitly! It is used internally for the performance
+// optimized evaluation of expression templates. Calling this function explicitly might result
+// in erroneous results and/or in compilation errors. Instead of using this function use the
+// assignment operator.
+*/
+template< typename MT       // Type of the matrix
+        , bool SO           // Storage order
+        , bool DF           // Density flag
+        , bool SF           // Symmetry flag
+        , typename... CCAs  // Compile time column arguments
+        , typename ET >     // Type of the element
+BLAZE_ALWAYS_INLINE bool
+   tryAdd( const Columns<MT,SO,DF,SF,CCAs...>& c, size_t row, size_t column, size_t m, size_t n, const ET& value )
+{
+   BLAZE_INTERNAL_ASSERT( row <= (~c).rows(), "Invalid row access index" );
+   BLAZE_INTERNAL_ASSERT( column <= (~c).columns(), "Invalid column access index" );
+   BLAZE_INTERNAL_ASSERT( row + m <= (~c).rows(), "Invalid number of rows" );
+   BLAZE_INTERNAL_ASSERT( column + n <= (~c).columns(), "Invalid number of columns" );
+
+   const size_t jend( column + n );
+
+   for( size_t j=column; j<jend; ++j ) {
+      if( !tryAdd( c.operand(), row, c.idx(j), m, 1UL, value ) )
+         return false;
+   }
+
+   return true;
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -2265,18 +2351,63 @@ inline bool tryAdd( const Columns<MT,SO,DF,SF,CCAs...>& c, size_t i, size_t j, c
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename MT     // Type of the matrix
-        , bool SO         // Storage order
-        , bool DF         // Density flag
-        , bool SF         // Symmetry flag
-        , size_t... CCAs  // Compile time column arguments
-        , typename ET >   // Type of the element
+template< typename MT       // Type of the matrix
+        , bool SO           // Storage order
+        , bool DF           // Density flag
+        , bool SF           // Symmetry flag
+        , typename... CCAs  // Compile time column arguments
+        , typename ET >     // Type of the element
 inline bool trySub( const Columns<MT,SO,DF,SF,CCAs...>& c, size_t i, size_t j, const ET& value )
 {
    BLAZE_INTERNAL_ASSERT( i < c.rows(), "Invalid row access index" );
    BLAZE_INTERNAL_ASSERT( j < c.columns(), "Invalid column access index" );
 
    return trySub( c.operand(), c.idx(i), j, value );
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Predict invariant violations by subtracting from a range of elements of a column selection.
+// \ingroup columns
+//
+// \param c The target column selection.
+// \param row The index of the first row of the range to be modified.
+// \param column The index of the first column of the range to be modified.
+// \param m The number of rows of the range to be modified.
+// \param n The number of columns of the range to be modified.
+// \param value The value to be subtracted to the range of elements.
+// \return \a true in case the operation would be successful, \a false if not.
+//
+// This function must \b NOT be called explicitly! It is used internally for the performance
+// optimized evaluation of expression templates. Calling this function explicitly might result
+// in erroneous results and/or in compilation errors. Instead of using this function use the
+// assignment operator.
+*/
+template< typename MT       // Type of the matrix
+        , bool SO           // Storage order
+        , bool DF           // Density flag
+        , bool SF           // Symmetry flag
+        , typename... CCAs  // Compile time column arguments
+        , typename ET >     // Type of the element
+BLAZE_ALWAYS_INLINE bool
+   trySub( const Columns<MT,SO,DF,SF,CCAs...>& c, size_t row, size_t column, size_t m, size_t n, const ET& value )
+{
+   BLAZE_INTERNAL_ASSERT( row <= (~c).rows(), "Invalid row access index" );
+   BLAZE_INTERNAL_ASSERT( column <= (~c).columns(), "Invalid column access index" );
+   BLAZE_INTERNAL_ASSERT( row + m <= (~c).rows(), "Invalid number of rows" );
+   BLAZE_INTERNAL_ASSERT( column + n <= (~c).columns(), "Invalid number of columns" );
+
+   const size_t jend( column + n );
+
+   for( size_t j=column; j<jend; ++j ) {
+      if( !trySub( c.operand(), row, c.idx(j), m, 1UL, value ) )
+         return false;
+   }
+
+   return true;
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -2298,12 +2429,12 @@ inline bool trySub( const Columns<MT,SO,DF,SF,CCAs...>& c, size_t i, size_t j, c
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename MT     // Type of the matrix
-        , bool SO         // Storage order
-        , bool DF         // Density flag
-        , bool SF         // Symmetry flag
-        , size_t... CCAs  // Compile time column arguments
-        , typename ET >   // Type of the element
+template< typename MT       // Type of the matrix
+        , bool SO           // Storage order
+        , bool DF           // Density flag
+        , bool SF           // Symmetry flag
+        , typename... CCAs  // Compile time column arguments
+        , typename ET >     // Type of the element
 inline bool tryMult( const Columns<MT,SO,DF,SF,CCAs...>& c, size_t i, size_t j, const ET& value )
 {
    BLAZE_INTERNAL_ASSERT( i < c.rows(), "Invalid row access index" );
@@ -2333,12 +2464,12 @@ inline bool tryMult( const Columns<MT,SO,DF,SF,CCAs...>& c, size_t i, size_t j, 
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename MT     // Type of the matrix
-        , bool SO         // Storage order
-        , bool DF         // Density flag
-        , bool SF         // Symmetry flag
-        , size_t... CCAs  // Compile time column arguments
-        , typename ET >   // Type of the element
+template< typename MT       // Type of the matrix
+        , bool SO           // Storage order
+        , bool DF           // Density flag
+        , bool SF           // Symmetry flag
+        , typename... CCAs  // Compile time column arguments
+        , typename ET >     // Type of the element
 BLAZE_ALWAYS_INLINE bool
    tryMult( const Columns<MT,SO,DF,SF,CCAs...>& c, size_t row, size_t column, size_t m, size_t n, const ET& value )
 {
@@ -2350,7 +2481,7 @@ BLAZE_ALWAYS_INLINE bool
    const size_t jend( column + n );
 
    for( size_t j=column; j<jend; ++j ) {
-      if( !tryMult( c.operand(), row, c.idx(j), m, n, value ) )
+      if( !tryMult( c.operand(), row, c.idx(j), m, 1UL, value ) )
          return false;
    }
 
@@ -2376,12 +2507,12 @@ BLAZE_ALWAYS_INLINE bool
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename MT     // Type of the matrix
-        , bool SO         // Storage order
-        , bool DF         // Density flag
-        , bool SF         // Symmetry flag
-        , size_t... CCAs  // Compile time column arguments
-        , typename ET >   // Type of the element
+template< typename MT       // Type of the matrix
+        , bool SO           // Storage order
+        , bool DF           // Density flag
+        , bool SF           // Symmetry flag
+        , typename... CCAs  // Compile time column arguments
+        , typename ET >     // Type of the element
 inline bool tryDiv( const Columns<MT,SO,DF,SF,CCAs...>& c, size_t i, size_t j, const ET& value )
 {
    BLAZE_INTERNAL_ASSERT( i < c.rows(), "Invalid row access index" );
@@ -2411,12 +2542,12 @@ inline bool tryDiv( const Columns<MT,SO,DF,SF,CCAs...>& c, size_t i, size_t j, c
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename MT     // Type of the matrix
-        , bool SO         // Storage order
-        , bool DF         // Density flag
-        , bool SF         // Symmetry flag
-        , size_t... CCAs  // Compile time column arguments
-        , typename ET >   // Type of the element
+template< typename MT       // Type of the matrix
+        , bool SO           // Storage order
+        , bool DF           // Density flag
+        , bool SF           // Symmetry flag
+        , typename... CCAs  // Compile time column arguments
+        , typename ET >     // Type of the element
 BLAZE_ALWAYS_INLINE bool
    tryDiv( const Columns<MT,SO,DF,SF,CCAs...>& c, size_t row, size_t column, size_t m, size_t n, const ET& value )
 {
@@ -2428,7 +2559,317 @@ BLAZE_ALWAYS_INLINE bool
    const size_t jend( column + n );
 
    for( size_t j=column; j<jend; ++j ) {
-      if( !tryDiv( c.operand(), row, c.idx(j), m, n, value ) )
+      if( !tryDiv( c.operand(), row, c.idx(j), m, 1UL, value ) )
+         return false;
+   }
+
+   return true;
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Predict invariant violations by shifting a single element of a column selection.
+// \ingroup columns
+//
+// \param c The target column selection.
+// \param i The row index of the element to be modified.
+// \param j The column index of the element to be modified.
+// \param count The number of bits to shift the element.
+// \return \a true in case the operation would be successful, \a false if not.
+//
+// This function must \b NOT be called explicitly! It is used internally for the performance
+// optimized evaluation of expression templates. Calling this function explicitly might result
+// in erroneous results and/or in compilation errors. Instead of using this function use the
+// assignment operator.
+*/
+template< typename MT         // Type of the matrix
+        , bool SO             // Storage order
+        , bool DF             // Density flag
+        , bool SF             // Symmetry flag
+        , typename... CCAs >  // Compile time column arguments
+inline bool tryShift( const Columns<MT,SO,DF,SF,CCAs...>& c, size_t i, size_t j, int count )
+{
+   BLAZE_INTERNAL_ASSERT( i < c.rows(), "Invalid row access index" );
+   BLAZE_INTERNAL_ASSERT( j < c.columns(), "Invalid column access index" );
+
+   return tryShift( c.operand(), c.idx(i), j, count );
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Predict invariant violations by shifting a range of elements of a column selection.
+// \ingroup columns
+//
+// \param c The target column selection.
+// \param row The index of the first row of the range to be modified.
+// \param column The index of the first column of the range to be modified.
+// \param m The number of rows of the range to be modified.
+// \param n The number of columns of the range to be modified.
+// \param count The number of bits to shift the range of elements.
+// \return \a true in case the operation would be successful, \a false if not.
+//
+// This function must \b NOT be called explicitly! It is used internally for the performance
+// optimized evaluation of expression templates. Calling this function explicitly might result
+// in erroneous results and/or in compilation errors. Instead of using this function use the
+// assignment operator.
+*/
+template< typename MT         // Type of the matrix
+        , bool SO             // Storage order
+        , bool DF             // Density flag
+        , bool SF             // Symmetry flag
+        , typename... CCAs >  // Compile time column arguments
+BLAZE_ALWAYS_INLINE bool
+   tryShift( const Columns<MT,SO,DF,SF,CCAs...>& c, size_t row, size_t column, size_t m, size_t n, int count )
+{
+   BLAZE_INTERNAL_ASSERT( row <= (~c).rows(), "Invalid row access index" );
+   BLAZE_INTERNAL_ASSERT( column <= (~c).columns(), "Invalid column access index" );
+   BLAZE_INTERNAL_ASSERT( row + m <= (~c).rows(), "Invalid number of rows" );
+   BLAZE_INTERNAL_ASSERT( column + n <= (~c).columns(), "Invalid number of columns" );
+
+   const size_t jend( column + n );
+
+   for( size_t j=column; j<jend; ++j ) {
+      if( !tryShift( c.operand(), row, c.idx(j), m, 1UL, count ) )
+         return false;
+   }
+
+   return true;
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Predict invariant violations by a bitwise AND on a single element of a column selection.
+// \ingroup columns
+//
+// \param c The target column selection.
+// \param i The row index of the element to be modified.
+// \param j The column index of the element to be modified.
+// \param value The bit pattern to be used on the element.
+// \return \a true in case the operation would be successful, \a false if not.
+//
+// This function must \b NOT be called explicitly! It is used internally for the performance
+// optimized evaluation of expression templates. Calling this function explicitly might result
+// in erroneous results and/or in compilation errors. Instead of using this function use the
+// assignment operator.
+*/
+template< typename MT       // Type of the matrix
+        , bool SO           // Storage order
+        , bool DF           // Density flag
+        , bool SF           // Symmetry flag
+        , typename... CCAs  // Compile time column arguments
+        , typename ET >     // Type of the element
+inline bool tryBitand( const Columns<MT,SO,DF,SF,CCAs...>& c, size_t i, size_t j, const ET& value )
+{
+   BLAZE_INTERNAL_ASSERT( i < c.rows(), "Invalid row access index" );
+   BLAZE_INTERNAL_ASSERT( j < c.columns(), "Invalid column access index" );
+
+   return tryBitand( c.operand(), c.idx(i), j, value );
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Predict invariant violations by a bitwise AND on a range of elements of a column selection.
+// \ingroup columns
+//
+// \param c The target column selection.
+// \param row The index of the first row of the range to be modified.
+// \param column The index of the first column of the range to be modified.
+// \param m The number of rows of the range to be modified.
+// \param n The number of columns of the range to be modified.
+// \param value The bit pattern to be used on the range of elements.
+// \return \a true in case the operation would be successful, \a false if not.
+//
+// This function must \b NOT be called explicitly! It is used internally for the performance
+// optimized evaluation of expression templates. Calling this function explicitly might result
+// in erroneous results and/or in compilation errors. Instead of using this function use the
+// assignment operator.
+*/
+template< typename MT       // Type of the matrix
+        , bool SO           // Storage order
+        , bool DF           // Density flag
+        , bool SF           // Symmetry flag
+        , typename... CCAs  // Compile time column arguments
+        , typename ET >     // Type of the element
+BLAZE_ALWAYS_INLINE bool
+   tryBitand( const Columns<MT,SO,DF,SF,CCAs...>& c, size_t row, size_t column, size_t m, size_t n, const ET& value )
+{
+   BLAZE_INTERNAL_ASSERT( row <= (~c).rows(), "Invalid row access index" );
+   BLAZE_INTERNAL_ASSERT( column <= (~c).columns(), "Invalid column access index" );
+   BLAZE_INTERNAL_ASSERT( row + m <= (~c).rows(), "Invalid number of rows" );
+   BLAZE_INTERNAL_ASSERT( column + n <= (~c).columns(), "Invalid number of columns" );
+
+   const size_t jend( column + n );
+
+   for( size_t j=column; j<jend; ++j ) {
+      if( !tryBitand( c.operand(), row, c.idx(j), m, 1UL, value ) )
+         return false;
+   }
+
+   return true;
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Predict invariant violations by a bitwise OR on a single element of a column selection.
+// \ingroup columns
+//
+// \param c The target column selection.
+// \param i The row index of the element to be modified.
+// \param j The column index of the element to be modified.
+// \param value The bit pattern to be used on the element.
+// \return \a true in case the operation would be successful, \a false if not.
+//
+// This function must \b NOT be called explicitly! It is used internally for the performance
+// optimized evaluation of expression templates. Calling this function explicitly might result
+// in erroneous results and/or in compilation errors. Instead of using this function use the
+// assignment operator.
+*/
+template< typename MT       // Type of the matrix
+        , bool SO           // Storage order
+        , bool DF           // Density flag
+        , bool SF           // Symmetry flag
+        , typename... CCAs  // Compile time column arguments
+        , typename ET >     // Type of the element
+inline bool tryBitor( const Columns<MT,SO,DF,SF,CCAs...>& c, size_t i, size_t j, const ET& value )
+{
+   BLAZE_INTERNAL_ASSERT( i < c.rows(), "Invalid row access index" );
+   BLAZE_INTERNAL_ASSERT( j < c.columns(), "Invalid column access index" );
+
+   return tryBitor( c.operand(), c.idx(i), j, value );
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Predict invariant violations by a bitwise OR on a range of elements of a column selection.
+// \ingroup columns
+//
+// \param c The target column selection.
+// \param row The index of the first row of the range to be modified.
+// \param column The index of the first column of the range to be modified.
+// \param m The number of rows of the range to be modified.
+// \param n The number of columns of the range to be modified.
+// \param value The bit pattern to be used on the range of elements.
+// \return \a true in case the operation would be successful, \a false if not.
+//
+// This function must \b NOT be called explicitly! It is used internally for the performance
+// optimized evaluation of expression templates. Calling this function explicitly might result
+// in erroneous results and/or in compilation errors. Instead of using this function use the
+// assignment operator.
+*/
+template< typename MT       // Type of the matrix
+        , bool SO           // Storage order
+        , bool DF           // Density flag
+        , bool SF           // Symmetry flag
+        , typename... CCAs  // Compile time column arguments
+        , typename ET >     // Type of the element
+BLAZE_ALWAYS_INLINE bool
+   tryBitor( const Columns<MT,SO,DF,SF,CCAs...>& c, size_t row, size_t column, size_t m, size_t n, const ET& value )
+{
+   BLAZE_INTERNAL_ASSERT( row <= (~c).rows(), "Invalid row access index" );
+   BLAZE_INTERNAL_ASSERT( column <= (~c).columns(), "Invalid column access index" );
+   BLAZE_INTERNAL_ASSERT( row + m <= (~c).rows(), "Invalid number of rows" );
+   BLAZE_INTERNAL_ASSERT( column + n <= (~c).columns(), "Invalid number of columns" );
+
+   const size_t jend( column + n );
+
+   for( size_t j=column; j<jend; ++j ) {
+      if( !tryBitor( c.operand(), row, c.idx(j), m, 1UL, value ) )
+         return false;
+   }
+
+   return true;
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Predict invariant violations by a bitwise XOR on a single element of a column selection.
+// \ingroup columns
+//
+// \param c The target column selection.
+// \param i The row index of the element to be modified.
+// \param j The column index of the element to be modified.
+// \param value The bit pattern to be used on the element.
+// \return \a true in case the operation would be successful, \a false if not.
+//
+// This function must \b NOT be called explicitly! It is used internally for the performance
+// optimized evaluation of expression templates. Calling this function explicitly might result
+// in erroneous results and/or in compilation errors. Instead of using this function use the
+// assignment operator.
+*/
+template< typename MT       // Type of the matrix
+        , bool SO           // Storage order
+        , bool DF           // Density flag
+        , bool SF           // Symmetry flag
+        , typename... CCAs  // Compile time column arguments
+        , typename ET >     // Type of the element
+inline bool tryBitxor( const Columns<MT,SO,DF,SF,CCAs...>& c, size_t i, size_t j, const ET& value )
+{
+   BLAZE_INTERNAL_ASSERT( i < c.rows(), "Invalid row access index" );
+   BLAZE_INTERNAL_ASSERT( j < c.columns(), "Invalid column access index" );
+
+   return tryBitxor( c.operand(), c.idx(i), j, value );
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Predict invariant violations by a bitwise XOR on a range of elements of a column selection.
+// \ingroup columns
+//
+// \param c The target column selection.
+// \param row The index of the first row of the range to be modified.
+// \param column The index of the first column of the range to be modified.
+// \param m The number of rows of the range to be modified.
+// \param n The number of columns of the range to be modified.
+// \param value The bit pattern to be used on the range of elements.
+// \return \a true in case the operation would be successful, \a false if not.
+//
+// This function must \b NOT be called explicitly! It is used internally for the performance
+// optimized evaluation of expression templates. Calling this function explicitly might result
+// in erroneous results and/or in compilation errors. Instead of using this function use the
+// assignment operator.
+*/
+template< typename MT       // Type of the matrix
+        , bool SO           // Storage order
+        , bool DF           // Density flag
+        , bool SF           // Symmetry flag
+        , typename... CCAs  // Compile time column arguments
+        , typename ET >     // Type of the element
+BLAZE_ALWAYS_INLINE bool
+   tryBitxor( const Columns<MT,SO,DF,SF,CCAs...>& c, size_t row, size_t column, size_t m, size_t n, const ET& value )
+{
+   BLAZE_INTERNAL_ASSERT( row <= (~c).rows(), "Invalid row access index" );
+   BLAZE_INTERNAL_ASSERT( column <= (~c).columns(), "Invalid column access index" );
+   BLAZE_INTERNAL_ASSERT( row + m <= (~c).rows(), "Invalid number of rows" );
+   BLAZE_INTERNAL_ASSERT( column + n <= (~c).columns(), "Invalid number of columns" );
+
+   const size_t jend( column + n );
+
+   for( size_t j=column; j<jend; ++j ) {
+      if( !tryBitxor( c.operand(), row, c.idx(j), m, 1UL, value ) )
          return false;
    }
 
@@ -2454,12 +2895,12 @@ BLAZE_ALWAYS_INLINE bool
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename MT     // Type of the matrix
-        , bool SO         // Storage order
-        , bool DF         // Density flag
-        , bool SF         // Symmetry flag
-        , size_t... CCAs  // Compile time column arguments
-        , typename VT >   // Type of the right-hand side vector
+template< typename MT       // Type of the matrix
+        , bool SO           // Storage order
+        , bool DF           // Density flag
+        , bool SF           // Symmetry flag
+        , typename... CCAs  // Compile time column arguments
+        , typename VT >     // Type of the right-hand side vector
 inline bool tryAssign( const Columns<MT,SO,DF,SF,CCAs...>& lhs,
                        const Vector<VT,false>& rhs, size_t row, size_t column )
 {
@@ -2489,12 +2930,12 @@ inline bool tryAssign( const Columns<MT,SO,DF,SF,CCAs...>& lhs,
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename MT     // Type of the matrix
-        , bool SO         // Storage order
-        , bool DF         // Density flag
-        , bool SF         // Symmetry flag
-        , size_t... CCAs  // Compile time column arguments
-        , typename VT >   // Type of the right-hand side vector
+template< typename MT       // Type of the matrix
+        , bool SO           // Storage order
+        , bool DF           // Density flag
+        , bool SF           // Symmetry flag
+        , typename... CCAs  // Compile time column arguments
+        , typename VT >     // Type of the right-hand side vector
 inline bool tryAssign( const Columns<MT,SO,DF,SF,CCAs...>& lhs,
                        const Vector<VT,true>& rhs, size_t row, size_t column )
 {
@@ -2531,17 +2972,17 @@ inline bool tryAssign( const Columns<MT,SO,DF,SF,CCAs...>& lhs,
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename MT     // Type of the matrix
-        , bool SO         // Storage order
-        , bool DF         // Density flag
-        , bool SF         // Symmetry flag
-        , size_t... CCAs  // Compile time column arguments
-        , typename VT     // Type of the right-hand side vector
-        , bool TF >       // Transpose flag of the right-hand side vector
+template< typename MT       // Type of the matrix
+        , bool SO           // Storage order
+        , bool DF           // Density flag
+        , bool SF           // Symmetry flag
+        , typename... CCAs  // Compile time column arguments
+        , typename VT       // Type of the right-hand side vector
+        , bool TF >         // Transpose flag of the right-hand side vector
 inline bool tryAssign( const Columns<MT,SO,DF,SF,CCAs...>& lhs,
                        const Vector<VT,TF>& rhs, ptrdiff_t band, size_t row, size_t column )
 {
-   UNUSED_PARAMETER( band );
+   MAYBE_UNUSED( band );
 
    BLAZE_INTERNAL_ASSERT( row <= lhs.rows(), "Invalid row access index" );
    BLAZE_INTERNAL_ASSERT( column <= lhs.columns(), "Invalid column access index" );
@@ -2575,13 +3016,13 @@ inline bool tryAssign( const Columns<MT,SO,DF,SF,CCAs...>& lhs,
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename MT1    // Type of the matrix
-        , bool SO1        // Storage order
-        , bool DF         // Density flag
-        , bool SF         // Symmetry flag
-        , size_t... CCAs  // Compile time column arguments
-        , typename MT2    // Type of the right-hand side matrix
-        , bool SO2 >      // Storage order of the right-hand side matrix
+template< typename MT1      // Type of the matrix
+        , bool SO1          // Storage order
+        , bool DF           // Density flag
+        , bool SF           // Symmetry flag
+        , typename... CCAs  // Compile time column arguments
+        , typename MT2      // Type of the right-hand side matrix
+        , bool SO2 >        // Storage order of the right-hand side matrix
 inline bool tryAssign( const Columns<MT1,SO1,DF,SF,CCAs...>& lhs,
                        const Matrix<MT2,SO2>& rhs, size_t row, size_t column )
 {
@@ -2618,12 +3059,12 @@ inline bool tryAssign( const Columns<MT1,SO1,DF,SF,CCAs...>& lhs,
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename MT     // Type of the matrix
-        , bool SO         // Storage order
-        , bool DF         // Density flag
-        , bool SF         // Symmetry flag
-        , size_t... CCAs  // Compile time column arguments
-        , typename VT >   // Type of the right-hand side vector
+template< typename MT       // Type of the matrix
+        , bool SO           // Storage order
+        , bool DF           // Density flag
+        , bool SF           // Symmetry flag
+        , typename... CCAs  // Compile time column arguments
+        , typename VT >     // Type of the right-hand side vector
 inline bool tryAddAssign( const Columns<MT,SO,DF,SF,CCAs...>& lhs,
                           const Vector<VT,false>& rhs, size_t row, size_t column )
 {
@@ -2654,12 +3095,12 @@ inline bool tryAddAssign( const Columns<MT,SO,DF,SF,CCAs...>& lhs,
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename MT     // Type of the matrix
-        , bool SO         // Storage order
-        , bool DF         // Density flag
-        , bool SF         // Symmetry flag
-        , size_t... CCAs  // Compile time column arguments
-        , typename VT >   // Type of the right-hand side vector
+template< typename MT       // Type of the matrix
+        , bool SO           // Storage order
+        , bool DF           // Density flag
+        , bool SF           // Symmetry flag
+        , typename... CCAs  // Compile time column arguments
+        , typename VT >     // Type of the right-hand side vector
 inline bool tryAddAssign( const Columns<MT,SO,DF,SF,CCAs...>& lhs,
                           const Vector<VT,true>& rhs, size_t row, size_t column )
 {
@@ -2696,17 +3137,17 @@ inline bool tryAddAssign( const Columns<MT,SO,DF,SF,CCAs...>& lhs,
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename MT     // Type of the matrix
-        , bool SO         // Storage order
-        , bool DF         // Density flag
-        , bool SF         // Symmetry flag
-        , size_t... CCAs  // Compile time column arguments
-        , typename VT     // Type of the right-hand side vector
-        , bool TF >       // Transpose flag of the right-hand side vector
+template< typename MT       // Type of the matrix
+        , bool SO           // Storage order
+        , bool DF           // Density flag
+        , bool SF           // Symmetry flag
+        , typename... CCAs  // Compile time column arguments
+        , typename VT       // Type of the right-hand side vector
+        , bool TF >         // Transpose flag of the right-hand side vector
 inline bool tryAddAssign( const Columns<MT,SO,DF,SF,CCAs...>& lhs,
                           const Vector<VT,TF>& rhs, ptrdiff_t band, size_t row, size_t column )
 {
-   UNUSED_PARAMETER( band );
+   MAYBE_UNUSED( band );
 
    BLAZE_INTERNAL_ASSERT( row <= lhs.rows(), "Invalid row access index" );
    BLAZE_INTERNAL_ASSERT( column <= lhs.columns(), "Invalid column access index" );
@@ -2740,13 +3181,13 @@ inline bool tryAddAssign( const Columns<MT,SO,DF,SF,CCAs...>& lhs,
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename MT1    // Type of the matrix
-        , bool SO1        // Storage order
-        , bool DF         // Density flag
-        , bool SF         // Symmetry flag
-        , size_t... CCAs  // Compile time column arguments
-        , typename MT2    // Type of the right-hand side matrix
-        , bool SO2 >      // Storage order of the right-hand side matrix
+template< typename MT1      // Type of the matrix
+        , bool SO1          // Storage order
+        , bool DF           // Density flag
+        , bool SF           // Symmetry flag
+        , typename... CCAs  // Compile time column arguments
+        , typename MT2      // Type of the right-hand side matrix
+        , bool SO2 >        // Storage order of the right-hand side matrix
 inline bool tryAddAssign( const Columns<MT1,SO1,DF,SF,CCAs...>& lhs,
                           const Matrix<MT2,SO2>& rhs, size_t row, size_t column )
 {
@@ -2783,12 +3224,12 @@ inline bool tryAddAssign( const Columns<MT1,SO1,DF,SF,CCAs...>& lhs,
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename MT     // Type of the matrix
-        , bool SO         // Storage order
-        , bool DF         // Density flag
-        , bool SF         // Symmetry flag
-        , size_t... CCAs  // Compile time column arguments
-        , typename VT >   // Type of the right-hand side vector
+template< typename MT       // Type of the matrix
+        , bool SO           // Storage order
+        , bool DF           // Density flag
+        , bool SF           // Symmetry flag
+        , typename... CCAs  // Compile time column arguments
+        , typename VT >     // Type of the right-hand side vector
 inline bool trySubAssign( const Columns<MT,SO,DF,SF,CCAs...>& lhs,
                           const Vector<VT,false>& rhs, size_t row, size_t column )
 {
@@ -2819,12 +3260,12 @@ inline bool trySubAssign( const Columns<MT,SO,DF,SF,CCAs...>& lhs,
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename MT     // Type of the matrix
-        , bool SO         // Storage order
-        , bool DF         // Density flag
-        , bool SF         // Symmetry flag
-        , size_t... CCAs  // Compile time column arguments
-        , typename VT >   // Type of the right-hand side vector
+template< typename MT       // Type of the matrix
+        , bool SO           // Storage order
+        , bool DF           // Density flag
+        , bool SF           // Symmetry flag
+        , typename... CCAs  // Compile time column arguments
+        , typename VT >     // Type of the right-hand side vector
 inline bool trySubAssign( const Columns<MT,SO,DF,SF,CCAs...>& lhs,
                           const Vector<VT,true>& rhs, size_t row, size_t column )
 {
@@ -2861,17 +3302,17 @@ inline bool trySubAssign( const Columns<MT,SO,DF,SF,CCAs...>& lhs,
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename MT     // Type of the matrix
-        , bool SO         // Storage order
-        , bool DF         // Density flag
-        , bool SF         // Symmetry flag
-        , size_t... CCAs  // Compile time column arguments
-        , typename VT     // Type of the right-hand side vector
-        , bool TF >       // Transpose flag of the right-hand side vector
+template< typename MT       // Type of the matrix
+        , bool SO           // Storage order
+        , bool DF           // Density flag
+        , bool SF           // Symmetry flag
+        , typename... CCAs  // Compile time column arguments
+        , typename VT       // Type of the right-hand side vector
+        , bool TF >         // Transpose flag of the right-hand side vector
 inline bool trySubAssign( const Columns<MT,SO,DF,SF,CCAs...>& lhs,
                           const Vector<VT,TF>& rhs, ptrdiff_t band, size_t row, size_t column )
 {
-   UNUSED_PARAMETER( band );
+   MAYBE_UNUSED( band );
 
    BLAZE_INTERNAL_ASSERT( row <= lhs.rows(), "Invalid row access index" );
    BLAZE_INTERNAL_ASSERT( column <= lhs.columns(), "Invalid column access index" );
@@ -2906,13 +3347,13 @@ inline bool trySubAssign( const Columns<MT,SO,DF,SF,CCAs...>& lhs,
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename MT1    // Type of the matrix
-        , bool SO1        // Storage order
-        , bool DF         // Density flag
-        , bool SF         // Symmetry flag
-        , size_t... CCAs  // Compile time column arguments
-        , typename MT2    // Type of the right-hand side matrix
-        , bool SO2 >      // Storage order of the right-hand side matrix
+template< typename MT1      // Type of the matrix
+        , bool SO1          // Storage order
+        , bool DF           // Density flag
+        , bool SF           // Symmetry flag
+        , typename... CCAs  // Compile time column arguments
+        , typename MT2      // Type of the right-hand side matrix
+        , bool SO2 >        // Storage order of the right-hand side matrix
 inline bool trySubAssign( const Columns<MT1,SO1,DF,SF,CCAs...>& lhs,
                           const Matrix<MT2,SO2>& rhs, size_t row, size_t column )
 {
@@ -2949,12 +3390,12 @@ inline bool trySubAssign( const Columns<MT1,SO1,DF,SF,CCAs...>& lhs,
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename MT     // Type of the matrix
-        , bool SO         // Storage order
-        , bool DF         // Density flag
-        , bool SF         // Symmetry flag
-        , size_t... CCAs  // Compile time column arguments
-        , typename VT >   // Type of the right-hand side vector
+template< typename MT       // Type of the matrix
+        , bool SO           // Storage order
+        , bool DF           // Density flag
+        , bool SF           // Symmetry flag
+        , typename... CCAs  // Compile time column arguments
+        , typename VT >     // Type of the right-hand side vector
 inline bool tryMultAssign( const Columns<MT,SO,DF,SF,CCAs...>& lhs,
                            const Vector<VT,false>& rhs, size_t row, size_t column )
 {
@@ -2985,12 +3426,12 @@ inline bool tryMultAssign( const Columns<MT,SO,DF,SF,CCAs...>& lhs,
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename MT     // Type of the matrix
-        , bool SO         // Storage order
-        , bool DF         // Density flag
-        , bool SF         // Symmetry flag
-        , size_t... CCAs  // Compile time column arguments
-        , typename VT >   // Type of the right-hand side vector
+template< typename MT       // Type of the matrix
+        , bool SO           // Storage order
+        , bool DF           // Density flag
+        , bool SF           // Symmetry flag
+        , typename... CCAs  // Compile time column arguments
+        , typename VT >     // Type of the right-hand side vector
 inline bool tryMultAssign( const Columns<MT,SO,DF,SF,CCAs...>& lhs,
                            const Vector<VT,true>& rhs, size_t row, size_t column )
 {
@@ -3027,17 +3468,17 @@ inline bool tryMultAssign( const Columns<MT,SO,DF,SF,CCAs...>& lhs,
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename MT     // Type of the matrix
-        , bool SO         // Storage order
-        , bool DF         // Density flag
-        , bool SF         // Symmetry flag
-        , size_t... CCAs  // Compile time column arguments
-        , typename VT     // Type of the right-hand side vector
-        , bool TF >       // Transpose flag of the right-hand side vector
+template< typename MT       // Type of the matrix
+        , bool SO           // Storage order
+        , bool DF           // Density flag
+        , bool SF           // Symmetry flag
+        , typename... CCAs  // Compile time column arguments
+        , typename VT       // Type of the right-hand side vector
+        , bool TF >         // Transpose flag of the right-hand side vector
 inline bool tryMultAssign( const Columns<MT,SO,DF,SF,CCAs...>& lhs,
                            const Vector<VT,TF>& rhs, ptrdiff_t band, size_t row, size_t column )
 {
-   UNUSED_PARAMETER( band );
+   MAYBE_UNUSED( band );
 
    BLAZE_INTERNAL_ASSERT( row <= lhs.rows(), "Invalid row access index" );
    BLAZE_INTERNAL_ASSERT( column <= lhs.columns(), "Invalid column access index" );
@@ -3072,13 +3513,13 @@ inline bool tryMultAssign( const Columns<MT,SO,DF,SF,CCAs...>& lhs,
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename MT1    // Type of the matrix
-        , bool SO1        // Storage order
-        , bool DF         // Density flag
-        , bool SF         // Symmetry flag
-        , size_t... CCAs  // Compile time column arguments
-        , typename MT2    // Type of the right-hand side matrix
-        , bool SO2 >      // Storage order of the right-hand side matrix
+template< typename MT1      // Type of the matrix
+        , bool SO1          // Storage order
+        , bool DF           // Density flag
+        , bool SF           // Symmetry flag
+        , typename... CCAs  // Compile time column arguments
+        , typename MT2      // Type of the right-hand side matrix
+        , bool SO2 >        // Storage order of the right-hand side matrix
 inline bool trySchurAssign( const Columns<MT1,SO1,DF,SF,CCAs...>& lhs,
                             const Matrix<MT2,SO2>& rhs, size_t row, size_t column )
 {
@@ -3115,12 +3556,12 @@ inline bool trySchurAssign( const Columns<MT1,SO1,DF,SF,CCAs...>& lhs,
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename MT     // Type of the matrix
-        , bool SO         // Storage order
-        , bool DF         // Density flag
-        , bool SF         // Symmetry flag
-        , size_t... CCAs  // Compile time column arguments
-        , typename VT >   // Type of the right-hand side vector
+template< typename MT       // Type of the matrix
+        , bool SO           // Storage order
+        , bool DF           // Density flag
+        , bool SF           // Symmetry flag
+        , typename... CCAs  // Compile time column arguments
+        , typename VT >     // Type of the right-hand side vector
 inline bool tryDivAssign( const Columns<MT,SO,DF,SF,CCAs...>& lhs,
                           const Vector<VT,false>& rhs, size_t row, size_t column )
 {
@@ -3151,12 +3592,12 @@ inline bool tryDivAssign( const Columns<MT,SO,DF,SF,CCAs...>& lhs,
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename MT     // Type of the matrix
-        , bool SO         // Storage order
-        , bool DF         // Density flag
-        , bool SF         // Symmetry flag
-        , size_t... CCAs  // Compile time column arguments
-        , typename VT >   // Type of the right-hand side vector
+template< typename MT       // Type of the matrix
+        , bool SO           // Storage order
+        , bool DF           // Density flag
+        , bool SF           // Symmetry flag
+        , typename... CCAs  // Compile time column arguments
+        , typename VT >     // Type of the right-hand side vector
 inline bool tryDivAssign( const Columns<MT,SO,DF,SF,CCAs...>& lhs,
                           const Vector<VT,true>& rhs, size_t row, size_t column )
 {
@@ -3193,17 +3634,17 @@ inline bool tryDivAssign( const Columns<MT,SO,DF,SF,CCAs...>& lhs,
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename MT     // Type of the matrix
-        , bool SO         // Storage order
-        , bool DF         // Density flag
-        , bool SF         // Symmetry flag
-        , size_t... CCAs  // Compile time column arguments
-        , typename VT     // Type of the right-hand side vector
-        , bool TF >       // Transpose flag of the right-hand side vector
+template< typename MT       // Type of the matrix
+        , bool SO           // Storage order
+        , bool DF           // Density flag
+        , bool SF           // Symmetry flag
+        , typename... CCAs  // Compile time column arguments
+        , typename VT       // Type of the right-hand side vector
+        , bool TF >         // Transpose flag of the right-hand side vector
 inline bool tryDivAssign( const Columns<MT,SO,DF,SF,CCAs...>& lhs,
                           const Vector<VT,TF>& rhs, ptrdiff_t band, size_t row, size_t column )
 {
-   UNUSED_PARAMETER( band );
+   MAYBE_UNUSED( band );
 
    BLAZE_INTERNAL_ASSERT( row <= lhs.rows(), "Invalid row access index" );
    BLAZE_INTERNAL_ASSERT( column <= lhs.columns(), "Invalid column access index" );
@@ -3212,6 +3653,669 @@ inline bool tryDivAssign( const Columns<MT,SO,DF,SF,CCAs...>& lhs,
 
    for( size_t i=0UL; i<(~rhs).size(); ++i ) {
       if( !tryDiv( lhs.operand(), row+i, lhs.idx( column+i ), (~rhs)[i] ) )
+         return false;
+   }
+
+   return true;
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Predict invariant violations by the shift assignment of a column vector to a column
+//        selection.
+// \ingroup columns
+//
+// \param lhs The target left-hand side column selection.
+// \param rhs The right-hand side column vector of bits to shift.
+// \param row The row index of the first element to be modified.
+// \param column The column index of the first element to be modified.
+// \return \a true in case the assignment would be successful, \a false if not.
+//
+// This function must \b NOT be called explicitly! It is used internally for the performance
+// optimized evaluation of expression templates. Calling this function explicitly might result
+// in erroneous results and/or in compilation errors. Instead of using this function use the
+// assignment operator.
+*/
+template< typename MT       // Type of the matrix
+        , bool SO           // Storage order
+        , bool DF           // Density flag
+        , bool SF           // Symmetry flag
+        , typename... CCAs  // Compile time column arguments
+        , typename VT >     // Type of the right-hand side vector
+inline bool tryShiftAssign( const Columns<MT,SO,DF,SF,CCAs...>& lhs,
+                            const Vector<VT,false>& rhs, size_t row, size_t column )
+{
+   BLAZE_INTERNAL_ASSERT( row <= lhs.rows(), "Invalid row access index" );
+   BLAZE_INTERNAL_ASSERT( column <= lhs.columns(), "Invalid column access index" );
+   BLAZE_INTERNAL_ASSERT( row + (~rhs).size() <= lhs.rows(), "Invalid number of rows" );
+
+   return tryShiftAssign( lhs.operand(), ~rhs, row, lhs.idx( column ) );
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Predict invariant violations by the shift assignment of a row vector to a column
+//        selection.
+// \ingroup columns
+//
+// \param lhs The target left-hand side column selection.
+// \param rhs The right-hand side row vector of bits to shift.
+// \param row The row index of the first element to be modified.
+// \param column The column index of the first element to be modified.
+// \return \a true in case the assignment would be successful, \a false if not.
+//
+// This function must \b NOT be called explicitly! It is used internally for the performance
+// optimized evaluation of expression templates. Calling this function explicitly might result
+// in erroneous results and/or in compilation errors. Instead of using this function use the
+// assignment operator.
+*/
+template< typename MT       // Type of the matrix
+        , bool SO           // Storage order
+        , bool DF           // Density flag
+        , bool SF           // Symmetry flag
+        , typename... CCAs  // Compile time column arguments
+        , typename VT >     // Type of the right-hand side vector
+inline bool tryShiftAssign( const Columns<MT,SO,DF,SF,CCAs...>& lhs,
+                            const Vector<VT,true>& rhs, size_t row, size_t column )
+{
+   BLAZE_INTERNAL_ASSERT( row <= lhs.rows(), "Invalid row access index" );
+   BLAZE_INTERNAL_ASSERT( column <= lhs.columns(), "Invalid column access index" );
+   BLAZE_INTERNAL_ASSERT( column + (~rhs).size() <= lhs.columns(), "Invalid number of columns" );
+
+   for( size_t i=0UL; i<(~rhs).size(); ++i ) {
+      if( !tryShift( lhs.operand(), row, lhs.idx( column+i ), (~rhs)[i] ) )
+         return false;
+   }
+
+   return true;
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Predict invariant violations by the shift assignment of a vector to the band of a
+//        column selection.
+// \ingroup columns
+//
+// \param lhs The target left-hand side column selection.
+// \param rhs The right-hand side vector of bits to shift.
+// \param band The index of the band the right-hand side vector is assigned to.
+// \param row The row index of the first element to be modified.
+// \param column The column index of the first element to be modified.
+// \return \a true in case the assignment would be successful, \a false if not.
+//
+// This function must \b NOT be called explicitly! It is used internally for the performance
+// optimized evaluation of expression templates. Calling this function explicitly might result
+// in erroneous results and/or in compilation errors. Instead of using this function use the
+// assignment operator.
+*/
+template< typename MT       // Type of the matrix
+        , bool SO           // Storage order
+        , bool DF           // Density flag
+        , bool SF           // Symmetry flag
+        , typename... CCAs  // Compile time column arguments
+        , typename VT       // Type of the right-hand side vector
+        , bool TF >         // Transpose flag of the right-hand side vector
+inline bool tryShiftAssign( const Columns<MT,SO,DF,SF,CCAs...>& lhs,
+                            const Vector<VT,TF>& rhs, ptrdiff_t band, size_t row, size_t column )
+{
+   MAYBE_UNUSED( band );
+
+   BLAZE_INTERNAL_ASSERT( row <= lhs.rows(), "Invalid row access index" );
+   BLAZE_INTERNAL_ASSERT( column <= lhs.columns(), "Invalid column access index" );
+   BLAZE_INTERNAL_ASSERT( row + (~rhs).size() <= lhs.rows(), "Invalid number of rows" );
+   BLAZE_INTERNAL_ASSERT( column + (~rhs).size() <= lhs.columns(), "Invalid number of columns" );
+
+   for( size_t i=0UL; i<(~rhs).size(); ++i ) {
+      if( !tryShift( lhs.operand(), row+i, lhs.idx( column+i ), (~rhs)[i] ) )
+         return false;
+   }
+
+   return true;
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Predict invariant violations by the shift assignment of a matrix to a column selection.
+// \ingroup columns
+//
+// \param lhs The target left-hand side column selection.
+// \param rhs The right-hand side matrix of bits to shift.
+// \param row The row index of the first element to be modified.
+// \param column The column index of the first element to be modified.
+// \return \a true in case the assignment would be successful, \a false if not.
+//
+// This function must \b NOT be called explicitly! It is used internally for the performance
+// optimized evaluation of expression templates. Calling this function explicitly might result
+// in erroneous results and/or in compilation errors. Instead of using this function use the
+// assignment operator.
+*/
+template< typename MT1      // Type of the matrix
+        , bool SO1          // Storage order
+        , bool DF           // Density flag
+        , bool SF           // Symmetry flag
+        , typename... CCAs  // Compile time column arguments
+        , typename MT2      // Type of the right-hand side matrix
+        , bool SO2 >        // Storage order of the right-hand side matrix
+inline bool tryShiftAssign( const Columns<MT1,SO1,DF,SF,CCAs...>& lhs,
+                            const Matrix<MT2,SO2>& rhs, size_t row, size_t column )
+{
+   BLAZE_INTERNAL_ASSERT( row <= lhs.rows(), "Invalid row access index" );
+   BLAZE_INTERNAL_ASSERT( column <= lhs.columns(), "Invalid column access index" );
+   BLAZE_INTERNAL_ASSERT( row + (~rhs).rows() <= lhs.rows(), "Invalid number of rows" );
+   BLAZE_INTERNAL_ASSERT( column + (~rhs).columns() <= lhs.columns(), "Invalid number of columns" );
+
+   for( size_t j=0UL; j<(~rhs).columns(); ++j ) {
+      if( !tryShiftAssign( lhs.operand(), blaze::column( ~rhs, j, unchecked ), row, lhs.idx( column+j ) ) )
+         return false;
+   }
+
+   return true;
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Predict invariant violations by the bitwise AND assignment of a column vector to a
+//        column selection.
+// \ingroup columns
+//
+// \param lhs The target left-hand side column selection.
+// \param rhs The right-hand side column vector for the bitwise AND operation.
+// \param row The row index of the first element to be modified.
+// \param column The column index of the first element to be modified.
+// \return \a true in case the assignment would be successful, \a false if not.
+//
+// This function must \b NOT be called explicitly! It is used internally for the performance
+// optimized evaluation of expression templates. Calling this function explicitly might result
+// in erroneous results and/or in compilation errors. Instead of using this function use the
+// assignment operator.
+*/
+template< typename MT       // Type of the matrix
+        , bool SO           // Storage order
+        , bool DF           // Density flag
+        , bool SF           // Symmetry flag
+        , typename... CCAs  // Compile time column arguments
+        , typename VT >     // Type of the right-hand side vector
+inline bool tryBitandAssign( const Columns<MT,SO,DF,SF,CCAs...>& lhs,
+                             const Vector<VT,false>& rhs, size_t row, size_t column )
+{
+   BLAZE_INTERNAL_ASSERT( row <= lhs.rows(), "Invalid row access index" );
+   BLAZE_INTERNAL_ASSERT( column <= lhs.columns(), "Invalid column access index" );
+   BLAZE_INTERNAL_ASSERT( row + (~rhs).size() <= lhs.rows(), "Invalid number of rows" );
+
+   return tryBitandAssign( lhs.operand(), ~rhs, row, lhs.idx( column ) );
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Predict invariant violations by the bitwise AND assignment of a row vector to a column
+//        selection.
+// \ingroup columns
+//
+// \param lhs The target left-hand side column selection.
+// \param rhs The right-hand side row vector for the bitwise AND operation.
+// \param row The row index of the first element to be modified.
+// \param column The column index of the first element to be modified.
+// \return \a true in case the assignment would be successful, \a false if not.
+//
+// This function must \b NOT be called explicitly! It is used internally for the performance
+// optimized evaluation of expression templates. Calling this function explicitly might result
+// in erroneous results and/or in compilation errors. Instead of using this function use the
+// assignment operator.
+*/
+template< typename MT       // Type of the matrix
+        , bool SO           // Storage order
+        , bool DF           // Density flag
+        , bool SF           // Symmetry flag
+        , typename... CCAs  // Compile time column arguments
+        , typename VT >     // Type of the right-hand side vector
+inline bool tryBitandAssign( const Columns<MT,SO,DF,SF,CCAs...>& lhs,
+                             const Vector<VT,true>& rhs, size_t row, size_t column )
+{
+   BLAZE_INTERNAL_ASSERT( row <= lhs.rows(), "Invalid row access index" );
+   BLAZE_INTERNAL_ASSERT( column <= lhs.columns(), "Invalid column access index" );
+   BLAZE_INTERNAL_ASSERT( column + (~rhs).size() <= lhs.columns(), "Invalid number of columns" );
+
+   for( size_t i=0UL; i<(~rhs).size(); ++i ) {
+      if( !tryBitand( lhs.operand(), row, lhs.idx( column+i ), (~rhs)[i] ) )
+         return false;
+   }
+
+   return true;
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Predict invariant violations by the bitwise AND assignment of a vector to the band of
+//        a column selection.
+// \ingroup columns
+//
+// \param lhs The target left-hand side column selection.
+// \param rhs The right-hand side vector for the bitwise AND operation.
+// \param band The index of the band the right-hand side vector is assigned to.
+// \param row The row index of the first element to be modified.
+// \param column The column index of the first element to be modified.
+// \return \a true in case the assignment would be successful, \a false if not.
+//
+// This function must \b NOT be called explicitly! It is used internally for the performance
+// optimized evaluation of expression templates. Calling this function explicitly might result
+// in erroneous results and/or in compilation errors. Instead of using this function use the
+// assignment operator.
+*/
+template< typename MT       // Type of the matrix
+        , bool SO           // Storage order
+        , bool DF           // Density flag
+        , bool SF           // Symmetry flag
+        , typename... CCAs  // Compile time column arguments
+        , typename VT       // Type of the right-hand side vector
+        , bool TF >         // Transpose flag of the right-hand side vector
+inline bool tryBitandAssign( const Columns<MT,SO,DF,SF,CCAs...>& lhs,
+                             const Vector<VT,TF>& rhs, ptrdiff_t band, size_t row, size_t column )
+{
+   MAYBE_UNUSED( band );
+
+   BLAZE_INTERNAL_ASSERT( row <= lhs.rows(), "Invalid row access index" );
+   BLAZE_INTERNAL_ASSERT( column <= lhs.columns(), "Invalid column access index" );
+   BLAZE_INTERNAL_ASSERT( row + (~rhs).size() <= lhs.rows(), "Invalid number of rows" );
+   BLAZE_INTERNAL_ASSERT( column + (~rhs).size() <= lhs.columns(), "Invalid number of columns" );
+
+   for( size_t i=0UL; i<(~rhs).size(); ++i ) {
+      if( !tryBitand( lhs.operand(), row+i, lhs.idx( column+i ), (~rhs)[i] ) )
+         return false;
+   }
+
+   return true;
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Predict invariant violations by the bitwise AND assignment of a matrix to a column
+//        selection.
+// \ingroup columns
+//
+// \param lhs The target left-hand side column selection.
+// \param rhs The right-hand side matrix for the bitwise AND operation.
+// \param row The row index of the first element to be modified.
+// \param column The column index of the first element to be modified.
+// \return \a true in case the assignment would be successful, \a false if not.
+//
+// This function must \b NOT be called explicitly! It is used internally for the performance
+// optimized evaluation of expression templates. Calling this function explicitly might result
+// in erroneous results and/or in compilation errors. Instead of using this function use the
+// assignment operator.
+*/
+template< typename MT1      // Type of the matrix
+        , bool SO1          // Storage order
+        , bool DF           // Density flag
+        , bool SF           // Symmetry flag
+        , typename... CCAs  // Compile time column arguments
+        , typename MT2      // Type of the right-hand side matrix
+        , bool SO2 >        // Storage order of the right-hand side matrix
+inline bool tryBitandAssign( const Columns<MT1,SO1,DF,SF,CCAs...>& lhs,
+                             const Matrix<MT2,SO2>& rhs, size_t row, size_t column )
+{
+   BLAZE_INTERNAL_ASSERT( row <= lhs.rows(), "Invalid row access index" );
+   BLAZE_INTERNAL_ASSERT( column <= lhs.columns(), "Invalid column access index" );
+   BLAZE_INTERNAL_ASSERT( row + (~rhs).rows() <= lhs.rows(), "Invalid number of rows" );
+   BLAZE_INTERNAL_ASSERT( column + (~rhs).columns() <= lhs.columns(), "Invalid number of columns" );
+
+   for( size_t j=0UL; j<(~rhs).columns(); ++j ) {
+      if( !tryBitandAssign( lhs.operand(), blaze::column( ~rhs, j, unchecked ), row, lhs.idx( column+j ) ) )
+         return false;
+   }
+
+   return true;
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Predict invariant violations by the bitwise OR assignment of a column vector to a
+//        column selection.
+// \ingroup columns
+//
+// \param lhs The target left-hand side column selection.
+// \param rhs The right-hand side column vector for the bitwise OR operation.
+// \param row The row index of the first element to be modified.
+// \param column The column index of the first element to be modified.
+// \return \a true in case the assignment would be successful, \a false if not.
+//
+// This function must \b NOT be called explicitly! It is used internally for the performance
+// optimized evaluation of expression templates. Calling this function explicitly might result
+// in erroneous results and/or in compilation errors. Instead of using this function use the
+// assignment operator.
+*/
+template< typename MT       // Type of the matrix
+        , bool SO           // Storage order
+        , bool DF           // Density flag
+        , bool SF           // Symmetry flag
+        , typename... CCAs  // Compile time column arguments
+        , typename VT >     // Type of the right-hand side vector
+inline bool tryBitorAssign( const Columns<MT,SO,DF,SF,CCAs...>& lhs,
+                            const Vector<VT,false>& rhs, size_t row, size_t column )
+{
+   BLAZE_INTERNAL_ASSERT( row <= lhs.rows(), "Invalid row access index" );
+   BLAZE_INTERNAL_ASSERT( column <= lhs.columns(), "Invalid column access index" );
+   BLAZE_INTERNAL_ASSERT( row + (~rhs).size() <= lhs.rows(), "Invalid number of rows" );
+
+   return tryBitorAssign( lhs.operand(), ~rhs, row, lhs.idx( column ) );
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Predict invariant violations by the bitwise OR assignment of a row vector to a column
+//        selection.
+// \ingroup columns
+//
+// \param lhs The target left-hand side column selection.
+// \param rhs The right-hand side row vector for the bitwise OR operation.
+// \param row The row index of the first element to be modified.
+// \param column The column index of the first element to be modified.
+// \return \a true in case the assignment would be successful, \a false if not.
+//
+// This function must \b NOT be called explicitly! It is used internally for the performance
+// optimized evaluation of expression templates. Calling this function explicitly might result
+// in erroneous results and/or in compilation errors. Instead of using this function use the
+// assignment operator.
+*/
+template< typename MT       // Type of the matrix
+        , bool SO           // Storage order
+        , bool DF           // Density flag
+        , bool SF           // Symmetry flag
+        , typename... CCAs  // Compile time column arguments
+        , typename VT >     // Type of the right-hand side vector
+inline bool tryBitorAssign( const Columns<MT,SO,DF,SF,CCAs...>& lhs,
+                            const Vector<VT,true>& rhs, size_t row, size_t column )
+{
+   BLAZE_INTERNAL_ASSERT( row <= lhs.rows(), "Invalid row access index" );
+   BLAZE_INTERNAL_ASSERT( column <= lhs.columns(), "Invalid column access index" );
+   BLAZE_INTERNAL_ASSERT( column + (~rhs).size() <= lhs.columns(), "Invalid number of columns" );
+
+   for( size_t i=0UL; i<(~rhs).size(); ++i ) {
+      if( !tryBitor( lhs.operand(), row, lhs.idx( column+i ), (~rhs)[i] ) )
+         return false;
+   }
+
+   return true;
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Predict invariant violations by the bitwise OR assignment of a vector to the band of
+//        a column selection.
+// \ingroup columns
+//
+// \param lhs The target left-hand side column selection.
+// \param rhs The right-hand side vector for the bitwise OR operation.
+// \param band The index of the band the right-hand side vector is assigned to.
+// \param row The row index of the first element to be modified.
+// \param column The column index of the first element to be modified.
+// \return \a true in case the assignment would be successful, \a false if not.
+//
+// This function must \b NOT be called explicitly! It is used internally for the performance
+// optimized evaluation of expression templates. Calling this function explicitly might result
+// in erroneous results and/or in compilation errors. Instead of using this function use the
+// assignment operator.
+*/
+template< typename MT       // Type of the matrix
+        , bool SO           // Storage order
+        , bool DF           // Density flag
+        , bool SF           // Symmetry flag
+        , typename... CCAs  // Compile time column arguments
+        , typename VT       // Type of the right-hand side vector
+        , bool TF >         // Transpose flag of the right-hand side vector
+inline bool tryBitorAssign( const Columns<MT,SO,DF,SF,CCAs...>& lhs,
+                            const Vector<VT,TF>& rhs, ptrdiff_t band, size_t row, size_t column )
+{
+   MAYBE_UNUSED( band );
+
+   BLAZE_INTERNAL_ASSERT( row <= lhs.rows(), "Invalid row access index" );
+   BLAZE_INTERNAL_ASSERT( column <= lhs.columns(), "Invalid column access index" );
+   BLAZE_INTERNAL_ASSERT( row + (~rhs).size() <= lhs.rows(), "Invalid number of rows" );
+   BLAZE_INTERNAL_ASSERT( column + (~rhs).size() <= lhs.columns(), "Invalid number of columns" );
+
+   for( size_t i=0UL; i<(~rhs).size(); ++i ) {
+      if( !tryBitor( lhs.operand(), row+i, lhs.idx( column+i ), (~rhs)[i] ) )
+         return false;
+   }
+
+   return true;
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Predict invariant violations by the bitwise OR assignment of a matrix to a column
+//        selection.
+// \ingroup columns
+//
+// \param lhs The target left-hand side column selection.
+// \param rhs The right-hand side matrix for the bitwise OR operation.
+// \param row The row index of the first element to be modified.
+// \param column The column index of the first element to be modified.
+// \return \a true in case the assignment would be successful, \a false if not.
+//
+// This function must \b NOT be called explicitly! It is used internally for the performance
+// optimized evaluation of expression templates. Calling this function explicitly might result
+// in erroneous results and/or in compilation errors. Instead of using this function use the
+// assignment operator.
+*/
+template< typename MT1      // Type of the matrix
+        , bool SO1          // Storage order
+        , bool DF           // Density flag
+        , bool SF           // Symmetry flag
+        , typename... CCAs  // Compile time column arguments
+        , typename MT2      // Type of the right-hand side matrix
+        , bool SO2 >        // Storage order of the right-hand side matrix
+inline bool tryBitorAssign( const Columns<MT1,SO1,DF,SF,CCAs...>& lhs,
+                            const Matrix<MT2,SO2>& rhs, size_t row, size_t column )
+{
+   BLAZE_INTERNAL_ASSERT( row <= lhs.rows(), "Invalid row access index" );
+   BLAZE_INTERNAL_ASSERT( column <= lhs.columns(), "Invalid column access index" );
+   BLAZE_INTERNAL_ASSERT( row + (~rhs).rows() <= lhs.rows(), "Invalid number of rows" );
+   BLAZE_INTERNAL_ASSERT( column + (~rhs).columns() <= lhs.columns(), "Invalid number of columns" );
+
+   for( size_t j=0UL; j<(~rhs).columns(); ++j ) {
+      if( !tryBitorAssign( lhs.operand(), blaze::column( ~rhs, j, unchecked ), row, lhs.idx( column+j ) ) )
+         return false;
+   }
+
+   return true;
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Predict invariant violations by the bitwise XOR assignment of a column vector to a
+//        column selection.
+// \ingroup columns
+//
+// \param lhs The target left-hand side column selection.
+// \param rhs The right-hand side column vector for the bitwise XOR operation.
+// \param row The row index of the first element to be modified.
+// \param column The column index of the first element to be modified.
+// \return \a true in case the assignment would be successful, \a false if not.
+//
+// This function must \b NOT be called explicitly! It is used internally for the performance
+// optimized evaluation of expression templates. Calling this function explicitly might result
+// in erroneous results and/or in compilation errors. Instead of using this function use the
+// assignment operator.
+*/
+template< typename MT       // Type of the matrix
+        , bool SO           // Storage order
+        , bool DF           // Density flag
+        , bool SF           // Symmetry flag
+        , typename... CCAs  // Compile time column arguments
+        , typename VT >     // Type of the right-hand side vector
+inline bool tryBitxorAssign( const Columns<MT,SO,DF,SF,CCAs...>& lhs,
+                             const Vector<VT,false>& rhs, size_t row, size_t column )
+{
+   BLAZE_INTERNAL_ASSERT( row <= lhs.rows(), "Invalid row access index" );
+   BLAZE_INTERNAL_ASSERT( column <= lhs.columns(), "Invalid column access index" );
+   BLAZE_INTERNAL_ASSERT( row + (~rhs).size() <= lhs.rows(), "Invalid number of rows" );
+
+   return tryBitxorAssign( lhs.operand(), ~rhs, row, lhs.idx( column ) );
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Predict invariant violations by the bitwise XOR assignment of a row vector to a column
+//        selection.
+// \ingroup columns
+//
+// \param lhs The target left-hand side column selection.
+// \param rhs The right-hand side row vector for the bitwise XOR operation.
+// \param row The row index of the first element to be modified.
+// \param column The column index of the first element to be modified.
+// \return \a true in case the assignment would be successful, \a false if not.
+//
+// This function must \b NOT be called explicitly! It is used internally for the performance
+// optimized evaluation of expression templates. Calling this function explicitly might result
+// in erroneous results and/or in compilation errors. Instead of using this function use the
+// assignment operator.
+*/
+template< typename MT       // Type of the matrix
+        , bool SO           // Storage order
+        , bool DF           // Density flag
+        , bool SF           // Symmetry flag
+        , typename... CCAs  // Compile time column arguments
+        , typename VT >     // Type of the right-hand side vector
+inline bool tryBitxorAssign( const Columns<MT,SO,DF,SF,CCAs...>& lhs,
+                             const Vector<VT,true>& rhs, size_t row, size_t column )
+{
+   BLAZE_INTERNAL_ASSERT( row <= lhs.rows(), "Invalid row access index" );
+   BLAZE_INTERNAL_ASSERT( column <= lhs.columns(), "Invalid column access index" );
+   BLAZE_INTERNAL_ASSERT( column + (~rhs).size() <= lhs.columns(), "Invalid number of columns" );
+
+   for( size_t i=0UL; i<(~rhs).size(); ++i ) {
+      if( !tryBitxor( lhs.operand(), row, lhs.idx( column+i ), (~rhs)[i] ) )
+         return false;
+   }
+
+   return true;
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Predict invariant violations by the bitwise XOR assignment of a vector to the band of
+//        a column selection.
+// \ingroup columns
+//
+// \param lhs The target left-hand side column selection.
+// \param rhs The right-hand side vector for the bitwise XOR operation.
+// \param band The index of the band the right-hand side vector is assigned to.
+// \param row The row index of the first element to be modified.
+// \param column The column index of the first element to be modified.
+// \return \a true in case the assignment would be successful, \a false if not.
+//
+// This function must \b NOT be called explicitly! It is used internally for the performance
+// optimized evaluation of expression templates. Calling this function explicitly might result
+// in erroneous results and/or in compilation errors. Instead of using this function use the
+// assignment operator.
+*/
+template< typename MT       // Type of the matrix
+        , bool SO           // Storage order
+        , bool DF           // Density flag
+        , bool SF           // Symmetry flag
+        , typename... CCAs  // Compile time column arguments
+        , typename VT       // Type of the right-hand side vector
+        , bool TF >         // Transpose flag of the right-hand side vector
+inline bool tryBitxorAssign( const Columns<MT,SO,DF,SF,CCAs...>& lhs,
+                             const Vector<VT,TF>& rhs, ptrdiff_t band, size_t row, size_t column )
+{
+   MAYBE_UNUSED( band );
+
+   BLAZE_INTERNAL_ASSERT( row <= lhs.rows(), "Invalid row access index" );
+   BLAZE_INTERNAL_ASSERT( column <= lhs.columns(), "Invalid column access index" );
+   BLAZE_INTERNAL_ASSERT( row + (~rhs).size() <= lhs.rows(), "Invalid number of rows" );
+   BLAZE_INTERNAL_ASSERT( column + (~rhs).size() <= lhs.columns(), "Invalid number of columns" );
+
+   for( size_t i=0UL; i<(~rhs).size(); ++i ) {
+      if( !tryBitxor( lhs.operand(), row+i, lhs.idx( column+i ), (~rhs)[i] ) )
+         return false;
+   }
+
+   return true;
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Predict invariant violations by the bitwise XOR assignment of a matrix to a column
+//        selection.
+// \ingroup columns
+//
+// \param lhs The target left-hand side column selection.
+// \param rhs The right-hand side matrix for the bitwise XOR operation.
+// \param row The row index of the first element to be modified.
+// \param column The column index of the first element to be modified.
+// \return \a true in case the assignment would be successful, \a false if not.
+//
+// This function must \b NOT be called explicitly! It is used internally for the performance
+// optimized evaluation of expression templates. Calling this function explicitly might result
+// in erroneous results and/or in compilation errors. Instead of using this function use the
+// assignment operator.
+*/
+template< typename MT1      // Type of the matrix
+        , bool SO1          // Storage order
+        , bool DF           // Density flag
+        , bool SF           // Symmetry flag
+        , typename... CCAs  // Compile time column arguments
+        , typename MT2      // Type of the right-hand side matrix
+        , bool SO2 >        // Storage order of the right-hand side matrix
+inline bool tryBitxorAssign( const Columns<MT1,SO1,DF,SF,CCAs...>& lhs,
+                             const Matrix<MT2,SO2>& rhs, size_t row, size_t column )
+{
+   BLAZE_INTERNAL_ASSERT( row <= lhs.rows(), "Invalid row access index" );
+   BLAZE_INTERNAL_ASSERT( column <= lhs.columns(), "Invalid column access index" );
+   BLAZE_INTERNAL_ASSERT( row + (~rhs).rows() <= lhs.rows(), "Invalid number of rows" );
+   BLAZE_INTERNAL_ASSERT( column + (~rhs).columns() <= lhs.columns(), "Invalid number of columns" );
+
+   for( size_t j=0UL; j<(~rhs).columns(); ++j ) {
+      if( !tryBitxorAssign( lhs.operand(), blaze::column( ~rhs, j, unchecked ), row, lhs.idx( column+j ) ) )
          return false;
    }
 
@@ -3236,72 +4340,14 @@ inline bool tryDivAssign( const Columns<MT,SO,DF,SF,CCAs...>& lhs,
 // optimized evaluation of expression templates. Calling this function explicitly might result
 // in the violation of invariants, erroneous results and/or in compilation errors.
 */
-template< typename MT     // Type of the matrix
-        , bool SO         // Storage order
-        , bool DF         // Density flag
-        , bool SF         // Symmetry flag
-        , size_t I        // First element index
-        , size_t... Is >  // Remaining element indices
-inline decltype(auto) derestrict( Columns<MT,SO,DF,SF,I,Is...>& c )
+template< typename MT         // Type of the matrix
+        , bool SO             // Storage order
+        , bool DF             // Density flag
+        , bool SF             // Symmetry flag
+        , typename... CCAs >  // Compile time column arguments
+inline decltype(auto) derestrict( Columns<MT,SO,DF,SF,CCAs...>& c )
 {
-   return columns<I,Is...>( derestrict( c.operand() ), unchecked );
-}
-/*! \endcond */
-//*************************************************************************************************
-
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-/*!\brief Removal of all restrictions on the data access to the given temporary column selection.
-// \ingroup columns
-//
-// \param c The temporary column selection to be derestricted.
-// \return Column selection without access restrictions.
-//
-// This function removes all restrictions on the data access to the given temporary column
-// selection. It returns a column selection that does provide the same interface but does not
-// have any restrictions on the data access.\n
-// This function must \b NOT be called explicitly! It is used internally for the performance
-// optimized evaluation of expression templates. Calling this function explicitly might result
-// in the violation of invariants, erroneous results and/or in compilation errors.
-*/
-template< typename MT     // Type of the matrix
-        , bool SO         // Storage order
-        , bool DF         // Density flag
-        , bool SF         // Symmetry flag
-        , size_t I        // First element index
-        , size_t... Is >  // Remaining element indices
-inline decltype(auto) derestrict( Columns<MT,SO,DF,SF,I,Is...>&& c )
-{
-   return columns<I,Is...>( derestrict( c.operand() ), unchecked );
-}
-/*! \endcond */
-//*************************************************************************************************
-
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-/*!\brief Removal of all restrictions on the data access to the given column selection.
-// \ingroup columns
-//
-// \param c The column selection to be derestricted.
-// \return Column selection without access restrictions.
-//
-// This function removes all restrictions on the data access to the given column selection.
-// It returns a column selection that does provide the same interface but does not have any
-// restrictions on the data access.\n
-// This function must \b NOT be called explicitly! It is used internally for the performance
-// optimized evaluation of expression templates. Calling this function explicitly might result
-// in the violation of invariants, erroneous results and/or in compilation errors.
-*/
-template< typename MT  // Type of the matrix
-        , bool SO      // Storage order
-        , bool DF      // Density flag
-        , bool SF >    // Symmetry flag
-inline decltype(auto) derestrict( Columns<MT,SO,DF,SF>& c )
-{
-   decltype(auto) indices( c.idces() );
-   return columns( derestrict( c.operand() ), indices.data(), indices.size(), unchecked );
+   return columns( derestrict( c.operand() ), c.idces(), unchecked );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -3322,14 +4368,14 @@ inline decltype(auto) derestrict( Columns<MT,SO,DF,SF>& c )
 // optimized evaluation of expression templates. Calling this function explicitly might result
 // in the violation of invariants, erroneous results and/or in compilation errors.
 */
-template< typename MT  // Type of the matrix
-        , bool SO      // Storage order
-        , bool DF      // Density flag
-        , bool SF >    // Symmetry flag
-inline decltype(auto) derestrict( Columns<MT,SO,DF,SF>&& r )
+template< typename MT         // Type of the matrix
+        , bool SO             // Storage order
+        , bool DF             // Density flag
+        , bool SF             // Symmetry flag
+        , typename... CCAs >  // Compile time column arguments
+inline decltype(auto) derestrict( Columns<MT,SO,DF,SF,CCAs...>&& c )
 {
-   decltype(auto) indices( r.idces() );
-   return columns( derestrict( r.operand() ), indices.data(), indices.size(), unchecked );
+   return columns( derestrict( c.operand() ), c.idces(), unchecked );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -3345,14 +4391,14 @@ inline decltype(auto) derestrict( Columns<MT,SO,DF,SF>&& r )
 
 //*************************************************************************************************
 /*! \cond BLAZE_INTERNAL */
-template< typename MT, bool SO, bool DF, bool SF, size_t... CCAs >
+template< typename MT, bool SO, bool DF, bool SF, typename... CCAs >
 struct Size< Columns<MT,SO,DF,SF,CCAs...>, 0UL >
    : public Size<MT,0UL>
 {};
 
-template< typename MT, bool SO, bool DF, bool SF, size_t I, size_t... Is >
-struct Size< Columns<MT,SO,DF,SF,I,Is...>, 1UL >
-   : public PtrdiffT<1UL+sizeof...(Is)>
+template< typename MT, bool SO, bool DF, bool SF, size_t I, size_t... Is, typename... CCAs >
+struct Size< Columns<MT,SO,DF,SF,index_sequence<I,Is...>,CCAs...>, 1UL >
+   : public Ptrdiff_t<1UL+sizeof...(Is)>
 {};
 /*! \endcond */
 //*************************************************************************************************
@@ -3368,14 +4414,14 @@ struct Size< Columns<MT,SO,DF,SF,I,Is...>, 1UL >
 
 //*************************************************************************************************
 /*! \cond BLAZE_INTERNAL */
-template< typename MT, bool SO, bool DF, bool SF, size_t... CCAs >
+template< typename MT, bool SO, bool DF, bool SF, typename... CCAs >
 struct MaxSize< Columns<MT,SO,DF,SF,CCAs...>, 0UL >
    : public MaxSize<MT,0UL>
 {};
 
-template< typename MT, bool SO, bool DF, bool SF, size_t I, size_t... Is >
-struct MaxSize< Columns<MT,SO,DF,SF,I,Is...>, 1UL >
-   : public PtrdiffT<1UL+sizeof...(Is)>
+template< typename MT, bool SO, bool DF, bool SF, size_t I, size_t... Is, typename... CCAs >
+struct MaxSize< Columns<MT,SO,DF,SF,index_sequence<I,Is...>,CCAs...>, 1UL >
+   : public Ptrdiff_t<1UL+sizeof...(Is)>
 {};
 /*! \endcond */
 //*************************************************************************************************
@@ -3391,7 +4437,7 @@ struct MaxSize< Columns<MT,SO,DF,SF,I,Is...>, 1UL >
 
 //*************************************************************************************************
 /*! \cond BLAZE_INTERNAL */
-template< typename MT, bool SO, bool DF, bool SF, size_t... CCAs >
+template< typename MT, bool SO, bool DF, bool SF, typename... CCAs >
 struct IsRestricted< Columns<MT,SO,DF,SF,CCAs...> >
    : public IsRestricted<MT>
 {};
@@ -3409,7 +4455,7 @@ struct IsRestricted< Columns<MT,SO,DF,SF,CCAs...> >
 
 //*************************************************************************************************
 /*! \cond BLAZE_INTERNAL */
-template< typename MT, bool SO, bool SF, size_t... CCAs >
+template< typename MT, bool SO, bool SF, typename... CCAs >
 struct HasConstDataAccess< Columns<MT,SO,true,SF,CCAs...> >
    : public HasConstDataAccess<MT>
 {};
@@ -3427,7 +4473,7 @@ struct HasConstDataAccess< Columns<MT,SO,true,SF,CCAs...> >
 
 //*************************************************************************************************
 /*! \cond BLAZE_INTERNAL */
-template< typename MT, bool SO, bool SF, size_t... CCAs >
+template< typename MT, bool SO, bool SF, typename... CCAs >
 struct HasMutableDataAccess< Columns<MT,SO,true,SF,CCAs...> >
    : public HasMutableDataAccess<MT>
 {};
@@ -3445,7 +4491,7 @@ struct HasMutableDataAccess< Columns<MT,SO,true,SF,CCAs...> >
 
 //*************************************************************************************************
 /*! \cond BLAZE_INTERNAL */
-template< typename MT, bool SO, bool SF, size_t... CCAs >
+template< typename MT, bool SO, bool SF, typename... CCAs >
 struct IsAligned< Columns<MT,SO,true,SF,CCAs...> >
    : public IsAligned<MT>
 {};

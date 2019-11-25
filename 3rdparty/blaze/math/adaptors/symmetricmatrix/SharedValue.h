@@ -3,7 +3,7 @@
 //  \file blaze/math/adaptors/symmetricmatrix/SharedValue.h
 //  \brief Header file for the SharedValue class
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -80,12 +80,25 @@ class SharedValue
    //@{
    explicit inline SharedValue();
    explicit inline SharedValue( const Type& value );
-   // No explicitly declared copy constructor.
+
+   SharedValue( const SharedValue& ) = default;
+   SharedValue( SharedValue&& ) = default;
    //@}
    //**********************************************************************************************
 
    //**Destructor**********************************************************************************
-   // No explicitly declared destructor.
+   /*!\name Destructor */
+   //@{
+   ~SharedValue() = default;
+   //@}
+   //**********************************************************************************************
+
+   //**Assignment operators************************************************************************
+   /*!\name Assignment operators */
+   //@{
+   SharedValue& operator=( const SharedValue& ) = default;
+   SharedValue& operator=( SharedValue&& ) = default;
+   //@}
    //**********************************************************************************************
 
    //**Access operators****************************************************************************
@@ -233,10 +246,10 @@ inline typename SharedValue<Type>::Pointer SharedValue<Type>::base() const noexc
 /*!\name SharedValue operators */
 //@{
 template< typename T1, typename T2 >
-inline bool operator==( const SharedValue<T1>& lhs, const SharedValue<T2>& rhs );
+bool operator==( const SharedValue<T1>& lhs, const SharedValue<T2>& rhs );
 
 template< typename T1, typename T2 >
-inline bool operator!=( const SharedValue<T1>& lhs, const SharedValue<T2>& rhs );
+bool operator!=( const SharedValue<T1>& lhs, const SharedValue<T2>& rhs );
 //@}
 //*************************************************************************************************
 
@@ -285,10 +298,10 @@ inline bool operator!=( const SharedValue<T1>& lhs, const SharedValue<T2>& rhs )
 /*!\name SharedValue global functions */
 //@{
 template< bool RF, typename Type >
-inline bool isDefault( const SharedValue<Type>& value );
+bool isDefault( const SharedValue<Type>& value );
 
 template< bool RF, typename T1, typename T2 >
-inline bool equal( const SharedValue<T1>& lhs, const SharedValue<T2>& rhs );
+bool equal( const SharedValue<T1>& lhs, const SharedValue<T2>& rhs );
 //@}
 //*************************************************************************************************
 

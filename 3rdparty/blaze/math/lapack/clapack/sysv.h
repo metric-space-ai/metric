@@ -3,7 +3,7 @@
 //  \file blaze/math/lapack/clapack/sysv.h
 //  \brief Header file for the CLAPACK sysv wrapper functions
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -42,6 +42,7 @@
 
 #include "../../../util/Complex.h"
 #include "../../../util/StaticAssert.h"
+#include "../../../util/Types.h"
 
 
 //=================================================================================================
@@ -55,10 +56,14 @@
 #if !defined(INTEL_MKL_VERSION)
 extern "C" {
 
-void ssysv_( char* uplo, int* n, int* nrhs, float*  A, int* lda, int* ipiv, float*  b, int* ldb, float*  work, int* lwork, int* info );
-void dsysv_( char* uplo, int* n, int* nrhs, double* A, int* lda, int* ipiv, double* b, int* ldb, double* work, int* lwork, int* info );
-void csysv_( char* uplo, int* n, int* nrhs, float*  A, int* lda, int* ipiv, float*  b, int* ldb, float*  work, int* lwork, int* info );
-void zsysv_( char* uplo, int* n, int* nrhs, double* A, int* lda, int* ipiv, double* b, int* ldb, double* work, int* lwork, int* info );
+void ssysv_( char* uplo, int* n, int* nrhs, float* A, int* lda, int* ipiv, float* b, int* ldb,
+             float* work, int* lwork, int* info, blaze::fortran_charlen_t nuplo );
+void dsysv_( char* uplo, int* n, int* nrhs, double* A, int* lda, int* ipiv, double* b, int* ldb,
+             double* work, int* lwork, int* info, blaze::fortran_charlen_t nuplo );
+void csysv_( char* uplo, int* n, int* nrhs, float* A, int* lda, int* ipiv, float* b, int* ldb,
+             float* work, int* lwork, int* info, blaze::fortran_charlen_t nuplo );
+void zsysv_( char* uplo, int* n, int* nrhs, double* A, int* lda, int* ipiv, double* b, int* ldb,
+             double* work, int* lwork, int* info, blaze::fortran_charlen_t nuplo );
 
 }
 #endif
@@ -79,17 +84,17 @@ namespace blaze {
 //*************************************************************************************************
 /*!\name LAPACK symmetric indefinite linear system functions (sysv) */
 //@{
-inline void sysv( char uplo, int n, int nrhs, float* A, int lda, int* ipiv,
-                  float* B, int ldb, float* work, int lwork, int* info );
+void sysv( char uplo, int n, int nrhs, float* A, int lda, int* ipiv,
+           float* B, int ldb, float* work, int lwork, int* info );
 
-inline void sysv( char uplo, int n, int nrhs, double* A, int lda, int* ipiv,
-                  double* B, int ldb, double* work, int lwork, int* info );
+void sysv( char uplo, int n, int nrhs, double* A, int lda, int* ipiv,
+           double* B, int ldb, double* work, int lwork, int* info );
 
-inline void sysv( char uplo, int n, int nrhs, complex<float>* A, int lda, int* ipiv,
-                  complex<float>* B, int ldb, complex<float>* work, int lwork, int* info );
+void sysv( char uplo, int n, int nrhs, complex<float>* A, int lda, int* ipiv,
+           complex<float>* B, int ldb, complex<float>* work, int lwork, int* info );
 
-inline void sysv( char uplo, int n, int nrhs, complex<double>* A, int lda, int* ipiv,
-                  complex<double>* B, int ldb, complex<double>* work, int lwork, int* info );
+void sysv( char uplo, int n, int nrhs, complex<double>* A, int lda, int* ipiv,
+           complex<double>* B, int ldb, complex<double>* work, int lwork, int* info );
 //@}
 //*************************************************************************************************
 
@@ -150,7 +155,8 @@ inline void sysv( char uplo, int n, int nrhs, float* A, int lda, int* ipiv,
    BLAZE_STATIC_ASSERT( sizeof( MKL_INT ) == sizeof( int ) );
 #endif
 
-   ssysv_( &uplo, &n, &nrhs, A, &lda, ipiv, B, &ldb, work, &lwork, info );
+   ssysv_( &uplo, &n, &nrhs, A, &lda, ipiv, B, &ldb, work, &lwork,
+           info, blaze::fortran_charlen_t(1) );
 }
 //*************************************************************************************************
 
@@ -211,7 +217,8 @@ inline void sysv( char uplo, int n, int nrhs, double* A, int lda, int* ipiv,
    BLAZE_STATIC_ASSERT( sizeof( MKL_INT ) == sizeof( int ) );
 #endif
 
-   dsysv_( &uplo, &n, &nrhs, A, &lda, ipiv, B, &ldb, work, &lwork, info );
+   dsysv_( &uplo, &n, &nrhs, A, &lda, ipiv, B, &ldb, work, &lwork,
+           info, blaze::fortran_charlen_t(1) );
 }
 //*************************************************************************************************
 
@@ -278,7 +285,8 @@ inline void sysv( char uplo, int n, int nrhs, complex<float>* A, int lda, int* i
 #endif
 
    csysv_( &uplo, &n, &nrhs, reinterpret_cast<ET*>( A ), &lda, ipiv,
-           reinterpret_cast<ET*>( B ), &ldb, reinterpret_cast<ET*>( work ), &lwork, info );
+           reinterpret_cast<ET*>( B ), &ldb, reinterpret_cast<ET*>( work ),
+           &lwork, info, blaze::fortran_charlen_t(1) );
 }
 //*************************************************************************************************
 
@@ -345,7 +353,8 @@ inline void sysv( char uplo, int n, int nrhs, complex<double>* A, int lda, int* 
 #endif
 
    zsysv_( &uplo, &n, &nrhs, reinterpret_cast<ET*>( A ), &lda, ipiv,
-           reinterpret_cast<ET*>( B ), &ldb, reinterpret_cast<ET*>( work ), &lwork, info );
+           reinterpret_cast<ET*>( B ), &ldb, reinterpret_cast<ET*>( work ),
+           &lwork, info, blaze::fortran_charlen_t(1) );
 }
 //*************************************************************************************************
 

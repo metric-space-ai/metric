@@ -3,7 +3,7 @@
 //  \file blaze/Util.h
 //  \brief Header file for the inclusion of the utility module of the Blaze library
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -73,7 +73,7 @@
 #include "util/Random.h"
 #include "util/Serialization.h"
 #include "util/Singleton.h"
-#include "util/SmallVector.h"
+#include "util/SmallArray.h"
 #include "util/StaticAssert.h"
 #include "util/Suffix.h"
 #include "util/Thread.h"

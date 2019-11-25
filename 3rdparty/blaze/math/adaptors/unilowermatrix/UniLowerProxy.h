@@ -3,7 +3,7 @@
 //  \file blaze/math/adaptors/unilowermatrix/UniLowerProxy.h
 //  \brief Header file for the UniLowerProxy class
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -41,12 +41,14 @@
 //*************************************************************************************************
 
 #include "../../../math/Aliases.h"
-#include "../../../math/constraints/Expression.h"
+#include "../../../math/constraints/Computation.h"
 #include "../../../math/constraints/Hermitian.h"
 #include "../../../math/constraints/Lower.h"
 #include "../../../math/constraints/Matrix.h"
 #include "../../../math/constraints/Symmetric.h"
+#include "../../../math/constraints/Transformation.h"
 #include "../../../math/constraints/Upper.h"
+#include "../../../math/constraints/View.h"
 #include "../../../math/Exception.h"
 #include "../../../math/proxy/Proxy.h"
 #include "../../../math/shims/Clear.h"
@@ -147,7 +149,10 @@ class UniLowerProxy
    //**********************************************************************************************
 
    //**Destructor**********************************************************************************
-   // No explicitly declared destructor.
+   /*!\name Destructor */
+   //@{
+   ~UniLowerProxy() = default;
+   //@}
    //**********************************************************************************************
 
    //**Assignment operators************************************************************************
@@ -216,7 +221,9 @@ class UniLowerProxy
    BLAZE_CONSTRAINT_MUST_NOT_BE_POINTER_TYPE         ( MT );
    BLAZE_CONSTRAINT_MUST_NOT_BE_CONST                ( MT );
    BLAZE_CONSTRAINT_MUST_NOT_BE_VOLATILE             ( MT );
-   BLAZE_CONSTRAINT_MUST_NOT_BE_EXPRESSION_TYPE      ( MT );
+   BLAZE_CONSTRAINT_MUST_NOT_BE_VIEW_TYPE            ( MT );
+   BLAZE_CONSTRAINT_MUST_NOT_BE_COMPUTATION_TYPE     ( MT );
+   BLAZE_CONSTRAINT_MUST_NOT_BE_TRANSFORMATION_TYPE  ( MT );
    BLAZE_CONSTRAINT_MUST_NOT_BE_SYMMETRIC_MATRIX_TYPE( MT );
    BLAZE_CONSTRAINT_MUST_NOT_BE_HERMITIAN_MATRIX_TYPE( MT );
    BLAZE_CONSTRAINT_MUST_NOT_BE_LOWER_MATRIX_TYPE    ( MT );
@@ -681,28 +688,28 @@ inline void UniLowerProxy<MT>::imag( ValueType value ) const
 /*!\name UniLowerProxy global functions */
 //@{
 template< typename MT >
-inline void reset( const UniLowerProxy<MT>& proxy );
+void reset( const UniLowerProxy<MT>& proxy );
 
 template< typename MT >
-inline void clear( const UniLowerProxy<MT>& proxy );
+void clear( const UniLowerProxy<MT>& proxy );
 
 template< typename MT >
-inline void invert( const UniLowerProxy<MT>& proxy );
+void invert( const UniLowerProxy<MT>& proxy );
 
 template< bool RF, typename MT >
-inline bool isDefault( const UniLowerProxy<MT>& proxy );
+bool isDefault( const UniLowerProxy<MT>& proxy );
 
 template< bool RF, typename MT >
-inline bool isReal( const UniLowerProxy<MT>& proxy );
+bool isReal( const UniLowerProxy<MT>& proxy );
 
 template< bool RF, typename MT >
-inline bool isZero( const UniLowerProxy<MT>& proxy );
+bool isZero( const UniLowerProxy<MT>& proxy );
 
 template< bool RF, typename MT >
-inline bool isOne( const UniLowerProxy<MT>& proxy );
+bool isOne( const UniLowerProxy<MT>& proxy );
 
 template< typename MT >
-inline bool isnan( const UniLowerProxy<MT>& proxy );
+bool isnan( const UniLowerProxy<MT>& proxy );
 //@}
 //*************************************************************************************************
 

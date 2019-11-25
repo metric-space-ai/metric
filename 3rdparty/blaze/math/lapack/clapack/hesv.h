@@ -3,7 +3,7 @@
 //  \file blaze/math/lapack/clapack/hesv.h
 //  \brief Header file for the CLAPACK hesv wrapper functions
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -42,6 +42,7 @@
 
 #include "../../../util/Complex.h"
 #include "../../../util/StaticAssert.h"
+#include "../../../util/Types.h"
 
 
 //=================================================================================================
@@ -55,8 +56,10 @@
 #if !defined(INTEL_MKL_VERSION)
 extern "C" {
 
-void chesv_( char* uplo, int* n, int* nrhs, float*  A, int* lda, int* ipiv, float*  b, int* ldb, float*  work, int* lwork, int* info );
-void zhesv_( char* uplo, int* n, int* nrhs, double* A, int* lda, int* ipiv, double* b, int* ldb, double* work, int* lwork, int* info );
+void chesv_( char* uplo, int* n, int* nrhs, float* A, int* lda, int* ipiv, float* b, int* ldb,
+             float* work, int* lwork, int* info, blaze::fortran_charlen_t nuplo );
+void zhesv_( char* uplo, int* n, int* nrhs, double* A, int* lda, int* ipiv, double* b, int* ldb,
+             double* work, int* lwork, int* info, blaze::fortran_charlen_t nuplo );
 
 }
 #endif
@@ -77,11 +80,11 @@ namespace blaze {
 //*************************************************************************************************
 /*!\name LAPACK Hermitian indefinite linear system functions (hesv) */
 //@{
-inline void hesv( char uplo, int n, int nrhs, complex<float>* A, int lda, int* ipiv,
-                  complex<float>* B, int ldb, complex<float>* work, int lwork, int* info );
+void hesv( char uplo, int n, int nrhs, complex<float>* A, int lda, int* ipiv,
+           complex<float>* B, int ldb, complex<float>* work, int lwork, int* info );
 
-inline void hesv( char uplo, int n, int nrhs, complex<double>* A, int lda, int* ipiv,
-                  complex<double>* B, int ldb, complex<double>* work, int lwork, int* info );
+void hesv( char uplo, int n, int nrhs, complex<double>* A, int lda, int* ipiv,
+           complex<double>* B, int ldb, complex<double>* work, int lwork, int* info );
 //@}
 //*************************************************************************************************
 
@@ -148,7 +151,8 @@ inline void hesv( char uplo, int n, int nrhs, complex<float>* A, int lda, int* i
 #endif
 
    chesv_( &uplo, &n, &nrhs, reinterpret_cast<ET*>( A ), &lda, ipiv,
-           reinterpret_cast<ET*>( B ), &ldb, reinterpret_cast<ET*>( work ), &lwork, info );
+           reinterpret_cast<ET*>( B ), &ldb, reinterpret_cast<ET*>( work ), &lwork, info,
+           blaze::fortran_charlen_t(1) );
 }
 //*************************************************************************************************
 
@@ -215,7 +219,8 @@ inline void hesv( char uplo, int n, int nrhs, complex<double>* A, int lda, int* 
 #endif
 
    zhesv_( &uplo, &n, &nrhs, reinterpret_cast<ET*>( A ), &lda, ipiv,
-           reinterpret_cast<ET*>( B ), &ldb, reinterpret_cast<ET*>( work ), &lwork, info );
+           reinterpret_cast<ET*>( B ), &ldb, reinterpret_cast<ET*>( work ), &lwork, info,
+           blaze::fortran_charlen_t(1) );
 }
 //*************************************************************************************************
 

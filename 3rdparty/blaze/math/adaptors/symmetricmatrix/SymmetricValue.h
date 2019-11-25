@@ -3,7 +3,7 @@
 //  \file blaze/math/adaptors/symmetricmatrix/SymmetricValue.h
 //  \brief Header file for the SymmetricValue class
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -41,12 +41,14 @@
 //*************************************************************************************************
 
 #include "../../../math/Aliases.h"
-#include "../../../math/constraints/Expression.h"
+#include "../../../math/constraints/Computation.h"
 #include "../../../math/constraints/Hermitian.h"
 #include "../../../math/constraints/Lower.h"
 #include "../../../math/constraints/SparseMatrix.h"
 #include "../../../math/constraints/Symmetric.h"
+#include "../../../math/constraints/Transformation.h"
 #include "../../../math/constraints/Upper.h"
+#include "../../../math/constraints/View.h"
 #include "../../../math/proxy/Proxy.h"
 #include "../../../math/shims/Clear.h"
 #include "../../../math/shims/Invert.h"
@@ -216,7 +218,9 @@ class SymmetricValue
    BLAZE_CONSTRAINT_MUST_NOT_BE_POINTER_TYPE         ( MT );
    BLAZE_CONSTRAINT_MUST_NOT_BE_CONST                ( MT );
    BLAZE_CONSTRAINT_MUST_NOT_BE_VOLATILE             ( MT );
-   BLAZE_CONSTRAINT_MUST_NOT_BE_EXPRESSION_TYPE      ( MT );
+   BLAZE_CONSTRAINT_MUST_NOT_BE_VIEW_TYPE            ( MT );
+   BLAZE_CONSTRAINT_MUST_NOT_BE_COMPUTATION_TYPE     ( MT );
+   BLAZE_CONSTRAINT_MUST_NOT_BE_TRANSFORMATION_TYPE  ( MT );
    BLAZE_CONSTRAINT_MUST_NOT_BE_SYMMETRIC_MATRIX_TYPE( MT );
    BLAZE_CONSTRAINT_MUST_NOT_BE_HERMITIAN_MATRIX_TYPE( MT );
    BLAZE_CONSTRAINT_MUST_NOT_BE_LOWER_MATRIX_TYPE    ( MT );
@@ -587,28 +591,28 @@ inline void SymmetricValue<MT>::imag( ValueType value ) const
 /*!\name SymmetricValue global functions */
 //@{
 template< typename MT >
-inline void reset( const SymmetricValue<MT>& value );
+void reset( const SymmetricValue<MT>& value );
 
 template< typename MT >
-inline void clear( const SymmetricValue<MT>& value );
+void clear( const SymmetricValue<MT>& value );
 
 template< typename MT >
-inline void invert( const SymmetricValue<MT>& value );
+void invert( const SymmetricValue<MT>& value );
 
 template< bool RF, typename MT >
-inline bool isDefault( const SymmetricValue<MT>& value );
+bool isDefault( const SymmetricValue<MT>& value );
 
 template< bool RF, typename MT >
-inline bool isReal( const SymmetricValue<MT>& value );
+bool isReal( const SymmetricValue<MT>& value );
 
 template< bool RF, typename MT >
-inline bool isZero( const SymmetricValue<MT>& value );
+bool isZero( const SymmetricValue<MT>& value );
 
 template< bool RF, typename MT >
-inline bool isOne( const SymmetricValue<MT>& value );
+bool isOne( const SymmetricValue<MT>& value );
 
 template< typename MT >
-inline bool isnan( const SymmetricValue<MT>& value );
+bool isnan( const SymmetricValue<MT>& value );
 //@}
 //*************************************************************************************************
 

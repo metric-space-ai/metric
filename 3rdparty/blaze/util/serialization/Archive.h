@@ -3,7 +3,7 @@
 //  \file blaze/util/serialization/Archive.h
 //  \brief Header file for the Archive class
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -43,7 +43,6 @@
 #include <memory>
 #include "../../util/DisableIf.h"
 #include "../../util/EnableIf.h"
-#include "../../util/NonCopyable.h"
 #include "../../util/Types.h"
 #include "../../util/typetraits/IsNumeric.h"
 
@@ -139,7 +138,6 @@ namespace blaze {
 */
 template< typename Stream >  // Type of the bound stream
 class Archive
-   : private NonCopyable
 {
  public:
    //**Constructors********************************************************************************
@@ -149,11 +147,25 @@ class Archive
    explicit inline Archive( Args&&... args );
 
    explicit inline Archive( Stream& stream );
+
+   Archive( const Archive& ) = delete;
+   Archive( Archive&& ) = default;
    //@}
    //**********************************************************************************************
 
    //**Destructor**********************************************************************************
-   // No explicitly declared destructor.
+   /*!\name Destructor */
+   //@{
+   ~Archive() = default;
+   //@}
+   //**********************************************************************************************
+
+   //**Assignment operators************************************************************************
+   /*!\name Assignment operators */
+   //@{
+   Archive& operator=( const Archive& ) = delete;
+   Archive& operator=( Archive&& ) = default;
+   //@}
    //**********************************************************************************************
 
    //**Operators***********************************************************************************
@@ -204,7 +216,6 @@ class Archive
    //**********************************************************************************************
 
  private:
-
    //**Member variables****************************************************************************
    /*!\name Member variables */
    //@{

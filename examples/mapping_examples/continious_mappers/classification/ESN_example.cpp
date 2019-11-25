@@ -12,9 +12,9 @@ Copyright (c) 2019 Panda Team
     #define M_PI 3.14159265358979323846
 #endif
 
-#include "../../modules/mapping.hpp"
+#include "../../../../modules/mapping.hpp"
 
-#include "../../modules/utils/visualizer.hpp"
+#include "../../../../modules/utils/visualizer.hpp"
 
 int main()
 {

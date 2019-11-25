@@ -3,7 +3,7 @@
 //  \file blaze/math/lapack/gesvd.h
 //  \brief Header file for the LAPACK singular value decomposition functions (gesvd)
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -45,12 +45,12 @@
 #include "../../math/constraints/Adaptor.h"
 #include "../../math/constraints/BLASCompatible.h"
 #include "../../math/constraints/Computation.h"
+#include "../../math/constraints/Contiguous.h"
 #include "../../math/constraints/MutableDataAccess.h"
 #include "../../math/Exception.h"
 #include "../../math/expressions/DenseMatrix.h"
 #include "../../math/expressions/DenseVector.h"
 #include "../../math/lapack/clapack/gesvd.h"
-#include "../../math/typetraits/IsResizable.h"
 #include "../../math/typetraits/UnderlyingElement.h"
 #include "../../util/algorithms/Max.h"
 #include "../../util/algorithms/Min.h"
@@ -73,19 +73,19 @@ namespace blaze {
 /*!\name LAPACK SVD functions (gesvd) */
 //@{
 template< typename MT, bool SO, typename VT, bool TF >
-inline void gesvd( DenseMatrix<MT,SO>& A, DenseVector<VT,TF>& s, char jobu, char jobv );
+void gesvd( DenseMatrix<MT,SO>& A, DenseVector<VT,TF>& s, char jobu, char jobv );
 
 template< typename MT1, bool SO, typename MT2, typename VT, bool TF >
-inline void gesvd( DenseMatrix<MT1,SO>& A, DenseMatrix<MT2,SO>& U,
-                   DenseVector<VT,TF>& s, char jobu, char jobv );
+void gesvd( DenseMatrix<MT1,SO>& A, DenseMatrix<MT2,SO>& U,
+            DenseVector<VT,TF>& s, char jobu, char jobv );
 
 template< typename MT1, bool SO, typename VT, bool TF, typename MT2 >
-inline void gesvd( DenseMatrix<MT1,SO>& A, DenseVector<VT,TF>& s,
-                   DenseMatrix<MT2,SO>& V, char jobu, char jobv );
+void gesvd( DenseMatrix<MT1,SO>& A, DenseVector<VT,TF>& s,
+            DenseMatrix<MT2,SO>& V, char jobu, char jobv );
 
 template< typename MT1, bool SO, typename MT2, typename VT, bool TF, typename MT3 >
-inline void gesvd( DenseMatrix<MT1,SO>& A, DenseMatrix<MT2,SO>& U,
-                   DenseVector<VT,TF>& s, DenseMatrix<MT3,SO>& V, char jobu, char jobv );
+void gesvd( DenseMatrix<MT1,SO>& A, DenseMatrix<MT2,SO>& U,
+            DenseVector<VT,TF>& s, DenseMatrix<MT3,SO>& V, char jobu, char jobv );
 //@}
 //*************************************************************************************************
 
@@ -113,8 +113,8 @@ template< typename MT  // Type of the matrix A
         , bool SO      // Storage order of the matrix A
         , typename VT  // Type of the vector s
         , bool TF >    // Transpose flag of the vector s
-inline DisableIf_t< IsComplex_v< ElementType_t<MT> > >
-   gesvd_backend( DenseMatrix<MT,SO>& A, DenseVector<VT,TF>& s, char jobu, char jobv )
+inline auto gesvd_backend( DenseMatrix<MT,SO>& A, DenseVector<VT,TF>& s, char jobu, char jobv )
+   -> DisableIf_t< IsComplex_v< ElementType_t<MT> > >
 {
    BLAZE_INTERNAL_ASSERT( jobu == 'O' || jobu == 'N', "Invalid jobu flag detected" );
    BLAZE_INTERNAL_ASSERT( jobv == 'O' || jobv == 'N', "Invalid jobv flag detected" );
@@ -170,8 +170,8 @@ template< typename MT  // Type of the matrix A
         , bool SO      // Storage order of the matrix A
         , typename VT  // Type of the vector s
         , bool TF >    // Transpose flag of the vector s
-inline EnableIf_t< IsComplex_v< ElementType_t<MT> > >
-   gesvd_backend( DenseMatrix<MT,SO>& A, DenseVector<VT,TF>& s, char jobu, char jobv )
+inline auto gesvd_backend( DenseMatrix<MT,SO>& A, DenseVector<VT,TF>& s, char jobu, char jobv )
+   -> EnableIf_t< IsComplex_v< ElementType_t<MT> > >
 {
    BLAZE_INTERNAL_ASSERT( jobu == 'O' || jobu == 'N', "Invalid jobu flag detected" );
    BLAZE_INTERNAL_ASSERT( jobv == 'O' || jobv == 'N', "Invalid jobv flag detected" );
@@ -299,10 +299,12 @@ inline void gesvd( DenseMatrix<MT,SO>& A, DenseVector<VT,TF>& s, char jobu, char
    BLAZE_CONSTRAINT_MUST_NOT_BE_ADAPTOR_TYPE( MT );
    BLAZE_CONSTRAINT_MUST_NOT_BE_COMPUTATION_TYPE( MT );
    BLAZE_CONSTRAINT_MUST_HAVE_MUTABLE_DATA_ACCESS( MT );
+   BLAZE_CONSTRAINT_MUST_BE_CONTIGUOUS_TYPE( MT );
    BLAZE_CONSTRAINT_MUST_BE_BLAS_COMPATIBLE_TYPE( ElementType_t<MT> );
 
    BLAZE_CONSTRAINT_MUST_NOT_BE_COMPUTATION_TYPE( VT );
    BLAZE_CONSTRAINT_MUST_HAVE_MUTABLE_DATA_ACCESS( VT );
+   BLAZE_CONSTRAINT_MUST_BE_CONTIGUOUS_TYPE( VT );
    BLAZE_CONSTRAINT_MUST_BE_BLAS_COMPATIBLE_TYPE( ElementType_t<VT> );
 
    const size_t M( (~A).rows() );
@@ -357,9 +359,9 @@ template< typename MT1    // Type of the matrix A
         , typename MT2    // Type of the matrix U
         , typename VT     // Type of the vector s
         , bool TF >       // Transpose flag of the vector s
-inline DisableIf_t< IsComplex_v< ElementType_t<MT1> > >
-   gesvd_backend( DenseMatrix<MT1,SO>& A, DenseMatrix<MT2,SO>& U,
-                  DenseVector<VT,TF>& s, char jobu, char jobv )
+inline auto gesvd_backend( DenseMatrix<MT1,SO>& A, DenseMatrix<MT2,SO>& U,
+                           DenseVector<VT,TF>& s, char jobu, char jobv )
+   -> DisableIf_t< IsComplex_v< ElementType_t<MT1> > >
 {
    BLAZE_INTERNAL_ASSERT( jobu == 'A' || jobu == 'S' || jobu == 'N', "Invalid jobu flag detected" );
    BLAZE_INTERNAL_ASSERT( jobv == 'O' || jobv == 'N', "Invalid jobv flag detected" );
@@ -423,9 +425,9 @@ template< typename MT1    // Type of the matrix A
         , typename MT2    // Type of the matrix U
         , typename VT     // Type of the vector s
         , bool TF >       // Transpose flag of the vector s
-inline EnableIf_t< IsComplex_v< ElementType_t<MT1> > >
-   gesvd_backend( DenseMatrix<MT1,SO>& A, DenseMatrix<MT2,SO>& U,
-                  DenseVector<VT,TF>& s, char jobu, char jobv )
+inline auto gesvd_backend( DenseMatrix<MT1,SO>& A, DenseMatrix<MT2,SO>& U,
+                           DenseVector<VT,TF>& s, char jobu, char jobv )
+   -> EnableIf_t< IsComplex_v< ElementType_t<MT1> > >
 {
    BLAZE_INTERNAL_ASSERT( jobu == 'A' || jobu == 'S' || jobu == 'N', "Invalid jobu flag detected" );
    BLAZE_INTERNAL_ASSERT( jobv == 'O' || jobv == 'N', "Invalid jobv flag detected" );
@@ -578,15 +580,18 @@ inline void gesvd( DenseMatrix<MT1,SO>& A, DenseMatrix<MT2,SO>& U,
    BLAZE_CONSTRAINT_MUST_NOT_BE_ADAPTOR_TYPE( MT1 );
    BLAZE_CONSTRAINT_MUST_NOT_BE_COMPUTATION_TYPE( MT1 );
    BLAZE_CONSTRAINT_MUST_HAVE_MUTABLE_DATA_ACCESS( MT1 );
+   BLAZE_CONSTRAINT_MUST_BE_CONTIGUOUS_TYPE( MT1 );
    BLAZE_CONSTRAINT_MUST_BE_BLAS_COMPATIBLE_TYPE( ElementType_t<MT1> );
 
    BLAZE_CONSTRAINT_MUST_NOT_BE_ADAPTOR_TYPE( MT2 );
    BLAZE_CONSTRAINT_MUST_NOT_BE_COMPUTATION_TYPE( MT2 );
    BLAZE_CONSTRAINT_MUST_HAVE_MUTABLE_DATA_ACCESS( MT2 );
+   BLAZE_CONSTRAINT_MUST_BE_CONTIGUOUS_TYPE( MT2 );
    BLAZE_CONSTRAINT_MUST_BE_BLAS_COMPATIBLE_TYPE( ElementType_t<MT2> );
 
    BLAZE_CONSTRAINT_MUST_NOT_BE_COMPUTATION_TYPE( VT );
    BLAZE_CONSTRAINT_MUST_HAVE_MUTABLE_DATA_ACCESS( VT );
+   BLAZE_CONSTRAINT_MUST_BE_CONTIGUOUS_TYPE( VT );
    BLAZE_CONSTRAINT_MUST_BE_BLAS_COMPATIBLE_TYPE( ElementType_t<VT> );
 
    const size_t M( (~A).rows() );
@@ -641,9 +646,9 @@ template< typename MT1    // Type of the matrix A
         , typename VT     // Type of the vector s
         , bool TF         // Transpose flag of the vector s
         , typename MT2 >  // Type of the matrix V
-inline DisableIf_t< IsComplex_v< ElementType_t<MT1> > >
-   gesvd_backend( DenseMatrix<MT1,SO>& A, DenseVector<VT,TF>& s,
-                  DenseMatrix<MT2,SO>& V, char jobu, char jobv )
+inline auto gesvd_backend( DenseMatrix<MT1,SO>& A, DenseVector<VT,TF>& s,
+                           DenseMatrix<MT2,SO>& V, char jobu, char jobv )
+   -> DisableIf_t< IsComplex_v< ElementType_t<MT1> > >
 {
    BLAZE_INTERNAL_ASSERT( jobu == 'O' || jobu == 'N', "Invalid jobu flag detected" );
    BLAZE_INTERNAL_ASSERT( jobv == 'A' || jobv == 'S' || jobv == 'N', "Invalid jobv flag detected" );
@@ -707,9 +712,9 @@ template< typename MT1    // Type of the matrix A
         , typename VT     // Type of the vector s
         , bool TF         // Transpose flag of the vector s
         , typename MT2 >  // Type of the matrix V
-inline EnableIf_t< IsComplex_v< ElementType_t<MT1> > >
-   gesvd_backend( DenseMatrix<MT1,SO>& A, DenseVector<VT,TF>& s,
-                  DenseMatrix<MT2,SO>& V, char jobu, char jobv )
+inline auto gesvd_backend( DenseMatrix<MT1,SO>& A, DenseVector<VT,TF>& s,
+                           DenseMatrix<MT2,SO>& V, char jobu, char jobv )
+   -> EnableIf_t< IsComplex_v< ElementType_t<MT1> > >
 {
    BLAZE_INTERNAL_ASSERT( jobu == 'O' || jobu == 'N', "Invalid jobu flag detected" );
    BLAZE_INTERNAL_ASSERT( jobv == 'A' || jobv == 'S' || jobv == 'N', "Invalid jobv flag detected" );
@@ -862,15 +867,18 @@ inline void gesvd( DenseMatrix<MT1,SO>& A, DenseVector<VT,TF>& s,
    BLAZE_CONSTRAINT_MUST_NOT_BE_ADAPTOR_TYPE( MT1 );
    BLAZE_CONSTRAINT_MUST_NOT_BE_COMPUTATION_TYPE( MT1 );
    BLAZE_CONSTRAINT_MUST_HAVE_MUTABLE_DATA_ACCESS( MT1 );
+   BLAZE_CONSTRAINT_MUST_BE_CONTIGUOUS_TYPE( MT1 );
    BLAZE_CONSTRAINT_MUST_BE_BLAS_COMPATIBLE_TYPE( ElementType_t<MT1> );
 
    BLAZE_CONSTRAINT_MUST_NOT_BE_COMPUTATION_TYPE( VT );
    BLAZE_CONSTRAINT_MUST_HAVE_MUTABLE_DATA_ACCESS( VT );
+   BLAZE_CONSTRAINT_MUST_BE_CONTIGUOUS_TYPE( VT );
    BLAZE_CONSTRAINT_MUST_BE_BLAS_COMPATIBLE_TYPE( ElementType_t<VT> );
 
    BLAZE_CONSTRAINT_MUST_NOT_BE_ADAPTOR_TYPE( MT2 );
    BLAZE_CONSTRAINT_MUST_NOT_BE_COMPUTATION_TYPE( MT2 );
    BLAZE_CONSTRAINT_MUST_HAVE_MUTABLE_DATA_ACCESS( MT2 );
+   BLAZE_CONSTRAINT_MUST_BE_CONTIGUOUS_TYPE( MT2 );
    BLAZE_CONSTRAINT_MUST_BE_BLAS_COMPATIBLE_TYPE( ElementType_t<MT2> );
 
    const size_t M( (~A).rows() );
@@ -927,9 +935,9 @@ template< typename MT1    // Type of the matrix A
         , typename VT     // Type of the vector s
         , bool TF         // Transpose flag of the vector s
         , typename MT3 >  // Type of the matrix V
-inline DisableIf_t< IsComplex_v< ElementType_t<MT1> > >
-   gesvd_backend( DenseMatrix<MT1,SO>& A, DenseMatrix<MT2,SO>& U,
-                  DenseVector<VT,TF>& s, DenseMatrix<MT3,SO>& V, char jobu, char jobv )
+inline auto gesvd_backend( DenseMatrix<MT1,SO>& A, DenseMatrix<MT2,SO>& U,
+                           DenseVector<VT,TF>& s, DenseMatrix<MT3,SO>& V, char jobu, char jobv )
+   -> DisableIf_t< IsComplex_v< ElementType_t<MT1> > >
 {
    BLAZE_INTERNAL_ASSERT( jobu == 'A' || jobu == 'S' || jobu == 'N', "Invalid jobu flag detected" );
    BLAZE_INTERNAL_ASSERT( jobv == 'A' || jobv == 'S' || jobv == 'N', "Invalid jobv flag detected" );
@@ -999,9 +1007,9 @@ template< typename MT1    // Type of the matrix A
         , typename VT     // Type of the vector s
         , bool TF         // Transpose flag of the vector s
         , typename MT3 >  // Type of the matrix V
-inline EnableIf_t< IsComplex_v< ElementType_t<MT1> > >
-   gesvd_backend( DenseMatrix<MT1,SO>& A, DenseMatrix<MT2,SO>& U,
-                  DenseVector<VT,TF>& s, DenseMatrix<MT3,SO>& V, char jobu, char jobv )
+inline auto gesvd_backend( DenseMatrix<MT1,SO>& A, DenseMatrix<MT2,SO>& U,
+                           DenseVector<VT,TF>& s, DenseMatrix<MT3,SO>& V, char jobu, char jobv )
+   -> EnableIf_t< IsComplex_v< ElementType_t<MT1> > >
 {
    BLAZE_INTERNAL_ASSERT( jobu == 'A' || jobu == 'S' || jobu == 'N', "Invalid jobu flag detected" );
    BLAZE_INTERNAL_ASSERT( jobv == 'A' || jobv == 'S' || jobv == 'N', "Invalid jobv flag detected" );
@@ -1166,20 +1174,24 @@ inline void gesvd( DenseMatrix<MT1,SO>& A, DenseMatrix<MT2,SO>& U,
    BLAZE_CONSTRAINT_MUST_NOT_BE_ADAPTOR_TYPE( MT1 );
    BLAZE_CONSTRAINT_MUST_NOT_BE_COMPUTATION_TYPE( MT1 );
    BLAZE_CONSTRAINT_MUST_HAVE_MUTABLE_DATA_ACCESS( MT1 );
+   BLAZE_CONSTRAINT_MUST_BE_CONTIGUOUS_TYPE( MT1 );
    BLAZE_CONSTRAINT_MUST_BE_BLAS_COMPATIBLE_TYPE( ElementType_t<MT1> );
 
    BLAZE_CONSTRAINT_MUST_NOT_BE_ADAPTOR_TYPE( MT2 );
    BLAZE_CONSTRAINT_MUST_NOT_BE_COMPUTATION_TYPE( MT2 );
    BLAZE_CONSTRAINT_MUST_HAVE_MUTABLE_DATA_ACCESS( MT2 );
+   BLAZE_CONSTRAINT_MUST_BE_CONTIGUOUS_TYPE( MT2 );
    BLAZE_CONSTRAINT_MUST_BE_BLAS_COMPATIBLE_TYPE( ElementType_t<MT2> );
 
    BLAZE_CONSTRAINT_MUST_NOT_BE_COMPUTATION_TYPE( VT );
    BLAZE_CONSTRAINT_MUST_HAVE_MUTABLE_DATA_ACCESS( VT );
+   BLAZE_CONSTRAINT_MUST_BE_CONTIGUOUS_TYPE( VT );
    BLAZE_CONSTRAINT_MUST_BE_BLAS_COMPATIBLE_TYPE( ElementType_t<VT> );
 
    BLAZE_CONSTRAINT_MUST_NOT_BE_ADAPTOR_TYPE( MT3 );
    BLAZE_CONSTRAINT_MUST_NOT_BE_COMPUTATION_TYPE( MT3 );
    BLAZE_CONSTRAINT_MUST_HAVE_MUTABLE_DATA_ACCESS( MT3 );
+   BLAZE_CONSTRAINT_MUST_BE_CONTIGUOUS_TYPE( MT3 );
    BLAZE_CONSTRAINT_MUST_BE_BLAS_COMPATIBLE_TYPE( ElementType_t<MT3> );
 
    const size_t M( (~A).rows() );

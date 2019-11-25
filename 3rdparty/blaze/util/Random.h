@@ -3,7 +3,7 @@
 //  \file blaze/util/Random.h
 //  \brief Implementation of a random number generator.
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -48,8 +48,8 @@
 #include "../util/Complex.h"
 #include "../util/NonCreatable.h"
 #include "../util/Types.h"
-#include "../util/typetraits/Decay.h"
 #include "../util/typetraits/RemoveCV.h"
+#include "../util/typetraits/RemoveCVRef.h"
 
 
 namespace blaze {
@@ -928,7 +928,7 @@ inline T rand( Args&&... args )
 template< typename T >  // Type of the random number
 inline void randomize( T&& value )
 {
-   Rand< Decay_t<T> > tmp;
+   Rand< RemoveCVRef_t<T> > tmp;
    tmp.randomize( std::forward<T>( value ) );
 }
 //*************************************************************************************************
@@ -948,7 +948,7 @@ template< typename T          // Type of the random number
         , typename... Args >  // Types of the optional arguments
 inline void randomize( T&& value, Args&&... args )
 {
-   Rand< Decay_t<T> > tmp;
+   Rand< RemoveCVRef_t<T> > tmp;
    tmp.randomize( std::forward<T>( value ), std::forward<Args>( args )... );
 }
 //*************************************************************************************************

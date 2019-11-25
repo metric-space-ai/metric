@@ -3,7 +3,7 @@
 //  \file blaze/math/shims/IsReal.h
 //  \brief Header file for the isReal shim
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -44,8 +44,8 @@
 #include "../../math/shims/IsZero.h"
 #include "../../system/Inline.h"
 #include "../../util/Complex.h"
+#include "../../util/MaybeUnused.h"
 #include "../../util/typetraits/IsBuiltin.h"
-#include "../../util/Unused.h"
 
 
 namespace blaze {
@@ -97,7 +97,7 @@ template< bool RF          // Relaxation flag
         , typename Type >  // Type of the given value
 BLAZE_ALWAYS_INLINE bool isReal( const Type& v ) noexcept
 {
-   UNUSED_PARAMETER( v );
+   MAYBE_UNUSED( v );
 
    return IsBuiltin_v<Type>;
 }

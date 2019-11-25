@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/DVecDVecMultExpr.h
 //  \brief Header file for the dense vector/dense vector multiplication expression
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -57,11 +57,13 @@
 #include "../../math/traits/MultTrait.h"
 #include "../../math/typetraits/HasSIMDMult.h"
 #include "../../math/typetraits/IsAligned.h"
+#include "../../math/typetraits/IsCommutative.h"
 #include "../../math/typetraits/IsComputation.h"
 #include "../../math/typetraits/IsExpression.h"
 #include "../../math/typetraits/IsPadded.h"
 #include "../../math/typetraits/IsTemporary.h"
 #include "../../math/typetraits/RequiresEvaluation.h"
+#include "../../system/HostDevice.h"
 #include "../../system/Inline.h"
 #include "../../system/Thresholds.h"
 #include "../../util/Assert.h"
@@ -154,6 +156,7 @@ class DVecDVecMultExpr
  public:
    //**Type definitions****************************************************************************
    using This          = DVecDVecMultExpr<VT1,VT2,TF>;  //!< Type of this DVecDVecMultExpr instance.
+   using BaseType      = DenseVector<This,TF>;          //!< Base type of this DVecDVecMultExpr instance.
    using ResultType    = MultTrait_t<RT1,RT2>;          //!< Result type for expression template evaluations.
    using TransposeType = TransposeType_t<ResultType>;   //!< Transpose type for expression template evaluations.
    using ElementType   = ElementType_t<ResultType>;     //!< Resulting element type.
@@ -204,7 +207,7 @@ class DVecDVecMultExpr
       // \param left Iterator to the initial left-hand side element.
       // \param right Iterator to the initial right-hand side element.
       */
-      explicit inline ConstIterator( LeftIteratorType left, RightIteratorType right )
+      explicit inline BLAZE_DEVICE_CALLABLE ConstIterator( LeftIteratorType left, RightIteratorType right )
          : left_ ( left  )  // Iterator to the current left-hand side element
          , right_( right )  // Iterator to the current right-hand side element
       {}
@@ -216,7 +219,7 @@ class DVecDVecMultExpr
       // \param inc The increment of the iterator.
       // \return The incremented iterator.
       */
-      inline ConstIterator& operator+=( size_t inc ) {
+      inline BLAZE_DEVICE_CALLABLE ConstIterator& operator+=( size_t inc ) {
          left_  += inc;
          right_ += inc;
          return *this;
@@ -229,7 +232,7 @@ class DVecDVecMultExpr
       // \param dec The decrement of the iterator.
       // \return The decremented iterator.
       */
-      inline ConstIterator& operator-=( size_t dec ) {
+      inline BLAZE_DEVICE_CALLABLE ConstIterator& operator-=( size_t dec ) {
          left_  -= dec;
          right_ -= dec;
          return *this;
@@ -241,7 +244,7 @@ class DVecDVecMultExpr
       //
       // \return Reference to the incremented iterator.
       */
-      inline ConstIterator& operator++() {
+      inline BLAZE_DEVICE_CALLABLE ConstIterator& operator++() {
          ++left_;
          ++right_;
          return *this;
@@ -253,7 +256,7 @@ class DVecDVecMultExpr
       //
       // \return The previous position of the iterator.
       */
-      inline const ConstIterator operator++( int ) {
+      inline BLAZE_DEVICE_CALLABLE const ConstIterator operator++( int ) {
          return ConstIterator( left_++, right_++ );
       }
       //*******************************************************************************************
@@ -263,7 +266,7 @@ class DVecDVecMultExpr
       //
       // \return Reference to the decremented iterator.
       */
-      inline ConstIterator& operator--() {
+      inline BLAZE_DEVICE_CALLABLE ConstIterator& operator--() {
          --left_;
          --right_;
          return *this;
@@ -275,7 +278,7 @@ class DVecDVecMultExpr
       //
       // \return The previous position of the iterator.
       */
-      inline const ConstIterator operator--( int ) {
+      inline BLAZE_DEVICE_CALLABLE const ConstIterator operator--( int ) {
          return ConstIterator( left_--, right_-- );
       }
       //*******************************************************************************************
@@ -285,7 +288,7 @@ class DVecDVecMultExpr
       //
       // \return The resulting value.
       */
-      inline ReturnType operator*() const {
+      inline BLAZE_DEVICE_CALLABLE ReturnType operator*() const {
          return (*left_) * (*right_);
       }
       //*******************************************************************************************
@@ -306,7 +309,7 @@ class DVecDVecMultExpr
       // \param rhs The right-hand side iterator.
       // \return \a true if the iterators refer to the same element, \a false if not.
       */
-      inline bool operator==( const ConstIterator& rhs ) const {
+      inline BLAZE_DEVICE_CALLABLE bool operator==( const ConstIterator& rhs ) const {
          return left_ == rhs.left_;
       }
       //*******************************************************************************************
@@ -317,7 +320,7 @@ class DVecDVecMultExpr
       // \param rhs The right-hand side iterator.
       // \return \a true if the iterators don't refer to the same element, \a false if they do.
       */
-      inline bool operator!=( const ConstIterator& rhs ) const {
+      inline BLAZE_DEVICE_CALLABLE bool operator!=( const ConstIterator& rhs ) const {
          return left_ != rhs.left_;
       }
       //*******************************************************************************************
@@ -328,7 +331,7 @@ class DVecDVecMultExpr
       // \param rhs The right-hand side iterator.
       // \return \a true if the left-hand side iterator is smaller, \a false if not.
       */
-      inline bool operator<( const ConstIterator& rhs ) const {
+      inline BLAZE_DEVICE_CALLABLE bool operator<( const ConstIterator& rhs ) const {
          return left_ < rhs.left_;
       }
       //*******************************************************************************************
@@ -339,7 +342,7 @@ class DVecDVecMultExpr
       // \param rhs The right-hand side iterator.
       // \return \a true if the left-hand side iterator is greater, \a false if not.
       */
-      inline bool operator>( const ConstIterator& rhs ) const {
+      inline BLAZE_DEVICE_CALLABLE bool operator>( const ConstIterator& rhs ) const {
          return left_ > rhs.left_;
       }
       //*******************************************************************************************
@@ -350,7 +353,7 @@ class DVecDVecMultExpr
       // \param rhs The right-hand side iterator.
       // \return \a true if the left-hand side iterator is smaller or equal, \a false if not.
       */
-      inline bool operator<=( const ConstIterator& rhs ) const {
+      inline BLAZE_DEVICE_CALLABLE bool operator<=( const ConstIterator& rhs ) const {
          return left_ <= rhs.left_;
       }
       //*******************************************************************************************
@@ -361,7 +364,7 @@ class DVecDVecMultExpr
       // \param rhs The right-hand side iterator.
       // \return \a true if the left-hand side iterator is greater or equal, \a false if not.
       */
-      inline bool operator>=( const ConstIterator& rhs ) const {
+      inline BLAZE_DEVICE_CALLABLE bool operator>=( const ConstIterator& rhs ) const {
          return left_ >= rhs.left_;
       }
       //*******************************************************************************************
@@ -372,7 +375,7 @@ class DVecDVecMultExpr
       // \param rhs The right-hand side iterator.
       // \return The number of elements between the two iterators.
       */
-      inline DifferenceType operator-( const ConstIterator& rhs ) const {
+      inline BLAZE_DEVICE_CALLABLE DifferenceType operator-( const ConstIterator& rhs ) const {
          return left_ - rhs.left_;
       }
       //*******************************************************************************************
@@ -384,7 +387,7 @@ class DVecDVecMultExpr
       // \param inc The number of elements the iterator is incremented.
       // \return The incremented iterator.
       */
-      friend inline const ConstIterator operator+( const ConstIterator& it, size_t inc ) {
+      friend inline BLAZE_DEVICE_CALLABLE const ConstIterator operator+( const ConstIterator& it, size_t inc ) {
          return ConstIterator( it.left_ + inc, it.right_ + inc );
       }
       //*******************************************************************************************
@@ -396,7 +399,7 @@ class DVecDVecMultExpr
       // \param it The iterator to be incremented.
       // \return The incremented iterator.
       */
-      friend inline const ConstIterator operator+( size_t inc, const ConstIterator& it ) {
+      friend inline BLAZE_DEVICE_CALLABLE const ConstIterator operator+( size_t inc, const ConstIterator& it ) {
          return ConstIterator( it.left_ + inc, it.right_ + inc );
       }
       //*******************************************************************************************
@@ -408,7 +411,7 @@ class DVecDVecMultExpr
       // \param dec The number of elements the iterator is decremented.
       // \return The decremented iterator.
       */
-      friend inline const ConstIterator operator-( const ConstIterator& it, size_t dec ) {
+      friend inline BLAZE_DEVICE_CALLABLE const ConstIterator operator-( const ConstIterator& it, size_t dec ) {
          return ConstIterator( it.left_ - dec, it.right_ - dec );
       }
       //*******************************************************************************************
@@ -593,21 +596,56 @@ class DVecDVecMultExpr
 
    //**Assignment to dense vectors*****************************************************************
    /*! \cond BLAZE_INTERNAL */
-   /*!\brief Assignment of a dense vector-dense vector multiplication to a dense vector.
+   /*!\brief Assignment of a non-commutative dense vector-dense vector multiplication to a
+   //        dense vector.
    // \ingroup dense_vector
    //
    // \param lhs The target left-hand side dense vector.
    // \param rhs The right-hand side multiplication expression to be assigned.
    // \return void
    //
-   // This function implements the performance optimized assignment of a dense vector-dense
-   // vector multiplication expression to a dense vector. Due to the explicit application of
-   // the SFINAE principle, this function can only be selected by the compiler in case either
-   // of the two operands requires an intermediate evaluation.
+   // This function implements the performance optimized assignment of a non-commutative dense
+   // vector-dense vector multiplication expression to a dense vector. Due to the explicit
+   // application of the SFINAE principle, this function can only be selected by the compiler
+   // in case either of the two operands requires an intermediate evaluation.
    */
    template< typename VT >  // Type of the target dense vector
-   friend inline EnableIf_t< UseAssign_v<VT> >
-      assign( DenseVector<VT,TF>& lhs, const DVecDVecMultExpr& rhs )
+   friend inline auto assign( DenseVector<VT,TF>& lhs, const DVecDVecMultExpr& rhs )
+      -> EnableIf_t< UseAssign_v<VT> && !IsCommutative_v<VT1,VT2> >
+   {
+      BLAZE_FUNCTION_TRACE;
+
+      BLAZE_INTERNAL_ASSERT( (~lhs).size() == rhs.size(), "Invalid vector sizes" );
+
+      if( !IsComputation_v<VT1> && isSame( ~lhs, rhs.lhs_ ) ) {
+         multAssign( ~lhs, rhs.rhs_ );
+      }
+      else {
+         CT1 a( serial( rhs.lhs_ ) );
+         CT2 b( serial( rhs.rhs_ ) );
+         assign( ~lhs, a * b );
+      }
+   }
+   /*! \endcond */
+   //**********************************************************************************************
+
+   //**Assignment to dense vectors*****************************************************************
+   /*! \cond BLAZE_INTERNAL */
+   /*!\brief Assignment of a commutative dense vector-dense vector multiplication to a dense vector.
+   // \ingroup dense_vector
+   //
+   // \param lhs The target left-hand side dense vector.
+   // \param rhs The right-hand side multiplication expression to be assigned.
+   // \return void
+   //
+   // This function implements the performance optimized assignment of a commutative dense
+   // vector-dense vector multiplication expression to a dense vector. Due to the explicit
+   // application of the SFINAE principle, this function can only be selected by the compiler
+   // in case either of the two operands requires an intermediate evaluation.
+   */
+   template< typename VT >  // Type of the target dense vector
+   friend inline auto assign( DenseVector<VT,TF>& lhs, const DVecDVecMultExpr& rhs )
+      -> EnableIf_t< UseAssign_v<VT> && IsCommutative_v<VT1,VT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -617,6 +655,10 @@ class DVecDVecMultExpr
          multAssign( ~lhs, rhs.rhs_ );
       }
       else if( !IsComputation_v<VT2> && isSame( ~lhs, rhs.rhs_ ) ) {
+         multAssign( ~lhs, rhs.lhs_ );
+      }
+      else if( !RequiresEvaluation_v<VT2> ) {
+         assign    ( ~lhs, rhs.rhs_ );
          multAssign( ~lhs, rhs.lhs_ );
       }
       else {
@@ -642,8 +684,8 @@ class DVecDVecMultExpr
    // of the two operands requires an intermediate evaluation.
    */
    template< typename VT >  // Type of the target sparse vector
-   friend inline EnableIf_t< UseAssign_v<VT> >
-      assign( SparseVector<VT,TF>& lhs, const DVecDVecMultExpr& rhs )
+   friend inline auto assign( SparseVector<VT,TF>& lhs, const DVecDVecMultExpr& rhs )
+      -> EnableIf_t< UseAssign_v<VT> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -674,8 +716,8 @@ class DVecDVecMultExpr
    // of the operands requires an intermediate evaluation.
    */
    template< typename VT >  // Type of the target dense vector
-   friend inline EnableIf_t< UseAssign_v<VT> >
-      addAssign( DenseVector<VT,TF>& lhs, const DVecDVecMultExpr& rhs )
+   friend inline auto addAssign( DenseVector<VT,TF>& lhs, const DVecDVecMultExpr& rhs )
+      -> EnableIf_t< UseAssign_v<VT> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -710,8 +752,8 @@ class DVecDVecMultExpr
    // the operands requires an intermediate evaluation.
    */
    template< typename VT >  // Type of the target dense vector
-   friend inline EnableIf_t< UseAssign_v<VT> >
-      subAssign( DenseVector<VT,TF>& lhs, const DVecDVecMultExpr& rhs )
+   friend inline auto subAssign( DenseVector<VT,TF>& lhs, const DVecDVecMultExpr& rhs )
+      -> EnableIf_t< UseAssign_v<VT> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -733,58 +775,74 @@ class DVecDVecMultExpr
 
    //**Multiplication assignment to dense vectors**************************************************
    /*! \cond BLAZE_INTERNAL */
-   /*!\brief Multiplication assignment of a dense vector-dense vector multiplication to a dense vector.
+   /*!\brief Multiplication assignment of a non-commutative dense vector-dense vector
+   //        multiplication to a dense vector.
    // \ingroup dense_vector
    //
    // \param lhs The target left-hand side dense vector.
    // \param rhs The right-hand side multiplication expression to be multiplied.
    // \return void
    //
-   // This function implements the performance optimized multiplication assignment of a dense
-   // vector-dense vector multiplication expression to a dense vector. Due to the explicit
-   // application of the SFINAE principle, this function can only be selected by the compiler
-   // in case either of the operands requires an intermediate evaluation.
+   // This function implements the performance optimized multiplication assignment of a
+   // non-commutative dense vector-dense vector multiplication expression to a dense vector. Due
+   // to the explicit application of the SFINAE principle, this function can only be selected by
+   // the compiler in case either of the operands requires an intermediate evaluation.
    */
    template< typename VT >  // Type of the target dense vector
-   friend inline EnableIf_t< UseAssign_v<VT> >
-      multAssign( DenseVector<VT,TF>& lhs, const DVecDVecMultExpr& rhs )
+   friend inline auto multAssign( DenseVector<VT,TF>& lhs, const DVecDVecMultExpr& rhs )
+      -> EnableIf_t< UseAssign_v<VT> && !IsCommutative_v<VT1,VT2> >
+   {
+      BLAZE_FUNCTION_TRACE;
+
+      BLAZE_CONSTRAINT_MUST_BE_DENSE_VECTOR_TYPE( ResultType );
+      BLAZE_CONSTRAINT_MUST_BE_VECTOR_WITH_TRANSPOSE_FLAG( ResultType, TF );
+      BLAZE_CONSTRAINT_MUST_NOT_REQUIRE_EVALUATION( ResultType );
+
+      BLAZE_INTERNAL_ASSERT( (~lhs).size() == rhs.size(), "Invalid vector sizes" );
+
+      const ResultType tmp( serial( rhs ) );
+      multAssign( ~lhs, tmp );
+   }
+   /*! \endcond */
+   //**********************************************************************************************
+
+   //**Multiplication assignment to dense vectors**************************************************
+   /*! \cond BLAZE_INTERNAL */
+   /*!\brief Multiplication assignment of a commutative dense vector-dense vector multiplication
+   //        to a dense vector.
+   // \ingroup dense_vector
+   //
+   // \param lhs The target left-hand side dense vector.
+   // \param rhs The right-hand side multiplication expression to be multiplied.
+   // \return void
+   //
+   // This function implements the performance optimized multiplication assignment of a
+   // commutative dense vector-dense vector multiplication expression to a dense vector. Due
+   // to the explicit application of the SFINAE principle, this function can only be selected
+   // by the compiler in case either of the operands requires an intermediate evaluation.
+   */
+   template< typename VT >  // Type of the target dense vector
+   friend inline auto multAssign( DenseVector<VT,TF>& lhs, const DVecDVecMultExpr& rhs )
+      -> EnableIf_t< UseAssign_v<VT> && IsCommutative_v<VT1,VT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
       BLAZE_INTERNAL_ASSERT( (~lhs).size() == rhs.size(), "Invalid vector sizes" );
 
-      multAssign( ~lhs, rhs.lhs_ );
-      multAssign( ~lhs, rhs.rhs_ );
+      if( !RequiresEvaluation_v<VT2> ) {
+         multAssign( ~lhs, rhs.rhs_ );
+         multAssign( ~lhs, rhs.lhs_ );
+      }
+      else {
+         multAssign( ~lhs, rhs.lhs_ );
+         multAssign( ~lhs, rhs.rhs_ );
+      }
    }
    /*! \endcond */
    //**********************************************************************************************
 
    //**Multiplication assignment to sparse vectors*************************************************
-   /*! \cond BLAZE_INTERNAL */
-   /*!\brief Multiplication assignment of a dense vector-dense vector multiplication to a sparse vector.
-   // \ingroup dense_vector
-   //
-   // \param lhs The target left-hand side sparse vector.
-   // \param rhs The right-hand side multiplication expression to be multiplied.
-   // \return void
-   //
-   // This function implements the performance optimized multiplication assignment of a dense
-   // vector-dense vector multiplication expression to a sparse vector. Due to the explicit
-   // application of the SFINAE principle, this function can only be selected by the compiler
-   // in case either of the operands requires an intermediate evaluation.
-   */
-   template< typename VT >  // Type of the target sparse vector
-   friend inline EnableIf_t< UseAssign_v<VT> >
-      multAssign( SparseVector<VT,TF>& lhs, const DVecDVecMultExpr& rhs )
-   {
-      BLAZE_FUNCTION_TRACE;
-
-      BLAZE_INTERNAL_ASSERT( (~lhs).size() == rhs.size(), "Invalid vector sizes" );
-
-      multAssign( ~lhs, rhs.lhs_ );
-      multAssign( ~lhs, rhs.rhs_ );
-   }
-   /*! \endcond */
+   // No special implementation for the multiplication assignment to sparse vectors.
    //**********************************************************************************************
 
    //**Division assignment to dense vectors********************************************************
@@ -802,8 +860,8 @@ class DVecDVecMultExpr
    // of the operands requires an intermediate evaluation.
    */
    template< typename VT >  // Type of the target dense vector
-   friend inline EnableIf_t< UseAssign_v<VT> >
-      divAssign( DenseVector<VT,TF>& lhs, const DVecDVecMultExpr& rhs )
+   friend inline auto divAssign( DenseVector<VT,TF>& lhs, const DVecDVecMultExpr& rhs )
+      -> EnableIf_t< UseAssign_v<VT> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -825,21 +883,57 @@ class DVecDVecMultExpr
 
    //**SMP assignment to dense vectors*************************************************************
    /*! \cond BLAZE_INTERNAL */
-   /*!\brief SMP assignment of a dense vector-dense vector multiplication to a dense vector.
+   /*!\brief SMP assignment of a non-commutative dense vector-dense vector multiplication to a
+   //        dense vector.
    // \ingroup dense_vector
    //
    // \param lhs The target left-hand side dense vector.
    // \param rhs The right-hand side multiplication expression to be assigned.
    // \return void
    //
-   // This function implements the performance optimized SMP assignment of a dense vector-dense
-   // vector multiplication expression to a dense vector. Due to the explicit application of the
-   // SFINAE principle, this function can only be selected by the compiler in case the expression
-   // specific parallel evaluation strategy is selected.
+   // This function implements the performance optimized SMP assignment of a non-commutative
+   // dense vector-dense vector multiplication expression to a dense vector. Due to the explicit
+   // application of the SFINAE principle, this function can only be selected by the compiler in
+   // case the expression specific parallel evaluation strategy is selected.
    */
    template< typename VT >  // Type of the target dense vector
-   friend inline EnableIf_t< UseSMPAssign_v<VT> >
-      smpAssign( DenseVector<VT,TF>& lhs, const DVecDVecMultExpr& rhs )
+   friend inline auto smpAssign( DenseVector<VT,TF>& lhs, const DVecDVecMultExpr& rhs )
+      -> EnableIf_t< UseSMPAssign_v<VT> && !IsCommutative_v<VT1,VT2> >
+   {
+      BLAZE_FUNCTION_TRACE;
+
+      BLAZE_INTERNAL_ASSERT( (~lhs).size() == rhs.size(), "Invalid vector sizes" );
+
+      if( !IsComputation_v<VT1> && isSame( ~lhs, rhs.lhs_ ) ) {
+         multAssign( ~lhs, rhs.rhs_ );
+      }
+      else {
+         CT1 a( rhs.lhs_ );
+         CT2 b( rhs.rhs_ );
+         smpAssign( ~lhs, a * b );
+      }
+   }
+   /*! \endcond */
+   //**********************************************************************************************
+
+   //**SMP assignment to dense vectors*************************************************************
+   /*! \cond BLAZE_INTERNAL */
+   /*!\brief SMP assignment of a commutative dense vector-dense vector multiplication to a
+   //        dense vector.
+   // \ingroup dense_vector
+   //
+   // \param lhs The target left-hand side dense vector.
+   // \param rhs The right-hand side multiplication expression to be assigned.
+   // \return void
+   //
+   // This function implements the performance optimized SMP assignment of a commutative dense
+   // vector-dense vector multiplication expression to a dense vector. Due to the explicit
+   // application of the SFINAE principle, this function can only be selected by the compiler
+   // in case the expression specific parallel evaluation strategy is selected.
+   */
+   template< typename VT >  // Type of the target dense vector
+   friend inline auto smpAssign( DenseVector<VT,TF>& lhs, const DVecDVecMultExpr& rhs )
+      -> EnableIf_t< UseSMPAssign_v<VT> && IsCommutative_v<VT1,VT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -849,6 +943,10 @@ class DVecDVecMultExpr
          smpMultAssign( ~lhs, rhs.rhs_ );
       }
       else if( !IsComputation_v<VT2> && isSame( ~lhs, rhs.rhs_ ) ) {
+         smpMultAssign( ~lhs, rhs.lhs_ );
+      }
+      else if( !RequiresEvaluation_v<VT2> ) {
+         smpAssign    ( ~lhs, rhs.rhs_ );
          smpMultAssign( ~lhs, rhs.lhs_ );
       }
       else {
@@ -874,8 +972,8 @@ class DVecDVecMultExpr
    // expression specific parallel evaluation strategy is selected.
    */
    template< typename VT >  // Type of the target sparse vector
-   friend inline EnableIf_t< UseSMPAssign_v<VT> >
-      smpAssign( SparseVector<VT,TF>& lhs, const DVecDVecMultExpr& rhs )
+   friend inline auto smpAssign( SparseVector<VT,TF>& lhs, const DVecDVecMultExpr& rhs )
+      -> EnableIf_t< UseSMPAssign_v<VT> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -906,8 +1004,8 @@ class DVecDVecMultExpr
    // expression specific parallel evaluation strategy is selected.
    */
    template< typename VT >  // Type of the target dense vector
-   friend inline EnableIf_t< UseSMPAssign_v<VT> >
-      smpAddAssign( DenseVector<VT,TF>& lhs, const DVecDVecMultExpr& rhs )
+   friend inline auto smpAddAssign( DenseVector<VT,TF>& lhs, const DVecDVecMultExpr& rhs )
+      -> EnableIf_t< UseSMPAssign_v<VT> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -943,8 +1041,8 @@ class DVecDVecMultExpr
    // in case the expression specific parallel evaluation strategy is selected.
    */
    template< typename VT >  // Type of the target dense vector
-   friend inline EnableIf_t< UseSMPAssign_v<VT> >
-      smpSubAssign( DenseVector<VT,TF>& lhs, const DVecDVecMultExpr& rhs )
+   friend inline auto smpSubAssign( DenseVector<VT,TF>& lhs, const DVecDVecMultExpr& rhs )
+      -> EnableIf_t< UseSMPAssign_v<VT> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -966,8 +1064,8 @@ class DVecDVecMultExpr
 
    //**SMP multiplication assignment to dense vectors**********************************************
    /*! \cond BLAZE_INTERNAL */
-   /*!\brief SMP multiplication assignment of a dense vector-dense vector multiplication to a
-   //        dense vector.
+   /*!\brief SMP multiplication assignment of a non-commutative dense vector-dense vector
+   //        multiplication to a dense vector.
    // \ingroup dense_vector
    //
    // \param lhs The target left-hand side dense vector.
@@ -975,51 +1073,65 @@ class DVecDVecMultExpr
    // \return void
    //
    // This function implements the performance optimized SMP multiplication assignment of a
-   // dense vector-dense vector multiplication expression to a dense vector. Due to the explicit
-   // application of the SFINAE principle, this function can only be selected by the compiler in
-   // case the expression specific parallel evaluation strategy is selected.
+   // non-commutative dense vector-dense vector multiplication expression to a dense vector. Due
+   // to the explicit application of the SFINAE principle, this function can only be selected by
+   // the compiler in case the expression specific parallel evaluation strategy is selected.
    */
    template< typename VT >  // Type of the target dense vector
-   friend inline EnableIf_t< UseSMPAssign_v<VT> >
-      smpMultAssign( DenseVector<VT,TF>& lhs, const DVecDVecMultExpr& rhs )
+   friend inline auto smpMultAssign( DenseVector<VT,TF>& lhs, const DVecDVecMultExpr& rhs )
+      -> EnableIf_t< UseSMPAssign_v<VT> && !IsCommutative_v<VT1,VT2> >
+   {
+      BLAZE_FUNCTION_TRACE;
+
+      BLAZE_CONSTRAINT_MUST_BE_DENSE_VECTOR_TYPE( ResultType );
+      BLAZE_CONSTRAINT_MUST_BE_VECTOR_WITH_TRANSPOSE_FLAG( ResultType, TF );
+      BLAZE_CONSTRAINT_MUST_NOT_REQUIRE_EVALUATION( ResultType );
+
+      BLAZE_INTERNAL_ASSERT( (~lhs).size() == rhs.size(), "Invalid vector sizes" );
+
+      const ResultType tmp( rhs );
+      smpMultAssign( ~lhs, tmp );
+   }
+   /*! \endcond */
+   //**********************************************************************************************
+
+   //**SMP multiplication assignment to dense vectors**********************************************
+   /*! \cond BLAZE_INTERNAL */
+   /*!\brief SMP multiplication assignment of a commutative dense vector-dense vector
+   //        multiplication to a dense vector.
+   // \ingroup dense_vector
+   //
+   // \param lhs The target left-hand side dense vector.
+   // \param rhs The right-hand side multiplication expression to be multiplied.
+   // \return void
+   //
+   // This function implements the performance optimized SMP multiplication assignment of a
+   // commutative dense vector-dense vector multiplication expression to a dense vector. Due
+   // to the explicit application of the SFINAE principle, this function can only be selected
+   // by the compiler in case the expression specific parallel evaluation strategy is selected.
+   */
+   template< typename VT >  // Type of the target dense vector
+   friend inline auto smpMultAssign( DenseVector<VT,TF>& lhs, const DVecDVecMultExpr& rhs )
+      -> EnableIf_t< UseSMPAssign_v<VT> && IsCommutative_v<VT1,VT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
       BLAZE_INTERNAL_ASSERT( (~lhs).size() == rhs.size(), "Invalid vector sizes" );
 
-      smpMultAssign( ~lhs, rhs.lhs_ );
-      smpMultAssign( ~lhs, rhs.rhs_ );
+      if( !RequiresEvaluation_v<VT2> ) {
+         smpMultAssign( ~lhs, rhs.rhs_ );
+         smpMultAssign( ~lhs, rhs.lhs_ );
+      }
+      else {
+         smpMultAssign( ~lhs, rhs.lhs_ );
+         smpMultAssign( ~lhs, rhs.rhs_ );
+      }
    }
    /*! \endcond */
    //**********************************************************************************************
 
    //**SMP multiplication assignment to sparse vectors*********************************************
-   /*! \cond BLAZE_INTERNAL */
-   /*!\brief SMP multiplication assignment of a dense vector-dense vector multiplication to a
-   //        sparse vector.
-   // \ingroup dense_vector
-   //
-   // \param lhs The target left-hand side sparse vector.
-   // \param rhs The right-hand side multiplication expression to be multiplied.
-   // \return void
-   //
-   // This function implements the performance optimized SMP multiplication assignment of a
-   // dense vector-dense vector multiplication expression to a sparse vector. Due to the explicit
-   // application of the SFINAE principle, this function can only be selected by the compiler in
-   // case the expression specific parallel evaluation strategy is selected.
-   */
-   template< typename VT >  // Type of the target sparse vector
-   friend inline EnableIf_t< UseSMPAssign_v<VT> >
-      smpMultAssign( SparseVector<VT,TF>& lhs, const DVecDVecMultExpr& rhs )
-   {
-      BLAZE_FUNCTION_TRACE;
-
-      BLAZE_INTERNAL_ASSERT( (~lhs).size() == rhs.size(), "Invalid vector sizes" );
-
-      smpMultAssign( ~lhs, rhs.lhs_ );
-      smpMultAssign( ~lhs, rhs.rhs_ );
-   }
-   /*! \endcond */
+   // No special implementation for the SMP multiplication assignment to sparse vectors.
    //**********************************************************************************************
 
    //**SMP division assignment to dense vectors****************************************************
@@ -1037,8 +1149,8 @@ class DVecDVecMultExpr
    // in case the expression specific parallel evaluation strategy is selected.
    */
    template< typename VT >  // Type of the target dense vector
-   friend inline EnableIf_t< UseSMPAssign_v<VT> >
-      smpDivAssign( DenseVector<VT,TF>& lhs, const DVecDVecMultExpr& rhs )
+   friend inline auto smpDivAssign( DenseVector<VT,TF>& lhs, const DVecDVecMultExpr& rhs )
+      -> EnableIf_t< UseSMPAssign_v<VT> >
    {
       BLAZE_FUNCTION_TRACE;
 

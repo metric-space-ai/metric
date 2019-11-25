@@ -3,7 +3,7 @@
 //  \file blaze/math/DiagonalMatrix.h
 //  \brief Header file for the complete DiagonalMatrix implementation
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -50,10 +50,9 @@
 #include "../math/SparseMatrix.h"
 #include "../math/typetraits/IsDenseMatrix.h"
 #include "../math/typetraits/UnderlyingBuiltin.h"
-#include "../util/FalseType.h"
 #include "../util/Indices.h"
+#include "../util/IntegralConstant.h"
 #include "../util/Random.h"
-#include "../util/TrueType.h"
 #include "../util/Types.h"
 
 

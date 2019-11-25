@@ -3,7 +3,7 @@
 //  \file blaze/math/simd/Equal.h
 //  \brief Header file for the SIMD equality functionality
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -72,7 +72,7 @@ template< bool RF       // Relaxation flag
 BLAZE_ALWAYS_INLINE bool equal( const SIMDi8<T>& a, const SIMDi8<T>& b ) noexcept
 #if BLAZE_AVX512BW_MODE
 {
-   return _mm512_cmpeq_epi8_mask( (~a).eval().value, (~b).eval().value ) == 0xffffffffffffffff;
+   return _mm512_cmpeq_epi8_mask( (~a).value, (~b).value ) == 0xffffffffffffffff;
 }
 #elif BLAZE_AVX2_MODE
 {
@@ -105,7 +105,7 @@ template< bool RF       // Relaxation flag
 BLAZE_ALWAYS_INLINE bool equal( const SIMDci8<T>& a, const SIMDci8<T>& b ) noexcept
 #if BLAZE_AVX512BW_MODE
 {
-   return _mm512_cmpeq_epi8_mask( (~a).eval().value, (~b).eval().value ) == 0xffffffffffffffff;
+   return _mm512_cmpeq_epi8_mask( (~a).value, (~b).value ) == 0xffffffffffffffff;
 }
 #elif BLAZE_AVX2_MODE
 {
@@ -181,7 +181,7 @@ template< bool RF       // Relaxation flag
 BLAZE_ALWAYS_INLINE bool equal( const SIMDi16<T>& a, const SIMDi16<T>& b ) noexcept
 #if BLAZE_AVX512BW_MODE
 {
-   return _mm512_cmpeq_epi16_mask( (~a).eval().value, (~b).eval().value ) == 0xffffffff;
+   return _mm512_cmpeq_epi16_mask( (~a).value, (~b).value ) == 0xffffffff;
 }
 #elif BLAZE_AVX2_MODE
 {
@@ -214,7 +214,7 @@ template< bool RF       // Relaxation flag
 BLAZE_ALWAYS_INLINE bool equal( const SIMDci16<T>& a, const SIMDci16<T>& b ) noexcept
 #if BLAZE_AVX512BW_MODE
 {
-   return _mm512_cmpeq_epi16_mask( (~a).eval().value, (~b).eval().value ) == 0xffffffff;
+   return _mm512_cmpeq_epi16_mask( (~a).value, (~b).value ) == 0xffffffff;
 }
 #elif BLAZE_AVX2_MODE
 {

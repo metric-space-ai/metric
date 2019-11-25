@@ -3,7 +3,7 @@
 //  \file blaze/math/lapack/clapack/geqrf.h
 //  \brief Header file for the CLAPACK geqrf wrapper functions
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -55,9 +55,9 @@
 #if !defined(INTEL_MKL_VERSION)
 extern "C" {
 
-void sgeqrf_( int* m, int* n, float*  A, int* lda, float*  tau, float*  work, int* lwork, int* info );
+void sgeqrf_( int* m, int* n, float* A, int* lda, float* tau, float* work, int* lwork, int* info );
 void dgeqrf_( int* m, int* n, double* A, int* lda, double* tau, double* work, int* lwork, int* info );
-void cgeqrf_( int* m, int* n, float*  A, int* lda, float*  tau, float*  work, int* lwork, int* info );
+void cgeqrf_( int* m, int* n, float* A, int* lda, float* tau, float* work, int* lwork, int* info );
 void zgeqrf_( int* m, int* n, double* A, int* lda, double* tau, double* work, int* lwork, int* info );
 
 }
@@ -79,17 +79,17 @@ namespace blaze {
 //*************************************************************************************************
 /*!\name LAPACK QR decomposition functions (geqrf) */
 //@{
-inline void geqrf( int m, int n, float* A, int lda, float* tau,
-                   float* work, int lwork, int* info );
+void geqrf( int m, int n, float* A, int lda, float* tau,
+            float* work, int lwork, int* info );
 
-inline void geqrf( int m, int n, double* A, int lda, double* tau,
-                   double* work, int lwork, int* info );
+void geqrf( int m, int n, double* A, int lda, double* tau,
+            double* work, int lwork, int* info );
 
-inline void geqrf( int m, int n, complex<float>* A, int lda, complex<float>* tau,
-                   complex<float>* work, int lwork, int* info );
+void geqrf( int m, int n, complex<float>* A, int lda, complex<float>* tau,
+            complex<float>* work, int lwork, int* info );
 
-inline void geqrf( int m, int n, complex<double>* A, int lda, complex<double>* tau,
-                   complex<double>* work, int lwork, int* info );
+void geqrf( int m, int n, complex<double>* A, int lda, complex<double>* tau,
+            complex<double>* work, int lwork, int* info );
 //@}
 //*************************************************************************************************
 

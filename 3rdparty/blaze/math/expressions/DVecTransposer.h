@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/DVecTransposer.h
 //  \brief Header file for the dense vector transposer
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -50,6 +50,7 @@
 #include "../../math/typetraits/HasConstDataAccess.h"
 #include "../../math/typetraits/HasMutableDataAccess.h"
 #include "../../math/typetraits/IsAligned.h"
+#include "../../math/typetraits/IsContiguous.h"
 #include "../../math/typetraits/IsPadded.h"
 #include "../../math/typetraits/MaxSize.h"
 #include "../../math/typetraits/Size.h"
@@ -80,6 +81,7 @@ class DVecTransposer
  public:
    //**Type definitions****************************************************************************
    using This           = DVecTransposer<VT,TF>;     //!< Type of this DVecTransposer instance.
+   using BaseType       = DenseVector<This,TF>;      //!< Base type of this DVecTransposer instance.
    using ResultType     = TransposeType_t<VT>;       //!< Result type for expression template evaluations.
    using TransposeType  = ResultType_t<VT>;          //!< Transpose type for expression template evaluations.
    using ElementType    = ElementType_t<VT>;         //!< Type of the vector elements.
@@ -693,6 +695,24 @@ struct HasMutableDataAccess< DVecTransposer<VT,TF> >
 template< typename VT, bool TF >
 struct IsAligned< DVecTransposer<VT,TF> >
    : public IsAligned<VT>
+{};
+/*! \endcond */
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
+//  ISCONTIGUOUS SPECIALIZATIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+template< typename VT, bool TF >
+struct IsContiguous< DVecTransposer<VT,TF> >
+   : public IsContiguous<VT>
 {};
 /*! \endcond */
 //*************************************************************************************************

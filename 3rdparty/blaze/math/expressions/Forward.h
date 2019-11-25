@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/Forward.h
 //  \brief Header file for all forward declarations for expression class templates
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -59,18 +59,21 @@ template< typename, bool > class DMatDeclLowExpr;
 template< typename, bool > class DMatDeclSymExpr;
 template< typename, bool > class DMatDeclUppExpr;
 template< typename, typename, bool > class DMatDMatAddExpr;
+template< typename, typename, bool > class DMatDMatKronExpr;
 template< typename, typename, typename, bool > class DMatDMatMapExpr;
 template< typename, typename, bool, bool, bool, bool > class DMatDMatMultExpr;
 template< typename, typename, bool > class DMatDMatSchurExpr;
 template< typename, typename, bool > class DMatDMatSubExpr;
 template< typename, typename > class DMatDVecMultExpr;
 template< typename, bool > class DMatEvalExpr;
+template< typename, bool > class DMatExpExpr;
 template< typename, typename, bool > class DMatMapExpr;
 template< typename, bool > class DMatInvExpr;
 template< typename, typename, bool > class DMatScalarDivExpr;
 template< typename, typename, bool > class DMatScalarMultExpr;
 template< typename, bool > class DMatSerialExpr;
 template< typename, typename, bool > class DMatSMatAddExpr;
+template< typename, typename, bool > class DMatSMatKronExpr;
 template< typename, typename, bool, bool, bool, bool > class DMatSMatMultExpr;
 template< typename, typename > class DMatSMatSchurExpr;
 template< typename, typename, bool > class DMatSMatSubExpr;
@@ -89,17 +92,20 @@ template< typename, typename > class DMatTSMatSubExpr;
 template< typename, typename, bool > class DVecDVecAddExpr;
 template< typename, typename, bool > class DVecDVecCrossExpr;
 template< typename, typename, bool > class DVecDVecDivExpr;
+template< typename, typename, bool > class DVecDVecKronExpr;
 template< typename, typename, typename, bool > class DVecDVecMapExpr;
 template< typename, typename, bool > class DVecDVecMultExpr;
 template< typename, typename > class DVecDVecOuterExpr;
 template< typename, typename, bool > class DVecDVecSubExpr;
 template< typename, bool > class DVecEvalExpr;
+template< typename, bool, size_t... > class DVecExpandExpr;
 template< typename, typename, bool > class DVecMapExpr;
 template< typename, typename, bool > class DVecScalarDivExpr;
 template< typename, typename, bool > class DVecScalarMultExpr;
 template< typename, bool > class DVecSerialExpr;
 template< typename, typename, bool > class DVecSVecAddExpr;
 template< typename, typename, bool > class DVecSVecCrossExpr;
+template< typename, typename, bool > class DVecSVecKronExpr;
 template< typename, typename, bool > class DVecSVecMultExpr;
 template< typename, typename > class DVecSVecOuterExpr;
 template< typename, typename, bool > class DVecSVecSubExpr;
@@ -111,6 +117,7 @@ template< typename, bool > class SMatDeclHermExpr;
 template< typename, bool > class SMatDeclLowExpr;
 template< typename, bool > class SMatDeclSymExpr;
 template< typename, bool > class SMatDeclUppExpr;
+template< typename, typename, bool > class SMatDMatKronExpr;
 template< typename, typename, bool, bool, bool, bool > class SMatDMatMultExpr;
 template< typename, typename > class SMatDMatSchurExpr;
 template< typename, typename, bool > class SMatDMatSubExpr;
@@ -121,6 +128,7 @@ template< typename, typename, bool > class SMatScalarDivExpr;
 template< typename, typename, bool > class SMatScalarMultExpr;
 template< typename, bool > class SMatSerialExpr;
 template< typename, typename > class SMatSMatAddExpr;
+template< typename, typename > class SMatSMatKronExpr;
 template< typename, typename > class SMatSMatMultExpr;
 template< typename, typename > class SMatSMatSchurExpr;
 template< typename, typename > class SMatSMatSubExpr;
@@ -130,6 +138,7 @@ template< typename, typename > class SMatTDMatSubExpr;
 template< typename, bool > class SMatTransExpr;
 template< typename, bool > class SMatTransposer;
 template< typename, typename > class SMatTSMatAddExpr;
+template< typename, typename > class SMatTSMatKronExpr;
 template< typename, typename > class SMatTSMatMultExpr;
 template< typename, typename > class SMatTSMatSchurExpr;
 template< typename, typename > class SMatTSMatSubExpr;
@@ -137,16 +146,19 @@ template< typename, bool > struct SparseMatrix;
 template< typename, bool > struct SparseVector;
 template< typename, typename, bool > class SVecDVecCrossExpr;
 template< typename, typename, bool > class SVecDVecDivExpr;
+template< typename, typename, bool > class SVecDVecKronExpr;
 template< typename, typename, bool > class SVecDVecMultExpr;
 template< typename, typename > class SVecDVecOuterExpr;
 template< typename, typename, bool > class SVecDVecSubExpr;
 template< typename, bool > class SVecEvalExpr;
+template< typename, bool, size_t... > class SVecExpandExpr;
 template< typename, typename, bool > class SVecMapExpr;
 template< typename, typename, bool > class SVecScalarDivExpr;
 template< typename, typename, bool > class SVecScalarMultExpr;
 template< typename, bool > class SVecSerialExpr;
 template< typename, typename, bool > class SVecSVecAddExpr;
 template< typename, typename, bool > class SVecSVecCrossExpr;
+template< typename, typename, bool > class SVecSVecKronExpr;
 template< typename, typename, bool > class SVecSVecMultExpr;
 template< typename, typename > class SVecSVecOuterExpr;
 template< typename, typename, bool > class SVecSVecSubExpr;
@@ -168,12 +180,14 @@ template< typename, typename, bool, bool, bool, bool > class TSMatDMatMultExpr;
 template< typename, typename > class TSMatDMatSchurExpr;
 template< typename, typename > class TSMatDMatSubExpr;
 template< typename, typename > class TSMatDVecMultExpr;
+template< typename, typename > class TSMatSMatKronExpr;
 template< typename, typename > class TSMatSMatMultExpr;
 template< typename, typename > class TSMatSMatSchurExpr;
 template< typename, typename > class TSMatSMatSubExpr;
 template< typename, typename > class TSMatSVecMultExpr;
 template< typename, typename, bool, bool, bool, bool > class TSMatTDMatMultExpr;
 template< typename, typename > class TSMatTSMatAddExpr;
+template< typename, typename > class TSMatTSMatKronExpr;
 template< typename, typename > class TSMatTSMatMultExpr;
 template< typename, typename > class TSMatTSMatSchurExpr;
 template< typename, typename > class TSMatTSMatSubExpr;
@@ -218,10 +232,10 @@ template< typename MT1, typename MT2, bool SO >
 decltype(auto) operator+( const SparseMatrix<MT1,SO>&, const DenseMatrix<MT2,SO>& );
 
 template< typename MT1, typename MT2 >
-decltype(auto) operator+( const SparseMatrix<MT2,false>&, const DenseMatrix<MT1,true>& );
+decltype(auto) operator+( const SparseMatrix<MT1,false>&, const DenseMatrix<MT2,true>& );
 
 template< typename MT1, typename MT2 >
-decltype(auto) operator+( const SparseMatrix<MT2,true>&, const DenseMatrix<MT1,false>& );
+decltype(auto) operator+( const SparseMatrix<MT1,true>&, const DenseMatrix<MT2,false>& );
 
 template< typename MT1, typename MT2 >
 decltype(auto) operator+( const SparseMatrix<MT1,false>&, const SparseMatrix<MT2,false>& );
@@ -475,6 +489,41 @@ template< typename MT1, typename MT2 >
 decltype(auto) operator%( const SparseMatrix<MT1,true>&, const SparseMatrix<MT2,true>& );
 
 
+template< typename VT1, typename VT2, bool TF >
+decltype(auto) kron( const DenseVector<VT1,TF>&, const DenseVector<VT2,TF>& );
+
+template< typename VT1, typename VT2, bool TF >
+decltype(auto) kron( const DenseVector<VT1,TF>&, const SparseVector<VT2,TF>& );
+
+template< typename VT1, typename VT2, bool TF >
+decltype(auto) kron( const SparseVector<VT1,TF>&, const DenseVector<VT2,TF>& );
+
+template< typename VT1, typename VT2, bool TF >
+decltype(auto) kron( const SparseVector<VT1,TF>&, const SparseVector<VT2,TF>& );
+
+
+template< typename MT1, bool SO1, typename MT2, bool SO2 >
+decltype(auto) kron( const DenseMatrix<MT1,SO1>&, const DenseMatrix<MT2,SO2>& );
+
+template< typename MT1, bool SO1, typename MT2, bool SO2 >
+decltype(auto) kron( const DenseMatrix<MT1,SO1>&, const SparseMatrix<MT2,SO2>& );
+
+template< typename MT1, bool SO1, typename MT2, bool SO2 >
+decltype(auto) kron( const SparseMatrix<MT1,SO1>&, const DenseMatrix<MT2,SO2>& );
+
+template< typename MT1, typename MT2 >
+decltype(auto) kron( const SparseMatrix<MT1,false>&, const SparseMatrix<MT2,false>& );
+
+template< typename MT1, typename MT2 >
+decltype(auto) kron( const SparseMatrix<MT1,false>&, const SparseMatrix<MT2,true>& );
+
+template< typename MT1, typename MT2 >
+decltype(auto) kron( const SparseMatrix<MT1,true>&, const SparseMatrix<MT2,false>& );
+
+template< typename MT1, typename MT2 >
+decltype(auto) kron( const SparseMatrix<MT1,true>&, const SparseMatrix<MT2,true>& );
+
+
 template< typename VT, bool TF >
 decltype(auto) trans( const DenseVector<VT,TF>& );
 
@@ -522,7 +571,7 @@ decltype(auto) serial( const SparseMatrix<MT,SO>& );
 
 
 template< typename MT, bool SO >
-inline decltype(auto) inv( const DenseMatrix<MT,SO>& );
+decltype(auto) inv( const DenseMatrix<MT,SO>& );
 
 
 template< typename VT, bool TF, typename OP >
@@ -569,39 +618,109 @@ template< size_t RF, typename MT, bool SO, typename OP >
 decltype(auto) reduce( const SparseMatrix<MT,SO>&, OP );
 
 
-template< typename MT, bool SO >
-inline decltype(auto) declsym( const DenseMatrix<MT,SO>& );
+template< typename VT, bool TF >
+decltype(auto) expand( const DenseVector<VT,TF>&, size_t );
+
+template< size_t E, typename VT, bool TF >
+decltype(auto) expand( const DenseVector<VT,TF>& );
+
+template< typename VT, bool TF >
+decltype(auto) expand( const SparseVector<VT,TF>&, size_t );
+
+template< size_t E, typename VT, bool TF >
+decltype(auto) expand( const SparseVector<VT,TF>& );
+
+
+template< typename VT, bool TF >
+decltype(auto) mean( const DenseVector<VT,TF>& );
+
+template< typename VT, bool TF >
+decltype(auto) mean( const SparseVector<VT,TF>& );
 
 template< typename MT, bool SO >
-inline decltype(auto) declsym( const SparseMatrix<MT,SO>& );
+decltype(auto) mean( const DenseMatrix<MT,SO>& );
+
+template< size_t RF, typename MT, bool SO >
+decltype(auto) mean( const DenseMatrix<MT,SO>& );
+
+template< typename MT, bool SO >
+decltype(auto) mean( const SparseMatrix<MT,SO>& );
+
+template< size_t RF, typename MT, bool SO >
+decltype(auto) mean( const SparseMatrix<MT,SO>& );
+
+
+template< typename VT, bool TF >
+decltype(auto) var( const DenseVector<VT,TF>& );
+
+template< typename VT, bool TF >
+decltype(auto) var( const SparseVector<VT,TF>& );
+
+template< typename MT, bool SO >
+decltype(auto) var( const DenseMatrix<MT,SO>& );
+
+template< size_t RF, typename MT, bool SO >
+decltype(auto) var( const DenseMatrix<MT,SO>& );
+
+template< typename MT, bool SO >
+decltype(auto) var( const SparseMatrix<MT,SO>& );
+
+template< size_t RF, typename MT, bool SO >
+decltype(auto) var( const SparseMatrix<MT,SO>& );
+
+
+template< typename VT, bool TF >
+decltype(auto) stddev( const DenseVector<VT,TF>& );
+
+template< typename VT, bool TF >
+decltype(auto) stddev( const SparseVector<VT,TF>& );
+
+template< typename MT, bool SO >
+decltype(auto) stddev( const DenseMatrix<MT,SO>& );
+
+template< size_t RF, typename MT, bool SO >
+decltype(auto) stddev( const DenseMatrix<MT,SO>& );
+
+template< typename MT, bool SO >
+decltype(auto) stddev( const SparseMatrix<MT,SO>& );
+
+template< size_t RF, typename MT, bool SO >
+decltype(auto) stddev( const SparseMatrix<MT,SO>& );
 
 
 template< typename MT, bool SO >
-inline decltype(auto) declherm( const DenseMatrix<MT,SO>& );
+decltype(auto) declsym( const DenseMatrix<MT,SO>& );
 
 template< typename MT, bool SO >
-inline decltype(auto) declherm( const SparseMatrix<MT,SO>& );
-
-
-template< typename MT, bool SO >
-inline decltype(auto) decllow( const DenseMatrix<MT,SO>& dm );
-
-template< typename MT, bool SO >
-inline decltype(auto) decllow( const SparseMatrix<MT,SO>& sm );
+decltype(auto) declsym( const SparseMatrix<MT,SO>& );
 
 
 template< typename MT, bool SO >
-inline decltype(auto) declupp( const DenseMatrix<MT,SO>& dm );
+decltype(auto) declherm( const DenseMatrix<MT,SO>& );
 
 template< typename MT, bool SO >
-inline decltype(auto) declupp( const SparseMatrix<MT,SO>& sm );
+decltype(auto) declherm( const SparseMatrix<MT,SO>& );
 
 
 template< typename MT, bool SO >
-inline decltype(auto) decldiag( const DenseMatrix<MT,SO>& dm );
+decltype(auto) decllow( const DenseMatrix<MT,SO>& dm );
 
 template< typename MT, bool SO >
-inline decltype(auto) decldiag( const SparseMatrix<MT,SO>& sm );
+decltype(auto) decllow( const SparseMatrix<MT,SO>& sm );
+
+
+template< typename MT, bool SO >
+decltype(auto) declupp( const DenseMatrix<MT,SO>& dm );
+
+template< typename MT, bool SO >
+decltype(auto) declupp( const SparseMatrix<MT,SO>& sm );
+
+
+template< typename MT, bool SO >
+decltype(auto) decldiag( const DenseMatrix<MT,SO>& dm );
+
+template< typename MT, bool SO >
+decltype(auto) decldiag( const SparseMatrix<MT,SO>& sm );
 
 } // namespace blaze
 

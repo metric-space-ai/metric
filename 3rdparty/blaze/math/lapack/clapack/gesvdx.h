@@ -3,7 +3,7 @@
 //  \file blaze/math/lapack/clapack/gesvdx.h
 //  \brief Header file for the CLAPACK gesvdx wrapper functions
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -42,6 +42,7 @@
 
 #include "../../../util/Complex.h"
 #include "../../../util/StaticAssert.h"
+#include "../../../util/Types.h"
 
 
 //=================================================================================================
@@ -55,10 +56,22 @@
 #if !defined(INTEL_MKL_VERSION) || (INTEL_MKL_VERSION < 20170000)
 extern "C" {
 
-void sgesvdx_( char* jobu, char* jobv, char* range, int* m, int* n, float*  A, int* lda, float*  vl, float*  vu, int* il, int* iu, int* ns, float*  s, float*  U, int* ldu, float*  V, int* ldv, float*  work, int* lwork, int* iwork, int* info );
-void dgesvdx_( char* jobu, char* jobv, char* range, int* m, int* n, double* A, int* lda, double* vl, double* vu, int* il, int* iu, int* ns, double* s, double* U, int* ldu, double* V, int* ldv, double* work, int* lwork, int* iwork, int* info );
-void cgesvdx_( char* jobu, char* jobv, char* range, int* m, int* n, float*  A, int* lda, float*  vl, float*  vu, int* il, int* iu, int* ns, float*  s, float*  U, int* ldu, float*  V, int* ldv, float*  work, int* lwork, float*  rwork, int* iwork, int* info );
-void zgesvdx_( char* jobu, char* jobv, char* range, int* m, int* n, double* A, int* lda, double* vl, double* vu, int* il, int* iu, int* ns, double* s, double* U, int* ldu, double* V, int* ldv, double* work, int* lwork, double* rwork, int* iwork, int* info );
+void sgesvdx_( char* jobu, char* jobv, char* range, int* m, int* n, float* A, int* lda,
+               float* vl, float* vu, int* il, int* iu, int* ns, float* s, float* U, int* ldu,
+               float* V, int* ldv, float* work, int* lwork, int* iwork, int* info,
+               blaze::fortran_charlen_t njobu, blaze::fortran_charlen_t njobv );
+void dgesvdx_( char* jobu, char* jobv, char* range, int* m, int* n, double* A, int* lda,
+               double* vl, double* vu, int* il, int* iu, int* ns, double* s, double* U, int* ldu,
+               double* V, int* ldv, double* work, int* lwork, int* iwork, int* info,
+               blaze::fortran_charlen_t njobu, blaze::fortran_charlen_t njobv );
+void cgesvdx_( char* jobu, char* jobv, char* range, int* m, int* n, float* A, int* lda,
+               float* vl, float* vu, int* il, int* iu, int* ns, float* s, float* U, int* ldu,
+               float* V, int* ldv, float* work, int* lwork, float* rwork, int* iwork, int* info,
+               blaze::fortran_charlen_t njobu, blaze::fortran_charlen_t njobv );
+void zgesvdx_( char* jobu, char* jobv, char* range, int* m, int* n, double* A, int* lda,
+               double* vl, double* vu, int* il, int* iu, int* ns, double* s, double* U, int* ldu,
+               double* V, int* ldv, double* work, int* lwork, double* rwork, int* iwork, int* info,
+               blaze::fortran_charlen_t njobu, blaze::fortran_charlen_t njobv );
 
 }
 #endif
@@ -79,25 +92,25 @@ namespace blaze {
 //*************************************************************************************************
 /*!\name LAPACK SVD functions (gesvdx) */
 //@{
-inline void gesvdx( char jobu, char jobv, char range, int m, int n, float* A, int lda,
-                    float vl, float vu, int il, int iu, int* ns,
-                    float* s, float* U, int ldu, float* V, int ldv,
-                    float* work, int lwork, int* iwork, int* info );
+void gesvdx( char jobu, char jobv, char range, int m, int n, float* A, int lda,
+             float vl, float vu, int il, int iu, int* ns,
+             float* s, float* U, int ldu, float* V, int ldv,
+             float* work, int lwork, int* iwork, int* info );
 
-inline void gesvdx( char jobu, char jobv, char range, int m, int n, double* A, int lda,
-                    double vl, double vu, int il, int iu, int* ns,
-                    double* s, double* U, int ldu, double* V, int ldv,
-                    double* work, int lwork, int* iwork, int* info );
+void gesvdx( char jobu, char jobv, char range, int m, int n, double* A, int lda,
+             double vl, double vu, int il, int iu, int* ns,
+             double* s, double* U, int ldu, double* V, int ldv,
+             double* work, int lwork, int* iwork, int* info );
 
-inline void gesvdx( char jobu, char jobv, char range, int m, int n, complex<float>* A, int lda,
-                    float vl, float vu, int il, int iu, int* ns,
-                    float* s, complex<float>* U, int ldu, complex<float>* V, int ldv,
-                    complex<float>* work, int lwork, float* rwork, int* iwork, int* info );
+void gesvdx( char jobu, char jobv, char range, int m, int n, complex<float>* A, int lda,
+             float vl, float vu, int il, int iu, int* ns,
+             float* s, complex<float>* U, int ldu, complex<float>* V, int ldv,
+             complex<float>* work, int lwork, float* rwork, int* iwork, int* info );
 
-inline void gesvdx( char jobu, char jobv, char range, int m, int n, complex<double>* A, int lda,
-                    double vl, double vu, int il, int iu, int* ns,
-                    double* s, complex<double>* U, int ldu, complex<double>* V, int ldv,
-                    complex<double>* work, int lwork, double* rwork, int* iwork, int* info );
+void gesvdx( char jobu, char jobv, char range, int m, int n, complex<double>* A, int lda,
+             double vl, double vu, int il, int iu, int* ns,
+             double* s, complex<double>* U, int ldu, complex<double>* V, int ldv,
+             complex<double>* work, int lwork, double* rwork, int* iwork, int* info );
 //@}
 //*************************************************************************************************
 
@@ -189,7 +202,8 @@ inline void gesvdx( char jobu, char jobv, char range, int m, int n, float* A, in
    ++iu;
 
    sgesvdx_( &jobu, &jobv, &range, &m, &n, A, &lda, &vl, &vu, &il, &iu, ns,
-             s, U, &ldu, V, &ldv, work, &lwork, iwork, info );
+             s, U, &ldu, V, &ldv, work, &lwork, iwork, info,
+             blaze::fortran_charlen_t(1), blaze::fortran_charlen_t(1) );
 }
 //*************************************************************************************************
 
@@ -281,7 +295,8 @@ inline void gesvdx( char jobu, char jobv, char range, int m, int n, double* A, i
    ++iu;
 
    dgesvdx_( &jobu, &jobv, &range, &m, &n, A, &lda, &vl, &vu, &il, &iu, ns,
-             s, U, &ldu, V, &ldv, work, &lwork, iwork, info );
+             s, U, &ldu, V, &ldv, work, &lwork, iwork, info,
+             blaze::fortran_charlen_t(1), blaze::fortran_charlen_t(1) );
 }
 //*************************************************************************************************
 
@@ -381,7 +396,8 @@ inline void gesvdx( char jobu, char jobv, char range, int m, int n, complex<floa
    cgesvdx_( &jobu, &jobv, &range, &m, &n, reinterpret_cast<ET*>( A ), &lda,
              &vl, &vu, &il, &iu, ns, s,
              reinterpret_cast<ET*>( U ), &ldu, reinterpret_cast<ET*>( V ), &ldv,
-             reinterpret_cast<ET*>( work ), &lwork, rwork, iwork, info );
+             reinterpret_cast<ET*>( work ), &lwork, rwork, iwork, info,
+             blaze::fortran_charlen_t(1), blaze::fortran_charlen_t(1) );
 }
 //*************************************************************************************************
 
@@ -481,7 +497,8 @@ inline void gesvdx( char jobu, char jobv, char range, int m, int n, complex<doub
    zgesvdx_( &jobu, &jobv, &range, &m, &n, reinterpret_cast<ET*>( A ), &lda,
              &vl, &vu, &il, &iu, ns, s,
              reinterpret_cast<ET*>( U ), &ldu, reinterpret_cast<ET*>( V ), &ldv,
-             reinterpret_cast<ET*>( work ), &lwork, rwork, iwork, info );
+             reinterpret_cast<ET*>( work ), &lwork, rwork, iwork, info,
+             blaze::fortran_charlen_t(1), blaze::fortran_charlen_t(1) );
 }
 //*************************************************************************************************
 

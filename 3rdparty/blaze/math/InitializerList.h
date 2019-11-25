@@ -3,7 +3,7 @@
 //  \file blaze/math/InitializerList.h
 //  \brief Header file for the extended initializer_list functionality
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -40,6 +40,7 @@
 // Includes
 //*************************************************************************************************
 
+#include "../math/RelaxationFlag.h"
 #include "../math/shims/IsDefault.h"
 #include "../util/algorithms/Max.h"
 #include "../util/InitializerList.h"
@@ -66,7 +67,7 @@ inline size_t nonZeros( initializer_list<Type> list ) noexcept
    size_t nonzeros( 0UL );
 
    for( const Type& element : list ) {
-      if( !isDefault( element ) )
+      if( !isDefault<strict>( element ) )
          ++nonzeros;
    }
 
@@ -104,7 +105,7 @@ inline size_t nonZeros( initializer_list< initializer_list<Type> > list ) noexce
 // \return The maximum number of columns.
 */
 template< typename Type >
-inline size_t determineColumns( initializer_list< initializer_list<Type> > list ) noexcept
+inline constexpr size_t determineColumns( initializer_list< initializer_list<Type> > list ) noexcept
 {
    size_t cols( 0UL );
 

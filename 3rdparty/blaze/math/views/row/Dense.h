@@ -3,7 +3,7 @@
 //  \file blaze/math/views/row/Dense.h
 //  \brief Row specialization for dense matrices
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -100,7 +100,6 @@
 #include "../../../util/Types.h"
 #include "../../../util/typetraits/IsConst.h"
 #include "../../../util/typetraits/IsReference.h"
-#include "../../../util/typetraits/RemoveReference.h"
 
 
 namespace blaze {
@@ -171,6 +170,9 @@ class Row<MT,true,true,SF,CRAs...>
 
    //! Compilation switch for the expression template assignment strategy.
    static constexpr bool smpAssignable = MT::smpAssignable;
+
+   //! Compilation switch for the expression template evaluation strategy.
+   static constexpr bool compileTimeArgs = DataType::compileTimeArgs;
    //**********************************************************************************************
 
    //**Constructors********************************************************************************
@@ -178,12 +180,16 @@ class Row<MT,true,true,SF,CRAs...>
    //@{
    template< typename... RRAs >
    explicit inline Row( MT& matrix, RRAs... args );
-   // No explicitly declared copy constructor.
+
+   Row( const Row& ) = default;
    //@}
    //**********************************************************************************************
 
    //**Destructor**********************************************************************************
-   // No explicitly declared destructor.
+   /*!\name Destructor */
+   //@{
+   ~Row() = default;
+   //@}
    //**********************************************************************************************
 
    //**Data access functions***********************************************************************
@@ -2624,6 +2630,9 @@ class Row<MT,false,true,false,CRAs...>
 
    //! Compilation switch for the expression template assignment strategy.
    static constexpr bool smpAssignable = MT::smpAssignable;
+
+   //! Compilation switch for the expression template evaluation strategy.
+   static constexpr bool compileTimeArgs = DataType::compileTimeArgs;
    //**********************************************************************************************
 
    //**Constructors********************************************************************************
@@ -2631,12 +2640,16 @@ class Row<MT,false,true,false,CRAs...>
    //@{
    template< typename... RRAs >
    explicit inline Row( MT& matrix, RRAs... args );
-   // No explicitly declared copy constructor.
+
+   Row( const Row& ) = default;
    //@}
    //**********************************************************************************************
 
    //**Destructor**********************************************************************************
-   // No explicitly declared destructor.
+   /*!\name Destructor */
+   //@{
+   ~Row() = default;
+   //@}
    //**********************************************************************************************
 
    //**Data access functions***********************************************************************
@@ -4185,6 +4198,9 @@ class Row<MT,false,true,true,CRAs...>
 
    //! Compilation switch for the expression template assignment strategy.
    static constexpr bool smpAssignable = MT::smpAssignable;
+
+   //! Compilation switch for the expression template evaluation strategy.
+   static constexpr bool compileTimeArgs = DataType::compileTimeArgs;
    //**********************************************************************************************
 
    //**Constructors********************************************************************************
@@ -4192,12 +4208,16 @@ class Row<MT,false,true,true,CRAs...>
    //@{
    template< typename... RRAs >
    explicit inline Row( MT& matrix, RRAs... args );
-   // No explicitly declared copy constructor.
+
+   Row( const Row& ) = default;
    //@}
    //**********************************************************************************************
 
    //**Destructor**********************************************************************************
-   // No explicitly declared destructor.
+   /*!\name Destructor */
+   //@{
+   ~Row() = default;
+   //@}
    //**********************************************************************************************
 
    //**Data access functions***********************************************************************

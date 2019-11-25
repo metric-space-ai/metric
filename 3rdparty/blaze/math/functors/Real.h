@@ -3,7 +3,7 @@
 //  \file blaze/math/functors/Real.h
 //  \brief Header file for the Real functor
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -46,16 +46,21 @@
 #include "../../math/typetraits/IsStrictlyLower.h"
 #include "../../math/typetraits/IsStrictlyUpper.h"
 #include "../../math/typetraits/IsSymmetric.h"
+#include "../../math/typetraits/IsUniform.h"
 #include "../../math/typetraits/IsUniLower.h"
 #include "../../math/typetraits/IsUniUpper.h"
 #include "../../math/typetraits/IsUpper.h"
+#include "../../math/typetraits/IsZero.h"
 #include "../../math/typetraits/YieldsLower.h"
 #include "../../math/typetraits/YieldsStrictlyLower.h"
 #include "../../math/typetraits/YieldsStrictlyUpper.h"
 #include "../../math/typetraits/YieldsSymmetric.h"
+#include "../../math/typetraits/YieldsUniform.h"
 #include "../../math/typetraits/YieldsUniLower.h"
 #include "../../math/typetraits/YieldsUniUpper.h"
 #include "../../math/typetraits/YieldsUpper.h"
+#include "../../math/typetraits/YieldsZero.h"
+#include "../../system/HostDevice.h"
 #include "../../system/Inline.h"
 #include "../../util/IntegralConstant.h"
 
@@ -75,25 +80,36 @@ namespace blaze {
 struct Real
 {
    //**********************************************************************************************
-   /*!\brief Default constructor of the Real functor.
-   */
-   explicit inline Real()
-   {}
-   //**********************************************************************************************
-
-   //**********************************************************************************************
    /*!\brief Returns the result of the real() function for the given object/value.
    //
    // \param a The given object/value.
    // \return The result of the real() function for the given object/value.
    */
    template< typename T >
-   BLAZE_ALWAYS_INLINE decltype(auto) operator()( const T& a ) const
+   BLAZE_ALWAYS_INLINE BLAZE_DEVICE_CALLABLE decltype(auto) operator()( const T& a ) const
    {
       return real( a );
    }
    //**********************************************************************************************
 };
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
+//  YIELDSUNIFORM SPECIALIZATIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+template< typename T >
+struct YieldsUniform<Real,T>
+   : public IsUniform<T>
+{};
+/*! \endcond */
 //*************************************************************************************************
 
 
@@ -218,6 +234,24 @@ struct YieldsUniUpper<Real,MT>
 template< typename MT >
 struct YieldsStrictlyUpper<Real,MT>
    : public IsStrictlyUpper<MT>
+{};
+/*! \endcond */
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
+//  YIELDSZERO SPECIALIZATIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+template< typename T >
+struct YieldsZero<Real,T>
+   : public IsZero<T>
 {};
 /*! \endcond */
 //*************************************************************************************************
