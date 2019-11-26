@@ -27,6 +27,7 @@ std::tuple<std::vector<uint8_t>, std::vector<uint32_t>, std::vector<uint8_t>> Da
 
 		return {labels, shape, features};
 	} else {
+		std::cout << "Could not open " << filename << std::endl;
 		return {{}, {}, {}};
 	}
 

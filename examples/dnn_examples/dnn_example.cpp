@@ -68,6 +68,11 @@ int main()
 	Datasets datasets;
 	auto [labels, shape, features] = datasets.getMnist("data.cereal");
 
+	if (shape.empty()) {
+		cout << "Data file is empty. Exiting." << endl;
+		return EXIT_FAILURE;
+	}
+
 
 	Autoencoder<uint8_t, double> autoencoder(features, shape[1] * shape[2], 255);
 
@@ -89,5 +94,5 @@ int main()
 	float t = vectorDiff(prediction, autoencoder.decode(latentVector));
 	cout << "test:" << t << endl;
 
-	return 0;
+	return EXIT_SUCCESS;
 }
