@@ -3,7 +3,7 @@
 //  \file blaze/math/lapack/clapack/hetri.h
 //  \brief Header file for the CLAPACK hetri wrapper functions
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -42,6 +42,7 @@
 
 #include "../../../util/Complex.h"
 #include "../../../util/StaticAssert.h"
+#include "../../../util/Types.h"
 
 
 //=================================================================================================
@@ -55,8 +56,10 @@
 #if !defined(INTEL_MKL_VERSION)
 extern "C" {
 
-void chetri_( char* uplo, int* n, float*  A, int* lda, int* ipiv, float*  work, int* info );
-void zhetri_( char* uplo, int* n, double* A, int* lda, int* ipiv, double* work, int* info );
+void chetri_( char* uplo, int* n, float* A, int* lda, int* ipiv, float* work,
+              int* info, blaze::fortran_charlen_t nuplo );
+void zhetri_( char* uplo, int* n, double* A, int* lda, int* ipiv, double* work,
+              int* info, blaze::fortran_charlen_t nuplo );
 
 }
 #endif
@@ -77,11 +80,11 @@ namespace blaze {
 //*************************************************************************************************
 /*!\name LAPACK LDLH-based inversion functions (hetri) */
 //@{
-inline void hetri( char uplo, int n, complex<float>* A, int lda,
-                   const int* ipiv, complex<float>* work, int* info );
+void hetri( char uplo, int n, complex<float>* A, int lda,
+            const int* ipiv, complex<float>* work, int* info );
 
-inline void hetri( char uplo, int n, complex<double>* A, int lda,
-                   const int* ipiv, complex<double>* work, int* info );
+void hetri( char uplo, int n, complex<double>* A, int lda,
+            const int* ipiv, complex<double>* work, int* info );
 //@}
 //*************************************************************************************************
 
@@ -130,8 +133,8 @@ inline void hetri( char uplo, int n, complex<float>* A, int lda,
    using ET = float;
 #endif
 
-   chetri_( &uplo, &n, reinterpret_cast<ET*>( A ), &lda,
-            const_cast<int*>( ipiv ), reinterpret_cast<ET*>( work ), info );
+   chetri_( &uplo, &n, reinterpret_cast<ET*>( A ), &lda, const_cast<int*>( ipiv ),
+            reinterpret_cast<ET*>( work ), info, blaze::fortran_charlen_t(1) );
 }
 //*************************************************************************************************
 
@@ -180,8 +183,8 @@ inline void hetri( char uplo, int n, complex<double>* A, int lda,
    using ET = double;
 #endif
 
-   zhetri_( &uplo, &n, reinterpret_cast<ET*>( A ), &lda,
-            const_cast<int*>( ipiv ), reinterpret_cast<ET*>( work ), info );
+   zhetri_( &uplo, &n, reinterpret_cast<ET*>( A ), &lda, const_cast<int*>( ipiv ),
+            reinterpret_cast<ET*>( work ), info, blaze::fortran_charlen_t(1) );
 }
 //*************************************************************************************************
 

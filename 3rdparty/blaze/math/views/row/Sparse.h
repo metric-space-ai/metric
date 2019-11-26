@@ -3,7 +3,7 @@
 //  \file blaze/math/views/row/Sparse.h
 //  \brief Row specialization for sparse matrices
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -69,6 +69,7 @@
 #include "../../../math/traits/MultTrait.h"
 #include "../../../math/traits/RowTrait.h"
 #include "../../../math/traits/SubTrait.h"
+#include "../../../math/typetraits/IsExpression.h"
 #include "../../../math/typetraits/IsLower.h"
 #include "../../../math/typetraits/IsRestricted.h"
 #include "../../../math/typetraits/IsStrictlyLower.h"
@@ -85,14 +86,13 @@
 #include "../../../util/constraints/Pointer.h"
 #include "../../../util/constraints/Reference.h"
 #include "../../../util/DisableIf.h"
+#include "../../../util/MaybeUnused.h"
 #include "../../../util/mpl/If.h"
 #include "../../../util/TypeList.h"
 #include "../../../util/Types.h"
 #include "../../../util/typetraits/IsConst.h"
 #include "../../../util/typetraits/IsIntegral.h"
 #include "../../../util/typetraits/IsReference.h"
-#include "../../../util/typetraits/RemoveReference.h"
-#include "../../../util/Unused.h"
 
 
 namespace blaze {
@@ -153,6 +153,9 @@ class Row<MT,true,false,SF,CRAs...>
    //**Compilation flags***************************************************************************
    //! Compilation switch for the expression template assignment strategy.
    static constexpr bool smpAssignable = false;
+
+   //! Compilation switch for the expression template evaluation strategy.
+   static constexpr bool compileTimeArgs = DataType::compileTimeArgs;
    //**********************************************************************************************
 
    //**Constructors********************************************************************************
@@ -160,12 +163,16 @@ class Row<MT,true,false,SF,CRAs...>
    //@{
    template< typename... RRAs >
    explicit inline Row( MT& matrix, RRAs... args );
-   // No explicitly declared copy constructor.
+
+   Row( const Row& ) = default;
    //@}
    //**********************************************************************************************
 
    //**Destructor**********************************************************************************
-   // No explicitly declared destructor.
+   /*!\name Destructor */
+   //@{
+   ~Row() = default;
+   //@}
    //**********************************************************************************************
 
    //**Data access functions***********************************************************************
@@ -2434,6 +2441,9 @@ class Row<MT,false,false,false,CRAs...>
    //**Compilation flags***************************************************************************
    //! Compilation switch for the expression template assignment strategy.
    static constexpr bool smpAssignable = false;
+
+   //! Compilation switch for the expression template evaluation strategy.
+   static constexpr bool compileTimeArgs = DataType::compileTimeArgs;
    //**********************************************************************************************
 
    //**Constructors********************************************************************************
@@ -2441,12 +2451,16 @@ class Row<MT,false,false,false,CRAs...>
    //@{
    template< typename... RRAs >
    explicit inline Row( MT& matrix, RRAs... args );
-   // No explicitly declared copy constructor.
+
+   Row( const Row& ) = default;
    //@}
    //**********************************************************************************************
 
    //**Destructor**********************************************************************************
-   // No explicitly declared destructor.
+   /*!\name Destructor */
+   //@{
+   ~Row() = default;
+   //@}
    //**********************************************************************************************
 
    //**Data access functions***********************************************************************
@@ -3386,7 +3400,7 @@ template< typename MT       // Type of the sparse matrix
         , size_t... CRAs >  // Compile time row arguments
 void Row<MT,false,false,false,CRAs...>::reserve( size_t n )
 {
-   UNUSED_PARAMETER( n );
+   MAYBE_UNUSED( n );
 
    return;
 }
@@ -4104,6 +4118,9 @@ class Row<MT,false,false,true,CRAs...>
    //**Compilation flags***************************************************************************
    //! Compilation switch for the expression template assignment strategy.
    static constexpr bool smpAssignable = false;
+
+   //! Compilation switch for the expression template evaluation strategy.
+   static constexpr bool compileTimeArgs = DataType::compileTimeArgs;
    //**********************************************************************************************
 
    //**Constructors********************************************************************************
@@ -4111,12 +4128,16 @@ class Row<MT,false,false,true,CRAs...>
    //@{
    template< typename... RRAs >
    explicit inline Row( MT& matrix, RRAs... args );
-   // No explicitly declared copy constructor.
+
+   Row( const Row& ) = default;
    //@}
    //**********************************************************************************************
 
    //**Destructor**********************************************************************************
-   // No explicitly declared destructor.
+   /*!\name Destructor */
+   //@{
+   ~Row() = default;
+   //@}
    //**********************************************************************************************
 
    //**Data access functions***********************************************************************

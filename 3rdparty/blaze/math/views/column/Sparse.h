@@ -3,7 +3,7 @@
 //  \file blaze/math/views/column/Sparse.h
 //  \brief Column specialization for sparse matrices
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -69,6 +69,7 @@
 #include "../../../math/traits/DivTrait.h"
 #include "../../../math/traits/MultTrait.h"
 #include "../../../math/traits/SubTrait.h"
+#include "../../../math/typetraits/IsExpression.h"
 #include "../../../math/typetraits/IsLower.h"
 #include "../../../math/typetraits/IsRestricted.h"
 #include "../../../math/typetraits/IsStrictlyLower.h"
@@ -85,13 +86,13 @@
 #include "../../../util/constraints/Pointer.h"
 #include "../../../util/constraints/Reference.h"
 #include "../../../util/DisableIf.h"
+#include "../../../util/MaybeUnused.h"
 #include "../../../util/mpl/If.h"
 #include "../../../util/TypeList.h"
 #include "../../../util/Types.h"
 #include "../../../util/typetraits/IsConst.h"
 #include "../../../util/typetraits/IsIntegral.h"
 #include "../../../util/typetraits/IsReference.h"
-#include "../../../util/Unused.h"
 
 
 namespace blaze {
@@ -152,6 +153,9 @@ class Column<MT,true,false,SF,CCAs...>
    //**Compilation flags***************************************************************************
    //! Compilation switch for the expression template assignment strategy.
    static constexpr bool smpAssignable = false;
+
+   //! Compilation switch for the expression template evaluation strategy.
+   static constexpr bool compileTimeArgs = DataType::compileTimeArgs;
    //**********************************************************************************************
 
    //**Constructors********************************************************************************
@@ -159,12 +163,16 @@ class Column<MT,true,false,SF,CCAs...>
    //@{
    template< typename... RCAs >
    explicit inline Column( MT& matrix, RCAs... args );
-   // No explicitly declared copy constructor.
+
+   Column( const Column& ) = default;
    //@}
    //**********************************************************************************************
 
    //**Destructor**********************************************************************************
-   // No explicitly declared destructor.
+   /*!\name Destructor */
+   //@{
+   ~Column() = default;
+   //@}
    //**********************************************************************************************
 
    //**Data access functions***********************************************************************
@@ -2433,6 +2441,9 @@ class Column<MT,false,false,false,CCAs...>
    //**Compilation flags***************************************************************************
    //! Compilation switch for the expression template assignment strategy.
    static constexpr bool smpAssignable = false;
+
+   //! Compilation switch for the expression template evaluation strategy.
+   static constexpr bool compileTimeArgs = DataType::compileTimeArgs;
    //**********************************************************************************************
 
    //**Constructors********************************************************************************
@@ -2440,12 +2451,16 @@ class Column<MT,false,false,false,CCAs...>
    //@{
    template< typename... RCAs >
    explicit inline Column( MT& matrix, RCAs... args );
-   // No explicitly declared copy constructor.
+
+   Column( const Column& ) = default;
    //@}
    //**********************************************************************************************
 
    //**Destructor**********************************************************************************
-   // No explicitly declared destructor.
+   /*!\name Destructor */
+   //@{
+   ~Column() = default;
+   //@}
    //**********************************************************************************************
 
    //**Data access functions***********************************************************************
@@ -3390,7 +3405,7 @@ template< typename MT       // Type of the sparse matrix
         , size_t... CCAs >  // Compile time column arguments
 void Column<MT,false,false,false,CCAs...>::reserve( size_t n )
 {
-   UNUSED_PARAMETER( n );
+   MAYBE_UNUSED( n );
 
    return;
 }
@@ -4109,6 +4124,9 @@ class Column<MT,false,false,true,CCAs...>
    //**Compilation flags***************************************************************************
    //! Compilation switch for the expression template assignment strategy.
    static constexpr bool smpAssignable = false;
+
+   //! Compilation switch for the expression template evaluation strategy.
+   static constexpr bool compileTimeArgs = DataType::compileTimeArgs;
    //**********************************************************************************************
 
    //**Constructors********************************************************************************
@@ -4116,12 +4134,16 @@ class Column<MT,false,false,true,CCAs...>
    //@{
    template< typename... RCAs >
    explicit inline Column( MT& matrix, RCAs... args );
-   // No explicitly declared copy constructor.
+
+   Column( const Column& ) = default;
    //@}
    //**********************************************************************************************
 
    //**Destructor**********************************************************************************
-   // No explicitly declared destructor.
+   /*!\name Destructor */
+   //@{
+   ~Column() = default;
+   //@}
    //**********************************************************************************************
 
    //**Data access functions***********************************************************************

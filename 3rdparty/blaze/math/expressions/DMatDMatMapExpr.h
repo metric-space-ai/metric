@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/DMatDMatMapExpr.h
 //  \brief Header file for the dense matrix/dense matrix map expression
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -51,41 +51,35 @@
 #include "../../math/expressions/DenseMatrix.h"
 #include "../../math/expressions/Forward.h"
 #include "../../math/expressions/MatMatMapExpr.h"
+#include "../../math/functors/And.h"
 #include "../../math/functors/Atan2.h"
+#include "../../math/functors/Bitand.h"
+#include "../../math/functors/Bitor.h"
+#include "../../math/functors/Bitxor.h"
 #include "../../math/functors/Hypot.h"
 #include "../../math/functors/Max.h"
 #include "../../math/functors/Min.h"
+#include "../../math/functors/Or.h"
 #include "../../math/functors/Pow.h"
+#include "../../math/functors/ShiftLV.h"
+#include "../../math/functors/ShiftRV.h"
 #include "../../math/shims/Serial.h"
 #include "../../math/SIMD.h"
 #include "../../math/traits/MapTrait.h"
+#include "../../math/typetraits/HasLoad.h"
 #include "../../math/typetraits/IsAligned.h"
 #include "../../math/typetraits/IsExpression.h"
-#include "../../math/typetraits/IsHermitian.h"
-#include "../../math/typetraits/IsLower.h"
 #include "../../math/typetraits/IsPadded.h"
-#include "../../math/typetraits/IsStrictlyLower.h"
-#include "../../math/typetraits/IsStrictlyUpper.h"
-#include "../../math/typetraits/IsSymmetric.h"
-#include "../../math/typetraits/IsUniLower.h"
-#include "../../math/typetraits/IsUniUpper.h"
-#include "../../math/typetraits/IsUpper.h"
+#include "../../math/typetraits/IsPaddingEnabled.h"
+#include "../../math/typetraits/IsSIMDEnabled.h"
 #include "../../math/typetraits/RequiresEvaluation.h"
-#include "../../math/typetraits/YieldsHermitian.h"
-#include "../../math/typetraits/YieldsLower.h"
-#include "../../math/typetraits/YieldsStrictlyLower.h"
-#include "../../math/typetraits/YieldsStrictlyUpper.h"
-#include "../../math/typetraits/YieldsSymmetric.h"
-#include "../../math/typetraits/YieldsUniLower.h"
-#include "../../math/typetraits/YieldsUniUpper.h"
-#include "../../math/typetraits/YieldsUpper.h"
+#include "../../system/HostDevice.h"
 #include "../../system/Inline.h"
 #include "../../util/Assert.h"
 #include "../../util/EnableIf.h"
 #include "../../util/FunctionTrace.h"
 #include "../../util/IntegralConstant.h"
 #include "../../util/mpl/If.h"
-#include "../../util/Template.h"
 #include "../../util/Types.h"
 #include "../../util/typetraits/HasMember.h"
 
@@ -124,12 +118,6 @@ class DMatDMatMapExpr
    using RN2 = ReturnType_t<MT2>;     //!< Return type of the right-hand side dense matrix expression.
    using CT1 = CompositeType_t<MT1>;  //!< Composite type of the left-hand side dense matrix expression.
    using CT2 = CompositeType_t<MT2>;  //!< Composite type of the right-hand side dense matrix expression.
-
-   //! Definition of the HasSIMDEnabled type trait.
-   BLAZE_CREATE_HAS_DATA_OR_FUNCTION_MEMBER_TYPE_TRAIT( HasSIMDEnabled, simdEnabled );
-
-   //! Definition of the HasLoad type trait.
-   BLAZE_CREATE_HAS_DATA_OR_FUNCTION_MEMBER_TYPE_TRAIT( HasLoad, load );
    //**********************************************************************************************
 
    //**Serial evaluation strategy******************************************************************
@@ -163,20 +151,10 @@ class DMatDMatMapExpr
    /*! \endcond */
    //**********************************************************************************************
 
-   //**SIMD support detection**********************************************************************
-   /*! \cond BLAZE_INTERNAL */
-   //! Helper structure for the detection of the SIMD capabilities of the given custom operation.
-   struct UseSIMDEnabledFlag {
-      static constexpr bool test( bool (*fnc)() ) { return fnc(); }
-      static constexpr bool test( bool b ) { return b; }
-      static constexpr bool value = test( OP::BLAZE_TEMPLATE simdEnabled<ET1,ET2> );
-   };
-   /*! \endcond */
-   //**********************************************************************************************
-
  public:
    //**Type definitions****************************************************************************
    using This          = DMatDMatMapExpr<MT1,MT2,OP,SO>;  //!< Type of this DMatDMatMapExpr instance.
+   using BaseType      = DenseMatrix<This,SO>;            //!< Base type of this DMatDMatMapExpr instance.
    using ResultType    = MapTrait_t<RT1,RT2,OP>;          //!< Result type for expression template evaluations.
    using OppositeType  = OppositeType_t<ResultType>;      //!< Result type with opposite storage order for expression template evaluations.
    using TransposeType = TransposeType_t<ResultType>;     //!< Transpose type for expression template evaluations.
@@ -251,7 +229,7 @@ class DMatDMatMapExpr
       // \param inc The increment of the iterator.
       // \return The incremented iterator.
       */
-      inline ConstIterator& operator+=( size_t inc ) {
+      inline BLAZE_DEVICE_CALLABLE ConstIterator& operator+=( size_t inc ) {
          left_  += inc;
          right_ += inc;
          return *this;
@@ -264,7 +242,7 @@ class DMatDMatMapExpr
       // \param dec The decrement of the iterator.
       // \return The decremented iterator.
       */
-      inline ConstIterator& operator-=( size_t dec ) {
+      inline BLAZE_DEVICE_CALLABLE ConstIterator& operator-=( size_t dec ) {
          left_  -= dec;
          right_ -= dec;
          return *this;
@@ -276,7 +254,7 @@ class DMatDMatMapExpr
       //
       // \return Reference to the incremented iterator.
       */
-      inline ConstIterator& operator++() {
+      inline BLAZE_DEVICE_CALLABLE ConstIterator& operator++() {
          ++left_;
          ++right_;
          return *this;
@@ -288,7 +266,7 @@ class DMatDMatMapExpr
       //
       // \return The previous position of the iterator.
       */
-      inline const ConstIterator operator++( int ) {
+      inline BLAZE_DEVICE_CALLABLE const ConstIterator operator++( int ) {
          return ConstIterator( left_++, right_++, op_ );
       }
       //*******************************************************************************************
@@ -298,7 +276,7 @@ class DMatDMatMapExpr
       //
       // \return Reference to the decremented iterator.
       */
-      inline ConstIterator& operator--() {
+      inline BLAZE_DEVICE_CALLABLE ConstIterator& operator--() {
          --left_;
          --right_;
          return *this;
@@ -310,7 +288,7 @@ class DMatDMatMapExpr
       //
       // \return The previous position of the iterator.
       */
-      inline const ConstIterator operator--( int ) {
+      inline BLAZE_DEVICE_CALLABLE const ConstIterator operator--( int ) {
          return ConstIterator( left_--, right_--, op_ );
       }
       //*******************************************************************************************
@@ -341,7 +319,7 @@ class DMatDMatMapExpr
       // \param rhs The right-hand side iterator.
       // \return \a true if the iterators refer to the same element, \a false if not.
       */
-      inline bool operator==( const ConstIterator& rhs ) const {
+      inline BLAZE_DEVICE_CALLABLE bool operator==( const ConstIterator& rhs ) const {
          return left_ == rhs.left_;
       }
       //*******************************************************************************************
@@ -352,7 +330,7 @@ class DMatDMatMapExpr
       // \param rhs The right-hand side iterator.
       // \return \a true if the iterators don't refer to the same element, \a false if they do.
       */
-      inline bool operator!=( const ConstIterator& rhs ) const {
+      inline BLAZE_DEVICE_CALLABLE bool operator!=( const ConstIterator& rhs ) const {
          return left_ != rhs.left_;
       }
       //*******************************************************************************************
@@ -363,7 +341,7 @@ class DMatDMatMapExpr
       // \param rhs The right-hand side iterator.
       // \return \a true if the left-hand side iterator is smaller, \a false if not.
       */
-      inline bool operator<( const ConstIterator& rhs ) const {
+      inline BLAZE_DEVICE_CALLABLE bool operator<( const ConstIterator& rhs ) const {
          return left_ < rhs.left_;
       }
       //*******************************************************************************************
@@ -374,7 +352,7 @@ class DMatDMatMapExpr
       // \param rhs The right-hand side iterator.
       // \return \a true if the left-hand side iterator is greater, \a false if not.
       */
-      inline bool operator>( const ConstIterator& rhs ) const {
+      inline BLAZE_DEVICE_CALLABLE bool operator>( const ConstIterator& rhs ) const {
          return left_ > rhs.left_;
       }
       //*******************************************************************************************
@@ -385,7 +363,7 @@ class DMatDMatMapExpr
       // \param rhs The right-hand side iterator.
       // \return \a true if the left-hand side iterator is smaller or equal, \a false if not.
       */
-      inline bool operator<=( const ConstIterator& rhs ) const {
+      inline BLAZE_DEVICE_CALLABLE bool operator<=( const ConstIterator& rhs ) const {
          return left_ <= rhs.left_;
       }
       //*******************************************************************************************
@@ -396,7 +374,7 @@ class DMatDMatMapExpr
       // \param rhs The right-hand side iterator.
       // \return \a true if the left-hand side iterator is greater or equal, \a false if not.
       */
-      inline bool operator>=( const ConstIterator& rhs ) const {
+      inline BLAZE_DEVICE_CALLABLE bool operator>=( const ConstIterator& rhs ) const {
          return left_ >= rhs.left_;
       }
       //*******************************************************************************************
@@ -407,7 +385,7 @@ class DMatDMatMapExpr
       // \param rhs The right-hand side iterator.
       // \return The number of elements between the two iterators.
       */
-      inline DifferenceType operator-( const ConstIterator& rhs ) const {
+      inline BLAZE_DEVICE_CALLABLE DifferenceType operator-( const ConstIterator& rhs ) const {
          return left_ - rhs.left_;
       }
       //*******************************************************************************************
@@ -443,7 +421,7 @@ class DMatDMatMapExpr
       // \param dec The number of elements the iterator is decremented.
       // \return The decremented iterator.
       */
-      friend inline const ConstIterator operator-( const ConstIterator& it, size_t dec ) {
+      friend inline BLAZE_DEVICE_CALLABLE const ConstIterator operator-( const ConstIterator& it, size_t dec ) {
          return ConstIterator( it.left_ - dec, it.right_ - dec, it.op_ );
       }
       //*******************************************************************************************
@@ -461,7 +439,7 @@ class DMatDMatMapExpr
    //! Compilation switch for the expression template evaluation strategy.
    static constexpr bool simdEnabled =
       ( MT1::simdEnabled && MT2::simdEnabled &&
-        If_t< HasSIMDEnabled_v<OP>, UseSIMDEnabledFlag, HasLoad<OP> >::value );
+        If_t< HasSIMDEnabled_v<OP>, GetSIMDEnabled<OP,ET1,ET2>, HasLoad<OP> >::value );
 
    //! Compilation switch for the expression template assignment strategy.
    static constexpr bool smpAssignable = ( MT1::smpAssignable && MT2::smpAssignable );
@@ -675,8 +653,8 @@ class DMatDMatMapExpr
    */
    template< typename MT  // Type of the target dense matrix
            , bool SO2 >   // Storage order of the target dense matrix
-   friend inline EnableIf_t< UseAssign_v<MT> >
-      assign( DenseMatrix<MT,SO2>& lhs, const DMatDMatMapExpr& rhs )
+   friend inline auto assign( DenseMatrix<MT,SO2>& lhs, const DMatDMatMapExpr& rhs )
+      -> EnableIf_t< UseAssign_v<MT> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -714,8 +692,8 @@ class DMatDMatMapExpr
    */
    template< typename MT  // Type of the target sparse matrix
            , bool SO2 >   // Storage order of the target sparse matrix
-   friend inline EnableIf_t< UseAssign_v<MT> >
-      assign( SparseMatrix<MT,SO2>& lhs, const DMatDMatMapExpr& rhs )
+   friend inline auto assign( SparseMatrix<MT,SO2>& lhs, const DMatDMatMapExpr& rhs )
+      -> EnableIf_t< UseAssign_v<MT> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -753,8 +731,8 @@ class DMatDMatMapExpr
    */
    template< typename MT  // Type of the target dense matrix
            , bool SO2 >   // Storage order of the target dense matrix
-   friend inline EnableIf_t< UseAssign_v<MT> >
-      addAssign( DenseMatrix<MT,SO2>& lhs, const DMatDMatMapExpr& rhs )
+   friend inline auto addAssign( DenseMatrix<MT,SO2>& lhs, const DMatDMatMapExpr& rhs )
+      -> EnableIf_t< UseAssign_v<MT> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -796,8 +774,8 @@ class DMatDMatMapExpr
    */
    template< typename MT  // Type of the target dense matrix
            , bool SO2 >   // Storage order of the target dense matrix
-   friend inline EnableIf_t< UseAssign_v<MT> >
-      subAssign( DenseMatrix<MT,SO2>& lhs, const DMatDMatMapExpr& rhs )
+   friend inline auto subAssign( DenseMatrix<MT,SO2>& lhs, const DMatDMatMapExpr& rhs )
+      -> EnableIf_t< UseAssign_v<MT> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -839,8 +817,8 @@ class DMatDMatMapExpr
    */
    template< typename MT  // Type of the target dense matrix
            , bool SO2 >   // Storage order of the target dense matrix
-   friend inline EnableIf_t< UseAssign_v<MT> >
-      schurAssign( DenseMatrix<MT,SO2>& lhs, const DMatDMatMapExpr& rhs )
+   friend inline auto schurAssign( DenseMatrix<MT,SO2>& lhs, const DMatDMatMapExpr& rhs )
+      -> EnableIf_t< UseAssign_v<MT> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -890,8 +868,8 @@ class DMatDMatMapExpr
    */
    template< typename MT  // Type of the target dense matrix
            , bool SO2 >   // Storage order of the target dense matrix
-   friend inline EnableIf_t< UseSMPAssign_v<MT> >
-      smpAssign( DenseMatrix<MT,SO2>& lhs, const DMatDMatMapExpr& rhs )
+   friend inline auto smpAssign( DenseMatrix<MT,SO2>& lhs, const DMatDMatMapExpr& rhs )
+      -> EnableIf_t< UseSMPAssign_v<MT> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -929,8 +907,8 @@ class DMatDMatMapExpr
    */
    template< typename MT  // Type of the target sparse matrix
            , bool SO2 >   // Storage order of the target sparse matrix
-   friend inline EnableIf_t< UseSMPAssign_v<MT> >
-      smpAssign( SparseMatrix<MT,SO2>& lhs, const DMatDMatMapExpr& rhs )
+   friend inline auto smpAssign( SparseMatrix<MT,SO2>& lhs, const DMatDMatMapExpr& rhs )
+      -> EnableIf_t< UseSMPAssign_v<MT> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -969,8 +947,8 @@ class DMatDMatMapExpr
    */
    template< typename MT  // Type of the target dense matrix
            , bool SO2 >   // Storage order of the target dense matrix
-   friend inline EnableIf_t< UseSMPAssign_v<MT> >
-      smpAddAssign( DenseMatrix<MT,SO2>& lhs, const DMatDMatMapExpr& rhs )
+   friend inline auto smpAddAssign( DenseMatrix<MT,SO2>& lhs, const DMatDMatMapExpr& rhs )
+      -> EnableIf_t< UseSMPAssign_v<MT> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -1013,8 +991,8 @@ class DMatDMatMapExpr
    */
    template< typename MT  // Type of the target dense matrix
            , bool SO2 >   // Storage order of the target dense matrix
-   friend inline EnableIf_t< UseSMPAssign_v<MT> >
-      smpSubAssign( DenseMatrix<MT,SO2>& lhs, const DMatDMatMapExpr& rhs )
+   friend inline auto smpSubAssign( DenseMatrix<MT,SO2>& lhs, const DMatDMatMapExpr& rhs )
+      -> EnableIf_t< UseSMPAssign_v<MT> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -1057,8 +1035,8 @@ class DMatDMatMapExpr
    */
    template< typename MT  // Type of the target dense matrix
            , bool SO2 >   // Storage order of the target dense matrix
-   friend inline EnableIf_t< UseSMPAssign_v<MT> >
-      smpSchurAssign( DenseMatrix<MT,SO2>& lhs, const DMatDMatMapExpr& rhs )
+   friend inline auto smpSchurAssign( DenseMatrix<MT,SO2>& lhs, const DMatDMatMapExpr& rhs )
+      -> EnableIf_t< UseSMPAssign_v<MT> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -1131,6 +1109,9 @@ class DMatDMatMapExpr
    // ... Resizing and initialization
    C = map( A, B, []( double x, double y ){ return std::min( x, y ); } );
    \endcode
+
+// In case the current number of rows and columns of the two given matrices don't match, a
+// \a std::invalid_argument is thrown.
 */
 template< typename MT1   // Type of the left-hand side dense matrix
         , typename MT2   // Type of the right-hand side dense matrix
@@ -1158,6 +1139,7 @@ inline decltype(auto)
 // \param lhs The left-hand side dense matrix operand.
 // \param rhs The right-hand side dense matrix operand.
 // \return The resulting dense matrix.
+// \exception std::invalid_argument Matrix sizes do not match.
 //
 // This function computes the componentwise minimum of the two dense matrices \a lhs and \a rhs.
 // The function returns an expression representing this operation.\n
@@ -1168,6 +1150,9 @@ inline decltype(auto)
    // ... Resizing and initialization
    C = min( A, B );
    \endcode
+
+// In case the current number of rows and columns of the two given matrices don't match, a
+// \a std::invalid_argument is thrown.
 */
 template< typename MT1  // Type of the left-hand side dense matrix
         , bool SO1      // Storage order of the left-hand side dense matrix
@@ -1190,6 +1175,7 @@ inline decltype(auto)
 // \param lhs The left-hand side dense matrix operand.
 // \param rhs The right-hand side dense matrix operand.
 // \return The resulting dense matrix.
+// \exception std::invalid_argument Matrix sizes do not match.
 //
 // This function computes the componentwise maximum of the two dense matrices \a lhs and \a rhs.
 // The function returns an expression representing this operation.\n
@@ -1200,6 +1186,9 @@ inline decltype(auto)
    // ... Resizing and initialization
    C = max( A, B );
    \endcode
+
+// In case the current number of rows and columns of the two given matrices don't match, a
+// \a std::invalid_argument is thrown.
 */
 template< typename MT1  // Type of the left-hand side dense matrix
         , bool SO1      // Storage order of the left-hand side dense matrix
@@ -1222,6 +1211,7 @@ inline decltype(auto)
 // \param lhs The left-hand side dense matrix operand.
 // \param rhs The right-hand side dense matrix operand.
 // \return The resulting dense matrix.
+// \exception std::invalid_argument Matrix sizes do not match.
 //
 // The \a hypot() function computes the componentwise hypotenous for the two dense matrices
 // \a lhs and \a rhs. The function returns an expression representing this operation.\n
@@ -1232,6 +1222,10 @@ inline decltype(auto)
    // ... Resizing and initialization
    C = hypot( A, B );
    \endcode
+
+// In case the current number of rows and columns of the two given matrices don't match, a
+// \a std::invalid_argument is thrown.
+
 */
 template< typename MT1  // Type of the left-hand side dense matrix
         , bool SO1      // Storage order of the left-hand side dense matrix
@@ -1254,6 +1248,7 @@ inline decltype(auto)
 // \param lhs The left-hand side dense matrix operand.
 // \param rhs The right-hand side dense matrix operand.
 // \return The resulting dense matrix.
+// \exception std::invalid_argument Matrix sizes do not match.
 //
 // The \a pow() function computes the componentwise exponential value for the two dense matrices
 // \a lhs and \a rhs. The function returns an expression representing this operation.\n
@@ -1264,6 +1259,9 @@ inline decltype(auto)
    // ... Resizing and initialization
    C = pow( A, B );
    \endcode
+
+// In case the current number of rows and columns of the two given matrices don't match, a
+// \a std::invalid_argument is thrown.
 */
 template< typename MT1  // Type of the left-hand side dense matrix
         , bool SO1      // Storage order of the left-hand side dense matrix
@@ -1286,6 +1284,7 @@ inline decltype(auto)
 // \param lhs The left-hand side dense matrix operand.
 // \param rhs The right-hand side dense matrix operand.
 // \return The resulting dense matrix.
+// \exception std::invalid_argument Matrix sizes do not match.
 //
 // This function computes the multi-valued inverse tangent of the two dense matrix \a lhs and
 // \a rhs. The function returns an expression representing this operation.\n
@@ -1296,6 +1295,9 @@ inline decltype(auto)
    // ... Resizing and initialization
    C = atan2( A, B );
    \endcode
+
+// In case the current number of rows and columns of the two given matrices don't match, a
+// \a std::invalid_argument is thrown.
 */
 template< typename MT1  // Type of the left-hand side dense matrix
         , bool SO1      // Storage order of the left-hand side dense matrix
@@ -1307,6 +1309,328 @@ inline decltype(auto)
    BLAZE_FUNCTION_TRACE;
 
    return map( ~lhs, ~rhs, Atan2() );
+}
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
+//  GLOBAL BINARY ARITHMETIC OPERATORS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*!\brief Left-shift operator for the elementwise left-shift of a dense matrix.
+// \ingroup dense_matrix
+//
+// \param lhs The left-hand side dense matrix to be shifted.
+// \param rhs The right-hand side dense matrix of bits to shift.
+// \return The left-shifted dense matrix.
+// \exception std::invalid_argument Matrix sizes do not match.
+//
+// This operator represents the elementwise left-shift of a given dense matrix:
+
+   \code
+   blaze::DynamicMatrix<unsigned int> A, B, C;
+   // ... Resizing and initialization
+   C = A << B;
+   \endcode
+
+// In case the current number of rows and columns of the two given matrices don't match, a
+// \a std::invalid_argument is thrown.
+*/
+template< typename MT1  // Type of the left-hand side dense matrix
+        , bool SO1      // Storage order of the left-hand side dense matrix
+        , typename MT2  // Type of the right-hand side dense matrix
+        , bool SO2 >    // Storage order of the right-hand side dense matrix
+inline decltype(auto)
+   operator<<( const DenseMatrix<MT1,SO1>& lhs, const DenseMatrix<MT2,SO2>& rhs )
+{
+   BLAZE_FUNCTION_TRACE;
+
+   return map( ~lhs, ~rhs, ShiftLV() );
+}
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*!\brief Right-shift operator for the elementwise right-shift of a dense matrix.
+// \ingroup dense_matrix
+//
+// \param lhs The left-hand side dense matrix to be shifted.
+// \param rhs The right-hand side dense matrix of bits to shift.
+// \return The right-shifted dense matrix.
+// \exception std::invalid_argument Matrix sizes do not match.
+//
+// This operator represents the elementwise right-shift of a given dense matrix:
+
+   \code
+   blaze::DynamicMatrix<unsigned int> A, B, C;
+   // ... Resizing and initialization
+   C = A >> B;
+   \endcode
+
+// In case the current number of rows and columns of the two given matrices don't match, a
+// \a std::invalid_argument is thrown.
+*/
+template< typename MT1  // Type of the left-hand side dense matrix
+        , bool SO1      // Storage order of the left-hand side dense matrix
+        , typename MT2  // Type of the right-hand side dense matrix
+        , bool SO2 >    // Storage order of the right-hand side dense matrix
+inline decltype(auto)
+   operator>>( const DenseMatrix<MT1,SO1>& lhs, const DenseMatrix<MT2,SO2>& rhs )
+{
+   BLAZE_FUNCTION_TRACE;
+
+   return map( ~lhs, ~rhs, ShiftRV() );
+}
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*!\brief Bitwise AND operator for two dense matrices.
+// \ingroup dense_matrix
+//
+// \param lhs The left-hand side dense matrix for the bitwise AND operation.
+// \param rhs The right-hand side dense matrix for the bitwise AND operation.
+// \return The resulting dense matrix.
+// \exception std::invalid_argument Matrix sizes do not match.
+//
+// This operator represents the bitwise AND of the given two dense matrices:
+
+   \code
+   blaze::DynamicMatrix<unsigned int> A, B, C;
+   // ... Resizing and initialization
+   C = A & B;
+   \endcode
+
+// In case the current number of rows and columns of the two given matrices don't match, a
+// \a std::invalid_argument is thrown.
+*/
+template< typename MT1  // Type of the left-hand side dense matrix
+        , bool SO1      // Storage order of the left-hand side dense matrix
+        , typename MT2  // Type of the right-hand side dense matrix
+        , bool SO2 >    // Storage order of the right-hand side dense matrix
+inline decltype(auto)
+   operator&( const DenseMatrix<MT1,SO1>& lhs, const DenseMatrix<MT2,SO2>& rhs )
+{
+   BLAZE_FUNCTION_TRACE;
+
+   return map( ~lhs, ~rhs, Bitand() );
+}
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*!\brief Bitwise OR operator for two dense matrices.
+// \ingroup dense_matrix
+//
+// \param lhs The left-hand side dense matrix for the bitwise OR operation.
+// \param rhs The right-hand side dense matrix for the bitwise OR operation.
+// \return The resulting dense matrix.
+// \exception std::invalid_argument Matrix sizes do not match.
+//
+// This operator represents the bitwise OR of the given two dense matrices:
+
+   \code
+   blaze::DynamicMatrix<unsigned int> A, B, C;
+   // ... Resizing and initialization
+   C = A | B;
+   \endcode
+
+// In case the current number of rows and columns of the two given matrices don't match, a
+// \a std::invalid_argument is thrown.
+*/
+template< typename MT1  // Type of the left-hand side dense matrix
+        , bool SO1      // Storage order of the left-hand side dense matrix
+        , typename MT2  // Type of the right-hand side dense matrix
+        , bool SO2 >    // Storage order of the right-hand side dense matrix
+inline decltype(auto)
+   operator|( const DenseMatrix<MT1,SO1>& lhs, const DenseMatrix<MT2,SO2>& rhs )
+{
+   BLAZE_FUNCTION_TRACE;
+
+   return map( ~lhs, ~rhs, Bitor() );
+}
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*!\brief Bitwise XOR operator for two dense matrices.
+// \ingroup dense_matrix
+//
+// \param lhs The left-hand side dense matrix for the bitwise XOR operation.
+// \param rhs The right-hand side dense matrix for the bitwise XOR operation.
+// \return The resulting dense matrix.
+// \exception std::invalid_argument Matrix sizes do not match.
+//
+// This operator represents the bitwise XOR of the given two dense matrices:
+
+   \code
+   blaze::DynamicMatrix<unsigned int> A, B, C;
+   // ... Resizing and initialization
+   C = A ^ B;
+   \endcode
+
+// In case the current number of rows and columns of the two given matrices don't match, a
+// \a std::invalid_argument is thrown.
+*/
+template< typename MT1  // Type of the left-hand side dense matrix
+        , bool SO1      // Storage order of the left-hand side dense matrix
+        , typename MT2  // Type of the right-hand side dense matrix
+        , bool SO2 >    // Storage order of the right-hand side dense matrix
+inline decltype(auto)
+   operator^( const DenseMatrix<MT1,SO1>& lhs, const DenseMatrix<MT2,SO2>& rhs )
+{
+   BLAZE_FUNCTION_TRACE;
+
+   return map( ~lhs, ~rhs, Bitxor() );
+}
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
+//  GLOBAL RESTRUCTURING BINARY ARITHMETIC OPERATORS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Left-shift operator for the elementwise left-shift of an elementwise left-shift expression
+//        (\f$ A=B\ll C\ll D \f$).
+// \ingroup dense_matrix
+//
+// \param lhs The left-hand side left-shift expression to be shifted.
+// \param rhs The right-hand side dense matrix of bits to shift.
+// \return The left-shifted dense matrix.
+// \exception std::invalid_argument Matrix sizes do not match.
+//
+// This function implements a performance optimized treatment of the elementwise left-shift
+// operation on an elementwise left-shift expression.
+*/
+template< typename MT1  // Type of the left-hand side dense matrix
+        , typename MT2  // Type of the middle dense matrix
+        , bool SO1      // Storage order of the left-hand side left-shift expression
+        , typename MT3  // Type of the right-hand side dense matrix
+        , bool SO2 >    // Storage order of the right-hand side dense matrix
+inline decltype(auto)
+   operator<<( const DMatDMatMapExpr<MT1,MT2,ShiftLV,SO1>& lhs, const DenseMatrix<MT3,SO2>& rhs )
+{
+   BLAZE_FUNCTION_TRACE;
+
+   return map( lhs.leftOperand(), lhs.rightOperand() + (~rhs), lhs.operation() );
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Right-shift operator for the elementwise right-shift of an elementwise right-shift
+//        expression (\f$ A=B\gg C\gg D \f$).
+// \ingroup dense_matrix
+//
+// \param lhs The left-hand side right-shift expression to be shifted.
+// \param rhs The right-hand side dense matrix of bits to shift.
+// \return The right-shifted dense matrix.
+// \exception std::invalid_argument Matrix sizes do not match.
+//
+// This function implements a performance optimized treatment of the elementwise right-shift
+// operation on an elementwise right-shift expression.
+*/
+template< typename MT1  // Type of the left-hand side dense matrix
+        , typename MT2  // Type of the middle dense matrix
+        , bool SO1      // Storage order of the left-hand side right-shift expression
+        , typename MT3  // Type of the right-hand side dense matrix
+        , bool SO2 >    // Storage order of the right-hand side dense matrix
+inline decltype(auto)
+   operator>>( const DMatDMatMapExpr<MT1,MT2,ShiftRV,SO1>& lhs, const DenseMatrix<MT3,SO2>& rhs )
+{
+   BLAZE_FUNCTION_TRACE;
+
+   return map( lhs.leftOperand(), lhs.rightOperand() + (~rhs), lhs.operation() );
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
+//  GLOBAL LOGICAL ARITHMETIC OPERATORS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*!\brief Logical AND operator for two dense matrices.
+// \ingroup dense_matrix
+//
+// \param lhs The left-hand side dense matrix for the logical AND operation.
+// \param rhs The right-hand side dense matrix for the logical AND operation.
+// \return The resulting dense matrix.
+// \exception std::invalid_argument Matrix sizes do not match.
+//
+// This operator represents the logical AND of the given two dense matrices:
+
+   \code
+   blaze::DynamicMatrix<bool> A, B, C;
+   // ... Resizing and initialization
+   C = A && B;
+   \endcode
+
+// In case the current number of rows and columns of the two given matrices don't match, a
+// \a std::invalid_argument is thrown.
+*/
+template< typename MT1  // Type of the left-hand side dense matrix
+        , bool SO1      // Storage order of the left-hand side dense matrix
+        , typename MT2  // Type of the right-hand side dense matrix
+        , bool SO2 >    // Storage order of the right-hand side dense matrix
+inline decltype(auto)
+   operator&&( const DenseMatrix<MT1,SO1>& lhs, const DenseMatrix<MT2,SO2>& rhs )
+{
+   BLAZE_FUNCTION_TRACE;
+
+   return map( ~lhs, ~rhs, And{} );
+}
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*!\brief Logical OR operator for two dense matrices.
+// \ingroup dense_matrix
+//
+// \param lhs The left-hand side dense matrix for the logical OR operation.
+// \param rhs The right-hand side dense matrix for the logical OR operation.
+// \return The resulting dense matrix.
+// \exception std::invalid_argument Matrix sizes do not match.
+//
+// This operator represents the logical OR of the given two dense matrices:
+
+   \code
+   blaze::DynamicMatrix<bool> A, B, C;
+   // ... Resizing and initialization
+   C = A || B;
+   \endcode
+
+// In case the current number of rows and columns of the two given matrices don't match, a
+// \a std::invalid_argument is thrown.
+*/
+template< typename MT1  // Type of the left-hand side dense matrix
+        , bool SO1      // Storage order of the left-hand side dense matrix
+        , typename MT2  // Type of the right-hand side dense matrix
+        , bool SO2 >    // Storage order of the right-hand side dense matrix
+inline decltype(auto)
+   operator||( const DenseMatrix<MT1,SO1>& lhs, const DenseMatrix<MT2,SO2>& rhs )
+{
+   BLAZE_FUNCTION_TRACE;
+
+   return map( ~lhs, ~rhs, Or{} );
 }
 //*************************************************************************************************
 
@@ -1341,151 +1665,7 @@ struct IsAligned< DMatDMatMapExpr<MT1,MT2,OP,SO> >
 /*! \cond BLAZE_INTERNAL */
 template< typename MT1, typename MT2, typename OP, bool SO >
 struct IsPadded< DMatDMatMapExpr<MT1,MT2,OP,SO> >
-   : public BoolConstant< IsPadded_v<MT1> && IsPadded_v<MT2> >
-{};
-/*! \endcond */
-//*************************************************************************************************
-
-
-
-
-//=================================================================================================
-//
-//  ISSYMMETRIC SPECIALIZATIONS
-//
-//=================================================================================================
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-template< typename MT1, typename MT2, typename OP, bool SO >
-struct IsSymmetric< DMatDMatMapExpr<MT1,MT2,OP,SO> >
-   : public YieldsSymmetric<OP,MT1,MT2>
-{};
-/*! \endcond */
-//*************************************************************************************************
-
-
-
-
-//=================================================================================================
-//
-//  ISHERMITIAN SPECIALIZATIONS
-//
-//=================================================================================================
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-template< typename MT1, typename MT2, typename OP, bool SO >
-struct IsHermitian< DMatDMatMapExpr<MT1,MT2,OP,SO> >
-   : public YieldsHermitian<OP,MT1,MT2>
-{};
-/*! \endcond */
-//*************************************************************************************************
-
-
-
-
-//=================================================================================================
-//
-//  ISLOWER SPECIALIZATIONS
-//
-//=================================================================================================
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-template< typename MT1, typename MT2, typename OP, bool SO >
-struct IsLower< DMatDMatMapExpr<MT1,MT2,OP,SO> >
-   : public YieldsLower<OP,MT1,MT2>
-{};
-/*! \endcond */
-//*************************************************************************************************
-
-
-
-
-//=================================================================================================
-//
-//  ISUNILOWER SPECIALIZATIONS
-//
-//=================================================================================================
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-template< typename MT1, typename MT2, typename OP, bool SO >
-struct IsUniLower< DMatDMatMapExpr<MT1,MT2,OP,SO> >
-   : public YieldsUniLower<OP,MT1,MT2>
-{};
-/*! \endcond */
-//*************************************************************************************************
-
-
-
-
-//=================================================================================================
-//
-//  ISSTRICTLYLOWER SPECIALIZATIONS
-//
-//=================================================================================================
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-template< typename MT1, typename MT2, typename OP, bool SO >
-struct IsStrictlyLower< DMatDMatMapExpr<MT1,MT2,OP,SO> >
-   : public YieldsStrictlyLower<OP,MT1,MT2>
-{};
-/*! \endcond */
-//*************************************************************************************************
-
-
-
-
-//=================================================================================================
-//
-//  ISUPPER SPECIALIZATIONS
-//
-//=================================================================================================
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-template< typename MT1, typename MT2, typename OP, bool SO >
-struct IsUpper< DMatDMatMapExpr<MT1,MT2,OP,SO> >
-   : public YieldsUpper<OP,MT1,MT2>
-{};
-/*! \endcond */
-//*************************************************************************************************
-
-
-
-
-//=================================================================================================
-//
-//  ISUNIUPPER SPECIALIZATIONS
-//
-//=================================================================================================
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-template< typename MT1, typename MT2, typename OP, bool SO >
-struct IsUniUpper< DMatDMatMapExpr<MT1,MT2,OP,SO> >
-   : public YieldsUniUpper<OP,MT1,MT2>
-{};
-/*! \endcond */
-//*************************************************************************************************
-
-
-
-
-//=================================================================================================
-//
-//  ISSTRICTLYUPPER SPECIALIZATIONS
-//
-//=================================================================================================
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-template< typename MT1, typename MT2, typename OP, bool SO >
-struct IsStrictlyUpper< DMatDMatMapExpr<MT1,MT2,OP,SO> >
-   : public YieldsStrictlyUpper<OP,MT1,MT2>
+   : public BoolConstant< IsPadded_v<MT1> && IsPadded_v<MT2> && IsPaddingEnabled_v<OP> >
 {};
 /*! \endcond */
 //*************************************************************************************************

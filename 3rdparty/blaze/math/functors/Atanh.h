@@ -3,7 +3,7 @@
 //  \file blaze/math/functors/Atanh.h
 //  \brief Header file for the Atanh functor
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -49,13 +49,18 @@
 #include "../../math/typetraits/IsStrictlyLower.h"
 #include "../../math/typetraits/IsStrictlyUpper.h"
 #include "../../math/typetraits/IsSymmetric.h"
+#include "../../math/typetraits/IsUniform.h"
 #include "../../math/typetraits/IsUpper.h"
+#include "../../math/typetraits/IsZero.h"
 #include "../../math/typetraits/YieldsHermitian.h"
 #include "../../math/typetraits/YieldsLower.h"
 #include "../../math/typetraits/YieldsStrictlyLower.h"
 #include "../../math/typetraits/YieldsStrictlyUpper.h"
 #include "../../math/typetraits/YieldsSymmetric.h"
+#include "../../math/typetraits/YieldsUniform.h"
 #include "../../math/typetraits/YieldsUpper.h"
+#include "../../math/typetraits/YieldsZero.h"
+#include "../../system/HostDevice.h"
 #include "../../system/Inline.h"
 
 
@@ -74,20 +79,13 @@ namespace blaze {
 struct Atanh
 {
    //**********************************************************************************************
-   /*!\brief Default constructor of the Atanh functor.
-   */
-   explicit inline Atanh()
-   {}
-   //**********************************************************************************************
-
-   //**********************************************************************************************
    /*!\brief Returns the result of the atanh() function for the given object/value.
    //
    // \param a The given object/value.
    // \return The result of the atanh() function for the given object/value.
    */
    template< typename T >
-   BLAZE_ALWAYS_INLINE decltype(auto) operator()( const T& a ) const
+   BLAZE_ALWAYS_INLINE BLAZE_DEVICE_CALLABLE decltype(auto) operator()( const T& a ) const
    {
       return atanh( a );
    }
@@ -100,6 +98,14 @@ struct Atanh
    */
    template< typename T >
    static constexpr bool simdEnabled() { return HasSIMDAtanh_v<T>; }
+   //**********************************************************************************************
+
+   //**********************************************************************************************
+   /*!\brief Returns whether the operation supports padding, i.e. whether it can deal with zeros.
+   //
+   // \return \a true in case padding is supported, \a false if not.
+   */
+   static constexpr bool paddingEnabled() { return true; }
    //**********************************************************************************************
 
    //**********************************************************************************************
@@ -116,6 +122,24 @@ struct Atanh
    }
    //**********************************************************************************************
 };
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
+//  YIELDSUNIFORM SPECIALIZATIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+template< typename T >
+struct YieldsUniform<Atanh,T>
+   : public IsUniform<T>
+{};
+/*! \endcond */
 //*************************************************************************************************
 
 
@@ -222,6 +246,24 @@ struct YieldsUpper<Atanh,MT>
 template< typename MT >
 struct YieldsStrictlyUpper<Atanh,MT>
    : public IsStrictlyUpper<MT>
+{};
+/*! \endcond */
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
+//  YIELDSZERO SPECIALIZATIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+template< typename T >
+struct YieldsZero<Atanh,T>
+   : public IsZero<T>
 {};
 /*! \endcond */
 //*************************************************************************************************

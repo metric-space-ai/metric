@@ -3,7 +3,7 @@
 //  \file blaze/math/views/column/Dense.h
 //  \brief Column specialization for dense matrices
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -61,6 +61,7 @@
 #include "../../../math/InitializerList.h"
 #include "../../../math/shims/Clear.h"
 #include "../../../math/shims/IsDefault.h"
+#include "../../../math/shims/Reset.h"
 #include "../../../math/SIMD.h"
 #include "../../../math/traits/ColumnTrait.h"
 #include "../../../math/traits/CrossTrait.h"
@@ -95,12 +96,10 @@
 #include "../../../util/DisableIf.h"
 #include "../../../util/EnableIf.h"
 #include "../../../util/mpl/If.h"
-#include "../../../util/TrueType.h"
 #include "../../../util/TypeList.h"
 #include "../../../util/Types.h"
 #include "../../../util/typetraits/IsConst.h"
 #include "../../../util/typetraits/IsReference.h"
-#include "../../../util/typetraits/RemoveReference.h"
 
 
 namespace blaze {
@@ -171,6 +170,9 @@ class Column<MT,true,true,SF,CCAs...>
 
    //! Compilation switch for the expression template assignment strategy.
    static constexpr bool smpAssignable = MT::smpAssignable;
+
+   //! Compilation switch for the expression template evaluation strategy.
+   static constexpr bool compileTimeArgs = DataType::compileTimeArgs;
    //**********************************************************************************************
 
    //**Constructors********************************************************************************
@@ -178,12 +180,16 @@ class Column<MT,true,true,SF,CCAs...>
    //@{
    template< typename... RCAs >
    explicit inline Column( MT& matrix, RCAs... args );
-   // No explicitly declared copy constructor.
+
+   Column( const Column& ) = default;
    //@}
    //**********************************************************************************************
 
    //**Destructor**********************************************************************************
-   // No explicitly declared destructor.
+   /*!\name Destructor */
+   //@{
+   ~Column() = default;
+   //@}
    //**********************************************************************************************
 
    //**Data access functions***********************************************************************
@@ -2622,6 +2628,9 @@ class Column<MT,false,true,false,CCAs...>
 
    //! Compilation switch for the expression template assignment strategy.
    static constexpr bool smpAssignable = MT::smpAssignable;
+
+   //! Compilation switch for the expression template evaluation strategy.
+   static constexpr bool compileTimeArgs = DataType::compileTimeArgs;
    //**********************************************************************************************
 
    //**Constructors********************************************************************************
@@ -2629,12 +2638,16 @@ class Column<MT,false,true,false,CCAs...>
    //@{
    template< typename... RCAs >
    explicit inline Column( MT& matrix, RCAs... args );
-   // No explicitly declared copy constructor.
+
+   Column( const Column& ) = default;
    //@}
    //**********************************************************************************************
 
    //**Destructor**********************************************************************************
-   // No explicitly declared destructor.
+   /*!\name Destructor */
+   //@{
+   ~Column() = default;
+   //@}
    //**********************************************************************************************
 
    //**Data access functions***********************************************************************
@@ -4183,6 +4196,9 @@ class Column<MT,false,true,true,CCAs...>
 
    //! Compilation switch for the expression template assignment strategy.
    static constexpr bool smpAssignable = MT::smpAssignable;
+
+   //! Compilation switch for the expression template evaluation strategy.
+   static constexpr bool compileTimeArgs = DataType::compileTimeArgs;
    //**********************************************************************************************
 
    //**Constructors********************************************************************************
@@ -4190,12 +4206,16 @@ class Column<MT,false,true,true,CCAs...>
    //@{
    template< typename... RCAs >
    explicit inline Column( MT& matrix, RCAs... args );
-   // No explicitly declared copy constructor.
+
+   Column( const Column& ) = default;
    //@}
    //**********************************************************************************************
 
    //**Destructor**********************************************************************************
-   // No explicitly declared destructor.
+   /*!\name Destructor */
+   //@{
+   ~Column() = default;
+   //@}
    //**********************************************************************************************
 
    //**Data access functions***********************************************************************

@@ -3,7 +3,7 @@
 //  \file blaze/math/dense/HybridVector.h
 //  \brief Header file for the HybridVector class template
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //
@@ -55,6 +55,7 @@
 #include "../../math/traits/CrossTrait.h"
 #include "../../math/traits/DivTrait.h"
 #include "../../math/traits/ElementsTrait.h"
+#include "../../math/traits/KronTrait.h"
 #include "../../math/traits/MapTrait.h"
 #include "../../math/traits/MultTrait.h"
 #include "../../math/traits/ReduceTrait.h"
@@ -71,6 +72,7 @@
 #include "../../math/typetraits/IsAligned.h"
 #include "../../math/typetraits/IsColumnVector.h"
 #include "../../math/typetraits/IsContiguous.h"
+#include "../../math/typetraits/IsDenseMatrix.h"
 #include "../../math/typetraits/IsDenseVector.h"
 #include "../../math/typetraits/IsMatrix.h"
 #include "../../math/typetraits/IsPadded.h"
@@ -78,6 +80,7 @@
 #include "../../math/typetraits/IsRowVector.h"
 #include "../../math/typetraits/IsSIMDCombinable.h"
 #include "../../math/typetraits/IsSparseVector.h"
+#include "../../math/typetraits/IsSquare.h"
 #include "../../math/typetraits/IsVector.h"
 #include "../../math/typetraits/LowType.h"
 #include "../../math/typetraits/MaxSize.h"
@@ -99,16 +102,14 @@
 #include "../../util/DisableIf.h"
 #include "../../util/EnableIf.h"
 #include "../../util/IntegralConstant.h"
+#include "../../util/MaybeUnused.h"
 #include "../../util/Memory.h"
-#include "../../util/mpl/PtrdiffT.h"
 #include "../../util/StaticAssert.h"
-#include "../../util/TrueType.h"
 #include "../../util/Types.h"
 #include "../../util/typetraits/AlignmentOf.h"
 #include "../../util/typetraits/IsNumeric.h"
 #include "../../util/typetraits/IsVectorizable.h"
 #include "../../util/typetraits/RemoveConst.h"
-#include "../../util/Unused.h"
 
 
 namespace blaze {
@@ -266,7 +267,7 @@ class HybridVector
    explicit inline HybridVector();
    explicit inline HybridVector( size_t n );
    explicit inline HybridVector( size_t n, const Type& init );
-   explicit inline HybridVector( initializer_list<Type> list );
+            inline HybridVector( initializer_list<Type> list );
 
    template< typename Other >
    explicit inline HybridVector( size_t n, const Other* array );
@@ -280,7 +281,10 @@ class HybridVector
    //**********************************************************************************************
 
    //**Destructor**********************************************************************************
-   // No explicitly declared destructor.
+   /*!\name Destructor */
+   //@{
+   ~HybridVector() = default;
+   //@}
    //**********************************************************************************************
 
    //**Data access functions***********************************************************************
@@ -635,7 +639,7 @@ inline HybridVector<Type,N,TF>::HybridVector( size_t n, const Type& init )
    \endcode
 
 // The vector is sized according to the size of the initializer list and all its elements are
-// initialized by the values of the given initializer list. In case the size of the given list
+// (copy) assigned the values of the given initializer list. In case the size of the given list
 // exceeds the maximum size of the hybrid vector (i.e. is larger than \a N), a
 // \a std::invalid_argument exception is thrown.
 */
@@ -1086,10 +1090,10 @@ inline HybridVector<Type,N,TF>& HybridVector<Type,N,TF>::operator=( const Type& 
    v = { 4.2, 6.3, -1.2 };
    \endcode
 
-// The vector is resized according to the size of the initializer list and all its elements are
-// assigned the values from the given initializer list. In case the size of the given list exceeds
-// the maximum size of the hybrid vector (i.e. is larger than \a N), a \a std::invalid_argument
-// exception is thrown.
+// The vector is resized according to the size of the initializer list and all its elements
+// are (copy) assigned the values from the given initializer list. In case the size of the
+// given list exceeds the maximum size of the hybrid vector (i.e. is larger than \a N), a
+// \a std::invalid_argument exception is thrown.
 */
 template< typename Type  // Data type of the vector
         , size_t N       // Number of elements
@@ -1383,7 +1387,7 @@ inline HybridVector<Type,N,TF>& HybridVector<Type,N,TF>::operator%=( const Vecto
 {
    using blaze::assign;
 
-   BLAZE_CONSTRAINT_MUST_BE_VECTOR_WITH_TRANSPOSE_FLAG( VT, TF );
+   BLAZE_CONSTRAINT_MUST_BE_VECTOR_WITH_TRANSPOSE_FLAG( ResultType_t<VT>, TF );
    BLAZE_CONSTRAINT_MUST_NOT_REQUIRE_EVALUATION( ResultType_t<VT> );
 
    using CrossType = CrossTrait_t< This, ResultType_t<VT> >;
@@ -1557,7 +1561,7 @@ template< typename Type  // Data type of the vector
         , bool TF >      // Transpose flag
 inline void HybridVector<Type,N,TF>::resize( size_t n, bool preserve )
 {
-   UNUSED_PARAMETER( preserve );
+   MAYBE_UNUSED( preserve );
 
    if( n > N ) {
       BLAZE_THROW_INVALID_ARGUMENT( "Invalid size for hybrid vector" );
@@ -1592,7 +1596,7 @@ template< typename Type  // Data type of the vector
         , bool TF >      // Transpose flag
 inline void HybridVector<Type,N,TF>::extend( size_t n, bool preserve )
 {
-   UNUSED_PARAMETER( preserve );
+   MAYBE_UNUSED( preserve );
    resize( size_+n );
 }
 //*************************************************************************************************
@@ -1680,7 +1684,7 @@ template< typename Type  // Data type of the vector
         , bool TF >      // Transpose flag
 inline void* HybridVector<Type,N,TF>::operator new( std::size_t size )
 {
-   UNUSED_PARAMETER( size );
+   MAYBE_UNUSED( size );
 
    BLAZE_INTERNAL_ASSERT( size == sizeof( HybridVector ), "Invalid number of bytes detected" );
 
@@ -1727,7 +1731,7 @@ template< typename Type  // Data type of the vector
         , bool TF >      // Transpose flag
 inline void* HybridVector<Type,N,TF>::operator new( std::size_t size, const std::nothrow_t& )
 {
-   UNUSED_PARAMETER( size );
+   MAYBE_UNUSED( size );
 
    BLAZE_INTERNAL_ASSERT( size == sizeof( HybridVector ), "Invalid number of bytes detected" );
 
@@ -2222,7 +2226,7 @@ inline void HybridVector<Type,N,TF>::assign( const SparseVector<VT,TF>& rhs )
 {
    BLAZE_INTERNAL_ASSERT( (~rhs).size() == size_, "Invalid vector sizes" );
 
-   for( ConstIterator_t<VT> element=(~rhs).begin(); element!=(~rhs).end(); ++element )
+   for( auto element=(~rhs).begin(); element!=(~rhs).end(); ++element )
       v_[element->index()] = element->value();
 }
 //*************************************************************************************************
@@ -2312,7 +2316,7 @@ inline void HybridVector<Type,N,TF>::addAssign( const SparseVector<VT,TF>& rhs )
 {
    BLAZE_INTERNAL_ASSERT( (~rhs).size() == size_, "Invalid vector sizes" );
 
-   for( ConstIterator_t<VT> element=(~rhs).begin(); element!=(~rhs).end(); ++element )
+   for( auto element=(~rhs).begin(); element!=(~rhs).end(); ++element )
       v_[element->index()] += element->value();
 }
 //*************************************************************************************************
@@ -2402,7 +2406,7 @@ inline void HybridVector<Type,N,TF>::subAssign( const SparseVector<VT,TF>& rhs )
 {
    BLAZE_INTERNAL_ASSERT( (~rhs).size() == size_, "Invalid vector sizes" );
 
-   for( ConstIterator_t<VT> element=(~rhs).begin(); element!=(~rhs).end(); ++element )
+   for( auto element=(~rhs).begin(); element!=(~rhs).end(); ++element )
       v_[element->index()] -= element->value();
 }
 //*************************************************************************************************
@@ -2496,7 +2500,7 @@ inline void HybridVector<Type,N,TF>::multAssign( const SparseVector<VT,TF>& rhs 
 
    reset();
 
-   for( ConstIterator_t<VT> element=(~rhs).begin(); element!=(~rhs).end(); ++element )
+   for( auto element=(~rhs).begin(); element!=(~rhs).end(); ++element )
       v_[element->index()] = tmp[element->index()] * element->value();
 }
 //*************************************************************************************************
@@ -2581,19 +2585,19 @@ inline auto HybridVector<Type,N,TF>::divAssign( const DenseVector<VT,TF>& rhs )
 /*!\name HybridVector operators */
 //@{
 template< typename Type, size_t N, bool TF >
-inline void reset( HybridVector<Type,N,TF>& v );
+void reset( HybridVector<Type,N,TF>& v );
 
 template< typename Type, size_t N, bool TF >
-inline void clear( HybridVector<Type,N,TF>& v );
+void clear( HybridVector<Type,N,TF>& v );
 
 template< bool RF, typename Type, size_t N, bool TF >
-inline bool isDefault( const HybridVector<Type,N,TF>& v );
+bool isDefault( const HybridVector<Type,N,TF>& v );
 
 template< typename Type, size_t N, bool TF >
-inline bool isIntact( const HybridVector<Type,N,TF>& v );
+bool isIntact( const HybridVector<Type,N,TF>& v );
 
 template< typename Type, size_t N, bool TF >
-inline void swap( HybridVector<Type,N,TF>& a, HybridVector<Type,N,TF>& b ) noexcept;
+void swap( HybridVector<Type,N,TF>& a, HybridVector<Type,N,TF>& b ) noexcept;
 //@}
 //*************************************************************************************************
 
@@ -2725,7 +2729,7 @@ inline void swap( HybridVector<Type,N,TF>& a, HybridVector<Type,N,TF>& b ) noexc
 /*! \cond BLAZE_INTERNAL */
 template< typename T, size_t N, bool TF >
 struct MaxSize< HybridVector<T,N,TF>, 0UL >
-   : public PtrdiffT<N>
+   : public Ptrdiff_t<N>
 {};
 /*! \endcond */
 //*************************************************************************************************
@@ -2997,6 +3001,36 @@ struct MultTraitEval2< T1, T2
 
 //=================================================================================================
 //
+//  KRONTRAIT SPECIALIZATIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+template< typename T1, typename T2 >
+struct KronTraitEval2< T1, T2
+                     , EnableIf_t< IsDenseVector_v<T1> &&
+                                   IsDenseVector_v<T2> &&
+                                   ( ( Size_v<T1,0UL> == DefaultSize_v ) ||
+                                     ( Size_v<T2,0UL> == DefaultSize_v ) ) &&
+                                   ( MaxSize_v<T1,0UL> != DefaultMaxSize_v ) &&
+                                   ( MaxSize_v<T2,0UL> != DefaultMaxSize_v ) > >
+{
+   using ET1 = ElementType_t<T1>;
+   using ET2 = ElementType_t<T2>;
+
+   static constexpr size_t N = MaxSize_v<T1,0UL> * MaxSize_v<T2,0UL>;
+
+   using Type = HybridVector< MultTrait_t<ET1,ET2>, N, TransposeFlag_v<T2> >;
+};
+/*! \endcond */
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
 //  DIVTRAIT SPECIALIZATIONS
 //
 //=================================================================================================
@@ -3101,11 +3135,14 @@ struct PartialReduceTraitEval2< T, OP, RF
                                             MaxSize_v<T,0UL> != DefaultMaxSize_v &&
                                             MaxSize_v<T,1UL> != DefaultMaxSize_v > >
 {
+   using ET = ElementType_t<T>;
+   using RT = decltype( std::declval<OP>()( std::declval<ET>(), std::declval<ET>() ) );
+
    static constexpr bool TF = ( RF == 0UL );
 
    static constexpr size_t N = MaxSize_v< T, TF ? 1UL : 0UL >;
 
-   using Type = HybridVector< ElementType_t<T>, N, TF >;
+   using Type = HybridVector<RT,N,TF>;
 };
 /*! \endcond */
 //*************************************************************************************************
@@ -3235,7 +3272,7 @@ struct ColumnTraitEval2< MT, I
                                      Size_v<MT,0UL> == DefaultSize_v &&
                                      MaxSize_v<MT,0UL> != DefaultMaxSize_v > >
 {
-   using Type = HybridVector< ElementType_t<MT>, MaxSize_v<MT,0UL>, false >;
+   using Type = HybridVector< RemoveConst_t< ElementType_t<MT> >, MaxSize_v<MT,0UL>, false >;
 };
 /*! \endcond */
 //*************************************************************************************************
@@ -3263,7 +3300,7 @@ struct BandTraitEval2< MT, I
    static constexpr size_t N   = MaxSize_v<MT,1UL>;
    static constexpr size_t Min = min( M - ( I >= 0L ? 0UL : -I ), N - ( I >= 0L ? I : 0UL ) );
 
-   using Type = HybridVector< ElementType_t<MT>, Min, defaultTransposeFlag >;
+   using Type = HybridVector< RemoveConst_t< ElementType_t<MT> >, Min, defaultTransposeFlag >;
 };
 
 template< typename MT >
@@ -3274,7 +3311,7 @@ struct BandTraitEval2< MT, inf
 {
    static constexpr size_t Min = min( Size_v<MT,0UL>, Size_v<MT,1UL> );
 
-   using Type = HybridVector< ElementType_t<MT>, Min, defaultTransposeFlag >;
+   using Type = HybridVector< RemoveConst_t< ElementType_t<MT> >, Min, defaultTransposeFlag >;
 };
 
 template< typename MT >
@@ -3287,7 +3324,7 @@ struct BandTraitEval2< MT, inf
 {
    static constexpr size_t Min = min( MaxSize_v<MT,0UL>, MaxSize_v<MT,1UL> );
 
-   using Type = HybridVector< ElementType_t<MT>, Min, defaultTransposeFlag >;
+   using Type = HybridVector< RemoveConst_t< ElementType_t<MT> >, Min, defaultTransposeFlag >;
 };
 /*! \endcond */
 //*************************************************************************************************

@@ -3,7 +3,7 @@
 //  \file blaze/math/lapack/clapack/orgrq.h
 //  \brief Header file for the CLAPACK orgrq wrapper functions
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -55,8 +55,10 @@
 #if !defined(INTEL_MKL_VERSION)
 extern "C" {
 
-void sorgrq_( int* m, int* n, int* k, float*  A, int* lda, float*  tau, float*  work, int* lwork, int* info );
-void dorgrq_( int* m, int* n, int* k, double* A, int* lda, double* tau, double* work, int* lwork, int* info );
+void sorgrq_( int* m, int* n, int* k, float* A, int* lda, float* tau,
+              float* work, int* lwork, int* info );
+void dorgrq_( int* m, int* n, int* k, double* A, int* lda, double* tau,
+              double* work, int* lwork, int* info );
 
 }
 #endif
@@ -77,11 +79,11 @@ namespace blaze {
 //*************************************************************************************************
 /*!\name LAPACK functions to reconstruct Q from a RQ decomposition (orgrq) */
 //@{
-inline void orgrq( int m, int n, int k, float* A, int lda, const float* tau,
-                   float* work, int lwork, int* info );
+void orgrq( int m, int n, int k, float* A, int lda, const float* tau,
+            float* work, int lwork, int* info );
 
-inline void orgrq( int m, int n, int k, double* A, int lda, const double* tau,
-                   double* work, int lwork, int* info );
+void orgrq( int m, int n, int k, double* A, int lda, const double* tau,
+            double* work, int lwork, int* info );
 //@}
 //*************************************************************************************************
 

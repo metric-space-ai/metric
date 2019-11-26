@@ -3,7 +3,7 @@
 //  \file blaze/util/AlignedArray.h
 //  \brief Header file for the AlignedArray implementation
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -43,7 +43,6 @@
 #include "../util/constraints/Const.h"
 #include "../util/constraints/Volatile.h"
 #include "../util/Exception.h"
-#include "../util/StaticAssert.h"
 #include "../util/typetraits/AlignmentOf.h"
 
 
@@ -114,17 +113,23 @@ class AlignedArray
 
    template< typename... Ts >
    explicit inline constexpr AlignedArray( const Ts&... args );
+
+   AlignedArray( const AlignedArray& ) = default;
+   AlignedArray( AlignedArray&& ) = default;
    //@}
    //**********************************************************************************************
 
    //**Destructor**********************************************************************************
-   // No explicitly declared destructor.
+   /*!\name Destructor */
+   //@{
+   ~AlignedArray() = default;
+   //@}
    //**********************************************************************************************
 
    //**Conversion operators************************************************************************
    /*!\name Conversion operators */
    //@{
-   inline           operator Pointer     () noexcept;
+   inline constexpr operator Pointer     () noexcept;
    inline constexpr operator ConstPointer() const noexcept;
    //@}
    //**********************************************************************************************
@@ -132,18 +137,26 @@ class AlignedArray
    //**Data access functions***********************************************************************
    /*!\name Data access functions */
    //@{
-   inline           Reference      operator[]( size_t index ) noexcept;
+   inline constexpr Reference      operator[]( size_t index ) noexcept;
    inline constexpr ConstReference operator[]( size_t index ) const noexcept;
    inline           Reference      at( size_t index );
    inline           ConstReference at( size_t index ) const;
-   inline           Pointer        data() noexcept;
+   inline constexpr Pointer        data() noexcept;
    inline constexpr ConstPointer   data() const noexcept;
-   inline           Iterator       begin () noexcept;
+   inline constexpr Iterator       begin () noexcept;
    inline constexpr ConstIterator  begin () const noexcept;
    inline constexpr ConstIterator  cbegin() const noexcept;
-   inline           Iterator       end   () noexcept;
+   inline constexpr Iterator       end   () noexcept;
    inline constexpr ConstIterator  end   () const noexcept;
    inline constexpr ConstIterator  cend  () const noexcept;
+   //@}
+   //**********************************************************************************************
+
+   //**Assignment operators************************************************************************
+   /*!\name Assignment operators */
+   //@{
+   AlignedArray& operator=( const AlignedArray& ) = default;
+   AlignedArray& operator=( AlignedArray&& ) = default;
    //@}
    //**********************************************************************************************
 
@@ -203,10 +216,8 @@ template< typename Type       // Data type of the elements
         , size_t Alignment >  // Array alignment
 template< typename... Ts >    // Types of the array initializers
 inline constexpr AlignedArray<Type,N,Alignment>::AlignedArray( const Ts&... args )
-   : v_{ args... }
-{
-   BLAZE_STATIC_ASSERT( sizeof...( Ts ) == N );
-}
+   : v_{ args... }  // The aligned array
+{}
 //*************************************************************************************************
 
 
@@ -226,7 +237,7 @@ inline constexpr AlignedArray<Type,N,Alignment>::AlignedArray( const Ts&... args
 template< typename Type       // Data type of the elements
         , size_t N            // Number of elements
         , size_t Alignment >  // Array alignment
-inline AlignedArray<Type,N,Alignment>::operator Pointer() noexcept
+inline constexpr AlignedArray<Type,N,Alignment>::operator Pointer() noexcept
 {
    return v_;
 }
@@ -267,7 +278,7 @@ inline constexpr AlignedArray<Type,N,Alignment>::operator ConstPointer() const n
 template< typename Type       // Data type of the elements
         , size_t N            // Number of elements
         , size_t Alignment >  // Array alignment
-inline typename AlignedArray<Type,N,Alignment>::Reference
+inline constexpr typename AlignedArray<Type,N,Alignment>::Reference
    AlignedArray<Type,N,Alignment>::operator[]( size_t index ) noexcept
 {
    return v_[index];
@@ -352,7 +363,7 @@ inline typename AlignedArray<Type,N,Alignment>::ConstReference
 template< typename Type       // Data type of the elements
         , size_t N            // Number of elements
         , size_t Alignment >  // Array alignment
-inline typename AlignedArray<Type,N,Alignment>::Pointer
+inline constexpr typename AlignedArray<Type,N,Alignment>::Pointer
    AlignedArray<Type,N,Alignment>::data() noexcept
 {
    return v_;
@@ -386,7 +397,7 @@ inline constexpr typename AlignedArray<Type,N,Alignment>::ConstPointer
 template< typename Type       // Data type of the elements
         , size_t N            // Number of elements
         , size_t Alignment >  // Array alignment
-inline typename AlignedArray<Type,N,Alignment>::Iterator
+inline constexpr typename AlignedArray<Type,N,Alignment>::Iterator
    AlignedArray<Type,N,Alignment>::begin() noexcept
 {
    return v_;
@@ -434,7 +445,7 @@ inline constexpr typename AlignedArray<Type,N,Alignment>::ConstIterator
 template< typename Type       // Data type of the elements
         , size_t N            // Number of elements
         , size_t Alignment >  // Array alignment
-inline typename AlignedArray<Type,N,Alignment>::Iterator
+inline constexpr typename AlignedArray<Type,N,Alignment>::Iterator
    AlignedArray<Type,N,Alignment>::end() noexcept
 {
    return v_ + N;

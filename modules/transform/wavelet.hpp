@@ -31,17 +31,6 @@ template <typename T>
 std::vector<T> conv_valid(std::vector<T> const& f, std::vector<T> const& g);
 
 /**
- * @brief valid convolution
- *
- * @param f
- * @param g
- * @return
- */
-template <typename Container>
-Container conv_valid(Container const& f, Container const& g); // overload added by Max F
-
-
-/**
  * @brief full convolution
  * 
  * @param f 
@@ -50,17 +39,6 @@ Container conv_valid(Container const& f, Container const& g); // overload added 
  */
 template <typename T>
 std::vector<T> conv(std::vector<T> const& f, std::vector<T> const& g);
-
-/**
- * @brief full convolution
- *
- * @param f
- * @param g
- * @return
- */
-template <typename Container>
-Container conv(Container const& f, Container const& g); // overload added by Max F
-
 
 /**
  * @brief linspace (erzeugt einen linearen Datenvektor)
@@ -72,7 +50,6 @@ Container conv(Container const& f, Container const& g); // overload added by Max
  */
 template <typename T>
 std::vector<T> linspace(T a, T b, int n);
-
 
 /**
  * @brief upsconv
@@ -86,18 +63,6 @@ template <typename T>
 std::vector<T> upsconv(std::vector<T> const& x, std::vector<T> const& f, int len);
 
 /**
- * @brief upsconv
- *
- * @param x
- * @param f
- * @param len
- * @return
- */
-template <typename Container>
-Container upsconv(Container const& x, Container const& f, int len); // overload added by Max F
-
-
-/**
  * @brief 
  * 
  * @param wnum 
@@ -108,17 +73,6 @@ template <typename T>
 std::vector<T> dbwavf(int const wnum, T dings);
 
 /**
- * @brief
- *
- * @param wnum
- * @param dings
- * @return
- */
-template <typename Container>
-Container dbwavf(int const wnum, typename Container::value_type dings); // overload added by Max F
-
-
-/**
  * @brief 
  * 
  * @param W_in 
@@ -126,16 +80,6 @@ Container dbwavf(int const wnum, typename Container::value_type dings); // overl
  */
 template <typename T>
 std::tuple<std::vector<T>, std::vector<T>, std::vector<T>, std::vector<T>> orthfilt(std::vector<T> const& W_in);
-
-/**
- * @brief
- *
- * @param W_in
- * @return
- */
-template <typename Container>
-std::tuple<Container, Container, Container, Container> orthfilt(Container const& W_in); // added by Max F
-
 
 /**
  * @brief 
@@ -148,17 +92,6 @@ template <typename T>
 std::tuple<std::vector<T>, std::vector<T>> dwt(std::vector<T> const& x, int waveletType);
 
 /**
- * @brief
- *
- * @param x
- * @param waveletType
- * @return
- */
-template <typename Container>
-std::tuple<Container, Container> dwt(Container const& x, int waveletType); // overload added by Max F
-
-
-/**
  * @brief 
  * 
  * @param a 
@@ -169,19 +102,6 @@ std::tuple<Container, Container> dwt(Container const& x, int waveletType); // ov
  */
 template <typename T>
 std::vector<T> idwt(std::vector<T> a, std::vector<T> d, int waveletType, int lx);
-
-/**
- * @brief
- *
- * @param a
- * @param d
- * @param waveletType
- * @param lx
- * @return
- */
-template <typename Container>
-Container idwt(Container a, Container d, int waveletType, int lx); // overload added by Max F, called in DSPCC
-
 
 /**
  * @brief 

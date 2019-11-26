@@ -3,7 +3,7 @@
 //  \file blaze/util/mpl/If.h
 //  \brief Header file for the If class template
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -91,10 +91,10 @@ struct If<false,T1,T2>
 
 
 //*************************************************************************************************
-/*!\brief Auxiliary alias declaration for the If class template.
+/*!\brief Auxiliary alias template for the If class template.
 // \ingroup util
 //
-// The If_t alias declaration provides a convenient shortcut to access the nested \a Type of
+// The If_t alias template provides a convenient shortcut to access the nested \a Type of
 // the If class template. For instance, given the types \a C, \a T1, and \a T2 the following
 // two type definitions are identical:
 

@@ -3,7 +3,7 @@
 //  \file blaze/math/sparse/CompressedVector.h
 //  \brief Implementation of an arbitrarily sized compressed vector
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -62,6 +62,7 @@
 #include "../../math/traits/CrossTrait.h"
 #include "../../math/traits/DivTrait.h"
 #include "../../math/traits/ElementsTrait.h"
+#include "../../math/traits/KronTrait.h"
 #include "../../math/traits/MapTrait.h"
 #include "../../math/traits/MultTrait.h"
 #include "../../math/traits/RowTrait.h"
@@ -69,12 +70,15 @@
 #include "../../math/traits/SubvectorTrait.h"
 #include "../../math/typetraits/HighType.h"
 #include "../../math/typetraits/IsColumnVector.h"
+#include "../../math/typetraits/IsDenseVector.h"
 #include "../../math/typetraits/IsResizable.h"
 #include "../../math/typetraits/IsRowVector.h"
 #include "../../math/typetraits/IsShrinkable.h"
 #include "../../math/typetraits/IsSMPAssignable.h"
 #include "../../math/typetraits/IsSparseMatrix.h"
 #include "../../math/typetraits/IsSparseVector.h"
+#include "../../math/typetraits/IsVector.h"
+#include "../../math/typetraits/IsZero.h"
 #include "../../math/typetraits/LowType.h"
 #include "../../math/typetraits/TransposeFlag.h"
 #include "../../system/Thresholds.h"
@@ -90,6 +94,7 @@
 #include "../../util/constraints/Volatile.h"
 #include "../../util/DisableIf.h"
 #include "../../util/EnableIf.h"
+#include "../../util/IntegralConstant.h"
 #include "../../util/Memory.h"
 #include "../../util/Types.h"
 #include "../../util/typetraits/IsFloatingPoint.h"
@@ -329,7 +334,7 @@ class CompressedVector
    explicit inline CompressedVector() noexcept;
    explicit inline CompressedVector( size_t size ) noexcept;
    explicit inline CompressedVector( size_t size, size_t nonzeros );
-   explicit inline CompressedVector( initializer_list<Type> list );
+            inline CompressedVector( initializer_list<Type> list );
 
    inline CompressedVector( const CompressedVector& sv );
    inline CompressedVector( CompressedVector&& sv ) noexcept;
@@ -780,10 +785,8 @@ inline typename CompressedVector<Type,TF>::Reference
 // \return Reference to the accessed value.
 // \exception std::out_of_range Invalid compressed vector access index.
 //
-// This function returns a reference to the accessed value at position \a index. In case the
-// compressed vector does not yet store an element for index \a index, a new element is inserted
-// into the compressed vector. In contrast to the subscript operator this function always
-// performs a check of the given access index.
+// In contrast to the subscript operator this function always performs a check of the given
+// access indices.
 */
 template< typename Type  // Data type of the vector
         , bool TF >      // Transpose flag
@@ -1056,7 +1059,10 @@ inline CompressedVector<Type,TF>&
    else {
       size_ = (~rhs).size();
       end_  = begin_;
-      assign( *this, ~rhs );
+
+      if( !IsZero_v<VT> ) {
+         assign( *this, ~rhs );
+      }
    }
 
    return *this;
@@ -1085,7 +1091,9 @@ inline CompressedVector<Type,TF>& CompressedVector<Type,TF>::operator+=( const V
       BLAZE_THROW_INVALID_ARGUMENT( "Vector sizes do not match" );
    }
 
-   addAssign( *this, ~rhs );
+   if( !IsZero_v<VT> ) {
+      addAssign( *this, ~rhs );
+   }
 
    return *this;
 }
@@ -1113,7 +1121,9 @@ inline CompressedVector<Type,TF>& CompressedVector<Type,TF>::operator-=( const V
       BLAZE_THROW_INVALID_ARGUMENT( "Vector sizes do not match" );
    }
 
-   subAssign( *this, ~rhs );
+   if( !IsZero_v<VT> ) {
+      subAssign( *this, ~rhs );
+   }
 
    return *this;
 }
@@ -1178,8 +1188,13 @@ inline CompressedVector<Type,TF>&
       BLAZE_THROW_INVALID_ARGUMENT( "Vector sizes do not match" );
    }
 
-   CompressedVector tmp( *this * (~rhs) );
-   swap( tmp );
+   if( !IsZero_v<VT> ) {
+      CompressedVector tmp( *this * (~rhs) );
+      swap( tmp );
+   }
+   else {
+      reset();
+   }
 
    return *this;
 }
@@ -1239,6 +1254,9 @@ inline CompressedVector<Type,TF>& CompressedVector<Type,TF>::operator%=( const V
 {
    using blaze::assign;
 
+   BLAZE_CONSTRAINT_MUST_BE_VECTOR_WITH_TRANSPOSE_FLAG( ResultType_t<VT>, TF );
+   BLAZE_CONSTRAINT_MUST_NOT_REQUIRE_EVALUATION( ResultType_t<VT> );
+
    using CrossType = CrossTrait_t< This, ResultType_t<VT> >;
 
    BLAZE_CONSTRAINT_MUST_BE_DENSE_VECTOR_TYPE( CrossType );
@@ -1249,9 +1267,14 @@ inline CompressedVector<Type,TF>& CompressedVector<Type,TF>::operator%=( const V
       BLAZE_THROW_INVALID_ARGUMENT( "Invalid vector size for cross product" );
    }
 
-   const CrossType tmp( *this % (~rhs) );
-   end_ = begin_;
-   assign( *this, tmp );
+   if( !IsZero_v<VT> ) {
+      const CrossType tmp( *this % (~rhs) );
+      reset();
+      assign( *this, tmp );
+   }
+   else {
+      reset();
+   }
 
    return *this;
 }
@@ -1991,7 +2014,7 @@ template< typename Type     // Data type of the vector
 template< typename Other >  // Data type of the scalar value
 inline CompressedVector<Type,TF>& CompressedVector<Type,TF>::scale( const Other& scalar )
 {
-   for( Iterator element=begin_; element!=end_; ++element )
+   for( auto element=begin_; element!=end_; ++element )
       element->value_ *= scalar;
    return *this;
 }
@@ -2128,7 +2151,7 @@ inline void CompressedVector<Type,TF>::assign( const SparseVector<VT,TF>& rhs )
    //
    // results in much less requirements on the ConstIterator type provided from the right-hand
    // sparse vector type
-   for( ConstIterator_t<VT> element=(~rhs).begin(); element!=(~rhs).end(); ++element )
+   for( auto element=(~rhs).begin(); element!=(~rhs).end(); ++element )
       append( element->index(), element->value() );
 }
 //*************************************************************************************************
@@ -2264,7 +2287,7 @@ inline void CompressedVector<Type,TF>::multAssign( const DenseVector<VT,TF>& rhs
 
    BLAZE_CONSTRAINT_MUST_NOT_REQUIRE_EVALUATION( VT );
 
-   for( Iterator element=begin_; element!=end_; ++element ) {
+   for( auto element=begin_; element!=end_; ++element ) {
       element->value_ *= (~rhs)[element->index_];
    }
 }
@@ -2291,7 +2314,7 @@ inline void CompressedVector<Type,TF>::divAssign( const DenseVector<VT,TF>& rhs 
 
    BLAZE_CONSTRAINT_MUST_NOT_REQUIRE_EVALUATION( VT );
 
-   for( Iterator element=begin_; element!=end_; ++element ) {
+   for( auto element=begin_; element!=end_; ++element ) {
       element->value_ /= (~rhs)[element->index_];
    }
 }
@@ -2310,19 +2333,19 @@ inline void CompressedVector<Type,TF>::divAssign( const DenseVector<VT,TF>& rhs 
 /*!\name CompressedVector operators */
 //@{
 template< typename Type, bool TF >
-inline void reset( CompressedVector<Type,TF>& v );
+void reset( CompressedVector<Type,TF>& v );
 
 template< typename Type, bool TF >
-inline void clear( CompressedVector<Type,TF>& v );
+void clear( CompressedVector<Type,TF>& v );
 
 template< bool RF, typename Type, bool TF >
-inline bool isDefault( const CompressedVector<Type,TF>& v );
+bool isDefault( const CompressedVector<Type,TF>& v );
 
 template< typename Type, bool TF >
-inline bool isIntact( const CompressedVector<Type,TF>& v ) noexcept;
+bool isIntact( const CompressedVector<Type,TF>& v ) noexcept;
 
 template< typename Type, bool TF >
-inline void swap( CompressedVector<Type,TF>& a, CompressedVector<Type,TF>& b ) noexcept;
+void swap( CompressedVector<Type,TF>& a, CompressedVector<Type,TF>& b ) noexcept;
 //@}
 //*************************************************************************************************
 
@@ -2622,6 +2645,34 @@ struct DivTraitEval2< T1, T2
 
 //=================================================================================================
 //
+//  KRONTRAIT SPECIALIZATIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+template< typename T1    // Type of the left-hand side operand
+        , typename T2 >  // Type of the right-hand side operand
+struct KronTraitEval2< T1, T2
+                     , EnableIf_t< IsVector_v<T1> &&
+                                   IsVector_v<T2> &&
+                                   ( IsSparseVector_v<T1> || IsSparseVector_v<T2> ) > >
+{
+   using ET1 = ElementType_t<T1>;
+   using ET2 = ElementType_t<T2>;
+
+   static constexpr bool TF = ( IsDenseVector_v<T2> ? TransposeFlag_v<T1> : TransposeFlag_v<T2> );
+
+   using Type = CompressedVector< MultTrait_t<ET1,ET2>, TF >;
+};
+/*! \endcond */
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
 //  MAPTRAIT SPECIALIZATIONS
 //
 //=================================================================================================
@@ -2752,7 +2803,7 @@ template< typename MT, size_t I >
 struct ColumnTraitEval2< MT, I
                        , EnableIf_t< IsSparseMatrix_v<MT> > >
 {
-   using Type = CompressedVector< ElementType_t<MT>, false >;
+   using Type = CompressedVector< RemoveConst_t< ElementType_t<MT> >, false >;
 };
 /*! \endcond */
 //*************************************************************************************************
@@ -2772,7 +2823,7 @@ template< typename MT, ptrdiff_t I >
 struct BandTraitEval2< MT, I
                      , EnableIf_t< IsSparseMatrix_v<MT> > >
 {
-   using Type = CompressedVector< ElementType_t<MT>, defaultTransposeFlag >;
+   using Type = CompressedVector< RemoveConst_t< ElementType_t<MT> >, defaultTransposeFlag >;
 };
 /*! \endcond */
 //*************************************************************************************************

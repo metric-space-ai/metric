@@ -3,7 +3,7 @@
 //  \file blaze/math/lapack/clapack/trtri.h
 //  \brief Header file for the CLAPACK trtri wrapper functions
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -42,6 +42,7 @@
 
 #include "../../../util/Complex.h"
 #include "../../../util/StaticAssert.h"
+#include "../../../util/Types.h"
 
 
 //=================================================================================================
@@ -55,10 +56,14 @@
 #if !defined(INTEL_MKL_VERSION)
 extern "C" {
 
-void strtri_( char* uplo, char* diag, int* n, float*  A, int* lda, int* info );
-void dtrtri_( char* uplo, char* diag, int* n, double* A, int* lda, int* info );
-void ctrtri_( char* uplo, char* diag, int* n, float*  A, int* lda, int* info );
-void ztrtri_( char* uplo, char* diag, int* n, double* A, int* lda, int* info );
+void strtri_( char* uplo, char* diag, int* n, float* A, int* lda, int* info,
+              blaze::fortran_charlen_t nuplo, blaze::fortran_charlen_t ndiag );
+void dtrtri_( char* uplo, char* diag, int* n, double* A, int* lda, int* info,
+              blaze::fortran_charlen_t nuplo, blaze::fortran_charlen_t ndiag );
+void ctrtri_( char* uplo, char* diag, int* n, float* A, int* lda, int* info,
+              blaze::fortran_charlen_t nuplo, blaze::fortran_charlen_t ndiag );
+void ztrtri_( char* uplo, char* diag, int* n, double* A, int* lda, int* info,
+              blaze::fortran_charlen_t nuplo, blaze::fortran_charlen_t ndiag );
 
 }
 #endif
@@ -79,13 +84,13 @@ namespace blaze {
 //*************************************************************************************************
 /*!\name LAPACK triangular matrix inversion functions (trtri) */
 //@{
-inline void trtri( char uplo, char diag, int n, float* A, int lda, int* info );
+void trtri( char uplo, char diag, int n, float* A, int lda, int* info );
 
-inline void trtri( char uplo, char diag, int n, double* A, int lda, int* info );
+void trtri( char uplo, char diag, int n, double* A, int lda, int* info );
 
-inline void trtri( char uplo, char diag, int n, complex<float>* A, int lda, int* info );
+void trtri( char uplo, char diag, int n, complex<float>* A, int lda, int* info );
 
-inline void trtri( char uplo, char diag, int n, complex<double>* A, int lda, int* info );
+void trtri( char uplo, char diag, int n, complex<double>* A, int lda, int* info );
 //@}
 //*************************************************************************************************
 
@@ -127,7 +132,8 @@ inline void trtri( char uplo, char diag, int n, float* A, int lda, int* info )
    BLAZE_STATIC_ASSERT( sizeof( MKL_INT ) == sizeof( int ) );
 #endif
 
-   strtri_( &uplo, &diag, &n, A, &lda, info );
+   strtri_( &uplo, &diag, &n, A, &lda, info,
+            blaze::fortran_charlen_t(1), blaze::fortran_charlen_t(1) );
 }
 //*************************************************************************************************
 
@@ -169,7 +175,8 @@ inline void trtri( char uplo, char diag, int n, double* A, int lda, int* info )
    BLAZE_STATIC_ASSERT( sizeof( MKL_INT ) == sizeof( int ) );
 #endif
 
-   dtrtri_( &uplo, &diag, &n, A, &lda, info );
+   dtrtri_( &uplo, &diag, &n, A, &lda, info,
+            blaze::fortran_charlen_t(1), blaze::fortran_charlen_t(1) );
 }
 //*************************************************************************************************
 
@@ -216,7 +223,8 @@ inline void trtri( char uplo, char diag, int n, complex<float>* A, int lda, int*
    using ET = float;
 #endif
 
-   ctrtri_( &uplo, &diag, &n, reinterpret_cast<ET*>( A ), &lda, info );
+   ctrtri_( &uplo, &diag, &n, reinterpret_cast<ET*>( A ), &lda, info,
+            blaze::fortran_charlen_t(1), blaze::fortran_charlen_t(1) );
 }
 //*************************************************************************************************
 
@@ -263,7 +271,8 @@ inline void trtri( char uplo, char diag, int n, complex<double>* A, int lda, int
    using ET = double;
 #endif
 
-   ztrtri_( &uplo, &diag, &n, reinterpret_cast<ET*>( A ), &lda, info );
+   ztrtri_( &uplo, &diag, &n, reinterpret_cast<ET*>( A ), &lda, info,
+            blaze::fortran_charlen_t(1), blaze::fortran_charlen_t(1) );
 }
 //*************************************************************************************************
 

@@ -3,7 +3,7 @@
 //  \file blaze/math/adaptors/strictlyuppermatrix/Dense.h
 //  \brief StrictlyUpperMatrix specialization for dense matrices
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -46,8 +46,8 @@
 #include "../../../math/adaptors/strictlyuppermatrix/BaseTemplate.h"
 #include "../../../math/adaptors/strictlyuppermatrix/StrictlyUpperProxy.h"
 #include "../../../math/Aliases.h"
+#include "../../../math/constraints/Computation.h"
 #include "../../../math/constraints/DenseMatrix.h"
-#include "../../../math/constraints/Expression.h"
 #include "../../../math/constraints/Hermitian.h"
 #include "../../../math/constraints/Lower.h"
 #include "../../../math/constraints/Resizable.h"
@@ -55,7 +55,9 @@
 #include "../../../math/constraints/Static.h"
 #include "../../../math/constraints/StorageOrder.h"
 #include "../../../math/constraints/Symmetric.h"
+#include "../../../math/constraints/Transformation.h"
 #include "../../../math/constraints/Upper.h"
+#include "../../../math/constraints/View.h"
 #include "../../../math/dense/DenseMatrix.h"
 #include "../../../math/dense/InitializerMatrix.h"
 #include "../../../math/Exception.h"
@@ -80,11 +82,10 @@
 #include "../../../util/constraints/Volatile.h"
 #include "../../../util/DisableIf.h"
 #include "../../../util/EnableIf.h"
-#include "../../../util/FalseType.h"
+#include "../../../util/IntegralConstant.h"
+#include "../../../util/MaybeUnused.h"
 #include "../../../util/StaticAssert.h"
-#include "../../../util/TrueType.h"
 #include "../../../util/Types.h"
-#include "../../../util/Unused.h"
 
 
 namespace blaze {
@@ -643,7 +644,7 @@ class StrictlyUpperMatrix<MT,SO,true>
    template< typename A1 > explicit inline StrictlyUpperMatrix( const A1& a1 );
                            explicit inline StrictlyUpperMatrix( size_t n, const ElementType& init );
 
-   explicit inline StrictlyUpperMatrix( initializer_list< initializer_list<ElementType> > list );
+   inline StrictlyUpperMatrix( initializer_list< initializer_list<ElementType> > list );
 
    template< typename Other >
    explicit inline StrictlyUpperMatrix( size_t n, const Other* array );
@@ -660,7 +661,10 @@ class StrictlyUpperMatrix<MT,SO,true>
    //**********************************************************************************************
 
    //**Destructor**********************************************************************************
-   // No explicitly declared destructor.
+   /*!\name Destructor */
+   //@{
+   ~StrictlyUpperMatrix() = default;
+   //@}
    //**********************************************************************************************
 
    //**Data access functions***********************************************************************
@@ -811,7 +815,9 @@ class StrictlyUpperMatrix<MT,SO,true>
    BLAZE_CONSTRAINT_MUST_NOT_BE_POINTER_TYPE         ( MT );
    BLAZE_CONSTRAINT_MUST_NOT_BE_CONST                ( MT );
    BLAZE_CONSTRAINT_MUST_NOT_BE_VOLATILE             ( MT );
-   BLAZE_CONSTRAINT_MUST_NOT_BE_EXPRESSION_TYPE      ( MT );
+   BLAZE_CONSTRAINT_MUST_NOT_BE_VIEW_TYPE            ( MT );
+   BLAZE_CONSTRAINT_MUST_NOT_BE_COMPUTATION_TYPE     ( MT );
+   BLAZE_CONSTRAINT_MUST_NOT_BE_TRANSFORMATION_TYPE  ( MT );
    BLAZE_CONSTRAINT_MUST_NOT_BE_SYMMETRIC_MATRIX_TYPE( MT );
    BLAZE_CONSTRAINT_MUST_NOT_BE_HERMITIAN_MATRIX_TYPE( MT );
    BLAZE_CONSTRAINT_MUST_NOT_BE_LOWER_MATRIX_TYPE    ( MT );
@@ -2263,7 +2269,7 @@ void StrictlyUpperMatrix<MT,SO,true>::resize( size_t n, bool preserve )
 {
    BLAZE_CONSTRAINT_MUST_BE_RESIZABLE_TYPE( MT );
 
-   UNUSED_PARAMETER( preserve );
+   MAYBE_UNUSED( preserve );
 
    BLAZE_INTERNAL_ASSERT( isSquare( matrix_ ), "Non-square strictly upper matrix detected" );
 
@@ -2300,7 +2306,7 @@ inline void StrictlyUpperMatrix<MT,SO,true>::extend( size_t n, bool preserve )
 {
    BLAZE_CONSTRAINT_MUST_BE_RESIZABLE_TYPE( MT );
 
-   UNUSED_PARAMETER( preserve );
+   MAYBE_UNUSED( preserve );
 
    resize( rows() + n, true );
 }

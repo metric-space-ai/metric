@@ -3,7 +3,7 @@
 //  \file blaze/math/typetraits/IsAddExpr.h
 //  \brief Header file for the IsAddExpr type trait class
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -40,10 +40,8 @@
 // Includes
 //*************************************************************************************************
 
-#include <utility>
 #include "../../math/expressions/AddExpr.h"
-#include "../../util/FalseType.h"
-#include "../../util/TrueType.h"
+#include "../../util/IntegralConstant.h"
 
 
 namespace blaze {
@@ -64,18 +62,20 @@ struct IsAddExprHelper
 {
  private:
    //**********************************************************************************************
-   template< typename U >
-   static TrueType test( const AddExpr<U>& );
+   static T* create();
 
    template< typename U >
-   static TrueType test( const volatile AddExpr<U>& );
+   static TrueType test( const AddExpr<U>* );
+
+   template< typename U >
+   static TrueType test( const volatile AddExpr<U>* );
 
    static FalseType test( ... );
    //**********************************************************************************************
 
  public:
    //**********************************************************************************************
-   using Type = decltype( test( std::declval<T&>() ) );
+   using Type = decltype( test( create() ) );
    //**********************************************************************************************
 };
 /*! \endcond */
@@ -102,8 +102,21 @@ struct IsAddExpr
 
 
 //*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Specialization of the IsAddExpr type trait for references.
+// \ingroup math_type_traits
+*/
+template< typename T >
+struct IsAddExpr<T&>
+   : public FalseType
+{};
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
 /*!\brief Auxiliary variable template for the IsAddExpr type trait.
-// \ingroup type_traits
+// \ingroup math_type_traits
 //
 // The IsAddExpr_v variable template provides a convenient shortcut to access the nested
 // \a value of the IsAddExpr class template. For instance, given the type \a T the following

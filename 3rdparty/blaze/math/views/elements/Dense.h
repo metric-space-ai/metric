@@ -3,7 +3,7 @@
 //  \file blaze/math/views/elements/Dense.h
 //  \brief Elements specialization for dense vectors
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -46,6 +46,7 @@
 #include "../../../math/constraints/DenseVector.h"
 #include "../../../math/constraints/Elements.h"
 #include "../../../math/constraints/RequiresEvaluation.h"
+#include "../../../math/constraints/Subvector.h"
 #include "../../../math/constraints/TransExpr.h"
 #include "../../../math/constraints/TransposeFlag.h"
 #include "../../../math/dense/InitializerVector.h"
@@ -68,7 +69,6 @@
 #include "../../../math/views/elements/ElementsData.h"
 #include "../../../system/Thresholds.h"
 #include "../../../util/Assert.h"
-#include "../../../util/DecltypeAuto.h"
 #include "../../../util/mpl/If.h"
 #include "../../../util/TypeList.h"
 #include "../../../util/typetraits/IsConst.h"
@@ -90,9 +90,9 @@ namespace blaze {
 //
 // This specialization of Elements adapts the class template to the requirements of dense vectors.
 */
-template< typename VT       // Type of the dense vector
-        , bool TF           // Transpose flag
-        , size_t... CEAs >  // Compile time element arguments
+template< typename VT         // Type of the dense vector
+        , bool TF             // Transpose flag
+        , typename... CEAs >  // Compile time element arguments
 class Elements<VT,TF,true,CEAs...>
    : public View< DenseVector< Elements<VT,TF,true,CEAs...>, TF > >
    , private ElementsData<CEAs...>
@@ -103,6 +103,10 @@ class Elements<VT,TF,true,CEAs...>
    using Operand  = If_t< IsExpression_v<VT>, VT, VT& >;  //!< Composite data type of the vector expression.
    //**********************************************************************************************
 
+   //**Compile time flags**************************************************************************
+   using DataType::N;  //!< Number of compile time indices.
+   //**********************************************************************************************
+
  public:
    //**Type definitions****************************************************************************
    //! Type of this Elements instance.
@@ -110,7 +114,7 @@ class Elements<VT,TF,true,CEAs...>
 
    using BaseType      = DenseVector<This,TF>;         //!< Base type of this Elements instance.
    using ViewedType    = VT;                           //!< The type viewed by this Elements instance.
-   using ResultType    = ElementsTrait_t<VT,CEAs...>;  //!< Result type for expression template evaluations.
+   using ResultType    = ElementsTrait_t<VT,N>;        //!< Result type for expression template evaluations.
    using TransposeType = TransposeType_t<ResultType>;  //!< Transpose type for expression template evaluations.
    using ElementType   = ElementType_t<VT>;            //!< Type of the elements.
    using ReturnType    = ReturnType_t<VT>;             //!< Return type for expression template evaluations
@@ -458,6 +462,9 @@ class Elements<VT,TF,true,CEAs...>
 
    //! Compilation switch for the expression template assignment strategy.
    static constexpr bool smpAssignable = VT::smpAssignable;
+
+   //! Compilation switch for the expression template evaluation strategy.
+   static constexpr bool compileTimeArgs = DataType::compileTimeArgs;
    //**********************************************************************************************
 
    //**Constructors********************************************************************************
@@ -466,13 +473,16 @@ class Elements<VT,TF,true,CEAs...>
    template< typename... REAs >
    explicit inline Elements( VT& vector, REAs... args );
 
-   inline Elements( const Elements& ) = default;
-   inline Elements( Elements&& ) = default;
+   Elements( const Elements& ) = default;
+   Elements( Elements&& ) = default;
    //@}
    //**********************************************************************************************
 
    //**Destructor**********************************************************************************
-   // No explicitly declared destructor.
+   /*!\name Destructor */
+   //@{
+   ~Elements() = default;
+   //@}
    //**********************************************************************************************
 
    //**Data access functions***********************************************************************
@@ -568,6 +578,7 @@ class Elements<VT,TF,true,CEAs...>
    BLAZE_CONSTRAINT_MUST_BE_DENSE_VECTOR_TYPE   ( VT );
    BLAZE_CONSTRAINT_MUST_NOT_BE_COMPUTATION_TYPE( VT );
    BLAZE_CONSTRAINT_MUST_NOT_BE_TRANSEXPR_TYPE  ( VT );
+   BLAZE_CONSTRAINT_MUST_NOT_BE_SUBVECTOR_TYPE  ( VT );
    BLAZE_CONSTRAINT_MUST_NOT_BE_ELEMENTS_TYPE   ( VT );
    BLAZE_CONSTRAINT_MUST_BE_VECTOR_WITH_TRANSPOSE_FLAG( VT, TF );
    //**********************************************************************************************
@@ -599,7 +610,7 @@ class Elements<VT,TF,true,CEAs...>
 */
 template< typename VT         // Type of the dense vector
         , bool TF             // Transpose flag
-        , size_t... CEAs >    // Compile time element arguments
+        , typename... CEAs >  // Compile time element arguments
 template< typename... REAs >  // Optional arguments
 inline Elements<VT,TF,true,CEAs...>::Elements( VT& vector, REAs... args )
    : DataType( args... )  // Base class initialization
@@ -635,9 +646,9 @@ inline Elements<VT,TF,true,CEAs...>::Elements( VT& vector, REAs... args )
 // This function only performs an index check in case BLAZE_USER_ASSERT() is active. In contrast,
 // the at() function is guaranteed to perform a check of the given access index.
 */
-template< typename VT       // Type of the dense vector
-        , bool TF           // Transpose flag
-        , size_t... CEAs >  // Compile time element arguments
+template< typename VT         // Type of the dense vector
+        , bool TF             // Transpose flag
+        , typename... CEAs >  // Compile time element arguments
 inline typename Elements<VT,TF,true,CEAs...>::Reference
    Elements<VT,TF,true,CEAs...>::operator[]( size_t index )
 {
@@ -658,9 +669,9 @@ inline typename Elements<VT,TF,true,CEAs...>::Reference
 // This function only performs an index check in case BLAZE_USER_ASSERT() is active. In contrast,
 // the at() function is guaranteed to perform a check of the given access index.
 */
-template< typename VT       // Type of the dense vector
-        , bool TF           // Transpose flag
-        , size_t... CEAs >  // Compile time element arguments
+template< typename VT         // Type of the dense vector
+        , bool TF             // Transpose flag
+        , typename... CEAs >  // Compile time element arguments
 inline typename Elements<VT,TF,true,CEAs...>::ConstReference
    Elements<VT,TF,true,CEAs...>::operator[]( size_t index ) const
 {
@@ -682,9 +693,9 @@ inline typename Elements<VT,TF,true,CEAs...>::ConstReference
 // In contrast to the subscript operator this function always performs a check of the given
 // access index.
 */
-template< typename VT       // Type of the dense vector
-        , bool TF           // Transpose flag
-        , size_t... CEAs >  // Compile time element arguments
+template< typename VT         // Type of the dense vector
+        , bool TF             // Transpose flag
+        , typename... CEAs >  // Compile time element arguments
 inline typename Elements<VT,TF,true,CEAs...>::Reference
    Elements<VT,TF,true,CEAs...>::at( size_t index )
 {
@@ -708,9 +719,9 @@ inline typename Elements<VT,TF,true,CEAs...>::Reference
 // In contrast to the subscript operator this function always performs a check of the given
 // access index.
 */
-template< typename VT       // Type of the dense vector
-        , bool TF           // Transpose flag
-        , size_t... CEAs >  // Compile time element arguments
+template< typename VT         // Type of the dense vector
+        , bool TF             // Transpose flag
+        , typename... CEAs >  // Compile time element arguments
 inline typename Elements<VT,TF,true,CEAs...>::ConstReference
    Elements<VT,TF,true,CEAs...>::at( size_t index ) const
 {
@@ -731,9 +742,9 @@ inline typename Elements<VT,TF,true,CEAs...>::ConstReference
 //
 // This function returns a pointer to the internal storage of the elements.
 */
-template< typename VT       // Type of the dense vector
-        , bool TF           // Transpose flag
-        , size_t... CEAs >  // Compile time element arguments
+template< typename VT         // Type of the dense vector
+        , bool TF             // Transpose flag
+        , typename... CEAs >  // Compile time element arguments
 inline typename Elements<VT,TF,true,CEAs...>::Pointer
    Elements<VT,TF,true,CEAs...>::data() noexcept
 {
@@ -751,9 +762,9 @@ inline typename Elements<VT,TF,true,CEAs...>::Pointer
 //
 // This function returns a pointer to the internal storage of the elements.
 */
-template< typename VT       // Type of the dense vector
-        , bool TF           // Transpose flag
-        , size_t... CEAs >  // Compile time element arguments
+template< typename VT         // Type of the dense vector
+        , bool TF             // Transpose flag
+        , typename... CEAs >  // Compile time element arguments
 inline typename Elements<VT,TF,true,CEAs...>::ConstPointer
    Elements<VT,TF,true,CEAs...>::data() const noexcept
 {
@@ -771,9 +782,9 @@ inline typename Elements<VT,TF,true,CEAs...>::ConstPointer
 //
 // This function returns an iterator to the first element of the element selection.
 */
-template< typename VT       // Type of the dense vector
-        , bool TF           // Transpose flag
-        , size_t... CEAs >  // Compile time element arguments
+template< typename VT         // Type of the dense vector
+        , bool TF             // Transpose flag
+        , typename... CEAs >  // Compile time element arguments
 inline typename Elements<VT,TF,true,CEAs...>::Iterator
    Elements<VT,TF,true,CEAs...>::begin()
 {
@@ -791,9 +802,9 @@ inline typename Elements<VT,TF,true,CEAs...>::Iterator
 //
 // This function returns an iterator to the first element of the element selection.
 */
-template< typename VT       // Type of the dense vector
-        , bool TF           // Transpose flag
-        , size_t... CEAs >  // Compile time element arguments
+template< typename VT         // Type of the dense vector
+        , bool TF             // Transpose flag
+        , typename... CEAs >  // Compile time element arguments
 inline typename Elements<VT,TF,true,CEAs...>::ConstIterator
    Elements<VT,TF,true,CEAs...>::begin() const
 {
@@ -811,9 +822,9 @@ inline typename Elements<VT,TF,true,CEAs...>::ConstIterator
 //
 // This function returns an iterator to the first element of the element selection.
 */
-template< typename VT       // Type of the dense vector
-        , bool TF           // Transpose flag
-        , size_t... CEAs >  // Compile time element arguments
+template< typename VT         // Type of the dense vector
+        , bool TF             // Transpose flag
+        , typename... CEAs >  // Compile time element arguments
 inline typename Elements<VT,TF,true,CEAs...>::ConstIterator
    Elements<VT,TF,true,CEAs...>::cbegin() const
 {
@@ -831,9 +842,9 @@ inline typename Elements<VT,TF,true,CEAs...>::ConstIterator
 //
 // This function returns an iterator just past the last element of the element selection.
 */
-template< typename VT       // Type of the dense vector
-        , bool TF           // Transpose flag
-        , size_t... CEAs >  // Compile time element arguments
+template< typename VT         // Type of the dense vector
+        , bool TF             // Transpose flag
+        , typename... CEAs >  // Compile time element arguments
 inline typename Elements<VT,TF,true,CEAs...>::Iterator
    Elements<VT,TF,true,CEAs...>::end()
 {
@@ -851,9 +862,9 @@ inline typename Elements<VT,TF,true,CEAs...>::Iterator
 //
 // This function returns an iterator just past the last element of the element selection.
 */
-template< typename VT       // Type of the dense vector
-        , bool TF           // Transpose flag
-        , size_t... CEAs >  // Compile time element arguments
+template< typename VT         // Type of the dense vector
+        , bool TF             // Transpose flag
+        , typename... CEAs >  // Compile time element arguments
 inline typename Elements<VT,TF,true,CEAs...>::ConstIterator
    Elements<VT,TF,true,CEAs...>::end() const
 {
@@ -871,9 +882,9 @@ inline typename Elements<VT,TF,true,CEAs...>::ConstIterator
 //
 // This function returns an iterator just past the last element of the element selection.
 */
-template< typename VT       // Type of the dense vector
-        , bool TF           // Transpose flag
-        , size_t... CEAs >  // Compile time element arguments
+template< typename VT         // Type of the dense vector
+        , bool TF             // Transpose flag
+        , typename... CEAs >  // Compile time element arguments
 inline typename Elements<VT,TF,true,CEAs...>::ConstIterator
    Elements<VT,TF,true,CEAs...>::cend() const
 {
@@ -898,9 +909,9 @@ inline typename Elements<VT,TF,true,CEAs...>::ConstIterator
 // \param rhs Scalar value to be assigned to all elements.
 // \return Reference to the assigned element selection.
 */
-template< typename VT       // Type of the dense vector
-        , bool TF           // Transpose flag
-        , size_t... CEAs >  // Compile time element arguments
+template< typename VT         // Type of the dense vector
+        , bool TF             // Transpose flag
+        , typename... CEAs >  // Compile time element arguments
 inline Elements<VT,TF,true,CEAs...>&
    Elements<VT,TF,true,CEAs...>::operator=( const ElementType& rhs )
 {
@@ -934,9 +945,9 @@ inline Elements<VT,TF,true,CEAs...>&
 // exception is thrown. Also, if the underlying vector \a VT is restricted and the assignment
 // would violate an invariant of the vector, a \a std::invalid_argument exception is thrown.
 */
-template< typename VT       // Type of the dense vector
-        , bool TF           // Transpose flag
-        , size_t... CEAs >  // Compile time element arguments
+template< typename VT         // Type of the dense vector
+        , bool TF             // Transpose flag
+        , typename... CEAs >  // Compile time element arguments
 inline Elements<VT,TF,true,CEAs...>&
    Elements<VT,TF,true,CEAs...>::operator=( initializer_list<ElementType> list )
 {
@@ -979,16 +990,16 @@ inline Elements<VT,TF,true,CEAs...>&
 // In case the current sizes of the two element selections don't match, a \a std::invalid_argument
 // exception is thrown.
 */
-template< typename VT       // Type of the dense vector
-        , bool TF           // Transpose flag
-        , size_t... CEAs >  // Compile time element arguments
+template< typename VT         // Type of the dense vector
+        , bool TF             // Transpose flag
+        , typename... CEAs >  // Compile time element arguments
 inline Elements<VT,TF,true,CEAs...>&
    Elements<VT,TF,true,CEAs...>::operator=( const Elements& rhs )
 {
    BLAZE_CONSTRAINT_MUST_BE_DENSE_VECTOR_TYPE  ( ResultType );
    BLAZE_CONSTRAINT_MUST_NOT_REQUIRE_EVALUATION( ResultType );
 
-   if( &rhs == this || ( &vector_ == &rhs.vector_ && idces() == rhs.idces() ) )
+   if( &rhs == this || ( &vector_ == &rhs.vector_ && compareIndices( *this, rhs ) ) )
       return *this;
 
    if( size() != rhs.size() ) {
@@ -1003,7 +1014,7 @@ inline Elements<VT,TF,true,CEAs...>&
       }
    }
 
-   BLAZE_DECLTYPE_AUTO( left, derestrict( *this ) );
+   decltype(auto) left( derestrict( *this ) );
 
    if( rhs.canAlias( &vector_ ) ) {
       const ResultType tmp( rhs );
@@ -1033,9 +1044,9 @@ inline Elements<VT,TF,true,CEAs...>&
 // In case the current sizes of the two vectors don't match, a \a std::invalid_argument
 // exception is thrown.
 */
-template< typename VT       // Type of the dense vector
-        , bool TF           // Transpose flag
-        , size_t... CEAs >  // Compile time element arguments
+template< typename VT         // Type of the dense vector
+        , bool TF             // Transpose flag
+        , typename... CEAs >  // Compile time element arguments
 template< typename VT2 >    // Type of the right-hand side vector
 inline Elements<VT,TF,true,CEAs...>&
    Elements<VT,TF,true,CEAs...>::operator=( const Vector<VT2,TF>& rhs )
@@ -1058,7 +1069,7 @@ inline Elements<VT,TF,true,CEAs...>&
       }
    }
 
-   BLAZE_DECLTYPE_AUTO( left, derestrict( *this ) );
+   decltype(auto) left( derestrict( *this ) );
 
    if( IsReference_v<Right> && right.canAlias( &vector_ ) ) {
       const ResultType_t<VT2> tmp( right );
@@ -1090,9 +1101,9 @@ inline Elements<VT,TF,true,CEAs...>&
 // In case the current sizes of the two vectors don't match, a \a std::invalid_argument exception
 // is thrown.
 */
-template< typename VT       // Type of the dense vector
-        , bool TF           // Transpose flag
-        , size_t... CEAs >  // Compile time element arguments
+template< typename VT         // Type of the dense vector
+        , bool TF             // Transpose flag
+        , typename... CEAs >  // Compile time element arguments
 template< typename VT2 >    // Type of the right-hand side vector
 inline Elements<VT,TF,true,CEAs...>&
    Elements<VT,TF,true,CEAs...>::operator+=( const Vector<VT2,TF>& rhs )
@@ -1115,7 +1126,7 @@ inline Elements<VT,TF,true,CEAs...>&
       }
    }
 
-   BLAZE_DECLTYPE_AUTO( left, derestrict( *this ) );
+   decltype(auto) left( derestrict( *this ) );
 
    if( IsReference_v<Right> && right.canAlias( &vector_ ) ) {
       const ResultType_t<VT2> tmp( right );
@@ -1145,9 +1156,9 @@ inline Elements<VT,TF,true,CEAs...>&
 // In case the current sizes of the two vectors don't match, a \a std::invalid_argument exception
 // is thrown.
 */
-template< typename VT       // Type of the dense vector
-        , bool TF           // Transpose flag
-        , size_t... CEAs >  // Compile time element arguments
+template< typename VT         // Type of the dense vector
+        , bool TF             // Transpose flag
+        , typename... CEAs >  // Compile time element arguments
 template< typename VT2 >    // Type of the right-hand side vector
 inline Elements<VT,TF,true,CEAs...>&
    Elements<VT,TF,true,CEAs...>::operator-=( const Vector<VT2,TF>& rhs )
@@ -1170,7 +1181,7 @@ inline Elements<VT,TF,true,CEAs...>&
       }
    }
 
-   BLAZE_DECLTYPE_AUTO( left, derestrict( *this ) );
+   decltype(auto) left( derestrict( *this ) );
 
    if( IsReference_v<Right> && right.canAlias( &vector_ ) ) {
       const ResultType_t<VT2> tmp( right );
@@ -1201,9 +1212,9 @@ inline Elements<VT,TF,true,CEAs...>&
 // In case the current sizes of the two vectors don't match, a \a std::invalid_argument exception
 // is thrown.
 */
-template< typename VT       // Type of the dense vector
-        , bool TF           // Transpose flag
-        , size_t... CEAs >  // Compile time element arguments
+template< typename VT         // Type of the dense vector
+        , bool TF             // Transpose flag
+        , typename... CEAs >  // Compile time element arguments
 template< typename VT2 >    // Type of the right-hand side vector
 inline Elements<VT,TF,true,CEAs...>&
    Elements<VT,TF,true,CEAs...>::operator*=( const Vector<VT2,TF>& rhs )
@@ -1226,7 +1237,7 @@ inline Elements<VT,TF,true,CEAs...>&
       }
    }
 
-   BLAZE_DECLTYPE_AUTO( left, derestrict( *this ) );
+   decltype(auto) left( derestrict( *this ) );
 
    if( IsReference_v<Right> && right.canAlias( &vector_ ) ) {
       const ResultType_t<VT2> tmp( right );
@@ -1256,9 +1267,9 @@ inline Elements<VT,TF,true,CEAs...>&
 // In case the current sizes of the two vectors don't match, a \a std::invalid_argument exception
 // is thrown.
 */
-template< typename VT       // Type of the dense vector
-        , bool TF           // Transpose flag
-        , size_t... CEAs >  // Compile time element arguments
+template< typename VT         // Type of the dense vector
+        , bool TF             // Transpose flag
+        , typename... CEAs >  // Compile time element arguments
 template< typename VT2 >    // Type of the right-hand side dense vector
 inline Elements<VT,TF,true,CEAs...>&
    Elements<VT,TF,true,CEAs...>::operator/=( const DenseVector<VT2,TF>& rhs )
@@ -1281,7 +1292,7 @@ inline Elements<VT,TF,true,CEAs...>&
       }
    }
 
-   BLAZE_DECLTYPE_AUTO( left, derestrict( *this ) );
+   decltype(auto) left( derestrict( *this ) );
 
    if( IsReference_v<Right> && right.canAlias( &vector_ ) ) {
       const ResultType_t<VT2> tmp( right );
@@ -1312,9 +1323,9 @@ inline Elements<VT,TF,true,CEAs...>&
 // In case the current size of any of the two vectors is not equal to 3, a \a std::invalid_argument
 // exception is thrown.
 */
-template< typename VT       // Type of the dense vector
-        , bool TF           // Transpose flag
-        , size_t... CEAs >  // Compile time element arguments
+template< typename VT         // Type of the dense vector
+        , bool TF             // Transpose flag
+        , typename... CEAs >  // Compile time element arguments
 template< typename VT2 >    // Type of the right-hand side vector
 inline Elements<VT,TF,true,CEAs...>&
    Elements<VT,TF,true,CEAs...>::operator%=( const Vector<VT2,TF>& rhs )
@@ -1344,7 +1355,7 @@ inline Elements<VT,TF,true,CEAs...>&
       }
    }
 
-   BLAZE_DECLTYPE_AUTO( left, derestrict( *this ) );
+   decltype(auto) left( derestrict( *this ) );
 
    assign( left, tmp );
 
@@ -1370,9 +1381,9 @@ inline Elements<VT,TF,true,CEAs...>&
 //
 // \return The vector containing the elements.
 */
-template< typename VT       // Type of the dense vector
-        , bool TF           // Transpose flag
-        , size_t... CEAs >  // Compile time element arguments
+template< typename VT         // Type of the dense vector
+        , bool TF             // Transpose flag
+        , typename... CEAs >  // Compile time element arguments
 inline VT& Elements<VT,TF,true,CEAs...>::operand() noexcept
 {
    return vector_;
@@ -1387,9 +1398,9 @@ inline VT& Elements<VT,TF,true,CEAs...>::operand() noexcept
 //
 // \return The vector containing the elements.
 */
-template< typename VT       // Type of the dense vector
-        , bool TF           // Transpose flag
-        , size_t... CEAs >  // Compile time element arguments
+template< typename VT         // Type of the dense vector
+        , bool TF             // Transpose flag
+        , typename... CEAs >  // Compile time element arguments
 inline const VT& Elements<VT,TF,true,CEAs...>::operand() const noexcept
 {
    return vector_;
@@ -1404,9 +1415,9 @@ inline const VT& Elements<VT,TF,true,CEAs...>::operand() const noexcept
 //
 // \return The minimum capacity of the element selection.
 */
-template< typename VT       // Type of the dense vector
-        , bool TF           // Transpose flag
-        , size_t... CEAs >  // Compile time element arguments
+template< typename VT         // Type of the dense vector
+        , bool TF             // Transpose flag
+        , typename... CEAs >  // Compile time element arguments
 inline size_t Elements<VT,TF,true,CEAs...>::spacing() const noexcept
 {
    return size();
@@ -1421,9 +1432,9 @@ inline size_t Elements<VT,TF,true,CEAs...>::spacing() const noexcept
 //
 // \return The maximum capacity of the element selection.
 */
-template< typename VT       // Type of the dense vector
-        , bool TF           // Transpose flag
-        , size_t... CEAs >  // Compile time element arguments
+template< typename VT         // Type of the dense vector
+        , bool TF             // Transpose flag
+        , typename... CEAs >  // Compile time element arguments
 inline size_t Elements<VT,TF,true,CEAs...>::capacity() const noexcept
 {
    return size();
@@ -1441,9 +1452,9 @@ inline size_t Elements<VT,TF,true,CEAs...>::capacity() const noexcept
 // Note that the number of non-zero elements is always less than or equal to the current number
 // of elements.
 */
-template< typename VT       // Type of the dense vector
-        , bool TF           // Transpose flag
-        , size_t... CEAs >  // Compile time element arguments
+template< typename VT         // Type of the dense vector
+        , bool TF             // Transpose flag
+        , typename... CEAs >  // Compile time element arguments
 inline size_t Elements<VT,TF,true,CEAs...>::nonZeros() const
 {
    size_t nonzeros( 0 );
@@ -1465,9 +1476,9 @@ inline size_t Elements<VT,TF,true,CEAs...>::nonZeros() const
 //
 // \return void
 */
-template< typename VT       // Type of the dense vector
-        , bool TF           // Transpose flag
-        , size_t... CEAs >  // Compile time element arguments
+template< typename VT         // Type of the dense vector
+        , bool TF             // Transpose flag
+        , typename... CEAs >  // Compile time element arguments
 inline void Elements<VT,TF,true,CEAs...>::reset()
 {
    using blaze::clear;
@@ -1498,9 +1509,9 @@ inline void Elements<VT,TF,true,CEAs...>::reset()
 // element of the element selection. For built-in and \c complex data types it has the same effect
 // as using the multiplication assignment operator.
 */
-template< typename VT       // Type of the dense vector
-        , bool TF           // Transpose flag
-        , size_t... CEAs >  // Compile time element arguments
+template< typename VT         // Type of the dense vector
+        , bool TF             // Transpose flag
+        , typename... CEAs >  // Compile time element arguments
 template< typename Other >  // Data type of the scalar value
 inline Elements<VT,TF,true,CEAs...>&
    Elements<VT,TF,true,CEAs...>::scale( const Other& scalar )
@@ -1532,9 +1543,9 @@ inline Elements<VT,TF,true,CEAs...>&
 // In contrast to the isAliased() function this function is allowed to use compile time
 // expressions to optimize the evaluation.
 */
-template< typename VT       // Type of the dense vector
-        , bool TF           // Transpose flag
-        , size_t... CEAs >  // Compile time element arguments
+template< typename VT         // Type of the dense vector
+        , bool TF             // Transpose flag
+        , typename... CEAs >  // Compile time element arguments
 template< typename Other >  // Data type of the foreign expression
 inline bool Elements<VT,TF,true,CEAs...>::canAlias( const Other* alias ) const noexcept
 {
@@ -1555,9 +1566,9 @@ inline bool Elements<VT,TF,true,CEAs...>::canAlias( const Other* alias ) const n
 // In contrast to the canAlias() function this function is not allowed to use compile time
 // expressions to optimize the evaluation.
 */
-template< typename VT       // Type of the dense vector
-        , bool TF           // Transpose flag
-        , size_t... CEAs >  // Compile time element arguments
+template< typename VT         // Type of the dense vector
+        , bool TF             // Transpose flag
+        , typename... CEAs >  // Compile time element arguments
 template< typename Other >  // Data type of the foreign expression
 inline bool Elements<VT,TF,true,CEAs...>::isAliased( const Other* alias ) const noexcept
 {
@@ -1577,9 +1588,9 @@ inline bool Elements<VT,TF,true,CEAs...>::isAliased( const Other* alias ) const 
 // memory, i.e. whether the beginning and the end of the selection are guaranteed to conform to
 // the alignment restrictions of the underlying element type.
 */
-template< typename VT       // Type of the dense vector
-        , bool TF           // Transpose flag
-        , size_t... CEAs >  // Compile time element arguments
+template< typename VT         // Type of the dense vector
+        , bool TF             // Transpose flag
+        , typename... CEAs >  // Compile time element arguments
 inline bool Elements<VT,TF,true,CEAs...>::isAligned() const noexcept
 {
    return false;
@@ -1599,9 +1610,9 @@ inline bool Elements<VT,TF,true,CEAs...>::isAligned() const noexcept
 // this function additionally provides runtime information (as for instance the current size of
 // the element selection).
 */
-template< typename VT       // Type of the dense vector
-        , bool TF           // Transpose flag
-        , size_t... CEAs >  // Compile time element arguments
+template< typename VT         // Type of the dense vector
+        , bool TF             // Transpose flag
+        , typename... CEAs >  // Compile time element arguments
 inline bool Elements<VT,TF,true,CEAs...>::canSMPAssign() const noexcept
 {
    return ( size() > SMP_DVECASSIGN_THRESHOLD );
@@ -1622,9 +1633,9 @@ inline bool Elements<VT,TF,true,CEAs...>::canSMPAssign() const noexcept
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename VT       // Type of the dense vector
-        , bool TF           // Transpose flag
-        , size_t... CEAs >  // Compile time element arguments
+template< typename VT         // Type of the dense vector
+        , bool TF             // Transpose flag
+        , typename... CEAs >  // Compile time element arguments
 template< typename VT2 >    // Type of the right-hand side dense vector
 inline void Elements<VT,TF,true,CEAs...>::assign( const DenseVector<VT2,TF>& rhs )
 {
@@ -1655,9 +1666,9 @@ inline void Elements<VT,TF,true,CEAs...>::assign( const DenseVector<VT2,TF>& rhs
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename VT       // Type of the dense vector
-        , bool TF           // Transpose flag
-        , size_t... CEAs >  // Compile time element arguments
+template< typename VT         // Type of the dense vector
+        , bool TF             // Transpose flag
+        , typename... CEAs >  // Compile time element arguments
 template< typename VT2 >    // Type of the right-hand side sparse vector
 inline void Elements<VT,TF,true,CEAs...>::assign( const SparseVector<VT2,TF>& rhs )
 {
@@ -1682,9 +1693,9 @@ inline void Elements<VT,TF,true,CEAs...>::assign( const SparseVector<VT2,TF>& rh
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename VT       // Type of the dense vector
-        , bool TF           // Transpose flag
-        , size_t... CEAs >  // Compile time element arguments
+template< typename VT         // Type of the dense vector
+        , bool TF             // Transpose flag
+        , typename... CEAs >  // Compile time element arguments
 template< typename VT2 >    // Type of the right-hand side dense vector
 inline void Elements<VT,TF,true,CEAs...>::addAssign( const DenseVector<VT2,TF>& rhs )
 {
@@ -1715,9 +1726,9 @@ inline void Elements<VT,TF,true,CEAs...>::addAssign( const DenseVector<VT2,TF>& 
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename VT       // Type of the dense vector
-        , bool TF           // Transpose flag
-        , size_t... CEAs >  // Compile time element arguments
+template< typename VT         // Type of the dense vector
+        , bool TF             // Transpose flag
+        , typename... CEAs >  // Compile time element arguments
 template< typename VT2 >    // Type of the right-hand side sparse vector
 inline void Elements<VT,TF,true,CEAs...>::addAssign( const SparseVector<VT2,TF>& rhs )
 {
@@ -1742,9 +1753,9 @@ inline void Elements<VT,TF,true,CEAs...>::addAssign( const SparseVector<VT2,TF>&
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename VT       // Type of the dense vector
-        , bool TF           // Transpose flag
-        , size_t... CEAs >  // Compile time element arguments
+template< typename VT         // Type of the dense vector
+        , bool TF             // Transpose flag
+        , typename... CEAs >  // Compile time element arguments
 template< typename VT2 >    // Type of the right-hand side dense vector
 inline void Elements<VT,TF,true,CEAs...>::subAssign( const DenseVector<VT2,TF>& rhs )
 {
@@ -1775,9 +1786,9 @@ inline void Elements<VT,TF,true,CEAs...>::subAssign( const DenseVector<VT2,TF>& 
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename VT       // Type of the dense vector
-        , bool TF           // Transpose flag
-        , size_t... CEAs >  // Compile time element arguments
+template< typename VT         // Type of the dense vector
+        , bool TF             // Transpose flag
+        , typename... CEAs >  // Compile time element arguments
 template< typename VT2 >    // Type of the right-hand side sparse vector
 inline void Elements<VT,TF,true,CEAs...>::subAssign( const SparseVector<VT2,TF>& rhs )
 {
@@ -1802,9 +1813,9 @@ inline void Elements<VT,TF,true,CEAs...>::subAssign( const SparseVector<VT2,TF>&
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename VT       // Type of the dense vector
-        , bool TF           // Transpose flag
-        , size_t... CEAs >  // Compile time element arguments
+template< typename VT         // Type of the dense vector
+        , bool TF             // Transpose flag
+        , typename... CEAs >  // Compile time element arguments
 template< typename VT2 >    // Type of the right-hand side dense vector
 inline void Elements<VT,TF,true,CEAs...>::multAssign( const DenseVector<VT2,TF>& rhs )
 {
@@ -1835,9 +1846,9 @@ inline void Elements<VT,TF,true,CEAs...>::multAssign( const DenseVector<VT2,TF>&
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename VT       // Type of the dense vector
-        , bool TF           // Transpose flag
-        , size_t... CEAs >  // Compile time element arguments
+template< typename VT         // Type of the dense vector
+        , bool TF             // Transpose flag
+        , typename... CEAs >  // Compile time element arguments
 template< typename VT2 >    // Type of the right-hand side sparse vector
 inline void Elements<VT,TF,true,CEAs...>::multAssign( const SparseVector<VT2,TF>& rhs )
 {
@@ -1875,9 +1886,9 @@ inline void Elements<VT,TF,true,CEAs...>::multAssign( const SparseVector<VT2,TF>
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename VT       // Type of the dense vector
-        , bool TF           // Transpose flag
-        , size_t... CEAs >  // Compile time element arguments
+template< typename VT         // Type of the dense vector
+        , bool TF             // Transpose flag
+        , typename... CEAs >  // Compile time element arguments
 template< typename VT2 >    // Type of the right-hand side dense vector
 inline void Elements<VT,TF,true,CEAs...>::divAssign( const DenseVector<VT2,TF>& rhs )
 {
@@ -1916,12 +1927,12 @@ inline void Elements<VT,TF,true,CEAs...>::divAssign( const DenseVector<VT2,TF>& 
 // This specialization of Elements adapts the class template to the special case of dense
 // vector/dense vector cross products.
 */
-template< typename VT1      // Type of the left-hand side dense vector
-        , typename VT2      // Type of the right-hand side dense vector
-        , bool TF           // Transpose flag
-        , size_t... CEAs >  // Compile time element arguments
-class Elements< DVecDVecCrossExpr<VT1,VT2,TF>, TF, true, CEAs... >
-   : public View< DenseVector< Elements< DVecDVecCrossExpr<VT1,VT2,TF>, TF, true, CEAs... >, TF > >
+template< typename VT1        // Type of the left-hand side dense vector
+        , typename VT2        // Type of the right-hand side dense vector
+        , bool TF             // Transpose flag
+        , typename... CEAs >  // Compile time element arguments
+class Elements< const DVecDVecCrossExpr<VT1,VT2,TF>, TF, true, CEAs... >
+   : public View< DenseVector< Elements< const DVecDVecCrossExpr<VT1,VT2,TF>, TF, true, CEAs... >, TF > >
    , private ElementsData<CEAs...>
 {
  private:
@@ -1931,14 +1942,18 @@ class Elements< DVecDVecCrossExpr<VT1,VT2,TF>, TF, true, CEAs... >
    using DataType = ElementsData<CEAs...>;          //!< The type of the ElementsData base class.
    //**********************************************************************************************
 
+   //**Compile time flags**************************************************************************
+   using DataType::N;  //! Number of compile time indices.
+   //**********************************************************************************************
+
  public:
    //**Type definitions****************************************************************************
    //! Type of this Elements instance.
-   using This = Elements<CPE,TF,true,CEAs...>;
+   using This = Elements<const CPE,TF,true,CEAs...>;
 
    using BaseType      = DenseVector<This,TF>;         //!< Base type of this Elements instance.
    using ViewedType    = CPE;                          //!< The type viewed by this Elements instance.
-   using ResultType    = ElementsTrait_t<RT,CEAs...>;  //!< Result type for expression template evaluations.
+   using ResultType    = ElementsTrait_t<RT,N>;        //!< Result type for expression template evaluations.
    using TransposeType = TransposeType_t<ResultType>;  //!< Transpose type for expression template evaluations.
    using ElementType   = ElementType_t<CPE>;           //!< Type of the elements.
    using ReturnType    = ReturnType_t<CPE>;            //!< Return type for expression template evaluations
@@ -1951,6 +1966,9 @@ class Elements< DVecDVecCrossExpr<VT1,VT2,TF>, TF, true, CEAs... >
 
    //! Compilation switch for the expression template assignment strategy.
    static constexpr bool smpAssignable = false;
+
+   //! Compilation switch for the expression template evaluation strategy.
+   static constexpr bool compileTimeArgs = DataType::compileTimeArgs;
    //**********************************************************************************************
 
    //**Constructor*********************************************************************************
@@ -2071,12 +2089,12 @@ class Elements< DVecDVecCrossExpr<VT1,VT2,TF>, TF, true, CEAs... >
 // This specialization of Elements adapts the class template to the special case of dense
 // vector/sparse vector cross products.
 */
-template< typename VT1      // Type of the left-hand side dense vector
-        , typename VT2      // Type of the right-hand side sparse vector
-        , bool TF           // Transpose flag
-        , size_t... CEAs >  // Compile time element arguments
-class Elements< DVecSVecCrossExpr<VT1,VT2,TF>, TF, true, CEAs... >
-   : public View< DenseVector< Elements< DVecSVecCrossExpr<VT1,VT2,TF>, TF, true, CEAs... >, TF > >
+template< typename VT1        // Type of the left-hand side dense vector
+        , typename VT2        // Type of the right-hand side sparse vector
+        , bool TF             // Transpose flag
+        , typename... CEAs >  // Compile time element arguments
+class Elements< const DVecSVecCrossExpr<VT1,VT2,TF>, TF, true, CEAs... >
+   : public View< DenseVector< Elements< const DVecSVecCrossExpr<VT1,VT2,TF>, TF, true, CEAs... >, TF > >
    , private ElementsData<CEAs...>
 {
  private:
@@ -2086,14 +2104,18 @@ class Elements< DVecSVecCrossExpr<VT1,VT2,TF>, TF, true, CEAs... >
    using DataType = ElementsData<CEAs...>;          //!< The type of the ElementsData base class.
    //**********************************************************************************************
 
+   //**Compile time flags**************************************************************************
+   using DataType::N;  //! Number of compile time indices.
+   //**********************************************************************************************
+
  public:
    //**Type definitions****************************************************************************
    //! Type of this Elements instance.
-   using This = Elements<CPE,TF,true,CEAs...>;
+   using This = Elements<const CPE,TF,true,CEAs...>;
 
    using BaseType      = DenseVector<This,TF>;         //!< Base type of this Elements instance.
    using ViewedType    = CPE;                          //!< The type viewed by this Elements instance.
-   using ResultType    = ElementsTrait_t<RT,CEAs...>;  //!< Result type for expression template evaluations.
+   using ResultType    = ElementsTrait_t<RT,N>;        //!< Result type for expression template evaluations.
    using TransposeType = TransposeType_t<ResultType>;  //!< Transpose type for expression template evaluations.
    using ElementType   = ElementType_t<CPE>;           //!< Type of the elements.
    using ReturnType    = ReturnType_t<CPE>;            //!< Return type for expression template evaluations
@@ -2106,6 +2128,9 @@ class Elements< DVecSVecCrossExpr<VT1,VT2,TF>, TF, true, CEAs... >
 
    //! Compilation switch for the expression template assignment strategy.
    static constexpr bool smpAssignable = false;
+
+   //! Compilation switch for the expression template evaluation strategy.
+   static constexpr bool compileTimeArgs = DataType::compileTimeArgs;
    //**********************************************************************************************
 
    //**Constructor*********************************************************************************
@@ -2226,12 +2251,12 @@ class Elements< DVecSVecCrossExpr<VT1,VT2,TF>, TF, true, CEAs... >
 // This specialization of Elements adapts the class template to the special case of sparse
 // vector/dense vector cross products.
 */
-template< typename VT1      // Type of the left-hand side sparse vector
-        , typename VT2      // Type of the right-hand side dense vector
-        , bool TF           // Transpose flag
-        , size_t... CEAs >  // Compile time element arguments
-class Elements< SVecDVecCrossExpr<VT1,VT2,TF>, TF, true, CEAs... >
-   : public View< DenseVector< Elements< SVecDVecCrossExpr<VT1,VT2,TF>, TF, true, CEAs... >, TF > >
+template< typename VT1        // Type of the left-hand side sparse vector
+        , typename VT2        // Type of the right-hand side dense vector
+        , bool TF             // Transpose flag
+        , typename... CEAs >  // Compile time element arguments
+class Elements< const SVecDVecCrossExpr<VT1,VT2,TF>, TF, true, CEAs... >
+   : public View< DenseVector< Elements< const SVecDVecCrossExpr<VT1,VT2,TF>, TF, true, CEAs... >, TF > >
    , private ElementsData<CEAs...>
 {
  private:
@@ -2241,14 +2266,18 @@ class Elements< SVecDVecCrossExpr<VT1,VT2,TF>, TF, true, CEAs... >
    using DataType = ElementsData<CEAs...>;          //!< The type of the ElementsData base class.
    //**********************************************************************************************
 
+   //**Compile time flags**************************************************************************
+   using DataType::N;  //! Number of compile time indices.
+   //**********************************************************************************************
+
  public:
    //**Type definitions****************************************************************************
    //! Type of this Elements instance.
-   using This = Elements<CPE,TF,true,CEAs...>;
+   using This = Elements<const CPE,TF,true,CEAs...>;
 
    using BaseType      = DenseVector<This,TF>;         //!< Base type of this Elements instance.
    using ViewedType    = CPE;                          //!< The type viewed by this Elements instance.
-   using ResultType    = ElementsTrait_t<RT,CEAs...>;  //!< Result type for expression template evaluations.
+   using ResultType    = ElementsTrait_t<RT,N>;        //!< Result type for expression template evaluations.
    using TransposeType = TransposeType_t<ResultType>;  //!< Transpose type for expression template evaluations.
    using ElementType   = ElementType_t<CPE>;           //!< Type of the elements.
    using ReturnType    = ReturnType_t<CPE>;            //!< Return type for expression template evaluations
@@ -2261,6 +2290,9 @@ class Elements< SVecDVecCrossExpr<VT1,VT2,TF>, TF, true, CEAs... >
 
    //! Compilation switch for the expression template assignment strategy.
    static constexpr bool smpAssignable = false;
+
+   //! Compilation switch for the expression template evaluation strategy.
+   static constexpr bool compileTimeArgs = DataType::compileTimeArgs;
    //**********************************************************************************************
 
    //**Constructor*********************************************************************************
@@ -2381,12 +2413,12 @@ class Elements< SVecDVecCrossExpr<VT1,VT2,TF>, TF, true, CEAs... >
 // This specialization of Elements adapts the class template to the special case of sparse
 // vector/sparse vector cross products.
 */
-template< typename VT1      // Type of the left-hand side sparse vector
-        , typename VT2      // Type of the right-hand side sparse vector
-        , bool TF           // Transpose flag
-        , size_t... CEAs >  // Compile time element arguments
-class Elements< SVecSVecCrossExpr<VT1,VT2,TF>, TF, true, CEAs... >
-   : public View< DenseVector< Elements< SVecSVecCrossExpr<VT1,VT2,TF>, TF, true, CEAs... >, TF > >
+template< typename VT1        // Type of the left-hand side sparse vector
+        , typename VT2        // Type of the right-hand side sparse vector
+        , bool TF             // Transpose flag
+        , typename... CEAs >  // Compile time element arguments
+class Elements< const SVecSVecCrossExpr<VT1,VT2,TF>, TF, true, CEAs... >
+   : public View< DenseVector< Elements< const SVecSVecCrossExpr<VT1,VT2,TF>, TF, true, CEAs... >, TF > >
    , private ElementsData<CEAs...>
 {
  private:
@@ -2396,14 +2428,18 @@ class Elements< SVecSVecCrossExpr<VT1,VT2,TF>, TF, true, CEAs... >
    using DataType = ElementsData<CEAs...>;          //!< The type of the ElementsData base class.
    //**********************************************************************************************
 
+   //**Compile time flags**************************************************************************
+   using DataType::N;  //! Number of compile time indices.
+   //**********************************************************************************************
+
  public:
    //**Type definitions****************************************************************************
    //! Type of this Elements instance.
-   using This = Elements<CPE,TF,true,CEAs...>;
+   using This = Elements<const CPE,TF,true,CEAs...>;
 
    using BaseType      = DenseVector<This,TF>;         //!< Base type of this Elements instance.
    using ViewedType    = CPE;                          //!< The type viewed by this Elements instance.
-   using ResultType    = ElementsTrait_t<RT,CEAs...>;  //!< Result type for expression template evaluations.
+   using ResultType    = ElementsTrait_t<RT,N>;        //!< Result type for expression template evaluations.
    using TransposeType = TransposeType_t<ResultType>;  //!< Transpose type for expression template evaluations.
    using ElementType   = ElementType_t<CPE>;           //!< Type of the elements.
    using ReturnType    = ReturnType_t<CPE>;            //!< Return type for expression template evaluations
@@ -2416,6 +2452,9 @@ class Elements< SVecSVecCrossExpr<VT1,VT2,TF>, TF, true, CEAs... >
 
    //! Compilation switch for the expression template assignment strategy.
    static constexpr bool smpAssignable = false;
+
+   //! Compilation switch for the expression template evaluation strategy.
+   static constexpr bool compileTimeArgs = DataType::compileTimeArgs;
    //**********************************************************************************************
 
    //**Constructor*********************************************************************************

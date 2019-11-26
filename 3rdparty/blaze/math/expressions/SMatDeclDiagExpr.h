@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/SMatDeclDiagExpr.h
 //  \brief Header file for the sparse matrix diagonal declaration expression
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -55,22 +55,17 @@
 #include "../../math/traits/DeclDiagTrait.h"
 #include "../../math/typetraits/IsDiagonal.h"
 #include "../../math/typetraits/IsExpression.h"
-#include "../../math/typetraits/IsHermitian.h"
 #include "../../math/typetraits/IsLower.h"
-#include "../../math/typetraits/IsStrictlyLower.h"
-#include "../../math/typetraits/IsStrictlyUpper.h"
 #include "../../math/typetraits/IsSymmetric.h"
-#include "../../math/typetraits/IsUniLower.h"
-#include "../../math/typetraits/IsUniUpper.h"
 #include "../../math/typetraits/IsUpper.h"
 #include "../../math/typetraits/RequiresEvaluation.h"
 #include "../../util/Assert.h"
 #include "../../util/DisableIf.h"
 #include "../../util/EnableIf.h"
 #include "../../util/FunctionTrace.h"
+#include "../../util/IntegralConstant.h"
 #include "../../util/InvalidType.h"
 #include "../../util/mpl/If.h"
-#include "../../util/TrueType.h"
 #include "../../util/Types.h"
 #include "../../util/typetraits/GetMemberType.h"
 
@@ -137,6 +132,7 @@ class SMatDeclDiagExpr
  public:
    //**Type definitions****************************************************************************
    using This          = SMatDeclDiagExpr<MT,SO>;      //!< Type of this SMatDeclDiagExpr instance.
+   using BaseType      = SparseMatrix<This,SO>;        //!< Base type of this SMatDeclDiagExpr instance.
    using ResultType    = DeclDiagTrait_t<RT>;          //!< Result type for expression template evaluations.
    using OppositeType  = OppositeType_t<ResultType>;   //!< Result type with opposite storage order for expression template evaluations.
    using TransposeType = TransposeType_t<ResultType>;  //!< Transpose type for expression template evaluations.
@@ -329,8 +325,8 @@ class SMatDeclDiagExpr
    */
    template< typename MT2  // Type of the target dense matrix
            , bool SO2 >    // Storage order of the target dense matrix
-   friend inline EnableIf_t< UseAssign_v<MT2> >
-      assign( DenseMatrix<MT2,SO2>& lhs, const SMatDeclDiagExpr& rhs )
+   friend inline auto assign( DenseMatrix<MT2,SO2>& lhs, const SMatDeclDiagExpr& rhs )
+      -> EnableIf_t< UseAssign_v<MT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -356,8 +352,8 @@ class SMatDeclDiagExpr
    */
    template< typename MT2  // Type of the target sparse matrix
            , bool SO2 >    // Storage order of the target sparse matrix
-   friend inline EnableIf_t< UseAssign_v<MT2> >
-      assign( SparseMatrix<MT2,SO2>& lhs, const SMatDeclDiagExpr& rhs )
+   friend inline auto assign( SparseMatrix<MT2,SO2>& lhs, const SMatDeclDiagExpr& rhs )
+      -> EnableIf_t< UseAssign_v<MT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -383,8 +379,8 @@ class SMatDeclDiagExpr
    */
    template< typename MT2  // Type of the target dense matrix
            , bool SO2 >    // Storage order of the target dense matrix
-   friend inline EnableIf_t< UseAssign_v<MT2> >
-      addAssign( DenseMatrix<MT2,SO2>& lhs, const SMatDeclDiagExpr& rhs )
+   friend inline auto addAssign( DenseMatrix<MT2,SO2>& lhs, const SMatDeclDiagExpr& rhs )
+      -> EnableIf_t< UseAssign_v<MT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -410,8 +406,8 @@ class SMatDeclDiagExpr
    */
    template< typename MT2  // Type of the target sparse matrix
            , bool SO2 >    // Storage order of the target sparse matrix
-   friend inline EnableIf_t< UseAssign_v<MT2> >
-      addAssign( SparseMatrix<MT2,SO2>& lhs, const SMatDeclDiagExpr& rhs )
+   friend inline auto addAssign( SparseMatrix<MT2,SO2>& lhs, const SMatDeclDiagExpr& rhs )
+      -> EnableIf_t< UseAssign_v<MT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -437,8 +433,8 @@ class SMatDeclDiagExpr
    */
    template< typename MT2  // Type of the target dense matrix
            , bool SO2 >    // Storage order of the target dense matrix
-   friend inline EnableIf_t< UseAssign_v<MT2> >
-      subAssign( DenseMatrix<MT2,SO2>& lhs, const SMatDeclDiagExpr& rhs )
+   friend inline auto subAssign( DenseMatrix<MT2,SO2>& lhs, const SMatDeclDiagExpr& rhs )
+      -> EnableIf_t< UseAssign_v<MT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -464,8 +460,8 @@ class SMatDeclDiagExpr
    */
    template< typename MT2  // Type of the target sparse matrix
            , bool SO2 >    // Storage order of the target sparse matrix
-   friend inline EnableIf_t< UseAssign_v<MT2> >
-      subAssign( SparseMatrix<MT2,SO2>& lhs, const SMatDeclDiagExpr& rhs )
+   friend inline auto subAssign( SparseMatrix<MT2,SO2>& lhs, const SMatDeclDiagExpr& rhs )
+      -> EnableIf_t< UseAssign_v<MT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -491,8 +487,8 @@ class SMatDeclDiagExpr
    */
    template< typename MT2  // Type of the target dense matrix
            , bool SO2 >    // Storage order of the target dense matrix
-   friend inline EnableIf_t< UseAssign_v<MT2> >
-      schurAssign( DenseMatrix<MT2,SO2>& lhs, const SMatDeclDiagExpr& rhs )
+   friend inline auto schurAssign( DenseMatrix<MT2,SO2>& lhs, const SMatDeclDiagExpr& rhs )
+      -> EnableIf_t< UseAssign_v<MT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -518,8 +514,8 @@ class SMatDeclDiagExpr
    */
    template< typename MT2  // Type of the target sparse matrix
            , bool SO2 >    // Storage order of the target sparse matrix
-   friend inline EnableIf_t< UseAssign_v<MT2> >
-      schurAssign( SparseMatrix<MT2,SO2>& lhs, const SMatDeclDiagExpr& rhs )
+   friend inline auto schurAssign( SparseMatrix<MT2,SO2>& lhs, const SMatDeclDiagExpr& rhs )
+      -> EnableIf_t< UseAssign_v<MT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -545,8 +541,8 @@ class SMatDeclDiagExpr
    */
    template< typename MT2  // Type of the target dense matrix
            , bool SO2 >    // Storage order of the target dense matrix
-   friend inline EnableIf_t< UseAssign_v<MT2> >
-      multAssign( DenseMatrix<MT2,SO2>& lhs, const SMatDeclDiagExpr& rhs )
+   friend inline auto multAssign( DenseMatrix<MT2,SO2>& lhs, const SMatDeclDiagExpr& rhs )
+      -> EnableIf_t< UseAssign_v<MT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -572,8 +568,8 @@ class SMatDeclDiagExpr
    */
    template< typename MT2  // Type of the target sparse matrix
            , bool SO2 >    // Storage order of the target sparse matrix
-   friend inline EnableIf_t< UseAssign_v<MT2> >
-      multAssign( SparseMatrix<MT2,SO2>& lhs, const SMatDeclDiagExpr& rhs )
+   friend inline auto multAssign( SparseMatrix<MT2,SO2>& lhs, const SMatDeclDiagExpr& rhs )
+      -> EnableIf_t< UseAssign_v<MT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -599,8 +595,8 @@ class SMatDeclDiagExpr
    */
    template< typename MT2  // Type of the target dense matrix
            , bool SO2 >    // Storage order of the target dense matrix
-   friend inline EnableIf_t< UseSMPAssign_v<MT2> >
-      smpAssign( DenseMatrix<MT2,SO2>& lhs, const SMatDeclDiagExpr& rhs )
+   friend inline auto smpAssign( DenseMatrix<MT2,SO2>& lhs, const SMatDeclDiagExpr& rhs )
+      -> EnableIf_t< UseSMPAssign_v<MT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -626,8 +622,8 @@ class SMatDeclDiagExpr
    */
    template< typename MT2  // Type of the target sparse matrix
            , bool SO2 >    // Storage order of the target sparse matrix
-   friend inline EnableIf_t< UseSMPAssign_v<MT2> >
-      smpAssign( SparseMatrix<MT2,SO2>& lhs, const SMatDeclDiagExpr& rhs )
+   friend inline auto smpAssign( SparseMatrix<MT2,SO2>& lhs, const SMatDeclDiagExpr& rhs )
+      -> EnableIf_t< UseSMPAssign_v<MT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -653,8 +649,8 @@ class SMatDeclDiagExpr
    */
    template< typename MT2  // Type of the target dense matrix
            , bool SO2 >    // Storage order of the target dense matrix
-   friend inline EnableIf_t< UseSMPAssign_v<MT2> >
-      smpAddAssign( DenseMatrix<MT2,SO2>& lhs, const SMatDeclDiagExpr& rhs )
+   friend inline auto smpAddAssign( DenseMatrix<MT2,SO2>& lhs, const SMatDeclDiagExpr& rhs )
+      -> EnableIf_t< UseSMPAssign_v<MT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -680,8 +676,8 @@ class SMatDeclDiagExpr
    */
    template< typename MT2  // Type of the target sparse matrix
            , bool SO2 >    // Storage order of the target sparse matrix
-   friend inline EnableIf_t< UseSMPAssign_v<MT2> >
-      smpAddAssign( SparseMatrix<MT2,SO2>& lhs, const SMatDeclDiagExpr& rhs )
+   friend inline auto smpAddAssign( SparseMatrix<MT2,SO2>& lhs, const SMatDeclDiagExpr& rhs )
+      -> EnableIf_t< UseSMPAssign_v<MT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -707,8 +703,8 @@ class SMatDeclDiagExpr
    */
    template< typename MT2  // Type of the target dense matrix
            , bool SO2 >    // Storage order of the target dense matrix
-   friend inline EnableIf_t< UseSMPAssign_v<MT2> >
-      smpSubAssign( DenseMatrix<MT2,SO2>& lhs, const SMatDeclDiagExpr& rhs )
+   friend inline auto smpSubAssign( DenseMatrix<MT2,SO2>& lhs, const SMatDeclDiagExpr& rhs )
+      -> EnableIf_t< UseSMPAssign_v<MT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -734,8 +730,8 @@ class SMatDeclDiagExpr
    */
    template< typename MT2  // Type of the target sparse matrix
            , bool SO2 >    // Storage order of the target sparse matrix
-   friend inline EnableIf_t< UseSMPAssign_v<MT2> >
-      smpSubAssign( SparseMatrix<MT2,SO2>& lhs, const SMatDeclDiagExpr& rhs )
+   friend inline auto smpSubAssign( SparseMatrix<MT2,SO2>& lhs, const SMatDeclDiagExpr& rhs )
+      -> EnableIf_t< UseSMPAssign_v<MT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -761,8 +757,8 @@ class SMatDeclDiagExpr
    */
    template< typename MT2  // Type of the target dense matrix
            , bool SO2 >    // Storage order of the target dense matrix
-   friend inline EnableIf_t< UseSMPAssign_v<MT2> >
-      smpSchurAssign( DenseMatrix<MT2,SO2>& lhs, const SMatDeclDiagExpr& rhs )
+   friend inline auto smpSchurAssign( DenseMatrix<MT2,SO2>& lhs, const SMatDeclDiagExpr& rhs )
+      -> EnableIf_t< UseSMPAssign_v<MT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -788,8 +784,8 @@ class SMatDeclDiagExpr
    */
    template< typename MT2  // Type of the target sparse matrix
            , bool SO2 >    // Storage order of the target sparse matrix
-   friend inline EnableIf_t< UseSMPAssign_v<MT2> >
-      smpSchurAssign( SparseMatrix<MT2,SO2>& lhs, const SMatDeclDiagExpr& rhs )
+   friend inline auto smpSchurAssign( SparseMatrix<MT2,SO2>& lhs, const SMatDeclDiagExpr& rhs )
+      -> EnableIf_t< UseSMPAssign_v<MT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -816,8 +812,8 @@ class SMatDeclDiagExpr
    */
    template< typename MT2  // Type of the target dense matrix
            , bool SO2 >    // Storage order of the target dense matrix
-   friend inline EnableIf_t< UseSMPAssign_v<MT2> >
-      smpMultAssign( DenseMatrix<MT2,SO2>& lhs, const SMatDeclDiagExpr& rhs )
+   friend inline auto smpMultAssign( DenseMatrix<MT2,SO2>& lhs, const SMatDeclDiagExpr& rhs )
+      -> EnableIf_t< UseSMPAssign_v<MT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -844,8 +840,8 @@ class SMatDeclDiagExpr
    */
    template< typename MT2  // Type of the target sparse matrix
            , bool SO2 >    // Storage order of the target sparse matrix
-   friend inline EnableIf_t< UseSMPAssign_v<MT2> >
-      smpMultAssign( SparseMatrix<MT2,SO2>& lhs, const SMatDeclDiagExpr& rhs )
+   friend inline auto smpMultAssign( SparseMatrix<MT2,SO2>& lhs, const SMatDeclDiagExpr& rhs )
+      -> EnableIf_t< UseSMPAssign_v<MT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -889,7 +885,7 @@ class SMatDeclDiagExpr
 */
 template< typename MT  // Type of the sparse matrix
         , bool SO      // Storage order
-        , typename = DisableIf_t< IsDiagonal_v<MT> > >
+        , DisableIf_t< IsDiagonal_v<MT> >* = nullptr >
 inline const SMatDeclDiagExpr<MT,SO> decldiag_backend( const SparseMatrix<MT,SO>& sm )
 {
    BLAZE_FUNCTION_TRACE;
@@ -915,7 +911,7 @@ inline const SMatDeclDiagExpr<MT,SO> decldiag_backend( const SparseMatrix<MT,SO>
 */
 template< typename MT  // Type of the sparse matrix
         , bool SO      // Storage order
-        , typename = EnableIf_t< IsDiagonal_v<MT> > >
+        , EnableIf_t< IsDiagonal_v<MT> >* = nullptr >
 inline const MT& decldiag_backend( const SparseMatrix<MT,SO>& sm )
 {
    BLAZE_FUNCTION_TRACE;
@@ -986,7 +982,7 @@ inline decltype(auto) decldiag( const SparseMatrix<MT,SO>& sm )
 template< typename MT  // Type of the left-hand side sparse matrix
         , typename ST  // Type of the right-hand side scalar value
         , bool SO      // Storage order
-        , typename = DisableIf_t< IsDiagonal_v<MT> > >
+        , DisableIf_t< IsDiagonal_v<MT> >* = nullptr >
 inline decltype(auto) decldiag( const SMatScalarMultExpr<MT,ST,SO>& sm )
 {
    BLAZE_FUNCTION_TRACE;
@@ -1023,24 +1019,6 @@ struct IsSymmetric< SMatDeclDiagExpr<MT,SO> >
 
 //=================================================================================================
 //
-//  ISHERMITIAN SPECIALIZATIONS
-//
-//=================================================================================================
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-template< typename MT, bool SO >
-struct IsHermitian< SMatDeclDiagExpr<MT,SO> >
-   : public IsHermitian<MT>
-{};
-/*! \endcond */
-//*************************************************************************************************
-
-
-
-
-//=================================================================================================
-//
 //  ISLOWER SPECIALIZATIONS
 //
 //=================================================================================================
@@ -1059,42 +1037,6 @@ struct IsLower< SMatDeclDiagExpr<MT,SO> >
 
 //=================================================================================================
 //
-//  ISUNILOWER SPECIALIZATIONS
-//
-//=================================================================================================
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-template< typename MT, bool SO >
-struct IsUniLower< SMatDeclDiagExpr<MT,SO> >
-   : public IsUniLower<MT>
-{};
-/*! \endcond */
-//*************************************************************************************************
-
-
-
-
-//=================================================================================================
-//
-//  ISSTRICTLYLOWER SPECIALIZATIONS
-//
-//=================================================================================================
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-template< typename MT, bool SO >
-struct IsStrictlyLower< SMatDeclDiagExpr<MT,SO> >
-   : public IsStrictlyLower<MT>
-{};
-/*! \endcond */
-//*************************************************************************************************
-
-
-
-
-//=================================================================================================
-//
 //  ISUPPER SPECIALIZATIONS
 //
 //=================================================================================================
@@ -1104,42 +1046,6 @@ struct IsStrictlyLower< SMatDeclDiagExpr<MT,SO> >
 template< typename MT, bool SO >
 struct IsUpper< SMatDeclDiagExpr<MT,SO> >
    : public TrueType
-{};
-/*! \endcond */
-//*************************************************************************************************
-
-
-
-
-//=================================================================================================
-//
-//  ISUNIUPPER SPECIALIZATIONS
-//
-//=================================================================================================
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-template< typename MT, bool SO >
-struct IsUniUpper< SMatDeclDiagExpr<MT,SO> >
-   : public IsUniUpper<MT>
-{};
-/*! \endcond */
-//*************************************************************************************************
-
-
-
-
-//=================================================================================================
-//
-//  ISSTRICTLYUPPER SPECIALIZATIONS
-//
-//=================================================================================================
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-template< typename MT, bool SO >
-struct IsStrictlyUpper< SMatDeclDiagExpr<MT,SO> >
-   : public IsStrictlyUpper<MT>
 {};
 /*! \endcond */
 //*************************************************************************************************

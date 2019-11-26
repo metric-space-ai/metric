@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/DVecDVecDivExpr.h
 //  \brief Header file for the dense vector/dense vector division expression
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -61,6 +61,7 @@
 #include "../../math/typetraits/IsExpression.h"
 #include "../../math/typetraits/IsTemporary.h"
 #include "../../math/typetraits/RequiresEvaluation.h"
+#include "../../system/HostDevice.h"
 #include "../../system/Inline.h"
 #include "../../system/Thresholds.h"
 #include "../../util/Assert.h"
@@ -154,6 +155,7 @@ class DVecDVecDivExpr
  public:
    //**Type definitions****************************************************************************
    using This          = DVecDVecDivExpr<VT1,VT2,TF>;  //!< Type of this DVecDVecDivExpr instance.
+   using BaseType      = DenseVector<This,TF>;         //!< Base type of this DVecDVecDivExpr instance.
    using ResultType    = DivTrait_t<RT1,RT2>;          //!< Result type for expression template evaluations.
    using TransposeType = TransposeType_t<ResultType>;  //!< Transpose type for expression template evaluations.
    using ElementType   = ElementType_t<ResultType>;    //!< Resulting element type.
@@ -204,7 +206,7 @@ class DVecDVecDivExpr
       // \param left Iterator to the initial left-hand side element.
       // \param right Iterator to the initial right-hand side element.
       */
-      explicit inline ConstIterator( LeftIteratorType left, RightIteratorType right )
+      explicit inline BLAZE_DEVICE_CALLABLE ConstIterator( LeftIteratorType left, RightIteratorType right )
          : left_ ( left  )  // Iterator to the current left-hand side element
          , right_( right )  // Iterator to the current right-hand side element
       {}
@@ -216,7 +218,7 @@ class DVecDVecDivExpr
       // \param inc The increment of the iterator.
       // \return The incremented iterator.
       */
-      inline ConstIterator& operator+=( size_t inc ) {
+      inline BLAZE_DEVICE_CALLABLE ConstIterator& operator+=( size_t inc ) {
          left_  += inc;
          right_ += inc;
          return *this;
@@ -229,7 +231,7 @@ class DVecDVecDivExpr
       // \param dec The decrement of the iterator.
       // \return The decremented iterator.
       */
-      inline ConstIterator& operator-=( size_t dec ) {
+      inline BLAZE_DEVICE_CALLABLE ConstIterator& operator-=( size_t dec ) {
          left_  -= dec;
          right_ -= dec;
          return *this;
@@ -241,7 +243,7 @@ class DVecDVecDivExpr
       //
       // \return Reference to the incremented iterator.
       */
-      inline ConstIterator& operator++() {
+      inline BLAZE_DEVICE_CALLABLE ConstIterator& operator++() {
          ++left_;
          ++right_;
          return *this;
@@ -253,7 +255,7 @@ class DVecDVecDivExpr
       //
       // \return The previous position of the iterator.
       */
-      inline const ConstIterator operator++( int ) {
+      inline BLAZE_DEVICE_CALLABLE const ConstIterator operator++( int ) {
          return ConstIterator( left_++, right_++ );
       }
       //*******************************************************************************************
@@ -263,7 +265,7 @@ class DVecDVecDivExpr
       //
       // \return Reference to the decremented iterator.
       */
-      inline ConstIterator& operator--() {
+      inline BLAZE_DEVICE_CALLABLE ConstIterator& operator--() {
          --left_;
          --right_;
          return *this;
@@ -275,7 +277,7 @@ class DVecDVecDivExpr
       //
       // \return The previous position of the iterator.
       */
-      inline const ConstIterator operator--( int ) {
+      inline BLAZE_DEVICE_CALLABLE const ConstIterator operator--( int ) {
          return ConstIterator( left_--, right_-- );
       }
       //*******************************************************************************************
@@ -285,7 +287,7 @@ class DVecDVecDivExpr
       //
       // \return The resulting value.
       */
-      inline ReturnType operator*() const {
+      inline BLAZE_DEVICE_CALLABLE ReturnType operator*() const {
          return (*left_) / (*right_);
       }
       //*******************************************************************************************
@@ -306,7 +308,7 @@ class DVecDVecDivExpr
       // \param rhs The right-hand side iterator.
       // \return \a true if the iterators refer to the same element, \a false if not.
       */
-      inline bool operator==( const ConstIterator& rhs ) const {
+      inline BLAZE_DEVICE_CALLABLE bool operator==( const ConstIterator& rhs ) const {
          return left_ == rhs.left_;
       }
       //*******************************************************************************************
@@ -317,7 +319,7 @@ class DVecDVecDivExpr
       // \param rhs The right-hand side iterator.
       // \return \a true if the iterators don't refer to the same element, \a false if they do.
       */
-      inline bool operator!=( const ConstIterator& rhs ) const {
+      inline BLAZE_DEVICE_CALLABLE bool operator!=( const ConstIterator& rhs ) const {
          return left_ != rhs.left_;
       }
       //*******************************************************************************************
@@ -328,7 +330,7 @@ class DVecDVecDivExpr
       // \param rhs The right-hand side iterator.
       // \return \a true if the left-hand side iterator is smaller, \a false if not.
       */
-      inline bool operator<( const ConstIterator& rhs ) const {
+      inline BLAZE_DEVICE_CALLABLE bool operator<( const ConstIterator& rhs ) const {
          return left_ < rhs.left_;
       }
       //*******************************************************************************************
@@ -339,7 +341,7 @@ class DVecDVecDivExpr
       // \param rhs The right-hand side iterator.
       // \return \a true if the left-hand side iterator is greater, \a false if not.
       */
-      inline bool operator>( const ConstIterator& rhs ) const {
+      inline BLAZE_DEVICE_CALLABLE bool operator>( const ConstIterator& rhs ) const {
          return left_ > rhs.left_;
       }
       //*******************************************************************************************
@@ -350,7 +352,7 @@ class DVecDVecDivExpr
       // \param rhs The right-hand side iterator.
       // \return \a true if the left-hand side iterator is smaller or equal, \a false if not.
       */
-      inline bool operator<=( const ConstIterator& rhs ) const {
+      inline BLAZE_DEVICE_CALLABLE bool operator<=( const ConstIterator& rhs ) const {
          return left_ <= rhs.left_;
       }
       //*******************************************************************************************
@@ -361,7 +363,7 @@ class DVecDVecDivExpr
       // \param rhs The right-hand side iterator.
       // \return \a true if the left-hand side iterator is greater or equal, \a false if not.
       */
-      inline bool operator>=( const ConstIterator& rhs ) const {
+      inline BLAZE_DEVICE_CALLABLE bool operator>=( const ConstIterator& rhs ) const {
          return left_ >= rhs.left_;
       }
       //*******************************************************************************************
@@ -372,7 +374,7 @@ class DVecDVecDivExpr
       // \param rhs The right-hand side iterator.
       // \return The number of elements between the two iterators.
       */
-      inline DifferenceType operator-( const ConstIterator& rhs ) const {
+      inline BLAZE_DEVICE_CALLABLE DifferenceType operator-( const ConstIterator& rhs ) const {
          return left_ - rhs.left_;
       }
       //*******************************************************************************************
@@ -384,7 +386,7 @@ class DVecDVecDivExpr
       // \param inc The number of elements the iterator is incremented.
       // \return The incremented iterator.
       */
-      friend inline const ConstIterator operator+( const ConstIterator& it, size_t inc ) {
+      friend inline BLAZE_DEVICE_CALLABLE const ConstIterator operator+( const ConstIterator& it, size_t inc ) {
          return ConstIterator( it.left_ + inc, it.right_ + inc );
       }
       //*******************************************************************************************
@@ -396,7 +398,7 @@ class DVecDVecDivExpr
       // \param it The iterator to be incremented.
       // \return The incremented iterator.
       */
-      friend inline const ConstIterator operator+( size_t inc, const ConstIterator& it ) {
+      friend inline BLAZE_DEVICE_CALLABLE const ConstIterator operator+( size_t inc, const ConstIterator& it ) {
          return ConstIterator( it.left_ + inc, it.right_ + inc );
       }
       //*******************************************************************************************
@@ -408,7 +410,7 @@ class DVecDVecDivExpr
       // \param dec The number of elements the iterator is decremented.
       // \return The decremented iterator.
       */
-      friend inline const ConstIterator operator-( const ConstIterator& it, size_t dec ) {
+      friend inline BLAZE_DEVICE_CALLABLE const ConstIterator operator-( const ConstIterator& it, size_t dec ) {
          return ConstIterator( it.left_ - dec, it.right_ - dec );
       }
       //*******************************************************************************************
@@ -606,17 +608,23 @@ class DVecDVecDivExpr
    // of the two operands requires an intermediate evaluation.
    */
    template< typename VT >  // Type of the target dense vector
-   friend inline EnableIf_t< UseAssign_v<VT> >
-      assign( DenseVector<VT,TF>& lhs, const DVecDVecDivExpr& rhs )
+   friend inline auto assign( DenseVector<VT,TF>& lhs, const DVecDVecDivExpr& rhs )
+      -> EnableIf_t< UseAssign_v<VT> >
    {
       BLAZE_FUNCTION_TRACE;
+
+      using ET = ElementType_t<VT>;
+
+      BLAZE_CONSTRAINT_MUST_BE_DENSE_VECTOR_TYPE( ResultType );
+      BLAZE_CONSTRAINT_MUST_BE_VECTOR_WITH_TRANSPOSE_FLAG( ResultType, TF );
+      BLAZE_CONSTRAINT_MUST_NOT_REQUIRE_EVALUATION( ResultType );
 
       BLAZE_INTERNAL_ASSERT( (~lhs).size() == rhs.size(), "Invalid vector sizes" );
 
       if( !IsComputation_v<VT1> && isSame( ~lhs, rhs.lhs_ ) ) {
          divAssign( ~lhs, rhs.rhs_ );
       }
-      else if( IsSame_v<VT,ResultType> || IsSame_v< ElementType_t<VT>, ElementType_t<VT1> > ) {
+      else if( ( IsSame_v<VT,ResultType> || IsSame_v<ET,ET1> ) && !rhs.rhs_.isAliased( &(~lhs) ) ) {
          assign   ( ~lhs, rhs.lhs_ );
          divAssign( ~lhs, rhs.rhs_ );
       }
@@ -643,8 +651,8 @@ class DVecDVecDivExpr
    // of the two operands requires an intermediate evaluation.
    */
    template< typename VT >  // Type of the target sparse vector
-   friend inline EnableIf_t< UseAssign_v<VT> >
-      assign( SparseVector<VT,TF>& lhs, const DVecDVecDivExpr& rhs )
+   friend inline auto assign( SparseVector<VT,TF>& lhs, const DVecDVecDivExpr& rhs )
+      -> EnableIf_t< UseAssign_v<VT> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -675,8 +683,8 @@ class DVecDVecDivExpr
    // of the operands requires an intermediate evaluation.
    */
    template< typename VT >  // Type of the target dense vector
-   friend inline EnableIf_t< UseAssign_v<VT> >
-      addAssign( DenseVector<VT,TF>& lhs, const DVecDVecDivExpr& rhs )
+   friend inline auto addAssign( DenseVector<VT,TF>& lhs, const DVecDVecDivExpr& rhs )
+      -> EnableIf_t< UseAssign_v<VT> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -711,8 +719,8 @@ class DVecDVecDivExpr
    // operands requires an intermediate evaluation.
    */
    template< typename VT >  // Type of the target dense vector
-   friend inline EnableIf_t< UseAssign_v<VT> >
-      subAssign( DenseVector<VT,TF>& lhs, const DVecDVecDivExpr& rhs )
+   friend inline auto subAssign( DenseVector<VT,TF>& lhs, const DVecDVecDivExpr& rhs )
+      -> EnableIf_t< UseAssign_v<VT> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -747,8 +755,8 @@ class DVecDVecDivExpr
    // of the operands requires an intermediate evaluation.
    */
    template< typename VT >  // Type of the target dense vector
-   friend inline EnableIf_t< UseAssign_v<VT> >
-      multAssign( DenseVector<VT,TF>& lhs, const DVecDVecDivExpr& rhs )
+   friend inline auto multAssign( DenseVector<VT,TF>& lhs, const DVecDVecDivExpr& rhs )
+      -> EnableIf_t< UseAssign_v<VT> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -783,8 +791,8 @@ class DVecDVecDivExpr
    // operands requires an intermediate evaluation.
    */
    template< typename VT >  // Type of the target dense vector
-   friend inline EnableIf_t< UseAssign_v<VT> >
-      divAssign( DenseVector<VT,TF>& lhs, const DVecDVecDivExpr& rhs )
+   friend inline auto divAssign( DenseVector<VT,TF>& lhs, const DVecDVecDivExpr& rhs )
+      -> EnableIf_t< UseAssign_v<VT> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -819,17 +827,23 @@ class DVecDVecDivExpr
    // specific parallel evaluation strategy is selected.
    */
    template< typename VT >  // Type of the target dense vector
-   friend inline EnableIf_t< UseSMPAssign_v<VT> >
-      smpAssign( DenseVector<VT,TF>& lhs, const DVecDVecDivExpr& rhs )
+   friend inline auto smpAssign( DenseVector<VT,TF>& lhs, const DVecDVecDivExpr& rhs )
+      -> EnableIf_t< UseSMPAssign_v<VT> >
    {
       BLAZE_FUNCTION_TRACE;
+
+      using ET = ElementType_t<VT>;
+
+      BLAZE_CONSTRAINT_MUST_BE_DENSE_VECTOR_TYPE( ResultType );
+      BLAZE_CONSTRAINT_MUST_BE_VECTOR_WITH_TRANSPOSE_FLAG( ResultType, TF );
+      BLAZE_CONSTRAINT_MUST_NOT_REQUIRE_EVALUATION( ResultType );
 
       BLAZE_INTERNAL_ASSERT( (~lhs).size() == rhs.size(), "Invalid vector sizes" );
 
       if( !IsComputation_v<VT1> && isSame( ~lhs, rhs.lhs_ ) ) {
          smpDivAssign( ~lhs, rhs.rhs_ );
       }
-      else if( IsSame_v<VT,ResultType> || IsSame_v< ElementType_t<VT>, ElementType_t<VT1> > ) {
+      else if( ( IsSame_v<VT,ResultType> || IsSame_v<ET,ET1> ) && !rhs.rhs_.isAliased( &(~lhs) ) ) {
          smpAssign   ( ~lhs, rhs.lhs_ );
          smpDivAssign( ~lhs, rhs.rhs_ );
       }
@@ -856,8 +870,8 @@ class DVecDVecDivExpr
    // specific parallel evaluation strategy is selected.
    */
    template< typename VT >  // Type of the target sparse vector
-   friend inline EnableIf_t< UseSMPAssign_v<VT> >
-      smpAssign( SparseVector<VT,TF>& lhs, const DVecDVecDivExpr& rhs )
+   friend inline auto smpAssign( SparseVector<VT,TF>& lhs, const DVecDVecDivExpr& rhs )
+      -> EnableIf_t< UseSMPAssign_v<VT> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -888,8 +902,8 @@ class DVecDVecDivExpr
    // specific parallel evaluation strategy is selected.
    */
    template< typename VT >  // Type of the target dense vector
-   friend inline EnableIf_t< UseSMPAssign_v<VT> >
-      smpAddAssign( DenseVector<VT,TF>& lhs, const DVecDVecDivExpr& rhs )
+   friend inline auto smpAddAssign( DenseVector<VT,TF>& lhs, const DVecDVecDivExpr& rhs )
+      -> EnableIf_t< UseSMPAssign_v<VT> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -924,8 +938,8 @@ class DVecDVecDivExpr
    // expression specific parallel evaluation strategy is selected.
    */
    template< typename VT >  // Type of the target dense vector
-   friend inline EnableIf_t< UseSMPAssign_v<VT> >
-      smpSubAssign( DenseVector<VT,TF>& lhs, const DVecDVecDivExpr& rhs )
+   friend inline auto smpSubAssign( DenseVector<VT,TF>& lhs, const DVecDVecDivExpr& rhs )
+      -> EnableIf_t< UseSMPAssign_v<VT> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -960,8 +974,8 @@ class DVecDVecDivExpr
    // in case the expression specific parallel evaluation strategy is selected.
    */
    template< typename VT >  // Type of the target dense vector
-   friend inline EnableIf_t< UseSMPAssign_v<VT> >
-      smpMultAssign( DenseVector<VT,TF>& lhs, const DVecDVecDivExpr& rhs )
+   friend inline auto smpMultAssign( DenseVector<VT,TF>& lhs, const DVecDVecDivExpr& rhs )
+      -> EnableIf_t< UseSMPAssign_v<VT> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -996,8 +1010,8 @@ class DVecDVecDivExpr
    // specific parallel evaluation strategy is selected.
    */
    template< typename VT >  // Type of the target dense vector
-   friend inline EnableIf_t< UseSMPAssign_v<VT> >
-      smpDivAssign( DenseVector<VT,TF>& lhs, const DVecDVecDivExpr& rhs )
+   friend inline auto smpDivAssign( DenseVector<VT,TF>& lhs, const DVecDVecDivExpr& rhs )
+      -> EnableIf_t< UseSMPAssign_v<VT> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -1039,12 +1053,12 @@ class DVecDVecDivExpr
 //=================================================================================================
 
 //*************************************************************************************************
-/*!\brief Division operator for the componentwise product of two dense vectors
+/*!\brief Division operator for the componentwise quotient of two dense vectors
 //        (\f$ \vec{a}=\vec{b}/\vec{c} \f$).
 // \ingroup dense_vector
 //
-// \param lhs The left-hand side dense vector for the component product.
-// \param rhs The right-hand side dense vector for the component product.
+// \param lhs The left-hand side dense vector for the component quotient.
+// \param rhs The right-hand side dense vector for the component quotient.
 // \return The quotient of the two vectors.
 // \exception std::invalid_argument Vector sizes do not match.
 //

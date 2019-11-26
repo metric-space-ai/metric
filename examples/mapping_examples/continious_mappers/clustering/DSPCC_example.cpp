@@ -94,7 +94,7 @@ int main()
 {
 
     // small dataset
-    /*
+    //*
 
     using recType = std::deque<double>;
 

@@ -3,7 +3,7 @@
 //  \file blaze/math/Matrix.h
 //  \brief Header file for all basic Matrix functionality
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -46,6 +46,7 @@
 #include "../math/Exception.h"
 #include "../math/expressions/Matrix.h"
 #include "../math/RelaxationFlag.h"
+#include "../math/views/Elements.h"
 
 
 namespace blaze {
@@ -60,40 +61,43 @@ namespace blaze {
 /*!\name Matrix functions */
 //@{
 template< typename MT, bool SO >
-inline bool isSymmetric( const Matrix<MT,SO>& m );
+bool isSymmetric( const Matrix<MT,SO>& m );
 
 template< typename MT, bool SO >
-inline bool isHermitian( const Matrix<MT,SO>& m );
+bool isHermitian( const Matrix<MT,SO>& m );
 
 template< typename MT, bool SO >
-inline bool isUniform( const Matrix<MT,SO>& m );
+bool isUniform( const Matrix<MT,SO>& m );
 
 template< typename MT, bool SO >
-inline bool isLower( const Matrix<MT,SO>& m );
+bool isLower( const Matrix<MT,SO>& m );
 
 template< typename MT, bool SO >
-inline bool isUniLower( const Matrix<MT,SO>& m );
+bool isUniLower( const Matrix<MT,SO>& m );
 
 template< typename MT, bool SO >
-inline bool isStrictlyLower( const Matrix<MT,SO>& m );
+bool isStrictlyLower( const Matrix<MT,SO>& m );
 
 template< typename MT, bool SO >
-inline bool isUpper( const Matrix<MT,SO>& m );
+bool isUpper( const Matrix<MT,SO>& m );
 
 template< typename MT, bool SO >
-inline bool isUniUpper( const Matrix<MT,SO>& m );
+bool isUniUpper( const Matrix<MT,SO>& m );
 
 template< typename MT, bool SO >
-inline bool isStrictlyUpper( const Matrix<MT,SO>& m );
+bool isStrictlyUpper( const Matrix<MT,SO>& m );
 
 template< typename MT, bool SO >
-inline bool isDiagonal( const Matrix<MT,SO>& m );
+bool isDiagonal( const Matrix<MT,SO>& m );
 
 template< typename MT, bool SO >
-inline bool isIdentity( const Matrix<MT,SO>& m );
+bool isIdentity( const Matrix<MT,SO>& m );
 
 template< typename MT, bool SO >
-inline auto trace( const Matrix<MT,SO>& m );
+auto trace( const Matrix<MT,SO>& m );
+
+template< bool RF, typename MT, bool SO >
+decltype(auto) reverse( const Matrix<MT,SO>& m );
 //@}
 //*************************************************************************************************
 
@@ -670,6 +674,91 @@ inline auto trace( const Matrix<MT,SO>& m )
 //*************************************************************************************************
 
 
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Backend implementation of the \c reverse() function for reversing the rows.
+// \ingroup matrix
+//
+// \param m The matrix to be reversed.
+// \return The reversed matrix.
+*/
+template< bool RF
+        , typename MT
+        , bool SO
+        , EnableIf_t< RF == rowwise >* = nullptr >
+inline decltype(auto) reverse_backend( const Matrix<MT,SO>& m )
+{
+   return rows( ~m, [max=(~m).rows()-1UL]( size_t i ){ return max - i; }, (~m).rows() );
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Backend implementation of the \c reverse() function for reversing the columns.
+// \ingroup matrix
+//
+// \param m The matrix to be reversed.
+// \return The reversed matrix.
+*/
+template< bool RF
+        , typename MT
+        , bool SO
+        , EnableIf_t< RF == columnwise >* = nullptr >
+inline decltype(auto) reverse_backend( const Matrix<MT,SO>& m )
+{
+   return columns( ~m, [max=(~m).columns()-1UL]( size_t i ){ return max - i; }, (~m).columns() );
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*!\brief Reverse the rows or columns of a matrix.
+// \ingroup matrix
+//
+// \param m The matrix to be reversed.
+// \return The reversed matrix.
+//
+// This function reverses the rows or matrices of a dense or sparse matrix. In case the compile
+// time flag \a RF is set to \a blaze::rowwise, the rows of the matrix are reversed, in case \a RF
+// is set to \a blaze::columnwise, the columns of the matrix are reversed. The following examples
+// gives an impression of both alternatives:
+
+   \code
+   blaze::DynamicMatrix<int,rowMajor> A{ { 1, 0, 2, 3 },
+                                         { 2, 4, 0, 1 },
+                                         { 0, 3, 1, 0 } };
+   blaze::DynamicMatrix<int> B;
+
+   // Reversing the rows result in the matrix
+   //
+   //    ( 0 3 1 0 )
+   //    ( 2 4 0 1 )
+   //    ( 1 0 2 3 )
+   //
+   B = reverse<rowwise>( A );
+
+   // Reversing the columns result in the matrix
+   //
+   //    ( 3 2 0 1 )
+   //    ( 1 0 4 2 )
+   //    ( 0 1 3 0 )
+   //
+   B = reverse<columnwise>( A );
+   \endcode
+*/
+template< bool RF      // Reverse flag
+        , typename MT  // Type of the matrix
+        , bool SO >    // Storage order
+inline decltype(auto) reverse( const Matrix<MT,SO>& m )
+{
+   return reverse_backend<RF>( ~m );
+}
+//*************************************************************************************************
+
+
 
 
 //=================================================================================================
@@ -682,7 +771,7 @@ inline auto trace( const Matrix<MT,SO>& m )
 /*!\name Matrix operators */
 //@{
 template< typename MT, bool SO >
-inline std::ostream& operator<<( std::ostream& os, const Matrix<MT,SO>& m );
+std::ostream& operator<<( std::ostream& os, const Matrix<MT,SO>& m );
 //@}
 //*************************************************************************************************
 
