@@ -3,7 +3,7 @@
 //  \file blaze/math/lapack/clapack/geqp3.h
 //  \brief Header file for the CLAPACK geqp3 wrapper functions
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -54,8 +54,10 @@
 #if !defined(INTEL_MKL_VERSION)
 extern "C" {
 
-void sgeqp3_( int* m, int* n, float*  A, int* lda, int* jpvt, float*  tau, float*  work, int* lwork, int* info );
-void dgeqp3_( int* m, int* n, double* A, int* lda, int* jpvt, double* tau, double* work, int* lwork, int* info );
+void sgeqp3_( int* m, int* n, float* A, int* lda, int* jpvt, float* tau,
+              float* work, int* lwork, int* info );
+void dgeqp3_( int* m, int* n, double* A, int* lda, int* jpvt, double* tau,
+              double* work, int* lwork, int* info );
 
 }
 #endif
@@ -76,11 +78,11 @@ namespace blaze {
 //*************************************************************************************************
 /*!\name LAPACK QR decomposition functions (geqp3) */
 //@{
-inline void geqp3( int m, int n, float* A, int lda, int* jpvt, float* tau,
-                   float* work, int lwork, int* info );
+void geqp3( int m, int n, float* A, int lda, int* jpvt, float* tau,
+            float* work, int lwork, int* info );
 
-inline void geqp3( int m, int n, double* A, int lda, int* jpvt, double* tau,
-                   double* work, int lwork, int* info );
+void geqp3( int m, int n, double* A, int lda, int* jpvt, double* tau,
+            double* work, int lwork, int* info );
 //@}
 //*************************************************************************************************
 

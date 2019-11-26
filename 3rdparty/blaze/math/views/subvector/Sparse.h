@@ -3,7 +3,7 @@
 //  \file blaze/math/views/subvector/Sparse.h
 //  \brief Subvector specialization for sparse vectors
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -78,7 +78,6 @@
 #include "../../../util/typetraits/IsConst.h"
 #include "../../../util/typetraits/IsIntegral.h"
 #include "../../../util/typetraits/IsReference.h"
-#include "../../../util/typetraits/RemoveReference.h"
 
 
 namespace blaze {
@@ -423,6 +422,9 @@ class Subvector<VT,AF,TF,false,CSAs...>
    //**Compilation flags***************************************************************************
    //! Compilation switch for the expression template assignment strategy.
    static constexpr bool smpAssignable = VT::smpAssignable;
+
+   //! Compilation switch for the expression template evaluation strategy.
+   static constexpr bool compileTimeArgs = DataType::compileTimeArgs;
    //**********************************************************************************************
 
    //**Constructors********************************************************************************
@@ -430,12 +432,16 @@ class Subvector<VT,AF,TF,false,CSAs...>
    //@{
    template< typename... RSAs >
    explicit inline Subvector( VT& vector, RSAs... args );
-   // No explicitly declared copy constructor.
+
+   Subvector( const Subvector& ) = default;
    //@}
    //**********************************************************************************************
 
    //**Destructor**********************************************************************************
-   // No explicitly declared destructor.
+   /*!\name Destructor */
+   //@{
+   ~Subvector() = default;
+   //@}
    //**********************************************************************************************
 
    //**Data access functions***********************************************************************

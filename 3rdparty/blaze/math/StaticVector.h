@@ -3,7 +3,7 @@
 //  \file blaze/math/StaticVector.h
 //  \brief Header file for the complete StaticVector implementation
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -44,6 +44,7 @@
 #include "../math/DenseVector.h"
 #include "../math/DynamicVector.h"
 #include "../math/StaticMatrix.h"
+#include "../math/ZeroVector.h"
 #include "../util/Random.h"
 
 

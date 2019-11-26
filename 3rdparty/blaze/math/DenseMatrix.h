@@ -3,7 +3,7 @@
 //  \file blaze/math/DenseMatrix.h
 //  \brief Header file for all basic DenseMatrix functionality
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -64,6 +64,7 @@
 #include "../math/expressions/DMatDetExpr.h"
 #include "../math/expressions/DMatDMatAddExpr.h"
 #include "../math/expressions/DMatDMatEqualExpr.h"
+#include "../math/expressions/DMatDMatKronExpr.h"
 #include "../math/expressions/DMatDMatMapExpr.h"
 #include "../math/expressions/DMatDMatMultExpr.h"
 #include "../math/expressions/DMatDMatSchurExpr.h"
@@ -72,6 +73,7 @@
 #include "../math/expressions/DMatEvalExpr.h"
 #include "../math/expressions/DMatInvExpr.h"
 #include "../math/expressions/DMatMapExpr.h"
+#include "../math/expressions/DMatMeanExpr.h"
 #include "../math/expressions/DMatNormExpr.h"
 #include "../math/expressions/DMatReduceExpr.h"
 #include "../math/expressions/DMatScalarDivExpr.h"
@@ -80,6 +82,8 @@
 #include "../math/expressions/DMatSMatAddExpr.h"
 #include "../math/expressions/DMatSMatMultExpr.h"
 #include "../math/expressions/DMatSMatSubExpr.h"
+#include "../math/expressions/DMatSoftmaxExpr.h"
+#include "../math/expressions/DMatStdDevExpr.h"
 #include "../math/expressions/DMatSVecMultExpr.h"
 #include "../math/expressions/DMatTDMatAddExpr.h"
 #include "../math/expressions/DMatTDMatMapExpr.h"
@@ -90,6 +94,7 @@
 #include "../math/expressions/DMatTSMatAddExpr.h"
 #include "../math/expressions/DMatTSMatMultExpr.h"
 #include "../math/expressions/DMatTSMatSubExpr.h"
+#include "../math/expressions/DMatVarExpr.h"
 #include "../math/expressions/DVecDVecOuterExpr.h"
 #include "../math/expressions/SMatDMatMultExpr.h"
 #include "../math/expressions/SMatDMatSubExpr.h"

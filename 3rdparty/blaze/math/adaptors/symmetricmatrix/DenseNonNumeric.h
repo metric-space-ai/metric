@@ -3,7 +3,7 @@
 //  \file blaze/math/adaptors/symmetricmatrix/DenseNonNumeric.h
 //  \brief SymmetricMatrix specialization for dense matrices with non-numeric element type
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -44,14 +44,16 @@
 #include <utility>
 #include "../../../math/adaptors/symmetricmatrix/BaseTemplate.h"
 #include "../../../math/Aliases.h"
+#include "../../../math/constraints/Computation.h"
 #include "../../../math/constraints/DenseMatrix.h"
-#include "../../../math/constraints/Expression.h"
 #include "../../../math/constraints/Hermitian.h"
 #include "../../../math/constraints/Lower.h"
 #include "../../../math/constraints/Resizable.h"
 #include "../../../math/constraints/StorageOrder.h"
 #include "../../../math/constraints/Symmetric.h"
+#include "../../../math/constraints/Transformation.h"
 #include "../../../math/constraints/Upper.h"
+#include "../../../math/constraints/View.h"
 #include "../../../math/dense/DenseMatrix.h"
 #include "../../../math/Exception.h"
 #include "../../../math/expressions/DenseMatrix.h"
@@ -60,7 +62,6 @@
 #include "../../../math/shims/Conjugate.h"
 #include "../../../math/shims/IsDefault.h"
 #include "../../../math/shims/IsZero.h"
-#include "../../../math/traits/MultTrait.h"
 #include "../../../math/typetraits/IsComputation.h"
 #include "../../../math/typetraits/IsCustom.h"
 #include "../../../math/typetraits/IsSMPAssignable.h"
@@ -78,12 +79,12 @@
 #include "../../../util/constraints/Volatile.h"
 #include "../../../util/DisableIf.h"
 #include "../../../util/EnableIf.h"
+#include "../../../util/MaybeUnused.h"
 #include "../../../util/mpl/If.h"
 #include "../../../util/StaticAssert.h"
 #include "../../../util/Types.h"
 #include "../../../util/typetraits/IsNumeric.h"
 #include "../../../util/typetraits/RemoveReference.h"
-#include "../../../util/Unused.h"
 
 
 namespace blaze {
@@ -485,7 +486,10 @@ class SymmetricMatrix<MT,SO,true,false>
    //**********************************************************************************************
 
    //**Destructor**********************************************************************************
-   // No explicitly declared destructor.
+   /*!\name Destructor */
+   //@{
+   ~SymmetricMatrix() = default;
+   //@}
    //**********************************************************************************************
 
    //**Data access functions***********************************************************************
@@ -647,7 +651,9 @@ class SymmetricMatrix<MT,SO,true,false>
    BLAZE_CONSTRAINT_MUST_NOT_BE_POINTER_TYPE         ( MT );
    BLAZE_CONSTRAINT_MUST_NOT_BE_CONST                ( MT );
    BLAZE_CONSTRAINT_MUST_NOT_BE_VOLATILE             ( MT );
-   BLAZE_CONSTRAINT_MUST_NOT_BE_EXPRESSION_TYPE      ( MT );
+   BLAZE_CONSTRAINT_MUST_NOT_BE_VIEW_TYPE            ( MT );
+   BLAZE_CONSTRAINT_MUST_NOT_BE_COMPUTATION_TYPE     ( MT );
+   BLAZE_CONSTRAINT_MUST_NOT_BE_TRANSFORMATION_TYPE  ( MT );
    BLAZE_CONSTRAINT_MUST_NOT_BE_SYMMETRIC_MATRIX_TYPE( MT );
    BLAZE_CONSTRAINT_MUST_NOT_BE_HERMITIAN_MATRIX_TYPE( MT );
    BLAZE_CONSTRAINT_MUST_NOT_BE_LOWER_MATRIX_TYPE    ( MT );
@@ -2089,7 +2095,7 @@ inline void SymmetricMatrix<MT,SO,true,false>::reset( size_t i )
 {
    using blaze::clear;
 
-   for( Iterator element=begin(i); element!=end(i); ++element )
+   for( auto element=begin(i); element!=end(i); ++element )
       clear( *element );
 }
 /*! \endcond */
@@ -2142,7 +2148,7 @@ void SymmetricMatrix<MT,SO,true,false>::resize( size_t n, bool preserve )
 {
    BLAZE_CONSTRAINT_MUST_BE_RESIZABLE_TYPE( MT );
 
-   UNUSED_PARAMETER( preserve );
+   MAYBE_UNUSED( preserve );
 
    BLAZE_INTERNAL_ASSERT( isSquare( matrix_ ), "Non-square symmetric matrix detected" );
 
@@ -2179,7 +2185,7 @@ inline void SymmetricMatrix<MT,SO,true,false>::extend( size_t n, bool preserve )
 {
    BLAZE_CONSTRAINT_MUST_BE_RESIZABLE_TYPE( MT );
 
-   UNUSED_PARAMETER( preserve );
+   MAYBE_UNUSED( preserve );
 
    resize( rows() + n, true );
 }
@@ -2552,19 +2558,17 @@ inline void SymmetricMatrix<MT,SO,true,false>::assign( const SparseMatrix<MT2,SO
    BLAZE_INTERNAL_ASSERT( rows()    == (~rhs).rows()   , "Invalid number of rows"    );
    BLAZE_INTERNAL_ASSERT( columns() == (~rhs).columns(), "Invalid number of columns" );
 
-   using RhsIterator = ConstIterator_t<MT2>;
-
    if( SO ) {
       for( size_t j=0UL; j<columns(); ++j ) {
-         const RhsIterator last( (~rhs).upperBound(j,j) );
-         for( RhsIterator element=(~rhs).begin(j); element!=last; ++element )
+         const auto last( (~rhs).upperBound(j,j) );
+         for( auto element=(~rhs).begin(j); element!=last; ++element )
             matrix_(element->index(),j) = element->value();
       }
    }
    else {
       for( size_t i=0UL; i<rows(); ++i ) {
-         const RhsIterator last( (~rhs).upperBound(i,i) );
-         for( RhsIterator element=(~rhs).begin(i); element!=last; ++element )
+         const auto last( (~rhs).upperBound(i,i) );
+         for( auto element=(~rhs).begin(i); element!=last; ++element )
             matrix_(i,element->index()) = element->value();
       }
    }
@@ -2628,19 +2632,17 @@ inline void SymmetricMatrix<MT,SO,true,false>::addAssign( const SparseMatrix<MT2
    BLAZE_INTERNAL_ASSERT( rows()    == (~rhs).rows()   , "Invalid number of rows"    );
    BLAZE_INTERNAL_ASSERT( columns() == (~rhs).columns(), "Invalid number of columns" );
 
-   using RhsIterator = ConstIterator_t<MT2>;
-
    if( SO ) {
       for( size_t j=0UL; j<columns(); ++j ) {
-         const RhsIterator last( (~rhs).upperBound(j,j) );
-         for( RhsIterator element=(~rhs).begin(j); element!=last; ++element )
+         const auto last( (~rhs).upperBound(j,j) );
+         for( auto element=(~rhs).begin(j); element!=last; ++element )
             matrix_(element->index(),j) += element->value();
       }
    }
    else {
       for( size_t i=0UL; i<rows(); ++i ) {
-         const RhsIterator last( (~rhs).upperBound(i,i) );
-         for( RhsIterator element=(~rhs).begin(i); element!=last; ++element )
+         const auto last( (~rhs).upperBound(i,i) );
+         for( auto element=(~rhs).begin(i); element!=last; ++element )
             matrix_(i,element->index()) += element->value();
       }
    }
@@ -2704,19 +2706,17 @@ inline void SymmetricMatrix<MT,SO,true,false>::subAssign( const SparseMatrix<MT2
    BLAZE_INTERNAL_ASSERT( rows()    == (~rhs).rows()   , "Invalid number of rows"    );
    BLAZE_INTERNAL_ASSERT( columns() == (~rhs).columns(), "Invalid number of columns" );
 
-   using RhsIterator = ConstIterator_t<MT2>;
-
    if( SO ) {
       for( size_t j=0UL; j<columns(); ++j ) {
-         const RhsIterator last( (~rhs).upperBound(j,j) );
-         for( RhsIterator element=(~rhs).begin(j); element!=last; ++element )
+         const auto last( (~rhs).upperBound(j,j) );
+         for( auto element=(~rhs).begin(j); element!=last; ++element )
             matrix_(element->index(),j) -= element->value();
       }
    }
    else {
       for( size_t i=0UL; i<rows(); ++i ) {
-         const RhsIterator last( (~rhs).upperBound(i,i) );
-         for( RhsIterator element=(~rhs).begin(i); element!=last; ++element )
+         const auto last( (~rhs).upperBound(i,i) );
+         for( auto element=(~rhs).begin(i); element!=last; ++element )
             matrix_(i,element->index()) -= element->value();
       }
    }
@@ -2780,15 +2780,13 @@ inline void SymmetricMatrix<MT,SO,true,false>::schurAssign( const SparseMatrix<M
    BLAZE_INTERNAL_ASSERT( rows()    == (~rhs).rows()   , "Invalid number of rows"    );
    BLAZE_INTERNAL_ASSERT( columns() == (~rhs).columns(), "Invalid number of columns" );
 
-   using RhsIterator = ConstIterator_t<MT2>;
-
    if( SO ) {
       for( size_t j=0UL; j<columns(); ++j )
       {
          size_t i( 0UL );
 
-         const RhsIterator last( (~rhs).upperBound(j,j) );
-         for( RhsIterator element=(~rhs).begin(j); element!=last; ++element ) {
+         const auto last( (~rhs).upperBound(j,j) );
+         for( auto element=(~rhs).begin(j); element!=last; ++element ) {
             for( ; i<element->index(); ++i )
                reset( matrix_(i,j) );
             matrix_(i,j) *= element->value();
@@ -2805,8 +2803,8 @@ inline void SymmetricMatrix<MT,SO,true,false>::schurAssign( const SparseMatrix<M
       {
          size_t j( 0UL );
 
-         const RhsIterator last( (~rhs).upperBound(i,i) );
-         for( RhsIterator element=(~rhs).begin(i); element!=last; ++element ) {
+         const auto last( (~rhs).upperBound(i,i) );
+         for( auto element=(~rhs).begin(i); element!=last; ++element ) {
             for( ; j<element->index(); ++j )
                reset( matrix_(i,j) );
             matrix_(i,j) *= element->value();

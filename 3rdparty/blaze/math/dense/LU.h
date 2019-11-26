@@ -3,7 +3,7 @@
 //  \file blaze/math/dense/LU.h
 //  \brief Header file for the dense matrix in-place LU decomposition
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -55,6 +55,7 @@
 #include "../../math/expressions/DenseMatrix.h"
 #include "../../math/lapack/getrf.h"
 #include "../../math/typetraits/IsResizable.h"
+#include "../../math/typetraits/IsSquare.h"
 #include "../../util/algorithms/Min.h"
 #include "../../util/NumericCast.h"
 

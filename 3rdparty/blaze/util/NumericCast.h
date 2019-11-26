@@ -3,7 +3,7 @@
 //  \file blaze/util/NumericCast.h
 //  \brief Cast operators for numeric types
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -45,9 +45,7 @@
 #include "../util/constraints/Numeric.h"
 #include "../util/EnableIf.h"
 #include "../util/Exception.h"
-#include "../util/FalseType.h"
 #include "../util/IntegralConstant.h"
-#include "../util/TrueType.h"
 #include "../util/typetraits/IsFloatingPoint.h"
 #include "../util/typetraits/IsIntegral.h"
 #include "../util/typetraits/IsSame.h"

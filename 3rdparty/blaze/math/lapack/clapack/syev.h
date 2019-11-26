@@ -3,7 +3,7 @@
 //  \file blaze/math/lapack/clapack/syev.h
 //  \brief Header file for the CLAPACK syev wrapper functions
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -42,6 +42,7 @@
 
 #include "../../../util/Complex.h"
 #include "../../../util/StaticAssert.h"
+#include "../../../util/Types.h"
 
 
 //=================================================================================================
@@ -55,8 +56,10 @@
 #if !defined(INTEL_MKL_VERSION)
 extern "C" {
 
-void ssyev_( char* jobz, char* uplo, int* n, float*  A, int* lda, float*  w, float*  work, int* lwork, int* info );
-void dsyev_( char* jobz, char* uplo, int* n, double* A, int* lda, double* w, double* work, int* lwork, int* info );
+void ssyev_( char* jobz, char* uplo, int* n, float* A, int* lda, float* w, float* work,
+             int* lwork, int* info, blaze::fortran_charlen_t njobz, blaze::fortran_charlen_t nuplo );
+void dsyev_( char* jobz, char* uplo, int* n, double* A, int* lda, double* w, double* work,
+             int* lwork, int* info, blaze::fortran_charlen_t njobz, blaze::fortran_charlen_t nuplo );
 
 }
 #endif
@@ -77,11 +80,11 @@ namespace blaze {
 //*************************************************************************************************
 /*!\name LAPACK symmetric matrix eigenvalue functions (syev) */
 //@{
-inline void syev( char jobz, char uplo, int n, float* A, int lda,
-                  float* w, float* work, int lwork, int* info );
+void syev( char jobz, char uplo, int n, float* A, int lda,
+           float* w, float* work, int lwork, int* info );
 
-inline void syev( char jobz, char uplo, int n, double* A, int lda,
-                  double* w, double* work, int lwork, int* info );
+void syev( char jobz, char uplo, int n, double* A, int lda,
+           double* w, double* work, int lwork, int* info );
 //@}
 //*************************************************************************************************
 
@@ -133,7 +136,8 @@ inline void syev( char jobz, char uplo, int n, float* A, int lda,
    BLAZE_STATIC_ASSERT( sizeof( MKL_INT ) == sizeof( int ) );
 #endif
 
-   ssyev_( &jobz, &uplo, &n, A, &lda, w, work, &lwork, info );
+   ssyev_( &jobz, &uplo, &n, A, &lda, w, work, &lwork, info,
+           blaze::fortran_charlen_t(1), blaze::fortran_charlen_t(1) );
 }
 //*************************************************************************************************
 
@@ -185,7 +189,8 @@ inline void syev( char jobz, char uplo, int n, double* A, int lda,
    BLAZE_STATIC_ASSERT( sizeof( MKL_INT ) == sizeof( int ) );
 #endif
 
-   dsyev_( &jobz, &uplo, &n, A, &lda, w, work, &lwork, info );
+   dsyev_( &jobz, &uplo, &n, A, &lda, w, work, &lwork, info,
+           blaze::fortran_charlen_t(1), blaze::fortran_charlen_t(1) );
 }
 //*************************************************************************************************
 
