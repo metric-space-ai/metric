@@ -592,6 +592,95 @@ DSPCC<recType, Metric>::DSPCC(
         size_t n_top_features_
         ) {
 
+//    using recTypeInner = DSPCC<recType, Metric>::recTypeInner;
+
+//    time_freq_balance = time_freq_balance_;
+//    resulting_subband_length = 0;
+//    n_features = n_features_; // number of features selected from both PCFAs
+//    n_features_freq = std::round(n_features_*time_freq_balance_);
+//    n_features_time = n_features_ - n_features_freq;
+//    for (size_t n = 2; n<=n_subbands_; n = n*2)
+//        n_subbands = n;
+//    n_top_subbands = n_top_features_;
+
+//    auto PreEncoded = outer_encode(TrainingDataset);
+//    for (size_t subband_idx = 0; subband_idx<std::get<0>(PreEncoded).size(); ++subband_idx) {
+//        freq_PCA_models.push_back(metric::PCFA<recTypeInner, void>(std::get<0>(PreEncoded)[subband_idx], n_features_freq));
+//        time_PCA_models.push_back(metric::PCFA<recTypeInner, void>(std::get<1>(PreEncoded)[subband_idx], n_features_time));
+//    }
+//    std::vector<std::vector<recTypeInner>> time_freq_PCFA_encoded = time_freq_PCFA_encode(PreEncoded);
+//    std::vector<recTypeInner> series = mixed_code_serialize(time_freq_PCFA_encoded);
+//    top_PCA_model.push_back(metric::PCFA<recTypeInner, void>(series, n_top_subbands));
+
+
+    select_train<recType>(TrainingDataset, n_features_, n_subbands_, time_freq_balance_, n_top_features_);
+}
+
+
+
+
+template <typename recType, typename Metric>
+template <typename R>
+typename std::enable_if <
+ DSPCC<recType, Metric>:: template determine_container_type<R>::code == 1,
+ void
+>::type
+DSPCC<recType, Metric>::select_train(
+        const std::vector<recType> & TrainingDataset,
+        size_t n_features_,
+        size_t n_subbands_,
+        float time_freq_balance_,
+        size_t n_top_features_
+        ) {
+    train(TrainingDataset, n_features_, n_subbands_, time_freq_balance_, n_top_features_);
+}
+
+
+
+
+template <typename recType, typename Metric>
+template <typename R>
+typename std::enable_if <
+ DSPCC<recType, Metric>:: template determine_container_type<R>::code == 2,
+ void
+>::type
+DSPCC<recType, Metric>::select_train(
+        const std::vector<recType> & TrainingDataset,
+        size_t n_features_,
+        size_t n_subbands_,
+        float time_freq_balance_,
+        size_t n_top_features_
+        ) {
+
+    using ValueType = DSPCC<recType, Metric>::value_type;
+
+    // convert from Blaze to STL
+    std::vector<std::vector<ValueType>> ConvertedDataset;
+    for (size_t i=0; i<TrainingDataset.size(); ++i) {
+        std::vector<ValueType> line;
+        for (size_t j=0; j<TrainingDataset[i].size(); ++j) {
+            line.push_back(TrainingDataset[i][j]);
+        }
+        ConvertedDataset.push_back(line);
+    }
+
+    train(ConvertedDataset, n_features_, n_subbands_, time_freq_balance_, n_top_features_);
+}
+
+
+
+
+template <typename recType, typename Metric>
+void DSPCC<recType, Metric>::train(
+        const std::vector<DSPCC<recType, Metric>::recTypeInner> & TrainingDataset,
+        size_t n_features_,
+        size_t n_subbands_,
+        float time_freq_balance_,
+        size_t n_top_features_
+        ) {
+
+    using recTypeInner = DSPCC<recType, Metric>::recTypeInner;
+
     time_freq_balance = time_freq_balance_;
     resulting_subband_length = 0;
     n_features = n_features_; // number of features selected from both PCFAs
@@ -603,30 +692,30 @@ DSPCC<recType, Metric>::DSPCC(
 
     auto PreEncoded = outer_encode(TrainingDataset);
     for (size_t subband_idx = 0; subband_idx<std::get<0>(PreEncoded).size(); ++subband_idx) {
-        freq_PCA_models.push_back(metric::PCFA<recType, void>(std::get<0>(PreEncoded)[subband_idx], n_features_freq));
-        time_PCA_models.push_back(metric::PCFA<recType, void>(std::get<1>(PreEncoded)[subband_idx], n_features_time));
+        freq_PCA_models.push_back(metric::PCFA<recTypeInner, void>(std::get<0>(PreEncoded)[subband_idx], n_features_freq));
+        time_PCA_models.push_back(metric::PCFA<recTypeInner, void>(std::get<1>(PreEncoded)[subband_idx], n_features_time));
     }
-    std::vector<std::vector<recType>> time_freq_PCFA_encoded = time_freq_PCFA_encode(PreEncoded);
-    std::vector<recType> series = mixed_code_serialize(time_freq_PCFA_encoded);
-    top_PCA_model.push_back(metric::PCFA<recType, void>(series, n_top_subbands));
+    std::vector<std::vector<recTypeInner>> time_freq_PCFA_encoded = time_freq_PCFA_encode(PreEncoded);
+    std::vector<recTypeInner> series = mixed_code_serialize(time_freq_PCFA_encoded);
+    top_PCA_model.push_back(metric::PCFA<recTypeInner, void>(series, n_top_subbands));
 }
 
 
-
 template <typename recType, typename Metric>
-std::tuple<std::deque<std::vector<recType>>, std::deque<std::vector<recType>>>
+std::tuple<std::deque<std::vector<typename DSPCC<recType, Metric>::recTypeInner>>, std::deque<std::vector<typename DSPCC<recType, Metric>::recTypeInner>>>
 DSPCC<recType, Metric>::outer_encode(
-        const std::vector<recType> & Curves
+        const std::vector<DSPCC<recType, Metric>::recTypeInner> & Curves
         ) {
 
-    using ElementType = typename recType::value_type;
+    using recTypeInner = DSPCC<recType, Metric>::recTypeInner;
+    using ElementType = typename recTypeInner::value_type;
 
-    std::deque<std::vector<recType>> FreqData;
-    std::deque<std::vector<recType>> TimeData;
+    std::deque<std::vector<recTypeInner>> FreqData;
+    std::deque<std::vector<recTypeInner>> TimeData;
     for (size_t subband_idx = 0; subband_idx<(n_subbands); ++subband_idx) {
-        std::vector<recType> SubbandData;
+        std::vector<recTypeInner> SubbandData;
         for (size_t record_idx = 0; record_idx<Curves.size(); ++record_idx) {
-            recType rec = {0};
+            recTypeInner rec = {0};
             SubbandData.push_back(rec); // TODO optimize
         }
         TimeData.push_back(SubbandData);
@@ -642,16 +731,16 @@ DSPCC<recType, Metric>::outer_encode(
 
     for (size_t record_idx = 0; record_idx<Curves.size(); ++record_idx) {
         std::stack<size_t> subband_length_local;
-        recType cropped_record(Curves[record_idx].begin(), Curves[record_idx].begin() + crop_size);
+        recTypeInner cropped_record(Curves[record_idx].begin(), Curves[record_idx].begin() + crop_size);
 
         //std::deque<std::vector<ElementType>> current_rec_subbands_timedomain = sequential_DWT<ElementType>(cropped_record, subband_length_local, 5, n_subbands); // TODO replace 5!!
-        std::deque<recType> current_rec_subbands_timedomain = sequential_DWT<std::deque, recType, std::allocator<recType>>(cropped_record, subband_length_local, 5, n_subbands); // TODO replace 5!! // TODO support different recType types
+        std::deque<recTypeInner> current_rec_subbands_timedomain = sequential_DWT<std::deque, recTypeInner, std::allocator<recTypeInner>>(cropped_record, subband_length_local, 5, n_subbands); // TODO replace 5!! // TODO support different recType types
         if (resulting_subband_length==0) { // only during the first run
             resulting_subband_length = current_rec_subbands_timedomain[0].size();
             //resulting_subband_length = mix_index(current_rec_subbands_timedomain[0].size(), 1); // max n^2 (here not needed), no dependence on time_freq_balance here!
             subband_length = subband_length_local;
         }
-        std::deque<recType> current_rec_subbands_freqdomain(current_rec_subbands_timedomain);
+        std::deque<recTypeInner> current_rec_subbands_freqdomain(current_rec_subbands_timedomain);
         metric::apply_DCT_STL(current_rec_subbands_freqdomain, false, resulting_subband_length); // transform all subbands at once (only first mix_idx values are replaced, the rest is left unchanged!), TODO refactor cutting!!
         for (size_t subband_idx = 0; subband_idx<current_rec_subbands_timedomain.size(); ++subband_idx) {
             TimeData[subband_idx][record_idx] = current_rec_subbands_timedomain[subband_idx];
@@ -663,18 +752,19 @@ DSPCC<recType, Metric>::outer_encode(
 
 
 template <typename recType, typename Metric>
-std::vector<recType>
-DSPCC<recType, Metric>::outer_decode(const std::tuple<std::deque<std::vector<recType>>, std::deque<std::vector<recType>>> & TimeFreqData) {
+std::vector<typename DSPCC<recType, Metric>::recTypeInner>
+DSPCC<recType, Metric>::outer_decode(const std::tuple<std::deque<std::vector<typename DSPCC<recType, Metric>::recTypeInner>>, std::deque<std::vector<typename DSPCC<recType, Metric>::recTypeInner>>> & TimeFreqData) {
 
-    using ElementType = typename recType::value_type;
+    using recTypeInner = DSPCC<recType, Metric>::recTypeInner;
+    using ElementType = typename recTypeInner::value_type;
 
-    std::deque<std::vector<recType>> FreqData = std::get<0>(TimeFreqData);
-    std::deque<std::vector<recType>> TimeData = std::get<1>(TimeFreqData);
+    std::deque<std::vector<recTypeInner>> FreqData = std::get<0>(TimeFreqData);
+    std::deque<std::vector<recTypeInner>> TimeData = std::get<1>(TimeFreqData);
 
-    std::vector<recType> Curves;
+    std::vector<recTypeInner> Curves;
     for (size_t record_idx = 0; record_idx<TimeData[0].size(); ++record_idx) { // TODO check if [0] element exists
-        std::vector<recType> subbands_freqdomain;
-        std::vector<recType> subbands_timedomain;
+        std::vector<recTypeInner> subbands_freqdomain;
+        std::vector<recTypeInner> subbands_timedomain;
         for (size_t subband_idx = 0; subband_idx<TimeData.size(); ++subband_idx) {
             subbands_timedomain.push_back(TimeData[subband_idx][record_idx]);
             subbands_freqdomain.push_back(FreqData[subband_idx][record_idx]);
@@ -683,11 +773,11 @@ DSPCC<recType, Metric>::outer_decode(const std::tuple<std::deque<std::vector<rec
 
         std::stack<size_t> subband_length_copy(subband_length);
         //std::vector<ElementType> restored_waveform_freq = sequential_iDWT(subbands_freqdomain, subband_length_copy, 5);
-        recType restored_waveform_freq = sequential_iDWT(subbands_freqdomain, subband_length_copy, 5);
+        recTypeInner restored_waveform_freq = sequential_iDWT(subbands_freqdomain, subband_length_copy, 5);
         subband_length_copy = subband_length;
         //std::vector<ElementType> restored_waveform_time = sequential_iDWT(subbands_timedomain, subband_length_copy, 5);
-        recType restored_waveform_time = sequential_iDWT(subbands_timedomain, subband_length_copy, 5);
-        recType restored_waveform_out;
+        recTypeInner restored_waveform_time = sequential_iDWT(subbands_timedomain, subband_length_copy, 5);
+        recTypeInner restored_waveform_out;
         for (size_t el_idx = 0; el_idx<restored_waveform_freq.size(); ++el_idx) {
             restored_waveform_out.push_back( (restored_waveform_freq[el_idx]*time_freq_balance + restored_waveform_time[el_idx]*(1 - time_freq_balance)) );
         }
@@ -711,15 +801,18 @@ DSPCC<recType, Metric>::time_freq_PCFA_encode(const std::vector<recType> & Data)
 template <typename recType, typename Metric>
 std::vector<std::vector<recType>>
 DSPCC<recType, Metric>::time_freq_PCFA_encode(const std::tuple<std::deque<std::vector<recType>>, std::deque<std::vector<recType>>> & PreEncoded) {
-    std::vector<std::vector<recType>> Encoded;
+
+    using recTypeInner = DSPCC<recType, Metric>::recTypeInner;
+
+    std::vector<std::vector<recTypeInner>> Encoded;
     //auto PreEncoded = outer_encode(Data);
     for (size_t subband_idx = 0; subband_idx<std::get<0>(PreEncoded).size(); ++subband_idx) {
         auto freq_encoded_subband = freq_PCA_models[subband_idx].encode(std::get<0>(PreEncoded)[subband_idx]);
         auto time_encoded_subband = time_PCA_models[subband_idx].encode(std::get<1>(PreEncoded)[subband_idx]);
         // here we crop and concatenate codes
-        std::vector<recType> encoded_subband;
+        std::vector<recTypeInner> encoded_subband;
         for (size_t record_idx = 0; record_idx<freq_encoded_subband.size(); ++record_idx)  {
-            recType mixed_codes;
+            recTypeInner mixed_codes;
             for (size_t el_idx = 0; el_idx<n_features_freq; ++el_idx) {
                 mixed_codes.push_back(freq_encoded_subband[record_idx][el_idx]);
             }
@@ -738,14 +831,16 @@ template <typename recType, typename Metric>
 std::vector<recType>
 DSPCC<recType, Metric>::time_freq_PCFA_decode(const std::vector<std::vector<recType>> & Codes) {
 
-    std::deque<std::vector<recType>> FreqData;
-    std::deque<std::vector<recType>> TimeData;
+    using recTypeInner = DSPCC<recType, Metric>::recTypeInner;
+
+    std::deque<std::vector<recTypeInner>> FreqData;
+    std::deque<std::vector<recTypeInner>> TimeData;
     for (size_t subband_idx = 0; subband_idx<Codes.size(); ++subband_idx) { // divide each vector of codes into freq and time parts and rearrange data by subbands
-        std::vector<recType> freq_codes;
-        std::vector<recType> time_codes;
+        std::vector<recTypeInner> freq_codes;
+        std::vector<recTypeInner> time_codes;
         for (size_t record_idx = 0; record_idx<Codes[subband_idx].size(); ++record_idx) {
-            recType freq_code_part(Codes[subband_idx][record_idx].begin(), Codes[subband_idx][record_idx].begin() + n_features_freq);
-            recType time_code_part(Codes[subband_idx][record_idx].begin() + n_features_freq, Codes[subband_idx][record_idx].end());
+            recTypeInner freq_code_part(Codes[subband_idx][record_idx].begin(), Codes[subband_idx][record_idx].begin() + n_features_freq);
+            recTypeInner time_code_part(Codes[subband_idx][record_idx].begin() + n_features_freq, Codes[subband_idx][record_idx].end());
             freq_codes.push_back(freq_code_part);
             time_codes.push_back(time_code_part);
         }
@@ -762,13 +857,14 @@ template <typename recType, typename Metric>
 std::vector<recType>
 DSPCC<recType, Metric>::mixed_code_serialize(const std::vector<std::vector<recType>> & PCFA_encoded) {
 
-    using ElementType = typename recType::value_type;
+    using recTypeInner = DSPCC<recType, Metric>::recTypeInner;
+    using ElementType = typename recTypeInner::value_type;
 
     //auto PCFA_encoded = time_freq_PCFA_encode(Data);
-    std::vector<recType> serialized_dataset;
+    std::vector<recTypeInner> serialized_dataset;
     for (size_t record_idx = 0; record_idx<PCFA_encoded[0].size(); ++record_idx) {
         //std::vector<ElementType> serialized_record;
-        recType serialized_record;
+        recTypeInner serialized_record;
         for (size_t subband_idx = 0; subband_idx<PCFA_encoded.size(); ++subband_idx) {
             serialized_record.insert(
                         serialized_record.end(),
@@ -787,11 +883,14 @@ DSPCC<recType, Metric>::mixed_code_serialize(const std::vector<std::vector<recTy
 template <typename recType, typename Metric>
 std::vector<std::vector<recType>>
 DSPCC<recType, Metric>::mixed_code_deserialize(const std::vector<recType> & Codes) {
-    std::vector<std::vector<recType>> deserialized;
+
+    using recTypeInner = DSPCC<recType, Metric>::recTypeInner;
+
+    std::vector<std::vector<recTypeInner>> deserialized;
     for (size_t subband_idx = 0; subband_idx<(n_subbands); ++subband_idx) {
-        std::vector<recType> SubbandData;
+        std::vector<recTypeInner> SubbandData;
         for (size_t record_idx = 0; record_idx<Codes.size(); ++record_idx) {
-            recType rec = {0};
+            recTypeInner rec = {0};
             SubbandData.push_back(rec); // TODO optimize
         }
         deserialized.push_back(SubbandData);
@@ -801,7 +900,7 @@ DSPCC<recType, Metric>::mixed_code_deserialize(const std::vector<recType> & Code
         size_t current_idx = 0;
         //std::vector<recType> deserialized_subband;
         for (size_t subband_idx = 0; subband_idx<freq_PCA_models.size(); ++subband_idx) {
-            recType mixed_code(Codes[record_idx].begin() + current_idx, Codes[record_idx].begin() + current_idx + n_features_freq);
+            recTypeInner mixed_code(Codes[record_idx].begin() + current_idx, Codes[record_idx].begin() + current_idx + n_features_freq);
             current_idx += n_features_freq;
             mixed_code.insert(mixed_code.end(), Codes[record_idx].begin() + current_idx, Codes[record_idx].begin() + current_idx + n_features_time);
             current_idx += n_features_time;
@@ -817,9 +916,12 @@ DSPCC<recType, Metric>::mixed_code_deserialize(const std::vector<recType> & Code
 template <typename recType, typename Metric>
 std::vector<recType>
 DSPCC<recType, Metric>::encode(const std::vector<recType> & Data) {
-    std::vector<recType> Codes;
-    std::vector<std::vector<recType>> time_freq_PCFA_encoded = time_freq_PCFA_encode(Data);
-    std::vector<recType> series = mixed_code_serialize(time_freq_PCFA_encoded);
+
+    using recTypeInner = DSPCC<recType, Metric>::recTypeInner;
+
+    std::vector<recTypeInner> Codes;
+    std::vector<std::vector<recTypeInner>> time_freq_PCFA_encoded = time_freq_PCFA_encode(Data);
+    std::vector<recTypeInner> series = mixed_code_serialize(time_freq_PCFA_encoded);
     return top_PCA_model[0].encode(series);
 }
 
@@ -830,7 +932,10 @@ DSPCC<recType, Metric>::encode(const std::vector<recType> & Data) {
 template <typename recType, typename Metric>
 std::vector<recType>
 DSPCC<recType, Metric>::decode(const std::vector<recType> & Codes) {
-    std::vector<std::vector<recType>> deserialized = mixed_code_deserialize(top_PCA_model[0].decode(Codes));
+
+    using recTypeInner = DSPCC<recType, Metric>::recTypeInner;
+
+    std::vector<std::vector<recTypeInner>> deserialized = mixed_code_deserialize(top_PCA_model[0].decode(Codes));
     return time_freq_PCFA_decode(deserialized);
 }
 

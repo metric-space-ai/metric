@@ -328,7 +328,76 @@ private:
 template <typename recType, typename Metric>
 class DSPCC {
 
+
+private:
+
+
+    template <typename>
+    struct determine_container_type  // checks whether container is STL container (1) or Blaze vector (2)
+    {
+        constexpr static int code = 0;
+    };
+
+    template <template <typename, typename> class Container, typename ValueType, typename Allocator>
+    struct determine_container_type<Container<ValueType, Allocator>>
+    {
+        constexpr static int code = 1;
+    };
+
+    template <template <typename, bool> class Container, typename ValueType, bool F>
+    struct determine_container_type<Container<ValueType, F>>
+    {
+        constexpr static int code = 2;
+    };
+
+
+
+    template<typename C, int = determine_container_type<C>::code>
+    struct determine_element_type  // determines type of element both for STL containers and Blaze vectors
+    {
+        using type = void;
+    };
+
+    template<typename C>
+    struct determine_element_type<C, 1>
+    {
+        using type = typename C::value_type;
+    };
+
+    template<typename C>
+    struct determine_element_type<C, 2>
+    {
+        using type = typename C::ElementType;
+    };
+
+
+
+    template<typename C, int = determine_container_type<C>::code>
+    struct determine_recTypeInner
+    {
+        using type = void;
+    };
+
+    template<typename C>
+    struct determine_recTypeInner<C, 1> // STL container
+    {
+        using type = C;
+    };
+
+
+    template<typename C>
+    struct determine_recTypeInner<C, 2> // Blaze vector
+    {
+        using type = std::vector<typename C::ElementType>; // we use STL vector for internal computations
+    };
+
+
+
 public:
+
+    using value_type = typename determine_element_type<recType>::type;
+    using recTypeInner = typename determine_recTypeInner<recType>::type;
+
     /**
    * @brief
    *
@@ -345,6 +414,9 @@ public:
             float time_freq_balance_ = 0.5,
             size_t n_top_features_ = 16
             );
+
+
+
 
 //    /**
 //   * @brief Construct a new VibrationFeatureExtractor object without DCT step
@@ -445,9 +517,10 @@ public:
 
 
 private:
-    std::vector<metric::PCFA<recType, Metric>> freq_PCA_models;
-    std::vector<metric::PCFA<recType, Metric>> time_PCA_models;
-    std::vector<metric::PCFA<recType, Metric>> top_PCA_model; // TODO solve initialization issue, remove wrapping vector
+
+    std::vector<metric::PCFA<recTypeInner, Metric>> freq_PCA_models;
+    std::vector<metric::PCFA<recTypeInner, Metric>> time_PCA_models;
+    std::vector<metric::PCFA<recTypeInner, Metric>> top_PCA_model; // TODO solve initialization issue, remove wrapping vector
     std::stack<size_t> subband_length;
     size_t n_subbands;
     size_t resulting_subband_length;
@@ -459,13 +532,52 @@ private:
     std::default_random_engine rgen;
 
 
+
+    template <typename R>
+    typename std::enable_if <
+     DSPCC<recType, Metric>:: template determine_container_type<R>::code == 1,
+     void
+    >::type
+    select_train(
+            const std::vector<recType> & TrainingDataset,
+            size_t n_features_ = 1, // TODO remove defaults everywhere except ctor
+            size_t n_subbands_ = 4,
+            float time_freq_balance_ = 0.5,
+            size_t n_top_features_ = 16
+            );
+
+
+    template <typename R>
+    typename std::enable_if <
+     DSPCC<recType, Metric>:: template determine_container_type<R>::code == 2,
+     void
+    >::type
+    select_train(
+            const std::vector<recType> & TrainingDataset,
+            size_t n_features_ = 1,
+            size_t n_subbands_ = 4,
+            float time_freq_balance_ = 0.5,
+            size_t n_top_features_ = 16
+            );
+
+
+
+    void train(
+            const std::vector<DSPCC<recType, Metric>::recTypeInner> & TrainingDataset,
+            size_t n_features_ = 1,
+            size_t n_subbands_ = 4,
+            float time_freq_balance_ = 0.5,
+            size_t n_top_features_ = 16
+            );
+
+
     /**
    * @brief apply DWT, DCT to input data, mix wave and spectrum, rearrande by subbands
    *
    * @param Curves - waveforms of same length and format as TrainingDataset
    * @return - recType containers grouped in vectors by subband, which are collected in the single vector
    */
-    std::tuple<std::deque<std::vector<recType>>, std::deque<std::vector<recType>>> outer_encode(const std::vector<recType> & Curves);
+    std::tuple<std::deque<std::vector<recTypeInner>>, std::deque<std::vector<recTypeInner>>> outer_encode(const std::vector<recTypeInner> & Curves);
 
     /**
    * @brief separates mix wave and spectrum, apply iDCT, reconstructs the subband waveform, applies iDWT, rearrande by records
@@ -473,7 +585,7 @@ private:
    * @param TimeFreqMixedData - vector of vectors (per subband) of recType wave-time combined vectors for each compressed record
    * @return - vector of decoded recType curves
    */
-    std::vector<recType> outer_decode(const std::tuple<std::deque<std::vector<recType>>, std::deque<std::vector<recType>>> & TimeFreqMixedData);
+    std::vector<recTypeInner> outer_decode(const std::tuple<std::deque<std::vector<recTypeInner>>, std::deque<std::vector<recTypeInner>>> & TimeFreqMixedData);
 
 
 
