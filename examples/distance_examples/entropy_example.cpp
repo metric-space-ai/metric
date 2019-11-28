@@ -52,20 +52,21 @@ int main() {
 
     // entropy with Edit metric
     //*
-    std::vector<std::vector<std::string>> input = {
-        {"AAA"},
-        {"HJGJHFG"},
-        {"BBB"},
-        {"AAAA"}
-    };
-//    std::vector<std::string> input = {
-//            "AAA",
-//            "HJGJHFG",
-//            "BBB",
-//            "AAAA"
+//    std::vector<std::vector<std::string>> input = {
+//        {"AAA"},
+//        {"HJGJHFG"},
+//        {"BBB"},
+//        {"AAAA"}
 //    };
 
-    auto ee =  metric::entropy(input, 3, 2.0, metric::Edit<char>());
+    std::vector<std::string> input = {
+            "AAA",
+            "HJGJHFG",
+            "BBB",
+            "AAAA"
+    };
+
+    auto ee =  metric::entropy(input, 3, 2.0, metric::Edit<void>()); // <void> or <char> or anything does not matter here since Container type is deduced
 //    auto ee =  metric::entropy(input, 3, 2.0, metric::Edit<std::string>());
 
     std::cout << "using Edit with strings: " << ee << std::endl << std::endl;
