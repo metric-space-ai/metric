@@ -102,7 +102,7 @@ namespace {
 }  // namespace
 
 template <typename T, typename Metric, typename L>
-typename std::enable_if<!std::is_integral<T>::value, T>::type entropy(
+typename std::enable_if<!std::is_integral<T>::value, double>::type entropy(
     std::vector<std::vector<T>> data, std::size_t k, L logbase, Metric metric)
 {
     if (data.empty() || data[0].empty()) {
@@ -111,11 +111,11 @@ typename std::enable_if<!std::is_integral<T>::value, T>::type entropy(
     if (data.size() < k + 1)
         throw std::invalid_argument("number of points in dataset must be larger than k");
 
-    T p = 1;
-    T N = data.size();
-    T d = data[0].size();
-    T two = 2.0;  // this is in order to make types match the log template function
-    T cb = d * log(logbase, two);
+    double p = 1;
+    double N = data.size();
+    double d = data[0].size();
+    double two = 2.0;  // this is in order to make types match the log template function
+    double cb = d * log(logbase, two);
 
     if constexpr (!std::is_same<Metric, typename metric::Chebyshev<T>>::value) {
         if constexpr (std::is_same<Metric, typename metric::Euclidian<T>>::value) {
@@ -126,9 +126,9 @@ typename std::enable_if<!std::is_integral<T>::value, T>::type entropy(
         cb = cb + d * log(logbase, std::tgamma(1 + 1 / p)) - log(logbase, std::tgamma(1 + d / p));
     }
 
-    add_noise(data);
+    //add_noise(data);
     metric::Tree<std::vector<T>, Metric> tree(data, -1, metric);
-    T entropyEstimate = boost::math::digamma(N) - boost::math::digamma(k) + cb + d * log(logbase, two);
+    double entropyEstimate = boost::math::digamma(N) - boost::math::digamma(k) + cb + d * log(logbase, two);
     for (std::size_t i = 0; i < N; i++) {
         auto res = tree.knn(data[i], k + 1);
         entropyEstimate += d / N * log(logbase, res.back().second);
