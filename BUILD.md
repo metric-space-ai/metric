@@ -2,7 +2,7 @@
 The following dependencies are required for building examples and tests:
 
 1. C++ compiler supported C++17
-2. Cmake  (https://www.cmake.org)
+2. Cmake 3.10+ (https://www.cmake.org)
 3. Boost libraries (https://www.boost.org)
 4. BLAS and LAPACK libraries
 5. Libpqxx (for SensorExample)
