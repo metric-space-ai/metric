@@ -9,7 +9,11 @@ The following dependencies are required for building examples and tests:
 
 # Ubuntu
 ### Install dependencies
-On ubuntu one can install dependencies from Ubuntu repositories
+On Ubuntu one can install dependencies from Ubuntu repositories.
+
+Note that CMake 3.10+ is available in default repositories since Ubuntu 18.04 LTS.
+If you are using an earlier version of Ubuntu, you may need to build CMake from [source code](https://gitlab.kitware.com/cmake/cmake).
+
 ```
 $ sudo apt install cmake
 $ sudo apt install libboost-all-dev
