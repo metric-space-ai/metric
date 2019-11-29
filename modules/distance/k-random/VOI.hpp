@@ -24,9 +24,6 @@ namespace metric {
  * @param metric
  * @return value of entropy estimation of the data 
  */
-//template <typename T, typename Metric = metric::Euclidian<T>, typename L = double>
-//typename std::enable_if<!std::is_integral<T>::value, double>::type entropy(
-//    std::vector<std::vector<T>> data, std::size_t k = 3, L logbase = 2, Metric metric = Metric());
 template <typename Container, typename Metric = metric::Euclidian<typename Container::value_type>, typename L = double>
 double entropy(
     std::vector<Container> data, std::size_t k = 3, L logbase = 2, Metric metric = Metric());

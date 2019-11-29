@@ -101,9 +101,7 @@ namespace {
 
 }  // namespace
 
-//template <typename T, typename Metric, typename L>
-//typename std::enable_if<!std::is_integral<T>::value, double>::type entropy(
-//    std::vector<std::vector<T>> data, std::size_t k, L logbase, Metric metric)
+
 template <typename Container, typename Metric, typename L>
 double entropy(
     std::vector<Container> data, std::size_t k, L logbase, Metric metric)
@@ -131,7 +129,7 @@ double entropy(
         cb = cb + d * log(logbase, std::tgamma(1 + 1 / p)) - log(logbase, std::tgamma(1 + d / p));
     }
 
-    //add_noise(data);
+    //add_noise(data); // TODO test
     metric::Tree<Container, Metric> tree(data, -1, metric);
     double entropyEstimate = boost::math::digamma(N) - boost::math::digamma(k) + cb + d * log(logbase, two);
     for (std::size_t i = 0; i < N; i++) {
