@@ -101,21 +101,24 @@ namespace {
 
 }  // namespace
 
-template <typename T, typename Metric, typename L>
-typename std::enable_if<!std::is_integral<T>::value, T>::type entropy(
-    std::vector<std::vector<T>> data, std::size_t k, L logbase, Metric metric)
+
+template <typename Container, typename Metric, typename L>
+double entropy(
+    std::vector<Container> data, std::size_t k, L logbase, Metric metric)
 {
+    using T = typename Container::value_type;
+
     if (data.empty() || data[0].empty()) {
         return 0;
     }
     if (data.size() < k + 1)
         throw std::invalid_argument("number of points in dataset must be larger than k");
 
-    T p = 1;
-    T N = data.size();
-    T d = data[0].size();
-    T two = 2.0;  // this is in order to make types match the log template function
-    T cb = d * log(logbase, two);
+    double p = 1;
+    double N = data.size();
+    double d = data[0].size();
+    double two = 2.0;  // this is in order to make types match the log template function
+    double cb = d * log(logbase, two);
 
     if constexpr (!std::is_same<Metric, typename metric::Chebyshev<T>>::value) {
         if constexpr (std::is_same<Metric, typename metric::Euclidian<T>>::value) {
@@ -126,9 +129,9 @@ typename std::enable_if<!std::is_integral<T>::value, T>::type entropy(
         cb = cb + d * log(logbase, std::tgamma(1 + 1 / p)) - log(logbase, std::tgamma(1 + d / p));
     }
 
-    add_noise(data);
-    metric::Tree<std::vector<T>, Metric> tree(data, -1, metric);
-    T entropyEstimate = boost::math::digamma(N) - boost::math::digamma(k) + cb + d * log(logbase, two);
+    //add_noise(data); // TODO test
+    metric::Tree<Container, Metric> tree(data, -1, metric);
+    double entropyEstimate = boost::math::digamma(N) - boost::math::digamma(k) + cb + d * log(logbase, two);
     for (std::size_t i = 0; i < N; i++) {
         auto res = tree.knn(data[i], k + 1);
         entropyEstimate += d / N * log(logbase, res.back().second);
@@ -252,7 +255,7 @@ template <typename T, typename Metric>
 typename std::enable_if<!std::is_integral<T>::value, T>::type variationOfInformation(
     const std::vector<std::vector<T>>& Xc, const std::vector<std::vector<T>>& Yc, int k, T logbase)
 {
-    return entropy<T, Metric>(Xc, k, logbase, Metric()) + entropy<T, Metric>(Yc, k, logbase, Metric())
+    return entropy<std::vector<T>, Metric>(Xc, k, logbase, Metric()) + entropy<std::vector<T>, Metric>(Yc, k, logbase, Metric())
         - 2 * mutualInformation<T>(Xc, Yc, k);
 }
 
@@ -262,7 +265,7 @@ typename std::enable_if<!std::is_integral<T>::value, T>::type variationOfInforma
 {
     using Cheb = metric::Chebyshev<T>;
     auto mi = mutualInformation<T>(Xc, Yc, k);
-    return 1 - (mi / (entropy<T, Cheb>(Xc, k, logbase, Cheb()) + entropy<T, Cheb>(Yc, k, logbase, Cheb()) - mi));
+    return 1 - (mi / (entropy<std::vector<T>, Cheb>(Xc, k, logbase, Cheb()) + entropy<std::vector<T>, Cheb>(Yc, k, logbase, Cheb()) - mi));
 }
 
 template <typename V>
@@ -272,7 +275,7 @@ typename std::enable_if<!std::is_integral<El>::value, V>::type VOI<V>::operator(
     const Container<Container<El, Allocator_inner>, Allocator_outer>& b) const
 {
     using Cheb = metric::Chebyshev<El>;
-    return entropy<El, Cheb>(a, k, logbase, Cheb()) + entropy<El, Cheb>(b, k, logbase, Cheb())
+    return entropy<std::vector<El>, Cheb>(a, k, logbase, Cheb()) + entropy<std::vector<El>, Cheb>(b, k, logbase, Cheb())
         - 2 * mutualInformation<El>(a, b, k);
 }
 
@@ -286,8 +289,8 @@ typename std::enable_if<!std::is_integral<El>::value, V>::type VOI_normalized<V>
     auto mi = mutualInformation<El>(a, b, this->k);
     return 1
         - (mi
-            / (entropy<El, Cheb>(a, this->k, this->logbase, Cheb())
-                + entropy<El, Cheb>(b, this->k, this->logbase, Cheb()) - mi));
+            / (entropy<std::vector<El>, Cheb>(a, this->k, this->logbase, Cheb())
+                + entropy<std::vector<El>, Cheb>(b, this->k, this->logbase, Cheb()) - mi));
 }
 
 // VOI based on Kozachenko-Leonenko entropy estimator
