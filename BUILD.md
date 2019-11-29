@@ -22,6 +22,8 @@ $ sudo apt install libpqxx-dev postgresql-server-dev-all
 ```
 ### Build
 
+If you are building it from inside a virtual machine, make sure to provision at least **2 GiB of virtual memory** for the build process to succeed.
+
 ```
   $ mkdir build
   $ cd build
