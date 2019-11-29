@@ -435,7 +435,7 @@ public:
    * @param Data - waveforms of same length and format as TrainingDataset
    * @return
    */
-    std::vector<std::vector<recType>> time_freq_PCFA_encode(const std::vector<recType> & Data);
+    std::vector<std::vector<recTypeInner>> time_freq_PCFA_encode(const std::vector<recTypeInner> & Data);
 
 
     /**
@@ -444,7 +444,7 @@ public:
    * @param Data - waveforms of same length and format as TrainingDataset
    * @return
    */
-    std::vector<std::vector<recType>> time_freq_PCFA_encode(const std::tuple<std::deque<std::vector<recType>>, std::deque<std::vector<recType>>> & PreEncoded);
+    std::vector<std::vector<recTypeInner>> time_freq_PCFA_encode(const std::tuple<std::deque<std::vector<recTypeInner>>, std::deque<std::vector<recTypeInner>>> & PreEncoded);
 
 
 
@@ -454,7 +454,7 @@ public:
    * @param Codes - compressed codes
    * @return
    */
-    std::vector<recType> time_freq_PCFA_decode(const std::vector<std::vector<recType>> & Codes);
+    std::vector<recTypeInner> time_freq_PCFA_decode(const std::vector<std::vector<recTypeInner>> & Codes);
 
 
 
@@ -465,7 +465,7 @@ public:
    * @param
    * @return
    */
-    std::vector<recType> mixed_code_serialize(const std::vector<std::vector<recType>> & PCFA_encoded);
+    std::vector<recTypeInner> mixed_code_serialize(const std::vector<std::vector<recTypeInner>> & PCFA_encoded);
 
 
 

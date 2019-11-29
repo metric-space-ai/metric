@@ -134,7 +134,7 @@ int main()
 
     // test Blaze vector input
 
-    /* // TODO make it work
+    //* // TODO make it work
 
     using recTypeBlaze = blaze::DynamicVector<double>; // TODO test col/row
 

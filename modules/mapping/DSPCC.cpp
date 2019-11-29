@@ -791,16 +791,16 @@ DSPCC<recType, Metric>::outer_decode(const std::tuple<std::deque<std::vector<typ
 
 
 template <typename recType, typename Metric>
-std::vector<std::vector<recType>>
-DSPCC<recType, Metric>::time_freq_PCFA_encode(const std::vector<recType> & Data) {
+std::vector<std::vector<typename DSPCC<recType, Metric>::recTypeInner>>
+DSPCC<recType, Metric>::time_freq_PCFA_encode(const std::vector<typename DSPCC<recType, Metric>::recTypeInner> & Data) {
 
     return time_freq_PCFA_encode(outer_encode(Data));
 }
 
 
 template <typename recType, typename Metric>
-std::vector<std::vector<recType>>
-DSPCC<recType, Metric>::time_freq_PCFA_encode(const std::tuple<std::deque<std::vector<recType>>, std::deque<std::vector<recType>>> & PreEncoded) {
+std::vector<std::vector<typename DSPCC<recType, Metric>::recTypeInner>>
+DSPCC<recType, Metric>::time_freq_PCFA_encode(const std::tuple<std::deque<std::vector<typename DSPCC<recType, Metric>::recTypeInner>>, std::deque<std::vector<typename DSPCC<recType, Metric>::recTypeInner>>> & PreEncoded) {
 
     using recTypeInner = DSPCC<recType, Metric>::recTypeInner;
 
@@ -828,8 +828,8 @@ DSPCC<recType, Metric>::time_freq_PCFA_encode(const std::tuple<std::deque<std::v
 
 
 template <typename recType, typename Metric>
-std::vector<recType>
-DSPCC<recType, Metric>::time_freq_PCFA_decode(const std::vector<std::vector<recType>> & Codes) {
+std::vector<typename DSPCC<recType, Metric>::recTypeInner>
+DSPCC<recType, Metric>::time_freq_PCFA_decode(const std::vector<std::vector<typename DSPCC<recType, Metric>::recTypeInner>> & Codes) {
 
     using recTypeInner = DSPCC<recType, Metric>::recTypeInner;
 
@@ -854,8 +854,8 @@ DSPCC<recType, Metric>::time_freq_PCFA_decode(const std::vector<std::vector<recT
 
 
 template <typename recType, typename Metric>
-std::vector<recType>
-DSPCC<recType, Metric>::mixed_code_serialize(const std::vector<std::vector<recType>> & PCFA_encoded) {
+std::vector<typename DSPCC<recType, Metric>::recTypeInner>
+DSPCC<recType, Metric>::mixed_code_serialize(const std::vector<std::vector<typename DSPCC<recType, Metric>::recTypeInner>> & PCFA_encoded) {
 
     using recTypeInner = DSPCC<recType, Metric>::recTypeInner;
     using ElementType = typename recTypeInner::value_type;
