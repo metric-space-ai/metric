@@ -483,6 +483,22 @@ public:
     std::vector<recType> decode(const std::vector<recType> & Codes);
 
 
+    template <typename R>
+    typename std::enable_if <
+     DSPCC<recType, Metric>:: template determine_container_type<R>::code == 1, // STL case
+     std::vector<recType>
+    >::type
+    select_decode(const std::vector<recType> & Data);
+
+
+    template <typename R>
+    typename std::enable_if <
+     DSPCC<recType, Metric>:: template determine_container_type<R>::code == 2, // Blaze case
+     std::vector<recType>
+    >::type
+    select_decode(const std::vector<recType> & Data);
+
+
 
     std::tuple<std::deque<std::vector<recType>>, std::deque<std::vector<recType>>>
     test_public_wrapper_encode(const std::vector<recType> & Curves) { // TODO remove when tested
@@ -584,7 +600,7 @@ private:
    * @param
    * @return
    */
-    std::vector<std::vector<recType>> mixed_code_deserialize(const std::vector<recType> & Codes);
+    std::vector<std::vector<recTypeInner>> mixed_code_deserialize(const std::vector<recTypeInner> & Codes);
 
 
 

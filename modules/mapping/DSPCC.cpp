@@ -883,8 +883,8 @@ DSPCC<recType, Metric>::mixed_code_serialize(const std::vector<std::vector<typen
 
 
 template <typename recType, typename Metric>
-std::vector<std::vector<recType>>
-DSPCC<recType, Metric>::mixed_code_deserialize(const std::vector<recType> & Codes) {
+std::vector<std::vector<typename DSPCC<recType, Metric>::recTypeInner>>
+DSPCC<recType, Metric>::mixed_code_deserialize(const std::vector<typename DSPCC<recType, Metric>::recTypeInner> & Codes) {
 
     using recTypeInner = DSPCC<recType, Metric>::recTypeInner;
 
@@ -997,6 +997,23 @@ template <typename recType, typename Metric>
 std::vector<recType>
 DSPCC<recType, Metric>::decode(const std::vector<recType> & Codes) {
 
+//    using recTypeInner = DSPCC<recType, Metric>::recTypeInner;
+
+//    std::vector<std::vector<recTypeInner>> deserialized = mixed_code_deserialize(top_PCA_model[0].decode(Codes));
+//    return time_freq_PCFA_decode(deserialized);
+    return select_decode<recType>(Codes);
+}
+
+
+
+template <typename recType, typename Metric>
+template <typename R>
+typename std::enable_if <
+ DSPCC<recType, Metric>:: template determine_container_type<R>::code == 1, // STL case
+ std::vector<recType>
+>::type
+DSPCC<recType, Metric>::select_decode(const std::vector<recType> & Codes) {
+
     using recTypeInner = DSPCC<recType, Metric>::recTypeInner;
 
     std::vector<std::vector<recTypeInner>> deserialized = mixed_code_deserialize(top_PCA_model[0].decode(Codes));
@@ -1004,6 +1021,42 @@ DSPCC<recType, Metric>::decode(const std::vector<recType> & Codes) {
 }
 
 
+template <typename recType, typename Metric>
+template <typename R>
+typename std::enable_if <
+ DSPCC<recType, Metric>:: template determine_container_type<R>::code == 2, // Blaze case
+ std::vector<recType>
+>::type
+DSPCC<recType, Metric>::select_decode(const std::vector<recType> & Codes) {
+
+    using recTypeInner = DSPCC<recType, Metric>::recTypeInner;
+
+    std::vector<recTypeInner> ConvertedCodes;
+    for (size_t i=0; i<Codes.size(); ++i) {
+        recTypeInner line;
+        for (size_t j=0; j<Codes[i].size(); ++j) {
+            line.push_back(Codes[i][j]);
+        }
+        ConvertedCodes.push_back(line);
+    }
+
+    std::vector<std::vector<recTypeInner>> deserialized = mixed_code_deserialize(top_PCA_model[0].decode(ConvertedCodes));
+    auto pre_output = time_freq_PCFA_decode(deserialized);
+
+    std::vector<recType> output;
+
+    // convert back
+    for (size_t i=0; i<pre_output.size(); ++i) {
+        recType line(pre_output[i].size());
+        for (size_t j=0; j<pre_output[i].size(); ++j) {
+            line[j] = pre_output[i][j];
+        }
+        output.push_back(line);
+    }
+
+    return output;
+
+}
 
 
 

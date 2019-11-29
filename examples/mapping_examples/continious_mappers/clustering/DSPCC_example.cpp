@@ -143,6 +143,13 @@ int main()
     std::vector<recTypeBlaze> dBlaze {dBlaze1, dBlaze2};
     auto bundleBlaze = metric::DSPCC<recTypeBlaze, void>(dBlaze, 4, 2, 0.5, 4);
     auto encodedBlaze = bundleBlaze.encode(dBlaze);
+    auto decodedBlaze = bundleBlaze.decode(encodedBlaze);
+
+    std::cout << "decoded Blaze vector:\n";
+
+    for (size_t i=0; i<decodedBlaze.size(); ++i) {
+        std::cout << decodedBlaze[i];
+    }
 
 
 
