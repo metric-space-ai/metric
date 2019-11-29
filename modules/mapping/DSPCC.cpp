@@ -654,10 +654,12 @@ DSPCC<recType, Metric>::select_train(
 
     using ValueType = DSPCC<recType, Metric>::value_type;
 
-    // convert from Blaze to STL
-    std::vector<std::vector<ValueType>> ConvertedDataset;
+    // convert from Blaze to STL  // TODO move to separate private method
+//    std::vector<std::vector<ValueType>> ConvertedDataset;
+    std::vector<recTypeInner> ConvertedDataset; // TODO try
     for (size_t i=0; i<TrainingDataset.size(); ++i) {
-        std::vector<ValueType> line;
+//        std::vector<ValueType> line;
+        recTypeInner line; // TODO try
         for (size_t j=0; j<TrainingDataset[i].size(); ++j) {
             line.push_back(TrainingDataset[i][j]);
         }
@@ -917,6 +919,26 @@ template <typename recType, typename Metric>
 std::vector<recType>
 DSPCC<recType, Metric>::encode(const std::vector<recType> & Data) {
 
+    return select_encode<recType>(Data);
+
+//    using recTypeInner = DSPCC<recType, Metric>::recTypeInner;
+
+//    std::vector<recTypeInner> Codes;
+//    std::vector<std::vector<recTypeInner>> time_freq_PCFA_encoded = time_freq_PCFA_encode(Data);
+//    std::vector<recTypeInner> series = mixed_code_serialize(time_freq_PCFA_encoded);
+//    return top_PCA_model[0].encode(series);
+}
+
+
+
+template <typename recType, typename Metric>
+template <typename R>
+typename std::enable_if <
+ DSPCC<recType, Metric>:: template determine_container_type<R>::code == 1, // STL case
+ std::vector<recType>
+>::type
+DSPCC<recType, Metric>::select_encode(const std::vector<recType> & Data) {
+
     using recTypeInner = DSPCC<recType, Metric>::recTypeInner;
 
     std::vector<recTypeInner> Codes;
@@ -924,6 +946,48 @@ DSPCC<recType, Metric>::encode(const std::vector<recType> & Data) {
     std::vector<recTypeInner> series = mixed_code_serialize(time_freq_PCFA_encoded);
     return top_PCA_model[0].encode(series);
 }
+
+
+
+
+template <typename recType, typename Metric>
+template <typename R>
+typename std::enable_if <
+ DSPCC<recType, Metric>:: template determine_container_type<R>::code == 2, // Blaze vector case
+ std::vector<recType>
+>::type
+DSPCC<recType, Metric>::select_encode(const std::vector<recType> & Data) {
+
+    using recTypeInner = DSPCC<recType, Metric>::recTypeInner;
+
+    std::vector<recTypeInner> ConvertedData;
+    for (size_t i=0; i<Data.size(); ++i) {
+        recTypeInner line;
+        for (size_t j=0; j<Data[i].size(); ++j) {
+            line.push_back(Data[i][j]);
+        }
+        ConvertedData.push_back(line);
+    }
+
+    std::vector<recTypeInner> Codes;
+    std::vector<std::vector<recTypeInner>> time_freq_PCFA_encoded = time_freq_PCFA_encode(ConvertedData);
+    std::vector<recTypeInner> series = mixed_code_serialize(time_freq_PCFA_encoded);
+    auto pre_output =  top_PCA_model[0].encode(series);
+
+    std::vector<recType> output;
+
+    // convert back
+    for (size_t i=0; i<pre_output.size(); ++i) {
+        recType line(pre_output[i].size());
+        for (size_t j=0; j<pre_output[i].size(); ++j) {
+            line[j] = pre_output[i][j];
+        }
+        output.push_back(line);
+    }
+
+    return output;
+}
+
 
 
 

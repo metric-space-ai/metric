@@ -438,15 +438,6 @@ public:
     std::vector<std::vector<recTypeInner>> time_freq_PCFA_encode(const std::vector<recTypeInner> & Data);
 
 
-    /**
-   * @brief get features for arbitrary waveforms by subbands
-   *
-   * @param Data - waveforms of same length and format as TrainingDataset
-   * @return
-   */
-    std::vector<std::vector<recTypeInner>> time_freq_PCFA_encode(const std::tuple<std::deque<std::vector<recTypeInner>>, std::deque<std::vector<recTypeInner>>> & PreEncoded);
-
-
 
     /**
    * @brief restores waveforms
@@ -458,28 +449,6 @@ public:
 
 
 
-
-    /**
-   * @brief
-   *
-   * @param
-   * @return
-   */
-    std::vector<recTypeInner> mixed_code_serialize(const std::vector<std::vector<recTypeInner>> & PCFA_encoded);
-
-
-
-    /**
-   * @brief
-   *
-   * @param
-   * @return
-   */
-    std::vector<std::vector<recType>> mixed_code_deserialize(const std::vector<recType> & Codes);
-
-
-
-
     /**
    * @brief get features for arbitrary waveforms
    *
@@ -487,6 +456,21 @@ public:
    * @return
    */
     std::vector<recType> encode(const std::vector<recType> & Data);
+
+    template <typename R>
+    typename std::enable_if <
+     DSPCC<recType, Metric>:: template determine_container_type<R>::code == 1, // STL case
+     std::vector<recType>
+    >::type
+    select_encode(const std::vector<recType> & Data);
+
+
+    template <typename R>
+    typename std::enable_if <
+     DSPCC<recType, Metric>:: template determine_container_type<R>::code == 2, // Blaze case
+     std::vector<recType>
+    >::type
+    select_encode(const std::vector<recType> & Data);
 
 
 
@@ -569,6 +553,39 @@ private:
             float time_freq_balance_ = 0.5,
             size_t n_top_features_ = 16
             );
+
+
+
+
+    /**
+   * @brief get features for arbitrary waveforms by subbands
+   *
+   * @param Data - waveforms of same length and format as TrainingDataset
+   * @return
+   */
+    std::vector<std::vector<recTypeInner>> time_freq_PCFA_encode(const std::tuple<std::deque<std::vector<recTypeInner>>, std::deque<std::vector<recTypeInner>>> & PreEncoded);
+
+
+
+
+    /**
+   * @brief
+   *
+   * @param
+   * @return
+   */
+    std::vector<recTypeInner> mixed_code_serialize(const std::vector<std::vector<recTypeInner>> & PCFA_encoded);
+
+
+
+    /**
+   * @brief
+   *
+   * @param
+   * @return
+   */
+    std::vector<std::vector<recType>> mixed_code_deserialize(const std::vector<recType> & Codes);
+
 
 
     /**
