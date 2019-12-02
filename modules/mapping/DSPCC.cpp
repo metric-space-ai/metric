@@ -76,17 +76,17 @@ DWT_unsplit(
 }
 
 
-template <typename T>
-std::deque<std::vector<T>>
-sequential_DWT( // old overload
-        std::vector<T> x,
-        std::stack<size_t> & subband_length,
-        int wavelet_type,
-        size_t subbands_num
-        ) {
-    std::deque<std::vector<T>> deque_x = {x};
-    return DWT_split(deque_x, subband_length, wavelet_type, subbands_num);
-}
+//template <typename T>
+//std::deque<std::vector<T>>
+//sequential_DWT( // old overload
+//        std::vector<T> x,
+//        std::stack<size_t> & subband_length,
+//        int wavelet_type,
+//        size_t subbands_num
+//        ) {
+//    std::deque<std::vector<T>> deque_x = {x};
+//    return DWT_split(deque_x, subband_length, wavelet_type, subbands_num);
+//}
 
 
 
@@ -155,7 +155,7 @@ DSPCC<recType, Metric>::DSPCC(
 template <typename recType, typename Metric>
 template <typename R>
 typename std::enable_if <
- DSPCC<recType, Metric>:: template determine_container_type<R>::code == 1,
+ determine_container_type<R>::code == 1,
  void
 >::type
 DSPCC<recType, Metric>::select_train(
@@ -174,7 +174,7 @@ DSPCC<recType, Metric>::select_train(
 template <typename recType, typename Metric>
 template <typename R>
 typename std::enable_if <
- DSPCC<recType, Metric>:: template determine_container_type<R>::code == 2,
+ determine_container_type<R>::code == 2,
  void
 >::type
 DSPCC<recType, Metric>::select_train(
@@ -448,7 +448,7 @@ DSPCC<recType, Metric>::encode(const std::vector<recType> & Data) {
 template <typename recType, typename Metric>
 template <typename R>
 typename std::enable_if <
- DSPCC<recType, Metric>:: template determine_container_type<R>::code == 1, // STL case
+ determine_container_type<R>::code == 1, // STL case
  std::vector<recType>
 >::type
 DSPCC<recType, Metric>::select_encode(const std::vector<recType> & Data) {
@@ -467,7 +467,7 @@ DSPCC<recType, Metric>::select_encode(const std::vector<recType> & Data) {
 template <typename recType, typename Metric>
 template <typename R>
 typename std::enable_if <
- DSPCC<recType, Metric>:: template determine_container_type<R>::code == 2, // Blaze vector case
+ determine_container_type<R>::code == 2, // Blaze vector case
  std::vector<recType>
 >::type
 DSPCC<recType, Metric>::select_encode(const std::vector<recType> & Data) {
@@ -519,7 +519,7 @@ DSPCC<recType, Metric>::decode(const std::vector<recType> & Codes) {
 template <typename recType, typename Metric>
 template <typename R>
 typename std::enable_if <
- DSPCC<recType, Metric>:: template determine_container_type<R>::code == 1, // STL case
+ determine_container_type<R>::code == 1, // STL case
  std::vector<recType>
 >::type
 DSPCC<recType, Metric>::select_decode(const std::vector<recType> & Codes) {
@@ -534,7 +534,7 @@ DSPCC<recType, Metric>::select_decode(const std::vector<recType> & Codes) {
 template <typename recType, typename Metric>
 template <typename R>
 typename std::enable_if <
- DSPCC<recType, Metric>:: template determine_container_type<R>::code == 2, // Blaze case
+ determine_container_type<R>::code == 2, // Blaze case
  std::vector<recType>
 >::type
 DSPCC<recType, Metric>::select_decode(const std::vector<recType> & Codes) {

@@ -111,37 +111,27 @@ private:
 };
 
 
+// common metafunctions for PCFA and DSPCC
 
 
-/**
- * @class PCFA
- *
- *@brief simple linear encoder based on PCA
- *
- */
-template <typename recType, typename Metric>
-class PCFA {
 
-private:
+template <typename>
+struct determine_container_type  // checks whether container is STL container (1) or Blaze vector (2)
+{
+    constexpr static int code = 0;
+};
 
+template <template <typename, typename> class Container, typename ValueType, typename Allocator>
+struct determine_container_type<Container<ValueType, Allocator>>
+{
+    constexpr static int code = 1;
+};
 
-    template <typename>
-    struct determine_container_type  // checks whether container is STL container (1) or Blaze vector (2)
-    {
-        constexpr static int code = 0;
-    };
-
-    template <template <typename, typename> class Container, typename ValueType, typename Allocator>
-    struct determine_container_type<Container<ValueType, Allocator>>
-    {
-        constexpr static int code = 1;
-    };
-
-    template <template <typename, bool> class Container, typename ValueType, bool F>
-    struct determine_container_type<Container<ValueType, F>>
-    {
-        constexpr static int code = 2;
-    };
+template <template <typename, bool> class Container, typename ValueType, bool F>
+struct determine_container_type<Container<ValueType, F>>
+{
+    constexpr static int code = 2;
+};
 
 
 
@@ -174,23 +164,39 @@ private:
 
 
 
-    template<typename C, int = determine_container_type<C>::code>
-    struct determine_element_type  // determines type of element both for STL containers and Blaze vectors
-    {
-        using type = void;
-    };
+template<typename C, int = determine_container_type<C>::code>
+struct determine_element_type  // determines type of element both for STL containers and Blaze vectors
+{
+    using type = void;
+};
 
-    template<typename C>
-    struct determine_element_type<C, 1>
-    {
-        using type = typename C::value_type;
-    };
+template<typename C>
+struct determine_element_type<C, 1>
+{
+    using type = typename C::value_type;
+};
 
-    template<typename C>
-    struct determine_element_type<C, 2>
-    {
-        using type = typename C::ElementType;
-    };
+template<typename C>
+struct determine_element_type<C, 2>
+{
+    using type = typename C::ElementType;
+};
+
+
+
+
+
+
+/**
+ * @class PCFA
+ *
+ *@brief simple linear encoder based on PCA
+ *
+ */
+template <typename recType, typename Metric>
+class PCFA {
+
+//private:
 
 
 
@@ -292,10 +298,6 @@ private:
 
     template <typename R>
     typename std::enable_if <
-//     std::is_same<
-//      R,
-//      std::vector<typename PCFA<R, Metric>::value_type, typename std::allocator<typename PCFA<R, Metric>::value_type>>
-//     >::value,
      determine_container_type<R>::code == 1,
      std::vector<R>
     >::type
@@ -303,10 +305,6 @@ private:
 
     template <typename R>
     typename std::enable_if<
-//     std::is_same<
-//      R,
-//      blaze::DynamicVector<typename PCFA<R, Metric>::value_type, blaze::rowVector>
-//     >::value,
      determine_container_type<R>::code == 2,
      std::vector<R>
     >::type

@@ -32,45 +32,6 @@ class DSPCC {
 
 private:
 
-    template <typename>
-    struct determine_container_type  // checks whether container is STL container (1) or Blaze vector (2)
-    {
-        constexpr static int code = 0;
-    };
-
-    template <template <typename, typename> class Container, typename ValueType, typename Allocator>
-    struct determine_container_type<Container<ValueType, Allocator>>
-    {
-        constexpr static int code = 1;
-    };
-
-    template <template <typename, bool> class Container, typename ValueType, bool F>
-    struct determine_container_type<Container<ValueType, F>>
-    {
-        constexpr static int code = 2;
-    };
-
-
-
-    template<typename C, int = determine_container_type<C>::code>
-    struct determine_element_type  // determines type of element both for STL containers and Blaze vectors
-    {
-        using type = void;
-    };
-
-    template<typename C>
-    struct determine_element_type<C, 1>
-    {
-        using type = typename C::value_type;
-    };
-
-    template<typename C>
-    struct determine_element_type<C, 2>
-    {
-        using type = typename C::ElementType;
-    };
-
-
 
     template<typename C, int = determine_container_type<C>::code>
     struct determine_recTypeInner // type for internal processing, that can not be Blaze vector
@@ -207,15 +168,16 @@ private:
    */
     template <typename R>
     typename std::enable_if <
-     DSPCC<recType, Metric>:: template determine_container_type<R>::code == 1,
+     //DSPCC<recType, Metric>:: template determine_container_type<R>::code == 1,
+     determine_container_type<R>::code == 1,
      void
     >::type
     select_train(
             const std::vector<recType> & TrainingDataset,
-            size_t n_features_ = 1, // TODO remove defaults everywhere except ctor
-            size_t n_subbands_ = 4,
-            float time_freq_balance_ = 0.5,
-            size_t n_top_features_ = 16
+            size_t n_features_,
+            size_t n_subbands_,
+            float time_freq_balance_,
+            size_t n_top_features_
             );
 
     /**
@@ -230,15 +192,15 @@ private:
    */
     template <typename R>
     typename std::enable_if <
-     DSPCC<recType, Metric>:: template determine_container_type<R>::code == 2,
+     determine_container_type<R>::code == 2,
      void
     >::type
     select_train(
             const std::vector<recType> & TrainingDataset,
-            size_t n_features_ = 1,
-            size_t n_subbands_ = 4,
-            float time_freq_balance_ = 0.5,
-            size_t n_top_features_ = 16
+            size_t n_features_,
+            size_t n_subbands_,
+            float time_freq_balance_,
+            size_t n_top_features_
             );
 
     /**
@@ -253,10 +215,10 @@ private:
    */
     void train(
             const std::vector<DSPCC<recType, Metric>::recTypeInner> & TrainingDataset,
-            size_t n_features_ = 1,
-            size_t n_subbands_ = 4,
-            float time_freq_balance_ = 0.5,
-            size_t n_top_features_ = 16
+            size_t n_features_,
+            size_t n_subbands_,
+            float time_freq_balance_,
+            size_t n_top_features_
             );
 
     /**
@@ -267,7 +229,7 @@ private:
    */
     template <typename R>
     typename std::enable_if <
-     DSPCC<recType, Metric>:: template determine_container_type<R>::code == 1, // STL case
+     determine_container_type<R>::code == 1, // STL case
      std::vector<recType>
     >::type
     select_encode(const std::vector<recType> & Data);
@@ -280,7 +242,8 @@ private:
    */
     template <typename R>
     typename std::enable_if <
-     DSPCC<recType, Metric>:: template determine_container_type<R>::code == 2, // Blaze case
+     //DSPCC<recType, Metric>:: template determine_container_type<R>::code == 2, // Blaze case
+     determine_container_type<R>::code == 2, // Blaze case
      std::vector<recType>
     >::type
     select_encode(const std::vector<recType> & Data);
@@ -294,7 +257,7 @@ private:
    */
     template <typename R>
     typename std::enable_if <
-     DSPCC<recType, Metric>:: template determine_container_type<R>::code == 1, // STL case
+     determine_container_type<R>::code == 1, // STL case
      std::vector<recType>
     >::type
     select_decode(const std::vector<recType> & Codes);
@@ -307,7 +270,7 @@ private:
    */
     template <typename R>
     typename std::enable_if <
-     DSPCC<recType, Metric>:: template determine_container_type<R>::code == 2, // Blaze case
+     determine_container_type<R>::code == 2, // Blaze case
      std::vector<recType>
     >::type
     select_decode(const std::vector<recType> & Codes);
