@@ -98,10 +98,10 @@ BOOST_AUTO_TEST_CASE(test_insert_if)
 {
     metric::Tree<int, distance<int>> tree;
     tree.insert(1);
-    BOOST_TEST(!tree.insert_if(2, 10));
-    BOOST_TEST(tree.insert_if(15, 10));
-    BOOST_TEST(!tree.insert_if(14, 10));
-    BOOST_TEST(tree.insert_if(26, 10));
+    BOOST_TEST(!std::get<1>(tree.insert_if(2, 10)));
+    BOOST_TEST(std::get<1>(tree.insert_if(15, 10)));
+    BOOST_TEST(!std::get<1>(tree.insert_if(14, 10)));
+    BOOST_TEST(std::get<1>(tree.insert_if(26, 10)));
 }
 
 BOOST_AUTO_TEST_CASE(test_insert2)
