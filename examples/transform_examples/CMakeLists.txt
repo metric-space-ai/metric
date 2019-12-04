@@ -3,7 +3,9 @@ cmake_minimum_required(VERSION 3.12)
 project(transform_examples)
 
 set(Boost_DEBUG on)  
-find_package(Boost)
+find_package(Boost COMPONENTS serialization iostreams program_options)
+find_package(ZLIB)
+find_package(Threads)
 
 include_directories(
     ${PROJECT_SOURCE_DIR}
@@ -26,6 +28,8 @@ foreach(exampleSrc ${EXAMPLE_SRCS})
  
 	#link to Boost libraries AND your targets and dependencies
 	target_link_libraries(${exampleName} ${Boost_LIBRARIES})
+	target_link_libraries(${exampleName} ${ZLIB_LIBRARIES})
+	target_link_libraries(${exampleName} Threads::Threads)
 	set_target_properties(${exampleName} PROPERTIES CXX_STANDARD 17)
 
 endforeach(exampleSrc)
