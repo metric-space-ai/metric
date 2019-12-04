@@ -93,115 +93,11 @@ void print_stats(std::tuple<double, double, double, double, double, double> stat
 int main()
 {
 
-    // small dataset
-    //*
+    float magnitude = 1;
 
-    using recType = std::deque<double>;
-
-    recType d0 {0, 1, 2, 3, 4, 5, 6, 100, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23};
-    recType d1 {0, 1, 2, 3, 4, 5, 6, 7,   8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 100};
-    std::vector<recType> d = {d0, d1};
-
-    float freq_time_balance = 0.5; // try values from 0 to 1 (e g 0, 0.5, 1) to get the following portions of freq-domain: 0, 4/9, 8/9
-    auto bundle = metric::DSPCC<recType, void>(d, 4, 2, freq_time_balance, 4);
-
-    auto pre_encoded = bundle.test_public_wrapper_encode(d);
-    auto pre_decoded = bundle.test_public_wrapper_decode(pre_encoded);
-
-    auto encoded = bundle.encode(d);
-    auto decoded = bundle.decode(encoded);
-
-    std::cout << "\noriginal:\n";
-    print_table(d);
-
-    std::cout << "\npre-decoded:\n";
-    print_table(pre_decoded);
-
-    std::cout << "\ndecoded:\n";
-    print_table(decoded);
-
-    std::cout << "\nsimple test done\n";
-    auto err_full_1 = normalized_err_stats<metric::Euclidian<double>>(d, decoded);
-    print_stats(err_full_1);
-    std::cout << "average RMSE = " << mean_square_error(d, decoded) << "\n";
-
-    //return 0;
-
-    //*/
-
-
-    // test Blaze vector input
-
-    //using recTypeBlaze = blaze::DynamicVector<double, blaze::columnVector>; // also works
-    using recTypeBlaze = blaze::DynamicVector<double, blaze::rowVector>;
-
-    recTypeBlaze dBlaze1 {0, 1, 2, 3, 4, 5, 6, 100, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23};
-    recTypeBlaze dBlaze2 {0, 1, 2, 3, 4, 5, 6, 7,   8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 100};
-    std::vector<recTypeBlaze> dBlaze {dBlaze1, dBlaze2};
-    auto bundleBlaze = metric::DSPCC<recTypeBlaze, void>(dBlaze, 3, 2, 0.5, 3);
-    auto encodedBlaze = bundleBlaze.encode(dBlaze);
-    auto decodedBlaze = bundleBlaze.decode(encodedBlaze);
-
-    std::cout << "decoded Blaze vector:\n";
-
-    for (size_t i=0; i<decodedBlaze.size(); ++i) {
-        std::cout << decodedBlaze[i];
-    }
-
-
-
-
-    //*/
-
-
-    // RMSE and metric error check
-    /*
-
-    using recType = std::vector<double>;
-
-    recType d0 {0, 1, 2, 3};
-    recType d1 {0, 1, 2, 3};
-    std::vector<recType> d = {d0, d1};
-
-    auto d_upd = d;
-    d_upd[0][3] = 5;
-
-    std::cout << "\nd:\n";
-    print_table(d); // some normalization issue when using DCT persists..
-
-    std::cout << "\nd_upd:\n";
-    print_table(d_upd); // some normalization issue when using DCT persists..
-
-    print_stats(normalized_err_stats<metric::Euclidian<double>>(d, d_upd));
-
-    std::cout << "average RMSE = " << mean_square_error(d, d_upd) << "\n";
-
-    //return 0;
-
-    // */
-
-
-
-
-
-    // vibration example
-    //*
-
-    float magnitude = 15;
-
-    auto raw_vdata = read_csv_num<double>("assets/vibration_smaller_3.csv", ",");
-    //auto raw_vdata = read_csv_num<double>("assets/vibration.csv", ",");
-//    auto raw_vdata = read_csv_num<double>("assets/vibration_smaller_3_no_peaks.csv", ",");
-//    auto raw_vdata = read_csv_num<double>("assets/vibration_smaller_3_added_peaks.csv", ",");
-    auto vdata =  transpose_timeseries(raw_vdata);
+    auto vdata = read_csv_num<double>("assets/taxi_weekly.csv", ",");
 
     mat2bmp::blaze2bmp_norm(vdata, "input.bmp", magnitude);
-
-//    std::stack<size_t> length_stack;
-//    auto decomposed = metric::sequential_DWT(vdata[0], length_stack, 5, 8);
-//    auto restored = metric::sequential_iDWT(decomposed, length_stack, 5);
-
-//    return 0;
 
 
     std::vector<double> errs_pre, errs_tf, errs_full;
@@ -209,8 +105,6 @@ int main()
     bool visualize = false;
 
     for (float mix = 0; mix<=1; mix+=0.25) {
-    //float mix  = 0.5; {
-
 
 
         if (mix == 0.5)
@@ -219,7 +113,7 @@ int main()
             visualize = false;
 
 
-        auto vDSPCC = metric::DSPCC<std::vector<double>, void>(vdata, 10, 16, mix, 10);
+        auto vDSPCC = metric::DSPCC<std::vector<double>, void>(vdata, 4, 2, mix, 4);
         // dataset,
         // number of features of freq and time PCFAs,
         // DWT subbands, share of freq features in the mixed code,
@@ -282,13 +176,6 @@ int main()
 
         std::cout << "average RMSE = " << mean_square_error(v_decoded2, vdata) << "\n";
 
-
-//        auto errors2 = normalized_errors<metric::Euclidian<double>>(vdata, v_decoded2);
-//        std::cout << "err/norm per record:\n";
-//        for (size_t i = 0; i< errors2.size(); ++i) {
-//            std::cout << errors2[i] << "\n";
-//        }
-
         std::cout << "\n";
 
     }
@@ -298,10 +185,6 @@ int main()
         std::cout << errs_pre[i] << "\t" << errs_tf[i] << "\t" << errs_full[i] << "\n";
     }
 
-
-
-
-    //*/
 
 
     return 0;
