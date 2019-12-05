@@ -3,7 +3,7 @@
 //  \file blaze/math/lapack/clapack/ormqr.h
 //  \brief Header file for the CLAPACK ormqr wrapper functions
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -41,6 +41,7 @@
 //*************************************************************************************************
 
 #include "../../../util/StaticAssert.h"
+#include "../../../util/Types.h"
 
 
 //=================================================================================================
@@ -54,8 +55,12 @@
 #if !defined(INTEL_MKL_VERSION)
 extern "C" {
 
-void sormqr_( char* side, char* trans, int* m, int* n, int* k, float*  A, int* lda, float*  tau, float*  C, int* ldc, float*  work, int* lwork, int* info );
-void dormqr_( char* side, char* trans, int* m, int* n, int* k, double* A, int* lda, double* tau, double* C, int* ldc, double* work, int* lwork, int* info );
+void sormqr_( char* side, char* trans, int* m, int* n, int* k, float* A, int* lda,
+              float* tau, float* C, int* ldc, float* work, int* lwork, int* info,
+              blaze::fortran_charlen_t nside, blaze::fortran_charlen_t ntrans );
+void dormqr_( char* side, char* trans, int* m, int* n, int* k, double* A, int* lda,
+              double* tau, double* C, int* ldc, double* work, int* lwork, int* info,
+              blaze::fortran_charlen_t nside, blaze::fortran_charlen_t ntrans );
 
 }
 #endif
@@ -76,11 +81,11 @@ namespace blaze {
 //*************************************************************************************************
 /*!\name LAPACK functions to multiply Q from a QR decomposition with a matrix (ormqr) */
 //@{
-inline void ormqr( char side, char trans, int m, int n, int k, const float* A, int lda,
-                   const float* tau, float* C, int ldc, float* work, int lwork, int* info );
+void ormqr( char side, char trans, int m, int n, int k, const float* A, int lda,
+            const float* tau, float* C, int ldc, float* work, int lwork, int* info );
 
-inline void ormqr( char side, char trans, int m, int n, int k, const double* A, int lda,
-                   const double* tau, double* C, int ldc, double* work, int lwork, int* info );
+void ormqr( char side, char trans, int m, int n, int k, const double* A, int lda,
+            const double* tau, double* C, int ldc, double* work, int lwork, int* info );
 //@}
 //*************************************************************************************************
 
@@ -140,7 +145,8 @@ inline void ormqr( char side, char trans, int m, int n, int k, const float* A, i
 #endif
 
    sormqr_( &side, &trans, &m, &n, &k, const_cast<float*>( A ), &lda,
-            const_cast<float*>( tau ), C, &ldc, work, &lwork, info );
+            const_cast<float*>( tau ), C, &ldc, work, &lwork, info,
+            blaze::fortran_charlen_t(1), blaze::fortran_charlen_t(1) );
 }
 //*************************************************************************************************
 
@@ -200,7 +206,8 @@ inline void ormqr( char side, char trans, int m, int n, int k, const double* A, 
 #endif
 
    dormqr_( &side, &trans, &m, &n, &k, const_cast<double*>( A ), &lda,
-            const_cast<double*>( tau ), C, &ldc, work, &lwork, info );
+            const_cast<double*>( tau ), C, &ldc, work, &lwork, info,
+            blaze::fortran_charlen_t(1), blaze::fortran_charlen_t(1) );
 }
 //*************************************************************************************************
 

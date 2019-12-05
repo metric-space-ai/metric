@@ -45,6 +45,5 @@ endif()
 find_package(Boost REQUIRED unit_test_framework)
 include_directories(${Boost_INCLUDE_DIR})
 
-add_subdirectory(examples)
 enable_testing()
 add_subdirectory(tests)

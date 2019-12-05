@@ -3,7 +3,7 @@
 //  \file blaze/util/typelist/Length.h
 //  \brief Header file for the Length class template
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -40,7 +40,7 @@
 // Includes
 //*************************************************************************************************
 
-#include "../../util/mpl/SizeT.h"
+#include "../../util/IntegralConstant.h"
 #include "../../util/typelist/TypeList.h"
 
 
@@ -79,7 +79,7 @@ struct Length;
 */
 template< typename... Ts >  // Type list elements
 struct Length< TypeList<Ts...> >
-   : public SizeT< sizeof...( Ts ) >
+   : public Size_t< sizeof...( Ts ) >
 {};
 /*! \endcond */
 //*************************************************************************************************

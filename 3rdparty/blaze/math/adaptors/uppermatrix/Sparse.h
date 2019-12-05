@@ -3,7 +3,7 @@
 //  \file blaze/math/adaptors/uppermatrix/Sparse.h
 //  \brief UpperMatrix specialization for sparse matrices
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -46,7 +46,7 @@
 #include "../../../math/adaptors/uppermatrix/BaseTemplate.h"
 #include "../../../math/adaptors/uppermatrix/UpperProxy.h"
 #include "../../../math/Aliases.h"
-#include "../../../math/constraints/Expression.h"
+#include "../../../math/constraints/Computation.h"
 #include "../../../math/constraints/Hermitian.h"
 #include "../../../math/constraints/Lower.h"
 #include "../../../math/constraints/Resizable.h"
@@ -54,7 +54,9 @@
 #include "../../../math/constraints/Static.h"
 #include "../../../math/constraints/StorageOrder.h"
 #include "../../../math/constraints/Symmetric.h"
+#include "../../../math/constraints/Transformation.h"
 #include "../../../math/constraints/Upper.h"
+#include "../../../math/constraints/View.h"
 #include "../../../math/dense/InitializerMatrix.h"
 #include "../../../math/Exception.h"
 #include "../../../math/expressions/SparseMatrix.h"
@@ -154,7 +156,7 @@ class UpperMatrix<MT,SO,false>
    explicit inline UpperMatrix( size_t n );
    explicit inline UpperMatrix( size_t n, size_t nonzeros );
    explicit inline UpperMatrix( size_t n, const std::vector<size_t>& nonzeros );
-   explicit inline UpperMatrix( initializer_list< initializer_list<ElementType> > list );
+            inline UpperMatrix( initializer_list< initializer_list<ElementType> > list );
 
    inline UpperMatrix( const UpperMatrix& m );
    inline UpperMatrix( UpperMatrix&& m ) noexcept;
@@ -165,7 +167,10 @@ class UpperMatrix<MT,SO,false>
    //**********************************************************************************************
 
    //**Destructor**********************************************************************************
-   // No explicitly declared destructor.
+   /*!\name Destructor */
+   //@{
+   ~UpperMatrix() = default;
+   //@}
    //**********************************************************************************************
 
    //**Data access functions***********************************************************************
@@ -336,7 +341,9 @@ class UpperMatrix<MT,SO,false>
    BLAZE_CONSTRAINT_MUST_NOT_BE_POINTER_TYPE         ( MT );
    BLAZE_CONSTRAINT_MUST_NOT_BE_CONST                ( MT );
    BLAZE_CONSTRAINT_MUST_NOT_BE_VOLATILE             ( MT );
-   BLAZE_CONSTRAINT_MUST_NOT_BE_EXPRESSION_TYPE      ( MT );
+   BLAZE_CONSTRAINT_MUST_NOT_BE_VIEW_TYPE            ( MT );
+   BLAZE_CONSTRAINT_MUST_NOT_BE_COMPUTATION_TYPE     ( MT );
+   BLAZE_CONSTRAINT_MUST_NOT_BE_TRANSFORMATION_TYPE  ( MT );
    BLAZE_CONSTRAINT_MUST_NOT_BE_SYMMETRIC_MATRIX_TYPE( MT );
    BLAZE_CONSTRAINT_MUST_NOT_BE_HERMITIAN_MATRIX_TYPE( MT );
    BLAZE_CONSTRAINT_MUST_NOT_BE_LOWER_MATRIX_TYPE    ( MT );
@@ -1605,13 +1612,15 @@ template< typename MT  // Type of the adapted dense matrix
         , bool SO >    // Storage order of the adapted dense matrix
 inline void UpperMatrix<MT,SO,false>::resetLower()
 {
+   using blaze::erase;
+
    if( SO ) {
       for( size_t j=0UL; j<columns(); ++j )
-         matrix_.erase( j, matrix_.upperBound( j, j ), matrix_.end( j ) );
+         erase( matrix_, j, matrix_.upperBound( j, j ), matrix_.end( j ) );
    }
    else {
       for( size_t i=1UL; i<rows(); ++i )
-         matrix_.erase( i, matrix_.begin( i ), matrix_.lowerBound( i, i ) );
+         erase( matrix_, i, matrix_.begin( i ), matrix_.lowerBound( i, i ) );
    }
 }
 /*! \endcond */
@@ -1799,7 +1808,9 @@ template< typename MT  // Type of the adapted sparse matrix
         , bool SO >    // Storage order of the adapted sparse matrix
 inline void UpperMatrix<MT,SO,false>::erase( size_t i, size_t j )
 {
-   matrix_.erase( i, j );
+   using blaze::erase;
+
+   erase( matrix_, i, j );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -1822,7 +1833,9 @@ template< typename MT  // Type of the adapted sparse matrix
 inline typename UpperMatrix<MT,SO,false>::Iterator
    UpperMatrix<MT,SO,false>::erase( size_t i, Iterator pos )
 {
-   return matrix_.erase( i, pos );
+   using blaze::erase;
+
+   return erase( matrix_, i, pos );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -1846,7 +1859,9 @@ template< typename MT  // Type of the adapted sparse matrix
 inline typename UpperMatrix<MT,SO,false>::Iterator
    UpperMatrix<MT,SO,false>::erase( size_t i, Iterator first, Iterator last )
 {
-   return matrix_.erase( i, first, last );
+   using blaze::erase;
+
+   return erase( matrix_, i, first, last );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -1879,7 +1894,9 @@ template< typename MT      // Type of the adapted sparse matrix
 template< typename Pred >  // Type of the unary predicate
 inline void UpperMatrix<MT,SO,false>::erase( Pred predicate )
 {
-   matrix_.erase( predicate );
+   using blaze::erase;
+
+   erase( matrix_, predicate );
 
    BLAZE_INTERNAL_ASSERT( isIntact(), "Broken invariant detected" );
 }
@@ -1920,7 +1937,9 @@ template< typename MT      // Type of the adapted sparse matrix
 template< typename Pred >  // Type of the unary predicate
 inline void UpperMatrix<MT,SO,false>::erase( size_t i, Iterator first, Iterator last, Pred predicate )
 {
-   matrix_.erase( i, first, last, predicate );
+   using blaze::erase;
+
+   erase( matrix_, i, first, last, predicate );
 
    BLAZE_INTERNAL_ASSERT( isIntact(), "Broken invariant detected" );
 }

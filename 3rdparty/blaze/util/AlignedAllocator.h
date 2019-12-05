@@ -3,7 +3,7 @@
 //  \file blaze/util/AlignedAllocator.h
 //  \brief Header file for the AlignedAllocator implementation
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -40,9 +40,9 @@
 // Includes
 //*************************************************************************************************
 
+#include "../util/MaybeUnused.h"
 #include "../util/Memory.h"
 #include "../util/typetraits/AlignmentOf.h"
-#include "../util/Unused.h"
 
 
 namespace blaze {
@@ -164,7 +164,7 @@ template< typename Type >
 template< typename Type2 >
 inline AlignedAllocator<Type>::AlignedAllocator( const AlignedAllocator<Type2>& allocator )
 {
-   UNUSED_PARAMETER( allocator );
+   MAYBE_UNUSED( allocator );
 }
 //*************************************************************************************************
 
@@ -243,7 +243,7 @@ template< typename Type >
 inline typename AlignedAllocator<Type>::Pointer
    AlignedAllocator<Type>::allocate( size_t numObjects, const void* localityHint )
 {
-   UNUSED_PARAMETER( localityHint );
+   MAYBE_UNUSED( localityHint );
 
    const size_t alignment( AlignmentOf_v<Type> );
 
@@ -271,7 +271,7 @@ inline typename AlignedAllocator<Type>::Pointer
 template< typename Type >
 inline void AlignedAllocator<Type>::deallocate( Pointer ptr, size_t numObjects ) noexcept
 {
-   UNUSED_PARAMETER( numObjects );
+   MAYBE_UNUSED( numObjects );
 
    if( ptr == nullptr )
       return;
@@ -363,7 +363,7 @@ template< typename T1    // Type of the left-hand side aligned allocator
         , typename T2 >  // Type of the right-hand side aligned allocator
 inline bool operator==( const AlignedAllocator<T1>& lhs, const AlignedAllocator<T2>& rhs ) noexcept
 {
-   UNUSED_PARAMETER( lhs, rhs );
+   MAYBE_UNUSED( lhs, rhs );
    return true;
 }
 //*************************************************************************************************
@@ -380,7 +380,7 @@ template< typename T1    // Type of the left-hand side aligned allocator
         , typename T2 >  // Type of the right-hand side aligned allocator
 inline bool operator!=( const AlignedAllocator<T1>& lhs, const AlignedAllocator<T2>& rhs ) noexcept
 {
-   UNUSED_PARAMETER( lhs, rhs );
+   MAYBE_UNUSED( lhs, rhs );
    return false;
 }
 //*************************************************************************************************

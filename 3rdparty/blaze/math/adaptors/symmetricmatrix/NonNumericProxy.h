@@ -3,7 +3,7 @@
 //  \file blaze/math/adaptors/symmetricmatrix/NonNumericProxy.h
 //  \brief Header file for the NonNumericProxy class
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -41,12 +41,14 @@
 //*************************************************************************************************
 
 #include "../../../math/Aliases.h"
-#include "../../../math/constraints/Expression.h"
+#include "../../../math/constraints/Computation.h"
 #include "../../../math/constraints/Hermitian.h"
 #include "../../../math/constraints/Lower.h"
 #include "../../../math/constraints/SparseMatrix.h"
 #include "../../../math/constraints/Symmetric.h"
+#include "../../../math/constraints/Transformation.h"
 #include "../../../math/constraints/Upper.h"
+#include "../../../math/constraints/View.h"
 #include "../../../math/InitializerList.h"
 #include "../../../math/proxy/Proxy.h"
 #include "../../../math/shims/Clear.h"
@@ -194,7 +196,9 @@ class NonNumericProxy
    BLAZE_CONSTRAINT_MUST_NOT_BE_POINTER_TYPE         ( MT );
    BLAZE_CONSTRAINT_MUST_NOT_BE_CONST                ( MT );
    BLAZE_CONSTRAINT_MUST_NOT_BE_VOLATILE             ( MT );
-   BLAZE_CONSTRAINT_MUST_NOT_BE_EXPRESSION_TYPE      ( MT );
+   BLAZE_CONSTRAINT_MUST_NOT_BE_VIEW_TYPE            ( MT );
+   BLAZE_CONSTRAINT_MUST_NOT_BE_COMPUTATION_TYPE     ( MT );
+   BLAZE_CONSTRAINT_MUST_NOT_BE_TRANSFORMATION_TYPE  ( MT );
    BLAZE_CONSTRAINT_MUST_NOT_BE_SYMMETRIC_MATRIX_TYPE( MT );
    BLAZE_CONSTRAINT_MUST_NOT_BE_HERMITIAN_MATRIX_TYPE( MT );
    BLAZE_CONSTRAINT_MUST_NOT_BE_LOWER_MATRIX_TYPE    ( MT );
@@ -496,25 +500,25 @@ inline NonNumericProxy<MT>::operator RawReference() const noexcept
 /*!\name NonNumericProxy global functions */
 //@{
 template< typename MT >
-inline void reset( const NonNumericProxy<MT>& proxy );
+void reset( const NonNumericProxy<MT>& proxy );
 
 template< typename MT >
-inline void clear( const NonNumericProxy<MT>& proxy );
+void clear( const NonNumericProxy<MT>& proxy );
 
 template< bool RF, typename MT >
-inline bool isDefault( const NonNumericProxy<MT>& proxy );
+bool isDefault( const NonNumericProxy<MT>& proxy );
 
 template< bool RF, typename MT >
-inline bool isReal( const NonNumericProxy<MT>& proxy );
+bool isReal( const NonNumericProxy<MT>& proxy );
 
 template< bool RF, typename MT >
-inline bool isZero( const NonNumericProxy<MT>& proxy );
+bool isZero( const NonNumericProxy<MT>& proxy );
 
 template< bool RF, typename MT >
-inline bool isOne( const NonNumericProxy<MT>& proxy );
+bool isOne( const NonNumericProxy<MT>& proxy );
 
 template< typename MT >
-inline bool isnan( const NonNumericProxy<MT>& proxy );
+bool isnan( const NonNumericProxy<MT>& proxy );
 //@}
 //*************************************************************************************************
 

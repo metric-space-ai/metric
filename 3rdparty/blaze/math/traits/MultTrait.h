@@ -3,7 +3,7 @@
 //  \file blaze/math/traits/MultTrait.h
 //  \brief Header file for the multiplication trait
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -49,8 +49,8 @@
 #include "../../util/InvalidType.h"
 #include "../../util/mpl/If.h"
 #include "../../util/typetraits/CommonType.h"
-#include "../../util/typetraits/Decay.h"
 #include "../../util/typetraits/IsBuiltin.h"
+#include "../../util/typetraits/RemoveCVRef.h"
 
 
 namespace blaze {
@@ -165,7 +165,7 @@ struct MultTrait< T, T, EnableIf_t< IsBuiltin_v<T> > >
 {
  public:
    //**********************************************************************************************
-   using Type = Decay_t<T>;
+   using Type = RemoveCVRef_t<T>;
    //**********************************************************************************************
 };
 /*! \endcond */

@@ -3,7 +3,7 @@
 //  \file blaze/math/Vector.h
 //  \brief Header file for all basic Vector functionality
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -44,7 +44,9 @@
 #include <iosfwd>
 #include "../math/Aliases.h"
 #include "../math/expressions/Vector.h"
+#include "../math/RelaxationFlag.h"
 #include "../math/TransposeFlag.h"
+#include "../math/views/Elements.h"
 
 
 namespace blaze {
@@ -58,36 +60,84 @@ namespace blaze {
 //*************************************************************************************************
 /*!\name Vector functions */
 //@{
-template< typename T1, typename T2 >
-inline decltype(auto) inner( const Vector<T1,false>& lhs, const Vector<T2,false>& rhs );
+template< typename VT, bool TF >
+bool isUniform( const Vector<VT,TF>& v );
 
 template< typename T1, typename T2 >
-inline decltype(auto) inner( const Vector<T1,false>& lhs, const Vector<T2,true>& rhs );
+decltype(auto) inner( const Vector<T1,false>& lhs, const Vector<T2,false>& rhs );
 
 template< typename T1, typename T2 >
-inline decltype(auto) inner( const Vector<T1,true>& lhs, const Vector<T2,false>& rhs );
+decltype(auto) inner( const Vector<T1,false>& lhs, const Vector<T2,true>& rhs );
 
 template< typename T1, typename T2 >
-inline decltype(auto) inner( const Vector<T1,true>& lhs, const Vector<T2,true>& rhs );
+decltype(auto) inner( const Vector<T1,true>& lhs, const Vector<T2,false>& rhs );
+
+template< typename T1, typename T2 >
+decltype(auto) inner( const Vector<T1,true>& lhs, const Vector<T2,true>& rhs );
 
 template< typename T1, bool TF1, typename T2, bool TF2 >
-inline decltype(auto) dot( const Vector<T1,TF1>& lhs, const Vector<T2,TF2>& rhs );
+decltype(auto) dot( const Vector<T1,TF1>& lhs, const Vector<T2,TF2>& rhs );
 
 template< typename T1, bool TF1, typename T2, bool TF2 >
-inline decltype(auto) operator,( const Vector<T1,TF1>& lhs, const Vector<T2,TF2>& rhs );
+decltype(auto) operator,( const Vector<T1,TF1>& lhs, const Vector<T2,TF2>& rhs );
 
 template< typename T1, typename T2 >
-inline decltype(auto) outer( const Vector<T1,false>& lhs, const Vector<T2,false>& rhs );
+decltype(auto) outer( const Vector<T1,false>& lhs, const Vector<T2,false>& rhs );
 
 template< typename T1, typename T2 >
-inline decltype(auto) outer( const Vector<T1,false>& lhs, const Vector<T2,true>& rhs );
+decltype(auto) outer( const Vector<T1,false>& lhs, const Vector<T2,true>& rhs );
 
 template< typename T1, typename T2 >
-inline decltype(auto) outer( const Vector<T1,true>& lhs, const Vector<T2,false>& rhs );
+decltype(auto) outer( const Vector<T1,true>& lhs, const Vector<T2,false>& rhs );
 
 template< typename T1, typename T2 >
-inline decltype(auto) outer( const Vector<T1,true>& lhs, const Vector<T2,true>& rhs );
+decltype(auto) outer( const Vector<T1,true>& lhs, const Vector<T2,true>& rhs );
+
+template< typename VT, bool TF >
+decltype(auto) reverse( const Vector<VT,TF>& v );
 //@}
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*!\brief Checks if the given vector is a uniform vector.
+// \ingroup vector
+//
+// \param v The vector to be checked.
+// \return \a true if the vector is a uniform vector, \a false if not.
+//
+// This function checks if the given dense or sparse vector is a uniform vector. The vector
+// is considered to be uniform if all its elements are identical. The following code example
+// demonstrates the use of the function:
+
+   \code
+   blaze::DynamicVector<int,blaze::columnVector> a, b;
+   // ... Initialization
+   if( isUniform( a ) ) { ... }
+   \endcode
+
+// Optionally, it is possible to switch between strict semantics (blaze::strict) and relaxed
+// semantics (blaze::relaxed):
+
+   \code
+   if( isUniform<relaxed>( a ) ) { ... }
+   \endcode
+
+// It is also possible to check if a vector expression results in a uniform vector:
+
+   \code
+   if( isUniform( a + b ) ) { ... }
+   \endcode
+
+// However, note that this might require the complete evaluation of the expression, including
+// the generation of a temporary vector.
+*/
+template< typename VT  // Type of the vector
+        , bool TF >    // Transpose flag
+inline bool isUniform( const Vector<VT,TF>& v )
+{
+   return isUniform<relaxed>( ~v );
+}
 //*************************************************************************************************
 
 
@@ -275,6 +325,32 @@ inline decltype(auto) outer( const Vector<T1,true>& lhs, const Vector<T2,true>& 
 //*************************************************************************************************
 
 
+//*************************************************************************************************
+/*!\brief Reverse the elements of a vector.
+// \ingroup vector
+//
+// \param v The vector to be reversed.
+// \return The reversed vector.
+//
+// This function reverses the elements of a dense or sparse vector. The following examples
+// demonstrates this by means of a dense vector:
+
+   \code
+   blaze::DynamicVector<int> a{ 1, 2, 3, 4, 5 };
+   blaze::DynamicVector<int> b;
+
+   b = reverse( a );  // Results in ( 5 4 3 2 1 )
+   \endcode
+*/
+template< typename VT  // Type of the vector
+        , bool TF >    // Transpose flag
+inline decltype(auto) reverse( const Vector<VT,TF>& v )
+{
+   return elements( ~v, [max=(~v).size()-1UL]( size_t i ){ return max - i; }, (~v).size() );
+}
+//*************************************************************************************************
+
+
 
 
 //=================================================================================================
@@ -287,7 +363,7 @@ inline decltype(auto) outer( const Vector<T1,true>& lhs, const Vector<T2,true>& 
 /*!\name Vector operators */
 //@{
 template< typename VT, bool TF >
-inline std::ostream& operator<<( std::ostream& os, const Vector<VT,TF>& v );
+std::ostream& operator<<( std::ostream& os, const Vector<VT,TF>& v );
 //@}
 //*************************************************************************************************
 

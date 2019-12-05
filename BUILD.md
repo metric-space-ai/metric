@@ -2,14 +2,18 @@
 The following dependencies are required for building examples and tests:
 
 1. C++ compiler supported C++17
-2. Cmake  (https://www.cmake.org)
+2. Cmake 3.10+ (https://www.cmake.org)
 3. Boost libraries (https://www.boost.org)
 4. BLAS and LAPACK libraries
 5. Libpqxx (for SensorExample)
 
 # Ubuntu
 ### Install dependencies
-On ubuntu one can install dependencies from Ubuntu repositories
+On Ubuntu one can install dependencies from Ubuntu repositories.
+
+Note that CMake 3.10+ is available in default repositories since Ubuntu 18.04 LTS.
+If you are using an earlier version of Ubuntu, you may need to build CMake from [source code](https://gitlab.kitware.com/cmake/cmake).
+
 ```
 $ sudo apt install cmake
 $ sudo apt install libboost-all-dev
@@ -17,6 +21,8 @@ $ sudo apt install libopenblas-dev
 $ sudo apt install libpqxx-dev postgresql-server-dev-all
 ```
 ### Build
+
+If you are building it from inside a virtual machine, make sure to provision at least **2 GiB of virtual memory** for the build process to succeed.
 
 ```
   $ mkdir build

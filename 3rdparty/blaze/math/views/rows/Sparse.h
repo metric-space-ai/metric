@@ -3,7 +3,7 @@
 //  \file blaze/math/views/rows/Sparse.h
 //  \brief Rows specialization for sparse matrices
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -67,12 +67,11 @@
 #include "../../../math/traits/SubTrait.h"
 #include "../../../math/typetraits/IsComputation.h"
 #include "../../../math/typetraits/IsExpression.h"
-#include "../../../math/typetraits/IsHermitian.h"
 #include "../../../math/typetraits/IsLower.h"
 #include "../../../math/typetraits/IsRestricted.h"
+#include "../../../math/typetraits/IsSparseMatrix.h"
 #include "../../../math/typetraits/IsStrictlyLower.h"
 #include "../../../math/typetraits/IsStrictlyUpper.h"
-#include "../../../math/typetraits/IsSymmetric.h"
 #include "../../../math/typetraits/IsUniLower.h"
 #include "../../../math/typetraits/IsUniUpper.h"
 #include "../../../math/typetraits/IsUpper.h"
@@ -84,13 +83,12 @@
 #include "../../../util/Assert.h"
 #include "../../../util/constraints/Pointer.h"
 #include "../../../util/constraints/Reference.h"
-#include "../../../util/DecltypeAuto.h"
+#include "../../../util/MaybeUnused.h"
 #include "../../../util/mpl/If.h"
 #include "../../../util/TypeList.h"
 #include "../../../util/Types.h"
 #include "../../../util/typetraits/IsConst.h"
 #include "../../../util/typetraits/IsReference.h"
-#include "../../../util/Unused.h"
 
 
 namespace blaze {
@@ -109,9 +107,9 @@ namespace blaze {
 // This specialization of Rows adapts the class template to the requirements of row-major
 // sparse matrices.
 */
-template< typename MT       // Type of the sparse matrix
-        , bool SF           // Symmetry flag
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , bool SF             // Symmetry flag
+        , typename... CRAs >  // Compile time row arguments
 class Rows<MT,true,false,SF,CRAs...>
    : public View< SparseMatrix< Rows<MT,true,false,SF,CRAs...>, false > >
    , private RowsData<CRAs...>
@@ -122,6 +120,10 @@ class Rows<MT,true,false,SF,CRAs...>
    using Operand  = If_t< IsExpression_v<MT>, MT, MT& >;  //!< Composite data type of the matrix expression.
    //**********************************************************************************************
 
+   //**Compile time flags**************************************************************************
+   using DataType::N;  //!< Number of compile time indices.
+   //**********************************************************************************************
+
  public:
    //**Type definitions****************************************************************************
    //! Type of this Rows instance.
@@ -129,7 +131,7 @@ class Rows<MT,true,false,SF,CRAs...>
 
    using BaseType      = SparseMatrix<This,false>;     //!< Base type of this Rows instance.
    using ViewedType    = MT;                           //!< The type viewed by this Rows instance.
-   using ResultType    = RowsTrait_t<MT,CRAs...>;      //!< Result type for expression template evaluations.
+   using ResultType    = RowsTrait_t<MT,N>;            //!< Result type for expression template evaluations.
    using OppositeType  = OppositeType_t<ResultType>;   //!< Result type with opposite storage order for expression template evaluations.
    using TransposeType = TransposeType_t<ResultType>;  //!< Transpose type for expression template evaluations.
    using ElementType   = ElementType_t<MT>;            //!< Type of the row elements.
@@ -152,6 +154,9 @@ class Rows<MT,true,false,SF,CRAs...>
    //**Compilation flags***************************************************************************
    //! Compilation switch for the expression template assignment strategy.
    static constexpr bool smpAssignable = MT::smpAssignable;
+
+   //! Compilation switch for the expression template evaluation strategy.
+   static constexpr bool compileTimeArgs = DataType::compileTimeArgs;
    //**********************************************************************************************
 
    //**Constructors********************************************************************************
@@ -160,13 +165,16 @@ class Rows<MT,true,false,SF,CRAs...>
    template< typename... RRAs >
    explicit inline Rows( MT& matrix, RRAs... args );
 
-   inline Rows( const Rows& ) = default;
-   inline Rows( Rows&& ) = default;
+   Rows( const Rows& ) = default;
+   Rows( Rows&& ) = default;
    //@}
    //**********************************************************************************************
 
    //**Destructor**********************************************************************************
-   // No explicitly declared destructor.
+   /*!\name Destructor */
+   //@{
+   ~Rows() = default;
+   //@}
    //**********************************************************************************************
 
    //**Data access functions***********************************************************************
@@ -339,7 +347,7 @@ class Rows<MT,true,false,SF,CRAs...>
 */
 template< typename MT         // Type of the sparse matrix
         , bool SF             // Symmetry flag
-        , size_t... CRAs >    // Compile time row arguments
+        , typename... CRAs >  // Compile time row arguments
 template< typename... RRAs >  // Runtime row arguments
 inline Rows<MT,true,false,SF,CRAs...>::Rows( MT& matrix, RRAs... args )
    : DataType( args... )  // Base class initialization
@@ -376,9 +384,9 @@ inline Rows<MT,true,false,SF,CRAs...>::Rows( MT& matrix, RRAs... args )
 // This function only performs an index check in case BLAZE_USER_ASSERT() is active. In contrast,
 // the at() function is guaranteed to perform a check of the given access indices.
 */
-template< typename MT       // Type of the sparse matrix
-        , bool SF           // Symmetry flag
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , bool SF             // Symmetry flag
+        , typename... CRAs >  // Compile time row arguments
 inline typename Rows<MT,true,false,SF,CRAs...>::Reference
    Rows<MT,true,false,SF,CRAs...>::operator()( size_t i, size_t j )
 {
@@ -402,9 +410,9 @@ inline typename Rows<MT,true,false,SF,CRAs...>::Reference
 // This function only performs an index check in case BLAZE_USER_ASSERT() is active. In contrast,
 // the at() function is guaranteed to perform a check of the given access indices.
 */
-template< typename MT       // Type of the sparse matrix
-        , bool SF           // Symmetry flag
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , bool SF             // Symmetry flag
+        , typename... CRAs >  // Compile time row arguments
 inline typename Rows<MT,true,false,SF,CRAs...>::ConstReference
    Rows<MT,true,false,SF,CRAs...>::operator()( size_t i, size_t j ) const
 {
@@ -429,9 +437,9 @@ inline typename Rows<MT,true,false,SF,CRAs...>::ConstReference
 // In contrast to the function call operator this function always performs a check of the given
 // access indices.
 */
-template< typename MT       // Type of the sparse matrix
-        , bool SF           // Symmetry flag
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , bool SF             // Symmetry flag
+        , typename... CRAs >  // Compile time row arguments
 inline typename Rows<MT,true,false,SF,CRAs...>::Reference
    Rows<MT,true,false,SF,CRAs...>::at( size_t i, size_t j )
 {
@@ -459,9 +467,9 @@ inline typename Rows<MT,true,false,SF,CRAs...>::Reference
 // In contrast to the function call operator this function always performs a check of the given
 // access indices.
 */
-template< typename MT       // Type of the sparse matrix
-        , bool SF           // Symmetry flag
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , bool SF             // Symmetry flag
+        , typename... CRAs >  // Compile time row arguments
 inline typename Rows<MT,true,false,SF,CRAs...>::ConstReference
    Rows<MT,true,false,SF,CRAs...>::at( size_t i, size_t j ) const
 {
@@ -486,9 +494,9 @@ inline typename Rows<MT,true,false,SF,CRAs...>::ConstReference
 //
 // This function returns a row iterator to the first non-zero element of row \a i.
 */
-template< typename MT       // Type of the sparse matrix
-        , bool SF           // Symmetry flag
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , bool SF             // Symmetry flag
+        , typename... CRAs >  // Compile time row arguments
 inline typename Rows<MT,true,false,SF,CRAs...>::Iterator
    Rows<MT,true,false,SF,CRAs...>::begin( size_t i )
 {
@@ -509,9 +517,9 @@ inline typename Rows<MT,true,false,SF,CRAs...>::Iterator
 //
 // This function returns a row iterator to the first non-zero element of row \a i.
 */
-template< typename MT       // Type of the sparse matrix
-        , bool SF           // Symmetry flag
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , bool SF             // Symmetry flag
+        , typename... CRAs >  // Compile time row arguments
 inline typename Rows<MT,true,false,SF,CRAs...>::ConstIterator
    Rows<MT,true,false,SF,CRAs...>::begin( size_t i ) const
 {
@@ -532,9 +540,9 @@ inline typename Rows<MT,true,false,SF,CRAs...>::ConstIterator
 //
 // This function returns a row iterator to the first non-zero element of row \a i.
 */
-template< typename MT       // Type of the sparse matrix
-        , bool SF           // Symmetry flag
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , bool SF             // Symmetry flag
+        , typename... CRAs >  // Compile time row arguments
 inline typename Rows<MT,true,false,SF,CRAs...>::ConstIterator
    Rows<MT,true,false,SF,CRAs...>::cbegin( size_t i ) const
 {
@@ -555,9 +563,9 @@ inline typename Rows<MT,true,false,SF,CRAs...>::ConstIterator
 //
 // This function returns an row iterator just past the last non-zero element of row \a i.
 */
-template< typename MT       // Type of the sparse matrix
-        , bool SF           // Symmetry flag
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , bool SF             // Symmetry flag
+        , typename... CRAs >  // Compile time row arguments
 inline typename Rows<MT,true,false,SF,CRAs...>::Iterator
    Rows<MT,true,false,SF,CRAs...>::end( size_t i )
 {
@@ -578,9 +586,9 @@ inline typename Rows<MT,true,false,SF,CRAs...>::Iterator
 //
 // This function returns an row iterator just past the last non-zero element of row \a i.
 */
-template< typename MT       // Type of the sparse matrix
-        , bool SF           // Symmetry flag
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , bool SF             // Symmetry flag
+        , typename... CRAs >  // Compile time row arguments
 inline typename Rows<MT,true,false,SF,CRAs...>::ConstIterator
    Rows<MT,true,false,SF,CRAs...>::end( size_t i ) const
 {
@@ -601,9 +609,9 @@ inline typename Rows<MT,true,false,SF,CRAs...>::ConstIterator
 //
 // This function returns an row iterator just past the last non-zero element of row \a i.
 */
-template< typename MT       // Type of the sparse matrix
-        , bool SF           // Symmetry flag
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , bool SF             // Symmetry flag
+        , typename... CRAs >  // Compile time row arguments
 inline typename Rows<MT,true,false,SF,CRAs...>::ConstIterator
    Rows<MT,true,false,SF,CRAs...>::cend( size_t i ) const
 {
@@ -639,9 +647,9 @@ inline typename Rows<MT,true,false,SF,CRAs...>::ConstIterator
 // exception is thrown. Also, if the underlying matrix \a MT is restricted and the assignment
 // would violate an invariant of the matrix, a \a std::invalid_argument exception is thrown.
 */
-template< typename MT       // Type of the sparse matrix
-        , bool SF           // Symmetry flag
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , bool SF             // Symmetry flag
+        , typename... CRAs >  // Compile time row arguments
 inline Rows<MT,true,false,SF,CRAs...>&
    Rows<MT,true,false,SF,CRAs...>::operator=( initializer_list< initializer_list<ElementType> > list )
 {
@@ -662,7 +670,7 @@ inline Rows<MT,true,false,SF,CRAs...>&
       }
    }
 
-   BLAZE_DECLTYPE_AUTO( left, derestrict( *this ) );
+   decltype(auto) left( derestrict( *this ) );
 
    left.reset();
    smpAssign( left, tmp );
@@ -688,9 +696,9 @@ inline Rows<MT,true,false,SF,CRAs...>&
 // symmetric matrix and the assignment would violate its lower, upper, or symmetry property,
 // respectively, a \a std::invalid_argument exception is thrown.
 */
-template< typename MT       // Type of the sparse matrix
-        , bool SF           // Symmetry flag
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , bool SF             // Symmetry flag
+        , typename... CRAs >  // Compile time row arguments
 inline Rows<MT,true,false,SF,CRAs...>&
    Rows<MT,true,false,SF,CRAs...>::operator=( const Rows& rhs )
 {
@@ -700,7 +708,7 @@ inline Rows<MT,true,false,SF,CRAs...>&
    BLAZE_CONSTRAINT_MUST_BE_SPARSE_MATRIX_TYPE ( ResultType );
    BLAZE_CONSTRAINT_MUST_NOT_REQUIRE_EVALUATION( ResultType );
 
-   if( this == &rhs || ( &matrix_ == &rhs.matrix_ && idces() == rhs.idces() ) )
+   if( this == &rhs || ( &matrix_ == &rhs.matrix_ && compareIndices( *this, rhs ) ) )
       return *this;
 
    if( rows() != rhs.rows() || columns() != rhs.columns() ) {
@@ -715,7 +723,7 @@ inline Rows<MT,true,false,SF,CRAs...>&
       }
    }
 
-   BLAZE_DECLTYPE_AUTO( left, derestrict( *this ) );
+   decltype(auto) left( derestrict( *this ) );
 
    if( rhs.canAlias( &matrix_ ) ) {
       const ResultType tmp( rhs );
@@ -750,11 +758,11 @@ inline Rows<MT,true,false,SF,CRAs...>&
 // and the assignment would violate its lower, upper, or symmetry property, respectively, a
 // \a std::invalid_argument exception is thrown.
 */
-template< typename MT       // Type of the sparse matrix
-        , bool SF           // Symmetry flag
-        , size_t... CRAs >  // Compile time row arguments
-template< typename MT2      // Type of the right-hand side matrix
-        , bool SO >         // Storage order of the right-hand side matrix
+template< typename MT         // Type of the sparse matrix
+        , bool SF             // Symmetry flag
+        , typename... CRAs >  // Compile time row arguments
+template< typename MT2        // Type of the right-hand side matrix
+        , bool SO >           // Storage order of the right-hand side matrix
 inline Rows<MT,true,false,SF,CRAs...>&
    Rows<MT,true,false,SF,CRAs...>::operator=( const Matrix<MT2,SO>& rhs )
 {
@@ -778,7 +786,7 @@ inline Rows<MT,true,false,SF,CRAs...>&
       }
    }
 
-   BLAZE_DECLTYPE_AUTO( left, derestrict( *this ) );
+   decltype(auto) left( derestrict( *this ) );
 
    if( IsReference_v<Right> && right.canAlias( &matrix_ ) ) {
       const ResultType_t<MT2> tmp( right );
@@ -812,11 +820,11 @@ inline Rows<MT,true,false,SF,CRAs...>&
 // symmetric matrix and the assignment would violate its lower, upper, or symmetry property,
 // respectively, a \a std::invalid_argument exception is thrown.
 */
-template< typename MT       // Type of the sparse matrix
-        , bool SF           // Symmetry flag
-        , size_t... CRAs >  // Compile time row arguments
-template< typename MT2      // Type of the right-hand side matrix
-        , bool SO >         // Storage order of the right-hand side matrix
+template< typename MT         // Type of the sparse matrix
+        , bool SF             // Symmetry flag
+        , typename... CRAs >  // Compile time row arguments
+template< typename MT2        // Type of the right-hand side matrix
+        , bool SO >           // Storage order of the right-hand side matrix
 inline Rows<MT,true,false,SF,CRAs...>&
    Rows<MT,true,false,SF,CRAs...>::operator+=( const Matrix<MT2,SO>& rhs )
 {
@@ -845,7 +853,7 @@ inline Rows<MT,true,false,SF,CRAs...>&
       }
    }
 
-   BLAZE_DECLTYPE_AUTO( left, derestrict( *this ) );
+   decltype(auto) left( derestrict( *this ) );
 
    left.reset();
    smpAssign( left, tmp );
@@ -872,11 +880,11 @@ inline Rows<MT,true,false,SF,CRAs...>&
 // symmetric matrix and the assignment would violate its lower, upper, or symmetry property,
 // respectively, a \a std::invalid_argument exception is thrown.
 */
-template< typename MT       // Type of the sparse matrix
-        , bool SF           // Symmetry flag
-        , size_t... CRAs >  // Compile time row arguments
-template< typename MT2      // Type of the right-hand side matrix
-        , bool SO >         // Storage order of the right-hand side matrix
+template< typename MT         // Type of the sparse matrix
+        , bool SF             // Symmetry flag
+        , typename... CRAs >  // Compile time row arguments
+template< typename MT2        // Type of the right-hand side matrix
+        , bool SO >           // Storage order of the right-hand side matrix
 inline Rows<MT,true,false,SF,CRAs...>&
    Rows<MT,true,false,SF,CRAs...>::operator-=( const Matrix<MT2,SO>& rhs )
 {
@@ -905,7 +913,7 @@ inline Rows<MT,true,false,SF,CRAs...>&
       }
    }
 
-   BLAZE_DECLTYPE_AUTO( left, derestrict( *this ) );
+   decltype(auto) left( derestrict( *this ) );
 
    left.reset();
    smpAssign( left, tmp );
@@ -932,11 +940,11 @@ inline Rows<MT,true,false,SF,CRAs...>&
 // symmetric matrix and the assignment would violate its lower, upper, or symmetry property,
 // respectively, a \a std::invalid_argument exception is thrown.
 */
-template< typename MT       // Type of the sparse matrix
-        , bool SF           // Symmetry flag
-        , size_t... CRAs >  // Compile time row arguments
-template< typename MT2      // Type of the right-hand side matrix
-        , bool SO >         // Storage order of the right-hand side matrix
+template< typename MT         // Type of the sparse matrix
+        , bool SF             // Symmetry flag
+        , typename... CRAs >  // Compile time row arguments
+template< typename MT2        // Type of the right-hand side matrix
+        , bool SO >           // Storage order of the right-hand side matrix
 inline Rows<MT,true,false,SF,CRAs...>&
    Rows<MT,true,false,SF,CRAs...>::operator%=( const Matrix<MT2,SO>& rhs )
 {
@@ -965,7 +973,7 @@ inline Rows<MT,true,false,SF,CRAs...>&
       }
    }
 
-   BLAZE_DECLTYPE_AUTO( left, derestrict( *this ) );
+   decltype(auto) left( derestrict( *this ) );
 
    left.reset();
    smpAssign( left, tmp );
@@ -992,9 +1000,9 @@ inline Rows<MT,true,false,SF,CRAs...>&
 //
 // \return The matrix containing the rows.
 */
-template< typename MT       // Type of the sparse matrix
-        , bool SF           // Symmetry flag
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , bool SF             // Symmetry flag
+        , typename... CRAs >  // Compile time row arguments
 inline MT& Rows<MT,true,false,SF,CRAs...>::operand() noexcept
 {
    return matrix_;
@@ -1009,9 +1017,9 @@ inline MT& Rows<MT,true,false,SF,CRAs...>::operand() noexcept
 //
 // \return The matrix containing the rows.
 */
-template< typename MT       // Type of the sparse matrix
-        , bool SF           // Symmetry flag
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , bool SF             // Symmetry flag
+        , typename... CRAs >  // Compile time row arguments
 inline const MT& Rows<MT,true,false,SF,CRAs...>::operand() const noexcept
 {
    return matrix_;
@@ -1026,9 +1034,9 @@ inline const MT& Rows<MT,true,false,SF,CRAs...>::operand() const noexcept
 //
 // \return The number of columns of the row selection.
 */
-template< typename MT       // Type of the sparse matrix
-        , bool SF           // Symmetry flag
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , bool SF             // Symmetry flag
+        , typename... CRAs >  // Compile time row arguments
 inline size_t Rows<MT,true,false,SF,CRAs...>::columns() const noexcept
 {
    return matrix_.columns();
@@ -1043,9 +1051,9 @@ inline size_t Rows<MT,true,false,SF,CRAs...>::columns() const noexcept
 //
 // \return The capacity of the sparse row selection.
 */
-template< typename MT       // Type of the sparse matrix
-        , bool SF           // Symmetry flag
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , bool SF             // Symmetry flag
+        , typename... CRAs >  // Compile time row arguments
 inline size_t Rows<MT,true,false,SF,CRAs...>::capacity() const noexcept
 {
    return nonZeros() + matrix_.capacity() - matrix_.nonZeros();
@@ -1063,9 +1071,9 @@ inline size_t Rows<MT,true,false,SF,CRAs...>::capacity() const noexcept
 //
 // This function returns the current capacity of the specified row.
 */
-template< typename MT       // Type of the sparse matrix
-        , bool SF           // Symmetry flag
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , bool SF             // Symmetry flag
+        , typename... CRAs >  // Compile time row arguments
 inline size_t Rows<MT,true,false,SF,CRAs...>::capacity( size_t i ) const noexcept
 {
    BLAZE_USER_ASSERT( i < rows(), "Invalid row access index" );
@@ -1082,9 +1090,9 @@ inline size_t Rows<MT,true,false,SF,CRAs...>::capacity( size_t i ) const noexcep
 //
 // \return The number of non-zero elements in the sparse row selection.
 */
-template< typename MT       // Type of the sparse matrix
-        , bool SF           // Symmetry flag
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , bool SF             // Symmetry flag
+        , typename... CRAs >  // Compile time row arguments
 inline size_t Rows<MT,true,false,SF,CRAs...>::nonZeros() const
 {
    size_t nonzeros( 0UL );
@@ -1107,9 +1115,9 @@ inline size_t Rows<MT,true,false,SF,CRAs...>::nonZeros() const
 //
 // This function returns the current number of non-zero elements in the specified row.
 */
-template< typename MT       // Type of the sparse matrix
-        , bool SF           // Symmetry flag
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , bool SF             // Symmetry flag
+        , typename... CRAs >  // Compile time row arguments
 inline size_t Rows<MT,true,false,SF,CRAs...>::nonZeros( size_t i ) const
 {
    BLAZE_USER_ASSERT( i < rows(), "Invalid row access index" );
@@ -1126,9 +1134,9 @@ inline size_t Rows<MT,true,false,SF,CRAs...>::nonZeros( size_t i ) const
 //
 // \return void
 */
-template< typename MT       // Type of the sparse matrix
-        , bool SF           // Symmetry flag
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , bool SF             // Symmetry flag
+        , typename... CRAs >  // Compile time row arguments
 inline void Rows<MT,true,false,SF,CRAs...>::reset()
 {
    for( size_t i=0UL; i<rows(); ++i ) {
@@ -1149,9 +1157,9 @@ inline void Rows<MT,true,false,SF,CRAs...>::reset()
 // This function resets the values in the specified row to their default value. Note that the
 // capacity of the row remains unchanged.
 */
-template< typename MT       // Type of the sparse matrix
-        , bool SF           // Symmetry flag
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , bool SF             // Symmetry flag
+        , typename... CRAs >  // Compile time row arguments
 inline void Rows<MT,true,false,SF,CRAs...>::reset( size_t i )
 {
    matrix_.reset( idx(i) );
@@ -1171,9 +1179,9 @@ inline void Rows<MT,true,false,SF,CRAs...>::reset( size_t i )
 // elements. The current values of the elements and the individual capacities of the selected
 // rows are preserved.
 */
-template< typename MT       // Type of the sparse matrix
-        , bool SF           // Symmetry flag
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , bool SF             // Symmetry flag
+        , typename... CRAs >  // Compile time row arguments
 inline void Rows<MT,true,false,SF,CRAs...>::reserve( size_t nonzeros )
 {
    const size_t current( capacity() );
@@ -1199,9 +1207,9 @@ inline void Rows<MT,true,false,SF,CRAs...>::reserve( size_t nonzeros )
 // current values of the sparse row selection and all other individual row capacities are
 // preserved.
 */
-template< typename MT       // Type of the sparse matrix
-        , bool SF           // Symmetry flag
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , bool SF             // Symmetry flag
+        , typename... CRAs >  // Compile time row arguments
 void Rows<MT,true,false,SF,CRAs...>::reserve( size_t i, size_t nonzeros )
 {
    matrix_.reserve( idx(i), nonzeros );
@@ -1220,9 +1228,9 @@ void Rows<MT,true,false,SF,CRAs...>::reserve( size_t i, size_t nonzeros )
 // The function removes all excessive capacity from all rows. Note that this function does not
 // remove the overall capacity but only reduces the capacity per row.
 */
-template< typename MT       // Type of the sparse matrix
-        , bool SF           // Symmetry flag
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , bool SF             // Symmetry flag
+        , typename... CRAs >  // Compile time row arguments
 void Rows<MT,true,false,SF,CRAs...>::trim()
 {
    for( size_t i=0UL; i<rows(); ++i ) {
@@ -1244,9 +1252,9 @@ void Rows<MT,true,false,SF,CRAs...>::trim()
 // all excessive capacity from the specified row. The excessive capacity is assigned to the
 // subsequent row.
 */
-template< typename MT       // Type of the sparse matrix
-        , bool SF           // Symmetry flag
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , bool SF             // Symmetry flag
+        , typename... CRAs >  // Compile time row arguments
 void Rows<MT,true,false,SF,CRAs...>::trim( size_t i )
 {
    BLAZE_USER_ASSERT( i < rows(), "Invalid row access index" );
@@ -1267,9 +1275,9 @@ void Rows<MT,true,false,SF,CRAs...>::trim( size_t i )
 // This function calculates a new row capacity based on the current capacity of the specified
 // sparse row. Note that the new capacity is restricted to the interval \f$[7..N]\f$.
 */
-template< typename MT       // Type of the sparse matrix
-        , bool SF           // Symmetry flag
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , bool SF             // Symmetry flag
+        , typename... CRAs >  // Compile time row arguments
 inline size_t Rows<MT,true,false,SF,CRAs...>::extendCapacity( size_t i ) const noexcept
 {
    using blaze::max;
@@ -1308,9 +1316,9 @@ inline size_t Rows<MT,true,false,SF,CRAs...>::extendCapacity( size_t i ) const n
 // matrix already contains an element with row index \a i and column index \a j its value is
 // modified, else a new element with the given \a value is inserted.
 */
-template< typename MT       // Type of the sparse matrix
-        , bool SF           // Symmetry flag
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , bool SF             // Symmetry flag
+        , typename... CRAs >  // Compile time row arguments
 inline typename Rows<MT,true,false,SF,CRAs...>::Iterator
    Rows<MT,true,false,SF,CRAs...>::set( size_t i, size_t j, const ElementType& value )
 {
@@ -1334,9 +1342,9 @@ inline typename Rows<MT,true,false,SF,CRAs...>::Iterator
 // are not allowed. In case the sparse row selection already contains an element with row index
 // \a i and column index \a j, a \a std::invalid_argument exception is thrown.
 */
-template< typename MT       // Type of the sparse matrix
-        , bool SF           // Symmetry flag
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , bool SF             // Symmetry flag
+        , typename... CRAs >  // Compile time row arguments
 inline typename Rows<MT,true,false,SF,CRAs...>::Iterator
    Rows<MT,true,false,SF,CRAs...>::insert( size_t i, size_t j, const ElementType& value )
 {
@@ -1390,9 +1398,9 @@ inline typename Rows<MT,true,false,SF,CRAs...>::Iterator
 // \note Although append() does not allocate new memory, it still invalidates all iterators
 // returned by the end() functions!
 */
-template< typename MT       // Type of the sparse matrix
-        , bool SF           // Symmetry flag
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , bool SF             // Symmetry flag
+        , typename... CRAs >  // Compile time row arguments
 inline void Rows<MT,true,false,SF,CRAs...>::append( size_t i, size_t j, const ElementType& value, bool check )
 {
    if( !check || !isDefault<strict>( value ) )
@@ -1416,12 +1424,12 @@ inline void Rows<MT,true,false,SF,CRAs...>::append( size_t i, size_t j, const El
 // \note Although finalize() does not allocate new memory, it still invalidates all iterators
 // returned by the end() functions!
 */
-template< typename MT       // Type of the sparse matrix
-        , bool SF           // Symmetry flag
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , bool SF             // Symmetry flag
+        , typename... CRAs >  // Compile time row arguments
 inline void Rows<MT,true,false,SF,CRAs...>::finalize( size_t i )
 {
-   UNUSED_PARAMETER( i );
+   MAYBE_UNUSED( i );
 
    return;
 }
@@ -1447,9 +1455,9 @@ inline void Rows<MT,true,false,SF,CRAs...>::finalize( size_t i )
 //
 // This function erases an element from the sparse row selection.
 */
-template< typename MT       // Type of the sparse matrix
-        , bool SF           // Symmetry flag
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , bool SF             // Symmetry flag
+        , typename... CRAs >  // Compile time row arguments
 inline void Rows<MT,true,false,SF,CRAs...>::erase( size_t i, size_t j )
 {
    BLAZE_USER_ASSERT( i < rows()   , "Invalid row access index"    );
@@ -1471,9 +1479,9 @@ inline void Rows<MT,true,false,SF,CRAs...>::erase( size_t i, size_t j )
 //
 // This function erases an element from the sparse row selection.
 */
-template< typename MT       // Type of the sparse matrix
-        , bool SF           // Symmetry flag
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , bool SF             // Symmetry flag
+        , typename... CRAs >  // Compile time row arguments
 inline typename Rows<MT,true,false,SF,CRAs...>::Iterator
    Rows<MT,true,false,SF,CRAs...>::erase( size_t i, Iterator pos )
 {
@@ -1496,9 +1504,9 @@ inline typename Rows<MT,true,false,SF,CRAs...>::Iterator
 //
 // This function erases a range of elements from row \a i of the sparse row selection.
 */
-template< typename MT       // Type of the sparse matrix
-        , bool SF           // Symmetry flag
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , bool SF             // Symmetry flag
+        , typename... CRAs >  // Compile time row arguments
 inline typename Rows<MT,true,false,SF,CRAs...>::Iterator
    Rows<MT,true,false,SF,CRAs...>::erase( size_t i, Iterator first, Iterator last )
 {
@@ -1533,10 +1541,10 @@ inline typename Rows<MT,true,false,SF,CRAs...>::Iterator
 // \note The predicate is required to be pure, i.e. to produce deterministic results for elements
 // with the same value. The attempt to use an impure predicate leads to undefined behavior!
 */
-template< typename MT       // Type of the sparse matrix
-        , bool SF           // Symmetry flag
-        , size_t... CRAs >  // Compile time row arguments
-template< typename Pred >   // Type of the unary predicate
+template< typename MT         // Type of the sparse matrix
+        , bool SF             // Symmetry flag
+        , typename... CRAs >  // Compile time row arguments
+template< typename Pred >     // Type of the unary predicate
 inline void Rows<MT,true,false,SF,CRAs...>::erase( Pred predicate )
 {
    for( size_t i=0UL; i<rows(); ++i ) {
@@ -1574,10 +1582,10 @@ inline void Rows<MT,true,false,SF,CRAs...>::erase( Pred predicate )
 // \note The predicate is required to be pure, i.e. to produce deterministic results for elements
 // with the same value. The attempt to use an impure predicate leads to undefined behavior!
 */
-template< typename MT       // Type of the sparse matrix
-        , bool SF           // Symmetry flag
-        , size_t... CRAs >  // Compile time row arguments
-template< typename Pred >   // Type of the unary predicate
+template< typename MT         // Type of the sparse matrix
+        , bool SF             // Symmetry flag
+        , typename... CRAs >  // Compile time row arguments
+template< typename Pred >     // Type of the unary predicate
 inline void Rows<MT,true,false,SF,CRAs...>::erase( size_t i, Iterator first, Iterator last, Pred predicate )
 {
    BLAZE_USER_ASSERT( i < rows(), "Invalid row access index" );
@@ -1611,9 +1619,9 @@ inline void Rows<MT,true,false,SF,CRAs...>::erase( size_t i, Iterator first, Ite
 // Note that the returned iterator is subject to invalidation due to inserting operations via
 // the function call operator, the set() function or the insert() function!
 */
-template< typename MT       // Type of the sparse matrix
-        , bool SF           // Symmetry flag
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , bool SF             // Symmetry flag
+        , typename... CRAs >  // Compile time row arguments
 inline typename Rows<MT,true,false,SF,CRAs...>::Iterator
    Rows<MT,true,false,SF,CRAs...>::find( size_t i, size_t j )
 {
@@ -1638,9 +1646,9 @@ inline typename Rows<MT,true,false,SF,CRAs...>::Iterator
 // Note that the returned iterator is subject to invalidation due to inserting operations via
 // the function call operator, the set() function or the insert() function!
 */
-template< typename MT       // Type of the sparse matrix
-        , bool SF           // Symmetry flag
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , bool SF             // Symmetry flag
+        , typename... CRAs >  // Compile time row arguments
 inline typename Rows<MT,true,false,SF,CRAs...>::ConstIterator
    Rows<MT,true,false,SF,CRAs...>::find( size_t i, size_t j ) const
 {
@@ -1664,9 +1672,9 @@ inline typename Rows<MT,true,false,SF,CRAs...>::ConstIterator
 // to invalidation due to inserting operations via the function call operator, the set() function
 // or the insert() function!
 */
-template< typename MT       // Type of the sparse matrix
-        , bool SF           // Symmetry flag
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , bool SF             // Symmetry flag
+        , typename... CRAs >  // Compile time row arguments
 inline typename Rows<MT,true,false,SF,CRAs...>::Iterator
    Rows<MT,true,false,SF,CRAs...>::lowerBound( size_t i, size_t j )
 {
@@ -1690,9 +1698,9 @@ inline typename Rows<MT,true,false,SF,CRAs...>::Iterator
 // to invalidation due to inserting operations via the function call operator, the set() function
 // or the insert() function!
 */
-template< typename MT       // Type of the sparse matrix
-        , bool SF           // Symmetry flag
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , bool SF             // Symmetry flag
+        , typename... CRAs >  // Compile time row arguments
 inline typename Rows<MT,true,false,SF,CRAs...>::ConstIterator
    Rows<MT,true,false,SF,CRAs...>::lowerBound( size_t i, size_t j ) const
 {
@@ -1716,9 +1724,9 @@ inline typename Rows<MT,true,false,SF,CRAs...>::ConstIterator
 // to invalidation due to inserting operations via the function call operator, the set() function
 // or the insert() function!
 */
-template< typename MT       // Type of the sparse matrix
-        , bool SF           // Symmetry flag
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , bool SF             // Symmetry flag
+        , typename... CRAs >  // Compile time row arguments
 inline typename Rows<MT,true,false,SF,CRAs...>::Iterator
    Rows<MT,true,false,SF,CRAs...>::upperBound( size_t i, size_t j )
 {
@@ -1742,9 +1750,9 @@ inline typename Rows<MT,true,false,SF,CRAs...>::Iterator
 // to invalidation due to inserting operations via the function call operator, the set() function
 // or the insert() function!
 */
-template< typename MT       // Type of the sparse matrix
-        , bool SF           // Symmetry flag
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , bool SF             // Symmetry flag
+        , typename... CRAs >  // Compile time row arguments
 inline typename Rows<MT,true,false,SF,CRAs...>::ConstIterator
    Rows<MT,true,false,SF,CRAs...>::upperBound( size_t i, size_t j ) const
 {
@@ -1775,9 +1783,9 @@ inline typename Rows<MT,true,false,SF,CRAs...>::ConstIterator
 // columns. Also, the function fails if the invariants of an underlying, restricted matrix are
 // violated. In all cases, a \a std::logic_error is thrown.
 */
-template< typename MT       // Type of the sparse matrix
-        , bool SF           // Symmetry flag
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , bool SF             // Symmetry flag
+        , typename... CRAs >  // Compile time row arguments
 inline Rows<MT,true,false,SF,CRAs...>&
    Rows<MT,true,false,SF,CRAs...>::transpose()
 {
@@ -1798,7 +1806,7 @@ inline Rows<MT,true,false,SF,CRAs...>&
       }
    }
 
-   BLAZE_DECLTYPE_AUTO( left, derestrict( *this ) );
+   decltype(auto) left( derestrict( *this ) );
 
    left.reset();
    smpAssign( left, tmp );
@@ -1822,9 +1830,9 @@ inline Rows<MT,true,false,SF,CRAs...>&
 // columns. Also, the function fails if the invariants of an underlying, restricted matrix are
 // violated. In all cases, a \a std::logic_error is thrown.
 */
-template< typename MT       // Type of the sparse matrix
-        , bool SF           // Symmetry flag
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , bool SF             // Symmetry flag
+        , typename... CRAs >  // Compile time row arguments
 inline Rows<MT,true,false,SF,CRAs...>&
    Rows<MT,true,false,SF,CRAs...>::ctranspose()
 {
@@ -1845,7 +1853,7 @@ inline Rows<MT,true,false,SF,CRAs...>&
       }
    }
 
-   BLAZE_DECLTYPE_AUTO( left, derestrict( *this ) );
+   decltype(auto) left( derestrict( *this ) );
 
    left.reset();
    smpAssign( left, tmp );
@@ -1869,10 +1877,10 @@ inline Rows<MT,true,false,SF,CRAs...>&
 // scale a row selection on a lower or upper unitriangular matrix. The attempt to scale such a
 // row selection results in a compile time error!
 */
-template< typename MT       // Type of the sparse matrix
-        , bool SF           // Symmetry flag
-        , size_t... CRAs >  // Compile time row arguments
-template< typename Other >  // Data type of the scalar value
+template< typename MT         // Type of the sparse matrix
+        , bool SF             // Symmetry flag
+        , typename... CRAs >  // Compile time row arguments
+template< typename Other >    // Data type of the scalar value
 inline Rows<MT,true,false,SF,CRAs...>&
    Rows<MT,true,false,SF,CRAs...>::scale( const Other& scalar )
 {
@@ -1911,10 +1919,10 @@ inline Rows<MT,true,false,SF,CRAs...>&
 // contrast to the isAliased() function this function is allowed to use compile time expressions
 // to optimize the evaluation.
 */
-template< typename MT       // Type of the sparse matrix
-        , bool SF           // Symmetry flag
-        , size_t... CRAs >  // Compile time row arguments
-template< typename Other >  // Data type of the foreign expression
+template< typename MT         // Type of the sparse matrix
+        , bool SF             // Symmetry flag
+        , typename... CRAs >  // Compile time row arguments
+template< typename Other >    // Data type of the foreign expression
 inline bool Rows<MT,true,false,SF,CRAs...>::canAlias( const Other* alias ) const noexcept
 {
    return matrix_.isAliased( alias );
@@ -1934,10 +1942,10 @@ inline bool Rows<MT,true,false,SF,CRAs...>::canAlias( const Other* alias ) const
 // In contrast to the canAlias() function this function is not allowed to use compile time
 // expressions to optimize the evaluation.
 */
-template< typename MT       // Type of the sparse matrix
-        , bool SF           // Symmetry flag
-        , size_t... CRAs >  // Compile time row arguments
-template< typename Other >  // Data type of the foreign expression
+template< typename MT         // Type of the sparse matrix
+        , bool SF             // Symmetry flag
+        , typename... CRAs >  // Compile time row arguments
+template< typename Other >    // Data type of the foreign expression
 inline bool Rows<MT,true,false,SF,CRAs...>::isAliased( const Other* alias ) const noexcept
 {
    return matrix_.isAliased( alias );
@@ -1957,9 +1965,9 @@ inline bool Rows<MT,true,false,SF,CRAs...>::isAliased( const Other* alias ) cons
 // this function additionally provides runtime information (as for instance the current number of
 // rows and/or columns of the matrix).
 */
-template< typename MT       // Type of the sparse matrix
-        , bool SF           // Symmetry flag
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , bool SF             // Symmetry flag
+        , typename... CRAs >  // Compile time row arguments
 inline bool Rows<MT,true,false,SF,CRAs...>::canSMPAssign() const noexcept
 {
    return false;
@@ -1980,11 +1988,11 @@ inline bool Rows<MT,true,false,SF,CRAs...>::canSMPAssign() const noexcept
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename MT       // Type of the sparse matrix
-        , bool SF           // Symmetry flag
-        , size_t... CRAs >  // Compile time row arguments
-template< typename MT2      // Type of the right-hand side dense matrix
-        , bool SO >         // Storage order of the right-hand side dense matrix
+template< typename MT         // Type of the sparse matrix
+        , bool SF             // Symmetry flag
+        , typename... CRAs >  // Compile time row arguments
+template< typename MT2        // Type of the right-hand side dense matrix
+        , bool SO >           // Storage order of the right-hand side dense matrix
 inline void Rows<MT,true,false,SF,CRAs...>::assign( const DenseMatrix<MT2,SO>& rhs )
 {
    BLAZE_CONSTRAINT_MUST_NOT_BE_SYMMETRIC_MATRIX_TYPE( MT );
@@ -2027,10 +2035,10 @@ inline void Rows<MT,true,false,SF,CRAs...>::assign( const DenseMatrix<MT2,SO>& r
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename MT       // Type of the sparse matrix
-        , bool SF           // Symmetry flag
-        , size_t... CRAs >  // Compile time row arguments
-template< typename MT2 >    // Type of the right-hand side sparse matrix
+template< typename MT         // Type of the sparse matrix
+        , bool SF             // Symmetry flag
+        , typename... CRAs >  // Compile time row arguments
+template< typename MT2 >      // Type of the right-hand side sparse matrix
 inline void Rows<MT,true,false,SF,CRAs...>::assign( const SparseMatrix<MT2,false>& rhs )
 {
    BLAZE_CONSTRAINT_MUST_NOT_BE_SYMMETRIC_MATRIX_TYPE( MT );
@@ -2073,10 +2081,10 @@ inline void Rows<MT,true,false,SF,CRAs...>::assign( const SparseMatrix<MT2,false
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename MT       // Type of the sparse matrix
-        , bool SF           // Symmetry flag
-        , size_t... CRAs >  // Compile time row arguments
-template< typename MT2 >    // Type of the right-hand side sparse matrix
+template< typename MT         // Type of the sparse matrix
+        , bool SF             // Symmetry flag
+        , typename... CRAs >  // Compile time row arguments
+template< typename MT2 >      // Type of the right-hand side sparse matrix
 inline void Rows<MT,true,false,SF,CRAs...>::assign( const SparseMatrix<MT2,true>& rhs )
 {
    BLAZE_CONSTRAINT_MUST_NOT_BE_SYMMETRIC_MATRIX_TYPE( MT );
@@ -2088,12 +2096,10 @@ inline void Rows<MT,true,false,SF,CRAs...>::assign( const SparseMatrix<MT2,true>
    BLAZE_INTERNAL_ASSERT( columns() == (~rhs).columns(), "Invalid number of columns" );
    BLAZE_INTERNAL_ASSERT( nonZeros() == 0UL, "Invalid non-zero elements detected" );
 
-   using RhsIterator = ConstIterator_t<MT2>;
-
    // Counting the number of elements per row
    std::vector<size_t> rowLengths( rows(), 0UL );
    for( size_t j=0UL; j<columns(); ++j ) {
-      for( RhsIterator element=(~rhs).begin(j); element!=(~rhs).end(j); ++element )
+      for( auto element=(~rhs).begin(j); element!=(~rhs).end(j); ++element )
          ++rowLengths[element->index()];
    }
 
@@ -2104,7 +2110,7 @@ inline void Rows<MT,true,false,SF,CRAs...>::assign( const SparseMatrix<MT2,true>
 
    // Appending the elements to the rows of the sparse row selection
    for( size_t j=0UL; j<columns(); ++j ) {
-      for( RhsIterator element=(~rhs).begin(j); element!=(~rhs).end(j); ++element )
+      for( auto element=(~rhs).begin(j); element!=(~rhs).end(j); ++element )
          append( element->index(), j, element->value(), true );
    }
 }
@@ -2124,11 +2130,11 @@ inline void Rows<MT,true,false,SF,CRAs...>::assign( const SparseMatrix<MT2,true>
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename MT       // Type of the sparse matrix
-        , bool SF           // Symmetry flag
-        , size_t... CRAs >  // Compile time row arguments
-template< typename MT2      // Type of the right-hand side matrix
-        , bool SO >         // Storage order of the right-hand side matrix
+template< typename MT         // Type of the sparse matrix
+        , bool SF             // Symmetry flag
+        , typename... CRAs >  // Compile time row arguments
+template< typename MT2        // Type of the right-hand side matrix
+        , bool SO >           // Storage order of the right-hand side matrix
 inline void Rows<MT,true,false,SF,CRAs...>::addAssign( const Matrix<MT2,SO>& rhs )
 {
    BLAZE_CONSTRAINT_MUST_NOT_BE_SYMMETRIC_MATRIX_TYPE( MT );
@@ -2161,11 +2167,11 @@ inline void Rows<MT,true,false,SF,CRAs...>::addAssign( const Matrix<MT2,SO>& rhs
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename MT       // Type of the sparse matrix
-        , bool SF           // Symmetry flag
-        , size_t... CRAs >  // Compile time row arguments
-template< typename MT2      // Type of the right-hand side matrix
-        , bool SO >         // Storage order of the right-hand side matrix
+template< typename MT         // Type of the sparse matrix
+        , bool SF             // Symmetry flag
+        , typename... CRAs >  // Compile time row arguments
+template< typename MT2        // Type of the right-hand side matrix
+        , bool SO >           // Storage order of the right-hand side matrix
 inline void Rows<MT,true,false,SF,CRAs...>::subAssign( const Matrix<MT2,SO>& rhs )
 {
    BLAZE_CONSTRAINT_MUST_NOT_BE_SYMMETRIC_MATRIX_TYPE( MT );
@@ -2198,11 +2204,11 @@ inline void Rows<MT,true,false,SF,CRAs...>::subAssign( const Matrix<MT2,SO>& rhs
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename MT       // Type of the sparse matrix
-        , bool SF           // Symmetry flag
-        , size_t... CRAs >  // Compile time row arguments
-template< typename MT2      // Type of the right-hand side matrix
-        , bool SO >         // Storage order of the right-hand side matrix
+template< typename MT         // Type of the sparse matrix
+        , bool SF             // Symmetry flag
+        , typename... CRAs >  // Compile time row arguments
+template< typename MT2        // Type of the right-hand side matrix
+        , bool SO >           // Storage order of the right-hand side matrix
 inline void Rows<MT,true,false,SF,CRAs...>::schurAssign( const Matrix<MT2,SO>& rhs )
 {
    BLAZE_CONSTRAINT_MUST_NOT_BE_SYMMETRIC_MATRIX_TYPE( MT );
@@ -2244,8 +2250,8 @@ inline void Rows<MT,true,false,SF,CRAs...>::schurAssign( const Matrix<MT2,SO>& r
 // This specialization of Rows adapts the class template to the requirements of general
 // column-major sparse matrices.
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
 class Rows<MT,false,false,false,CRAs...>
    : public View< SparseMatrix< Rows<MT,false,false,false,CRAs...>, false > >
    , private RowsData<CRAs...>
@@ -2256,6 +2262,10 @@ class Rows<MT,false,false,false,CRAs...>
    using Operand  = If_t< IsExpression_v<MT>, MT, MT& >;  //!< Composite data type of the sparse matrix expression.
    //**********************************************************************************************
 
+   //**Compile time flags**************************************************************************
+   using DataType::N;  //!< Number of compile time indices.
+   //**********************************************************************************************
+
  public:
    //**Type definitions****************************************************************************
    //! Type of this Rows instance.
@@ -2263,7 +2273,7 @@ class Rows<MT,false,false,false,CRAs...>
 
    using BaseType      = SparseMatrix<This,false>;     //!< Base type of this Rows instance.
    using ViewedType    = MT;                           //!< The type viewed by this Rows instance.
-   using ResultType    = RowsTrait_t<MT,CRAs...>;      //!< Result type for expression template evaluations.
+   using ResultType    = RowsTrait_t<MT,N>;            //!< Result type for expression template evaluations.
    using OppositeType  = OppositeType_t<ResultType>;   //!< Result type with opposite storage order for expression template evaluations.
    using TransposeType = TransposeType_t<ResultType>;  //!< Transpose type for expression template evaluations.
    using ElementType   = ElementType_t<MT>;            //!< Type of the row elements.
@@ -2580,7 +2590,7 @@ class Rows<MT,false,false,false,CRAs...>
 
       //**Friend declarations**********************************************************************
       template< typename MatrixType2, typename IteratorType2 > friend class RowsIterator;
-      template< typename MT2, bool SO2, bool DF2, bool SF2, size_t... CRAs2 > friend class Rows;
+      template< typename MT2, bool SO2, bool DF2, bool SF2, typename... CRAs2 > friend class Rows;
       //*******************************************************************************************
    };
    //**********************************************************************************************
@@ -2596,6 +2606,9 @@ class Rows<MT,false,false,false,CRAs...>
    //**Compilation flags***************************************************************************
    //! Compilation switch for the expression template assignment strategy.
    static constexpr bool smpAssignable = MT::smpAssignable;
+
+   //! Compilation switch for the expression template evaluation strategy.
+   static constexpr bool compileTimeArgs = DataType::compileTimeArgs;
    //**********************************************************************************************
 
    //**Constructors********************************************************************************
@@ -2604,13 +2617,16 @@ class Rows<MT,false,false,false,CRAs...>
    template< typename... RRAs >
    explicit inline Rows( MT& matrix, RRAs... args );
 
-   inline Rows( const Rows& ) = default;
-   inline Rows( Rows&& ) = default;
+   Rows( const Rows& ) = default;
+   Rows( Rows&& ) = default;
    //@}
    //**********************************************************************************************
 
    //**Destructor**********************************************************************************
-   // No explicitly declared destructor.
+   /*!\name Destructor */
+   //@{
+   ~Rows() = default;
+   //@}
    //**********************************************************************************************
 
    //**Data access functions***********************************************************************
@@ -2776,7 +2792,7 @@ class Rows<MT,false,false,false,CRAs...>
 // optional \a blaze::unchecked argument.
 */
 template< typename MT         // Type of the sparse matrix
-        , size_t... CRAs >    // Compile time row arguments
+        , typename... CRAs >  // Compile time row arguments
 template< typename... RRAs >  // Runtime row arguments
 inline Rows<MT,false,false,false,CRAs...>::Rows( MT& matrix, RRAs... args )
    : DataType( args... )  // Base class initialization
@@ -2813,8 +2829,8 @@ inline Rows<MT,false,false,false,CRAs...>::Rows( MT& matrix, RRAs... args )
 // This function only performs an index check in case BLAZE_USER_ASSERT() is active. In contrast,
 // the at() function is guaranteed to perform a check of the given access indices.
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
 inline typename Rows<MT,false,false,false,CRAs...>::Reference
    Rows<MT,false,false,false,CRAs...>::operator()( size_t i, size_t j )
 {
@@ -2838,8 +2854,8 @@ inline typename Rows<MT,false,false,false,CRAs...>::Reference
 // This function only performs an index check in case BLAZE_USER_ASSERT() is active. In contrast,
 // the at() function is guaranteed to perform a check of the given access indices.
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
 inline typename Rows<MT,false,false,false,CRAs...>::ConstReference
    Rows<MT,false,false,false,CRAs...>::operator()( size_t i, size_t j ) const
 {
@@ -2864,8 +2880,8 @@ inline typename Rows<MT,false,false,false,CRAs...>::ConstReference
 // In contrast to the function call operator this function always performs a check of the given
 // access indices.
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
 inline typename Rows<MT,false,false,false,CRAs...>::Reference
    Rows<MT,false,false,false,CRAs...>::at( size_t i, size_t j )
 {
@@ -2893,8 +2909,8 @@ inline typename Rows<MT,false,false,false,CRAs...>::Reference
 // In contrast to the function call operator this function always performs a check of the given
 // access indices.
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
 inline typename Rows<MT,false,false,false,CRAs...>::ConstReference
    Rows<MT,false,false,false,CRAs...>::at( size_t i, size_t j ) const
 {
@@ -2919,8 +2935,8 @@ inline typename Rows<MT,false,false,false,CRAs...>::ConstReference
 //
 // This function returns a row iterator to the first non-zero element of row \a i.
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
 inline typename Rows<MT,false,false,false,CRAs...>::Iterator
    Rows<MT,false,false,false,CRAs...>::begin( size_t i )
 {
@@ -2941,8 +2957,8 @@ inline typename Rows<MT,false,false,false,CRAs...>::Iterator
 //
 // This function returns a row iterator to the first non-zero element of row \a i.
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
 inline typename Rows<MT,false,false,false,CRAs...>::ConstIterator
    Rows<MT,false,false,false,CRAs...>::begin( size_t i ) const
 {
@@ -2963,8 +2979,8 @@ inline typename Rows<MT,false,false,false,CRAs...>::ConstIterator
 //
 // This function returns a row iterator to the first non-zero element of row \a i.
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
 inline typename Rows<MT,false,false,false,CRAs...>::ConstIterator
    Rows<MT,false,false,false,CRAs...>::cbegin( size_t i ) const
 {
@@ -2985,8 +3001,8 @@ inline typename Rows<MT,false,false,false,CRAs...>::ConstIterator
 //
 // This function returns an row iterator just past the last non-zero element of row \a i.
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
 inline typename Rows<MT,false,false,false,CRAs...>::Iterator
    Rows<MT,false,false,false,CRAs...>::end( size_t i )
 {
@@ -3007,8 +3023,8 @@ inline typename Rows<MT,false,false,false,CRAs...>::Iterator
 //
 // This function returns an row iterator just past the last non-zero element of row \a i.
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
 inline typename Rows<MT,false,false,false,CRAs...>::ConstIterator
    Rows<MT,false,false,false,CRAs...>::end( size_t i ) const
 {
@@ -3029,8 +3045,8 @@ inline typename Rows<MT,false,false,false,CRAs...>::ConstIterator
 //
 // This function returns an row iterator just past the last non-zero element of row \a i.
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
 inline typename Rows<MT,false,false,false,CRAs...>::ConstIterator
    Rows<MT,false,false,false,CRAs...>::cend( size_t i ) const
 {
@@ -3066,8 +3082,8 @@ inline typename Rows<MT,false,false,false,CRAs...>::ConstIterator
 // exception is thrown. Also, if the underlying matrix \a MT is restricted and the assignment
 // would violate an invariant of the matrix, a \a std::invalid_argument exception is thrown.
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
 inline Rows<MT,false,false,false,CRAs...>&
    Rows<MT,false,false,false,CRAs...>::operator=( initializer_list< initializer_list<ElementType> > list )
 {
@@ -3088,7 +3104,7 @@ inline Rows<MT,false,false,false,CRAs...>&
       }
    }
 
-   BLAZE_DECLTYPE_AUTO( left, derestrict( *this ) );
+   decltype(auto) left( derestrict( *this ) );
 
    smpAssign( left, tmp );
 
@@ -3113,8 +3129,8 @@ inline Rows<MT,false,false,false,CRAs...>&
 // symmetric matrix and the assignment would violate its lower, upper, or symmetry property,
 // respectively, a \a std::invalid_argument exception is thrown.
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
 inline Rows<MT,false,false,false,CRAs...>&
    Rows<MT,false,false,false,CRAs...>::operator=( const Rows& rhs )
 {
@@ -3124,7 +3140,7 @@ inline Rows<MT,false,false,false,CRAs...>&
    BLAZE_CONSTRAINT_MUST_BE_SPARSE_MATRIX_TYPE ( ResultType );
    BLAZE_CONSTRAINT_MUST_NOT_REQUIRE_EVALUATION( ResultType );
 
-   if( this == &rhs || ( &matrix_ == &rhs.matrix_ && idces() == rhs.idces() ) )
+   if( this == &rhs || ( &matrix_ == &rhs.matrix_ && compareIndices( *this, rhs ) ) )
       return *this;
 
    if( rows() != rhs.rows() || columns() != rhs.columns() ) {
@@ -3139,7 +3155,7 @@ inline Rows<MT,false,false,false,CRAs...>&
       }
    }
 
-   BLAZE_DECLTYPE_AUTO( left, derestrict( *this ) );
+   decltype(auto) left( derestrict( *this ) );
 
    if( rhs.canAlias( &matrix_ ) ) {
       const ResultType tmp( rhs );
@@ -3174,10 +3190,10 @@ inline Rows<MT,false,false,false,CRAs...>&
 // and the assignment would violate its lower, upper, or symmetry property, respectively, a
 // \a std::invalid_argument exception is thrown.
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
-template< typename MT2      // Type of the right-hand side matrix
-        , bool SO >         // Storage order of the right-hand side matrix
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
+template< typename MT2        // Type of the right-hand side matrix
+        , bool SO >           // Storage order of the right-hand side matrix
 inline Rows<MT,false,false,false,CRAs...>&
    Rows<MT,false,false,false,CRAs...>::operator=( const Matrix<MT2,SO>& rhs )
 {
@@ -3201,7 +3217,7 @@ inline Rows<MT,false,false,false,CRAs...>&
       }
    }
 
-   BLAZE_DECLTYPE_AUTO( left, derestrict( *this ) );
+   decltype(auto) left( derestrict( *this ) );
 
    if( IsReference_v<Right> && right.canAlias( &matrix_ ) ) {
       const ResultType_t<MT2> tmp( right );
@@ -3237,10 +3253,10 @@ inline Rows<MT,false,false,false,CRAs...>&
 // symmetric matrix and the assignment would violate its lower, upper, or symmetry property,
 // respectively, a \a std::invalid_argument exception is thrown.
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
-template< typename MT2      // Type of the right-hand side matrix
-        , bool SO >         // Storage order of the right-hand side matrix
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
+template< typename MT2        // Type of the right-hand side matrix
+        , bool SO >           // Storage order of the right-hand side matrix
 inline Rows<MT,false,false,false,CRAs...>&
    Rows<MT,false,false,false,CRAs...>::operator+=( const Matrix<MT2,SO>& rhs )
 {
@@ -3269,7 +3285,7 @@ inline Rows<MT,false,false,false,CRAs...>&
       }
    }
 
-   BLAZE_DECLTYPE_AUTO( left, derestrict( *this ) );
+   decltype(auto) left( derestrict( *this ) );
 
    if( IsSparseMatrix_v<AddType> ) {
       left.reset();
@@ -3299,10 +3315,10 @@ inline Rows<MT,false,false,false,CRAs...>&
 // symmetric matrix and the assignment would violate its lower, upper, or symmetry property,
 // respectively, a \a std::invalid_argument exception is thrown.
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
-template< typename MT2      // Type of the right-hand side matrix
-        , bool SO >         // Storage order of the right-hand side matrix
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
+template< typename MT2        // Type of the right-hand side matrix
+        , bool SO >           // Storage order of the right-hand side matrix
 inline Rows<MT,false,false,false,CRAs...>&
    Rows<MT,false,false,false,CRAs...>::operator-=( const Matrix<MT2,SO>& rhs )
 {
@@ -3331,7 +3347,7 @@ inline Rows<MT,false,false,false,CRAs...>&
       }
    }
 
-   BLAZE_DECLTYPE_AUTO( left, derestrict( *this ) );
+   decltype(auto) left( derestrict( *this ) );
 
    if( IsSparseMatrix_v<SubType> ) {
       left.reset();
@@ -3361,10 +3377,10 @@ inline Rows<MT,false,false,false,CRAs...>&
 // symmetric matrix and the assignment would violate its lower, upper, or symmetry property,
 // respectively, a \a std::invalid_argument exception is thrown.
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
-template< typename MT2      // Type of the right-hand side matrix
-        , bool SO >         // Storage order of the right-hand side matrix
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
+template< typename MT2        // Type of the right-hand side matrix
+        , bool SO >           // Storage order of the right-hand side matrix
 inline Rows<MT,false,false,false,CRAs...>&
    Rows<MT,false,false,false,CRAs...>::operator%=( const Matrix<MT2,SO>& rhs )
 {
@@ -3393,7 +3409,7 @@ inline Rows<MT,false,false,false,CRAs...>&
       }
    }
 
-   BLAZE_DECLTYPE_AUTO( left, derestrict( *this ) );
+   decltype(auto) left( derestrict( *this ) );
 
    if( IsSparseMatrix_v<SchurType> ) {
       left.reset();
@@ -3423,8 +3439,8 @@ inline Rows<MT,false,false,false,CRAs...>&
 //
 // \return The matrix containing the rows.
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
 inline MT& Rows<MT,false,false,false,CRAs...>::operand() noexcept
 {
    return matrix_;
@@ -3439,8 +3455,8 @@ inline MT& Rows<MT,false,false,false,CRAs...>::operand() noexcept
 //
 // \return The matrix containing the rows.
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
 inline const MT& Rows<MT,false,false,false,CRAs...>::operand() const noexcept
 {
    return matrix_;
@@ -3455,8 +3471,8 @@ inline const MT& Rows<MT,false,false,false,CRAs...>::operand() const noexcept
 //
 // \return The number of columns of the row selection.
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
 inline size_t Rows<MT,false,false,false,CRAs...>::columns() const noexcept
 {
    return matrix_.columns();
@@ -3471,8 +3487,8 @@ inline size_t Rows<MT,false,false,false,CRAs...>::columns() const noexcept
 //
 // \return The capacity of the sparse row selection.
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
 inline size_t Rows<MT,false,false,false,CRAs...>::capacity() const noexcept
 {
    return rows() * columns();
@@ -3490,11 +3506,11 @@ inline size_t Rows<MT,false,false,false,CRAs...>::capacity() const noexcept
 //
 // This function returns the current capacity of the specified row.
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
 inline size_t Rows<MT,false,false,false,CRAs...>::capacity( size_t i ) const noexcept
 {
-   UNUSED_PARAMETER( i );
+   MAYBE_UNUSED( i );
 
    BLAZE_USER_ASSERT( i < rows(), "Invalid row access index" );
 
@@ -3510,8 +3526,8 @@ inline size_t Rows<MT,false,false,false,CRAs...>::capacity( size_t i ) const noe
 //
 // \return The number of non-zero elements in the sparse row selection.
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
 inline size_t Rows<MT,false,false,false,CRAs...>::nonZeros() const
 {
    size_t nonzeros( 0UL );
@@ -3541,8 +3557,8 @@ inline size_t Rows<MT,false,false,false,CRAs...>::nonZeros() const
 //
 // This function returns the current number of non-zero elements in the specified row.
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
 inline size_t Rows<MT,false,false,false,CRAs...>::nonZeros( size_t i ) const
 {
    BLAZE_USER_ASSERT( i < rows(), "Invalid row access index" );
@@ -3566,8 +3582,8 @@ inline size_t Rows<MT,false,false,false,CRAs...>::nonZeros( size_t i ) const
 //
 // \return void
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
 inline void Rows<MT,false,false,false,CRAs...>::reset()
 {
    for( size_t i=0UL; i<rows(); ++i ) {
@@ -3588,8 +3604,8 @@ inline void Rows<MT,false,false,false,CRAs...>::reset()
 // This function resets the values in the specified row to their default value. Note that the
 // capacity of the row remains unchanged.
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
 inline void Rows<MT,false,false,false,CRAs...>::reset( size_t i )
 {
    const size_t index( idx(i) );
@@ -3624,11 +3640,11 @@ inline void Rows<MT,false,false,false,CRAs...>::reset( size_t i )
 // elements. The current values of the elements and the individual capacities of the selected
 // rows are preserved.
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
 inline void Rows<MT,false,false,false,CRAs...>::reserve( size_t nonzeros )
 {
-   UNUSED_PARAMETER( nonzeros );
+   MAYBE_UNUSED( nonzeros );
 
    return;
 }
@@ -3649,11 +3665,11 @@ inline void Rows<MT,false,false,false,CRAs...>::reserve( size_t nonzeros )
 // current values of the sparse row selection and all other individual row capacities are
 // preserved.
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
 void Rows<MT,false,false,false,CRAs...>::reserve( size_t i, size_t nonzeros )
 {
-   UNUSED_PARAMETER( i, nonzeros );
+   MAYBE_UNUSED( i, nonzeros );
 
    return;
 }
@@ -3671,8 +3687,8 @@ void Rows<MT,false,false,false,CRAs...>::reserve( size_t i, size_t nonzeros )
 // The function removes all excessive capacity from all rows. Note that this function does not
 // remove the overall capacity but only reduces the capacity per row.
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
 void Rows<MT,false,false,false,CRAs...>::trim()
 {
    return;
@@ -3692,11 +3708,11 @@ void Rows<MT,false,false,false,CRAs...>::trim()
 // all excessive capacity from the specified row. The excessive capacity is assigned to the
 // subsequent row.
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
 void Rows<MT,false,false,false,CRAs...>::trim( size_t i )
 {
-   UNUSED_PARAMETER( i );
+   MAYBE_UNUSED( i );
 
    BLAZE_USER_ASSERT( i < rows(), "Invalid row access index" );
 
@@ -3727,8 +3743,8 @@ void Rows<MT,false,false,false,CRAs...>::trim( size_t i )
 // matrix already contains an element with row index \a i and column index \a j its value is
 // modified, else a new element with the given \a value is inserted.
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
 inline typename Rows<MT,false,false,false,CRAs...>::Iterator
    Rows<MT,false,false,false,CRAs...>::set( size_t i, size_t j, const ElementType& value )
 {
@@ -3752,8 +3768,8 @@ inline typename Rows<MT,false,false,false,CRAs...>::Iterator
 // are not allowed. In case the sparse row selection already contains an element with row index
 // \a i and column index \a j, a \a std::invalid_argument exception is thrown.
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
 inline typename Rows<MT,false,false,false,CRAs...>::Iterator
    Rows<MT,false,false,false,CRAs...>::insert( size_t i, size_t j, const ElementType& value )
 {
@@ -3807,8 +3823,8 @@ inline typename Rows<MT,false,false,false,CRAs...>::Iterator
 // \note Although append() does not allocate new memory, it still invalidates all iterators
 // returned by the end() functions!
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
 inline void Rows<MT,false,false,false,CRAs...>::append( size_t i, size_t j, const ElementType& value, bool check )
 {
    if( !check || !isDefault<strict>( value ) )
@@ -3832,11 +3848,11 @@ inline void Rows<MT,false,false,false,CRAs...>::append( size_t i, size_t j, cons
 // \note Although finalize() does not allocate new memory, it still invalidates all iterators
 // returned by the end() functions!
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
 inline void Rows<MT,false,false,false,CRAs...>::finalize( size_t i )
 {
-   UNUSED_PARAMETER( i );
+   MAYBE_UNUSED( i );
 
    return;
 }
@@ -3862,8 +3878,8 @@ inline void Rows<MT,false,false,false,CRAs...>::finalize( size_t i )
 //
 // This function erases an element from the sparse row selection.
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
 inline void Rows<MT,false,false,false,CRAs...>::erase( size_t i, size_t j )
 {
    BLAZE_USER_ASSERT( i < rows()   , "Invalid row access index"    );
@@ -3885,8 +3901,8 @@ inline void Rows<MT,false,false,false,CRAs...>::erase( size_t i, size_t j )
 //
 // This function erases an element from the sparse row selection.
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
 inline typename Rows<MT,false,false,false,CRAs...>::Iterator
    Rows<MT,false,false,false,CRAs...>::erase( size_t i, Iterator pos )
 {
@@ -3913,12 +3929,12 @@ inline typename Rows<MT,false,false,false,CRAs...>::Iterator
 //
 // This function erases a range of elements from row \a i of the sparse row selection.
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
 inline typename Rows<MT,false,false,false,CRAs...>::Iterator
    Rows<MT,false,false,false,CRAs...>::erase( size_t i, Iterator first, Iterator last )
 {
-   UNUSED_PARAMETER( i );
+   MAYBE_UNUSED( i );
 
    BLAZE_USER_ASSERT( i < rows(), "Invalid row access index" );
 
@@ -3955,9 +3971,9 @@ inline typename Rows<MT,false,false,false,CRAs...>::Iterator
 // \note The predicate is required to be pure, i.e. to produce deterministic results for elements
 // with the same value. The attempt to use an impure predicate leads to undefined behavior!
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
-template< typename Pred >   // Type of the unary predicate
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
+template< typename Pred >     // Type of the unary predicate
 inline void Rows<MT,false,false,false,CRAs...>::erase( Pred predicate )
 {
    for( size_t i=0UL; i<rows(); ++i ) {
@@ -3998,12 +4014,12 @@ inline void Rows<MT,false,false,false,CRAs...>::erase( Pred predicate )
 // \note The predicate is required to be pure, i.e. to produce deterministic results for elements
 // with the same value. The attempt to use an impure predicate leads to undefined behavior!
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
-template< typename Pred >   // Type of the unary predicate
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
+template< typename Pred >     // Type of the unary predicate
 inline void Rows<MT,false,false,false,CRAs...>::erase( size_t i, Iterator first, Iterator last, Pred predicate )
 {
-   UNUSED_PARAMETER( i );
+   MAYBE_UNUSED( i );
 
    BLAZE_USER_ASSERT( i < rows(), "Invalid row access index" );
 
@@ -4039,8 +4055,8 @@ inline void Rows<MT,false,false,false,CRAs...>::erase( size_t i, Iterator first,
 // Note that the returned iterator is subject to invalidation due to inserting operations via
 // the function call operator, the set() function or the insert() function!
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
 inline typename Rows<MT,false,false,false,CRAs...>::Iterator
    Rows<MT,false,false,false,CRAs...>::find( size_t i, size_t j )
 {
@@ -4071,8 +4087,8 @@ inline typename Rows<MT,false,false,false,CRAs...>::Iterator
 // Note that the returned iterator is subject to invalidation due to inserting operations via
 // the function call operator, the set() function or the insert() function!
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
 inline typename Rows<MT,false,false,false,CRAs...>::ConstIterator
    Rows<MT,false,false,false,CRAs...>::find( size_t i, size_t j ) const
 {
@@ -4102,8 +4118,8 @@ inline typename Rows<MT,false,false,false,CRAs...>::ConstIterator
 // to invalidation due to inserting operations via the function call operator, the set() function
 // or the insert() function!
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
 inline typename Rows<MT,false,false,false,CRAs...>::Iterator
    Rows<MT,false,false,false,CRAs...>::lowerBound( size_t i, size_t j )
 {
@@ -4137,8 +4153,8 @@ inline typename Rows<MT,false,false,false,CRAs...>::Iterator
 // to invalidation due to inserting operations via the function call operator, the set() function
 // or the insert() function!
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
 inline typename Rows<MT,false,false,false,CRAs...>::ConstIterator
    Rows<MT,false,false,false,CRAs...>::lowerBound( size_t i, size_t j ) const
 {
@@ -4172,8 +4188,8 @@ inline typename Rows<MT,false,false,false,CRAs...>::ConstIterator
 // to invalidation due to inserting operations via the function call operator, the set() function
 // or the insert() function!
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
 inline typename Rows<MT,false,false,false,CRAs...>::Iterator
    Rows<MT,false,false,false,CRAs...>::upperBound( size_t i, size_t j )
 {
@@ -4197,8 +4213,8 @@ inline typename Rows<MT,false,false,false,CRAs...>::Iterator
 // to invalidation due to inserting operations via the function call operator, the set() function
 // or the insert() function!
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
 inline typename Rows<MT,false,false,false,CRAs...>::ConstIterator
    Rows<MT,false,false,false,CRAs...>::upperBound( size_t i, size_t j ) const
 {
@@ -4229,8 +4245,8 @@ inline typename Rows<MT,false,false,false,CRAs...>::ConstIterator
 // columns. Also, the function fails if the invariants of an underlying, restricted matrix are
 // violated. In all cases, a \a std::logic_error is thrown.
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
 inline Rows<MT,false,false,false,CRAs...>&
    Rows<MT,false,false,false,CRAs...>::transpose()
 {
@@ -4251,7 +4267,7 @@ inline Rows<MT,false,false,false,CRAs...>&
       }
    }
 
-   BLAZE_DECLTYPE_AUTO( left, derestrict( *this ) );
+   decltype(auto) left( derestrict( *this ) );
 
    left.reset();
    smpAssign( left, tmp );
@@ -4275,8 +4291,8 @@ inline Rows<MT,false,false,false,CRAs...>&
 // columns. Also, the function fails if the invariants of an underlying, restricted matrix are
 // violated. In all cases, a \a std::logic_error is thrown.
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
 inline Rows<MT,false,false,false,CRAs...>&
    Rows<MT,false,false,false,CRAs...>::ctranspose()
 {
@@ -4297,7 +4313,7 @@ inline Rows<MT,false,false,false,CRAs...>&
       }
    }
 
-   BLAZE_DECLTYPE_AUTO( left, derestrict( *this ) );
+   decltype(auto) left( derestrict( *this ) );
 
    left.reset();
    smpAssign( left, tmp );
@@ -4321,9 +4337,9 @@ inline Rows<MT,false,false,false,CRAs...>&
 // scale a row selection on a lower or upper unitriangular matrix. The attempt to scale such a
 // row selection results in a compile time error!
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
-template< typename Other >  // Data type of the scalar value
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
+template< typename Other >    // Data type of the scalar value
 inline Rows<MT,false,false,false,CRAs...>&
    Rows<MT,false,false,false,CRAs...>::scale( const Other& scalar )
 {
@@ -4366,9 +4382,9 @@ inline Rows<MT,false,false,false,CRAs...>&
 // contrast to the isAliased() function this function is allowed to use compile time expressions
 // to optimize the evaluation.
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
-template< typename Other >  // Data type of the foreign expression
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
+template< typename Other >    // Data type of the foreign expression
 inline bool Rows<MT,false,false,false,CRAs...>::canAlias( const Other* alias ) const noexcept
 {
    return matrix_.isAliased( alias );
@@ -4388,9 +4404,9 @@ inline bool Rows<MT,false,false,false,CRAs...>::canAlias( const Other* alias ) c
 // In contrast to the canAlias() function this function is not allowed to use compile time
 // expressions to optimize the evaluation.
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
-template< typename Other >  // Data type of the foreign expression
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
+template< typename Other >    // Data type of the foreign expression
 inline bool Rows<MT,false,false,false,CRAs...>::isAliased( const Other* alias ) const noexcept
 {
    return matrix_.isAliased( alias );
@@ -4410,8 +4426,8 @@ inline bool Rows<MT,false,false,false,CRAs...>::isAliased( const Other* alias ) 
 // this function additionally provides runtime information (as for instance the current number of
 // rows and/or columns of the matrix).
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
 inline bool Rows<MT,false,false,false,CRAs...>::canSMPAssign() const noexcept
 {
    return false;
@@ -4432,10 +4448,10 @@ inline bool Rows<MT,false,false,false,CRAs...>::canSMPAssign() const noexcept
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
-template< typename MT2      // Type of the right-hand side dense matrix
-        , bool SO >         // Storage order of the right-hand side dense matrix
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
+template< typename MT2        // Type of the right-hand side dense matrix
+        , bool SO >           // Storage order of the right-hand side dense matrix
 inline void Rows<MT,false,false,false,CRAs...>::assign( const DenseMatrix<MT2,SO>& rhs )
 {
    BLAZE_CONSTRAINT_MUST_NOT_BE_SYMMETRIC_MATRIX_TYPE( MT );
@@ -4471,9 +4487,9 @@ inline void Rows<MT,false,false,false,CRAs...>::assign( const DenseMatrix<MT2,SO
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
-template< typename MT2 >    // Type of the right-hand side sparse matrix
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
+template< typename MT2 >      // Type of the right-hand side sparse matrix
 inline void Rows<MT,false,false,false,CRAs...>::assign( const SparseMatrix<MT2,false>& rhs )
 {
    BLAZE_CONSTRAINT_MUST_NOT_BE_SYMMETRIC_MATRIX_TYPE( MT );
@@ -4511,9 +4527,9 @@ inline void Rows<MT,false,false,false,CRAs...>::assign( const SparseMatrix<MT2,f
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
-template< typename MT2 >    // Type of the right-hand side sparse matrix
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
+template< typename MT2 >      // Type of the right-hand side sparse matrix
 inline void Rows<MT,false,false,false,CRAs...>::assign( const SparseMatrix<MT2,true>& rhs )
 {
    BLAZE_CONSTRAINT_MUST_NOT_BE_SYMMETRIC_MATRIX_TYPE( MT );
@@ -4552,10 +4568,10 @@ inline void Rows<MT,false,false,false,CRAs...>::assign( const SparseMatrix<MT2,t
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
-template< typename MT2      // Type of the right-hand side matrix
-        , bool SO >         // Storage order of the right-hand side matrix
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
+template< typename MT2        // Type of the right-hand side matrix
+        , bool SO >           // Storage order of the right-hand side matrix
 inline void Rows<MT,false,false,false,CRAs...>::addAssign( const Matrix<MT2,SO>& rhs )
 {
    BLAZE_CONSTRAINT_MUST_NOT_BE_SYMMETRIC_MATRIX_TYPE( MT );
@@ -4588,10 +4604,10 @@ inline void Rows<MT,false,false,false,CRAs...>::addAssign( const Matrix<MT2,SO>&
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
-template< typename MT2      // Type of the right-hand side matrix
-        , bool SO >         // Storage order of the right-hand side matrix
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
+template< typename MT2        // Type of the right-hand side matrix
+        , bool SO >           // Storage order of the right-hand side matrix
 inline void Rows<MT,false,false,false,CRAs...>::subAssign( const Matrix<MT2,SO>& rhs )
 {
    BLAZE_CONSTRAINT_MUST_NOT_BE_SYMMETRIC_MATRIX_TYPE( MT );
@@ -4624,10 +4640,10 @@ inline void Rows<MT,false,false,false,CRAs...>::subAssign( const Matrix<MT2,SO>&
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
-template< typename MT2      // Type of the right-hand side matrix
-        , bool SO >         // Storage order of the right-hand side matrix
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
+template< typename MT2        // Type of the right-hand side matrix
+        , bool SO >           // Storage order of the right-hand side matrix
 inline void Rows<MT,false,false,false,CRAs...>::schurAssign( const Matrix<MT2,SO>& rhs )
 {
    BLAZE_CONSTRAINT_MUST_NOT_BE_SYMMETRIC_MATRIX_TYPE( MT );
@@ -4669,8 +4685,8 @@ inline void Rows<MT,false,false,false,CRAs...>::schurAssign( const Matrix<MT2,SO
 // This specialization of Rows adapts the class template to the requirements of symmetric
 // column-major sparse matrices.
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
 class Rows<MT,false,false,true,CRAs...>
    : public View< SparseMatrix< Rows<MT,false,false,true,CRAs...>, false > >
    , private RowsData<CRAs...>
@@ -4681,6 +4697,10 @@ class Rows<MT,false,false,true,CRAs...>
    using Operand  = If_t< IsExpression_v<MT>, MT, MT& >;  //!< Composite data type of the matrix expression.
    //**********************************************************************************************
 
+   //**Compile time flags**************************************************************************
+   using DataType::N;  //!< Number of compile time indices.
+   //**********************************************************************************************
+
  public:
    //**Type definitions****************************************************************************
    //! Type of this Rows instance.
@@ -4688,7 +4708,7 @@ class Rows<MT,false,false,true,CRAs...>
 
    using BaseType      = SparseMatrix<This,false>;     //!< Base type of this Rows instance.
    using ViewedType    = MT;                           //!< The type viewed by this Rows instance.
-   using ResultType    = RowsTrait_t<MT,CRAs...>;      //!< Result type for expression template evaluations.
+   using ResultType    = RowsTrait_t<MT,N>;            //!< Result type for expression template evaluations.
    using OppositeType  = OppositeType_t<ResultType>;   //!< Result type with opposite storage order for expression template evaluations.
    using TransposeType = TransposeType_t<ResultType>;  //!< Transpose type for expression template evaluations.
    using ElementType   = ElementType_t<MT>;            //!< Type of the row elements.
@@ -4711,6 +4731,9 @@ class Rows<MT,false,false,true,CRAs...>
    //**Compilation flags***************************************************************************
    //! Compilation switch for the expression template assignment strategy.
    static constexpr bool smpAssignable = MT::smpAssignable;
+
+   //! Compilation switch for the expression template evaluation strategy.
+   static constexpr bool compileTimeArgs = DataType::compileTimeArgs;
    //**********************************************************************************************
 
    //**Constructors********************************************************************************
@@ -4719,13 +4742,16 @@ class Rows<MT,false,false,true,CRAs...>
    template< typename... RRAs >
    explicit inline Rows( MT& matrix, RRAs... args );
 
-   inline Rows( const Rows& ) = default;
-   inline Rows( Rows&& ) = default;
+   Rows( const Rows& ) = default;
+   Rows( Rows&& ) = default;
    //@}
    //**********************************************************************************************
 
    //**Destructor**********************************************************************************
-   // No explicitly declared destructor.
+   /*!\name Destructor */
+   //@{
+   ~Rows() = default;
+   //@}
    //**********************************************************************************************
 
    //**Data access functions***********************************************************************
@@ -4868,7 +4894,7 @@ class Rows<MT,false,false,true,CRAs...>
 // optional \a blaze::unchecked argument.
 */
 template< typename MT         // Type of the sparse matrix
-        , size_t... CRAs >    // Compile time row arguments
+        , typename... CRAs >  // Compile time row arguments
 template< typename... RRAs >  // Runtime row arguments
 inline Rows<MT,false,false,true,CRAs...>::Rows( MT& matrix, RRAs... args )
    : DataType( args... )  // Base class initialization
@@ -4905,8 +4931,8 @@ inline Rows<MT,false,false,true,CRAs...>::Rows( MT& matrix, RRAs... args )
 // This function only performs an index check in case BLAZE_USER_ASSERT() is active. In contrast,
 // the at() function is guaranteed to perform a check of the given access indices.
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
 inline typename Rows<MT,false,false,true,CRAs...>::Reference
    Rows<MT,false,false,true,CRAs...>::operator()( size_t i, size_t j )
 {
@@ -4930,8 +4956,8 @@ inline typename Rows<MT,false,false,true,CRAs...>::Reference
 // This function only performs an index check in case BLAZE_USER_ASSERT() is active. In contrast,
 // the at() function is guaranteed to perform a check of the given access indices.
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
 inline typename Rows<MT,false,false,true,CRAs...>::ConstReference
    Rows<MT,false,false,true,CRAs...>::operator()( size_t i, size_t j ) const
 {
@@ -4956,8 +4982,8 @@ inline typename Rows<MT,false,false,true,CRAs...>::ConstReference
 // In contrast to the function call operator this function always performs a check of the given
 // access indices.
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
 inline typename Rows<MT,false,false,true,CRAs...>::Reference
    Rows<MT,false,false,true,CRAs...>::at( size_t i, size_t j )
 {
@@ -4985,8 +5011,8 @@ inline typename Rows<MT,false,false,true,CRAs...>::Reference
 // In contrast to the function call operator this function always performs a check of the given
 // access indices.
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
 inline typename Rows<MT,false,false,true,CRAs...>::ConstReference
    Rows<MT,false,false,true,CRAs...>::at( size_t i, size_t j ) const
 {
@@ -5011,8 +5037,8 @@ inline typename Rows<MT,false,false,true,CRAs...>::ConstReference
 //
 // This function returns a row iterator to the first non-zero element of row \a i.
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
 inline typename Rows<MT,false,false,true,CRAs...>::Iterator
    Rows<MT,false,false,true,CRAs...>::begin( size_t i )
 {
@@ -5033,8 +5059,8 @@ inline typename Rows<MT,false,false,true,CRAs...>::Iterator
 //
 // This function returns a row iterator to the first non-zero element of row \a i.
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
 inline typename Rows<MT,false,false,true,CRAs...>::ConstIterator
    Rows<MT,false,false,true,CRAs...>::begin( size_t i ) const
 {
@@ -5055,8 +5081,8 @@ inline typename Rows<MT,false,false,true,CRAs...>::ConstIterator
 //
 // This function returns a row iterator to the first non-zero element of row \a i.
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
 inline typename Rows<MT,false,false,true,CRAs...>::ConstIterator
    Rows<MT,false,false,true,CRAs...>::cbegin( size_t i ) const
 {
@@ -5077,8 +5103,8 @@ inline typename Rows<MT,false,false,true,CRAs...>::ConstIterator
 //
 // This function returns an row iterator just past the last non-zero element of row \a i.
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
 inline typename Rows<MT,false,false,true,CRAs...>::Iterator
    Rows<MT,false,false,true,CRAs...>::end( size_t i )
 {
@@ -5099,8 +5125,8 @@ inline typename Rows<MT,false,false,true,CRAs...>::Iterator
 //
 // This function returns an row iterator just past the last non-zero element of row \a i.
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
 inline typename Rows<MT,false,false,true,CRAs...>::ConstIterator
    Rows<MT,false,false,true,CRAs...>::end( size_t i ) const
 {
@@ -5121,8 +5147,8 @@ inline typename Rows<MT,false,false,true,CRAs...>::ConstIterator
 //
 // This function returns an row iterator just past the last non-zero element of row \a i.
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
 inline typename Rows<MT,false,false,true,CRAs...>::ConstIterator
    Rows<MT,false,false,true,CRAs...>::cend( size_t i ) const
 {
@@ -5148,8 +5174,8 @@ inline typename Rows<MT,false,false,true,CRAs...>::ConstIterator
 //
 // \return The matrix containing the rows.
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
 inline MT& Rows<MT,false,false,true,CRAs...>::operand() noexcept
 {
    return matrix_;
@@ -5164,8 +5190,8 @@ inline MT& Rows<MT,false,false,true,CRAs...>::operand() noexcept
 //
 // \return The matrix containing the rows.
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
 inline const MT& Rows<MT,false,false,true,CRAs...>::operand() const noexcept
 {
    return matrix_;
@@ -5180,8 +5206,8 @@ inline const MT& Rows<MT,false,false,true,CRAs...>::operand() const noexcept
 //
 // \return The number of columns of the row selection.
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
 inline size_t Rows<MT,false,false,true,CRAs...>::columns() const noexcept
 {
    return matrix_.columns();
@@ -5196,8 +5222,8 @@ inline size_t Rows<MT,false,false,true,CRAs...>::columns() const noexcept
 //
 // \return The capacity of the sparse row selection.
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
 inline size_t Rows<MT,false,false,true,CRAs...>::capacity() const noexcept
 {
    return nonZeros() + matrix_.capacity() - matrix_.nonZeros();
@@ -5215,8 +5241,8 @@ inline size_t Rows<MT,false,false,true,CRAs...>::capacity() const noexcept
 //
 // This function returns the current capacity of the specified row.
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
 inline size_t Rows<MT,false,false,true,CRAs...>::capacity( size_t i ) const noexcept
 {
    BLAZE_USER_ASSERT( i < rows(), "Invalid row access index" );
@@ -5233,8 +5259,8 @@ inline size_t Rows<MT,false,false,true,CRAs...>::capacity( size_t i ) const noex
 //
 // \return The number of non-zero elements in the sparse row selection.
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
 inline size_t Rows<MT,false,false,true,CRAs...>::nonZeros() const
 {
    size_t nonzeros( 0UL );
@@ -5257,8 +5283,8 @@ inline size_t Rows<MT,false,false,true,CRAs...>::nonZeros() const
 //
 // This function returns the current number of non-zero elements in the specified row.
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
 inline size_t Rows<MT,false,false,true,CRAs...>::nonZeros( size_t i ) const
 {
    BLAZE_USER_ASSERT( i < rows(), "Invalid row access index" );
@@ -5275,8 +5301,8 @@ inline size_t Rows<MT,false,false,true,CRAs...>::nonZeros( size_t i ) const
 //
 // \return void
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
 inline void Rows<MT,false,false,true,CRAs...>::reset()
 {
    for( size_t i=0UL; i<rows(); ++i ) {
@@ -5297,8 +5323,8 @@ inline void Rows<MT,false,false,true,CRAs...>::reset()
 // This function resets the values in the specified row to their default value. Note that the
 // capacity of the row remains unchanged.
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
 inline void Rows<MT,false,false,true,CRAs...>::reset( size_t i )
 {
    matrix_.reset( idx(i) );
@@ -5318,8 +5344,8 @@ inline void Rows<MT,false,false,true,CRAs...>::reset( size_t i )
 // elements. The current values of the elements and the individual capacities of the selected
 // rows are preserved.
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
 inline void Rows<MT,false,false,true,CRAs...>::reserve( size_t nonzeros )
 {
    const size_t current( capacity() );
@@ -5345,8 +5371,8 @@ inline void Rows<MT,false,false,true,CRAs...>::reserve( size_t nonzeros )
 // current values of the sparse row selection and all other individual row capacities are
 // preserved.
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
 void Rows<MT,false,false,true,CRAs...>::reserve( size_t i, size_t nonzeros )
 {
    matrix_.reserve( idx(i), nonzeros );
@@ -5365,8 +5391,8 @@ void Rows<MT,false,false,true,CRAs...>::reserve( size_t i, size_t nonzeros )
 // The function removes all excessive capacity from all rows. Note that this function does not
 // remove the overall capacity but only reduces the capacity per row.
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
 void Rows<MT,false,false,true,CRAs...>::trim()
 {
    for( size_t i=0UL; i<rows(); ++i ) {
@@ -5388,8 +5414,8 @@ void Rows<MT,false,false,true,CRAs...>::trim()
 // all excessive capacity from the specified row. The excessive capacity is assigned to the
 // subsequent row.
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
 void Rows<MT,false,false,true,CRAs...>::trim( size_t i )
 {
    BLAZE_USER_ASSERT( i < rows(), "Invalid row access index" );
@@ -5421,8 +5447,8 @@ void Rows<MT,false,false,true,CRAs...>::trim( size_t i )
 // matrix already contains an element with row index \a i and column index \a j its value is
 // modified, else a new element with the given \a value is inserted.
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
 inline typename Rows<MT,false,false,true,CRAs...>::Iterator
    Rows<MT,false,false,true,CRAs...>::set( size_t i, size_t j, const ElementType& value )
 {
@@ -5446,8 +5472,8 @@ inline typename Rows<MT,false,false,true,CRAs...>::Iterator
 // are not allowed. In case the sparse row selection already contains an element with row index
 // \a i and column index \a j, a \a std::invalid_argument exception is thrown.
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
 inline typename Rows<MT,false,false,true,CRAs...>::Iterator
    Rows<MT,false,false,true,CRAs...>::insert( size_t i, size_t j, const ElementType& value )
 {
@@ -5501,8 +5527,8 @@ inline typename Rows<MT,false,false,true,CRAs...>::Iterator
 // \note Although append() does not allocate new memory, it still invalidates all iterators
 // returned by the end() functions!
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
 inline void Rows<MT,false,false,true,CRAs...>::append( size_t i, size_t j, const ElementType& value, bool check )
 {
    if( !check || !isDefault<strict>( value ) )
@@ -5526,11 +5552,11 @@ inline void Rows<MT,false,false,true,CRAs...>::append( size_t i, size_t j, const
 // \note Although finalize() does not allocate new memory, it still invalidates all iterators
 // returned by the end() functions!
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
 inline void Rows<MT,false,false,true,CRAs...>::finalize( size_t i )
 {
-   UNUSED_PARAMETER( i );
+   MAYBE_UNUSED( i );
 
    return;
 }
@@ -5556,8 +5582,8 @@ inline void Rows<MT,false,false,true,CRAs...>::finalize( size_t i )
 //
 // This function erases an element from the sparse row selection.
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
 inline void Rows<MT,false,false,true,CRAs...>::erase( size_t i, size_t j )
 {
    BLAZE_USER_ASSERT( i < rows()   , "Invalid row access index"    );
@@ -5579,8 +5605,8 @@ inline void Rows<MT,false,false,true,CRAs...>::erase( size_t i, size_t j )
 //
 // This function erases an element from the sparse row selection.
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
 inline typename Rows<MT,false,false,true,CRAs...>::Iterator
    Rows<MT,false,false,true,CRAs...>::erase( size_t i, Iterator pos )
 {
@@ -5603,8 +5629,8 @@ inline typename Rows<MT,false,false,true,CRAs...>::Iterator
 //
 // This function erases a range of elements from row \a i of the sparse row selection.
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
 inline typename Rows<MT,false,false,true,CRAs...>::Iterator
    Rows<MT,false,false,true,CRAs...>::erase( size_t i, Iterator first, Iterator last )
 {
@@ -5639,9 +5665,9 @@ inline typename Rows<MT,false,false,true,CRAs...>::Iterator
 // \note The predicate is required to be pure, i.e. to produce deterministic results for elements
 // with the same value. The attempt to use an impure predicate leads to undefined behavior!
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
-template< typename Pred >   // Type of the unary predicate
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
+template< typename Pred >     // Type of the unary predicate
 inline void Rows<MT,false,false,true,CRAs...>::erase( Pred predicate )
 {
    for( size_t i=0UL; i<rows(); ++i ) {
@@ -5679,9 +5705,9 @@ inline void Rows<MT,false,false,true,CRAs...>::erase( Pred predicate )
 // \note The predicate is required to be pure, i.e. to produce deterministic results for elements
 // with the same value. The attempt to use an impure predicate leads to undefined behavior!
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
-template< typename Pred >   // Type of the unary predicate
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
+template< typename Pred >     // Type of the unary predicate
 inline void Rows<MT,false,false,true,CRAs...>::erase( size_t i, Iterator first, Iterator last, Pred predicate )
 {
    BLAZE_USER_ASSERT( i < rows(), "Invalid row access index" );
@@ -5715,8 +5741,8 @@ inline void Rows<MT,false,false,true,CRAs...>::erase( size_t i, Iterator first, 
 // Note that the returned iterator is subject to invalidation due to inserting operations via
 // the function call operator, the set() function or the insert() function!
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
 inline typename Rows<MT,false,false,true,CRAs...>::Iterator
    Rows<MT,false,false,true,CRAs...>::find( size_t i, size_t j )
 {
@@ -5741,8 +5767,8 @@ inline typename Rows<MT,false,false,true,CRAs...>::Iterator
 // Note that the returned iterator is subject to invalidation due to inserting operations via
 // the function call operator, the set() function or the insert() function!
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
 inline typename Rows<MT,false,false,true,CRAs...>::ConstIterator
    Rows<MT,false,false,true,CRAs...>::find( size_t i, size_t j ) const
 {
@@ -5766,8 +5792,8 @@ inline typename Rows<MT,false,false,true,CRAs...>::ConstIterator
 // to invalidation due to inserting operations via the function call operator, the set() function
 // or the insert() function!
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
 inline typename Rows<MT,false,false,true,CRAs...>::Iterator
    Rows<MT,false,false,true,CRAs...>::lowerBound( size_t i, size_t j )
 {
@@ -5791,8 +5817,8 @@ inline typename Rows<MT,false,false,true,CRAs...>::Iterator
 // to invalidation due to inserting operations via the function call operator, the set() function
 // or the insert() function!
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
 inline typename Rows<MT,false,false,true,CRAs...>::ConstIterator
    Rows<MT,false,false,true,CRAs...>::lowerBound( size_t i, size_t j ) const
 {
@@ -5816,8 +5842,8 @@ inline typename Rows<MT,false,false,true,CRAs...>::ConstIterator
 // to invalidation due to inserting operations via the function call operator, the set() function
 // or the insert() function!
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
 inline typename Rows<MT,false,false,true,CRAs...>::Iterator
    Rows<MT,false,false,true,CRAs...>::upperBound( size_t i, size_t j )
 {
@@ -5841,8 +5867,8 @@ inline typename Rows<MT,false,false,true,CRAs...>::Iterator
 // to invalidation due to inserting operations via the function call operator, the set() function
 // or the insert() function!
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
 inline typename Rows<MT,false,false,true,CRAs...>::ConstIterator
    Rows<MT,false,false,true,CRAs...>::upperBound( size_t i, size_t j ) const
 {
@@ -5871,9 +5897,9 @@ inline typename Rows<MT,false,false,true,CRAs...>::ConstIterator
 // contrast to the isAliased() function this function is allowed to use compile time expressions
 // to optimize the evaluation.
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
-template< typename Other >  // Data type of the foreign expression
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
+template< typename Other >    // Data type of the foreign expression
 inline bool Rows<MT,false,false,true,CRAs...>::canAlias( const Other* alias ) const noexcept
 {
    return matrix_.isAliased( alias );
@@ -5893,9 +5919,9 @@ inline bool Rows<MT,false,false,true,CRAs...>::canAlias( const Other* alias ) co
 // In contrast to the canAlias() function this function is not allowed to use compile time
 // expressions to optimize the evaluation.
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
-template< typename Other >  // Data type of the foreign expression
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
+template< typename Other >    // Data type of the foreign expression
 inline bool Rows<MT,false,false,true,CRAs...>::isAliased( const Other* alias ) const noexcept
 {
    return matrix_.isAliased( alias );
@@ -5915,8 +5941,8 @@ inline bool Rows<MT,false,false,true,CRAs...>::isAliased( const Other* alias ) c
 // this function additionally provides runtime information (as for instance the current number of
 // rows and/or columns of the matrix).
 */
-template< typename MT       // Type of the sparse matrix
-        , size_t... CRAs >  // Compile time row arguments
+template< typename MT         // Type of the sparse matrix
+        , typename... CRAs >  // Compile time row arguments
 inline bool Rows<MT,false,false,true,CRAs...>::canSMPAssign() const noexcept
 {
    return false;

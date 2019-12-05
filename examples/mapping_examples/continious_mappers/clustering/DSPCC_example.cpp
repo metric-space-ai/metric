@@ -94,19 +94,19 @@ int main()
 {
 
     // small dataset
-    /*
+    //*
 
-    using recType = std::vector<double>;
+    using recType = std::deque<double>;
 
-    recType d0 {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18};
-    recType d1 {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 100};
+    recType d0 {0, 1, 2, 3, 4, 5, 6, 100, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23};
+    recType d1 {0, 1, 2, 3, 4, 5, 6, 7,   8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 100};
     std::vector<recType> d = {d0, d1};
 
     float freq_time_balance = 0.5; // try values from 0 to 1 (e g 0, 0.5, 1) to get the following portions of freq-domain: 0, 4/9, 8/9
-    auto bundle = metric::DSPCC1<recType, void>(d, 4, 4, freq_time_balance, 4);
+    auto bundle = metric::DSPCC<recType, void>(d, 4, 2, freq_time_balance, 4);
 
-    //auto pre_encoded = bundle.test_public_wrapper_encode(d);
-    //auto pre_decoded = bundle.test_public_wrapper_decode(pre_encoded);
+    auto pre_encoded = bundle.test_public_wrapper_encode(d);
+    auto pre_decoded = bundle.test_public_wrapper_decode(pre_encoded);
 
     auto encoded = bundle.encode(d);
     auto decoded = bundle.decode(encoded);
@@ -114,10 +114,13 @@ int main()
     std::cout << "\noriginal:\n";
     print_table(d);
 
-    std::cout << "\ndecoded:\n";
-    print_table(decoded); // some normalization issue when using DCT persists..
+    std::cout << "\npre-decoded:\n";
+    print_table(pre_decoded);
 
-    std::cout << "\nmix_index: " << bundle.get_mix_idx() << "\n";
+    std::cout << "\ndecoded:\n";
+    print_table(decoded);
+
+    //std::cout << "\nmix_index: " << bundle.get_mix_idx() << "\n";
 
     std::cout << "\nsimple test done\n";
     auto err_full_1 = normalized_err_stats<metric::Euclidian<double>>(d, decoded);
@@ -129,7 +132,7 @@ int main()
     //*/
 
 
-    // RMSE and mectric error check
+    // RMSE and metric error check
     /*
 
     using recType = std::vector<double>;
@@ -162,9 +165,11 @@ int main()
     // vibration example
     //*
 
-    float magnitude = 80;
+    float magnitude = 15;
 
     auto raw_vdata = read_csv_num<double>("assets/vibration_smaller_3.csv", ",");
+//    auto raw_vdata = read_csv_num<double>("assets/vibration_smaller_3_no_peaks.csv", ",");
+//    auto raw_vdata = read_csv_num<double>("assets/vibration_smaller_3_added_peaks.csv", ",");
     auto vdata =  transpose_timeseries(raw_vdata);
 
     mat2bmp::blaze2bmp_norm(vdata, "input.bmp", magnitude);
@@ -181,6 +186,8 @@ int main()
     bool visualize = false;
 
     for (float mix = 0; mix<=1; mix+=0.25) {
+    //float mix  = 0.5; {
+
 
 
         if (mix == 0.5)
@@ -189,7 +196,7 @@ int main()
             visualize = false;
 
 
-        auto vDSPCC = metric::DSPCC<std::vector<double>, void>(vdata, 60, 64, mix, 60);
+        auto vDSPCC = metric::DSPCC<std::vector<double>, void>(vdata, 10, 16, mix, 10);
         // dataset,
         // number of features of freq and time PCFAs,
         // DWT subbands, share of freq features in the mixed code,

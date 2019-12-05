@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/DVecDVecEqualExpr.h
 //  \brief Header file for the dense vector/dense vector equality comparison expression
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -117,8 +117,8 @@ template< bool RF       // Relaxation flag
         , bool TF1      // Transpose flag of the left-hand side dense vector
         , typename VT2  // Type of the right-hand side dense vector
         , bool TF2 >    // Transpose flag of the right-hand side dense vector
-inline DisableIf_t< DVecDVecEqualExprHelper<VT1,VT2>::value, bool >
-   equal( const DenseVector<VT1,TF1>& lhs, const DenseVector<VT2,TF2>& rhs )
+inline auto equal( const DenseVector<VT1,TF1>& lhs, const DenseVector<VT2,TF2>& rhs )
+   -> DisableIf_t< DVecDVecEqualExprHelper<VT1,VT2>::value, bool >
 {
    using CT1 = CompositeType_t<VT1>;
    using CT2 = CompositeType_t<VT2>;
@@ -158,8 +158,8 @@ template< bool RF       // Relaxation flag
         , bool TF1      // Transpose flag of the left-hand side dense vector
         , typename VT2  // Type of the right-hand side dense vector
         , bool TF2 >    // Transpose flag of the right-hand side dense vector
-inline EnableIf_t< DVecDVecEqualExprHelper<VT1,VT2>::value, bool >
-   equal( const DenseVector<VT1,TF1>& lhs, const DenseVector<VT2,TF2>& rhs )
+inline auto equal( const DenseVector<VT1,TF1>& lhs, const DenseVector<VT2,TF2>& rhs )
+   -> EnableIf_t< DVecDVecEqualExprHelper<VT1,VT2>::value, bool >
 {
    using CT1 = CompositeType_t<VT1>;
    using CT2 = CompositeType_t<VT2>;

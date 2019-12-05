@@ -3,7 +3,7 @@
 //  \file blaze/math/lapack/clapack/hetrs.h
 //  \brief Header file for the CLAPACK hetrs wrapper functions
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -42,6 +42,7 @@
 
 #include "../../../util/Complex.h"
 #include "../../../util/StaticAssert.h"
+#include "../../../util/Types.h"
 
 
 //=================================================================================================
@@ -55,8 +56,10 @@
 #if !defined(INTEL_MKL_VERSION)
 extern "C" {
 
-void chetrs_( char* uplo, int* n, int* nrhs, float*  A, int* lda, int* ipiv, float*  B, int* ldb, int* info );
-void zhetrs_( char* uplo, int* n, int* nrhs, double* A, int* lda, int* ipiv, double* B, int* ldb, int* info );
+void chetrs_( char* uplo, int* n, int* nrhs, float* A, int* lda, int* ipiv,
+              float* B, int* ldb, int* info, blaze::fortran_charlen_t nuplo );
+void zhetrs_( char* uplo, int* n, int* nrhs, double* A, int* lda, int* ipiv,
+              double* B, int* ldb, int* info, blaze::fortran_charlen_t nuplo );
 
 }
 #endif
@@ -77,11 +80,11 @@ namespace blaze {
 //*************************************************************************************************
 /*!\name LAPACK LDLH-based substitution functions (hetrs) */
 //@{
-inline void hetrs( char uplo, int n, int nrhs, const complex<float>* A, int lda, const int* ipiv,
-                   complex<float>* B, int ldb, int* info );
+void hetrs( char uplo, int n, int nrhs, const complex<float>* A, int lda, const int* ipiv,
+            complex<float>* B, int ldb, int* info );
 
-inline void hetrs( char uplo, int n, int nrhs, const complex<double>* A, int lda, const int* ipiv,
-                   complex<double>* B, int ldb, int* info );
+void hetrs( char uplo, int n, int nrhs, const complex<double>* A, int lda, const int* ipiv,
+            complex<double>* B, int ldb, int* info );
 //@}
 //*************************************************************************************************
 
@@ -133,7 +136,8 @@ inline void hetrs( char uplo, int n, int nrhs, const complex<float>* A, int lda,
 #endif
 
    chetrs_( &uplo, &n, &nrhs, const_cast<ET*>( reinterpret_cast<const ET*>( A ) ),
-            &lda, const_cast<int*>( ipiv ), reinterpret_cast<ET*>( B ), &ldb, info );
+            &lda, const_cast<int*>( ipiv ), reinterpret_cast<ET*>( B ), &ldb, info,
+            blaze::fortran_charlen_t(1) );
 }
 //*************************************************************************************************
 
@@ -185,7 +189,8 @@ inline void hetrs( char uplo, int n, int nrhs, const complex<double>* A, int lda
 #endif
 
    zhetrs_( &uplo, &n, &nrhs, const_cast<ET*>( reinterpret_cast<const ET*>( A ) ),
-            &lda, const_cast<int*>( ipiv ), reinterpret_cast<ET*>( B ), &ldb, info );
+            &lda, const_cast<int*>( ipiv ), reinterpret_cast<ET*>( B ), &ldb, info,
+            blaze::fortran_charlen_t(1) );
 }
 //*************************************************************************************************
 

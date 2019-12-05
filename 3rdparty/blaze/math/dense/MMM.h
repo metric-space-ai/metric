@@ -3,7 +3,7 @@
 //  \file blaze/math/dense/MMM.h
 //  \brief Header file for the dense matrix multiplication kernels
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -69,7 +69,6 @@
 #include "../../system/Blocking.h"
 #include "../../util/algorithms/Min.h"
 #include "../../util/Assert.h"
-#include "../../util/DecltypeAuto.h"
 #include "../../util/StaticAssert.h"
 #include "../../util/Types.h"
 #include "../../util/typetraits/IsFloatingPoint.h"
@@ -1171,7 +1170,7 @@ void lmmm( DenseMatrix<MT1,false>& C, const MT2& A, const MT3& B, ST alpha, ST b
    DynamicMatrix<ET2,false> A2( M, KBLOCK );
    DynamicMatrix<ET3,true>  B2( KBLOCK, JBLOCK );
 
-   BLAZE_DECLTYPE_AUTO( c, derestrict( ~C ) );
+   decltype(auto) c( derestrict( ~C ) );
 
    if( isDefault( beta ) ) {
       reset( c );
@@ -1697,7 +1696,7 @@ void lmmm( DenseMatrix<MT1,true>& C, const MT2& A, const MT3& B, ST alpha, ST be
    DynamicMatrix<ET2,false> A2( IBLOCK, KBLOCK );
    DynamicMatrix<ET3,true>  B2( KBLOCK, N );
 
-   BLAZE_DECLTYPE_AUTO( c, derestrict( ~C ) );
+   decltype(auto) c( derestrict( ~C ) );
 
    if( isDefault( beta ) ) {
       reset( c );
@@ -2241,7 +2240,7 @@ void ummm( DenseMatrix<MT1,false>& C, const MT2& A, const MT3& B, ST alpha, ST b
    DynamicMatrix<ET2,false> A2( M, KBLOCK );
    DynamicMatrix<ET3,true>  B2( KBLOCK, JBLOCK );
 
-   BLAZE_DECLTYPE_AUTO( c, derestrict( ~C ) );
+   decltype(auto) c( derestrict( ~C ) );
 
    if( isDefault( beta ) ) {
       reset( c );
@@ -2759,7 +2758,7 @@ void ummm( DenseMatrix<MT1,true>& C, const MT2& A, const MT3& B, ST alpha, ST be
    DynamicMatrix<ET2,false> A2( IBLOCK, KBLOCK );
    DynamicMatrix<ET3,true>  B2( KBLOCK, N );
 
-   BLAZE_DECLTYPE_AUTO( c, derestrict( ~C ) );
+   decltype(auto) c( derestrict( ~C ) );
 
    if( isDefault( beta ) ) {
       reset( c );

@@ -3,7 +3,7 @@
 //  \file blaze/math/Infinity.h
 //  \brief Numerical infinity for built-in data types.
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -93,17 +93,20 @@ class NegativeInfinity
    //**********************************************************************************************
 
  private:
-   //**Constructor*********************************************************************************
-   /*!\name Constructor */
+   //**Constructors********************************************************************************
+   /*!\name Constructors */
    //@{
    explicit inline constexpr NegativeInfinity();
-   // No explicitly declared copy constructor.
+   NegativeInfinity( const NegativeInfinity& ) = default;
    //@}
    //**********************************************************************************************
 
  public:
    //**Destructor**********************************************************************************
-   // No explicitly declared destructor.
+   /*!\name Destructor */
+   //@{
+   ~NegativeInfinity() = default;
+   //@}
    //**********************************************************************************************
 
    //**Conversion operators************************************************************************
@@ -132,15 +135,15 @@ class NegativeInfinity
    //@}
    //**********************************************************************************************
 
- private:
    //**Forbidden operations************************************************************************
    /*!\name Forbidden operations */
    //@{
-   NegativeInfinity& operator=( const NegativeInfinity& ninf );  //!< Copy assignment operator (private & undefined)
-   void* operator&() const;                                      //!< Address operator (private & undefined)
+   NegativeInfinity& operator=( const NegativeInfinity& ) = delete;
+   void* operator&() const = delete;
    //@}
    //**********************************************************************************************
 
+ private:
    //**Friend declarations*************************************************************************
    /*! \cond BLAZE_INTERNAL */
    friend class Infinity;
@@ -154,7 +157,7 @@ class NegativeInfinity
 
 //=================================================================================================
 //
-//  CONSTRUCTOR
+//  CONSTRUCTORS
 //
 //=================================================================================================
 
@@ -344,22 +347,22 @@ inline constexpr bool NegativeInfinity<I>::equal( const T& rhs ) const
 /*!\name NegativeInfinity operators */
 //@{
 template< typename I1, typename I2 >
-inline constexpr bool operator==( const NegativeInfinity<I1>& lhs, const NegativeInfinity<I2>& rhs );
+constexpr bool operator==( const NegativeInfinity<I1>& lhs, const NegativeInfinity<I2>& rhs );
 
 template< typename I, typename T >
-inline constexpr bool operator==( const NegativeInfinity<I>& lhs, const T& rhs );
+constexpr bool operator==( const NegativeInfinity<I>& lhs, const T& rhs );
 
 template< typename I, typename T >
-inline constexpr bool operator==( const T& lhs, const NegativeInfinity<I>& rhs );
+constexpr bool operator==( const T& lhs, const NegativeInfinity<I>& rhs );
 
 template< typename I1, typename I2 >
-inline constexpr bool operator!=( const NegativeInfinity<I1>& lhs, const NegativeInfinity<I2>& rhs );
+constexpr bool operator!=( const NegativeInfinity<I1>& lhs, const NegativeInfinity<I2>& rhs );
 
 template< typename I, typename T >
-inline constexpr bool operator!=( const NegativeInfinity<I>& lhs, const T& rhs );
+constexpr bool operator!=( const NegativeInfinity<I>& lhs, const T& rhs );
 
 template< typename I, typename T >
-inline constexpr bool operator!=( const T& lhs, const NegativeInfinity<I>& rhs );
+constexpr bool operator!=( const T& lhs, const NegativeInfinity<I>& rhs );
 //@}
 //*************************************************************************************************
 
@@ -529,15 +532,19 @@ class Infinity
    using NegativeType = NegativeInfinity<Infinity>;  //!< The negative infinity type.
    //**********************************************************************************************
 
-   //**Constructor*********************************************************************************
-   /*!\name Constructor */
+   //**Constructors********************************************************************************
+   /*!\name Constructors */
    //@{
    explicit inline constexpr Infinity();
+   Infinity( const Infinity& ) = default;
    //@}
    //**********************************************************************************************
 
    //**Destructor**********************************************************************************
-   // No explicitly declared destructor.
+   /*!\name Destructor */
+   //@{
+   ~Infinity() = default;
+   //@}
    //**********************************************************************************************
 
    //**Conversion operators************************************************************************
@@ -579,12 +586,11 @@ class Infinity
    //@}
    //**********************************************************************************************
 
- private:
    //**Forbidden operations************************************************************************
    /*!\name Forbidden operations */
    //@{
-   Infinity& operator=( const Infinity& inf );  //!< Copy assignment operator (private & undefined)
-   void* operator&() const;                     //!< Address operator (private & undefined)
+   Infinity& operator=( const Infinity& ) = delete;
+   void* operator&() const = delete;
    //@}
    //**********************************************************************************************
 };
@@ -595,7 +601,7 @@ class Infinity
 
 //=================================================================================================
 //
-//  CONSTRUCTOR
+//  CONSTRUCTORS
 //
 //=================================================================================================
 
@@ -866,33 +872,33 @@ inline constexpr bool Infinity::equal( const T& rhs ) const
 //*************************************************************************************************
 /*!\name Infinity operators */
 //@{
-inline constexpr bool operator==( const Infinity& lhs, const Infinity& rhs );
+constexpr bool operator==( const Infinity& lhs, const Infinity& rhs );
 
 template< typename I >
-inline constexpr bool operator==( const Infinity& lhs, const NegativeInfinity<I>& rhs );
+constexpr bool operator==( const Infinity& lhs, const NegativeInfinity<I>& rhs );
 
 template< typename I >
-inline constexpr bool operator==( const NegativeInfinity<I>& lhs, const Infinity& rhs );
+constexpr bool operator==( const NegativeInfinity<I>& lhs, const Infinity& rhs );
 
 template< typename T >
-inline constexpr bool operator==( const Infinity& lhs, const T& rhs );
+constexpr bool operator==( const Infinity& lhs, const T& rhs );
 
 template< typename T >
-inline constexpr bool operator==( const T& lhs, const Infinity& rhs );
+constexpr bool operator==( const T& lhs, const Infinity& rhs );
 
-inline constexpr bool operator!=( const Infinity& lhs, const Infinity& rhs );
+constexpr bool operator!=( const Infinity& lhs, const Infinity& rhs );
 
 template< typename I >
-inline constexpr bool operator!=( const Infinity& lhs, const NegativeInfinity<I>& rhs );
+constexpr bool operator!=( const Infinity& lhs, const NegativeInfinity<I>& rhs );
 
 template< typename I >
-inline constexpr bool operator!=( const NegativeInfinity<I>& lhs, const Infinity& rhs );
+constexpr bool operator!=( const NegativeInfinity<I>& lhs, const Infinity& rhs );
 
 template< typename T >
-inline constexpr bool operator!=( const Infinity& lhs, const T& rhs );
+constexpr bool operator!=( const Infinity& lhs, const T& rhs );
 
 template< typename T >
-inline constexpr bool operator!=( const T& lhs, const Infinity& rhs );
+constexpr bool operator!=( const T& lhs, const Infinity& rhs );
 //@}
 //*************************************************************************************************
 

@@ -3,7 +3,7 @@
 //  \file blaze/math/lapack/clapack/getrf.h
 //  \brief Header file for the CLAPACK getrf wrapper functions
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -55,9 +55,9 @@
 #if !defined(INTEL_MKL_VERSION)
 extern "C" {
 
-void sgetrf_( int* m, int* n, float*  A, int* lda, int* ipiv, int* info );
+void sgetrf_( int* m, int* n, float* A, int* lda, int* ipiv, int* info );
 void dgetrf_( int* m, int* n, double* A, int* lda, int* ipiv, int* info );
-void cgetrf_( int* m, int* n, float*  A, int* lda, int* ipiv, int* info );
+void cgetrf_( int* m, int* n, float* A, int* lda, int* ipiv, int* info );
 void zgetrf_( int* m, int* n, double* A, int* lda, int* ipiv, int* info );
 
 }
@@ -79,13 +79,13 @@ namespace blaze {
 //*************************************************************************************************
 /*!\name LAPACK LU decomposition functions (getrf) */
 //@{
-inline void getrf( int m, int n, float* A, int lda, int* ipiv, int* info );
+void getrf( int m, int n, float* A, int lda, int* ipiv, int* info );
 
-inline void getrf( int m, int n, double* A, int lda, int* ipiv, int* info );
+void getrf( int m, int n, double* A, int lda, int* ipiv, int* info );
 
-inline void getrf( int m, int n, complex<float>* A, int lda, int* ipiv, int* info );
+void getrf( int m, int n, complex<float>* A, int lda, int* ipiv, int* info );
 
-inline void getrf( int m, int n, complex<double>* A, int lda, int* ipiv, int* info );
+void getrf( int m, int n, complex<double>* A, int lda, int* ipiv, int* info );
 //@}
 //*************************************************************************************************
 

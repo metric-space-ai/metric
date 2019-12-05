@@ -3,7 +3,7 @@
 //  \file blaze/math/adaptors/symmetricmatrix/SparseNumeric.h
 //  \brief SymmetricMatrix specialization for sparse matrices with numeric element type
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -47,14 +47,16 @@
 #include "../../../math/adaptors/symmetricmatrix/SymmetricElement.h"
 #include "../../../math/adaptors/symmetricmatrix/SymmetricValue.h"
 #include "../../../math/Aliases.h"
-#include "../../../math/constraints/Expression.h"
+#include "../../../math/constraints/Computation.h"
 #include "../../../math/constraints/Hermitian.h"
 #include "../../../math/constraints/Lower.h"
 #include "../../../math/constraints/Resizable.h"
 #include "../../../math/constraints/SparseMatrix.h"
 #include "../../../math/constraints/StorageOrder.h"
 #include "../../../math/constraints/Symmetric.h"
+#include "../../../math/constraints/Transformation.h"
 #include "../../../math/constraints/Upper.h"
+#include "../../../math/constraints/View.h"
 #include "../../../math/dense/InitializerMatrix.h"
 #include "../../../math/Exception.h"
 #include "../../../math/expressions/Forward.h"
@@ -77,11 +79,11 @@
 #include "../../../util/constraints/Volatile.h"
 #include "../../../util/DisableIf.h"
 #include "../../../util/EnableIf.h"
+#include "../../../util/MaybeUnused.h"
 #include "../../../util/StaticAssert.h"
 #include "../../../util/typetraits/IsBuiltin.h"
 #include "../../../util/typetraits/IsNumeric.h"
 #include "../../../util/Types.h"
-#include "../../../util/Unused.h"
 
 
 namespace blaze {
@@ -312,7 +314,7 @@ class SymmetricMatrix<MT,SO,false,true>
    explicit inline SymmetricMatrix( size_t n );
    explicit inline SymmetricMatrix( size_t n, size_t nonzeros );
    explicit inline SymmetricMatrix( size_t n, const std::vector<size_t>& nonzeros );
-   explicit inline SymmetricMatrix( initializer_list< initializer_list<ElementType> > list );
+            inline SymmetricMatrix( initializer_list< initializer_list<ElementType> > list );
 
    inline SymmetricMatrix( const SymmetricMatrix& m );
    inline SymmetricMatrix( SymmetricMatrix&& m ) noexcept;
@@ -323,7 +325,10 @@ class SymmetricMatrix<MT,SO,false,true>
    //**********************************************************************************************
 
    //**Destructor**********************************************************************************
-   // No explicitly declared destructor.
+   /*!\name Destructor */
+   //@{
+   ~SymmetricMatrix() = default;
+   //@}
    //**********************************************************************************************
 
    //**Data access functions***********************************************************************
@@ -509,7 +514,9 @@ class SymmetricMatrix<MT,SO,false,true>
    BLAZE_CONSTRAINT_MUST_NOT_BE_POINTER_TYPE         ( MT );
    BLAZE_CONSTRAINT_MUST_NOT_BE_CONST                ( MT );
    BLAZE_CONSTRAINT_MUST_NOT_BE_VOLATILE             ( MT );
-   BLAZE_CONSTRAINT_MUST_NOT_BE_EXPRESSION_TYPE      ( MT );
+   BLAZE_CONSTRAINT_MUST_NOT_BE_VIEW_TYPE            ( MT );
+   BLAZE_CONSTRAINT_MUST_NOT_BE_COMPUTATION_TYPE     ( MT );
+   BLAZE_CONSTRAINT_MUST_NOT_BE_TRANSFORMATION_TYPE  ( MT );
    BLAZE_CONSTRAINT_MUST_NOT_BE_SYMMETRIC_MATRIX_TYPE( MT );
    BLAZE_CONSTRAINT_MUST_NOT_BE_HERMITIAN_MATRIX_TYPE( MT );
    BLAZE_CONSTRAINT_MUST_NOT_BE_LOWER_MATRIX_TYPE    ( MT );
@@ -1752,7 +1759,9 @@ template< typename MT  // Type of the adapted sparse matrix
         , bool SO >    // Storage order of the adapted sparse matrix
 inline void SymmetricMatrix<MT,SO,false,true>::reset( size_t i )
 {
-   for( Iterator_t<MT> it=matrix_.begin(i); it!=matrix_.end(i); ++it )
+   using blaze::erase;
+
+   for( auto it=matrix_.begin(i); it!=matrix_.end(i); ++it )
    {
       const size_t j( it->index() );
 
@@ -1762,12 +1771,12 @@ inline void SymmetricMatrix<MT,SO,false,true>::reset( size_t i )
       if( SO ) {
          const Iterator_t<MT> pos( matrix_.find( i, j ) );
          BLAZE_INTERNAL_ASSERT( pos != matrix_.end( j ), "Missing element detected" );
-         matrix_.erase( j, pos );
+         erase( matrix_, j, pos );
       }
       else {
          const Iterator_t<MT> pos( matrix_.find( j, i ) );
          BLAZE_INTERNAL_ASSERT( pos != matrix_.end( j ), "Missing element detected" );
-         matrix_.erase( j, pos );
+         erase( matrix_, j, pos );
       }
    }
 
@@ -1818,7 +1827,7 @@ void SymmetricMatrix<MT,SO,false,true>::resize( size_t n, bool preserve )
 {
    BLAZE_CONSTRAINT_MUST_BE_RESIZABLE_TYPE( MT );
 
-   UNUSED_PARAMETER( preserve );
+   MAYBE_UNUSED( preserve );
 
    BLAZE_INTERNAL_ASSERT( isSquare( matrix_ ), "Non-square symmetric matrix detected" );
 
@@ -2131,9 +2140,11 @@ template< typename MT  // Type of the adapted sparse matrix
         , bool SO >    // Storage order of the adapted sparse matrix
 inline void SymmetricMatrix<MT,SO,false,true>::erase( size_t i, size_t j )
 {
-   matrix_.erase( i, j );
+   using blaze::erase;
+
+   erase( matrix_, i, j );
    if( i != j )
-      matrix_.erase( j, i );
+      erase( matrix_, j, i );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -2156,6 +2167,8 @@ template< typename MT  // Type of the adapted sparse matrix
 inline typename SymmetricMatrix<MT,SO,false,true>::Iterator
    SymmetricMatrix<MT,SO,false,true>::erase( size_t i, Iterator pos )
 {
+   using blaze::erase;
+
    const Iterator_t<MT> base( pos.base() );
 
    if( base == matrix_.end( i ) )
@@ -2165,18 +2178,18 @@ inline typename SymmetricMatrix<MT,SO,false,true>::Iterator
 
    if( i == j ) {
       BLAZE_INTERNAL_ASSERT( matrix_.find( i, i ) != matrix_.end( i ), "Missing element detected" );
-      return Iterator( matrix_.erase( i, base ), matrix_, i );
+      return Iterator( erase( matrix_, i, base ), matrix_, i );
    }
 
    if( SO ) {
       BLAZE_INTERNAL_ASSERT( matrix_.find( i, j ) != matrix_.end( j ), "Missing element detected" );
-      matrix_.erase( j, matrix_.find( i, j ) );
-      return Iterator( matrix_.erase( i, base ), matrix_, i );
+      erase( matrix_, j, matrix_.find( i, j ) );
+      return Iterator( erase( matrix_, i, base ), matrix_, i );
    }
    else {
       BLAZE_INTERNAL_ASSERT( matrix_.find( j, i ) != matrix_.end( j ), "Missing element detected" );
-      matrix_.erase( j, matrix_.find( j, i ) );
-      return Iterator( matrix_.erase( i, base ), matrix_, i );
+      erase( matrix_, j, matrix_.find( j, i ) );
+      return Iterator( erase(matrix_, i, base ), matrix_, i );
    }
 }
 /*! \endcond */
@@ -2202,7 +2215,9 @@ template< typename MT  // Type of the adapted sparse matrix
 inline typename SymmetricMatrix<MT,SO,false,true>::Iterator
    SymmetricMatrix<MT,SO,false,true>::erase( size_t i, Iterator first, Iterator last )
 {
-   for( Iterator_t<MT> it=first.base(); it!=last.base(); ++it )
+   using blaze::erase;
+
+   for( auto it=first.base(); it!=last.base(); ++it )
    {
       const size_t j( it->index() );
 
@@ -2211,15 +2226,15 @@ inline typename SymmetricMatrix<MT,SO,false,true>::Iterator
 
       if( SO ) {
          BLAZE_INTERNAL_ASSERT( matrix_.find( i, j ) != matrix_.end( j ), "Missing element detected" );
-         matrix_.erase( i, j );
+         erase( matrix_, i, j );
       }
       else {
          BLAZE_INTERNAL_ASSERT( matrix_.find( j, i ) != matrix_.end( j ), "Missing element detected" );
-         matrix_.erase( j, i );
+         erase( matrix_, j, i );
       }
    }
 
-   return Iterator( matrix_.erase( i, first.base(), last.base() ), matrix_, i );
+   return Iterator( erase( matrix_, i, first.base(), last.base() ), matrix_, i );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -2252,7 +2267,9 @@ template< typename MT      // Type of the adapted sparse matrix
 template< typename Pred >  // Type of the unary predicate
 inline void SymmetricMatrix<MT,SO,false,true>::erase( Pred predicate )
 {
-   matrix_.erase( predicate );
+   using blaze::erase;
+
+   erase( matrix_, predicate );
 
    BLAZE_INTERNAL_ASSERT( isIntact(), "Broken invariant detected" );
 }
@@ -2294,17 +2311,19 @@ template< typename Pred >  // Type of the unary predicate
 inline void
    SymmetricMatrix<MT,SO,false,true>::erase( size_t i, Iterator first, Iterator last, Pred predicate )
 {
-   for( Iterator it=first; it!=last; ++it ) {
+   using blaze::erase;
+
+   for( auto it=first; it!=last; ++it ) {
       const size_t j( it->index() );
       if( i != j && predicate( it->value() ) ) {
          if( SO )
-            matrix_.erase( i, j );
+            erase( matrix_, i, j );
          else
-            matrix_.erase( j, i );
+            erase( matrix_, j, i );
       }
    }
 
-   matrix_.erase( i, first.base(), last.base(), predicate );
+   erase( matrix_, i, first.base(), last.base(), predicate );
 
    BLAZE_INTERNAL_ASSERT( isIntact(), "Broken invariant detected" );
 }

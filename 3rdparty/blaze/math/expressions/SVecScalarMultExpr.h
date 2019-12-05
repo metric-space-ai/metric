@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/SVecScalarMultExpr.h
 //  \brief Header file for the sparse vector/scalar multiplication expression
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -46,6 +46,7 @@
 #include "../../math/constraints/RequiresEvaluation.h"
 #include "../../math/constraints/SparseVector.h"
 #include "../../math/constraints/TransposeFlag.h"
+#include "../../math/constraints/Zero.h"
 #include "../../math/Exception.h"
 #include "../../math/expressions/Computation.h"
 #include "../../math/expressions/Forward.h"
@@ -58,14 +59,17 @@
 #include "../../math/typetraits/IsExpression.h"
 #include "../../math/typetraits/IsInvertible.h"
 #include "../../math/typetraits/IsTemporary.h"
+#include "../../math/typetraits/IsZero.h"
 #include "../../math/typetraits/RequiresEvaluation.h"
 #include "../../math/typetraits/UnderlyingBuiltin.h"
 #include "../../util/Assert.h"
 #include "../../util/constraints/FloatingPoint.h"
 #include "../../util/constraints/Numeric.h"
 #include "../../util/constraints/SameType.h"
+#include "../../util/DisableIf.h"
 #include "../../util/EnableIf.h"
 #include "../../util/FunctionTrace.h"
+#include "../../util/MaybeUnused.h"
 #include "../../util/mpl/If.h"
 #include "../../util/Types.h"
 #include "../../util/typetraits/IsNumeric.h"
@@ -148,6 +152,7 @@ class SVecScalarMultExpr
  public:
    //**Type definitions****************************************************************************
    using This          = SVecScalarMultExpr<VT,ST,TF>;  //!< Type of this SVecScalarMultExpr instance.
+   using BaseType      = SparseVector<This,TF>;         //!< Base type of this SVecScalarMultExpr instance.
    using ResultType    = MultTrait_t<RT,ST>;            //!< Result type for expression template evaluations.
    using TransposeType = TransposeType_t<ResultType>;   //!< Transpose type for expression template evaluations.
    using ElementType   = ElementType_t<ResultType>;     //!< Resulting element type.
@@ -478,8 +483,8 @@ class SVecScalarMultExpr
    // operand requires an intermediate evaluation.
    */
    template< typename VT2 >  // Type of the target dense vector
-   friend inline EnableIf_t< UseAssign_v<VT2> >
-      assign( DenseVector<VT2,TF>& lhs, const SVecScalarMultExpr& rhs )
+   friend inline auto assign( DenseVector<VT2,TF>& lhs, const SVecScalarMultExpr& rhs )
+      -> EnableIf_t< UseAssign_v<VT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -506,8 +511,8 @@ class SVecScalarMultExpr
    // operand requires an intermediate evaluation.
    */
    template< typename VT2 >  // Type of the target sparse vector
-   friend inline EnableIf_t< UseAssign_v<VT2> >
-      assign( SparseVector<VT2,TF>& lhs, const SVecScalarMultExpr& rhs )
+   friend inline auto assign( SparseVector<VT2,TF>& lhs, const SVecScalarMultExpr& rhs )
+      -> EnableIf_t< UseAssign_v<VT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -534,8 +539,8 @@ class SVecScalarMultExpr
    // operand requires an intermediate evaluation.
    */
    template< typename VT2 >  // Type of the target dense vector
-   friend inline EnableIf_t< UseAssign_v<VT2> >
-      addAssign( DenseVector<VT2,TF>& lhs, const SVecScalarMultExpr& rhs )
+   friend inline auto addAssign( DenseVector<VT2,TF>& lhs, const SVecScalarMultExpr& rhs )
+      -> EnableIf_t< UseAssign_v<VT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -570,8 +575,8 @@ class SVecScalarMultExpr
    // operand requires an intermediate evaluation.
    */
    template< typename VT2 >  // Type of the target dense vector
-   friend inline EnableIf_t< UseAssign_v<VT2> >
-      subAssign( DenseVector<VT2,TF>& lhs, const SVecScalarMultExpr& rhs )
+   friend inline auto subAssign( DenseVector<VT2,TF>& lhs, const SVecScalarMultExpr& rhs )
+      -> EnableIf_t< UseAssign_v<VT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -606,8 +611,8 @@ class SVecScalarMultExpr
    // vector operand requires an intermediate evaluation.
    */
    template< typename VT2 >  // Type of the target dense vector
-   friend inline EnableIf_t< UseAssign_v<VT2> >
-      multAssign( DenseVector<VT2,TF>& lhs, const SVecScalarMultExpr& rhs )
+   friend inline auto multAssign( DenseVector<VT2,TF>& lhs, const SVecScalarMultExpr& rhs )
+      -> EnableIf_t< UseAssign_v<VT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -650,8 +655,8 @@ class SVecScalarMultExpr
    // expression specific parallel evaluation strategy is selected.
    */
    template< typename VT2 >  // Type of the target dense vector
-   friend inline EnableIf_t< UseSMPAssign_v<VT2> >
-      smpAddAssign( DenseVector<VT2,TF>& lhs, const SVecScalarMultExpr& rhs )
+   friend inline auto smpAddAssign( DenseVector<VT2,TF>& lhs, const SVecScalarMultExpr& rhs )
+      -> EnableIf_t< UseSMPAssign_v<VT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -686,8 +691,8 @@ class SVecScalarMultExpr
    // expression specific parallel evaluation strategy is selected.
    */
    template< typename VT2 >  // Type of the target dense vector
-   friend inline EnableIf_t< UseSMPAssign_v<VT2> >
-      smpSubAssign( DenseVector<VT2,TF>& lhs, const SVecScalarMultExpr& rhs )
+   friend inline auto smpSubAssign( DenseVector<VT2,TF>& lhs, const SVecScalarMultExpr& rhs )
+      -> EnableIf_t< UseSMPAssign_v<VT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -722,8 +727,8 @@ class SVecScalarMultExpr
    // expression specific parallel evaluation strategy is selected.
    */
    template< typename VT2 >  // Type of the target dense vector
-   friend inline EnableIf_t< UseSMPAssign_v<VT2> >
-      smpMultAssign( DenseVector<VT2,TF>& lhs, const SVecScalarMultExpr& rhs )
+   friend inline auto smpMultAssign( DenseVector<VT2,TF>& lhs, const SVecScalarMultExpr& rhs )
+      -> EnableIf_t< UseSMPAssign_v<VT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -747,6 +752,7 @@ class SVecScalarMultExpr
    /*! \cond BLAZE_INTERNAL */
    BLAZE_CONSTRAINT_MUST_BE_SPARSE_VECTOR_TYPE( VT );
    BLAZE_CONSTRAINT_MUST_BE_VECTOR_WITH_TRANSPOSE_FLAG( VT, TF );
+   BLAZE_CONSTRAINT_MUST_NOT_BE_ZERO_TYPE( VT );
    BLAZE_CONSTRAINT_MUST_BE_NUMERIC_TYPE( ST );
    BLAZE_CONSTRAINT_MUST_BE_SAME_TYPE( ST, RightOperand );
    /*! \endcond */
@@ -802,6 +808,71 @@ inline decltype(auto) operator-( const SparseVector<VT,TF>& sv )
 //=================================================================================================
 
 //*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Backend implementation of the multiplication between a sparse vector and a scalar value
+//        (\f$ \vec{a}=\vec{b}*s \f$).
+// \ingroup sparse_vector
+//
+// \param vec The left-hand side sparse vector for the multiplication.
+// \param scalar The right-hand side scalar value for the multiplication.
+// \return The scaled result vector.
+//
+// This function implements a performance optimized treatment of the multiplication between a
+// sparse vector and a scalar value.
+*/
+template< typename VT  // Type of the left-hand side sparse vector
+        , bool TF      // Transpose flag of the left-hand side sparse vector
+        , typename ST  // Type of the right-hand side scalar
+        , DisableIf_t< IsZero_v<VT> >* = nullptr >
+inline const SVecScalarMultExpr< VT, MultTrait_t< UnderlyingBuiltin_t<VT>, ST >, TF >
+   svecscalarmult( const SparseVector<VT,TF>& vec, ST scalar )
+{
+   BLAZE_FUNCTION_TRACE;
+
+   using ScalarType = MultTrait_t< UnderlyingBuiltin_t<VT>, ST >;
+   using ReturnType = const SVecScalarMultExpr<VT,ScalarType,TF>;
+   return ReturnType( ~vec, scalar );
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Backend implementation of the multiplication between a zero vector and a scalar value
+//        (\f$ \vec{a}=\vec{b}*s \f$).
+// \ingroup sparse_vector
+//
+// \param vec The left-hand side zero vector for the multiplication.
+// \param scalar The right-hand side scalar value for the multiplication.
+// \return The resulting zero vector.
+//
+// This function implements a performance optimized treatment of the multiplication between a
+// zero vector and a scalar value. It returns a zero vector.
+*/
+template< typename VT  // Type of the left-hand side sparse vector
+        , bool TF      // Transpose flag of the left-hand side sparse vector
+        , typename ST  // Type of the right-hand side scalar
+        , EnableIf_t< IsZero_v<VT> >* = nullptr >
+inline decltype(auto)
+   svecscalarmult( const SparseVector<VT,TF>& vec, ST scalar )
+{
+   BLAZE_FUNCTION_TRACE;
+
+   MAYBE_UNUSED( scalar );
+
+   using ReturnType = const MultTrait_t< ResultType_t<VT>, ST >;
+
+   BLAZE_CONSTRAINT_MUST_BE_VECTOR_WITH_TRANSPOSE_FLAG( ReturnType, TF );
+   BLAZE_CONSTRAINT_MUST_BE_ZERO_TYPE( ReturnType );
+
+   return ReturnType( (~vec).size() );
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
 /*!\brief Multiplication operator for the multiplication of a sparse vector and a scalar value
 //        (\f$ \vec{a}=\vec{b}*s \f$).
 // \ingroup sparse_vector
@@ -825,14 +896,12 @@ inline decltype(auto) operator-( const SparseVector<VT,TF>& sv )
 template< typename VT  // Type of the left-hand side sparse vector
         , typename ST  // Type of the right-hand side scalar
         , bool TF      // Transpose flag
-        , typename = EnableIf_t< IsNumeric_v<ST> > >
+        , EnableIf_t< IsNumeric_v<ST> >* = nullptr >
 inline decltype(auto) operator*( const SparseVector<VT,TF>& vec, ST scalar )
 {
    BLAZE_FUNCTION_TRACE;
 
-   using ScalarType = MultTrait_t< UnderlyingBuiltin_t<VT>, ST >;
-   using ReturnType = const SVecScalarMultExpr<VT,ScalarType,TF>;
-   return ReturnType( ~vec, scalar );
+   return svecscalarmult( ~vec, scalar );
 }
 //*************************************************************************************************
 
@@ -861,14 +930,12 @@ inline decltype(auto) operator*( const SparseVector<VT,TF>& vec, ST scalar )
 template< typename ST  // Type of the left-hand side scalar
         , typename VT  // Type of the right-hand side sparse vector
         , bool TF      // Transpose flag
-        , typename = EnableIf_t< IsNumeric_v<ST> > >
+        , EnableIf_t< IsNumeric_v<ST> >* = nullptr >
 inline decltype(auto) operator*( ST scalar, const SparseVector<VT,TF>& vec )
 {
    BLAZE_FUNCTION_TRACE;
 
-   using ScalarType = MultTrait_t< ST, UnderlyingBuiltin_t<VT> >;
-   using ReturnType = const SVecScalarMultExpr<VT,ScalarType,TF>;
-   return ReturnType( ~vec, scalar );
+   return svecscalarmult( ~vec, scalar );
 }
 //*************************************************************************************************
 
@@ -975,7 +1042,7 @@ template< typename VT   // Type of the sparse vector of the left-hand side expre
         , typename ST1  // Type of the scalar of the left-hand side expression
         , bool TF       // Transpose flag of the sparse vector
         , typename ST2  // Type of the right-hand side scalar
-        , typename = EnableIf_t< IsNumeric_v<ST2> > >
+        , EnableIf_t< IsNumeric_v<ST2> >* = nullptr >
 inline decltype(auto) operator*( const SVecScalarMultExpr<VT,ST1,TF>& vec, ST2 scalar )
 {
    BLAZE_FUNCTION_TRACE;
@@ -1003,7 +1070,7 @@ template< typename ST1  // Type of the left-hand side scalar
         , typename VT   // Type of the sparse vector of the right-hand side expression
         , typename ST2  // Type of the scalar of the right-hand side expression
         , bool TF       // Transpose flag of the sparse vector
-        , typename = EnableIf_t< IsNumeric_v<ST1> > >
+        , EnableIf_t< IsNumeric_v<ST1> >* = nullptr >
 inline decltype(auto) operator*( ST1 scalar, const SVecScalarMultExpr<VT,ST2,TF>& vec )
 {
    BLAZE_FUNCTION_TRACE;
@@ -1031,7 +1098,7 @@ template< typename VT   // Type of the dense vector of the left-hand side expres
         , typename ST1  // Type of the scalar of the left-hand side expression
         , bool TF       // Transpose flag of the dense vector
         , typename ST2  // Type of the right-hand side scalar
-        , typename = EnableIf_t< IsNumeric_v<ST2> && ( IsInvertible_v<ST1> || IsInvertible_v<ST2> ) > >
+        , EnableIf_t< IsNumeric_v<ST2> && ( IsInvertible_v<ST1> || IsInvertible_v<ST2> ) >* = nullptr >
 inline decltype(auto) operator/( const SVecScalarMultExpr<VT,ST1,TF>& vec, ST2 scalar )
 {
    BLAZE_FUNCTION_TRACE;

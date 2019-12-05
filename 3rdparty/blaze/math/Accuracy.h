@@ -3,7 +3,7 @@
 //  \file blaze/math/Accuracy.h
 //  \brief Computation accuracy for floating point data types
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -74,17 +74,20 @@ class NegativeAccuracy
    //**********************************************************************************************
 
  private:
-   //**Constructor*********************************************************************************
-   /*!\name Constructor */
+   //**Constructors********************************************************************************
+   /*!\name Constructors */
    //@{
    explicit inline constexpr NegativeAccuracy();
-   // No explicitly declared copy constructor.
+   NegativeAccuracy( const NegativeAccuracy& ) = default;
    //@}
    //**********************************************************************************************
 
  public:
    //**Destructor**********************************************************************************
-   // No explicitly declared destructor.
+   /*!\name Destructor */
+   //@{
+   ~NegativeAccuracy() = default;
+   //@}
    //**********************************************************************************************
 
    //**Unary plus/minus operators******************************************************************
@@ -103,15 +106,15 @@ class NegativeAccuracy
    //@}
    //**********************************************************************************************
 
- private:
    //**Forbidden operations************************************************************************
    /*!\name Forbidden operations */
    //@{
-   NegativeAccuracy& operator=( const NegativeAccuracy& );  //!< Copy assignment operator (private & undefined)
-   void* operator&() const;                                 //!< Address operator (private & undefined)
+   NegativeAccuracy& operator=( const NegativeAccuracy& ) = delete;
+   void* operator&() const = delete;
    //@}
    //**********************************************************************************************
 
+ private:
    //**Friend declarations*************************************************************************
    /*! \cond BLAZE_INTERNAL */
    friend class Accuracy;
@@ -125,7 +128,7 @@ class NegativeAccuracy
 
 //=================================================================================================
 //
-//  CONSTRUCTOR
+//  CONSTRUCTORS
 //
 //=================================================================================================
 
@@ -209,28 +212,28 @@ inline constexpr NegativeAccuracy<A>::operator const T() const
 /*!\name NegativeAccuracy operators */
 //@{
 template< typename A, typename T >
-inline constexpr bool operator==( const NegativeAccuracy<A>& lhs, const T& rhs );
+constexpr bool operator==( const NegativeAccuracy<A>& lhs, const T& rhs );
 
 template< typename A, typename T >
-inline constexpr bool operator==( const T& lhs, const NegativeAccuracy<A>& rhs );
+constexpr bool operator==( const T& lhs, const NegativeAccuracy<A>& rhs );
 
 template< typename A, typename T >
-inline constexpr bool operator!=( const NegativeAccuracy<A>& lhs, const T& rhs );
+constexpr bool operator!=( const NegativeAccuracy<A>& lhs, const T& rhs );
 
 template< typename A, typename T >
-inline constexpr bool operator!=( const T& lhs, const NegativeAccuracy<A>& rhs );
+constexpr bool operator!=( const T& lhs, const NegativeAccuracy<A>& rhs );
 
 template< typename A, typename T >
-inline constexpr bool operator<( const NegativeAccuracy<A>& lhs, const T& rhs );
+constexpr bool operator<( const NegativeAccuracy<A>& lhs, const T& rhs );
 
 template< typename A, typename T >
-inline constexpr bool operator<( const T& lhs, const NegativeAccuracy<A>& rhs );
+constexpr bool operator<( const T& lhs, const NegativeAccuracy<A>& rhs );
 
 template< typename A, typename T >
-inline constexpr bool operator>( const NegativeAccuracy<A>& lhs, const T& rhs );
+constexpr bool operator>( const NegativeAccuracy<A>& lhs, const T& rhs );
 
 template< typename A, typename T >
-inline constexpr bool operator>( const T& lhs, const NegativeAccuracy<A>& rhs );
+constexpr bool operator>( const T& lhs, const NegativeAccuracy<A>& rhs );
 //@}
 //*************************************************************************************************
 
@@ -502,16 +505,19 @@ class Accuracy
    using NegativeType = NegativeAccuracy<Accuracy>;  //!< The negated accuracy type.
    //**********************************************************************************************
 
-   //**Constructor*********************************************************************************
-   /*!\name Constructor */
+   //**Constructors********************************************************************************
+   /*!\name Constructors */
    //@{
    explicit inline constexpr Accuracy();
-   // No explicitly declared copy constructor.
+   Accuracy( const Accuracy& ) = default;
    //@}
    //**********************************************************************************************
 
    //**Destructor**********************************************************************************
-   // No explicitly declared destructor.
+   /*!\name Destructor */
+   //@{
+   ~Accuracy() = default;
+   //@}
    //**********************************************************************************************
 
    //**Unary plus/minus operators******************************************************************
@@ -530,12 +536,11 @@ class Accuracy
    //@}
    //**********************************************************************************************
 
- private:
    //**Forbidden operations************************************************************************
    /*!\name Forbidden operations */
    //@{
-   Accuracy& operator=( const Accuracy& );  //!< Copy assignment operator (private & undefined)
-   void* operator&() const;                 //!< Address operator (private & undefined)
+   Accuracy& operator=( const Accuracy& ) = delete;
+   void* operator&() const = delete;
    //@}
    //**********************************************************************************************
 };
@@ -546,7 +551,7 @@ class Accuracy
 
 //=================================================================================================
 //
-//  CONSTRUCTOR
+//  CONSTRUCTORS
 //
 //=================================================================================================
 
@@ -625,40 +630,40 @@ inline constexpr Accuracy::operator const T() const
 /*!\name Accuracy operators */
 //@{
 template< typename T >
-inline constexpr bool operator==( const Accuracy& lhs, const T& rhs );
+constexpr bool operator==( const Accuracy& lhs, const T& rhs );
 
 template< typename T >
-inline constexpr bool operator==( const T& lhs, const Accuracy& rhs );
+constexpr bool operator==( const T& lhs, const Accuracy& rhs );
 
 template< typename T >
-inline constexpr bool operator!=( const Accuracy& lhs, const T& rhs );
+constexpr bool operator!=( const Accuracy& lhs, const T& rhs );
 
 template< typename T >
-inline constexpr bool operator!=( const T& lhs, const Accuracy& rhs );
+constexpr bool operator!=( const T& lhs, const Accuracy& rhs );
 
 template< typename T >
-inline constexpr bool operator<( const Accuracy& lhs, const T& rhs );
+constexpr bool operator<( const Accuracy& lhs, const T& rhs );
 
 template< typename T >
-inline constexpr bool operator<( const T& lhs, const Accuracy& rhs );
+constexpr bool operator<( const T& lhs, const Accuracy& rhs );
 
 template< typename T >
-inline constexpr bool operator>( const Accuracy& lhs, const T& rhs );
+constexpr bool operator>( const Accuracy& lhs, const T& rhs );
 
 template< typename T >
-inline constexpr bool operator>( const T& lhs, const Accuracy& rhs );
+constexpr bool operator>( const T& lhs, const Accuracy& rhs );
 
 template< typename T >
-inline constexpr bool operator<=( const Accuracy& lhs, const T& rhs );
+constexpr bool operator<=( const Accuracy& lhs, const T& rhs );
 
 template< typename T >
-inline constexpr bool operator<=( const T& lhs, const Accuracy& rhs );
+constexpr bool operator<=( const T& lhs, const Accuracy& rhs );
 
 template< typename T >
-inline constexpr bool operator>=( const Accuracy& lhs, const T& rhs );
+constexpr bool operator>=( const Accuracy& lhs, const T& rhs );
 
 template< typename T >
-inline constexpr bool operator>=( const T& lhs, const Accuracy& rhs );
+constexpr bool operator>=( const T& lhs, const Accuracy& rhs );
 //@}
 //*************************************************************************************************
 
