@@ -9,6 +9,8 @@ Copyright (c) 2019 Panda Team
 #include <vector>
 #include "../../modules/distance.hpp"
 
+#include <random>
+
 
 
 int main() {
@@ -104,6 +106,30 @@ int main() {
 
     auto f_voi_norm_kl = metric::VOI_normalized_kl<long double>();
     std::cout << "KL VOI functor norm = " << f_voi_norm_kl(v1, v2) << std::endl;
+
+
+    std::cout << "\n\nTesting entropy function on uniformly distributed r. v.s:\n";
+
+    //std::random_device rd;
+    //std::mt19937 gen(rd());
+    std::mt19937 gen(1);
+    std::uniform_real_distribution<double> dis(0.0, 1.0);
+
+    std::vector<std::vector<double>> urv;
+
+    for (size_t i = 0; i<1000; ++i) {
+        urv.push_back({dis(gen), dis(gen), dis(gen), dis(gen), dis(gen), dis(gen), dis(gen)});
+        //urv.push_back({dis(gen), dis(gen), dis(gen)});
+        //urv.push_back({dis(gen)});
+    }
+
+    e = entropy(urv, 3, 2.0, metric::Euclidian<double>());
+    std::cout << "using Euclidean: " << e << std::endl;
+
+    e = entropy_kl(urv, 3, 2.0, metric::Euclidian<double>());
+    std::cout << "using Euclidean Kozachenko-Leonenko: " << e << std::endl;
+
+
 
 
     return 0;
