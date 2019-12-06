@@ -1,7 +1,7 @@
 #ifndef OUTPUT_MULTICLASSENTROPY_H_
 #define OUTPUT_MULTICLASSENTROPY_H_
 
-#include <blaze/Math.h>
+#include "../../../../3rdparty/blaze/Math.h"
 #include <stdexcept>
 #include "../Config.h"
 

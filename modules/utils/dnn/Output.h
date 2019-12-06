@@ -3,7 +3,7 @@
 
 #include <stdexcept>
 
-#include <blaze/Math.h>
+#include "../../../3rdparty/blaze/Math.h"
 
 
 namespace MiniDNN
