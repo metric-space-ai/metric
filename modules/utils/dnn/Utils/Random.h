@@ -1,7 +1,7 @@
 #ifndef UTILS_RANDOM_H_
 #define UTILS_RANDOM_H_
 
-#include <blaze/Math.h>
+#include "../../../../3rdparty/blaze/Math.h"
 #include "../RNG.h"
 
 namespace MiniDNN

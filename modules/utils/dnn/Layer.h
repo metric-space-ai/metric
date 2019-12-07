@@ -3,7 +3,7 @@
 
 #include <vector>
 
-#include <blaze/Math.h>
+#include "../../../3rdparty/blaze/Math.h"
 
 #include "RNG.h"
 #include "Optimizer.h"

@@ -1,7 +1,7 @@
 #ifndef ACTIVATION_SIGMOID_H_
 #define ACTIVATION_SIGMOID_H_
 
-#include <blaze/Math.h>
+#include "../../../../3rdparty/blaze/Math.h"
 
 namespace MiniDNN
 {

@@ -1,7 +1,7 @@
 #ifndef OPTIMIZER_H_
 #define OPTIMIZER_H_
 
-#include <blaze/Math.h>
+#include "../../../3rdparty/blaze/Math.h"
 
 namespace MiniDNN
 {

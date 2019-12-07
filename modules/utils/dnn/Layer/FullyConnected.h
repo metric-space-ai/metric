@@ -5,7 +5,7 @@
 #include <iostream>
 #include <stdexcept>
 
-#include <blaze/Math.h>
+#include "../../../../3rdparty/blaze/Math.h"
 
 #include "../Layer.h"
 #include "../Utils/Random.h"
