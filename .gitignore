@@ -16,3 +16,5 @@
 mkl
 build
 /3rdparty/jpeglib/Release/jpeg.lib
+*.bmp
+/test

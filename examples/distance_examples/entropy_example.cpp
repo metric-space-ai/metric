@@ -50,6 +50,21 @@ int main() {
     std::cout << std::endl;
 
 
+
+    std::vector<std::string> input = {
+            "AAA",
+            "HJGJHFG",
+            "BBB",
+            "AAAA",
+            "long long long long long long string"
+    };
+
+    auto ee =  metric::entropy(input, 3, 2.0, metric::Edit<void>()); // <void> or <char> or anything does not matter here since Container type is deduced
+
+    std::cout << "using Edit with strings: " << ee << std::endl << std::endl;
+    //*/
+
+
     // Mutual Information
 
     std::vector<std::vector<double>> v1 = {{5,5}, {2,2}, {3,3}, {5,5}};
