@@ -55,10 +55,16 @@ namespace MiniDNN
 	                                                                featuresLength(featuresLength), normValue(normValue)
 	{
 		/* Create layers */
-		//net.addLayer(FullyConnected<Scalar, ReLU<Scalar>>(featuresLength, LATENT_VECTOR_SIZE));
-		//net.addLayer(FullyConnected<Scalar, Sigmoid<Scalar>>(LATENT_VECTOR_SIZE, featuresLength));
-		net.addLayer(Conv2d<Scalar, ReLU<Scalar>>(28, 28, 1, 1, 5, 5));
-		net.addLayer(Conv2dTranspose<Scalar, Sigmoid<Scalar>>(24, 24, 1, 1, 5, 5));
+		net.addLayer(FullyConnected<Scalar, ReLU<Scalar>>(featuresLength, 4096));
+		net.addLayer(FullyConnected<Scalar, ReLU<Scalar>>(4096, 1024));
+		net.addLayer(FullyConnected<Scalar, ReLU<Scalar>>(1024, 256));
+		net.addLayer(FullyConnected<Scalar, ReLU<Scalar>>(256, 64));
+		net.addLayer(FullyConnected<Scalar, ReLU<Scalar>>(64, 256));
+		net.addLayer(FullyConnected<Scalar, ReLU<Scalar>>(256, 1024));
+		net.addLayer(FullyConnected<Scalar, ReLU<Scalar>>(1024, 4096));
+		net.addLayer(FullyConnected<Scalar, ReLU<Scalar>>(4096, featuresLength));
+		//net.addLayer(Conv2d<Scalar, ReLU<Scalar>>(featuresLength, 28, 1, 1, 5, 5));
+		//net.addLayer(Conv2dTranspose<Scalar, Sigmoid<Scalar>>(24, 24, 1, 1, 5, 5));
 
 		net.setCallback(VerboseCallback<Scalar>());
 		/* Set output layer */
