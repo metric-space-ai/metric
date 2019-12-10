@@ -48,7 +48,7 @@ class pattern_compressor {
 
         recMetric_Blaze() = default;
 
-        recMetric_Blaze(Metric1 m)
+        explicit recMetric_Blaze(Metric1 m)
             : metric(m)
         {
         }
@@ -63,7 +63,7 @@ class pattern_compressor {
     using Tree = metric::Tree<typename blaze::CompressedVector<T>, metric_t>;
     using band_index_t = std::unordered_map<std::size_t, std::size_t>;
 
-    std::size_t rate;
+    std::size_t batch_size;
     int wavelet_type;
     std::vector<std::unique_ptr<Tree>> trees;
     std::vector<band_index_t> bands_index_map;
@@ -79,42 +79,53 @@ class pattern_compressor {
 
     void make_task(std::vector<T>&& v, std::size_t band_index, std::size_t slice_index);
 
-    std::vector<T> to_vector(const blaze::CompressedVector<T>& v);
+    std::vector<T> to_vector(const blaze::CompressedVector<T>& v) const;
 
-    void print_vec(const std::vector<T>& v);
+    void print_vec(const std::vector<T>& v) const;
 
-    void print_vec(const blaze::CompressedVector<T>& v, std::size_t real_index);
+    void print_vec(const blaze::CompressedVector<T>& v, std::size_t real_index) const;
+
+    pattern_compressor(const pattern_compressor<T, Metric> &) = delete;
+    pattern_compressor<T, Metric> & operator=(const pattern_compressor<T, Metric> &) = delete;
 
 public:
     /** \brief Constructor
      *
      * @param noise_threshold_ vector of threshold values used to remove noise from input data
-     * @param metric_threshold_ vector of threshold values used to similarity check
-     * @param rate_ size of input data batch
+     * @param similarity_threshold_ vector of threshold values used to similarity check
+     * @param batch_size_ size of input data batch
      * @param wavelet_type type of wavelet used to decompose input data
      * @param metric Metric object used to similarity check
      * @param threads number of thread in internal thread_pool
      */
-    pattern_compressor(std::vector<T>&& noise_threshold_, std::vector<T>&& metric_threshold_, std::size_t rate_,
-        int wavelet_type_, Metric metric, int threads);
+    pattern_compressor(std::vector<T>&& similarity_threshold_, std::vector<T>&& noise_threshold_,
+                       std::size_t batch_size_, int wavelet_type_, Metric metric, int threads);
 
     /** \brief Move constructor
      *
      */
-    pattern_compressor(pattern_compressor<T, Metric>&& pc);
+    pattern_compressor(pattern_compressor<T, Metric>&& pc) noexcept;
 
+    /**
+     * \brief moving operator=
+     */
+    pattern_compressor<T,Metric> & operator=(pattern_compressor<T, Metric> && pc)  noexcept;
+
+    ~pattern_compressor() = default;
+    
     /** \briefProcess next slice of time series
      *
-     * @param buffer next slice of input data
+     * @param buffer next slice of input data, size of buffer should be equal to get_batch_size()
+     * @exception std::runtime_error throws when size of bufffer is not equalt to get_batch_size()
      */
-    void process_batch(std::vector<T>&& buffer);
+    void process_batch(const std::vector<T>& buffer);
 
     /** \brief Compress decomposed data
      * @param compressor compression filter, may be boost::iostreams::zlib_compressor
      * @return array of cahr with compressed data
      */
     template <typename Compressor>
-    std::vector<char> compress(Compressor compressor = boost::iostreams::zlib_compressor());
+    std::vector<char> compress(const Compressor & compressor = boost::iostreams::zlib_compressor()) const;
 
     /**
      * \brief Decompress data
@@ -122,32 +133,32 @@ public:
      * @param decompression filter, may be boost::iostreams::zlib_decompressor
      */
     template <typename Decompressor>
-    void decompress(const std::vector<char>& input, Decompressor decompressor = boost::iostreams::zlib_decompressor());
+    void decompress(const std::vector<char>& input, const Decompressor & decompressor = boost::iostreams::zlib_decompressor());
 
     /**
-     * \brief Restore data slice
+     * \brief Restore data batch
      *
-     * @param index index of the slice in time serie
-     * @return restored slice of data
+     * @param index index of the batch in time series
+     * @return restored batch of data
      */
-    std::vector<T> get_slice(std::size_t index);
+    std::vector<T> get_batch(std::size_t index) const;
 
     /**
      * \brief Get the expected size of input slice
      *
      */
-    std::size_t get_rate() const noexcept { return rate; }
+    [[nodiscard]] std::size_t get_batch_size() const noexcept { return batch_size; }
 
     /**
      * \brief Get number of decomposed subbands
      *
      */
-    std::size_t get_subbands_size() const { return join_map.size(); }
+    [[nodiscard]] std::size_t get_subbands_size() const noexcept { return join_map.size(); }
 
     /**
      *  \brief Get number of elements of one subband
      */
-    std::size_t get_band_size() const
+    [[nodiscard]] std::size_t get_band_size() const noexcept
     {
         if (join_map.empty())
             return 0;
@@ -164,19 +175,19 @@ public:
      */
 template <typename recType, typename Metric, typename... Ts>
 class pattern_compressor_factory {
-    int wavelet_type;
-    std::size_t rate;
-    std::tuple<Ts...> metric_args;
-    std::size_t subbands_size;
+    const int wavelet_type;
+    const std::size_t batch_size;
+    const std::tuple<Ts...> metric_args;
+    const std::size_t subbands_size;
 
     template <typename... Args, std::size_t... Is>
-    Metric make_metric(std::tuple<Args...>& tup, std::index_sequence<Is...>)
+    Metric make_metric(const std::tuple<Args...>& tup, std::index_sequence<Is...>) const
     {
         return Metric(std::get<Is>(tup)...);
     }
 
     template <typename... Args>
-    Metric make_metric(std::tuple<Args...>& tup)
+    Metric make_metric(const std::tuple<Args...>& tup) const
     {
         return make_metric(tup, std::index_sequence_for<Args...> {});
     }
@@ -189,32 +200,31 @@ public:
          * @param rate_ size of incoming batch of data
          * @param args arguments for Metric constructor
          */
-    pattern_compressor_factory(int wavelet_type_, std::size_t rate_, Ts&&... args)
+    pattern_compressor_factory(int wavelet_type_, std::size_t batch_size_, Ts&&... args)
         : wavelet_type(wavelet_type_)
-        , rate(rate_)
+        , batch_size(batch_size_)
         , metric_args(std::make_tuple(std::forward<Ts>(args)...))
+        , subbands_size(wavelet::wmaxlev(batch_size, wavelet_type) + 2)
     {
-        subbands_size = wavelet::wmaxlev(rate, wavelet_type) + 2;
     }
 
     /**
          * \brief Return a number of decomposed subbands
          *
          */
-    std::size_t get_subbands_size() const { return subbands_size; }
+    [[nodiscard]] std::size_t get_subbands_size() const { return subbands_size; }
 
     /**
          * \@brief make vector with default values of threshold to remove noise from input data.
          *
-         * @param size amount of threshold values, should be equal to subbands_size
          * @return vector with default values of threshold for each subband
          */
 
-    std::vector<recType> make_noise_threshold(std::size_t size)
+    std::vector<recType> make_noise_threshold() const
     {
         std::vector<recType> threshold;
         recType factor = std::sqrt(recType { 2.0 });
-        for (std::size_t i = 0; i < size; ++i) {
+        for (std::size_t i = 0; i < subbands_size; ++i) {
             if (i < 2) {
                 threshold.push_back(0.01);
             } else {
@@ -229,29 +239,40 @@ public:
          *
          * @param metric_threshold vector of threshold values to check similarity between subbands
          * @param noise_threshold vector of threshold values to remove noise from input data
-         * @param threads number of thread in internal thread_pool
+         * @param threads number of thread in internal thread_pool, default value is 2
          * @return pattern_compressor object
          */
     pattern_compressor<recType, Metric> operator()(
-        std::vector<recType>&& metric_threshold, std::vector<recType>&& noise_threshold, int threads = 2)
+        std::vector<recType>&& similarity_threshold, std::vector<recType>&& noise_threshold, int threads = 2) const
     {
+        if(similarity_threshold.size() != get_subbands_size()) {
+            throw std::runtime_error("size of similarity_threshold should be equal to get_subbands_size()");
+        }
+        if (noise_threshold.size() != get_subbands_size()) {
+            throw std::runtime_error("size of similarity_threshold should be equal to get_subbands_size()");
+        }
 
-        return pattern_compressor<recType, Metric>(std::move(noise_threshold), std::move(metric_threshold), rate,
-            wavelet_type, make_metric(metric_args), threads);
+        return pattern_compressor<recType, Metric>(std::forward<std::vector<recType>>(similarity_threshold),
+                                                   std::forward<std::vector<recType>>(noise_threshold),
+                                                   batch_size, wavelet_type, make_metric(metric_args), threads);
     }
 
     /**
          * \brief Constructor of pattern_compressor objects based on factory parameters
          *
-         * @param metric_threshold vector of threshold values to check similarity between subbands
-         * @param threads number of thread in internal thread_pool
+         * @param similarity_threshold vector of threshold values to check similarity between subbands
+         * @param threads number of thread in internal thread_pool, default value is 2
          * @return pattern_compressor object
          */
-    pattern_compressor<recType, Metric> operator()(std::vector<recType>&& metric_threshold, int threads = 2)
+    pattern_compressor<recType, Metric> operator()(std::vector<recType>&& similarity_threshold, int threads = 2) const
     {
+        if (similarity_threshold.size() != get_subbands_size()) {
+            throw std::runtime_error("size of similarity_threshold should be equal to get_subbands_size()");
+        }
 
-        return pattern_compressor<recType, Metric>(std::move(make_noise_threshold(subbands_size)),
-            std::move(metric_threshold), rate, wavelet_type, make_metric(metric_args), threads);
+        return pattern_compressor<recType, Metric>(std::forward<std::vector<recType>>(similarity_threshold),
+                                                   make_noise_threshold(),
+                                                   batch_size, wavelet_type, make_metric(metric_args), threads);
     }
 };
 
@@ -262,15 +283,16 @@ public:
      * @tparam Metric metric class used to similarity check
      *
      * @param wavelet_type type of wavelet used for decomposition
-     * @param rate size of batch of input data
+     * @param batch_size size of batch of input data
      * @param args arguments for Metric constructor
      */
 template <typename recType, typename Metric, typename... Ts>
 inline pattern_compressor_factory<recType, Metric, Ts...> make_compressor_factory(
-    int wavelet_type, std::size_t rate, Ts&&... args)
+    int wavelet_type, std::size_t batch_size, Ts&&... args)
 {
-    return pattern_compressor_factory<recType, Metric, Ts...>(wavelet_type, rate, std::forward<Ts>(args)...);
+    return pattern_compressor_factory<recType, Metric, Ts...>(wavelet_type, batch_size, std::forward<Ts>(args)...);
 }
 }  // namespace metric
+
 #include "pattern_compressor.cpp"
 #endif

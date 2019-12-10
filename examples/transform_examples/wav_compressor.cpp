@@ -5,7 +5,6 @@
 
   Copyright (c) 2019 Panda Team
 */
-
 #include <iostream>
 #include <fstream>
 #include <vector>
@@ -17,33 +16,36 @@
 #include <boost/program_options.hpp>
 
 #include "assets/AudioFile.h"
-#include "../../modules/utils/pattern_compressor.hpp"
+
 #include "../../modules/distance/k-related/Standards.hpp"
 
+#include "../../modules/utils/pattern_compressor.hpp"
 namespace po = boost::program_options;
 
 template <typename Compressor>
-void compress_file(const std::string& file_name, const std::string& out_name, Compressor compressor)
+void compress_file(const std::string& file_name, std::string out_name, Compressor compressor)
 {
     AudioFile<double> file;
     file.load(file_name);
     std::vector<double> buffer;
-    buffer.reserve(compressor.get_rate());
+    buffer.reserve(compressor.get_batch_size());
     std::size_t count = 0;
-    for (std::size_t i = 0; i < file.samples[0].size(); i++) {
+    for(auto & v : file.samples[0]) {
         // accumulate enough data from input
-        buffer.push_back(file.samples[0][i]);
-        if (buffer.size() == compressor.get_rate()) {
-
+        buffer.push_back(v);
+        if (buffer.size() == compressor.get_batch_size()) {
             // process slice
-            compressor.process_batch(std::move(buffer));
+            compressor.process_batch(buffer);
             std::cout << "push slice #" << count << std::endl;
             buffer.clear();
             count++;
         }
     }
     if (!buffer.empty()) {
-        compressor.process_batch(std::move(buffer));
+        if(buffer.size() < compressor.get_batch_size()) {
+            buffer.resize(compressor.get_batch_size(), 0.0);
+        }
+        compressor.process_batch(buffer);
         std::cout << "push slice #" << count << std::endl;
         count++;
     }
@@ -52,10 +54,12 @@ void compress_file(const std::string& file_name, const std::string& out_name, Co
     boost::iostreams::zlib_params zp(boost::iostreams::zlib::default_compression, boost::iostreams::zlib::deflated, 15,
         8, boost::iostreams::zlib::huffman_only);
     std::vector<char> v = compressor.compress(boost::iostreams::zlib_compressor(zp));
+    if(out_name.empty()) {
+        out_name = std::filesystem::path(file_name).filename().string() + ".z";
+    }
 
     // save compressed data
-    std::string out_file = std::filesystem::path(file_name).filename().string() + ".z";
-    std::ofstream ostr(out_file.c_str(), std::ios::binary);
+    std::ofstream ostr(out_name.c_str(), std::ios::binary);
     ostr.write(v.data(), v.size());
     ostr.flush();
     ostr.close();
@@ -74,8 +78,8 @@ void decompress_file(const std::string& file_name, const std::string& outfile, C
     std::vector<std::vector<double>> buffer(1);
 
     for (std::size_t i = 0; i < compressor.get_band_size(); i++) {
-        auto slice = compressor.get_slice(i);
-        buffer[0].insert(buffer[0].end(), slice.begin(), slice.end());
+        auto batch = compressor.get_batch(i);
+        buffer[0].insert(buffer[0].end(), batch.begin(), batch.end());
     }
     audio.setAudioBuffer(buffer);
     audio.save(outfile);
@@ -94,12 +98,18 @@ int main(int argc, char** argv)
     std::string file_name;
     std::string output_file;
     std::size_t threads = 1;
+    double similarity_threshold = 0.05;
+    std::size_t slice_size = 4096;
     try {
         po::options_description desc("wav_compressor");
-        desc.add_options()("decompress,d", "Decompress")("threads,t", po::value<std::size_t>()->default_value(2),
-            "Number of threads to use while compressing")("help,h", "produce help message")("output-file,o",
-            po::value<std::string>(),
-            "output file, default == 'input-file'.z")("input-file", po::value<std::string>(), "input file");
+        desc.add_options()
+            ("help,h", "produce help message")
+            ("decompress,d", "Decompress")
+            ("threshold,r", po::value<double>()->default_value(0.05), "Similarity threshold")
+            ("slice-size,s", po::value<std::size_t>()->default_value(4096), "Size of input data slices")
+            ("threads,t", po::value<std::size_t>()->default_value(2), "Number of threads to use while compressing")
+            ("output-file,o", po::value<std::string>(), "output file, default == 'input-file'.z")
+            ("input-file", po::value<std::string>(), "input file");
 
         po::positional_options_description p;
         p.add("input-file", 1);
@@ -121,13 +131,16 @@ int main(int argc, char** argv)
             usage(desc);
             return 1;
         }
-
         if (vm.count("output-file")) {
             output_file = vm["output-file"].as<std::string>();
-        } else {
-            output_file = file_name + ".z";
-        }
+        } 
 
+        if(vm.count("threshold")) {
+            similarity_threshold = vm["threshold"].as<double>();
+        }
+        if (vm.count("slice-size")) {
+            slice_size = vm["slice-size"].as<std::size_t>();
+        }
         if (vm.count("decompress")) {
             if (!vm.count("output-file")) {
                 usage(desc);
@@ -142,8 +155,8 @@ int main(int argc, char** argv)
     }
 
     // create compressor for double time series with rate = 4096 and wavelet_type = 5
-    auto cf = metric::make_compressor_factory<double, metric::TWED<double>>(5, 4096, 1, 0);
-    auto wcomp = cf(std::vector<double>(cf.get_subbands_size(), 0), threads);
+    auto cf = metric::make_compressor_factory<double, metric::TWED<double>>(5, slice_size, 1, 0);
+    auto wcomp = cf(std::vector<double>(cf.get_subbands_size(), similarity_threshold), threads);
     if (is_decompress) {
         decompress_file(file_name, output_file, std::move(wcomp));
     } else {
