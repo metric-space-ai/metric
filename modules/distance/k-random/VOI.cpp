@@ -102,6 +102,24 @@ namespace {
 }  // namespace
 
 
+
+template <typename T>
+T conv_diff_entropy(T in) {
+    if (in < 1)
+        return 1/std::exp(1)*std::exp(in);
+    else
+        return in;
+}
+
+template <typename T>
+T conv_diff_entropy_inv(T in) {
+    if (in < 1)
+        return std::log(in) + 1;
+    else
+        return in;
+}
+
+
 template <typename Container, typename Metric, typename L>
 double entropy(
     std::vector<Container> data, std::size_t k, L logbase, Metric metric)
@@ -136,7 +154,7 @@ double entropy(
         auto res = tree.knn(data[i], k + 1);
         entropyEstimate += d / N * log(logbase, res.back().second);
     }
-    return entropyEstimate;
+    return metric::conv_diff_entropy(entropyEstimate); // conversion of values below 1 to exp scale
 }
 
 // Kozachenko-Leonenko estimator based on https://hal.archives-ouvertes.fr/hal-00331300/document (Shannon diff. entropy,
@@ -200,8 +218,8 @@ typename std::enable_if<!std::is_integral<T>::value, T>::type mutualInformation(
 
     auto X = Xc;
     auto Y = Yc;
-    add_noise(X);
-    add_noise(Y);
+    //add_noise(X);
+    //add_noise(Y);
     std::vector<std::vector<T>> XY;
     combine(X, Y, XY);
     metric::Tree<std::vector<T>, Metric> tree(XY, -1, metric);
@@ -245,17 +263,23 @@ typename std::enable_if<std::is_integral<T>::value, T>::type mutualInformation(
 {
     std::vector<std::vector<T>> XY;
     combine(Xc, Yc, XY);
-    return entropy<T>(Xc, logbase)
-        + entropy<T>(Yc,
-            logbase)  // entropy overload for integers is not implemented yet
-        - entropy<T>(XY, logbase);
+//    return entropy<T>(Xc, logbase)
+//        + entropy<T>(Yc,
+//            logbase)  // entropy overload for integers is not implemented yet
+//        - entropy<T>(XY, logbase);
+    return metric::conv_diff_entropy_inv(entropy<T>(Xc, logbase))
+        + metric::conv_diff_entropy_inv(entropy<T>(Yc,
+            logbase))  // entropy overload for integers is not implemented yet
+        - metric::conv_diff_entropy_inv(entropy<T>(XY, logbase));
 }
 
 template <typename T, typename Metric>
 typename std::enable_if<!std::is_integral<T>::value, T>::type variationOfInformation(
     const std::vector<std::vector<T>>& Xc, const std::vector<std::vector<T>>& Yc, int k, T logbase)
 {
-    return entropy<std::vector<T>, Metric>(Xc, k, logbase, Metric()) + entropy<std::vector<T>, Metric>(Yc, k, logbase, Metric())
+//    return entropy<std::vector<T>, Metric>(Xc, k, logbase, Metric()) + entropy<std::vector<T>, Metric>(Yc, k, logbase, Metric())
+//        - 2 * mutualInformation<T>(Xc, Yc, k);
+    return metric::conv_diff_entropy_inv(entropy<std::vector<T>, Metric>(Xc, k, logbase, Metric())) + metric::conv_diff_entropy_inv(entropy<std::vector<T>, Metric>(Yc, k, logbase, Metric()))
         - 2 * mutualInformation<T>(Xc, Yc, k);
 }
 
@@ -265,7 +289,8 @@ typename std::enable_if<!std::is_integral<T>::value, T>::type variationOfInforma
 {
     using Cheb = metric::Chebyshev<T>;
     auto mi = mutualInformation<T>(Xc, Yc, k);
-    return 1 - (mi / (entropy<std::vector<T>, Cheb>(Xc, k, logbase, Cheb()) + entropy<std::vector<T>, Cheb>(Yc, k, logbase, Cheb()) - mi));
+    //return 1 - (mi / (entropy<std::vector<T>, Cheb>(Xc, k, logbase, Cheb()) + entropy<std::vector<T>, Cheb>(Yc, k, logbase, Cheb()) - mi));
+    return 1 - (mi / (metric::conv_diff_entropy_inv(entropy<std::vector<T>, Cheb>(Xc, k, logbase, Cheb())) + metric::conv_diff_entropy_inv(entropy<std::vector<T>, Cheb>(Yc, k, logbase, Cheb()) - mi)));
 }
 
 template <typename V>
@@ -275,7 +300,9 @@ typename std::enable_if<!std::is_integral<El>::value, V>::type VOI<V>::operator(
     const Container<Container<El, Allocator_inner>, Allocator_outer>& b) const
 {
     using Cheb = metric::Chebyshev<El>;
-    return entropy<std::vector<El>, Cheb>(a, k, logbase, Cheb()) + entropy<std::vector<El>, Cheb>(b, k, logbase, Cheb())
+//    return entropy<std::vector<El>, Cheb>(a, k, logbase, Cheb()) + entropy<std::vector<El>, Cheb>(b, k, logbase, Cheb())
+//        - 2 * mutualInformation<El>(a, b, k);
+    return metric::conv_diff_entropy_inv(entropy<std::vector<El>, Cheb>(a, k, logbase, Cheb())) + metric::conv_diff_entropy_inv(entropy<std::vector<El>, Cheb>(b, k, logbase, Cheb()))
         - 2 * mutualInformation<El>(a, b, k);
 }
 
@@ -287,10 +314,14 @@ typename std::enable_if<!std::is_integral<El>::value, V>::type VOI_normalized<V>
 {
     using Cheb = metric::Chebyshev<El>;
     auto mi = mutualInformation<El>(a, b, this->k);
+//    return 1
+//        - (mi
+//            / (entropy<std::vector<El>, Cheb>(a, this->k, this->logbase, Cheb())
+//                + entropy<std::vector<El>, Cheb>(b, this->k, this->logbase, Cheb()) - mi));
     return 1
         - (mi
-            / (entropy<std::vector<El>, Cheb>(a, this->k, this->logbase, Cheb())
-                + entropy<std::vector<El>, Cheb>(b, this->k, this->logbase, Cheb()) - mi));
+            / (metric::conv_diff_entropy_inv(entropy<std::vector<El>, Cheb>(a, this->k, this->logbase, Cheb()))
+                + metric::conv_diff_entropy_inv(entropy<std::vector<El>, Cheb>(b, this->k, this->logbase, Cheb()) - mi)));
 }
 
 // VOI based on Kozachenko-Leonenko entropy estimator

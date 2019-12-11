@@ -116,12 +116,22 @@ int main() {
     std::uniform_real_distribution<double> dis(0.0, 1.0);
 
     std::vector<std::vector<double>> urv;
+    std::vector<std::vector<double>> urv2;
 
     for (size_t i = 0; i<1000; ++i) {
-        urv.push_back({dis(gen), dis(gen), dis(gen), dis(gen), dis(gen), dis(gen), dis(gen)});
+        //urv.push_back({dis(gen), dis(gen), dis(gen), dis(gen), dis(gen), dis(gen), dis(gen)});
         //urv.push_back({dis(gen), dis(gen), dis(gen)});
+        urv.push_back({dis(gen), dis(gen)});
+        urv2.push_back({dis(gen), dis(gen)});
         //urv.push_back({dis(gen)});
     }
+
+
+    std::cout << "using Chebyshev: "
+              << entropy(urv, 3, 2.0, metric::Chebyshev<double>())
+              << ", "
+              << entropy(urv2, 3, 2.0, metric::Chebyshev<double>())
+              << std::endl;
 
     e = entropy(urv, 3, 2.0, metric::Euclidian<double>());
     std::cout << "using Euclidean: " << e << std::endl;
@@ -129,7 +139,10 @@ int main() {
     e = entropy_kl(urv, 3, 2.0, metric::Euclidian<double>());
     std::cout << "using Euclidean Kozachenko-Leonenko: " << e << std::endl;
 
+    auto rf_voi = metric::VOI<double>();
+    std::cout << "using VOI: " << rf_voi(urv, urv2) << std::endl;
 
+    std::cout << "conv test " << metric::conv_diff_entropy_inv(metric::conv_diff_entropy(-0.118)) << std::endl;
 
 
     return 0;
