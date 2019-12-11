@@ -23,7 +23,7 @@ class Optimizer
 		using AlignedMapVec = blaze::CustomVector<Scalar, blaze::aligned, blaze::unpadded>;
 		using ConstAlignedMapVec = const blaze::CustomVector<Scalar, blaze::aligned, blaze::unpadded>;
 
-public:
+	public:
         virtual ~Optimizer() {}
 
         ///

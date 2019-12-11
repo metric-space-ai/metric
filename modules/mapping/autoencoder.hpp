@@ -9,7 +9,7 @@ namespace MiniDNN
 	class Autoencoder
 	{
 		private:
-			using Matrix = blaze::DynamicMatrix<Scalar, blaze::columnMajor>;
+			using Matrix = blaze::DynamicMatrix<Scalar>;
 
 			Network<Scalar> net;
 			std::shared_ptr <Optimizer<Scalar>> opt;
@@ -110,18 +110,18 @@ namespace MiniDNN
 	}
 
 	template<typename InputDataType, typename Scalar>
-	typename Autoencoder<InputDataType, Scalar>::Matrix Autoencoder<InputDataType, Scalar>::convertData(
-			const std::vector<InputDataType> &inputData)
+	typename Autoencoder<InputDataType, Scalar>::Matrix Autoencoder<InputDataType, Scalar>::convertData(const std::vector<InputDataType> &inputData)
 	{
 		/* Convert features to scalar type */
 		std::vector<Scalar> dataScalar(inputData.begin(), inputData.end());
 
-		Matrix data(featuresLength, dataScalar.size() / featuresLength, dataScalar.data());
+		Matrix data(dataScalar.size() / featuresLength, featuresLength, dataScalar.data());
 
 		/* Norm features [0..1] */
 		if (normValue != 0) {
 			data /= Scalar(normValue);
 		}
+
 		return data;
 	}
 
@@ -141,9 +141,10 @@ namespace MiniDNN
 		}
 
 		std::vector<InputDataType> output;
-		for (auto j = 0; j < temp.columns(); ++j) {
-			auto dataPointer = blaze::column(temp, j).data();
-			std::vector<Scalar> vectorScalar(dataPointer, dataPointer + temp.rows());
+		for (auto i = 0; i < temp.rows(); ++i) {
+			auto dataPointer = blaze::rows(temp, i).data();
+			std::vector<Scalar> vectorScalar(dataPointer, dataPointer + temp.columns());
+
 			output.insert(output.end(), vectorScalar.begin(), vectorScalar.end());
 		}
 

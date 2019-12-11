@@ -32,7 +32,7 @@ template <typename Scalar>
 class Network
 {
     private:
-		using Matrix = blaze::DynamicMatrix<Scalar, blaze::columnMajor>;
+		using Matrix = blaze::DynamicMatrix<Scalar>;
 
         RNG                 defaultRng;      // Built-in RNG
         RNG&                rng;              // Reference to the RNG provided by the user,
@@ -397,27 +397,24 @@ class Network
         ///                   use the current random state.
         ///
         template <typename DerivedX, typename DerivedY>
-        bool fit(Optimizer<Scalar>& opt, const DerivedX& x,
-                 const DerivedY& y,
-                 int batch_size, int epoch, int seed = -1)
+        bool fit(Optimizer<Scalar>& opt, const DerivedX& x, const DerivedY& y,
+									 int batch_size, int epoch, int seed = -1)
         {
             // We do not directly use PlainObjectX since it may be row-majored if x is passed as mat.transpose()
             // We want to force XType and YType to be column-majored
             const int nlayer = num_layers();
 
-            if (nlayer <= 0)
-            {
-                return false;
-            }
+	        if (nlayer <= 0) {
+		        return false;
+	        }
 
             // Reset optimizer
             opt.reset();
 
             // Create shuffled mini-batches
-            if (seed > 0)
-            {
-                rng.seed(seed);
-            }
+	        if (seed > 0) {
+		        rng.seed(seed);
+	        }
 
             std::vector<DerivedX> x_batches;
             std::vector<DerivedY> y_batches;
@@ -428,21 +425,19 @@ class Network
             m_callback->m_nepoch = epoch;
 
             // Iterations on the whole data set
-            for (int k = 0; k < epoch; k++)
-            {
-                m_callback->m_epoch_id = k;
+	        for (int k = 0; k < epoch; k++) {
+		        m_callback->m_epoch_id = k;
 
-                // Train on each mini-batch
-                for (int i = 0; i < nbatch; i++)
-                {
-                    m_callback->m_batch_id = i;
-                    m_callback->pre_training_batch(this, x_batches[i], y_batches[i]);
-                    this->forward(x_batches[i]);
-                    this->backprop(x_batches[i], y_batches[i]);
-                    this->update(opt);
-                    m_callback->post_training_batch(this, x_batches[i], y_batches[i]);
-                }
-            }
+		        // Train on each mini-batch
+		        for (int i = 0; i < nbatch; i++) {
+			        m_callback->m_batch_id = i;
+			        m_callback->pre_training_batch(this, x_batches[i], y_batches[i]);
+			        this->forward(x_batches[i]);
+			        this->backprop(x_batches[i], y_batches[i]);
+			        this->update(opt);
+			        m_callback->post_training_batch(this, x_batches[i], y_batches[i]);
+		        }
+	        }
 
             return true;
         }
