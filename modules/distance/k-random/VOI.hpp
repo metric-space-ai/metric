@@ -22,11 +22,12 @@ namespace metric {
  * @param k
  * @param logbase
  * @param metric
+ * @param exp  - flag, applies 1/exp(1)*exp(estimated_entropy) to output
  * @return value of entropy estimation of the data 
  */
 template <typename Container, typename Metric = metric::Euclidian<typename Container::value_type>, typename L = double>
 double entropy(
-    std::vector<Container> data, std::size_t k = 3, L logbase = 2, Metric metric = Metric());
+    std::vector<Container> data, std::size_t k = 3, L logbase = 2, Metric metric = Metric(), bool exp = false);
 
 /**
  * @brief
