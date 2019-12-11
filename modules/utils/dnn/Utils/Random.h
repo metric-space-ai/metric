@@ -36,51 +36,47 @@ blaze::DynamicVector<int> getVectorIntLinspaced(const size_t size, const int low
 
 
 template <typename DerivedX, typename DerivedY, typename XType, typename YType>
-int create_shuffled_batches(
-    const DerivedX& x, const DerivedY& y,
-    int batch_size, RNG& rng,
-    std::vector<XType>& x_batches, std::vector<YType>& y_batches
-)
+int create_shuffled_batches(const DerivedX &x, const DerivedY &y,
+								int batch_size, RNG &rng,
+								std::vector<XType> &x_batches, std::vector<YType> &y_batches)
 {
-    const int nobs = x.columns();
-    const int dimx = x.rows();
-    const int dimy = y.rows();
+	const int nobs = x.rows();
+	const int dimx = x.columns();
+	const int dimy = y.columns();
 
-    if (y.columns() != nobs)
-    {
-        throw std::invalid_argument("Input X and Y have different number of observations");
-    }
+	if (y.rows() != nobs) {
+		throw std::invalid_argument("Input X and Y have different number of observations");
+	}
 
     // Randomly shuffle the IDs
     blaze::DynamicVector<int> id = getVectorIntLinspaced(nobs, 0, nobs - 1);
     shuffle(id.data(), id.size(), rng);
 
     // Compute batch size
-    if (batch_size > nobs)
-    {
-        batch_size = nobs;
-    }
+	if (batch_size > nobs) {
+		batch_size = nobs;
+	}
 
     const int nbatch = (nobs - 1) / batch_size + 1;
     const int last_batch_size = nobs - (nbatch - 1) * batch_size;
+
     // Create shuffled data
     x_batches.clear();
     y_batches.clear();
     x_batches.reserve(nbatch);
     y_batches.reserve(nbatch);
 
-    for (int i = 0; i < nbatch; i++)
-    {
+    for (int i = 0; i < nbatch; i++) {
         const int bsize = (i == nbatch - 1) ? last_batch_size : batch_size;
-        x_batches.push_back(XType(dimx, bsize));
-        y_batches.push_back(YType(dimy, bsize));
+        x_batches.push_back(XType(bsize, dimx));
+        y_batches.push_back(YType(bsize, dimx));
+
         // Copy data
         const int offset = i * batch_size;
 
-        for (int j = 0; j < bsize; j++)
-        {
-            blaze::column(x_batches[i], j) = blaze::column(x, id[offset + j]);
-            blaze::column(y_batches[i], j) = blaze::column(y, id[offset + j]);
+        for (int j = 0; j < bsize; j++) {
+            blaze::rows(x_batches[i], j) = blaze::rows(x, id[offset + j]);
+            blaze::rows(y_batches[i], j) = blaze::rows(y, id[offset + j]);
         }
     }
 
