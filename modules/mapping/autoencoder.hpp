@@ -154,9 +154,9 @@ namespace MiniDNN
 	std::vector<Scalar> Autoencoder<InputDataType, Scalar>::encode(const std::vector<InputDataType> &data)
 	{
 		auto input = convertData(data);
-		net.m_layers[0]->forward(input);
+		net.layers[0]->forward(input);
 
-		Matrix output = net.m_layers[0]->output();
+		Matrix output = net.layers[0]->output();
 
 		std::vector<Scalar> vectorScalar(output.data(), output.data() + output.rows());
 		return vectorScalar;
@@ -166,8 +166,8 @@ namespace MiniDNN
 	std::vector<InputDataType> Autoencoder<InputDataType, Scalar>::decode(const std::vector<Scalar> &data)
 	{
 		Matrix latentVector(data.size(), 1, data.data());
-		net.m_layers[1]->forward(latentVector);
+		net.layers[1]->forward(latentVector);
 
-		return convertToOutput(net.m_layers[1]->output());
+		return convertToOutput(net.layers[1]->output());
 	}
 }

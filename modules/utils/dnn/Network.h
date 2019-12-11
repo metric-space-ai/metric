@@ -34,11 +34,11 @@ class Network
     private:
 		using Matrix = blaze::DynamicMatrix<Scalar, blaze::columnMajor>;
 
-        RNG                 m_default_rng;      // Built-in RNG
-        RNG&                m_rng;              // Reference to the RNG provided by the user,
+        RNG                 defaultRng;      // Built-in RNG
+        RNG&                rng;              // Reference to the RNG provided by the user,
 												// otherwise reference to m_default_rng
-        std::shared_ptr<Output<Scalar>>             m_output;           // The output layer
-        Callback<Scalar>                           m_default_callback; // Default callback function
+        std::shared_ptr<Output<Scalar>>             outputLayer;           // The output layer
+        Callback<Scalar>                           defaultCallback; // Default callback function
         std::shared_ptr<Callback<Scalar>>           m_callback;         // Points to user-provided callback function,
 												// otherwise points to m_default_callback
 
@@ -54,7 +54,7 @@ class Network
 
             for (int i = 1; i < nlayer; i++)
             {
-                if (m_layers[i]->in_size() != m_layers[i - 1]->out_size())
+                if (layers[i]->in_size() != layers[i - 1]->out_size())
                 {
                     throw std::invalid_argument("Unit sizes do not match");
                 }
@@ -72,17 +72,17 @@ class Network
             }
 
             // First layer
-            if (input.rows() != m_layers[0]->in_size())
+            if (input.rows() != layers[0]->in_size())
             {
                 throw std::invalid_argument("Input data have incorrect dimension");
             }
 
-            m_layers[0]->forward(input);
+            layers[0]->forward(input);
 
             // The following layers
             for (int i = 1; i < nlayer; i++)
             {
-                m_layers[i]->forward(m_layers[i - 1]->output());
+                layers[i]->forward(layers[i - 1]->output());
             }
         }
 
@@ -100,31 +100,31 @@ class Network
                 return;
             }
 
-            std::shared_ptr<Layer<Scalar>> first_layer = m_layers[0];
-            std::shared_ptr<Layer<Scalar>> last_layer = m_layers[nlayer - 1];
+            std::shared_ptr<Layer<Scalar>> first_layer = layers[0];
+            std::shared_ptr<Layer<Scalar>> last_layer = layers[nlayer - 1];
             // Let output layer compute back-propagation data
-            m_output->check_target_data(target);
-            m_output->evaluate(last_layer->output(), target);
+            outputLayer->check_target_data(target);
+            outputLayer->evaluate(last_layer->output(), target);
 
             // If there is only one hidden layer, "prev_layer_data" will be the input data
             if (nlayer == 1)
             {
-                first_layer->backprop(input, m_output->backprop_data());
+                first_layer->backprop(input, outputLayer->backprop_data());
                 return;
             }
 
             // Compute gradients for the last hidden layer
-            last_layer->backprop(m_layers[nlayer - 2]->output(), m_output->backprop_data());
+            last_layer->backprop(layers[nlayer - 2]->output(), outputLayer->backprop_data());
 
             // Compute gradients for all the hidden layers except for the first one and the last one
             for (int i = nlayer - 2; i > 0; i--)
             {
-                m_layers[i]->backprop(m_layers[i - 1]->output(),
-                                      m_layers[i + 1]->backprop_data());
+                layers[i]->backprop(layers[i - 1]->output(),
+                                    layers[i + 1]->backprop_data());
             }
 
             // Compute gradients for the first layer
-            first_layer->backprop(input, m_layers[1]->backprop_data());
+            first_layer->backprop(input, layers[1]->backprop_data());
         }
 
         // Update parameters
@@ -139,22 +139,22 @@ class Network
 
             for (int i = 0; i < nlayer; i++)
             {
-                m_layers[i]->update(opt);
+                layers[i]->update(opt);
             }
         }
 
-    public:
 
-		std::vector<std::shared_ptr<Layer<Scalar>>> m_layers;           // Pointers to hidden layers
-	///
-        /// Default constructor that creates an empty neural network
-        ///
+	public:
+		/* Layers pointers */
+		std::vector<std::shared_ptr<Layer<Scalar>>> layers;
+
+        /* Default constructor that creates an empty neural network */
         Network() :
-            m_default_rng(1),
-            m_rng(m_default_rng),
-            m_output(NULL),
-            m_default_callback(),
-            m_callback(NULL)
+		        defaultRng(1),
+		        rng(defaultRng),
+		        outputLayer(NULL),
+		        defaultCallback(),
+		        m_callback(NULL)
         {}
 
         ///
@@ -164,11 +164,11 @@ class Network
         ///            from the default RNG class.
         ///
         Network(RNG& rng) :
-            m_default_rng(1),
-            m_rng(rng),
-            m_output(NULL),
-            m_default_callback(),
-            m_callback(NULL)
+		        defaultRng(1),
+		        rng(rng),
+		        outputLayer(NULL),
+		        defaultCallback(),
+		        m_callback(NULL)
         {}
 
         ///
@@ -187,7 +187,7 @@ class Network
         template<typename T>
         void addLayer(const T &layer)
         {
-            m_layers.push_back(std::make_shared<T>(layer));
+            layers.push_back(std::make_shared<T>(layer));
         }
 
         ///
@@ -201,7 +201,7 @@ class Network
         template<typename T>
         void setOutput(const T &output)
         {
-            m_output = std::make_shared<T>(output);
+            outputLayer = std::make_shared<T>(output);
         }
 
         ///
@@ -209,7 +209,7 @@ class Network
         ///
         int num_layers() const
         {
-            return m_layers.size();
+            return layers.size();
         }
 
         ///
@@ -228,7 +228,7 @@ class Network
         ///
         const Output<Scalar>* get_output() const
         {
-            return m_output.get();
+            return outputLayer.get();
         }
 
         ///
@@ -247,7 +247,7 @@ class Network
         ///
         void set_default_callback()
         {
-            m_callback = &m_default_callback;
+            m_callback = &defaultCallback;
         }
 
         ///
@@ -265,14 +265,14 @@ class Network
 
             if (seed > 0)
             {
-                m_rng.seed(seed);
+                rng.seed(seed);
             }
 
             const int nlayer = num_layers();
 
             for (int i = 0; i < nlayer; i++)
             {
-                m_layers[i]->init(mu, sigma, m_rng);
+                layers[i]->init(mu, sigma, rng);
             }
         }
 
@@ -287,7 +287,7 @@ class Network
 
             for (int i = 0; i < nlayer; i++)
             {
-                res.push_back(m_layers[i]->get_parameters());
+                res.push_back(layers[i]->get_parameters());
             }
 
             return res;
@@ -309,7 +309,7 @@ class Network
 
             for (int i = 0; i < nlayer; i++)
             {
-                m_layers[i]->set_parameters(param[i]);
+                layers[i]->set_parameters(param[i]);
             }
         }
 
@@ -324,7 +324,7 @@ class Network
 
             for (int i = 0; i < nlayer; i++)
             {
-                res.push_back(m_layers[i]->get_derivatives());
+                res.push_back(layers[i]->get_derivatives());
             }
 
             return res;
@@ -339,7 +339,7 @@ class Network
         {
             if (seed > 0)
             {
-                m_rng.seed(seed);
+                rng.seed(seed);
             }
 
             this->forward(input);
@@ -352,7 +352,7 @@ class Network
             for (int i = 0; i < npoints; i++)
             {
                 // Randomly select a layer
-                const int layer_id = int(m_rng.rand() * nlayer);
+                const int layer_id = int(rng.rand() * nlayer);
                 // Randomly pick a parameter, note that some layers may have no parameters
                 const int nparam = deriv[layer_id].size();
 
@@ -361,19 +361,19 @@ class Network
                     continue;
                 }
 
-                const int param_id = int(m_rng.rand() * nparam);
+                const int param_id = int(rng.rand() * nparam);
                 // Turbulate the parameter a little bit
                 const Scalar old = param[layer_id][param_id];
                 param[layer_id][param_id] -= eps;
                 this->set_parameters(param);
                 this->forward(input);
                 this->backprop(input, target);
-                const Scalar loss_pre = m_output->loss();
+                const Scalar loss_pre = outputLayer->loss();
                 param[layer_id][param_id] += eps * 2;
                 this->set_parameters(param);
                 this->forward(input);
                 this->backprop(input, target);
-                const Scalar loss_post = m_output->loss();
+                const Scalar loss_post = outputLayer->loss();
                 const Scalar deriv_est = (loss_post - loss_pre) / eps / 2;
                 std::cout << "[layer " << layer_id << ", param " << param_id <<
                           "] deriv = " << deriv[layer_id][param_id] << ", est = " << deriv_est <<
@@ -416,13 +416,13 @@ class Network
             // Create shuffled mini-batches
             if (seed > 0)
             {
-                m_rng.seed(seed);
+                rng.seed(seed);
             }
 
             std::vector<DerivedX> x_batches;
             std::vector<DerivedY> y_batches;
-            const int nbatch = internal::create_shuffled_batches(x, y, batch_size, m_rng,
-                               x_batches, y_batches);
+            const int nbatch = internal::create_shuffled_batches(x, y, batch_size, rng,
+                                                                 x_batches, y_batches);
             // Set up callback parameters
             m_callback->m_nbatch = nbatch;
             m_callback->m_nepoch = epoch;
@@ -462,7 +462,7 @@ class Network
             }
 
             this->forward(x);
-            return m_layers[nlayer - 1]->output();
+            return layers[nlayer - 1]->output();
         }
 };
 
