@@ -11,14 +11,14 @@ Network json consist of map object. Keys is layer index (0...). Values is layer 
             "type": "FullyConnected",
             "inputSize": 784,
             "outputSize": 256,
-            "activation": "RelU"
+            "activation": "ReLU"
         },
     "1":
         {
             "type": "FullyConnected",
             "inputSize": 256,
             "outputSize": 64,
-            "activation": "RelU"
+            "activation": "ReLU"
         },
     "2":
         {
