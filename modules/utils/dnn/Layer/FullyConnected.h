@@ -23,8 +23,8 @@ template <typename Scalar, typename Activation>
 class FullyConnected: public Layer<Scalar>
 {
     private:
-	using Matrix = blaze::DynamicMatrix<Scalar, blaze::columnMajor>;
-	using Vector = blaze::DynamicVector<Scalar>;
+		using Matrix = blaze::DynamicMatrix<Scalar, blaze::columnMajor>;
+		using Vector = blaze::DynamicVector<Scalar>;
 		using ConstAlignedMapVec = const blaze::CustomVector<Scalar, blaze::aligned, blaze::unpadded>;
 		using AlignedMapVec = blaze::CustomVector<Scalar, blaze::aligned, blaze::unpadded>;
 
