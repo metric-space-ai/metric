@@ -163,10 +163,12 @@ double entropy(
 // Kozachenko-Leonenko estimator based on https://hal.archives-ouvertes.fr/hal-00331300/document (Shannon diff. entropy,
 // q = 1)
 
-template <typename T, typename Metric = metric::Euclidian<T>, typename L = T>  // TODO check if L = T is correct
-typename std::enable_if<!std::is_integral<T>::value, T>::type entropy_kl(
-    std::vector<std::vector<T>> data, std::size_t k = 3, L logbase = 2, Metric metric = Metric())
+template <typename Container, typename Metric = metric::Euclidian<typename Container::value_type>, typename L = double>  // TODO check if L = T is correct
+typename std::enable_if<!std::is_integral<typename Container::value_type>::value, double>::type entropy_kl(
+    std::vector<Container> data, std::size_t k = 3, L logbase = 2, Metric metric = Metric())
 {
+    using T = typename Container::value_type;
+
     if (data.empty() || data[0].empty())
         return 0;
     if (data.size() < k + 1)
@@ -174,14 +176,14 @@ typename std::enable_if<!std::is_integral<T>::value, T>::type entropy_kl(
     if constexpr (!std::is_same<Metric, typename metric::Euclidian<T>>::value)
         throw std::logic_error("entropy function is now implemented only for Euclidean distance");
 
-    metric::Tree<std::vector<T>, Metric> tree(data, -1, metric);
+    metric::Tree<Container, Metric> tree(data, -1, metric);
 
     size_t N = data.size();
     size_t m = data[0].size();
-    T two = 2.0;  // this is in order to make types match the log template function
-    T sum = 0;
+    double two = 2.0;  // this is in order to make types match the log template function
+    double sum = 0;
     auto Pi = boost::math::constants::pi<T>();
-    T half_m = m / two;
+    double half_m = m / two;
     auto coeff = (N - 1) * exp(-boost::math::digamma(k + 1)) * std::pow(Pi, half_m) / boost::math::tgamma(half_m + 1);
 
     for (std::size_t i = 0; i < N; i++) {
@@ -191,7 +193,8 @@ typename std::enable_if<!std::is_integral<T>::value, T>::type entropy_kl(
     }
 
     return sum;
-}
+} // TODO debug!!
+
 
 template <typename T>
 std::pair<std::vector<double>, std::vector<std::vector<T>>> pluginEstimator(const std::vector<std::vector<T>>& Y)
@@ -253,7 +256,7 @@ typename std::enable_if<!std::is_integral<T>::value, T>::type mutualInformation(
             auto rnn_set = xTree.rnn(X[i], ex_eps);
             nx = rnn_set.size();  // replaced ex by ex_eps by Max F
         } else {
-            throw std::runtime_error("this version not allowed");
+            throw std::runtime_error("this version is not allowed");
         }
         entropyEstimate -= 1.0 / N * boost::math::digamma(static_cast<double>(nx));
     }
@@ -343,6 +346,7 @@ typename std::enable_if<!std::is_integral<El>::value, V>::type VOI_normalized<V>
 }
 
 // VOI based on Kozachenko-Leonenko entropy estimator
+// TODO debug entropy_kl, add support of arbitrary metric
 
 template <typename V>
 template <template <class, class> class Container, class Allocator_inner, class Allocator_outer, class El>
