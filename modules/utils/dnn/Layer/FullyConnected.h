@@ -108,7 +108,7 @@ class FullyConnected: public Layer<Scalar>
             // Now we need to calculate d(L) / d(z) = [d(a) / d(z)] * [d(L) / d(a)]
             // d(L) / d(a) is computed in the next layer, contained in next_layer_data
             // The Jacobian matrix J = d(a) / d(z) is determined by the activation function
-            Matrix& dLz = m_z;
+            ColumnMatrix dLz = m_z;
 
             Activation::apply_jacobian(m_z, m_a, next_layer_data, dLz);
 
