@@ -45,45 +45,39 @@ class Network
         // Check dimensions of layers
         void check_unit_sizes() const
         {
-            const int nlayer = num_layers();
+	        const int nlayer = num_layers();
 
-            if (nlayer <= 1)
-            {
-                return;
-            }
+	        if (nlayer <= 1) {
+		        return;
+	        }
 
-            for (int i = 1; i < nlayer; i++)
-            {
-                if (layers[i]->in_size() != layers[i - 1]->out_size())
-                {
-                    throw std::invalid_argument("Unit sizes do not match");
-                }
-            }
+	        for (int i = 1; i < nlayer; i++) {
+		        if (layers[i]->in_size() != layers[i - 1]->out_size()) {
+			        throw std::invalid_argument("Unit sizes do not match");
+		        }
+	        }
         }
 
         // Let each layer compute its output
         void forward(const Matrix& input)
         {
-            const int nlayer = num_layers();
+	        const int nlayer = num_layers();
 
-            if (nlayer <= 0)
-            {
-                return;
-            }
+	        if (nlayer <= 0) {
+		        return;
+	        }
 
-            // First layer
-            if (input.rows() != layers[0]->in_size())
-            {
-                throw std::invalid_argument("Input data have incorrect dimension");
-            }
+	        // First layer
+	        if (input.rows() != layers[0]->in_size()) {
+		        throw std::invalid_argument("Input data have incorrect dimension");
+	        }
 
-            layers[0]->forward(input);
+	        layers[0]->forward(input);
 
-            // The following layers
-            for (int i = 1; i < nlayer; i++)
-            {
-                layers[i]->forward(layers[i - 1]->output());
-            }
+	        // The following layers
+	        for (int i = 1; i < nlayer; i++) {
+		        layers[i]->forward(layers[i - 1]->output());
+	        }
         }
 
         // Let each layer compute its gradients of the parameters
@@ -95,10 +89,9 @@ class Network
         {
             const int nlayer = num_layers();
 
-            if (nlayer <= 0)
-            {
-                return;
-            }
+	        if (nlayer <= 0) {
+		        return;
+	        }
 
             std::shared_ptr<Layer<Scalar>> first_layer = layers[0];
             std::shared_ptr<Layer<Scalar>> last_layer = layers[nlayer - 1];
@@ -261,19 +254,17 @@ class Network
         void init(const Scalar& mu = Scalar(0), const Scalar& sigma = Scalar(0.01),
                   int seed = -1)
         {
-            check_unit_sizes();
+	        check_unit_sizes();
 
-            if (seed > 0)
-            {
-                rng.seed(seed);
-            }
+	        if (seed > 0) {
+		        rng.seed(seed);
+	        }
 
-            const int nlayer = num_layers();
+	        const int nlayer = num_layers();
 
-            for (int i = 0; i < nlayer; i++)
-            {
-                layers[i]->init(mu, sigma, rng);
-            }
+	        for (int i = 0; i < nlayer; i++) {
+		        layers[i]->init(mu, sigma, rng);
+	        }
         }
 
         ///
@@ -316,18 +307,17 @@ class Network
         ///
         /// Get the serialized derivatives of layer parameters
         ///
-        std::vector< std::vector<Scalar>> get_derivatives() const
+        std::vector<std::vector<Scalar>> get_derivatives() const
         {
-            const int nlayer = num_layers();
-            std::vector< std::vector<Scalar>> res;
-            res.reserve(nlayer);
+	        const int nlayer = num_layers();
+	        std::vector<std::vector<Scalar>> res;
+	        res.reserve(nlayer);
 
-            for (int i = 0; i < nlayer; i++)
-            {
-                res.push_back(layers[i]->get_derivatives());
-            }
+	        for (int i = 0; i < nlayer; i++) {
+		        res.push_back(layers[i]->get_derivatives());
+	        }
 
-            return res;
+	        return res;
         }
 
         ///
@@ -389,8 +379,8 @@ class Network
         /// Fit the model based on the given data
         ///
         /// \param opt        An object that inherits from the Optimizer class, indicating the optimization algorithm to use.
-        /// \param x          The predictors. Each column is an observation.
-        /// \param y          The response variable. Each column is an observation.
+        /// \param x          The predictors. Each row is an observation.
+        /// \param y          The response variable. Each row is an observation.
         /// \param batch_size Mini-batch size.
         /// \param epoch      Number of epochs of training.
         /// \param seed       Set the random seed of the %RNG if `seed > 0`, otherwise
@@ -401,7 +391,7 @@ class Network
 									 int batch_size, int epoch, int seed = -1)
         {
             // We do not directly use PlainObjectX since it may be row-majored if x is passed as mat.transpose()
-            // We want to force XType and YType to be column-majored
+            // We want to force XType and YType to be row-majored
             const int nlayer = num_layers();
 
 	        if (nlayer <= 0) {
@@ -445,16 +435,15 @@ class Network
         ///
         /// Use the fitted model to make predictions
         ///
-        /// \param x The predictors. Each column is an observation.
+        /// \param x The predictors. Each row is an observation.
         ///
         Matrix predict(const Matrix& x)
         {
             const int nlayer = num_layers();
 
-            if (nlayer <= 0)
-            {
-                return Matrix();
-            }
+	        if (nlayer <= 0) {
+		        return Matrix();
+	        }
 
             this->forward(x);
             return layers[nlayer - 1]->output();

@@ -16,7 +16,7 @@ template<typename Scalar>
 class ReLU
 {
 	private:
-		using Matrix = blaze::DynamicMatrix<Scalar, blaze::columnMajor>;
+		using Matrix = blaze::DynamicMatrix<Scalar>;
 
 	public:
         // a = activation(z) = max(z, 0)

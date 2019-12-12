@@ -23,7 +23,7 @@ template <typename Scalar, typename Activation>
 class FullyConnected: public Layer<Scalar>
 {
     private:
-		using Matrix = blaze::DynamicMatrix<Scalar, blaze::columnMajor>;
+		using Matrix = blaze::DynamicMatrix<Scalar>;
 		using Vector = blaze::DynamicVector<Scalar>;
 		using ConstAlignedMapVec = const blaze::CustomVector<Scalar, blaze::aligned, blaze::unpadded>;
 		using AlignedMapVec = blaze::CustomVector<Scalar, blaze::aligned, blaze::unpadded>;
@@ -54,6 +54,7 @@ class FullyConnected: public Layer<Scalar>
             m_bias.resize(this->m_out_size);
             m_dw.resize(this->m_in_size, this->m_out_size);
             m_db.resize(this->m_out_size);
+
             // Set random coefficients
             internal::set_normal_random(m_weight.data(), blaze::size(m_weight), rng, mu, sigma);
             internal::set_normal_random(m_bias.data(), m_bias.size(), rng, mu, sigma);
@@ -73,19 +74,20 @@ class FullyConnected: public Layer<Scalar>
 	        m_bias = biasesValue;
         }
 
-	// prev_layer_data: in_size x nobs
+		// prev_layer_data: in_size x nobs
         void forward(const Matrix& prev_layer_data)
         {
-            const int nobs = prev_layer_data.columns();
+            const int nobs = prev_layer_data.rows();
+
             // Linear term z = W' * in + b
-            m_z.resize(this->m_out_size, nobs);
-            /* noalises */
-            m_z = blaze::trans(m_weight) * prev_layer_data;
-            for (size_t i = 0UL; i < m_z.columns(); i++) {
-				blaze::column(m_z, i) += m_bias;
+            m_z.resize(nobs, this->m_out_size);
+
+            m_z = prev_layer_data * m_weight;
+            for (size_t i = 0UL; i < m_z.rows(); i++) {
+				blaze::row(m_z, i) += m_bias;
             }
             // Apply activation function
-            m_a.resize(this->m_out_size, nobs);
+            m_a.resize(nobs, this->m_out_size);
 	        //std::cout << blaze::submatrix<0, 0, 5, 20>(prev_layer_data) << std::endl;
 	        //std::cout << blaze::submatrix<0, 0, 5, 20>(m_z) << std::endl;
             Activation::activate(m_z, m_a);
@@ -100,23 +102,24 @@ class FullyConnected: public Layer<Scalar>
         // next_layer_data: out_size x nobs
         void backprop(const Matrix& prev_layer_data, const Matrix& next_layer_data)
         {
-            const int nobs = prev_layer_data.columns();
+            const int nobs = prev_layer_data.rows();
             // After forward stage, m_z contains z = W' * in + b
             // Now we need to calculate d(L) / d(z) = [d(a) / d(z)] * [d(L) / d(a)]
             // d(L) / d(a) is computed in the next layer, contained in next_layer_data
             // The Jacobian matrix J = d(a) / d(z) is determined by the activation function
             Matrix& dLz = m_z;
+
             Activation::apply_jacobian(m_z, m_a, next_layer_data, dLz);
+
             // Now dLz contains d(L) / d(z)
             // Derivative for weights, d(L) / d(W) = [d(L) / d(z)] * in'
-	        /* noalises */
-	        m_dw = prev_layer_data * blaze::trans(dLz) / nobs;
+	        m_dw = blaze::trans(prev_layer_data) * dLz / nobs;
+
             // Derivative for bias, d(L) / d(b) = d(L) / d(z)
-	        /* noalises */
-	        m_db = blaze::mean<blaze::rowwise>(dLz);
+	        m_db = blaze::mean<blaze::columnwise>(dLz);
+
             // Compute d(L) / d_in = W * [d(L) / d(z)]
-            m_din.resize(this->m_in_size, nobs);
-	        /* noalises */
+            m_din.resize(nobs, this->m_in_size);
 	        m_din = m_weight * dLz;
         }
 
