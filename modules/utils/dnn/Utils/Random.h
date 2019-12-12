@@ -1,44 +1,19 @@
 #ifndef UTILS_RANDOM_H_
 #define UTILS_RANDOM_H_
 
+#include <random>
+
 #include "../../../../3rdparty/blaze/Math.h"
-#include "../RNG.h"
 
 namespace MiniDNN
 {
 
 namespace internal {
 
-
-// Shuffle the integer array
-inline void shuffle(int *arr, const int n, RNG &rng)
-{
-	for (int i = n - 1; i > 0; i--) {
-		// A random non-negative integer <= i
-		const int j = int(rng.rand() * (i + 1));
-		// Swap arr[i] and arr[j]
-		const int tmp = arr[i];
-		arr[i] = arr[j];
-		arr[j] = tmp;
-	}
-}
-
-blaze::DynamicVector<int> getVectorIntLinspaced(const size_t size, const int low, const int high)
-{
-	blaze::DynamicVector<int> v(size);
-
-	for (size_t i = 0UL; i < size; i++) {
-		v[i] = blaze::rand<int>(low, high);
-	}
-
-	return v;
-}
-
-
-template <typename DerivedX, typename DerivedY, typename XType, typename YType>
+    template <typename DerivedX, typename DerivedY, typename XType, typename YType>
 int create_shuffled_batches(
     const DerivedX& x, const DerivedY& y,
-    int batch_size, RNG& rng,
+    int batch_size, std::mt19937& rng,
     std::vector<XType>& x_batches, std::vector<YType>& y_batches
 )
 {
@@ -52,8 +27,9 @@ int create_shuffled_batches(
     }
 
     // Randomly shuffle the IDs
-    blaze::DynamicVector<int> id = getVectorIntLinspaced(nobs, 0, nobs - 1);
-    shuffle(id.data(), id.size(), rng);
+    std::vector<int> id(nobs);
+    std::iota(id.begin(), id.end(), 0);
+    std::shuffle(id.begin(), id.end(), rng);
 
     // Compute batch size
     if (batch_size > nobs)
@@ -89,26 +65,13 @@ int create_shuffled_batches(
 
 // Fill array with N(mu, sigma^2) random numbers
 template<typename Scalar>
-inline void set_normal_random(Scalar* arr, const int n, RNG& rng,
+inline void set_normal_random(Scalar* arr, const int n, std::mt19937& rng,
                               const Scalar& mu = Scalar(0),
                               const Scalar& sigma = Scalar(1))
 {
-    // For simplicity we use Box-Muller transform to generate normal random variates
-    const double two_pi = 6.283185307179586476925286766559;
-
-    for (int i = 0; i < n - 1; i += 2)
-    {
-        const double t1 = sigma * std::sqrt(-2 * std::log(rng.rand()));
-        const double t2 = two_pi * rng.rand();
-        arr[i]     = t1 * std::cos(t2) + mu;
-        arr[i + 1] = t1 * std::sin(t2) + mu;
-    }
-
-    if (n % 2 == 1)
-    {
-        const double t1 = sigma * std::sqrt(-2 * std::log(rng.rand()));
-        const double t2 = two_pi * rng.rand();
-        arr[n - 1] = t1 * std::cos(t2) + mu;
+    std::normal_distribution<Scalar> normalDistribution(mu, sigma);
+    for (auto i = 0; i < n; ++i) {
+        arr[i] = normalDistribution(rng);
     }
 }
 
