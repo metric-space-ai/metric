@@ -4,7 +4,7 @@
 #include "../Optimizer.h"
 #include "../Utils/sparsepp.h"
 
-namespace MiniDNN
+namespace dnn
 {
 
 
@@ -58,7 +58,7 @@ class RMSProp: public Optimizer<Scalar>
 };
 
 
-} // namespace MiniDNN
+} // namespace dnn
 
 
 #endif /* OPTIMIZER_RMSPROP_H_ */

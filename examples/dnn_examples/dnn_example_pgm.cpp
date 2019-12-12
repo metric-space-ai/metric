@@ -8,7 +8,7 @@
 
 
 using namespace std;
-using namespace MiniDNN;
+using namespace dnn;
 
 
 template <typename Scalar>

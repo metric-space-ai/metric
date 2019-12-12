@@ -8,7 +8,7 @@
 
 #include "Optimizer.h"
 
-namespace MiniDNN
+namespace dnn
 {
 
 
@@ -160,7 +160,7 @@ class Layer
 };
 
 
-} // namespace MiniDNN
+} // namespace dnn
 
 
 #endif /* LAYER_H_ */

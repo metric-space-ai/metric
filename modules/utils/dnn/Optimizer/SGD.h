@@ -4,7 +4,7 @@
 #include <Eigen/Core>
 #include "../Optimizer.h"
 
-namespace MiniDNN
+namespace dnn
 {
 
 
@@ -36,7 +36,7 @@ class SGD: public Optimizer<Scalar>
 };
 
 
-} // namespace MiniDNN
+} // namespace dnn
 
 
 #endif /* OPTIMIZER_SGD_H_ */

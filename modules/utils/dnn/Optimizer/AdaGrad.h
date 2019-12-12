@@ -5,7 +5,7 @@
 #include "../Optimizer.h"
 #include "../Utils/sparsepp.h"
 
-namespace MiniDNN
+namespace dnn
 {
 
 
@@ -57,7 +57,7 @@ class AdaGrad: public Optimizer
 };
 
 
-} // namespace MiniDNN
+} // namespace dnn
 
 
 #endif /* OPTIMIZER_ADAGRAD_H_ */

@@ -13,7 +13,7 @@
 #include "Callback.h"
 #include "Utils/Random.h"
 
-namespace MiniDNN
+namespace dnn
 {
 
 
@@ -469,7 +469,7 @@ class Network
 };
 
 
-} // namespace MiniDNN
+} // namespace dnn
 
 
 #endif /* NETWORK_H_ */

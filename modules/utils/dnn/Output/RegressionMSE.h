@@ -3,7 +3,7 @@
 
 #include <stdexcept>
 
-namespace MiniDNN
+namespace dnn
 {
 
 
@@ -54,7 +54,7 @@ class RegressionMSE: public Output<Scalar>
 };
 
 
-} // namespace MiniDNN
+} // namespace dnn
 
 
 #endif /* OUTPUT_REGRESSIONMSE_H_ */

@@ -1,5 +1,5 @@
-#ifndef MINIDNN_H_
-#define MINIDNN_H_
+#ifndef dnn_H_
+#define dnn_H_
 
 #include "../../../3rdparty/blaze/Math.h"
 
@@ -30,4 +30,4 @@
 #include "Network.h"
 
 
-#endif /* MINIDNN_H_ */
+#endif /* dnn_H_ */

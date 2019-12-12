@@ -3,7 +3,7 @@
 #include <chrono>
 
 
-namespace MiniDNN
+namespace dnn
 {
 	template<typename InputDataType, typename Scalar>
 	class Autoencoder

@@ -2,7 +2,7 @@
 #define UTILS_CONVOLUTION_H_
 
 
-namespace MiniDNN
+namespace dnn
 {
 	namespace internal
 	{
@@ -36,7 +36,7 @@ namespace MiniDNN
 			{}
 		};
 	} // namespace internal
-} // namespace MiniDNN
+} // namespace dnn
 
 
 #endif /* UTILS_CONVOLUTION_H_ */

@@ -5,7 +5,7 @@
 #include <stdexcept>
 #include "../Config.h"
 
-namespace MiniDNN
+namespace dnn
 {
 
 
@@ -113,7 +113,7 @@ class BinaryClassEntropy: public Output
 };
 
 
-} // namespace MiniDNN
+} // namespace dnn
 
 
 #endif /* OUTPUT_BINARYCLASSENTROPY_H_ */

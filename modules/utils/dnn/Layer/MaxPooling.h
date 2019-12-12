@@ -6,7 +6,7 @@
 #include "../Layer.h"
 #include "../Utils/FindMax.h"
 
-namespace MiniDNN
+namespace dnn
 {
 
 
@@ -167,7 +167,7 @@ class MaxPooling: public Layer<Scalar>
 };
 
 
-} // namespace MiniDNN
+} // namespace dnn
 
 
 #endif /* LAYER_MAXPOOLING_H_ */

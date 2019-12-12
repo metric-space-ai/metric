@@ -7,7 +7,7 @@
 #include "../Utils/Random.h"
 
 
-namespace MiniDNN
+namespace dnn
 {
 
 
@@ -294,7 +294,7 @@ class Conv2d: public Layer<Scalar>
 };
 
 
-} // namespace MiniDNN
+} // namespace dnn
 
 
 #endif /* LAYER_CONVOLUTIONAL_H_ */

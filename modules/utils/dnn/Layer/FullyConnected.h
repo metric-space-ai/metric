@@ -11,7 +11,7 @@
 #include "../Layer.h"
 #include "../Utils/Random.h"
 
-namespace MiniDNN
+namespace dnn
 {
 
 
@@ -168,7 +168,7 @@ class FullyConnected: public Layer<Scalar>
 };
 
 
-} // namespace MiniDNN
+} // namespace dnn
 
 
 #endif /* LAYER_FULLYCONNECTED_H_ */

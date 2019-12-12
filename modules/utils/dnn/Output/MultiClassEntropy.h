@@ -5,7 +5,7 @@
 #include <stdexcept>
 #include "../Config.h"
 
-namespace MiniDNN
+namespace dnn
 {
 
 
@@ -143,7 +143,7 @@ class MultiClassEntropy: public Output
 };
 
 
-} // namespace MiniDNN
+} // namespace dnn
 
 
 #endif /* OUTPUT_MULTICLASSENTROPY_H_ */

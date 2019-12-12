@@ -3,7 +3,7 @@
 
 #include "../../../../3rdparty/blaze/Math.h"
 
-namespace MiniDNN
+namespace dnn
 {
 
 
@@ -57,7 +57,7 @@ class ReLU
 };
 
 
-} // namespace MiniDNN
+} // namespace dnn
 
 
 #endif /* ACTIVATION_RELU_H_ */

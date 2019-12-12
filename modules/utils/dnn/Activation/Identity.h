@@ -3,7 +3,7 @@
 
 #include "../../../../3rdparty/blaze/Math.h"
 
-namespace MiniDNN
+namespace dnn
 {
 
 
@@ -44,7 +44,7 @@ class Identity
 };
 
 
-} // namespace MiniDNN
+} // namespace dnn
 
 
 #endif /* ACTIVATION_IDENTITY_H_ */

@@ -2,7 +2,7 @@
 #define UTILS_FINDMAX_H_
 
 
-namespace MiniDNN
+namespace dnn
 {
 
 namespace internal
@@ -136,7 +136,7 @@ inline Scalar find_block_max(const Scalar* x, const int nrow, const int ncol,
 
 } // namespace internal
 
-} // namespace MiniDNN
+} // namespace dnn
 
 
 #endif /* UTILS_FINDMAX_H_ */

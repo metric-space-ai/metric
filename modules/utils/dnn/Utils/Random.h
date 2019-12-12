@@ -5,7 +5,7 @@
 
 #include "../../../../3rdparty/blaze/Math.h"
 
-namespace MiniDNN
+namespace dnn
 {
 
 namespace internal {
@@ -78,7 +78,7 @@ inline void set_normal_random(Scalar* arr, const int n, std::mt19937& rng,
 
 } // namespace internal
 
-} // namespace MiniDNN
+} // namespace dnn
 
 
 #endif /* UTILS_RANDOM_H_ */

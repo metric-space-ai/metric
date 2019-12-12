@@ -3,7 +3,7 @@
 
 #include "../../../../3rdparty/blaze/Math.h"
 
-namespace MiniDNN
+namespace dnn
 {
 
 
@@ -38,7 +38,7 @@ class Sigmoid
 };
 
 
-} // namespace MiniDNN
+} // namespace dnn
 
 
 #endif /* ACTIVATION_SIGMOID_H_ */

@@ -3,7 +3,7 @@
 
 #include "../../../3rdparty/blaze/Math.h"
 
-namespace MiniDNN
+namespace dnn
 {
 
 
@@ -46,7 +46,7 @@ public:
 };
 
 
-} // namespace MiniDNN
+} // namespace dnn
 
 
 #endif /* OPTIMIZER_H_ */
