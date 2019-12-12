@@ -4,6 +4,7 @@
 
 #include <iostream>
 #include <stdexcept>
+#include <random>
 
 #include "../../../../3rdparty/blaze/Math.h"
 
@@ -48,7 +49,7 @@ class FullyConnected: public Layer<Scalar>
             Layer<Scalar>(in_size, out_size)
         {}
 
-        void init(const Scalar& mu, const Scalar& sigma, RNG& rng)
+        void init(const Scalar& mu, const Scalar& sigma, std::mt19937& rng)
         {
             m_weight.resize(this->m_in_size, this->m_out_size);
             m_bias.resize(this->m_out_size);

@@ -18,7 +18,7 @@ BOOST_AUTO_TEST_CASE(base)
 {
 	Network<double> net;
 
-	RNG rng(1);
+	std::mt19937 rng;
 	Network<double> netRng(rng);
 
 	VerboseCallback<double> verboseCallback;

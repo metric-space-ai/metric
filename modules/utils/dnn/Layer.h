@@ -2,10 +2,10 @@
 #define LAYER_H_
 
 #include <vector>
+#include <random>
 
 #include "../../../3rdparty/blaze/Math.h"
 
-#include "RNG.h"
 #include "Optimizer.h"
 
 namespace MiniDNN
@@ -72,8 +72,8 @@ class Layer
         ///
         /// \param mu    Mean of the normal distribution.
         /// \param sigma Standard deviation of the normal distribution.
-        /// \param rng   The random number generator of type RNG.
-        virtual void init(const Scalar& mu, const Scalar& sigma, RNG& rng) = 0;
+        /// \param rng   The random number generator of type std::mt19937.
+        virtual void init(const Scalar& mu, const Scalar& sigma, std::mt19937& rng) = 0;
 
         //virtual void initConstant(const Scalar weightsValue, const Scalar biasesValue) = 0;
 

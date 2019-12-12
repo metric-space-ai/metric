@@ -61,7 +61,7 @@ class MaxPooling: public Layer<Scalar>
             m_out_cols(m_channel_cols / m_pool_cols)
         {}
 
-        void init(const Scalar& mu, const Scalar& sigma, RNG& rng) {}
+        void init(const Scalar& mu, const Scalar& sigma, std::mt19937& rng) {}
 
         void forward(const Matrix& prev_layer_data)
         {

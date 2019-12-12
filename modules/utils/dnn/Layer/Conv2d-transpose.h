@@ -84,7 +84,7 @@ class Conv2dTranspose: public Layer<Scalar>
 	        m_bias.resize(m_dim.out_channels);
         }
 
-        void init(const Scalar& mu, const Scalar& sigma, RNG& rng)
+        void init(const Scalar& mu, const Scalar& sigma, std::mt19937& rng)
         {
             // Set data dimension
             const int filter_data_size = m_dim.in_channels * m_dim.out_channels *
