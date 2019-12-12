@@ -5,6 +5,8 @@
 
 #include "../../../../3rdparty/blaze/Math.h"
 
+namespace metric
+{
 namespace dnn
 {
 
@@ -79,6 +81,7 @@ inline void set_normal_random(Scalar* arr, const int n, std::mt19937& rng,
 } // namespace internal
 
 } // namespace dnn
+} // namespace metric
 
 
 #endif /* UTILS_RANDOM_H_ */

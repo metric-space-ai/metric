@@ -8,6 +8,8 @@
 
 #include "Optimizer.h"
 
+namespace metric
+{
 namespace dnn
 {
 
@@ -161,6 +163,7 @@ class Layer
 
 
 } // namespace dnn
+} // namespace metric
 
 
 #endif /* LAYER_H_ */

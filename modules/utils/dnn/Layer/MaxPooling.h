@@ -6,6 +6,8 @@
 #include "../Layer.h"
 #include "../Utils/FindMax.h"
 
+namespace metric
+{
 namespace dnn
 {
 
@@ -168,6 +170,7 @@ class MaxPooling: public Layer<Scalar>
 
 
 } // namespace dnn
+} // namespace metric
 
 
 #endif /* LAYER_MAXPOOLING_H_ */

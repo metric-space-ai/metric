@@ -4,6 +4,8 @@
 #include <Eigen/Core>
 #include "../Optimizer.h"
 
+namespace metric
+{
 namespace dnn
 {
 
@@ -37,6 +39,7 @@ class SGD: public Optimizer<Scalar>
 
 
 } // namespace dnn
+} // namespace metric
 
 
 #endif /* OPTIMIZER_SGD_H_ */

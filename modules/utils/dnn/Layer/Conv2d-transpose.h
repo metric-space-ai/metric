@@ -7,6 +7,8 @@
 #include "../Utils/Random.h"
 
 
+namespace metric
+{
 namespace dnn
 {
 
@@ -291,6 +293,7 @@ class Conv2dTranspose: public Layer<Scalar>
 
 
 } // namespace dnn
+} // namespace metric
 
 
 #endif /* LAYER_CONV2D_TRANSPOSE_H_ */

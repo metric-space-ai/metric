@@ -4,6 +4,8 @@
 #include "../Optimizer.h"
 #include "../Utils/sparsepp.h"
 
+namespace metric
+{
 namespace dnn
 {
 
@@ -59,6 +61,7 @@ class RMSProp: public Optimizer<Scalar>
 
 
 } // namespace dnn
+} // namespace metric
 
 
 #endif /* OPTIMIZER_RMSPROP_H_ */

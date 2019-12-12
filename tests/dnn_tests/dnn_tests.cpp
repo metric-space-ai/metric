@@ -8,7 +8,7 @@
 #include "modules/utils/dnn.hpp"
 
 
-using namespace dnn;
+using namespace metric::dnn;
 
 using Matrix = blaze::DynamicMatrix<double, blaze::columnMajor>;
 using Vector = blaze::DynamicVector<double>;

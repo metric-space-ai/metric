@@ -5,6 +5,8 @@
 #include <stdexcept>
 #include "../Config.h"
 
+namespace metric
+{
 namespace dnn
 {
 
@@ -144,6 +146,7 @@ class MultiClassEntropy: public Output
 
 
 } // namespace dnn
+} // namespace metric
 
 
 #endif /* OUTPUT_MULTICLASSENTROPY_H_ */

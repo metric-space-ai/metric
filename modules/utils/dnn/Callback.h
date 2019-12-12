@@ -4,6 +4,8 @@
 //#include "Network.h"
 
 
+namespace metric
+{
 namespace dnn
 {
 
@@ -61,6 +63,7 @@ class Callback
 
 
 } // namespace dnn
+} // namespace metric
 
 
 #endif /* CALLBACK_H_ */

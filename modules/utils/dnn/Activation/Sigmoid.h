@@ -3,6 +3,8 @@
 
 #include "../../../../3rdparty/blaze/Math.h"
 
+namespace metric
+{
 namespace dnn
 {
 
@@ -39,6 +41,7 @@ class Sigmoid
 
 
 } // namespace dnn
+} // namespace metric
 
 
 #endif /* ACTIVATION_SIGMOID_H_ */

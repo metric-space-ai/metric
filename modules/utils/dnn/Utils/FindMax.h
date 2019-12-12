@@ -2,6 +2,8 @@
 #define UTILS_FINDMAX_H_
 
 
+namespace metric
+{
 namespace dnn
 {
 
@@ -137,6 +139,7 @@ inline Scalar find_block_max(const Scalar* x, const int nrow, const int ncol,
 } // namespace internal
 
 } // namespace dnn
+} // namespace metric
 
 
 #endif /* UTILS_FINDMAX_H_ */

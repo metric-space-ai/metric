@@ -3,6 +3,8 @@
 
 #include "../../../../3rdparty/blaze/Math.h"
 
+namespace metric
+{
 namespace dnn
 {
 
@@ -58,6 +60,7 @@ class ReLU
 
 
 } // namespace dnn
+} // namespace metric
 
 
 #endif /* ACTIVATION_RELU_H_ */

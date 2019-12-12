@@ -3,6 +3,8 @@
 
 #include "../../../3rdparty/blaze/Math.h"
 
+namespace metric
+{
 namespace dnn
 {
 
@@ -47,6 +49,7 @@ public:
 
 
 } // namespace dnn
+} // namespace metric
 
 
 #endif /* OPTIMIZER_H_ */

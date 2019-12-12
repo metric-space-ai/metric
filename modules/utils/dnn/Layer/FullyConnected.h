@@ -11,6 +11,8 @@
 #include "../Layer.h"
 #include "../Utils/Random.h"
 
+namespace metric
+{
 namespace dnn
 {
 
@@ -169,6 +171,7 @@ class FullyConnected: public Layer<Scalar>
 
 
 } // namespace dnn
+} // namespace metric
 
 
 #endif /* LAYER_FULLYCONNECTED_H_ */

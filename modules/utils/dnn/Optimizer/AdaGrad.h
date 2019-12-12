@@ -5,6 +5,8 @@
 #include "../Optimizer.h"
 #include "../Utils/sparsepp.h"
 
+namespace metric
+{
 namespace dnn
 {
 
@@ -58,6 +60,7 @@ class AdaGrad: public Optimizer
 
 
 } // namespace dnn
+} // namespace metric
 
 
 #endif /* OPTIMIZER_ADAGRAD_H_ */

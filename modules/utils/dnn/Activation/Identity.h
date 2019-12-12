@@ -3,6 +3,8 @@
 
 #include "../../../../3rdparty/blaze/Math.h"
 
+namespace metric
+{
 namespace dnn
 {
 
@@ -45,6 +47,7 @@ class Identity
 
 
 } // namespace dnn
+} // namespace metric
 
 
 #endif /* ACTIVATION_IDENTITY_H_ */

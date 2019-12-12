@@ -3,6 +3,8 @@
 
 #include <stdexcept>
 
+namespace metric
+{
 namespace dnn
 {
 
@@ -55,6 +57,7 @@ class RegressionMSE: public Output<Scalar>
 
 
 } // namespace dnn
+} // namespace metric
 
 
 #endif /* OUTPUT_REGRESSIONMSE_H_ */

@@ -13,6 +13,8 @@
 #include "Callback.h"
 #include "Utils/Random.h"
 
+namespace metric
+{
 namespace dnn
 {
 
@@ -470,6 +472,7 @@ class Network
 
 
 } // namespace dnn
+} // namespace metric
 
 
 #endif /* NETWORK_H_ */
