@@ -3,8 +3,6 @@
 
 #include "../../../3rdparty/blaze/Math.h"
 
-#include "RNG.h"
-
 #include "Layer.h"
 #include "Layer/FullyConnected.h"
 #include "Layer/Conv2d.h"
