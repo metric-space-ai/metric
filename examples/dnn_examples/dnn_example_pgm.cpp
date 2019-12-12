@@ -8,7 +8,7 @@
 
 
 using namespace std;
-using namespace dnn;
+using namespace metric;
 
 
 template <typename Scalar>
