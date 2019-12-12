@@ -70,7 +70,7 @@ int main(int argc, char* argv[])
 	}
 
 	/* Load images */
-	auto [shape, features] = Datasets::loadImages(argv[1]);
+	auto [shape, features] = dnn::Datasets::loadImages(argv[1]);
 
 	if (shape.empty()) {
 		cout << "Could not load images. Exiting." << endl;
