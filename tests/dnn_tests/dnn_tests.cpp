@@ -8,7 +8,7 @@
 #include "modules/utils/dnn.hpp"
 
 
-using namespace MiniDNN;
+using namespace metric::dnn;
 
 using Matrix = blaze::DynamicMatrix<double, blaze::columnMajor>;
 using Vector = blaze::DynamicVector<double>;
@@ -18,7 +18,7 @@ BOOST_AUTO_TEST_CASE(base)
 {
 	Network<double> net;
 
-	RNG rng(1);
+	std::mt19937 rng;
 	Network<double> netRng(rng);
 
 	VerboseCallback<double> verboseCallback;

@@ -4,7 +4,9 @@
 //#include "Network.h"
 
 
-namespace MiniDNN
+namespace metric
+{
+namespace dnn
 {
 
 template <typename Scalar>
@@ -60,7 +62,8 @@ class Callback
 };
 
 
-} // namespace MiniDNN
+} // namespace dnn
+} // namespace metric
 
 
 #endif /* CALLBACK_H_ */

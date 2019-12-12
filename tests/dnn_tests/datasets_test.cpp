@@ -6,6 +6,8 @@
 #include <iostream>
 #include "modules/utils/dnn/Utils/datasets.hpp"
 
+using namespace metric::dnn;
+
 
 BOOST_AUTO_TEST_CASE(notexist)
 {

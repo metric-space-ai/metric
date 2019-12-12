@@ -3,7 +3,7 @@
 #include <chrono>
 
 
-namespace MiniDNN
+namespace metric
 {
 	template<typename InputDataType, typename Scalar>
 	class Autoencoder
@@ -11,8 +11,8 @@ namespace MiniDNN
 		private:
 			using Matrix = blaze::DynamicMatrix<Scalar>;
 
-			Network<Scalar> net;
-			std::shared_ptr <Optimizer<Scalar>> opt;
+			dnn::Network<Scalar> net;
+			std::shared_ptr <dnn::Optimizer<Scalar>> opt;
 			Matrix trainData;
 			size_t featuresLength;
 			Scalar normValue;
@@ -55,25 +55,25 @@ namespace MiniDNN
 	                                                                featuresLength(featuresLength), normValue(normValue)
 	{
 		/* Create layers */
-		net.addLayer(FullyConnected<Scalar, ReLU<Scalar>>(featuresLength, 1024));
-		net.addLayer(FullyConnected<Scalar, ReLU<Scalar>>(1024, 256));
-		net.addLayer(FullyConnected<Scalar, ReLU<Scalar>>(256, 64));
-		net.addLayer(FullyConnected<Scalar, ReLU<Scalar>>(64, 256));
-		net.addLayer(FullyConnected<Scalar, ReLU<Scalar>>(256, 1024));
-		net.addLayer(FullyConnected<Scalar, ReLU<Scalar>>(1024, featuresLength));
+		net.addLayer(dnn::FullyConnected<Scalar, dnn::ReLU<Scalar>>(featuresLength, 1024));
+		net.addLayer(dnn::FullyConnected<Scalar, dnn::ReLU<Scalar>>(1024, 256));
+		net.addLayer(dnn::FullyConnected<Scalar, dnn::ReLU<Scalar>>(256, 64));
+		net.addLayer(dnn::FullyConnected<Scalar, dnn::ReLU<Scalar>>(64, 256));
+		net.addLayer(dnn::FullyConnected<Scalar, dnn::ReLU<Scalar>>(256, 1024));
+		net.addLayer(dnn::FullyConnected<Scalar, dnn::ReLU<Scalar>>(1024, featuresLength));
 		//net.addLayer(Conv2d<Scalar, ReLU<Scalar>>(featuresLength, 28, 1, 1, 5, 5));
 		//net.addLayer(Conv2dTranspose<Scalar, Sigmoid<Scalar>>(24, 24, 1, 1, 5, 5));
 
-		net.setCallback(VerboseCallback<Scalar>());
+		net.setCallback(dnn::VerboseCallback<Scalar>());
 		/* Set output layer */
 
 		/* Create optimizer object */
-		opt = std::make_shared < RMSProp < Scalar >> (RMSProp<Scalar>());
+		opt = std::make_shared < dnn::RMSProp < Scalar >> (dnn::RMSProp<Scalar>());
 		//opt->learningRate = 0.01;
 
 		/* Set callback function object */
 
-		net.setOutput(RegressionMSE<Scalar>());
+		net.setOutput(dnn::RegressionMSE<Scalar>());
 		/* Initialize parameters with N(0, 0.01^2) using random seed 123 */
 		net.init(0, 0.01, 123);
 

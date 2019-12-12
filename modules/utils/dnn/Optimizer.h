@@ -3,7 +3,9 @@
 
 #include "../../../3rdparty/blaze/Math.h"
 
-namespace MiniDNN
+namespace metric
+{
+namespace dnn
 {
 
 
@@ -46,7 +48,8 @@ class Optimizer
 };
 
 
-} // namespace MiniDNN
+} // namespace dnn
+} // namespace metric
 
 
 #endif /* OPTIMIZER_H_ */

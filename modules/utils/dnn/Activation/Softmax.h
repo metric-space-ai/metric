@@ -1,7 +1,9 @@
 #ifndef ACTIVATION_SOFTMAX_H_
 #define ACTIVATION_SOFTMAX_H_
 
-namespace MiniDNN
+namespace metric
+{
+namespace dnn
 {
 
 
@@ -40,7 +42,8 @@ class Softmax
 };
 
 
-} // namespace MiniDNN
+} // namespace dnn
+} // namespace metric
 
 
 #endif /* ACTIVATION_SOFTMAX_H_ */

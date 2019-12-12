@@ -2,7 +2,9 @@
 #define UTILS_CONVOLUTION_H_
 
 
-namespace MiniDNN
+namespace metric
+{
+namespace dnn
 {
 	namespace internal
 	{
@@ -36,7 +38,8 @@ namespace MiniDNN
 			{}
 		};
 	} // namespace internal
-} // namespace MiniDNN
+} // namespace dnn
+} // namespace metric
 
 
 #endif /* UTILS_CONVOLUTION_H_ */

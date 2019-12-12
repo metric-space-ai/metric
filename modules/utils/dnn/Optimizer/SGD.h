@@ -4,7 +4,9 @@
 #include <Eigen/Core>
 #include "../Optimizer.h"
 
-namespace MiniDNN
+namespace metric
+{
+namespace dnn
 {
 
 
@@ -36,7 +38,8 @@ class SGD: public Optimizer<Scalar>
 };
 
 
-} // namespace MiniDNN
+} // namespace dnn
+} // namespace metric
 
 
 #endif /* OPTIMIZER_SGD_H_ */

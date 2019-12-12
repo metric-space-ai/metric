@@ -5,7 +5,9 @@
 #include "../Callback.h"
 #include "../Network.h"
 
-namespace MiniDNN
+namespace metric
+{
+namespace dnn
 {
 
 
@@ -39,7 +41,8 @@ class VerboseCallback: public Callback<Scalar>
 };
 
 
-} // namespace MiniDNN
+} // namespace dnn
+} // namespace metric
 
 
 #endif /* CALLBACK_VERBOSECALLBACK_H_ */

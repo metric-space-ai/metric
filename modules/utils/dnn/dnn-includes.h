@@ -1,9 +1,7 @@
-#ifndef MINIDNN_H_
-#define MINIDNN_H_
+#ifndef DNN_INCLUDES_H_
+#define DNN_INCLUDES_H_
 
 #include "../../../3rdparty/blaze/Math.h"
-
-#include "RNG.h"
 
 #include "Layer.h"
 #include "Layer/FullyConnected.h"
@@ -32,4 +30,4 @@
 #include "Network.h"
 
 
-#endif /* MINIDNN_H_ */
+#endif /* dnn_H_ */

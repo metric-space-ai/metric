@@ -8,6 +8,12 @@
 #include "../../../../3rdparty/cereal/archives/binary.hpp"
 
 
+namespace metric
+{
+namespace dnn
+{
+
+
 class Datasets {
 	public:
 		std::tuple<std::vector<uint8_t>, std::vector<uint32_t>, std::vector<uint8_t>> getMnist(const std::string filename);
@@ -97,6 +103,8 @@ std::tuple<std::vector<uint32_t>, std::vector<uint8_t>> Datasets::loadImages(con
 		return {{}, {}};
 	}
 
-
 }
+
+} // namespace dnn
+} // namespace metric
 

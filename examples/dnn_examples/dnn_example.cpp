@@ -8,7 +8,7 @@
 
 
 using namespace std;
-using namespace MiniDNN;
+using namespace metric;
 
 
 template <typename Scalar>
@@ -65,7 +65,7 @@ int vectorDiff(const vector<T>& vector1, const vector<T>& vector2)
 int main()
 {
 	/* Load data */
-	Datasets datasets;
+	dnn::Datasets datasets;
 	auto [labels, shape, features] = datasets.getMnist("data.cereal");
 
 	if (shape.empty()) {

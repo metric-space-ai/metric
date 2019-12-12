@@ -4,16 +4,18 @@
 #include <vector>
 #include <stdexcept>
 #include <utility>
+#include <random>
 
 #include "../../../3rdparty/blaze/Math.h"
 
-#include "RNG.h"
 #include "Layer.h"
 #include "Output.h"
 #include "Callback.h"
 #include "Utils/Random.h"
 
-namespace MiniDNN
+namespace metric
+{
+namespace dnn
 {
 
 
@@ -34,8 +36,8 @@ class Network
     private:
 		using Matrix = blaze::DynamicMatrix<Scalar>;
 
-        RNG                 defaultRng;      // Built-in RNG
-        RNG&                rng;              // Reference to the RNG provided by the user,
+        std::mt19937                 defaultRng;      // Built-in std::mt19937
+        std::mt19937&                rng;              // Reference to the std::mt19937 provided by the user,
 												// otherwise reference to m_default_rng
         std::shared_ptr<Output<Scalar>>             outputLayer;           // The output layer
         Callback<Scalar>                           defaultCallback; // Default callback function
@@ -154,7 +156,7 @@ class Network
         /// Constructor with a user-provided random number generator
         ///
         /// \param rng A user-provided random number generator object that inherits
-        ///            from the default RNG class.
+        ///            from the default std::mt19937 class.
         ///
         Network(RNG& rng) :
 		        defaultRng(1),
@@ -248,7 +250,7 @@ class Network
         ///
         /// \param mu    Mean of the normal distribution.
         /// \param sigma Standard deviation of the normal distribution.
-        /// \param seed  Set the random seed of the %RNG if `seed > 0`, otherwise
+        /// \param seed  Set the random seed of the %std::mt19937 if `seed > 0`, otherwise
         ///              use the current random state.
         ///
         void init(const Scalar& mu = Scalar(0), const Scalar& sigma = Scalar(0.01),
@@ -320,6 +322,7 @@ class Network
 	        return res;
         }
 
+/*
         ///
         /// Debugging tool to check parameter gradients
         ///
@@ -383,7 +386,7 @@ class Network
         /// \param y          The response variable. Each row is an observation.
         /// \param batch_size Mini-batch size.
         /// \param epoch      Number of epochs of training.
-        /// \param seed       Set the random seed of the %RNG if `seed > 0`, otherwise
+        /// \param seed       Set the random seed of the %std::mt19937 if `seed > 0`, otherwise
         ///                   use the current random state.
         ///
         template <typename DerivedX, typename DerivedY>
@@ -451,7 +454,8 @@ class Network
 };
 
 
-} // namespace MiniDNN
+} // namespace dnn
+} // namespace metric
 
 
 #endif /* NETWORK_H_ */
