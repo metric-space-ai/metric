@@ -16,7 +16,7 @@ template<typename Scalar>
 class Sigmoid
 {
 	private:
-		using Matrix = blaze::DynamicMatrix<Scalar, blaze::columnMajor>;
+		using Matrix = blaze::DynamicMatrix<Scalar>;
     public:
         // a = activation(z) = 1 / (1 + exp(-z))
         // Z = [z1, ..., zn], A = [a1, ..., an], n observations

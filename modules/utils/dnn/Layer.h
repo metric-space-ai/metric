@@ -33,7 +33,7 @@ class Layer
         const int m_out_size; // Size of output units
 
     public:
-		using Matrix = blaze::DynamicMatrix<Scalar, blaze::columnMajor>;
+		using Matrix = blaze::DynamicMatrix<Scalar>;
 
 	///
         /// Constructor

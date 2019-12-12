@@ -24,8 +24,8 @@ class ReLU
         static inline void activate(const Matrix& Z, Matrix& A)
         {
             //A = Z.array().cwiseMax(Scalar(0));
-	        for(size_t i = 0UL; i < Z.rows(); i++ ) {
-		        for(size_t j = 0UL; j < Z.columns(); j++ ) {
+			for(size_t j = 0UL; j < Z.columns(); j++ ) {
+				for(size_t i = 0UL; i < Z.rows(); i++ ) {
 		        	if (Z(i, j) < 0) {
 				        A(i, j) = 0;
 			        } else {
@@ -44,8 +44,8 @@ class ReLU
                                           const Matrix& F, Matrix& G)
         {
             //G = (A.array() > Scalar(0)).select(F, Scalar(0));
-	        for(size_t i = 0UL; i < G.rows(); i++ ) {
-		        for(size_t j = 0UL; j < G.columns(); j++ ) {
+			for(size_t j = 0UL; j < G.columns(); j++ ) {
+				for(size_t i = 0UL; i < G.rows(); i++ ) {
 			        if (A(i, j) > 0) {
 				        G(i, j) = F(i, j);
 			        } else {

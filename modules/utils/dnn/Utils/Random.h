@@ -75,8 +75,8 @@ int create_shuffled_batches(const DerivedX &x, const DerivedY &y,
         const int offset = i * batch_size;
 
         for (int j = 0; j < bsize; j++) {
-            blaze::rows(x_batches[i], j) = blaze::rows(x, id[offset + j]);
-            blaze::rows(y_batches[i], j) = blaze::rows(y, id[offset + j]);
+            blaze::row(x_batches[i], j) = blaze::row(x, id[offset + j]);
+            blaze::row(y_batches[i], j) = blaze::row(y, id[offset + j]);
         }
     }
 

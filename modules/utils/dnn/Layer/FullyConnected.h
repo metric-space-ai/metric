@@ -24,13 +24,14 @@ class FullyConnected: public Layer<Scalar>
 {
     private:
 		using Matrix = blaze::DynamicMatrix<Scalar>;
-		using Vector = blaze::DynamicVector<Scalar>;
+		using ColumnMatrix = blaze::DynamicMatrix<Scalar, blaze::columnMajor>;
+		using Vector = blaze::DynamicVector<Scalar, blaze::rowVector>;
 		using ConstAlignedMapVec = const blaze::CustomVector<Scalar, blaze::aligned, blaze::unpadded>;
 		using AlignedMapVec = blaze::CustomVector<Scalar, blaze::aligned, blaze::unpadded>;
 
-		Matrix m_weight;  // Weight parameters, W(in_size x out_size)
+		ColumnMatrix m_weight;  // Weight parameters, W(in_size x out_size)
         Vector m_bias;    // Bias parameters, b(out_size x 1)
-        Matrix m_dw;      // Derivative of weights
+        ColumnMatrix m_dw;      // Derivative of weights
         Vector m_db;      // Derivative of bias
         Matrix m_z;       // Linear term, z = W' * in + b
         Matrix m_a;       // Output of this layer, a = act(z)
@@ -120,7 +121,7 @@ class FullyConnected: public Layer<Scalar>
 
             // Compute d(L) / d_in = W * [d(L) / d(z)]
             m_din.resize(nobs, this->m_in_size);
-	        m_din = m_weight * dLz;
+	        m_din = dLz * blaze::trans(m_weight);
         }
 
         const Matrix& backprop_data() const

@@ -142,7 +142,7 @@ namespace MiniDNN
 
 		std::vector<InputDataType> output;
 		for (auto i = 0; i < temp.rows(); ++i) {
-			auto dataPointer = blaze::rows(temp, i).data();
+			auto dataPointer = blaze::row(temp, i).data();
 			std::vector<Scalar> vectorScalar(dataPointer, dataPointer + temp.columns());
 
 			output.insert(output.end(), vectorScalar.begin(), vectorScalar.end());

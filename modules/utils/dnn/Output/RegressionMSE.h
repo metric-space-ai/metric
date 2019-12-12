@@ -16,7 +16,7 @@ template <typename Scalar>
 class RegressionMSE: public Output<Scalar>
 {
     private:
-		using Matrix = blaze::DynamicMatrix<Scalar, blaze::columnMajor>;
+		using Matrix = blaze::DynamicMatrix<Scalar>;
         Matrix m_din;  // Derivative of the input of this layer.
         // Note that input of this layer is also the output of previous layer
 
@@ -24,10 +24,10 @@ class RegressionMSE: public Output<Scalar>
         void evaluate(const Matrix& prev_layer_data, const Matrix& target)
         {
             // Check dimension
-            const int nobs = prev_layer_data.columns();
-            const int nvar = prev_layer_data.rows();
+            const int nobs = prev_layer_data.rows();
+            const int nvar = prev_layer_data.columns();
 
-            if ((target.columns() != nobs) || (target.rows() != nvar))
+            if ((target.rows() != nobs) || (target.columns() != nvar))
             {
                 throw std::invalid_argument("[class RegressionMSE]: Target data have incorrect dimension");
             }
@@ -36,7 +36,7 @@ class RegressionMSE: public Output<Scalar>
             // L = 0.5 * ||yhat - y||^2
             // in = yhat
             // d(L) / d(in) = yhat - y
-            m_din.resize(nvar, nobs);
+            m_din.resize(nobs, nvar);
             //noalises
             m_din = prev_layer_data - target;
         }
@@ -49,7 +49,7 @@ class RegressionMSE: public Output<Scalar>
         Scalar loss() const
         {
             // L = 0.5 * ||yhat - y||^2
-            return blaze::sqrNorm(m_din) / m_din.columns() * Scalar(0.5);
+            return blaze::sqrNorm(m_din) / m_din.rows() * Scalar(0.5);
         }
 };
 

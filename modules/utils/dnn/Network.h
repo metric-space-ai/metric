@@ -68,7 +68,7 @@ class Network
 	        }
 
 	        // First layer
-	        if (input.rows() != layers[0]->in_size()) {
+	        if (input.columns() != layers[0]->in_size()) {
 		        throw std::invalid_argument("Input data have incorrect dimension");
 	        }
 

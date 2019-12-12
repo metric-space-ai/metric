@@ -25,7 +25,7 @@ template<typename Scalar>
 class Output
 {
 	private:
-		using Matrix = blaze::DynamicMatrix<Scalar, blaze::columnMajor>;
+		using Matrix = blaze::DynamicMatrix<Scalar>;
 		using IntegerVector = blaze::DynamicVector<int, blaze::rowVector>;
     public:
         virtual ~Output() {}
