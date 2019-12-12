@@ -1,5 +1,5 @@
-#ifndef dnn_H_
-#define dnn_H_
+#ifndef DNN_INCLUDES_H_
+#define DNN_INCLUDES_H_
 
 #include "../../../3rdparty/blaze/Math.h"
 
