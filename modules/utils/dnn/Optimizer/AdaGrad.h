@@ -45,11 +45,10 @@ class AdaGrad: public Optimizer
             Array& grad_square = m_history[dvec.data()];
 
             // If length is zero, initialize it
-            if (grad_square.size() == 0)
-            {
-                grad_square.resize(dvec.size());
-                grad_square.setZero();
-            }
+	        if (grad_square.size() == 0) {
+		        grad_square.resize(dvec.size());
+		        grad_square.setZero();
+	        }
 
             // Update accumulated squared gradient
             grad_square += dvec.array().square();

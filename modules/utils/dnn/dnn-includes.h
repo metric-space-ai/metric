@@ -20,7 +20,7 @@
 //#include "Output/MultiClassEntropy.h"
 
 #include "Optimizer.h"
-//#include "Optimizer/SGD.h"
+#include "Optimizer/SGD.h"
 //#include "Optimizer/AdaGrad.h"
 #include "Optimizer/RMSProp.h"
 

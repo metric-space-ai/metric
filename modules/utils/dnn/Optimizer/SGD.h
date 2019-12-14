@@ -1,8 +1,8 @@
 #ifndef OPTIMIZER_SGD_H_
 #define OPTIMIZER_SGD_H_
 
-#include <Eigen/Core>
 #include "../Optimizer.h"
+
 
 namespace metric
 {
@@ -19,11 +19,11 @@ template <typename Scalar>
 class SGD: public Optimizer<Scalar>
 {
     private:
-        typedef Eigen::Matrix<Scalar, Eigen::Dynamic, 1> Vector;
-        typedef Vector::ConstAlignedMapType ConstAlignedMapVec;
-        typedef Vector::AlignedMapType AlignedMapVec;
+		using Vector = blaze::DynamicVector<Scalar>;
+		using AlignedMapVec = blaze::CustomVector<Scalar, blaze::aligned, blaze::unpadded>;
+		using ConstAlignedMapVec = const blaze::CustomVector<Scalar, blaze::aligned, blaze::unpadded>;
 
-    public:
+	public:
         Scalar m_lrate;
         Scalar m_decay;
 
@@ -33,7 +33,7 @@ class SGD: public Optimizer<Scalar>
 
         void update(ConstAlignedMapVec& dvec, AlignedMapVec& vec)
         {
-            vec.noalias() -= m_lrate * (dvec + m_decay * vec);
+            vec -= m_lrate * (dvec + m_decay * vec);
         }
 };
 
