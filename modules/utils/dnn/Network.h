@@ -158,7 +158,7 @@ class Network
         /// \param rng A user-provided random number generator object that inherits
         ///            from the default std::mt19937 class.
         ///
-        Network(RNG& rng) :
+        Network(std::mt19937& rng) :
 		        defaultRng(1),
 		        rng(rng),
 		        outputLayer(NULL),
@@ -377,7 +377,7 @@ class Network
             // Restore original parameters
             this->set_parameters(param);
         }
-
+*/
         ///
         /// Fit the model based on the given data
         ///
