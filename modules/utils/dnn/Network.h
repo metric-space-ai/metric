@@ -54,7 +54,7 @@ class Network
 	        }
 
 	        for (int i = 1; i < nlayer; i++) {
-		        if (layers[i]->in_size() != layers[i - 1]->out_size()) {
+		        if (layers[i]->getInputSize() != layers[i - 1]->getOutputSize()) {
 			        throw std::invalid_argument("Unit sizes do not match");
 		        }
 	        }
@@ -70,7 +70,7 @@ class Network
 	        }
 
 	        // First layer
-	        if (input.columns() != layers[0]->in_size()) {
+	        if (input.columns() != layers[0]->getInputSize()) {
 		        throw std::invalid_argument("Input data have incorrect dimension");
 	        }
 
