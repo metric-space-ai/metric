@@ -52,7 +52,10 @@ class FullyConnected: public Layer<Scalar>
             Layer<Scalar>(in_size, out_size)
         {}
 
-        void init(const Scalar& mu, const Scalar& sigma, std::mt19937& rng)
+		FullyConnected(const nlohmann::json& json) : Layer<Scalar>(json)
+		{}
+
+		void init(const Scalar& mu, const Scalar& sigma, std::mt19937& rng)
         {
             m_weight.resize(this->inputSize, this->outputSize);
             m_bias.resize(this->outputSize);

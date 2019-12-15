@@ -41,19 +41,23 @@ class Layer
 	///
         /// Constructor
         ///
-        /// \param in_size  Number of input units of this hidden Layer. It must be
+        /// \param inputSize  Number of input units of this hidden Layer. It must be
         ///                 equal to the number of output units of the previous layer.
-        /// \param out_size Number of output units of this hidden layer. It must be
+        /// \param outputSize Number of output units of this hidden layer. It must be
         ///                 equal to the number of input units of the next layer.
         ///
-        Layer(const int in_size, const int out_size) :
-		        inputSize(in_size), outputSize(out_size)
+        Layer(const int inputSize, const int outputSize) :
+		        inputSize(inputSize), outputSize(outputSize)
         {}
 
         ///
         /// Virtual destructor
         ///
         virtual ~Layer() {}
+
+        Layer(const nlohmann::json& json) : inputSize(json["inputSize"].get<int>()),
+                                                outputSize(json["outputSize"].get<int>())
+        {}
 
         ///
         /// Get the number of input units of this hidden layer.
