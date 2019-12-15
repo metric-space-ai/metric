@@ -30,3 +30,41 @@ BOOST_AUTO_TEST_CASE(fullyconnected_json)
 
 	BOOST_CHECK_EQUAL(json, fc.toJson());
 }
+
+//BOOST_AUTO_TEST_CASE(maxpolling_json)
+//{
+//	auto json = R"(
+//					{
+//						"inputSize": 100,
+//						"outputSize": 10
+//					}
+//				)"_json;
+//
+//	MaxPooling<double, Identity<double>> mp(json);
+//
+//	BOOST_CHECK_EQUAL(mp.getInputSize(), 100);
+//	BOOST_CHECK_EQUAL(mp.getOutputSize(), 10);
+//
+//	BOOST_CHECK_EQUAL(json, mp.toJson());
+//}
+
+BOOST_AUTO_TEST_CASE(network_json)
+{
+	auto json = R"({
+					"0":
+						{
+							"type": "FullyConnected",
+							"inputSize": 100,
+							"outputSize": 10,
+							"activation": "ReLU"
+						},
+					"train":
+						{
+							"loss": "RegressionMSE",
+							"optimizer": "RMSProp"
+						}
+					}
+				)"_json;
+
+	Network<double> nt(json.dump());
+}
