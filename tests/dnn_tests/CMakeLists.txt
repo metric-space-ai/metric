@@ -6,6 +6,8 @@ include_directories(${Boost_INCLUDE_DIR})
 add_executable(dnn_tests dnn_tests.cpp)
 target_link_libraries(dnn_tests ${Boost_LIBRARIES})
 
+add_executable(dnn_json_tests dnn_json_tests.cpp)
+target_link_libraries(dnn_json_tests ${Boost_LIBRARIES})
 
 add_executable(datasets_test datasets_test.cpp)
 target_link_libraries(datasets_test ${Boost_LIBRARIES})
