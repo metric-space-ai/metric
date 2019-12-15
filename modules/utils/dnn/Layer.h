@@ -30,8 +30,6 @@ template<typename Scalar>
 class Layer
 {
     protected:
-
-
         const int inputSize;  // Size of input units
         const int outputSize; // Size of output units
 
@@ -59,8 +57,16 @@ class Layer
                                                 outputSize(json["outputSize"].get<int>())
         {}
 
-        ///
-        /// Get the number of input units of this hidden layer.
+		nlohmann::json toJson()
+		{
+			nlohmann::json json = {
+					{"inputSize", inputSize},
+					{"outputSize", outputSize}
+			};
+			return json;
+		}
+	///
+	/// Get the number of input units of this hidden layer.
         ///
         int getInputSize() const
         {

@@ -27,4 +27,6 @@ BOOST_AUTO_TEST_CASE(fullyconnected_json)
 
 	BOOST_CHECK_EQUAL(fc.getInputSize(), 100);
 	BOOST_CHECK_EQUAL(fc.getOutputSize(), 10);
+
+	BOOST_CHECK_EQUAL(json, fc.toJson());
 }
