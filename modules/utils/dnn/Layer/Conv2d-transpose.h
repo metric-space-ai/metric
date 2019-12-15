@@ -158,7 +158,7 @@ class Conv2dTranspose: public Layer<Scalar>
             const int nobs = prev_layer_data.columns();
 
 	        // Linear term, z = conv(in, w) + b
-            m_z.resize(this->m_out_size, nobs);
+            m_z.resize(this->outputSize, nobs);
 
 	        // Convolution
 	        auto unrolledKernel = getUnrolledKernel();
@@ -186,7 +186,7 @@ class Conv2dTranspose: public Layer<Scalar>
 
 
 	        /* Apply activation function */
-            m_a.resize(this->m_out_size, nobs);
+            m_a.resize(this->outputSize, nobs);
             Activation::activate(m_z, m_a);
         }
 
@@ -195,8 +195,8 @@ class Conv2dTranspose: public Layer<Scalar>
             return m_a;
         }
 
-        // prev_layer_data: in_size x nobs
-        // next_layer_data: out_size x nobs
+        // prev_layer_data: getInputSize x nobs
+        // next_layer_data: getOutputSize x nobs
         // https://grzegorzgwardys.wordpress.com/2016/04/22/8/
         void backprop(const Matrix& prev_layer_data, const Matrix& next_layer_data)
         {
@@ -231,7 +231,7 @@ class Conv2dTranspose: public Layer<Scalar>
             m_db = blaze::mean<blaze::rowwise>(dLb_by_obs);
 
 
-            m_din.resize(this->m_in_size, nobs);
+            m_din.resize(this->inputSize, nobs);
 
 	        auto unrolledKernel = getUnrolledKernel();
 

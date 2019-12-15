@@ -5,6 +5,7 @@
 #include <random>
 
 #include "../../../3rdparty/blaze/Math.h"
+#include "../../../3rdparty/json/json.hpp"
 
 #include "Optimizer.h"
 
@@ -31,8 +32,8 @@ class Layer
     protected:
 
 
-        const int m_in_size;  // Size of input units
-        const int m_out_size; // Size of output units
+        const int inputSize;  // Size of input units
+        const int outputSize; // Size of output units
 
     public:
 		using Matrix = blaze::DynamicMatrix<Scalar>;
@@ -46,7 +47,7 @@ class Layer
         ///                 equal to the number of input units of the next layer.
         ///
         Layer(const int in_size, const int out_size) :
-            m_in_size(in_size), m_out_size(out_size)
+		        inputSize(in_size), outputSize(out_size)
         {}
 
         ///
@@ -57,16 +58,16 @@ class Layer
         ///
         /// Get the number of input units of this hidden layer.
         ///
-        int in_size() const
+        int getInputSize() const
         {
-            return m_in_size;
+            return inputSize;
         }
         ///
         /// Get the number of output units of this hidden layer.
         ///
-        int out_size() const
+        int getOutputSize() const
         {
-            return m_out_size;
+            return outputSize;
         }
 
         ///
@@ -90,7 +91,7 @@ class Layer
         ///
         /// \param prev_layer_data The output of previous layer, which is also the
         ///                        input of this layer. `prev_layer_data` should have
-        ///                        `in_size` rows as in the constructor, and each
+        ///                        `getInputSize` rows as in the constructor, and each
         ///                        column of `prev_layer_data` is an observation.
         ///
         virtual void forward(const Matrix& prev_layer_data) = 0;
@@ -104,7 +105,7 @@ class Layer
         /// in Layer::forward() of the next layer.
         ///
         /// \return A reference to the matrix that contains the output values. The
-        ///         matrix should have `out_size` rows as in the constructor,
+        ///         matrix should have `getOutputSize` rows as in the constructor,
         ///         and have number of columns equal to that of `prev_layer_data` in the
         ///         Layer::forward() function. Each column represents an observation.
         ///
@@ -119,12 +120,12 @@ class Layer
         ///
         /// \param prev_layer_data The output of previous layer, which is also the
         ///                        input of this layer. `prev_layer_data` should have
-        ///                        `in_size` rows as in the constructor, and each
+        ///                        `getInputSize` rows as in the constructor, and each
         ///                        column of `prev_layer_data` is an observation.
         /// \param next_layer_data The gradients of the input units of the next layer,
         ///                        which is also the gradients of the output units of
         ///                        this layer. `next_layer_data` should have
-        ///                        `out_size` rows as in the constructor, and the same
+        ///                        `getOutputSize` rows as in the constructor, and the same
         ///                        number of columns as `prev_layer_data`.
         ///
         virtual void backprop(const Matrix& prev_layer_data,

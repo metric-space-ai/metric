@@ -32,8 +32,8 @@ class FullyConnected: public Layer<Scalar>
 		using ConstAlignedMapVec = const blaze::CustomVector<Scalar, blaze::aligned, blaze::unpadded>;
 		using AlignedMapVec = blaze::CustomVector<Scalar, blaze::aligned, blaze::unpadded>;
 
-		ColumnMatrix m_weight;  // Weight parameters, W(in_size x out_size)
-        Vector m_bias;    // Bias parameters, b(out_size x 1)
+		ColumnMatrix m_weight;  // Weight parameters, W(getInputSize x getOutputSize)
+        Vector m_bias;    // Bias parameters, b(getOutputSize x 1)
         ColumnMatrix m_dw;      // Derivative of weights
         Vector m_db;      // Derivative of bias
         Matrix m_z;       // Linear term, z = W' * in + b
@@ -54,10 +54,10 @@ class FullyConnected: public Layer<Scalar>
 
         void init(const Scalar& mu, const Scalar& sigma, std::mt19937& rng)
         {
-            m_weight.resize(this->m_in_size, this->m_out_size);
-            m_bias.resize(this->m_out_size);
-            m_dw.resize(this->m_in_size, this->m_out_size);
-            m_db.resize(this->m_out_size);
+            m_weight.resize(this->inputSize, this->outputSize);
+            m_bias.resize(this->outputSize);
+            m_dw.resize(this->inputSize, this->outputSize);
+            m_db.resize(this->outputSize);
 
             // Set random coefficients
             internal::set_normal_random(m_weight.data(), blaze::size(m_weight), rng, mu, sigma);
@@ -69,29 +69,29 @@ class FullyConnected: public Layer<Scalar>
 
         void initConstant(const Scalar weightsValue, const Scalar biasesValue)
         {
-	        m_weight.resize(this->m_in_size, this->m_out_size);
-	        m_bias.resize(this->m_out_size);
-	        m_dw.resize(this->m_in_size, this->m_out_size);
-	        m_db.resize(this->m_out_size);
+	        m_weight.resize(this->inputSize, this->outputSize);
+	        m_bias.resize(this->outputSize);
+	        m_dw.resize(this->inputSize, this->outputSize);
+	        m_db.resize(this->outputSize);
 
 	        m_weight = weightsValue;
 	        m_bias = biasesValue;
         }
 
-		// prev_layer_data: in_size x nobs
+		// prev_layer_data: getInputSize x nobs
         void forward(const Matrix& prev_layer_data)
         {
             const int nobs = prev_layer_data.rows();
 
             // Linear term z = W' * in + b
-            m_z.resize(nobs, this->m_out_size);
+            m_z.resize(nobs, this->outputSize);
 
             m_z = prev_layer_data * m_weight;
             for (size_t i = 0UL; i < m_z.rows(); i++) {
 				blaze::row(m_z, i) += m_bias;
             }
             // Apply activation function
-            m_a.resize(nobs, this->m_out_size);
+            m_a.resize(nobs, this->outputSize);
 	        //std::cout << blaze::submatrix<0, 0, 5, 20>(prev_layer_data) << std::endl;
 	        //std::cout << blaze::submatrix<0, 0, 5, 20>(m_z) << std::endl;
             Activation::activate(m_z, m_a);
@@ -102,8 +102,8 @@ class FullyConnected: public Layer<Scalar>
             return m_a;
         }
 
-        // prev_layer_data: in_size x nobs
-        // next_layer_data: out_size x nobs
+        // prev_layer_data: getInputSize x nobs
+        // next_layer_data: getOutputSize x nobs
         void backprop(const Matrix& prev_layer_data, const Matrix& next_layer_data)
         {
             const int nobs = prev_layer_data.rows();
@@ -123,7 +123,7 @@ class FullyConnected: public Layer<Scalar>
 	        m_db = blaze::mean<blaze::columnwise>(dLz);
 
             // Compute d(L) / d_in = W * [d(L) / d(z)]
-            m_din.resize(nobs, this->m_in_size);
+            m_din.resize(nobs, this->inputSize);
 	        m_din = dLz * blaze::trans(m_weight);
         }
 

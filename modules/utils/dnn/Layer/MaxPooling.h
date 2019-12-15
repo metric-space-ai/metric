@@ -23,7 +23,7 @@ template <typename Scalar, typename Activation>
 class MaxPooling: public Layer<Scalar>
 {
     private:
-		using Matrix = blaze::DynamicMatrix<Scalar, blaze::columnMajor>;
+		using Matrix = blaze::DynamicMatrix<Scalar>;
 		using IntMatrix = blaze::DynamicMatrix<int>;
 
 		const int m_channel_rows;
@@ -69,8 +69,8 @@ class MaxPooling: public Layer<Scalar>
         {
             // Each column is an observation
             const int nobs = prev_layer_data.columns();
-            m_loc.resize(this->m_out_size, nobs);
-            m_z.resize(this->m_out_size, nobs);
+            m_loc.resize(this->outputSize, nobs);
+            m_z.resize(this->outputSize, nobs);
             // Use m_loc to store the address of each pooling block relative to the beginning of the data
             int* loc_data = m_loc.data();
             const int channel_end = blaze::size(prev_layer_data);
@@ -112,7 +112,7 @@ class MaxPooling: public Layer<Scalar>
             }
 
             // Apply activation function
-            m_a.resize(this->m_out_size, nobs);
+            m_a.resize(this->outputSize, nobs);
             Activation::activate(m_z, m_a);
         }
 
@@ -121,8 +121,8 @@ class MaxPooling: public Layer<Scalar>
             return m_a;
         }
 
-        // prev_layer_data: in_size x nobs
-        // next_layer_data: out_size x nobs
+        // prev_layer_data: getInputSize x nobs
+        // next_layer_data: getOutputSize x nobs
         void backprop(const Matrix& prev_layer_data, const Matrix& next_layer_data)
         {
             const int nobs = prev_layer_data.columns();
@@ -130,12 +130,12 @@ class MaxPooling: public Layer<Scalar>
             // Now we need to calculate d(L) / d(z) = [d(a) / d(z)] * [d(L) / d(a)]
             // d(L) / d(z) is computed in the next layer, contained in next_layer_data
             // The Jacobian matrix J = d(a) / d(z) is determined by the activation function
-            Matrix& dLz = m_z;
+            Matrix dLz = m_z;
             Activation::apply_jacobian(m_z, m_a, next_layer_data, dLz);
             // d(L) / d(in_i) = sum_j{ [d(z_j) / d(in_i)] * [d(L) / d(z_j)] }
             // d(z_j) / d(in_i) = 1 if in_i is used to compute z_j and is the maximum
             //                  = 0 otherwise
-            m_din.resize(this->m_in_size, nobs);
+            m_din.resize(this->inputSize, nobs);
             m_din = 0;
             const int dLz_size = blaze::size(dLz);
             const Scalar* dLz_data = dLz.data();
