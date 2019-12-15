@@ -60,7 +60,7 @@ namespace metric
 		net.addLayer(dnn::FullyConnected<Scalar, dnn::ReLU<Scalar>>(256, 64));
 		net.addLayer(dnn::FullyConnected<Scalar, dnn::ReLU<Scalar>>(64, 256));
 		net.addLayer(dnn::FullyConnected<Scalar, dnn::ReLU<Scalar>>(256, 1024));
-		net.addLayer(dnn::FullyConnected<Scalar, dnn::ReLU<Scalar>>(1024, featuresLength));
+		net.addLayer(dnn::FullyConnected<Scalar, dnn::Sigmoid<Scalar>>(1024, featuresLength));
 		//net.addLayer(Conv2d<Scalar, ReLU<Scalar>>(featuresLength, 28, 1, 1, 5, 5));
 		//net.addLayer(Conv2dTranspose<Scalar, Sigmoid<Scalar>>(24, 24, 1, 1, 5, 5));
 
