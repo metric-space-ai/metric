@@ -166,7 +166,34 @@ class Network
 		        m_callback(NULL)
         {}
 
-        ///
+        Network(const std::string& jsonString) :
+				defaultRng(1),
+				rng(rng),
+				outputLayer(NULL),
+				defaultCallback(),
+				m_callback(NULL)
+		{
+			auto json = nlohmann::json::parse(jsonString);
+
+			for (auto i = 0; i < json.size() - 1; ++i) {
+				auto layerJson = json[std::to_string(i)];
+
+				auto activation = layerJson["activation"].get<std::string>();
+
+				auto type = layerJson["type"].get<std::string>();
+				if (type == "FullyConnected") {
+					if (activation == "Identity") {
+						addLayer(FullyConnected<double, Identity<double>>(layerJson));
+					} else if (activation == "ReLU") {
+						addLayer(FullyConnected<double, ReLU<double>>(layerJson));
+					} else if (activation == "Sigmoid") {
+						addLayer(FullyConnected<double, Sigmoid<double>>(layerJson));
+					}
+				}
+			}
+		}
+
+	///
         /// Destructor that frees the added hidden layers and output layer
         ///
         ~Network()   {}
