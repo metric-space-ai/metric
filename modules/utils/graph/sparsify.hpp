@@ -50,6 +50,10 @@ namespace metric {
 template <typename Tv>
 blaze::CompressedMatrix<Tv, blaze::columnMajor> sparsify(
     const blaze::CompressedMatrix<Tv, blaze::columnMajor>& a, float ep = 0.3F, float matrixConcConst = 4.0F, float JLfac = 4.0F);
+
+template <typename Tv>
+blaze::CompressedMatrix<Tv, blaze::columnMajor> kruskal_sparsify(
+    const blaze::CompressedMatrix<Tv, blaze::columnMajor>& a, bool minimum = true);
 }
 
 #include "sparsify.cpp"
