@@ -13,20 +13,20 @@ namespace metric {
 	namespace KOC_details {
 		template <class recType, class Graph, class Metric, class Distribution>
 		void KOC<recType, Graph, Metric, Distribution>::train(
-			const std::vector<std::vector<T>>& samples)
+			const std::vector<std::vector<T>>& samples, int num_clusters)
 		{
 			SOM<recType, Graph, Metric, Distribution>::train(samples);
 			parse_distances(samples, samples.size());
-			std::tie(clusters, centroids, clusters_counts) = clusterize_nodes();
+			std::tie(clusters, centroids, clusters_counts) = clusterize_nodes(num_clusters);
 		}
 
 
 		template <class recType, class Graph, class Metric, class Distribution>
-		void KOC<recType, Graph, Metric, Distribution>::estimate(const std::vector<std::vector<T>>& samples, const size_t sampleSize)
+		void KOC<recType, Graph, Metric, Distribution>::estimate(const std::vector<std::vector<T>>& samples, const size_t sampleSize, int num_clusters)
 		{
 			SOM<recType, Graph, Metric, Distribution>::estimate(samples, sampleSize);
 			parse_distances(samples, sampleSize);
-			std::tie(clusters, centroids, clusters_counts) = clusterize_nodes();
+			std::tie(clusters, centroids, clusters_counts) = clusterize_nodes(num_clusters);
 		}
 
 		template <class recType, class Graph, class Metric, class Distribution>
@@ -75,7 +75,7 @@ namespace metric {
 			for (size_t i = 0; i < samples.size(); i++)
 			{
 				// if entropy less then min entropy level then it is anomaly
-				result.push_back(check_if_anomaly(samples[i]));
+				result.push_back(check_if_anomaly(samples[i], anomaly_threshold));
 			}
 
 			return result;
@@ -100,16 +100,34 @@ namespace metric {
 				reduced_reshaped.push_back({reduced[j]});
 			}
 			auto e = entropy(reduced_reshaped, 3, 2.0, SOM<recType, Graph, Metric, Distribution>::metric);
-
+			
+			//std::cout << e << "entropy_range:" << entropy_range << std::endl;
 			// if entropy less then min entropy level then it is anomaly
 			return e < entropy_range;
 		}
 
 		
 		template <class recType, class Graph, class Metric, class Distribution>
-		std::tuple<std::vector<int>, std::vector<std::vector<recType::value_type>>, std::vector<int>> KOC<recType, Graph, Metric, Distribution>::result()
-		{
-			return { clusters, centroids, clusters_counts };
+		std::vector<int> KOC<recType, Graph, Metric, Distribution>::result(
+			const std::vector<std::vector<T>>& samples, double anomaly_threshold = 0.0)
+		{				
+			std::vector<int> assignments;
+			auto anomalies = check_if_anomaly(samples, anomaly_threshold);						
+			for (size_t i = 0; i < samples.size(); i++)
+			{
+				// we want 0 label for anomalies
+				if (anomalies[i])
+				{
+					assignments.push_back(0);
+				}
+				else
+				{
+					auto bmu = BMU(samples[i]);
+					assignments.push_back(clusters[bmu]);
+				}
+			}
+
+			return assignments;
 		};
 
 		// PRIVATE
@@ -167,18 +185,31 @@ namespace metric {
 		}
 
 		template <class recType, class Graph, class Metric, class Distribution>
-		std::tuple<std::vector<int>, std::vector<std::vector<recType::value_type>>, std::vector<int>> KOC<recType, Graph, Metric, Distribution>::clusterize_nodes()
+		std::tuple<std::vector<int>, std::vector<std::vector<recType::value_type>>, std::vector<int>> KOC<recType, Graph, Metric, Distribution>::clusterize_nodes(int num_clusters)
 		{
 			int min_cluster_size = 0;
-			int num_clusters = KOC<recType, Graph, Metric, Distribution>::getNodesNumber();
+			//int num_clusters = KOC<recType, Graph, Metric, Distribution>::getNodesNumber();
 
 			auto nodes_data = KOC<recType, Graph, Metric, Distribution>::get_weights();
 
 			while (min_cluster_size <= 1)
 			{
 				// clustering on the reduced data
-
+				
 				auto [assignments, exemplars, counts] = metric::kmeans(nodes_data, num_clusters, 1000);
+				//metric::Matrix<recType, metric::Euclidian<double>, double> distance_matrix(nodes_data);
+				//auto [assignments_size_t, exemplars_unknwn, counts_size_t] = metric::dbscan(distance_matrix, (double)0.7, 1);
+				//std::vector<std::vector<recType::value_type>> exemplars;
+				//std::vector<int> assignments;
+				//for (const auto i : assignments_size_t)
+				//{
+				//	assignments.push_back(static_cast<int>(i));
+				//}
+				//std::vector<int> counts;
+				//for (const auto i : counts_size_t)
+				//{
+				//	counts.push_back(static_cast<int>(i));
+				//}
 		
 				std::vector<int>::iterator result = std::min_element(counts.begin(), counts.end());
 				min_cluster_size = counts[std::distance(counts.begin(), result)];	
@@ -207,6 +238,7 @@ namespace metric {
 						// we want 0 label for anomalies, so increment original labels
 						assignments[i]++;
 					}
+
 					return { assignments, exemplars, counts };
 				}
 			}
@@ -290,12 +322,12 @@ namespace metric {
 
 	
 	template <class recType, class Graph, class Metric, class Distribution>
-	KOC_details::KOC<recType, Graph, Metric, Distribution> KOC_factory<recType, Graph, Metric, Distribution>::operator()(const std::vector<std::vector<T>>& samples)
+	KOC_details::KOC<recType, Graph, Metric, Distribution> KOC_factory<recType, Graph, Metric, Distribution>::operator()(const std::vector<std::vector<T>>& samples, int num_clusters)
 	{
 		KOC_details::KOC<recType, Graph, Metric, Distribution> koc(graph_, metric_, start_learn_rate_, finish_learn_rate_, iterations_, distribution_, 
 			neighborhood_start_size_, neigbour_range_decay_, random_seed_);
 
-		koc.train(samples);
+		koc.train(samples, num_clusters);
 
 		return koc;
 	}

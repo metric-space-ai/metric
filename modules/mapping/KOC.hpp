@@ -89,7 +89,7 @@ namespace metric {
 				 * 
 				 * @param samples 
 				 */
-			void train(const std::vector<std::vector<T>>& samples) override;
+			void train(const std::vector<std::vector<T>>& samples, int num_clusters);
 
 			/**
 				 * @brief 
@@ -122,9 +122,9 @@ namespace metric {
 				 * 
 				 * @return std::vector<int>
 				 */
-			std::tuple<std::vector<int>, std::vector<std::vector<recType::value_type>>, std::vector<int>> result();
+			std::vector<int> result(const std::vector<std::vector<T>>& samples, double anomaly_threshold = 0.0);
 
-		private:
+		//private:
 	
 			//double anomaly_threshold_ = 0.0;
 			std::vector<int> clusters;	
@@ -151,14 +151,14 @@ namespace metric {
 				 * 
 				 * @param samples 
 				 */
-			std::tuple<std::vector<int>, std::vector<std::vector<recType::value_type>>, std::vector<int>> clusterize_nodes();
+			std::tuple<std::vector<int>, std::vector<std::vector<recType::value_type>>, std::vector<int>> clusterize_nodes(int num_clusters);
 
 			/**
 				 * @brief 
 				 * 
 				 * @param samples 
 				 */
-			void estimate(const std::vector<std::vector<T>>& samples, const size_t sampleSize) override;
+			void estimate(const std::vector<std::vector<T>>& samples, const size_t sampleSize, int num_clusters);
 
 			/**
 				 * @brief 
@@ -218,7 +218,7 @@ namespace metric {
 		/**
 		 * @brief 
 		 */
-		KOC_details::KOC<recType, Graph, Metric, Distribution> operator()(const std::vector<std::vector<T>>& samples);
+		KOC_details::KOC<recType, Graph, Metric, Distribution> operator()(const std::vector<std::vector<T>>& samples, int num_clusters);
 
 	private:
 

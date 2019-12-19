@@ -210,6 +210,106 @@ std::vector<std::vector<double>> readEnergies(std::string dirname)
 }
 
 
+std::vector<std::vector<double>> readCsvData(std::string filename, char delimeter)
+{
+	std::fstream fin;
+
+	fin.open(filename, std::ios::in);
+	
+	std::vector<double> row;
+	std::string line, word, w;
+
+	std::vector<std::vector<double>> rows;
+
+	// omit headers 
+	//getline(fin, line);
+
+	int i = 0;
+	while (getline(fin, line))
+	{
+		i++;
+		//std::cout << "row " << i << std::endl;
+		std::stringstream s(line);
+
+		row.clear();
+		while (getline(s, word, delimeter))
+		{
+			//std::cout << " -> " << word << std::endl;
+			
+			row.push_back(std::stod(word));
+		}
+
+		rows.push_back(row);
+	}
+
+	return rows;
+}
+
+
+std::tuple<std::vector<std::string>, std::vector<std::vector<double>>> readCsvData2(std::string filename, char delimeter)
+{
+	std::fstream fin;
+
+	fin.open(filename, std::ios::in);
+	
+	std::vector<std::string> dates;
+	std::vector<double> row;
+	std::string line, word, w;
+
+	std::vector<std::vector<double>> rows;
+	
+	int day, month, year, hour, minute, second;
+	int added_days = 0;
+	bool was_yesterday = false;
+
+	// omit headers 
+	getline(fin, line);
+
+	int i = 0;
+	while (getline(fin, line))
+	{
+		i++;
+		std::stringstream s(line);
+
+		getline(s, word, delimeter);
+		sscanf(word.c_str(), "%4d-%2d-%2d %2d:%2d:%2d", &year, &month, &day, &hour, &minute, &second);
+		//std::cout << word << " " << year << " " << month << " " << day << " " << hour << " " << minute << " " << second << " " << std::endl;
+		if (was_yesterday && hour * 60 + minute >= 4 * 60)
+		{
+			//std::cout << i << " " << word << std::endl;
+			dates.push_back(word);
+			rows.push_back(row);
+			row.clear();
+		}
+
+		if (hour * 60 + minute < 4 * 60)
+		{
+			was_yesterday = true;
+		}
+		else
+		{
+			was_yesterday = false;
+		}
+
+		while (getline(s, word, delimeter))
+		{
+			//std::cout << " -> " << word << std::endl;
+			
+			row.push_back(std::stod(word));
+		}
+
+	}
+	
+	//std::cout << " --> " << std::endl;
+
+	// erase first element with partial data
+	rows.erase(rows.begin());
+	dates.erase(dates.end() - 1);
+
+	return { dates, rows };
+}
+
+
 std::mutex mu;
 
 int main(int argc, char *argv[])
@@ -219,8 +319,8 @@ int main(int argc, char *argv[])
 
 	using Record = std::vector<double>;
 				
-	size_t best_w_grid_size = 8;
-	size_t best_h_grid_size = 6;
+	size_t best_w_grid_size = 5;
+	size_t best_h_grid_size = 4;
 
 	// if overrided from arguments
 	
@@ -233,6 +333,39 @@ int main(int argc, char *argv[])
 	// create, train KOC over the raw data and reduce the data	
 	// then make clustering on the reduced data
 	
+	//std::vector<Record> dataset = {
+	//	{0, 0},
+	//	{0, 1},
+	//	{0, 2},
+	//	{2, 2},
+	//	{2, 2},
+	//	{2, 2},
+	//	{0, 4},
+	//	{0, 4},
+	//	{0, 4},
+	//	{8, 0},
+	//	{8, 0},
+	//	{8, 0},
+	//};
+
+	//std::vector<Record> test_samples_1 = {
+	//	{0, 0},
+	//	{0, 1},
+	//	{0, 0},
+	//	{5, 5},
+	//};
+
+	
+	//auto dataset = readCsvData("assets/testdataset/compound.csv", ',');
+	//auto dataset = readCsvData("assets/testdataset/fisheriris.csv", ',');
+	//auto dataset = readCsvData("assets/testdataset/multidim.csv", ',');
+	//auto [dates, dataset] = readCsvData2("assets/testdataset/nyc_taxi.csv", ',');
+	
+	//std::cout << " ->> " << std::endl;
+	//vector_print(dates);
+	//matrix_print(dataset);
+
+
 	std::vector<Record> dataset = {
 		{0, 0, 0},
 		{0, 1, 0},
@@ -255,8 +388,8 @@ int main(int argc, char *argv[])
 		{5, 5, 5},
 	};
 
-	metric::KOC_factory<Record> simple_koc_factory;    
-	auto simple_koc = simple_koc_factory(dataset); 
+	metric::KOC_factory<Record> simple_koc_factory(best_w_grid_size, best_h_grid_size, 0.5, 0.0, 100);    
+	auto simple_koc = simple_koc_factory(dataset, 5); 
 	//auto [assignments, seeds, counts] = clust_1.result();
 
 	//metric::KOC<Record, metric::Grid4, metric::Euclidian<double>, std::uniform_real_distribution<double>> 
@@ -264,24 +397,52 @@ int main(int argc, char *argv[])
 	
 	//simple_koc.train(dataset);
 
-	double anomaly_threshold = 0.01;
+	double anomaly_threshold = -0.5;
 
-	auto anomalies = simple_koc.check_if_anomaly(test_samples_1, anomaly_threshold);	
+	auto anomalies = simple_koc.check_if_anomaly(dataset, anomaly_threshold);	
 	std::cout << std::endl;
 	std::cout << "anomalies:" << std::endl;
 	vector_print(anomalies);
 	std::cout << std::endl;
-	
-	auto [clusters_grid, seeds, counts] = simple_koc.result();	
-	std::cout << std::endl;
-	std::cout << "clusters grid:" << std::endl;
-	vector_print(clusters_grid, 5, 4);
 
-	auto assigned_clusters = simple_koc.encode(test_samples_1, anomaly_threshold);	
+	
+  //  for (int i = 0; i < anomalies.size() - 1; i++)
+  //  {
+		//if (anomalies[i])
+		//{
+		//	std::cout << dates[i] << std::endl;
+		//}
+  //  }
+	
+	auto assignments = simple_koc.result(dataset, anomaly_threshold);	
 	std::cout << std::endl;
-	std::cout << "assigned clusters:" << std::endl;
-	vector_print(assigned_clusters);
-	std::cout << std::endl;
+	std::cout << "assignments:" << std::endl;
+	vector_print(assignments);
+
+	//auto assigned_clusters = simple_koc.encode(test_samples_1, anomaly_threshold);	
+	//std::cout << std::endl;
+	//std::cout << "assigned clusters:" << std::endl;
+	//vector_print(assigned_clusters);
+	//std::cout << std::endl;
+
+	json reference_data;
+	reference_data.push_back(assignments);
+	
+	//for (size_t i = 0; i < dataset.size(); ++i) 
+	//{		
+	//	reference_data.push_back(clusters_grid[simple_koc.BMU(dataset[i])]);
+	//}
+	//std::ofstream outputFile("KOC_clusters.json");
+	//outputFile << std::setw(4) << reference_data << std::endl;
+	//outputFile.close();	
+	//
+	//json all_samples_data;	
+	//all_samples_data.push_back(dataset);
+	//std::ofstream outputFile_2("KOC_samples_data.json");
+	//outputFile_2 << std::setw(4) << all_samples_data << std::endl;
+	//outputFile_2.close();	
+
+
 
 	/// OUTLIERS DETECTION FOR ENERGIES
 
@@ -301,7 +462,7 @@ int main(int argc, char *argv[])
 	metric::KOC_factory<Record, metric::Grid4, metric::Euclidian<double>, std::uniform_real_distribution<double>> 
 		koc_factory(best_w_grid_size, best_h_grid_size, 0.8, 0.0, 20);	
 	
-	auto koc = koc_factory(speeds); 
+	auto koc = koc_factory(speeds, 5); 
 
 	//
 
@@ -382,12 +543,12 @@ int main(int argc, char *argv[])
 	vector_print(anomalies);
 	std::cout << std::endl;
 	
-	std::tie(clusters_grid, seeds, counts) = koc.result();	
+	assignments = koc.result(test_samples, anomaly_threshold);	
 	std::cout << std::endl;
-	std::cout << "clusters grid:" << std::endl;
-	vector_print(clusters_grid, best_w_grid_size, best_h_grid_size);
+	std::cout << "assignments:" << std::endl;
+	vector_print(assignments);
 
-	assigned_clusters = koc.encode(test_samples, anomaly_threshold);	
+	auto assigned_clusters = koc.encode(test_samples, anomaly_threshold);	
 	std::cout << std::endl;
 	std::cout << "assigned clusters:" << std::endl;
 	vector_print(assigned_clusters);

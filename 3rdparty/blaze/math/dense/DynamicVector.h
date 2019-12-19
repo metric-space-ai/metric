@@ -1469,7 +1469,7 @@ inline void DynamicVector<Type,TF>::resize( size_t n, bool preserve )
       }
 
       // Replacing the old array
-      swap( v_, tmp );
+      std::swap( v_, tmp );
       deallocate( tmp );
       capacity_ = newCapacity;
    }
