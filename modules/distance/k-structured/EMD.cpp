@@ -41,8 +41,9 @@ inline void print_vector(const std::vector<T>& v)
 template <typename T>
 inline void print_matrix(const std::vector<std::vector<T>>& m)
 {
-    std::cout << "[ ";
+    std::cout << "[ "<< std::endl;
     for (auto& r : m) {
+		std::cout << "  ";
         print_vector(r);
         std::cout << std::endl;
     }

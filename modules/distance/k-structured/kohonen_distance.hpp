@@ -36,7 +36,7 @@ struct kohonen_distance {
      *
      * @param som_model - trained SOM model
      */
-	kohonen_distance(metric::SOM<Sample, Graph, Metric, Distribution> som_model);
+	//kohonen_distance(metric::SOM<Sample, Graph, Metric, Distribution> som_model);
 
     /**
      * @brief Construct a new kohonen_distance object
@@ -58,8 +58,8 @@ struct kohonen_distance {
      * @param iterations
      * @param distribution
      */
-	kohonen_distance(std::vector<Sample>& samples, Graph graph, Metric metric = Metric(), double start_learn_rate = 0.8, double finish_learn_rate = 0.0, size_t iterations = 20, 
-		Distribution distribution = Distribution(-1, 1));
+	//kohonen_distance(std::vector<Sample>& samples, Graph graph, Metric metric = Metric(), double start_learn_rate = 0.8, double finish_learn_rate = 0.0, size_t iterations = 20, 
+	//	Distribution distribution = Distribution(-1, 1));
 
     /**
      * @brief Compute the EMD for two records in the Kohonen space.
@@ -70,9 +70,14 @@ struct kohonen_distance {
      */
     distance_return_type operator()(const Sample& sample_1, const Sample& sample_2);
 
+private:
+	
+	void calculate_distance_matrix(std::vector<Sample> samples, size_t nodesWidth, size_t nodesHeight);
+
 	metric::SOM<Sample, Graph, Metric, Distribution> som_model_;
 	
-	metric::EMD<D> emd_distance_;
+	//metric::EMD<D> emd_distance_;
+	std::vector<std::vector<D>> distance_matrix_;
 };
 
 }  // namespace metric
