@@ -33,7 +33,14 @@ Network json consist of map object. Keys is layer index (0...). Values is layer 
             "inputSize": 256,
             "outputSize": 784,
             "activation": "Sigmoid"
+        },
+    "train":
+        {
+            "loss": "RegressionMSE",
+            "optimizer": {"type": "RMSProp",
+                          "learningRate": 0.01}
         }
+    }
 }
 ```
 
