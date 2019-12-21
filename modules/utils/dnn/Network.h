@@ -43,6 +43,7 @@ class Network
         Callback<Scalar>                           defaultCallback; // Default callback function
         std::shared_ptr<Callback<Scalar>>           m_callback;         // Points to user-provided callback function,
 												// otherwise points to m_default_callback
+		std::shared_ptr<Optimizer<Scalar>>          opt;
 
         // Check dimensions of layers
         void check_unit_sizes() const
@@ -123,7 +124,7 @@ class Network
         }
 
         // Update parameters
-        void update(Optimizer<Scalar>& opt)
+        void update()
         {
             const int nlayer = num_layers();
 
@@ -255,6 +256,12 @@ class Network
         void setOutput(const T &output)
         {
             outputLayer = std::make_shared<T>(output);
+        }
+
+        template<typename T>
+        void setOptimizer(const T &optimizer)
+        {
+        	opt = std::make_shared<T>(optimizer)
         }
 
         ///
@@ -439,7 +446,6 @@ class Network
         ///
         /// Fit the model based on the given data
         ///
-        /// \param opt        An object that inherits from the Optimizer class, indicating the optimization algorithm to use.
         /// \param x          The predictors. Each row is an observation.
         /// \param y          The response variable. Each row is an observation.
         /// \param batch_size Mini-batch size.
@@ -448,7 +454,7 @@ class Network
         ///                   use the current random state.
         ///
         template <typename DerivedX, typename DerivedY>
-        bool fit(Optimizer<Scalar>& opt, const DerivedX& x, const DerivedY& y,
+        bool fit(const DerivedX& x, const DerivedY& y,
 									 int batch_size, int epoch, int seed = -1)
         {
             // We do not directly use PlainObjectX since it may be row-majored if x is passed as mat.transpose()
@@ -460,7 +466,7 @@ class Network
 	        }
 
             // Reset optimizer
-            opt.reset();
+            opt->reset();
 
             // Create shuffled mini-batches
 	        if (seed > 0) {
@@ -485,7 +491,7 @@ class Network
 			        m_callback->pre_training_batch(this, x_batches[i], y_batches[i]);
 			        this->forward(x_batches[i]);
 			        this->backprop(x_batches[i], y_batches[i]);
-			        this->update(opt);
+			        this->update();
 			        m_callback->post_training_batch(this, x_batches[i], y_batches[i]);
 		        }
 	        }

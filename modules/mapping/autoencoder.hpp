@@ -12,7 +12,6 @@ namespace metric
 			using Matrix = blaze::DynamicMatrix<Scalar>;
 
 			dnn::Network<Scalar> net;
-			std::shared_ptr <dnn::Optimizer<Scalar>> opt;
 			Matrix trainData;
 			size_t featuresLength;
 			Scalar normValue;
@@ -68,7 +67,7 @@ namespace metric
 		/* Set output layer */
 
 		/* Create optimizer object */
-		opt = std::make_shared < dnn::RMSProp < Scalar >> (dnn::RMSProp<Scalar>());
+		net.setOptimizer(dnn::RMSProp<Scalar>());
 		//opt->learningRate = 0.01;
 
 		/* Set callback function object */
@@ -91,7 +90,7 @@ namespace metric
 	void Autoencoder<InputDataType, Scalar>::train(size_t epochs, size_t batchSize)
 	{
 		auto t1 = std::chrono::high_resolution_clock::now();
-		net.fit(*opt, trainData, trainData, batchSize, epochs, 123);
+		net.fit(trainData, trainData, batchSize, epochs, 123);
 		auto t2 = std::chrono::high_resolution_clock::now();
 		auto d = std::chrono::duration_cast < std::chrono::duration < double >> (t2 - t1);
 		std::cout << "Training time: " << d.count() << " s" << std::endl;
