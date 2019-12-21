@@ -22,7 +22,12 @@ class ReLU
 		using ColumnMatrix = blaze::DynamicMatrix<Scalar, blaze::columnMajor>;
 
 	public:
-        // a = activation(z) = max(z, 0)
+		static std::string getType()
+		{
+			return "ReLU";
+		}
+
+		// a = activation(z) = max(z, 0)
         // Z = [z1, ..., zn], A = [a1, ..., an], n observations
         static inline void activate(const Matrix& Z, Matrix& A)
         {

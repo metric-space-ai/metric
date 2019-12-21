@@ -25,6 +25,11 @@ class Identity
 		using Matrix = blaze::DynamicMatrix<Scalar>;
 		using ColumnMatrix = blaze::DynamicMatrix<Scalar, blaze::columnMajor>;
 public:
+		static std::string getType()
+		{
+			return "Identity";
+		}
+
         // a = activation(z) = z
         // Z = [z1, ..., zn], A = [a1, ..., an], n observations
         static inline void activate(const Matrix& Z, Matrix& A)

@@ -57,7 +57,7 @@ class Layer
                                                 outputSize(json["outputSize"].get<int>())
         {}
 
-		nlohmann::json toJson()
+	virtual nlohmann::json toJson()
 		{
 			nlohmann::json json = {
 					{"inputSize", inputSize},

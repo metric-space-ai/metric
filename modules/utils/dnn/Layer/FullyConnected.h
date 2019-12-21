@@ -55,6 +55,14 @@ class FullyConnected: public Layer<Scalar>
 		FullyConnected(const nlohmann::json& json) : Layer<Scalar>(json)
 		{}
 
+		nlohmann::json toJson()
+		{
+			auto json = Layer<Scalar>::toJson();
+			json["type"] = "FullyConnected";
+			json["activation"] = Activation::getType();
+
+			return json;
+		}
 
 		void init(const Scalar& mu, const Scalar& sigma, std::mt19937& rng)
         {

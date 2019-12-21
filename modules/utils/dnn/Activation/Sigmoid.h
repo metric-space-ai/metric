@@ -20,8 +20,14 @@ class Sigmoid
 	private:
 		using Matrix = blaze::DynamicMatrix<Scalar>;
 		using ColumnMatrix = blaze::DynamicMatrix<Scalar, blaze::columnMajor>;
-public:
-        // a = activation(z) = 1 / (1 + exp(-z))
+
+	public:
+		static std::string getType()
+		{
+			return "Sigmoid";
+		}
+
+		// a = activation(z) = 1 / (1 + exp(-z))
         // Z = [z1, ..., zn], A = [a1, ..., an], n observations
         static inline void activate(const Matrix& Z, Matrix& A)
         {

@@ -18,8 +18,10 @@ BOOST_AUTO_TEST_CASE(fullyconnected_json)
 {
 	auto json = R"(
 					{
+						"type": "FullyConnected",
 						"inputSize": 100,
-						"outputSize": 10
+						"outputSize": 10,
+						"activation": "Identity"
 					}
 				)"_json;
 
@@ -67,4 +69,5 @@ BOOST_AUTO_TEST_CASE(network_json)
 				)"_json;
 
 	Network<double> nt(json.dump());
+	BOOST_CHECK_EQUAL(json, nt.toJson());
 }
