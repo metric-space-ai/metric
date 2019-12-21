@@ -32,6 +32,8 @@ class Output
     public:
         virtual ~Output() {}
 
+        virtual std::string getType() = 0;
+
         // Check the format of target data, e.g. in classification problems the
         // target data should be binary (either 0 or 1)
         virtual void check_target_data(const Matrix& target) {}

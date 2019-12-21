@@ -175,6 +175,7 @@ class Network
 		{
 			auto json = nlohmann::json::parse(jsonString);
 
+			/* Construct layers */
 			for (auto i = 0; i < json.size() - 1; ++i) {
 				auto layerJson = json[std::to_string(i)];
 
@@ -191,12 +192,42 @@ class Network
 					}
 				}
 			}
+
+			/* Create train part */
+			auto trainJson = json["train"];
+
+			/* Loss */
+			auto loss = trainJson["loss"].get<std::string>();
+			if (loss == "RegressionMSE") {
+				setOutput(RegressionMSE<Scalar>());
+			}
+
+			/* Optimizer */
+			auto optimizerJson = trainJson["optimizer"];
+			//auto optimizer = optimizerJson.get<std::string>();
+			//if (optimizer == "RMSProp") {
+
+			//}
 		}
 
 	///
         /// Destructor that frees the added hidden layers and output layer
         ///
         ~Network()   {}
+
+        nlohmann::json toJson()
+        {
+        	/* Layers */
+        	nlohmann::json json;
+        	for (auto i = 0; i < layers.size(); ++i) {
+        		json[std::to_string(i)] = layers[i]->toJson();
+        	}
+
+        	/* Loss */
+        	json["train"]["loss"] = outputLayer->getType();
+
+            return json;
+        }
 
         ///
         /// Add a hidden layer to the neural network

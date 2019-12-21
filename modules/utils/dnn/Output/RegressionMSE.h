@@ -23,6 +23,11 @@ class RegressionMSE: public Output<Scalar>
         // Note that input of this layer is also the output of previous layer
 
     public:
+		std::string getType()
+		{
+			return "RegressionMSE";
+		}
+
         void evaluate(const Matrix& prev_layer_data, const Matrix& target)
         {
             // Check dimension
