@@ -28,6 +28,7 @@ class Optimizer
 	public:
         virtual ~Optimizer() {}
 
+        virtual nlohmann::json toJson() = 0;
         ///
         /// Reset the optimizer to clear all historical information
         ///

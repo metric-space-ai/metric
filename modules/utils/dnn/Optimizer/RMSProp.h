@@ -34,7 +34,19 @@ class RMSProp: public Optimizer<Scalar>
             learningRate(Scalar(0.01)), m_eps(Scalar(1e-6)), m_decay(Scalar(0.9))
         {}
 
-        void reset()
+		nlohmann::json toJson()
+		{
+        	nlohmann::json json;
+        	json["type"] = "RMSProp";
+        	json["learningRate"] = learningRate;
+			json["eps"] = m_eps;
+			json["decay"] = m_decay;
+
+			return json;
+		}
+
+
+		void reset()
         {
             m_history.clear();
         }

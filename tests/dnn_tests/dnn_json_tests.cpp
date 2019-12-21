@@ -63,7 +63,10 @@ BOOST_AUTO_TEST_CASE(network_json)
 					"train":
 						{
 							"loss": "RegressionMSE",
-							"optimizer": {"type": "RMSProp"}
+							"optimizer": {"type": "RMSProp",
+											"learningRate": 0.01,
+											"eps": 1e-6,
+											"decay": 0.9}
 						}
 					}
 				)"_json;

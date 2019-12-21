@@ -205,8 +205,17 @@ class Network
 
 			/* Optimizer */
 			auto optimizerJson = trainJson["optimizer"];
-			//auto optimizer = optimizerJson.get<std::string>();
-			//if (optimizer == "RMSProp") {
+			auto optimizerType = optimizerJson["type"].get<std::string>();
+			auto learningRate = optimizerJson["learningRate"].get<Scalar>();
+			auto eps = optimizerJson["eps"].get<Scalar>();
+			auto decay = optimizerJson["decay"].get<Scalar>();
+			if (optimizerType == "RMSProp") {
+				RMSProp<Scalar> optimizer;
+				optimizer.learningRate = learningRate;
+				optimizer.m_eps = eps;
+				optimizer.m_decay = decay;
+				setOptimizer(optimizer);
+			}
 
 			//}
 		}
@@ -226,6 +235,9 @@ class Network
 
         	/* Loss */
         	json["train"]["loss"] = outputLayer->getType();
+
+        	/* Optimizer */
+        	json["train"]["optimizer"] = opt->toJson();
 
             return json;
         }
@@ -261,7 +273,7 @@ class Network
         template<typename T>
         void setOptimizer(const T &optimizer)
         {
-        	opt = std::make_shared<T>(optimizer)
+        	opt = std::make_shared<T>(optimizer);
         }
 
         ///
