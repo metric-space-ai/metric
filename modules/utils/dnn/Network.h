@@ -5,8 +5,14 @@
 #include <stdexcept>
 #include <utility>
 #include <random>
+#include <fstream>
 
 #include "../../../3rdparty/blaze/Math.h"
+#include "../../../3rdparty/cereal/archives/binary.hpp"
+#include "../../../3rdparty/cereal/types/string.hpp"
+#include "../../../3rdparty/cereal/types/vector.hpp"
+#include "../../../3rdparty/cereal/types/map.hpp"
+
 
 #include "Layer.h"
 #include "Output.h"
@@ -168,15 +174,21 @@ class Network
         {}
 
         Network(const std::string& jsonString) :
-				defaultRng(1),
-				rng(rng),
-				outputLayer(NULL),
-				defaultCallback(),
-				m_callback(NULL)
+			defaultRng(1),
+			rng(rng),
+			outputLayer(NULL),
+			defaultCallback(),
+			m_callback(NULL)
+		{
+			constructFromJsonString(jsonString);
+		}
+
+		void constructFromJsonString(const std::string& jsonString)
 		{
 			auto json = nlohmann::json::parse(jsonString);
 
 			/* Construct layers */
+			layers.clear();
 			for (auto i = 0; i < json.size() - 1; ++i) {
 				auto layerJson = json[std::to_string(i)];
 
@@ -242,6 +254,37 @@ class Network
             return json;
         }
 
+        void save(const std::string filename)
+        {
+			std::string jsonString = toJson().dump();
+
+			std::map<size_t, std::vector<std::vector<Scalar>>> layersParameters;
+
+			for (auto i = 0; i < layers.size(); ++i) {
+				layersParameters[i] = layers[i]->getParameters();
+			}
+
+			std::ofstream file(filename);
+			cereal::BinaryOutputArchive boa(file);
+
+			boa(jsonString, layersParameters);
+        }
+
+        void load(const std::string filepath)
+        {
+        	std::ifstream file(filepath);
+        	cereal::BinaryInputArchive bia(file);
+
+        	std::string jsonString;
+        	std::map<size_t, std::vector<std::vector<Scalar>>> layersParameters;
+        	bia(jsonString, layersParameters);
+
+        	constructFromJsonString(jsonString);
+
+        	for (auto& e: layersParameters) {
+        		layers[e.first]->setParameters(e.second);
+        	}
+        }
         ///
         /// Add a hidden layer to the neural network
         ///

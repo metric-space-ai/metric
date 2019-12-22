@@ -160,11 +160,11 @@ class Layer
         ///
         /// Get serialized values of parameters
         ///
-        virtual std::vector<Scalar> get_parameters() const = 0;
+        virtual std::vector<std::vector<Scalar>> getParameters() const = 0;
         ///
         /// Set the values of layer parameters from serialized data
         ///
-        virtual void set_parameters(const std::vector<Scalar>& param) {};
+        virtual void setParameters(const std::vector<std::vector<Scalar>>& param) {};
 
         ///
         /// Get serialized values of the gradient of parameters

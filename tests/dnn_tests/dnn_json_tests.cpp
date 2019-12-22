@@ -73,4 +73,9 @@ BOOST_AUTO_TEST_CASE(network_json)
 
 	Network<double> nt(json.dump());
 	BOOST_CHECK_EQUAL(json, nt.toJson());
+
+	nt.save("/tmp/net.cereal");
+	nt.load("/tmp/net.cereal");
+
+	BOOST_CHECK_EQUAL(json, nt.toJson());
 }

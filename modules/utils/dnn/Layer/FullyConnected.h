@@ -154,25 +154,28 @@ class FullyConnected: public Layer<Scalar>
             opt.update(db, b);
         }
 
-        std::vector<Scalar> get_parameters() const
+        std::vector<std::vector<Scalar>> getParameters() const
         {
-            std::vector<Scalar> res(blaze::size(m_weight) + m_bias.size());
-            // Copy the data of weights and bias to a long vector
-            std::copy(m_weight.data(), m_weight.data() + blaze::size(m_weight), res.begin());
-            std::copy(m_bias.data(), m_bias.data() + m_bias.size(),
-                      res.begin() + blaze::size(m_weight));
-            return res;
+			std::vector<std::vector<Scalar>> parameters(2);
+
+            parameters[0].resize(blaze::size(m_weight));
+            parameters[1].resize(m_bias.size());
+
+            std::copy(m_weight.data(), m_weight.data() + blaze::size(m_weight), parameters[0].begin());
+            std::copy(m_bias.data(), m_bias.data() + m_bias.size(), parameters[1].begin());
+
+            return parameters;
         }
 
-        void set_parameters(const std::vector<Scalar>& param)
+        void setParameters(const std::vector<std::vector<Scalar>>& parameters)
         {
-            if (static_cast<int>(param.size()) != blaze::size(m_weight) + m_bias.size())
+            /*if (static_cast<int>(param.size()) != blaze::size(m_weight) + m_bias.size())
             {
                 throw std::invalid_argument("Parameter size does not match");
-            }
+            }*/
 
-            std::copy(param.begin(), param.begin() + blaze::size(m_weight), m_weight.data());
-            std::copy(param.begin() + blaze::size(m_weight), param.end(), m_bias.data());
+            std::copy(parameters[0].begin(), parameters[0].begin() + blaze::size(m_weight), m_weight.data());
+	        std::copy(parameters[1].begin(), parameters[1].begin() + blaze::size(m_bias), m_bias.data());
         }
 
         std::vector<Scalar> get_derivatives() const
