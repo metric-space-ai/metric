@@ -58,8 +58,8 @@ struct kohonen_distance {
      * @param iterations
      * @param distribution
      */
-	//kohonen_distance(std::vector<Sample>& samples, Graph graph, Metric metric = Metric(), double start_learn_rate = 0.8, double finish_learn_rate = 0.0, size_t iterations = 20, 
-	//	Distribution distribution = Distribution(-1, 1));
+	kohonen_distance(std::vector<Sample>& samples, Graph graph, Metric metric = Metric(), double start_learn_rate = 0.8, double finish_learn_rate = 0.0, size_t iterations = 20, 
+		Distribution distribution = Distribution(-1, 1));
 
     /**
      * @brief Compute the EMD for two records in the Kohonen space.
