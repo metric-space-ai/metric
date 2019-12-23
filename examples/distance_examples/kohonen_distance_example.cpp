@@ -104,29 +104,29 @@ int main()
 
 	//
 	
- //   using Vector = std::vector<double>;
- //   using Metric = metric::Euclidian<double>;
- //   using Graph = metric::Grid6; 
- //   using Distribution = std::uniform_real_distribution<double>; 
+    using Vector = std::vector<double>;
+    using Metric = metric::Euclidian<double>;
+    using Graph = metric::Grid6; 
+    using Distribution = std::uniform_real_distribution<double>; 
 
-	//Distribution distr(-1, 1);
+	Distribution distr(-1, 1);
 
- //   metric::SOM<Vector, Graph, Metric> som_model(Graph(grid_w, grid_h), Metric(), 0.8, 0.2, 20, distr);
+    metric::SOM<Vector, Graph, Metric> som_model(Graph(grid_w, grid_h), Metric(), 0.8, 0.2, 20, distr);
+	
+    if (!som_model.isValid()) {
+    	std::cout << "SOM is not valid" << std::endl;
+    	return EXIT_FAILURE;
+    }
 
- //   if (!som_model.isValid()) {
- //   	std::cout << "SOM is not valid" << std::endl;
- //   	return EXIT_FAILURE;
- //   }
+	som_model.train(train_dataset);
+	
+	metric::kohonen_distance<double, Vector, Graph, Metric> distance_3(som_model);
 
-	//som_model.train(train_dataset);
-	//
-	//metric::kohonen_distance<double, Vector, Graph, Metric> distance_3(som_model);
-
-	//t1 = std::chrono::steady_clock::now();
-	//result = distance_3(train_dataset[0], train_dataset[1]);
-	//t2 = std::chrono::steady_clock::now();
-	//std::cout << "result: " << result << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000 << " s)" << std::endl;
-	//std::cout << "" << std::endl;
+	t1 = std::chrono::steady_clock::now();
+	result = distance_3(train_dataset[0], train_dataset[1]);
+	t2 = std::chrono::steady_clock::now();
+	std::cout << "result: " << result << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000 << " s)" << std::endl;
+	std::cout << "" << std::endl;
 
 
 

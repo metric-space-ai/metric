@@ -36,7 +36,7 @@ struct kohonen_distance {
      *
      * @param som_model - trained SOM model
      */
-	//kohonen_distance(metric::SOM<Sample, Graph, Metric, Distribution> som_model);
+	kohonen_distance(metric::SOM<Sample, Graph, Metric, Distribution> som_model);
 
     /**
      * @brief Construct a new kohonen_distance object
@@ -72,7 +72,7 @@ struct kohonen_distance {
 
 private:
 	
-	void calculate_distance_matrix(std::vector<Sample> samples, size_t nodesWidth, size_t nodesHeight);
+	void calculate_distance_matrix();
 
 	metric::SOM<Sample, Graph, Metric, Distribution> som_model_;
 	

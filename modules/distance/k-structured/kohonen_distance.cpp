@@ -21,16 +21,16 @@ Copyright (c) 2019 PANDA Team
 namespace metric {
 	
 	
-//template <typename D, typename Sample, typename Graph, typename Metric, typename Distribution>
-//kohonen_distance<D, Sample, Graph, Metric, Distribution>::kohonen_distance(metric::SOM<Sample, Graph, Metric, Distribution> som_model) : som_model_(som_model)
-//{
-//	// calculate ground distance matrix between SOM nodes
-//	//auto cost_mat = metric::EMD_details::ground_distance_matrix_of_2dgrid<typename Sample::value_type, Metric>(som_model_.get_weights());
-//	//auto maxCost = metric::EMD_details::max_in_distance_matrix(cost_mat);
-//	//emd_distance_ = metric::EMD<D>(cost_mat, maxCost);
-//
-//	calculate_distance_matrix(som_model_.get_weights(), nodesWidth, nodesHeight);
-//}
+template <typename D, typename Sample, typename Graph, typename Metric, typename Distribution>
+kohonen_distance<D, Sample, Graph, Metric, Distribution>::kohonen_distance(metric::SOM<Sample, Graph, Metric, Distribution> som_model) : som_model_(som_model)
+{
+	// calculate ground distance matrix between SOM nodes
+	//auto cost_mat = metric::EMD_details::ground_distance_matrix_of_2dgrid<typename Sample::value_type, Metric>(som_model_.get_weights());
+	//auto maxCost = metric::EMD_details::max_in_distance_matrix(cost_mat);
+	//emd_distance_ = metric::EMD<D>(cost_mat, maxCost);
+
+	calculate_distance_matrix();
+}
 	
 
 template <typename D, typename Sample, typename Graph, typename Metric, typename Distribution>
@@ -44,7 +44,7 @@ kohonen_distance<D, Sample, Graph, Metric, Distribution>::kohonen_distance(std::
 	//auto maxCost = metric::EMD_details::max_in_distance_matrix(cost_mat);
 	//emd_distance_ = metric::EMD<D>(cost_mat, maxCost);
 
-	calculate_distance_matrix(som_model_.get_weights(), nodesWidth, nodesHeight);
+	calculate_distance_matrix();
 }
 	
 
@@ -80,39 +80,35 @@ auto kohonen_distance<D, Sample, Graph, Metric, Distribution>::operator()(const 
 
 
 template <typename D, typename Sample, typename Graph, typename Metric, typename Distribution>
-void kohonen_distance<D, Sample, Graph, Metric, Distribution>::calculate_distance_matrix(std::vector<Sample> samples, size_t nodesWidth, size_t nodesHeight)
+void kohonen_distance<D, Sample, Graph, Metric, Distribution>::calculate_distance_matrix()
 {
 	
 	typedef boost::adjacency_list <boost::listS, boost::vecS, boost::undirectedS, boost::no_property, boost::property <boost::edge_weight_t, D>> Graph_t;
 	typedef boost::graph_traits <Graph_t>::vertex_descriptor Vertex_descriptor;
 	typedef std::pair<int, int> Edge;
 
-	std::vector<int> nodes_list(samples.size());
+	std::vector<Sample> nodes = som_model_.get_weights();
+
+	std::vector<int> nodes_list(nodes.size());
 	std::iota(nodes_list.begin(), nodes_list.end(), 0);
 	
 	std::vector<Edge> edge_vector;
 	std::vector<D> weights;
     Metric distance;
-	// horisontal edges
-	for (size_t c1 = 0; c1 < nodesWidth; ++c1) 
+
+	
+	auto matrix = som_model_.get_graph().get_matrix();
+	for (size_t i = 0; i < matrix.rows(); ++i) 
 	{
-        for (size_t c2 = 0; c2 < nodesHeight - 1; ++c2) 
+		for (size_t j = i + 1; j < matrix.columns(); ++j) 
 		{
-			int node = c1 + c2 * nodesWidth;
-			edge_vector.push_back(Edge(node, node + nodesWidth));
-			weights.push_back(distance(samples[node], samples[node + nodesWidth]));
-        }
-    }
-	// vertical edges
-	for (size_t c1 = 0; c1 < nodesHeight; ++c1) 
-	{
-        for (size_t c2 = 0; c2 < nodesWidth - 1; ++c2) 
-		{
-			int node = c1 * nodesWidth + c2;
-			edge_vector.push_back(Edge(node, node + 1));
-			weights.push_back(distance(samples[node], samples[node + 1]));
-        }
-    }
+			if (matrix(i, j) > 0)
+			{
+				edge_vector.push_back(Edge(i, j));
+				weights.push_back(distance(nodes[i], nodes[j]));
+			}
+		}
+	}
 
 	Edge edge_array[edge_vector.size()];
 	std::copy(edge_vector.begin(), edge_vector.end(), edge_array);
