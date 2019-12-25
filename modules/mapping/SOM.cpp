@@ -198,6 +198,8 @@ void SOM<recType, Graph, Metric, Distribution>::subsampled_train_(const std::vec
 
     size_t idx = 0;
     //size_t idx_r = 0;
+	
+	json reference_data;
 
     while (idx < iterations) {
 
@@ -261,10 +263,17 @@ void SOM<recType, Graph, Metric, Distribution>::subsampled_train_(const std::vec
 				}
 			}
 		}
+
+		reference_data.push_back(get_weights());
 		
 		++idx;		
 
     }
+
+	
+	std::ofstream outputFile("KOC_nodes_data.json");
+	outputFile << std::setw(4) << reference_data << std::endl;
+	outputFile.close();	
 }
 
 }  // namespace metric

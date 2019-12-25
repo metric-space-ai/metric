@@ -68,9 +68,13 @@ namespace metric {
 		{
 			std::vector<bool> result;
 	
-			auto entropy_range = reduced_mean_entropy - (reduced_mean_entropy - reduced_min_entropy) * (1 + anomaly_threshold);
-			std::cout << "entropy_range: " << entropy_range << 
-				" reduced_mean_entropy: " << reduced_mean_entropy << " reduced_min_entropy: " << reduced_min_entropy << " reduced_max_entropy: " << reduced_max_entropy << std::endl;
+			//auto entropy_range = reduced_mean_entropy - (reduced_mean_entropy - reduced_min_entropy) * (1 + anomaly_threshold);
+			//std::cout << "entropy_range: " << entropy_range << 
+			//	" reduced_mean_entropy: " << reduced_mean_entropy << " reduced_min_entropy: " << reduced_min_entropy << " reduced_max_entropy: " << reduced_max_entropy << std::endl;
+	
+			//auto reduced_closest_distance_range = reduced_mean_closest_distance - (reduced_mean_closest_distance - reduced_min_closest_distance) * (1 + anomaly_threshold);
+			//std::cout << "reduced_closest_distance_range: " << reduced_closest_distance_range << 
+			//	" reduced_mean_closest_distance: " << reduced_mean_closest_distance << " reduced_min_closest_distance: " << reduced_min_closest_distance << " reduced_max_closest_distance: " << reduced_max_closest_distance << std::endl;
 
 			for (size_t i = 0; i < samples.size(); i++)
 			{
@@ -84,26 +88,33 @@ namespace metric {
 		template <class recType, class Graph, class Metric, class Distribution>
 		bool KOC<recType, Graph, Metric, Distribution>::check_if_anomaly(const recType& sample, double anomaly_threshold)
 		{
-			//auto closest_distance_range = reduced_mean_closest_distance - (reduced_mean_closest_distance - reduced_min_closest_distance) * (1 + anomaly_threshold_);
 			auto entropy_range = reduced_mean_entropy - (reduced_mean_entropy - reduced_min_entropy) * (1 + anomaly_threshold);
 
 			auto reduced = SOM<recType, Graph, Metric, Distribution>::encode(sample);
 			auto bmu = SOM<recType, Graph, Metric, Distribution>::BMU(sample);
+			auto closest_distance_range = reduced_mean_closest_distance[bmu] + (reduced_mean_closest_distance[bmu] - reduced_min_closest_distance[bmu]) * (1 + anomaly_threshold);
 			// if closest distance more then max closest distance level then it is anomaly
-			// return reduced[bmu] > closest_distance_range;
+			//std::cout << 
+			//	" bmu: " << bmu << 
+			//	" reduced_mean_closest_distance: " << reduced_mean_closest_distance[bmu] << 
+			//	" reduced_min_closest_distance: " << reduced_min_closest_distance[bmu] << 
+			//	" reduced_max_closest_distance: " << reduced_max_closest_distance[bmu] << 
+			//	std::endl;
+			//std::cout << " reduced[bmu]: " << reduced[bmu] << " closest_distance_range: " << closest_distance_range << std::endl;
+			return reduced[bmu] > closest_distance_range;
 		
-			std::sort(reduced.begin(), reduced.end());	
+			//std::sort(reduced.begin(), reduced.end());	
 
-			std::vector<std::vector<T>> reduced_reshaped;
-			for (size_t j = 0; j < reduced.size(); j++)
-			{
-				reduced_reshaped.push_back({reduced[j]});
-			}
-			auto e = entropy(reduced_reshaped, 3, 2.0, SOM<recType, Graph, Metric, Distribution>::metric);
-			
-			//std::cout << e << "entropy_range:" << entropy_range << std::endl;
-			// if entropy less then min entropy level then it is anomaly
-			return e < entropy_range;
+			//std::vector<std::vector<T>> reduced_reshaped;
+			//for (size_t j = 0; j < reduced.size(); j++)
+			//{
+			//	reduced_reshaped.push_back({reduced[j]});
+			//}
+			//auto e = entropy(reduced_reshaped, 3, 2.0, SOM<recType, Graph, Metric, Distribution>::metric);
+			//
+			//std::cout << " e: " << e << " entropy_range: " << entropy_range << std::endl;
+			//// if entropy less then min entropy level then it is anomaly
+			//return e < entropy_range;
 		}
 
 		
@@ -146,18 +157,20 @@ namespace metric {
 			// shuffle samples after all was processed		
 			std::shuffle(randomized_samples.begin(), randomized_samples.end(), std::mt19937 { std::random_device {}() });
 	
+			int num_nodes = KOC<recType, Graph, Metric, Distribution>::getNodesNumber();
+
 			std::vector<T> entropies;
-			std::vector<T> closest_distances;  // closest distances to the nodes for each sample from train dataset
+			std::vector<std::vector<T>> closest_distances(num_nodes);  // closest distances to the nodes for each sample from train dataset
 			T entropies_sum = 0;
-			T distances_sum = 0;
+			std::vector<T> distances_sum(num_nodes, 0);
 			for (size_t i = 0; i < sampleSize; i++)
 			{
 				size_t sample_idx = randomized_samples[i];
 		
 				auto reduced = SOM<recType, Graph, Metric, Distribution>::encode(samples[sample_idx]);
 				auto bmu = SOM<recType, Graph, Metric, Distribution>::BMU(samples[sample_idx]);
-				distances_sum += reduced[bmu];
-				closest_distances.push_back(reduced[bmu]);
+				distances_sum[bmu] += reduced[bmu];
+				closest_distances[bmu].push_back(reduced[bmu]);
 		
 				std::sort(reduced.begin(), reduced.end());	
 
@@ -176,12 +189,27 @@ namespace metric {
 			reduced_max_entropy = entropies[std::distance(entropies.begin(), result)];
 			result = std::min_element(entropies.begin(), entropies.end());
 			reduced_min_entropy = entropies[std::distance(entropies.begin(), result)];
-
-			reduced_mean_closest_distance = distances_sum / closest_distances.size();
-			result = std::max_element(closest_distances.begin(), closest_distances.end());
-			reduced_max_closest_distance = closest_distances[std::distance(closest_distances.begin(), result)];
-			result = std::min_element(closest_distances.begin(), closest_distances.end());
-			reduced_min_closest_distance = closest_distances[std::distance(closest_distances.begin(), result)];
+			
+			reduced_mean_closest_distance = std::vector<T>(num_nodes);
+			reduced_max_closest_distance = std::vector<T>(num_nodes);
+			reduced_min_closest_distance = std::vector<T>(num_nodes);
+			for (size_t i = 0; i < num_nodes; i++)
+			{
+				if (closest_distances[i].size() > 0)
+				{
+					reduced_mean_closest_distance[i] = distances_sum[i] / closest_distances[i].size();
+					result = std::max_element(closest_distances[i].begin(), closest_distances[i].end());
+					reduced_max_closest_distance[i] = closest_distances[i][std::distance(closest_distances[i].begin(), result)];
+					result = std::min_element(closest_distances[i].begin(), closest_distances[i].end());
+					reduced_min_closest_distance[i] = closest_distances[i][std::distance(closest_distances[i].begin(), result)];
+				}
+				else
+				{
+					reduced_mean_closest_distance[i] = 0;
+					reduced_max_closest_distance[i] = 0;
+					reduced_min_closest_distance[i] = 0;
+				}
+			}
 		}
 
 		template <class recType, class Graph, class Metric, class Distribution>

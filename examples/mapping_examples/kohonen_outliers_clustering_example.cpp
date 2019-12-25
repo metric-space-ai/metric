@@ -319,7 +319,7 @@ int main(int argc, char *argv[])
 
 	using Record = std::vector<double>;
 				
-	size_t best_w_grid_size = 5;
+	size_t best_w_grid_size = 6;
 	size_t best_h_grid_size = 4;
 
 	// if overrided from arguments
@@ -332,32 +332,38 @@ int main(int argc, char *argv[])
 
 	// create, train KOC over the raw data and reduce the data	
 	// then make clustering on the reduced data
-	
+	//
 	//std::vector<Record> dataset = {
-	//	{0, 0},
-	//	{0, 1},
-	//	{0, 2},
-	//	{2, 2},
-	//	{2, 2},
-	//	{2, 2},
-	//	{0, 4},
-	//	{0, 4},
-	//	{0, 4},
-	//	{8, 0},
-	//	{8, 0},
-	//	{8, 0},
+
+	//	{0, 0.1},
+	//	{0.2, 0},
+
+	//	{0, 1.2},
+	//	{0.1, 1},
+
+	//	{0.1, 2},
+	//	{0.2, 2},
+
+	//	{1, 0},
+	//	{1.2, 0.1},
+
+	//	{1.3, 1.1},
+	//	{0.9, 1},
+
+	//	{1.1, 2},
+	//	{0.9, 1.9},
 	//};
 
 	//std::vector<Record> test_samples_1 = {
 	//	{0, 0},
 	//	{0, 1},
-	//	{0, 0},
+	//	{0.5, 0.5},
 	//	{5, 5},
 	//};
 
 	
 	//auto dataset = readCsvData("assets/testdataset/compound.csv", ',');
-	//auto dataset = readCsvData("assets/testdataset/fisheriris.csv", ',');
+	auto dataset = readCsvData("assets/testdataset/fisheriris.csv", ',');
 	//auto dataset = readCsvData("assets/testdataset/multidim.csv", ',');
 	//auto [dates, dataset] = readCsvData2("assets/testdataset/nyc_taxi.csv", ',');
 	
@@ -366,30 +372,30 @@ int main(int argc, char *argv[])
 	//matrix_print(dataset);
 
 
-	std::vector<Record> dataset = {
-		{0, 0, 0},
-		{0, 1, 0},
-		{0, 2, 0},
-		{2, 2, 2},
-		{2, 2, 2},
-		{2, 2, 2},
-		{0, 0, 4},
-		{0, 0, 4},
-		{0, 0, 4},
-		{8, 0, 0},
-		{8, 0, 0},
-		{8, 0, 0},
-	};
+	//std::vector<Record> dataset = {
+	//	{0, 0, 0},
+	//	{0, 1, 0},
+	//	{0, 2, 0},
+	//	{2, 2, 2},
+	//	{2, 2, 2},
+	//	{2, 2, 2},
+	//	{0, 0, 4},
+	//	{0, 0, 4},
+	//	{0, 0, 4},
+	//	{8, 0, 0},
+	//	{8, 0, 0},
+	//	{8, 0, 0},
+	//};
 
 	std::vector<Record> test_samples_1 = {
-		{0, 0, 0},
-		{0, 1, 0},
-		{0, 0, 3},
-		{5, 5, 5},
+		{6.5, 3.2, 5.1, 2.2},
+		{6.1, 3.3, 5.3, 2.3},
+		{5.9, 3.1, 5.2, 1.8},
+		{4.3, 5.0, 5.0, 3.5}
 	};
 
-	metric::KOC_factory<Record> simple_koc_factory(best_w_grid_size, best_h_grid_size, 0.5, 0.0, 100);    
-	auto simple_koc = simple_koc_factory(dataset, 5); 
+	metric::KOC_factory<Record> simple_koc_factory(best_w_grid_size, best_h_grid_size, 0.5, 0.0, 300);    
+	auto simple_koc = simple_koc_factory(dataset, 6); 
 	//auto [assignments, seeds, counts] = clust_1.result();
 
 	//metric::KOC<Record, metric::Grid4, metric::Euclidian<double>, std::uniform_real_distribution<double>> 
@@ -397,9 +403,15 @@ int main(int argc, char *argv[])
 	
 	//simple_koc.train(dataset);
 
-	double anomaly_threshold = -0.5;
+	double anomaly_threshold = 3.0;
 
 	auto anomalies = simple_koc.check_if_anomaly(dataset, anomaly_threshold);	
+	std::cout << std::endl;
+	std::cout << "anomalies:" << std::endl;
+	vector_print(anomalies);
+	std::cout << std::endl;
+
+	anomalies = simple_koc.check_if_anomaly(test_samples_1, anomaly_threshold);	
 	std::cout << std::endl;
 	std::cout << "anomalies:" << std::endl;
 	vector_print(anomalies);
@@ -414,149 +426,168 @@ int main(int argc, char *argv[])
 		//}
   //  }
 	
-	auto assignments = simple_koc.result(dataset, anomaly_threshold);	
-	std::cout << std::endl;
-	std::cout << "assignments:" << std::endl;
-	vector_print(assignments);
 
 	//auto assigned_clusters = simple_koc.encode(test_samples_1, anomaly_threshold);	
 	//std::cout << std::endl;
 	//std::cout << "assigned clusters:" << std::endl;
 	//vector_print(assigned_clusters);
 	//std::cout << std::endl;
-
-	json reference_data;
-	reference_data.push_back(assignments);
 	
-	//for (size_t i = 0; i < dataset.size(); ++i) 
-	//{		
-	//	reference_data.push_back(clusters_grid[simple_koc.BMU(dataset[i])]);
-	//}
-	//std::ofstream outputFile("KOC_clusters.json");
-	//outputFile << std::setw(4) << reference_data << std::endl;
-	//outputFile.close();	
-	//
-	//json all_samples_data;	
-	//all_samples_data.push_back(dataset);
-	//std::ofstream outputFile_2("KOC_samples_data.json");
-	//outputFile_2 << std::setw(4) << all_samples_data << std::endl;
-	//outputFile_2.close();	
+	auto assignments = simple_koc.result(dataset, anomaly_threshold);	
+	std::cout << std::endl;
+	std::cout << "assignments:" << std::endl;
+	vector_print(assignments);
+
+	json reference_data_0;
+	reference_data_0.push_back(assignments);	
+	std::ofstream outputFile_0("KOC_samples_assignments.json");
+	outputFile_0 << std::setw(4) << reference_data_0 << std::endl;
+	outputFile_0.close();	
+	
+	assignments = simple_koc.result(test_samples_1, anomaly_threshold);	
+	std::cout << std::endl;
+	std::cout << "assignments:" << std::endl;
+	vector_print(assignments);
+
+	json reference_data_1;
+	reference_data_1.push_back(assignments);	
+	std::ofstream outputFile_1("KOC_test_assignments.json");
+	outputFile_1 << std::setw(4) << reference_data_1 << std::endl;
+	outputFile_1.close();	
+	
+	json all_samples_data;	
+	all_samples_data.push_back(dataset);
+	std::ofstream outputFile_2("KOC_samples_data.json");
+	outputFile_2 << std::setw(4) << all_samples_data << std::endl;
+	outputFile_2.close();	
+	
+	json all_test_data;	
+	all_test_data.push_back(test_samples_1);
+	std::ofstream outputFile_3("KOC_test_data.json");
+	outputFile_3 << std::setw(4) << all_test_data << std::endl;
+	outputFile_3.close();	
+	
+	json clusters_data;	
+	clusters_data.push_back(simple_koc.clusters);
+	std::ofstream outputFile_4("KOC_clusters_data.json");
+	outputFile_4 << std::setw(4) << clusters_data << std::endl;
+	outputFile_4.close();	
 
 
 
 	/// OUTLIERS DETECTION FOR ENERGIES
 
-	auto t1 = std::chrono::steady_clock::now();
+	//auto t1 = std::chrono::steady_clock::now();
 
-	if (argc > 1)
-	{
-		RAW_DATA_DIRNAME = argv[1];
-	}
+	//if (argc > 1)
+	//{
+	//	RAW_DATA_DIRNAME = argv[1];
+	//}
 
-	/* Load data */
-	auto speeds = readEnergies(RAW_DATA_DIRNAME);
-	std::cout << "" << std::endl;
-	std::cout << "Num records: " << speeds.size() << std::endl;
-	std::cout << "Num values in the record: " << speeds[0].size() << std::endl;
+	///* Load data */
+	//auto speeds = readEnergies(RAW_DATA_DIRNAME);
+	//std::cout << "" << std::endl;
+	//std::cout << "Num records: " << speeds.size() << std::endl;
+	//std::cout << "Num values in the record: " << speeds[0].size() << std::endl;
 
-	metric::KOC_factory<Record, metric::Grid4, metric::Euclidian<double>, std::uniform_real_distribution<double>> 
-		koc_factory(best_w_grid_size, best_h_grid_size, 0.8, 0.0, 20);	
-	
-	auto koc = koc_factory(speeds, 5); 
+	//metric::KOC_factory<Record, metric::Grid4, metric::Euclidian<double>, std::uniform_real_distribution<double>> 
+	//	koc_factory(best_w_grid_size, best_h_grid_size, 0.8, 0.0, 20);	
+	//
+	//auto koc = koc_factory(speeds, 5); 
+
+	////
+
+	//std::vector<std::vector<double>> test_samples;
+	//
+	//std::vector<double> test_sample;
+	//for (auto i = 0; i < 7 * 8; i++)
+	//{
+	//	test_sample.push_back(((double) rand() / (RAND_MAX)));
+	//}
+	//test_samples.push_back(test_sample);
+
+	//std::random_device rd;     // only used once to initialise (seed) engine
+	//std::mt19937 rng(rd());    // random-number engine used (Mersenne-Twister in this case)
+	//std::uniform_int_distribution<int> uni(0, speeds.size()); // guaranteed unbiased
+	//
+	////metric::Grid4 graph(best_w_grid_size, best_h_grid_size);
+	//metric::Euclidian<double> distance;
+	////std::uniform_real_distribution<double> distribution;
+
+	//auto random_integer = uni(rng);
+	//test_samples.push_back(speeds[random_integer]);
 
 	//
+	//std::vector<double> entropies;
+	//double entropies_sum = 0;
+	//metric::SOM<Record, metric::Grid4, metric::Euclidian<double>, std::uniform_real_distribution<double>>& som_version = koc;
+	//for (size_t i = 0; i < speeds.size(); i++)
+	//{
 
-	std::vector<std::vector<double>> test_samples;
-	
-	std::vector<double> test_sample;
-	for (auto i = 0; i < 7 * 8; i++)
-	{
-		test_sample.push_back(((double) rand() / (RAND_MAX)));
-	}
-	test_samples.push_back(test_sample);
+	//	auto reduced = som_version.encode(speeds[i]);
+	//	std::sort(reduced.begin(), reduced.end());	
 
-	std::random_device rd;     // only used once to initialise (seed) engine
-	std::mt19937 rng(rd());    // random-number engine used (Mersenne-Twister in this case)
-	std::uniform_int_distribution<int> uni(0, speeds.size()); // guaranteed unbiased
-	
-	//metric::Grid4 graph(best_w_grid_size, best_h_grid_size);
-	metric::Euclidian<double> distance;
-	//std::uniform_real_distribution<double> distribution;
+	//	std::vector<Record> reduced_reshaped;
+	//	for (size_t j = 0; j < reduced.size(); j++)
+	//	{
+	//		reduced_reshaped.push_back({reduced[j]});
+	//	}
+	//	auto e = entropy(reduced_reshaped, 3, 2.0, distance);
+	//	entropies_sum += e;
+	//	entropies.push_back(e);
+	//}
 
-	auto random_integer = uni(rng);
-	test_samples.push_back(speeds[random_integer]);
+	//std::sort(entropies.begin(), entropies.end());		
+	//for (size_t i = 0; i < 20; i++)
+	//{
+	//	std::cout << "first entropy: " << entropies[i] << std::endl;	
+	//}
+	//std::cout << "" << std::endl;
 
-	
-	std::vector<double> entropies;
-	double entropies_sum = 0;
-	metric::SOM<Record, metric::Grid4, metric::Euclidian<double>, std::uniform_real_distribution<double>>& som_version = koc;
-	for (size_t i = 0; i < speeds.size(); i++)
-	{
+	//std::cout << "mean entropy: " << entropies_sum / entropies.size() << std::endl;	
+ //   auto result = std::max_element(entropies.begin(), entropies.end());
+	//std::cout << "max entropy: " << entropies[std::distance(entropies.begin(), result)] << std::endl;
+ //   result = std::min_element(entropies.begin(), entropies.end());
+	//std::cout << "min entropy: " << entropies[std::distance(entropies.begin(), result)] << std::endl;
+	//std::cout << "" << std::endl;
 
-		auto reduced = som_version.encode(speeds[i]);
-		std::sort(reduced.begin(), reduced.end());	
+	//for (size_t i = 0; i < test_samples.size(); i++)
+	//{
+	//	auto reduced = som_version.encode(test_samples[i]);
+	//	std::sort(reduced.begin(), reduced.end());	
 
-		std::vector<Record> reduced_reshaped;
-		for (size_t j = 0; j < reduced.size(); j++)
-		{
-			reduced_reshaped.push_back({reduced[j]});
-		}
-		auto e = entropy(reduced_reshaped, 3, 2.0, distance);
-		entropies_sum += e;
-		entropies.push_back(e);
-	}
+	//	std::vector<Record> reduced_reshaped;
+	//	for (size_t j = 0; j < reduced.size(); j++)
+	//	{
+	//		reduced_reshaped.push_back({reduced[j]});
+	//	}
+	//	auto e = entropy(reduced_reshaped, 3, 2.0, distance);
+	//	std::cout << "test entropy: " << e << std::endl;
+	//}
+	//std::cout << "" << std::endl;
+	//
+	//anomaly_threshold = -0.1;
+	//anomalies = koc.check_if_anomaly(test_samples, anomaly_threshold);
+	//
+	//std::cout << std::endl;
+	//std::cout << "anomalies:" << std::endl;
+	//vector_print(anomalies);
+	//std::cout << std::endl;
+	//
+	//assignments = koc.result(test_samples, anomaly_threshold);	
+	//std::cout << std::endl;
+	//std::cout << "assignments:" << std::endl;
+	//vector_print(assignments);
 
-	std::sort(entropies.begin(), entropies.end());		
-	for (size_t i = 0; i < 20; i++)
-	{
-		std::cout << "first entropy: " << entropies[i] << std::endl;	
-	}
-	std::cout << "" << std::endl;
+	//auto assigned_clusters = koc.encode(test_samples, anomaly_threshold);	
+	//std::cout << std::endl;
+	//std::cout << "assigned clusters:" << std::endl;
+	//vector_print(assigned_clusters);
+	//std::cout << std::endl;
 
-	std::cout << "mean entropy: " << entropies_sum / entropies.size() << std::endl;	
-    auto result = std::max_element(entropies.begin(), entropies.end());
-	std::cout << "max entropy: " << entropies[std::distance(entropies.begin(), result)] << std::endl;
-    result = std::min_element(entropies.begin(), entropies.end());
-	std::cout << "min entropy: " << entropies[std::distance(entropies.begin(), result)] << std::endl;
-	std::cout << "" << std::endl;
-
-	for (size_t i = 0; i < test_samples.size(); i++)
-	{
-		auto reduced = som_version.encode(test_samples[i]);
-		std::sort(reduced.begin(), reduced.end());	
-
-		std::vector<Record> reduced_reshaped;
-		for (size_t j = 0; j < reduced.size(); j++)
-		{
-			reduced_reshaped.push_back({reduced[j]});
-		}
-		auto e = entropy(reduced_reshaped, 3, 2.0, distance);
-		std::cout << "test entropy: " << e << std::endl;
-	}
-	std::cout << "" << std::endl;
-	
-	anomaly_threshold = -0.1;
-	anomalies = koc.check_if_anomaly(test_samples, anomaly_threshold);
-	
-	std::cout << std::endl;
-	std::cout << "anomalies:" << std::endl;
-	vector_print(anomalies);
-	std::cout << std::endl;
-	
-	assignments = koc.result(test_samples, anomaly_threshold);	
-	std::cout << std::endl;
-	std::cout << "assignments:" << std::endl;
-	vector_print(assignments);
-
-	auto assigned_clusters = koc.encode(test_samples, anomaly_threshold);	
-	std::cout << std::endl;
-	std::cout << "assigned clusters:" << std::endl;
-	vector_print(assigned_clusters);
-	std::cout << std::endl;
-
-	auto t2 = std::chrono::steady_clock::now();
-	std::cout << "(Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000 << " s)" << std::endl;
-	std::cout << "" << std::endl;
+	//auto t2 = std::chrono::steady_clock::now();
+	//std::cout << "(Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000 << " s)" << std::endl;
+	//std::cout << "" << std::endl;
 
 
     return 0;

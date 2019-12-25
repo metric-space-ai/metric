@@ -135,9 +135,9 @@ namespace metric {
 			T reduced_min_entropy;	
 			T reduced_max_entropy;	
 	
-			T reduced_mean_closest_distance;	
-			T reduced_min_closest_distance;	
-			T reduced_max_closest_distance;	
+			std::vector<T> reduced_mean_closest_distance;	
+			std::vector<T> reduced_min_closest_distance;	
+			std::vector<T> reduced_max_closest_distance;	
 
 			/**
 				 * @brief 
