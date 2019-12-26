@@ -47,21 +47,24 @@ class MaxPooling: public Layer<Scalar>
         ///
         /// Constructor
         ///
-        /// \param in_width       Width of the input image in each channel.
-        /// \param in_height      Height of the input image in each channel.
+        /// \param inputWidth       Width of the input image in each channel.
+        /// \param inputHeight      Height of the input image in each channel.
         /// \param in_channels    Number of input channels.
         /// \param pooling_width  Width of the pooling window.
         /// \param pooling_height Height of the pooling window.
         ///
-        MaxPooling(const int in_width, const int in_height, const int in_channels,
+        MaxPooling(const int inputWidth, const int inputHeight, const int in_channels,
                    const int pooling_width, const int pooling_height) :
-            Layer<Scalar>(in_width * in_height * in_channels,
-                  (in_width / pooling_width) * (in_height / pooling_height) * in_channels),
-            m_channel_rows(in_height), m_channel_cols(in_width), m_in_channels(in_channels),
-            m_pool_rows(pooling_height), m_pool_cols(pooling_width),
-            m_out_rows(m_channel_rows / m_pool_rows),
-            m_out_cols(m_channel_cols / m_pool_cols)
+		        Layer<Scalar>(inputWidth * inputHeight * in_channels,
+		                      (inputWidth / pooling_width) * (inputHeight / pooling_height) * in_channels),
+		        m_channel_rows(inputHeight), m_channel_cols(inputWidth), m_in_channels(in_channels),
+		        m_pool_rows(pooling_height), m_pool_cols(pooling_width),
+		        m_out_rows(m_channel_rows / m_pool_rows),
+		        m_out_cols(m_channel_cols / m_pool_cols)
         {}
+
+        //MaxPooling(const nlohmann::json& json) : Layer<Scalar>(json)
+        //{}
 
         void init(const Scalar& mu, const Scalar& sigma, std::mt19937& rng) {}
 
