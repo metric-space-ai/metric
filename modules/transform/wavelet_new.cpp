@@ -1288,5 +1288,120 @@ std::vector<T> rescale(std::vector<T> const& A, T a, T b)
     return R;
 }
 
+
+// 2d functions
+
+
+template <typename Container>
+std::tuple<std::vector<Container>, std::vector<Container>, std::vector<Container>, std::vector<Container>>
+dwt2(std::vector<Container> const & x, int waveletType)
+{
+    std::vector<Container> ll, lh, hl, hh, l, h;
+
+    for (size_t row_idx = 0; row_idx<x.size(); ++row_idx) { // upper level split, by rows
+        auto row_split = dwt(x[row_idx], waveletType);
+        l.push_back(std::get<0>(row_split));
+        h.push_back(std::get<1>(row_split));
+    }
+    assert(l.size() == h.size()); // TODO remove after testing
+    assert(l[0].size() == h[0].size()); // TODO remove after testing
+
+    //bool vector_empty = true;
+    for (size_t col_idx = 0; col_idx<l[0].size(); col_idx++) { // 2 lower level splits, by colmns
+        Container l_col, h_col;
+        for (size_t row_idx = 0; row_idx<l.size(); ++row_idx) { // we assume sizes of l and r are equal
+            l_col.push_back(l[row_idx][col_idx]);
+            h_col.push_back(h[row_idx][col_idx]);
+        }
+        {
+            auto col_split_l = dwt(l_col, waveletType);
+            //if (vector_empty) {
+            if (col_idx < 1) { // first iteration only
+                // init
+                for (size_t row_idx=0; row_idx<l_col.size(); ++row_idx) {
+                    ll.push_back(Container(l[0].size(), 0)); // adding zero vectors
+                    lh.push_back(Container(l[0].size(), 0));
+                    hl.push_back(Container(h[0].size(), 0));
+                    hh.push_back(Container(h[0].size(), 0));
+                }
+                //vector_empty = false;
+            }
+            //std::vector<Container> ll_col, lh_col;
+            //ll_col.push_back(std::get<0>(col_split_l));
+            //lh_col.push_back(std::get<1>(col_split_l));
+            for (size_t row_idx = 0; row_idx<l.size(); ++row_idx) {
+                ll[row_idx][col_idx] = std::get<0>(col_split_l)[row_idx];
+                lh[row_idx][col_idx] = std::get<1>(col_split_l)[row_idx];
+            }
+        } // remove col_split_l from memory
+        {
+            auto col_split_h = dwt(h_col, waveletType);
+            //std::vector<Container> hl_col, hh_col;
+            //hl_col.push_back(std::get<0>(col_split_h));
+            //hh_col.push_back(std::get<1>(col_split_h));
+            for (size_t row_idx = 0; row_idx<l.size(); ++row_idx) {
+                hl[row_idx][col_idx] = std::get<0>(col_split_h)[row_idx];
+                hh[row_idx][col_idx] = std::get<1>(col_split_h)[row_idx];
+            }
+        }
+    }
+
+    return std::make_tuple(ll, lh, hl, hh);
+}
+
+
+template <typename Container>
+std::vector<Container> idwt2(
+            std::vector<Container> const & ll,
+            std::vector<Container> const & lh,
+            std::vector<Container> const & hl,
+            std::vector<Container> const & hh,
+            int waveletType,
+            int hx,
+            int wx)
+{
+    std::vector<Container> out;
+    //
+    assert(ll.size()==lh.size()); // TODO remove after testing and add exception
+    assert(ll.size()==hl.size());
+    assert(ll.size()==hh.size());
+    assert(ll[0].size()==lh[0].size());
+    assert(ll[0].size()==hl[0].size());
+    assert(ll[0].size()==hh[0].size());
+
+    std::vector<Container> l_colmajor, h_colmajor;
+    for (size_t col_idx = 0; col_idx<ll[0].size(); col_idx++) {
+        Container col_ll, col_lh, col_hl, col_hh, col_split_l, col_split_h;
+        for (size_t row_idx = 0; row_idx<ll.size(); ++row_idx) {
+            col_ll.push_back(ll[row_idx][col_idx]);
+            col_lh.push_back(lh[row_idx][col_idx]);
+            col_hl.push_back(hl[row_idx][col_idx]);
+            col_hh.push_back(hh[row_idx][col_idx]);
+        }
+        col_split_l = wavelet::idwt(col_ll, col_lh, waveletType, hx);
+        l_colmajor.push_back(col_split_l);
+        col_split_h = wavelet::idwt(col_hl, col_hh, waveletType, hx);
+        h_colmajor.push_back(col_split_h);
+    }
+
+    assert(l_colmajor.size()==h_colmajor.size()); // TODO remove after testing
+    assert(l_colmajor[0].size()==h_colmajor[0].size());
+
+    // transpose and apply second idwt
+    for (size_t row_idx = 0; row_idx<l_colmajor[0].size(); ++row_idx) {
+        Container row_split_l, row_split_h;
+        for (size_t col_idx = 0; col_idx<l_colmajor.size(); col_idx++) {
+            row_split_l.push_back(l_colmajor[row_idx][col_idx]);
+            row_split_h.push_back(h_colmajor[row_idx][col_idx]);
+        }
+        //Container row = idwt(row_split_l, row_split_h, waveletType, wx);
+        out.push_back(idwt(row_split_l, row_split_h, waveletType, wx));
+    }
+
+    return out;
+}
+
+
+
 }  // end namespace
 #endif
