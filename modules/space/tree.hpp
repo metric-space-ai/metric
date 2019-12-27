@@ -159,10 +159,9 @@ public:
      * @brief Insert date record to the cover tree
      *
      * @param p data record
-     * @return true if inserting successful
-     * @return false if inserting unsuccessful
+     * @return ID of inserted node
      */
-    bool insert(const recType& p);
+    std::size_t insert(const recType& p);
 
     /**
      * @brief Insert set of data records to the cover tree
@@ -175,14 +174,14 @@ public:
     bool insert(const std::vector<recType>& p);
 
     /**
-     * @brief inser data record to the tree if distance between root and new point is greater than a threshold
+     * @brief inser data record to the tree if distance between NN and new point is greater than a threshold
      *
      * @param p new data record
      * @param treshold distance threshold
-     * @return true if inserting successful
-     * @return false if inserting unsuccessful
+     * @return ID of inserted node and true if inserting successful
+     * @return ID of NN node and false if inserting unsuccessful
      */
-    bool insert_if(const recType& p, Distance treshold);
+    std::tuple<std::size_t, bool> insert_if(const recType& p, Distance treshold);
 
     /**
      * @brief inser set of data records to the tree if distance between root and new point is greater than a threshold

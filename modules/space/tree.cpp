@@ -240,7 +240,7 @@ typename Node<recType, Metric>::Distance Node<recType, Metric>::dist(Node_ptr n)
 template <class recType, class Metric>
 Node<recType, Metric>* Node<recType, Metric>::setChild(const recType& p, int new_id)
 {
-    Node_ptr temp(new Node<recType, Metric>());
+    Node_ptr temp(new Node<recType, Metric>(tree_ptr));
     temp->data = p;
     temp->level = level - 1;
     temp->parent_dist = 0;
@@ -389,13 +389,20 @@ std::size_t Tree<recType, Metric>::insert_if(const std::vector<recType>& p, Dist
     return inserted;
 }
 template <class recType, class Metric>
-bool Tree<recType, Metric>::insert_if(const recType& p, Distance treshold)
+std::tuple<std::size_t, bool> Tree<recType, Metric>::insert_if(const recType& p, Distance treshold)
 {
-    if (root->dist(p) > treshold) {
-        insert(p);
-        return true;
+    if(empty()) {
+        std::size_t id = insert(p);
+        return std::make_tuple(id,true);
     }
-    return false;
+    std::pair<Node_ptr, Distance> result(root, root->dist(p));
+    nn_(root, result.second, p, result);
+    if(result.second > treshold) {
+        auto n = insert(p);
+        return std::make_tuple(n, true);
+    }
+
+    return std::make_pair(result.first->ID, false);
 }
 
 /*** vector of data record insertion  **/
@@ -410,7 +417,7 @@ bool Tree<recType, Metric>::insert(const std::vector<recType>& p)
 
 /*** data record insertion **/
 template <class recType, class Metric>
-bool Tree<recType, Metric>::insert(const recType& x)
+std::size_t Tree<recType, Metric>::insert(const recType& x)
 {
     std::unique_lock<std::shared_timed_mutex> lk(global_mut);
     (void)lk;  // prevent AppleCLang warning;
@@ -427,9 +434,8 @@ bool Tree<recType, Metric>::insert(const recType& x)
         root = node;
     } else {
         root = insert(root, node);
-        return true;
     }
-    return false;
+    return node->ID;
 }
 /*** data record insertion **/
 template <class recType, class Metric>

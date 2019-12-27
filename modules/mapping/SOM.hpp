@@ -171,6 +171,16 @@ public:
 		return weights;
 	}
 
+    /**
+		 * @brief
+		 * 
+		 * @return
+		 */
+	Graph get_graph()
+	{
+		return graph;
+	}
+
 protected:
     size_t input_dimensions;  // dimensions of inputs vector
 
