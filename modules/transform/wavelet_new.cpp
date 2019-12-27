@@ -1298,7 +1298,7 @@ dwt2(std::vector<Container> const & x, int waveletType)
 {
     std::vector<Container> ll, lh, hl, hh, l, h;
 
-    for (size_t row_idx = 0; row_idx<x.size(); ++row_idx) { // upper level split, by rows
+    for (size_t row_idx = 0; row_idx<x.size(); ++row_idx) { // top-level split, by rows
         auto row_split = dwt(x[row_idx], waveletType);
         l.push_back(std::get<0>(row_split));
         h.push_back(std::get<1>(row_split));
@@ -1315,10 +1315,11 @@ dwt2(std::vector<Container> const & x, int waveletType)
         }
         {
             auto col_split_l = dwt(l_col, waveletType);
+            assert(std::get<0>(col_split_l).size()==std::get<1>(col_split_l).size()); // TODO remove after testing
             //if (vector_empty) {
             if (col_idx < 1) { // first iteration only
                 // init
-                for (size_t row_idx=0; row_idx<l_col.size(); ++row_idx) {
+                for (size_t row_idx=0; row_idx<std::get<0>(col_split_l).size(); ++row_idx) {
                     ll.push_back(Container(l[0].size(), 0)); // adding zero vectors
                     lh.push_back(Container(l[0].size(), 0));
                     hl.push_back(Container(h[0].size(), 0));
@@ -1329,7 +1330,7 @@ dwt2(std::vector<Container> const & x, int waveletType)
             //std::vector<Container> ll_col, lh_col;
             //ll_col.push_back(std::get<0>(col_split_l));
             //lh_col.push_back(std::get<1>(col_split_l));
-            for (size_t row_idx = 0; row_idx<l.size(); ++row_idx) {
+            for (size_t row_idx = 0; row_idx<std::get<0>(col_split_l).size(); ++row_idx) {
                 ll[row_idx][col_idx] = std::get<0>(col_split_l)[row_idx];
                 lh[row_idx][col_idx] = std::get<1>(col_split_l)[row_idx];
             }
@@ -1339,7 +1340,8 @@ dwt2(std::vector<Container> const & x, int waveletType)
             //std::vector<Container> hl_col, hh_col;
             //hl_col.push_back(std::get<0>(col_split_h));
             //hh_col.push_back(std::get<1>(col_split_h));
-            for (size_t row_idx = 0; row_idx<l.size(); ++row_idx) {
+            assert(std::get<0>(col_split_h).size()==std::get<1>(col_split_h).size()); // TODO remove after testing
+            for (size_t row_idx = 0; row_idx<std::get<0>(col_split_h).size(); ++row_idx) {
                 hl[row_idx][col_idx] = std::get<0>(col_split_h)[row_idx];
                 hh[row_idx][col_idx] = std::get<1>(col_split_h)[row_idx];
             }
@@ -1391,8 +1393,8 @@ std::vector<Container> idwt2(
     for (size_t row_idx = 0; row_idx<l_colmajor[0].size(); ++row_idx) {
         Container row_split_l, row_split_h;
         for (size_t col_idx = 0; col_idx<l_colmajor.size(); col_idx++) {
-            row_split_l.push_back(l_colmajor[row_idx][col_idx]);
-            row_split_h.push_back(h_colmajor[row_idx][col_idx]);
+            row_split_l.push_back(l_colmajor[col_idx][row_idx]);
+            row_split_h.push_back(h_colmajor[col_idx][row_idx]);
         }
         //Container row = idwt(row_split_l, row_split_h, waveletType, wx);
         out.push_back(idwt(row_split_l, row_split_h, waveletType, wx));

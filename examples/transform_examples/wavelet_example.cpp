@@ -8,12 +8,21 @@
 
 int main() {
 
-    std::vector<double> data = {0, 0, 0, 0, 1, 0, 0, 0, 0, 0};
+    //std::vector<double> data = {0, 0, 0, 0, 1, 0, 0, 0, 0, 0};
+    std::vector<double> data = {0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
     //std::vector<double> data = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
 
-    auto encoded = wavelet::dwt(data, 4);
-    auto decoded = wavelet::idwt(std::get<0>(encoded), std::get<1>(encoded), 4, 8);
+    int wavelet = 2;
 
+    auto encoded = wavelet::dwt(data, wavelet);
+    auto decoded = wavelet::idwt(std::get<0>(encoded), std::get<1>(encoded), wavelet, data.size());
+
+    std::cout << "\n1d:\n";
+    std::cout << "splitted L:\n";
+    auto encoded_l = std::get<0>(encoded);
+    for (size_t i = 0; i<encoded_l.size(); ++i)
+        std::cout << encoded_l[i] << "\n";
+    std::cout << "restored:\n";
     for (size_t i = 0; i<decoded.size(); ++i)
         std::cout << decoded[i] << "\n";
 
@@ -21,30 +30,33 @@ int main() {
     Container zeros = Container(10, 0);
     Container peak = zeros;
     peak[4] = 1;
-    std::vector<Container> data2d = {zeros, zeros, zeros, zeros, peak, zeros, zeros}; //, zeros, zeros, zeros};
+    std::vector<Container> data2d = {zeros, zeros, zeros, zeros, peak, zeros, zeros, zeros, zeros, zeros, zeros, zeros, zeros, zeros};
+    //std::vector<Container> data2d = {zeros, peak}; // TODO add data size control
 
-    std::cout << "\n";
+
+    std::cout << "\n2d:\n";
+    std::cout << "input:\n";
     for (size_t i = 0; i<data2d.size(); ++i) {
         for (size_t j = 0; j<data2d[0].size(); ++j)
             std::cout << data2d[i][j] << " ";
         std::cout << "\n";
     }
 
-    auto dec = wavelet::dwt2(data2d, 2);
+    auto splitted = wavelet::dwt2(data2d, wavelet);
 
-    std::cout << "\n";
-    for (size_t i = 0; i<std::get<0>(dec).size(); ++i) {
-        for (size_t j = 0; j<std::get<0>(dec)[0].size(); ++j)
-            std::cout << std::get<0>(dec)[i][j] << " ";
+    std::cout << "slpitted LL:\n";
+    for (size_t i = 0; i<std::get<0>(splitted).size(); ++i) {
+        for (size_t j = 0; j<std::get<0>(splitted)[0].size(); ++j)
+            std::cout << std::get<0>(splitted)[i][j] << " ";
         std::cout << "\n";
     }
 
-    auto rec = wavelet::idwt2(std::get<0>(dec), std::get<1>(dec), std::get<2>(dec), std::get<3>(dec), 2, data2d.size(), data2d[0].size());
+    auto restored = wavelet::idwt2(std::get<0>(splitted), std::get<1>(splitted), std::get<2>(splitted), std::get<3>(splitted), wavelet, data2d.size(), data2d[0].size());
 
-    std::cout << "\n";
-    for (size_t i = 0; i<rec.size(); ++i) {
-        for (size_t j = 0; j<rec[0].size(); ++j)
-            std::cout << rec[i][j] << " ";
+    std::cout << "restored:\n";
+    for (size_t i = 0; i<restored.size(); ++i) {
+        for (size_t j = 0; j<restored[0].size(); ++j)
+            std::cout << restored[i][j] << " ";
         std::cout << "\n";
     }
 
