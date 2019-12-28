@@ -21,6 +21,68 @@ namespace MiniDNN
 template <typename Scalar, typename Activation>
 class Conv2d: public Layer<Scalar>
 {
+    public:
+    
+        class LayerSerialProxy : public Layer<Scalar>::LayerSerialProxy {
+        public:
+            LayerSerialProxy() : Layer<Scalar>::LayerSerialProxy() {}
+            LayerSerialProxy(Layer<Scalar>* save_layer) : Layer<Scalar>::LayerSerialProxy(save_layer) {}
+
+            template<class Archive>
+            void load(Archive & ar)
+            {
+                int inputWidth;
+                int inputHeight;
+                int inputChannels;
+                int outputChannels;
+                int kernelWidth;
+                int kernelHeight;
+
+                ar(CEREAL_NVP(inputWidth),
+                   CEREAL_NVP(inputHeight),
+                   CEREAL_NVP(inputChannels),
+                   CEREAL_NVP(outputChannels),
+                   CEREAL_NVP(kernelWidth),
+                   CEREAL_NVP(kernelHeight));
+
+                Layer<Scalar>::LayerSerialProxy::load_layer = std::make_shared<Conv2d<Scalar,
+                    Activation>>(inputWidth,
+                                 inputHeight,
+                                 inputChannels,
+                                 outputChannels,
+                                 kernelWidth,
+                                 kernelHeight);
+            }
+
+            template<class Archive>
+            void save(Archive & ar) const
+            {
+                Conv2d<Scalar, Activation>* sl = dynamic_cast<Conv2d<Scalar, Activation>*>(Layer<Scalar>::LayerSerialProxy::save_layer);
+                int inputWidth = sl->inputWidth;
+                int inputHeight = sl->inputHeight;
+                int inputChannels = sl->inputChannels;
+                int outputChannels = sl->outputChannels;
+                int kernelWidth = sl->kernelWidth;
+                int kernelHeight = sl->kernelHeight;
+
+                ar(CEREAL_NVP(inputWidth),
+                   CEREAL_NVP(inputHeight),
+                   CEREAL_NVP(inputChannels),
+                   CEREAL_NVP(outputChannels),
+                   CEREAL_NVP(kernelWidth),
+                   CEREAL_NVP(kernelHeight));
+            }
+
+            // just for this type to be considered polymorphic
+            virtual void rtti() {}
+        };
+
+        virtual std::shared_ptr<typename Layer<Scalar>::LayerSerialProxy>
+            getSerial() {
+            return std::make_shared<LayerSerialProxy>(this);
+        }
+    
+    
     private:
 		using Matrix = blaze::DynamicMatrix<Scalar, blaze::columnMajor>;
 		using Vector = blaze::DynamicVector<Scalar>;
@@ -32,6 +94,8 @@ class Conv2d: public Layer<Scalar>
 
 		size_t inputWidth;
 		size_t inputHeight;
+        size_t inputChannels;
+        size_t outputChannels;
 		size_t kernelWidth;
 		size_t kernelHeight;
 		size_t outputWidth;
@@ -73,6 +137,7 @@ class Conv2d: public Layer<Scalar>
 							m_dim(inputChannels, outputChannels, inputHeight, inputWidth, kernelHeight,
 									  kernelWidth),
 									  inputWidth(inputWidth), inputHeight(inputHeight),
+                                      inputChannels(inputChannels), outputChannels(outputChannels),
 									  kernelWidth(kernelWidth), kernelHeight(kernelHeight),
 									  outputWidth(inputWidth - kernelWidth + 1),
 									  outputHeight(inputHeight - kernelHeight + 1)

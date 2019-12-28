@@ -6,13 +6,19 @@
 
 #include <iostream>
 #include "modules/utils/dnn.hpp"
+#include "modules/utils/dnn/Layer.h"
+#include "modules/utils/dnn/Utils/Serializer.h"
+#include "modules/utils/dnn/Layer/Conv2d.h"
+#include "modules/utils/dnn/Layer/Conv2d-transpose.h"
+#include "modules/utils/dnn/Layer/FullyConnected.h"
+#include "modules/utils/dnn/Layer/MaxPooling.h"
+#include "modules/utils/dnn/Activation/Identity.h"
 
 
 using namespace MiniDNN;
 
 using Matrix = blaze::DynamicMatrix<double, blaze::columnMajor>;
 using Vector = blaze::DynamicVector<double>;
-
 
 BOOST_AUTO_TEST_CASE(base)
 {
@@ -130,3 +136,92 @@ BOOST_AUTO_TEST_CASE(deconvolutional)
 	BOOST_CHECK_EQUAL(convTransposeLayer.output(), Y);
 }
 
+// these are prerequisites for any serialization to work:
+// - CEREAL_SIMPLIFY_FOR_BASE_CLASS() for each necessary Layer+Scalar
+//   combination
+// - register types with names
+// - register polymorphic relations
+typedef Layer<float>::LayerSerialProxy LayerParent;
+CEREAL_SIMPLIFY_FOR_BASE_CLASS(LayerParent);
+CEREAL_REGISTER_TYPE_WITH_NAME(LayerParent, "Layer_float");
+
+typedef typename Conv2d<float, typename MiniDNN::Identity<float>>::LayerSerialProxy Conv2dProxy;
+CEREAL_REGISTER_TYPE_WITH_NAME(Conv2dProxy, "Conv2d_float_Identity");
+CEREAL_REGISTER_POLYMORPHIC_RELATION(LayerParent, Conv2dProxy);
+
+typedef typename Conv2dTranspose<float, typename MiniDNN::Identity<float>>::LayerSerialProxy Conv2dTransposeProxy;
+CEREAL_REGISTER_TYPE_WITH_NAME(Conv2dTransposeProxy, "Conv2dTranspose_float_Identity");
+CEREAL_REGISTER_POLYMORPHIC_RELATION(LayerParent, Conv2dTransposeProxy);
+
+typedef typename FullyConnected<float, typename MiniDNN::Identity<float>>::LayerSerialProxy FullyConnectedProxy;
+CEREAL_REGISTER_TYPE_WITH_NAME(FullyConnectedProxy, "FullyConnected_float_Identity");
+CEREAL_REGISTER_POLYMORPHIC_RELATION(LayerParent, FullyConnectedProxy);
+
+typedef typename MaxPooling<float, typename MiniDNN::Identity<float>>::LayerSerialProxy MaxPoolingProxy;
+CEREAL_REGISTER_TYPE_WITH_NAME(MaxPoolingProxy, "MaxPooling_float_Identity");
+CEREAL_REGISTER_POLYMORPHIC_RELATION(LayerParent, MaxPoolingProxy);
+
+
+BOOST_AUTO_TEST_CASE(serialization_load_non_existing_file)
+{
+    try {
+        std::vector<std::shared_ptr<Layer<float>>> layers = loadFrom<float>("");
+        throw std::runtime_error("exception expected");
+    } catch (std::runtime_error& e) {
+        // nothing here
+    }
+}
+
+BOOST_AUTO_TEST_CASE(serialization_load_empty)
+{
+    try {
+        std::vector<std::shared_ptr<Layer<float>>> layers = loadFrom<float>("../../../tests/dnn_tests/serialization_load_empty.json");
+        throw std::runtime_error("exception expected");
+    } catch (cereal::RapidJSONException& e) {
+        // nothing here
+    }
+}
+
+BOOST_AUTO_TEST_CASE(serialization_load_empty_object)
+{
+    std::vector<std::shared_ptr<Layer<float>>> layers = loadFrom<float>("../../../tests/dnn_tests/serialization_load_empty_object.json");
+    BOOST_TEST(layers.size() == 0);    
+}
+
+BOOST_AUTO_TEST_CASE(serialization_load_one)
+{
+    std::string f1 = "../../../tests/dnn_tests/serialization_load_one_layer.json";
+    std::string f2 = "/tmp/test_serialization.json";
+    std::vector<std::shared_ptr<Layer<float>>> layers = loadFrom<float>(f1);
+    BOOST_TEST(layers.size() == 1);
+    saveTo<float>(f2, layers);
+
+    {
+        std::ifstream ifs1(f1);
+        std::ifstream ifs2(f2);
+
+        std::istream_iterator<char> b1(ifs1), e1;
+        std::istream_iterator<char> b2(ifs2), e2;
+
+        BOOST_CHECK_EQUAL_COLLECTIONS(b1, e1, b2, e2);
+    }
+}
+
+BOOST_AUTO_TEST_CASE(serialization_load_all)
+{
+    std::string f1 = "../../../tests/dnn_tests/serialization_load_all_layers.json";
+    std::string f2 = "/tmp/test_serialization.json";
+    std::vector<std::shared_ptr<Layer<float>>> layers = loadFrom<float>(f1);
+    BOOST_TEST(layers.size() == 4);
+    saveTo<float>(f2, layers);
+
+    {
+        std::ifstream ifs1(f1);
+        std::ifstream ifs2(f2);
+
+        std::istream_iterator<char> b1(ifs1), e1;
+        std::istream_iterator<char> b2(ifs2), e2;
+
+        BOOST_CHECK_EQUAL_COLLECTIONS(b1, e1, b2, e2);
+    }
+}

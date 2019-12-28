@@ -1,0 +1,11 @@
+{
+    "0": {
+        "type": "Conv2d_float_Identity",
+        "inputWidth": 1,
+        "inputHeight": 2,
+        "inputChannels": 3,
+        "outputChannels": 4,
+        "kernelWidth": 5,
+        "kernelHeight": 6
+    }
+}

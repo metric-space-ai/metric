@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "../../../3rdparty/blaze/Math.h"
+#include "cereal/cereal.hpp"
 
 #include "RNG.h"
 #include "Optimizer.h"
@@ -31,6 +32,38 @@ class Layer
 
         const int m_in_size;  // Size of input units
         const int m_out_size; // Size of output units
+
+    public:
+        // serialization stuff
+        
+        class LayerSerialProxy {
+        protected:
+            Layer<Scalar>* save_layer;
+            std::shared_ptr<Layer<Scalar>> load_layer;
+        public:
+            LayerSerialProxy() : save_layer(0) {}
+            LayerSerialProxy(Layer<Scalar>* save_layer) : save_layer(save_layer) {}
+
+            template<class Archive>
+            void load(Archive & ar)
+            {
+                throw std::runtime_error("attempt to load Layer which is abstract");
+            }
+
+            template<class Archive>
+            void save(Archive & ar) const
+            {
+                // TODO: consider
+                throw std::runtime_error("attempt to save Layer which is abstract");
+            }
+
+            // just for this type to be considered polymorphic
+            virtual void rtti() {}
+
+            std::shared_ptr<Layer<Scalar>> getLoadLayer() { return load_layer; }            
+        };
+
+        virtual std::shared_ptr<LayerSerialProxy> getSerial() = 0;
 
     public:
 		using Matrix = blaze::DynamicMatrix<Scalar, blaze::columnMajor>;

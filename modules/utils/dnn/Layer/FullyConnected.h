@@ -22,6 +22,48 @@ namespace MiniDNN
 template <typename Scalar, typename Activation>
 class FullyConnected: public Layer<Scalar>
 {
+    public:
+    
+        class LayerSerialProxy : public Layer<Scalar>::LayerSerialProxy {
+        public:
+            LayerSerialProxy() : Layer<Scalar>::LayerSerialProxy() {}
+            LayerSerialProxy(Layer<Scalar>* save_layer) : Layer<Scalar>::LayerSerialProxy(save_layer) {}
+
+            template<class Archive>
+            void load(Archive & ar)
+            {
+                int in_size;
+                int out_size;
+
+                ar(CEREAL_NVP(in_size),
+                   CEREAL_NVP(out_size));
+
+                Layer<Scalar>::LayerSerialProxy::load_layer = std::make_shared<FullyConnected<Scalar,
+                    Activation>>(in_size,
+                                 out_size);
+            }
+
+            template<class Archive>
+            void save(Archive & ar) const
+            {
+                FullyConnected<Scalar, Activation>* sl = dynamic_cast<FullyConnected<Scalar, Activation>*>(Layer<Scalar>::LayerSerialProxy::save_layer);
+
+                int in_size = sl->in_size();
+                int out_size = sl->out_size();
+
+                ar(CEREAL_NVP(in_size),
+                   CEREAL_NVP(out_size));
+            }
+
+            // just for this type to be considered polymorphic
+            virtual void rtti() {}
+        };
+
+        virtual std::shared_ptr<typename Layer<Scalar>::LayerSerialProxy>
+            getSerial() {
+            return std::make_shared<LayerSerialProxy>(this);
+        }
+    
     private:
 	using Matrix = blaze::DynamicMatrix<Scalar, blaze::columnMajor>;
 	using Vector = blaze::DynamicVector<Scalar>;

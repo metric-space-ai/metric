@@ -44,6 +44,7 @@ add_definitions("/w")
 endif()
 find_package(Boost REQUIRED unit_test_framework)
 include_directories(${Boost_INCLUDE_DIR})
+include_directories("3rdparty")
 
 enable_testing()
 add_subdirectory(tests)

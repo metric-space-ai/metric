@@ -1,0 +1,33 @@
+{
+    "0": {
+        "type": "Conv2d_float_Identity",
+        "inputWidth": 1,
+        "inputHeight": 2,
+        "inputChannels": 3,
+        "outputChannels": 4,
+        "kernelWidth": 5,
+        "kernelHeight": 6
+    },
+    "1": {
+        "type": "Conv2dTranspose_float_Identity",
+        "inputWidth": 1,
+        "inputHeight": 2,
+        "inputChannels": 3,
+        "outputChannels": 4,
+        "kernelWidth": 5,
+        "kernelHeight": 6
+    },
+    "2": {
+        "type": "FullyConnected_float_Identity",
+        "in_size": 1,
+        "out_size": 2
+    },
+    "3": {
+        "type": "MaxPooling_float_Identity",
+        "in_width": 1,
+        "in_height": 2,
+        "in_channels": 3,
+        "pooling_width": 4,
+        "pooling_height": 5
+    }
+}

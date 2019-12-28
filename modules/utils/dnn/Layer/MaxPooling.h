@@ -20,6 +20,63 @@ namespace MiniDNN
 template <typename Scalar, typename Activation>
 class MaxPooling: public Layer<Scalar>
 {
+    public:
+    
+        class LayerSerialProxy : public Layer<Scalar>::LayerSerialProxy {
+        public:
+            LayerSerialProxy() : Layer<Scalar>::LayerSerialProxy() {}
+            LayerSerialProxy(Layer<Scalar>* save_layer) : Layer<Scalar>::LayerSerialProxy(save_layer) {}
+
+            template<class Archive>
+            void load(Archive & ar)
+            {
+                int in_width;
+                int in_height;
+                int in_channels;
+                int pooling_width;
+                int pooling_height;
+
+                ar(CEREAL_NVP(in_width),
+                   CEREAL_NVP(in_height),
+                   CEREAL_NVP(in_channels),
+                   CEREAL_NVP(pooling_width),
+                   CEREAL_NVP(pooling_height));
+                
+                Layer<Scalar>::LayerSerialProxy::load_layer = std::make_shared<MaxPooling<Scalar,
+                    Activation>>(in_width,
+                                 in_height,
+                                 in_channels,
+                                 pooling_width,
+                                 pooling_height);
+            }
+
+            template<class Archive>
+            void save(Archive & ar) const
+            {
+                MaxPooling<Scalar, Activation>* sl = dynamic_cast<MaxPooling<Scalar, Activation>*>(Layer<Scalar>::LayerSerialProxy::save_layer);
+
+                int in_width = sl->m_channel_cols;
+                int in_height = sl->m_channel_rows;
+                int in_channels = sl->m_in_channels;
+                int pooling_width = sl->m_pool_cols;
+                int pooling_height = sl->m_pool_rows;
+
+                ar(CEREAL_NVP(in_width),
+                   CEREAL_NVP(in_height),
+                   CEREAL_NVP(in_channels),
+                   CEREAL_NVP(pooling_width),
+                   CEREAL_NVP(pooling_height));
+            }
+
+            // just for this type to be considered polymorphic
+            virtual void rtti() {}
+        };
+
+        virtual std::shared_ptr<typename Layer<Scalar>::LayerSerialProxy>
+            getSerial() {
+            return std::make_shared<LayerSerialProxy>(this);
+        }
+    
     private:
 		using Matrix = blaze::DynamicMatrix<Scalar, blaze::columnMajor>;
 		using IntMatrix = blaze::DynamicMatrix<int>;
