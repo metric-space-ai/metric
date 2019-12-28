@@ -6,6 +6,9 @@
 //#include "transform/wavelet.hpp"
 #include "transform/wavelet_new.hpp"
 
+#include "assets/helpers.cpp"
+#include "modules/utils/visualizer.hpp"
+
 int main() {
 
     //std::vector<double> data = {0, 0, 0, 0, 1, 0, 0, 0, 0, 0};
@@ -59,6 +62,26 @@ int main() {
             std::cout << restored[i][j] << " ";
         std::cout << "\n";
     }
+
+
+    // cameraman image test
+
+    auto cm = read_csv_num<double>("assets/cameraman.csv", ",");
+
+    auto cm_splitted = wavelet::dwt2(cm, 4);
+    auto cm_restored = wavelet::idwt2(cm_splitted, 4, cm.size(), cm[0].size());
+
+    mat2bmp::blaze2bmp(cm_restored, "cm_restored.bmp", 1.0/256.0);
+    mat2bmp::blaze2bmp(std::get<0>(cm_splitted), "cm_ll.bmp", 1.0/256.0);
+    mat2bmp::blaze2bmp(std::get<1>(cm_splitted), "cm_lh.bmp", 1.0/256.0);
+    mat2bmp::blaze2bmp(std::get<2>(cm_splitted), "cm_hl.bmp", 1.0/256.0);
+    mat2bmp::blaze2bmp(std::get<3>(cm_splitted), "cm_hh.bmp", 1.0/256.0);
+
+    // showing reference file
+
+//    auto cm_splitted_ref = read_csv_num<double>("assets/cm_ref.csv", ",");
+//    mat2bmp::blaze2bmp(cm_splitted_ref, "cm_splitted_ref.bmp", 1.0/256.0);
+
 
     return 0;
 }

@@ -1404,6 +1404,17 @@ std::vector<Container> idwt2(
 }
 
 
+template <typename Container>
+std::vector<Container> idwt2(
+            std::tuple<std::vector<Container>, std::vector<Container>, std::vector<Container>, std::vector<Container>> in,
+            int waveletType,
+            int hx,
+            int wx)
+{
+    return idwt2(std::get<0>(in), std::get<1>(in), std::get<2>(in), std::get<3>(in), waveletType, hx, wx);
+}
+
+
 
 }  // end namespace
 #endif
