@@ -24,8 +24,9 @@ template <typename Scalar, typename Activation>
 class Conv2d: public Layer<Scalar>
 {
     private:
-		using Matrix = blaze::DynamicMatrix<Scalar, blaze::columnMajor>;
-		using Vector = blaze::DynamicVector<Scalar>;
+		using Matrix = blaze::DynamicMatrix<Scalar>;
+		using ColumnMatrix = blaze::DynamicMatrix<Scalar, blaze::columnMajor>;
+		using Vector = blaze::DynamicVector<Scalar, blaze::rowMajor>;
 		using ConstAlignedMapMat = const blaze::CustomMatrix<Scalar, blaze::unaligned, blaze::unpadded, blaze::columnMajor>;
 		using ConstAlignedMapVec = const blaze::CustomVector<Scalar, blaze::aligned, blaze::unpadded>;
 		using AlignedMapVec = blaze::CustomVector<Scalar, blaze::aligned, blaze::unpadded>;
@@ -38,21 +39,23 @@ class Conv2d: public Layer<Scalar>
 		size_t kernelHeight;
 		size_t outputWidth;
 		size_t outputHeight;
+		size_t inputChannels;
+		size_t outputChannels;
 
 		std::vector<size_t> jDeltas;
 		std::vector<size_t> iDeltas;
 
-        Vector m_filter_data;           // Filter parameters. Total length is
+        Vector kernelData;           // Filter parameters. Total length is
         // (in_channels x out_channels x filter_rows x filter_cols)
         // See Utils/Convolution.h for its layout
 
         Vector m_df_data;               // Derivative of filters, same dimension as m_filter_data
 
-        Vector m_bias;                  // Bias term for the output channels, out_channels x 1. (One bias term per channel)
+        Vector bias;                  // Bias term for the output channels, out_channels x 1. (One bias term per channel)
         Vector m_db;                    // Derivative of bias, same dimension as m_bias
 
-        Matrix m_z;                     // Linear term, z = conv(in, w) + b. Each column is an observation
-        Matrix m_a;                     // Output of this layer, a = act(z)
+        Matrix z;                     // Linear term, z = conv(in, w) + b. Each column is an observation
+        Matrix a;                     // Output of this layer, a = act(z)
         Matrix m_din;                   // Derivative of the input of this layer
         // Note that input of this layer is also the output of previous layer
 
@@ -70,36 +73,38 @@ class Conv2d: public Layer<Scalar>
         Conv2d(const int inputWidth, const int inputHeight,
                const int inputChannels, const int outputChannels,
                const int kernelWidth, const int kernelHeight) :
-							Layer<Scalar>(inputWidth * inputHeight * inputChannels,
-										  (inputWidth - kernelWidth + 1) * (inputHeight - kernelHeight + 1) * outputChannels),
-							m_dim(inputChannels, outputChannels, inputHeight, inputWidth, kernelHeight,
-									  kernelWidth),
-									  inputWidth(inputWidth), inputHeight(inputHeight),
-									  kernelWidth(kernelWidth), kernelHeight(kernelHeight),
-									  outputWidth(inputWidth - kernelWidth + 1),
-									  outputHeight(inputHeight - kernelHeight + 1)
+											Layer<Scalar>(inputWidth * inputHeight * inputChannels,
+											  (inputWidth - kernelWidth + 1) * (inputHeight - kernelHeight + 1) * outputChannels),
+											m_dim(inputChannels, outputChannels,
+													inputHeight, inputWidth,
+													kernelHeight, kernelWidth),
+											  inputWidth(inputWidth), inputHeight(inputHeight),
+											  kernelWidth(kernelWidth), kernelHeight(kernelHeight),
+											  outputWidth(inputWidth - kernelWidth + 1),
+											  outputHeight(inputHeight - kernelHeight + 1),
+											  inputChannels(inputChannels), outputChannels(outputChannels)
         {
-	        const int filter_data_size = m_dim.in_channels * m_dim.out_channels *
-	                                     m_dim.filter_rows * m_dim.filter_cols;
-	        m_filter_data.resize(filter_data_size);
+	        kernelData.resize(inputChannels * outputChannels * kernelWidth * kernelHeight);
 
-	        m_bias.resize(m_dim.out_channels);
+	        bias.resize(outputChannels);
         }
 
         void init(const Scalar& mu, const Scalar& sigma, std::mt19937& rng)
         {
             // Set data dimension
-            const int filter_data_size = m_dim.in_channels * m_dim.out_channels *
-                                         m_dim.filter_rows * m_dim.filter_cols;
-            m_filter_data.resize(filter_data_size);
-            m_df_data.resize(filter_data_size);
+            const int kernelDataSize = inputChannels * outputChannels * kernelWidth * kernelHeight;
+
+            kernelData.resize(kernelDataSize);
+            m_df_data.resize(kernelDataSize);
+
             // Random initialization of filter parameters
-            internal::set_normal_random(m_filter_data.data(), filter_data_size, rng, mu,
-                                        sigma);
+            internal::set_normal_random(kernelData.data(), kernelDataSize, rng, mu, sigma);
+
             // Bias term
-            m_bias.resize(m_dim.out_channels);
-            m_db.resize(m_dim.out_channels);
-            internal::set_normal_random(m_bias.data(), m_dim.out_channels, rng, mu, sigma);
+            bias.resize(outputChannels);
+            m_db.resize(outputChannels);
+
+            internal::set_normal_random(bias.data(), outputChannels, rng, mu, sigma);
         }
 
         Matrix getUnrolledKernel()
@@ -115,14 +120,14 @@ class Conv2d: public Layer<Scalar>
 			size_t dr = fromWidth - kernelWidth;
 
 			jDeltas.resize(unrolledKernel.rows());
-			iDeltas.resize(m_filter_data.size());
+			iDeltas.resize(kernelData.size());
 
 			Vector kernelRow(kernelWidth * kernelHeight + (kernelHeight - 1) * dr);
 			kernelRow = 0;
 
 			size_t p = 0;
-			for (size_t i = 0; i < m_filter_data.size(); ++i) {
-				kernelRow[p++] = m_filter_data[i];
+			for (size_t i = 0; i < kernelData.size(); ++i) {
+				kernelRow[p++] = kernelData[i];
 				iDeltas[i] = p;
 
 				if ((i + 1) % kernelWidth == 0) {
@@ -158,7 +163,7 @@ class Conv2d: public Layer<Scalar>
             const int nobs = prev_layer_data.columns();
 
 	        // Linear term, z = conv(in, w) + b
-            m_z.resize(this->outputSize, nobs);
+            z.resize(this->outputSize, nobs);
 
 	        // Convolution
 	        auto unrolledKernel = getUnrolledKernel();
@@ -168,30 +173,29 @@ class Conv2d: public Layer<Scalar>
 	        //cout << m_filter_data << endl;
 	        //cout << unrolledKernel << endl;
 	        for (int i = 0; i < nobs; ++i) {
-		        blaze::column(m_z, i) = unrolledKernel * blaze::column(prev_layer_data, i);
+		        blaze::column(z, i) = unrolledKernel * blaze::column(prev_layer_data, i);
 	        }
 
 
 	        // Add bias terms
-            // Each column of m_z contains m_dim.out_channels channels, and each channel has
+            // Each column of z contains m_dim.out_channels channels, and each channel has
             // m_dim.conv_rows * m_dim.conv_cols elements
             int channel_start_row = 0;
             const int channel_nelem = m_dim.conv_rows * m_dim.conv_cols;
 
-            for (int i = 0; i < m_dim.out_channels; i++, channel_start_row += channel_nelem)
-            {
-                submatrix(m_z, channel_start_row, 0, channel_nelem, nobs) += m_bias[i];
-            }
+	        for (int i = 0; i < outputChannels; i++, channel_start_row += channel_nelem) {
+		        submatrix(z, channel_start_row, 0, channel_nelem, nobs) += bias[i];
+	        }
 
 
 	        /* Apply activation function */
-            m_a.resize(this->outputSize, nobs);
-            Activation::activate(m_z, m_a);
+            a.resize(this->outputSize, nobs);
+            Activation::activate(z, a);
         }
 
         const Matrix& output() const
         {
-            return m_a;
+            return a;
         }
 
         // prev_layer_data: getInputSize x nobs
@@ -200,19 +204,19 @@ class Conv2d: public Layer<Scalar>
         void backprop(const Matrix& prev_layer_data, const Matrix& next_layer_data)
         {
             const int nobs = prev_layer_data.columns();
-            Matrix& dLz = m_z;
-            Activation::apply_jacobian(m_z, m_a, next_layer_data, dLz);
+            ColumnMatrix dLz = z;
+            Activation::apply_jacobian(z, a, next_layer_data, dLz);
 
 
             /* Derivative for weights */
-            Matrix kernelDerivatives(m_filter_data.size(), nobs, 0);
+            Matrix kernelDerivatives(kernelData.size(), nobs, 0);
 	        Matrix W(outputWidth * outputHeight, inputWidth * inputHeight);
 	        for (size_t i = 0; i < nobs; ++i) {
 	            for (size_t k = 0; k < dLz.rows(); ++k) {
 	                blaze::row(W, k) = blaze::trans(blaze::column(prev_layer_data, i) * dLz(k, i));
 	            }
 
-	            for (size_t j = 0; j < m_filter_data.size(); ++j) {
+	            for (size_t j = 0; j < kernelData.size(); ++j) {
 		            for (size_t k = 0; k < jDeltas.size(); ++k) {
 		            	kernelDerivatives(j, i) += W(k, jDeltas[k] + iDeltas[j]);
 		            }
@@ -225,11 +229,11 @@ class Conv2d: public Layer<Scalar>
             /* Derivative for bias */
 
             ConstAlignedMapMat dLz_by_channel(dLz.data(), outputWidth * outputHeight,
-														  m_dim.out_channels * nobs);
+														  outputChannels * nobs);
             Vector dLb = blaze::trans(blaze::sum<blaze::columnwise>(dLz_by_channel));
 
             /* Average over observations */
-            ConstAlignedMapMat dLb_by_obs(dLb.data(), m_dim.out_channels, nobs);
+            ConstAlignedMapMat dLb_by_obs(dLb.data(), outputChannels, nobs);
             m_db = blaze::mean<blaze::rowwise>(dLb_by_obs);
 
             m_din.resize(this->inputSize, nobs);
@@ -253,40 +257,40 @@ class Conv2d: public Layer<Scalar>
         {
             ConstAlignedMapVec dw(m_df_data.data(), m_df_data.size());
             ConstAlignedMapVec db(m_db.data(), m_db.size());
-            AlignedMapVec      w(m_filter_data.data(), m_filter_data.size());
-            AlignedMapVec      b(m_bias.data(), m_bias.size());
+            AlignedMapVec      w(kernelData.data(), kernelData.size());
+            AlignedMapVec      b(bias.data(), bias.size());
             opt.update(dw, w);
             opt.update(db, b);
         }
 
-        std::vector<Scalar> get_parameters() const
-        {
-            std::vector<Scalar> res(m_filter_data.size() + m_bias.size());
-            // Copy the data of filters and bias to a long vector
-            std::copy(m_filter_data.data(), m_filter_data.data() + m_filter_data.size(),
-                      res.begin());
-            std::copy(m_bias.data(), m_bias.data() + m_bias.size(),
-                      res.begin() + m_filter_data.size());
-            return res;
+		std::vector<std::vector<Scalar>> getParameters() const
+		{
+			std::vector<std::vector<Scalar>> parameters(2);
+
+            // kernels
+            std::copy(kernelData.data(), kernelData.data() + kernelData.size(),
+                      parameters[0].begin());
+			// bias
+            std::copy(bias.data(), bias.data() + bias.size(),
+                      parameters[1].begin());
+
+            return parameters;
         }
 
-        void setParameters(const Vector &kernelData, const Vector &biasData)
-        {
-            if (kernelData.size() != m_filter_data.size()) {
-                throw std::invalid_argument("Parameter size does not match");
-            }
-
-			if (biasData.size() != m_bias.size()) {
+		void setParameters(const std::vector<std::vector<Scalar>>& parameters)
+		{
+			/*if (static_cast<int>(param.size()) != blaze::size(m_weight) + m_bias.size())
+			{
 				throw std::invalid_argument("Parameter size does not match");
-			}
+			}*/
 
-			m_filter_data = kernelData;
-			m_bias = biasData;
-        }
+			std::copy(parameters[0].begin(), parameters[0].begin() + blaze::size(kernelData), kernelData.data());
+			std::copy(parameters[1].begin(), parameters[1].begin() + blaze::size(bias), bias.data());
+		}
 
-        std::vector<Scalar> get_derivatives() const
-        {
-            std::vector<Scalar> res(m_df_data.size() + m_db.size());
+		std::vector<Scalar> get_derivatives() const
+		{
+			std::vector<Scalar> res(m_df_data.size() + m_db.size());
             // Copy the data of filters and bias to a long vector
             std::copy(m_df_data.data(), m_df_data.data() + m_df_data.size(), res.begin());
             std::copy(m_db.data(), m_db.data() + m_db.size(),
