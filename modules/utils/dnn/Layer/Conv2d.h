@@ -31,7 +31,6 @@ class Conv2d: public Layer<Scalar>
 		using ConstAlignedMapVec = const blaze::CustomVector<Scalar, blaze::aligned, blaze::unpadded>;
 		using AlignedMapVec = blaze::CustomVector<Scalar, blaze::aligned, blaze::unpadded>;
 
-		const internal::ConvDims m_dim; // Various dimensions of convolution
 
 		size_t inputWidth;
 		size_t inputHeight;
@@ -75,9 +74,6 @@ class Conv2d: public Layer<Scalar>
                const int kernelWidth, const int kernelHeight) :
 											Layer<Scalar>(inputWidth * inputHeight * inputChannels,
 											  (inputWidth - kernelWidth + 1) * (inputHeight - kernelHeight + 1) * outputChannels),
-											m_dim(inputChannels, outputChannels,
-													inputHeight, inputWidth,
-													kernelHeight, kernelWidth),
 											  inputWidth(inputWidth), inputHeight(inputHeight),
 											  kernelWidth(kernelWidth), kernelHeight(kernelHeight),
 											  outputWidth(inputWidth - kernelWidth + 1),
@@ -115,11 +111,11 @@ class Conv2d: public Layer<Scalar>
             size_t toWidth = outputWidth;
             size_t toHeight = outputHeight;
 
-			Matrix unrolledKernel(toWidth * toHeight, fromWidth * fromHeight, 0);
+			Matrix unrolledKernel(fromWidth * fromHeight, toWidth * toHeight,  0);
 
 			size_t dr = fromWidth - kernelWidth;
 
-			jDeltas.resize(unrolledKernel.rows());
+			jDeltas.resize(unrolledKernel.columns());
 			iDeltas.resize(kernelData.size());
 
 			Vector kernelRow(kernelWidth * kernelHeight + (kernelHeight - 1) * dr);
@@ -135,12 +131,11 @@ class Conv2d: public Layer<Scalar>
 				}
 			}
 
-
 			size_t j00 = 0;
 	        size_t j0 = 0;
-			for (size_t i = 0; i < unrolledKernel.rows(); ++i) {
+			for (size_t i = 0; i < unrolledKernel.columns(); ++i) {
 				for (size_t j = 0; j < kernelRow.size(); ++j) {
-					unrolledKernel(i, (j00 * fromWidth) + j0 + j) = kernelRow[j];
+					unrolledKernel((j00 * fromWidth) + j0 + j, i) = kernelRow[j];
 				}
 
 				jDeltas[i] = (j00 * fromWidth) + j0;
@@ -160,10 +155,10 @@ class Conv2d: public Layer<Scalar>
         void forward(const Matrix& prev_layer_data)
         {
             // Each column is an observation
-            const int nobs = prev_layer_data.columns();
+            const int nobs = prev_layer_data.rows();
 
 	        // Linear term, z = conv(in, w) + b
-            z.resize(this->outputSize, nobs);
+            z.resize(nobs, this->outputSize);
 
 	        // Convolution
 	        auto unrolledKernel = getUnrolledKernel();
@@ -173,7 +168,7 @@ class Conv2d: public Layer<Scalar>
 	        //cout << m_filter_data << endl;
 	        //cout << unrolledKernel << endl;
 	        for (int i = 0; i < nobs; ++i) {
-		        blaze::column(z, i) = unrolledKernel * blaze::column(prev_layer_data, i);
+		        blaze::row(z, i) = blaze::row(prev_layer_data, i) * unrolledKernel;
 	        }
 
 
@@ -181,15 +176,14 @@ class Conv2d: public Layer<Scalar>
             // Each column of z contains m_dim.out_channels channels, and each channel has
             // m_dim.conv_rows * m_dim.conv_cols elements
             int channel_start_row = 0;
-            const int channel_nelem = m_dim.conv_rows * m_dim.conv_cols;
-
+            const int channel_nelem = outputWidth * outputHeight;
 	        for (int i = 0; i < outputChannels; i++, channel_start_row += channel_nelem) {
-		        submatrix(z, channel_start_row, 0, channel_nelem, nobs) += bias[i];
+		        submatrix(z, 0, channel_start_row, nobs, channel_nelem) += bias[i];
 	        }
 
 
 	        /* Apply activation function */
-            a.resize(this->outputSize, nobs);
+            a.resize(nobs, this->outputSize);
             Activation::activate(z, a);
         }
 
