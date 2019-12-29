@@ -26,8 +26,8 @@ class Conv2d: public Layer<Scalar>
     private:
 		using Matrix = blaze::DynamicMatrix<Scalar>;
 		using ColumnMatrix = blaze::DynamicMatrix<Scalar, blaze::columnMajor>;
-		using Vector = blaze::DynamicVector<Scalar, blaze::rowMajor>;
-		using ConstAlignedMapMat = const blaze::CustomMatrix<Scalar, blaze::unaligned, blaze::unpadded, blaze::columnMajor>;
+		using Vector = blaze::DynamicVector<Scalar, blaze::rowVector>;
+		using ConstAlignedMapMat = const blaze::CustomMatrix<Scalar, blaze::unaligned, blaze::unpadded>;
 		using ConstAlignedMapVec = const blaze::CustomVector<Scalar, blaze::aligned, blaze::unpadded>;
 		using AlignedMapVec = blaze::CustomVector<Scalar, blaze::aligned, blaze::unpadded>;
 
@@ -48,14 +48,14 @@ class Conv2d: public Layer<Scalar>
         // (in_channels x out_channels x filter_rows x filter_cols)
         // See Utils/Convolution.h for its layout
 
-        Vector m_df_data;               // Derivative of filters, same dimension as m_filter_data
+        Vector df_data;               // Derivative of filters, same dimension as m_filter_data
 
         Vector bias;                  // Bias term for the output channels, out_channels x 1. (One bias term per channel)
-        Vector m_db;                    // Derivative of bias, same dimension as m_bias
+        Vector db;                    // Derivative of bias, same dimension as m_bias
 
         Matrix z;                     // Linear term, z = conv(in, w) + b. Each column is an observation
         Matrix a;                     // Output of this layer, a = act(z)
-        Matrix m_din;                   // Derivative of the input of this layer
+        Matrix din;                   // Derivative of the input of this layer
         // Note that input of this layer is also the output of previous layer
 
     public:
@@ -91,14 +91,14 @@ class Conv2d: public Layer<Scalar>
             const int kernelDataSize = inputChannels * outputChannels * kernelWidth * kernelHeight;
 
             kernelData.resize(kernelDataSize);
-            m_df_data.resize(kernelDataSize);
+            df_data.resize(kernelDataSize);
 
             // Random initialization of filter parameters
             internal::set_normal_random(kernelData.data(), kernelDataSize, rng, mu, sigma);
 
             // Bias term
             bias.resize(outputChannels);
-            m_db.resize(outputChannels);
+            db.resize(outputChannels);
 
             internal::set_normal_random(bias.data(), outputChannels, rng, mu, sigma);
         }
@@ -197,17 +197,18 @@ class Conv2d: public Layer<Scalar>
         // https://grzegorzgwardys.wordpress.com/2016/04/22/8/
         void backprop(const Matrix& prev_layer_data, const Matrix& next_layer_data)
         {
-            const int nobs = prev_layer_data.columns();
-            ColumnMatrix dLz = z;
-            Activation::apply_jacobian(z, a, next_layer_data, dLz);
+            const size_t nobs = prev_layer_data.rows();
+            //ColumnMatrix dLz = z;
+	        Matrix dLz = z;
+	        Activation::apply_jacobian(z, a, next_layer_data, dLz);
 
 
             /* Derivative for weights */
-            Matrix kernelDerivatives(kernelData.size(), nobs, 0);
-	        Matrix W(outputWidth * outputHeight, inputWidth * inputHeight);
+            Matrix kernelDerivatives(nobs, kernelData.size(), 0);
+	        Matrix W(inputWidth * inputHeight, outputWidth * outputHeight);
 	        for (size_t i = 0; i < nobs; ++i) {
-	            for (size_t k = 0; k < dLz.rows(); ++k) {
-	                blaze::row(W, k) = blaze::trans(blaze::column(prev_layer_data, i) * dLz(k, i));
+	            for (size_t k = 0; k < dLz.columns(); ++k) {
+	                blaze::column(W, k) = blaze::trans(blaze::row(prev_layer_data, i) * dLz(k, i));
 	            }
 
 	            for (size_t j = 0; j < kernelData.size(); ++j) {
@@ -217,44 +218,42 @@ class Conv2d: public Layer<Scalar>
 	            }
             }
 
-            m_df_data = blaze::mean<blaze::rowwise>(kernelDerivatives);
+	        /* Average over observations */
+	        df_data = blaze::mean<blaze::columnwise>(kernelDerivatives);
 
 
             /* Derivative for bias */
+            ConstAlignedMapMat dLz_by_channel(dLz.data(), outputChannels * nobs, outputWidth * outputHeight);
+            Vector dLb = blaze::trans(blaze::sum<blaze::rowwise>(dLz_by_channel));
 
-            ConstAlignedMapMat dLz_by_channel(dLz.data(), outputWidth * outputHeight,
-														  outputChannels * nobs);
-            Vector dLb = blaze::trans(blaze::sum<blaze::columnwise>(dLz_by_channel));
-
-            /* Average over observations */
-            ConstAlignedMapMat dLb_by_obs(dLb.data(), outputChannels, nobs);
-            m_db = blaze::mean<blaze::rowwise>(dLb_by_obs);
-
-            m_din.resize(this->inputSize, nobs);
+	        /* Average over observations */
+            ConstAlignedMapMat dLb_by_obs(dLb.data(), nobs, outputChannels);
+	        db = blaze::mean<blaze::columnwise>(dLb_by_obs);
 
 
 	        /* Derivative for input */
 	        auto unrolledKernel = getUnrolledKernel();
 	        blaze::transpose(unrolledKernel);
 
+	        din.resize(nobs, this->inputSize);
 	        for (int i = 0; i < nobs; ++i) {
-		        blaze::column(m_din, i) = unrolledKernel * blaze::column(dLz, i);
+		        blaze::row(din, i) = blaze::row(dLz, i) * unrolledKernel;
 	        }
         }
 
         const Matrix& backprop_data() const
         {
-            return m_din;
+            return din;
         }
 
         void update(Optimizer<Scalar>& opt)
         {
-            ConstAlignedMapVec dw(m_df_data.data(), m_df_data.size());
-            ConstAlignedMapVec db(m_db.data(), m_db.size());
+            ConstAlignedMapVec dw(df_data.data(), df_data.size());
+            ConstAlignedMapVec dbConst(db.data(), db.size());
             AlignedMapVec      w(kernelData.data(), kernelData.size());
             AlignedMapVec      b(bias.data(), bias.size());
             opt.update(dw, w);
-            opt.update(db, b);
+            opt.update(dbConst, b);
         }
 
 		std::vector<std::vector<Scalar>> getParameters() const
@@ -284,11 +283,11 @@ class Conv2d: public Layer<Scalar>
 
 		std::vector<Scalar> get_derivatives() const
 		{
-			std::vector<Scalar> res(m_df_data.size() + m_db.size());
+			std::vector<Scalar> res(df_data.size() + db.size());
             // Copy the data of filters and bias to a long vector
-            std::copy(m_df_data.data(), m_df_data.data() + m_df_data.size(), res.begin());
-            std::copy(m_db.data(), m_db.data() + m_db.size(),
-                      res.begin() + m_df_data.size());
+            std::copy(df_data.data(), df_data.data() + df_data.size(), res.begin());
+            std::copy(db.data(), db.data() + db.size(),
+                      res.begin() + df_data.size());
             return res;
         }
 };
