@@ -264,7 +264,10 @@ void SOM<recType, Graph, Metric, Distribution>::subsampled_train_(const std::vec
 			}
 		}
 
-		reference_data.push_back(get_weights());
+		if (idx % 10 == 0)
+		{
+			reference_data.push_back(get_weights());
+		}
 		
 		++idx;		
 

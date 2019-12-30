@@ -363,9 +363,10 @@ int main(int argc, char *argv[])
 
 	
 	//auto dataset = readCsvData("assets/testdataset/compound.csv", ',');
-	auto dataset = readCsvData("assets/testdataset/fisheriris.csv", ',');
+	//auto dataset = readCsvData("assets/testdataset/fisheriris.csv", ',');
 	//auto dataset = readCsvData("assets/testdataset/multidim.csv", ',');
 	//auto [dates, dataset] = readCsvData2("assets/testdataset/nyc_taxi.csv", ',');
+	auto dataset = readCsvData("assets/testdataset/3d_swissroll.csv", ',');
 	
 	//std::cout << " ->> " << std::endl;
 	//vector_print(dates);
@@ -387,12 +388,14 @@ int main(int argc, char *argv[])
 	//	{8, 0, 0},
 	//};
 
-	std::vector<Record> test_samples_1 = {
-		{6.5, 3.2, 5.1, 2.2},
-		{6.1, 3.3, 5.3, 2.3},
-		{5.9, 3.1, 5.2, 1.8},
-		{4.3, 5.0, 5.0, 3.5}
-	};
+	//std::vector<Record> test_samples_1 = {
+	//	{6.5, 3.2, 5.1, 2.2},
+	//	{6.1, 3.3, 5.3, 2.3},
+	//	{5.9, 3.1, 5.2, 1.8},
+	//	{4.3, 5.0, 5.0, 3.5}
+	//};
+
+	std::vector<Record> test_samples_1 = { dataset[0] };
 
 	metric::KOC_factory<Record> simple_koc_factory(best_w_grid_size, best_h_grid_size, 0.5, 0.0, 300);    
 	auto simple_koc = simple_koc_factory(dataset, 6); 
