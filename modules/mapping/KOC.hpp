@@ -151,7 +151,7 @@ namespace metric {
 				 * 
 				 * @param samples 
 				 */
-			std::tuple<std::vector<int>, std::vector<std::vector<recType::value_type>>, std::vector<int>> clusterize_nodes(int num_clusters);
+			std::tuple<std::vector<int>, std::vector<std::vector<typename recType::value_type>>, std::vector<int>> clusterize_nodes(int num_clusters);
 
 			/**
 				 * @brief 

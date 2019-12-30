@@ -68,14 +68,6 @@ namespace metric {
 		{
 			std::vector<bool> result;
 	
-			//auto entropy_range = reduced_mean_entropy - (reduced_mean_entropy - reduced_min_entropy) * (1 + anomaly_threshold);
-			//std::cout << "entropy_range: " << entropy_range << 
-			//	" reduced_mean_entropy: " << reduced_mean_entropy << " reduced_min_entropy: " << reduced_min_entropy << " reduced_max_entropy: " << reduced_max_entropy << std::endl;
-	
-			//auto reduced_closest_distance_range = reduced_mean_closest_distance - (reduced_mean_closest_distance - reduced_min_closest_distance) * (1 + anomaly_threshold);
-			//std::cout << "reduced_closest_distance_range: " << reduced_closest_distance_range << 
-			//	" reduced_mean_closest_distance: " << reduced_mean_closest_distance << " reduced_min_closest_distance: " << reduced_min_closest_distance << " reduced_max_closest_distance: " << reduced_max_closest_distance << std::endl;
-
 			for (size_t i = 0; i < samples.size(); i++)
 			{
 				// if entropy less then min entropy level then it is anomaly
@@ -105,22 +97,12 @@ namespace metric {
 		
 			//std::sort(reduced.begin(), reduced.end());	
 
-			//std::vector<std::vector<T>> reduced_reshaped;
-			//for (size_t j = 0; j < reduced.size(); j++)
-			//{
-			//	reduced_reshaped.push_back({reduced[j]});
-			//}
-			//auto e = entropy(reduced_reshaped, 3, 2.0, SOM<recType, Graph, Metric, Distribution>::metric);
-			//
-			//std::cout << " e: " << e << " entropy_range: " << entropy_range << std::endl;
-			//// if entropy less then min entropy level then it is anomaly
-			//return e < entropy_range;
 		}
 
 		
 		template <class recType, class Graph, class Metric, class Distribution>
 		std::vector<int> KOC<recType, Graph, Metric, Distribution>::result(
-			const std::vector<std::vector<T>>& samples, double anomaly_threshold = 0.0)
+			const std::vector<std::vector<T>>& samples, double anomaly_threshold)
 		{				
 			std::vector<int> assignments;
 			auto anomalies = check_if_anomaly(samples, anomaly_threshold);						
@@ -213,10 +195,9 @@ namespace metric {
 		}
 
 		template <class recType, class Graph, class Metric, class Distribution>
-		std::tuple<std::vector<int>, std::vector<std::vector<recType::value_type>>, std::vector<int>> KOC<recType, Graph, Metric, Distribution>::clusterize_nodes(int num_clusters)
+		std::tuple<std::vector<int>, std::vector<std::vector<typename recType::value_type>>, std::vector<int>> KOC<recType, Graph, Metric, Distribution>::clusterize_nodes(int num_clusters)
 		{
 			int min_cluster_size = 0;
-			//int num_clusters = KOC<recType, Graph, Metric, Distribution>::getNodesNumber();
 
 			auto nodes_data = KOC<recType, Graph, Metric, Distribution>::get_weights();
 
@@ -225,19 +206,6 @@ namespace metric {
 				// clustering on the reduced data
 				
 				auto [assignments, exemplars, counts] = metric::kmeans(nodes_data, num_clusters, 1000);
-				//metric::Matrix<recType, metric::Euclidian<double>, double> distance_matrix(nodes_data);
-				//auto [assignments_size_t, exemplars_unknwn, counts_size_t] = metric::dbscan(distance_matrix, (double)0.7, 1);
-				//std::vector<std::vector<recType::value_type>> exemplars;
-				//std::vector<int> assignments;
-				//for (const auto i : assignments_size_t)
-				//{
-				//	assignments.push_back(static_cast<int>(i));
-				//}
-				//std::vector<int> counts;
-				//for (const auto i : counts_size_t)
-				//{
-				//	counts.push_back(static_cast<int>(i));
-				//}
 		
 				std::vector<int>::iterator result = std::min_element(counts.begin(), counts.end());
 				min_cluster_size = counts[std::distance(counts.begin(), result)];	
@@ -271,7 +239,7 @@ namespace metric {
 				}
 			}
 
-			return { std::vector<int>(), std::vector<std::vector<recType::value_type>>(), std::vector<int>() };
+			return { std::vector<int>(), std::vector<std::vector<typename recType::value_type>>(), std::vector<int>() };
 		}
 
 	}  // namespace KOC_details
@@ -280,7 +248,7 @@ namespace metric {
 	
 	template <class recType, class Graph, class Metric, class Distribution>
 	KOC_factory<recType, Graph, Metric, Distribution>::KOC_factory(size_t nodesNumber, 
-		double start_learn_rate = 0.8, double finish_learn_rate = 0.0, size_t iterations = 20, T distribution_min = -1, T distribution_max = 1) : 
+		double start_learn_rate, double finish_learn_rate, size_t iterations, T distribution_min, T distribution_max) : 
 		graph_(nodesNumber), 
 		metric_(), 
 		distribution_(distribution_min, distribution_max)
@@ -296,8 +264,8 @@ namespace metric {
 	}
 	
 	template <class recType, class Graph, class Metric, class Distribution>
-	KOC_factory<recType, Graph, Metric, Distribution>::KOC_factory(size_t nodesWidth = 5, size_t nodesHeight = 4, 
-		double start_learn_rate = 0.8, double finish_learn_rate = 0.0, size_t iterations = 20, T distribution_min = -1, T distribution_max = 1) : 
+	KOC_factory<recType, Graph, Metric, Distribution>::KOC_factory(size_t nodesWidth, size_t nodesHeight, 
+		double start_learn_rate, double finish_learn_rate, size_t iterations, T distribution_min, T distribution_max) : 
 		graph_(nodesWidth, nodesHeight), 
 		metric_(), 
 		distribution_(distribution_min, distribution_max)

@@ -555,7 +555,7 @@ bool LPS::millerRabin(const size_t nodesNumber)
 
 bool LPS::miller_rabin_pass(const size_t a, const size_t s, const size_t d, const size_t nodesNumber)
 {
-    auto p = size_t(pow(a, d)) % nodesNumber;
+    auto p = size_t(std::pow(a, d)) % nodesNumber;
     if (p == 1) {
         return true;
     }

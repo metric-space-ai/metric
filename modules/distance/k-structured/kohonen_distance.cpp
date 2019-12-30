@@ -66,7 +66,7 @@ void kohonen_distance<D, Sample, Graph, Metric, Distribution>::calculate_distanc
 {
 	
 	typedef boost::adjacency_list <boost::listS, boost::vecS, boost::undirectedS, boost::no_property, boost::property <boost::edge_weight_t, D>> Graph_t;
-	typedef boost::graph_traits <Graph_t>::vertex_descriptor Vertex_descriptor;
+	typedef typename boost::graph_traits <Graph_t>::vertex_descriptor Vertex_descriptor;
 	typedef std::pair<int, int> Edge;
 
 	std::vector<Sample> nodes = som_model_.get_weights();
@@ -97,7 +97,7 @@ void kohonen_distance<D, Sample, Graph, Metric, Distribution>::calculate_distanc
 	int num_arcs = sizeof(edge_array) / sizeof(Edge);
 	Graph_t g(edge_array, edge_array + num_arcs, weights.data(), nodes_list.size());
 
-	boost::property_map<Graph_t, boost::edge_weight_t>::type weightmap = get(boost::edge_weight, g);
+	typename boost::property_map<Graph_t, boost::edge_weight_t>::type weightmap = get(boost::edge_weight, g);
 	std::vector<Vertex_descriptor> p(num_vertices(g));
 	std::vector<D> d(num_vertices(g));
 
