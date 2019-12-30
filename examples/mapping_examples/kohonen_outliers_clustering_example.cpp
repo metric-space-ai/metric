@@ -16,9 +16,9 @@ Copyright (c) 2019 Panda Team
 #include <iostream>
 #include <fstream>
 
-//#if defined(_WIN64)
+#if defined(_WIN64)
 #include <filesystem>
-//#endif
+#endif
 
 #include <chrono>
 
