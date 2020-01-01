@@ -106,21 +106,19 @@ BOOST_AUTO_TEST_CASE(convolutional)
 	BOOST_CHECK_EQUAL(convLayer.output(), Y);
 }
 
-//BOOST_AUTO_TEST_CASE(deconvolutional)
-//{
-//	Conv2dTranspose<double, Identity<double>> convTransposeLayer(2, 2, 1, 1, 2, 2);
-//	blaze::DynamicMatrix<double, blaze::columnMajor> X{{1, 2, 3, 4}};
-//	blaze::transpose(X);
-//	Vector K = {1, 2, 3, 4};
-//	Vector bias = {0};
-//
-//	convTransposeLayer.setParameters(K, bias);
-//
-//	convTransposeLayer.forward(X);
-//
-//	blaze::DynamicMatrix<double, blaze::columnMajor> Y {{1, 4, 4, 6, 20, 16, 9, 24, 16}};
-//	blaze::transpose(Y);
-//
-//	BOOST_CHECK_EQUAL(convTransposeLayer.output(), Y);
-//}
-//
+BOOST_AUTO_TEST_CASE(deconvolutional)
+{
+	Conv2dTranspose<double, Identity<double>> convTransposeLayer(2, 2, 1, 1, 2, 2);
+	blaze::DynamicMatrix<double, blaze::columnMajor> X{{1, 2, 3, 4}};
+	std::vector<double> K = {1, 2, 3, 4};
+	std::vector<double> bias = {0};
+
+	convTransposeLayer.setParameters({K, bias});
+
+	convTransposeLayer.forward(X);
+
+	blaze::DynamicMatrix<double, blaze::columnMajor> Y {{1, 4, 4, 6, 20, 16, 9, 24, 16}};
+
+	BOOST_CHECK_EQUAL(convTransposeLayer.output(), Y);
+}
+
