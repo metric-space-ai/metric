@@ -189,7 +189,7 @@ PCFA<recType, Metric>::encode(const std::vector<recType> & Data) {
     for (size_t row_idx = 0; row_idx < DataBlaze.rows(); row_idx++)
         blaze::row(CenteredInput, row_idx) = blaze::row(DataBlaze, row_idx) - averages;
     blaze::DynamicMatrix<PCFA<recType, Metric>::value_type> Out = CenteredInput * W_encode;
-    return blaze_to_vector<recType>(Out);
+    return blaze2rectype<recType>(Out);
 }
 
 
@@ -223,9 +223,9 @@ PCFA<recType, Metric>::decode(
         auto Centered = blaze::DynamicMatrix<typename PCFA<recType, Metric>::value_type>(Noncentered.rows(), Noncentered.columns());
         for (size_t row_idx = 0; row_idx < Noncentered.rows(); row_idx++)
             blaze::row(Centered, row_idx) = blaze::row(Noncentered, row_idx) + averages;
-        return blaze_to_vector<recType>(Centered);
+        return blaze2rectype<recType>(Centered);
     } else {
-        return blaze_to_vector<recType>(CodesBlaze * W_decode);
+        return blaze2rectype<recType>(CodesBlaze * W_decode);
     }
 }
 
@@ -252,7 +252,7 @@ PCFA<recType, Metric>::eigenmodes_mat() {
 template <typename recType, typename Metric>
 std::vector<recType>
 PCFA<recType, Metric>::eigenmodes() {
-    return blaze_to_vector<recType>(eigenmodes_mat());
+    return blaze2rectype<recType>(eigenmodes_mat());
 }
 
 
@@ -273,7 +273,7 @@ typename std::enable_if <
  determine_container_type<R>::code == 1,
  std::vector<R>
 >::type // here we support only STL vector
-PCFA<recType, Metric>::blaze_to_vector(const blaze::DynamicMatrix<typename PCFA<R, Metric>::value_type> & In) { // TODO support arbitrary type!
+PCFA<recType, Metric>::blaze2rectype(const blaze::DynamicMatrix<typename PCFA<R, Metric>::value_type> & In) { // TODO support arbitrary type!
     std::vector<recType> Out;
     for (size_t i = 0; i < In.rows(); ++i) {  // TODO optimize using iterators!!
         recType rec;
@@ -291,7 +291,7 @@ typename std::enable_if<
  determine_container_type<R>::code == 2,
  std::vector<R>
 >::type
-PCFA<recType, Metric>::blaze_to_vector(const blaze::DynamicMatrix<typename PCFA<R, Metric>::value_type> & In) { // only blaze row-vector
+PCFA<recType, Metric>::blaze2rectype(const blaze::DynamicMatrix<typename PCFA<R, Metric>::value_type> & In) { // only blaze row-vector
     std::vector<recType> Out;
     for (size_t i = 0; i < In.rows(); ++i) {  // TODO optimize using iterators!!
         recType rec(In.columns()); // blaze specific

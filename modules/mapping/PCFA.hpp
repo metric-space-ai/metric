@@ -301,14 +301,14 @@ private:
      determine_container_type<R>::code == 1,
      std::vector<R>
     >::type
-    blaze_to_vector(const blaze::DynamicMatrix<typename PCFA<R, Metric>::value_type> & In);
+    blaze2rectype(const blaze::DynamicMatrix<typename PCFA<R, Metric>::value_type> & In);
 
     template <typename R>
     typename std::enable_if<
      determine_container_type<R>::code == 2,
      std::vector<R>
     >::type
-    blaze_to_vector(const blaze::DynamicMatrix<typename PCFA<R, Metric>::value_type> & In);
+    blaze2rectype(const blaze::DynamicMatrix<typename PCFA<R, Metric>::value_type> & In);
 
 };
 
