@@ -15,7 +15,7 @@ int main() {
     std::vector<double> data = {0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
     //std::vector<double> data = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
 
-    int wavelet = 2;
+    int wavelet = 4;
 
     auto encoded = wavelet::dwt(data, wavelet);
     auto decoded = wavelet::idwt(std::get<0>(encoded), std::get<1>(encoded), wavelet, data.size());
@@ -79,8 +79,8 @@ int main() {
 
     // showing reference file
 
-//    auto cm_splitted_ref = read_csv_num<double>("assets/cm_ref.csv", ",");
-//    mat2bmp::blaze2bmp(cm_splitted_ref, "cm_splitted_ref.bmp", 1.0/256.0);
+    //auto cm_splitted_ref = read_csv_num<double>("assets/cm_ref_8.csv", ",");
+    //mat2bmp::blaze2bmp(cm_splitted_ref, "cm_splitted_ref.bmp", 1.0/256.0);
 
 
     return 0;
