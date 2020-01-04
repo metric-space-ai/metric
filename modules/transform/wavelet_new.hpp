@@ -247,7 +247,63 @@ template <typename T>
 T TWED(blaze::CompressedVector<T> const& As, blaze::CompressedVector<T> const& Bs, T const& penalty,
     T const& elastic);  // edited by Max F because of "redefinition of default argument" compile-time error. I hope this does not break anything..
 
+
+// 2d functions
+
+
+/**
+ * @brief
+ *
+ * @param x
+ * @param waveletType
+ * @return
+ */
+template <typename Container>
+std::tuple<std::vector<Container>, std::vector<Container>, std::vector<Container>, std::vector<Container>>
+dwt2(std::vector<Container> const & x, int waveletType);
+
+
+/**
+ * @brief
+ *
+ * @param ll
+ * @param lh
+ * @param hl
+ * @param hh
+ * @param waveletType
+ * @param hx
+ * @param wx
+ * @return
+ */
+template <typename Container>
+std::vector<Container> idwt2(
+            std::vector<Container> const & ll,
+            std::vector<Container> const & lh,
+            std::vector<Container> const & hl,
+            std::vector<Container> const & hh,
+            int waveletType,
+            int hx,
+            int wx);
+
+/**
+ * @brief
+ *
+ * @param in
+ * @param waveletType
+ * @param hx
+ * @param wx
+ * @return
+ */
+template <typename Container>
+std::vector<Container> idwt2(
+            std::tuple<std::vector<Container>, std::vector<Container>, std::vector<Container>, std::vector<Container>> in,
+            int waveletType,
+            int hx,
+            int wx);
+
+
 }  // namespace
+
 
 #include "wavelet_new.cpp"
 
