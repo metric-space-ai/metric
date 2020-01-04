@@ -17,7 +17,7 @@
 #include "Output.h"
 #include "Output/RegressionMSE.h"
 //#include "Output/BinaryClassEntropy.h"
-//#include "Output/MultiClassEntropy.h"
+#include "Output/MultiClassEntropy.h"
 
 #include "Optimizer.h"
 #include "Optimizer/SGD.h"
