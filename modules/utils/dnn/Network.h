@@ -6,6 +6,7 @@
 #include <utility>
 #include <random>
 #include <fstream>
+#include <chrono>
 
 #include "../../../3rdparty/blaze/Math.h"
 #include "../../../3rdparty/cereal/archives/binary.hpp"
@@ -42,13 +43,13 @@ class Network
     private:
 		using Matrix = blaze::DynamicMatrix<Scalar>;
 
-        std::mt19937                 defaultRng;      // Built-in std::mt19937
-        std::mt19937&                rng;              // Reference to the std::mt19937 provided by the user,
-												// otherwise reference to m_default_rng
+        std::mt19937                            defaultRng;      // Built-in std::mt19937
+        std::mt19937&                           rng;              // Reference to the std::mt19937 provided by the user,
+																	// otherwise reference to m_default_rng
         std::shared_ptr<Output<Scalar>>             outputLayer;           // The output layer
         Callback<Scalar>                           defaultCallback; // Default callback function
         std::shared_ptr<Callback<Scalar>>           m_callback;         // Points to user-provided callback function,
-												// otherwise points to m_default_callback
+																		// otherwise points to m_default_callback
 		std::shared_ptr<Optimizer<Scalar>>          opt;
 
         // Check dimensions of layers
@@ -531,21 +532,25 @@ class Network
             const int nbatch = internal::create_shuffled_batches(x, y, batch_size, rng,
                                                                  x_batches, y_batches);
             // Set up callback parameters
-            m_callback->m_nbatch = nbatch;
-            m_callback->m_nepoch = epoch;
+            m_callback->batchesNumber = nbatch;
+            m_callback->epochsNumber = epoch;
 
             // Iterations on the whole data set
 	        for (int k = 0; k < epoch; k++) {
-		        m_callback->m_epoch_id = k;
+		        m_callback->epochId = k;
 
 		        // Train on each mini-batch
 		        for (int i = 0; i < nbatch; i++) {
-			        m_callback->m_batch_id = i;
-			        m_callback->pre_training_batch(this, x_batches[i], y_batches[i]);
+			        auto t1 = std::chrono::high_resolution_clock::now();
+			        m_callback->batchId = i;
+			        m_callback->preTrainingBatch(this, x_batches[i], y_batches[i]);
 			        this->forward(x_batches[i]);
 			        this->backprop(x_batches[i], y_batches[i]);
 			        this->update();
-			        m_callback->post_training_batch(this, x_batches[i], y_batches[i]);
+			        m_callback->postTrainingBatch(this, x_batches[i], y_batches[i]);
+			        auto t2 = std::chrono::high_resolution_clock::now();
+			        auto d = std::chrono::duration_cast < std::chrono::duration < double >> (t2 - t1);
+			        std::cout << "Training time: " << d.count() << " s" << std::endl;
 		        }
 	        }
 
