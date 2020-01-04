@@ -26,9 +26,9 @@ namespace dnn
 template<typename Scalar>
 class Output
 {
-	private:
+	protected:
 		using Matrix = blaze::DynamicMatrix<Scalar>;
-		using IntegerVector = blaze::DynamicVector<int, blaze::rowVector>;
+		using IntegerVector = blaze::DynamicMatrix<int, blaze::columnMajor>;
     public:
         virtual ~Output() {}
 

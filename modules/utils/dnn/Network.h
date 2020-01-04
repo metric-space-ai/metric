@@ -132,17 +132,15 @@ class Network
         // Update parameters
         void update()
         {
-            const int nlayer = num_layers();
+	        const int nlayer = num_layers();
 
-            if (nlayer <= 0)
-            {
-                return;
-            }
+	        if (nlayer <= 0) {
+		        return;
+	        }
 
-            for (int i = 0; i < nlayer; i++)
-            {
-                layers[i]->update(opt);
-            }
+	        for (int i = 0; i < nlayer; i++) {
+		        layers[i]->update(*opt);
+	        }
         }
 
 
