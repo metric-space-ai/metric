@@ -12,54 +12,54 @@ namespace dnn
 
 namespace internal {
 
-    template <typename DerivedX, typename DerivedY, typename XType, typename YType>
-int create_shuffled_batches(
-    const DerivedX& x, const DerivedY& y,
-    int batch_size, std::mt19937& rng,
-    std::vector<XType>& x_batches, std::vector<YType>& y_batches
+template <typename DerivedX, typename DerivedY, typename XType, typename YType>
+int create_shuffled_batches(const DerivedX& x, const DerivedY& y,
+                            int batchSize, std::mt19937& rng,
+                            std::vector<XType>& xBatches, std::vector<YType>& yBatches
 )
 {
-	const int nobs = x.rows();
-	const int dimx = x.columns();
-	const int dimy = y.columns();
+	const int observationsNumber = x.rows();
+	const int dimX = x.columns();
+	const int dimY = y.columns();
 
-	if (y.rows() != nobs) {
+	if (y.rows() != observationsNumber) {
 		throw std::invalid_argument("Input X and Y have different number of observations");
 	}
 
     // Randomly shuffle the IDs
-    std::vector<int> id(nobs);
+    std::vector<int> id(observationsNumber);
     std::iota(id.begin(), id.end(), 0);
     std::shuffle(id.begin(), id.end(), rng);
 
     // Compute batch size
-	if (batch_size > nobs) {
-		batch_size = nobs;
+	if (batchSize > observationsNumber) {
+		batchSize = observationsNumber;
 	}
 
-    const int nbatch = (nobs - 1) / batch_size + 1;
-    const int last_batch_size = nobs - (nbatch - 1) * batch_size;
-    // Create shuffled data
-    x_batches.clear();
-    y_batches.clear();
-    x_batches.reserve(nbatch);
-    y_batches.reserve(nbatch);
+    const int batchesNumber = (observationsNumber - 1) / batchSize + 1;
+    const int lastBatchSize = observationsNumber - (batchesNumber - 1) * batchSize;
 
-    for (int i = 0; i < nbatch; i++) {
-        const int bsize = (i == nbatch - 1) ? last_batch_size : batch_size;
-        x_batches.push_back(XType(bsize, dimx));
-        y_batches.push_back(YType(bsize, dimx));
+    // Create shuffled data
+    xBatches.clear();
+    yBatches.clear();
+    xBatches.reserve(batchesNumber);
+    yBatches.reserve(batchesNumber);
+
+    for (int i = 0; i < batchesNumber; i++) {
+        const int currentBatchSize = (i == batchesNumber - 1) ? lastBatchSize : batchSize;
+        xBatches.push_back(XType(currentBatchSize, dimX));
+        yBatches.push_back(YType(currentBatchSize, dimY));
 
         // Copy data
-        const int offset = i * batch_size;
+        const int offset = i * batchSize;
 
-        for (int j = 0; j < bsize; j++) {
-            blaze::row(x_batches[i], j) = blaze::row(x, id[offset + j]);
-            blaze::row(y_batches[i], j) = blaze::row(y, id[offset + j]);
+        for (int j = 0; j < currentBatchSize; j++) {
+            blaze::row(xBatches[i], j) = blaze::row(x, id[offset + j]);
+            blaze::row(yBatches[i], j) = blaze::row(y, id[offset + j]);
         }
     }
 
-    return nbatch;
+    return batchesNumber;
 }
 
 // Fill array with N(mu, sigma^2) random numbers
