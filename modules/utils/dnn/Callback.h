@@ -32,33 +32,33 @@ template <typename Scalar>
 class Callback
 {
     protected:
-		using Matrix = blaze::DynamicMatrix<Scalar, blaze::columnMajor>;
-		using IntegerVector = blaze::DynamicVector<int, blaze::rowVector>;
+		using Matrix = blaze::DynamicMatrix<Scalar>;
+		using IntegerVector = blaze::DynamicMatrix<int, blaze::columnMajor>;
 
     public:
         // Public members that will be set by the network during the training process
-        int m_nbatch;   // Number of total batches
-        int m_batch_id; // The index for the current mini-batch (0, 1, ..., m_nbatch-1)
-        int m_nepoch;   // Total number of epochs (one run on the whole data set) in the training process
-        int m_epoch_id; // The index for the current epoch (0, 1, ..., m_nepoch-1)
+        int batchesNumber;   // Number of total batches
+        int batchId; // The index for the current mini-batch (0, 1, ..., m_nbatch-1)
+        int epochsNumber;   // Total number of epochs (one run on the whole data set) in the training process
+        int epochId; // The index for the current epoch (0, 1, ..., m_nepoch-1)
 
         Callback() :
-            m_nbatch(0), m_batch_id(0), m_nepoch(0), m_epoch_id(0)
+		        batchesNumber(0), batchId(0), epochsNumber(0), epochId(0)
         {}
 
         virtual ~Callback() {}
 
         // Before training a mini-batch
-        virtual void pre_training_batch(const Network<Scalar>* net, const Matrix& x,
-                                        const Matrix& y) {}
-        virtual void pre_training_batch(const Network<Scalar>* net, const Matrix& x,
-                                        const IntegerVector& y) {}
+        virtual void preTrainingBatch(const Network<Scalar>* net, const Matrix& x,
+                                      const Matrix& y) {}
+        virtual void preTrainingBatch(const Network<Scalar>* net, const Matrix& x,
+                                      const IntegerVector& y) {}
 
         // After a mini-batch is trained
-        virtual void post_training_batch(const Network<Scalar>* net, const Matrix& x,
-                                         const Matrix& y) {}
-        virtual void post_training_batch(const Network<Scalar>* net, const Matrix& x,
-                                         const IntegerVector& y) {}
+        virtual void postTrainingBatch(const Network<Scalar>* net, const Matrix& x,
+                                       const Matrix& y) {}
+        virtual void postTrainingBatch(const Network<Scalar>* net, const Matrix& x,
+                                       const IntegerVector& y) {}
 };
 
 
