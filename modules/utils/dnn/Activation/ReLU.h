@@ -62,6 +62,20 @@ class ReLU
 		        }
 	        }
         }
+	static inline void apply_jacobian(const Matrix& Z, const Matrix& A,
+	                                  const Matrix& F, Matrix& G)
+	{
+		//G = (A.array() > Scalar(0)).select(F, Scalar(0));
+		for(size_t i = 0UL; i < G.rows(); i++ ) {
+			for(size_t j = 0UL; j < G.columns(); j++ ) {
+				if (A(i, j) > 0) {
+					G(i, j) = F(i, j);
+				} else {
+					G(i, j) = 0;
+				}
+			}
+		}
+	}
 };
 
 

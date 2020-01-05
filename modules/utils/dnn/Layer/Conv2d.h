@@ -2,6 +2,8 @@
 #define LAYER_CONVOLUTIONAL_H_
 
 #include <stdexcept>
+#include <chrono>
+
 #include "../Layer.h"
 #include "../Utils/Convolution.h"
 #include "../Utils/Random.h"
@@ -25,8 +27,10 @@ class Conv2d: public Layer<Scalar>
 {
     private:
 		using Matrix = blaze::DynamicMatrix<Scalar>;
+		using SparceMatrix = blaze::CompressedMatrix<Scalar, blaze::columnMajor>;
 		using ColumnMatrix = blaze::DynamicMatrix<Scalar, blaze::columnMajor>;
 		using Vector = blaze::DynamicVector<Scalar, blaze::rowVector>;
+		using SparceVector = blaze::CompressedVector<Scalar, blaze::rowVector>;
 		using ConstAlignedMapMat = const blaze::CustomMatrix<Scalar, blaze::unaligned, blaze::unpadded>;
 		using ConstAlignedMapVec = const blaze::CustomVector<Scalar, blaze::aligned, blaze::unpadded>;
 		using AlignedMapVec = blaze::CustomVector<Scalar, blaze::aligned, blaze::unpadded>;
@@ -41,6 +45,7 @@ class Conv2d: public Layer<Scalar>
 		size_t inputChannels;
 		size_t outputChannels;
 
+		SparceMatrix unrolledKernel;
 		std::vector<size_t> jDeltas;
 		std::vector<size_t> iDeltas;
 
@@ -103,23 +108,24 @@ class Conv2d: public Layer<Scalar>
             internal::set_normal_random(bias.data(), outputChannels, rng, mu, sigma);
         }
 
-        Matrix getUnrolledKernel()
+        void getUnrolledKernel()
         {
-            size_t fromWidth = inputWidth;
-            size_t fromHeight = inputHeight;
+            const size_t fromWidth = inputWidth;
+            const size_t fromHeight = inputHeight;
 
-            size_t toWidth = outputWidth;
-            size_t toHeight = outputHeight;
+            const size_t toWidth = outputWidth;
+            const size_t toHeight = outputHeight;
 
-			Matrix unrolledKernel(fromWidth * fromHeight, toWidth * toHeight,  0);
+			unrolledKernel.resize(fromWidth * fromHeight, toWidth * toHeight);
+			blaze::reset(unrolledKernel);
 
-			size_t dr = fromWidth - kernelWidth;
+			const size_t dr = fromWidth - kernelWidth;
 
 			jDeltas.resize(unrolledKernel.columns());
 			iDeltas.resize(kernelData.size());
 
-			Vector kernelRow(kernelWidth * kernelHeight + (kernelHeight - 1) * dr);
-			kernelRow = 0;
+			SparceVector kernelRow(kernelWidth * kernelHeight + (kernelHeight - 1) * dr);
+			//kernelRow = 0;
 
 			size_t p = 0;
 			for (size_t i = 0; i < kernelData.size(); ++i) {
@@ -147,8 +153,6 @@ class Conv2d: public Layer<Scalar>
 					++j0;
 				}
 			}
-
-			return unrolledKernel;
         }
 
 
@@ -161,7 +165,7 @@ class Conv2d: public Layer<Scalar>
             z.resize(nobs, this->outputSize);
 
 	        // Convolution
-	        auto unrolledKernel = getUnrolledKernel();
+	        getUnrolledKernel();
 
 	        //cout << prev_layer_data;
 	        //cout << getUnrolledKernel() << endl;
@@ -198,25 +202,30 @@ class Conv2d: public Layer<Scalar>
         void backprop(const Matrix& prev_layer_data, const Matrix& next_layer_data)
         {
             const size_t nobs = prev_layer_data.rows();
+
             //ColumnMatrix dLz = z;
 	        Matrix dLz = z;
 	        Activation::apply_jacobian(z, a, next_layer_data, dLz);
 
 
+	        auto t1 = std::chrono::high_resolution_clock::now();
             /* Derivative for weights */
-            Matrix kernelDerivatives(nobs, kernelData.size(), 0);
-	        Matrix W(inputWidth * inputHeight, outputWidth * outputHeight);
+            ColumnMatrix kernelDerivatives(nobs, kernelData.size(), 0);
+	        ColumnMatrix W(inputWidth * inputHeight, outputWidth * outputHeight);
 	        for (size_t i = 0; i < nobs; ++i) {
 	            for (size_t k = 0; k < dLz.columns(); ++k) {
-	                blaze::column(W, k) = blaze::trans(blaze::row(prev_layer_data, i) * dLz(k, i));
+	                blaze::column(W, k) = blaze::trans(blaze::row(prev_layer_data, i) * dLz(i, k));
 	            }
 
 	            for (size_t j = 0; j < kernelData.size(); ++j) {
 		            for (size_t k = 0; k < jDeltas.size(); ++k) {
-		            	kernelDerivatives(j, i) += W(k, jDeltas[k] + iDeltas[j]);
+		            	kernelDerivatives(i, j) += W(jDeltas[k] + iDeltas[j], k);
 		            }
 	            }
             }
+	        auto t2 = std::chrono::high_resolution_clock::now();
+	        auto d = std::chrono::duration_cast < std::chrono::duration < double >> (t2 - t1);
+	        std::cout << "time: " << d.count() << " s" << std::endl;
 
 	        /* Average over observations */
 	        df_data = blaze::mean<blaze::columnwise>(kernelDerivatives);
@@ -232,12 +241,9 @@ class Conv2d: public Layer<Scalar>
 
 
 	        /* Derivative for input */
-	        auto unrolledKernel = getUnrolledKernel();
-	        blaze::transpose(unrolledKernel);
-
 	        din.resize(nobs, this->inputSize);
 	        for (int i = 0; i < nobs; ++i) {
-		        blaze::row(din, i) = blaze::row(dLz, i) * unrolledKernel;
+		        blaze::row(din, i) = blaze::row(dLz, i) * blaze::trans(unrolledKernel);
 	        }
         }
 
