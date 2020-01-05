@@ -93,7 +93,6 @@ void SOM<recType, Graph, Metric, Distribution>::train(
     const std::vector<std::vector<T>>& samples)
 {
 	subsampled_train_(samples, samples.size());
-	//parse_distances(samples, samples.size());
 }
 
 
@@ -101,7 +100,6 @@ template <class recType, class Graph, class Metric, class Distribution>
 void SOM<recType, Graph, Metric, Distribution>::estimate(const std::vector<std::vector<T>>& samples, const size_t sampleSize)
 {
 	subsampled_train_(samples, sampleSize);
-	//parse_distances(samples, sampleSize);
 }
 
 template <class recType, class Graph, class Metric, class Distribution>
@@ -197,9 +195,6 @@ void SOM<recType, Graph, Metric, Distribution>::subsampled_train_(const std::vec
     std::iota(randomized_samples.begin(), randomized_samples.end(), 0);
 
     size_t idx = 0;
-    //size_t idx_r = 0;
-	
-	json reference_data;
 
     while (idx < iterations) {
 
@@ -208,15 +203,6 @@ void SOM<recType, Graph, Metric, Distribution>::subsampled_train_(const std::vec
 
 		for (auto idx_r = 0; idx_r < randomized_samples.size(); idx_r++)
 		{
-			//if (idx_r >= randomized_samples.size() - 1) {
-			//    std::shuffle(
-			//        randomized_samples.begin(), randomized_samples.end(), std::mt19937 { std::random_device {}() });
-			//    idx_r = 0;
-
-			//} else {
-			//    idx_r++;
-			//}
-
 			// break if we use subsampling (i.e. train on a part of the whole samples)
 			if (idx_r >= sampleSize)
 				break;
@@ -263,20 +249,10 @@ void SOM<recType, Graph, Metric, Distribution>::subsampled_train_(const std::vec
 				}
 			}
 		}
-
-		if (idx % 10 == 0)
-		{
-			reference_data.push_back(get_weights());
-		}
 		
 		++idx;		
 
     }
-
-	
-	std::ofstream outputFile("KOC_nodes_data.json");
-	outputFile << std::setw(4) << reference_data << std::endl;
-	outputFile.close();	
 }
 
 }  // namespace metric
