@@ -100,7 +100,8 @@ blaze::CompressedMatrix<Tv, blaze::columnMajor> sparsify(
     return as;
 }
 
-
+namespace kruskal_sparsify_detail {
+    
 template <typename Tv>
 class KruskalEdge {
 private:
@@ -140,7 +141,7 @@ public:
     inline void enable() {
         enabled = true;
     }
-    bool isEnabled() {
+    inline bool isEnabled() const {
         return enabled;
     }
 };
@@ -181,19 +182,24 @@ public:
         return ss.str();
     }
 };
+    
+}
 
 template <typename Tv>
 blaze::CompressedMatrix<Tv, blaze::columnMajor> kruskal_sparsify(
     const blaze::CompressedMatrix<Tv, blaze::columnMajor>& a, bool minimum) {
-    const size_t edge_count = a.nonZeros();
-
     if (a.columns() != a.rows())
         throw std::invalid_argument("expected square matrix");
+
+    using namespace kruskal_sparsify_detail;
+
+    const size_t node_count = a.columns();    
+    const size_t edge_count = a.nonZeros();
 
     // initializing edge list
     std::vector<KruskalEdge<Tv> > edges;
     edges.reserve(edge_count);
-    for (size_t node_from = 0; node_from < a.rows(); node_from++) {
+    for (size_t node_from = 0; node_from < node_count; node_from++) {
         // not checking elements above diagonal (graph is undirected)
         for (auto i = a.begin(node_from); i != a.end(node_from); ++i) {
             size_t node_to = i->index();
@@ -221,7 +227,7 @@ blaze::CompressedMatrix<Tv, blaze::columnMajor> kruskal_sparsify(
 
     // initializing node list (needed to have disjoint-set data structure)
     std::vector<KruskalNode> nodes;
-    nodes.resize(a.columns());
+    nodes.resize(node_count);
     
     // traversing edge list, addition happens only if no loops are
     // created in the process
@@ -238,7 +244,8 @@ blaze::CompressedMatrix<Tv, blaze::columnMajor> kruskal_sparsify(
     }
 
     // putting together result
-    blaze::CompressedMatrix<Tv, blaze::columnMajor> res(a.columns(), a.rows());
+    blaze::CompressedMatrix<Tv, blaze::columnMajor> res(node_count,
+                                                        node_count);
     res.reserve(new_edge_count * 2);
 
     for (auto& i : edges) {
