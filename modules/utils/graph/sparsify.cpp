@@ -99,6 +99,157 @@ blaze::CompressedMatrix<Tv, blaze::columnMajor> sparsify(
 
     return as;
 }
+
+
+template <typename Tv>
+class KruskalEdge {
+private:
+    size_t node_from;
+    size_t node_to;
+    Tv weight;
+    bool enabled;
+public:
+    KruskalEdge(size_t node_from, size_t node_to, Tv weight) :
+        node_from(node_from), node_to(node_to), weight(weight),
+        enabled(false) {
+    }
+
+    KruskalEdge(KruskalEdge&& e) noexcept : node_from(e.node_from),
+                                            node_to(e.node_to),
+                                            weight(std::move(e.weight)),
+                                            enabled(e.enabled) {}
+    KruskalEdge& operator=(KruskalEdge&& e) {
+        if (this != &e) {
+            node_from = e.node_from;
+            node_to = e.node_to;
+            weight = std::move(e.weight);
+            enabled = e.enabled;
+        }
+        return *this;
+    }
+
+    inline const Tv& getWeight() const {
+        return weight;
+    }
+    inline size_t getNodeFrom() const {
+        return node_from;
+    }
+    inline size_t getNodeTo() const {
+        return node_to;
+    }
+    inline void enable() {
+        enabled = true;
+    }
+    bool isEnabled() {
+        return enabled;
+    }
+};
+    
+class KruskalNode {
+private:
+    KruskalNode* parent;
+    size_t size;
+    KruskalNode* find() {
+        if (!parent)
+            return this;
+        KruskalNode* p = parent->find();
+        parent = p;
+        return p;
+    }
+    void union_with(KruskalNode* node) {
+        KruskalNode* root0 = find();
+        KruskalNode* root1 = node->find();
+        root0->size += root1->size;
+        root1->parent = root0;
+    }
+public:
+    KruskalNode() : parent(0), size(1) {}
+    inline bool isConnected(KruskalNode& node) {
+        return find() == node.find();
+    }
+    
+    inline void connect(KruskalNode& node) {
+        if (node.size > size)
+            node.union_with(this);
+        else
+            union_with(&node);
+    }
+    
+    std::string toString() {
+        std::stringstream ss;
+        ss << this << ":" << parent << ":" << size;
+        return ss.str();
+    }
+};
+
+template <typename Tv>
+blaze::CompressedMatrix<Tv, blaze::columnMajor> kruskal_sparsify(
+    const blaze::CompressedMatrix<Tv, blaze::columnMajor>& a, bool minimum) {
+    const size_t edge_count = a.nonZeros();
+
+    if (a.columns() != a.rows())
+        throw std::invalid_argument("expected square matrix");
+
+    // initializing edge list
+    std::vector<KruskalEdge<Tv> > edges;
+    edges.reserve(edge_count);
+    for (size_t node_from = 0; node_from < a.rows(); node_from++) {
+        // not checking elements above diagonal (graph is undirected)
+        for (auto i = a.begin(node_from); i != a.end(node_from); ++i) {
+            size_t node_to = i->index();
+            
+            if (node_to >= node_from)
+                break;
+            
+            Tv weight = i->value();
+            edges.push_back(KruskalEdge<Tv>(node_from, node_to, weight));
+        }
+    }
+
+    // sorting edge list
+    if (minimum) {
+        sort(edges.begin(), edges.end(), [](const KruskalEdge<Tv>& a,
+                                            const KruskalEdge<Tv>& b) {
+                 return a.getWeight() < b.getWeight();
+             });
+    } else {
+        sort(edges.begin(), edges.end(), [](const KruskalEdge<Tv>& a,
+                                            const KruskalEdge<Tv>& b) {
+                 return a.getWeight() > b.getWeight();
+             });
+    }
+
+    // initializing node list (needed to have disjoint-set data structure)
+    std::vector<KruskalNode> nodes;
+    nodes.resize(a.columns());
+    
+    // traversing edge list, addition happens only if no loops are
+    // created in the process
+    size_t new_edge_count = 0;
+    for (auto& i : edges) {
+        KruskalNode& node_from = nodes[i.getNodeFrom()];
+        KruskalNode& node_to = nodes[i.getNodeTo()];
+
+        if (!node_from.isConnected(node_to)) {
+            node_from.connect(node_to);
+            i.enable();
+            new_edge_count++;
+        }
+    }
+
+    // putting together result
+    blaze::CompressedMatrix<Tv, blaze::columnMajor> res(a.columns(), a.rows());
+    res.reserve(new_edge_count * 2);
+
+    for (auto& i : edges) {
+        if (i.isEnabled()) {
+            res(i.getNodeTo(), i.getNodeFrom()) = i.getWeight();
+            res(i.getNodeFrom(), i.getNodeTo()) = i.getWeight();
+        }
+    }
+    return res;
+}
+    
 }
 
 #endif
