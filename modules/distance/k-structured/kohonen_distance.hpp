@@ -19,7 +19,7 @@ namespace metric {
  *
  * @brief 
  * 
- * The idea of the Kohonen distance is: to train a SOM on a dataset and then compute the EMD for two records in the Kohonen space.
+ * The idea of the Kohonen distance is: to train a SOM on a dataset and then compute the EMD (shortest path between SOM's graph nodes) for two records in the Kohonen space.
  * 
  * The egdes of the SOM graph (distances between nodes) are the ground distance for the EMD.
  * Then for every record, to get a vector of distances between all SOM nodes, it is weights for ground distances.
@@ -69,15 +69,36 @@ struct kohonen_distance {
      * @return distance on kohonen space
      */
     distance_return_type operator()(const Sample& sample_1, const Sample& sample_2);
+	
+    /**
+     * @brief 
+	 * Recursive function that reconstructs the shortest backwards node by node
+     *
+     * @param from_node - index of the SOM's graph start node
+     * @param to_node second sample - index of the SOM's graph end node
+     */
+	void print_shortest_path(int from_node, int to_node);
 
 private:
 	
-	void calculate_distance_matrix();
+	void calculate_distance_matrix();	
+
+	/**
+	 * @brief get_closest_unmarked_node
+	 * @return the index of closest nodes not visited
+	 */
+	int get_closest_unmarked_node(std::vector<D>& distance, std::vector<bool>& mark, int numOfVertices);
+	
+	/**
+	 * @brief calculate_distance
+	 * Computes the shortest path
+	 */
+	std::tuple<std::vector<D>, std::vector<int>> calculate_distance(blaze::CompressedMatrix<D>& adjMatrix, int from_node, int num);
 
 	metric::SOM<Sample, Graph, Metric, Distribution> som_model_;
 	
-	//metric::EMD<D> emd_distance_;
 	std::vector<std::vector<D>> distance_matrix_;
+	std::vector<std::vector<int>> predecessors_;
 };
 
 }  // namespace metric
