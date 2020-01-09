@@ -157,23 +157,25 @@ private:
         parent = p;
         return p;
     }
-    void union_with(KruskalNode* node) {
-        KruskalNode* root0 = find();
-        KruskalNode* root1 = node->find();
-        root0->size += root1->size;
-        root1->parent = root0;
-    }
+
 public:
     KruskalNode() : parent(0), size(1) {}
     inline bool isConnected(KruskalNode& node) {
         return find() == node.find();
     }
-    
-    inline void connect(KruskalNode& node) {
-        if (node.size > size)
-            node.union_with(this);
-        else
-            union_with(&node);
+
+    inline void union_with(KruskalNode& node) {
+        KruskalNode* root0 = find();
+        KruskalNode* root1 = node.find();
+
+        if (root1->size > root0->size) {
+            KruskalNode* tmp = root0;
+            root0 = root1;
+            root1 = tmp;
+        } 
+        
+        root0->size += root1->size;
+        root1->parent = root0;
     }
     
     std::string toString() {
@@ -237,7 +239,7 @@ blaze::CompressedMatrix<Tv, blaze::columnMajor> kruskal_sparsify(
         KruskalNode& node_to = nodes[i.getNodeTo()];
 
         if (!node_from.isConnected(node_to)) {
-            node_from.connect(node_to);
+            node_from.union_with(node_to);
             i.enable();
             new_edge_count++;
         }
