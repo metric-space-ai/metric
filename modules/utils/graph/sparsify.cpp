@@ -23,7 +23,7 @@ https://github.com/danspielman/Laplacians.jl
 
 namespace metric {
 template <typename Tv>
-blaze::CompressedMatrix<Tv, blaze::columnMajor> sparsify(
+blaze::CompressedMatrix<Tv, blaze::columnMajor> sparsify_effective_resistance(
     const blaze::CompressedMatrix<Tv, blaze::columnMajor>& a, float ep, float matrixConcConst, float JLfac)
 {
 
@@ -188,7 +188,7 @@ public:
 }
 
 template <typename Tv>
-blaze::CompressedMatrix<Tv, blaze::columnMajor> kruskal_sparsify(
+blaze::CompressedMatrix<Tv, blaze::columnMajor> sparsify_spanning_tree(
     const blaze::CompressedMatrix<Tv, blaze::columnMajor>& a, bool minimum) {
     if (a.columns() != a.rows())
         throw std::invalid_argument("expected square matrix");
