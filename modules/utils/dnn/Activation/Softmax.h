@@ -12,20 +12,21 @@ namespace dnn
 ///
 /// The softmax activation function
 ///
+template<typename Scalar>
 class Softmax
 {
     private:
-        typedef Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> Matrix;
-        typedef Eigen::Array<Scalar, 1, Eigen::Dynamic> RowArray;
-
-    public:
+        //typedef Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> Matrix;
+        //typedef Eigen::Array<Scalar, 1, Eigen::Dynamic> RowArray;
+		using Matrix = blaze::DynamicMatrix<Scalar>;
+		using Vector = blaze::DynamicVector<Scalar>;
+		using RowVector = blaze::DynamicVector<Scalar, blaze::rowVector>;
+	public:
         // a = activation(z) = softmax(z)
         // Z = [z1, ..., zn], A = [a1, ..., an], n observations
         static inline void activate(const Matrix& Z, Matrix& A)
         {
-            A.array() = (Z.rowwise() - Z.colwise().maxCoeff()).array().exp();
-            RowArray colsums = A.colwise().sum();
-            A.array().rowwise() /= colsums;
+        	A = blaze::softmax<blaze::rowwise>(Z);
         }
 
         // Apply the Jacobian matrix J to a vector f
@@ -36,8 +37,8 @@ class Softmax
         static inline void apply_jacobian(const Matrix& Z, const Matrix& A,
                                           const Matrix& F, Matrix& G)
         {
-            RowArray a_dot_f = A.cwiseProduct(F).colwise().sum();
-            G.array() = A.array() * (F.array().rowwise() - a_dot_f);
+            RowVector a_dot_f = A.cwiseProduct(F).colwise().sum();
+            G = A * (F.rowwise() - a_dot_f);
         }
 };
 
