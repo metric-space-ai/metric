@@ -32,14 +32,14 @@ class VerboseCallback: public Callback<Scalar>
                       << loss << std::endl;
         }
 
-        void postTrainingBatch(const Network<Scalar>* net, const Matrix& x,
+        /*void postTrainingBatch(const Network<Scalar>* net, const Matrix& x,
                                const IntegerVector& y)
         {
             Scalar loss = net->get_output()->loss();
             std::cout << "[Epoch " << this->epochId << "/" << this->epochsNumber;
             std::cout << ", batch " << this->batchId << "/" << this->batchesNumber << "] Loss = "
                       << loss << std::endl;
-        }
+        }*/
 };
 
 

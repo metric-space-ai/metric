@@ -543,7 +543,7 @@ class Network
 		        for (int i = 0; i < nbatch; i++) {
 			        auto t1 = std::chrono::high_resolution_clock::now();
 			        m_callback->batchId = i;
-			        m_callback->preTrainingBatch(this, x_batches[i], y_batches[i]);
+			        //m_callback->preTrainingBatch(this, x_batches[i], y_batches[i]);
 			        this->forward(x_batches[i]);
 			        this->backprop(x_batches[i], y_batches[i]);
 			        this->update();

@@ -60,7 +60,7 @@ class MultiClassEntropy: public Output<Scalar>
 	        }
         }
 
-        void check_target_data(const IntegerVector& target)
+        /*void check_target_data(const IntegerVector& target)
         {
             // All elements must be non-negative
             const int nobs = target.rows();
@@ -70,7 +70,7 @@ class MultiClassEntropy: public Output<Scalar>
 			        throw std::invalid_argument("[class MultiClassEntropy]: Target data must be non-negative");
 		        }
 	        }
-        }
+        }*/
 
         // target is a matrix with each column representing an observation
         // Each column is a vector that has a one at some location and has zeros elsewhere
@@ -138,7 +138,7 @@ class MultiClassEntropy: public Output<Scalar>
 		        }
 	        }
 
-            return res / m_din.columns();
+            return res / m_din.rows();
         }
 };
 

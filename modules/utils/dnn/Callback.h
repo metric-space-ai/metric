@@ -51,14 +51,14 @@ class Callback
         // Before training a mini-batch
         virtual void preTrainingBatch(const Network<Scalar>* net, const Matrix& x,
                                       const Matrix& y) {}
-        virtual void preTrainingBatch(const Network<Scalar>* net, const Matrix& x,
-                                      const IntegerVector& y) {}
+        //virtual void preTrainingBatch(const Network<Scalar>* net, const Matrix& x,
+                                      //const IntegerVector& y) {}
 
         // After a mini-batch is trained
         virtual void postTrainingBatch(const Network<Scalar>* net, const Matrix& x,
                                        const Matrix& y) {}
-        virtual void postTrainingBatch(const Network<Scalar>* net, const Matrix& x,
-                                       const IntegerVector& y) {}
+        //virtual void postTrainingBatch(const Network<Scalar>* net, const Matrix& x,
+                                       //const IntegerVector& y) {}
 };
 
 
