@@ -10,6 +10,18 @@
 using namespace std;
 using namespace metric::dnn;
 
+template<typename T>
+void printMatrix(const T& m)
+{
+	cout << setw(3);
+	for (auto i = 0; i < m.rows(); ++i) {
+		for (auto j = 0; j < m.columns(); ++j) {
+			cout << setw(3) << m(i, j) << " ";
+		}
+		cout << endl;
+	}
+}
+
 
 int main()
 {
@@ -26,13 +38,22 @@ int main()
 	//Autoencoder<uint8_t, double> autoencoder(features, shape[1] * shape[2], 255);
 
 	Network<double> network;
-	network.addLayer(FullyConnected<double, ReLU<double>>(28 * 28, 200));
+	/*network.addLayer(FullyConnected<double, ReLU<double>>(28 * 28, 200));
 	network.addLayer(FullyConnected<double, ReLU<double>>(200, 80));
 	network.addLayer(FullyConnected<double, Sigmoid<double>>(80, 10));
+	*/
+
+	network.addLayer(Conv2d<double, ReLU<double>>(28, 28, 1, 1, 3, 3));
+	network.addLayer(MaxPooling<double, Identity<double>>(26, 26, 1, 2, 2));
+	//network.addLayer(Conv2d<double, ReLU<double>>(26, 26, 64, 8, 3, 3));
+	//network.addLayer(Conv2d<double, ReLU<double>>(26, 26, 8, 8, 3, 3));
+	//network.addLayer(FullyConnected<double, Sigmoid<double>>(169, 10));
+	network.addLayer(FullyConnected<double, Softmax<double>>(169, 10));
 
 	network.setOptimizer(RMSProp<double>());
 
 	network.setOutput(MultiClassEntropy<double>());
+	//network.setOutput(RegressionMSE<double>());
 
 	network.setCallback(VerboseCallback<double>());
 
@@ -45,9 +66,20 @@ int main()
 	featuresBlaze /= double(255);
 
 	std::vector<int> labelsInteger(labels.begin(), labels.end());
-	blaze::DynamicMatrix<int, blaze::columnMajor> labelsBlaze(shape[0], 1, labelsInteger.data());
+	//blaze::DynamicMatrix<int, blaze::columnMajor> labelsBlaze(shape[0], 1, labelsInteger.data());
+	blaze::DynamicMatrix<double, blaze::columnMajor> labelsBlaze(shape[0], 10);
+	labelsBlaze = 0;
+	for (auto i = 0; i < labels.size(); ++i) {
+		labelsBlaze(i, labelsInteger[i]) = 1;
+	}
 
-	network.fit(featuresBlaze, labelsBlaze, 256, 1, 123);
+
+	network.fit(featuresBlaze, labelsBlaze, 1024, 10, 123);
+
+	auto prediction = network.predict(blaze::submatrix(featuresBlaze, 10, 0, 1, featuresBlaze.columns()));
+	//std::cout << labelsBlaze(10, 0) << std::endl;
+	printMatrix(blaze::submatrix(labelsBlaze, 10, 0, 1, 10));
+	printMatrix(prediction);
 
 /*
 	cout << "Train" << endl;
