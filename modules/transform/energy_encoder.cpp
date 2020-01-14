@@ -164,6 +164,45 @@ private:
 
 
 
+// functions for computing sizes
+
+
+size_t subband_size(size_t original_size, size_t depth, size_t wavelet_length) {
+    //size_t n = 1;
+    size_t sz = original_size;
+    //float sum = 0;
+    for (size_t i=1; i<=depth; ++i){
+        //n = n*2;
+        //sum += (wavelet_length - 2)/(float)n; // -2 instead of -1 because of floor rounding within cast
+        sz = (sz + wavelet_length - 1)/2.0;
+    }
+    //return original_size/(float)n + sum;
+    return sz;
+}
+
+
+size_t original_size_old(size_t subband_size, size_t depth, size_t wavelet_length) {
+    size_t n = 1;
+    float sum = 0;
+    for (size_t i=1; i<=depth; ++i){
+        n = n*2;
+        sum += (wavelet_length - 2)/(float)n; // -2 instead of -1 because of floor
+    }
+    return n*(subband_size - sum);
+}
+
+
+
+size_t original_size(size_t subband_size, size_t depth, size_t wavelet_length) {
+    size_t n = 1;
+    size_t sz = subband_size;
+    for (size_t i=1; i<=depth; ++i){
+        sz = sz*2 - wavelet_length + 2;
+    }
+    return sz;
+}
+
+
 
 }  // namespace metric
 
