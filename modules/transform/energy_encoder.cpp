@@ -122,11 +122,17 @@ sequential_iDWT(
 class energy_encoder { // very simple and inoptimal recursive functor without static members, to be used as reference
 
 public:
-    energy_encoder(int wavelet_type_ = 4, size_t splits_ = 4, bool bothsided_ = true) :
+    //energy_encoder(int wavelet_type_ = 4, size_t splits_ = 4, bool bothsided_ = true) :
+    energy_encoder(int wavelet_type_ = 4, size_t splits_ = 2, bool bothsided_ = true) :
         wavelet_type(wavelet_type_),
-        splits(splits_),
+        //splits(splits_),
         bothsided(bothsided_) // not used
-    {}
+    {
+        subbands = 1;
+        for (size_t i = 0; i < splits_; ++i)
+            subbands *= 2;
+
+    }
 
     template <
         template <typename, typename> class Container,
@@ -140,14 +146,14 @@ public:
         InnerContainer out;
 
         std::stack<size_t> subband_length;
-        auto subbands = sequential_DWT<std::vector, InnerContainer, std::allocator<InnerContainer>>(in, subband_length, wavelet_type, splits); // TODO update splits with log2
+        auto n_subbands = sequential_DWT<std::vector, InnerContainer, std::allocator<InnerContainer>>(in, subband_length, wavelet_type, subbands); // TODO update splits with log2
 
-        for (size_t i = 0; i<subbands.size(); ++i) { // computing one energy value per subband
+        for (size_t i = 0; i<n_subbands.size(); ++i) { // computing one energy value per subband
             ValueType sum = 0;
-            for (size_t j = 0; j<subbands[i].size(); ++j) {
-                sum += subbands[i][j] * subbands[i][j];
+            for (size_t j = 0; j<n_subbands[i].size(); ++j) {
+                sum += n_subbands[i][j] * n_subbands[i][j];
             }
-            sum = sum / subbands[i].size();
+            sum = sum / n_subbands[i].size();
             out.push_back(sum);
         }
         return out;
@@ -155,7 +161,7 @@ public:
 
 private:
     int wavelet_type;
-    size_t splits;
+    size_t subbands;
     bool bothsided;
 
 };
@@ -168,20 +174,15 @@ private:
 
 
 size_t subband_size(size_t original_size, size_t depth, size_t wavelet_length) {
-    //size_t n = 1;
     size_t sz = original_size;
-    //float sum = 0;
     for (size_t i=1; i<=depth; ++i){
-        //n = n*2;
-        //sum += (wavelet_length - 2)/(float)n; // -2 instead of -1 because of floor rounding within cast
         sz = (sz + wavelet_length - 1)/2.0;
     }
-    //return original_size/(float)n + sum;
     return sz;
 }
 
 
-size_t original_size_old(size_t subband_size, size_t depth, size_t wavelet_length) {
+size_t original_size_old(size_t subband_size, size_t depth, size_t wavelet_length) { // rounding issue
     size_t n = 1;
     float sum = 0;
     for (size_t i=1; i<=depth; ++i){
@@ -190,7 +191,6 @@ size_t original_size_old(size_t subband_size, size_t depth, size_t wavelet_lengt
     }
     return n*(subband_size - sum);
 }
-
 
 
 size_t original_size(size_t subband_size, size_t depth, size_t wavelet_length) {
@@ -202,6 +202,11 @@ size_t original_size(size_t subband_size, size_t depth, size_t wavelet_length) {
     return sz;
 }
 
+
+size_t wmaxlevel(size_t input_size, int waveletType) {
+
+    return 0;
+}
 
 
 }  // namespace metric

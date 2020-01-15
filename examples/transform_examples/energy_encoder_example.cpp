@@ -16,7 +16,7 @@ int main() {
 //        data.push_back((double)i);
 //    }
 
-    auto e = metric::energy_encoder(5, 2);
+    auto e = metric::energy_encoder(5, 1);
     //auto e = metric::energy_encoder();
     auto result = e(data);
 
@@ -28,8 +28,8 @@ int main() {
 
 
 
-    std::cout << "testing subband size computation\n";
-
+    std::cout << "testing subband size computation:\n";
+    std::cout << "\nl_split_estim l_split_actual | input_extim_estim input_estim_by_actual | l_split_estim_by_input_estim\n";
     size_t lx = 50000, lf = 10;
     size_t subbands_num = 2;
     std::vector<double> x(lx, 0.0);
@@ -44,8 +44,11 @@ int main() {
                 std::cout << "\ninequal split size: " << j << " " << split[j].size()  << "\n";
         }
         auto lr_estim = metric::subband_size(lx, i, lf);
+        auto lx_estim = metric::original_size(lr, i, lf);
         std::cout << lr_estim << " " << lr << " | "
-                  << metric::original_size(lr_estim, i, lf) << " " << metric::original_size(lr, i, lf) << "\n";
+                  << metric::original_size(lr_estim, i, lf) << " " << lx_estim << " | "
+                  << metric::subband_size(lx_estim, i, lf)
+                  << "\n";
 
         subbands_num *= 2;
     }
