@@ -325,6 +325,60 @@ private:
 
 
 
+/**
+ * @class Grid4
+ * @brief
+ * 
+ */
+template <typename Sample, typename Distance, typename WeightType = bool, bool isDense = false, bool isSymmetric = true>
+class KNNGraph : public Graph<WeightType, isDense, isSymmetric> {
+public:
+
+    /**
+     * @brief Construct a new KNN Graph object
+     * 
+     * @param width 
+     * @param height 
+     */
+    KNNGraph(std::vector<Sample> X, size_t neighbors_num, size_t max_bruteforce_size);
+
+	
+	size_t neighbors_num() { return _neighbors_num; };
+	
+protected:
+	size_t _neighbors_num = 1;
+	size_t _max_bruteforce_size = 10;
+	bool _not_more_neighbors = false;
+
+private:
+    /**
+     * @brief 
+     * 
+     */
+    void construct(std::vector<Sample> X);
+	
+    /**
+     * @brief 
+     * 
+     */
+	std::vector<std::pair<size_t, size_t>> brute_force(std::vector<Sample> samples, std::vector<int> ids);
+	
+    /**
+     * @brief 
+     * 
+     */
+	std::vector<std::pair<size_t, size_t>> random_pair_division(std::vector<Sample> samples, std::vector<int> ids, int max_size);
+
+    /**
+     * @brief 
+     * 
+     */
+	template <typename T1>
+	std::vector<size_t> sort_indexes(const std::vector<T1> &v);
+};
+
+
+
 
 
 /**

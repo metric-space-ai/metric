@@ -675,6 +675,207 @@ void RandomUniform<WType, isDense>::fill(MType& matrix, WType lower_bound, WType
         }
 }
 
+// KNN-Graph
+
+template <typename Sample, typename Distance, typename WeightType, bool isDense, bool isSymmetric>
+KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::KNNGraph(std::vector<Sample> X, size_t neighbors_num, size_t max_bruteforce_size)
+    : Graph<WeightType, isDense, isSymmetric>(X.size()), _neighbors_num(neighbors_num), _max_bruteforce_size(max_bruteforce_size)
+{
+    construct(X);
+}
+
+template <typename Sample, typename Distance, typename WeightType, bool isDense, bool isSymmetric>
+void KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::construct(std::vector<Sample> samples)
+{
+    m.resize(samples.size(), samples.size());
+	
+	std::vector<int> ids(samples.size());
+    std::iota(ids.begin(), ids.end(), 0);
+
+	std::vector<std::pair<size_t, size_t>> edgesPairs;
+	double updated_percent = 1.0;
+	int max_iterations = 100;
+	int iterations = 0;
+	while(updated_percent > 0.02)
+	{
+		auto newEdgesPairs = random_pair_division(samples, ids, _max_bruteforce_size);
+					
+		int was_size = edgesPairs.size();
+		for (int j = 0; j < newEdgesPairs.size(); j++)
+		{
+			bool already_exist = false;
+
+			for (int k = 0; k < edgesPairs.size(); k++)
+			{
+				if (edgesPairs[k] == newEdgesPairs[j] || (edgesPairs[k].first == newEdgesPairs[j].second && edgesPairs[k].second == newEdgesPairs[j].first))
+				{
+					already_exist = true;
+					break;
+				}
+			}
+
+			if (!already_exist)
+			{
+				edgesPairs.push_back(newEdgesPairs[j]);
+			}
+		}
+		if (was_size > 0)
+		{
+			updated_percent = (double)(edgesPairs.size() - was_size) / was_size;
+		}
+
+		iterations++;
+
+		if (iterations >= max_iterations)
+		{
+			break;
+		}
+	}
+	
+	std::cout << "edges: " << std::endl;
+	for (size_t i = 0; i < edgesPairs.size(); ++i) {
+		std::cout << edgesPairs[i].first << " " << edgesPairs[i].second << std::endl;
+	}
+
+    buildEdges(edgesPairs);
+
+    valid = true;
+}
+
+template <typename Sample, typename Distance, typename WeightType, bool isDense, bool isSymmetric>
+std::vector<std::pair<size_t, size_t>> KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::random_pair_division(std::vector<Sample> samples, std::vector<int> ids, int max_size)
+{
+	Distance d;
+	std::vector<Sample> A;
+	std::vector<Sample> B;
+	std::vector<int> A_ids;
+	std::vector<int> B_ids;
+    std::vector<std::pair<size_t, size_t>> edgesPairs;
+    std::vector<std::pair<size_t, size_t>> edgesPairsResult;
+
+	auto n = samples.size();
+
+	if (n > 0)
+	{
+		std::random_device rnd;
+		std::mt19937 mt(rnd());
+		std::uniform_int_distribution<int> dist(0, n - 1);
+
+		if (n <= max_size)
+		{
+			edgesPairs = brute_force(samples, ids);
+		}
+		else
+		{
+			auto a = samples[dist(mt)];
+			auto b = samples[dist(mt)];
+			Sample x;
+			for (int i = 0; i < n; i++)
+			{
+				x = samples[i];
+				if (d(x, a) < d(x, b))
+				{
+					A.push_back(x);
+					A_ids.push_back(ids[i]);
+				}
+				else
+				{
+					B.push_back(x);
+					B_ids.push_back(ids[i]);
+				}
+			}
+			edgesPairsResult = random_pair_division(A, A_ids, max_size);
+			edgesPairs.insert( edgesPairs.end(), edgesPairsResult.begin(), edgesPairsResult.end() );
+			edgesPairsResult = random_pair_division(B, B_ids, max_size);
+			edgesPairs.insert( edgesPairs.end(), edgesPairsResult.begin(), edgesPairsResult.end() );
+		}
+	}
+
+	return edgesPairs;
+}
+
+template <typename Sample, typename Distance, typename WeightType, bool isDense, bool isSymmetric>
+std::vector<std::pair<size_t, size_t>> KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::brute_force(std::vector<Sample> samples, std::vector<int> ids)
+{	
+    std::vector<std::pair<size_t, size_t>> edgesPairs;
+
+	//
+	Distance distance;
+	int update_count = 0;
+	
+    for (int i = 0; i < samples.size(); i++) 
+	{
+        auto i_point = samples[i];
+		std::vector<Distance::value_type> distances;
+        for (int j = 0; j < samples.size(); j++) 
+		{
+            auto i_other_point = samples[j];
+            Distance::value_type dist = distance(i_point, i_other_point);
+			distances.push_back(dist);
+        }
+
+		auto idxs = sort_indexes(distances);
+
+		for (int j = 0; j < idxs.size(); j++)
+		{
+			// omit first item because it is pair between the same item
+			if (j == 0)
+			{
+				continue;
+			}
+			
+			bool already_exist = false;
+			
+			std::vector<int>::iterator max_index = std::max_element(ids.begin(), ids.end());
+			std::vector<int> sizes(ids[std::distance(ids.begin(), max_index)] + 1, 0);
+			for (int k = 0; k < edgesPairs.size(); k++)
+			{
+				sizes[edgesPairs[k].first]++;
+				sizes[edgesPairs[k].second]++;
+				if (edgesPairs[k] == std::pair<size_t, size_t>(ids[i], ids[idxs[j]]) || edgesPairs[k] == std::pair<size_t, size_t>(ids[idxs[j]], ids[i]))
+				{
+					already_exist = true;
+					break;
+				}
+				if (_not_more_neighbors)
+				{
+					if (sizes[edgesPairs[k].first] >= _neighbors_num || sizes[edgesPairs[k].second] >= _neighbors_num )
+					{
+						already_exist = true;
+						break;
+					}
+				}
+			}
+			if (!already_exist)
+			{
+				edgesPairs.emplace_back(ids[i], ids[idxs[j]]);
+			}
+
+			if (j + 1 >= _neighbors_num)
+			{
+				break;
+			}
+		}
+    }
+
+	return edgesPairs;
+}
+
+template <typename Sample, typename Distance, typename WeightType, bool isDense, bool isSymmetric>
+template <typename T1>
+std::vector<size_t> KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::sort_indexes(const std::vector<T1> &v) 
+{
+	// initialize original index locations
+	std::vector<size_t> idx(v.size());
+	std::iota(idx.begin(), idx.end(), 0);
+
+	// sort indexes based on comparing values in v
+	std::sort(idx.begin(), idx.end(),
+		[&v](size_t i1, size_t i2) {return v[i1] < v[i2];});
+
+	return idx;
+}
+
 // Graph factory based on Blaze matrix of 4 allowed types
 
 template <class ValueType>

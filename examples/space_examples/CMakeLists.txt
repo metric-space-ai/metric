@@ -13,7 +13,7 @@ include_directories(${Boost_INCLUDE_DIRS})
 # for Visual Studio
 if(MSVC)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++17")
-endif(MSVC)
+endif(MSVC) 
  
 #Run through each source
 foreach(exampleSrc ${EXAMPLE_SRCS})
