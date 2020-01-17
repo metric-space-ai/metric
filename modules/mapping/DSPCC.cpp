@@ -259,7 +259,7 @@ DSPCC<recType, Metric>::outer_encode(
     // compute size and crop input
     size_t depth = (size_t)std::floor(std::log2(n_subbands));
     size_t max_subband_size = subband_size(Curves[0].size(), depth); // TODO check if not empty
-    size_t appropriate_subband_size = mix_index(max_subband_size, 1);
+    size_t appropriate_subband_size = crop_index(max_subband_size, 1);
     size_t crop_size = original_size(appropriate_subband_size, depth);
 
     for (size_t record_idx = 0; record_idx<Curves.size(); ++record_idx) {
@@ -574,19 +574,19 @@ DSPCC<recType, Metric>::select_decode(const std::vector<recType> & Codes) {
 
 template <typename recType, typename Metric>
 size_t
-DSPCC<recType, Metric>::mix_index(size_t length, float time_freq_balance) {
-    // computing 2^n value nearest to given time-freq mix factor
-    float mix_factor = time_freq_balance * length; // TODO check in time_freq_balance_ is in [0, 1]
-    size_t n = 4; // we skip 2^1 // TODO try 2
+DSPCC<recType, Metric>::crop_index(size_t length, float crop_share) {
+    // computing 2^n value nearest to given share value
+    float crop_factor = crop_share * length; // TODO check in time_freq_balance_ is in [0, 1]
+    size_t n = 4; // we skip 2^1
     size_t n_prev = 0;
     size_t mix_index = 0;
     while (true) {
-        if (n > mix_factor) {
+        if (n > crop_factor) {
             if (n > length) { // overrun
                 mix_index = n_prev;
                 break;
             }
-            if (mix_factor - n_prev > n - mix_factor) // we stick to n_prev or to n, not greater than max index
+            if (crop_factor - n_prev > n - crop_factor) // we stick to n_prev or to n, not greater than max index
                 mix_index = n;
             else
                 mix_index = n_prev;
