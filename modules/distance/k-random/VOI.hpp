@@ -243,10 +243,45 @@ VOI_normalized_kl(int, V)->VOI_normalized_kl<double>;
 
 
 
-// averaged entropy estimation
+
+// averaged entropy estimation: code COPIED from mgc.*pp with only mgc replaced with entropy, TODO refactor to avoid code dubbing
 
 
-// TODO add declaration
+// helper functions
+
+std::vector<double> linspace(double a, double b, int n);
+
+double polyeval(const std::vector<double>& poly, const double z);
+
+double erfcinv(const double z);
+
+double erfinv_imp(const double p, const double q);
+
+std::vector<double> icdf(const std::vector<double>& prob, const double mu, const double sigma);
+
+double variance(const std::vector<double>& data, const double mean);
+
+double mean(const std::vector<double>& data);
+
+double peak2ems(const std::vector<double>& data);
+
+
+// entropy estimation function
+
+//template <typename Container, class Metric = void>
+template <typename Container, typename Metric = metric::Euclidian<typename Container::value_type>, typename L = double>
+double entropy_avg(
+            const Container& a, // data
+         // averaging parameters
+            const size_t sampleSize = 250,
+            const double threshold = 0.05,
+            size_t maxIterations = 1000,
+         // entropy parameters
+            std::size_t k = 3,
+            L logbase = 2,
+            Metric metric = Metric(),
+            bool exp = false
+        );
 
 
 

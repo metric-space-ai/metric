@@ -415,6 +415,25 @@ double polyeval(const std::vector<double>& poly, const double z)
 
 
 
+double erfcinv(const double z)
+{
+    if ((z < 0) || (z > 2))
+        std::cout << "Argument outside range [0,2] in inverse erfc function (got p=%1%)." << std::endl;
+
+    double p, q, s;
+    if (z > 1) {
+        q = 2 - z;
+        p = 1 - q;
+        s = -1;
+    } else {
+        p = 1 - z;
+        q = z;
+        s = 1;
+    }
+    return s * erfinv_imp(p, q);
+}
+
+
 double erfinv_imp(const double p, const double q)
 {
     double result = 0;
@@ -509,28 +528,8 @@ double erfinv_imp(const double p, const double q)
 }
 
 
-double erfcinv(const double z)
-{
-    if ((z < 0) || (z > 2))
-        std::cout << "Argument outside range [0,2] in inverse erfc function (got p=%1%)." << std::endl;
 
-    double p, q, s;
-    if (z > 1) {
-        q = 2 - z;
-        p = 1 - q;
-        s = -1;
-    } else {
-        p = 1 - z;
-        q = z;
-        s = 1;
-    }
-    return s * erfinv_imp(p, q);
-}
-
-
-
-std::vector<double> icdf(
-    const std::vector<double>& prob, const double mu, const double sigma)
+std::vector<double> icdf(const std::vector<double>& prob, const double mu, const double sigma)
 {
     std::vector<double> synth;
     synth.reserve(prob.size());
@@ -589,11 +588,18 @@ double peak2ems(const std::vector<double>& data)
 
 
 // entropy estimation function
-// TODO update
-//template <class recType, class Metric>
-template <typename Container, class Metric = void>
+
+//template <typename Container, class Metric>
+template <typename Container, typename Metric, typename L>
 double entropy_avg(
-    const Container& a, const size_t sampleSize = 250, const double threshold = 0.05, size_t maxIterations = 1000)
+        const Container & a,
+        const size_t sampleSize,
+        const double threshold,
+        size_t maxIterations,
+        std::size_t k,
+        L logbase,
+        Metric metric,
+        bool exp)
 {
     const size_t dataSize = a.size();
 

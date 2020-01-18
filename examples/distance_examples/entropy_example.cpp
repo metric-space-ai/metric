@@ -146,8 +146,10 @@ int main() {
 
 
     // testing entropy_avg
+
+    std::cout << "\n\nstart nentropy_avg test\n";
     auto e_avg = metric::entropy_avg(urv);
-    std::cout << "\n\nentropy_avg test: " << e_avg << "\n";
+    std::cout << "\nentropy_avg result: " << e_avg << "\n\n";
 
 
     return 0;
