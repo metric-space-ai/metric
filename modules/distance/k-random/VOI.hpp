@@ -241,6 +241,15 @@ struct VOI_normalized_kl : VOI_kl<V> {
 template <typename V>
 VOI_normalized_kl(int, V)->VOI_normalized_kl<double>;
 
+
+
+// averaged entropy estimation
+
+
+// TODO add declaration
+
+
+
 }  // namespace metric
 
 #include "VOI.cpp"

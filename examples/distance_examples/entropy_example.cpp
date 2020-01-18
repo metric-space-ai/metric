@@ -145,5 +145,10 @@ int main() {
     std::cout << "conv test " << metric::conv_diff_entropy_inv(metric::conv_diff_entropy(-0.118)) << std::endl;
 
 
+    // testing entropy_avg
+    auto e_avg = metric::entropy_avg(urv);
+    std::cout << "\n\nentropy_avg test: " << e_avg << "\n";
+
+
     return 0;
 }
