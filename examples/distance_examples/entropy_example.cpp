@@ -117,6 +117,7 @@ int main() {
 
     std::vector<std::vector<double>> urv;
     std::vector<std::vector<double>> urv2;
+    std::vector<std::vector<double>> urv3;
 
     for (size_t i = 0; i<1000; ++i) {
         //urv.push_back({dis(gen), dis(gen), dis(gen), dis(gen), dis(gen), dis(gen), dis(gen)});
@@ -125,7 +126,9 @@ int main() {
         urv2.push_back({dis(gen), dis(gen)});
         //urv.push_back({dis(gen)});
     }
-
+    for (size_t i = 0; i<250; ++i) {
+        urv3.push_back({dis(gen), dis(gen)});
+    }
 
     std::cout << "using Chebyshev: "
               << entropy(urv, 3, 2.0, metric::Chebyshev<double>())
@@ -147,10 +150,12 @@ int main() {
 
     // testing entropy_avg
 
-    std::cout << "\n\nstart nentropy_avg test\n";
+    std::cout << "\n\nstart entropy_avg test\n";
     auto e_avg = metric::entropy_avg(urv);
     std::cout << "\nentropy_avg result: " << e_avg << "\n\n";
 
+    e = entropy(urv3, 3, 2.0, metric::Euclidian<double>());
+    std::cout << "default entropy for vector of sample size 250: " << e << "\n\n";
 
     return 0;
 }
