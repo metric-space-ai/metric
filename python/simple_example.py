@@ -54,18 +54,18 @@ m_e_e = metric.MGC("euclidian", "euclidian")
 m_e_m = metric.MGC("euclidian", "manhatten")
 
 start_time = time.time()
-res = m_e_e.calculate(A,B)
+res = m_e_e(A,B)
 end_time = time.time()
 print("Multiscale graph correlation1: %06f (Time = %06fms)" % (res, (end_time - start_time)*1000) );
-res = m_e_e.calculate(A,B)
+res = m_e_e(A,B)
 
 start_time = time.time()
-res = m_e_e.calculate(A1,B1)
+res = m_e_e(A1,B1)
 end_time = time.time()
 print("Multiscale graph correlation2: %06f (Time = %06fms)" % (res, (end_time - start_time)*1000) );
 
 start_time = time.time()
-res = m_e_m.calculate(A2,B2)
+res = m_e_m(A2,B2)
 end_time = time.time()
 print("Multiscale graph correlation3: %06f (Time = %06fms)" % (res, (end_time - start_time)*1000) );
 

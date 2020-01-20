@@ -76,7 +76,7 @@ BOOST_PYTHON_MODULE(metric)
             boost::apply_visitor([&](auto& obj) { ret = obj.estimate(python_wrap_stl(A), python_wrap_stl(B), BsampleSize, threshold, maxIterations); }, *self.mgc);
             return ret;
         }, "return estimate of the correlation betweeen A and B")
-        .def("calculate", +[](metrics& self, bp::object& A, bp::object& B) {
+        .def("__call__", +[](metrics& self, bp::object& A, bp::object& B) {
             double ret = std::numeric_limits<double>::infinity();
             boost::apply_visitor([&](auto& obj) { ret = obj.operator()(python_wrap_stl(A), python_wrap_stl(B)); }, *self.mgc);
             return ret;
