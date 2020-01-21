@@ -294,12 +294,14 @@ int main() {
     std::vector<std::vector<double>> urv;
     std::vector<std::vector<double>> urv2;
     std::vector<std::vector<double>> urv3;
+    std::vector<std::deque<double>> urv4;
 
     for (size_t i = 0; i<1000; ++i) {
         //urv.push_back({dis(gen), dis(gen), dis(gen), dis(gen), dis(gen), dis(gen), dis(gen)});
         //urv.push_back({dis(gen), dis(gen), dis(gen)});
         urv.push_back({dis(gen), dis(gen)});
         urv2.push_back({dis(gen), dis(gen)});
+        urv4.push_back({dis(gen), dis(gen)});
         //urv.push_back({dis(gen)});
     }
     for (size_t i = 0; i<250; ++i) {
@@ -338,6 +340,14 @@ int main() {
     std::cout << "default entropy for vector of sample size 250: " << e_plane << "\n\n";
 
 
+    // testing types
+
+    {
+        //std::vector<std::deque<double>> v = { {5,5}, {2,2}, {3,3}, {5,1} };
+        auto e_f = metric::entropy<void, metric::Chebyshev<double>>();
+        std::cout << "\n\ntesting deque type\n\nChebyshev, full: " << e_f(urv4, 3, 2.0) << std::endl;
+        std::cout << "Chebyshevm estimation:\n" << e_f.estimate(urv4) << std::endl;
+    }
 
 
     return 0;

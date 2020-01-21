@@ -121,7 +121,7 @@ T conv_diff_entropy_inv(T in) {
 
 
 template <typename Container, typename Metric, typename L>
-double entropy_fn(
+double entropy_fn( // old version, TODO remove
     std::vector<Container> data, std::size_t k, L logbase, Metric metric, bool exp)
 {
     using T = typename Container::value_type;
@@ -161,6 +161,8 @@ double entropy_fn(
 }
 
 
+
+// averaged entropy estimation: code COPIED from mgc.*pp with only mgc replaced with entropy, TODO refactor to avoid code dubbing
 template <typename recType, typename Metric>
 template <template <typename, typename> class OuterContainer, typename Container, typename OuterAllocator>
 double entropy<recType, Metric>::operator()(
@@ -207,7 +209,7 @@ double entropy<recType, Metric>::operator()(
         return entropyEstimate;
 }
 
-
+// averaged entropy estimation: code COPIED from mgc.*pp with only mgc replaced with entropy, TODO refactor to avoid code dubbing
 template <typename recType, typename Metric>
 template <typename Container>
 double entropy<recType, Metric>::estimate(
@@ -232,8 +234,10 @@ double entropy<recType, Metric>::estimate(
         maxIterations = dataSize / sampleSize;
     }
 
+    auto e = entropy<void, Metric>();
+
     if (maxIterations < 1) {
-        return entropy_fn(a, k, logbase, metric);
+        return e(a, k, logbase, metric);
     }
 
     /* Create shuffle indexes */
@@ -264,7 +268,7 @@ double entropy<recType, Metric>::estimate(
         }
 
         /* Get sample mgc value */
-        double sample_entopy = entropy_fn(sampleA, k, logbase, metric);
+        double sample_entopy = e(sampleA, k, logbase, metric);
         entropyValues.push_back(sample_entopy);
 
         std::sort(entropyValues.begin(), entropyValues.end());
@@ -433,8 +437,14 @@ typename std::enable_if<!std::is_integral<T>::value, T>::type variationOfInforma
 //        - 2 * mutualInformation<T>(Xc, Yc, k);
 //    return metric::conv_diff_entropy_inv(entropy<std::vector<T>, Metric>(Xc, k, logbase, Metric())) + metric::conv_diff_entropy_inv(entropy<std::vector<T>, Metric>(Yc, k, logbase, Metric()))
 //        - 2 * mutualInformation<T>(Xc, Yc, k);
-    return entropy_fn<std::vector<T>, Metric>(Xc, k, logbase, Metric(), false) + entropy_fn<std::vector<T>, Metric>(Yc, k, logbase, Metric(), false)
+
+//    return entropy_fn<std::vector<T>, Metric>(Xc, k, logbase, Metric(), false) + entropy_fn<std::vector<T>, Metric>(Yc, k, logbase, Metric(), false)
+//        - 2 * mutualInformation<T>(Xc, Yc, k);
+
+    auto e = entropy<void, Metric>();
+    return e(Xc, k, logbase) + e(Yc, k, logbase) // TODD probably metric metaparameters needed!
         - 2 * mutualInformation<T>(Xc, Yc, k);
+
 }
 
 template <typename T>

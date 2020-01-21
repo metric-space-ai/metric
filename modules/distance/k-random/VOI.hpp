@@ -26,12 +26,12 @@ namespace metric {
  * @return value of entropy estimation of the data 
  */
 template <typename Container, typename Metric = metric::Euclidian<typename Container::value_type>, typename L = double>
-double entropy_fn(
+double entropy_fn(  // old version, TODO remove
     std::vector<Container> data, std::size_t k = 3, L logbase = 2, Metric metric = Metric(), bool exp = false);
 
 
 template <typename recType, typename Metric = metric::Euclidian<typename recType::value_type>>
-struct entropy {
+struct entropy { // averaged entropy estimation: code COPIED from mgc.*pp with only mgc replaced with entropy, TODO refactor to avoid code dubbing
 
     template <template <typename, typename> class OuterContainer, typename Container, typename OuterAllocator>
     double operator()(
@@ -271,10 +271,9 @@ VOI_normalized_kl(int, V)->VOI_normalized_kl<double>;
 
 
 
-// averaged entropy estimation: code COPIED from mgc.*pp with only mgc replaced with entropy, TODO refactor to avoid code dubbing
 
+// helper functions for averaged entropy estimation: code COPIED from mgc.*pp with only mgc replaced with entropy, TODO refactor to avoid code dubbing
 
-// helper functions
 
 std::vector<double> linspace(double a, double b, int n);
 
@@ -291,24 +290,6 @@ double variance(const std::vector<double>& data, const double mean);
 double mean(const std::vector<double>& data);
 
 double peak2ems(const std::vector<double>& data);
-
-
-//// entropy estimation function
-
-////template <typename Container, class Metric = void>
-//template <typename Container, typename Metric = metric::Euclidian<typename Container::value_type>, typename L = double>
-//double entropy_avg(
-//            const Container& a, // data
-//         // averaging parameters
-//            const size_t sampleSize = 250,
-//            const double threshold = 0.05,
-//            size_t maxIterations = 1000,
-//         // entropy parameters
-//            std::size_t k = 3,
-//            L logbase = 2,
-//            Metric metric = Metric(),
-//            bool exp = false
-//        );
 
 
 
