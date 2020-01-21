@@ -121,7 +121,7 @@ T conv_diff_entropy_inv(T in) {
 
 
 template <typename Container, typename Metric, typename L>
-double entropy(
+double entropy_fn(
     std::vector<Container> data, std::size_t k, L logbase, Metric metric, bool exp)
 {
     using T = typename Container::value_type;
@@ -159,6 +159,141 @@ double entropy(
     else
         return entropyEstimate;
 }
+
+
+template <typename recType, typename Metric>
+template <template <typename, typename> class OuterContainer, typename Container, typename OuterAllocator>
+double entropy<recType, Metric>::operator()(
+        const OuterContainer<Container, OuterAllocator> & data,
+        std::size_t k,
+        double logbase,
+        Metric metric,
+        bool exp
+        ) const
+{
+    using T = typename Container::value_type;
+
+    if (data.empty() || data[0].empty()) {
+        return 0;
+    }
+    if (data.size() < k + 1)
+        throw std::invalid_argument("number of points in dataset must be larger than k");
+
+    double p = 1;
+    double N = data.size();
+    double d = data[0].size();
+    double two = 2.0;  // this is in order to make types match the log template function
+    double cb = d * log(logbase, two);
+
+    if constexpr (!std::is_same<Metric, typename metric::Chebyshev<T>>::value) {
+        if constexpr (std::is_same<Metric, typename metric::Euclidian<T>>::value) {
+            p = 2;
+        } else if constexpr (std::is_same<Metric, typename metric::P_norm<T>>::value) {
+            p = metric.p;
+        }
+        cb = cb + d * log(logbase, std::tgamma(1 + 1 / p)) - log(logbase, std::tgamma(1 + d / p));
+    }
+
+    //add_noise(data); // TODO test
+    metric::Tree<Container, Metric> tree(data, -1, metric);
+    double entropyEstimate = boost::math::digamma(N) - boost::math::digamma(k) + cb + d * log(logbase, two);
+    for (std::size_t i = 0; i < N; i++) {
+        auto res = tree.knn(data[i], k + 1);
+        entropyEstimate += d / N * log(logbase, res.back().second);
+    }
+    if (exp)
+        return metric::conv_diff_entropy(entropyEstimate); // conversion of values below 1 to exp scale
+    else
+        return entropyEstimate;
+}
+
+
+template <typename recType, typename Metric>
+template <typename Container>
+double entropy<recType, Metric>::estimate(
+        const Container & a,
+        const size_t sampleSize,
+        const double threshold,
+        size_t maxIterations,
+        std::size_t k,
+        double logbase,
+        Metric metric,
+        bool exp // TODO apply to returning value!
+        )
+{
+    const size_t dataSize = a.size();
+
+    /* Update maxIterations */
+    if (maxIterations == 0) {
+        maxIterations = dataSize / sampleSize;
+    }
+
+    if (maxIterations > dataSize / sampleSize) {
+        maxIterations = dataSize / sampleSize;
+    }
+
+    if (maxIterations < 1) {
+        return entropy_fn(a, k, logbase, metric);
+    }
+
+    /* Create shuffle indexes */
+    std::vector<size_t> indexes(dataSize);
+    std::iota(indexes.begin(), indexes.end(), 0);
+
+    auto rng = std::default_random_engine();
+    std::shuffle(indexes.begin(), indexes.end(), rng);
+
+    /* Create vector container for fast random access */
+    const std::vector<typename Container::value_type> vectorA(a.begin(), a.end());
+
+    /* Create samples */
+    std::vector<typename Container::value_type> sampleA;
+    sampleA.reserve(sampleSize);
+
+    std::vector<double> entropyValues;
+    double mu = 0;
+    for (auto i = 1; i <= maxIterations; ++i) {
+        size_t start = (i - 1) * sampleSize;
+        size_t end = std::min(i * sampleSize - 1, dataSize - 1);
+
+        /* Create samples */
+        sampleA.clear();
+
+        for (auto j = start; j < end; ++j) {
+            sampleA.push_back(vectorA[indexes[j]]);
+        }
+
+        /* Get sample mgc value */
+        double sample_entopy = entropy_fn(sampleA, k, logbase, metric);
+        entropyValues.push_back(sample_entopy);
+
+        std::sort(entropyValues.begin(), entropyValues.end());
+
+        const size_t n = entropyValues.size();
+        const auto p0 = linspace(0.5 / n, 1 - 0.5 / n, n);
+
+        mu = mean(entropyValues);
+        double sigma = variance(entropyValues, mu);
+
+        const std::vector<double> synth = icdf(p0, mu, sigma);
+        std::vector<double> diff;
+        diff.reserve(n);
+        for (auto i = 0; i < n; ++i) {
+            diff.push_back(entropyValues[i] - synth[i]);
+        }
+
+        auto convergence = peak2ems(diff) / n;
+        std::cout << n << " " << convergence << " " << sample_entopy << " " << mu << std::endl;
+
+        if (convergence < threshold) {
+            return mu;
+        }
+    }
+
+    return mu;
+}
+
+
 
 // Kozachenko-Leonenko estimator based on https://hal.archives-ouvertes.fr/hal-00331300/document (Shannon diff. entropy,
 // q = 1)
@@ -278,9 +413,16 @@ typename std::enable_if<std::is_integral<T>::value, T>::type mutualInformation(
 //        + metric::conv_diff_entropy_inv(entropy<T>(Yc,
 //            logbase))  // entropy overload for integers is not implemented yet
 //        - metric::conv_diff_entropy_inv(entropy<T>(XY, logbase));
-    return entropy<T>(Xc, k, 2.0, metric::Euclidian<T>(), false) // TODO update metric and logbase
-        + entropy<T>(Yc, k, 2.0, metric::Euclidian<T>(), false)  // entropy overload for integers is not implemented yet
-        - entropy<T>(XY, k, 2.0, metric::Euclidian<T>(), false);
+
+//    return entropy<T>(Xc, k, 2.0, metric::Euclidian<T>(), false) // TODO update metric and logbase
+//        + entropy<T>(Yc, k, 2.0, metric::Euclidian<T>(), false)  // entropy overload for integers is not implemented yet
+//        - entropy<T>(XY, k, 2.0, metric::Euclidian<T>(), false);
+
+    auto e = entropy<void, metric::Euclidian<T>>(); // TODO update metric and logbase
+    return e(Xc, k, 2.0)
+        + e(Yc, k, 2.0)  // entropy overload for integers is not implemented yet
+        - e(XY, k, 2.0);
+
 }
 
 template <typename T, typename Metric>
@@ -291,7 +433,7 @@ typename std::enable_if<!std::is_integral<T>::value, T>::type variationOfInforma
 //        - 2 * mutualInformation<T>(Xc, Yc, k);
 //    return metric::conv_diff_entropy_inv(entropy<std::vector<T>, Metric>(Xc, k, logbase, Metric())) + metric::conv_diff_entropy_inv(entropy<std::vector<T>, Metric>(Yc, k, logbase, Metric()))
 //        - 2 * mutualInformation<T>(Xc, Yc, k);
-    return entropy<std::vector<T>, Metric>(Xc, k, logbase, Metric(), false) + entropy<std::vector<T>, Metric>(Yc, k, logbase, Metric(), false)
+    return entropy_fn<std::vector<T>, Metric>(Xc, k, logbase, Metric(), false) + entropy_fn<std::vector<T>, Metric>(Yc, k, logbase, Metric(), false)
         - 2 * mutualInformation<T>(Xc, Yc, k);
 }
 
@@ -303,7 +445,10 @@ typename std::enable_if<!std::is_integral<T>::value, T>::type variationOfInforma
     auto mi = mutualInformation<T>(Xc, Yc, k);
     //return 1 - (mi / (entropy<std::vector<T>, Cheb>(Xc, k, logbase, Cheb()) + entropy<std::vector<T>, Cheb>(Yc, k, logbase, Cheb()) - mi));
     //return 1 - (mi / (metric::conv_diff_entropy_inv(entropy<std::vector<T>, Cheb>(Xc, k, logbase, Cheb())) + metric::conv_diff_entropy_inv(entropy<std::vector<T>, Cheb>(Yc, k, logbase, Cheb()) - mi)));
-    return 1 - (mi / (entropy<std::vector<T>, Cheb>(Xc, k, logbase, Cheb(), false) + entropy<std::vector<T>, Cheb>(Yc, k, logbase, Cheb(), false) - mi));
+
+    //return 1 - (mi / (entropy_fn<std::vector<T>, Cheb>(Xc, k, logbase, Cheb(), false) + entropy_fn<std::vector<T>, Cheb>(Yc, k, logbase, Cheb(), false) - mi));
+    auto e = entropy<void, Cheb>();
+    return 1 - (mi / (e(Xc, k, logbase) + e(Yc, k, logbase) - mi));
 }
 
 template <typename V>
@@ -313,11 +458,16 @@ typename std::enable_if<!std::is_integral<El>::value, V>::type VOI<V>::operator(
     const Container<Container<El, Allocator_inner>, Allocator_outer>& b) const
 {
     using Cheb = metric::Chebyshev<El>;
-//    return entropy<std::vector<El>, Cheb>(a, k, logbase, Cheb()) + entropy<std::vector<El>, Cheb>(b, k, logbase, Cheb())
+//    return entropy_fn<std::vector<El>, Cheb>(a, k, logbase, Cheb()) + entropy_fn<std::vector<El>, Cheb>(b, k, logbase, Cheb())
 //        - 2 * mutualInformation<El>(a, b, k);
-//    return metric::conv_diff_entropy_inv(entropy<std::vector<El>, Cheb>(a, k, logbase, Cheb())) + metric::conv_diff_entropy_inv(entropy<std::vector<El>, Cheb>(b, k, logbase, Cheb()))
+//    return metric::conv_diff_entropy_inv(entropy_fn<std::vector<El>, Cheb>(a, k, logbase, Cheb())) + metric::conv_diff_entropy_inv(entropy_fn<std::vector<El>, Cheb>(b, k, logbase, Cheb()))
 //        - 2 * mutualInformation<El>(a, b, k);
-    return entropy<std::vector<El>, Cheb>(a, k, logbase, Cheb(), false) + entropy<std::vector<El>, Cheb>(b, k, logbase, Cheb(), false)
+
+//    return entropy_fn<std::vector<El>, Cheb>(a, k, logbase, Cheb(), false) + entropy_fn<std::vector<El>, Cheb>(b, k, logbase, Cheb(), false)
+//        - 2 * mutualInformation<El>(a, b, k);
+
+    auto e = entropy<void, Cheb>();
+    return e(a, k, logbase) + e(b, k, logbase)
         - 2 * mutualInformation<El>(a, b, k);
 
 }
@@ -332,17 +482,23 @@ typename std::enable_if<!std::is_integral<El>::value, V>::type VOI_normalized<V>
     auto mi = mutualInformation<El>(a, b, this->k);
 //    return 1
 //        - (mi
-//            / (entropy<std::vector<El>, Cheb>(a, this->k, this->logbase, Cheb())
-//                + entropy<std::vector<El>, Cheb>(b, this->k, this->logbase, Cheb()) - mi));
+//            / (entropy_fn<std::vector<El>, Cheb>(a, this->k, this->logbase, Cheb())
+//                + entropy_fn<std::vector<El>, Cheb>(b, this->k, this->logbase, Cheb()) - mi));
 //    return 1
 //        - (mi
 //            / (metric::conv_diff_entropy_inv(entropy<std::vector<El>, Cheb>(a, this->k, this->logbase, Cheb()))
 //                + metric::conv_diff_entropy_inv(entropy<std::vector<El>, Cheb>(b, this->k, this->logbase, Cheb()) - mi)));
+
+//    return 1
+//        - (mi
+//            / (entropy_fn<std::vector<El>, Cheb>(a, this->k, this->logbase, Cheb(), false)
+//                + entropy_fn<std::vector<El>, Cheb>(b, this->k, this->logbase, Cheb(), false) - mi));
+
+    auto e = entropy<void, Cheb>();
     return 1
         - (mi
-            / (entropy<std::vector<El>, Cheb>(a, this->k, this->logbase, Cheb(), false)
-                + entropy<std::vector<El>, Cheb>(b, this->k, this->logbase, Cheb(), false) - mi));
-
+            / (e(a, this->k, this->logbase)
+                + e(b, this->k, this->logbase) - mi));
 }
 
 // VOI based on Kozachenko-Leonenko entropy estimator
@@ -587,91 +743,91 @@ double peak2ems(const std::vector<double>& data)
 
 
 
-// entropy estimation function
+//// entropy estimation function
 
-//template <typename Container, class Metric>
-template <typename Container, typename Metric, typename L>
-double entropy_avg(
-        const Container & a,
-        const size_t sampleSize,
-        const double threshold,
-        size_t maxIterations,
-        std::size_t k,
-        L logbase,
-        Metric metric,
-        bool exp)
-{
-    const size_t dataSize = a.size();
+////template <typename Container, class Metric>
+//template <typename Container, typename Metric, typename L>
+//double entropy_avg(
+//        const Container & a,
+//        const size_t sampleSize,
+//        const double threshold,
+//        size_t maxIterations,
+//        std::size_t k,
+//        L logbase,
+//        Metric metric,
+//        bool exp)
+//{
+//    const size_t dataSize = a.size();
 
-    /* Update maxIterations */
-    if (maxIterations == 0) {
-        maxIterations = dataSize / sampleSize;
-    }
+//    /* Update maxIterations */
+//    if (maxIterations == 0) {
+//        maxIterations = dataSize / sampleSize;
+//    }
 
-    if (maxIterations > dataSize / sampleSize) {
-        maxIterations = dataSize / sampleSize;
-    }
+//    if (maxIterations > dataSize / sampleSize) {
+//        maxIterations = dataSize / sampleSize;
+//    }
 
-    if (maxIterations < 1) {
-        return entropy(a);
-    }
+//    if (maxIterations < 1) {
+//        return entropy_fn(a);
+//    }
 
-    /* Create shuffle indexes */
-    std::vector<size_t> indexes(dataSize);
-    std::iota(indexes.begin(), indexes.end(), 0);
+//    /* Create shuffle indexes */
+//    std::vector<size_t> indexes(dataSize);
+//    std::iota(indexes.begin(), indexes.end(), 0);
 
-    auto rng = std::default_random_engine();
-    std::shuffle(indexes.begin(), indexes.end(), rng);
+//    auto rng = std::default_random_engine();
+//    std::shuffle(indexes.begin(), indexes.end(), rng);
 
-    /* Create vector container for fast random access */
-    const std::vector<typename Container::value_type> vectorA(a.begin(), a.end());
+//    /* Create vector container for fast random access */
+//    const std::vector<typename Container::value_type> vectorA(a.begin(), a.end());
 
-    /* Create samples */
-    std::vector<typename Container::value_type> sampleA;
-    sampleA.reserve(sampleSize);
+//    /* Create samples */
+//    std::vector<typename Container::value_type> sampleA;
+//    sampleA.reserve(sampleSize);
 
-    std::vector<double> entropyValues;
-    double mu = 0;
-    for (auto i = 1; i <= maxIterations; ++i) {
-        size_t start = (i - 1) * sampleSize;
-        size_t end = std::min(i * sampleSize - 1, dataSize - 1);
+//    std::vector<double> entropyValues;
+//    double mu = 0;
+//    for (auto i = 1; i <= maxIterations; ++i) {
+//        size_t start = (i - 1) * sampleSize;
+//        size_t end = std::min(i * sampleSize - 1, dataSize - 1);
 
-        /* Create samples */
-        sampleA.clear();
+//        /* Create samples */
+//        sampleA.clear();
 
-        for (auto j = start; j < end; ++j) {
-            sampleA.push_back(vectorA[indexes[j]]);
-        }
+//        for (auto j = start; j < end; ++j) {
+//            sampleA.push_back(vectorA[indexes[j]]);
+//        }
 
-        /* Get sample mgc value */
-        double sample_entopy = entropy(sampleA);
-        entropyValues.push_back(sample_entopy);
+//        /* Get sample mgc value */
+//        double sample_entopy = entropy_fn(sampleA); // TODO add parameters
+//        entropyValues.push_back(sample_entopy);
 
-        std::sort(entropyValues.begin(), entropyValues.end());
+//        std::sort(entropyValues.begin(), entropyValues.end());
 
-        const size_t n = entropyValues.size();
-        const auto p0 = linspace(0.5 / n, 1 - 0.5 / n, n);
+//        const size_t n = entropyValues.size();
+//        const auto p0 = linspace(0.5 / n, 1 - 0.5 / n, n);
 
-        mu = mean(entropyValues);
-        double sigma = variance(entropyValues, mu);
+//        mu = mean(entropyValues);
+//        double sigma = variance(entropyValues, mu);
 
-        const std::vector<double> synth = icdf(p0, mu, sigma);
-        std::vector<double> diff;
-        diff.reserve(n);
-        for (auto i = 0; i < n; ++i) {
-            diff.push_back(entropyValues[i] - synth[i]);
-        }
+//        const std::vector<double> synth = icdf(p0, mu, sigma);
+//        std::vector<double> diff;
+//        diff.reserve(n);
+//        for (auto i = 0; i < n; ++i) {
+//            diff.push_back(entropyValues[i] - synth[i]);
+//        }
 
-        auto convergence = peak2ems(diff) / n;
-        std::cout << n << " " << convergence << " " << sample_entopy << " " << mu << std::endl;
+//        auto convergence = peak2ems(diff) / n;
+//        std::cout << n << " " << convergence << " " << sample_entopy << " " << mu << std::endl;
 
-        if (convergence < threshold) {
-            return mu;
-        }
-    }
+//        if (convergence < threshold) {
+//            return mu;
+//        }
+//    }
 
-    return mu;
-}
+//    return mu;
+//}
 
 
 

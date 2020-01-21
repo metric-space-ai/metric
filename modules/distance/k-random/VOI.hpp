@@ -26,8 +26,35 @@ namespace metric {
  * @return value of entropy estimation of the data 
  */
 template <typename Container, typename Metric = metric::Euclidian<typename Container::value_type>, typename L = double>
-double entropy(
+double entropy_fn(
     std::vector<Container> data, std::size_t k = 3, L logbase = 2, Metric metric = Metric(), bool exp = false);
+
+
+template <typename recType, typename Metric = metric::Euclidian<typename recType::value_type>>
+struct entropy {
+
+    template <template <typename, typename> class OuterContainer, typename Container, typename OuterAllocator>
+    double operator()(
+            const OuterContainer<Container, OuterAllocator> & data,
+            std::size_t k = 3,
+            double logbase = 2,
+            Metric metric = Metric(),
+            bool exp = false
+            ) const;
+
+    template <typename Container>
+    double estimate(
+            const Container & a,
+            const size_t sampleSize = 250,
+            const double threshold = 0.05,
+            size_t maxIterations = 1000,
+            std::size_t k = 3,
+            double logbase = 2,
+            Metric metric = Metric(),
+            bool exp = false
+            );
+};
+
 
 /**
  * @brief
@@ -266,22 +293,22 @@ double mean(const std::vector<double>& data);
 double peak2ems(const std::vector<double>& data);
 
 
-// entropy estimation function
+//// entropy estimation function
 
-//template <typename Container, class Metric = void>
-template <typename Container, typename Metric = metric::Euclidian<typename Container::value_type>, typename L = double>
-double entropy_avg(
-            const Container& a, // data
-         // averaging parameters
-            const size_t sampleSize = 250,
-            const double threshold = 0.05,
-            size_t maxIterations = 1000,
-         // entropy parameters
-            std::size_t k = 3,
-            L logbase = 2,
-            Metric metric = Metric(),
-            bool exp = false
-        );
+////template <typename Container, class Metric = void>
+//template <typename Container, typename Metric = metric::Euclidian<typename Container::value_type>, typename L = double>
+//double entropy_avg(
+//            const Container& a, // data
+//         // averaging parameters
+//            const size_t sampleSize = 250,
+//            const double threshold = 0.05,
+//            size_t maxIterations = 1000,
+//         // entropy parameters
+//            std::size_t k = 3,
+//            L logbase = 2,
+//            Metric metric = Metric(),
+//            bool exp = false
+//        );
 
 
 
