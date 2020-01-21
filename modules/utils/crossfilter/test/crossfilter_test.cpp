@@ -407,3 +407,17 @@ BOOST_AUTO_TEST_CASE(iterable_dimension_test)
     cross::filter<IterableRecord> cf;
     auto dim = cf.iterable_dimension([](auto r) { return r.vec; });
 }
+
+BOOST_AUTO_TEST_CASE(create_dimension_pointer)
+{
+    cross::filter<Record> cf;
+    auto dim = cf.dimension_ptr([](auto r) { return r.a; });
+    delete dim;
+}
+
+BOOST_AUTO_TEST_CASE(create_iterable_dimension_pointer)
+{
+    cross::filter<IterableRecord> cf;
+    auto dim = cf.iterable_dimension_ptr([](auto r) { return r.vec; });
+    delete dim;
+}
