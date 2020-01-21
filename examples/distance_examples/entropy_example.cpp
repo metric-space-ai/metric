@@ -11,7 +11,7 @@ Copyright (c) 2019 Panda Team
 
 #include <random>
 
-//*
+/*
 
 int main() {
 	
@@ -165,7 +165,7 @@ int main() {
 }
 //*/
 
-/*
+//*
 
 int main() {
 
@@ -324,6 +324,20 @@ int main() {
     std::cout << "using VOI: " << rf_voi(urv, urv2) << std::endl;
 
     std::cout << "conv test " << metric::conv_diff_entropy_inv(metric::conv_diff_entropy(-0.118)) << std::endl;
+
+
+
+
+    // testing entropy::estimate
+
+    std::cout << "\n\nstart entropy_avg test\n";
+    auto e_avg = e_f_eucl.estimate(urv);
+    std::cout << "\nentropy_avg result: " << e_avg << "\n\n";
+
+    auto e_plane = e_f_eucl(urv3);
+    std::cout << "default entropy for vector of sample size 250: " << e_plane << "\n\n";
+
+
 
 
     return 0;
