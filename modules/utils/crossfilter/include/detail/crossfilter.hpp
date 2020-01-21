@@ -307,6 +307,18 @@ public:
     }
 
     /**
+       Constructs a new dimension using the specified value accessor function.
+       Returns pointer to new dimension object.
+    */
+    template <typename F>
+    auto dimension_ptr(F getter)
+        -> cross::dimension<decltype(getter(std::declval<record_type_t>())), T, cross::non_iterable, Hash>*
+    {
+        //    writer_lock_t lk(mutex);
+        return impl_type_t::dimension_ptr(getter);
+    }
+
+    /**
      Constructs a new dimension using the specified value accessor function.
      Getter function must return container of elements.
   */
@@ -318,6 +330,20 @@ public:
         (void)lk;  // avoid AppleClang warning about unused variable;
         using value_type = decltype(getter(record_type_t()));
         return impl_type_t::template iterable_dimension<value_type>(getter);
+    }
+    /**
+     Constructs a new dimension using the specified value accessor function.
+     Getter function must return container of elements.
+     Return pointer to new dimension object
+  */
+    template <typename F>
+    auto iterable_dimension_ptr(F getter)
+        -> cross::dimension<decltype(getter(std::declval<record_type_t>())), T, cross::iterable, Hash>*
+    {
+        writer_lock_t lk(mutex);
+        (void)lk;  // avoid AppleClang warning about unused variable;
+        using value_type = decltype(getter(record_type_t()));
+        return impl_type_t::template iterable_dimension_ptr<value_type>(getter);
     }
 
     /**
