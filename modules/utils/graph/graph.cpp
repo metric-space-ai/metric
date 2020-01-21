@@ -678,8 +678,8 @@ void RandomUniform<WType, isDense>::fill(MType& matrix, WType lower_bound, WType
 // KNN-Graph
 
 template <typename Sample, typename Distance, typename WeightType, bool isDense, bool isSymmetric>
-KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::KNNGraph(std::vector<Sample> X, size_t neighbors_num, size_t max_bruteforce_size)
-    : Graph<WeightType, isDense, isSymmetric>(X.size()), _neighbors_num(neighbors_num), _max_bruteforce_size(max_bruteforce_size)
+KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::KNNGraph(std::vector<Sample> X, size_t neighbors_num, size_t max_bruteforce_size, int max_iterations, double update_range)
+    : Graph<WeightType, isDense, isSymmetric>(X.size()), _neighbors_num(neighbors_num), _max_bruteforce_size(max_bruteforce_size), _max_iterations(max_iterations), _update_range(update_range)
 {
     construct(X);
 }
@@ -694,9 +694,8 @@ void KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::construct(std
 
 	std::vector<std::pair<size_t, size_t>> edgesPairs;
 	double updated_percent = 1.0;
-	int max_iterations = 100;
 	int iterations = 0;
-	while(updated_percent > 0.02)
+	while(updated_percent > _update_range)
 	{
 		auto newEdgesPairs = random_pair_division(samples, ids, _max_bruteforce_size);
 					
@@ -726,15 +725,10 @@ void KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::construct(std
 
 		iterations++;
 
-		if (iterations >= max_iterations)
+		if (iterations >= _max_iterations)
 		{
 			break;
 		}
-	}
-	
-	std::cout << "edges: " << std::endl;
-	for (size_t i = 0; i < edgesPairs.size(); ++i) {
-		std::cout << edgesPairs[i].first << " " << edgesPairs[i].second << std::endl;
 	}
 
     buildEdges(edgesPairs);
@@ -860,6 +854,127 @@ std::vector<std::pair<size_t, size_t>> KNNGraph<Sample, Distance, WeightType, is
 
 	return edgesPairs;
 }
+
+
+//unsigned long long nndes_iterate_limited(DataSet* data, kNNGraph* kNN, int _k_limit) {
+//
+//    vector<vector<int>> new_knn(data->size);
+//    vector<vector<int>> old_knn(data->size);
+//    vector<vector<int>> reverse_new_knn(data->size);
+//    vector<vector<int>> reverse_old_knn(data->size);
+//
+//    int k_limit = kNN->k;
+//    if(_k_limit>0) { k_limit = _k_limit;}
+//
+//    unsigned long long update_count = 0;
+//    g_timer.tuck("  Build old_knn, new_knn ");
+//    for(int i_knn = 0; i_knn < kNN->size;i_knn++) {
+//        new_knn[i_knn].clear();
+//        old_knn[i_knn].clear();
+//        reverse_new_knn[i_knn].clear();
+//        reverse_old_knn[i_knn].clear();
+//
+//        for(int j = 0; j < k_limit && j < kNN->list[i_knn].size;j++) {
+//            kNNItem* ki = get_kNN_item(kNN,i_knn,j);
+//            if(ki->new_item
+//                    /*&& (k_limit <= 0 || new_knn[i_knn].size() <= k_limit)*/
+//              ) {
+//                new_knn[i_knn].push_back(ki->id);
+//                ki->new_item = false;
+//            } else {
+//                old_knn[i_knn].push_back(ki->id);
+//            }
+//        }
+//    }
+//
+//    // Construct reverse kNN
+//    for(int i_knn = 0; i_knn < kNN->size;i_knn++) {
+//        for(std::vector<int>::iterator it = new_knn[i_knn].begin(); it != new_knn[i_knn].end(); ++it) {
+//            new_knn[*it].push_back(i_knn);
+//        }
+//        for(std::vector<int>::iterator it = old_knn[i_knn].begin(); it != old_knn[i_knn].end(); ++it) {
+//            old_knn[*it].push_back(i_knn);
+//        }
+//    }
+//
+//    g_timer.tuck("  START Local join");
+//    for(int i_knn = 0; i_knn < kNN->size;i_knn++) {
+//
+//        std::sort( old_knn[i_knn].begin(), old_knn[i_knn].end());
+//        std::sort( new_knn[i_knn].begin(), new_knn[i_knn].end());
+//        int last_id = INT_MAX;
+//        for(std::vector<int>::iterator it = new_knn[i_knn].begin(); it != new_knn[i_knn].end(); ++it)
+//        {
+//            int id_A = *it;
+//
+//            if(id_A == last_id) {continue;}
+//            nndes_join(data,kNN,id_A,i_knn,new_knn,update_count);
+//            nndes_join_old(data,kNN,id_A,i_knn,old_knn,update_count);
+//
+//            last_id = id_A;
+//        }
+//    }
+//
+//    g_timer.tuck("  END Local join");
+//
+//    return update_count;
+//}
+
+
+//template <typename Sample, typename Distance, typename WeightType, bool isDense, bool isSymmetric>
+//std::vector<Sample> KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::gnnn_search(Sample query, size_t max_closest_num, size_t iterations, size_t num_greedy_moves, size_t num_expansions)
+//{
+//	std::vector<Sample> result;
+//	std::vector<Distance::value_type> choosen_distances;
+//	std::vector<Sample> choosen_points;
+//	std::vector<Distance::value_type> distances;
+//	Distance::value_type distance;
+//
+//	Heap<double> pq{knn_graph.query2(k, query_point, mt, e_param, step)};
+//	
+//	Distance distancer;
+//
+//	// num_expansions should be less then k(neighbors_num) of the graph
+//	if (num_expansions > _neighbors_num)
+//	{
+//		num_expansions = _neighbors_num;
+//	}
+//
+//	for (int i = 0; i < iterations; i++) 
+//	{
+//		// get initial node from the graph
+//		Y = random;
+//		for (int j = 0; j < num_greedy_moves; j++) 
+//		{
+//			distances.clear();
+//			neighbours = Y.neighbours;
+//
+//			// get first num_expansions neighbours for Y and calculate distances to the query
+//			for (int p = 0; p < num_expansions; p++) 
+//			{
+//				distance = distancer(neighbours[p], query);
+//				distances.push_back(distance);
+//				choosen_distances.push_back(distances[idxs[q]]);
+//				choosen_points.push_back(neighbours[idxs[q]]);
+//			}
+//			
+//			std::vector<int>::iterator min_index = std::min_element(distances.begin(), distances.end());
+//			Y = neighbours[std::distance(ids.begin(), max_index)];
+//		}
+//	}
+//			
+//	// sort distances and return corresopnding nodes from choosen
+//
+//	auto idxs = sort_indexes(choosen_distances);
+//
+//	for (int i = 0; i < max_closest_num; i++)
+//	{
+//		result.push_back(choosen_points[idxs[i]]);
+//	}
+//
+//	return result;
+//}
+
 
 template <typename Sample, typename Distance, typename WeightType, bool isDense, bool isSymmetric>
 template <typename T1>

@@ -77,7 +77,7 @@ int main()
 	std::cout << "Graph space example have started" << std::endl;
 	std::cout << "" << std::endl;
 	
-    size_t neighbors_num = 3;  //15;
+    size_t neighbors_num = 3;
 		
     std::vector<std::vector<double>> table = {
         { 0, 1 },
@@ -121,6 +121,27 @@ int main()
     //};
 	
     auto g = metric::KNNGraph<std::vector<double>, metric::Euclidian<double>>(table, neighbors_num, 2.5 * neighbors_num);
+	
+    std::cout << "graph:" << std::endl;
+    std::cout << g.get_matrix() << std::endl;
+	
+    std::cout << std::endl;
+    std::cout << "Neighbours:" << std::endl;
+	auto neighbours = g.getNeighbours(2, 2);
+	
+    std::cout << "  [ ";
+    std::cout << std::endl;
+	for (size_t i = 0; i < neighbours.size(); i++)
+	{
+        std::cout << "  [ ";
+		for (size_t j = 0; j < neighbours[i].size(); j++)
+		{
+            std::cout << neighbours[i][j] << " ";
+		}
+        std::cout << "]" << std::endl;
+	}
+    std::cout << "]";
+
 	
     return 0;
 }

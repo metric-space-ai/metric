@@ -326,8 +326,10 @@ private:
 
 
 /**
- * @class Grid4
- * @brief
+ * @class KNNGraph
+ * @brief Fast hierarchial method algorithm that constructs an approximate kNN graph. The method is simple and it works with any type of data for which a distance function can be provided. 
+ * Algorith has two parts. In the first part we create a crude approximation of the graph by subdividing the dataset until each subset reaches given max_bruteforce_size.
+ * In the second part this approximation is iteratively fine-tuned by combining the first algorithm with NN-descent method. 
  * 
  */
 template <typename Sample, typename Distance, typename WeightType = bool, bool isDense = false, bool isSymmetric = true>
@@ -340,14 +342,21 @@ public:
      * @param width 
      * @param height 
      */
-    KNNGraph(std::vector<Sample> X, size_t neighbors_num, size_t max_bruteforce_size);
+    KNNGraph(std::vector<Sample> X, size_t neighbors_num, size_t max_bruteforce_size, int max_iterations = 100, double update_range = 0.02);
 
 	
 	size_t neighbors_num() { return _neighbors_num; };
+
+	
+	std::vector<Sample> gnnn_search(Sample sample, size_t k);
 	
 protected:
 	size_t _neighbors_num = 1;
 	size_t _max_bruteforce_size = 10;
+	
+	int _max_iterations = 100;
+	double _update_range = 0.02;
+
 	bool _not_more_neighbors = false;
 
 private:
