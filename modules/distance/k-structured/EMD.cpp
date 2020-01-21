@@ -1098,8 +1098,7 @@ auto EMD<V>::operator()(const Container& Pc, const Container& Qc) const -> dista
         C = default_ground_matrix(Pc.size(), Pc.size());
         is_C_initialized = true;
     }
-    // typedef typename Container::value_type T;
-    using T = value_type;
+
     const EMD_details::FLOW_TYPE_T FLOW_TYPE = EMD_details::NO_FLOW;
     //    // if maxC is not given seperatly // disabled by Max F when rolled back to original version
     //    if (maxC == std::numeric_limits<T>::min())
@@ -1112,8 +1111,9 @@ auto EMD<V>::operator()(const Container& Pc, const Container& Qc) const -> dista
 
     assert((F != NULL) || (FLOW_TYPE == EMD_details::NO_FLOW));
 
-    std::vector<T> P(std::begin(Pc), std::end(Pc));
-    std::vector<T> Q(std::begin(Qc), std::end(Qc));
+	// changed from std::vector<T> to Container by Stepan Mamontov 21.01.2020
+    Container P(Pc);
+    Container Q(Qc);
 
     // Assuming metric property we can pre-flow 0-cost edges
     {
