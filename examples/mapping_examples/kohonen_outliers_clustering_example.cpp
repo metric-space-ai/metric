@@ -147,14 +147,14 @@ std::vector<std::vector<double>> readEnergies(std::string dirname)
 	std::vector<std::vector<double>> rows;
 	
 	//#if defined(_WIN64)
-		for (const auto & entry : std::filesystem::directory_iterator(dirname))
+               for (const auto & entry : std::filesystem::directory_iterator(dirname))
 	//#endif
 	#if defined(__linux__)
-		for (auto filename : files)
+               for (auto filename : files)
 	#endif
     {
 		//#if defined(_WIN64)
-			auto filename = entry.path();
+                       auto filename = entry.path();
 		//#endif
 		std::cout << "reading data from " << filename << "... " << std::endl;
 
@@ -236,6 +236,7 @@ int main(int argc, char *argv[])
 	
 	metric::Grid4 graph(best_w_grid_size, best_h_grid_size);
 	metric::Euclidian<double> distance;
+    auto en = metric::entropy<void, metric::Euclidian<double>>();
 	std::uniform_real_distribution<double> distribution;
 
 	metric::KOC<Record, metric::Grid4, metric::Euclidian<double>, std::uniform_real_distribution<double>> 
@@ -338,7 +339,8 @@ int main(int argc, char *argv[])
 		{
 			reduced_reshaped.push_back({reduced[j]});
 		}
-		auto e = entropy(reduced_reshaped, 3, 2.0, distance);
+        //auto e = entropy_fn(reduced_reshaped, 3, 2.0, distance); // old function, TODO remove
+        auto e = en(reduced_reshaped, 3, 2.0);
 		entropies_sum += e;
 		entropies.push_back(e);
 	}
@@ -367,7 +369,8 @@ int main(int argc, char *argv[])
 		{
 			reduced_reshaped.push_back({reduced[j]});
 		}
-		auto e = entropy(reduced_reshaped, 3, 2.0, distance);
+        //auto e = entropy_fn(reduced_reshaped, 3, 2.0, distance); // old function, TODO remove
+        auto e = en(reduced_reshaped, 3, 2.0);
 		std::cout << "test entropy: " << e << std::endl;
 	}
 	std::cout << "" << std::endl;

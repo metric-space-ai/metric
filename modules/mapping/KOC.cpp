@@ -92,7 +92,9 @@ bool KOC<recType, Graph, Metric, Distribution>::check_if_anomaly(const recType& 
     for (size_t j = 0; j < reduced.size(); j++) {
         reduced_reshaped.push_back({ reduced[j] });
     }
-    auto e = entropy(reduced_reshaped, 3, 2.0, SOM<recType, Graph, Metric, Distribution>::metric);
+    auto en = entropy<void, Metric>();
+    //auto e = entropy_fn(reduced_reshaped, 3, 2.0, SOM<recType, Graph, Metric, Distribution>::metric); // old function call, TODO remove
+    auto e = en(reduced_reshaped, 3, 2.0, SOM<recType, Graph, Metric, Distribution>::metric);
 
     // if entropy less then min entropy level then it is anomaly
     return e < entropy_range;
@@ -118,6 +120,7 @@ void KOC<recType, Graph, Metric, Distribution>::parse_distances(
     std::vector<T> closest_distances;  // closest distances to the nodes for each sample from train dataset
     T entropies_sum = 0;
     T distances_sum = 0;
+    auto en = entropy<void, Metric>();
     for (size_t i = 0; i < sampleSize; i++) {
         size_t sample_idx = randomized_samples[i];
 
@@ -132,7 +135,8 @@ void KOC<recType, Graph, Metric, Distribution>::parse_distances(
         for (size_t j = 0; j < reduced.size(); j++) {
             reduced_reshaped.push_back({ reduced[j] });
         }
-        auto e = entropy(reduced_reshaped, 3, 2.0, SOM<recType, Graph, Metric, Distribution>::metric);
+        //auto e = entropy_fn(reduced_reshaped, 3, 2.0, SOM<recType, Graph, Metric, Distribution>::metric); // old function call, TODO remove
+        auto e = en(reduced_reshaped, 3, 2.0, SOM<recType, Graph, Metric, Distribution>::metric);
         entropies_sum += e;
         entropies.push_back(e);
     }

@@ -343,7 +343,6 @@ int main() {
     // testing types
 
     {
-        //std::vector<std::deque<double>> v = { {5,5}, {2,2}, {3,3}, {5,1} };
         auto e_f = metric::entropy<void, metric::Chebyshev<double>>();
         std::cout << "\n\ntesting deque type\n\nChebyshev, full: " << e_f(urv4, 3, 2.0) << std::endl;
         std::cout << "Chebyshevm estimation:\n" << e_f.estimate(urv4) << std::endl;
