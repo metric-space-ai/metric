@@ -348,7 +348,7 @@ public:
 	size_t neighbors_num() { return _neighbors_num; };
 
 	
-	std::vector<Sample> gnnn_search(Sample sample, size_t k);
+	std::vector<int> gnnn_search(Sample query, int max_closest_num, int iterations = 10, int num_greedy_moves = -1, int num_expansions = -1);
 	
 protected:
 	size_t _neighbors_num = 1;
@@ -358,6 +358,8 @@ protected:
 	double _update_range = 0.02;
 
 	bool _not_more_neighbors = false;
+
+	std::vector<Sample> _nodes;
 
 private:
     /**
