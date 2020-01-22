@@ -90,7 +90,7 @@ int main() {
         x.push_back(dist(rng));
 
 
-    std::cout << "runnning energy extractors " << runs << " times on vector of length " << len << "\n";
+    std::cout << "running energy extractors " << runs << " times on vector of length " << len << "\n";
 
     auto e = metric::energy_encoder(5, 3);
 
