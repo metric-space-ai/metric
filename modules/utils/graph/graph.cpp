@@ -695,10 +695,14 @@ void KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::construct(std
 	std::vector<std::pair<size_t, size_t>> edgesPairs;
 	double updated_percent = 1.0;
 	int iterations = 0;
+
+	// we iterate until we can found new edges (updated edges between nodes)
 	while(updated_percent > _update_range)
 	{
+		// create or update approximated knn graph
 		auto newEdgesPairs = random_pair_division(samples, ids, _max_bruteforce_size);
 					
+		// then update edge pair and check how many was updated
 		int was_size = edgesPairs.size();
 		for (int j = 0; j < newEdgesPairs.size(); j++)
 		{
@@ -731,6 +735,7 @@ void KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::construct(std
 		}
 	}
 
+	// finish graph
     buildEdges(edgesPairs);
 
     valid = true;
@@ -757,13 +762,18 @@ std::vector<std::pair<size_t, size_t>> KNNGraph<Sample, Distance, WeightType, is
 
 		if (n <= max_size)
 		{
+			// conquer stage
 			edgesPairs = brute_force(samples, ids);
 		}
 		else
 		{
+			// divide stage
+
+			// take random nodes(samples)
 			auto a = samples[dist(mt)];
 			auto b = samples[dist(mt)];
 			Sample x;
+			// and divide all nodes to two groups, where each node is close to one of two initial points
 			for (int i = 0; i < n; i++)
 			{
 				x = samples[i];
@@ -778,6 +788,8 @@ std::vector<std::pair<size_t, size_t>> KNNGraph<Sample, Distance, WeightType, is
 					B_ids.push_back(ids[i]);
 				}
 			}
+
+			// and recursively divide both groups again
 			edgesPairsResult = random_pair_division(A, A_ids, max_size);
 			edgesPairs.insert( edgesPairs.end(), edgesPairsResult.begin(), edgesPairsResult.end() );
 			edgesPairsResult = random_pair_division(B, B_ids, max_size);
@@ -793,14 +805,15 @@ std::vector<std::pair<size_t, size_t>> KNNGraph<Sample, Distance, WeightType, is
 {	
     std::vector<std::pair<size_t, size_t>> edgesPairs;
 
-	//
 	Distance distance;
 	int update_count = 0;
 	
     for (int i = 0; i < samples.size(); i++) 
 	{
+		// take each node
         auto i_point = samples[i];
 		std::vector<Distance::value_type> distances;
+		// then calculate distances for all other nodes
         for (int j = 0; j < samples.size(); j++) 
 		{
             auto i_other_point = samples[j];
@@ -821,30 +834,35 @@ std::vector<std::pair<size_t, size_t>> KNNGraph<Sample, Distance, WeightType, is
 			bool already_exist = false;
 			
 			std::vector<int>::iterator max_index = std::max_element(ids.begin(), ids.end());
-			std::vector<int> sizes(ids[std::distance(ids.begin(), max_index)] + 1, 0);
+			// here we keep number of edges from each node
+			std::vector<int> num_edges_by_node(ids[std::distance(ids.begin(), max_index)] + 1, 0);
 			for (int k = 0; k < edgesPairs.size(); k++)
 			{
-				sizes[edgesPairs[k].first]++;
-				sizes[edgesPairs[k].second]++;
+				num_edges_by_node[edgesPairs[k].first]++;
+				num_edges_by_node[edgesPairs[k].second]++;
 				if (edgesPairs[k] == std::pair<size_t, size_t>(ids[i], ids[idxs[j]]) || edgesPairs[k] == std::pair<size_t, size_t>(ids[idxs[j]], ids[i]))
 				{
 					already_exist = true;
 					break;
 				}
+				// if we want to keep neighbours strickt not more then _neighbors_num
 				if (_not_more_neighbors)
 				{
-					if (sizes[edgesPairs[k].first] >= _neighbors_num || sizes[edgesPairs[k].second] >= _neighbors_num )
+					if (num_edges_by_node[edgesPairs[k].first] >= _neighbors_num || num_edges_by_node[edgesPairs[k].second] >= _neighbors_num )
 					{
 						already_exist = true;
 						break;
 					}
 				}
 			}
+
+			// add current node and closest to result
 			if (!already_exist)
 			{
 				edgesPairs.emplace_back(ids[i], ids[idxs[j]]);
 			}
 
+			// and break if we get '_neighbors_num' edges
 			if (j + 1 >= _neighbors_num)
 			{
 				break;
