@@ -126,7 +126,7 @@ public:
     energy_encoder(int wavelet_type_ = 4, size_t splits_ = 2, bool bothsided_ = true) :
         wavelet_type(wavelet_type_),
         //splits(splits_),
-        bothsided(bothsided_) // not used
+        bothsided(bothsided_) // not used now, TODO implement one-sided!
     {
         subbands = 1;
         for (size_t i = 0; i < splits_; ++i)
@@ -145,6 +145,7 @@ public:
 
         InnerContainer out;
 
+        //subband_length = std::stack<size_t>();
         std::stack<size_t> subband_length;
         auto n_subbands = sequential_DWT<std::vector, InnerContainer, std::allocator<InnerContainer>>(in, subband_length, wavelet_type, subbands); // TODO update splits with log2
 
@@ -166,10 +167,19 @@ public:
         return out;
     }
 
+    std::vector<size_t> freq_bounds(size_t len) {
+        std::vector<size_t> bounds = {0};
+        float step = len / (2.0 * (float)subbands);
+        for (size_t i = 1; i<=subbands; ++i)
+            bounds.push_back(step*i + 0.5);
+        return bounds;
+    }
+
 private:
     int wavelet_type;
     size_t subbands;
     bool bothsided;
+    //std::stack<size_t> subband_length;
 
 };
 

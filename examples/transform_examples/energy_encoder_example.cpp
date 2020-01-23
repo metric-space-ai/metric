@@ -53,5 +53,22 @@ int main() {
         subbands_num *= 2;
     }
 
+
+    std::cout << "\n\ntesting computation of frequency bounds for 4 splits, 40000 points:\n";
+
+    auto e2 = metric::energy_encoder(5, 4);
+    auto bounds = e2.freq_bounds(40000);
+    for (size_t i=0; i< bounds.size(); ++i)
+        std::cout << bounds[i] << "\n";
+
+    std::cout << "\n\ntesting computation of frequency bounds for 4 splits, 39999 points:\n";
+
+    bounds = e2.freq_bounds(39999);
+    for (size_t i=0; i< bounds.size(); ++i)
+        std::cout << bounds[i] << "\n";
+
+    std::cout << "\n\n";
+
+
     return 0;
 }
