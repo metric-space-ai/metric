@@ -366,7 +366,21 @@ public:
         t.print(ostr);
         return ostr;
     }
+    /**
+     * @brief Computes graph distance between two nodes
+     * @param id1  - ID of the first node
+     * @param id2  - ID of the second node
+     * @return weighted sum of edges between nodes
+     */
+    Distance distance_by_id(std::size_t id1, std::size_t id2) const;
 
+    /**
+     * @brief Computes graph distance between two records
+     * @param p1  - first record
+     * @param p2  - second record
+     * @return weighted sum of edges between nodes nearest to p1 and p2
+     */
+    Distance distance(const recType & p1, const recType & p2) const;
 private:
     friend class Node<recType, Metric>;
 
@@ -462,6 +476,10 @@ private:
             kv.second -= 1;
         }
     }
+    std::pair<Distance, std::size_t> distance_to_root(Node_ptr p) const;
+    std::pair<Distance, std::size_t> distance_to_level(Node_ptr &p, int level) const;
+    Distance distance_by_node(Node_ptr p1, Node_ptr p2) const;
+    std::pair<Distance, std::size_t> graph_distance(Node_ptr p1, Node_ptr p2) const; 
 };
 }  // namespace metric
 #include "tree.cpp"  // include the implementation

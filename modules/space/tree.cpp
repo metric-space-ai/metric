@@ -1378,7 +1378,86 @@ inline std::string Tree<recType, Metric>::to_json(std::function<std::string(cons
     ostr << "]}" << std::endl;
     return ostr.str();
 }
+    
+template <typename recType, typename Metric>
+auto Tree<recType, Metric>::distance_to_root(Node_ptr p) const -> std::pair<Distance, std::size_t> {
+    Distance dist = 0;
+    std::size_t cnt = 0;
+    while(p->parent != nullptr) {
+        dist += p->parent_dist;
+        cnt++;
+        p = p->parent;
+    }
+    return std::pair{dist, cnt};
+}
 
+template <typename recType, typename Metric>
+auto Tree<recType, Metric>::distance_to_level(Node_ptr &p, int level) const -> std::pair<Distance, std::size_t>
+{
+    Distance dist = 0;
+    std::size_t cnt = 0;
+    while(p->level < level) {
+        dist += p->parent_dist;
+        cnt++;
+        p = p->parent;
+    }
+    return std::pair{dist, cnt};
+}
+
+template <typename recType, typename Metric>
+auto Tree<recType, Metric>::graph_distance(Node_ptr p1, Node_ptr p2) const -> std::pair<Distance, std::size_t> {
+    if (p1->parent == p2->parent) {
+        return std::pair{p1->parent_dist + p2->parent_dist, 2};
+    }
+    auto d1 = distance_to_root(p1);
+    auto d2 = distance_to_root(p2);
+    return std::pair{d1.first + d2.first, d1.second + d2.second};
+}
+
+template <typename recType, typename Metric>
+auto Tree<recType, Metric>::distance_by_node(Node_ptr p1, Node_ptr p2) const -> Distance {
+    std::pair<Distance, std::size_t> dist1{0,0};
+    if (p1->level < p2->level) {
+        dist1 = distance_to_level(p1, p2->level);
+    } else if(p2->level < p1->level) {
+        dist1 = distance_to_level(p2, p1->level);
+    }
+    if(p1 == p2) {
+        return dist1.first / dist1.second;
+    }
+    auto dist = graph_distance(p1, p2);
+    return (dist1.first + dist.first) / (dist1.second + dist.second);
+}
+
+template <typename recType, typename Metric>
+auto Tree<recType, Metric>::distance_by_id(std::size_t id1, std::size_t id2) const -> Distance
+{
+    auto p1 = index_map.find(id1);
+    if(p1 == index_map.end()) {
+        throw std::runtime_error("tree has no such ID: " + std::to_string(id1));
+    }
+    auto p2 = index_map.find(id2);
+    if (p2 == index_map.end()) {
+        throw std::runtime_error("tree has no such ID: " + std::to_string(id2));
+    }
+    if (id1 == id2) {
+        return 0;
+    }
+
+    Node_ptr n1 = data[p1->second].second;
+    Node_ptr n2 = data[p2->second].second;
+    return distance_by_node(n1, n2);
+}
+
+template <typename recType, typename Metric>
+auto Tree<recType, Metric>::distance(const recType &r1, const recType &r2) const -> Distance {
+    auto nn1 = nn(r1);
+    auto nn2 = nn(r2);
+    if(nn1 == nn2) {
+        return 0;
+    }
+    return distance_by_node(nn1, nn2);
+}
 }  // namespace metric
 
 #endif

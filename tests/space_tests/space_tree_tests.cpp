@@ -333,3 +333,90 @@ BOOST_AUTO_TEST_CASE(tree_element_access)
         BOOST_TEST(tree[i] == data[i]);
     }
 }
+
+
+BOOST_AUTO_TEST_CASE(tree_distance_by_id) {
+    std::vector<float> data = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+    metric::Tree<float, distance<float, float>> tree;
+    tree.insert(data);
+    for(std::size_t id = 0; id < 10; id++)  {
+        std::cout << id << " -> " << tree[id] << std::endl;
+    }
+    // clang-format off
+    /*
+    (5)
+    ├──(2)
+    |   ├──(0)
+    |   |   └──(1)
+    |   └──(3)
+    |       └──(4)
+    ├──(6)
+    |   └──(7)
+    |       └──(8)
+    └──(9)
+    */
+    // clang-format on
+
+    // same ID
+    for(std::size_t i = 0; i < 10; ++i) {
+        BOOST_TEST(tree.distance_by_id(i,i) == 0);
+    }
+    //parent - child
+    BOOST_TEST(tree.distance_by_id(5, 2) == 3);
+    BOOST_TEST(tree.distance_by_id(2, 5) == 3);
+
+    // same level, one parent
+    BOOST_TEST(tree.distance_by_id(0, 3) == (1.0 + 2.0) / 2);
+    BOOST_TEST(tree.distance_by_id(3, 0) == (1.0 + 2.0)/2);
+
+    // different levels, one subtree
+    BOOST_TEST(tree.distance_by_id(1, 3) == (1.0f + 2.0f + 1.0f) / 3);
+    BOOST_TEST(tree.distance_by_id(3, 1) == (1.0f + 2.0f + 1.0f) / 3);
+
+    //same levels, different subtree
+    BOOST_TEST(tree.distance_by_id(0, 7) == (1.f + 1.f + 2.f + 3.f) / 4);
+    BOOST_TEST(tree.distance_by_id(7, 0) == (1.f + 1.f + 2.f + 3.f) / 4);
+
+    //different levels, different subtree
+    BOOST_TEST(tree.distance_by_id(1, 7) == (1.f + 1.f + 1.f + 2.f + 3.f)/5);
+    BOOST_TEST(tree.distance_by_id(7, 1) == (1.f + 1.f + 1.f + 2.f + 3.f)/5);
+
+    BOOST_CHECK_THROW(tree.distance_by_id(100, 0), std::runtime_error);
+    BOOST_CHECK_THROW(tree.distance_by_id(1, 100), std::runtime_error);
+    BOOST_CHECK_THROW(tree.distance_by_id(100, 100), std::runtime_error);
+}
+
+BOOST_AUTO_TEST_CASE(tree_distance_by_value)
+{
+    std::vector<float> data = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
+    metric::Tree<float, distance<float, float>> tree;
+    tree.insert(data);
+
+    // same value
+    for(std::size_t i = 0; i < 10; ++i) {
+        BOOST_TEST(tree.distance(data[i],data[i]) == 0);
+    }
+    //parent - child
+    BOOST_TEST(tree.distance(data[5], data[2]) == 3);
+    BOOST_TEST(tree.distance(data[2], data[5]) == 3);
+    BOOST_TEST(tree.distance(6.2, 3.3) == 3);
+    BOOST_TEST(tree.distance(3.3, 6.2) == 3);
+
+    // same level, one parent
+    BOOST_TEST(tree.distance(data[0], data[3]) == (1.0 + 2.0) / 2);
+    BOOST_TEST(tree.distance(data[3], data[0]) == (1.0 + 2.0)/2);
+    BOOST_TEST(tree.distance(1.3, 4.2) == (1.0 + 2.0) / 2);
+    BOOST_TEST(tree.distance(4.2, 1.3) == (1.0 + 2.0) / 2);
+
+    // different levels, one subtree
+    BOOST_TEST(tree.distance(2.2, 3.9) == (1.0f + 2.0f + 1.0f) / 3);
+    BOOST_TEST(tree.distance(3.9, 2.2) == (1.0f + 2.0f + 1.0f) / 3);
+
+    //same levels, different subtree
+    BOOST_TEST(tree.distance(0.1, 8.2) == (1.f + 1.f + 2.f + 3.f) / 4);
+    BOOST_TEST(tree.distance(8.2, 0.7) == (1.f + 1.f + 2.f + 3.f) / 4);
+
+    //different levels, different subtree
+    BOOST_TEST(tree.distance(1.9, 7.9) == (1.f + 1.f + 1.f + 2.f + 3.f)/5);
+    BOOST_TEST(tree.distance(7.9, 1.9) == (1.f + 1.f + 1.f + 2.f + 3.f)/5);
+}
