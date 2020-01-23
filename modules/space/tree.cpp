@@ -1461,8 +1461,8 @@ auto Tree<recType, Metric>::distance(const recType &r1, const recType &r2) const
 
 template <typename recType, typename Metric>
 auto Tree<recType, Metric>::matrix() const
-    -> blaze::SymmetricMatrix<blaze::DynamicMatrix<Distance, blaze::rowMajor>> {
-    blaze::SymmetricMatrix<blaze::DynamicMatrix<Distance, blaze::rowMajor>> m(data.size());
+    -> blaze::SymmetricMatrix<blaze::CompressedMatrix<Distance, blaze::rowMajor>> {
+    blaze::SymmetricMatrix<blaze::CompressedMatrix<Distance, blaze::rowMajor>> m(data.size());
     for(std::size_t i = 0; i < data.size(); i++) {
         for(std::size_t j = i +1; j < data.size(); j++) {
             if( data[i].second->parent == data[j].second) {

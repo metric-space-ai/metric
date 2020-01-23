@@ -390,7 +390,7 @@ public:
      * @return blaze::SymmetricMatrix with distance
      *
      */
-    blaze::SymmetricMatrix<blaze::DynamicMatrix<Distance, blaze::rowMajor>> matrix() const;
+    blaze::SymmetricMatrix<blaze::CompressedMatrix<Distance, blaze::rowMajor>> matrix() const;
 private:
     friend class Node<recType, Metric>;
 
