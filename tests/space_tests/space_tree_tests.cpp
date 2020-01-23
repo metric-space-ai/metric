@@ -420,3 +420,17 @@ BOOST_AUTO_TEST_CASE(tree_distance_by_value)
     BOOST_TEST(tree.distance(1.9, 7.9) == (1.f + 1.f + 1.f + 2.f + 3.f)/5);
     BOOST_TEST(tree.distance(7.9, 1.9) == (1.f + 1.f + 1.f + 2.f + 3.f)/5);
 }
+
+
+BOOST_AUTO_TEST_CASE(tree_to_distance_matrix) {
+    std::vector<float> data = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
+    metric::Tree<float, distance<float, float>> tree;
+    tree.insert(data);
+    auto m = tree.matrix();
+    distance<float, float> dist;
+    for(std::size_t i = 0; i < m.rows(); i++) {
+        for (std::size_t j = 0; j < m.columns(); j++) {
+            BOOST_TEST(m(i,j) == dist(data[i], data[j]));
+        }
+    }
+}

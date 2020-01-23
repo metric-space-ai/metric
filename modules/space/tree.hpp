@@ -24,6 +24,9 @@ Copyright (c) 2018, Michael Welsch
 #include <unordered_set>
 #include <unordered_map>
 #include <vector>
+#include "../../3rdparty/blaze/Math.h"
+#include "../../3rdparty/blaze/math/Matrix.h"
+#include "../../3rdparty/blaze/math/adaptors/SymmetricMatrix.h"
 namespace metric {
 /*
   _ \         _|             |  |       \  |        |       _)
@@ -381,6 +384,13 @@ public:
      * @return weighted sum of edges between nodes nearest to p1 and p2
      */
     Distance distance(const recType & p1, const recType & p2) const;
+
+    /**
+     * @brief convert cover tree to distance matrix
+     * @return blaze::SymmetricMatrix with distance
+     *
+     */
+    blaze::SymmetricMatrix<blaze::DynamicMatrix<Distance, blaze::rowMajor>> matrix() const;
 private:
     friend class Node<recType, Metric>;
 

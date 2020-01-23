@@ -1458,6 +1458,24 @@ auto Tree<recType, Metric>::distance(const recType &r1, const recType &r2) const
     }
     return distance_by_node(nn1, nn2);
 }
+
+template <typename recType, typename Metric>
+auto Tree<recType, Metric>::matrix() const
+    -> blaze::SymmetricMatrix<blaze::DynamicMatrix<Distance, blaze::rowMajor>> {
+    blaze::SymmetricMatrix<blaze::DynamicMatrix<Distance, blaze::rowMajor>> m(data.size());
+    for(std::size_t i = 0; i < data.size(); i++) {
+        for(std::size_t j = i +1; j < data.size(); j++) {
+            if( data[i].second->parent == data[j].second) {
+                m(i,j) = data[i].second->parent_dist;
+            } else if (data[j].second->parent == data[i].second) {
+                m(i, j) = data[j].second->parent_dist;
+            } else {
+                m(i, j) = metric(data[i].first, data[j].first);
+            }
+        }
+    }
+    return m;
+}
 }  // namespace metric
 
 #endif
