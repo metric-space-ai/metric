@@ -50,8 +50,8 @@ B2 = numpy.array([ [ 2.70625143351230 ], [ 1.41259513494005 ], [ 0.6660867936926
         [ 0.552591658802459 ], [ 1.52144482984914 ], [ 3.43908991254968 ] ]);
 
 
-m_e_e = metric.MGC("euclidian", "euclidian")
-m_e_m = metric.MGC("euclidian", "manhatten")
+m_e_e = metric.MGC("euclidean", "euclidean")
+m_e_m = metric.MGC("euclidean", "manhatten")
 
 start_time = time.time()
 res = m_e_e(A,B)

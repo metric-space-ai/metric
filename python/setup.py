@@ -12,7 +12,7 @@ setuptools.setup(
      long_description_content_type="text/markdown",
      url="https://github.com/panda-official/metric",
      packages=setuptools.find_packages(),
-     data_files=['../modules/*'],
+#data_files=['../modules/*'],
      install_requires = ['cmake_setuptools'],
      classifiers=[
          "Programming Language :: Python :: 3",

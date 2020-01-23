@@ -1,12 +1,11 @@
-## Build:
+## Build module
+
 ```
-mkdir build
-cd build
-cmake ..
-make
+python3 setup.py bdist_wheel
 ```
 
-## Test:
-```
-python3 simple_example.py
-```
+## Install module
+
+sudo pip3 install dist/metric-<version>-cp37-cp37m-linux_<arch>.whl
+
+## [Examples](examples)
