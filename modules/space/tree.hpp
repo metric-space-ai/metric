@@ -22,6 +22,7 @@ Copyright (c) 2018, Michael Welsch
 #include <string>
 #include <tuple>
 #include <unordered_set>
+#include <unordered_map>
 #include <vector>
 namespace metric {
 /*
@@ -206,6 +207,7 @@ public:
      *
      * @param id data record ID
      * @return data record with ID == id
+     * @throws std::runtime_error when tree has no element with ID
      */
     recType operator[](size_t id);
 
@@ -377,10 +379,13 @@ private:
     std::atomic<int> min_scale;  // Minimum scale
     std::atomic<int> max_scale;  // Minimum scale
     int truncate_level = -1;  // Relative level below which the tree is truncated
-    std::atomic<unsigned> N;  // Number of points in the cover tree
+    std::atomic<std::size_t> nextID = 0;  // Next node ID
     mutable std::shared_timed_mutex global_mut;  // lock for changing the root
+    std::vector<std::pair<recType, Node_ptr>> data;
 
-    /*** Imlementation Methodes ***/
+    std::unordered_map<std::size_t, std::size_t> index_map;  // ID -> data index mapping
+
+    // /*** Imlementation Methodes ***/
 
     Node_ptr insert(Node_ptr p, Node_ptr x);
 
@@ -429,11 +434,35 @@ private:
         std::vector<std::vector<std::size_t>>& result);
 
     Distance metric(const recType& p1, const recType& p2) const { return metric_(p1, p2); }
-
+    Distance metric_by_id(const std::size_t id1, const std::size_t id2) {
+        return metric_(data[index_map[id1]].first, data[index_map[id2]].first);
+    }
     template <class Archive>
     auto deserialize_node(Archive& istr) -> SerializedNode<recType, Metric>;
-};
 
+    std::size_t add_data(const recType & p, Node_ptr ptr) {
+        data.push_back(std::pair{p,ptr});
+        auto id = nextID++;
+        index_map[id] = data.size()-1;
+        return id;
+    }
+    const recType & get_data(std::size_t ID) {
+        return data[index_map[ID]].first;
+    }
+    void remove_data(std::size_t ID) {
+        auto p = data.begin();
+        auto pi = index_map.find(ID);
+        std::size_t i = pi->second;
+        std::advance(p, i);
+        data.erase(p);
+        index_map.erase(pi);
+        for(auto &kv : index_map) {
+            if(kv.first <= i)
+                continue;
+            kv.second -= 1;
+        }
+    }
+};
 }  // namespace metric
 #include "tree.cpp"  // include the implementation
 
