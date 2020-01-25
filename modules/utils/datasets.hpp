@@ -20,7 +20,7 @@ namespace metric {
 		static blaze::DynamicMatrix<T> readDenseMatrixFromFile(const std::string filepath);
 
 	private:
-		static std::array<std::regex, 2> getSeparator(std::string string);
+		static std::regex getSeparator(std::string string);
 		template<typename T>
 		static blaze::DynamicVector<T, blaze::rowVector> getRowFromStrings(std::vector<std::string> stringElements);
 	};
@@ -49,26 +49,21 @@ namespace metric {
 
 	}
 
-	std::array<std::regex, 2> Datasets::getSeparator(std::string string)
+	std::regex Datasets::getSeparator(std::string string)
 	{
-		std::cout << string << std::endl;
 		std::regex delimiter;
 		std::regex decimal;
 
 		std::regex r("\\s*;\\s*");
 		if (std::regex_search(string, r)) {
-			delimiter = r;
+			return r;
 		}
 
-		if (std::regex_search(string, std::regex(R"(\s*,\s*)"))) {
-			delimiter = std::regex(R"(\s*,\s*)");
+		if (std::regex_search(string, std::regex(R"(\s+,\s+)"))) {
+			return std::regex(R"(\s*,\s*)");
+		} else {
+			return std::regex(R"(\s+)");
 		}
-		//r = "\\.";
-		//if (std::regex_search(string, r)) {
-		//	decimal = r;
-		//}
-
-		return {delimiter, decimal};
 	}
 
 	template<typename T>
@@ -80,7 +75,7 @@ namespace metric {
 		std::string line;
 		std::vector<blaze::DynamicVector<T, blaze::rowVector>> rows;
 		while (std::getline(file, line)) {
-			auto[delimiter, decimal] = getSeparator(line);
+			auto delimiter = getSeparator(line);
 
 			std::sregex_token_iterator first{line.begin(), line.end(), delimiter, -1};
 			std::vector<std::string> row{first, {}};

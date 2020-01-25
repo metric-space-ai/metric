@@ -18,11 +18,13 @@ using Vector = blaze::DynamicVector<double>;
 BOOST_AUTO_TEST_CASE(base)
 {
 	blaze::DynamicMatrix<double> m{{1, 2, 3},
-	                               {4, 5, 6}};
+	                               {4, 5, 6},
+	                               {7, 8, 9}};
 	{
 		std::ofstream file("matrix.dsv");
 		file << "1;2; 3" << std::endl;
 		file << "4 , 5,6" << std::endl;
+		file << "7 8  9" << std::endl;
 		file.close();
 		BOOST_CHECK_EQUAL(Datasets::readDenseMatrixFromFile<double>("matrix.dsv"), m);
 	}
