@@ -5,7 +5,7 @@
 #include <limits>
 
 #include <iostream>
-#include "modules/utils/dsv.hpp"
+#include "modules/utils/datasets.hpp"
 
 using namespace std;
 using namespace metric;
@@ -17,8 +17,18 @@ using Vector = blaze::DynamicVector<double>;
 
 BOOST_AUTO_TEST_CASE(base)
 {
-	string dsvLine = "1 2 3 4";
+	blaze::DynamicMatrix<double> m{{1, 2, 3},
+	                               {4, 5, 6}};
+	{
+		std::ofstream file("matrix.dsv");
+		file << "1;2; 3" << std::endl;
+		file << "4 , 5,6" << std::endl;
+		file.close();
+		BOOST_CHECK_EQUAL(Datasets::readDenseMatrixFromFile<double>("matrix.dsv"), m);
+	}
+	//BOOST_CHECK_EQUAL(Datasets::readDenseMatrixFromFile<double>("1,2,3"), m;
+	//BOOST_CHECK_EQUAL(Datasets::readDenseMatrixFromFile<double>("1.2.3"), m);
+	//BOOST_CHECK_EQUAL(Datasets::readDenseMatrixFromFile<double>("1 ; 2 ; 3"), m);
 
-	get
 
 }

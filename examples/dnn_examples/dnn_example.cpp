@@ -1,6 +1,6 @@
 #include "../../modules/utils/dnn.hpp"
 #include "../../modules/utils/dnn/Utils/Random.h"
-#include "../../modules/utils/datasets.cpp"
+#include "../../modules/utils/datasets.hpp"
 #include "../../modules/mapping/autoencoder.hpp"
 
 #include <iostream>
