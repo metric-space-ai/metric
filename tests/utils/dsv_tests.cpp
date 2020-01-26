@@ -5,7 +5,10 @@
 #include <limits>
 
 #include <iostream>
+#include <chrono>
+
 #include "modules/utils/datasets.hpp"
+
 
 using namespace std;
 using namespace metric;
@@ -25,7 +28,8 @@ BOOST_AUTO_TEST_CASE(base)
 	                               {16, -17, 18},
 	                               {-0.19, 2, 0.21},
 	                               {-22, 23, 24},
-	                               {-25, 26, 27}};
+	                               {-25, 26, 27},
+	                               {-2.8e-8, 29, 3e7}};
 	{
 		std::ofstream file("matrix.dsv");
 		file << "1;2; 3" << std::endl;
@@ -37,12 +41,15 @@ BOOST_AUTO_TEST_CASE(base)
 		file << "-,19 2 ,21" << std::endl;
 		file << "-22 , 23 ,24" << std::endl;
 		file << "[-25,26,27] " << std::endl;
+		file << " [-2,8e-8 29 3,0e007] " << std::endl;
 		file.close();
 		BOOST_CHECK_EQUAL(Datasets::readDenseMatrixFromFile<double>("matrix.dsv"), m);
 	}
-	//BOOST_CHECK_EQUAL(Datasets::readDenseMatrixFromFile<double>("1,2,3"), m;
-	//BOOST_CHECK_EQUAL(Datasets::readDenseMatrixFromFile<double>("1.2.3"), m);
-	//BOOST_CHECK_EQUAL(Datasets::readDenseMatrixFromFile<double>("1 ; 2 ; 3"), m);
 
-
+	/*auto t1 = std::chrono::high_resolution_clock::now();
+	auto dm = Datasets::readDenseMatrixFromFile<double>("/tmp/d.dsv");
+	auto t2 = std::chrono::high_resolution_clock::now();
+	std::cout << dm << std::endl;
+	std::cout << std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count() << std::endl;
+	*/
 }

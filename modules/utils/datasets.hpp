@@ -22,7 +22,7 @@ namespace metric {
 	private:
 		static std::regex getDelimiterAndSetDecimal(std::string &string);
 		template<typename T>
-		static blaze::DynamicVector<T, blaze::rowVector> getRowFromStrings(std::vector<std::string> stringElements);
+		static blaze::DynamicVector<T, blaze::rowVector> getRowFromStrings(const std::vector<std::string>& stringElements);
 	};
 
 
@@ -54,8 +54,8 @@ namespace metric {
 		std::regex delimiter;
 		std::regex decimal;
 
-		bool dotFound = std::regex_search(string, std::regex(R"(\.)"));
-		bool commaFound = std::regex_search(string, std::regex(R"(,)"));
+		bool dotFound = (string.find('.') != std::string::npos);
+		bool commaFound = (string.find(',') != std::string::npos);
 
 		std::regex r("\\s*;\\s*");
 		if (std::regex_search(string, r)) {
@@ -92,13 +92,25 @@ namespace metric {
 		std::ifstream file(filepath);
 
 		std::string line;
+
+		/* Count rows */
+		auto rowsNumber = std::count(std::istreambuf_iterator<char>(file),
+		           std::istreambuf_iterator<char>(), '\n');
+		file.seekg(0);
+
+		/* Reserve rows */
 		std::vector<blaze::DynamicVector<T, blaze::rowVector>> rows;
+		rows.reserve(rowsNumber);
+
 		while (std::getline(file, line)) {
+			/* Trim */
 			line = std::regex_replace(line, std::regex(R"(^\s+|\s+$)"), "");
 			line = std::regex_replace(line, std::regex(R"(^\[|\]$)"), "");
 
+			/* Get delimiter and replace decimal char to dot (if needs) */
 			auto delimiter = getDelimiterAndSetDecimal(line);
 
+			/* Split */
 			std::sregex_token_iterator first{line.begin(), line.end(), delimiter, -1};
 			std::vector<std::string> row{first, {}};
 
@@ -111,15 +123,11 @@ namespace metric {
 			blaze::row(matrix, i) = rows[i];
 		}
 
-		//if (delimiter == std::regex("")) {
-		//	std::cout << "nothing" << std::endl;
-		//}
-
 		return matrix;
 	}
 
 	template<typename T>
-	blaze::DynamicVector<T, blaze::rowVector> Datasets::getRowFromStrings(std::vector<std::string> stringElements)
+	blaze::DynamicVector<T, blaze::rowVector> Datasets::getRowFromStrings(const std::vector<std::string>& stringElements)
 	{
 		blaze::DynamicVector<T, blaze::rowVector> row(stringElements.size());
 		for (size_t i = 0; i < row.size(); ++i) {
