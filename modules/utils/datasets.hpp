@@ -20,7 +20,7 @@ namespace metric {
 		static blaze::DynamicMatrix<T> readDenseMatrixFromFile(const std::string filepath);
 
 	private:
-		static std::regex getSeparator(std::string string);
+		static std::regex getDelimiterAndSetDecimal(std::string &string);
 		template<typename T>
 		static blaze::DynamicVector<T, blaze::rowVector> getRowFromStrings(std::vector<std::string> stringElements);
 	};
@@ -49,18 +49,37 @@ namespace metric {
 
 	}
 
-	std::regex Datasets::getSeparator(std::string string)
+	std::regex Datasets::getDelimiterAndSetDecimal(std::string &string)
 	{
 		std::regex delimiter;
 		std::regex decimal;
 
+		bool dotFound = std::regex_search(string, std::regex(R"(\.)"));
+		bool commaFound = std::regex_search(string, std::regex(R"(,)"));
+
 		std::regex r("\\s*;\\s*");
 		if (std::regex_search(string, r)) {
+			if (commaFound) {
+				string = std::regex_replace(string, std::regex(","), ".");
+			}
 			return r;
 		}
 
-		if (std::regex_search(string, std::regex(R"(\s+,\s+)"))) {
-			return std::regex(R"(\s*,\s*)");
+		if (commaFound) {
+			if (dotFound) {
+				return std::regex(R"(\s*,\s*)");
+			} else {
+				if (std::regex_search(string, std::regex(R"(\s+)"))) {
+					if (std::regex_search(string, std::regex(R"(\s+,\s+|,\S+,)"))) {
+						return std::regex(R"(\s*,\s*)");
+					} else {
+						string = std::regex_replace(string, std::regex(","), ".");
+						return std::regex(R"(\s+)");
+					}
+				} else {
+					return std::regex(R"(\s*,\s*)");
+				}
+			}
 		} else {
 			return std::regex(R"(\s+)");
 		}
@@ -75,7 +94,10 @@ namespace metric {
 		std::string line;
 		std::vector<blaze::DynamicVector<T, blaze::rowVector>> rows;
 		while (std::getline(file, line)) {
-			auto delimiter = getSeparator(line);
+			line = std::regex_replace(line, std::regex(R"(^\s+|\s+$)"), "");
+			line = std::regex_replace(line, std::regex(R"(^\[|\]$)"), "");
+
+			auto delimiter = getDelimiterAndSetDecimal(line);
 
 			std::sregex_token_iterator first{line.begin(), line.end(), delimiter, -1};
 			std::vector<std::string> row{first, {}};
