@@ -8,7 +8,7 @@ project(space_examples)
 file(GLOB EXAMPLE_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.cpp)
 
 
-include_directories(${Boost_INCLUDE_DIRS})
+include_directories(${Boost_INCLUDE_DIRS}) 
 
 # for Visual Studio
 if(MSVC)

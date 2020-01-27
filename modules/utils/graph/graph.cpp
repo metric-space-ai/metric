@@ -830,6 +830,12 @@ std::vector<std::pair<size_t, size_t>> KNNGraph<Sample, Distance, WeightType, is
 			{
 				continue;
 			}
+
+			// and break if we get '_neighbors_num' edges
+			if (j >= _neighbors_num)
+			{
+				break;
+			}
 			
 			bool already_exist = false;
 			
@@ -860,12 +866,6 @@ std::vector<std::pair<size_t, size_t>> KNNGraph<Sample, Distance, WeightType, is
 			if (!already_exist)
 			{
 				edgesPairs.emplace_back(ids[i], ids[idxs[j]]);
-			}
-
-			// and break if we get '_neighbors_num' edges
-			if (j + 1 >= _neighbors_num)
-			{
-				break;
 			}
 		}
     }
@@ -965,6 +965,11 @@ std::vector<int> KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::g
 	{
 		num_expansions = _neighbors_num;
 	}
+	// if still negative
+	if (num_expansions < 0)
+	{
+		num_expansions = 1;
+	}
 	if (num_greedy_moves < 0)
 	{
 		// if param is missed we choose 20% of all nodes as number of mooves
@@ -973,57 +978,67 @@ std::vector<int> KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::g
 
 	//
 
-	for (int i = 0; i < iterations; i++) 
+	if (_nodes.size() > 0)
 	{
-		std::random_device rnd;
-		std::mt19937 mt(rnd());
-		std::uniform_int_distribution<int> dist(0, _nodes.size() - 1);
-		
-		// get initial random node from the graph
-		int checking_node = dist(mt);
-		int prev_node = -1;
-		int new_node;
-
-		// walk from initial node on distance 'num_greedy_moves' steps
-		for (int j = 0; j < num_greedy_moves; j++) 
+		for (int i = 0; i < iterations; i++) 
 		{
-			distances.clear();
-			// 0 index is for node itself, 1 - is first circle of neighbours
-			auto neighbours = getNeighbours(checking_node, 1)[1];
-
-			// get first num_expansions neighbours for the checking node and calculate distances to the query
-			for (int p = 0; p < num_expansions; p++) 
+			std::random_device rnd;
+			std::mt19937 mt(rnd());
+			std::uniform_int_distribution<int> dist(0, _nodes.size() - 1);
+		
+			// get initial random node from the graph
+			int checking_node = dist(mt);
+			int prev_node = -1;
+			int new_node;
+		
+			// walk from initial node on distance 'num_greedy_moves' steps
+			for (int j = 0; j < num_greedy_moves; j++) 
 			{
-				if (p < neighbours.size())
+
+				distances.clear();
+				// 0 index is for node itself, 1 - is first circle of neighbours
+				auto neighbours = getNeighbours(checking_node, 1)[1];
+
+				// get first num_expansions neighbours for the checking node and calculate distances to the query
+				for (int p = 0; p < num_expansions; p++) 
 				{
-					distance = distancer(_nodes[neighbours[p]], query);
-					distances.push_back(distance);
-					
-					if (std::find(choosen_nodes.begin(), choosen_nodes.end(), neighbours[p]) == choosen_nodes.end())
+					if (p < neighbours.size())
 					{
-						choosen_distances.push_back(distance);
-						choosen_nodes.push_back(neighbours[p]);
+						distance = distancer(_nodes[neighbours[p]], query);
+						distances.push_back(distance);
+					
+						if (std::find(choosen_nodes.begin(), choosen_nodes.end(), neighbours[p]) == choosen_nodes.end())
+						{
+							choosen_distances.push_back(distance);
+							choosen_nodes.push_back(neighbours[p]);
+						}
 					}
 				}
-			}
 			
-			std::vector<Distance::value_type>::iterator min_index = std::min_element(distances.begin(), distances.end());
-			new_node = neighbours[std::distance(distances.begin(), min_index)];
-			// if we back to the visited node then we fall in loop and search is complete
-			if (new_node == prev_node)
-			{
-				break;
+				std::vector<Distance::value_type>::iterator min_index = std::min_element(distances.begin(), distances.end());
+				new_node = neighbours[std::distance(distances.begin(), min_index)];
+				// if we back to the visited node then we fall in loop and search is complete
+				if (new_node == prev_node)
+				{
+					break;
+				}
+				prev_node = checking_node;
+				checking_node = new_node;
+
+			
 			}
-			prev_node = checking_node;
-			checking_node = new_node;
 		}
-	}
 			
-	// sort distances and return corresopnding nodes from choosen
-	auto idxs = sort_indexes(choosen_distances);
-	for (int i = 0; i < max_closest_num; i++)
-	{
-		result.push_back(choosen_nodes[idxs[i]]);
+		// sort distances and return corresopnding nodes from choosen
+		auto idxs = sort_indexes(choosen_distances);
+		for (int i = 0; i < max_closest_num; i++)
+		{
+			if (i < idxs.size())
+			{
+				result.push_back(choosen_nodes[idxs[i]]);
+			}
+		}
+
 	}
 
 	return result;

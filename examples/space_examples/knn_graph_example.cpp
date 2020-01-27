@@ -55,23 +55,6 @@ Copyright (c) 2019 Panda Team
 //}
 
 
-//
-//template <typename Sample>
-//void random_pair_NN_descent(std::vector<Sample> X, int max_size)
-//{
-//	REPEAT
-//	 random_pair_division(X, max_size);
-//	 delta = Changes(kNN);
-//	UNTIL delta < 10%
-//
-//	REPEAT
-//	 random_pair_division(X, max_size);
-//	 NNDES(X,kNN);
-//	 delta = Changes(kNN);
-//	UNTIL delta < StopCriterion;
-//}
-
-
 int main()
 {
 	std::cout << "Graph space example have started" << std::endl;
