@@ -350,11 +350,14 @@ int main() {
 
 
     // measuring the entropy estimation bias
-    std::cout << "\n\nmeasuring the entropy estimation bias on 2d random vector\n\n";
+    std::cout << "\n\nmeasuring the entropy estimation bias on random vector\n\n";
 
 
-//    std::vector<std::deque<double>> urv6 = {{0.1}, {0.3}, {0.5}, {0.7}, {0.9}, {0.51}, {0.5}};
-//    std::cout << "\nshort test vector result: " << urv6.size() << " | " << e_f_eucl(urv6) << "\n\n";
+    //std::vector<std::deque<double>> urv6 = {{0.1}, {0.3}, {0.5}, {0.7}, {0.9}, {0.51}, {0.5}};
+    std::vector<std::deque<double>> urv6 =
+        {{0.1, 0.5, 0.7}, {0.3, 0.7, 0.9}, {0.5, 0.9, 0.1}, {0.7, 0.1, 0.3}, {0.9, 0.3, 0.5}, {0.51, 0.91, 0.11}, {0.5, 0.9, 0.1}};
+    //std::cout << "\nshort test vector result: " << urv6.size() << " | " << e_f_eucl(urv6) << "\n\n";
+    std::cout << "\nshort test vector result: " << urv6.size() << " | " << e_f_cheb(urv6) << "\n\n";
 
 
     size_t step = 1000;
@@ -362,20 +365,22 @@ int main() {
     std::vector<std::deque<double>> urv5;
 
     for (size_t i = 0; i<step; ++i) {
-        urv5.push_back({dis(gen), dis(gen)});
+        //urv5.push_back({dis(gen), dis(gen)});
         //urv5.push_back({dis(gen)});
         //urv5.push_back({dis(gen), dis(gen), dis(gen), dis(gen)});
+        urv5.push_back({dis(gen), dis(gen), dis(gen)});
     }
 
 
     std::cout << "length | entropy\n";
     for (size_t i = 0; i<25; ++i) {
-        std::cout << urv5.size() << " | " << e_f_eucl(urv5) << "\n";
-        //std::cout << urv5.size() << " | " << e_f_cheb(urv5) << "\n";
+        //std::cout << urv5.size() << " | " << e_f_eucl(urv5) << "\n";
+        std::cout << urv5.size() << " | " << e_f_cheb(urv5) << "\n";
         for (size_t i = 0; i<step; ++i) {
-            urv5.push_back({dis(gen), dis(gen)});
+            //urv5.push_back({dis(gen), dis(gen)});
             //urv5.push_back({dis(gen)});
             //urv5.push_back({dis(gen), dis(gen), dis(gen), dis(gen)});
+            urv5.push_back({dis(gen), dis(gen), dis(gen)});
         }
     }
 

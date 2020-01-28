@@ -217,7 +217,7 @@ double entropy<recType, Metric>::operator()(
 //*/
 
 
-
+//*
 // updated version
 // averaged entropy estimation: code COPIED from mgc.*pp with only mgc replaced with entropy, TODO refactor to avoid code dubbing
 template <typename recType, typename Metric>
@@ -273,7 +273,7 @@ double entropy<recType, Metric>::operator()(
     else
         return entropyEstimate;
 }
-
+//*/
 
 
 // averaged entropy estimation: code COPIED from mgc.*pp with only mgc replaced with entropy, TODO refactor to avoid code dubbing
