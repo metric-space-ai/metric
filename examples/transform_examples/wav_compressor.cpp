@@ -11,7 +11,8 @@
 #include <unordered_map>
 #include <cstring>
 #include <chrono>
-#include <filesystem>
+//#include <filesystem>
+#include <experimental/filesystem> // temporary
 #include <boost/iostreams/filter/zlib.hpp>
 #include <boost/program_options.hpp>
 
@@ -56,6 +57,7 @@ void compress_file(const std::string& file_name, std::string out_name, Compresso
     std::vector<char> v = compressor.compress(boost::iostreams::zlib_compressor(zp));
     if(out_name.empty()) {
         out_name = std::filesystem::path(file_name).filename().string() + ".z";
+        //out_name = std::experimental::filesystem::path(file_name).filename().string() + ".z"; // edited by Max F, Jan, 9, 2020
     }
 
     // save compressed data
