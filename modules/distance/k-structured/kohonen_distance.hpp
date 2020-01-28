@@ -70,9 +70,14 @@ struct kohonen_distance {
      */
     distance_return_type operator()(const Sample& sample_1, const Sample& sample_2);
 
+private:
+	
+	void calculate_distance_matrix();
+
 	metric::SOM<Sample, Graph, Metric, Distribution> som_model_;
 	
-	metric::EMD<D> emd_distance_;
+	//metric::EMD<D> emd_distance_;
+	std::vector<std::vector<D>> distance_matrix_;
 };
 
 }  // namespace metric

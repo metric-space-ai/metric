@@ -8,9 +8,10 @@ Copyright (c) 2019 Panda Team
 
 #include <vector>
 #include <iostream>
+#include <fstream>
+
 #include <chrono>
 #include "../../modules/distance.hpp"
-
 
 
 std::tuple<std::vector<std::vector<double>>, std::vector<double>> readData(std::string filename)
@@ -65,17 +66,39 @@ int main()
 	std::cout << "Kohonen Distance example have started" << std::endl;
 	std::cout << "" << std::endl;
 
-	/* Load data */
-	auto [train_dataset, labels] = readData("assets/Compound.txt");
-
-	int grid_w = 6;
-	int grid_h = 4;
+	int grid_w = 3;
+	int grid_h = 2;
 	
-	metric::kohonen_distance<double, std::vector<double>> distance_1(train_dataset, grid_w, grid_h);
+	using Record = std::vector<double>;
+		
+	std::vector<Record> simple_grid = {
+		{0, 0},
+		{1, 0},
+		{2, 0},
+
+		{0, 1},
+		{1, 1},
+		{2, 1},
+	};
+	
+	metric::kohonen_distance<double, std::vector<double>> distance_1(simple_grid, grid_w, grid_h);
 
 	auto t1 = std::chrono::steady_clock::now();
-	auto result = distance_1(train_dataset[0], train_dataset[1]);
+	auto result = distance_1(simple_grid[0], simple_grid[5]);
 	auto t2 = std::chrono::steady_clock::now();
+	std::cout << "result: " << result << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000 << " s)" << std::endl;
+	std::cout << "" << std::endl;
+
+	//
+	
+	/* Load data */
+	auto [train_dataset, labels] = readData("assets/Compound.txt");	
+	
+	metric::kohonen_distance<double, std::vector<double>> distance_2(train_dataset, grid_w, grid_h);
+
+	t1 = std::chrono::steady_clock::now();
+	result = distance_2(train_dataset[0], train_dataset[1]);
+	t2 = std::chrono::steady_clock::now();
 	std::cout << "result: " << result << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000 << " s)" << std::endl;
 	std::cout << "" << std::endl;
 
@@ -89,7 +112,7 @@ int main()
 	Distribution distr(-1, 1);
 
     metric::SOM<Vector, Graph, Metric> som_model(Graph(grid_w, grid_h), Metric(), 0.8, 0.2, 20, distr);
-
+	
     if (!som_model.isValid()) {
     	std::cout << "SOM is not valid" << std::endl;
     	return EXIT_FAILURE;
@@ -97,10 +120,10 @@ int main()
 
 	som_model.train(train_dataset);
 	
-	metric::kohonen_distance<double, Vector, Graph, Metric> distance_2(som_model);
+	metric::kohonen_distance<double, Vector, Graph, Metric> distance_3(som_model);
 
 	t1 = std::chrono::steady_clock::now();
-	result = distance_2(train_dataset[0], train_dataset[1]);
+	result = distance_3(train_dataset[0], train_dataset[1]);
 	t2 = std::chrono::steady_clock::now();
 	std::cout << "result: " << result << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000 << " s)" << std::endl;
 	std::cout << "" << std::endl;
