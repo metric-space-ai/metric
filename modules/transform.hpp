@@ -23,6 +23,6 @@ Copyright (c) PANDA Team
 #define _METRIC_TRANSFORM_HPP
 
 #include "transform/discrete_cosine.hpp"
-#include "transform/wavelet_new.hpp"
+#include "transform/wavelet.hpp"
 
 #endif
