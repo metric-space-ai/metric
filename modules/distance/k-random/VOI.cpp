@@ -217,8 +217,66 @@ double entropy<recType, Metric>::operator()(
 //*/
 
 
-//*
-// updated version
+
+
+//* // updating the original version
+
+// averaged entropy estimation: code COPIED from mgc.*pp with only mgc replaced with entropy, TODO refactor to avoid code dubbing
+template <typename recType, typename Metric>
+template <template <typename, typename> class OuterContainer, typename Container, typename OuterAllocator>
+double entropy<recType, Metric>::operator()(
+        const OuterContainer<Container, OuterAllocator> & data,
+        std::size_t k,
+        double logbase,
+        Metric metric,
+        bool exp
+        ) const
+{
+    using T = typename Container::value_type;
+
+    if (data.empty() || data[0].empty()) {
+        return 0;
+    }
+    if (data.size() < k + 1)
+        throw std::invalid_argument("number of points in dataset must be larger than k");
+
+    double p = 1;
+    double N = data.size();
+    double d = data[0].size();
+    double two = 2.0;  // this is in order to make types match the log template function
+    //double cb = d * log(logbase, two);
+    double cb = 0;
+
+    if constexpr (!std::is_same<Metric, typename metric::Chebyshev<T>>::value) {
+        if constexpr (std::is_same<Metric, typename metric::Euclidian<T>>::value) {
+            p = 2;
+        } else if constexpr (std::is_same<Metric, typename metric::P_norm<T>>::value) {
+            p = metric.p;
+        }
+        cb = cb + d * log(logbase, std::tgamma(1 + 1 / p)) - log(logbase, std::tgamma(1 + d / p));
+    }
+
+    //add_noise(data); // TODO test
+    metric::Tree<Container, Metric> tree(data, -1, metric);
+    //double entropyEstimate = boost::math::digamma(N) - boost::math::digamma(k) + cb + d * log(logbase, two);
+    double entropyEstimate = (boost::math::digamma(N) - boost::math::digamma(k)) / std::log(logbase) + cb + d * log(logbase, two);
+    for (std::size_t i = 0; i < N; i++) {
+        auto res = tree.knn(data[i], k + 1);
+        entropyEstimate += d / N * log(logbase, res.back().second);
+    }
+    if (exp)
+        return metric::conv_diff_entropy(entropyEstimate); // conversion of values below 1 to exp scale
+    else
+        return entropyEstimate;
+}
+
+//*/
+
+
+
+
+/*
+// updated version, results are correct only for Shebyshev metric!!
 // averaged entropy estimation: code COPIED from mgc.*pp with only mgc replaced with entropy, TODO refactor to avoid code dubbing
 template <typename recType, typename Metric>
 template <template <typename, typename> class OuterContainer, typename Container, typename OuterAllocator>

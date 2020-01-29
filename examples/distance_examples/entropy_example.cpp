@@ -374,8 +374,8 @@ int main() {
 
     std::cout << "length | entropy\n";
     for (size_t i = 0; i<25; ++i) {
-        //std::cout << urv5.size() << " | " << e_f_eucl(urv5) << "\n";
-        std::cout << urv5.size() << " | " << e_f_cheb(urv5) << "\n";
+        std::cout << urv5.size() << " | " << e_f_eucl(urv5) << "\n";
+        //std::cout << urv5.size() << " | " << e_f_cheb(urv5) << "\n";
         for (size_t i = 0; i<step; ++i) {
             //urv5.push_back({dis(gen), dis(gen)});
             //urv5.push_back({dis(gen)});
