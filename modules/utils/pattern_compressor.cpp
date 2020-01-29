@@ -13,8 +13,8 @@ Copyright(c) 2019 PANDA Team
 #include <boost/iostreams/device/back_inserter.hpp>
 #include <boost/iostreams/filtering_stream.hpp>
 
-#include <blaze/math/CompressedVector.h>
-//#include "3rdparty/blaze/math/CompressedVector.h"  // edited by Max F, Jan, 9, 2020
+//#include <blaze/math/CompressedVector.h>
+#include "3rdparty/blaze/math/CompressedVector.h"  // edited by Max F, Jan, 9, 2020
 
 #include <stdexcept>
 
@@ -81,7 +81,8 @@ template <typename T, typename Metric>
 inline void pattern_compressor<T, Metric>::process_band(
     std::vector<T>&& band, std::size_t band_index, std::size_t slice_index)
 {
-    blaze::CompressedVector<T> vc = wavelet::smoothDenoise(band, noise_threshold[band_index]);
+    //blaze::CompressedVector<T> vc = wavelet::smoothDenoise(band, noise_threshold[band_index]);
+    blaze::CompressedVector<T> vc = helper_functions::smoothDenoise(band, noise_threshold[band_index]); // edited by Max F, Jan, 29, 2020
     std::lock_guard<std::mutex> lk(mutex[band_index]);
     auto res = trees[band_index]->insert_if(vc, similarity_threshold[band_index]);
     if (std::get<1>(res) == false) {
