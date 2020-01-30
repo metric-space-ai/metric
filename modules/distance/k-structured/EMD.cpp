@@ -651,8 +651,8 @@ namespace EMD_details {
     template <typename Container, FLOW_TYPE_T FLOW_TYPE>
     struct emd_impl_integral_types {
         typedef typename Container::value_type T;
-        T operator()(const Container& POrig, const Container& QOrig, const Container& Pc,
-            const Container& Qc,  // P, Q, C replaced with Pc, Qc, Cc by Max F
+        T operator()(const Container& POrig, const Container& QOrig, const std::vector<T>& Pc,
+            const std::vector<T>& Qc,  // P, Q, C replaced with Pc, Qc, Cc by Max F
             const std::vector<std::vector<T>>& Cc,
             // T maxC, // disabled by MaxF //now updated inside
             T extra_mass_penalty,
@@ -933,7 +933,7 @@ namespace EMD_details {
         typedef long long int CONVERT_TO_T;
         // typedef int T;
 
-        T operator()(const Container& POrig, const Container& QOrig, const Container& P, const Container& Q,
+        T operator()(const Container& POrig, const Container& QOrig, const std::vector<T>& P, const std::vector<T>& Q,
             const std::vector<std::vector<T>>& C,
             // T maxC, // disabled by Max F
             T extra_mass_penalty,
@@ -1099,6 +1099,7 @@ auto EMD<V>::operator()(const Container& Pc, const Container& Qc) const -> dista
         is_C_initialized = true;
     }
 
+    using T = value_type;
     const EMD_details::FLOW_TYPE_T FLOW_TYPE = EMD_details::NO_FLOW;
     //    // if maxC is not given seperatly // disabled by Max F when rolled back to original version
     //    if (maxC == std::numeric_limits<T>::min())
@@ -1112,8 +1113,8 @@ auto EMD<V>::operator()(const Container& Pc, const Container& Qc) const -> dista
     assert((F != NULL) || (FLOW_TYPE == EMD_details::NO_FLOW));
 
 	// changed from std::vector<T> to Container by Stepan Mamontov 21.01.2020
-    Container P(Pc);
-    Container Q(Qc);
+    std::vector<T> P(std::begin(Pc), std::end(Pc));
+    std::vector<T> Q(std::begin(Qc), std::end(Qc));
 
     // Assuming metric property we can pre-flow 0-cost edges
     {
