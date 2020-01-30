@@ -15,16 +15,16 @@ class NotUsed {};
 class MGCInterface {
 public:
     virtual ~MGCInterface() = default;
-    virtual double estimate(const python_wrap_stl& obj1, const python_wrap_stl& obj2, const size_t BsampleSize, const double threshold, size_t maxIterations) = 0;
-    virtual double operator()(const python_wrap_stl& obj1, const python_wrap_stl& obj2) = 0;
+    virtual double estimate(const WrapStlMatrix<double>& obj1, const WrapStlMatrix<double>& obj2, const size_t BsampleSize, const double threshold, size_t maxIterations) = 0;
+    virtual double operator()(const WrapStlMatrix<double>& obj1, const WrapStlMatrix<double>& obj2) = 0;
 };
 
 template <class T1, class T2>
 class MGCImpl: public metric::MGC<NotUsed,T1,NotUsed,T2>, public MGCInterface {
-    virtual double estimate(const python_wrap_stl& obj1, const python_wrap_stl& obj2, const size_t BsampleSize, const double threshold, size_t maxIterations) override {
+    virtual double estimate(const WrapStlMatrix<double>& obj1, const WrapStlMatrix<double>& obj2, const size_t BsampleSize, const double threshold, size_t maxIterations) override {
         return metric::MGC<NotUsed,T1,NotUsed,T2>::estimate(obj1, obj2);
     }
-    virtual double operator()(const python_wrap_stl& obj1, const python_wrap_stl& obj2) override {
+    virtual double operator()(const WrapStlMatrix<double>& obj1, const WrapStlMatrix<double>& obj2) override {
         return metric::MGC<NotUsed,T1,NotUsed,T2>::operator()(obj1, obj2);
     }
 };

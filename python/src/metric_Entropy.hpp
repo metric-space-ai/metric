@@ -14,7 +14,7 @@ namespace metric_Entropy {
 //TODO: fix vector<> in matric::estimate function
 template <typename Container, typename Metric = metric::Euclidian<double>, typename L = double>
 double entropy_wrap(const Container& data, std::size_t k = 3, L logbase = 2, Metric metric = Metric()) {
-    using ContainerIn = python_wrap_stl;
+    using ContainerIn = WrapStlMatrix<double>;
     std::vector<ContainerIn> data2;
     for (unsigned i = 0; i < data.size(); i++)
         data2.push_back(data[i]);
@@ -22,7 +22,7 @@ double entropy_wrap(const Container& data, std::size_t k = 3, L logbase = 2, Met
 }
 
 //BOOST_PYTHON_FUNCTION_OVERLOADS(entropy_overloads, entropy, 1, 4);
-double entropy(const python_wrap_stl& obj, std::size_t k = 3, double logbase = 2.0, const char* metricName = "eucludean") {
+double entropy(const WrapStlMatrix<double>& obj, std::size_t k = 3, double logbase = 2.0, const char* metricName = "eucludean") {
     double ret = std::numeric_limits<double>::max();
     bool got = false;
         size_t i = 0;
@@ -32,7 +32,7 @@ double entropy(const python_wrap_stl& obj, std::size_t k = 3, double logbase = 2
             auto name = MetricTypeNames[i++];
             if (!got && name == metricName) {
                 got = true;
-                ret = entropy_wrap<python_wrap_stl,Type1>(obj, k, logbase, Type1());
+                ret = entropy_wrap<WrapStlMatrix<double>,Type1>(obj, k, logbase, Type1());
             }
         });
     if (!got) throw std::runtime_error("No such metric");

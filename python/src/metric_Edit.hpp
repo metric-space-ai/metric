@@ -15,7 +15,7 @@ class metricsEdit {
     metric::Edit<NotUsed> metricEdit;
 
 public:
-    int call(const python_wrap_stl& A, const python_wrap_stl& B) {
+    int call(const WrapStlMatrix<double>& A, const WrapStlMatrix<double>& B) {
             return metricEdit(A,B);
     }
 };

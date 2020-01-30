@@ -7,6 +7,6 @@
 */
 
 def("entropy", +[](bp::object& A, std::size_t k = 3, double logbase = 2.0, const char* metric = "eucludean") {
-        return metric_Entropy::entropy(python_wrap_stl(A), k, logbase, metric);
+        return metric_Entropy::entropy(WrapStlMatrix<double>(A), k, logbase, metric);
     }, "Continuous entropy estimator");
 

@@ -17,6 +17,3 @@ template <class T>
 std::vector<std::vector<T>>(*ground_distance_matrix_of_2dgrid_2)(std::vector<std::vector<T>>) = &metric::EMD_details::ground_distance_matrix_of_2dgrid<T>;
 
 };
-
-
-
