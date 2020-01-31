@@ -15,19 +15,19 @@ Copyright (c) 2019 Panda Team
 
 namespace metric {
 
-/**
- * @brief Continuous entropy estimator
- *
- * @param data
- * @param k
- * @param logbase
- * @param metric
- * @param exp  - flag, applies 1/exp(1)*exp(estimated_entropy) to output
- * @return value of entropy estimation of the data 
- */
-template <typename Container, typename Metric = metric::Euclidian<typename Container::value_type>, typename L = double>
-double entropy_fn(  // old version, TODO remove
-    std::vector<Container> data, std::size_t k = 3, L logbase = 2, Metric metric = Metric(), bool exp = false);
+///**
+// * @brief Continuous entropy estimator
+// *
+// * @param data
+// * @param k
+// * @param logbase
+// * @param metric
+// * @param exp  - flag, applies 1/exp(1)*exp(estimated_entropy) to output
+// * @return value of entropy estimation of the data
+// */
+//template <typename Container, typename Metric = metric::Euclidian<typename Container::value_type>, typename L = double>
+//double entropy_fn(  // old erronuous version, TODO remove
+//    std::vector<Container> data, std::size_t k = 3, L logbase = 2, Metric metric = Metric(), bool exp = false);
 
 
 template <typename recType, typename Metric = metric::Euclidian<typename recType::value_type>>
@@ -187,6 +187,12 @@ struct VOI_normalized : VOI<V> {
 
 template <typename V>
 VOI_normalized(int, V)->VOI_normalized<double>;
+
+
+
+// functions based on Kozachenko-Leonenko entropy estimator
+// WARNING the entropy_kl estimator function used in functions declared below, is not finished and seems to have BUGS
+
 
 /**
  * @class VOI_kl
