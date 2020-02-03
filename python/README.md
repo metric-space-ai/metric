@@ -6,6 +6,6 @@ python3 setup.py bdist_wheel
 
 ## Install module
 
-sudo pip3 install dist/metric-<version>-cp37-cp37m-linux_<arch>.whl
+sudo pip3 install dist/metric-&lt;version&gt;-cp37-cp37m-linux_&lt;arch&gt;.whl
 
 ## [Examples](examples)
