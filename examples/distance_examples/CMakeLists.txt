@@ -13,7 +13,7 @@ include_directories(
     ${PROJECT_SOURCE_DIR}
     ${PROJECT_SOURCE_DIR}/../../3rdparty/jpeglib 
     )
-
+	 
 include_directories(${Boost_INCLUDE_DIRS}) 
 	
 file(COPY "assets" DESTINATION ".")
