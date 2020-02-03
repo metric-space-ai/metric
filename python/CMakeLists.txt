@@ -24,8 +24,11 @@ else ()
 find_package(Boost COMPONENTS python REQUIRED)
 endif ()
 
+if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+else ()
 find_package(PkgConfig REQUIRED)
 pkg_search_module(PYTHON3 REQUIRED python3)
+endif ()
 set_target_properties(metric_py PROPERTIES CXX_STANDARD 17)
 target_include_directories(metric_py PRIVATE ${PYTHON3_INCLUDE_DIRS} src ..)
 
