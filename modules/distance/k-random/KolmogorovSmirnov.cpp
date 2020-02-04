@@ -9,9 +9,20 @@ Copyright (c) 2020 Panda Team
 #define _METRIC_DISTANCE_K_RANDOM_KOLMOGOROV_SMIRNOV_CPP
 
 #include "KolmogorovSmirnov.hpp"
+#include "../../utils/poor_mans_quantum.hpp"
 
 namespace metric {
 	
+template <typename T>
+std::vector<T> linspace(T a, T b, size_t N) {
+    T h = (b - a) / static_cast<T>(N-1);
+    std::vector<T> xs(N);
+    typename std::vector<T>::iterator x;
+    T val;
+    for (x = xs.begin(), val = a; x != xs.end(); ++x, val += h)
+        *x = val;
+    return xs;
+}
 
 template <typename Sample, typename D>
 auto KolmogorovSmirnov<typename Sample, typename D>::operator()(const Sample& sample_1, const Sample& sample_2) -> distance_return_type
@@ -20,6 +31,16 @@ auto KolmogorovSmirnov<typename Sample, typename D>::operator()(const Sample& sa
 	Sample normalized_distribution_2(sample_2.size());
 	Sample cumulitive_distribution_1;
 	Sample cumulitive_distribution_2;
+
+	//PMQ pmq_1(sample_1);
+	//PMQ pmq_2(sample_2);
+	//
+	//for (int i = 0; i < sample_1.size(); i++)
+	//{
+	//	std::cout << pmq_1.cdf(sample_1[i]) << " ";
+	//}
+	//std::cout << std::endl;
+
 
 	// make cumulative distribution functions for the first sample
 
