@@ -80,7 +80,6 @@ auto KolmogorovSmirnov<typename Sample, typename D>::operator()(const Sample& sa
 	D max_difference = 0;
 	for (int i = 0; i < cumulitive_distribution_1.size(); i++)
 	{
-		std::cout << cumulitive_distribution_1[i] << " " << cumulitive_distribution_2[i] << " " << (cumulitive_distribution_1[i] - cumulitive_distribution_2[i]) << std::endl;
 		if (abs(cumulitive_distribution_1[i] - cumulitive_distribution_2[i]) > max_difference)
 		{
 			max_difference = abs(cumulitive_distribution_1[i] - cumulitive_distribution_2[i]);
