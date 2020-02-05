@@ -105,16 +105,17 @@ BOOST_AUTO_TEST_CASE(convolutional)
 	blaze::DynamicMatrix<double> Y {{19, 25, 37, 43}};
 
 	BOOST_CHECK_EQUAL(convLayer.output(), Y);
-	blaze::DynamicMatrix<double> A = {{0, 1, 2, 3},
+
+	/*blaze::DynamicMatrix<double> A = {{0, 1, 2, 3},
 	                                  {4, 5, 6, 7}};
 	blaze::DynamicMatrix<double> B = {{8, 9, 10, 1.2},
 	                                  {1.2, 1.3, 1.4, 1.5}};
 
 	blaze::DynamicMatrix<double> C(2, 2);
-
+*/
 	//blaze::gemm(CblasRowMajor, CblasNoTrans, CblasTrans, 2, 2, 4,
 	 //           1, A.data(), 4, B.data(), 2, 1, C.data(), 2);
-	double A0[] = {0, 1, 2, 3, 4, 5, 6, 7};
+	/*double A0[] = {0, 1, 2, 3, 4, 5, 6, 7};
 	double B0[] = {8, 9, 10, 1.2, 1.3, 1.4, 1.5};
 	double C0[4];
 	blaze::gemm(CblasRowMajor, CblasNoTrans, CblasTrans, 2, 2, 4,
@@ -122,7 +123,7 @@ BOOST_AUTO_TEST_CASE(convolutional)
 	//blaze::gemm(CblasRowMajor, CblasNoTrans, CblasTrans, 2, 2, 4,
 	//		   1, A0, 4, B0, 4, 0, C0, 2);
 	std::cout << C << std::endl;
-	std::cout << A * blaze::trans(B) << std::endl;
+	std::cout << A * blaze::trans(B) << std::endl;*/
 }
 
 /*BOOST_AUTO_TEST_CASE(deconvolutional)
