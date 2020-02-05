@@ -121,11 +121,11 @@ BOOST_AUTO_TEST_CASE(convolutional)
 	           1, A.data(), 4, B.data(), 4, 0, C.data(), 2);
 	//blaze::gemm(CblasRowMajor, CblasNoTrans, CblasTrans, 2, 2, 4,
 	//		   1, A0, 4, B0, 4, 0, C0, 2);
-std::cout << C << std::endl;
+	std::cout << C << std::endl;
 	std::cout << A * blaze::trans(B) << std::endl;
 }
 
-BOOST_AUTO_TEST_CASE(deconvolutional)
+/*BOOST_AUTO_TEST_CASE(deconvolutional)
 {
 	Conv2dTranspose<double, Identity<double>> convTransposeLayer(2, 2, 1, 1, 2, 2);
 	blaze::DynamicMatrix<double, blaze::columnMajor> X{{1, 2, 3, 4}};
@@ -139,6 +139,6 @@ BOOST_AUTO_TEST_CASE(deconvolutional)
 	blaze::DynamicMatrix<double, blaze::columnMajor> Y {{1, 4, 4, 6, 20, 16, 9, 24, 16}};
 
 	BOOST_CHECK_EQUAL(convTransposeLayer.output(), Y);
-
 }
 
+ */
