@@ -45,12 +45,12 @@ dnn::Network<double> net(json);
 
 dnn::Network<double> net;
 
-net.addLayer(dnn::FullyConnected<Scalar, dnn::ReLU<Scalar>>(4000, 1024));
-net.addLayer(dnn::FullyConnected<Scalar, dnn::ReLU<Scalar>>(1024, 256));
-net.addLayer(dnn::FullyConnected<Scalar, dnn::ReLU<Scalar>>(256, 64));
-net.addLayer(dnn::FullyConnected<Scalar, dnn::ReLU<Scalar>>(64, 256));
-net.addLayer(dnn::FullyConnected<Scalar, dnn::ReLU<Scalar>>(256, 1024));
-net.addLayer(dnn::FullyConnected<Scalar, dnn::Sigmoid<Scalar>>(1024, 4000));
+net.addLayer(dnn::FullyConnected<double, dnn::ReLU<double>>(4000, 1024));
+net.addLayer(dnn::FullyConnected<double, dnn::ReLU<double>>(1024, 256));
+net.addLayer(dnn::FullyConnected<double, dnn::ReLU<double>>(256, 64));
+net.addLayer(dnn::FullyConnected<double, dnn::ReLU<double>>(64, 256));
+net.addLayer(dnn::FullyConnected<double, dnn::ReLU<double>>(256, 1024));
+net.addLayer(dnn::FullyConnected<double, dnn::Sigmoid<double>>(1024, 4000));
 ```
 
 ##Json
