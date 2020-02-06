@@ -16,9 +16,9 @@ Copyright (c) 2019 Panda Team
 #include <iostream>
 #include <fstream>
 
-//#if defined(_WIN64)
+#if defined(_WIN64)
 #include <filesystem>
-//#endif
+#endif
 
 #include <chrono>
 
@@ -146,16 +146,16 @@ std::vector<std::vector<double>> readEnergies(std::string dirname)
 
 	std::vector<std::vector<double>> rows;
 	
-	//#if defined(_WIN64)
+	#if defined(_WIN64)
 		for (const auto & entry : std::filesystem::directory_iterator(dirname))
-	//#endif
+	#endif
 	#if defined(__linux__)
 		for (auto filename : files)
 	#endif
     {
-		//#if defined(_WIN64)
+		#if defined(_WIN64)
 			auto filename = entry.path();
-		//#endif
+		#endif
 		std::cout << "reading data from " << filename << "... " << std::endl;
 
 		std::fstream fin;
