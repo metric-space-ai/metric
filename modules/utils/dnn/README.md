@@ -1,8 +1,62 @@
 # DNN module
 
+## Network construction methods
+
+### Load trained net
+```c++
+#include "metric/modules/utils/dnn.hpp"
+
+dnn::Network<double> net;
+net.load("path_to_cereal_file");
+```
+### Construct from json string
+```c++
+#include "metric/modules/utils/dnn.hpp"
+
+# Network with one dense layer
+auto json = R"({
+                "0":
+                    {
+                        "type": "FullyConnected",
+                        "inputSize": 100,
+                        "outputSize": 10,
+                        "activation": "ReLU"
+                    },
+                "train":
+                    {
+                        "loss": "RegressionMSE",
+                        "optimizer": {"type": "RMSProp",
+                                        "learningRate": 0.01,
+                                        "eps": 1e-6,
+                                        "decay": 0.9}
+                    }
+                }
+            )"_json;
+
+dnn::Network<double> net(json);
+
+# Train
+......
+```
+
+### Describe structure in program code
+```c++
+#include "metric/modules/utils/dnn.hpp"
+
+dnn::Network<double> net;
+
+net.addLayer(dnn::FullyConnected<Scalar, dnn::ReLU<Scalar>>(4000, 1024));
+net.addLayer(dnn::FullyConnected<Scalar, dnn::ReLU<Scalar>>(1024, 256));
+net.addLayer(dnn::FullyConnected<Scalar, dnn::ReLU<Scalar>>(256, 64));
+net.addLayer(dnn::FullyConnected<Scalar, dnn::ReLU<Scalar>>(64, 256));
+net.addLayer(dnn::FullyConnected<Scalar, dnn::ReLU<Scalar>>(256, 1024));
+net.addLayer(dnn::FullyConnected<Scalar, dnn::Sigmoid<Scalar>>(1024, 4000));
+```
+
+##Json
 Network json consist of map object. Keys is layer index (0...). Values is layer object.
 
-## Network fully connected autoencoder example:
+### Network fully connected autoencoder example:
 
 ```javascript
 {
