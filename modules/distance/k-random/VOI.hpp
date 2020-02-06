@@ -24,9 +24,9 @@ namespace metric {
  * @param metric
  * @return value of entropy estimation of the data 
  */
-template <typename Container, typename Metric = metric::Euclidian<typename Container::value_type>, typename L = double>
+template <typename Container, typename Metric = metric::Euclidian<typename Container::value_type::value_type>, typename L = double>
 double entropy(
-    std::vector<Container> data, std::size_t k = 3, L logbase = 2, Metric metric = Metric());
+    Container data, std::size_t k = 3, L logbase = 2, Metric metric = Metric());
 
 /**
  * @brief
@@ -47,13 +47,13 @@ std::pair<std::vector<double>, std::vector<std::vector<T>>> pluginEstimator(cons
  * @param version
  * @return
  */
-template <typename T, typename Metric = metric::Chebyshev<T>>
-typename std::enable_if<!std::is_integral<T>::value, T>::type mutualInformation(const std::vector<std::vector<T>>& Xc,
-    const std::vector<std::vector<T>>& Yc, int k = 3, Metric metric = Metric(), int version = 2);
+template <typename T, template <typename> class Container, typename Metric = metric::Chebyshev<T>>
+typename std::enable_if<!std::is_integral<T>::value, T>::type mutualInformation(const Container<Container<T>>& Xc,
+    const Container<Container<T>>& Yc, int k = 3, Metric metric = Metric(), int version = 2);
 
-template <typename T>
+template <typename T, template <typename> class Container>
 typename std::enable_if<std::is_integral<T>::value, T>::type mutualInformation(
-    const std::vector<std::vector<T>>& Xc, const std::vector<std::vector<T>>& Yc, T logbase = 2.0);
+    const Container<Container<T>>& Xc, const Container<Container<T>>& Yc, T logbase = 2.0);
 
 /**
  * @brief

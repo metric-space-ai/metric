@@ -30,12 +30,12 @@ namespace bpn = boost::python::numpy;
 
 using base_python_object = bp::api::object;
 
-template<typename T>
+template<typename T, class Allocator = std::allocator<T>>
 class WrapStlVector: public base_python_object {
     public:
         typedef T value_type;
         WrapStlVector() = default;
-        WrapStlVector(base_python_object& obj)
+        WrapStlVector(base_python_object obj)
             : base_python_object(obj)
         {
         }
@@ -51,10 +51,24 @@ class WrapStlVector: public base_python_object {
             return bp::stl_input_iterator<T>();
         }
 
-        T operator[](int index) const {
-            T wr = bp::extract<T>(base_python_object::operator[](index));
+        template<typename U = T, typename std::enable_if<std::is_floating_point<U>::value>::type* = nullptr>
+        U operator[](int index) const  {
+            U wr = bp::extract<U>(base_python_object::operator[](index));
             return wr;
         }
+
+        template<typename U = T, typename std::enable_if<std::is_integral<U>::value>::type* = nullptr>
+        U operator[](int index) const  {
+            U wr = bp::extract<U>(base_python_object::operator[](index));
+            return wr;
+        }
+
+        template<typename U = T, typename std::enable_if<!std::is_floating_point<U>::value>::type* = nullptr>
+        WrapStlVector<typename U::value_type> operator[](int index) const {
+            base_python_object wr = bp::extract<base_python_object>(base_python_object::operator[](index));
+            return WrapStlVector<typename U::value_type>(wr);
+        }
+
 };
 
 template<typename T>

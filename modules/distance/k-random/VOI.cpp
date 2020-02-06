@@ -69,9 +69,9 @@ namespace {
         }
         std::cout << "]" << std::endl;
     }
-    template <typename T>
+    template <typename T, class Container>
     void combine(
-        const std::vector<std::vector<T>>& X, const std::vector<std::vector<T>>& Y, std::vector<std::vector<T>>& XY)
+        const Container& X, const Container& Y, std::vector<std::vector<T>>& XY)
     {
         std::size_t N = X.size();
         std::size_t dx = X[0].size();
@@ -104,9 +104,9 @@ namespace {
 
 template <typename Container, typename Metric, typename L>
 double entropy(
-    std::vector<Container> data, std::size_t k, L logbase, Metric metric)
+    Container data, std::size_t k, L logbase, Metric metric)
 {
-    using T = typename Container::value_type;
+    using T = typename Container::value_type::value_type;
 
     if (data.empty() || data[0].empty()) {
         return 0;
@@ -130,7 +130,7 @@ double entropy(
     }
 
     //add_noise(data); // TODO test
-    metric::Tree<Container, Metric> tree(data, -1, metric);
+    metric::Tree<typename Container::value_type, Metric> tree(data, -1, metric);
     double entropyEstimate = boost::math::digamma(N) - boost::math::digamma(k) + cb + d * log(logbase, two);
     for (std::size_t i = 0; i < N; i++) {
         auto res = tree.knn(data[i], k + 1);
@@ -142,9 +142,9 @@ double entropy(
 // Kozachenko-Leonenko estimator based on https://hal.archives-ouvertes.fr/hal-00331300/document (Shannon diff. entropy,
 // q = 1)
 
-template <typename T, typename Metric = metric::Euclidian<T>, typename L = T>  // TODO check if L = T is correct
+template <template <class> class Container, typename T, typename Metric = metric::Euclidian<T>, typename L = T>  // TODO check if L = T is correct
 typename std::enable_if<!std::is_integral<T>::value, T>::type entropy_kl(
-    std::vector<std::vector<T>> data, std::size_t k = 3, L logbase = 2, Metric metric = Metric())
+    Container<Container<T>> data, std::size_t k = 3, L logbase = 2, Metric metric = Metric())
 {
     if (data.empty() || data[0].empty())
         return 0;
@@ -153,7 +153,7 @@ typename std::enable_if<!std::is_integral<T>::value, T>::type entropy_kl(
     if constexpr (!std::is_same<Metric, typename metric::Euclidian<T>>::value)
         throw std::logic_error("entropy function is now implemented only for Euclidean distance");
 
-    metric::Tree<std::vector<T>, Metric> tree(data, -1, metric);
+    metric::Tree<Container<T>, Metric> tree(data, -1, metric);
 
     size_t N = data.size();
     size_t m = data[0].size();
@@ -189,17 +189,23 @@ std::pair<std::vector<double>, std::vector<std::vector<T>>> pluginEstimator(cons
     return std::make_pair(counts, uniqueVal);
 }
 
-template <typename T, typename Metric>
+template <typename T, template <typename> class Container, typename Metric>
 typename std::enable_if<!std::is_integral<T>::value, T>::type mutualInformation(
-    const std::vector<std::vector<T>>& Xc, const std::vector<std::vector<T>>& Yc, int k, Metric metric, int version)
+    const Container<Container<T>>& Xc, const Container<Container<T>>& Yc, int k, Metric metric, int version)
 {
     T N = Xc.size();
 
     if (N < k + 1 || Yc.size() < k + 1)
         throw std::invalid_argument("number of points in dataset must be larger than k");
 
-    auto X = Xc;
-    auto Y = Yc;
+    std::vector<std::vector<T>> X;
+    for (const auto& e: Xc)
+        X.push_back(std::vector<T>(std::begin(e), std::end(e)));
+
+    std::vector<std::vector<T>> Y;
+    for (const auto& e: Yc)
+        Y.push_back(std::vector<T>(std::begin(e), std::end(e)));
+
     add_noise(X);
     add_noise(Y);
     std::vector<std::vector<T>> XY;
@@ -239,9 +245,9 @@ typename std::enable_if<!std::is_integral<T>::value, T>::type mutualInformation(
     return entropyEstimate;
 }
 
-template <typename T>
+template <typename T, template <typename> class Container>
 typename std::enable_if<std::is_integral<T>::value, T>::type mutualInformation(
-    const std::vector<std::vector<T>>& Xc, const std::vector<std::vector<T>>& Yc, T logbase)
+    const Container<Container<T>>& Xc, const Container<Container<T>>& Yc, T logbase)
 {
     std::vector<std::vector<T>> XY;
     combine(Xc, Yc, XY);
@@ -255,7 +261,7 @@ template <typename T, typename Metric>
 typename std::enable_if<!std::is_integral<T>::value, T>::type variationOfInformation(
     const std::vector<std::vector<T>>& Xc, const std::vector<std::vector<T>>& Yc, int k, T logbase)
 {
-    return entropy<std::vector<T>, Metric>(Xc, k, logbase, Metric()) + entropy<std::vector<T>, Metric>(Yc, k, logbase, Metric())
+    return entropy<std::vector<std::vector<T>>, Metric>(Xc, k, logbase, Metric()) + entropy<std::vector<std::vector<T>>, Metric>(Yc, k, logbase, Metric())
         - 2 * mutualInformation<T>(Xc, Yc, k);
 }
 
@@ -265,7 +271,7 @@ typename std::enable_if<!std::is_integral<T>::value, T>::type variationOfInforma
 {
     using Cheb = metric::Chebyshev<T>;
     auto mi = mutualInformation<T>(Xc, Yc, k);
-    return 1 - (mi / (entropy<std::vector<T>, Cheb>(Xc, k, logbase, Cheb()) + entropy<std::vector<T>, Cheb>(Yc, k, logbase, Cheb()) - mi));
+    return 1 - (mi / (entropy<std::vector<std::vector<T>>, Cheb>(Xc, k, logbase, Cheb()) + entropy<std::vector<std::vector<T>>, Cheb>(Yc, k, logbase, Cheb()) - mi));
 }
 
 template <typename V>
@@ -275,7 +281,7 @@ typename std::enable_if<!std::is_integral<El>::value, V>::type VOI<V>::operator(
     const Container<Container<El, Allocator_inner>, Allocator_outer>& b) const
 {
     using Cheb = metric::Chebyshev<El>;
-    return entropy<std::vector<El>, Cheb>(a, k, logbase, Cheb()) + entropy<std::vector<El>, Cheb>(b, k, logbase, Cheb())
+    return entropy<std::vector<std::vector<El>>, Cheb>(a, k, logbase, Cheb()) + entropy<std::vector<std::vector<El>>, Cheb>(b, k, logbase, Cheb())
         - 2 * mutualInformation<El>(a, b, k);
 }
 
@@ -289,8 +295,8 @@ typename std::enable_if<!std::is_integral<El>::value, V>::type VOI_normalized<V>
     auto mi = mutualInformation<El>(a, b, this->k);
     return 1
         - (mi
-            / (entropy<std::vector<El>, Cheb>(a, this->k, this->logbase, Cheb())
-                + entropy<std::vector<El>, Cheb>(b, this->k, this->logbase, Cheb()) - mi));
+            / (entropy<Container<Container<El, Allocator_inner>, Allocator_outer>, Cheb>(a, this->k, this->logbase, Cheb())
+                + entropy<Container<Container<El, Allocator_inner>, Allocator_outer>, Cheb>(b, this->k, this->logbase, Cheb()) - mi));
 }
 
 // VOI based on Kozachenko-Leonenko entropy estimator

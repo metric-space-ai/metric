@@ -18,7 +18,7 @@ double entropy_wrap(const Container& data, std::size_t k = 3, L logbase = 2, Met
     std::vector<ContainerIn> data2;
     for (unsigned i = 0; i < data.size(); i++)
         data2.push_back(data[i]);
-    return metric::entropy<ContainerIn, Metric, L>(data2, k, logbase, metric);
+    return metric::entropy<std::vector<ContainerIn>, Metric, L>(data2, k, logbase, metric);
 }
 
 //BOOST_PYTHON_FUNCTION_OVERLOADS(entropy_overloads, entropy, 1, 4);

@@ -20,6 +20,7 @@
 #include "metric_MGC.hpp"
 #include "metric_Edit.hpp"
 #include "metric_Entropy.hpp"
+#include "metric_VOI.hpp"
 #include "metric_EMD.hpp"
 //#include "metric_affprop.hpp"
 
@@ -89,6 +90,36 @@ struct NumpyScalarConverter {
     }
 };
 
+template <typename ArrayType>
+struct NumpyArrayConverter {
+
+    NumpyArrayConverter() {
+        using namespace boost::python;
+        converter::registry::push_back(&convertible, &construct, type_id<ArrayType>());
+    }
+
+    static void* convertible(PyObject* obj_ptr) {
+        std::string name = getObjType(obj_ptr);
+
+        if ( name == "ndarray") {
+            return obj_ptr;
+        }
+        return 0;
+    }
+
+    static void construct(PyObject* obj_ptr, boost::python::converter::rvalue_from_python_stage1_data* data) {
+        using namespace boost::python;
+
+        bp::object obj(boost::python::handle<>(bp::borrowed(obj_ptr)));
+
+        void* storage = ((converter::rvalue_from_python_storage<ArrayType>*) data)->storage.bytes;
+
+        ArrayType * array = new (storage) ArrayType(obj);
+
+        data->convertible = storage;
+    }
+};
+
 BOOST_PYTHON_MODULE(metric) {
 
     bp::class_<VectorDouble>("VectorDouble").def(bp::vector_indexing_suite<VectorDouble>());
@@ -109,10 +140,12 @@ BOOST_PYTHON_MODULE(metric) {
     NumpyScalarConverter<float>();
     NumpyScalarConverter<double>();
 
+    NumpyArrayConverter<WrapStlVector<double>>();
 
 #include "metric_MGC.cpp"
 #include "metric_Edit.cpp"
 #include "metric_Entropy.cpp"
+#include "metric_VOI.cpp"
 #include "metric_EMD.cpp"
 //#include "metric_affprop.cpp"
 

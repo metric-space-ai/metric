@@ -139,13 +139,14 @@ public:
     Tree(const recType& p, int truncate = -1, Metric d = Metric());  // cover tree with one data record as root
 
     /**
-     * @brief Construct a Tree object from data vector
+     * @brief Construct a Tree object from Container
      *
      * @param p vector of data records to store in tree
      * @param truncate truncate paramter
      * @param d metric object
      */
-    Tree(const std::vector<recType>& p, int truncate = -1, Metric d = Metric());  // with a vector of data records
+    template <class Container>
+    Tree(const Container& p, int truncateArg = -1, Metric d = Metric());
 
     /**
      * @brief Destroy the Tree object

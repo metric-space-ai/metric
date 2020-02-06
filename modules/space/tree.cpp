@@ -320,9 +320,10 @@ Tree<recType, Metric>::Tree(const recType& p, int truncateArg /*=-1*/, Metric d)
     root->ID = 0;
 }
 
-/*** constructor: with a vector data records **/
+/*** constructor: with a container **/
 template <class recType, class Metric>
-Tree<recType, Metric>::Tree(const std::vector<recType>& p, int truncateArg /*=-1*/, Metric d)
+template <class Container>
+Tree<recType, Metric>::Tree(const Container& p, int truncateArg /*=-1*/, Metric d)
     : metric_(d)
 {
     min_scale = 1000;
