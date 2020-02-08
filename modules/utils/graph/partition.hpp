@@ -6,18 +6,6 @@
 		Copyright (c) 2019 Panda Team
 		Copyright (c) 2019 Oleg Popov
 */
-/*
-Laplacians is a package containing graph algorithms, with an emphasis on tasks related to 
-spectral and algebraic graph theory. It contains (and will contain more) code for solving 
-systems of linear equations in graph Laplacians, low stretch spanning trees, sparsifiation, 
-clustering, local clustering, and optimization on graphs.
-
-All graphs are represented by sparse adjacency matrices. This is both for speed, and because 
-our main concerns are algebraic tasks. It does not handle dynamic graphs. It would be very slow 
-to implement dynamic graphs this way.
-
-https://github.com/danspielman/Laplacians.jl
-*/
 
 #ifndef _METRIC_UTILS_GRAPH_PARTITION_HPP
 #define _METRIC_UTILS_GRAPH_PARTITION_HPP
@@ -25,20 +13,13 @@ https://github.com/danspielman/Laplacians.jl
 #include <cmath>
 #include "../../../3rdparty/blaze/Math.h"
 #include <blaze/math/DynamicMatrix.h>
+#include <blaze/math/Rows.h>
 #include <vector>
 #include <algorithm>
 #include <chrono>
 #include "../solver/solver.hpp"
 
 namespace metric {
-/*
-	Just implements Spielman-Srivastava
-		as = sparsify(a; ep=0.5)
-
-	Apply Spielman-Srivastava sparsification: sampling by effective resistances.
-	`ep` should be less than 1.
-*/
-
 
 //TO DO don't forgot to move this
 int RandomIntInRange(int left, int right) { return left + (std::rand() % (right - left + 1)); }
@@ -54,7 +35,7 @@ template <typename Tv>
 blaze::DynamicMatrix<Tv> DotMatrix(blaze::DynamicMatrix<Tv> left, blaze::DynamicMatrix<Tv> right)
 {
 	blaze::DynamicMatrix<Tv> result(left);
-	left *= right;
+	result *= right;
 	return result;
 }
 
@@ -71,10 +52,37 @@ double VectorMean(blaze::DynamicVector<Tv> source)
 	return result;
 }
 
+
 template <typename Tv>
-void RemoveMatrixRows(blaze::DynamicMatrix<Tv> &source, blaze::DynamicVector<int> removeRows)
+void PrintArray(blaze::DynamicVector<Tv> source)
 {
-	blaze::DynamicMatrix<Tv> newMatrix(source.rows(), removeRows.size());
+	std::cout<<"array[" << source.size() << "] ";
+	for (int i = 0; i < source.size(); i++)
+	{
+		std::cout<<source[i]<<", ";
+	}
+	std::cout<<"\n";
+}
+
+template <typename Tv>
+void PrintMatrix(blaze::DynamicMatrix<Tv> source)
+{
+	std::cout << "matrix[" << source.rows() << ", " << source.columns() << "] ";
+	for (int i = 0; i < source.rows(); i++)
+	{
+		std::cout << "\n";
+		for (int j = 0; j < source.columns(); j++)
+		{
+			std::cout << source(i, j) << ", ";
+		}
+	}
+	std::cout << "\n";
+}
+
+template <typename Tv>
+blaze::DynamicMatrix<Tv> RemoveMatrixRows(blaze::DynamicMatrix<Tv> source, blaze::DynamicVector<int> removeRows)
+{
+	blaze::DynamicMatrix<Tv> newMatrix(source.rows() - removeRows.size(), removeRows.size());
 
 	int rowCount = 0;
 	for (int i = 0; i < source.rows(); i++)
@@ -97,40 +105,12 @@ void RemoveMatrixRows(blaze::DynamicMatrix<Tv> &source, blaze::DynamicVector<int
 		}
 		rowCount++;
 	}
-	return;
+
+	return newMatrix;
 }
 
-//template <typename Tv>
-//double Union(blaze::DynamicVector<blaze::DynamicVector<Tv>> source)
-//{
-//	blaze::DynamicVector<Tv> result;
-//
-//	for (int i = 0; i < source.size(); i++)
-//	{
-//		for (int j = 0; j < source[i].size(); j++)
-//		{
-//			if (result.find(source[i][j]) == source[i].end())
-//			{
-//				
-//			}
-//		}
-//	}
-//
-//	result /= source.size();
-//	return result;
-//}
-
-
-/**
- * @brief Apply Spielman-Srivastava sparsification: sampling by effective resistances.
- * 
- * @param a 
- * @param ep 
- * @param matrixConcConst 
- * @param JLfac 
- * @return
- */
 bool perform_graph_partition(blaze::DynamicMatrix<double> distanceMatrix, blaze::DynamicMatrix<int> &partition);
+
 }
 
 #include "partition.cpp"
