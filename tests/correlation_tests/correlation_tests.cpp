@@ -133,6 +133,10 @@ BOOST_AUTO_TEST_CASE(MGC)
     auto m1 = generateMatrix<double>(4, 4);
     auto m2 = generateMatrix<double>(4, 4);
     mgc(m1, m2);
+
+    /* MGC corelation */
+    mgc.correlation(A1, B1, -4, 7);
+
 }
 
 BOOST_AUTO_TEST_CASE(MGC_Estimate)
