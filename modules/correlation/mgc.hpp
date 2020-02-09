@@ -56,7 +56,14 @@ struct MGC {
     double estimate(const Container1& a, const Container2& b, const size_t sampleSize = 250,
         const double threshold = 0.05, size_t maxIterations = 1000);
 
-    template <typename Container1, typename Container2>
+	/** @brief return vector of mgc values calculated for different data shifts
+	 * @param a container of values of type recType1
+	 * @param b container of values of type recType2
+	 * @param from
+	 * @param to
+	 * @return vector of mgc values calculated for different data shifts
+	 */
+	template <typename Container1, typename Container2>
     std::vector<double> correlation(const Container1& a, const Container2& b, const int from, const int to) const;
 
     /**
