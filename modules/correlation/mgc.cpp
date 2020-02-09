@@ -652,18 +652,18 @@ std::vector<double> MGC<recType1, Metric1, recType2, Metric2>::linspace(double a
 template<class recType1, class Metric1, class recType2, class Metric2>
 template<typename Container1, typename Container2>
 std::vector<double>
-MGC<recType1, Metric1, recType2, Metric2>::correlation(const Container1 &a, const Container2 &b, const size_t from,
-													   const size_t to) const
+MGC<recType1, Metric1, recType2, Metric2>::correlation(const Container1 &a, const Container2 &b,
+																const int from, const int to) const
 {
 	std::vector<double> result;
 
-	std::vector<typename Container1::value_type> aShifted;
-	std::vector<typename Container2::value_type> bShifted;
+	for (int shift = from; shift < to; ++shift) {
+		std::vector<typename Container1::value_type> aShifted;
+		std::vector<typename Container2::value_type> bShifted;
 
-	for (int shift = from; shift < from; ++shift) {
 		if (shift < 0) {
-			aShifted.insert(aShifted.end(), a.begin() + shift, a.end());
-			bShifted.insert(bShifted.end(), b.begin(), b.end() - shift);
+			aShifted.insert(aShifted.end(), a.begin() + (-shift), a.end());
+			bShifted.insert(bShifted.end(), b.begin(), b.end() - (-shift));
 		} else {
 			aShifted.insert(aShifted.end(), a.begin(), a.end() - shift);
 			bShifted.insert(bShifted.end(), b.begin() + shift, b.end());

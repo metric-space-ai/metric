@@ -57,7 +57,7 @@ struct MGC {
         const double threshold = 0.05, size_t maxIterations = 1000);
 
     template <typename Container1, typename Container2>
-    std::vector<double> correlation(const Container1& a, const Container2& b, const size_t from, const size_t to) const;
+    std::vector<double> correlation(const Container1& a, const Container2& b, const int from, const int to) const;
 
     /**
      * @brief
