@@ -12,105 +12,24 @@
 
 #include <cmath>
 #include "../../../3rdparty/blaze/Math.h"
+#include "../solver/solver.hpp"
 #include <blaze/math/DynamicMatrix.h>
 #include <blaze/math/Rows.h>
 #include <vector>
 #include <algorithm>
 #include <chrono>
-#include "../solver/solver.hpp"
 
 namespace metric {
 
-//TO DO don't forgot to move this
-int RandomIntInRange(int left, int right) { return left + (std::rand() % (right - left + 1)); }
-
-template <typename Tv>
-blaze::DynamicMatrix<Tv> CloneMatrix(blaze::DynamicMatrix<Tv> source)
-{
-	blaze::DynamicMatrix<Tv> newMatrix(source);
-	return newMatrix;
-}
-
-template <typename Tv>
-blaze::DynamicMatrix<Tv> DotMatrix(blaze::DynamicMatrix<Tv> left, blaze::DynamicMatrix<Tv> right)
-{
-	blaze::DynamicMatrix<Tv> result(left);
-	result *= right;
-	return result;
-}
-
-template <typename Tv>
-double VectorMean(blaze::DynamicVector<Tv> source)
-{
-	double result = 0;
-	for (int i = 0; i < source.size(); i++)
-	{
-		result += source[i];
-	}
-
-	result /= source.size();
-	return result;
-}
-
-
-template <typename Tv>
-void PrintArray(blaze::DynamicVector<Tv> source)
-{
-	std::cout<<"array[" << source.size() << "] ";
-	for (int i = 0; i < source.size(); i++)
-	{
-		std::cout<<source[i]<<", ";
-	}
-	std::cout<<"\n";
-}
-
-template <typename Tv>
-void PrintMatrix(blaze::DynamicMatrix<Tv> source)
-{
-	std::cout << "matrix[" << source.rows() << ", " << source.columns() << "] ";
-	for (int i = 0; i < source.rows(); i++)
-	{
-		std::cout << "\n(";
-		for (int j = 0; j < source.columns(); j++)
-		{
-			std::cout << source(i, j) << ", ";
-		}
-		std::cout << "\n),";
-	}
-	std::cout << "\n";
-}
-
-template <typename Tv>
-blaze::DynamicMatrix<Tv> RemoveMatrixRows(blaze::DynamicMatrix<Tv> source, blaze::DynamicVector<int> removeRows)
-{
-	blaze::DynamicMatrix<Tv> newMatrix(source.rows() - removeRows.size(), removeRows.size());
-
-	int rowCount = 0;
-	for (int i = 0; i < source.rows(); i++)
-	{
-		bool skipRow = false;
-		for (int j = 0; j < removeRows.size(); j++)
-		{
-			if (i == removeRows[j])
-			{
-				skipRow = true;
-				break;
-			}
-		}
-
-		if(skipRow) continue;
-
-		for (int j = 0; j < source.columns(); j++)
-		{
-			newMatrix(rowCount, j) = source(i, j);
-		}
-		rowCount++;
-	}
-
-	return newMatrix;
-}
-
-bool perform_graph_partition(blaze::DynamicMatrix<double> distanceMatrix, blaze::DynamicMatrix<int> &partition);
+/**
+ * @brief Apply Spielman-Srivastava sparsification: sampling by effective resistances.
+ *
+ * @param distanceMatrix Input distance matrix, must have more than 100 nodes. 
+ * @param partition Reference to the matrix that will contain the best result found
+ * @param attempts  Is the number of attempts to find global optima, SOMETHING LIKE 100 - 1000
+ * @return true if there is no error, false otherwise
+ */
+bool perform_graph_partition(blaze::DynamicMatrix<double> distanceMatrix, blaze::DynamicMatrix<int> &partition, int globalOptimum = 100);
 
 }
 
