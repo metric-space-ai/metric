@@ -32,15 +32,18 @@ bool perform_graph_partition(const blaze::DynamicMatrix<double> distanceMatrix,
     }
 
     //dd = Table[du [[ra [[i]] ]], { i, Length[ra] }];
-   blaze::DynamicMatrix<double> randomColumns(randomColumnsIndex.size(), length);
+    blaze::DynamicMatrix<double> dd(randomColumnsIndex.size(), length);
     for (int i = 0; i < randomColumnsIndex.size(); i++)
     {
         for (int j = 0; j < length; j++)
         {
-            randomColumns(i, j) = distanceMatrix(randomColumnsIndex[i], j);
+            dd(i, j) = distanceMatrix(randomColumnsIndex[i], j);
         }
     }
     
+   /* std::cout << "dd Matrix: \n";
+    PrintMatrix(randomColumns);*/
+
     /*blaze::DynamicMatrix<double> randomColumns(rows, randomColumnsIndex.size());
     for (int i = 0; i < randomColumnsIndex.size(); i++)
     {
@@ -52,7 +55,7 @@ bool perform_graph_partition(const blaze::DynamicMatrix<double> distanceMatrix,
 
 
     //a = 1. Transpose[dd]
-    blaze::DynamicMatrix<double> a = CloneMatrix(randomColumns).transpose();
+    blaze::DynamicMatrix<double> a = CloneMatrix(dd).transpose();
 
     //n1 = Length[a];
     int n1 = a.rows();
@@ -104,10 +107,16 @@ bool perform_graph_partition(const blaze::DynamicMatrix<double> distanceMatrix,
                 }
             }
 
+          /*  std::cout << "r Matrix: \n";
+            PrintMatrix(r);*/
+
             blaze::DynamicMatrix<double> dotAC = DotMatrix(a, c);
             blaze::DynamicMatrix<double> rtranspose = CloneMatrix(r).transpose();
             blaze::DynamicMatrix<double> p = DotMatrix(rtranspose, dotAC);
-            
+
+          /*  std::cout << "P Matrix: [" << p.rows() << "][" << p.columns() << "]\n";
+            PrintMatrix(p);*/
+
             blaze::DynamicMatrix<double> u = CloneMatrix(r).transpose();
 
             k1 = u.rows();
@@ -144,6 +153,7 @@ bool perform_graph_partition(const blaze::DynamicMatrix<double> distanceMatrix,
             rsize.reset();
             uRowSums = sum<blaze::rowwise>(u);
 
+         
             for (int i = 0; i < k1; i++)
             {
                 rsize[i] = uRowSums[i];
@@ -157,7 +167,10 @@ bool perform_graph_partition(const blaze::DynamicMatrix<double> distanceMatrix,
                 }
             }
 
-            blaze::DynamicMatrix<double> ln = blaze::log(p + blaze::pow(10, -34));
+            blaze::DynamicMatrix<double> ln = blaze::log(p + 0.0001);
+
+            /*std::cout << "ln Matrix: [\n";
+            PrintMatrix(ln);*/
 
             //blaze::DynamicMatrix<double> ln = p + blaze::pow(10, -5);
             //PrintMatrix(ln);
@@ -173,9 +186,12 @@ bool perform_graph_partition(const blaze::DynamicMatrix<double> distanceMatrix,
                 }
             }*/
 
-            uRowSums = sum<blaze::rowwise>(p);
-            blaze::DynamicVector<double> pi(uRowSums);
+            //uRowSums = sum<blaze::rowwise>(p);
+            blaze::DynamicVector<double> pi = sum<blaze::rowwise>(p);
               
+          /*  std::cout << "pi vector: \n";
+            PrintArray(pi);*/
+
             c.reset();
 
             for (int i = 0; i < n2; i++)
@@ -190,41 +206,78 @@ bool perform_graph_partition(const blaze::DynamicMatrix<double> distanceMatrix,
             blaze::DynamicVector<int> ff;
             blaze::DynamicMatrix<double> rw;
 
-            while(t < tmax)
+            while(t <= tmax && t < 2)
             { 
   
+                /*std::cout<<"LnMatrix: \n";
+                PrintMatrix(ln);
+                std::cout << "BMatrix: \n";
+                PrintMatrix(b);*/
+                //return true;
+
                 blaze::DynamicMatrix<double> dotProduct = ln * b;
+
+              /*  std::cout << "dotProduct: \n";
+                PrintMatrix(dotProduct);*/
+
                 rw.reset();
                 rw.resize(dotProduct.rows(), dotProduct.columns());
                 
+                std::cout << "dot product Matrix: \n";
+                PrintMatrix(dotProduct);
+
+                std::cout << "pi arrray\n";
+                PrintArray(pi);
+
+
+                std::cout << "-----------------------------\n";
+                std::cout << "-----------------------------\n";
+                std::cout << "-----------------------------\n";
+                std::cout << "-----------------------------\n";
+
                 for (int i = 0; i < dotProduct.rows(); i++)
                 {
                     for (int j = 0; j < dotProduct.columns(); j++)
                     {
-                        rw(i, j) = -1 * (dotProduct(i, j) - pi[j]);
+                        rw(i, j) = -1 * (dotProduct(i, j) - pi[i]);
                     }
                 }
-                rw = CloneMatrix(rw).transpose();
+
+               
+
+                // ---------------------------------------------- ok until here -----------------------------------------------------
+
+                rw = rw.transpose();
+
+             /*   std::cout << "rw Matrix: \n";
+                PrintMatrix(rw);*/
+
                 ff.reset();
                 ff.resize(rw.rows());
                 for (int i = 0; i < rw.rows(); i++)
                 {
+                    double min = 0;
                     for(int j=0; j<rw.columns(); j++)
-                    {
-                        std::cout<<"check agains:"<< rw(i, j)<<"\n";
+                    {          
+                        //std::cout<<"check agains:"<< rw(i, j)<<"\n";
                         if(j == 0)
                         {
                             ff[i] = 0;
+                            min = rw(i, j);
                         }
                         else
                         {
-                            if (rw(i, j) < ff[i])
+                            if (rw(i, j) < min)
                             {
+                                min = rw(i, j);
                                 ff[i] = j;
                             }
                         }
                     }
                 }
+
+                std::cout << "ff array: \n";
+                PrintArray(ff);
 
                 /*div = Mean[Table[rw [[i, ff [[i]] ]], { i, n1 }]];
                 ru = r * 0;
@@ -236,6 +289,7 @@ bool perform_graph_partition(const blaze::DynamicMatrix<double> distanceMatrix,
                 }
                 
                 double div = blaze::mean(auxTable);
+                std::cout << "div: " << div << "\n";
 
                 blaze::DynamicMatrix<int> ru(r.rows(), r.columns(), 0);
                 for (int i = 0; i < n1; i++)
@@ -243,8 +297,11 @@ bool perform_graph_partition(const blaze::DynamicMatrix<double> distanceMatrix,
                     ru(i, ff[i]) = 1;
                 }
 
+                //std::cout << "ru matrix: \n";
+                //PrintMatrix(ru);
+
                 //-------- move to function -------------
-                blaze::DynamicVector<int> clustrow(ff);
+                /*blaze::DynamicVector<int> clustrow(ff);
                 int unionSize = clustrow.size();
                 for (int i = 0; i < clustrow.size() - 1; i++)
                 {
@@ -261,8 +318,22 @@ bool perform_graph_partition(const blaze::DynamicMatrix<double> distanceMatrix,
                         }
                     }
                 }
-                clustrow.shrinkToFit();
+                clustrow.shrinkToFit();*/
                 //-------- move to function -------------
+
+
+                blaze::DynamicVector<int> clustrow;
+                for (int i = 0; i < ff.size(); i++)
+                {
+                    if (std::find(clustrow.begin(), clustrow.end(), ff[i]) == clustrow.end())
+                    {
+                        clustrow.extend(1);
+                        clustrow[clustrow.size() - 1] = ff[i];
+                    }   
+                }
+
+                //std::cout << "clustrow array: \n";
+                //PrintArray(clustrow);
 
                 blaze::DynamicMatrix<int> ruu = CloneMatrix(ru).transpose();
                 blaze::DynamicMatrix<int> rne(clustrow.size(), ruu.columns());
@@ -274,7 +345,11 @@ bool perform_graph_partition(const blaze::DynamicMatrix<double> distanceMatrix,
                     }
                 }
 
-                blaze::DynamicMatrix<int> rnew = CloneMatrix(ruu).transpose();
+
+                std::cout << "rne matrix: \n";
+                PrintMatrix(rne);
+
+                blaze::DynamicMatrix<int> rnew = CloneMatrix(rne).transpose();
 
                 r = rnew;
 
@@ -283,6 +358,11 @@ bool perform_graph_partition(const blaze::DynamicMatrix<double> distanceMatrix,
                 blaze::DynamicVector<int> sdd;
 
                 uRowSums = sum<blaze::rowwise>(u);
+                
+                std::cout << "u before extraction : \n";
+                PrintMatrix(u);
+
+                
                 for (int i = 0; i < u.rows(); i++)
                 {
                     if (uRowSums[i] == 0)
@@ -291,6 +371,13 @@ bool perform_graph_partition(const blaze::DynamicMatrix<double> distanceMatrix,
                         sdd[sdd.size() - 1] = i;
                     }
                 }
+
+
+                std::cout << "u before extraction : \n";
+                PrintMatrix(u);
+
+                std::cout << "sdd : \n";
+                PrintArray(sdd);
 
                 //If[Length[sdd] > 0, u = Delete[u, sdd]]
                 if(sdd.size() > 0)
@@ -323,15 +410,24 @@ bool perform_graph_partition(const blaze::DynamicMatrix<double> distanceMatrix,
                     }
                 }
 
+                std::cout << "u after extraction : \n";
+                PrintMatrix(u);
+
                 //clone(u).transpose;
                 r = CloneMatrix(u).transpose();
                 k1 = u.rows();
                 
                 blaze::DynamicMatrix<double> acProduct = a * c;
-
+                
+           /*     std::cout << "ac product : \n";
+                PrintMatrix(acProduct);*/
 
                 blaze::DynamicMatrix<double> pu = CloneMatrix(rnew).transpose() * acProduct;
-                
+              /*  
+                std::cout << "pu matrix : \n";
+                PrintMatrix(pu);*/
+
+
                 rsize.clear();
                 rsize.resize(k1);
                 for (int i = 0; i < k1; i++)
@@ -348,9 +444,12 @@ bool perform_graph_partition(const blaze::DynamicMatrix<double> distanceMatrix,
                     }
                 }
 
-                blaze::DynamicMatrix<double> lnu = blaze::log(pu + blaze::pow(10, -34));
+                blaze::DynamicMatrix<double> lnu = blaze::log(pu + 0.0001);
                 p = pu;
                 
+                std::cout << "p matrix : \n";
+                PrintMatrix(p);
+
                 uRowSums = sum<blaze::rowwise>(p);
                 pi.reset();
                 pi.resize(p.rows());
@@ -362,6 +461,9 @@ bool perform_graph_partition(const blaze::DynamicMatrix<double> distanceMatrix,
 
                 ln = lnu;
                 t++;
+
+                std::cout << "ln matrix : \n";
+                PrintMatrix(ln);
             }
 
 

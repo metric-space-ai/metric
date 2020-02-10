@@ -70,11 +70,12 @@ void PrintMatrix(blaze::DynamicMatrix<Tv> source)
 	std::cout << "matrix[" << source.rows() << ", " << source.columns() << "] ";
 	for (int i = 0; i < source.rows(); i++)
 	{
-		std::cout << "\n";
+		std::cout << "\n(";
 		for (int j = 0; j < source.columns(); j++)
 		{
 			std::cout << source(i, j) << ", ";
 		}
+		std::cout << "\n),";
 	}
 	std::cout << "\n";
 }
