@@ -128,7 +128,20 @@ int main()
 	print_vector(found_4);
 	assert(found_4.size() == 0);
     std::cout << std::endl;
+
+
+	///
 	
+	//	
+    auto g_5 = metric::KNNGraph(g_0);
+
+	// nothing bad should be happened
+    std::cout << std::endl;
+    std::cout << "gnn search:" << std::endl;
+	auto found_5 = g_5.gnnn_search(query, search_neighbors_num);
+	print_vector(found_4);
+	assert(found_4.size() == found_0.size());
+    std::cout << std::endl;
 
 	
     return 0;

@@ -685,6 +685,16 @@ KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::KNNGraph(std::vect
 }
 
 template <typename Sample, typename Distance, typename WeightType, bool isDense, bool isSymmetric>
+KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::KNNGraph(const KNNGraph& graph)
+    : _neighbors_num(graph._neighbors_num), _max_bruteforce_size(graph._max_bruteforce_size), _max_iterations(graph._max_iterations), _update_range(graph._update_range)
+{
+	_nodes = graph._nodes;
+	// copy assignment
+	m = graph.m;
+    valid = true;
+}
+
+template <typename Sample, typename Distance, typename WeightType, bool isDense, bool isSymmetric>
 void KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::construct(std::vector<Sample> samples)
 {
     m.resize(samples.size(), samples.size());

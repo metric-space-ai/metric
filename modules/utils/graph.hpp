@@ -62,6 +62,7 @@ public:
      * @param edgesPairs 
      */
     Graph(const std::vector<std::pair<size_t, size_t>> & edgesPairs);
+
     /**
      * @brief Construct a new Graph object
      * 
@@ -339,10 +340,14 @@ public:
     /**
      * @brief Construct a new KNN Graph object
      * 
-     * @param width 
-     * @param height 
      */
     KNNGraph(std::vector<Sample> X, size_t neighbors_num, size_t max_bruteforce_size, int max_iterations = 100, double update_range = 0.02);
+
+    /**
+     * @brief Construct a new KNN Graph object
+     * 
+     */
+    KNNGraph(const KNNGraph& graph);
 
 	
 	size_t neighbors_num() { return _neighbors_num; };

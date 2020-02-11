@@ -121,6 +121,25 @@ int main()
 	{
 		std::cout << found[i] << " ";
 	}
+    std::cout << "]" << std::endl;
+    std::cout << std::endl;
+
+	//
+	
+    auto other_g = metric::KNNGraph(g);
+	
+    std::cout << "other graph:" << std::endl;
+    std::cout << other_g.get_matrix() << std::endl;
+
+    std::cout << std::endl;
+    std::cout << "gnn search:" << std::endl;
+	found = other_g.gnnn_search(query, 3);
+	
+    std::cout << "[ ";
+	for (size_t i = 0; i < found.size(); i++)
+	{
+		std::cout << found[i] << " ";
+	}
     std::cout << "]";
 
 	
