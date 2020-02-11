@@ -27,11 +27,6 @@ Discrete<T>::Discrete(std::vector<T> samples)
     : _generator(std::random_device {}())
 {
 	std::sort(samples.begin(), samples.end());
-	for (int i = 0; i < samples.size(); i++)
-	{
-		std::cout << samples[i] << " ";
-	}
-	std::cout << std::endl;
 	
 	std::map<T, int> hist{};
 	for (int i = 0; i < samples.size(); i++)
