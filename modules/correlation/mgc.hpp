@@ -59,12 +59,11 @@ struct MGC {
 	/** @brief return vector of mgc values calculated for different data shifts
 	 * @param a container of values of type recType1
 	 * @param b container of values of type recType2
-	 * @param from
-	 * @param to
+	 * @param n number of delayed computations in +/- direction
 	 * @return vector of mgc values calculated for different data shifts
 	 */
 	template <typename Container1, typename Container2>
-    std::vector<double> correlation(const Container1& a, const Container2& b, const int from, const int to) const;
+    std::vector<double> xcorr(const Container1& a, const Container2& b, const int n) const;
 
     /**
      * @brief

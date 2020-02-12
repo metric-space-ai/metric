@@ -652,12 +652,12 @@ std::vector<double> MGC<recType1, Metric1, recType2, Metric2>::linspace(double a
 template<class recType1, class Metric1, class recType2, class Metric2>
 template<typename Container1, typename Container2>
 std::vector<double>
-MGC<recType1, Metric1, recType2, Metric2>::correlation(const Container1 &a, const Container2 &b,
-																const int from, const int to) const
+MGC<recType1, Metric1, recType2, Metric2>::xcorr(const Container1 &a, const Container2 &b,
+																const int n) const
 {
 	std::vector<double> result;
 
-	for (int shift = from; shift < to; ++shift) {
+	for (int shift = -n; shift <= n; ++shift) {
 		std::vector<typename Container1::value_type> aShifted;
 		std::vector<typename Container2::value_type> bShifted;
 

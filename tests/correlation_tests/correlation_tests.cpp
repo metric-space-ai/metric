@@ -143,10 +143,8 @@ BOOST_AUTO_TEST_CASE(MGC)
 												0.37837904236096026,
 												0.4589100366738734,
 												0.3811881240213428,
-												0.44657481646290537,
-												0.3865428831953871,
-												0.47331789390863266};
-    auto correlation = mgc.correlation(A1, B1, -4, 7);
+												0.44657481646290537};
+    auto correlation = mgc.xcorr(A1, B1, 4);
 
     BOOST_CHECK_EQUAL(correlationReference.size(), correlation.size());
 
