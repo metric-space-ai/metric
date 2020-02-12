@@ -6,6 +6,8 @@
   Copyright (c) 2020 Panda Team
 */
 
+#include "metric_py.hpp"
+
 namespace metric_EMD {
 
 class EMD_detailsScope {};

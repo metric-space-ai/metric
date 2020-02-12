@@ -7,7 +7,8 @@
 */
 
 #pragma once
-#include <boost/mpl/vector.hpp>
+#include "metric_types.hpp"
+#include "metric_py.hpp"
 namespace metric_MGC {
 
 class NotUsed {};
@@ -38,6 +39,7 @@ class metrics {
                     std::shared_ptr<MGCInterface>
                 >
         >;
+
     static MetricTable table;
     static MetricTable CreateMetricTable() {
         MetricTable t;

@@ -8,6 +8,8 @@
 
 #pragma once
 
+#include "metric_py.hpp"
+
 namespace metric_Edit {
 
 class NotUsed {};

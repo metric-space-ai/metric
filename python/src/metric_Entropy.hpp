@@ -7,6 +7,8 @@
 */
 
 #pragma once
+#include "metric_types.hpp"
+#include "metric_py.hpp"
 #include <boost/python/numpy.hpp>
 
 namespace metric_Entropy {

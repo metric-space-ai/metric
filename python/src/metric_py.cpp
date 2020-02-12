@@ -6,29 +6,35 @@
   Copyright (c) 2020 Panda Team
 */
 
-#include "modules/correlation.hpp"
-#include "modules/distance.hpp"
 #include "metric_py.hpp"
 
 #include <boost/python/suite/indexing/vector_indexing_suite.hpp>
-#include <boost/python/object.hpp>
-#include <boost/python/converter/implicit.hpp>
-#include <boost/python/converter/registry.hpp>
-#include <boost/python/module.hpp>
-#include <numpy/arrayobject.h>
-#include <numpy/arrayscalars.h>
-#include "metric_MGC.hpp"
-#include "metric_Edit.hpp"
-#include "metric_Entropy.hpp"
-#include "metric_VOI.hpp"
-#include "metric_EMD.hpp"
+//#include <boost/python/object.hpp>
+//#include <boost/python/converter/implicit.hpp>
+//#include <boost/python/converter/registry.hpp>
+//#include <boost/python/module.hpp>
 //#include "metric_affprop.hpp"
+
+namespace bp = boost::python;
 
 typedef std::vector<double> VectorDouble;
 typedef std::vector<VectorDouble> VectorVectorDouble;
 typedef std::vector<int> VectorInt;
 typedef std::vector<VectorInt> VectorVectorInt;
 
+std::string getObjType(const bp::api::object& obj) {
+    boost::python::extract<boost::python::object> objectExtractor(obj);
+    boost::python::object o=objectExtractor();
+    std::string obj_type = boost::python::extract<std::string>(o.attr("__class__").attr("__name__"));
+    return obj_type;
+}
+
+std::string getObjType(PyObject* obj_ptr) {
+       boost::python::object obj(boost::python::handle<>(boost::python::borrowed(obj_ptr)));
+       return getObjType(obj);
+}
+
+/*
 template <typename ScalarType>
 struct NumpyScalarConverter {
 
@@ -89,7 +95,9 @@ struct NumpyScalarConverter {
         data->convertible = storage;
     }
 };
+*/
 
+/*
 template <typename ArrayType>
 struct NumpyArrayConverter {
 
@@ -119,6 +127,18 @@ struct NumpyArrayConverter {
         data->convertible = storage;
     }
 };
+*/
+
+void export_numpy_scalar_converter();
+void export_numpy_array_converter();
+
+void export_metric_MGC();
+void export_metric_Edit();
+void export_metric_Entropy();
+void export_metric_VOI_kl();
+void export_metric_VOI_normalized();
+void export_metric_EMD();
+void export_metric_EMD_details();
 
 BOOST_PYTHON_MODULE(metric) {
 
@@ -127,27 +147,19 @@ BOOST_PYTHON_MODULE(metric) {
     bp::class_<VectorInt>("VectorInt").def(bp::vector_indexing_suite<VectorInt>());
     bp::class_<VectorVectorInt>("VectorVectorInt").def(bp::vector_indexing_suite<VectorVectorInt>());
 
-    NumpyScalarConverter<signed char>();
-    NumpyScalarConverter<short>();
-    NumpyScalarConverter<int>();
-    NumpyScalarConverter<long>();
-    NumpyScalarConverter<long long>();
-    NumpyScalarConverter<unsigned char>();
-    NumpyScalarConverter<unsigned short>();
-    NumpyScalarConverter<unsigned int>();
-    NumpyScalarConverter<unsigned long>();
-    NumpyScalarConverter<unsigned long long>();
-    NumpyScalarConverter<float>();
-    NumpyScalarConverter<double>();
+    export_numpy_scalar_converter();
 
-    NumpyArrayConverter<WrapStlVector<double>>();
+    export_numpy_array_converter();
 
-#include "metric_MGC.cpp"
-#include "metric_Edit.cpp"
-#include "metric_Entropy.cpp"
-#include "metric_VOI.cpp"
-#include "metric_EMD.cpp"
-//#include "metric_affprop.cpp"
+    export_metric_MGC();
+    export_metric_Edit();
+    export_metric_Entropy();
+    export_metric_VOI_kl();
+    export_metric_VOI_normalized();
+    export_metric_EMD();
+    export_metric_EMD_details();
+
+// TODO #include "metric_affprop.cpp"
 
 }
 

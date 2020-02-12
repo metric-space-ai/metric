@@ -6,9 +6,15 @@
   Copyright (c) 2020 Panda Team
 */
 
+#include "metric_Edit.hpp"
+
+namespace bp = boost::python;
+
+void export_metric_Edit() {
+
 bp::class_<metric_Edit::metricsEdit>("Edit")
       .def("__call__", +[](metric_Edit::metricsEdit& self, bp::object& A, bp::object& B) {
           return self.call(A,B);
       }, "return Edit distance between A and B")
       ;
-
+}

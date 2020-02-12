@@ -6,6 +6,13 @@
   Copyright (c) 2020 Panda Team
 */
 
+#include "metric_MGC.hpp"
+
+namespace bp = boost::python;
+
+void export_metric_MGC()
+{
+
 bp::class_<metric_MGC::metrics>("MGC", bp::init<std::string,std::string>())
     .def("estimate", +[](metric_MGC::metrics& self, bp::object& A, bp::object& B, const size_t BsampleSize = 250, const double threshold = 0.05, size_t maxIterations = 1000) {
         return self.mgc->estimate(WrapStlMatrix<double>(A), WrapStlMatrix<double>(B), BsampleSize, threshold, maxIterations);
@@ -14,4 +21,4 @@ bp::class_<metric_MGC::metrics>("MGC", bp::init<std::string,std::string>())
         return self.mgc->operator()(WrapStlMatrix<double>(A), WrapStlMatrix<double>(B));
     }, "return correlation betweeen A and B")
     ;
-
+}

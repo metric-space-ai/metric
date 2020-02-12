@@ -6,7 +6,14 @@
   Copyright (c) 2020 Panda Team
 */
 
+#include "metric_Entropy.hpp"
+
+namespace bp = boost::python;
+
+void export_metric_Entropy() {
+
 def("entropy", +[](bp::object& A, std::size_t k = 3, double logbase = 2.0, const char* metric = "eucludean") {
         return metric_Entropy::entropy(WrapStlMatrix<double>(A), k, logbase, metric);
     }, "Continuous entropy estimator");
 
+}

@@ -8,27 +8,14 @@
 
 #pragma once
 #include <boost/python.hpp>
-#include <boost/python/numpy.hpp>
-#include <boost/python/scope.hpp>
+//#include <boost/python/numpy.hpp>
+//#include <boost/python/scope.hpp>
 
-// define list of metric and thier names
-using MetricTypes = boost::mpl::vector<
-    metric::Euclidian<double>
-    , metric::Manhatten<double>
-    //, metric::Chebyshev<double>
-    , metric::P_norm<double> // TODO: constructor argument
->;
-std::vector<std::string> MetricTypeNames = {
-    "euclidean",
-    "manhatten",
-    //"chebyshev",
-    "p_norm",
-};
+#include "modules/correlation.hpp"
+#include "modules/distance.hpp"
 
-namespace bp = boost::python;
-namespace bpn = boost::python::numpy;
 
-using base_python_object = bp::api::object;
+using base_python_object = boost::python::api::object;
 
 template<typename T, class Allocator = std::allocator<T>>
 class WrapStlVector: public base_python_object {
@@ -39,33 +26,33 @@ class WrapStlVector: public base_python_object {
             : base_python_object(obj)
         {
         }
-        size_t size() const {return bp::len(*this);}
+        size_t size() const {return boost::python::len(*this);}
 
         bool empty() const {return size() == 0;}
 
-        bp::stl_input_iterator<T> begin() const {
-            return bp::stl_input_iterator<T>(*this);
+        boost::python::stl_input_iterator<T> begin() const {
+            return boost::python::stl_input_iterator<T>(*this);
         }
 
-        bp::stl_input_iterator<T> end() const {
-            return bp::stl_input_iterator<T>();
+        boost::python::stl_input_iterator<T> end() const {
+            return boost::python::stl_input_iterator<T>();
         }
 
         template<typename U = T, typename std::enable_if<std::is_floating_point<U>::value>::type* = nullptr>
         U operator[](int index) const  {
-            U wr = bp::extract<U>(base_python_object::operator[](index));
+            U wr = boost::python::extract<U>(base_python_object::operator[](index));
             return wr;
         }
 
         template<typename U = T, typename std::enable_if<std::is_integral<U>::value>::type* = nullptr>
         U operator[](int index) const  {
-            U wr = bp::extract<U>(base_python_object::operator[](index));
+            U wr = boost::python::extract<U>(base_python_object::operator[](index));
             return wr;
         }
 
         template<typename U = T, typename std::enable_if<!std::is_floating_point<U>::value>::type* = nullptr>
         WrapStlVector<typename U::value_type> operator[](int index) const {
-            base_python_object wr = bp::extract<base_python_object>(base_python_object::operator[](index));
+            base_python_object wr = boost::python::extract<base_python_object>(base_python_object::operator[](index));
             return WrapStlVector<typename U::value_type>(wr);
         }
 
@@ -80,38 +67,24 @@ class WrapStlMatrix: public base_python_object {
             : base_python_object(obj)
         {
         }
-        size_t size() const {return bp::len(*this);}
+        size_t size() const {return boost::python::len(*this);}
 
         bool empty() const {return size() == 0;}
 
-        bp::stl_input_iterator<T> begin() const {
-            return bp::stl_input_iterator<T>(*this);
+	boost::python::stl_input_iterator<T> begin() const {
+            return boost::python::stl_input_iterator<T>(*this);
         }
 
-        bp::stl_input_iterator<T> end() const {
-            return bp::stl_input_iterator<T>();
+	boost::python::stl_input_iterator<T> end() const {
+            return boost::python::stl_input_iterator<T>();
         }
 
         WrapStlMatrix operator[](int index) const {
-            base_python_object wr = bp::extract<base_python_object>(base_python_object::operator[](index));
+            base_python_object wr = boost::python::extract<base_python_object>(base_python_object::operator[](index));
             return WrapStlMatrix(wr);
         }
 };
 
-template<class T>
-struct MPLHelpType
-{
-    typedef T agrument_type;
-};
 
-static std::string getObjType(const bp::api::object& obj) {
-    boost::python::extract<boost::python::object> objectExtractor(obj);
-    boost::python::object o=objectExtractor();
-    std::string obj_type = boost::python::extract<std::string>(o.attr("__class__").attr("__name__"));
-    return obj_type;
-}
-
-static std::string getObjType(PyObject* obj_ptr) {
-       boost::python::object obj(boost::python::handle<>(boost::python::borrowed(obj_ptr)));
-       return getObjType(obj);
-}
+std::string getObjType(const boost::python::api::object& obj);
+std::string getObjType(PyObject* obj_ptr);

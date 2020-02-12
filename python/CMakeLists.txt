@@ -5,12 +5,24 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 #set(CMAKE_CXX_FLAGS "-Wall")
-set(CMAKE_CXX_FLAGS_DEBUG "-g")
-set(CMAKE_CXX_FLAGS_RELEASE "-O3")
+set(CMAKE_CXX_FLAGS_DEBUG "-DMETRIC_DISABLE_INLINE_CPP -g")
+set(CMAKE_CXX_FLAGS_RELEASE "-DMETRIC_DISABLE_INLINE_CPP -O3 -g")
 
 project(metric_py DESCRIPTION "metric python binding")
 
-SET(SRC src/metric_py.cpp)
+SET(SRC 
+	src/metric_py.cpp
+    src/numpy_array_converter.cpp
+    src/numpy_scalar_converter.cpp
+    src/metric_types.cpp
+    src/metric_MGC.cpp
+    src/metric_Edit.cpp
+    src/metric_Entropy.cpp
+    src/metric_VOI_kl.cpp
+    src/metric_VOI_normalized.cpp
+    src/metric_EMD.cpp
+	src/metric_EMD_details.cpp
+)
 
 add_library(metric_py SHARED ${SRC})
 set_target_properties(metric_py PROPERTIES PREFIX "")
