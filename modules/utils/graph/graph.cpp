@@ -686,7 +686,7 @@ KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::KNNGraph(std::vect
 
 template <typename Sample, typename Distance, typename WeightType, bool isDense, bool isSymmetric>
 KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::KNNGraph(const KNNGraph& graph)
-    : _neighbors_num(graph._neighbors_num), _max_bruteforce_size(graph._max_bruteforce_size), _max_iterations(graph._max_iterations), _update_range(graph._update_range)
+    : Graph<WeightType, isDense, isSymmetric>(), _neighbors_num(graph._neighbors_num), _max_bruteforce_size(graph._max_bruteforce_size), _max_iterations(graph._max_iterations), _update_range(graph._update_range)
 {
 	_nodes = graph._nodes;
 	// copy assignment
@@ -694,10 +694,59 @@ KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::KNNGraph(const KNN
     valid = true;
 }
 
+//template <typename Sample, typename Distance, typename WeightType, bool isDense, bool isSymmetric>
+//KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::KNNGraph(std::vector<std::vector<typename Distance::value_type>> distance_matrix) 
+//	: Graph<WeightType, isDense, isSymmetric>(),
+//{
+//	//_distance_matrix = distance_matrix;
+//
+// //   make_edge_pairs(samples);
+//
+// //   valid = true;
+//}
+
+
 template <typename Sample, typename Distance, typename WeightType, bool isDense, bool isSymmetric>
-void KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::construct(std::vector<Sample> samples)
+KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::KNNGraph(Tree<Sample, Distance>& tree, size_t neighbors_num, size_t max_bruteforce_size, int max_iterations, double update_range)
+    : Graph<WeightType, isDense, isSymmetric>(tree.size()), _neighbors_num(neighbors_num), _max_bruteforce_size(max_bruteforce_size), _max_iterations(max_iterations), _update_range(update_range)
 {
-    m.resize(samples.size(), samples.size());
+	auto nodes = tree.get_all_nodes();
+	std::vector<Sample> samples;
+	
+	for (std::size_t i = 0; i < nodes.size(); ++i) 
+	{
+		samples.push_back(nodes[i]->data);
+	}
+	
+	_nodes = samples;
+    construct(samples);
+}
+
+template <typename Sample, typename Distance, typename WeightType, bool isDense, bool isSymmetric>
+void KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::calculate_distance_matrix(std::vector<Sample> samples)
+{
+	Distance distance;
+	
+	for (int i = 0; i < samples.size(); i++)
+	{
+		// take each node
+		auto i_point = samples[i];
+		std::vector<Distance::value_type> distances;
+		// then calculate distances for all other nodes
+		for (int j = 0; j < samples.size(); j++)
+		{
+			auto i_other_point = samples[j];
+			distances.push_back(distance(i_point, i_other_point));
+		}
+
+		_distance_matrix.push_back(distances);
+	}
+}
+
+template <typename Sample, typename Distance, typename WeightType, bool isDense, bool isSymmetric>
+void KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::make_edge_pairs(std::vector<Sample> samples)
+{
+    m.resize(samples.size(), samples.size());	
 	
 	std::vector<int> ids(samples.size());
     std::iota(ids.begin(), ids.end(), 0);
@@ -747,9 +796,18 @@ void KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::construct(std
 
 	// finish graph
     buildEdges(edgesPairs);
+}
+
+template <typename Sample, typename Distance, typename WeightType, bool isDense, bool isSymmetric>
+void KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::construct(std::vector<Sample> samples)
+{
+	calculate_distance_matrix(samples);
+
+    make_edge_pairs(samples);
 
     valid = true;
 }
+
 
 template <typename Sample, typename Distance, typename WeightType, bool isDense, bool isSymmetric>
 std::vector<std::pair<size_t, size_t>> KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::random_pair_division(std::vector<Sample> samples, std::vector<int> ids, int max_size)
@@ -815,23 +873,23 @@ std::vector<std::pair<size_t, size_t>> KNNGraph<Sample, Distance, WeightType, is
 {	
     std::vector<std::pair<size_t, size_t>> edgesPairs;
 
-	Distance distance;
 	int update_count = 0;
 	
-    for (int i = 0; i < samples.size(); i++) 
+	std::vector<std::vector<Distance::value_type>> distances;
+	std::vector<Distance::value_type> distance_row;
+	for (int i = 0; i < ids.size(); i++)
 	{
-		// take each node
-        auto i_point = samples[i];
-		std::vector<Distance::value_type> distances;
-		// then calculate distances for all other nodes
-        for (int j = 0; j < samples.size(); j++) 
+		distance_row.clear();
+		for (int j = 0; j < ids.size(); j++)
 		{
-            auto i_other_point = samples[j];
-            Distance::value_type dist = distance(i_point, i_other_point);
-			distances.push_back(dist);
-        }
-
-		auto idxs = sort_indexes(distances);
+			distance_row.push_back(_distance_matrix[i][j]);
+		}
+		distances.push_back(distance_row);
+	}
+	
+    for (int i = 0; i < ids.size(); i++) 
+	{
+		auto idxs = sort_indexes(distances[i]);
 
 		for (int j = 0; j < idxs.size(); j++)
 		{
@@ -882,72 +940,6 @@ std::vector<std::pair<size_t, size_t>> KNNGraph<Sample, Distance, WeightType, is
 
 	return edgesPairs;
 }
-
-
-//unsigned long long nndes_iterate_limited(DataSet* data, kNNGraph* kNN, int _k_limit) {
-//
-//    vector<vector<int>> new_knn(data->size);
-//    vector<vector<int>> old_knn(data->size);
-//    vector<vector<int>> reverse_new_knn(data->size);
-//    vector<vector<int>> reverse_old_knn(data->size);
-//
-//    int k_limit = kNN->k;
-//    if(_k_limit>0) { k_limit = _k_limit;}
-//
-//    unsigned long long update_count = 0;
-//    g_timer.tuck("  Build old_knn, new_knn ");
-//    for(int i_knn = 0; i_knn < kNN->size;i_knn++) {
-//        new_knn[i_knn].clear();
-//        old_knn[i_knn].clear();
-//        reverse_new_knn[i_knn].clear();
-//        reverse_old_knn[i_knn].clear();
-//
-//        for(int j = 0; j < k_limit && j < kNN->list[i_knn].size;j++) {
-//            kNNItem* ki = get_kNN_item(kNN,i_knn,j);
-//            if(ki->new_item
-//                    /*&& (k_limit <= 0 || new_knn[i_knn].size() <= k_limit)*/
-//              ) {
-//                new_knn[i_knn].push_back(ki->id);
-//                ki->new_item = false;
-//            } else {
-//                old_knn[i_knn].push_back(ki->id);
-//            }
-//        }
-//    }
-//
-//    // Construct reverse kNN
-//    for(int i_knn = 0; i_knn < kNN->size;i_knn++) {
-//        for(std::vector<int>::iterator it = new_knn[i_knn].begin(); it != new_knn[i_knn].end(); ++it) {
-//            new_knn[*it].push_back(i_knn);
-//        }
-//        for(std::vector<int>::iterator it = old_knn[i_knn].begin(); it != old_knn[i_knn].end(); ++it) {
-//            old_knn[*it].push_back(i_knn);
-//        }
-//    }
-//
-//    g_timer.tuck("  START Local join");
-//    for(int i_knn = 0; i_knn < kNN->size;i_knn++) {
-//
-//        std::sort( old_knn[i_knn].begin(), old_knn[i_knn].end());
-//        std::sort( new_knn[i_knn].begin(), new_knn[i_knn].end());
-//        int last_id = INT_MAX;
-//        for(std::vector<int>::iterator it = new_knn[i_knn].begin(); it != new_knn[i_knn].end(); ++it)
-//        {
-//            int id_A = *it;
-//
-//            if(id_A == last_id) {continue;}
-//            nndes_join(data,kNN,id_A,i_knn,new_knn,update_count);
-//            nndes_join_old(data,kNN,id_A,i_knn,old_knn,update_count);
-//
-//            last_id = id_A;
-//        }
-//    }
-//
-//    g_timer.tuck("  END Local join");
-//
-//    return update_count;
-//}
-
 
 template <typename Sample, typename Distance, typename WeightType, bool isDense, bool isSymmetric>
 std::vector<int> KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::gnnn_search(Sample query, int max_closest_num, int iterations, int num_greedy_moves, int num_expansions)
@@ -1004,7 +996,6 @@ std::vector<int> KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::g
 			// walk from initial node on distance 'num_greedy_moves' steps
 			for (int j = 0; j < num_greedy_moves; j++) 
 			{
-
 				distances.clear();
 				// 0 index is for node itself, 1 - is first circle of neighbours
 				auto neighbours = getNeighbours(checking_node, 1)[1];

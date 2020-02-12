@@ -10,6 +10,7 @@ Copyright (c) 2019 Michael Welsch
 #define _METRIC_UTILS_GRAPH_HPP
 
 #include "../../3rdparty/blaze/Blaze.h"
+#include "../space/tree.hpp"
 
 #include <stack>
 #include <type_traits>
@@ -349,8 +350,23 @@ public:
      */
     KNNGraph(const KNNGraph& graph);
 
+    /**
+     * @brief Construct a new KNN Graph object
+     * 
+     */
+    KNNGraph(Tree<Sample, Distance>& tree, size_t neighbors_num, size_t max_bruteforce_size, int max_iterations = 100, double update_range = 0.02);
+
+    ///**
+    // * @brief Construct a new KNN Graph object
+    // * 
+    // */
+    //KNNGraph(std::vector<std::vector<typename Distance::value_type>> distance_matrix);
+
 	
 	size_t neighbors_num() { return _neighbors_num; };
+
+	
+	Sample get_node_data(size_t i) { return _nodes[i]; };
 
 	
 	std::vector<int> gnnn_search(Sample query, int max_closest_num, int iterations = 10, int num_greedy_moves = -1, int num_expansions = -1);
@@ -365,6 +381,7 @@ protected:
 	bool _not_more_neighbors = false;
 
 	std::vector<Sample> _nodes;
+	std::vector<std::vector<typename Distance::value_type>> _distance_matrix;
 
 private:
     /**
@@ -372,6 +389,18 @@ private:
      * 
      */
     void construct(std::vector<Sample> X);
+
+    /**
+     * @brief 
+     * 
+     */
+    void calculate_distance_matrix(std::vector<Sample> X);
+
+    /**
+     * @brief 
+     * 
+     */
+    void make_edge_pairs(std::vector<Sample> X);
 	
     /**
      * @brief 

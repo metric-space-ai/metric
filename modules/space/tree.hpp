@@ -341,7 +341,14 @@ public:
      * @return true if lhs and rhs has the same structure
      * @return false if lhs and rhs differs
      */
-    bool same_tree(const Node_ptr lhs, const Node_ptr rhs) const;
+    bool same_tree(const Node_ptr lhs, const Node_ptr rhs) const;	
+
+    /**
+     * @brief recursively iterate through the tree and return all nodes of the tree
+     *
+     * @return return all nodes of the tree
+     */	
+	auto Tree<recType, Metric>::get_all_nodes() -> std::vector<Node_ptr>;
 
     /**
      * @brief compare tree with another
@@ -432,6 +439,8 @@ private:
 
     template <class Archive>
     auto deserialize_node(Archive& istr) -> SerializedNode<recType, Metric>;
+	
+	void get_all_nodes_(Node_ptr node_p, std::vector<Node_ptr>& output);
 };
 
 }  // namespace metric

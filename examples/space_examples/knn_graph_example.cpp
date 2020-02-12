@@ -116,12 +116,12 @@ int main()
     std::cout << "gnn search:" << std::endl;
 	auto found = g.gnnn_search(query, 3);
 	
-    std::cout << "[ ";
 	for (size_t i = 0; i < found.size(); i++)
 	{
-		std::cout << found[i] << " ";
+		std::cout << found[i] << " -> ";
+		print_vector(g.get_node_data(found[i]));
+		std::cout << std::endl;
 	}
-    std::cout << "]" << std::endl;
     std::cout << std::endl;
 
 	//
@@ -129,18 +129,34 @@ int main()
     auto other_g = metric::KNNGraph(g);
 	
     std::cout << "other graph:" << std::endl;
-    std::cout << other_g.get_matrix() << std::endl;
-
-    std::cout << std::endl;
     std::cout << "gnn search:" << std::endl;
 	found = other_g.gnnn_search(query, 3);
-	
-    std::cout << "[ ";
+		
 	for (size_t i = 0; i < found.size(); i++)
 	{
-		std::cout << found[i] << " ";
+		std::cout << found[i] << " -> ";
+		print_vector(other_g.get_node_data(found[i]));
+		std::cout << std::endl;
 	}
-    std::cout << "]";
+    std::cout << std::endl;
+
+	//
+
+    metric::Tree<std::vector<double>, metric::Euclidian<double>> tree(table);
+	
+    auto graph_from_tree = metric::KNNGraph(tree, neighbors_num, 2.5 * neighbors_num);
+	
+    std::cout << "tree graph:" << std::endl;
+    std::cout << "gnn search:" << std::endl;
+	found = graph_from_tree.gnnn_search(query, 3);
+	
+	for (size_t i = 0; i < found.size(); i++)
+	{
+		std::cout << found[i] << " -> ";
+		print_vector(graph_from_tree.get_node_data(found[i]));
+		std::cout << std::endl;
+	}
+    std::cout << std::endl;
 
 	
     return 0;
