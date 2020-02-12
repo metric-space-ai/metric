@@ -54,7 +54,7 @@ struct MGC {
      */
     template <typename Container1, typename Container2>
     double estimate(const Container1& a, const Container2& b, const size_t sampleSize = 250,
-        const double threshold = 0.05, size_t maxIterations = 1000);
+                            const double threshold = 0.05, size_t maxIterations = 1000);
 
 	/** @brief return vector of mgc values calculated for different data shifts
 	 * @param a container of values of type recType1
@@ -65,6 +65,14 @@ struct MGC {
 	template <typename Container1, typename Container2>
     std::vector<double> xcorr(const Container1& a, const Container2& b, const int n) const;
 
+	/**
+	 * @brief return distance matrix
+	 *
+	 * @param c container of values
+	 * @return distance matrix
+	 */
+	template <typename Container, typename Metric>
+    DistanceMatrix<double> computeDistanceMatrix(const Container &c) const;
     /**
      * @brief
      *
@@ -134,6 +142,7 @@ struct MGC {
      * @return
      */
     std::vector<double> linspace(double a, double b, int n);
+
 };
 
 /**

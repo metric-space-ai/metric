@@ -342,31 +342,31 @@ double MGC<recType1, Metric1, recType2, Metric2>::operator()(const Container1& a
 {
     assert(a.size() == b.size()) /* "data sets to not have same size"*/;
 
-    /* Compute distance matrix 1 */
-    DistanceMatrix<double> X(a.size());
-    for (size_t i = 0; i < X.rows(); ++i) {
-        X(i, i) = 0;
-        for (size_t j = i + 1; j < X.columns(); ++j) {
-            double distance = Metric1()(a[i], a[j]);
-            X(i, j) = distance;
-        }
-    }
-
-    /* Compute distance matrix 2 */
-    DistanceMatrix<double> Y(b.size());
-    for (size_t i = 0; i < Y.rows(); ++i) {
-        Y(i, i) = 0;
-        for (size_t j = i + 1; j < Y.columns(); ++j) {
-            double distance = Metric2()(b[i], b[j]);
-            Y(i, j) = distance;
-        }
-    }
+    /* Compute distance matrices */
+	auto X = computeDistanceMatrix<Container1, Metric1>(a);
+    auto Y = computeDistanceMatrix<Container2, Metric2>(b);
 
     return MGC_direct()(X, Y);
 }
 
-
 template <class recType1, class Metric1, class recType2, class Metric2>
+template <typename Container, typename Metric>
+DistanceMatrix<double> MGC<recType1, Metric1, recType2, Metric2>::computeDistanceMatrix(const Container &c) const
+{
+	DistanceMatrix<double> X(c.size());
+	for (size_t i = 0; i < X.rows(); ++i) {
+		X(i, i) = 0;
+		for (size_t j = i + 1; j < X.columns(); ++j) {
+			double distance = Metric()(c[i], c[j]);
+			X(i, j) = distance;
+		}
+	}
+
+	return X;
+}
+
+
+	template <class recType1, class Metric1, class recType2, class Metric2>
 template <typename Container1, typename Container2>
 double MGC<recType1, Metric1, recType2, Metric2>::estimate(
     const Container1& a, const Container2& b, const size_t sampleSize, const double threshold, size_t maxIterations)
