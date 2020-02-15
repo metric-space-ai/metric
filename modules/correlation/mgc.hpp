@@ -162,6 +162,15 @@ struct MGC_direct {
     template <typename T>
     T operator()(const DistanceMatrix<T>& a, const DistanceMatrix<T>& b);
 
+    /** @brief return vector of mgc values calculated for different data shifts
+     * @param a distance matrix
+     * @param b distance matrix
+     * @param n number of delayed computations in +/- direction
+     * @return vector of mgc values calculated for different data shifts
+     */
+    template <typename T>
+    std::vector<double> xcorr(const DistanceMatrix<T>& a, const DistanceMatrix<T>& b, const int n);
+
     /**
      * @brief Computes the centered distance matrix
      *
