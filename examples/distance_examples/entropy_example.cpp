@@ -230,7 +230,8 @@ int main() {
         //std::cout << urv5.size() << " | " << e_f_eucl(urv5) << "\n";
         //std::cout << urv5.size() << " | " << e_f_cheb(urv5) << "\n";
         //std::cout << urv5.size() << " | " << e_f_manh(urv5) << "\n";
-        std::cout << urv5.size() << " | " << e_f_mink(urv5, 3, 2.0, metric::P_norm<double>(2)) << "\n";
+        //std::cout << urv5.size() << " | " << e_f_mink(urv5, 3, 2.0, metric::P_norm<double>(2)) << "\n";
+        std::cout << urv5.size() << " | " << e_f_eucl(urv5, 500) << "\n";
     }
 
 
