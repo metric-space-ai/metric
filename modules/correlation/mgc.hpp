@@ -169,7 +169,7 @@ struct MGC_direct {
      * @return vector of mgc values calculated for different data shifts
      */
     template <typename T>
-    std::vector<double> xcorr(const DistanceMatrix<T>& a, const DistanceMatrix<T>& b, const int n);
+    std::vector<double> xcorr(const DistanceMatrix<T>& a, const DistanceMatrix<T>& b, const unsigned int n);
 
     /**
      * @brief Computes the centered distance matrix

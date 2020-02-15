@@ -12,6 +12,7 @@
 #include <functional>
 #include <iterator>
 #include <numeric>
+#include <limits>
 #include <vector>
 
 #if defined(_MSC_VER)
@@ -337,18 +338,25 @@ T MGC_direct::operator()(const DistanceMatrix<T>& X, const DistanceMatrix<T>& Y)
     return optimal_local_generalized_correlation(corr, R);
 }
 
-template<typename T> std::vector<double> MGC_direct::xcorr(const DistanceMatrix<T> &a, const DistanceMatrix<T> &b, const int n)
+template<typename T> std::vector<double> MGC_direct::xcorr(const DistanceMatrix<T> &a, const DistanceMatrix<T> &b, const unsigned int n)
 {
 	assert(a.rows() == b.rows());
+	assert(n <= std::numeric_limits<int>::max());
 
 	std::vector<double> result;
+	result.reserve(2 * n + 1);
 
-	for (int shift = -n; shift <= n; ++shift) {
+	int s = -n;
+	if (s <= (int)n) {
+		auto g = 9;
+	}
+
+	for (int shift = -n; shift <= (int)n; ++shift) {
 		DistanceMatrix<T> aShifted;
 		DistanceMatrix<T> bShifted;
 
-		auto start = std::abs(shift);
-		auto length = a.rows() - start;
+		const auto start = std::abs(shift);
+		const auto length = a.rows() - start;
 
 		if (shift < 0) {
 			aShifted = blaze::submatrix(a, start, start, length, length);
@@ -396,8 +404,9 @@ DistanceMatrix<double> MGC<recType1, Metric1, recType2, Metric2>::computeDistanc
 
 template <class recType1, class Metric1, class recType2, class Metric2>
 template <typename Container1, typename Container2>
-double MGC<recType1, Metric1, recType2, Metric2>::estimate(
-    const Container1& a, const Container2& b, const size_t sampleSize, const double threshold, size_t maxIterations)
+double MGC<recType1, Metric1, recType2, Metric2>::estimate(const Container1& a, const Container2& b,
+															const size_t sampleSize, const double threshold,
+															size_t maxIterations)
 {
     assert(a.size() == b.size());
 
