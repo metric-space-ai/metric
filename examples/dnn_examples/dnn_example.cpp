@@ -66,6 +66,7 @@ int main()
 {
 	/* Load data */
 	dnn::Datasets datasets;
+	/* shape: [batches, rows, cols, channels] */
 	auto [labels, shape, features] = datasets.getMnist("data.cereal");
 
 	if (shape.empty()) {
@@ -74,10 +75,50 @@ int main()
 	}
 
 
-	Autoencoder<uint8_t, double> autoencoder(features, shape[1] * shape[2], 255);
+	auto json = R"({
+					"0":
+						{
+							"type": "FullyConnected",
+							"inputSize": 784,
+							"outputSize": 128,
+							"activation": "ReLU"
+						},
+					"1":
+						{
+							"type": "FullyConnected",
+							"inputSize": 128,
+							"outputSize": 6,
+							"activation": "ReLU"
+						},
+					"2":
+						{
+							"type": "FullyConnected",
+							"inputSize": 6,
+							"outputSize": 128,
+							"activation": "ReLU"
+						},
+					"3":
+						{
+							"type": "FullyConnected",
+							"inputSize": 128,
+							"outputSize": 784,
+							"activation": "Sigmoid"
+						},
+					"train":
+						{
+							"loss": "RegressionMSE",
+							"optimizer": {"type": "RMSProp",
+											"learningRate": 0.01,
+											"eps": 1e-6,
+											"decay": 0.9}
+						}
+					}
+				)"_json;
+
+	Autoencoder<uint8_t, double> autoencoder(json.dump());
 
 	cout << "Train" << endl;
-	autoencoder.train(1, 256);
+	autoencoder.train(features, 5, 256);
 
 	cout << "Sample:" << endl;
 	vector<uint8_t> sample(features.begin(), features.begin() + shape[1] * shape[2]);

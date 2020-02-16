@@ -9,9 +9,7 @@
 
 #include "Optimizer.h"
 
-namespace metric
-{
-namespace dnn
+namespace metric::dnn
 {
 
 
@@ -29,14 +27,13 @@ namespace dnn
 template<typename Scalar>
 class Layer
 {
-    protected:
-        const int inputSize;  // Size of input units
-        const int outputSize; // Size of output units
-
     public:
 		using Matrix = blaze::DynamicMatrix<Scalar>;
 
-	///
+		const int inputSize;  // Size of input units
+		const int outputSize; // Size of output units
+
+		///
         /// Constructor
         ///
         /// \param inputSize  Number of input units of this hidden Layer. It must be
@@ -173,8 +170,7 @@ class Layer
 };
 
 
-} // namespace dnn
-} // namespace metric
+} // namespace metric::dnn
 
 
 #endif /* LAYER_H_ */

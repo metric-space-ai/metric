@@ -81,7 +81,7 @@ int main(int argc, char* argv[])
 	Autoencoder<uint8_t, float> autoencoder(features, shape[1] * shape[2], 255);
 
 	cout << "Train" << endl;
-	autoencoder.train(1, 2);
+	autoencoder.train(vector<InputDataType>(), 1, 2);
 
 	cout << "Sample:" << endl;
 	vector<uint8_t> sample(features.begin(), features.begin() + shape[1] * shape[2]);

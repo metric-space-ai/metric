@@ -6,37 +6,33 @@
 namespace metric
 {
 	template<typename InputDataType, typename Scalar>
-	class Autoencoder
+	class Autoencoder : public dnn::Network<Scalar>
 	{
 		private:
-			using Matrix = blaze::DynamicMatrix<Scalar>;
+			using typename dnn::Network<Scalar>::Matrix;
 
-			dnn::Network<Scalar> net;
 			Matrix trainData;
-			size_t featuresLength;
 			Scalar normValue;
 
 			Matrix convertData(const std::vector<InputDataType> &inputData);
 			std::vector<InputDataType> convertToOutput(const Matrix &data, bool doDenormalization = true);
 
-		public:
-			static constexpr int LATENT_VECTOR_SIZE = 32;
-
-			/* Empty constructor */
-			Autoencoder() = default;
-
-			/* Construct with provided data */
-			Autoencoder(const std::vector<InputDataType> inputData, size_t featuresLength, InputDataType normValue = 0);
-
-			~Autoencoder() = default;
-
-			void setDataShape(size_t _featuresLength, InputDataType _normValue = 0);
-
 			/* Load data (previous data will be erased) */
 			void loadTrainData(const std::vector<InputDataType> data);
 
 
-			void train(size_t epochs, size_t batchSize);
+		public:
+			/* Empty constructor */
+			Autoencoder();
+
+			/* Construct with provided data */
+			Autoencoder(const std::string &jsonString);
+
+			~Autoencoder() = default;
+
+			void setNormValue(InputDataType _normValue = 0);
+
+			void train(const std::vector<InputDataType>& data, size_t epochs, size_t batchSize);
 
 			/* Return latent vector */
 			std::vector<Scalar> encode(const std::vector<InputDataType> &data);
@@ -48,36 +44,47 @@ namespace metric
 			std::vector<InputDataType> predict(const std::vector<InputDataType> data);
 	};
 
+
 	template<typename InputDataType, typename Scalar>
-	Autoencoder<InputDataType, Scalar>::Autoencoder(const std::vector<InputDataType> inputData,
-	                                                size_t featuresLength, InputDataType normValue) :
-	                                                                featuresLength(featuresLength), normValue(normValue)
+	Autoencoder<InputDataType, Scalar>::Autoencoder() : normValue(255)
+	{}
+
+	template<typename InputDataType, typename Scalar>
+	Autoencoder<InputDataType, Scalar>::Autoencoder(const std::string &jsonString) : Autoencoder()
 	{
-		/* Create layers */
-		net.addLayer(dnn::FullyConnected<Scalar, dnn::ReLU<Scalar>>(featuresLength, 1024));
-		net.addLayer(dnn::FullyConnected<Scalar, dnn::ReLU<Scalar>>(1024, 256));
-		net.addLayer(dnn::FullyConnected<Scalar, dnn::ReLU<Scalar>>(256, 64));
-		net.addLayer(dnn::FullyConnected<Scalar, dnn::ReLU<Scalar>>(64, 256));
-		net.addLayer(dnn::FullyConnected<Scalar, dnn::ReLU<Scalar>>(256, 1024));
-		net.addLayer(dnn::FullyConnected<Scalar, dnn::Sigmoid<Scalar>>(1024, featuresLength));
-		//net.addLayer(Conv2d<Scalar, ReLU<Scalar>>(featuresLength, 28, 1, 1, 5, 5));
-		//net.addLayer(Conv2dTranspose<Scalar, Sigmoid<Scalar>>(24, 24, 1, 1, 5, 5));
-
-		net.setCallback(dnn::VerboseCallback<Scalar>());
-		/* Set output layer */
-
-		/* Create optimizer object */
-		net.setOptimizer(dnn::RMSProp<Scalar>());
-		//opt->learningRate = 0.01;
-
-		/* Set callback function object */
-
-		net.setOutput(dnn::RegressionMSE<Scalar>());
-		/* Initialize parameters with N(0, 0.01^2) using random seed 123 */
-		net.init(0, 0.01, 123);
-
-		loadTrainData(inputData);
+		this->constructFromJsonString(jsonString);
 	}
+
+//	template<typename InputDataType, typename Scalar>
+//	Autoencoder<InputDataType, Scalar>::Autoencoder(const std::vector<InputDataType> inputData,
+//	                                                size_t featuresLength, InputDataType normValue) :
+//	                                                                featuresLength(featuresLength), normValue(normValue)
+//	{
+//		/* Create layers */
+//		net.addLayer(dnn::FullyConnected<Scalar, dnn::ReLU<Scalar>>(featuresLength, 1024));
+//		net.addLayer(dnn::FullyConnected<Scalar, dnn::ReLU<Scalar>>(1024, 256));
+//		net.addLayer(dnn::FullyConnected<Scalar, dnn::ReLU<Scalar>>(256, 64));
+//		net.addLayer(dnn::FullyConnected<Scalar, dnn::ReLU<Scalar>>(64, 256));
+//		net.addLayer(dnn::FullyConnected<Scalar, dnn::ReLU<Scalar>>(256, 1024));
+//		net.addLayer(dnn::FullyConnected<Scalar, dnn::Sigmoid<Scalar>>(1024, featuresLength));
+//		//net.addLayer(Conv2d<Scalar, ReLU<Scalar>>(featuresLength, 28, 1, 1, 5, 5));
+//		//net.addLayer(Conv2dTranspose<Scalar, Sigmoid<Scalar>>(24, 24, 1, 1, 5, 5));
+//
+//		net.setCallback(dnn::VerboseCallback<Scalar>());
+//		/* Set output layer */
+//
+//		/* Create optimizer object */
+//		net.setOptimizer(dnn::RMSProp<Scalar>());
+//		//opt->learningRate = 0.01;
+//
+//		/* Set callback function object */
+//
+//		net.setOutput(dnn::RegressionMSE<Scalar>());
+//		/* Initialize parameters with N(0, 0.01^2) using random seed 123 */
+//		net.init(0, 0.01, 123);
+//
+//		loadTrainData(inputData);
+//	}
 
 	template<typename InputDataType, typename Scalar>
 	void Autoencoder<InputDataType, Scalar>::loadTrainData(const std::vector<InputDataType> data)
@@ -87,10 +94,13 @@ namespace metric
 
 
 	template<typename InputDataType, typename Scalar>
-	void Autoencoder<InputDataType, Scalar>::train(size_t epochs, size_t batchSize)
+	void
+	Autoencoder<InputDataType, Scalar>::train(const std::vector<InputDataType>& data, size_t epochs, size_t batchSize)
 	{
+		loadTrainData(data);
+
 		auto t1 = std::chrono::high_resolution_clock::now();
-		net.fit(trainData, trainData, batchSize, epochs, 123);
+		this->fit(trainData, trainData, batchSize, epochs, 123);
 		auto t2 = std::chrono::high_resolution_clock::now();
 		auto d = std::chrono::duration_cast < std::chrono::duration < double >> (t2 - t1);
 		std::cout << "Training time: " << d.count() << " s" << std::endl;
@@ -100,7 +110,7 @@ namespace metric
 	std::vector<InputDataType> Autoencoder<InputDataType, Scalar>::predict(const std::vector <InputDataType> data)
 	{
 		auto t1 = std::chrono::high_resolution_clock::now();
-		auto prediction = net.predict(convertData(data));
+		auto prediction = dnn::Network<Scalar>::predict(convertData(data));
 		auto t2 = std::chrono::high_resolution_clock::now();
 		auto d = std::chrono::duration_cast < std::chrono::duration < double >> (t2 - t1);
 		std::cout << "Prediction time: " << d.count() << " s" << std::endl;
@@ -114,6 +124,7 @@ namespace metric
 		/* Convert features to scalar type */
 		std::vector<Scalar> dataScalar(inputData.begin(), inputData.end());
 
+		auto featuresLength = this->layers[0]->inputSize;
 		Matrix data(dataScalar.size() / featuresLength, featuresLength, dataScalar.data());
 
 		/* Norm features [0..1] */
@@ -125,9 +136,8 @@ namespace metric
 	}
 
 	template<typename InputDataType, typename Scalar>
-	void Autoencoder<InputDataType, Scalar>::setDataShape(size_t _featuresLength, InputDataType _normValue)
+	void Autoencoder<InputDataType, Scalar>::setNormValue(InputDataType _normValue)
 	{
-		featuresLength = _featuresLength;
 		normValue = _normValue;
 	}
 
@@ -153,21 +163,41 @@ namespace metric
 	template<typename InputDataType, typename Scalar>
 	std::vector<Scalar> Autoencoder<InputDataType, Scalar>::encode(const std::vector<InputDataType> &data)
 	{
+		assert(this->num_layers() % 2 == 0);
+
 		auto input = convertData(data);
-		net.layers[0]->forward(input);
 
-		Matrix output = net.layers[0]->output();
+		const size_t encoderLastLayerNumber = this->num_layers() / 2;
 
-		std::vector<Scalar> vectorScalar(output.data(), output.data() + output.rows());
+		this->layers[0]->forward(input);
+		for (size_t i = 1; i < encoderLastLayerNumber; i++) {
+			this->layers[i]->forward(this->layers[i - 1]->output());
+		}
+
+		Matrix output = this->layers[encoderLastLayerNumber - 1]->output();
+
+		std::vector<Scalar> vectorScalar(output.data(), output.data() + output.columns());
+
 		return vectorScalar;
 	}
 
 	template<typename InputDataType, typename Scalar>
 	std::vector<InputDataType> Autoencoder<InputDataType, Scalar>::decode(const std::vector<Scalar> &data)
 	{
-		Matrix latentVector(data.size(), 1, data.data());
-		net.layers[1]->forward(latentVector);
+		assert(this->num_layers() % 2 == 0);
 
-		return convertToOutput(net.layers[1]->output());
+		Matrix latentVector(1, data.size(), data.data());
+
+		const size_t decoderFirstLayerNumber = this->num_layers() / 2;
+
+		this->layers[decoderFirstLayerNumber]->forward(latentVector);
+		for (size_t i = decoderFirstLayerNumber + 1; i < this->num_layers(); i++) {
+			this->layers[i]->forward(this->layers[i - 1]->output());
+		}
+
+		Matrix output = this->layers[this->num_layers() - 1]->output();
+
+		return convertToOutput(output);
 	}
+
 }

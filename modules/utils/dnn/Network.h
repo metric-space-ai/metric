@@ -20,11 +20,9 @@
 #include "Callback.h"
 #include "Utils/Random.h"
 
-namespace metric
-{
-namespace dnn
-{
 
+namespace metric::dnn
+{
 
 ///
 /// \defgroup Network Neural Network Model
@@ -40,9 +38,10 @@ namespace dnn
 template <typename Scalar>
 class Network
 {
-    private:
+	protected:
 		using Matrix = blaze::DynamicMatrix<Scalar>;
 
+	private:
 		std::mt19937                                randomEngine;              // Reference to the std::mt19937 provided by the user,
 
         std::shared_ptr<Output<Scalar>>             outputLayer;           // The output layer
@@ -179,8 +178,8 @@ class Network
 						addLayer(FullyConnected<double, ReLU<double>>(layerJson));
 					} else if (activation == "Sigmoid") {
 						addLayer(FullyConnected<double, Sigmoid<double>>(layerJson));
-					} else if (activation == "Softmax") {
-						addLayer(FullyConnected<double, Softmax<double>>(layerJson));
+					//} else if (activation == "Softmax") {
+					//	addLayer(FullyConnected<double, Softmax<double>>(layerJson));
 					}
 				}
 			}
@@ -213,10 +212,8 @@ class Network
 			init();
 		}
 
-		///
-        /// Destructor that frees the added hidden layers and output layer
-        ///
-        ~Network()   {}
+
+        ~Network() = default;
 
         nlohmann::json toJson()
         {
@@ -494,8 +491,7 @@ class Network
         ///                   use the current random state.
         ///
         template <typename DerivedX, typename DerivedY>
-        bool fit(const DerivedX& x, const DerivedY& y,
-									 int batch_size, int epoch, int seed = -1)
+        bool fit(const DerivedX& x, const DerivedY& y, int batch_size, int epoch, int seed = -1)
         {
             // We do not directly use PlainObjectX since it may be row-majored if x is passed as mat.transpose()
             // We want to force XType and YType to be row-majored
@@ -562,8 +558,7 @@ class Network
 };
 
 
-} // namespace dnn
-} // namespace metric
+} // namespace metric::dnn
 
 
 #endif /* NETWORK_H_ */
