@@ -78,10 +78,65 @@ int main(int argc, char* argv[])
 	}
 
 
-	Autoencoder<uint8_t, float> autoencoder(features, shape[1] * shape[2], 255);
+	auto json = R"({
+					"0":
+						{
+							"type": "FullyConnected",
+							"inputSize": 40000,
+							"outputSize": 1024,
+							"activation": "ReLU"
+						},
+					"1":
+						{
+							"type": "FullyConnected",
+							"inputSize": 1024,
+							"outputSize": 256,
+							"activation": "ReLU"
+						},
+					"2":
+						{
+							"type": "FullyConnected",
+							"inputSize": 256,
+							"outputSize": 64,
+							"activation": "ReLU"
+						},
+					"3":
+						{
+							"type": "FullyConnected",
+							"inputSize": 64,
+							"outputSize": 256,
+							"activation": "ReLU"
+						},
+					"4":
+						{
+							"type": "FullyConnected",
+							"inputSize": 256,
+							"outputSize": 1024,
+							"activation": "ReLU"
+						},
+					"5":
+						{
+							"type": "FullyConnected",
+							"inputSize": 1024,
+							"outputSize": 40000,
+							"activation": "Sigmoid"
+						},
+					"train":
+						{
+							"loss": "RegressionMSE",
+							"optimizer": {"type": "RMSProp",
+											"learningRate": 0.01,
+											"eps": 1e-6,
+											"decay": 0.9}
+						}
+					}
+				)"_json;
+
+	Autoencoder<uint8_t, double> autoencoder(json.dump());
+	autoencoder.setCallback(dnn::VerboseCallback<double>());
 
 	cout << "Train" << endl;
-	autoencoder.train(vector<InputDataType>(), 1, 2);
+	autoencoder.train(features, 5, 256);
 
 	cout << "Sample:" << endl;
 	vector<uint8_t> sample(features.begin(), features.begin() + shape[1] * shape[2]);
@@ -92,10 +147,10 @@ int main(int argc, char* argv[])
 	printMatrix(prediction, shape[1], shape[2]);
 
 	cout << "latent vector" << endl;
-	vector<float> latentVector = autoencoder.encode(sample);
+	vector<double> latentVector = autoencoder.encode(sample);
 	printVector(latentVector);
 
-	float t = vectorDiff(prediction, autoencoder.decode(latentVector));
+	int t = vectorDiff(prediction, autoencoder.decode(latentVector));
 	cout << "test:" << t << endl;
 
 	return EXIT_SUCCESS;

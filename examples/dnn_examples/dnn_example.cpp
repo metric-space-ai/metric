@@ -116,6 +116,7 @@ int main()
 				)"_json;
 
 	Autoencoder<uint8_t, double> autoencoder(json.dump());
+	autoencoder.setCallback(dnn::VerboseCallback<double>());
 
 	cout << "Train" << endl;
 	autoencoder.train(features, 5, 256);
@@ -132,7 +133,7 @@ int main()
 	vector<double> latentVector = autoencoder.encode(sample);
 	printVector(latentVector);
 
-	float t = vectorDiff(prediction, autoencoder.decode(latentVector));
+	int t = vectorDiff(prediction, autoencoder.decode(latentVector));
 	cout << "test:" << t << endl;
 
 	return EXIT_SUCCESS;
