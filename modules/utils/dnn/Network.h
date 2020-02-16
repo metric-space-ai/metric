@@ -43,14 +43,14 @@ class Network
     private:
 		using Matrix = blaze::DynamicMatrix<Scalar>;
 
-        std::mt19937                           rng;              // Reference to the std::mt19937 provided by the user,
+		std::mt19937                                randomEngine;              // Reference to the std::mt19937 provided by the user,
 
         std::shared_ptr<Output<Scalar>>             outputLayer;           // The output layer
-        std::shared_ptr<Callback<Scalar>>           m_callback;         // Points to user-provided callback function,
+        std::shared_ptr<Callback<Scalar>>           callback;         // Points to user-provided callback function,
 
 		std::shared_ptr<Optimizer<Scalar>>          opt;
 
-        // Check dimensions of layers
+        /* Check dimensions of layers */
         void check_unit_sizes() const
         {
 	        const int nlayer = num_layers();
@@ -148,7 +148,7 @@ class Network
 		std::vector<std::shared_ptr<Layer<Scalar>>> layers;
 
         /* Default constructor that creates an empty neural network */
-        Network() : rng{std::random_device()()},
+        Network() : randomEngine{std::random_device()()},
 					outputLayer(NULL)
         {
         	setDefaultCallback();
@@ -179,6 +179,8 @@ class Network
 						addLayer(FullyConnected<double, ReLU<double>>(layerJson));
 					} else if (activation == "Sigmoid") {
 						addLayer(FullyConnected<double, Sigmoid<double>>(layerJson));
+					} else if (activation == "Softmax") {
+						addLayer(FullyConnected<double, Softmax<double>>(layerJson));
 					}
 				}
 			}
@@ -207,10 +209,11 @@ class Network
 			}
 
 
-			init(0, 0.01);
+			/* Init layers */
+			init();
 		}
 
-	///
+		///
         /// Destructor that frees the added hidden layers and output layer
         ///
         ~Network()   {}
@@ -232,7 +235,7 @@ class Network
             return json;
         }
 
-        void save(const std::string filename)
+        void save(const std::string filename) const
         {
 			std::string jsonString = toJson().dump();
 
@@ -331,9 +334,9 @@ class Network
         ///                 from the default Callback class.
         ///
         template<typename T>
-        void setCallback(const T &callback)
+        void setCallback(const T &_callback)
         {
-            m_callback = std::make_shared<T>(callback);
+            callback = std::make_shared<T>(_callback);
         }
         ///
         /// Set the default silent callback function
@@ -345,7 +348,7 @@ class Network
 
         void setRandomEngineSeed(const unsigned int seed)
 		{
-			rng.seed(seed);
+			randomEngine.seed(seed);
 		}
 
         ///
@@ -361,13 +364,13 @@ class Network
 	        check_unit_sizes();
 
 	        if (seed > 0) {
-		        rng.seed(seed);
+		        setRandomEngineSeed(seed);
 	        }
 
 	        const int nlayer = num_layers();
 
 	        for (int i = 0; i < nlayer; i++) {
-		        layers[i]->init(mu, sigma, rng);
+		        layers[i]->init(mu, sigma, randomEngine);
 	        }
         }
 
@@ -434,7 +437,7 @@ class Network
         {
             if (seed > 0)
             {
-                rng.seed(seed);
+                randomEngine.seed(seed);
             }
 
             this->forward(input);
@@ -447,7 +450,7 @@ class Network
             for (int i = 0; i < npoints; i++)
             {
                 // Randomly select a layer
-                const int layer_id = int(rng.rand() * nlayer);
+                const int layer_id = int(randomEngine.rand() * nlayer);
                 // Randomly pick a parameter, note that some layers may have no parameters
                 const int nparam = deriv[layer_id].size();
 
@@ -456,7 +459,7 @@ class Network
                     continue;
                 }
 
-                const int param_id = int(rng.rand() * nparam);
+                const int param_id = int(randomEngine.rand() * nparam);
                 // Turbulate the parameter a little bit
                 const Scalar old = param[layer_id][param_id];
                 param[layer_id][param_id] -= eps;
@@ -507,30 +510,30 @@ class Network
 
             // Create shuffled mini-batches
 	        if (seed > 0) {
-		        rng.seed(seed);
+		        randomEngine.seed(seed);
 	        }
 
             std::vector<DerivedX> x_batches;
             std::vector<DerivedY> y_batches;
-            const int nbatch = internal::create_shuffled_batches(x, y, batch_size, rng,
+            const int nbatch = internal::create_shuffled_batches(x, y, batch_size, randomEngine,
                                                                  x_batches, y_batches);
             // Set up callback parameters
-            m_callback->batchesNumber = nbatch;
-            m_callback->epochsNumber = epoch;
+            callback->batchesNumber = nbatch;
+            callback->epochsNumber = epoch;
 
             // Iterations on the whole data set
 	        for (int k = 0; k < epoch; k++) {
-		        m_callback->epochId = k;
+		        callback->epochId = k;
 
 		        // Train on each mini-batch
 		        for (int i = 0; i < nbatch; i++) {
 			        auto t1 = std::chrono::high_resolution_clock::now();
-			        m_callback->batchId = i;
-			        //m_callback->preTrainingBatch(this, x_batches[i], y_batches[i]);
+			        callback->batchId = i;
+			        //callback->preTrainingBatch(this, x_batches[i], y_batches[i]);
 			        this->forward(x_batches[i]);
 			        this->backprop(x_batches[i], y_batches[i]);
 			        this->update();
-			        m_callback->postTrainingBatch(this, x_batches[i], y_batches[i]);
+			        callback->postTrainingBatch(this, x_batches[i], y_batches[i]);
 			        auto t2 = std::chrono::high_resolution_clock::now();
 			        auto d = std::chrono::duration_cast < std::chrono::duration < double >> (t2 - t1);
 			        std::cout << "Training time: " << d.count() << " s" << std::endl;
