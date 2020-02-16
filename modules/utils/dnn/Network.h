@@ -43,13 +43,11 @@ class Network
     private:
 		using Matrix = blaze::DynamicMatrix<Scalar>;
 
-        std::mt19937                            defaultRng;      // Built-in std::mt19937
-        std::mt19937&                           rng;              // Reference to the std::mt19937 provided by the user,
-																	// otherwise reference to m_default_rng
+        std::mt19937                           rng;              // Reference to the std::mt19937 provided by the user,
+
         std::shared_ptr<Output<Scalar>>             outputLayer;           // The output layer
-        Callback<Scalar>                           defaultCallback; // Default callback function
         std::shared_ptr<Callback<Scalar>>           m_callback;         // Points to user-provided callback function,
-																		// otherwise points to m_default_callback
+
 		std::shared_ptr<Optimizer<Scalar>>          opt;
 
         // Check dimensions of layers
@@ -150,40 +148,20 @@ class Network
 		std::vector<std::shared_ptr<Layer<Scalar>>> layers;
 
         /* Default constructor that creates an empty neural network */
-        Network() :
-		        defaultRng(1),
-		        rng(defaultRng),
-		        outputLayer(NULL),
-		        defaultCallback(),
-		        m_callback(NULL)
-        {}
+        Network() : rng{std::random_device()()},
+					outputLayer(NULL)
+        {
+        	setDefaultCallback();
+        }
 
-        ///
-        /// Constructor with a user-provided random number generator
-        ///
-        /// \param rng A user-provided random number generator object that inherits
-        ///            from the default std::mt19937 class.
-        ///
-        Network(std::mt19937& rng) :
-		        defaultRng(1),
-		        rng(rng),
-		        outputLayer(NULL),
-		        defaultCallback(),
-		        m_callback(NULL)
-        {}
-
-        Network(const std::string& jsonString) :
-			defaultRng(1),
-			rng(rng),
-			outputLayer(NULL),
-			defaultCallback(),
-			m_callback(NULL)
+        Network(const std::string& jsonString) : Network()
 		{
 			constructFromJsonString(jsonString);
 		}
 
 		void constructFromJsonString(const std::string& jsonString)
 		{
+        	/* Parse json */
 			auto json = nlohmann::json::parse(jsonString);
 
 			/* Construct layers */
@@ -228,7 +206,8 @@ class Network
 				setOptimizer(optimizer);
 			}
 
-			//}
+
+			init(0, 0.01);
 		}
 
 	///
@@ -359,10 +338,15 @@ class Network
         ///
         /// Set the default silent callback function
         ///
-        void set_default_callback()
+        void setDefaultCallback()
         {
-            m_callback = &defaultCallback;
+            setCallback(Callback<Scalar>());
         }
+
+        void setRandomEngineSeed(const unsigned int seed)
+		{
+			rng.seed(seed);
+		}
 
         ///
         /// Initialize layer parameters in the network using normal distribution
@@ -372,8 +356,7 @@ class Network
         /// \param seed  Set the random seed of the %std::mt19937 if `seed > 0`, otherwise
         ///              use the current random state.
         ///
-        void init(const Scalar& mu = Scalar(0), const Scalar& sigma = Scalar(0.01),
-                  int seed = -1)
+        void init(const Scalar& mu = Scalar(0), const Scalar& sigma = Scalar(0.01), int seed = -1)
         {
 	        check_unit_sizes();
 

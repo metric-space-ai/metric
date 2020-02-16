@@ -19,9 +19,6 @@ BOOST_AUTO_TEST_CASE(base)
 {
 	Network<double> net;
 
-	std::mt19937 rng;
-	Network<double> netRng(rng);
-
 	VerboseCallback<double> verboseCallback;
 
 	RMSProp<double> opt;

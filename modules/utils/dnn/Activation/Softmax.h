@@ -21,8 +21,14 @@ class Softmax
 		using Matrix = blaze::DynamicMatrix<Scalar>;
 		using Vector = blaze::DynamicVector<Scalar>;
 		using RowVector = blaze::DynamicVector<Scalar, blaze::rowVector>;
+
 	public:
-        // a = activation(z) = softmax(z)
+		static std::string getType()
+		{
+			return "Softmax";
+		}
+
+		// a = activation(z) = softmax(z)
         // Z = [z1, ..., zn], A = [a1, ..., an], n observations
         static inline void activate(const Matrix& Z, Matrix& A)
         {
