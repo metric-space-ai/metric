@@ -21,7 +21,7 @@ Copyright (c) 2019 Panda Team
 
 #include "../../../3rdparty/blaze/Blaze.h"
 
-#include <iostream> // TODO remove
+//#include <iostream> // TODO remove
 
 
 
@@ -60,8 +60,6 @@ truncNormMoments(
     std::vector<double> muHatOUT (n, 0);
     std::vector<double> sigmaHatOUT (n, 0);
 
-    //double inf = std::numeric_limits<double>::infinity();
-
     for (size_t i = 0; i<n; ++i) {
 
         auto lowerB = lowerBIN[i];
@@ -97,7 +95,7 @@ truncNormMoments(
             } else {
                 if (a == -inf) {
                     if (b > 26) {
-                        auto logZhatOtherTail = std::log(0.5) + std::log(erfcx(b)) - b*b; // erfcx def= exp(z*z)*erfc(z)
+                        auto logZhatOtherTail = std::log(0.5) + std::log(erfcx(b)) - b*b;
                         logZhat = std::log(1 - std::exp(logZhatOtherTail));
                     }
                     else
@@ -192,24 +190,15 @@ local_gaussian_axis_aligned_hyperrectangles(
     bool converged = false;
     size_t k = 1;
 
-    //blaze::DynamicVector<double> dsigma = blaze::diagonal(sigma);
-
     // here we only define expressions, no calculations are made
-    //auto tauCavity = 1/dsigma - tauSite; // TODO evaluate once blaze::diagonal(sigma)
-    //auto nuCavity =  mu/dsigma - nuSite;
     auto tauCavity = 1/blaze::diagonal(sigma) - tauSite; // TODO evaluate once blaze::diagonal(sigma)
     auto nuCavity =  mu/blaze::diagonal(sigma) - nuSite;
-    //std::vector<double> sighat;
-    //auto deltatauSite = 1/sighat - tauCavity - tauSite;
+    blaze::DynamicVector<double> sighat (n, 0); // TODO test well
+    auto deltatauSite = 1.0/sighat - tauCavity - tauSite; // TODO test
     blaze::DynamicVector<double> logZhat;
     blaze::DynamicMatrix<double> L;
 
     while (!converged && k < maxSteps) {
-
-        //blaze::DynamicVector<double> tauCavity = 1/blaze::diagonal(sigma) - tauSite; // TODO evaluate once blaze::diagonal(sigma)
-        //blaze::DynamicVector<double> nuCavity =  mu/blaze::diagonal(sigma) - nuSite;
-
-        //blaze::DynamicVector<double> nuCavityValue = evaluate(nuCavity);
         blaze::DynamicVector<double> muInBlaze ( nuCavity * (1/tauCavity) ); // componentwise, TODO check
         blaze::DynamicVector<double> sigmaInBlaze = 1/tauCavity;
 
@@ -232,7 +221,7 @@ local_gaussian_axis_aligned_hyperrectangles(
         auto sighatSTL = std::get<2>(hat);
         logZhat = blaze::DynamicVector<double>(logZhatSTL.size(), 0);
         blaze::DynamicVector<double> muhat (muhatSTL.size(), 0);
-        blaze::DynamicVector<double> sighat (sighatSTL.size(), 0);
+        //blaze::DynamicVector<double> sighat (sighatSTL.size(), 0); // moved outside loop
         assert(logZhat.size() == n && muhat.size() == n && sighat.size() == n); // TODO remove after testing
         for (size_t i = 0; i < n; ++i) {
             logZhat[i] = logZhatSTL[i];
@@ -240,7 +229,7 @@ local_gaussian_axis_aligned_hyperrectangles(
             sighat[i] = sighatSTL[i];
         }
 
-        auto deltatauSite = 1/sighat - tauCavity - tauSite; // TODO move definition out of loop
+        //auto deltatauSite = 1.0/sighat - tauCavity - tauSite; // definition moved out of loop
         tauSite = blaze::evaluate(tauSite + deltatauSite);
         nuSite = blaze::evaluate(muhat/sighat - nuCavity);
 
@@ -251,12 +240,10 @@ local_gaussian_axis_aligned_hyperrectangles(
             sSiteHalf(i, i) = std::sqrt(tauSite[i]);
         }
         blaze::IdentityMatrix<double> eye (K.rows());
-        L = eye + sSiteHalf*K*sSiteHalf; // TODO debug
+        L = eye + sSiteHalf*K*sSiteHalf; // TODO test
         //std::cout << "L:\n" << L << "\n";
         blaze::potrf(L, 'U');
-//        L = chol(eye(size(K)) + SsiteHalf*K*SsiteHalf);
         auto V = blaze::inv(blaze::trans(L)) * (sSiteHalf*K);
-//        V = L'\(SsiteHalf*K);
         sigma = K - blaze::trans(V)*V;
         mu = sigma*(nuSite + KinvM);
 
@@ -270,9 +257,6 @@ local_gaussian_axis_aligned_hyperrectangles(
         k++;
     }
 
-
-    // TODO
-//    lZ1 = 0.5*sum(log( 1 + tauSite./tauCavity)) - sum(log(diag(L)));
     double lZ1 = 0;
     blaze::DiagonalMatrix<blaze::DynamicMatrix<double>> tau (n, 0);
     blaze::DiagonalMatrix<blaze::DynamicMatrix<double>> diagTauSite (n, 0);
@@ -284,14 +268,10 @@ local_gaussian_axis_aligned_hyperrectangles(
         diagTauSite(i, i) = tauSite[i];
         diagTauCavity(i, i) = tauCavity[i];
     }
-//    lZ2 = 0.5*(nuSite - tauSite.*m)'*(sigma - diag(1./(tauCavity + tauSite)))*(nuSite - tauSite.*m);
     blaze::DynamicVector<double> diffSite (nuSite - tauSite*m);
     double lZ2 = 0.5*(blaze::trans(diffSite)*tau*diffSite);
-//    lZ3 = 0.5*nuCavity_t*((diag(tauSite) + diag(tauCavity))\(tauSite.*nuCavity./tauCavity - 2*nuSite));
     auto lZ3 = 0.5*blaze::trans(nuCavity)*( blaze::trans(diagTauSite + diagTauCavity)*(tauSite*nuCavity/tauCavity - 2*nuSite) );
-//    lZ4 = - 0.5*(tauCavity.*m)'*((diag(tauSite) + diag(tauCavity))\(tauSite.*m - 2*nuSite));
     auto lZ4 = - 0.5*blaze::trans(tauCavity*m)*( blaze::trans(diagTauSite + diagTauCavity)*(tauSite*m - 2*nuSite) );
-//    logZ = lZ1 + lZ2 + lZ3 + lZ4 + sum(logZhat);
     logZ = lZ1 + lZ2 + lZ3 + lZ4 + blaze::sum(logZhat);
 
     return std::make_tuple(logZ, mu, sigma);
