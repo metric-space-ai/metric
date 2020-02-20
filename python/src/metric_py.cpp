@@ -16,6 +16,7 @@ typedef std::vector<double> VectorDouble;
 typedef std::vector<VectorDouble> VectorVectorDouble;
 typedef std::vector<int> VectorInt;
 typedef std::vector<VectorInt> VectorVectorInt;
+typedef std::vector<bool> VectorBool;
 
 std::string getObjType(const bp::api::object& obj) {
     boost::python::extract<boost::python::object> objectExtractor(obj);
@@ -40,6 +41,7 @@ BOOST_PYTHON_MODULE(metric) {
     bp::class_<VectorVectorDouble>("VectorVectorDouble").def(bp::vector_indexing_suite<VectorVectorDouble>());
     bp::class_<VectorInt>("VectorInt").def(bp::vector_indexing_suite<VectorInt>());
     bp::class_<VectorVectorInt>("VectorVectorInt").def(bp::vector_indexing_suite<VectorVectorInt>());
+    bp::class_<VectorBool>("VectorBool").def(bp::vector_indexing_suite<VectorBool>());
 
     export_metric_KOC();
 

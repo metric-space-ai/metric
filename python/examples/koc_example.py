@@ -1,3 +1,4 @@
+import sys
 import metric
 
 
@@ -24,20 +25,18 @@ def main():
     simple_koc = simple_koc_factory(dataset, 5)
 
     anomaly_threshold = -0.5
+    simple_koc.check_if_anomaly([[0.2] * 3]*10, anomaly_threshold)
 
     anomalies = simple_koc.check_if_anomaly(dataset, anomaly_threshold)
-    print(anomalies)
+    print('anomalies:', list(anomalies))
+
+    assignments = simple_koc.result(dataset, anomaly_threshold)
+    print('assignments:', list(assignments))
 
 
-main()
+sys.exit(main())
 
 '''
-    auto
-    assignments = simple_koc.result(dataset, anomaly_threshold);
-    std::cout << std::endl;
-    std::cout << "assignments:" << std::endl;
-    vector_print(assignments);
-
     json reference_data
     reference_data.push_back(assignments)
 

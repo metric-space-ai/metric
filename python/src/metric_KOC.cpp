@@ -16,6 +16,7 @@ std::vector< T > to_std_vector( const bp::list& iterable )
 void export_metric_KOC() {
     using Record = std::vector<double>;
     using Factory = metric::KOC_factory<Record>;
+    using KOC = Factory::KOC;
 
     auto factory = bp::class_<Factory>("KOC_factory");
 
@@ -79,8 +80,12 @@ void export_metric_KOC() {
     factory.def("__call__", &Factory::operator(), "construct KOC");
 
     // KOC
-    auto koc = bp::class_<Factory::KOC>("KOC", bp::no_init);
-
+    auto koc = bp::class_<KOC>("KOC", bp::no_init)
+        .def("train", &Factory::KOC::train)
+        .def("result", &Factory::KOC::result)
+        .def<std::vector<int> (KOC::*)(const std::vector<Record>&, double)>("encode", &KOC::encode)
+        //.def<bool (KOC::*)(const Record&, double)>("check_if_anomaly", &KOC::check_if_anomaly) TODO: overload
+        .def<std::vector<bool> (KOC::*)(const std::vector<Record>&, double)>("check_if_anomaly", &KOC::check_if_anomaly);
 }
 
-// make build && pip uninstall metric && pip install dist/metric-0.0.1-cp36-cp36m-linux_x86_64.whl
+// make build && pip uninstall --yes metric && pip install dist/metric-0.0.1-cp36-cp36m-linux_x86_64.whl
