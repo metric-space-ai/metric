@@ -11,50 +11,6 @@ Copyright (c) 2019 Panda Team
 #include "../../modules/distance.hpp"
 
 
-
-
-
-//template <typename Sample, typename D = double, typename Distance = metric::Euclidian<D>>
-//int updatekNN(metric::KNNGraph graph, Sample p1, Sample p2, D dist)
-//{
-//
-//    //kNNList* kl = &kNN->list[p1];
-//    //kNNItem* ki = kl->items;
-//
-//	D max_dist = 100;
-//	size_t num_edges = 2;
-//
-//    if(max_dist > dist || num_edges < graph.neighbors_num()) 
-//	{
-//        //int i = 0;
-//        //for(i=0; i <= kl->size; i++) {
-//        //    if(ki->id == p2) { return 0 ;} //TODO:??
-//
-//        //    if (ki->dist > dist || i == kl->size) {
-//        //        int moveamount = kNN->k - i -1;
-//        //        if(moveamount > 0 ) { //TODO: needed?
-//        //            // Move from ki to ki+1
-//        //            memmove(ki+1,ki,moveamount*sizeof(kNNItem));
-//        //        }
-//        //        ki->id = p2;
-//        //        ki->dist = dist;
-//        //        ki->new_item = true; //TODO: not needed in all search types
-//
-//        //        if(kl->size < kNN->k) { kl->size++;}
-//        //        kl->max_dist = kl->items[kl->size -1].dist; //TODO: optimize?
-//        //        break;
-//        //    }
-//        //    ki++;
-//        //}
-//        return 1; // Did update
-//    }
-//    else 
-//	{
-//        return 0; // Did not update
-//    }
-//}
-
-
 int main()
 {
 	std::cout << "Graph space example have started" << std::endl;
@@ -85,23 +41,6 @@ int main()
         { 0, 7 },
         { 0, 8 },
     };
-	
-    //std::vector<std::vector<double>> table = {
-    //    { 0, 1, 1, 1, 1, 1, 2, 3 },
-    //    { 1, 1, 1, 1, 1, 2, 3, 4 },
-    //    { 2, 2, 2, 1, 1, 2, 0, 0 },
-    //    { 3, 3, 2, 2, 1, 1, 0, 0 },
-    //    { 4, 3, 2, 1, 0, 0, 0, 0 },
-    //    { 5, 3, 2, 1, 0, 0, 0, 0 },
-    //    { 4, 6, 2, 2, 1, 1, 0, 0 },
-    //    { 0, 1, 1, 1, 1, 1, 6, 1 },
-    //    { 1, 1, 1, 1, 1, 2, 7, 2 },
-    //    { 2, 2, 2, 1, 1, 2, 8, 3 },
-    //    { 3, 3, 2, 2, 1, 1, 9, 4 },
-    //    { 4, 3, 2, 1, 0, 0, 5, 5 },
-    //    { 5, 3, 2, 1, 0, 0, 4, 6 },
-    //    { 4, 6, 2, 2, 1, 1, 3, 7 }
-    //};
 	
     auto g = metric::KNNGraph<std::vector<double>, metric::Euclidian<double>>(table, neighbors_num, 2.5 * neighbors_num);
 	
