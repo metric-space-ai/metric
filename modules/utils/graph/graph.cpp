@@ -712,14 +712,26 @@ KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::KNNGraph(Tree<Samp
 {
 	auto nodes = tree.get_all_nodes();
 	std::vector<Sample> samples;
-	
+	std::vector<std::pair<size_t, size_t>> edgesPairs;
+
+	// iterate through the tree to collect edges	   	
 	for (std::size_t i = 0; i < nodes.size(); ++i) 
 	{
 		samples.push_back(nodes[i]->data);
+		auto children = nodes[i]->get_children();
+		for (std::size_t j = 0; j < children.size(); ++j) 
+		{
+            edgesPairs.emplace_back(nodes[i]->get_ID(), children[j]->get_ID());
+		}
 	}
 	
 	_nodes = samples;
-    construct(samples);
+
+	calculate_distance_matrix(samples);
+
+    buildEdges(edgesPairs);
+
+    valid = true;
 }
 
 template <typename Sample, typename Distance, typename WeightType, bool isDense, bool isSymmetric>
