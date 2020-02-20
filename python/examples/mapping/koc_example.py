@@ -1,12 +1,13 @@
 import sys
 import metric
+import numpy
 
 
 def main():
     best_w_grid_size = 5
     best_h_grid_size = 4
 
-    dataset = [
+    dataset = numpy.float_([
         [0, 0, 0],
         [0, 1, 0],
         [0, 2, 0],
@@ -19,13 +20,13 @@ def main():
         [8, 0, 0],
         [8, 0, 0],
         [8, 0, 0],
-    ]
+    ])
 
     simple_koc_factory = metric.KOC_factory(best_w_grid_size, best_h_grid_size, 0.5, 0.0, 100)
     simple_koc = simple_koc_factory(dataset, 5)
 
     anomaly_threshold = -0.5
-    simple_koc.check_if_anomaly([[0.2] * 3]*10, anomaly_threshold)
+    simple_koc.check_if_anomaly(dataset, anomaly_threshold)
 
     anomalies = simple_koc.check_if_anomaly(dataset, anomaly_threshold)
     print('anomalies:', list(anomalies))
