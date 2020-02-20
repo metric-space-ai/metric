@@ -8,6 +8,7 @@
 
 int main() {
 
+    /*
     std::vector<double> lower = {-0.5, -0.5};
     std::vector<double> upper = {0.5, 0.5};
     std::vector<double> mu = {0, 0};
@@ -23,11 +24,14 @@ int main() {
     for (size_t i = 0; i<logZ.size(); ++i) {
         std::cout << logZ[i] << " " << muOUT[i] << " " << sigmaOUT[i] << "\n";
     }
+    // */
 
     blaze::DynamicVector<double> m = {0, 0};
     blaze::DynamicMatrix<double> K = {{1, 0}, {0, 1}};
-    blaze::DynamicVector<double> lowerB = {-0.5, -0.5};
-    blaze::DynamicVector<double> upperB = {0.5, 0.5};
+    //blaze::DynamicVector<double> lowerB = {-0.5, -0.5};
+    //blaze::DynamicVector<double> upperB = {0.5, 0.5};
+    blaze::DynamicVector<double> lowerB = {0.5, 0.5};
+    blaze::DynamicVector<double> upperB = {1.5, 1.5};
 
     auto result2 = epmgp::local_gaussian_axis_aligned_hyperrectangles(m, K, lowerB, upperB);
 

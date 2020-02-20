@@ -195,18 +195,18 @@ local_gaussian_axis_aligned_hyperrectangles(
     auto nuCavity =  mu/blaze::diagonal(sigma) - nuSite;
     blaze::DynamicVector<double> sighat (n, 0); // TODO test well
     auto deltatauSite = 1.0/sighat - tauCavity - tauSite; // TODO test
-    blaze::DynamicVector<double> logZhat;
+    auto logZhat = blaze::DynamicVector<double>(n, 0);
     blaze::DynamicMatrix<double> L;
+
+    std::vector<double> muInSTL (n, 0);
+    std::vector<double> sigmaInSTL (n, 0);
+    std::vector<double> lowerbSTL (lowerB.size(), 0);
+    std::vector<double> upperbSTL (upperB.size(), 0);
 
     while (!converged && k < maxSteps) {
         blaze::DynamicVector<double> muInBlaze ( nuCavity * (1/tauCavity) ); // componentwise, TODO check
         blaze::DynamicVector<double> sigmaInBlaze = 1/tauCavity;
 
-        std::vector<double> muInSTL (muInBlaze.size(), 0);
-        std::vector<double> sigmaInSTL (sigmaInBlaze.size(), 0);
-        std::vector<double> lowerbSTL (lowerB.size(), 0);
-        std::vector<double> upperbSTL (upperB.size(), 0);
-        assert(muInSTL.size() == n && sigmaInSTL.size() == n); // TODO remove after testing
         for (size_t i = 0; i < n; ++i) {
             muInSTL[i] = muInBlaze[i];
             sigmaInSTL[i] = sigmaInBlaze[i];
@@ -219,7 +219,6 @@ local_gaussian_axis_aligned_hyperrectangles(
         auto logZhatSTL = std::get<0>(hat);
         auto muhatSTL = std::get<1>(hat);
         auto sighatSTL = std::get<2>(hat);
-        logZhat = blaze::DynamicVector<double>(logZhatSTL.size(), 0);
         blaze::DynamicVector<double> muhat (muhatSTL.size(), 0);
         //blaze::DynamicVector<double> sighat (sighatSTL.size(), 0); // moved outside loop
         assert(logZhat.size() == n && muhat.size() == n && sighat.size() == n); // TODO remove after testing
@@ -269,7 +268,7 @@ local_gaussian_axis_aligned_hyperrectangles(
         diagTauCavity(i, i) = tauCavity[i];
     }
     blaze::DynamicVector<double> diffSite (nuSite - tauSite*m);
-    double lZ2 = 0.5*(blaze::trans(diffSite)*tau*diffSite);
+    double lZ2 = 0.5*(blaze::trans(diffSite)*(sigma-tau)*diffSite);
     auto lZ3 = 0.5*blaze::trans(nuCavity)*( blaze::trans(diagTauSite + diagTauCavity)*(tauSite*nuCavity/tauCavity - 2*nuSite) );
     auto lZ4 = - 0.5*blaze::trans(tauCavity*m)*( blaze::trans(diagTauSite + diagTauCavity)*(tauSite*m - 2*nuSite) );
     logZ = lZ1 + lZ2 + lZ3 + lZ4 + blaze::sum(logZhat);
