@@ -3,15 +3,21 @@ cmake_minimum_required(VERSION 3.9)
 set(CMAKE_BUILD_TYPE Debug)
 
 #set(CMAKE_CXX_FLAGS "-Wall")
-set(CMAKE_CXX_FLAGS_DEBUG "-g")
-set(CMAKE_CXX_FLAGS_RELEASE "-O3")
+set(CMAKE_CXX_FLAGS_DEBUG "-DMETRIC_DISABLE_INLINE_CPP -g")
+set(CMAKE_CXX_FLAGS_RELEASE "-DMETRIC_DISABLE_INLINE_CPP -O3")
 
 project(metric_py DESCRIPTION "metric python binding")
 
 SET(SRC 
 	src/metric_py.cpp
+    src/metric_converters.cpp
+    src/metric_types.cpp
 	src/metric_KOC.cpp
-	src/metric_converters.cpp
+	src/metric_sorensen.cpp
+	src/metric_Edit.cpp
+	src/metric_EMD.cpp
+	src/metric_Entropy.cpp
+	src/metric_MGC.cpp
 )
 
 add_library(metric_py SHARED ${SRC})

@@ -1,4 +1,5 @@
 #include "modules/mapping.hpp"
+#include "modules/utils/graph/graph.cpp"
 
 #include <boost/python.hpp>
 

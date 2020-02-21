@@ -32,6 +32,11 @@ std::string getObjType(PyObject* obj_ptr) {
 
 void export_metric_KOC();
 void export_converters();
+void export_metric_sorensen();
+void export_metric_MGC();
+void export_metric_Edit();
+void export_metric_EMD();
+void export_metric_Entropy();
 
 BOOST_PYTHON_MODULE(metric) {
 
@@ -44,6 +49,11 @@ BOOST_PYTHON_MODULE(metric) {
     bp::class_<VectorBool>("VectorBool").def(bp::vector_indexing_suite<VectorBool>());
 
     export_metric_KOC();
+    export_metric_sorensen();
+    export_metric_MGC();
+    export_metric_Edit();
+    export_metric_EMD();
+    export_metric_Entropy();
 
 // TODO #include "metric_affprop.cpp"
 

@@ -8,6 +8,8 @@ Copyright (c) 2018 Michael Welsch
 #ifndef _METRIC_DISTANCE_K_RELATED_STANDARDS_HPP
 #define _METRIC_DISTANCE_K_RELATED_STANDARDS_HPP
 
+#include <type_traits>
+
 namespace metric {
 
 /**

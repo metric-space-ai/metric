@@ -9,6 +9,7 @@
 #pragma once
 #include "metric_types.hpp"
 #include "metric_py.hpp"
+
 namespace metric_MGC {
 
 class NotUsed {};
