@@ -12,25 +12,38 @@
 
 #include <cmath>
 #include "../../../3rdparty/blaze/Math.h"
-#include "../solver/solver.hpp"
 #include <blaze/math/DynamicMatrix.h>
 #include <blaze/math/Rows.h>
 #include <vector>
 #include <algorithm>
 #include <chrono>
+#include "../solver/solver.hpp"
+
+//#include <cmath>
+//#include "../../../3rdparty/blaze/Math.h"
+//#include "../solver/solver.hpp"
+//#include <blaze/math/DynamicMatrix.h>
+//#include <blaze/math/Rows.h>
+//#include <vector>
+//#include <algorithm>
+//#include <chrono>
 
 namespace metric {
 
-/**
- * @brief Apply Spielman-Srivastava sparsification: sampling by effective resistances.
- *
- * @param distanceMatrix Input distance matrix, must have more than 100 nodes. 
+    /**
+ * @param distanceMatrix Input distance matrix must have more nodes than processingChunkSize. 
  * @param partition Reference to the matrix that will contain the best result found
- * @param attempts  Is the number of attempts to find global optima, SOMETHING LIKE 100 - 1000
- * @return true if there is no error, false otherwise
+ * @param global_optimum_attempts  Is the number of attempts to find global optima, something like 100 - 1000
+ * @param processing_chunk_size Must be > distanceMatrix nodes count
+ * @param random_seed, leave unset for different results on different executions
+ * @return 0 = no error, 1 = bad input, 2 = unknown error, 3 = distance matrix is corrupted
  */
-bool perform_graph_partition(blaze::DynamicMatrix<double> distanceMatrix, blaze::DynamicMatrix<int> &partition, int globalOptimum = 100);
-
+int perform_graph_partition(
+    blaze::DynamicMatrix<double> distance_matrix, 
+    blaze::DynamicMatrix<int>& partition_matrix, 
+    int global_optimum_attempts = 100, 
+    int processing_chunk_size = 100, 
+    __int64 random_seed = -1);
 }
 
 #include "partition.cpp"
