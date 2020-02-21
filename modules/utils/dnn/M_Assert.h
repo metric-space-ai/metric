@@ -1,7 +1,7 @@
 #include <iostream>
 
 /// \file
-/// Implementation of the assert function for MiniDNN
+/// Implementation of the assert function for dnn
 #pragma once
 
 inline void __M_Assert(const char* expr_str, bool expr, const char* file,

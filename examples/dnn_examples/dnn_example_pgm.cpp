@@ -62,15 +62,18 @@ int vectorDiff(const vector<T>& vector1, const vector<T>& vector2)
 	return diff;
 }
 
-int main()
+int main(int argc, char* argv[])
 {
-	/* Load data */
-	dnn::Datasets datasets;
-	/* shape: [batches, rows, cols, channels] */
-	auto [labels, shape, features] = datasets.getMnist("data.cereal");
+	if (argc != 2) {
+		cout << "usage: " << argv[0] << " pgm images list" << endl;
+		return EXIT_FAILURE;
+	}
+
+	/* Load images */
+	auto [shape, features] = dnn::Datasets::loadImages(argv[1]);
 
 	if (shape.empty()) {
-		cout << "Data file is empty. Exiting." << endl;
+		cout << "Could not load images. Exiting." << endl;
 		return EXIT_FAILURE;
 	}
 
@@ -79,29 +82,43 @@ int main()
 					"0":
 						{
 							"type": "FullyConnected",
-							"inputSize": 784,
-							"outputSize": 128,
+							"inputSize": 40000,
+							"outputSize": 1024,
 							"activation": "ReLU"
 						},
 					"1":
 						{
 							"type": "FullyConnected",
-							"inputSize": 128,
-							"outputSize": 6,
+							"inputSize": 1024,
+							"outputSize": 256,
 							"activation": "ReLU"
 						},
 					"2":
 						{
 							"type": "FullyConnected",
-							"inputSize": 6,
-							"outputSize": 128,
+							"inputSize": 256,
+							"outputSize": 64,
 							"activation": "ReLU"
 						},
 					"3":
 						{
 							"type": "FullyConnected",
-							"inputSize": 128,
-							"outputSize": 784,
+							"inputSize": 64,
+							"outputSize": 256,
+							"activation": "ReLU"
+						},
+					"4":
+						{
+							"type": "FullyConnected",
+							"inputSize": 256,
+							"outputSize": 1024,
+							"activation": "ReLU"
+						},
+					"5":
+						{
+							"type": "FullyConnected",
+							"inputSize": 1024,
+							"outputSize": 40000,
 							"activation": "Sigmoid"
 						},
 					"train":
