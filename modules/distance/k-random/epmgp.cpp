@@ -21,7 +21,7 @@ Copyright (c) 2019 Panda Team
 
 #include "../../../3rdparty/blaze/Blaze.h"
 
-//#include <iostream> // TODO remove
+#include <iostream> // TODO remove
 
 
 
@@ -239,9 +239,12 @@ local_gaussian_axis_aligned_hyperrectangles(
             sSiteHalf(i, i) = std::sqrt(tauSite[i]);
         }
         blaze::IdentityMatrix<double> eye (K.rows());
-        L = eye + sSiteHalf*K*sSiteHalf; // TODO test
+        blaze::llh(eye + sSiteHalf*K*sSiteHalf, L);
+        L = blaze::trans(L); // get lower from upper
+        //L = eye + sSiteHalf*K*sSiteHalf; // TODO remove
         //std::cout << "L:\n" << L << "\n";
-        blaze::potrf(L, 'U');
+        //blaze::potrf(L, 'U'); // LAPACK issue
+        //std::cout << "L_chol:\n" << L << "\n";
         auto V = blaze::inv(blaze::trans(L)) * (sSiteHalf*K);
         sigma = K - blaze::trans(V)*V;
         mu = sigma*(nuSite + KinvM);
@@ -260,6 +263,8 @@ local_gaussian_axis_aligned_hyperrectangles(
     blaze::DiagonalMatrix<blaze::DynamicMatrix<double>> tau (n, 0);
     blaze::DiagonalMatrix<blaze::DynamicMatrix<double>> diagTauSite (n, 0);
     blaze::DiagonalMatrix<blaze::DynamicMatrix<double>> diagTauCavity (n, 0);
+    //blaze::DynamicMatrix<double> diagTauSite (n, n, 0);
+    //blaze::DynamicMatrix<double> diagTauCavity (n, n, 0);
 
     for (size_t i = 0; i<n; ++i) {
         lZ1 += std::log(1 + tauSite[i]/tauCavity[i])*0.5 - std::log(L(i, i));
@@ -269,8 +274,8 @@ local_gaussian_axis_aligned_hyperrectangles(
     }
     blaze::DynamicVector<double> diffSite (nuSite - tauSite*m);
     double lZ2 = 0.5*(blaze::trans(diffSite)*(sigma-tau)*diffSite);
-    auto lZ3 = 0.5*blaze::trans(nuCavity)*( blaze::trans(diagTauSite + diagTauCavity)*(tauSite*nuCavity/tauCavity - 2*nuSite) );
-    auto lZ4 = - 0.5*blaze::trans(tauCavity*m)*( blaze::trans(diagTauSite + diagTauCavity)*(tauSite*m - 2*nuSite) );
+    auto lZ3 = 0.5*( blaze::trans(nuCavity)*( blaze::inv(diagTauSite + diagTauCavity)*(tauSite*nuCavity/tauCavity - 2*nuSite) ) );
+    auto lZ4 = - 0.5*( blaze::trans(tauCavity*m)*( blaze::inv(diagTauSite + diagTauCavity)*(tauSite*m - 2*nuSite) ) );
     logZ = lZ1 + lZ2 + lZ3 + lZ4 + blaze::sum(logZhat);
 
     return std::make_tuple(logZ, mu, sigma);
