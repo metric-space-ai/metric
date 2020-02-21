@@ -2,9 +2,6 @@
 		This Source Code Form is subject to the terms of the Mozilla Public
 		License, v. 2.0. If a copy of the MPL was not distributed with this
 		file, You can obtain one at http://mozilla.org/MPL/2.0/.
-
-		Copyright (c) 2019 Panda Team
-		Copyright (c) 2019 Oleg Popov
 */
 
 #ifndef _METRIC_UTILS_GRAPH_PARTITION_HPP
@@ -12,25 +9,16 @@
 
 #include <cmath>
 #include "../../../3rdparty/blaze/Math.h"
-#include <blaze/math/DynamicMatrix.h>
-#include <blaze/math/Rows.h>
+#include "../../../3rdparty/blaze/math/DynamicMatrix.h"
+#include "../../../3rdparty/blaze/math/Rows.h"
 #include <vector>
 #include <algorithm>
 #include <chrono>
 #include "../solver/solver.hpp"
 
-//#include <cmath>
-//#include "../../../3rdparty/blaze/Math.h"
-//#include "../solver/solver.hpp"
-//#include <blaze/math/DynamicMatrix.h>
-//#include <blaze/math/Rows.h>
-//#include <vector>
-//#include <algorithm>
-//#include <chrono>
-
 namespace metric {
 
-    /**
+ /**
  * @param distanceMatrix Input distance matrix must have more nodes than processingChunkSize. 
  * @param partition Reference to the matrix that will contain the best result found
  * @param global_optimum_attempts  Is the number of attempts to find global optima, something like 100 - 1000

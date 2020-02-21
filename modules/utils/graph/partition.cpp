@@ -61,7 +61,13 @@ blaze::DynamicMatrix<Tv> extract_random_matrix_rows(blaze::DynamicMatrix<Tv> sou
     for (int i = 0; i < length; i++) {
         random_rows_index[i] = i;
     }
-    std::random_shuffle(random_rows_index.begin(), random_rows_index.end());
+
+    std::random_device rd;
+    std::mt19937 g(rd());
+
+    std::shuffle(random_rows_index.begin(), random_rows_index.end(), g);
+    //std::random_shuffle(random_rows_index.begin(), random_rows_index.end());
+
     random_rows_index.resize(rows_count, true);
 
     blaze::DynamicMatrix<double> result(rows_count, length);
