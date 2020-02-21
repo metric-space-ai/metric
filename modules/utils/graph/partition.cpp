@@ -56,7 +56,6 @@ blaze::DynamicMatrix<Tv> extract_random_matrix_rows(blaze::DynamicMatrix<Tv> sou
 {
     int length = source.rows();
 
-    // ra is list random sample of processing_chunk_size columns
     blaze::DynamicVector<int> random_rows_index(length);
     for (int i = 0; i < length; i++) {
         random_rows_index[i] = i;
@@ -66,8 +65,6 @@ blaze::DynamicMatrix<Tv> extract_random_matrix_rows(blaze::DynamicMatrix<Tv> sou
     std::mt19937 g(rd());
 
     std::shuffle(random_rows_index.begin(), random_rows_index.end(), g);
-    //std::random_shuffle(random_rows_index.begin(), random_rows_index.end());
-
     random_rows_index.resize(rows_count, true);
 
     blaze::DynamicMatrix<double> result(rows_count, length);
