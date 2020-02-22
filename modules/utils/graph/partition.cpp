@@ -167,24 +167,35 @@ int perform_graph_partition(blaze::DynamicMatrix<double> distance_matrix, blaze:
             blaze::DynamicMatrix<double> r1(r);
             blaze::DynamicVector<double> rf1;
 
-            int tt = 0;
-            while (tt == 0) {
+            bool keep_going = 0;
+            int attempts = 0;
+
+            while (keep_going) {
                 /*
                 choose a random row clusterin to start, rf is a list of clusters \
-                memership, value 0 means at least one member, 1 means no members, 
+                memership, value 0 means at least one member, 1 means no members,
                 max cf = 0 means all clusters have members, run untill all rf \
                 elements are zeroes
                 */
                 rf1 = rf;
-                for (int i = 0; i < n1; i++) {
+                for (int i = 0; i < n1; i++)
+                {
                     int l = random_int_in_range(0, kk1 - 1);
                     r1(i, l) = 1;
                     rf1[l] = 0;
-                    if (blaze::max(rf1) == 0) {
-                        tt = 1;
+                    if (blaze::max(rf1) == 0)
+                    {
+                        keep_going = false;
+                        r = r1;
+                    }
+                    else if (attempts >= n1)
+                    {
+                        keep_going = false;
                         r = r1;
                     }
                 }
+
+                attempts++;
             }
 
             blaze::DynamicMatrix<double> p = clone_matrix(r).transpose() * (a * c);
