@@ -18,6 +18,7 @@ SET(SRC
 	src/metric_EMD.cpp
 	src/metric_Entropy.cpp
 	src/metric_MGC.cpp
+	src/metric_standards.cpp
 )
 
 add_library(metric_py SHARED ${SRC})
