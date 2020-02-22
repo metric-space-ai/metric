@@ -24,6 +24,8 @@ struct SClusteringTouple {
 
 bool distance_matrix_is_valid(blaze::DynamicMatrix<double> matrix)
 {
+    //if(matrix.rows() != matrix.columns()) return false;
+
     for (int i = 0; i < matrix.rows(); i++) 
     {
         for (int j = i; j < matrix.columns(); j++) 
@@ -143,7 +145,7 @@ int perform_graph_partition(blaze::DynamicMatrix<double> distance_matrix, blaze:
     int n1 = a.rows();
     int n2 = a.columns();
 
-    //prepare unit matrix
+    //prepare identity matrix
     blaze::DynamicMatrix<double> c = get_identity_matrix(n2);
     blaze::DynamicMatrix<double> b = clone_matrix(a).transpose();
     blaze::DynamicVector<SClusteringTouple> results;
@@ -167,10 +169,10 @@ int perform_graph_partition(blaze::DynamicMatrix<double> distance_matrix, blaze:
             blaze::DynamicMatrix<double> r1(r);
             blaze::DynamicVector<double> rf1;
 
-            bool keep_going = 0;
-            int attempts = 0;
+            bool keep_going = true;
 
-            while (keep_going) {
+            while (keep_going) 
+            {
                 /*
                 choose a random row clusterin to start, rf is a list of clusters \
                 memership, value 0 means at least one member, 1 means no members,
@@ -188,14 +190,7 @@ int perform_graph_partition(blaze::DynamicMatrix<double> distance_matrix, blaze:
                         keep_going = false;
                         r = r1;
                     }
-                    else if (attempts >= n1)
-                    {
-                        keep_going = false;
-                        r = r1;
-                    }
                 }
-
-                attempts++;
             }
 
             blaze::DynamicMatrix<double> p = clone_matrix(r).transpose() * (a * c);

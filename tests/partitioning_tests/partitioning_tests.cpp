@@ -22,7 +22,7 @@ BOOST_AUTO_TEST_CASE(bad_chunk_size)
     BOOST_TEST(error != 0);
 }
 
-BOOST_AUTO_TEST_CASE(working_partition_150)
+BOOST_AUTO_TEST_CASE(working_partition_small_size)
 {
     blaze::DynamicMatrix<double> distance_matrix(150, 150, 0);
     blaze::DynamicMatrix<int> partition_matrix;
@@ -131,7 +131,7 @@ BOOST_AUTO_TEST_CASE(corrupted_distance_matrix)
     BOOST_TEST(error != 0);
 }
 
-BOOST_AUTO_TEST_CASE(corrupted_large_distances)
+BOOST_AUTO_TEST_CASE(large_distances)
 {
     blaze::DynamicMatrix<double> distance_matrix(200, 200, 0);
     blaze::DynamicMatrix<int> partition_matrix;
@@ -145,4 +145,48 @@ BOOST_AUTO_TEST_CASE(corrupted_large_distances)
 
     int error = metric::perform_graph_partition(distance_matrix, partition_matrix, 5, 100, 0);
     BOOST_TEST(error == 0);
+}
+
+BOOST_AUTO_TEST_CASE(sparse_matrix_0)
+{
+    blaze::DynamicMatrix<double> distance_matrix(1000, 1000, 0);
+    blaze::DynamicMatrix<int> partition_matrix;
+
+    for (int i = 0; i < distance_matrix.rows(); i++) {
+        for (int j = i + 1; j < distance_matrix.columns(); j++) {
+            if(i * j == 1000) 
+            {
+                distance_matrix(i, j) = i;
+                distance_matrix(j, i) = distance_matrix(i, j);
+            }
+        }
+    }
+
+    int error = metric::perform_graph_partition(distance_matrix, partition_matrix, 1, 200, 0);
+
+    BOOST_TEST(error == 0);
+    BOOST_TEST(partition_matrix.rows() == 1000);
+    BOOST_TEST(partition_matrix.columns() == 4);
+}
+
+BOOST_AUTO_TEST_CASE(sparse_matrix_1)
+{
+    blaze::DynamicMatrix<double> distance_matrix(5000, 5000, 0);
+    blaze::DynamicMatrix<int> partition_matrix;
+
+    for (int i = 0; i < distance_matrix.rows(); i++) {
+        for (int j = i + 1; j < distance_matrix.columns(); j++) {
+            if (i * j == 5000)
+            {
+                distance_matrix(i, j) = 1;
+                distance_matrix(j, i) = distance_matrix(i, j);
+            }
+        }
+    }
+
+    int error = metric::perform_graph_partition(distance_matrix, partition_matrix, 1, 600, 0);
+
+    BOOST_TEST(error == 0);
+    BOOST_TEST(partition_matrix.rows() == 5000);
+    BOOST_TEST(partition_matrix.columns() == 3);
 }
