@@ -176,5 +176,5 @@ BOOST_AUTO_TEST_CASE(convolutional)
 
 	nt.fit(data, labels, 1, 1);
 
-	std::cout << nt.predict(data) << std::endl;*/
-}
+	std::cout << nt.predict(data) << std::endl;
+}*/
