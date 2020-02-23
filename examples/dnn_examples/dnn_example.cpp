@@ -87,17 +87,31 @@ int main()
 						{
 							"type": "FullyConnected",
 							"inputSize": 128,
-							"outputSize": 6,
+							"outputSize": 64,
 							"activation": "ReLU"
 						},
 					"2":
 						{
 							"type": "FullyConnected",
-							"inputSize": 6,
-							"outputSize": 128,
+							"inputSize": 64,
+							"outputSize": 32,
 							"activation": "ReLU"
 						},
 					"3":
+						{
+							"type": "FullyConnected",
+							"inputSize": 32,
+							"outputSize": 64,
+							"activation": "ReLU"
+						},
+					"4":
+						{
+							"type": "FullyConnected",
+							"inputSize": 64,
+							"outputSize": 128,
+							"activation": "ReLU"
+						},
+					"5":
 						{
 							"type": "FullyConnected",
 							"inputSize": 128,
@@ -119,7 +133,7 @@ int main()
 	autoencoder.setCallback(dnn::VerboseCallback<double>());
 
 	cout << "Train" << endl;
-	autoencoder.train(features, 5, 256);
+	autoencoder.train(features, 50, 64);
 
 	cout << "Sample:" << endl;
 	vector<uint8_t> sample(features.begin(), features.begin() + shape[1] * shape[2]);

@@ -1,12 +1,12 @@
 #ifndef OPTIMIZER_RMSPROP_H_
 #define OPTIMIZER_RMSPROP_H_
 
-#include "../Optimizer.h"
-#include "../Utils/sparsepp.h"
+#include "unordered_map"
 
-namespace metric
-{
-namespace dnn
+#include "../Optimizer.h"
+
+
+namespace metric::dnn
 {
 
 
@@ -23,7 +23,7 @@ class RMSProp: public Optimizer<Scalar>
 		using AlignedMapVec = blaze::CustomVector<Scalar, blaze::aligned, blaze::unpadded>;
 		using ConstAlignedMapVec = const blaze::CustomVector<Scalar, blaze::aligned, blaze::unpadded>;
 
-		spp::sparse_hash_map<const Scalar*, Array> m_history;
+		std::unordered_map<const Scalar*, Array> m_history;
 
     public:
         Scalar learningRate;
@@ -55,6 +55,7 @@ class RMSProp: public Optimizer<Scalar>
         {
             // Get the accumulated squared gradient associated with this gradient
             Array& grad_square = m_history[dvec.data()];
+            //std::cout << "history:" << m_history.size() << std::endl;
 
             // If length is zero, initialize it
 	        if (grad_square.size() == 0) {
@@ -71,8 +72,7 @@ class RMSProp: public Optimizer<Scalar>
 };
 
 
-} // namespace dnn
-} // namespace metric
+} // namespace metric::dnn
 
 
 #endif /* OPTIMIZER_RMSPROP_H_ */

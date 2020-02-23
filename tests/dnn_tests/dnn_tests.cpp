@@ -138,5 +138,43 @@ BOOST_AUTO_TEST_CASE(convolutional)
 
 	BOOST_CHECK_EQUAL(convTransposeLayer.output(), Y);
 }
+*/
 
- */
+/*BOOST_AUTO_TEST_CASE(network_json)
+{
+	auto json = R"({
+					"0":
+						{
+							"type": "FullyConnected",
+							"inputSize": 3,
+							"outputSize": 2,
+							"activation": "ReLU"
+						},
+					"1":
+						{
+							"type": "FullyConnected",
+							"inputSize": 2,
+							"outputSize": 1,
+							"activation": "Sigmoid"
+						},
+					"train":
+						{
+							"loss": "RegressionMSE",
+							"optimizer": {"type": "RMSProp",
+											"learningRate": 0.01,
+											"eps": 1e-6,
+											"decay": 0.9}
+						}
+					}
+				)"_json;
+
+	using Scalar = double;
+	Network<Scalar> nt(json.dump());
+
+	blaze::DynamicMatrix<Scalar> data = {{0.1, 0.2, 0.3}};
+	blaze::DynamicMatrix<Scalar> labels = {{0.4}};
+
+	nt.fit(data, labels, 1, 1);
+
+	std::cout << nt.predict(data) << std::endl;*/
+}

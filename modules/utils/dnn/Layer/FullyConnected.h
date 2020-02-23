@@ -66,6 +66,8 @@ class FullyConnected: public Layer<Scalar>
 
 		void init(const Scalar& mu, const Scalar& sigma, std::mt19937& rng)
         {
+			//this->initConstant(0.1, 0);
+			//return;
             m_weight.resize(this->inputSize, this->outputSize);
             m_bias.resize(this->outputSize);
             m_dw.resize(this->inputSize, this->outputSize);
@@ -137,6 +139,11 @@ class FullyConnected: public Layer<Scalar>
             // Compute d(L) / d_in = W * [d(L) / d(z)]
             m_din.resize(nobs, this->inputSize);
 	        m_din = dLz * blaze::trans(m_weight);
+
+//	        std::cout << "m_dw" << std::endl;
+//	        std::cout << m_dw << std::endl;
+//	        std::cout << "m_b" << std::endl;
+//	        std::cout << m_db << std::endl;
         }
 
         const Matrix& backprop_data() const

@@ -100,31 +100,30 @@ class Network
 		        return;
 	        }
 
-            std::shared_ptr<Layer<Scalar>> first_layer = layers[0];
-            std::shared_ptr<Layer<Scalar>> last_layer = layers[nlayer - 1];
+            auto firstLayer = layers[0];
+            auto lastLayer = layers[nlayer - 1];
+
             // Let output layer compute back-propagation data
             outputLayer->check_target_data(target);
-            outputLayer->evaluate(last_layer->output(), target);
+            outputLayer->evaluate(lastLayer->output(), target);
 
             // If there is only one hidden layer, "prev_layer_data" will be the input data
-            if (nlayer == 1)
-            {
-                first_layer->backprop(input, outputLayer->backprop_data());
-                return;
-            }
+	        if (nlayer == 1) {
+		        firstLayer->backprop(input, outputLayer->backprop_data());
+		        return;
+	        }
 
             // Compute gradients for the last hidden layer
-            last_layer->backprop(layers[nlayer - 2]->output(), outputLayer->backprop_data());
+            lastLayer->backprop(layers[nlayer - 2]->output(), outputLayer->backprop_data());
 
             // Compute gradients for all the hidden layers except for the first one and the last one
-            for (int i = nlayer - 2; i > 0; i--)
-            {
-                layers[i]->backprop(layers[i - 1]->output(),
-                                    layers[i + 1]->backprop_data());
-            }
+	        for (int i = nlayer - 2; i > 0; i--) {
+		        layers[i]->backprop(layers[i - 1]->output(),
+		                            layers[i + 1]->backprop_data());
+	        }
 
             // Compute gradients for the first layer
-            first_layer->backprop(input, layers[1]->backprop_data());
+            firstLayer->backprop(input, layers[1]->backprop_data());
         }
 
         // Update parameters
@@ -173,13 +172,13 @@ class Network
 				auto type = layerJson["type"].get<std::string>();
 				if (type == "FullyConnected") {
 					if (activation == "Identity") {
-						addLayer(FullyConnected<double, Identity<double>>(layerJson));
+						addLayer(FullyConnected<Scalar, Identity<Scalar>>(layerJson));
 					} else if (activation == "ReLU") {
-						addLayer(FullyConnected<double, ReLU<double>>(layerJson));
+						addLayer(FullyConnected<Scalar, ReLU<Scalar>>(layerJson));
 					} else if (activation == "Sigmoid") {
-						addLayer(FullyConnected<double, Sigmoid<double>>(layerJson));
+						addLayer(FullyConnected<Scalar, Sigmoid<Scalar>>(layerJson));
 					//} else if (activation == "Softmax") {
-					//	addLayer(FullyConnected<double, Softmax<double>>(layerJson));
+					//	addLayer(FullyConnected<Scalar, Softmax<Scalar>>(layerJson));
 					}
 				}
 			}
@@ -368,13 +367,15 @@ class Network
 
 	        for (int i = 0; i < nlayer; i++) {
 		        layers[i]->init(mu, sigma, randomEngine);
+		        //layers[i]->initConstant(0.1, 0);
 	        }
         }
 
-        ///
-        /// Get the serialized layer parameters
-        ///
-        std::vector< std::vector<Scalar>> get_parameters() const
+
+	///
+	/// Get the serialized layer parameters
+	///
+	std::vector< std::vector<Scalar>> get_parameters() const
         {
             const int nlayer = num_layers();
             std::vector< std::vector<Scalar>> res;
