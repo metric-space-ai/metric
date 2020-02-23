@@ -522,19 +522,21 @@ class Network
 	        for (int k = 0; k < epoch; k++) {
 		        callback->epochId = k;
 
+		        callback->preTrainingEpoch(this);
+
 		        // Train on each mini-batch
 		        for (int i = 0; i < nbatch; i++) {
-			        auto t1 = std::chrono::high_resolution_clock::now();
 			        callback->batchId = i;
-			        //callback->preTrainingBatch(this, x_batches[i], y_batches[i]);
+
+			        callback->preTrainingBatch(this, x_batches[i], y_batches[i]);
+
 			        this->forward(x_batches[i]);
 			        this->backprop(x_batches[i], y_batches[i]);
 			        this->update();
+
 			        callback->postTrainingBatch(this, x_batches[i], y_batches[i]);
-			        auto t2 = std::chrono::high_resolution_clock::now();
-			        auto d = std::chrono::duration_cast < std::chrono::duration < double >> (t2 - t1);
-			        std::cout << "Training time: " << d.count() << " s" << std::endl;
 		        }
+		        callback->postTrainingEpoch(this);
 	        }
 
             return true;

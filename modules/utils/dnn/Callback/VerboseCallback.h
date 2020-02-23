@@ -2,6 +2,8 @@
 #define CALLBACK_VERBOSECALLBACK_H_
 
 #include <iostream>
+#include <chrono>
+
 #include "../Callback.h"
 #include "../Network.h"
 
@@ -23,23 +25,78 @@ class VerboseCallback: public Callback<Scalar>
 		using typename Callback<Scalar>::Matrix;
 		using typename Callback<Scalar>::IntegerVector;
 
-    public:
-        void postTrainingBatch(const Network<Scalar>* net, const Matrix& x, const Matrix& y)
-        {
-            const Scalar loss = net->get_output()->loss();
-            std::cout << "[Epoch " << this->epochId << "/" << this->epochsNumber;
-            std::cout << ", batch " << this->batchId << "/" << this->batchesNumber << "] Loss = "
-                      << loss << std::endl;
-        }
+		using Clock = std::chrono::high_resolution_clock;
 
-        /*void postTrainingBatch(const Network<Scalar>* net, const Matrix& x,
-                               const IntegerVector& y)
-        {
-            Scalar loss = net->get_output()->loss();
+		bool verboseEpoch;
+		bool verboseBatch;
+
+		Clock::time_point epochStart;
+		Clock::time_point batchStart;
+
+    public:
+		VerboseCallback(bool verboseEpoch = true, bool verboseBatch = true) : verboseEpoch(verboseEpoch),
+																				verboseBatch(verboseBatch)
+		{}
+
+		void preTrainingEpoch(const Network<Scalar>* net)
+		{
+			if (!verboseEpoch) {
+				return;
+			}
+
+			epochStart = Clock::now();
+		}
+
+		void postTrainingEpoch(const Network<Scalar>* net)
+		{
+			if (!verboseEpoch) {
+				return;
+			}
+
+			const Scalar loss = net->get_output()->loss();
+
+			std::cout << "[Epoch " << this->epochId << "/" << this->epochsNumber << "] Loss = "
+					  << loss;
+
+			auto epochEnd = Clock::now();
+			auto d = std::chrono::duration_cast<std::chrono::duration<double>>(epochEnd - epochStart);
+			std::cout << " Training time: " << d.count() << " s" << std::endl;
+		}
+
+		void preTrainingBatch(const Network<Scalar>* net, const Matrix& x, const Matrix& y)
+		{
+			if (!verboseBatch) {
+				return;
+			}
+
+			batchStart = Clock::now();
+		}
+
+		void postTrainingBatch(const Network<Scalar>* net, const Matrix& x, const Matrix& y)
+		{
+			if (!verboseBatch) {
+				return;
+			}
+
+            const Scalar loss = net->get_output()->loss();
+
             std::cout << "[Epoch " << this->epochId << "/" << this->epochsNumber;
             std::cout << ", batch " << this->batchId << "/" << this->batchesNumber << "] Loss = "
-                      << loss << std::endl;
-        }*/
+                      << loss;
+
+			auto batchEnd = Clock::now();
+			auto d = std::chrono::duration_cast<std::chrono::duration<double>>(batchEnd - batchStart);
+			std::cout << " Training time: " << d.count() << " s" << std::endl;
+		}
+
+	/*void postTrainingBatch(const Network<Scalar>* net, const Matrix& x,
+						   const IntegerVector& y)
+	{
+		Scalar loss = net->get_output()->loss();
+		std::cout << "[Epoch " << this->epochId << "/" << this->epochsNumber;
+		std::cout << ", batch " << this->batchId << "/" << this->batchesNumber << "] Loss = "
+				  << loss << std::endl;
+	}*/
 };
 
 

@@ -99,11 +99,7 @@ namespace metric
 	{
 		loadTrainData(data);
 
-		auto t1 = std::chrono::high_resolution_clock::now();
 		this->fit(trainData, trainData, batchSize, epochs, 123);
-		auto t2 = std::chrono::high_resolution_clock::now();
-		auto d = std::chrono::duration_cast < std::chrono::duration < double >> (t2 - t1);
-		std::cout << "Training time: " << d.count() << " s" << std::endl;
 	}
 
 	template<typename InputDataType, typename Scalar>
