@@ -153,12 +153,14 @@ class FullyConnected: public Layer<Scalar>
 
         void update(Optimizer<Scalar>& opt)
         {
+/*
             ConstAlignedMapVec dw(m_dw.data(), blaze::size(m_dw));
             ConstAlignedMapVec db(m_db.data(), m_db.size());
             AlignedMapVec      w(m_weight.data(), blaze::size(m_weight));
             AlignedMapVec      b(m_bias.data(), m_bias.size());
-            opt.update(dw, w);
-            opt.update(db, b);
+*/
+            opt.update(m_dw, m_weight);
+            opt.update(m_db, m_bias);
         }
 
         std::vector<std::vector<Scalar>> getParameters() const

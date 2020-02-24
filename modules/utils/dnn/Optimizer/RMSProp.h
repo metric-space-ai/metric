@@ -19,11 +19,16 @@ template <typename Scalar>
 class RMSProp: public Optimizer<Scalar>
 {
     private:
+		using typename Optimizer<Scalar>::RowVector;
+		using typename Optimizer<Scalar>::ColumnMatrix;
+
 		using Array = blaze::DynamicVector<Scalar>;
 		using AlignedMapVec = blaze::CustomVector<Scalar, blaze::aligned, blaze::unpadded>;
 		using ConstAlignedMapVec = const blaze::CustomVector<Scalar, blaze::aligned, blaze::unpadded>;
 
 		std::unordered_map<const Scalar*, Array> m_history;
+		std::unordered_map<const RowVector*, RowVector> historyVectors;
+		std::unordered_map<const ColumnMatrix*, ColumnMatrix> historyMatrices;
 
     public:
         Scalar learningRate;
@@ -54,7 +59,7 @@ class RMSProp: public Optimizer<Scalar>
         void update(ConstAlignedMapVec& dvec, AlignedMapVec& vec)
         {
             // Get the accumulated squared gradient associated with this gradient
-            Array& grad_square = m_history[dvec.data()];
+            auto& grad_square = m_history[dvec.data()];
             //std::cout << "history:" << m_history.size() << std::endl;
 
             // If length is zero, initialize it
@@ -69,6 +74,37 @@ class RMSProp: public Optimizer<Scalar>
             // Update parameters
             vec -= learningRate * dvec / blaze::sqrt(grad_square + m_eps);
         }
+
+		void update(const RowVector& dvec, RowVector& vec)
+		{
+			auto& grad_square = historyVectors[&dvec];
+			//std::cout << "RowVector history:" << historyVectors.size() << std::endl;
+
+			if (grad_square.size() == 0) {
+				grad_square.resize(dvec.size());
+				grad_square = 0;
+			}
+
+			grad_square = m_decay * grad_square + (Scalar(1) - m_decay) *
+												  blaze::pow(dvec, 2);
+			vec -= learningRate * dvec / blaze::sqrt(grad_square + m_eps);
+		}
+
+		void update(const ColumnMatrix& dvec, ColumnMatrix& vec)
+		{
+			auto& grad_square = historyMatrices[&dvec];
+			//std::cout << "ColumnMatrix history:" << historyVectors.size() << std::endl;
+
+			if (blaze::isDefault(grad_square)) {
+				grad_square.resize(dvec.rows(), dvec.columns());
+				grad_square = 0;
+			}
+
+			grad_square = m_decay * grad_square + (Scalar(1) - m_decay) * blaze::pow(dvec, 2);
+			for (size_t j = 0; j < dvec.columns(); ++j) {
+				blaze::column(vec, j) -= learningRate * blaze::column(dvec, j) / blaze::column(blaze::sqrt(grad_square + m_eps), j);
+			}
+		}
 };
 
 

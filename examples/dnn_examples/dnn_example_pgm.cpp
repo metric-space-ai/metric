@@ -135,17 +135,21 @@ int main(int argc, char* argv[])
 	Autoencoder<uint8_t, double> autoencoder(json.dump());
 	autoencoder.setCallback(dnn::VerboseCallback<double>());
 
-	cout << "fps" << endl;
+	/*cout << "fps" << endl;
 	for (auto i = 0; i < 100; ++i) {
 		auto w = shape[1] * shape[2];
 		vector<uint8_t> sample(features.begin() + i * w , features.begin() + (i + 1)*shape[1] * shape[2]);
 		auto prediction = autoencoder.predict(sample);
 	}
-	return 0;
-	/*printMatrix(prediction, shape[1], shape[2]);
+	return 0;*/
+	//auto i = 10;
+	//auto w = shape[1] * shape[2];
+	//vector<uint8_t> sample(features.begin() + i * w , features.begin() + (i + 1)*shape[1] * shape[2]);
+	//auto prediction = autoencoder.predict(sample);
+	//printMatrix(prediction, shape[1], shape[2]);
 
 	cout << "Train" << endl;
-	autoencoder.train(features, 1, 128);
+	autoencoder.train(features, 50, 128);
 
 	cout << "Sample:" << endl;
 	vector<uint8_t> sample(features.begin(), features.begin() + shape[1] * shape[2]);
@@ -161,6 +165,5 @@ int main(int argc, char* argv[])
 
 	int t = vectorDiff(prediction, autoencoder.decode(latentVector));
 	cout << "test:" << t << endl;
-*/
 	return EXIT_SUCCESS;
 }
