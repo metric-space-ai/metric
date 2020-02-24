@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/SVecDVecOuterExpr.h
 //  \brief Header file for the sparse vector/dense vector outer product expression
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -59,6 +59,7 @@
 #include "../../math/expressions/SparseMatrix.h"
 #include "../../math/expressions/VecTVecMultExpr.h"
 #include "../../math/shims/IsDefault.h"
+#include "../../math/shims/PrevMultiple.h"
 #include "../../math/shims/Reset.h"
 #include "../../math/shims/Serial.h"
 #include "../../math/SIMD.h"
@@ -72,6 +73,7 @@
 #include "../../math/typetraits/IsTemporary.h"
 #include "../../math/typetraits/IsZero.h"
 #include "../../math/typetraits/Size.h"
+#include "../../system/MacroDisable.h"
 #include "../../system/Optimizations.h"
 #include "../../util/Assert.h"
 #include "../../util/EnableIf.h"
@@ -348,7 +350,7 @@ class SVecDVecOuterExpr
    // \param lhs The left-hand side sparse vector operand of the multiplication expression.
    // \param rhs The right-hand side dense vector operand of the multiplication expression.
    */
-   explicit inline SVecDVecOuterExpr( const VT1& lhs, const VT2& rhs ) noexcept
+   inline SVecDVecOuterExpr( const VT1& lhs, const VT2& rhs ) noexcept
       : lhs_( lhs )  // Left-hand side sparse vector of the multiplication expression
       , rhs_( rhs )  // Right-hand side dense vector of the multiplication expression
    {}
@@ -391,7 +393,7 @@ class SVecDVecOuterExpr
    //**Begin function******************************************************************************
    /*!\brief Returns an iterator to the first non-zero element of column \a i.
    //
-   // \param i The row index.
+   // \param i The column index.
    // \return Iterator to the first non-zero element of column \a i.
    */
    inline ConstIterator begin( size_t i ) const {
@@ -402,7 +404,7 @@ class SVecDVecOuterExpr
    //**End function********************************************************************************
    /*!\brief Returns an iterator just past the last non-zero element of column \a i.
    //
-   // \param i The row index.
+   // \param i The column index.
    // \return Iterator just past the last non-zero element of column \a i.
    */
    inline ConstIterator end( size_t i ) const {
@@ -633,8 +635,8 @@ class SVecDVecOuterExpr
 
       const size_t N( A.columns() );
 
-      const size_t jpos( remainder ? ( N & size_t(-SIMDSIZE) ) : N );
-      BLAZE_INTERNAL_ASSERT( !remainder || ( N - ( N % SIMDSIZE ) ) == jpos, "Invalid end calculation" );
+      const size_t jpos( remainder ? prevMultiple( N, SIMDSIZE ) : N );
+      BLAZE_INTERNAL_ASSERT( jpos <= N, "Invalid end calculation" );
 
       const auto begin( x.begin() );
       const auto end  ( x.end()   );
@@ -910,8 +912,8 @@ class SVecDVecOuterExpr
 
       const size_t N( A.columns() );
 
-      const size_t jpos( remainder ? ( N & size_t(-SIMDSIZE) ) : N );
-      BLAZE_INTERNAL_ASSERT( !remainder || ( N - ( N % SIMDSIZE ) ) == jpos, "Invalid end calculation" );
+      const size_t jpos( remainder ? prevMultiple( N, SIMDSIZE ) : N );
+      BLAZE_INTERNAL_ASSERT( jpos <= N, "Invalid end calculation" );
 
       const auto begin( x.begin() );
       const auto end  ( x.end()   );
@@ -1078,8 +1080,8 @@ class SVecDVecOuterExpr
 
       const size_t N( A.columns() );
 
-      const size_t jpos( remainder ? ( N & size_t(-SIMDSIZE) ) : N );
-      BLAZE_INTERNAL_ASSERT( !remainder || ( N - ( N % SIMDSIZE ) ) == jpos, "Invalid end calculation" );
+      const size_t jpos( remainder ? prevMultiple( N, SIMDSIZE ) : N );
+      BLAZE_INTERNAL_ASSERT( jpos <= N, "Invalid end calculation" );
 
       const auto begin( x.begin() );
       const auto end  ( x.end()   );
@@ -1262,8 +1264,8 @@ class SVecDVecOuterExpr
       const size_t M( A.rows()    );
       const size_t N( A.columns() );
 
-      const size_t jpos( remainder ? ( N & size_t(-SIMDSIZE) ) : N );
-      BLAZE_INTERNAL_ASSERT( !remainder || ( N - ( N % SIMDSIZE ) ) == jpos, "Invalid end calculation" );
+      const size_t jpos( remainder ? prevMultiple( N, SIMDSIZE ) : N );
+      BLAZE_INTERNAL_ASSERT( jpos <= N, "Invalid end calculation" );
 
       const auto begin( x.begin() );
       const auto end  ( x.end()   );

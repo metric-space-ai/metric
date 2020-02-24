@@ -3,7 +3,7 @@
 //  \file blaze/config/Optimizations.h
 //  \brief Configuration of performance optimizations
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -31,37 +31,6 @@
 //  DAMAGE.
 */
 //=================================================================================================
-
-
-//*************************************************************************************************
-/*!\brief Configuration of the padding of dense vectors and matrices.
-// \ingroup config
-//
-// This configuration switch enables/disables the padding of dense vectors and matrices. Padding
-// is used by the Blaze library in order to achieve maximum performance for both dense vector
-// and matrix operations. Due to padding, the proper alignment of data elements can be guaranteed
-// and the need for remainder loops is minimized. In case padding is enabled, it is enabled for
-// all native dense vectors and matrices. If padding is disabled, it is generally disabled.
-//
-// Possible settings for padding:
-//  - Disabled: \b 0
-//  - Enabled : \b 1
-//
-// \warning Note that disabling padding can considerably reduce the performance of all dense
-// vector and matrix operations!
-//
-// \note It is possible to (de-)activate padding via command line or by defining this symbol
-// manually before including any Blaze header file:
-
-   \code
-   #define BLAZE_USE_PADDING 1
-   #include "../Blaze.h"
-   \endcode
-*/
-#ifndef BLAZE_USE_PADDING
-#define BLAZE_USE_PADDING 1
-#endif
-//*************************************************************************************************
 
 
 //*************************************************************************************************

@@ -3,7 +3,7 @@
 //  \file blaze/math/CustomMatrix.h
 //  \brief Header file for the complete CustomMatrix implementation
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -40,6 +40,7 @@
 // Includes
 //*************************************************************************************************
 
+#include "../math/AlignmentFlag.h"
 #include "../math/dense/CustomMatrix.h"
 #include "../math/dense/DynamicMatrix.h"
 #include "../math/DenseMatrix.h"
@@ -70,11 +71,11 @@ namespace blaze {
 //
 // This specialization of the Rand class creates random instances of CustomMatrix.
 */
-template< typename Type  // Data type of the matrix
-        , bool AF        // Alignment flag
-        , bool PF        // Padding flag
-        , bool SO        // Storage order
-        , typename RT >  // Result type
+template< typename Type     // Data type of the matrix
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF    // Padding flag
+        , bool SO           // Storage order
+        , typename RT >     // Result type
 class Rand< CustomMatrix<Type,AF,PF,SO,RT> >
 {
  public:
@@ -99,11 +100,11 @@ class Rand< CustomMatrix<Type,AF,PF,SO,RT> >
 // \param matrix The matrix to be randomized.
 // \return void
 */
-template< typename Type  // Data type of the matrix
-        , bool AF        // Alignment flag
-        , bool PF        // Padding flag
-        , bool SO        // Storage order
-        , typename RT >  // Result type
+template< typename Type     // Data type of the matrix
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF    // Padding flag
+        , bool SO           // Storage order
+        , typename RT >     // Result type
 inline void Rand< CustomMatrix<Type,AF,PF,SO,RT> >::randomize( CustomMatrix<Type,AF,PF,SO,RT>& matrix ) const
 {
    using blaze::randomize;
@@ -130,12 +131,12 @@ inline void Rand< CustomMatrix<Type,AF,PF,SO,RT> >::randomize( CustomMatrix<Type
 // \param max The largest possible value for a matrix element.
 // \return void
 */
-template< typename Type   // Data type of the matrix
-        , bool AF         // Alignment flag
-        , bool PF         // Padding flag
-        , bool SO         // Storage order
-        , typename RT >   // Result type
-template< typename Arg >  // Min/max argument type
+template< typename Type     // Data type of the matrix
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF    // Padding flag
+        , bool SO           // Storage order
+        , typename RT >     // Result type
+template< typename Arg >    // Min/max argument type
 inline void Rand< CustomMatrix<Type,AF,PF,SO,RT> >::randomize( CustomMatrix<Type,AF,PF,SO,RT>& matrix,
                                                                const Arg& min, const Arg& max ) const
 {
@@ -170,11 +171,11 @@ inline void Rand< CustomMatrix<Type,AF,PF,SO,RT> >::randomize( CustomMatrix<Type
 // \return void
 // \exception std::invalid_argument Invalid non-square matrix provided.
 */
-template< typename Type  // Data type of the matrix
-        , bool AF        // Alignment flag
-        , bool PF        // Padding flag
-        , bool SO        // Storage order
-        , typename RT >  // Result type
+template< typename Type     // Data type of the matrix
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF    // Padding flag
+        , bool SO           // Storage order
+        , typename RT >     // Result type
 void makeSymmetric( CustomMatrix<Type,AF,PF,SO,RT>& matrix )
 {
    using blaze::randomize;
@@ -209,12 +210,12 @@ void makeSymmetric( CustomMatrix<Type,AF,PF,SO,RT>& matrix )
 // \return void
 // \exception std::invalid_argument Invalid non-square matrix provided.
 */
-template< typename Type   // Data type of the matrix
-        , bool AF         // Alignment flag
-        , bool PF         // Padding flag
-        , bool SO         // Storage order
-        , typename RT     // Result type
-        , typename Arg >  // Min/max argument type
+template< typename Type     // Data type of the matrix
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF    // Padding flag
+        , bool SO           // Storage order
+        , typename RT       // Result type
+        , typename Arg >    // Min/max argument type
 void makeSymmetric( CustomMatrix<Type,AF,PF,SO,RT>& matrix, const Arg& min, const Arg& max )
 {
    using blaze::randomize;
@@ -247,11 +248,11 @@ void makeSymmetric( CustomMatrix<Type,AF,PF,SO,RT>& matrix, const Arg& min, cons
 // \return void
 // \exception std::invalid_argument Invalid non-square matrix provided.
 */
-template< typename Type  // Data type of the matrix
-        , bool AF        // Alignment flag
-        , bool PF        // Padding flag
-        , bool SO        // Storage order
-        , typename RT >  // Result type
+template< typename Type     // Data type of the matrix
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF    // Padding flag
+        , bool SO           // Storage order
+        , typename RT >     // Result type
 void makeHermitian( CustomMatrix<Type,AF,PF,SO,RT>& matrix )
 {
    using blaze::randomize;
@@ -290,12 +291,12 @@ void makeHermitian( CustomMatrix<Type,AF,PF,SO,RT>& matrix )
 // \return void
 // \exception std::invalid_argument Invalid non-square matrix provided.
 */
-template< typename Type   // Data type of the matrix
-        , bool AF         // Alignment flag
-        , bool PF         // Padding flag
-        , bool SO         // Storage order
-        , typename RT     // Result type
-        , typename Arg >  // Min/max argument type
+template< typename Type     // Data type of the matrix
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF    // Padding flag
+        , bool SO           // Storage order
+        , typename RT       // Result type
+        , typename Arg >    // Min/max argument type
 void makeHermitian( CustomMatrix<Type,AF,PF,SO,RT>& matrix, const Arg& min, const Arg& max )
 {
    using blaze::randomize;
@@ -332,11 +333,11 @@ void makeHermitian( CustomMatrix<Type,AF,PF,SO,RT>& matrix, const Arg& min, cons
 // \return void
 // \exception std::invalid_argument Invalid non-square matrix provided.
 */
-template< typename Type  // Data type of the matrix
-        , bool AF        // Alignment flag
-        , bool PF        // Padding flag
-        , bool SO        // Storage order
-        , typename RT >  // Result type
+template< typename Type     // Data type of the matrix
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF    // Padding flag
+        , bool SO           // Storage order
+        , typename RT >     // Result type
 void makePositiveDefinite( CustomMatrix<Type,AF,PF,SO,RT>& matrix )
 {
    using blaze::randomize;

@@ -3,7 +3,7 @@
 //  \file blaze/math/functors/LpNorm.h
 //  \brief Header file for the LpNorm functor
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -109,13 +109,6 @@ template<>
 struct LpNorm<1UL>
 {
    //**********************************************************************************************
-   /*!\brief Default constructor of the LpNorm functor.
-   */
-   explicit inline LpNorm()
-   {}
-   //**********************************************************************************************
-
-   //**********************************************************************************************
    /*!\brief Calls the lpNorm() function with the given object/value.
    //
    // \param a The given object/value.
@@ -140,13 +133,6 @@ struct LpNorm<1UL>
 template<>
 struct LpNorm<2UL>
 {
-   //**********************************************************************************************
-   /*!\brief Default constructor of the LpNorm functor.
-   */
-   explicit inline LpNorm()
-   {}
-   //**********************************************************************************************
-
    //**********************************************************************************************
    /*!\brief Calls the lpNorm() function with the given object/value.
    //
@@ -173,13 +159,6 @@ template<>
 struct LpNorm<3UL>
 {
    //**********************************************************************************************
-   /*!\brief Default constructor of the LpNorm functor.
-   */
-   explicit inline LpNorm()
-   {}
-   //**********************************************************************************************
-
-   //**********************************************************************************************
    /*!\brief Calls the lpNorm() function with the given object/value.
    //
    // \param a The given object/value.
@@ -204,13 +183,6 @@ struct LpNorm<3UL>
 template<>
 struct LpNorm<4UL>
 {
-   //**********************************************************************************************
-   /*!\brief Default constructor of the LpNorm functor.
-   */
-   explicit inline LpNorm()
-   {}
-   //**********************************************************************************************
-
    //**********************************************************************************************
    /*!\brief Calls the lpNorm() function with the given object/value.
    //

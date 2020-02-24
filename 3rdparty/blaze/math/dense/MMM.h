@@ -3,7 +3,7 @@
 //  \file blaze/math/dense/MMM.h
 //  \brief Header file for the dense matrix multiplication kernels
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -59,6 +59,7 @@
 #include "../../math/expressions/DenseMatrix.h"
 #include "../../math/shims/IsDefault.h"
 #include "../../math/shims/IsOne.h"
+#include "../../math/shims/PrevMultiple.h"
 #include "../../math/shims/Serial.h"
 #include "../../math/SIMD.h"
 #include "../../math/typetraits/IsLower.h"
@@ -155,7 +156,7 @@ void mmm( DenseMatrix<MT1,false>& C, const MT2& A, const MT3& B, ST alpha, ST be
    while( kk + ( remainder ? SIMDSIZE-1UL : 0UL ) < K )
    {
       if( remainder ) {
-         kblock = ( ( kk+KBLOCK <= K )?( KBLOCK ):( ( K - kk ) & size_t(-SIMDSIZE) ) );
+         kblock = ( ( kk+KBLOCK <= K )?( KBLOCK ):( prevMultiple( K - kk, SIMDSIZE ) ) );
       }
       else {
          kblock = ( ( kk+KBLOCK <= K )?( KBLOCK ):( K - kk ) );
@@ -655,7 +656,7 @@ void mmm( DenseMatrix<MT1,true>& C, const MT2& A, const MT3& B, ST alpha, ST bet
    while( kk + ( remainder ? SIMDSIZE-1UL : 0UL ) < K )
    {
       if( remainder ) {
-         kblock = ( ( kk+KBLOCK <= K )?( KBLOCK ):( ( K - kk ) & size_t(-SIMDSIZE) ) );
+         kblock = ( ( kk+KBLOCK <= K )?( KBLOCK ):( prevMultiple( K - kk, SIMDSIZE ) ) );
       }
       else {
          kblock = ( ( kk+KBLOCK <= K )?( KBLOCK ):( K - kk ) );
@@ -1185,7 +1186,7 @@ void lmmm( DenseMatrix<MT1,false>& C, const MT2& A, const MT3& B, ST alpha, ST b
    while( kk + ( remainder ? SIMDSIZE-1UL : 0UL ) < K )
    {
       if( remainder ) {
-         kblock = ( ( kk+KBLOCK <= K )?( KBLOCK ):( ( K - kk ) & size_t(-SIMDSIZE) ) );
+         kblock = ( ( kk+KBLOCK <= K )?( KBLOCK ):( prevMultiple( K - kk, SIMDSIZE ) ) );
       }
       else {
          kblock = ( ( kk+KBLOCK <= K )?( KBLOCK ):( K - kk ) );
@@ -1711,7 +1712,7 @@ void lmmm( DenseMatrix<MT1,true>& C, const MT2& A, const MT3& B, ST alpha, ST be
    while( kk + ( remainder ? SIMDSIZE-1UL : 0UL ) < K )
    {
       if( remainder ) {
-         kblock = ( ( kk+KBLOCK <= K )?( KBLOCK ):( ( K - kk ) & size_t(-SIMDSIZE) ) );
+         kblock = ( ( kk+KBLOCK <= K )?( KBLOCK ):( prevMultiple( K - kk, SIMDSIZE ) ) );
       }
       else {
          kblock = ( ( kk+KBLOCK <= K )?( KBLOCK ):( K - kk ) );
@@ -2255,7 +2256,7 @@ void ummm( DenseMatrix<MT1,false>& C, const MT2& A, const MT3& B, ST alpha, ST b
    while( kk + ( remainder ? SIMDSIZE-1UL : 0UL ) < K )
    {
       if( remainder ) {
-         kblock = ( ( kk+KBLOCK <= K )?( KBLOCK ):( ( K - kk ) & size_t(-SIMDSIZE) ) );
+         kblock = ( ( kk+KBLOCK <= K )?( KBLOCK ):( prevMultiple( K - kk, SIMDSIZE ) ) );
       }
       else {
          kblock = ( ( kk+KBLOCK <= K )?( KBLOCK ):( K - kk ) );
@@ -2773,7 +2774,7 @@ void ummm( DenseMatrix<MT1,true>& C, const MT2& A, const MT3& B, ST alpha, ST be
    while( kk + ( remainder ? SIMDSIZE-1UL : 0UL ) < K )
    {
       if( remainder ) {
-         kblock = ( ( kk+KBLOCK <= K )?( KBLOCK ):( ( K - kk ) & size_t(-SIMDSIZE) ) );
+         kblock = ( ( kk+KBLOCK <= K )?( KBLOCK ):( prevMultiple( K - kk, SIMDSIZE ) ) );
       }
       else {
          kblock = ( ( kk+KBLOCK <= K )?( KBLOCK ):( K - kk ) );

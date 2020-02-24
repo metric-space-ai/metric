@@ -3,7 +3,7 @@
 //  \file blaze/math/dense/UniformMatrix.h
 //  \brief Header file for the implementation of a uniform matrix
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -44,10 +44,12 @@
 #include "../../math/Aliases.h"
 #include "../../math/AlignmentFlag.h"
 #include "../../math/dense/UniformIterator.h"
+#include "../../math/dense/Forward.h"
 #include "../../math/Exception.h"
 #include "../../math/expressions/DenseMatrix.h"
 #include "../../math/expressions/Expression.h"
 #include "../../math/Forward.h"
+#include "../../math/RelaxationFlag.h"
 #include "../../math/shims/Clear.h"
 #include "../../math/shims/Conjugate.h"
 #include "../../math/shims/IsDefault.h"
@@ -81,7 +83,6 @@
 #include "../../math/typetraits/YieldsUniform.h"
 #include "../../math/typetraits/YieldsZero.h"
 #include "../../system/Inline.h"
-#include "../../system/StorageOrder.h"
 #include "../../system/Thresholds.h"
 #include "../../util/Assert.h"
 #include "../../util/constraints/Const.h"
@@ -180,8 +181,8 @@ namespace blaze {
    D *= A * B;    // Multiplication assignment
    \endcode
 */
-template< typename Type                    // Data type of the matrix
-        , bool SO = defaultStorageOrder >  // Storage order
+template< typename Type  // Data type of the matrix
+        , bool SO >      // Storage order
 class UniformMatrix
    : public Expression< DenseMatrix< UniformMatrix<Type,SO>, SO > >
 {
@@ -243,9 +244,9 @@ class UniformMatrix
    //**Constructors********************************************************************************
    /*!\name Constructors */
    //@{
-   explicit inline constexpr UniformMatrix() noexcept;
-   explicit inline constexpr UniformMatrix( size_t m, size_t n );
-   explicit inline constexpr UniformMatrix( size_t m, size_t n, const Type& init );
+   constexpr UniformMatrix() noexcept;
+   constexpr UniformMatrix( size_t m, size_t n );
+   constexpr UniformMatrix( size_t m, size_t n, const Type& init );
 
    template< typename MT, bool SO2 >
    inline UniformMatrix( const Matrix<MT,SO2>& m );
@@ -266,21 +267,21 @@ class UniformMatrix
    //**Data access functions***********************************************************************
    /*!\name Data access functions */
    //@{
-   inline constexpr ConstReference operator()( size_t i, size_t j ) const noexcept;
-   inline           ConstReference at( size_t i, size_t j ) const;
-   inline constexpr ConstPointer   data  () const noexcept;
-   inline constexpr ConstPointer   data  ( size_t i ) const noexcept;
-   inline constexpr ConstIterator  begin ( size_t i ) const noexcept;
-   inline constexpr ConstIterator  cbegin( size_t i ) const noexcept;
-   inline constexpr ConstIterator  end   ( size_t i ) const noexcept;
-   inline constexpr ConstIterator  cend  ( size_t i ) const noexcept;
+   constexpr ConstReference operator()( size_t i, size_t j ) const noexcept;
+   inline    ConstReference at( size_t i, size_t j ) const;
+   constexpr ConstPointer   data  () const noexcept;
+   constexpr ConstPointer   data  ( size_t i ) const noexcept;
+   constexpr ConstIterator  begin ( size_t i ) const noexcept;
+   constexpr ConstIterator  cbegin( size_t i ) const noexcept;
+   constexpr ConstIterator  end   ( size_t i ) const noexcept;
+   constexpr ConstIterator  cend  ( size_t i ) const noexcept;
    //@}
    //**********************************************************************************************
 
    //**Assignment operators************************************************************************
    /*!\name Assignment operators */
    //@{
-   inline constexpr UniformMatrix& operator=( const Type& rhs );
+   constexpr UniformMatrix& operator=( const Type& rhs );
 
    UniformMatrix& operator=( const UniformMatrix& ) = default;
    UniformMatrix& operator=( UniformMatrix&& ) = default;
@@ -302,26 +303,26 @@ class UniformMatrix
    //**Utility functions***************************************************************************
    /*!\name Utility functions */
    //@{
-   inline constexpr size_t rows() const noexcept;
-   inline constexpr size_t columns() const noexcept;
-   inline constexpr size_t spacing() const noexcept;
-   inline constexpr size_t capacity() const noexcept;
-   inline constexpr size_t capacity( size_t i ) const noexcept;
-   inline           size_t nonZeros() const;
-   inline           size_t nonZeros( size_t i ) const;
-   inline constexpr void   reset();
-   inline constexpr void   clear();
-          constexpr void   resize ( size_t m, size_t n, bool preserve=true );
-   inline constexpr void   extend ( size_t m, size_t n, bool preserve=true );
-   inline constexpr void   swap( UniformMatrix& m ) noexcept;
+   constexpr size_t rows() const noexcept;
+   constexpr size_t columns() const noexcept;
+   constexpr size_t spacing() const noexcept;
+   constexpr size_t capacity() const noexcept;
+   constexpr size_t capacity( size_t i ) const noexcept;
+   inline    size_t nonZeros() const;
+   inline    size_t nonZeros( size_t i ) const;
+   constexpr void   reset();
+   constexpr void   clear();
+   constexpr void   resize ( size_t m, size_t n, bool preserve=true );
+   constexpr void   extend ( size_t m, size_t n, bool preserve=true );
+   constexpr void   swap( UniformMatrix& m ) noexcept;
    //@}
    //**********************************************************************************************
 
    //**Numeric functions***************************************************************************
    /*!\name Numeric functions */
    //@{
-   inline constexpr UniformMatrix& transpose();
-   inline constexpr UniformMatrix& ctranspose();
+   constexpr UniformMatrix& transpose();
+   constexpr UniformMatrix& ctranspose();
 
    template< typename Other > inline UniformMatrix& scale( const Other& scalar );
    //@}
@@ -384,7 +385,7 @@ class UniformMatrix
 */
 template< typename Type  // Data type of the matrix
         , bool SO >      // Storage order
-inline constexpr UniformMatrix<Type,SO>::UniformMatrix() noexcept
+constexpr UniformMatrix<Type,SO>::UniformMatrix() noexcept
    : m_    ( 0UL )  // The current number of rows of the matrix
    , n_    ( 0UL )  // The current number of columns of the matrix
    , value_()       // The value of all elements of the uniform matrix
@@ -400,7 +401,7 @@ inline constexpr UniformMatrix<Type,SO>::UniformMatrix() noexcept
 */
 template< typename Type  // Data type of the matrix
         , bool SO >      // Storage order
-inline constexpr UniformMatrix<Type,SO>::UniformMatrix( size_t m, size_t n )
+constexpr UniformMatrix<Type,SO>::UniformMatrix( size_t m, size_t n )
    : m_    ( m )  // The current number of rows of the matrix
    , n_    ( n )  // The current number of columns of the matrix
    , value_()     // The value of all elements of the uniform matrix
@@ -419,7 +420,7 @@ inline constexpr UniformMatrix<Type,SO>::UniformMatrix( size_t m, size_t n )
 */
 template< typename Type  // Data type of the matrix
         , bool SO >      // Storage order
-inline constexpr UniformMatrix<Type,SO>::UniformMatrix( size_t m, size_t n, const Type& init )
+constexpr UniformMatrix<Type,SO>::UniformMatrix( size_t m, size_t n, const Type& init )
    : m_    ( m )     // The current number of rows of the matrix
    , n_    ( n )     // The current number of columns of the matrix
    , value_( init )  // The value of all elements of the uniform matrix
@@ -476,7 +477,7 @@ inline UniformMatrix<Type,SO>::UniformMatrix( const Matrix<MT,SO2>& m )
 */
 template< typename Type  // Data type of the matrix
         , bool SO >      // Storage order
-inline constexpr typename UniformMatrix<Type,SO>::ConstReference
+constexpr typename UniformMatrix<Type,SO>::ConstReference
    UniformMatrix<Type,SO>::operator()( size_t i, size_t j ) const noexcept
 {
    MAYBE_UNUSED( i, j );
@@ -531,7 +532,7 @@ inline typename UniformMatrix<Type,SO>::ConstReference
 */
 template< typename Type  // Data type of the matrix
         , bool SO >      // Storage order
-inline constexpr typename UniformMatrix<Type,SO>::ConstPointer
+constexpr typename UniformMatrix<Type,SO>::ConstPointer
    UniformMatrix<Type,SO>::data() const noexcept
 {
    return &value_;
@@ -549,7 +550,7 @@ inline constexpr typename UniformMatrix<Type,SO>::ConstPointer
 */
 template< typename Type  // Data type of the matrix
         , bool SO >      // Storage order
-inline constexpr typename UniformMatrix<Type,SO>::ConstPointer
+constexpr typename UniformMatrix<Type,SO>::ConstPointer
    UniformMatrix<Type,SO>::data( size_t i ) const noexcept
 {
    MAYBE_UNUSED( i );
@@ -575,7 +576,7 @@ inline constexpr typename UniformMatrix<Type,SO>::ConstPointer
 */
 template< typename Type  // Data type of the matrix
         , bool SO >      // Storage order
-inline constexpr typename UniformMatrix<Type,SO>::ConstIterator
+constexpr typename UniformMatrix<Type,SO>::ConstIterator
    UniformMatrix<Type,SO>::begin( size_t i ) const noexcept
 {
    MAYBE_UNUSED( i );
@@ -601,7 +602,7 @@ inline constexpr typename UniformMatrix<Type,SO>::ConstIterator
 */
 template< typename Type  // Data type of the matrix
         , bool SO >      // Storage order
-inline constexpr typename UniformMatrix<Type,SO>::ConstIterator
+constexpr typename UniformMatrix<Type,SO>::ConstIterator
    UniformMatrix<Type,SO>::cbegin( size_t i ) const noexcept
 {
    MAYBE_UNUSED( i );
@@ -627,7 +628,7 @@ inline constexpr typename UniformMatrix<Type,SO>::ConstIterator
 */
 template< typename Type  // Data type of the matrix
         , bool SO >      // Storage order
-inline constexpr typename UniformMatrix<Type,SO>::ConstIterator
+constexpr typename UniformMatrix<Type,SO>::ConstIterator
    UniformMatrix<Type,SO>::end( size_t i ) const noexcept
 {
    MAYBE_UNUSED( i );
@@ -653,7 +654,7 @@ inline constexpr typename UniformMatrix<Type,SO>::ConstIterator
 */
 template< typename Type  // Data type of the matrix
         , bool SO >      // Storage order
-inline constexpr typename UniformMatrix<Type,SO>::ConstIterator
+constexpr typename UniformMatrix<Type,SO>::ConstIterator
    UniformMatrix<Type,SO>::cend( size_t i ) const noexcept
 {
    MAYBE_UNUSED( i );
@@ -682,7 +683,7 @@ inline constexpr typename UniformMatrix<Type,SO>::ConstIterator
 */
 template< typename Type  // Data type of the matrix
         , bool SO >      // Storage order
-inline constexpr UniformMatrix<Type,SO>& UniformMatrix<Type,SO>::operator=( const Type& rhs )
+constexpr UniformMatrix<Type,SO>& UniformMatrix<Type,SO>::operator=( const Type& rhs )
 {
    value_ = rhs;
 
@@ -926,7 +927,7 @@ inline auto UniformMatrix<Type,SO>::operator/=( ST scalar )
 */
 template< typename Type  // Data type of the matrix
         , bool SO >      // Storage order
-inline constexpr size_t UniformMatrix<Type,SO>::rows() const noexcept
+constexpr size_t UniformMatrix<Type,SO>::rows() const noexcept
 {
    return m_;
 }
@@ -940,7 +941,7 @@ inline constexpr size_t UniformMatrix<Type,SO>::rows() const noexcept
 */
 template< typename Type  // Data type of the matrix
         , bool SO >      // Storage order
-inline constexpr size_t UniformMatrix<Type,SO>::columns() const noexcept
+constexpr size_t UniformMatrix<Type,SO>::columns() const noexcept
 {
    return n_;
 }
@@ -959,7 +960,7 @@ inline constexpr size_t UniformMatrix<Type,SO>::columns() const noexcept
 */
 template< typename Type  // Data type of the matrix
         , bool SO >      // Storage order
-inline constexpr size_t UniformMatrix<Type,SO>::spacing() const noexcept
+constexpr size_t UniformMatrix<Type,SO>::spacing() const noexcept
 {
    return SO ? m_ : n_;
 }
@@ -973,7 +974,7 @@ inline constexpr size_t UniformMatrix<Type,SO>::spacing() const noexcept
 */
 template< typename Type  // Data type of the matrix
         , bool SO >      // Storage order
-inline constexpr size_t UniformMatrix<Type,SO>::capacity() const noexcept
+constexpr size_t UniformMatrix<Type,SO>::capacity() const noexcept
 {
    return m_ * n_;
 }
@@ -993,7 +994,7 @@ inline constexpr size_t UniformMatrix<Type,SO>::capacity() const noexcept
 */
 template< typename Type  // Data type of the matrix
         , bool SO >      // Storage order
-inline constexpr size_t UniformMatrix<Type,SO>::capacity( size_t i ) const noexcept
+constexpr size_t UniformMatrix<Type,SO>::capacity( size_t i ) const noexcept
 {
    MAYBE_UNUSED( i );
    BLAZE_USER_ASSERT( SO  || i < m_, "Invalid dense matrix row access index" );
@@ -1056,7 +1057,7 @@ inline size_t UniformMatrix<Type,SO>::nonZeros( size_t i ) const
 */
 template< typename Type  // Data type of the matrix
         , bool SO >      // Storage order
-inline constexpr void UniformMatrix<Type,SO>::reset()
+constexpr void UniformMatrix<Type,SO>::reset()
 {
    using blaze::clear;
 
@@ -1074,7 +1075,7 @@ inline constexpr void UniformMatrix<Type,SO>::reset()
 */
 template< typename Type  // Data type of the matrix
         , bool SO >      // Storage order
-inline constexpr void UniformMatrix<Type,SO>::clear()
+constexpr void UniformMatrix<Type,SO>::clear()
 {
    m_ = 0UL;
    n_ = 0UL;
@@ -1122,7 +1123,7 @@ void constexpr UniformMatrix<Type,SO>::resize( size_t m, size_t n, bool preserve
 */
 template< typename Type  // Data type of the matrix
         , bool SO >      // Storage order
-inline constexpr void UniformMatrix<Type,SO>::extend( size_t m, size_t n, bool preserve )
+constexpr void UniformMatrix<Type,SO>::extend( size_t m, size_t n, bool preserve )
 {
    resize( m_+m, n_+n, preserve );
 }
@@ -1137,7 +1138,7 @@ inline constexpr void UniformMatrix<Type,SO>::extend( size_t m, size_t n, bool p
 */
 template< typename Type  // Data type of the matrix
         , bool SO >      // Storage order
-inline constexpr void UniformMatrix<Type,SO>::swap( UniformMatrix& m ) noexcept
+constexpr void UniformMatrix<Type,SO>::swap( UniformMatrix& m ) noexcept
 {
    using std::swap;
 
@@ -1163,7 +1164,7 @@ inline constexpr void UniformMatrix<Type,SO>::swap( UniformMatrix& m ) noexcept
 */
 template< typename Type  // Data type of the matrix
         , bool SO >      // Storage order
-inline constexpr UniformMatrix<Type,SO>& UniformMatrix<Type,SO>::transpose()
+constexpr UniformMatrix<Type,SO>& UniformMatrix<Type,SO>::transpose()
 {
    using std::swap;
 
@@ -1181,7 +1182,7 @@ inline constexpr UniformMatrix<Type,SO>& UniformMatrix<Type,SO>::transpose()
 */
 template< typename Type  // Data type of the matrix
         , bool SO >      // Storage order
-inline constexpr UniformMatrix<Type,SO>& UniformMatrix<Type,SO>::ctranspose()
+constexpr UniformMatrix<Type,SO>& UniformMatrix<Type,SO>::ctranspose()
 {
    using std::swap;
 
@@ -1423,7 +1424,7 @@ constexpr void reset( UniformMatrix<Type,SO>& m );
 template< typename Type, bool SO >
 constexpr void clear( UniformMatrix<Type,SO>& m );
 
-template< bool RF, typename Type, bool SO >
+template< RelaxationFlag RF, typename Type, bool SO >
 constexpr bool isDefault( const UniformMatrix<Type,SO>& m );
 
 template< typename Type, bool SO >
@@ -1444,7 +1445,7 @@ constexpr void swap( UniformMatrix<Type,SO>& a, UniformMatrix<Type,SO>& b ) noex
 */
 template< typename Type  // Data type of the matrix
         , bool SO >      // Storage order
-inline constexpr void reset( UniformMatrix<Type,SO>& m )
+constexpr void reset( UniformMatrix<Type,SO>& m )
 {
    m.reset();
 }
@@ -1460,7 +1461,7 @@ inline constexpr void reset( UniformMatrix<Type,SO>& m )
 */
 template< typename Type  // Data type of the matrix
         , bool SO >      // Storage order
-inline constexpr void clear( UniformMatrix<Type,SO>& m )
+constexpr void clear( UniformMatrix<Type,SO>& m )
 {
    m.clear();
 }
@@ -1492,10 +1493,10 @@ inline constexpr void clear( UniformMatrix<Type,SO>& m )
    if( isDefault<relaxed>( A ) ) { ... }
    \endcode
 */
-template< bool RF        // Relaxation flag
-        , typename Type  // Data type of the matrix
-        , bool SO >      // Storage order
-inline constexpr bool isDefault( const UniformMatrix<Type,SO>& m )
+template< RelaxationFlag RF  // Relaxation flag
+        , typename Type      // Data type of the matrix
+        , bool SO >          // Storage order
+constexpr bool isDefault( const UniformMatrix<Type,SO>& m )
 {
    return ( m.rows() == 0UL && m.columns() == 0UL );
 }
@@ -1522,7 +1523,7 @@ inline constexpr bool isDefault( const UniformMatrix<Type,SO>& m )
 */
 template< typename Type  // Data type of the matrix
         , bool SO >      // Storage order
-inline constexpr bool isIntact( const UniformMatrix<Type,SO>& m ) noexcept
+constexpr bool isIntact( const UniformMatrix<Type,SO>& m ) noexcept
 {
    MAYBE_UNUSED( m );
 
@@ -1541,7 +1542,7 @@ inline constexpr bool isIntact( const UniformMatrix<Type,SO>& m ) noexcept
 */
 template< typename Type  // Data type of the matrix
         , bool SO >      // Storage order
-inline constexpr void swap( UniformMatrix<Type,SO>& a, UniformMatrix<Type,SO>& b ) noexcept
+constexpr void swap( UniformMatrix<Type,SO>& a, UniformMatrix<Type,SO>& b ) noexcept
 {
    a.swap( b );
 }
@@ -1574,24 +1575,24 @@ inline constexpr void swap( UniformMatrix<Type,SO>& a, UniformMatrix<Type,SO>& b
    using blaze::columnMajor;
 
    // Creates the uniform row-major matrix
-   //    ( 1 1 1 1 1 )
-   //    ( 1 1 1 1 1 )
+   //    ( 1, 1, 1, 1, 1 )
+   //    ( 1, 1, 1, 1, 1 )
    auto U1 = uniform<int>( 2UL, 5UL, 1 );
 
    // Creates the uniform row-major matrix
-   //    ( 1.2 1.2 )
-   //    ( 1.2 1.2 )
-   //    ( 1.2 1.2 )
+   //    ( 1.2, 1.2 )
+   //    ( 1.2, 1.2 )
+   //    ( 1.2, 1.2 )
    auto U2 = uniform<int,rowMajor>( 3UL, 2UL, 1.2 );
 
    // Creates the uniform column-major matrix
-   //   ( 5U 5U 5U 5U 5U 5U 5U )
-   //   ( 5U 5U 5U 5U 5U 5U 5U )
+   //   ( 5U, 5U, 5U, 5U, 5U, 5U, 5U )
+   //   ( 5U, 5U, 5U, 5U, 5U, 5U, 5U )
    auto U3 = uniform<int,columnMajor>( 2UL, 7UL, 5U );
    \endcode
 */
 template< bool SO = defaultStorageOrder, typename T >
-inline constexpr decltype(auto) uniform( size_t m, size_t n, T&& init )
+constexpr decltype(auto) uniform( size_t m, size_t n, T&& init )
 {
    return UniformMatrix< RemoveCVRef_t<T>, SO >( m, n, std::forward<T>( init ) );
 }
@@ -1904,6 +1905,19 @@ struct UnaryMapTraitEval1< T, OP
 
 //*************************************************************************************************
 /*! \cond BLAZE_INTERNAL */
+template< typename T1, typename T2, typename OP >
+struct BinaryMapTraitEval1< T1, T2, OP
+                          , EnableIf_t< IsColumnVector_v<T1> &&
+                                        IsRowVector_v<T2> &&
+                                        YieldsUniform_v<OP,T1,T2> &&
+                                        !YieldsZero_v<OP,T1,T2> > >
+{
+   using ET1 = ElementType_t<T1>;
+   using ET2 = ElementType_t<T2>;
+
+   using Type = UniformMatrix< MapTrait_t<ET1,ET2,OP>, false >;
+};
+
 template< typename T1, typename T2, typename OP >
 struct BinaryMapTraitEval1< T1, T2, OP
                           , EnableIf_t< IsMatrix_v<T1> &&

@@ -3,7 +3,7 @@
 //  \file blaze/math/simd/SIMDPack.h
 //  \brief Header file for the SIMDPack base class
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -60,8 +60,9 @@ namespace blaze {
 // back to this type via the 'Curiously Recurring Template Pattern' (CRTP).
 */
 template< typename T >  // Type of the SIMD pack
-struct SIMDPack
+class SIMDPack
 {
+ public:
    //**Non-const conversion operator***************************************************************
    /*!\brief Conversion operator for non-constant vectors.
    //
@@ -80,6 +81,19 @@ struct SIMDPack
    BLAZE_ALWAYS_INLINE const T& operator~() const noexcept {
       return *static_cast<const T*>( this );
    }
+   //**********************************************************************************************
+
+ protected:
+   //**Special member functions********************************************************************
+   /*!\name Special member functions */
+   //@{
+   SIMDPack() = default;
+   SIMDPack( const SIMDPack& ) = default;
+   SIMDPack( SIMDPack&& ) = default;
+   ~SIMDPack() = default;
+   SIMDPack& operator=( const SIMDPack& ) = default;
+   SIMDPack& operator=( SIMDPack&& ) = default;
+   //@}
    //**********************************************************************************************
 };
 //*************************************************************************************************

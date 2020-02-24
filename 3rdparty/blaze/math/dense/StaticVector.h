@@ -3,7 +3,7 @@
 //  \file blaze/math/dense/StaticVector.h
 //  \brief Header file for the implementation of a fixed-size vector
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -40,21 +40,28 @@
 // Includes
 //*************************************************************************************************
 
+#include <array>
 #include <tuple>
 #include <utility>
 #include "../../math/Aliases.h"
+#include "../../math/AlignmentFlag.h"
 #include "../../math/constraints/DenseVector.h"
 #include "../../math/constraints/RequiresEvaluation.h"
 #include "../../math/constraints/TransposeFlag.h"
 #include "../../math/dense/DenseIterator.h"
+#include "../../math/dense/Forward.h"
 #include "../../math/Exception.h"
 #include "../../math/expressions/DenseVector.h"
 #include "../../math/expressions/SparseVector.h"
 #include "../../math/Forward.h"
 #include "../../math/InitializerList.h"
+#include "../../math/PaddingFlag.h"
+#include "../../math/ReductionFlag.h"
+#include "../../math/RelaxationFlag.h"
 #include "../../math/shims/Clear.h"
 #include "../../math/shims/IsDefault.h"
 #include "../../math/shims/NextMultiple.h"
+#include "../../math/shims/PrevMultiple.h"
 #include "../../math/shims/Serial.h"
 #include "../../math/SIMD.h"
 #include "../../math/traits/AddTrait.h"
@@ -68,6 +75,7 @@
 #include "../../math/traits/MultTrait.h"
 #include "../../math/traits/ReduceTrait.h"
 #include "../../math/traits/RowTrait.h"
+#include "../../math/traits/SolveTrait.h"
 #include "../../math/traits/SubTrait.h"
 #include "../../math/traits/SubvectorTrait.h"
 #include "../../math/typetraits/HasConstDataAccess.h"
@@ -96,6 +104,7 @@
 #include "../../math/typetraits/TransposeFlag.h"
 #include "../../system/Inline.h"
 #include "../../system/Optimizations.h"
+#include "../../system/Standard.h"
 #include "../../system/TransposeFlag.h"
 #include "../../util/algorithms/Max.h"
 #include "../../util/algorithms/Min.h"
@@ -107,7 +116,6 @@
 #include "../../util/constraints/Reference.h"
 #include "../../util/constraints/Vectorizable.h"
 #include "../../util/constraints/Volatile.h"
-#include "../../util/DisableIf.h"
 #include "../../util/EnableIf.h"
 #include "../../util/IntegralConstant.h"
 #include "../../util/MaybeUnused.h"
@@ -118,6 +126,7 @@
 #include "../../util/typetraits/IsNumeric.h"
 #include "../../util/typetraits/IsVectorizable.h"
 #include "../../util/typetraits/RemoveConst.h"
+#include "../../util/typetraits/RemoveCV.h"
 
 
 namespace blaze {
@@ -136,11 +145,12 @@ namespace blaze {
 // \ingroup static_vector
 //
 // The StaticVector class template is the representation of a fixed-size vector with statically
-// allocated elements of arbitrary type. The type of the elements, the number of elements and
-// the transpose flag of the vector can be specified via the three template parameters:
+// allocated elements of arbitrary type. The type of the elements, the number of elements, the
+// transpose flag, the alignment, and the padding of the vector can be specified via the five
+// template parameters:
 
    \code
-   template< typename Type, size_t N, bool TF >
+   template< typename Type, size_t N, bool TF, AlignmentFlag AF, PaddingFlag PF >
    class StaticVector;
    \endcode
 
@@ -150,6 +160,12 @@ namespace blaze {
 //          only used for tiny and small vectors.
 //  - TF  : specifies whether the vector is a row vector (\a blaze::rowVector) or a column
 //          vector (\a blaze::columnVector). The default value is \a blaze::columnVector.
+//  - AF  : specifies whether the first element of the vector is properly aligned with respect to
+//          the available instruction set (SSE, AVX, ...). Possible values are \a blaze::aligned
+//          and \a blaze::unaligned. The default value is \a blaze::aligned.
+//  - PF  : specifies whether the vector should be padded to maximize the efficiency of vectorized
+//          operations. Possible values are \a blaze::padded and \a blaze::unpadded. The default
+//          value is \a blaze::padded.
 //
 // These contiguously stored elements can be directly accessed with the subscript operator. The
 // numbering of the vector elements is
@@ -194,42 +210,32 @@ namespace blaze {
    A = a * trans( b );  // Outer product between two vectors
    \endcode
 */
-template< typename Type                     // Data type of the vector
-        , size_t N                          // Number of elements
-        , bool TF = defaultTransposeFlag >  // Transpose flag
+template< typename Type     // Data type of the vector
+        , size_t N          // Number of elements
+        , bool TF           // Transpose flag
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
 class StaticVector
-   : public DenseVector< StaticVector<Type,N,TF>, TF >
+   : public DenseVector< StaticVector<Type,N,TF,AF,PF>, TF >
 {
- private:
-   //**********************************************************************************************
-   //! The number of elements packed within a single SIMD vector.
-   static constexpr size_t SIMDSIZE = SIMDTrait<Type>::size;
-
-   //! Alignment adjustment.
-   static constexpr size_t NN = ( usePadding ? nextMultiple( N, SIMDSIZE ) : N );
-
-   //! Compilation switch for the choice of alignment.
-   static constexpr bool align = ( NN >= SIMDSIZE );
-   //**********************************************************************************************
-
  public:
    //**Type definitions****************************************************************************
-   using This          = StaticVector<Type,N,TF>;   //!< Type of this StaticVector instance.
-   using BaseType      = DenseVector<This,TF>;      //!< Base type of this StaticVector instance.
-   using ResultType    = This;                      //!< Result type for expression template evaluations.
-   using TransposeType = StaticVector<Type,N,!TF>;  //!< Transpose type for expression template evaluations.
-   using ElementType   = Type;                      //!< Type of the vector elements.
-   using SIMDType      = SIMDTrait_t<ElementType>;  //!< SIMD type of the vector elements.
-   using ReturnType    = const Type&;               //!< Return type for expression template evaluations.
-   using CompositeType = const StaticVector&;       //!< Data type for composite expression templates.
+   using This          = StaticVector<Type,N,TF,AF,PF>;   //!< Type of this StaticVector instance.
+   using BaseType      = DenseVector<This,TF>;            //!< Base type of this StaticVector instance.
+   using ResultType    = This;                            //!< Result type for expression template evaluations.
+   using TransposeType = StaticVector<Type,N,!TF,AF,PF>;  //!< Transpose type for expression template evaluations.
+   using ElementType   = Type;                            //!< Type of the vector elements.
+   using SIMDType      = SIMDTrait_t<ElementType>;        //!< SIMD type of the vector elements.
+   using ReturnType    = const Type&;                     //!< Return type for expression template evaluations.
+   using CompositeType = const StaticVector&;             //!< Data type for composite expression templates.
 
    using Reference      = Type&;        //!< Reference to a non-constant vector value.
    using ConstReference = const Type&;  //!< Reference to a constant vector value.
    using Pointer        = Type*;        //!< Pointer to a non-constant vector value.
    using ConstPointer   = const Type*;  //!< Pointer to a constant vector value.
 
-   using Iterator      = DenseIterator<Type,align>;        //!< Iterator over non-constant elements.
-   using ConstIterator = DenseIterator<const Type,align>;  //!< Iterator over constant elements.
+   using Iterator      = DenseIterator<Type,AF>;        //!< Iterator over non-constant elements.
+   using ConstIterator = DenseIterator<const Type,AF>;  //!< Iterator over constant elements.
    //**********************************************************************************************
 
    //**Rebind struct definition********************************************************************
@@ -237,7 +243,7 @@ class StaticVector
    */
    template< typename NewType >  // Data type of the other vector
    struct Rebind {
-      using Other = StaticVector<NewType,N,TF>;  //!< The type of the other StaticVector.
+      using Other = StaticVector<NewType,N,TF,AF,PF>;  //!< The type of the other StaticVector.
    };
    //**********************************************************************************************
 
@@ -246,7 +252,7 @@ class StaticVector
    */
    template< size_t NewN >  // Number of elements of the other vector
    struct Resize {
-      using Other = StaticVector<Type,NewN,TF>;  //!< The type of the other StaticVector.
+      using Other = StaticVector<Type,NewN,TF,AF,PF>;  //!< The type of the other StaticVector.
    };
    //**********************************************************************************************
 
@@ -268,20 +274,23 @@ class StaticVector
    //**Constructors********************************************************************************
    /*!\name Constructors */
    //@{
-   explicit inline           StaticVector();
-   explicit inline           StaticVector( const Type& init );
-            inline constexpr StaticVector( initializer_list<Type> list );
+            inline    StaticVector();
+   explicit inline    StaticVector( const Type& init );
+            constexpr StaticVector( initializer_list<Type> list );
 
    template< typename Other >
-   explicit inline StaticVector( size_t n, const Other* array );
+   inline StaticVector( size_t n, const Other* array );
 
    template< typename Other, size_t Dim >
-   explicit inline StaticVector( const Other (&array)[Dim] );
+   constexpr StaticVector( const Other (&array)[Dim] );
 
-   inline constexpr StaticVector( const StaticVector& v );
+   template< typename Other, size_t Dim >
+   constexpr StaticVector( const std::array<Other,Dim>& array );
 
-   template< typename Other >
-   inline StaticVector( const StaticVector<Other,N,TF>& v );
+   constexpr StaticVector( const StaticVector& v );
+
+   template< typename Other, AlignmentFlag AF2, PaddingFlag PF2 >
+   inline StaticVector( const StaticVector<Other,N,TF,AF2,PF2>& v );
 
    template< typename VT >
    inline StaticVector( const Vector<VT,TF>& v );
@@ -298,34 +307,37 @@ class StaticVector
    //**Data access functions***********************************************************************
    /*!\name Data access functions */
    //@{
-   inline constexpr Reference      operator[]( size_t index ) noexcept;
-   inline constexpr ConstReference operator[]( size_t index ) const noexcept;
-   inline           Reference      at( size_t index );
-   inline           ConstReference at( size_t index ) const;
-   inline constexpr Pointer        data  () noexcept;
-   inline constexpr ConstPointer   data  () const noexcept;
-   inline constexpr Iterator       begin () noexcept;
-   inline constexpr ConstIterator  begin () const noexcept;
-   inline constexpr ConstIterator  cbegin() const noexcept;
-   inline constexpr Iterator       end   () noexcept;
-   inline constexpr ConstIterator  end   () const noexcept;
-   inline constexpr ConstIterator  cend  () const noexcept;
+   constexpr Reference      operator[]( size_t index ) noexcept;
+   constexpr ConstReference operator[]( size_t index ) const noexcept;
+   inline    Reference      at( size_t index );
+   inline    ConstReference at( size_t index ) const;
+   constexpr Pointer        data  () noexcept;
+   constexpr ConstPointer   data  () const noexcept;
+   constexpr Iterator       begin () noexcept;
+   constexpr ConstIterator  begin () const noexcept;
+   constexpr ConstIterator  cbegin() const noexcept;
+   constexpr Iterator       end   () noexcept;
+   constexpr ConstIterator  end   () const noexcept;
+   constexpr ConstIterator  cend  () const noexcept;
    //@}
    //**********************************************************************************************
 
    //**Assignment operators************************************************************************
    /*!\name Assignment operators */
    //@{
-   inline constexpr StaticVector& operator=( const Type& rhs );
-   inline constexpr StaticVector& operator=( initializer_list<Type> list );
+   constexpr StaticVector& operator=( const Type& rhs );
+   constexpr StaticVector& operator=( initializer_list<Type> list );
 
    template< typename Other, size_t Dim >
-   inline StaticVector& operator=( const Other (&array)[Dim] );
+   constexpr StaticVector& operator=( const Other (&array)[Dim] );
 
-   inline constexpr StaticVector& operator=( const StaticVector& rhs );
+   template< typename Other, size_t Dim >
+   constexpr StaticVector& operator=( const std::array<Other,Dim>& array );
 
-   template< typename Other >
-   inline StaticVector& operator=( const StaticVector<Other,N,TF>& rhs );
+   constexpr StaticVector& operator=( const StaticVector& rhs );
+
+   template< typename Other, AlignmentFlag AF2, PaddingFlag PF2 >
+   inline StaticVector& operator=( const StaticVector<Other,N,TF,AF2,PF2>& rhs );
 
    template< typename VT > inline StaticVector& operator= ( const Vector<VT,TF>& rhs );
    template< typename VT > inline StaticVector& operator+=( const Vector<VT,TF>& rhs );
@@ -339,12 +351,12 @@ class StaticVector
    //**Utility functions***************************************************************************
    /*!\name Utility functions */
    //@{
-   static inline constexpr size_t size() noexcept;
-   static inline constexpr size_t spacing() noexcept;
-   static inline constexpr size_t capacity() noexcept;
-          inline           size_t nonZeros() const;
-          inline constexpr void   reset();
-          inline           void   swap( StaticVector& v ) noexcept;
+   static constexpr size_t size() noexcept;
+   static constexpr size_t spacing() noexcept;
+   static constexpr size_t capacity() noexcept;
+          inline    size_t nonZeros() const;
+          constexpr void   reset();
+          inline    void   swap( StaticVector& v ) noexcept;
    //@}
    //**********************************************************************************************
 
@@ -372,11 +384,20 @@ class StaticVector
 
  private:
    //**********************************************************************************************
+   //! The number of elements packed within a single SIMD vector.
+   static constexpr size_t SIMDSIZE = SIMDTrait<Type>::size;
+
+   //! Alignment adjustment.
+   static constexpr size_t NN = ( PF == padded ? nextMultiple( N, SIMDSIZE ) : N );
+   //**********************************************************************************************
+
+   //**********************************************************************************************
    /*! \cond BLAZE_INTERNAL */
    //! Helper variable template for the explicit application of the SFINAE principle.
    template< typename VT >
    static constexpr bool VectorizedAssign_v =
       ( useOptimizedKernels &&
+        NN >= SIMDSIZE &&
         simdEnabled && VT::simdEnabled &&
         IsSIMDCombinable_v< Type, ElementType_t<VT> > );
    /*! \endcond */
@@ -387,9 +408,7 @@ class StaticVector
    //! Helper variable template for the explicit application of the SFINAE principle.
    template< typename VT >
    static constexpr bool VectorizedAddAssign_v =
-      ( useOptimizedKernels &&
-        simdEnabled && VT::simdEnabled &&
-        IsSIMDCombinable_v< Type, ElementType_t<VT> > &&
+      ( VectorizedAssign_v<VT> &&
         HasSIMDAdd_v< Type, ElementType_t<VT> > );
    /*! \endcond */
    //**********************************************************************************************
@@ -399,9 +418,7 @@ class StaticVector
    //! Helper variable template for the explicit application of the SFINAE principle.
    template< typename VT >
    static constexpr bool VectorizedSubAssign_v =
-      ( useOptimizedKernels &&
-        simdEnabled && VT::simdEnabled &&
-        IsSIMDCombinable_v< Type, ElementType_t<VT> > &&
+      ( VectorizedAssign_v<VT> &&
         HasSIMDSub_v< Type, ElementType_t<VT> > );
    /*! \endcond */
    //**********************************************************************************************
@@ -411,9 +428,7 @@ class StaticVector
    //! Helper variable template for the explicit application of the SFINAE principle.
    template< typename VT >
    static constexpr bool VectorizedMultAssign_v =
-      ( useOptimizedKernels &&
-        simdEnabled && VT::simdEnabled &&
-        IsSIMDCombinable_v< Type, ElementType_t<VT> > &&
+      ( VectorizedAssign_v<VT> &&
         HasSIMDMult_v< Type, ElementType_t<VT> > );
    /*! \endcond */
    //**********************************************************************************************
@@ -423,9 +438,7 @@ class StaticVector
    //! Helper variable template for the explicit application of the SFINAE principle.
    template< typename VT >
    static constexpr bool VectorizedDivAssign_v =
-      ( useOptimizedKernels &&
-        simdEnabled && VT::simdEnabled &&
-        IsSIMDCombinable_v< Type, ElementType_t<VT> > &&
+      ( VectorizedAssign_v<VT> &&
         HasSIMDDiv_v< Type, ElementType_t<VT> > );
    /*! \endcond */
    //**********************************************************************************************
@@ -434,7 +447,7 @@ class StaticVector
    //**Debugging functions*************************************************************************
    /*!\name Debugging functions */
    //@{
-   inline constexpr bool isIntact() const noexcept;
+   constexpr bool isIntact() const noexcept;
    //@}
    //**********************************************************************************************
 
@@ -444,7 +457,7 @@ class StaticVector
    template< typename Other > inline bool canAlias ( const Other* alias ) const noexcept;
    template< typename Other > inline bool isAliased( const Other* alias ) const noexcept;
 
-   static inline constexpr bool isAligned() noexcept;
+   static constexpr bool isAligned() noexcept;
 
    BLAZE_ALWAYS_INLINE SIMDType load ( size_t index ) const noexcept;
    BLAZE_ALWAYS_INLINE SIMDType loada( size_t index ) const noexcept;
@@ -499,7 +512,7 @@ class StaticVector
    //**********************************************************************************************
    //! Alignment of the data elements.
    static constexpr size_t Alignment =
-      ( align ? AlignmentOf_v<Type> : std::alignment_of<Type>::value );
+      ( AF == aligned ? AlignmentOf_v<Type> : std::alignment_of<Type>::value );
 
    //! Type of the aligned storage.
    using AlignedStorage = AlignedArray<Type,NN,Alignment>;
@@ -523,11 +536,36 @@ class StaticVector
    BLAZE_CONSTRAINT_MUST_NOT_BE_REFERENCE_TYPE( Type );
    BLAZE_CONSTRAINT_MUST_NOT_BE_CONST         ( Type );
    BLAZE_CONSTRAINT_MUST_NOT_BE_VOLATILE      ( Type );
-   BLAZE_STATIC_ASSERT( !usePadding || ( NN % SIMDSIZE == 0UL ) );
+   BLAZE_STATIC_ASSERT( PF == unpadded || ( NN % SIMDSIZE == 0UL ) );
    BLAZE_STATIC_ASSERT( NN >= N );
+   BLAZE_STATIC_ASSERT( IsVectorizable_v<Type> || NN == N );
    /*! \endcond */
    //**********************************************************************************************
 };
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
+//  DEDUCTION GUIDES
+//
+//=================================================================================================
+
+//*************************************************************************************************
+#if BLAZE_CPP17_MODE
+
+template< typename Type, typename... Ts >
+StaticVector( Type, Ts... ) -> StaticVector<Type,1+sizeof...(Ts)>;
+
+template< typename Type, size_t N >
+StaticVector( Type (&)[N] ) -> StaticVector< RemoveCV_t<Type>, N >;
+
+template< typename Type, size_t N >
+StaticVector( std::array<Type,N> ) -> StaticVector<Type,N>;
+
+#endif
 //*************************************************************************************************
 
 
@@ -552,24 +590,22 @@ class StaticVector
 // floating point). In case the elements are of class type, this switch has no effect. See
 // the <tt>"../../config/Optimizations.h"</tt> configuration file for more details.
 */
-template< typename Type  // Data type of the vector
-        , size_t N       // Number of elements
-        , bool TF >      // Transpose flag
-inline StaticVector<Type,N,TF>::StaticVector()
+template< typename Type     // Data type of the vector
+        , size_t N          // Number of elements
+        , bool TF           // Transpose flag
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+inline StaticVector<Type,N,TF,AF,PF>::StaticVector()
+#if BLAZE_USE_DEFAULT_INITIALIZATION
    : v_()  // The statically allocated vector elements
+#endif
 {
-   BLAZE_STATIC_ASSERT( IsVectorizable_v<Type> || NN == N );
-
-   if( IsNumeric_v<Type> ) {
-      if( useDefaultInitialization ) {
-         for( size_t i=0UL; i<NN; ++i )
-            v_[i] = Type();
-      }
-      else if( usePadding ) {
-         for( size_t i=N; i<NN; ++i )
-            v_[i] = Type();
-      }
+#if !BLAZE_USE_DEFAULT_INITIALIZATION
+   if( IsNumeric_v<Type> && PF == unpadded ) {
+      for( size_t i=N; i<NN; ++i )
+         v_[i] = Type();
    }
+#endif
 
    BLAZE_INTERNAL_ASSERT( isIntact(), "Invariant violation detected" );
 }
@@ -581,14 +617,14 @@ inline StaticVector<Type,N,TF>::StaticVector()
 //
 // \param init Initial value for all vector elements.
 */
-template< typename Type  // Data type of the vector
-        , size_t N       // Number of elements
-        , bool TF >      // Transpose flag
-inline StaticVector<Type,N,TF>::StaticVector( const Type& init )
-   : v_()  // The statically allocated vector elements
+template< typename Type     // Data type of the vector
+        , size_t N          // Number of elements
+        , bool TF           // Transpose flag
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+inline StaticVector<Type,N,TF,AF,PF>::StaticVector( const Type& init )
+   // v_ is intentionally left uninitialized
 {
-   BLAZE_STATIC_ASSERT( IsVectorizable_v<Type> || NN == N );
-
    for( size_t i=0UL; i<N; ++i )
       v_[i] = init;
 
@@ -617,14 +653,14 @@ inline StaticVector<Type,N,TF>::StaticVector( const Type& init )
 // are initialized as default. Note that in case the size of the initializer list exceeds the size
 // of the vector, a \a std::invalid_argument exception is thrown.
 */
-template< typename Type  // Data type of the vector
-        , size_t N       // Number of elements
-        , bool TF >      // Transpose flag
-inline constexpr StaticVector<Type,N,TF>::StaticVector( initializer_list<Type> list )
-   : v_( Type() )  // The statically allocated vector elements
+template< typename Type     // Data type of the vector
+        , size_t N          // Number of elements
+        , bool TF           // Transpose flag
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+constexpr StaticVector<Type,N,TF,AF,PF>::StaticVector( initializer_list<Type> list )
+   : v_()  // The statically allocated vector elements
 {
-   BLAZE_STATIC_ASSERT( IsVectorizable_v<Type> || NN == N );
-
    if( list.size() > N ) {
       BLAZE_THROW_INVALID_ARGUMENT( "Invalid setup of static vector" );
    }
@@ -653,7 +689,7 @@ inline constexpr StaticVector<Type,N,TF>::StaticVector( initializer_list<Type> l
    \code
    const double array* = new double[2];
    // ... Initialization of the array
-   blaze::StaticVector<double,2> v( array, 2UL );
+   blaze::StaticVector<double,2> v( 2UL, array );
    delete[] array;
    \endcode
 
@@ -665,13 +701,13 @@ inline constexpr StaticVector<Type,N,TF>::StaticVector( initializer_list<Type> l
 */
 template< typename Type     // Data type of the vector
         , size_t N          // Number of elements
-        , bool TF >         // Transpose flag
+        , bool TF           // Transpose flag
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
 template< typename Other >  // Data type of the initialization array
-inline StaticVector<Type,N,TF>::StaticVector( size_t n, const Other* array )
-   : v_()  // The statically allocated vector elements
+inline StaticVector<Type,N,TF,AF,PF>::StaticVector( size_t n, const Other* array )
+   // v_ is intentionally left uninitialized
 {
-   BLAZE_STATIC_ASSERT( IsVectorizable_v<Type> || NN == N );
-
    if( n > N ) {
       BLAZE_THROW_INVALID_ARGUMENT( "Invalid setup of static vector" );
    }
@@ -692,9 +728,9 @@ inline StaticVector<Type,N,TF>::StaticVector( size_t n, const Other* array )
 //*************************************************************************************************
 /*!\brief Array initialization of all vector elements.
 //
-// \param array M-dimensional array for the initialization.
+// \param array Static array for the initialization.
 //
-// This assignment operator offers the option to directly initialize the elements of the vector
+// This constructor operator offers the option to directly initialize the elements of the vector
 // with a static array:
 
    \code
@@ -702,25 +738,57 @@ inline StaticVector<Type,N,TF>::StaticVector( size_t n, const Other* array )
    blaze::StaticVector<double,3> v( init );
    \endcode
 
-// The vector is initialized with the values from the given array. Missing values are initialized
-// with default values (as e.g. the third value in the example).
+// The vector is initialized with the values from the given static array. Whereas the dimensions
+// of the vector and the static array must match, it is allowed to provide fewer initializers for
+// the static array. Missing values are initialized with default values (as e.g. the third value
+// in the example).
 */
-template< typename Type   // Data type of the vector
-        , size_t N        // Number of elements
-        , bool TF >       // Transpose flag
-template< typename Other  // Data type of the initialization array
-        , size_t Dim >    // Dimension of the initialization array
-inline StaticVector<Type,N,TF>::StaticVector( const Other (&array)[Dim] )
-   : v_()  // The statically allocated vector elements
+template< typename Type     // Data type of the vector
+        , size_t N          // Number of elements
+        , bool TF           // Transpose flag
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+template< typename Other    // Data type of the static array
+        , size_t Dim >      // Dimension of the static array
+constexpr StaticVector<Type,N,TF,AF,PF>::StaticVector( const Other (&array)[Dim] )
+   : v_( array )  // The statically allocated vector elements
 {
-   BLAZE_STATIC_ASSERT( IsVectorizable_v<Type> || NN == N );
    BLAZE_STATIC_ASSERT( Dim == N );
 
-   for( size_t i=0UL; i<N; ++i )
-      v_[i] = array[i];
+   BLAZE_INTERNAL_ASSERT( isIntact(), "Invariant violation detected" );
+}
+//*************************************************************************************************
 
-   for( size_t i=N; i<NN; ++i )
-      v_[i] = Type();
+
+//*************************************************************************************************
+/*!\brief Initialization of all vector elements from the given std::array.
+//
+// \param array The given std::array for the initialization.
+//
+// This constructor operator offers the option to directly initialize the elements of the vector
+// with a std::array:
+
+   \code
+   std::array<double,3> init{ 1.0, 2.0 };
+   blaze::StaticVector<double,3> v( init );
+   \endcode
+
+// The vector is initialized with the values from the given std::array. Whereas the dimensions
+// of the vector and the std::array must match, it is allowed to provide fewer initializers for
+// the std::array. Missing values are initialized with default values (as e.g. the third value
+// in the example).
+*/
+template< typename Type     // Data type of the vector
+        , size_t N          // Number of elements
+        , bool TF           // Transpose flag
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+template< typename Other    // Data type of the std::array
+        , size_t Dim >      // Dimension of the std::array
+constexpr StaticVector<Type,N,TF,AF,PF>::StaticVector( const std::array<Other,Dim>& array )
+   : v_( array )  // The statically allocated vector elements
+{
+   BLAZE_STATIC_ASSERT( Dim == N );
 
    BLAZE_INTERNAL_ASSERT( isIntact(), "Invariant violation detected" );
 }
@@ -734,14 +802,15 @@ inline StaticVector<Type,N,TF>::StaticVector( const Other (&array)[Dim] )
 //
 // The copy constructor is explicitly defined in order to enable/facilitate NRV optimization.
 */
-template< typename Type  // Data type of the vector
-        , size_t N       // Number of elements
-        , bool TF >      // Transpose flag
-inline constexpr StaticVector<Type,N,TF>::StaticVector( const StaticVector& v )
-   : v_( v.v_ )  // The statically allocated vector elements
+template< typename Type     // Data type of the vector
+        , size_t N          // Number of elements
+        , bool TF           // Transpose flag
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+constexpr StaticVector<Type,N,TF,AF,PF>::StaticVector( const StaticVector& v )
+   : BaseType()  // Initialization of the base class
+   , v_( v.v_ )  // The statically allocated vector elements
 {
-   BLAZE_STATIC_ASSERT( IsVectorizable_v<Type> || NN == N );
-
    BLAZE_INTERNAL_ASSERT( isIntact(), "Invariant violation detected" );
 }
 //*************************************************************************************************
@@ -752,15 +821,17 @@ inline constexpr StaticVector<Type,N,TF>::StaticVector( const StaticVector& v )
 //
 // \param v Vector to be copied.
 */
-template< typename Type     // Data type of the vector
-        , size_t N          // Number of elements
-        , bool TF >         // Transpose flag
-template< typename Other >  // Data type of the foreign vector
-inline StaticVector<Type,N,TF>::StaticVector( const StaticVector<Other,N,TF>& v )
-   : v_()  // The statically allocated vector elements
+template< typename Type      // Data type of the vector
+        , size_t N           // Number of elements
+        , bool TF            // Transpose flag
+        , AlignmentFlag AF   // Alignment flag
+        , PaddingFlag PF >   // Padding flag
+template< typename Other     // Data type of the foreign vector
+        , AlignmentFlag AF2  // Alignment flag of the foreign vector
+        , PaddingFlag PF2 >  // Padding flag of the foreign vector
+inline StaticVector<Type,N,TF,AF,PF>::StaticVector( const StaticVector<Other,N,TF,AF2,PF2>& v )
+   // v_ is intentionally left uninitialized
 {
-   BLAZE_STATIC_ASSERT( IsVectorizable_v<Type> || NN == N );
-
    for( size_t i=0UL; i<N; ++i )
       v_[i] = v[i];
 
@@ -782,16 +853,16 @@ inline StaticVector<Type,N,TF>::StaticVector( const StaticVector<Other,N,TF>& v 
 // of the given vector does not match the size of the static vector (i.e. is not N), a
 // \a std::invalid_argument exception is thrown.
 */
-template< typename Type  // Data type of the vector
-        , size_t N       // Number of elements
-        , bool TF >      // Transpose flag
-template< typename VT >  // Type of the foreign vector
-inline StaticVector<Type,N,TF>::StaticVector( const Vector<VT,TF>& v )
-   : v_()  // The statically allocated vector elements
+template< typename Type     // Data type of the vector
+        , size_t N          // Number of elements
+        , bool TF           // Transpose flag
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+template< typename VT >     // Type of the foreign vector
+inline StaticVector<Type,N,TF,AF,PF>::StaticVector( const Vector<VT,TF>& v )
+   // v_ is intentionally left uninitialized
 {
    using blaze::assign;
-
-   BLAZE_STATIC_ASSERT( IsVectorizable_v<Type> || NN == N );
 
    if( (~v).size() != N ) {
       BLAZE_THROW_INVALID_ARGUMENT( "Invalid setup of static vector" );
@@ -825,11 +896,13 @@ inline StaticVector<Type,N,TF>::StaticVector( const Vector<VT,TF>& v )
 // This function only performs an index check in case BLAZE_USER_ASSERT() is active. In contrast,
 // the at() function is guaranteed to perform a check of the given access index.
 */
-template< typename Type  // Data type of the vector
-        , size_t N       // Number of elements
-        , bool TF >      // Transpose flag
-inline constexpr typename StaticVector<Type,N,TF>::Reference
-   StaticVector<Type,N,TF>::operator[]( size_t index ) noexcept
+template< typename Type     // Data type of the vector
+        , size_t N          // Number of elements
+        , bool TF           // Transpose flag
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+constexpr typename StaticVector<Type,N,TF,AF,PF>::Reference
+   StaticVector<Type,N,TF,AF,PF>::operator[]( size_t index ) noexcept
 {
    BLAZE_USER_ASSERT( index < N, "Invalid vector access index" );
    return v_[index];
@@ -846,11 +919,13 @@ inline constexpr typename StaticVector<Type,N,TF>::Reference
 // This function only performs an index check in case BLAZE_USER_ASSERT() is active. In contrast,
 // the at() function is guaranteed to perform a check of the given access index.
 */
-template< typename Type  // Data type of the vector
-        , size_t N       // Number of elements
-        , bool TF >      // Transpose flag
-inline constexpr typename StaticVector<Type,N,TF>::ConstReference
-   StaticVector<Type,N,TF>::operator[]( size_t index ) const noexcept
+template< typename Type     // Data type of the vector
+        , size_t N          // Number of elements
+        , bool TF           // Transpose flag
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+constexpr typename StaticVector<Type,N,TF,AF,PF>::ConstReference
+   StaticVector<Type,N,TF,AF,PF>::operator[]( size_t index ) const noexcept
 {
    BLAZE_USER_ASSERT( index < N, "Invalid vector access index" );
    return v_[index];
@@ -868,11 +943,13 @@ inline constexpr typename StaticVector<Type,N,TF>::ConstReference
 // In contrast to the subscript operator this function always performs a check of the given
 // access index.
 */
-template< typename Type  // Data type of the vector
-        , size_t N       // Number of elements
-        , bool TF >      // Transpose flag
-inline typename StaticVector<Type,N,TF>::Reference
-   StaticVector<Type,N,TF>::at( size_t index )
+template< typename Type     // Data type of the vector
+        , size_t N          // Number of elements
+        , bool TF           // Transpose flag
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+inline typename StaticVector<Type,N,TF,AF,PF>::Reference
+   StaticVector<Type,N,TF,AF,PF>::at( size_t index )
 {
    if( index >= N ) {
       BLAZE_THROW_OUT_OF_RANGE( "Invalid vector access index" );
@@ -892,11 +969,13 @@ inline typename StaticVector<Type,N,TF>::Reference
 // In contrast to the subscript operator this function always performs a check of the given
 // access index.
 */
-template< typename Type  // Data type of the vector
-        , size_t N       // Number of elements
-        , bool TF >      // Transpose flag
-inline typename StaticVector<Type,N,TF>::ConstReference
-   StaticVector<Type,N,TF>::at( size_t index ) const
+template< typename Type     // Data type of the vector
+        , size_t N          // Number of elements
+        , bool TF           // Transpose flag
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+inline typename StaticVector<Type,N,TF,AF,PF>::ConstReference
+   StaticVector<Type,N,TF,AF,PF>::at( size_t index ) const
 {
    if( index >= N ) {
       BLAZE_THROW_OUT_OF_RANGE( "Invalid vector access index" );
@@ -913,11 +992,13 @@ inline typename StaticVector<Type,N,TF>::ConstReference
 //
 // This function returns a pointer to the internal storage of the static vector.
 */
-template< typename Type  // Data type of the vector
-        , size_t N       // Number of elements
-        , bool TF >      // Transpose flag
-inline constexpr typename StaticVector<Type,N,TF>::Pointer
-   StaticVector<Type,N,TF>::data() noexcept
+template< typename Type     // Data type of the vector
+        , size_t N          // Number of elements
+        , bool TF           // Transpose flag
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+constexpr typename StaticVector<Type,N,TF,AF,PF>::Pointer
+   StaticVector<Type,N,TF,AF,PF>::data() noexcept
 {
    return v_;
 }
@@ -931,11 +1012,13 @@ inline constexpr typename StaticVector<Type,N,TF>::Pointer
 //
 // This function returns a pointer to the internal storage of the static vector.
 */
-template< typename Type  // Data type of the vector
-        , size_t N       // Number of elements
-        , bool TF >      // Transpose flag
-inline constexpr typename StaticVector<Type,N,TF>::ConstPointer
-   StaticVector<Type,N,TF>::data() const noexcept
+template< typename Type     // Data type of the vector
+        , size_t N          // Number of elements
+        , bool TF           // Transpose flag
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+constexpr typename StaticVector<Type,N,TF,AF,PF>::ConstPointer
+   StaticVector<Type,N,TF,AF,PF>::data() const noexcept
 {
    return v_;
 }
@@ -947,11 +1030,13 @@ inline constexpr typename StaticVector<Type,N,TF>::ConstPointer
 //
 // \return Iterator to the first element of the static vector.
 */
-template< typename Type  // Data type of the vector
-        , size_t N       // Number of elements
-        , bool TF >      // Transpose flag
-inline constexpr typename StaticVector<Type,N,TF>::Iterator
-   StaticVector<Type,N,TF>::begin() noexcept
+template< typename Type     // Data type of the vector
+        , size_t N          // Number of elements
+        , bool TF           // Transpose flag
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+constexpr typename StaticVector<Type,N,TF,AF,PF>::Iterator
+   StaticVector<Type,N,TF,AF,PF>::begin() noexcept
 {
    return Iterator( v_ );
 }
@@ -963,11 +1048,13 @@ inline constexpr typename StaticVector<Type,N,TF>::Iterator
 //
 // \return Iterator to the first element of the static vector.
 */
-template< typename Type  // Data type of the vector
-        , size_t N       // Number of elements
-        , bool TF >      // Transpose flag
-inline constexpr typename StaticVector<Type,N,TF>::ConstIterator
-   StaticVector<Type,N,TF>::begin() const noexcept
+template< typename Type     // Data type of the vector
+        , size_t N          // Number of elements
+        , bool TF           // Transpose flag
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+constexpr typename StaticVector<Type,N,TF,AF,PF>::ConstIterator
+   StaticVector<Type,N,TF,AF,PF>::begin() const noexcept
 {
    return ConstIterator( v_ );
 }
@@ -979,11 +1066,13 @@ inline constexpr typename StaticVector<Type,N,TF>::ConstIterator
 //
 // \return Iterator to the first element of the static vector.
 */
-template< typename Type  // Data type of the vector
-        , size_t N       // Number of elements
-        , bool TF >      // Transpose flag
-inline constexpr typename StaticVector<Type,N,TF>::ConstIterator
-   StaticVector<Type,N,TF>::cbegin() const noexcept
+template< typename Type     // Data type of the vector
+        , size_t N          // Number of elements
+        , bool TF           // Transpose flag
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+constexpr typename StaticVector<Type,N,TF,AF,PF>::ConstIterator
+   StaticVector<Type,N,TF,AF,PF>::cbegin() const noexcept
 {
    return ConstIterator( v_ );
 }
@@ -995,11 +1084,13 @@ inline constexpr typename StaticVector<Type,N,TF>::ConstIterator
 //
 // \return Iterator just past the last element of the static vector.
 */
-template< typename Type  // Data type of the vector
-        , size_t N       // Number of elements
-        , bool TF >      // Transpose flag
-inline constexpr typename StaticVector<Type,N,TF>::Iterator
-   StaticVector<Type,N,TF>::end() noexcept
+template< typename Type     // Data type of the vector
+        , size_t N          // Number of elements
+        , bool TF           // Transpose flag
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+constexpr typename StaticVector<Type,N,TF,AF,PF>::Iterator
+   StaticVector<Type,N,TF,AF,PF>::end() noexcept
 {
    return Iterator( v_ + N );
 }
@@ -1011,11 +1102,13 @@ inline constexpr typename StaticVector<Type,N,TF>::Iterator
 //
 // \return Iterator just past the last element of the static vector.
 */
-template< typename Type  // Data type of the vector
-        , size_t N       // Number of elements
-        , bool TF >      // Transpose flag
-inline constexpr typename StaticVector<Type,N,TF>::ConstIterator
-   StaticVector<Type,N,TF>::end() const noexcept
+template< typename Type     // Data type of the vector
+        , size_t N          // Number of elements
+        , bool TF           // Transpose flag
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+constexpr typename StaticVector<Type,N,TF,AF,PF>::ConstIterator
+   StaticVector<Type,N,TF,AF,PF>::end() const noexcept
 {
    return ConstIterator( v_ + N );
 }
@@ -1027,11 +1120,13 @@ inline constexpr typename StaticVector<Type,N,TF>::ConstIterator
 //
 // \return Iterator just past the last element of the static vector.
 */
-template< typename Type  // Data type of the vector
-        , size_t N       // Number of elements
-        , bool TF >      // Transpose flag
-inline constexpr typename StaticVector<Type,N,TF>::ConstIterator
-   StaticVector<Type,N,TF>::cend() const noexcept
+template< typename Type     // Data type of the vector
+        , size_t N          // Number of elements
+        , bool TF           // Transpose flag
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+constexpr typename StaticVector<Type,N,TF,AF,PF>::ConstIterator
+   StaticVector<Type,N,TF,AF,PF>::cend() const noexcept
 {
    return ConstIterator( v_ + N );
 }
@@ -1052,11 +1147,13 @@ inline constexpr typename StaticVector<Type,N,TF>::ConstIterator
 // \param rhs Scalar value to be assigned to all vector elements.
 // \return Reference to the assigned vector.
 */
-template< typename Type  // Data type of the vector
-        , size_t N       // Number of elements
-        , bool TF >      // Transpose flag
-inline constexpr StaticVector<Type,N,TF>&
-   StaticVector<Type,N,TF>::operator=( const Type& rhs )
+template< typename Type     // Data type of the vector
+        , size_t N          // Number of elements
+        , bool TF           // Transpose flag
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+constexpr StaticVector<Type,N,TF,AF,PF>&
+   StaticVector<Type,N,TF,AF,PF>::operator=( const Type& rhs )
 {
    for( size_t i=0UL; i<N; ++i )
       v_[i] = rhs;
@@ -1083,11 +1180,13 @@ inline constexpr StaticVector<Type,N,TF>&
 // values are reset to their default state. Note that in case the size of the initializer list
 // exceeds the size of the vector, a \a std::invalid_argument exception is thrown.
 */
-template< typename Type  // Data type of the vector
-        , size_t N       // Number of elements
-        , bool TF >      // Transpose flag
-inline constexpr StaticVector<Type,N,TF>&
-   StaticVector<Type,N,TF>::operator=( initializer_list<Type> list )
+template< typename Type     // Data type of the vector
+        , size_t N          // Number of elements
+        , bool TF           // Transpose flag
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+constexpr StaticVector<Type,N,TF,AF,PF>&
+   StaticVector<Type,N,TF,AF,PF>::operator=( initializer_list<Type> list )
 {
    if( list.size() > N ) {
       BLAZE_THROW_INVALID_ARGUMENT( "Invalid assignment to static vector" );
@@ -1112,7 +1211,7 @@ inline constexpr StaticVector<Type,N,TF>&
 //*************************************************************************************************
 /*!\brief Array assignment to all vector elements.
 //
-// \param array M-dimensional array for the assignment.
+// \param array Static array for the assignment.
 // \return Reference to the assigned vector.
 //
 // This assignment operator offers the option to directly set all elements of the vector:
@@ -1123,20 +1222,65 @@ inline constexpr StaticVector<Type,N,TF>&
    v = init;
    \endcode
 
-// The vector is assigned the values from the given array. Missing values are initialized with
-// default values (as e.g. the third value in the example).
+// The vector is assigned the values from the given static array. Whereas the dimensions of the
+// vector and the static array must match, it is allowed to provide fewer initializers for the
+// static array. Missing values are initialized with default values (as e.g. the third value in
+// the example).
 */
-template< typename Type   // Data type of the vector
-        , size_t N        // Number of elements
-        , bool TF >       // Transpose flag
-template< typename Other  // Data type of the initialization array
-        , size_t Dim >    // Dimension of the initialization array
-inline StaticVector<Type,N,TF>& StaticVector<Type,N,TF>::operator=( const Other (&array)[Dim] )
+template< typename Type     // Data type of the vector
+        , size_t N          // Number of elements
+        , bool TF           // Transpose flag
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+template< typename Other    // Data type of the static array
+        , size_t Dim >      // Dimension of the static array
+constexpr StaticVector<Type,N,TF,AF,PF>&
+   StaticVector<Type,N,TF,AF,PF>::operator=( const Other (&array)[Dim] )
 {
    BLAZE_STATIC_ASSERT( Dim == N );
 
    for( size_t i=0UL; i<N; ++i )
       v_[i] = array[i];
+
+   return *this;
+}
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*!\brief Array assignment to all vector elements.
+//
+// \param array The given std::array for the assignment.
+// \return Reference to the assigned vector.
+//
+// This assignment operator offers the option to directly set all elements of the vector:
+
+   \code
+   const std::array<double,3> init{ 1.0, 2.0 };
+   blaze::StaticVector<double,3> v;
+   v = init;
+   \endcode
+
+// The vector is assigned the values from the given std::array. Whereas the dimensions of the
+// vector and the std::array must match, it is allowed to provide fewer initializers for the
+// std::array. Missing values are initialized with default values (as e.g. the third value in
+// the example).
+*/
+template< typename Type     // Data type of the vector
+        , size_t N          // Number of elements
+        , bool TF           // Transpose flag
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+template< typename Other    // Data type of the std::array
+        , size_t Dim >      // Dimension of the std::array
+constexpr StaticVector<Type,N,TF,AF,PF>&
+   StaticVector<Type,N,TF,AF,PF>::operator=( const std::array<Other,Dim>& array )
+{
+   BLAZE_STATIC_ASSERT( Dim == N );
+
+   for( size_t i=0UL; i<N; ++i )
+      v_[i] = array[i];
+
    return *this;
 }
 //*************************************************************************************************
@@ -1150,10 +1294,13 @@ inline StaticVector<Type,N,TF>& StaticVector<Type,N,TF>::operator=( const Other 
 //
 // Explicit definition of a copy assignment operator for performance reasons.
 */
-template< typename Type  // Data type of the vector
-        , size_t N       // Number of elements
-        , bool TF >      // Transpose flag
-inline constexpr StaticVector<Type,N,TF>& StaticVector<Type,N,TF>::operator=( const StaticVector& rhs )
+template< typename Type     // Data type of the vector
+        , size_t N          // Number of elements
+        , bool TF           // Transpose flag
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+constexpr StaticVector<Type,N,TF,AF,PF>&
+   StaticVector<Type,N,TF,AF,PF>::operator=( const StaticVector& rhs )
 {
    v_ = rhs.v_;
 
@@ -1170,11 +1317,16 @@ inline constexpr StaticVector<Type,N,TF>& StaticVector<Type,N,TF>::operator=( co
 // \param rhs Vector to be copied.
 // \return Reference to the assigned vector.
 */
-template< typename Type     // Data type of the vector
-        , size_t N          // Number of elements
-        , bool TF >         // Transpose flag
-template< typename Other >  // Data type of the foreign vector
-inline StaticVector<Type,N,TF>& StaticVector<Type,N,TF>::operator=( const StaticVector<Other,N,TF>& rhs )
+template< typename Type      // Data type of the vector
+        , size_t N           // Number of elements
+        , bool TF            // Transpose flag
+        , AlignmentFlag AF   // Alignment flag
+        , PaddingFlag PF >   // Padding flag
+template< typename Other     // Data type of the foreign vector
+        , AlignmentFlag AF2  // Alignment flag of the foreign vector
+        , PaddingFlag PF2 >  // Padding flag of the foreign vector
+inline StaticVector<Type,N,TF,AF,PF>&
+   StaticVector<Type,N,TF,AF,PF>::operator=( const StaticVector<Other,N,TF,AF2,PF2>& rhs )
 {
    using blaze::assign;
 
@@ -1197,11 +1349,14 @@ inline StaticVector<Type,N,TF>& StaticVector<Type,N,TF>::operator=( const Static
 // This constructor initializes the vector as a copy of the given vector. In case the
 // size of the given vector is not N, a \a std::invalid_argument exception is thrown.
 */
-template< typename Type  // Data type of the vector
-        , size_t N       // Number of elements
-        , bool TF >      // Transpose flag
-template< typename VT >  // Type of the right-hand side vector
-inline StaticVector<Type,N,TF>& StaticVector<Type,N,TF>::operator=( const Vector<VT,TF>& rhs )
+template< typename Type     // Data type of the vector
+        , size_t N          // Number of elements
+        , bool TF           // Transpose flag
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+template< typename VT >     // Type of the right-hand side vector
+inline StaticVector<Type,N,TF,AF,PF>&
+   StaticVector<Type,N,TF,AF,PF>::operator=( const Vector<VT,TF>& rhs )
 {
    using blaze::assign;
 
@@ -1236,11 +1391,14 @@ inline StaticVector<Type,N,TF>& StaticVector<Type,N,TF>::operator=( const Vector
 // In case the current sizes of the two vectors don't match, a \a std::invalid_argument exception
 // is thrown.
 */
-template< typename Type  // Data type of the vector
-        , size_t N       // Number of elements
-        , bool TF >      // Transpose flag
-template< typename VT >  // Type of the right-hand side vector
-inline StaticVector<Type,N,TF>& StaticVector<Type,N,TF>::operator+=( const Vector<VT,TF>& rhs )
+template< typename Type     // Data type of the vector
+        , size_t N          // Number of elements
+        , bool TF           // Transpose flag
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+template< typename VT >     // Type of the right-hand side vector
+inline StaticVector<Type,N,TF,AF,PF>&
+   StaticVector<Type,N,TF,AF,PF>::operator+=( const Vector<VT,TF>& rhs )
 {
    using blaze::addAssign;
 
@@ -1273,11 +1431,14 @@ inline StaticVector<Type,N,TF>& StaticVector<Type,N,TF>::operator+=( const Vecto
 // In case the current sizes of the two vectors don't match, a \a std::invalid_argument exception
 // is thrown.
 */
-template< typename Type  // Data type of the vector
-        , size_t N       // Number of elements
-        , bool TF >      // Transpose flag
-template< typename VT >  // Type of the right-hand side vector
-inline StaticVector<Type,N,TF>& StaticVector<Type,N,TF>::operator-=( const Vector<VT,TF>& rhs )
+template< typename Type     // Data type of the vector
+        , size_t N          // Number of elements
+        , bool TF           // Transpose flag
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+template< typename VT >     // Type of the right-hand side vector
+inline StaticVector<Type,N,TF,AF,PF>&
+   StaticVector<Type,N,TF,AF,PF>::operator-=( const Vector<VT,TF>& rhs )
 {
    using blaze::subAssign;
 
@@ -1311,11 +1472,14 @@ inline StaticVector<Type,N,TF>& StaticVector<Type,N,TF>::operator-=( const Vecto
 // In case the current sizes of the two vectors don't match, a \a std::invalid_argument exception
 // is thrown.
 */
-template< typename Type  // Data type of the vector
-        , size_t N       // Number of elements
-        , bool TF >      // Transpose flag
-template< typename VT >  // Type of the right-hand side vector
-inline StaticVector<Type,N,TF>& StaticVector<Type,N,TF>::operator*=( const Vector<VT,TF>& rhs )
+template< typename Type     // Data type of the vector
+        , size_t N          // Number of elements
+        , bool TF           // Transpose flag
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+template< typename VT >     // Type of the right-hand side vector
+inline StaticVector<Type,N,TF,AF,PF>&
+   StaticVector<Type,N,TF,AF,PF>::operator*=( const Vector<VT,TF>& rhs )
 {
    using blaze::assign;
    using blaze::multAssign;
@@ -1349,11 +1513,14 @@ inline StaticVector<Type,N,TF>& StaticVector<Type,N,TF>::operator*=( const Vecto
 // In case the current sizes of the two vectors don't match, a \a std::invalid_argument exception
 // is thrown.
 */
-template< typename Type  // Data type of the vector
-        , size_t N       // Number of elements
-        , bool TF >      // Transpose flag
-template< typename VT >  // Type of the right-hand side vector
-inline StaticVector<Type,N,TF>& StaticVector<Type,N,TF>::operator/=( const DenseVector<VT,TF>& rhs )
+template< typename Type     // Data type of the vector
+        , size_t N          // Number of elements
+        , bool TF           // Transpose flag
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+template< typename VT >     // Type of the right-hand side vector
+inline StaticVector<Type,N,TF,AF,PF>&
+   StaticVector<Type,N,TF,AF,PF>::operator/=( const DenseVector<VT,TF>& rhs )
 {
    using blaze::assign;
    using blaze::divAssign;
@@ -1388,11 +1555,14 @@ inline StaticVector<Type,N,TF>& StaticVector<Type,N,TF>::operator/=( const Dense
 // In case the current size of any of the two vectors is not equal to 3, a \a std::invalid_argument
 // exception is thrown.
 */
-template< typename Type  // Data type of the vector
-        , size_t N       // Number of elements
-        , bool TF >      // Transpose flag
-template< typename VT >  // Type of the right-hand side vector
-inline StaticVector<Type,N,TF>& StaticVector<Type,N,TF>::operator%=( const Vector<VT,TF>& rhs )
+template< typename Type     // Data type of the vector
+        , size_t N          // Number of elements
+        , bool TF           // Transpose flag
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+template< typename VT >     // Type of the right-hand side vector
+inline StaticVector<Type,N,TF,AF,PF>&
+   StaticVector<Type,N,TF,AF,PF>::operator%=( const Vector<VT,TF>& rhs )
 {
    using blaze::assign;
 
@@ -1432,10 +1602,12 @@ inline StaticVector<Type,N,TF>& StaticVector<Type,N,TF>::operator%=( const Vecto
 //
 // \return The size of the vector.
 */
-template< typename Type  // Data type of the vector
-        , size_t N       // Number of elements
-        , bool TF >      // Transpose flag
-inline constexpr size_t StaticVector<Type,N,TF>::size() noexcept
+template< typename Type     // Data type of the vector
+        , size_t N          // Number of elements
+        , bool TF           // Transpose flag
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+constexpr size_t StaticVector<Type,N,TF,AF,PF>::size() noexcept
 {
    return N;
 }
@@ -1450,10 +1622,12 @@ inline constexpr size_t StaticVector<Type,N,TF>::size() noexcept
 // This function returns the minimum capacity of the vector, which corresponds to the current
 // size plus padding.
 */
-template< typename Type  // Data type of the vector
-        , size_t N       // Number of elements
-        , bool TF >      // Transpose flag
-inline constexpr size_t StaticVector<Type,N,TF>::spacing() noexcept
+template< typename Type     // Data type of the vector
+        , size_t N          // Number of elements
+        , bool TF           // Transpose flag
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+constexpr size_t StaticVector<Type,N,TF,AF,PF>::spacing() noexcept
 {
    return NN;
 }
@@ -1465,10 +1639,12 @@ inline constexpr size_t StaticVector<Type,N,TF>::spacing() noexcept
 //
 // \return The maximum capacity of the vector.
 */
-template< typename Type  // Data type of the vector
-        , size_t N       // Number of elements
-        , bool TF >      // Transpose flag
-inline constexpr size_t StaticVector<Type,N,TF>::capacity() noexcept
+template< typename Type     // Data type of the vector
+        , size_t N          // Number of elements
+        , bool TF           // Transpose flag
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+constexpr size_t StaticVector<Type,N,TF,AF,PF>::capacity() noexcept
 {
    return NN;
 }
@@ -1483,10 +1659,12 @@ inline constexpr size_t StaticVector<Type,N,TF>::capacity() noexcept
 // Note that the number of non-zero elements is always less than or equal to the current size
 // of the vector.
 */
-template< typename Type  // Data type of the vector
-        , size_t N       // Number of elements
-        , bool TF >      // Transpose flag
-inline size_t StaticVector<Type,N,TF>::nonZeros() const
+template< typename Type     // Data type of the vector
+        , size_t N          // Number of elements
+        , bool TF           // Transpose flag
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+inline size_t StaticVector<Type,N,TF,AF,PF>::nonZeros() const
 {
    size_t nonzeros( 0 );
 
@@ -1505,10 +1683,12 @@ inline size_t StaticVector<Type,N,TF>::nonZeros() const
 //
 // \return void
 */
-template< typename Type  // Data type of the vector
-        , size_t N       // Number of elements
-        , bool TF >      // Transpose flag
-inline constexpr void StaticVector<Type,N,TF>::reset()
+template< typename Type     // Data type of the vector
+        , size_t N          // Number of elements
+        , bool TF           // Transpose flag
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+constexpr void StaticVector<Type,N,TF,AF,PF>::reset()
 {
    using blaze::clear;
    for( size_t i=0UL; i<N; ++i )
@@ -1523,10 +1703,12 @@ inline constexpr void StaticVector<Type,N,TF>::reset()
 // \param v The vector to be swapped.
 // \return void
 */
-template< typename Type  // Data type of the vector
-        , size_t N       // Number of elements
-        , bool TF >      // Transpose flag
-inline void StaticVector<Type,N,TF>::swap( StaticVector& v ) noexcept
+template< typename Type     // Data type of the vector
+        , size_t N          // Number of elements
+        , bool TF           // Transpose flag
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+inline void StaticVector<Type,N,TF,AF,PF>::swap( StaticVector& v ) noexcept
 {
    using std::swap;
 
@@ -1563,9 +1745,12 @@ inline void StaticVector<Type,N,TF>::swap( StaticVector& v ) noexcept
 */
 template< typename Type     // Data type of the vector
         , size_t N          // Number of elements
-        , bool TF >         // Transpose flag
+        , bool TF           // Transpose flag
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
 template< typename Other >  // Data type of the scalar value
-inline StaticVector<Type,N,TF>& StaticVector<Type,N,TF>::scale( const Other& scalar )
+inline StaticVector<Type,N,TF,AF,PF>&
+   StaticVector<Type,N,TF,AF,PF>::scale( const Other& scalar )
 {
    for( size_t i=0; i<N; ++i )
       v_[i] *= scalar;
@@ -1592,10 +1777,12 @@ inline StaticVector<Type,N,TF>& StaticVector<Type,N,TF>::scale( const Other& sca
 // This class-specific implementation of operator new provides the functionality to allocate
 // dynamic memory based on the alignment restrictions of the StaticVector class template.
 */
-template< typename Type  // Data type of the vector
-        , size_t N       // Number of elements
-        , bool TF >      // Transpose flag
-inline void* StaticVector<Type,N,TF>::operator new( std::size_t size )
+template< typename Type     // Data type of the vector
+        , size_t N          // Number of elements
+        , bool TF           // Transpose flag
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+inline void* StaticVector<Type,N,TF,AF,PF>::operator new( std::size_t size )
 {
    MAYBE_UNUSED( size );
 
@@ -1616,10 +1803,12 @@ inline void* StaticVector<Type,N,TF>::operator new( std::size_t size )
 // This class-specific implementation of operator new provides the functionality to allocate
 // dynamic memory based on the alignment restrictions of the StaticVector class template.
 */
-template< typename Type  // Data type of the vector
-        , size_t N       // Number of elements
-        , bool TF >      // Transpose flag
-inline void* StaticVector<Type,N,TF>::operator new[]( std::size_t size )
+template< typename Type     // Data type of the vector
+        , size_t N          // Number of elements
+        , bool TF           // Transpose flag
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+inline void* StaticVector<Type,N,TF,AF,PF>::operator new[]( std::size_t size )
 {
    BLAZE_INTERNAL_ASSERT( size >= sizeof( StaticVector )       , "Invalid number of bytes detected" );
    BLAZE_INTERNAL_ASSERT( size %  sizeof( StaticVector ) == 0UL, "Invalid number of bytes detected" );
@@ -1639,10 +1828,12 @@ inline void* StaticVector<Type,N,TF>::operator new[]( std::size_t size )
 // This class-specific implementation of operator new provides the functionality to allocate
 // dynamic memory based on the alignment restrictions of the StaticVector class template.
 */
-template< typename Type  // Data type of the vector
-        , size_t N       // Number of elements
-        , bool TF >      // Transpose flag
-inline void* StaticVector<Type,N,TF>::operator new( std::size_t size, const std::nothrow_t& )
+template< typename Type     // Data type of the vector
+        , size_t N          // Number of elements
+        , bool TF           // Transpose flag
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+inline void* StaticVector<Type,N,TF,AF,PF>::operator new( std::size_t size, const std::nothrow_t& )
 {
    MAYBE_UNUSED( size );
 
@@ -1663,10 +1854,12 @@ inline void* StaticVector<Type,N,TF>::operator new( std::size_t size, const std:
 // This class-specific implementation of operator new provides the functionality to allocate
 // dynamic memory based on the alignment restrictions of the StaticVector class template.
 */
-template< typename Type  // Data type of the vector
-        , size_t N       // Number of elements
-        , bool TF >      // Transpose flag
-inline void* StaticVector<Type,N,TF>::operator new[]( std::size_t size, const std::nothrow_t& )
+template< typename Type     // Data type of the vector
+        , size_t N          // Number of elements
+        , bool TF           // Transpose flag
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+inline void* StaticVector<Type,N,TF,AF,PF>::operator new[]( std::size_t size, const std::nothrow_t& )
 {
    BLAZE_INTERNAL_ASSERT( size >= sizeof( StaticVector )       , "Invalid number of bytes detected" );
    BLAZE_INTERNAL_ASSERT( size %  sizeof( StaticVector ) == 0UL, "Invalid number of bytes detected" );
@@ -1682,10 +1875,12 @@ inline void* StaticVector<Type,N,TF>::operator new[]( std::size_t size, const st
 // \param ptr The memory to be deallocated.
 // \return void
 */
-template< typename Type  // Data type of the vector
-        , size_t N       // Number of elements
-        , bool TF >      // Transpose flag
-inline void StaticVector<Type,N,TF>::operator delete( void* ptr )
+template< typename Type     // Data type of the vector
+        , size_t N          // Number of elements
+        , bool TF           // Transpose flag
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+inline void StaticVector<Type,N,TF,AF,PF>::operator delete( void* ptr )
 {
    deallocate( static_cast<StaticVector*>( ptr ) );
 }
@@ -1698,10 +1893,12 @@ inline void StaticVector<Type,N,TF>::operator delete( void* ptr )
 // \param ptr The memory to be deallocated.
 // \return void
 */
-template< typename Type  // Data type of the vector
-        , size_t N       // Number of elements
-        , bool TF >      // Transpose flag
-inline void StaticVector<Type,N,TF>::operator delete[]( void* ptr )
+template< typename Type     // Data type of the vector
+        , size_t N          // Number of elements
+        , bool TF           // Transpose flag
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+inline void StaticVector<Type,N,TF,AF,PF>::operator delete[]( void* ptr )
 {
    deallocate( static_cast<StaticVector*>( ptr ) );
 }
@@ -1714,10 +1911,12 @@ inline void StaticVector<Type,N,TF>::operator delete[]( void* ptr )
 // \param ptr The memory to be deallocated.
 // \return void
 */
-template< typename Type  // Data type of the vector
-        , size_t N       // Number of elements
-        , bool TF >      // Transpose flag
-inline void StaticVector<Type,N,TF>::operator delete( void* ptr, const std::nothrow_t& )
+template< typename Type     // Data type of the vector
+        , size_t N          // Number of elements
+        , bool TF           // Transpose flag
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+inline void StaticVector<Type,N,TF,AF,PF>::operator delete( void* ptr, const std::nothrow_t& )
 {
    deallocate( static_cast<StaticVector*>( ptr ) );
 }
@@ -1730,10 +1929,12 @@ inline void StaticVector<Type,N,TF>::operator delete( void* ptr, const std::noth
 // \param ptr The memory to be deallocated.
 // \return void
 */
-template< typename Type  // Data type of the vector
-        , size_t N       // Number of elements
-        , bool TF >      // Transpose flag
-inline void StaticVector<Type,N,TF>::operator delete[]( void* ptr, const std::nothrow_t& )
+template< typename Type     // Data type of the vector
+        , size_t N          // Number of elements
+        , bool TF           // Transpose flag
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+inline void StaticVector<Type,N,TF,AF,PF>::operator delete[]( void* ptr, const std::nothrow_t& )
 {
    deallocate( static_cast<StaticVector*>( ptr ) );
 }
@@ -1757,10 +1958,12 @@ inline void StaticVector<Type,N,TF>::operator delete[]( void* ptr, const std::no
 // state is valid. In case the invariants are intact, the function returns \a true, else it
 // will return \a false.
 */
-template< typename Type  // Data type of the vector
-        , size_t N       // Number of elements
-        , bool TF >      // Transpose flag
-inline constexpr bool StaticVector<Type,N,TF>::isIntact() const noexcept
+template< typename Type     // Data type of the vector
+        , size_t N          // Number of elements
+        , bool TF           // Transpose flag
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+constexpr bool StaticVector<Type,N,TF,AF,PF>::isIntact() const noexcept
 {
    if( IsNumeric_v<Type> ) {
       for( size_t i=N; i<NN; ++i ) {
@@ -1794,9 +1997,11 @@ inline constexpr bool StaticVector<Type,N,TF>::isIntact() const noexcept
 */
 template< typename Type     // Data type of the vector
         , size_t N          // Number of elements
-        , bool TF >         // Transpose flag
+        , bool TF           // Transpose flag
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
 template< typename Other >  // Data type of the foreign expression
-inline bool StaticVector<Type,N,TF>::canAlias( const Other* alias ) const noexcept
+inline bool StaticVector<Type,N,TF,AF,PF>::canAlias( const Other* alias ) const noexcept
 {
    return static_cast<const void*>( this ) == static_cast<const void*>( alias );
 }
@@ -1815,9 +2020,11 @@ inline bool StaticVector<Type,N,TF>::canAlias( const Other* alias ) const noexce
 */
 template< typename Type     // Data type of the vector
         , size_t N          // Number of elements
-        , bool TF >         // Transpose flag
+        , bool TF           // Transpose flag
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
 template< typename Other >  // Data type of the foreign expression
-inline bool StaticVector<Type,N,TF>::isAliased( const Other* alias ) const noexcept
+inline bool StaticVector<Type,N,TF,AF,PF>::isAliased( const Other* alias ) const noexcept
 {
    return static_cast<const void*>( this ) == static_cast<const void*>( alias );
 }
@@ -1833,12 +2040,14 @@ inline bool StaticVector<Type,N,TF>::isAliased( const Other* alias ) const noexc
 // whether the beginning and the end of the vector are guaranteed to conform to the alignment
 // restrictions of the element type \a Type.
 */
-template< typename Type  // Data type of the vector
-        , size_t N       // Number of elements
-        , bool TF >      // Transpose flag
-inline constexpr bool StaticVector<Type,N,TF>::isAligned() noexcept
+template< typename Type     // Data type of the vector
+        , size_t N          // Number of elements
+        , bool TF           // Transpose flag
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+constexpr bool StaticVector<Type,N,TF,AF,PF>::isAligned() noexcept
 {
-   return align;
+   return AF == aligned;
 }
 //*************************************************************************************************
 
@@ -1855,13 +2064,18 @@ inline constexpr bool StaticVector<Type,N,TF>::isAligned() noexcept
 // used internally for the performance optimized evaluation of expression templates. Calling
 // this function explicitly might result in erroneous results and/or in compilation errors.
 */
-template< typename Type  // Data type of the vector
-        , size_t N       // Number of elements
-        , bool TF >      // Transpose flag
-BLAZE_ALWAYS_INLINE typename StaticVector<Type,N,TF>::SIMDType
-   StaticVector<Type,N,TF>::load( size_t index ) const noexcept
+template< typename Type     // Data type of the vector
+        , size_t N          // Number of elements
+        , bool TF           // Transpose flag
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+BLAZE_ALWAYS_INLINE typename StaticVector<Type,N,TF,AF,PF>::SIMDType
+   StaticVector<Type,N,TF,AF,PF>::load( size_t index ) const noexcept
 {
-   return loada( index );
+   if( AF == aligned )
+      return loada( index );
+   else
+      return loadu( index );
 }
 //*************************************************************************************************
 
@@ -1879,11 +2093,13 @@ BLAZE_ALWAYS_INLINE typename StaticVector<Type,N,TF>::SIMDType
 // Calling this function explicitly might result in erroneous results and/or in compilation
 // errors.
 */
-template< typename Type  // Data type of the vector
-        , size_t N       // Number of elements
-        , bool TF >      // Transpose flag
-BLAZE_ALWAYS_INLINE typename StaticVector<Type,N,TF>::SIMDType
-   StaticVector<Type,N,TF>::loada( size_t index ) const noexcept
+template< typename Type     // Data type of the vector
+        , size_t N          // Number of elements
+        , bool TF           // Transpose flag
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+BLAZE_ALWAYS_INLINE typename StaticVector<Type,N,TF,AF,PF>::SIMDType
+   StaticVector<Type,N,TF,AF,PF>::loada( size_t index ) const noexcept
 {
    using blaze::loada;
 
@@ -1912,11 +2128,13 @@ BLAZE_ALWAYS_INLINE typename StaticVector<Type,N,TF>::SIMDType
 // Calling this function explicitly might result in erroneous results and/or in compilation
 // errors.
 */
-template< typename Type  // Data type of the vector
-        , size_t N       // Number of elements
-        , bool TF >      // Transpose flag
-BLAZE_ALWAYS_INLINE typename StaticVector<Type,N,TF>::SIMDType
-   StaticVector<Type,N,TF>::loadu( size_t index ) const noexcept
+template< typename Type     // Data type of the vector
+        , size_t N          // Number of elements
+        , bool TF           // Transpose flag
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+BLAZE_ALWAYS_INLINE typename StaticVector<Type,N,TF,AF,PF>::SIMDType
+   StaticVector<Type,N,TF,AF,PF>::loadu( size_t index ) const noexcept
 {
    using blaze::loadu;
 
@@ -1943,13 +2161,18 @@ BLAZE_ALWAYS_INLINE typename StaticVector<Type,N,TF>::SIMDType
 // used internally for the performance optimized evaluation of expression templates. Calling
 // this function explicitly might result in erroneous results and/or in compilation errors.
 */
-template< typename Type  // Data type of the vector
-        , size_t N       // Number of elements
-        , bool TF >      // Transpose flag
+template< typename Type     // Data type of the vector
+        , size_t N          // Number of elements
+        , bool TF           // Transpose flag
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
 BLAZE_ALWAYS_INLINE void
-   StaticVector<Type,N,TF>::store( size_t index, const SIMDType& value ) noexcept
+   StaticVector<Type,N,TF,AF,PF>::store( size_t index, const SIMDType& value ) noexcept
 {
-   storea( index, value );
+   if( AF == aligned )
+      storea( index, value );
+   else
+      storeu( index, value );
 }
 //*************************************************************************************************
 
@@ -1967,11 +2190,13 @@ BLAZE_ALWAYS_INLINE void
 // is used internally for the performance optimized evaluation of expression templates. Calling
 // this function explicitly might result in erroneous results and/or in compilation errors.
 */
-template< typename Type  // Data type of the vector
-        , size_t N       // Number of elements
-        , bool TF >      // Transpose flag
+template< typename Type     // Data type of the vector
+        , size_t N          // Number of elements
+        , bool TF           // Transpose flag
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
 BLAZE_ALWAYS_INLINE void
-   StaticVector<Type,N,TF>::storea( size_t index, const SIMDType& value ) noexcept
+   StaticVector<Type,N,TF,AF,PF>::storea( size_t index, const SIMDType& value ) noexcept
 {
    using blaze::storea;
 
@@ -2000,11 +2225,13 @@ BLAZE_ALWAYS_INLINE void
 // is used internally for the performance optimized evaluation of expression templates. Calling
 // this function explicitly might result in erroneous results and/or in compilation errors.
 */
-template< typename Type  // Data type of the vector
-        , size_t N       // Number of elements
-        , bool TF >      // Transpose flag
+template< typename Type     // Data type of the vector
+        , size_t N          // Number of elements
+        , bool TF           // Transpose flag
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
 BLAZE_ALWAYS_INLINE void
-   StaticVector<Type,N,TF>::storeu( size_t index, const SIMDType& value ) noexcept
+   StaticVector<Type,N,TF,AF,PF>::storeu( size_t index, const SIMDType& value ) noexcept
 {
    using blaze::storeu;
 
@@ -2032,11 +2259,13 @@ BLAZE_ALWAYS_INLINE void
 // expression templates. Calling this function explicitly might result in erroneous results
 // and/or in compilation errors.
 */
-template< typename Type  // Data type of the vector
-        , size_t N       // Number of elements
-        , bool TF >      // Transpose flag
+template< typename Type     // Data type of the vector
+        , size_t N          // Number of elements
+        , bool TF           // Transpose flag
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
 BLAZE_ALWAYS_INLINE void
-   StaticVector<Type,N,TF>::stream( size_t index, const SIMDType& value ) noexcept
+   StaticVector<Type,N,TF,AF,PF>::stream( size_t index, const SIMDType& value ) noexcept
 {
    using blaze::stream;
 
@@ -2063,11 +2292,13 @@ BLAZE_ALWAYS_INLINE void
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename Type  // Data type of the vector
-        , size_t N       // Number of elements
-        , bool TF >      // Transpose flag
-template< typename VT >  // Type of the right-hand side dense vector
-inline auto StaticVector<Type,N,TF>::assign( const DenseVector<VT,TF>& rhs )
+template< typename Type     // Data type of the vector
+        , size_t N          // Number of elements
+        , bool TF           // Transpose flag
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+template< typename VT >     // Type of the right-hand side dense vector
+inline auto StaticVector<Type,N,TF,AF,PF>::assign( const DenseVector<VT,TF>& rhs )
    -> DisableIf_t< VectorizedAssign_v<VT> >
 {
    BLAZE_INTERNAL_ASSERT( (~rhs).size() == N, "Invalid vector sizes" );
@@ -2089,21 +2320,23 @@ inline auto StaticVector<Type,N,TF>::assign( const DenseVector<VT,TF>& rhs )
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename Type  // Data type of the vector
-        , size_t N       // Number of elements
-        , bool TF >      // Transpose flag
-template< typename VT >  // Type of the right-hand side dense vector
-inline auto StaticVector<Type,N,TF>::assign( const DenseVector<VT,TF>& rhs )
+template< typename Type     // Data type of the vector
+        , size_t N          // Number of elements
+        , bool TF           // Transpose flag
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+template< typename VT >     // Type of the right-hand side dense vector
+inline auto StaticVector<Type,N,TF,AF,PF>::assign( const DenseVector<VT,TF>& rhs )
    -> EnableIf_t< VectorizedAssign_v<VT> >
 {
    BLAZE_CONSTRAINT_MUST_BE_VECTORIZABLE_TYPE( Type );
 
    BLAZE_INTERNAL_ASSERT( (~rhs).size() == N, "Invalid vector sizes" );
 
-   constexpr bool remainder( !usePadding || !IsPadded_v<VT> );
+   constexpr bool remainder( PF == unpadded || !IsPadded_v<VT> );
 
-   constexpr size_t ipos( ( remainder )?( N & size_t(-SIMDSIZE) ):( N ) );
-   BLAZE_INTERNAL_ASSERT( !remainder || ( N - ( N % (SIMDSIZE) ) ) == ipos, "Invalid end calculation" );
+   constexpr size_t ipos( remainder ? prevMultiple( N, SIMDSIZE ) : N );
+   BLAZE_INTERNAL_ASSERT( ipos <= N, "Invalid end calculation" );
 
    size_t i( 0UL );
 
@@ -2128,11 +2361,13 @@ inline auto StaticVector<Type,N,TF>::assign( const DenseVector<VT,TF>& rhs )
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename Type  // Data type of the vector
-        , size_t N       // Number of elements
-        , bool TF >      // Transpose flag
-template< typename VT >  // Type of the right-hand side sparse vector
-inline void StaticVector<Type,N,TF>::assign( const SparseVector<VT,TF>& rhs )
+template< typename Type     // Data type of the vector
+        , size_t N          // Number of elements
+        , bool TF           // Transpose flag
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+template< typename VT >     // Type of the right-hand side sparse vector
+inline void StaticVector<Type,N,TF,AF,PF>::assign( const SparseVector<VT,TF>& rhs )
 {
    BLAZE_INTERNAL_ASSERT( (~rhs).size() == N, "Invalid vector sizes" );
 
@@ -2153,11 +2388,13 @@ inline void StaticVector<Type,N,TF>::assign( const SparseVector<VT,TF>& rhs )
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename Type  // Data type of the vector
-        , size_t N       // Number of elements
-        , bool TF >      // Transpose flag
-template< typename VT >  // Type of the right-hand side dense vector
-inline auto StaticVector<Type,N,TF>::addAssign( const DenseVector<VT,TF>& rhs )
+template< typename Type     // Data type of the vector
+        , size_t N          // Number of elements
+        , bool TF           // Transpose flag
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+template< typename VT >     // Type of the right-hand side dense vector
+inline auto StaticVector<Type,N,TF,AF,PF>::addAssign( const DenseVector<VT,TF>& rhs )
    -> DisableIf_t< VectorizedAddAssign_v<VT> >
 {
    BLAZE_INTERNAL_ASSERT( (~rhs).size() == N, "Invalid vector sizes" );
@@ -2179,21 +2416,23 @@ inline auto StaticVector<Type,N,TF>::addAssign( const DenseVector<VT,TF>& rhs )
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename Type  // Data type of the vector
-        , size_t N       // Number of elements
-        , bool TF >      // Transpose flag
-template< typename VT >  // Type of the right-hand side dense vector
-inline auto StaticVector<Type,N,TF>::addAssign( const DenseVector<VT,TF>& rhs )
+template< typename Type     // Data type of the vector
+        , size_t N          // Number of elements
+        , bool TF           // Transpose flag
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+template< typename VT >     // Type of the right-hand side dense vector
+inline auto StaticVector<Type,N,TF,AF,PF>::addAssign( const DenseVector<VT,TF>& rhs )
    -> EnableIf_t< VectorizedAddAssign_v<VT> >
 {
    BLAZE_CONSTRAINT_MUST_BE_VECTORIZABLE_TYPE( Type );
 
    BLAZE_INTERNAL_ASSERT( (~rhs).size() == N, "Invalid vector sizes" );
 
-   constexpr bool remainder( !usePadding || !IsPadded_v<VT> );
+   constexpr bool remainder( PF == unpadded || !IsPadded_v<VT> );
 
-   constexpr size_t ipos( ( remainder )?( N & size_t(-SIMDSIZE) ):( N ) );
-   BLAZE_INTERNAL_ASSERT( !remainder || ( N - ( N % (SIMDSIZE) ) ) == ipos, "Invalid end calculation" );
+   constexpr size_t ipos( remainder ? prevMultiple( N, SIMDSIZE ) : N );
+   BLAZE_INTERNAL_ASSERT( ipos <= N, "Invalid end calculation" );
 
    size_t i( 0UL );
 
@@ -2218,11 +2457,13 @@ inline auto StaticVector<Type,N,TF>::addAssign( const DenseVector<VT,TF>& rhs )
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename Type  // Data type of the vector
-        , size_t N       // Number of elements
-        , bool TF >      // Transpose flag
-template< typename VT >  // Type of the right-hand side sparse vector
-inline void StaticVector<Type,N,TF>::addAssign( const SparseVector<VT,TF>& rhs )
+template< typename Type     // Data type of the vector
+        , size_t N          // Number of elements
+        , bool TF           // Transpose flag
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+template< typename VT >     // Type of the right-hand side sparse vector
+inline void StaticVector<Type,N,TF,AF,PF>::addAssign( const SparseVector<VT,TF>& rhs )
 {
    BLAZE_INTERNAL_ASSERT( (~rhs).size() == N, "Invalid vector sizes" );
 
@@ -2243,11 +2484,13 @@ inline void StaticVector<Type,N,TF>::addAssign( const SparseVector<VT,TF>& rhs )
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename Type  // Data type of the vector
-        , size_t N       // Number of elements
-        , bool TF >      // Transpose flag
-template< typename VT >  // Type of the right-hand side dense vector
-inline auto StaticVector<Type,N,TF>::subAssign( const DenseVector<VT,TF>& rhs )
+template< typename Type     // Data type of the vector
+        , size_t N          // Number of elements
+        , bool TF           // Transpose flag
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+template< typename VT >     // Type of the right-hand side dense vector
+inline auto StaticVector<Type,N,TF,AF,PF>::subAssign( const DenseVector<VT,TF>& rhs )
    -> DisableIf_t< VectorizedSubAssign_v<VT> >
 {
    BLAZE_INTERNAL_ASSERT( (~rhs).size() == N, "Invalid vector sizes" );
@@ -2269,21 +2512,23 @@ inline auto StaticVector<Type,N,TF>::subAssign( const DenseVector<VT,TF>& rhs )
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename Type  // Data type of the vector
-        , size_t N       // Number of elements
-        , bool TF >      // Transpose flag
-template< typename VT >  // Type of the right-hand side dense vector
-inline auto StaticVector<Type,N,TF>::subAssign( const DenseVector<VT,TF>& rhs )
+template< typename Type     // Data type of the vector
+        , size_t N          // Number of elements
+        , bool TF           // Transpose flag
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+template< typename VT >     // Type of the right-hand side dense vector
+inline auto StaticVector<Type,N,TF,AF,PF>::subAssign( const DenseVector<VT,TF>& rhs )
    -> EnableIf_t< VectorizedSubAssign_v<VT> >
 {
    BLAZE_CONSTRAINT_MUST_BE_VECTORIZABLE_TYPE( Type );
 
    BLAZE_INTERNAL_ASSERT( (~rhs).size() == N, "Invalid vector sizes" );
 
-   constexpr bool remainder( !usePadding || !IsPadded_v<VT> );
+   constexpr bool remainder( PF == unpadded || !IsPadded_v<VT> );
 
-   constexpr size_t ipos( ( remainder )?( N & size_t(-SIMDSIZE) ):( N ) );
-   BLAZE_INTERNAL_ASSERT( !remainder || ( N - ( N % (SIMDSIZE) ) ) == ipos, "Invalid end calculation" );
+   constexpr size_t ipos( remainder ? prevMultiple( N, SIMDSIZE ) : N );
+   BLAZE_INTERNAL_ASSERT( ipos <= N, "Invalid end calculation" );
 
    size_t i( 0UL );
 
@@ -2308,11 +2553,13 @@ inline auto StaticVector<Type,N,TF>::subAssign( const DenseVector<VT,TF>& rhs )
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename Type  // Data type of the vector
-        , size_t N       // Number of elements
-        , bool TF >      // Transpose flag
-template< typename VT >  // Type of the right-hand side sparse vector
-inline void StaticVector<Type,N,TF>::subAssign( const SparseVector<VT,TF>& rhs )
+template< typename Type     // Data type of the vector
+        , size_t N          // Number of elements
+        , bool TF           // Transpose flag
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+template< typename VT >     // Type of the right-hand side sparse vector
+inline void StaticVector<Type,N,TF,AF,PF>::subAssign( const SparseVector<VT,TF>& rhs )
 {
    BLAZE_INTERNAL_ASSERT( (~rhs).size() == N, "Invalid vector sizes" );
 
@@ -2333,11 +2580,13 @@ inline void StaticVector<Type,N,TF>::subAssign( const SparseVector<VT,TF>& rhs )
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename Type  // Data type of the vector
-        , size_t N       // Number of elements
-        , bool TF >      // Transpose flag
-template< typename VT >  // Type of the right-hand side dense vector
-inline auto StaticVector<Type,N,TF>::multAssign( const DenseVector<VT,TF>& rhs )
+template< typename Type     // Data type of the vector
+        , size_t N          // Number of elements
+        , bool TF           // Transpose flag
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+template< typename VT >     // Type of the right-hand side dense vector
+inline auto StaticVector<Type,N,TF,AF,PF>::multAssign( const DenseVector<VT,TF>& rhs )
    -> DisableIf_t< VectorizedMultAssign_v<VT> >
 {
    BLAZE_INTERNAL_ASSERT( (~rhs).size() == N, "Invalid vector sizes" );
@@ -2359,21 +2608,23 @@ inline auto StaticVector<Type,N,TF>::multAssign( const DenseVector<VT,TF>& rhs )
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename Type  // Data type of the vector
-        , size_t N       // Number of elements
-        , bool TF >      // Transpose flag
-template< typename VT >  // Type of the right-hand side dense vector
-inline auto StaticVector<Type,N,TF>::multAssign( const DenseVector<VT,TF>& rhs )
+template< typename Type     // Data type of the vector
+        , size_t N          // Number of elements
+        , bool TF           // Transpose flag
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+template< typename VT >     // Type of the right-hand side dense vector
+inline auto StaticVector<Type,N,TF,AF,PF>::multAssign( const DenseVector<VT,TF>& rhs )
    -> EnableIf_t< VectorizedMultAssign_v<VT> >
 {
    BLAZE_CONSTRAINT_MUST_BE_VECTORIZABLE_TYPE( Type );
 
    BLAZE_INTERNAL_ASSERT( (~rhs).size() == N, "Invalid vector sizes" );
 
-   constexpr bool remainder( !usePadding || !IsPadded_v<VT> );
+   constexpr bool remainder( PF == unpadded || !IsPadded_v<VT> );
 
-   constexpr size_t ipos( ( remainder )?( N & size_t(-SIMDSIZE) ):( N ) );
-   BLAZE_INTERNAL_ASSERT( !remainder || ( N - ( N % (SIMDSIZE) ) ) == ipos, "Invalid end calculation" );
+   constexpr size_t ipos( remainder ? prevMultiple( N, SIMDSIZE ) : N );
+   BLAZE_INTERNAL_ASSERT( ipos <= N, "Invalid end calculation" );
 
    size_t i( 0UL );
 
@@ -2398,11 +2649,13 @@ inline auto StaticVector<Type,N,TF>::multAssign( const DenseVector<VT,TF>& rhs )
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename Type  // Data type of the vector
-        , size_t N       // Number of elements
-        , bool TF >      // Transpose flag
-template< typename VT >  // Type of the right-hand side sparse vector
-inline void StaticVector<Type,N,TF>::multAssign( const SparseVector<VT,TF>& rhs )
+template< typename Type     // Data type of the vector
+        , size_t N          // Number of elements
+        , bool TF           // Transpose flag
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+template< typename VT >     // Type of the right-hand side sparse vector
+inline void StaticVector<Type,N,TF,AF,PF>::multAssign( const SparseVector<VT,TF>& rhs )
 {
    BLAZE_INTERNAL_ASSERT( (~rhs).size() == N, "Invalid vector sizes" );
 
@@ -2427,11 +2680,13 @@ inline void StaticVector<Type,N,TF>::multAssign( const SparseVector<VT,TF>& rhs 
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename Type  // Data type of the vector
-        , size_t N       // Number of elements
-        , bool TF >      // Transpose flag
-template< typename VT >  // Type of the right-hand side dense vector
-inline auto StaticVector<Type,N,TF>::divAssign( const DenseVector<VT,TF>& rhs )
+template< typename Type     // Data type of the vector
+        , size_t N          // Number of elements
+        , bool TF           // Transpose flag
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+template< typename VT >     // Type of the right-hand side dense vector
+inline auto StaticVector<Type,N,TF,AF,PF>::divAssign( const DenseVector<VT,TF>& rhs )
    -> DisableIf_t< VectorizedDivAssign_v<VT> >
 {
    BLAZE_INTERNAL_ASSERT( (~rhs).size() == N, "Invalid vector sizes" );
@@ -2453,19 +2708,21 @@ inline auto StaticVector<Type,N,TF>::divAssign( const DenseVector<VT,TF>& rhs )
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename Type  // Data type of the vector
-        , size_t N       // Number of elements
-        , bool TF >      // Transpose flag
-template< typename VT >  // Type of the right-hand side dense vector
-inline auto StaticVector<Type,N,TF>::divAssign( const DenseVector<VT,TF>& rhs )
+template< typename Type     // Data type of the vector
+        , size_t N          // Number of elements
+        , bool TF           // Transpose flag
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+template< typename VT >     // Type of the right-hand side dense vector
+inline auto StaticVector<Type,N,TF,AF,PF>::divAssign( const DenseVector<VT,TF>& rhs )
    -> EnableIf_t< VectorizedDivAssign_v<VT> >
 {
    BLAZE_CONSTRAINT_MUST_BE_VECTORIZABLE_TYPE( Type );
 
    BLAZE_INTERNAL_ASSERT( (~rhs).size() == N, "Invalid vector sizes" );
 
-   constexpr size_t ipos( N & size_t(-SIMDSIZE) );
-   BLAZE_INTERNAL_ASSERT( ( N - ( N % (SIMDSIZE) ) ) == ipos, "Invalid end calculation" );
+   constexpr size_t ipos( prevMultiple( N, SIMDSIZE ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= N, "Invalid end calculation" );
 
    size_t i( 0UL );
 
@@ -2494,38 +2751,38 @@ inline auto StaticVector<Type,N,TF>::divAssign( const DenseVector<VT,TF>& rhs )
 //*************************************************************************************************
 /*!\name StaticVector operators */
 //@{
-template< typename Type, size_t N, bool TF >
-constexpr void reset( StaticVector<Type,N,TF>& v );
+template< typename Type, size_t N, bool TF, AlignmentFlag AF, PaddingFlag PF >
+constexpr void reset( StaticVector<Type,N,TF,AF,PF>& v );
 
-template< typename Type, size_t N, bool TF >
-constexpr void clear( StaticVector<Type,N,TF>& v );
+template< typename Type, size_t N, bool TF, AlignmentFlag AF, PaddingFlag PF >
+constexpr void clear( StaticVector<Type,N,TF,AF,PF>& v );
 
-template< bool RF, typename Type, size_t N, bool TF >
-bool isDefault( const StaticVector<Type,N,TF>& v );
+template< RelaxationFlag RF, typename Type, size_t N, bool TF, AlignmentFlag AF, PaddingFlag PF >
+bool isDefault( const StaticVector<Type,N,TF,AF,PF>& v );
 
-template< typename Type, size_t N, bool TF >
-constexpr bool isIntact( const StaticVector<Type,N,TF>& v ) noexcept;
+template< typename Type, size_t N, bool TF, AlignmentFlag AF, PaddingFlag PF >
+constexpr bool isIntact( const StaticVector<Type,N,TF,AF,PF>& v ) noexcept;
 
-template< typename Type, bool TF >
-const StaticVector<Type,2UL,TF> perp( const StaticVector<Type,2UL,TF>& v );
+template< typename Type, bool TF, AlignmentFlag AF, PaddingFlag PF >
+const StaticVector<Type,2UL,TF,AF,PF> perp( const StaticVector<Type,2UL,TF,AF,PF>& v );
 
-template< typename Type, bool TF >
-const StaticVector<Type,3UL,TF> perp( const StaticVector<Type,3UL,TF>& v );
+template< typename Type, bool TF, AlignmentFlag AF, PaddingFlag PF >
+const StaticVector<Type,3UL,TF,AF,PF> perp( const StaticVector<Type,3UL,TF,AF,PF>& v );
 
-template< typename Type, size_t N, bool TF >
-void swap( StaticVector<Type,N,TF>& a, StaticVector<Type,N,TF>& b ) noexcept;
+template< typename Type, size_t N, bool TF, AlignmentFlag AF, PaddingFlag PF >
+void swap( StaticVector<Type,N,TF,AF,PF>& a, StaticVector<Type,N,TF,AF,PF>& b ) noexcept;
 
-template< size_t I, typename Type, size_t N, bool TF >
-constexpr Type& get( StaticVector<Type,N,TF>& v ) noexcept;
+template< size_t I, typename Type, size_t N, bool TF, AlignmentFlag AF, PaddingFlag PF >
+constexpr Type& get( StaticVector<Type,N,TF,AF,PF>& v ) noexcept;
 
-template< size_t I, typename Type, size_t N, bool TF >
-constexpr Type&& get( StaticVector<Type,N,TF>&& v ) noexcept;
+template< size_t I, typename Type, size_t N, bool TF, AlignmentFlag AF, PaddingFlag PF >
+constexpr Type&& get( StaticVector<Type,N,TF,AF,PF>&& v ) noexcept;
 
-template< size_t I, typename Type, size_t N, bool TF >
-constexpr const Type& get( const StaticVector<Type,N,TF>& v) noexcept;
+template< size_t I, typename Type, size_t N, bool TF, AlignmentFlag AF, PaddingFlag PF >
+constexpr const Type& get( const StaticVector<Type,N,TF,AF,PF>& v) noexcept;
 
-template< size_t I, typename Type, size_t N, bool TF >
-constexpr const Type&& get( const StaticVector<Type,N,TF>&& v ) noexcept;
+template< size_t I, typename Type, size_t N, bool TF, AlignmentFlag AF, PaddingFlag PF >
+constexpr const Type&& get( const StaticVector<Type,N,TF,AF,PF>&& v ) noexcept;
 //@}
 //*************************************************************************************************
 
@@ -2537,10 +2794,12 @@ constexpr const Type&& get( const StaticVector<Type,N,TF>&& v ) noexcept;
 // \param v The vector to be resetted.
 // \return void
 */
-template< typename Type  // Data type of the vector
-        , size_t N       // Number of elements
-        , bool TF >      // Transpose flag
-inline constexpr void reset( StaticVector<Type,N,TF>& v )
+template< typename Type     // Data type of the vector
+        , size_t N          // Number of elements
+        , bool TF           // Transpose flag
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+constexpr void reset( StaticVector<Type,N,TF,AF,PF>& v )
 {
    v.reset();
 }
@@ -2556,10 +2815,12 @@ inline constexpr void reset( StaticVector<Type,N,TF>& v )
 //
 // Clearing a static vector is equivalent to resetting it via the reset() function.
 */
-template< typename Type  // Data type of the vector
-        , size_t N       // Number of elements
-        , bool TF >      // Transpose flag
-inline constexpr void clear( StaticVector<Type,N,TF>& v )
+template< typename Type     // Data type of the vector
+        , size_t N          // Number of elements
+        , bool TF           // Transpose flag
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+constexpr void clear( StaticVector<Type,N,TF,AF,PF>& v )
 {
    v.reset();
 }
@@ -2591,11 +2852,13 @@ inline constexpr void clear( StaticVector<Type,N,TF>& v )
    if( isDefault<relaxed>( a ) ) { ... }
    \endcode
 */
-template< bool RF        // Relaxation flag
-        , typename Type  // Data type of the vector
-        , size_t N       // Number of elements
-        , bool TF >      // Transpose flag
-inline bool isDefault( const StaticVector<Type,N,TF>& v )
+template< RelaxationFlag RF  // Relaxation flag
+        , typename Type      // Data type of the vector
+        , size_t N           // Number of elements
+        , bool TF            // Transpose flag
+        , AlignmentFlag AF   // Alignment flag
+        , PaddingFlag PF >   // Padding flag
+inline bool isDefault( const StaticVector<Type,N,TF,AF,PF>& v )
 {
    for( size_t i=0UL; i<N; ++i )
       if( !isDefault<RF>( v[i] ) ) return false;
@@ -2622,10 +2885,12 @@ inline bool isDefault( const StaticVector<Type,N,TF>& v )
    if( isIntact( a ) ) { ... }
    \endcode
 */
-template< typename Type  // Data type of the vector
-        , size_t N       // Number of elements
-        , bool TF >      // Transpose flag
-inline constexpr bool isIntact( const StaticVector<Type,N,TF>& v ) noexcept
+template< typename Type     // Data type of the vector
+        , size_t N          // Number of elements
+        , bool TF           // Transpose flag
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+constexpr bool isIntact( const StaticVector<Type,N,TF,AF,PF>& v ) noexcept
 {
    return v.isIntact();
 }
@@ -2643,11 +2908,13 @@ inline constexpr bool isIntact( const StaticVector<Type,N,TF>& v ) noexcept
 // \f$ \vec{b} \f$ is a modification of the two-dimensional dot product in which \f$ \vec{a} \f$
 // is replaced by the perpendicular vector rotated 90 degrees to the left defined by Hill (1994).
 */
-template< typename Type  // Data type of the vector
-        , bool TF >      // Transpose flag
-inline const StaticVector<Type,2UL,TF> perp( const StaticVector<Type,2UL,TF>& v )
+template< typename Type     // Data type of the vector
+        , bool TF           // Transpose flag
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+inline const StaticVector<Type,2UL,TF,AF,PF> perp( const StaticVector<Type,2UL,TF,AF,PF>& v )
 {
-   return StaticVector<Type,2UL,TF>( -v[1UL], v[0UL] );
+   return StaticVector<Type,2UL,TF,AF,PF>( -v[1UL], v[0UL] );
 }
 //*************************************************************************************************
 
@@ -2660,14 +2927,16 @@ inline const StaticVector<Type,2UL,TF> perp( const StaticVector<Type,2UL,TF>& v 
 //
 // \note The perpendicular vector may have any length!
 */
-template< typename Type  // Data type of the vector
-        , bool TF >      // Transpose flag
-inline const StaticVector<Type,3UL,TF> perp( const StaticVector<Type,3UL,TF>& v )
+template< typename Type     // Data type of the vector
+        , bool TF           // Transpose flag
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+inline const StaticVector<Type,3UL,TF,AF,PF> perp( const StaticVector<Type,3UL,TF,AF,PF>& v )
 {
    if( v[0] != Type() || v[1] != Type() )
-      return StaticVector<Type,3UL,TF>( v[1UL], -v[0UL], Type() );
+      return StaticVector<Type,3UL,TF,AF,PF>( v[1UL], -v[0UL], Type() );
    else
-      return StaticVector<Type,3UL,TF>( Type(), v[2UL], -v[1UL] );
+      return StaticVector<Type,3UL,TF,AF,PF>( Type(), v[2UL], -v[1UL] );
 }
 //*************************************************************************************************
 
@@ -2680,10 +2949,12 @@ inline const StaticVector<Type,3UL,TF> perp( const StaticVector<Type,3UL,TF>& v 
 // \param b The second vector to be swapped.
 // \return void
 */
-template< typename Type  // Data type of the vector
-        , size_t N       // Number of elements
-        , bool TF >      // Transpose flag
-inline void swap( StaticVector<Type,N,TF>& a, StaticVector<Type,N,TF>& b ) noexcept
+template< typename Type     // Data type of the vector
+        , size_t N          // Number of elements
+        , bool TF           // Transpose flag
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+inline void swap( StaticVector<Type,N,TF,AF,PF>& a, StaticVector<Type,N,TF,AF,PF>& b ) noexcept
 {
    a.swap( b );
 }
@@ -2697,11 +2968,13 @@ inline void swap( StaticVector<Type,N,TF>& a, StaticVector<Type,N,TF>& b ) noexc
 // \param v The vector to be accessed.
 // \return Reference to the accessed value.
 */
-template< size_t I       // Compile time access index
-        , typename Type  // Data type of the vector
-        , size_t N       // Number of elements
-        , bool TF >      // Transpose flag
-constexpr Type& get( StaticVector<Type,N,TF>& v ) noexcept
+template< size_t I          // Compile time access index
+        , typename Type     // Data type of the vector
+        , size_t N          // Number of elements
+        , bool TF           // Transpose flag
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+constexpr Type& get( StaticVector<Type,N,TF,AF,PF>& v ) noexcept
 {
    BLAZE_STATIC_ASSERT_MSG( I < N, "Invalid vector access index" );
    return v[I];
@@ -2716,11 +2989,13 @@ constexpr Type& get( StaticVector<Type,N,TF>& v ) noexcept
 // \param v The vector to be accessed.
 // \return Reference to the accessed value.
 */
-template< size_t I       // Compile time access index
-        , typename Type  // Data type of the vector
-        , size_t N       // Number of elements
-        , bool TF >      // Transpose flag
-constexpr Type&& get( StaticVector<Type,N,TF>&& v ) noexcept
+template< size_t I          // Compile time access index
+        , typename Type     // Data type of the vector
+        , size_t N          // Number of elements
+        , bool TF           // Transpose flag
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+constexpr Type&& get( StaticVector<Type,N,TF,AF,PF>&& v ) noexcept
 {
    BLAZE_STATIC_ASSERT_MSG( I < N, "Invalid vector access index" );
    return std::move( v[I] );
@@ -2735,11 +3010,13 @@ constexpr Type&& get( StaticVector<Type,N,TF>&& v ) noexcept
 // \param v The vector to be accessed.
 // \return Reference to the accessed value.
 */
-template< size_t I       // Compile time access index
-        , typename Type  // Data type of the vector
-        , size_t N       // Number of elements
-        , bool TF >      // Transpose flag
-constexpr const Type& get( const StaticVector<Type,N,TF>& v) noexcept
+template< size_t I          // Compile time access index
+        , typename Type     // Data type of the vector
+        , size_t N          // Number of elements
+        , bool TF           // Transpose flag
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+constexpr const Type& get( const StaticVector<Type,N,TF,AF,PF>& v) noexcept
 {
    BLAZE_STATIC_ASSERT_MSG( I < N, "Invalid vector access index" );
    return v[I];
@@ -2754,11 +3031,13 @@ constexpr const Type& get( const StaticVector<Type,N,TF>& v) noexcept
 // \param v The vector to be accessed.
 // \return Reference to the accessed value.
 */
-template< size_t I       // Compile time access index
-        , typename Type  // Data type of the vector
-        , size_t N       // Number of elements
-        , bool TF >      // Transpose flag
-constexpr const Type&& get( const StaticVector<Type,N,TF>&& v ) noexcept
+template< size_t I          // Compile time access index
+        , typename Type     // Data type of the vector
+        , size_t N          // Number of elements
+        , bool TF           // Transpose flag
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+constexpr const Type&& get( const StaticVector<Type,N,TF,AF,PF>&& v ) noexcept
 {
    BLAZE_STATIC_ASSERT_MSG( I < N, "Invalid vector access index" );
    return std::move( v[I] );
@@ -2776,8 +3055,8 @@ constexpr const Type&& get( const StaticVector<Type,N,TF>&& v ) noexcept
 
 //*************************************************************************************************
 /*! \cond BLAZE_INTERNAL */
-template< typename T, size_t N, bool TF >
-struct Size< StaticVector<T,N,TF>, 0UL >
+template< typename T, size_t N, bool TF, AlignmentFlag AF, PaddingFlag PF >
+struct Size< StaticVector<T,N,TF,AF,PF>, 0UL >
    : public Ptrdiff_t<N>
 {};
 /*! \endcond */
@@ -2794,8 +3073,8 @@ struct Size< StaticVector<T,N,TF>, 0UL >
 
 //*************************************************************************************************
 /*! \cond BLAZE_INTERNAL */
-template< typename T, size_t N, bool TF >
-struct MaxSize< StaticVector<T,N,TF>, 0UL >
+template< typename T, size_t N, bool TF, AlignmentFlag AF, PaddingFlag PF >
+struct MaxSize< StaticVector<T,N,TF,AF,PF>, 0UL >
    : public Ptrdiff_t<N>
 {};
 /*! \endcond */
@@ -2812,8 +3091,8 @@ struct MaxSize< StaticVector<T,N,TF>, 0UL >
 
 //*************************************************************************************************
 /*! \cond BLAZE_INTERNAL */
-template< typename T, size_t N, bool TF >
-struct HasConstDataAccess< StaticVector<T,N,TF> >
+template< typename T, size_t N, bool TF, AlignmentFlag AF, PaddingFlag PF >
+struct HasConstDataAccess< StaticVector<T,N,TF,AF,PF> >
    : public TrueType
 {};
 /*! \endcond */
@@ -2830,8 +3109,8 @@ struct HasConstDataAccess< StaticVector<T,N,TF> >
 
 //*************************************************************************************************
 /*! \cond BLAZE_INTERNAL */
-template< typename T, size_t N, bool TF >
-struct HasMutableDataAccess< StaticVector<T,N,TF> >
+template< typename T, size_t N, bool TF, AlignmentFlag AF, PaddingFlag PF >
+struct HasMutableDataAccess< StaticVector<T,N,TF,AF,PF> >
    : public TrueType
 {};
 /*! \endcond */
@@ -2848,8 +3127,8 @@ struct HasMutableDataAccess< StaticVector<T,N,TF> >
 
 //*************************************************************************************************
 /*! \cond BLAZE_INTERNAL */
-template< typename T, size_t N, bool TF >
-struct IsStatic< StaticVector<T,N,TF> >
+template< typename T, size_t N, bool TF, AlignmentFlag AF, PaddingFlag PF >
+struct IsStatic< StaticVector<T,N,TF,AF,PF> >
    : public TrueType
 {};
 /*! \endcond */
@@ -2866,9 +3145,9 @@ struct IsStatic< StaticVector<T,N,TF> >
 
 //*************************************************************************************************
 /*! \cond BLAZE_INTERNAL */
-template< typename T, size_t N, bool TF >
-struct IsAligned< StaticVector<T,N,TF> >
-   : public BoolConstant< StaticVector<T,N,TF>::isAligned() >
+template< typename T, size_t N, bool TF, AlignmentFlag AF, PaddingFlag PF >
+struct IsAligned< StaticVector<T,N,TF,AF,PF> >
+   : public BoolConstant< AF == aligned >
 {};
 /*! \endcond */
 //*************************************************************************************************
@@ -2884,8 +3163,8 @@ struct IsAligned< StaticVector<T,N,TF> >
 
 //*************************************************************************************************
 /*! \cond BLAZE_INTERNAL */
-template< typename T, size_t N, bool TF >
-struct IsContiguous< StaticVector<T,N,TF> >
+template< typename T, size_t N, bool TF, AlignmentFlag AF, PaddingFlag PF >
+struct IsContiguous< StaticVector<T,N,TF,AF,PF> >
    : public TrueType
 {};
 /*! \endcond */
@@ -2902,9 +3181,9 @@ struct IsContiguous< StaticVector<T,N,TF> >
 
 //*************************************************************************************************
 /*! \cond BLAZE_INTERNAL */
-template< typename T, size_t N, bool TF >
-struct IsPadded< StaticVector<T,N,TF> >
-   : public BoolConstant<usePadding>
+template< typename T, size_t N, bool TF, AlignmentFlag AF, PaddingFlag PF >
+struct IsPadded< StaticVector<T,N,TF,AF,PF> >
+   : public BoolConstant< PF == padded >
 {};
 /*! \endcond */
 //*************************************************************************************************
@@ -3169,8 +3448,8 @@ struct UnaryMapTraitEval2< T, OP
 /*! \cond BLAZE_INTERNAL */
 template< typename T1, typename T2, typename OP >
 struct BinaryMapTraitEval2< T1, T2, OP
-                          , EnableIf_t< IsVector_v<T1> &&
-                                        IsVector_v<T2> &&
+                          , EnableIf_t< ( ( IsRowVector_v<T1> && IsRowVector_v<T2> ) ||
+                                          ( IsColumnVector_v<T1> && IsColumnVector_v<T2> ) ) &&
                                         ( Size_v<T1,0UL> != DefaultSize_v ||
                                           Size_v<T2,0UL> != DefaultSize_v ) > >
 {
@@ -3195,7 +3474,7 @@ struct BinaryMapTraitEval2< T1, T2, OP
 
 //*************************************************************************************************
 /*! \cond BLAZE_INTERNAL */
-template< typename T, typename OP, size_t RF >
+template< typename T, typename OP, ReductionFlag RF >
 struct PartialReduceTraitEval2< T, OP, RF
                               , EnableIf_t< IsMatrix_v<T> &&
                                             Size_v<T,0UL> != DefaultSize_v &&
@@ -3204,11 +3483,37 @@ struct PartialReduceTraitEval2< T, OP, RF
    using ET = ElementType_t<T>;
    using RT = decltype( std::declval<OP>()( std::declval<ET>(), std::declval<ET>() ) );
 
-   static constexpr bool TF = ( RF == 0UL );
+   static constexpr bool TF = ( RF == columnwise );
 
    static constexpr size_t N = Size_v< T, TF ? 1UL : 0UL >;
 
    using Type = StaticVector<RT,N,TF>;
+};
+/*! \endcond */
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
+//  SOLVETRAIT SPECIALIZATIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+template< typename T1, typename T2 >
+struct SolveTraitEval2< T1, T2
+                      , EnableIf_t< IsDenseMatrix_v<T1> &&
+                                    IsDenseVector_v<T2> &&
+                                    ( ( Size_v<T1,0UL> != DefaultSize_v ) ||
+                                      ( Size_v<T1,1UL> != DefaultSize_v ) ||
+                                      ( Size_v<T2,0UL> != DefaultSize_v ) ) > >
+{
+   static constexpr size_t N = max( Size_v<T1,0UL>, Size_v<T1,1UL>, Size_v<T2,0UL> );
+
+   using Type = StaticVector< ElementType_t<T2>, N, TransposeFlag_v<T2> >;
 };
 /*! \endcond */
 //*************************************************************************************************
@@ -3224,10 +3529,10 @@ struct PartialReduceTraitEval2< T, OP, RF
 
 //*************************************************************************************************
 /*! \cond BLAZE_INTERNAL */
-template< typename T1, size_t N, bool TF, typename T2 >
-struct HighType< StaticVector<T1,N,TF>, StaticVector<T2,N,TF> >
+template< typename T1, size_t N, bool TF, AlignmentFlag AF, PaddingFlag PF, typename T2 >
+struct HighType< StaticVector<T1,N,TF,AF,PF>, StaticVector<T2,N,TF,AF,PF> >
 {
-   using Type = StaticVector< typename HighType<T1,T2>::Type, N, TF >;
+   using Type = StaticVector< typename HighType<T1,T2>::Type, N, TF, AF, PF >;
 };
 /*! \endcond */
 //*************************************************************************************************
@@ -3243,10 +3548,10 @@ struct HighType< StaticVector<T1,N,TF>, StaticVector<T2,N,TF> >
 
 //*************************************************************************************************
 /*! \cond BLAZE_INTERNAL */
-template< typename T1, size_t N, bool TF, typename T2 >
-struct LowType< StaticVector<T1,N,TF>, StaticVector<T2,N,TF> >
+template< typename T1, size_t N, bool TF, AlignmentFlag AF, PaddingFlag PF, typename T2 >
+struct LowType< StaticVector<T1,N,TF,AF,PF>, StaticVector<T2,N,TF,AF,PF> >
 {
-   using Type = StaticVector< typename LowType<T1,T2>::Type, N, TF >;
+   using Type = StaticVector< typename LowType<T1,T2>::Type, N, TF, AF, PF >;
 };
 /*! \endcond */
 //*************************************************************************************************
@@ -3376,13 +3681,13 @@ struct BandTraitEval2< MT, I
 /*! \cond BLAZE_INTERNAL */
 namespace std
 {
-   template< typename Type, size_t N, bool TF >
-   class tuple_size< blaze::StaticVector<Type,N,TF> >
+   template< typename Type, size_t N, bool TF, blaze::AlignmentFlag AF, blaze::PaddingFlag PF >
+   class tuple_size< blaze::StaticVector<Type,N,TF,AF,PF> >
       : public integral_constant< size_t, N >
    {};
 
-   template< size_t I, typename Type, size_t N, bool TF >
-   class tuple_element< I, blaze::StaticVector<Type,N,TF> >
+   template< size_t I, typename Type, size_t N, bool TF, blaze::AlignmentFlag AF, blaze::PaddingFlag PF >
+   class tuple_element< I, blaze::StaticVector<Type,N,TF,AF,PF> >
    {
     public:
       using type = Type;

@@ -3,7 +3,7 @@
 //  \file blaze/math/typetraits/IsMatVecMultExpr.h
 //  \brief Header file for the IsMatVecMultExpr type trait class
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -68,7 +68,7 @@ struct IsMatVecMultExprHelper
    static TrueType test( const MatVecMultExpr<VT>* );
 
    template< typename MT >
-   static TrueType test( const volatile MatTransExpr<MT>* );
+   static TrueType test( const volatile MatVecMultExpr<MT>* );
 
    static FalseType test( ... );
    //**********************************************************************************************

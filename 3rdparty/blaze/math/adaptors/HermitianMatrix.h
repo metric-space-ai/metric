@@ -3,7 +3,7 @@
 //  \file blaze/math/adaptors/HermitianMatrix.h
 //  \brief Header file for the implementation of a Hermitian matrix adaptor
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -49,6 +49,7 @@
 #include "../../math/Exception.h"
 #include "../../math/Forward.h"
 #include "../../math/InversionFlag.h"
+#include "../../math/RelaxationFlag.h"
 #include "../../math/shims/Conjugate.h"
 #include "../../math/shims/IsDefault.h"
 #include "../../math/shims/IsDivisor.h"
@@ -57,7 +58,11 @@
 #include "../../math/traits/DeclDiagTrait.h"
 #include "../../math/traits/DeclHermTrait.h"
 #include "../../math/traits/DeclLowTrait.h"
+#include "../../math/traits/DeclStrLowTrait.h"
+#include "../../math/traits/DeclStrUppTrait.h"
 #include "../../math/traits/DeclSymTrait.h"
+#include "../../math/traits/DeclUniLowTrait.h"
+#include "../../math/traits/DeclUniUppTrait.h"
 #include "../../math/traits/DeclUppTrait.h"
 #include "../../math/traits/DivTrait.h"
 #include "../../math/traits/KronTrait.h"
@@ -123,7 +128,7 @@ void reset( HermitianMatrix<MT,SO,DF>& m, size_t i );
 template< typename MT, bool SO, bool DF >
 void clear( HermitianMatrix<MT,SO,DF>& m );
 
-template< bool RF, typename MT, bool SO, bool DF >
+template< RelaxationFlag RF, typename MT, bool SO, bool DF >
 bool isDefault( const HermitianMatrix<MT,SO,DF>& m );
 
 template< typename MT, bool SO, bool DF >
@@ -217,10 +222,10 @@ inline void clear( HermitianMatrix<MT,SO,DF>& m )
    if( isDefault<relaxed>( A ) ) { ... }
    \endcode
 */
-template< bool RF      // Relaxation flag
-        , typename MT  // Type of the adapted matrix
-        , bool SO      // Storage order of the adapted matrix
-        , bool DF >    // Density flag
+template< RelaxationFlag RF  // Relaxation flag
+        , typename MT        // Type of the adapted matrix
+        , bool SO            // Storage order of the adapted matrix
+        , bool DF >          // Density flag
 inline bool isDefault( const HermitianMatrix<MT,SO,DF>& m )
 {
    return isDefault<RF>( m.matrix_ );
@@ -1791,6 +1796,44 @@ struct DeclLowTrait< HermitianMatrix<MT,SO,DF> >
 
 //=================================================================================================
 //
+//  DECLUNILOWTRAIT SPECIALIZATIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+template< typename MT, bool SO, bool DF >
+struct DeclUniLowTrait< HermitianMatrix<MT,SO,DF> >
+{
+   using Type = IdentityMatrix< ElementType_t<MT>, SO >;
+};
+/*! \endcond */
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
+//  DECLSTRLOWTRAIT SPECIALIZATIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+template< typename MT, bool SO, bool DF >
+struct DeclStrLowTrait< HermitianMatrix<MT,SO,DF> >
+{
+   using Type = ZeroMatrix< ElementType_t<MT>, SO >;
+};
+/*! \endcond */
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
 //  DECLUPPTRAIT SPECIALIZATIONS
 //
 //=================================================================================================
@@ -1801,6 +1844,44 @@ template< typename MT, bool SO, bool DF >
 struct DeclUppTrait< HermitianMatrix<MT,SO,DF> >
 {
    using Type = DiagonalMatrix<MT,SO,DF>;
+};
+/*! \endcond */
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
+//  DECLUNIUPPTRAIT SPECIALIZATIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+template< typename MT, bool SO, bool DF >
+struct DeclUniUppTrait< HermitianMatrix<MT,SO,DF> >
+{
+   using Type = IdentityMatrix< ElementType_t<MT>, SO >;
+};
+/*! \endcond */
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
+//  DECLSTRUPPTRAIT SPECIALIZATIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+template< typename MT, bool SO, bool DF >
+struct DeclStrUppTrait< HermitianMatrix<MT,SO,DF> >
+{
+   using Type = ZeroMatrix< ElementType_t<MT>, SO >;
 };
 /*! \endcond */
 //*************************************************************************************************

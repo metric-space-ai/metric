@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/DVecDVecInnerExpr.h
 //  \brief Header file for the dense vector/dense vector inner product expression
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -43,15 +43,16 @@
 #include "../../math/Aliases.h"
 #include "../../math/Exception.h"
 #include "../../math/expressions/DenseVector.h"
+#include "../../math/shims/PrevMultiple.h"
 #include "../../math/SIMD.h"
 #include "../../math/traits/MultTrait.h"
 #include "../../math/typetraits/HasSIMDAdd.h"
 #include "../../math/typetraits/HasSIMDMult.h"
 #include "../../math/typetraits/IsPadded.h"
 #include "../../math/typetraits/IsSIMDCombinable.h"
+#include "../../system/MacroDisable.h"
 #include "../../system/Optimizations.h"
 #include "../../util/Assert.h"
-#include "../../util/DisableIf.h"
 #include "../../util/EnableIf.h"
 #include "../../util/FunctionTrace.h"
 #include "../../util/Types.h"
@@ -197,12 +198,12 @@ inline auto dvecdvecinner( const DenseVector<VT1,true>& lhs, const DenseVector<V
    CT2 right( ~rhs );
 
    constexpr size_t SIMDSIZE = SIMDTrait<MultType>::size;
-   constexpr bool remainder( !usePadding || !IsPadded_v<XT1> || !IsPadded_v<XT2> );
+   constexpr bool remainder( !IsPadded_v<XT1> || !IsPadded_v<XT2> );
 
    const size_t N( left.size() );
 
-   const size_t ipos( ( remainder )?( N & size_t(-SIMDSIZE) ):( N ) );
-   BLAZE_INTERNAL_ASSERT( !remainder || ( N - ( N % SIMDSIZE ) ) == ipos, "Invalid end calculation" );
+   const size_t ipos( remainder ? prevMultiple( N, SIMDSIZE ): N );
+   BLAZE_INTERNAL_ASSERT( ipos <= N, "Invalid end calculation" );
 
    SIMDTrait_t<MultType> xmm1, xmm2, xmm3, xmm4;
    size_t i( 0UL );

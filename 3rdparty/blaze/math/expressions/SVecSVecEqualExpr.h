@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/SVecSVecEqualExpr.h
 //  \brief Header file for the sparse vector/sparse vector equality comparison expression
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -45,6 +45,7 @@
 #include "../../math/RelaxationFlag.h"
 #include "../../math/shims/Equal.h"
 #include "../../math/shims/IsDefault.h"
+#include "../../system/MacroDisable.h"
 
 
 namespace blaze {
@@ -68,11 +69,11 @@ namespace blaze {
 // a direct comparison of two floating point numbers should be avoided. This function offers the
 // possibility to compare two floating-point vectors with a certain accuracy margin.
 */
-template< bool RF       // Relaxation flag
-        , typename VT1  // Type of the left-hand side sparse vector
-        , bool TF1      // Transpose flag of the left-hand side sparse vector
-        , typename VT2  // Type of the right-hand side sparse vector
-        , bool TF2 >    // Transpose flag of the right-hand side sparse vector
+template< RelaxationFlag RF  // Relaxation flag
+        , typename VT1       // Type of the left-hand side sparse vector
+        , bool TF1           // Transpose flag of the left-hand side sparse vector
+        , typename VT2       // Type of the right-hand side sparse vector
+        , bool TF2 >         // Transpose flag of the right-hand side sparse vector
 inline bool equal( const SparseVector<VT1,TF1>& lhs, const SparseVector<VT2,TF2>& rhs )
 {
    using CT1 = CompositeType_t<VT1>;
