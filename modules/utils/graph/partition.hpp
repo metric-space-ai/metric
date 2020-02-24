@@ -18,21 +18,22 @@
 
 namespace metric {
 
- /**
- * @param distanceMatrix Input distance matrix must have more nodes than processingChunkSize. 
+/**
+ * @param distanceMatrix Input distance matrix must have more nodes than processingChunkSize.
  * @param partition Reference to the matrix that will contain the best result found
- * @param global_optimum_attempts  Is the number of attempts to find global optima, something like 100 - 1000
+ * @param global_optimum_attempts  Is the number of attempts to find global optima, something like 1 - 100
  * @param processing_chunk_size Must be > distanceMatrix nodes count
  * @param random_seed, leave unset for different results on different executions
  * @return 0 = no error, 1 = bad input, 2 = unknown error, 3 = distance matrix is corrupted
  */
-int perform_graph_partition(
-    blaze::DynamicMatrix<double> distance_matrix, 
-    blaze::DynamicMatrix<int>& partition_matrix, 
-    int global_optimum_attempts = 100, 
-    int processing_chunk_size = 100, 
-    __int64 random_seed = -1);
+    int perform_graph_partition(
+        blaze::DynamicMatrix<double> distance_matrix,
+        blaze::DynamicMatrix<int>& partition_matrix,
+        int global_optimum_attempts = 100,
+        int processing_chunk_size = 100,
+        __int64 random_seed = -1);
 }
+
 
 #include "partition.cpp"
 #endif
