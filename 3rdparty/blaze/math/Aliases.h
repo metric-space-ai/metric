@@ -3,7 +3,7 @@
 //  \file blaze/math/Aliases.h
 //  \brief Header file for auxiliary alias declarations
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -252,6 +252,26 @@ using Operand_t = typename T::Operand;
 
 
 //*************************************************************************************************
+/*!\brief Alias declaration for nested \c Operation type definitions.
+// \ingroup aliases
+//
+// The Operation_t alias declaration provides a convenient shortcut to access the nested
+// \a Operation type definition of the given type \a T. The following code example shows both
+// ways to access the nested type definition:
+
+   \code
+   using Type1 = typename T::Operation;
+   using Type2 = Operation_t<T>;
+
+   BLAZE_CONSTRAINT_MUST_BE_STRICTLY_SAME_TYPE( Type1, Type2 );
+   \endcode
+*/
+template< typename T >
+using Operation_t = typename T::Operation;
+//*************************************************************************************************
+
+
+//*************************************************************************************************
 /*!\brief Alias declaration for nested \c OppositeType type definitions.
 // \ingroup aliases
 //
@@ -308,6 +328,26 @@ using Pointer_t = typename T::Pointer;
 */
 template< typename T1, typename T2 >
 using Rebind_t = typename T1::template Rebind<T2>::Other;
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*!\brief Alias declaration for nested \c rebind class templates.
+// \ingroup aliases
+//
+// The rebind_t alias declaration provides a convenient shortcut to access the nested \a rebind
+// class template of the given type \a T1. The following code example shows both ways to access
+// the nested class template:
+
+   \code
+   using Type1 = typename T1::template rebind<T2>::Other;
+   using Type2 = rebind_t<T1,T2>;
+
+   BLAZE_CONSTRAINT_MUST_BE_STRICTLY_SAME_TYPE( Type1, Type2 );
+   \endcode
+*/
+template< typename T1, typename T2 >
+using rebind_t = typename T1::template rebind<T2>::other;
 //*************************************************************************************************
 
 

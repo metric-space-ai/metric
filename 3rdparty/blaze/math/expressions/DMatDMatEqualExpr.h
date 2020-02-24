@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/DMatDMatEqualExpr.h
 //  \brief Header file for the dense matrix/dense matrix equality comparison expression
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -44,12 +44,12 @@
 #include "../../math/expressions/DenseMatrix.h"
 #include "../../math/RelaxationFlag.h"
 #include "../../math/shims/Equal.h"
+#include "../../math/shims/PrevMultiple.h"
 #include "../../math/SIMD.h"
 #include "../../math/typetraits/HasSIMDEqual.h"
 #include "../../math/typetraits/IsPadded.h"
 #include "../../system/Blocking.h"
 #include "../../system/Optimizations.h"
-#include "../../util/DisableIf.h"
 #include "../../util/EnableIf.h"
 #include "../../util/Types.h"
 #include "../../util/typetraits/RemoveReference.h"
@@ -113,9 +113,9 @@ struct DMatDMatEqualExprHelper
 // a direct comparison of two floating point numbers should be avoided. This function offers the
 // possibility to compare two floating-point matrices with a certain accuracy margin.
 */
-template< bool RF         // Relaxation flag
-        , typename MT1    // Type of the left-hand side dense matrix
-        , typename MT2 >  // Type of the right-hand side dense matrix
+template< RelaxationFlag RF  // Relaxation flag
+        , typename MT1       // Type of the left-hand side dense matrix
+        , typename MT2 >     // Type of the right-hand side dense matrix
 inline auto equal( const DenseMatrix<MT1,false>& lhs, const DenseMatrix<MT2,false>& rhs )
    -> DisableIf_t< DMatDMatEqualExprHelper<MT1,MT2>::value, bool >
 {
@@ -157,9 +157,9 @@ inline auto equal( const DenseMatrix<MT1,false>& lhs, const DenseMatrix<MT2,fals
 // a direct comparison of two floating point numbers should be avoided. This function offers the
 // possibility to compare two floating-point matrices with a certain accuracy margin.
 */
-template< bool RF         // Relaxation flag
-        , typename MT1    // Type of the left-hand side dense matrix
-        , typename MT2 >  // Type of the right-hand side dense matrix
+template< RelaxationFlag RF  // Relaxation flag
+        , typename MT1       // Type of the left-hand side dense matrix
+        , typename MT2 >     // Type of the right-hand side dense matrix
 inline auto equal( const DenseMatrix<MT1,false>& lhs, const DenseMatrix<MT2,false>& rhs )
    -> EnableIf_t< DMatDMatEqualExprHelper<MT1,MT2>::value, bool >
 {
@@ -177,13 +177,13 @@ inline auto equal( const DenseMatrix<MT1,false>& lhs, const DenseMatrix<MT2,fals
    CT2 B( ~rhs );
 
    constexpr size_t SIMDSIZE = SIMDTrait< ElementType_t<MT1> >::size;
-   constexpr bool remainder( !usePadding || !IsPadded_v<XT1> || !IsPadded_v<XT2> );
+   constexpr bool remainder( !IsPadded_v<XT1> || !IsPadded_v<XT2> );
 
    const size_t M( A.rows()    );
    const size_t N( A.columns() );
 
-   const size_t jpos( ( remainder )?( N & size_t(-SIMDSIZE) ):( N ) );
-   BLAZE_INTERNAL_ASSERT( !remainder || ( N - ( N % SIMDSIZE ) ) == jpos, "Invalid end calculation" );
+   const size_t jpos( remainder ? prevMultiple( N, SIMDSIZE ) : N );
+   BLAZE_INTERNAL_ASSERT( jpos <= N, "Invalid end calculation" );
 
    for( size_t i=0UL; i<M; ++i )
    {
@@ -226,9 +226,9 @@ inline auto equal( const DenseMatrix<MT1,false>& lhs, const DenseMatrix<MT2,fals
 // a direct comparison of two floating point numbers should be avoided. This function offers the
 // possibility to compare two floating-point matrices with a certain accuracy margin.
 */
-template< bool RF         // Relaxation flag
-        , typename MT1    // Type of the left-hand side dense matrix
-        , typename MT2 >  // Type of the right-hand side dense matrix
+template< RelaxationFlag RF  // Relaxation flag
+        , typename MT1       // Type of the left-hand side dense matrix
+        , typename MT2 >     // Type of the right-hand side dense matrix
 inline auto equal( const DenseMatrix<MT1,true>& lhs, const DenseMatrix<MT2,true>& rhs )
    -> DisableIf_t< DMatDMatEqualExprHelper<MT1,MT2>::value, bool >
 {
@@ -270,9 +270,9 @@ inline auto equal( const DenseMatrix<MT1,true>& lhs, const DenseMatrix<MT2,true>
 // a direct comparison of two floating point numbers should be avoided. This function offers the
 // possibility to compare two floating-point matrices with a certain accuracy margin.
 */
-template< bool RF         // Relaxation flag
-        , typename MT1    // Type of the left-hand side dense matrix
-        , typename MT2 >  // Type of the right-hand side dense matrix
+template< RelaxationFlag RF  // Relaxation flag
+        , typename MT1       // Type of the left-hand side dense matrix
+        , typename MT2 >     // Type of the right-hand side dense matrix
 inline auto equal( const DenseMatrix<MT1,true>& lhs, const DenseMatrix<MT2,true>& rhs )
    -> EnableIf_t< DMatDMatEqualExprHelper<MT1,MT2>::value, bool >
 {
@@ -290,13 +290,13 @@ inline auto equal( const DenseMatrix<MT1,true>& lhs, const DenseMatrix<MT2,true>
    CT2 B( ~rhs );
 
    constexpr size_t SIMDSIZE = SIMDTrait< ElementType_t<MT1> >::size;
-   constexpr bool remainder( !usePadding || !IsPadded_v<XT1> || !IsPadded_v<XT2> );
+   constexpr bool remainder( !IsPadded_v<XT1> || !IsPadded_v<XT2> );
 
    const size_t M( A.rows()    );
    const size_t N( A.columns() );
 
-   const size_t ipos( ( remainder )?( M & size_t(-SIMDSIZE) ):( M ) );
-   BLAZE_INTERNAL_ASSERT( !remainder || ( M - ( M % SIMDSIZE ) ) == ipos, "Invalid end calculation" );
+   const size_t ipos( remainder ? prevMultiple( M, SIMDSIZE ) : M );
+   BLAZE_INTERNAL_ASSERT( ipos <= M, "Invalid end calculation" );
 
    for( size_t j=0UL; j<N; ++j )
    {
@@ -339,10 +339,10 @@ inline auto equal( const DenseMatrix<MT1,true>& lhs, const DenseMatrix<MT2,true>
 // a direct comparison of two floating point numbers should be avoided. This function offers the
 // possibility to compare two floating-point matrices with a certain accuracy margin.
 */
-template< bool RF       // Relaxation flag
-        , typename MT1  // Type of the left-hand side dense matrix
-        , typename MT2  // Type of the right-hand side dense matrix
-        , bool SO >     // Storage order
+template< RelaxationFlag RF  // Relaxation flag
+        , typename MT1       // Type of the left-hand side dense matrix
+        , typename MT2       // Type of the right-hand side dense matrix
+        , bool SO >          // Storage order
 inline bool equal( const DenseMatrix<MT1,SO>& lhs, const DenseMatrix<MT2,!SO>& rhs )
 {
    using CT1 = CompositeType_t<MT1>;

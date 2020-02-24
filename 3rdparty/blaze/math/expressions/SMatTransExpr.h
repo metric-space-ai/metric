@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/SMatTransExpr.h
 //  \brief Header file for the sparse matrix transpose expression
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -40,7 +40,6 @@
 // Includes
 //*************************************************************************************************
 
-#include <iterator>
 #include "../../math/Aliases.h"
 #include "../../math/constraints/RequiresEvaluation.h"
 #include "../../math/constraints/SparseMatrix.h"
@@ -84,13 +83,10 @@ template< typename MT  // Type of the sparse matrix
         , bool SO >    // Storage order
 class SMatTransExpr
    : public MatTransExpr< SparseMatrix< SMatTransExpr<MT,SO>, SO > >
-   , private If< IsComputation_v<MT>, Computation, Transformation >::Type
+   , private If_t< IsComputation_v<MT>, Computation, Transformation >
 {
  private:
    //**Type definitions****************************************************************************
-   using RT = ResultType_t<MT>;     //!< Result type of the sparse matrix expression.
-   using CT = CompositeType_t<MT>;  //!< Composite type of the sparse matrix expression.
-
    //! Definition of the GetConstIterator type trait.
    BLAZE_CREATE_GET_TYPE_MEMBER_TYPE_TRAIT( GetConstIterator, ConstIterator, INVALID_TYPE );
    //**********************************************************************************************
@@ -732,71 +728,6 @@ inline decltype(auto) trans( const SparseMatrix<MT,SO>& sm )
    using ReturnType = const SMatTransExpr<MT,!SO>;
    return ReturnType( ~sm );
 }
-//*************************************************************************************************
-
-
-
-
-//=================================================================================================
-//
-//  GLOBAL RESTRUCTURING FUNCTIONS
-//
-//=================================================================================================
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-/*!\brief Calculating the transpose of a transpose sparse matrix.
-// \ingroup sparse_matrix
-//
-// \param sm The sparse matrix to be (re-)transposed.
-// \return The transpose of the transpose matrix.
-//
-// This function implements a performance optimized treatment of the transpose operation on a
-// sparse matrix transpose expression. It returns an expression representing the transpose of a
-// transpose sparse matrix:
-
-   \code
-   using blaze::rowMajor;
-
-   blaze::CompressedMatrix<double,rowMajor> A, B;
-   // ... Resizing and initialization
-   B = trans( trans( A ) );
-   \endcode
-*/
-template< typename MT  // Type of the dense matrix
-        , bool SO >    // Storage order
-inline decltype(auto) trans( const SMatTransExpr<MT,SO>& sm )
-{
-   BLAZE_FUNCTION_TRACE;
-
-   return sm.operand();
-}
-/*! \endcond */
-//*************************************************************************************************
-
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-/*!\brief Calculation of the transpose of the given sparse matrix-scalar multiplication.
-// \ingroup sparse_matrix
-//
-// \param sm The sparse matrix-scalar multiplication expression to be transposed.
-// \return The transpose of the expression.
-//
-// This operator implements the performance optimized treatment of the transpose of a sparse
-// matrix-scalar multiplication. It restructures the expression \f$ A=trans(B*s1) \f$ to the
-// expression \f$ A=trans(B)*s1 \f$.
-*/
-template< typename MT  // Type of the left-hand side sparse matrix
-        , typename ST  // Type of the right-hand side scalar value
-        , bool SO >    // Storage order
-inline decltype(auto) trans( const SMatScalarMultExpr<MT,ST,SO>& sm )
-{
-   BLAZE_FUNCTION_TRACE;
-
-   return trans( sm.leftOperand() ) * sm.rightOperand();
-}
-/*! \endcond */
 //*************************************************************************************************
 
 } // namespace blaze

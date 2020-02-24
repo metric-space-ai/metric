@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/MatScalarDivExpr.h
 //  \brief Header file for the MatScalarDivExpr base class
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -40,7 +40,9 @@
 // Includes
 //*************************************************************************************************
 
+#include "../../math/Exception.h"
 #include "../../math/expressions/DivExpr.h"
+#include "../../util/FunctionTrace.h"
 
 
 namespace blaze {
@@ -66,6 +68,321 @@ template< typename MT >  // Matrix base type of the expression
 struct MatScalarDivExpr
    : public DivExpr<MT>
 {};
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
+//  GLOBAL RESTRUCTURING FUNCTIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Calculation of the transpose of the given matrix-scalar division.
+// \ingroup math
+//
+// \param matrix The matrix-scalar division expression to be transposed.
+// \return The transpose of the expression.
+//
+// This operator implements the performance optimized treatment of the transpose of a
+// matrix-scalar division. It restructures the expression \f$ A=trans(B/s1) \f$ to
+// the expression \f$ A=trans(B)/s1 \f$.
+*/
+template< typename MT >  // Matrix base type of the expression
+inline decltype(auto) trans( const MatScalarDivExpr<MT>& matrix )
+{
+   BLAZE_FUNCTION_TRACE;
+
+   return trans( (~matrix).leftOperand() ) / (~matrix).rightOperand();
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Calculation of the complex conjugate of the given matrix-scalar division.
+// \ingroup math
+//
+// \param matrix The matrix-scalar division expression to be conjugated.
+// \return The complex conjugate of the expression.
+//
+// This operator implements the performance optimized treatment of the complex conjugate
+// of a matrix-scalar division. It restructures the expression \f$ a=conj(b/s1) \f$ to the
+// expression \f$ a=conj(b)/s1 \f$.
+*/
+template< typename MT >  // Matrix base type of the expression
+inline decltype(auto) conj( const MatScalarDivExpr<MT>& matrix )
+{
+   BLAZE_FUNCTION_TRACE;
+
+   return conj( (~matrix).leftOperand() ) / (~matrix).rightOperand();
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Declares the given non-symmetric matrix-scalar division expression as symmetric.
+// \ingroup math
+//
+// \param matrix The input matrix-scalar division expression.
+// \return The redeclared expression.
+// \exception std::invalid_argument Invalid symmetric matrix specification.
+//
+// This function implements the application of the \a declsym operation on a matrix-scalar
+// division. It restructures the expression \f$ A=declsym(B/s1) \f$ to the expression
+// \f$ A=declsym(B)/s1 \f$. In case the given matrix is not a square matrix, a
+// \a std::invalid_argument exception is thrown.
+*/
+template< typename MT >  // Matrix base type of the expression
+inline decltype(auto) declsym( const MatScalarDivExpr<MT>& matrix )
+{
+   BLAZE_FUNCTION_TRACE;
+
+   if( !isSquare( ~matrix ) ) {
+      BLAZE_THROW_INVALID_ARGUMENT( "Invalid symmetric matrix specification" );
+   }
+
+   return declsym( (~matrix).leftOperand() ) / (~matrix).rightOperand();
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Declares the given non-Hermitian matrix-scalar division expression as Hermitian.
+// \ingroup math
+//
+// \param matrix The input matrix-scalar division expression.
+// \return The redeclared expression.
+// \exception std::invalid_argument Invalid Hermitian matrix specification.
+//
+// This function implements the application of the declherm() operation on a matrix-scalar
+// division. It restructures the expression \f$ A=declherm(B/s1) \f$ to the expression
+// \f$ A=declherm(B)/s1 \f$. In case the given matrix is not a square matrix,
+// a \a std::invalid_argument exception is thrown.
+*/
+template< typename MT >  // Matrix base type of the expression
+inline decltype(auto) declherm( const MatScalarDivExpr<MT>& matrix )
+{
+   BLAZE_FUNCTION_TRACE;
+
+   if( !isSquare( ~matrix ) ) {
+      BLAZE_THROW_INVALID_ARGUMENT( "Invalid Hermitian matrix specification" );
+   }
+
+   return declherm( (~matrix).leftOperand() ) / (~matrix).rightOperand();
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Declares the given non-lower matrix-scalar division expression as lower.
+// \ingroup math
+//
+// \param matrix The input matrix-scalar division expression.
+// \return The redeclared expression.
+// \exception std::invalid_argument Invalid lower matrix specification.
+//
+// This function implements the application of the decllow() operation on a matrix-scalar
+// division. It restructures the expression \f$ A=decllow(B/s1) \f$ to the expression
+// \f$ A=decllow(B)/s1 \f$. In case the given matrix is not a square matrix,
+// a \a std::invalid_argument exception is thrown.
+*/
+template< typename MT >  // Matrix base type of the expression
+inline decltype(auto) decllow( const MatScalarDivExpr<MT>& matrix )
+{
+   BLAZE_FUNCTION_TRACE;
+
+   if( !isSquare( ~matrix ) ) {
+      BLAZE_THROW_INVALID_ARGUMENT( "Invalid lower matrix specification" );
+   }
+
+   return decllow( (~matrix).leftOperand() ) / (~matrix).rightOperand();
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Declares the given non-unilower matrix-scalar division expression as unilower.
+// \ingroup math
+//
+// \param matrix The input matrix-scalar division expression.
+// \return The redeclared expression.
+// \exception std::invalid_argument Invalid unilower matrix specification.
+//
+// This function implements the application of the declunilow() operation on a matrix-scalar
+// division. It restructures the expression \f$ A=declunilow(B/s1) \f$ to the expression
+// \f$ A=declunilow(B)/s1 \f$. In case the given matrix is not a square matrix,
+// a \a std::invalid_argument exception is thrown.
+*/
+template< typename MT >  // Matrix base type of the expression
+inline decltype(auto) declunilow( const MatScalarDivExpr<MT>& matrix )
+{
+   BLAZE_FUNCTION_TRACE;
+
+   if( !isSquare( ~matrix ) ) {
+      BLAZE_THROW_INVALID_ARGUMENT( "Invalid unilower matrix specification" );
+   }
+
+   return declunilow( (~matrix).leftOperand() ) / (~matrix).rightOperand();
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Declares the given non-strictly-lower matrix-scalar division expression as strictly lower.
+// \ingroup math
+//
+// \param matrix The input matrix-scalar division expression.
+// \return The redeclared expression.
+// \exception std::invalid_argument Invalid strictly lower matrix specification.
+//
+// This function implements the application of the declstrlow() operation on a matrix-scalar
+// division. It restructures the expression \f$ A=declstrlow(B/s1) \f$ to the expression
+// \f$ A=declstrlow(B)/s1 \f$. In case the given matrix is not a square matrix,
+// a \a std::invalid_argument exception is thrown.
+*/
+template< typename MT >  // Matrix base type of the expression
+inline decltype(auto) declstrlow( const MatScalarDivExpr<MT>& matrix )
+{
+   BLAZE_FUNCTION_TRACE;
+
+   if( !isSquare( ~matrix ) ) {
+      BLAZE_THROW_INVALID_ARGUMENT( "Invalid strictly lower matrix specification" );
+   }
+
+   return declstrlow( (~matrix).leftOperand() ) / (~matrix).rightOperand();
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Declares the given non-upper matrix-scalar division expression as upper.
+// \ingroup math
+//
+// \param matrix The input matrix-scalar division expression.
+// \return The redeclared expression.
+// \exception std::invalid_argument Invalid upper matrix specification.
+//
+// This function implements the application of the declupp() operation on a matrix-scalar
+// division. It restructures the expression \f$ A=declupp(B/s1) \f$ to the expression
+// \f$ A=declupp(B)/s1 \f$. In case the given matrix is not a square matrix,
+// a \a std::invalid_argument exception is thrown.
+*/
+template< typename MT >  // Matrix base type of the expression
+inline decltype(auto) declupp( const MatScalarDivExpr<MT>& matrix )
+{
+   BLAZE_FUNCTION_TRACE;
+
+   if( !isSquare( ~matrix ) ) {
+      BLAZE_THROW_INVALID_ARGUMENT( "Invalid upper matrix specification" );
+   }
+
+   return declupp( (~matrix).leftOperand() ) / (~matrix).rightOperand();
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Declares the given non-uniupper matrix-scalar division expression as uniupper.
+// \ingroup math
+//
+// \param matrix The input matrix-scalar division expression.
+// \return The redeclared expression.
+// \exception std::invalid_argument Invalid uniupper matrix specification.
+//
+// This function implements the application of the decluniupp() operation on a matrix-scalar
+// division. It restructures the expression \f$ A=decluniupp(B/s1) \f$ to the expression
+// \f$ A=decluniupp(B)/s1 \f$. In case the given matrix is not a square matrix,
+// a \a std::invalid_argument exception is thrown.
+*/
+template< typename MT >  // Matrix base type of the expression
+inline decltype(auto) decluniupp( const MatScalarDivExpr<MT>& matrix )
+{
+   BLAZE_FUNCTION_TRACE;
+
+   if( !isSquare( ~matrix ) ) {
+      BLAZE_THROW_INVALID_ARGUMENT( "Invalid uniupper matrix specification" );
+   }
+
+   return decluniupp( (~matrix).leftOperand() ) / (~matrix).rightOperand();
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Declares the given non-strictly-upper matrix-scalar division expression as strictly upper.
+// \ingroup math
+//
+// \param matrix The input matrix-scalar division expression.
+// \return The redeclared expression.
+// \exception std::invalid_argument Invalid strictly upper matrix specification.
+//
+// This function implements the application of the declstrupp() operation on a matrix-scalar
+// division. It restructures the expression \f$ A=declstrupp(B/s1) \f$ to the expression
+// \f$ A=declstrupp(B)/s1 \f$. In case the given matrix is not a square matrix,
+// a \a std::invalid_argument exception is thrown.
+*/
+template< typename MT >  // Matrix base type of the expression
+inline decltype(auto) declstrupp( const MatScalarDivExpr<MT>& matrix )
+{
+   BLAZE_FUNCTION_TRACE;
+
+   if( !isSquare( ~matrix ) ) {
+      BLAZE_THROW_INVALID_ARGUMENT( "Invalid strictly upper matrix specification" );
+   }
+
+   return declstrupp( (~matrix).leftOperand() ) / (~matrix).rightOperand();
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Declares the given non-diagonal matrix-scalar division expression as diagonal.
+// \ingroup math
+//
+// \param matrix The input matrix-scalar division expression.
+// \return The redeclared expression.
+// \exception std::invalid_argument Invalid diagonal matrix specification.
+//
+// This function implements the application of the decldiag() operation on a matrix-scalar
+// division. It restructures the expression \f$ A=decldiag(B/s1) \f$ to the expression
+// \f$ A=decldiag(B)/s1 \f$. In case the given matrix is not a square matrix,
+// a \a std::invalid_argument exception is thrown.
+*/
+template< typename MT >  // Matrix base type of the expression
+inline decltype(auto) decldiag( const MatScalarDivExpr<MT>& matrix )
+{
+   BLAZE_FUNCTION_TRACE;
+
+   if( !isSquare( ~matrix ) ) {
+      BLAZE_THROW_INVALID_ARGUMENT( "Invalid diagonal matrix specification" );
+   }
+
+   return decldiag( (~matrix).leftOperand() ) / (~matrix).rightOperand();
+}
+/*! \endcond */
 //*************************************************************************************************
 
 } // namespace blaze

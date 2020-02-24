@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/SparseVector.h
 //  \brief Header file for the SparseVector base class
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -67,9 +67,22 @@ namespace blaze {
 */
 template< typename VT  // Type of the sparse vector
         , bool TF >    // Transpose flag
-struct SparseVector
+class SparseVector
    : public Vector<VT,TF>
-{};
+{
+ protected:
+   //**Special member functions********************************************************************
+   /*!\name Special member functions */
+   //@{
+   SparseVector() = default;
+   SparseVector( const SparseVector& ) = default;
+   SparseVector( SparseVector&& ) = default;
+   ~SparseVector() = default;
+   SparseVector& operator=( const SparseVector& ) = default;
+   SparseVector& operator=( SparseVector&& ) = default;
+   //@}
+   //**********************************************************************************************
+};
 //*************************************************************************************************
 
 } // namespace blaze

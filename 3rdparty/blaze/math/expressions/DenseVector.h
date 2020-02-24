@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/DenseVector.h
 //  \brief Header file for the DenseVector base class
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -44,7 +44,6 @@
 #include "../../math/typetraits/HasConstDataAccess.h"
 #include "../../math/typetraits/HasMutableDataAccess.h"
 #include "../../system/Inline.h"
-#include "../../util/DisableIf.h"
 #include "../../util/EnableIf.h"
 #include "../../util/MaybeUnused.h"
 
@@ -73,9 +72,22 @@ namespace blaze {
 */
 template< typename VT  // Type of the dense vector
         , bool TF >    // Transpose flag
-struct DenseVector
+class DenseVector
    : public Vector<VT,TF>
-{};
+{
+ protected:
+   //**Special member functions********************************************************************
+   /*!\name Special member functions */
+   //@{
+   DenseVector() = default;
+   DenseVector( const DenseVector& ) = default;
+   DenseVector( DenseVector&& ) = default;
+   ~DenseVector() = default;
+   DenseVector& operator=( const DenseVector& ) = default;
+   DenseVector& operator=( DenseVector&& ) = default;
+   //@}
+   //**********************************************************************************************
+};
 //*************************************************************************************************
 
 

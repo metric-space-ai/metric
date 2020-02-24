@@ -3,7 +3,7 @@
 //  \file blaze/math/shims/Clear.h
 //  \brief Header file for the clear shim
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -64,7 +64,7 @@ namespace blaze {
 template< typename Type >
 BLAZE_ALWAYS_INLINE constexpr void clear( Type& clearable )
 {
-   clearable = Type(0);
+   clearable = Type();
 }
 //*************************************************************************************************
 

@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/ExpandExprData.h
 //  \brief Header file for the implementation of the ExpandExprData class template
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -89,7 +89,7 @@ class ExpandExprData<>
    //**Constructors********************************************************************************
    /*!\name Constructors */
    //@{
-   explicit inline ExpandExprData( size_t expansion ) noexcept;
+   inline ExpandExprData( size_t expansion ) noexcept;
 
    ExpandExprData( const ExpandExprData& ) = default;
    //@}
@@ -179,7 +179,7 @@ class ExpandExprData<E>
    //**Constructors********************************************************************************
    /*!\name Constructors */
    //@{
-   explicit inline constexpr ExpandExprData() noexcept;
+   constexpr ExpandExprData() noexcept;
 
    ExpandExprData( const ExpandExprData& ) = default;
    //@}
@@ -202,7 +202,7 @@ class ExpandExprData<E>
    //**Utility functions***************************************************************************
    /*!\name Utility functions */
    //@{
-   static inline constexpr size_t expansion() noexcept;
+   static constexpr size_t expansion() noexcept;
    //@}
    //**********************************************************************************************
 };
@@ -215,7 +215,7 @@ class ExpandExprData<E>
 /*!\brief The constructor for ExpandExprData.
 */
 template< size_t E >  // Compile time expansion
-inline constexpr ExpandExprData<E>::ExpandExprData() noexcept
+constexpr ExpandExprData<E>::ExpandExprData() noexcept
 {}
 /*! \endcond */
 //*************************************************************************************************
@@ -228,7 +228,7 @@ inline constexpr ExpandExprData<E>::ExpandExprData() noexcept
 // \return The expansion.
 */
 template< size_t E >  // Compile time expansion
-inline constexpr size_t ExpandExprData<E>::expansion() noexcept
+constexpr size_t ExpandExprData<E>::expansion() noexcept
 {
    return E;
 }

@@ -3,7 +3,7 @@
 //  \file blaze/math/Vector.h
 //  \brief Header file for all basic Vector functionality
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -44,7 +44,6 @@
 #include <iosfwd>
 #include "../math/Aliases.h"
 #include "../math/expressions/Vector.h"
-#include "../math/RelaxationFlag.h"
 #include "../math/TransposeFlag.h"
 #include "../math/views/Elements.h"
 
@@ -93,8 +92,8 @@ decltype(auto) outer( const Vector<T1,true>& lhs, const Vector<T2,false>& rhs );
 template< typename T1, typename T2 >
 decltype(auto) outer( const Vector<T1,true>& lhs, const Vector<T2,true>& rhs );
 
-template< typename VT, bool TF >
-decltype(auto) reverse( const Vector<VT,TF>& v );
+template< typename VT >
+decltype(auto) reverse( VT&& v );
 //@}
 //*************************************************************************************************
 
@@ -342,9 +341,8 @@ inline decltype(auto) outer( const Vector<T1,true>& lhs, const Vector<T2,true>& 
    b = reverse( a );  // Results in ( 5 4 3 2 1 )
    \endcode
 */
-template< typename VT  // Type of the vector
-        , bool TF >    // Transpose flag
-inline decltype(auto) reverse( const Vector<VT,TF>& v )
+template< typename VT >  // Type of the vector
+inline decltype(auto) reverse( VT&& v )
 {
    return elements( ~v, [max=(~v).size()-1UL]( size_t i ){ return max - i; }, (~v).size() );
 }

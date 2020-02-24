@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/DMatDMatKronExpr.h
 //  \brief Header file for the dense matrix/dense matrix Kronecker product expression
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -64,7 +64,6 @@
 #include "../../math/typetraits/IsUpper.h"
 #include "../../util/Assert.h"
 #include "../../util/FunctionTrace.h"
-#include "../../util/MaybeUnused.h"
 #include "../../util/mpl/If.h"
 #include "../../util/Types.h"
 
@@ -152,7 +151,7 @@ class DMatDMatKronExpr
    // \param lhs The left-hand side operand of the Kronecker product expression.
    // \param rhs The right-hand side operand of the Kronecker product expression.
    */
-   explicit inline DMatDMatKronExpr( const MT1& lhs, const MT2& rhs ) noexcept
+   inline DMatDMatKronExpr( const MT1& lhs, const MT2& rhs ) noexcept
       : lhs_( lhs )  // Left-hand side dense matrix of the Kronecker product expression
       , rhs_( rhs )  // Right-hand side dense matrix of the Kronecker product expression
    {}

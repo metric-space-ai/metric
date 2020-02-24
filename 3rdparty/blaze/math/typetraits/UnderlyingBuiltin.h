@@ -3,7 +3,7 @@
 //  \file blaze/math/typetraits/UnderlyingBuiltin.h
 //  \brief Header file for the UnderlyingBuiltin type trait
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -40,8 +40,9 @@
 // Includes
 //*************************************************************************************************
 
+#include "../../util/EnableIf.h"
+#include "../../util/typetraits/IsSame.h"
 #include "../../util/typetraits/RemoveCV.h"
-#include "../../util/typetraits/Void.h"
 
 
 namespace blaze {
@@ -129,7 +130,7 @@ struct UnderlyingBuiltinHelper1
 };
 
 template< typename T >
-struct UnderlyingBuiltinHelper1< T, Void_t< typename T::ElementType > >
+struct UnderlyingBuiltinHelper1< T, EnableIf_t< !IsSame_v< T, typename T::ElementType > > >
 {
    using Type = typename UnderlyingBuiltinHelper1< typename T::ElementType >::Type;
 };
@@ -149,7 +150,7 @@ struct UnderlyingBuiltinHelper2
 };
 
 template< typename T >
-struct UnderlyingBuiltinHelper2< T, Void_t< typename T::value_type > >
+struct UnderlyingBuiltinHelper2< T, EnableIf_t< !IsSame_v< T, typename T::value_type > > >
 {
    using Type = typename UnderlyingBuiltinHelper1< typename T::value_type >::Type;
 };
