@@ -19,6 +19,8 @@ SET(SRC
 	src/metric_Entropy.cpp
 	src/metric_MGC.cpp
 	src/metric_standards.cpp
+	src/metric_SSIM.cpp
+	src/metric_TWED.cpp
 )
 
 add_library(metric_py SHARED ${SRC})

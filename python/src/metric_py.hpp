@@ -79,9 +79,9 @@ class WrapStlMatrix: public base_python_object {
             return boost::python::stl_input_iterator<T>();
         }
 
-        WrapStlMatrix operator[](int index) const {
+        WrapStlVector<T> operator[](int index) const {
             base_python_object wr = boost::python::extract<base_python_object>(base_python_object::operator[](index));
-            return WrapStlMatrix(wr);
+            return WrapStlVector<T>(wr);
         }
 };
 

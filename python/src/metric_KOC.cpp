@@ -5,14 +5,6 @@
 
 namespace bp = boost::python;
 
-template< typename T >
-inline
-std::vector< T > to_std_vector( const bp::list& iterable )
-{
-    return std::vector< T >( bp::stl_input_iterator< T >( iterable ),
-                             bp::stl_input_iterator< T >( ) );
-}
-
 // TODO: template with record type
 void export_metric_KOC() {
     using Record = std::vector<double>;

@@ -30,14 +30,16 @@ std::string getObjType(PyObject* obj_ptr) {
        return getObjType(obj);
 }
 
-void export_metric_KOC();
 void export_converters();
+void export_metric_KOC();
 void export_metric_sorensen();
 void export_metric_MGC();
 void export_metric_Edit();
 void export_metric_EMD();
 void export_metric_Entropy();
 void export_metric_standards();
+void export_metric_SSIM();
+void export_metric_TWED();
 
 BOOST_PYTHON_MODULE(metric) {
 
@@ -56,6 +58,8 @@ BOOST_PYTHON_MODULE(metric) {
     export_metric_EMD();
     export_metric_Entropy();
     export_metric_standards();
+    export_metric_SSIM();
+    export_metric_TWED();
 
 // TODO #include "metric_affprop.cpp"
 
