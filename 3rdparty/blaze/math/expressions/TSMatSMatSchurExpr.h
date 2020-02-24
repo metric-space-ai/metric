@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/TSMatSMatSchurExpr.h
 //  \brief Header file for the transpose sparse matrix/sparse matrix Schur product expression
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -57,7 +57,6 @@
 #include "../../math/shims/Serial.h"
 #include "../../math/sparse/Forward.h"
 #include "../../math/traits/SchurTrait.h"
-#include "../../math/typetraits/IsComputation.h"
 #include "../../math/typetraits/IsExpression.h"
 #include "../../math/typetraits/IsLower.h"
 #include "../../math/typetraits/IsStrictlyLower.h"
@@ -71,7 +70,6 @@
 #include "../../math/typetraits/StorageOrder.h"
 #include "../../util/algorithms/Min.h"
 #include "../../util/Assert.h"
-#include "../../util/DisableIf.h"
 #include "../../util/EnableIf.h"
 #include "../../util/FunctionTrace.h"
 #include "../../util/IntegralConstant.h"
@@ -170,7 +168,7 @@ class TSMatSMatSchurExpr
    // \param lhs The left-hand side sparse matrix operand of the Schur product expression.
    // \param rhs The right-hand side sparse matrix operand of the Schur product expression.
    */
-   explicit inline TSMatSMatSchurExpr( const MT1& lhs, const MT2& rhs ) noexcept
+   inline TSMatSMatSchurExpr( const MT1& lhs, const MT2& rhs ) noexcept
       : lhs_( lhs )  // Left-hand side sparse matrix of the Schur product expression
       , rhs_( rhs )  // Right-hand side sparse matrix of the Schur product expression
    {

@@ -3,7 +3,7 @@
 //  \file blaze/math/adaptors/uniuppermatrix/UniUpperValue.h
 //  \brief Header file for the UniUpperValue class
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -51,6 +51,7 @@
 #include "../../../math/constraints/View.h"
 #include "../../../math/Exception.h"
 #include "../../../math/proxy/Proxy.h"
+#include "../../../math/RelaxationFlag.h"
 #include "../../../math/shims/Clear.h"
 #include "../../../math/shims/Invert.h"
 #include "../../../math/shims/IsDefault.h"
@@ -585,16 +586,16 @@ void clear( const UniUpperValue<MT>& value );
 template< typename MT >
 void invert( const UniUpperValue<MT>& value );
 
-template< bool RF, typename MT >
+template< RelaxationFlag RF, typename MT >
 bool isDefault( const UniUpperValue<MT>& value );
 
-template< bool RF, typename MT >
+template< RelaxationFlag RF, typename MT >
 bool isReal( const UniUpperValue<MT>& value );
 
-template< bool RF, typename MT >
+template< RelaxationFlag RF, typename MT >
 bool isZero( const UniUpperValue<MT>& value );
 
-template< bool RF, typename MT >
+template< RelaxationFlag RF, typename MT >
 bool isOne( const UniUpperValue<MT>& value );
 
 template< typename MT >
@@ -662,7 +663,7 @@ inline void invert( const UniUpperValue<MT>& value )
 // This function checks whether the uniupper value is in default state. In case it is in
 // default state, the function returns \a true, otherwise it returns \a false.
 */
-template< bool RF, typename MT >
+template< RelaxationFlag RF, typename MT >
 inline bool isDefault( const UniUpperValue<MT>& value )
 {
    using blaze::isDefault;
@@ -684,7 +685,7 @@ inline bool isDefault( const UniUpperValue<MT>& value )
 // type, the function returns \a true if the imaginary part is equal to 0. Otherwise it returns
 // \a false.
 */
-template< bool RF, typename MT >
+template< RelaxationFlag RF, typename MT >
 inline bool isReal( const UniUpperValue<MT>& value )
 {
    using blaze::isReal;
@@ -704,7 +705,7 @@ inline bool isReal( const UniUpperValue<MT>& value )
 // This function checks whether the uniupper value represents the numeric value 0. In case it
 // is 0, the function returns \a true, otherwise it returns \a false.
 */
-template< bool RF, typename MT >
+template< RelaxationFlag RF, typename MT >
 inline bool isZero( const UniUpperValue<MT>& value )
 {
    using blaze::isZero;
@@ -724,7 +725,7 @@ inline bool isZero( const UniUpperValue<MT>& value )
 // This function checks whether the uniupper value represents the numeric value 1. In case it
 // is 1, the function returns \a true, otherwise it returns \a false.
 */
-template< bool RF, typename MT >
+template< RelaxationFlag RF, typename MT >
 inline bool isOne( const UniUpperValue<MT>& value )
 {
    using blaze::isOne;

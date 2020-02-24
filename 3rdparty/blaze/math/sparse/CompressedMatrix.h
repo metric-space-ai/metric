@@ -3,7 +3,7 @@
 //  \file blaze/math/sparse/CompressedMatrix.h
 //  \brief Implementation of a compressed MxN matrix
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -53,6 +53,7 @@
 #include "../../math/RelaxationFlag.h"
 #include "../../math/shims/IsDefault.h"
 #include "../../math/shims/Serial.h"
+#include "../../math/sparse/Forward.h"
 #include "../../math/sparse/MatrixAccessProxy.h"
 #include "../../math/sparse/ValueIndexPair.h"
 #include "../../math/traits/AddTrait.h"
@@ -68,6 +69,7 @@
 #include "../../math/traits/SubTrait.h"
 #include "../../math/typetraits/HighType.h"
 #include "../../math/typetraits/IsColumnVector.h"
+#include "../../math/typetraits/IsDenseMatrix.h"
 #include "../../math/typetraits/IsIdentity.h"
 #include "../../math/typetraits/IsLower.h"
 #include "../../math/typetraits/IsMatrix.h"
@@ -222,8 +224,8 @@ namespace blaze {
    F *= A * D;    // Multiplication assignment
    \endcode
 */
-template< typename Type                    // Data type of the matrix
-        , bool SO = defaultStorageOrder >  // Storage order
+template< typename Type  // Data type of the matrix
+        , bool SO >      // Storage order
 class CompressedMatrix
    : public SparseMatrix< CompressedMatrix<Type,SO>, SO >
 {
@@ -244,9 +246,9 @@ class CompressedMatrix
       : public ElementBase
    {
       //**Constructors*****************************************************************************
-      explicit Element() = default;
-               Element( const Element& rhs ) = default;
-               Element( Element&& rhs ) = default;
+      Element() = default;
+      Element( const Element& rhs ) = default;
+      Element( Element&& rhs ) = default;
       //*******************************************************************************************
 
       //**Assignment operators*********************************************************************
@@ -358,11 +360,11 @@ class CompressedMatrix
    //**Constructors********************************************************************************
    /*!\name Constructors */
    //@{
-   explicit inline CompressedMatrix();
-   explicit inline CompressedMatrix( size_t m, size_t n );
-   explicit inline CompressedMatrix( size_t m, size_t n, size_t nonzeros );
-   explicit        CompressedMatrix( size_t m, size_t n, const std::vector<size_t>& nonzeros );
-            inline CompressedMatrix( initializer_list< initializer_list<Type> > list );
+   inline CompressedMatrix();
+   inline CompressedMatrix( size_t m, size_t n );
+   inline CompressedMatrix( size_t m, size_t n, size_t nonzeros );
+          CompressedMatrix( size_t m, size_t n, const std::vector<size_t>& nonzeros );
+   inline CompressedMatrix( initializer_list< initializer_list<Type> > list );
 
    inline CompressedMatrix( const CompressedMatrix& sm );
    inline CompressedMatrix( CompressedMatrix&& sm ) noexcept;
@@ -503,7 +505,7 @@ class CompressedMatrix
    //**Constructors********************************************************************************
    /*!\name Constructors */
    //@{
-   explicit inline CompressedMatrix( size_t m, size_t n, Uninitialized );
+   inline CompressedMatrix( size_t m, size_t n, Uninitialized );
    //@}
    //**********************************************************************************************
 
@@ -3018,9 +3020,9 @@ class CompressedMatrix<Type,true>
       : public ElementBase
    {
       //**Constructors*****************************************************************************
-      explicit Element() = default;
-               Element( const Element& rhs ) = default;
-               Element( Element&& rhs ) = default;
+      Element() = default;
+      Element( const Element& rhs ) = default;
+      Element( Element&& rhs ) = default;
       //*******************************************************************************************
 
       //**Assignment operators*********************************************************************
@@ -3129,11 +3131,11 @@ class CompressedMatrix<Type,true>
    //**Constructors********************************************************************************
    /*!\name Constructors */
    //@{
-   explicit inline CompressedMatrix();
-   explicit inline CompressedMatrix( size_t m, size_t n );
-   explicit inline CompressedMatrix( size_t m, size_t n, size_t nonzeros );
-   explicit        CompressedMatrix( size_t m, size_t n, const std::vector<size_t>& nonzeros );
-            inline CompressedMatrix( initializer_list< initializer_list<Type> > list );
+   inline CompressedMatrix();
+   inline CompressedMatrix( size_t m, size_t n );
+   inline CompressedMatrix( size_t m, size_t n, size_t nonzeros );
+          CompressedMatrix( size_t m, size_t n, const std::vector<size_t>& nonzeros );
+   inline CompressedMatrix( initializer_list< initializer_list<Type> > list );
 
    inline CompressedMatrix( const CompressedMatrix& sm );
    inline CompressedMatrix( CompressedMatrix&& sm ) noexcept;
@@ -3274,7 +3276,7 @@ class CompressedMatrix<Type,true>
    //**Constructors********************************************************************************
    /*!\name Constructors */
    //@{
-   explicit inline CompressedMatrix( size_t m, size_t n, Uninitialized );
+   inline CompressedMatrix( size_t m, size_t n, Uninitialized );
    //@}
    //**********************************************************************************************
 
@@ -5791,7 +5793,7 @@ void reset( CompressedMatrix<Type,SO>& m, size_t i );
 template< typename Type, bool SO >
 void clear( CompressedMatrix<Type,SO>& m );
 
-template< bool RF, typename Type, bool SO >
+template< RelaxationFlag RF, typename Type, bool SO >
 bool isDefault( const CompressedMatrix<Type,SO>& m );
 
 template< typename Type, bool SO >
@@ -5882,9 +5884,9 @@ inline void clear( CompressedMatrix<Type,SO>& m )
    if( isDefault<relaxed>( A ) ) { ... }
    \endcode
 */
-template< bool RF        // Relaxation flag
-        , typename Type  // Data type of the matrix
-        , bool SO >      // Storage order
+template< RelaxationFlag RF  // Relaxation flag
+        , typename Type      // Data type of the matrix
+        , bool SO >          // Storage order
 inline bool isDefault( const CompressedMatrix<Type,SO>& m )
 {
    return ( m.rows() == 0UL && m.columns() == 0UL );

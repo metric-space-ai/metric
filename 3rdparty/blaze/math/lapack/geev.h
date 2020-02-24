@@ -3,7 +3,7 @@
 //  \file blaze/math/lapack/geev.h
 //  \brief Header file for the LAPACK general matrix eigenvalue functions (geev)
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -57,7 +57,6 @@
 #include "../../util/Complex.h"
 #include "../../util/constraints/Builtin.h"
 #include "../../util/constraints/Complex.h"
-#include "../../util/DisableIf.h"
 #include "../../util/EnableIf.h"
 #include "../../util/NumericCast.h"
 #include "../../util/typetraits/IsComplex.h"
@@ -123,11 +122,11 @@ inline auto geev_backend( DenseMatrix<MT,SO>& A, DenseVector<VT,TF>& w )
    BLAZE_CONSTRAINT_MUST_BE_COMPLEX_TYPE( CT );
    BLAZE_CONSTRAINT_MUST_BE_BUILTIN_TYPE( BT );
 
-   int n   ( numeric_cast<int>( (~A).rows() ) );
-   int lda ( numeric_cast<int>( (~A).spacing() ) );
-   int info( 0 );
+   blas_int_t n   ( numeric_cast<blas_int_t>( (~A).rows() ) );
+   blas_int_t lda ( numeric_cast<blas_int_t>( (~A).spacing() ) );
+   blas_int_t info( 0 );
 
-   int lwork( 3*n + 2 );
+   blas_int_t lwork( 3*n + 2 );
    const std::unique_ptr<BT[]> wr  ( new BT[n] );
    const std::unique_ptr<BT[]> wi  ( new BT[n] );
    const std::unique_ptr<BT[]> work( new BT[lwork] );
@@ -182,11 +181,11 @@ inline auto geev_backend( DenseMatrix<MT,SO>& A, DenseVector<VT,TF>& w )
    BLAZE_CONSTRAINT_MUST_BE_COMPLEX_TYPE( CT );
    BLAZE_CONSTRAINT_MUST_BE_BUILTIN_TYPE( BT );
 
-   int n   ( numeric_cast<int>( (~A).rows() ) );
-   int lda ( numeric_cast<int>( (~A).spacing() ) );
-   int info( 0 );
+   blas_int_t n   ( numeric_cast<blas_int_t>( (~A).rows() ) );
+   blas_int_t lda ( numeric_cast<blas_int_t>( (~A).spacing() ) );
+   blas_int_t info( 0 );
 
-   int lwork( 2*n + 2 );
+   blas_int_t lwork( 2*n + 2 );
    const std::unique_ptr<CT[]> work ( new CT[lwork] );
    const std::unique_ptr<BT[]> rwork( new BT[2*n] );
 
@@ -331,11 +330,11 @@ inline auto geev_backend( DenseMatrix<MT1,SO1>& A, DenseMatrix<MT2,SO2>& VL, Den
    BLAZE_CONSTRAINT_MUST_BE_COMPLEX_TYPE( CT );
    BLAZE_CONSTRAINT_MUST_BE_BUILTIN_TYPE( BT );
 
-   int n   ( numeric_cast<int>( (~A).rows() ) );
-   int lda ( numeric_cast<int>( (~A).spacing() ) );
-   int info( 0 );
+   blas_int_t n   ( numeric_cast<blas_int_t>( (~A).rows() ) );
+   blas_int_t lda ( numeric_cast<blas_int_t>( (~A).spacing() ) );
+   blas_int_t info( 0 );
 
-   int lwork( 4*n + 2 );
+   blas_int_t lwork( 4*n + 2 );
    const std::unique_ptr<BT[]> vl  ( new BT[n*n] );
    const std::unique_ptr<BT[]> wr  ( new BT[n] );
    const std::unique_ptr<BT[]> wi  ( new BT[n] );
@@ -423,12 +422,12 @@ inline auto geev_backend( DenseMatrix<MT1,SO1>& A, DenseMatrix<MT2,SO2>& VL, Den
    BLAZE_CONSTRAINT_MUST_BE_COMPLEX_TYPE( CT );
    BLAZE_CONSTRAINT_MUST_BE_BUILTIN_TYPE( BT );
 
-   int n   ( numeric_cast<int>( (~A).rows() ) );
-   int lda ( numeric_cast<int>( (~A).spacing() ) );
-   int ldvl( numeric_cast<int>( (~VL).spacing() ) );
-   int info( 0 );
+   blas_int_t n   ( numeric_cast<blas_int_t>( (~A).rows() ) );
+   blas_int_t lda ( numeric_cast<blas_int_t>( (~A).spacing() ) );
+   blas_int_t ldvl( numeric_cast<blas_int_t>( (~VL).spacing() ) );
+   blas_int_t info( 0 );
 
-   int lwork( 2*n + 2 );
+   blas_int_t lwork( 2*n + 2 );
    const std::unique_ptr<CT[]> work ( new CT[lwork] );
    const std::unique_ptr<BT[]> rwork( new BT[2*n] );
 
@@ -599,11 +598,11 @@ inline auto geev_backend( DenseMatrix<MT1,SO1>& A, DenseVector<VT,TF>& w, DenseM
    BLAZE_CONSTRAINT_MUST_BE_COMPLEX_TYPE( CT );
    BLAZE_CONSTRAINT_MUST_BE_BUILTIN_TYPE( BT );
 
-   int n   ( numeric_cast<int>( (~A).rows() ) );
-   int lda ( numeric_cast<int>( (~A).spacing() ) );
-   int info( 0 );
+   blas_int_t n   ( numeric_cast<blas_int_t>( (~A).rows() ) );
+   blas_int_t lda ( numeric_cast<blas_int_t>( (~A).spacing() ) );
+   blas_int_t info( 0 );
 
-   int lwork( 4*n + 2 );
+   blas_int_t lwork( 4*n + 2 );
    const std::unique_ptr<BT[]> vr  ( new BT[n*n] );
    const std::unique_ptr<BT[]> wr  ( new BT[n] );
    const std::unique_ptr<BT[]> wi  ( new BT[n] );
@@ -691,12 +690,12 @@ inline auto geev_backend( DenseMatrix<MT1,SO1>& A, DenseVector<VT,TF>& w, DenseM
    BLAZE_CONSTRAINT_MUST_BE_COMPLEX_TYPE( CT );
    BLAZE_CONSTRAINT_MUST_BE_BUILTIN_TYPE( BT );
 
-   int n   ( numeric_cast<int>( (~A).rows() ) );
-   int lda ( numeric_cast<int>( (~A).spacing() ) );
-   int ldvr( numeric_cast<int>( (~VR).spacing() ) );
-   int info( 0 );
+   blas_int_t n   ( numeric_cast<blas_int_t>( (~A).rows() ) );
+   blas_int_t lda ( numeric_cast<blas_int_t>( (~A).spacing() ) );
+   blas_int_t ldvr( numeric_cast<blas_int_t>( (~VR).spacing() ) );
+   blas_int_t info( 0 );
 
-   int lwork( 2*n + 2 );
+   blas_int_t lwork( 2*n + 2 );
    const std::unique_ptr<CT[]> work ( new CT[lwork] );
    const std::unique_ptr<BT[]> rwork( new BT[2*n] );
 
@@ -870,11 +869,11 @@ inline auto geev_backend( DenseMatrix<MT1,SO1>& A, DenseMatrix<MT2,SO2>& VL,
    BLAZE_CONSTRAINT_MUST_BE_COMPLEX_TYPE( CT );
    BLAZE_CONSTRAINT_MUST_BE_BUILTIN_TYPE( BT );
 
-   int n   ( numeric_cast<int>( (~A).rows() ) );
-   int lda ( numeric_cast<int>( (~A).spacing() ) );
-   int info( 0 );
+   blas_int_t n   ( numeric_cast<blas_int_t>( (~A).rows() ) );
+   blas_int_t lda ( numeric_cast<blas_int_t>( (~A).spacing() ) );
+   blas_int_t info( 0 );
 
-   int lwork( 4*n + 2 );
+   blas_int_t lwork( 4*n + 2 );
    const std::unique_ptr<BT[]> vl  ( new BT[n*n] );
    const std::unique_ptr<BT[]> vr  ( new BT[n*n] );
    const std::unique_ptr<BT[]> wr  ( new BT[n] );
@@ -973,13 +972,13 @@ inline auto geev_backend( DenseMatrix<MT1,SO1>& A, DenseMatrix<MT2,SO2>& VL,
    BLAZE_CONSTRAINT_MUST_BE_COMPLEX_TYPE( CT );
    BLAZE_CONSTRAINT_MUST_BE_BUILTIN_TYPE( BT );
 
-   int n   ( numeric_cast<int>( (~A).rows() ) );
-   int lda ( numeric_cast<int>( (~A).spacing() ) );
-   int ldvl( numeric_cast<int>( (~VL).spacing() ) );
-   int ldvr( numeric_cast<int>( (~VR).spacing() ) );
-   int info( 0 );
+   blas_int_t n   ( numeric_cast<blas_int_t>( (~A).rows() ) );
+   blas_int_t lda ( numeric_cast<blas_int_t>( (~A).spacing() ) );
+   blas_int_t ldvl( numeric_cast<blas_int_t>( (~VL).spacing() ) );
+   blas_int_t ldvr( numeric_cast<blas_int_t>( (~VR).spacing() ) );
+   blas_int_t info( 0 );
 
-   int lwork( 2*n + 2 );
+   blas_int_t lwork( 2*n + 2 );
    const std::unique_ptr<CT[]> work ( new CT[lwork] );
    const std::unique_ptr<BT[]> rwork( new BT[2*n] );
 

@@ -3,7 +3,7 @@
 //  \file blaze/math/sparse/ZeroVector.h
 //  \brief Implementation of a zero vector
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -45,7 +45,9 @@
 #include "../../math/expressions/Expression.h"
 #include "../../math/expressions/SparseVector.h"
 #include "../../math/Forward.h"
+#include "../../math/RelaxationFlag.h"
 #include "../../math/shims/IsZero.h"
+#include "../../math/sparse/Forward.h"
 #include "../../math/sparse/ValueIndexPair.h"
 #include "../../math/traits/AddTrait.h"
 #include "../../math/traits/BandTrait.h"
@@ -165,8 +167,8 @@ namespace blaze {
    e = z * 2.0;  // Scaling of a zero vector
    \endcode
 */
-template< typename Type                     // Data type of the vector
-        , bool TF = defaultTransposeFlag >  // Transpose flag
+template< typename Type  // Data type of the vector
+        , bool TF >      // Transpose flag
 class ZeroVector
    : public Expression< SparseVector< ZeroVector<Type,TF>, TF > >
 {
@@ -219,8 +221,8 @@ class ZeroVector
    //**Constructors********************************************************************************
    /*!\name Constructors */
    //@{
-   explicit inline constexpr ZeroVector() noexcept;
-   explicit inline constexpr ZeroVector( size_t size ) noexcept;
+            constexpr ZeroVector() noexcept;
+   explicit constexpr ZeroVector( size_t size ) noexcept;
 
    template< typename VT > inline ZeroVector( const Vector<VT,TF>& v );
 
@@ -239,12 +241,12 @@ class ZeroVector
    //**Data access functions***********************************************************************
    /*!\name Data access functions */
    //@{
-   inline constexpr ConstReference operator[]( size_t index ) const noexcept;
-   inline           ConstReference at( size_t index ) const;
-   inline constexpr ConstIterator  begin () const noexcept;
-   inline constexpr ConstIterator  cbegin() const noexcept;
-   inline constexpr ConstIterator  end   () const noexcept;
-   inline constexpr ConstIterator  cend  () const noexcept;
+   constexpr ConstReference operator[]( size_t index ) const noexcept;
+   inline    ConstReference at( size_t index ) const;
+   constexpr ConstIterator  begin () const noexcept;
+   constexpr ConstIterator  cbegin() const noexcept;
+   constexpr ConstIterator  end   () const noexcept;
+   constexpr ConstIterator  cend  () const noexcept;
    //@}
    //**********************************************************************************************
 
@@ -262,12 +264,12 @@ class ZeroVector
    //**Utility functions***************************************************************************
    /*!\name Utility functions */
    //@{
-   inline constexpr size_t size() const noexcept;
-   inline constexpr size_t capacity() const noexcept;
-   inline constexpr size_t nonZeros() const noexcept;
-   inline constexpr void   clear() noexcept;
-   inline constexpr void   resize( size_t n ) noexcept;
-   inline constexpr void   swap( ZeroVector& v ) noexcept;
+   constexpr size_t size() const noexcept;
+   constexpr size_t capacity() const noexcept;
+   constexpr size_t nonZeros() const noexcept;
+   constexpr void   clear() noexcept;
+   constexpr void   resize( size_t n ) noexcept;
+   constexpr void   swap( ZeroVector& v ) noexcept;
    //@}
    //**********************************************************************************************
 
@@ -337,7 +339,7 @@ const Type ZeroVector<Type,TF>::zero_{};
 */
 template< typename Type  // Data type of the vector
         , bool TF >      // Transpose flag
-inline constexpr ZeroVector<Type,TF>::ZeroVector() noexcept
+constexpr ZeroVector<Type,TF>::ZeroVector() noexcept
    : size_( 0UL )  // The current size/dimension of the zero vector
 {}
 //*************************************************************************************************
@@ -350,7 +352,7 @@ inline constexpr ZeroVector<Type,TF>::ZeroVector() noexcept
 */
 template< typename Type  // Data type of the vector
         , bool TF >      // Transpose flag
-inline constexpr ZeroVector<Type,TF>::ZeroVector( size_t n ) noexcept
+constexpr ZeroVector<Type,TF>::ZeroVector( size_t n ) noexcept
    : size_( n )  // The current size/dimension of the zero vector
 {}
 //*************************************************************************************************
@@ -394,7 +396,7 @@ inline ZeroVector<Type,TF>::ZeroVector( const Vector<VT,TF>& v )
 */
 template< typename Type  // Data type of the vector
         , bool TF >      // Transpose flag
-inline constexpr typename ZeroVector<Type,TF>::ConstReference
+constexpr typename ZeroVector<Type,TF>::ConstReference
    ZeroVector<Type,TF>::operator[]( size_t index ) const noexcept
 {
    MAYBE_UNUSED( index );
@@ -437,7 +439,7 @@ inline typename ZeroVector<Type,TF>::ConstReference
 */
 template< typename Type  // Data type of the vector
         , bool TF >      // Transpose flag
-inline constexpr typename ZeroVector<Type,TF>::ConstIterator
+constexpr typename ZeroVector<Type,TF>::ConstIterator
    ZeroVector<Type,TF>::begin() const noexcept
 {
    return nullptr;
@@ -452,7 +454,7 @@ inline constexpr typename ZeroVector<Type,TF>::ConstIterator
 */
 template< typename Type  // Data type of the vector
         , bool TF >      // Transpose flag
-inline constexpr typename ZeroVector<Type,TF>::ConstIterator
+constexpr typename ZeroVector<Type,TF>::ConstIterator
    ZeroVector<Type,TF>::cbegin() const noexcept
 {
    return nullptr;
@@ -467,7 +469,7 @@ inline constexpr typename ZeroVector<Type,TF>::ConstIterator
 */
 template< typename Type  // Data type of the vector
         , bool TF >      // Transpose flag
-inline constexpr typename ZeroVector<Type,TF>::ConstIterator
+constexpr typename ZeroVector<Type,TF>::ConstIterator
    ZeroVector<Type,TF>::end() const noexcept
 {
    return nullptr;
@@ -482,7 +484,7 @@ inline constexpr typename ZeroVector<Type,TF>::ConstIterator
 */
 template< typename Type  // Data type of the vector
         , bool TF >      // Transpose flag
-inline constexpr typename ZeroVector<Type,TF>::ConstIterator
+constexpr typename ZeroVector<Type,TF>::ConstIterator
    ZeroVector<Type,TF>::cend() const noexcept
 {
    return nullptr;
@@ -540,7 +542,7 @@ inline ZeroVector<Type,TF>&
 */
 template< typename Type  // Data type of the vector
         , bool TF >      // Transpose flag
-inline constexpr size_t ZeroVector<Type,TF>::size() const noexcept
+constexpr size_t ZeroVector<Type,TF>::size() const noexcept
 {
    return size_;
 }
@@ -554,7 +556,7 @@ inline constexpr size_t ZeroVector<Type,TF>::size() const noexcept
 */
 template< typename Type  // Data type of the vector
         , bool TF >      // Transpose flag
-inline constexpr size_t ZeroVector<Type,TF>::capacity() const noexcept
+constexpr size_t ZeroVector<Type,TF>::capacity() const noexcept
 {
    return 0UL;
 }
@@ -571,7 +573,7 @@ inline constexpr size_t ZeroVector<Type,TF>::capacity() const noexcept
 */
 template< typename Type  // Data type of the vector
         , bool TF >      // Transpose flag
-inline constexpr size_t ZeroVector<Type,TF>::nonZeros() const noexcept
+constexpr size_t ZeroVector<Type,TF>::nonZeros() const noexcept
 {
    return 0UL;
 }
@@ -587,7 +589,7 @@ inline constexpr size_t ZeroVector<Type,TF>::nonZeros() const noexcept
 */
 template< typename Type  // Data type of the vector
         , bool TF >      // Transpose flag
-inline constexpr void ZeroVector<Type,TF>::clear() noexcept
+constexpr void ZeroVector<Type,TF>::clear() noexcept
 {
    size_ = 0UL;
 }
@@ -606,7 +608,7 @@ inline constexpr void ZeroVector<Type,TF>::clear() noexcept
 */
 template< typename Type  // Data type of the vector
         , bool TF >      // Transpose flag
-inline constexpr void ZeroVector<Type,TF>::resize( size_t n ) noexcept
+constexpr void ZeroVector<Type,TF>::resize( size_t n ) noexcept
 {
    size_ = n;
 }
@@ -621,7 +623,7 @@ inline constexpr void ZeroVector<Type,TF>::resize( size_t n ) noexcept
 */
 template< typename Type  // Data type of the vector
         , bool TF >      // Transpose flag
-inline constexpr void ZeroVector<Type,TF>::swap( ZeroVector& v ) noexcept
+constexpr void ZeroVector<Type,TF>::swap( ZeroVector& v ) noexcept
 {
    const size_t tmp( size_ );
    size_ = v.size_;
@@ -803,7 +805,7 @@ constexpr void reset( ZeroVector<Type,TF>& m ) noexcept;
 template< typename Type, bool TF >
 constexpr void clear( ZeroVector<Type,TF>& m ) noexcept;
 
-template< bool RF, typename Type, bool TF >
+template< RelaxationFlag RF, typename Type, bool TF >
 constexpr bool isDefault( const ZeroVector<Type,TF>& m ) noexcept;
 
 template< typename Type, bool TF >
@@ -824,7 +826,7 @@ constexpr void swap( ZeroVector<Type,TF>& a, ZeroVector<Type,TF>& b ) noexcept;
 */
 template< typename Type  // Data type of the vector
         , bool TF >      // Transpose flag
-inline constexpr void reset( ZeroVector<Type,TF>& v ) noexcept
+constexpr void reset( ZeroVector<Type,TF>& v ) noexcept
 {
    MAYBE_UNUSED( v );
 }
@@ -840,7 +842,7 @@ inline constexpr void reset( ZeroVector<Type,TF>& v ) noexcept
 */
 template< typename Type  // Data type of the vector
         , bool TF >      // Transpose flag
-inline constexpr void clear( ZeroVector<Type,TF>& v ) noexcept
+constexpr void clear( ZeroVector<Type,TF>& v ) noexcept
 {
    v.clear();
 }
@@ -871,10 +873,10 @@ inline constexpr void clear( ZeroVector<Type,TF>& v ) noexcept
    if( isDefault<relaxed>( z ) ) { ... }
    \endcode
 */
-template< bool RF        // Relaxation flag
-        , typename Type  // Data type of the vector
-        , bool TF >      // Transpose flag
-inline constexpr bool isDefault( const ZeroVector<Type,TF>& v ) noexcept
+template< RelaxationFlag RF  // Relaxation flag
+        , typename Type      // Data type of the vector
+        , bool TF >          // Transpose flag
+constexpr bool isDefault( const ZeroVector<Type,TF>& v ) noexcept
 {
    return ( v.size() == 0UL );
 }
@@ -900,7 +902,7 @@ inline constexpr bool isDefault( const ZeroVector<Type,TF>& v ) noexcept
 */
 template< typename Type  // Data type of the vector
         , bool TF >      // Transpose flag
-inline constexpr bool isIntact( const ZeroVector<Type,TF>& v ) noexcept
+constexpr bool isIntact( const ZeroVector<Type,TF>& v ) noexcept
 {
    MAYBE_UNUSED( v );
 
@@ -919,7 +921,7 @@ inline constexpr bool isIntact( const ZeroVector<Type,TF>& v ) noexcept
 */
 template< typename Type  // Data type of the vector
         , bool TF >      // Transpose flag
-inline constexpr void swap( ZeroVector<Type,TF>& a, ZeroVector<Type,TF>& b ) noexcept
+constexpr void swap( ZeroVector<Type,TF>& a, ZeroVector<Type,TF>& b ) noexcept
 {
    a.swap( b );
 }
@@ -1091,18 +1093,18 @@ inline void erase( ZeroVector<Type,TF>& m, Iterator first, Iterator last, Pred p
    using blaze::columnVector;
    using blaze::rowVector;
 
-   // Creates the zero column vector ( 0 0 0 0 0 )
+   // Creates the zero column vector ( 0, 0, 0, 0, 0 )
    auto z1 = zero<int>( 5UL );
 
-   // Creates the zero column vector ( 0.0 0.0 0.0 )
+   // Creates the zero column vector ( 0.0, 0.0, 0.0 )
    auto z2 = zero<double,columnVector>( 3UL );
 
-   // Creates the zero row vector ( 0U 0U 0U 0U )
+   // Creates the zero row vector ( 0U, 0U, 0U, 0U )
    auto z3 = zero<unsigned int,rowVector>( 4UL );
    \endcode
 */
 template< typename T, bool TF = defaultTransposeFlag >
-inline constexpr decltype(auto) zero( size_t n ) noexcept
+constexpr decltype(auto) zero( size_t n ) noexcept
 {
    return ZeroVector<T,TF>( n );
 }

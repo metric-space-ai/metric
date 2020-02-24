@@ -3,7 +3,7 @@
 //  \file blaze/math/views/Row.h
 //  \brief Header file for the implementation of the Row view
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -50,6 +50,8 @@
 #include "../../math/expressions/MatMatMapExpr.h"
 #include "../../math/expressions/MatMatMultExpr.h"
 #include "../../math/expressions/MatMatSubExpr.h"
+#include "../../math/expressions/MatNoAliasExpr.h"
+#include "../../math/expressions/MatNoSIMDExpr.h"
 #include "../../math/expressions/Matrix.h"
 #include "../../math/expressions/MatScalarDivExpr.h"
 #include "../../math/expressions/MatScalarMultExpr.h"
@@ -57,7 +59,10 @@
 #include "../../math/expressions/MatTransExpr.h"
 #include "../../math/expressions/SchurExpr.h"
 #include "../../math/expressions/VecExpandExpr.h"
+#include "../../math/expressions/VecTVecMapExpr.h"
 #include "../../math/expressions/VecTVecMultExpr.h"
+#include "../../math/functors/Bind2nd.h"
+#include "../../math/RelaxationFlag.h"
 #include "../../math/shims/IsDefault.h"
 #include "../../math/typetraits/HasConstDataAccess.h"
 #include "../../math/typetraits/HasMutableDataAccess.h"
@@ -661,6 +666,76 @@ inline decltype(auto) row( const MatMatMapExpr<MT>& matrix, RRAs... args )
 
 //*************************************************************************************************
 /*! \cond BLAZE_INTERNAL */
+/*!\brief Creating a view on a specific row of the given outer map operation.
+// \ingroup row
+//
+// \param matrix The constant outer map operation.
+// \param args Optional row arguments.
+// \return View on the specified row of the outer map operation.
+// \exception std::invalid_argument Invalid row access index.
+//
+// This function returns an expression representing the specified row of the given outer map
+// operation.
+*/
+template< size_t I            // Row index
+        , typename MT         // Matrix base type of the expression
+        , typename... RRAs >  // Optional row arguments
+inline decltype(auto) row( const VecTVecMapExpr<MT>& matrix, RRAs... args )
+{
+   BLAZE_FUNCTION_TRACE;
+
+   MAYBE_UNUSED( args... );
+
+   if( !Contains_v< TypeList<RRAs...>, Unchecked > ) {
+      if( (~matrix).rows() <= I ) {
+         BLAZE_THROW_INVALID_ARGUMENT( "Invalid row access index" );
+      }
+   }
+
+   return map( (~matrix).rightOperand(),
+               blaze::bind2nd( (~matrix).operation(), (~matrix).leftOperand()[I] ) );
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Creating a view on a specific row of the given outer map operation.
+// \ingroup row
+//
+// \param matrix The constant outer map operation.
+// \param index The index of the row.
+// \param args Optional row arguments.
+// \return View on the specified row of the outer map operation.
+// \exception std::invalid_argument Invalid row access index.
+//
+// This function returns an expression representing the specified row of the given outer map
+// operation.
+*/
+template< typename MT         // Matrix base type of the expression
+        , typename... RRAs >  // Optional row arguments
+inline decltype(auto) row( const VecTVecMapExpr<MT>& matrix, size_t index, RRAs... args )
+{
+   BLAZE_FUNCTION_TRACE;
+
+   MAYBE_UNUSED( args... );
+
+   if( !Contains_v< TypeList<RRAs...>, Unchecked > ) {
+      if( (~matrix).rows() <= index ) {
+         BLAZE_THROW_INVALID_ARGUMENT( "Invalid row access index" );
+      }
+   }
+
+   return map( (~matrix).rightOperand(),
+               blaze::bind2nd( (~matrix).operation(), (~matrix).leftOperand()[index] ) );
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
 /*!\brief Creating a view on a specific row of the given matrix evaluation operation.
 // \ingroup row
 //
@@ -704,6 +779,56 @@ inline decltype(auto) row( const MatSerialExpr<MT>& matrix, RRAs... args )
    BLAZE_FUNCTION_TRACE;
 
    return serial( row<CRAs...>( (~matrix).operand(), args... ) );
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Creating a view on a specific row of the given matrix no-alias operation.
+// \ingroup row
+//
+// \param matrix The constant matrix no-alias operation.
+// \param args The runtime row arguments
+// \return View on the specified row of the no-alias operation.
+//
+// This function returns an expression representing the specified row of the given matrix
+// no-alias operation.
+*/
+template< size_t... CRAs      // Compile time row arguments
+        , typename MT         // Matrix base type of the expression
+        , typename... RRAs >  // Runtime row arguments
+inline decltype(auto) row( const MatNoAliasExpr<MT>& matrix, RRAs... args )
+{
+   BLAZE_FUNCTION_TRACE;
+
+   return noalias( row<CRAs...>( (~matrix).operand(), args... ) );
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Creating a view on a specific row of the given matrix no-SIMD operation.
+// \ingroup row
+//
+// \param matrix The constant matrix no-SIMD operation.
+// \param args The runtime row arguments
+// \return View on the specified row of the no-SIMD operation.
+//
+// This function returns an expression representing the specified row of the given matrix
+// no-SIMD operation.
+*/
+template< size_t... CRAs      // Compile time row arguments
+        , typename MT         // Matrix base type of the expression
+        , typename... RRAs >  // Runtime row arguments
+inline decltype(auto) row( const MatNoSIMDExpr<MT>& matrix, RRAs... args )
+{
+   BLAZE_FUNCTION_TRACE;
+
+   return nosimd( row<CRAs...>( (~matrix).operand(), args... ) );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -941,11 +1066,11 @@ inline void clear( Row<MT,SO,DF,SF,CRAs...>&& row )
    if( isDefault<relaxed>( row( A, 0UL ) ) ) { ... }
    \endcode
 */
-template< bool RF           // Relaxation flag
-        , typename MT       // Type of the matrix
-        , bool SO           // Storage order
-        , bool SF           // Symmetry flag
-        , size_t... CRAs >  // Compile time row arguments
+template< RelaxationFlag RF  // Relaxation flag
+        , typename MT        // Type of the matrix
+        , bool SO            // Storage order
+        , bool SF            // Symmetry flag
+        , size_t... CRAs >   // Compile time row arguments
 inline bool isDefault( const Row<MT,SO,true,SF,CRAs...>& row )
 {
    using blaze::isDefault;
@@ -984,11 +1109,11 @@ inline bool isDefault( const Row<MT,SO,true,SF,CRAs...>& row )
    if( isDefault<relaxed>( row( A, 0UL ) ) ) { ... }
    \endcode
 */
-template< bool RF           // Relaxation flag
-        , typename MT       // Type of the matrix
-        , bool SO           // Storage order
-        , bool SF           // Symmetry flag
-        , size_t... CRAs >  // Compile time row arguments
+template< RelaxationFlag RF  // Relaxation flag
+        , typename MT        // Type of the matrix
+        , bool SO            // Storage order
+        , bool SF            // Symmetry flag
+        , size_t... CRAs >   // Compile time row arguments
 inline bool isDefault( const Row<MT,SO,false,SF,CRAs...>& row )
 {
    using blaze::isDefault;
@@ -2048,6 +2173,58 @@ template< typename MT  // Type of the matrix
 inline decltype(auto) derestrict( Row<MT,SO,DF,SF>&& r )
 {
    return row( derestrict( r.operand() ), r.row(), unchecked );
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Returns a reference to the underlying matrix of the given row.
+// \ingroup row
+//
+// \param r The given row.
+// \return Reference to the underlying matrix.
+//
+// This function returns a reference to the underlying matrix of the given row.\n
+// This function must \b NOT be called explicitly! It is used internally for the performance
+// optimized evaluation of expression templates. Calling this function explicitly might result
+// in the violation of invariants, erroneous results and/or in compilation errors.
+*/
+template< typename MT        // Type of the matrix
+        , bool SO            // Storage order
+        , bool DF            // Density flag
+        , bool SF            // Symmetry flag
+        , size_t... CRAs >   // Compile time row arguments
+inline decltype(auto) unview( Row<MT,SO,DF,SF,CRAs...>& r )
+{
+   return r.operand();
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Returns a reference to the underlying matrix of the given constant row.
+// \ingroup row
+//
+// \param r The given constant row.
+// \return Reference to the underlying matrix.
+//
+// This function returns a reference to the underlying matrix of the given constant row.\n
+// This function must \b NOT be called explicitly! It is used internally for the performance
+// optimized evaluation of expression templates. Calling this function explicitly might result
+// in the violation of invariants, erroneous results and/or in compilation errors.
+*/
+template< typename MT        // Type of the matrix
+        , bool SO            // Storage order
+        , bool DF            // Density flag
+        , bool SF            // Symmetry flag
+        , size_t... CRAs >   // Compile time row arguments
+inline decltype(auto) unview( const Row<MT,SO,DF,SF,CRAs...>& r )
+{
+   return r.operand();
 }
 /*! \endcond */
 //*************************************************************************************************

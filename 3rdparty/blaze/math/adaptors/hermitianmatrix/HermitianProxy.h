@@ -3,7 +3,7 @@
 //  \file blaze/math/adaptors/hermitianmatrix/HermitianProxy.h
 //  \brief Header file for the HermitianProxy class
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -51,6 +51,7 @@
 #include "../../../math/constraints/View.h"
 #include "../../../math/Exception.h"
 #include "../../../math/proxy/Proxy.h"
+#include "../../../math/RelaxationFlag.h"
 #include "../../../math/shims/Clear.h"
 #include "../../../math/shims/Conjugate.h"
 #include "../../../math/shims/Invert.h"
@@ -137,8 +138,8 @@ class HermitianProxy
    //**Constructors********************************************************************************
    /*!\name Constructors */
    //@{
-   explicit inline HermitianProxy( MT& matrix, size_t row, size_t column );
-            inline HermitianProxy( const HermitianProxy& hp );
+   inline HermitianProxy( MT& matrix, size_t row, size_t column );
+   inline HermitianProxy( const HermitianProxy& hp );
    //@}
    //**********************************************************************************************
 
@@ -714,16 +715,16 @@ void clear( const HermitianProxy<MT>& proxy );
 template< typename MT >
 void invert( const HermitianProxy<MT>& proxy );
 
-template< bool RF, typename MT >
+template< RelaxationFlag RF, typename MT >
 bool isDefault( const HermitianProxy<MT>& proxy );
 
-template< bool RF, typename MT >
+template< RelaxationFlag RF, typename MT >
 bool isReal( const HermitianProxy<MT>& proxy );
 
-template< bool RF, typename MT >
+template< RelaxationFlag RF, typename MT >
 bool isZero( const HermitianProxy<MT>& proxy );
 
-template< bool RF, typename MT >
+template< RelaxationFlag RF, typename MT >
 bool isOne( const HermitianProxy<MT>& proxy );
 
 template< typename MT >
@@ -793,7 +794,7 @@ inline void invert( const HermitianProxy<MT>& proxy )
 // This function checks whether the element represented by the access proxy is in default state.
 // In case it is in default state, the function returns \a true, otherwise it returns \a false.
 */
-template< bool RF, typename MT >
+template< RelaxationFlag RF, typename MT >
 inline bool isDefault( const HermitianProxy<MT>& proxy )
 {
    using blaze::isDefault;
@@ -815,7 +816,7 @@ inline bool isDefault( const HermitianProxy<MT>& proxy )
 // the element is of complex type, the function returns \a true if the imaginary part is equal
 // to 0. Otherwise it returns \a false.
 */
-template< bool RF, typename MT >
+template< RelaxationFlag RF, typename MT >
 inline bool isReal( const HermitianProxy<MT>& proxy )
 {
    using blaze::isReal;
@@ -835,7 +836,7 @@ inline bool isReal( const HermitianProxy<MT>& proxy )
 // This function checks whether the element represented by the access proxy represents the numeric
 // value 0. In case it is 0, the function returns \a true, otherwise it returns \a false.
 */
-template< bool RF, typename MT >
+template< RelaxationFlag RF, typename MT >
 inline bool isZero( const HermitianProxy<MT>& proxy )
 {
    using blaze::isZero;
@@ -855,7 +856,7 @@ inline bool isZero( const HermitianProxy<MT>& proxy )
 // This function checks whether the element represented by the access proxy represents the numeric
 // value 1. In case it is 1, the function returns \a true, otherwise it returns \a false.
 */
-template< bool RF, typename MT >
+template< RelaxationFlag RF, typename MT >
 inline bool isOne( const HermitianProxy<MT>& proxy )
 {
    using blaze::isOne;

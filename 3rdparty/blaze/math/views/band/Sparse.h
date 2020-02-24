@@ -3,7 +3,7 @@
 //  \file blaze/math/views/band/Sparse.h
 //  \brief Band specialization for sparse matrices
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -54,7 +54,6 @@
 #include "../../../math/expressions/DenseVector.h"
 #include "../../../math/expressions/SparseVector.h"
 #include "../../../math/expressions/View.h"
-#include "../../../math/RelaxationFlag.h"
 #include "../../../math/shims/IsDefault.h"
 #include "../../../math/sparse/SparseElement.h"
 #include "../../../math/traits/AddTrait.h"
@@ -81,7 +80,7 @@
 #include "../../../util/Assert.h"
 #include "../../../util/constraints/Pointer.h"
 #include "../../../util/constraints/Reference.h"
-#include "../../../util/DisableIf.h"
+#include "../../../util/EnableIf.h"
 #include "../../../util/MaybeUnused.h"
 #include "../../../util/mpl/If.h"
 #include "../../../util/TypeList.h"
@@ -981,7 +980,7 @@ inline Band<MT,TF,false,false,CBAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( rhs.canAlias( &matrix_ ) ) {
+   if( rhs.canAlias( this ) ) {
       const ResultType tmp( rhs );
       assign( left, tmp );
    }
@@ -2011,7 +2010,7 @@ template< typename MT          // Type of the sparse matrix
 template< typename Other >     // Data type of the foreign expression
 inline bool Band<MT,TF,false,false,CBAs...>::canAlias( const Other* alias ) const noexcept
 {
-   return matrix_.isAliased( alias );
+   return matrix_.isAliased( &unview( *alias ) );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -2034,7 +2033,7 @@ template< typename MT          // Type of the sparse matrix
 template< typename Other >     // Data type of the foreign expression
 inline bool Band<MT,TF,false,false,CBAs...>::isAliased( const Other* alias ) const noexcept
 {
-   return matrix_.isAliased( alias );
+   return matrix_.isAliased( &unview( *alias ) );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -2338,7 +2337,7 @@ class Band<MT,TF,false,true,CBAs...>
    */
    template< typename T >
    inline bool canAlias( const T* alias ) const noexcept {
-      return matrix_.isAliased( alias );
+      return matrix_.isAliased( &unview( *alias ) );
    }
    //**********************************************************************************************
 
@@ -2350,7 +2349,7 @@ class Band<MT,TF,false,true,CBAs...>
    */
    template< typename T >
    inline bool isAliased( const T* alias ) const noexcept {
-      return matrix_.isAliased( alias );
+      return matrix_.isAliased( &unview( *alias ) );
    }
    //**********************************************************************************************
 
