@@ -21,30 +21,6 @@ Discrete<T>::Discrete()
 {
 }
 
-// Updated by Stepan Mamontov 04.02.2020
-template <typename T>
-Discrete<T>::Discrete(std::vector<T> samples)
-    : _generator(std::random_device {}())
-{
-	std::sort(samples.begin(), samples.end());
-	
-	std::map<T, int> hist{};
-	for (int i = 0; i < samples.size(); i++)
-	{
-        ++hist[samples[i]];
-    }
-	
-	_data.clear();
-	_prob.clear();
-	double cumulative_sum = 0;
-	for(std::map<T, int>::iterator it = hist.begin(); it != hist.end(); ++it) 
-	{
-		_data.push_back(it->first);
-		cumulative_sum += (double) it->second / samples.size();
-		_prob.push_back(cumulative_sum);
-	}
-}
-
 template <typename T>
 T Discrete<T>::rnd()
 {
@@ -106,12 +82,13 @@ T Discrete<T>::cdf(const T x)
     values.push_back(x);
 	T result = akimaInterp1(_data, _prob, values)[0];
 	
-	if (result < 0)
+	// cut probs over the _data values
+	if (x < _data[0])
 	{
 		result = 0;
 	}
 	
-	if (result > 1)
+	if (x > _data[_data.size() - 1])
 	{
 		result = 1;
 	}

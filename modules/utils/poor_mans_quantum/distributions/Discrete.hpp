@@ -27,12 +27,6 @@ public:
     Discrete();
 
     /**
-     * @brief Construct a new Discrete object
-     * 
-     */
-    Discrete(std::vector<T> samples);
-
-    /**
      * @brief 
      * 
      * @param seed 

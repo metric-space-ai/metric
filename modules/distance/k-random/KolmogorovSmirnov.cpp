@@ -32,78 +32,28 @@ auto KolmogorovSmirnov<typename Sample, typename D>::operator()(const Sample& sa
 	Sample cumulitive_distribution_1;
 	Sample cumulitive_distribution_2;
 
-	//PMQ pmq_1(sample_1);
-	//PMQ pmq_2(sample_2);
-	//
-	//for (int i = 0; i < sample_1.size(); i++)
-	//{
-	//	std::cout << pmq_1.cdf(sample_1[i]) << " ";
-	//}
-	//std::cout << std::endl;
-
-
-	// make cumulative distribution functions for the first sample
-
-	Sample::value_type min_value = INFINITY;
-	Sample::value_type max_value = -INFINITY; 
-	Sample::value_type cumulitive_sum = 0;
-	for (int i = 0; i < sample_1.size(); i++)
-	{
-		if (sample_1[i] > max_value)
-		{
-			max_value = sample_1[i];
-		}
-		if (sample_1[i] < min_value)
-		{
-			min_value = sample_1[i];
-		}
-	}
-
-	for (int i = 0; i < sample_1.size(); i++)
-	{
-		normalized_distribution_1[i] = (sample_1[i] - min_value) / (max_value - min_value);
-	}
-	for (int i = 0; i < normalized_distribution_1.size(); i++)
-	{
-		cumulitive_sum += normalized_distribution_1[i];
-		cumulitive_distribution_1.push_back(cumulitive_sum);
-	}
-	
-	// make cumulative distribution functions for the second sample
-	
-	min_value = INFINITY;
-	max_value = -INFINITY;
-	cumulitive_sum = 0;
-	for (int i = 0; i < sample_2.size(); i++)
-	{
-		if (sample_2[i] > max_value)
-		{
-			max_value = sample_2[i];
-		}
-		if (sample_2[i] < min_value)
-		{
-			min_value = sample_2[i];
-		}
-	}
-
-	for (int i = 0; i < sample_2.size(); i++)
-	{
-		normalized_distribution_2[i] = (sample_2[i] - min_value) / (max_value - min_value);
-	}
-	for (int i = 0; i < normalized_distribution_2.size(); i++)
-	{
-		cumulitive_sum += normalized_distribution_2[i];
-		cumulitive_distribution_2.push_back(cumulitive_sum);
-	}
-	
+	PMQ pmq_1(sample_1);
+	PMQ pmq_2(sample_2);
+		
 	// find the most difference between distributions
+
+	Sample concat_data;
+	for (int i = 0; i < sample_1.size(); i++)
+	{
+		concat_data.push_back(sample_1[i]);
+	}
+	for (int i = 0; i < sample_2.size(); i++)
+	{
+		concat_data.push_back(sample_2[i]);
+	}
+	std::sort(concat_data.begin(), concat_data.end());
 	
 	D max_difference = 0;
-	for (int i = 0; i < cumulitive_distribution_1.size(); i++)
+	for (int i = 0; i < concat_data.size(); i++)
 	{
-		if (abs(cumulitive_distribution_1[i] - cumulitive_distribution_2[i]) > max_difference)
+		if (abs(pmq_1.cdf(concat_data[i]) - pmq_2.cdf(concat_data[i])) > max_difference)
 		{
-			max_difference = abs(cumulitive_distribution_1[i] - cumulitive_distribution_2[i]);
+			max_difference = abs(pmq_1.cdf(concat_data[i]) - pmq_2.cdf(concat_data[i]));
 		}
 	}
 
