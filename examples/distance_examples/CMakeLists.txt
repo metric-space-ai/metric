@@ -5,7 +5,7 @@ project(distance_examples)
 set(Boost_DEBUG on)  
 find_package(Boost)
 
-if(UNIX)
+if(UNIX) 
     find_package(Threads REQUIRED)
 endif(UNIX)
 

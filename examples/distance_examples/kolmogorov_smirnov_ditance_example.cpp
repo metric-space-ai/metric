@@ -27,7 +27,6 @@ int main()
 	   
     metric::KolmogorovSmirnov<std::vector<double>, double> distance;
 
-    // assumes that i1 and i2 are serialized vectors of the image matrices, and cost_mat contains a distance matrix that takes into account the original pixel locations.
     auto t1 = std::chrono::steady_clock::now();
     auto result1 = distance(samples_2, samples_3);
     auto t2 = std::chrono::steady_clock::now();
