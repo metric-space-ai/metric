@@ -21,6 +21,9 @@ SET(SRC
 	src/metric_standards.cpp
 	src/metric_SSIM.cpp
 	src/metric_TWED.cpp
+    src/metric_matrix.cpp
+#    src/metric_kohonen_distance.cpp
+    src/metric_dbscan.cpp
 )
 
 add_library(metric_py SHARED ${SRC})

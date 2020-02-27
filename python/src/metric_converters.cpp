@@ -58,7 +58,7 @@ struct IterableConverter
         // the python object to the container's constructor.
         new (storage) Container(
             iterator(bp::object(handle)), // begin
-            iterator());                      // end
+            iterator());                  // end
         data->convertible = storage;
     }
 };
@@ -163,7 +163,9 @@ void export_converters()
 {
     IterableConverter()
         .from_python<std::vector<double>>()
-        .from_python<std::vector<std::vector<double>>>();
+        .from_python<std::vector<int>>()
+        .from_python<std::vector<std::vector<double>>>()
+        .from_python<std::vector<std::vector<int>>>();
 
     NumpyScalarConverter()
         .from_python<signed char>()
@@ -180,5 +182,7 @@ void export_converters()
         .from_python<double>();
 
     NumpyArrayConverter()
-        .from_python<WrapStlVector<double>>();
+        .from_python<WrapStlVector<double>>()
+        .from_python<WrapStlMatrix<double>>()
+        .from_python<WrapStlVector<WrapStlVector<double>>>();
 }

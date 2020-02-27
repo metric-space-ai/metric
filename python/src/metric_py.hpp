@@ -8,12 +8,7 @@
 
 #pragma once
 
-//#include "modules/correlation.hpp"
-//#include "modules/distance.hpp"
-
 #include <boost/python.hpp>
-//#include <boost/python/numpy.hpp>
-//#include <boost/python/scope.hpp>
 
 using base_python_object = boost::python::api::object;
 
@@ -60,29 +55,33 @@ class WrapStlVector: public base_python_object {
 
 template<typename T>
 class WrapStlMatrix: public base_python_object {
-    public:
-        typedef std::vector<T> value_type;
-        WrapStlMatrix() = default;
-        WrapStlMatrix(base_python_object& obj)
-            : base_python_object(obj)
-        {
-        }
-        size_t size() const {return boost::python::len(*this);}
+public:
+    typedef std::vector<T> value_type;
+    WrapStlMatrix() = default;
+    WrapStlMatrix(base_python_object& obj)
+        : base_python_object(obj) {
+    }
 
-        bool empty() const {return size() == 0;}
+    size_t size() const {
+        return boost::python::len(*this);
+    }
+
+    bool empty() const {
+        return size() == 0;
+    }
 
 	boost::python::stl_input_iterator<T> begin() const {
-            return boost::python::stl_input_iterator<T>(*this);
-        }
+        return boost::python::stl_input_iterator<T>(*this);
+    }
 
 	boost::python::stl_input_iterator<T> end() const {
-            return boost::python::stl_input_iterator<T>();
-        }
+        return boost::python::stl_input_iterator<T>();
+    }
 
-        WrapStlVector<T> operator[](int index) const {
-            base_python_object wr = boost::python::extract<base_python_object>(base_python_object::operator[](index));
-            return WrapStlVector<T>(wr);
-        }
+    WrapStlMatrix operator[](int index) const {
+        base_python_object wr = boost::python::extract<base_python_object>(base_python_object::operator[](index));
+        return WrapStlMatrix(wr);
+    }
 };
 
 

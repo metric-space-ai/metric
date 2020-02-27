@@ -2,28 +2,28 @@ import numpy
 import metric
 
 
-def test_euclidian():
+def test_euclidean():
     v0 = numpy.float_([0, 1, 1, 1, 1, 1, 2, 3])
     v1 = numpy.float_([1, 1, 1, 1, 1, 2, 3, 4])
 
-    assert isinstance(metric.Euclidian, object)
+    assert isinstance(metric.Euclidean, object)
 
-    distance = metric.Euclidian()
-    assert isinstance(distance, metric.Euclidian)
+    distance = metric.Euclidean()
+    assert isinstance(distance, metric.Euclidean)
     assert callable(distance)
 
     assert distance(v0, v1) == 2.0
     assert distance(v1, v0) == 2.0
 
 
-def test_euclidian_with_threshold():
+def test_euclidean_with_threshold():
     v0 = numpy.float_([0, 1, 1, 1, 1, 1, 2, 3])
     v1 = numpy.float_([1, 1, 1, 1, 1, 2, 3, 4])
 
-    assert isinstance(metric.Euclidian, object)
+    assert isinstance(metric.Euclidean, object)
 
-    distance = metric.Euclidian_thresholded(thres_=1000.0, factor_=3000.0)
-    assert isinstance(distance, metric.Euclidian_thresholded)
+    distance = metric.Euclidean_thresholded(thres_=1000.0, factor_=3000.0)
+    assert isinstance(distance, metric.Euclidean_thresholded)
     assert callable(distance)
 
     assert distance(v0, v1) == 1000.0

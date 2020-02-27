@@ -22,13 +22,16 @@ def main():
         [8, 0, 0],
     ])
 
+    simple_dataset = numpy.float_([8, 0, 1])
+
     simple_koc_factory = metric.KOC_factory(best_w_grid_size, best_h_grid_size, 0.5, 0.0, 100)
     simple_koc = simple_koc_factory(dataset, 5)
 
     anomaly_threshold = -0.5
-    simple_koc.check_if_anomaly(dataset, anomaly_threshold)
 
-    anomalies = simple_koc.check_if_anomaly(dataset, anomaly_threshold)
+    print('vector anomalies: ', simple_koc.check_if_anomaly(sample=simple_dataset, anomaly_threshold=anomaly_threshold))
+
+    anomalies = simple_koc.check_if_anomaly(samples=dataset, anomaly_threshold=anomaly_threshold)
     print('anomalies:', list(anomalies))
 
     assignments = simple_koc.result(dataset, anomaly_threshold)
@@ -67,20 +70,10 @@ sys.exit(main())
         }
         test_samples.push_back(test_sample);
 
-        std::random_device
-        rd; // only
-        used
-        once
-        to
-        initialise(seed)
-        engine
-        std::mt19937
+        std::random_device rd; 
         rng(rd()); // random - number
-        engine
-        used(Mersenne - Twister in this
-        case)
-        std::uniform_int_distribution < int > uni(0, speeds.size()); // guaranteed
-        unbiased
+
+        std::uniform_int_distribution < int > uni(0, speeds.size()); // guaranteed unbiased
 
         // metric::Grid4
         graph(best_w_grid_size, best_h_grid_size);

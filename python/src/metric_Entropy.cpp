@@ -27,7 +27,7 @@ double entropy(const WrapStlMatrix<double>& obj, std::size_t k = 3, double logba
     bool got = false;
         size_t i = 0;
         boost::mpl::for_each<MetricTypes, MPLHelpType<boost::mpl::_1> >([&](auto type_wrapper) {
-        using Type1 = typename decltype(type_wrapper)::agrument_type;
+            using Type1 = typename decltype(type_wrapper)::agrument_type;
             assert(MetricTypeNames.size() > i);
             auto name = MetricTypeNames[i++];
             if (!got && name == metricName) {

@@ -6,11 +6,11 @@
 namespace bp = boost::python;
 
 template<typename Value, typename Container>
-void register_wrapper_euclidian() {
+void register_wrapper_euclidean() {
     using Metric = metric::Euclidian<Value>;
     auto p1 = &Metric::template operator()<Container>;
     Value (Metric::*p2)(const Value&, const Value&) const = &Metric::operator();
-    bp::class_<Metric>("Euclidian")
+    bp::class_<Metric>("Euclidean")
         .def("__call__", p1)
         .def("__call__", p2);
 }
@@ -30,9 +30,9 @@ void register_wrapper_pnorm() {
 }
 
 template<typename Value, typename Container>
-void register_wrapper_euclidian_thresholded() {
+void register_wrapper_euclidean_thresholded() {
     using Metric = metric::Euclidian_thresholded<Value>;
-    bp::class_<Metric>("Euclidian_thresholded", bp::init<Value, Value>((bp::arg("thres_"), bp::arg("factor_"))))
+    bp::class_<Metric>("Euclidean_thresholded", bp::init<Value, Value>((bp::arg("thres_"), bp::arg("factor_"))))
         .def("__call__", &Metric::template operator()<Container>);
 }
 
@@ -51,10 +51,10 @@ void register_wrapper_chebyshev() {
 }
 
 void export_metric_standards() {
-    register_wrapper_euclidian<double, std::vector<double>>();
+    register_wrapper_euclidean<double, std::vector<double>>();
     register_wrapper_manhatten<double, std::vector<double>>();
     register_wrapper_pnorm<double, std::vector<double>>();
-    register_wrapper_euclidian_thresholded<double, std::vector<double>>();
+    register_wrapper_euclidean_thresholded<double, std::vector<double>>();
     register_wrapper_cosine<double, std::vector<double>>();
     register_wrapper_chebyshev<double, std::vector<double>>();
 }

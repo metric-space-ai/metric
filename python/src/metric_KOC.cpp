@@ -1,3 +1,4 @@
+#include "metric_py.hpp"
 #include "modules/mapping.hpp"
 #include "modules/utils/graph/graph.cpp"
 
@@ -72,13 +73,16 @@ void export_metric_KOC() {
 
     factory.def("__call__", &Factory::operator(), "construct KOC");
 
+    std::vector<bool> (KOC::*check_if_anomaly1)(const std::vector<Record>&, double) = &KOC::check_if_anomaly;
+    bool (KOC::*check_if_anomaly2)(const Record&, double) = &KOC::check_if_anomaly;
+
     // KOC
-    auto koc = bp::class_<KOC>("KOC", bp::no_init)
-        .def("train", &Factory::KOC::train)
-        .def("result", &Factory::KOC::result)
-        .def<std::vector<int> (KOC::*)(const std::vector<Record>&, double)>("encode", &KOC::encode)
-        //.def<bool (KOC::*)(const Record&, double)>("check_if_anomaly", &KOC::check_if_anomaly) TODO: overload
-        .def<std::vector<bool> (KOC::*)(const std::vector<Record>&, double)>("check_if_anomaly", &KOC::check_if_anomaly);
+    auto koc = bp::class_<KOC>("KOC", bp::no_init);
+    koc.def("train", &Factory::KOC::train);
+    koc.def("result", &Factory::KOC::result);
+    koc.def<std::vector<int> (KOC::*)(const std::vector<Record>&, double)>("encode", &KOC::encode);
+    koc.def("check_if_anomaly", check_if_anomaly1, (bp::arg("samples"), bp::arg("anomaly_threshold") = 0.0));
+    koc.def("check_if_anomaly", check_if_anomaly2, (bp::arg("sample"), bp::arg("anomaly_threshold") = 0.0));
 }
 
 // make build && pip uninstall --yes metric && pip install dist/metric-0.0.1-cp36-cp36m-linux_x86_64.whl

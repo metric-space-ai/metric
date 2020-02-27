@@ -40,11 +40,15 @@ void export_metric_Entropy();
 void export_metric_standards();
 void export_metric_SSIM();
 void export_metric_TWED();
+void export_metric_matrix();
+void export_metric_kohonen();
+void export_metric_dbscan();
 
 BOOST_PYTHON_MODULE(metric) {
 
     export_converters();
 
+    // exposing C++ return types
     bp::class_<VectorDouble>("VectorDouble").def(bp::vector_indexing_suite<VectorDouble>());
     bp::class_<VectorVectorDouble>("VectorVectorDouble").def(bp::vector_indexing_suite<VectorVectorDouble>());
     bp::class_<VectorInt>("VectorInt").def(bp::vector_indexing_suite<VectorInt>());
@@ -52,6 +56,7 @@ BOOST_PYTHON_MODULE(metric) {
     bp::class_<VectorBool>("VectorBool").def(bp::vector_indexing_suite<VectorBool>());
 
     export_metric_KOC();
+    export_metric_matrix();
     export_metric_sorensen();
     export_metric_MGC();
     export_metric_Edit();
@@ -60,8 +65,9 @@ BOOST_PYTHON_MODULE(metric) {
     export_metric_standards();
     export_metric_SSIM();
     export_metric_TWED();
+//    export_metric_kohonen();
+    export_metric_dbscan();
 
 // TODO #include "metric_affprop.cpp"
 
 }
-

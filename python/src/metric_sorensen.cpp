@@ -6,11 +6,6 @@
 namespace bp = boost::python;
 
 
-int testme(const std::vector<double>& t) {
-    return 10;
-}
-
-
 template<typename Value>
 void register_wrapper() {
     {
@@ -26,6 +21,4 @@ void register_wrapper() {
 
 void export_metric_sorensen() {
     register_wrapper<double>();
-
-    bp::def("testme", &testme);
 }
