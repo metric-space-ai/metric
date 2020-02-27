@@ -81,6 +81,15 @@ class FullyConnected: public Layer<Scalar>
             //m_bias = 0.01;
         }
 
+        void init(const std::map<std::string, std::shared_ptr<Initializer<Scalar>>> initializers)
+        {
+			initializers.at("normal")->init(this->inputSize, this->outputSize, m_weight);
+	        initializers.at("zero")->init(this->outputSize, m_bias);
+
+	        m_dw.resize(this->inputSize, this->outputSize);
+	        m_db.resize(this->outputSize);
+        }
+
         void initConstant(const Scalar weightsValue, const Scalar biasesValue)
         {
 	        m_weight.resize(this->inputSize, this->outputSize);

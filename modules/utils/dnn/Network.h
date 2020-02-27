@@ -20,6 +20,9 @@
 #include "Callback.h"
 #include "Utils/Random.h"
 
+#include "Initializer/ZeroInitializer.h"
+#include "Initializer/NormalInitializer.h"
+
 
 namespace metric::dnn
 {
@@ -48,6 +51,9 @@ class Network
         std::shared_ptr<Callback<Scalar>>           callback;         // Points to user-provided callback function,
 
 		std::shared_ptr<Optimizer<Scalar>>          opt;
+
+		std::map<std::string, std::shared_ptr<Initializer<Scalar>>> initializers;
+
 
         /* Check dimensions of layers */
         void check_unit_sizes() const
@@ -150,6 +156,9 @@ class Network
 					outputLayer(NULL)
         {
         	setDefaultCallback();
+
+	        setInitializer("normal", dnn::NormalInitializer<Scalar>(0, 0.01, randomEngine));
+	        setInitializer("zero", dnn::ZeroInitializer<Scalar>());
         }
 
         Network(const std::string& jsonString) : Network()
@@ -347,6 +356,12 @@ class Network
 			randomEngine.seed(seed);
 		}
 
+		template <typename T>
+		void setInitializer(const std::string name, const T& initializer)
+		{
+        	initializers[name] = std::make_shared<T>(initializer);
+		}
+
         ///
         /// Initialize layer parameters in the network using normal distribution
         ///
@@ -365,9 +380,8 @@ class Network
 
 	        const int nlayer = num_layers();
 
-	        for (int i = 0; i < nlayer; i++) {
-		        layers[i]->init(mu, sigma, randomEngine);
-		        //layers[i]->initConstant(0.1, 0);
+			for (auto layer: layers) {
+		        layer->init(this->initializers);
 	        }
         }
 
