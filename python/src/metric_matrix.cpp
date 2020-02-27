@@ -7,16 +7,6 @@
 
 namespace bp = boost::python;
 
-
-void test1(const std::vector<int>& data) {
-    std::cout << "Vector size " << data.size() << std::endl;
-}
-
-void test2(const std::vector<std::vector<int>>& data) {
-    std::cout << "Vector 2d size " << data.size() << " x " << data[0].size() << std::endl;
-}
-
-
 // TODO: add metric
 template<typename recType>
 void register_wrapper_matrix() {
@@ -44,6 +34,4 @@ void register_wrapper_matrix() {
 
 void export_metric_matrix() {
     register_wrapper_matrix<std::vector<double>>();
-    bp::def("Test1", &test1);
-    bp::def("Test2", &test2);
 }

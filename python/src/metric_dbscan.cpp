@@ -7,9 +7,8 @@ namespace bp = boost::python;
 
 template<typename recType, typename Metric, typename T>
 void register_wrapper_dbscan() {
-    using Mapping = metric::dbscan<recType, Metric, T>;
     using Matrix = metric::Matrix<recType, Metric, T>;
-    def<const Metric&, T eps, std::size_t minpts>("dbscan", &metric::dbscan)
+    bp::def<const Metric&, T eps, std::size_t minpts>("dbscan", &metric::dbscan<recType, Metric, T>)
 }
 
 void export_metric_dbscan() {
