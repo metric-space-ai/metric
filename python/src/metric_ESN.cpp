@@ -22,5 +22,5 @@ void register_wrapper_ESN() {
 }
 
 void export_metric_ESN() {
-    register_wrapper_ESN<std::vector<double>, void>();
+    register_wrapper_ESN();
 }
