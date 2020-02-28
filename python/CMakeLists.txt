@@ -23,7 +23,11 @@ SET(SRC
 	src/metric_TWED.cpp
     src/metric_matrix.cpp
 #    src/metric_kohonen_distance.cpp
-    src/metric_dbscan.cpp
+#    src/metric_dbscan.cpp
+    src/metric_DSPCC.cpp
+    src/metric_autoencoder.cpp
+    src/metric_wavelet.cpp
+    src/metric_ESN.cpp
 )
 
 add_library(metric_py SHARED ${SRC})
