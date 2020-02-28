@@ -26,8 +26,9 @@ SET(SRC
 #    src/metric_dbscan.cpp
     src/metric_DSPCC.cpp
     src/metric_autoencoder.cpp
-    src/metric_wavelet.cpp
-    src/metric_ESN.cpp
+#    src/metric_wavelet.cpp
+#    src/metric_ESN.cpp
+    src/metric_affprop.cpp
 )
 
 add_library(metric_py SHARED ${SRC})

@@ -46,6 +46,8 @@ void export_metric_dbscan();
 void export_metric_autoencoder();
 void export_metric_wavelet();
 void export_metric_ESN();
+void export_metric_DSPCC();
+void export_metric_affprop();
 
 BOOST_PYTHON_MODULE(metric) {
 
@@ -71,8 +73,9 @@ BOOST_PYTHON_MODULE(metric) {
 //    export_metric_kohonen();
 //    export_metric_dbscan();
     export_metric_autoencoder();
-    export_metric_wavelet();
-    export_metric_ESN();
-// TODO #include "metric_affprop.cpp"
+//    export_metric_wavelet();
+//    export_metric_ESN();
+    export_metric_DSPCC();
+    export_metric_affprop();
 
 }
