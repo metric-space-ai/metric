@@ -18,18 +18,24 @@ Copyright (c) 2019 Panda Team
 
 int main()
 {
+
+    //// long double is not supported by the current BLAS!
+    //blaze::DynamicMatrix<double> ldm = {{1, 0}, {0, 1}};
+    //std::cout << blaze::eigen(ldm)<< "\n";
+
 	std::cout << "ESN example have started" << std::endl;
 	std::cout << '\n';
 
     bool visualize = false;
 
+    using value_type = double;
 
     //*
     // run ESN on small dataset
 
     visualize = true;
 
-    blaze::DynamicMatrix<double, blaze::rowMajor>  SlicesR {
+    blaze::DynamicMatrix<value_type, blaze::rowMajor>  SlicesR {
         {1   , 0.75, 0.5 , 0.25, 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   },
         {0   , 0.25, 0.5 , 0.75, 1   , 0.75, 0.5 , 0.25, 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   },
         {0   , 0   , 0   , 0   , 0   , 0.25, 0.5 , 0.75, 1   , 0.75, 0.5 , 0.25, 0   , 0   , 0   , 0   , 0   , 0   },
@@ -38,13 +44,13 @@ int main()
         {0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0.25}
     };
 
-    blaze::DynamicMatrix<double, blaze::rowMajor> TargetR {
+    blaze::DynamicMatrix<value_type, blaze::rowMajor> TargetR {
         {-0.45, -0.4, -0.35, -0.3, -0.25, -0.2, -0.15, -0.1, -0.05, 0   , 0.05, 0.1, 0.15 , 0.2 , 0.25 , 0.3 , 0.35 , 0.4 },
         {0.5 , 0.25 , 0  , 0.25, 0.5 , 0.25 , 0  , 0.25, 0.5 , 0.25 , 0  , 0.25, 0.5 , 0.25 , 0  , 0.25, 0.5 , 0.25},
     };
     // first line (position of peak) is easy to predict, second is much harder. ESN predicts it better in no-echo mode
 
-    blaze::DynamicMatrix<double, blaze::rowMajor>  SlicesTestR {
+    blaze::DynamicMatrix<value_type, blaze::rowMajor>  SlicesTestR {
         {0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0.25},
         {0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0.25, 0.5 , 0.75, 1   , 0.75},
         {0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0.25, 0.5 , 0.75, 1   , 0.75, 0.25, 0   , 0   , 0   },
@@ -61,7 +67,7 @@ int main()
         mat2bmp::blaze2bmp(SlicesTestR, "ESN_SlicesTestR.bmp");
     }
 
-    auto esn = metric::ESN<std::vector<double>, void>(500, 4, 0.99, 0.5, 5, 0.9); // echo
+    auto esn = metric::ESN<std::vector<value_type>, void>(500, 4, 0.99, 0.5, 5, 0.9); // echo
     esn.train(SlicesR, TargetR);
 
     auto prediction = esn.predict(SlicesTestR);
@@ -81,33 +87,35 @@ int main()
 
     visualize = true; // set false in order to prevent from overwriting images from ESN internals of the previous launch
 
+    //using value_type = float;
+
     size_t n_freq_steps = 10;
     size_t n_slices_per_step = 100;
     size_t waveform_length = 64; //512; //64; // 100;
 
-    blaze::DynamicMatrix<double, blaze::columnMajor>  SlicesSine(waveform_length, n_freq_steps*n_slices_per_step, 0.0);
-    blaze::DynamicMatrix<double, blaze::columnMajor>  TargetSine(1, n_freq_steps*n_slices_per_step, 0.0);
-    blaze::DynamicMatrix<double, blaze::columnMajor>  TestSlicesSine(waveform_length, n_freq_steps, 0.0);
-    blaze::DynamicMatrix<double, blaze::columnMajor>  TestTargetSine(1, n_freq_steps, 0.0);
+    blaze::DynamicMatrix<value_type, blaze::columnMajor>  SlicesSine(waveform_length, n_freq_steps*n_slices_per_step, 0.0);
+    blaze::DynamicMatrix<value_type, blaze::columnMajor>  TargetSine(1, n_freq_steps*n_slices_per_step, 0.0);
+    blaze::DynamicMatrix<value_type, blaze::columnMajor>  TestSlicesSine(waveform_length, n_freq_steps, 0.0);
+    blaze::DynamicMatrix<value_type, blaze::columnMajor>  TestTargetSine(1, n_freq_steps, 0.0);
 
-    double frequenz; // based on original test case code
-    double phase = 0;
-    double delta_T = 0.05;
+    value_type frequenz; // based on original test case code
+    value_type phase = 0;
+    value_type delta_T = 0.05;
 
     // sine generator
     size_t idx = 0;
     for (size_t ii = 1; ii <= n_freq_steps; ii++) // frequency change steps
     {
-        frequenz = double(ii)/double(n_freq_steps);
+        frequenz = value_type(ii)/value_type(n_freq_steps);
         for (size_t i = 0; i < n_slices_per_step; ++i) // slices with same freq and random phases (within each freq step)
         {
-            phase = (double)rand()/RAND_MAX;
+            phase = (value_type)rand()/RAND_MAX;
             phase = phase * 0.9 + 0.1; // never appeared in test dataset
             //std::cout << "phase = " << phase << ", freq =  " << frequenz << "\n";
             TargetSine(0, idx) = frequenz; //-0.5; // works for positive values without offset
             for (size_t t = 0; t < waveform_length; t++) // draw waveform: 100 points in each slice
             {
-                SlicesSine(t, idx) = sin(2 * M_PI * (frequenz * double(t) * delta_T + phase));
+                SlicesSine(t, idx) = sin(2 * M_PI * (frequenz * value_type(t) * delta_T + phase));
             }
             //std::cout << idx << " " << phase << " " << frequenz << "\n";
             idx++;
@@ -117,12 +125,12 @@ int main()
     idx = 0;
     for (size_t i = 1; i <= n_freq_steps; i++) // frequency steps
     {
-        frequenz = double(i)/double(n_freq_steps);
+        frequenz = value_type(i)/value_type(n_freq_steps);
         phase = 0; //(double)rand()/RAND_MAX;
         TestTargetSine(0, idx) = frequenz; //-0.5;
         for (size_t t = 0; t < waveform_length; t++) // draw waveform: 100 points in each slice
         {
-            TestSlicesSine(t, idx) = sin(2 * M_PI * (frequenz * double(t) * delta_T + phase));
+            TestSlicesSine(t, idx) = sin(2 * M_PI * (frequenz * value_type(t) * delta_T + phase));
         }
         //std::cout << idx << " " << phase << " " << frequenz << "\n";
         idx++;
@@ -137,7 +145,7 @@ int main()
     }
 
 
-    auto esn_sine = metric::ESN<std::vector<double>, void>(500, 10, 0, 1, 0, 0.9); // reservoir disabled: w_sr=0, alpha=1, washout=0
+    auto esn_sine = metric::ESN<std::vector<value_type>, void>(500, 10, 0, 1, 0, 0.9); // reservoir disabled: w_sr=0, alpha=1, washout=0
     // ctor input: w_size=500, w_connections=10, w_sr=0.6, alpha=0.5, washout=1, beta=0.5
     esn_sine.train(SlicesSine, TargetSine);
 
