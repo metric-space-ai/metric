@@ -72,11 +72,55 @@ int main()
 
     auto prediction = esn.predict(SlicesTestR);
 
-    std::cout << "ESN small test prediction:\n" << prediction << "\n";
+    std::cout << "ESN small test prediction, data in matrices:\n" << prediction << "\n";
     // expected horizintally mirrored Terget_R with some reverberation and delay
 
     if (visualize)
         mat2bmp::blaze2bmp(prediction, "ESN_prediction.bmp");
+    //*/
+
+
+    //*
+    // test overloads for vector<recType>
+
+    std::vector<std::vector<value_type>> SlicesRV {
+        {1   , 0.75, 0.5 , 0.25, 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   },
+        {0   , 0.25, 0.5 , 0.75, 1   , 0.75, 0.5 , 0.25, 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   },
+        {0   , 0   , 0   , 0   , 0   , 0.25, 0.5 , 0.75, 1   , 0.75, 0.5 , 0.25, 0   , 0   , 0   , 0   , 0   , 0   },
+        {0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0.25, 0.5 , 0.75, 1   , 0.75, 0.25, 0   , 0   , 0   },
+        {0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0.25, 0.5 , 0.75, 1   , 0.75},
+        {0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0.25}
+    };
+
+    std::vector<std::vector<value_type>> TargetRV {
+        {-0.45, -0.4, -0.35, -0.3, -0.25, -0.2, -0.15, -0.1, -0.05, 0   , 0.05, 0.1, 0.15 , 0.2 , 0.25 , 0.3 , 0.35 , 0.4 },
+        {0.5 , 0.25 , 0  , 0.25, 0.5 , 0.25 , 0  , 0.25, 0.5 , 0.25 , 0  , 0.25, 0.5 , 0.25 , 0  , 0.25, 0.5 , 0.25},
+    };
+    // first line (position of peak) is easy to predict, second is much harder. ESN predicts it better in no-echo mode
+
+    std::vector<std::vector<value_type>> SlicesTestRV {
+        {0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0.25},
+        {0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0.25, 0.5 , 0.75, 1   , 0.75},
+        {0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0.25, 0.5 , 0.75, 1   , 0.75, 0.25, 0   , 0   , 0   },
+        {0   , 0   , 0   , 0   , 0   , 0.25, 0.5 , 0.75, 1   , 0.75, 0.5 , 0.25, 0   , 0   , 0   , 0   , 0   , 0   },
+        {0   , 0.25, 0.5 , 0.75, 1   , 0.75, 0.5 , 0.25, 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   },
+        {1   , 0.75, 0.5 , 0.25, 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   }
+    };
+
+    auto esnV = metric::ESN<std::vector<value_type>, void>(500, 4, 0.99, 0.5, 5, 0.9); // echo
+    esnV.train(SlicesRV, TargetRV);
+
+    auto predictionV = esnV.predict(SlicesTestRV);
+
+    std::cout << "ESN small test prediction, data in resords:\n";
+    for (size_t i = 0; i<predictionV.size(); ++i) {
+        for (size_t j = 0; j<predictionV[0].size(); ++j)
+            std::cout << predictionV[i][j] << " ";
+        std::cout << "\n";
+    }
+    // expected horizintally mirrored Terget_R with some reverberation and delay
+
+
     //*/
 
 

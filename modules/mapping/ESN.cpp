@@ -222,17 +222,28 @@ std::vector<recType> ESN<recType, Metric>::predict(const std::vector<recType>& S
 {
     auto SlicesMat = vector_to_blaze(Slices);
     auto PredictionMat = predict(SlicesMat);
-    return blaze2rectype(PredictionMat);
+    return blaze2rectype<recType>(PredictionMat);
 }
+
+
+//template <typename recType, typename Metric>
+//blaze::DynamicMatrix<typename ESN<recType, Metric>::value_type>
+//ESN<recType, Metric>::vector_to_blaze(const std::vector<recType> & In) {
+//    blaze::DynamicMatrix<value_type> Out(In[0].size(), In.size(), 0);  // transpose
+//    for (size_t i = 0; i < In.size(); ++i) // TODO optimize by using iterators
+//        for (size_t j = 0; j < In[0].size(); ++j)
+//            Out(j, i) = In[i][j];
+//    return Out;
+//}
 
 
 template <typename recType, typename Metric>
 blaze::DynamicMatrix<typename ESN<recType, Metric>::value_type>
 ESN<recType, Metric>::vector_to_blaze(const std::vector<recType> & In) {
-    blaze::DynamicMatrix<value_type> Out(In[0].size(), In.size(), 0); // transposing, because ESN takes input matrix with records in columns
+    blaze::DynamicMatrix<value_type> Out(In.size(), In[0].size(), 0);
     for (size_t i = 0; i < In.size(); ++i) // TODO optimize by using iterators
         for (size_t j = 0; j < In[0].size(); ++j)
-            Out(i, j) = In[j][i]; // [j,i] -> [i,j]
+            Out(i, j) = In[i][j];
     return Out;
 }
 
@@ -243,12 +254,12 @@ template <typename R>
 typename std::enable_if <
  determine_container_type<R>::code == 1,
  std::vector<R>
->::type // here we support only STL vector
-ESN<recType, Metric>::blaze2rectype(const blaze::DynamicMatrix<typename ESN<R, Metric>::value_type> & In) { // TODO support arbitrary type!
+>::type
+ESN<recType, Metric>::blaze2rectype(const blaze::DynamicMatrix<typename ESN<R, Metric>::value_type> & In) {
     std::vector<recType> Out;
-    for (size_t i = 0; i < In.columns(); ++i) {  // we transpose the output, hence columns to rows
+    for (size_t i = 0; i < In.rows(); ++i) {
         recType rec;
-        for (size_t j = 0; j < In.rows(); ++j)
+        for (size_t j = 0; j < In.columns(); ++j)
             rec.push_back(In(i, j));
         Out.push_back(rec);
     }
@@ -264,9 +275,9 @@ typename std::enable_if<
 >::type
 ESN<recType, Metric>::blaze2rectype(const blaze::DynamicMatrix<typename ESN<R, Metric>::value_type> & In) { // only blaze row-vector
     std::vector<recType> Out;
-    for (size_t i = 0; i < In.columns(); ++i) {  // we transpose the output, hence columns to rows
+    for (size_t i = 0; i < In.rows(); ++i) {
         recType rec(In.rows()); // blaze specific
-        for (size_t j = 0; j < In.rows(); ++j)
+        for (size_t j = 0; j < In.columns(); ++j)
             rec[j] = In(i, j);  // blaze specific
         Out.push_back(rec);
     }
