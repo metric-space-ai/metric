@@ -1,5 +1,5 @@
 import setuptools
-from cmake_setuptools import *
+from cmake_setuptools import CMakeExtension, CMakeBuildExt
 setuptools.setup(
      name='metric',
      version='0.0.1',

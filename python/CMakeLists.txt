@@ -29,6 +29,8 @@ SET(SRC
 #    src/metric_wavelet.cpp
 #    src/metric_ESN.cpp
     src/metric_affprop.cpp
+    src/metric_kmeans.cpp
+    src/metric_kmedoids.cpp
 )
 
 add_library(metric_py SHARED ${SRC})

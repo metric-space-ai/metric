@@ -48,6 +48,8 @@ void export_metric_wavelet();
 void export_metric_ESN();
 void export_metric_DSPCC();
 void export_metric_affprop();
+void export_metric_kmeans();
+void export_metric_kmedoids();
 
 BOOST_PYTHON_MODULE(metric) {
 
@@ -77,5 +79,7 @@ BOOST_PYTHON_MODULE(metric) {
 //    export_metric_ESN();
     export_metric_DSPCC();
     export_metric_affprop();
+    export_metric_kmeans();
+    export_metric_kmedoids();
 
 }
