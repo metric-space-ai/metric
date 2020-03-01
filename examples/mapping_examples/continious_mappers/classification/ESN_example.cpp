@@ -84,6 +84,7 @@ int main()
     // test overloads for vector<recType>
 
     using recType = std::vector<double>;
+    //using recType = blaze::DynamicVector<double>; // also supported
 
     std::vector<recType> SlicesRV {
         {   1,    0,    0,    0,    0,    0},
