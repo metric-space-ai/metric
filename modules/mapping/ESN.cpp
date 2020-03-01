@@ -164,6 +164,7 @@ ESN<recType, Metric>::ESN(size_t w_size,  // = 500, // number of elements in res
     , washout(washout_)
 {
     assert(w_connections / (float)w_size < 0.5);
+    rgen.seed(std::random_device{}());
     create_W(w_size, w_connections, w_sr);
 }
 
