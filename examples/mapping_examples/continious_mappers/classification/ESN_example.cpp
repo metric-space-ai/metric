@@ -20,8 +20,8 @@ int main()
 {
 
     //// long double is not supported by the current BLAS!
-    //blaze::DynamicMatrix<double> ldm = {{1, 0}, {0, 1}};
-    //std::cout << blaze::eigen(ldm)<< "\n";
+    //blaze::DynamicMatrix<long double> ldm = {{1, 0}, {0, 1}};
+    //std::cout << blaze::eigen(ldm)<< "\n"; // this fails
 
 	std::cout << "ESN example have started" << std::endl;
 	std::cout << '\n';
@@ -31,7 +31,7 @@ int main()
     using value_type = double;
 
     //*
-    // run ESN on small dataset
+    // run ESN on small dataset passed in the native Blaze matrix form (data points in columns)
 
     visualize = true;
 
@@ -42,7 +42,7 @@ int main()
         {0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0.25, 0.5 , 0.75, 1   , 0.75, 0.5 , 0.25, 0   , 0   },
         {0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0.25, 0.5 , 0.75, 1   , 0.75},
         {0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0.25}
-    };
+    }; // first COLUMN represents zero time moment, second represents time = 1, etc
 
     blaze::DynamicMatrix<value_type, blaze::rowMajor> TargetR {
         {-0.45, -0.4, -0.35, -0.3, -0.25, -0.2, -0.15, -0.1, -0.05, 0   , 0.05, 0.1, 0.15 , 0.2 , 0.25 , 0.3 , 0.35 , 0.4 },
@@ -68,6 +68,7 @@ int main()
     }
 
     auto esn = metric::ESN<std::vector<value_type>, void>(500, 4, 0.99, 0.5, 5, 0.9); // echo
+    //auto esn = metric::ESN<std::vector<value_type>, void>(500, 4, 0.99, 1, 0, 0.9); // no echo (alpha=1 and no washout)
     esn.train(SlicesR, TargetR);
 
     auto prediction = esn.predict(SlicesTestR);
@@ -81,15 +82,17 @@ int main()
 
 
     //*
-    // test overloads for vector<recType>
+    // run ESN for vector<recType> dataset, data points in recType containers (in rows)
+    // data is exactly the same as in the example above
 
+    //using recType = std::deque<float>;
     using recType = std::vector<double>;
     //using recType = blaze::DynamicVector<double>; // also supported
 
     std::vector<recType> SlicesRV {
-        {   1,    0,    0,    0,    0,    0},
-        {0.75, 0.25,    0,    0,    0,    0},
-        {0.5 ,  0.5,    0,    0,    0,    0},
+        {   1,    0,    0,    0,    0,    0}, // time = 0
+        {0.75, 0.25,    0,    0,    0,    0}, // time = 1
+        {0.5 ,  0.5,    0,    0,    0,    0}, // etc
         {0.25, 0.75,    0,    0,    0,    0},
         {   0,    1,    0,    0,    0,    0},
         {   0, 0.75, 0.25,    0,    0,    0},
@@ -151,6 +154,7 @@ int main()
     };
 
     auto esnV = metric::ESN<recType, void>(500, 4, 0.99, 0.5, 5, 0.9); // echo
+    //auto esnV = metric::ESN<recType, void>(500, 4, 0.99, 1, 0, 0.9); // no echo (alpha=1 and no washout)
     esnV.train(SlicesRV, TargetRV);
 
     auto predictionV = esnV.predict(SlicesTestRV);

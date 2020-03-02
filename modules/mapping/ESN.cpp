@@ -18,7 +18,7 @@ namespace ESN_details {
     // ---------------------------------  math functions:
 
     template <typename T>
-    blaze::DynamicMatrix<T> get_readout_no_echo(  // for ESN with disables echo
+    blaze::DynamicMatrix<T> get_readout_no_echo(  // for networks with disabled echo
         const blaze::DynamicMatrix<T>& Slices, const blaze::DynamicMatrix<T>& W_in);
 
     template <typename T>
@@ -34,7 +34,7 @@ namespace ESN_details {
     // ---------------------------------  math functions:
 
     template <typename T>
-    blaze::DynamicMatrix<T> get_readout_no_echo(  // for ESN with disables echo
+    blaze::DynamicMatrix<T> get_readout_no_echo(  // for networks with disabled echo
         const blaze::DynamicMatrix<T>& Slices, const blaze::DynamicMatrix<T>& W_in)
     {
         size_t slice_size = W_in.columns();
@@ -54,8 +54,8 @@ namespace ESN_details {
     blaze::DynamicMatrix<T> get_readout(  // echo mode
         const blaze::DynamicMatrix<T>& Slices, const blaze::DynamicMatrix<T>& W_in,
         const blaze::CompressedMatrix<T>& W,  // TODO make sparse
-        T alpha,  // = 0.5,
-        size_t washout  // = 0
+        T alpha,
+        size_t washout
     )
     {
 
@@ -155,8 +155,8 @@ template <typename recType, typename Metric>
 ESN<recType, Metric>::ESN(size_t w_size,  // = 500, // number of elements in reservoir
     value_type w_connections,  // = 10, // number of interconnections (for each reservoir element)
     value_type w_sr,  // = 0.6, // desired spectral radius of the reservoir
-    value_type alpha_,  // = 0.5, // leak rate, number of slices excluded from output for washout
-    size_t washout_,  // = 1,
+    value_type alpha_,  // = 0.5, // leak rate
+    size_t washout_,  // = 1, // number of slices excluded from output for washout
     value_type beta_  // = 0.5, // ridge solver metaparameter
     )
     : alpha(alpha_)
@@ -272,56 +272,6 @@ ESN<recType, Metric>::blaze2rectype(const blaze::DynamicMatrix<typename ESN<R, M
     }
     return Out;
 }
-
-
-
-//template <typename recType, typename Metric>
-//blaze::DynamicMatrix<typename ESN<recType, Metric>::value_type>
-//ESN<recType, Metric>::vector_to_blaze(const std::vector<recType> & In) {
-//    blaze::DynamicMatrix<value_type> Out(In.size(), In[0].size(), 0);
-//    for (size_t i = 0; i < In.size(); ++i) // TODO optimize by using iterators
-//        for (size_t j = 0; j < In[0].size(); ++j)
-//            Out(i, j) = In[i][j];
-//    return Out;
-//}
-
-
-
-//template <typename recType, typename Metric>
-//template <typename R>
-//typename std::enable_if <
-// determine_container_type<R>::code == 1,
-// std::vector<R>
-//>::type
-//ESN<recType, Metric>::blaze2rectype(const blaze::DynamicMatrix<typename ESN<R, Metric>::value_type> & In) {
-//    std::vector<recType> Out;
-//    for (size_t i = 0; i < In.rows(); ++i) {
-//        recType rec;
-//        for (size_t j = 0; j < In.columns(); ++j)
-//            rec.push_back(In(i, j));
-//        Out.push_back(rec);
-//    }
-//    return Out;
-//}
-
-
-//template <typename recType, typename Metric>
-//template <typename R>
-//typename std::enable_if<
-// determine_container_type<R>::code == 2,
-// std::vector<R>
-//>::type
-//ESN<recType, Metric>::blaze2rectype(const blaze::DynamicMatrix<typename ESN<R, Metric>::value_type> & In) { // only blaze row-vector
-//    std::vector<recType> Out;
-//    for (size_t i = 0; i < In.rows(); ++i) {
-//        recType rec(In.rows()); //  .columns() ?? // blaze specific
-//        for (size_t j = 0; j < In.columns(); ++j)
-//            rec[j] = In(i, j);  // blaze specific
-//        Out.push_back(rec);
-//    }
-//    return Out;
-//}
-
 
 
 

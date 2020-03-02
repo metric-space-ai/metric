@@ -89,8 +89,8 @@ public:
     ESN(size_t w_size = 500,  // number of elements in reservoir
         value_type w_connections = 10,  // number of interconnections (for each reservoir element)
         value_type w_sr = 0.6,  // desired spectral radius of the reservoir
-        value_type alpha_ = 0.5,  // leak rate, number of slices excluded from output for washout
-        size_t washout_ = 1,
+        value_type alpha_ = 0.5,  // leak rate
+        size_t washout_ = 1,  // number of slices excluded from output for washout
         value_type beta_ = 0.5  // ridge solver metaparameter
     );
 
