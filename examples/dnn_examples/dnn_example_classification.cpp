@@ -1,6 +1,6 @@
 #include "../../modules/utils/dnn.hpp"
 #include "../../modules/utils/dnn/Utils/Random.h"
-#include "../../modules/utils/dnn/Utils/datasets.hpp"
+#include "../../modules/utils/datasets.hpp"
 //#include "../../modules/mapping/autoencoder.hpp"
 
 #include <iostream>
@@ -48,7 +48,7 @@ int main()
 	//network.addLayer(Conv2d<double, ReLU<double>>(26, 26, 64, 8, 3, 3));
 	//network.addLayer(Conv2d<double, ReLU<double>>(26, 26, 8, 8, 3, 3));
 	//network.addLayer(FullyConnected<double, Sigmoid<double>>(169, 10));
-	network.addLayer(FullyConnected<double, Softmax<double>>(169, 10));
+	network.addLayer(FullyConnected<double, Sigmoid<double>>(169, 10));
 
 	network.setOptimizer(RMSProp<double>());
 
