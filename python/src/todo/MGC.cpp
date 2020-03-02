@@ -6,7 +6,6 @@
   Copyright (c) 2020 Panda Team
 */
 
-#pragma once
 #include "metric_types.hpp"
 #include "metric_py.hpp"
 
@@ -32,7 +31,7 @@ class MGCImpl: public metric::MGC<NotUsed,T1,NotUsed,T2>, public MGCInterface {
 };
 
 class metrics {
-    using MetricTable = 
+    using MetricTable =
         std::map<
                 std::string,
                 std::map<
@@ -80,3 +79,19 @@ public:
 metrics::MetricTable metrics::table = metrics::CreateMetricTable();
 
 };
+
+
+namespace bp = boost::python;
+
+void export_metric_MGC()
+{
+
+bp::class_<metric_MGC::metrics>("MGC", bp::init<std::string,std::string>())
+    .def("estimate", +[](metric_MGC::metrics& self, bp::object& A, bp::object& B, const size_t BsampleSize = 250, const double threshold = 0.05, size_t maxIterations = 1000) {
+        return self.mgc->estimate(WrapStlMatrix<double>(A), WrapStlMatrix<double>(B), BsampleSize, threshold, maxIterations);
+    }, "return estimate of the correlation betweeen A and B")
+    .def("__call__", +[](metric_MGC::metrics& self, bp::object& A, bp::object& B) {
+        return self.mgc->operator()(WrapStlMatrix<double>(A), WrapStlMatrix<double>(B));
+    }, "return correlation betweeen A and B")
+    ;
+}

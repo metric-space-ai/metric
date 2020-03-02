@@ -7,7 +7,6 @@
 */
 
 #include "metric_py.hpp"
-#include "metric_VOI.hpp"
 
 namespace bp = boost::python;
 
