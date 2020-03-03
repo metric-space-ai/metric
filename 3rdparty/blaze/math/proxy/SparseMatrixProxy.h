@@ -3,7 +3,7 @@
 //  \file blaze/math/proxy/SparseMatrixProxy.h
 //  \brief Header file for the SparseMatrixProxy class
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -49,7 +49,6 @@
 #include "../../math/typetraits/IsSquare.h"
 #include "../../math/typetraits/IsColumnMajorMatrix.h"
 #include "../../system/Inline.h"
-#include "../../util/DisableIf.h"
 #include "../../util/EnableIf.h"
 #include "../../util/Types.h"
 
@@ -168,6 +167,19 @@ class SparseMatrixProxy
    inline void ctranspose() const;
 
    template< typename Other > inline void scale( const Other& scalar ) const;
+   //@}
+   //**********************************************************************************************
+
+ protected:
+   //**Special member functions********************************************************************
+   /*!\name Special member functions */
+   //@{
+   SparseMatrixProxy() = default;
+   SparseMatrixProxy( const SparseMatrixProxy& ) = default;
+   SparseMatrixProxy( SparseMatrixProxy&& ) = default;
+   ~SparseMatrixProxy() = default;
+   SparseMatrixProxy& operator=( const SparseMatrixProxy& ) = default;
+   SparseMatrixProxy& operator=( SparseMatrixProxy&& ) = default;
    //@}
    //**********************************************************************************************
 

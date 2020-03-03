@@ -3,7 +3,7 @@
 //  \file blaze/math/functors/Bind1st.h
 //  \brief Header file for the Bind1st functor
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -40,7 +40,6 @@
 // Includes
 //*************************************************************************************************
 
-#include "../../math/constraints/SIMDPack.h"
 #include "../../math/simd/Set.h"
 #include "../../math/typetraits/IsSIMDEnabled.h"
 #include "../../math/typetraits/YieldsSymmetric.h"
@@ -57,10 +56,10 @@ namespace blaze {
 //=================================================================================================
 
 //*************************************************************************************************
-/*!\brief Generic wrapper for a binary operation with fixed 1st argument.
+/*!\brief Generic wrapper for an operation with fixed 1st argument.
 // \ingroup functors
 */
-template< typename OP    // Type of the binary operation
+template< typename OP    // Type of the operation
         , typename A1 >  // Type of the bound argument
 struct Bind1st
 {
@@ -68,35 +67,35 @@ struct Bind1st
    //**********************************************************************************************
    /*!\brief Constructor of the Bind1st functor.
    //
-   // \param op The binary operation.
+   // \param op The wrapped operation.
    // \param a1 The 1st argument.
    */
-   explicit inline constexpr Bind1st( const OP& op, const A1& a1 )
+   constexpr Bind1st( const OP& op, const A1& a1 )
       : op_( op )  // The wrapped operation.
       , a1_( a1 )  // The 1st argument
    {}
    //**********************************************************************************************
 
    //**********************************************************************************************
-   /*!\brief Returns the result of the wrapped operation for the given object/value.
+   /*!\brief Returns the result of the wrapped operation for the given arguments.
    //
-   // \param a The given object/value.
-   // \return The result of the wrapped operation for the given object/value.
+   // \param args The remaining arguments.
+   // \return The result of the wrapped operation for the given arguments.
    */
-   template< typename T >
-   BLAZE_ALWAYS_INLINE constexpr decltype(auto) operator()( const T& a ) const
+   template< typename... Args >
+   BLAZE_ALWAYS_INLINE constexpr decltype(auto) operator()( Args&&... args ) const
    {
-      return op_( a1_, a );
+      return op_( a1_, std::forward<Args>( args )... );
    }
    //**********************************************************************************************
 
    //**********************************************************************************************
-   /*!\brief Returns whether SIMD is enabled for the specified data type \a T.
+   /*!\brief Returns whether SIMD is enabled for the specified data types \a Args.
    //
-   // \return \a true in case SIMD is enabled for the data type \a T, \a false if not.
+   // \return \a true in case SIMD is enabled for the data types \a Args, \a false if not.
    */
-   template< typename T >
-   static constexpr bool simdEnabled() { return IsSIMDEnabled_v<OP,A1,T>; }
+   template< typename... Args >
+   static constexpr bool simdEnabled() { return IsSIMDEnabled_v<OP,A1,Args...>; }
    //**********************************************************************************************
 
    //**********************************************************************************************
@@ -108,22 +107,21 @@ struct Bind1st
    //**********************************************************************************************
 
    //**********************************************************************************************
-   /*!\brief Returns the result of the wrapped operation for the given SIMD vector.
+   /*!\brief Returns the result of the wrapped operation for the given SIMD vectors.
    //
-   // \param a The given SIMD vector.
-   // \return The result of the wrapped operation for the given SIMD vector.
+   // \param args The remaining SIMD vectors.
+   // \return The result of the wrapped operation for the given SIMD vectors.
    */
-   template< typename T >
-   BLAZE_ALWAYS_INLINE decltype(auto) load( const T& a ) const
+   template< typename... Args >
+   BLAZE_ALWAYS_INLINE decltype(auto) load( Args&&... args ) const
    {
-      BLAZE_CONSTRAINT_MUST_BE_SIMD_PACK( T );
-      return op_.load( set( a1_ ), a );
+      return op_.load( set( a1_ ), std::forward<Args>( args )... );
    }
    //**********************************************************************************************
 
  private:
    //**Member variables****************************************************************************
-   OP op_;  //!< The binary operation.
+   OP op_;  //!< The wrapped operation.
    A1 a1_;  //!< The 1st argument.
    //**********************************************************************************************
 };
@@ -139,19 +137,19 @@ struct Bind1st
 //=================================================================================================
 
 //*************************************************************************************************
-/*!\brief Binds the given object/value to the 1st parameter of the given binary operation.
+/*!\brief Binds the given object/value to the 1st parameter of the given operation.
 // \ingroup functors
 //
-// \param op The binary operation to be wrapped.
-// \param a1 The argument to be bound to the second parameter of the binary operation.
+// \param op The operation to be wrapped.
+// \param a1 The argument to be bound to the second parameter of the operation.
 // \return The operation with bound 1st argument.
 //
 // The \a bind1st() function binds the given argument \a x to the 1st parameter of the given
-// binary operation \a op.
+// operation \a op.
 */
-template< typename OP    // Type of the binary operation
+template< typename OP    // Type of the operation
         , typename A1 >  // Type of the bound argument
-inline constexpr Bind1st<OP,A1> bind1st( const OP& op, const A1& a1 )
+constexpr Bind1st<OP,A1> bind1st( const OP& op, const A1& a1 )
 {
    return Bind1st<OP,A1>( op, a1 );
 }

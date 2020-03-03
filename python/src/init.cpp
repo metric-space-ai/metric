@@ -20,7 +20,7 @@ typedef std::vector<bool> VectorBool;
 
 void export_converters();
 
-BOOST_PYTHON_MODULE(metric) {
+BOOST_PYTHON_MODULE(_metric) {
     export_converters();
 
     // exposing C++ return types

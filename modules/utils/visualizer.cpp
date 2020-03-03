@@ -121,5 +121,26 @@ void blaze2bmp_norm(OuterContainer<InnerContainer<ValueType, InnerAllocator>, Ou
 
 
 
+template <
+        template <typename, typename> class OuterContainer,
+        template <typename, typename> class InnerContainer,
+        typename ValueType,
+        typename OuterAllocator,
+        typename InnerAllocator
+        >
+void blaze2bmp(OuterContainer<InnerContainer<ValueType, InnerAllocator>, OuterAllocator> m_stl, std::string filename, float magnitude = 1)
+{
+    blaze::DynamicMatrix<ValueType> m(m_stl.size(), m_stl[0].size(), 0); // we assume length of all rows is equal and there is at least 1 row
+    //blaze::DynamicMatrix<double> m(m_stl.size(), m_stl[0].size(), 0); // we assume length of all rows is equal and there is at least 1 row
+    for (size_t i=0; i<m_stl.size(); ++i)
+        for (size_t j=0; j<m_stl[0].size(); ++j)
+            m(i, j) = m_stl[i][j];
+            //m(i, j) = (double)m_stl[i][j];
+    auto M = m * magnitude;
+    mat2bmp::blaze2bmp(M, filename);
+}
+
+
+
 } // namespace mat2bmp
 

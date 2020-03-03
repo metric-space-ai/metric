@@ -1,5 +1,5 @@
 import numpy
-import metric
+from metric.distance import Kohonen
 
 
 def test_ok():
@@ -15,6 +15,6 @@ def test_ok():
         [2, 1],
     ])
 
-    distance = metric.kohonen_distance(simple_grid, grid_w, grid_h)
+    distance = Kohonen(simple_grid, grid_w, grid_h)
 
     print("distance: ", distance(simple_grid[0], simple_grid[5]))

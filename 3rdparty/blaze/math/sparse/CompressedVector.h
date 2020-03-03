@@ -3,7 +3,7 @@
 //  \file blaze/math/sparse/CompressedVector.h
 //  \brief Implementation of an arbitrarily sized compressed vector
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -54,6 +54,7 @@
 #include "../../math/RelaxationFlag.h"
 #include "../../math/shims/IsDefault.h"
 #include "../../math/shims/Serial.h"
+#include "../../math/sparse/Forward.h"
 #include "../../math/sparse/ValueIndexPair.h"
 #include "../../math/sparse/VectorAccessProxy.h"
 #include "../../math/traits/AddTrait.h"
@@ -92,7 +93,6 @@
 #include "../../util/constraints/Reference.h"
 #include "../../util/constraints/SameSize.h"
 #include "../../util/constraints/Volatile.h"
-#include "../../util/DisableIf.h"
 #include "../../util/EnableIf.h"
 #include "../../util/IntegralConstant.h"
 #include "../../util/Memory.h"
@@ -205,8 +205,8 @@ namespace blaze {
    A = a * trans( b );  // Outer product between two vectors
    \endcode
 */
-template< typename Type                     // Data type of the vector
-        , bool TF = defaultTransposeFlag >  // Transpose flag
+template< typename Type  // Data type of the vector
+        , bool TF >      // Transpose flag
 class CompressedVector
    : public SparseVector< CompressedVector<Type,TF>, TF >
 {
@@ -227,9 +227,9 @@ class CompressedVector
       : public ElementBase
    {
       //**Constructors*****************************************************************************
-      explicit Element() = default;
-               Element( const Element& rhs ) = default;
-               Element( Element&& rhs ) = default;
+      Element() = default;
+      Element( const Element& rhs ) = default;
+      Element( Element&& rhs ) = default;
       //*******************************************************************************************
 
       //**Assignment operators*********************************************************************
@@ -331,9 +331,9 @@ class CompressedVector
    //**Constructors********************************************************************************
    /*!\name Constructors */
    //@{
-   explicit inline CompressedVector() noexcept;
+            inline CompressedVector() noexcept;
    explicit inline CompressedVector( size_t size ) noexcept;
-   explicit inline CompressedVector( size_t size, size_t nonzeros );
+            inline CompressedVector( size_t size, size_t nonzeros );
             inline CompressedVector( initializer_list<Type> list );
 
    inline CompressedVector( const CompressedVector& sv );
@@ -2338,7 +2338,7 @@ void reset( CompressedVector<Type,TF>& v );
 template< typename Type, bool TF >
 void clear( CompressedVector<Type,TF>& v );
 
-template< bool RF, typename Type, bool TF >
+template< RelaxationFlag RF, typename Type, bool TF >
 bool isDefault( const CompressedVector<Type,TF>& v );
 
 template< typename Type, bool TF >
@@ -2406,9 +2406,9 @@ inline void clear( CompressedVector<Type,TF>& v )
    if( isDefault<relaxed>( a ) ) { ... }
    \endcode
 */
-template< bool RF        // Relaxation flag
-        , typename Type  // Data type of the vector
-        , bool TF >      // Transpose flag
+template< RelaxationFlag RF  // Relaxation flag
+        , typename Type      // Data type of the vector
+        , bool TF >          // Transpose flag
 inline bool isDefault( const CompressedVector<Type,TF>& v )
 {
    return ( v.size() == 0UL );

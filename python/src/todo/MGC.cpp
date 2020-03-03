@@ -95,3 +95,22 @@ bp::class_<metric_MGC::metrics>("MGC", bp::init<std::string,std::string>())
     }, "return correlation betweeen A and B")
     ;
 }
+
+
+/*
+    template <typename Container1, typename Container2>
+    double operator()(const Container1& a, const Container2& b) const;
+
+    template <typename Container1, typename Container2>
+    double estimate(const Container1& a, const Container2& b, const size_t sampleSize = 250,
+                    const double threshold = 0.05, size_t maxIterations = 1000);
+
+    double mean(const std::vector<double>& data);
+    double variance(const std::vector<double>& data, const double mean);
+    std::vector<double> icdf(const std::vector<double>& prob, const double mu, const double sigma);
+    double erfcinv(const double z);
+    double erfinv_imp(const double p, const double q);
+    double polyeval(const std::vector<double>& poly, const double z);
+    double peak2ems(const std::vector<double>& data);
+    std::vector<double> linspace(double a, double b, int n);
+*/

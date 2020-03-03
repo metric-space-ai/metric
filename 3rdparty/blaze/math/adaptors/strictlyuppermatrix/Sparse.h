@@ -3,7 +3,7 @@
 //  \file blaze/math/adaptors/strictlyuppermatrix/Sparse.h
 //  \brief StrictlyUpperMatrix specialization for sparse matrices
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -76,7 +76,6 @@
 #include "../../../util/constraints/Pointer.h"
 #include "../../../util/constraints/Reference.h"
 #include "../../../util/constraints/Volatile.h"
-#include "../../../util/DisableIf.h"
 #include "../../../util/EnableIf.h"
 #include "../../../util/StaticAssert.h"
 #include "../../../util/Types.h"
@@ -155,10 +154,10 @@ class StrictlyUpperMatrix<MT,SO,false>
    //**Constructors********************************************************************************
    /*!\name Constructors */
    //@{
-   explicit inline StrictlyUpperMatrix();
+            inline StrictlyUpperMatrix();
    explicit inline StrictlyUpperMatrix( size_t n );
-   explicit inline StrictlyUpperMatrix( size_t n, size_t nonzeros );
-   explicit inline StrictlyUpperMatrix( size_t n, const std::vector<size_t>& nonzeros );
+            inline StrictlyUpperMatrix( size_t n, size_t nonzeros );
+            inline StrictlyUpperMatrix( size_t n, const std::vector<size_t>& nonzeros );
             inline StrictlyUpperMatrix( initializer_list< initializer_list<ElementType> > list );
 
    inline StrictlyUpperMatrix( const StrictlyUpperMatrix& m );
@@ -249,8 +248,8 @@ class StrictlyUpperMatrix<MT,SO,false>
    inline void   shrinkToFit();
    inline void   swap( StrictlyUpperMatrix& m ) noexcept;
 
-   static inline constexpr size_t maxNonZeros() noexcept;
-   static inline constexpr size_t maxNonZeros( size_t n ) noexcept;
+   static constexpr size_t maxNonZeros() noexcept;
+   static constexpr size_t maxNonZeros( size_t n ) noexcept;
    //@}
    //**********************************************************************************************
 
@@ -1606,7 +1605,7 @@ inline void StrictlyUpperMatrix<MT,SO,false>::swap( StrictlyUpperMatrix& m ) noe
 */
 template< typename MT  // Type of the adapted dense matrix
         , bool SO >    // Storage order of the adapted dense matrix
-inline constexpr size_t StrictlyUpperMatrix<MT,SO,false>::maxNonZeros() noexcept
+constexpr size_t StrictlyUpperMatrix<MT,SO,false>::maxNonZeros() noexcept
 {
    BLAZE_CONSTRAINT_MUST_BE_STATIC_TYPE( MT );
 
@@ -1628,7 +1627,7 @@ inline constexpr size_t StrictlyUpperMatrix<MT,SO,false>::maxNonZeros() noexcept
 */
 template< typename MT  // Type of the adapted dense matrix
         , bool SO >    // Storage order of the adapted dense matrix
-inline constexpr size_t StrictlyUpperMatrix<MT,SO,false>::maxNonZeros( size_t n ) noexcept
+constexpr size_t StrictlyUpperMatrix<MT,SO,false>::maxNonZeros( size_t n ) noexcept
 {
    return ( ( n - 1UL ) * n ) / 2UL;
 }

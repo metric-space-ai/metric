@@ -3,7 +3,7 @@
 //  \file blaze/math/Traits.h
 //  \brief Header file for all expression traits
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -49,7 +49,11 @@
 #include "../math/traits/DeclHermTrait.h"
 #include "../math/traits/DeclIdTrait.h"
 #include "../math/traits/DeclLowTrait.h"
+#include "../math/traits/DeclStrLowTrait.h"
+#include "../math/traits/DeclStrUppTrait.h"
 #include "../math/traits/DeclSymTrait.h"
+#include "../math/traits/DeclUniLowTrait.h"
+#include "../math/traits/DeclUniUppTrait.h"
 #include "../math/traits/DeclUppTrait.h"
 #include "../math/traits/DeclZeroTrait.h"
 #include "../math/traits/DerestrictTrait.h"
@@ -63,6 +67,7 @@
 #include "../math/traits/RowsTrait.h"
 #include "../math/traits/RowTrait.h"
 #include "../math/traits/SchurTrait.h"
+#include "../math/traits/SolveTrait.h"
 #include "../math/traits/SubmatrixTrait.h"
 #include "../math/traits/SubTrait.h"
 #include "../math/traits/SubvectorTrait.h"

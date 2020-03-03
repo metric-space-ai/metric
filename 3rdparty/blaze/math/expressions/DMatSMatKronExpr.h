@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/DMatSMatKronExpr.h
 //  \brief Header file for the dense matrix/sparse matrix Kronecker product expression
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -56,20 +56,16 @@
 #include "../../math/shims/Reset.h"
 #include "../../math/shims/Serial.h"
 #include "../../math/traits/KronTrait.h"
-#include "../../math/typetraits/IsColumnMajorMatrix.h"
 #include "../../math/typetraits/IsExpression.h"
 #include "../../math/typetraits/IsLower.h"
-#include "../../math/typetraits/IsRowMajorMatrix.h"
 #include "../../math/typetraits/IsStrictlyLower.h"
 #include "../../math/typetraits/IsStrictlyUpper.h"
 #include "../../math/typetraits/IsTemporary.h"
 #include "../../math/typetraits/IsUpper.h"
 #include "../../math/typetraits/IsZero.h"
 #include "../../util/Assert.h"
-#include "../../util/DisableIf.h"
 #include "../../util/EnableIf.h"
 #include "../../util/FunctionTrace.h"
-#include "../../util/MaybeUnused.h"
 #include "../../util/mpl/If.h"
 #include "../../util/Types.h"
 
@@ -152,7 +148,7 @@ class DMatSMatKronExpr
    // \param lhs The left-hand side dense matrix operand of the Kronecker product expression.
    // \param rhs The right-hand side sparse matrix operand of the Kronecker product expression.
    */
-   explicit inline DMatSMatKronExpr( const MT1& lhs, const MT2& rhs ) noexcept
+   inline DMatSMatKronExpr( const MT1& lhs, const MT2& rhs ) noexcept
       : lhs_( lhs )  // Left-hand side dense matrix of the Kronecker product expression
       , rhs_( rhs )  // Right-hand side sparse matrix of the Kronecker product expression
    {}

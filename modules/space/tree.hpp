@@ -22,7 +22,11 @@ Copyright (c) 2018, Michael Welsch
 #include <string>
 #include <tuple>
 #include <unordered_set>
+#include <unordered_map>
 #include <vector>
+#include "../../3rdparty/blaze/Math.h"
+#include "../../3rdparty/blaze/math/Matrix.h"
+#include "../../3rdparty/blaze/math/adaptors/SymmetricMatrix.h"
 namespace metric {
 /*
   _ \         _|             |  |       \  |        |       _)
@@ -207,6 +211,7 @@ public:
      *
      * @param id data record ID
      * @return data record with ID == id
+     * @throws std::runtime_error when tree has no element with ID
      */
     recType operator[](size_t id);
 
@@ -365,7 +370,28 @@ public:
         t.print(ostr);
         return ostr;
     }
+    /**
+     * @brief Computes graph distance between two nodes
+     * @param id1  - ID of the first node
+     * @param id2  - ID of the second node
+     * @return weighted sum of edges between nodes
+     */
+    Distance distance_by_id(std::size_t id1, std::size_t id2) const;
 
+    /**
+     * @brief Computes graph distance between two records
+     * @param p1  - first record
+     * @param p2  - second record
+     * @return weighted sum of edges between nodes nearest to p1 and p2
+     */
+    Distance distance(const recType & p1, const recType & p2) const;
+
+    /**
+     * @brief convert cover tree to distance matrix
+     * @return blaze::SymmetricMatrix with distance
+     *
+     */
+    blaze::SymmetricMatrix<blaze::DynamicMatrix<Distance, blaze::rowMajor>> matrix() const;
 private:
     friend class Node<recType, Metric>;
 
@@ -378,10 +404,13 @@ private:
     std::atomic<int> min_scale;  // Minimum scale
     std::atomic<int> max_scale;  // Minimum scale
     int truncate_level = -1;  // Relative level below which the tree is truncated
-    std::atomic<unsigned> N;  // Number of points in the cover tree
+    std::atomic<std::size_t> nextID = 0;  // Next node ID
     mutable std::shared_timed_mutex global_mut;  // lock for changing the root
+    std::vector<std::pair<recType, Node_ptr>> data;
 
-    /*** Imlementation Methodes ***/
+    std::unordered_map<std::size_t, std::size_t> index_map;  // ID -> data index mapping
+
+    // /*** Imlementation Methodes ***/
 
     Node_ptr insert(Node_ptr p, Node_ptr x);
 
@@ -430,11 +459,39 @@ private:
         std::vector<std::vector<std::size_t>>& result);
 
     Distance metric(const recType& p1, const recType& p2) const { return metric_(p1, p2); }
-
+    Distance metric_by_id(const std::size_t id1, const std::size_t id2) {
+        return metric_(data[index_map[id1]].first, data[index_map[id2]].first);
+    }
     template <class Archive>
     auto deserialize_node(Archive& istr) -> SerializedNode<recType, Metric>;
-};
 
+    std::size_t add_data(const recType & p, Node_ptr ptr) {
+        data.push_back(std::pair{p,ptr});
+        auto id = nextID++;
+        index_map[id] = data.size()-1;
+        return id;
+    }
+    const recType & get_data(std::size_t ID) {
+        return data[index_map[ID]].first;
+    }
+    void remove_data(std::size_t ID) {
+        auto p = data.begin();
+        auto pi = index_map.find(ID);
+        std::size_t i = pi->second;
+        std::advance(p, i);
+        data.erase(p);
+        index_map.erase(pi);
+        for(auto &kv : index_map) {
+            if(kv.first <= i)
+                continue;
+            kv.second -= 1;
+        }
+    }
+    std::pair<Distance, std::size_t> distance_to_root(Node_ptr p) const;
+    std::pair<Distance, std::size_t> distance_to_level(Node_ptr &p, int level) const;
+    Distance distance_by_node(Node_ptr p1, Node_ptr p2) const;
+    std::pair<Distance, std::size_t> graph_distance(Node_ptr p1, Node_ptr p2) const; 
+};
 }  // namespace metric
 #include "tree.cpp"  // include the implementation
 

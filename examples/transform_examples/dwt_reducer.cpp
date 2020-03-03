@@ -10,6 +10,7 @@
 
 #include "assets/helpers.cpp"
 
+//#include "transform/helper_functions.cpp" // TODO remove
 
 #include <vector>
 #include <iostream>
@@ -221,7 +222,7 @@ int main() {
 	std::cout << '\n';
 
     
-    auto x = wavelet::linspace(0.0, 1.0, 3200);
+    auto x = wavelet::linspace<std::vector<double>>(0.0, 1.0, 3200);
 
     std::cout << wavelet::wmaxlev(x.size(), 5) << std::endl;
 

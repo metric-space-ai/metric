@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/SVecSVecCrossExpr.h
 //  \brief Header file for the sparse vector/sparse vector cross product expression
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -56,12 +56,11 @@
 #include "../../math/expressions/Forward.h"
 #include "../../math/shims/Serial.h"
 #include "../../math/traits/CrossTrait.h"
-#include "../../math/typetraits/IsComputation.h"
 #include "../../math/typetraits/IsExpression.h"
 #include "../../math/typetraits/IsTemporary.h"
 #include "../../math/typetraits/IsZero.h"
+#include "../../system/MacroDisable.h"
 #include "../../util/Assert.h"
-#include "../../util/DisableIf.h"
 #include "../../util/EnableIf.h"
 #include "../../util/FunctionTrace.h"
 #include "../../util/MaybeUnused.h"
@@ -158,7 +157,7 @@ class SVecSVecCrossExpr
    // \param lhs The left-hand side operand of the cross product expression.
    // \param rhs The right-hand side operand of the cross product expression.
    */
-   explicit inline SVecSVecCrossExpr( const VT1& lhs, const VT2& rhs ) noexcept
+   inline SVecSVecCrossExpr( const VT1& lhs, const VT2& rhs ) noexcept
       : lhs_( lhs )  // Left-hand side sparse vector of the cross product expression
       , rhs_( rhs )  // Right-hand side sparse vector of the cross product expression
    {
@@ -205,7 +204,7 @@ class SVecSVecCrossExpr
    //
    // \return The size of the vector.
    */
-   inline constexpr size_t size() const noexcept {
+   constexpr size_t size() const noexcept {
       return 3UL;
    }
    //**********************************************************************************************

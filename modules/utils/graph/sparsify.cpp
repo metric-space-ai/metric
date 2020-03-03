@@ -23,7 +23,7 @@ https://github.com/danspielman/Laplacians.jl
 
 namespace metric {
 template <typename Tv>
-blaze::CompressedMatrix<Tv, blaze::columnMajor> sparsify(
+blaze::CompressedMatrix<Tv, blaze::columnMajor> sparsify_effective_resistance(
     const blaze::CompressedMatrix<Tv, blaze::columnMajor>& a, float ep, float matrixConcConst, float JLfac)
 {
 
@@ -100,7 +100,8 @@ blaze::CompressedMatrix<Tv, blaze::columnMajor> sparsify(
     return as;
 }
 
-
+namespace kruskal_sparsify_detail {
+    
 template <typename Tv>
 class KruskalEdge {
 private:
@@ -140,7 +141,7 @@ public:
     inline void enable() {
         enabled = true;
     }
-    bool isEnabled() {
+    inline bool isEnabled() const {
         return enabled;
     }
 };
@@ -156,23 +157,25 @@ private:
         parent = p;
         return p;
     }
-    void union_with(KruskalNode* node) {
-        KruskalNode* root0 = find();
-        KruskalNode* root1 = node->find();
-        root0->size += root1->size;
-        root1->parent = root0;
-    }
+
 public:
     KruskalNode() : parent(0), size(1) {}
     inline bool isConnected(KruskalNode& node) {
         return find() == node.find();
     }
-    
-    inline void connect(KruskalNode& node) {
-        if (node.size > size)
-            node.union_with(this);
-        else
-            union_with(&node);
+
+    inline void union_with(KruskalNode& node) {
+        KruskalNode* root0 = find();
+        KruskalNode* root1 = node.find();
+
+        if (root1->size > root0->size) {
+            KruskalNode* tmp = root0;
+            root0 = root1;
+            root1 = tmp;
+        } 
+        
+        root0->size += root1->size;
+        root1->parent = root0;
     }
     
     std::string toString() {
@@ -181,19 +184,24 @@ public:
         return ss.str();
     }
 };
+    
+}
 
 template <typename Tv>
-blaze::CompressedMatrix<Tv, blaze::columnMajor> kruskal_sparsify(
+blaze::CompressedMatrix<Tv, blaze::columnMajor> sparsify_spanning_tree(
     const blaze::CompressedMatrix<Tv, blaze::columnMajor>& a, bool minimum) {
-    const size_t edge_count = a.nonZeros();
-
     if (a.columns() != a.rows())
         throw std::invalid_argument("expected square matrix");
+
+    using namespace kruskal_sparsify_detail;
+
+    const size_t node_count = a.columns();    
+    const size_t edge_count = a.nonZeros();
 
     // initializing edge list
     std::vector<KruskalEdge<Tv> > edges;
     edges.reserve(edge_count);
-    for (size_t node_from = 0; node_from < a.rows(); node_from++) {
+    for (size_t node_from = 0; node_from < node_count; node_from++) {
         // not checking elements above diagonal (graph is undirected)
         for (auto i = a.begin(node_from); i != a.end(node_from); ++i) {
             size_t node_to = i->index();
@@ -221,7 +229,7 @@ blaze::CompressedMatrix<Tv, blaze::columnMajor> kruskal_sparsify(
 
     // initializing node list (needed to have disjoint-set data structure)
     std::vector<KruskalNode> nodes;
-    nodes.resize(a.columns());
+    nodes.resize(node_count);
     
     // traversing edge list, addition happens only if no loops are
     // created in the process
@@ -231,14 +239,15 @@ blaze::CompressedMatrix<Tv, blaze::columnMajor> kruskal_sparsify(
         KruskalNode& node_to = nodes[i.getNodeTo()];
 
         if (!node_from.isConnected(node_to)) {
-            node_from.connect(node_to);
+            node_from.union_with(node_to);
             i.enable();
             new_edge_count++;
         }
     }
 
     // putting together result
-    blaze::CompressedMatrix<Tv, blaze::columnMajor> res(a.columns(), a.rows());
+    blaze::CompressedMatrix<Tv, blaze::columnMajor> res(node_count,
+                                                        node_count);
     res.reserve(new_edge_count * 2);
 
     for (auto& i : edges) {
