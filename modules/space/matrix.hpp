@@ -47,7 +47,7 @@ public:
     /**
      * @brief Construct a new Matrix with set of data records
      *
-     * @param p vector of data records
+     * @param p random access container of data records
      * @param d metric object to use as distance
      */
     template <typename Container,
@@ -85,9 +85,8 @@ public:
     /**
      * @brief append set of data records to the matrix
      *
-     * @param p vector of the new data records
+     * @param p random access container with new data records
      * @return vector of ID of inserted node
-     * @return false if operation is unsuccesful
      */
     template <typename Container,
         typename = std::enable_if<
