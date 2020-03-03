@@ -21,3 +21,7 @@ void register_wrapper_affprop() {
 void export_metric_affprop() {
     register_wrapper_affprop<std::vector<double>, metric::Euclidian<double>, float>();
 }
+
+BOOST_PYTHON_MODULE(_affprop) {
+    export_metric_affprop();
+}

@@ -13,3 +13,7 @@ void register_wrapper_dbscan() {
 void export_metric_dbscan() {
     register_wrapper_dbscan<std::vector<float>, metric::Euclidian<float>, float>();
 }
+
+BOOST_PYTHON_MODULE(_dbscan) {
+    export_metric_dbscan();
+}

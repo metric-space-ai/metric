@@ -1,6 +1,14 @@
-#include "metric_py.hpp"
-#include "modules/distance.hpp"
+/*
+  This Source Code Form is subject to the terms of the Mozilla Public
+  License, v. 2.0. If a copy of the MPL was not distributed with this
+  file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+  Copyright (c) 2020 Panda Team
+*/
+
+#include "modules/distance/k-structured/Edit.hpp"
+
+#include <boost/python.hpp>
 #include <string>
 #include <vector>
 

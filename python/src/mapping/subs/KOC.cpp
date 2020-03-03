@@ -84,3 +84,7 @@ void export_metric_KOC() {
 }
 
 // make build && pip uninstall --yes metric && pip install dist/metric-0.0.1-cp36-cp36m-linux_x86_64.whl
+
+BOOST_PYTHON_MODULE(_KOC) {
+    export_metric_KOC();
+}

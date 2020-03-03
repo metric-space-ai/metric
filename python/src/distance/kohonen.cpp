@@ -33,7 +33,7 @@ template <typename D,
 template<typename DistanceType, typename Sample>
 void register_wrapper_kohonen() {
     using Metric = metric::kohonen_distance<DistanceType, Sample>;
-    auto metric = bp::class_<Metric>("kohonen_distance", bp::no_init);
+    auto metric = bp::class_<Metric>("Kohonen", bp::no_init);
     metric.def(bp::init<std::vector<Sample>&, size_t, size_t>(
         (
             bp::arg("samples"),

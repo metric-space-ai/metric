@@ -1,5 +1,5 @@
 import numpy
-import metric
+from metric.mapping import KOC_factory
 
 
 def test_ok():
@@ -25,7 +25,7 @@ def test_ok():
 
     simple_dataset = numpy.float_([8, 0, 1])
 
-    koc_factory = metric.KOC_factory(best_w_grid_size, best_h_grid_size, 0.5, 0.0, 100)
+    koc_factory = KOC_factory(best_w_grid_size, best_h_grid_size, 0.5, 0.0, 100)
     koc = koc_factory(dataset, 5)
 
     assert koc.check_if_anomaly(sample=simple_dataset, anomaly_threshold=-0.5)
