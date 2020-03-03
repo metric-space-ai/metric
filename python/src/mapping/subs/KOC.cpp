@@ -1,4 +1,6 @@
-#include "modules/mapping.hpp"
+#include "modules/mapping/kmeans.hpp"   // FIXME: someone forgot this in KOC
+#include "modules/distance/k-random/VOI.hpp"    // FIXME: and this
+#include "modules/mapping/KOC.hpp"
 
 #include <boost/python.hpp>
 

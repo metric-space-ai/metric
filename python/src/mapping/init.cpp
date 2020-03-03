@@ -11,14 +11,14 @@ namespace bp = boost::python;
 
 void export_metric_autoencoder();
 void export_metric_DSPCC();
-void export_metric_ESN();
+//void export_metric_ESN();
 void export_metric_kmeans();
 void export_metric_kmedoids();
 
 BOOST_PYTHON_MODULE(_mapping) {
     export_metric_autoencoder();
     export_metric_DSPCC();
-    export_metric_ESN();
+    //export_metric_ESN();
     export_metric_kmeans();
     export_metric_kmedoids();
 }
