@@ -4,18 +4,25 @@
 #include <vector>
 #include <stdexcept>
 #include <utility>
+#include <random>
+#include <fstream>
+#include <chrono>
 
 #include "../../../3rdparty/blaze/Math.h"
+#include "../../../3rdparty/cereal/archives/binary.hpp"
+#include "../../../3rdparty/cereal/types/string.hpp"
+#include "../../../3rdparty/cereal/types/vector.hpp"
+#include "../../../3rdparty/cereal/types/map.hpp"
 
-#include "RNG.h"
+
 #include "Layer.h"
 #include "Output.h"
 #include "Callback.h"
 #include "Utils/Random.h"
 
-namespace MiniDNN
-{
 
+namespace metric::dnn
+{
 
 ///
 /// \defgroup Network Neural Network Model
@@ -31,59 +38,53 @@ namespace MiniDNN
 template <typename Scalar>
 class Network
 {
-    private:
-		using Matrix = blaze::DynamicMatrix<Scalar, blaze::columnMajor>;
+	protected:
+		using Matrix = blaze::DynamicMatrix<Scalar>;
 
-        RNG                 m_default_rng;      // Built-in RNG
-        RNG&                m_rng;              // Reference to the RNG provided by the user,
-												// otherwise reference to m_default_rng
-        std::shared_ptr<Output<Scalar>>             m_output;           // The output layer
-        Callback<Scalar>                           m_default_callback; // Default callback function
-        std::shared_ptr<Callback<Scalar>>           m_callback;         // Points to user-provided callback function,
-												// otherwise points to m_default_callback
+	private:
+		std::mt19937                                randomEngine;              // Reference to the std::mt19937 provided by the user,
 
-        // Check dimensions of layers
+        std::shared_ptr<Output<Scalar>>             outputLayer;           // The output layer
+        std::shared_ptr<Callback<Scalar>>           callback;         // Points to user-provided callback function,
+
+		std::shared_ptr<Optimizer<Scalar>>          opt;
+
+        /* Check dimensions of layers */
         void check_unit_sizes() const
         {
-            const int nlayer = num_layers();
+	        const int nlayer = num_layers();
 
-            if (nlayer <= 1)
-            {
-                return;
-            }
+	        if (nlayer <= 1) {
+		        return;
+	        }
 
-            for (int i = 1; i < nlayer; i++)
-            {
-                if (m_layers[i]->in_size() != m_layers[i - 1]->out_size())
-                {
-                    throw std::invalid_argument("Unit sizes do not match");
-                }
-            }
+	        for (int i = 1; i < nlayer; i++) {
+		        if (layers[i]->getInputSize() != layers[i - 1]->getOutputSize()) {
+			        throw std::invalid_argument("Unit sizes do not match");
+		        }
+	        }
         }
 
         // Let each layer compute its output
         void forward(const Matrix& input)
         {
-            const int nlayer = num_layers();
+	        const int nlayer = num_layers();
 
-            if (nlayer <= 0)
-            {
-                return;
-            }
+	        if (nlayer <= 0) {
+		        return;
+	        }
 
-            // First layer
-            if (input.rows() != m_layers[0]->in_size())
-            {
-                throw std::invalid_argument("Input data have incorrect dimension");
-            }
+	        // First layer
+	        if (input.columns() != layers[0]->getInputSize()) {
+		        throw std::invalid_argument("Input data have incorrect dimension");
+	        }
 
-            m_layers[0]->forward(input);
+	        layers[0]->forward(input);
 
-            // The following layers
-            for (int i = 1; i < nlayer; i++)
-            {
-                m_layers[i]->forward(m_layers[i - 1]->output());
-            }
+	        // The following layers
+	        for (int i = 1; i < nlayer; i++) {
+		        layers[i]->forward(layers[i - 1]->output());
+	        }
         }
 
         // Let each layer compute its gradients of the parameters
@@ -95,87 +96,173 @@ class Network
         {
             const int nlayer = num_layers();
 
-            if (nlayer <= 0)
-            {
-                return;
-            }
+	        if (nlayer <= 0) {
+		        return;
+	        }
 
-            std::shared_ptr<Layer<Scalar>> first_layer = m_layers[0];
-            std::shared_ptr<Layer<Scalar>> last_layer = m_layers[nlayer - 1];
+            std::shared_ptr<Layer<Scalar>> first_layer = layers[0];
+            std::shared_ptr<Layer<Scalar>> last_layer = layers[nlayer - 1];
             // Let output layer compute back-propagation data
-            m_output->check_target_data(target);
-            m_output->evaluate(last_layer->output(), target);
+            outputLayer->check_target_data(target);
+            outputLayer->evaluate(last_layer->output(), target);
 
             // If there is only one hidden layer, "prev_layer_data" will be the input data
             if (nlayer == 1)
             {
-                first_layer->backprop(input, m_output->backprop_data());
+                first_layer->backprop(input, outputLayer->backprop_data());
                 return;
             }
 
             // Compute gradients for the last hidden layer
-            last_layer->backprop(m_layers[nlayer - 2]->output(), m_output->backprop_data());
+            last_layer->backprop(layers[nlayer - 2]->output(), outputLayer->backprop_data());
 
             // Compute gradients for all the hidden layers except for the first one and the last one
             for (int i = nlayer - 2; i > 0; i--)
             {
-                m_layers[i]->backprop(m_layers[i - 1]->output(),
-                                      m_layers[i + 1]->backprop_data());
+                layers[i]->backprop(layers[i - 1]->output(),
+                                    layers[i + 1]->backprop_data());
             }
 
             // Compute gradients for the first layer
-            first_layer->backprop(input, m_layers[1]->backprop_data());
+            first_layer->backprop(input, layers[1]->backprop_data());
         }
 
         // Update parameters
-        void update(Optimizer<Scalar>& opt)
+        void update()
         {
-            const int nlayer = num_layers();
+	        const int nlayer = num_layers();
 
-            if (nlayer <= 0)
-            {
-                return;
-            }
+	        if (nlayer <= 0) {
+		        return;
+	        }
 
-            for (int i = 0; i < nlayer; i++)
-            {
-                m_layers[i]->update(opt);
-            }
+	        for (int i = 0; i < nlayer; i++) {
+		        layers[i]->update(*opt);
+	        }
         }
 
-    public:
 
-		std::vector<std::shared_ptr<Layer<Scalar>>> m_layers;           // Pointers to hidden layers
-	///
-        /// Default constructor that creates an empty neural network
-        ///
-        Network() :
-            m_default_rng(1),
-            m_rng(m_default_rng),
-            m_output(NULL),
-            m_default_callback(),
-            m_callback(NULL)
-        {}
+	public:
+		/* Layers pointers */
+		std::vector<std::shared_ptr<Layer<Scalar>>> layers;
 
-        ///
-        /// Constructor with a user-provided random number generator
-        ///
-        /// \param rng A user-provided random number generator object that inherits
-        ///            from the default RNG class.
-        ///
-        Network(RNG& rng) :
-            m_default_rng(1),
-            m_rng(rng),
-            m_output(NULL),
-            m_default_callback(),
-            m_callback(NULL)
-        {}
+        /* Default constructor that creates an empty neural network */
+        Network() : randomEngine{std::random_device()()},
+					outputLayer(NULL)
+        {
+        	setDefaultCallback();
+        }
 
-        ///
-        /// Destructor that frees the added hidden layers and output layer
-        ///
-        ~Network()   {}
+        Network(const std::string& jsonString) : Network()
+		{
+			constructFromJsonString(jsonString);
+		}
 
+		void constructFromJsonString(const std::string& jsonString)
+		{
+        	/* Parse json */
+			auto json = nlohmann::json::parse(jsonString);
+
+			/* Construct layers */
+			layers.clear();
+			for (auto i = 0; i < json.size() - 1; ++i) {
+				auto layerJson = json[std::to_string(i)];
+
+				auto activation = layerJson["activation"].get<std::string>();
+
+				auto type = layerJson["type"].get<std::string>();
+				if (type == "FullyConnected") {
+					if (activation == "Identity") {
+						addLayer(FullyConnected<double, Identity<double>>(layerJson));
+					} else if (activation == "ReLU") {
+						addLayer(FullyConnected<double, ReLU<double>>(layerJson));
+					} else if (activation == "Sigmoid") {
+						addLayer(FullyConnected<double, Sigmoid<double>>(layerJson));
+					//} else if (activation == "Softmax") {
+					//	addLayer(FullyConnected<double, Softmax<double>>(layerJson));
+					}
+				}
+			}
+
+			/* Create train part */
+			auto trainJson = json["train"];
+
+			/* Loss */
+			auto loss = trainJson["loss"].get<std::string>();
+			if (loss == "RegressionMSE") {
+				setOutput(RegressionMSE<Scalar>());
+			}
+
+			/* Optimizer */
+			auto optimizerJson = trainJson["optimizer"];
+			auto optimizerType = optimizerJson["type"].get<std::string>();
+			auto learningRate = optimizerJson["learningRate"].get<Scalar>();
+			auto eps = optimizerJson["eps"].get<Scalar>();
+			auto decay = optimizerJson["decay"].get<Scalar>();
+			if (optimizerType == "RMSProp") {
+				RMSProp<Scalar> optimizer;
+				optimizer.learningRate = learningRate;
+				optimizer.m_eps = eps;
+				optimizer.m_decay = decay;
+				setOptimizer(optimizer);
+			}
+
+
+			/* Init layers */
+			init();
+		}
+
+
+        ~Network() = default;
+
+        nlohmann::json toJson()
+        {
+        	/* Layers */
+        	nlohmann::json json;
+        	for (auto i = 0; i < layers.size(); ++i) {
+        		json[std::to_string(i)] = layers[i]->toJson();
+        	}
+
+        	/* Loss */
+        	json["train"]["loss"] = outputLayer->getType();
+
+        	/* Optimizer */
+        	json["train"]["optimizer"] = opt->toJson();
+
+            return json;
+        }
+
+        void save(const std::string filename) const
+        {
+			std::string jsonString = toJson().dump();
+
+			std::map<size_t, std::vector<std::vector<Scalar>>> layersParameters;
+
+			for (auto i = 0; i < layers.size(); ++i) {
+				layersParameters[i] = layers[i]->getParameters();
+			}
+
+			std::ofstream file(filename);
+			cereal::BinaryOutputArchive boa(file);
+
+			boa(jsonString, layersParameters);
+        }
+
+        void load(const std::string filepath)
+        {
+        	std::ifstream file(filepath);
+        	cereal::BinaryInputArchive bia(file);
+
+        	std::string jsonString;
+        	std::map<size_t, std::vector<std::vector<Scalar>>> layersParameters;
+        	bia(jsonString, layersParameters);
+
+        	constructFromJsonString(jsonString);
+
+        	for (auto& e: layersParameters) {
+        		layers[e.first]->setParameters(e.second);
+        	}
+        }
         ///
         /// Add a hidden layer to the neural network
         ///
@@ -187,7 +274,7 @@ class Network
         template<typename T>
         void addLayer(const T &layer)
         {
-            m_layers.push_back(std::make_shared<T>(layer));
+            layers.push_back(std::make_shared<T>(layer));
         }
 
         ///
@@ -201,7 +288,13 @@ class Network
         template<typename T>
         void setOutput(const T &output)
         {
-            m_output = std::make_shared<T>(output);
+            outputLayer = std::make_shared<T>(output);
+        }
+
+        template<typename T>
+        void setOptimizer(const T &optimizer)
+        {
+        	opt = std::make_shared<T>(optimizer);
         }
 
         ///
@@ -209,7 +302,7 @@ class Network
         ///
         int num_layers() const
         {
-            return m_layers.size();
+            return layers.size();
         }
 
         ///
@@ -228,7 +321,7 @@ class Network
         ///
         const Output<Scalar>* get_output() const
         {
-            return m_output.get();
+            return outputLayer.get();
         }
 
         ///
@@ -238,42 +331,44 @@ class Network
         ///                 from the default Callback class.
         ///
         template<typename T>
-        void setCallback(const T &callback)
+        void setCallback(const T &_callback)
         {
-            m_callback = std::make_shared<T>(callback);
+            callback = std::make_shared<T>(_callback);
         }
         ///
         /// Set the default silent callback function
         ///
-        void set_default_callback()
+        void setDefaultCallback()
         {
-            m_callback = &m_default_callback;
+            setCallback(Callback<Scalar>());
         }
+
+        void setRandomEngineSeed(const unsigned int seed)
+		{
+			randomEngine.seed(seed);
+		}
 
         ///
         /// Initialize layer parameters in the network using normal distribution
         ///
         /// \param mu    Mean of the normal distribution.
         /// \param sigma Standard deviation of the normal distribution.
-        /// \param seed  Set the random seed of the %RNG if `seed > 0`, otherwise
+        /// \param seed  Set the random seed of the %std::mt19937 if `seed > 0`, otherwise
         ///              use the current random state.
         ///
-        void init(const Scalar& mu = Scalar(0), const Scalar& sigma = Scalar(0.01),
-                  int seed = -1)
+        void init(const Scalar& mu = Scalar(0), const Scalar& sigma = Scalar(0.01), int seed = -1)
         {
-            check_unit_sizes();
+	        check_unit_sizes();
 
-            if (seed > 0)
-            {
-                m_rng.seed(seed);
-            }
+	        if (seed > 0) {
+		        setRandomEngineSeed(seed);
+	        }
 
-            const int nlayer = num_layers();
+	        const int nlayer = num_layers();
 
-            for (int i = 0; i < nlayer; i++)
-            {
-                m_layers[i]->init(mu, sigma, m_rng);
-            }
+	        for (int i = 0; i < nlayer; i++) {
+		        layers[i]->init(mu, sigma, randomEngine);
+	        }
         }
 
         ///
@@ -287,7 +382,7 @@ class Network
 
             for (int i = 0; i < nlayer; i++)
             {
-                res.push_back(m_layers[i]->get_parameters());
+                res.push_back(layers[i]->get_parameters());
             }
 
             return res;
@@ -309,27 +404,27 @@ class Network
 
             for (int i = 0; i < nlayer; i++)
             {
-                m_layers[i]->set_parameters(param[i]);
+                layers[i]->set_parameters(param[i]);
             }
         }
 
         ///
         /// Get the serialized derivatives of layer parameters
         ///
-        std::vector< std::vector<Scalar>> get_derivatives() const
+        std::vector<std::vector<Scalar>> get_derivatives() const
         {
-            const int nlayer = num_layers();
-            std::vector< std::vector<Scalar>> res;
-            res.reserve(nlayer);
+	        const int nlayer = num_layers();
+	        std::vector<std::vector<Scalar>> res;
+	        res.reserve(nlayer);
 
-            for (int i = 0; i < nlayer; i++)
-            {
-                res.push_back(m_layers[i]->get_derivatives());
-            }
+	        for (int i = 0; i < nlayer; i++) {
+		        res.push_back(layers[i]->get_derivatives());
+	        }
 
-            return res;
+	        return res;
         }
 
+/*
         ///
         /// Debugging tool to check parameter gradients
         ///
@@ -339,7 +434,7 @@ class Network
         {
             if (seed > 0)
             {
-                m_rng.seed(seed);
+                randomEngine.seed(seed);
             }
 
             this->forward(input);
@@ -352,7 +447,7 @@ class Network
             for (int i = 0; i < npoints; i++)
             {
                 // Randomly select a layer
-                const int layer_id = int(m_rng.rand() * nlayer);
+                const int layer_id = int(randomEngine.rand() * nlayer);
                 // Randomly pick a parameter, note that some layers may have no parameters
                 const int nparam = deriv[layer_id].size();
 
@@ -361,19 +456,19 @@ class Network
                     continue;
                 }
 
-                const int param_id = int(m_rng.rand() * nparam);
+                const int param_id = int(randomEngine.rand() * nparam);
                 // Turbulate the parameter a little bit
                 const Scalar old = param[layer_id][param_id];
                 param[layer_id][param_id] -= eps;
                 this->set_parameters(param);
                 this->forward(input);
                 this->backprop(input, target);
-                const Scalar loss_pre = m_output->loss();
+                const Scalar loss_pre = outputLayer->loss();
                 param[layer_id][param_id] += eps * 2;
                 this->set_parameters(param);
                 this->forward(input);
                 this->backprop(input, target);
-                const Scalar loss_post = m_output->loss();
+                const Scalar loss_post = outputLayer->loss();
                 const Scalar deriv_est = (loss_post - loss_pre) / eps / 2;
                 std::cout << "[layer " << layer_id << ", param " << param_id <<
                           "] deriv = " << deriv[layer_id][param_id] << ", est = " << deriv_est <<
@@ -384,65 +479,62 @@ class Network
             // Restore original parameters
             this->set_parameters(param);
         }
-
+*/
         ///
         /// Fit the model based on the given data
         ///
-        /// \param opt        An object that inherits from the Optimizer class, indicating the optimization algorithm to use.
-        /// \param x          The predictors. Each column is an observation.
-        /// \param y          The response variable. Each column is an observation.
+        /// \param x          The predictors. Each row is an observation.
+        /// \param y          The response variable. Each row is an observation.
         /// \param batch_size Mini-batch size.
         /// \param epoch      Number of epochs of training.
-        /// \param seed       Set the random seed of the %RNG if `seed > 0`, otherwise
+        /// \param seed       Set the random seed of the %std::mt19937 if `seed > 0`, otherwise
         ///                   use the current random state.
         ///
         template <typename DerivedX, typename DerivedY>
-        bool fit(Optimizer<Scalar>& opt, const DerivedX& x,
-                 const DerivedY& y,
-                 int batch_size, int epoch, int seed = -1)
+        bool fit(const DerivedX& x, const DerivedY& y, int batch_size, int epoch, int seed = -1)
         {
             // We do not directly use PlainObjectX since it may be row-majored if x is passed as mat.transpose()
-            // We want to force XType and YType to be column-majored
+            // We want to force XType and YType to be row-majored
             const int nlayer = num_layers();
 
-            if (nlayer <= 0)
-            {
-                return false;
-            }
+	        if (nlayer <= 0) {
+		        return false;
+	        }
 
             // Reset optimizer
-            opt.reset();
+            opt->reset();
 
             // Create shuffled mini-batches
-            if (seed > 0)
-            {
-                m_rng.seed(seed);
-            }
+	        if (seed > 0) {
+		        randomEngine.seed(seed);
+	        }
 
             std::vector<DerivedX> x_batches;
             std::vector<DerivedY> y_batches;
-            const int nbatch = internal::create_shuffled_batches(x, y, batch_size, m_rng,
-                               x_batches, y_batches);
+            const int nbatch = internal::create_shuffled_batches(x, y, batch_size, randomEngine,
+                                                                 x_batches, y_batches);
             // Set up callback parameters
-            m_callback->m_nbatch = nbatch;
-            m_callback->m_nepoch = epoch;
+            callback->batchesNumber = nbatch;
+            callback->epochsNumber = epoch;
 
             // Iterations on the whole data set
-            for (int k = 0; k < epoch; k++)
-            {
-                m_callback->m_epoch_id = k;
+	        for (int k = 0; k < epoch; k++) {
+		        callback->epochId = k;
 
-                // Train on each mini-batch
-                for (int i = 0; i < nbatch; i++)
-                {
-                    m_callback->m_batch_id = i;
-                    m_callback->pre_training_batch(this, x_batches[i], y_batches[i]);
-                    this->forward(x_batches[i]);
-                    this->backprop(x_batches[i], y_batches[i]);
-                    this->update(opt);
-                    m_callback->post_training_batch(this, x_batches[i], y_batches[i]);
-                }
-            }
+		        // Train on each mini-batch
+		        for (int i = 0; i < nbatch; i++) {
+			        auto t1 = std::chrono::high_resolution_clock::now();
+			        callback->batchId = i;
+			        //callback->preTrainingBatch(this, x_batches[i], y_batches[i]);
+			        this->forward(x_batches[i]);
+			        this->backprop(x_batches[i], y_batches[i]);
+			        this->update();
+			        callback->postTrainingBatch(this, x_batches[i], y_batches[i]);
+			        auto t2 = std::chrono::high_resolution_clock::now();
+			        auto d = std::chrono::duration_cast < std::chrono::duration < double >> (t2 - t1);
+			        std::cout << "Training time: " << d.count() << " s" << std::endl;
+		        }
+	        }
 
             return true;
         }
@@ -450,24 +542,23 @@ class Network
         ///
         /// Use the fitted model to make predictions
         ///
-        /// \param x The predictors. Each column is an observation.
+        /// \param x The predictors. Each row is an observation.
         ///
         Matrix predict(const Matrix& x)
         {
             const int nlayer = num_layers();
 
-            if (nlayer <= 0)
-            {
-                return Matrix();
-            }
+	        if (nlayer <= 0) {
+		        return Matrix();
+	        }
 
             this->forward(x);
-            return m_layers[nlayer - 1]->output();
+            return layers[nlayer - 1]->output();
         }
 };
 
 
-} // namespace MiniDNN
+} // namespace metric::dnn
 
 
 #endif /* NETWORK_H_ */

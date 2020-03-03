@@ -3,7 +3,7 @@
 //  \file blaze/math/dense/InitializerMatrix.h
 //  \brief Header file for the implementation of a matrix representation of an initializer list
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -233,8 +233,8 @@ class InitializerMatrix
    //**Constructors********************************************************************************
    /*!\name Constructors */
    //@{
-   explicit inline InitializerMatrix( initializer_list< initializer_list<Type> > list ) noexcept;
-   explicit inline InitializerMatrix( initializer_list< initializer_list<Type> > list, size_t n );
+   inline InitializerMatrix( initializer_list< initializer_list<Type> > list ) noexcept;
+   inline InitializerMatrix( initializer_list< initializer_list<Type> > list, size_t n );
 
    InitializerMatrix( const InitializerMatrix& ) = default;
    //@}

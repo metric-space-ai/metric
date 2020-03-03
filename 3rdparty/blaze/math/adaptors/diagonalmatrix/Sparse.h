@@ -3,7 +3,7 @@
 //  \file blaze/math/adaptors/diagonalmatrix/Sparse.h
 //  \brief DiagonalMatrix specialization for sparse matrices
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -59,6 +59,7 @@
 #include "../../../math/Exception.h"
 #include "../../../math/expressions/SparseMatrix.h"
 #include "../../../math/InitializerList.h"
+#include "../../../math/RelaxationFlag.h"
 #include "../../../math/shims/Clear.h"
 #include "../../../math/shims/IsDefault.h"
 #include "../../../math/sparse/SparseMatrix.h"
@@ -71,7 +72,6 @@
 #include "../../../util/constraints/Pointer.h"
 #include "../../../util/constraints/Reference.h"
 #include "../../../util/constraints/Volatile.h"
-#include "../../../util/DisableIf.h"
 #include "../../../util/EnableIf.h"
 #include "../../../util/StaticAssert.h"
 #include "../../../util/Types.h"
@@ -150,10 +150,10 @@ class DiagonalMatrix<MT,SO,false>
    //**Constructors********************************************************************************
    /*!\name Constructors */
    //@{
-   explicit inline DiagonalMatrix();
+            inline DiagonalMatrix();
    explicit inline DiagonalMatrix( size_t n );
-   explicit inline DiagonalMatrix( size_t n, size_t nonzeros );
-   explicit inline DiagonalMatrix( size_t n, const std::vector<size_t>& nonzeros );
+            inline DiagonalMatrix( size_t n, size_t nonzeros );
+            inline DiagonalMatrix( size_t n, const std::vector<size_t>& nonzeros );
             inline DiagonalMatrix( initializer_list< initializer_list<ElementType> > list );
 
    inline DiagonalMatrix( const DiagonalMatrix& m );
@@ -323,7 +323,7 @@ class DiagonalMatrix<MT,SO,false>
    //**********************************************************************************************
 
    //**Friend declarations*************************************************************************
-   template< bool RF, typename MT2, bool SO2, bool DF2 >
+   template< RelaxationFlag RF, typename MT2, bool SO2, bool DF2 >
    friend bool isDefault( const DiagonalMatrix<MT2,SO2,DF2>& m );
 
    template< typename MT2, bool SO2, bool DF2 >

@@ -3,7 +3,7 @@
 //  \file blaze/math/Shims.h
 //  \brief Header file for the mathematical shims
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -43,6 +43,7 @@
 #include "../math/shims/Abs.h"
 #include "../math/shims/Acos.h"
 #include "../math/shims/Acosh.h"
+#include "../math/shims/Arg.h"
 #include "../math/shims/Asin.h"
 #include "../math/shims/Asinh.h"
 #include "../math/shims/Atan.h"
@@ -65,6 +66,7 @@
 #include "../math/shims/Exp2.h"
 #include "../math/shims/Exp10.h"
 #include "../math/shims/Floor.h"
+#include "../math/shims/Frexp.h"
 #include "../math/shims/Greater.h"
 #include "../math/shims/Hypot.h"
 #include "../math/shims/Imaginary.h"
@@ -86,6 +88,7 @@
 #include "../math/shims/Pow2.h"
 #include "../math/shims/Pow3.h"
 #include "../math/shims/Pow4.h"
+#include "../math/shims/PrevMultiple.h"
 #include "../math/shims/Qdrt.h"
 #include "../math/shims/Real.h"
 #include "../math/shims/Reset.h"

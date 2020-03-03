@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/DVecDVecKronExpr.h
 //  \brief Header file for the dense vector/dense vector Kronecker product expression
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -58,9 +58,9 @@
 #include "../../math/traits/KronTrait.h"
 #include "../../math/typetraits/IsExpression.h"
 #include "../../math/typetraits/IsTemporary.h"
+#include "../../system/MacroDisable.h"
 #include "../../util/Assert.h"
 #include "../../util/FunctionTrace.h"
-#include "../../util/MaybeUnused.h"
 #include "../../util/mpl/If.h"
 #include "../../util/TypeList.h"
 #include "../../util/Types.h"
@@ -148,7 +148,7 @@ class DVecDVecKronExpr
    // \param lhs The left-hand side operand of the Kronecker product expression.
    // \param rhs The right-hand side operand of the Kronecker product expression.
    */
-   explicit inline DVecDVecKronExpr( const VT1& lhs, const VT2& rhs ) noexcept
+   inline DVecDVecKronExpr( const VT1& lhs, const VT2& rhs ) noexcept
       : lhs_( lhs )  // Left-hand side dense vector of the Kronecker product expression
       , rhs_( rhs )  // Right-hand side dense vector of the Kronecker product expression
    {}

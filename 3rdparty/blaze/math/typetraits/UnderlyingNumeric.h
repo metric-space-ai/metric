@@ -3,7 +3,7 @@
 //  \file blaze/math/typetraits/UnderlyingNumeric.h
 //  \brief Header file for the UnderlyingNumeric type trait
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -41,8 +41,9 @@
 //*************************************************************************************************
 
 #include "../../util/Complex.h"
+#include "../../util/EnableIf.h"
+#include "../../util/typetraits/IsSame.h"
 #include "../../util/typetraits/RemoveCV.h"
-#include "../../util/typetraits/Void.h"
 
 
 namespace blaze {
@@ -136,7 +137,7 @@ struct UnderlyingNumericHelper1< complex<T>, void >
 };
 
 template< typename T >
-struct UnderlyingNumericHelper1< T, Void_t< typename T::ElementType > >
+struct UnderlyingNumericHelper1< T, EnableIf_t< !IsSame_v< T, typename T::ElementType > > >
 {
    using Type = typename UnderlyingNumericHelper1< typename T::ElementType >::Type;
 };
@@ -156,7 +157,7 @@ struct UnderlyingNumericHelper2
 };
 
 template< typename T >
-struct UnderlyingNumericHelper2< T, Void_t< typename T::value_type > >
+struct UnderlyingNumericHelper2< T, EnableIf_t< !IsSame_v< T, typename T::value_type > > >
 {
    using Type = typename UnderlyingNumericHelper1< typename T::value_type >::Type;
 };

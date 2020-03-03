@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/SMatEvalExpr.h
 //  \brief Header file for the sparse matrix evaluation expression
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -799,35 +799,6 @@ inline decltype(auto) eval( const SparseMatrix<MT,SO>& sm )
    using ReturnType = const SMatEvalExpr<MT,SO>;
    return ReturnType( ~sm );
 }
-//*************************************************************************************************
-
-
-
-
-//=================================================================================================
-//
-//  GLOBAL RESTRUCTURING FUNCTIONS
-//
-//=================================================================================================
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-/*!\brief Evaluation of the given sparse matrix evaluation expression \a sm.
-// \ingroup sparse_matrix
-//
-// \param sm The input evaluation expression.
-// \return The evaluated sparse matrix.
-//
-// This function implements a performance optimized treatment of the evaluation of a sparse matrix
-// evaluation expression.
-*/
-template< typename MT  // Type of the sparse matrix
-        , bool SO >    // Storage order
-inline decltype(auto) eval( const SMatEvalExpr<MT,SO>& sm )
-{
-   return sm;
-}
-/*! \endcond */
 //*************************************************************************************************
 
 } // namespace blaze

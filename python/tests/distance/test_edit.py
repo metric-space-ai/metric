@@ -1,4 +1,4 @@
-import metric
+from metric.distance import Edit
 import numpy
 
 
@@ -6,7 +6,7 @@ def test_close_strings():
     str1 = "1011001100110011001111111"
     str2 = "1000011001100110011011100"
 
-    distance = metric.Edit()
+    distance = Edit()
 
     assert distance(str1, str2) == 5
 
@@ -15,7 +15,7 @@ def test_different_strings():
     str1 = "1011001100110011001111111"
     str2 = "Absolutely different string"
 
-    distance = metric.Edit()
+    distance = Edit()
 
     assert distance(str1, str2) == 27
 
@@ -29,6 +29,6 @@ def test_array():
                      0.0129766138306992, 0.00923506810444738, 1.49393468371558e-07, 0.00619896971968280,
                      0.212322021636953, 0.257245700714104, 1.59223791395715])
 
-    distance = metric.Edit()
+    distance = Edit()
 
     assert distance(a, b) == 10

@@ -3,7 +3,7 @@
 //  \file blaze/math/adaptors/symmetricmatrix/SparseNumeric.h
 //  \brief SymmetricMatrix specialization for sparse matrices with numeric element type
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -62,6 +62,7 @@
 #include "../../../math/expressions/Forward.h"
 #include "../../../math/expressions/SparseMatrix.h"
 #include "../../../math/InitializerList.h"
+#include "../../../math/RelaxationFlag.h"
 #include "../../../math/shims/Clear.h"
 #include "../../../math/shims/Conjugate.h"
 #include "../../../math/shims/IsDefault.h"
@@ -77,7 +78,6 @@
 #include "../../../util/constraints/Pointer.h"
 #include "../../../util/constraints/Reference.h"
 #include "../../../util/constraints/Volatile.h"
-#include "../../../util/DisableIf.h"
 #include "../../../util/EnableIf.h"
 #include "../../../util/MaybeUnused.h"
 #include "../../../util/StaticAssert.h"
@@ -310,10 +310,10 @@ class SymmetricMatrix<MT,SO,false,true>
    //**Constructors********************************************************************************
    /*!\name Constructors */
    //@{
-   explicit inline SymmetricMatrix();
+            inline SymmetricMatrix();
    explicit inline SymmetricMatrix( size_t n );
-   explicit inline SymmetricMatrix( size_t n, size_t nonzeros );
-   explicit inline SymmetricMatrix( size_t n, const std::vector<size_t>& nonzeros );
+            inline SymmetricMatrix( size_t n, size_t nonzeros );
+            inline SymmetricMatrix( size_t n, const std::vector<size_t>& nonzeros );
             inline SymmetricMatrix( initializer_list< initializer_list<ElementType> > list );
 
    inline SymmetricMatrix( const SymmetricMatrix& m );
@@ -375,8 +375,7 @@ class SymmetricMatrix<MT,SO,false,true>
       -> EnableIf_t< IsComputation_v<MT2>, SymmetricMatrix& >;
 
    template< typename MT2 >
-   inline auto operator+=( const Matrix<MT2,!SO>& rhs )
-      -> SymmetricMatrix&;
+   inline auto operator+=( const Matrix<MT2,!SO>& rhs ) -> SymmetricMatrix&;
 
    template< typename MT2 >
    inline auto operator-=( const Matrix<MT2,SO>& rhs )
@@ -387,8 +386,7 @@ class SymmetricMatrix<MT,SO,false,true>
       -> EnableIf_t< IsComputation_v<MT2>, SymmetricMatrix& >;
 
    template< typename MT2 >
-   inline auto operator-=( const Matrix<MT2,!SO>& rhs )
-      -> SymmetricMatrix&;
+   inline auto operator-=( const Matrix<MT2,!SO>& rhs ) -> SymmetricMatrix&;
 
    template< typename MT2 >
    inline auto operator%=( const Matrix<MT2,SO>& rhs )
@@ -504,7 +502,7 @@ class SymmetricMatrix<MT,SO,false,true>
    //**********************************************************************************************
 
    //**Friend declarations*************************************************************************
-   template< bool RF, typename MT2, bool SO2, bool DF2, bool NF2 >
+   template< RelaxationFlag RF, typename MT2, bool SO2, bool DF2, bool NF2 >
    friend bool isDefault( const SymmetricMatrix<MT2,SO2,DF2,NF2>& m );
    //**********************************************************************************************
 

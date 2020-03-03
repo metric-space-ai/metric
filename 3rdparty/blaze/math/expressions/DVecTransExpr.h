@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/DVecTransExpr.h
 //  \brief Header file for the dense vector transpose expression
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -40,7 +40,6 @@
 // Includes
 //*************************************************************************************************
 
-#include <iterator>
 #include "../../math/Aliases.h"
 #include "../../math/constraints/DenseVector.h"
 #include "../../math/constraints/TransposeFlag.h"
@@ -60,6 +59,7 @@
 #include "../../math/typetraits/IsPadded.h"
 #include "../../math/typetraits/RequiresEvaluation.h"
 #include "../../system/Inline.h"
+#include "../../system/MacroDisable.h"
 #include "../../util/Assert.h"
 #include "../../util/EnableIf.h"
 #include "../../util/FunctionTrace.h"
@@ -89,12 +89,10 @@ template< typename VT  // Type of the dense vector
         , bool TF >    // Transpose flag
 class DVecTransExpr
    : public VecTransExpr< DenseVector< DVecTransExpr<VT,TF>, TF > >
-   , private If< IsComputation_v<VT>, Computation, Transformation >::Type
+   , private If_t< IsComputation_v<VT>, Computation, Transformation >
 {
  private:
    //**Type definitions****************************************************************************
-   using CT = CompositeType_t<VT>;  //!< Composite type of the dense vector expression.
-
    //! Definition of the GetConstIterator type trait.
    BLAZE_CREATE_GET_TYPE_MEMBER_TYPE_TRAIT( GetConstIterator, ConstIterator, INVALID_TYPE );
    //**********************************************************************************************
@@ -782,71 +780,6 @@ inline decltype(auto) transTo( const DenseVector<VT,TF>& dv )
 {
    return transTo_backend( ~dv, BoolConstant<TTF == TF>() );
 }
-//*************************************************************************************************
-
-
-
-
-//=================================================================================================
-//
-//  GLOBAL RESTRUCTURING FUNCTIONS
-//
-//=================================================================================================
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-/*!\brief Calculating the transpose of a transpose dense vector.
-// \ingroup dense_vector
-//
-// \param dv The dense vector to be (re-)transposed.
-// \return The transpose of the transpose vector.
-//
-// This function implements a performance optimized treatment of the transpose operation on a
-// dense vector transpose expression. It returns an expression representing the transpose of a
-// transpose dense vector:
-
-   \code
-   using blaze::columnVector;
-
-   blaze::DynamicVector<double,columnVector> a, b;
-   // ... Resizing and initialization
-   b = trans( trans( a ) );
-   \endcode
-*/
-template< typename VT  // Type of the dense vector
-        , bool TF >    // Transpose flag
-inline decltype(auto) trans( const DVecTransExpr<VT,TF>& dv )
-{
-   BLAZE_FUNCTION_TRACE;
-
-   return dv.operand();
-}
-/*! \endcond */
-//*************************************************************************************************
-
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-/*!\brief Calculation of the transpose of the given dense vector-scalar multiplication.
-// \ingroup dense_vector
-//
-// \param dv The dense vector-scalar multiplication expression to be transposed.
-// \return The transpose of the expression.
-//
-// This operator implements the performance optimized treatment of the transpose of a dense
-// vector-scalar multiplication. It restructures the expression \f$ a=trans(b*s1) \f$ to the
-// expression \f$ a=trans(b)*s1 \f$.
-*/
-template< typename VT  // Type of the left-hand side dense vector
-        , typename ST  // Type of the right-hand side scalar value
-        , bool TF >    // Transpose flag
-inline decltype(auto) trans( const DVecScalarMultExpr<VT,ST,TF>& dv )
-{
-   BLAZE_FUNCTION_TRACE;
-
-   return trans( dv.leftOperand() ) * dv.rightOperand();
-}
-/*! \endcond */
 //*************************************************************************************************
 
 

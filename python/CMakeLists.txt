@@ -12,15 +12,6 @@ project(metric_py DESCRIPTION "metric python binding")
 SET(SOURCE_PATH ${CMAKE_SOURCE_DIR}/src)
 SET(METRIC_SOURCE_PATH ${CMAKE_SOURCE_DIR}/..)
 
-SET(SRC
-	src/init.cpp
-    src/metric_converters.cpp
-)
-
-add_library(metric_py SHARED ${SRC})
-set_target_properties(metric_py PROPERTIES PREFIX "")
-set_target_properties(metric_py PROPERTIES SOVERSION 1)
-
 # rasbian has python3 while arch has python
 find_package(Boost 1.72 COMPONENTS python3)
 If (Boost_FOUND)
@@ -39,15 +30,18 @@ else ()
 find_package(PkgConfig REQUIRED)
 endif ()
 
-set_target_properties(metric_py PROPERTIES CXX_STANDARD 17)
-target_include_directories(metric_py PRIVATE
+set(COMMON_LIBRARIES
+    ${Boost_LIBRARIES}
+    ${PYTHON3_LIBRARIES}
+    ${lapackblas_libraries}
+)
+
+SET(HEADER_INCLUDE_PATH
     ${PYTHON3_INCLUDE_DIRS}
     ${SOURCE_PATH}
     ${METRIC_SOURCE_PATH}
 )
 
-target_link_libraries(metric_py ${Boost_LIBRARIES} ${PYTHON3_LIBRARIES} ${lapackblas_libraries})
+include_directories(${HEADER_INCLUDE_PATH})
 
-add_subdirectory(src/distance)
-add_subdirectory(src/mapping)
-
+add_subdirectory(src)

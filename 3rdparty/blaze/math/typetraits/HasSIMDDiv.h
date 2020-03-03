@@ -3,7 +3,7 @@
 //  \file blaze/math/typetraits/HasSIMDDiv.h
 //  \brief Header file for the HasSIMDDiv type trait
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -76,20 +76,22 @@ struct HasSIMDDivHelper
 //*************************************************************************************************
 /*! \cond BLAZE_INTERNAL */
 template< typename T1, typename T2 >
-struct HasSIMDDivHelper< T1, T2, EnableIf_t< IsNumeric_v<T1> && IsIntegral_v<T1> &&
-                                             IsSigned_v<T1> && IsNumeric_v<T2> &&
-                                             IsIntegral_v<T2> && IsSigned_v<T2> &&
+struct HasSIMDDivHelper< T1, T2, EnableIf_t< ( IsNumeric_v<T1> && IsNumeric_v<T2> ) &&
+                                             ( IsIntegral_v<T1> && IsIntegral_v<T2> ) &&
+                                             !( IsSigned_v<T1> ^ IsSigned_v<T2> ) &&
                                              sizeof(T1) == sizeof(T2) > >
    : public BoolConstant< bool( BLAZE_SVML_MODE ) &&
-                          ( ( bool( BLAZE_MIC_MODE      ) && sizeof(T1) >= 4UL ) ||
+                          ( ( bool( BLAZE_AVX2_MODE     ) ) ||
+                            ( bool( BLAZE_MIC_MODE      ) && sizeof(T1) >= 4UL ) ||
                             ( bool( BLAZE_AVX512BW_MODE ) && sizeof(T1) <= 2UL ) ||
                             ( bool( BLAZE_AVX512F_MODE  ) && sizeof(T1) >= 4UL ) ) >
 {};
 
 template< typename T >
-struct HasSIMDDivHelper< complex<T>, T, EnableIf_t< IsNumeric_v<T> && IsIntegral_v<T> && IsSigned_v<T> > >
+struct HasSIMDDivHelper< complex<T>, T, EnableIf_t< IsNumeric_v<T> && IsIntegral_v<T> > >
    : public BoolConstant< bool( BLAZE_SVML_MODE ) &&
-                          ( ( bool( BLAZE_MIC_MODE      ) && sizeof(T) >= 4UL ) ||
+                          ( ( bool( BLAZE_AVX2_MODE     ) ) ||
+                            ( bool( BLAZE_MIC_MODE      ) && sizeof(T) >= 4UL ) ||
                             ( bool( BLAZE_AVX512BW_MODE ) && sizeof(T) <= 2UL ) ||
                             ( bool( BLAZE_AVX512F_MODE  ) && sizeof(T) >= 4UL ) ) >
 {};

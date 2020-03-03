@@ -3,7 +3,7 @@
 //  \file blaze/math/adaptors/symmetricmatrix/DenseNumeric.h
 //  \brief SymmetricMatrix specialization for dense matrices with numeric element type
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -62,6 +62,7 @@
 #include "../../../math/expressions/Forward.h"
 #include "../../../math/InitializerList.h"
 #include "../../../math/InversionFlag.h"
+#include "../../../math/RelaxationFlag.h"
 #include "../../../math/shims/Clear.h"
 #include "../../../math/shims/Conjugate.h"
 #include "../../../math/shims/IsZero.h"
@@ -82,7 +83,6 @@
 #include "../../../util/constraints/Pointer.h"
 #include "../../../util/constraints/Reference.h"
 #include "../../../util/constraints/Volatile.h"
-#include "../../../util/DisableIf.h"
 #include "../../../util/EnableIf.h"
 #include "../../../util/MaybeUnused.h"
 #include "../../../util/mpl/If.h"
@@ -731,18 +731,18 @@ class SymmetricMatrix<MT,SO,true,true>
    //**Constructors********************************************************************************
    /*!\name Constructors */
    //@{
-   explicit inline SymmetricMatrix();
+            inline SymmetricMatrix();
    explicit inline SymmetricMatrix( size_t n );
             inline SymmetricMatrix( initializer_list< initializer_list<ElementType> > list );
 
    template< typename Other >
-   explicit inline SymmetricMatrix( size_t n, const Other* array );
+   inline SymmetricMatrix( size_t n, const Other* array );
 
    template< typename Other, size_t N >
-   explicit inline SymmetricMatrix( const Other (&array)[N][N] );
+   inline SymmetricMatrix( const Other (&array)[N][N] );
 
-   explicit inline SymmetricMatrix( ElementType* ptr, size_t n );
-   explicit inline SymmetricMatrix( ElementType* ptr, size_t n, size_t nn );
+   inline SymmetricMatrix( ElementType* ptr, size_t n );
+   inline SymmetricMatrix( ElementType* ptr, size_t n, size_t nn );
 
    inline SymmetricMatrix( const SymmetricMatrix& m );
    inline SymmetricMatrix( SymmetricMatrix&& m ) noexcept;
@@ -830,8 +830,7 @@ class SymmetricMatrix<MT,SO,true,true>
       -> EnableIf_t< IsComputation_v<MT2>, SymmetricMatrix& >;
 
    template< typename MT2 >
-   inline auto operator%=( const Matrix<MT2,!SO>& rhs )
-      -> SymmetricMatrix&;
+   inline auto operator%=( const Matrix<MT2,!SO>& rhs ) -> SymmetricMatrix&;
 
    template< typename ST >
    inline auto operator*=( ST rhs ) -> EnableIf_t< IsNumeric_v<ST>, SymmetricMatrix& >;
@@ -913,7 +912,7 @@ class SymmetricMatrix<MT,SO,true,true>
    //**********************************************************************************************
 
    //**Friend declarations*************************************************************************
-   template< bool RF, typename MT2, bool SO2, bool DF2, bool NF2 >
+   template< RelaxationFlag RF, typename MT2, bool SO2, bool DF2, bool NF2 >
    friend bool isDefault( const SymmetricMatrix<MT2,SO2,DF2,NF2>& m );
 
    template< InversionFlag IF, typename MT2, bool SO2 >

@@ -3,7 +3,7 @@
 //  \file blaze/math/adaptors/uniuppermatrix/Dense.h
 //  \brief UniUpperMatrix specialization for dense matrices
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -85,7 +85,6 @@
 #include "../../../util/constraints/Reference.h"
 #include "../../../util/constraints/Vectorizable.h"
 #include "../../../util/constraints/Volatile.h"
-#include "../../../util/DisableIf.h"
 #include "../../../util/EnableIf.h"
 #include "../../../util/IntegralConstant.h"
 #include "../../../util/MaybeUnused.h"
@@ -645,20 +644,20 @@ class UniUpperMatrix<MT,SO,true>
    //**Constructors********************************************************************************
    /*!\name Constructors */
    //@{
-                           explicit inline UniUpperMatrix();
+                                    inline UniUpperMatrix();
    template< typename A1 > explicit inline UniUpperMatrix( const A1& a1 );
-                           explicit inline UniUpperMatrix( size_t n, const ElementType& init );
+                                    inline UniUpperMatrix( size_t n, const ElementType& init );
 
    inline UniUpperMatrix( initializer_list< initializer_list<ElementType> > list );
 
    template< typename Other >
-   explicit inline UniUpperMatrix( size_t n, const Other* array );
+   inline UniUpperMatrix( size_t n, const Other* array );
 
    template< typename Other, size_t N >
-   explicit inline UniUpperMatrix( const Other (&array)[N][N] );
+   inline UniUpperMatrix( const Other (&array)[N][N] );
 
-   explicit inline UniUpperMatrix( ElementType* ptr, size_t n );
-   explicit inline UniUpperMatrix( ElementType* ptr, size_t n, size_t nn );
+   inline UniUpperMatrix( ElementType* ptr, size_t n );
+   inline UniUpperMatrix( ElementType* ptr, size_t n, size_t nn );
 
    inline UniUpperMatrix( const UniUpperMatrix& m );
    inline UniUpperMatrix( UniUpperMatrix&& m ) noexcept;
@@ -750,8 +749,8 @@ class UniUpperMatrix<MT,SO,true>
    inline void   shrinkToFit();
    inline void   swap( UniUpperMatrix& m ) noexcept;
 
-   static inline constexpr size_t maxNonZeros() noexcept;
-   static inline constexpr size_t maxNonZeros( size_t n ) noexcept;
+   static constexpr size_t maxNonZeros() noexcept;
+   static constexpr size_t maxNonZeros( size_t n ) noexcept;
    //@}
    //**********************************************************************************************
 
@@ -2360,7 +2359,7 @@ inline void UniUpperMatrix<MT,SO,true>::swap( UniUpperMatrix& m ) noexcept
 */
 template< typename MT  // Type of the adapted dense matrix
         , bool SO >    // Storage order of the adapted dense matrix
-inline constexpr size_t UniUpperMatrix<MT,SO,true>::maxNonZeros() noexcept
+constexpr size_t UniUpperMatrix<MT,SO,true>::maxNonZeros() noexcept
 {
    BLAZE_CONSTRAINT_MUST_BE_STATIC_TYPE( MT );
 
@@ -2382,7 +2381,7 @@ inline constexpr size_t UniUpperMatrix<MT,SO,true>::maxNonZeros() noexcept
 */
 template< typename MT  // Type of the adapted dense matrix
         , bool SO >    // Storage order of the adapted dense matrix
-inline constexpr size_t UniUpperMatrix<MT,SO,true>::maxNonZeros( size_t n ) noexcept
+constexpr size_t UniUpperMatrix<MT,SO,true>::maxNonZeros( size_t n ) noexcept
 {
    return ( ( n + 1UL ) * n ) / 2UL;
 }

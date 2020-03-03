@@ -5,7 +5,9 @@
 #include "../Callback.h"
 #include "../Network.h"
 
-namespace MiniDNN
+namespace metric
+{
+namespace dnn
 {
 
 
@@ -18,28 +20,31 @@ template <typename Scalar>
 class VerboseCallback: public Callback<Scalar>
 {
 	private:
-		using Matrix = blaze::DynamicMatrix<Scalar, blaze::columnMajor>;
-		using IntegerVector = blaze::DynamicVector<int, blaze::rowVector>;
+		using typename Callback<Scalar>::Matrix;
+		using typename Callback<Scalar>::IntegerVector;
 
     public:
-        void post_training_batch(const Network<Scalar>* net, const Matrix& x, const Matrix& y)
+        void postTrainingBatch(const Network<Scalar>* net, const Matrix& x, const Matrix& y)
         {
             const Scalar loss = net->get_output()->loss();
-            std::cout << "[Epoch " << this->m_epoch_id << ", batch " << this->m_batch_id << "] Loss = "
+            std::cout << "[Epoch " << this->epochId << "/" << this->epochsNumber;
+            std::cout << ", batch " << this->batchId << "/" << this->batchesNumber << "] Loss = "
                       << loss << std::endl;
         }
 
-        void post_training_batch(const Network<Scalar>* net, const Matrix& x,
-                                 const IntegerVector& y)
+        /*void postTrainingBatch(const Network<Scalar>* net, const Matrix& x,
+                               const IntegerVector& y)
         {
             Scalar loss = net->get_output()->loss();
-            std::cout << "[Epoch " << this->m_epoch_id << ", batch " << this->m_batch_id << "] Loss = "
+            std::cout << "[Epoch " << this->epochId << "/" << this->epochsNumber;
+            std::cout << ", batch " << this->batchId << "/" << this->batchesNumber << "] Loss = "
                       << loss << std::endl;
-        }
+        }*/
 };
 
 
-} // namespace MiniDNN
+} // namespace dnn
+} // namespace metric
 
 
 #endif /* CALLBACK_VERBOSECALLBACK_H_ */

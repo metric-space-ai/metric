@@ -15,12 +15,14 @@ void export_metric_sorensen();
 void export_metric_SSIM();
 void export_metric_standards();
 void export_metric_TWED();
+void export_metric_Edit();
 
-BOOST_PYTHON_MODULE(distance) {
+BOOST_PYTHON_MODULE(_distance) {
     export_metric_EMD();
     export_metric_kohonen();
     export_metric_sorensen();
     export_metric_SSIM();
     export_metric_standards();
     export_metric_TWED();
+    export_metric_Edit();
 }

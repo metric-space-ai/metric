@@ -19,4 +19,3 @@ struct MPLHelpType
 {
     typedef T agrument_type;
 };
-

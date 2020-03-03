@@ -3,7 +3,7 @@
 //  \file blaze/math/views/submatrix/SubmatrixData.h
 //  \brief Header file for the implementation of the SubmatrixData class template
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -100,7 +100,7 @@ class SubmatrixData<>
    /*!\name Constructors */
    //@{
    template< typename... RSAs >
-   explicit inline SubmatrixData( size_t rindex, size_t cindex, size_t m, size_t n, RSAs... args );
+   inline SubmatrixData( size_t rindex, size_t cindex, size_t m, size_t n, RSAs... args );
 
    SubmatrixData( const SubmatrixData& ) = default;
    //@}
@@ -284,10 +284,10 @@ class SubmatrixData<I,J,M,N>
    //**Utility functions***************************************************************************
    /*!\name Utility functions */
    //@{
-   static inline constexpr size_t row    () noexcept;
-   static inline constexpr size_t column () noexcept;
-   static inline constexpr size_t rows   () noexcept;
-   static inline constexpr size_t columns() noexcept;
+   static constexpr size_t row    () noexcept;
+   static constexpr size_t column () noexcept;
+   static constexpr size_t rows   () noexcept;
+   static constexpr size_t columns() noexcept;
    //@}
    //**********************************************************************************************
 };
@@ -324,7 +324,7 @@ template< size_t I    // Index of the first row
         , size_t J    // Index of the first column
         , size_t M    // Number of rows
         , size_t N >  // Number of columns
-inline constexpr size_t SubmatrixData<I,J,M,N>::row() noexcept
+constexpr size_t SubmatrixData<I,J,M,N>::row() noexcept
 {
    return I;
 }
@@ -342,7 +342,7 @@ template< size_t I    // Index of the first row
         , size_t J    // Index of the first column
         , size_t M    // Number of rows
         , size_t N >  // Number of columns
-inline constexpr size_t SubmatrixData<I,J,M,N>::column() noexcept
+constexpr size_t SubmatrixData<I,J,M,N>::column() noexcept
 {
    return J;
 }
@@ -360,7 +360,7 @@ template< size_t I    // Index of the first row
         , size_t J    // Index of the first column
         , size_t M    // Number of rows
         , size_t N >  // Number of columns
-inline constexpr size_t SubmatrixData<I,J,M,N>::rows() noexcept
+constexpr size_t SubmatrixData<I,J,M,N>::rows() noexcept
 {
    return M;
 }
@@ -378,7 +378,7 @@ template< size_t I    // Index of the first row
         , size_t J    // Index of the first column
         , size_t M    // Number of rows
         , size_t N >  // Number of columns
-inline constexpr size_t SubmatrixData<I,J,M,N>::columns() noexcept
+constexpr size_t SubmatrixData<I,J,M,N>::columns() noexcept
 {
    return N;
 }
