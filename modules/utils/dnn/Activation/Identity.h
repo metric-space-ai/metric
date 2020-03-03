@@ -3,7 +3,9 @@
 
 #include "../../../../3rdparty/blaze/Math.h"
 
-namespace MiniDNN
+namespace metric
+{
+namespace dnn
 {
 
 
@@ -20,13 +22,18 @@ template<typename Scalar>
 class Identity
 {
 	private:
-		using Matrix = blaze::DynamicMatrix<Scalar, blaze::columnMajor>;
-    public:
+		using Matrix = blaze::DynamicMatrix<Scalar>;
+		using ColumnMatrix = blaze::DynamicMatrix<Scalar, blaze::columnMajor>;
+public:
+		static std::string getType()
+		{
+			return "Identity";
+		}
+
         // a = activation(z) = z
         // Z = [z1, ..., zn], A = [a1, ..., an], n observations
         static inline void activate(const Matrix& Z, Matrix& A)
         {
-        	/*noalias*/
             A = Z;
         }
 
@@ -36,15 +43,21 @@ class Identity
         // Z = [z1, ..., zn], G = [g1, ..., gn], F = [f1, ..., fn]
         // Note: When entering this function, Z and G may point to the same matrix
         static inline void apply_jacobian(const Matrix& Z, const Matrix& A,
-                                          const Matrix& F, Matrix& G)
+                                          const Matrix& F, ColumnMatrix& G)
         {
-	        /*noalias*/
             G = F;
         }
+
+		static inline void apply_jacobian(const Matrix& Z, const Matrix& A,
+										  const Matrix& F, Matrix& G)
+		{
+			G = F;
+		}
 };
 
 
-} // namespace MiniDNN
+	} // namespace dnn
+} // namespace metric
 
 
 #endif /* ACTIVATION_IDENTITY_H_ */

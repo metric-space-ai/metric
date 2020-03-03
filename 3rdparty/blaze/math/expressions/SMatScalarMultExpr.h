@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/SMatScalarMultExpr.h
 //  \brief Header file for the sparse matrix/scalar multiplication expression
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -55,7 +55,6 @@
 #include "../../math/shims/Serial.h"
 #include "../../math/sparse/ValueIndexPair.h"
 #include "../../math/traits/MultTrait.h"
-#include "../../math/typetraits/IsComputation.h"
 #include "../../math/typetraits/IsExpression.h"
 #include "../../math/typetraits/IsInvertible.h"
 #include "../../math/typetraits/IsTemporary.h"
@@ -65,7 +64,6 @@
 #include "../../util/Assert.h"
 #include "../../util/constraints/Numeric.h"
 #include "../../util/constraints/SameType.h"
-#include "../../util/DisableIf.h"
 #include "../../util/EnableIf.h"
 #include "../../util/FunctionTrace.h"
 #include "../../util/MaybeUnused.h"
@@ -309,7 +307,7 @@ class SMatScalarMultExpr
    // \param matrix The left-hand side sparse matrix of the multiplication expression.
    // \param scalar The right-hand side scalar of the multiplication expression.
    */
-   explicit inline SMatScalarMultExpr( const MT& matrix, ST scalar ) noexcept
+   inline SMatScalarMultExpr( const MT& matrix, ST scalar ) noexcept
       : matrix_( matrix )  // Left-hand side sparse matrix of the multiplication expression
       , scalar_( scalar )  // Right-hand side scalar of the multiplication expression
    {}
@@ -349,10 +347,10 @@ class SMatScalarMultExpr
    //**********************************************************************************************
 
    //**Begin function******************************************************************************
-   /*!\brief Returns an iterator to the first non-zero element of row \a i.
+   /*!\brief Returns an iterator to the first non-zero element of row/column \a i.
    //
-   // \param i The row index.
-   // \return Iterator to the first non-zero element of row \a i.
+   // \param i The row/column index.
+   // \return Iterator to the first non-zero element of row/column \a i.
    */
    inline ConstIterator begin( size_t i ) const {
       return ConstIterator( matrix_.begin(i), scalar_ );
@@ -360,10 +358,10 @@ class SMatScalarMultExpr
    //**********************************************************************************************
 
    //**End function********************************************************************************
-   /*!\brief Returns an iterator just past the last non-zero element of row \a i.
+   /*!\brief Returns an iterator just past the last non-zero element of row/column \a i.
    //
-   // \param i The row index.
-   // \return Iterator just past the last non-zero element of row \a i.
+   // \param i The row/column index.
+   // \return Iterator just past the last non-zero element of row/column \a i.
    */
    inline ConstIterator end( size_t i ) const {
       return ConstIterator( matrix_.end(i), scalar_ );

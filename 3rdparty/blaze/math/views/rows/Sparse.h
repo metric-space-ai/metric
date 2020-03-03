@@ -3,7 +3,7 @@
 //  \file blaze/math/views/rows/Sparse.h
 //  \brief Rows specialization for sparse matrices
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -58,7 +58,6 @@
 #include "../../../math/expressions/SparseMatrix.h"
 #include "../../../math/expressions/View.h"
 #include "../../../math/InitializerList.h"
-#include "../../../math/RelaxationFlag.h"
 #include "../../../math/shims/IsDefault.h"
 #include "../../../math/sparse/SparseElement.h"
 #include "../../../math/traits/AddTrait.h"
@@ -725,7 +724,7 @@ inline Rows<MT,true,false,SF,CRAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( rhs.canAlias( &matrix_ ) ) {
+   if( rhs.canAlias( this ) ) {
       const ResultType tmp( rhs );
       left.reset();
       smpAssign( left, tmp );
@@ -788,7 +787,7 @@ inline Rows<MT,true,false,SF,CRAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( IsReference_v<Right> && right.canAlias( &matrix_ ) ) {
+   if( IsReference_v<Right> && right.canAlias( this ) ) {
       const ResultType_t<MT2> tmp( right );
       left.reset();
       smpAssign( left, tmp );
@@ -1925,7 +1924,7 @@ template< typename MT         // Type of the sparse matrix
 template< typename Other >    // Data type of the foreign expression
 inline bool Rows<MT,true,false,SF,CRAs...>::canAlias( const Other* alias ) const noexcept
 {
-   return matrix_.isAliased( alias );
+   return matrix_.isAliased( &unview( *alias ) );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -1948,7 +1947,7 @@ template< typename MT         // Type of the sparse matrix
 template< typename Other >    // Data type of the foreign expression
 inline bool Rows<MT,true,false,SF,CRAs...>::isAliased( const Other* alias ) const noexcept
 {
-   return matrix_.isAliased( alias );
+   return matrix_.isAliased( &unview( *alias ) );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -3157,7 +3156,7 @@ inline Rows<MT,false,false,false,CRAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( rhs.canAlias( &matrix_ ) ) {
+   if( rhs.canAlias( this ) ) {
       const ResultType tmp( rhs );
       left.reset();
       smpAssign( left, tmp );
@@ -3219,7 +3218,7 @@ inline Rows<MT,false,false,false,CRAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( IsReference_v<Right> && right.canAlias( &matrix_ ) ) {
+   if( IsReference_v<Right> && right.canAlias( this ) ) {
       const ResultType_t<MT2> tmp( right );
       if( IsSparseMatrix_v< ResultType_t<MT2> > )
          left.reset();
@@ -4387,7 +4386,7 @@ template< typename MT         // Type of the sparse matrix
 template< typename Other >    // Data type of the foreign expression
 inline bool Rows<MT,false,false,false,CRAs...>::canAlias( const Other* alias ) const noexcept
 {
-   return matrix_.isAliased( alias );
+   return matrix_.isAliased( &unview( *alias ) );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -4409,7 +4408,7 @@ template< typename MT         // Type of the sparse matrix
 template< typename Other >    // Data type of the foreign expression
 inline bool Rows<MT,false,false,false,CRAs...>::isAliased( const Other* alias ) const noexcept
 {
-   return matrix_.isAliased( alias );
+   return matrix_.isAliased( &unview( *alias ) );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -5902,7 +5901,7 @@ template< typename MT         // Type of the sparse matrix
 template< typename Other >    // Data type of the foreign expression
 inline bool Rows<MT,false,false,true,CRAs...>::canAlias( const Other* alias ) const noexcept
 {
-   return matrix_.isAliased( alias );
+   return matrix_.isAliased( &unview( *alias ) );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -5924,7 +5923,7 @@ template< typename MT         // Type of the sparse matrix
 template< typename Other >    // Data type of the foreign expression
 inline bool Rows<MT,false,false,true,CRAs...>::isAliased( const Other* alias ) const noexcept
 {
-   return matrix_.isAliased( alias );
+   return matrix_.isAliased( &unview( *alias ) );
 }
 /*! \endcond */
 //*************************************************************************************************

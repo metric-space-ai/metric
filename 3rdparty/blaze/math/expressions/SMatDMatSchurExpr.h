@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/SMatDMatSchurExpr.h
 //  \brief Header file for the sparse matrix/dense matrix Schur product expression
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -70,7 +70,6 @@
 #include "../../math/typetraits/IsZero.h"
 #include "../../math/typetraits/Size.h"
 #include "../../util/Assert.h"
-#include "../../util/DisableIf.h"
 #include "../../util/EnableIf.h"
 #include "../../util/FunctionTrace.h"
 #include "../../util/IntegralConstant.h"
@@ -309,7 +308,7 @@ class SMatDMatSchurExpr
    // \param lhs The left-hand side sparse matrix operand of the Schur product expression.
    // \param rhs The right-hand side dense matrix operand of the Schur product expression.
    */
-   explicit inline SMatDMatSchurExpr( const MT1& lhs, const MT2& rhs ) noexcept
+   inline SMatDMatSchurExpr( const MT1& lhs, const MT2& rhs ) noexcept
       : lhs_( lhs )  // Left-hand side sparse matrix of the Schur product expression
       , rhs_( rhs )  // Right-hand side dense matrix of the Schur product expression
    {

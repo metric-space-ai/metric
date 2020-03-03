@@ -3,7 +3,7 @@
 //  \file blaze/math/dense/StaticMatrix.h
 //  \brief Header file for the implementation of a fixed-size matrix
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -40,20 +40,25 @@
 // Includes
 //*************************************************************************************************
 
+#include <array>
 #include <utility>
 #include "../../math/Aliases.h"
+#include "../../math/AlignmentFlag.h"
 #include "../../math/constraints/Diagonal.h"
 #include "../../math/constraints/Symmetric.h"
 #include "../../math/dense/DenseIterator.h"
+#include "../../math/dense/Forward.h"
 #include "../../math/Exception.h"
 #include "../../math/expressions/DenseMatrix.h"
 #include "../../math/expressions/SparseMatrix.h"
 #include "../../math/Forward.h"
 #include "../../math/InitializerList.h"
+#include "../../math/RelaxationFlag.h"
 #include "../../math/shims/Clear.h"
 #include "../../math/shims/Conjugate.h"
 #include "../../math/shims/IsDefault.h"
 #include "../../math/shims/NextMultiple.h"
+#include "../../math/shims/PrevMultiple.h"
 #include "../../math/shims/Serial.h"
 #include "../../math/SIMD.h"
 #include "../../math/traits/AddTrait.h"
@@ -65,6 +70,7 @@
 #include "../../math/traits/MultTrait.h"
 #include "../../math/traits/RowsTrait.h"
 #include "../../math/traits/SchurTrait.h"
+#include "../../math/traits/SolveTrait.h"
 #include "../../math/traits/SubmatrixTrait.h"
 #include "../../math/traits/SubTrait.h"
 #include "../../math/typetraits/HasConstDataAccess.h"
@@ -99,8 +105,6 @@
 #include "../../math/typetraits/StorageOrder.h"
 #include "../../system/Inline.h"
 #include "../../system/Optimizations.h"
-#include "../../system/StorageOrder.h"
-#include "../../system/TransposeFlag.h"
 #include "../../util/algorithms/Max.h"
 #include "../../util/algorithms/Min.h"
 #include "../../util/AlignedArray.h"
@@ -112,7 +116,6 @@
 #include "../../util/constraints/Reference.h"
 #include "../../util/constraints/Vectorizable.h"
 #include "../../util/constraints/Volatile.h"
-#include "../../util/DisableIf.h"
 #include "../../util/EnableIf.h"
 #include "../../util/IntegralConstant.h"
 #include "../../util/MaybeUnused.h"
@@ -124,6 +127,7 @@
 #include "../../util/typetraits/IsSame.h"
 #include "../../util/typetraits/IsVectorizable.h"
 #include "../../util/typetraits/RemoveConst.h"
+#include "../../util/typetraits/RemoveCV.h"
 
 
 namespace blaze {
@@ -142,11 +146,12 @@ namespace blaze {
 // \ingroup static_matrix
 //
 // The StaticMatrix class template is the representation of a fixed-size matrix with statically
-// allocated elements of arbitrary type. The type of the elements, the number of rows and columns
-// and the storage order of the matrix can be specified via the four template parameters:
+// allocated elements of arbitrary type. The type of the elements, the number of rows and columns,
+// the storage order of the matrix, the alignment and the padding of the matrix can be specified
+// via the six template parameters:
 
    \code
-   template< typename Type, size_t M, size_t N, bool SO >
+   template< typename Type, size_t M, size_t N, bool SO, AlignmentFlag AF, PaddingFlag PF >
    class StaticMatrix;
    \endcode
 
@@ -157,6 +162,12 @@ namespace blaze {
 //          that StaticMatrix is only used for tiny and small matrices.
 //  - SO  : specifies the storage order (blaze::rowMajor, blaze::columnMajor) of the matrix.
 //          The default value is blaze::rowMajor.
+//  - AF  : specifies whether the first element of every row/column is properly aligned with
+//          respect to the available instruction set (SSE, AVX, ...). Possible values are
+//          \a blaze::aligned and \a blaze::unaligned. The default value is \a blaze::aligned.
+//  - PF  : specifies whether every row/column of the matrix should be padded to maximize the
+//          efficiency of vectorized operations. Possible values are \a blaze::padded and
+//          \a blaze::unpadded. The default value is \a blaze::padded.
 //
 // Depending on the storage order, the matrix elements are either stored in a row-wise fashion
 // or in a column-wise fashion. Given the 2x3 matrix
@@ -216,44 +227,34 @@ namespace blaze {
    F *= A * D;    // Multiplication assignment
    \endcode
 */
-template< typename Type                    // Data type of the matrix
-        , size_t M                         // Number of rows
-        , size_t N                         // Number of columns
-        , bool SO = defaultStorageOrder >  // Storage order
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , bool SO           // Storage order
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
 class StaticMatrix
-   : public DenseMatrix< StaticMatrix<Type,M,N,SO>, SO >
+   : public DenseMatrix< StaticMatrix<Type,M,N,SO,AF,PF>, SO >
 {
- private:
-   //**********************************************************************************************
-   //! The number of elements packed within a single SIMD vector.
-   static constexpr size_t SIMDSIZE = SIMDTrait<Type>::size;
-
-   //! Alignment adjustment.
-   static constexpr size_t NN = ( usePadding ? nextMultiple( N, SIMDSIZE ) : N );
-
-   //! Compilation switch for the choice of alignment.
-   static constexpr bool align = ( usePadding || NN % SIMDSIZE == 0UL );
-   //**********************************************************************************************
-
  public:
    //**Type definitions****************************************************************************
-   using This          = StaticMatrix<Type,M,N,SO>;   //!< Type of this StaticMatrix instance.
-   using BaseType      = DenseMatrix<This,SO>;        //!< Base type of this StaticMatrix instance.
-   using ResultType    = This;                        //!< Result type for expression template evaluations.
-   using OppositeType  = StaticMatrix<Type,M,N,!SO>;  //!< Result type with opposite storage order for expression template evaluations.
-   using TransposeType = StaticMatrix<Type,N,M,!SO>;  //!< Transpose type for expression template evaluations.
-   using ElementType   = Type;                        //!< Type of the matrix elements.
-   using SIMDType      = SIMDTrait_t<ElementType>;    //!< SIMD type of the matrix elements.
-   using ReturnType    = const Type&;                 //!< Return type for expression template evaluations.
-   using CompositeType = const This&;                 //!< Data type for composite expression templates.
+   using This          = StaticMatrix<Type,M,N,SO,AF,PF>;   //!< Type of this StaticMatrix instance.
+   using BaseType      = DenseMatrix<This,SO>;              //!< Base type of this StaticMatrix instance.
+   using ResultType    = This;                              //!< Result type for expression template evaluations.
+   using OppositeType  = StaticMatrix<Type,M,N,!SO,AF,PF>;  //!< Result type with opposite storage order for expression template evaluations.
+   using TransposeType = StaticMatrix<Type,N,M,!SO,AF,PF>;  //!< Transpose type for expression template evaluations.
+   using ElementType   = Type;                              //!< Type of the matrix elements.
+   using SIMDType      = SIMDTrait_t<ElementType>;          //!< SIMD type of the matrix elements.
+   using ReturnType    = const Type&;                       //!< Return type for expression template evaluations.
+   using CompositeType = const This&;                       //!< Data type for composite expression templates.
 
    using Reference      = Type&;        //!< Reference to a non-constant matrix value.
    using ConstReference = const Type&;  //!< Reference to a constant matrix value.
    using Pointer        = Type*;        //!< Pointer to a non-constant matrix value.
    using ConstPointer   = const Type*;  //!< Pointer to a constant matrix value.
 
-   using Iterator      = DenseIterator<Type,align>;        //!< Iterator over non-constant elements.
-   using ConstIterator = DenseIterator<const Type,align>;  //!< Iterator over constant elements.
+   using Iterator      = DenseIterator<Type,AF>;        //!< Iterator over non-constant elements.
+   using ConstIterator = DenseIterator<const Type,AF>;  //!< Iterator over constant elements.
    //**********************************************************************************************
 
    //**Rebind struct definition********************************************************************
@@ -261,7 +262,7 @@ class StaticMatrix
    */
    template< typename NewType >  // Data type of the other matrix
    struct Rebind {
-      using Other = StaticMatrix<NewType,M,N,SO>;  //!< The type of the other StaticMatrix.
+      using Other = StaticMatrix<NewType,M,N,SO,AF,PF>;  //!< The type of the other StaticMatrix.
    };
    //**********************************************************************************************
 
@@ -271,7 +272,7 @@ class StaticMatrix
    template< size_t NewM    // Number of rows of the other matrix
            , size_t NewN >  // Number of columns of the other matrix
    struct Resize {
-      using Other = StaticMatrix<Type,NewM,NewN,SO>;  //!< The type of the other StaticMatrix.
+      using Other = StaticMatrix<Type,NewM,NewN,SO,AF,PF>;  //!< The type of the other StaticMatrix.
    };
    //**********************************************************************************************
 
@@ -293,20 +294,23 @@ class StaticMatrix
    //**Constructors********************************************************************************
    /*!\name Constructors */
    //@{
-   explicit inline           StaticMatrix();
-   explicit inline           StaticMatrix( const Type& init );
-            inline constexpr StaticMatrix( initializer_list< initializer_list<Type> > list );
+            inline    StaticMatrix();
+   explicit inline    StaticMatrix( const Type& init );
+            constexpr StaticMatrix( initializer_list< initializer_list<Type> > list );
 
    template< typename Other >
-   explicit inline StaticMatrix( size_t m, size_t n, const Other* array );
+   inline StaticMatrix( size_t m, size_t n, const Other* array );
 
    template< typename Other, size_t Rows, size_t Cols >
-   explicit inline StaticMatrix( const Other (&array)[Rows][Cols] );
+   inline StaticMatrix( const Other (&array)[Rows][Cols] );
 
-   inline constexpr StaticMatrix( const StaticMatrix& m );
+   template< typename Other, size_t Rows, size_t Cols >
+   StaticMatrix( const std::array<std::array<Other,Cols>,Rows>& array );
 
-   template< typename Other, bool SO2 >
-   inline StaticMatrix( const StaticMatrix<Other,M,N,SO2>& m );
+   constexpr StaticMatrix( const StaticMatrix& m );
+
+   template< typename Other, bool SO2, AlignmentFlag AF2, PaddingFlag PF2 >
+   inline StaticMatrix( const StaticMatrix<Other,M,N,SO2,AF2,PF2>& m );
 
    template< typename MT, bool SO2 >
    inline StaticMatrix( const Matrix<MT,SO2>& m );
@@ -323,36 +327,39 @@ class StaticMatrix
    //**Data access functions***********************************************************************
    /*!\name Data access functions */
    //@{
-   inline constexpr Reference      operator()( size_t i, size_t j ) noexcept;
-   inline constexpr ConstReference operator()( size_t i, size_t j ) const noexcept;
-   inline           Reference      at( size_t i, size_t j );
-   inline           ConstReference at( size_t i, size_t j ) const;
-   inline constexpr Pointer        data  () noexcept;
-   inline constexpr ConstPointer   data  () const noexcept;
-   inline constexpr Pointer        data  ( size_t i ) noexcept;
-   inline constexpr ConstPointer   data  ( size_t i ) const noexcept;
-   inline constexpr Iterator       begin ( size_t i ) noexcept;
-   inline constexpr ConstIterator  begin ( size_t i ) const noexcept;
-   inline constexpr ConstIterator  cbegin( size_t i ) const noexcept;
-   inline constexpr Iterator       end   ( size_t i ) noexcept;
-   inline constexpr ConstIterator  end   ( size_t i ) const noexcept;
-   inline constexpr ConstIterator  cend  ( size_t i ) const noexcept;
+   constexpr Reference      operator()( size_t i, size_t j ) noexcept;
+   constexpr ConstReference operator()( size_t i, size_t j ) const noexcept;
+   inline    Reference      at( size_t i, size_t j );
+   inline    ConstReference at( size_t i, size_t j ) const;
+   constexpr Pointer        data  () noexcept;
+   constexpr ConstPointer   data  () const noexcept;
+   constexpr Pointer        data  ( size_t i ) noexcept;
+   constexpr ConstPointer   data  ( size_t i ) const noexcept;
+   constexpr Iterator       begin ( size_t i ) noexcept;
+   constexpr ConstIterator  begin ( size_t i ) const noexcept;
+   constexpr ConstIterator  cbegin( size_t i ) const noexcept;
+   constexpr Iterator       end   ( size_t i ) noexcept;
+   constexpr ConstIterator  end   ( size_t i ) const noexcept;
+   constexpr ConstIterator  cend  ( size_t i ) const noexcept;
    //@}
    //**********************************************************************************************
 
    //**Assignment operators************************************************************************
    /*!\name Assignment operators */
    //@{
-   inline constexpr StaticMatrix& operator=( const Type& set );
-   inline constexpr StaticMatrix& operator=( initializer_list< initializer_list<Type> > list );
+   constexpr StaticMatrix& operator=( const Type& set );
+   constexpr StaticMatrix& operator=( initializer_list< initializer_list<Type> > list );
 
    template< typename Other, size_t Rows, size_t Cols >
    inline StaticMatrix& operator=( const Other (&array)[Rows][Cols] );
 
-   inline constexpr StaticMatrix& operator=( const StaticMatrix& rhs );
+   template< typename Other, size_t Rows, size_t Cols >
+   inline StaticMatrix& operator=( const std::array<std::array<Other,Cols>,Rows>& array );
 
-   template< typename Other, bool SO2 >
-   inline StaticMatrix& operator=( const StaticMatrix<Other,M,N,SO2>& rhs );
+   constexpr StaticMatrix& operator=( const StaticMatrix& rhs );
+
+   template< typename Other, bool SO2, AlignmentFlag AF2, PaddingFlag PF2 >
+   inline StaticMatrix& operator=( const StaticMatrix<Other,M,N,SO2,AF2,PF2>& rhs );
 
    template< typename MT, bool SO2 > inline StaticMatrix& operator= ( const Matrix<MT,SO2>& rhs );
    template< typename MT, bool SO2 > inline StaticMatrix& operator+=( const Matrix<MT,SO2>& rhs );
@@ -364,16 +371,16 @@ class StaticMatrix
    //**Utility functions***************************************************************************
    /*!\name Utility functions */
    //@{
-   static inline constexpr size_t rows() noexcept;
-   static inline constexpr size_t columns() noexcept;
-   static inline constexpr size_t spacing() noexcept;
-   static inline constexpr size_t capacity() noexcept;
-          inline           size_t capacity( size_t i ) const noexcept;
-          inline           size_t nonZeros() const;
-          inline           size_t nonZeros( size_t i ) const;
-          inline constexpr void   reset();
-          inline           void   reset( size_t i );
-          inline           void   swap( StaticMatrix& m ) noexcept;
+   static constexpr size_t rows() noexcept;
+   static constexpr size_t columns() noexcept;
+   static constexpr size_t spacing() noexcept;
+   static constexpr size_t capacity() noexcept;
+          inline    size_t capacity( size_t i ) const noexcept;
+          inline    size_t nonZeros() const;
+          inline    size_t nonZeros( size_t i ) const;
+          constexpr void   reset();
+          inline    void   reset( size_t i );
+          inline    void   swap( StaticMatrix& m ) noexcept;
    //@}
    //**********************************************************************************************
 
@@ -404,11 +411,20 @@ class StaticMatrix
 
  private:
    //**********************************************************************************************
+   //! The number of elements packed within a single SIMD vector.
+   static constexpr size_t SIMDSIZE = SIMDTrait<Type>::size;
+
+   //! Alignment adjustment.
+   static constexpr size_t NN = ( PF == padded ? nextMultiple( N, SIMDSIZE ) : N );
+   //**********************************************************************************************
+
+   //**********************************************************************************************
    /*! \cond BLAZE_INTERNAL */
    //! Helper variable template for the explicit application of the SFINAE principle.
    template< typename MT >
    static constexpr bool VectorizedAssign_v =
       ( useOptimizedKernels &&
+        NN >= SIMDSIZE &&
         simdEnabled && MT::simdEnabled &&
         IsSIMDCombinable_v< Type, ElementType_t<MT> > &&
         IsRowMajorMatrix_v<MT> );
@@ -420,11 +436,8 @@ class StaticMatrix
    //! Helper variable template for the explicit application of the SFINAE principle.
    template< typename MT >
    static constexpr bool VectorizedAddAssign_v =
-      ( useOptimizedKernels &&
-        simdEnabled && MT::simdEnabled &&
-        IsSIMDCombinable_v< Type, ElementType_t<MT> > &&
+      ( VectorizedAssign_v<MT> &&
         HasSIMDAdd_v< Type, ElementType_t<MT> > &&
-        IsRowMajorMatrix_v<MT> &&
         !IsDiagonal_v<MT> );
    /*! \endcond */
    //**********************************************************************************************
@@ -434,11 +447,8 @@ class StaticMatrix
    //! Helper variable template for the explicit application of the SFINAE principle.
    template< typename MT >
    static constexpr bool VectorizedSubAssign_v =
-      ( useOptimizedKernels &&
-        simdEnabled && MT::simdEnabled &&
-        IsSIMDCombinable_v< Type, ElementType_t<MT> > &&
+      ( VectorizedAssign_v<MT> &&
         HasSIMDSub_v< Type, ElementType_t<MT> > &&
-        IsRowMajorMatrix_v<MT> &&
         !IsDiagonal_v<MT> );
    /*! \endcond */
    //**********************************************************************************************
@@ -448,11 +458,8 @@ class StaticMatrix
    //! Helper variable template for the explicit application of the SFINAE principle.
    template< typename MT >
    static constexpr bool VectorizedSchurAssign_v =
-      ( useOptimizedKernels &&
-        simdEnabled && MT::simdEnabled &&
-        IsSIMDCombinable_v< Type, ElementType_t<MT> > &&
-        HasSIMDMult_v< Type, ElementType_t<MT> > &&
-        IsRowMajorMatrix_v<MT> );
+      ( VectorizedAssign_v<MT> &&
+        HasSIMDMult_v< Type, ElementType_t<MT> > );
    /*! \endcond */
    //**********************************************************************************************
 
@@ -460,7 +467,7 @@ class StaticMatrix
    //**Debugging functions*************************************************************************
    /*!\name Debugging functions */
    //@{
-   inline constexpr bool isIntact() const noexcept;
+   constexpr bool isIntact() const noexcept;
    //@}
    //**********************************************************************************************
 
@@ -470,7 +477,7 @@ class StaticMatrix
    template< typename Other > inline bool canAlias ( const Other* alias ) const noexcept;
    template< typename Other > inline bool isAliased( const Other* alias ) const noexcept;
 
-   static inline constexpr bool isAligned() noexcept;
+   static constexpr bool isAligned() noexcept;
 
    BLAZE_ALWAYS_INLINE SIMDType load ( size_t i, size_t j ) const noexcept;
    BLAZE_ALWAYS_INLINE SIMDType loada( size_t i, size_t j ) const noexcept;
@@ -532,7 +539,7 @@ class StaticMatrix
    //**********************************************************************************************
    //! Alignment of the data elements.
    static constexpr size_t Alignment =
-      ( align ? AlignmentOf_v<Type> : std::alignment_of<Type>::value );
+      ( AF == aligned ? AlignmentOf_v<Type> : std::alignment_of<Type>::value );
 
    //! Type of the aligned storage.
    using AlignedStorage = AlignedArray<Type,M*NN,Alignment>;
@@ -560,11 +567,34 @@ class StaticMatrix
    BLAZE_CONSTRAINT_MUST_NOT_BE_REFERENCE_TYPE( Type );
    BLAZE_CONSTRAINT_MUST_NOT_BE_CONST         ( Type );
    BLAZE_CONSTRAINT_MUST_NOT_BE_VOLATILE      ( Type );
-   BLAZE_STATIC_ASSERT( !usePadding || NN % SIMDSIZE == 0UL );
+   BLAZE_STATIC_ASSERT( AF == unaligned || PF == padded || N % SIMDSIZE == 0UL );
+   BLAZE_STATIC_ASSERT( PF == unpadded || NN % SIMDSIZE == 0UL );
    BLAZE_STATIC_ASSERT( NN >= N );
+   BLAZE_STATIC_ASSERT( IsVectorizable_v<Type> || NN == N );
    /*! \endcond */
    //**********************************************************************************************
 };
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
+//  DEDUCTION GUIDES
+//
+//=================================================================================================
+
+//*************************************************************************************************
+#if BLAZE_CPP17_MODE
+
+template< typename Type, size_t M, size_t N >
+StaticMatrix( Type (&)[M][N] ) -> StaticMatrix< RemoveCV_t<Type>, M, N >;
+
+template< typename Type, size_t M, size_t N >
+StaticMatrix( std::array<std::array<Type,N>,M> ) -> StaticMatrix<Type,M,N>;
+
+#endif
 //*************************************************************************************************
 
 
@@ -589,26 +619,24 @@ class StaticMatrix
 // floating point). In case the elements are of class type, this switch has no effect. See
 // the <tt>"../../config/Optimizations.h"</tt> configuration file for more details.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N       // Number of columns
-        , bool SO >      // Storage order
-inline StaticMatrix<Type,M,N,SO>::StaticMatrix()
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , bool SO           // Storage order
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+inline StaticMatrix<Type,M,N,SO,AF,PF>::StaticMatrix()
+#if BLAZE_USE_DEFAULT_INITIALIZATION
    : v_()  // The statically allocated matrix elements
+#endif
 {
-   BLAZE_STATIC_ASSERT( IsVectorizable_v<Type> || NN == N );
-
-   if( IsNumeric_v<Type> ) {
-      if( useDefaultInitialization ) {
-         for( size_t i=0UL; i<M*NN; ++i )
-            v_[i] = Type();
-      }
-      else if( usePadding ) {
-         for( size_t i=0UL; i<M; ++i )
-            for( size_t j=N; j<NN; ++j )
-               v_[i*NN+j] = Type();
-      }
+#if !BLAZE_USE_DEFAULT_INITIALIZATION
+   if( IsNumeric_v<Type> && PF == padded ) {
+      for( size_t i=0UL; i<M; ++i )
+         for( size_t j=N; j<NN; ++j )
+            v_[i*NN+j] = Type();
    }
+#endif
 
    BLAZE_INTERNAL_ASSERT( isIntact(), "Invariant violation detected" );
 }
@@ -620,15 +648,15 @@ inline StaticMatrix<Type,M,N,SO>::StaticMatrix()
 //
 // \param init Initial value for all matrix elements.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N       // Number of columns
-        , bool SO >      // Storage order
-inline StaticMatrix<Type,M,N,SO>::StaticMatrix( const Type& init )
-   : v_()  // The statically allocated matrix elements
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , bool SO           // Storage order
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+inline StaticMatrix<Type,M,N,SO,AF,PF>::StaticMatrix( const Type& init )
+   // v_ is intentionally left uninitialized
 {
-   BLAZE_STATIC_ASSERT( IsVectorizable_v<Type> || NN == N );
-
    for( size_t i=0UL; i<M; ++i ) {
       for( size_t j=0UL; j<N; ++j )
          v_[i*NN+j] = init;
@@ -665,15 +693,15 @@ inline StaticMatrix<Type,M,N,SO>::StaticMatrix( const Type& init )
 // size of any nested list exceeds the number of columns, a \a std::invalid_argument exception
 // is thrown.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N       // Number of columns
-        , bool SO >      // Storage order
-inline constexpr StaticMatrix<Type,M,N,SO>::StaticMatrix( initializer_list< initializer_list<Type> > list )
-   : v_( Type() )  // The statically allocated matrix elements
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , bool SO           // Storage order
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+constexpr StaticMatrix<Type,M,N,SO,AF,PF>::StaticMatrix( initializer_list< initializer_list<Type> > list )
+   : v_()  // The statically allocated matrix elements
 {
-   BLAZE_STATIC_ASSERT( IsVectorizable_v<Type> || NN == N );
-
    if( list.size() != M || determineColumns( list ) > N ) {
       BLAZE_THROW_INVALID_ARGUMENT( "Invalid setup of static matrix" );
    }
@@ -709,7 +737,7 @@ inline constexpr StaticMatrix<Type,M,N,SO>::StaticMatrix( initializer_list< init
 
    int* array = new int[6];
    // ... Initialization of the dynamic array
-   blaze::StaticMatrix<int,3,4,rowMajor> v( array, 2UL, 3UL );
+   blaze::StaticMatrix<int,3,4,rowMajor> v( 2UL, 3UL, array );
    delete[] array;
    \endcode
 
@@ -723,13 +751,13 @@ inline constexpr StaticMatrix<Type,M,N,SO>::StaticMatrix( initializer_list< init
 template< typename Type     // Data type of the matrix
         , size_t M          // Number of rows
         , size_t N          // Number of columns
-        , bool SO >         // Storage order
+        , bool SO           // Storage order
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
 template< typename Other >  // Data type of the initialization array
-inline StaticMatrix<Type,M,N,SO>::StaticMatrix( size_t m, size_t n, const Other* array )
-   : v_()  // The statically allocated matrix elements
+inline StaticMatrix<Type,M,N,SO,AF,PF>::StaticMatrix( size_t m, size_t n, const Other* array )
+   // v_ is intentionally left uninitialized
 {
-   BLAZE_STATIC_ASSERT( IsVectorizable_v<Type> || NN == N );
-
    if( m > M || n > N ) {
       BLAZE_THROW_INVALID_ARGUMENT( "Invalid setup of static matrix" );
    }
@@ -759,7 +787,7 @@ inline StaticMatrix<Type,M,N,SO>::StaticMatrix( size_t m, size_t n, const Other*
 //*************************************************************************************************
 /*!\brief Array initialization of all matrix elements.
 //
-// \param array \f$ M \times N \f$ dimensional array for the initialization.
+// \param array Static array for the initialization.
 //
 // This constructor offers the option to directly initialize the elements of the matrix with
 // a static array:
@@ -773,20 +801,68 @@ inline StaticMatrix<Type,M,N,SO>::StaticMatrix( size_t m, size_t n, const Other*
    blaze::StaticMatrix<int,3,3,rowMajor> A( init );
    \endcode
 
-// The matrix is initialized with the values from the given array. Missing values are initialized
-// with default values (as e.g. the value 6 in the example).
+// The matrix is initialized with the values from the given static array. Missing values are
+// initialized with default values (as e.g. the value 6 in the example).
 */
-template< typename Type   // Data type of the matrix
-        , size_t M        // Number of rows
-        , size_t N        // Number of columns
-        , bool SO >       // Storage order
-template< typename Other  // Data type of the initialization array
-        , size_t Rows     // Number of rows of the initialization array
-        , size_t Cols >   // Number of columns of the initialization array
-inline StaticMatrix<Type,M,N,SO>::StaticMatrix( const Other (&array)[Rows][Cols] )
-   : v_()  // The statically allocated matrix elements
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , bool SO           // Storage order
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+template< typename Other    // Data type of the static array
+        , size_t Rows       // Number of rows of the static array
+        , size_t Cols >     // Number of columns of the static array
+inline StaticMatrix<Type,M,N,SO,AF,PF>::StaticMatrix( const Other (&array)[Rows][Cols] )
+   // v_ is intentionally left uninitialized
 {
-   BLAZE_STATIC_ASSERT( IsVectorizable_v<Type> || NN == N );
+   BLAZE_STATIC_ASSERT( Rows == M && Cols == N );
+
+   for( size_t i=0UL; i<M; ++i ) {
+      for( size_t j=0UL; j<N; ++j )
+         v_[i*NN+j] = array[i][j];
+
+      for( size_t j=N; j<NN; ++j )
+            v_[i*NN+j] = Type();
+   }
+
+   BLAZE_INTERNAL_ASSERT( isIntact(), "Invariant violation detected" );
+}
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*!\brief Initialization of all matrix elements from the given std::array.
+//
+// \param array The given std::array for the initialization.
+//
+// This constructor offers the option to directly initialize the elements of the matrix with
+// a std::array:
+
+   \code
+   using blaze::rowMajor;
+
+   const std::array<std::array<int,3>,3> init = { { { 1, 2, 3 },
+                                                    { 4, 5 },
+                                                    { 7, 8, 9 } } };
+   blaze::StaticMatrix<int,3,3,rowMajor> A( init );
+   \endcode
+
+// The matrix is initialized with the values from the given std::array. Missing values are
+// initialized with default values (as e.g. the value 6 in the example).
+*/
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , bool SO           // Storage order
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+template< typename Other    // Data type of the std::array
+        , size_t Rows       // Number of rows of the std::array
+        , size_t Cols >     // Number of columns of the std::array
+inline StaticMatrix<Type,M,N,SO,AF,PF>::StaticMatrix( const std::array<std::array<Other,Cols>,Rows>& array )
+   // v_ is intentionally left uninitialized
+{
    BLAZE_STATIC_ASSERT( Rows == M && Cols == N );
 
    for( size_t i=0UL; i<M; ++i ) {
@@ -809,15 +885,16 @@ inline StaticMatrix<Type,M,N,SO>::StaticMatrix( const Other (&array)[Rows][Cols]
 //
 // The copy constructor is explicitly defined in order to enable/facilitate NRV optimization.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N       // Number of columns
-        , bool SO >      // Storage order
-inline constexpr StaticMatrix<Type,M,N,SO>::StaticMatrix( const StaticMatrix& m )
-   : v_( m.v_ )  // The statically allocated matrix elements
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , bool SO           // Storage order
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+constexpr StaticMatrix<Type,M,N,SO,AF,PF>::StaticMatrix( const StaticMatrix& m )
+   : BaseType()  // Initialization of the base class
+   , v_( m.v_ )  // The statically allocated matrix elements
 {
-   BLAZE_STATIC_ASSERT( IsVectorizable_v<Type> || NN == N );
-
    BLAZE_INTERNAL_ASSERT( isIntact(), "Invariant violation detected" );
 }
 //*************************************************************************************************
@@ -828,17 +905,19 @@ inline constexpr StaticMatrix<Type,M,N,SO>::StaticMatrix( const StaticMatrix& m 
 //
 // \param m Matrix to be copied.
 */
-template< typename Type   // Data type of the matrix
-        , size_t M        // Number of rows
-        , size_t N        // Number of columns
-        , bool SO >       // Storage order
-template< typename Other  // Data type of the foreign matrix
-        , bool SO2 >      // Storage order of the foreign matrix
-inline StaticMatrix<Type,M,N,SO>::StaticMatrix( const StaticMatrix<Other,M,N,SO2>& m )
-   : v_()  // The statically allocated matrix elements
+template< typename Type      // Data type of the matrix
+        , size_t M           // Number of rows
+        , size_t N           // Number of columns
+        , bool SO            // Storage order
+        , AlignmentFlag AF   // Alignment flag
+        , PaddingFlag PF >   // Padding flag
+template< typename Other     // Data type of the foreign matrix
+        , bool SO2           // Storage order of the foreign matrix
+        , AlignmentFlag AF2  // Alignment flag of the foreign matrix
+        , PaddingFlag PF2 >  // Padding flag of the foreign matrix
+inline StaticMatrix<Type,M,N,SO,AF,PF>::StaticMatrix( const StaticMatrix<Other,M,N,SO2,AF2,PF2>& m )
+   // v_ is intentionally left uninitialized
 {
-   BLAZE_STATIC_ASSERT( IsVectorizable_v<Type> || NN == N );
-
    for( size_t i=0UL; i<M; ++i ) {
       for( size_t j=0UL; j<N; ++j )
          v_[i*NN+j] = m(i,j);
@@ -862,18 +941,18 @@ inline StaticMatrix<Type,M,N,SO>::StaticMatrix( const StaticMatrix<Other,M,N,SO2
 // the given matrix does not match the size of the static matrix (i.e. the number of rows is
 // not M or the number of columns is not N), a \a std::invalid_argument exception is thrown.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N       // Number of columns
-        , bool SO >      // Storage order
-template< typename MT    // Type of the foreign matrix
-        , bool SO2 >     // Storage order of the foreign matrix
-inline StaticMatrix<Type,M,N,SO>::StaticMatrix( const Matrix<MT,SO2>& m )
-   : v_()  // The statically allocated matrix elements
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , bool SO           // Storage order
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+template< typename MT       // Type of the foreign matrix
+        , bool SO2 >        // Storage order of the foreign matrix
+inline StaticMatrix<Type,M,N,SO,AF,PF>::StaticMatrix( const Matrix<MT,SO2>& m )
+   // v_ is intentionally left uninitialized
 {
    using blaze::assign;
-
-   BLAZE_STATIC_ASSERT( IsVectorizable_v<Type> || NN == N );
 
    if( (~m).rows() != M || (~m).columns() != N ) {
       BLAZE_THROW_INVALID_ARGUMENT( "Invalid setup of static matrix" );
@@ -910,12 +989,14 @@ inline StaticMatrix<Type,M,N,SO>::StaticMatrix( const Matrix<MT,SO2>& m )
 // This function only performs an index check in case BLAZE_USER_ASSERT() is active. In contrast,
 // the at() function is guaranteed to perform a check of the given access indices.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N       // Number of columns
-        , bool SO >      // Storage order
-inline constexpr typename StaticMatrix<Type,M,N,SO>::Reference
-   StaticMatrix<Type,M,N,SO>::operator()( size_t i, size_t j ) noexcept
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , bool SO           // Storage order
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+constexpr typename StaticMatrix<Type,M,N,SO,AF,PF>::Reference
+   StaticMatrix<Type,M,N,SO,AF,PF>::operator()( size_t i, size_t j ) noexcept
 {
    BLAZE_USER_ASSERT( i<M, "Invalid row access index"    );
    BLAZE_USER_ASSERT( j<N, "Invalid column access index" );
@@ -934,12 +1015,14 @@ inline constexpr typename StaticMatrix<Type,M,N,SO>::Reference
 // This function only performs an index check in case BLAZE_USER_ASSERT() is active. In contrast,
 // the at() function is guaranteed to perform a check of the given access indices.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N       // Number of columns
-        , bool SO >      // Storage order
-inline constexpr typename StaticMatrix<Type,M,N,SO>::ConstReference
-   StaticMatrix<Type,M,N,SO>::operator()( size_t i, size_t j ) const noexcept
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , bool SO           // Storage order
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+constexpr typename StaticMatrix<Type,M,N,SO,AF,PF>::ConstReference
+   StaticMatrix<Type,M,N,SO,AF,PF>::operator()( size_t i, size_t j ) const noexcept
 {
    BLAZE_USER_ASSERT( i<M, "Invalid row access index"    );
    BLAZE_USER_ASSERT( j<N, "Invalid column access index" );
@@ -959,12 +1042,14 @@ inline constexpr typename StaticMatrix<Type,M,N,SO>::ConstReference
 // In contrast to the subscript operator this function always performs a check of the given
 // access indices.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N       // Number of columns
-        , bool SO >      // Storage order
-inline typename StaticMatrix<Type,M,N,SO>::Reference
-   StaticMatrix<Type,M,N,SO>::at( size_t i, size_t j )
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , bool SO           // Storage order
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+inline typename StaticMatrix<Type,M,N,SO,AF,PF>::Reference
+   StaticMatrix<Type,M,N,SO,AF,PF>::at( size_t i, size_t j )
 {
    if( i >= M ) {
       BLAZE_THROW_OUT_OF_RANGE( "Invalid row access index" );
@@ -988,12 +1073,14 @@ inline typename StaticMatrix<Type,M,N,SO>::Reference
 // In contrast to the subscript operator this function always performs a check of the given
 // access indices.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N       // Number of columns
-        , bool SO >      // Storage order
-inline typename StaticMatrix<Type,M,N,SO>::ConstReference
-   StaticMatrix<Type,M,N,SO>::at( size_t i, size_t j ) const
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , bool SO           // Storage order
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+inline typename StaticMatrix<Type,M,N,SO,AF,PF>::ConstReference
+   StaticMatrix<Type,M,N,SO,AF,PF>::at( size_t i, size_t j ) const
 {
    if( i >= M ) {
       BLAZE_THROW_OUT_OF_RANGE( "Invalid row access index" );
@@ -1018,12 +1105,14 @@ inline typename StaticMatrix<Type,M,N,SO>::ConstReference
 // respectively, the total number of elements including padding is given by the \c spacing()
 // member function.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N       // Number of columns
-        , bool SO >      // Storage order
-inline constexpr typename StaticMatrix<Type,M,N,SO>::Pointer
-   StaticMatrix<Type,M,N,SO>::data() noexcept
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , bool SO           // Storage order
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+constexpr typename StaticMatrix<Type,M,N,SO,AF,PF>::Pointer
+   StaticMatrix<Type,M,N,SO,AF,PF>::data() noexcept
 {
    return v_;
 }
@@ -1042,12 +1131,14 @@ inline constexpr typename StaticMatrix<Type,M,N,SO>::Pointer
 // respectively, the total number of elements including padding is given by the \c spacing()
 // member function.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N       // Number of columns
-        , bool SO >      // Storage order
-inline constexpr typename StaticMatrix<Type,M,N,SO>::ConstPointer
-   StaticMatrix<Type,M,N,SO>::data() const noexcept
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , bool SO           // Storage order
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+constexpr typename StaticMatrix<Type,M,N,SO,AF,PF>::ConstPointer
+   StaticMatrix<Type,M,N,SO,AF,PF>::data() const noexcept
 {
    return v_;
 }
@@ -1062,12 +1153,14 @@ inline constexpr typename StaticMatrix<Type,M,N,SO>::ConstPointer
 //
 // This function returns a pointer to the internal storage for the elements in row/column \a i.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N       // Number of columns
-        , bool SO >      // Storage order
-inline constexpr typename StaticMatrix<Type,M,N,SO>::Pointer
-   StaticMatrix<Type,M,N,SO>::data( size_t i ) noexcept
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , bool SO           // Storage order
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+constexpr typename StaticMatrix<Type,M,N,SO,AF,PF>::Pointer
+   StaticMatrix<Type,M,N,SO,AF,PF>::data( size_t i ) noexcept
 {
    BLAZE_USER_ASSERT( i < M, "Invalid dense matrix row access index" );
    return v_ + i*NN;
@@ -1083,12 +1176,14 @@ inline constexpr typename StaticMatrix<Type,M,N,SO>::Pointer
 //
 // This function returns a pointer to the internal storage for the elements in row/column \a i.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N       // Number of columns
-        , bool SO >      // Storage order
-inline constexpr typename StaticMatrix<Type,M,N,SO>::ConstPointer
-   StaticMatrix<Type,M,N,SO>::data( size_t i ) const noexcept
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , bool SO           // Storage order
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+constexpr typename StaticMatrix<Type,M,N,SO,AF,PF>::ConstPointer
+   StaticMatrix<Type,M,N,SO,AF,PF>::data( size_t i ) const noexcept
 {
    BLAZE_USER_ASSERT( i < M, "Invalid dense matrix row access index" );
    return v_ + i*NN;
@@ -1107,12 +1202,14 @@ inline constexpr typename StaticMatrix<Type,M,N,SO>::ConstPointer
 // of row \a i, in case the storage flag is set to \a columnMajor the function returns an iterator
 // to the first element of column \a i.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N       // Number of columns
-        , bool SO >      // Storage order
-inline constexpr typename StaticMatrix<Type,M,N,SO>::Iterator
-   StaticMatrix<Type,M,N,SO>::begin( size_t i ) noexcept
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , bool SO           // Storage order
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+constexpr typename StaticMatrix<Type,M,N,SO,AF,PF>::Iterator
+   StaticMatrix<Type,M,N,SO,AF,PF>::begin( size_t i ) noexcept
 {
    BLAZE_USER_ASSERT( i < M, "Invalid dense matrix row access index" );
    return Iterator( v_ + i*NN );
@@ -1131,12 +1228,14 @@ inline constexpr typename StaticMatrix<Type,M,N,SO>::Iterator
 // of row \a i, in case the storage flag is set to \a columnMajor the function returns an iterator
 // to the first element of column \a i.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N       // Number of columns
-        , bool SO >      // Storage order
-inline constexpr typename StaticMatrix<Type,M,N,SO>::ConstIterator
-   StaticMatrix<Type,M,N,SO>::begin( size_t i ) const noexcept
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , bool SO           // Storage order
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+constexpr typename StaticMatrix<Type,M,N,SO,AF,PF>::ConstIterator
+   StaticMatrix<Type,M,N,SO,AF,PF>::begin( size_t i ) const noexcept
 {
    BLAZE_USER_ASSERT( i < M, "Invalid dense matrix row access index" );
    return ConstIterator( v_ + i*NN );
@@ -1155,12 +1254,14 @@ inline constexpr typename StaticMatrix<Type,M,N,SO>::ConstIterator
 // of row \a i, in case the storage flag is set to \a columnMajor the function returns an iterator
 // to the first element of column \a i.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N       // Number of columns
-        , bool SO >      // Storage order
-inline constexpr typename StaticMatrix<Type,M,N,SO>::ConstIterator
-   StaticMatrix<Type,M,N,SO>::cbegin( size_t i ) const noexcept
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , bool SO           // Storage order
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+constexpr typename StaticMatrix<Type,M,N,SO,AF,PF>::ConstIterator
+   StaticMatrix<Type,M,N,SO,AF,PF>::cbegin( size_t i ) const noexcept
 {
    BLAZE_USER_ASSERT( i < M, "Invalid dense matrix row access index" );
    return ConstIterator( v_ + i*NN );
@@ -1179,12 +1280,14 @@ inline constexpr typename StaticMatrix<Type,M,N,SO>::ConstIterator
 // the last element of row \a i, in case the storage flag is set to \a columnMajor the function
 // returns an iterator just past the last element of column \a i.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N       // Number of columns
-        , bool SO >      // Storage order
-inline constexpr typename StaticMatrix<Type,M,N,SO>::Iterator
-   StaticMatrix<Type,M,N,SO>::end( size_t i ) noexcept
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , bool SO           // Storage order
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+constexpr typename StaticMatrix<Type,M,N,SO,AF,PF>::Iterator
+   StaticMatrix<Type,M,N,SO,AF,PF>::end( size_t i ) noexcept
 {
    BLAZE_USER_ASSERT( i < M, "Invalid dense matrix row access index" );
    return Iterator( v_ + i*NN + N );
@@ -1203,12 +1306,14 @@ inline constexpr typename StaticMatrix<Type,M,N,SO>::Iterator
 // the last element of row \a i, in case the storage flag is set to \a columnMajor the function
 // returns an iterator just past the last element of column \a i.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N       // Number of columns
-        , bool SO >      // Storage order
-inline constexpr typename StaticMatrix<Type,M,N,SO>::ConstIterator
-   StaticMatrix<Type,M,N,SO>::end( size_t i ) const noexcept
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , bool SO           // Storage order
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+constexpr typename StaticMatrix<Type,M,N,SO,AF,PF>::ConstIterator
+   StaticMatrix<Type,M,N,SO,AF,PF>::end( size_t i ) const noexcept
 {
    BLAZE_USER_ASSERT( i < M, "Invalid dense matrix row access index" );
    return ConstIterator( v_ + i*NN + N );
@@ -1227,12 +1332,14 @@ inline constexpr typename StaticMatrix<Type,M,N,SO>::ConstIterator
 // the last element of row \a i, in case the storage flag is set to \a columnMajor the function
 // returns an iterator just past the last element of column \a i.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N       // Number of columns
-        , bool SO >      // Storage order
-inline constexpr typename StaticMatrix<Type,M,N,SO>::ConstIterator
-   StaticMatrix<Type,M,N,SO>::cend( size_t i ) const noexcept
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , bool SO           // Storage order
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+constexpr typename StaticMatrix<Type,M,N,SO,AF,PF>::ConstIterator
+   StaticMatrix<Type,M,N,SO,AF,PF>::cend( size_t i ) const noexcept
 {
    BLAZE_USER_ASSERT( i < M, "Invalid dense matrix row access index" );
    return ConstIterator( v_ + i*NN + N );
@@ -1254,11 +1361,14 @@ inline constexpr typename StaticMatrix<Type,M,N,SO>::ConstIterator
 // \param set Scalar value to be assigned to all matrix elements.
 // \return Reference to the assigned matrix.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N       // Number of columns
-        , bool SO >      // Storage order
-inline constexpr StaticMatrix<Type,M,N,SO>& StaticMatrix<Type,M,N,SO>::operator=( const Type& set )
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , bool SO           // Storage order
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+constexpr StaticMatrix<Type,M,N,SO,AF,PF>&
+   StaticMatrix<Type,M,N,SO,AF,PF>::operator=( const Type& set )
 {
    for( size_t i=0UL; i<M; ++i )
       for( size_t j=0UL; j<N; ++j )
@@ -1295,12 +1405,14 @@ inline constexpr StaticMatrix<Type,M,N,SO>& StaticMatrix<Type,M,N,SO>::operator=
 // size of any nested list exceeds the number of columns, a \a std::invalid_argument exception
 // is thrown.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N       // Number of columns
-        , bool SO >      // Storage order
-inline constexpr StaticMatrix<Type,M,N,SO>&
-   StaticMatrix<Type,M,N,SO>::operator=( initializer_list< initializer_list<Type> > list )
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , bool SO           // Storage order
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+constexpr StaticMatrix<Type,M,N,SO,AF,PF>&
+   StaticMatrix<Type,M,N,SO,AF,PF>::operator=( initializer_list< initializer_list<Type> > list )
 {
    if( list.size() != M || determineColumns( list ) > N ) {
       BLAZE_THROW_INVALID_ARGUMENT( "Invalid assignment to static matrix" );
@@ -1330,7 +1442,7 @@ inline constexpr StaticMatrix<Type,M,N,SO>&
 //*************************************************************************************************
 /*!\brief Array assignment to all matrix elements.
 //
-// \param array \f$ M \times N \f$ dimensional array for the assignment.
+// \param array Static array for the assignment.
 // \return Reference to the assigned matrix.
 //
 // This assignment operator offers the option to directly set all elements of the matrix:
@@ -1345,18 +1457,66 @@ inline constexpr StaticMatrix<Type,M,N,SO>&
    A = init;
    \endcode
 
-// The matrix is assigned the values from the given array. Missing values are initialized with
-// default values (as e.g. the value 6 in the example).
+// The matrix is assigned the values from the given static array. Missing values are initialized
+// with default values (as e.g. the value 6 in the example).
 */
-template< typename Type   // Data type of the matrix
-        , size_t M        // Number of rows
-        , size_t N        // Number of columns
-        , bool SO >       // Storage order
-template< typename Other  // Data type of the initialization array
-        , size_t Rows     // Number of rows of the initialization array
-        , size_t Cols >   // Number of columns of the initialization array
-inline StaticMatrix<Type,M,N,SO>&
-   StaticMatrix<Type,M,N,SO>::operator=( const Other (&array)[Rows][Cols] )
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , bool SO           // Storage order
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+template< typename Other    // Data type of the static array
+        , size_t Rows       // Number of rows of the static array
+        , size_t Cols >     // Number of columns of the static array
+inline StaticMatrix<Type,M,N,SO,AF,PF>&
+   StaticMatrix<Type,M,N,SO,AF,PF>::operator=( const Other (&array)[Rows][Cols] )
+{
+   BLAZE_STATIC_ASSERT( Rows == M && Cols == N );
+
+   for( size_t i=0UL; i<M; ++i )
+      for( size_t j=0UL; j<N; ++j )
+         v_[i*NN+j] = array[i][j];
+
+   BLAZE_INTERNAL_ASSERT( isIntact(), "Invariant violation detected" );
+
+   return *this;
+}
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*!\brief Array assignment to all matrix elements.
+//
+// \param array The given std::array for the assignment.
+// \return Reference to the assigned matrix.
+//
+// This assignment operator offers the option to directly set all elements of the matrix:
+
+   \code
+   using blaze::rowMajor;
+
+   const std::array<std::array<int,3UL>,3UL> init = { { { 1, 2, 3 },
+                                                        { 4, 5 },
+                                                        { 7, 8, 9 } };
+   blaze::StaticMatrix<int,3UL,3UL,rowMajor> A;
+   A = init;
+   \endcode
+
+// The matrix is assigned the values from the given std::array. Missing values are initialized
+// with default values (as e.g. the value 6 in the example).
+*/
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , bool SO           // Storage order
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+template< typename Other    // Data type of the static array
+        , size_t Rows       // Number of rows of the static array
+        , size_t Cols >     // Number of columns of the static array
+inline StaticMatrix<Type,M,N,SO,AF,PF>&
+   StaticMatrix<Type,M,N,SO,AF,PF>::operator=( const std::array<std::array<Other,Cols>,Rows>& array )
 {
    BLAZE_STATIC_ASSERT( Rows == M && Cols == N );
 
@@ -1379,12 +1539,14 @@ inline StaticMatrix<Type,M,N,SO>&
 //
 // Explicit definition of a copy assignment operator for performance reasons.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N       // Number of columns
-        , bool SO >      // Storage order
-inline constexpr StaticMatrix<Type,M,N,SO>&
-   StaticMatrix<Type,M,N,SO>::operator=( const StaticMatrix& rhs )
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , bool SO           // Storage order
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+constexpr StaticMatrix<Type,M,N,SO,AF,PF>&
+   StaticMatrix<Type,M,N,SO,AF,PF>::operator=( const StaticMatrix& rhs )
 {
    v_ = rhs.v_;
 
@@ -1401,14 +1563,18 @@ inline constexpr StaticMatrix<Type,M,N,SO>&
 // \param rhs Matrix to be copied.
 // \return Reference to the assigned matrix.
 */
-template< typename Type   // Data type of the matrix
-        , size_t M        // Number of rows
-        , size_t N        // Number of columns
-        , bool SO >       // Storage order
-template< typename Other  // Data type of the foreign matrix
-        , bool SO2 >      // Storage order of the foreign matrix
-inline StaticMatrix<Type,M,N,SO>&
-   StaticMatrix<Type,M,N,SO>::operator=( const StaticMatrix<Other,M,N,SO2>& rhs )
+template< typename Type      // Data type of the matrix
+        , size_t M           // Number of rows
+        , size_t N           // Number of columns
+        , bool SO            // Storage order
+        , AlignmentFlag AF   // Alignment flag
+        , PaddingFlag PF >   // Padding flag
+template< typename Other     // Data type of the foreign matrix
+        , bool SO2           // Storage order of the foreign matrix
+        , AlignmentFlag AF2  // Alignment flag of the foreign matrix
+        , PaddingFlag PF2 >  // Padding flag of the foreign matrix
+inline StaticMatrix<Type,M,N,SO,AF,PF>&
+   StaticMatrix<Type,M,N,SO,AF,PF>::operator=( const StaticMatrix<Other,M,N,SO2,AF2,PF2>& rhs )
 {
    using blaze::assign;
 
@@ -1432,13 +1598,16 @@ inline StaticMatrix<Type,M,N,SO>&
 // number of rows of the given matrix is not M or the number of columns is not N, a
 // \a std::invalid_argument exception is thrown.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N       // Number of columns
-        , bool SO >      // Storage order
-template< typename MT    // Type of the right-hand side matrix
-        , bool SO2 >     // Storage order of the right-hand side matrix
-inline StaticMatrix<Type,M,N,SO>& StaticMatrix<Type,M,N,SO>::operator=( const Matrix<MT,SO2>& rhs )
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , bool SO           // Storage order
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+template< typename MT       // Type of the right-hand side matrix
+        , bool SO2 >        // Storage order of the right-hand side matrix
+inline StaticMatrix<Type,M,N,SO,AF,PF>&
+   StaticMatrix<Type,M,N,SO,AF,PF>::operator=( const Matrix<MT,SO2>& rhs )
 {
    using blaze::assign;
 
@@ -1483,13 +1652,16 @@ inline StaticMatrix<Type,M,N,SO>& StaticMatrix<Type,M,N,SO>::operator=( const Ma
 // In case the current sizes of the two matrices don't match, a \a std::invalid_argument exception
 // is thrown.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N       // Number of columns
-        , bool SO >      // Storage order
-template< typename MT    // Type of the right-hand side matrix
-        , bool SO2 >     // Storage order of the right-hand side matrix
-inline StaticMatrix<Type,M,N,SO>& StaticMatrix<Type,M,N,SO>::operator+=( const Matrix<MT,SO2>& rhs )
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , bool SO           // Storage order
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+template< typename MT       // Type of the right-hand side matrix
+        , bool SO2 >        // Storage order of the right-hand side matrix
+inline StaticMatrix<Type,M,N,SO,AF,PF>&
+   StaticMatrix<Type,M,N,SO,AF,PF>::operator+=( const Matrix<MT,SO2>& rhs )
 {
    using blaze::addAssign;
 
@@ -1522,13 +1694,16 @@ inline StaticMatrix<Type,M,N,SO>& StaticMatrix<Type,M,N,SO>::operator+=( const M
 // In case the current sizes of the two matrices don't match, a \a std::invalid_argument exception
 // is thrown.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N       // Number of columns
-        , bool SO >      // Storage order
-template< typename MT    // Type of the right-hand side matrix
-        , bool SO2 >     // Storage order of the right-hand side matrix
-inline StaticMatrix<Type,M,N,SO>& StaticMatrix<Type,M,N,SO>::operator-=( const Matrix<MT,SO2>& rhs )
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , bool SO           // Storage order
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+template< typename MT       // Type of the right-hand side matrix
+        , bool SO2 >        // Storage order of the right-hand side matrix
+inline StaticMatrix<Type,M,N,SO,AF,PF>&
+   StaticMatrix<Type,M,N,SO,AF,PF>::operator-=( const Matrix<MT,SO2>& rhs )
 {
    using blaze::subAssign;
 
@@ -1561,13 +1736,16 @@ inline StaticMatrix<Type,M,N,SO>& StaticMatrix<Type,M,N,SO>::operator-=( const M
 // In case the current sizes of the two matrices don't match, a \a std::invalid_argument exception
 // is thrown.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N       // Number of columns
-        , bool SO >      // Storage order
-template< typename MT    // Type of the right-hand side matrix
-        , bool SO2 >     // Storage order of the right-hand side matrix
-inline StaticMatrix<Type,M,N,SO>& StaticMatrix<Type,M,N,SO>::operator%=( const Matrix<MT,SO2>& rhs )
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , bool SO           // Storage order
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+template< typename MT       // Type of the right-hand side matrix
+        , bool SO2 >        // Storage order of the right-hand side matrix
+inline StaticMatrix<Type,M,N,SO,AF,PF>&
+   StaticMatrix<Type,M,N,SO,AF,PF>::operator%=( const Matrix<MT,SO2>& rhs )
 {
    using blaze::schurAssign;
 
@@ -1603,11 +1781,13 @@ inline StaticMatrix<Type,M,N,SO>& StaticMatrix<Type,M,N,SO>::operator%=( const M
 //
 // \return The number of rows of the matrix.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N       // Number of columns
-        , bool SO >      // Storage order
-inline constexpr size_t StaticMatrix<Type,M,N,SO>::rows() noexcept
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , bool SO           // Storage order
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+constexpr size_t StaticMatrix<Type,M,N,SO,AF,PF>::rows() noexcept
 {
    return M;
 }
@@ -1619,11 +1799,13 @@ inline constexpr size_t StaticMatrix<Type,M,N,SO>::rows() noexcept
 //
 // \return The number of columns of the matrix.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N       // Number of columns
-        , bool SO >      // Storage order
-inline constexpr size_t StaticMatrix<Type,M,N,SO>::columns() noexcept
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , bool SO           // Storage order
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+constexpr size_t StaticMatrix<Type,M,N,SO,AF,PF>::columns() noexcept
 {
    return N;
 }
@@ -1638,11 +1820,13 @@ inline constexpr size_t StaticMatrix<Type,M,N,SO>::columns() noexcept
 // This function returns the spacing between the beginning of two rows, i.e. the total number
 // of elements of a row.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N       // Number of columns
-        , bool SO >      // Storage order
-inline constexpr size_t StaticMatrix<Type,M,N,SO>::spacing() noexcept
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , bool SO           // Storage order
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+constexpr size_t StaticMatrix<Type,M,N,SO,AF,PF>::spacing() noexcept
 {
    return NN;
 }
@@ -1654,11 +1838,13 @@ inline constexpr size_t StaticMatrix<Type,M,N,SO>::spacing() noexcept
 //
 // \return The capacity of the matrix.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N       // Number of columns
-        , bool SO >      // Storage order
-inline constexpr size_t StaticMatrix<Type,M,N,SO>::capacity() noexcept
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , bool SO           // Storage order
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+constexpr size_t StaticMatrix<Type,M,N,SO,AF,PF>::capacity() noexcept
 {
    return M*NN;
 }
@@ -1676,11 +1862,13 @@ inline constexpr size_t StaticMatrix<Type,M,N,SO>::capacity() noexcept
 // in case the storage flag is set to \a columnMajor the function returns the capacity
 // of column \a i.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N       // Number of columns
-        , bool SO >      // Storage order
-inline size_t StaticMatrix<Type,M,N,SO>::capacity( size_t i ) const noexcept
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , bool SO           // Storage order
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+inline size_t StaticMatrix<Type,M,N,SO,AF,PF>::capacity( size_t i ) const noexcept
 {
    MAYBE_UNUSED( i );
 
@@ -1696,11 +1884,13 @@ inline size_t StaticMatrix<Type,M,N,SO>::capacity( size_t i ) const noexcept
 //
 // \return The number of non-zero elements in the matrix.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N       // Number of columns
-        , bool SO >      // Storage order
-inline size_t StaticMatrix<Type,M,N,SO>::nonZeros() const
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , bool SO           // Storage order
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+inline size_t StaticMatrix<Type,M,N,SO,AF,PF>::nonZeros() const
 {
    size_t nonzeros( 0UL );
 
@@ -1725,11 +1915,13 @@ inline size_t StaticMatrix<Type,M,N,SO>::nonZeros() const
 // elements in row \a i, in case the storage flag is set to \a columnMajor the function returns
 // the number of non-zero elements in column \a i.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N       // Number of columns
-        , bool SO >      // Storage order
-inline size_t StaticMatrix<Type,M,N,SO>::nonZeros( size_t i ) const
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , bool SO           // Storage order
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+inline size_t StaticMatrix<Type,M,N,SO,AF,PF>::nonZeros( size_t i ) const
 {
    BLAZE_USER_ASSERT( i < rows(), "Invalid row access index" );
 
@@ -1750,11 +1942,13 @@ inline size_t StaticMatrix<Type,M,N,SO>::nonZeros( size_t i ) const
 //
 // \return void
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N       // Number of columns
-        , bool SO >      // Storage order
-inline constexpr void StaticMatrix<Type,M,N,SO>::reset()
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , bool SO           // Storage order
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+constexpr void StaticMatrix<Type,M,N,SO,AF,PF>::reset()
 {
    using blaze::clear;
 
@@ -1776,11 +1970,13 @@ inline constexpr void StaticMatrix<Type,M,N,SO>::reset()
 // the storage order is set to \a columnMajor the function resets the values in column \a i.
 // Note that the capacity of the row/column remains unchanged.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N       // Number of columns
-        , bool SO >      // Storage order
-inline void StaticMatrix<Type,M,N,SO>::reset( size_t i )
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , bool SO           // Storage order
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+inline void StaticMatrix<Type,M,N,SO,AF,PF>::reset( size_t i )
 {
    using blaze::clear;
 
@@ -1797,11 +1993,13 @@ inline void StaticMatrix<Type,M,N,SO>::reset( size_t i )
 // \param m The matrix to be swapped.
 // \return void
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N       // Number of columns
-        , bool SO >      // Storage order
-inline void StaticMatrix<Type,M,N,SO>::swap( StaticMatrix& m ) noexcept
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , bool SO           // Storage order
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+inline void StaticMatrix<Type,M,N,SO,AF,PF>::swap( StaticMatrix& m ) noexcept
 {
    using std::swap;
 
@@ -1830,11 +2028,13 @@ inline void StaticMatrix<Type,M,N,SO>::swap( StaticMatrix& m ) noexcept
 // This function transposes the static matrix in-place. Note that this function can only be used
 // for square static matrices, i.e. if \a M is equal to N.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N       // Number of columns
-        , bool SO >      // Storage order
-inline StaticMatrix<Type,M,N,SO>& StaticMatrix<Type,M,N,SO>::transpose()
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , bool SO           // Storage order
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+inline StaticMatrix<Type,M,N,SO,AF,PF>& StaticMatrix<Type,M,N,SO,AF,PF>::transpose()
 {
    using std::swap;
 
@@ -1863,11 +2063,13 @@ inline StaticMatrix<Type,M,N,SO>& StaticMatrix<Type,M,N,SO>::transpose()
    A = trans( A );
    \endcode
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N       // Number of columns
-        , bool SO >      // Storage order
-inline void StaticMatrix<Type,M,N,SO>::transpose( TrueType )
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , bool SO           // Storage order
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+inline void StaticMatrix<Type,M,N,SO,AF,PF>::transpose( TrueType )
 {
    transpose();
 }
@@ -1889,11 +2091,13 @@ inline void StaticMatrix<Type,M,N,SO>::transpose( TrueType )
    A = trans( A );
    \endcode
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N       // Number of columns
-        , bool SO >      // Storage order
-inline void StaticMatrix<Type,M,N,SO>::transpose( FalseType )
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , bool SO           // Storage order
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+inline void StaticMatrix<Type,M,N,SO,AF,PF>::transpose( FalseType )
 {}
 /*! \endcond */
 //*************************************************************************************************
@@ -1907,11 +2111,13 @@ inline void StaticMatrix<Type,M,N,SO>::transpose( FalseType )
 // This function transposes the static matrix in-place. Note that this function can only be used
 // for square static matrices, i.e. if \a M is equal to N.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N       // Number of columns
-        , bool SO >      // Storage order
-inline StaticMatrix<Type,M,N,SO>& StaticMatrix<Type,M,N,SO>::ctranspose()
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , bool SO           // Storage order
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+inline StaticMatrix<Type,M,N,SO,AF,PF>& StaticMatrix<Type,M,N,SO,AF,PF>::ctranspose()
 {
    BLAZE_STATIC_ASSERT( M == N );
 
@@ -1941,11 +2147,13 @@ inline StaticMatrix<Type,M,N,SO>& StaticMatrix<Type,M,N,SO>::ctranspose()
    A = ctrans( A );
    \endcode
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N       // Number of columns
-        , bool SO >      // Storage order
-inline void StaticMatrix<Type,M,N,SO>::ctranspose( TrueType )
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , bool SO           // Storage order
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+inline void StaticMatrix<Type,M,N,SO,AF,PF>::ctranspose( TrueType )
 {
    ctranspose();
 }
@@ -1967,11 +2175,13 @@ inline void StaticMatrix<Type,M,N,SO>::ctranspose( TrueType )
    A = ctrans( A );
    \endcode
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N       // Number of columns
-        , bool SO >      // Storage order
-inline void StaticMatrix<Type,M,N,SO>::ctranspose( FalseType )
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , bool SO           // Storage order
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+inline void StaticMatrix<Type,M,N,SO,AF,PF>::ctranspose( FalseType )
 {}
 /*! \endcond */
 //*************************************************************************************************
@@ -1997,9 +2207,12 @@ inline void StaticMatrix<Type,M,N,SO>::ctranspose( FalseType )
 template< typename Type     // Data type of the matrix
         , size_t M          // Number of rows
         , size_t N          // Number of columns
-        , bool SO >         // Storage order
+        , bool SO           // Storage order
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
 template< typename Other >  // Data type of the scalar value
-inline StaticMatrix<Type,M,N,SO>& StaticMatrix<Type,M,N,SO>::scale( const Other& scalar )
+inline StaticMatrix<Type,M,N,SO,AF,PF>&
+   StaticMatrix<Type,M,N,SO,AF,PF>::scale( const Other& scalar )
 {
    for( size_t i=0UL; i<M; ++i )
       for( size_t j=0UL; j<N; ++j )
@@ -2028,11 +2241,13 @@ inline StaticMatrix<Type,M,N,SO>& StaticMatrix<Type,M,N,SO>::scale( const Other&
 // This class-specific implementation of operator new provides the functionality to allocate
 // dynamic memory based on the alignment restrictions of the StaticMatrix class template.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N       // Number of columns
-        , bool SO >      // Storage order
-inline void* StaticMatrix<Type,M,N,SO>::operator new( std::size_t size )
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , bool SO           // Storage order
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+inline void* StaticMatrix<Type,M,N,SO,AF,PF>::operator new( std::size_t size )
 {
    MAYBE_UNUSED( size );
 
@@ -2053,11 +2268,13 @@ inline void* StaticMatrix<Type,M,N,SO>::operator new( std::size_t size )
 // This class-specific implementation of operator new provides the functionality to allocate
 // dynamic memory based on the alignment restrictions of the StaticMatrix class template.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N       // Number of columns
-        , bool SO >      // Storage order
-inline void* StaticMatrix<Type,M,N,SO>::operator new[]( std::size_t size )
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , bool SO           // Storage order
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+inline void* StaticMatrix<Type,M,N,SO,AF,PF>::operator new[]( std::size_t size )
 {
    BLAZE_INTERNAL_ASSERT( size >= sizeof( StaticMatrix )       , "Invalid number of bytes detected" );
    BLAZE_INTERNAL_ASSERT( size %  sizeof( StaticMatrix ) == 0UL, "Invalid number of bytes detected" );
@@ -2077,11 +2294,13 @@ inline void* StaticMatrix<Type,M,N,SO>::operator new[]( std::size_t size )
 // This class-specific implementation of operator new provides the functionality to allocate
 // dynamic memory based on the alignment restrictions of the StaticMatrix class template.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N       // Number of columns
-        , bool SO >      // Storage order
-inline void* StaticMatrix<Type,M,N,SO>::operator new( std::size_t size, const std::nothrow_t& )
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , bool SO           // Storage order
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+inline void* StaticMatrix<Type,M,N,SO,AF,PF>::operator new( std::size_t size, const std::nothrow_t& )
 {
    MAYBE_UNUSED( size );
 
@@ -2102,11 +2321,13 @@ inline void* StaticMatrix<Type,M,N,SO>::operator new( std::size_t size, const st
 // This class-specific implementation of operator new provides the functionality to allocate
 // dynamic memory based on the alignment restrictions of the StaticMatrix class template.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N       // Number of columns
-        , bool SO >      // Storage order
-inline void* StaticMatrix<Type,M,N,SO>::operator new[]( std::size_t size, const std::nothrow_t& )
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , bool SO           // Storage order
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+inline void* StaticMatrix<Type,M,N,SO,AF,PF>::operator new[]( std::size_t size, const std::nothrow_t& )
 {
    BLAZE_INTERNAL_ASSERT( size >= sizeof( StaticMatrix )       , "Invalid number of bytes detected" );
    BLAZE_INTERNAL_ASSERT( size %  sizeof( StaticMatrix ) == 0UL, "Invalid number of bytes detected" );
@@ -2122,11 +2343,13 @@ inline void* StaticMatrix<Type,M,N,SO>::operator new[]( std::size_t size, const 
 // \param ptr The memory to be deallocated.
 // \return void
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N       // Number of columns
-        , bool SO >      // Storage order
-inline void StaticMatrix<Type,M,N,SO>::operator delete( void* ptr )
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , bool SO           // Storage order
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+inline void StaticMatrix<Type,M,N,SO,AF,PF>::operator delete( void* ptr )
 {
    deallocate( static_cast<StaticMatrix*>( ptr ) );
 }
@@ -2139,11 +2362,13 @@ inline void StaticMatrix<Type,M,N,SO>::operator delete( void* ptr )
 // \param ptr The memory to be deallocated.
 // \return void
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N       // Number of columns
-        , bool SO >      // Storage order
-inline void StaticMatrix<Type,M,N,SO>::operator delete[]( void* ptr )
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , bool SO           // Storage order
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+inline void StaticMatrix<Type,M,N,SO,AF,PF>::operator delete[]( void* ptr )
 {
    deallocate( static_cast<StaticMatrix*>( ptr ) );
 }
@@ -2156,11 +2381,13 @@ inline void StaticMatrix<Type,M,N,SO>::operator delete[]( void* ptr )
 // \param ptr The memory to be deallocated.
 // \return void
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N       // Number of columns
-        , bool SO >      // Storage order
-inline void StaticMatrix<Type,M,N,SO>::operator delete( void* ptr, const std::nothrow_t& )
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , bool SO           // Storage order
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+inline void StaticMatrix<Type,M,N,SO,AF,PF>::operator delete( void* ptr, const std::nothrow_t& )
 {
    deallocate( static_cast<StaticMatrix*>( ptr ) );
 }
@@ -2173,11 +2400,13 @@ inline void StaticMatrix<Type,M,N,SO>::operator delete( void* ptr, const std::no
 // \param ptr The memory to be deallocated.
 // \return void
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N       // Number of columns
-        , bool SO >      // Storage order
-inline void StaticMatrix<Type,M,N,SO>::operator delete[]( void* ptr, const std::nothrow_t& )
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , bool SO           // Storage order
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+inline void StaticMatrix<Type,M,N,SO,AF,PF>::operator delete[]( void* ptr, const std::nothrow_t& )
 {
    deallocate( static_cast<StaticMatrix*>( ptr ) );
 }
@@ -2201,11 +2430,13 @@ inline void StaticMatrix<Type,M,N,SO>::operator delete[]( void* ptr, const std::
 // state is valid. In case the invariants are intact, the function returns \a true, else it
 // will return \a false.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N       // Number of columns
-        , bool SO >      // Storage order
-inline constexpr bool StaticMatrix<Type,M,N,SO>::isIntact() const noexcept
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , bool SO           // Storage order
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+constexpr bool StaticMatrix<Type,M,N,SO,AF,PF>::isIntact() const noexcept
 {
    if( IsNumeric_v<Type> ) {
       for( size_t i=0UL; i<M; ++i ) {
@@ -2242,9 +2473,11 @@ inline constexpr bool StaticMatrix<Type,M,N,SO>::isIntact() const noexcept
 template< typename Type     // Data type of the matrix
         , size_t M          // Number of rows
         , size_t N          // Number of columns
-        , bool SO >         // Storage order
+        , bool SO           // Storage order
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
 template< typename Other >  // Data type of the foreign expression
-inline bool StaticMatrix<Type,M,N,SO>::canAlias( const Other* alias ) const noexcept
+inline bool StaticMatrix<Type,M,N,SO,AF,PF>::canAlias( const Other* alias ) const noexcept
 {
    return static_cast<const void*>( this ) == static_cast<const void*>( alias );
 }
@@ -2264,9 +2497,11 @@ inline bool StaticMatrix<Type,M,N,SO>::canAlias( const Other* alias ) const noex
 template< typename Type     // Data type of the matrix
         , size_t M          // Number of rows
         , size_t N          // Number of columns
-        , bool SO >         // Storage order
+        , bool SO           // Storage order
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
 template< typename Other >  // Data type of the foreign expression
-inline bool StaticMatrix<Type,M,N,SO>::isAliased( const Other* alias ) const noexcept
+inline bool StaticMatrix<Type,M,N,SO,AF,PF>::isAliased( const Other* alias ) const noexcept
 {
    return static_cast<const void*>( this ) == static_cast<const void*>( alias );
 }
@@ -2282,13 +2517,15 @@ inline bool StaticMatrix<Type,M,N,SO>::isAliased( const Other* alias ) const noe
 // whether the beginning and the end of each row/column of the matrix are guaranteed to conform
 // to the alignment restrictions of the element type \a Type.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N       // Number of columns
-        , bool SO >      // Storage order
-inline constexpr bool StaticMatrix<Type,M,N,SO>::isAligned() noexcept
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , bool SO           // Storage order
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+constexpr bool StaticMatrix<Type,M,N,SO,AF,PF>::isAligned() noexcept
 {
-   return align;
+   return AF == aligned;
 }
 //*************************************************************************************************
 
@@ -2308,14 +2545,16 @@ inline constexpr bool StaticMatrix<Type,M,N,SO>::isAligned() noexcept
 // performance optimized evaluation of expression templates. Calling this function explicitly
 // might result in erroneous results and/or in compilation errors.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N       // Number of columns
-        , bool SO >      // Storage order
-BLAZE_ALWAYS_INLINE typename StaticMatrix<Type,M,N,SO>::SIMDType
-   StaticMatrix<Type,M,N,SO>::load( size_t i, size_t j ) const noexcept
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , bool SO           // Storage order
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+BLAZE_ALWAYS_INLINE typename StaticMatrix<Type,M,N,SO,AF,PF>::SIMDType
+   StaticMatrix<Type,M,N,SO,AF,PF>::load( size_t i, size_t j ) const noexcept
 {
-   if( align )
+   if( AF == aligned )
       return loada( i, j );
    else
       return loadu( i, j );
@@ -2338,12 +2577,14 @@ BLAZE_ALWAYS_INLINE typename StaticMatrix<Type,M,N,SO>::SIMDType
 // internally for the performance optimized evaluation of expression templates. Calling this
 // function explicitly might result in erroneous results and/or in compilation errors.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N       // Number of columns
-        , bool SO >      // Storage order
-BLAZE_ALWAYS_INLINE typename StaticMatrix<Type,M,N,SO>::SIMDType
-   StaticMatrix<Type,M,N,SO>::loada( size_t i, size_t j ) const noexcept
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , bool SO           // Storage order
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+BLAZE_ALWAYS_INLINE typename StaticMatrix<Type,M,N,SO,AF,PF>::SIMDType
+   StaticMatrix<Type,M,N,SO,AF,PF>::loada( size_t i, size_t j ) const noexcept
 {
    using blaze::loada;
 
@@ -2352,7 +2593,7 @@ BLAZE_ALWAYS_INLINE typename StaticMatrix<Type,M,N,SO>::SIMDType
    BLAZE_INTERNAL_ASSERT( i < M, "Invalid row access index" );
    BLAZE_INTERNAL_ASSERT( j < N, "Invalid column access index" );
    BLAZE_INTERNAL_ASSERT( j + SIMDSIZE <= NN, "Invalid column access index" );
-   BLAZE_INTERNAL_ASSERT( !usePadding || j % SIMDSIZE == 0UL, "Invalid column access index" );
+   BLAZE_INTERNAL_ASSERT( PF == unpadded || j % SIMDSIZE == 0UL, "Invalid column access index" );
    BLAZE_INTERNAL_ASSERT( checkAlignment( &v_[i*NN+j] ), "Invalid alignment detected" );
 
    return loada( &v_[i*NN+j] );
@@ -2375,12 +2616,14 @@ BLAZE_ALWAYS_INLINE typename StaticMatrix<Type,M,N,SO>::SIMDType
 // internally for the performance optimized evaluation of expression templates. Calling this
 // function explicitly might result in erroneous results and/or in compilation errors.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N       // Number of columns
-        , bool SO >      // Storage order
-BLAZE_ALWAYS_INLINE typename StaticMatrix<Type,M,N,SO>::SIMDType
-   StaticMatrix<Type,M,N,SO>::loadu( size_t i, size_t j ) const noexcept
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , bool SO           // Storage order
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+BLAZE_ALWAYS_INLINE typename StaticMatrix<Type,M,N,SO,AF,PF>::SIMDType
+   StaticMatrix<Type,M,N,SO,AF,PF>::loadu( size_t i, size_t j ) const noexcept
 {
    using blaze::loadu;
 
@@ -2411,14 +2654,16 @@ BLAZE_ALWAYS_INLINE typename StaticMatrix<Type,M,N,SO>::SIMDType
 // performance optimized evaluation of expression templates. Calling this function explicitly
 // might result in erroneous results and/or in compilation errors.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N       // Number of columns
-        , bool SO >      // Storage order
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , bool SO           // Storage order
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
 BLAZE_ALWAYS_INLINE void
-   StaticMatrix<Type,M,N,SO>::store( size_t i, size_t j, const SIMDType& value ) noexcept
+   StaticMatrix<Type,M,N,SO,AF,PF>::store( size_t i, size_t j, const SIMDType& value ) noexcept
 {
-   if( align )
+   if( AF == aligned )
       storea( i, j, value );
    else
       storeu( i, j, value );
@@ -2442,12 +2687,14 @@ BLAZE_ALWAYS_INLINE void
 // internally for the performance optimized evaluation of expression templates. Calling this
 // function explicitly might result in erroneous results and/or in compilation errors.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N       // Number of columns
-        , bool SO >      // Storage order
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , bool SO           // Storage order
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
 BLAZE_ALWAYS_INLINE void
-   StaticMatrix<Type,M,N,SO>::storea( size_t i, size_t j, const SIMDType& value ) noexcept
+   StaticMatrix<Type,M,N,SO,AF,PF>::storea( size_t i, size_t j, const SIMDType& value ) noexcept
 {
    using blaze::storea;
 
@@ -2456,7 +2703,7 @@ BLAZE_ALWAYS_INLINE void
    BLAZE_INTERNAL_ASSERT( i < M, "Invalid row access index" );
    BLAZE_INTERNAL_ASSERT( j < N, "Invalid column access index" );
    BLAZE_INTERNAL_ASSERT( j + SIMDSIZE <= NN, "Invalid column access index" );
-   BLAZE_INTERNAL_ASSERT( !usePadding || j % SIMDSIZE == 0UL, "Invalid column access index" );
+   BLAZE_INTERNAL_ASSERT( PF == unpadded || j % SIMDSIZE == 0UL, "Invalid column access index" );
    BLAZE_INTERNAL_ASSERT( checkAlignment( &v_[i*NN+j] ), "Invalid alignment detected" );
 
    storea( &v_[i*NN+j], value );
@@ -2480,12 +2727,14 @@ BLAZE_ALWAYS_INLINE void
 // internally for the performance optimized evaluation of expression templates. Calling this
 // function explicitly might result in erroneous results and/or in compilation errors.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N       // Number of columns
-        , bool SO >      // Storage order
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , bool SO           // Storage order
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
 BLAZE_ALWAYS_INLINE void
-   StaticMatrix<Type,M,N,SO>::storeu( size_t i, size_t j, const SIMDType& value ) noexcept
+   StaticMatrix<Type,M,N,SO,AF,PF>::storeu( size_t i, size_t j, const SIMDType& value ) noexcept
 {
    using blaze::storeu;
 
@@ -2517,12 +2766,14 @@ BLAZE_ALWAYS_INLINE void
 // templates. Calling this function explicitly might result in erroneous results and/or in
 // compilation errors.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N       // Number of columns
-        , bool SO >      // Storage order
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , bool SO           // Storage order
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
 BLAZE_ALWAYS_INLINE void
-   StaticMatrix<Type,M,N,SO>::stream( size_t i, size_t j, const SIMDType& value ) noexcept
+   StaticMatrix<Type,M,N,SO,AF,PF>::stream( size_t i, size_t j, const SIMDType& value ) noexcept
 {
    using blaze::stream;
 
@@ -2531,7 +2782,7 @@ BLAZE_ALWAYS_INLINE void
    BLAZE_INTERNAL_ASSERT( i < M, "Invalid row access index" );
    BLAZE_INTERNAL_ASSERT( j < N, "Invalid column access index" );
    BLAZE_INTERNAL_ASSERT( j + SIMDSIZE <= NN, "Invalid column access index" );
-   BLAZE_INTERNAL_ASSERT( !usePadding || j % SIMDSIZE == 0UL, "Invalid column access index" );
+   BLAZE_INTERNAL_ASSERT( PF == unpadded || j % SIMDSIZE == 0UL, "Invalid column access index" );
    BLAZE_INTERNAL_ASSERT( checkAlignment( &v_[i*NN+j] ), "Invalid alignment detected" );
 
    stream( &v_[i*NN+j], value );
@@ -2550,13 +2801,15 @@ BLAZE_ALWAYS_INLINE void
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N       // Number of columns
-        , bool SO >      // Storage order
-template< typename MT    // Type of the right-hand side dense matrix
-        , bool SO2 >     // Storage order of the right-hand side dense matrix
-inline auto StaticMatrix<Type,M,N,SO>::assign( const DenseMatrix<MT,SO2>& rhs )
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , bool SO           // Storage order
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+template< typename MT       // Type of the right-hand side dense matrix
+        , bool SO2 >        // Storage order of the right-hand side dense matrix
+inline auto StaticMatrix<Type,M,N,SO,AF,PF>::assign( const DenseMatrix<MT,SO2>& rhs )
    -> DisableIf_t< VectorizedAssign_v<MT> >
 {
    BLAZE_INTERNAL_ASSERT( (~rhs).rows() == M && (~rhs).columns() == N, "Invalid matrix size" );
@@ -2581,23 +2834,25 @@ inline auto StaticMatrix<Type,M,N,SO>::assign( const DenseMatrix<MT,SO2>& rhs )
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N       // Number of columns
-        , bool SO >      // Storage order
-template< typename MT    // Type of the right-hand side dense matrix
-        , bool SO2 >     // Storage order of the right-hand side dense matrix
-inline auto StaticMatrix<Type,M,N,SO>::assign( const DenseMatrix<MT,SO2>& rhs )
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , bool SO           // Storage order
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+template< typename MT       // Type of the right-hand side dense matrix
+        , bool SO2 >        // Storage order of the right-hand side dense matrix
+inline auto StaticMatrix<Type,M,N,SO,AF,PF>::assign( const DenseMatrix<MT,SO2>& rhs )
    -> EnableIf_t< VectorizedAssign_v<MT> >
 {
    BLAZE_CONSTRAINT_MUST_BE_VECTORIZABLE_TYPE( Type );
 
    BLAZE_INTERNAL_ASSERT( (~rhs).rows() == M && (~rhs).columns() == N, "Invalid matrix size" );
 
-   constexpr bool remainder( !usePadding || !IsPadded_v<MT> );
+   constexpr bool remainder( PF == unpadded || !IsPadded_v<MT> );
 
-   constexpr size_t jpos( ( remainder )?( N & size_t(-SIMDSIZE) ):( N ) );
-   BLAZE_INTERNAL_ASSERT( !remainder || ( N - ( N % (SIMDSIZE) ) ) == jpos, "Invalid end calculation" );
+   constexpr size_t jpos( remainder ? prevMultiple( N, SIMDSIZE ) : N );
+   BLAZE_INTERNAL_ASSERT( jpos <= N, "Invalid end calculation" );
 
    for( size_t i=0UL; i<M; ++i )
    {
@@ -2625,12 +2880,14 @@ inline auto StaticMatrix<Type,M,N,SO>::assign( const DenseMatrix<MT,SO2>& rhs )
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N       // Number of columns
-        , bool SO >      // Storage order
-template< typename MT >  // Type of the right-hand side sparse matrix
-inline void StaticMatrix<Type,M,N,SO>::assign( const SparseMatrix<MT,SO>& rhs )
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , bool SO           // Storage order
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+template< typename MT >     // Type of the right-hand side sparse matrix
+inline void StaticMatrix<Type,M,N,SO,AF,PF>::assign( const SparseMatrix<MT,SO>& rhs )
 {
    BLAZE_INTERNAL_ASSERT( (~rhs).rows() == M && (~rhs).columns() == N, "Invalid matrix size" );
 
@@ -2652,12 +2909,14 @@ inline void StaticMatrix<Type,M,N,SO>::assign( const SparseMatrix<MT,SO>& rhs )
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N       // Number of columns
-        , bool SO >      // Storage order
-template< typename MT >  // Type of the right-hand side sparse matrix
-inline void StaticMatrix<Type,M,N,SO>::assign( const SparseMatrix<MT,!SO>& rhs )
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , bool SO           // Storage order
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+template< typename MT >     // Type of the right-hand side sparse matrix
+inline void StaticMatrix<Type,M,N,SO,AF,PF>::assign( const SparseMatrix<MT,!SO>& rhs )
 {
    BLAZE_CONSTRAINT_MUST_NOT_BE_SYMMETRIC_MATRIX_TYPE( MT );
 
@@ -2681,13 +2940,15 @@ inline void StaticMatrix<Type,M,N,SO>::assign( const SparseMatrix<MT,!SO>& rhs )
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N       // Number of columns
-        , bool SO >      // Storage order
-template< typename MT    // Type of the right-hand side dense matrix
-        , bool SO2 >     // Storage order of the right-hand side dense matrix
-inline auto StaticMatrix<Type,M,N,SO>::addAssign( const DenseMatrix<MT,SO2>& rhs )
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , bool SO           // Storage order
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+template< typename MT       // Type of the right-hand side dense matrix
+        , bool SO2 >        // Storage order of the right-hand side dense matrix
+inline auto StaticMatrix<Type,M,N,SO,AF,PF>::addAssign( const DenseMatrix<MT,SO2>& rhs )
    -> DisableIf_t< VectorizedAddAssign_v<MT> >
 {
    BLAZE_INTERNAL_ASSERT( (~rhs).rows() == M && (~rhs).columns() == N, "Invalid matrix size" );
@@ -2728,13 +2989,15 @@ inline auto StaticMatrix<Type,M,N,SO>::addAssign( const DenseMatrix<MT,SO2>& rhs
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N       // Number of columns
-        , bool SO >      // Storage order
-template< typename MT    // Type of the right-hand side dense matrix
-        , bool SO2 >     // Storage order of the right-hand side dense matrix
-inline auto StaticMatrix<Type,M,N,SO>::addAssign( const DenseMatrix<MT,SO2>& rhs )
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , bool SO           // Storage order
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+template< typename MT       // Type of the right-hand side dense matrix
+        , bool SO2 >        // Storage order of the right-hand side dense matrix
+inline auto StaticMatrix<Type,M,N,SO,AF,PF>::addAssign( const DenseMatrix<MT,SO2>& rhs )
    -> EnableIf_t< VectorizedAddAssign_v<MT> >
 {
    BLAZE_CONSTRAINT_MUST_BE_VECTORIZABLE_TYPE( Type );
@@ -2742,20 +3005,20 @@ inline auto StaticMatrix<Type,M,N,SO>::addAssign( const DenseMatrix<MT,SO2>& rhs
 
    BLAZE_INTERNAL_ASSERT( (~rhs).rows() == M && (~rhs).columns() == N, "Invalid matrix size" );
 
-   constexpr bool remainder( !usePadding || !IsPadded_v<MT> );
+   constexpr bool remainder( PF == unpadded || !IsPadded_v<MT> );
 
    for( size_t i=0UL; i<M; ++i )
    {
       const size_t jbegin( ( IsUpper_v<MT> )
-                           ?( ( IsStrictlyUpper_v<MT> ? i+1UL : i ) & size_t(-SIMDSIZE) )
+                           ?( prevMultiple( ( IsStrictlyUpper_v<MT> ? i+1UL : i ), SIMDSIZE ) )
                            :( 0UL ) );
       const size_t jend  ( ( IsLower_v<MT> )
                            ?( IsStrictlyLower_v<MT> ? i : i+1UL )
                            :( N ) );
       BLAZE_INTERNAL_ASSERT( jbegin <= jend, "Invalid loop indices detected" );
 
-      const size_t jpos( ( remainder )?( jend & size_t(-SIMDSIZE) ):( jend ) );
-      BLAZE_INTERNAL_ASSERT( !remainder || ( jend - ( jend % (SIMDSIZE) ) ) == jpos, "Invalid end calculation" );
+      const size_t jpos( remainder ? prevMultiple( jend, SIMDSIZE ) : jend );
+      BLAZE_INTERNAL_ASSERT( jpos <= jend, "Invalid end calculation" );
 
       size_t j( jbegin );
 
@@ -2781,12 +3044,14 @@ inline auto StaticMatrix<Type,M,N,SO>::addAssign( const DenseMatrix<MT,SO2>& rhs
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N       // Number of columns
-        , bool SO >      // Storage order
-template< typename MT >  // Type of the right-hand side sparse matrix
-inline void StaticMatrix<Type,M,N,SO>::addAssign( const SparseMatrix<MT,SO>& rhs )
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , bool SO           // Storage order
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+template< typename MT >     // Type of the right-hand side sparse matrix
+inline void StaticMatrix<Type,M,N,SO,AF,PF>::addAssign( const SparseMatrix<MT,SO>& rhs )
 {
    BLAZE_INTERNAL_ASSERT( (~rhs).rows() == M && (~rhs).columns() == N, "Invalid matrix size" );
 
@@ -2808,12 +3073,14 @@ inline void StaticMatrix<Type,M,N,SO>::addAssign( const SparseMatrix<MT,SO>& rhs
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N       // Number of columns
-        , bool SO >      // Storage order
-template< typename MT >  // Type of the right-hand side sparse matrix
-inline void StaticMatrix<Type,M,N,SO>::addAssign( const SparseMatrix<MT,!SO>& rhs )
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , bool SO           // Storage order
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+template< typename MT >     // Type of the right-hand side sparse matrix
+inline void StaticMatrix<Type,M,N,SO,AF,PF>::addAssign( const SparseMatrix<MT,!SO>& rhs )
 {
    BLAZE_CONSTRAINT_MUST_NOT_BE_SYMMETRIC_MATRIX_TYPE( MT );
 
@@ -2837,13 +3104,15 @@ inline void StaticMatrix<Type,M,N,SO>::addAssign( const SparseMatrix<MT,!SO>& rh
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N       // Number of columns
-        , bool SO >      // Storage order
-template< typename MT    // Type of the right-hand side dense matrix
-        , bool SO2 >     // Storage order of the right-hand side dense matrix
-inline auto StaticMatrix<Type,M,N,SO>::subAssign( const DenseMatrix<MT,SO2>& rhs )
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , bool SO           // Storage order
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+template< typename MT       // Type of the right-hand side dense matrix
+        , bool SO2 >        // Storage order of the right-hand side dense matrix
+inline auto StaticMatrix<Type,M,N,SO,AF,PF>::subAssign( const DenseMatrix<MT,SO2>& rhs )
    -> DisableIf_t< VectorizedSubAssign_v<MT> >
 {
    BLAZE_INTERNAL_ASSERT( (~rhs).rows() == M && (~rhs).columns() == N, "Invalid matrix size" );
@@ -2884,13 +3153,15 @@ inline auto StaticMatrix<Type,M,N,SO>::subAssign( const DenseMatrix<MT,SO2>& rhs
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N       // Number of columns
-        , bool SO >      // Storage order
-template< typename MT    // Type of the right-hand side dense matrix
-        , bool SO2 >     // Storage order of the right-hand side dense matrix
-inline auto StaticMatrix<Type,M,N,SO>::subAssign( const DenseMatrix<MT,SO2>& rhs )
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , bool SO           // Storage order
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+template< typename MT       // Type of the right-hand side dense matrix
+        , bool SO2 >        // Storage order of the right-hand side dense matrix
+inline auto StaticMatrix<Type,M,N,SO,AF,PF>::subAssign( const DenseMatrix<MT,SO2>& rhs )
    -> EnableIf_t< VectorizedSubAssign_v<MT> >
 {
    BLAZE_CONSTRAINT_MUST_BE_VECTORIZABLE_TYPE( Type );
@@ -2898,20 +3169,20 @@ inline auto StaticMatrix<Type,M,N,SO>::subAssign( const DenseMatrix<MT,SO2>& rhs
 
    BLAZE_INTERNAL_ASSERT( (~rhs).rows() == M && (~rhs).columns() == N, "Invalid matrix size" );
 
-   constexpr bool remainder( !usePadding || !IsPadded_v<MT> );
+   constexpr bool remainder( PF == unpadded || !IsPadded_v<MT> );
 
    for( size_t i=0UL; i<M; ++i )
    {
       const size_t jbegin( ( IsUpper_v<MT> )
-                           ?( ( IsStrictlyUpper_v<MT> ? i+1UL : i ) & size_t(-SIMDSIZE) )
+                           ?( prevMultiple( ( IsStrictlyUpper_v<MT> ? i+1UL : i ), SIMDSIZE ) )
                            :( 0UL ) );
       const size_t jend  ( ( IsLower_v<MT> )
                            ?( IsStrictlyLower_v<MT> ? i : i+1UL )
                            :( N ) );
       BLAZE_INTERNAL_ASSERT( jbegin <= jend, "Invalid loop indices detected" );
 
-      const size_t jpos( ( remainder )?( jend & size_t(-SIMDSIZE) ):( jend ) );
-      BLAZE_INTERNAL_ASSERT( !remainder || ( jend - ( jend % (SIMDSIZE) ) ) == jpos, "Invalid end calculation" );
+      const size_t jpos( remainder ? prevMultiple( jend, SIMDSIZE ) : jend );
+      BLAZE_INTERNAL_ASSERT( jpos <= jend, "Invalid end calculation" );
 
       size_t j( jbegin );
 
@@ -2937,12 +3208,14 @@ inline auto StaticMatrix<Type,M,N,SO>::subAssign( const DenseMatrix<MT,SO2>& rhs
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N       // Number of columns
-        , bool SO >      // Storage order
-template< typename MT >  // Type of the right-hand side sparse matrix
-inline void StaticMatrix<Type,M,N,SO>::subAssign( const SparseMatrix<MT,SO>& rhs )
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , bool SO           // Storage order
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+template< typename MT >     // Type of the right-hand side sparse matrix
+inline void StaticMatrix<Type,M,N,SO,AF,PF>::subAssign( const SparseMatrix<MT,SO>& rhs )
 {
    BLAZE_INTERNAL_ASSERT( (~rhs).rows() == M && (~rhs).columns() == N, "Invalid matrix size" );
 
@@ -2964,12 +3237,14 @@ inline void StaticMatrix<Type,M,N,SO>::subAssign( const SparseMatrix<MT,SO>& rhs
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N       // Number of columns
-        , bool SO >      // Storage order
-template< typename MT >  // Type of the right-hand side sparse matrix
-inline void StaticMatrix<Type,M,N,SO>::subAssign( const SparseMatrix<MT,!SO>& rhs )
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , bool SO           // Storage order
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+template< typename MT >     // Type of the right-hand side sparse matrix
+inline void StaticMatrix<Type,M,N,SO,AF,PF>::subAssign( const SparseMatrix<MT,!SO>& rhs )
 {
    BLAZE_CONSTRAINT_MUST_NOT_BE_SYMMETRIC_MATRIX_TYPE( MT );
 
@@ -2993,13 +3268,15 @@ inline void StaticMatrix<Type,M,N,SO>::subAssign( const SparseMatrix<MT,!SO>& rh
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N       // Number of columns
-        , bool SO >      // Storage order
-template< typename MT    // Type of the right-hand side dense matrix
-        , bool SO2 >     // Storage order of the right-hand side dense matrix
-inline auto StaticMatrix<Type,M,N,SO>::schurAssign( const DenseMatrix<MT,SO2>& rhs )
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , bool SO           // Storage order
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+template< typename MT       // Type of the right-hand side dense matrix
+        , bool SO2 >        // Storage order of the right-hand side dense matrix
+inline auto StaticMatrix<Type,M,N,SO,AF,PF>::schurAssign( const DenseMatrix<MT,SO2>& rhs )
    -> DisableIf_t< VectorizedSchurAssign_v<MT> >
 {
    BLAZE_INTERNAL_ASSERT( (~rhs).rows() == M && (~rhs).columns() == N, "Invalid matrix size" );
@@ -3024,23 +3301,25 @@ inline auto StaticMatrix<Type,M,N,SO>::schurAssign( const DenseMatrix<MT,SO2>& r
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N       // Number of columns
-        , bool SO >      // Storage order
-template< typename MT    // Type of the right-hand side dense matrix
-        , bool SO2 >     // Storage order of the right-hand side dense matrix
-inline auto StaticMatrix<Type,M,N,SO>::schurAssign( const DenseMatrix<MT,SO2>& rhs )
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , bool SO           // Storage order
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+template< typename MT       // Type of the right-hand side dense matrix
+        , bool SO2 >        // Storage order of the right-hand side dense matrix
+inline auto StaticMatrix<Type,M,N,SO,AF,PF>::schurAssign( const DenseMatrix<MT,SO2>& rhs )
    -> EnableIf_t< VectorizedSchurAssign_v<MT> >
 {
    BLAZE_CONSTRAINT_MUST_BE_VECTORIZABLE_TYPE( Type );
 
    BLAZE_INTERNAL_ASSERT( (~rhs).rows() == M && (~rhs).columns() == N, "Invalid matrix size" );
 
-   constexpr bool remainder( !usePadding || !IsPadded_v<MT> );
+   constexpr bool remainder( PF == unpadded || !IsPadded_v<MT> );
 
-   constexpr size_t jpos( ( remainder )?( N & size_t(-SIMDSIZE) ):( N ) );
-   BLAZE_INTERNAL_ASSERT( !remainder || ( N - ( N % (SIMDSIZE) ) ) == jpos, "Invalid end calculation" );
+   constexpr size_t jpos( remainder ? prevMultiple( N, SIMDSIZE ) : N );
+   BLAZE_INTERNAL_ASSERT( jpos <= N, "Invalid end calculation" );
 
    for( size_t i=0UL; i<M; ++i )
    {
@@ -3068,12 +3347,14 @@ inline auto StaticMatrix<Type,M,N,SO>::schurAssign( const DenseMatrix<MT,SO2>& r
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N       // Number of columns
-        , bool SO >      // Storage order
-template< typename MT >  // Type of the right-hand side sparse matrix
-inline void StaticMatrix<Type,M,N,SO>::schurAssign( const SparseMatrix<MT,SO>& rhs )
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , bool SO           // Storage order
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+template< typename MT >     // Type of the right-hand side sparse matrix
+inline void StaticMatrix<Type,M,N,SO,AF,PF>::schurAssign( const SparseMatrix<MT,SO>& rhs )
 {
    BLAZE_INTERNAL_ASSERT( (~rhs).rows() == M && (~rhs).columns() == N, "Invalid matrix size" );
 
@@ -3099,12 +3380,14 @@ inline void StaticMatrix<Type,M,N,SO>::schurAssign( const SparseMatrix<MT,SO>& r
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N       // Number of columns
-        , bool SO >      // Storage order
-template< typename MT >  // Type of the right-hand side sparse matrix
-inline void StaticMatrix<Type,M,N,SO>::schurAssign( const SparseMatrix<MT,!SO>& rhs )
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , bool SO           // Storage order
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+template< typename MT >     // Type of the right-hand side sparse matrix
+inline void StaticMatrix<Type,M,N,SO,AF,PF>::schurAssign( const SparseMatrix<MT,!SO>& rhs )
 {
    BLAZE_CONSTRAINT_MUST_NOT_BE_SYMMETRIC_MATRIX_TYPE( MT );
 
@@ -3141,43 +3424,33 @@ inline void StaticMatrix<Type,M,N,SO>::schurAssign( const SparseMatrix<MT,!SO>& 
 // This specialization of StaticMatrix adapts the class template to the requirements of
 // column-major matrices.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N >     // Number of columns
-class StaticMatrix<Type,M,N,true>
-   : public DenseMatrix< StaticMatrix<Type,M,N,true>, true >
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+class StaticMatrix<Type,M,N,true,AF,PF>
+   : public DenseMatrix< StaticMatrix<Type,M,N,true,AF,PF>, true >
 {
- private:
-   //**********************************************************************************************
-   //! The number of elements packed within a single SIMD element.
-   static constexpr size_t SIMDSIZE = SIMDTrait<Type>::size;
-
-   //! Alignment adjustment.
-   static constexpr size_t MM = ( usePadding ? nextMultiple( M, SIMDSIZE ) : M );
-
-   //! Compilation switch for the choice of alignment.
-   static constexpr bool align = ( usePadding || MM % SIMDSIZE == 0UL );
-   //**********************************************************************************************
-
  public:
    //**Type definitions****************************************************************************
-   using This          = StaticMatrix<Type,M,N,true>;   //!< Type of this StaticMatrix instance.
-   using BaseType      = DenseMatrix<This,true>;        //!< Base type of this StaticMatrix instance.
-   using ResultType    = This;                          //!< Result type for expression template evaluations.
-   using OppositeType  = StaticMatrix<Type,M,N,false>;  //!< Result type with opposite storage order for expression template evaluations.
-   using TransposeType = StaticMatrix<Type,N,M,false>;  //!< Transpose type for expression template evaluations.
-   using ElementType   = Type;                          //!< Type of the matrix elements.
-   using SIMDType      = SIMDTrait_t<ElementType>;      //!< SIMD type of the matrix elements.
-   using ReturnType    = const Type&;                   //!< Return type for expression template evaluations.
-   using CompositeType = const This&;                   //!< Data type for composite expression templates.
+   using This          = StaticMatrix<Type,M,N,true,AF,PF>;   //!< Type of this StaticMatrix instance.
+   using BaseType      = DenseMatrix<This,true>;              //!< Base type of this StaticMatrix instance.
+   using ResultType    = This;                                //!< Result type for expression template evaluations.
+   using OppositeType  = StaticMatrix<Type,M,N,false,AF,PF>;  //!< Result type with opposite storage order for expression template evaluations.
+   using TransposeType = StaticMatrix<Type,N,M,false,AF,PF>;  //!< Transpose type for expression template evaluations.
+   using ElementType   = Type;                                //!< Type of the matrix elements.
+   using SIMDType      = SIMDTrait_t<ElementType>;            //!< SIMD type of the matrix elements.
+   using ReturnType    = const Type&;                         //!< Return type for expression template evaluations.
+   using CompositeType = const This&;                         //!< Data type for composite expression templates.
 
    using Reference      = Type&;        //!< Reference to a non-constant matrix value.
    using ConstReference = const Type&;  //!< Reference to a constant matrix value.
    using Pointer        = Type*;        //!< Pointer to a non-constant matrix value.
    using ConstPointer   = const Type*;  //!< Pointer to a constant matrix value.
 
-   using Iterator      = DenseIterator<Type,align>;        //!< Iterator over non-constant elements.
-   using ConstIterator = DenseIterator<const Type,align>;  //!< Iterator over constant elements.
+   using Iterator      = DenseIterator<Type,AF>;        //!< Iterator over non-constant elements.
+   using ConstIterator = DenseIterator<const Type,AF>;  //!< Iterator over constant elements.
    //**********************************************************************************************
 
    //**Rebind struct definition********************************************************************
@@ -3185,7 +3458,7 @@ class StaticMatrix<Type,M,N,true>
    */
    template< typename NewType >  // Data type of the other matrix
    struct Rebind {
-      using Other = StaticMatrix<NewType,M,N,true>;  //!< The type of the other StaticMatrix.
+      using Other = StaticMatrix<NewType,M,N,true,AF,PF>;  //!< The type of the other StaticMatrix.
    };
    //**********************************************************************************************
 
@@ -3195,7 +3468,7 @@ class StaticMatrix<Type,M,N,true>
    template< size_t NewM    // Number of rows of the other matrix
            , size_t NewN >  // Number of columns of the other matrix
    struct Resize {
-      using Other = StaticMatrix<Type,NewM,NewN,true>;  //!< The type of the other StaticMatrix.
+      using Other = StaticMatrix<Type,NewM,NewN,true,AF,PF>;  //!< The type of the other StaticMatrix.
    };
    //**********************************************************************************************
 
@@ -3217,20 +3490,23 @@ class StaticMatrix<Type,M,N,true>
    //**Constructors********************************************************************************
    /*!\name Constructors */
    //@{
-   explicit inline           StaticMatrix();
-   explicit inline           StaticMatrix( const Type& init );
-            inline constexpr StaticMatrix( initializer_list< initializer_list<Type> > list );
+            inline    StaticMatrix();
+   explicit inline    StaticMatrix( const Type& init );
+            constexpr StaticMatrix( initializer_list< initializer_list<Type> > list );
 
    template< typename Other >
-   explicit inline StaticMatrix( size_t m, size_t n, const Other* array );
+   inline StaticMatrix( size_t m, size_t n, const Other* array );
 
    template< typename Other, size_t Rows, size_t Cols >
-   explicit inline StaticMatrix( const Other (&array)[Rows][Cols] );
+   inline StaticMatrix( const Other (&array)[Rows][Cols] );
 
-   inline constexpr StaticMatrix( const StaticMatrix& m );
+   template< typename Other, size_t Rows, size_t Cols >
+   StaticMatrix( const std::array<std::array<Other,Cols>,Rows>& array );
 
-   template< typename Other, bool SO >
-   inline StaticMatrix( const StaticMatrix<Other,M,N,SO>&  m );
+   constexpr StaticMatrix( const StaticMatrix& m );
+
+   template< typename Other, bool SO2, AlignmentFlag AF2, PaddingFlag PF2 >
+   inline StaticMatrix( const StaticMatrix<Other,M,N,SO2,AF2,PF2>&  m );
 
    template< typename MT, bool SO >
    inline StaticMatrix( const Matrix<MT,SO>& m );
@@ -3247,36 +3523,39 @@ class StaticMatrix<Type,M,N,true>
    //**Data access functions***********************************************************************
    /*!\name Data access functions */
    //@{
-   inline constexpr Reference      operator()( size_t i, size_t j ) noexcept;
-   inline constexpr ConstReference operator()( size_t i, size_t j ) const noexcept;
-   inline           Reference      at( size_t i, size_t j );
-   inline           ConstReference at( size_t i, size_t j ) const;
-   inline constexpr Pointer        data  () noexcept;
-   inline constexpr ConstPointer   data  () const noexcept;
-   inline constexpr Pointer        data  ( size_t j ) noexcept;
-   inline constexpr ConstPointer   data  ( size_t j ) const noexcept;
-   inline constexpr Iterator       begin ( size_t j ) noexcept;
-   inline constexpr ConstIterator  begin ( size_t j ) const noexcept;
-   inline constexpr ConstIterator  cbegin( size_t j ) const noexcept;
-   inline constexpr Iterator       end   ( size_t j ) noexcept;
-   inline constexpr ConstIterator  end   ( size_t j ) const noexcept;
-   inline constexpr ConstIterator  cend  ( size_t j ) const noexcept;
+   constexpr Reference      operator()( size_t i, size_t j ) noexcept;
+   constexpr ConstReference operator()( size_t i, size_t j ) const noexcept;
+   inline    Reference      at( size_t i, size_t j );
+   inline    ConstReference at( size_t i, size_t j ) const;
+   constexpr Pointer        data  () noexcept;
+   constexpr ConstPointer   data  () const noexcept;
+   constexpr Pointer        data  ( size_t j ) noexcept;
+   constexpr ConstPointer   data  ( size_t j ) const noexcept;
+   constexpr Iterator       begin ( size_t j ) noexcept;
+   constexpr ConstIterator  begin ( size_t j ) const noexcept;
+   constexpr ConstIterator  cbegin( size_t j ) const noexcept;
+   constexpr Iterator       end   ( size_t j ) noexcept;
+   constexpr ConstIterator  end   ( size_t j ) const noexcept;
+   constexpr ConstIterator  cend  ( size_t j ) const noexcept;
    //@}
    //**********************************************************************************************
 
    //**Assignment operators************************************************************************
    /*!\name Assignment operators */
    //@{
-   inline constexpr StaticMatrix& operator=( const Type& set );
-   inline constexpr StaticMatrix& operator=( initializer_list< initializer_list<Type> > list );
+   constexpr StaticMatrix& operator=( const Type& set );
+   constexpr StaticMatrix& operator=( initializer_list< initializer_list<Type> > list );
 
    template< typename Other, size_t Rows, size_t Cols >
    inline StaticMatrix& operator=( const Other (&array)[Rows][Cols] );
 
-   inline constexpr StaticMatrix& operator=( const StaticMatrix& rhs );
+   template< typename Other, size_t Rows, size_t Cols >
+   inline StaticMatrix& operator=( const std::array<std::array<Other,Cols>,Rows>& array );
 
-   template< typename Other, bool SO >
-   inline StaticMatrix& operator=( const StaticMatrix<Other,M,N,SO>& rhs );
+   constexpr StaticMatrix& operator=( const StaticMatrix& rhs );
+
+   template< typename Other, bool SO2, AlignmentFlag AF2, PaddingFlag PF2 >
+   inline StaticMatrix& operator=( const StaticMatrix<Other,M,N,SO2,AF2,PF2>& rhs );
 
    template< typename MT, bool SO > inline StaticMatrix& operator= ( const Matrix<MT,SO>& rhs );
    template< typename MT, bool SO > inline StaticMatrix& operator+=( const Matrix<MT,SO>& rhs );
@@ -3288,16 +3567,16 @@ class StaticMatrix<Type,M,N,true>
    //**Utility functions***************************************************************************
    /*!\name Utility functions */
    //@{
-   static inline constexpr size_t rows() noexcept;
-   static inline constexpr size_t columns() noexcept;
-   static inline constexpr size_t spacing() noexcept;
-   static inline constexpr size_t capacity() noexcept;
-          inline           size_t capacity( size_t j ) const noexcept;
-          inline           size_t nonZeros() const;
-          inline           size_t nonZeros( size_t j ) const;
-          inline constexpr void   reset();
-          inline           void   reset( size_t i );
-          inline           void   swap( StaticMatrix& m ) noexcept;
+   static constexpr size_t rows() noexcept;
+   static constexpr size_t columns() noexcept;
+   static constexpr size_t spacing() noexcept;
+   static constexpr size_t capacity() noexcept;
+          inline    size_t capacity( size_t j ) const noexcept;
+          inline    size_t nonZeros() const;
+          inline    size_t nonZeros( size_t j ) const;
+          constexpr void   reset();
+          inline    void   reset( size_t i );
+          inline    void   swap( StaticMatrix& m ) noexcept;
    //@}
    //**********************************************************************************************
 
@@ -3328,10 +3607,19 @@ class StaticMatrix<Type,M,N,true>
 
  private:
    //**********************************************************************************************
+   //! The number of elements packed within a single SIMD element.
+   static constexpr size_t SIMDSIZE = SIMDTrait<Type>::size;
+
+   //! Alignment adjustment.
+   static constexpr size_t MM = ( PF == padded ? nextMultiple( M, SIMDSIZE ) : M );
+   //**********************************************************************************************
+
+   //**********************************************************************************************
    //! Helper variable template for the explicit application of the SFINAE principle.
    template< typename MT >
    static constexpr bool VectorizedAssign_v =
       ( useOptimizedKernels &&
+        MM >= SIMDSIZE &&
         simdEnabled && MT::simdEnabled &&
         IsSIMDCombinable_v< Type, ElementType_t<MT> > &&
         IsColumnMajorMatrix_v<MT> );
@@ -3341,11 +3629,8 @@ class StaticMatrix<Type,M,N,true>
    //! Helper variable template for the explicit application of the SFINAE principle.
    template< typename MT >
    static constexpr bool VectorizedAddAssign_v =
-      ( useOptimizedKernels &&
-        simdEnabled && MT::simdEnabled &&
-        IsSIMDCombinable_v< Type, ElementType_t<MT> > &&
+      ( VectorizedAssign_v<MT> &&
         HasSIMDAdd_v< Type, ElementType_t<MT> > &&
-        IsColumnMajorMatrix_v<MT> &&
         !IsDiagonal_v<MT> );
    //**********************************************************************************************
 
@@ -3353,11 +3638,8 @@ class StaticMatrix<Type,M,N,true>
    //! Helper variable template for the explicit application of the SFINAE principle.
    template< typename MT >
    static constexpr bool VectorizedSubAssign_v =
-      ( useOptimizedKernels &&
-        simdEnabled && MT::simdEnabled &&
-        IsSIMDCombinable_v< Type, ElementType_t<MT> > &&
+      ( VectorizedAssign_v<MT> &&
         HasSIMDSub_v< Type, ElementType_t<MT> > &&
-        IsColumnMajorMatrix_v<MT> &&
         !IsDiagonal_v<MT> );
    //**********************************************************************************************
 
@@ -3365,18 +3647,15 @@ class StaticMatrix<Type,M,N,true>
    //! Helper variable template for the explicit application of the SFINAE principle.
    template< typename MT >
    static constexpr bool VectorizedSchurAssign_v =
-      ( useOptimizedKernels &&
-        simdEnabled && MT::simdEnabled &&
-        IsSIMDCombinable_v< Type, ElementType_t<MT> > &&
-        HasSIMDMult_v< Type, ElementType_t<MT> > &&
-        IsColumnMajorMatrix_v<MT> );
+      ( VectorizedAssign_v<MT> &&
+        HasSIMDMult_v< Type, ElementType_t<MT> > );
    //**********************************************************************************************
 
  public:
    //**Debugging functions*************************************************************************
    /*!\name Debugging functions */
    //@{
-   inline constexpr bool isIntact() const noexcept;
+   constexpr bool isIntact() const noexcept;
    //@}
    //**********************************************************************************************
 
@@ -3386,7 +3665,7 @@ class StaticMatrix<Type,M,N,true>
    template< typename Other > inline bool canAlias ( const Other* alias ) const noexcept;
    template< typename Other > inline bool isAliased( const Other* alias ) const noexcept;
 
-   static inline constexpr bool isAligned() noexcept;
+   static constexpr bool isAligned() noexcept;
 
    BLAZE_ALWAYS_INLINE SIMDType load ( size_t i, size_t j ) const noexcept;
    BLAZE_ALWAYS_INLINE SIMDType loada( size_t i, size_t j ) const noexcept;
@@ -3446,7 +3725,7 @@ class StaticMatrix<Type,M,N,true>
    //**********************************************************************************************
    //! Alignment of the data elements.
    static constexpr size_t Alignment =
-      ( align ? AlignmentOf_v<Type> : std::alignment_of<Type>::value );
+      ( AF == aligned ? AlignmentOf_v<Type> : std::alignment_of<Type>::value );
 
    //! Type of the aligned storage.
    using AlignedStorage = AlignedArray<Type,MM*N,Alignment>;
@@ -3465,8 +3744,10 @@ class StaticMatrix<Type,M,N,true>
    BLAZE_CONSTRAINT_MUST_NOT_BE_REFERENCE_TYPE( Type );
    BLAZE_CONSTRAINT_MUST_NOT_BE_CONST         ( Type );
    BLAZE_CONSTRAINT_MUST_NOT_BE_VOLATILE      ( Type );
-   BLAZE_STATIC_ASSERT( !usePadding || MM % SIMDSIZE == 0UL );
+   BLAZE_STATIC_ASSERT( AF == unaligned || PF == padded || M % SIMDSIZE == 0UL );
+   BLAZE_STATIC_ASSERT( PF == unpadded || MM % SIMDSIZE == 0UL );
    BLAZE_STATIC_ASSERT( MM >= M );
+   BLAZE_STATIC_ASSERT( IsVectorizable_v<Type> || MM == M );
    //**********************************************************************************************
 };
 /*! \endcond */
@@ -3477,7 +3758,7 @@ class StaticMatrix<Type,M,N,true>
 
 //=================================================================================================
 //
-//  CONSTRUCTORS
+//  xex
 //
 //=================================================================================================
 
@@ -3495,25 +3776,23 @@ class StaticMatrix<Type,M,N,true>
 // floating point). In case the elements are of class type, this switch has no effect. See
 // the <tt>"../../config/Optimizations.h"</tt> configuration file for more details.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N >     // Number of columns
-inline StaticMatrix<Type,M,N,true>::StaticMatrix()
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+inline StaticMatrix<Type,M,N,true,AF,PF>::StaticMatrix()
+#if BLAZE_USE_DEFAULT_INITIALIZATION
    : v_()  // The statically allocated matrix elements
+#endif
 {
-   BLAZE_STATIC_ASSERT( IsVectorizable_v<Type> || MM == M );
-
-   if( IsNumeric_v<Type> ) {
-      if( useDefaultInitialization ) {
-         for( size_t i=0UL; i<MM*N; ++i )
-            v_[i] = Type();
-      }
-      else if( usePadding ) {
-         for( size_t j=0UL; j<N; ++j )
-            for( size_t i=M; i<MM; ++i )
-               v_[i+j*MM] = Type();
-      }
+#if !BLAZE_USE_DEFAULT_INITIALIZATION
+   if( IsNumeric_v<Type> && PF == padded ) {
+      for( size_t j=0UL; j<N; ++j )
+         for( size_t i=M; i<MM; ++i )
+            v_[i+j*MM] = Type();
    }
+#endif
 
    BLAZE_INTERNAL_ASSERT( isIntact(), "Invariant violation detected" );
 }
@@ -3527,14 +3806,14 @@ inline StaticMatrix<Type,M,N,true>::StaticMatrix()
 //
 // \param init Initial value for all matrix elements.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N >     // Number of columns
-inline StaticMatrix<Type,M,N,true>::StaticMatrix( const Type& init )
-   : v_()  // The statically allocated matrix elements
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+inline StaticMatrix<Type,M,N,true,AF,PF>::StaticMatrix( const Type& init )
+   // v_ is intentionally left uninitialized
 {
-   BLAZE_STATIC_ASSERT( IsVectorizable_v<Type> || MM == M );
-
    for( size_t j=0UL; j<N; ++j ) {
       for( size_t i=0UL; i<M; ++i )
          v_[i+j*MM] = init;
@@ -3572,14 +3851,14 @@ inline StaticMatrix<Type,M,N,true>::StaticMatrix( const Type& init )
 // size of the top-level initializer list exceeds the number of rows or the size of any nested
 // list exceeds the number of columns, a \a std::invalid_argument exception is thrown.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N >     // Number of columns
-inline constexpr StaticMatrix<Type,M,N,true>::StaticMatrix( initializer_list< initializer_list<Type> > list )
-   : v_( Type() )  // The statically allocated matrix elements
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+constexpr StaticMatrix<Type,M,N,true,AF,PF>::StaticMatrix( initializer_list< initializer_list<Type> > list )
+   : v_()  // The statically allocated matrix elements
 {
-   BLAZE_STATIC_ASSERT( IsVectorizable_v<Type> || MM == M );
-
    if( list.size() != M || determineColumns( list ) > N ) {
       BLAZE_THROW_INVALID_ARGUMENT( "Invalid setup of static matrix" );
    }
@@ -3617,7 +3896,7 @@ inline constexpr StaticMatrix<Type,M,N,true>::StaticMatrix( initializer_list< in
 
    int* array = new int[6];
    // ... Initialization of the dynamic array
-   blaze::StaticMatrix<int,3,4,columnMajor> v( array, 2UL, 3UL );
+   blaze::StaticMatrix<int,3,4,columnMajor> v( 2UL, 3UL, array );
    delete[] array;
    \endcode
 
@@ -3630,13 +3909,13 @@ inline constexpr StaticMatrix<Type,M,N,true>::StaticMatrix( initializer_list< in
 */
 template< typename Type     // Data type of the matrix
         , size_t M          // Number of rows
-        , size_t N >        // Number of columns
+        , size_t N          // Number of columns
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
 template< typename Other >  // Data type of the initialization array
-inline StaticMatrix<Type,M,N,true>::StaticMatrix( size_t m, size_t n, const Other* array )
-   : v_()  // The statically allocated matrix elements
+inline StaticMatrix<Type,M,N,true,AF,PF>::StaticMatrix( size_t m, size_t n, const Other* array )
+   // v_ is intentionally left uninitialized
 {
-   BLAZE_STATIC_ASSERT( IsVectorizable_v<Type> || MM == M );
-
    if( m > M || n > N ) {
       BLAZE_THROW_INVALID_ARGUMENT( "Invalid setup of static matrix" );
    }
@@ -3668,7 +3947,7 @@ inline StaticMatrix<Type,M,N,true>::StaticMatrix( size_t m, size_t n, const Othe
 /*! \cond BLAZE_INTERNAL */
 /*!\brief Array initialization of all matrix elements.
 //
-// \param array \f$ M \times N \f$ dimensional array for the initialization.
+// \param array Static array for the initialization.
 //
 // This constructor offers the option to directly initialize the elements of the matrix with
 // a static array:
@@ -3682,19 +3961,68 @@ inline StaticMatrix<Type,M,N,true>::StaticMatrix( size_t m, size_t n, const Othe
    blaze::StaticMatrix<int,3,3,columnMajor> A( init );
    \endcode
 
-// The matrix is initialized with the values from the given array. Missing values are initialized
-// with default values (as e.g. the value 6 in the example).
+// The matrix is initialized with the values from the given static array. Missing values are
+// initialized with default values (as e.g. the value 6 in the example).
 */
-template< typename Type   // Data type of the matrix
-        , size_t M        // Number of rows
-        , size_t N >      // Number of columns
-template< typename Other  // Data type of the initialization array
-        , size_t Rows     // Number of rows of the initialization array
-        , size_t Cols >   // Number of columns of the initialization array
-inline StaticMatrix<Type,M,N,true>::StaticMatrix( const Other (&array)[Rows][Cols] )
-   : v_()  // The statically allocated matrix elements
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+template< typename Other    // Data type of the static array
+        , size_t Rows       // Number of rows of the static array
+        , size_t Cols >     // Number of columns of the static array
+inline StaticMatrix<Type,M,N,true,AF,PF>::StaticMatrix( const Other (&array)[Rows][Cols] )
+   // v_ is intentionally left uninitialized
 {
-   BLAZE_STATIC_ASSERT( IsVectorizable_v<Type> || MM == M );
+   BLAZE_STATIC_ASSERT( Rows == M && Cols == N );
+
+   for( size_t j=0UL; j<N; ++j ) {
+      for( size_t i=0UL; i<M; ++i )
+         v_[i+j*MM] = array[i][j];
+
+      for( size_t i=M; i<MM; ++i )
+         v_[i+j*MM] = Type();
+   }
+
+   BLAZE_INTERNAL_ASSERT( isIntact(), "Invariant violation detected" );
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Initialization of all matrix elements from the given std::array.
+//
+// \param array The given std::array for the initialization.
+//
+// This constructor offers the option to directly initialize the elements of the matrix with
+// a std::array:
+
+   \code
+   using blaze::columnMajor;
+
+   const std::array<std::array<int,3>,3> init = { { { 1, 2, 3 },
+                                                    { 4, 5 },
+                                                    { 7, 8, 9 } } };
+   blaze::StaticMatrix<int,3,3,columnMajor> A( init );
+   \endcode
+
+// The matrix is initialized with the values from the given std::array. Missing values are
+// initialized with default values (as e.g. the value 6 in the example).
+*/
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+template< typename Other    // Data type of the std::array
+        , size_t Rows       // Number of rows of the std::array
+        , size_t Cols >     // Number of columns of the std::array
+inline StaticMatrix<Type,M,N,true,AF,PF>::StaticMatrix( const std::array<std::array<Other,Cols>,Rows>& array )
+   // v_ is intentionally left uninitialized
+{
    BLAZE_STATIC_ASSERT( Rows == M && Cols == N );
 
    for( size_t j=0UL; j<N; ++j ) {
@@ -3719,14 +4047,15 @@ inline StaticMatrix<Type,M,N,true>::StaticMatrix( const Other (&array)[Rows][Col
 //
 // The copy constructor is explicitly defined in order to enable/facilitate NRV optimization.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N >     // Number of columns
-inline constexpr StaticMatrix<Type,M,N,true>::StaticMatrix( const StaticMatrix& m )
-   : v_( m.v_ )  // The statically allocated matrix elements
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+constexpr StaticMatrix<Type,M,N,true,AF,PF>::StaticMatrix( const StaticMatrix& m )
+   : BaseType()  // Initialization of the base class
+   , v_( m.v_ )  // The statically allocated matrix elements
 {
-   BLAZE_STATIC_ASSERT( IsVectorizable_v<Type> || MM == M );
-
    BLAZE_INTERNAL_ASSERT( isIntact(), "Invariant violation detected" );
 }
 /*! \endcond */
@@ -3739,16 +4068,18 @@ inline constexpr StaticMatrix<Type,M,N,true>::StaticMatrix( const StaticMatrix& 
 //
 // \param m Matrix to be copied.
 */
-template< typename Type   // Data type of the matrix
-        , size_t M        // Number of rows
-        , size_t N >      // Number of columns
-template< typename Other  // Data type of the foreign matrix
-        , bool SO >       // Storage order of the foreign matrix
-inline StaticMatrix<Type,M,N,true>::StaticMatrix( const StaticMatrix<Other,M,N,SO>& m )
-   : v_()  // The statically allocated matrix elements
+template< typename Type      // Data type of the matrix
+        , size_t M           // Number of rows
+        , size_t N           // Number of columns
+        , AlignmentFlag AF   // Alignment flag
+        , PaddingFlag PF >   // Padding flag
+template< typename Other     // Data type of the foreign matrix
+        , bool SO2           // Storage order of the foreign matrix
+        , AlignmentFlag AF2  // Alignment flag of the foreign matrix
+        , PaddingFlag PF2 >  // Padding flag of the foreign matrix
+inline StaticMatrix<Type,M,N,true,AF,PF>::StaticMatrix( const StaticMatrix<Other,M,N,SO2,AF2,PF2>& m )
+   // v_ is intentionally left uninitialized
 {
-   BLAZE_STATIC_ASSERT( IsVectorizable_v<Type> || MM == M );
-
    for( size_t j=0UL; j<N; ++j ) {
       for( size_t i=0UL; i<M; ++i )
          v_[i+j*MM] = m(i,j);
@@ -3774,17 +4105,17 @@ inline StaticMatrix<Type,M,N,true>::StaticMatrix( const StaticMatrix<Other,M,N,S
 // the given matrix does not match the size of the static matrix (i.e. the number of rows is
 // not M or the number of columns is not N), a \a std::invalid_argument exception is thrown.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N >     // Number of columns
-template< typename MT    // Type of the foreign matrix
-        , bool SO >      // Storage order of the foreign matrix
-inline StaticMatrix<Type,M,N,true>::StaticMatrix( const Matrix<MT,SO>& m )
-   : v_()  // The statically allocated matrix elements
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+template< typename MT       // Type of the foreign matrix
+        , bool SO >         // Storage order of the foreign matrix
+inline StaticMatrix<Type,M,N,true,AF,PF>::StaticMatrix( const Matrix<MT,SO>& m )
+   // v_ is intentionally left uninitialized
 {
    using blaze::assign;
-
-   BLAZE_STATIC_ASSERT( IsVectorizable_v<Type> || MM == M );
 
    if( (~m).rows() != M || (~m).columns() != N ) {
       BLAZE_THROW_INVALID_ARGUMENT( "Invalid setup of static matrix" );
@@ -3823,11 +4154,13 @@ inline StaticMatrix<Type,M,N,true>::StaticMatrix( const Matrix<MT,SO>& m )
 // This function only performs an index check in case BLAZE_USER_ASSERT() is active. In contrast,
 // the at() function is guaranteed to perform a check of the given access indices.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N >     // Number of columns
-inline constexpr typename StaticMatrix<Type,M,N,true>::Reference
-   StaticMatrix<Type,M,N,true>::operator()( size_t i, size_t j ) noexcept
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+constexpr typename StaticMatrix<Type,M,N,true,AF,PF>::Reference
+   StaticMatrix<Type,M,N,true,AF,PF>::operator()( size_t i, size_t j ) noexcept
 {
    BLAZE_USER_ASSERT( i<M, "Invalid row access index"    );
    BLAZE_USER_ASSERT( j<N, "Invalid column access index" );
@@ -3848,11 +4181,13 @@ inline constexpr typename StaticMatrix<Type,M,N,true>::Reference
 // This function only performs an index check in case BLAZE_USER_ASSERT() is active. In contrast,
 // the at() function is guaranteed to perform a check of the given access indices.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N >     // Number of columns
-inline constexpr typename StaticMatrix<Type,M,N,true>::ConstReference
-   StaticMatrix<Type,M,N,true>::operator()( size_t i, size_t j ) const noexcept
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+constexpr typename StaticMatrix<Type,M,N,true,AF,PF>::ConstReference
+   StaticMatrix<Type,M,N,true,AF,PF>::operator()( size_t i, size_t j ) const noexcept
 {
    BLAZE_USER_ASSERT( i<M, "Invalid row access index"    );
    BLAZE_USER_ASSERT( j<N, "Invalid column access index" );
@@ -3874,11 +4209,13 @@ inline constexpr typename StaticMatrix<Type,M,N,true>::ConstReference
 // In contrast to the subscript operator this function always performs a check of the given
 // access indices.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N >     // Number of columns
-inline typename StaticMatrix<Type,M,N,true>::Reference
-   StaticMatrix<Type,M,N,true>::at( size_t i, size_t j )
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+inline typename StaticMatrix<Type,M,N,true,AF,PF>::Reference
+   StaticMatrix<Type,M,N,true,AF,PF>::at( size_t i, size_t j )
 {
    if( i >= M ) {
       BLAZE_THROW_OUT_OF_RANGE( "Invalid row access index" );
@@ -3904,11 +4241,13 @@ inline typename StaticMatrix<Type,M,N,true>::Reference
 // In contrast to the subscript operator this function always performs a check of the given
 // access indices.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N >     // Number of columns
-inline typename StaticMatrix<Type,M,N,true>::ConstReference
-   StaticMatrix<Type,M,N,true>::at( size_t i, size_t j ) const
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+inline typename StaticMatrix<Type,M,N,true,AF,PF>::ConstReference
+   StaticMatrix<Type,M,N,true,AF,PF>::at( size_t i, size_t j ) const
 {
    if( i >= M ) {
       BLAZE_THROW_OUT_OF_RANGE( "Invalid row access index" );
@@ -3934,11 +4273,13 @@ inline typename StaticMatrix<Type,M,N,true>::ConstReference
 // elements within a column are given by the \c columns() member functions, the total number
 // of elements including padding is given by the \c spacing() member function.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N >     // Number of columns
-inline constexpr typename StaticMatrix<Type,M,N,true>::Pointer
-   StaticMatrix<Type,M,N,true>::data() noexcept
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+constexpr typename StaticMatrix<Type,M,N,true,AF,PF>::Pointer
+   StaticMatrix<Type,M,N,true,AF,PF>::data() noexcept
 {
    return v_;
 }
@@ -3958,11 +4299,13 @@ inline constexpr typename StaticMatrix<Type,M,N,true>::Pointer
 // elements within a column are given by the \c columns() member functions, the total number
 // of elements including padding is given by the \c spacing() member function.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N >     // Number of columns
-inline constexpr typename StaticMatrix<Type,M,N,true>::ConstPointer
-   StaticMatrix<Type,M,N,true>::data() const noexcept
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+constexpr typename StaticMatrix<Type,M,N,true,AF,PF>::ConstPointer
+   StaticMatrix<Type,M,N,true,AF,PF>::data() const noexcept
 {
    return v_;
 }
@@ -3979,11 +4322,13 @@ inline constexpr typename StaticMatrix<Type,M,N,true>::ConstPointer
 //
 // This function returns a pointer to the internal storage for the elements in column \a j.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N >     // Number of columns
-inline constexpr typename StaticMatrix<Type,M,N,true>::Pointer
-   StaticMatrix<Type,M,N,true>::data( size_t j ) noexcept
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+constexpr typename StaticMatrix<Type,M,N,true,AF,PF>::Pointer
+   StaticMatrix<Type,M,N,true,AF,PF>::data( size_t j ) noexcept
 {
    BLAZE_USER_ASSERT( j < N, "Invalid dense matrix column access index" );
    return v_ + j*MM;
@@ -4001,11 +4346,13 @@ inline constexpr typename StaticMatrix<Type,M,N,true>::Pointer
 //
 // This function returns a pointer to the internal storage for the elements in column \a j
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N >     // Number of columns
-inline constexpr typename StaticMatrix<Type,M,N,true>::ConstPointer
-   StaticMatrix<Type,M,N,true>::data( size_t j ) const noexcept
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+constexpr typename StaticMatrix<Type,M,N,true,AF,PF>::ConstPointer
+   StaticMatrix<Type,M,N,true,AF,PF>::data( size_t j ) const noexcept
 {
    BLAZE_USER_ASSERT( j < N, "Invalid dense matrix column access index" );
    return v_ + j*MM;
@@ -4021,11 +4368,13 @@ inline constexpr typename StaticMatrix<Type,M,N,true>::ConstPointer
 // \param j The column index.
 // \return Iterator to the first element of column \a j.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N >     // Number of columns
-inline constexpr typename StaticMatrix<Type,M,N,true>::Iterator
-   StaticMatrix<Type,M,N,true>::begin( size_t j ) noexcept
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+constexpr typename StaticMatrix<Type,M,N,true,AF,PF>::Iterator
+   StaticMatrix<Type,M,N,true,AF,PF>::begin( size_t j ) noexcept
 {
    BLAZE_USER_ASSERT( j < N, "Invalid dense matrix column access index" );
    return Iterator( v_ + j*MM );
@@ -4041,11 +4390,13 @@ inline constexpr typename StaticMatrix<Type,M,N,true>::Iterator
 // \param j The column index.
 // \return Iterator to the first element of column \a j.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N >     // Number of columns
-inline constexpr typename StaticMatrix<Type,M,N,true>::ConstIterator
-   StaticMatrix<Type,M,N,true>::begin( size_t j ) const noexcept
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+constexpr typename StaticMatrix<Type,M,N,true,AF,PF>::ConstIterator
+   StaticMatrix<Type,M,N,true,AF,PF>::begin( size_t j ) const noexcept
 {
    BLAZE_USER_ASSERT( j < N, "Invalid dense matrix column access index" );
    return ConstIterator( v_ + j*MM );
@@ -4061,11 +4412,13 @@ inline constexpr typename StaticMatrix<Type,M,N,true>::ConstIterator
 // \param j The column index.
 // \return Iterator to the first element of column \a j.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N >     // Number of columns
-inline constexpr typename StaticMatrix<Type,M,N,true>::ConstIterator
-   StaticMatrix<Type,M,N,true>::cbegin( size_t j ) const noexcept
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+constexpr typename StaticMatrix<Type,M,N,true,AF,PF>::ConstIterator
+   StaticMatrix<Type,M,N,true,AF,PF>::cbegin( size_t j ) const noexcept
 {
    BLAZE_USER_ASSERT( j < N, "Invalid dense matrix column access index" );
    return ConstIterator( v_ + j*MM );
@@ -4081,11 +4434,13 @@ inline constexpr typename StaticMatrix<Type,M,N,true>::ConstIterator
 // \param j The column index.
 // \return Iterator just past the last element of column \a j.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N >     // Number of columns
-inline constexpr typename StaticMatrix<Type,M,N,true>::Iterator
-   StaticMatrix<Type,M,N,true>::end( size_t j ) noexcept
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+constexpr typename StaticMatrix<Type,M,N,true,AF,PF>::Iterator
+   StaticMatrix<Type,M,N,true,AF,PF>::end( size_t j ) noexcept
 {
    BLAZE_USER_ASSERT( j < N, "Invalid dense matrix column access index" );
    return Iterator( v_ + j*MM + M );
@@ -4101,11 +4456,13 @@ inline constexpr typename StaticMatrix<Type,M,N,true>::Iterator
 // \param j The column index.
 // \return Iterator just past the last element of column \a j.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N >     // Number of columns
-inline constexpr typename StaticMatrix<Type,M,N,true>::ConstIterator
-   StaticMatrix<Type,M,N,true>::end( size_t j ) const noexcept
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+constexpr typename StaticMatrix<Type,M,N,true,AF,PF>::ConstIterator
+   StaticMatrix<Type,M,N,true,AF,PF>::end( size_t j ) const noexcept
 {
    BLAZE_USER_ASSERT( j < N, "Invalid dense matrix column access index" );
    return ConstIterator( v_ + j*MM + M );
@@ -4121,11 +4478,13 @@ inline constexpr typename StaticMatrix<Type,M,N,true>::ConstIterator
 // \param j The column index.
 // \return Iterator just past the last element of column \a j.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N >     // Number of columns
-inline constexpr typename StaticMatrix<Type,M,N,true>::ConstIterator
-   StaticMatrix<Type,M,N,true>::cend( size_t j ) const noexcept
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+constexpr typename StaticMatrix<Type,M,N,true,AF,PF>::ConstIterator
+   StaticMatrix<Type,M,N,true,AF,PF>::cend( size_t j ) const noexcept
 {
    BLAZE_USER_ASSERT( j < N, "Invalid dense matrix column access index" );
    return ConstIterator( v_ + j*MM + M );
@@ -4149,11 +4508,13 @@ inline constexpr typename StaticMatrix<Type,M,N,true>::ConstIterator
 // \param set Scalar value to be assigned to all matrix elements.
 // \return Reference to the assigned matrix.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N >     // Number of columns
-inline constexpr StaticMatrix<Type,M,N,true>&
-   StaticMatrix<Type,M,N,true>::operator=( const Type& set )
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+constexpr StaticMatrix<Type,M,N,true,AF,PF>&
+   StaticMatrix<Type,M,N,true,AF,PF>::operator=( const Type& set )
 {
    for( size_t j=0UL; j<N; ++j )
       for( size_t i=0UL; i<M; ++i )
@@ -4191,11 +4552,13 @@ inline constexpr StaticMatrix<Type,M,N,true>&
 // size of the top-level initializer list exceeds the number of rows or the size of any nested
 // list exceeds the number of columns, a \a std::invalid_argument exception is thrown.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N >     // Number of columns
-inline constexpr StaticMatrix<Type,M,N,true>&
-   StaticMatrix<Type,M,N,true>::operator=( initializer_list< initializer_list<Type> > list )
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+constexpr StaticMatrix<Type,M,N,true,AF,PF>&
+   StaticMatrix<Type,M,N,true,AF,PF>::operator=( initializer_list< initializer_list<Type> > list )
 {
    if( list.size() != M || determineColumns( list ) > N ) {
       BLAZE_THROW_INVALID_ARGUMENT( "Invalid assignment to static matrix" );
@@ -4227,7 +4590,7 @@ inline constexpr StaticMatrix<Type,M,N,true>&
 /*! \cond BLAZE_INTERNAL */
 /*!\brief Array assignment to all matrix elements.
 //
-// \param array \f$ M \times N \f$ dimensional array for the assignment.
+// \param array Static array for the assignment.
 // \return Reference to the assigned matrix.
 //
 // This assignment operator offers the option to directly set all elements of the matrix:
@@ -4242,17 +4605,19 @@ inline constexpr StaticMatrix<Type,M,N,true>&
    A = init;
    \endcode
 
-// The matrix is assigned the values from the given array. Missing values are initialized with
-// default values (as e.g. the value 6 in the example).
+// The matrix is assigned the values from the given static array. Missing values are initialized
+// with default values (as e.g. the value 6 in the example).
 */
-template< typename Type   // Data type of the matrix
-        , size_t M        // Number of rows
-        , size_t N >      // Number of columns
-template< typename Other  // Data type of the initialization array
-        , size_t Rows     // Number of rows of the initialization array
-        , size_t Cols >   // Number of columns of the initialization array
-inline StaticMatrix<Type,M,N,true>&
-   StaticMatrix<Type,M,N,true>::operator=( const Other (&array)[Rows][Cols] )
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+template< typename Other    // Data type of the static array
+        , size_t Rows       // Number of rows of the static array
+        , size_t Cols >     // Number of columns of the static array
+inline StaticMatrix<Type,M,N,true,AF,PF>&
+   StaticMatrix<Type,M,N,true,AF,PF>::operator=( const Other (&array)[Rows][Cols] )
 {
    BLAZE_STATIC_ASSERT( Rows == M && Cols == N );
 
@@ -4269,6 +4634,51 @@ inline StaticMatrix<Type,M,N,true>&
 
 
 //*************************************************************************************************
+/*!\brief Array assignment to all matrix elements.
+//
+// \param array The given std::array for the assignment.
+// \return Reference to the assigned matrix.
+//
+// This assignment operator offers the option to directly set all elements of the matrix:
+
+   \code
+   using blaze::rowMajor;
+
+   const std::array<std::array<int,3UL>,3UL> init = { { { 1, 2, 3 },
+                                                        { 4, 5 },
+                                                        { 7, 8, 9 } };
+   blaze::StaticMatrix<int,3UL,3UL,rowMajor> A;
+   A = init;
+   \endcode
+
+// The matrix is assigned the values from the given std::array. Missing values are initialized
+// with default values (as e.g. the value 6 in the example).
+*/
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+template< typename Other    // Data type of the static array
+        , size_t Rows       // Number of rows of the static array
+        , size_t Cols >     // Number of columns of the static array
+inline StaticMatrix<Type,M,N,true,AF,PF>&
+   StaticMatrix<Type,M,N,true,AF,PF>::operator=( const std::array<std::array<Other,Cols>,Rows>& array )
+{
+   BLAZE_STATIC_ASSERT( Rows == M && Cols == N );
+
+   for( size_t j=0UL; j<N; ++j )
+      for( size_t i=0UL; i<M; ++i )
+         v_[i+j*MM] = array[i][j];
+
+   BLAZE_INTERNAL_ASSERT( isIntact(), "Invariant violation detected" );
+
+   return *this;
+}
+//*************************************************************************************************
+
+
+//*************************************************************************************************
 /*! \cond BLAZE_INTERNAL */
 /*!\brief Copy assignment operator for StaticMatrix.
 //
@@ -4277,11 +4687,13 @@ inline StaticMatrix<Type,M,N,true>&
 //
 // Explicit definition of a copy assignment operator for performance reasons.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N >     // Number of columns
-inline constexpr StaticMatrix<Type,M,N,true>&
-   StaticMatrix<Type,M,N,true>::operator=( const StaticMatrix& rhs )
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+constexpr StaticMatrix<Type,M,N,true,AF,PF>&
+   StaticMatrix<Type,M,N,true,AF,PF>::operator=( const StaticMatrix& rhs )
 {
    v_ = rhs.v_;
 
@@ -4300,13 +4712,17 @@ inline constexpr StaticMatrix<Type,M,N,true>&
 // \param rhs Matrix to be copied.
 // \return Reference to the assigned matrix.
 */
-template< typename Type   // Data type of the matrix
-        , size_t M        // Number of rows
-        , size_t N >      // Number of columns
-template< typename Other  // Data type of the foreign matrix
-        , bool SO >       // Storage order of the foreign matrix
-inline StaticMatrix<Type,M,N,true>&
-   StaticMatrix<Type,M,N,true>::operator=( const StaticMatrix<Other,M,N,SO>& rhs )
+template< typename Type      // Data type of the matrix
+        , size_t M           // Number of rows
+        , size_t N           // Number of columns
+        , AlignmentFlag AF   // Alignment flag
+        , PaddingFlag PF >   // Padding flag
+template< typename Other     // Data type of the foreign matrix
+        , bool SO2           // Storage order of the foreign matrix
+        , AlignmentFlag AF2  // Alignment flag of the foreign matrix
+        , PaddingFlag PF2 >  // Padding flag of the foreign matrix
+inline StaticMatrix<Type,M,N,true,AF,PF>&
+   StaticMatrix<Type,M,N,true,AF,PF>::operator=( const StaticMatrix<Other,M,N,SO2,AF2,PF2>& rhs )
 {
    using blaze::assign;
 
@@ -4332,12 +4748,15 @@ inline StaticMatrix<Type,M,N,true>&
 // number of rows of the given matrix is not M or the number of columns is not N, a
 // \a std::invalid_argument exception is thrown.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N >     // Number of columns
-template< typename MT    // Type of the right-hand side matrix
-        , bool SO >      // Storage order of the right-hand side matrix
-inline StaticMatrix<Type,M,N,true>& StaticMatrix<Type,M,N,true>::operator=( const Matrix<MT,SO>& rhs )
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+template< typename MT       // Type of the right-hand side matrix
+        , bool SO >         // Storage order of the right-hand side matrix
+inline StaticMatrix<Type,M,N,true,AF,PF>&
+   StaticMatrix<Type,M,N,true,AF,PF>::operator=( const Matrix<MT,SO>& rhs )
 {
    using blaze::assign;
 
@@ -4384,12 +4803,15 @@ inline StaticMatrix<Type,M,N,true>& StaticMatrix<Type,M,N,true>::operator=( cons
 // In case the current sizes of the two matrices don't match, a \a std::invalid_argument exception
 // is thrown.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N >     // Number of columns
-template< typename MT    // Type of the right-hand side matrix
-        , bool SO >      // Storage order of the right-hand side matrix
-inline StaticMatrix<Type,M,N,true>& StaticMatrix<Type,M,N,true>::operator+=( const Matrix<MT,SO>& rhs )
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+template< typename MT       // Type of the right-hand side matrix
+        , bool SO >         // Storage order of the right-hand side matrix
+inline StaticMatrix<Type,M,N,true,AF,PF>&
+   StaticMatrix<Type,M,N,true,AF,PF>::operator+=( const Matrix<MT,SO>& rhs )
 {
    using blaze::addAssign;
 
@@ -4424,12 +4846,15 @@ inline StaticMatrix<Type,M,N,true>& StaticMatrix<Type,M,N,true>::operator+=( con
 // In case the current sizes of the two matrices don't match, a \a std::invalid_argument exception
 // is thrown.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N >     // Number of columns
-template< typename MT    // Type of the right-hand side matrix
-        , bool SO >      // Storage order of the right-hand side matrix
-inline StaticMatrix<Type,M,N,true>& StaticMatrix<Type,M,N,true>::operator-=( const Matrix<MT,SO>& rhs )
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+template< typename MT       // Type of the right-hand side matrix
+        , bool SO >         // Storage order of the right-hand side matrix
+inline StaticMatrix<Type,M,N,true,AF,PF>&
+   StaticMatrix<Type,M,N,true,AF,PF>::operator-=( const Matrix<MT,SO>& rhs )
 {
    using blaze::subAssign;
 
@@ -4464,12 +4889,15 @@ inline StaticMatrix<Type,M,N,true>& StaticMatrix<Type,M,N,true>::operator-=( con
 // In case the current sizes of the two matrices don't match, a \a std::invalid_argument exception
 // is thrown.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N >     // Number of columns
-template< typename MT    // Type of the right-hand side matrix
-        , bool SO >      // Storage order of the right-hand side matrix
-inline StaticMatrix<Type,M,N,true>& StaticMatrix<Type,M,N,true>::operator%=( const Matrix<MT,SO>& rhs )
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+template< typename MT       // Type of the right-hand side matrix
+        , bool SO >         // Storage order of the right-hand side matrix
+inline StaticMatrix<Type,M,N,true,AF,PF>&
+   StaticMatrix<Type,M,N,true,AF,PF>::operator%=( const Matrix<MT,SO>& rhs )
 {
    using blaze::schurAssign;
 
@@ -4507,10 +4935,12 @@ inline StaticMatrix<Type,M,N,true>& StaticMatrix<Type,M,N,true>::operator%=( con
 //
 // \return The number of rows of the matrix.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N >     // Number of columns
-inline constexpr size_t StaticMatrix<Type,M,N,true>::rows() noexcept
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+constexpr size_t StaticMatrix<Type,M,N,true,AF,PF>::rows() noexcept
 {
    return M;
 }
@@ -4524,10 +4954,12 @@ inline constexpr size_t StaticMatrix<Type,M,N,true>::rows() noexcept
 //
 // \return The number of columns of the matrix.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N >     // Number of columns
-inline constexpr size_t StaticMatrix<Type,M,N,true>::columns() noexcept
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+constexpr size_t StaticMatrix<Type,M,N,true,AF,PF>::columns() noexcept
 {
    return N;
 }
@@ -4544,10 +4976,12 @@ inline constexpr size_t StaticMatrix<Type,M,N,true>::columns() noexcept
 // This function returns the spacing between the beginning of two column, i.e. the total number
 // of elements of a column.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N >     // Number of columns
-inline constexpr size_t StaticMatrix<Type,M,N,true>::spacing() noexcept
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+constexpr size_t StaticMatrix<Type,M,N,true,AF,PF>::spacing() noexcept
 {
    return MM;
 }
@@ -4561,10 +4995,12 @@ inline constexpr size_t StaticMatrix<Type,M,N,true>::spacing() noexcept
 //
 // \return The capacity of the matrix.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N >     // Number of columns
-inline constexpr size_t StaticMatrix<Type,M,N,true>::capacity() noexcept
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+constexpr size_t StaticMatrix<Type,M,N,true,AF,PF>::capacity() noexcept
 {
    return MM*N;
 }
@@ -4579,10 +5015,12 @@ inline constexpr size_t StaticMatrix<Type,M,N,true>::capacity() noexcept
 // \param j The index of the column.
 // \return The current capacity of column \a j.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N >     // Number of columns
-inline size_t StaticMatrix<Type,M,N,true>::capacity( size_t j ) const noexcept
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+inline size_t StaticMatrix<Type,M,N,true,AF,PF>::capacity( size_t j ) const noexcept
 {
    MAYBE_UNUSED( j );
 
@@ -4600,10 +5038,12 @@ inline size_t StaticMatrix<Type,M,N,true>::capacity( size_t j ) const noexcept
 //
 // \return The number of non-zero elements in the dense matrix.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N >     // Number of columns
-inline size_t StaticMatrix<Type,M,N,true>::nonZeros() const
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+inline size_t StaticMatrix<Type,M,N,true,AF,PF>::nonZeros() const
 {
    size_t nonzeros( 0UL );
 
@@ -4625,10 +5065,12 @@ inline size_t StaticMatrix<Type,M,N,true>::nonZeros() const
 // \param j The index of the column.
 // \return The number of non-zero elements of column \a j.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N >     // Number of columns
-inline size_t StaticMatrix<Type,M,N,true>::nonZeros( size_t j ) const
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+inline size_t StaticMatrix<Type,M,N,true,AF,PF>::nonZeros( size_t j ) const
 {
    BLAZE_USER_ASSERT( j < columns(), "Invalid column access index" );
 
@@ -4651,10 +5093,12 @@ inline size_t StaticMatrix<Type,M,N,true>::nonZeros( size_t j ) const
 //
 // \return void
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N >     // Number of columns
-inline constexpr void StaticMatrix<Type,M,N,true>::reset()
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+constexpr void StaticMatrix<Type,M,N,true,AF,PF>::reset()
 {
    using blaze::clear;
 
@@ -4676,10 +5120,12 @@ inline constexpr void StaticMatrix<Type,M,N,true>::reset()
 // This function reset the values in the specified column to their default value. Note that
 // the capacity of the column remains unchanged.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N >     // Number of columns
-inline void StaticMatrix<Type,M,N,true>::reset( size_t j )
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+inline void StaticMatrix<Type,M,N,true,AF,PF>::reset( size_t j )
 {
    using blaze::clear;
 
@@ -4698,10 +5144,12 @@ inline void StaticMatrix<Type,M,N,true>::reset( size_t j )
 // \param m The matrix to be swapped.
 // \return void
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N >     // Number of columns
-inline void StaticMatrix<Type,M,N,true>::swap( StaticMatrix& m ) noexcept
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+inline void StaticMatrix<Type,M,N,true,AF,PF>::swap( StaticMatrix& m ) noexcept
 {
    using std::swap;
 
@@ -4732,10 +5180,13 @@ inline void StaticMatrix<Type,M,N,true>::swap( StaticMatrix& m ) noexcept
 // This function transposes the static matrix in-place. Note that this function can only be used
 // for square static matrices, i.e. if \a M is equal to N.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N >     // Number of columns
-inline StaticMatrix<Type,M,N,true>& StaticMatrix<Type,M,N,true>::transpose()
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+inline StaticMatrix<Type,M,N,true,AF,PF>&
+   StaticMatrix<Type,M,N,true,AF,PF>::transpose()
 {
    using std::swap;
 
@@ -4765,10 +5216,12 @@ inline StaticMatrix<Type,M,N,true>& StaticMatrix<Type,M,N,true>::transpose()
    A = trans( A );
    \endcode
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N >     // Number of columns
-inline void StaticMatrix<Type,M,N,true>::transpose( TrueType )
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+inline void StaticMatrix<Type,M,N,true,AF,PF>::transpose( TrueType )
 {
    transpose();
 }
@@ -4790,10 +5243,12 @@ inline void StaticMatrix<Type,M,N,true>::transpose( TrueType )
    A = trans( A );
    \endcode
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N >     // Number of columns
-inline void StaticMatrix<Type,M,N,true>::transpose( FalseType )
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+inline void StaticMatrix<Type,M,N,true,AF,PF>::transpose( FalseType )
 {}
 /*! \endcond */
 //*************************************************************************************************
@@ -4808,10 +5263,13 @@ inline void StaticMatrix<Type,M,N,true>::transpose( FalseType )
 // This function transposes the static matrix in-place. Note that this function can only be used
 // for square static matrices, i.e. if \a M is equal to N.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N >     // Number of columns
-inline StaticMatrix<Type,M,N,true>& StaticMatrix<Type,M,N,true>::ctranspose()
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+inline StaticMatrix<Type,M,N,true,AF,PF>&
+   StaticMatrix<Type,M,N,true,AF,PF>::ctranspose()
 {
    BLAZE_STATIC_ASSERT( M == N );
 
@@ -4842,10 +5300,12 @@ inline StaticMatrix<Type,M,N,true>& StaticMatrix<Type,M,N,true>::ctranspose()
    A = ctrans( A );
    \endcode
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N >     // Number of columns
-inline void StaticMatrix<Type,M,N,true>::ctranspose( TrueType )
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+inline void StaticMatrix<Type,M,N,true,AF,PF>::ctranspose( TrueType )
 {
    ctranspose();
 }
@@ -4867,10 +5327,12 @@ inline void StaticMatrix<Type,M,N,true>::ctranspose( TrueType )
    A = ctrans( A );
    \endcode
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N >     // Number of columns
-inline void StaticMatrix<Type,M,N,true>::ctranspose( FalseType )
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+inline void StaticMatrix<Type,M,N,true,AF,PF>::ctranspose( FalseType )
 {}
 /*! \endcond */
 //*************************************************************************************************
@@ -4896,10 +5358,12 @@ inline void StaticMatrix<Type,M,N,true>::ctranspose( FalseType )
 */
 template< typename Type     // Data type of the matrix
         , size_t M          // Number of rows
-        , size_t N >        // Number of columns
+        , size_t N          // Number of columns
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
 template< typename Other >  // Data type of the scalar value
-inline StaticMatrix<Type,M,N,true>&
-   StaticMatrix<Type,M,N,true>::scale( const Other& scalar )
+inline StaticMatrix<Type,M,N,true,AF,PF>&
+   StaticMatrix<Type,M,N,true,AF,PF>::scale( const Other& scalar )
 {
    for( size_t j=0UL; j<N; ++j )
       for( size_t i=0UL; i<M; ++i )
@@ -4930,10 +5394,12 @@ inline StaticMatrix<Type,M,N,true>&
 // This class-specific implementation of operator new provides the functionality to allocate
 // dynamic memory based on the alignment restrictions of the StaticMatrix class template.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N >     // Number of columns
-inline void* StaticMatrix<Type,M,N,true>::operator new( std::size_t size )
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+inline void* StaticMatrix<Type,M,N,true,AF,PF>::operator new( std::size_t size )
 {
    MAYBE_UNUSED( size );
 
@@ -4956,10 +5422,12 @@ inline void* StaticMatrix<Type,M,N,true>::operator new( std::size_t size )
 // This class-specific implementation of operator new provides the functionality to allocate
 // dynamic memory based on the alignment restrictions of the StaticMatrix class template.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N >     // Number of columns
-inline void* StaticMatrix<Type,M,N,true>::operator new[]( std::size_t size )
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+inline void* StaticMatrix<Type,M,N,true,AF,PF>::operator new[]( std::size_t size )
 {
    BLAZE_INTERNAL_ASSERT( size >= sizeof( StaticMatrix )       , "Invalid number of bytes detected" );
    BLAZE_INTERNAL_ASSERT( size %  sizeof( StaticMatrix ) == 0UL, "Invalid number of bytes detected" );
@@ -4981,10 +5449,12 @@ inline void* StaticMatrix<Type,M,N,true>::operator new[]( std::size_t size )
 // This class-specific implementation of operator new provides the functionality to allocate
 // dynamic memory based on the alignment restrictions of the StaticMatrix class template.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N >     // Number of columns
-inline void* StaticMatrix<Type,M,N,true>::operator new( std::size_t size, const std::nothrow_t& )
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+inline void* StaticMatrix<Type,M,N,true,AF,PF>::operator new( std::size_t size, const std::nothrow_t& )
 {
    MAYBE_UNUSED( size );
 
@@ -5007,10 +5477,12 @@ inline void* StaticMatrix<Type,M,N,true>::operator new( std::size_t size, const 
 // This class-specific implementation of operator new provides the functionality to allocate
 // dynamic memory based on the alignment restrictions of the StaticMatrix class template.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N >     // Number of columns
-inline void* StaticMatrix<Type,M,N,true>::operator new[]( std::size_t size, const std::nothrow_t& )
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+inline void* StaticMatrix<Type,M,N,true,AF,PF>::operator new[]( std::size_t size, const std::nothrow_t& )
 {
    BLAZE_INTERNAL_ASSERT( size >= sizeof( StaticMatrix )       , "Invalid number of bytes detected" );
    BLAZE_INTERNAL_ASSERT( size %  sizeof( StaticMatrix ) == 0UL, "Invalid number of bytes detected" );
@@ -5028,10 +5500,12 @@ inline void* StaticMatrix<Type,M,N,true>::operator new[]( std::size_t size, cons
 // \param ptr The memory to be deallocated.
 // \return void
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N >     // Number of columns
-inline void StaticMatrix<Type,M,N,true>::operator delete( void* ptr )
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+inline void StaticMatrix<Type,M,N,true,AF,PF>::operator delete( void* ptr )
 {
    deallocate( static_cast<StaticMatrix*>( ptr ) );
 }
@@ -5046,10 +5520,12 @@ inline void StaticMatrix<Type,M,N,true>::operator delete( void* ptr )
 // \param ptr The memory to be deallocated.
 // \return void
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N >     // Number of columns
-inline void StaticMatrix<Type,M,N,true>::operator delete[]( void* ptr )
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+inline void StaticMatrix<Type,M,N,true,AF,PF>::operator delete[]( void* ptr )
 {
    deallocate( static_cast<StaticMatrix*>( ptr ) );
 }
@@ -5064,10 +5540,12 @@ inline void StaticMatrix<Type,M,N,true>::operator delete[]( void* ptr )
 // \param ptr The memory to be deallocated.
 // \return void
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N >     // Number of columns
-inline void StaticMatrix<Type,M,N,true>::operator delete( void* ptr, const std::nothrow_t& )
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+inline void StaticMatrix<Type,M,N,true,AF,PF>::operator delete( void* ptr, const std::nothrow_t& )
 {
    deallocate( static_cast<StaticMatrix*>( ptr ) );
 }
@@ -5082,10 +5560,12 @@ inline void StaticMatrix<Type,M,N,true>::operator delete( void* ptr, const std::
 // \param ptr The memory to be deallocated.
 // \return void
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N >     // Number of columns
-inline void StaticMatrix<Type,M,N,true>::operator delete[]( void* ptr, const std::nothrow_t& )
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+inline void StaticMatrix<Type,M,N,true,AF,PF>::operator delete[]( void* ptr, const std::nothrow_t& )
 {
    deallocate( static_cast<StaticMatrix*>( ptr ) );
 }
@@ -5111,10 +5591,12 @@ inline void StaticMatrix<Type,M,N,true>::operator delete[]( void* ptr, const std
 // state is valid. In case the invariants are intact, the function returns \a true, else it
 // will return \a false.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N >     // Number of columns
-inline constexpr bool StaticMatrix<Type,M,N,true>::isIntact() const noexcept
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+constexpr bool StaticMatrix<Type,M,N,true,AF,PF>::isIntact() const noexcept
 {
    if( IsNumeric_v<Type> ) {
       for( size_t j=0UL; j<N; ++j ) {
@@ -5152,9 +5634,11 @@ inline constexpr bool StaticMatrix<Type,M,N,true>::isIntact() const noexcept
 */
 template< typename Type     // Data type of the matrix
         , size_t M          // Number of rows
-        , size_t N >        // Number of columns
+        , size_t N          // Number of columns
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
 template< typename Other >  // Data type of the foreign expression
-inline bool StaticMatrix<Type,M,N,true>::canAlias( const Other* alias ) const noexcept
+inline bool StaticMatrix<Type,M,N,true,AF,PF>::canAlias( const Other* alias ) const noexcept
 {
    return static_cast<const void*>( this ) == static_cast<const void*>( alias );
 }
@@ -5175,9 +5659,11 @@ inline bool StaticMatrix<Type,M,N,true>::canAlias( const Other* alias ) const no
 */
 template< typename Type     // Data type of the matrix
         , size_t M          // Number of rows
-        , size_t N >        // Number of columns
+        , size_t N          // Number of columns
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
 template< typename Other >  // Data type of the foreign expression
-inline bool StaticMatrix<Type,M,N,true>::isAliased( const Other* alias ) const noexcept
+inline bool StaticMatrix<Type,M,N,true,AF,PF>::isAliased( const Other* alias ) const noexcept
 {
    return static_cast<const void*>( this ) == static_cast<const void*>( alias );
 }
@@ -5195,12 +5681,14 @@ inline bool StaticMatrix<Type,M,N,true>::isAliased( const Other* alias ) const n
 // whether the beginning and the end of each column of the matrix are guaranteed to conform to
 // the alignment restrictions of the element type \a Type.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N >     // Number of columns
-inline constexpr bool StaticMatrix<Type,M,N,true>::isAligned() noexcept
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+constexpr bool StaticMatrix<Type,M,N,true,AF,PF>::isAligned() noexcept
 {
-   return align;
+   return AF == aligned;
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -5221,13 +5709,15 @@ inline constexpr bool StaticMatrix<Type,M,N,true>::isAligned() noexcept
 // for the performance optimized evaluation of expression templates. Calling this function
 // explicitly might result in erroneous results and/or in compilation errors.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N >     // Number of columns
-BLAZE_ALWAYS_INLINE typename StaticMatrix<Type,M,N,true>::SIMDType
-   StaticMatrix<Type,M,N,true>::load( size_t i, size_t j ) const noexcept
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+BLAZE_ALWAYS_INLINE typename StaticMatrix<Type,M,N,true,AF,PF>::SIMDType
+   StaticMatrix<Type,M,N,true,AF,PF>::load( size_t i, size_t j ) const noexcept
 {
-   if( align )
+   if( AF == aligned )
       return loada( i, j );
    else
       return loadu( i, j );
@@ -5251,11 +5741,13 @@ BLAZE_ALWAYS_INLINE typename StaticMatrix<Type,M,N,true>::SIMDType
 // internally for the performance optimized evaluation of expression templates. Calling this
 // function explicitly might result in erroneous results and/or in compilation errors.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N >     // Number of columns
-BLAZE_ALWAYS_INLINE typename StaticMatrix<Type,M,N,true>::SIMDType
-   StaticMatrix<Type,M,N,true>::loada( size_t i, size_t j ) const noexcept
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+BLAZE_ALWAYS_INLINE typename StaticMatrix<Type,M,N,true,AF,PF>::SIMDType
+   StaticMatrix<Type,M,N,true,AF,PF>::loada( size_t i, size_t j ) const noexcept
 {
    using blaze::loada;
 
@@ -5263,7 +5755,7 @@ BLAZE_ALWAYS_INLINE typename StaticMatrix<Type,M,N,true>::SIMDType
 
    BLAZE_INTERNAL_ASSERT( i < M, "Invalid row access index" );
    BLAZE_INTERNAL_ASSERT( i + SIMDSIZE <= MM, "Invalid row access index" );
-   BLAZE_INTERNAL_ASSERT( !usePadding || i % SIMDSIZE == 0UL, "Invalid row access index" );
+   BLAZE_INTERNAL_ASSERT( PF == unpadded || i % SIMDSIZE == 0UL, "Invalid row access index" );
    BLAZE_INTERNAL_ASSERT( j < N, "Invalid column access index" );
    BLAZE_INTERNAL_ASSERT( checkAlignment( &v_[i+j*MM] ), "Invalid alignment detected" );
 
@@ -5288,11 +5780,13 @@ BLAZE_ALWAYS_INLINE typename StaticMatrix<Type,M,N,true>::SIMDType
 // internally for the performance optimized evaluation of expression templates. Calling this
 // function explicitly might result in erroneous results and/or in compilation errors.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N >     // Number of columns
-BLAZE_ALWAYS_INLINE typename StaticMatrix<Type,M,N,true>::SIMDType
-   StaticMatrix<Type,M,N,true>::loadu( size_t i, size_t j ) const noexcept
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+BLAZE_ALWAYS_INLINE typename StaticMatrix<Type,M,N,true,AF,PF>::SIMDType
+   StaticMatrix<Type,M,N,true,AF,PF>::loadu( size_t i, size_t j ) const noexcept
 {
    using blaze::loadu;
 
@@ -5324,13 +5818,15 @@ BLAZE_ALWAYS_INLINE typename StaticMatrix<Type,M,N,true>::SIMDType
 // performance optimized evaluation of expression templates. Calling this function explicitly
 // might result in erroneous results and/or in compilation errors.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N >     // Number of columns
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
 BLAZE_ALWAYS_INLINE void
-   StaticMatrix<Type,M,N,true>::store( size_t i, size_t j, const SIMDType& value ) noexcept
+   StaticMatrix<Type,M,N,true,AF,PF>::store( size_t i, size_t j, const SIMDType& value ) noexcept
 {
-   if( align )
+   if( AF == aligned )
       storea( i, j, value );
    else
       storeu( i, j, value );
@@ -5355,11 +5851,13 @@ BLAZE_ALWAYS_INLINE void
 // internally for the performance optimized evaluation of expression templates. Calling this
 // function explicitly might result in erroneous results and/or in compilation errors.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N >     // Number of columns
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
 BLAZE_ALWAYS_INLINE void
-   StaticMatrix<Type,M,N,true>::storea( size_t i, size_t j, const SIMDType& value ) noexcept
+   StaticMatrix<Type,M,N,true,AF,PF>::storea( size_t i, size_t j, const SIMDType& value ) noexcept
 {
    using blaze::storea;
 
@@ -5367,7 +5865,7 @@ BLAZE_ALWAYS_INLINE void
 
    BLAZE_INTERNAL_ASSERT( i < M, "Invalid row access index" );
    BLAZE_INTERNAL_ASSERT( i + SIMDSIZE <= MM, "Invalid row access index" );
-   BLAZE_INTERNAL_ASSERT( !usePadding || i % SIMDSIZE == 0UL, "Invalid row access index" );
+   BLAZE_INTERNAL_ASSERT( PF == unpadded || i % SIMDSIZE == 0UL, "Invalid row access index" );
    BLAZE_INTERNAL_ASSERT( j < N, "Invalid column access index" );
    BLAZE_INTERNAL_ASSERT( checkAlignment( &v_[i+j*MM] ), "Invalid alignment detected" );
 
@@ -5393,11 +5891,13 @@ BLAZE_ALWAYS_INLINE void
 // internally for the performance optimized evaluation of expression templates. Calling this
 // function explicitly might result in erroneous results and/or in compilation errors.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N >     // Number of columns
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
 BLAZE_ALWAYS_INLINE void
-   StaticMatrix<Type,M,N,true>::storeu( size_t i, size_t j, const SIMDType& value ) noexcept
+   StaticMatrix<Type,M,N,true,AF,PF>::storeu( size_t i, size_t j, const SIMDType& value ) noexcept
 {
    using blaze::storeu;
 
@@ -5430,11 +5930,13 @@ BLAZE_ALWAYS_INLINE void
 // templates. Calling this function explicitly might result in erroneous results and/or in
 // compilation errors.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N >     // Number of columns
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
 BLAZE_ALWAYS_INLINE void
-   StaticMatrix<Type,M,N,true>::stream( size_t i, size_t j, const SIMDType& value ) noexcept
+   StaticMatrix<Type,M,N,true,AF,PF>::stream( size_t i, size_t j, const SIMDType& value ) noexcept
 {
    using blaze::stream;
 
@@ -5442,7 +5944,7 @@ BLAZE_ALWAYS_INLINE void
 
    BLAZE_INTERNAL_ASSERT( i < M, "Invalid row access index" );
    BLAZE_INTERNAL_ASSERT( i + SIMDSIZE <= MM, "Invalid row access index" );
-   BLAZE_INTERNAL_ASSERT( !usePadding || i % SIMDSIZE == 0UL, "Invalid row access index" );
+   BLAZE_INTERNAL_ASSERT( PF == unpadded || i % SIMDSIZE == 0UL, "Invalid row access index" );
    BLAZE_INTERNAL_ASSERT( j < N, "Invalid column access index" );
    BLAZE_INTERNAL_ASSERT( checkAlignment( &v_[i+j*MM] ), "Invalid alignment detected" );
 
@@ -5464,12 +5966,14 @@ BLAZE_ALWAYS_INLINE void
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N >     // Number of columns
-template< typename MT    // Type of the right-hand side dense matrix
-        , bool SO >      // Storage order of the right-hand side dense matrix
-inline auto StaticMatrix<Type,M,N,true>::assign( const DenseMatrix<MT,SO>& rhs )
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+template< typename MT       // Type of the right-hand side dense matrix
+        , bool SO >         // Storage order of the right-hand side dense matrix
+inline auto StaticMatrix<Type,M,N,true,AF,PF>::assign( const DenseMatrix<MT,SO>& rhs )
    -> DisableIf_t< VectorizedAssign_v<MT> >
 {
    BLAZE_INTERNAL_ASSERT( (~rhs).rows() == M && (~rhs).columns() == N, "Invalid matrix size" );
@@ -5496,22 +6000,24 @@ inline auto StaticMatrix<Type,M,N,true>::assign( const DenseMatrix<MT,SO>& rhs )
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N >     // Number of columns
-template< typename MT    // Type of the right-hand side dense matrix
-        , bool SO >      // Storage order of the right-hand side dense matrix
-inline auto StaticMatrix<Type,M,N,true>::assign( const DenseMatrix<MT,SO>& rhs )
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+template< typename MT       // Type of the right-hand side dense matrix
+        , bool SO >         // Storage order of the right-hand side dense matrix
+inline auto StaticMatrix<Type,M,N,true,AF,PF>::assign( const DenseMatrix<MT,SO>& rhs )
    -> EnableIf_t< VectorizedAssign_v<MT> >
 {
    BLAZE_CONSTRAINT_MUST_BE_VECTORIZABLE_TYPE( Type );
 
    BLAZE_INTERNAL_ASSERT( (~rhs).rows() == M && (~rhs).columns() == N, "Invalid matrix size" );
 
-   constexpr bool remainder( !usePadding || !IsPadded_v<MT> );
+   constexpr bool remainder( PF == unpadded || !IsPadded_v<MT> );
 
-   constexpr size_t ipos( ( remainder )?( M & size_t(-SIMDSIZE) ):( M ) );
-   BLAZE_INTERNAL_ASSERT( !remainder || ( M - ( M % (SIMDSIZE) ) ) == ipos, "Invalid end calculation" );
+   constexpr size_t ipos( remainder ? prevMultiple( M, SIMDSIZE ) : M );
+   BLAZE_INTERNAL_ASSERT( ipos <= M, "Invalid end calculation" );
 
    for( size_t j=0UL; j<N; ++j )
    {
@@ -5541,11 +6047,13 @@ inline auto StaticMatrix<Type,M,N,true>::assign( const DenseMatrix<MT,SO>& rhs )
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N >     // Number of columns
-template< typename MT >  // Type of the right-hand side sparse matrix
-inline void StaticMatrix<Type,M,N,true>::assign( const SparseMatrix<MT,true>& rhs )
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+template< typename MT >     // Type of the right-hand side sparse matrix
+inline void StaticMatrix<Type,M,N,true,AF,PF>::assign( const SparseMatrix<MT,true>& rhs )
 {
    BLAZE_INTERNAL_ASSERT( (~rhs).rows() == M && (~rhs).columns() == N, "Invalid matrix size" );
 
@@ -5569,11 +6077,13 @@ inline void StaticMatrix<Type,M,N,true>::assign( const SparseMatrix<MT,true>& rh
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N >     // Number of columns
-template< typename MT >  // Type of the right-hand side sparse matrix
-inline void StaticMatrix<Type,M,N,true>::assign( const SparseMatrix<MT,false>& rhs )
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+template< typename MT >     // Type of the right-hand side sparse matrix
+inline void StaticMatrix<Type,M,N,true,AF,PF>::assign( const SparseMatrix<MT,false>& rhs )
 {
    BLAZE_CONSTRAINT_MUST_NOT_BE_SYMMETRIC_MATRIX_TYPE( MT );
 
@@ -5599,12 +6109,14 @@ inline void StaticMatrix<Type,M,N,true>::assign( const SparseMatrix<MT,false>& r
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N >     // Number of columns
-template< typename MT    // Type of the right-hand side dense matrix
-        , bool SO >      // Storage order of the right-hand side dense matrix
-inline auto StaticMatrix<Type,M,N,true>::addAssign( const DenseMatrix<MT,SO>& rhs )
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+template< typename MT       // Type of the right-hand side dense matrix
+        , bool SO >         // Storage order of the right-hand side dense matrix
+inline auto StaticMatrix<Type,M,N,true,AF,PF>::addAssign( const DenseMatrix<MT,SO>& rhs )
    -> DisableIf_t< VectorizedAddAssign_v<MT> >
 {
    BLAZE_INTERNAL_ASSERT( (~rhs).rows() == M && (~rhs).columns() == N, "Invalid matrix size" );
@@ -5647,12 +6159,14 @@ inline auto StaticMatrix<Type,M,N,true>::addAssign( const DenseMatrix<MT,SO>& rh
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N >     // Number of columns
-template< typename MT    // Type of the right-hand side dense matrix
-        , bool SO >      // Storage order of the right-hand side dense matrix
-inline auto StaticMatrix<Type,M,N,true>::addAssign( const DenseMatrix<MT,SO>& rhs )
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+template< typename MT       // Type of the right-hand side dense matrix
+        , bool SO >         // Storage order of the right-hand side dense matrix
+inline auto StaticMatrix<Type,M,N,true,AF,PF>::addAssign( const DenseMatrix<MT,SO>& rhs )
    -> EnableIf_t< VectorizedAddAssign_v<MT> >
 {
    BLAZE_CONSTRAINT_MUST_BE_VECTORIZABLE_TYPE( Type );
@@ -5660,20 +6174,20 @@ inline auto StaticMatrix<Type,M,N,true>::addAssign( const DenseMatrix<MT,SO>& rh
 
    BLAZE_INTERNAL_ASSERT( (~rhs).rows() == M && (~rhs).columns() == N, "Invalid matrix size" );
 
-   constexpr bool remainder( !usePadding || !IsPadded_v<MT> );
+   constexpr bool remainder( PF == unpadded || !IsPadded_v<MT> );
 
    for( size_t j=0UL; j<N; ++j )
    {
       const size_t ibegin( ( IsLower_v<MT> )
-                           ?( ( IsStrictlyLower_v<MT> ? j+1UL : j ) & size_t(-SIMDSIZE) )
+                           ?( prevMultiple( ( IsStrictlyLower_v<MT> ? j+1UL : j ), SIMDSIZE ) )
                            :( 0UL ) );
       const size_t iend  ( ( IsUpper_v<MT> )
                            ?( IsStrictlyUpper_v<MT> ? j : j+1UL )
                            :( M ) );
       BLAZE_INTERNAL_ASSERT( ibegin <= iend, "Invalid loop indices detected" );
 
-      const size_t ipos( ( remainder )?( iend & size_t(-SIMDSIZE) ):( iend ) );
-      BLAZE_INTERNAL_ASSERT( !remainder || ( iend - ( iend % (SIMDSIZE) ) ) == ipos, "Invalid end calculation" );
+      const size_t ipos( remainder ? prevMultiple( iend, SIMDSIZE ) : iend );
+      BLAZE_INTERNAL_ASSERT( ipos <= iend, "Invalid end calculation" );
 
       size_t i( ibegin );
 
@@ -5701,11 +6215,13 @@ inline auto StaticMatrix<Type,M,N,true>::addAssign( const DenseMatrix<MT,SO>& rh
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N >     // Number of columns
-template< typename MT >  // Type of the right-hand side sparse matrix
-inline void StaticMatrix<Type,M,N,true>::addAssign( const SparseMatrix<MT,true>& rhs )
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+template< typename MT >     // Type of the right-hand side sparse matrix
+inline void StaticMatrix<Type,M,N,true,AF,PF>::addAssign( const SparseMatrix<MT,true>& rhs )
 {
    BLAZE_INTERNAL_ASSERT( (~rhs).rows() == M && (~rhs).columns() == N, "Invalid matrix size" );
 
@@ -5729,11 +6245,13 @@ inline void StaticMatrix<Type,M,N,true>::addAssign( const SparseMatrix<MT,true>&
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N >     // Number of columns
-template< typename MT >  // Type of the right-hand side sparse matrix
-inline void StaticMatrix<Type,M,N,true>::addAssign( const SparseMatrix<MT,false>& rhs )
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+template< typename MT >     // Type of the right-hand side sparse matrix
+inline void StaticMatrix<Type,M,N,true,AF,PF>::addAssign( const SparseMatrix<MT,false>& rhs )
 {
    BLAZE_CONSTRAINT_MUST_NOT_BE_SYMMETRIC_MATRIX_TYPE( MT );
 
@@ -5759,12 +6277,14 @@ inline void StaticMatrix<Type,M,N,true>::addAssign( const SparseMatrix<MT,false>
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N >     // Number of columns
-template< typename MT    // Type of the right-hand side dense matrix
-        , bool SO >      // Storage order of the right-hand side dense matrix
-inline auto StaticMatrix<Type,M,N,true>::subAssign( const DenseMatrix<MT,SO>& rhs )
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+template< typename MT       // Type of the right-hand side dense matrix
+        , bool SO >         // Storage order of the right-hand side dense matrix
+inline auto StaticMatrix<Type,M,N,true,AF,PF>::subAssign( const DenseMatrix<MT,SO>& rhs )
    -> DisableIf_t< VectorizedSubAssign_v<MT> >
 {
    BLAZE_INTERNAL_ASSERT( (~rhs).rows() == M && (~rhs).columns() == N, "Invalid matrix size" );
@@ -5807,12 +6327,14 @@ inline auto StaticMatrix<Type,M,N,true>::subAssign( const DenseMatrix<MT,SO>& rh
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N >     // Number of columns
-template< typename MT    // Type of the right-hand side dense matrix
-        , bool SO >      // Storage order of the right-hand side dense matrix
-inline auto StaticMatrix<Type,M,N,true>::subAssign( const DenseMatrix<MT,SO>& rhs )
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+template< typename MT       // Type of the right-hand side dense matrix
+        , bool SO >         // Storage order of the right-hand side dense matrix
+inline auto StaticMatrix<Type,M,N,true,AF,PF>::subAssign( const DenseMatrix<MT,SO>& rhs )
    -> EnableIf_t< VectorizedSubAssign_v<MT> >
 {
    BLAZE_CONSTRAINT_MUST_BE_VECTORIZABLE_TYPE( Type );
@@ -5820,20 +6342,20 @@ inline auto StaticMatrix<Type,M,N,true>::subAssign( const DenseMatrix<MT,SO>& rh
 
    BLAZE_INTERNAL_ASSERT( (~rhs).rows() == M && (~rhs).columns() == N, "Invalid matrix size" );
 
-   constexpr bool remainder( !usePadding || !IsPadded_v<MT> );
+   constexpr bool remainder( PF == unpadded || !IsPadded_v<MT> );
 
    for( size_t j=0UL; j<N; ++j )
    {
       const size_t ibegin( ( IsLower_v<MT> )
-                           ?( ( IsStrictlyLower_v<MT> ? j+1UL : j ) & size_t(-SIMDSIZE) )
+                           ?( prevMultiple( ( IsStrictlyLower_v<MT> ? j+1UL : j ), SIMDSIZE ) )
                            :( 0UL ) );
       const size_t iend  ( ( IsUpper_v<MT> )
                            ?( IsStrictlyUpper_v<MT> ? j : j+1UL )
                            :( M ) );
       BLAZE_INTERNAL_ASSERT( ibegin <= iend, "Invalid loop indices detected" );
 
-      const size_t ipos( ( remainder )?( iend & size_t(-SIMDSIZE) ):( iend ) );
-      BLAZE_INTERNAL_ASSERT( !remainder || ( iend - ( iend % (SIMDSIZE) ) ) == ipos, "Invalid end calculation" );
+      const size_t ipos( remainder ? prevMultiple( iend, SIMDSIZE ) : iend );
+      BLAZE_INTERNAL_ASSERT( ipos <= iend, "Invalid end calculation" );
 
       size_t i( ibegin );
 
@@ -5861,11 +6383,13 @@ inline auto StaticMatrix<Type,M,N,true>::subAssign( const DenseMatrix<MT,SO>& rh
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N >     // Number of columns
-template< typename MT >  // Type of the right-hand side sparse matrix
-inline void StaticMatrix<Type,M,N,true>::subAssign( const SparseMatrix<MT,true>& rhs )
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+template< typename MT >     // Type of the right-hand side sparse matrix
+inline void StaticMatrix<Type,M,N,true,AF,PF>::subAssign( const SparseMatrix<MT,true>& rhs )
 {
    BLAZE_INTERNAL_ASSERT( (~rhs).rows() == M && (~rhs).columns() == N, "Invalid matrix size" );
 
@@ -5889,11 +6413,13 @@ inline void StaticMatrix<Type,M,N,true>::subAssign( const SparseMatrix<MT,true>&
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N >     // Number of columns
-template< typename MT >  // Type of the right-hand side sparse matrix
-inline void StaticMatrix<Type,M,N,true>::subAssign( const SparseMatrix<MT,false>& rhs )
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+template< typename MT >     // Type of the right-hand side sparse matrix
+inline void StaticMatrix<Type,M,N,true,AF,PF>::subAssign( const SparseMatrix<MT,false>& rhs )
 {
    BLAZE_CONSTRAINT_MUST_NOT_BE_SYMMETRIC_MATRIX_TYPE( MT );
 
@@ -5919,12 +6445,14 @@ inline void StaticMatrix<Type,M,N,true>::subAssign( const SparseMatrix<MT,false>
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N >     // Number of columns
-template< typename MT    // Type of the right-hand side dense matrix
-        , bool SO >      // Storage order of the right-hand side dense matrix
-inline auto StaticMatrix<Type,M,N,true>::schurAssign( const DenseMatrix<MT,SO>& rhs )
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+template< typename MT       // Type of the right-hand side dense matrix
+        , bool SO >         // Storage order of the right-hand side dense matrix
+inline auto StaticMatrix<Type,M,N,true,AF,PF>::schurAssign( const DenseMatrix<MT,SO>& rhs )
    -> DisableIf_t< VectorizedSchurAssign_v<MT> >
 {
    BLAZE_INTERNAL_ASSERT( (~rhs).rows() == M && (~rhs).columns() == N, "Invalid matrix size" );
@@ -5951,22 +6479,24 @@ inline auto StaticMatrix<Type,M,N,true>::schurAssign( const DenseMatrix<MT,SO>& 
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N >     // Number of columns
-template< typename MT    // Type of the right-hand side dense matrix
-        , bool SO >      // Storage order of the right-hand side dense matrix
-inline auto StaticMatrix<Type,M,N,true>::schurAssign( const DenseMatrix<MT,SO>& rhs )
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+template< typename MT       // Type of the right-hand side dense matrix
+        , bool SO >         // Storage order of the right-hand side dense matrix
+inline auto StaticMatrix<Type,M,N,true,AF,PF>::schurAssign( const DenseMatrix<MT,SO>& rhs )
    -> EnableIf_t< VectorizedSchurAssign_v<MT> >
 {
    BLAZE_CONSTRAINT_MUST_BE_VECTORIZABLE_TYPE( Type );
 
    BLAZE_INTERNAL_ASSERT( (~rhs).rows() == M && (~rhs).columns() == N, "Invalid matrix size" );
 
-   constexpr bool remainder( !usePadding || !IsPadded_v<MT> );
+   constexpr bool remainder( PF == unpadded || !IsPadded_v<MT> );
 
-   constexpr size_t ipos( ( remainder )?( M & size_t(-SIMDSIZE) ):( M ) );
-   BLAZE_INTERNAL_ASSERT( !remainder || ( M - ( M % (SIMDSIZE) ) ) == ipos, "Invalid end calculation" );
+   constexpr size_t ipos( remainder ? prevMultiple( M, SIMDSIZE ) : M );
+   BLAZE_INTERNAL_ASSERT( ipos <= M, "Invalid end calculation" );
 
    for( size_t j=0UL; j<N; ++j )
    {
@@ -5996,11 +6526,13 @@ inline auto StaticMatrix<Type,M,N,true>::schurAssign( const DenseMatrix<MT,SO>& 
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N >     // Number of columns
-template< typename MT >  // Type of the right-hand side sparse matrix
-inline void StaticMatrix<Type,M,N,true>::schurAssign( const SparseMatrix<MT,true>& rhs )
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+template< typename MT >     // Type of the right-hand side sparse matrix
+inline void StaticMatrix<Type,M,N,true,AF,PF>::schurAssign( const SparseMatrix<MT,true>& rhs )
 {
    BLAZE_INTERNAL_ASSERT( (~rhs).rows() == M && (~rhs).columns() == N, "Invalid matrix size" );
 
@@ -6028,11 +6560,13 @@ inline void StaticMatrix<Type,M,N,true>::schurAssign( const SparseMatrix<MT,true
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N >     // Number of columns
-template< typename MT >  // Type of the right-hand side sparse matrix
-inline void StaticMatrix<Type,M,N,true>::schurAssign( const SparseMatrix<MT,false>& rhs )
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+template< typename MT >     // Type of the right-hand side sparse matrix
+inline void StaticMatrix<Type,M,N,true,AF,PF>::schurAssign( const SparseMatrix<MT,false>& rhs )
 {
    BLAZE_CONSTRAINT_MUST_NOT_BE_SYMMETRIC_MATRIX_TYPE( MT );
 
@@ -6065,23 +6599,23 @@ inline void StaticMatrix<Type,M,N,true>::schurAssign( const SparseMatrix<MT,fals
 //*************************************************************************************************
 /*!\name StaticMatrix operators */
 //@{
-template< typename Type, size_t M, size_t N, bool SO >
-void reset( StaticMatrix<Type,M,N,SO>& m );
+template< typename Type, size_t M, size_t N, bool SO, AlignmentFlag AF, PaddingFlag PF >
+void reset( StaticMatrix<Type,M,N,SO,AF,PF>& m );
 
-template< typename Type, size_t M, size_t N, bool SO >
-void reset( StaticMatrix<Type,M,N,SO>& m, size_t i );
+template< typename Type, size_t M, size_t N, bool SO, AlignmentFlag AF, PaddingFlag PF >
+void reset( StaticMatrix<Type,M,N,SO,AF,PF>& m, size_t i );
 
-template< typename Type, size_t M, size_t N, bool SO >
-void clear( StaticMatrix<Type,M,N,SO>& m );
+template< typename Type, size_t M, size_t N, bool SO, AlignmentFlag AF, PaddingFlag PF >
+void clear( StaticMatrix<Type,M,N,SO,AF,PF>& m );
 
-template< bool RF, typename Type, size_t M, size_t N, bool SO >
-bool isDefault( const StaticMatrix<Type,M,N,SO>& m );
+template< RelaxationFlag RF, typename Type, size_t M, size_t N, bool SO, AlignmentFlag AF, PaddingFlag PF >
+bool isDefault( const StaticMatrix<Type,M,N,SO,AF,PF>& m );
 
-template< typename Type, size_t M, size_t N, bool SO >
-bool isIntact( const StaticMatrix<Type,M,N,SO>& m ) noexcept;
+template< typename Type, size_t M, size_t N, bool SO, AlignmentFlag AF, PaddingFlag PF >
+bool isIntact( const StaticMatrix<Type,M,N,SO,AF,PF>& m ) noexcept;
 
-template< typename Type, size_t M, size_t N, bool SO >
-void swap( StaticMatrix<Type,M,N,SO>& a, StaticMatrix<Type,M,N,SO>& b ) noexcept;
+template< typename Type, size_t M, size_t N, bool SO, AlignmentFlag AF, PaddingFlag PF >
+void swap( StaticMatrix<Type,M,N,SO,AF,PF>& a, StaticMatrix<Type,M,N,SO,AF,PF>& b ) noexcept;
 //@}
 //*************************************************************************************************
 
@@ -6093,11 +6627,13 @@ void swap( StaticMatrix<Type,M,N,SO>& a, StaticMatrix<Type,M,N,SO>& b ) noexcept
 // \param m The matrix to be resetted.
 // \return void
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N       // Number of columns
-        , bool SO >      // Storage order
-inline void reset( StaticMatrix<Type,M,N,SO>& m )
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , bool SO           // Storage order
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+inline void reset( StaticMatrix<Type,M,N,SO,AF,PF>& m )
 {
    m.reset();
 }
@@ -6117,11 +6653,13 @@ inline void reset( StaticMatrix<Type,M,N,SO>& m )
 // values in row \a i, if it is a \a columnMajor matrix the function resets the values in column
 // \a i. Note that the capacity of the row/column remains unchanged.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N       // Number of columns
-        , bool SO >      // Storage order
-inline void reset( StaticMatrix<Type,M,N,SO>& m, size_t i )
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , bool SO           // Storage order
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+inline void reset( StaticMatrix<Type,M,N,SO,AF,PF>& m, size_t i )
 {
    m.reset( i );
 }
@@ -6137,11 +6675,13 @@ inline void reset( StaticMatrix<Type,M,N,SO>& m, size_t i )
 //
 // Clearing a static matrix is equivalent to resetting it via the reset() function.
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N       // Number of columns
-        , bool SO >      // Storage order
-inline void clear( StaticMatrix<Type,M,N,SO>& m )
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , bool SO           // Storage order
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+inline void clear( StaticMatrix<Type,M,N,SO,AF,PF>& m )
 {
    m.reset();
 }
@@ -6172,12 +6712,14 @@ inline void clear( StaticMatrix<Type,M,N,SO>& m )
    if( isDefault<relaxed>( A ) ) { ... }
    \endcode
 */
-template< bool RF        // Relaxation flag
-        , typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N       // Number of columns
-        , bool SO >      // Storage order
-inline bool isDefault( const StaticMatrix<Type,M,N,SO>& m )
+template< RelaxationFlag RF  // Relaxation flag
+        , typename Type      // Data type of the matrix
+        , size_t M           // Number of rows
+        , size_t N           // Number of columns
+        , bool SO            // Storage order
+        , AlignmentFlag AF   // Alignment flag
+        , PaddingFlag PF >   // Padding flag
+inline bool isDefault( const StaticMatrix<Type,M,N,SO,AF,PF>& m )
 {
    if( SO == rowMajor ) {
       for( size_t i=0UL; i<M; ++i )
@@ -6213,11 +6755,13 @@ inline bool isDefault( const StaticMatrix<Type,M,N,SO>& m )
    if( isIntact( A ) ) { ... }
    \endcode
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N       // Number of columns
-        , bool SO >      // Storage order
-inline bool isIntact( const StaticMatrix<Type,M,N,SO>& m ) noexcept
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , bool SO           // Storage order
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+inline bool isIntact( const StaticMatrix<Type,M,N,SO,AF,PF>& m ) noexcept
 {
    return m.isIntact();
 }
@@ -6232,11 +6776,13 @@ inline bool isIntact( const StaticMatrix<Type,M,N,SO>& m ) noexcept
 // \param b The second matrix to be swapped.
 // \return void
 */
-template< typename Type  // Data type of the matrix
-        , size_t M       // Number of rows
-        , size_t N       // Number of columns
-        , bool SO >      // Storage order
-inline void swap( StaticMatrix<Type,M,N,SO>& a, StaticMatrix<Type,M,N,SO>& b ) noexcept
+template< typename Type     // Data type of the matrix
+        , size_t M          // Number of rows
+        , size_t N          // Number of columns
+        , bool SO           // Storage order
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF >  // Padding flag
+inline void swap( StaticMatrix<Type,M,N,SO,AF,PF>& a, StaticMatrix<Type,M,N,SO,AF,PF>& b ) noexcept
 {
    a.swap( b );
 }
@@ -6253,13 +6799,13 @@ inline void swap( StaticMatrix<Type,M,N,SO>& a, StaticMatrix<Type,M,N,SO>& b ) n
 
 //*************************************************************************************************
 /*! \cond BLAZE_INTERNAL */
-template< typename T, size_t M, size_t N, bool SO >
-struct Size< StaticMatrix<T,M,N,SO>, 0UL >
+template< typename T, size_t M, size_t N, bool SO, AlignmentFlag AF, PaddingFlag PF >
+struct Size< StaticMatrix<T,M,N,SO,AF,PF>, 0UL >
    : public Ptrdiff_t<M>
 {};
 
-template< typename T, size_t M, size_t N, bool SO >
-struct Size< StaticMatrix<T,M,N,SO>, 1UL >
+template< typename T, size_t M, size_t N, bool SO, AlignmentFlag AF, PaddingFlag PF >
+struct Size< StaticMatrix<T,M,N,SO,AF,PF>, 1UL >
    : public Ptrdiff_t<N>
 {};
 /*! \endcond */
@@ -6276,13 +6822,13 @@ struct Size< StaticMatrix<T,M,N,SO>, 1UL >
 
 //*************************************************************************************************
 /*! \cond BLAZE_INTERNAL */
-template< typename T, size_t M, size_t N, bool SO >
-struct MaxSize< StaticMatrix<T,M,N,SO>, 0UL >
+template< typename T, size_t M, size_t N, bool SO, AlignmentFlag AF, PaddingFlag PF >
+struct MaxSize< StaticMatrix<T,M,N,SO,AF,PF>, 0UL >
    : public Ptrdiff_t<M>
 {};
 
-template< typename T, size_t M, size_t N, bool SO >
-struct MaxSize< StaticMatrix<T,M,N,SO>, 1UL >
+template< typename T, size_t M, size_t N, bool SO, AlignmentFlag AF, PaddingFlag PF >
+struct MaxSize< StaticMatrix<T,M,N,SO,AF,PF>, 1UL >
    : public Ptrdiff_t<N>
 {};
 /*! \endcond */
@@ -6299,8 +6845,8 @@ struct MaxSize< StaticMatrix<T,M,N,SO>, 1UL >
 
 //*************************************************************************************************
 /*! \cond BLAZE_INTERNAL */
-template< typename T, size_t N, bool SO >
-struct IsSquare< StaticMatrix<T,N,N,SO> >
+template< typename T, size_t N, bool SO, AlignmentFlag AF, PaddingFlag PF >
+struct IsSquare< StaticMatrix<T,N,N,SO,AF,PF> >
    : public TrueType
 {};
 /*! \endcond */
@@ -6317,8 +6863,8 @@ struct IsSquare< StaticMatrix<T,N,N,SO> >
 
 //*************************************************************************************************
 /*! \cond BLAZE_INTERNAL */
-template< typename T, size_t M, size_t N, bool SO >
-struct HasConstDataAccess< StaticMatrix<T,M,N,SO> >
+template< typename T, size_t M, size_t N, bool SO, AlignmentFlag AF, PaddingFlag PF >
+struct HasConstDataAccess< StaticMatrix<T,M,N,SO,AF,PF> >
    : public TrueType
 {};
 /*! \endcond */
@@ -6335,8 +6881,8 @@ struct HasConstDataAccess< StaticMatrix<T,M,N,SO> >
 
 //*************************************************************************************************
 /*! \cond BLAZE_INTERNAL */
-template< typename T, size_t M, size_t N, bool SO >
-struct HasMutableDataAccess< StaticMatrix<T,M,N,SO> >
+template< typename T, size_t M, size_t N, bool SO, AlignmentFlag AF, PaddingFlag PF >
+struct HasMutableDataAccess< StaticMatrix<T,M,N,SO,AF,PF> >
    : public TrueType
 {};
 /*! \endcond */
@@ -6353,8 +6899,8 @@ struct HasMutableDataAccess< StaticMatrix<T,M,N,SO> >
 
 //*************************************************************************************************
 /*! \cond BLAZE_INTERNAL */
-template< typename T, size_t M, size_t N, bool SO >
-struct IsStatic< StaticMatrix<T,M,N,SO> >
+template< typename T, size_t M, size_t N, bool SO, AlignmentFlag AF, PaddingFlag PF >
+struct IsStatic< StaticMatrix<T,M,N,SO,AF,PF> >
    : public TrueType
 {};
 /*! \endcond */
@@ -6371,9 +6917,9 @@ struct IsStatic< StaticMatrix<T,M,N,SO> >
 
 //*************************************************************************************************
 /*! \cond BLAZE_INTERNAL */
-template< typename T, size_t M, size_t N, bool SO >
-struct IsAligned< StaticMatrix<T,M,N,SO> >
-   : public BoolConstant< StaticMatrix<T,M,N,SO>::isAligned() >
+template< typename T, size_t M, size_t N, bool SO, AlignmentFlag AF, PaddingFlag PF >
+struct IsAligned< StaticMatrix<T,M,N,SO,AF,PF> >
+   : public BoolConstant< AF == aligned >
 {};
 /*! \endcond */
 //*************************************************************************************************
@@ -6389,8 +6935,8 @@ struct IsAligned< StaticMatrix<T,M,N,SO> >
 
 //*************************************************************************************************
 /*! \cond BLAZE_INTERNAL */
-template< typename T, size_t M, size_t N, bool SO >
-struct IsContiguous< StaticMatrix<T,M,N,SO> >
+template< typename T, size_t M, size_t N, bool SO, AlignmentFlag AF, PaddingFlag PF >
+struct IsContiguous< StaticMatrix<T,M,N,SO,AF,PF> >
    : public TrueType
 {};
 /*! \endcond */
@@ -6407,9 +6953,9 @@ struct IsContiguous< StaticMatrix<T,M,N,SO> >
 
 //*************************************************************************************************
 /*! \cond BLAZE_INTERNAL */
-template< typename T, size_t M, size_t N, bool SO >
-struct IsPadded< StaticMatrix<T,M,N,SO> >
-   : public BoolConstant<usePadding>
+template< typename T, size_t M, size_t N, bool SO, AlignmentFlag AF, PaddingFlag PF >
+struct IsPadded< StaticMatrix<T,M,N,SO,AF,PF> >
+   : public BoolConstant< PF == padded >
 {};
 /*! \endcond */
 //*************************************************************************************************
@@ -6709,6 +7255,22 @@ struct UnaryMapTraitEval2< T, OP
 /*! \cond BLAZE_INTERNAL */
 template< typename T1, typename T2, typename OP >
 struct BinaryMapTraitEval2< T1, T2, OP
+                          , EnableIf_t< IsColumnVector_v<T1> &&
+                                        IsRowVector_v<T2> &&
+                                        ( Size_v<T1,0UL> != DefaultSize_v ) &&
+                                        ( Size_v<T2,0UL> != DefaultSize_v ) > >
+{
+   using ET1 = ElementType_t<T1>;
+   using ET2 = ElementType_t<T2>;
+
+   static constexpr size_t M = Size_v<T1,0UL>;
+   static constexpr size_t N = Size_v<T2,0UL>;
+
+   using Type = StaticMatrix< MapTrait_t<ET1,ET2,OP>, M, N, false >;
+};
+
+template< typename T1, typename T2, typename OP >
+struct BinaryMapTraitEval2< T1, T2, OP
                           , EnableIf_t< IsMatrix_v<T1> &&
                                         IsMatrix_v<T2> &&
                                         ( Size_v<T1,0UL> != DefaultSize_v ||
@@ -6773,16 +7335,44 @@ struct ExpandTraitEval2< T, E
 
 //=================================================================================================
 //
+//  SOLVETRAIT SPECIALIZATIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+template< typename T1, typename T2 >
+struct SolveTraitEval2< T1, T2
+                      , EnableIf_t< IsDenseMatrix_v<T1> &&
+                                    IsDenseMatrix_v<T2> &&
+                                    ( ( Size_v<T1,0UL> != DefaultSize_v ) ||
+                                      ( Size_v<T1,1UL> != DefaultSize_v ) ||
+                                      ( Size_v<T2,0UL> != DefaultSize_v ) ) &&
+                                    ( Size_v<T2,1UL> != DefaultSize_v ) > >
+{
+   static constexpr size_t M = max( Size_v<T1,0UL>, Size_v<T1,1UL>, Size_v<T2,0UL> );
+   static constexpr size_t N = Size_v<T2,1UL>;
+
+   using Type = StaticMatrix< ElementType_t<T2>, M, N, StorageOrder_v<T2> >;
+};
+/*! \endcond */
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
 //  HIGHTYPE SPECIALIZATIONS
 //
 //=================================================================================================
 
 //*************************************************************************************************
 /*! \cond BLAZE_INTERNAL */
-template< typename T1, size_t M, size_t N, bool SO, typename T2 >
-struct HighType< StaticMatrix<T1,M,N,SO>, StaticMatrix<T2,M,N,SO> >
+template< typename T1, size_t M, size_t N, bool SO, typename T2, AlignmentFlag AF, PaddingFlag PF >
+struct HighType< StaticMatrix<T1,M,N,SO,AF,PF>, StaticMatrix<T2,M,N,SO,AF,PF> >
 {
-   using Type = StaticMatrix< typename HighType<T1,T2>::Type, M, N, SO >;
+   using Type = StaticMatrix< typename HighType<T1,T2>::Type, M, N, SO, AF, PF >;
 };
 /*! \endcond */
 //*************************************************************************************************
@@ -6798,10 +7388,10 @@ struct HighType< StaticMatrix<T1,M,N,SO>, StaticMatrix<T2,M,N,SO> >
 
 //*************************************************************************************************
 /*! \cond BLAZE_INTERNAL */
-template< typename T1, size_t M, size_t N, bool SO, typename T2 >
-struct LowType< StaticMatrix<T1,M,N,SO>, StaticMatrix<T2,M,N,SO> >
+template< typename T1, size_t M, size_t N, bool SO, typename T2, AlignmentFlag AF, PaddingFlag PF >
+struct LowType< StaticMatrix<T1,M,N,SO,AF,PF>, StaticMatrix<T2,M,N,SO,AF,PF> >
 {
-   using Type = StaticMatrix< typename LowType<T1,T2>::Type, M, N, SO >;
+   using Type = StaticMatrix< typename LowType<T1,T2>::Type, M, N, SO, AF, PF >;
 };
 /*! \endcond */
 //*************************************************************************************************

@@ -3,7 +3,7 @@
 //  \file blaze/math/proxy/DefaultProxy.h
 //  \brief Header file for the DefaultProxy class
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -69,6 +69,19 @@ class DefaultProxy
    //@{
    BLAZE_ALWAYS_INLINE PT&       operator~();
    BLAZE_ALWAYS_INLINE const PT& operator~() const;
+   //@}
+   //**********************************************************************************************
+
+ protected:
+   //**Special member functions********************************************************************
+   /*!\name Special member functions */
+   //@{
+   DefaultProxy() = default;
+   DefaultProxy( const DefaultProxy& ) = default;
+   DefaultProxy( DefaultProxy&& ) = default;
+   ~DefaultProxy() = default;
+   DefaultProxy& operator=( const DefaultProxy& ) = default;
+   DefaultProxy& operator=( DefaultProxy&& ) = default;
    //@}
    //**********************************************************************************************
 };

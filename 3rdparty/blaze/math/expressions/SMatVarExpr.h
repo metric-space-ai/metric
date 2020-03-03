@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/SMatVarExpr.h
 //  \brief Header file for the sparse matrix variance expression
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -61,6 +61,7 @@
 #include "../../math/typetraits/RequiresEvaluation.h"
 #include "../../math/typetraits/UnderlyingBuiltin.h"
 #include "../../math/views/Check.h"
+#include "../../system/MacroDisable.h"
 #include "../../util/Assert.h"
 #include "../../util/EnableIf.h"
 #include "../../util/FunctionTrace.h"
@@ -86,8 +87,8 @@ namespace blaze {
 // The SMatVarExpr class represents the compile time expression for the computation of the
 // row-/column-wise variance function on row-major sparse matrices.
 */
-template< typename MT  // Type of the sparse matrix
-        , size_t RF >  // Reduction flag
+template< typename MT         // Type of the sparse matrix
+        , ReductionFlag RF >  // Reduction flag
 class SMatVarExpr
 {};
 //*************************************************************************************************
@@ -632,7 +633,7 @@ class SMatVarExpr<MT,rowwise>
       // \param sm The sparse matrix operand of the variance expression.
       // \param index Index to the initial matrix row.
       */
-      explicit inline ConstIterator( Operand sm, size_t index )
+      inline ConstIterator( Operand sm, size_t index )
          : sm_   ( sm    )  // Sparse matrix of the variance expression
          , index_( index )  // Index to the current matrix row
       {}
@@ -1225,8 +1226,8 @@ inline decltype(auto) var( const SparseMatrix<MT,SO>& sm )
 // \param sm The given row-major sparse matrix for the variance computation.
 // \return The result of the variance operation.
 */
-template< size_t RF      // Reduction flag
-        , typename MT >  // Type of the sparse matrix
+template< ReductionFlag RF  // Reduction flag
+        , typename MT >     // Type of the sparse matrix
 inline const SMatVarExpr<MT,RF> var_backend( const SparseMatrix<MT,false>& sm )
 {
    using ReturnType = const SMatVarExpr<MT,RF>;
@@ -1244,11 +1245,12 @@ inline const SMatVarExpr<MT,RF> var_backend( const SparseMatrix<MT,false>& sm )
 // \param sm The given column-major sparse matrix for the variance computation.
 // \return The result of the variance operation.
 */
-template< size_t RF      // Reduction flag
-        , typename MT >  // Type of the sparse matrix
+template< ReductionFlag RF  // Reduction flag
+        , typename MT >     // Type of the sparse matrix
 inline decltype(auto) var_backend( const SparseMatrix<MT,true>& sm )
 {
-   return trans( var<1UL-RF>( trans( ~sm ) ) );
+   constexpr ReductionFlag RF2( RF == rowwise ? columnwise : rowwise );
+   return trans( var<RF2>( trans( ~sm ) ) );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -1290,9 +1292,9 @@ inline decltype(auto) var_backend( const SparseMatrix<MT,true>& sm )
 // than 2 or in case \a RF is set to \a columnwise and the number of rows of the given matrix is
 // smaller than 2, a \a std::invalid_argument is thrown.
 */
-template< size_t RF    // Reduction flag
-        , typename MT  // Type of the sparse matrix
-        , bool SO >    // Storage order
+template< ReductionFlag RF  // Reduction flag
+        , typename MT       // Type of the sparse matrix
+        , bool SO >         // Storage order
 inline decltype(auto) var( const SparseMatrix<MT,SO>& sm )
 {
    BLAZE_FUNCTION_TRACE;

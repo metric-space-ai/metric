@@ -3,7 +3,7 @@
 //  \file blaze/math/simd/Mult.h
 //  \brief Header file for the SIMD multiplication functionality
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -765,7 +765,7 @@ struct SIMDf32MultExpr
    // \param a The left-hand side operand for the multiplication.
    // \param b The right-hand side operand for the multiplication.
    */
-   explicit BLAZE_ALWAYS_INLINE SIMDf32MultExpr( const T1& a, const T2& b )
+   BLAZE_ALWAYS_INLINE SIMDf32MultExpr( const T1& a, const T2& b )
       : a_( a )  // The left-hand side operand for the multiplication
       , b_( b )  // The right-hand side operand for the multiplication
    {}
@@ -960,7 +960,7 @@ struct SIMDf64MultExpr
    // \param a The left-hand side operand for the multiplication.
    // \param b The right-hand side operand for the multiplication.
    */
-   explicit BLAZE_ALWAYS_INLINE SIMDf64MultExpr( const T1& a, const T2& b )
+   BLAZE_ALWAYS_INLINE SIMDf64MultExpr( const T1& a, const T2& b )
       : a_( a )  // The left-hand side operand for the multiplication
       , b_( b )  // The right-hand side operand for the multiplication
    {}

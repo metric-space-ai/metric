@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/Vector.h
 //  \brief Header file for the Vector CRTP base class
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -44,8 +44,8 @@
 #include "../../math/typetraits/IsResizable.h"
 #include "../../math/typetraits/IsShrinkable.h"
 #include "../../system/Inline.h"
+#include "../../system/MacroDisable.h"
 #include "../../util/Assert.h"
-#include "../../util/DisableIf.h"
 #include "../../util/EnableIf.h"
 #include "../../util/FunctionTrace.h"
 #include "../../util/MaybeUnused.h"
@@ -75,8 +75,9 @@ namespace blaze {
 */
 template< typename VT  // Type of the vector
         , bool TF >    // Transpose flag
-struct Vector
+class Vector
 {
+ public:
    //**Type definitions****************************************************************************
    using VectorType = VT;  //!< Type of the vector.
    //**********************************************************************************************
@@ -103,6 +104,19 @@ struct Vector
    BLAZE_ALWAYS_INLINE constexpr const VectorType& operator~() const noexcept {
       return *static_cast<const VectorType*>( this );
    }
+   //**********************************************************************************************
+
+ protected:
+   //**Special member functions********************************************************************
+   /*!\name Special member functions */
+   //@{
+   Vector() = default;
+   Vector( const Vector& ) = default;
+   Vector( Vector&& ) = default;
+   ~Vector() = default;
+   Vector& operator=( const Vector& ) = default;
+   Vector& operator=( Vector&& ) = default;
+   //@}
    //**********************************************************************************************
 };
 //*************************************************************************************************
@@ -1602,6 +1616,54 @@ BLAZE_ALWAYS_INLINE bool tryBitxorAssign( const Vector<VT1,TF1>& lhs, const Vect
 template< typename VT  // Type of the vector
         , bool TF >    // Transpose flag of the vector
 BLAZE_ALWAYS_INLINE VT& derestrict( Vector<VT,TF>& vector )
+{
+   return ~vector;
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Removal of the top-level view on the given vector.
+// \ingroup vector
+//
+// \param vector The vector to be unviewed.
+// \return Reference to the vector without view.
+//
+// This function removes the top-level view on the given vector and returns a reference to the
+// unviewed vector.\n
+// This function must \b NOT be called explicitly! It is used internally for the performance
+// optimized evaluation of expression templates. Calling this function explicitly might result
+// in the violation of invariants, erroneous results and/or in compilation errors.
+*/
+template< typename VT  // Type of the vector
+        , bool TF >    // Transpose flag of the vector
+BLAZE_ALWAYS_INLINE VT& unview( Vector<VT,TF>& vector )
+{
+   return ~vector;
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Removal of the top-level views on the given constant vector.
+// \ingroup vector
+//
+// \param vector The constant vector to be unviewed.
+// \return Reference to the vector without view.
+//
+// This function removes the top-level view on the given constant vector and returns a reference
+// to the unviewed vector.\n
+// This function must \b NOT be called explicitly! It is used internally for the performance
+// optimized evaluation of expression templates. Calling this function explicitly might result
+// in the violation of invariants, erroneous results and/or in compilation errors.
+*/
+template< typename VT  // Type of the vector
+        , bool TF >    // Transpose flag of the vector
+BLAZE_ALWAYS_INLINE const VT& unview( const Vector<VT,TF>& vector )
 {
    return ~vector;
 }

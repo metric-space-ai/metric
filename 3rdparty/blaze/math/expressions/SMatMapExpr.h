@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/SMatMapExpr.h
 //  \brief Header file for the sparse matrix map expression
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -56,7 +56,6 @@
 #include "../../math/sparse/ValueIndexPair.h"
 #include "../../math/traits/MapTrait.h"
 #include "../../math/traits/MultTrait.h"
-#include "../../math/typetraits/IsComputation.h"
 #include "../../math/typetraits/IsExpression.h"
 #include "../../math/typetraits/RequiresEvaluation.h"
 #include "../../math/typetraits/UnderlyingBuiltin.h"
@@ -188,8 +187,8 @@ class SMatMapExpr
       // \param op The custom unary operation.
       */
       inline ConstIterator( IteratorType it, OP op )
-         : it_( it )  // Iterator over the elements of the sparse matrix expression
-         , op_( op )  // The custom unary operation
+         : it_( it )             // Iterator over the elements of the sparse matrix expression
+         , op_( std::move(op) )  // The custom unary operation
       {}
       //*******************************************************************************************
 
@@ -296,9 +295,9 @@ class SMatMapExpr
    // \param sm The sparse matrix operand of the map expression.
    // \param op The custom unary operation.
    */
-   explicit inline SMatMapExpr( const MT& sm, OP op ) noexcept
-      : sm_( sm )  // Sparse matrix of the map expression
-      , op_( op )  // The custom unary operation
+   inline SMatMapExpr( const MT& sm, OP op ) noexcept
+      : sm_( sm )             // Sparse matrix of the map expression
+      , op_( std::move(op) )  // The custom unary operation
    {}
    //**********************************************************************************************
 
@@ -336,10 +335,10 @@ class SMatMapExpr
    //**********************************************************************************************
 
    //**Begin function******************************************************************************
-   /*!\brief Returns an iterator to the first non-zero element of row \a i.
+   /*!\brief Returns an iterator to the first non-zero element of row/column \a i.
    //
-   // \param i The row index.
-   // \return Iterator to the first non-zero element of row \a i.
+   // \param i The row/column index.
+   // \return Iterator to the first non-zero element of row/column \a i.
    */
    inline ConstIterator begin( size_t i ) const {
       return ConstIterator( sm_.begin(i), op_ );
@@ -347,10 +346,10 @@ class SMatMapExpr
    //**********************************************************************************************
 
    //**End function********************************************************************************
-   /*!\brief Returns an iterator just past the last non-zero element of row \a i.
+   /*!\brief Returns an iterator just past the last non-zero element of row/column \a i.
    //
-   // \param i The row index.
-   // \return Iterator just past the last non-zero element of row \a i.
+   // \param i The row/column index.
+   // \return Iterator just past the last non-zero element of row/column \a i.
    */
    inline ConstIterator end( size_t i ) const {
       return ConstIterator( sm_.end(i), op_ );
@@ -972,7 +971,7 @@ inline decltype(auto) map( const SparseMatrix<MT,SO>& sm, OP op )
    BLAZE_FUNCTION_TRACE;
 
    using ReturnType = const SMatMapExpr<MT,OP,SO>;
-   return ReturnType( ~sm, op );
+   return ReturnType( ~sm, std::move(op) );
 }
 //*************************************************************************************************
 
@@ -1002,7 +1001,7 @@ inline decltype(auto) forEach( const SparseMatrix<MT,SO>& sm, OP op )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~sm, op );
+   return map( ~sm, std::move(op) );
 }
 //*************************************************************************************************
 
@@ -1182,9 +1181,9 @@ inline decltype(auto) round( const SparseMatrix<MT,SO>& sm )
 // \param sm The input matrix.
 // \return The complex conjugate of each single element of \a sm.
 //
-// The \a conj function calculates the complex conjugate of each element of the input matrix
+// The \a conj() function calculates the complex conjugate of each element of the input matrix
 // \a sm. The function returns an expression representing this operation.\n
-// The following example demonstrates the use of the \a conj function:
+// The following example demonstrates the use of the \a conj() function:
 
    \code
    blaze::CompressedMatrix< complex<double> > A, B;
@@ -1210,10 +1209,10 @@ inline decltype(auto) conj( const SparseMatrix<MT,SO>& sm )
 // \param sm The input matrix.
 // \return The conjugate transpose of \a sm.
 //
-// The \a ctrans function returns an expression representing the conjugate transpose (also called
-// adjoint matrix, Hermitian conjugate matrix or transjugate matrix) of the given input matrix
-// \a sm.\n
-// The following example demonstrates the use of the \a ctrans function:
+// The \a ctrans() function returns an expression representing the conjugate transpose (also
+// called adjoint matrix, Hermitian conjugate matrix or transjugate matrix) of the given input
+// matrix \a sm.\n
+// The following example demonstrates the use of the \a ctrans() function:
 
    \code
    blaze::CompressedMatrix< complex<double> > A, B;
@@ -1221,7 +1220,7 @@ inline decltype(auto) conj( const SparseMatrix<MT,SO>& sm )
    B = ctrans( A );
    \endcode
 
-// Note that the \a ctrans function has the same effect as manually applying the \a conj and
+// Note that the \a ctrans() function has the same effect as manually applying the \a conj() and
 // \a trans function in any order:
 
    \code
@@ -1247,9 +1246,9 @@ inline decltype(auto) ctrans( const SparseMatrix<MT,SO>& sm )
 // \param sm The input matrix.
 // \return The real part of each single element of \a sm.
 //
-// The \a real function calculates the real part of each element of the input matrix \a sm.
+// The \a real() function calculates the real part of each element of the input matrix \a sm.
 // The function returns an expression representing this operation.\n
-// The following example demonstrates the use of the \a real function:
+// The following example demonstrates the use of the \a real() function:
 
    \code
    blaze::CompressedMatrix<double> A, B;
@@ -1275,9 +1274,9 @@ inline decltype(auto) real( const SparseMatrix<MT,SO>& sm )
 // \param sm The input matrix.
 // \return The imaginary part of each single element of \a sm.
 //
-// The \a imag function calculates the imaginary part of each element of the input matrix \a sm.
+// The \a imag() function calculates the imaginary part of each element of the input matrix \a sm.
 // The function returns an expression representing this operation.\n
-// The following example demonstrates the use of the \a imag function:
+// The following example demonstrates the use of the \a imag() function:
 
    \code
    blaze::CompressedMatrix<double> A, B;
@@ -1292,6 +1291,34 @@ inline decltype(auto) imag( const SparseMatrix<MT,SO>& sm )
    BLAZE_FUNCTION_TRACE;
 
    return map( ~sm, Imag() );
+}
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*!\brief Returns a matrix containing the phase angle of each single element of \a sm.
+// \ingroup sparse_matrix
+//
+// \param sm The input matrix.
+// \return The phase angle of each single element of \a sm.
+//
+// The \a arg() function calculates the phase angle of each element of the input matrix \a sm.
+// The function returns an expression representing this operation.\n
+// The following example demonstrates the use of the \a arg() function:
+
+   \code
+   blaze::CompressedMatrix<double> A, B;
+   // ... Resizing and initialization
+   B = arg( A );
+   \endcode
+*/
+template< typename MT  // Type of the sparse matrix
+        , bool SO >    // Storage order
+inline decltype(auto) arg( const SparseMatrix<MT,SO>& sm )
+{
+   BLAZE_FUNCTION_TRACE;
+
+   return map( ~sm, Arg() );
 }
 //*************************************************************************************************
 
@@ -1446,7 +1473,7 @@ inline decltype(auto) clamp( const SparseMatrix<MT,SO>& sm, const DT& min, const
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~sm, Clamp<DT>( min, max ) );
+   return map( ~sm, bind2nd( bind3rd( Clamp(), max ), min ) );
 }
 //*************************************************************************************************
 

@@ -3,7 +3,7 @@
 //  \file blaze/math/shims/IsZero.h
 //  \brief Header file for the isZero shim
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -97,8 +97,8 @@ namespace blaze {
    complex<double> c3( 1.0, 0.0  );  //    false              |    false
    \endcode
 */
-template< bool RF          // Relaxation flag
-        , typename Type >  // Type of the given value/object
+template< RelaxationFlag RF  // Relaxation flag
+        , typename Type >    // Type of the given value/object
 BLAZE_ALWAYS_INLINE EnableIf_t< IsNumeric_v<Type>, bool > isZero( const Type& v ) noexcept
 {
    return isDefault<RF>( v );

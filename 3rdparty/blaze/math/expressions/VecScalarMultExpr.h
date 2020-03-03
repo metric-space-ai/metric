@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/VecScalarMultExpr.h
 //  \brief Header file for the VecScalarMultExpr base class
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -67,6 +67,60 @@ template< typename VT >  // Vector base type of the expression
 struct VecScalarMultExpr
    : public MultExpr<VT>
 {};
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
+//  GLOBAL RESTRUCTURING FUNCTIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Calculation of the transpose of the given vector-scalar multiplication.
+// \ingroup math
+//
+// \param vector The vector-scalar multiplication expression to be transposed.
+// \return The transpose of the expression.
+//
+// This operator implements the performance optimized treatment of the transpose of a
+// vector-scalar multiplication. It restructures the expression \f$ a=trans(b*s1) \f$ to
+// the expression \f$ a=trans(b)*s1 \f$.
+*/
+template< typename VT >  // Vector base type of the expression
+inline decltype(auto) trans( const VecScalarMultExpr<VT>& vector )
+{
+   BLAZE_FUNCTION_TRACE;
+
+   return trans( (~vector).leftOperand() ) * (~vector).rightOperand();
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Calculation of the complex conjugate of the given vector-scalar multiplication.
+// \ingroup math
+//
+// \param vector The vector-scalar multiplication expression to be conjugated.
+// \return The complex conjugate of the expression.
+//
+// This operator implements the performance optimized treatment of the complex conjugate of a
+// vector-scalar multiplication. It restructures the expression \f$ a=conj(b*s1) \f$ to the
+// expression \f$ a=conj(b)*s1 \f$.
+*/
+template< typename VT >  // Vector base type of the expression
+inline decltype(auto) conj( const VecScalarMultExpr<VT>& vector )
+{
+   BLAZE_FUNCTION_TRACE;
+
+   return conj( (~vector).leftOperand() ) * (~vector).rightOperand();
+}
+/*! \endcond */
 //*************************************************************************************************
 
 } // namespace blaze

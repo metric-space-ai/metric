@@ -3,7 +3,7 @@
 //  \file blaze/math/proxy/DenseVectorProxy.h
 //  \brief Header file for the DenseVectorProxy class
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -49,7 +49,6 @@
 #include "../../math/typetraits/IsResizable.h"
 #include "../../math/typetraits/IsRowVector.h"
 #include "../../system/Inline.h"
-#include "../../util/DisableIf.h"
 #include "../../util/EnableIf.h"
 #include "../../util/MaybeUnused.h"
 #include "../../util/Types.h"
@@ -131,6 +130,19 @@ class DenseVectorProxy
    /*!\name Numeric functions */
    //@{
    template< typename Other > inline void scale( const Other& scalar ) const;
+   //@}
+   //**********************************************************************************************
+
+ protected:
+   //**Special member functions********************************************************************
+   /*!\name Special member functions */
+   //@{
+   DenseVectorProxy() = default;
+   DenseVectorProxy( const DenseVectorProxy& ) = default;
+   DenseVectorProxy( DenseVectorProxy&& ) = default;
+   ~DenseVectorProxy() = default;
+   DenseVectorProxy& operator=( const DenseVectorProxy& ) = default;
+   DenseVectorProxy& operator=( DenseVectorProxy&& ) = default;
    //@}
    //**********************************************************************************************
 
