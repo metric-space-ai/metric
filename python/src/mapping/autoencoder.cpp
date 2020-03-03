@@ -2,22 +2,15 @@
 
 #include <boost/python.hpp>
 #include <vector>
+#include <string>
 
 namespace bp = boost::python;
 
 template<typename InputDataType, typename Scalar>
 void register_wrapper_autoencoder() {
-    using Mapping = MiniDNN::Autoencoder<InputDataType, Scalar>;
+    using Mapping = metric::Autoencoder<InputDataType, Scalar>;
     auto encoder = bp::class_<Mapping>("Autoencoder");
-    encoder.def(bp::init<std::vector<InputDataType>, size_t, InputDataType>(
-        (
-            bp::arg("input_data"),
-            bp::arg("features_length") = 1,
-            bp::arg("norm_value") = 0
-        )
-    ));
-    encoder.def("set_data_shape", &Mapping::setDataShape);
-    encoder.def("load_train_data", &Mapping::loadTrainData);
+    encoder.def(bp::init<const std::string&>((bp::arg("jsonString"))));
     encoder.def("train", &Mapping::train);
     encoder.def("encode", &Mapping::encode);
     encoder.def("decode", &Mapping::decode);
