@@ -8,44 +8,105 @@ Copyright (c) 2019  Panda Team
 #ifndef _METRIC_SPACE_MATRIX_CPP
 #define _METRIC_SPACE_MATRIX_CPP
 #include "matrix.hpp"
+#include <stdexcept>
+#include <type_traits>
 
 namespace metric {
 
-/*** constructor: with a vector data records **/
-template <typename recType, typename Metric, typename distType>
-Matrix<recType, Metric, distType>::Matrix(const std::vector<recType>& p, Metric d)
-    : metric_(d)
-    , D_(p.size())
-    , data_(p)
-
-{
-    for (size_t i = 0; i < D_.columns(); ++i) {
-        D_(i, i) = 0;
-        for (size_t j = i + 1; j < D_.rows(); ++j) {
-            auto distance = metric_(p[i], p[j]);
-            D_(i, j) = distance;
-        }
-    }
-}
-
-template <typename recType, typename Metric, typename distType>
-distType Matrix<recType, Metric, distType>::operator()(size_t i, size_t j) const
+template <typename recType, typename Metric>
+auto Matrix<recType, Metric>::operator()(size_t i, size_t j) const -> distType
 {
     return D_(i, j);
 }
 
-template <typename recType, typename Metric, typename distType>
-recType Matrix<recType, Metric, distType>::operator[](size_t id) const
+template <typename recType, typename Metric>
+recType Matrix<recType, Metric>::operator[](size_t id) const
 {
     return (data_(id));
 }
 
-template <typename recType, typename Metric, typename distType>
-size_t Matrix<recType, Metric, distType>::size() const
+template <typename recType, typename Metric>
+size_t Matrix<recType, Metric>::size() const
 {
     return data_.size();
 }
 
-}  // namespace metric
+template <typename recType, typename Metric>
+std::size_t Matrix<recType, Metric>::insert(const recType& item)
+{
+    std::size_t old_size = D_.rows();
+    D_.resize(old_size + 1, true);
+    for (std::size_t i = 0; i < old_size; i++) {
+        D_(i, old_size) = metric_(data_[i], item);
+    }
+    data_.push_back(item);
+    return old_size;
+}
 
+template <typename recType, typename Metric>
+template <typename Container,
+          typename>
+std::vector<std::size_t>
+Matrix<recType, Metric>::insert(const Container& items)
+{
+    std::vector<std::size_t> ids;
+    ids.reserve(items.size());
+    for (auto& i : items) {
+        auto id = insert(i);
+        ids.push_back(id);
+    }
+    return ids;
+}
+
+// unimplemented stuff
+template <typename recType, typename Metric>
+std::pair<std::size_t, bool> Matrix<recType, Metric>::insert_if(const recType& p, distType threshold)
+{
+    //    throw std::runtime_error("not implemented yet");
+    return std::pair { 0, false };
+}
+template <typename recType, typename Metric>
+template <typename Container, typename>
+std::vector<std::pair<std::size_t, bool>> Matrix<recType, Metric>::insert_if(const Container& p, distType threshold)
+{
+    //    throw std::runtime_error("not implemented yet");
+    return std::vector<std::pair<std::size_t, bool>> {};
+}
+
+template <typename recType, typename Metric>
+bool Matrix<recType, Metric>::erase(std::size_t id)
+{
+    //    throw std::runtime_error("not implemented yet");
+    return false;
+}
+
+template <typename recType, typename Metric>
+void Matrix<recType, Metric>::set(std::size_t id, const recType& p)
+{
+    //    throw std::runtime_error("not implemented yet");
+}
+
+template <typename recType, typename Metric>
+std::size_t Matrix<recType, Metric>::nn(const recType& p) const
+{
+    //    throw std::runtime_error("not implemented yet");
+    return 0;
+}
+
+template <typename recType, typename Metric>
+auto Matrix<recType, Metric>::knn(const recType& p, unsigned k) const -> std::vector<std::pair<std::size_t, distType>>
+{
+    //    throw std::runtime_error("not implemented yet");
+    return std::vector<std::pair<std::size_t, distType>> {};
+}
+
+template <typename recType, typename Metric>
+auto Matrix<recType, Metric>::rnn(const recType& p, distType distance) const
+    -> std::vector<std::pair<std::size_t, distType>>
+{
+    //    throw std::runtime_error("not implemented yet");
+    return std::vector<std::pair<std::size_t, distType>> {};
+}
+
+}  // namespace metric
 #endif
