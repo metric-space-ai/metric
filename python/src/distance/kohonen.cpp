@@ -15,6 +15,7 @@ template <typename D,
 
 
 	kohonen_distance(metric::SOM<Sample, Graph, Metric, Distribution> som_model);   <---------- ???
+
 	kohonen_distance(std::vector<Sample>& samples,
 	                size_t nodesWidth,
 	                size_t nodesHeight);
@@ -25,8 +26,6 @@ template <typename D,
                     double finish_learn_rate = 0.0,
                     size_t iterations = 20,
                     Distribution distribution = Distribution(-1, 1));
-    distance_return_type operator()(const Sample& sample_1,
-                                    const Sample& sample_2);
 
 */
 

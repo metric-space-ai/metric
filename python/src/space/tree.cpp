@@ -62,10 +62,29 @@ class Tree {
 template <typename recType, typename Metric>
 void register_wrapper_Tree() {
     using Tree = metric::Tree<recType, Metric>;
-    using Matrix = std::vector<std::vector<recType>>;
     auto tree = bp::class_<Tree>("Tree", bp::no_init);
-    Tree(int truncate = -1, Metric d = Metric());
-    Tree(const recType& p, int truncate = -1, Metric d = Metric());
+
+    //Tree(int truncate = -1, Metric d = Metric());  // empty tree
+
+    /**
+     * @brief Construct a Tree object with one data record as root
+     *
+     * @param p data record
+     * @param truncate truncate parameter
+     * @param d metric object
+     */
+    //Tree(const recType& p, int truncate = -1, Metric d = Metric());  // cover tree with one data record as root
+
+    /**
+     * @brief Construct a Tree object from Container
+     *
+     * @param p vector of data records to store in tree
+     * @param truncate truncate paramter
+     * @param d metric object
+     */
+    //template <class Container>
+    //Tree(const Container& p, int truncateArg = -1, Metric d = Metric());
+
     tree.def(bp::init<int, Metric>(
         (
             bp::arg("truncate") = -1,

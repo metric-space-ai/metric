@@ -9,3 +9,5 @@ target_link_libraries(${LIB_NAME} ${COMMON_LIBRARIES})
 
 add_subdirectory(distance)
 add_subdirectory(mapping)
+add_subdirectory(transform)
+add_subdirectory(space)
