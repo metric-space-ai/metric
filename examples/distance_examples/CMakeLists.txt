@@ -12,11 +12,11 @@ endif(UNIX)
 include_directories(
     ${PROJECT_SOURCE_DIR}
     ${PROJECT_SOURCE_DIR}/../../3rdparty/jpeglib 
-    )
+    ) 
 	 
-include_directories(${Boost_INCLUDE_DIRS}) 
+include_directories(${Boost_INCLUDE_DIRS})  
 	
-file(COPY "assets" DESTINATION ".")
+file(COPY "assets" DESTINATION ".") 
 
 file(GLOB EXAMPLE_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.cpp) 
 
