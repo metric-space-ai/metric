@@ -1,4 +1,4 @@
-#include "modules/mapping.hpp"
+#include "modules/mapping/ESN.hpp"
 
 #include <boost/python.hpp>
 #include <vector>

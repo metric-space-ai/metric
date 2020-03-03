@@ -1,4 +1,3 @@
-#include "metric_py.hpp"
 #include "modules/mapping.hpp"
 
 #include <boost/python.hpp>
