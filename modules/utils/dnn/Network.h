@@ -215,7 +215,7 @@ class Network
 
         ~Network() = default;
 
-        nlohmann::json toJson()
+        nlohmann::json toJson() const
         {
         	/* Layers */
         	nlohmann::json json;

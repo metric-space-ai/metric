@@ -4,7 +4,7 @@
 
 //#include "../../modules/transform.hpp"
 //#include "transform/wavelet.hpp"
-#include "transform/wavelet.hpp"
+#include "modules/transform/wavelet.hpp"
 
 #include "assets/helpers.cpp"
 #include "modules/utils/visualizer.hpp"

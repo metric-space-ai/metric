@@ -43,7 +43,10 @@ if(MSVC)
 add_definitions("/w")
 endif()
 find_package(Boost REQUIRED unit_test_framework)
-include_directories(${Boost_INCLUDE_DIR})
+include_directories(
+    ${Boost_INCLUDE_DIR}
+    ${PROJECT_SOURCE_DIR}
+)
 
 enable_testing()
 add_subdirectory(tests)
