@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.10)
 
 project(transform_examples)
 
@@ -31,5 +31,7 @@ foreach(exampleSrc ${EXAMPLE_SRCS})
 	target_link_libraries(${exampleName} ${ZLIB_LIBRARIES})
 	target_link_libraries(${exampleName} Threads::Threads)
 	set_target_properties(${exampleName} PROPERTIES CXX_STANDARD 17)
-
+	if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS 8.0)
+	    target_link_libraries(${exampleName} stdc++fs)
+	endif()
 endforeach(exampleSrc)
