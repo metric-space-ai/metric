@@ -12,6 +12,7 @@ void register_wrapper_DSPCC() {
     using Mapping = metric::DSPCC<recType, Metric>;
     using Matrix = std::vector<std::vector<recType>>;
     using Queue = std::deque<std::vector<recType>>;
+
     auto dspcc = bp::class_<Mapping>("DSPCC", bp::init<const std::vector<recType>&, size_t, size_t, float, size_t>(
         (
             bp::arg("training_dataset"),
@@ -21,14 +22,11 @@ void register_wrapper_DSPCC() {
             bp::arg("n_top_features_") = 16
         )
     ));
-    Matrix (Mapping::*encode1) (const std::vector<recType>&) = &Mapping::time_freq_PCFA_encode;
-    Matrix (Mapping::*encode2) (const std::tuple<Queue, Queue>&) = &Mapping::time_freq_PCFA_encode;
-    dspcc.def("time_freq_PCFA_encode", encode1);
-    dspcc.def("time_freq_PCFA_encode", encode2);
+    Matrix (Mapping::*encode) (const std::vector<recType>&) = &Mapping::time_freq_PCFA_encode;
+    dspcc.def("time_freq_PCFA_encode", encode);
     dspcc.def("time_freq_PCFA_decode", &Mapping::time_freq_PCFA_decode);
-    dspcc.def("mixed_code_serialize", &Mapping::mixed_code_serialize);
-    dspcc.def("encode", &Mapping::mixed_code_serialize);
-    dspcc.def("decode", &Mapping::mixed_code_serialize);
+    dspcc.def("encode", &Mapping::encode);
+    dspcc.def("decode", &Mapping::decode);
 }
 
 void export_metric_DSPCC() {
