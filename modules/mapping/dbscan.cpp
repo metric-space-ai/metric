@@ -71,7 +71,7 @@ namespace dbscan_details {
 
 // main algorithm
 template <typename recType, typename Metric, typename T>
-std::tuple<std::vector<int>, std::vector<int>, std::vector<int>> dbscan(const Matrix<recType, Metric, T>& DM,
+std::tuple<std::vector<int>, std::vector<int>, std::vector<int>> dbscan(const Matrix<recType, Metric>& DM,
                                                                         T eps, std::size_t minpts)
 {
 
