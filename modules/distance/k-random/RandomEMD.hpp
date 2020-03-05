@@ -15,8 +15,13 @@ namespace metric {
 /**
  * @brief
  *
- * @tparam Sample
- * @tparam D
+ * Earth Mover’s Distance (EMD), also known as the first Wasserstein distance. 
+ * Çhysical interpretation ùà the EMDis easy to understand: imagine the two datasets to be piles of earth, and the goal is to move the first pile around to match the second. 
+ * The Earth Mover’s Distance is the minimum amount of work involved, where “amount of work” is the amount of earth you have to move multiplied by the distance you have to move it. 
+ * The EMD can also be shown to be equal to the area between the two empirical CDFs, which is calculated py PMQ. 
+ *
+ * @tparam Sample - sample type
+ * @tparam D - distance return type
  */
 template <typename Sample, typename D = double>
 struct RandomEMD {
@@ -33,7 +38,7 @@ struct RandomEMD {
     /**
      * @brief Construct a new EMD object
      *
-     * @param precision  for integration. Should be in (0, 1). Less means more accurate.
+     * @param precision used for integration. Should be in (0, 1). Less means more accurate.
      */
     explicit RandomEMD(double precision) : precision_(precision)
     {

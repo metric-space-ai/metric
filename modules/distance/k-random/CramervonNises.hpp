@@ -1,4 +1,4 @@
-/*
+﻿/*
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
 file, You can obtain one at http://mozilla.org/MPL/2.0/.
@@ -15,8 +15,12 @@ namespace metric {
 /**
  * @brief
  *
- * @tparam Sample
- * @tparam D
+ * The Cramér-von Mises (CM) distance is obtained by summing the squared difference between the two empirical CDFs along the x-axis (and then taking the square root of the sum to make it an actual distance). 
+ * The relationship between the CM distance and the EMD is analogous to that of the L1 and L2 norms. 
+ * CDFs is calculated by PMQ.
+ * 
+ * @tparam Sample - sample type
+ * @tparam D - distance return type
  */
 template <typename Sample, typename D = double>
 struct CramervonNises {

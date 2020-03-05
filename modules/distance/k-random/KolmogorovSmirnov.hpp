@@ -15,8 +15,11 @@ namespace metric {
 /**
  * @brief
  *
- * @tparam Sample
- * @tparam D
+ * To compare the two samples, we construct their empirical cumulative distribution functions (CDF). CDFs is calculated by PMQ. 
+ * The Kolmogorov-Smirnov (KS) distance is defined to be the largest absolute difference between the two empirical CDFs evaluated at any point.
+ * 
+ * @tparam Sample - sample type
+ * @tparam D - distance return type
  */
 template <typename Sample, typename D = double>
 struct KolmogorovSmirnov {
