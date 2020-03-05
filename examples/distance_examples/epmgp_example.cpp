@@ -2,13 +2,26 @@
 #include <vector>
 #include <iostream>
 #include <tuple>
-#include "../../modules/distance/k-random/epmgp.cpp"
+//#include "../../modules/distance/k-random/epmgp.cpp"
+#include "../../modules/distance/k-random/entropy_kpn.cpp"
 
 #include <limits>
 
 
 
 int main() {
+
+
+
+
+
+
+    /*
+
+    blaze::DynamicVector<double> x = {1, 2, 3};
+    std::cout << "\nmvnpdf at point: " << metric::mvnpdf(x) << "\n\n";
+
+    // */
 
     /*
 
@@ -145,6 +158,28 @@ int main() {
     std::cout << "sigmaOUT2 = \n" << sigmaOUT2 << "\n";
 
     // */
+
+
+
+    // testing entropy_kpN
+    //*
+
+    std::cout << "\n\ntesting entropy_kpN\n\n";
+
+    std::vector<std::vector<double>> v = { {5,5}, {2,2}, {3,3}, {5,1} };
+
+    {
+        //auto e_f = metric::entropy<void, metric::Chebyshev<double>>();
+        auto e = metric::entropy_kpN<std::vector<double>, metric::Chebyshev<double>>(v, metric::Chebyshev<double>(), 2, 3);
+        std::cout << "using Chebyshev: " << e << std::endl;
+    }
+
+
+    // */
+
+
+
+
 
     return 0;
 }
