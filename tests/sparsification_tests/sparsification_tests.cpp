@@ -7,8 +7,8 @@
 */
 #include "modules/utils/graph/sparsify.hpp"
 
-#define BOOST_TEST_MAIN
-
+#define BOOST_TEST_MODULE sparsification_tests
+#define BOOST_TEST_DYN_LINK
 #include <boost/test/unit_test.hpp>
 
 BOOST_AUTO_TEST_CASE(kruskal_empty_graph)

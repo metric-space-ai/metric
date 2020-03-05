@@ -14,7 +14,7 @@ Copyright(c) 2019 PANDA Team
 #include <boost/iostreams/filtering_stream.hpp>
 
 //#include <blaze/math/CompressedVector.h>
-#include "3rdparty/blaze/math/CompressedVector.h"  // edited by Max F, Jan, 9, 2020
+#include "../../3rdparty/blaze/math/CompressedVector.h"  // edited by Max F, Jan, 9, 2020
 
 #include <stdexcept>
 
