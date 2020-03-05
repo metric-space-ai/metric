@@ -21,17 +21,17 @@ void register_wrapper_matrix() {
 
     bp::class_<Matrix>("Matrix", bp::init<const Container&>())
         .def(bp::init<const recType&>())
+        .def(bp::init<const Container&>())
         .def("insert", insert1)
         .def("insert_if", insert_if1)
         .def("insert", insert2)
         .def("insert_if", insert_if2)
         .def("erase", &Matrix::erase)
-        .def("set", &Matrix::set)
         //.def("__getitem__", &Matrix::operator[]) // FIXME: broken in CPP
         .def("__setitem__", &Matrix::set)
         .def("__call__", &Matrix::operator())
         .def("erase", &Matrix::erase)
-        .def("size", &Matrix::size)
+        .def("__len__", &Matrix::size)
         .def("nn", &Matrix::nn)
         .def("knn", &Matrix::knn)
         .def("rnn", &Matrix::rnn);

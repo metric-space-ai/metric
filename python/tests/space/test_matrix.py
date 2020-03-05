@@ -1,4 +1,4 @@
-import metric
+from metric.space import Matrix
 import numpy
 
 
@@ -12,7 +12,7 @@ def test_2d():
         [2.57927000000000, 2.63399000000000, 2.46802000000000, 61.9026000000000, 61.9026000000000]
     ])
 
-    matrix = metric.Matrix(data)
+    matrix = Matrix(data)
 
     assert matrix.size() == 6
     assert matrix(1, 3) == 37.9158821105957
