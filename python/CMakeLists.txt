@@ -12,6 +12,8 @@ project(metric_py DESCRIPTION "metric python binding")
 SET(SOURCE_PATH ${CMAKE_SOURCE_DIR}/src)
 SET(METRIC_SOURCE_PATH ${CMAKE_SOURCE_DIR}/..)
 
+find_package(Python3 COMPONENTS NumPy Interpreter Development)
+
 # rasbian has python3 while arch has python
 find_package(Boost COMPONENTS python3)
 If (Boost_FOUND)
@@ -36,15 +38,9 @@ set(COMMON_LIBRARIES
     ${lapackblas_libraries}
 )
 
-get_cmake_property(_variableNames VARIABLES)
-list (SORT _variableNames)
-foreach (_variableName ${_variableNames})
-    message(STATUS "${_variableName}=${${_variableName}}")
-endforeach()
-
 SET(HEADER_INCLUDE_PATH
     ${Boost_INCLUDE_DIR}
-    ${Python3_INCLUDE_DIRS}
+    ${Python3_INCLUDE_DIR}
     ${SOURCE_PATH}
     ${METRIC_SOURCE_PATH}
 )
