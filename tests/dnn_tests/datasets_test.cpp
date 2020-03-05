@@ -4,9 +4,9 @@
 #include <boost/test/unit_test.hpp>
 
 #include <iostream>
-#include "modules/utils/dnn/Utils/datasets.hpp"
+#include "modules/utils/datasets.hpp"
 
-using namespace metric::dnn;
+using namespace metric;
 
 
 BOOST_AUTO_TEST_CASE(notexist)
