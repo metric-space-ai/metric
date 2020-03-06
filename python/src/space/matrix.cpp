@@ -19,9 +19,24 @@ void register_wrapper_matrix() {
     std::pair<std::size_t, bool> (Matrix::*insert_if1)(const recType&, typename Matrix::distType) = &Matrix::insert_if;
     std::vector<std::pair<std::size_t, bool>> (Matrix::*insert_if2)(const Container&, typename Matrix::distType) = &Matrix::insert_if;
 
-    bp::class_<Matrix>("Matrix", bp::init<const Container&>())
-        .def(bp::init<const recType&>())
-        .def(bp::init<const Container&>())
+    bp::class_<Matrix>("Matrix", bp::no_init)
+        .def(bp::init<Metric>(
+            (
+                bp::arg("d") = Metric()
+            )
+        ))
+        .def(bp::init<const recType&, Metric>(
+            (
+                bp::arg("p"),
+                bp::arg("d") = Metric()
+            )
+        ))
+        .def(bp::init<const Container&, Metric>(
+            (
+                bp::arg("p"),
+                bp::arg("d") = Metric()
+            )
+        ))
         .def("insert", insert1)
         .def("insert_if", insert_if1)
         .def("insert", insert2)

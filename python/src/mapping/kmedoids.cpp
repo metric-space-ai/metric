@@ -7,7 +7,7 @@ namespace bp = boost::python;
 
 template <typename recType, typename Metric, typename T>
 void register_wrapper_kmedoids() {
-    bp::def("kmeans", &metric::kmedoids<recType, Metric, T>,
+    bp::def("kmedoids", &metric::kmedoids<recType, Metric, T>,
         (
             bp::arg("dm"),
             bp::arg("k")

@@ -29,7 +29,7 @@ def main():
 
     anomaly_threshold = -0.5
 
-    print('vector anomalies: ', simple_koc.check_if_anomaly(sample=simple_dataset, anomaly_threshold=anomaly_threshold))
+    print('vector anomalies: ', simple_koc.check_if_anomaly(sample=dataset, anomaly_threshold=anomaly_threshold))
 
     anomalies = simple_koc.check_if_anomaly(samples=dataset, anomaly_threshold=anomaly_threshold)
     print('anomalies:', list(anomalies))

@@ -14,5 +14,27 @@ def test_2d():
 
     matrix = Matrix(data)
 
-    assert matrix.size() == 6
+    assert len(matrix) == 6
     assert matrix(1, 3) == 37.9158821105957
+
+
+def test_create():
+    matrix = Matrix()
+    assert len(matrix) == 0
+
+    matrix = Matrix(numpy.float_([1.0]))
+    assert len(matrix) == 1
+
+    matrix = Matrix(numpy.float_([1], [2], [3]))
+    assert len(matrix) == 3
+
+
+def test_insert():
+    matrix = Matrix()
+    id1 = matrix.insert(numpy.float_([1.0]))
+    assert len(matrix) == 1
+    assert id1 == 0
+
+    ids = list(matrix.insert(numpy.float_([1, 2, 3, 4])))
+    assert len(matrix) == 5
+    assert ids == [1, 2, 3, 4]
