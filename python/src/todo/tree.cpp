@@ -8,25 +8,9 @@ namespace bp = boost::python;
 /*
 template <class recType, class Metric>
 class Tree {
-*/
-    std::vector<std::vector<std::size_t>> clustering(
-        const std::vector<double>& distribution,
-        const std::vector<std::size_t>& indexes, const std::vector<recType>& points
-    );
-
-    std::vector<std::vector<std::size_t>> clustering(
-        const std::vector<double>& distribution, const std::vector<std::size_t>& IDS
-    );
-
-    std::vector<std::vector<std::size_t>> clustering(
-        const std::vector<double>& distribution, const std::vector<recType>& points
-    );
-
     template <class Archive, class Stream> void deserialize(Archive& input, Stream& stream);
     template <class Archive> void serialize(Archive& archive);
 
-    std::size_t insert(const recType& p);
-    bool insert(const std::vector<recType>& p);
     std::tuple<std::size_t, bool> insert_if(const recType& p, Distance treshold);
     std::size_t insert_if(const std::vector<recType>& p, Distance treshold);
     bool erase(const recType& p);
@@ -81,14 +65,30 @@ void register_wrapper_Tree() {
             bp::arg("distance") = Metric(),
         )
     ));
-    tree.def("clustering",)
-    // template <class Container> Tree(const Container& p, int truncateArg = -1, Metric d = Metric()); // TODO
-    dspcc.def("time_freq_PCFA_encode", encode1);
-    dspcc.def("time_freq_PCFA_encode", encode2);
-    dspcc.def("time_freq_PCFA_decode", &Mapping::time_freq_PCFA_decode);
-    dspcc.def("mixed_code_serialize", &Mapping::mixed_code_serialize);
-    dspcc.def("encode", &Mapping::mixed_code_serialize);
-    dspcc.def("decode", &Mapping::mixed_code_serialize);
+    std::vector<std::vector<std::size_t>> (Tree::*clustering1) (
+        const std::vector<double>&,
+        const std::vector<std::size_t>,
+        const std::vector<recType>&
+    ) = &Tree::clustering;
+
+    std::vector<std::vector<std::size_t>> (Tree::*clustering2) (
+        const std::vector<double>&,
+        const std::vector<std::size_t>
+    ) = &Tree::clustering;
+
+    std::vector<std::vector<std::size_t>> (Tree::*clustering3) (
+        const std::vector<double>&,
+        const std::vector<recType>&
+    ) = &Tree::clustering;
+
+    std::size_t (Tree::*insert1) (const recType&) = &Tree::insert;
+    bool (Tree::*insert2) (const std::vector<recType>&) = &Tree::insert;
+
+    tree.def("clustering", clustering1);
+    tree.def("clustering", clustering2);
+    tree.def("clustering", clustering3);
+    tree.def("insert", &Tree::insert1);
+    tree.def("insert", &Tree::insert2);
 }
 
 void export_metric_Tree() {
