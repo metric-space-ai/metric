@@ -13,7 +13,7 @@ namespace metric {
 			using Vector = blaze::DynamicVector<T>;
 
 			HOG(const size_t orientations, const size_t cellSize, const size_t blockSize);
-			Vector compute(const HOG::Matrix &image) const;
+			Vector encode(const HOG::Matrix &image) const;
 
 		private:
 			size_t orientations;

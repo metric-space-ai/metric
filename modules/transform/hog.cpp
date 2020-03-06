@@ -10,12 +10,21 @@ namespace metric {
 																				cellSize(cellSize),
 																				blockSize(blockSize)
 	{
+		assert(orientations > 2);
+		assert(cellSize > 0);
+		assert(blockSize > 0);
+		//assert(cellSize % 2 == 0);
 	}
 
 
 	template<typename T>
-	typename HOG<T>::Vector HOG<T>::compute(const HOG::Matrix &image) const
+	typename HOG<T>::Vector HOG<T>::encode(const HOG::Matrix &image) const
 	{
+		assert(image.rows() > 0);
+		assert(image.columns() > 0);
+		assert(image.rows() % blockSize * cellSize == 0);
+		assert(image.columns() % blockSize * cellSize == 0);
+
 		/* Compute dx */
 		blaze::DynamicMatrix<T> dx(image.rows(), image.columns());
 		blaze::row(dx, 0) = blaze::row(image, 1);
@@ -37,52 +46,95 @@ namespace metric {
 		blaze::DynamicMatrix<T> dy = dyColumnMajor;
 
 
-		/* Compute magnitudes */
-		Matrix dx2 = blaze::invsqrt(dx);
-		Matrix dy2 = blaze::invsqrt(dy);
+		/* Compute magnitude */
+		Matrix dx2 = blaze::pow(dx, 2);
+		Matrix dy2 = blaze::pow(dy, 2);
 
 		Matrix magnitude = blaze::sqrt(dx2 + dy2);
 
 
 		/* Compute angle */
 		Matrix angle(image.rows(), image.columns());
+		dx += 2 * std::numeric_limits<T>::epsilon();
 		for (auto i = 0; i < image.rows(); ++i) {
-			blaze::row(angle, i) = blaze::row(dx, i) / blaze::row(dy, i);
+			blaze::row(angle, i) = blaze::row(dy, i) / blaze::row(dx, i);
 		}
 
+		//std::cout << " dev" << std::endl;
+		//std::cout << blaze::row(angle, 0) << std::endl;
 		angle = blaze::atan(angle);
+		//std::cout << " atan" << std::endl;
+		//std::cout << blaze::row(angle, 0) << std::endl;
+
+		angle += M_PI / T(2);
+		//std::cout << " norm" << std::endl;
+		//std::cout << blaze::row(angle, 0) << std::endl;
+		angle /= M_PI / T(orientations);
+		//std::cout << " norm" << std::endl;
+		//std::cout << blaze::row(angle, 0) << std::endl;
+		//std::cout << angle << std::endl;
 
 
-		const size_t blockCell = orientations * blockSize;
 
-		blaze::DynamicVector<T> histograms = blaze::zero<T>((image.rows() / blockSize) * (image.columns() / blockSize) *
-																std::pow(blockSize * orientations, 2));
-		size_t blockCount = 0;
+		/* Define HOG features */
+
+		/* Length of histogram of block */
+		const size_t blockHistogramSize = blockSize * blockSize * orientations;
+
+		/* Size of block in pixels */
 		const size_t blockCellSize = blockSize * cellSize;
-		for (auto blockStartRow = 0; blockStartRow < image.rows() - blockCellSize; blockStartRow += blockCellSize) {
-			for (auto blockStartColumn = 0; blockStartColumn < image.columns() - blockCellSize; blockStartColumn += blockCellSize) {
+
+		/* Number of blocks in image */
+		const size_t blockNumbers = (image.rows() / blockCellSize) * (image.columns() / blockCellSize);
+
+		/* Resulting fetures vector */
+		Vector features(blockNumbers * blockHistogramSize);
+
+		size_t blockCount = 0;
+		for (auto blockStartRow = 0; blockStartRow < image.rows() - blockCellSize + 1; blockStartRow += blockCellSize) {
+			for (auto blockStartColumn = 0; blockStartColumn < image.columns() - blockCellSize + 1; blockStartColumn += blockCellSize) {
 
 				/* Compute block histogram */
-				blaze::DynamicMatrix<T> histogram(blockSize * blockSize, orientations);
-				for (auto i = blockStartRow; i < blockCellSize; ++i) {
-					for (auto j = blockStartColumn; j < blockCellSize; ++j) {
-						size_t cellNumber = ((i - blockStartRow) / cellSize) *  ((j - blockStartColumn) / cellSize);
-						size_t angleBin = std::floor(angle(i, j) / orientations);
-						histogram(cellNumber, angleBin) += magnitude(i, j);
+				blaze::DynamicMatrix<T> blockHistogram = blaze::zero<T>(blockSize * blockSize, orientations);
+				for (auto i = 0; i < blockCellSize; ++i) {
+					for (auto j = 0; j < blockCellSize; ++j) {
+						const size_t cellNumber = (i / cellSize) * blockSize + (j / cellSize);
+						const T angleBin = std::floor(angle(blockStartRow + i, blockStartColumn + j));
+						//std::cout << i << " " << j << " " << cellNumber << " " << angleBin << std::endl;
+						blockHistogram(cellNumber, angleBin) += magnitude(blockStartRow + i, blockStartColumn + j);
+
 					}
 				}
 
-				T norm = blaze::sum(blaze::invsqrt(histogram));
-				histogram /= norm;
+				/* Normalize block */
+				T norm = std::sqrt(blaze::sum(blaze::pow(blockHistogram, 2)) + 2 * std::numeric_limits<T>::epsilon());
 
-				for (size_t k = 0; k < histogram.rows(); ++k) {
-					blaze::subvector(histograms, blockCount * blockSize + k * orientations, orientations) =
-							blaze::trans(blaze::row(histogram, k));
+				//std::cout << norm << std::endl;
+				blockHistogram /= norm;
+				//std::cout << blockHistogram << std::endl;
+
+				for (size_t k = 0; k < blockHistogram.rows(); ++k) {
+					//std::cout << blockCount * blockHistogramSize + k * orientations << " " << orientations << std::endl;
+					blaze::subvector(features, blockCount * blockHistogramSize + k * orientations, orientations) =
+							blaze::trans(blaze::row(blockHistogram, k));
+
+				//std::cout <<  blaze::row(blockHistogram, k) << std::endl;
+
+
+					//std::cout << blaze::subvector(features, blockCount * blockHistogramSize + k * orientations, orientations) << std::endl;
+
 				}
+				//std::cout << blaze::trans(features) << std::endl;
+				++blockCount;
+				std::cout << blockCount << std::endl;
 			}
 		}
 
-		return histograms;
+		//std:: cout << "result" << std::endl;
+		//std::cout << blaze::subvector(features, blockCount * blockHistogramSize + 1 * orientations, orientations) << std::endl;
+		//std::cout << blaze::subvector(features, 0, features.size()) << std::endl;
+		//std::cout << blaze::trans(features) << std::endl;
+		return features;
 	}
 
 

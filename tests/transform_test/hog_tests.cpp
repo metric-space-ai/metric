@@ -19,10 +19,19 @@ BOOST_AUTO_TEST_CASE(base)
 {
 	auto hog = HOG<double>(9, 8, 4);
 
-	//auto image = metric::Datasets::readDenseMatrixFromFile("image.pgm");
+	auto [shape, data] = Datasets::loadImages("images-list");
 
-	blaze::DynamicMatrix<double> image = blaze::generate( 320, 320, []( size_t i, size_t j ){ return 2.1F + 1.1F*(i*3UL+j); } );
-	std::cout << image << std::endl;
+	blaze::DynamicMatrix<double> image(shape[1], shape[2]);
+	size_t index = 0;
+	for (size_t i = 0; i < shape[1]; ++i) {
+		for (auto e = image.begin(i); e != image.end(i); ++e) {
+			*e = data[index++];
+		}
+	}
 
-	std:: cout << hog.compute(image) << std::endl;
+	//blaze::DynamicMatrix<double> image = blaze::generate( 320, 320, []( size_t i, size_t j ){ return 2.1F + 1.1F*(i*3UL+j); } );
+	//std::cout << image << std::endl;
+
+	blaze::DynamicVector<double, blaze::rowVector> r = blaze::trans(hog.encode(image));
+	std::cout << r << std::endl;
 }
