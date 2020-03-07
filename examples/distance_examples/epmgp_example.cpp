@@ -174,6 +174,48 @@ int main() {
         std::cout << "using Chebyshev: " << e << std::endl;
     }
 
+    // */
+
+
+
+    //*
+
+    std::cout << "\n\nTesting entropy_kpN function on uniformly distributed r. v.s:\n";
+
+    //std::random_device rd;
+    //std::mt19937 gen(rd());
+    std::mt19937 gen(1);
+    std::uniform_real_distribution<double> dis(0.0, 1.0);
+
+    std::vector<std::vector<double>> urv;
+    //std::vector<std::vector<double>> urv2;
+    //std::vector<std::vector<double>> urv3;
+    ///std::vector<std::deque<double>> urv4;
+
+    for (size_t i = 0; i<1000; ++i) {
+        //urv.push_back({dis(gen), dis(gen), dis(gen), dis(gen), dis(gen), dis(gen), dis(gen)});
+        //urv.push_back({dis(gen), dis(gen), dis(gen)});
+        urv.push_back({dis(gen), dis(gen)});
+        //urv2.push_back({dis(gen), dis(gen)});
+        //urv4.push_back({dis(gen), dis(gen)});
+        //urv.push_back({dis(gen)});
+    }
+    //for (size_t i = 0; i<250; ++i) {
+        //urv3.push_back({dis(gen), dis(gen)});
+    //}
+
+    std::cout << "using Chebyshev: "
+              << metric::entropy_kpN<std::vector<double>, metric::Chebyshev<double>>(urv, metric::Chebyshev<double>(), 3, 10)
+              << ", "
+              << metric::entropy_kpN<std::vector<double>, metric::Chebyshev<double>>(urv, metric::Chebyshev<double>(), 7, 20)
+              << std::endl;
+
+    auto e = metric::entropy_kpN<std::vector<double>, metric::Euclidian<double>>(urv, metric::Euclidian<double>(), 3, 10);
+    std::cout << "using Euclidean: " << e << std::endl;
+
+
+
+
 
     // */
 
