@@ -21,4 +21,5 @@ BOOST_PYTHON_MODULE(_mapping) {
     //export_metric_ESN();
     export_metric_kmeans();
     export_metric_kmedoids();
+    export_metric_ensembles();
 }
