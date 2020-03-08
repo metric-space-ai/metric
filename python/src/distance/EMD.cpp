@@ -6,7 +6,7 @@
   Copyright (c) 2020 Panda Team
 */
 
-#include "../metric_py.hpp"
+#include "../stl_wrappers.hpp"
 #include "modules/distance/k-structured/EMD.hpp"
 
 namespace bp = boost::python;

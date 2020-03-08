@@ -6,7 +6,7 @@
   Copyright (c) 2020 Panda Team
 */
 
-#include "../metric_py.hpp" // TODO: why do we need WrapSTLVector here? and not a copy
+#include "../stl_wrappers.hpp" // TODO: why do we need WrapSTLVector here? and not a copy
 #include "modules/distance/k-random/VOI.hpp"
 
 namespace bp = boost::python;

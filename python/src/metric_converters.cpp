@@ -1,4 +1,4 @@
-#include "metric_py.hpp"
+#include "stl_wrappers.hpp"
 #include <boost/python.hpp>
 #include <boost/python/object.hpp>
 #include <boost/python/converter/implicit.hpp>
@@ -6,6 +6,7 @@
 #include <boost/python/module.hpp>
 #include <numpy/arrayobject.h>
 #include <numpy/arrayscalars.h>
+#include <iostream>
 
 namespace bp = boost::python;
 
@@ -20,6 +21,8 @@ struct IterableConverter
             bp::type_id<Container>()
         );
 
+        std::cout << "Register type_id " << bp::type_id<Container>().name() << std::endl;
+
         return *this;
     }
 
@@ -28,6 +31,7 @@ struct IterableConverter
     */
     static void* convertible(PyObject* object)
     {
+        std::cout << "IterableConverter convertible " << (PyObject_GetIter(object) != NULL) << std::endl;
         return PyObject_GetIter(object) ? object : NULL;
     }
 
@@ -73,6 +77,8 @@ struct NumpyArrayConverter {
             bp::type_id<ArrayType>()
         );
 
+        std::cout << "Register type_id " << bp::type_id<ArrayType>().name() << std::endl;
+
         return *this;
     }
 
@@ -80,8 +86,10 @@ struct NumpyArrayConverter {
         std::string name = getObjType(obj_ptr);
 
         if ( name == "ndarray") {
+            std::cout << "NumpyArrayConverter convertible " << name << " yes" << std::endl;
             return obj_ptr;
         }
+        std::cout << "NumpyArrayConverter convertible " << name << " no" << std::endl;
         return 0;
     }
 
@@ -124,6 +132,8 @@ struct NumpyScalarConverter {
             ) {
             return obj_ptr;
         }
+        std::cout << "NumpyScalarConverter convertible " << name << " no" << std::endl;
+
         return 0;
     }
 
@@ -180,6 +190,12 @@ void export_converters()
         .from_python<unsigned long long>()
         .from_python<float>()
         .from_python<double>();
+
+//    NumpyArrayConverter()
+//        .from_python<std::vector<double>>()
+//        .from_python<std::vector<int>>()
+//        .from_python<std::vector<std::vector<double>>>()
+//        .from_python<std::vector<std::vector<int>>>();
 
     NumpyArrayConverter()
         .from_python<WrapStlVector<double>>()

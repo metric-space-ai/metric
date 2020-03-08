@@ -7,7 +7,7 @@
 */
 
 #include "metric_types.hpp"
-#include "metric_py.hpp"
+#include "stl_wrappers.hpp"
 
 namespace bp = boost::python;
 

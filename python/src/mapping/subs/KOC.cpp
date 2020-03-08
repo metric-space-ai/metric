@@ -1,21 +1,32 @@
+#include "../../metric_types.hpp"
 #include "modules/mapping/kmeans.hpp"   // FIXME: someone forgot this in KOC
 #include "modules/distance/k-random/VOI.hpp"    // FIXME: and this
 #include "modules/mapping/KOC.hpp"
 
 #include <boost/python.hpp>
+#include <typeindex>
 
 namespace bp = boost::python;
 
-// TODO: template with record type
-void export_metric_KOC() {
-    using Record = std::vector<double>;
-    using Factory = metric::KOC_factory<Record>;
-    using KOC = Factory::KOC;
+/*
+  koc = KOC(rec_type="double", graph="grid6", metric="euclidean", distribution="uniform")
 
-    auto factory = bp::class_<Factory>("KOC_factory");
+  constructor will be a factory
+  it will pickup pre-built C++ class
+  all template methods of this class will be generated for popular cases only
+*/
+template <typename Record, class Graph, class Metric>
+void wrap_metric_KOC() {
+    using Factory = metric::KOC_factory<Record, Graph, Metric>;
+    using KOC = typename Factory::KOC;
+    using value_type = typename Factory::T;
+
+    std::string className = "KOC_factory_" + getGraphName<Graph>() + "_" + getMetricName<Metric>();
+
+    auto factory = bp::class_<Factory>(className.c_str());
 
     factory.def(
-        bp::init<size_t, double, double, size_t, Factory::T, Factory::T>(
+        bp::init<size_t, double, double, size_t, value_type, value_type>(
             (
                 bp::arg("nodesNumber"),
                 bp::arg("start_learn_rate")= 0.8,
@@ -27,7 +38,7 @@ void export_metric_KOC() {
         )
     );
     factory.def(
-        bp::init<size_t, size_t, double, double, size_t, Factory::T, Factory::T>(
+        bp::init<size_t, size_t, double, double, size_t, value_type, value_type>(
             (
                 bp::arg("nodesWidth") = 5,
                 bp::arg("nodesHeight") = 4,
@@ -40,7 +51,7 @@ void export_metric_KOC() {
         )
     );
     factory.def(
-        bp::init<size_t, double, double, size_t, Factory::T, Factory::T, double, double, long long>(
+        bp::init<size_t, double, double, size_t, value_type, value_type, double, double, long long>(
             (
                 bp::arg("nodesNumber"),
                 bp::arg("start_learn_rate"),
@@ -55,7 +66,7 @@ void export_metric_KOC() {
         )
     );
     factory.def(
-        bp::init<size_t, size_t, double, double, size_t, Factory::T, Factory::T, double, double, long long>(
+        bp::init<size_t, size_t, double, double, size_t, value_type, value_type, double, double, long long>(
             (
                 bp::arg("nodesWidth"),
                 bp::arg("nodesHeight"),
@@ -77,15 +88,24 @@ void export_metric_KOC() {
     bool (KOC::*check_if_anomaly2)(const Record&, double) = &KOC::check_if_anomaly;
 
     // KOC
-    auto koc = bp::class_<KOC>("KOC", bp::no_init);
-    koc.def("train", &Factory::KOC::train);
-    koc.def("result", &Factory::KOC::result);
-    koc.def<std::vector<int> (KOC::*)(const std::vector<Record>&, double)>("encode", &KOC::encode);
+    className = "KOC_" + getGraphName<Graph>() + "_" + getMetricName<Metric>();
+    auto koc = bp::class_<KOC>(className.c_str(), bp::no_init);
+    std::vector<int> (KOC::*encode)(const std::vector<Record>&, double) = &KOC::encode;
+    koc.def("train", &KOC::train);
+    koc.def("result", &KOC::result);
+    koc.def("encode", encode);
     koc.def("check_if_anomaly", check_if_anomaly1, (bp::arg("samples"), bp::arg("anomaly_threshold") = 0.0));
     koc.def("check_if_anomaly", check_if_anomaly2, (bp::arg("sample"), bp::arg("anomaly_threshold") = 0.0));
 }
 
-// make build && pip uninstall --yes metric && pip install dist/metric-0.0.1-cp36-cp36m-linux_x86_64.whl
+// TODO: make loop over metrics and graphs
+// TODO: add distribution
+void export_metric_KOC() {
+    wrap_metric_KOC<std::vector<double>, metric::Grid6, metric::Euclidian<double>>();
+    wrap_metric_KOC<std::vector<double>, metric::Grid6, metric::Manhatten<double>>();
+    wrap_metric_KOC<std::vector<double>, metric::Grid6, metric::Chebyshev<double>>();
+    wrap_metric_KOC<std::vector<double>, metric::Grid6, metric::P_norm<double>>();
+}
 
 BOOST_PYTHON_MODULE(_KOC) {
     export_metric_KOC();

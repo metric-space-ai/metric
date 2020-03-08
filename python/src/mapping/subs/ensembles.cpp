@@ -1,7 +1,9 @@
 #include "modules/mapping/ensembles.hpp"
+
 #include <boost/python.hpp>
 #include <functional>
 #include <vector>
+#include <variant>
 
 namespace bp = boost::python;
 
@@ -30,13 +32,19 @@ void register_wrapper_Bagging() {
     void (Mapping::*train)(Container&, Features&, Callback&, bool) = &Mapping::train;
     void (Mapping::*predict)(Container&, Features&, std::vector<bool>&) = &Mapping::predict;
 
-    bp::class_<Mapping>("Bagging", bp::init<int, double, double, std::vector<double>, std::vector<WeakLearner>>())
+    bp::class_<Mapping>("Bagging", bp::init<int, double, double, std::vector<double>, std::vector<WeakLearnerVariant>>())
         .def("train", train)
         .def("predict", predict);
 }
 
 void export_metric_ensembles() {
     using Record = std::vector<double>;
-    register_wrapper_Boosting<Record, metric::edmClassifier<Record, CSVM>, metric::SubsampleRUS<Record>>();
-    register_wrapper_Bagging<Record, metric::edmClassifier<Record, CSVM>, metric::SubsampleRUS<Record>>();
+    using WeakLearner = metric::edmClassifier<Record, CSVM>;
+    using WeakLearnerVariant = std::variant<metric::edmSVM<Record>, metric::edmClassifier<Record, CSVM>>;
+    register_wrapper_Boosting<Record, WeakLearner, metric::SubsampleRUS<Record>>();
+    register_wrapper_Bagging<Record, WeakLearnerVariant, metric::SubsampleRUS<Record>>();
+}
+
+BOOST_PYTHON_MODULE(_ensembles) {
+    export_metric_ensembles();
 }

@@ -6,27 +6,38 @@
   Copyright (c) 2020 Panda Team
 */
 
-#include "metric_py.hpp"
-
+#include <boost/python.hpp>
 #include <boost/python/suite/indexing/vector_indexing_suite.hpp>
+#include <vector>
+#include <iostream>
 
 namespace bp = boost::python;
 
-typedef std::vector<double> VectorDouble;
-typedef std::vector<VectorDouble> VectorVectorDouble;
-typedef std::vector<int> VectorInt;
-typedef std::vector<VectorInt> VectorVectorInt;
-typedef std::vector<bool> VectorBool;
 
 void export_converters();
-
-BOOST_PYTHON_MODULE(_metric) {
-    export_converters();
-
-    // exposing C++ return types
+void export_containers() {
+    typedef std::vector<double> VectorDouble;
+    typedef std::vector<VectorDouble> VectorVectorDouble;
+    typedef std::vector<int> VectorInt;
+    typedef std::vector<VectorInt> VectorVectorInt;
+    typedef std::vector<bool> VectorBool;
     bp::class_<VectorDouble>("VectorDouble").def(bp::vector_indexing_suite<VectorDouble>());
     bp::class_<VectorVectorDouble>("VectorVectorDouble").def(bp::vector_indexing_suite<VectorVectorDouble>());
     bp::class_<VectorInt>("VectorInt").def(bp::vector_indexing_suite<VectorInt>());
     bp::class_<VectorVectorInt>("VectorVectorInt").def(bp::vector_indexing_suite<VectorVectorInt>());
     bp::class_<VectorBool>("VectorBool").def(bp::vector_indexing_suite<VectorBool>());
+}
+
+void test1(int t) {
+    std::cout << "test1 " << t << std::endl;
+}
+
+void test2(const std::vector<int>& t) {
+    std::cout << "test2 " << t[0] << std::endl;
+}
+
+BOOST_PYTHON_MODULE(_metric) {
+    export_converters();
+    // exposing C++ return types
+    export_containers();
 }

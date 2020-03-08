@@ -15,3 +15,9 @@ add_library(dbscan SHARED ${SOURCE_PATH}/mapping/subs/dbscan.cpp)
 set_target_properties(dbscan PROPERTIES CXX_STANDARD 17)
 set_target_properties(dbscan PROPERTIES PREFIX "_")
 target_link_libraries(dbscan ${COMMON_LIBRARIES})
+
+# ----------------------------------------------------------------------
+add_library(ensembles SHARED ${SOURCE_PATH}/mapping/subs/ensembles.cpp)
+set_target_properties(ensembles PROPERTIES CXX_STANDARD 17)
+set_target_properties(ensembles PROPERTIES PREFIX "_")
+target_link_libraries(ensembles ${COMMON_LIBRARIES})
