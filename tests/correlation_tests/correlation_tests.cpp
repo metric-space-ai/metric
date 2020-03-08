@@ -133,6 +133,25 @@ BOOST_AUTO_TEST_CASE(MGC)
     auto m1 = generateMatrix<double>(4, 4);
     auto m2 = generateMatrix<double>(4, 4);
     mgc(m1, m2);
+
+    /* MGC corelation */
+    std::vector<double> correlationReference = {0.3406052387919164,
+												0.36670317239506234,
+												0.35527060120466675,
+												0.3899053662191226,
+												0.2884565911772877,
+												0.37837904236096026,
+												0.4589100366738734,
+												0.3811881240213428,
+												0.44657481646290537};
+    auto correlation = mgc.xcorr(A1, B1, 4);
+
+    BOOST_CHECK_EQUAL(correlationReference.size(), correlation.size());
+
+	for (auto i = 0; i < correlation.size(); ++i) {
+		BOOST_CHECK_CLOSE(correlationReference[i], correlation[i], 1e-5);
+	}
+
 }
 
 BOOST_AUTO_TEST_CASE(MGC_Estimate)
