@@ -45,6 +45,38 @@ void export_metric_ensembles() {
     register_wrapper_Bagging<Record, WeakLearnerVariant, metric::SubsampleRUS<Record>>();
 }
 
+template <class Record>
+class DT {
+public:
+    DT(double entropy_threshold_ = 0, double gain_threshold_ = 0);
+
+    template <typename ConType, typename VariantType>
+    void train(ConType& payments, std::vector<VariantType>, std::function<int(const Record&)>& response);
+
+    template <typename ConType, typename VariantType>
+    void predict(ConType& input_data, std::vector<VariantType> dimensions, std::vector<int>& predictions);
+
+template <typename Record>
+void register_wrapper_DT() {
+    using Mapping = metric::DT<Record>;
+    using Container = std::vector<Record>;
+    using Callback = std::function<int(const Record&)>;
+
+    void (Mapping::*train)(Container&, std::vector<Record>, Callback&) = &Mapping::train;
+    void (Mapping::*predict)(Container&, std::vector<Record>, std::vector<int>&) = &Mapping::predict;
+
+    bp::class_<Mapping>("DT", bp::init<double, double>())
+        .def("train", train)
+        .def("predict", predict);
+}
+
+void export_metric_DT() {
+    typedef std::variant<double, std::vector<double>, std::vector<std::vector<double>>, std::string> V;  // field type
+    typedef std::vector<V> Record;
+    register_wrapper_DT<Record>();
+}
+
 BOOST_PYTHON_MODULE(_ensembles) {
     export_metric_ensembles();
+    export_metric_DT();
 }

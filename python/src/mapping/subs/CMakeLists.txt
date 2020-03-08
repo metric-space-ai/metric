@@ -21,3 +21,9 @@ add_library(ensembles SHARED ${SOURCE_PATH}/mapping/subs/ensembles.cpp)
 set_target_properties(ensembles PROPERTIES CXX_STANDARD 17)
 set_target_properties(ensembles PROPERTIES PREFIX "_")
 target_link_libraries(ensembles ${COMMON_LIBRARIES})
+
+# ----------------------------------------------------------------------
+add_library(dt SHARED ${SOURCE_PATH}/mapping/subs/ensembles.cpp)
+set_target_properties(ensembles PROPERTIES CXX_STANDARD 17)
+set_target_properties(ensembles PROPERTIES PREFIX "_")
+target_link_libraries(ensembles ${COMMON_LIBRARIES})
