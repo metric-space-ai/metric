@@ -4,6 +4,8 @@
 
 #define _USE_MATH_DEFINES
 
+#include <boost/math/special_functions/digamma.hpp>
+
 #include "epmgp.cpp"
 #include "../k-related/Standards.hpp"
 #include "../../space/tree.hpp"
@@ -90,7 +92,7 @@ double entropy_kpN(
         h += logG - std::log(g);
     }
 
-    return h;
+    return boost::math::digamma(n) - boost::math::digamma(k) + h/n;
 }
 
 
