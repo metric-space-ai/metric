@@ -33,7 +33,7 @@ std::unordered_map<std::type_index, std::string> graphTypeNames = {
 };
 template<typename Graph>
 std::string getGraphName() {
-    return graphTypeNames[std::type_index(typeid(Graph))];
+    return graphTypeNames.at(std::type_index(typeid(Graph)));
 }
 
 template<typename Type>

@@ -1,1 +1,1 @@
-from _correlation import *
+from .mgc import MGC, MGC_direct
