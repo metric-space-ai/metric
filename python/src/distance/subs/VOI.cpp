@@ -18,26 +18,20 @@ namespace bp = boost::python;
 template<typename Value>
 void wrap_metric_VOI_kl() {
     using Metric = metric::VOI_kl<Value>;
+    using Container = WrapStlVector<WrapStlVector<Value>>;
     bp::class_<Metric>("VOI_kl", bp::init<int, Value>())
-        .def("__call__", +[](Metric& self, bp::object& A, bp::object& B) {
-            auto vecA = WrapStlVector<Value>(A);
-            auto vecB = WrapStlVector<Value>(B);
-            auto matA = WrapStlVector<WrapStlVector<Value>>(vecA);
-            auto matB = WrapStlVector<WrapStlVector<Value>>(vecB);
-            return self.operator()(matA, matB);
+        .def("__call__", +[](Metric& self, const Container& a, const Container& b) {
+            return self.operator()(a, b);
         }, "Calculate variation of information based on Kozachenko-Leonenko entropy estimator");
 }
 
 template<typename Value>
 void wrap_metric_VOI_normalized() {
     using Metric = metric::VOI_normalized<Value>;
+    using Container = WrapStlVector<WrapStlVector<Value>>;
     bp::class_<Metric>("VOI_normalized", bp::init<int, Value>())
-        .def("__call__", +[](Metric& self, bp::object& A, bp::object& B) {
-            auto vecA = WrapStlVector<Value>(A);
-            auto vecB = WrapStlVector<Value>(B);
-            auto matA = WrapStlVector<WrapStlVector<Value>>(vecA);
-            auto matB = WrapStlVector<WrapStlVector<Value>>(vecB);
-            return self.operator()(matA, matB);
+        .def("__call__", +[](Metric& self, const Container& a, const Container& b) {
+            return self.operator()(a, b);
         }, "Calculate Variation of Information");
 }
 
