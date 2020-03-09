@@ -35,7 +35,7 @@ class RMSProp: public Optimizer<Scalar>
         Scalar m_eps;
         Scalar m_decay;
 
-        RMSProp(Scalar learningRate = Scalar(0.01), Scalar eps = Scalar(1e-6), Scalar decay = Scalar(0.9)3) :
+        RMSProp(Scalar learningRate = Scalar(0.01), Scalar eps = Scalar(1e-6), Scalar decay = Scalar(0.9)) :
 									learningRate(learningRate), m_eps(eps), m_decay(decay)
         {}
 

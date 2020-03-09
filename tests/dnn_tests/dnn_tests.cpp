@@ -186,24 +186,21 @@ BOOST_AUTO_TEST_CASE(rmsprop)
 	RowVector gradients = {1.000, -3.24, -0.60, 2.79, 1.820};
 
 	// Defining the expected updates
-
 	RowVector first_update  = {-0.0220, 1.0310, -0.0490, -0.7500, 0.0080};
 	RowVector second_update = {-0.0227, 1.0317, -0.0482, -0.7507, 0.0072};
 
 	// Testing
-
 	auto optimizer = RMSProp<double>(0.0001, 1e-8, 0.99);
 	optimizer.update(gradients, weights);
 
-	//for (size_t i = 0; i < weights.size(); i++) {
-		//EXPECT_NEAR(first_update[i], weights[i], 1e-3);
-		std::cout << weights << std::endl;
-	//}
+	for (size_t i = 0; i < weights.size(); i++) {
+		BOOST_TEST(std::abs(first_update[i] - weights[i]) < 1e-3);
+	}
 
 	optimizer.update(gradients, weights);
 
-	//for (size_t i = 0; i < weights.size(); i++) {
-		//EXPECT_NEAR(second_update[i], weights[i], 1e-3);
-		std::cout << weights << std::endl;
-	//}
+	for (size_t i = 0; i < weights.size(); i++) {
+		BOOST_TEST(std::abs(second_update[i] - weights[i]) < 1e-3);
+	}
+
 }
