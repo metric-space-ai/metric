@@ -1,6 +1,6 @@
 #include "../../modules/utils/dnn.hpp"
 #include "../../modules/utils/dnn/Utils/Random.h"
-#include "../../modules/utils/dnn/Utils/datasets.hpp"
+#include "../../modules/utils/datasets.hpp"
 #include "../../modules/mapping/autoencoder.hpp"
 
 #include <iostream>
@@ -65,12 +65,12 @@ int vectorDiff(const vector<T>& vector1, const vector<T>& vector2)
 int main(int argc, char* argv[])
 {
 	if (argc != 2) {
-		cout << "usage: " << argv[0] << " pgm images list" << endl;
+		cout << "usage: " << argv[0] << " pgm_images_list" << endl;
 		return EXIT_FAILURE;
 	}
 
 	/* Load images */
-	auto [shape, features] = dnn::Datasets::loadImages(argv[1]);
+	auto [shape, features] = Datasets::loadImages(argv[1]);
 
 	if (shape.empty()) {
 		cout << "Could not load images. Exiting." << endl;

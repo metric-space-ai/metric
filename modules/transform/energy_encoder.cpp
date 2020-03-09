@@ -11,7 +11,7 @@
 
 //#include <cstddef>
 #include <stack>
-#include "transform/wavelet.hpp"
+#include "../../modules/transform/wavelet.hpp"
 
 namespace metric {
 

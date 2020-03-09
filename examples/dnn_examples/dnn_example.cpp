@@ -1,6 +1,6 @@
 #include "../../modules/utils/dnn.hpp"
 #include "../../modules/utils/dnn/Utils/Random.h"
-#include "../../modules/utils/dnn/Utils/datasets.hpp"
+#include "../../modules/utils/datasets.hpp"
 #include "../../modules/mapping/autoencoder.hpp"
 
 #include <iostream>
@@ -65,7 +65,7 @@ int vectorDiff(const vector<T>& vector1, const vector<T>& vector2)
 int main()
 {
 	/* Load data */
-	dnn::Datasets datasets;
+	Datasets datasets;
 	/* shape: [batches, rows, cols, channels] */
 	auto [labels, shape, features] = datasets.getMnist("data.cereal");
 
