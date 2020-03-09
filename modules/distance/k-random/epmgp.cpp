@@ -113,29 +113,29 @@ double erfcx_double (double x)
 
 
 template <typename T>
-T erfcx(T x) { // for double on x86_64, inf starts at -26
+T erfcx(T x) { // for double, inf starts at -26 on x86_64
     return (T)erfcx_double((double)x);
 }
 
 
 
 
-// TODO make template
-std::tuple<std::vector<double>, std::vector<double>, std::vector<double>>
+template <typename T>
+std::tuple<std::vector<T>, std::vector<T>, std::vector<T>>
 truncNormMoments(
-        std::vector<double> lowerBIN,
-        std::vector<double> upperBIN,
-        std::vector<double> muIN,
-        std::vector<double> sigmaIN
+        std::vector<T> lowerBIN,
+        std::vector<T> upperBIN,
+        std::vector<T> muIN,
+        std::vector<T> sigmaIN
         )
 {
     size_t n = lowerBIN.size();
 
     assert(upperBIN.size()==n && muIN.size()==n && sigmaIN.size()==n);
 
-    std::vector<double> logZhatOUT (n, 0);
-    std::vector<double> muHatOUT (n, 0);
-    std::vector<double> sigmaHatOUT (n, 0);
+    std::vector<T> logZhatOUT (n, 0);
+    std::vector<T> muHatOUT (n, 0);
+    std::vector<T> sigmaHatOUT (n, 0);
 
     for (size_t i = 0; i<n; ++i) {
 
@@ -146,7 +146,7 @@ truncNormMoments(
 
         assert(lowerB<=upperB);
 
-        double logZhat, meanConst, varConst;
+        T logZhat, meanConst, varConst;
 
         auto a = (lowerB - mu)/(std::sqrt(2*sigma));
         auto b = (upperB - mu)/(std::sqrt(2*sigma));
@@ -240,30 +240,30 @@ truncNormMoments(
 }
 
 
-// TODO make template
-std::tuple<double, blaze::DynamicVector<double>, blaze::DynamicMatrix<double>>
+template <typename T>
+std::tuple<T, blaze::DynamicVector<T>, blaze::DynamicMatrix<T>>
 local_gaussian_axis_aligned_hyperrectangles(
-        blaze::DynamicVector<double> m,
-        blaze::DynamicMatrix<double> K,
-        blaze::DynamicVector<double> lowerB,
-        blaze::DynamicVector<double> upperB
+        blaze::DynamicVector<T> m,
+        blaze::DynamicMatrix<T> K,
+        blaze::DynamicVector<T> lowerB,
+        blaze::DynamicVector<T> upperB
         )
 {
     size_t n = m.size();
     assert(lowerB.size() == n && upperB.size() == n && K.rows() == n);
 
     size_t maxSteps = 200;
-    double epsConverge = 1e-8;
+    T epsConverge = 1e-8;
 
-    blaze::DynamicVector<double> tauSite (K.rows(), 0);
-    blaze::DynamicVector<double> nuSite (K.rows(), 0);
+    blaze::DynamicVector<T> tauSite (K.rows(), 0);
+    blaze::DynamicVector<T> nuSite (K.rows(), 0);
 
 
-    double logZ = 0;
-    blaze::DynamicVector<double> mu = (lowerB + upperB) / 2.0;
-    blaze::DynamicMatrix<double> sigma = K;
-    blaze::DynamicVector<double> KinvM = blaze::evaluate(blaze::inv(K) * m); // TODO test!!
-    blaze::DynamicVector<double> muLast (mu.size(), 1);
+    T logZ = 0;
+    blaze::DynamicVector<T> mu = (lowerB + upperB) / 2.0;
+    blaze::DynamicMatrix<T> sigma = K;
+    blaze::DynamicVector<T> KinvM = blaze::evaluate(blaze::inv(K) * m); // TODO test!!
+    blaze::DynamicVector<T> muLast (mu.size(), 1);
     muLast = muLast * -inf;
     bool converged = false;
     size_t k = 1;
@@ -271,19 +271,19 @@ local_gaussian_axis_aligned_hyperrectangles(
     // here we only define expressions, no calculations are made
     auto tauCavity = 1/blaze::diagonal(sigma) - tauSite; // TODO evaluate once blaze::diagonal(sigma)
     auto nuCavity =  mu/blaze::diagonal(sigma) - nuSite;
-    blaze::DynamicVector<double> sighat (n, 0); // TODO test well
+    blaze::DynamicVector<T> sighat (n, 0); // TODO test well
     auto deltatauSite = 1.0/sighat - tauCavity - tauSite; // TODO test
-    auto logZhat = blaze::DynamicVector<double>(n, 0);
-    blaze::DynamicMatrix<double> L;
+    auto logZhat = blaze::DynamicVector<T>(n, 0);
+    blaze::DynamicMatrix<T> L;
 
-    std::vector<double> muInSTL (n, 0);
-    std::vector<double> sigmaInSTL (n, 0);
-    std::vector<double> lowerbSTL (lowerB.size(), 0);
-    std::vector<double> upperbSTL (upperB.size(), 0);
+    std::vector<T> muInSTL (n, 0);
+    std::vector<T> sigmaInSTL (n, 0);
+    std::vector<T> lowerbSTL (lowerB.size(), 0);
+    std::vector<T> upperbSTL (upperB.size(), 0);
 
     while (!converged && k < maxSteps) {
-        blaze::DynamicVector<double> muInBlaze ( nuCavity * (1/tauCavity) ); // componentwise, TODO check
-        blaze::DynamicVector<double> sigmaInBlaze = 1/tauCavity;
+        blaze::DynamicVector<T> muInBlaze ( nuCavity * (1/tauCavity) ); // componentwise, TODO check
+        blaze::DynamicVector<T> sigmaInBlaze = 1/tauCavity;
 
         for (size_t i = 0; i < n; ++i) {
             muInSTL[i] = muInBlaze[i];
@@ -297,7 +297,7 @@ local_gaussian_axis_aligned_hyperrectangles(
         auto logZhatSTL = std::get<0>(hat);
         auto muhatSTL = std::get<1>(hat);
         auto sighatSTL = std::get<2>(hat);
-        blaze::DynamicVector<double> muhat (muhatSTL.size(), 0);
+        blaze::DynamicVector<T> muhat (muhatSTL.size(), 0);
         //blaze::DynamicVector<double> sighat (sighatSTL.size(), 0); // moved outside loop
         assert(logZhat.size() == n && muhat.size() == n && sighat.size() == n); // TODO remove after testing
         for (size_t i = 0; i < n; ++i) {
@@ -312,11 +312,11 @@ local_gaussian_axis_aligned_hyperrectangles(
 
         // here in Matlab code goes 'if any(tauSite)<0' which seems never to be executed
 
-        blaze::DiagonalMatrix<blaze::DynamicMatrix<double>> sSiteHalf (tauSite.size(), 0);
+        blaze::DiagonalMatrix<blaze::DynamicMatrix<T>> sSiteHalf (tauSite.size(), 0);
         for (size_t i = 0; i<tauSite.size(); ++i) {
             sSiteHalf(i, i) = std::sqrt(tauSite[i]);
         }
-        blaze::IdentityMatrix<double> eye (K.rows());
+        blaze::IdentityMatrix<T> eye (K.rows());
         blaze::llh(eye + sSiteHalf*K*sSiteHalf, L);
         L = blaze::trans(L); // get lower from upper
         //L = eye + sSiteHalf*K*sSiteHalf; // TODO remove
@@ -327,7 +327,7 @@ local_gaussian_axis_aligned_hyperrectangles(
         sigma = K - blaze::trans(V)*V;
         mu = sigma*(nuSite + KinvM);
 
-        blaze::DynamicVector<double> diff = muLast - mu;
+        blaze::DynamicVector<T> diff = muLast - mu;
         //double dotsqr = blaze::evaluate(blaze::trans(diff) * diff);
         if (std::sqrt(blaze::trans(diff) * diff) < epsConverge) // (norm(muLast-mu)) < epsConverge
             converged = true;
@@ -337,10 +337,10 @@ local_gaussian_axis_aligned_hyperrectangles(
         k++;
     }
 
-    double lZ1 = 0;
-    blaze::DiagonalMatrix<blaze::DynamicMatrix<double>> tau (n, 0);
-    blaze::DiagonalMatrix<blaze::DynamicMatrix<double>> diagTauSite (n, 0);
-    blaze::DiagonalMatrix<blaze::DynamicMatrix<double>> diagTauCavity (n, 0);
+    T lZ1 = 0;
+    blaze::DiagonalMatrix<blaze::DynamicMatrix<T>> tau (n, 0);
+    blaze::DiagonalMatrix<blaze::DynamicMatrix<T>> diagTauSite (n, 0);
+    blaze::DiagonalMatrix<blaze::DynamicMatrix<T>> diagTauCavity (n, 0);
     //blaze::DynamicMatrix<double> diagTauSite (n, n, 0);
     //blaze::DynamicMatrix<double> diagTauCavity (n, n, 0);
 
@@ -350,8 +350,8 @@ local_gaussian_axis_aligned_hyperrectangles(
         diagTauSite(i, i) = tauSite[i];
         diagTauCavity(i, i) = tauCavity[i];
     }
-    blaze::DynamicVector<double> diffSite (nuSite - tauSite*m);
-    double lZ2 = 0.5*(blaze::trans(diffSite)*(sigma-tau)*diffSite);
+    blaze::DynamicVector<T> diffSite (nuSite - tauSite*m);
+    T lZ2 = 0.5*(blaze::trans(diffSite)*(sigma-tau)*diffSite);
     auto lZ3 = 0.5*( blaze::trans(nuCavity)*( blaze::inv(diagTauSite + diagTauCavity)*(tauSite*nuCavity/tauCavity - 2*nuSite) ) );
     auto lZ4 = - 0.5*( blaze::trans(tauCavity*m)*( blaze::inv(diagTauSite + diagTauCavity)*(tauSite*m - 2*nuSite) ) );
     logZ = lZ1 + lZ2 + lZ3 + lZ4 + blaze::sum(logZhat);

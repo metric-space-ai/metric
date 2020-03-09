@@ -33,10 +33,10 @@ double mvnpdf(blaze::DynamicVector<double> x) {
 }
 
 
-template <typename recType, typename Metric>
+template <typename recType, typename Metric = metric::Chebyshev<typename recType::value_type>>
 double entropy_kpN(
         std::vector<recType> X,
-        Metric metric = metric::Chebyshev<double>(), // temporarily we support only double // TODO update
+        Metric metric = Metric(),
         size_t k = 7,
         size_t p = 70
         )
@@ -84,7 +84,7 @@ double entropy_kpN(
         //std::cout << "---- Nodes:\n" << Nodes << "\n";
         //std::cout << "---- Cov:\n" << (blaze::trans(Nodes) * Nodes)/(p - 1) << "\n";
 
-        auto g_local = epmgp::local_gaussian_axis_aligned_hyperrectangles(mu, K, lb, ub);
+        auto g_local = epmgp::local_gaussian_axis_aligned_hyperrectangles<double>(mu, K, lb, ub);
         double logG = std::get<0>(g_local);
 
         double g = mvnpdf(x_vector, mu, K);
