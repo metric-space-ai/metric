@@ -31,6 +31,6 @@ void export_metric_ESN() {
     register_wrapper_ESN<std::vector<double>, metric::Euclidian<double>>();
 }
 
-BOOST_PYTHON_MODULE(_koc) {
+BOOST_PYTHON_MODULE(_esn) {
     export_metric_ESN();
 }

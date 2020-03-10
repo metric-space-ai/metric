@@ -21,11 +21,15 @@ void export_containers() {
     typedef std::vector<int> VectorInt;
     typedef std::vector<VectorInt> VectorVectorInt;
     typedef std::vector<bool> VectorBool;
+    typedef std::vector<unsigned long> VectorLong;
+    typedef std::vector<VectorLong> VectorVectorLong;
     bp::class_<VectorDouble>("VectorDouble").def(bp::vector_indexing_suite<VectorDouble>());
     bp::class_<VectorVectorDouble>("VectorVectorDouble").def(bp::vector_indexing_suite<VectorVectorDouble>());
     bp::class_<VectorInt>("VectorInt").def(bp::vector_indexing_suite<VectorInt>());
     bp::class_<VectorVectorInt>("VectorVectorInt").def(bp::vector_indexing_suite<VectorVectorInt>());
     bp::class_<VectorBool>("VectorBool").def(bp::vector_indexing_suite<VectorBool>());
+    bp::class_<VectorLong>("VectorLong").def(bp::vector_indexing_suite<VectorLong>());
+    bp::class_<VectorVectorLong>("VectorVectorLong").def(bp::vector_indexing_suite<VectorVectorLong>());
 }
 
 void test1(int t) {

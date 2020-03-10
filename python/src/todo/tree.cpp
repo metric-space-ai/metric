@@ -55,37 +55,42 @@ void register_wrapper_Tree() {
 //        const std::vector<std::size_t>&
 //    ) = &Tree::clustering;
 
-    std::vector<std::vector<std::size_t>> (Tree::*clustering3) (
-        const std::vector<double>&,
-        const std::vector<recType>&
-    ) = &Tree::clustering;
-
-    std::tuple<std::size_t, bool> (Tree::*insert_if1) (const recType&, Distance) = &Tree::insert_if;
-    std::size_t (Tree::*insert_if2) (const std::vector<recType>&, Distance) = &Tree::insert_if;
-
-    tree.def("clustering", clustering1);
+//    std::vector<std::vector<std::size_t>> (Tree::*clustering3) (
+//        const std::vector<double>&,
+//        const std::vector<recType>&
+//    ) = &Tree::clustering;
+//
+//    std::tuple<std::size_t, bool> (Tree::*insert_if1) (const recType&, Distance) = &Tree::insert_if;
+//    std::size_t (Tree::*insert_if2) (const std::vector<recType>&, Distance) = &Tree::insert_if;
+//
+//    tree.def("clustering", clustering1);
 //    tree.def("clustering", clustering2);
-    tree.def("clustering", clustering3);
-    tree.def("insert", insert_if1);
-    tree.def("insert", insert_if2);
+//    tree.def("clustering", clustering3);
+//    tree.def("insert", insert_if1);
+//    tree.def("insert", insert_if2);
 
-    tree.def("erase", &Tree::erase);
-    tree.def("__getitem__", &Tree::operator[]);
-    tree.def("nn", &Tree::nn);
-    tree.def("knn", &Tree::knn);
-    tree.def("rnn", &Tree:rnn);
-    tree.def("__len__", &Tree::size);
-    tree.def("empty", &Tree::size);
-    tree.def("to_vector", &Tree::toVector);
-    tree.def("check_covering", &Tree::check_covering);
-    tree.def("distance_by_id", &Tree::distance_by_id);
-    tree.def("distance", &Tree::distance);
-    tree.def("to_json", &Tree::to_json);
+//    tree.def("erase", &Tree::erase);
+//    tree.def("__getitem__", &Tree::operator[]);
+//    tree.def("nn", &Tree::nn);
+//    tree.def("knn", &Tree::knn);
+//    tree.def("rnn", &Tree::rnn);
+//    tree.def("__len__", &Tree::size);
+//    tree.def("empty", &Tree::size);
+//    tree.def("to_vector", &Tree::toVector);
+//    tree.def("check_covering", &Tree::check_covering);
+//    tree.def("distance_by_id", &Tree::distance_by_id);
+//    tree.def("distance", &Tree::distance);
+
+    std::string (Tree::*to_json1)(std::function<std::string(const recType&)) = &Tree::to_json;
+    std::string (Tree::*to_json1)() = &Tree::to_json;
+    tree.def("to_json", to_json1);
+    tree.def("to_json", to_json2);
+
     tree.def("level_size", Tree::levelSize);
-    tree.def("print", &Tree::print);
-    tree.def("print_levels", &Tree::print_levels);
-    tree.def("root", &Tree::get_root);
-    tree.def("__eq__", &Tree::operator==);
+    //tree.def("print", &Tree::print);
+    //tree.def("print_levels", &Tree::print_levels);
+    //tree.def("root", &Tree::get_root);
+    //tree.def("__eq__", &Tree::operator==);
 }
 
 void export_metric_Tree() {

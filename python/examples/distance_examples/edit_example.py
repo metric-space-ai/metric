@@ -1,13 +1,12 @@
-#!/usr/bin/python3
-import metric
 import time
 import numpy
+from metric.distance import Edit
 
 str1 = "1011001100110011001111111"
 str2 = "1000011001100110011011100"
 str3 = "Absolutely different string"
 
-distance = metric.Edit()
+distance = Edit()
 
 start_time = time.time()
 res = distance(str1, str2)

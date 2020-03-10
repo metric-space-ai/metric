@@ -29,7 +29,7 @@ target_link_libraries(dbscan ${COMMON_LIBRARIES})
 #target_link_libraries(ensembles ${COMMON_LIBRARIES})
 
 # ----------------------------------------------------------------------
-add_library(_esn SHARED ${SOURCE_PATH}/mapping/subs/ESN.cpp)
-set_target_properties(_esn PROPERTIES CXX_STANDARD 17)
-set_target_properties(_esn PROPERTIES PREFIX "_")
-target_link_libraries(_esn ${COMMON_LIBRARIES})
+add_library(esn SHARED ${SOURCE_PATH}/mapping/subs/ESN.cpp)
+set_target_properties(esn PROPERTIES CXX_STANDARD 17)
+set_target_properties(esn PROPERTIES PREFIX "_")
+target_link_libraries(esn ${COMMON_LIBRARIES})

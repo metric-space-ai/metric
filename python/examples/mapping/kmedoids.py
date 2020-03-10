@@ -1,6 +1,7 @@
 import sys
-import metric
 import numpy
+from metric.mapping import kmedoids
+from metric.space import Matrix
 
 
 def main():
@@ -13,8 +14,10 @@ def main():
            [2.57927000000000, 2.63399000000000, 2.46802000000000, 61.9026000000000, 61.9026000000000]
     ])
 
-    assignments, means, counts = metric.kmedoids(metric.Matrix(data), 4)  # clusters the data in 4 groups.
-    print("assignments", assignments)
+    assignments, means, counts = kmedoids(Matrix(data), 4)  # clusters the data in 4 groups.
+    print("assignments", list(assignments))
+    print("means", list(means))
+    print("counts", list(counts))
 
 
 sys.exit(main())

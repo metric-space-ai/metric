@@ -1,6 +1,6 @@
 import sys
 import numpy
-import metric
+from metric.mapping import ESN
 
 
 def main():
@@ -29,7 +29,7 @@ def main():
         {1   , 0.75, 0.5 , 0.25, 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   }
     ])
 
-    esn = metric.ESN(500, 4, 0.99, 0.5, 5, 0.9)
+    esn = ESN(500, 4, 0.99, 0.5, 5, 0.9)
     esn.train(SlicesR, TargetR)
     prediction = esn.predict(SlicesTestR)
     print("Prediction:", prediction)

@@ -4,7 +4,7 @@ set(CMAKE_VERBOSE_MAKEFILE ON)
 #set(CMAKE_BUILD_TYPE Debug)
 
 #set(CMAKE_CXX_FLAGS "-Wall")
-set(CMAKE_CXX_FLAGS_DEBUG "-DBOOST_PYTHON_TRACE_REGISTRY -g")
+set(CMAKE_CXX_FLAGS_DEBUG "-g")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 
 project(metric_py DESCRIPTION "metric python binding")
