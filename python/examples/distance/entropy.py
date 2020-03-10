@@ -1,25 +1,17 @@
 import numpy
 from metric.distance import entropy
 
-Aent = numpy.float_([
+aent = numpy.float_([
     [5.0, 5.0],
     [2.0, 2.0],
     [3.0, 3.0],
     [5.0, 1.0],
 ])
 
+print("Entropies:")
+for metric in ('chebyshev', 'p-norm', 'euclidean', 'manhatten'):
+    res = entropy(aent, 3, 2.0, metric=metric)
+    print(f'using {metric}: {res:.5f}')
 
-res = entropy(Aent, 3, 2.0, metric="chebyshev")
-print("entropy using Chebyshev: ", res)
-
-res = entropy(Aent, 3, 2.0, "p-norm")
-print("entropy using General Minkowsky: ", res)
-
-res = entropy(Aent, 3, 2.0, metric="euclidean")
-print("entropy using Euclidean: ", res)
-
-res = entropy(Aent, 3, 2.0, metric="manhatten")
-print("entropy using Manhatten: ", res)
-
-res = entropy(Aent)
-print("entropy using Default: ", res)
+res = entropy(aent)
+print(f'using Default: {res:.5f}')

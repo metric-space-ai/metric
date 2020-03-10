@@ -49,19 +49,14 @@ template <typename Container, typename Metric>
 void wrap_metric_entropy() {
     using Value = typename Container::value_type::value_type;
     std::string name = "entropy_" + getMetricName<Metric>();
-    bp::def(name.c_str(), +[](const WrapStlVector<WrapStlVector<Value>>& data, std::size_t k = 3, Value logbase = 2) {
-        return metric::entropy(data, k, logbase);
+    bp::def(name.c_str(), +[](const Container& data, std::size_t k = 3, Value logbase = 2) {
+        return metric::entropy<Container, Metric, Value>(data, k, logbase);
     }, (bp::arg("data"), bp::arg("k") = 3, bp::arg("logbase") = 2), "Continuous entropy estimator");
 }
 
-
-template <typename Container, typename Metric = metric::Euclidian<typename Container::value_type::value_type>, typename L = double>
-double entropy(
-    Container data, std::size_t k = 3, L logbase = 2);
-
 void export_metric_entropy() {
     using Value = double;
-    using Container = std::vector<std::vector<Value>>;
+    using Container = WrapStlVector<WrapStlVector<Value>>;
     wrap_metric_entropy<Container, metric::Euclidian<Value>>();
     wrap_metric_entropy<Container, metric::Manhatten<Value>>();
     wrap_metric_entropy<Container, metric::Chebyshev<Value>>();
