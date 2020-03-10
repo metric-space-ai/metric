@@ -1,3 +1,11 @@
+/*
+This Source Code Form is subject to the terms of the Mozilla Public
+License, v. 2.0. If a copy of the MPL was not distributed with this
+file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+Copyright (c) 2019 Panda Team
+*/
+
 
 #ifndef _ENTROPY_KPN_CPP
 #define _ENTROPY_KPN_CPP
@@ -7,6 +15,7 @@
 #include <boost/math/special_functions/digamma.hpp>
 
 #include "epmgp.cpp"
+#include "estimator_helpers.cpp"
 #include "../../space/tree.hpp"
 
 
@@ -159,6 +168,96 @@ double entropy_kpN<recType, Metric>::operator()(
     return boost::math::digamma(n) - boost::math::digamma(k) + h/n;
 }
 
+
+
+
+// averaged entropy estimation: code COPIED from mgc.*pp with only mgc replaced with entropy, TODO refactor to avoid code dubbing
+template <typename recType, typename Metric>
+template <typename Container>
+double entropy_kpN<recType, Metric>::estimate(
+        const Container & a,
+        const size_t sampleSize,
+        const double threshold,
+        size_t maxIterations,
+        std::size_t k,
+        double logbase,
+        Metric metric,
+        bool exp // TODO apply to returning value!
+        )
+{
+    const size_t dataSize = a.size();
+
+    /* Update maxIterations */
+    if (maxIterations == 0) {
+        maxIterations = dataSize / sampleSize;
+    }
+
+    if (maxIterations > dataSize / sampleSize) {
+        maxIterations = dataSize / sampleSize;
+    }
+
+    auto e = entropy_kpN<void, Metric>();
+
+    if (maxIterations < 1) {
+        return e(a, k, logbase, metric);
+    }
+
+    /* Create shuffle indexes */
+    std::vector<size_t> indexes(dataSize);
+    std::iota(indexes.begin(), indexes.end(), 0);
+
+    auto rng = std::default_random_engine();
+    std::shuffle(indexes.begin(), indexes.end(), rng);
+
+    /* Create vector container for fast random access */
+    const std::vector<typename Container::value_type> vectorA(a.begin(), a.end());
+
+    /* Create samples */
+    std::vector<typename Container::value_type> sampleA;
+    sampleA.reserve(sampleSize);
+
+    std::vector<double> entropyValues;
+    double mu = 0;
+    for (auto i = 1; i <= maxIterations; ++i) {
+        size_t start = (i - 1) * sampleSize;
+        size_t end = std::min(i * sampleSize - 1, dataSize - 1);
+
+        /* Create samples */
+        sampleA.clear();
+
+        for (auto j = start; j < end; ++j) {
+            sampleA.push_back(vectorA[indexes[j]]);
+        }
+
+        /* Get sample mgc value */
+        double sample_entopy = e(sampleA, k, logbase, metric);
+        entropyValues.push_back(sample_entopy);
+
+        std::sort(entropyValues.begin(), entropyValues.end());
+
+        const size_t n = entropyValues.size();
+        const auto p0 = linspace(0.5 / n, 1 - 0.5 / n, n);
+
+        mu = mean(entropyValues);
+        double sigma = variance(entropyValues, mu);
+
+        const std::vector<double> synth = icdf(p0, mu, sigma);
+        std::vector<double> diff;
+        diff.reserve(n);
+        for (auto i = 0; i < n; ++i) {
+            diff.push_back(entropyValues[i] - synth[i]);
+        }
+
+        auto convergence = peak2ems(diff) / n;
+        std::cout << n << " " << convergence << " " << sample_entopy << " " << mu << std::endl;
+
+        if (convergence < threshold) {
+            return mu;
+        }
+    }
+
+    return mu;
+}
 
 
 

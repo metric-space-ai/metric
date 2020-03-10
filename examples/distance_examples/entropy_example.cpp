@@ -69,6 +69,12 @@ int main() {
         std::cout << "using Default: " << e << std::endl;
     }
 
+    {
+        auto ekpn = metric::entropy_kpN<void, metric::Chebyshev<double>>();
+        auto e = ekpn(v, metric::Chebyshev<double>(), 2, 3);
+        std::cout << "entropy_kpN, using Chebyshev: " << e << std::endl;
+    }
+
     std::cout << std::endl;
 
 
@@ -164,6 +170,17 @@ int main() {
     auto e_f_eucl = metric::entropy<void, metric::Euclidian<double>>();
     auto e = e_f_eucl(urv, 3, 2.0);
     std::cout << "using Euclidean: " << e << std::endl;
+
+    auto ekpn_cheb = metric::entropy_kpN<void, metric::Chebyshev<double>>();
+    auto ekpn_eucl = metric::entropy_kpN<void, metric::Euclidian<double>>();
+
+    std::cout << "entropy_kpN, using Chebyshev: "
+              << ekpn_cheb(urv, metric::Chebyshev<double>(), 3, 10)
+              << ", "
+              << ekpn_cheb(urv, metric::Chebyshev<double>(), 7, 20)
+              << std::endl;
+
+    std::cout << "entropy_kpN, using Euclidean: " << ekpn_eucl(urv, metric::Euclidian<double>(), 3, 10) << std::endl;
 
     e = entropy_kl(urv, 3, 2.0, metric::Euclidian<double>());
     std::cout << "using Euclidean Kozachenko-Leonenko: " << e << std::endl;
