@@ -1461,18 +1461,25 @@ auto Tree<recType, Metric>::distance(const recType &r1, const recType &r2) const
 
 template <typename recType, typename Metric>
 auto Tree<recType, Metric>::matrix() const
-    -> blaze::SymmetricMatrix<blaze::CompressedMatrix<Distance, blaze::rowMajor>> {
-    blaze::SymmetricMatrix<blaze::CompressedMatrix<Distance, blaze::rowMajor>> m(data.size());
-    for(std::size_t i = 0; i < data.size(); i++) {
+    -> blaze::CompressedMatrix<Distance, blaze::rowMajor> {
+    auto N = data.size();
+    blaze::CompressedMatrix<Distance, blaze::rowMajor> m(N, N);
+    
+    m.reserve(N*(N-1)/2);
+    for (std::size_t i = 0; i < data.size(); i++)
+    {
         for(std::size_t j = i +1; j < data.size(); j++) {
             if( data[i].second->parent == data[j].second) {
-                m(i,j) = data[i].second->parent_dist;
+                // node J is a parent for node I, so we can use parent_dist
+                m.append(i, j, data[i].second->parent_dist);
             } else if (data[j].second->parent == data[i].second) {
-                m(i, j) = data[j].second->parent_dist;
+                // node I is a parent for node J, so we can use parent_dist
+                m.append(i, j,data[j].second->parent_dist);
             } else {
-                m(i, j) = metric(data[i].first, data[j].first);
+                m.append(i, j, metric(data[i].first, data[j].first));
             }
         }
+        m.finalize(i);
     }
     return m;
 }

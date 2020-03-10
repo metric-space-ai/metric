@@ -430,7 +430,11 @@ BOOST_AUTO_TEST_CASE(tree_to_distance_matrix) {
     distance<float, float> dist;
     for(std::size_t i = 0; i < m.rows(); i++) {
         for (std::size_t j = 0; j < m.columns(); j++) {
-            BOOST_TEST(m(i,j) == dist(data[i], data[j]));
+            if( i < j) {
+                BOOST_TEST(m(i,j) == dist(data[i], data[j]));
+            } else {
+                BOOST_TEST(m(j, i) == dist(data[i], data[j]));
+            }
         }
     }
 }
