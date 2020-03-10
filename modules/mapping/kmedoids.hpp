@@ -20,9 +20,9 @@ namespace metric {
  * @param k 
  * @return 
  */
-template <typename recType, typename Metric, typename T>
+    template <typename recType, typename Metric, typename T = typename Metric::distance_type>
 std::tuple<std::vector<int>, std::vector<int>, std::vector<int>> kmedoids(
-    const metric::Matrix<recType, Metric, T>& DM, int k);
+    const metric::Matrix<recType, Metric>& DM, int k);
 
 }  // namespace metric
 

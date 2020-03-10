@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/SVecDVecDivExpr.h
 //  \brief Header file for the sparse vector/sparse vector division expression
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -63,6 +63,7 @@
 #include "../../math/typetraits/IsZero.h"
 #include "../../math/typetraits/RequiresEvaluation.h"
 #include "../../math/typetraits/Size.h"
+#include "../../system/MacroDisable.h"
 #include "../../util/Assert.h"
 #include "../../util/EnableIf.h"
 #include "../../util/FunctionTrace.h"
@@ -295,7 +296,7 @@ class SVecDVecDivExpr
    // \param lhs The left-hand side sparse vector operand of the division expression.
    // \param rhs The right-hand side dense vector operand of the division expression.
    */
-   explicit inline SVecDVecDivExpr( const VT1& lhs, const VT2& rhs ) noexcept
+   inline SVecDVecDivExpr( const VT1& lhs, const VT2& rhs ) noexcept
       : lhs_( lhs )  // Left-hand side sparse vector of the division expression
       , rhs_( rhs )  // Right-hand side dense vector of the division expression
    {

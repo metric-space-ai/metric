@@ -3,7 +3,7 @@
 //  \file blaze/math/typetraits/HasSIMDRound.h
 //  \brief Header file for the HasSIMDRound type trait
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -41,8 +41,9 @@
 //*************************************************************************************************
 
 #include "../../system/Vectorization.h"
-#include "../../util/EnableIf.h"
 #include "../../util/IntegralConstant.h"
+#include "../../util/typetraits/IsDouble.h"
+#include "../../util/typetraits/IsFloat.h"
 #include "../../util/typetraits/RemoveCVRef.h"
 
 

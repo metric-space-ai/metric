@@ -3,7 +3,7 @@
 //  \file blaze/math/dense/InitializerVector.h
 //  \brief Header file for the implementation of a vector representation of an initializer list
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -52,7 +52,6 @@
 #include "../../math/typetraits/HighType.h"
 #include "../../math/typetraits/IsInitializer.h"
 #include "../../math/typetraits/LowType.h"
-#include "../../system/TransposeFlag.h"
 #include "../../util/Assert.h"
 #include "../../util/constraints/Const.h"
 #include "../../util/constraints/Pointer.h"
@@ -169,8 +168,8 @@ namespace blaze {
    A = a * trans( b );  // Outer product between two vectors
    \endcode
 */
-template< typename Type                     // Data type of the vector
-        , bool TF = defaultTransposeFlag >  // Transpose flag
+template< typename Type  // Data type of the vector
+        , bool TF >      // Transpose flag
 class InitializerVector
    : public DenseVector< InitializerVector<Type,TF>, TF >
 {
@@ -229,8 +228,8 @@ class InitializerVector
    //**Constructors********************************************************************************
    /*!\name Constructors */
    //@{
-   explicit inline InitializerVector( initializer_list<Type> list ) noexcept;
-   explicit inline InitializerVector( initializer_list<Type> list, size_t n );
+   inline InitializerVector( initializer_list<Type> list ) noexcept;
+   inline InitializerVector( initializer_list<Type> list, size_t n );
 
    InitializerVector( const InitializerVector& ) = default;
    //@}

@@ -3,7 +3,7 @@
 //  \file blaze/math/views/column/ColumnData.h
 //  \brief Header file for the implementation of the ColumnData class template
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -225,7 +225,7 @@ class ColumnData<I>
    //**Utility functions***************************************************************************
    /*!\name Utility functions */
    //@{
-   static inline constexpr size_t column() noexcept;
+   static constexpr size_t column() noexcept;
    //@}
    //**********************************************************************************************
 };
@@ -256,7 +256,7 @@ inline ColumnData<I>::ColumnData( RCAs... args )
 // \return The index of the column.
 */
 template< size_t I >  // Compile time column index
-inline constexpr size_t ColumnData<I>::column() noexcept
+constexpr size_t ColumnData<I>::column() noexcept
 {
    return I;
 }

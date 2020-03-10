@@ -3,7 +3,7 @@
 //  \file blaze/math/Functors.h
 //  \brief Header file for all functors
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -47,6 +47,7 @@
 #include "../math/functors/AddAssign.h"
 #include "../math/functors/And.h"
 #include "../math/functors/AndAssign.h"
+#include "../math/functors/Arg.h"
 #include "../math/functors/Asin.h"
 #include "../math/functors/Asinh.h"
 #include "../math/functors/Assign.h"
@@ -55,6 +56,7 @@
 #include "../math/functors/Atanh.h"
 #include "../math/functors/Bind1st.h"
 #include "../math/functors/Bind2nd.h"
+#include "../math/functors/Bind3rd.h"
 #include "../math/functors/Bitand.h"
 #include "../math/functors/Bitor.h"
 #include "../math/functors/Bitxor.h"
@@ -70,7 +72,11 @@
 #include "../math/functors/DeclHerm.h"
 #include "../math/functors/DeclId.h"
 #include "../math/functors/DeclLow.h"
+#include "../math/functors/DeclStrLow.h"
+#include "../math/functors/DeclStrUpp.h"
 #include "../math/functors/DeclSym.h"
+#include "../math/functors/DeclUniLow.h"
+#include "../math/functors/DeclUniUpp.h"
 #include "../math/functors/DeclUpp.h"
 #include "../math/functors/DeclZero.h"
 #include "../math/functors/Div.h"
@@ -89,6 +95,7 @@
 #include "../math/functors/InvAdd.h"
 #include "../math/functors/InvCbrt.h"
 #include "../math/functors/InvSqrt.h"
+#include "../math/functors/Join.h"
 #include "../math/functors/Kron.h"
 #include "../math/functors/L1Norm.h"
 #include "../math/functors/L2Norm.h"
@@ -100,12 +107,17 @@
 #include "../math/functors/Log2.h"
 #include "../math/functors/Log10.h"
 #include "../math/functors/LpNorm.h"
+#include "../math/functors/MAC.h"
+#include "../math/functors/MakePair.h"
 #include "../math/functors/Max.h"
 #include "../math/functors/Min.h"
+#include "../math/functors/Minmax.h"
 #include "../math/functors/ModuloAssign.h"
 #include "../math/functors/Mult.h"
 #include "../math/functors/MultAssign.h"
+#include "../math/functors/NoAlias.h"
 #include "../math/functors/Noop.h"
+#include "../math/functors/NoSIMD.h"
 #include "../math/functors/Not.h"
 #include "../math/functors/Or.h"
 #include "../math/functors/OrAssign.h"

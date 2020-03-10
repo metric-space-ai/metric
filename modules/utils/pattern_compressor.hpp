@@ -26,6 +26,7 @@ Copyright(c) 2019 PANDA Team
 #include "../../modules/distance/k-structured/TWED.hpp"
 #include "../../modules/space/tree.hpp"
 #include "../../modules/transform/wavelet.hpp"
+#include "../../modules/transform/helper_functions.cpp" // added by Max F, Jan, 29, 2020
 
 namespace metric {
 

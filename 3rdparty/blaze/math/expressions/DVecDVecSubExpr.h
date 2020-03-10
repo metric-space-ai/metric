@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/DVecDVecSubExpr.h
 //  \brief Header file for the dense vector/dense vector subtraction expression
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -64,6 +64,7 @@
 #include "../../math/typetraits/RequiresEvaluation.h"
 #include "../../system/HostDevice.h"
 #include "../../system/Inline.h"
+#include "../../system/MacroDisable.h"
 #include "../../system/Thresholds.h"
 #include "../../util/Assert.h"
 #include "../../util/EnableIf.h"
@@ -206,7 +207,7 @@ class DVecDVecSubExpr
       // \param left Iterator to the initial left-hand side element.
       // \param right Iterator to the initial right-hand side element.
       */
-      explicit inline BLAZE_DEVICE_CALLABLE ConstIterator( LeftIteratorType left, RightIteratorType right )
+      inline BLAZE_DEVICE_CALLABLE ConstIterator( LeftIteratorType left, RightIteratorType right )
          : left_ ( left  )  // Iterator to the current left-hand side element
          , right_( right )  // Iterator to the current right-hand side element
       {}
@@ -443,7 +444,7 @@ class DVecDVecSubExpr
    // \param lhs The left-hand side operand of the subtraction expression.
    // \param rhs The right-hand side operand of the subtraction expression.
    */
-   explicit inline DVecDVecSubExpr( const VT1& lhs, const VT2& rhs ) noexcept
+   inline DVecDVecSubExpr( const VT1& lhs, const VT2& rhs ) noexcept
       : lhs_( lhs )  // Left-hand side dense vector of the subtraction expression
       , rhs_( rhs )  // Right-hand side dense vector of the subtraction expression
    {

@@ -3,7 +3,9 @@
 
 #include "../../../3rdparty/blaze/Math.h"
 
-namespace MiniDNN
+namespace metric
+{
+namespace dnn
 {
 
 
@@ -23,9 +25,10 @@ class Optimizer
 		using AlignedMapVec = blaze::CustomVector<Scalar, blaze::aligned, blaze::unpadded>;
 		using ConstAlignedMapVec = const blaze::CustomVector<Scalar, blaze::aligned, blaze::unpadded>;
 
-public:
+	public:
         virtual ~Optimizer() {}
 
+        virtual nlohmann::json toJson() = 0;
         ///
         /// Reset the optimizer to clear all historical information
         ///
@@ -46,7 +49,8 @@ public:
 };
 
 
-} // namespace MiniDNN
+} // namespace dnn
+} // namespace metric
 
 
 #endif /* OPTIMIZER_H_ */

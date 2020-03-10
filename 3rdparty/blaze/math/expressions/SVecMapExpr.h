@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/SVecMapExpr.h
 //  \brief Header file for the sparse vector map expression
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -56,11 +56,11 @@
 #include "../../math/sparse/ValueIndexPair.h"
 #include "../../math/traits/MapTrait.h"
 #include "../../math/traits/MultTrait.h"
-#include "../../math/typetraits/IsComputation.h"
 #include "../../math/typetraits/IsExpression.h"
 #include "../../math/typetraits/RequiresEvaluation.h"
 #include "../../math/typetraits/UnderlyingBuiltin.h"
 #include "../../math/typetraits/UnderlyingNumeric.h"
+#include "../../system/MacroDisable.h"
 #include "../../util/Assert.h"
 #include "../../util/EnableIf.h"
 #include "../../util/FunctionTrace.h"
@@ -185,8 +185,8 @@ class SVecMapExpr
       // \param op The custom unary operation.
       */
       inline ConstIterator( IteratorType it, OP op )
-         : it_( it )  // Iterator over the elements of the sparse vector expression
-         , op_( op )  // The custom unary operation
+         : it_( it )             // Iterator over the elements of the sparse vector expression
+         , op_( std::move(op) )  // The custom unary operation
       {}
       //*******************************************************************************************
 
@@ -293,9 +293,9 @@ class SVecMapExpr
    // \param sv The sparse vector operand of the map expression.
    // \param op The custom unary operation.
    */
-   explicit inline SVecMapExpr( const VT& sv, OP op ) noexcept
-      : sv_( sv )  // Sparse vector of the map expression
-      , op_( op )  // The custom unary operation
+   inline SVecMapExpr( const VT& sv, OP op ) noexcept
+      : sv_( sv )             // Sparse vector of the map expression
+      , op_( std::move(op) )  // The custom unary operation
    {}
    //**********************************************************************************************
 
@@ -859,7 +859,7 @@ inline decltype(auto) map( const SparseVector<VT,TF>& sv, OP op )
    BLAZE_FUNCTION_TRACE;
 
    using ReturnType = const SVecMapExpr<VT,OP,TF>;
-   return ReturnType( ~sv, op );
+   return ReturnType( ~sv, std::move(op) );
 }
 //*************************************************************************************************
 
@@ -889,7 +889,7 @@ inline decltype(auto) forEach( const SparseVector<VT,TF>& sv, OP op )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~sv, op );
+   return map( ~sv, std::move(op) );
 }
 //*************************************************************************************************
 
@@ -1069,9 +1069,9 @@ inline decltype(auto) round( const SparseVector<VT,TF>& sv )
 // \param sv The integral sparse input vector.
 // \return The complex conjugate of each single element of \a sv.
 //
-// The \a conj function calculates the complex conjugate of each element of the sparse input
+// The \a conj() function calculates the complex conjugate of each element of the sparse input
 // vector \a sv. The function returns an expression representing this operation.\n
-// The following example demonstrates the use of the \a conj function:
+// The following example demonstrates the use of the \a conj() function:
 
    \code
    blaze::CompressedVector<double> a, b;
@@ -1097,10 +1097,10 @@ inline decltype(auto) conj( const SparseVector<VT,TF>& sv )
 // \param sv The input vector.
 // \return The conjugate transpose of \a sv.
 //
-// The \a ctrans function returns an expression representing the conjugate transpose (also called
-// adjoint matrix, Hermitian conjugate matrix or transjugate matrix) of the given input vector
-// \a sv.\n
-// The following example demonstrates the use of the \a ctrans function:
+// The \a ctrans() function returns an expression representing the conjugate transpose (also
+// called adjoint matrix, Hermitian conjugate matrix or transjugate matrix) of the given input
+// vector \a sv.\n
+// The following example demonstrates the use of the \a ctrans() function:
 
    \code
    blaze::CompressedVector< complex<double> > a, b;
@@ -1108,7 +1108,7 @@ inline decltype(auto) conj( const SparseVector<VT,TF>& sv )
    b = ctrans( a );
    \endcode
 
-// Note that the \a ctrans function has the same effect as manually applying the \a conj and
+// Note that the \a ctrans() function has the same effect as manually applying the \a conj() and
 // \a trans function in any order:
 
    \code
@@ -1134,9 +1134,9 @@ inline decltype(auto) ctrans( const SparseVector<VT,TF>& sv )
 // \param sv The integral sparse input vector.
 // \return The real part of each single element of \a sv.
 //
-// The \a real function calculates the real part of each element of the sparse input vector
+// The \a real() function calculates the real part of each element of the sparse input vector
 // \a sv. The function returns an expression representing this operation.\n
-// The following example demonstrates the use of the \a real function:
+// The following example demonstrates the use of the \a real() function:
 
    \code
    blaze::CompressedVector<double> a, b;
@@ -1162,9 +1162,9 @@ inline decltype(auto) real( const SparseVector<VT,TF>& sv )
 // \param sv The integral sparse input vector.
 // \return The imaginary part of each single element of \a sv.
 //
-// The \a imag function calculates the imaginary part of each element of the sparse input vector
+// The \a imag() function calculates the imaginary part of each element of the sparse input vector
 // \a sv. The function returns an expression representing this operation.\n
-// The following example demonstrates the use of the \a imag function:
+// The following example demonstrates the use of the \a imag() function:
 
    \code
    blaze::CompressedVector<double> a, b;
@@ -1179,6 +1179,34 @@ inline decltype(auto) imag( const SparseVector<VT,TF>& sv )
    BLAZE_FUNCTION_TRACE;
 
    return map( ~sv, Imag() );
+}
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*!\brief Returns a vector containing the phase angle of each single element of \a sv.
+// \ingroup sparse_vector
+//
+// \param sv The integral sparse input vector.
+// \return The phase angle of each single element of \a sv.
+//
+// The \a arg() function calculates the phase angle of each element of the sparse input vector
+// \a sv. The function returns an expression representing this operation.\n
+// The following example demonstrates the use of the \a arg() function:
+
+   \code
+   blaze::CompressedVector<double> a, b;
+   // ... Resizing and initialization
+   b = arg( a );
+   \endcode
+*/
+template< typename VT  // Type of the sparse vector
+        , bool TF >    // Transpose flag
+inline decltype(auto) arg( const SparseVector<VT,TF>& sv )
+{
+   BLAZE_FUNCTION_TRACE;
+
+   return map( ~sv, Arg() );
 }
 //*************************************************************************************************
 
@@ -1333,7 +1361,7 @@ inline decltype(auto) clamp( const SparseVector<VT,TF>& sv, const DT& min, const
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~sv, Clamp<DT>( min, max ) );
+   return map( ~sv, bind2nd( bind3rd( Clamp(), max ), min ) );
 }
 //*************************************************************************************************
 

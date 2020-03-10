@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/SVecSerialExpr.h
 //  \brief Header file for the sparse vector serial evaluation expression
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -48,8 +48,8 @@
 #include "../../math/expressions/Forward.h"
 #include "../../math/expressions/VecSerialExpr.h"
 #include "../../math/expressions/SparseVector.h"
-#include "../../math/typetraits/IsComputation.h"
 #include "../../math/typetraits/IsExpression.h"
+#include "../../system/MacroDisable.h"
 #include "../../util/Assert.h"
 #include "../../util/FunctionTrace.h"
 #include "../../util/mpl/If.h"
@@ -652,35 +652,6 @@ inline decltype(auto) serial( const SparseVector<VT,TF>& sv )
    using ReturnType = const SVecSerialExpr<VT,TF>;
    return ReturnType( ~sv );
 }
-//*************************************************************************************************
-
-
-
-
-//=================================================================================================
-//
-//  GLOBAL RESTRUCTURING FUNCTIONS
-//
-//=================================================================================================
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-/*!\brief Evaluation of the given sparse vector serial evaluation expression \a sv.
-// \ingroup sparse_vector
-//
-// \param sv The input serial evaluation expression.
-// \return The evaluated sparse vector.
-//
-// This function implements a performance optimized treatment of the serial evaluation of a sparse
-// vector serial evaluation expression.
-*/
-template< typename VT  // Type of the sparse vector
-        , bool TF >    // Transpose flag
-inline decltype(auto) serial( const SVecSerialExpr<VT,TF>& sv )
-{
-   return sv;
-}
-/*! \endcond */
 //*************************************************************************************************
 
 } // namespace blaze

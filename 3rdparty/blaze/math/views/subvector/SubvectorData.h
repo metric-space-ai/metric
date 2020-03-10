@@ -3,7 +3,7 @@
 //  \file blaze/math/views/subvector/SubvectorData.h
 //  \brief Header file for the implementation of the SubvectorData class template
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -100,7 +100,7 @@ class SubvectorData<>
    /*!\name Constructors */
    //@{
    template< typename... RSAs >
-   explicit inline SubvectorData( size_t index, size_t n, RSAs... args );
+   inline SubvectorData( size_t index, size_t n, RSAs... args );
 
    SubvectorData( const SubvectorData& ) = default;
    //@}
@@ -246,8 +246,8 @@ class SubvectorData<I,N>
    //**Utility functions***************************************************************************
    /*!\name Utility functions */
    //@{
-   static inline constexpr size_t offset() noexcept;
-   static inline constexpr size_t size  () noexcept;
+   static constexpr size_t offset() noexcept;
+   static constexpr size_t size  () noexcept;
    //@}
    //**********************************************************************************************
 };
@@ -280,7 +280,7 @@ inline SubvectorData<I,N>::SubvectorData( RSAs... args )
 */
 template< size_t I    // Index of the first element
         , size_t N >  // Number of elements
-inline constexpr size_t SubvectorData<I,N>::offset() noexcept
+constexpr size_t SubvectorData<I,N>::offset() noexcept
 {
    return I;
 }
@@ -296,7 +296,7 @@ inline constexpr size_t SubvectorData<I,N>::offset() noexcept
 */
 template< size_t I    // Index of the first element
         , size_t N >  // Number of elements
-inline constexpr size_t SubvectorData<I,N>::size() noexcept
+constexpr size_t SubvectorData<I,N>::size() noexcept
 {
    return N;
 }

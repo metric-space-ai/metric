@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/DMatDMatMapExpr.h
 //  \brief Header file for the dense matrix/dense matrix map expression
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -57,6 +57,8 @@
 #include "../../math/functors/Bitor.h"
 #include "../../math/functors/Bitxor.h"
 #include "../../math/functors/Hypot.h"
+#include "../../math/functors/Join.h"
+#include "../../math/functors/MakePair.h"
 #include "../../math/functors/Max.h"
 #include "../../math/functors/Min.h"
 #include "../../math/functors/Or.h"
@@ -124,9 +126,9 @@ class DMatDMatMapExpr
    //! Compilation switch for the serial evaluation strategy of the map expression.
    /*! The \a useAssign compile time constant expression represents a compilation switch for
        the serial evaluation strategy of the map expression. In case either of the two dense
-       matrix operands requires an intermediate evaluation, \a useAssign will be set to 1 and
-       the addition expression will be evaluated via the \a assign function family. Otherwise
-       \a useAssign will be set to 0 and the expression will be evaluated via the subscript
+       matrix operands requires an intermediate evaluation, \a useAssign will be set to \a true
+       and the addition expression will be evaluated via the \a assign function family. Otherwise
+       \a useAssign will be set to \a false and the expression will be evaluated via the subscript
        operator. */
    static constexpr bool useAssign = ( RequiresEvaluation_v<MT1> || RequiresEvaluation_v<MT2> );
 
@@ -142,9 +144,9 @@ class DMatDMatMapExpr
    //! Helper variable template for the explicit application of the SFINAE principle.
    /*! This variable template is a helper for the selection of the parallel evaluation strategy.
        In case at least one of the two dense matrix operands is not SMP assignable and at least
-       one of the two operands requires an intermediate evaluation, the variable is set to 1 and
-       the expression specific evaluation strategy is selected. Otherwise the variable is set to
-       0 and the default strategy is chosen. */
+       one of the two operands requires an intermediate evaluation, the variable is set to \a true
+       and the expression specific evaluation strategy is selected. Otherwise the variable is set
+       to \a false and the default strategy is chosen. */
    template< typename MT >
    static constexpr bool UseSMPAssign_v =
       ( ( !MT1::smpAssignable || !MT2::smpAssignable ) && useAssign );
@@ -172,7 +174,7 @@ class DMatDMatMapExpr
    //! Composite type of the right-hand side dense matrix expression.
    using RightOperand = If_t< IsExpression_v<MT2>, const MT2, const MT2& >;
 
-   //! Data type of the custom unary operation.
+   //! Data type of the custom binary operation.
    using Operation = OP;
 
    //! Type for the assignment of the left-hand side dense matrix operand.
@@ -214,12 +216,12 @@ class DMatDMatMapExpr
       //
       // \param left Iterator to the initial left-hand side element.
       // \param right Iterator to the initial right-hand side element.
-      // \param op The custom unary operation.
+      // \param op The custom binary operation.
       */
-      explicit inline ConstIterator( LeftIteratorType left, RightIteratorType right, OP op )
-         : left_ ( left  )  // Iterator to the current left-hand side element
-         , right_( right )  // Iterator to the current right-hand side element
-         , op_   ( op    )  // The custom unary operation
+      inline ConstIterator( LeftIteratorType left, RightIteratorType right, OP op )
+         : left_ ( left  )          // Iterator to the current left-hand side element
+         , right_( right )          // Iterator to the current right-hand side element
+         , op_   ( std::move(op) )  // The custom binary operation
       {}
       //*******************************************************************************************
 
@@ -430,7 +432,7 @@ class DMatDMatMapExpr
       //**Member variables*************************************************************************
       LeftIteratorType  left_;   //!< Iterator to the current left-hand side element.
       RightIteratorType right_;  //!< Iterator to the current right-hand side element.
-      OP                op_;     //!< The custom unary operation.
+      OP                op_;     //!< The custom binary operation.
       //*******************************************************************************************
    };
    //**********************************************************************************************
@@ -455,12 +457,12 @@ class DMatDMatMapExpr
    //
    // \param lhs The left-hand side dense matrix operand of the map expression.
    // \param rhs The right-hand side dense matrix operand of the map expression.
-   // \param op The custom unary operation.
+   // \param op The custom binary operation.
    */
-   explicit inline DMatDMatMapExpr( const MT1& lhs, const MT2& rhs, OP op ) noexcept
-      : lhs_( lhs )  // Left-hand side dense matrix of the map expression
-      , rhs_( rhs )  // Right-hand side dense matrix of the map expression
-      , op_ ( op  )  // The custom unary operation
+   inline DMatDMatMapExpr( const MT1& lhs, const MT2& rhs, OP op ) noexcept
+      : lhs_( lhs )            // Left-hand side dense matrix of the map expression
+      , rhs_( rhs )            // Right-hand side dense matrix of the map expression
+      , op_ ( std::move(op) )  // The custom binary operation
    {}
    //**********************************************************************************************
 
@@ -514,10 +516,10 @@ class DMatDMatMapExpr
    //**********************************************************************************************
 
    //**Begin function******************************************************************************
-   /*!\brief Returns an iterator to the first non-zero element of row \a i.
+   /*!\brief Returns an iterator to the first non-zero element of row/column \a i.
    //
-   // \param i The row index.
-   // \return Iterator to the first non-zero element of row \a i.
+   // \param i The row/column index.
+   // \return Iterator to the first non-zero element of row/column \a i.
    */
    inline ConstIterator begin( size_t i ) const {
       return ConstIterator( lhs_.begin(i), rhs_.begin(i), op_ );
@@ -525,10 +527,10 @@ class DMatDMatMapExpr
    //**********************************************************************************************
 
    //**End function********************************************************************************
-   /*!\brief Returns an iterator just past the last non-zero element of row \a i.
+   /*!\brief Returns an iterator just past the last non-zero element of row/column \a i.
    //
-   // \param i The row index.
-   // \return Iterator just past the last non-zero element of row \a i.
+   // \param i The row/column index.
+   // \return Iterator just past the last non-zero element of row/column \a i.
    */
    inline ConstIterator end( size_t i ) const {
       return ConstIterator( lhs_.end(i), rhs_.end(i), op_ );
@@ -634,7 +636,7 @@ class DMatDMatMapExpr
    //**Member variables****************************************************************************
    LeftOperand  lhs_;  //!< Left-hand side dense matrix of the map expression.
    RightOperand rhs_;  //!< Right-hand side dense matrix of the map expression.
-   Operation    op_;   //!< The custom unary operation.
+   Operation    op_;   //!< The custom binary operation.
    //**********************************************************************************************
 
    //**Assignment to dense matrices****************************************************************
@@ -669,6 +671,8 @@ class DMatDMatMapExpr
       BLAZE_INTERNAL_ASSERT( B.rows()    == rhs.rhs_.rows()   , "Invalid number of rows"    );
       BLAZE_INTERNAL_ASSERT( B.columns() == rhs.rhs_.columns(), "Invalid number of columns" );
       BLAZE_INTERNAL_ASSERT( A.rows()    == (~lhs).rows()     , "Invalid number of rows"    );
+      BLAZE_INTERNAL_ASSERT( A.columns() == (~lhs).columns()  , "Invalid number of columns" );
+      BLAZE_INTERNAL_ASSERT( B.rows()    == (~lhs).rows()     , "Invalid number of rows"    );
       BLAZE_INTERNAL_ASSERT( B.columns() == (~lhs).columns()  , "Invalid number of columns" );
 
       assign( ~lhs, map( A, B, rhs.op_ ) );
@@ -747,6 +751,8 @@ class DMatDMatMapExpr
       BLAZE_INTERNAL_ASSERT( B.rows()    == rhs.rhs_.rows()   , "Invalid number of rows"    );
       BLAZE_INTERNAL_ASSERT( B.columns() == rhs.rhs_.columns(), "Invalid number of columns" );
       BLAZE_INTERNAL_ASSERT( A.rows()    == (~lhs).rows()     , "Invalid number of rows"    );
+      BLAZE_INTERNAL_ASSERT( A.columns() == (~lhs).columns()  , "Invalid number of columns" );
+      BLAZE_INTERNAL_ASSERT( B.rows()    == (~lhs).rows()     , "Invalid number of rows"    );
       BLAZE_INTERNAL_ASSERT( B.columns() == (~lhs).columns()  , "Invalid number of columns" );
 
       addAssign( ~lhs, map( A, B, rhs.op_ ) );
@@ -790,6 +796,8 @@ class DMatDMatMapExpr
       BLAZE_INTERNAL_ASSERT( B.rows()    == rhs.rhs_.rows()   , "Invalid number of rows"    );
       BLAZE_INTERNAL_ASSERT( B.columns() == rhs.rhs_.columns(), "Invalid number of columns" );
       BLAZE_INTERNAL_ASSERT( A.rows()    == (~lhs).rows()     , "Invalid number of rows"    );
+      BLAZE_INTERNAL_ASSERT( A.columns() == (~lhs).columns()  , "Invalid number of columns" );
+      BLAZE_INTERNAL_ASSERT( B.rows()    == (~lhs).rows()     , "Invalid number of rows"    );
       BLAZE_INTERNAL_ASSERT( B.columns() == (~lhs).columns()  , "Invalid number of columns" );
 
       subAssign( ~lhs, map( A, B, rhs.op_ ) );
@@ -833,6 +841,8 @@ class DMatDMatMapExpr
       BLAZE_INTERNAL_ASSERT( B.rows()    == rhs.rhs_.rows()   , "Invalid number of rows"    );
       BLAZE_INTERNAL_ASSERT( B.columns() == rhs.rhs_.columns(), "Invalid number of columns" );
       BLAZE_INTERNAL_ASSERT( A.rows()    == (~lhs).rows()     , "Invalid number of rows"    );
+      BLAZE_INTERNAL_ASSERT( A.columns() == (~lhs).columns()  , "Invalid number of columns" );
+      BLAZE_INTERNAL_ASSERT( B.rows()    == (~lhs).rows()     , "Invalid number of rows"    );
       BLAZE_INTERNAL_ASSERT( B.columns() == (~lhs).columns()  , "Invalid number of columns" );
 
       schurAssign( ~lhs, map( A, B, rhs.op_ ) );
@@ -884,6 +894,8 @@ class DMatDMatMapExpr
       BLAZE_INTERNAL_ASSERT( B.rows()    == rhs.rhs_.rows()   , "Invalid number of rows"    );
       BLAZE_INTERNAL_ASSERT( B.columns() == rhs.rhs_.columns(), "Invalid number of columns" );
       BLAZE_INTERNAL_ASSERT( A.rows()    == (~lhs).rows()     , "Invalid number of rows"    );
+      BLAZE_INTERNAL_ASSERT( A.columns() == (~lhs).columns()  , "Invalid number of columns" );
+      BLAZE_INTERNAL_ASSERT( B.rows()    == (~lhs).rows()     , "Invalid number of rows"    );
       BLAZE_INTERNAL_ASSERT( B.columns() == (~lhs).columns()  , "Invalid number of columns" );
 
       smpAssign( ~lhs, map( A, B, rhs.op_ ) );
@@ -963,6 +975,8 @@ class DMatDMatMapExpr
       BLAZE_INTERNAL_ASSERT( B.rows()    == rhs.rhs_.rows()   , "Invalid number of rows"    );
       BLAZE_INTERNAL_ASSERT( B.columns() == rhs.rhs_.columns(), "Invalid number of columns" );
       BLAZE_INTERNAL_ASSERT( A.rows()    == (~lhs).rows()     , "Invalid number of rows"    );
+      BLAZE_INTERNAL_ASSERT( A.columns() == (~lhs).columns()  , "Invalid number of columns" );
+      BLAZE_INTERNAL_ASSERT( B.rows()    == (~lhs).rows()     , "Invalid number of rows"    );
       BLAZE_INTERNAL_ASSERT( B.columns() == (~lhs).columns()  , "Invalid number of columns" );
 
       smpAddAssign( ~lhs, map( A, B, rhs.op_ ) );
@@ -1007,6 +1021,8 @@ class DMatDMatMapExpr
       BLAZE_INTERNAL_ASSERT( B.rows()    == rhs.rhs_.rows()   , "Invalid number of rows"    );
       BLAZE_INTERNAL_ASSERT( B.columns() == rhs.rhs_.columns(), "Invalid number of columns" );
       BLAZE_INTERNAL_ASSERT( A.rows()    == (~lhs).rows()     , "Invalid number of rows"    );
+      BLAZE_INTERNAL_ASSERT( A.columns() == (~lhs).columns()  , "Invalid number of columns" );
+      BLAZE_INTERNAL_ASSERT( B.rows()    == (~lhs).rows()     , "Invalid number of rows"    );
       BLAZE_INTERNAL_ASSERT( B.columns() == (~lhs).columns()  , "Invalid number of columns" );
 
       smpSubAssign( ~lhs, map( A, B, rhs.op_ ) );
@@ -1051,6 +1067,8 @@ class DMatDMatMapExpr
       BLAZE_INTERNAL_ASSERT( B.rows()    == rhs.rhs_.rows()   , "Invalid number of rows"    );
       BLAZE_INTERNAL_ASSERT( B.columns() == rhs.rhs_.columns(), "Invalid number of columns" );
       BLAZE_INTERNAL_ASSERT( A.rows()    == (~lhs).rows()     , "Invalid number of rows"    );
+      BLAZE_INTERNAL_ASSERT( A.columns() == (~lhs).columns()  , "Invalid number of columns" );
+      BLAZE_INTERNAL_ASSERT( B.rows()    == (~lhs).rows()     , "Invalid number of rows"    );
       BLAZE_INTERNAL_ASSERT( B.columns() == (~lhs).columns()  , "Invalid number of columns" );
 
       smpSchurAssign( ~lhs, map( A, B, rhs.op_ ) );
@@ -1090,8 +1108,8 @@ class DMatDMatMapExpr
 //=================================================================================================
 
 //*************************************************************************************************
-/*!\brief Evaluates the given binary operation on each single element of the dense matrices
-//        \a lhs and \a rhs.
+/*!\brief Elementwise evaluation of the given binary operation on each single element of the
+//        dense matrices \a lhs and \a rhs.
 // \ingroup dense_matrix
 //
 // \param lhs The left-hand side dense matrix operand.
@@ -1100,7 +1118,7 @@ class DMatDMatMapExpr
 // \return The binary operation applied to each single element of \a lhs and \a rhs.
 // \exception std::invalid_argument Matrix sizes do not match.
 //
-// The \a map() function evaluates the given binary operation on each element of the input
+// The \a map() function evaluates the given binary operation on each single element of the input
 // matrices \a lhs and \a rhs. The function returns an expression representing this operation.\n
 // The following example demonstrates the use of the \a map() function:
 
@@ -1127,7 +1145,161 @@ inline decltype(auto)
    }
 
    using ReturnType = const DMatDMatMapExpr<MT1,MT2,OP,SO>;
-   return ReturnType( ~lhs, ~rhs, op );
+   return ReturnType( ~lhs, ~rhs, std::move(op) );
+}
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*!\brief Elementwise evaluation of the given ternary operation on each single element of the
+//        dense matrices \a dm1, \a dm2 and \a dm3.
+// \ingroup dense_matrix
+//
+// \param dm1 The first dense matrix operand.
+// \param dm2 The second dense matrix operand.
+// \param dm3 The third dense matrix operand.
+// \param op The custom, ternary operation.
+// \return The ternary operation applied to each single element of the three matrices.
+// \exception std::invalid_argument Matrix sizes do not match.
+//
+// The \a map() function evaluates the given ternary operation on each single element of the
+// input matrices \a dm1, \a dm2, and \a dm3. The function returns an expression representing
+// this operation.\n
+// In case the current number of rows and columns of the three given matrices don't match, a
+// \a std::invalid_argument is thrown.
+*/
+template< typename MT1   // Type of the first dense matrix
+        , typename MT2   // Type of the second dense matrix
+        , typename MT3   // Type of the third dense matrix
+        , bool SO        // Storage order
+        , typename OP >  // Type of the custom operation
+inline decltype(auto)
+   map( const DenseMatrix<MT1,SO>& dm1, const DenseMatrix<MT2,SO>& dm2,
+        const DenseMatrix<MT3,SO>& dm3, OP op )
+{
+   BLAZE_FUNCTION_TRACE;
+
+   const MakePair mp{};
+   return map( map( map( ~dm1, ~dm2, mp ), ~dm3, mp ), join( std::move(op) ) );
+}
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*!\brief Elementwise evaluation of the given 4-ary operation on each single element of the
+//        dense matrices \a dm1, \a dm2, \a dm3 and \a dm4.
+// \ingroup dense_matrix
+//
+// \param dm1 The first dense matrix operand.
+// \param dm2 The second dense matrix operand.
+// \param dm3 The third dense matrix operand.
+// \param dm4 The fourth dense matrix operand.
+// \param op The custom, 4-ary operation.
+// \return The 4-ary operation applied to each single element of the four matrices.
+// \exception std::invalid_argument Matrix sizes do not match.
+//
+// The \a map() function evaluates the given 4-ary operation on each single element of the input
+// matrices \a dm1, \a dm2, \a dm3, and \a dm4. The function returns an expression representing
+// this operation.\n
+// In case the current number of rows and columns of the four given matrices don't match, a
+// \a std::invalid_argument is thrown.
+*/
+template< typename MT1   // Type of the first dense matrix
+        , typename MT2   // Type of the second dense matrix
+        , typename MT3   // Type of the third dense matrix
+        , typename MT4   // Type of the fourth dense matrix
+        , bool SO        // Storage order
+        , typename OP >  // Type of the custom operation
+inline decltype(auto)
+   map( const DenseMatrix<MT1,SO>& dm1, const DenseMatrix<MT2,SO>& dm2,
+        const DenseMatrix<MT3,SO>& dm3, const DenseMatrix<MT4,SO>& dm4, OP op )
+{
+   BLAZE_FUNCTION_TRACE;
+
+   const MakePair mp{};
+   return map( map( map( map( ~dm1, ~dm2, mp ), ~dm3, mp ), ~dm4, mp ), join( std::move(op) ) );
+}
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*!\brief Elementwise evaluation of the given 5-ary operation on each single element of the
+//        dense matrices \a dm1, \a dm2, \a dm3, \a dm4, and \a dm5.
+// \ingroup dense_matrix
+//
+// \param dm1 The first dense matrix operand.
+// \param dm2 The second dense matrix operand.
+// \param dm3 The third dense matrix operand.
+// \param dm4 The fourth dense matrix operand.
+// \param dm5 The fifth dense matrix operand.
+// \param op The custom, 5-ary operation.
+// \return The 5-ary operation applied to each single element of the five matrices.
+// \exception std::invalid_argument Matrix sizes do not match.
+//
+// The \a map() function evaluates the given 5-ary operation on each single element of the input
+// matrices \a dm1, \a dm2, \a dm3, \a dm4, and \a dm5. The function returns an expression
+// representing this operation.\n
+// In case the current number of rows and columns of the five given matrices don't match, a
+// \a std::invalid_argument is thrown.
+*/
+template< typename MT1   // Type of the first dense matrix
+        , typename MT2   // Type of the second dense matrix
+        , typename MT3   // Type of the third dense matrix
+        , typename MT4   // Type of the fourth dense matrix
+        , typename MT5   // Type of the fifth dense matrix
+        , bool SO        // Storage order
+        , typename OP >  // Type of the custom operation
+inline decltype(auto)
+   map( const DenseMatrix<MT1,SO>& dm1, const DenseMatrix<MT2,SO>& dm2,
+        const DenseMatrix<MT3,SO>& dm3, const DenseMatrix<MT4,SO>& dm4,
+        const DenseMatrix<MT5,SO>& dm5, OP op )
+{
+   BLAZE_FUNCTION_TRACE;
+
+   const MakePair mp{};
+   return map( map( map( map( map( ~dm1, ~dm2, mp ), ~dm3, mp ), ~dm4, mp ), ~dm5, mp ), join( std::move(op) ) );
+}
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*!\brief Elementwise evaluation of the given 6-ary operation on each single element of the
+//        dense matrices \a dm1, \a dm2, \a dm3, \a dm4, \a dm5, and \a dm6.
+// \ingroup dense_matrix
+//
+// \param dm1 The first dense matrix operand.
+// \param dm2 The second dense matrix operand.
+// \param dm3 The third dense matrix operand.
+// \param dm4 The fourth dense matrix operand.
+// \param dm5 The fifth dense matrix operand.
+// \param dm6 The sixth dense matrix operand.
+// \param op The custom, 6-ary operation.
+// \return The 6-ary operation applied to each single element of the six matrices.
+// \exception std::invalid_argument Matrix sizes do not match.
+//
+// The \a map() function evaluates the given 6-ary operation on each single element of the input
+// matrices \a dm1, \a dm2, \a dm3, \a dm4, \a dm5, and \a dm6. The function returns an expression
+// representing this operation.\n
+// In case the current number of rows and columns of the six given matrices don't match, a
+// \a std::invalid_argument is thrown.
+*/
+template< typename MT1   // Type of the first dense matrix
+        , typename MT2   // Type of the second dense matrix
+        , typename MT3   // Type of the third dense matrix
+        , typename MT4   // Type of the fourth dense matrix
+        , typename MT5   // Type of the fifth dense matrix
+        , typename MT6   // Type of the sixth dense matrix
+        , bool SO        // Storage order
+        , typename OP >  // Type of the custom operation
+inline decltype(auto)
+   map( const DenseMatrix<MT1,SO>& dm1, const DenseMatrix<MT2,SO>& dm2,
+        const DenseMatrix<MT3,SO>& dm3, const DenseMatrix<MT4,SO>& dm4,
+        const DenseMatrix<MT5,SO>& dm5, const DenseMatrix<MT6,SO>& dm6, OP op )
+{
+   BLAZE_FUNCTION_TRACE;
+
+   const MakePair mp{};
+   return map( map( map( map( map( map( ~dm1, ~dm2, mp ), ~dm3, mp ), ~dm4, mp ), ~dm5, mp ), ~dm6, mp ), join( std::move(op) ) );
 }
 //*************************************************************************************************
 
@@ -1309,6 +1481,50 @@ inline decltype(auto)
    BLAZE_FUNCTION_TRACE;
 
    return map( ~lhs, ~rhs, Atan2() );
+}
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*!\brief Elementwise conditional selection of values from the dense matrices \a lhs and \a rhs.
+// \ingroup dense_matrix
+//
+// \param cond The dense matrix containing the selection conditions.
+// \param lhs The true-case dense matrix.
+// \param rhs The false-case dense matrix.
+// \return The resulting dense matrix.
+// \exception std::invalid_argument Matrix sizes do not match.
+//
+// This function performs an elementwise conditional selection of values from the two given dense
+// matrices \a lhs and \a rhs. In case an element in the \a cond matrix evaluates to \a true, the
+// according element of \a lhs is selected, in case the \a cond element evaluates to \a false, the
+// according element of \a rhs is selected. The function returns an expression representing this
+// operation.\n
+// The following example demonstrates the use of the \a selec() function:
+
+   \code
+   blaze::DynamicMatrix<bool> cond{ { true, false }, { true false } };
+   blaze::DynamicMatrix<int> A{ { 1, -1 }, { 1, -1 } };
+   blaze::DynamicMatrix<int> B{ { -2, 2 }, { -2, 2 } };
+   blaze::DynamicMatrix<int> C;
+   // ... Resizing and initialization
+
+   C = select( cond, A, B );  // Results in ( 1, 2 ) ( 1, 2 )
+   \endcode
+
+// In case the current number of rows and columns of the three given matrices don't match, a
+// \a std::invalid_argument is thrown.
+*/
+template< typename MT1  // Type of the conditional dense matrix
+        , typename MT2  // Type of the true-case dense matrix
+        , typename MT3  // Type of the false-case dense matrix
+        , bool SO >     // Storage order
+inline decltype(auto)
+   select( const DenseMatrix<MT1,SO>& cond, const DenseMatrix<MT2,SO>& lhs, const DenseMatrix<MT3,SO>& rhs )
+{
+   BLAZE_FUNCTION_TRACE;
+
+   return map( cond, lhs, rhs, []( bool c, const auto& a, const auto& b ) { return c ? a : b; } );
 }
 //*************************************************************************************************
 

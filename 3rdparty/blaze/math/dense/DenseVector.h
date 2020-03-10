@@ -3,7 +3,7 @@
 //  \file blaze/math/dense/DenseVector.h
 //  \brief Header file for utility functions for dense vectors
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -43,6 +43,7 @@
 #include "../../math/Aliases.h"
 #include "../../math/expressions/DenseVector.h"
 #include "../../math/Exception.h"
+#include "../../math/RelaxationFlag.h"
 #include "../../math/shims/Equal.h"
 #include "../../math/shims/IsDivisor.h"
 #include "../../math/shims/IsNaN.h"
@@ -52,6 +53,7 @@
 #include "../../math/typetraits/IsRestricted.h"
 #include "../../math/typetraits/IsUniform.h"
 #include "../../math/typetraits/IsZero.h"
+#include "../../system/MacroDisable.h"
 #include "../../util/Assert.h"
 #include "../../util/constraints/Numeric.h"
 #include "../../util/EnableIf.h"
@@ -490,7 +492,7 @@ template< typename VT    // Type of the left-hand side dense vector
 inline auto operator/=( DenseVector<VT,TF>& vec, ST scalar )
    -> EnableIf_t< IsNumeric_v<ST>, VT& >
 {
-   BLAZE_USER_ASSERT( !isZero( scalar ), "Division by zero detected" );
+   BLAZE_USER_ASSERT( isDivisor( scalar ), "Division by zero detected" );
 
    if( IsRestricted_v<VT> ) {
       if( !tryDiv( ~vec, 0UL, (~vec).size(), scalar ) ) {
@@ -1118,8 +1120,11 @@ bool isnan( const DenseVector<VT,TF>& dv );
 template< typename VT, bool TF >
 bool isDivisor( const DenseVector<VT,TF>& dv );
 
-template< bool RF, typename VT, bool TF >
+template< RelaxationFlag RF, typename VT, bool TF >
 bool isUniform( const DenseVector<VT,TF>& dv );
+
+template< RelaxationFlag RF, typename VT, bool TF >
+bool isZero( const DenseVector<VT,TF>& dv );
 //@}
 //*************************************************************************************************
 
@@ -1221,9 +1226,9 @@ bool isDivisor( const DenseVector<VT,TF>& dv )
 // However, note that this might require the complete evaluation of the expression, including
 // the generation of a temporary vector.
 */
-template< bool RF      // Relaxation flag
-        , typename VT  // Type of the dense vector
-        , bool TF >    // Transpose flag
+template< RelaxationFlag RF  // Relaxation flag
+        , typename VT        // Type of the dense vector
+        , bool TF >          // Transpose flag
 bool isUniform( const DenseVector<VT,TF>& dv )
 {
    if( IsUniform_v<VT> || (~dv).size() < 2UL )
@@ -1276,9 +1281,9 @@ bool isUniform( const DenseVector<VT,TF>& dv )
 // However, note that this might require the complete evaluation of the expression, including
 // the generation of a temporary vector.
 */
-template< bool RF      // Relaxation flag
-        , typename VT  // Type of the dense vector
-        , bool TF >    // Transpose flag
+template< RelaxationFlag RF  // Relaxation flag
+        , typename VT        // Type of the dense vector
+        , bool TF >          // Transpose flag
 bool isZero( const DenseVector<VT,TF>& dv )
 {
    if( IsZero_v<VT> || (~dv).size() == 0UL )

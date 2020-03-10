@@ -3,7 +3,7 @@
 //  \file blaze/math/lapack/clapack/getrs.h
 //  \brief Header file for the CLAPACK getrs wrapper functions
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -40,6 +40,7 @@
 // Includes
 //*************************************************************************************************
 
+#include "../../../math/blas/Types.h"
 #include "../../../util/Complex.h"
 #include "../../../util/StaticAssert.h"
 #include "../../../util/Types.h"
@@ -53,17 +54,21 @@
 
 //*************************************************************************************************
 /*! \cond BLAZE_INTERNAL */
-#if !defined(INTEL_MKL_VERSION)
+#if !defined(INTEL_MKL_VERSION) && !defined(BLAS_H)
 extern "C" {
 
-void sgetrs_( char* trans, int* n, int* nrhs, float* A, int* lda, int* ipiv,
-              float* B, int* ldb, int* info, blaze::fortran_charlen_t ntrans );
-void dgetrs_( char* trans, int* n, int* nrhs, double* A, int* lda, int* ipiv,
-              double* B, int* ldb, int* info, blaze::fortran_charlen_t ntrans );
-void cgetrs_( char* trans, int* n, int* nrhs, float* A, int* lda, int* ipiv,
-              float* B, int* ldb, int* info, blaze::fortran_charlen_t ntrans );
-void zgetrs_( char* trans, int* n, int* nrhs, double* A, int* lda, int* ipiv,
-              double* B, int* ldb, int* info, blaze::fortran_charlen_t ntrans );
+void sgetrs_( char* trans, blaze::blas_int_t* n, blaze::blas_int_t* nrhs, float* A,
+              blaze::blas_int_t* lda, blaze::blas_int_t* ipiv, float* B, blaze::blas_int_t* ldb,
+              blaze::blas_int_t* info, blaze::fortran_charlen_t ntrans );
+void dgetrs_( char* trans, blaze::blas_int_t* n, blaze::blas_int_t* nrhs, double* A,
+              blaze::blas_int_t* lda, blaze::blas_int_t* ipiv, double* B, blaze::blas_int_t* ldb,
+              blaze::blas_int_t* info, blaze::fortran_charlen_t ntrans );
+void cgetrs_( char* trans, blaze::blas_int_t* n, blaze::blas_int_t* nrhs, float* A,
+              blaze::blas_int_t* lda, blaze::blas_int_t* ipiv, float* B, blaze::blas_int_t* ldb,
+              blaze::blas_int_t* info, blaze::fortran_charlen_t ntrans );
+void zgetrs_( char* trans, blaze::blas_int_t* n, blaze::blas_int_t* nrhs, double* A,
+              blaze::blas_int_t* lda, blaze::blas_int_t* ipiv, double* B, blaze::blas_int_t* ldb,
+              blaze::blas_int_t* info, blaze::fortran_charlen_t ntrans );
 
 }
 #endif
@@ -84,17 +89,21 @@ namespace blaze {
 //*************************************************************************************************
 /*!\name LAPACK LU-based substitution functions (getrs) */
 //@{
-void getrs( char trans, int n, int nrhs, const float* A, int lda, const int* ipiv,
-            float* B, int ldb, int* info );
+void getrs( char trans, blas_int_t n, blas_int_t nrhs, const float* A,
+            blas_int_t lda, const blas_int_t* ipiv, float* B,
+            blas_int_t ldb, blas_int_t* info );
 
-void getrs( char trans, int n, int nrhs, const double* A, int lda, const int* ipiv,
-            double* B, int ldb, int* info );
+void getrs( char trans, blas_int_t n, blas_int_t nrhs, const double* A,
+            blas_int_t lda, const blas_int_t* ipiv, double* B,
+            blas_int_t ldb, blas_int_t* info );
 
-void getrs( char trans, int n, int nrhs, const complex<float>* A, int lda,
-            const int* ipiv, complex<float>* B, int ldb, int* info );
+void getrs( char trans, blas_int_t n, blas_int_t nrhs, const complex<float>* A,
+            blas_int_t lda, const blas_int_t* ipiv, complex<float>* B,
+            blas_int_t ldb, blas_int_t* info );
 
-void getrs( char trans, int n, int nrhs, const complex<double>* A, int lda,
-            const int* ipiv, complex<double>* B, int ldb, int* info );
+void getrs( char trans, blas_int_t n, blas_int_t nrhs, const complex<double>* A,
+            blas_int_t lda, const blas_int_t* ipiv, complex<double>* B,
+            blas_int_t ldb, blas_int_t* info );
 //@}
 //*************************************************************************************************
 
@@ -138,15 +147,20 @@ void getrs( char trans, int n, int nrhs, const complex<double>* A, int lda,
 // is available and linked to the executable. Otherwise a call to this function will result in a
 // linker error.
 */
-inline void getrs( char trans, int n, int nrhs, const float* A, int lda,
-                   const int* ipiv, float* B, int ldb, int* info )
+inline void getrs( char trans, blas_int_t n, blas_int_t nrhs, const float* A,
+                   blas_int_t lda, const blas_int_t* ipiv, float* B,
+                   blas_int_t ldb, blas_int_t* info )
 {
 #if defined(INTEL_MKL_VERSION)
-   BLAZE_STATIC_ASSERT( sizeof( MKL_INT ) == sizeof( int ) );
+   BLAZE_STATIC_ASSERT( sizeof( MKL_INT ) == sizeof( blas_int_t ) );
 #endif
 
    sgetrs_( &trans, &n, &nrhs, const_cast<float*>( A ), &lda,
-            const_cast<int*>( ipiv ), B, &ldb, info, blaze::fortran_charlen_t(1) );
+            const_cast<blas_int_t*>( ipiv ), B, &ldb, info
+#if !defined(INTEL_MKL_VERSION) && !defined(BLAS_H)
+          , blaze::fortran_charlen_t(1)
+#endif
+          );
 }
 //*************************************************************************************************
 
@@ -190,15 +204,20 @@ inline void getrs( char trans, int n, int nrhs, const float* A, int lda,
 // is available and linked to the executable. Otherwise a call to this function will result in a
 // linker error.
 */
-inline void getrs( char trans, int n, int nrhs, const double* A, int lda,
-                   const int* ipiv, double* B, int ldb, int* info )
+inline void getrs( char trans, blas_int_t n, blas_int_t nrhs, const double* A,
+                   blas_int_t lda, const blas_int_t* ipiv, double* B,
+                   blas_int_t ldb, blas_int_t* info )
 {
 #if defined(INTEL_MKL_VERSION)
-   BLAZE_STATIC_ASSERT( sizeof( MKL_INT ) == sizeof( int ) );
+   BLAZE_STATIC_ASSERT( sizeof( MKL_INT ) == sizeof( blas_int_t ) );
 #endif
 
    dgetrs_( &trans, &n, &nrhs, const_cast<double*>( A ), &lda,
-            const_cast<int*>( ipiv ), B, &ldb, info, blaze::fortran_charlen_t(1) );
+            const_cast<blas_int_t*>( ipiv ), B, &ldb, info
+#if !defined(INTEL_MKL_VERSION) && !defined(BLAS_H)
+          , blaze::fortran_charlen_t(1)
+#endif
+          );
 }
 //*************************************************************************************************
 
@@ -242,21 +261,26 @@ inline void getrs( char trans, int n, int nrhs, const double* A, int lda,
 // is available and linked to the executable. Otherwise a call to this function will result in a
 // linker error.
 */
-inline void getrs( char trans, int n, int nrhs, const complex<float>* A, int lda,
-                   const int* ipiv, complex<float>* B, int ldb, int* info )
+inline void getrs( char trans, blas_int_t n, blas_int_t nrhs, const complex<float>* A,
+                   blas_int_t lda, const blas_int_t* ipiv, complex<float>* B,
+                   blas_int_t ldb, blas_int_t* info )
 {
    BLAZE_STATIC_ASSERT( sizeof( complex<float> ) == 2UL*sizeof( float ) );
 
 #if defined(INTEL_MKL_VERSION)
-   BLAZE_STATIC_ASSERT( sizeof( MKL_INT ) == sizeof( int ) );
+   BLAZE_STATIC_ASSERT( sizeof( MKL_INT ) == sizeof( blas_int_t ) );
+   BLAZE_STATIC_ASSERT( sizeof( MKL_Complex8 ) == sizeof( complex<float> ) );
    using ET = MKL_Complex8;
 #else
    using ET = float;
 #endif
 
    cgetrs_( &trans, &n, &nrhs, const_cast<ET*>( reinterpret_cast<const ET*>( A ) ),
-            &lda, const_cast<int*>( ipiv ), reinterpret_cast<ET*>( B ), &ldb, info,
-            blaze::fortran_charlen_t(1) );
+            &lda, const_cast<blas_int_t*>( ipiv ), reinterpret_cast<ET*>( B ), &ldb, info
+#if !defined(INTEL_MKL_VERSION) && !defined(BLAS_H)
+          , blaze::fortran_charlen_t(1)
+#endif
+          );
 }
 //*************************************************************************************************
 
@@ -300,21 +324,26 @@ inline void getrs( char trans, int n, int nrhs, const complex<float>* A, int lda
 // is available and linked to the executable. Otherwise a call to this function will result in a
 // linker error.
 */
-inline void getrs( char trans, int n, int nrhs, const complex<double>* A, int lda,
-                   const int* ipiv, complex<double>* B, int ldb, int* info )
+inline void getrs( char trans, blas_int_t n, blas_int_t nrhs, const complex<double>* A,
+                   blas_int_t lda, const blas_int_t* ipiv, complex<double>* B,
+                   blas_int_t ldb, blas_int_t* info )
 {
    BLAZE_STATIC_ASSERT( sizeof( complex<double> ) == 2UL*sizeof( double ) );
 
 #if defined(INTEL_MKL_VERSION)
-   BLAZE_STATIC_ASSERT( sizeof( MKL_INT ) == sizeof( int ) );
+   BLAZE_STATIC_ASSERT( sizeof( MKL_INT ) == sizeof( blas_int_t ) );
+   BLAZE_STATIC_ASSERT( sizeof( MKL_Complex16 ) == sizeof( complex<double> ) );
    using ET = MKL_Complex16;
 #else
    using ET = double;
 #endif
 
    zgetrs_( &trans, &n, &nrhs, const_cast<ET*>( reinterpret_cast<const ET*>( A ) ),
-            &lda, const_cast<int*>( ipiv ), reinterpret_cast<ET*>( B ), &ldb, info,
-            blaze::fortran_charlen_t(1) );
+            &lda, const_cast<blas_int_t*>( ipiv ), reinterpret_cast<ET*>( B ), &ldb, info
+#if !defined(INTEL_MKL_VERSION) && !defined(BLAS_H)
+          , blaze::fortran_charlen_t(1)
+#endif
+          );
 }
 //*************************************************************************************************
 

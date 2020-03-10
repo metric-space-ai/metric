@@ -3,7 +3,7 @@
 //  \file blaze/math/lapack/trsv.h
 //  \brief Header file for the LAPACK triangular linear system solver functions (trsv)
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -199,9 +199,9 @@ inline void trsv( const DenseMatrix<MT,SO>& A, DenseVector<VT,TF>& b, char uplo,
       BLAZE_THROW_INVALID_ARGUMENT( "Invalid diag argument provided" );
    }
 
-   int n   ( numeric_cast<int>( (~A).rows() ) );
-   int lda ( numeric_cast<int>( (~A).spacing() ) );
-   int incX( 1 );
+   blas_int_t n   ( numeric_cast<blas_int_t>( (~A).rows() ) );
+   blas_int_t lda ( numeric_cast<blas_int_t>( (~A).spacing() ) );
+   blas_int_t incX( 1 );
 
    if( n == 0 ) {
       return;
