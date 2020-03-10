@@ -38,5 +38,5 @@ int main()
 
     CollectionFunctionTest();
 
-    // sparsification_test(); // error: ‘sparsify’ is not a member of ‘metric’; did you mean ‘sparse’?
+    sparsification_test();
 }

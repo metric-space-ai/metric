@@ -19,7 +19,7 @@ template<typename Value>
 void wrap_metric_VOI_kl() {
     using Metric = metric::VOI_kl<Value>;
     using Container = WrapStlVector<WrapStlVector<Value>>;
-    bp::class_<Metric>("VOI_kl", bp::init<int, Value>())
+    bp::class_<Metric>("VOI_kl", bp::init<int, Value>((bp::arg("k") = 3, bp::arg("logbase") = 2)))
         .def("__call__", +[](Metric& self, const Container& a, const Container& b) {
             return self.operator()(a, b);
         }, "Calculate variation of information based on Kozachenko-Leonenko entropy estimator");
@@ -29,7 +29,12 @@ template<typename Value>
 void wrap_metric_VOI_normalized() {
     using Metric = metric::VOI_normalized<Value>;
     using Container = WrapStlVector<WrapStlVector<Value>>;
-    bp::class_<Metric>("VOI_normalized", bp::init<int, Value>())
+    bp::class_<Metric>("VOI_normalized", bp::init<int, Value>(
+            (
+                bp::arg("k") = 3,
+                bp::arg("logbase") = 2
+            )
+        ))
         .def("__call__", +[](Metric& self, const Container& a, const Container& b) {
             return self.operator()(a, b);
         }, "Calculate Variation of Information");
@@ -42,10 +47,17 @@ void export_metric_VOI() {
 
 template <typename Container, typename Metric>
 void wrap_metric_entropy() {
+    using Value = typename Container::value_type::value_type;
     std::string name = "entropy_" + getMetricName<Metric>();
-    auto entropy = &metric::entropy<Container, Metric, typename Container::value_type::value_type>;
-    bp::def(name.c_str(), entropy, "Continuous entropy estimator");
+    bp::def(name.c_str(), +[](const WrapStlVector<WrapStlVector<Value>>& data, std::size_t k = 3, Value logbase = 2) {
+        return metric::entropy(data, k, logbase);
+    }, (bp::arg("data"), bp::arg("k") = 3, bp::arg("logbase") = 2), "Continuous entropy estimator");
 }
+
+
+template <typename Container, typename Metric = metric::Euclidian<typename Container::value_type::value_type>, typename L = double>
+double entropy(
+    Container data, std::size_t k = 3, L logbase = 2);
 
 void export_metric_entropy() {
     using Value = double;

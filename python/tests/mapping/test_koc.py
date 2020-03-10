@@ -1,5 +1,5 @@
 import numpy
-from metric.mapping import KOC
+from metric.mapping import KOC, KOC_factory
 
 
 def test_ok():
