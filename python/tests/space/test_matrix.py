@@ -8,7 +8,7 @@ def test_create_empty():
 
 
 def test_create_1d():
-    data = numpy.float_([1.0])
+    data = numpy.float_([1.0, 2.0])
     matrix = Matrix(data)
     assert len(matrix) == 1
 
@@ -20,11 +20,11 @@ def test_create_2d():
 
 def test_insert_1d():
     matrix = Matrix()
-    id1 = matrix.insert(numpy.float_([1.0]))
+    id1 = matrix.insert(numpy.float_([1.0, 2.0]))
     assert len(matrix) == 1
     assert id1 == 0
 
-    id2 = matrix.insert(numpy.float_([2.0]))
+    id2 = matrix.insert(numpy.float_([2.0, 3.0]))
     assert len(matrix) == 2
     assert id2 == 1
 
@@ -34,8 +34,8 @@ def test_insert_2d():
 
     ids = list(matrix.insert(numpy.float_([[1], [2], [3], [4]])))
     assert len(matrix) == 4
-    assert ids == [1, 2, 3, 4]
+    assert ids == [0, 1, 2, 3]
 
     ids = list(matrix.insert(numpy.float_([[1], [2], [3], [4]])))
     assert len(matrix) == 8
-    assert ids == [5, 5, 6, 7]
+    assert ids == [4, 5, 6, 7]
