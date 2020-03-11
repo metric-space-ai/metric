@@ -22,7 +22,8 @@ Copyright (c) 2019 Panda Team
 namespace metric {
 
 
-
+// NOVED TO ESTIMATOR_HELPERS.CPP
+/*
 double mvnpdf(blaze::DynamicVector<double> x, blaze::DynamicVector<double> mu, blaze::DynamicMatrix<double> Sigma) {
 
     size_t n = x.size();
@@ -39,7 +40,7 @@ double mvnpdf(blaze::DynamicVector<double> x) {
 
     return( mvnpdf(x, blaze::DynamicVector<double>(x.size(), 0), blaze::IdentityMatrix<double>(x.size())) );
 }
-
+*/
 
 
 
@@ -105,7 +106,8 @@ double mvnpdf(blaze::DynamicVector<double> x) {
 //    return boost::math::digamma(n) - boost::math::digamma(k) + h/n;
 //}
 
-
+// MOVED TO ENTROPY.*PP
+/*
 template <typename recType, typename Metric>
 template <template <typename, typename> class OuterContainer, typename Container, typename OuterAllocator>
 double entropy_kpN<recType, Metric>::operator()(
@@ -117,6 +119,9 @@ double entropy_kpN<recType, Metric>::operator()(
 {
     size_t n = X.size();
     size_t d = X[0].size();
+
+    assert(p < n);
+    assert(k < p);
 
     double h = 0;
 
@@ -187,7 +192,7 @@ double entropy_kpN<recType, Metric>::estimate(
 {
     const size_t dataSize = a.size();
 
-    /* Update maxIterations */
+    // Update maxIterations
     if (maxIterations == 0) {
         maxIterations = dataSize / sampleSize;
     }
@@ -202,17 +207,17 @@ double entropy_kpN<recType, Metric>::estimate(
         return e(a, k, logbase, metric);
     }
 
-    /* Create shuffle indexes */
+    // Create shuffle indexes
     std::vector<size_t> indexes(dataSize);
     std::iota(indexes.begin(), indexes.end(), 0);
 
     auto rng = std::default_random_engine();
     std::shuffle(indexes.begin(), indexes.end(), rng);
 
-    /* Create vector container for fast random access */
+    // Create vector container for fast random access
     const std::vector<typename Container::value_type> vectorA(a.begin(), a.end());
 
-    /* Create samples */
+    // Create samples
     std::vector<typename Container::value_type> sampleA;
     sampleA.reserve(sampleSize);
 
@@ -222,14 +227,14 @@ double entropy_kpN<recType, Metric>::estimate(
         size_t start = (i - 1) * sampleSize;
         size_t end = std::min(i * sampleSize - 1, dataSize - 1);
 
-        /* Create samples */
+        // Create samples
         sampleA.clear();
 
         for (auto j = start; j < end; ++j) {
             sampleA.push_back(vectorA[indexes[j]]);
         }
 
-        /* Get sample mgc value */
+        // Get sample mgc value
         double sample_entopy = e(sampleA, k, logbase, metric);
         entropyValues.push_back(sample_entopy);
 
@@ -259,7 +264,7 @@ double entropy_kpN<recType, Metric>::estimate(
     return mu;
 }
 
-
+*/
 
 
 } // namespace metric

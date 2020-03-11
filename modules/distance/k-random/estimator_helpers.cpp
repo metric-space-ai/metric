@@ -17,6 +17,32 @@ namespace metric {
 
 
 
+
+
+double mvnpdf(blaze::DynamicVector<double> x, blaze::DynamicVector<double> mu, blaze::DynamicMatrix<double> Sigma) {
+
+    size_t n = x.size();
+    assert(mu.size() == n && Sigma.columns() == n && Sigma.rows() == n);
+
+    auto centered = x - mu;
+    auto p =  blaze::trans(centered) * blaze::inv(Sigma) * centered;
+    //return std::exp(-p/2) / ( std::sqrt(blaze::det(Sigma)) * std::pow(2*M_PI, (double)n/2.0) );
+    return std::exp(-p/2) / std::sqrt( blaze::det(Sigma) * std::pow(2*M_PI, n) );
+}
+
+
+double mvnpdf(blaze::DynamicVector<double> x) {
+
+    return( mvnpdf(x, blaze::DynamicVector<double>(x.size(), 0), blaze::IdentityMatrix<double>(x.size())) );
+}
+
+
+
+
+
+
+
+
 // averaged entropy estimation: code COPIED from mgc.*pp with only mgc replaced with entropy, TODO refactor to avoid code dubbing
 
 std::vector<double> linspace(double a, double b, int n)

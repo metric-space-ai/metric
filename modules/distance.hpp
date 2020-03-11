@@ -33,6 +33,6 @@ Copyright (c) PANDA Team
 
 #include "distance/k-related/L1.hpp"
 #include "distance/k-random/VOI.hpp"
-#include "distance/k-random/entropy_kpn.hpp"
+//#include "distance/k-random/entropy_kpn.hpp"
 
 #endif //_METRIC_DISTANCE_HPP

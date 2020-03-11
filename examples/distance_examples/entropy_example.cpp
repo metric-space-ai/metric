@@ -208,7 +208,7 @@ int main() {
     {
         auto e_f = metric::entropy<void, metric::Chebyshev<double>>();
         std::cout << "\n\ntesting deque type\n\nChebyshev, full: " << e_f(urv4, 3, 2.0) << std::endl;
-        std::cout << "Chebyshevm estimation:\n" << e_f.estimate(urv4) << std::endl;
+        std::cout << "Chebyshev estimation:\n" << e_f.estimate(urv4) << std::endl;
     }
 
 
@@ -231,12 +231,13 @@ int main() {
     std::cout << "short test vector result,  eucl: " << urv6.size() << " | " << e_f_eucl(urv6) << "\n";
     std::cout << "short test vector result, mink2: " << urv6.size() << " | " << e_f_mink(urv6, 3, 2.0, metric::P_norm<double>(2)) << "\n";
     std::cout << "short test vector result,  cheb: " << urv6.size() << " | " << e_f_cheb(urv6) << "\n";
+    std::cout << "short test vector result,   kpN: " << urv6.size() << " | " << ekpn_cheb(urv6, metric::Chebyshev<double>(), 3, 5) << "\n";
 
     size_t step = 1000;
 
     std::vector<std::deque<double>> urv5;
 
-    std::cout << "\nlength | entropy\n";
+    std::cout << "\nlength | entropy | kpN entropy\n";
     for (size_t i = 0; i<25; ++i) {
         for (size_t i = 0; i<step; ++i) {
             //urv5.push_back({dis(gen), dis(gen)});
@@ -248,7 +249,7 @@ int main() {
         //std::cout << urv5.size() << " | " << e_f_cheb(urv5) << "\n";
         //std::cout << urv5.size() << " | " << e_f_manh(urv5) << "\n";
         //std::cout << urv5.size() << " | " << e_f_mink(urv5, 3, 2.0, metric::P_norm<double>(2)) << "\n";
-        std::cout << urv5.size() << " | " << e_f_eucl(urv5, 500) << "\n";
+        std::cout << urv5.size() << " | " << e_f_eucl(urv5, 500) << " | " << ekpn_cheb(urv5) << "\n";
     }
 
 

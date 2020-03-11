@@ -107,7 +107,8 @@ namespace {
 }  // namespace
 
 
-
+//MOVED TO ENTROPY.*PP
+/*
 template <typename T>
 T conv_diff_entropy(T in) {
     if (in < 1)
@@ -123,7 +124,7 @@ T conv_diff_entropy_inv(T in) {
     else
         return in;
 }
-
+*/
 
 //template <typename Container, typename Metric, typename L>
 //double entropy_fn( // old erroneous version, TODO remove
@@ -336,8 +337,8 @@ double entropy<recType, Metric>::operator()(
 
 
 
-
-//*
+// MOVED TO ENTROPY.*PP
+/*
 // updated version, for different metric
 // averaged entropy estimation: code COPIED from mgc.*pp with only mgc replaced with entropy, TODO refactor to avoid code dubbing
 template <typename recType, typename Metric>
@@ -389,8 +390,6 @@ double entropy<recType, Metric>::operator()(
     else
         return entropyEstimate;
 }
-//*/
-
 
 
 // averaged entropy estimation: code COPIED from mgc.*pp with only mgc replaced with entropy, TODO refactor to avoid code dubbing
@@ -409,7 +408,7 @@ double entropy<recType, Metric>::estimate(
 {
     const size_t dataSize = a.size();
 
-    /* Update maxIterations */
+    // Update maxIterations
     if (maxIterations == 0) {
         maxIterations = dataSize / sampleSize;
     }
@@ -424,17 +423,17 @@ double entropy<recType, Metric>::estimate(
         return e(a, k, logbase, metric);
     }
 
-    /* Create shuffle indexes */
+    // Create shuffle indexes
     std::vector<size_t> indexes(dataSize);
     std::iota(indexes.begin(), indexes.end(), 0);
 
     auto rng = std::default_random_engine();
     std::shuffle(indexes.begin(), indexes.end(), rng);
 
-    /* Create vector container for fast random access */
+    // Create vector container for fast random access
     const std::vector<typename Container::value_type> vectorA(a.begin(), a.end());
 
-    /* Create samples */
+    // Create samples
     std::vector<typename Container::value_type> sampleA;
     sampleA.reserve(sampleSize);
 
@@ -444,14 +443,14 @@ double entropy<recType, Metric>::estimate(
         size_t start = (i - 1) * sampleSize;
         size_t end = std::min(i * sampleSize - 1, dataSize - 1);
 
-        /* Create samples */
+        // Create samples
         sampleA.clear();
 
         for (auto j = start; j < end; ++j) {
             sampleA.push_back(vectorA[indexes[j]]);
         }
 
-        /* Get sample mgc value */
+        // Get sample mgc value
         double sample_entopy = e(sampleA, k, logbase, metric);
         entropyValues.push_back(sample_entopy);
 
@@ -480,6 +479,9 @@ double entropy<recType, Metric>::estimate(
 
     return mu;
 }
+
+// */
+
 
 
 

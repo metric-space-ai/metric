@@ -3,7 +3,7 @@
 #include <iostream>
 #include <tuple>
 //#include "../../modules/distance/k-random/epmgp.cpp"
-#include "../../modules/distance/k-random/entropy_kpn.hpp"
+#include "../../modules/distance/k-random/entropy.hpp"
 
 #include <limits>
 

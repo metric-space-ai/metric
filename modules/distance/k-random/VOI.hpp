@@ -10,6 +10,7 @@ Copyright (c) 2019 Panda Team
 #define _METRIC_DISTANCE_K_RANDOM_VOI_HPP
 
 #include "../k-related/Standards.hpp"
+#include "entropy.hpp"
 #include <type_traits>
 #include <vector>
 
@@ -25,11 +26,12 @@ namespace metric {
 // * @param exp  - flag, applies 1/exp(1)*exp(estimated_entropy) to output
 // * @return value of entropy estimation of the data
 // */
+
+// MOVED TO ENTROPY.*PP
+/*
 //template <typename Container, typename Metric = metric::Euclidian<typename Container::value_type>, typename L = double>
 //double entropy_fn(  // old erronuous version, TODO remove
 //    std::vector<Container> data, std::size_t k = 3, L logbase = 2, Metric metric = Metric(), bool exp = false);
-
-
 template <typename recType, typename Metric = metric::Euclidian<typename recType::value_type>>
 struct entropy { // averaged entropy estimation: code COPIED from mgc.*pp with only mgc replaced with entropy, TODO refactor to avoid code dubbing
 
@@ -54,7 +56,7 @@ struct entropy { // averaged entropy estimation: code COPIED from mgc.*pp with o
             bool exp = false
             );
 };
-
+*/
 
 /**
  * @brief
@@ -278,6 +280,8 @@ VOI_normalized_kl(int, V)->VOI_normalized_kl<double>;
 
 
 
+// MOVED TO ESTIMATOR_HELPERS.CPP
+/*
 // helper functions for averaged entropy estimation: code COPIED from mgc.*pp with only mgc replaced with entropy, TODO refactor to avoid code dubbing
 
 
@@ -297,7 +301,7 @@ double mean(const std::vector<double>& data);
 
 double peak2ems(const std::vector<double>& data);
 
-
+*/
 
 }  // namespace metric
 

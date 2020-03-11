@@ -15,7 +15,8 @@ Copyright (c) 2019 Panda Team
 
 namespace metric {
 
-
+// MOVED TO ENTROPY.*PP
+/*
 template <typename recType, typename Metric = metric::Chebyshev<typename recType::value_type>>
 struct entropy_kpN {
 
@@ -39,7 +40,7 @@ struct entropy_kpN {
             bool exp = false
             );
 };
-
+*/
 
 
 } // namespace metric
