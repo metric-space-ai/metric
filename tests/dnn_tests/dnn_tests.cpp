@@ -90,17 +90,17 @@ BOOST_AUTO_TEST_CASE(fullyconnected)
 
 BOOST_AUTO_TEST_CASE(convolutional)
 {
-	Conv2d<double, Identity<double>> convLayer(3, 3, 1, 1, 2, 2, 2);
+	Conv2d<double, Identity<double>> convLayer(3, 3, 1, 2, 2, 2, 1);
 	blaze::DynamicMatrix<double> X{{0, 1, 2, 3, 4, 5, 6, 7, 8}};
 
-	std::vector<double> K = {0, 1, 2, 3};
-	std::vector<double> bias = {1};
+	std::vector<double> K = {0, 1, 2, 3, 4, 5, 6, 7};
+	std::vector<double> bias = {1, 2};
 
 	convLayer.setParameters({K, bias});
 
 	convLayer.forward(X);
 
-	blaze::DynamicMatrix<double> Y {{19, 25, 37, 43}};
+	blaze::DynamicMatrix<double> Y {{20, 26, 38, 44}};
 
 	std::cout << convLayer.output() << std::endl;
 	BOOST_CHECK_EQUAL(convLayer.output(), Y);
