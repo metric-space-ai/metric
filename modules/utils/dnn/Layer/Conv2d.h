@@ -44,6 +44,7 @@ class Conv2d: public Layer<Scalar>
 		size_t outputHeight;
 		size_t inputChannels;
 		size_t outputChannels;
+		size_t stride;
 
 		SparceMatrix unrolledKernel;
 		std::vector<size_t> jDeltas;
@@ -76,14 +77,18 @@ class Conv2d: public Layer<Scalar>
         ///
         Conv2d(const int inputWidth, const int inputHeight,
                const int inputChannels, const int outputChannels,
-               const int kernelWidth, const int kernelHeight) :
+               const int kernelWidth, const int kernelHeight,
+               const size_t stride = 1) :
 											Layer<Scalar>(inputWidth * inputHeight * inputChannels,
-											  (inputWidth - kernelWidth + 1) * (inputHeight - kernelHeight + 1) * outputChannels),
+											  ((inputWidth - kernelWidth) / stride + 1) *
+											    ((inputHeight - kernelHeight) / stride + 1) * outputChannels),
+
 											  inputWidth(inputWidth), inputHeight(inputHeight),
 											  kernelWidth(kernelWidth), kernelHeight(kernelHeight),
-											  outputWidth(inputWidth - kernelWidth + 1),
-											  outputHeight(inputHeight - kernelHeight + 1),
-											  inputChannels(inputChannels), outputChannels(outputChannels)
+											  inputChannels(inputChannels), outputChannels(outputChannels),
+											  stride(stride),
+											  outputWidth((inputWidth - kernelWidth) / stride + 1),
+											  outputHeight((inputHeight - kernelHeight) / stride + 1)
         {
 	        kernelData.resize(inputChannels * outputChannels * kernelWidth * kernelHeight);
 
@@ -124,8 +129,9 @@ class Conv2d: public Layer<Scalar>
 			jDeltas.resize(unrolledKernel.columns());
 			iDeltas.resize(kernelData.size());
 
+
+			/* Construct kernel row (convolutional for one output pixel) */
 			SparceVector kernelRow(kernelWidth * kernelHeight + (kernelHeight - 1) * dr);
-			//kernelRow = 0;
 
 			size_t p = 0;
 			for (size_t i = 0; i < kernelData.size(); ++i) {
@@ -137,6 +143,8 @@ class Conv2d: public Layer<Scalar>
 				}
 			}
 
+
+			/* Fill unrolled kernel */
 			size_t j00 = 0;
 	        size_t j0 = 0;
 			for (size_t i = 0; i < unrolledKernel.columns(); ++i) {
@@ -144,13 +152,14 @@ class Conv2d: public Layer<Scalar>
 					unrolledKernel((j00 * fromWidth) + j0 + j, i) = kernelRow[j];
 				}
 
+				//blaze::submatrix(unrolledKernel)
+
 				jDeltas[i] = (j00 * fromWidth) + j0;
 
-				if (j0 + 1 + kernelWidth > fromWidth) {
-					j0  = 0;
-					++j00;
-				} else {
-					++j0;
+				j0 += stride;
+				if (j0 + kernelWidth > fromWidth) {
+					j0 = 0;
+					j00 += stride;
 				}
 			}
         }
@@ -158,7 +167,7 @@ class Conv2d: public Layer<Scalar>
 
         void forward(const Matrix& prev_layer_data)
         {
-            // Each column is an observation
+            // Each row is an observation
             const int nobs = prev_layer_data.rows();
 
 	        // Linear term, z = conv(in, w) + b
@@ -177,7 +186,7 @@ class Conv2d: public Layer<Scalar>
 
 
 	        // Add bias terms
-            // Each column of z contains m_dim.out_channels channels, and each channel has
+            // Each row of z contains m_dim.out_channels channels, and each channel has
             // m_dim.conv_rows * m_dim.conv_cols elements
             int channel_start_row = 0;
             const int channel_nelem = outputWidth * outputHeight;

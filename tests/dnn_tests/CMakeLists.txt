@@ -5,6 +5,7 @@ find_package(Boost REQUIRED COMPONENTS unit_test_framework)
 find_package(BLAS)
 
 include_directories(${Boost_INCLUDE_DIR})
+
 add_executable(dnn_tests dnn_tests.cpp)
 target_link_libraries(dnn_tests ${Boost_LIBRARIES} ${BLAS_LIBRARIES})
 
