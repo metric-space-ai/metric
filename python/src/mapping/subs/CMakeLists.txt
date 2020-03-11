@@ -17,16 +17,16 @@ set_target_properties(dbscan PROPERTIES PREFIX "_")
 target_link_libraries(dbscan ${COMMON_LIBRARIES})
 
 # ----------------------------------------------------------------------
-#add_library(ensembles SHARED ${SOURCE_PATH}/mapping/subs/ensembles.cpp)
-#set_target_properties(ensembles PROPERTIES CXX_STANDARD 17)
-#set_target_properties(ensembles PROPERTIES PREFIX "_")
-#target_link_libraries(ensembles ${COMMON_LIBRARIES})
+add_library(ensembles SHARED ${SOURCE_PATH}/mapping/subs/ensembles.cpp)
+set_target_properties(ensembles PROPERTIES CXX_STANDARD 17)
+set_target_properties(ensembles PROPERTIES PREFIX "_")
+target_link_libraries(ensembles ${COMMON_LIBRARIES})
 
 # ----------------------------------------------------------------------
-#add_library(dt SHARED ${SOURCE_PATH}/mapping/subs/ensembles.cpp)
-#set_target_properties(ensembles PROPERTIES CXX_STANDARD 17)
-#set_target_properties(ensembles PROPERTIES PREFIX "_")
-#target_link_libraries(ensembles ${COMMON_LIBRARIES})
+add_library(dt SHARED ${SOURCE_PATH}/mapping/subs/dt.cpp)
+set_target_properties(dt PROPERTIES CXX_STANDARD 17)
+set_target_properties(dt PROPERTIES PREFIX "_")
+target_link_libraries(dt ${COMMON_LIBRARIES})
 
 # ----------------------------------------------------------------------
 add_library(esn SHARED ${SOURCE_PATH}/mapping/subs/ESN.cpp)

@@ -6,6 +6,9 @@
   Copyright (c) 2020 Panda Team
 */
 
+#include "metric_converters.hpp"
+#include "stl_wrappers.hpp"
+
 #include <boost/python.hpp>
 #include <boost/python/suite/indexing/vector_indexing_suite.hpp>
 #include <vector>
@@ -14,7 +17,35 @@
 namespace bp = boost::python;
 
 
-void export_converters();
+void export_converters()
+{
+    IterableConverter()
+        .from_python<std::vector<double>>()
+        .from_python<std::vector<int>>()
+        .from_python<std::vector<std::vector<double>>>()
+        .from_python<std::vector<std::vector<int>>>()
+        ;
+
+    NumpyScalarConverter()
+        .from_python<signed char>()
+        .from_python<short>()
+        .from_python<int>()
+        .from_python<long>()
+        .from_python<long long>()
+        .from_python<unsigned char>()
+        .from_python<unsigned short>()
+        .from_python<unsigned int>()
+        .from_python<unsigned long>()
+        .from_python<unsigned long long>()
+        .from_python<float>()
+        .from_python<double>();
+
+    NumpyArrayConverter()
+        .from_python<WrapStlVector<double>>()
+        .from_python<WrapStlMatrix<double>>()
+        .from_python<WrapStlVector<WrapStlVector<double>>>();
+}
+
 void export_containers() {
     typedef std::vector<double> VectorDouble;
     typedef std::vector<VectorDouble> VectorVectorDouble;
