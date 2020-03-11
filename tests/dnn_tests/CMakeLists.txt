@@ -15,7 +15,7 @@ target_link_libraries(dnn_json_tests ${Boost_LIBRARIES})
 add_executable(datasets_test datasets_test.cpp)
 target_link_libraries(datasets_test ${Boost_LIBRARIES})
 
-add_test(NAME dnn_test COMMAND dnn_test)
+add_test(NAME dnn_test COMMAND dnn_tests)
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/empty ${CMAKE_CURRENT_BINARY_DIR}/empty COPYONLY)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/wrong-shape ${CMAKE_CURRENT_BINARY_DIR}/wrong-shape COPYONLY)
