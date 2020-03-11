@@ -25,14 +25,15 @@ void register_wrapper_manhatten() {
 template<typename Value, typename Container>
 void register_wrapper_pnorm() {
     using Metric = metric::P_norm<Value>;
-    bp::class_<Metric>("P_norm", bp::init<Value>(bp::arg("p_") = 1))
+    bp::class_<Metric>("P_norm", bp::init<Value>(bp::arg("p") = 1))
         .def("__call__", &Metric::template operator()<Container>);
 }
 
 template<typename Value, typename Container>
 void register_wrapper_euclidean_thresholded() {
     using Metric = metric::Euclidian_thresholded<Value>;
-    bp::class_<Metric>("Euclidean_thresholded", bp::init<Value, Value>((bp::arg("thres_"), bp::arg("factor_"))))
+    bp::class_<Metric>("Euclidean_thresholded", bp::init())
+        .def(bp::init<Value, Value>((bp::arg("thres"), bp::arg("factor"))))
         .def("__call__", &Metric::template operator()<Container>);
 }
 
