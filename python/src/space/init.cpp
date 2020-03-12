@@ -10,9 +10,9 @@
 namespace bp = boost::python;
 
 void export_metric_matrix();
-//void export_metric_Tree();
+void export_metric_Tree();
 
 BOOST_PYTHON_MODULE(_space) {
     export_metric_matrix();
-//    export_metric_Tree(); // FIXME: broken in C++
+    export_metric_Tree();
 }

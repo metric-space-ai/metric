@@ -55,19 +55,19 @@ void register_wrapper_Tree() {
 //        const std::vector<std::size_t>&
 //    ) = &Tree::clustering;
 
-//    std::vector<std::vector<std::size_t>> (Tree::*clustering3) (
-//        const std::vector<double>&,
-//        const std::vector<recType>&
-//    ) = &Tree::clustering;
-//
-//    std::tuple<std::size_t, bool> (Tree::*insert_if1) (const recType&, Distance) = &Tree::insert_if;
-//    std::size_t (Tree::*insert_if2) (const std::vector<recType>&, Distance) = &Tree::insert_if;
-//
-//    tree.def("clustering", clustering1);
+    std::vector<std::vector<std::size_t>> (Tree::*clustering3) (
+        const std::vector<double>&,
+        const std::vector<recType>&
+    ) = &Tree::clustering;
+
+    std::tuple<std::size_t, bool> (Tree::*insert_if1) (const recType&, Distance) = &Tree::insert_if;
+    std::size_t (Tree::*insert_if2) (const std::vector<recType>&, Distance) = &Tree::insert_if;
+
+    tree.def("clustering", clustering1);
 //    tree.def("clustering", clustering2);
-//    tree.def("clustering", clustering3);
-//    tree.def("insert", insert_if1);
-//    tree.def("insert", insert_if2);
+    tree.def("clustering", clustering3);
+    tree.def("insert", insert_if1);
+    tree.def("insert", insert_if2);
 
     tree.def("erase", &Tree::erase);
     tree.def("__getitem__", &Tree::operator[]);
