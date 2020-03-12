@@ -5,34 +5,13 @@ from metric.mapping import DT, Dimension
 from metric import distance
 
 
-def response(record):
-    print(record)
-    return record[0]
+def extend(sequence, length):
+    return sequence[:length] + [0] * (length - len(sequence))
 
 
 def main():
     print("Metric Decision Tree example have started")
 
-    dim1 = Dimension(lambda x: x[0], lambda a, b: a - b)
-    dim2 = Dimension(lambda x: x[1], lambda a, b: a + b)
-    dimensions = (dim1, dim2)
-    payments = [(1, 2), (10, 22), (11, 23)]
-    input_data = [(1, 2), (10, 22), (11, 23)]
-
-    dt = DT()
-    dt.train(payments, dimensions, response)
-    prediction = dt.predict(input_data, dimensions)
-
-    print("Prediction:", list(prediction))
-
-    big_example()
-
-
-def extend(sequence, length):
-    return sequence[:length] + [0] * (length - len(sequence))
-
-
-def big_example():
     img1 = numpy.float_([ # needs to be larger than blur kernel size coded intarnally as 11
         [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ], [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ],
         [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ], [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ],
@@ -110,8 +89,7 @@ def big_example():
     prediction = model.predict(test_sample, dimensions)
     print("Metric Desicion Tree prediction: ", list(prediction))
 
-    prediction.clear()
-    model.predict(test_sample, dimensions, prediction)
+    prediction = model.predict(test_sample, dimensions)
     print("Metric Desicion Tree prediction2: ", list(prediction))
 
     print("Distances separately: ")
@@ -120,5 +98,6 @@ def big_example():
 
     # test SSIM separately
     print("SSIM distance: ", distance.SSIM()(img1, img2))
+
 
 sys.exit(main())
