@@ -9,7 +9,7 @@ template <typename V, typename T>
 void register_wrapper_dimension() {
     using Dimension = cross::dimension<V, T>;
     using Callback = py::object;
-    auto dim = py::class_<Dimension>("Dimension");
+    auto dim = py::class_<Dimension, boost::noncopyable>("Dimension");
     dim.def("dispose", &Dimension::dispose);
     dim.def("get_offset", &Dimension::get_offset);
     dim.def("get_bit_index", &Dimension::get_bit_index);
@@ -52,12 +52,10 @@ void register_wrapper_dimension() {
     });
 }
 
-class Test
-{
-    std::string a;
-};
 
 void export_metric_dimension() {
-//    register_wrapper_dimension<std::string, std::vector<int>>();
-    register_wrapper_dimension<double, Test>();
+    register_wrapper_dimension<double, py::object>();
+    register_wrapper_dimension<int, py::object>();
+    register_wrapper_dimension<std::string, py::object>();
+    register_wrapper_dimension<py::object, py::object>();
 }

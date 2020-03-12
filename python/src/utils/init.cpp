@@ -10,7 +10,9 @@
 namespace bp = boost::python;
 
 void export_metric_sparsify();
+void export_metric_dimension();
 
 BOOST_PYTHON_MODULE(_utils) {
     export_metric_sparsify();
+    export_metric_dimension();
 }
