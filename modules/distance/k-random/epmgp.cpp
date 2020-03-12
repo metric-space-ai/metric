@@ -21,8 +21,6 @@ Copyright (c) 2019 Panda Team
 
 #include "../../../3rdparty/blaze/Blaze.h"
 
-//#include <iostream> // TODO remove
-
 
 
 namespace epmgp {

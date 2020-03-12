@@ -16,56 +16,7 @@ Copyright (c) 2019 Panda Team
 
 namespace metric {
 
-///**
-// * @brief Continuous entropy estimator
-// *
-// * @param data
-// * @param k
-// * @param logbase
-// * @param metric
-// * @param exp  - flag, applies 1/exp(1)*exp(estimated_entropy) to output
-// * @return value of entropy estimation of the data
-// */
 
-// MOVED TO ENTROPY.*PP
-/*
-//template <typename Container, typename Metric = metric::Euclidian<typename Container::value_type>, typename L = double>
-//double entropy_fn(  // old erronuous version, TODO remove
-//    std::vector<Container> data, std::size_t k = 3, L logbase = 2, Metric metric = Metric(), bool exp = false);
-template <typename recType, typename Metric = metric::Euclidian<typename recType::value_type>>
-struct entropy { // averaged entropy estimation: code COPIED from mgc.*pp with only mgc replaced with entropy, TODO refactor to avoid code dubbing
-
-    template <template <typename, typename> class OuterContainer, typename Container, typename OuterAllocator>
-    double operator()(
-            const OuterContainer<Container, OuterAllocator> & data,
-            std::size_t k = 3,
-            double logbase = 2,
-            Metric metric = Metric(),
-            bool exp = false
-            ) const;
-
-    template <typename Container>
-    double estimate(
-            const Container & a,
-            const size_t sampleSize = 250,
-            const double threshold = 0.05,
-            size_t maxIterations = 1000,
-            std::size_t k = 3,
-            double logbase = 2,
-            Metric metric = Metric(),
-            bool exp = false
-            );
-};
-*/
-
-/**
- * @brief
- *
- * @param Y
- * @return
- */
-template <typename T>
-std::pair<std::vector<double>, std::vector<std::vector<T>>> pluginEstimator(const std::vector<std::vector<T>>& Y);
 
 /**
  * @brief

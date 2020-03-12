@@ -7,9 +7,12 @@ Copyright (c) 2019 Panda Team
 */
 
 #include <vector>
-#include "../../modules/distance.hpp"
-
 #include <random>
+
+//#include "../../modules/distance.hpp"
+#include "../../modules/distance/k-random/VOI.hpp"
+
+#include "distance/k-structured/Edit.hpp"
 
 
 
@@ -134,7 +137,6 @@ int main() {
     std::cout << "KL VOI functor norm = " << f_voi_norm_kl(v1, v2) << std::endl;
 
 
-    // done till here
 
     std::cout << "\n\nTesting entropy function on uniformly distributed r. v.s:\n";
 

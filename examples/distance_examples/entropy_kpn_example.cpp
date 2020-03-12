@@ -12,10 +12,6 @@
 int main() {
 
 
-
-
-
-
     /*
 
     blaze::DynamicVector<double> x = {1, 2, 3};
@@ -23,7 +19,7 @@ int main() {
 
     // */
 
-    /*
+    //*
 
     for (double a = -30; a < 530; a += 1) {
         //std::cout << a << " " << std::log(0.5) + std::log(epmgp::erfcx(a)) - a*a << "\n";
@@ -86,7 +82,7 @@ int main() {
     }
     // */
 
-    /*
+    //*
 
     //std::vector<double> lower = {-0.5, -0.5};
     //std::vector<double> upper = {0.5, 0.5};

@@ -74,6 +74,25 @@ struct entropy_kpN {
 
 
 
+// -------------------------------- to be debugged
+
+
+
+
+
+
+// ported from Julia, not in use
+/**
+ * @brief
+ *
+ * @param Y
+ * @return
+ */
+template <typename T>
+std::pair<std::vector<double>, std::vector<std::vector<T>>> pluginEstimator(const std::vector<std::vector<T>>& Y);
+
+
+
 } // namespace metric
 
 #include "entropy.cpp"
