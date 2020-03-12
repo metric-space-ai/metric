@@ -5,7 +5,7 @@
 #include <vector>
 #include <variant>
 
-namespace bp = boost::python;
+namespace py = boost::python;
 
 template <typename Record, typename WeakLearner, typename Subsampler>
 void register_wrapper_Boosting() {
@@ -17,7 +17,14 @@ void register_wrapper_Boosting() {
     void (Mapping::*train)(Container&, Features&, Callback&, bool) = &Mapping::train;
     void (Mapping::*predict)(Container&, Features&, std::vector<bool>&) = &Mapping::predict;
 
-    bp::class_<Mapping>("Boosting", bp::init<int, double, double, WeakLearner>())
+    py::class_<Mapping>("Boosting", py::init<int, double, double, WeakLearner>(
+        (
+            py::arg("ensemble_size_"),
+            py::arg("share_overall"),
+            py::arg("share_minor"),
+            py::arg("weak_classifier")
+        )
+    ))
         .def("train", train)
         .def("predict", predict);
 }
@@ -32,7 +39,15 @@ void register_wrapper_Bagging() {
     void (Mapping::*train)(Container&, Features&, Callback&, bool) = &Mapping::train;
     void (Mapping::*predict)(Container&, Features&, std::vector<bool>&) = &Mapping::predict;
 
-    bp::class_<Mapping>("Bagging", bp::init<int, double, double, std::vector<double>, std::vector<WeakLearnerVariant>>())
+    py::class_<Mapping>("Bagging", py::init<int, double, double, std::vector<double>, std::vector<WeakLearnerVariant>>(
+        (
+            py::arg("ensemble_size"),
+            py::arg("share_overall"),
+            py::arg("share_minor"),
+            py::arg("type_weight"),
+            py::arg("weak_classifiers")
+        )
+    ))
         .def("train", train)
         .def("predict", predict);
 }

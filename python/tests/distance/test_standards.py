@@ -22,7 +22,7 @@ def test_euclidean_with_threshold():
 
     assert isinstance(Euclidean, object)
 
-    distance = Euclidean_thresholded(thres_=1000.0, factor_=3000.0)
+    distance = Euclidean_thresholded(thres=1000.0, factor=3000.0)
     assert isinstance(distance, Euclidean_thresholded)
     assert callable(distance)
 
@@ -50,7 +50,7 @@ def test_p_norm():
 
     assert isinstance(P_norm, object)
 
-    distance = P_norm(p_=2)
+    distance = P_norm(p=2)
     assert isinstance(distance, P_norm)
     assert callable(distance)
 
