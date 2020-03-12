@@ -1,37 +1,47 @@
 #include "modules/space/matrix.hpp"
-#include "metric_py.hpp"
+#include "modules/distance/k-related/Standards.hpp"
 
 #include <boost/python.hpp>
 #include <vector>
-#include <iostream>
+#include <utility>
 
 namespace bp = boost::python;
 
-// TODO: add metric
-template<typename recType>
+template<typename recType, typename Metric>
 void register_wrapper_matrix() {
-    using Matrix = metric::Matrix<recType>;
-    // using Container = std::vector<recType>;
-    // bool (Matrix::*append1)(const recType&) = &Matrix::append;
-    // bool (Matrix::*append_if1)(const recType&, float) = &Matrix::append_if;
-    // bool (Matrix::*append2)(const Container&) = &Matrix::append;
-    // bool (Matrix::*append_if2)(const Container&, float) = &Matrix::append_if;
+    using Matrix = metric::Matrix<recType, Metric>;
+    using Container = std::vector<recType>;
+    size_t (Matrix::*insert1)(const recType&) = &Matrix::insert;
+    std::vector<size_t> (Matrix::*insert2)(const Container&) = &Matrix::insert;
+    std::pair<std::size_t, bool> (Matrix::*insert_if1)(const recType&, typename Matrix::distType) = &Matrix::insert_if;
+    std::vector<std::pair<std::size_t, bool>> (Matrix::*insert_if2)(const Container&, typename Matrix::distType) = &Matrix::insert_if;
 
-    bp::class_<Matrix>("Matrix", bp::init<const std::vector<recType>&>())
-        // FIXME: missing in CPP
-        //.def(bp::init<const recType&>()
-        //.def("append", append1)
-        //.def("append_if", append_if1)
-        //.def("append", append2)
-        //.def("append_if", append_if2)
-        // .def("erase", &Matrix::erase)
-        //.def("set", &Matrix::set)
-        //.def("__getitem__", &Matrix::operator[])  // FIXME: this is broken in CPP
+    bp::class_<Matrix>("Matrix", bp::init())
+        .def(bp::init<const recType&>(
+            (
+                bp::arg("p")
+            )
+        ))
+        .def(bp::init<const Container&>(
+            (
+                bp::arg("p")
+            )
+        ))
+        .def("insert", insert1)
+        .def("insert_if", insert_if1)
+        .def("insert", insert2)
+        .def("insert_if", insert_if2)
+        .def("erase", &Matrix::erase)
+//        .def("__getitem__", &Matrix::operator[]) // FIXME: broken in CPP
+        .def("__setitem__", &Matrix::set)
         .def("__call__", &Matrix::operator())
-        .def("size", &Matrix::size);
+        .def("erase", &Matrix::erase)
+        .def("__len__", &Matrix::size)
+        .def("nn", &Matrix::nn)
+        .def("knn", &Matrix::knn)
+        .def("rnn", &Matrix::rnn);
 }
 
-
 void export_metric_matrix() {
-    register_wrapper_matrix<std::vector<double>>();
+    register_wrapper_matrix<std::vector<double>, metric::Euclidian<double>>();
 }

@@ -1,8 +1,8 @@
 set(LIB_NAME metric)
 
-file(GLOB DISTANCE_SOURCE_FILES ${SOURCE_PATH}/*.cpp)
+file(GLOB BASIC_SOURCE_FILES ${SOURCE_PATH}/*.cpp)
 
-add_library(${LIB_NAME} SHARED ${DISTANCE_SOURCE_FILES})
+add_library(${LIB_NAME} SHARED ${BASIC_SOURCE_FILES})
 set_target_properties(${LIB_NAME} PROPERTIES CXX_STANDARD 17)
 set_target_properties(${LIB_NAME} PROPERTIES PREFIX "_")
 target_link_libraries(${LIB_NAME} ${COMMON_LIBRARIES})
@@ -10,4 +10,6 @@ target_link_libraries(${LIB_NAME} ${COMMON_LIBRARIES})
 add_subdirectory(distance)
 add_subdirectory(mapping)
 add_subdirectory(transform)
-#add_subdirectory(space)
+add_subdirectory(space)
+add_subdirectory(utils)
+add_subdirectory(correlation)

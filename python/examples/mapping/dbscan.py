@@ -1,6 +1,7 @@
 import sys
-import metric
 import numpy
+from metric.mapping import dbscan
+from metric.space import Matrix
 
 
 def main():
@@ -13,12 +14,12 @@ def main():
         [2.57927000000000, 2.63399000000000, 2.46802000000000, 61.9026000000000, 61.9026000000000]
     ])
 
-    distance_matrix = metric.Matrix(data)
+    distance_matrix = Matrix(data)
 
-    [assignments, seeds, counts] = metric.dbscan(distance_matrix, 64.0, 1)
-    print(assignments)
-    print(seeds)
-    print(counts)
+    [assignments, seeds, counts] = dbscan(distance_matrix, 64.0, 1)
+    print(list(assignments))
+    print(list(seeds))
+    print(list(counts))
 
 
 sys.exit(main())

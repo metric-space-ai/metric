@@ -1,7 +1,9 @@
 import numpy
+import pytest
 from metric.distance import Kohonen
 
 
+@pytest.mark.xfail(reason="Bug in Kohonen_distance, pass non-const reference")
 def test_ok():
     grid_w = 3
     grid_h = 2

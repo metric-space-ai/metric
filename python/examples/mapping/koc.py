@@ -1,6 +1,6 @@
 import sys
-import metric
 import numpy
+from metric.mapping import KOC_factory
 
 
 def main():
@@ -24,7 +24,7 @@ def main():
 
     simple_dataset = numpy.float_([8, 0, 1])
 
-    simple_koc_factory = metric.KOC_factory(best_w_grid_size, best_h_grid_size, 0.5, 0.0, 100)
+    simple_koc_factory = KOC_factory(best_w_grid_size, best_h_grid_size, 0.5, 0.0, 100)
     simple_koc = simple_koc_factory(dataset, 5)
 
     anomaly_threshold = -0.5

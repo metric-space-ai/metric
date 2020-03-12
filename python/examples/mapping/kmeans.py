@@ -1,6 +1,6 @@
 import sys
-import metric
 import numpy
+from metric.mapping import kmeans
 
 
 def main():
@@ -13,9 +13,11 @@ def main():
            [2.57927000000000, 2.63399000000000, 2.46802000000000, 61.9026000000000, 61.9026000000000]
     ])
 
-    assignments, means, counts = metric.kmeans(data, 4)  # clusters the data in 4 groups.
+    assignments, means, counts = kmeans(data, 4)  # clusters the data in 4 groups.
 
-    print("assignments", assignments)
+    print("assignments", list(assignments))
+    print("means", list(map(list, means)))
+    print("counts", list(counts))
     # TODO
 
 

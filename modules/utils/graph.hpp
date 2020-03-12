@@ -373,8 +373,6 @@ Graph<ValueType, true, true> make_graph(blaze::SymmetricMatrix<blaze::DynamicMat
 } // end namespace metric
 
 
-#ifndef METRIC_DISABLE_INLINE_CPP
 #include "graph/graph.cpp"
-#endif
 
 #endif // header guards

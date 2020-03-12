@@ -7,15 +7,15 @@
 */
 #include "modules/utils/graph/sparsify.hpp"
 
-#define BOOST_TEST_MAIN
-
+#define BOOST_TEST_MODULE sparsification_tests
+#define BOOST_TEST_DYN_LINK
 #include <boost/test/unit_test.hpp>
 
 BOOST_AUTO_TEST_CASE(kruskal_empty_graph)
 {
     blaze::CompressedMatrix<float, blaze::columnMajor> input(0, 0);
     blaze::CompressedMatrix<float, blaze::columnMajor> output =
-        metric::kruskal_sparsify(input);
+        metric::sparsify_spanning_tree(input);
 
     BOOST_TEST(output.rows() == 0);
     BOOST_TEST(output.columns() == 0);
@@ -27,7 +27,7 @@ BOOST_AUTO_TEST_CASE(kruskal_not_connected_nodes)
     blaze::CompressedMatrix<float, blaze::columnMajor> input(10, 10);
     input.reserve(0);
     blaze::CompressedMatrix<float, blaze::columnMajor> output =
-        metric::kruskal_sparsify(input);
+        metric::sparsify_spanning_tree(input);
 
     BOOST_TEST(output.rows() == 10);
     BOOST_TEST(output.columns() == 10);
@@ -40,7 +40,7 @@ BOOST_AUTO_TEST_CASE(kruskal_two_nodes_one_connection)
     input.reserve(1);
     input(0, 1) = 5;
     blaze::CompressedMatrix<float, blaze::columnMajor> output =
-        metric::kruskal_sparsify(input);
+        metric::sparsify_spanning_tree(input);
 
     BOOST_TEST(output.rows() == 2);
     BOOST_TEST(output.columns() == 2);
@@ -60,7 +60,7 @@ BOOST_AUTO_TEST_CASE(kruskal_two_trees)
     input(0, 3) = 200;
 
     blaze::CompressedMatrix<float, blaze::columnMajor> output =
-        metric::kruskal_sparsify(input);
+        metric::sparsify_spanning_tree(input);
 
     BOOST_TEST(output.rows() == 4);
     BOOST_TEST(output.columns() == 4);
@@ -87,7 +87,7 @@ BOOST_AUTO_TEST_CASE(kruskal_matrix_creation_order)
     input.finalize(3);
 
     blaze::CompressedMatrix<float, blaze::columnMajor> output =
-        metric::kruskal_sparsify(input);
+        metric::sparsify_spanning_tree(input);
 
     BOOST_TEST(output.rows() == 4);
     BOOST_TEST(output.columns() == 4);
@@ -112,7 +112,7 @@ BOOST_AUTO_TEST_CASE(kruskal_maximum_spanning_tree)
     input(0, 3) = 200;
 
     blaze::CompressedMatrix<float, blaze::columnMajor> output =
-        metric::kruskal_sparsify(input, false);
+        metric::sparsify_spanning_tree(input, false);
 
     BOOST_TEST(output.rows() == 4);
     BOOST_TEST(output.columns() == 4);
@@ -133,7 +133,7 @@ BOOST_AUTO_TEST_CASE(kruskal_input_bad_size)
 
     try {
         blaze::CompressedMatrix<float, blaze::columnMajor> output =
-            metric::kruskal_sparsify(input);
+            metric::sparsify_spanning_tree(input);
         throw std::runtime_error("matrix property of n==m is not checked");
     } catch (std::invalid_argument& e) {
         // nothing here

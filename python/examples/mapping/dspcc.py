@@ -1,6 +1,6 @@
 import sys
 import numpy
-import metric
+from metric.mapping import DSPCC
 
 
 def main():
@@ -12,7 +12,7 @@ def main():
 
     # try values from 0 to 1 (e g 0, 0.5, 1) to get the following portions of freq-domain: 0, 4 / 9, 8 / 9
     freq_time_balance = 0.5
-    bundle = metric.DSPCC(d, 4, 2, freq_time_balance, 4)
+    bundle = DSPCC(d, 4, 2, freq_time_balance, 4)
     encoded = bundle.encode(d)
     print(encoded)
     decoded = bundle.decode(encoded)

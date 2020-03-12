@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.9)
+cmake_minimum_required(VERSION 3.10)
 set(CMAKE_VERBOSE_MAKEFILE ON)
 
 #set(CMAKE_BUILD_TYPE Debug)
@@ -12,11 +12,13 @@ project(metric_py DESCRIPTION "metric python binding")
 SET(SOURCE_PATH ${CMAKE_SOURCE_DIR}/src)
 SET(METRIC_SOURCE_PATH ${CMAKE_SOURCE_DIR}/..)
 
+find_package(Python3 COMPONENTS NumPy Interpreter Development)
+
 # rasbian has python3 while arch has python
-find_package(Boost 1.72 COMPONENTS python3)
+find_package(Boost COMPONENTS python3)
 If (Boost_FOUND)
 else ()
-find_package(Boost 1.72 COMPONENTS python REQUIRED)
+find_package(Boost COMPONENTS python REQUIRED)
 endif ()
 
 find_package(BLAS)
@@ -37,7 +39,8 @@ set(COMMON_LIBRARIES
 )
 
 SET(HEADER_INCLUDE_PATH
-    ${PYTHON3_INCLUDE_DIRS}
+    ${Boost_INCLUDE_DIR}
+    ${Python3_INCLUDE_DIR}
     ${SOURCE_PATH}
     ${METRIC_SOURCE_PATH}
 )
