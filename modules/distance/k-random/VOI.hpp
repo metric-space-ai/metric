@@ -10,7 +10,7 @@ Copyright (c) 2019 Panda Team
 #define _METRIC_DISTANCE_K_RANDOM_VOI_HPP
 
 #include "../k-related/Standards.hpp"
-#include "entropy.hpp"
+#include "../../correlation/entropy.hpp"
 #include <type_traits>
 #include <vector>
 

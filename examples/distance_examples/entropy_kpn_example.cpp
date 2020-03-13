@@ -2,8 +2,8 @@
 #include <vector>
 #include <iostream>
 #include <tuple>
-//#include "../../modules/distance/k-random/epmgp.cpp"
-#include "../../modules/distance/k-random/entropy.hpp"
+//#include "../../modules/correlation/epmgp.cpp"
+#include "../../modules/correlation/entropy.hpp"
 
 #include <limits>
 

@@ -11,8 +11,8 @@ Copyright (c) 2019 Panda Team
 
 #include <type_traits>
 
-#include "../../../3rdparty/blaze/Blaze.h"
-#include "../k-related/Standards.hpp"
+#include "../../3rdparty/blaze/Blaze.h"
+#include "../distance/k-related/Standards.hpp"
 
 //#include <vector>
 
