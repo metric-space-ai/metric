@@ -741,7 +741,7 @@ std::vector<recType> Tree<recType, Metric>::toVector()
     while (stack.size() > 0) {
         current = stack.top();
         stack.pop();
-        zipped.push_back(std::make_pair(current->data, current->ID));  // Add to dataset
+        zipped.push_back(std::make_pair(current->get_data(), current->ID));  // Add to dataset
         for (const auto& child : *current)
             stack.push(child);
     }
