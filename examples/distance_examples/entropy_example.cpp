@@ -219,21 +219,23 @@ int main() {
 
 
     //std::vector<std::deque<double>> urv6 = {{0.1}, {0.3}, {0.5}, {0.7}, {0.9}, {0.51}, {0.5}};
-    std::vector<std::deque<double>> urv6 =
+    using ElType = float; // long double;
+    std::vector<std::deque<ElType>> urv6 =
         {{0.1, 0.5, 0.7}, {0.3, 0.7, 0.9}, {0.5, 0.9, 0.1}, {0.7, 0.1, 0.3}, {0.9, 0.3, 0.5}, {0.51, 0.91, 0.11}, {0.5, 0.9, 0.1}};
     //std::cout << "\nshort test vector result: " << urv6.size() << " | " << e_f_eucl(urv6) << "\n\n";
     std::cout << "\nshort test vector result: " << urv6.size() << " | " << e_f_cheb(urv6) << "\n\n";
 
 
-    auto e_f_mink = metric::entropy<void, metric::P_norm<double>>();
-    auto e_f_manh = metric::entropy<void, metric::Manhatten<double>>();
+    auto e_f_mink = metric::entropy<void, metric::P_norm<ElType>>();
+    auto e_f_manh = metric::entropy<void, metric::Manhatten<ElType>>();
+    auto e_kpn_cheb = metric::entropy_kpN<void, metric::Chebyshev<ElType>>();
 
     std::cout << "short test vector result,  manh: " << urv6.size() << " | " << e_f_manh(urv6) << "\n";
-    std::cout << "short test vector result, mink1: " << urv6.size() << " | " << e_f_mink(urv6, 3, 2.0, metric::P_norm<double>(1)) << "\n";
+    std::cout << "short test vector result, mink1: " << urv6.size() << " | " << e_f_mink(urv6, 3, 2.0, metric::P_norm<ElType>(1)) << "\n";
     std::cout << "short test vector result,  eucl: " << urv6.size() << " | " << e_f_eucl(urv6) << "\n";
-    std::cout << "short test vector result, mink2: " << urv6.size() << " | " << e_f_mink(urv6, 3, 2.0, metric::P_norm<double>(2)) << "\n";
+    std::cout << "short test vector result, mink2: " << urv6.size() << " | " << e_f_mink(urv6, 3, 2.0, metric::P_norm<ElType>(2)) << "\n";
     std::cout << "short test vector result,  cheb: " << urv6.size() << " | " << e_f_cheb(urv6) << "\n";
-    std::cout << "short test vector result,   kpN: " << urv6.size() << " | " << ekpn_cheb(urv6, metric::Chebyshev<double>(), 3, 5) << "\n";
+    std::cout << "short test vector result,   kpN: " << urv6.size() << " | " << e_kpn_cheb(urv6, metric::Chebyshev<ElType>(), 3, 5) << "\n";
 
     size_t step = 1000;
 
