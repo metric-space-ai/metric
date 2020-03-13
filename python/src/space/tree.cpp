@@ -21,6 +21,7 @@ namespace py = boost::python;
 template <typename recType, typename Metric>
 void register_wrapper_Tree() {
     using Tree = metric::Tree<recType, Metric>;
+    using Node = metric::Node<recType, Metric>;
     using Container = std::vector<recType>;
     using Distance = typename Tree::Distance;
     auto tree = py::class_<Tree, boost::noncopyable>("Tree", py::no_init);
@@ -60,12 +61,16 @@ void register_wrapper_Tree() {
         const std::vector<recType>&
     ) = &Tree::clustering;
 
+    size_t (Tree::*insert1) (const recType&) = &Tree::insert;
+    bool (Tree::*insert2) (const std::vector<recType>&) = &Tree::insert;
     std::tuple<std::size_t, bool> (Tree::*insert_if1) (const recType&, Distance) = &Tree::insert_if;
     std::size_t (Tree::*insert_if2) (const std::vector<recType>&, Distance) = &Tree::insert_if;
 
     tree.def("clustering", clustering1);
 //    tree.def("clustering", clustering2);
     tree.def("clustering", clustering3);
+    tree.def("insert", insert1);
+    tree.def("insert", insert2);
     tree.def("insert", insert_if1);
     tree.def("insert", insert_if2);
 
@@ -93,6 +98,9 @@ void register_wrapper_Tree() {
     tree.def("print_levels", &Tree::print_levels);
     tree.def("root", &Tree::get_root, py::return_internal_reference<>());
     tree.def("__eq__", &Tree::operator==);
+
+    // just simple wrapper to return something
+    auto node = py::class_<Node, boost::noncopyable>("Node", py::no_init);
 }
 
 void export_metric_Tree() {

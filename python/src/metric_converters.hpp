@@ -7,20 +7,36 @@
 #include <boost/python/module.hpp>
 #include <numpy/arrayobject.h>
 #include <numpy/arrayscalars.h>
-#include <iostream>
 
 
-inline std::string getObjClassName(const boost::python::api::object& obj) {
-    boost::python::extract<boost::python::object> objectExtractor(obj);
-    boost::python::object o=objectExtractor();
-    std::string obj_type = boost::python::extract<std::string>(o.attr("__class__").attr("__name__"));
-    return obj_type;
-}
+class PyObjectHelper
+{
+    boost::python::object object;
+public:
+    PyObjectHelper(PyObject* obj_ptr)
+        :object(boost::python::handle<>(boost::python::borrowed(obj_ptr)))
+    {
+    }
 
-inline std::string getObjClassName(PyObject* obj_ptr) {
-       boost::python::object obj(boost::python::handle<>(boost::python::borrowed(obj_ptr)));
-       return getObjClassName(obj);
-}
+    std::string name() {
+        return boost::python::extract<std::string>(this->object.attr("__class__").attr("__name__"));
+    }
+
+    bool isNumpyArray() {
+        return this->name() == "ndarray";
+    }
+
+    unsigned numberOfDimensions() {
+        return boost::python::extract<unsigned>(this->object.attr("ndim"));
+    }
+};
+
+
+template<typename T> struct is_2dvector : public std::false_type {};
+
+template<typename T, typename A1, typename A2>
+struct is_2dvector<std::vector<std::vector<T, A1>, A2>> : public std::true_type {};
+
 
 struct IterableConverter
 {
@@ -28,7 +44,7 @@ struct IterableConverter
     IterableConverter& from_python()
     {
         boost::python::converter::registry::push_back(
-            &IterableConverter::convertible,
+            &IterableConverter::convertible<Container>,
             &IterableConverter::construct<Container>,
             boost::python::type_id<Container>()
         );
@@ -37,11 +53,17 @@ struct IterableConverter
     }
 
     /*
-    @brief Check if PyObject is iterable.
+    @brief Check if PyObject is iterable twice
     */
+    template <typename Container>
     static void* convertible(PyObject* object)
     {
+        PyObjectHelper helper(object);
+        if constexpr(is_2dvector<Container>::value) {
+            return PyObject_GetIter(object) && helper.isNumpyArray() && helper.numberOfDimensions() > 1 ? object : NULL;
+        }
         return PyObject_GetIter(object) ? object : NULL;
+
     }
 
     /* @brief Convert iterable PyObject to C++ container type.
@@ -90,13 +112,9 @@ struct NumpyArrayConverter {
     }
 
     static void* convertible(PyObject* obj_ptr) {
-        const std::string name = getObjClassName(obj_ptr);
-
-        if ( name == "ndarray") {
-            std::cout << "NumpyArrayConverter convertible " << name << " yes" << std::endl;
+        if (PyObjectHelper(obj_ptr).isNumpyArray()) {
             return obj_ptr;
         }
-        std::cout << "NumpyArrayConverter convertible " << name << " no" << std::endl;
         return 0;
     }
 
@@ -123,8 +141,7 @@ struct NumpyScalarConverter {
     }
 
     static void* convertible(PyObject* obj_ptr) {
-        std::string name = getObjClassName(obj_ptr);
-
+        auto name = PyObjectHelper(obj_ptr).name();
         if (
                 name == "float32" ||
                 name == "float64" ||
