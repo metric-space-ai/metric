@@ -83,16 +83,3 @@ public:
         return WrapStlMatrix(wr);
     }
 };
-
-
-inline std::string getObjType(const boost::python::api::object& obj) {
-    boost::python::extract<boost::python::object> objectExtractor(obj);
-    boost::python::object o=objectExtractor();
-    std::string obj_type = boost::python::extract<std::string>(o.attr("__class__").attr("__name__"));
-    return obj_type;
-}
-
-inline std::string getObjType(PyObject* obj_ptr) {
-       boost::python::object obj(boost::python::handle<>(boost::python::borrowed(obj_ptr)));
-       return getObjType(obj);
-}

@@ -1,7 +1,5 @@
 #pragma once
-
-#include "stl_wrappers.hpp" // getObjType
-
+#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 #include <boost/python.hpp>
 #include <boost/python/object.hpp>
 #include <boost/python/converter/implicit.hpp>
@@ -11,6 +9,18 @@
 #include <numpy/arrayscalars.h>
 #include <iostream>
 
+
+inline std::string getObjClassName(const boost::python::api::object& obj) {
+    boost::python::extract<boost::python::object> objectExtractor(obj);
+    boost::python::object o=objectExtractor();
+    std::string obj_type = boost::python::extract<std::string>(o.attr("__class__").attr("__name__"));
+    return obj_type;
+}
+
+inline std::string getObjClassName(PyObject* obj_ptr) {
+       boost::python::object obj(boost::python::handle<>(boost::python::borrowed(obj_ptr)));
+       return getObjClassName(obj);
+}
 
 struct IterableConverter
 {
@@ -80,7 +90,7 @@ struct NumpyArrayConverter {
     }
 
     static void* convertible(PyObject* obj_ptr) {
-        std::string name = getObjType(obj_ptr);
+        const std::string name = getObjClassName(obj_ptr);
 
         if ( name == "ndarray") {
             std::cout << "NumpyArrayConverter convertible " << name << " yes" << std::endl;
@@ -113,7 +123,7 @@ struct NumpyScalarConverter {
     }
 
     static void* convertible(PyObject* obj_ptr) {
-        std::string name = getObjType(obj_ptr);
+        std::string name = getObjClassName(obj_ptr);
 
         if (
                 name == "float32" ||
@@ -129,37 +139,34 @@ struct NumpyScalarConverter {
             ) {
             return obj_ptr;
         }
-        std::cout << "NumpyScalarConverter convertible " << name << " no" << std::endl;
 
         return 0;
     }
 
     template <typename ScalarType>
     static void construct(PyObject* obj_ptr, boost::python::converter::rvalue_from_python_stage1_data* data) {
-        std::string name = getObjType(obj_ptr);
-
         void* storage = ((boost::python::converter::rvalue_from_python_storage<ScalarType>*) data)->storage.bytes;
 
         ScalarType * scalar = new (storage) ScalarType;
-        if (name == "float32")
+        if (PyArray_IsScalar(obj_ptr, Float32))
             (*scalar) = PyArrayScalar_VAL(obj_ptr, Float32);
-        else if (name == "float64")
+        else if (PyArray_IsScalar(obj_ptr, Float64))
             (*scalar) = PyArrayScalar_VAL(obj_ptr, Float64);
-        else if (name == "int8")
+        else if (PyArray_IsScalar(obj_ptr, Int8))
             (*scalar) = PyArrayScalar_VAL(obj_ptr, Int8);
-        else if (name == "int16")
+        else if (PyArray_IsScalar(obj_ptr, Int16))
             (*scalar) = PyArrayScalar_VAL(obj_ptr, Int16);
-        else if (name == "int32")
+        else if (PyArray_IsScalar(obj_ptr, Int32))
             (*scalar) = PyArrayScalar_VAL(obj_ptr, Int32);
-        else if (name == "int64")
+        else if (PyArray_IsScalar(obj_ptr, Int64))
             (*scalar) = PyArrayScalar_VAL(obj_ptr, Int64);
-        else if (name == "uint8")
+        else if (PyArray_IsScalar(obj_ptr, UInt8))
             (*scalar) = PyArrayScalar_VAL(obj_ptr, UInt8);
-        else if (name == "uint16")
+        else if (PyArray_IsScalar(obj_ptr, UInt16))
             (*scalar) = PyArrayScalar_VAL(obj_ptr, UInt16);
-        else if (name == "uint32")
+        else if (PyArray_IsScalar(obj_ptr, UInt32))
             (*scalar) = PyArrayScalar_VAL(obj_ptr, UInt32);
-        else if (name == "uint64")
+        else if (PyArray_IsScalar(obj_ptr, UInt64))
             (*scalar) = PyArrayScalar_VAL(obj_ptr, UInt64);
 
         data->convertible = storage;
