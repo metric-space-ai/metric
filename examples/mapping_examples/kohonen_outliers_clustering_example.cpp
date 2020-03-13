@@ -207,8 +207,8 @@ int main(int argc, char *argv[])
 
 	using Record = std::vector<double>;
 				
-	size_t best_w_grid_size = 6;
-	size_t best_h_grid_size = 4;
+	size_t best_w_grid_size = 3;
+	size_t best_h_grid_size = 2;
 
 	// if overrided from arguments
 	
@@ -335,7 +335,10 @@ int main(int argc, char *argv[])
 		dataset = datasets[i];
 		test_set = test_sets[i];
 
-		metric::KOC_factory<Record, metric::Grid4> simple_koc_factory(best_w_grid_size, best_h_grid_size, 0.5, 0.0, 300);    
+		// random seed for repeateable results
+		long long random_seed = 777;
+
+		metric::KOC_factory<Record, metric::Grid4> simple_koc_factory(best_w_grid_size, best_h_grid_size, 0.5, 0.0, 300, -1, 1, 2, 0.5, random_seed);    
 		auto simple_koc = simple_koc_factory(dataset, num_clusters); 
 
 		double sigma = 1.5;

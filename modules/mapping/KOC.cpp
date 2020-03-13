@@ -159,7 +159,10 @@ namespace metric {
 			std::iota(randomized_samples.begin(), randomized_samples.end(), 0);
 
 			// shuffle samples after all was processed		
-			std::shuffle(randomized_samples.begin(), randomized_samples.end(), std::mt19937 { std::random_device {}() });
+
+			std::default_random_engine random_generator(SOM<recType, Graph, Metric, Distribution>::random_seed);
+
+			std::shuffle(randomized_samples.begin(), randomized_samples.end(), random_generator);
 	
 			int num_nodes = KOC<recType, Graph, Metric, Distribution>::getNodesNumber();
 
@@ -202,7 +205,7 @@ namespace metric {
 			{
 				// clustering on the reduced data
 				
-				auto [assignments, exemplars, counts] = metric::kmeans(nodes_data, num_clusters, 1000);
+				auto [assignments, exemplars, counts] = metric::kmeans(nodes_data, num_clusters, SOM<recType, Graph, Metric, Distribution>::iterations, "euclidian", SOM<recType, Graph, Metric, Distribution>::random_seed);
 		
 				std::vector<int>::iterator result = std::min_element(counts.begin(), counts.end());
 				min_cluster_size = counts[std::distance(counts.begin(), result)];	
