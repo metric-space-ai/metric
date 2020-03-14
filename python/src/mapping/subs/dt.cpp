@@ -61,8 +61,8 @@ void register_wrapper_DT() {
     using Callback = std::function<int(const Record&)>;
     using Dims = std::vector<std::variant<Dimension>>;
 
-    void (Class::*train)(const Container&, const Dims&, Callback&) = &Class::train;
-    void (Class::*predict)(const Container&, const Dims&, std::vector<int>&) = &Class::predict;
+    void (Class::*train)(const Container&, Dims, Callback&) = &Class::train;
+    void (Class::*predict)(const Container&, Dims, std::vector<int>&) = &Class::predict;
 
     auto dt = py::class_<Class>("DT", py::init<double, double>(
         (

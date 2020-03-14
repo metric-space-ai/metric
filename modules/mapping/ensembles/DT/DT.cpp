@@ -23,7 +23,7 @@ DT<Record>::DT(double entropy_threshold_, double gain_threshold_)
 template <class Record>
 template <typename ConType, typename VariantType>
 void DT<Record>::train(
-    const ConType& payments, const std::vector<VariantType>& dimensions, std::function<int(const Record&)>& response)
+    const ConType& payments, std::vector<VariantType> dimensions, std::function<int(const Record&)>& response)
 {
     typedef double NumType;  // TODO replace hardcode
 
@@ -38,7 +38,7 @@ void DT<Record>::train(
         for (size_t i = 0; i < payments.size(); i++) {
             for (size_t j = i; j < payments.size(); j++) {
                 auto d_dist_vis
-                    = [&payments, i, j](const auto& d) { return (NumType)d.get_distance(payments[i], payments[j]); };
+                    = [&payments, i, j](auto& d) { return (NumType)d.get_distance(payments[i], payments[j]); };
                 matrix[i][j] = matrix[j][i] = std::visit(d_dist_vis, dimensions[f]);
             }
             bool found = false;  // also count unique labels
@@ -135,7 +135,7 @@ void DT<Record>::train(
 
 template <class Record>
 template <typename ConType, typename VariantType>
-void DT<Record>::predict(const ConType& input_data, const std::vector<VariantType>& dimensions, std::vector<int>& predictions)
+void DT<Record>::predict(const ConType& input_data, std::vector<VariantType> dimensions, std::vector<int>& predictions)
 {
     typedef double NumType;  // TODO replace hardcode
 
@@ -158,7 +158,7 @@ void DT<Record>::predict(const ConType& input_data, const std::vector<VariantTyp
             for (size_t m = 0; m < current_node->medoid_records.size(); m++)  // medoid loop
             {
                 Record r = current_node->medoid_records[m];
-                auto d_dist_vis = [&input_data, i, r](const auto& d) { return (NumType)d.get_distance(input_data[i], r); };
+                auto d_dist_vis = [&input_data, i, r](auto& d) { return (NumType)d.get_distance(input_data[i], r); };
                 NumType distance = std::visit(d_dist_vis, dimensions[current_node->field_index]);
 
                 if (distance < min_distance) {
