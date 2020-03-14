@@ -9,6 +9,7 @@
 #pragma once
 
 #include <boost/python.hpp>
+#include <vector>
 
 using base_python_object = boost::python::api::object;
 
@@ -50,7 +51,6 @@ class WrapStlVector: public base_python_object {
             base_python_object wr = boost::python::extract<base_python_object>(base_python_object::operator[](index));
             return WrapStlVector<typename U::value_type>(wr);
         }
-
 };
 
 template<typename T>

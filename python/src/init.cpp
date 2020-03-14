@@ -14,7 +14,7 @@
 #include <vector>
 #include <iostream>
 
-namespace bp = boost::python;
+namespace py = boost::python;
 
 
 void export_converters()
@@ -48,28 +48,28 @@ void export_converters()
 
 void export_containers() {
     typedef std::vector<double> VectorDouble;
-    typedef std::vector<VectorDouble> VectorVectorDouble;
     typedef std::vector<int> VectorInt;
-    typedef std::vector<VectorInt> VectorVectorInt;
     typedef std::vector<bool> VectorBool;
-    typedef std::vector<unsigned long> VectorLong;
-    typedef std::vector<VectorLong> VectorVectorLong;
-    bp::class_<VectorDouble>("VectorDouble").def(bp::vector_indexing_suite<VectorDouble>());
-    bp::class_<VectorVectorDouble>("VectorVectorDouble").def(bp::vector_indexing_suite<VectorVectorDouble>());
-    bp::class_<VectorInt>("VectorInt").def(bp::vector_indexing_suite<VectorInt>());
-    bp::class_<VectorVectorInt>("VectorVectorInt").def(bp::vector_indexing_suite<VectorVectorInt>());
-    bp::class_<VectorBool>("VectorBool").def(bp::vector_indexing_suite<VectorBool>());
-    bp::class_<VectorLong>("VectorLong").def(bp::vector_indexing_suite<VectorLong>());
-    bp::class_<VectorVectorLong>("VectorVectorLong").def(bp::vector_indexing_suite<VectorVectorLong>());
+    typedef std::vector<unsigned char> VectorUChar;
+    typedef std::vector<unsigned int> VectorUInt;
+    typedef std::vector<unsigned long> VectorULong;
+    typedef std::vector<VectorDouble> VectorVectorDouble;
+    typedef std::vector<VectorInt> VectorVectorInt;
+    typedef std::vector<VectorULong> VectorVectorULong;
+
+    py::class_<VectorDouble>("VectorDouble").def(py::vector_indexing_suite<VectorDouble>());
+    py::class_<VectorInt>("VectorInt").def(py::vector_indexing_suite<VectorInt>());
+    py::class_<VectorBool>("VectorBool").def(py::vector_indexing_suite<VectorBool>());
+    py::class_<VectorUChar>("VectorUChar").def(py::vector_indexing_suite<VectorUChar>());
+    py::class_<VectorUInt>("VectorUInt").def(py::vector_indexing_suite<VectorUInt>());
+    py::class_<VectorULong>("VectorULong").def(py::vector_indexing_suite<VectorULong>());
+
+    py::class_<VectorVectorDouble>("VectorVectorDouble").def(py::vector_indexing_suite<VectorVectorDouble>());
+    py::class_<VectorVectorInt>("VectorVectorInt").def(py::vector_indexing_suite<VectorVectorInt>());
+    py::class_<VectorVectorULong>("VectorVectorULong").def(py::vector_indexing_suite<VectorVectorULong>());
+
 }
 
-void test1(int t) {
-    std::cout << "test1 " << t << std::endl;
-}
-
-void test2(const std::vector<int>& t) {
-    std::cout << "test2 " << t[0] << std::endl;
-}
 
 BOOST_PYTHON_MODULE(_metric) {
     export_converters();

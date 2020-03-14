@@ -13,13 +13,13 @@
 #include <vector>
 #include <string>
 
-namespace bp = boost::python;
+namespace py = boost::python;
 
 template<typename Value>
 void wrap_metric_VOI_kl() {
     using Metric = metric::VOI_kl<Value>;
     using Container = WrapStlVector<WrapStlVector<Value>>;
-    bp::class_<Metric>("VOI_kl", bp::init<int, Value>((bp::arg("k") = 3, bp::arg("logbase") = 2)))
+    py::class_<Metric>("VOI_kl", py::init<int, Value>((py::arg("k") = 3, py::arg("logbase") = 2)))
         .def("__call__", +[](Metric& self, const Container& a, const Container& b) {
             return self.operator()(a, b);
         }, "Calculate variation of information based on Kozachenko-Leonenko entropy estimator");
@@ -29,10 +29,10 @@ template<typename Value>
 void wrap_metric_VOI_normalized() {
     using Metric = metric::VOI_normalized<Value>;
     using Container = WrapStlVector<WrapStlVector<Value>>;
-    bp::class_<Metric>("VOI_normalized", bp::init<int, Value>(
+    py::class_<Metric>("VOI_normalized", py::init<int, Value>(
             (
-                bp::arg("k") = 3,
-                bp::arg("logbase") = 2
+                py::arg("k") = 3,
+                py::arg("logbase") = 2
             )
         ))
         .def("__call__", +[](Metric& self, const Container& a, const Container& b) {
@@ -49,9 +49,9 @@ template <typename Container, typename Metric>
 void wrap_metric_entropy() {
     using Value = typename Container::value_type::value_type;
     std::string name = "entropy_" + getMetricName<Metric>();
-    bp::def(name.c_str(), +[](const Container& data, std::size_t k = 3, Value logbase = 2) {
+    py::def(name.c_str(), +[](const Container& data, std::size_t k = 3, Value logbase = 2) {
         return metric::entropy<Container, Metric, Value>(data, k, logbase);
-    }, (bp::arg("data"), bp::arg("k") = 3, bp::arg("logbase") = 2), "Continuous entropy estimator");
+    }, (py::arg("data"), py::arg("k") = 3, py::arg("logbase") = 2), "Continuous entropy estimator");
 }
 
 void export_metric_entropy() {

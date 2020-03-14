@@ -5,7 +5,7 @@
 #include <tuple>
 #include <deque>
 
-namespace bp = boost::python;
+namespace py = boost::python;
 
 template <typename recType, typename Metric>
 void register_wrapper_DSPCC() {
@@ -13,13 +13,13 @@ void register_wrapper_DSPCC() {
     using Matrix = std::vector<std::vector<recType>>;
     using Queue = std::deque<std::vector<recType>>;
 
-    auto dspcc = bp::class_<Mapping>("DSPCC", bp::init<const std::vector<recType>&, size_t, size_t, float, size_t>(
+    auto dspcc = py::class_<Mapping>("DSPCC", py::init<const std::vector<recType>&, size_t, size_t, float, size_t>(
         (
-            bp::arg("training_dataset"),
-            bp::arg("n_features_") = 1,
-            bp::arg("n_subbands_") = 4,
-            bp::arg("time_freq_balance_") = 0.5,
-            bp::arg("n_top_features_") = 16
+            py::arg("training_dataset"),
+            py::arg("n_features_") = 1,
+            py::arg("n_subbands_") = 4,
+            py::arg("time_freq_balance_") = 0.5,
+            py::arg("n_top_features_") = 16
         )
     ));
     Matrix (Mapping::*encode) (const std::vector<recType>&) = &Mapping::time_freq_PCFA_encode;

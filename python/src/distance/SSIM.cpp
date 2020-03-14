@@ -3,15 +3,15 @@
 #include <boost/python.hpp>
 #include <vector>
 
-namespace bp = boost::python;
+namespace py = boost::python;
 
 template<typename DistanceType, typename Value>
 void register_wrapper_SSIM() {
     using Metric = metric::SSIM<DistanceType, Value>;
     using ValueType = typename Value::value_type;
     using Container = typename std::vector<Value>;
-    bp::class_<Metric>("SSIM")
-        .def(bp::init<ValueType, ValueType>((bp::arg("dynamic_range_"), bp::arg("masking_"))))
+    py::class_<Metric>("SSIM")
+        .def(py::init<ValueType, ValueType>((py::arg("dynamic_range_"), py::arg("masking_"))))
         .def("__call__", &Metric::template operator()<Container>);
 }
 

@@ -15,45 +15,47 @@ namespace py = boost::python;
 
 
 void export_metric_EMD() {
-    using V = double;
+    using V = int;
     using Container = std::vector<std::vector<V>>;
+    using Vector = std::vector<V>;
     using Class = metric::EMD<V>;
 
     Container (*func1)(size_t,size_t) = &metric::EMD_details::ground_distance_matrix_of_2dgrid<V>;
-    Container (*func2)(Container) = &metric::EMD_details::ground_distance_matrix_of_2dgrid<V>;
+    //Container (*func2)(Container) = &metric::EMD_details::ground_distance_matrix_of_2dgrid<V>;
 
-    py::class_<Class>("EMD")
-        .def(py::init<const Container&>(
+    auto emd = py::class_<Class>("EMD", "Earth mover's distance");
+    emd.def(py::init<const Container&>(
             (
                 py::arg("C")
             )
-        ))
-        .def(py::init<const Container&, const V&>(
+        ));
+    emd.def(py::init<const Container&, const V&>(
             (
                 py::arg("C"),
                 py::arg("extra_mass_penalty")
             )
-        ))
-        .def(py::init<std::size_t, std::size_t>(
+        ));
+    emd.def(py::init<std::size_t, std::size_t>(
             (
                 py::arg("rows"),
                 py::arg("cols")
             )
-        ))
-        .def(py::init<std::size_t, std::size_t, const V&>(
+        ));
+    emd.def(py::init<std::size_t, std::size_t, const V&>(
             (
                 py::arg("rows"),
                 py::arg("cols"),
                 py::arg("extra_mass_penalty")
             )
-        ))
-        .def("__call__", +[](Class& self, py::object& A, py::object& B) {
-            return self.operator()(WrapStlVector<V>(A), WrapStlVector<V>(B));
-        })
-        .def("ground_distance_matrix_of_2dgrid", func1)
-        .def("ground_distance_matrix_of_2dgrid", func2)
-        .def("max_in_distance_matrix", metric::EMD_details::max_in_distance_matrix<Container>)
-        ;
+        ));
+    V (Class::*call)(const Vector&, const Vector&) const = &Class::operator()<Vector>;
+    emd.def("__call__", call);
+//        .def("__call__", +[](Class& self, py::object A, py::object B) {
+//            return self.operator()(WrapStlVector<V>(A), WrapStlVector<V>(B));
+//        })
+    emd.def("ground_distance_matrix_of_2dgrid", func1, (py::arg("cols"), py::arg("rows")));
+    //emd.def("ground_distance_matrix_of_2dgrid", func2, (py::arg("grid"));
+    emd.def("max_in_distance_matrix", metric::EMD_details::max_in_distance_matrix<Container>);
 }
 
 

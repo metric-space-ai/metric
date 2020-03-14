@@ -12,7 +12,7 @@
 #include <string>
 #include <vector>
 
-namespace bp = boost::python;
+namespace py = boost::python;
 
 template<typename Value>
 void register_wrapper_edit() {
@@ -20,7 +20,7 @@ void register_wrapper_edit() {
     auto p1 = &Metric::template operator()<std::basic_string_view<Value>>;
     auto p2 = &Metric::template operator()<std::vector<double>>;
     int (Metric::*p3)(const Value*, const Value*) const = &Metric::operator();
-    bp::class_<Metric>("Edit")
+    py::class_<Metric>("Edit")
         .def("__call__", p1)
         .def("__call__", p2)
         .def("__call__", p3);

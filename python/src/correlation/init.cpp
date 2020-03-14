@@ -7,7 +7,7 @@
 */
 #include <boost/python.hpp>
 
-namespace bp = boost::python;
+namespace py = boost::python;
 
 void export_metric_MGC();
 

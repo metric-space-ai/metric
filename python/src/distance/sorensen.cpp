@@ -3,19 +3,19 @@
 #include <boost/python.hpp>
 #include <vector>
 
-namespace bp = boost::python;
+namespace py = boost::python;
 
 
 template<typename Value>
 void register_wrapper() {
     {
         using Specialization = double (*)(const blaze::CompressedVector<Value>&, const blaze::CompressedVector<Value>&);
-        bp::def<Specialization>("sorensen", &metric::sorensen<Value>);
+        py::def<Specialization>("sorensen", &metric::sorensen<Value>);
     }
 
     {
         using Specialization = double (*)(const std::vector<Value>&, const std::vector<Value>&);
-        bp::def<Specialization>("sorensen", &metric::sorensen<std::vector<Value>>);
+        py::def<Specialization>("sorensen", &metric::sorensen<std::vector<Value>>);
     }
 }
 

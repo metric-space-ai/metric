@@ -15,19 +15,24 @@
 
 class NotUsed {};
 
-namespace bp = boost::python;
+namespace py = boost::python;
 
 template <class RecType, class Metric1, class Metric2>
 void wrap_metric_MGC() {
     using Metric = metric::MGC<NotUsed, Metric1, NotUsed, Metric2>;
     using Container = std::vector<RecType>;
     std::string name = "MGC_" + getMetricName<Metric1>() + "_" + getMetricName<Metric2>();
-    auto mgc = bp::class_<Metric>(name.c_str());
+    auto mgc = py::class_<Metric>(name.c_str(), "Multiscale Graph Correlation");
     mgc.def("__call__", +[](Metric& self,
         const WrapStlMatrix<double>& a,
         const WrapStlMatrix<double>& b) {
             return self(a, b);
-        }
+        },
+        (
+            py::arg("a"),
+            py::arg("b")
+        ),
+        "Return correlation betweeen a and b"
     );
     mgc.def("estimate", +[](Metric& self,
         const WrapStlMatrix<double>& a,
@@ -36,7 +41,15 @@ void wrap_metric_MGC() {
         double threshold = 0.05,
         size_t max_iterations = 1000) {
             return self.estimate(a, b, b_sample_size, threshold, max_iterations);
-        }
+        },
+        (
+            py::arg("a"),
+            py::arg("b"),
+            py::arg("b_sample_size") = 250,
+            py::arg("threshold") = 0.05,
+            py::arg("max_iterations") = 1000
+        ),
+        "Return estimate of the correlation between a and b"
     );
     mgc.def("xcorr", +[](Metric& self,
         const WrapStlMatrix<double>& a,
@@ -64,7 +77,7 @@ void wrap_metric_MGC() {
 template <class T>
 void wrap_metric_MGC_direct() {
     using Metric = metric::MGC_direct;
-    auto mgc = bp::class_<Metric>("MGC_direct");
+    auto mgc = py::class_<Metric>("MGC_direct");
     mgc.def("__call__", &Metric::operator()<T>);   // FIXME: unsupported argument types
     mgc.def("xcorr", &Metric::xcorr<T>);           // FIXME: unsupported argument types
     mgc.def("center_distance_matrix", &Metric::center_distance_matrix<T>);

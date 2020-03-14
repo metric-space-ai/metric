@@ -5,7 +5,7 @@
 #include <vector>
 #include <utility>
 
-namespace bp = boost::python;
+namespace py = boost::python;
 
 template<typename recType, typename Metric>
 void register_wrapper_matrix() {
@@ -16,15 +16,15 @@ void register_wrapper_matrix() {
     std::pair<std::size_t, bool> (Matrix::*insert_if1)(const recType&, typename Matrix::distType) = &Matrix::insert_if;
     std::vector<std::pair<std::size_t, bool>> (Matrix::*insert_if2)(const Container&, typename Matrix::distType) = &Matrix::insert_if;
 
-    bp::class_<Matrix>("Matrix", bp::init())
-        .def(bp::init<const recType&>(
+    py::class_<Matrix>("Matrix", py::init())
+        .def(py::init<const recType&>(
             (
-                bp::arg("p")
+                py::arg("p")
             )
         ))
-        .def(bp::init<const Container&>(
+        .def(py::init<const Container&>(
             (
-                bp::arg("p")
+                py::arg("p")
             )
         ))
         .def("insert", insert1)

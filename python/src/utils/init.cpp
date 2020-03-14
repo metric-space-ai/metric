@@ -7,12 +7,14 @@
 */
 #include <boost/python.hpp>
 
-namespace bp = boost::python;
+namespace py = boost::python;
 
 void export_metric_sparsify();
 void export_metric_dimension();
+void export_metric_datasets();
 
 BOOST_PYTHON_MODULE(_utils) {
     export_metric_sparsify();
     export_metric_dimension();
+    export_metric_datasets();
 }

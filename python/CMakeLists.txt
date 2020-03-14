@@ -12,7 +12,7 @@ project(metric_py DESCRIPTION "metric python binding")
 SET(SOURCE_PATH ${CMAKE_SOURCE_DIR}/src)
 SET(METRIC_SOURCE_PATH ${CMAKE_SOURCE_DIR}/..)
 
-find_package(Python3 COMPONENTS NumPy Interpreter Development)
+find_package(Python3 COMPONENTS Interpreter Development)
 
 # rasbian has python3 while arch has python
 find_package(Boost COMPONENTS python3)
@@ -34,7 +34,7 @@ endif ()
 
 set(COMMON_LIBRARIES
     ${Boost_LIBRARIES}
-    ${PYTHON3_LIBRARIES}
+    ${Python3_LIBRARIES}
     ${lapackblas_libraries}
 )
 

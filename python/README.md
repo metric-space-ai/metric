@@ -1,3 +1,11 @@
+# Ubuntu
+## Install dependencies
+On Ubuntu one can install dependencies from Ubuntu repositories.
+
+```
+$ sudo apt-get install python-numpy
+```
+
 ## Build module
 
 ```
