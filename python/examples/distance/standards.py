@@ -10,13 +10,13 @@ def main():
     distance = Euclidean()
     print('Euclidian distance:', distance(v0, v1))
 
-    distance = Euclidean_thresholded(thres_=1000.0, factor_=3000.0)
+    distance = Euclidean_thresholded(thres=1000.0, factor=3000.0)
     print('Euclidian Threshold distance:', distance(v0, v1))
 
     distance = Manhatten()
     print('Manhatten distance:', distance(v0, v1))
 
-    distance = P_norm(p_=2)
+    distance = P_norm(p=2)
     print('Minkowski (L general) Metric:', distance(v0, v1))
 
     distance = Cosine()
