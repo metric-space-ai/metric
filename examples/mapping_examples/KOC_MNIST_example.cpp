@@ -297,6 +297,7 @@ int main(int argc, char *argv[])
 	std::vector<Record> dataset;
 	std::vector<int> labels;
 	std::vector<Record> test_set;
+	std::vector<int> test_labels;
 	
 	std::tie(dataset, labels) = readCsvData("assets/mnist100.csv", ',');
 	
@@ -304,6 +305,7 @@ int main(int argc, char *argv[])
 	std::cout << "labels:" << std::endl;
 	vector_print(labels);
 	   
+	std::tie(test_set, test_labels) = readCsvData("assets/MNIST_anomalies.csv", ',');
 	test_set.push_back(dataset[0]);
 	test_set.push_back(dataset[1]);
 	test_set.push_back(dataset[4]);
@@ -325,7 +327,7 @@ int main(int argc, char *argv[])
 	auto simple_koc = simple_koc_factory(dataset, num_clusters); 
 
 	// extra deviation of the clusters from original in the KOC
-	double sigma = 2.0;
+	double sigma = 1.75;
 	
 	
 	std::cout << std::endl;
