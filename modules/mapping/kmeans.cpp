@@ -46,6 +46,8 @@ namespace kmeans_details {
             return val * val;
         } else if (distance_measure.compare("manhatten") == 0)
             return metric::Manhatten<T>()(a, b);
+		else if (distance_measure.compare("cosine_inverted") == 0)
+            return metric::CosineInverted<T>()(a, b);
         else {
             return metric::Euclidian<T>()(a, b);
         }

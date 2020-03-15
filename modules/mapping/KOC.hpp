@@ -145,6 +145,7 @@ namespace metric {
 			std::tuple<std::vector<size_t>, std::vector<typename recType::value_type>, std::vector<int>> top_outlier(const std::vector<recType>& samples, double sigma = 1.0, int count = 10);
 
 		private:
+			int min_cluster_size_ = 1;
 	
 			std::vector<int> clusters;	
 			std::vector<recType> centroids;	
