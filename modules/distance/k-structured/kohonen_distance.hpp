@@ -45,7 +45,7 @@ struct kohonen_distance {
      * @param nodesWidth - width of the SOM grid
      * @param nodesHeight - height of the SOM grid
      */
-	kohonen_distance(std::vector<Sample>& samples, size_t nodesWidth, size_t nodesHeight);
+	kohonen_distance(const std::vector<Sample>& samples, size_t nodesWidth, size_t nodesHeight);
 
     /**
      * @brief Construct a new kohonen_distance object
@@ -58,7 +58,7 @@ struct kohonen_distance {
      * @param iterations
      * @param distribution
      */
-	kohonen_distance(std::vector<Sample>& samples, Graph graph, Metric metric = Metric(), double start_learn_rate = 0.8, double finish_learn_rate = 0.0, size_t iterations = 20, 
+	kohonen_distance(std::vector<Sample>& samples, Graph graph, Metric metric = Metric(), double start_learn_rate = 0.8, double finish_learn_rate = 0.0, size_t iterations = 20,
 		Distribution distribution = Distribution(-1, 1));
 
     /**

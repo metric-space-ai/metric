@@ -34,7 +34,7 @@ kohonen_distance<D, Sample, Graph, Metric, Distribution>::kohonen_distance(metri
 	
 
 template <typename D, typename Sample, typename Graph, typename Metric, typename Distribution>
-kohonen_distance<D, Sample, Graph, Metric, Distribution>::kohonen_distance(std::vector<Sample>& samples, size_t nodesWidth, size_t nodesHeight) : 
+kohonen_distance<D, Sample, Graph, Metric, Distribution>::kohonen_distance(const std::vector<Sample>& samples, size_t nodesWidth, size_t nodesHeight) :
 	som_model_(Graph(nodesWidth, nodesHeight), Metric(), 0.8, 0.2, 20)
 {
 	som_model_.train(samples);
