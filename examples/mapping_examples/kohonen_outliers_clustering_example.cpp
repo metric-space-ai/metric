@@ -323,6 +323,12 @@ int main(int argc, char *argv[])
 
 	///
 
+	// random seed for repeateable results
+	long long random_seed = 777;
+	double sigma = 1.5;
+
+	metric::KOC_factory<Record, metric::Grid4> simple_koc_factory(best_w_grid_size, best_h_grid_size, sigma, 0.5, 0.0, 300, -1, 1, 2, 0.5, random_seed);    
+
 	for (int i = 0; i < datasets.size(); i++)
 	{
 		std::cout << "--------------" << std::endl;
@@ -335,23 +341,17 @@ int main(int argc, char *argv[])
 		dataset = datasets[i];
 		test_set = test_sets[i];
 
-		// random seed for repeateable results
-		long long random_seed = 777;
-
-		metric::KOC_factory<Record, metric::Grid4> simple_koc_factory(best_w_grid_size, best_h_grid_size, 0.5, 0.0, 300, -1, 1, 2, 0.5, random_seed);    
 		auto simple_koc = simple_koc_factory(dataset, num_clusters); 
-
-		double sigma = 1.5;
 	
 	
 		std::cout << "train dataset:" << std::endl;
 
-		auto anomalies = simple_koc.check_if_anomaly(dataset, sigma);	
+		auto anomalies = simple_koc.check_if_anomaly(dataset);	
 		std::cout << std::endl;
 		std::cout << "anomalies:" << std::endl;
 		vector_print(anomalies);
 	
-		auto assignments = simple_koc.result(dataset, sigma);	
+		auto assignments = simple_koc.result(dataset);	
 		std::cout << std::endl;
 		std::cout << "assignments:" << std::endl;
 		vector_print(assignments);
@@ -361,12 +361,12 @@ int main(int argc, char *argv[])
 		std::cout << std::endl;
 		std::cout << "test dataset:" << std::endl;
 
-		anomalies = simple_koc.check_if_anomaly(test_set, sigma);	
+		anomalies = simple_koc.check_if_anomaly(test_set);	
 		std::cout << std::endl;
 		std::cout << "anomalies:" << std::endl;
 		vector_print(anomalies);
 	
-		assignments = simple_koc.result(test_set, sigma);	
+		assignments = simple_koc.result(test_set);	
 		std::cout << std::endl;
 		std::cout << "assignments:" << std::endl;
 		vector_print(assignments);
@@ -377,7 +377,7 @@ int main(int argc, char *argv[])
 		std::cout << std::endl;
 		std::cout << "top outliers:" << std::endl;
 
-		auto [idxs, sorted_distances, sorted_assignments] = simple_koc.top_outlier(test_set, sigma, 10);
+		auto [idxs, sorted_distances, sorted_assignments] = simple_koc.top_outlier(test_set, 10);
 	
 		std::cout << std::endl;
 		std::cout << "sorted indexes:" << std::endl;
