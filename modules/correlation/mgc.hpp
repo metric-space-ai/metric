@@ -36,6 +36,16 @@ using DistanceMatrix = blaze::SymmetricMatrix<blaze::DynamicMatrix<T>>;
  */
 template <class recType1, class Metric1, class recType2, class Metric2>
 struct MGC {
+
+    /**
+     * @brief Construct MGC object
+     *
+     * @param m1 Metric1 object
+     * @param m2 Metric1 object
+     *
+     */
+    explicit MGC(const Metric1 & m1 = Metric1(), const Metric2 & m2 = Metric2()) : metric1(m1), metric2(m2) {}
+
     /** @brief return correlation betweeen a and b
      * @param a container of values of type recType1
      * @param b container of values of type recType2
@@ -72,7 +82,7 @@ struct MGC {
 	 * @return distance matrix
 	 */
 	template <typename Container, typename Metric>
-    DistanceMatrix<double> computeDistanceMatrix(const Container &c) const;
+  DistanceMatrix<double> computeDistanceMatrix(const Container &c, const Metric & metric) const;
     /**
      * @brief
      *
@@ -143,6 +153,9 @@ struct MGC {
      */
     std::vector<double> linspace(double a, double b, int n);
 
+private:
+    Metric1 metric1;
+    Metric2 metric2;
 };
 
 /**
