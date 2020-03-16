@@ -107,6 +107,6 @@ void export_metric_KOC() {
     wrap_metric_KOC<std::vector<double>, metric::Grid6, metric::P_norm<double>>();
 }
 
-BOOST_PYTHON_MODULE(_KOC) {
+BOOST_PYTHON_MODULE(_koc) {
     export_metric_KOC();
 }

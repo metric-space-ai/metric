@@ -63,7 +63,7 @@ void export_metric_entropy() {
     wrap_metric_entropy<Container, metric::P_norm<Value>>();
 }
 
-BOOST_PYTHON_MODULE(_VOI) {
+BOOST_PYTHON_MODULE(_voi) {
     export_metric_VOI();
     export_metric_entropy();
 }
