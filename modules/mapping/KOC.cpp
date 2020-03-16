@@ -17,20 +17,20 @@ namespace metric {
 	namespace KOC_details {
 		template <class recType, class Graph, class Metric, class Distribution>
 		void KOC<recType, Graph, Metric, Distribution>::train(
-			const std::vector<recType>& samples, int num_clusters)
+			const std::vector<recType>& samples, int num_clusters, int min_cluster_size)
 		{
 			SOM<recType, Graph, Metric, Distribution>::train(samples);
 			calculate_std_deviations_for_nodes(samples, samples.size());
-			std::tie(clusters, centroids, clusters_counts) = clusterize_nodes(num_clusters);
+			std::tie(clusters, centroids, clusters_counts) = clusterize_nodes(num_clusters, min_cluster_size);
 		}
 
 
 		template <class recType, class Graph, class Metric, class Distribution>
-		void KOC<recType, Graph, Metric, Distribution>::estimate(const std::vector<recType>& samples, const size_t sampleSize, int num_clusters)
+		void KOC<recType, Graph, Metric, Distribution>::estimate(const std::vector<recType>& samples, const size_t sampleSize, int num_clusters, int min_cluster_size)
 		{
 			SOM<recType, Graph, Metric, Distribution>::estimate(samples, sampleSize);
 			calculate_std_deviations_for_nodes(samples, sampleSize);
-			std::tie(clusters, centroids, clusters_counts) = clusterize_nodes(num_clusters);
+			std::tie(clusters, centroids, clusters_counts) = clusterize_nodes(num_clusters, min_cluster_size);
 		}
 
 		template <class recType, class Graph, class Metric, class Distribution>
@@ -195,7 +195,7 @@ namespace metric {
 		}
 
 		template <class recType, class Graph, class Metric, class Distribution>
-		std::tuple<std::vector<int>, std::vector<recType>, std::vector<int>> KOC<recType, Graph, Metric, Distribution>::clusterize_nodes(int num_clusters)
+		std::tuple<std::vector<int>, std::vector<recType>, std::vector<int>> KOC<recType, Graph, Metric, Distribution>::clusterize_nodes(int num_clusters, int min_cluster_size)
 		{
 			int current_min_cluster_size = -1;
 
@@ -211,7 +211,7 @@ namespace metric {
 				metric_name = "manhatten";
 			}
 
-			while (current_min_cluster_size < min_cluster_size_)
+			while (current_min_cluster_size < min_cluster_size)
 			{
 				// clustering on the reduced data
 				
@@ -237,7 +237,7 @@ namespace metric {
 
 				num_clusters = new_num_clusters;
 
-				if (current_min_cluster_size >= min_cluster_size_)
+				if (current_min_cluster_size >= min_cluster_size)
 				{
 					for (size_t i = 0; i < assignments.size(); i++)
 					{
@@ -343,12 +343,12 @@ namespace metric {
 
 	
 	template <class recType, class Graph, class Metric, class Distribution>
-	KOC_details::KOC<recType, Graph, Metric, Distribution> KOC_factory<recType, Graph, Metric, Distribution>::operator()(const std::vector<recType>& samples, int num_clusters)
+	KOC_details::KOC<recType, Graph, Metric, Distribution> KOC_factory<recType, Graph, Metric, Distribution>::operator()(const std::vector<recType>& samples, int num_clusters, int min_cluster_size)
 	{
 		KOC_details::KOC<recType, Graph, Metric, Distribution> koc(graph_, metric_, start_learn_rate_, finish_learn_rate_, iterations_, distribution_, 
 			neighborhood_start_size_, neigbour_range_decay_, random_seed_);
 
-		koc.train(samples, num_clusters);
+		koc.train(samples, num_clusters, min_cluster_size);
 
 		return koc;
 	}

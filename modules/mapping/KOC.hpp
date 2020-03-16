@@ -91,7 +91,7 @@ namespace metric {
 				 * @param samples 
 				 * @param num_clusters 
 				 */
-			void train(const std::vector<recType>& samples, int num_clusters);
+			void train(const std::vector<recType>& samples, int num_clusters, int min_cluster_size = 1);
 
 			/**
 				 * @brief 
@@ -168,7 +168,7 @@ namespace metric {
 				 * 
 				 * @return std::tuple<std::vector<int>, std::vector<recType>, std::vector<int>>
 				 */
-			std::tuple<std::vector<int>, std::vector<recType>, std::vector<int>> clusterize_nodes(int num_clusters);
+			std::tuple<std::vector<int>, std::vector<recType>, std::vector<int>> clusterize_nodes(int num_clusters, int min_cluster_size = 1);
 
 			/**
 				 * @brief 
@@ -177,7 +177,7 @@ namespace metric {
 				 * @param sampleSize 
 				 * @param num_clusters 
 				 */
-			void estimate(const std::vector<recType>& samples, const size_t sampleSize, int num_clusters);
+			void estimate(const std::vector<recType>& samples, const size_t sampleSize, int num_clusters, int min_cluster_size = 1);
 
 			/**
 				 * @brief 
@@ -291,7 +291,7 @@ namespace metric {
 			* 
 			* @return KOC_details::KOC<recType, Graph, Metric, Distribution>
 		 */
-		KOC_details::KOC<recType, Graph, Metric, Distribution> operator()(const std::vector<recType>& samples, int num_clusters);
+		KOC_details::KOC<recType, Graph, Metric, Distribution> operator()(const std::vector<recType>& samples, int num_clusters, int min_cluster_size = 1);
 
 	private:
 
