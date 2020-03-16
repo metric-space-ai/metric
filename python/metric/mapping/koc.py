@@ -1,4 +1,4 @@
-import _KOC as impl
+import _koc as impl
 from metric._common import cpp_implementation_router
 
 
