@@ -24,6 +24,11 @@ namespace metric {
 template <typename D, typename Sample, typename Graph, typename Metric, typename Distribution>
 kohonen_distance<D, Sample, Graph, Metric, Distribution>::kohonen_distance(metric::SOM<Sample, Graph, Metric, Distribution> som_model) : som_model_(som_model)
 {
+	// calculate ground distance matrix between SOM nodes
+	//auto cost_mat = metric::EMD_details::ground_distance_matrix_of_2dgrid<typename Sample::value_type, Metric>(som_model_.get_weights());
+	//auto maxCost = metric::EMD_details::max_in_distance_matrix(cost_mat);
+	//emd_distance_ = metric::EMD<D>(cost_mat, maxCost);
+
 	calculate_distance_matrix();
 }
 	
@@ -33,6 +38,11 @@ kohonen_distance<D, Sample, Graph, Metric, Distribution>::kohonen_distance(std::
 	som_model_(Graph(nodesWidth, nodesHeight), Metric(), 0.8, 0.2, 20)
 {
 	som_model_.train(samples);
+	
+	// calculate ground distance matrix between SOM nodes
+	//auto cost_mat = metric::EMD_details::ground_distance_matrix_of_2dgrid<typename Sample::value_type, Metric>(som_model_.get_weights());
+	//auto maxCost = metric::EMD_details::max_in_distance_matrix(cost_mat);
+	//emd_distance_ = metric::EMD<D>(cost_mat, maxCost);
 
 	calculate_distance_matrix();
 }
@@ -44,6 +54,11 @@ kohonen_distance<D, Sample, Graph, Metric, Distribution>::kohonen_distance(std::
 	som_model_(graph, metric, start_learn_rate, finish_learn_rate, iterations, distribution)
 {
 	som_model_.train(samples);
+
+	// calculate ground distance matrix between SOM nodes
+	//auto cost_mat = metric::EMD_details::ground_distance_matrix_of_2dgrid<typename Sample::value_type, Metric>(som_model_.get_weights());
+	//auto maxCost = metric::EMD_details::max_in_distance_matrix(cost_mat);
+	//emd_distance_ = metric::EMD<D>(cost_mat, maxCost);
 	
 	calculate_distance_matrix();
 }
