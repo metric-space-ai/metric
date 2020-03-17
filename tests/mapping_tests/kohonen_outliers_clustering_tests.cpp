@@ -16,7 +16,7 @@ Copyright (c) 2019 Panda Team
 
 #include <boost/test/unit_test.hpp>
 
-BOOST_AUTO_TEST_CASE(KOC) {
+BOOST_AUTO_TEST_CASE(Main) {
 	
 	using Record = std::vector<double>;
 				
@@ -102,27 +102,67 @@ BOOST_AUTO_TEST_CASE(KOC) {
 	BOOST_CHECK(idxs[1] == 0);
 	BOOST_CHECK(idxs[2] == 2);
 	BOOST_CHECK(idxs[3] == 3);
+}
 
-	///////////////////////////////////////////////////////////////
+BOOST_AUTO_TEST_CASE(Empty) {
+	
+	using Record = std::vector<double>;
+				
+	size_t best_w_grid_size = 3;
+	size_t best_h_grid_size = 2;	
+
+	// init
+
+	std::vector<Record> dataset = {
+
+		{0, 0.1},
+		{0.2, 0},
+
+		{0, 1.2},
+		{0.1, 1},
+
+		{0.1, 2},
+		{0.2, 2},
+
+		{1, 0},
+		{1.2, 0.1},
+
+		{1.3, 1.1},
+		{0.9, 1},
+
+		{1.1, 2},
+		{0.9, 1.9},
+	};
+
+	std::vector<Record> test_set = {
+		{0.5, 0.5},
+		{5, 5},
+		{0, 0.1},
+		{0, 1},
+	};
+	
+	int num_clusters = 3;
+	double sigma = 1.5;
+	double random_seed = 777;
 	
 	// empty test dataset
 	
 	std::vector<Record> empty_set;
 			
-	metric::KOC_factory<Record, metric::Grid4> koc_factory_1(best_w_grid_size, best_h_grid_size, sigma, 0.5, 0.0, 300);    
+	metric::KOC_factory<Record, metric::Grid4> koc_factory_1(best_w_grid_size, best_h_grid_size, sigma, 0.5, 0.0, 300, -1, 1, 2, 0.5, random_seed);    
 	auto koc_1 = koc_factory_1(dataset, num_clusters); 
 
-	anomalies = koc_1.check_if_anomaly(empty_set);
+	auto anomalies = koc_1.check_if_anomaly(empty_set);
 	// all should be ok, but zero sized result
 	BOOST_CHECK(anomalies.size() == 0);
 	
-	assignments = koc_1.assign_to_clusters(empty_set);
+	auto assignments = koc_1.assign_to_clusters(empty_set);
 	// all should be ok, but zero sized result
 	BOOST_CHECK(assignments.size() == 0);
 
 	//top outliers
 
-	std::tie(idxs, sorted_distances) = koc_1.top_outliers(empty_set, 10);
+	auto [idxs, sorted_distances] = koc_1.top_outliers(empty_set, 10);
 	// all should be ok, but zero sized result
 	BOOST_CHECK(idxs.size() == 0);
 	BOOST_CHECK(sorted_distances.size() == 0);
