@@ -6,7 +6,9 @@
 #include "../../../3rdparty/blaze/Math.h"
 
 
-namespace MiniDNN
+namespace metric
+{
+namespace dnn
 {
 
 
@@ -24,11 +26,13 @@ namespace MiniDNN
 template<typename Scalar>
 class Output
 {
-	private:
-		using Matrix = blaze::DynamicMatrix<Scalar, blaze::columnMajor>;
-		using IntegerVector = blaze::DynamicVector<int, blaze::rowVector>;
+	protected:
+		using Matrix = blaze::DynamicMatrix<Scalar>;
+		using IntegerVector = blaze::DynamicMatrix<int, blaze::columnMajor>;
     public:
         virtual ~Output() {}
+
+        virtual std::string getType() = 0;
 
         // Check the format of target data, e.g. in classification problems the
         // target data should be binary (either 0 or 1)
@@ -37,10 +41,10 @@ class Output
         // Another type of target data where each element is a class label
         // This version may not be sensible for regression tasks, so by default
         // we raise an exception
-        virtual void check_target_data(const IntegerVector& target)
+        /*virtual void check_target_data(const IntegerVector& target)
         {
             throw std::invalid_argument("[class Output]: This output type cannot take class labels as target data");
-        }
+        }*/
 
         // A combination of the forward stage and the back-propagation stage for the output layer
         // The computed derivative of the input should be stored in this layer, and can be retrieved by
@@ -50,11 +54,11 @@ class Output
         // Another type of target data where each element is a class label
         // This version may not be sensible for regression tasks, so by default
         // we raise an exception
-        virtual void evaluate(const Matrix& prev_layer_data,
+        /*virtual void evaluate(const Matrix& prev_layer_data,
                               const IntegerVector& target)
         {
             throw std::invalid_argument("[class Output]: This output type cannot take class labels as target data");
-        }
+        }*/
 
         // The derivative of the input of this layer, which is also the derivative
         // of the output of previous layer
@@ -67,7 +71,8 @@ class Output
 };
 
 
-} // namespace MiniDNN
+} // namespace dnn
+} // namespace metric
 
 
 #endif /* OUTPUT_H_ */

@@ -3,7 +3,7 @@
 //  \file blaze/math/serialization/VectorSerializer.h
 //  \brief Serialization of dense and sparse vectors
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -50,7 +50,6 @@
 #include "../../math/typetraits/IsDenseVector.h"
 #include "../../math/typetraits/IsResizable.h"
 #include "../../util/Assert.h"
-#include "../../util/DisableIf.h"
 #include "../../util/EnableIf.h"
 #include "../../util/Types.h"
 
@@ -193,7 +192,7 @@ class VectorSerializer
    //**Constructor*********************************************************************************
    /*!\name Constructor */
    //@{
-   explicit inline VectorSerializer();
+   inline VectorSerializer();
    //@}
    //**********************************************************************************************
 

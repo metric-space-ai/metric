@@ -3,7 +3,7 @@
 //  \file blaze/math/views/Column.h
 //  \brief Header file for the implementation of the Column view
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -50,6 +50,8 @@
 #include "../../math/expressions/MatMatMapExpr.h"
 #include "../../math/expressions/MatMatMultExpr.h"
 #include "../../math/expressions/MatMatSubExpr.h"
+#include "../../math/expressions/MatNoAliasExpr.h"
+#include "../../math/expressions/MatNoSIMDExpr.h"
 #include "../../math/expressions/Matrix.h"
 #include "../../math/expressions/MatScalarDivExpr.h"
 #include "../../math/expressions/MatScalarMultExpr.h"
@@ -57,7 +59,10 @@
 #include "../../math/expressions/MatTransExpr.h"
 #include "../../math/expressions/SchurExpr.h"
 #include "../../math/expressions/VecExpandExpr.h"
+#include "../../math/expressions/VecTVecMapExpr.h"
 #include "../../math/expressions/VecTVecMultExpr.h"
+#include "../../math/functors/Bind2nd.h"
+#include "../../math/RelaxationFlag.h"
 #include "../../math/shims/IsDefault.h"
 #include "../../math/typetraits/HasConstDataAccess.h"
 #include "../../math/typetraits/HasMutableDataAccess.h"
@@ -664,6 +669,76 @@ inline decltype(auto) column( const MatMatMapExpr<MT>& matrix, RCAs... args )
 
 //*************************************************************************************************
 /*! \cond BLAZE_INTERNAL */
+/*!\brief Creating a view on a specific column of the given outer map operation.
+// \ingroup column
+//
+// \param matrix The constant outer map operation.
+// \param args Optional column arguments.
+// \return View on the specified column of the outer map operation.
+// \exception std::invalid_argument Invalid column access index.
+//
+// This function returns an expression representing the specified column of the given outer
+// map operation.
+*/
+template< size_t I            // Column index
+        , typename MT         // Matrix base type of the expression
+        , typename... RCAs >  // Optional column arguments
+inline decltype(auto) column( const VecTVecMapExpr<MT>& matrix, RCAs... args )
+{
+   BLAZE_FUNCTION_TRACE;
+
+   MAYBE_UNUSED( args... );
+
+   if( !Contains_v< TypeList<RCAs...>, Unchecked > ) {
+      if( (~matrix).columns() <= I ) {
+         BLAZE_THROW_INVALID_ARGUMENT( "Invalid column access index" );
+      }
+   }
+
+   return map( (~matrix).leftOperand(),
+               blaze::bind2nd( (~matrix).operation(), (~matrix).rightOperand()[I] ) );
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Creating a view on a specific column of the given outer map operation.
+// \ingroup column
+//
+// \param matrix The constant outer map operation.
+// \param index The index of the column.
+// \param args Optional column arguments.
+// \return View on the specified column of the outer map operation.
+// \exception std::invalid_argument Invalid column access index.
+//
+// This function returns an expression representing the specified column of the given outer
+// map operation.
+*/
+template< typename MT         // Matrix base type of the expression
+        , typename... RCAs >  // Optional column arguments
+inline decltype(auto) column( const VecTVecMapExpr<MT>& matrix, size_t index, RCAs... args )
+{
+   BLAZE_FUNCTION_TRACE;
+
+   MAYBE_UNUSED( args... );
+
+   if( !Contains_v< TypeList<RCAs...>, Unchecked > ) {
+      if( (~matrix).columns() <= index ) {
+         BLAZE_THROW_INVALID_ARGUMENT( "Invalid column access index" );
+      }
+   }
+
+   return map( (~matrix).leftOperand(),
+               blaze::bind2nd( (~matrix).operation(), (~matrix).rightOperand()[index] ) );
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
 /*!\brief Creating a view on a specific column of the given matrix evaluation operation.
 // \ingroup column
 //
@@ -707,6 +782,56 @@ inline decltype(auto) column( const MatSerialExpr<MT>& matrix, RCAs... args )
    BLAZE_FUNCTION_TRACE;
 
    return serial( column<CCAs...>( (~matrix).operand(), args... ) );
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Creating a view on a specific column of the given matrix no-alias operation.
+// \ingroup column
+//
+// \param matrix The constant matrix no-alias operation.
+// \param args The runtime column arguments.
+// \return View on the specified column of the no-alias operation.
+//
+// This function returns an expression representing the specified column of the given matrix
+// no-alias operation.
+*/
+template< size_t... CCAs      // Compile time column arguments
+        , typename MT         // Matrix base type of the expression
+        , typename... RCAs >  // Runtime column arguments
+inline decltype(auto) column( const MatNoAliasExpr<MT>& matrix, RCAs... args )
+{
+   BLAZE_FUNCTION_TRACE;
+
+   return noalias( column<CCAs...>( (~matrix).operand(), args... ) );
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Creating a view on a specific column of the given matrix no-SIMD operation.
+// \ingroup column
+//
+// \param matrix The constant matrix no-SIMD operation.
+// \param args The runtime column arguments.
+// \return View on the specified column of the no-SIMD operation.
+//
+// This function returns an expression representing the specified column of the given matrix
+// no-SIMD operation.
+*/
+template< size_t... CCAs      // Compile time column arguments
+        , typename MT         // Matrix base type of the expression
+        , typename... RCAs >  // Runtime column arguments
+inline decltype(auto) column( const MatNoSIMDExpr<MT>& matrix, RCAs... args )
+{
+   BLAZE_FUNCTION_TRACE;
+
+   return nosimd( column<CCAs...>( (~matrix).operand(), args... ) );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -944,11 +1069,11 @@ inline void clear( Column<MT,SO,DF,SF,CCAs...>&& column )
    if( isDefault<relaxed>( column( A, 0UL ) ) ) { ... }
    \endcode
 */
-template< bool RF           // Relaxation flag
-        , typename MT       // Type of the dense matrix
-        , bool SO           // Storage order
-        , bool SF           // Symmetry flag
-        , size_t... CCAs >  // Compile time column arguments
+template< RelaxationFlag RF  // Relaxation flag
+        , typename MT        // Type of the dense matrix
+        , bool SO            // Storage order
+        , bool SF            // Symmetry flag
+        , size_t... CCAs >   // Compile time column arguments
 inline bool isDefault( const Column<MT,SO,true,SF,CCAs...>& column )
 {
    using blaze::isDefault;
@@ -987,11 +1112,11 @@ inline bool isDefault( const Column<MT,SO,true,SF,CCAs...>& column )
    if( isDefault<relaxed>( column( A, 0UL ) ) ) { ... }
    \endcode
 */
-template< bool RF           // Relaxation flag
-        , typename MT       // Type of the sparse matrix
-        , bool SO           // Storage order
-        , bool SF           // Symmetry flag
-        , size_t... CCAs >  // Compile time column arguments
+template< RelaxationFlag RF  // Relaxation flag
+        , typename MT        // Type of the sparse matrix
+        , bool SO            // Storage order
+        , bool SF            // Symmetry flag
+        , size_t... CCAs >   // Compile time column arguments
 inline bool isDefault( const Column<MT,SO,false,SF,CCAs...>& column )
 {
    using blaze::isDefault;
@@ -2051,6 +2176,58 @@ template< typename MT  // Type of the matrix
 inline decltype(auto) derestrict( Column<MT,SO,DF,SF>&& c )
 {
    return column( derestrict( c.operand() ), c.column(), unchecked );
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Returns a reference to the underlying matrix of the given column.
+// \ingroup column
+//
+// \param c The given column.
+// \return Reference to the underlying matrix.
+//
+// This function returns a reference to the underlying matrix of the given column.\n
+// This function must \b NOT be called explicitly! It is used internally for the performance
+// optimized evaluation of expression templates. Calling this function explicitly might result
+// in the violation of invariants, erroneous results and/or in compilation errors.
+*/
+template< typename MT       // Type of the matrix
+        , bool SO           // Storage order
+        , bool DF           // Density flag
+        , bool SF           // Symmetry flag
+        , size_t... CCAs >  // Compile time column arguments
+inline decltype(auto) unview( Column<MT,SO,DF,SF,CCAs...>& c )
+{
+   return c.operand();
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Returns a reference to the underlying matrix of the given constant column.
+// \ingroup column
+//
+// \param c The given constant column.
+// \return Reference to the underlying matrix.
+//
+// This function returns a reference to the underlying matrix of the given constant column.\n
+// This function must \b NOT be called explicitly! It is used internally for the performance
+// optimized evaluation of expression templates. Calling this function explicitly might result
+// in the violation of invariants, erroneous results and/or in compilation errors.
+*/
+template< typename MT       // Type of the matrix
+        , bool SO           // Storage order
+        , bool DF           // Density flag
+        , bool SF           // Symmetry flag
+        , size_t... CCAs >  // Compile time column arguments
+inline decltype(auto) unview( const Column<MT,SO,DF,SF,CCAs...>& c )
+{
+   return c.operand();
 }
 /*! \endcond */
 //*************************************************************************************************

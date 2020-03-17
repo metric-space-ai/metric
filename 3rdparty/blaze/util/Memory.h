@@ -3,7 +3,7 @@
 //  \file blaze/util/Memory.h
 //  \brief Header file for memory allocation and deallocation functionality
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -40,13 +40,12 @@
 // Includes
 //*************************************************************************************************
 
-#if BLAZE_WIN64_PLATFORM || BLAZE_MINGW64_PLATFORM || BLAZE_MINGW32_PLATFORM
+#if BLAZE_WIN32_PLATFORM || BLAZE_WIN64_PLATFORM || BLAZE_MINGW64_PLATFORM || BLAZE_MINGW32_PLATFORM
 #  include <malloc.h>
 #endif
 #include <cstdlib>
 #include <new>
 #include "../util/Assert.h"
-#include "../util/DisableIf.h"
 #include "../util/EnableIf.h"
 #include "../util/Exception.h"
 #include "../util/Types.h"
@@ -80,7 +79,7 @@ inline byte_t* allocate_backend( size_t size, size_t alignment )
 {
    void* raw( nullptr );
 
-#if BLAZE_WIN64_PLATFORM || BLAZE_MINGW64_PLATFORM
+#if BLAZE_WIN32_PLATFORM || BLAZE_WIN64_PLATFORM || BLAZE_MINGW64_PLATFORM
    raw = _aligned_malloc( size, alignment );
    if( raw == nullptr ) {
 #elif BLAZE_MINGW32_PLATFORM
@@ -112,7 +111,7 @@ inline byte_t* allocate_backend( size_t size, size_t alignment )
 */
 inline void deallocate_backend( const void* address ) noexcept
 {
-#if BLAZE_WIN64_PLATFORM || BLAZE_MINGW64_PLATFORM
+#if BLAZE_WIN32_PLATFORM || BLAZE_WIN64_PLATFORM || BLAZE_MINGW64_PLATFORM
    _aligned_free( const_cast<void*>( address ) );
 #elif BLAZE_MINGW32_PLATFORM
    __mingw_aligned_free( const_cast<void*>( address ) );

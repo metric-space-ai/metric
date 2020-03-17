@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/SMatStdDevExpr.h
 //  \brief Header file for the sparse matrix standard deviation expression
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -127,9 +127,9 @@ inline decltype(auto) stddev( const SparseMatrix<MT,SO>& sm )
 // than 2 or in case \a RF is set to \a columnwise and the number of rows of the given matrix is
 // smaller than 2, a \a std::invalid_argument is thrown.
 */
-template< size_t RF    // Reduction flag
-        , typename MT  // Type of the sparse matrix
-        , bool SO >    // Storage order
+template< ReductionFlag RF  // Reduction flag
+        , typename MT       // Type of the sparse matrix
+        , bool SO >         // Storage order
 inline decltype(auto) stddev( const SparseMatrix<MT,SO>& sm )
 {
    BLAZE_FUNCTION_TRACE;

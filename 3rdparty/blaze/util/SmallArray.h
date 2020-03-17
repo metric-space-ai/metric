@@ -3,7 +3,7 @@
 //  \file blaze/util/SmallArray.h
 //  \brief Header file for the SmallArray implementation
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -98,13 +98,13 @@ class SmallArray
    //@{
    explicit inline SmallArray( const A& alloc = A() );
    explicit inline SmallArray( size_t n, const A& alloc = A() );
-   explicit inline SmallArray( size_t n, const T& init, const A& alloc = A() );
+            inline SmallArray( size_t n, const T& init, const A& alloc = A() );
 
    template< typename InputIt >
-   explicit inline SmallArray( InputIt first, InputIt last, const A& alloc = A() );
+   inline SmallArray( InputIt first, InputIt last, const A& alloc = A() );
 
    template< typename U >
-   explicit inline SmallArray( initializer_list<U> list, const A& alloc = A() );
+   inline SmallArray( initializer_list<U> list, const A& alloc = A() );
 
    inline SmallArray( const SmallArray& sa );
    inline SmallArray( SmallArray&& sa );
@@ -179,7 +179,7 @@ class SmallArray
    //**Constructors********************************************************************************
    /*!\name Constructors */
    //@{
-   explicit inline SmallArray( size_t n, const A& alloc, Uninitialized );
+   inline SmallArray( size_t n, const A& alloc, Uninitialized );
    //@}
    //**********************************************************************************************
 

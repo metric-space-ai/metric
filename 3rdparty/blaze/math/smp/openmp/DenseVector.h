@@ -3,7 +3,7 @@
 //  \file blaze/math/smp/openmp/DenseVector.h
 //  \brief Header file for the OpenMP-based dense vector SMP implementation
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -52,6 +52,7 @@
 #include "../../../math/typetraits/IsSIMDCombinable.h"
 #include "../../../math/typetraits/IsSMPAssignable.h"
 #include "../../../math/views/Subvector.h"
+#include "../../../system/MacroDisable.h"
 #include "../../../system/SMP.h"
 #include "../../../util/algorithms/Min.h"
 #include "../../../util/Assert.h"

@@ -3,7 +3,7 @@
 //  \file blaze/math/views/submatrix/Sparse.h
 //  \brief Submatrix specialization for sparse matrices
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -60,7 +60,6 @@
 #include "../../../math/expressions/SparseMatrix.h"
 #include "../../../math/expressions/View.h"
 #include "../../../math/InitializerList.h"
-#include "../../../math/RelaxationFlag.h"
 #include "../../../math/shims/IsDefault.h"
 #include "../../../math/shims/Serial.h"
 #include "../../../math/shims/Reset.h"
@@ -576,13 +575,6 @@ class Submatrix<MT,AF,false,false,CSAs...>
    //**********************************************************************************************
 
  private:
-   //**Utility functions***************************************************************************
-   /*!\name Utility functions */
-   //@{
-   inline bool hasOverlap() const noexcept;
-   //@}
-   //**********************************************************************************************
-
    //**Member variables****************************************************************************
    /*!\name Member variables */
    //@{
@@ -1033,7 +1025,7 @@ inline Submatrix<MT,AF,false,false,CSAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( rhs.canAlias( &matrix_ ) ) {
+   if( rhs.canAlias( this ) ) {
       const ResultType tmp( rhs );
       left.reset();
       assign( left, tmp );
@@ -1091,7 +1083,7 @@ inline Submatrix<MT,AF,false,false,CSAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( IsReference_v<Right> && right.canAlias( &matrix_ ) ) {
+   if( IsReference_v<Right> && right.canAlias( this ) ) {
       const ResultType_t<MT2> tmp( right );
       left.reset();
       assign( left, tmp );
@@ -1572,31 +1564,6 @@ void Submatrix<MT,AF,false,false,CSAs...>::trim( size_t i )
 {
    BLAZE_USER_ASSERT( i < rows(), "Invalid row access index" );
    matrix_.trim( row() + i );
-}
-/*! \endcond */
-//*************************************************************************************************
-
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-/*!\brief Checking whether there exists an overlap in the context of a symmetric matrix.
-//
-// \return \a true in case an overlap exists, \a false if not.
-//
-// This function checks if in the context of a symmetric matrix the submatrix has an overlap with
-// its counterpart. In case an overlap exists, the function return \a true, otherwise it returns
-// \a false.
-*/
-template< typename MT       // Type of the sparse matrix
-        , AlignmentFlag AF  // Alignment flag
-        , size_t... CSAs >  // Compile time submatrix arguments
-inline bool Submatrix<MT,AF,false,false,CSAs...>::hasOverlap() const noexcept
-{
-   BLAZE_INTERNAL_ASSERT( IsSymmetric_v<MT> || IsHermitian_v<MT>, "Invalid matrix detected" );
-
-   if( ( row() + rows() <= column() ) || ( column() + columns() <= row() ) )
-      return false;
-   else return true;
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -2254,7 +2221,7 @@ template< typename MT       // Type of the sparse matrix
 template< typename Other >  // Data type of the foreign expression
 inline bool Submatrix<MT,AF,false,false,CSAs...>::canAlias( const Other* alias ) const noexcept
 {
-   return matrix_.isAliased( alias );
+   return matrix_.isAliased( &unview( *alias ) );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -2277,7 +2244,7 @@ template< typename MT       // Type of the sparse matrix
 template< typename Other >  // Data type of the foreign expression
 inline bool Submatrix<MT,AF,false,false,CSAs...>::isAliased( const Other* alias ) const noexcept
 {
-   return matrix_.isAliased( alias );
+   return matrix_.isAliased( &unview( *alias ) );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -3029,13 +2996,6 @@ class Submatrix<MT,AF,true,false,CSAs...>
    //**********************************************************************************************
 
  private:
-   //**Utility functions***************************************************************************
-   /*!\name Utility functions */
-   //@{
-   inline bool hasOverlap() const noexcept;
-   //@}
-   //**********************************************************************************************
-
    //**Member variables****************************************************************************
    /*!\name Member variables */
    //@{
@@ -3456,7 +3416,7 @@ inline Submatrix<MT,AF,true,false,CSAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( rhs.canAlias( &matrix_ ) ) {
+   if( rhs.canAlias( this ) ) {
       const ResultType tmp( rhs );
       left.reset();
       assign( left, tmp );
@@ -3514,7 +3474,7 @@ inline Submatrix<MT,AF,true,false,CSAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( IsReference_v<Right> && right.canAlias( &matrix_ ) ) {
+   if( IsReference_v<Right> && right.canAlias( this ) ) {
       const ResultType_t<MT2> tmp( right );
       left.reset();
       assign( left, tmp );
@@ -3974,31 +3934,6 @@ void Submatrix<MT,AF,true,false,CSAs...>::trim( size_t j )
 {
    BLAZE_USER_ASSERT( j < columns(), "Invalid column access index" );
    matrix_.trim( column() + j );
-}
-/*! \endcond */
-//*************************************************************************************************
-
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-/*!\brief Checking whether there exists an overlap in the context of a symmetric matrix.
-//
-// \return \a true in case an overlap exists, \a false if not.
-//
-// This function checks if in the context of a symmetric matrix the submatrix has an overlap with
-// its counterpart. In case an overlap exists, the function return \a true, otherwise it returns
-// \a false.
-*/
-template< typename MT       // Type of the sparse matrix
-        , AlignmentFlag AF  // Alignment flag
-        , size_t... CSAs >  // Compile time submatrix arguments
-inline bool Submatrix<MT,AF,true,false,CSAs...>::hasOverlap() const noexcept
-{
-   BLAZE_INTERNAL_ASSERT( IsSymmetric_v<MT> || IsHermitian_v<MT>, "Invalid matrix detected" );
-
-   if( ( row() + rows() <= column() ) || ( column() + columns() <= row() ) )
-      return false;
-   else return true;
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -4648,7 +4583,7 @@ template< typename MT       // Type of the sparse matrix
 template< typename Other >  // Data type of the foreign expression
 inline bool Submatrix<MT,AF,true,false,CSAs...>::canAlias( const Other* alias ) const noexcept
 {
-   return matrix_.isAliased( alias );
+   return matrix_.isAliased( &unview( *alias ) );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -4671,7 +4606,7 @@ template< typename MT       // Type of the sparse matrix
 template< typename Other >  // Data type of the foreign expression
 inline bool Submatrix<MT,AF,true,false,CSAs...>::isAliased( const Other* alias ) const noexcept
 {
-   return matrix_.isAliased( alias );
+   return matrix_.isAliased( &unview( *alias ) );
 }
 /*! \endcond */
 //*************************************************************************************************

@@ -3,7 +3,7 @@
 //  \file blaze/util/DimensionOf.h
 //  \brief Compile time evaluation of array sizes
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -73,7 +73,7 @@ namespace blaze {
    \endcode
 */
 template< typename T, size_t N >
-inline constexpr size_t dimensionof( T(&a)[N] )
+constexpr size_t dimensionof( T(&a)[N] )
 {
    MAYBE_UNUSED( a );
    return N;

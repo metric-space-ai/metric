@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/SVecVarExpr.h
 //  \brief Header file for the sparse vector variance expression
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -44,6 +44,7 @@
 #include "../../math/expressions/SparseVector.h"
 #include "../../math/shims/Invert.h"
 #include "../../math/shims/Pow2.h"
+#include "../../math/typetraits/IsZero.h"
 #include "../../math/typetraits/UnderlyingBuiltin.h"
 #include "../../util/Assert.h"
 #include "../../util/FunctionTrace.h"

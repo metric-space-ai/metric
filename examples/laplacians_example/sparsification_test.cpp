@@ -38,7 +38,7 @@ void sparsification_test()
 
     blaze::CompressedMatrix<double, blaze::columnMajor> Gp = metric::power(G, 15);
 
-    blaze::CompressedMatrix<double, blaze::columnMajor> Gsparse = metric::sparsify(Gp, 1.0F);
+    blaze::CompressedMatrix<double, blaze::columnMajor> Gsparse = metric::sparsify_effective_resistance(Gp, 1.0F);
 
     std::cout << "Dimension:" << Gp.rows() << "\n";
 

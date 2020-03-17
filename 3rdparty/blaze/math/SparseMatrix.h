@@ -3,7 +3,7 @@
 //  \file blaze/math/SparseMatrix.h
 //  \brief Header file for all basic SparseMatrix functionality
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -54,7 +54,11 @@
 #include "../math/expressions/SMatDeclDiagExpr.h"
 #include "../math/expressions/SMatDeclHermExpr.h"
 #include "../math/expressions/SMatDeclLowExpr.h"
+#include "../math/expressions/SMatDeclStrLowExpr.h"
+#include "../math/expressions/SMatDeclStrUppExpr.h"
 #include "../math/expressions/SMatDeclSymExpr.h"
+#include "../math/expressions/SMatDeclUniLowExpr.h"
+#include "../math/expressions/SMatDeclUniUppExpr.h"
 #include "../math/expressions/SMatDeclUppExpr.h"
 #include "../math/expressions/SMatDMatKronExpr.h"
 #include "../math/expressions/SMatDMatSchurExpr.h"
@@ -62,7 +66,9 @@
 #include "../math/expressions/SMatEvalExpr.h"
 #include "../math/expressions/SMatMapExpr.h"
 #include "../math/expressions/SMatMeanExpr.h"
+#include "../math/expressions/SMatNoAliasExpr.h"
 #include "../math/expressions/SMatNormExpr.h"
+#include "../math/expressions/SMatNoSIMDExpr.h"
 #include "../math/expressions/SMatReduceExpr.h"
 #include "../math/expressions/SMatScalarDivExpr.h"
 #include "../math/expressions/SMatScalarMultExpr.h"

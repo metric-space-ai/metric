@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/DVecMapExpr.h
 //  \brief Header file for the dense vector map expression
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -71,6 +71,7 @@
 #include "../../math/typetraits/UnderlyingNumeric.h"
 #include "../../system/HostDevice.h"
 #include "../../system/Inline.h"
+#include "../../system/MacroDisable.h"
 #include "../../util/Assert.h"
 #include "../../util/EnableIf.h"
 #include "../../util/FunctionTrace.h"
@@ -192,9 +193,9 @@ class DVecMapExpr
       // \param it Iterator to the initial vector element.
       // \param op The custom unary operation.
       */
-      explicit inline BLAZE_DEVICE_CALLABLE ConstIterator( IteratorType it, OP op )
-         : it_( it )  // Iterator to the current vector element
-         , op_( op )  // The custom unary operation
+      inline BLAZE_DEVICE_CALLABLE ConstIterator( IteratorType it, OP op )
+         : it_( it )             // Iterator to the current vector element
+         , op_( std::move(op) )  // The custom unary operation
       {}
       //*******************************************************************************************
 
@@ -427,9 +428,9 @@ class DVecMapExpr
    // \param dv The dense vector operand of the map expression.
    // \param op The custom unary operation.
    */
-   explicit inline DVecMapExpr( const VT& dv, OP op ) noexcept
-      : dv_( dv )  // Dense vector of the map expression
-      , op_( op )  // The custom unary operation
+   inline DVecMapExpr( const VT& dv, OP op ) noexcept
+      : dv_( dv )             // Dense vector of the map expression
+      , op_( std::move(op) )  // The custom unary operation
    {}
    //**********************************************************************************************
 
@@ -1097,7 +1098,7 @@ inline decltype(auto) map( const DenseVector<VT,TF>& dv, OP op )
    BLAZE_FUNCTION_TRACE;
 
    using ReturnType = const DVecMapExpr<VT,OP,TF>;
-   return ReturnType( ~dv, op );
+   return ReturnType( ~dv, std::move(op) );
 }
 //*************************************************************************************************
 
@@ -1127,7 +1128,142 @@ inline decltype(auto) forEach( const DenseVector<VT,TF>& dv, OP op )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~dv, op );
+   return map( ~dv, std::move(op) );
+}
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*!\brief Computes the componentwise minimum of a dense vector \a dv and a scalar.
+// \ingroup dense_vector
+//
+// \param dv The left-hand side dense vector operand.
+// \param scalar The right-hand side scalar value.
+// \return The resulting dense vector.
+//
+// This operator computes the componentwise minimum of a dense vector \a dv and a uniform vector
+// represented by the scalar value \a scalar. The function returns an expression representing this
+// operation.\n
+// The following example demonstrates the use of the \a min() function:
+
+   \code
+   blaze::DynamicVector<double> a, b;
+   // ... Resizing and initialization
+   b = min( a, 0.0 );
+   \endcode
+*/
+template< typename VT  // Type of the dense vector
+        , bool TF      // Transpose flag
+        , typename ST  // Type of the scalar exponent
+        , EnableIf_t< IsNumeric_v<ST> >* = nullptr >
+decltype(auto) min( const DenseVector<VT,TF>& dv, ST scalar )
+{
+   BLAZE_FUNCTION_TRACE;
+
+   using ScalarType = MultTrait_t< UnderlyingBuiltin_t<VT>, ST >;
+   return map( ~dv, bind2nd( Min(), ScalarType( scalar ) ) );
+}
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*!\brief Computes the componentwise minimum of a scalar and a dense vector \a dv.
+// \ingroup dense_vector
+//
+// \param scalar The left-hand side scalar value.
+// \param dv The right-hand side dense vector operand.
+// \return The resulting dense vector.
+//
+// This operator computes the componentwise minimum of a uniform vector represented by the scalar
+// value \a scalar and a dense vector \a dv. The function returns an expression representing this
+// operation.\n
+// The following example demonstrates the use of the \a min() function:
+
+   \code
+   blaze::DynamicVector<double> a, b;
+   // ... Resizing and initialization
+   b = min( 0.0, a );
+   \endcode
+*/
+template< typename ST  // Type of the scalar exponent
+        , typename VT  // Type of the dense vector
+        , bool TF      // Transpose flag
+        , EnableIf_t< IsNumeric_v<ST> >* = nullptr >
+decltype(auto) min( ST scalar, const DenseVector<VT,TF>& dv )
+{
+   BLAZE_FUNCTION_TRACE;
+
+   using ScalarType = MultTrait_t< UnderlyingBuiltin_t<VT>, ST >;
+   return map( ~dv, bind1st( Min(), ScalarType( scalar ) ) );
+}
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*!\brief Computes the componentwise maximum of a dense vector \a dv and a scalar.
+// \ingroup dense_vector
+//
+// \param dv The left-hand side dense vector operand.
+// \param scalar The right-hand side scalar value.
+// \return The resulting dense vector.
+//
+// This operator computes the componentwise maximum of a dense vector \a dv and a uniform vector
+// represented by the scalar value \a scalar. The function returns an expression representing this
+// operation.\n
+// The following example demonstrates the use of the \a max() function:
+
+   \code
+   blaze::DynamicVector<double> a, b;
+   // ... Resizing and initialization
+   b = max( a, 0.0 );
+   \endcode
+
+// In case the current sizes of the two given vectors don't match, a \a std::invalid_argument
+// is thrown.
+*/
+template< typename VT  // Type of the dense vector
+        , bool TF      // Transpose flag
+        , typename ST  // Type of the scalar exponent
+        , EnableIf_t< IsNumeric_v<ST> >* = nullptr >
+decltype(auto) max( const DenseVector<VT,TF>& dv, ST scalar )
+{
+   BLAZE_FUNCTION_TRACE;
+
+   using ScalarType = MultTrait_t< UnderlyingBuiltin_t<VT>, ST >;
+   return map( ~dv, bind2nd( Max(), ScalarType( scalar ) ) );
+}
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*!\brief Computes the componentwise maximum of a scalar and a dense vector \a dv.
+// \ingroup dense_vector
+//
+// \param scalar The left-hand side scalar value.
+// \param dv The right-hand side dense vector operand.
+// \return The resulting dense vector.
+//
+// This operator computes the componentwise maximum of a uniform vector represented by the scalar
+// value \a scalar and a dense vector \a dv. The function returns an expression representing this
+// operation.\n
+// The following example demonstrates the use of the \a max() function:
+
+   \code
+   blaze::DynamicVector<double> a, b;
+   // ... Resizing and initialization
+   b = max( 0.0, a );
+   \endcode
+*/
+template< typename ST  // Type of the scalar exponent
+        , typename VT  // Type of the dense vector
+        , bool TF      // Transpose flag
+        , EnableIf_t< IsNumeric_v<ST> >* = nullptr >
+decltype(auto) max( ST scalar, const DenseVector<VT,TF>& dv )
+{
+   BLAZE_FUNCTION_TRACE;
+
+   using ScalarType = MultTrait_t< UnderlyingBuiltin_t<VT>, ST >;
+   return map( ~dv, bind1st( Max(), ScalarType( scalar ) ) );
 }
 //*************************************************************************************************
 
@@ -1307,9 +1443,9 @@ inline decltype(auto) round( const DenseVector<VT,TF>& dv )
 // \param dv The input vector.
 // \return The complex conjugate of each single element of \a dv.
 //
-// The \a conj function calculates the complex conjugate of each element of the input vector
+// The \a conj() function calculates the complex conjugate of each element of the input vector
 // \a dv. The function returns an expression representing this operation.\n
-// The following example demonstrates the use of the \a conj function:
+// The following example demonstrates the use of the \a conj() function:
 
    \code
    blaze::DynamicVector< complex<double> > a, b;
@@ -1335,10 +1471,10 @@ inline decltype(auto) conj( const DenseVector<VT,TF>& dv )
 // \param dv The input vector.
 // \return The conjugate transpose of \a dv.
 //
-// The \a ctrans function returns an expression representing the conjugate transpose (also called
-// adjoint matrix, Hermitian conjugate matrix or transjugate matrix) of the given input vector
-// \a dv.\n
-// The following example demonstrates the use of the \a ctrans function:
+// The \a ctrans() function returns an expression representing the conjugate transpose (also
+// called adjoint matrix, Hermitian conjugate matrix or transjugate matrix) of the given input
+// vector \a dv.\n
+// The following example demonstrates the use of the \a ctrans() function:
 
    \code
    blaze::DynamicVector< complex<double> > a, b;
@@ -1346,7 +1482,7 @@ inline decltype(auto) conj( const DenseVector<VT,TF>& dv )
    b = ctrans( a );
    \endcode
 
-// Note that the \a ctrans function has the same effect as manually applying the \a conj and
+// Note that the \a ctrans() function has the same effect as manually applying the \a conj() and
 // \a trans function in any order:
 
    \code
@@ -1372,9 +1508,9 @@ inline decltype(auto) ctrans( const DenseVector<VT,TF>& dv )
 // \param dv The input vector.
 // \return The real part of each single element of \a dv.
 //
-// The \a real function calculates the real part of each element of the input vector \a dv.
+// The \a real() function calculates the real part of each element of the input vector \a dv.
 // The function returns an expression representing this operation.\n
-// The following example demonstrates the use of the \a real function:
+// The following example demonstrates the use of the \a real() function:
 
    \code
    blaze::DynamicVector<double> a, b;
@@ -1400,9 +1536,9 @@ inline decltype(auto) real( const DenseVector<VT,TF>& dv )
 // \param dv The input vector.
 // \return The imaginary part of each single element of \a dv.
 //
-// The \a imag function calculates the imaginary part of each element of the input vector \a dv.
+// The \a imag() function calculates the imaginary part of each element of the input vector \a dv.
 // The function returns an expression representing this operation.\n
-// The following example demonstrates the use of the \a imag function:
+// The following example demonstrates the use of the \a imag() function:
 
    \code
    blaze::DynamicVector<double> a, b;
@@ -1417,6 +1553,34 @@ inline decltype(auto) imag( const DenseVector<VT,TF>& dv )
    BLAZE_FUNCTION_TRACE;
 
    return map( ~dv, Imag() );
+}
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*!\brief Returns a vector containing the phase angle of each single element of \a dv.
+// \ingroup dense_vector
+//
+// \param dv The input vector.
+// \return The phase angle of each single element of \a dv.
+//
+// The \a arg() function calculates the phase angle of each element of the input vector \a dv.
+// The function returns an expression representing this operation.\n
+// The following example demonstrates the use of the \a arg() function:
+
+   \code
+   blaze::DynamicVector<double> a, b;
+   // ... Resizing and initialization
+   b = arg( a );
+   \endcode
+*/
+template< typename VT  // Type of the dense vector
+        , bool TF >    // Transpose flag
+inline decltype(auto) arg( const DenseVector<VT,TF>& dv )
+{
+   BLAZE_FUNCTION_TRACE;
+
+   return map( ~dv, Arg() );
 }
 //*************************************************************************************************
 
@@ -1571,7 +1735,7 @@ inline decltype(auto) clamp( const DenseVector<VT,TF>& dv, const DT& min, const 
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~dv, Clamp<DT>( min, max ) );
+   return map( ~dv, bind2nd( bind3rd( Clamp(), max ), min ) );
 }
 //*************************************************************************************************
 
