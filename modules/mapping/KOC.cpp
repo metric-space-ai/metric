@@ -17,90 +17,53 @@ namespace metric {
 	namespace KOC_details {
 		template <class recType, class Graph, class Metric, class Distribution>
 		void KOC<recType, Graph, Metric, Distribution>::train(
-
-			const std::vector<recType>& samples, int num_clusters)
+			const std::vector<recType>& samples, int num_clusters, int min_cluster_size)
 		{
-			SOM<recType, Graph, Metric, Distribution>::train(samples);
+			som_.train(samples);
 			calculate_std_deviations_for_nodes(samples, samples.size());
-			std::tie(clusters, centroids, clusters_counts) = clusterize_nodes(num_clusters);
+			std::tie(clusters, centroids, clusters_counts) = clusterize_nodes(num_clusters, min_cluster_size);
 		}
 
 
-		template <class recType, class Graph, class Metric, class Distribution>
-		void KOC<recType, Graph, Metric, Distribution>::estimate(const std::vector<recType>& samples, const size_t sampleSize, int num_clusters)
-		{
-			SOM<recType, Graph, Metric, Distribution>::estimate(samples, sampleSize);
-			calculate_std_deviations_for_nodes(samples, sampleSize);
-			std::tie(clusters, centroids, clusters_counts) = clusterize_nodes(num_clusters);
-		}
+		//template <class recType, class Graph, class Metric, class Distribution>
+		//void KOC<recType, Graph, Metric, Distribution>::estimate(const std::vector<recType>& samples, const size_t sampleSize, int num_clusters, int min_cluster_size)
+		//{
+		//	som_.estimate(samples, sampleSize);
+		//	calculate_std_deviations_for_nodes(samples, sampleSize);
+		//	std::tie(clusters, centroids, clusters_counts) = clusterize_nodes(num_clusters, min_cluster_size);
+		//}
 
-
-
-		template <class recType, class Graph, class Metric, class Distribution>
-
-		std::vector<int> KOC<recType, Graph, Metric, Distribution>::encode(const std::vector<recType>& samples, double sigma)
-		{
-			std::vector<int> result;
-
-			for (size_t i = 0; i < samples.size(); i++)
-			{
-				if (check_if_anomaly(samples[i], anomaly_threshold))
-				{
-					result.push_back(0);
-				}
-				else
-				{
-					auto bmu = SOM<recType, Graph, Metric, Distribution>::BMU(samples[i]);
-					result.push_back(clusters[bmu]);
-				}
-			}
-
-			return result;
-		}
 
 		template <class recType, class Graph, class Metric, class Distribution>
-		size_t KOC<recType, Graph, Metric, Distribution>::BMU(const recType& sample) const
-		{
-			return SOM<recType, Graph, Metric, Distribution>::BMU(sample);
-		}
-
-		template <class recType, class Graph, class Metric, class Distribution>
-		std::vector<bool> KOC<recType, Graph, Metric, Distribution>::check_if_anomaly(const std::vector<recType>& samples, double sigma)
-
+		std::vector<bool> KOC<recType, Graph, Metric, Distribution>::check_if_anomaly(const std::vector<recType>& samples)
 		{
 			std::vector<bool> result;
 	
 			for (size_t i = 0; i < samples.size(); i++)
 			{
 				// if entropy less then min entropy level then it is anomaly
-
-				result.push_back(check_if_anomaly(samples[i], sigma));
-
+				result.push_back(check_if_anomaly(samples[i]));
 			}
 
 			return result;
 		}
 
 		template <class recType, class Graph, class Metric, class Distribution>
-
-		bool KOC<recType, Graph, Metric, Distribution>::check_if_anomaly(const recType& sample, double sigma)
+		bool KOC<recType, Graph, Metric, Distribution>::check_if_anomaly(const recType& sample)
 		{
-			auto reduced = SOM<recType, Graph, Metric, Distribution>::encode(sample);
-			auto bmu = SOM<recType, Graph, Metric, Distribution>::BMU(sample);
+			auto reduced = som_.encode(sample);
+			auto bmu = som_.BMU(sample);
 			// if closest distance more then max closest distance level then it is anomaly
-			return reduced[bmu] > nodes_std_deviations[bmu] * sigma;
-
+			return reduced[bmu] > nodes_std_deviations[bmu] * anomaly_sigma_;
 		}
 
 		
 		template <class recType, class Graph, class Metric, class Distribution>
-
-		std::vector<int> KOC<recType, Graph, Metric, Distribution>::result(
-			const std::vector<recType>& samples, double sigma)
+		std::vector<int> KOC<recType, Graph, Metric, Distribution>::assign_to_clusters(
+			const std::vector<recType>& samples)
 		{				
 			std::vector<int> assignments;
-			auto anomalies = check_if_anomaly(samples, sigma);						
-
+			auto anomalies = check_if_anomaly(samples);						
 			for (size_t i = 0; i < samples.size(); i++)
 			{
 				// we want 0 label as anomaly
@@ -120,28 +83,22 @@ namespace metric {
 
 		
 		template <class recType, class Graph, class Metric, class Distribution>
-
-		std::tuple<std::vector<size_t>, std::vector<typename recType::value_type>, std::vector<int>> 
-			KOC<recType, Graph, Metric, Distribution>::top_outlier(const std::vector<recType>& samples, double sigma, int count)
+		std::tuple<std::vector<size_t>, std::vector<typename recType::value_type>> 
+			KOC<recType, Graph, Metric, Distribution>::top_outliers(const std::vector<recType>& samples, int count)
 		{			
-			auto assignments = result(samples, sigma);
-
+			auto assignments = assign_to_clusters(samples);
 			
 			std::vector<T> distances;
 			for (int i = 0; i < samples.size(); i++)
 			{
-
-				auto reduced = encode(samples[i]);
-				auto bmu = BMU(samples[i]);
-				distances.push_back(reduced[bmu] - nodes_std_deviations[bmu] * sigma);
-
+				auto reduced = som_.encode(samples[i]);
+				auto bmu = som_.BMU(samples[i]);
+				distances.push_back(reduced[bmu] - nodes_std_deviations[bmu] * anomaly_sigma_);
 			}
 
 			auto idxs = sort_indexes(distances);	
 			std::vector<T> sorted_distances;		
-
-			std::vector<int> sorted_assignments;		
-
+			//std::vector<int> sorted_assignments;		
 			if (idxs.size() > count)
 			{
 				idxs.resize(count);
@@ -149,12 +106,10 @@ namespace metric {
 			for (int i = 0; i < idxs.size(); i++)
 			{
 				sorted_distances.push_back(distances[idxs[i]]);
-
-				sorted_assignments.push_back(assignments[idxs[i]]);
+				//sorted_assignments.push_back(assignments[idxs[i]]);
 			}
 
-			return {idxs, sorted_distances, sorted_assignments};
-
+			return {idxs, sorted_distances};
 		};
 
 
@@ -177,9 +132,7 @@ namespace metric {
 
 			std::shuffle(randomized_samples.begin(), randomized_samples.end(), random_generator);
 	
-
-			int num_nodes = KOC<recType, Graph, Metric, Distribution>::getNodesNumber();
-
+			int num_nodes = som_.getNodesNumber();
 
 			std::vector<int> closest_distances(num_nodes, 0);  
 			std::vector<T> square_distances_sum(num_nodes, 0);
@@ -188,14 +141,12 @@ namespace metric {
 				size_t sample_idx = randomized_samples[i];
 		
 				auto sample = next(samples.begin(), sample_idx); 
-
-				auto reduced = SOM<recType, Graph, Metric, Distribution>::encode(*sample);
-				auto bmu = SOM<recType, Graph, Metric, Distribution>::BMU(*sample);
+				auto reduced = som_.encode(*sample);
+				auto bmu = som_.BMU(*sample);
 
 				square_distances_sum[bmu] += reduced[bmu] * reduced[bmu];
 				closest_distances[bmu]++;
 			}
-
 
 			nodes_std_deviations = std::vector<T>(num_nodes);
 			for (size_t i = 0; i < num_nodes; i++)
@@ -212,9 +163,7 @@ namespace metric {
 		}
 
 		template <class recType, class Graph, class Metric, class Distribution>
-
-		std::tuple<std::vector<int>, std::vector<recType>, std::vector<int>> KOC<recType, Graph, Metric, Distribution>::clusterize_nodes(int num_clusters)
-
+		std::tuple<std::vector<int>, std::vector<recType>, std::vector<int>> KOC<recType, Graph, Metric, Distribution>::clusterize_nodes(int num_clusters, int min_cluster_size)
 		{
 			int current_min_cluster_size = -1;
 
@@ -368,9 +317,7 @@ namespace metric {
 
 	
 	template <class recType, class Graph, class Metric, class Distribution>
-
-	KOC_details::KOC<recType, Graph, Metric, Distribution> KOC_factory<recType, Graph, Metric, Distribution>::operator()(const std::vector<recType>& samples, int num_clusters)
-
+	KOC_details::KOC<recType, Graph, Metric, Distribution> KOC_factory<recType, Graph, Metric, Distribution>::operator()(const std::vector<recType>& samples, int num_clusters, int min_cluster_size)
 	{
 		KOC_details::KOC<recType, Graph, Metric, Distribution> koc(graph_, metric_, anomaly_sigma_, start_learn_rate_, finish_learn_rate_, iterations_, distribution_, 
 			neighborhood_start_size_, neigbour_range_decay_, random_seed_);
