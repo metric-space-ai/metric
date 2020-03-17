@@ -40,7 +40,7 @@ namespace metric {
  */
 template <typename T>
 std::tuple<std::vector<int>, std::vector<std::vector<T>>, std::vector<int>> kmeans(
-    const std::vector<std::vector<T>>& data, int k, int maxiter = 200, std::string distance_measure = "euclidian");
+    const std::vector<std::vector<T>>& data, int k, int maxiter = 200, std::string distance_measure = "euclidian", long long random_seed = -1);
 
 }  // namespace metric
 
