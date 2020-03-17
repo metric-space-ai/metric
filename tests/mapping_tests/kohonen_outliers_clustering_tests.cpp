@@ -55,8 +55,9 @@ BOOST_AUTO_TEST_CASE(KOC) {
 	
 	int num_clusters = 3;
 	double sigma = 1.5;
+	double random_seed = 777;
 		
-	metric::KOC_factory<Record, metric::Grid4> simple_koc_factory(best_w_grid_size, best_h_grid_size, sigma, 0.5, 0.0, 300);    
+	metric::KOC_factory<Record, metric::Grid4> simple_koc_factory(best_w_grid_size, best_h_grid_size, sigma, 0.5, 0.0, 300, -1, 1, 2, 0.5, random_seed);    
 	auto simple_koc = simple_koc_factory(dataset, num_clusters); 
 
 
