@@ -3,7 +3,7 @@
 //  \file blaze/math/lapack/heev.h
 //  \brief Header file for the LAPACK Hermitian matrix eigenvalue functions (heev)
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -168,15 +168,15 @@ inline void heev( DenseMatrix<MT,SO>& A, DenseVector<VT,TF>& w, char jobz, char 
 
    resize( ~w, (~A).rows(), false );
 
-   int n   ( numeric_cast<int>( (~A).rows()    ) );
-   int lda ( numeric_cast<int>( (~A).spacing() ) );
-   int info( 0 );
+   blas_int_t n   ( numeric_cast<blas_int_t>( (~A).rows()    ) );
+   blas_int_t lda ( numeric_cast<blas_int_t>( (~A).spacing() ) );
+   blas_int_t info( 0 );
 
    if( n == 0 ) {
       return;
    }
 
-   int lwork( 10*n + 2 );
+   blas_int_t lwork( 10*n + 2 );
    const std::unique_ptr<CT[]> work ( new CT[lwork] );
    const std::unique_ptr<BT[]> rwork( new BT[3*n-2] );
 

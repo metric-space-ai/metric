@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/DVecNormExpr.h
 //  \brief Header file for the dense vector norm expression
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -61,6 +61,7 @@
 #include "../../math/shims/Evaluate.h"
 #include "../../math/shims/Invert.h"
 #include "../../math/shims/IsZero.h"
+#include "../../math/shims/PrevMultiple.h"
 #include "../../math/SIMD.h"
 #include "../../math/traits/MultTrait.h"
 #include "../../math/typetraits/HasLoad.h"
@@ -216,10 +217,10 @@ inline decltype(auto) norm_backend( const DenseVector<VT,TF>& dv, Abs abs, Power
 
    const size_t N( tmp.size() );
 
-   constexpr bool remainder( !usePadding || !IsPadded_v< RemoveReference_t<VT> > );
+   constexpr bool remainder( !IsPadded_v< RemoveReference_t<VT> > );
 
-   const size_t ipos( ( remainder )?( N & size_t(-SIMDSIZE) ):( N ) );
-   BLAZE_INTERNAL_ASSERT( !remainder || ( N - ( N % SIMDSIZE ) ) == ipos, "Invalid end calculation" );
+   const size_t ipos( remainder ? prevMultiple( N, SIMDSIZE ) : N );
+   BLAZE_INTERNAL_ASSERT( ipos <= N, "Invalid end calculation" );
 
    SIMDTrait_t<ET> xmm1, xmm2, xmm3, xmm4;
    size_t i( 0UL );

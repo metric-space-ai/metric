@@ -133,6 +133,25 @@ BOOST_AUTO_TEST_CASE(MGC)
     auto m1 = generateMatrix<double>(4, 4);
     auto m2 = generateMatrix<double>(4, 4);
     mgc(m1, m2);
+
+    /* MGC corelation */
+    std::vector<double> correlationReference = {0.3406052387919164,
+												0.36670317239506234,
+												0.35527060120466675,
+												0.3899053662191226,
+												0.2884565911772877,
+												0.37837904236096026,
+												0.4589100366738734,
+												0.3811881240213428,
+												0.44657481646290537};
+    auto correlation = mgc.xcorr(A1, B1, 4);
+
+    BOOST_CHECK_EQUAL(correlationReference.size(), correlation.size());
+
+	for (auto i = 0; i < correlation.size(); ++i) {
+		BOOST_CHECK_CLOSE(correlationReference[i], correlation[i], 1e-5);
+	}
+
 }
 
 BOOST_AUTO_TEST_CASE(MGC_Estimate)
@@ -164,4 +183,37 @@ BOOST_AUTO_TEST_CASE(MGC_Estimate)
 
     auto result = mgc.estimate(dataX, dataY);
     std::cout << result << std::endl;
+}
+
+BOOST_AUTO_TEST_CASE(MGC_construct) {
+    // this test has no asserts, it just checks compilation
+
+    metric::MGC<float, metric::Euclidian<float>, float, metric::Euclidian<float>> m1;
+    m1(std::vector<float>{}, std::vector<float>{});
+
+    metric::MGC<float, metric::Euclidian<float>, std::vector<float>, metric::Manhatten<float>> m2;
+    m2(std::vector<float> {}, std::vector<std::vector<float>> {});
+
+    metric::MGC<float, metric::Euclidian<float>, std::vector<double>, metric::Manhatten<double>> m3;
+    m3(std::vector<float> {}, std::vector<std::vector<double>> {});
+
+    metric::MGC<float, metric::Euclidian<float>,
+                std::vector<double>, metric::Manhatten<double>> m4(metric::Euclidian<float>{});
+    m4(std::vector<float> {}, std::vector<std::vector<double>> {});
+
+    metric::MGC<float, metric::Euclidian<float>,
+                std::vector<double>, metric::Manhatten<double>> m5(metric::Euclidian<float> {},
+                                                                   metric::Manhatten<double>{});
+    m5(std::vector<float> {}, std::vector<std::vector<double>> {});
+
+    metric::Euclidian<float> e1;
+    metric::Manhatten<double> e2;
+
+    metric::MGC<float, metric::Euclidian<float>, std::vector<double>, metric::Manhatten<double>> m6(e1, e2);
+    m6(std::vector<float> {}, std::vector<std::vector<double>> {});
+
+    std::function<float(float, float)> f1 = [](float, float) ->float {return 0;};
+    using func_metric = std::function<float(float, float)>;
+    metric::MGC<float, func_metric, float, func_metric> m7(f1, f1);
+    m7(std::vector<float>{}, std::vector<float>{});
 }

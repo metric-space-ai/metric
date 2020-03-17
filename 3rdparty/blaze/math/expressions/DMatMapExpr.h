@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/DMatMapExpr.h
 //  \brief Header file for the dense matrix map expression
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -196,9 +196,9 @@ class DMatMapExpr
       // \param it Iterator to the initial matrix element.
       // \param op The custom unary operation.
       */
-      explicit inline BLAZE_DEVICE_CALLABLE ConstIterator( IteratorType it, OP op )
-         : it_( it )  // Iterator to the current matrix element
-         , op_( op )  // The custom unary operation
+      inline BLAZE_DEVICE_CALLABLE ConstIterator( IteratorType it, OP op )
+         : it_( it )             // Iterator to the current matrix element
+         , op_( std::move(op) )  // The custom unary operation
       {}
       //*******************************************************************************************
 
@@ -430,9 +430,9 @@ class DMatMapExpr
    // \param dm The dense matrix operand of the map expression.
    // \param op The custom unary operation.
    */
-   explicit inline DMatMapExpr( const MT& dm, OP op ) noexcept
-      : dm_( dm )  // Dense matrix of the map expression
-      , op_( op )  // The custom unary operation
+   inline DMatMapExpr( const MT& dm, OP op ) noexcept
+      : dm_( dm )             // Dense matrix of the map expression
+      , op_( std::move(op) )  // The custom unary operation
    {}
    //**********************************************************************************************
 
@@ -486,10 +486,10 @@ class DMatMapExpr
    //**********************************************************************************************
 
    //**Begin function******************************************************************************
-   /*!\brief Returns an iterator to the first non-zero element of row \a i.
+   /*!\brief Returns an iterator to the first non-zero element of row/column \a i.
    //
-   // \param i The row index.
-   // \return Iterator to the first non-zero element of row \a i.
+   // \param i The row/column index.
+   // \return Iterator to the first non-zero element of row/column \a i.
    */
    inline ConstIterator begin( size_t i ) const {
       return ConstIterator( dm_.begin(i), op_ );
@@ -497,10 +497,10 @@ class DMatMapExpr
    //**********************************************************************************************
 
    //**End function********************************************************************************
-   /*!\brief Returns an iterator just past the last non-zero element of row \a i.
+   /*!\brief Returns an iterator just past the last non-zero element of row/column \a i.
    //
-   // \param i The row index.
-   // \return Iterator just past the last non-zero element of row \a i.
+   // \param i The row/column index.
+   // \return Iterator just past the last non-zero element of row/column \a i.
    */
    inline ConstIterator end( size_t i ) const {
       return ConstIterator( dm_.end(i), op_ );
@@ -1099,7 +1099,7 @@ inline decltype(auto) map( const DenseMatrix<MT,SO>& dm, OP op )
    BLAZE_FUNCTION_TRACE;
 
    using ReturnType = const DMatMapExpr<MT,OP,SO>;
-   return ReturnType( ~dm, op );
+   return ReturnType( ~dm, std::move(op) );
 }
 //*************************************************************************************************
 
@@ -1129,7 +1129,139 @@ inline decltype(auto) forEach( const DenseMatrix<MT,SO>& dm, OP op )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~dm, op );
+   return map( ~dm, std::move(op) );
+}
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*!\brief Computes the componentwise minimum of a dense matrix \a dm and a scalar.
+// \ingroup dense_matrix
+//
+// \param dm The left-hand side dense matrix operand.
+// \param scalar The right-hand side scalar value.
+// \return The resulting dense matrix.
+//
+// This operator computes the componentwise minimum of a dense matrix \a dm and a uniform matrix
+// represented by the scalar value \a scalar. The function returns an expression representing this
+// operation.\n
+// The following example demonstrates the use of the \a min() function:
+
+   \code
+   blaze::DynamicMatrix<double> A, B;
+   // ... Resizing and initialization
+   B = min( A, 0.0 );
+   \endcode
+*/
+template< typename MT  // Type of the dense matrix
+        , bool SO      // Storage order
+        , typename ST  // Type of the scalar exponent
+        , EnableIf_t< IsNumeric_v<ST> >* = nullptr >
+decltype(auto) min( const DenseMatrix<MT,SO>& dm, ST scalar )
+{
+   BLAZE_FUNCTION_TRACE;
+
+   using ScalarType = MultTrait_t< UnderlyingBuiltin_t<MT>, ST >;
+   return map( ~dm, bind2nd( Min(), ScalarType( scalar ) ) );
+}
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*!\brief Computes the componentwise minimum of a scalar and a dense matrix \a dm.
+// \ingroup dense_matrix
+//
+// \param scalar The left-hand side scalar value.
+// \param dm The right-hand side dense matrix operand.
+// \return The resulting dense matrix.
+//
+// This operator computes the componentwise minimum of a uniform matrix represented by the scalar
+// value \a scalar and a dense matrix \a dm. The function returns an expression representing this
+// operation.\n
+// The following example demonstrates the use of the \a min() function:
+
+   \code
+   blaze::DynamicMatrix<double> A, B;
+   // ... Resizing and initialization
+   B = min( 0.0, A );
+   \endcode
+*/
+template< typename ST  // Type of the scalar exponent
+        , typename MT  // Type of the dense matrix
+        , bool SO      // Storage order
+        , EnableIf_t< IsNumeric_v<ST> >* = nullptr >
+decltype(auto) min( ST scalar, const DenseMatrix<MT,SO>& dm )
+{
+   BLAZE_FUNCTION_TRACE;
+
+   using ScalarType = MultTrait_t< UnderlyingBuiltin_t<MT>, ST >;
+   return map( ~dm, bind1st( Min(), ScalarType( scalar ) ) );
+}
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*!\brief Computes the componentwise maximum of a dense matrix \a dm and a scalar.
+// \ingroup dense_matrix
+//
+// \param dm The left-hand side dense matrix operand.
+// \param scalar The right-hand side scalar value.
+// \return The resulting dense matrix.
+//
+// This operator computes the componentwise maximum of a dense matrix \a dm and a uniform matrix
+// represented by the scalar value \a scalar. The function returns an expression representing this
+// operation.\n
+// The following example demonstrates the use of the \a max() function:
+
+   \code
+   blaze::DynamicMatrix<double> A, B;
+   // ... Resizing and initialization
+   B = max( A, 0.0 );
+   \endcode
+*/
+template< typename MT  // Type of the dense matrix
+        , bool SO      // Storage order
+        , typename ST  // Type of the scalar exponent
+        , EnableIf_t< IsNumeric_v<ST> >* = nullptr >
+decltype(auto) max( const DenseMatrix<MT,SO>& dm, ST scalar )
+{
+   BLAZE_FUNCTION_TRACE;
+
+   using ScalarType = MultTrait_t< UnderlyingBuiltin_t<MT>, ST >;
+   return map( ~dm, bind2nd( Max(), ScalarType( scalar ) ) );
+}
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*!\brief Computes the componentwise maximum of a scalar and a dense matrix \a dm.
+// \ingroup dense_matrix
+//
+// \param scalar The left-hand side scalar value.
+// \param dm The right-hand side dense matrix operand.
+// \return The resulting dense matrix.
+//
+// This operator computes the componentwise maximum of a uniform matrix represented by the scalar
+// value \a scalar and a dense matrix \a dm. The function returns an expression representing this
+// operation.\n
+// The following example demonstrates the use of the \a max() function:
+
+   \code
+   blaze::DynamicMatrix<double> A, B;
+   // ... Resizing and initialization
+   B = max( 0.0, A );
+   \endcode
+*/
+template< typename ST  // Type of the scalar exponent
+        , typename MT  // Type of the dense matrix
+        , bool SO      // Storage order
+        , EnableIf_t< IsNumeric_v<ST> >* = nullptr >
+decltype(auto) max( ST scalar, const DenseMatrix<MT,SO>& dm )
+{
+   BLAZE_FUNCTION_TRACE;
+
+   using ScalarType = MultTrait_t< UnderlyingBuiltin_t<MT>, ST >;
+   return map( ~dm, bind1st( Max(), ScalarType( scalar ) ) );
 }
 //*************************************************************************************************
 
@@ -1309,9 +1441,9 @@ inline decltype(auto) round( const DenseMatrix<MT,SO>& dm )
 // \param dm The input matrix.
 // \return The conjugate complex of each single element of \a dm.
 //
-// The \a conj function calculates the complex conjugate of each element of the input matrix
+// The \a conj() function calculates the complex conjugate of each element of the input matrix
 // \a dm. The function returns an expression representing this operation.\n
-// The following example demonstrates the use of the \a conj function:
+// The following example demonstrates the use of the \a conj() function:
 
    \code
    blaze::DynamicMatrix< complex<double> > A, B;
@@ -1337,10 +1469,10 @@ inline decltype(auto) conj( const DenseMatrix<MT,SO>& dm )
 // \param dm The input matrix.
 // \return The conjugate transpose of \a dm.
 //
-// The \a ctrans function returns an expression representing the conjugate transpose (also called
-// adjoint matrix, Hermitian conjugate matrix or transjugate matrix) of the given input matrix
-// \a dm.\n
-// The following example demonstrates the use of the \a ctrans function:
+// The \a ctrans() function returns an expression representing the conjugate transpose (also
+// called adjoint matrix, Hermitian conjugate matrix or transjugate matrix) of the given input
+// matrix \a dm.\n
+// The following example demonstrates the use of the \a ctrans() function:
 
    \code
    blaze::DynamicMatrix< complex<double> > A, B;
@@ -1348,7 +1480,7 @@ inline decltype(auto) conj( const DenseMatrix<MT,SO>& dm )
    B = ctrans( A );
    \endcode
 
-// Note that the \a ctrans function has the same effect as manually applying the \a conj and
+// Note that the \a ctrans() function has the same effect as manually applying the \a conj() and
 // \a trans function in any order:
 
    \code
@@ -1374,9 +1506,9 @@ inline decltype(auto) ctrans( const DenseMatrix<MT,SO>& dm )
 // \param dm The input matrix.
 // \return The real part of each single element of \a dm.
 //
-// The \a real function calculates the real part of each element of the input matrix \a dm.
+// The \a real() function calculates the real part of each element of the input matrix \a dm.
 // The function returns an expression representing this operation.\n
-// The following example demonstrates the use of the \a real function:
+// The following example demonstrates the use of the \a real() function:
 
    \code
    blaze::DynamicMatrix<double> A, B;
@@ -1402,9 +1534,9 @@ inline decltype(auto) real( const DenseMatrix<MT,SO>& dm )
 // \param dm The input matrix.
 // \return The imaginary part of each single element of \a dm.
 //
-// The \a imag function calculates the imaginary part of each element of the input matrix \a dm.
+// The \a imag() function calculates the imaginary part of each element of the input matrix \a dm.
 // The function returns an expression representing this operation.\n
-// The following example demonstrates the use of the \a imag function:
+// The following example demonstrates the use of the \a imag() function:
 
    \code
    blaze::DynamicMatrix<double> A, B;
@@ -1419,6 +1551,34 @@ inline decltype(auto) imag( const DenseMatrix<MT,SO>& dm )
    BLAZE_FUNCTION_TRACE;
 
    return map( ~dm, Imag() );
+}
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*!\brief Returns a matrix containing the phase angle of each single element of \a dm.
+// \ingroup dense_matrix
+//
+// \param dm The input matrix.
+// \return The phase angle of each single element of \a dm.
+//
+// The \a arg() function calculates the phase angle of each element of the input matrix \a dm.
+// The function returns an expression representing this operation.\n
+// The following example demonstrates the use of the \a arg() function:
+
+   \code
+   blaze::DynamicMatrix<double> A, B;
+   // ... Resizing and initialization
+   B = arg( A );
+   \endcode
+*/
+template< typename MT  // Type of the dense matrix
+        , bool SO >    // Storage order
+inline decltype(auto) arg( const DenseMatrix<MT,SO>& dm )
+{
+   BLAZE_FUNCTION_TRACE;
+
+   return map( ~dm, Arg() );
 }
 //*************************************************************************************************
 
@@ -1573,7 +1733,7 @@ inline decltype(auto) clamp( const DenseMatrix<MT,SO>& dm, const DT& min, const 
 {
    BLAZE_FUNCTION_TRACE;
 
-   return map( ~dm, Clamp<DT>( min, max ) );
+   return map( ~dm, bind2nd( bind3rd( Clamp(), max ), min ) );
 }
 //*************************************************************************************************
 

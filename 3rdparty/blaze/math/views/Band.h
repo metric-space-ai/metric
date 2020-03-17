@@ -3,7 +3,7 @@
 //  \file blaze/math/views/Band.h
 //  \brief Header file for the implementation of the Band view
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -49,6 +49,8 @@
 #include "../../math/expressions/MatMatKronExpr.h"
 #include "../../math/expressions/MatMatMapExpr.h"
 #include "../../math/expressions/MatMatSubExpr.h"
+#include "../../math/expressions/MatNoAliasExpr.h"
+#include "../../math/expressions/MatNoSIMDExpr.h"
 #include "../../math/expressions/Matrix.h"
 #include "../../math/expressions/MatScalarDivExpr.h"
 #include "../../math/expressions/MatScalarMultExpr.h"
@@ -56,7 +58,9 @@
 #include "../../math/expressions/MatTransExpr.h"
 #include "../../math/expressions/SchurExpr.h"
 #include "../../math/expressions/VecExpandExpr.h"
+#include "../../math/expressions/VecTVecMapExpr.h"
 #include "../../math/expressions/VecTVecMultExpr.h"
+#include "../../math/RelaxationFlag.h"
 #include "../../math/shims/IsDefault.h"
 #include "../../math/typetraits/HasConstDataAccess.h"
 #include "../../math/typetraits/HasMutableDataAccess.h"
@@ -77,7 +81,6 @@
 #include "../../system/TransposeFlag.h"
 #include "../../util/algorithms/Min.h"
 #include "../../util/Assert.h"
-#include "../../util/DisableIf.h"
 #include "../../util/EnableIf.h"
 #include "../../util/FunctionTrace.h"
 #include "../../util/IntegralConstant.h"
@@ -696,6 +699,42 @@ inline decltype(auto) band( const MatMatMapExpr<MT>& matrix, RBAs... args )
 
 //*************************************************************************************************
 /*! \cond BLAZE_INTERNAL */
+/*!\brief Creating a view on a specific band of the given outer map operation.
+// \ingroup band
+//
+// \param matrix The constant Kronecker map operation.
+// \param args The runtime band arguments.
+// \return View on the specified band of the Kronecker map operation.
+//
+// This function returns an expression representing the specified band of the given outer map
+// operation.
+*/
+template< ptrdiff_t... CBAs   // Compile time band arguments
+        , typename MT         // Type of the matrix
+        , typename... RBAs >  // Runtime band arguments
+inline decltype(auto) band( const VecTVecMapExpr<MT>& matrix, RBAs... args )
+{
+   BLAZE_FUNCTION_TRACE;
+
+   const BandData<CBAs...> bd( args... );
+
+   decltype(auto) leftOperand ( (~matrix).leftOperand()  );
+   decltype(auto) rightOperand( (~matrix).rightOperand() );
+
+   const size_t row   ( bd.band() <  0L ? -bd.band() : 0UL );
+   const size_t column( bd.band() >= 0L ?  bd.band() : 0UL );
+   const size_t size  ( min( leftOperand.size() - row, rightOperand.size() - column ) );
+
+   return map( transTo<defaultTransposeFlag>( subvector( leftOperand , row   , size ) ),
+               transTo<defaultTransposeFlag>( subvector( rightOperand, column, size ) ),
+               (~matrix).operation() );
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
 /*!\brief Creating a view on a specific band of the given matrix evaluation operation.
 // \ingroup band
 //
@@ -746,6 +785,56 @@ inline decltype(auto) band( const MatSerialExpr<MT>& matrix, RBAs... args )
 
 //*************************************************************************************************
 /*! \cond BLAZE_INTERNAL */
+/*!\brief Creating a view on a specific band of the given matrix no-alias operation.
+// \ingroup band
+//
+// \param matrix The constant matrix no-alias operation.
+// \param args The runtime band arguments.
+// \return View on the specified band of the no-alias operation.
+//
+// This function returns an expression representing the specified band of the given matrix
+// no-alias operation.
+*/
+template< ptrdiff_t... CBAs   // Compile time band arguments
+        , typename MT         // Type of the matrix
+        , typename... RBAs >  // Runtime band arguments
+inline decltype(auto) band( const MatNoAliasExpr<MT>& matrix, RBAs... args )
+{
+   BLAZE_FUNCTION_TRACE;
+
+   return noalias( band<CBAs...>( (~matrix).operand(), args... ) );
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Creating a view on a specific band of the given matrix no-SIMD operation.
+// \ingroup band
+//
+// \param matrix The constant matrix no-SIMD operation.
+// \param args The runtime band arguments.
+// \return View on the specified band of the no-SIMD operation.
+//
+// This function returns an expression representing the specified band of the given matrix
+// no-SIMD operation.
+*/
+template< ptrdiff_t... CBAs   // Compile time band arguments
+        , typename MT         // Type of the matrix
+        , typename... RBAs >  // Runtime band arguments
+inline decltype(auto) band( const MatNoSIMDExpr<MT>& matrix, RBAs... args )
+{
+   BLAZE_FUNCTION_TRACE;
+
+   return nosimd( band<CBAs...>( (~matrix).operand(), args... ) );
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
 /*!\brief Creating a view on a specific band of the given matrix declaration operation.
 // \ingroup band
 //
@@ -781,14 +870,39 @@ inline decltype(auto) band( const DeclExpr<MT>& matrix, RBAs... args )
 // This function returns an expression representing the specified band of the given matrix
 // transpose operation.
 */
-template< ptrdiff_t... CBAs   // Compile time band arguments
+template< ptrdiff_t I         // Band index
         , typename MT         // Type of the matrix
         , typename... RBAs >  // Runtime band arguments
 inline decltype(auto) band( const MatTransExpr<MT>& matrix, RBAs... args )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return band<-CBAs...>( (~matrix).operand(), -args... );
+   return band<-I>( (~matrix).operand(), args... );
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Creating a view on a specific band of the given matrix transpose operation.
+// \ingroup band
+//
+// \param matrix The constant matrix transpose operation.
+// \param index The band index.
+// \param args Optional band arguments.
+// \return View on the specified band of the transpose operation.
+//
+// This function returns an expression representing the specified band of the given matrix
+// transpose operation.
+*/
+template< typename MT         // Type of the matrix
+        , typename... RBAs >  // Runtime band arguments
+inline decltype(auto) band( const MatTransExpr<MT>& matrix, ptrdiff_t index, RBAs... args )
+{
+   BLAZE_FUNCTION_TRACE;
+
+   return band( (~matrix).operand(), -index, args... );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -1024,7 +1138,7 @@ inline void clear( Band<MT,TF,DF,MF,CBAs...>&& band )
    if( isDefault<relaxed>( band( A, 0UL ) ) ) { ... }
    \endcode
 */
-template< bool RF              // Relaxation flag
+template< RelaxationFlag RF    // Relaxation flag
         , typename MT          // Type of the dense matrix
         , bool TF              // Transpose flag
         , bool MF              // Multiplication flag
@@ -1067,7 +1181,7 @@ inline bool isDefault( const Band<MT,TF,true,MF,CBAs...>& band )
    if( isDefault<relaxed>( band( A, 0UL ) ) ) { ... }
    \endcode
 */
-template< bool RF              // Relaxation flag
+template< RelaxationFlag RF    // Relaxation flag
         , typename MT          // Type of the sparse matrix
         , bool TF              // Transpose flag
         , bool MF              // Multiplication flag
@@ -2325,6 +2439,58 @@ template< typename MT  // Type of the matrix
 inline decltype(auto) derestrict( Band<MT,TF,DF,MF>&& b )
 {
    return band( derestrict( b.operand() ), b.band(), unchecked );
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Returns a reference to the underlying matrix of the given band.
+// \ingroup band
+//
+// \param b The given band.
+// \return Reference to the underlying matrix.
+//
+// This function returns a reference to the underlying matrix of the given band.\n
+// This function must \b NOT be called explicitly! It is used internally for the performance
+// optimized evaluation of expression templates. Calling this function explicitly might result
+// in the violation of invariants, erroneous results and/or in compilation errors.
+*/
+template< typename MT          // Type of the matrix
+        , bool TF              // Transpose flag
+        , bool DF              // Density flag
+        , bool MF              // Multiplication flag
+        , ptrdiff_t... CBAs >  // Compile time band arguments
+inline decltype(auto) unview( Band<MT,TF,DF,MF,CBAs...>& b )
+{
+   return b.operand();
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Returns a reference to the underlying matrix of the given constant band.
+// \ingroup band
+//
+// \param b The given constant band.
+// \return Reference to the underlying matrix.
+//
+// This function returns a reference to the underlying matrix of the given constant band.\n
+// This function must \b NOT be called explicitly! It is used internally for the performance
+// optimized evaluation of expression templates. Calling this function explicitly might result
+// in the violation of invariants, erroneous results and/or in compilation errors.
+*/
+template< typename MT          // Type of the matrix
+        , bool TF              // Transpose flag
+        , bool DF              // Density flag
+        , bool MF              // Multiplication flag
+        , ptrdiff_t... CBAs >  // Compile time band arguments
+inline decltype(auto) unview( const Band<MT,TF,DF,MF,CBAs...>& b )
+{
+   return b.operand();
 }
 /*! \endcond */
 //*************************************************************************************************

@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/TDVecDMatMultExpr.h
 //  \brief Header file for the transpose dense vector/dense matrix multiplication expression
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -57,6 +57,7 @@
 #include "../../math/expressions/MatMatMultExpr.h"
 #include "../../math/expressions/TVecMatMultExpr.h"
 #include "../../math/expressions/VecScalarMultExpr.h"
+#include "../../math/shims/PrevMultiple.h"
 #include "../../math/shims/Reset.h"
 #include "../../math/shims/Serial.h"
 #include "../../math/SIMD.h"
@@ -75,12 +76,14 @@
 #include "../../math/typetraits/IsPadded.h"
 #include "../../math/typetraits/IsSIMDCombinable.h"
 #include "../../math/typetraits/IsStrictlyLower.h"
+#include "../../math/typetraits/IsStrictlyTriangular.h"
 #include "../../math/typetraits/IsStrictlyUpper.h"
 #include "../../math/typetraits/IsTriangular.h"
 #include "../../math/typetraits/IsUpper.h"
 #include "../../math/typetraits/RequiresEvaluation.h"
 #include "../../math/views/Check.h"
 #include "../../system/BLAS.h"
+#include "../../system/MacroDisable.h"
 #include "../../system/Optimizations.h"
 #include "../../system/Thresholds.h"
 #include "../../util/algorithms/Max.h"
@@ -88,7 +91,6 @@
 #include "../../util/Assert.h"
 #include "../../util/Complex.h"
 #include "../../util/constraints/SameType.h"
-#include "../../util/DisableIf.h"
 #include "../../util/EnableIf.h"
 #include "../../util/FunctionTrace.h"
 #include "../../util/IntegralConstant.h"
@@ -245,7 +247,7 @@ class TDVecDMatMultExpr
    // \param vec The left-hand side vector operand of the multiplication expression.
    // \param mat The right-hand side matrix operand of the multiplication expression.
    */
-   explicit inline TDVecDMatMultExpr( const VT& vec, const MT& mat ) noexcept
+   inline TDVecDMatMultExpr( const VT& vec, const MT& mat ) noexcept
       : vec_( vec )  // Left-hand side dense vector of the multiplication expression
       , mat_( mat )  // Right-hand side dense matrix of the multiplication expression
    {
@@ -406,7 +408,8 @@ class TDVecDMatMultExpr
 
       BLAZE_INTERNAL_ASSERT( (~lhs).size() == rhs.size(), "Invalid vector sizes" );
 
-      if( rhs.mat_.rows() == 0UL ) {
+      if( rhs.mat_.rows() == 0UL ||
+          ( IsStrictlyTriangular_v<MT> && rhs.mat_.rows() == 1UL ) ) {
          reset( ~lhs );
          return;
       }
@@ -504,7 +507,8 @@ class TDVecDMatMultExpr
             BLAZE_INTERNAL_ASSERT( jbegin <= jend, "Invalid loop indices detected" );
 
             const size_t jnum( jend - jbegin );
-            const size_t jpos( jbegin + ( jnum & size_t(-2) ) );
+            const size_t jpos( jbegin + prevMultiple( jnum, 2UL ) );
+            BLAZE_INTERNAL_ASSERT( jpos <= jbegin+jnum, "Invalid end calculation" );
 
             for( size_t j=jbegin; j<jpos; j+=2UL ) {
                y[j    ] += x[i] * A(i,j    );
@@ -576,8 +580,8 @@ class TDVecDMatMultExpr
       const size_t M( A.rows()    );
       const size_t N( A.columns() );
 
-      const size_t jpos( remainder ? ( N & size_t(-SIMDSIZE) ) : N );
-      BLAZE_INTERNAL_ASSERT( !remainder || ( N - ( N % SIMDSIZE ) ) == jpos, "Invalid end calculation" );
+      const size_t jpos( remainder ? prevMultiple( N, SIMDSIZE ) : N );
+      BLAZE_INTERNAL_ASSERT( jpos <= N, "Invalid end calculation" );
 
       size_t j( 0UL );
 
@@ -589,12 +593,20 @@ class TDVecDMatMultExpr
          const size_t iend( ( IsUpper_v<MT1> )
                             ?( min( j+SIMDSIZE*8UL, M ) - ( IsStrictlyUpper_v<MT1> ? 1UL : 0UL ) )
                             :( M ) );
-         BLAZE_INTERNAL_ASSERT( ibegin <= iend, "Invalid loop indices detected" );
+         BLAZE_INTERNAL_ASSERT( ibegin < iend, "Invalid loop indices detected" );
 
-         SIMDType xmm1, xmm2, xmm3, xmm4, xmm5, xmm6, xmm7, xmm8;
+         SIMDType x1( set( x[ibegin] ) );
+         SIMDType xmm1( x1 * A.load(ibegin,j             ) );
+         SIMDType xmm2( x1 * A.load(ibegin,j+SIMDSIZE    ) );
+         SIMDType xmm3( x1 * A.load(ibegin,j+SIMDSIZE*2UL) );
+         SIMDType xmm4( x1 * A.load(ibegin,j+SIMDSIZE*3UL) );
+         SIMDType xmm5( x1 * A.load(ibegin,j+SIMDSIZE*4UL) );
+         SIMDType xmm6( x1 * A.load(ibegin,j+SIMDSIZE*5UL) );
+         SIMDType xmm7( x1 * A.load(ibegin,j+SIMDSIZE*6UL) );
+         SIMDType xmm8( x1 * A.load(ibegin,j+SIMDSIZE*7UL) );
 
-         for( size_t i=ibegin; i<iend; ++i ) {
-            const SIMDType x1( set( x[i] ) );
+         for( size_t i=ibegin+1UL; i<iend; ++i ) {
+            x1 = set( x[i] );
             xmm1 += x1 * A.load(i,j             );
             xmm2 += x1 * A.load(i,j+SIMDSIZE    );
             xmm3 += x1 * A.load(i,j+SIMDSIZE*2UL);
@@ -623,12 +635,16 @@ class TDVecDMatMultExpr
          const size_t iend( ( IsUpper_v<MT1> )
                             ?( min( j+SIMDSIZE*4UL, M ) - ( IsStrictlyUpper_v<MT1> ? 1UL : 0UL ) )
                             :( M ) );
-         BLAZE_INTERNAL_ASSERT( ibegin <= iend, "Invalid loop indices detected" );
+         BLAZE_INTERNAL_ASSERT( ibegin < iend, "Invalid loop indices detected" );
 
-         SIMDType xmm1, xmm2, xmm3, xmm4;
+         SIMDType x1( set( x[ibegin] ) );
+         SIMDType xmm1( x1 * A.load(ibegin,j             ) );
+         SIMDType xmm2( x1 * A.load(ibegin,j+SIMDSIZE    ) );
+         SIMDType xmm3( x1 * A.load(ibegin,j+SIMDSIZE*2UL) );
+         SIMDType xmm4( x1 * A.load(ibegin,j+SIMDSIZE*3UL) );
 
-         for( size_t i=ibegin; i<iend; ++i ) {
-            const SIMDType x1( set( x[i] ) );
+         for( size_t i=ibegin+1UL; i<iend; ++i ) {
+            x1 = set( x[i] );
             xmm1 += x1 * A.load(i,j             );
             xmm2 += x1 * A.load(i,j+SIMDSIZE    );
             xmm3 += x1 * A.load(i,j+SIMDSIZE*2UL);
@@ -649,12 +665,15 @@ class TDVecDMatMultExpr
          const size_t iend( ( IsUpper_v<MT1> )
                             ?( min( j+SIMDSIZE*3UL, M ) - ( IsStrictlyUpper_v<MT1> ? 1UL : 0UL ) )
                             :( M ) );
-         BLAZE_INTERNAL_ASSERT( ibegin <= iend, "Invalid loop indices detected" );
+         BLAZE_INTERNAL_ASSERT( ibegin < iend, "Invalid loop indices detected" );
 
-         SIMDType xmm1, xmm2, xmm3;
+         SIMDType x1( set( x[ibegin] ) );
+         SIMDType xmm1( x1 * A.load(ibegin,j             ) );
+         SIMDType xmm2( x1 * A.load(ibegin,j+SIMDSIZE    ) );
+         SIMDType xmm3( x1 * A.load(ibegin,j+SIMDSIZE*2UL) );
 
-         for( size_t i=ibegin; i<iend; ++i ) {
-            const SIMDType x1( set( x[i] ) );
+         for( size_t i=ibegin+1UL; i<iend; ++i ) {
+            x1 = set( x[i] );
             xmm1 += x1 * A.load(i,j             );
             xmm2 += x1 * A.load(i,j+SIMDSIZE    );
             xmm3 += x1 * A.load(i,j+SIMDSIZE*2UL);
@@ -673,12 +692,14 @@ class TDVecDMatMultExpr
          const size_t iend( ( IsUpper_v<MT1> )
                             ?( min( j+SIMDSIZE*2UL, M ) - ( IsStrictlyUpper_v<MT1> ? 1UL : 0UL ) )
                             :( M ) );
-         BLAZE_INTERNAL_ASSERT( ibegin <= iend, "Invalid loop indices detected" );
+         BLAZE_INTERNAL_ASSERT( ibegin < iend, "Invalid loop indices detected" );
 
-         SIMDType xmm1, xmm2;
+         SIMDType x1( set( x[ibegin] ) );
+         SIMDType xmm1( x1 * A.load(ibegin,j         ) );
+         SIMDType xmm2( x1 * A.load(ibegin,j+SIMDSIZE) );
 
-         for( size_t i=ibegin; i<iend; ++i ) {
-            const SIMDType x1( set( x[i] ) );
+         for( size_t i=ibegin+1UL; i<iend; ++i ) {
+            x1 = set( x[i] );
             xmm1 += x1 * A.load(i,j         );
             xmm2 += x1 * A.load(i,j+SIMDSIZE);
          }
@@ -695,11 +716,11 @@ class TDVecDMatMultExpr
          const size_t iend( ( IsUpper_v<MT1> )
                             ?( min( j+SIMDSIZE, M ) - ( IsStrictlyUpper_v<MT1> ? 1UL : 0UL ) )
                             :( M ) );
-         BLAZE_INTERNAL_ASSERT( ibegin <= iend, "Invalid loop indices detected" );
+         BLAZE_INTERNAL_ASSERT( ibegin < iend, "Invalid loop indices detected" );
 
-         SIMDType xmm1;
+         SIMDType xmm1( set( x[ibegin] ) * A.load(ibegin,j) );
 
-         for( size_t i=ibegin; i<iend; ++i ) {
+         for( size_t i=ibegin+1UL; i<iend; ++i ) {
             xmm1 += set( x[i] ) * A.load(i,j);
          }
 
@@ -708,17 +729,13 @@ class TDVecDMatMultExpr
 
       for( ; remainder && j<N; ++j )
       {
-         const size_t ibegin( ( IsLower_v<MT1> )
-                              ?( IsStrictlyLower_v<MT1> ? j+1UL : j )
-                              :( 0UL ) );
-         const size_t iend( ( IsUpper_v<MT1> )
-                            ?( min( j+1UL, M ) - ( IsStrictlyUpper_v<MT1> ? 1UL : 0UL ) )
-                            :( M ) );
-         BLAZE_INTERNAL_ASSERT( ibegin <= iend, "Invalid loop indices detected" );
+         const size_t ibegin( ( IsLower_v<MT1> )?( j ):( 0UL ) );
+         const size_t iend( ( IsUpper_v<MT1> )?( min( j+1UL, M ) ):( M ) );
+         BLAZE_INTERNAL_ASSERT( ibegin < iend, "Invalid loop indices detected" );
 
-         ElementType value{};
+         ElementType value( x[ibegin] * A(ibegin,j) );
 
-         for( size_t i=ibegin; i<iend; ++i ) {
+         for( size_t i=ibegin+1UL; i<iend; ++i ) {
             value += x[i] * A(i,j);
          }
 
@@ -794,19 +811,27 @@ class TDVecDMatMultExpr
                                ?( min( jtmp, ( IsStrictlyLower_v<MT1> ? iend-1UL : iend ) ) )
                                :( jtmp ) );
 
-            const size_t jpos( remainder ? ( jend & size_t(-SIMDSIZE) ) : jend );
-            BLAZE_INTERNAL_ASSERT( !remainder || ( jend - ( jend % SIMDSIZE ) ) == jpos, "Invalid end calculation" );
+            const size_t jpos( remainder ? prevMultiple( jend, SIMDSIZE ) : jend );
+            BLAZE_INTERNAL_ASSERT( jpos <= jend, "Invalid end calculation" );
 
             size_t j( ( IsUpper_v<MT1> )
-                      ?( max( jj, ( IsStrictlyUpper_v<MT1> ? ii+1UL : ii ) & size_t(-SIMDSIZE) ) )
+                      ?( max( jj, prevMultiple( ( IsStrictlyUpper_v<MT1> ? ii+1UL : ii ), SIMDSIZE ) ) )
                       :( jj ) );
 
             for( ; (j+SIMDSIZE*7UL) < jpos; j+=SIMDSIZE*8UL )
             {
-               SIMDType xmm1, xmm2, xmm3, xmm4, xmm5, xmm6, xmm7, xmm8;
+               SIMDType x1( set( x[ii] ) );
+               SIMDType xmm1( x1 * A.load(ii,j             ) );
+               SIMDType xmm2( x1 * A.load(ii,j+SIMDSIZE    ) );
+               SIMDType xmm3( x1 * A.load(ii,j+SIMDSIZE*2UL) );
+               SIMDType xmm4( x1 * A.load(ii,j+SIMDSIZE*3UL) );
+               SIMDType xmm5( x1 * A.load(ii,j+SIMDSIZE*4UL) );
+               SIMDType xmm6( x1 * A.load(ii,j+SIMDSIZE*5UL) );
+               SIMDType xmm7( x1 * A.load(ii,j+SIMDSIZE*6UL) );
+               SIMDType xmm8( x1 * A.load(ii,j+SIMDSIZE*7UL) );
 
-               for( size_t i=ii; i<iend; ++i ) {
-                  const SIMDType x1( set( x[i] ) );
+               for( size_t i=ii+1UL; i<iend; ++i ) {
+                  x1 = set( x[i] );
                   xmm1 += x1 * A.load(i,j             );
                   xmm2 += x1 * A.load(i,j+SIMDSIZE    );
                   xmm3 += x1 * A.load(i,j+SIMDSIZE*2UL);
@@ -829,10 +854,14 @@ class TDVecDMatMultExpr
 
             for( ; (j+SIMDSIZE*3UL) < jpos; j+=SIMDSIZE*4UL )
             {
-               SIMDType xmm1, xmm2, xmm3, xmm4;
+               SIMDType x1( set( x[ii] ) );
+               SIMDType xmm1( x1 * A.load(ii,j             ) );
+               SIMDType xmm2( x1 * A.load(ii,j+SIMDSIZE    ) );
+               SIMDType xmm3( x1 * A.load(ii,j+SIMDSIZE*2UL) );
+               SIMDType xmm4( x1 * A.load(ii,j+SIMDSIZE*3UL) );
 
-               for( size_t i=ii; i<iend; ++i ) {
-                  const SIMDType x1( set( x[i] ) );
+               for( size_t i=ii+1UL; i<iend; ++i ) {
+                  x1 = set( x[i] );
                   xmm1 += x1 * A.load(i,j             );
                   xmm2 += x1 * A.load(i,j+SIMDSIZE    );
                   xmm3 += x1 * A.load(i,j+SIMDSIZE*2UL);
@@ -847,10 +876,13 @@ class TDVecDMatMultExpr
 
             for( ; (j+SIMDSIZE*2UL) < jpos; j+=SIMDSIZE*3UL )
             {
-               SIMDType xmm1, xmm2, xmm3;
+               SIMDType x1( set( x[ii] ) );
+               SIMDType xmm1( x1 * A.load(ii,j             ) );
+               SIMDType xmm2( x1 * A.load(ii,j+SIMDSIZE    ) );
+               SIMDType xmm3( x1 * A.load(ii,j+SIMDSIZE*2UL) );
 
-               for( size_t i=ii; i<iend; ++i ) {
-                  const SIMDType x1( set( x[i] ) );
+               for( size_t i=ii+1UL; i<iend; ++i ) {
+                  x1 = set( x[i] );
                   xmm1 += x1 * A.load(i,j             );
                   xmm2 += x1 * A.load(i,j+SIMDSIZE    );
                   xmm3 += x1 * A.load(i,j+SIMDSIZE*2UL);
@@ -863,10 +895,12 @@ class TDVecDMatMultExpr
 
             for( ; (j+SIMDSIZE) < jpos; j+=SIMDSIZE*2UL )
             {
-               SIMDType xmm1, xmm2;
+               SIMDType x1( set( x[ii] ) );
+               SIMDType xmm1( x1 * A.load(ii,j         ) );
+               SIMDType xmm2( x1 * A.load(ii,j+SIMDSIZE) );
 
-               for( size_t i=ii; i<iend; ++i ) {
-                  const SIMDType x1( set( x[i] ) );
+               for( size_t i=ii+1UL; i<iend; ++i ) {
+                  x1 = set( x[i] );
                   xmm1 += x1 * A.load(i,j         );
                   xmm2 += x1 * A.load(i,j+SIMDSIZE);
                }
@@ -877,9 +911,9 @@ class TDVecDMatMultExpr
 
             for( ; j<jpos; j+=SIMDSIZE )
             {
-               SIMDType xmm1;
+               SIMDType xmm1( set( x[ii] ) * A.load(ii,j) );
 
-               for( size_t i=ii; i<iend; ++i ) {
+               for( size_t i=ii+1UL; i<iend; ++i ) {
                   xmm1 += set( x[i] ) * A.load(i,j);
                }
 
@@ -888,9 +922,9 @@ class TDVecDMatMultExpr
 
             for( ; remainder && j<jend; ++j )
             {
-               ElementType value{};
+               ElementType value( x[ii] * A(ii,j) );
 
-               for( size_t i=ii; i<iend; ++i ) {
+               for( size_t i=ii+1UL; i<iend; ++i ) {
                   value += x[i] * A(i,j);
                }
 
@@ -1012,7 +1046,8 @@ class TDVecDMatMultExpr
 
       BLAZE_INTERNAL_ASSERT( (~lhs).size() == rhs.size(), "Invalid vector sizes" );
 
-      if( rhs.mat_.rows() == 0UL || rhs.mat_.columns() == 0UL ) {
+      if( rhs.mat_.rows() == 0UL || rhs.mat_.columns() == 0UL ||
+          ( IsStrictlyTriangular_v<MT> && rhs.mat_.rows() == 1UL ) ) {
          return;
       }
 
@@ -1094,7 +1129,8 @@ class TDVecDMatMultExpr
             BLAZE_INTERNAL_ASSERT( jbegin <= jend, "Invalid loop indices detected" );
 
             const size_t jnum( jend - jbegin );
-            const size_t jpos( jbegin + ( jnum & size_t(-2) ) );
+            const size_t jpos( jbegin + prevMultiple( jnum, 2UL ) );
+            BLAZE_INTERNAL_ASSERT( jpos <= jbegin+jnum, "Invalid end calculation" );
 
             for( size_t j=jbegin; j<jpos; j+=2UL ) {
                y[j    ] += x[i] * A(i,j    );
@@ -1159,8 +1195,8 @@ class TDVecDMatMultExpr
       const size_t M( A.rows()    );
       const size_t N( A.columns() );
 
-      const size_t jpos( remainder ? ( N & size_t(-SIMDSIZE) ) : N );
-      BLAZE_INTERNAL_ASSERT( !remainder || ( N - ( N % SIMDSIZE ) ) == jpos, "Invalid end calculation" );
+      const size_t jpos( remainder ? prevMultiple( N, SIMDSIZE ) : N );
+      BLAZE_INTERNAL_ASSERT( jpos <= N, "Invalid end calculation" );
 
       size_t j( 0UL );
 
@@ -1172,7 +1208,7 @@ class TDVecDMatMultExpr
          const size_t iend( ( IsUpper_v<MT1> )
                             ?( min( j+SIMDSIZE*8UL, M ) - ( IsStrictlyUpper_v<MT1> ? 1UL : 0UL ) )
                             :( M ) );
-         BLAZE_INTERNAL_ASSERT( ibegin <= iend, "Invalid loop indices detected" );
+         BLAZE_INTERNAL_ASSERT( ibegin < iend, "Invalid loop indices detected" );
 
          SIMDType xmm1( y.load(j             ) );
          SIMDType xmm2( y.load(j+SIMDSIZE    ) );
@@ -1213,7 +1249,7 @@ class TDVecDMatMultExpr
          const size_t iend( ( IsUpper_v<MT1> )
                             ?( min( j+SIMDSIZE*4UL, M ) - ( IsStrictlyUpper_v<MT1> ? 1UL : 0UL ) )
                             :( M ) );
-         BLAZE_INTERNAL_ASSERT( ibegin <= iend, "Invalid loop indices detected" );
+         BLAZE_INTERNAL_ASSERT( ibegin < iend, "Invalid loop indices detected" );
 
          SIMDType xmm1( y.load(j             ) );
          SIMDType xmm2( y.load(j+SIMDSIZE    ) );
@@ -1242,7 +1278,7 @@ class TDVecDMatMultExpr
          const size_t iend( ( IsUpper_v<MT1> )
                             ?( min( j+SIMDSIZE*3UL, M ) - ( IsStrictlyUpper_v<MT1> ? 1UL : 0UL ) )
                             :( M ) );
-         BLAZE_INTERNAL_ASSERT( ibegin <= iend, "Invalid loop indices detected" );
+         BLAZE_INTERNAL_ASSERT( ibegin < iend, "Invalid loop indices detected" );
 
          SIMDType xmm1( y.load(j             ) );
          SIMDType xmm2( y.load(j+SIMDSIZE    ) );
@@ -1268,7 +1304,7 @@ class TDVecDMatMultExpr
          const size_t iend( ( IsUpper_v<MT1> )
                             ?( min( j+SIMDSIZE*2UL, M ) - ( IsStrictlyUpper_v<MT1> ? 1UL : 0UL ) )
                             :( M ) );
-         BLAZE_INTERNAL_ASSERT( ibegin <= iend, "Invalid loop indices detected" );
+         BLAZE_INTERNAL_ASSERT( ibegin < iend, "Invalid loop indices detected" );
 
          SIMDType xmm1( y.load(j         ) );
          SIMDType xmm2( y.load(j+SIMDSIZE) );
@@ -1291,7 +1327,7 @@ class TDVecDMatMultExpr
          const size_t iend( ( IsUpper_v<MT1> )
                             ?( min( j+SIMDSIZE, M ) - ( IsStrictlyUpper_v<MT1> ? 1UL : 0UL ) )
                             :( M ) );
-         BLAZE_INTERNAL_ASSERT( ibegin <= iend, "Invalid loop indices detected" );
+         BLAZE_INTERNAL_ASSERT( ibegin < iend, "Invalid loop indices detected" );
 
          SIMDType xmm1( y.load(j) );
 
@@ -1304,17 +1340,13 @@ class TDVecDMatMultExpr
 
       for( ; remainder && j<N; ++j )
       {
-         const size_t ibegin( ( IsLower_v<MT1> )
-                              ?( IsStrictlyLower_v<MT1> ? j+1UL : j )
-                              :( 0UL ) );
-         const size_t iend( ( IsUpper_v<MT1> )
-                            ?( min( j+1UL, M ) - ( IsStrictlyUpper_v<MT1> ? 1UL : 0UL ) )
-                            :( M ) );
-         BLAZE_INTERNAL_ASSERT( ibegin <= iend, "Invalid loop indices detected" );
+         const size_t ibegin( ( IsLower_v<MT1> )?( j ):( 0UL ) );
+         const size_t iend( ( IsUpper_v<MT1> )?( min( j+1UL, M ) ):( M ) );
+         BLAZE_INTERNAL_ASSERT( ibegin < iend, "Invalid loop indices detected" );
 
-         ElementType value{};
+         ElementType value( x[ibegin] * A(ibegin,j) );
 
-         for( size_t i=ibegin; i<iend; ++i ) {
+         for( size_t i=ibegin+1UL; i<iend; ++i ) {
             value += x[i] * A(i,j);
          }
 
@@ -1388,19 +1420,27 @@ class TDVecDMatMultExpr
                                ?( min( jtmp, ( IsStrictlyLower_v<MT1> ? iend-1UL : iend ) ) )
                                :( jtmp ) );
 
-            const size_t jpos( remainder ? ( jend & size_t(-SIMDSIZE) ) : jend );
-            BLAZE_INTERNAL_ASSERT( !remainder || ( jend - ( jend % SIMDSIZE ) ) == jpos, "Invalid end calculation" );
+            const size_t jpos( remainder ? prevMultiple( jend, SIMDSIZE ) : jend );
+            BLAZE_INTERNAL_ASSERT( jpos <= jend, "Invalid end calculation" );
 
             size_t j( ( IsUpper_v<MT1> )
-                      ?( max( jj, ( IsStrictlyUpper_v<MT1> ? ii+1UL : ii ) & size_t(-SIMDSIZE) ) )
+                      ?( max( jj, prevMultiple( ( IsStrictlyUpper_v<MT1> ? ii+1UL : ii ), SIMDSIZE ) ) )
                       :( jj ) );
 
             for( ; (j+SIMDSIZE*7UL) < jpos; j+=SIMDSIZE*8UL )
             {
-               SIMDType xmm1, xmm2, xmm3, xmm4, xmm5, xmm6, xmm7, xmm8;
+               SIMDType x1( set( x[ii] ) );
+               SIMDType xmm1( x1 * A.load(ii,j             ) );
+               SIMDType xmm2( x1 * A.load(ii,j+SIMDSIZE    ) );
+               SIMDType xmm3( x1 * A.load(ii,j+SIMDSIZE*2UL) );
+               SIMDType xmm4( x1 * A.load(ii,j+SIMDSIZE*3UL) );
+               SIMDType xmm5( x1 * A.load(ii,j+SIMDSIZE*4UL) );
+               SIMDType xmm6( x1 * A.load(ii,j+SIMDSIZE*5UL) );
+               SIMDType xmm7( x1 * A.load(ii,j+SIMDSIZE*6UL) );
+               SIMDType xmm8( x1 * A.load(ii,j+SIMDSIZE*7UL) );
 
-               for( size_t i=ii; i<iend; ++i ) {
-                  const SIMDType x1( set( x[i] ) );
+               for( size_t i=ii+1UL; i<iend; ++i ) {
+                  x1 = set( x[i] );
                   xmm1 += x1 * A.load(i,j             );
                   xmm2 += x1 * A.load(i,j+SIMDSIZE    );
                   xmm3 += x1 * A.load(i,j+SIMDSIZE*2UL);
@@ -1423,10 +1463,14 @@ class TDVecDMatMultExpr
 
             for( ; (j+SIMDSIZE*3UL) < jpos; j+=SIMDSIZE*4UL )
             {
-               SIMDType xmm1, xmm2, xmm3, xmm4;
+               SIMDType x1( set( x[ii] ) );
+               SIMDType xmm1( x1 * A.load(ii,j             ) );
+               SIMDType xmm2( x1 * A.load(ii,j+SIMDSIZE    ) );
+               SIMDType xmm3( x1 * A.load(ii,j+SIMDSIZE*2UL) );
+               SIMDType xmm4( x1 * A.load(ii,j+SIMDSIZE*3UL) );
 
-               for( size_t i=ii; i<iend; ++i ) {
-                  const SIMDType x1( set( x[i] ) );
+               for( size_t i=ii+1UL; i<iend; ++i ) {
+                  x1 = set( x[i] );
                   xmm1 += x1 * A.load(i,j             );
                   xmm2 += x1 * A.load(i,j+SIMDSIZE    );
                   xmm3 += x1 * A.load(i,j+SIMDSIZE*2UL);
@@ -1441,10 +1485,13 @@ class TDVecDMatMultExpr
 
             for( ; (j+SIMDSIZE*2UL) < jpos; j+=SIMDSIZE*3UL )
             {
-               SIMDType xmm1, xmm2, xmm3;
+               SIMDType x1( set( x[ii] ) );
+               SIMDType xmm1( x1 * A.load(ii,j             ) );
+               SIMDType xmm2( x1 * A.load(ii,j+SIMDSIZE    ) );
+               SIMDType xmm3( x1 * A.load(ii,j+SIMDSIZE*2UL) );
 
-               for( size_t i=ii; i<iend; ++i ) {
-                  const SIMDType x1( set( x[i] ) );
+               for( size_t i=ii+1UL; i<iend; ++i ) {
+                  x1 = set( x[i] );
                   xmm1 += x1 * A.load(i,j             );
                   xmm2 += x1 * A.load(i,j+SIMDSIZE    );
                   xmm3 += x1 * A.load(i,j+SIMDSIZE*2UL);
@@ -1457,10 +1504,12 @@ class TDVecDMatMultExpr
 
             for( ; (j+SIMDSIZE) < jpos; j+=SIMDSIZE*2UL )
             {
-               SIMDType xmm1, xmm2;
+               SIMDType x1( set( x[ii] ) );
+               SIMDType xmm1( x1 * A.load(ii,j         ) );
+               SIMDType xmm2( x1 * A.load(ii,j+SIMDSIZE) );
 
-               for( size_t i=ii; i<iend; ++i ) {
-                  const SIMDType x1( set( x[i] ) );
+               for( size_t i=ii+1UL; i<iend; ++i ) {
+                  x1 = set( x[i] );
                   xmm1 += x1 * A.load(i,j         );
                   xmm2 += x1 * A.load(i,j+SIMDSIZE);
                }
@@ -1471,9 +1520,9 @@ class TDVecDMatMultExpr
 
             for( ; j<jpos; j+=SIMDSIZE )
             {
-               SIMDType xmm1;
+               SIMDType xmm1( set( x[ii] ) * A.load(ii,j) );
 
-               for( size_t i=ii; i<iend; ++i ) {
+               for( size_t i=ii+1UL; i<iend; ++i ) {
                   xmm1 += set( x[i] ) * A.load(i,j);
                }
 
@@ -1482,9 +1531,9 @@ class TDVecDMatMultExpr
 
             for( ; remainder && j<jend; ++j )
             {
-               ElementType value{};
+               ElementType value( x[ii] * A(ii,j) );
 
-               for( size_t i=ii; i<iend; ++i ) {
+               for( size_t i=ii+1UL; i<iend; ++i ) {
                   value += x[i] * A(i,j);
                }
 
@@ -1581,7 +1630,8 @@ class TDVecDMatMultExpr
 
       BLAZE_INTERNAL_ASSERT( (~lhs).size() == rhs.size(), "Invalid vector sizes" );
 
-      if( rhs.mat_.rows() == 0UL || rhs.mat_.columns() == 0UL ) {
+      if( rhs.mat_.rows() == 0UL || rhs.mat_.columns() == 0UL ||
+          ( IsStrictlyTriangular_v<MT> && rhs.mat_.rows() == 1UL ) ) {
          return;
       }
 
@@ -1663,7 +1713,8 @@ class TDVecDMatMultExpr
             BLAZE_INTERNAL_ASSERT( jbegin <= jend, "Invalid loop indices detected" );
 
             const size_t jnum( jend - jbegin );
-            const size_t jpos( jbegin + ( jnum & size_t(-2) ) );
+            const size_t jpos( jbegin + prevMultiple( jnum, 2UL ) );
+            BLAZE_INTERNAL_ASSERT( jpos <= jbegin+jnum, "Invalid end calculation" );
 
             for( size_t j=jbegin; j<jpos; j+=2UL ) {
                y[j    ] -= x[i] * A(i,j    );
@@ -1729,8 +1780,8 @@ class TDVecDMatMultExpr
       const size_t M( A.rows()    );
       const size_t N( A.columns() );
 
-      const size_t jpos( remainder ? ( N & size_t(-SIMDSIZE) ) : N );
-      BLAZE_INTERNAL_ASSERT( !remainder || ( N - ( N % SIMDSIZE ) ) == jpos, "Invalid end calculation" );
+      const size_t jpos( remainder ? prevMultiple( N, SIMDSIZE ) : N );
+      BLAZE_INTERNAL_ASSERT( jpos <= N, "Invalid end calculation" );
 
       size_t j( 0UL );
 
@@ -1742,7 +1793,7 @@ class TDVecDMatMultExpr
          const size_t iend( ( IsUpper_v<MT1> )
                             ?( min( j+SIMDSIZE*8UL, M ) - ( IsStrictlyUpper_v<MT1> ? 1UL : 0UL ) )
                             :( M ) );
-         BLAZE_INTERNAL_ASSERT( ibegin <= iend, "Invalid loop indices detected" );
+         BLAZE_INTERNAL_ASSERT( ibegin < iend, "Invalid loop indices detected" );
 
          SIMDType xmm1( y.load(j             ) );
          SIMDType xmm2( y.load(j+SIMDSIZE    ) );
@@ -1783,7 +1834,7 @@ class TDVecDMatMultExpr
          const size_t iend( ( IsUpper_v<MT1> )
                             ?( min( j+SIMDSIZE*4UL, M ) - ( IsStrictlyUpper_v<MT1> ? 1UL : 0UL ) )
                             :( M ) );
-         BLAZE_INTERNAL_ASSERT( ibegin <= iend, "Invalid loop indices detected" );
+         BLAZE_INTERNAL_ASSERT( ibegin < iend, "Invalid loop indices detected" );
 
          SIMDType xmm1( y.load(j             ) );
          SIMDType xmm2( y.load(j+SIMDSIZE    ) );
@@ -1812,7 +1863,7 @@ class TDVecDMatMultExpr
          const size_t iend( ( IsUpper_v<MT1> )
                             ?( min( j+SIMDSIZE*3UL, M ) - ( IsStrictlyUpper_v<MT1> ? 1UL : 0UL ) )
                             :( M ) );
-         BLAZE_INTERNAL_ASSERT( ibegin <= iend, "Invalid loop indices detected" );
+         BLAZE_INTERNAL_ASSERT( ibegin < iend, "Invalid loop indices detected" );
 
          SIMDType xmm1( y.load(j             ) );
          SIMDType xmm2( y.load(j+SIMDSIZE    ) );
@@ -1838,7 +1889,7 @@ class TDVecDMatMultExpr
          const size_t iend( ( IsUpper_v<MT1> )
                             ?( min( j+SIMDSIZE*2UL, M ) - ( IsStrictlyUpper_v<MT1> ? 1UL : 0UL ) )
                             :( M ) );
-         BLAZE_INTERNAL_ASSERT( ibegin <= iend, "Invalid loop indices detected" );
+         BLAZE_INTERNAL_ASSERT( ibegin < iend, "Invalid loop indices detected" );
 
          SIMDType xmm1( y.load(j         ) );
          SIMDType xmm2( y.load(j+SIMDSIZE) );
@@ -1861,7 +1912,7 @@ class TDVecDMatMultExpr
          const size_t iend( ( IsUpper_v<MT1> )
                             ?( min( j+SIMDSIZE, M ) - ( IsStrictlyUpper_v<MT1> ? 1UL : 0UL ) )
                             :( M ) );
-         BLAZE_INTERNAL_ASSERT( ibegin <= iend, "Invalid loop indices detected" );
+         BLAZE_INTERNAL_ASSERT( ibegin < iend, "Invalid loop indices detected" );
 
          SIMDType xmm1( y.load(j) );
 
@@ -1874,17 +1925,13 @@ class TDVecDMatMultExpr
 
       for( ; remainder && j<N; ++j )
       {
-         const size_t ibegin( ( IsLower_v<MT1> )
-                              ?( IsStrictlyLower_v<MT1> ? j+1UL : j )
-                              :( 0UL ) );
-         const size_t iend( ( IsUpper_v<MT1> )
-                            ?( min( j+1UL, M ) - ( IsStrictlyUpper_v<MT1> ? 1UL : 0UL ) )
-                            :( M ) );
-         BLAZE_INTERNAL_ASSERT( ibegin <= iend, "Invalid loop indices detected" );
+         const size_t ibegin( ( IsLower_v<MT1> )?( j ):( 0UL ) );
+         const size_t iend( ( IsUpper_v<MT1> )?( min( j+1UL, M ) ):( M ) );
+         BLAZE_INTERNAL_ASSERT( ibegin < iend, "Invalid loop indices detected" );
 
-         ElementType value{};
+         ElementType value( x[ibegin] * A(ibegin,j) );
 
-         for( size_t i=ibegin; i<iend; ++i ) {
+         for( size_t i=ibegin+1UL; i<iend; ++i ) {
             value += x[i] * A(i,j);
          }
 
@@ -1959,19 +2006,27 @@ class TDVecDMatMultExpr
                                ?( min( jtmp, ( IsStrictlyLower_v<MT1> ? iend-1UL : iend ) ) )
                                :( jtmp ) );
 
-            const size_t jpos( remainder ? ( jend & size_t(-SIMDSIZE) ) : jend );
-            BLAZE_INTERNAL_ASSERT( !remainder || ( jend - ( jend % SIMDSIZE ) ) == jpos, "Invalid end calculation" );
+            const size_t jpos( remainder ? prevMultiple( jend, SIMDSIZE ) : jend );
+            BLAZE_INTERNAL_ASSERT( jpos <= jend, "Invalid end calculation" );
 
             size_t j( ( IsUpper_v<MT1> )
-                      ?( max( jj, ( IsStrictlyUpper_v<MT1> ? ii+1UL : ii ) & size_t(-SIMDSIZE) ) )
+                      ?( max( jj, prevMultiple( ( IsStrictlyUpper_v<MT1> ? ii+1UL : ii ), SIMDSIZE ) ) )
                       :( jj ) );
 
             for( ; (j+SIMDSIZE*7UL) < jpos; j+=SIMDSIZE*8UL )
             {
-               SIMDType xmm1, xmm2, xmm3, xmm4, xmm5, xmm6, xmm7, xmm8;
+               SIMDType x1( set( x[ii] ) );
+               SIMDType xmm1( x1 * A.load(ii,j             ) );
+               SIMDType xmm2( x1 * A.load(ii,j+SIMDSIZE    ) );
+               SIMDType xmm3( x1 * A.load(ii,j+SIMDSIZE*2UL) );
+               SIMDType xmm4( x1 * A.load(ii,j+SIMDSIZE*3UL) );
+               SIMDType xmm5( x1 * A.load(ii,j+SIMDSIZE*4UL) );
+               SIMDType xmm6( x1 * A.load(ii,j+SIMDSIZE*5UL) );
+               SIMDType xmm7( x1 * A.load(ii,j+SIMDSIZE*6UL) );
+               SIMDType xmm8( x1 * A.load(ii,j+SIMDSIZE*7UL) );
 
-               for( size_t i=ii; i<iend; ++i ) {
-                  const SIMDType x1( set( x[i] ) );
+               for( size_t i=ii+1UL; i<iend; ++i ) {
+                  x1 = set( x[i] );
                   xmm1 += x1 * A.load(i,j             );
                   xmm2 += x1 * A.load(i,j+SIMDSIZE    );
                   xmm3 += x1 * A.load(i,j+SIMDSIZE*2UL);
@@ -1994,10 +2049,14 @@ class TDVecDMatMultExpr
 
             for( ; (j+SIMDSIZE*3UL) < jpos; j+=SIMDSIZE*4UL )
             {
-               SIMDType xmm1, xmm2, xmm3, xmm4;
+               SIMDType x1( set( x[ii] ) );
+               SIMDType xmm1( x1 * A.load(ii,j             ) );
+               SIMDType xmm2( x1 * A.load(ii,j+SIMDSIZE    ) );
+               SIMDType xmm3( x1 * A.load(ii,j+SIMDSIZE*2UL) );
+               SIMDType xmm4( x1 * A.load(ii,j+SIMDSIZE*3UL) );
 
-               for( size_t i=ii; i<iend; ++i ) {
-                  const SIMDType x1( set( x[i] ) );
+               for( size_t i=ii+1UL; i<iend; ++i ) {
+                  x1 = set( x[i] );
                   xmm1 += x1 * A.load(i,j             );
                   xmm2 += x1 * A.load(i,j+SIMDSIZE    );
                   xmm3 += x1 * A.load(i,j+SIMDSIZE*2UL);
@@ -2012,10 +2071,13 @@ class TDVecDMatMultExpr
 
             for( ; (j+SIMDSIZE*2UL) < jpos; j+=SIMDSIZE*3UL )
             {
-               SIMDType xmm1, xmm2, xmm3;
+               SIMDType x1( set( x[ii] ) );
+               SIMDType xmm1( x1 * A.load(ii,j             ) );
+               SIMDType xmm2( x1 * A.load(ii,j+SIMDSIZE    ) );
+               SIMDType xmm3( x1 * A.load(ii,j+SIMDSIZE*2UL) );
 
-               for( size_t i=ii; i<iend; ++i ) {
-                  const SIMDType x1( set( x[i] ) );
+               for( size_t i=ii+1UL; i<iend; ++i ) {
+                  x1 = set( x[i] );
                   xmm1 += x1 * A.load(i,j             );
                   xmm2 += x1 * A.load(i,j+SIMDSIZE    );
                   xmm3 += x1 * A.load(i,j+SIMDSIZE*2UL);
@@ -2028,10 +2090,12 @@ class TDVecDMatMultExpr
 
             for( ; (j+SIMDSIZE) < jpos; j+=SIMDSIZE*2UL )
             {
-               SIMDType xmm1, xmm2;
+               SIMDType x1( set( x[ii] ) );
+               SIMDType xmm1( x1 * A.load(ii,j         ) );
+               SIMDType xmm2( x1 * A.load(ii,j+SIMDSIZE) );
 
-               for( size_t i=ii; i<iend; ++i ) {
-                  const SIMDType x1( set( x[i] ) );
+               for( size_t i=ii+1UL; i<iend; ++i ) {
+                  x1 = set( x[i] );
                   xmm1 += x1 * A.load(i,j         );
                   xmm2 += x1 * A.load(i,j+SIMDSIZE);
                }
@@ -2042,9 +2106,9 @@ class TDVecDMatMultExpr
 
             for( ; j<jpos; j+=SIMDSIZE )
             {
-               SIMDType xmm1;
+               SIMDType xmm1( set( x[ii] ) * A.load(ii,j) );
 
-               for( size_t i=ii; i<iend; ++i ) {
+               for( size_t i=ii+1UL; i<iend; ++i ) {
                   xmm1 += set( x[i] ) * A.load(i,j);
                }
 
@@ -2053,9 +2117,9 @@ class TDVecDMatMultExpr
 
             for( ; remainder && j<jend; ++j )
             {
-               ElementType value{};
+               ElementType value( x[ii] * A(ii,j) );
 
-               for( size_t i=ii; i<iend; ++i ) {
+               for( size_t i=ii+1UL; i<iend; ++i ) {
                   value += x[i] * A(i,j);
                }
 
@@ -2223,7 +2287,8 @@ class TDVecDMatMultExpr
 
       BLAZE_INTERNAL_ASSERT( (~lhs).size() == rhs.size(), "Invalid vector sizes" );
 
-      if( rhs.mat_.rows() == 0UL ) {
+      if( rhs.mat_.rows() == 0UL ||
+          ( IsStrictlyTriangular_v<MT> && rhs.mat_.rows() == 1UL ) ) {
          reset( ~lhs );
          return;
       }
@@ -2300,7 +2365,8 @@ class TDVecDMatMultExpr
 
       BLAZE_INTERNAL_ASSERT( (~lhs).size() == rhs.size(), "Invalid vector sizes" );
 
-      if( rhs.mat_.rows() == 0UL || rhs.mat_.columns() == 0UL ) {
+      if( rhs.mat_.rows() == 0UL || rhs.mat_.columns() == 0UL ||
+          ( IsStrictlyTriangular_v<MT> && rhs.mat_.rows() == 1UL ) ) {
          return;
       }
 
@@ -2344,7 +2410,8 @@ class TDVecDMatMultExpr
 
       BLAZE_INTERNAL_ASSERT( (~lhs).size() == rhs.size(), "Invalid vector sizes" );
 
-      if( rhs.mat_.rows() == 0UL || rhs.mat_.columns() == 0UL ) {
+      if( rhs.mat_.rows() == 0UL || rhs.mat_.columns() == 0UL ||
+          ( IsStrictlyTriangular_v<MT> && rhs.mat_.rows() == 1UL ) ) {
          return;
       }
 
@@ -2595,7 +2662,7 @@ class DVecScalarMultExpr< TDVecDMatMultExpr<VT,MT>, ST, true >
    // \param vector The left-hand side dense vector of the multiplication expression.
    // \param scalar The right-hand side scalar of the multiplication expression.
    */
-   explicit inline DVecScalarMultExpr( const VMM& vector, ST scalar )
+   inline DVecScalarMultExpr( const VMM& vector, ST scalar )
       : vector_( vector )  // Left-hand side dense vector of the multiplication expression
       , scalar_( scalar )  // Right-hand side scalar of the multiplication expression
    {}
@@ -2736,7 +2803,8 @@ class DVecScalarMultExpr< TDVecDMatMultExpr<VT,MT>, ST, true >
       LeftOperand_t<VMM>  left ( rhs.vector_.leftOperand()  );
       RightOperand_t<VMM> right( rhs.vector_.rightOperand() );
 
-      if( right.rows() == 0UL ) {
+      if( right.rows() == 0UL ||
+          ( IsStrictlyTriangular_v<MT> && right.rows() == 1UL ) ) {
          reset( ~lhs );
          return;
       }
@@ -2833,7 +2901,8 @@ class DVecScalarMultExpr< TDVecDMatMultExpr<VT,MT>, ST, true >
             BLAZE_INTERNAL_ASSERT( jbegin <= jend, "Invalid loop indices detected" );
 
             const size_t jnum( jend - jbegin );
-            const size_t jpos( jbegin + ( jnum & size_t(-2) ) );
+            const size_t jpos( jbegin + prevMultiple( jnum, 2UL ) );
+            BLAZE_INTERNAL_ASSERT( jpos <= jbegin+jnum, "Invalid end calculation" );
 
             for( size_t j=jbegin; j<jpos; j+=2UL ) {
                y[j    ] += x[i] * A(i,j    );
@@ -2913,8 +2982,8 @@ class DVecScalarMultExpr< TDVecDMatMultExpr<VT,MT>, ST, true >
       const size_t M( A.rows()    );
       const size_t N( A.columns() );
 
-      const size_t jpos( remainder ? ( N & size_t(-SIMDSIZE) ) : N );
-      BLAZE_INTERNAL_ASSERT( !remainder || ( N - ( N % SIMDSIZE ) ) == jpos, "Invalid end calculation" );
+      const size_t jpos( remainder ? prevMultiple( N, SIMDSIZE ) : N );
+      BLAZE_INTERNAL_ASSERT( jpos <= N, "Invalid end calculation" );
 
       const SIMDType factor( set( scalar ) );
 
@@ -2928,12 +2997,20 @@ class DVecScalarMultExpr< TDVecDMatMultExpr<VT,MT>, ST, true >
          const size_t iend( ( IsUpper_v<MT1> )
                             ?( min( j+SIMDSIZE*8UL, M ) - ( IsStrictlyUpper_v<MT1> ? 1UL : 0UL ) )
                             :( M ) );
-         BLAZE_INTERNAL_ASSERT( ibegin <= iend, "Invalid loop indices detected" );
+         BLAZE_INTERNAL_ASSERT( ibegin < iend, "Invalid loop indices detected" );
 
-         SIMDType xmm1, xmm2, xmm3, xmm4, xmm5, xmm6, xmm7, xmm8;
+         SIMDType x1( set( x[ibegin] ) );
+         SIMDType xmm1( x1 * A.load(ibegin,j             ) );
+         SIMDType xmm2( x1 * A.load(ibegin,j+SIMDSIZE    ) );
+         SIMDType xmm3( x1 * A.load(ibegin,j+SIMDSIZE*2UL) );
+         SIMDType xmm4( x1 * A.load(ibegin,j+SIMDSIZE*3UL) );
+         SIMDType xmm5( x1 * A.load(ibegin,j+SIMDSIZE*4UL) );
+         SIMDType xmm6( x1 * A.load(ibegin,j+SIMDSIZE*5UL) );
+         SIMDType xmm7( x1 * A.load(ibegin,j+SIMDSIZE*6UL) );
+         SIMDType xmm8( x1 * A.load(ibegin,j+SIMDSIZE*7UL) );
 
-         for( size_t i=ibegin; i<iend; ++i ) {
-            const SIMDType x1( set( x[i] ) );
+         for( size_t i=ibegin+1UL; i<iend; ++i ) {
+            x1 = set( x[i] );
             xmm1 += x1 * A.load(i,j             );
             xmm2 += x1 * A.load(i,j+SIMDSIZE    );
             xmm3 += x1 * A.load(i,j+SIMDSIZE*2UL);
@@ -2962,12 +3039,16 @@ class DVecScalarMultExpr< TDVecDMatMultExpr<VT,MT>, ST, true >
          const size_t iend( ( IsUpper_v<MT1> )
                             ?( min( j+SIMDSIZE*4UL, M ) - ( IsStrictlyUpper_v<MT1> ? 1UL : 0UL ) )
                             :( M ) );
-         BLAZE_INTERNAL_ASSERT( ibegin <= iend, "Invalid loop indices detected" );
+         BLAZE_INTERNAL_ASSERT( ibegin < iend, "Invalid loop indices detected" );
 
-         SIMDType xmm1, xmm2, xmm3, xmm4;
+         SIMDType x1( set( x[ibegin] ) );
+         SIMDType xmm1( x1 * A.load(ibegin,j             ) );
+         SIMDType xmm2( x1 * A.load(ibegin,j+SIMDSIZE    ) );
+         SIMDType xmm3( x1 * A.load(ibegin,j+SIMDSIZE*2UL) );
+         SIMDType xmm4( x1 * A.load(ibegin,j+SIMDSIZE*3UL) );
 
-         for( size_t i=ibegin; i<iend; ++i ) {
-            const SIMDType x1( set( x[i] ) );
+         for( size_t i=ibegin+1UL; i<iend; ++i ) {
+            x1 = set( x[i] );
             xmm1 += x1 * A.load(i,j             );
             xmm2 += x1 * A.load(i,j+SIMDSIZE    );
             xmm3 += x1 * A.load(i,j+SIMDSIZE*2UL);
@@ -2988,12 +3069,15 @@ class DVecScalarMultExpr< TDVecDMatMultExpr<VT,MT>, ST, true >
          const size_t iend( ( IsUpper_v<MT1> )
                             ?( min( j+SIMDSIZE*3UL, M ) - ( IsStrictlyUpper_v<MT1> ? 1UL : 0UL ) )
                             :( M ) );
-         BLAZE_INTERNAL_ASSERT( ibegin <= iend, "Invalid loop indices detected" );
+         BLAZE_INTERNAL_ASSERT( ibegin < iend, "Invalid loop indices detected" );
 
-         SIMDType xmm1, xmm2, xmm3;
+         SIMDType x1( set( x[ibegin] ) );
+         SIMDType xmm1( x1 * A.load(ibegin,j             ) );
+         SIMDType xmm2( x1 * A.load(ibegin,j+SIMDSIZE    ) );
+         SIMDType xmm3( x1 * A.load(ibegin,j+SIMDSIZE*2UL) );
 
-         for( size_t i=ibegin; i<iend; ++i ) {
-            const SIMDType x1( set( x[i] ) );
+         for( size_t i=ibegin+1UL; i<iend; ++i ) {
+            x1 = set( x[i] );
             xmm1 += x1 * A.load(i,j             );
             xmm2 += x1 * A.load(i,j+SIMDSIZE    );
             xmm3 += x1 * A.load(i,j+SIMDSIZE*2UL);
@@ -3012,12 +3096,14 @@ class DVecScalarMultExpr< TDVecDMatMultExpr<VT,MT>, ST, true >
          const size_t iend( ( IsUpper_v<MT1> )
                             ?( min( j+SIMDSIZE*2UL, M ) - ( IsStrictlyUpper_v<MT1> ? 1UL : 0UL ) )
                             :( M ) );
-         BLAZE_INTERNAL_ASSERT( ibegin <= iend, "Invalid loop indices detected" );
+         BLAZE_INTERNAL_ASSERT( ibegin < iend, "Invalid loop indices detected" );
 
-         SIMDType xmm1, xmm2;
+         SIMDType x1( set( x[ibegin] ) );
+         SIMDType xmm1( x1 * A.load(ibegin,j         ) );
+         SIMDType xmm2( x1 * A.load(ibegin,j+SIMDSIZE) );
 
-         for( size_t i=ibegin; i<iend; ++i ) {
-            const SIMDType x1( set( x[i] ) );
+         for( size_t i=ibegin+1UL; i<iend; ++i ) {
+            x1 = set( x[i] );
             xmm1 += x1 * A.load(i,j         );
             xmm2 += x1 * A.load(i,j+SIMDSIZE);
          }
@@ -3034,11 +3120,11 @@ class DVecScalarMultExpr< TDVecDMatMultExpr<VT,MT>, ST, true >
          const size_t iend( ( IsUpper_v<MT1> )
                             ?( min( j+SIMDSIZE, M ) - ( IsStrictlyUpper_v<MT1> ? 1UL : 0UL ) )
                             :( M ) );
-         BLAZE_INTERNAL_ASSERT( ibegin <= iend, "Invalid loop indices detected" );
+         BLAZE_INTERNAL_ASSERT( ibegin < iend, "Invalid loop indices detected" );
 
-         SIMDType xmm1;
+         SIMDType xmm1( set( x[ibegin] ) * A.load(ibegin,j) );
 
-         for( size_t i=ibegin; i<iend; ++i ) {
+         for( size_t i=ibegin+1UL; i<iend; ++i ) {
             xmm1 += set( x[i] ) * A.load(i,j);
          }
 
@@ -3047,17 +3133,13 @@ class DVecScalarMultExpr< TDVecDMatMultExpr<VT,MT>, ST, true >
 
       for( ; remainder && j<N; ++j )
       {
-         const size_t ibegin( ( IsLower_v<MT1> )
-                              ?( IsStrictlyLower_v<MT1> ? j+1UL : j )
-                              :( 0UL ) );
-         const size_t iend( ( IsUpper_v<MT1> )
-                            ?( min( j+1UL, M ) - ( IsStrictlyUpper_v<MT1> ? 1UL : 0UL ) )
-                            :( M ) );
-         BLAZE_INTERNAL_ASSERT( ibegin <= iend, "Invalid loop indices detected" );
+         const size_t ibegin( ( IsLower_v<MT1> )?( j ):( 0UL ) );
+         const size_t iend( ( IsUpper_v<MT1> )?( min( j+1UL, M ) ):( M ) );
+         BLAZE_INTERNAL_ASSERT( ibegin < iend, "Invalid loop indices detected" );
 
-         ElementType value{};
+         ElementType value( x[ibegin] * A(ibegin,j) );
 
-         for( size_t i=ibegin; i<iend; ++i ) {
+         for( size_t i=ibegin+1UL; i<iend; ++i ) {
             value += x[i] * A(i,j);
          }
 
@@ -3135,19 +3217,27 @@ class DVecScalarMultExpr< TDVecDMatMultExpr<VT,MT>, ST, true >
                                ?( min( jtmp, ( IsStrictlyLower_v<MT1> ? iend-1UL : iend ) ) )
                                :( jtmp ) );
 
-            const size_t jpos( remainder ? ( jend & size_t(-SIMDSIZE) ) : jend );
-            BLAZE_INTERNAL_ASSERT( !remainder || ( jend - ( jend % SIMDSIZE ) ) == jpos, "Invalid end calculation" );
+            const size_t jpos( remainder ? prevMultiple( jend, SIMDSIZE ) : jend );
+            BLAZE_INTERNAL_ASSERT( jpos <= jend, "Invalid end calculation" );
 
             size_t j( ( IsUpper_v<MT1> )
-                      ?( max( jj, ( IsStrictlyUpper_v<MT1> ? ii+1UL : ii ) & size_t(-SIMDSIZE) ) )
+                      ?( max( jj, prevMultiple( ( IsStrictlyUpper_v<MT1> ? ii+1UL : ii ), SIMDSIZE ) ) )
                       :( jj ) );
 
             for( ; (j+SIMDSIZE*7UL) < jpos; j+=SIMDSIZE*8UL )
             {
-               SIMDType xmm1, xmm2, xmm3, xmm4, xmm5, xmm6, xmm7, xmm8;
+               SIMDType x1( set( x[ii] ) );
+               SIMDType xmm1( x1 * A.load(ii,j             ) );
+               SIMDType xmm2( x1 * A.load(ii,j+SIMDSIZE    ) );
+               SIMDType xmm3( x1 * A.load(ii,j+SIMDSIZE*2UL) );
+               SIMDType xmm4( x1 * A.load(ii,j+SIMDSIZE*3UL) );
+               SIMDType xmm5( x1 * A.load(ii,j+SIMDSIZE*4UL) );
+               SIMDType xmm6( x1 * A.load(ii,j+SIMDSIZE*5UL) );
+               SIMDType xmm7( x1 * A.load(ii,j+SIMDSIZE*6UL) );
+               SIMDType xmm8( x1 * A.load(ii,j+SIMDSIZE*7UL) );
 
-               for( size_t i=ii; i<iend; ++i ) {
-                  const SIMDType x1( set( x[i] ) );
+               for( size_t i=ii+1UL; i<iend; ++i ) {
+                  x1 = set( x[i] );
                   xmm1 += x1 * A.load(i,j             );
                   xmm2 += x1 * A.load(i,j+SIMDSIZE    );
                   xmm3 += x1 * A.load(i,j+SIMDSIZE*2UL);
@@ -3170,10 +3260,14 @@ class DVecScalarMultExpr< TDVecDMatMultExpr<VT,MT>, ST, true >
 
             for( ; (j+SIMDSIZE*3UL) < jpos; j+=SIMDSIZE*4UL )
             {
-               SIMDType xmm1, xmm2, xmm3, xmm4;
+               SIMDType x1( set( x[ii] ) );
+               SIMDType xmm1( x1 * A.load(ii,j             ) );
+               SIMDType xmm2( x1 * A.load(ii,j+SIMDSIZE    ) );
+               SIMDType xmm3( x1 * A.load(ii,j+SIMDSIZE*2UL) );
+               SIMDType xmm4( x1 * A.load(ii,j+SIMDSIZE*3UL) );
 
-               for( size_t i=ii; i<iend; ++i ) {
-                  const SIMDType x1( set( x[i] ) );
+               for( size_t i=ii+1UL; i<iend; ++i ) {
+                  x1 = set( x[i] );
                   xmm1 += x1 * A.load(i,j             );
                   xmm2 += x1 * A.load(i,j+SIMDSIZE    );
                   xmm3 += x1 * A.load(i,j+SIMDSIZE*2UL);
@@ -3188,10 +3282,13 @@ class DVecScalarMultExpr< TDVecDMatMultExpr<VT,MT>, ST, true >
 
             for( ; (j+SIMDSIZE*2UL) < jpos; j+=SIMDSIZE*3UL )
             {
-               SIMDType xmm1, xmm2, xmm3;
+               SIMDType x1( set( x[ii] ) );
+               SIMDType xmm1( x1 * A.load(ii,j             ) );
+               SIMDType xmm2( x1 * A.load(ii,j+SIMDSIZE    ) );
+               SIMDType xmm3( x1 * A.load(ii,j+SIMDSIZE*2UL) );
 
-               for( size_t i=ii; i<iend; ++i ) {
-                  const SIMDType x1( set( x[i] ) );
+               for( size_t i=ii+1UL; i<iend; ++i ) {
+                  x1 = set( x[i] );
                   xmm1 += x1 * A.load(i,j             );
                   xmm2 += x1 * A.load(i,j+SIMDSIZE    );
                   xmm3 += x1 * A.load(i,j+SIMDSIZE*2UL);
@@ -3204,10 +3301,12 @@ class DVecScalarMultExpr< TDVecDMatMultExpr<VT,MT>, ST, true >
 
             for( ; (j+SIMDSIZE) < jpos; j+=SIMDSIZE*2UL )
             {
-               SIMDType xmm1, xmm2;
+               SIMDType x1( set( x[ii] ) );
+               SIMDType xmm1( x1 * A.load(ii,j         ) );
+               SIMDType xmm2( x1 * A.load(ii,j+SIMDSIZE) );
 
-               for( size_t i=ii; i<iend; ++i ) {
-                  const SIMDType x1( set( x[i] ) );
+               for( size_t i=ii+1UL; i<iend; ++i ) {
+                  x1 = set( x[i] );
                   xmm1 += x1 * A.load(i,j         );
                   xmm2 += x1 * A.load(i,j+SIMDSIZE);
                }
@@ -3218,9 +3317,9 @@ class DVecScalarMultExpr< TDVecDMatMultExpr<VT,MT>, ST, true >
 
             for( ; j<jpos; j+=SIMDSIZE )
             {
-               SIMDType xmm1;
+               SIMDType xmm1( set( x[ii] ) * A.load(ii,j) );
 
-               for( size_t i=ii; i<iend; ++i ) {
+               for( size_t i=ii+1UL; i<iend; ++i ) {
                   xmm1 += set( x[i] ) * A.load(i,j);
                }
 
@@ -3229,9 +3328,9 @@ class DVecScalarMultExpr< TDVecDMatMultExpr<VT,MT>, ST, true >
 
             for( ; remainder && j<jend; ++j )
             {
-               ElementType value{};
+               ElementType value( x[ii] * A(ii,j) );
 
-               for( size_t i=ii; i<iend; ++i ) {
+               for( size_t i=ii+1UL; i<iend; ++i ) {
                   value += x[i] * A(i,j);
                }
 
@@ -3351,7 +3450,8 @@ class DVecScalarMultExpr< TDVecDMatMultExpr<VT,MT>, ST, true >
       LeftOperand_t<VMM>  left ( rhs.vector_.leftOperand()  );
       RightOperand_t<VMM> right( rhs.vector_.rightOperand() );
 
-      if( right.rows() == 0UL || right.columns() == 0UL ) {
+      if( right.rows() == 0UL || right.columns() == 0UL ||
+          ( IsStrictlyTriangular_v<MT> && right.rows() == 1UL ) ) {
          return;
       }
 
@@ -3469,8 +3569,8 @@ class DVecScalarMultExpr< TDVecDMatMultExpr<VT,MT>, ST, true >
       const size_t M( A.rows()    );
       const size_t N( A.columns() );
 
-      const size_t jpos( remainder ? ( N & size_t(-SIMDSIZE) ) : N );
-      BLAZE_INTERNAL_ASSERT( !remainder || ( N - ( N % SIMDSIZE ) ) == jpos, "Invalid end calculation" );
+      const size_t jpos( remainder ? prevMultiple( N, SIMDSIZE ) : N );
+      BLAZE_INTERNAL_ASSERT( jpos <= N, "Invalid end calculation" );
 
       const SIMDType factor( set( scalar ) );
 
@@ -3484,12 +3584,20 @@ class DVecScalarMultExpr< TDVecDMatMultExpr<VT,MT>, ST, true >
          const size_t iend( ( IsUpper_v<MT1> )
                             ?( min( j+SIMDSIZE*8UL, M ) - ( IsStrictlyUpper_v<MT1> ? 1UL : 0UL ) )
                             :( M ) );
-         BLAZE_INTERNAL_ASSERT( ibegin <= iend, "Invalid loop indices detected" );
+         BLAZE_INTERNAL_ASSERT( ibegin < iend, "Invalid loop indices detected" );
 
-         SIMDType xmm1, xmm2, xmm3, xmm4, xmm5, xmm6, xmm7, xmm8;
+         SIMDType x1( set( x[ibegin] ) );
+         SIMDType xmm1( x1 * A.load(ibegin,j             ) );
+         SIMDType xmm2( x1 * A.load(ibegin,j+SIMDSIZE    ) );
+         SIMDType xmm3( x1 * A.load(ibegin,j+SIMDSIZE*2UL) );
+         SIMDType xmm4( x1 * A.load(ibegin,j+SIMDSIZE*3UL) );
+         SIMDType xmm5( x1 * A.load(ibegin,j+SIMDSIZE*4UL) );
+         SIMDType xmm6( x1 * A.load(ibegin,j+SIMDSIZE*5UL) );
+         SIMDType xmm7( x1 * A.load(ibegin,j+SIMDSIZE*6UL) );
+         SIMDType xmm8( x1 * A.load(ibegin,j+SIMDSIZE*7UL) );
 
-         for( size_t i=ibegin; i<iend; ++i ) {
-            const SIMDType x1( set( x[i] ) );
+         for( size_t i=ibegin+1UL; i<iend; ++i ) {
+            x1 = set( x[i] );
             xmm1 += x1 * A.load(i,j             );
             xmm2 += x1 * A.load(i,j+SIMDSIZE    );
             xmm3 += x1 * A.load(i,j+SIMDSIZE*2UL);
@@ -3518,12 +3626,16 @@ class DVecScalarMultExpr< TDVecDMatMultExpr<VT,MT>, ST, true >
          const size_t iend( ( IsUpper_v<MT1> )
                             ?( min( j+SIMDSIZE*4UL, M ) - ( IsStrictlyUpper_v<MT1> ? 1UL : 0UL ) )
                             :( M ) );
-         BLAZE_INTERNAL_ASSERT( ibegin <= iend, "Invalid loop indices detected" );
+         BLAZE_INTERNAL_ASSERT( ibegin < iend, "Invalid loop indices detected" );
 
-         SIMDType xmm1, xmm2, xmm3, xmm4;
+         SIMDType x1( set( x[ibegin] ) );
+         SIMDType xmm1( x1 * A.load(ibegin,j             ) );
+         SIMDType xmm2( x1 * A.load(ibegin,j+SIMDSIZE    ) );
+         SIMDType xmm3( x1 * A.load(ibegin,j+SIMDSIZE*2UL) );
+         SIMDType xmm4( x1 * A.load(ibegin,j+SIMDSIZE*3UL) );
 
-         for( size_t i=ibegin; i<iend; ++i ) {
-            const SIMDType x1( set( x[i] ) );
+         for( size_t i=ibegin+1UL; i<iend; ++i ) {
+            x1 = set( x[i] );
             xmm1 += x1 * A.load(i,j             );
             xmm2 += x1 * A.load(i,j+SIMDSIZE    );
             xmm3 += x1 * A.load(i,j+SIMDSIZE*2UL);
@@ -3544,12 +3656,15 @@ class DVecScalarMultExpr< TDVecDMatMultExpr<VT,MT>, ST, true >
          const size_t iend( ( IsUpper_v<MT1> )
                             ?( min( j+SIMDSIZE*3UL, M ) - ( IsStrictlyUpper_v<MT1> ? 1UL : 0UL ) )
                             :( M ) );
-         BLAZE_INTERNAL_ASSERT( ibegin <= iend, "Invalid loop indices detected" );
+         BLAZE_INTERNAL_ASSERT( ibegin < iend, "Invalid loop indices detected" );
 
-         SIMDType xmm1, xmm2, xmm3;
+         SIMDType x1( set( x[ibegin] ) );
+         SIMDType xmm1( x1 * A.load(ibegin,j             ) );
+         SIMDType xmm2( x1 * A.load(ibegin,j+SIMDSIZE    ) );
+         SIMDType xmm3( x1 * A.load(ibegin,j+SIMDSIZE*2UL) );
 
-         for( size_t i=ibegin; i<iend; ++i ) {
-            const SIMDType x1( set( x[i] ) );
+         for( size_t i=ibegin+1UL; i<iend; ++i ) {
+            x1 = set( x[i] );
             xmm1 += x1 * A.load(i,j             );
             xmm2 += x1 * A.load(i,j+SIMDSIZE    );
             xmm3 += x1 * A.load(i,j+SIMDSIZE*2UL);
@@ -3568,12 +3683,14 @@ class DVecScalarMultExpr< TDVecDMatMultExpr<VT,MT>, ST, true >
          const size_t iend( ( IsUpper_v<MT1> )
                             ?( min( j+SIMDSIZE*2UL, M ) - ( IsStrictlyUpper_v<MT1> ? 1UL : 0UL ) )
                             :( M ) );
-         BLAZE_INTERNAL_ASSERT( ibegin <= iend, "Invalid loop indices detected" );
+         BLAZE_INTERNAL_ASSERT( ibegin < iend, "Invalid loop indices detected" );
 
-         SIMDType xmm1, xmm2;
+         SIMDType x1( set( x[ibegin] ) );
+         SIMDType xmm1( x1 * A.load(ibegin,j         ) );
+         SIMDType xmm2( x1 * A.load(ibegin,j+SIMDSIZE) );
 
-         for( size_t i=ibegin; i<iend; ++i ) {
-            const SIMDType x1( set( x[i] ) );
+         for( size_t i=ibegin+1UL; i<iend; ++i ) {
+            x1 = set( x[i] );
             xmm1 += x1 * A.load(i,j         );
             xmm2 += x1 * A.load(i,j+SIMDSIZE);
          }
@@ -3590,11 +3707,11 @@ class DVecScalarMultExpr< TDVecDMatMultExpr<VT,MT>, ST, true >
          const size_t iend( ( IsUpper_v<MT1> )
                             ?( min( j+SIMDSIZE, M ) - ( IsStrictlyUpper_v<MT1> ? 1UL : 0UL ) )
                             :( M ) );
-         BLAZE_INTERNAL_ASSERT( ibegin <= iend, "Invalid loop indices detected" );
+         BLAZE_INTERNAL_ASSERT( ibegin < iend, "Invalid loop indices detected" );
 
-         SIMDType xmm1;
+         SIMDType xmm1( set( x[ibegin] ) * A.load(ibegin,j) );
 
-         for( size_t i=ibegin; i<iend; ++i ) {
+         for( size_t i=ibegin+1UL; i<iend; ++i ) {
             xmm1 += set( x[i] ) * A.load(i,j);
          }
 
@@ -3603,17 +3720,13 @@ class DVecScalarMultExpr< TDVecDMatMultExpr<VT,MT>, ST, true >
 
       for( ; remainder && j<N; ++j )
       {
-         const size_t ibegin( ( IsLower_v<MT1> )
-                              ?( IsStrictlyLower_v<MT1> ? j+1UL : j )
-                              :( 0UL ) );
-         const size_t iend( ( IsUpper_v<MT1> )
-                            ?( min( j+1UL, M ) - ( IsStrictlyUpper_v<MT1> ? 1UL : 0UL ) )
-                            :( M ) );
-         BLAZE_INTERNAL_ASSERT( ibegin <= iend, "Invalid loop indices detected" );
+         const size_t ibegin( ( IsLower_v<MT1> )?( j ):( 0UL ) );
+         const size_t iend( ( IsUpper_v<MT1> )?( min( j+1UL, M ) ):( M ) );
+         BLAZE_INTERNAL_ASSERT( ibegin < iend, "Invalid loop indices detected" );
 
-         ElementType value{};
+         ElementType value( x[ibegin] * A(ibegin,j) );
 
-         for( size_t i=ibegin; i<iend; ++i ) {
+         for( size_t i=ibegin+1UL; i<iend; ++i ) {
             value += x[i] * A(i,j);
          }
 
@@ -3690,19 +3803,27 @@ class DVecScalarMultExpr< TDVecDMatMultExpr<VT,MT>, ST, true >
                                ?( min( jtmp, ( IsStrictlyLower_v<MT1> ? iend-1UL : iend ) ) )
                                :( jtmp ) );
 
-            const size_t jpos( remainder ? ( jend & size_t(-SIMDSIZE) ) : jend );
-            BLAZE_INTERNAL_ASSERT( !remainder || ( jend - ( jend % SIMDSIZE ) ) == jpos, "Invalid end calculation" );
+            const size_t jpos( remainder ? prevMultiple( jend, SIMDSIZE ) : jend );
+            BLAZE_INTERNAL_ASSERT( jpos <= jend, "Invalid end calculation" );
 
             size_t j( ( IsUpper_v<MT1> )
-                      ?( max( jj, ( IsStrictlyUpper_v<MT1> ? ii+1UL : ii ) & size_t(-SIMDSIZE) ) )
+                      ?( max( jj, prevMultiple( ( IsStrictlyUpper_v<MT1> ? ii+1UL : ii ), SIMDSIZE ) ) )
                       :( jj ) );
 
             for( ; (j+SIMDSIZE*7UL) < jpos; j+=SIMDSIZE*8UL )
             {
-               SIMDType xmm1, xmm2, xmm3, xmm4, xmm5, xmm6, xmm7, xmm8;
+               SIMDType x1( set( x[ii] ) );
+               SIMDType xmm1( x1 * A.load(ii,j             ) );
+               SIMDType xmm2( x1 * A.load(ii,j+SIMDSIZE    ) );
+               SIMDType xmm3( x1 * A.load(ii,j+SIMDSIZE*2UL) );
+               SIMDType xmm4( x1 * A.load(ii,j+SIMDSIZE*3UL) );
+               SIMDType xmm5( x1 * A.load(ii,j+SIMDSIZE*4UL) );
+               SIMDType xmm6( x1 * A.load(ii,j+SIMDSIZE*5UL) );
+               SIMDType xmm7( x1 * A.load(ii,j+SIMDSIZE*6UL) );
+               SIMDType xmm8( x1 * A.load(ii,j+SIMDSIZE*7UL) );
 
-               for( size_t i=ii; i<iend; ++i ) {
-                  const SIMDType x1( set( x[i] ) );
+               for( size_t i=ii+1UL; i<iend; ++i ) {
+                  x1 = set( x[i] );
                   xmm1 += x1 * A.load(i,j             );
                   xmm2 += x1 * A.load(i,j+SIMDSIZE    );
                   xmm3 += x1 * A.load(i,j+SIMDSIZE*2UL);
@@ -3725,10 +3846,14 @@ class DVecScalarMultExpr< TDVecDMatMultExpr<VT,MT>, ST, true >
 
             for( ; (j+SIMDSIZE*3UL) < jpos; j+=SIMDSIZE*4UL )
             {
-               SIMDType xmm1, xmm2, xmm3, xmm4;
+               SIMDType x1( set( x[ii] ) );
+               SIMDType xmm1( x1 * A.load(ii,j             ) );
+               SIMDType xmm2( x1 * A.load(ii,j+SIMDSIZE    ) );
+               SIMDType xmm3( x1 * A.load(ii,j+SIMDSIZE*2UL) );
+               SIMDType xmm4( x1 * A.load(ii,j+SIMDSIZE*3UL) );
 
-               for( size_t i=ii; i<iend; ++i ) {
-                  const SIMDType x1( set( x[i] ) );
+               for( size_t i=ii+1UL; i<iend; ++i ) {
+                  x1 = set( x[i] );
                   xmm1 += x1 * A.load(i,j             );
                   xmm2 += x1 * A.load(i,j+SIMDSIZE    );
                   xmm3 += x1 * A.load(i,j+SIMDSIZE*2UL);
@@ -3743,10 +3868,13 @@ class DVecScalarMultExpr< TDVecDMatMultExpr<VT,MT>, ST, true >
 
             for( ; (j+SIMDSIZE*2UL) < jpos; j+=SIMDSIZE*3UL )
             {
-               SIMDType xmm1, xmm2, xmm3;
+               SIMDType x1( set( x[ii] ) );
+               SIMDType xmm1( x1 * A.load(ii,j             ) );
+               SIMDType xmm2( x1 * A.load(ii,j+SIMDSIZE    ) );
+               SIMDType xmm3( x1 * A.load(ii,j+SIMDSIZE*2UL) );
 
-               for( size_t i=ii; i<iend; ++i ) {
-                  const SIMDType x1( set( x[i] ) );
+               for( size_t i=ii+1UL; i<iend; ++i ) {
+                  x1 = set( x[i] );
                   xmm1 += x1 * A.load(i,j             );
                   xmm2 += x1 * A.load(i,j+SIMDSIZE    );
                   xmm3 += x1 * A.load(i,j+SIMDSIZE*2UL);
@@ -3759,10 +3887,12 @@ class DVecScalarMultExpr< TDVecDMatMultExpr<VT,MT>, ST, true >
 
             for( ; (j+SIMDSIZE) < jpos; j+=SIMDSIZE*2UL )
             {
-               SIMDType xmm1, xmm2;
+               SIMDType x1( set( x[ii] ) );
+               SIMDType xmm1( x1 * A.load(ii,j         ) );
+               SIMDType xmm2( x1 * A.load(ii,j+SIMDSIZE) );
 
-               for( size_t i=ii; i<iend; ++i ) {
-                  const SIMDType x1( set( x[i] ) );
+               for( size_t i=ii+1UL; i<iend; ++i ) {
+                  x1 = set( x[i] );
                   xmm1 += x1 * A.load(i,j         );
                   xmm2 += x1 * A.load(i,j+SIMDSIZE);
                }
@@ -3773,9 +3903,9 @@ class DVecScalarMultExpr< TDVecDMatMultExpr<VT,MT>, ST, true >
 
             for( ; j<jpos; j+=SIMDSIZE )
             {
-               SIMDType xmm1;
+               SIMDType xmm1( set( x[ii] ) * A.load(ii,j) );
 
-               for( size_t i=ii; i<iend; ++i ) {
+               for( size_t i=ii+1UL; i<iend; ++i ) {
                   xmm1 += set( x[i] ) * A.load(i,j);
                }
 
@@ -3784,9 +3914,9 @@ class DVecScalarMultExpr< TDVecDMatMultExpr<VT,MT>, ST, true >
 
             for( ; remainder && j<jend; ++j )
             {
-               ElementType value{};
+               ElementType value( x[ii] * A(ii,j) );
 
-               for( size_t i=ii; i<iend; ++i ) {
+               for( size_t i=ii+1UL; i<iend; ++i ) {
                   value += x[i] * A(i,j);
                }
 
@@ -3884,7 +4014,8 @@ class DVecScalarMultExpr< TDVecDMatMultExpr<VT,MT>, ST, true >
       LeftOperand_t<VMM>  left ( rhs.vector_.leftOperand()  );
       RightOperand_t<VMM> right( rhs.vector_.rightOperand() );
 
-      if( right.rows() == 0UL || right.columns() == 0UL ) {
+      if( right.rows() == 0UL || right.columns() == 0UL ||
+          ( IsStrictlyTriangular_v<MT> && right.rows() == 1UL ) ) {
          return;
       }
 
@@ -4002,8 +4133,8 @@ class DVecScalarMultExpr< TDVecDMatMultExpr<VT,MT>, ST, true >
       const size_t M( A.rows()    );
       const size_t N( A.columns() );
 
-      const size_t jpos( remainder ? ( N & size_t(-SIMDSIZE) ) : N );
-      BLAZE_INTERNAL_ASSERT( !remainder || ( N - ( N % SIMDSIZE ) ) == jpos, "Invalid end calculation" );
+      const size_t jpos( remainder ? prevMultiple( N, SIMDSIZE ) : N );
+      BLAZE_INTERNAL_ASSERT( jpos <= N, "Invalid end calculation" );
 
       const SIMDType factor( set( scalar ) );
 
@@ -4017,12 +4148,20 @@ class DVecScalarMultExpr< TDVecDMatMultExpr<VT,MT>, ST, true >
          const size_t iend( ( IsUpper_v<MT1> )
                             ?( min( j+SIMDSIZE*8UL, M ) - ( IsStrictlyUpper_v<MT1> ? 1UL : 0UL ) )
                             :( M ) );
-         BLAZE_INTERNAL_ASSERT( ibegin <= iend, "Invalid loop indices detected" );
+         BLAZE_INTERNAL_ASSERT( ibegin < iend, "Invalid loop indices detected" );
 
-         SIMDType xmm1, xmm2, xmm3, xmm4, xmm5, xmm6, xmm7, xmm8;
+         SIMDType x1( set( x[ibegin] ) );
+         SIMDType xmm1( x1 * A.load(ibegin,j             ) );
+         SIMDType xmm2( x1 * A.load(ibegin,j+SIMDSIZE    ) );
+         SIMDType xmm3( x1 * A.load(ibegin,j+SIMDSIZE*2UL) );
+         SIMDType xmm4( x1 * A.load(ibegin,j+SIMDSIZE*3UL) );
+         SIMDType xmm5( x1 * A.load(ibegin,j+SIMDSIZE*4UL) );
+         SIMDType xmm6( x1 * A.load(ibegin,j+SIMDSIZE*5UL) );
+         SIMDType xmm7( x1 * A.load(ibegin,j+SIMDSIZE*6UL) );
+         SIMDType xmm8( x1 * A.load(ibegin,j+SIMDSIZE*7UL) );
 
-         for( size_t i=ibegin; i<iend; ++i ) {
-            const SIMDType x1( set( x[i] ) );
+         for( size_t i=ibegin+1UL; i<iend; ++i ) {
+            x1 = set( x[i] );
             xmm1 += x1 * A.load(i,j             );
             xmm2 += x1 * A.load(i,j+SIMDSIZE    );
             xmm3 += x1 * A.load(i,j+SIMDSIZE*2UL);
@@ -4051,12 +4190,16 @@ class DVecScalarMultExpr< TDVecDMatMultExpr<VT,MT>, ST, true >
          const size_t iend( ( IsUpper_v<MT1> )
                             ?( min( j+SIMDSIZE*4UL, M ) - ( IsStrictlyUpper_v<MT1> ? 1UL : 0UL ) )
                             :( M ) );
-         BLAZE_INTERNAL_ASSERT( ibegin <= iend, "Invalid loop indices detected" );
+         BLAZE_INTERNAL_ASSERT( ibegin < iend, "Invalid loop indices detected" );
 
-         SIMDType xmm1, xmm2, xmm3, xmm4;
+         SIMDType x1( set( x[ibegin] ) );
+         SIMDType xmm1( x1 * A.load(ibegin,j             ) );
+         SIMDType xmm2( x1 * A.load(ibegin,j+SIMDSIZE    ) );
+         SIMDType xmm3( x1 * A.load(ibegin,j+SIMDSIZE*2UL) );
+         SIMDType xmm4( x1 * A.load(ibegin,j+SIMDSIZE*3UL) );
 
-         for( size_t i=ibegin; i<iend; ++i ) {
-            const SIMDType x1( set( x[i] ) );
+         for( size_t i=ibegin+1UL; i<iend; ++i ) {
+            x1 = set( x[i] );
             xmm1 += x1 * A.load(i,j             );
             xmm2 += x1 * A.load(i,j+SIMDSIZE    );
             xmm3 += x1 * A.load(i,j+SIMDSIZE*2UL);
@@ -4077,12 +4220,15 @@ class DVecScalarMultExpr< TDVecDMatMultExpr<VT,MT>, ST, true >
          const size_t iend( ( IsUpper_v<MT1> )
                             ?( min( j+SIMDSIZE*3UL, M ) - ( IsStrictlyUpper_v<MT1> ? 1UL : 0UL ) )
                             :( M ) );
-         BLAZE_INTERNAL_ASSERT( ibegin <= iend, "Invalid loop indices detected" );
+         BLAZE_INTERNAL_ASSERT( ibegin < iend, "Invalid loop indices detected" );
 
-         SIMDType xmm1, xmm2, xmm3;
+         SIMDType x1( set( x[ibegin] ) );
+         SIMDType xmm1( x1 * A.load(ibegin,j             ) );
+         SIMDType xmm2( x1 * A.load(ibegin,j+SIMDSIZE    ) );
+         SIMDType xmm3( x1 * A.load(ibegin,j+SIMDSIZE*2UL) );
 
-         for( size_t i=ibegin; i<iend; ++i ) {
-            const SIMDType x1( set( x[i] ) );
+         for( size_t i=ibegin+1UL; i<iend; ++i ) {
+            x1 = set( x[i] );
             xmm1 += x1 * A.load(i,j             );
             xmm2 += x1 * A.load(i,j+SIMDSIZE    );
             xmm3 += x1 * A.load(i,j+SIMDSIZE*2UL);
@@ -4101,12 +4247,14 @@ class DVecScalarMultExpr< TDVecDMatMultExpr<VT,MT>, ST, true >
          const size_t iend( ( IsUpper_v<MT1> )
                             ?( min( j+SIMDSIZE*2UL, M ) - ( IsStrictlyUpper_v<MT1> ? 1UL : 0UL ) )
                             :( M ) );
-         BLAZE_INTERNAL_ASSERT( ibegin <= iend, "Invalid loop indices detected" );
+         BLAZE_INTERNAL_ASSERT( ibegin < iend, "Invalid loop indices detected" );
 
-         SIMDType xmm1, xmm2;
+         SIMDType x1( set( x[ibegin] ) );
+         SIMDType xmm1( x1 * A.load(ibegin,j         ) );
+         SIMDType xmm2( x1 * A.load(ibegin,j+SIMDSIZE) );
 
-         for( size_t i=ibegin; i<iend; ++i ) {
-            const SIMDType x1( set( x[i] ) );
+         for( size_t i=ibegin+1UL; i<iend; ++i ) {
+            x1 = set( x[i] );
             xmm1 += x1 * A.load(i,j         );
             xmm2 += x1 * A.load(i,j+SIMDSIZE);
          }
@@ -4123,11 +4271,11 @@ class DVecScalarMultExpr< TDVecDMatMultExpr<VT,MT>, ST, true >
          const size_t iend( ( IsUpper_v<MT1> )
                             ?( min( j+SIMDSIZE, M ) - ( IsStrictlyUpper_v<MT1> ? 1UL : 0UL ) )
                             :( M ) );
-         BLAZE_INTERNAL_ASSERT( ibegin <= iend, "Invalid loop indices detected" );
+         BLAZE_INTERNAL_ASSERT( ibegin < iend, "Invalid loop indices detected" );
 
-         SIMDType xmm1;
+         SIMDType xmm1( set( x[ibegin] ) * A.load(ibegin,j) );
 
-         for( size_t i=ibegin; i<iend; ++i ) {
+         for( size_t i=ibegin+1UL; i<iend; ++i ) {
             xmm1 += set( x[i] ) * A.load(i,j);
          }
 
@@ -4136,17 +4284,13 @@ class DVecScalarMultExpr< TDVecDMatMultExpr<VT,MT>, ST, true >
 
       for( ; remainder && j<N; ++j )
       {
-         const size_t ibegin( ( IsLower_v<MT1> )
-                              ?( IsStrictlyLower_v<MT1> ? j+1UL : j )
-                              :( 0UL ) );
-         const size_t iend( ( IsUpper_v<MT1> )
-                            ?( min( j+1UL, M ) - ( IsStrictlyUpper_v<MT1> ? 1UL : 0UL ) )
-                            :( M ) );
-         BLAZE_INTERNAL_ASSERT( ibegin <= iend, "Invalid loop indices detected" );
+         const size_t ibegin( ( IsLower_v<MT1> )?( j ):( 0UL ) );
+         const size_t iend( ( IsUpper_v<MT1> )?( min( j+1UL, M ) ):( M ) );
+         BLAZE_INTERNAL_ASSERT( ibegin < iend, "Invalid loop indices detected" );
 
-         ElementType value{};
+         ElementType value( x[ibegin] * A(ibegin,j) );
 
-         for( size_t i=ibegin; i<iend; ++i ) {
+         for( size_t i=ibegin+1UL; i<iend; ++i ) {
             value += x[i] * A(i,j);
          }
 
@@ -4223,19 +4367,27 @@ class DVecScalarMultExpr< TDVecDMatMultExpr<VT,MT>, ST, true >
                                ?( min( jtmp, ( IsStrictlyLower_v<MT1> ? iend-1UL : iend ) ) )
                                :( jtmp ) );
 
-            const size_t jpos( remainder ? ( jend & size_t(-SIMDSIZE) ) : jend );
-            BLAZE_INTERNAL_ASSERT( !remainder || ( jend - ( jend % SIMDSIZE ) ) == jpos, "Invalid end calculation" );
+            const size_t jpos( remainder ? prevMultiple( jend, SIMDSIZE ) : jend );
+            BLAZE_INTERNAL_ASSERT( jpos <= jend, "Invalid end calculation" );
 
             size_t j( ( IsUpper_v<MT1> )
-                      ?( max( jj, ( IsStrictlyUpper_v<MT1> ? ii+1UL : ii ) & size_t(-SIMDSIZE) ) )
+                      ?( max( jj, prevMultiple( ( IsStrictlyUpper_v<MT1> ? ii+1UL : ii ), SIMDSIZE ) ) )
                       :( jj ) );
 
             for( ; (j+SIMDSIZE*7UL) < jpos; j+=SIMDSIZE*8UL )
             {
-               SIMDType xmm1, xmm2, xmm3, xmm4, xmm5, xmm6, xmm7, xmm8;
+               SIMDType x1( set( x[ii] ) );
+               SIMDType xmm1( x1 * A.load(ii,j             ) );
+               SIMDType xmm2( x1 * A.load(ii,j+SIMDSIZE    ) );
+               SIMDType xmm3( x1 * A.load(ii,j+SIMDSIZE*2UL) );
+               SIMDType xmm4( x1 * A.load(ii,j+SIMDSIZE*3UL) );
+               SIMDType xmm5( x1 * A.load(ii,j+SIMDSIZE*4UL) );
+               SIMDType xmm6( x1 * A.load(ii,j+SIMDSIZE*5UL) );
+               SIMDType xmm7( x1 * A.load(ii,j+SIMDSIZE*6UL) );
+               SIMDType xmm8( x1 * A.load(ii,j+SIMDSIZE*7UL) );
 
-               for( size_t i=ii; i<iend; ++i ) {
-                  const SIMDType x1( set( x[i] ) );
+               for( size_t i=ii+1UL; i<iend; ++i ) {
+                  x1 = set( x[i] );
                   xmm1 += x1 * A.load(i,j             );
                   xmm2 += x1 * A.load(i,j+SIMDSIZE    );
                   xmm3 += x1 * A.load(i,j+SIMDSIZE*2UL);
@@ -4258,10 +4410,14 @@ class DVecScalarMultExpr< TDVecDMatMultExpr<VT,MT>, ST, true >
 
             for( ; (j+SIMDSIZE*3UL) < jpos; j+=SIMDSIZE*4UL )
             {
-               SIMDType xmm1, xmm2, xmm3, xmm4;
+               SIMDType x1( set( x[ii] ) );
+               SIMDType xmm1( x1 * A.load(ii,j             ) );
+               SIMDType xmm2( x1 * A.load(ii,j+SIMDSIZE    ) );
+               SIMDType xmm3( x1 * A.load(ii,j+SIMDSIZE*2UL) );
+               SIMDType xmm4( x1 * A.load(ii,j+SIMDSIZE*3UL) );
 
-               for( size_t i=ii; i<iend; ++i ) {
-                  const SIMDType x1( set( x[i] ) );
+               for( size_t i=ii+1UL; i<iend; ++i ) {
+                  x1 = set( x[i] );
                   xmm1 += x1 * A.load(i,j             );
                   xmm2 += x1 * A.load(i,j+SIMDSIZE    );
                   xmm3 += x1 * A.load(i,j+SIMDSIZE*2UL);
@@ -4276,10 +4432,13 @@ class DVecScalarMultExpr< TDVecDMatMultExpr<VT,MT>, ST, true >
 
             for( ; (j+SIMDSIZE*2UL) < jpos; j+=SIMDSIZE*3UL )
             {
-               SIMDType xmm1, xmm2, xmm3;
+               SIMDType x1( set( x[ii] ) );
+               SIMDType xmm1( x1 * A.load(ii,j             ) );
+               SIMDType xmm2( x1 * A.load(ii,j+SIMDSIZE    ) );
+               SIMDType xmm3( x1 * A.load(ii,j+SIMDSIZE*2UL) );
 
-               for( size_t i=ii; i<iend; ++i ) {
-                  const SIMDType x1( set( x[i] ) );
+               for( size_t i=ii+1UL; i<iend; ++i ) {
+                  x1 = set( x[i] );
                   xmm1 += x1 * A.load(i,j             );
                   xmm2 += x1 * A.load(i,j+SIMDSIZE    );
                   xmm3 += x1 * A.load(i,j+SIMDSIZE*2UL);
@@ -4292,10 +4451,12 @@ class DVecScalarMultExpr< TDVecDMatMultExpr<VT,MT>, ST, true >
 
             for( ; (j+SIMDSIZE) < jpos; j+=SIMDSIZE*2UL )
             {
-               SIMDType xmm1, xmm2;
+               SIMDType x1( set( x[ii] ) );
+               SIMDType xmm1( x1 * A.load(ii,j         ) );
+               SIMDType xmm2( x1 * A.load(ii,j+SIMDSIZE) );
 
-               for( size_t i=ii; i<iend; ++i ) {
-                  const SIMDType x1( set( x[i] ) );
+               for( size_t i=ii+1UL; i<iend; ++i ) {
+                  x1 = set( x[i] );
                   xmm1 += x1 * A.load(i,j         );
                   xmm2 += x1 * A.load(i,j+SIMDSIZE);
                }
@@ -4306,9 +4467,9 @@ class DVecScalarMultExpr< TDVecDMatMultExpr<VT,MT>, ST, true >
 
             for( ; j<jpos; j+=SIMDSIZE )
             {
-               SIMDType xmm1;
+               SIMDType xmm1( set( x[ii] ) * A.load(ii,j) );
 
-               for( size_t i=ii; i<iend; ++i ) {
+               for( size_t i=ii+1UL; i<iend; ++i ) {
                   xmm1 += set( x[i] ) * A.load(i,j);
                }
 
@@ -4317,9 +4478,9 @@ class DVecScalarMultExpr< TDVecDMatMultExpr<VT,MT>, ST, true >
 
             for( ; remainder && j<jend; ++j )
             {
-               ElementType value{};
+               ElementType value( x[ii] * A(ii,j) );
 
-               for( size_t i=ii; i<iend; ++i ) {
+               for( size_t i=ii+1UL; i<iend; ++i ) {
                   value += x[i] * A(i,j);
                }
 
@@ -4484,7 +4645,8 @@ class DVecScalarMultExpr< TDVecDMatMultExpr<VT,MT>, ST, true >
       LeftOperand_t<VMM>  left ( rhs.vector_.leftOperand()  );
       RightOperand_t<VMM> right( rhs.vector_.rightOperand() );
 
-      if( right.rows() == 0UL ) {
+      if( right.rows() == 0UL ||
+          ( IsStrictlyTriangular_v<MT> && right.rows() == 1UL ) ) {
          reset( ~lhs );
          return;
       }
@@ -4560,7 +4722,8 @@ class DVecScalarMultExpr< TDVecDMatMultExpr<VT,MT>, ST, true >
       LeftOperand_t<VMM>  left ( rhs.vector_.leftOperand()  );
       RightOperand_t<VMM> right( rhs.vector_.rightOperand() );
 
-      if( right.rows() == 0UL || right.columns() == 0UL ) {
+      if( right.rows() == 0UL || right.columns() == 0UL ||
+          ( IsStrictlyTriangular_v<MT> && right.rows() == 1UL ) ) {
          return;
       }
 
@@ -4605,7 +4768,8 @@ class DVecScalarMultExpr< TDVecDMatMultExpr<VT,MT>, ST, true >
       LeftOperand_t<VMM>  left ( rhs.vector_.leftOperand()  );
       RightOperand_t<VMM> right( rhs.vector_.rightOperand() );
 
-      if( right.rows() == 0UL || right.columns() == 0UL ) {
+      if( right.rows() == 0UL || right.columns() == 0UL ||
+          ( IsStrictlyTriangular_v<MT> && right.rows() == 1UL ) ) {
          return;
       }
 
@@ -4766,41 +4930,6 @@ inline decltype(auto)
    using ReturnType = const TDVecDMatMultExpr<VT,MT>;
    return ReturnType( ~vec, ~mat );
 }
-//*************************************************************************************************
-
-
-
-
-//=================================================================================================
-//
-//  GLOBAL RESTRUCTURING BINARY ARITHMETIC OPERATORS
-//
-//=================================================================================================
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-/*!\brief Multiplication operator for the multiplication of a transpose dense vector and a
-//        dense matrix-matrix multiplication expression (\f$ \vec{y}^T=\vec{x}^T*(A*B) \f$).
-// \ingroup dense_vector
-//
-// \param vec The left-hand side dense vector for the multiplication.
-// \param mat The right-hand side dense matrix-matrix multiplication.
-// \return The resulting vector.
-//
-// This operator implements a performance optimized treatment of the multiplication of a dense
-// vector and a dense matrix-matrix multiplication expression. It restructures the expression
-// \f$ \vec{y}^T=\vec{x}^T*(A*B) \f$ to the expression \f$ \vec{y}^T=(\vec{x}^T*A)*B \f$.
-*/
-template< typename VT    // Type of the left-hand side dense vector
-        , typename MT >  // Matrix base type of the right-hand side expression
-inline decltype(auto)
-   operator*( const DenseVector<VT,true>& vec, const MatMatMultExpr<MT>& mat )
-{
-   BLAZE_FUNCTION_TRACE;
-
-   return ( vec * (~mat).leftOperand() ) * (~mat).rightOperand();
-}
-/*! \endcond */
 //*************************************************************************************************
 
 

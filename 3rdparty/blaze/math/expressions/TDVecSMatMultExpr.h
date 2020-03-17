@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/TDVecSMatMultExpr.h
 //  \brief Header file for the transpose dense vector/sparse matrix multiplication expression
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -73,9 +73,9 @@
 #include "../../math/typetraits/IsZero.h"
 #include "../../math/typetraits/RequiresEvaluation.h"
 #include "../../math/views/Check.h"
+#include "../../system/MacroDisable.h"
 #include "../../system/Thresholds.h"
 #include "../../util/Assert.h"
-#include "../../util/DisableIf.h"
 #include "../../util/EnableIf.h"
 #include "../../util/FunctionTrace.h"
 #include "../../util/MaybeUnused.h"
@@ -168,7 +168,7 @@ class TDVecSMatMultExpr
    //**Constructor*********************************************************************************
    /*!\brief Constructor for the TDVecSMatMultExpr class.
    */
-   explicit inline TDVecSMatMultExpr( const VT& vec, const MT& mat ) noexcept
+   inline TDVecSMatMultExpr( const VT& vec, const MT& mat ) noexcept
       : vec_( vec )  // Left-hand side dense vector of the multiplication expression
       , mat_( mat )  // Right-hand side sparse matrix of the multiplication expression
    {

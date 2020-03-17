@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/DMatDeclSymExpr.h
 //  \brief Header file for the dense matrix symmetry declaration expression
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -63,7 +63,6 @@
 #include "../../math/typetraits/IsUniTriangular.h"
 #include "../../math/typetraits/RequiresEvaluation.h"
 #include "../../util/Assert.h"
-#include "../../util/DisableIf.h"
 #include "../../util/EnableIf.h"
 #include "../../util/FunctionTrace.h"
 #include "../../util/IntegralConstant.h"
@@ -1009,46 +1008,6 @@ inline decltype(auto) declsym( const DenseMatrix<MT,SO>& dm )
 
    return declsym_backend( ~dm );
 }
-//*************************************************************************************************
-
-
-
-
-//=================================================================================================
-//
-//  GLOBAL RESTRUCTURING FUNCTIONS
-//
-//=================================================================================================
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-/*!\brief Declares the given non-symmetric dense matrix-scalar multiplication expression as symmetric.
-// \ingroup dense_matrix
-//
-// \param dm The input dense matrix-scalar multiplication expression.
-// \return The redeclared expression.
-// \exception std::invalid_argument Invalid symmetric matrix specification.
-//
-// This function implements the application of the \a declsym operation on a dense matrix-
-// scalar multiplication. It restructures the expression \f$ A=declsym(B*s1) \f$ to the
-// expression \f$ A=declsym(B)*s1 \f$. In case the given matrix is not a square matrix,
-// a \a std::invalid_argument exception is thrown.
-*/
-template< typename MT  // Type of the left-hand side dense matrix
-        , typename ST  // Type of the right-hand side scalar value
-        , bool SO      // Storage order
-        , DisableIf_t< IsSymmetric_v<MT> >* = nullptr >
-inline decltype(auto) declsym( const DMatScalarMultExpr<MT,ST,SO>& dm )
-{
-   BLAZE_FUNCTION_TRACE;
-
-   if( !isSquare( dm ) ) {
-      BLAZE_THROW_INVALID_ARGUMENT( "Invalid symmetric matrix specification" );
-   }
-
-   return declsym( dm.leftOperand() ) * dm.rightOperand();
-}
-/*! \endcond */
 //*************************************************************************************************
 
 

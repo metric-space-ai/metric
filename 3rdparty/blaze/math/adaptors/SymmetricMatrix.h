@@ -3,7 +3,7 @@
 //  \file blaze/math/adaptors/SymmetricMatrix.h
 //  \brief Header file for the implementation of a symmetric matrix adaptor
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -49,15 +49,20 @@
 #include "../../math/constraints/BLASCompatible.h"
 #include "../../math/constraints/RequiresEvaluation.h"
 #include "../../math/Exception.h"
-#include "../../math/InversionFlag.h"
 #include "../../math/Forward.h"
+#include "../../math/InversionFlag.h"
+#include "../../math/RelaxationFlag.h"
 #include "../../math/shims/IsDefault.h"
 #include "../../math/shims/IsDivisor.h"
 #include "../../math/traits/AddTrait.h"
 #include "../../math/traits/DeclDiagTrait.h"
 #include "../../math/traits/DeclHermTrait.h"
 #include "../../math/traits/DeclLowTrait.h"
+#include "../../math/traits/DeclStrLowTrait.h"
+#include "../../math/traits/DeclStrUppTrait.h"
 #include "../../math/traits/DeclSymTrait.h"
+#include "../../math/traits/DeclUniLowTrait.h"
+#include "../../math/traits/DeclUniUppTrait.h"
 #include "../../math/traits/DeclUppTrait.h"
 #include "../../math/traits/DivTrait.h"
 #include "../../math/traits/KronTrait.h"
@@ -122,7 +127,7 @@ void reset( SymmetricMatrix<MT,SO,DF,NF>& m, size_t i );
 template< typename MT, bool SO, bool DF, bool NF >
 void clear( SymmetricMatrix<MT,SO,DF,NF>& m );
 
-template< bool RF, typename MT, bool SO, bool DF, bool NF >
+template< RelaxationFlag RF, typename MT, bool SO, bool DF, bool NF >
 bool isDefault( const SymmetricMatrix<MT,SO,DF,NF>& m );
 
 template< typename MT, bool SO, bool DF, bool NF >
@@ -219,11 +224,11 @@ inline void clear( SymmetricMatrix<MT,SO,DF,NF>& m )
    if( isDefault<relaxed>( A ) ) { ... }
    \endcode
 */
-template< bool RF      // Relaxation flag
-        , typename MT  // Type of the adapted matrix
-        , bool SO      // Storage order of the adapted matrix
-        , bool DF      // Density flag
-        , bool NF >    // Numeric flag
+template< RelaxationFlag RF  // Relaxation flag
+        , typename MT        // Type of the adapted matrix
+        , bool SO            // Storage order of the adapted matrix
+        , bool DF            // Density flag
+        , bool NF >          // Numeric flag
 inline bool isDefault( const SymmetricMatrix<MT,SO,DF,NF>& m )
 {
    return isDefault<RF>( m.matrix_ );
@@ -1026,7 +1031,7 @@ struct DeclSymTrait< SymmetricMatrix<MT,SO,DF,NF> >
 template< typename MT, bool SO, bool DF, bool NF >
 struct DeclHermTrait< SymmetricMatrix<MT,SO,DF,NF> >
 {
-   using Type = HermitianMatrix<MT>;
+   using Type = HermitianMatrix<MT,SO,DF>;
 };
 /*! \endcond */
 //*************************************************************************************************
@@ -1045,7 +1050,45 @@ struct DeclHermTrait< SymmetricMatrix<MT,SO,DF,NF> >
 template< typename MT, bool SO, bool DF, bool NF >
 struct DeclLowTrait< SymmetricMatrix<MT,SO,DF,NF> >
 {
-   using Type = DiagonalMatrix<MT>;
+   using Type = DiagonalMatrix<MT,SO,DF>;
+};
+/*! \endcond */
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
+//  DECLUNILOWTRAIT SPECIALIZATIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+template< typename MT, bool SO, bool DF, bool NF >
+struct DeclUniLowTrait< SymmetricMatrix<MT,SO,DF,NF> >
+{
+   using Type = IdentityMatrix< ElementType_t<MT>, SO >;
+};
+/*! \endcond */
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
+//  DECLSTRLOWTRAIT SPECIALIZATIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+template< typename MT, bool SO, bool DF, bool NF >
+struct DeclStrLowTrait< SymmetricMatrix<MT,SO,DF,NF> >
+{
+   using Type = ZeroMatrix< ElementType_t<MT>, SO >;
 };
 /*! \endcond */
 //*************************************************************************************************
@@ -1064,7 +1107,45 @@ struct DeclLowTrait< SymmetricMatrix<MT,SO,DF,NF> >
 template< typename MT, bool SO, bool DF, bool NF >
 struct DeclUppTrait< SymmetricMatrix<MT,SO,DF,NF> >
 {
-   using Type = DiagonalMatrix<MT>;
+   using Type = DiagonalMatrix<MT,SO,DF>;
+};
+/*! \endcond */
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
+//  DECLUNIUPPTRAIT SPECIALIZATIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+template< typename MT, bool SO, bool DF, bool NF >
+struct DeclUniUppTrait< SymmetricMatrix<MT,SO,DF,NF> >
+{
+   using Type = IdentityMatrix< ElementType_t<MT>, SO >;
+};
+/*! \endcond */
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
+//  DECLSTRUPPTRAIT SPECIALIZATIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+template< typename MT, bool SO, bool DF, bool NF >
+struct DeclStrUppTrait< SymmetricMatrix<MT,SO,DF,NF> >
+{
+   using Type = ZeroMatrix< ElementType_t<MT>, SO >;
 };
 /*! \endcond */
 //*************************************************************************************************
@@ -1083,7 +1164,7 @@ struct DeclUppTrait< SymmetricMatrix<MT,SO,DF,NF> >
 template< typename MT, bool SO, bool DF, bool NF >
 struct DeclDiagTrait< SymmetricMatrix<MT,SO,DF,NF> >
 {
-   using Type = DiagonalMatrix<MT>;
+   using Type = DiagonalMatrix<MT,SO,DF>;
 };
 /*! \endcond */
 //*************************************************************************************************

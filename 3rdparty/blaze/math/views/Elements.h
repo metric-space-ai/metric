@@ -3,7 +3,7 @@
 //  \file blaze/math/views/Elements.h
 //  \brief Header file for the implementation of the Elements view
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -50,6 +50,8 @@
 #include "../../math/expressions/CrossExpr.h"
 #include "../../math/expressions/VecEvalExpr.h"
 #include "../../math/expressions/VecMapExpr.h"
+#include "../../math/expressions/VecNoAliasExpr.h"
+#include "../../math/expressions/VecNoSIMDExpr.h"
 #include "../../math/expressions/VecScalarDivExpr.h"
 #include "../../math/expressions/VecScalarMultExpr.h"
 #include "../../math/expressions/VecSerialExpr.h"
@@ -62,7 +64,7 @@
 #include "../../math/expressions/VecVecMultExpr.h"
 #include "../../math/expressions/VecVecSubExpr.h"
 #include "../../math/InitializerList.h"
-#include "../../math/IntegerSequence.h"
+#include "../../math/RelaxationFlag.h"
 #include "../../math/shims/IsDefault.h"
 #include "../../math/shims/Serial.h"
 #include "../../math/typetraits/HasConstDataAccess.h"
@@ -75,9 +77,11 @@
 #include "../../math/views/elements/BaseTemplate.h"
 #include "../../math/views/elements/Dense.h"
 #include "../../math/views/elements/Sparse.h"
+#include "../../system/MacroDisable.h"
 #include "../../util/Assert.h"
 #include "../../util/EnableIf.h"
 #include "../../util/FunctionTrace.h"
+#include "../../util/IntegerSequence.h"
 #include "../../util/IntegralConstant.h"
 #include "../../util/MaybeUnused.h"
 #include "../../util/SmallArray.h"
@@ -1161,6 +1165,56 @@ inline decltype(auto) elements( const VecSerialExpr<VT>& vector, REAs... args )
 
 //*************************************************************************************************
 /*! \cond BLAZE_INTERNAL */
+/*!\brief Creating a view on a selection of elements on the given vector no-alias operation.
+// \ingroup elements
+//
+// \param vector The constant vector no-alias operation.
+// \param args The runtime element arguments.
+// \return View on the specified selection of elements on the no-alias operation.
+//
+// This function returns an expression representing the specified selection of elements on the
+// given vector no-alias operation.
+*/
+template< size_t... CEAs      // Compile time element arguments
+        , typename VT         // Vector base type of the expression
+        , typename... REAs >  // Runtime element arguments
+inline decltype(auto) elements( const VecNoAliasExpr<VT>& vector, REAs... args )
+{
+   BLAZE_FUNCTION_TRACE;
+
+   return noalias( elements<CEAs...>( (~vector).operand(), args... ) );
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Creating a view on a selection of elements on the given vector no-SIMD operation.
+// \ingroup elements
+//
+// \param vector The constant vector no-SIMD operation.
+// \param args The runtime element arguments.
+// \return View on the specified selection of elements on the no-SIMD operation.
+//
+// This function returns an expression representing the specified selection of elements on the
+// given vector no-SIMD operation.
+*/
+template< size_t... CEAs      // Compile time element arguments
+        , typename VT         // Vector base type of the expression
+        , typename... REAs >  // Runtime element arguments
+inline decltype(auto) elements( const VecNoSIMDExpr<VT>& vector, REAs... args )
+{
+   BLAZE_FUNCTION_TRACE;
+
+   return nosimd( elements<CEAs...>( (~vector).operand(), args... ) );
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
 /*!\brief Creating a view on a selection of elements on the given vector transpose operation.
 // \ingroup elements
 //
@@ -1533,7 +1587,7 @@ inline void clear( Elements<VT,TF,DF,CEAs...>&& e )
    if( isDefault<relaxed>( elements( v, { 5UL, 10UL, 15UL } ) ) ) { ... }
    \endcode
 */
-template< bool RF             // Relaxation flag
+template< RelaxationFlag RF   // Relaxation flag
         , typename VT         // Type of the dense vector
         , bool TF             // Transpose flag
         , typename... CEAs >  // Compile time element arguments
@@ -1575,7 +1629,7 @@ inline bool isDefault( const Elements<VT,TF,true,CEAs...>& e )
    if( isDefault<relaxed>( elements( v, { 5UL, 10UL, 15UL } ) ) ) { ... }
    \endcode
 */
-template< bool RF             // Relaxation flag
+template< RelaxationFlag RF   // Relaxation flag
         , typename VT         // Type of the sparse vector
         , bool TF             // Transpose flag
         , typename... CEAs >  // Compile time element arguments
@@ -2810,6 +2864,57 @@ template< typename VT         // Type of the vector
 inline decltype(auto) derestrict( Elements<VT,TF,DF,CEAs...>&& e )
 {
    return elements( derestrict( e.operand() ), e.idces(), unchecked );
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Returns a reference to the underlying vector of the given element selection.
+// \ingroup elements
+//
+// \param e The given element selection.
+// \return Reference to the underlying vector.
+//
+// This function returns a reference to the underlying vector of the given element selection.\n
+// This function must \b NOT be called explicitly! It is used internally for the performance
+// optimized evaluation of expression templates. Calling this function explicitly might result
+// in the violation of invariants, erroneous results and/or in compilation errors.
+*/
+template< typename VT         // Type of the vector
+        , bool TF             // Transpose flag
+        , bool DF             // Density flag
+        , typename... CEAs >  // Compile time element arguments
+inline decltype(auto) unview( Elements<VT,TF,DF,CEAs...>& e )
+{
+   return e.operand();
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Returns a reference to the underlying vector of the given constant element selection.
+// \ingroup elements
+//
+// \param e The given constant element selection.
+// \return Reference to the underlying vector.
+//
+// This function returns a reference to the underlying vector of the given constant element
+// selection.\n
+// This function must \b NOT be called explicitly! It is used internally for the performance
+// optimized evaluation of expression templates. Calling this function explicitly might result
+// in the violation of invariants, erroneous results and/or in compilation errors.
+*/
+template< typename VT         // Type of the vector
+        , bool TF             // Transpose flag
+        , bool DF             // Density flag
+        , typename... CEAs >  // Compile time element arguments
+inline decltype(auto) unview( const Elements<VT,TF,DF,CEAs...>& e )
+{
+   return e.operand();
 }
 /*! \endcond */
 //*************************************************************************************************

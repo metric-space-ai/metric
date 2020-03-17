@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/DVecReduceExpr.h
 //  \brief Header file for the dense vector reduce expression
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -46,14 +46,13 @@
 #include "../../math/functors/Max.h"
 #include "../../math/functors/Min.h"
 #include "../../math/functors/Mult.h"
+#include "../../math/shims/PrevMultiple.h"
 #include "../../math/SIMD.h"
 #include "../../math/typetraits/HasLoad.h"
 #include "../../math/typetraits/IsPadded.h"
 #include "../../math/typetraits/IsSIMDEnabled.h"
 #include "../../math/typetraits/IsUniform.h"
-#include "../../system/Compiler.h"
 #include "../../util/Assert.h"
-#include "../../util/DisableIf.h"
 #include "../../util/EnableIf.h"
 #include "../../util/FunctionTrace.h"
 #include "../../util/Types.h"
@@ -193,8 +192,8 @@ inline auto dvecreduce( const DenseVector<VT,TF>& dv, OP op )
 
    if( N >= SIMDSIZE )
    {
-      const size_t ipos( N & size_t(-SIMDSIZE) );
-      BLAZE_INTERNAL_ASSERT( ( N - ( N % SIMDSIZE ) ) == ipos, "Invalid end calculation" );
+      const size_t ipos( prevMultiple( N, SIMDSIZE ) );
+      BLAZE_INTERNAL_ASSERT( ipos <= N, "Invalid end calculation" );
 
       SIMDTrait_t<ET> xmm1( tmp.load(0UL) );
 
@@ -261,30 +260,15 @@ inline auto dvecreduce( const DenseVector<VT,TF>& dv, Add /*op*/ )
 
    BLAZE_INTERNAL_ASSERT( tmp.size() == N, "Invalid vector size" );
 
-   constexpr bool remainder( !usePadding || !IsPadded_v< RemoveReference_t<CT> > );
+   constexpr bool remainder( !IsPadded_v< RemoveReference_t<CT> > );
    constexpr size_t SIMDSIZE = SIMDTrait<ET>::size;
 
    ET redux{};
 
-   if( !BLAZE_CLANG_COMPILER && !remainder )
+   if( !remainder || N >= SIMDSIZE )
    {
-      SIMDTrait_t<ET> xmm1, xmm2;
-      size_t i( 0UL );
-
-      for( ; (i+SIMDSIZE) < N; i+=SIMDSIZE*2UL ) {
-         xmm1 += tmp.load(i         );
-         xmm2 += tmp.load(i+SIMDSIZE);
-      }
-      if( i < N ) {
-         xmm1 += tmp.load(i);
-      }
-
-      redux = sum( xmm1 + xmm2 );
-   }
-   else if( !remainder || N >= SIMDSIZE )
-   {
-      const size_t ipos( ( remainder )?( N & size_t(-SIMDSIZE) ):( N ) );
-      BLAZE_INTERNAL_ASSERT( !remainder || ( N - ( N % SIMDSIZE ) ) == ipos, "Invalid end calculation" );
+      const size_t ipos( remainder ? prevMultiple( N, SIMDSIZE ) : N );
+      BLAZE_INTERNAL_ASSERT( ipos <= N, "Invalid end calculation" );
 
       SIMDTrait_t<ET> xmm1( tmp.load(0UL) );
 
@@ -403,7 +387,7 @@ inline decltype(auto) reduce( const DenseVector<VT,TF>& dv, OP op )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return dvecreduce( ~dv, op );
+   return dvecreduce( ~dv, std::move(op) );
 }
 //*************************************************************************************************
 

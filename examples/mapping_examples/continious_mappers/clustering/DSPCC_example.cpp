@@ -120,14 +120,36 @@ int main()
     std::cout << "\ndecoded:\n";
     print_table(decoded);
 
-    //std::cout << "\nmix_index: " << bundle.get_mix_idx() << "\n";
-
     std::cout << "\nsimple test done\n";
     auto err_full_1 = normalized_err_stats<metric::Euclidian<double>>(d, decoded);
     print_stats(err_full_1);
     std::cout << "average RMSE = " << mean_square_error(d, decoded) << "\n";
 
     //return 0;
+
+    //*/
+
+
+    // test Blaze vector input
+
+    //using recTypeBlaze = blaze::DynamicVector<double, blaze::columnVector>; // also works
+    using recTypeBlaze = blaze::DynamicVector<double, blaze::rowVector>;
+
+    recTypeBlaze dBlaze1 {0, 1, 2, 3, 4, 5, 6, 100, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23};
+    recTypeBlaze dBlaze2 {0, 1, 2, 3, 4, 5, 6, 7,   8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 100};
+    std::vector<recTypeBlaze> dBlaze {dBlaze1, dBlaze2};
+    auto bundleBlaze = metric::DSPCC<recTypeBlaze, void>(dBlaze, 3, 2, 0.5, 3);
+    auto encodedBlaze = bundleBlaze.encode(dBlaze);
+    auto decodedBlaze = bundleBlaze.decode(encodedBlaze);
+
+    std::cout << "decoded Blaze vector:\n";
+
+    for (size_t i=0; i<decodedBlaze.size(); ++i) {
+        std::cout << decodedBlaze[i];
+    }
+
+
+
 
     //*/
 
@@ -168,6 +190,7 @@ int main()
     float magnitude = 15;
 
     auto raw_vdata = read_csv_num<double>("assets/vibration_smaller_3.csv", ",");
+    //auto raw_vdata = read_csv_num<double>("assets/vibration.csv", ",");
 //    auto raw_vdata = read_csv_num<double>("assets/vibration_smaller_3_no_peaks.csv", ",");
 //    auto raw_vdata = read_csv_num<double>("assets/vibration_smaller_3_added_peaks.csv", ",");
     auto vdata =  transpose_timeseries(raw_vdata);
