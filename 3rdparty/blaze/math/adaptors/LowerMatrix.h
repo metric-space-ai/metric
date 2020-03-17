@@ -3,7 +3,7 @@
 //  \file blaze/math/adaptors/LowerMatrix.h
 //  \brief Header file for the implementation of a lower matrix adaptor
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -54,13 +54,18 @@
 #include "../../math/Exception.h"
 #include "../../math/Forward.h"
 #include "../../math/InversionFlag.h"
+#include "../../math/RelaxationFlag.h"
 #include "../../math/shims/IsDefault.h"
 #include "../../math/shims/IsDivisor.h"
 #include "../../math/traits/AddTrait.h"
 #include "../../math/traits/DeclDiagTrait.h"
 #include "../../math/traits/DeclHermTrait.h"
 #include "../../math/traits/DeclLowTrait.h"
+#include "../../math/traits/DeclStrLowTrait.h"
+#include "../../math/traits/DeclStrUppTrait.h"
 #include "../../math/traits/DeclSymTrait.h"
+#include "../../math/traits/DeclUniLowTrait.h"
+#include "../../math/traits/DeclUniUppTrait.h"
 #include "../../math/traits/DeclUppTrait.h"
 #include "../../math/traits/DivTrait.h"
 #include "../../math/traits/KronTrait.h"
@@ -128,7 +133,7 @@ void reset( LowerMatrix<MT,SO,DF>& m, size_t i );
 template< typename MT, bool SO, bool DF >
 void clear( LowerMatrix<MT,SO,DF>& m );
 
-template< bool RF, typename MT, bool SO, bool DF >
+template< RelaxationFlag RF, typename MT, bool SO, bool DF >
 bool isDefault( const LowerMatrix<MT,SO,DF>& m );
 
 template< typename MT, bool SO, bool DF >
@@ -225,10 +230,10 @@ inline void clear( LowerMatrix<MT,SO,DF>& m )
    if( isDefault<relaxed>( A ) ) { ... }
    \endcode
 */
-template< bool RF      // Relaxation flag
-        , typename MT  // Type of the adapted matrix
-        , bool SO      // Storage order of the adapted matrix
-        , bool DF >    // Density flag
+template< RelaxationFlag RF  // Relaxation flag
+        , typename MT        // Type of the adapted matrix
+        , bool SO            // Storage order of the adapted matrix
+        , bool DF >          // Density flag
 inline bool isDefault( const LowerMatrix<MT,SO,DF>& m )
 {
    return isDefault<RF>( m.matrix_ );
@@ -2173,7 +2178,7 @@ struct BinaryMapTraitEval1< T1, T2, OP
 template< typename MT, bool SO, bool DF >
 struct DeclSymTrait< LowerMatrix<MT,SO,DF> >
 {
-   using Type = DiagonalMatrix<MT>;
+   using Type = DiagonalMatrix<MT,SO,DF>;
 };
 /*! \endcond */
 //*************************************************************************************************
@@ -2192,7 +2197,7 @@ struct DeclSymTrait< LowerMatrix<MT,SO,DF> >
 template< typename MT, bool SO, bool DF >
 struct DeclHermTrait< LowerMatrix<MT,SO,DF> >
 {
-   using Type = HermitianMatrix<MT>;
+   using Type = HermitianMatrix<MT,SO,DF>;
 };
 /*! \endcond */
 //*************************************************************************************************
@@ -2221,6 +2226,44 @@ struct DeclLowTrait< LowerMatrix<MT,SO,DF> >
 
 //=================================================================================================
 //
+//  DECLUNILOWTRAIT SPECIALIZATIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+template< typename MT, bool SO, bool DF >
+struct DeclUniLowTrait< LowerMatrix<MT,SO,DF> >
+{
+   using Type = UniLowerMatrix<MT,SO,DF>;
+};
+/*! \endcond */
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
+//  DECLSTRLOWTRAIT SPECIALIZATIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+template< typename MT, bool SO, bool DF >
+struct DeclStrLowTrait< LowerMatrix<MT,SO,DF> >
+{
+   using Type = StrictlyLowerMatrix<MT,SO,DF>;
+};
+/*! \endcond */
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
 //  DECLUPPTRAIT SPECIALIZATIONS
 //
 //=================================================================================================
@@ -2231,6 +2274,44 @@ template< typename MT, bool SO, bool DF >
 struct DeclUppTrait< LowerMatrix<MT,SO,DF> >
 {
    using Type = DiagonalMatrix<MT,SO,DF>;
+};
+/*! \endcond */
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
+//  DECLUNIUPPTRAIT SPECIALIZATIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+template< typename MT, bool SO, bool DF >
+struct DeclUniUppTrait< LowerMatrix<MT,SO,DF> >
+{
+   using Type = IdentityMatrix< ElementType_t<MT>, SO >;
+};
+/*! \endcond */
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
+//  DECLSTRUPPTRAIT SPECIALIZATIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+template< typename MT, bool SO, bool DF >
+struct DeclStrUppTrait< LowerMatrix<MT,SO,DF> >
+{
+   using Type = ZeroMatrix< ElementType_t<MT>, SO >;
 };
 /*! \endcond */
 //*************************************************************************************************

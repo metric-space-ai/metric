@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/SVecSVecKronExpr.h
 //  \brief Header file for the sparse vector/sparse vector Kronecker product expression
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -58,8 +58,8 @@
 #include "../../math/typetraits/IsExpression.h"
 #include "../../math/typetraits/IsTemporary.h"
 #include "../../math/typetraits/IsZero.h"
+#include "../../system/MacroDisable.h"
 #include "../../util/Assert.h"
-#include "../../util/DisableIf.h"
 #include "../../util/EnableIf.h"
 #include "../../util/FunctionTrace.h"
 #include "../../util/mpl/If.h"
@@ -141,7 +141,7 @@ class SVecSVecKronExpr
    //**Constructor*********************************************************************************
    /*!\brief Constructor for the SVecSVecKronExpr class.
    */
-   explicit inline SVecSVecKronExpr( const VT1& lhs, const VT2& rhs ) noexcept
+   inline SVecSVecKronExpr( const VT1& lhs, const VT2& rhs ) noexcept
       : lhs_( lhs )  // Left-hand side sparse vector of the Kronecker product expression
       , rhs_( rhs )  // Right-hand side sparse vector of the Kronecker product expression
    {}

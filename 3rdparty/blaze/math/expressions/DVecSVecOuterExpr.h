@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/DVecSVecOuterExpr.h
 //  \brief Header file for the dense vector/sparse vector outer product expression
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -59,6 +59,7 @@
 #include "../../math/expressions/SparseMatrix.h"
 #include "../../math/expressions/VecTVecMultExpr.h"
 #include "../../math/shims/IsDefault.h"
+#include "../../math/shims/PrevMultiple.h"
 #include "../../math/shims/Reset.h"
 #include "../../math/shims/Serial.h"
 #include "../../math/SIMD.h"
@@ -72,6 +73,7 @@
 #include "../../math/typetraits/IsTemporary.h"
 #include "../../math/typetraits/IsZero.h"
 #include "../../math/typetraits/Size.h"
+#include "../../system/MacroDisable.h"
 #include "../../system/Optimizations.h"
 #include "../../util/Assert.h"
 #include "../../util/EnableIf.h"
@@ -349,7 +351,7 @@ class DVecSVecOuterExpr
    // \param lhs The left-hand side dense vector operand of the multiplication expression.
    // \param rhs The right-hand side sparse vector operand of the multiplication expression.
    */
-   explicit inline DVecSVecOuterExpr( const VT1& lhs, const VT2& rhs ) noexcept
+   inline DVecSVecOuterExpr( const VT1& lhs, const VT2& rhs ) noexcept
       : lhs_( lhs )  // Left-hand side dense vector of the multiplication expression
       , rhs_( rhs )  // Right-hand side sparse vector of the multiplication expression
    {}
@@ -678,8 +680,8 @@ class DVecSVecOuterExpr
 
       const size_t M( A.rows() );
 
-      const size_t ipos( remainder ? ( M & size_t(-SIMDSIZE) ) : M );
-      BLAZE_INTERNAL_ASSERT( !remainder || ( M - ( M % SIMDSIZE ) ) == ipos, "Invalid end calculation" );
+      const size_t ipos( remainder ? prevMultiple( M, SIMDSIZE ) : M );
+      BLAZE_INTERNAL_ASSERT( ipos <= M, "Invalid end calculation" );
 
       const auto begin( y.begin() );
       const auto end  ( y.end()   );
@@ -957,8 +959,8 @@ class DVecSVecOuterExpr
 
       const size_t M( A.rows() );
 
-      const size_t ipos( remainder ? ( M & size_t(-SIMDSIZE) ) : M );
-      BLAZE_INTERNAL_ASSERT( !remainder || ( M - ( M % SIMDSIZE ) ) == ipos, "Invalid end calculation" );
+      const size_t ipos( remainder ? prevMultiple( M, SIMDSIZE ) : M );
+      BLAZE_INTERNAL_ASSERT( ipos <= M, "Invalid end calculation" );
 
       const auto begin( y.begin() );
       const auto end  ( y.end()   );
@@ -1127,8 +1129,8 @@ class DVecSVecOuterExpr
 
       const size_t M( A.rows() );
 
-      const size_t ipos( remainder ? ( M & size_t(-SIMDSIZE) ) : M );
-      BLAZE_INTERNAL_ASSERT( !remainder || ( M - ( M % SIMDSIZE ) ) == ipos, "Invalid end calculation" );
+      const size_t ipos( remainder ? prevMultiple( M, SIMDSIZE ) : M );
+      BLAZE_INTERNAL_ASSERT( ipos <= M, "Invalid end calculation" );
 
       const auto begin( y.begin() );
       const auto end  ( y.end()   );
@@ -1318,8 +1320,8 @@ class DVecSVecOuterExpr
       const size_t M( A.rows()    );
       const size_t N( A.columns() );
 
-      const size_t ipos( remainder ? ( M & size_t(-SIMDSIZE) ) : M );
-      BLAZE_INTERNAL_ASSERT( !remainder || ( M - ( M % SIMDSIZE ) ) == ipos, "Invalid end calculation" );
+      const size_t ipos( remainder ? prevMultiple( M, SIMDSIZE ) : M );
+      BLAZE_INTERNAL_ASSERT( ipos <= M, "Invalid end calculation" );
 
       const auto begin( y.begin() );
       const auto end  ( y.end()   );

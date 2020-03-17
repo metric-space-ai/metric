@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/TSMatSMatKronExpr.h
 //  \brief Header file for the transpose sparse matrix/sparse matrix Kronecker product expression
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -61,9 +61,9 @@
 #include "../../math/typetraits/IsTemporary.h"
 #include "../../math/typetraits/IsZero.h"
 #include "../../util/Assert.h"
-#include "../../util/DisableIf.h"
 #include "../../util/EnableIf.h"
 #include "../../util/FunctionTrace.h"
+#include "../../util/MaybeUnused.h"
 #include "../../util/mpl/If.h"
 #include "../../util/Types.h"
 
@@ -145,7 +145,7 @@ class TSMatSMatKronExpr
    // \param lhs The left-hand side sparse matrix operand of the Kronecker product expression.
    // \param rhs The right-hand side sparse matrix operand of the Kronecker product expression.
    */
-   explicit inline TSMatSMatKronExpr( const MT1& lhs, const MT2& rhs ) noexcept
+   inline TSMatSMatKronExpr( const MT1& lhs, const MT2& rhs ) noexcept
       : lhs_( lhs )  // Left-hand side sparse matrix of the Kronecker product expression
       , rhs_( rhs )  // Right-hand side sparse matrix of the Kronecker product expression
    {}

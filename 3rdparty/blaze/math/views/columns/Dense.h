@@ -3,7 +3,7 @@
 //  \file blaze/math/views/columns/Dense.h
 //  \brief Columns specialization for dense matrices
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -58,6 +58,7 @@
 #include "../../../math/expressions/DenseMatrix.h"
 #include "../../../math/expressions/View.h"
 #include "../../../math/InitializerList.h"
+#include "../../../math/shims/PrevMultiple.h"
 #include "../../../math/shims/Reset.h"
 #include "../../../math/SIMD.h"
 #include "../../../math/traits/AddTrait.h"
@@ -90,7 +91,6 @@
 #include "../../../util/constraints/Pointer.h"
 #include "../../../util/constraints/Reference.h"
 #include "../../../util/constraints/Vectorizable.h"
-#include "../../../util/DisableIf.h"
 #include "../../../util/EnableIf.h"
 #include "../../../util/MaybeUnused.h"
 #include "../../../util/mpl/If.h"
@@ -304,9 +304,7 @@ class Columns<MT,true,true,SF,CCAs...>
    //! Helper variable template for the explicit application of the SFINAE principle.
    template< typename MT2 >
    static constexpr bool VectorizedAddAssign_v =
-      ( useOptimizedKernels &&
-        simdEnabled && MT2::simdEnabled &&
-        IsSIMDCombinable_v< ElementType, ElementType_t<MT2> > &&
+      ( VectorizedAssign_v<MT2> &&
         HasSIMDAdd_v< ElementType, ElementType_t<MT2> > &&
         !IsDiagonal_v<MT2> );
    //**********************************************************************************************
@@ -315,9 +313,7 @@ class Columns<MT,true,true,SF,CCAs...>
    //! Helper variable template for the explicit application of the SFINAE principle.
    template< typename MT2 >
    static constexpr bool VectorizedSubAssign_v =
-      ( useOptimizedKernels &&
-        simdEnabled && MT2::simdEnabled &&
-        IsSIMDCombinable_v< ElementType, ElementType_t<MT2> > &&
+      ( VectorizedAssign_v<MT2> &&
         HasSIMDSub_v< ElementType, ElementType_t<MT2> > &&
         !IsDiagonal_v<MT2> );
    //**********************************************************************************************
@@ -326,9 +322,7 @@ class Columns<MT,true,true,SF,CCAs...>
    //! Helper variable template for the explicit application of the SFINAE principle.
    template< typename MT2 >
    static constexpr bool VectorizedSchurAssign_v =
-      ( useOptimizedKernels &&
-        simdEnabled && MT2::simdEnabled &&
-        IsSIMDCombinable_v< ElementType, ElementType_t<MT2> > &&
+      ( VectorizedAssign_v<MT2> &&
         HasSIMDMult_v< ElementType, ElementType_t<MT2> > );
    //**********************************************************************************************
 
@@ -952,7 +946,7 @@ inline Columns<MT,true,true,SF,CCAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( rhs.canAlias( &matrix_ ) ) {
+   if( rhs.canAlias( this ) ) {
       const ResultType tmp( rhs );
       smpAssign( left, tmp );
    }
@@ -1017,7 +1011,7 @@ inline Columns<MT,true,true,SF,CCAs...>&
       reset();
    }
 
-   if( IsReference_v<Right> && right.canAlias( &matrix_ ) ) {
+   if( IsReference_v<Right> && right.canAlias( this ) ) {
       const ResultType_t<MT2> tmp( right );
       smpAssign( left, tmp );
    }
@@ -1081,7 +1075,7 @@ inline auto Columns<MT,true,true,SF,CCAs...>::operator+=( const Matrix<MT2,SO2>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( (~rhs).canAlias( &matrix_ ) ) {
+   if( (~rhs).canAlias( this ) ) {
       const AddType tmp( *this + (~rhs) );
       smpAssign( left, tmp );
    }
@@ -1205,7 +1199,7 @@ inline auto Columns<MT,true,true,SF,CCAs...>::operator-=( const Matrix<MT2,SO2>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( (~rhs).canAlias( &matrix_ ) ) {
+   if( (~rhs).canAlias( this ) ) {
       const SubType tmp( *this - (~rhs ) );
       smpAssign( left, tmp );
    }
@@ -1328,7 +1322,7 @@ inline auto Columns<MT,true,true,SF,CCAs...>::operator%=( const Matrix<MT2,SO2>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( (~rhs).canAlias( &matrix_ ) ) {
+   if( (~rhs).canAlias( this ) ) {
       const SchurType tmp( *this % (~rhs) );
       if( IsSparseMatrix_v<SchurType> )
          reset();
@@ -1779,7 +1773,7 @@ template< typename MT         // Type of the dense matrix
 template< typename Other >    // Data type of the foreign expression
 inline bool Columns<MT,true,true,SF,CCAs...>::canAlias( const Other* alias ) const noexcept
 {
-   return matrix_.isAliased( alias );
+   return matrix_.isAliased( &unview( *alias ) );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -1830,7 +1824,7 @@ template< typename MT         // Type of the dense matrix
 template< typename Other >    // Data type of the foreign expression
 inline bool Columns<MT,true,true,SF,CCAs...>::isAliased( const Other* alias ) const noexcept
 {
-   return matrix_.isAliased( alias );
+   return matrix_.isAliased( &unview( *alias ) );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -2125,8 +2119,8 @@ inline auto Columns<MT,true,true,SF,CCAs...>::assign( const DenseMatrix<MT2,true
    BLAZE_INTERNAL_ASSERT( rows()    == (~rhs).rows()   , "Invalid number of rows"    );
    BLAZE_INTERNAL_ASSERT( columns() == (~rhs).columns(), "Invalid number of columns" );
 
-   const size_t ipos( rows() & size_t(-2) );
-   BLAZE_INTERNAL_ASSERT( ( rows() - ( rows() % 2UL ) ) == ipos, "Invalid end calculation" );
+   const size_t ipos( prevMultiple( rows(), 2UL ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= rows(), "Invalid end calculation" );
 
    for( size_t j=0UL; j<columns(); ++j ) {
       const size_t index( idx(j) );
@@ -2170,12 +2164,12 @@ inline auto Columns<MT,true,true,SF,CCAs...>::assign( const DenseMatrix<MT2,true
    BLAZE_INTERNAL_ASSERT( rows()    == (~rhs).rows()   , "Invalid number of rows"    );
    BLAZE_INTERNAL_ASSERT( columns() == (~rhs).columns(), "Invalid number of columns" );
 
-   const size_t ipos( rows() & size_t(-SIMDSIZE) );
-   BLAZE_INTERNAL_ASSERT( ( rows() - ( rows() % (SIMDSIZE) ) ) == ipos, "Invalid end calculation" );
+   const size_t ipos( prevMultiple( rows(), SIMDSIZE ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= rows(), "Invalid end calculation" );
 
    if( useStreaming &&
        rows()*columns() > ( cacheSize / ( sizeof(ElementType) * 3UL ) ) &&
-       !(~rhs).isAliased( &matrix_ ) )
+       !(~rhs).isAliased( this ) )
    {
       for( size_t j=0UL; j<columns(); ++j )
       {
@@ -2248,7 +2242,9 @@ inline void Columns<MT,true,true,SF,CCAs...>::assign( const DenseMatrix<MT2,fals
 
    if( rows() < block && columns() < block )
    {
-      const size_t ipos( (~rhs).rows() & size_t(-2) );
+      const size_t ipos( prevMultiple( (~rhs).rows(), 2UL ) );
+      BLAZE_INTERNAL_ASSERT( ipos <= (~rhs).rows(), "Invalid end calculation" );
+
       for( size_t j=0UL; j<columns(); ++j ) {
          const size_t index( idx(j) );
          for( size_t i=0UL; i<ipos; i+=2UL ) {
@@ -2374,8 +2370,8 @@ inline auto Columns<MT,true,true,SF,CCAs...>::addAssign( const DenseMatrix<MT2,t
    BLAZE_INTERNAL_ASSERT( rows()    == (~rhs).rows()   , "Invalid number of rows"    );
    BLAZE_INTERNAL_ASSERT( columns() == (~rhs).columns(), "Invalid number of columns" );
 
-   const size_t ipos( rows() & size_t(-2) );
-   BLAZE_INTERNAL_ASSERT( ( rows() - ( rows() % 2UL ) ) == ipos, "Invalid end calculation" );
+   const size_t ipos( prevMultiple( rows(), 2UL ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= rows(), "Invalid end calculation" );
 
    for( size_t j=0UL; j<columns(); ++j )
    {
@@ -2428,15 +2424,15 @@ inline auto Columns<MT,true,true,SF,CCAs...>::addAssign( const DenseMatrix<MT2,t
    for( size_t j=0UL; j<columns(); ++j )
    {
       const size_t ibegin( ( IsLower_v<MT2> )
-                           ?( ( IsStrictlyLower_v<MT2> ? j+1UL : j ) & size_t(-SIMDSIZE) )
+                           ?( prevMultiple( ( IsStrictlyLower_v<MT2> ? j+1UL : j ), SIMDSIZE ) )
                            :( 0UL ) );
       const size_t iend  ( ( IsUpper_v<MT2> )
                            ?( IsStrictlyUpper_v<MT2> ? j : j+1UL )
                            :( rows() ) );
       BLAZE_INTERNAL_ASSERT( ibegin <= iend, "Invalid loop indices detected" );
 
-      const size_t ipos( iend & size_t(-SIMDSIZE) );
-      BLAZE_INTERNAL_ASSERT( ( iend - ( iend % (SIMDSIZE) ) ) == ipos, "Invalid end calculation" );
+      const size_t ipos( prevMultiple( iend, SIMDSIZE ) );
+      BLAZE_INTERNAL_ASSERT( ipos <= iend, "Invalid end calculation" );
 
       size_t i( ibegin );
       Iterator left( begin(j) + ibegin );
@@ -2490,7 +2486,9 @@ inline void Columns<MT,true,true,SF,CCAs...>::addAssign( const DenseMatrix<MT2,f
 
    if( rows() < block && columns() < block )
    {
-      const size_t ipos( (~rhs).rows() & size_t(-2) );
+      const size_t ipos( prevMultiple( (~rhs).rows(), 2UL ) );
+      BLAZE_INTERNAL_ASSERT( ipos <= (~rhs).rows(), "Invalid end calculation" );
+
       for( size_t j=0UL; j<columns(); ++j ) {
          const size_t index( idx(j) );
          for( size_t i=0UL; i<ipos; i+=2UL ) {
@@ -2615,8 +2613,8 @@ inline auto Columns<MT,true,true,SF,CCAs...>::subAssign( const DenseMatrix<MT2,t
    BLAZE_INTERNAL_ASSERT( rows()    == (~rhs).rows()   , "Invalid number of rows"    );
    BLAZE_INTERNAL_ASSERT( columns() == (~rhs).columns(), "Invalid number of columns" );
 
-   const size_t ipos( rows() & size_t(-2) );
-   BLAZE_INTERNAL_ASSERT( ( rows() - ( rows() % 2UL ) ) == ipos, "Invalid end calculation" );
+   const size_t ipos( prevMultiple( rows(), 2UL ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= rows(), "Invalid end calculation" );
 
    for( size_t j=0UL; j<columns(); ++j )
    {
@@ -2670,15 +2668,15 @@ inline auto Columns<MT,true,true,SF,CCAs...>::subAssign( const DenseMatrix<MT2,t
    for( size_t j=0UL; j<columns(); ++j )
    {
       const size_t ibegin( ( IsLower_v<MT2> )
-                           ?( ( IsStrictlyLower_v<MT2> ? j+1UL : j ) & size_t(-SIMDSIZE) )
+                           ?( prevMultiple( ( IsStrictlyLower_v<MT2> ? j+1UL : j ), SIMDSIZE ) )
                            :( 0UL ) );
       const size_t iend  ( ( IsUpper_v<MT2> )
                            ?( IsStrictlyUpper_v<MT2> ? j : j+1UL )
                            :( rows() ) );
       BLAZE_INTERNAL_ASSERT( ibegin <= iend, "Invalid loop indices detected" );
 
-      const size_t ipos( iend & size_t(-SIMDSIZE) );
-      BLAZE_INTERNAL_ASSERT( ( iend - ( iend % (SIMDSIZE) ) ) == ipos, "Invalid end calculation" );
+      const size_t ipos( prevMultiple( iend, SIMDSIZE ) );
+      BLAZE_INTERNAL_ASSERT( ipos <= iend, "Invalid end calculation" );
 
       size_t i( ibegin );
       Iterator left( begin(j) + ibegin );
@@ -2732,7 +2730,9 @@ inline void Columns<MT,true,true,SF,CCAs...>::subAssign( const DenseMatrix<MT2,f
 
    if( rows() < block && columns() < block )
    {
-      const size_t ipos( (~rhs).rows() & size_t(-2) );
+      const size_t ipos( prevMultiple( (~rhs).rows(), 2UL ) );
+      BLAZE_INTERNAL_ASSERT( ipos <= (~rhs).rows(), "Invalid end calculation" );
+
       for( size_t j=0UL; j<columns(); ++j ) {
          const size_t index( idx(j) );
          for( size_t i=0UL; i<ipos; i+=2UL ) {
@@ -2857,8 +2857,8 @@ inline auto Columns<MT,true,true,SF,CCAs...>::schurAssign( const DenseMatrix<MT2
    BLAZE_INTERNAL_ASSERT( rows()    == (~rhs).rows()   , "Invalid number of rows"    );
    BLAZE_INTERNAL_ASSERT( columns() == (~rhs).columns(), "Invalid number of columns" );
 
-   const size_t ipos( rows() & size_t(-2) );
-   BLAZE_INTERNAL_ASSERT( ( rows() - ( rows() % 2UL ) ) == ipos, "Invalid end calculation" );
+   const size_t ipos( prevMultiple( rows(), 2UL ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= rows(), "Invalid end calculation" );
 
    for( size_t j=0UL; j<columns(); ++j ) {
       const size_t index( idx(j) );
@@ -2905,8 +2905,8 @@ inline auto Columns<MT,true,true,SF,CCAs...>::schurAssign( const DenseMatrix<MT2
 
    for( size_t j=0UL; j<columns(); ++j )
    {
-      const size_t ipos( rows() & size_t(-SIMDSIZE) );
-      BLAZE_INTERNAL_ASSERT( ( rows() - ( rows() % (SIMDSIZE) ) ) == ipos, "Invalid end calculation" );
+      const size_t ipos( prevMultiple( rows(), SIMDSIZE ) );
+      BLAZE_INTERNAL_ASSERT( ipos <= rows(), "Invalid end calculation" );
 
       size_t i( 0UL );
       Iterator left( begin(j) );
@@ -2960,7 +2960,9 @@ inline void Columns<MT,true,true,SF,CCAs...>::schurAssign( const DenseMatrix<MT2
 
    if( rows() < block && columns() < block )
    {
-      const size_t ipos( (~rhs).rows() & size_t(-2) );
+      const size_t ipos( prevMultiple( (~rhs).rows(), 2UL ) );
+      BLAZE_INTERNAL_ASSERT( ipos <= (~rhs).rows(), "Invalid end calculation" );
+
       for( size_t j=0UL; j<columns(); ++j ) {
          const size_t index( idx(j) );
          for( size_t i=0UL; i<ipos; i+=2UL ) {
@@ -4174,7 +4176,7 @@ inline Columns<MT,false,true,false,CCAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( rhs.canAlias( &matrix_ ) ) {
+   if( rhs.canAlias( this ) ) {
       const ResultType tmp( rhs );
       smpAssign( left, tmp );
    }
@@ -4238,7 +4240,7 @@ inline Columns<MT,false,true,false,CCAs...>&
       reset();
    }
 
-   if( IsReference_v<Right> && right.canAlias( &matrix_ ) ) {
+   if( IsReference_v<Right> && right.canAlias( this ) ) {
       const ResultType_t<MT2> tmp( right );
       smpAssign( left, tmp );
    }
@@ -4301,7 +4303,7 @@ inline auto Columns<MT,false,true,false,CCAs...>::operator+=( const Matrix<MT2,S
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( (~rhs).canAlias( &matrix_ ) ) {
+   if( (~rhs).canAlias( this ) ) {
       const AddType tmp( *this + (~rhs) );
       smpAssign( left, tmp );
    }
@@ -4423,7 +4425,7 @@ inline auto Columns<MT,false,true,false,CCAs...>::operator-=( const Matrix<MT2,S
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( (~rhs).canAlias( &matrix_ ) ) {
+   if( (~rhs).canAlias( this ) ) {
       const SubType tmp( *this - (~rhs ) );
       smpAssign( left, tmp );
    }
@@ -4544,7 +4546,7 @@ inline auto Columns<MT,false,true,false,CCAs...>::operator%=( const Matrix<MT2,S
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( (~rhs).canAlias( &matrix_ ) ) {
+   if( (~rhs).canAlias( this ) ) {
       const SchurType tmp( *this % (~rhs) );
       if( IsSparseMatrix_v<SchurType> )
          reset();
@@ -4993,7 +4995,7 @@ template< typename MT         // Type of the dense matrix
 template< typename Other >    // Data type of the foreign expression
 inline bool Columns<MT,false,true,false,CCAs...>::canAlias( const Other* alias ) const noexcept
 {
-   return matrix_.isAliased( alias );
+   return matrix_.isAliased( &unview( *alias ) );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -5042,7 +5044,7 @@ template< typename MT         // Type of the dense matrix
 template< typename Other >    // Data type of the foreign expression
 inline bool Columns<MT,false,true,false,CCAs...>::isAliased( const Other* alias ) const noexcept
 {
-   return matrix_.isAliased( alias );
+   return matrix_.isAliased( &unview( *alias ) );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -5139,8 +5141,8 @@ inline void Columns<MT,false,true,false,CCAs...>::assign( const DenseMatrix<MT2,
    BLAZE_INTERNAL_ASSERT( rows()    == (~rhs).rows()   , "Invalid number of rows"    );
    BLAZE_INTERNAL_ASSERT( columns() == (~rhs).columns(), "Invalid number of columns" );
 
-   const size_t ipos( rows() & size_t(-2) );
-   BLAZE_INTERNAL_ASSERT( ( rows() - ( rows() % 2UL ) ) == ipos, "Invalid end calculation" );
+   const size_t ipos( prevMultiple( rows(), 2UL ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= rows(), "Invalid end calculation" );
 
    for( size_t j=0UL; j<columns(); ++j ) {
       const size_t index( idx(j) );
@@ -5186,7 +5188,9 @@ inline void Columns<MT,false,true,false,CCAs...>::assign( const DenseMatrix<MT2,
 
    if( rows() < block && columns() < block )
    {
-      const size_t ipos( (~rhs).rows() & size_t(-2) );
+      const size_t ipos( prevMultiple( (~rhs).rows(), 2UL ) );
+      BLAZE_INTERNAL_ASSERT( ipos <= (~rhs).rows(), "Invalid end calculation" );
+
       for( size_t j=0UL; j<columns(); ++j ) {
          const size_t index( idx(j) );
          for( size_t i=0UL; i<ipos; i+=2UL ) {
@@ -5308,8 +5312,8 @@ inline void Columns<MT,false,true,false,CCAs...>::addAssign( const DenseMatrix<M
    BLAZE_INTERNAL_ASSERT( rows()    == (~rhs).rows()   , "Invalid number of rows"    );
    BLAZE_INTERNAL_ASSERT( columns() == (~rhs).columns(), "Invalid number of columns" );
 
-   const size_t ipos( rows() & size_t(-2) );
-   BLAZE_INTERNAL_ASSERT( ( rows() - ( rows() % 2UL ) ) == ipos, "Invalid end calculation" );
+   const size_t ipos( prevMultiple( rows(), 2UL ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= rows(), "Invalid end calculation" );
 
    for( size_t j=0UL; j<columns(); ++j )
    {
@@ -5361,7 +5365,9 @@ inline void Columns<MT,false,true,false,CCAs...>::addAssign( const DenseMatrix<M
 
    if( rows() < block && columns() < block )
    {
-      const size_t ipos( (~rhs).rows() & size_t(-2) );
+      const size_t ipos( prevMultiple( (~rhs).rows(), 2UL ) );
+      BLAZE_INTERNAL_ASSERT( ipos <= (~rhs).rows(), "Invalid end calculation" );
+
       for( size_t j=0UL; j<columns(); ++j ) {
          const size_t index( idx(j) );
          for( size_t i=0UL; i<ipos; i+=2UL ) {
@@ -5482,8 +5488,8 @@ inline void Columns<MT,false,true,false,CCAs...>::subAssign( const DenseMatrix<M
    BLAZE_INTERNAL_ASSERT( rows()    == (~rhs).rows()   , "Invalid number of rows"    );
    BLAZE_INTERNAL_ASSERT( columns() == (~rhs).columns(), "Invalid number of columns" );
 
-   const size_t ipos( rows() & size_t(-2) );
-   BLAZE_INTERNAL_ASSERT( ( rows() - ( rows() % 2UL ) ) == ipos, "Invalid end calculation" );
+   const size_t ipos( prevMultiple( rows(), 2UL ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= rows(), "Invalid end calculation" );
 
    for( size_t j=0UL; j<columns(); ++j )
    {
@@ -5536,7 +5542,9 @@ inline void Columns<MT,false,true,false,CCAs...>::subAssign( const DenseMatrix<M
 
    if( rows() < block && columns() < block )
    {
-      const size_t ipos( (~rhs).rows() & size_t(-2) );
+      const size_t ipos( prevMultiple( (~rhs).rows(), 2UL ) );
+      BLAZE_INTERNAL_ASSERT( ipos <= (~rhs).rows(), "Invalid end calculation" );
+
       for( size_t j=0UL; j<columns(); ++j ) {
          const size_t index( idx(j) );
          for( size_t i=0UL; i<ipos; i+=2UL ) {
@@ -5657,8 +5665,8 @@ inline void Columns<MT,false,true,false,CCAs...>::schurAssign( const DenseMatrix
    BLAZE_INTERNAL_ASSERT( rows()    == (~rhs).rows()   , "Invalid number of rows"    );
    BLAZE_INTERNAL_ASSERT( columns() == (~rhs).columns(), "Invalid number of columns" );
 
-   const size_t ipos( rows() & size_t(-2) );
-   BLAZE_INTERNAL_ASSERT( ( rows() - ( rows() % 2UL ) ) == ipos, "Invalid end calculation" );
+   const size_t ipos( prevMultiple( rows(), 2UL ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= rows(), "Invalid end calculation" );
 
    for( size_t j=0UL; j<columns(); ++j ) {
       const size_t index( idx(j) );
@@ -5704,7 +5712,9 @@ inline void Columns<MT,false,true,false,CCAs...>::schurAssign( const DenseMatrix
 
    if( rows() < block && columns() < block )
    {
-      const size_t ipos( (~rhs).rows() & size_t(-2) );
+      const size_t ipos( prevMultiple( (~rhs).rows(), 2UL ) );
+      BLAZE_INTERNAL_ASSERT( ipos <= (~rhs).rows(), "Invalid end calculation" );
+
       for( size_t j=0UL; j<columns(); ++j ) {
          const size_t index( idx(j) );
          for( size_t i=0UL; i<ipos; i+=2UL ) {
@@ -6643,7 +6653,7 @@ template< typename MT         // Type of the dense matrix
 template< typename Other >    // Data type of the foreign expression
 inline bool Columns<MT,false,true,true,CCAs...>::canAlias( const Other* alias ) const noexcept
 {
-   return matrix_.isAliased( alias );
+   return matrix_.isAliased( &unview( *alias ) );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -6692,7 +6702,7 @@ template< typename MT         // Type of the dense matrix
 template< typename Other >    // Data type of the foreign expression
 inline bool Columns<MT,false,true,true,CCAs...>::isAliased( const Other* alias ) const noexcept
 {
-   return matrix_.isAliased( alias );
+   return matrix_.isAliased( &unview( *alias ) );
 }
 /*! \endcond */
 //*************************************************************************************************

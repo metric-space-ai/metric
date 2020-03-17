@@ -189,7 +189,7 @@ PCFA<recType, Metric>::encode(const std::vector<recType> & Data) {
     for (size_t row_idx = 0; row_idx < DataBlaze.rows(); row_idx++)
         blaze::row(CenteredInput, row_idx) = blaze::row(DataBlaze, row_idx) - averages;
     blaze::DynamicMatrix<PCFA<recType, Metric>::value_type> Out = CenteredInput * W_encode;
-    return blaze_to_vector<recType>(Out);
+    return blaze2rectype<recType>(Out);
 }
 
 
@@ -223,9 +223,9 @@ PCFA<recType, Metric>::decode(
         auto Centered = blaze::DynamicMatrix<typename PCFA<recType, Metric>::value_type>(Noncentered.rows(), Noncentered.columns());
         for (size_t row_idx = 0; row_idx < Noncentered.rows(); row_idx++)
             blaze::row(Centered, row_idx) = blaze::row(Noncentered, row_idx) + averages;
-        return blaze_to_vector<recType>(Centered);
+        return blaze2rectype<recType>(Centered);
     } else {
-        return blaze_to_vector<recType>(CodesBlaze * W_decode);
+        return blaze2rectype<recType>(CodesBlaze * W_decode);
     }
 }
 
@@ -252,7 +252,7 @@ PCFA<recType, Metric>::eigenmodes_mat() {
 template <typename recType, typename Metric>
 std::vector<recType>
 PCFA<recType, Metric>::eigenmodes() {
-    return blaze_to_vector<recType>(eigenmodes_mat());
+    return blaze2rectype<recType>(eigenmodes_mat());
 }
 
 
@@ -269,31 +269,11 @@ PCFA<recType, Metric>::vector_to_blaze(const std::vector<recType> & In) {
 
 template <typename recType, typename Metric>
 template <typename R>
-
-#if defined(_WIN64)
-
 typename std::enable_if <
-// std::is_same<
-//  R,
-//  std::vector<typename PCFA<R, Metric>::value_type, typename std::allocator<typename PCFA<R, Metric>::value_type>>
-// >::value,
- PCFA<recType, Metric>::determine_container_type<R>::code == 1,
+ determine_container_type<R>::code == 1,
  std::vector<R>
 >::type // here we support only STL vector
-
-#else
-
-typename std::enable_if <
-// std::is_same<
-//  R,
-//  std::vector<typename PCFA<R, Metric>::value_type, typename std::allocator<typename PCFA<R, Metric>::value_type>>
-// >::value,
- PCFA<recType, Metric>:: template determine_container_type<R>::code == 1,
- std::vector<R>
->::type // here we support only STL vector
-
-#endif
-PCFA<recType, Metric>::blaze_to_vector(const blaze::DynamicMatrix<typename PCFA<R, Metric>::value_type> & In) { // TODO support arbitrary type!
+PCFA<recType, Metric>::blaze2rectype(const blaze::DynamicMatrix<typename PCFA<R, Metric>::value_type> & In) { // TODO support arbitrary type!
     std::vector<recType> Out;
     for (size_t i = 0; i < In.rows(); ++i) {  // TODO optimize using iterators!!
         recType rec;
@@ -307,31 +287,11 @@ PCFA<recType, Metric>::blaze_to_vector(const blaze::DynamicMatrix<typename PCFA<
 
 template <typename recType, typename Metric>
 template <typename R>
-
-#if defined(_WIN64)
-
 typename std::enable_if<
-// std::is_same<
-//  R,
-//  blaze::DynamicVector<typename PCFA<R, Metric>::value_type, blaze::rowVector>
-// >::value,
- PCFA<recType, Metric>::determine_container_type<R>::code == 2,
+ determine_container_type<R>::code == 2,
  std::vector<R>
 >::type
-
-#else
-
-typename std::enable_if<
-// std::is_same<
-//  R,
-//  blaze::DynamicVector<typename PCFA<R, Metric>::value_type, blaze::rowVector>
-// >::value,
- PCFA<recType, Metric>:: template determine_container_type<R>::code == 2,
- std::vector<R>
->::type
-
-#endif
-PCFA<recType, Metric>::blaze_to_vector(const blaze::DynamicMatrix<typename PCFA<R, Metric>::value_type> & In) { // only blaze row-vector
+PCFA<recType, Metric>::blaze2rectype(const blaze::DynamicMatrix<typename PCFA<R, Metric>::value_type> & In) { // only blaze row-vector
     std::vector<recType> Out;
     for (size_t i = 0; i < In.rows(); ++i) {  // TODO optimize using iterators!!
         recType rec(In.columns()); // blaze specific
@@ -349,12 +309,6 @@ PCFA_col<typename BlazeMatrix::ElementType> PCFA_col_factory(const BlazeMatrix &
     return PCFA_col<typename BlazeMatrix::ElementType>(TrainingData, n_features);
 }
 
-
-//template <typename BlazeMatrix>
-//PCFA<typename BlazeMatrix::ElementType> PCFA_factory(const BlazeMatrix & TrainingData, size_t n_features)
-//{
-//    return PCFA<typename BlazeMatrix::ElementType>(TrainingData, n_features);
-//}; // TODO make factory for any Blaze type
 
 
 template <typename ElementType>

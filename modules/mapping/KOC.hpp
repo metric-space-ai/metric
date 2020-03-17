@@ -45,6 +45,7 @@ namespace metric {
 			class Distribution = std::uniform_real_distribution<typename recType::value_type>
 		>
 		class KOC : public SOM<recType, Graph, Metric, Distribution> {
+
 			typedef typename recType::value_type T;
 
 		public:
@@ -58,8 +59,11 @@ namespace metric {
 				 * @param iterations 
 				 * @param distribution 
 				 */
-			KOC(Graph graph, Metric metric, double start_learn_rate = 0.8, double finish_learn_rate = 0.0, size_t iterations = 20, Distribution distribution = Distribution(-1, 1))
-				: SOM<recType, Graph, Metric, Distribution>(graph, metric, start_learn_rate, finish_learn_rate, iterations, distribution) {};
+			KOC(Graph graph, Metric metric, double anomaly_sigma = 1.0, double start_learn_rate = 0.8, double finish_learn_rate = 0.0, size_t iterations = 20, Distribution distribution = Distribution(-1, 1))
+				: som_(graph, metric, start_learn_rate, finish_learn_rate, iterations, distribution), 
+				anomaly_sigma_(anomaly_sigma), 
+				iterations_(iterations),
+				random_seed_(std::chrono::system_clock::now().time_since_epoch().count()) {};
 
 			/**
 				 * @brief Construct a new KOC object
@@ -74,10 +78,12 @@ namespace metric {
 				 * @param neigbour_range_decay 
 				 * @param random_seed 
 				 */
-			KOC(Graph graph, Metric metric, double start_learn_rate, double finish_learn_rate, size_t iterations, 
+			KOC(Graph graph, Metric metric, double anomaly_sigma, double start_learn_rate, double finish_learn_rate, size_t iterations, 
 				Distribution distribution, double neighborhood_start_size, double neigbour_range_decay, long long random_seed)
-				: SOM<recType, Graph, Metric, Distribution>(graph, metric, start_learn_rate, finish_learn_rate, iterations,  
-					distribution, neighborhood_start_size, neigbour_range_decay, random_seed) {};
+				: som_(graph, metric, start_learn_rate, finish_learn_rate, iterations, distribution, neighborhood_start_size, neigbour_range_decay, random_seed), 
+				anomaly_sigma_(anomaly_sigma), 
+				iterations_(iterations), 
+				random_seed_(random_seed) {};
 
 			/**
 				 * @brief Destroy the KOC object
@@ -91,6 +97,7 @@ namespace metric {
 				 * @param samples 
 				 * @param num_clusters 
 				 */
+
 			void train(const std::vector<recType>& samples, int num_clusters);
 
 			/**
@@ -103,6 +110,7 @@ namespace metric {
 				 */
 			std::vector<int> encode(const std::vector<recType>& samples, double sigma = 1.0);
 
+
 			/**
 				 * @brief 
 				 * 
@@ -111,7 +119,9 @@ namespace metric {
 				 * 
 				 * @return std::vector<bool> 
 				 */
+
 			std::vector<bool> check_if_anomaly(const std::vector<recType>& samples, double sigma = 1.0);
+
 
 			/**
 				 * @brief 
@@ -121,12 +131,15 @@ namespace metric {
 				 * 
 				 * @return bool
 				 */
+
 			bool check_if_anomaly(const recType& sample, double sigma = 1.0);
+
 
 			/**
 				 * @brief 
 				 * 
 				 * @param samples 
+
 				 * @param sigma 
 				 * 
 				 * @return std::vector<int>
@@ -145,12 +158,15 @@ namespace metric {
 			std::tuple<std::vector<size_t>, std::vector<typename recType::value_type>, std::vector<int>> top_outlier(const std::vector<recType>& samples, double sigma = 1.0, int count = 10);
 
 		private:
+
 	
 			std::vector<int> clusters;	
 			std::vector<recType> centroids;	
 			std::vector<int> clusters_counts;	
 	
 			std::vector<T> nodes_std_deviations;	
+
+
 
 			/**
 				 * @brief 
@@ -167,7 +183,9 @@ namespace metric {
 				 * 
 				 * @return std::tuple<std::vector<int>, std::vector<recType>, std::vector<int>>
 				 */
+
 			std::tuple<std::vector<int>, std::vector<recType>, std::vector<int>> clusterize_nodes(int num_clusters);
+
 
 			/**
 				 * @brief 
@@ -203,6 +221,7 @@ namespace metric {
 				 * 
 				 * @return std::vector<size_t>
 				 */
+
 			template <typename T1>
 			std::vector<size_t> sort_indexes(const std::vector<T1> &v);
 
@@ -232,7 +251,7 @@ namespace metric {
 			* @param distribution_min 
 			* @param distribution_max 
 		 */
-		KOC_factory(size_t nodesNumber, double start_learn_rate = 0.8, double finish_learn_rate = 0.0, size_t iterations = 20, T distribution_min = -1, T distribution_max = 1);
+		KOC_factory(size_t nodesNumber, double anomaly_sigma, double start_learn_rate = 0.8, double finish_learn_rate = 0.0, size_t iterations = 20, T distribution_min = -1, T distribution_max = 1);
 
 		/**
 			* @brief
@@ -245,7 +264,7 @@ namespace metric {
 			* @param distribution_min 
 			* @param distribution_max 
 		 */
-		KOC_factory(size_t nodesWidth = 5, size_t nodesHeight = 4, double start_learn_rate = 0.8, double finish_learn_rate = 0.0, size_t iterations = 20, T distribution_min = -1, T distribution_max = 1);
+		KOC_factory(size_t nodesWidth = 5, size_t nodesHeight = 4, double anomaly_sigma = 1.0, double start_learn_rate = 0.8, double finish_learn_rate = 0.0, size_t iterations = 20, T distribution_min = -1, T distribution_max = 1);
 
 		/**
 			* @brief
@@ -260,7 +279,7 @@ namespace metric {
 			* @param neigbour_range_decay 
 			* @param random_seed 
 		 */
-		KOC_factory(size_t nodesNumber, 
+		KOC_factory(size_t nodesNumber, double anomaly_sigma, 
 			double start_learn_rate, double finish_learn_rate, size_t iterations, T distribution_min, T distribution_max, 
 			double neighborhood_start_size, double neigbour_range_decay, long long random_seed);
 
@@ -278,7 +297,7 @@ namespace metric {
 			* @param neigbour_range_decay 
 			* @param random_seed 
 		 */
-		KOC_factory(size_t nodesWidth, size_t nodesHeight, 
+		KOC_factory(size_t nodesWidth, size_t nodesHeight, double anomaly_sigma, 
 			double start_learn_rate, double finish_learn_rate, size_t iterations, T distribution_min, T distribution_max, 
 			double neighborhood_start_size, double neigbour_range_decay, long long random_seed);
 
@@ -290,7 +309,9 @@ namespace metric {
 			* 
 			* @return KOC_details::KOC<recType, Graph, Metric, Distribution>
 		 */
+
 		KOC_details::KOC<recType, Graph, Metric, Distribution> operator()(const std::vector<recType>& samples, int num_clusters);
+
 
 	private:
 
@@ -305,6 +326,7 @@ namespace metric {
 		double neighborhood_start_size_;
 		double neigbour_range_decay_;
 		long long random_seed_;
+		double anomaly_sigma_;
 	};
 
 } // namespace metric

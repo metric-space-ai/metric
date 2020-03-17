@@ -5,7 +5,9 @@
 #include "../Optimizer.h"
 #include "../Utils/sparsepp.h"
 
-namespace MiniDNN
+namespace metric
+{
+namespace dnn
 {
 
 
@@ -43,11 +45,10 @@ class AdaGrad: public Optimizer
             Array& grad_square = m_history[dvec.data()];
 
             // If length is zero, initialize it
-            if (grad_square.size() == 0)
-            {
-                grad_square.resize(dvec.size());
-                grad_square.setZero();
-            }
+	        if (grad_square.size() == 0) {
+		        grad_square.resize(dvec.size());
+		        grad_square.setZero();
+	        }
 
             // Update accumulated squared gradient
             grad_square += dvec.array().square();
@@ -57,7 +58,8 @@ class AdaGrad: public Optimizer
 };
 
 
-} // namespace MiniDNN
+} // namespace dnn
+} // namespace metric
 
 
 #endif /* OPTIMIZER_ADAGRAD_H_ */

@@ -3,7 +3,7 @@
 //  \file blaze/math/adaptors/StrictlyLowerMatrix.h
 //  \brief Header file for the implementation of a strictly lower triangular matrix adaptor
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -45,12 +45,17 @@
 #include "../../math/adaptors/strictlylowermatrix/Sparse.h"
 #include "../../math/constraints/RequiresEvaluation.h"
 #include "../../math/Forward.h"
+#include "../../math/RelaxationFlag.h"
 #include "../../math/shims/IsDefault.h"
 #include "../../math/traits/AddTrait.h"
 #include "../../math/traits/DeclDiagTrait.h"
 #include "../../math/traits/DeclHermTrait.h"
 #include "../../math/traits/DeclLowTrait.h"
+#include "../../math/traits/DeclStrLowTrait.h"
+#include "../../math/traits/DeclStrUppTrait.h"
 #include "../../math/traits/DeclSymTrait.h"
+#include "../../math/traits/DeclUniLowTrait.h"
+#include "../../math/traits/DeclUniUppTrait.h"
 #include "../../math/traits/DeclUppTrait.h"
 #include "../../math/traits/DivTrait.h"
 #include "../../math/traits/KronTrait.h"
@@ -92,6 +97,7 @@
 #include "../../util/Assert.h"
 #include "../../util/EnableIf.h"
 #include "../../util/IntegralConstant.h"
+#include "../../util/InvalidType.h"
 #include "../../util/MaybeUnused.h"
 #include "../../util/typetraits/IsNumeric.h"
 
@@ -116,7 +122,7 @@ void reset( StrictlyLowerMatrix<MT,SO,DF>& m, size_t i );
 template< typename MT, bool SO, bool DF >
 void clear( StrictlyLowerMatrix<MT,SO,DF>& m );
 
-template< bool RF, typename MT, bool SO, bool DF >
+template< RelaxationFlag RF, typename MT, bool SO, bool DF >
 bool isDefault( const StrictlyLowerMatrix<MT,SO,DF>& m );
 
 template< typename MT, bool SO, bool DF >
@@ -196,10 +202,10 @@ inline void clear( StrictlyLowerMatrix<MT,SO,DF>& m )
 // This function checks whether the resizable strictly lower triangular matrix is in default
 // state.
 */
-template< bool RF      // Relaxation flag
-        , typename MT  // Type of the adapted matrix
-        , bool SO      // Storage order of the adapted matrix
-        , bool DF >    // Density flag
+template< RelaxationFlag RF  // Relaxation flag
+        , typename MT        // Type of the adapted matrix
+        , bool SO            // Storage order of the adapted matrix
+        , bool DF >          // Density flag
 inline bool isDefault_backend( const StrictlyLowerMatrix<MT,SO,DF>& m, TrueType )
 {
    return ( m.rows() == 0UL );
@@ -219,10 +225,10 @@ inline bool isDefault_backend( const StrictlyLowerMatrix<MT,SO,DF>& m, TrueType 
 // This function checks whether the fixed-size strictly lower triangular matrix is in default
 // state.
 */
-template< bool RF      // Relaxation flag
-        , typename MT  // Type of the adapted matrix
-        , bool SO      // Storage order of the adapted matrix
-        , bool DF >    // Density flag
+template< RelaxationFlag RF  // Relaxation flag
+        , typename MT        // Type of the adapted matrix
+        , bool SO            // Storage order of the adapted matrix
+        , bool DF >          // Density flag
 inline bool isDefault_backend( const StrictlyLowerMatrix<MT,SO,DF>& m, FalseType )
 {
    if( SO ) {
@@ -274,10 +280,10 @@ inline bool isDefault_backend( const StrictlyLowerMatrix<MT,SO,DF>& m, FalseType
    if( isDefault<relaxed>( A ) ) { ... }
    \endcode
 */
-template< bool RF      // Relaxation flag
-        , typename MT  // Type of the adapted matrix
-        , bool SO      // Storage order of the adapted matrix
-        , bool DF >    // Density flag
+template< RelaxationFlag RF  // Relaxation flag
+        , typename MT        // Type of the adapted matrix
+        , bool SO            // Storage order of the adapted matrix
+        , bool DF >          // Density flag
 inline bool isDefault( const StrictlyLowerMatrix<MT,SO,DF>& m )
 {
    return isDefault_backend<RF>( m, typename IsResizable<MT>::Type() );
@@ -2133,6 +2139,44 @@ struct DeclLowTrait< StrictlyLowerMatrix<MT,SO,DF> >
 
 //=================================================================================================
 //
+//  DECLUNILOWTRAIT SPECIALIZATIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+template< typename MT, bool SO, bool DF >
+struct DeclUniLowTrait< StrictlyLowerMatrix<MT,SO,DF> >
+{
+   using Type = INVALID_TYPE;
+};
+/*! \endcond */
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
+//  DECLSTRLOWTRAIT SPECIALIZATIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+template< typename MT, bool SO, bool DF >
+struct DeclStrLowTrait< StrictlyLowerMatrix<MT,SO,DF> >
+{
+   using Type = StrictlyLowerMatrix<MT,SO,DF>;
+};
+/*! \endcond */
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
 //  DECLUPPTRAIT SPECIALIZATIONS
 //
 //=================================================================================================
@@ -2141,6 +2185,44 @@ struct DeclLowTrait< StrictlyLowerMatrix<MT,SO,DF> >
 /*! \cond BLAZE_INTERNAL */
 template< typename MT, bool SO, bool DF >
 struct DeclUppTrait< StrictlyLowerMatrix<MT,SO,DF> >
+{
+   using Type = ZeroMatrix< typename MT::ElementType, SO >;
+};
+/*! \endcond */
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
+//  DECLUNIUPPTRAIT SPECIALIZATIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+template< typename MT, bool SO, bool DF >
+struct DeclUniUppTrait< StrictlyLowerMatrix<MT,SO,DF> >
+{
+   using Type = INVALID_TYPE;
+};
+/*! \endcond */
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
+//  DECLSTRUPPTRAIT SPECIALIZATIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+template< typename MT, bool SO, bool DF >
+struct DeclStrUppTrait< StrictlyLowerMatrix<MT,SO,DF> >
 {
    using Type = ZeroMatrix< typename MT::ElementType, SO >;
 };

@@ -3,7 +3,7 @@
 //  \file blaze/math/sparse/SparseVector.h
 //  \brief Header file for utility functions for sparse vectors
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -44,6 +44,7 @@
 #include "../../math/Aliases.h"
 #include "../../math/Exception.h"
 #include "../../math/expressions/SparseVector.h"
+#include "../../math/RelaxationFlag.h"
 #include "../../math/shims/Equal.h"
 #include "../../math/shims/IsDefault.h"
 #include "../../math/shims/IsNaN.h"
@@ -60,6 +61,7 @@
 #include "../../math/typetraits/UnderlyingNumeric.h"
 #include "../../util/constraints/Numeric.h"
 #include "../../util/Assert.h"
+#include "../../util/EnableIf.h"
 #include "../../util/mpl/If.h"
 #include "../../util/Types.h"
 #include "../../util/typetraits/IsBuiltin.h"
@@ -265,10 +267,10 @@ inline auto operator/=( SparseVector<VT,TF>&& vec, ST scalar )
 template< typename VT, bool TF >
 bool isnan( const SparseVector<VT,TF>& sv );
 
-template< bool RF, typename VT, bool TF >
+template< RelaxationFlag RF, typename VT, bool TF >
 bool isUniform( const SparseVector<VT,TF>& sv );
 
-template< bool RF, typename VT, bool TF >
+template< RelaxationFlag RF, typename VT, bool TF >
 bool isZero( const SparseVector<VT,TF>& sv );
 //@}
 //*************************************************************************************************
@@ -344,9 +346,9 @@ inline bool isnan( const SparseVector<VT,TF>& sv )
 // However, note that this might require the complete evaluation of the expression, including
 // the generation of a temporary vector.
 */
-template< bool RF      // Relaxation flag
-        , typename VT  // Type of the sparse vector
-        , bool TF >    // Transpose flag
+template< RelaxationFlag RF  // Relaxation flag
+        , typename VT        // Type of the sparse vector
+        , bool TF >          // Transpose flag
 bool isUniform( const SparseVector<VT,TF>& sv )
 {
    using CT = CompositeType_t<VT>;
@@ -416,9 +418,9 @@ bool isUniform( const SparseVector<VT,TF>& sv )
 // However, note that this might require the complete evaluation of the expression, including
 // the generation of a temporary vector.
 */
-template< bool RF      // Relaxation flag
-        , typename VT  // Type of the sparse vector
-        , bool TF >    // Transpose flag
+template< RelaxationFlag RF  // Relaxation flag
+        , typename VT        // Type of the sparse vector
+        , bool TF >          // Transpose flag
 bool isZero( const SparseVector<VT,TF>& sv )
 {
    if( IsZero_v<VT> || (~sv).nonZeros() == 0UL )

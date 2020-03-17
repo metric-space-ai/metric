@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/DMatMeanExpr.h
 //  \brief Header file for the dense matrix mean expression
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -152,9 +152,9 @@ inline decltype(auto) mean( const DenseMatrix<MT,SO>& dm )
 // \param dm The given general dense matrix for the mean computation.
 // \return The row-/column-wise mean of the given matrix.
 */
-template< size_t RF    // Reduction flag
-        , typename MT  // Type of the dense matrix
-        , bool SO >    // Storage order
+template< ReductionFlag RF  // Reduction flag
+        , typename MT       // Type of the dense matrix
+        , bool SO >         // Storage order
 decltype(auto) mean_backend( const DenseMatrix<MT,SO>& dm, FalseType )
 {
    using BT = UnderlyingBuiltin_t<MT>;
@@ -177,9 +177,9 @@ decltype(auto) mean_backend( const DenseMatrix<MT,SO>& dm, FalseType )
 // \param dm The given general dense matrix for the mean computation.
 // \return The row-/column-wise mean of the given matrix.
 */
-template< size_t RF    // Reduction flag
-        , typename MT  // Type of the dense matrix
-        , bool SO >    // Storage order
+template< ReductionFlag RF  // Reduction flag
+        , typename MT       // Type of the dense matrix
+        , bool SO >         // Storage order
 decltype(auto) mean_backend( const DenseMatrix<MT,SO>& dm, TrueType )
 {
    const size_t n( RF == rowwise ? rows( ~dm ) : columns( ~dm ) );
@@ -229,9 +229,9 @@ decltype(auto) mean_backend( const DenseMatrix<MT,SO>& dm, TrueType )
 // case \a RF is set to \a columnwise and the number of rows of the given matrix is 0, a
 // \a std::invalid_argument is thrown.
 */
-template< size_t RF    // Reduction flag
-        , typename MT  // Type of the dense matrix
-        , bool SO >    // Storage order
+template< ReductionFlag RF  // Reduction flag
+        , typename MT       // Type of the dense matrix
+        , bool SO >         // Storage order
 decltype(auto) mean( const DenseMatrix<MT,SO>& dm )
 {
    BLAZE_FUNCTION_TRACE;

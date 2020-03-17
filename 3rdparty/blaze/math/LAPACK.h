@@ -3,7 +3,7 @@
 //  \file blaze/math/LAPACK.h
 //  \brief Header file for the LAPACK functionality
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -53,6 +53,7 @@
 #include "../math/lapack/getrf.h"
 #include "../math/lapack/getri.h"
 #include "../math/lapack/getrs.h"
+#include "../math/lapack/gges.h"
 #include "../math/lapack/heev.h"
 #include "../math/lapack/heevd.h"
 #include "../math/lapack/heevx.h"
