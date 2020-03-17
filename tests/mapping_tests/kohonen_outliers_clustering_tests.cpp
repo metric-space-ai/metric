@@ -56,13 +56,13 @@ BOOST_AUTO_TEST_CASE(KOC) {
 	int num_clusters = 3;
 	double sigma = 1.5;
 		
-	metric::KOC_factory<Record, metric::Grid4> simple_koc_factory(best_w_grid_size, best_h_grid_size, 0.5, 0.0, 300);    
+	metric::KOC_factory<Record, metric::Grid4> simple_koc_factory(best_w_grid_size, best_h_grid_size, sigma, 0.5, 0.0, 300);    
 	auto simple_koc = simple_koc_factory(dataset, num_clusters); 
 
 
 	// original dataset
 
-	auto anomalies = simple_koc.check_if_anomaly(dataset, sigma);	
+	auto anomalies = simple_koc.check_if_anomaly(dataset);	
 
 	// there are should be no anomalies in the train dataset
 	for (int i = 0; i < anomalies.size(); i++)
@@ -70,7 +70,7 @@ BOOST_AUTO_TEST_CASE(KOC) {
 		BOOST_CHECK(anomalies[i] == 0);
 	}
 	
-	auto assignments = simple_koc.result(dataset, sigma);	
+	auto assignments = simple_koc.assign_to_clusters(dataset);	
 
 	// there are should be no zero-named clusters in the train dataset
 	for (int i = 0; i < assignments.size(); i++)
@@ -81,21 +81,21 @@ BOOST_AUTO_TEST_CASE(KOC) {
 
 	// test dataset
 
-	anomalies = simple_koc.check_if_anomaly(test_set, sigma);	
+	anomalies = simple_koc.check_if_anomaly(test_set);	
 	// first two records should be anomalies, others two should not
 	BOOST_CHECK(anomalies[0] == 1);
 	BOOST_CHECK(anomalies[1] == 1);
 	BOOST_CHECK(anomalies[2] == 0);
 	BOOST_CHECK(anomalies[3] == 0);
 	
-	assignments = simple_koc.result(test_set, sigma);	
+	assignments = simple_koc.assign_to_clusters(test_set);	
 	// first two records should zero-named anomalies
 	BOOST_CHECK(assignments[0] == 0);
 	BOOST_CHECK(assignments[1] == 0);
 
 	// top outliers
 
-	auto [idxs, sorted_distances, sorted_assignments] = simple_koc.top_outlier(test_set, sigma, 10);
+	auto [idxs, sorted_distances] = simple_koc.top_outliers(test_set, 10);
 	// indexes should be as following
 	BOOST_CHECK(idxs[0] == 1);
 	BOOST_CHECK(idxs[1] == 0);
@@ -108,23 +108,22 @@ BOOST_AUTO_TEST_CASE(KOC) {
 	
 	std::vector<Record> empty_set;
 			
-	metric::KOC_factory<Record, metric::Grid4> koc_factory_1(best_w_grid_size, best_h_grid_size, 0.5, 0.0, 300);    
+	metric::KOC_factory<Record, metric::Grid4> koc_factory_1(best_w_grid_size, best_h_grid_size, sigma, 0.5, 0.0, 300);    
 	auto koc_1 = koc_factory_1(dataset, num_clusters); 
 
-	anomalies = koc_1.check_if_anomaly(empty_set, sigma);
+	anomalies = koc_1.check_if_anomaly(empty_set);
 	// all should be ok, but zero sized result
 	BOOST_CHECK(anomalies.size() == 0);
 	
-	assignments = koc_1.result(empty_set, sigma);
+	assignments = koc_1.assign_to_clusters(empty_set);
 	// all should be ok, but zero sized result
 	BOOST_CHECK(assignments.size() == 0);
 
 	//top outliers
 
-	std::tie(idxs, sorted_distances, sorted_assignments) = koc_1.top_outlier(empty_set, sigma, 10);
+	std::tie(idxs, sorted_distances) = koc_1.top_outliers(empty_set, 10);
 	// all should be ok, but zero sized result
 	BOOST_CHECK(idxs.size() == 0);
 	BOOST_CHECK(sorted_distances.size() == 0);
-	BOOST_CHECK(sorted_assignments.size() == 0);
 }
 

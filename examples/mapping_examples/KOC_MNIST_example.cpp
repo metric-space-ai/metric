@@ -338,7 +338,7 @@ int main(int argc, char *argv[])
 	std::cout << "anomalies:" << std::endl;
 	vector_print(anomalies);
 	
-	auto assignments = simple_koc.result(dataset);	
+	auto assignments = simple_koc.assign_to_clusters(dataset);	
 	std::cout << std::endl;
 	std::cout << "assignments:" << std::endl;
 	vector_print(assignments);
@@ -388,7 +388,7 @@ int main(int argc, char *argv[])
 	std::cout << "anomalies:" << std::endl;
 	vector_print(anomalies);
 	
-	assignments = simple_koc.result(test_set);	
+	assignments = simple_koc.assign_to_clusters(test_set);	
 	std::cout << std::endl;
 	std::cout << "assignments:" << std::endl;
 	vector_print(assignments);

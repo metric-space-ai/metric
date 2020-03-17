@@ -91,7 +91,7 @@ namespace metric {
 
 		
 		template <class recType, class Graph, class Metric, class Distribution>
-		std::vector<int> KOC<recType, Graph, Metric, Distribution>::result(
+		std::vector<int> KOC<recType, Graph, Metric, Distribution>::assign_to_clusters(
 			const std::vector<recType>& samples)
 		{				
 			std::vector<int> assignments;
@@ -115,10 +115,10 @@ namespace metric {
 
 		
 		template <class recType, class Graph, class Metric, class Distribution>
-		std::tuple<std::vector<size_t>, std::vector<typename recType::value_type>, std::vector<int>> 
-			KOC<recType, Graph, Metric, Distribution>::top_outlier(const std::vector<recType>& samples, int count)
+		std::tuple<std::vector<size_t>, std::vector<typename recType::value_type>> 
+			KOC<recType, Graph, Metric, Distribution>::top_outliers(const std::vector<recType>& samples, int count)
 		{			
-			auto assignments = result(samples);
+			auto assignments = assign_to_clusters(samples);
 			
 			std::vector<T> distances;
 			for (int i = 0; i < samples.size(); i++)
@@ -130,7 +130,7 @@ namespace metric {
 
 			auto idxs = sort_indexes(distances);	
 			std::vector<T> sorted_distances;		
-			std::vector<int> sorted_assignments;		
+			//std::vector<int> sorted_assignments;		
 			if (idxs.size() > count)
 			{
 				idxs.resize(count);
@@ -138,10 +138,10 @@ namespace metric {
 			for (int i = 0; i < idxs.size(); i++)
 			{
 				sorted_distances.push_back(distances[idxs[i]]);
-				sorted_assignments.push_back(assignments[idxs[i]]);
+				//sorted_assignments.push_back(assignments[idxs[i]]);
 			}
 
-			return {idxs, sorted_distances, sorted_assignments};
+			return {idxs, sorted_distances};
 		};
 
 

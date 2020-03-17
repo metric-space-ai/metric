@@ -110,7 +110,6 @@ namespace metric {
 				 * @brief 
 				 * 
 				 * @param samples 
-				 * @param sigma 
 				 * 
 				 * @return std::vector<bool> 
 				 */
@@ -120,7 +119,6 @@ namespace metric {
 				 * @brief 
 				 * 
 				 * @param sample
-				 * @param sigma 
 				 * 
 				 * @return bool
 				 */
@@ -130,22 +128,21 @@ namespace metric {
 				 * @brief 
 				 * 
 				 * @param samples 
-				 * @param sigma 
 				 * 
 				 * @return std::vector<int>
 				 */
-			std::vector<int> result(const std::vector<recType>& samples);
+			std::vector<int> assign_to_clusters(const std::vector<recType>& samples);
 
 			/**
 				 * @brief 
 				 * 
 				 * @param samples 
-				 * @param sigma 
 				 * @param count 
 				 * 
-				 * @return std::tuple<std::vector<size_t>, std::vector<typename recType::value_type>, std::vector<int>>
+				 * @return std::tuple<std::vector<size_t>, std::vector<typename recType::value_type>> - two vectors, the first with indexes of the top outlier samples (sorted from the farest),
+				 * and the second with distances to std deviation edge from nodes coordinates (multiplied to anomaly_sigma, according to formula: distance = <distance to the best matchin node> - <std_deviation_of_the_node><anomaly_sigma>)
 				 */
-			std::tuple<std::vector<size_t>, std::vector<typename recType::value_type>, std::vector<int>> top_outlier(const std::vector<recType>& samples, int count = 10);
+			std::tuple<std::vector<size_t>, std::vector<typename recType::value_type>> top_outliers(const std::vector<recType>& samples, int count = 10);
 
 		private:
 			int min_cluster_size_ = 1;
