@@ -52,7 +52,6 @@ add_executable(ESN_example continious_mappers/classification/ESN_example.cpp)
 # other
 add_executable(auto_detect_metric_example auto_detect_metric_example.cpp)
 add_executable(kohonen_outliers_clustering_example kohonen_outliers_clustering_example.cpp)
-add_executable(KOC_MNIST_example KOC_MNIST_example.cpp)
 
 
 if(UNIX)
@@ -74,10 +73,6 @@ if(UNIX)
 	set_target_properties(kohonen_outliers_clustering_example PROPERTIES CXX_STANDARD 17)
 	target_compile_options(kohonen_outliers_clustering_example PRIVATE -pthread)
 	set_target_properties(kohonen_outliers_clustering_example PROPERTIES LINK_FLAGS -pthread)
-
-	set_target_properties(KOC_MNIST_example PROPERTIES CXX_STANDARD 17)
-	target_compile_options(KOC_MNIST_example PRIVATE -pthread)
-	set_target_properties(KOC_MNIST_example PROPERTIES LINK_FLAGS -pthread)
 endif(UNIX)
 
 find_package(LAPACK)
@@ -99,7 +94,6 @@ if(LAPACK_LIBRARIES)
 	target_link_libraries(ESN_example PRIVATE ${LAPACK_LIBRARIES})
 	target_link_libraries(auto_detect_metric_example PRIVATE ${LAPACK_LIBRARIES})
 	target_link_libraries(kohonen_outliers_clustering_example PRIVATE ${LAPACK_LIBRARIES})
-	target_link_libraries(KOC_MNIST_example PRIVATE ${LAPACK_LIBRARIES})
 endif(LAPACK_LIBRARIES)
  
 if(CMAKE_SYSTEM_NAME MATCHES Windows)
@@ -163,10 +157,6 @@ if(CMAKE_SYSTEM_NAME MATCHES Windows)
 	target_link_directories(kohonen_outliers_clustering_example PRIVATE ${PROJECT_SOURCE_DIR}/../../mkl/lib/intel64_win)
 	target_link_libraries(kohonen_outliers_clustering_example PRIVATE mkl_core.lib mkl_sequential.lib mkl_intel_lp64.lib)
 	target_link_libraries(kohonen_outliers_clustering_example PRIVATE ${Boost_LIBRARIES})
-
-	target_link_directories(KOC_MNIST_example PRIVATE ${PROJECT_SOURCE_DIR}/../../mkl/lib/intel64_win)
-	target_link_libraries(KOC_MNIST_example PRIVATE mkl_core.lib mkl_sequential.lib mkl_intel_lp64.lib)
-	target_link_libraries(KOC_MNIST_example PRIVATE ${Boost_LIBRARIES})
 endif()
 
 

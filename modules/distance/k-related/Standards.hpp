@@ -167,29 +167,6 @@ struct Cosine {
 };
 
 /**
- * @class CosineInverted
- *
- * @brief CosineInverted similarity. Means 1 - Cosine.
- *
- */
-
-template <typename V = double>
-struct CosineInverted {
-    using value_type = V;
-    using distance_type = value_type;
-
-    /**
-     * @brief calculate cosine similariy between two non-zero vector
-     *
-     * @param a first vector
-     * @param b second vector
-     * @return cosine similarity between a and b
-     */
-    template <typename Container>
-    distance_type operator()(const Container& a, const Container& b) const;
-};
-
-/**
  * @class Chebyshev
  *
  * @brief Chebyshev metric
