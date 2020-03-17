@@ -211,6 +211,11 @@ namespace metric {
 				metric_name = "manhatten";
 			}
 
+			if (min_cluster_size > nodes_data.size())
+			{
+				min_cluster_size = nodes_data.size();
+			}
+
 			while (current_min_cluster_size < min_cluster_size)
 			{
 				// clustering on the reduced data
@@ -233,6 +238,10 @@ namespace metric {
 				if (new_num_clusters == num_clusters)
 				{
 					new_num_clusters--;
+				}
+				if (new_num_clusters <= 0)
+				{
+					new_num_clusters = 1;
 				}
 
 				num_clusters = new_num_clusters;
@@ -276,18 +285,16 @@ namespace metric {
 		double start_learn_rate, double finish_learn_rate, size_t iterations, T distribution_min, T distribution_max) : 
 		graph_(nodesNumber), 
 		metric_(), 
-		distribution_(distribution_min, distribution_max)
+		distribution_(distribution_min, distribution_max),
+		anomaly_sigma_(anomaly_sigma),
+		start_learn_rate_(start_learn_rate),
+		finish_learn_rate_(finish_learn_rate),
+		iterations_(iterations),
+		random_seed_(std::chrono::system_clock::now().time_since_epoch().count()),	
+		neighborhood_start_size_(std::sqrt(double(nodesNumber))),
+		neigbour_range_decay_(2.0)
 	{
-		anomaly_sigma_ = anomaly_sigma; 
-
-		start_learn_rate_ = start_learn_rate;
-		finish_learn_rate_ = finish_learn_rate;
-		iterations_ = iterations;
 	
-		random_seed_ = std::chrono::system_clock::now().time_since_epoch().count();
-	
-		neighborhood_start_size_ = std::sqrt(double(nodesNumber));
-		neigbour_range_decay_ = 2.0;
 	}
 	
 	template <class recType, class Graph, class Metric, class Distribution>
@@ -295,18 +302,15 @@ namespace metric {
 		double start_learn_rate, double finish_learn_rate, size_t iterations, T distribution_min, T distribution_max) : 
 		graph_(nodesWidth, nodesHeight), 
 		metric_(), 
-		distribution_(distribution_min, distribution_max)
+		distribution_(distribution_min, distribution_max),
+		anomaly_sigma_(anomaly_sigma),
+		start_learn_rate_(start_learn_rate),
+		finish_learn_rate_(finish_learn_rate),
+		iterations_(iterations),
+		random_seed_(std::chrono::system_clock::now().time_since_epoch().count()),	
+		neighborhood_start_size_(std::sqrt(double(nodesWidth * nodesHeight))),
+		neigbour_range_decay_(2.0)
 	{
-		anomaly_sigma_ = anomaly_sigma; 
-
-		start_learn_rate_ = start_learn_rate;
-		finish_learn_rate_ = finish_learn_rate;
-		iterations_ = iterations;
-	
-		random_seed_ = std::chrono::system_clock::now().time_since_epoch().count();
-	
-		neighborhood_start_size_ = std::sqrt(double(nodesWidth * nodesHeight));
-		neigbour_range_decay_ = 2.0;
 	}
 	
 	template <class recType, class Graph, class Metric, class Distribution>
@@ -315,18 +319,15 @@ namespace metric {
 			double neighborhood_start_size, double neigbour_range_decay, long long random_seed) : 
 		graph_(nodesNumber), 
 		metric_(), 
-		distribution_(distribution_min, distribution_max)
+		distribution_(distribution_min, distribution_max),
+		anomaly_sigma_(anomaly_sigma),
+		start_learn_rate_(start_learn_rate),
+		finish_learn_rate_(finish_learn_rate),
+		iterations_(iterations),
+		random_seed_(random_seed),	
+		neighborhood_start_size_(neighborhood_start_size),
+		neigbour_range_decay_(neigbour_range_decay)
 	{
-		anomaly_sigma_ = anomaly_sigma; 
-
-		start_learn_rate_ = start_learn_rate;
-		finish_learn_rate_ = finish_learn_rate;
-		iterations_ = iterations;
-	
-		random_seed_ = random_seed;
-	
-		neighborhood_start_size_ = neighborhood_start_size;
-		neigbour_range_decay_ = neigbour_range_decay;
 	}
 	
 	template <class recType, class Graph, class Metric, class Distribution>
@@ -335,18 +336,15 @@ namespace metric {
 			double neighborhood_start_size, double neigbour_range_decay, long long random_seed) : 
 		graph_(nodesWidth, nodesHeight), 
 		metric_(), 
-		distribution_(distribution_min, distribution_max)
+		distribution_(distribution_min, distribution_max),
+		anomaly_sigma_(anomaly_sigma),
+		start_learn_rate_(start_learn_rate),
+		finish_learn_rate_(finish_learn_rate),
+		iterations_(iterations),
+		random_seed_(random_seed),	
+		neighborhood_start_size_(neighborhood_start_size),
+		neigbour_range_decay_(neigbour_range_decay)
 	{
-		anomaly_sigma_ = anomaly_sigma; 
-
-		start_learn_rate_ = start_learn_rate;
-		finish_learn_rate_ = finish_learn_rate;
-		iterations_ = iterations;
-	
-		random_seed_ = random_seed;
-	
-		neighborhood_start_size_ = neighborhood_start_size;
-		neigbour_range_decay_ = neigbour_range_decay;
 	}
 
 	
