@@ -196,7 +196,6 @@ void SOM<recType, Graph, Metric, Distribution>::subsampled_train_(const std::vec
 
     size_t idx = 0;
 
-	std::default_random_engine random_generator(random_seed);
 
     while (idx < iterations) {
 

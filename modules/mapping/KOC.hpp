@@ -44,7 +44,8 @@ namespace metric {
 			class Metric = metric::Euclidian<typename recType::value_type>, 
 			class Distribution = std::uniform_real_distribution<typename recType::value_type>
 		>
-		class KOC {
+		class KOC : public SOM<recType, Graph, Metric, Distribution> {
+
 			typedef typename recType::value_type T;
 
 		public:
@@ -53,7 +54,6 @@ namespace metric {
 				 * 
 				 * @param graph 
 				 * @param metric 
-				 * @param anomaly_sigma 
 				 * @param start_learn_rate 
 				 * @param finish_learn_rate 
 				 * @param iterations 
@@ -70,7 +70,6 @@ namespace metric {
 				 * 
 				 * @param graph 
 				 * @param metric 
-				 * @param anomaly_sigma 
 				 * @param start_learn_rate 
 				 * @param finish_learn_rate 
 				 * @param iterations 
@@ -98,51 +97,68 @@ namespace metric {
 				 * @param samples 
 				 * @param num_clusters 
 				 */
-			void train(const std::vector<recType>& samples, int num_clusters, int min_cluster_size = 1);
+
+			void train(const std::vector<recType>& samples, int num_clusters);
+
+			/**
+				 * @brief 
+				 * 
+				 * @param sample 
+				 * @param sigma 
+				 *  
+				 * @return std::vector<int>
+				 */
+			std::vector<int> encode(const std::vector<recType>& samples, double sigma = 1.0);
+
 
 			/**
 				 * @brief 
 				 * 
 				 * @param samples 
+				 * @param sigma 
 				 * 
 				 * @return std::vector<bool> 
 				 */
-			std::vector<bool> check_if_anomaly(const std::vector<recType>& samples);
+
+			std::vector<bool> check_if_anomaly(const std::vector<recType>& samples, double sigma = 1.0);
+
 
 			/**
 				 * @brief 
 				 * 
 				 * @param sample
+				 * @param sigma 
 				 * 
 				 * @return bool
 				 */
-			bool check_if_anomaly(const recType& sample);
+
+			bool check_if_anomaly(const recType& sample, double sigma = 1.0);
+
 
 			/**
 				 * @brief 
 				 * 
 				 * @param samples 
+
+				 * @param sigma 
 				 * 
 				 * @return std::vector<int>
 				 */
-			std::vector<int> assign_to_clusters(const std::vector<recType>& samples);
+			std::vector<int> result(const std::vector<recType>& samples, double sigma = 1.0);
 
 			/**
 				 * @brief 
 				 * 
 				 * @param samples 
+				 * @param sigma 
 				 * @param count 
 				 * 
-				 * @return std::tuple<std::vector<size_t>, std::vector<typename recType::value_type>> - two vectors, the first with indexes of the top outlier samples (sorted from the farest),
-				 * and the second with distances to std deviation edge from nodes coordinates (multiplied to anomaly_sigma, according to formula: distance = <distance to the best matchin node> - <std_deviation_of_the_node><anomaly_sigma>)
+				 * @return std::tuple<std::vector<size_t>, std::vector<typename recType::value_type>, std::vector<int>>
 				 */
-			std::tuple<std::vector<size_t>, std::vector<typename recType::value_type>> top_outliers(const std::vector<recType>& samples, int count = 10);
+			std::tuple<std::vector<size_t>, std::vector<typename recType::value_type>, std::vector<int>> top_outlier(const std::vector<recType>& samples, double sigma = 1.0, int count = 10);
 
 		private:
-			int min_cluster_size_ = 1;
-			double anomaly_sigma_ = 1;
-			size_t iterations_;
-			long long random_seed_;
+
 	
 			std::vector<int> clusters;	
 			std::vector<recType> centroids;	
@@ -150,7 +166,7 @@ namespace metric {
 	
 			std::vector<T> nodes_std_deviations;	
 
-			SOM<recType, Graph, Metric, Distribution> som_;
+
 
 			/**
 				 * @brief 
@@ -167,7 +183,9 @@ namespace metric {
 				 * 
 				 * @return std::tuple<std::vector<int>, std::vector<recType>, std::vector<int>>
 				 */
-			std::tuple<std::vector<int>, std::vector<recType>, std::vector<int>> clusterize_nodes(int num_clusters, int min_cluster_size = 1);
+
+			std::tuple<std::vector<int>, std::vector<recType>, std::vector<int>> clusterize_nodes(int num_clusters);
+
 
 			/**
 				 * @brief 
@@ -176,8 +194,26 @@ namespace metric {
 				 * @param sampleSize 
 				 * @param num_clusters 
 				 */
-			void estimate(const std::vector<recType>& samples, const size_t sampleSize, int num_clusters, int min_cluster_size = 1);
-						
+			void estimate(const std::vector<recType>& samples, const size_t sampleSize, int num_clusters);
+
+			/**
+				 * @brief 
+				 * 
+				 * @param sample 
+				 * 
+				 * @return size_t
+				 */
+			size_t BMU(const recType& sample) const override;
+
+			/**
+				 * @brief 
+				 * 
+				 * @param sample 
+				 * 
+				 * @return std::vector<double>
+				 */
+			std::vector<double> encode(const recType& sample) override;
+			
 			/**
 				 * @brief 
 				 * 
@@ -185,6 +221,7 @@ namespace metric {
 				 * 
 				 * @return std::vector<size_t>
 				 */
+
 			template <typename T1>
 			std::vector<size_t> sort_indexes(const std::vector<T1> &v);
 
@@ -272,7 +309,9 @@ namespace metric {
 			* 
 			* @return KOC_details::KOC<recType, Graph, Metric, Distribution>
 		 */
-		KOC_details::KOC<recType, Graph, Metric, Distribution> operator()(const std::vector<recType>& samples, int num_clusters, int min_cluster_size = 1);
+
+		KOC_details::KOC<recType, Graph, Metric, Distribution> operator()(const std::vector<recType>& samples, int num_clusters);
+
 
 	private:
 

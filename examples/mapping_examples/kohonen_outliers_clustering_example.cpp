@@ -207,8 +207,10 @@ int main(int argc, char *argv[])
 
 	using Record = std::vector<double>;
 				
-	size_t best_w_grid_size = 3;
-	size_t best_h_grid_size = 2;
+
+	size_t best_w_grid_size = 6;
+	size_t best_h_grid_size = 4;
+
 
 	// if overrided from arguments
 	
@@ -222,6 +224,7 @@ int main(int argc, char *argv[])
 	std::vector<std::vector<Record>> test_sets;
 	std::vector<std::string> dataset_names;
 	
+
 	std::vector<Record> dataset;
 	std::vector<Record> test_set;
 	std::vector<std::string> dates;
@@ -285,12 +288,11 @@ int main(int argc, char *argv[])
 	test_sets.push_back(test_set);
 
 	dataset_names.push_back("fisheriris dataset");
-
-	//
 	
 	dataset = readCsvData("assets/testdataset/multidim.csv", ',');
 	datasets.push_back(dataset);
 	
+
 	test_set = {	
 		{1.86,-0.5,0.01,0.36,-0.04,-0.35,0.11,0.09,0.57,-0.09,-0.03,0.05,-0.21,-0.21,0.04,-0.14,0.14,-0.11,0.18,-0.06,-0.04,0.08,-0.03,-0.13,0.11,0.02,0.04,-0.04,-0.14,-0.1}, 
 		{0.87,-0.97,0.24,0.18,0.23,0.35,0.21,-0.06,0.01,0.06,-0.1,0.02,-0.13,0.18,-0.43,0.06,-0.24,0.12,0.04,-0.2,-0.12,0.23,0.06,0.2,-0.09,0.01,0.28,0.01,0.11,-0.04}, 
@@ -321,13 +323,14 @@ int main(int argc, char *argv[])
 
 	dataset_names.push_back("swissroll dataset");
 
-	///
+	
 
 	// random seed for repeateable results
 	long long random_seed = 777;
 	double sigma = 1.5;
 
 	metric::KOC_factory<Record, metric::Grid4> simple_koc_factory(best_w_grid_size, best_h_grid_size, sigma, 0.5, 0.0, 300, -1, 1, 2, 0.5, random_seed);    
+
 
 	for (int i = 0; i < datasets.size(); i++)
 	{
@@ -341,32 +344,40 @@ int main(int argc, char *argv[])
 		dataset = datasets[i];
 		test_set = test_sets[i];
 
+		metric::KOC_factory<Record, metric::Grid4> simple_koc_factory(best_w_grid_size, best_h_grid_size, 0.5, 0.0, 300);    
 		auto simple_koc = simple_koc_factory(dataset, num_clusters); 
+
+		double sigma = 1.5;
 	
 	
 		std::cout << "train dataset:" << std::endl;
 
-		auto anomalies = simple_koc.check_if_anomaly(dataset);	
+		auto anomalies = simple_koc.check_if_anomaly(dataset, sigma);	
 		std::cout << std::endl;
 		std::cout << "anomalies:" << std::endl;
 		vector_print(anomalies);
 	
-		auto assignments = simple_koc.assign_to_clusters(dataset);	
+		auto assignments = simple_koc.result(dataset, sigma);	
 		std::cout << std::endl;
 		std::cout << "assignments:" << std::endl;
 		vector_print(assignments);
 	
+
 	
 		std::cout << std::endl;
 		std::cout << std::endl;
 		std::cout << "test dataset:" << std::endl;
 
-		anomalies = simple_koc.check_if_anomaly(test_set);	
+
+		anomalies = simple_koc.check_if_anomaly(test_set, sigma);	
+
 		std::cout << std::endl;
 		std::cout << "anomalies:" << std::endl;
 		vector_print(anomalies);
 	
-		assignments = simple_koc.assign_to_clusters(test_set);	
+
+		assignments = simple_koc.result(test_set, sigma);	
+
 		std::cout << std::endl;
 		std::cout << "assignments:" << std::endl;
 		vector_print(assignments);
@@ -377,7 +388,8 @@ int main(int argc, char *argv[])
 		std::cout << std::endl;
 		std::cout << "top outliers:" << std::endl;
 
-		auto [idxs, sorted_distances] = simple_koc.top_outliers(test_set, 10);
+		auto [idxs, sorted_distances, sorted_assignments] = simple_koc.top_outlier(test_set, sigma, 10);
+
 	
 		std::cout << std::endl;
 		std::cout << "sorted indexes:" << std::endl;
@@ -388,6 +400,11 @@ int main(int argc, char *argv[])
 		vector_print(sorted_distances);
 	
 		std::cout << std::endl;
+		std::cout << "sorted assignments:" << std::endl;
+		vector_print(sorted_assignments);
+	
+		std::cout << std::endl;
+
 		std::cout << std::endl;
 		std::cout << std::endl;
 	}
