@@ -44,7 +44,7 @@ namespace metric {
 			class Metric = metric::Euclidian<typename recType::value_type>, 
 			class Distribution = std::uniform_real_distribution<typename recType::value_type>
 		>
-		class KOC : public SOM<recType, Graph, Metric, Distribution> {
+		class KOC {
 			typedef typename recType::value_type T;
 
 		public:
@@ -60,8 +60,10 @@ namespace metric {
 				 * @param distribution 
 				 */
 			KOC(Graph graph, Metric metric, double anomaly_sigma = 1.0, double start_learn_rate = 0.8, double finish_learn_rate = 0.0, size_t iterations = 20, Distribution distribution = Distribution(-1, 1))
-				: SOM<recType, Graph, Metric, Distribution>(graph, metric, start_learn_rate, finish_learn_rate, iterations, distribution), 
-				anomaly_sigma_(anomaly_sigma) {};
+				: som_(graph, metric, start_learn_rate, finish_learn_rate, iterations, distribution), 
+				anomaly_sigma_(anomaly_sigma), 
+				iterations_(iterations),
+				random_seed_(std::chrono::system_clock::now().time_since_epoch().count()) {};
 
 			/**
 				 * @brief Construct a new KOC object
@@ -79,9 +81,10 @@ namespace metric {
 				 */
 			KOC(Graph graph, Metric metric, double anomaly_sigma, double start_learn_rate, double finish_learn_rate, size_t iterations, 
 				Distribution distribution, double neighborhood_start_size, double neigbour_range_decay, long long random_seed)
-				: SOM<recType, Graph, Metric, Distribution>(graph, metric, start_learn_rate, finish_learn_rate, iterations,  
-					distribution, neighborhood_start_size, neigbour_range_decay, random_seed), 
-				anomaly_sigma_(anomaly_sigma) {};
+				: som_(graph, metric, start_learn_rate, finish_learn_rate, iterations, distribution, neighborhood_start_size, neigbour_range_decay, random_seed), 
+				anomaly_sigma_(anomaly_sigma), 
+				iterations_(iterations), 
+				random_seed_(random_seed) {};
 
 			/**
 				 * @brief Destroy the KOC object
@@ -96,15 +99,6 @@ namespace metric {
 				 * @param num_clusters 
 				 */
 			void train(const std::vector<recType>& samples, int num_clusters, int min_cluster_size = 1);
-
-			/**
-				 * @brief 
-				 * 
-				 * @param sample 
-				 *  
-				 * @return std::vector<int>
-				 */
-			std::vector<int> encode(const std::vector<recType>& samples);
 
 			/**
 				 * @brief 
@@ -147,12 +141,16 @@ namespace metric {
 		private:
 			int min_cluster_size_ = 1;
 			double anomaly_sigma_ = 1;
+			size_t iterations_;
+			long long random_seed_;
 	
 			std::vector<int> clusters;	
 			std::vector<recType> centroids;	
 			std::vector<int> clusters_counts;	
 	
 			std::vector<T> nodes_std_deviations;	
+
+			SOM<recType, Graph, Metric, Distribution> som_;
 
 			/**
 				 * @brief 
@@ -179,25 +177,7 @@ namespace metric {
 				 * @param num_clusters 
 				 */
 			void estimate(const std::vector<recType>& samples, const size_t sampleSize, int num_clusters, int min_cluster_size = 1);
-
-			/**
-				 * @brief 
-				 * 
-				 * @param sample 
-				 * 
-				 * @return size_t
-				 */
-			size_t BMU(const recType& sample) const override;
-
-			/**
-				 * @brief 
-				 * 
-				 * @param sample 
-				 * 
-				 * @return std::vector<double>
-				 */
-			std::vector<double> encode(const recType& sample) override;
-			
+						
 			/**
 				 * @brief 
 				 * 

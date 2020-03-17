@@ -263,63 +263,63 @@ int main(int argc, char *argv[])
 
 	//
 	
-	//dataset = readCsvData("assets/testdataset/compound.csv", ',');
-	//datasets.push_back(dataset);
+	dataset = readCsvData("assets/testdataset/compound.csv", ',');
+	datasets.push_back(dataset);
 
-	//test_set = { {4, 0} };
-	//test_sets.push_back(test_set);
+	test_set = { {4, 0} };
+	test_sets.push_back(test_set);
 
-	//dataset_names.push_back("compound dataset");
+	dataset_names.push_back("compound dataset");
+	
 	//
-	////
-	//
-	//dataset = readCsvData("assets/testdataset/fisheriris.csv", ',');
-	//datasets.push_back(dataset);
+	
+	dataset = readCsvData("assets/testdataset/fisheriris.csv", ',');
+	datasets.push_back(dataset);
 
-	//test_set = {
-	//	{6.5, 3.2, 5.1, 2.2},
-	//	{6.1, 3.3, 5.3, 2.3},
-	//	{5.9, 3.1, 5.2, 1.8},
-	//	{8.3, 5.0, 5.0, 3.5}
-	//};
-	//test_sets.push_back(test_set);
+	test_set = {
+		{6.5, 3.2, 5.1, 2.2},
+		{6.1, 3.3, 5.3, 2.3},
+		{5.9, 3.1, 5.2, 1.8},
+		{8.3, 5.0, 5.0, 3.5}
+	};
+	test_sets.push_back(test_set);
 
-	//dataset_names.push_back("fisheriris dataset");
+	dataset_names.push_back("fisheriris dataset");
 
-	////
 	//
-	//dataset = readCsvData("assets/testdataset/multidim.csv", ',');
-	//datasets.push_back(dataset);
-	//
-	//test_set = {	
-	//	{1.86,-0.5,0.01,0.36,-0.04,-0.35,0.11,0.09,0.57,-0.09,-0.03,0.05,-0.21,-0.21,0.04,-0.14,0.14,-0.11,0.18,-0.06,-0.04,0.08,-0.03,-0.13,0.11,0.02,0.04,-0.04,-0.14,-0.1}, 
-	//	{0.87,-0.97,0.24,0.18,0.23,0.35,0.21,-0.06,0.01,0.06,-0.1,0.02,-0.13,0.18,-0.43,0.06,-0.24,0.12,0.04,-0.2,-0.12,0.23,0.06,0.2,-0.09,0.01,0.28,0.01,0.11,-0.04}, 
-	//	{2,2,0.4,0.01,-0.1,0.1,0.2,0.1,-0.1,0.4,-0.1,-0.01,0.3,0.2,0.3,0.01,0.2,0.1,-0.1,-0.1,-0.4,0.1,0.2,0.3,0.01,0.3,0.1,0.4,0.1,0.1}
-	//};
-	//test_sets.push_back(test_set);
+	
+	dataset = readCsvData("assets/testdataset/multidim.csv", ',');
+	datasets.push_back(dataset);
+	
+	test_set = {	
+		{1.86,-0.5,0.01,0.36,-0.04,-0.35,0.11,0.09,0.57,-0.09,-0.03,0.05,-0.21,-0.21,0.04,-0.14,0.14,-0.11,0.18,-0.06,-0.04,0.08,-0.03,-0.13,0.11,0.02,0.04,-0.04,-0.14,-0.1}, 
+		{0.87,-0.97,0.24,0.18,0.23,0.35,0.21,-0.06,0.01,0.06,-0.1,0.02,-0.13,0.18,-0.43,0.06,-0.24,0.12,0.04,-0.2,-0.12,0.23,0.06,0.2,-0.09,0.01,0.28,0.01,0.11,-0.04}, 
+		{2,2,0.4,0.01,-0.1,0.1,0.2,0.1,-0.1,0.4,-0.1,-0.01,0.3,0.2,0.3,0.01,0.2,0.1,-0.1,-0.1,-0.4,0.1,0.2,0.3,0.01,0.3,0.1,0.4,0.1,0.1}
+	};
+	test_sets.push_back(test_set);
 
-	//dataset_names.push_back("multidim dataset");
+	dataset_names.push_back("multidim dataset");
+	
 	//
-	////
-	//
-	//std::tie(dates, dataset) = readCsvData2("assets/testdataset/nyc_taxi.csv", ',');
-	//datasets.push_back(dataset);
-	//
-	//test_set = { dataset[2], dataset[12], dataset[22], dataset[53], dataset[84], dataset[122], dataset[123], dataset[149], dataset[162], dataset[163], 
-	//	dataset[183], dataset[184], dataset[192], dataset[199], dataset[201]  };
-	//test_sets.push_back(test_set);
+	
+	std::tie(dates, dataset) = readCsvData2("assets/testdataset/nyc_taxi.csv", ',');
+	datasets.push_back(dataset);
+	
+	test_set = { dataset[2], dataset[12], dataset[22], dataset[53], dataset[84], dataset[122], dataset[123], dataset[149], dataset[162], dataset[163], 
+		dataset[183], dataset[184], dataset[192], dataset[199], dataset[201]  };
+	test_sets.push_back(test_set);
 
-	//dataset_names.push_back("NYC taxi dataset");
+	dataset_names.push_back("NYC taxi dataset");
+	
 	//
-	////
-	//
-	//dataset = readCsvData("assets/testdataset/3d_swissroll.csv", ',');
-	//datasets.push_back(dataset);
+	
+	dataset = readCsvData("assets/testdataset/3d_swissroll.csv", ',');
+	datasets.push_back(dataset);
 
-	//test_set = { dataset[2], dataset[12], dataset[22]  };
-	//test_sets.push_back(test_set);
+	test_set = { dataset[2], dataset[12], dataset[22]  };
+	test_sets.push_back(test_set);
 
-	//dataset_names.push_back("swissroll dataset");
+	dataset_names.push_back("swissroll dataset");
 
 	///
 
