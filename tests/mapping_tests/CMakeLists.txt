@@ -2,8 +2,7 @@ cmake_minimum_required(VERSION 3.10)
 
 enable_testing()
 
-set(Boost_DEBUG on)  
-find_package(Boost)
+set(Boost_DEBUG on)
 find_package(LAPACK)
 
 project(mapping_tests)
@@ -23,9 +22,11 @@ add_executable(mapping_tests mapping_tests.cpp)
 
 target_include_directories(mapping_tests PRIVATE ${Boost_INCLUDE_DIRS})
 target_link_directories(mapping_tests PRIVATE ${BOOST_LINK_DIRS})
-target_link_libraries(mapping_tests ${Boost_LIBRARIES})
+target_link_libraries(mapping_tests PRIVATE ${Boost_LIBRARIES})
 
 if(UNIX)
+    set(THREADS_PREFER_PTHREAD_FLAG ON)
+    find_package(Threads REQUIRED)
 	set_target_properties(mapping_tests PROPERTIES CXX_STANDARD 17)
 endif(UNIX)
 
@@ -37,7 +38,7 @@ add_executable(koc_tests kohonen_outliers_clustering_tests.cpp)
 
 target_include_directories(koc_tests PRIVATE ${Boost_INCLUDE_DIRS})
 target_link_directories(koc_tests PRIVATE ${BOOST_LINK_DIRS})
-target_link_libraries(koc_tests ${Boost_LIBRARIES})
+target_link_libraries(koc_tests PRIVATE ${Boost_LIBRARIES})
 
 if(UNIX)
 	set_target_properties(koc_tests PROPERTIES CXX_STANDARD 17)
