@@ -11,7 +11,7 @@ def time_n_log(*funcs, **func_names):
     """
     def wrapper(*_args, **_kwargs):
         if funcs:
-            func = funcs.pop()
+            func = funcs[0]
             func_name = func.__name__
         else:
             func_name, func = func_names.popitem()
