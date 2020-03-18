@@ -50,9 +50,6 @@ void export_metric_EMD() {
         ));
     V (Class::*call)(const Vector&, const Vector&) const = &Class::operator()<Vector>;
     emd.def("__call__", call);
-//        .def("__call__", +[](Class& self, py::object A, py::object B) {
-//            return self.operator()(WrapStlVector<V>(A), WrapStlVector<V>(B));
-//        })
     emd.def("ground_distance_matrix_of_2dgrid", func1, (py::arg("cols"), py::arg("rows")));
     //emd.def("ground_distance_matrix_of_2dgrid", func2, (py::arg("grid"));
     emd.def("max_in_distance_matrix", metric::EMD_details::max_in_distance_matrix<Container>);

@@ -11,8 +11,10 @@ void register_wrapper_SSIM() {
     using ValueType = typename Value::value_type;
     using Container = typename std::vector<Value>;
     py::class_<Metric>("SSIM")
-        .def(py::init<ValueType, ValueType>((py::arg("dynamic_range_"), py::arg("masking_"))))
-        .def("__call__", &Metric::template operator()<Container>);
+        .def(py::init<ValueType, ValueType>((py::arg("dynamic_range"), py::arg("masking"))))
+        .def("__call__", &Metric::template operator()<Container>)
+        .def_readonly("dynamic_range", &Metric::dynamic_range)
+        .def_readonly("masking", &Metric::masking);
 }
 
 void export_metric_SSIM() {
