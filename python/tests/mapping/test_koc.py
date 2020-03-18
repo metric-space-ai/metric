@@ -22,14 +22,20 @@ def test_ok():
         [8, 0, 0],
     ])
 
-    koc_factory = KOC_factory(best_w_grid_size, best_h_grid_size, 0.5, 0.0, 100)
+    koc_factory = KOC_factory(nodes_width=best_w_grid_size,
+                              nodes_height=best_h_grid_size,
+                              anomaly_sigma=anomaly_threshold,
+                              start_learn_rate=0.5,
+                              finish_learn_rate=0.0,
+                              iterations=100)
     koc = koc_factory(dataset, 5)
 
-    anomaly1 = koc.check_if_anomaly(samples=dataset, anomaly_threshold=anomaly_threshold)
-    anomaly2 = koc.check_if_anomaly(samples=dataset, anomaly_threshold=anomaly_threshold)
+    anomaly1 = koc.check_if_anomaly(samples=dataset)
+    anomaly2 = koc.check_if_anomaly(samples=dataset)
 
-    assignments1 = koc.result(dataset, anomaly_threshold)
-    assignments2 = koc.result(dataset, anomaly_threshold)
+    indexes1, distances1 = koc.top_outliers(dataset)
+    indexes2, distances2 = koc.top_outliers(dataset)
 
     assert list(anomaly1) == list(anomaly2)
-    assert list(assignments1) == list(assignments2)
+    assert list(indexes1) == list(indexes2)
+    assert list(distances1) == list(distances2)

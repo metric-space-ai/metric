@@ -3,8 +3,10 @@
 #include "modules/distance/k-random/VOI.hpp"    // FIXME: and this
 #include "modules/mapping/KOC.hpp"
 
+
 #include <boost/python.hpp>
 #include <typeindex>
+#include <tuple>
 
 namespace py = boost::python;
 
@@ -106,7 +108,10 @@ void wrap_metric_KOC() {
             py::arg("min_cluster_size") = 1
         )
     );
-    koc.def("top_outliers", &KOC::top_outliers,
+    koc.def("top_outliers", +[](KOC& self, const std::vector<Record>& samples, int count){
+        auto result = self.top_outliers(samples, count);
+        return py::make_tuple(std::get<0>(result), std::get<1>(result));
+    },
         (
             py::arg("samples"),
             py::arg("count") = 10
