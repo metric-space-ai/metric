@@ -196,10 +196,12 @@ void SOM<recType, Graph, Metric, Distribution>::subsampled_train_(const std::vec
 
     size_t idx = 0;
 
+	std::default_random_engine random_generator(random_seed);
+
     while (idx < iterations) {
 
 		// shuffle samples after all was processed		
-        std::shuffle(randomized_samples.begin(), randomized_samples.end(), std::mt19937 { std::random_device {}() });
+        std::shuffle(randomized_samples.begin(), randomized_samples.end(), random_generator);
 
 		for (auto idx_r = 0; idx_r < randomized_samples.size(); idx_r++)
 		{
