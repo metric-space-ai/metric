@@ -84,7 +84,7 @@ int main()
 	metric::kohonen_distance<double, std::vector<double>> distance_1(simple_grid, grid_w, grid_h);
 
 	auto t1 = std::chrono::steady_clock::now();
-	auto result = distance_1(simple_grid[0], simple_grid[5]);
+	auto result = distance_1(simple_grid[2], simple_grid[3]);
 	auto t2 = std::chrono::steady_clock::now();
 	std::cout << "result: " << result << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000 << " s)" << std::endl;
 	std::cout << "" << std::endl;

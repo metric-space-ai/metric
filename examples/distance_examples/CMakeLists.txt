@@ -15,7 +15,7 @@ include_directories(
     )
 
 include_directories(${Boost_INCLUDE_DIRS}) 
-	
+	 
 file(COPY "assets" DESTINATION ".")
 
 file(GLOB EXAMPLE_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.cpp) 
@@ -34,14 +34,14 @@ foreach(exampleSrc ${EXAMPLE_SRCS})
 	set_target_properties(${exampleName} PROPERTIES CXX_STANDARD 17)
 
 #  target_link_libraries(${exampleName} ${LAPACK_LIBRARIES})
-	if(UNIX)
+	if(UNIX) 
 		set(THREADS_PREFER_PTHREAD_FLAG ON)
 		set(CMAKE_CXX_FLAGS "-O3")
 
 		target_link_libraries(${exampleName} Threads::Threads)
 
 		target_compile_options(${exampleName} PRIVATE -pthread)
-		set_target_properties(${exampleName} PROPERTIES LINK_FLAGS -pthread)
+		set_target_properties(${exampleName} PROPERTIES LINK_FLAGS -pthread) 
 	endif(UNIX) 
 
 endforeach(exampleSrc)
