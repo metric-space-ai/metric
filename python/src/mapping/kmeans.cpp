@@ -1,3 +1,4 @@
+#include <chrono>  // FIXME
 #include "modules/mapping/kmeans.hpp"
 
 #include <boost/python.hpp>

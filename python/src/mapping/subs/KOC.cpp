@@ -26,9 +26,10 @@ void wrap_metric_KOC() {
     auto factory = py::class_<Factory>(className.c_str());
 
     factory.def(
-        py::init<size_t, double, double, size_t, value_type, value_type>(
+        py::init<size_t, double, double, double, size_t, value_type, value_type>(
             (
-                py::arg("nodesNumber"),
+                py::arg("nodes_number"),
+                py::arg("anomaly_sigma"),
                 py::arg("start_learn_rate")= 0.8,
                 py::arg("finish_learn_rate") = 0.0,
                 py::arg("iterations") = 20,
@@ -38,10 +39,11 @@ void wrap_metric_KOC() {
         )
     );
     factory.def(
-        py::init<size_t, size_t, double, double, size_t, value_type, value_type>(
+        py::init<size_t, size_t, double, double, double, size_t, value_type, value_type>(
             (
-                py::arg("nodesWidth") = 5,
-                py::arg("nodesHeight") = 4,
+                py::arg("nodes_width") = 5,
+                py::arg("nodes_height") = 4,
+                py::arg("anomaly_sigma") = 1.0,
                 py::arg("start_learn_rate") = 0.8,
                 py::arg("finish_learn_rate") = 0.0,
                 py::arg("iterations") = 20,
@@ -51,9 +53,10 @@ void wrap_metric_KOC() {
         )
     );
     factory.def(
-        py::init<size_t, double, double, size_t, value_type, value_type, double, double, long long>(
+        py::init<size_t, double, double, double, size_t, value_type, value_type, double, double, long long>(
             (
-                py::arg("nodesNumber"),
+                py::arg("nodes_number"),
+                py::arg("anomaly_sigma"),
                 py::arg("start_learn_rate"),
                 py::arg("finish_learn_rate"),
                 py::arg("iterations"),
@@ -66,10 +69,11 @@ void wrap_metric_KOC() {
         )
     );
     factory.def(
-        py::init<size_t, size_t, double, double, size_t, value_type, value_type, double, double, long long>(
+        py::init<size_t, size_t, double, double, double, size_t, value_type, value_type, double, double, long long>(
             (
-                py::arg("nodesWidth"),
-                py::arg("nodesHeight"),
+                py::arg("nodes_width"),
+                py::arg("nodes_height"),
+                py::arg("anomaly_sigma"),
                 py::arg("start_learn_rate"),
                 py::arg("finish_learn_rate"),
                 py::arg("iterations"),
@@ -82,20 +86,35 @@ void wrap_metric_KOC() {
         )
     );
 
-    factory.def("__call__", &Factory::operator(), "construct KOC");
-
-    std::vector<bool> (KOC::*check_if_anomaly1)(const std::vector<Record>&, double) = &KOC::check_if_anomaly;
-    bool (KOC::*check_if_anomaly2)(const Record&, double) = &KOC::check_if_anomaly;
+    factory.def("__call__", &Factory::operator(), "construct KOC",
+        (
+            py::arg("samples"),
+            py::arg("num_clusters"),
+            py::arg("min_cluster_size") = 1
+        )
+    );
 
     // KOC
     className = "KOC_" + getGraphName<Graph>() + "_" + getMetricName<Metric>();
     auto koc = py::class_<KOC>(className.c_str(), py::no_init);
-    std::vector<int> (KOC::*encode)(const std::vector<Record>&, double) = &KOC::encode;
-    koc.def("train", &KOC::train);
-    koc.def("result", &KOC::result);
-    koc.def("encode", encode);
-    koc.def("check_if_anomaly", check_if_anomaly1, (py::arg("samples"), py::arg("anomaly_threshold") = 0.0));
-    koc.def("check_if_anomaly", check_if_anomaly2, (py::arg("sample"), py::arg("anomaly_threshold") = 0.0));
+    std::vector<bool> (KOC::*check_if_anomaly1)(const std::vector<Record>&) = &KOC::check_if_anomaly;
+    bool (KOC::*check_if_anomaly2)(const Record&) = &KOC::check_if_anomaly;
+    koc.def("train", &KOC::train,
+        (
+            py::arg("samples"),
+            py::arg("num_clusters"),
+            py::arg("min_cluster_size") = 1
+        )
+    );
+    koc.def("top_outliers", &KOC::top_outliers,
+        (
+            py::arg("samples"),
+            py::arg("count") = 10
+        )
+    );
+    koc.def("assign_to_clusters", &KOC::assign_to_clusters, (py::arg("samples")));
+    koc.def("check_if_anomaly", check_if_anomaly1, (py::arg("samples")));
+    koc.def("check_if_anomaly", check_if_anomaly2, (py::arg("sample")));
 }
 
 // TODO: make loop over metrics and graphs
