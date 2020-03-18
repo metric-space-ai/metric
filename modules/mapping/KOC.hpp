@@ -38,8 +38,13 @@ namespace metric {
 			 *@brief 
 			 * 
 			 */
-		template <typename recType, class Graph = metric::Grid6, class Metric = metric::Euclidian<typename recType::value_type>, class Distribution = std::uniform_real_distribution<typename recType::value_type>
-		>class KOC  {
+		template <
+			typename recType,
+			class Graph = metric::Grid6,
+			class Metric = metric::Euclidian<typename recType::value_type>,
+			class Distribution = std::uniform_real_distribution<typename recType::value_type>
+		>
+		class KOC {
 			typedef typename recType::value_type T;
 
 		public:
@@ -54,13 +59,8 @@ namespace metric {
 				 * @param iterations
 				 * @param distribution
 				 */
-			KOC(Graph graph,
-			    Metric metric,
-			    double anomaly_sigma = 1.0, double start_learn_rate = 0.8,
-			    double finish_learn_rate = 0.0,
-			    size_t iterations = 20,
-			    Distribution distribution = Distribution(-1, 1)
-            ): som_(graph, metric, start_learn_rate, finish_learn_rate, iterations, distribution),
+			KOC(Graph graph, Metric metric, double anomaly_sigma = 1.0, double start_learn_rate = 0.8, double finish_learn_rate = 0.0, size_t iterations = 20, Distribution distribution = Distribution(-1, 1))
+				: som_(graph, metric, start_learn_rate, finish_learn_rate, iterations, distribution),
 				anomaly_sigma_(anomaly_sigma),
 				iterations_(iterations),
 				random_seed_(std::chrono::system_clock::now().time_since_epoch().count()) {};
@@ -79,14 +79,8 @@ namespace metric {
 				 * @param neigbour_range_decay 
 				 * @param random_seed 
 				 */
-			KOC(Graph graph, Metric metric,
-			    double anomaly_sigma, double start_learn_rate,
-			    double finish_learn_rate,
-			    size_t iterations,
-				Distribution distribution,
-				double neighborhood_start_size,
-				double neigbour_range_decay,
-				long long random_seed)
+			KOC(Graph graph, Metric metric, double anomaly_sigma, double start_learn_rate, double finish_learn_rate, size_t iterations,
+				Distribution distribution, double neighborhood_start_size, double neigbour_range_decay, long long random_seed)
 				: som_(graph, metric, start_learn_rate, finish_learn_rate, iterations, distribution, neighborhood_start_size, neigbour_range_decay, random_seed),
 				anomaly_sigma_(anomaly_sigma),
 				iterations_(iterations),
@@ -200,7 +194,12 @@ namespace metric {
 	
 	//
 	
-	template <typename recType, class Graph = metric::Grid6, class Metric = metric::Euclidian<typename recType::value_type>, class Distribution = std::uniform_real_distribution<typename recType::value_type>>
+	template <
+		typename recType,
+		class Graph = metric::Grid6,
+		class Metric = metric::Euclidian<typename recType::value_type>,
+		class Distribution = std::uniform_real_distribution<typename recType::value_type>
+	>
 	struct KOC_factory {
 		
 		typedef typename recType::value_type T;
@@ -216,12 +215,7 @@ namespace metric {
 			* @param distribution_min
 			* @param distribution_max
 		 */
-		KOC_factory(size_t nodesNumber,
-		            double anomaly_sigma, double start_learn_rate = 0.8,
-		            double finish_learn_rate = 0.0,
-		            size_t iterations = 20,
-		            T distribution_min = -1,
-		            T distribution_max = 1);
+		KOC_factory(size_t nodesNumber, double anomaly_sigma, double start_learn_rate = 0.8, double finish_learn_rate = 0.0, size_t iterations = 20, T distribution_min = -1, T distribution_max = 1);
 
 		/**
 			* @brief
@@ -234,13 +228,7 @@ namespace metric {
 			* @param distribution_min
 			* @param distribution_max
 		 */
-		KOC_factory(size_t nodesWidth = 5,
-		            size_t nodesHeight = 4,
-		            double anomaly_sigma = 1.0, double start_learn_rate = 0.8,
-		            double finish_learn_rate = 0.0,
-		            size_t iterations = 20,
-		            T distribution_min = -1,
-		            T distribution_max = 1);
+		KOC_factory(size_t nodesWidth = 5, size_t nodesHeight = 4, double anomaly_sigma = 1.0, double start_learn_rate = 0.8, double finish_learn_rate = 0.0, size_t iterations = 20, T distribution_min = -1, T distribution_max = 1);
 
 		/**
 			* @brief
@@ -256,14 +244,8 @@ namespace metric {
 			* @param random_seed
 		 */
 		KOC_factory(size_t nodesNumber, double anomaly_sigma,
-                    double start_learn_rate,
-                    double finish_learn_rate,
-                    size_t iterations,
-                    T distribution_min,
-                    T distribution_max,
-                    double neighborhood_start_size,
-                    double neigbour_range_decay,
-                    long long random_seed);
+			double start_learn_rate, double finish_learn_rate, size_t iterations, T distribution_min, T distribution_max,
+			double neighborhood_start_size, double neigbour_range_decay, long long random_seed);
 
 		/**
 			* @brief

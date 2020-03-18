@@ -143,7 +143,7 @@ public:
     Tree(const recType& p, int truncate = -1, Metric d = Metric());  // cover tree with one data record as root
 
     /**
-     * @brief Construct a Tree object from Container
+     * @brief Construct a Tree object from data vector
      *
      * @param p vector of data records to store in tree
      * @param truncate truncate paramter

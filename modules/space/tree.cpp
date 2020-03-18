@@ -322,7 +322,7 @@ Tree<recType, Metric>::Tree(const recType& p, int truncateArg /*=-1*/, Metric d)
     root->ID = add_value(p);
 }
 
-/*** constructor: with a container **/
+/*** constructor: with a vector data records **/
 template <class recType, class Metric>
 template <class Container>
 Tree<recType, Metric>::Tree(const Container& p, int truncateArg /*=-1*/, Metric d)
