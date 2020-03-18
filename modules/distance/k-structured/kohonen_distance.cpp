@@ -10,7 +10,7 @@ Copyright (c) 2019 PANDA Team
 #define _METRIC_DISTANCE_K_STRUCTURED_KOHONEN_CPP
 
 #include "kohonen_distance.hpp"
-#include "../../3rdparty/blaze/Blaze.h"
+#include "../../../3rdparty/blaze/Blaze.h"
 #include <cmath>
 #include <vector>
 
