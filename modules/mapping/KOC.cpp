@@ -170,11 +170,11 @@ namespace metric {
 			auto nodes_data = som_.get_weights();
 
 			std::string metric_name = "euclidian";
-			if (typeid(Metric) == typeid(metric::CosineInverted<Metric::value_type>))
+			if (typeid(Metric) == typeid(metric::CosineInverted<typename Metric::value_type>))
 			{
 				metric_name = "cosine_inverted";
 			}
-			else if (typeid(Metric) == typeid(metric::Manhatten<Metric::value_type>))
+			else if (typeid(Metric) == typeid(metric::Manhatten<typename Metric::value_type>))
 			{
 				metric_name = "manhatten";
 			}
