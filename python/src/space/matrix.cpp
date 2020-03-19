@@ -16,7 +16,7 @@ void register_wrapper_matrix() {
     std::pair<std::size_t, bool> (Matrix::*insert_if1)(const recType&, typename Matrix::distType) = &Matrix::insert_if;
     std::vector<std::pair<std::size_t, bool>> (Matrix::*insert_if2)(const Container&, typename Matrix::distType) = &Matrix::insert_if;
 
-    py::class_<Matrix>("Matrix", py::init())
+    py::class_<Matrix>("Matrix")
         .def(py::init<const recType&>(
             (
                 py::arg("p")

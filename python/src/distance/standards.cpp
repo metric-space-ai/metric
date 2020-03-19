@@ -32,7 +32,7 @@ void register_wrapper_pnorm() {
 template<typename Value, typename Container>
 void register_wrapper_euclidean_thresholded() {
     using Metric = metric::Euclidian_thresholded<Value>;
-    py::class_<Metric>("Euclidean_thresholded", py::init())
+    py::class_<Metric>("Euclidean_thresholded")
         .def(py::init<Value, Value>((py::arg("thres"), py::arg("factor"))))
         .def("__call__", &Metric::template operator()<Container>);
 }

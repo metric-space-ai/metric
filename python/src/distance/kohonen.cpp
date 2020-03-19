@@ -15,24 +15,22 @@ template <typename D,
 
 
 	kohonen_distance(metric::SOM<Sample, Graph, Metric, Distribution> som_model);   <---------- ???
-
-	kohonen_distance(std::vector<Sample>& samples,
-	                size_t nodesWidth,
-	                size_t nodesHeight);
-	kohonen_distance(std::vector<Sample>& samples,
-                    Graph graph,
-                    Metric metric = Metric(),
-                    double start_learn_rate = 0.8,
-                    double finish_learn_rate = 0.0,
-                    size_t iterations = 20,
-                    Distribution distribution = Distribution(-1, 1));
-
 */
 
-template<typename DistanceType, typename Sample>
+template<typename DistanceType, typename Sample, typename Graph, typename Metric>
 void register_wrapper_kohonen() {
-    using Metric = metric::kohonen_distance<DistanceType, Sample>;
-    auto metric = py::class_<Metric>("Kohonen", py::no_init);
+    using Class = metric::kohonen_distance<DistanceType, Sample>;
+    auto metric = py::class_<Class>("Kohonen", py::no_init);
+    metric.def(py::init<const std::vector<Sample>&, Graph, Metric, double, double, size_t>(
+        (
+            py::arg("samples"),
+            py::arg("graph"),
+            py::arg("metric"),
+            py::arg("start_learn_rate") = 0.8,
+            py::arg("finish_learn_rate") = 0.0,
+            py::arg("iterations") = 20
+        )
+    ));
     metric.def(py::init<const std::vector<Sample>&, size_t, size_t>(
         (
             py::arg("samples"),
@@ -40,9 +38,24 @@ void register_wrapper_kohonen() {
             py::arg("nodes_height")
         )
     ));
-    metric.def("__call__", &Metric::operator());
+    metric.def("__call__", &Class::operator(),
+        (
+            py::arg("sample1"),
+            py::arg("sample2")
+        ),
+        "Compute the EMD for two records in the Kohonen space."
+    );
+    metric.def("print_shortest_path", &Class::print_shortest_path,
+        (
+            py::arg("from_node"),
+            py::arg("to_node")
+        ),
+        "Recursive function that reconstructs the shortest backwards node by node."
+    );
 }
 
 void export_metric_kohonen() {
-    register_wrapper_kohonen<double, std::vector<double>>();
+    using DistanceType = double;
+    using SampleType = std::vector<DistanceType>;
+    register_wrapper_kohonen<DistanceType, SampleType, metric::Grid4, metric::Euclidian<DistanceType>>();
 }

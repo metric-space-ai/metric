@@ -15,7 +15,13 @@ void register_wrapper() {
 
     {
         using Specialization = double (*)(const std::vector<Value>&, const std::vector<Value>&);
-        py::def<Specialization>("sorensen", &metric::sorensen<std::vector<Value>>);
+        py::def<Specialization>("sorensen", &metric::sorensen<std::vector<Value>>,
+            (
+                py::arg("a"),
+                py::arg("b")
+            ),
+            "Sørensen–Dice coefficient"
+        );
     }
 }
 
