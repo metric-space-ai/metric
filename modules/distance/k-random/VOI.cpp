@@ -31,9 +31,9 @@ namespace {
     template <typename C>
     void add_noise(C & data)
     {
+        using T = type_traits::underlaying_type_t<C>;
         std::random_device rd;
         std::mt19937 gen(rd());
-        using T = type_traits::underlaying_type_t<C>;
         std::normal_distribution<T> dis(0, 1);
         double c = 1e-10;
         for (auto& v : data) {
