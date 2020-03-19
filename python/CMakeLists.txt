@@ -15,17 +15,14 @@ SET(METRIC_SOURCE_PATH ${CMAKE_SOURCE_DIR}/..)
 find_package(Python3 COMPONENTS Interpreter Development)
 
 # rasbian has python3 while arch has python
+set(Boost_DEBUG on)
 find_package(Boost COMPONENTS python3)
 If (Boost_FOUND)
 else ()
 find_package(Boost COMPONENTS python REQUIRED)
 endif ()
 
-find_package(BLAS)
-find_package(LAPACK)
-if(LAPACK_FOUND AND BLAS_FOUND)
-   set(lapackblas_libraries ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
-endif()
+find_package(LAPACK REQUIRED)
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 else ()
@@ -35,7 +32,7 @@ endif ()
 set(COMMON_LIBRARIES
     ${Boost_LIBRARIES}
     ${Python3_LIBRARIES}
-    ${lapackblas_libraries}
+    ${LAPACK_LIBRARIES}
 )
 
 SET(HEADER_INCLUDE_PATH
