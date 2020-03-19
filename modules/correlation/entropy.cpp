@@ -367,6 +367,7 @@ double entropy_kpN<recType, Metric>::operator()(
     assert(k < p);
 
     double h = 0;
+    int got_results = 0;  // absents in Matlab original code
 
     metric::Tree<Container, Metric> tree (X, -1, metric);
     blaze::DynamicMatrix<double> Nodes (p, d, 0);
@@ -388,7 +389,9 @@ double entropy_kpN<recType, Metric>::operator()(
         }
         mu = mu/p;
         Nodes = Nodes - blaze::expand(blaze::trans(mu), Nodes.rows());
-        auto K = blaze::evaluate( (blaze::trans(Nodes) * Nodes)*p/(p - 1) + blaze::IdentityMatrix<double>(d)*double(1e-8) );
+        double offset = 1e-8;
+        //double offset = 1e-5; // todo compute depending of machine epsilon
+        auto K = blaze::evaluate( (blaze::trans(Nodes) * Nodes)*p/(p - 1) + blaze::IdentityMatrix<double>(d)*offset );
 
         blaze::reset(lb);
         blaze::reset(ub);
@@ -398,22 +401,28 @@ double entropy_kpN<recType, Metric>::operator()(
             x_vector[d_idx] = X[i][d_idx];
         }
 
-        //std::cout << "---- mu:\n" << mu << "\n"; // TODO remove
-        //std::cout << "---- K:\n" << K << "\n";
-        //std::cout << "---- lb:\n" << lb << "\n";
-        //std::cout << "---- ub:\n" << ub << "\n";
+//        std::cout << "---- mu:\n" << mu << "\n"; // TODO remove
+//        std::cout << "---- K:\n" << K << "\n";
+//        std::cout << "---- lb:\n" << lb << "\n";
+//        std::cout << "---- ub:\n" << ub << "\n";
         //std::cout << "---- Nodes:\n" << Nodes << "\n";
         //std::cout << "---- Cov:\n" << (blaze::trans(Nodes) * Nodes)/(p - 1) << "\n";
 
         auto g_local = epmgp::local_gaussian_axis_aligned_hyperrectangles<double>(mu, K, lb, ub);
         double logG = std::get<0>(g_local);
 
-        double g = mvnpdf(x_vector, mu, K);
+        if (!std::isnan(logG)) { // UNLIKE original Matlab code, we exclude points that result in NaN, TODO check math validity
+            double g = mvnpdf(x_vector, mu, K);
+            h += logG - std::log(g);
+            got_results++;
+        }
 
-        h += logG - std::log(g);
     }
 
-    return boost::math::digamma(n) - boost::math::digamma(k) + h/n;
+    if (got_results > 20) // absents in Matlab original code
+        return boost::math::digamma(n) - boost::math::digamma(k) + h/n;
+    else
+        return std::nan("not defined");
 }
 
 
