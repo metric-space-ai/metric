@@ -20,6 +20,6 @@ MAKE="make -j1" python3 setup.py bdist_wheel
 
 ## Install module
 
-sudo pip3 install dist/metric-&lt;version&gt;-cp37-cp37m-linux_&lt;arch&gt;.whl
+python3 -m pip install dist/*
 
 ## [Examples](examples)
