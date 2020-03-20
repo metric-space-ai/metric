@@ -350,11 +350,11 @@ public:
      */
     KNNGraph(const KNNGraph& graph);
 
-    /**
-     * @brief Construct a new KNN Graph object
-     * 
-     */
-    KNNGraph(Tree<Sample, Distance>& tree, size_t neighbors_num, size_t max_bruteforce_size, int max_iterations = 100, double update_range = 0.02);
+    ///**
+    // * @brief Construct a new KNN Graph object
+    // * 
+    // */
+    //KNNGraph(Tree<Sample, Distance>& tree, size_t neighbors_num, size_t max_bruteforce_size, int max_iterations = 100, double update_range = 0.02);
 
     ///**
     // * @brief Construct a new KNN Graph object
