@@ -27,7 +27,7 @@ void print_entropies(size_t step, size_t dim, size_t k) {
     std::vector<std::deque<double>> v;
 
     std::cout << "\nlength | entropy | kpN entropy (k*2) | kpN entropy (k*3) | kpN entropy (k*4) | kpN entropy (k*10) \n";
-    for (size_t i = 0; i<20; ++i) {
+    for (size_t i = 0; i<10; ++i) {
 
         for (size_t j = 0; j<step; ++j) {
             std::deque<double> row;
@@ -59,7 +59,7 @@ int main() {
     size_t step = 1000;
 
     std::vector<size_t> dim_values = {1, 2, 5, 25}; // {1, 2, 3, 4, 5, 7, 10, 25};
-    std::vector<size_t> k_values =  {30}; // {3, 5, 10, 15, 20, 30}; //, 50};
+    std::vector<size_t> k_values =  {3, 30}; // {3, 5, 10, 15, 20, 30}; //, 50};
 
     for (size_t i_k = 0; i_k < k_values.size(); ++i_k)
         for (size_t i_dim = 0; i_dim < dim_values.size(); ++i_dim)

@@ -256,7 +256,6 @@ local_gaussian_axis_aligned_hyperrectangles(
     blaze::DynamicVector<T> tauSite (K.rows(), 0);
     blaze::DynamicVector<T> nuSite (K.rows(), 0);
 
-
     T logZ = 0;
     blaze::DynamicVector<T> mu = (lowerB + upperB) / 2.0;
     blaze::DynamicMatrix<T> sigma = K;
@@ -266,11 +265,11 @@ local_gaussian_axis_aligned_hyperrectangles(
     bool converged = false;
     size_t k = 1;
 
-    // here we only define expressions, no calculations are made
-    auto tauCavity = 1/blaze::diagonal(sigma) - tauSite; // TODO evaluate once blaze::diagonal(sigma)
+    // here we only define expressions, calculations are made inside the loop below
+    auto tauCavity = 1/blaze::diagonal(sigma) - tauSite;
     auto nuCavity =  mu/blaze::diagonal(sigma) - nuSite;
-    blaze::DynamicVector<T> sighat (n, 0); // TODO test well
-    auto deltatauSite = 1.0/sighat - tauCavity - tauSite; // TODO test
+    blaze::DynamicVector<T> sighat (n, 0);
+    auto deltatauSite = 1.0/sighat - tauCavity - tauSite;
     auto logZhat = blaze::DynamicVector<T>(n, 0);
     blaze::DynamicMatrix<T> L;
 
@@ -280,7 +279,7 @@ local_gaussian_axis_aligned_hyperrectangles(
     std::vector<T> upperbSTL (upperB.size(), 0);
 
     while (!converged && k < maxSteps) {
-        blaze::DynamicVector<T> muInBlaze ( nuCavity * (1/tauCavity) ); // componentwise, TODO check
+        blaze::DynamicVector<T> muInBlaze ( nuCavity * (1/tauCavity) );
         blaze::DynamicVector<T> sigmaInBlaze = 1/tauCavity;
 
         for (size_t i = 0; i < n; ++i) {
@@ -291,20 +290,6 @@ local_gaussian_axis_aligned_hyperrectangles(
         }
 
         auto hat = truncNormMoments(lowerbSTL, upperbSTL, muInSTL, sigmaInSTL);
-
-        // TODO remove
-//        if (sigmaInSTL[0] < 0) {
-//            std::cout << "---- tauCavity:\n" << tauCavity << "---- 1/tauCavity:\n" << 1/tauCavity;
-//        }
-
-//        std::cout << "\n----------- k: " << k << "\n";   // TODO remove
-//        std::cout << "---- sigma_new:\n" << sigma << "\n"; // TODO remove
-//        //std::cout << "---- KinvM:\n" << KinvM << "\n"; // TODO remove
-//        std::cout << "---- mu_new:\n" << mu << "\n"; // TODO remove
-//        //std::cout << "---- tauSite:\n" << tauSite << "\n";   // TODO remove
-//        std::cout << "---- tauCavity:\n" << tauCavity << "\n";   // TODO remove
-//        //std::cout << "---- nuSite:\n" << nuSite << "\n";   // TODO remove
-//        std::cout << "---- nuCavity:\n" << nuCavity << "\n";   // TODO remove
 
         auto logZhatSTL = std::get<0>(hat);
         auto muhatSTL = std::get<1>(hat);
@@ -318,61 +303,19 @@ local_gaussian_axis_aligned_hyperrectangles(
             sighat[i] = sighatSTL[i];
         }
 
-//        // TODO remove
-//        std::cout << "---- logZhat:\n" << logZhat << "\n";   // TODO remove
-//        std::cout << "---- muhat:\n" << muhat << "\n";   // TODO remove
-//        std::cout << "---- sigat:\n" << sighat << "\n";   // TODO remove
-//        std::cout << "deltatauSite _1 :\n" << deltatauSite << "\n"; // TODO remove
-
-
         //auto deltatauSite = 1.0/sighat - tauCavity - tauSite; // definition moved out of loop
         tauSite = blaze::evaluate(tauSite + deltatauSite);
         nuSite = blaze::evaluate(muhat/sighat - nuCavity);
 
-        // here in Matlab code goes 'if any(tauSite)<0' which seems never to be executed
-
         blaze::DiagonalMatrix<blaze::DynamicMatrix<T>> sSiteHalf (tauSite.size(), 0);
         for (size_t i = 0; i<tauSite.size(); ++i) {
-            if (tauSite[i] < 0 || std::isnan(tauSite[i])) {
-                sSiteHalf(i, i) = 0; // TODO CHECK WELL!!!!!
-//                std::cout << "---- bad tauSite[i]:\n" << tauSite[i] << "\n"; // TODO remove
-//                std::cout << "deltatauSite:\n" << deltatauSite << "\n"; // TODO remove
-//                std::cout << "sighat:\n" << sighat << "\n"; // TODO remove
-//                std::cout << "tauSite:\n" << tauSite << "\n"; // TODO remove
-//                std::cout << "tauCavity:\n" << tauCavity << "\n"; // TODO remove
-//                std::cout << "\n";
-            }
+            if (tauSite[i] < 0 || std::isnan(tauSite[i]))
+                sSiteHalf(i, i) = 0; // TODO chreck well
             else
                 sSiteHalf(i, i) = std::sqrt(tauSite[i]);
         }
         blaze::IdentityMatrix<T> eye (K.rows());
-        //blaze::llh(eye + sSiteHalf*K*sSiteHalf, L); // TODO enable!
-
-        // code for debug, TODO remove!!
-        auto CholArg = blaze::evaluate(eye + sSiteHalf*K*sSiteHalf);
-//        blaze::DynamicVector<std::complex<double>, blaze::columnVector> EigenValues;
-//        blaze::eigen(CholArg, EigenValues);
-//        bool isSPD = true;
-//        for (size_t e_i = 0; e_i < EigenValues.size(); ++e_i) {
-//            if (std::real(EigenValues[e_i]) < 0)
-//                isSPD = false;
-//        }
-        //if (!blaze::isPositiveDefinite(CholArg)) {
-//        if (!isSPD) {
-//            std::cout << "---- deltatauSite:\n" << deltatauSite << "\n"; // TODO remove
-//            std::cout << "---- tauSite:\n" << tauSite << "\n"; // TODO remove
-//            std::cout << "---- sSiteHalf:\n" << sSiteHalf << "\n"; // TODO remove
-//            std::cout << "---- K:\n" << K << "\n"; // TODO remove
-//            std::cout << "---- L_arg:\n" << CholArg << "\n";   // TODO remove
-//            std::cout << "---- sighat:\n" << sighat << "\n"; // TODO remove
-//            std::cout << "---- 1/sighat:\n" << 1/sighat << "\n"; // TODO remove
-//            std::cout << "---- tauCavity:\n" << tauCavity << "\n"; // TODO remove
-//        }
-
-        blaze::llh(CholArg, L);
-
-        // end of code for debug
-
+        blaze::llh(eye + sSiteHalf*K*sSiteHalf, L);
         L = blaze::trans(L); // get lower from upper
         //L = eye + sSiteHalf*K*sSiteHalf; // TODO remove
         //std::cout << "L:\n" << L << "\n";
@@ -383,23 +326,6 @@ local_gaussian_axis_aligned_hyperrectangles(
         mu = sigma*(nuSite + KinvM);
         blaze::DynamicVector<T> diff = muLast - mu;
 
-//        // TODO remove
-//        std::cout << "\nafter update, k: " << k << "\n";   // TODO remove
-//        std::cout << "---- V:\n" << V << "\n";   // TODO remove
-//        std::cout << "---- sigma_new:\n" << sigma << "\n"; // TODO remove
-//        //std::cout << "---- KinvM:\n" << KinvM << "\n"; // TODO remove
-//        std::cout << "---- mu_new:\n" << mu << "\n"; // TODO remove
-//        std::cout << "---- dist_diff:\n" << std::sqrt(blaze::trans(diff) * diff) << "\n"; // TODO remove
-//        std::cout << "---- tauSite:\n" << tauSite << "\n";   // TODO remove
-//        std::cout << "---- tauCavity:\n" << tauCavity << "\n";   // TODO remove
-//        std::cout << "---- nuSite:\n" << nuSite << "\n";   // TODO remove
-//        std::cout << "---- nuCavity:\n" << nuCavity << "\n";   // TODO remove
-//        std::cout << "---- logZhat:\n" << logZhat << "\n";   // TODO remove
-//        std::cout << "deltatauSite:\n" << deltatauSite << "\n"; // TODO remove
-
-
-
-        //double dotsqr = blaze::evaluate(blaze::trans(diff) * diff);
         if (std::sqrt(blaze::trans(diff) * diff) < epsConverge) // (norm(muLast-mu)) < epsConverge
             converged = true;
         else

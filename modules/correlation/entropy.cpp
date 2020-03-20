@@ -266,81 +266,6 @@ double entropy<recType, Metric>::estimate(
         )
 {
     return estimate_func<Container, entropy<recType, Metric>, Metric>(a, sampleSize, threshold, maxIterations, k, logbase, metric, exp);
-
-    /*
-    const size_t dataSize = a.size();
-
-    // Update maxIterations
-    if (maxIterations == 0) {
-        maxIterations = dataSize / sampleSize;
-    }
-
-    if (maxIterations > dataSize / sampleSize) {
-        maxIterations = dataSize / sampleSize;
-    }
-
-    auto e = entropy<void, Metric>();
-
-    if (maxIterations < 1) {
-        return e(a, k, logbase, metric);
-    }
-
-    // Create shuffle indexes
-    std::vector<size_t> indexes(dataSize);
-    std::iota(indexes.begin(), indexes.end(), 0);
-
-    auto rng = std::default_random_engine();
-    std::shuffle(indexes.begin(), indexes.end(), rng);
-
-    // Create vector container for fast random access
-    const std::vector<typename Container::value_type> vectorA(a.begin(), a.end());
-
-    // Create samples
-    std::vector<typename Container::value_type> sampleA;
-    sampleA.reserve(sampleSize);
-
-    std::vector<double> entropyValues;
-    double mu = 0;
-    for (auto i = 1; i <= maxIterations; ++i) {
-        size_t start = (i - 1) * sampleSize;
-        size_t end = std::min(i * sampleSize - 1, dataSize - 1);
-
-        // Create samples
-        sampleA.clear();
-
-        for (auto j = start; j < end; ++j) {
-            sampleA.push_back(vectorA[indexes[j]]);
-        }
-
-        // Get sample mgc value
-        double sample_entopy = e(sampleA, k, logbase, metric);
-        entropyValues.push_back(sample_entopy);
-
-        std::sort(entropyValues.begin(), entropyValues.end());
-
-        const size_t n = entropyValues.size();
-        const auto p0 = linspace(0.5 / n, 1 - 0.5 / n, n);
-
-        mu = mean(entropyValues);
-        double sigma = variance(entropyValues, mu);
-
-        const std::vector<double> synth = icdf(p0, mu, sigma);
-        std::vector<double> diff;
-        diff.reserve(n);
-        for (auto i = 0; i < n; ++i) {
-            diff.push_back(entropyValues[i] - synth[i]);
-        }
-
-        auto convergence = peak2ems(diff) / n;
-        std::cout << n << " " << convergence << " " << sample_entopy << " " << mu << std::endl;
-
-        if (convergence < threshold) {
-            return mu;
-        }
-    }
-
-    return mu;
-    */
 }
 
 
@@ -401,17 +326,10 @@ double entropy_kpN<recType, Metric>::operator()(
             x_vector[d_idx] = X[i][d_idx];
         }
 
-//        std::cout << "---- mu:\n" << mu << "\n"; // TODO remove
-//        std::cout << "---- K:\n" << K << "\n";
-//        std::cout << "---- lb:\n" << lb << "\n";
-//        std::cout << "---- ub:\n" << ub << "\n";
-        //std::cout << "---- Nodes:\n" << Nodes << "\n";
-        //std::cout << "---- Cov:\n" << (blaze::trans(Nodes) * Nodes)/(p - 1) << "\n";
-
         auto g_local = epmgp::local_gaussian_axis_aligned_hyperrectangles<double>(mu, K, lb, ub);
         double logG = std::get<0>(g_local);
 
-        if (!std::isnan(logG)) { // UNLIKE original Matlab code, we exclude points that result in NaN, TODO check math validity
+        if (!std::isnan(logG)) { // UNLIKE original Matlab code, we exclude points that result in NaN, TODO check validity
             double g = mvnpdf(x_vector, mu, K);
             h += logG - std::log(g);
             got_results++;
@@ -419,10 +337,10 @@ double entropy_kpN<recType, Metric>::operator()(
 
     }
 
-    if (got_results > 20) // absents in Matlab original code
+    if (got_results > 20) // this absents in Matlab original code
         return boost::math::digamma(n) - boost::math::digamma(k) + h/n;
     else
-        return std::nan("not defined");
+        return std::nan("estimation failed");
 }
 
 
@@ -442,81 +360,6 @@ double entropy_kpN<recType, Metric>::estimate(
         )
 {
     return estimate_func<Container, entropy_kpN<recType, Metric>, Metric>(a, sampleSize, threshold, maxIterations, k, logbase, metric, exp);
-
-    /*
-    const size_t dataSize = a.size();
-
-    // Update maxIterations
-    if (maxIterations == 0) {
-        maxIterations = dataSize / sampleSize;
-    }
-
-    if (maxIterations > dataSize / sampleSize) {
-        maxIterations = dataSize / sampleSize;
-    }
-
-    auto e = entropy_kpN<void, Metric>();
-
-    if (maxIterations < 1) {
-        return e(a, k, logbase, metric);
-    }
-
-    // Create shuffle indexes
-    std::vector<size_t> indexes(dataSize);
-    std::iota(indexes.begin(), indexes.end(), 0);
-
-    auto rng = std::default_random_engine();
-    std::shuffle(indexes.begin(), indexes.end(), rng);
-
-    // Create vector container for fast random access
-    const std::vector<typename Container::value_type> vectorA(a.begin(), a.end());
-
-    // Create samples
-    std::vector<typename Container::value_type> sampleA;
-    sampleA.reserve(sampleSize);
-
-    std::vector<double> entropyValues;
-    double mu = 0;
-    for (auto i = 1; i <= maxIterations; ++i) {
-        size_t start = (i - 1) * sampleSize;
-        size_t end = std::min(i * sampleSize - 1, dataSize - 1);
-
-        // Create samples
-        sampleA.clear();
-
-        for (auto j = start; j < end; ++j) {
-            sampleA.push_back(vectorA[indexes[j]]);
-        }
-
-        // Get sample mgc value
-        double sample_entopy = e(sampleA, k, logbase, metric);
-        entropyValues.push_back(sample_entopy);
-
-        std::sort(entropyValues.begin(), entropyValues.end());
-
-        const size_t n = entropyValues.size();
-        const auto p0 = linspace(0.5 / n, 1 - 0.5 / n, n);
-
-        mu = mean(entropyValues);
-        double sigma = variance(entropyValues, mu);
-
-        const std::vector<double> synth = icdf(p0, mu, sigma);
-        std::vector<double> diff;
-        diff.reserve(n);
-        for (auto i = 0; i < n; ++i) {
-            diff.push_back(entropyValues[i] - synth[i]);
-        }
-
-        auto convergence = peak2ems(diff) / n;
-        std::cout << n << " " << convergence << " " << sample_entopy << " " << mu << std::endl;
-
-        if (convergence < threshold) {
-            return mu;
-        }
-    }
-
-    return mu;
-    */
 }
 
 
