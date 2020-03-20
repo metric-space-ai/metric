@@ -2,7 +2,8 @@ cmake_minimum_required(VERSION 3.10)
 
 enable_testing()
 
-set(Boost_DEBUG on)
+set(Boost_DEBUG on)  
+find_package(Boost)
 find_package(LAPACK)
 
 project(mapping_tests)
@@ -16,13 +17,11 @@ endif(MSVC)
 
 set(BOOST_LINK_DIRS "${BOOST_ROOT}/stage/lib")
 
-# mapping tests
-
-add_executable(mapping_tests mapping_tests.cpp)
+# mapping testsadd_executable(mapping_tests mapping_tests.cpp)
 
 target_include_directories(mapping_tests PRIVATE ${Boost_INCLUDE_DIRS})
+target_link_libraries(mapping_tests ${Boost_LIBRARIES})
 target_link_directories(mapping_tests PRIVATE ${BOOST_LINK_DIRS})
-target_link_libraries(mapping_tests PRIVATE ${Boost_LIBRARIES})
 
 if(UNIX)
     set(THREADS_PREFER_PTHREAD_FLAG ON)

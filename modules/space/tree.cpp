@@ -895,6 +895,28 @@ void Tree<recType, Metric>::print_(NodeType* node_p, std::ostream& ostr) const
     }
 }
 
+template <class recType, class Metric>
+auto Tree<recType, Metric>::get_all_nodes() -> std::vector<Node_ptr>
+{	
+	std::vector<Node_ptr> all_nodes;
+	
+	all_nodes.push_back(root);
+	get_all_nodes_(root, all_nodes);
+
+	return all_nodes;
+}
+
+template <class recType, class Metric>
+void Tree<recType, Metric>::get_all_nodes_(Node_ptr node_p, std::vector<Node_ptr>& output)
+{	
+	for (std::size_t i = 0; i < node_p->children.size(); ++i) 
+	{
+		output.push_back(node_p->children[i]);
+		get_all_nodes_(node_p->children[i], output);
+	}
+}
+
+
 /*** traverse the tree from root and do something with every node ***/
 template <class recType, class Metric>
 void Tree<recType, Metric>::traverse(const std::function<void(Node_ptr)>& f)
