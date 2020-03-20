@@ -5,18 +5,18 @@ project(distance_examples)
 set(Boost_DEBUG on)  
 find_package(Boost)
 
-if(UNIX)
+if(UNIX) 
     find_package(Threads REQUIRED)
 endif(UNIX)
 
 include_directories(
     ${PROJECT_SOURCE_DIR}
     ${PROJECT_SOURCE_DIR}/../../3rdparty/jpeglib 
-    )
-
-include_directories(${Boost_INCLUDE_DIRS}) 
+    ) 
 	 
-file(COPY "assets" DESTINATION ".")
+include_directories(${Boost_INCLUDE_DIRS})  
+	
+file(COPY "assets" DESTINATION ".") 
 
 file(GLOB EXAMPLE_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.cpp) 
 find_package(JPEG) 
