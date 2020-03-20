@@ -29,7 +29,7 @@ int main()
     auto t1 = std::chrono::steady_clock::now();
     auto result = distance_1(samples_1, samples_2);
     auto t2 = std::chrono::steady_clock::now();
-    std::cout << "result1: " << result
+    std::cout << "result: " << result
               << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000
               << " s)" << std::endl;
     std::cout << "" << std::endl;
@@ -41,7 +41,7 @@ int main()
     t1 = std::chrono::steady_clock::now();
     result = distance_2(samples_1, samples_2);
     t2 = std::chrono::steady_clock::now();
-    std::cout << "result1: " << result
+    std::cout << "result: " << result
               << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000
               << " s)" << std::endl;
     std::cout << "" << std::endl;
@@ -53,7 +53,7 @@ int main()
     t1 = std::chrono::steady_clock::now();
     result = distance_3(samples_1, samples_2);
     t2 = std::chrono::steady_clock::now();
-    std::cout << "result1: " << result
+    std::cout << "result: " << result
               << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000
               << " s)" << std::endl;
     std::cout << "" << std::endl;

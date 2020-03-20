@@ -21,16 +21,17 @@ int main()
     std::cout << "" << std::endl;	
 
 	/*** here are some data records ***/
-	std::vector<double> samples_1 = { 0, 1.5, 1, 2, 2, 2, 2, 3, 3, 4 };
-	std::vector<double> samples_2 = { 0, 1, 2, 3, 3, 2, 1, 0, 2, 2 };
-	std::vector<double> samples_3 = { 0, 0, 0, 3, 3, 2, 1, 0, 2 };
-	   
+	std::vector<double> samples_1 = { 0, 1, 2, 3, 3, 2, 1, 0, 2, 2 };
+	std::vector<double> samples_2 = { 0, 0, 2, 3, 3, 2, 1, 0, 2, 2 };
+	//std::vector<double> samples_1 = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
+	//std::vector<double> samples_2 = { 1, 2, 3, 4, 5 };
+	//   
     metric::KolmogorovSmirnov<std::vector<double>, double> distance;
 
     auto t1 = std::chrono::steady_clock::now();
-    auto result1 = distance(samples_2, samples_3);
+    auto result1 = distance(samples_1, samples_2);
     auto t2 = std::chrono::steady_clock::now();
-    std::cout << "result1: " << result1
+    std::cout << "result: " << result1
               << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000
               << " s)" << std::endl;
     std::cout << "" << std::endl;
