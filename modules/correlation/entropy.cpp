@@ -329,6 +329,7 @@ double entropy_kpN<recType, Metric>::operator()(
         auto g_local = epmgp::local_gaussian_axis_aligned_hyperrectangles<double>(mu, K, lb, ub);
         double logG = std::get<0>(g_local);
 
+        // TODO deside if we skip
         if (!std::isnan(logG)) { // UNLIKE original Matlab code, we exclude points that result in NaN, TODO check validity
             double g = mvnpdf(x_vector, mu, K);
             h += logG - std::log(g);

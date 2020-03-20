@@ -310,7 +310,7 @@ local_gaussian_axis_aligned_hyperrectangles(
         blaze::DiagonalMatrix<blaze::DynamicMatrix<T>> sSiteHalf (tauSite.size(), 0);
         for (size_t i = 0; i<tauSite.size(); ++i) {
             if (tauSite[i] < 0 || std::isnan(tauSite[i]))
-                sSiteHalf(i, i) = 0; // TODO chreck well
+                sSiteHalf(i, i) = 0; // TODO check well
             else
                 sSiteHalf(i, i) = std::sqrt(tauSite[i]);
         }
@@ -355,6 +355,168 @@ local_gaussian_axis_aligned_hyperrectangles(
 
     return std::make_tuple(logZ, mu, sigma);
 }
+
+
+
+// complex version
+/*
+
+
+template <typename T>
+std::tuple<T, blaze::DynamicVector<T>, blaze::DynamicMatrix<T>>
+local_gaussian_axis_aligned_hyperrectangles(
+        blaze::DynamicVector<T> m,
+        blaze::DynamicMatrix<T> K,
+        blaze::DynamicVector<T> lowerB,
+        blaze::DynamicVector<T> upperB
+        )
+{
+    size_t n = m.size();
+    assert(lowerB.size() == n && upperB.size() == n && K.rows() == n);
+
+    size_t maxSteps = 200;
+    T epsConverge = 1e-8;
+
+    blaze::DynamicVector<T> tauSite (K.rows(), 0);
+    blaze::DynamicVector<T> nuSite (K.rows(), 0);
+
+    T logZ = 0;
+    blaze::DynamicVector<T> mu = (lowerB + upperB) / 2.0;
+    blaze::DynamicMatrix<T> sigma = K;
+    blaze::DynamicVector<T> KinvM = blaze::evaluate(blaze::inv(K) * m);
+    blaze::DynamicVector<T> muLast (mu.size(), 1);
+    muLast = muLast * -inf;
+    bool converged = false;
+    size_t k = 1;
+
+    // here we only define expressions, calculations are made inside the loop below
+    auto tauCavity = 1/blaze::diagonal(sigma) - tauSite;
+    auto nuCavity =  mu/blaze::diagonal(sigma) - nuSite;
+    blaze::DynamicVector<T> sighat (n, 0);
+    auto deltatauSite = 1.0/sighat - tauCavity - tauSite;
+    auto logZhat = blaze::DynamicVector<T>(n, 0);
+    blaze::DynamicMatrix<T> L;
+    blaze::DynamicMatrix<std::complex<T>> Lc; // complex
+
+    std::vector<T> muInSTL (n, 0);
+    std::vector<T> sigmaInSTL (n, 0);
+    std::vector<T> lowerbSTL (lowerB.size(), 0);
+    std::vector<T> upperbSTL (upperB.size(), 0);
+
+    while (!converged && k < maxSteps) {
+        blaze::DynamicVector<T> muInBlaze ( nuCavity * (1/tauCavity) );
+        blaze::DynamicVector<T> sigmaInBlaze = 1/tauCavity;
+
+        for (size_t i = 0; i < n; ++i) {
+            muInSTL[i] = muInBlaze[i];
+            sigmaInSTL[i] = sigmaInBlaze[i];
+            lowerbSTL[i] = lowerB[i];
+            upperbSTL[i] = upperB[i];
+        }
+
+        auto hat = truncNormMoments(lowerbSTL, upperbSTL, muInSTL, sigmaInSTL);
+
+        auto logZhatSTL = std::get<0>(hat);
+        auto muhatSTL = std::get<1>(hat);
+        auto sighatSTL = std::get<2>(hat);
+        blaze::DynamicVector<T> muhat (muhatSTL.size(), 0);
+        //blaze::DynamicVector<double> sighat (sighatSTL.size(), 0); // moved outside loop
+        assert(logZhat.size() == n && muhat.size() == n && sighat.size() == n); // TODO remove after testing
+        for (size_t i = 0; i < n; ++i) {
+            logZhat[i] = logZhatSTL[i];
+            muhat[i] = muhatSTL[i];
+            sighat[i] = sighatSTL[i];
+        }
+
+        //auto deltatauSite = 1.0/sighat - tauCavity - tauSite; // definition moved out of loop
+        tauSite = blaze::evaluate(tauSite + deltatauSite);
+        nuSite = blaze::evaluate(muhat/sighat - nuCavity);
+
+//        blaze::DiagonalMatrix<blaze::DynamicMatrix<T>> sSiteHalf (tauSite.size(), 0);
+//        for (size_t i = 0; i<tauSite.size(); ++i) {
+//            if (tauSite[i] < 0 || std::isnan(tauSite[i]))
+//                sSiteHalf(i, i) = 0; // TODO check well
+//            else
+//                sSiteHalf(i, i) = std::sqrt(tauSite[i]);
+//        }
+//        blaze::IdentityMatrix<T> eye (K.rows());
+//        blaze::llh(eye + sSiteHalf*K*sSiteHalf, L);
+//        L = blaze::trans(L); // get lower from upper
+
+        bool negative_exists = false;
+        blaze::DiagonalMatrix<blaze::DynamicMatrix<std::complex<T>>> sSiteHalf (tauSite.size(), 0);
+
+        for (size_t i = 0; i<tauSite.size(); ++i) {
+            if (tauSite[i] < 0) {
+                negative_exists = true;
+                sSiteHalf(i, i) = std::sqrt(tauSite[i]);
+                break;
+            }
+        }
+        if (negative_exists) {
+            for (size_t i = 0; i<tauSite.size(); ++i) {
+                if (tauSite[i] > -1e-8) {
+                    tauSite[i] = 0;
+                    sSiteHalf(i, i) = 0; // TODO check epsilon!!
+                }
+            }
+        }
+        blaze::IdentityMatrix<std::complex<T>> eye (K.rows());
+        blaze::DynamicMatrix<std::complex<T>> Kc = K;
+        Lc = K; // TODO create empty // blaze::DynamicMatrix<std::complex<T>>(K.rows(), 0);
+        auto llh_arg = eye + sSiteHalf*Kc*sSiteHalf;
+        //blaze::llh(eye + sSiteHalf*Kc*sSiteHalf, Lc);
+        blaze::llh(llh_arg, Lc);
+        Lc = blaze::trans(Lc); // get lower from upper
+        L = blaze::real(Lc);
+
+
+
+        //L = eye + sSiteHalf*K*sSiteHalf; // TODO remove
+        //std::cout << "L:\n" << L << "\n";
+        //blaze::potrf(L, 'U'); // LAPACK issue
+        //std::cout << "L_chol:\n" << L << "\n";
+
+        // auto V = blaze::inv(blaze::trans(L)) * (sSiteHalf*K);
+        auto V = blaze::inv(blaze::trans(Lc)) * (sSiteHalf*Kc);
+        //sigma = K - blaze::trans(V)*V;
+        sigma = blaze::real(Kc - blaze::trans(V)*V);
+        mu = sigma*(nuSite + KinvM);
+        blaze::DynamicVector<T> diff = muLast - mu;
+
+        if (std::sqrt(blaze::trans(diff) * diff) < epsConverge) // (norm(muLast-mu)) < epsConverge
+            converged = true;
+        else
+            muLast = mu;
+
+        k++;
+    }
+
+    T lZ1 = 0;
+    blaze::DiagonalMatrix<blaze::DynamicMatrix<T>> tau (n, 0);
+    blaze::DiagonalMatrix<blaze::DynamicMatrix<T>> diagTauSite (n, 0);
+    blaze::DiagonalMatrix<blaze::DynamicMatrix<T>> diagTauCavity (n, 0);
+    //blaze::DynamicMatrix<double> diagTauSite (n, n, 0);
+    //blaze::DynamicMatrix<double> diagTauCavity (n, n, 0);
+
+    for (size_t i = 0; i<n; ++i) {
+        lZ1 += std::log(1 + tauSite[i]/tauCavity[i])*0.5 - std::log(L(i, i));
+        tau(i, i) = 1/(tauCavity[i] + tauSite[i]);
+        diagTauSite(i, i) = tauSite[i];
+        diagTauCavity(i, i) = tauCavity[i];
+    }
+    blaze::DynamicVector<T> diffSite (nuSite - tauSite*m);
+    T lZ2 = 0.5*(blaze::trans(diffSite)*(sigma-tau)*diffSite);
+    auto lZ3 = 0.5*( blaze::trans(nuCavity)*( blaze::inv(diagTauSite + diagTauCavity)*(tauSite*nuCavity/tauCavity - 2*nuSite) ) );
+    auto lZ4 = - 0.5*( blaze::trans(tauCavity*m)*( blaze::inv(diagTauSite + diagTauCavity)*(tauSite*m - 2*nuSite) ) );
+    logZ = lZ1 + lZ2 + lZ3 + lZ4 + blaze::sum(logZhat);
+
+    return std::make_tuple(logZ, mu, sigma);
+}
+
+
+
+// */
 
 
 
