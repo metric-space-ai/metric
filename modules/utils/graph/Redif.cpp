@@ -4,7 +4,8 @@
 namespace metric
 {
 	template <typename recType, class Metric, typename Tv>
-	Redif<recType, Metric, Tv>::Redif(std::vector<std::vector<Tv>> trainData, size_t nNeighbors /* = 10 */, size_t nIter /* = 15 */)
+	Redif<recType, Metric, Tv>::Redif(const std::vector<std::vector<Tv>>& trainData, size_t nNeighbors /* = 10 */, size_t nIter /* = 15 */)
+
 	{
 		this->nNeighbors = nNeighbors;
 		xTrain = blaze::DynamicMatrix<Tv>(trainData.size(), trainData[0].size());
@@ -34,17 +35,13 @@ namespace metric
 			blaze::DynamicMatrix<Tv> invLeft(n, n);
 			invLeft = blaze::inv(D + 0.25*graphLap);
 			xTrainDe = invLeft * (D*xTrainDe);
-
-			//cout << endl << endl << endl << endl << endl << endl;
-			//cout << i << "-th" << endl;
-			//for (size_t j = 0; j < 10; j++)
-			//	cout << graphLap(0, j) << "\t";
 		}
 
 	}
 
 	template <typename recType, class Metric, typename Tv>
-	blaze::DynamicMatrix<Tv> Redif<recType, Metric, Tv>::getLocalDistMatrix(blaze::DynamicMatrix<Tv> dataSample)
+	blaze::DynamicMatrix<Tv> Redif<recType, Metric, Tv>::getLocalDistMatrix(const blaze::DynamicMatrix<Tv>& dataSample)
+
 	{
 		size_t n = dataSample.rows();
 
@@ -88,7 +85,6 @@ namespace metric
 				tempIdx[j] = j;
 				tempDist[j] = dist(j, i);
 			}
-			std::cout << i << "-th" << std::endl;
 			Quicksort(tempIdx, tempDist, 0, n - 1);
 			//if (i == 58)
 			//{
@@ -118,7 +114,8 @@ namespace metric
 	}
 
 	template <typename recType, class Metric, typename Tv>
-	blaze::DynamicMatrix<Tv> Redif<recType, Metric, Tv>::calcWeightedGraphLaplacian(blaze::DynamicMatrix<Tv> localDist)
+	blaze::DynamicMatrix<Tv> Redif<recType, Metric, Tv>::calcWeightedGraphLaplacian(const blaze::DynamicMatrix<Tv>& localDist)
+
 	{
 		size_t n = localDist.rows();
 
@@ -153,7 +150,8 @@ namespace metric
 	}
 
 	template <typename recType, class Metric, typename Tv>
-	blaze::DynamicMatrix<Tv> Redif<recType, Metric, Tv>::encode(blaze::DynamicMatrix<Tv> x, blaze::DynamicVector<Tv> & l_idx)
+	blaze::DynamicMatrix<Tv> Redif<recType, Metric, Tv>::encode(const blaze::DynamicMatrix<Tv>& x, blaze::DynamicVector<Tv> & l_idx)
+
 	{
 		size_t nTrain = xTrain.rows();
 		size_t nX = x.rows();
@@ -246,7 +244,8 @@ namespace metric
 	}
 
 	template <typename recType, class Metric, typename Tv>
-	blaze::DynamicMatrix<Tv> Redif<recType, Metric, Tv>::decode(blaze::DynamicMatrix<Tv> xEncoded, blaze::DynamicMatrix<Tv> xTrainEncoded, blaze::DynamicVector<size_t> l_idx)
+	blaze::DynamicMatrix<Tv> Redif<recType, Metric, Tv>::decode(const blaze::DynamicMatrix<Tv>& xEncoded, const blaze::DynamicMatrix<Tv>& xTrainEncoded, const blaze::DynamicVector<size_t>& l_idx)
+
 	{
 		size_t n = xTrainEncoded.rows();
 		size_t nIter = LArray.size();
