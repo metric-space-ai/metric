@@ -1,4 +1,3 @@
-
 cmake_minimum_required(VERSION 3.10)
 set(BOOST_TEST_LIB ${Boost_LIBRARIES})
 
@@ -27,6 +26,7 @@ set(BOOST_LINK_DIRS "${BOOST_ROOT}/stage/lib")
 if(UNIX)
     set(THREADS_PREFER_PTHREAD_FLAG ON)
     find_package(Threads REQUIRED)
+
 endif(UNIX)
 
 AUX_SOURCE_DIRECTORY(. TEST_SRCS)
@@ -57,4 +57,5 @@ foreach(testSrc ${TEST_SRCS})
         #Finally add it to test execution - 
         #Notice the WORKING_DIRECTORY and COMMAND
         add_test(NAME ${testName} COMMAND ${testName})
+
 endforeach(testSrc)
