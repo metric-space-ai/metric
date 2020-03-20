@@ -71,20 +71,15 @@ namespace {
         }
         std::cout << "]" << std::endl;
     }
-    template <typename C1, typename C2, typename C3>
-    void combine(
-        const C1& X, const C2& Y, C3& XY)
+    template <typename C1, typename C2, typename T=type_traits::underlaying_type_t<C1>>
+    std::vector<std::vector<T>> combine(const C1& X, const C2& Y)
     {
         std::size_t N = X.size();
         std::size_t dx = X[0].size();
         std::size_t dy = Y[0].size();
-        if constexpr( type_traits::is_has_resize_method_v<C3>) {
-          XY.resize(N);
-        }
+        std::vector<std::vector<T>> XY(N);
         for (std::size_t i = 0; i < N; i++) {
-            if constexpr (type_traits::is_has_resize_method_v<type_traits::index_value_type_t<C3>>) {
-                XY[i].resize(dx + dy);
-            }
+            XY[i].resize(dx + dy);
             std::size_t k = 0;
             for (std::size_t j = 0; j < dx; j++, k++) {
                 XY[i][k] = X[i][j];
@@ -93,6 +88,7 @@ namespace {
                 XY[i][k] = Y[i][j];
             }
         }
+        return XY;
     }
     template <typename Container, typename T = type_traits::underlaying_type_t<Container>>
     std::vector<T> unique(const Container& data)
@@ -112,8 +108,8 @@ template <typename Container, typename Metric, typename L>
 double entropy(
     const Container & data, std::size_t k, L logbase, const Metric & metric)
 {
-    using T_underlaying = typename std::decay<decltype(std::declval<Container&>()[0][0])>::type; //typename Container::value_type;
-    using T = typename std::decay<decltype(std::declval<Container&>()[0])>::type;
+    using T_underlaying = type_traits::underlaying_type_t<Container>;
+    using T = type_traits::index_value_type_t<Container>; 
     if (data.size() == 0 || data[0].size() == 0) {
         return 0;
     }
@@ -215,8 +211,7 @@ mutualInformation(
     auto Y = Yc;
     add_noise(X);
     add_noise(Y);
-    std::vector<std::vector<T>> XY;
-    combine(X, Y, XY);
+    std::vector<std::vector<T>> XY = combine(X, Y);
     metric::Tree<std::vector<T>, Metric> tree(XY, -1, metric);
     auto entropyEstimate = boost::math::digamma(k) + boost::math::digamma(N);
     if (version == 2) {
@@ -256,8 +251,7 @@ template <typename Container, typename T>
 std::enable_if_t<type_traits::is_container_of_integrals_v<Container>, T>
 mutualInformation(const Container& Xc, const Container& Yc, T logbase)
 {
-    Container XY;
-    combine(Xc, Yc, XY);
+    std::vector<std::vector<T>> XY = combine(Xc, Yc);
     return entropy(Xc, logbase)
         + entropy(Yc,
             logbase)  // entropy overload for integers is not implemented yet
@@ -322,8 +316,7 @@ template <typename C, typename El>
 typename std::enable_if_t<!std::is_integral_v<El>, V>  // only real values are accepted
     VOI_kl<V>::operator()(const C& a, const C& b) const
 {
-    std::vector<std::vector<El>> ab;
-    combine(a, b, ab);
+    std::vector<std::vector<El>> ab = combine(a, b);
     return 2 * entropy_kl(ab) - entropy_kl(a) - entropy_kl(b);
 }
 
@@ -334,8 +327,7 @@ VOI_normalized_kl<V>::operator()(const C& a, const C& b) const
 {
     auto entropy_a = entropy_kl(a);
     auto entropy_b = entropy_kl(b);
-    std::vector<std::vector<El>> ab;
-    combine(a, b, ab);
+    std::vector<std::vector<El>> ab = combine(a, b);
     auto joint_entropy = entropy_kl(ab);
     auto mi = entropy_a + entropy_b - joint_entropy;
     return 1 - (mi / (entropy_a + entropy_b - mi));

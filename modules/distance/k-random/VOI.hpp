@@ -23,11 +23,6 @@ namespace metric {
  * @param metric
  * @return value of entropy estimation of the data 
  */
-// template <typename Container, typename Metric = metric::Euclidian<typename Container::value_type>, typename L = double>
-// double entropy(
-//     std::vector<Container> data, std::size_t k = 3, L logbase = 2, Metric metric = Metric());
-
-// template <typename Container, typename Metric = metric::Euclidian<typename Container::value_type>, typename L = double>
 template<typename Container,
          typename Metric = metric::Euclidian<type_traits::underlaying_type_t<Container>>,
          typename L = double
@@ -123,10 +118,6 @@ struct VOI {
      * @param b second container
      * @return variation of information between a and b
      */
-    // template <template <class, class> class Container, class Allocator_inner, class Allocator_outer, class El>
-    // typename std::enable_if<!std::is_integral<El>::value, V>::type  // only real values are accepted
-    // operator()(const Container<Container<El, Allocator_inner>, Allocator_outer>& a,
-    //     const Container<Container<El, Allocator_inner>, Allocator_outer>& b) const;
 
     template <typename Container, typename T = type_traits::underlaying_type_t<Container>>
     typename std::enable_if_t<!std::is_integral_v<T>, V>  // only real values are accepted
@@ -168,10 +159,6 @@ struct VOI_normalized : VOI<V> {
      * @param b second container
      * @return varition of information between a and b
      */
-    // template <template <class, class> class Container, class Allocator_inner, class Allocator_outer, class El>
-    // typename std::enable_if<!std::is_integral<El>::value, V>::type  // only real values are accepted
-    // operator()(const Container<Container<El, Allocator_inner>, Allocator_outer>& a,
-    //     const Container<Container<El, Allocator_inner>, Allocator_outer>& b) const;
     template <typename Container, typename T = type_traits::underlaying_type_t<Container>>
     typename std::enable_if_t<!std::is_integral_v<T>, V>  // only real values are accepted
     operator()(const Container& a, const Container& b) const;
@@ -218,11 +205,6 @@ struct VOI_kl {
     typename std::enable_if_t<!std::is_integral_v<T>, V>  // only real values are accepted
     operator()(const Container& a, const Container& b) const;
 
-    // template <template <class, class> class Container, class Allocator_inner, class Allocator_outer, class El>
-    // typename std::enable_if<!std::is_integral<El>::value, V>::type  // only real values are accepted
-    // operator()(const Container<Container<El, Allocator_inner>, Allocator_outer>& a,
-    //     const Container<Container<El, Allocator_inner>, Allocator_outer>& b) const;
-
     // TODO add support of 1D random values passed in simple containers
 };
 
@@ -257,11 +239,6 @@ struct VOI_normalized_kl : VOI_kl<V> {
     template <typename Container, typename T = type_traits::underlaying_type_t<Container>>
     typename std::enable_if_t<!std::is_integral_v<T>, V>  // only real values are accepted
     operator()(const Container& a, const Container& b) const;
-
-    // template <template <class, class> class Container, class Allocator_inner, class Allocator_outer, class El>
-    // typename std::enable_if<!std::is_integral<El>::value, V>::type  // only real values are accepted
-    // operator()(const Container<Container<El, Allocator_inner>, Allocator_outer>& a,
-    //     const Container<Container<El, Allocator_inner>, Allocator_outer>& b) const;
 
     // TODO add support of 1D random values passed in simple containers
 };
