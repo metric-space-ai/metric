@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/SMatSVecMultExpr.h
 //  \brief Header file for the sparse matrix/sparse vector multiplication expression
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -66,9 +66,9 @@
 #include "../../math/typetraits/IsZero.h"
 #include "../../math/typetraits/RequiresEvaluation.h"
 #include "../../math/views/Check.h"
+#include "../../system/MacroDisable.h"
 #include "../../system/Thresholds.h"
 #include "../../util/Assert.h"
-#include "../../util/DisableIf.h"
 #include "../../util/EnableIf.h"
 #include "../../util/FunctionTrace.h"
 #include "../../util/MaybeUnused.h"
@@ -163,7 +163,7 @@ class SMatSVecMultExpr
    // \param mat The left-hand side sparse matrix operand of the multiplication expression.
    // \param vec The right-hand side sparse vector operand of the multiplication expression.
    */
-   explicit inline SMatSVecMultExpr( const MT& mat, const VT& vec ) noexcept
+   inline SMatSVecMultExpr( const MT& mat, const VT& vec ) noexcept
       : mat_( mat )  // Left-hand side sparse matrix of the multiplication expression
       , vec_( vec )  // Right-hand side sparse vector of the multiplication expression
    {

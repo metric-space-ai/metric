@@ -3,7 +3,7 @@
 //  \file blaze/math/views/subvector/Dense.h
 //  \brief Subvector specialization for dense vectors
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -59,6 +59,7 @@
 #include "../../../math/InitializerList.h"
 #include "../../../math/shims/Clear.h"
 #include "../../../math/shims/IsDefault.h"
+#include "../../../math/shims/PrevMultiple.h"
 #include "../../../math/shims/Reset.h"
 #include "../../../math/SIMD.h"
 #include "../../../math/traits/CrossTrait.h"
@@ -79,12 +80,12 @@
 #include "../../../system/CacheSize.h"
 #include "../../../system/HostDevice.h"
 #include "../../../system/Inline.h"
+#include "../../../system/MacroDisable.h"
 #include "../../../system/Optimizations.h"
 #include "../../../system/Thresholds.h"
 #include "../../../util/AlignmentCheck.h"
 #include "../../../util/Assert.h"
 #include "../../../util/constraints/Vectorizable.h"
-#include "../../../util/DisableIf.h"
 #include "../../../util/EnableIf.h"
 #include "../../../util/mpl/If.h"
 #include "../../../util/TypeList.h"
@@ -664,9 +665,7 @@ class Subvector<VT,unaligned,TF,true,CSAs...>
    //! Helper structure for the explicit application of the SFINAE principle.
    template< typename VT2 >
    static constexpr bool VectorizedAddAssign_v =
-      ( useOptimizedKernels &&
-        simdEnabled && VT2::simdEnabled &&
-        IsSIMDCombinable_v< ElementType, ElementType_t<VT2> > &&
+      ( VectorizedAssign_v<VT2> &&
         HasSIMDAdd_v< ElementType, ElementType_t<VT2> > );
    //**********************************************************************************************
 
@@ -674,19 +673,15 @@ class Subvector<VT,unaligned,TF,true,CSAs...>
    //! Helper structure for the explicit application of the SFINAE principle.
    template< typename VT2 >
    static constexpr bool VectorizedSubAssign_v =
-      ( useOptimizedKernels &&
-        simdEnabled && VT2::simdEnabled &&
-        IsSIMDCombinable_v< ElementType, ElementType_t<VT2> > &&
-       HasSIMDSub_v< ElementType, ElementType_t<VT2> > );
+      ( VectorizedAssign_v<VT2> &&
+        HasSIMDSub_v< ElementType, ElementType_t<VT2> > );
    //**********************************************************************************************
 
    //**********************************************************************************************
    //! Helper structure for the explicit application of the SFINAE principle.
    template< typename VT2 >
    static constexpr bool VectorizedMultAssign_v =
-      ( useOptimizedKernels &&
-        simdEnabled && VT2::simdEnabled &&
-        IsSIMDCombinable_v< ElementType, ElementType_t<VT2> > &&
+      ( VectorizedAssign_v<VT2> &&
         HasSIMDMult_v< ElementType, ElementType_t<VT2> > );
    //**********************************************************************************************
 
@@ -694,9 +689,7 @@ class Subvector<VT,unaligned,TF,true,CSAs...>
    //! Helper structure for the explicit application of the SFINAE principle.
    template< typename VT2 >
    static constexpr bool VectorizedDivAssign_v =
-      ( useOptimizedKernels &&
-        simdEnabled && VT2::simdEnabled &&
-        IsSIMDCombinable_v< ElementType, ElementType_t<VT2> > &&
+      ( VectorizedAssign_v<VT2> &&
         HasSIMDDiv_v< ElementType, ElementType_t<VT2> > );
    //**********************************************************************************************
 
@@ -1229,7 +1222,7 @@ inline Subvector<VT,unaligned,TF,true,CSAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( rhs.canAlias( &vector_ ) ) {
+   if( rhs.canAlias( this ) ) {
       const ResultType tmp( rhs );
       smpAssign( left, tmp );
    }
@@ -1280,7 +1273,7 @@ inline Subvector<VT,unaligned,TF,true,CSAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( IsReference_v<Right> && right.canAlias( &vector_ ) ) {
+   if( IsReference_v<Right> && right.canAlias( this ) ) {
       const ResultType_t<VT2> tmp( right );
       smpAssign( left, tmp );
    }
@@ -1333,7 +1326,7 @@ inline Subvector<VT,unaligned,TF,true,CSAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( IsReference_v<Right> && right.canAlias( &vector_ ) ) {
+   if( IsReference_v<Right> && right.canAlias( this ) ) {
       const ResultType_t<VT2> tmp( right );
       smpAddAssign( left, tmp );
    }
@@ -1384,7 +1377,7 @@ inline Subvector<VT,unaligned,TF,true,CSAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( IsReference_v<Right> && right.canAlias( &vector_ ) ) {
+   if( IsReference_v<Right> && right.canAlias( this ) ) {
       const ResultType_t<VT2> tmp( right );
       smpSubAssign( left, tmp );
    }
@@ -1436,7 +1429,7 @@ inline Subvector<VT,unaligned,TF,true,CSAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( IsReference_v<Right> && right.canAlias( &vector_ ) ) {
+   if( IsReference_v<Right> && right.canAlias( this ) ) {
       const ResultType_t<VT2> tmp( right );
       smpMultAssign( left, tmp );
    }
@@ -1487,7 +1480,7 @@ inline Subvector<VT,unaligned,TF,true,CSAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( IsReference_v<Right> && right.canAlias( &vector_ ) ) {
+   if( IsReference_v<Right> && right.canAlias( this ) ) {
       const ResultType_t<VT2> tmp( right );
       smpDivAssign( left, tmp );
    }
@@ -1744,7 +1737,7 @@ template< typename VT       // Type of the dense vector
 template< typename Other >  // Data type of the foreign expression
 inline bool Subvector<VT,unaligned,TF,true,CSAs...>::canAlias( const Other* alias ) const noexcept
 {
-   return vector_.isAliased( alias );
+   return vector_.isAliased( &unview( *alias ) );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -1796,7 +1789,7 @@ template< typename VT       // Type of the dense vector
 template< typename Other >  // Data type of the foreign expression
 inline bool Subvector<VT,unaligned,TF,true,CSAs...>::isAliased( const Other* alias ) const noexcept
 {
-   return vector_.isAliased( alias );
+   return vector_.isAliased( &unview( *alias ) );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -2118,7 +2111,9 @@ inline auto Subvector<VT,unaligned,TF,true,CSAs...>::assign( const DenseVector<V
 {
    BLAZE_INTERNAL_ASSERT( size() == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t ipos( size() & size_t(-2) );
+   const size_t ipos( prevMultiple( size(), 2UL ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= size(), "Invalid end calculation" );
+
    for( size_t i=0UL; i<ipos; i+=2UL ) {
       vector_[offset()+i    ] = (~rhs)[i    ];
       vector_[offset()+i+1UL] = (~rhs)[i+1UL];
@@ -2154,8 +2149,8 @@ inline auto Subvector<VT,unaligned,TF,true,CSAs...>::assign( const DenseVector<V
 
    BLAZE_INTERNAL_ASSERT( size() == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t ipos( size() & size_t(-SIMDSIZE) );
-   BLAZE_INTERNAL_ASSERT( ( size() - ( size() % (SIMDSIZE) ) ) == ipos, "Invalid end calculation" );
+   const size_t ipos( prevMultiple( size(), SIMDSIZE ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= size(), "Invalid end calculation" );
 
    size_t i( 0UL );
    Iterator left( begin() );
@@ -2163,7 +2158,7 @@ inline auto Subvector<VT,unaligned,TF,true,CSAs...>::assign( const DenseVector<V
 
    if( useStreaming && isAligned_ &&
        ( size() > ( cacheSize/( sizeof(ElementType) * 3UL ) ) ) &&
-       !(~rhs).isAliased( &vector_ ) )
+       !(~rhs).isAliased( this ) )
    {
       for( ; i<ipos; i+=SIMDSIZE ) {
          left.stream( right.load() ); left += SIMDSIZE; right += SIMDSIZE;
@@ -2240,7 +2235,9 @@ inline auto Subvector<VT,unaligned,TF,true,CSAs...>::addAssign( const DenseVecto
 {
    BLAZE_INTERNAL_ASSERT( size() == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t ipos( size() & size_t(-2) );
+   const size_t ipos( prevMultiple( size(), 2UL ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= size(), "Invalid end calculation" );
+
    for( size_t i=0UL; i<ipos; i+=2UL ) {
       vector_[offset()+i    ] += (~rhs)[i    ];
       vector_[offset()+i+1UL] += (~rhs)[i+1UL];
@@ -2276,8 +2273,8 @@ inline auto Subvector<VT,unaligned,TF,true,CSAs...>::addAssign( const DenseVecto
 
    BLAZE_INTERNAL_ASSERT( size() == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t ipos( size() & size_t(-SIMDSIZE) );
-   BLAZE_INTERNAL_ASSERT( ( size() - ( size() % (SIMDSIZE) ) ) == ipos, "Invalid end calculation" );
+   const size_t ipos( prevMultiple( size(), SIMDSIZE ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= size(), "Invalid end calculation" );
 
    size_t i( 0UL );
    Iterator left( begin() );
@@ -2348,7 +2345,9 @@ inline auto Subvector<VT,unaligned,TF,true,CSAs...>::subAssign( const DenseVecto
 {
    BLAZE_INTERNAL_ASSERT( size() == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t ipos( size() & size_t(-2) );
+   const size_t ipos( prevMultiple( size(), 2UL ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= size(), "Invalid end calculation" );
+
    for( size_t i=0UL; i<ipos; i+=2UL ) {
       vector_[offset()+i    ] -= (~rhs)[i    ];
       vector_[offset()+i+1UL] -= (~rhs)[i+1UL];
@@ -2384,8 +2383,8 @@ inline auto Subvector<VT,unaligned,TF,true,CSAs...>::subAssign( const DenseVecto
 
    BLAZE_INTERNAL_ASSERT( size() == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t ipos( size() & size_t(-SIMDSIZE) );
-   BLAZE_INTERNAL_ASSERT( ( size() - ( size() % (SIMDSIZE) ) ) == ipos, "Invalid end calculation" );
+   const size_t ipos( prevMultiple( size(), SIMDSIZE ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= size(), "Invalid end calculation" );
 
    size_t i( 0UL );
    Iterator left( begin() );
@@ -2456,7 +2455,9 @@ inline auto Subvector<VT,unaligned,TF,true,CSAs...>::multAssign( const DenseVect
 {
    BLAZE_INTERNAL_ASSERT( size() == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t ipos( size() & size_t(-2) );
+   const size_t ipos( prevMultiple( size(), 2UL ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= size(), "Invalid end calculation" );
+
    for( size_t i=0UL; i<ipos; i+=2UL ) {
       vector_[offset()+i    ] *= (~rhs)[i    ];
       vector_[offset()+i+1UL] *= (~rhs)[i+1UL];
@@ -2492,8 +2493,8 @@ inline auto Subvector<VT,unaligned,TF,true,CSAs...>::multAssign( const DenseVect
 
    BLAZE_INTERNAL_ASSERT( size() == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t ipos( size() & size_t(-SIMDSIZE) );
-   BLAZE_INTERNAL_ASSERT( ( size() - ( size() % (SIMDSIZE) ) ) == ipos, "Invalid end calculation" );
+   const size_t ipos( prevMultiple( size(), SIMDSIZE ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= size(), "Invalid end calculation" );
 
    size_t i( 0UL );
    Iterator left( begin() );
@@ -2577,7 +2578,9 @@ inline auto Subvector<VT,unaligned,TF,true,CSAs...>::divAssign( const DenseVecto
 {
    BLAZE_INTERNAL_ASSERT( size() == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t ipos( size() & size_t(-2) );
+   const size_t ipos( prevMultiple( size(), 2UL ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= size(), "Invalid end calculation" );
+
    for( size_t i=0UL; i<ipos; i+=2UL ) {
       vector_[offset()+i    ] /= (~rhs)[i    ];
       vector_[offset()+i+1UL] /= (~rhs)[i+1UL];
@@ -2613,8 +2616,8 @@ inline auto Subvector<VT,unaligned,TF,true,CSAs...>::divAssign( const DenseVecto
 
    BLAZE_INTERNAL_ASSERT( size() == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t ipos( size() & size_t(-SIMDSIZE) );
-   BLAZE_INTERNAL_ASSERT( ( size() - ( size() % (SIMDSIZE) ) ) == ipos, "Invalid end calculation" );
+   const size_t ipos( prevMultiple( size(), SIMDSIZE ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= size(), "Invalid end calculation" );
 
    size_t i( 0UL );
    Iterator left( begin() );
@@ -2801,9 +2804,7 @@ class Subvector<VT,aligned,TF,true,CSAs...>
    //! Helper structure for the explicit application of the SFINAE principle.
    template< typename VT2 >
    static constexpr bool VectorizedAddAssign_v =
-      ( useOptimizedKernels &&
-        simdEnabled && VT2::simdEnabled &&
-        IsSIMDCombinable_v< ElementType, ElementType_t<VT2> > &&
+      ( VectorizedAssign_v<VT2> &&
         HasSIMDAdd_v< ElementType, ElementType_t<VT2> > );
    //**********************************************************************************************
 
@@ -2811,9 +2812,7 @@ class Subvector<VT,aligned,TF,true,CSAs...>
    //! Helper structure for the explicit application of the SFINAE principle.
    template< typename VT2 >
    static constexpr bool VectorizedSubAssign_v =
-      ( useOptimizedKernels &&
-        simdEnabled && VT2::simdEnabled &&
-        IsSIMDCombinable_v< ElementType, ElementType_t<VT2> > &&
+      ( VectorizedAssign_v<VT2> &&
         HasSIMDSub_v< ElementType, ElementType_t<VT2> > );
    //**********************************************************************************************
 
@@ -2821,9 +2820,7 @@ class Subvector<VT,aligned,TF,true,CSAs...>
    //! Helper structure for the explicit application of the SFINAE principle.
    template< typename VT2 >
    static constexpr bool VectorizedMultAssign_v =
-      ( useOptimizedKernels &&
-        simdEnabled && VT2::simdEnabled &&
-        IsSIMDCombinable_v< ElementType, ElementType_t<VT2> > &&
+      ( VectorizedAssign_v<VT2> &&
         HasSIMDMult_v< ElementType, ElementType_t<VT2> > );
    //**********************************************************************************************
 
@@ -2831,9 +2828,7 @@ class Subvector<VT,aligned,TF,true,CSAs...>
    //! Helper structure for the explicit application of the SFINAE principle.
    template< typename VT2 >
    static constexpr bool VectorizedDivAssign_v =
-      ( useOptimizedKernels &&
-        simdEnabled && VT2::simdEnabled &&
-        IsSIMDCombinable_v< ElementType, ElementType_t<VT2> > &&
+      ( VectorizedAssign_v<VT2> &&
         HasSIMDDiv_v< ElementType, ElementType_t<VT2> > );
    //**********************************************************************************************
 
@@ -3355,7 +3350,7 @@ inline Subvector<VT,aligned,TF,true,CSAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( rhs.canAlias( &vector_ ) ) {
+   if( rhs.canAlias( this ) ) {
       const ResultType tmp( ~rhs );
       smpAssign( left, tmp );
    }
@@ -3406,7 +3401,7 @@ inline Subvector<VT,aligned,TF,true,CSAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( IsReference_v<Right> && right.canAlias( &vector_ ) ) {
+   if( IsReference_v<Right> && right.canAlias( this ) ) {
       const ResultType_t<VT2> tmp( right );
       smpAssign( left, tmp );
    }
@@ -3459,7 +3454,7 @@ inline Subvector<VT,aligned,TF,true,CSAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( IsReference_v<Right> && right.canAlias( &vector_ ) ) {
+   if( IsReference_v<Right> && right.canAlias( this ) ) {
       const ResultType_t<VT2> tmp( right );
       smpAddAssign( left, tmp );
    }
@@ -3510,7 +3505,7 @@ inline Subvector<VT,aligned,TF,true,CSAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( IsReference_v<Right> && right.canAlias( &vector_ ) ) {
+   if( IsReference_v<Right> && right.canAlias( this ) ) {
       const ResultType_t<VT2> tmp( right );
       smpSubAssign( left, tmp );
    }
@@ -3562,7 +3557,7 @@ inline Subvector<VT,aligned,TF,true,CSAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( IsReference_v<Right> && right.canAlias( &vector_ ) ) {
+   if( IsReference_v<Right> && right.canAlias( this ) ) {
       const ResultType_t<VT2> tmp( right );
       smpMultAssign( left, tmp );
    }
@@ -3613,7 +3608,7 @@ inline Subvector<VT,aligned,TF,true,CSAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( IsReference_v<Right> && right.canAlias( &vector_ ) ) {
+   if( IsReference_v<Right> && right.canAlias( this ) ) {
       const ResultType_t<VT2> tmp( right );
       smpDivAssign( left, tmp );
    }
@@ -3870,7 +3865,7 @@ template< typename VT       // Type of the dense vector
 template< typename Other >  // Data type of the foreign expression
 inline bool Subvector<VT,aligned,TF,true,CSAs...>::canAlias( const Other* alias ) const noexcept
 {
-   return vector_.isAliased( alias );
+   return vector_.isAliased( &unview( *alias ) );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -3922,7 +3917,7 @@ template< typename VT       // Type of the dense vector
 template< typename Other >  // Data type of the foreign expression
 inline bool Subvector<VT,aligned,TF,true,CSAs...>::isAliased( const Other* alias ) const noexcept
 {
-   return vector_.isAliased( alias );
+   return vector_.isAliased( &unview( *alias ) );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -4235,7 +4230,9 @@ inline auto Subvector<VT,aligned,TF,true,CSAs...>::assign( const DenseVector<VT2
 {
    BLAZE_INTERNAL_ASSERT( size() == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t ipos( size() & size_t(-2) );
+   const size_t ipos( prevMultiple( size(), 2UL ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= size(), "Invalid end calculation" );
+
    for( size_t i=0UL; i<ipos; i+=2UL ) {
       vector_[offset()+i    ] = (~rhs)[i    ];
       vector_[offset()+i+1UL] = (~rhs)[i+1UL];
@@ -4271,14 +4268,14 @@ inline auto Subvector<VT,aligned,TF,true,CSAs...>::assign( const DenseVector<VT2
 
    BLAZE_INTERNAL_ASSERT( size() == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t ipos( size() & size_t(-SIMDSIZE) );
-   BLAZE_INTERNAL_ASSERT( ( size() - ( size() % (SIMDSIZE) ) ) == ipos, "Invalid end calculation" );
+   const size_t ipos( prevMultiple( size(), SIMDSIZE ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= size(), "Invalid end calculation" );
 
    size_t i( 0UL );
    Iterator left( begin() );
    ConstIterator_t<VT2> right( (~rhs).begin() );
 
-   if( useStreaming && size() > ( cacheSize/( sizeof(ElementType) * 3UL ) ) && !(~rhs).isAliased( &vector_ ) )
+   if( useStreaming && size() > ( cacheSize/( sizeof(ElementType) * 3UL ) ) && !(~rhs).isAliased( this ) )
    {
       for( ; i<ipos; i+=SIMDSIZE ) {
          left.stream( right.load() ); left += SIMDSIZE; right += SIMDSIZE;
@@ -4355,7 +4352,9 @@ inline auto Subvector<VT,aligned,TF,true,CSAs...>::addAssign( const DenseVector<
 {
    BLAZE_INTERNAL_ASSERT( size() == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t ipos( size() & size_t(-2) );
+   const size_t ipos( prevMultiple( size(), 2UL ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= size(), "Invalid end calculation" );
+
    for( size_t i=0UL; i<ipos; i+=2UL ) {
       vector_[offset()+i    ] += (~rhs)[i    ];
       vector_[offset()+i+1UL] += (~rhs)[i+1UL];
@@ -4391,8 +4390,8 @@ inline auto Subvector<VT,aligned,TF,true,CSAs...>::addAssign( const DenseVector<
 
    BLAZE_INTERNAL_ASSERT( size() == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t ipos( size() & size_t(-SIMDSIZE) );
-   BLAZE_INTERNAL_ASSERT( ( size() - ( size() % (SIMDSIZE) ) ) == ipos, "Invalid end calculation" );
+   const size_t ipos( prevMultiple( size(), SIMDSIZE ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= size(), "Invalid end calculation" );
 
    size_t i( 0UL );
    Iterator left( begin() );
@@ -4463,7 +4462,9 @@ inline auto Subvector<VT,aligned,TF,true,CSAs...>::subAssign( const DenseVector<
 {
    BLAZE_INTERNAL_ASSERT( size() == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t ipos( size() & size_t(-2) );
+   const size_t ipos( prevMultiple( size(), 2UL ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= size(), "Invalid end calculation" );
+
    for( size_t i=0UL; i<ipos; i+=2UL ) {
       vector_[offset()+i    ] -= (~rhs)[i    ];
       vector_[offset()+i+1UL] -= (~rhs)[i+1UL];
@@ -4499,8 +4500,8 @@ inline auto Subvector<VT,aligned,TF,true,CSAs...>::subAssign( const DenseVector<
 
    BLAZE_INTERNAL_ASSERT( size() == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t ipos( size() & size_t(-SIMDSIZE) );
-   BLAZE_INTERNAL_ASSERT( ( size() - ( size() % (SIMDSIZE) ) ) == ipos, "Invalid end calculation" );
+   const size_t ipos( prevMultiple( size(), SIMDSIZE ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= size(), "Invalid end calculation" );
 
    size_t i( 0UL );
    Iterator left( begin() );
@@ -4571,7 +4572,9 @@ inline auto Subvector<VT,aligned,TF,true,CSAs...>::multAssign( const DenseVector
 {
    BLAZE_INTERNAL_ASSERT( size() == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t ipos( size() & size_t(-2) );
+   const size_t ipos( prevMultiple( size(), 2UL ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= size(), "Invalid end calculation" );
+
    for( size_t i=0UL; i<ipos; i+=2UL ) {
       vector_[offset()+i    ] *= (~rhs)[i    ];
       vector_[offset()+i+1UL] *= (~rhs)[i+1UL];
@@ -4607,8 +4610,8 @@ inline auto Subvector<VT,aligned,TF,true,CSAs...>::multAssign( const DenseVector
 
    BLAZE_INTERNAL_ASSERT( size() == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t ipos( size() & size_t(-SIMDSIZE) );
-   BLAZE_INTERNAL_ASSERT( ( size() - ( size() % (SIMDSIZE) ) ) == ipos, "Invalid end calculation" );
+   const size_t ipos( prevMultiple( size(), SIMDSIZE ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= size(), "Invalid end calculation" );
 
    size_t i( 0UL );
    Iterator left( begin() );
@@ -4692,7 +4695,9 @@ inline auto Subvector<VT,aligned,TF,true,CSAs...>::divAssign( const DenseVector<
 {
    BLAZE_INTERNAL_ASSERT( size() == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t ipos( size() & size_t(-2) );
+   const size_t ipos( prevMultiple( size(), 2UL ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= size(), "Invalid end calculation" );
+
    for( size_t i=0UL; i<ipos; i+=2UL ) {
       vector_[offset()+i    ] /= (~rhs)[i    ];
       vector_[offset()+i+1UL] /= (~rhs)[i+1UL];
@@ -4728,8 +4733,8 @@ inline auto Subvector<VT,aligned,TF,true,CSAs...>::divAssign( const DenseVector<
 
    BLAZE_INTERNAL_ASSERT( size() == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t ipos( size() & size_t(-SIMDSIZE) );
-   BLAZE_INTERNAL_ASSERT( ( size() - ( size() % (SIMDSIZE) ) ) == ipos, "Invalid end calculation" );
+   const size_t ipos( prevMultiple( size(), SIMDSIZE ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= size(), "Invalid end calculation" );
 
    size_t i( 0UL );
    Iterator left( begin() );
@@ -4885,7 +4890,7 @@ class Subvector< DVecDVecCrossExpr<VT1,VT2,TF>, unaligned, TF, true, CSAs... >
    */
    template< typename T >
    inline bool canAlias( const T* alias ) const noexcept {
-      return vector_.canAlias( alias );
+      return vector_.canAlias( &unview( *alias ) );
    }
    //**********************************************************************************************
 
@@ -4897,7 +4902,7 @@ class Subvector< DVecDVecCrossExpr<VT1,VT2,TF>, unaligned, TF, true, CSAs... >
    */
    template< typename T >
    inline bool isAliased( const T* alias ) const noexcept {
-      return vector_.isAliased( alias );
+      return vector_.isAliased( &unview( *alias ) );
    }
    //**********************************************************************************************
 
@@ -5043,7 +5048,7 @@ class Subvector< DVecSVecCrossExpr<VT1,VT2,TF>, unaligned, TF, true, CSAs... >
    */
    template< typename T >
    inline bool canAlias( const T* alias ) const noexcept {
-      return vector_.canAlias( alias );
+      return vector_.canAlias( &unview( *alias ) );
    }
    //**********************************************************************************************
 
@@ -5055,7 +5060,7 @@ class Subvector< DVecSVecCrossExpr<VT1,VT2,TF>, unaligned, TF, true, CSAs... >
    */
    template< typename T >
    inline bool isAliased( const T* alias ) const noexcept {
-      return vector_.isAliased( alias );
+      return vector_.isAliased( &unview( *alias ) );
    }
    //**********************************************************************************************
 
@@ -5201,7 +5206,7 @@ class Subvector< SVecDVecCrossExpr<VT1,VT2,TF>, unaligned, TF, true, CSAs... >
    */
    template< typename T >
    inline bool canAlias( const T* alias ) const noexcept {
-      return vector_.canAlias( alias );
+      return vector_.canAlias( &unview( *alias ) );
    }
    //**********************************************************************************************
 
@@ -5213,7 +5218,7 @@ class Subvector< SVecDVecCrossExpr<VT1,VT2,TF>, unaligned, TF, true, CSAs... >
    */
    template< typename T >
    inline bool isAliased( const T* alias ) const noexcept {
-      return vector_.isAliased( alias );
+      return vector_.isAliased( &unview( *alias ) );
    }
    //**********************************************************************************************
 
@@ -5359,7 +5364,7 @@ class Subvector< SVecSVecCrossExpr<VT1,VT2,TF>, unaligned, TF, true, CSAs... >
    */
    template< typename T >
    inline bool canAlias( const T* alias ) const noexcept {
-      return vector_.canAlias( alias );
+      return vector_.canAlias( &unview( *alias ) );
    }
    //**********************************************************************************************
 
@@ -5371,7 +5376,7 @@ class Subvector< SVecSVecCrossExpr<VT1,VT2,TF>, unaligned, TF, true, CSAs... >
    */
    template< typename T >
    inline bool isAliased( const T* alias ) const {
-      return vector_.isAliased( alias );
+      return vector_.isAliased( &unview( *alias ) );
    }
    //**********************************************************************************************
 

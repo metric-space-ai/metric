@@ -3,7 +3,7 @@
 //  \file blaze/math/SparseVector.h
 //  \brief Header file for all basic SparseVector functionality
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -54,7 +54,9 @@
 #include "../math/expressions/SVecExpandExpr.h"
 #include "../math/expressions/SVecMapExpr.h"
 #include "../math/expressions/SVecMeanExpr.h"
+#include "../math/expressions/SVecNoAliasExpr.h"
 #include "../math/expressions/SVecNormExpr.h"
+#include "../math/expressions/SVecNoSIMDExpr.h"
 #include "../math/expressions/SVecReduceExpr.h"
 #include "../math/expressions/SVecScalarDivExpr.h"
 #include "../math/expressions/SVecScalarMultExpr.h"

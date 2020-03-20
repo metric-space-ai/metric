@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/SVecScalarDivExpr.h
 //  \brief Header file for the sparse vector/scalar division expression
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -56,7 +56,6 @@
 #include "../../math/sparse/ValueIndexPair.h"
 #include "../../math/traits/DivTrait.h"
 #include "../../math/traits/MultTrait.h"
-#include "../../math/typetraits/IsComputation.h"
 #include "../../math/typetraits/IsExpression.h"
 #include "../../math/typetraits/IsInvertible.h"
 #include "../../math/typetraits/IsMultExpr.h"
@@ -65,11 +64,11 @@
 #include "../../math/typetraits/RequiresEvaluation.h"
 #include "../../math/typetraits/UnderlyingBuiltin.h"
 #include "../../math/typetraits/UnderlyingNumeric.h"
+#include "../../system/MacroDisable.h"
 #include "../../util/Assert.h"
 #include "../../util/constraints/FloatingPoint.h"
 #include "../../util/constraints/Numeric.h"
 #include "../../util/constraints/SameType.h"
-#include "../../util/DisableIf.h"
 #include "../../util/EnableIf.h"
 #include "../../util/FunctionTrace.h"
 #include "../../util/MaybeUnused.h"
@@ -315,7 +314,7 @@ class SVecScalarDivExpr
    // \param vector The left-hand side sparse vector of the division expression.
    // \param scalar The right-hand side scalar of the division expression.
    */
-   explicit inline SVecScalarDivExpr( const VT& vector, ST scalar ) noexcept
+   inline SVecScalarDivExpr( const VT& vector, ST scalar ) noexcept
       : vector_( vector )  // Left-hand side sparse vector of the division expression
       , scalar_( scalar )  // Right-hand side scalar of the division expression
    {}

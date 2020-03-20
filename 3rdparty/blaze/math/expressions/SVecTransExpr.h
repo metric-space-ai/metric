@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/SVecTransExpr.h
 //  \brief Header file for the sparse vector transpose expression
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -40,7 +40,6 @@
 // Includes
 //*************************************************************************************************
 
-#include <iterator>
 #include "../../math/Aliases.h"
 #include "../../math/constraints/RequiresEvaluation.h"
 #include "../../math/constraints/SparseVector.h"
@@ -54,6 +53,7 @@
 #include "../../math/expressions/VecTransExpr.h"
 #include "../../math/typetraits/IsExpression.h"
 #include "../../math/typetraits/RequiresEvaluation.h"
+#include "../../system/MacroDisable.h"
 #include "../../util/Assert.h"
 #include "../../util/EnableIf.h"
 #include "../../util/FunctionTrace.h"
@@ -83,12 +83,10 @@ template< typename VT  // Type of the sparse vector
         , bool TF >    // Transpose flag
 class SVecTransExpr
    : public VecTransExpr< SparseVector< SVecTransExpr<VT,TF>, TF > >
-   , private If< IsComputation_v<VT>, Computation, Transformation >::Type
+   , private If_t< IsComputation_v<VT>, Computation, Transformation >
 {
  private:
    //**Type definitions****************************************************************************
-   using CT = CompositeType_t<VT>;  //!< Composite type of the sparse vector expression.
-
    //! Definition of the GetConstIterator type trait.
    BLAZE_CREATE_GET_TYPE_MEMBER_TYPE_TRAIT( GetConstIterator, ConstIterator, INVALID_TYPE );
    //**********************************************************************************************
@@ -717,71 +715,6 @@ inline decltype(auto) transTo( const SparseVector<VT,TF>& sv )
 {
    return transTo_backend( ~sv, BoolConstant<TTF == TF>() );
 }
-//*************************************************************************************************
-
-
-
-
-//=================================================================================================
-//
-//  GLOBAL RESTRUCTURING FUNCTIONS
-//
-//=================================================================================================
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-/*!\brief Calculating the transpose of a transpose sparse vector.
-// \ingroup sparse_vector
-//
-// \param sv The sparse vector to be (re-)transposed.
-// \return The transpose of the transpose vector.
-//
-// This function implements a performance optimized treatment of the transpose operation on a
-// sparse vector transpose expression. It returns an expression representing the transpose of a
-// transpose sparse vector:
-
-   \code
-   using blaze::columnVector;
-
-   blaze::CompressedVector<double,columnVector> a, b;
-   // ... Resizing and initialization
-   b = trans( trans( a ) );
-   \endcode
-*/
-template< typename VT  // Type of the sparse vector
-        , bool TF >    // Transpose flag
-inline decltype(auto) trans( const SVecTransExpr<VT,TF>& sv )
-{
-   BLAZE_FUNCTION_TRACE;
-
-   return sv.operand();
-}
-/*! \endcond */
-//*************************************************************************************************
-
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-/*!\brief Calculation of the transpose of the given sparse vector-scalar multiplication.
-// \ingroup sparse_vector
-//
-// \param sv The sparse vector-scalar multiplication expression to be transposed.
-// \return The transpose of the expression.
-//
-// This operator implements the performance optimized treatment of the transpose of a sparse
-// vector-scalar multiplication. It restructures the expression \f$ a=trans(b*s1) \f$ to the
-// expression \f$ a=trans(b)*s1 \f$.
-*/
-template< typename VT  // Type of the left-hand side sparse vector
-        , typename ST  // Type of the right-hand side scalar value
-        , bool TF >    // Transpose flag
-inline decltype(auto) trans( const SVecScalarMultExpr<VT,ST,TF>& sv )
-{
-   BLAZE_FUNCTION_TRACE;
-
-   return trans( sv.leftOperand() ) * sv.rightOperand();
-}
-/*! \endcond */
 //*************************************************************************************************
 
 } // namespace blaze

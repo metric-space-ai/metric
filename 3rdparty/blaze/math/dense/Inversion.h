@@ -3,7 +3,7 @@
 //  \file blaze/math/dense/Inversion.h
 //  \brief Header file for the dense matrix in-place inversion kernels
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -45,6 +45,7 @@
 #include "../../math/constraints/Adaptor.h"
 #include "../../math/constraints/BLASCompatible.h"
 #include "../../math/constraints/StrictlyTriangular.h"
+#include "../../math/constraints/Uniform.h"
 #include "../../math/dense/StaticMatrix.h"
 #include "../../math/Exception.h"
 #include "../../math/expressions/DenseMatrix.h"
@@ -62,6 +63,13 @@
 #include "../../math/shims/IsDivisor.h"
 #include "../../math/shims/Invert.h"
 #include "../../math/shims/Real.h"
+#include "../../math/typetraits/IsDiagonal.h"
+#include "../../math/typetraits/IsHermitian.h"
+#include "../../math/typetraits/IsLower.h"
+#include "../../math/typetraits/IsSymmetric.h"
+#include "../../math/typetraits/IsUniLower.h"
+#include "../../math/typetraits/IsUniUpper.h"
+#include "../../math/typetraits/IsUpper.h"
 #include "../../util/algorithms/Min.h"
 #include "../../util/Assert.h"
 #include "../../util/EnableIf.h"
@@ -71,6 +79,36 @@
 
 
 namespace blaze {
+
+//=================================================================================================
+//
+//  AUXILIARY FUNCTIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Returns the proper inversion flag for the given matrix type \a MT.
+//
+// \return The proper inversion flag for the matrix type \a MT.
+*/
+template< typename MT >
+constexpr InversionFlag getInversionFlag() noexcept
+{
+   return ( IsDiagonal_v<MT>  ? asDiagonal
+          : IsUniUpper_v<MT>  ? asUniUpper
+          : IsUpper_v<MT>     ? asUpper
+          : IsUniLower_v<MT>  ? asUniLower
+          : IsLower_v<MT>     ? asLower
+          : IsSymmetric_v<MT> ? asSymmetric
+          : IsHermitian_v<MT> ? asHermitian
+          :                     asGeneral );
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+
 
 //=================================================================================================
 //
@@ -3302,7 +3340,7 @@ inline void invertByLU( DenseMatrix<MT,SO>& dm )
    BLAZE_CONSTRAINT_MUST_BE_BLAS_COMPATIBLE_TYPE( ElementType_t<MT> );
 
    const size_t n( min( (~dm).rows(), (~dm).columns() ) );
-   const std::unique_ptr<int[]> ipiv( new int[n] );
+   const std::unique_ptr<blas_int_t[]> ipiv( new blas_int_t[n] );
 
    getrf( ~dm, ipiv.get() );
    getri( ~dm, ipiv.get() );
@@ -3349,7 +3387,7 @@ inline void invertByLDLT( DenseMatrix<MT,SO>& dm )
    BLAZE_USER_ASSERT( isSymmetric( ~dm ), "Invalid non-symmetric matrix detected" );
 
    const char uplo( ( SO )?( 'L' ):( 'U' ) );
-   const std::unique_ptr<int[]> ipiv( new int[(~dm).rows()] );
+   const std::unique_ptr<blas_int_t[]> ipiv( new blas_int_t[(~dm).rows()] );
 
    sytrf( ~dm, uplo, ipiv.get() );
    sytri( ~dm, uplo, ipiv.get() );
@@ -3451,7 +3489,7 @@ inline auto invertByLDLH( DenseMatrix<MT,SO>& dm )
    BLAZE_USER_ASSERT( isHermitian( ~dm ), "Invalid non-Hermitian matrix detected" );
 
    const char uplo( ( SO )?( 'L' ):( 'U' ) );
-   const std::unique_ptr<int[]> ipiv( new int[(~dm).rows()] );
+   const std::unique_ptr<blas_int_t[]> ipiv( new blas_int_t[(~dm).rows()] );
 
    hetrf( ~dm, uplo, ipiv.get() );
    hetri( ~dm, uplo, ipiv.get() );
@@ -3853,7 +3891,7 @@ template< typename MT  // Type of the dense matrix
         , bool SO >    // Storage order of the dense matrix
 inline void invert( DenseMatrix<MT,SO>& dm )
 {
-   invert<byLU>( ~dm );
+   invert< getInversionFlag<MT>() >( ~dm );
 }
 //*************************************************************************************************
 
@@ -3902,6 +3940,7 @@ template< InversionFlag IF  // Inversion algorithm
 inline void invert( DenseMatrix<MT,SO>& dm )
 {
    BLAZE_CONSTRAINT_MUST_NOT_BE_STRICTLY_TRIANGULAR_MATRIX_TYPE( MT );
+   BLAZE_CONSTRAINT_MUST_NOT_BE_UNIFORM_TYPE( MT );
    BLAZE_CONSTRAINT_MUST_BE_BLAS_COMPATIBLE_TYPE( ElementType_t<MT> );
 
    if( !isSquare( ~dm ) ) {
