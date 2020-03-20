@@ -257,7 +257,6 @@ namespace metric
 		for (size_t i = 0; i < nIter; i++)
 		{
 			blaze::DynamicMatrix<Tv> temp = LArray[nIter - i - 1];
-			cout << temp.rows() << " X " << temp.columns() << endl;
 			blaze::DynamicMatrix<Tv> D(n, n);
 			for (size_t k = 0; k < n; k++)
 				D(k, k) = temp(k, k);
