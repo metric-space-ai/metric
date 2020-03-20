@@ -694,18 +694,6 @@ KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::KNNGraph(const KNN
     valid = true;
 }
 
-//template <typename Sample, typename Distance, typename WeightType, bool isDense, bool isSymmetric>
-//KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::KNNGraph(std::vector<std::vector<typename Distance::value_type>> distance_matrix) 
-//	: Graph<WeightType, isDense, isSymmetric>(),
-//{
-//	//_distance_matrix = distance_matrix;
-//
-// //   make_edge_pairs(samples);
-//
-// //   valid = true;
-//}
-
-
 template <typename Sample, typename Distance, typename WeightType, bool isDense, bool isSymmetric>
 KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::KNNGraph(Tree<Sample, Distance>& tree, size_t neighbors_num, size_t max_bruteforce_size, int max_iterations, double update_range)
     : Graph<WeightType, isDense, isSymmetric>(tree.size()), _neighbors_num(neighbors_num), _max_bruteforce_size(max_bruteforce_size), _max_iterations(max_iterations), _update_range(update_range)
