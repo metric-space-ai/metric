@@ -3,7 +3,7 @@
 //  \file blaze/math/serialization/MatrixSerializer.h
 //  \brief Serialization of dense and sparse matrices
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -53,7 +53,6 @@
 #include "../../math/typetraits/IsResizable.h"
 #include "../../math/typetraits/IsRowMajorMatrix.h"
 #include "../../util/Assert.h"
-#include "../../util/DisableIf.h"
 #include "../../util/EnableIf.h"
 #include "../../util/Types.h"
 #include "../../util/typetraits/IsNumeric.h"
@@ -198,7 +197,7 @@ class MatrixSerializer
    //**Constructors********************************************************************************
    /*!\name Constructors */
    //@{
-   explicit inline MatrixSerializer();
+   inline MatrixSerializer();
    //@}
    //**********************************************************************************************
 

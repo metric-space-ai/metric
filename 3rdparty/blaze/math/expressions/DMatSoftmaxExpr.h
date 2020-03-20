@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/DMatSoftmaxExpr.h
 //  \brief Header file for the dense matrix softmax expression
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -131,9 +131,9 @@ auto softmax( const DenseMatrix<MT,SO>& dm )
    C = softmax<columnwise>( A );
    \endcode
 */
-template< bool RF      // Reduction flag
-        , typename MT  // Type of the dense matrix
-        , bool SO >    // Storage order
+template< ReductionFlag RF  // Reduction flag
+        , typename MT       // Type of the dense matrix
+        , bool SO >         // Storage order
 auto softmax( const DenseMatrix<MT,SO>& dm )
 {
    auto tmp( evaluate( exp( ~dm ) ) );

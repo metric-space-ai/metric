@@ -3,7 +3,7 @@
 //  \file blaze/math/views/Submatrix.h
 //  \brief Header file for the implementation of the Submatrix view
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -52,6 +52,8 @@
 #include "../../math/expressions/MatMatMapExpr.h"
 #include "../../math/expressions/MatMatMultExpr.h"
 #include "../../math/expressions/MatMatSubExpr.h"
+#include "../../math/expressions/MatNoAliasExpr.h"
+#include "../../math/expressions/MatNoSIMDExpr.h"
 #include "../../math/expressions/Matrix.h"
 #include "../../math/expressions/MatReduceExpr.h"
 #include "../../math/expressions/MatScalarDivExpr.h"
@@ -62,10 +64,11 @@
 #include "../../math/expressions/SchurExpr.h"
 #include "../../math/expressions/TVecMatMultExpr.h"
 #include "../../math/expressions/VecExpandExpr.h"
+#include "../../math/expressions/VecTVecMapExpr.h"
 #include "../../math/expressions/VecTVecMultExpr.h"
-#include "../../math/IntegerSequence.h"
 #include "../../math/InversionFlag.h"
 #include "../../math/ReductionFlag.h"
+#include "../../math/RelaxationFlag.h"
 #include "../../math/shims/IsDefault.h"
 #include "../../math/shims/Serial.h"
 #include "../../math/typetraits/HasConstDataAccess.h"
@@ -94,11 +97,10 @@
 #include "../../util/algorithms/Max.h"
 #include "../../util/algorithms/Min.h"
 #include "../../util/Assert.h"
-#include "../../util/DisableIf.h"
 #include "../../util/EnableIf.h"
 #include "../../util/FunctionTrace.h"
+#include "../../util/IntegerSequence.h"
 #include "../../util/IntegralConstant.h"
-#include "../../util/MaybeUnused.h"
 #include "../../util/SmallArray.h"
 #include "../../util/StaticAssert.h"
 #include "../../util/TypeList.h"
@@ -1235,6 +1237,67 @@ inline decltype(auto) submatrix( const MatMatMapExpr<MT>& matrix, RSAs... args )
 
 //*************************************************************************************************
 /*! \cond BLAZE_INTERNAL */
+/*!\brief Creating a view on a specific submatrix of the given outer map operation.
+// \ingroup submatrix
+//
+// \param matrix The constant outer map operation.
+// \return View on the specified submatrix of the outer map operation.
+//
+// This function returns an expression representing the specified submatrix of the given
+// outer map operation.
+*/
+template< AlignmentFlag AF    // Alignment flag
+        , size_t I            // Index of the first row
+        , size_t J            // Index of the first column
+        , size_t M            // Number of rows
+        , size_t N            // Number of columns
+        , typename MT         // Matrix base type of the expression
+        , typename... RSAs >  // Runtime submatrix arguments
+inline decltype(auto) submatrix( const VecTVecMapExpr<MT>& matrix, RSAs... args )
+{
+   BLAZE_FUNCTION_TRACE;
+
+   return map( subvector<AF,I,M>( (~matrix).leftOperand(), args... ),
+               subvector<AF,J,N>( (~matrix).rightOperand(), args... ),
+               (~matrix).operation() );
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Creating a view on a specific submatrix of the given outer map operation.
+// \ingroup submatrix
+//
+// \param matrix The constant outer map operation.
+// \param row The index of the first row of the submatrix.
+// \param column The index of the first column of the submatrix.
+// \param m The number of rows of the submatrix.
+// \param n The number of columns of the submatrix.
+// \return View on the specified submatrix of the outer map operation.
+//
+// This function returns an expression representing the specified submatrix of the given
+// outer map operation.
+*/
+template< AlignmentFlag AF    // Alignment flag
+        , typename MT         // Matrix base type of the expression
+        , typename... RSAs >  // Runtime submatrix arguments
+inline decltype(auto)
+   submatrix( const VecTVecMapExpr<MT>& matrix, size_t row, size_t column, size_t m, size_t n, RSAs... args )
+{
+   BLAZE_FUNCTION_TRACE;
+
+   return map( subvector<AF>( (~matrix).leftOperand(), row, m, args... ),
+               subvector<AF>( (~matrix).rightOperand(), column, n, args... ),
+               (~matrix).operation() );
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
 /*!\brief Creating a view on a specific submatrix of the given matrix evaluation operation.
 // \ingroup submatrix
 //
@@ -1280,6 +1343,58 @@ inline decltype(auto) submatrix( const MatSerialExpr<MT>& matrix, RSAs... args )
    BLAZE_FUNCTION_TRACE;
 
    return serial( submatrix<AF,CSAs...>( (~matrix).operand(), args... ) );
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Creating a view on a specific submatrix of the given matrix no-alias operation.
+// \ingroup submatrix
+//
+// \param matrix The constant matrix no-alias operation.
+// \param args The runtime submatrix arguments.
+// \return View on the specified submatrix of the no-alias operation.
+//
+// This function returns an expression representing the specified submatrix of the given matrix
+// no-alias operation.
+*/
+template< AlignmentFlag AF    // Alignment flag
+        , size_t... CSAs      // Compile time submatrix arguments
+        , typename MT         // Matrix base type of the expression
+        , typename... RSAs >  // Runtime submatrix arguments
+inline decltype(auto) submatrix( const MatNoAliasExpr<MT>& matrix, RSAs... args )
+{
+   BLAZE_FUNCTION_TRACE;
+
+   return noalias( submatrix<AF,CSAs...>( (~matrix).operand(), args... ) );
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Creating a view on a specific submatrix of the given matrix no-SIMD operation.
+// \ingroup submatrix
+//
+// \param matrix The constant matrix no-SIMD operation.
+// \param args The runtime submatrix arguments.
+// \return View on the specified submatrix of the no-SIMD operation.
+//
+// This function returns an expression representing the specified submatrix of the given matrix
+// no-SIMD operation.
+*/
+template< AlignmentFlag AF    // Alignment flag
+        , size_t... CSAs      // Compile time submatrix arguments
+        , typename MT         // Matrix base type of the expression
+        , typename... RSAs >  // Runtime submatrix arguments
+inline decltype(auto) submatrix( const MatNoSIMDExpr<MT>& matrix, RSAs... args )
+{
+   BLAZE_FUNCTION_TRACE;
+
+   return nosimd( submatrix<AF,CSAs...>( (~matrix).operand(), args... ) );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -2461,11 +2576,11 @@ inline void clear( Submatrix<MT,AF,SO,DF,CSAs...>&& sm )
    if( isDefault<relaxed>( submatrix( A, 12UL, 13UL, 22UL, 33UL ) ) ) { ... }
    \endcode
 */
-template< bool RF           // Relaxation flag
-        , typename MT       // Type of the dense matrix
-        , AlignmentFlag AF  // Alignment flag
-        , bool SO           // Storage order
-        , size_t... CSAs >  // Compile time submatrix arguments
+template< RelaxationFlag RF  // Relaxation flag
+        , typename MT        // Type of the dense matrix
+        , AlignmentFlag AF   // Alignment flag
+        , bool SO            // Storage order
+        , size_t... CSAs >   // Compile time submatrix arguments
 inline bool isDefault( const Submatrix<MT,AF,SO,true,CSAs...>& sm )
 {
    using blaze::isDefault;
@@ -2515,11 +2630,11 @@ inline bool isDefault( const Submatrix<MT,AF,SO,true,CSAs...>& sm )
    if( isDefault<relaxed>( submatrix( A, 12UL, 13UL, 22UL, 33UL ) ) ) { ... }
    \endcode
 */
-template< bool RF           // Relaxation flag
-        , typename MT       // Type of the sparse matrix
-        , AlignmentFlag AF  // Alignment flag
-        , bool SO           // Storage order
-        , size_t... CSAs >  // Compile time submatrix arguments
+template< RelaxationFlag RF  // Relaxation flag
+        , typename MT        // Type of the sparse matrix
+        , AlignmentFlag AF   // Alignment flag
+        , bool SO            // Storage order
+        , size_t... CSAs >   // Compile time submatrix arguments
 inline bool isDefault( const Submatrix<MT,AF,SO,false,CSAs...>& sm )
 {
    using blaze::isDefault;
@@ -4711,7 +4826,7 @@ inline bool tryBitxorAssign( const Submatrix<MT1,AF,SO1,DF,CSAs...>& lhs,
 /*!\brief Removal of all restrictions on the data access to the given submatrix.
 // \ingroup submatrix
 //
-// \param dm The submatrix to be derestricted.
+// \param sm The submatrix to be derestricted.
 // \return Submatrix without access restrictions.
 //
 // This function removes all restrictions on the data access to the given submatrix. It returns a
@@ -4729,9 +4844,9 @@ template< typename MT       // Type of the matrix
         , size_t J          // Index of the first column
         , size_t M          // Number of rows
         , size_t N >        // Number of columns
-inline decltype(auto) derestrict( Submatrix<MT,AF,SO,DF,I,J,M,N>& dm )
+inline decltype(auto) derestrict( Submatrix<MT,AF,SO,DF,I,J,M,N>& sm )
 {
-   return submatrix<AF,I,J,M,N>( derestrict( dm.operand() ), unchecked );
+   return submatrix<AF,I,J,M,N>( derestrict( sm.operand() ), unchecked );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -4742,7 +4857,7 @@ inline decltype(auto) derestrict( Submatrix<MT,AF,SO,DF,I,J,M,N>& dm )
 /*!\brief Removal of all restrictions on the data access to the given temporary submatrix.
 // \ingroup submatrix
 //
-// \param dm The temporary submatrix to be derestricted.
+// \param sm The temporary submatrix to be derestricted.
 // \return Submatrix without access restrictions.
 //
 // This function removes all restrictions on the data access to the given temporary submatrix. It
@@ -4760,9 +4875,9 @@ template< typename MT       // Type of the matrix
         , size_t J          // Index of the first column
         , size_t M          // Number of rows
         , size_t N >        // Number of columns
-inline decltype(auto) derestrict( Submatrix<MT,AF,SO,DF,I,J,M,N>&& dm )
+inline decltype(auto) derestrict( Submatrix<MT,AF,SO,DF,I,J,M,N>&& sm )
 {
-   return submatrix<AF,I,J,M,N>( derestrict( dm.operand() ), unchecked );
+   return submatrix<AF,I,J,M,N>( derestrict( sm.operand() ), unchecked );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -4773,7 +4888,7 @@ inline decltype(auto) derestrict( Submatrix<MT,AF,SO,DF,I,J,M,N>&& dm )
 /*!\brief Removal of all restrictions on the data access to the given submatrix.
 // \ingroup submatrix
 //
-// \param dm The submatrix to be derestricted.
+// \param sm The submatrix to be derestricted.
 // \return Submatrix without access restrictions.
 //
 // This function removes all restrictions on the data access to the given submatrix. It returns a
@@ -4787,9 +4902,9 @@ template< typename MT       // Type of the matrix
         , AlignmentFlag AF  // Alignment flag
         , bool SO           // Storage order
         , bool DF >         // Density flag
-inline decltype(auto) derestrict( Submatrix<MT,AF,SO,DF>& dm )
+inline decltype(auto) derestrict( Submatrix<MT,AF,SO,DF>& sm )
 {
-   return submatrix<AF>( derestrict( dm.operand() ), dm.row(), dm.column(), dm.rows(), dm.columns(), unchecked );
+   return submatrix<AF>( derestrict( sm.operand() ), sm.row(), sm.column(), sm.rows(), sm.columns(), unchecked );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -4800,7 +4915,7 @@ inline decltype(auto) derestrict( Submatrix<MT,AF,SO,DF>& dm )
 /*!\brief Removal of all restrictions on the data access to the given temporary submatrix.
 // \ingroup submatrix
 //
-// \param dm The temporary submatrix to be derestricted.
+// \param sm The temporary submatrix to be derestricted.
 // \return Submatrix without access restrictions.
 //
 // This function removes all restrictions on the data access to the given temporary submatrix. It
@@ -4814,9 +4929,61 @@ template< typename MT       // Type of the matrix
         , AlignmentFlag AF  // Alignment flag
         , bool SO           // Storage order
         , bool DF >         // Density flag
-inline decltype(auto) derestrict( Submatrix<MT,AF,SO,DF>&& dm )
+inline decltype(auto) derestrict( Submatrix<MT,AF,SO,DF>&& sm )
 {
-   return submatrix<AF>( derestrict( dm.operand() ), dm.row(), dm.column(), dm.rows(), dm.columns(), unchecked );
+   return submatrix<AF>( derestrict( sm.operand() ), sm.row(), sm.column(), sm.rows(), sm.columns(), unchecked );
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Returns a reference to the underlying matrix of the given submatrix.
+// \ingroup submatrix
+//
+// \param sm The given submatrix.
+// \return Reference to the underlying matrix.
+//
+// This function returns a reference to the underlying matrix of the given submatrix.\n
+// This function must \b NOT be called explicitly! It is used internally for the performance
+// optimized evaluation of expression templates. Calling this function explicitly might result
+// in the violation of invariants, erroneous results and/or in compilation errors.
+*/
+template< typename MT       // Type of the matrix
+        , AlignmentFlag AF  // Alignment flag
+        , bool SO           // Storage order
+        , bool DF           // Density flag
+        , size_t... CSAs >  // Compile time submatrix arguments
+inline decltype(auto) unview( Submatrix<MT,AF,SO,DF,CSAs...>& sm )
+{
+   return sm.operand();
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Returns a reference to the underlying matrix of the given constant submatrix.
+// \ingroup submatrix
+//
+// \param sm The given constant submatrix.
+// \return Reference to the underlying matrix.
+//
+// This function returns a reference to the underlying matrix of the given constant submatrix.\n
+// This function must \b NOT be called explicitly! It is used internally for the performance
+// optimized evaluation of expression templates. Calling this function explicitly might result
+// in the violation of invariants, erroneous results and/or in compilation errors.
+*/
+template< typename MT       // Type of the matrix
+        , AlignmentFlag AF  // Alignment flag
+        , bool SO           // Storage order
+        , bool DF           // Density flag
+        , size_t... CSAs >  // Compile time submatrix arguments
+inline decltype(auto) unview( const Submatrix<MT,AF,SO,DF,CSAs...>& sm )
+{
+   return sm.operand();
 }
 /*! \endcond */
 //*************************************************************************************************

@@ -3,7 +3,7 @@
 //  \file blaze/math/typetraits/IsMatReduceExpr.h
 //  \brief Header file for the IsMatReduceExpr type trait class
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -64,10 +64,10 @@ struct IsMatReduceExprHelper
    //**********************************************************************************************
    static T* create();
 
-   template< typename U, size_t N >
+   template< typename U, ReductionFlag N >
    static TrueType test( const MatReduceExpr<U,N>* );
 
-   template< typename U, size_t N >
+   template< typename U, ReductionFlag N >
    static TrueType test( const volatile MatReduceExpr<U,N>* );
 
    static FalseType test( ... );

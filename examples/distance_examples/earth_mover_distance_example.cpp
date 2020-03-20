@@ -45,22 +45,101 @@ int main()
 
     // assumes that i1 and i2 are serialized vectors of the image matrices, and cost_mat contains a distance matrix that takes into account the original pixel locations.
     auto t1 = std::chrono::steady_clock::now();
-    auto result1 = distance(i1, i2);
+    auto result = distance(i1, i2);
     auto t2 = std::chrono::steady_clock::now();
-    std::cout << "result1: " << result1
+    std::cout << "result: " << result
               << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000
               << " s)" << std::endl;
     std::cout << "" << std::endl;
 
     std::cout << "swap records and calculate again" << std::endl;
     std::cout << "" << std::endl;
-
-    auto result2 = distance(i2, i1);
-    auto t3 = std::chrono::steady_clock::now();
-    std::cout << "result2: " << result2
-              << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t3 - t2).count()) / 1000000
+	
+    t1 = std::chrono::steady_clock::now();
+    result = distance(i2, i1);
+    t2 = std::chrono::steady_clock::now();
+    std::cout << "result: " << result
+              << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000
               << " s)" << std::endl;
     std::cout << "" << std::endl;
+
+	//	
+	
+    cost_mat = metric::EMD_details::ground_distance_matrix_of_2dgrid<emd_Type>(3, 3);
+    maxCost = metric::EMD_details::max_in_distance_matrix(cost_mat);
+    distance = metric::EMD<emd_Type>(cost_mat, maxCost);
+
+	// vector
+
+	std::vector<emd_Type> vector_1 = {0, 0, 0, 0, 0, 0, 0, 0, 0};
+    std::vector<emd_Type> vector_2 = {0, 0, 0, 0, 1, 0, 0, 0, 0};
+
+	t1 = std::chrono::steady_clock::now();
+    result = distance(vector_1, vector_2);
+    t2 = std::chrono::steady_clock::now();
+    std::cout << "result: " << result
+              << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000
+              << " s)" << std::endl;
+    std::cout << "" << std::endl;
+
+	//// array
+
+	//emd_Type array_1[] = {0, 0, 0, 0, 0, 0, 0, 0, 0};
+ //   emd_Type array_2[] = {0, 0, 0, 0, 1, 0, 0, 0, 0};	
+
+	//t1 = std::chrono::steady_clock::now();
+ //   result = distance(array_1, array_2);
+ //   t2 = std::chrono::steady_clock::now();
+ //   std::cout << "result: " << result
+ //             << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000
+ //             << " s)" << std::endl;
+ //   std::cout << "" << std::endl;
+
+	// std::array
+
+	std::array<emd_Type, 9> std_array_1 = {0, 0, 0, 0, 0, 0, 0, 0, 0};
+    std::array<emd_Type, 9> std_array_2 = {0, 0, 0, 0, 1, 0, 0, 0, 0};	
+
+	t1 = std::chrono::steady_clock::now();
+    result = distance(std_array_1, std_array_2);
+    t2 = std::chrono::steady_clock::now();
+    std::cout << "result: " << result
+              << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000
+              << " s)" << std::endl;
+    std::cout << "" << std::endl;
+
+	// deque
+
+	std::deque<emd_Type> deque_1 = {0, 0, 0, 0, 0, 0, 0, 0, 0};
+    std::deque<emd_Type> deque_2 = {0, 0, 0, 0, 1, 0, 0, 0, 0};
+
+	t1 = std::chrono::steady_clock::now();
+    result = distance(deque_1, deque_2);
+    t2 = std::chrono::steady_clock::now();
+    std::cout << "result: " << result
+              << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000
+              << " s)" << std::endl;
+    std::cout << "" << std::endl;
+
+	//// map
+
+	//std::map<int, emd_Type> map_1;
+ //   std::map<int, emd_Type> map_2;
+	//
+	//for (auto i = 0; i < 9; i++)
+	//{
+	//	map_1[i] = 0;
+	//	map_2[i] = 0;
+	//}
+	//map_2[5] = 1;
+	//
+	//t1 = std::chrono::steady_clock::now();
+ //   result = distance(map_1, map_2);
+ //   t2 = std::chrono::steady_clock::now();
+ //   std::cout << "result: " << result
+ //             << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000
+ //             << " s)" << std::endl;
+ //   std::cout << "" << std::endl;
 
     return 0;
 }

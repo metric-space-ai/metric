@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/DMatSerialExpr.h
 //  \brief Header file for the dense matrix serial evaluation expression
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -812,35 +812,6 @@ inline decltype(auto) serial( const DenseMatrix<MT,SO>& dm )
    using ReturnType = const DMatSerialExpr<MT,SO>;
    return ReturnType( ~dm );
 }
-//*************************************************************************************************
-
-
-
-
-//=================================================================================================
-//
-//  GLOBAL RESTRUCTURING FUNCTIONS
-//
-//=================================================================================================
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-/*!\brief Evaluation of the given dense matrix serial evaluation expression \a dm.
-// \ingroup dense_matrix
-//
-// \param dm The input serial evaluation expression.
-// \return The evaluated dense matrix.
-//
-// This function implements a performance optimized treatment of the serial evaluation of a dense
-// matrix serial evaluation expression.
-*/
-template< typename MT  // Type of the dense matrix
-        , bool SO >    // Storage order
-inline decltype(auto) serial( const DMatSerialExpr<MT,SO>& dm )
-{
-   return dm;
-}
-/*! \endcond */
 //*************************************************************************************************
 
 

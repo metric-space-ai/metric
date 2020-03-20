@@ -36,6 +36,16 @@ using DistanceMatrix = blaze::SymmetricMatrix<blaze::DynamicMatrix<T>>;
  */
 template <class recType1, class Metric1, class recType2, class Metric2>
 struct MGC {
+
+    /**
+     * @brief Construct MGC object
+     *
+     * @param m1 Metric1 object
+     * @param m2 Metric1 object
+     *
+     */
+    explicit MGC(const Metric1 & m1 = Metric1(), const Metric2 & m2 = Metric2()) : metric1(m1), metric2(m2) {}
+
     /** @brief return correlation betweeen a and b
      * @param a container of values of type recType1
      * @param b container of values of type recType2
@@ -54,8 +64,25 @@ struct MGC {
      */
     template <typename Container1, typename Container2>
     double estimate(const Container1& a, const Container2& b, const size_t sampleSize = 250,
-        const double threshold = 0.05, size_t maxIterations = 1000);
+                            const double threshold = 0.05, size_t maxIterations = 1000);
 
+	/** @brief return vector of mgc values calculated for different data shifts
+	 * @param a container of values of type recType1
+	 * @param b container of values of type recType2
+	 * @param n number of delayed computations in +/- direction
+	 * @return vector of mgc values calculated for different data shifts
+	 */
+	template <typename Container1, typename Container2>
+    std::vector<double> xcorr(const Container1& a, const Container2& b, const int n) const;
+
+	/**
+	 * @brief return distance matrix
+	 *
+	 * @param c container of values
+	 * @return distance matrix
+	 */
+	template <typename Container, typename Metric>
+  DistanceMatrix<double> computeDistanceMatrix(const Container &c, const Metric & metric) const;
     /**
      * @brief
      *
@@ -125,6 +152,10 @@ struct MGC {
      * @return
      */
     std::vector<double> linspace(double a, double b, int n);
+
+private:
+    Metric1 metric1;
+    Metric2 metric2;
 };
 
 /**
@@ -143,6 +174,15 @@ struct MGC_direct {
      */
     template <typename T>
     T operator()(const DistanceMatrix<T>& a, const DistanceMatrix<T>& b);
+
+    /** @brief return vector of mgc values calculated for different data shifts
+     * @param a distance matrix
+     * @param b distance matrix
+     * @param n number of delayed computations in +/- direction
+     * @return vector of mgc values calculated for different data shifts
+     */
+    template <typename T>
+    std::vector<double> xcorr(const DistanceMatrix<T>& a, const DistanceMatrix<T>& b, const unsigned int n);
 
     /**
      * @brief Computes the centered distance matrix

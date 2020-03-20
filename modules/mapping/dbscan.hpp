@@ -35,7 +35,7 @@ namespace metric {
  *          size of corresponding cluster.
  */
 template <typename recType, typename Metric, typename T>
-std::tuple<std::vector<int>, std::vector<int>, std::vector<int>> dbscan(const metric::Matrix<recType, Metric, T>& dm, T eps, std::size_t minpts);
+std::tuple<std::vector<int>, std::vector<int>, std::vector<int>> dbscan(const metric::Matrix<recType, Metric>& dm, T eps, std::size_t minpts);
 
 }  // namespace metric
 

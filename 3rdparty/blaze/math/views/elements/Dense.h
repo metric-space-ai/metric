@@ -3,7 +3,7 @@
 //  \file blaze/math/views/elements/Dense.h
 //  \brief Elements specialization for dense vectors
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -57,6 +57,7 @@
 #include "../../../math/InitializerList.h"
 #include "../../../math/shims/Clear.h"
 #include "../../../math/shims/IsDefault.h"
+#include "../../../math/shims/PrevMultiple.h"
 #include "../../../math/shims/Reset.h"
 #include "../../../math/traits/CrossTrait.h"
 #include "../../../math/traits/ElementsTrait.h"
@@ -67,6 +68,7 @@
 #include "../../../math/views/Check.h"
 #include "../../../math/views/elements/BaseTemplate.h"
 #include "../../../math/views/elements/ElementsData.h"
+#include "../../../system/MacroDisable.h"
 #include "../../../system/Thresholds.h"
 #include "../../../util/Assert.h"
 #include "../../../util/mpl/If.h"
@@ -1016,7 +1018,7 @@ inline Elements<VT,TF,true,CEAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( rhs.canAlias( &vector_ ) ) {
+   if( rhs.canAlias( this ) ) {
       const ResultType tmp( rhs );
       smpAssign( left, tmp );
    }
@@ -1071,7 +1073,7 @@ inline Elements<VT,TF,true,CEAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( IsReference_v<Right> && right.canAlias( &vector_ ) ) {
+   if( IsReference_v<Right> && right.canAlias( this ) ) {
       const ResultType_t<VT2> tmp( right );
       smpAssign( left, tmp );
    }
@@ -1128,7 +1130,7 @@ inline Elements<VT,TF,true,CEAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( IsReference_v<Right> && right.canAlias( &vector_ ) ) {
+   if( IsReference_v<Right> && right.canAlias( this ) ) {
       const ResultType_t<VT2> tmp( right );
       smpAddAssign( left, tmp );
    }
@@ -1183,7 +1185,7 @@ inline Elements<VT,TF,true,CEAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( IsReference_v<Right> && right.canAlias( &vector_ ) ) {
+   if( IsReference_v<Right> && right.canAlias( this ) ) {
       const ResultType_t<VT2> tmp( right );
       smpSubAssign( left, tmp );
    }
@@ -1239,7 +1241,7 @@ inline Elements<VT,TF,true,CEAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( IsReference_v<Right> && right.canAlias( &vector_ ) ) {
+   if( IsReference_v<Right> && right.canAlias( this ) ) {
       const ResultType_t<VT2> tmp( right );
       smpMultAssign( left, tmp );
    }
@@ -1294,7 +1296,7 @@ inline Elements<VT,TF,true,CEAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( IsReference_v<Right> && right.canAlias( &vector_ ) ) {
+   if( IsReference_v<Right> && right.canAlias( this ) ) {
       const ResultType_t<VT2> tmp( right );
       smpDivAssign( left, tmp );
    }
@@ -1549,7 +1551,7 @@ template< typename VT         // Type of the dense vector
 template< typename Other >  // Data type of the foreign expression
 inline bool Elements<VT,TF,true,CEAs...>::canAlias( const Other* alias ) const noexcept
 {
-   return vector_.isAliased( alias );
+   return vector_.isAliased( &unview( *alias ) );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -1572,7 +1574,7 @@ template< typename VT         // Type of the dense vector
 template< typename Other >  // Data type of the foreign expression
 inline bool Elements<VT,TF,true,CEAs...>::isAliased( const Other* alias ) const noexcept
 {
-   return vector_.isAliased( alias );
+   return vector_.isAliased( &unview( *alias ) );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -1641,7 +1643,9 @@ inline void Elements<VT,TF,true,CEAs...>::assign( const DenseVector<VT2,TF>& rhs
 {
    BLAZE_INTERNAL_ASSERT( size() == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t ipos( size() & size_t(-2) );
+   const size_t ipos( prevMultiple( size(), 2UL ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= size(), "Invalid end calculation" );
+
    for( size_t i=0UL; i<ipos; i+=2UL ) {
       vector_[idx(i    )] = (~rhs)[i    ];
       vector_[idx(i+1UL)] = (~rhs)[i+1UL];
@@ -1701,7 +1705,9 @@ inline void Elements<VT,TF,true,CEAs...>::addAssign( const DenseVector<VT2,TF>& 
 {
    BLAZE_INTERNAL_ASSERT( size() == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t ipos( size() & size_t(-2) );
+   const size_t ipos( prevMultiple( size(), 2UL ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= size(), "Invalid end calculation" );
+
    for( size_t i=0UL; i<ipos; i+=2UL ) {
       vector_[idx(i    )] += (~rhs)[i    ];
       vector_[idx(i+1UL)] += (~rhs)[i+1UL];
@@ -1761,7 +1767,9 @@ inline void Elements<VT,TF,true,CEAs...>::subAssign( const DenseVector<VT2,TF>& 
 {
    BLAZE_INTERNAL_ASSERT( size() == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t ipos( size() & size_t(-2) );
+   const size_t ipos( prevMultiple( size(), 2UL ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= size(), "Invalid end calculation" );
+
    for( size_t i=0UL; i<ipos; i+=2UL ) {
       vector_[idx(i    )] -= (~rhs)[i    ];
       vector_[idx(i+1UL)] -= (~rhs)[i+1UL];
@@ -1821,7 +1829,9 @@ inline void Elements<VT,TF,true,CEAs...>::multAssign( const DenseVector<VT2,TF>&
 {
    BLAZE_INTERNAL_ASSERT( size() == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t ipos( size() & size_t(-2) );
+   const size_t ipos( prevMultiple( size(), 2UL ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= size(), "Invalid end calculation" );
+
    for( size_t i=0UL; i<ipos; i+=2UL ) {
       vector_[idx(i    )] *= (~rhs)[i    ];
       vector_[idx(i+1UL)] *= (~rhs)[i+1UL];
@@ -1894,7 +1904,9 @@ inline void Elements<VT,TF,true,CEAs...>::divAssign( const DenseVector<VT2,TF>& 
 {
    BLAZE_INTERNAL_ASSERT( size() == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t ipos( size() & size_t(-2) );
+   const size_t ipos( prevMultiple( size(), 2UL ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= size(), "Invalid end calculation" );
+
    for( size_t i=0UL; i<ipos; i+=2UL ) {
       vector_[idx(i    )] /= (~rhs)[i    ];
       vector_[idx(i+1UL)] /= (~rhs)[i+1UL];
@@ -2044,7 +2056,7 @@ class Elements< const DVecDVecCrossExpr<VT1,VT2,TF>, TF, true, CEAs... >
    */
    template< typename T >
    inline bool canAlias( const T* alias ) const noexcept {
-      return vector_.canAlias( alias );
+      return vector_.canAlias( &unview( *alias ) );
    }
    //**********************************************************************************************
 
@@ -2056,7 +2068,7 @@ class Elements< const DVecDVecCrossExpr<VT1,VT2,TF>, TF, true, CEAs... >
    */
    template< typename T >
    inline bool isAliased( const T* alias ) const noexcept {
-      return vector_.isAliased( alias );
+      return vector_.isAliased( &unview( *alias ) );
    }
    //**********************************************************************************************
 
@@ -2206,7 +2218,7 @@ class Elements< const DVecSVecCrossExpr<VT1,VT2,TF>, TF, true, CEAs... >
    */
    template< typename T >
    inline bool canAlias( const T* alias ) const noexcept {
-      return vector_.canAlias( alias );
+      return vector_.canAlias( &unview( *alias ) );
    }
    //**********************************************************************************************
 
@@ -2218,7 +2230,7 @@ class Elements< const DVecSVecCrossExpr<VT1,VT2,TF>, TF, true, CEAs... >
    */
    template< typename T >
    inline bool isAliased( const T* alias ) const noexcept {
-      return vector_.isAliased( alias );
+      return vector_.isAliased( &unview( *alias ) );
    }
    //**********************************************************************************************
 
@@ -2368,7 +2380,7 @@ class Elements< const SVecDVecCrossExpr<VT1,VT2,TF>, TF, true, CEAs... >
    */
    template< typename T >
    inline bool canAlias( const T* alias ) const noexcept {
-      return vector_.canAlias( alias );
+      return vector_.canAlias( &unview( *alias ) );
    }
    //**********************************************************************************************
 
@@ -2380,7 +2392,7 @@ class Elements< const SVecDVecCrossExpr<VT1,VT2,TF>, TF, true, CEAs... >
    */
    template< typename T >
    inline bool isAliased( const T* alias ) const noexcept {
-      return vector_.isAliased( alias );
+      return vector_.isAliased( &unview( *alias ) );
    }
    //**********************************************************************************************
 
@@ -2530,7 +2542,7 @@ class Elements< const SVecSVecCrossExpr<VT1,VT2,TF>, TF, true, CEAs... >
    */
    template< typename T >
    inline bool canAlias( const T* alias ) const noexcept {
-      return vector_.canAlias( alias );
+      return vector_.canAlias( &unview( *alias ) );
    }
    //**********************************************************************************************
 
@@ -2542,7 +2554,7 @@ class Elements< const SVecSVecCrossExpr<VT1,VT2,TF>, TF, true, CEAs... >
    */
    template< typename T >
    inline bool isAliased( const T* alias ) const noexcept {
-      return vector_.isAliased( alias );
+      return vector_.isAliased( &unview( *alias ) );
    }
    //**********************************************************************************************
 

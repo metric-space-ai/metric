@@ -11,7 +11,19 @@
 #include <unordered_map>
 #include <cstring>
 #include <chrono>
+#ifdef __GNUC__
+  #if __GNUC_PREREQ(8,0)
+	#include <filesystem>
+        namespace fs = std::filesystem;
+  #else
+	#include <experimental/filesystem>
+        namespace fs = std::experimental::filesystem;
+  #endif
+#else
 #include <filesystem>
+namespace fs = std::filesystem;
+#endif
+//#include <experimental/filesystem> // edited by Max F
 #include <boost/iostreams/filter/zlib.hpp>
 #include <boost/program_options.hpp>
 
@@ -55,7 +67,8 @@ void compress_file(const std::string& file_name, std::string out_name, Compresso
         8, boost::iostreams::zlib::huffman_only);
     std::vector<char> v = compressor.compress(boost::iostreams::zlib_compressor(zp));
     if(out_name.empty()) {
-        out_name = std::filesystem::path(file_name).filename().string() + ".z";
+        out_name = fs::path(file_name).filename().string() + ".z";
+        //out_name = std::experimental::filesystem::path(file_name).filename().string() + ".z"; // edited by Max F, Jan, 9, 2020
     }
 
     // save compressed data

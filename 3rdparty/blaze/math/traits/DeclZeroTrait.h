@@ -3,7 +3,7 @@
 //  \file blaze/math/traits/DeclZeroTrait.h
 //  \brief Header file for the declzero trait
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -47,6 +47,7 @@
 #include "../../math/typetraits/Size.h"
 #include "../../math/typetraits/StorageOrder.h"
 #include "../../math/typetraits/TransposeFlag.h"
+#include "../../util/EnableIf.h"
 #include "../../util/InvalidType.h"
 
 

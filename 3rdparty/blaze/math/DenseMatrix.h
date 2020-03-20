@@ -3,7 +3,7 @@
 //  \file blaze/math/DenseMatrix.h
 //  \brief Header file for all basic DenseMatrix functionality
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -50,6 +50,7 @@
 #include "../math/dense/Inversion.h"
 #include "../math/dense/LLH.h"
 #include "../math/dense/LQ.h"
+#include "../math/dense/LSE.h"
 #include "../math/dense/LU.h"
 #include "../math/dense/QL.h"
 #include "../math/dense/QR.h"
@@ -59,7 +60,11 @@
 #include "../math/expressions/DMatDeclDiagExpr.h"
 #include "../math/expressions/DMatDeclHermExpr.h"
 #include "../math/expressions/DMatDeclLowExpr.h"
+#include "../math/expressions/DMatDeclStrLowExpr.h"
+#include "../math/expressions/DMatDeclStrUppExpr.h"
 #include "../math/expressions/DMatDeclSymExpr.h"
+#include "../math/expressions/DMatDeclUniLowExpr.h"
+#include "../math/expressions/DMatDeclUniUppExpr.h"
 #include "../math/expressions/DMatDeclUppExpr.h"
 #include "../math/expressions/DMatDetExpr.h"
 #include "../math/expressions/DMatDMatAddExpr.h"
@@ -68,13 +73,20 @@
 #include "../math/expressions/DMatDMatMapExpr.h"
 #include "../math/expressions/DMatDMatMultExpr.h"
 #include "../math/expressions/DMatDMatSchurExpr.h"
+#include "../math/expressions/DMatDMatSolveExpr.h"
 #include "../math/expressions/DMatDMatSubExpr.h"
 #include "../math/expressions/DMatDVecMultExpr.h"
+#include "../math/expressions/DMatDVecSolveExpr.h"
+#include "../math/expressions/DMatEigenExpr.h"
 #include "../math/expressions/DMatEvalExpr.h"
+#include "../math/expressions/DMatExpExpr.h"
+#include "../math/expressions/DMatGenExpr.h"
 #include "../math/expressions/DMatInvExpr.h"
 #include "../math/expressions/DMatMapExpr.h"
 #include "../math/expressions/DMatMeanExpr.h"
+#include "../math/expressions/DMatNoAliasExpr.h"
 #include "../math/expressions/DMatNormExpr.h"
+#include "../math/expressions/DMatNoSIMDExpr.h"
 #include "../math/expressions/DMatReduceExpr.h"
 #include "../math/expressions/DMatScalarDivExpr.h"
 #include "../math/expressions/DMatScalarMultExpr.h"
@@ -84,6 +96,7 @@
 #include "../math/expressions/DMatSMatSubExpr.h"
 #include "../math/expressions/DMatSoftmaxExpr.h"
 #include "../math/expressions/DMatStdDevExpr.h"
+#include "../math/expressions/DMatSVDExpr.h"
 #include "../math/expressions/DMatSVecMultExpr.h"
 #include "../math/expressions/DMatTDMatAddExpr.h"
 #include "../math/expressions/DMatTDMatMapExpr.h"

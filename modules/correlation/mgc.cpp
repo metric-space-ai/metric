@@ -12,6 +12,7 @@
 #include <functional>
 #include <iterator>
 #include <numeric>
+#include <limits>
 #include <vector>
 
 #if defined(_MSC_VER)
@@ -30,6 +31,8 @@
 
 #include "../utils/graph/connected_components.hpp"
 #include "../distance.hpp"
+#include "mgc.hpp"
+
 
 namespace metric {
 
@@ -283,8 +286,9 @@ void MGC_direct::normalize_generalized_correlation(
 template <typename T>
 T MGC_direct::operator()(const DistanceMatrix<T>& X, const DistanceMatrix<T>& Y)
 {
+	assert(X.rows() == Y.rows());
 
-    // center distance matrix
+	// center distance matrix
     blaze::DynamicMatrix<T> A = center_distance_matrix(X);
     blaze::DynamicMatrix<T> B = center_distance_matrix(Y);
 
@@ -334,39 +338,75 @@ T MGC_direct::operator()(const DistanceMatrix<T>& X, const DistanceMatrix<T>& Y)
     return optimal_local_generalized_correlation(corr, R);
 }
 
-template <class recType1, class Metric1, class recType2, class Metric2>
+template<typename T> std::vector<double> MGC_direct::xcorr(const DistanceMatrix<T> &a, const DistanceMatrix<T> &b, const unsigned int n)
+{
+	assert(a.rows() == b.rows());
+	assert(n <= std::numeric_limits<int>::max());
+
+	std::vector<double> result;
+	result.reserve(2 * n + 1);
+
+	int s = -n;
+	if (s <= (int)n) {
+		auto g = 9;
+	}
+
+	for (int shift = -n; shift <= (int)n; ++shift) {
+		DistanceMatrix<T> aShifted;
+		DistanceMatrix<T> bShifted;
+
+		const auto start = std::abs(shift);
+		const auto length = a.rows() - start;
+
+		if (shift < 0) {
+			aShifted = blaze::submatrix(a, start, start, length, length);
+			bShifted = blaze::submatrix(b, 0, 0, length, length);
+		} else {
+			aShifted = blaze::submatrix(a, 0, 0, length, length);
+			bShifted = blaze::submatrix(b, start, start, length, length);
+		}
+
+		result.push_back(operator()(aShifted, bShifted));
+	}
+
+	return result;
+}
+
+	template <class recType1, class Metric1, class recType2, class Metric2>
 template <typename Container1, typename Container2>
 double MGC<recType1, Metric1, recType2, Metric2>::operator()(const Container1& a, const Container2& b) const
 {
-    assert(a.size() == b.size()) /* "data sets to not have same size"*/;
+    assert(a.size() == b.size());
 
-    /* Compute distance matrix 1 */
-    DistanceMatrix<double> X(a.size());
-    for (size_t i = 0; i < X.rows(); ++i) {
-        X(i, i) = 0;
-        for (size_t j = i + 1; j < X.columns(); ++j) {
-            double distance = Metric1()(a[i], a[j]);
-            X(i, j) = distance;
-        }
-    }
-
-    /* Compute distance matrix 2 */
-    DistanceMatrix<double> Y(b.size());
-    for (size_t i = 0; i < Y.rows(); ++i) {
-        Y(i, i) = 0;
-        for (size_t j = i + 1; j < Y.columns(); ++j) {
-            double distance = Metric2()(b[i], b[j]);
-            Y(i, j) = distance;
-        }
-    }
+    /* Compute distance matrices */
+    auto X = computeDistanceMatrix<Container1>(a, metric1);
+    auto Y = computeDistanceMatrix<Container2>(b, metric2);
 
     return MGC_direct()(X, Y);
 }
 
 template <class recType1, class Metric1, class recType2, class Metric2>
+template <typename Container, typename Metric>
+DistanceMatrix<double> MGC<recType1, Metric1, recType2, Metric2>::computeDistanceMatrix(const Container &c, const Metric & metric) const
+{
+	DistanceMatrix<double> X(c.size());
+	for (size_t i = 0; i < X.rows(); ++i) {
+		X(i, i) = 0;
+		for (size_t j = i + 1; j < X.columns(); ++j) {
+			double distance = metric(c[i], c[j]);
+			X(i, j) = distance;
+		}
+	}
+
+	return X;
+}
+
+
+template <class recType1, class Metric1, class recType2, class Metric2>
 template <typename Container1, typename Container2>
-double MGC<recType1, Metric1, recType2, Metric2>::estimate(
-    const Container1& a, const Container2& b, const size_t sampleSize, const double threshold, size_t maxIterations)
+double MGC<recType1, Metric1, recType2, Metric2>::estimate(const Container1& a, const Container2& b,
+															const size_t sampleSize, const double threshold,
+															size_t maxIterations)
 {
     assert(a.size() == b.size());
 
@@ -644,6 +684,22 @@ std::vector<double> MGC<recType1, Metric1, recType2, Metric2>::linspace(double a
     }
 
     return array;
+}
+
+template<class recType1, class Metric1, class recType2, class Metric2>
+template<typename Container1, typename Container2>
+std::vector<double>
+MGC<recType1, Metric1, recType2, Metric2>::xcorr(const Container1 &a, const Container2 &b,
+																const int n) const
+{
+	assert(a.size() == b.size());
+
+	/* Compute distance matrices */
+	auto X = computeDistanceMatrix<Container1>(a, metric1);
+	auto Y = computeDistanceMatrix<Container2>(b, metric2);
+
+
+	return MGC_direct().xcorr(X, Y, n);
 }
 
 }  // namespace metric
