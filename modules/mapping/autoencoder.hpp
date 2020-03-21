@@ -117,6 +117,8 @@ namespace metric
 	template<typename InputDataType, typename Scalar>
 	typename Autoencoder<InputDataType, Scalar>::Matrix Autoencoder<InputDataType, Scalar>::convertData(const std::vector<InputDataType> &inputData)
 	{
+		assert(this->num_layers() > 0);
+
 		/* Convert features to scalar type */
 		std::vector<Scalar> dataScalar(inputData.begin(), inputData.end());
 

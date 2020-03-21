@@ -30,9 +30,10 @@ class Layer
     public:
 		using Matrix = blaze::DynamicMatrix<Scalar>;
 
-		const int inputSize;  // Size of input units
-		const int outputSize; // Size of output units
+		int inputSize;  // Size of input units
+		int outputSize; // Size of output units
 
+		Layer() {};
 		///
         /// Constructor
         ///
@@ -50,8 +51,7 @@ class Layer
         ///
         virtual ~Layer() {}
 
-        Layer(const nlohmann::json& json) : inputSize(json["inputSize"].get<int>()),
-                                                outputSize(json["outputSize"].get<int>())
+        Layer(const nlohmann::json& json)
         {}
 
 	virtual nlohmann::json toJson()

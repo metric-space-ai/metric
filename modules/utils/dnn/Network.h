@@ -180,6 +180,23 @@ class Network
 					//} else if (activation == "Softmax") {
 					//	addLayer(FullyConnected<Scalar, Softmax<Scalar>>(layerJson));
 					}
+				} else if (type == "Conv2d") {
+					if (activation == "Identity") {
+						addLayer(Conv2d<Scalar, Identity<Scalar>>(layerJson));
+					} else if (activation == "ReLU") {
+						addLayer(Conv2d<Scalar, ReLU<Scalar>>(layerJson));
+					} else if (activation == "Sigmoid") {
+						addLayer(Conv2d<Scalar, Sigmoid<Scalar>>(layerJson));
+					}
+
+				} else if (type == "Conv2dTranspose") {
+					if (activation == "Identity") {
+						addLayer(Conv2dTranspose<Scalar, Identity<Scalar>>(layerJson));
+					} else if (activation == "ReLU") {
+						addLayer(Conv2dTranspose<Scalar, ReLU<Scalar>>(layerJson));
+					} else if (activation == "Sigmoid") {
+						addLayer(Conv2dTranspose<Scalar, Sigmoid<Scalar>>(layerJson));
+					}
 				}
 			}
 

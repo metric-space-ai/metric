@@ -52,12 +52,15 @@ class FullyConnected: public Layer<Scalar>
             Layer<Scalar>(in_size, out_size)
         {}
 
-		FullyConnected(const nlohmann::json& json) : Layer<Scalar>(json)
-		{}
-
-		nlohmann::json toJson()
+		FullyConnected(const nlohmann::json& json)
 		{
-			auto json = Layer<Scalar>::toJson();
+			this->inputSize = json["inputSize"].get<int>();
+			this->outputSize = json["outputSize"].get<int>();
+		}
+
+	nlohmann::json toJson()
+	{
+		auto json = Layer<Scalar>::toJson();
 			json["type"] = "FullyConnected";
 			json["activation"] = Activation::getType();
 
