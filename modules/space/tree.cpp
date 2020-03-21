@@ -324,8 +324,8 @@ Tree<recType, Metric>::Tree(const recType& p, int truncateArg /*=-1*/, Metric d)
 
 /*** constructor: with a vector data records **/
 template <class recType, class Metric>
-template <class Container>
-Tree<recType, Metric>::Tree(const Container& p, int truncateArg /*=-1*/, Metric d)
+template<typename C>
+Tree<recType, Metric>::Tree(const C& p, int truncateArg /*=-1*/, Metric d)
     : metric_(d)
 {
     min_scale = 1000;
@@ -894,6 +894,28 @@ void Tree<recType, Metric>::print_(NodeType* node_p, std::ostream& ostr) const
         pop();
     }
 }
+
+template <class recType, class Metric>
+auto Tree<recType, Metric>::get_all_nodes() -> std::vector<Node_ptr>
+{
+	std::vector<Node_ptr> all_nodes;
+
+	all_nodes.push_back(root);
+	get_all_nodes_(root, all_nodes);
+
+	return all_nodes;
+}
+
+template <class recType, class Metric>
+void Tree<recType, Metric>::get_all_nodes_(Node_ptr node_p, std::vector<Node_ptr>& output)
+{
+	for (std::size_t i = 0; i < node_p->children.size(); ++i)
+	{
+		output.push_back(node_p->children[i]);
+		get_all_nodes_(node_p->children[i], output);
+	}
+}
+
 
 /*** traverse the tree from root and do something with every node ***/
 template <class recType, class Metric>

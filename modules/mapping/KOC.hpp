@@ -51,13 +51,13 @@ namespace metric {
 			/**
 				 * @brief Construct a new KOC object
 				 * 
-				 * @param graph
-				 * @param metric 
+				 * @param graph - pre created graph (with metric::Graph interface) over which SOM is being constructed. Default is metric::Grid6 (hexagones grid).
+				 * @param metric - metric or distance being used for SOM training. Default is metric::Euclidian.
 				 * @param anomaly_sigma
-				 * @param start_learn_rate
-				 * @param finish_learn_rate
-				 * @param iterations
-				 * @param distribution
+				 * @param s_learn_rate - start learning rate for SOM training. Shows how error can influence on the sample on the first iterations of the training.
+				 * @param f_learn_rate - finish learning rate for SOM training. Shows how error can influence on the sample on the last iterations of the training.
+				 * @param iterations - maximum number of iterations for SOM training.
+				 * @param distribution - distribution used for creating initial weights (positions) of the SOM nodes. 
 				 */
 			KOC(Graph graph, Metric metric, double anomaly_sigma = 1.0, double start_learn_rate = 0.8, double finish_learn_rate = 0.0, size_t iterations = 20, Distribution distribution = Distribution(-1, 1))
 				: som_(graph, metric, start_learn_rate, finish_learn_rate, iterations, distribution),
@@ -68,16 +68,16 @@ namespace metric {
 			/**
 				 * @brief Construct a new KOC object
 				 * 
-				 * @param graph 
-				 * @param metric 
+				 * @param graph - pre created graph (with metric::Graph interface) over which SOM is being constructed. Default is metric::Grid6 (hexagones grid).
+				 * @param metric - metric or distance being used for SOM training. Default is metric::Euclidian.
 				 * @param anomaly_sigma
-				 * @param start_learn_rate
-				 * @param finish_learn_rate
-				 * @param iterations 
-				 * @param distribution 
-				 * @param neighborhood_start_size 
-				 * @param neigbour_range_decay 
-				 * @param random_seed 
+				 * @param s_learn_rate - start learning rate for SOM training. Shows how error can influence on the sample on the first iterations of the training.
+				 * @param f_learn_rate - finish learning rate for SOM training. Shows how error can influence on the sample on the last iterations of the training.
+				 * @param iterations - maximum number of iterations for SOM training.
+				 * @param distribution - distribution used for creating initial weights (positions) of the SOM nodes. 
+				 * @param neighborhood_start_size - number of neighbours of the checking node which weights (positions) will be corrected while SOM training. 
+				 * @param neigbour_range_decay - shows how distance from the checking node influence to weights (positions) of the checking node neighbours while SOM training. 
+				 * @param random_seed - the value used to initialize the random number generator, which is used for the initial distribution of weight (positions).
 				 */
 			KOC(Graph graph, Metric metric, double anomaly_sigma, double start_learn_rate, double finish_learn_rate, size_t iterations,
 				Distribution distribution, double neighborhood_start_size, double neigbour_range_decay, long long random_seed)
@@ -206,72 +206,71 @@ namespace metric {
 		typedef typename KOC_details::KOC<recType, Graph, Metric, Distribution> KOC;
 
 		/**
-			* @brief
-			*
-			* @param nodesNumber
-			* @param start_learn_rate
-			* @param finish_learn_rate
-			* @param iterations
-			* @param distribution_min
-			* @param distribution_max
+		 * @brief
+		 * @param nodesNumber - total number of the nodes for graph over which SOM is being constructed. From this number it should be possible to extract the int square root.
+		 * @param start_learn_rate - start learning rate for SOM training. Shows how error can influence on the sample on the first iterations of the training.
+		 * @param finish_learn_rate - finish learning rate for SOM training. Shows how error can influence on the sample on the last iterations of the training.
+		 * @param iterations - maximum number of iterations for SOM training.
+		 * @param distribution_min - left side (minimum) of the distribution used for creating initial weights (positions) of the SOM nodes. 
+		 * @param distribution_max - right side (maximum) of the distribution used for creating initial weights (positions) of the SOM nodes. 
 		 */
 		KOC_factory(size_t nodesNumber, double anomaly_sigma, double start_learn_rate = 0.8, double finish_learn_rate = 0.0, size_t iterations = 20, T distribution_min = -1, T distribution_max = 1);
 
 		/**
-			* @brief
-			*
-			* @param nodesWidth
-			* @param nodesHeight
-			* @param start_learn_rate
-			* @param finish_learn_rate
-			* @param iterations
-			* @param distribution_min
-			* @param distribution_max
+		 * @brief
+		 *
+		 * @param nodesWidth - number of the nodes in width for graph over which SOM is being constructed.
+		 * @param nodesHeight - number of the nodes in height for graph over which SOM is being constructed.
+		 * @param start_learn_rate - start learning rate for SOM training. Shows how error can influence on the sample on the first iterations of the training.
+		 * @param finish_learn_rate - finish learning rate for SOM training. Shows how error can influence on the sample on the last iterations of the training.
+		 * @param iterations - maximum number of iterations for SOM training.
+		 * @param distribution_min - left side (minimum) of the distribution used for creating initial weights (positions) of the SOM nodes. 
+		 * @param distribution_max - right side (maximum) of the distribution used for creating initial weights (positions) of the SOM nodes. 
 		 */
 		KOC_factory(size_t nodesWidth = 5, size_t nodesHeight = 4, double anomaly_sigma = 1.0, double start_learn_rate = 0.8, double finish_learn_rate = 0.0, size_t iterations = 20, T distribution_min = -1, T distribution_max = 1);
 
 		/**
-			* @brief
-			*
-			* @param nodesNumber
-			* @param start_learn_rate
-			* @param finish_learn_rate
-			* @param iterations
-			* @param distribution_min
-			* @param distribution_max
-			* @param neighborhood_start_size
-			* @param neigbour_range_decay
-			* @param random_seed
+		 * @brief
+		 *
+		 * @param nodesNumber - total number of the nodes for graph over which SOM is being constructed. From this number it should be possible to extract the int square root.
+		 * @param start_learn_rate - start learning rate for SOM training. Shows how error can influence on the sample on the first iterations of the training.
+		 * @param finish_learn_rate - finish learning rate for SOM training. Shows how error can influence on the sample on the last iterations of the training.
+		 * @param iterations - maximum number of iterations for SOM training.
+		 * @param distribution_min - left side (minimum) of the distribution used for creating initial weights (positions) of the SOM nodes. 
+		 * @param distribution_max - right side (maximum) of the distribution used for creating initial weights (positions) of the SOM nodes. 
+		 * @param neighborhood_start_size - number of neighbours of the checking node which weights (positions) will be corrected while SOM training. 
+		 * @param neigbour_range_decay - shows how distance from the checking node influence to weights (positions) of the checking node neighbours while SOM training. 
+		 * @param random_seed - the value used to initialize the random number generator, which is used for the initial distribution of weight (positions).
 		 */
 		KOC_factory(size_t nodesNumber, double anomaly_sigma,
 			double start_learn_rate, double finish_learn_rate, size_t iterations, T distribution_min, T distribution_max,
 			double neighborhood_start_size, double neigbour_range_decay, long long random_seed);
 
 		/**
-			* @brief
-			*
-			* @param nodesWidth
-			* @param nodesHeight
-			* @param start_learn_rate
-			* @param finish_learn_rate
-			* @param iterations
-			* @param distribution_min
-			* @param distribution_max
-			* @param neighborhood_start_size
-			* @param neigbour_range_decay
-			* @param random_seed
+		 * @brief
+		 *
+		 * @param nodesWidth - number of the nodes in width for graph over which SOM is being constructed.
+		 * @param nodesHeight - number of the nodes in height for graph over which SOM is being constructed.
+		 * @param s_learn_rate - start learning rate for SOM training. Shows how error can influence on the sample on the first iterations of the training.
+		 * @param f_learn_rate - finish learning rate for SOM training. Shows how error can influence on the sample on the last iterations of the training.
+		 * @param iterations - maximum number of iterations for SOM training.
+		 * @param distribution_min - left side (minimum) of the distribution used for creating initial weights (positions) of the SOM nodes. 
+		 * @param distribution_max - right side (maximum) of the distribution used for creating initial weights (positions) of the SOM nodes. 
+		 * @param neighborhood_start_size - number of neighbours of the checking node which weights (positions) will be corrected while SOM training. 
+		 * @param neigbour_range_decay - shows how distance from the checking node influence to weights (positions) of the checking node neighbours while SOM training. 
+		 * @param random_seed - the value used to initialize the random number generator, which is used for the initial distribution of weight (positions).
 		 */
 		KOC_factory(size_t nodesWidth, size_t nodesHeight, double anomaly_sigma,
 			double start_learn_rate, double finish_learn_rate, size_t iterations, T distribution_min, T distribution_max, 
 			double neighborhood_start_size, double neigbour_range_decay, long long random_seed);
 
 		/**
-			* @brief
-			*
-			* @param samples
-			* @param num_clusters
-			*
-			* @return KOC_details::KOC<recType, Graph, Metric, Distribution>
+		 * @brief 
+		 * 
+		 * @param samples
+		 * @param num_clusters - number of expected clusters
+		 *
+		 * @return KOC_details::KOC<recType, Graph, Metric, Distribution>
 		 */
 		KOC operator()(const std::vector<recType>& samples, int num_clusters, int min_cluster_size = 1);
 

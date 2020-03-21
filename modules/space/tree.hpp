@@ -149,8 +149,8 @@ public:
      * @param truncate truncate paramter
      * @param d metric object
      */
-    template <class Container>
-    Tree(const Container& p, int truncateArg = -1, Metric d = Metric());
+    template<typename Container>
+    Tree(const Container& p, int truncate = -1, Metric d = Metric());  // with a vector of data records
 
     /**
      * @brief Destroy the Tree object
@@ -350,6 +350,13 @@ public:
     bool same_tree(const Node_ptr lhs, const Node_ptr rhs) const;
 
     /**
+     * @brief recursively iterate through the tree and return all nodes of the tree
+     *
+     * @return return all nodes of the tree
+     */
+	auto Tree<recType, Metric>::get_all_nodes() -> std::vector<Node_ptr>;
+
+    /**
      * @brief compare tree with another
      *
      * @param t another tree
@@ -491,6 +498,8 @@ private:
     std::pair<Distance, std::size_t> distance_to_level(Node_ptr &p, int level) const;
     Distance distance_by_node(Node_ptr p1, Node_ptr p2) const;
     std::pair<Distance, std::size_t> graph_distance(Node_ptr p1, Node_ptr p2) const; 
+
+	void get_all_nodes_(Node_ptr node_p, std::vector<Node_ptr>& output);
 };
 }  // namespace metric
 #include "tree.cpp"  // include the implementation

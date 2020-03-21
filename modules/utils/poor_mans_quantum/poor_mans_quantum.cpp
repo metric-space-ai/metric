@@ -123,37 +123,58 @@ PMQ<Distribution, T>::PMQ(T par1, T par2, size_t n, Distribution d)
     }
 }
 
+// Updated by Stepan Mamontov 26.02.2020 (updated to use generic types)
 /*** constructor for discrete samples ***/
-template <typename Distribution, typename T>
-PMQ<Distribution, T>::PMQ(std::vector<float> data, Distribution d)
-    : _dist(d)
-    , _generator(std::random_device {}())
-{
-    _dist._data = data;
-#if USE_VECTOR_SORT
-    vector_sort::sort(_dist._data);
-#else
-    std::sort(_dist._data.begin(), _dist._data.end());
-#endif
-    _dist._prob = linspace(T(0.5) / T(data.size()), T(1) - T(0.5) / T(data.size()), data.size());
-}
+//template <typename Distribution, typename T>
+//PMQ<Distribution, T>::PMQ(std::vector<T> data, Distribution d)
+//    : _dist(d)
+//    , _generator(std::random_device {}())
+//{
+//    _dist._data.resize(data.size());
+//    for (size_t i = 0; i < data.size(); ++i) {
+//        _dist._data[i] = T(data[i]);
+//    }
+//#if USE_VECTOR_SORT
+//    vector_sort::sort(_dist._data);
+//#else
+//    std::sort(_dist._data.begin(), _dist._data.end());
+//#endif
+//	auto prob = linspace(T(0.5) / T(data.size()), T(1) - T(0.5) / T(data.size()), data.size());
+//
+//    _dist._prob.resize(prob.size());
+//    for (size_t i = 0; i < prob.size(); ++i) {
+//        _dist._prob[i] = T(prob[i]);
+//    }
+//}
 
+// Updated by Stepan Mamontov 26.02.2020 (calculate histogram of the data and then calculate cumulative distribution)
 /*** constructor for discrete samples ***/
 template <typename Distribution, typename T>
-PMQ<Distribution, T>::PMQ(std::vector<double> data, Distribution d)
+PMQ<Distribution, T>::PMQ(std::vector<T> data, Distribution d)
     : _dist(d)
     , _generator(std::random_device {}())
 {
-    _dist._data.resize(data.size());
-    for (size_t i = 0; i < data.size(); ++i) {
-        _dist._data[i] = float(data[i]);
-    }
 #if USE_VECTOR_SORT
-    vector_sort::sort(_dist._data);
+	vector_sort::sort(data);
 #else
-    std::sort(_dist._data.begin(), _dist._data.end());
+	std::sort(data.begin(), data.end());
 #endif
-    _dist._prob = linspace(T(0.5) / T(data.size()), T(1) - T(0.5) / T(data.size()), data.size());
+
+	std::map<T, int> hist{};
+	for (int i = 0; i < data.size(); i++)
+	{
+        ++hist[data[i]];
+    }
+	
+	_dist._data.clear();
+	_dist._prob.clear();
+	T cumulative_sum = 0;
+	for(std::map<T, int>::iterator it = hist.begin(); it != hist.end(); ++it) 
+	{
+		_dist._data.push_back(it->first);
+		cumulative_sum += (T) it->second / data.size();
+		_dist._prob.push_back(cumulative_sum);
+	}
 }
 
 template <typename Distribution, typename T>

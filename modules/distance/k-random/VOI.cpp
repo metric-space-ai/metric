@@ -13,6 +13,7 @@ Copyright (c) 2019 Panda Team
 #include <iostream>
 #include <random>
 #include <unordered_set>
+#include <utility>
 #include <vector>
 
 #include <boost/functional/hash.hpp>
@@ -27,9 +28,10 @@ Copyright (c) 2019 Panda Team
 namespace metric {
 
 namespace {
-    template <typename T>
-    void add_noise(std::vector<std::vector<T>>& data)
+    template <typename C>
+    void add_noise(C & data)
     {
+        using T = type_traits::underlaying_type_t<C>;
         std::random_device rd;
         std::mt19937 gen(rd());
         std::normal_distribution<T> dis(0, 1);
@@ -69,14 +71,13 @@ namespace {
         }
         std::cout << "]" << std::endl;
     }
-    template <typename T, class Container>
-    void combine(
-        const Container& X, const Container& Y, std::vector<std::vector<T>>& XY)
+    template <typename C1, typename C2, typename T=type_traits::underlaying_type_t<C1>>
+    std::vector<std::vector<T>> combine(const C1& X, const C2& Y)
     {
         std::size_t N = X.size();
         std::size_t dx = X[0].size();
         std::size_t dy = Y[0].size();
-        XY.resize(N);
+        std::vector<std::vector<T>> XY(N);
         for (std::size_t i = 0; i < N; i++) {
             XY[i].resize(dx + dy);
             std::size_t k = 0;
@@ -87,9 +88,10 @@ namespace {
                 XY[i][k] = Y[i][j];
             }
         }
+        return XY;
     }
-    template <typename T>
-    std::vector<T> unique(const std::vector<T>& data)
+    template <typename Container, typename T = type_traits::underlaying_type_t<Container>>
+    std::vector<T> unique(const Container& data)
     {
         std::unordered_set<std::size_t> hashes;
         std::vector<T> result;
@@ -104,11 +106,11 @@ namespace {
 
 template <typename Container, typename Metric, typename L>
 double entropy(
-    Container data, std::size_t k, L logbase, Metric metric)
+    const Container & data, std::size_t k, L logbase, const Metric & metric)
 {
-    using T = typename Container::value_type::value_type;
-
-    if (data.empty() || data[0].empty()) {
+    using T_underlaying = type_traits::underlaying_type_t<Container>;
+    using T = type_traits::index_value_type_t<Container>;
+    if (data.size() == 0 || data[0].size() == 0) {
         return 0;
     }
     if (data.size() < k + 1)
@@ -120,17 +122,17 @@ double entropy(
     double two = 2.0;  // this is in order to make types match the log template function
     double cb = d * log(logbase, two);
 
-    if constexpr (!std::is_same<Metric, typename metric::Chebyshev<T>>::value) {
-        if constexpr (std::is_same<Metric, typename metric::Euclidian<T>>::value) {
+    if constexpr (!std::is_same<Metric, typename metric::Chebyshev<T_underlaying>>::value) {
+        if constexpr (std::is_same<Metric, typename metric::Euclidian<T_underlaying>>::value) {
             p = 2;
-        } else if constexpr (std::is_same<Metric, typename metric::P_norm<T>>::value) {
+        } else if constexpr (std::is_same<Metric, typename metric::P_norm<T_underlaying>>::value) {
             p = metric.p;
         }
         cb = cb + d * log(logbase, std::tgamma(1 + 1 / p)) - log(logbase, std::tgamma(1 + d / p));
     }
 
     //add_noise(data); // TODO test
-    metric::Tree<typename Container::value_type, Metric> tree(data, -1, metric);
+    metric::Tree<T, Metric> tree(data, -1, metric);
     double entropyEstimate = boost::math::digamma(N) - boost::math::digamma(k) + cb + d * log(logbase, two);
     for (std::size_t i = 0; i < N; i++) {
         auto res = tree.knn(data[i], k + 1);
@@ -142,10 +144,13 @@ double entropy(
 // Kozachenko-Leonenko estimator based on https://hal.archives-ouvertes.fr/hal-00331300/document (Shannon diff. entropy,
 // q = 1)
 
-template <template <class> class Container, typename T, typename Metric = metric::Euclidian<T>, typename L = T>  // TODO check if L = T is correct
-typename std::enable_if<!std::is_integral<T>::value, T>::type entropy_kl(
-    Container<Container<T>> data, std::size_t k = 3, L logbase = 2, Metric metric = Metric())
+template <typename Container, typename Metric = metric::Euclidian<type_traits::underlaying_type_t<Container>>,
+    typename L = type_traits::underlaying_type_t<Container>>  // TODO check if L = T is correct
+std::enable_if_t<!type_traits::is_container_of_integrals_v<Container>, L>
+entropy_kl( const Container & data, std::size_t k = 3, L logbase = 2, const Metric &metric = Metric())
 {
+    using T1 = type_traits::index_value_type_t<Container>;
+    using T = type_traits::underlaying_type_t<Container>;
     if (data.empty() || data[0].empty())
         return 0;
     if (data.size() < k + 1)
@@ -153,7 +158,7 @@ typename std::enable_if<!std::is_integral<T>::value, T>::type entropy_kl(
     if constexpr (!std::is_same<Metric, typename metric::Euclidian<T>>::value)
         throw std::logic_error("entropy function is now implemented only for Euclidean distance");
 
-    metric::Tree<Container<T>, Metric> tree(data, -1, metric);
+    metric::Tree<T1, Metric> tree(data, -1, metric);
 
     size_t N = data.size();
     size_t m = data[0].size();
@@ -172,8 +177,8 @@ typename std::enable_if<!std::is_integral<T>::value, T>::type entropy_kl(
     return sum;
 }
 
-template <typename T>
-std::pair<std::vector<double>, std::vector<std::vector<T>>> pluginEstimator(const std::vector<std::vector<T>>& Y)
+template <typename Container, typename T>
+std::pair<std::vector<double>, Container> pluginEstimator(const Container & Y)
 {
     std::vector<std::vector<T>> uniqueVal = unique(Y);
     std::vector<double> counts(uniqueVal.size());
@@ -189,10 +194,14 @@ std::pair<std::vector<double>, std::vector<std::vector<T>>> pluginEstimator(cons
     return std::make_pair(counts, uniqueVal);
 }
 
-template <typename T, template <typename> class Container, typename Metric>
-typename std::enable_if<!std::is_integral<T>::value, T>::type mutualInformation(
-    const Container<Container<T>>& Xc, const Container<Container<T>>& Yc, int k, Metric metric, int version)
+template <typename Container, typename Metric>
+typename std::enable_if_t<!type_traits::is_container_of_integrals_v<Container>,
+                          type_traits::underlaying_type_t<Container>>
+mutualInformation(
+                  const Container & Xc, const Container & Yc, int k, const Metric & metric, int version)
 {
+    using T = type_traits::underlaying_type_t<Container>;
+    using V = type_traits::index_value_type_t<Container>;
     T N = Xc.size();
 
     if (N < k + 1 || Yc.size() < k + 1)
@@ -208,15 +217,14 @@ typename std::enable_if<!std::is_integral<T>::value, T>::type mutualInformation(
 
     add_noise(X);
     add_noise(Y);
-    std::vector<std::vector<T>> XY;
-    combine(X, Y, XY);
+    std::vector<std::vector<T>> XY = combine(X, Y);
     metric::Tree<std::vector<T>, Metric> tree(XY, -1, metric);
     auto entropyEstimate = boost::math::digamma(k) + boost::math::digamma(N);
     if (version == 2) {
         entropyEstimate -= 1 / static_cast<double>(k);
     }
 
-    metric::Tree<std::vector<T>, Metric> xTree(X, -1, metric);
+    metric::Tree<V, Metric> xTree(X, -1, metric);
 
     for (std::size_t i = 0; i < N; i++) {
         auto res = tree.knn(XY[i], k + 1);
@@ -245,83 +253,87 @@ typename std::enable_if<!std::is_integral<T>::value, T>::type mutualInformation(
     return entropyEstimate;
 }
 
-template <typename T, template <typename> class Container>
-typename std::enable_if<std::is_integral<T>::value, T>::type mutualInformation(
-    const Container<Container<T>>& Xc, const Container<Container<T>>& Yc, T logbase)
+template <typename Container, typename T>
+std::enable_if_t<type_traits::is_container_of_integrals_v<Container>, T>
+mutualInformation(const Container& Xc, const Container& Yc, T logbase)
 {
-    std::vector<std::vector<T>> XY;
-    combine(Xc, Yc, XY);
-    return entropy<T>(Xc, logbase)
-        + entropy<T>(Yc,
+    std::vector<std::vector<T>> XY = combine(Xc, Yc);
+    return entropy(Xc, logbase)
+        + entropy(Yc,
             logbase)  // entropy overload for integers is not implemented yet
-        - entropy<T>(XY, logbase);
+        - entropy(XY, logbase);
 }
 
-template <typename T, typename Metric>
-typename std::enable_if<!std::is_integral<T>::value, T>::type variationOfInformation(
-    const std::vector<std::vector<T>>& Xc, const std::vector<std::vector<T>>& Yc, int k, T logbase)
+template <typename C, typename Metric, typename T>
+typename std::enable_if_t<!type_traits::is_container_of_integrals_v<C>, T>
+variationOfInformation(const C& Xc, const C& Yc, int k, T logbase)
 {
-    return entropy<std::vector<std::vector<T>>, Metric>(Xc, k, logbase, Metric()) + entropy<std::vector<std::vector<T>>, Metric>(Yc, k, logbase, Metric())
-        - 2 * mutualInformation<T>(Xc, Yc, k);
+    return entropy<C, Metric>(Xc, k, logbase, Metric()) + entropy<C, Metric>(Yc, k, logbase, Metric())
+        - 2 * mutualInformation<C>(Xc, Yc, k);
 }
 
-template <typename T>
-typename std::enable_if<!std::is_integral<T>::value, T>::type variationOfInformation_normalized(
-    const std::vector<std::vector<T>>& Xc, const std::vector<std::vector<T>>& Yc, int k, T logbase)
+template <typename C, typename T>
+typename std::enable_if_t<!type_traits::is_container_of_integrals_v<C>, T>
+variationOfInformation_normalized(
+        const C& Xc, const C& Yc, int k, T logbase)
 {
     using Cheb = metric::Chebyshev<T>;
-    auto mi = mutualInformation<T>(Xc, Yc, k);
-    return 1 - (mi / (entropy<std::vector<std::vector<T>>, Cheb>(Xc, k, logbase, Cheb()) + entropy<std::vector<std::vector<T>>, Cheb>(Yc, k, logbase, Cheb()) - mi));
+    auto mi = mutualInformation<C>(Xc, Yc, k);
+    return 1 - (mi / (entropy(Xc, k, logbase, Cheb()) + entropy(Yc, k, logbase, Cheb()) - mi));
 }
 
 template <typename V>
-template <template <class, class> class Container, class Allocator_inner, class Allocator_outer, class El>
-typename std::enable_if<!std::is_integral<El>::value, V>::type VOI<V>::operator()(
-    const Container<Container<El, Allocator_inner>, Allocator_outer>& a,
-    const Container<Container<El, Allocator_inner>, Allocator_outer>& b) const
+template <typename C, typename El>
+typename std::enable_if_t<!std::is_integral_v<El>, V>  // only real values are accepted
+VOI<V>::operator()(const C& a, const C& b) const
 {
     using Cheb = metric::Chebyshev<El>;
-    return entropy<std::vector<std::vector<El>>, Cheb>(a, k, logbase, Cheb()) + entropy<std::vector<std::vector<El>>, Cheb>(b, k, logbase, Cheb())
-        - 2 * mutualInformation<El>(a, b, k);
+    return entropy(a, k, logbase, Cheb()) + entropy(b, k, logbase, Cheb())
+        - 2 * mutualInformation<C>(a, b, k);
 }
 
 template <typename V>
-template <template <class, class> class Container, class Allocator_inner, class Allocator_outer, class El>
-typename std::enable_if<!std::is_integral<El>::value, V>::type VOI_normalized<V>::operator()(
-    const Container<Container<El, Allocator_inner>, Allocator_outer>& a,
-    const Container<Container<El, Allocator_inner>, Allocator_outer>& b) const
+template <typename C, typename El>
+typename std::enable_if_t<std::is_integral_v<El>, V>  // only real values are accepted
+VOI<V>::operator()(const C& a, const C& b) const
 {
     using Cheb = metric::Chebyshev<El>;
-    auto mi = mutualInformation<El>(a, b, this->k);
+    return entropy(a, k, logbase, Cheb()) + entropy(b, k, logbase, Cheb())
+        - 2 * mutualInformation<C>(a, b, k);
+}
+
+template <typename V>
+template <typename C, typename El>
+typename std::enable_if_t<!std::is_integral_v<El>, V>  // only real values are accepted
+VOI_normalized<V>::operator()(const C& a, const C& b) const
+{
+    using Cheb = metric::Chebyshev<El>;
+    auto mi = mutualInformation(a, b, this->k);
     return 1
         - (mi
-            / (entropy<Container<Container<El, Allocator_inner>, Allocator_outer>, Cheb>(a, this->k, this->logbase, Cheb())
-                + entropy<Container<Container<El, Allocator_inner>, Allocator_outer>, Cheb>(b, this->k, this->logbase, Cheb()) - mi));
+            / (entropy(a, this->k, this->logbase, Cheb())
+                + entropy(b, this->k, this->logbase, Cheb()) - mi));
 }
 
 // VOI based on Kozachenko-Leonenko entropy estimator
 
 template <typename V>
-template <template <class, class> class Container, class Allocator_inner, class Allocator_outer, class El>
-typename std::enable_if<!std::is_integral<El>::value, V>::type VOI_kl<V>::operator()(
-    const Container<Container<El, Allocator_inner>, Allocator_outer>& a,
-    const Container<Container<El, Allocator_inner>, Allocator_outer>& b) const
+template <typename C, typename El>
+typename std::enable_if_t<!std::is_integral_v<El>, V>  // only real values are accepted
+    VOI_kl<V>::operator()(const C& a, const C& b) const
 {
-    std::vector<std::vector<El>> ab;
-    combine(a, b, ab);
+    std::vector<std::vector<El>> ab = combine(a, b);
     return 2 * entropy_kl(ab) - entropy_kl(a) - entropy_kl(b);
 }
 
 template <typename V>
-template <template <class, class> class Container, class Allocator_inner, class Allocator_outer, class El>
-typename std::enable_if<!std::is_integral<El>::value, V>::type VOI_normalized_kl<V>::operator()(
-    const Container<Container<El, Allocator_inner>, Allocator_outer>& a,
-    const Container<Container<El, Allocator_inner>, Allocator_outer>& b) const
+template <typename C, typename El>
+typename std::enable_if_t<!std::is_integral_v<El>, V>  // only real values are accepted
+VOI_normalized_kl<V>::operator()(const C& a, const C& b) const
 {
     auto entropy_a = entropy_kl(a);
     auto entropy_b = entropy_kl(b);
-    std::vector<std::vector<El>> ab;
-    combine(a, b, ab);
+    std::vector<std::vector<El>> ab = combine(a, b);
     auto joint_entropy = entropy_kl(ab);
     auto mi = entropy_a + entropy_b - joint_entropy;
     return 1 - (mi / (entropy_a + entropy_b - mi));
