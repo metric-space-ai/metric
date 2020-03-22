@@ -5,18 +5,18 @@
 
   Copyright (c) 2020 Panda Team
 */
-#include <boost/python.hpp>
+#include <pybind11/pybind11.h>
 
-namespace py = boost::python;
+namespace py = pybind11;
 
-void export_metric_autoencoder();
-void export_metric_DSPCC();
-void export_metric_kmeans();
-void export_metric_kmedoids();
+void export_metric_autoencoder(py::module& m);
+void export_metric_DSPCC(py::module& m);
+void export_metric_kmeans(py::module& m);
+void export_metric_kmedoids(py::module& m);
 
-BOOST_PYTHON_MODULE(_mapping) {
-    export_metric_autoencoder();
-    export_metric_DSPCC();
-    export_metric_kmeans();
-    export_metric_kmedoids();
+PYBIND11_MODULE(_mapping, m) {
+    export_metric_autoencoder(m);
+    export_metric_DSPCC(m);
+    export_metric_kmeans(m);
+    export_metric_kmedoids(m);
 }

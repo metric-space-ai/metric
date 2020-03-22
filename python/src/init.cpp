@@ -6,18 +6,17 @@
   Copyright (c) 2020 Panda Team
 */
 
-#include "metric_converters.hpp"
-#include "stl_wrappers.hpp"
+//#include "metric_converters.hpp"
+//#include "stl_wrappers.hpp"
 
-#include <boost/python.hpp>
-#include <boost/python/suite/indexing/vector_indexing_suite.hpp>
-#include <vector>
-#include <iostream>
+#include <pybind11/pybind11.h>
+//#include <boost/python/suite/indexing/vector_indexing_suite.hpp>
+//#include <vector>
 
-namespace py = boost::python;
+namespace py = pybind11;
 
 
-void export_converters()
+/*void export_converters()
 {
     IterableConverter()
         .from_python<std::vector<double>>()
@@ -44,9 +43,9 @@ void export_converters()
         .from_python<WrapStlVector<double>>()
         .from_python<WrapStlMatrix<double>>()
         .from_python<WrapStlVector<WrapStlVector<double>>>();
-}
+}*/
 
-void export_containers() {
+/*void export_containers() {
     typedef std::vector<double> VectorDouble;
     typedef std::vector<int> VectorInt;
     typedef std::vector<bool> VectorBool;
@@ -68,11 +67,21 @@ void export_containers() {
     py::class_<VectorVectorInt>("VectorVectorInt").def(py::vector_indexing_suite<VectorVectorInt>());
     py::class_<VectorVectorULong>("VectorVectorULong").def(py::vector_indexing_suite<VectorVectorULong>());
 
+}*/
+
+#include <string>
+#include <vector>
+#include <pybind11/stl.h>
+
+std::string my_test(std::vector<int> a, const std::vector<double>& b)
+{
+    return "COOL";
 }
 
-
-BOOST_PYTHON_MODULE(_metric) {
-    export_converters();
+PYBIND11_MODULE(_metric, m) {
+    m.doc() = "My module doc";
+    m.def("my_test", &my_test, "My test function");
+    //export_converters();
     // exposing C++ return types
-    export_containers();
+    //export_containers();
 }

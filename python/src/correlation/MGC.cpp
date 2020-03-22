@@ -10,19 +10,19 @@
 #include "../stl_wrappers.hpp"
 #include "../metric_types.hpp"
 
-#include <boost/python.hpp>
+#include <pybind11/pybind11.h>
 #include <string>
 
 class NotUsed {};
 
-namespace py = boost::python;
+namespace py = pybind11;
 
 template <class RecType, class Metric1, class Metric2>
-void wrap_metric_MGC() {
+void wrap_metric_MGC(py::module& m) {
     using Metric = metric::MGC<NotUsed, Metric1, NotUsed, Metric2>;
     using Container = std::vector<RecType>;
     std::string name = "MGC_" + getMetricName<Metric1>() + "_" + getMetricName<Metric2>();
-    auto mgc = py::class_<Metric>(name.c_str(), "Multiscale Graph Correlation");
+    auto mgc = py::class_<Metric>(m, name.c_str(), "Multiscale Graph Correlation");
     mgc.def("__call__", +[](Metric& self,
         const WrapStlMatrix<double>& a,
         const WrapStlMatrix<double>& b) {
@@ -75,9 +75,9 @@ void wrap_metric_MGC() {
 }
 
 template <class T>
-void wrap_metric_MGC_direct() {
+void wrap_metric_MGC_direct(py::module& m) {
     using Metric = metric::MGC_direct;
-    auto mgc = py::class_<Metric>("MGC_direct");
+    auto mgc = py::class_<Metric>(m, "MGC_direct");
     mgc.def("__call__", &Metric::operator()<T>);   // FIXME: unsupported argument types
     mgc.def("xcorr", &Metric::xcorr<T>);           // FIXME: unsupported argument types
     mgc.def("center_distance_matrix", &Metric::center_distance_matrix<T>);
@@ -95,29 +95,29 @@ void wrap_metric_MGC_direct() {
     mgc.def("optimal_local_generalized_correlation", &Metric::optimal_local_generalized_correlation<T>);
 }
 
-void export_metric_MGC()
+void export_metric_MGC(py::module& m)
 {
     using T = double;
     // TODO: loop
-    wrap_metric_MGC<std::vector<T>, metric::Euclidian<T>, metric::Euclidian<T>>();
-    wrap_metric_MGC<std::vector<T>, metric::Euclidian<T>, metric::Manhatten<T>>();
-//    wrap_metric_MGC<std::vector<T>, metric::Euclidian<T>, metric::Chebyshev<T>>();
-    wrap_metric_MGC<std::vector<T>, metric::Euclidian<T>, metric::P_norm<T>>();
+    wrap_metric_MGC<std::vector<T>, metric::Euclidian<T>, metric::Euclidian<T>>(m);
+    wrap_metric_MGC<std::vector<T>, metric::Euclidian<T>, metric::Manhatten<T>>(m);
+//    wrap_metric_MGC<std::vector<T>, metric::Euclidian<T>, metric::Chebyshev<T>>(m);
+    wrap_metric_MGC<std::vector<T>, metric::Euclidian<T>, metric::P_norm<T>>(m);
 
-    wrap_metric_MGC<std::vector<T>, metric::Manhatten<T>, metric::Euclidian<T>>();
-    wrap_metric_MGC<std::vector<T>, metric::Manhatten<T>, metric::Manhatten<T>>();
-//    wrap_metric_MGC<std::vector<T>, metric::Manhatten<T>, metric::Chebyshev<T>>();
-    wrap_metric_MGC<std::vector<T>, metric::Manhatten<T>, metric::P_norm<T>>();
+    wrap_metric_MGC<std::vector<T>, metric::Manhatten<T>, metric::Euclidian<T>>(m);
+    wrap_metric_MGC<std::vector<T>, metric::Manhatten<T>, metric::Manhatten<T>>(m);
+//    wrap_metric_MGC<std::vector<T>, metric::Manhatten<T>, metric::Chebyshev<T>>(m);
+    wrap_metric_MGC<std::vector<T>, metric::Manhatten<T>, metric::P_norm<T>>(m);
 
 //    wrap_metric_MGC<std::vector<T>, metric::Chebyshev<T>, metric::Euclidian<T>>();
 //    wrap_metric_MGC<std::vector<T>, metric::Chebyshev<T>, metric::Manhatten<T>>();
 //    wrap_metric_MGC<std::vector<T>, metric::Chebyshev<T>, metric::Chebyshev<T>>();
 //    wrap_metric_MGC<std::vector<T>, metric::Chebyshev<T>, metric::P_norm<T>>();
 
-    wrap_metric_MGC<std::vector<T>, metric::P_norm<T>, metric::Euclidian<T>>();
-    wrap_metric_MGC<std::vector<T>, metric::P_norm<T>, metric::Manhatten<T>>();
+    wrap_metric_MGC<std::vector<T>, metric::P_norm<T>, metric::Euclidian<T>>(m);
+    wrap_metric_MGC<std::vector<T>, metric::P_norm<T>, metric::Manhatten<T>>(m);
 //    wrap_metric_MGC<std::vector<T>, metric::P_norm<T>, metric::Chebyshev<T>>();
-    wrap_metric_MGC<std::vector<T>, metric::P_norm<T>, metric::P_norm<T>>();
+    wrap_metric_MGC<std::vector<T>, metric::P_norm<T>, metric::P_norm<T>>(m);
 
-    wrap_metric_MGC_direct<T>();
+    wrap_metric_MGC_direct<T>(m);
 }

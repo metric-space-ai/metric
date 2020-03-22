@@ -5,14 +5,14 @@
 
   Copyright (c) 2020 Panda Team
 */
-#include <boost/python.hpp>
+#include <pybind11/pybind11.h>
 
-namespace py = boost::python;
+namespace py = pybind11;
 
-void export_metric_matrix();
-void export_metric_Tree();
+void export_metric_matrix(py::module& m);
+void export_metric_Tree(py::module& m);
 
-BOOST_PYTHON_MODULE(_space) {
-    export_metric_matrix();
-    export_metric_Tree();
+PYBIND11_MODULE(_space, m) {
+    export_metric_matrix(m);
+    export_metric_Tree(m);
 }

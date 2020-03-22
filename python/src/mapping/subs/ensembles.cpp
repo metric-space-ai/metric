@@ -1,14 +1,16 @@
 #include "modules/mapping/ensembles.hpp"
 
-#include <boost/python.hpp>
+#include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
+#include <pybind11/numpy.h>
 #include <functional>
 #include <vector>
 #include <variant>
 
-namespace py = boost::python;
+namespace py = pybind11;
 
 template <typename Record, typename WeakLearner, typename Subsampler>
-void register_wrapper_Boosting() {
+void register_wrapper_Boosting(py::module& m) {
     using Mapping = metric::Boosting<Record, WeakLearner, Subsampler>;
     using Container = std::vector<Record>;
     using Features = std::vector<std::function<double(Record)>>;
@@ -17,20 +19,19 @@ void register_wrapper_Boosting() {
     void (Mapping::*train)(Container&, Features&, Callback&, bool) = &Mapping::train;
     void (Mapping::*predict)(Container&, Features&, std::vector<bool>&) = &Mapping::predict;
 
-    py::class_<Mapping>("Boosting", py::init<int, double, double, WeakLearner>(
-        (
+    py::class_<Mapping>(m, "Boosting")
+        .def(py::init<int, double, double, WeakLearner>(),
             py::arg("ensemble_size_"),
             py::arg("share_overall"),
             py::arg("share_minor"),
             py::arg("weak_classifier")
         )
-    ))
         .def("train", train)
         .def("predict", predict);
 }
 
 template <typename Record, typename WeakLearnerVariant, typename Subsampler>
-void register_wrapper_Bagging() {
+void register_wrapper_Bagging(py::module& m) {
     using Mapping = metric::Bagging<Record, WeakLearnerVariant, Subsampler>;
     using Container = std::vector<Record>;
     using Features = std::vector<std::function<double(Record)>>;
@@ -39,27 +40,26 @@ void register_wrapper_Bagging() {
     void (Mapping::*train)(Container&, Features&, Callback&, bool) = &Mapping::train;
     void (Mapping::*predict)(Container&, Features&, std::vector<bool>&) = &Mapping::predict;
 
-    py::class_<Mapping>("Bagging", py::init<int, double, double, std::vector<double>, std::vector<WeakLearnerVariant>>(
-        (
+    py::class_<Mapping>(m, "Bagging")
+        .def(py::init<int, double, double, std::vector<double>, std::vector<WeakLearnerVariant>>(),
             py::arg("ensemble_size"),
             py::arg("share_overall"),
             py::arg("share_minor"),
             py::arg("type_weight"),
             py::arg("weak_classifiers")
         )
-    ))
         .def("train", train)
         .def("predict", predict);
 }
 
-void export_metric_ensembles() {
+void export_metric_ensembles(py::module& m) {
     using Record = std::vector<double>;
     using WeakLearner = metric::edmClassifier<Record, CSVM>;
     using WeakLearnerVariant = std::variant<metric::edmSVM<Record>, metric::edmClassifier<Record, CSVM>>;
-    register_wrapper_Boosting<Record, WeakLearner, metric::SubsampleRUS<Record>>();
-    register_wrapper_Bagging<Record, WeakLearnerVariant, metric::SubsampleRUS<Record>>();
+    register_wrapper_Boosting<Record, WeakLearner, metric::SubsampleRUS<Record>>(m);
+    register_wrapper_Bagging<Record, WeakLearnerVariant, metric::SubsampleRUS<Record>>(m);
 }
 
-BOOST_PYTHON_MODULE(_ensembles) {
-    export_metric_ensembles();
+PYBIND11_MODULE(_ensembles, m) {
+    export_metric_ensembles(m);
 }

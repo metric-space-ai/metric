@@ -1,10 +1,12 @@
 #include "modules/mapping/dbscan.hpp"
 
-#include <boost/python.hpp>
+#include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
+#include <pybind11/numpy.h>
 #include <tuple>
 #include <vector>
 
-namespace py = boost::python;
+namespace py = pybind11;
 
 template<typename recType, typename Metric, typename T>
 py::tuple dbscan(const metric::Matrix<recType, Metric>& dm, T eps, std::size_t minpts) {
@@ -13,14 +15,14 @@ py::tuple dbscan(const metric::Matrix<recType, Metric>& dm, T eps, std::size_t m
 }
 
 template<typename recType, typename Metric, typename T>
-void register_wrapper_dbscan() {
-    py::def("dbscan", &dbscan<recType, Metric, T>);
+void register_wrapper_dbscan(py::module& m) {
+    m.def("dbscan", &dbscan<recType, Metric, T>);
 }
 
-void export_metric_dbscan() {
-    register_wrapper_dbscan<std::vector<double>, metric::Euclidian<double>, double>();
+void export_metric_dbscan(py::module& m) {
+    register_wrapper_dbscan<std::vector<double>, metric::Euclidian<double>, double>(m);
 }
 
-BOOST_PYTHON_MODULE(_dbscan) {
-    export_metric_dbscan();
+PYBIND11_MODULE(_dbscan, m) {
+    export_metric_dbscan(m);
 }

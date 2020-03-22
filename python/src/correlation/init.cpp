@@ -5,12 +5,12 @@
 
   Copyright (c) 2020 Panda Team
 */
-#include <boost/python.hpp>
+#include <pybind11/pybind11.h>
 
-namespace py = boost::python;
+namespace py = pybind11;
 
-void export_metric_MGC();
+void export_metric_MGC(py::module& m);
 
-BOOST_PYTHON_MODULE(_correlation) {
-    export_metric_MGC();
+PYBIND11_MODULE(_correlation, m) {
+    export_metric_MGC(m);
 }

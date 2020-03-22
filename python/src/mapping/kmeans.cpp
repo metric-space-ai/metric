@@ -1,11 +1,13 @@
 #include <chrono>  // FIXME
 #include "modules/mapping/kmeans.hpp"
 
-#include <boost/python.hpp>
+#include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
+#include <pybind11/numpy.h>
 #include <vector>
 #include <tuple>
 
-namespace py = boost::python;
+namespace py = pybind11;
 
 template<typename T>
 py::tuple kmeans(const std::vector<std::vector<T>>& data,
@@ -17,17 +19,15 @@ py::tuple kmeans(const std::vector<std::vector<T>>& data,
 }
 
 template <typename T>
-void register_wrapper_kmeans() {
-    py::def("kmeans", &kmeans<T>,
-        (
-            py::arg("data"),
-            py::arg("k") = 0.5,
-            py::arg("maxiter") = 200,
-            py::arg("distance_measure") = "euclidian"   // TODO: fix typo
-        )
+void register_wrapper_kmeans(py::module& m) {
+    m.def("kmeans", &kmeans<T>,
+        py::arg("data"),
+        py::arg("k") = 0.5,
+        py::arg("maxiter") = 200,
+        py::arg("distance_measure") = "euclidian"   // TODO: fix typo
     );
 }
 
-void export_metric_kmeans() {
-    register_wrapper_kmeans<double>();
+void export_metric_kmeans(py::module& m) {
+    register_wrapper_kmeans<double>(m);
 }

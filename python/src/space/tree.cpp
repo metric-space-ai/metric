@@ -1,10 +1,12 @@
 #include "modules/space/tree.hpp"
 #include "modules/distance/k-related/Standards.hpp"
 
-#include <boost/python.hpp>
+#include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
+#include <pybind11/numpy.h>
 #include <vector>
 
-namespace py = boost::python;
+namespace py = pybind11;
 /*  TODO:
     template <class Archive, class Stream> void deserialize(Archive& input, Stream& stream);
     template <class Archive> void serialize(Archive& archive);
@@ -19,18 +21,13 @@ namespace py = boost::python;
 */
 
 template <typename recType, typename Metric>
-void register_wrapper_Tree() {
+void register_wrapper_Tree(py::module& m) {
     using Tree = metric::Tree<recType, Metric>;
     using Node = metric::Node<recType, Metric>;
     using Container = std::vector<recType>;
     using Distance = typename Tree::Distance;
-    auto tree = py::class_<Tree, boost::noncopyable>("Tree", py::no_init);
-    tree.def(py::init<int>(
-        (
-            py::arg("truncate") = -1
-        ),
-        "Empty tree"
-    ));
+    auto tree = py::class_<Tree>(m, "Tree");
+    tree.def(py::init<int>(), "Empty tree", py::arg("truncate") = -1);
 // FIXME: broken in C++ add_value
 //    tree.def(py::init<const recType&, int>(
 //        (
@@ -38,12 +35,10 @@ void register_wrapper_Tree() {
 //            py::arg("truncate") = -1
 //        )
 //    ));
-    tree.def(py::init<const Container&, int>(
-        (
-            py::arg("p"),
-            py::arg("truncate") = -1
-        )
-    ));
+    tree.def(py::init<const Container&, int>(),
+        py::arg("p"),
+        py::arg("truncate") = -1
+    );
     std::vector<std::vector<std::size_t>> (Tree::*clustering1) (
         const std::vector<double>&,
         const std::vector<std::size_t>&,
@@ -76,7 +71,7 @@ void register_wrapper_Tree() {
 
     tree.def("erase", &Tree::erase);
     tree.def("__getitem__", &Tree::operator[]);
-    tree.def("nn", &Tree::nn, py::return_internal_reference<>());
+    tree.def("nn", &Tree::nn, py::return_value_policy::reference_internal);
     tree.def("knn", &Tree::knn);
     tree.def("rnn", &Tree::rnn);
     tree.def("__len__", &Tree::size);
@@ -96,13 +91,13 @@ void register_wrapper_Tree() {
     tree.def("level_size", &Tree::levelSize);
     tree.def("print", print);
     tree.def("print_levels", &Tree::print_levels);
-    tree.def("root", &Tree::get_root, py::return_internal_reference<>());
+    tree.def("root", &Tree::get_root, py::return_value_policy::reference_internal);
     tree.def("__eq__", &Tree::operator==);
 
     // just simple wrapper to return something
-    auto node = py::class_<Node, boost::noncopyable>("Node", py::no_init);
+    auto node = py::class_<Node>(m, "Node");
 }
 
-void export_metric_Tree() {
-    register_wrapper_Tree<std::vector<double>, metric::Euclidian<double>>();
+void export_metric_Tree(py::module& m) {
+    register_wrapper_Tree<std::vector<double>, metric::Euclidian<double>>(m);
 }

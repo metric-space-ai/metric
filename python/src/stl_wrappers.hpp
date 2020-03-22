@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include <boost/python.hpp>
+#include <pybind11/pybind11.h>
 #include <vector>
 
 using base_python_object = boost::python::api::object;

@@ -1,14 +1,16 @@
 #include "modules/space/matrix.hpp"
 #include "modules/distance/k-related/Standards.hpp"
 
-#include <boost/python.hpp>
+#include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
+#include <pybind11/numpy.h>
 #include <vector>
 #include <utility>
 
-namespace py = boost::python;
+namespace py = pybind11;
 
 template<typename recType, typename Metric>
-void register_wrapper_matrix() {
+void register_wrapper_matrix(py::module& m) {
     using Matrix = metric::Matrix<recType, Metric>;
     using Container = std::vector<recType>;
     size_t (Matrix::*insert1)(const recType&) = &Matrix::insert;
@@ -16,17 +18,9 @@ void register_wrapper_matrix() {
     std::pair<std::size_t, bool> (Matrix::*insert_if1)(const recType&, typename Matrix::distType) = &Matrix::insert_if;
     std::vector<std::pair<std::size_t, bool>> (Matrix::*insert_if2)(const Container&, typename Matrix::distType) = &Matrix::insert_if;
 
-    py::class_<Matrix>("Matrix")
-        .def(py::init<const recType&>(
-            (
-                py::arg("p")
-            )
-        ))
-        .def(py::init<const Container&>(
-            (
-                py::arg("p")
-            )
-        ))
+    py::class_<Matrix>(m, "Matrix")
+        .def(py::init<const recType&>(), py::arg("p"))
+        .def(py::init<const Container&>(), py::arg("p"))
         .def("insert", insert1)
         .def("insert_if", insert_if1)
         .def("insert", insert2)
@@ -42,6 +36,6 @@ void register_wrapper_matrix() {
         .def("rnn", &Matrix::rnn);
 }
 
-void export_metric_matrix() {
-    register_wrapper_matrix<std::vector<double>, metric::Euclidian<double>>();
+void export_metric_matrix(py::module& m) {
+    register_wrapper_matrix<std::vector<double>, metric::Euclidian<double>>(m);
 }

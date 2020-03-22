@@ -5,16 +5,16 @@
 
   Copyright (c) 2020 Panda Team
 */
-#include <boost/python.hpp>
+#include <pybind11/pybind11.h>
 
-namespace py = boost::python;
+namespace py = pybind11;
 
-void export_metric_sparsify();
-void export_metric_dimension();
-void export_metric_datasets();
+void export_metric_sparsify(py::module& m);
+void export_metric_dimension(py::module& m);
+void export_metric_datasets(py::module& m);
 
-BOOST_PYTHON_MODULE(_utils) {
-    export_metric_sparsify();
-    export_metric_dimension();
-    export_metric_datasets();
+PYBIND11_MODULE(_utils, m) {
+    export_metric_sparsify(m);
+    export_metric_dimension(m);
+    export_metric_datasets(m);
 }

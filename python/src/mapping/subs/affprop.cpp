@@ -1,10 +1,12 @@
 #include "modules/mapping/affprop.hpp"
 
-#include <boost/python.hpp>
+#include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
+#include <pybind11/numpy.h>
 #include <vector>
 #include <tuple>
 
-namespace py = boost::python;
+namespace py = pybind11;
 
 template<typename recType, typename Metric, typename T>
 py::tuple affprop(const metric::Matrix<recType, Metric>& DM,
@@ -17,22 +19,20 @@ py::tuple affprop(const metric::Matrix<recType, Metric>& DM,
 }
 
 template <typename recType, typename Metric, typename T>
-void register_wrapper_affprop() {
-    py::def("affprop", &affprop<recType, Metric, T>,
-        (
-            py::arg("dm"),
-            py::arg("preference") = 0.5,
-            py::arg("maxiter") = 200,
-            py::arg("tol") = 1.0e-6,
-            py::arg("damp") = 0.5
-        )
+void register_wrapper_affprop(py::module& m) {
+    m.def("affprop", &affprop<recType, Metric, T>,
+        py::arg("dm"),
+        py::arg("preference") = 0.5,
+        py::arg("maxiter") = 200,
+        py::arg("tol") = 1.0e-6,
+        py::arg("damp") = 0.5
     );
 }
 
-void export_metric_affprop() {
-    register_wrapper_affprop<std::vector<double>, metric::Euclidian<double>, float>();
+void export_metric_affprop(py::module& m) {
+    register_wrapper_affprop<std::vector<double>, metric::Euclidian<double>, float>(m);
 }
 
-BOOST_PYTHON_MODULE(_affprop) {
-    export_metric_affprop();
+PYBIND11_MODULE(_affprop, m) {
+    export_metric_affprop(m);
 }

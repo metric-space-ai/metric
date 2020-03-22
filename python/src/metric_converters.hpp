@@ -1,6 +1,6 @@
 #pragma once
 #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
-#include <boost/python.hpp>
+#include <pybind11/pybind11.h>
 #include <boost/python/object.hpp>
 #include <boost/python/converter/implicit.hpp>
 #include <boost/python/converter/registry.hpp>

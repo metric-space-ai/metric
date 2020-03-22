@@ -5,24 +5,24 @@
 
   Copyright (c) 2020 Panda Team
 */
-#include <boost/python.hpp>
+#include <pybind11/pybind11.h>
 
-namespace py = boost::python;
+namespace py = pybind11;
 
-void export_metric_EMD();
-void export_metric_kohonen();
-void export_metric_sorensen();
-void export_metric_SSIM();
-void export_metric_standards();
-void export_metric_TWED();
-void export_metric_Edit();
+void export_metric_EMD(py::module& m);
+void export_metric_kohonen(py::module& m);
+void export_metric_sorensen(py::module& m);
+void export_metric_SSIM(py::module& m);
+void export_metric_standards(py::module& m);
+void export_metric_TWED(py::module& m);
+void export_metric_Edit(py::module& m);
 
-BOOST_PYTHON_MODULE(_distance) {
-    export_metric_EMD();
-    export_metric_kohonen();
-    export_metric_sorensen();
-    export_metric_SSIM();
-    export_metric_standards();
-    export_metric_TWED();
-    export_metric_Edit();
+PYBIND11_MODULE(_distance, m) {
+    export_metric_EMD(m);
+    export_metric_kohonen(m);
+    export_metric_sorensen(m);
+    export_metric_SSIM(m);
+    export_metric_standards(m);
+    export_metric_TWED(m);
+    export_metric_Edit(m);
 }

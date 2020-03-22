@@ -1,15 +1,17 @@
 #include "modules/utils/crossfilter.hpp"
-#include <boost/python.hpp>
+#include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
+#include <pybind11/numpy.h>
 #include <string>
 #include <vector>
 
-namespace py = boost::python;
+namespace py = pybind11;
 
 template <typename V, typename T>
-void register_wrapper_dimension() {
+void register_wrapper_dimension(py::module& m) {
     using Dimension = cross::dimension<V, T>;
     using Callback = py::object;
-    auto dim = py::class_<Dimension, boost::noncopyable>("Dimension");
+    auto dim = py::class_<Dimension>(m, "Dimension");
     dim.def("dispose", &Dimension::dispose);
     dim.def("get_offset", &Dimension::get_offset);
     dim.def("get_bit_index", &Dimension::get_bit_index);
@@ -53,9 +55,9 @@ void register_wrapper_dimension() {
 }
 
 
-void export_metric_dimension() {
-    register_wrapper_dimension<double, py::object>();
-    register_wrapper_dimension<int, py::object>();
-    register_wrapper_dimension<std::string, py::object>();
-    register_wrapper_dimension<py::object, py::object>();
+void export_metric_dimension(py::module& m) {
+    register_wrapper_dimension<double, py::object>(m);
+    register_wrapper_dimension<int, py::object>(m);
+    register_wrapper_dimension<std::string, py::object>(m);
+    register_wrapper_dimension<py::object, py::object>(m);
 }
