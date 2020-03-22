@@ -1,5 +1,5 @@
-# Ubuntu
 ## Install dependencies
+### Ubuntu
 On Ubuntu one can install dependencies from Ubuntu repositories.
 
 ```
@@ -19,7 +19,7 @@ MAKE="make -j1" python3 setup.py bdist_wheel
 ```
 
 ## Install module
-
+```
 python3 -m pip install dist/*
-
-## [Examples](examples)
+```
+## Examples

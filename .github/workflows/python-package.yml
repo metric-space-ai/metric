@@ -29,6 +29,7 @@ jobs:
       with:
         python-versions: 'cp36-cp36m cp37-cp37m cp38-cp38'
         system-packages: 'cmake3 openblas-devel boost-devel devtoolset-9'
+        build-requirements: 'auditwheel==3.1.0'
         package-path: './python/'
     - name: Publish wheels to PyPI
       env:
