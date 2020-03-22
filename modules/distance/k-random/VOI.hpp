@@ -9,7 +9,7 @@ Copyright (c) 2019 Panda Team
 #ifndef _METRIC_DISTANCE_K_RANDOM_VOI_HPP
 #define _METRIC_DISTANCE_K_RANDOM_VOI_HPP
 
-#include "modules/k-related/Standards.hpp"
+#include "modules/distance/k-related/Standards.hpp"
 #include "modules/utils/type_traits.hpp"
 
 #include <type_traits>
