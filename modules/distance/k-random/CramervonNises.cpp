@@ -14,7 +14,7 @@ Copyright (c) 2020 Panda Team
 namespace metric {
 
 template <typename Sample, typename D>
-auto CramervonNises<typename Sample, typename D>::operator()(const Sample& sample_1, const Sample& sample_2) -> distance_return_type
+auto CramervonNises<Sample, D>::operator()(const Sample& sample_1, const Sample& sample_2) -> distance_return_type
 {
 	PMQ pmq_1(sample_1);
 	PMQ pmq_2(sample_2);

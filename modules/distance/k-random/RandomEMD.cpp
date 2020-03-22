@@ -14,7 +14,7 @@ Copyright (c) 2020 Panda Team
 namespace metric {
 
 template <typename Sample, typename D>
-auto RandomEMD<typename Sample, typename D>::operator()(const Sample& sample_1, const Sample& sample_2) -> distance_return_type
+auto RandomEMD<Sample, D>::operator()(const Sample& sample_1, const Sample& sample_2) -> distance_return_type
 {
 
 	PMQ pmq_1(sample_1);
