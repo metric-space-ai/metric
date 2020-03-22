@@ -30,7 +30,7 @@ class Conv2d: public Layer<Scalar>
 		using SparseMatrix = blaze::CompressedMatrix<Scalar, blaze::columnMajor>;
 		using ColumnMatrix = blaze::DynamicMatrix<Scalar, blaze::columnMajor>;
 		using Vector = blaze::DynamicVector<Scalar, blaze::rowVector>;
-		using SparceVector = blaze::CompressedVector<Scalar, blaze::rowVector>;
+		using SparseVector = blaze::CompressedVector<Scalar, blaze::rowVector>;
 		//using ConstAlignedMapVec = const blaze::CustomVector<Scalar, blaze::aligned, blaze::unpadded>;
 		//using AlignedMapVec = blaze::CustomVector<Scalar, blaze::aligned, blaze::unpadded>;
 
@@ -45,9 +45,12 @@ class Conv2d: public Layer<Scalar>
 		size_t outputChannels;
 		size_t stride;
 
+		bool isTranspose;
+
 		std::vector<SparseMatrix> unrolledKernels;
 		std::vector<size_t> jDeltas;
 		std::vector<size_t> iDeltas;
+		blaze::CompressedMatrix<Scalar> kernelRow;
 
         Vector kernelsData;           // Filter parameters. Total length is
         // (in_channels x out_channels x filter_rows x filter_cols)
@@ -89,9 +92,9 @@ class Conv2d: public Layer<Scalar>
 											  outputWidth((inputWidth - kernelWidth) / stride + 1),
 											  outputHeight((inputHeight - kernelHeight) / stride + 1)
         {
-	        kernelsData.resize(inputChannels * outputChannels * kernelWidth * kernelHeight);
-
-	        bias.resize(outputChannels);
+	        this->inputSize = inputChannels * inputWidth * inputHeight;
+	        this->outputSize = outputChannels * outputWidth * outputHeight;
+	        isTranspose = false;
         }
 
 		Conv2d(const nlohmann::json& json) : inputWidth(json["inputWidth"].get<int>()),
@@ -107,10 +110,11 @@ class Conv2d: public Layer<Scalar>
 
 			this->inputSize = inputChannels * inputWidth * inputHeight;
 			this->outputSize = outputChannels * outputWidth * outputHeight;
+			isTranspose = false;
 		}
 
-		void init(const Scalar& mu, const Scalar& sigma, std::mt19937& rng)
-			{
+	void init(const Scalar& mu, const Scalar& sigma, std::mt19937& rng)
+		{
             // Set data dimension
             const int kernelDataSize = inputChannels * outputChannels * kernelWidth * kernelHeight;
 
@@ -120,81 +124,100 @@ class Conv2d: public Layer<Scalar>
             // Random initialization of filter parameters
             internal::set_normal_random(kernelsData.data(), kernelDataSize, rng, mu, sigma);
 
-            getUnrolledKernel();
 
             // Bias term
             bias.resize(outputChannels);
             db.resize(outputChannels);
 
             internal::set_normal_random(bias.data(), outputChannels, rng, mu, sigma);
+
+            calculateUnrolledKernelStructure();
+			getUnrolledKernel();
+		}
+
+        void calculateUnrolledKernelStructure()
+        {
+	        /* Init unrolled kernels */
+			unrolledKernels.resize(outputChannels, SparseMatrix(inputChannels * inputWidth * inputHeight,
+		                                                            outputWidth * outputHeight));
+
+	        const size_t dr = (isTranspose ? outputWidth : inputWidth) - kernelWidth;
+
+	        kernelRow.resize(1, kernelWidth * kernelHeight + (kernelHeight - 1) * dr);
+
+			iDeltas.resize(kernelWidth * kernelHeight);
+
+			size_t p = 0;
+			for (size_t i = 0; i < iDeltas.size(); ++i) {
+				iDeltas[i] = ++p;
+
+				if ((i + 1) % kernelWidth == 0) {
+					p += dr;
+				}
+			}
+
+			if (!isTranspose) {
+				jDeltas.resize(outputWidth * outputHeight);
+			} else {
+				jDeltas.resize(inputWidth * inputHeight);
+			}
+
+			/* Fill unrolled kernel */
+			const size_t fromWidth = isTranspose ? outputWidth : inputWidth;
+			size_t j00 = 0;
+			size_t j0 = 0;
+			for (size_t i = 0; i < jDeltas.size(); ++i) {
+				jDeltas[i] = (j00 * fromWidth) + j0;
+
+				j0 += stride;
+				if (j0 + kernelWidth > fromWidth) {
+					j0 = 0;
+					j00 += stride;
+				}
+			}
         }
 
         void getUnrolledKernel()
         {
-            const size_t fromWidth = inputWidth;
-            const size_t fromHeight = inputHeight;
-
-            const size_t toWidth = outputWidth;
-            const size_t toHeight = outputHeight;
-
-			unrolledKernels.resize(outputChannels, SparseMatrix(inputChannels * fromWidth * fromHeight, toWidth * toHeight));
-
-			//blaze::reset(unrolledKernel);
-
-	        const size_t dr = fromWidth - kernelWidth;
-	        const size_t fromElementCount = fromWidth * fromHeight;
-	        const size_t toElementCount = toWidth * toHeight;
 	        const size_t kernelOneLength = kernelWidth * kernelHeight;
 	        const size_t kernelOutputChannelLength = inputChannels * kernelWidth * kernelHeight;
 
-			for (size_t k = 0; k < outputChannels; ++k) {
-				auto &unrolledKernelInputChannels = unrolledKernels[k];
-				auto kernelDataInputChannels = blaze::subvector(kernelsData, k * kernelOutputChannelLength, kernelOutputChannelLength);
+			for (size_t outputChannel = 0; outputChannel < outputChannels; ++outputChannel) {
+				auto &unrolledKernelInputChannels = unrolledKernels[outputChannel];
+				auto kernelDataInputChannels = blaze::subvector(kernelsData, outputChannel * kernelOutputChannelLength, kernelOutputChannelLength);
 
-
+				const size_t unrolledKernelRowsNumber = unrolledKernelInputChannels.rows() / inputChannels;
 				for (size_t inputChannel = 0; inputChannel < inputChannels; ++inputChannel) {
-
 					auto unrolledKernel = blaze::submatrix(unrolledKernelInputChannels,
-															inputChannel * fromElementCount, 0,
-															fromElementCount, toElementCount);
+															inputChannel * unrolledKernelRowsNumber, 0,
+															unrolledKernelRowsNumber, unrolledKernelInputChannels.columns());
 
-
-					auto kernelData = blaze::subvector(kernelsData, k * kernelOneLength, kernelOneLength);
-
-					jDeltas.resize(unrolledKernel.columns());
-					iDeltas.resize(kernelData.size());
+					auto kernelData = blaze::subvector(kernelDataInputChannels, outputChannel * kernelOneLength, kernelOneLength);
 
 
 					/* Construct kernel row (convolutional for one output pixel) */
-					SparceVector kernelRow(kernelWidth * kernelHeight + (kernelHeight - 1) * dr);
-
-					size_t p = 0;
-					for (size_t i = 0; i < kernelData.size(); ++i) {
-						kernelRow[p++] = kernelData[i];
-						iDeltas[i] = p;
-
-						if ((i + 1) % kernelWidth == 0) {
-							p += dr;
-						}
+					for (size_t i = 0; i < iDeltas.size(); ++i) {
+						kernelRow(0, iDeltas[i]) = kernelData[i];
 					}
 
 
 					/* Fill unrolled kernel */
-					size_t j00 = 0;
-					size_t j0 = 0;
-					for (size_t i = 0; i < unrolledKernel.columns(); ++i) {
-						for (size_t j = 0; j < kernelRow.size(); ++j) {
-							unrolledKernel((j00 * fromWidth) + j0 + j, i) = kernelRow[j];
+					if (isTranspose) {
+						for (size_t i = 0; i < unrolledKernel.rows(); ++i) {
+							assert(unrolledKernel.rows() == jDeltas.size());
+							//std::cout << i << " " << jDeltas[i] << std::endl;
+							assert(jDeltas[i] + kernelRow.columns() <= unrolledKernel.columns());
+							//blaze::submatrix(unrolledKernel, i, jDeltas[i], 1, kernelRow.columns()) = kernelRow;
+							for (size_t j = 0; j < kernelRow.columns(); ++j) {
+								unrolledKernel(i, jDeltas[i] + j) = kernelRow(0, j);
+							}
 						}
-
-						//blaze::submatrix(unrolledKernel)
-
-						jDeltas[i] = (j00 * fromWidth) + j0;
-
-						j0 += stride;
-						if (j0 + kernelWidth > fromWidth) {
-							j0 = 0;
-							j00 += stride;
+					} else {
+						for (size_t i = 0; i < unrolledKernel.columns(); ++i) {
+							//blaze::submatrix(unrolledKernel, jDeltas[i], i, kernelRow.columns(), 1) = blaze::trans(kernelRow);
+							for (size_t j = 0; j < kernelRow.columns(); ++j) {
+								unrolledKernel(jDeltas[i] + j, i) = kernelRow(0, j);
+							}
 						}
 					}
 				}
@@ -255,14 +278,17 @@ class Conv2d: public Layer<Scalar>
 	        const size_t outputChannelElementsNumber = outputWidth * outputHeight;
 	        const size_t kernelOutputChannelLength = inputChannels * kernelWidth * kernelHeight;
 
+
 	        auto t1 = std::chrono::high_resolution_clock::now();
 
-            /* Derivative for weights */
+            /* Derivative for kernel */
             ColumnMatrix kernelDerivatives(nobs, kernelsData.size(), 0);
-	        for (size_t channel = 0; channel < outputChannels; ++channel) {
-	        	auto dLzChannel = blaze::submatrix(dLz, 0, channel * outputChannelElementsNumber, nobs, outputChannelElementsNumber);
-		        auto kernelDerivativesChannel = blaze::submatrix(kernelDerivatives, 0, channel * kernelOutputChannelLength,
-																					nobs, kernelOutputChannelLength);
+
+            /* Parse output channels */
+	        for (size_t outputChannel = 0; outputChannel < outputChannels; ++outputChannel) {
+	        	auto dLzChannel = blaze::submatrix(dLz, 0, outputChannel * outputChannelElementsNumber, nobs, outputChannelElementsNumber);
+		        auto kernelDerivativesChannel = blaze::submatrix(kernelDerivatives, 0, outputChannel * kernelOutputChannelLength,
+		                                                         nobs, kernelOutputChannelLength);
 
 		        ColumnMatrix W(inputChannels * inputWidth * inputHeight, outputChannelElementsNumber);
 				for (size_t observation = 0; observation < nobs; ++observation) {
@@ -271,12 +297,17 @@ class Conv2d: public Layer<Scalar>
 						blaze::column(W, k) = previousObservation * dLzChannel(observation, k);
 					}
 
+					/* Parse input channels */
 					for (size_t inputChannel = 0; inputChannel < inputChannels; ++inputChannel) {
 						auto kdic = blaze::submatrix(kernelDerivativesChannel, 0, inputChannel * kernelWidth * kernelHeight, nobs, kernelWidth * kernelHeight);
 						auto wic = blaze::submatrix(W, inputChannel * inputWidth * inputHeight, 0, inputWidth * inputHeight, W.columns());
 						for (size_t j = 0; j < kdic.columns(); ++j) {
 							for (size_t k = 0; k < jDeltas.size(); ++k) {
-								kdic(observation, j) += wic(jDeltas[k] + iDeltas[j], k);
+								if (isTranspose) {
+									kdic(observation, j) += wic(k, jDeltas[k] + iDeltas[j]);
+								} else {
+									kdic(observation, j) += wic(jDeltas[k] + iDeltas[j], k);
+								}
 							}
 						}
 					}

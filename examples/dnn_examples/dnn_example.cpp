@@ -170,7 +170,7 @@ int main()
 	autoencoder.setCallback(dnn::VerboseCallback<double>());
 
 	cout << "Train" << endl;
-	autoencoder.train(features, 10, 256);
+	autoencoder.train(features, 1, 256);
 
 	cout << "Sample:" << endl;
 	vector<uint8_t> sample(features.begin(), features.begin() + shape[1] * shape[2]);

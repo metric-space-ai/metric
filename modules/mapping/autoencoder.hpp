@@ -32,7 +32,7 @@ namespace metric
 
 			void setNormValue(InputDataType _normValue = 0);
 
-			void train(const std::vector<InputDataType>& data, size_t epochs, size_t batchSize);
+			void train(const std::vector<InputDataType> data, size_t epochs, size_t batchSize);
 
 			/* Return latent vector */
 			std::vector<Scalar> encode(const std::vector<InputDataType> &data);
@@ -55,36 +55,6 @@ namespace metric
 		this->constructFromJsonString(jsonString);
 	}
 
-//	template<typename InputDataType, typename Scalar>
-//	Autoencoder<InputDataType, Scalar>::Autoencoder(const std::vector<InputDataType> inputData,
-//	                                                size_t featuresLength, InputDataType normValue) :
-//	                                                                featuresLength(featuresLength), normValue(normValue)
-//	{
-//		/* Create layers */
-//		net.addLayer(dnn::FullyConnected<Scalar, dnn::ReLU<Scalar>>(featuresLength, 1024));
-//		net.addLayer(dnn::FullyConnected<Scalar, dnn::ReLU<Scalar>>(1024, 256));
-//		net.addLayer(dnn::FullyConnected<Scalar, dnn::ReLU<Scalar>>(256, 64));
-//		net.addLayer(dnn::FullyConnected<Scalar, dnn::ReLU<Scalar>>(64, 256));
-//		net.addLayer(dnn::FullyConnected<Scalar, dnn::ReLU<Scalar>>(256, 1024));
-//		net.addLayer(dnn::FullyConnected<Scalar, dnn::Sigmoid<Scalar>>(1024, featuresLength));
-//		//net.addLayer(Conv2d<Scalar, ReLU<Scalar>>(featuresLength, 28, 1, 1, 5, 5));
-//		//net.addLayer(Conv2dTranspose<Scalar, Sigmoid<Scalar>>(24, 24, 1, 1, 5, 5));
-//
-//		net.setCallback(dnn::VerboseCallback<Scalar>());
-//		/* Set output layer */
-//
-//		/* Create optimizer object */
-//		net.setOptimizer(dnn::RMSProp<Scalar>());
-//		//opt->learningRate = 0.01;
-//
-//		/* Set callback function object */
-//
-//		net.setOutput(dnn::RegressionMSE<Scalar>());
-//		/* Initialize parameters with N(0, 0.01^2) using random seed 123 */
-//		net.init(0, 0.01, 123);
-//
-//		loadTrainData(inputData);
-//	}
 
 	template<typename InputDataType, typename Scalar>
 	void Autoencoder<InputDataType, Scalar>::loadTrainData(const std::vector<InputDataType> data)
@@ -95,7 +65,7 @@ namespace metric
 
 	template<typename InputDataType, typename Scalar>
 	void
-	Autoencoder<InputDataType, Scalar>::train(const std::vector<InputDataType>& data, size_t epochs, size_t batchSize)
+	Autoencoder<InputDataType, Scalar>::train(const std::vector<InputDataType> data, size_t epochs, size_t batchSize)
 	{
 		loadTrainData(data);
 
