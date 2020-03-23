@@ -1,22 +1,35 @@
 import setuptools
 from os import path
+import re
 from cmake_ext import CMakeExtension, CMakeBuildExt
-from metric import __version__
 
 
-this_directory = path.abspath(path.dirname(__file__))
-with open(path.join(this_directory, 'README.md'), encoding='utf-8') as f:
-    long_description = f.read()
+HERE = path.abspath(path.dirname(__file__))
+
+
+def get_file_content(*paths):
+    with open(path.join(HERE, *paths), 'r', encoding='utf-8') as fp:
+        return fp.read()
+
+
+def find_version(*file_paths):
+    version_file = get_file_content(*file_paths)
+    version_match = re.search(r"^__version__ = ['\"]([^'\"]*)['\"]",
+                              version_file, re.M)
+    if version_match:
+        return version_match.group(1)
+    raise RuntimeError("Unable to find version string.")
+
 
 setuptools.setup(
     name='metric-py',
-    version=__version__,
+    version=find_version('metric', '__init__.py'),
     ext_modules=[CMakeExtension('all')],
     cmdclass={'build_ext': CMakeBuildExt},
     author="Jura Gresko",
     author_email="juragresko@gmail.com",
     description="Metric python3 module",
-    long_description=long_description,
+    long_description=get_file_content('README.md'),
     long_description_content_type="text/markdown",
     url="https://github.com/panda-official/metric",
     packages=setuptools.find_packages(),
