@@ -184,13 +184,16 @@ namespace metric {
 				min_cluster_size = nodes_data.size();
 			}
 
-			print_matrix(nodes_data);
-
 			while (current_min_cluster_size < min_cluster_size)
 			{
 				// clustering on the reduced data
 				
 				auto [assignments, exemplars, counts] = metric::kmeans(nodes_data, num_clusters, iterations_, metric_name, random_seed_);
+				
+				print_vector(assignments);
+				print_vector(counts);
+
+				std::cout << std::endl;
 
 				std::vector<int>::iterator result = std::min_element(counts.begin(), counts.end());
 				current_min_cluster_size = counts[std::distance(counts.begin(), result)];
