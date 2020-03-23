@@ -49,22 +49,25 @@ T Discrete<T>::quantil(T p)
 template <typename T>
 T Discrete<T>::mean()
 {
-    T sum = 0;
+	// Updated mean calculation by Stepan Mamontov 04.02.2020
+	// Updated according to formula: mean = sum (x * P(x))  ->  https://en.wikipedia.org/wiki/Mean#Mean_of_a_probability_distribution
+    T sum = _data[0] * _prob[0];
     for (size_t i = 1; i < _data.size(); ++i) {
-        sum += (_data[i] - _data[i - 1]) * (_prob[i] - _prob[i - 1]);
+        sum += _data[i] * (_prob[i] - _prob[i - 1]);
     }
-    T value = sum * (_data[_data.size() - 1] - _data[0]);  // / T(_data.size());
 
-    return value;
+    return sum;
 }
 
 template <typename T>
 T Discrete<T>::variance()
 {
+	// Updated variance calculation by Stepan Mamontov 04.02.2020
+	// Updated accroding to formula: variance = sum ((x - mean) * (x - mean) * P(x))  ->  https://en.wikipedia.org/wiki/Variance#Discrete_random_variable
     T mean_value = mean();
-    T sum = 0;
-    for (size_t i = 0; i < _data.size(); ++i) {
-        sum += (_data[i] - mean_value) * (_data[i] - mean_value);
+    T sum = (_data[0] - mean_value) * (_data[0] - mean_value) * _prob[0];
+    for (size_t i = 1; i < _data.size(); ++i) {
+        sum += (_data[i] - mean_value) * (_data[i] - mean_value) * (_prob[i] - _prob[i-1]);
     }
     return sum;
 }
@@ -73,7 +76,24 @@ T Discrete<T>::variance()
 template <typename T>
 T Discrete<T>::cdf(const T x)
 {
-    return (T(0.5) * (T(1) + (x - _p1) / (_p2 * 1.41421356237309504880)));
+	// Updated cdf calculation by Stepan Mamontov 04.02.2020
+	// Updated by return interpolated func of cumulative propability from distributed value
+    std::vector<T> values;
+    values.push_back(x);
+	T result = akimaInterp1(_data, _prob, values)[0];
+	
+	// cut probs over the _data values
+	if (x < _data[0])
+	{
+		result = 0;
+	}
+	
+	if (x > _data[_data.size() - 1])
+	{
+		result = 1;
+	}
+
+	return result;
 }
 
 }  // end namespace metric

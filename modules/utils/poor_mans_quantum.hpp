@@ -47,22 +47,24 @@ public:
      * @param d 
      */
     PMQ(T par1 = 1.0, T par2 = 0.0, size_t n = 1000, Distribution d = Distribution());
-
+	
+	// Updated by Stepan Mamontov 26.02.2020
     /**
      * @brief Construct a new PMQ object
      * 
      * @param data 
      * @param d 
      */
-    PMQ(std::vector<double> data, Distribution d = Distribution());
-
+    PMQ(std::vector<T> data, Distribution d = Distribution());
+	
+	// Updated by Stepan Mamontov 26.02.2020
     /**
      * @brief Construct a new PMQ object
      * 
      * @param data 
      * @param d 
      */
-    PMQ(std::vector<float> data, Distribution d = Distribution());
+    //PMQ(std::vector<float> data, Distribution d = Distribution());
 
     /**
      * @brief 

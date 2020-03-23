@@ -88,7 +88,7 @@ int main() {
 	std::cout << "Variation of Information, normalized Variation of Information:" << std::endl;
 	
 	std::cout << "VOI = " << metric::variationOfInformation(v1, v2) << std::endl;
-	std::cout << "VOI (Manhatten) = " << metric::variationOfInformation<double, metric::Manhatten<double>>(v1, v2) << std::endl;
+	std::cout << "VOI (Manhatten) = " << metric::variationOfInformation<std::vector<std::vector<double>>, metric::Manhatten<double>>(v1, v2) << std::endl;
 	std::cout << "VOI norm = " << metric::variationOfInformation_normalized(v1, v2) << std::endl;
 
 	// functor

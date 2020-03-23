@@ -42,6 +42,9 @@ int main()
 
     cTree.print();
 
+    std::cout << std::endl;
+    std::cout << std::endl;
+
 	//
 
     /*** batch insert ***/
