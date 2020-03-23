@@ -199,8 +199,8 @@ namespace metric {
 			std::cout << distance(nodes_data[0], nodes_data[10]) << " ";
 			std::cout << distance(nodes_data[0], nodes_data[11]) << " ";
 			std::cout << std::endl;
-			std::cout << typeid(distance).name() << std::endl;
-			std::cout << typeid(nodes_data).name() << std::endl;
+			std::cout << typeid(recType).name() << std::endl;
+			std::cout << typeid(typename Metric::value_type).name() << std::endl;
 			std::cout << std::endl;
 
 			while (current_min_cluster_size < min_cluster_size)
