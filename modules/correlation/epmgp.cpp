@@ -309,8 +309,8 @@ local_gaussian_axis_aligned_hyperrectangles(
 
         blaze::DiagonalMatrix<blaze::DynamicMatrix<T>> sSiteHalf (tauSite.size(), 0);
         for (size_t i = 0; i<tauSite.size(); ++i) {
-            if (tauSite[i] < 0 || std::isnan(tauSite[i]))
-                sSiteHalf(i, i) = 0; // TODO check well
+            if (tauSite[i] < 0 || std::isnan(tauSite[i])) // this differs from Matlab code
+                sSiteHalf(i, i) = 0;
             else
                 sSiteHalf(i, i) = std::sqrt(tauSite[i]);
         }
@@ -358,7 +358,7 @@ local_gaussian_axis_aligned_hyperrectangles(
 
 
 
-// complex version
+// complex value version, needs debugging
 /*
 
 

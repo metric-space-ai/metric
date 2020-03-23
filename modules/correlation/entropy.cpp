@@ -315,7 +315,7 @@ double entropy_kpN<recType, Metric>::operator()(
         mu = mu/p;
         Nodes = Nodes - blaze::expand(blaze::trans(mu), Nodes.rows());
         double offset = 1e-8;
-        //double offset = 1e-5; // todo compute depending of machine epsilon
+        //double offset = 1e-5; // TODO consider dependence on machine epsilon
         auto K = blaze::evaluate( (blaze::trans(Nodes) * Nodes)*p/(p - 1) + blaze::IdentityMatrix<double>(d)*offset );
 
         blaze::reset(lb);
@@ -329,7 +329,6 @@ double entropy_kpN<recType, Metric>::operator()(
         auto g_local = epmgp::local_gaussian_axis_aligned_hyperrectangles<double>(mu, K, lb, ub);
         double logG = std::get<0>(g_local);
 
-        // TODO deside if we skip
         if (!std::isnan(logG)) { // UNLIKE original Matlab code, we exclude points that result in NaN, TODO check validity
             double g = mvnpdf(x_vector, mu, K);
             h += logG - std::log(g);
@@ -338,7 +337,7 @@ double entropy_kpN<recType, Metric>::operator()(
 
     }
 
-    if (got_results > 20) // this absents in Matlab original code
+    if (got_results > 20) // this absents in Matlab original code. TODO adjust min number of points
         return boost::math::digamma(n) - boost::math::digamma(k) + h/n;
     else
         return std::nan("estimation failed");
