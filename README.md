@@ -1,6 +1,7 @@
 # PANDA | METRIC
 
 **PANDA | METRIC** is a framework for processing arbitrary data. 
+project page: https://panda.technology/de/metric
 
 ## Overview
 
@@ -54,7 +55,7 @@ such as the search for neighboring elements. If you can compare two entries all 
 related through the d-representations in a metric space. 
  
 **METRIC | MAPPING** contains various algorithms that can
-‘calculate’ metric spaces or map them into equivalent
+â€˜calculateâ€™ metric spaces or map them into equivalent
 metric spaces. 
 In general, you can regard all of the algorithms in METRIC | MAPPING as mapper from one metric space into 
 a new one, usually with the goal to reduce complexity (like clustering or classifying) or to fill missing 

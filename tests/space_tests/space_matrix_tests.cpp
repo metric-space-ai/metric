@@ -8,7 +8,7 @@ Copyright (c) 2020 Panda Team
 
 #include <boost/test/tools/old/interface.hpp>
 #include <stdexcept>
-#define BOOST_TEST_DYN_LINK
+//#define BOOST_TEST_DYN_LINK
 #define BOOST_TEST_MODULE space_matrix_test
 #include <boost/test/unit_test.hpp>
 

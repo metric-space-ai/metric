@@ -324,7 +324,8 @@ Tree<recType, Metric>::Tree(const recType& p, int truncateArg /*=-1*/, Metric d)
 
 /*** constructor: with a vector data records **/
 template <class recType, class Metric>
-Tree<recType, Metric>::Tree(const std::vector<recType>& p, int truncateArg /*=-1*/, Metric d)
+template<typename C>
+Tree<recType, Metric>::Tree(const C& p, int truncateArg /*=-1*/, Metric d)
     : metric_(d)
 {
     min_scale = 1000;
@@ -894,6 +895,28 @@ void Tree<recType, Metric>::print_(NodeType* node_p, std::ostream& ostr) const
     }
 }
 
+template <class recType, class Metric>
+auto Tree<recType, Metric>::get_all_nodes() -> std::vector<Node_ptr>
+{	
+	std::vector<Node_ptr> all_nodes;
+	
+	all_nodes.push_back(root);
+	get_all_nodes_(root, all_nodes);
+
+	return all_nodes;
+}
+
+template <class recType, class Metric>
+void Tree<recType, Metric>::get_all_nodes_(Node_ptr node_p, std::vector<Node_ptr>& output)
+{	
+	for (std::size_t i = 0; i < node_p->children.size(); ++i) 
+	{
+		output.push_back(node_p->children[i]);
+		get_all_nodes_(node_p->children[i], output);
+	}
+}
+
+
 /*** traverse the tree from root and do something with every node ***/
 template <class recType, class Metric>
 void Tree<recType, Metric>::traverse(const std::function<void(Node_ptr)>& f)
@@ -1461,18 +1484,25 @@ auto Tree<recType, Metric>::distance(const recType &r1, const recType &r2) const
 
 template <typename recType, typename Metric>
 auto Tree<recType, Metric>::matrix() const
-    -> blaze::SymmetricMatrix<blaze::DynamicMatrix<Distance, blaze::rowMajor>> {
-    blaze::SymmetricMatrix<blaze::DynamicMatrix<Distance, blaze::rowMajor>> m(data.size());
-    for(std::size_t i = 0; i < data.size(); i++) {
+    -> blaze::CompressedMatrix<Distance, blaze::rowMajor> {
+    auto N = data.size();
+    blaze::CompressedMatrix<Distance, blaze::rowMajor> m(N, N);
+    
+    m.reserve(N*(N-1)/2);
+    for (std::size_t i = 0; i < data.size(); i++)
+    {
         for(std::size_t j = i +1; j < data.size(); j++) {
             if( data[i].second->parent == data[j].second) {
-                m(i,j) = data[i].second->parent_dist;
+                // node J is a parent for node I, so we can use parent_dist
+                m.append(i, j, data[i].second->parent_dist);
             } else if (data[j].second->parent == data[i].second) {
-                m(i, j) = data[j].second->parent_dist;
+                // node I is a parent for node J, so we can use parent_dist
+                m.append(i, j,data[j].second->parent_dist);
             } else {
-                m(i, j) = metric(data[i].first, data[j].first);
+                m.append(i, j, metric(data[i].first, data[j].first));
             }
         }
+        m.finalize(i);
     }
     return m;
 }
