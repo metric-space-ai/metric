@@ -10,8 +10,6 @@
 //#include "stl_wrappers.hpp"
 
 #include <pybind11/pybind11.h>
-//#include <boost/python/suite/indexing/vector_indexing_suite.hpp>
-//#include <vector>
 
 namespace py = pybind11;
 
@@ -69,18 +67,8 @@ namespace py = pybind11;
 
 }*/
 
-#include <string>
-#include <vector>
-#include <pybind11/stl.h>
-
-std::string my_test(std::vector<int> a, const std::vector<double>& b)
-{
-    return "COOL";
-}
 
 PYBIND11_MODULE(_metric, m) {
-    m.doc() = "My module doc";
-    m.def("my_test", &my_test, "My test function");
     //export_converters();
     // exposing C++ return types
     //export_containers();
