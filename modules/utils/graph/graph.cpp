@@ -690,8 +690,8 @@ KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::KNNGraph(const KNN
 {
 	_nodes = graph._nodes;
 	// copy assignment
-	m = graph.m;
-    valid = true;
+	Graph<WeightType, isDense, isSymmetric>::m = graph.m;
+    Graph<WeightType, isDense, isSymmetric>::valid = true;
 }
 
 //template <typename Sample, typename Distance, typename WeightType, bool isDense, bool isSymmetric>
@@ -746,7 +746,7 @@ void KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::calculate_dis
 template <typename Sample, typename Distance, typename WeightType, bool isDense, bool isSymmetric>
 void KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::make_edge_pairs(std::vector<Sample> samples)
 {
-    m.resize(samples.size(), samples.size());	
+    Graph<WeightType, isDense, isSymmetric>::m.resize(samples.size(), samples.size());	
 	
 	std::vector<int> ids(samples.size());
     std::iota(ids.begin(), ids.end(), 0);
@@ -795,7 +795,7 @@ void KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::make_edge_pai
 	}
 
 	// finish graph
-    buildEdges(edgesPairs);
+    Graph<WeightType, isDense, isSymmetric>::buildEdges(edgesPairs);
 }
 
 template <typename Sample, typename Distance, typename WeightType, bool isDense, bool isSymmetric>
@@ -805,7 +805,7 @@ void KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::construct(std
 
     make_edge_pairs(samples);
 
-    valid = true;
+    Graph<WeightType, isDense, isSymmetric>::valid = true;
 }
 
 
@@ -998,7 +998,7 @@ std::vector<int> KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::g
 			{
 				distances.clear();
 				// 0 index is for node itself, 1 - is first circle of neighbours
-				auto neighbours = getNeighbours(checking_node, 1)[1];
+				auto neighbours = Graph<WeightType, isDense, isSymmetric>::getNeighbours(checking_node, 1)[1];
 
 				// get first num_expansions neighbours for the checking node and calculate distances to the query
 				for (int p = 0; p < num_expansions; p++) 
