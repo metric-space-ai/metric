@@ -184,6 +184,21 @@ namespace metric {
 				min_cluster_size = nodes_data.size();
 			}
 
+			Metric distance;
+
+			std::cout << std::endl;
+			std::cout << distance(nodes_data[0], nodes_data[1]) << " ";
+			std::cout << distance(nodes_data[0], nodes_data[2]) << " ";
+			std::cout << distance(nodes_data[0], nodes_data[3]) << " ";
+			std::cout << distance(nodes_data[0], nodes_data[4]) << " ";
+			std::cout << distance(nodes_data[0], nodes_data[5]) << " ";
+			std::cout << distance(nodes_data[0], nodes_data[6]) << " ";
+			std::cout << distance(nodes_data[0], nodes_data[7]) << " ";
+			std::cout << distance(nodes_data[0], nodes_data[8]) << " ";
+			std::cout << distance(nodes_data[0], nodes_data[9]) << " ";
+			std::cout << distance(nodes_data[0], nodes_data[10]) << " ";
+			std::cout << distance(nodes_data[0], nodes_data[11]) << " ";
+
 			while (current_min_cluster_size < min_cluster_size)
 			{
 				// clustering on the reduced data
