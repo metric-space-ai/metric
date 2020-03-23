@@ -184,6 +184,8 @@ namespace metric {
 				min_cluster_size = nodes_data.size();
 			}
 
+			print_matrix(nodes_data);
+
 			while (current_min_cluster_size < min_cluster_size)
 			{
 				// clustering on the reduced data
