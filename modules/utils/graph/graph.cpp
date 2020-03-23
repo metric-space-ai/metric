@@ -691,7 +691,7 @@ KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::KNNGraph(const KNN
 	_nodes = graph._nodes;
 	// copy assignment
 	this->m = graph.m;
-    this->valid = true;
+  this->valid = true;
 }
 
 //template <typename Sample, typename Distance, typename WeightType, bool isDense, bool isSymmetric>
@@ -795,7 +795,7 @@ void KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::make_edge_pai
 	}
 
 	// finish graph
-    this->buildEdges(edgesPairs);
+  this->buildEdges(edgesPairs);
 }
 
 template <typename Sample, typename Distance, typename WeightType, bool isDense, bool isSymmetric>
