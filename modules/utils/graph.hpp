@@ -370,7 +370,7 @@ public:
 
 	
 	std::vector<int> gnnn_search(Sample query, int max_closest_num, int iterations = 10, int num_greedy_moves = -1, int num_expansions = -1);
-	
+
 protected:
 	size_t _neighbors_num = 1;
 	size_t _max_bruteforce_size = 10;
@@ -420,6 +420,8 @@ private:
      */
 	template <typename T1>
 	std::vector<size_t> sort_indexes(const std::vector<T1> &v);
+
+    using distance_value_type_t = typename Distance::value_type;
 };
 
 

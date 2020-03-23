@@ -690,8 +690,8 @@ KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::KNNGraph(const KNN
 {
 	_nodes = graph._nodes;
 	// copy assignment
-	m = graph.m;
-    valid = true;
+	this->m = graph.m;
+  this->valid = true;
 }
 
 //template <typename Sample, typename Distance, typename WeightType, bool isDense, bool isSymmetric>
@@ -731,7 +731,7 @@ void KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::calculate_dis
 	{
 		// take each node
 		auto i_point = samples[i];
-		std::vector<Distance::value_type> distances;
+		std::vector<distance_value_type_t> distances;
 		// then calculate distances for all other nodes
 		for (int j = 0; j < samples.size(); j++)
 		{
@@ -746,7 +746,7 @@ void KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::calculate_dis
 template <typename Sample, typename Distance, typename WeightType, bool isDense, bool isSymmetric>
 void KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::make_edge_pairs(std::vector<Sample> samples)
 {
-    m.resize(samples.size(), samples.size());	
+    this->m.resize(samples.size(), samples.size());	
 	
 	std::vector<int> ids(samples.size());
     std::iota(ids.begin(), ids.end(), 0);
@@ -795,17 +795,17 @@ void KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::make_edge_pai
 	}
 
 	// finish graph
-    buildEdges(edgesPairs);
+  this->buildEdges(edgesPairs);
 }
 
 template <typename Sample, typename Distance, typename WeightType, bool isDense, bool isSymmetric>
 void KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::construct(std::vector<Sample> samples)
 {
-	calculate_distance_matrix(samples);
+    calculate_distance_matrix(samples);
 
     make_edge_pairs(samples);
 
-    valid = true;
+    this->valid = true;
 }
 
 
@@ -874,9 +874,8 @@ std::vector<std::pair<size_t, size_t>> KNNGraph<Sample, Distance, WeightType, is
     std::vector<std::pair<size_t, size_t>> edgesPairs;
 
 	int update_count = 0;
-	
-	std::vector<std::vector<Distance::value_type>> distances;
-	std::vector<Distance::value_type> distance_row;
+	std::vector<std::vector<distance_value_type_t>> distances;
+	std::vector<distance_value_type_t> distance_row;
 	for (int i = 0; i < ids.size(); i++)
 	{
 		distance_row.clear();
@@ -947,15 +946,15 @@ std::vector<int> KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::g
 	std::vector<int> result;
 
 	// variables for choosen nodes during search
-	std::vector<Distance::value_type> choosen_distances;
+	std::vector<distance_value_type_t> choosen_distances;
 	std::vector<int> choosen_nodes;
 
 	// temp variables
-	std::vector<Distance::value_type> distances;
-	Distance::value_type distance;
-			
+	std::vector<distance_value_type_t> distances;
+	distance_value_type_t distance;
+
 	Distance distancer;
-	
+
 	// num_expansions should be less then k(neighbors_num) of the graph
 	if (num_expansions > _neighbors_num)
 	{
@@ -998,7 +997,7 @@ std::vector<int> KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::g
 			{
 				distances.clear();
 				// 0 index is for node itself, 1 - is first circle of neighbours
-				auto neighbours = getNeighbours(checking_node, 1)[1];
+				auto neighbours = this->getNeighbours(checking_node, 1)[1];
 
 				// get first num_expansions neighbours for the checking node and calculate distances to the query
 				for (int p = 0; p < num_expansions; p++) 
@@ -1016,7 +1015,7 @@ std::vector<int> KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::g
 					}
 				}
 			
-				std::vector<Distance::value_type>::iterator min_index = std::min_element(distances.begin(), distances.end());
+				auto min_index = std::min_element(distances.begin(), distances.end());
 				new_node = neighbours[std::distance(distances.begin(), min_index)];
 				// if we back to the visited node then we fall in loop and search is complete
 				if (new_node == prev_node)

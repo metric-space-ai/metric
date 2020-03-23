@@ -8,7 +8,7 @@ Copyright (c) 2020 Panda Team
 
 #include "modules/utils/type_traits.hpp"
 #include <stdexcept>
-#define BOOST_TEST_DYN_LINK
+//#define BOOST_TEST_DYN_LINK
 #define BOOST_TEST_MODULE voi_test
 #include <boost/test/unit_test.hpp>
 

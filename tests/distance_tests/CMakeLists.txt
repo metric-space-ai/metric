@@ -26,7 +26,6 @@ set(BOOST_LINK_DIRS "${BOOST_ROOT}/stage/lib")
 if(UNIX)
     set(THREADS_PREFER_PTHREAD_FLAG ON)
     find_package(Threads REQUIRED)
-
 endif(UNIX)
 
 AUX_SOURCE_DIRECTORY(. TEST_SRCS)
@@ -39,18 +38,16 @@ foreach(testSrc ${TEST_SRCS})
         #Add compile target
         add_executable(${testName} ${testSrc})
  
-		#link to Boost libraries AND your targets and dependencies 
-		target_link_directories(${testName} PRIVATE ${BOOST_LINK_DIRS})
-		target_link_libraries(${testName} ${Boost_LIBRARIES})
+	#link to Boost libraries AND your targets and dependencies 
+	if(CMAKE_SYSTEM_NAME MATCHES Windows)
+	    target_link_directories(${testName} PRIVATE ${BOOST_LINK_DIRS})
+	endif()
+	target_link_libraries(${testName} ${Boost_LIBRARIES})
         target_link_libraries(${testName} ${BOOST_TEST_LIB})
-		set_target_properties(${testName} PROPERTIES CXX_STANDARD 17)
+	set_target_properties(${testName} PROPERTIES CXX_STANDARD 17)
 	if(UNIX)
-		set(CMAKE_CXX_FLAGS "-O3")
-
-		target_link_libraries(${exampleName} Threads::Threads)
-
-		target_compile_options(${exampleName} PRIVATE -pthread)
-		set_target_properties(${exampleName} PROPERTIES LINK_FLAGS -pthread)
+		target_compile_options(${testName} PRIVATE -DBOOST_TEST_DYN_LINK)
+		target_link_libraries(${testName} Threads::Threads)
 	endif(UNIX)
         #I like to move testing binaries into a testBin directory
 #        set_target_properties(${testName} PROPERTIES RUNTIME_OUTPUT_DIRECTORY  ${CMAKE_CURRENT_SOURCE_DIR})
