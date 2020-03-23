@@ -875,7 +875,7 @@ std::vector<std::pair<size_t, size_t>> KNNGraph<Sample, Distance, WeightType, is
 
 	int update_count = 0;
 	
-	std::vector<std::vector<Distance::value_type>> distances;
+	std::vector<std::vector<typename Distance::value_type>> distances;
 	std::vector<typename Distance::value_type> distance_row;
 	for (int i = 0; i < ids.size(); i++)
 	{
