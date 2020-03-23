@@ -229,8 +229,6 @@ std::tuple<std::vector<int>, std::vector<std::vector<T>>, std::vector<int>> kmea
     int updated_number_of_means = 0;
     std::vector<int> counts(k, int(0));
 	
-	std::cout << "kmeans: " << typeid(T).name() << std::endl;
-	std::cout << std::endl;
     do {
         kmeans_details::update_assignments(assignments, data, means, distance_measure);
         auto [updated_counts, updated_number_of_means] = kmeans_details::update_means(means, data, assignments, k);

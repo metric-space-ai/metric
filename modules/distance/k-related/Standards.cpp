@@ -95,7 +95,8 @@ auto CosineInverted<V>::operator()(const Container& A, const Container& B) const
         denom_a += *it1 * *it1;
         denom_b += *it2 * *it2;
     }
-    return abs(1 - dot / (std::sqrt(denom_a) * std::sqrt(denom_b)));
+	std::cout << std::abs(1 - dot / (std::sqrt(denom_a) * std::sqrt(denom_b))) << std::endl;
+    return std::abs(1 - dot / (std::sqrt(denom_a) * std::sqrt(denom_b)));
 }
 
 template <typename V>
