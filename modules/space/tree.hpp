@@ -353,7 +353,7 @@ public:
      * @brief recursively iterate through the tree and return all nodes of the tree
      *
      * @return return all nodes of the tree
-     */
+     */	
 	auto get_all_nodes() -> std::vector<Node_ptr>;
 
     /**
@@ -395,10 +395,12 @@ public:
 
     /**
      * @brief convert cover tree to distance matrix
-     * @return blaze::SymmetricMatrix with distance
+     * @return blaze::CompressedMatrix with distances between nodes,
+     * Since the matrix is symmetric, we fill only the upper right part of the matrix,
+     * so matrix will have only N*(N-1)/2 non zeroes elements;
      *
      */
-    blaze::SymmetricMatrix<blaze::DynamicMatrix<Distance, blaze::rowMajor>> matrix() const;
+    blaze::CompressedMatrix<Distance, blaze::rowMajor> matrix() const;
 private:
     friend class Node<recType, Metric>;
 

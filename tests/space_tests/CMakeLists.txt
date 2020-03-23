@@ -40,8 +40,8 @@ foreach(testSrc ${TEST_SRCS})
 		#target_compile_options(${testName} PRIVATE /D BOOST_ALL_NO_LIB=1)
 #		target_compile_options(${testName} PRIVATE /DBOOST_USE_WINDOWS_H)
 	endif()
-		target_include_directories(${testName} PRIVATE ${Boost_INCLUDE_DIRS})
-		target_link_directories(${testName} PRIVATE ${BOOST_LINK_DIRS})
+
+	target_include_directories(${testName} PRIVATE ${Boost_INCLUDE_DIRS})
         target_link_libraries(${testName} PRIVATE ${Boost_LIBRARIES})
         target_link_libraries(${testName} PRIVATE ${BOOST_TEST_LIB})
 
@@ -53,11 +53,12 @@ foreach(testSrc ${TEST_SRCS})
 		target_link_directories(${testName} PRIVATE ${PROJECT_SOURCE_DIR}/../../mkl/lib/intel64_win)
 		target_link_libraries(${testName} PRIVATE mkl_core.lib mkl_sequential.lib mkl_intel_lp64.lib)
 		target_link_libraries(${testName} PRIVATE ${Boost_LIBRARIES})
+		target_link_directories(${testName} PRIVATE ${BOOST_LINK_DIRS})
 	endif()
 
 	if(UNIX)
-	    target_link_libraries(${testName} Threads::Threads)
-	set_target_properties(mapping_tests PROPERTIES CXX_STANDARD 17)
+	    target_link_libraries(${testName} PRIVATE Threads::Threads)
+ 	    target_compile_options(${testName} PRIVATE -DBOOST_TEST_DYN_LINK)
 	endif(UNIX)
 
         #I like to move testing binaries into a testBin directory 

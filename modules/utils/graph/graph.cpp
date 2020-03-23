@@ -731,7 +731,7 @@ void KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::calculate_dis
 	{
 		// take each node
 		auto i_point = samples[i];
-		std::vector<typename Distance::value_type> distances;
+		std::vector<distance_value_type_t> distances;
 		// then calculate distances for all other nodes
 		for (int j = 0; j < samples.size(); j++)
 		{
@@ -801,7 +801,7 @@ void KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::make_edge_pai
 template <typename Sample, typename Distance, typename WeightType, bool isDense, bool isSymmetric>
 void KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::construct(std::vector<Sample> samples)
 {
-	calculate_distance_matrix(samples);
+    calculate_distance_matrix(samples);
 
     make_edge_pairs(samples);
 
@@ -874,9 +874,8 @@ std::vector<std::pair<size_t, size_t>> KNNGraph<Sample, Distance, WeightType, is
     std::vector<std::pair<size_t, size_t>> edgesPairs;
 
 	int update_count = 0;
-	
-	std::vector<std::vector<typename Distance::value_type>> distances;
-	std::vector<typename Distance::value_type> distance_row;
+	std::vector<std::vector<distance_value_type_t>> distances;
+	std::vector<distance_value_type_t> distance_row;
 	for (int i = 0; i < ids.size(); i++)
 	{
 		distance_row.clear();
@@ -944,19 +943,18 @@ std::vector<std::pair<size_t, size_t>> KNNGraph<Sample, Distance, WeightType, is
 template <typename Sample, typename Distance, typename WeightType, bool isDense, bool isSymmetric>
 std::vector<int> KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::gnnn_search(Sample query, int max_closest_num, int iterations, int num_greedy_moves, int num_expansions)
 {
-    using V = typename Distance::value_type;
 	std::vector<int> result;
 
 	// variables for choosen nodes during search
-	std::vector<V> choosen_distances;
+	std::vector<distance_value_type_t> choosen_distances;
 	std::vector<int> choosen_nodes;
 
 	// temp variables
-	std::vector<V> distances;
-	V distance;
-			
+	std::vector<distance_value_type_t> distances;
+	distance_value_type_t distance;
+
 	Distance distancer;
-	
+
 	// num_expansions should be less then k(neighbors_num) of the graph
 	if (num_expansions > _neighbors_num)
 	{
@@ -1017,7 +1015,7 @@ std::vector<int> KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::g
 					}
 				}
 			
-				typename std::vector<V>::iterator min_index = std::min_element(distances.begin(), distances.end());
+				auto min_index = std::min_element(distances.begin(), distances.end());
 				new_node = neighbours[std::distance(distances.begin(), min_index)];
 				// if we back to the visited node then we fall in loop and search is complete
 				if (new_node == prev_node)
