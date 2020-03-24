@@ -32,6 +32,15 @@ struct entropy { // averaged entropy estimation: code COPIED from mgc.*pp with o
             bool exp = false
             ) const;
 
+    template <template <typename, typename> class OuterContainer, template <typename, bool> class InnerContainer, class OuterAllocator, typename ValueType, bool F>
+    double operator()( // TODO implement
+            const OuterContainer<InnerContainer<ValueType, F>, OuterAllocator> & data, // inner cpntainer is specialized with bool F
+            std::size_t k = 3,
+            double logbase = 2,
+            Metric metric = Metric(),
+            bool exp = false
+            ) const;
+
     template <typename Container>
     double estimate(
             const Container & a,
