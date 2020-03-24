@@ -180,7 +180,7 @@ class Conv2d: public Layer<Scalar>
         void getUnrolledKernel()
         {
 	        const size_t kernelOneLength = kernelWidth * kernelHeight;
-	        const size_t kernelOutputChannelLength = inputChannels * kernelWidth * kernelHeight;
+	        const size_t kernelOutputChannelLength = inputChannels * kernelOneLength;
 
 			for (size_t outputChannel = 0; outputChannel < outputChannels; ++outputChannel) {
 				auto &unrolledKernelInputChannels = unrolledKernels[outputChannel];
@@ -192,7 +192,7 @@ class Conv2d: public Layer<Scalar>
 															inputChannel * unrolledKernelRowsNumber, 0,
 															unrolledKernelRowsNumber, unrolledKernelInputChannels.columns());
 
-					auto kernelData = blaze::subvector(kernelDataInputChannels, outputChannel * kernelOneLength, kernelOneLength);
+					auto kernelData = blaze::subvector(kernelDataInputChannels, inputChannel * kernelOneLength, kernelOneLength);
 
 
 					/* Construct kernel row (convolutional for one output pixel) */
