@@ -58,7 +58,7 @@ struct kohonen_distance {
      * @param iterations
      * @param distribution
      */
-	kohonen_distance(const std::vector<Sample>& samples, Graph graph, Metric metric = Metric(), double start_learn_rate = 0.8, double finish_learn_rate = 0.0, size_t iterations = 20, 
+	kohonen_distance(const std::vector<Sample>& samples, Graph graph, Metric metric = Metric(), double start_learn_rate = 0.8, double finish_learn_rate = 0.0, size_t iterations = 20,
 		Distribution distribution = Distribution(-1, 1));
 
     /**
@@ -69,9 +69,9 @@ struct kohonen_distance {
      * @return distance on kohonen space
      */
     distance_return_type operator()(const Sample& sample_1, const Sample& sample_2);
-	
+
     /**
-     * @brief 
+     * @brief
 	 * Recursive function that reconstructs the shortest backwards node by node
      *
      * @param from_node - index of the SOM's graph start node
@@ -81,14 +81,14 @@ struct kohonen_distance {
 
 private:
 	
-	void calculate_distance_matrix();	
+	void calculate_distance_matrix();
 
 	/**
 	 * @brief get_closest_unmarked_node
 	 * @return the index of closest nodes not visited
 	 */
 	int get_closest_unmarked_node(const std::vector<D>& distance, const std::vector<bool>& mark, int numOfVertices);
-	
+
 	/**
 	 * @brief calculate_distance
 	 * Computes the shortest path
@@ -96,7 +96,7 @@ private:
 	std::tuple<std::vector<D>, std::vector<int>> calculate_distance(const blaze::CompressedMatrix<D>& adjMatrix, int from_node, int num);
 
 	metric::SOM<Sample, Graph, Metric, Distribution> som_model_;
-	
+
 	std::vector<std::vector<D>> distance_matrix_;
 	std::vector<std::vector<int>> predecessors_;
 };

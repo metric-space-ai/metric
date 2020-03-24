@@ -202,7 +202,7 @@ namespace metric {
 					}
 				}
 
-				int new_num_clusters = num_clusters * min(0.5, 0.1 * num_ones);
+				int new_num_clusters = num_clusters * std::min(0.5, 0.1 * num_ones);
 				if (new_num_clusters == num_clusters)
 				{
 					new_num_clusters--;

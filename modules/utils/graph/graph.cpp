@@ -746,7 +746,7 @@ void KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::calculate_dis
 template <typename Sample, typename Distance, typename WeightType, bool isDense, bool isSymmetric>
 void KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::make_edge_pairs(std::vector<Sample> samples)
 {
-    this->m.resize(samples.size(), samples.size());	
+    this->m.resize(samples.size(), samples.size());
 	
 	std::vector<int> ids(samples.size());
     std::iota(ids.begin(), ids.end(), 0);
