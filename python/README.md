@@ -28,13 +28,16 @@ MAKE="make -j1" python3 setup.py bdist_wheel
 ```
 
 ### Install module
+## Linux
 ```
 python3 -m pip install dist/*
 ```
 ## Windows
 TODO
 ## OS X
-TODO
+```
+pip3 install dist/*
+```
 ## Examples
 
 ```python
