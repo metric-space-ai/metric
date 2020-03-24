@@ -3,7 +3,7 @@ A python wrapper for METRIC library (https://panda.technology/de/metric)
 # Installation
 ## Ubuntu
 ```
-python3 -m pip install metric-py
+pip3 install metric-py -i https://test.pypi.org/simple/
 ```
 
 # Build from the source
