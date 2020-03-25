@@ -11,6 +11,7 @@ Copyright (c) 2018 Michael Welsch
 #include "Standards.hpp"
 
 #include <cmath>
+#include <algorithm>
 
 namespace metric {
 
