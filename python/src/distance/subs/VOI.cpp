@@ -10,8 +10,10 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <pybind11/numpy.h>
+#include <pybind11/functional.h>
 #include <vector>
 #include <string>
+#include <functional>
 
 namespace py = pybind11;
 //
@@ -58,11 +60,13 @@ void wrap_metric_entropy(py::module& m) {
 
 void export_metric_entropy(py::module& m) {
     using Value = double;
-    using Container = std::vector<std::vector<Value>>;
+    using RecType = std::vector<Value>;
+    using Container = std::vector<RecType>;
     wrap_metric_entropy<Container, metric::Euclidian<Value>>(m);
     wrap_metric_entropy<Container, metric::Manhatten<Value>>(m);
     wrap_metric_entropy<Container, metric::Chebyshev<Value>>(m);
     wrap_metric_entropy<Container, metric::P_norm<Value>>(m);
+    wrap_metric_entropy<Container, std::function<double(const RecType&, const RecType&)>>(m);
 }
 
 PYBIND11_MODULE(_voi, m) {
