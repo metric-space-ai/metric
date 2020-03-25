@@ -145,6 +145,30 @@ int main()
 						},
 					"1":
 						{
+							"type": "Conv2d",
+							"inputWidth": 13,
+							"inputHeight": 13,
+							"inputChannels": 16,
+							"outputChannels": 8,
+							"kernelWidth": 3,
+							"kernelHeight": 3,
+							"stride": 2,
+							"activation": "ReLU"
+						},
+					"2":
+						{
+							"type": "Conv2dTranspose",
+							"inputWidth": 6,
+							"inputHeight": 6,
+							"inputChannels": 8,
+							"outputChannels": 16,
+							"kernelWidth": 3,
+							"kernelHeight": 3,
+							"stride": 2,
+							"activation": "Sigmoid"
+						},
+					"3":
+						{
 							"type": "Conv2dTranspose",
 							"inputWidth": 13,
 							"inputHeight": 13,
