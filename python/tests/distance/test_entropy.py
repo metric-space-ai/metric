@@ -4,9 +4,7 @@ import math
 
 
 def my_euclidean(a, b):
-    result = math.sqrt(sum(((x - y) * (x - y) for x, y in zip(a, b))))
-    print('python', result)
-    return result
+    return math.sqrt(sum(((x - y) * (x - y) for x, y in zip(a, b))))
 
 
 def test_entropy():
