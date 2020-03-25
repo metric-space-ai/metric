@@ -12,6 +12,7 @@ Copyright (c) 2018 Michael Welsch
 #include <algorithm>
 
 #include <cmath>
+#include <algorithm>
 
 namespace metric {
 

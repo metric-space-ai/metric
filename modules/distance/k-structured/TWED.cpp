@@ -9,6 +9,7 @@ Copyright (c) 2018 Michael Welsch
 #define _METRIC_DISTANCE_K_STRUCTURED_TWED_CPP
 #include "TWED.hpp"
 #include <vector>
+#include <algorithm>
 
 namespace metric {
 

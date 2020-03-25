@@ -9,6 +9,7 @@ Copyright (c) 2019  Michael Welsch
 #ifndef _METRIC_HELPER_FUNCTIONS_CPP
 #define _METRIC_HELPER_FUNCTIONS_CPP
 
+#include <algorithm>
 
 namespace helper_functions {
 
