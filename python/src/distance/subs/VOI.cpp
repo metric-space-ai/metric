@@ -48,7 +48,7 @@ void wrap_metric_entropy(py::module& m) {
     using Value = double ;//typename Container::value_type::value_type;
     std::string name = "entropy_" + getMetricName<Metric>();
     m.def(name.c_str(), +[](const Container& data, std::size_t k = 3, Value logbase = 2) {
-            return metric::entropy<Container, Metric, Value>(data, k, logbase);
+            return metric::entropy<Container, Metric>(data, k, logbase);
         },
         "Continuous entropy estimator",
         py::arg("data"), py::arg("k") = 3, py::arg("logbase") = 2
