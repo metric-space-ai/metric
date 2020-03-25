@@ -1,10 +1,12 @@
 #include <iostream>
 #include <fstream>
 
+#include <string>
 #include <tuple>
 #include <regex>
 
 #include "../../3rdparty/cereal/types/vector.hpp"
+#include "../../3rdparty/cereal/types/string.hpp"
 #include "../../3rdparty/cereal/archives/binary.hpp"
 
 #include "../../3rdparty/blaze/Math.h"
@@ -16,6 +18,14 @@ namespace metric {
 	class Datasets {
 		public:
 			std::tuple<std::vector<uint8_t>, std::vector<uint32_t>, std::vector<uint8_t>> getMnist(const std::string filename);
+
+			/**
+			 * Nyc Taxi dataset
+			 * @param filename data file in cereal format
+			 * @return data, times(columns), dates(rows)
+			 */
+			std::tuple<std::vector<std::vector<uint16_t>>, std::vector<std::string>, std::vector<std::string>>
+			getNycTaxi(const std::string filename);
 
 			template<typename T>
 			static blaze::DynamicMatrix<T> readDenseMatrixFromFile(const std::string filepath);
@@ -44,6 +54,29 @@ namespace metric {
 			ia(labels, shape, features);
 
 			return {labels, shape, features};
+		} else {
+			std::cout << "Could not open " << filename << std::endl;
+			return {{},
+			        {},
+			        {}};
+		}
+
+	}
+
+	std::tuple<std::vector<std::vector<uint16_t>>, std::vector<std::string>, std::vector<std::string>>
+	Datasets::getNycTaxi(const std::string filename)
+	{
+		std::ifstream dataFile(filename, std::ifstream::binary);
+
+		if (dataFile) {
+			cereal::BinaryInputArchive ia(dataFile);
+			std::vector<std::vector<uint16_t>> data;
+			std::vector<std::string> times;
+			std::vector<std::string> dates;
+
+			ia(data, times, dates);
+
+			return {data, times, dates};
 		} else {
 			std::cout << "Could not open " << filename << std::endl;
 			return {{},

@@ -38,3 +38,17 @@ BOOST_AUTO_TEST_CASE(images_list)
 	BOOST_CHECK_EQUAL_COLLECTIONS(trueData.begin(), trueData.end(), data.begin(), data.end());
 }
 
+/*BOOST_AUTO_TEST_CASE(nyc_taxi_dataset)
+{
+	auto [data, times, dates] = Datasets().getNycTaxi("taxi.cereal");
+
+	BOOST_CHECK_EQUAL(data.size(), dates.size());
+	BOOST_CHECK_EQUAL(data[0].size(), times.size());
+	BOOST_CHECK_EQUAL(dates.size(), 214);
+	BOOST_CHECK_EQUAL(times.size(), 48);
+
+	BOOST_CHECK_EQUAL(dates[194], "11-Jan-2015");
+	BOOST_CHECK_EQUAL(times[5], "06:30");
+	BOOST_CHECK_EQUAL(data[194][5], 3710);
+}*/
+
