@@ -3,7 +3,7 @@
 //  \file blaze/math/views/Subvector.h
 //  \brief Header file for the implementation of the Subvector view
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -47,6 +47,8 @@
 #include "../../math/expressions/CrossExpr.h"
 #include "../../math/expressions/VecEvalExpr.h"
 #include "../../math/expressions/VecMapExpr.h"
+#include "../../math/expressions/VecNoAliasExpr.h"
+#include "../../math/expressions/VecNoSIMDExpr.h"
 #include "../../math/expressions/VecScalarDivExpr.h"
 #include "../../math/expressions/VecScalarMultExpr.h"
 #include "../../math/expressions/VecSerialExpr.h"
@@ -58,7 +60,7 @@
 #include "../../math/expressions/VecVecMapExpr.h"
 #include "../../math/expressions/VecVecMultExpr.h"
 #include "../../math/expressions/VecVecSubExpr.h"
-#include "../../math/IntegerSequence.h"
+#include "../../math/RelaxationFlag.h"
 #include "../../math/shims/IsDefault.h"
 #include "../../math/shims/Serial.h"
 #include "../../math/typetraits/HasConstDataAccess.h"
@@ -73,9 +75,11 @@
 #include "../../math/views/subvector/BaseTemplate.h"
 #include "../../math/views/subvector/Dense.h"
 #include "../../math/views/subvector/Sparse.h"
+#include "../../system/MacroDisable.h"
 #include "../../util/Assert.h"
 #include "../../util/EnableIf.h"
 #include "../../util/FunctionTrace.h"
+#include "../../util/IntegerSequence.h"
 #include "../../util/IntegralConstant.h"
 #include "../../util/SmallArray.h"
 #include "../../util/StaticAssert.h"
@@ -1165,6 +1169,58 @@ inline decltype(auto) subvector( const VecSerialExpr<VT>& vector, RSAs... args )
 
 //*************************************************************************************************
 /*! \cond BLAZE_INTERNAL */
+/*!\brief Creating a view on a specific subvector of the given vector no-alias operation.
+// \ingroup subvector
+//
+// \param vector The constant vector no-alias operation.
+// \param args The runtime subvector arguments.
+// \return View on the specified subvector of the no-alias operation.
+//
+// This function returns an expression representing the specified subvector of the given vector
+// no-alias operation.
+*/
+template< AlignmentFlag AF    // Alignment flag
+        , size_t... CSAs      // Compile time subvector arguments
+        , typename VT         // Vector base type of the expression
+        , typename... RSAs >  // Runtime subvector arguments
+inline decltype(auto) subvector( const VecNoAliasExpr<VT>& vector, RSAs... args )
+{
+   BLAZE_FUNCTION_TRACE;
+
+   return noalias( subvector<AF,CSAs...>( (~vector).operand(), args... ) );
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Creating a view on a specific subvector of the given vector no-SIMD operation.
+// \ingroup subvector
+//
+// \param vector The constant vector no-SIMD operation.
+// \param args The runtime subvector arguments.
+// \return View on the specified subvector of the no-SIMD operation.
+//
+// This function returns an expression representing the specified subvector of the given vector
+// no-SIMD operation.
+*/
+template< AlignmentFlag AF    // Alignment flag
+        , size_t... CSAs      // Compile time subvector arguments
+        , typename VT         // Vector base type of the expression
+        , typename... RSAs >  // Runtime subvector arguments
+inline decltype(auto) subvector( const VecNoSIMDExpr<VT>& vector, RSAs... args )
+{
+   BLAZE_FUNCTION_TRACE;
+
+   return nosimd( subvector<AF,CSAs...>( (~vector).operand(), args... ) );
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
 /*!\brief Creating a view on a specific subvector of the given vector transpose operation.
 // \ingroup subvector
 //
@@ -1416,7 +1472,7 @@ inline decltype(auto) elements( VT&& sv, T* indices, size_t n, REAs... args )
 
    if( isChecked ) {
       for( size_t i=0UL; i<n; ++i ) {
-         if( sv.size() <= indices[i] ) {
+         if( sv.size() <= size_t( indices[i] ) ) {
             BLAZE_THROW_INVALID_ARGUMENT( "Invalid elements specification" );
          }
       }
@@ -1459,7 +1515,7 @@ inline decltype(auto) elements( VT&& sv, P p, size_t n, REAs... args )
 
    if( isChecked ) {
       for( size_t i=0UL; i<n; ++i ) {
-         if( sv.size() <= p(i) ) {
+         if( sv.size() <= size_t( p(i) ) ) {
             BLAZE_THROW_INVALID_ARGUMENT( "Invalid elements specification" );
          }
       }
@@ -1590,11 +1646,11 @@ inline void clear( Subvector<VT,AF,TF,DF,CSAs...>&& sv )
    if( isDefault<relaxed>( subvector( v, 10UL, 20UL ) ) ) { ... }
    \endcode
 */
-template< bool RF           // Relaxation flag
-        , typename VT       // Type of the dense vector
-        , AlignmentFlag AF  // Alignment flag
-        , bool TF           // Transpose flag
-        , size_t... CSAs >  // Compile time subvector arguments
+template< RelaxationFlag RF  // Relaxation flag
+        , typename VT        // Type of the dense vector
+        , AlignmentFlag AF   // Alignment flag
+        , bool TF            // Transpose flag
+        , size_t... CSAs >   // Compile time subvector arguments
 inline bool isDefault( const Subvector<VT,AF,TF,true,CSAs...>& sv )
 {
    using blaze::isDefault;
@@ -1634,11 +1690,11 @@ inline bool isDefault( const Subvector<VT,AF,TF,true,CSAs...>& sv )
    if( isDefault<relaxed>( subvector( v, 10UL, 20UL ) ) ) { ... }
    \endcode
 */
-template< bool RF           // Relaxation flag
-        , typename VT       // Type of the sparse vector
-        , AlignmentFlag AF  // Alignment flag
-        , bool TF           // Transpose flag
-        , size_t... CSAs >  // Compile time subvector arguments
+template< RelaxationFlag RF  // Relaxation flag
+        , typename VT        // Type of the sparse vector
+        , AlignmentFlag AF   // Alignment flag
+        , bool TF            // Transpose flag
+        , size_t... CSAs >   // Compile time subvector arguments
 inline bool isDefault( const Subvector<VT,AF,TF,false,CSAs...>& sv )
 {
    using blaze::isDefault;
@@ -2756,6 +2812,58 @@ template< typename VT       // Type of the vector
 inline decltype(auto) derestrict( Subvector<VT,AF,TF,DF>&& sv )
 {
    return subvector<AF>( derestrict( sv.operand() ), sv.offset(), sv.size(), unchecked );
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Returns a reference to the underlying vector of the given subvector.
+// \ingroup subvector
+//
+// \param sv The given subvector.
+// \return Reference to the underlying vector.
+//
+// This function returns a reference to the underlying vector of the given subvector.\n
+// This function must \b NOT be called explicitly! It is used internally for the performance
+// optimized evaluation of expression templates. Calling this function explicitly might result
+// in the violation of invariants, erroneous results and/or in compilation errors.
+*/
+template< typename VT       // Type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , bool TF           // Transpose flag
+        , bool DF           // Density flag
+        , size_t... CSAs >  // Compile time subvector arguments
+inline decltype(auto) unview( Subvector<VT,AF,TF,DF,CSAs...>& sv )
+{
+   return sv.operand();
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Returns a reference to the underlying vector of the given constant subvector.
+// \ingroup subvector
+//
+// \param sv The given constant subvector.
+// \return Reference to the underlying vector.
+//
+// This function returns a reference to the underlying vector of the given constant subvector.\n
+// This function must \b NOT be called explicitly! It is used internally for the performance
+// optimized evaluation of expression templates. Calling this function explicitly might result
+// in the violation of invariants, erroneous results and/or in compilation errors.
+*/
+template< typename VT       // Type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , bool TF           // Transpose flag
+        , bool DF           // Density flag
+        , size_t... CSAs >  // Compile time subvector arguments
+inline decltype(auto) unview( const Subvector<VT,AF,TF,DF,CSAs...>& sv )
+{
+   return sv.operand();
 }
 /*! \endcond */
 //*************************************************************************************************

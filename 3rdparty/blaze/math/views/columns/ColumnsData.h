@@ -3,7 +3,7 @@
 //  \file blaze/math/views/columns/ColumnsData.h
 //  \brief Header file for the implementation of the ColumnsData class template
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -40,9 +40,10 @@
 // Includes
 //*************************************************************************************************
 
-#include "../../../math/IntegerSequence.h"
+#include <array>
 #include "../../../system/Standard.h"
 #include "../../../util/Assert.h"
+#include "../../../util/IntegerSequence.h"
 #include "../../../util/MaybeUnused.h"
 #include "../../../util/SmallArray.h"
 #include "../../../util/Types.h"
@@ -135,9 +136,9 @@ class ColumnsData< index_sequence<I,Is...> >
    //**Utility functions***************************************************************************
    /*!\name Utility functions */
    //@{
-   static inline constexpr decltype(auto) idces  () noexcept;
-   static inline constexpr size_t         idx    ( size_t i ) noexcept;
-   static inline constexpr size_t         columns() noexcept;
+   static constexpr decltype(auto) idces  () noexcept;
+   static constexpr size_t         idx    ( size_t i ) noexcept;
+   static constexpr size_t         columns() noexcept;
    //@}
    //**********************************************************************************************
 
@@ -195,7 +196,7 @@ inline ColumnsData< index_sequence<I,Is...> >::ColumnsData( RCAs... args ) noexc
 */
 template< size_t I        // First column index
         , size_t... Is >  // Remaining column indices
-inline constexpr decltype(auto) ColumnsData< index_sequence<I,Is...> >::idces() noexcept
+constexpr decltype(auto) ColumnsData< index_sequence<I,Is...> >::idces() noexcept
 {
    return index_sequence<I,Is...>();
 }
@@ -212,7 +213,7 @@ inline constexpr decltype(auto) ColumnsData< index_sequence<I,Is...> >::idces() 
 */
 template< size_t I        // First column index
         , size_t... Is >  // Remaining column indices
-inline constexpr size_t ColumnsData< index_sequence<I,Is...> >::idx( size_t i ) noexcept
+constexpr size_t ColumnsData< index_sequence<I,Is...> >::idx( size_t i ) noexcept
 {
    BLAZE_USER_ASSERT( i < columns(), "Invalid column access index" );
    return indices_[i];
@@ -229,7 +230,7 @@ inline constexpr size_t ColumnsData< index_sequence<I,Is...> >::idx( size_t i ) 
 */
 template< size_t I        // First column index
         , size_t... Is >  // Remaining column indices
-inline constexpr size_t ColumnsData< index_sequence<I,Is...> >::columns() noexcept
+constexpr size_t ColumnsData< index_sequence<I,Is...> >::columns() noexcept
 {
    return N;
 }
@@ -275,7 +276,7 @@ class ColumnsData<P>
    /*!\name Constructors */
    //@{
    template< typename... RCAs >
-   explicit inline ColumnsData( P p, size_t n, RCAs... args ) noexcept;
+   inline ColumnsData( P p, size_t n, RCAs... args ) noexcept;
 
    ColumnsData( const ColumnsData& ) = default;
    ColumnsData( ColumnsData&& ) = default;
@@ -424,7 +425,7 @@ class ColumnsData<>
    /*!\name Constructors */
    //@{
    template< typename T, typename... RCAs >
-   explicit inline ColumnsData( T* indices, size_t n, RCAs... args );
+   inline ColumnsData( T* indices, size_t n, RCAs... args );
 
    ColumnsData( const ColumnsData& ) = default;
    ColumnsData( ColumnsData&& ) = default;
@@ -553,7 +554,7 @@ inline size_t ColumnsData<>::columns() const noexcept
 // \return \a true if the indices of both instances are equal, \a false if not.
 */
 template< typename... CRAs1, typename... CRAs2 >
-inline constexpr bool
+constexpr bool
    compareIndices( const ColumnsData<CRAs1...>& lhs, const ColumnsData<CRAs2...>& rhs ) noexcept
 {
    if( lhs.columns() != rhs.columns() )

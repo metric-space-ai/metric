@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/DMatEvalExpr.h
 //  \brief Header file for the dense matrix evaluation expression
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -790,35 +790,6 @@ inline decltype(auto) eval( const DenseMatrix<MT,SO>& dm )
    using ReturnType = const DMatEvalExpr<MT,SO>;
    return ReturnType( ~dm );
 }
-//*************************************************************************************************
-
-
-
-
-//=================================================================================================
-//
-//  GLOBAL RESTRUCTURING FUNCTIONS
-//
-//=================================================================================================
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-/*!\brief Evaluation of the given dense matrix evaluation expression \a dm.
-// \ingroup dense_matrix
-//
-// \param dm The input evaluation expression.
-// \return The evaluated dense matrix.
-//
-// This function implements a performance optimized treatment of the evaluation of a dense matrix
-// evaluation expression.
-*/
-template< typename MT  // Type of the dense matrix
-        , bool SO >    // Storage order
-inline decltype(auto) eval( const DMatEvalExpr<MT,SO>& dm )
-{
-   return dm;
-}
-/*! \endcond */
 //*************************************************************************************************
 
 

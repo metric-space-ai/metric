@@ -111,18 +111,20 @@ int main() {
     std::cout << "MI (version 1) for v1, v2: " << metric::mutualInformation(v1, v2, 3, metric::Chebyshev<double>()) << std::endl;
     std::cout << "MI (version 2) for v2, v1: " << metric::mutualInformation(v2, v1) << std::endl;
     std::cout << "MI (version 1) for v2, v1: " << metric::mutualInformation(v2, v1, 3, metric::Chebyshev<double>(), 1) << std::endl;
-    std::cout << std::endl;
 
+	std::cout << std::endl;
 
-    // Variation of Information, normalized Variation of Information
+		
+	// Variation of Information, normalized Variation of Information
+	
+	std::cout << "Variation of Information, normalized Variation of Information:" << std::endl;
+	
+	std::cout << "VOI = " << metric::variationOfInformation(v1, v2) << std::endl;
+	std::cout << "VOI (Manhatten) = " << metric::variationOfInformation<std::vector<std::vector<double>>, metric::Manhatten<double>>(v1, v2) << std::endl;
+	std::cout << "VOI norm = " << metric::variationOfInformation_normalized(v1, v2) << std::endl;
 
-    std::cout << "Variation of Information, normalized Variation of Information:" << std::endl;
+	// functor
 
-    std::cout << "VOI = " << metric::variationOfInformation(v1, v2) << std::endl;
-    std::cout << "VOI (Manhatten) = " << metric::variationOfInformation<double, metric::Manhatten<double>>(v1, v2) << std::endl;
-    std::cout << "VOI norm = " << metric::variationOfInformation_normalized(v1, v2) << std::endl;
-
-    // functor
     auto f_voi = metric::VOI<long double>();
     std::cout << "VOI functor = " << f_voi(v1, v2) << std::endl;
 

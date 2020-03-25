@@ -3,7 +3,7 @@
 //  \file blaze/math/adaptors/diagonalmatrix/DiagonalProxy.h
 //  \brief Header file for the DiagonalProxy class
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -52,6 +52,7 @@
 #include "../../../math/Exception.h"
 #include "../../../math/InitializerList.h"
 #include "../../../math/proxy/Proxy.h"
+#include "../../../math/RelaxationFlag.h"
 #include "../../../math/shims/Clear.h"
 #include "../../../math/shims/IsDefault.h"
 #include "../../../math/shims/IsNaN.h"
@@ -116,8 +117,8 @@ class DiagonalProxy
    //**Constructors********************************************************************************
    /*!\name Constructors */
    //@{
-   explicit inline DiagonalProxy( MT& matrix, size_t row, size_t column );
-            inline DiagonalProxy( const DiagonalProxy& dp );
+   inline DiagonalProxy( MT& matrix, size_t row, size_t column );
+   inline DiagonalProxy( const DiagonalProxy& dp );
    //@}
    //**********************************************************************************************
 
@@ -563,16 +564,16 @@ void reset( const DiagonalProxy<MT>& proxy );
 template< typename MT >
 void clear( const DiagonalProxy<MT>& proxy );
 
-template< bool RF, typename MT >
+template< RelaxationFlag RF, typename MT >
 bool isDefault( const DiagonalProxy<MT>& proxy );
 
-template< bool RF, typename MT >
+template< RelaxationFlag RF, typename MT >
 bool isReal( const DiagonalProxy<MT>& proxy );
 
-template< bool RF, typename MT >
+template< RelaxationFlag RF, typename MT >
 bool isZero( const DiagonalProxy<MT>& proxy );
 
-template< bool RF, typename MT >
+template< RelaxationFlag RF, typename MT >
 bool isOne( const DiagonalProxy<MT>& proxy );
 
 template< typename MT >
@@ -631,7 +632,7 @@ inline void clear( const DiagonalProxy<MT>& proxy )
 // This function checks whether the element represented by the access proxy is in default state.
 // In case it is in default state, the function returns \a true, otherwise it returns \a false.
 */
-template< bool RF, typename MT >
+template< RelaxationFlag RF, typename MT >
 inline bool isDefault( const DiagonalProxy<MT>& proxy )
 {
    using blaze::isDefault;
@@ -653,7 +654,7 @@ inline bool isDefault( const DiagonalProxy<MT>& proxy )
 // the element is of complex type, the function returns \a true if the imaginary part is equal
 // to 0. Otherwise it returns \a false.
 */
-template< bool RF, typename MT >
+template< RelaxationFlag RF, typename MT >
 inline bool isReal( const DiagonalProxy<MT>& proxy )
 {
    using blaze::isReal;
@@ -673,7 +674,7 @@ inline bool isReal( const DiagonalProxy<MT>& proxy )
 // This function checks whether the element represented by the access proxy represents the numeric
 // value 0. In case it is 0, the function returns \a true, otherwise it returns \a false.
 */
-template< bool RF, typename MT >
+template< RelaxationFlag RF, typename MT >
 inline bool isZero( const DiagonalProxy<MT>& proxy )
 {
    using blaze::isZero;
@@ -693,7 +694,7 @@ inline bool isZero( const DiagonalProxy<MT>& proxy )
 // This function checks whether the element represented by the access proxy represents the numeric
 // value 1. In case it is 1, the function returns \a true, otherwise it returns \a false.
 */
-template< bool RF, typename MT >
+template< RelaxationFlag RF, typename MT >
 inline bool isOne( const DiagonalProxy<MT>& proxy )
 {
    using blaze::isOne;

@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/DMatSVecMultExpr.h
 //  \brief Header file for the dense matrix/sparse vector multiplication expression
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -73,9 +73,9 @@
 #include "../../math/typetraits/IsZero.h"
 #include "../../math/typetraits/RequiresEvaluation.h"
 #include "../../math/views/Check.h"
+#include "../../system/MacroDisable.h"
 #include "../../system/Thresholds.h"
 #include "../../util/Assert.h"
-#include "../../util/DisableIf.h"
 #include "../../util/EnableIf.h"
 #include "../../util/FunctionTrace.h"
 #include "../../util/MaybeUnused.h"
@@ -192,7 +192,7 @@ class DMatSVecMultExpr
    // \param mat The left-hand side dense matrix operand of the multiplication expression.
    // \param vec The right-hand side sparse vector operand of the multiplication expression.
    */
-   explicit inline DMatSVecMultExpr( const MT& mat, const VT& vec ) noexcept
+   inline DMatSVecMultExpr( const MT& mat, const VT& vec ) noexcept
       : mat_( mat )  // Left-hand side dense matrix of the multiplication expression
       , vec_( vec )  // Right-hand side sparse vector of the multiplication expression
    {
@@ -987,41 +987,6 @@ inline decltype(auto)
 
    return dmatsvecmult( ~mat, ~vec );
 }
-//*************************************************************************************************
-
-
-
-
-//=================================================================================================
-//
-//  GLOBAL RESTRUCTURING BINARY ARITHMETIC OPERATORS
-//
-//=================================================================================================
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-/*!\brief Multiplication operator for the multiplication of a dense matrix-matrix
-//        multiplication expression and a sparse vector (\f$ \vec{y}=(A*B)*\vec{x} \f$).
-// \ingroup dense_vector
-//
-// \param mat The left-hand side dense matrix-matrix multiplication.
-// \param vec The right-hand side sparse vector for the multiplication.
-// \return The resulting vector.
-//
-// This operator implements a performance optimized treatment of the multiplication of a dense
-// matrix-matrix multiplication expression and a sparse vector. It restructures the expression
-// \f$ \vec{y}=(A*B)*\vec{x} \f$ to the expression \f$ \vec{y}=A*(B*\vec{x}) \f$.
-*/
-template< typename MT    // Matrix base type of the left-hand side expression
-        , typename VT >  // Type of the right-hand side sparse vector
-inline decltype(auto)
-   operator*( const MatMatMultExpr<MT>& mat, const SparseVector<VT,false>& vec )
-{
-   BLAZE_FUNCTION_TRACE;
-
-   return (~mat).leftOperand() * ( (~mat).rightOperand() * vec );
-}
-/*! \endcond */
 //*************************************************************************************************
 
 

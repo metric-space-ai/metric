@@ -87,6 +87,19 @@ auto Cosine<V>::operator()(const Container& A, const Container& B) const -> dist
 
 template <typename V>
 template <typename Container>
+auto CosineInverted<V>::operator()(const Container& A, const Container& B) const -> distance_type
+{
+    value_type dot = 0, denom_a = 0, denom_b = 0;
+    for (auto it1 = A.begin(), it2 = B.begin(); it1 != A.end() || it2 != B.end(); ++it1, ++it2) {
+        dot += *it1 * *it2;
+        denom_a += *it1 * *it1;
+        denom_b += *it2 * *it2;
+    }
+    return std::abs(1 - dot / (std::sqrt(denom_a) * std::sqrt(denom_b)));
+}
+
+template <typename V>
+template <typename Container>
 V Chebyshev<V>::operator()(const Container& lhs, const Container& rhs) const
 {
     distance_type res = 0;

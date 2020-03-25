@@ -3,7 +3,7 @@
 //  \file blaze/math/lapack/gesvd.h
 //  \brief Header file for the LAPACK singular value decomposition functions (gesvd)
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -55,7 +55,6 @@
 #include "../../util/algorithms/Max.h"
 #include "../../util/algorithms/Min.h"
 #include "../../util/Assert.h"
-#include "../../util/DisableIf.h"
 #include "../../util/EnableIf.h"
 #include "../../util/NumericCast.h"
 #include "../../util/typetraits/IsComplex.h"
@@ -123,15 +122,15 @@ inline auto gesvd_backend( DenseMatrix<MT,SO>& A, DenseVector<VT,TF>& s, char jo
 
    using ET = ElementType_t<MT>;
 
-   int m   ( numeric_cast<int>( SO ? (~A).rows() : (~A).columns() ) );
-   int n   ( numeric_cast<int>( SO ? (~A).columns() : (~A).rows() ) );
-   int lda ( numeric_cast<int>( (~A).spacing() ) );
-   int info( 0 );
+   blas_int_t m   ( numeric_cast<blas_int_t>( SO ? (~A).rows() : (~A).columns() ) );
+   blas_int_t n   ( numeric_cast<blas_int_t>( SO ? (~A).columns() : (~A).rows() ) );
+   blas_int_t lda ( numeric_cast<blas_int_t>( (~A).spacing() ) );
+   blas_int_t info( 0 );
 
-   const int minimum( min( m, n ) );
-   const int maximum( max( m, n ) );
+   const blas_int_t minimum( min( m, n ) );
+   const blas_int_t maximum( max( m, n ) );
 
-   int lwork( max( 3*minimum + maximum, 5*minimum ) + 2 );
+   blas_int_t lwork( max( 3*minimum + maximum, 5*minimum ) + 2 );
    const std::unique_ptr<ET[]> work( new ET[lwork] );
 
    gesvd( ( SO ? jobu : jobv ), ( SO ? jobv : jobu ), m, n, (~A).data(), lda,
@@ -181,15 +180,15 @@ inline auto gesvd_backend( DenseMatrix<MT,SO>& A, DenseVector<VT,TF>& s, char jo
    using CT = ElementType_t<MT>;
    using BT = UnderlyingElement_t<CT>;
 
-   int m   ( numeric_cast<int>( SO ? (~A).rows() : (~A).columns() ) );
-   int n   ( numeric_cast<int>( SO ? (~A).columns() : (~A).rows() ) );
-   int lda ( numeric_cast<int>( (~A).spacing() ) );
-   int info( 0 );
+   blas_int_t m   ( numeric_cast<blas_int_t>( SO ? (~A).rows() : (~A).columns() ) );
+   blas_int_t n   ( numeric_cast<blas_int_t>( SO ? (~A).columns() : (~A).rows() ) );
+   blas_int_t lda ( numeric_cast<blas_int_t>( (~A).spacing() ) );
+   blas_int_t info( 0 );
 
-   const int minimum( min( m, n ) );
-   const int maximum( max( m, n ) );
+   const blas_int_t minimum( min( m, n ) );
+   const blas_int_t maximum( max( m, n ) );
 
-   int lwork( 2*minimum + maximum + 2 );
+   blas_int_t lwork( 2*minimum + maximum + 2 );
    const std::unique_ptr<CT[]> work ( new CT[lwork] );
    const std::unique_ptr<BT[]> rwork( new BT[5*minimum] );
 
@@ -372,16 +371,16 @@ inline auto gesvd_backend( DenseMatrix<MT1,SO>& A, DenseMatrix<MT2,SO>& U,
 
    using ET = ElementType_t<MT1>;
 
-   int m   ( numeric_cast<int>( SO ? (~A).rows() : (~A).columns() ) );
-   int n   ( numeric_cast<int>( SO ? (~A).columns() : (~A).rows() ) );
-   int lda ( numeric_cast<int>( (~A).spacing() ) );
-   int ldu ( numeric_cast<int>( (~U).spacing() ) );
-   int info( 0 );
+   blas_int_t m   ( numeric_cast<blas_int_t>( SO ? (~A).rows() : (~A).columns() ) );
+   blas_int_t n   ( numeric_cast<blas_int_t>( SO ? (~A).columns() : (~A).rows() ) );
+   blas_int_t lda ( numeric_cast<blas_int_t>( (~A).spacing() ) );
+   blas_int_t ldu ( numeric_cast<blas_int_t>( (~U).spacing() ) );
+   blas_int_t info( 0 );
 
-   const int minimum( min( m, n ) );
-   const int maximum( max( m, n ) );
+   const blas_int_t minimum( min( m, n ) );
+   const blas_int_t maximum( max( m, n ) );
 
-   int lwork( max( 3*minimum + maximum, 5*minimum ) + 2 );
+   blas_int_t lwork( max( 3*minimum + maximum, 5*minimum ) + 2 );
    const std::unique_ptr<ET[]> work( new ET[lwork] );
 
    gesvd( ( SO ? jobu : jobv ), ( SO ? jobv : jobu ),
@@ -439,16 +438,16 @@ inline auto gesvd_backend( DenseMatrix<MT1,SO>& A, DenseMatrix<MT2,SO>& U,
    using CT = ElementType_t<MT1>;
    using BT = UnderlyingElement_t<CT>;
 
-   int m   ( numeric_cast<int>( SO ? (~A).rows() : (~A).columns() ) );
-   int n   ( numeric_cast<int>( SO ? (~A).columns() : (~A).rows() ) );
-   int lda ( numeric_cast<int>( (~A).spacing() ) );
-   int ldu ( numeric_cast<int>( (~U).spacing() ) );
-   int info( 0 );
+   blas_int_t m   ( numeric_cast<blas_int_t>( SO ? (~A).rows() : (~A).columns() ) );
+   blas_int_t n   ( numeric_cast<blas_int_t>( SO ? (~A).columns() : (~A).rows() ) );
+   blas_int_t lda ( numeric_cast<blas_int_t>( (~A).spacing() ) );
+   blas_int_t ldu ( numeric_cast<blas_int_t>( (~U).spacing() ) );
+   blas_int_t info( 0 );
 
-   const int minimum( min( m, n ) );
-   const int maximum( max( m, n ) );
+   const blas_int_t minimum( min( m, n ) );
+   const blas_int_t maximum( max( m, n ) );
 
-   int lwork( 2*minimum + maximum + 2 );
+   blas_int_t lwork( 2*minimum + maximum + 2 );
    const std::unique_ptr<CT[]> work ( new CT[lwork] );
    const std::unique_ptr<BT[]> rwork( new BT[5*minimum] );
 
@@ -659,16 +658,16 @@ inline auto gesvd_backend( DenseMatrix<MT1,SO>& A, DenseVector<VT,TF>& s,
 
    using ET = ElementType_t<MT1>;
 
-   int m   ( numeric_cast<int>( SO ? (~A).rows() : (~A).columns() ) );
-   int n   ( numeric_cast<int>( SO ? (~A).columns() : (~A).rows() ) );
-   int lda ( numeric_cast<int>( (~A).spacing() ) );
-   int ldv ( numeric_cast<int>( (~V).spacing() ) );
-   int info( 0 );
+   blas_int_t m   ( numeric_cast< blas_int_t>( SO ? (~A).rows() : (~A).columns() ) );
+   blas_int_t n   ( numeric_cast< blas_int_t>( SO ? (~A).columns() : (~A).rows() ) );
+   blas_int_t lda ( numeric_cast< blas_int_t>( (~A).spacing() ) );
+   blas_int_t ldv ( numeric_cast< blas_int_t>( (~V).spacing() ) );
+   blas_int_t info( 0 );
 
-   const int minimum( min( m, n ) );
-   const int maximum( max( m, n ) );
+   const blas_int_t minimum( min( m, n ) );
+   const blas_int_t maximum( max( m, n ) );
 
-   int lwork( max( 3*minimum + maximum, 5*minimum ) + 2 );
+   blas_int_t lwork( max( 3*minimum + maximum, 5*minimum ) + 2 );
    const std::unique_ptr<ET[]> work( new ET[lwork] );
 
    gesvd( ( SO ? jobu : jobv ), ( SO ? jobv : jobu ),
@@ -726,16 +725,16 @@ inline auto gesvd_backend( DenseMatrix<MT1,SO>& A, DenseVector<VT,TF>& s,
    using CT = ElementType_t<MT1>;
    using BT = UnderlyingElement_t<CT>;
 
-   int m   ( numeric_cast<int>( SO ? (~A).rows() : (~A).columns() ) );
-   int n   ( numeric_cast<int>( SO ? (~A).columns() : (~A).rows() ) );
-   int lda ( numeric_cast<int>( (~A).spacing() ) );
-   int ldv ( numeric_cast<int>( (~V).spacing() ) );
-   int info( 0 );
+   blas_int_t m   ( numeric_cast<blas_int_t>( SO ? (~A).rows() : (~A).columns() ) );
+   blas_int_t n   ( numeric_cast<blas_int_t>( SO ? (~A).columns() : (~A).rows() ) );
+   blas_int_t lda ( numeric_cast<blas_int_t>( (~A).spacing() ) );
+   blas_int_t ldv ( numeric_cast<blas_int_t>( (~V).spacing() ) );
+   blas_int_t info( 0 );
 
-   const int minimum( min( m, n ) );
-   const int maximum( max( m, n ) );
+   const blas_int_t minimum( min( m, n ) );
+   const blas_int_t maximum( max( m, n ) );
 
-   int lwork( 2*minimum + maximum + 2 );
+   blas_int_t lwork( 2*minimum + maximum + 2 );
    const std::unique_ptr<CT[]> work ( new CT[lwork] );
    const std::unique_ptr<BT[]> rwork( new BT[5*minimum] );
 
@@ -951,17 +950,17 @@ inline auto gesvd_backend( DenseMatrix<MT1,SO>& A, DenseMatrix<MT2,SO>& U,
 
    using ET = ElementType_t<MT1>;
 
-   int m   ( numeric_cast<int>( SO ? (~A).rows() : (~A).columns() ) );
-   int n   ( numeric_cast<int>( SO ? (~A).columns() : (~A).rows() ) );
-   int lda ( numeric_cast<int>( (~A).spacing() ) );
-   int ldu ( numeric_cast<int>( (~U).spacing() ) );
-   int ldv ( numeric_cast<int>( (~V).spacing() ) );
-   int info( 0 );
+   blas_int_t m   ( numeric_cast<blas_int_t>( SO ? (~A).rows() : (~A).columns() ) );
+   blas_int_t n   ( numeric_cast<blas_int_t>( SO ? (~A).columns() : (~A).rows() ) );
+   blas_int_t lda ( numeric_cast<blas_int_t>( (~A).spacing() ) );
+   blas_int_t ldu ( numeric_cast<blas_int_t>( (~U).spacing() ) );
+   blas_int_t ldv ( numeric_cast<blas_int_t>( (~V).spacing() ) );
+   blas_int_t info( 0 );
 
-   const int minimum( min( m, n ) );
-   const int maximum( max( m, n ) );
+   const blas_int_t minimum( min( m, n ) );
+   const blas_int_t maximum( max( m, n ) );
 
-   int lwork( max( 3*minimum + maximum, 5*minimum ) + 2 );
+   blas_int_t lwork( max( 3*minimum + maximum, 5*minimum ) + 2 );
    const std::unique_ptr<ET[]> work( new ET[lwork] );
 
    gesvd( ( SO ? jobu : jobv ), ( SO ? jobv : jobu ),
@@ -1024,17 +1023,17 @@ inline auto gesvd_backend( DenseMatrix<MT1,SO>& A, DenseMatrix<MT2,SO>& U,
    using CT = ElementType_t<MT1>;
    using BT = UnderlyingElement_t<CT>;
 
-   int m   ( numeric_cast<int>( SO ? (~A).rows() : (~A).columns() ) );
-   int n   ( numeric_cast<int>( SO ? (~A).columns() : (~A).rows() ) );
-   int lda ( numeric_cast<int>( (~A).spacing() ) );
-   int ldu ( numeric_cast<int>( (~U).spacing() ) );
-   int ldv ( numeric_cast<int>( (~V).spacing() ) );
-   int info( 0 );
+   blas_int_t m   ( numeric_cast<blas_int_t>( SO ? (~A).rows() : (~A).columns() ) );
+   blas_int_t n   ( numeric_cast<blas_int_t>( SO ? (~A).columns() : (~A).rows() ) );
+   blas_int_t lda ( numeric_cast<blas_int_t>( (~A).spacing() ) );
+   blas_int_t ldu ( numeric_cast<blas_int_t>( (~U).spacing() ) );
+   blas_int_t ldv ( numeric_cast<blas_int_t>( (~V).spacing() ) );
+   blas_int_t info( 0 );
 
-   const int minimum( min( m, n ) );
-   const int maximum( max( m, n ) );
+   const blas_int_t minimum( min( m, n ) );
+   const blas_int_t maximum( max( m, n ) );
 
-   int lwork( 2*minimum + maximum + 2 );
+   blas_int_t lwork( 2*minimum + maximum + 2 );
    const std::unique_ptr<CT[]> work ( new CT[lwork] );
    const std::unique_ptr<BT[]> rwork( new BT[5*minimum] );
 

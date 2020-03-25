@@ -3,7 +3,7 @@
 //  \file blaze/util/AlignedAllocator.h
 //  \brief Header file for the AlignedAllocator implementation
 //
-//  Copyright (C) 2012-2019 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -42,6 +42,7 @@
 
 #include "../util/MaybeUnused.h"
 #include "../util/Memory.h"
+#include "../util/Types.h"
 #include "../util/typetraits/AlignmentOf.h"
 
 
@@ -101,7 +102,7 @@ class AlignedAllocator
    //**Constructors********************************************************************************
    /*!\name Constructors */
    //@{
-   explicit inline AlignedAllocator();
+   inline AlignedAllocator();
 
    template< typename Type2 >
    inline AlignedAllocator( const AlignedAllocator<Type2>& );
@@ -111,9 +112,9 @@ class AlignedAllocator
    //**Utility functions***************************************************************************
    /*!\name Utility functions */
    //@{
-   inline constexpr size_t max_size() const noexcept;
-   inline Pointer          address( Reference x ) const noexcept;
-   inline ConstPointer     address( ConstReference x ) const noexcept;
+   constexpr size_t       max_size() const noexcept;
+   inline    Pointer      address( Reference x ) const noexcept;
+   inline    ConstPointer address( ConstReference x ) const noexcept;
    //@}
    //**********************************************************************************************
 
@@ -183,7 +184,7 @@ inline AlignedAllocator<Type>::AlignedAllocator( const AlignedAllocator<Type2>& 
 // \return The maximum number of elements that can be allocated together.
 */
 template< typename Type >
-inline constexpr size_t AlignedAllocator<Type>::max_size() const noexcept
+constexpr size_t AlignedAllocator<Type>::max_size() const noexcept
 {
    return size_t(-1) / sizeof( Type );
 }

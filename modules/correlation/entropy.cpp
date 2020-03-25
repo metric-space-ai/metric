@@ -308,8 +308,10 @@ double entropy_kpN<recType, Metric>::operator()(
         blaze::reset(mu);
         for (size_t p_idx= 0; p_idx < p; ++p_idx) { // r v realizations from the tree
             for (size_t d_idx = 0; d_idx < d; ++d_idx) { // dimensions
-                Nodes(p_idx, d_idx) = res[p_idx].first->data[d_idx];
-                mu[d_idx] += res[p_idx].first->data[d_idx];
+                //Nodes(p_idx, d_idx) = res[p_idx].first->data[d_idx];
+                //mu[d_idx] += res[p_idx].first->data[d_idx];
+                Nodes(p_idx, d_idx) = res[p_idx].first->get_data()[d_idx];
+                mu[d_idx] += res[p_idx].first->get_data()[d_idx];
             }
         }
         mu = mu/p;

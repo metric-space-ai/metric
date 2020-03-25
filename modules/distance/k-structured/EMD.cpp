@@ -41,8 +41,9 @@ inline void print_vector(const std::vector<T>& v)
 template <typename T>
 inline void print_matrix(const std::vector<std::vector<T>>& m)
 {
-    std::cout << "[ ";
+    std::cout << "[ "<< std::endl;
     for (auto& r : m) {
+		std::cout << "  ";
         print_vector(r);
         std::cout << std::endl;
     }
@@ -650,8 +651,8 @@ namespace EMD_details {
     template <typename Container, FLOW_TYPE_T FLOW_TYPE>
     struct emd_impl_integral_types {
         typedef typename Container::value_type T;
-        T operator()(const Container& POrig, const Container& QOrig, const Container& Pc,
-            const Container& Qc,  // P, Q, C replaced with Pc, Qc, Cc by Max F
+        T operator()(const Container& POrig, const Container& QOrig, const std::vector<T>& Pc,
+            const std::vector<T>& Qc,  // P, Q, C replaced with Pc, Qc, Cc by Max F
             const std::vector<std::vector<T>>& Cc,
             // T maxC, // disabled by MaxF //now updated inside
             T extra_mass_penalty,
@@ -932,7 +933,7 @@ namespace EMD_details {
         typedef long long int CONVERT_TO_T;
         // typedef int T;
 
-        T operator()(const Container& POrig, const Container& QOrig, const Container& P, const Container& Q,
+        T operator()(const Container& POrig, const Container& QOrig, const std::vector<T>& P, const std::vector<T>& Q,
             const std::vector<std::vector<T>>& C,
             // T maxC, // disabled by Max F
             T extra_mass_penalty,
@@ -1097,7 +1098,7 @@ auto EMD<V>::operator()(const Container& Pc, const Container& Qc) const -> dista
         C = default_ground_matrix(Pc.size(), Pc.size());
         is_C_initialized = true;
     }
-    // typedef typename Container::value_type T;
+
     using T = value_type;
     const EMD_details::FLOW_TYPE_T FLOW_TYPE = EMD_details::NO_FLOW;
     //    // if maxC is not given seperatly // disabled by Max F when rolled back to original version
@@ -1111,6 +1112,7 @@ auto EMD<V>::operator()(const Container& Pc, const Container& Qc) const -> dista
 
     assert((F != NULL) || (FLOW_TYPE == EMD_details::NO_FLOW));
 
+	// changed from std::vector<T> to Container by Stepan Mamontov 21.01.2020
     std::vector<T> P(std::begin(Pc), std::end(Pc));
     std::vector<T> Q(std::begin(Qc), std::end(Qc));
 

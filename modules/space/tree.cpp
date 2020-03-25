@@ -13,6 +13,8 @@ Copyright (c) 2018 Michael Welsch
 #include <cmath>
 #include <functional>
 #include <sstream>
+#include <stdexcept>
+#include <type_traits>
 #include <vector>
 #if defined BOOST_SERIALIZATION_NVP
 #define SERIALIZATION_NVP2(name, variable) boost::serialization::make_nvp(name, variable)
@@ -68,12 +70,16 @@ class Node {
 public:
     using Distance = typename Tree<recType, Metric>::Distance;
 
-    //    friend Tree<recType, Metric>;
-    Node(Tree<recType, Metric>* ptr, Distance base = Tree<recType, Metric>().base)
+    explicit Node(Tree<recType, Metric>* ptr, Distance base = Tree<recType, Metric>().base)
         : tree_ptr(ptr)
         , base(base)
-    {
-    }
+    { }
+    Node() = delete;
+    Node(const Node &) = delete;
+    Node(Node &&) = delete;
+    Node & operator=(const Node&)=delete;
+    Node & operator=(Node &&) = delete;
+
     ~Node()
     {
         for (auto p : children) {
@@ -84,26 +90,26 @@ public:
 
     // private:
     Distance base;
-    recType data;  // data record associated with the node
-    recType center_of_mass;
-
     Node_ptr parent = nullptr;  // parent of current node
     std::vector<Node_ptr> children;  // list of children
     int level = 0;  // current level of the node
     Distance parent_dist = 0;  // upper bound of distance to any of descendants
-    unsigned ID = 0;  // unique ID of current node
+    std::size_t ID = 0;  // unique ID of current node
 
-    //    mutable std::shared_timed_mutex mut; // lock for current node
 public:
-    unsigned get_ID() const { return ID; }
+    [[nodiscard]] unsigned get_ID() const { return ID; }
     void set_ID(const unsigned v) { ID = v; }
-    const recType get_data() const { return data; }
-    void set_data(const recType& r) { data = r; }
+
+    const recType& get_data() const { return tree_ptr->get_data(ID); }
+
     Node_ptr get_parent() const { return parent; }
     void set_parent(Node_ptr node) { parent = node; }
+
     std::vector<Node_ptr>& get_children() { return children; }
-    int get_level() const { return level; }
+
+    [[nodiscard]] int get_level() const { return level; }
     void set_level(int l) { level = l; }
+
     Distance get_parent_dist() const { return parent_dist; }
     void set_parent_dist(const Distance& d) { parent_dist = d; }
 
@@ -145,8 +151,8 @@ public:
     template <typename Archive>
     void serialize(Archive& ar, const unsigned int)
     {
-        ar& SERIALIZATION_NVP(base) & SERIALIZATION_NVP(level) & SERIALIZATION_NVP(parent_dist) & SERIALIZATION_NVP(ID)
-            & SERIALIZATION_NVP(data);
+        ar& SERIALIZATION_NVP(base) & SERIALIZATION_NVP(level) & SERIALIZATION_NVP(parent_dist) & SERIALIZATION_NVP(ID);
+        //            & SERIALIZATION_NVP(data);
     }
 };
 
@@ -156,11 +162,12 @@ struct SerializedNode {
     NodeType* node = nullptr;
     bool is_null = true;
     bool has_children = false;
-
-    SerializedNode()
+    Tree<recType, Metric> * tree_ptr;
+    SerializedNode(Tree<recType, Metric> * tree_ptr_)
         : node(nullptr)
         , is_null(true)
-        , has_children(false)
+        , has_children(false),
+          tree_ptr(tree_ptr_)
     {
     }
     ~SerializedNode() {}
@@ -176,7 +183,6 @@ struct SerializedNode {
     {
         ar << SERIALIZATION_NVP(is_null);
         if (!is_null) {
-            // ar << *node << has_children;
             ar << SERIALIZATION_NVP2("node", *node) << SERIALIZATION_NVP(has_children);
         }
     }
@@ -186,7 +192,7 @@ struct SerializedNode {
         ar >> SERIALIZATION_NVP(is_null);
         if (!is_null) {
             try {
-                node = new NodeType(nullptr);
+                node = new NodeType(tree_ptr);
                 ar >> SERIALIZATION_NVP2("node", *node);
 
                 ar >> SERIALIZATION_NVP(has_children);
@@ -198,7 +204,6 @@ struct SerializedNode {
         }
     }
     SERIALIZE_SPLIT_MEMBERS();
-    // BOOST_SERIALIZATION_SPLIT_MEMBER()
 };
 /*
    \  |             |           _ _|                    |                                |           |   _)
@@ -226,25 +231,25 @@ typename Node<recType, Metric>::Distance Node<recType, Metric>::sepdist()
 template <class recType, class Metric>
 typename Node<recType, Metric>::Distance Node<recType, Metric>::dist(const recType& pp) const
 {
-    return tree_ptr->metric(data, pp);
+    return tree_ptr->metric(get_data(), pp);
 }
 
 /*** distance between current node and node n ***/
 template <class recType, class Metric>
 typename Node<recType, Metric>::Distance Node<recType, Metric>::dist(Node_ptr n) const
 {
-    return tree_ptr->metric(data, n->data);
+    return tree_ptr->metric_by_id(ID, n->ID);
 }
 
 /*** insert a new child of current node with point p ***/
 template <class recType, class Metric>
 Node<recType, Metric>* Node<recType, Metric>::setChild(const recType& p, int new_id)
 {
-    Node_ptr temp(new Node<recType, Metric>());
-    temp->data = p;
+    Node_ptr temp(new Node<recType, Metric>(tree_ptr));
     temp->level = level - 1;
     temp->parent_dist = 0;
     temp->ID = new_id;
+    temp->set_data(p);
     temp->parent = this;
     children.push_back(temp);
     return temp;
@@ -300,7 +305,6 @@ Tree<recType, Metric>::Tree(int truncate /*=-1*/, Metric d)
     min_scale = 1000;
     max_scale = 0;
     truncate_level = truncate;
-    N = 0;
 }
 
 /*** constructor: with a signal data record **/
@@ -311,30 +315,27 @@ Tree<recType, Metric>::Tree(const recType& p, int truncateArg /*=-1*/, Metric d)
     min_scale = 1000;
     max_scale = 0;
     truncate_level = truncateArg;
-    N = 1;
 
     root = std::make_unique<NodeType>();
-    root->data = p;
     root->level = 0;
     root->parent_dist = 0;
-    root->ID = 0;
+    root->ID = add_value(p);
 }
 
 /*** constructor: with a vector data records **/
 template <class recType, class Metric>
-Tree<recType, Metric>::Tree(const std::vector<recType>& p, int truncateArg /*=-1*/, Metric d)
+template<typename C>
+Tree<recType, Metric>::Tree(const C& p, int truncateArg /*=-1*/, Metric d)
     : metric_(d)
 {
     min_scale = 1000;
     max_scale = 0;
     truncate_level = truncateArg;
-    N = 1;
 
     root = new NodeType(this);
-    root->data = p[0];
     root->level = 0;
     root->parent_dist = 0;
-    root->ID = 0;
+    root->ID = add_data(p[0], root);
 
     for (std::size_t i = 1; i < p.size(); ++i) {
         insert(p[i]);
@@ -389,13 +390,20 @@ std::size_t Tree<recType, Metric>::insert_if(const std::vector<recType>& p, Dist
     return inserted;
 }
 template <class recType, class Metric>
-bool Tree<recType, Metric>::insert_if(const recType& p, Distance treshold)
+std::tuple<std::size_t, bool> Tree<recType, Metric>::insert_if(const recType& p, Distance treshold)
 {
-    if (root->dist(p) > treshold) {
-        insert(p);
-        return true;
+    if(empty()) {
+        std::size_t id = insert(p);
+        return std::make_tuple(id,true);
     }
-    return false;
+    std::pair<Node_ptr, Distance> result(root, root->dist(p));
+    nn_(root, result.second, p, result);
+    if(result.second > treshold) {
+        auto n = insert(p);
+        return std::make_tuple(n, true);
+    }
+
+    return std::make_pair(result.first->ID, false);
 }
 
 /*** vector of data record insertion  **/
@@ -410,16 +418,15 @@ bool Tree<recType, Metric>::insert(const std::vector<recType>& p)
 
 /*** data record insertion **/
 template <class recType, class Metric>
-bool Tree<recType, Metric>::insert(const recType& x)
+std::size_t Tree<recType, Metric>::insert(const recType& x)
 {
     std::unique_lock<std::shared_timed_mutex> lk(global_mut);
     (void)lk;  // prevent AppleCLang warning;
 
-    Node_ptr node = new NodeType(this);
-    node->data = x;
+    auto node = new NodeType(this);
     node->set_level(0);
     node->set_parent_dist(0);
-    node->set_ID(N++);
+    node->ID = add_data(x, node);
     node->set_parent(nullptr);
 
     // root insertion
@@ -427,9 +434,8 @@ bool Tree<recType, Metric>::insert(const recType& x)
         root = node;
     } else {
         root = insert(root, node);
-        return true;
     }
-    return false;
+    return node->ID;
 }
 /*** data record insertion **/
 template <class recType, class Metric>
@@ -523,7 +529,8 @@ bool Tree<recType, Metric>::erase(const recType& p)
             if (node_p->get_children().empty()) {
                 delete root;
                 root = nullptr;
-                N--;
+                data.clear();
+                index_map.clear();
                 return true;
             }
             auto leaf = findAnyLeaf();
@@ -535,7 +542,7 @@ bool Tree<recType, Metric>::erase(const recType& p)
                 l->set_parent(leaf);
             }
             ret_val = true;
-            N--;
+            remove_data(node_p->get_ID());
             node_p->children.clear();
             delete node_p;
         }
@@ -555,8 +562,8 @@ bool Tree<recType, Metric>::erase(const recType& p)
                 root = Tree<recType, Metric>::insert_(root, q);
             }
             node_p->children.clear();
+            remove_data(node_p->get_ID());
             delete node_p;
-            N--;
             ret_val = true;
         }
     }
@@ -688,7 +695,6 @@ void Tree<recType, Metric>::rnn_(Node_ptr current, Distance dist_current, const 
         nnList.push_back(temp);
     }
 
-    // auto[idx, dists] = sortChildrenByDistance(current, p);
     auto idx__dists = sortChildrenByDistance(current, p);
     auto idx = std::get<0>(idx__dists);
     auto dists = std::get<1>(idx__dists);
@@ -696,8 +702,7 @@ void Tree<recType, Metric>::rnn_(Node_ptr current, Distance dist_current, const 
     for (const auto& child_idx : idx) {
         Node_ptr child = current->children[child_idx];
         Distance dist_child = dists[child_idx];
-        // if (distance > dist_child - child->parent_dist) // bug
-        if (dist_child < distance + 2 * child->covdist())  // ++ changes
+        if (dist_child < distance + 2 * child->covdist()) 
             rnn_(child, dist_child, p, distance, nnList);
     }
 }
@@ -713,7 +718,7 @@ size_t Tree<recType, Metric>::size()
 {
     std::shared_lock<std::shared_timed_mutex> lk(global_mut);
     (void)lk;
-    return size_t(N);
+    return data.size();
 }
 
 /*
@@ -754,19 +759,11 @@ std::vector<recType> Tree<recType, Metric>::toVector()
 template <class recType, class Metric>
 recType Tree<recType, Metric>::operator[](size_t id)
 {
-    // iterate through tree with stack
-    std::stack<Node_ptr> stack;
-    Node_ptr current = root;
-    stack.push(root);
-    while (stack.size() > 0) {
-        current = stack.top();
-        stack.pop();
-        if (current->ID == id)
-            break;
-        for (const auto& child : *current)
-            stack.push(child);
+    auto p = index_map.find(id);
+    if(p == index_map.end()) {
+        throw std::runtime_error("tree has no such ID:" + std::to_string(id));
     }
-    return current->data;
+    return data[p->second].first;
 }
 
 /*
@@ -898,6 +895,28 @@ void Tree<recType, Metric>::print_(NodeType* node_p, std::ostream& ostr) const
     }
 }
 
+template <class recType, class Metric>
+auto Tree<recType, Metric>::get_all_nodes() -> std::vector<Node_ptr>
+{	
+	std::vector<Node_ptr> all_nodes;
+	
+	all_nodes.push_back(root);
+	get_all_nodes_(root, all_nodes);
+
+	return all_nodes;
+}
+
+template <class recType, class Metric>
+void Tree<recType, Metric>::get_all_nodes_(Node_ptr node_p, std::vector<Node_ptr>& output)
+{	
+	for (std::size_t i = 0; i < node_p->children.size(); ++i) 
+	{
+		output.push_back(node_p->children[i]);
+		get_all_nodes_(node_p->children[i], output);
+	}
+}
+
+
 /*** traverse the tree from root and do something with every node ***/
 template <class recType, class Metric>
 void Tree<recType, Metric>::traverse(const std::function<void(Node_ptr)>& f)
@@ -950,7 +969,7 @@ inline void Tree<recType, Metric>::serialize_aux(Node_ptr node, Archive& archive
         for (auto& c : node->children) {
             serialize_aux(c, archive);
         }
-        SerializedNode<recType, Metric> snn(nullptr);
+        SerializedNode<recType, Metric> snn(this);
         archive << SERIALIZATION_NVP2("node", snn);
     } else {
         archive << SERIALIZATION_NVP2("node", sn);
@@ -963,31 +982,24 @@ inline void Tree<recType, Metric>::serialize(Archive& archive)
 {
     std::shared_lock<std::shared_timed_mutex> lk(global_mut);
     (void)lk;
+    archive << data << index_map;
     serialize_aux(root, archive);
-}
-template <class recType, class Metric>
-template <class Archive>
-inline auto Tree<recType, Metric>::deserialize_node(Archive& istr) -> SerializedNode<recType, Metric>
-{
-    SerializedNode<recType, Metric> n;
-    istr& n;
-    return n;
 }
 
 template <class recType, class Metric>
 template <class Archive, class Stream>
 inline void Tree<recType, Metric>::deserialize(Archive& input, Stream& stream)
 {
-    SerializedNode<recType, Metric> node;
+    SerializedNode<recType, Metric> node(this);
     std::unique_lock<std::shared_timed_mutex> lk(global_mut);
     (void)lk;
-
+    input >> data >> index_map;
     try {
         input >> SERIALIZATION_NVP2("node", node);
         std::stack<Node_ptr> parentstack;
         parentstack.push(node.node);
         while (!stream.eof()) {
-            SerializedNode<recType, Metric> node;
+            SerializedNode<recType, Metric> node(this);
 
             input >> SERIALIZATION_NVP2("node", node);
             if (!node.is_null) {
@@ -1014,7 +1026,7 @@ inline bool Tree<recType, Metric>::same_tree(const Node_ptr lhs, const Node_ptr 
         return true;
     }
     if (lhs->ID != rhs->ID || lhs->level != rhs->level || lhs->parent_dist != rhs->parent_dist
-        || lhs->data != rhs->data) {
+        || lhs->get_data() != rhs->get_data()) {
         return false;
     }
 
@@ -1241,7 +1253,6 @@ inline void is_distribution_ok(const std::vector<double>& distribution)
             throw bad_distribution_exception {};
         d0 = distribution[i];
     }
-    return;
 }
 template <typename recType, typename Metric>
 inline std::vector<std::vector<std::size_t>> Tree<recType, Metric>::clustering(
@@ -1362,11 +1373,11 @@ inline std::string Tree<recType, Metric>::to_json(std::function<std::string(cons
     std::vector<node_t> nodes;
     std::vector<edge_t> edges;
     traverse([&nodes, &edges](auto p) {
-        nodes.emplace_back(node_t { p->ID, p->data });
-        if (p->parent != nullptr) {
-            edges.emplace_back(edge_t { p->parent->ID, p->ID, p->parent_dist });
-        }
-    });
+                 nodes.emplace_back(node_t { p->ID, p->get_data() });
+                 if (p->parent != nullptr) {
+                     edges.emplace_back(edge_t { p->parent->ID, p->ID, p->parent_dist });
+                 }
+             });
     std::ostringstream ostr;
     ostr << "{" << std::endl;
     ostr << "\"nodes\": [" << std::endl;
@@ -1389,6 +1400,111 @@ inline std::string Tree<recType, Metric>::to_json(std::function<std::string(cons
     }
     ostr << "]}" << std::endl;
     return ostr.str();
+}
+    
+template <typename recType, typename Metric>
+auto Tree<recType, Metric>::distance_to_root(Node_ptr p) const -> std::pair<Distance, std::size_t> {
+    Distance dist = 0;
+    std::size_t cnt = 0;
+    while(p->parent != nullptr) {
+        dist += p->parent_dist;
+        cnt++;
+        p = p->parent;
+    }
+    return std::pair{dist, cnt};
+}
+
+template <typename recType, typename Metric>
+auto Tree<recType, Metric>::distance_to_level(Node_ptr &p, int level) const -> std::pair<Distance, std::size_t>
+{
+    Distance dist = 0;
+    std::size_t cnt = 0;
+    while(p->level < level) {
+        dist += p->parent_dist;
+        cnt++;
+        p = p->parent;
+    }
+    return std::pair{dist, cnt};
+}
+
+template <typename recType, typename Metric>
+auto Tree<recType, Metric>::graph_distance(Node_ptr p1, Node_ptr p2) const -> std::pair<Distance, std::size_t> {
+    if (p1->parent == p2->parent) {
+        return std::pair{p1->parent_dist + p2->parent_dist, 2};
+    }
+    auto d1 = distance_to_root(p1);
+    auto d2 = distance_to_root(p2);
+    return std::pair{d1.first + d2.first, d1.second + d2.second};
+}
+
+template <typename recType, typename Metric>
+auto Tree<recType, Metric>::distance_by_node(Node_ptr p1, Node_ptr p2) const -> Distance {
+    std::pair<Distance, std::size_t> dist1{0,0};
+    if (p1->level < p2->level) {
+        dist1 = distance_to_level(p1, p2->level);
+    } else if(p2->level < p1->level) {
+        dist1 = distance_to_level(p2, p1->level);
+    }
+    if(p1 == p2) {
+        return dist1.first / dist1.second;
+    }
+    auto dist = graph_distance(p1, p2);
+    return (dist1.first + dist.first) / (dist1.second + dist.second);
+}
+
+template <typename recType, typename Metric>
+auto Tree<recType, Metric>::distance_by_id(std::size_t id1, std::size_t id2) const -> Distance
+{
+    auto p1 = index_map.find(id1);
+    if(p1 == index_map.end()) {
+        throw std::runtime_error("tree has no such ID: " + std::to_string(id1));
+    }
+    auto p2 = index_map.find(id2);
+    if (p2 == index_map.end()) {
+        throw std::runtime_error("tree has no such ID: " + std::to_string(id2));
+    }
+    if (id1 == id2) {
+        return 0;
+    }
+
+    Node_ptr n1 = data[p1->second].second;
+    Node_ptr n2 = data[p2->second].second;
+    return distance_by_node(n1, n2);
+}
+
+template <typename recType, typename Metric>
+auto Tree<recType, Metric>::distance(const recType &r1, const recType &r2) const -> Distance {
+    auto nn1 = nn(r1);
+    auto nn2 = nn(r2);
+    if(nn1 == nn2) {
+        return 0;
+    }
+    return distance_by_node(nn1, nn2);
+}
+
+template <typename recType, typename Metric>
+auto Tree<recType, Metric>::matrix() const
+    -> blaze::CompressedMatrix<Distance, blaze::rowMajor> {
+    auto N = data.size();
+    blaze::CompressedMatrix<Distance, blaze::rowMajor> m(N, N);
+    
+    m.reserve(N*(N-1)/2);
+    for (std::size_t i = 0; i < data.size(); i++)
+    {
+        for(std::size_t j = i +1; j < data.size(); j++) {
+            if( data[i].second->parent == data[j].second) {
+                // node J is a parent for node I, so we can use parent_dist
+                m.append(i, j, data[i].second->parent_dist);
+            } else if (data[j].second->parent == data[i].second) {
+                // node I is a parent for node J, so we can use parent_dist
+                m.append(i, j,data[j].second->parent_dist);
+            } else {
+                m.append(i, j, metric(data[i].first, data[j].first));
+            }
+        }
+        m.finalize(i);
+    }
+    return m;
 }
 }  // namespace metric
 

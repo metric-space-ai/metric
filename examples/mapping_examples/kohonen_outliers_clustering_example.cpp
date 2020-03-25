@@ -16,9 +16,9 @@ Copyright (c) 2019 Panda Team
 #include <iostream>
 #include <fstream>
 
-//#if defined(_WIN64)
+#if defined(_WIN64)
 #include <filesystem>
-//#endif
+#endif
 
 #include <chrono>
 
@@ -26,17 +26,10 @@ Copyright (c) 2019 Panda Team
 #include "../../modules/utils/Semaphore.h"
 
 #include "assets/json.hpp"
-//#include "../../modules/distance.hpp"
 #include "../../modules/mapping.hpp"
 
 
 using json = nlohmann::json;
-
-///////////////////////////////////////////////////////
-
-std::string RAW_DATA_DIRNAME = "assets/data";
-
-////////////////////////////////////////////////////////
 
 
 template <typename T>
@@ -119,108 +112,103 @@ void vector_print(const std::vector<T> &vec,const size_t width, const size_t hei
 	std::cout << std::endl;
 }
 
-std::vector<std::vector<double>> readEnergies(std::string dirname)
+std::vector<std::vector<double>> readCsvData(std::string filename, char delimeter)
 {
-	#if defined(__linux__)
-		std::vector<std::string> files;
-		DIR *dp;
-		struct dirent *dirp;
-		if((dp  = opendir(dirname.c_str())) == NULL) {
-			std::cout << "Error(" << errno << ") opening " << dirname << std::endl;
-			return std::vector<std::vector<double>>();
-		}
+	std::fstream fin;
 
-		while ((dirp = readdir(dp)) != NULL) {
-			std::string fn = std::string(dirp->d_name);
-			if (fn.size() > 4 && fn.substr(fn.size() - 4) == ".log")
-			{
-				files.push_back(dirname + "/" + fn);
-			}
-		}
-		closedir(dp);
-	#endif
+	fin.open(filename, std::ios::in);
 	
 	std::vector<double> row;
-	std::vector<double> speeds;
 	std::string line, word, w;
 
 	std::vector<std::vector<double>> rows;
-	
-	//#if defined(_WIN64)
-               for (const auto & entry : std::filesystem::directory_iterator(dirname))
-	//#endif
-	#if defined(__linux__)
-               for (auto filename : files)
-	#endif
-    {
-		//#if defined(_WIN64)
-                       auto filename = entry.path();
-		//#endif
-		std::cout << "reading data from " << filename << "... " << std::endl;
 
-		std::fstream fin;
+	int i = 0;
+	while (getline(fin, line))
+	{
+		i++;
+		std::stringstream s(line);
 
-		fin.open(filename, std::ios::in);
-
-		char delimeter = 9;
-
-		int i = 0;
-		while (getline(fin, line))
+		row.clear();
+		while (getline(s, word, delimeter))
 		{
-			std::stringstream s(line);
-
-			row.clear();
-			// omit first digit
-			getline(s, word, delimeter);
-
-			while (getline(s, word, delimeter))
-			{
-				// std::cout << " -> " << word << std::endl;
-
-				row.push_back(std::stold(word));
-			}
-			// erase last element
-			double speed = row[row.size() - 1];
-			speeds.push_back(speed);
-			
-			row.pop_back();
-
-			if (speed >= 1)
-			{
-				for (auto k = 0; k < row.size(); k++)
-				{
-					row[k] = sqrt(row[k]);
-				}
-			}
-			else
-			{
-				for (auto k = 0; k < row.size(); k++)
-				{
-					row[k] = 0;
-				}
-			}
-
-			rows.push_back(row);
+			row.push_back(std::stod(word));
 		}
 
-		rows.pop_back();
+		rows.push_back(row);
 	}
 
 	return rows;
 }
 
+std::tuple<std::vector<std::string>, std::vector<std::vector<double>>> readCsvData2(std::string filename, char delimeter)
+{
+	std::fstream fin;
 
-std::mutex mu;
+	fin.open(filename, std::ios::in);
+	
+	std::vector<std::string> dates;
+	std::vector<double> row;
+	std::string line, word, w;
+
+	std::vector<std::vector<double>> rows;
+	
+	int day, month, year, hour, minute, second;
+	int added_days = 0;
+	bool was_yesterday = false;
+
+	// omit headers 
+	getline(fin, line);
+
+	int i = 0;
+	while (getline(fin, line))
+	{
+		i++;
+		std::stringstream s(line);
+
+		getline(s, word, delimeter);
+		sscanf(word.c_str(), "%4d-%2d-%2d %2d:%2d:%2d", &year, &month, &day, &hour, &minute, &second);
+		if (was_yesterday && hour * 60 + minute >= 4 * 60)
+		{
+			dates.push_back(word);
+			rows.push_back(row);
+			row.clear();
+		}
+
+		if (hour * 60 + minute < 4 * 60)
+		{
+			was_yesterday = true;
+		}
+		else
+		{
+			was_yesterday = false;
+		}
+
+		while (getline(s, word, delimeter))
+		{
+			row.push_back(std::stod(word));
+		}
+
+	}
+
+	// erase first element with partial data
+	rows.erase(rows.begin());
+	dates.erase(dates.end() - 1);
+
+	return { dates, rows };
+}
+
+///
 
 int main(int argc, char *argv[])
 {
 	std::cout << "KOC example have started" << std::endl;
-	std::cout << '\n';
+	std::cout << std::endl;
 
 	using Record = std::vector<double>;
 				
-	size_t best_w_grid_size = 8;
-	size_t best_h_grid_size = 6;
+	size_t best_w_grid_size = 3;
+	size_t best_h_grid_size = 2;
 
 	// if overrided from arguments
 	
@@ -230,174 +218,179 @@ int main(int argc, char *argv[])
 		best_h_grid_size = std::stod(argv[3]);
 	}
 
-	// create, train KOC over the raw data and reduce the data	
-	// then make clustering on the reduced data
+	std::vector<std::vector<Record>> datasets;
+	std::vector<std::vector<Record>> test_sets;
+	std::vector<std::string> dataset_names;
 	
-	
-	metric::Grid4 graph(best_w_grid_size, best_h_grid_size);
-	metric::Euclidian<double> distance;
-    auto en = metric::entropy<void, metric::Euclidian<double>>();
-	std::uniform_real_distribution<double> distribution;
-
-	metric::KOC<Record, metric::Grid4, metric::Euclidian<double>, std::uniform_real_distribution<double>> 
-		simple_koc(graph, distance, 0.8, 0.0, 20, distribution);	
-	
-	
-	std::vector<Record> dataset = {
-		{0, 0, 0},
-		{0, 1, 0},
-		{0, 2, 0},
-		{2, 2, 2},
-		{2, 2, 2},
-		{2, 2, 2},
-		{0, 0, 4},
-		{0, 0, 4},
-		{0, 0, 4},
-		{8, 0, 0},
-		{8, 0, 0},
-		{8, 0, 0},
-	};
-
-	std::vector<Record> test_samples_1 = {
-		{0, 0, 0},
-		{0, 1, 0},
-		{0, 0, 3},
-		{5, 5, 5},
-	};
-	
-	simple_koc.train(dataset);
-
-	simple_koc.set_anomaly_threshold(0.01);
-
-	auto anomalies = simple_koc.check_if_anomaly(test_samples_1);	
-	std::cout << std::endl;
-	std::cout << "anomalies:" << std::endl;
-	vector_print(anomalies);
-	std::cout << std::endl;
-	
-	std::vector<int> clusters_grid = simple_koc.get_clusters();	
-	std::cout << std::endl;
-	std::cout << "clusters grid:" << std::endl;
-	vector_print(clusters_grid, best_w_grid_size, best_h_grid_size);
-
-	auto assigned_clusters = simple_koc.encode(test_samples_1);	
-	std::cout << std::endl;
-	std::cout << "assigned clusters:" << std::endl;
-	vector_print(assigned_clusters);
-	std::cout << std::endl;
-
-	/// OUTLIERS DETECTION FOR ENERGIES
-
-	auto t1 = std::chrono::steady_clock::now();
-
-	if (argc > 1)
-	{
-		RAW_DATA_DIRNAME = argv[1];
-	}
-
-	/* Load data */
-	auto speeds = readEnergies(RAW_DATA_DIRNAME);
-	std::cout << "" << std::endl;
-	std::cout << "Num records: " << speeds.size() << std::endl;
-	std::cout << "Num values in the record: " << speeds[0].size() << std::endl;
-
-	metric::KOC<Record, metric::Grid4, metric::Euclidian<double>, std::uniform_real_distribution<double>> 
-		koc(graph, distance, 0.8, 0.0, 20, distribution);	
-
-	koc.train(speeds);
+	std::vector<Record> dataset;
+	std::vector<Record> test_set;
+	std::vector<std::string> dates;
 
 	//
 
-	std::vector<std::vector<double>> test_samples;
+	dataset = {
+
+		{0, 0.1},
+		{0.2, 0},
+
+		{0, 1.2},
+		{0.1, 1},
+
+		{0.1, 2},
+		{0.2, 2},
+
+		{1, 0},
+		{1.2, 0.1},
+
+		{1.3, 1.1},
+		{0.9, 1},
+
+		{1.1, 2},
+		{0.9, 1.9},
+	};
+	datasets.push_back(dataset);
+
+	test_set = {
+		{0, 0},
+		{0, 1},
+		{0.5, 0.5},
+		{0.0, 0.3},
+		{5, 5},
+	};
+	test_sets.push_back(test_set);
+
+	dataset_names.push_back("syntetic dataset");
+
+	//
 	
-	std::vector<double> test_sample;
-	for (auto i = 0; i < 7 * 8; i++)
+	dataset = readCsvData("assets/testdataset/compound.csv", ',');
+	datasets.push_back(dataset);
+
+	test_set = { {4, 0} };
+	test_sets.push_back(test_set);
+
+	dataset_names.push_back("compound dataset");
+
+	//
+
+	dataset = readCsvData("assets/testdataset/fisheriris.csv", ',');
+	datasets.push_back(dataset);
+
+	test_set = {
+		{6.5, 3.2, 5.1, 2.2},
+		{6.1, 3.3, 5.3, 2.3},
+		{5.9, 3.1, 5.2, 1.8},
+		{8.3, 5.0, 5.0, 3.5}
+	};
+	test_sets.push_back(test_set);
+
+	dataset_names.push_back("fisheriris dataset");
+
+	//
+
+	dataset = readCsvData("assets/testdataset/multidim.csv", ',');
+	datasets.push_back(dataset);
+
+	test_set = {
+		{1.86,-0.5,0.01,0.36,-0.04,-0.35,0.11,0.09,0.57,-0.09,-0.03,0.05,-0.21,-0.21,0.04,-0.14,0.14,-0.11,0.18,-0.06,-0.04,0.08,-0.03,-0.13,0.11,0.02,0.04,-0.04,-0.14,-0.1},
+		{0.87,-0.97,0.24,0.18,0.23,0.35,0.21,-0.06,0.01,0.06,-0.1,0.02,-0.13,0.18,-0.43,0.06,-0.24,0.12,0.04,-0.2,-0.12,0.23,0.06,0.2,-0.09,0.01,0.28,0.01,0.11,-0.04},
+		{2,2,0.4,0.01,-0.1,0.1,0.2,0.1,-0.1,0.4,-0.1,-0.01,0.3,0.2,0.3,0.01,0.2,0.1,-0.1,-0.1,-0.4,0.1,0.2,0.3,0.01,0.3,0.1,0.4,0.1,0.1}
+	};
+	test_sets.push_back(test_set);
+
+	dataset_names.push_back("multidim dataset");
+
+	//
+
+	std::tie(dates, dataset) = readCsvData2("assets/testdataset/nyc_taxi.csv", ',');
+	datasets.push_back(dataset);
+
+	test_set = { dataset[2], dataset[12], dataset[22], dataset[53], dataset[84], dataset[122], dataset[123], dataset[149], dataset[162], dataset[163],
+		dataset[183], dataset[184], dataset[192], dataset[199], dataset[201]  };
+	test_sets.push_back(test_set);
+
+	dataset_names.push_back("NYC taxi dataset");
+
+	//
+
+	dataset = readCsvData("assets/testdataset/3d_swissroll.csv", ',');
+	datasets.push_back(dataset);
+
+	test_set = { dataset[2], dataset[12], dataset[22]  };
+	test_sets.push_back(test_set);
+
+	dataset_names.push_back("swissroll dataset");
+
+	///
+
+	// random seed for repeateable results
+	long long random_seed = 777;
+	double sigma = 1.5;
+
+	metric::KOC_factory<Record, metric::Grid4> simple_koc_factory(best_w_grid_size, best_h_grid_size, sigma, 0.5, 0.0, 300, -1, 1, 2, 0.5, random_seed);
+
+	for (int i = 0; i < datasets.size(); i++)
 	{
-		test_sample.push_back(((double) rand() / (RAND_MAX)));
+		std::cout << "--------------" << std::endl;
+		std::cout << dataset_names[i] << std::endl;
+		std::cout << "--------------" << std::endl;
+		std::cout << std::endl;
+
+		int num_clusters = 5;
+
+		dataset = datasets[i];
+		test_set = test_sets[i];
+
+		auto simple_koc = simple_koc_factory(dataset, num_clusters);
+
+
+		std::cout << "train dataset:" << std::endl;
+
+		auto anomalies = simple_koc.check_if_anomaly(dataset);
+		std::cout << std::endl;
+		std::cout << "anomalies:" << std::endl;
+		vector_print(anomalies);
+
+		auto assignments = simple_koc.assign_to_clusters(dataset);
+		std::cout << std::endl;
+		std::cout << "assignments:" << std::endl;
+		vector_print(assignments);
+
+
+		std::cout << std::endl;
+		std::cout << std::endl;
+		std::cout << "test dataset:" << std::endl;
+
+		anomalies = simple_koc.check_if_anomaly(test_set);
+		std::cout << std::endl;
+		std::cout << "anomalies:" << std::endl;
+		vector_print(anomalies);
+
+		assignments = simple_koc.assign_to_clusters(test_set);
+		std::cout << std::endl;
+		std::cout << "assignments:" << std::endl;
+		vector_print(assignments);
+
+		///
+
+		std::cout << std::endl;
+		std::cout << std::endl;
+		std::cout << "top outliers:" << std::endl;
+
+		auto [idxs, sorted_distances] = simple_koc.top_outliers(test_set, 10);
+
+		std::cout << std::endl;
+		std::cout << "sorted indexes:" << std::endl;
+		vector_print(idxs);
+
+		std::cout << std::endl;
+		std::cout << "sorted distances:" << std::endl;
+		vector_print(sorted_distances);
+
+		std::cout << std::endl;
+		std::cout << std::endl;
+		std::cout << std::endl;
 	}
-	test_samples.push_back(test_sample);
-
-	std::random_device rd;     // only used once to initialise (seed) engine
-	std::mt19937 rng(rd());    // random-number engine used (Mersenne-Twister in this case)
-	std::uniform_int_distribution<int> uni(0, speeds.size()); // guaranteed unbiased
-
-	auto random_integer = uni(rng);
-	test_samples.push_back(speeds[random_integer]);
-
-	
-	std::vector<double> entropies;
-	double entropies_sum = 0;
-	metric::SOM<Record, metric::Grid4, metric::Euclidian<double>, std::uniform_real_distribution<double>>& som_version = koc;
-	for (size_t i = 0; i < speeds.size(); i++)
-	{
-
-		auto reduced = som_version.encode(speeds[i]);
-		std::sort(reduced.begin(), reduced.end());	
-
-		std::vector<Record> reduced_reshaped;
-		for (size_t j = 0; j < reduced.size(); j++)
-		{
-			reduced_reshaped.push_back({reduced[j]});
-		}
-        //auto e = entropy_fn(reduced_reshaped, 3, 2.0, distance); // old function, TODO remove
-        auto e = en(reduced_reshaped, 3, 2.0);
-		entropies_sum += e;
-		entropies.push_back(e);
-	}
-
-	std::sort(entropies.begin(), entropies.end());		
-	for (size_t i = 0; i < 20; i++)
-	{
-		std::cout << "first entropy: " << entropies[i] << std::endl;	
-	}
-	std::cout << "" << std::endl;
-
-	std::cout << "mean entropy: " << entropies_sum / entropies.size() << std::endl;	
-    auto result = std::max_element(entropies.begin(), entropies.end());
-	std::cout << "max entropy: " << entropies[std::distance(entropies.begin(), result)] << std::endl;
-    result = std::min_element(entropies.begin(), entropies.end());
-	std::cout << "min entropy: " << entropies[std::distance(entropies.begin(), result)] << std::endl;
-	std::cout << "" << std::endl;
-
-	for (size_t i = 0; i < test_samples.size(); i++)
-	{
-		auto reduced = som_version.encode(test_samples[i]);
-		std::sort(reduced.begin(), reduced.end());	
-
-		std::vector<Record> reduced_reshaped;
-		for (size_t j = 0; j < reduced.size(); j++)
-		{
-			reduced_reshaped.push_back({reduced[j]});
-		}
-        //auto e = entropy_fn(reduced_reshaped, 3, 2.0, distance); // old function, TODO remove
-        auto e = en(reduced_reshaped, 3, 2.0);
-		std::cout << "test entropy: " << e << std::endl;
-	}
-	std::cout << "" << std::endl;
-	
-	koc.set_anomaly_threshold(-0.1);
-	anomalies = koc.check_if_anomaly(test_samples);
-	
-	std::cout << std::endl;
-	std::cout << "anomalies:" << std::endl;
-	vector_print(anomalies);
-	std::cout << std::endl;
-	
-	clusters_grid = koc.get_clusters();	
-	std::cout << std::endl;
-	std::cout << "clusters grid:" << std::endl;
-	vector_print(clusters_grid, best_w_grid_size, best_h_grid_size);
-
-	assigned_clusters = koc.encode(test_samples);	
-	std::cout << std::endl;
-	std::cout << "assigned clusters:" << std::endl;
-	vector_print(assigned_clusters);
-	std::cout << std::endl;
-
-	auto t2 = std::chrono::steady_clock::now();
-	std::cout << "(Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000 << " s)" << std::endl;
-	std::cout << "" << std::endl;
-
 
     return 0;
 }

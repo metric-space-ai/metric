@@ -13,9 +13,8 @@ Copyright (c) 2019 Panda Team
 #include "../../correlation/entropy.hpp"
 #include <type_traits>
 #include <vector>
-
+#include "../../../modules/utils/type_traits.hpp"
 namespace metric {
-
 
 
 /**
@@ -28,26 +27,15 @@ namespace metric {
  * @param version
  * @return
  */
-template <typename T, typename Metric = metric::Chebyshev<T>>
-typename std::enable_if<!std::is_integral<T>::value, T>::type mutualInformation(const std::vector<std::vector<T>>& Xc,
-    const std::vector<std::vector<T>>& Yc, int k = 3, Metric metric = Metric(), int version = 2);
+template <typename Container, typename Metric = metric::Chebyshev<type_traits::underlaying_type_t<Container>>>
+typename std::enable_if_t<!type_traits::is_container_of_integrals_v<Container>,
+                          type_traits::underlaying_type_t<Container>>
+mutualInformation(const Container& Xc,
+    const Container & Yc, int k = 3, const Metric & metric = Metric(), int version = 2);
 
-template <typename T>
-typename std::enable_if<std::is_integral<T>::value, T>::type mutualInformation(
-    const std::vector<std::vector<T>>& Xc, const std::vector<std::vector<T>>& Yc, T logbase = 2.0);
-
-/**
- * @brief
- *
- * @param Xc
- * @param Yc
- * @param k
- * @param logbase
- * @return
- */
-template <typename T = double, typename Metric = metric::Chebyshev<T>>
-typename std::enable_if<!std::is_integral<T>::value, T>::type variationOfInformation(
-    const std::vector<std::vector<T>>& Xc, const std::vector<std::vector<T>>& Yc, int k = 3, T logbase = 2.0);
+template <typename Container, typename T = type_traits::underlaying_type_t<Container> >
+std::enable_if_t<type_traits::is_container_of_integrals_v<Container>, T>
+mutualInformation(const Container& Xc, const Container& Yc, T logbase = 2.0);
 
 /**
  * @brief
@@ -58,9 +46,25 @@ typename std::enable_if<!std::is_integral<T>::value, T>::type variationOfInforma
  * @param logbase
  * @return
  */
-template <typename T = double>
-typename std::enable_if<!std::is_integral<T>::value, T>::type variationOfInformation_normalized(
-    const std::vector<std::vector<T>>& Xc, const std::vector<std::vector<T>>& Yc, int k = 3, T logbase = 2.0);
+template <typename C, typename Metric = metric::Chebyshev<type_traits::underlaying_type_t<C>>,
+          typename T = type_traits::underlaying_type_t<C>>
+typename std::enable_if_t<!type_traits::is_container_of_integrals_v<C>, T>
+variationOfInformation(const C& Xc, const C& Yc, int k = 3, T logbase = 2.0);
+
+
+/**
+ * @brief
+ *
+ * @param Xc
+ * @param Yc
+ * @param k
+ * @param logbase
+ * @return
+ */
+    template <typename C, typename T = type_traits::underlaying_type_t<C>>
+    typename std::enable_if_t<!type_traits::is_container_of_integrals_v<C>,T>
+    variationOfInformation_normalized(
+    const C & Xc, const C& Yc, int k = 3, T logbase = 2.0);
 
 /**
  * @brief
@@ -93,10 +97,14 @@ struct VOI {
      * @param b second container
      * @return variation of information between a and b
      */
-    template <template <class, class> class Container, class Allocator_inner, class Allocator_outer, class El>
-    typename std::enable_if<!std::is_integral<El>::value, V>::type  // only real values are accepted
-    operator()(const Container<Container<El, Allocator_inner>, Allocator_outer>& a,
-        const Container<Container<El, Allocator_inner>, Allocator_outer>& b) const;
+
+    template <typename Container, typename T = type_traits::underlaying_type_t<Container>>
+    typename std::enable_if_t<!std::is_integral_v<T>, V>  // only real values are accepted
+    operator()(const Container& a, const Container& b) const;
+
+    template <typename Container, typename T = type_traits::underlaying_type_t<Container>>
+    typename std::enable_if_t<std::is_integral_v<T>, V>  // only real values are accepted
+    operator()(const Container& a, const Container& b) const;
 
     // TODO add support of 1D random values passed in simple containers
 };
@@ -130,10 +138,9 @@ struct VOI_normalized : VOI<V> {
      * @param b second container
      * @return varition of information between a and b
      */
-    template <template <class, class> class Container, class Allocator_inner, class Allocator_outer, class El>
-    typename std::enable_if<!std::is_integral<El>::value, V>::type  // only real values are accepted
-    operator()(const Container<Container<El, Allocator_inner>, Allocator_outer>& a,
-        const Container<Container<El, Allocator_inner>, Allocator_outer>& b) const;
+    template <typename Container, typename T = type_traits::underlaying_type_t<Container>>
+    typename std::enable_if_t<!std::is_integral_v<T>, V>  // only real values are accepted
+    operator()(const Container& a, const Container& b) const;
 
     // TODO add support of 1D random values passed in simple containers
 };
@@ -179,10 +186,9 @@ struct VOI_kl {
      * @param b second container
      * @return variation of information
      */
-    template <template <class, class> class Container, class Allocator_inner, class Allocator_outer, class El>
-    typename std::enable_if<!std::is_integral<El>::value, V>::type  // only real values are accepted
-    operator()(const Container<Container<El, Allocator_inner>, Allocator_outer>& a,
-        const Container<Container<El, Allocator_inner>, Allocator_outer>& b) const;
+    template <typename Container, typename T = type_traits::underlaying_type_t<Container>>
+    typename std::enable_if_t<!std::is_integral_v<T>, V>  // only real values are accepted
+    operator()(const Container& a, const Container& b) const;
 
     // TODO add support of 1D random values passed in simple containers
 };
@@ -215,10 +221,9 @@ struct VOI_normalized_kl : VOI_kl<V> {
      * @param b second value
      * @return normalized value of the variation of information
      */
-    template <template <class, class> class Container, class Allocator_inner, class Allocator_outer, class El>
-    typename std::enable_if<!std::is_integral<El>::value, V>::type  // only real values are accepted
-    operator()(const Container<Container<El, Allocator_inner>, Allocator_outer>& a,
-        const Container<Container<El, Allocator_inner>, Allocator_outer>& b) const;
+    template <typename Container, typename T = type_traits::underlaying_type_t<Container>>
+    typename std::enable_if_t<!std::is_integral_v<T>, V>  // only real values are accepted
+    operator()(const Container& a, const Container& b) const;
 
     // TODO add support of 1D random values passed in simple containers
 };
