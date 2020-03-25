@@ -19,12 +19,15 @@ void register_wrapper_Redif(py::module& m) {
         py::arg("n_iter") = 15,
         py::arg("metric") = Metric()
     );
-    Matrix (Class::*encode) (const std::vector<recType>&) = &Class::encode;
-    cls.def("encode", encode);
+    cls.def("encode", &Class::template encode<Metric>);
     cls.def("decode", &Class::decode);
 }
 
 void export_metric_Redif(py::module& m) {
     using Value = double;
-    register_wrapper_Redif<Value, metric::Euclidean<Value>>(m);
+    register_wrapper_Redif<Value, metric::Euclidian<Value>>(m);
+}
+
+PYBIND11_MODULE(_redif, m) {
+    export_metric_Redif(m);
 }

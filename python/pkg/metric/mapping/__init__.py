@@ -5,3 +5,4 @@ from _mapping import *
 from _esn import *
 from _dt import *
 from _ensembles import *
+from _redif import *

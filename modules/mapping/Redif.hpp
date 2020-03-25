@@ -15,7 +15,7 @@ namespace metric
 		Redif(
 		    const std::vector<std::vector<Tv>>& trainData,
 		    size_t nNeighbors = 10,
-		    size_t nIter = 15
+		    size_t nIter = 15,
 		    Metric metric = Metric()
         );
 		~Redif() = default;

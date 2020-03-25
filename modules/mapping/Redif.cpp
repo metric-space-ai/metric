@@ -9,7 +9,7 @@ namespace metric
 	    const std::vector<std::vector<Tv>>& trainData,
 	    size_t nNeighbors /* = 10 */,
 	    size_t nIter /* = 15 */,
-	    Metric metric = Metric()
+	    Metric metric /*= Metric() */
     )
 	{
 		this->nNeighbors = nNeighbors;
