@@ -19,4 +19,5 @@ PYBIND11_MODULE(_mapping, m) {
     export_metric_DSPCC(m);
     export_metric_kmeans(m);
     export_metric_kmedoids(m);
+    export_metric_Redif(m);
 }
