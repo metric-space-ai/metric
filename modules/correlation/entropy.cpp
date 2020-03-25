@@ -8,27 +8,18 @@ Copyright (c) 2019 Panda Team
 #ifndef _METRIC_DISTANCE_K_RANDOM_ENTROPY_CPP
 #define _METRIC_DISTANCE_K_RANDOM_ENTROPY_CPP
 
-//#include <algorithm>
-#include <cmath>
-//#include <iostream>
-//#include <random>
-//#include <unordered_set>
-#include <vector>
-
-//#include <boost/functional/hash.hpp>
-
-//#include <boost/math/constants/constants.hpp>
 #include <boost/math/special_functions/digamma.hpp>
 #include <boost/math/special_functions/gamma.hpp>
 
-#include "../space/tree.hpp"
+#include "modules/utils/type_traits.hpp"
+#include "modules/space/tree.hpp"
 #include "estimator_helpers.cpp"
 #include "epmgp.cpp"
 
+#include <cmath>
+#include <vector>
 
 namespace metric {
-
-
 
 
 template <typename T>
@@ -48,36 +39,11 @@ T conv_diff_entropy_inv(T in) {
 }
 
 
-
-/* // good code, but all calls are disabled
-template <template <typename, typename> class OuterContainer, typename Container, typename OuterAllocator>
-void add_noise(OuterContainer<Container, OuterAllocator> & data)
-{
-    using T = typename Container::value_type;
-
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::normal_distribution<T> dis(0, 1);
-    double c = 1e-10;
-    for (auto& v : data) {
-        std::transform(v.begin(), v.end(), v.begin(), [&gen, c, &dis](T e) {
-            auto g = dis(gen);
-            auto k = e + c * g;
-            return k;
-        });
-    }
-}
-*/
-
-
 template <typename T1, typename T2>
 T1 log(T1 logbase, T2 x)
 {
     return std::log(x) / std::log(logbase);
 }
-
-
-
 
 
 double mvnpdf(blaze::DynamicVector<double> x, blaze::DynamicVector<double> mu, blaze::DynamicMatrix<double> Sigma) {
@@ -98,22 +64,16 @@ double mvnpdf(blaze::DynamicVector<double> x) {
 }
 
 
-
-
 // averaged entropy estimation: code COPIED from mgc.*pp with only mgc replaced with entropy, TODO refactor to avoid code dubbing
-
-template <typename Container, typename EntropyFunctor, typename Metric>
-double estimate_func(
+template <typename Container>
+double estimate(
         const Container & a,
+        const std::function<double(const Container&)>& entropy,
         const size_t sampleSize,
         const double threshold,
-        size_t maxIterations,
-        std::size_t k,
-        double logbase,
-        Metric metric,
-        bool exp // TODO apply to returning value!
-        )
-{
+        size_t maxIterations
+){
+    using T = type_traits::underlaying_type_t<Container>;
     const size_t dataSize = a.size();
 
     // Update maxIterations
@@ -125,10 +85,8 @@ double estimate_func(
         maxIterations = dataSize / sampleSize;
     }
 
-    auto e = EntropyFunctor();
-
     if (maxIterations < 1) {
-        return e(a, k, logbase, metric);
+        return entropy(a);
     }
 
     // Create shuffle indexes
@@ -159,7 +117,7 @@ double estimate_func(
         }
 
         // Get sample mgc value
-        double sample_entopy = e(sampleA, k, logbase, metric);
+        const double sample_entopy = entropy(sampleA);
         entropyValues.push_back(sample_entopy);
 
         std::sort(entropyValues.begin(), entropyValues.end());
@@ -189,26 +147,19 @@ double estimate_func(
 }
 
 
-
-
-
-
-
 // ----------------------------------- entropy
-
 // updated version, for different metric
 // averaged entropy estimation: code COPIED from mgc.*pp with only mgc replaced with entropy, TODO refactor to avoid code dubbing
-template <typename recType, typename Metric>
-template <template <typename, typename> class OuterContainer, typename Container, typename OuterAllocator>
-double entropy<recType, Metric>::operator()(
-        const OuterContainer<Container, OuterAllocator> & data,
-        std::size_t k,
-        double logbase,
-        Metric metric,
-        bool exp
-        ) const
-{
-    using T = typename Container::value_type;
+template <typename Container, typename Metric>
+double entropy(
+    const Container& data,
+    std::size_t k,
+    double logbase,
+    Metric metric,
+    bool exp
+) {
+    using T = type_traits::underlaying_type_t<Container>;
+    using V = type_traits::index_value_type_t<Container>;
 
     if (data.empty() || data[0].empty()) {
         return 0;
@@ -220,7 +171,7 @@ double entropy<recType, Metric>::operator()(
     double d = data[0].size();
 
     //add_noise(data); // TODO test
-    metric::Tree<Container, Metric> tree(data, -1, metric);
+    metric::Tree<V, Metric> tree(data, -1, metric);
 
     double entropyEstimate = 0;
     double log_sum = 0;
@@ -232,6 +183,8 @@ double entropy<recType, Metric>::operator()(
     entropyEstimate = entropyEstimate * d / (double)N; // mean log * d
     entropyEstimate += boost::math::digamma(N) - boost::math::digamma(k) + d*std::log(2.0);
 
+    // FIXME: really WTF? is this?
+    // if not chebyshev do this
     if constexpr (!std::is_same<Metric, typename metric::Chebyshev<T>>::value) {
         double p = 1; // Manhatten and other metrics (TODO check if it is correct for them!)
         if constexpr (std::is_same<Metric, typename metric::Euclidian<T>>::value) {
@@ -242,51 +195,24 @@ double entropy<recType, Metric>::operator()(
         entropyEstimate += d * std::log(std::tgamma(1 + 1 / p)) - std::log(std::tgamma(1 + d / p));
     }
     entropyEstimate /= std::log(logbase);
-    if (exp)
-        return metric::conv_diff_entropy(entropyEstimate); // conversion of values below 1 to exp scale
-    else
-        return entropyEstimate;
+    if (exp) {
+        entropyEstimate = metric::conv_diff_entropy(entropyEstimate); // conversion of values below 1 to exp scale
+    }
+
+    return entropyEstimate;
 }
-
-
-
-
-// averaged entropy estimation: code COPIED from mgc.*pp with only mgc replaced with entropy, TODO refactor to avoid code dubbing
-template <typename recType, typename Metric>
-template <typename Container>
-double entropy<recType, Metric>::estimate(
-        const Container & a,
-        const size_t sampleSize,
-        const double threshold,
-        size_t maxIterations,
-        std::size_t k,
-        double logbase,
-        Metric metric,
-        bool exp // TODO apply to returning value!
-        )
-{
-    return estimate_func<Container, entropy<recType, Metric>, Metric>(a, sampleSize, threshold, maxIterations, k, logbase, metric, exp);
-}
-
-
-
-
-
 
 
 // ----------------------------------- entropy_kpN
-
-template <typename recType, typename Metric>
-template <template <typename, typename> class OuterContainer, typename Container, typename OuterAllocator>
-double entropy_kpN<recType, Metric>::operator()(
-        const OuterContainer<Container, OuterAllocator> X,
-        Metric metric, // = Metric(),
-        size_t k, // = 7,
-        size_t p // = 70
-        ) const
-{
-    size_t n = X.size();
-    size_t d = X[0].size();
+template <typename Container, typename Metric>
+double entropy_kpN(
+    const Container& data,
+    size_t k, // = 7,
+    size_t p, // = 70,
+    Metric metric // = Metric(),
+){
+    size_t n = data.size();
+    size_t d = data[0].size();
 
     assert(p < n);
     assert(k < p);
@@ -294,7 +220,7 @@ double entropy_kpN<recType, Metric>::operator()(
     double h = 0;
     int got_results = 0;  // absents in Matlab original code
 
-    metric::Tree<Container, Metric> tree (X, -1, metric);
+    metric::Tree<Container, Metric> tree (data, -1, metric);
     blaze::DynamicMatrix<double> Nodes (p, d, 0);
     blaze::DynamicVector<double> mu (d, 0);
     blaze::DynamicVector<double> lb (d, 0);
@@ -302,7 +228,7 @@ double entropy_kpN<recType, Metric>::operator()(
     blaze::DynamicVector<double> x_vector (d, 0);
     for (size_t i = 0; i < n; ++i) {
 
-        auto res = tree.knn(X[i], p);
+        auto res = tree.knn(data[i], p);
         auto eps = res[k-1].second;
 
         blaze::reset(mu);
@@ -323,9 +249,9 @@ double entropy_kpN<recType, Metric>::operator()(
         blaze::reset(lb);
         blaze::reset(ub);
         for (size_t d_idx = 0; d_idx < d; ++d_idx) { // dimensions
-            lb[d_idx] = X[i][d_idx] - eps;
-            ub[d_idx] = X[i][d_idx] + eps;
-            x_vector[d_idx] = X[i][d_idx];
+            lb[d_idx] = data[i][d_idx] - eps;
+            ub[d_idx] = data[i][d_idx] + eps;
+            x_vector[d_idx] = data[i][d_idx];
         }
 
         auto g_local = epmgp::local_gaussian_axis_aligned_hyperrectangles<double>(mu, K, lb, ub);
@@ -339,42 +265,13 @@ double entropy_kpN<recType, Metric>::operator()(
 
     }
 
-    if (got_results > 20) // this absents in Matlab original code. TODO adjust min number of points
-        return boost::math::digamma(n) - boost::math::digamma(k) + h/n;
-    else
+    if (got_results <= 20) // this absents in Matlab original code. TODO adjust min number of points
         return std::nan("estimation failed");
+    return boost::math::digamma(n) - boost::math::digamma(k) + h/n;
 }
-
-
-
-// averaged entropy estimation: code COPIED from mgc.*pp with only mgc replaced with entropy, TODO refactor to avoid code dubbing
-template <typename recType, typename Metric>
-template <typename Container>
-double entropy_kpN<recType, Metric>::estimate(
-        const Container & a,
-        const size_t sampleSize,
-        const double threshold,
-        size_t maxIterations,
-        std::size_t k,
-        double logbase,
-        Metric metric,
-        bool exp // TODO apply to returning value!
-        )
-{
-    return estimate_func<Container, entropy_kpN<recType, Metric>, Metric>(a, sampleSize, threshold, maxIterations, k, logbase, metric, exp);
-}
-
-
-
-
-
 
 
 // ---------------------------------- estimators to be debugged
-
-
-
-
 // Kozachenko-Leonenko estimator based on https://hal.archives-ouvertes.fr/hal-00331300/document (Shannon diff. entropy,
 // q = 1)
 // WARNING: this estimator is sill under construction, it seems to have bugs and needs debugging
@@ -412,7 +309,6 @@ typename std::enable_if<!std::is_integral<typename Container::value_type>::value
 } // TODO debug!!
 
 
-
 // ported from Julia, not in use
 template <typename T>
 std::pair<std::vector<double>, std::vector<std::vector<T>>> pluginEstimator(const std::vector<std::vector<T>>& Y)
@@ -432,19 +328,7 @@ std::pair<std::vector<double>, std::vector<std::vector<T>>> pluginEstimator(cons
 }
 
 
-
-
-
-
-
-
-
-
 // ----------------------------------- old versiions
-
-
-
-
 /* // original version, erroneous
 
 // averaged entropy estimation: code COPIED from mgc.*pp with only mgc replaced with entropy, TODO refactor to avoid code dubbing

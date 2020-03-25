@@ -1,5 +1,5 @@
-#include "modules/correlation.hpp"
-#include "modules/distance.hpp"
+#include "modules/utils/graph.hpp"
+#include "modules/distance/k-related/Standards.hpp"
 #include <boost/mpl/vector.hpp>
 #include <typeindex>
 #include <vector>

@@ -161,8 +161,7 @@ template <typename C, typename Metric, typename T>
 typename std::enable_if_t<!type_traits::is_container_of_integrals_v<C>, T>
 variationOfInformation(const C& Xc, const C& Yc, int k, T logbase)
 {
-    auto e = entropy<void, Metric>();
-    return e(Xc, k, logbase) + e(Yc, k, logbase) // TODD probably metric metaparameters needed!
+    return entropy(Xc, k, logbase, Metric()) + entropy(Yc, k, logbase, Metric()) // TODD probably metric metaparameters needed!
         - 2 * mutualInformation<C>(Xc, Yc, k);
 }
 
@@ -171,10 +170,8 @@ typename std::enable_if_t<!type_traits::is_container_of_integrals_v<C>, T>
 variationOfInformation_normalized(
         const C& Xc, const C& Yc, int k, T logbase)
 {
-    using Cheb = metric::Chebyshev<T>;
     auto mi = mutualInformation<C>(Xc, Yc, k);
-    auto e = entropy<void, Cheb>();
-    return 1 - (mi / (e(Xc, k, logbase) + e(Yc, k, logbase) - mi));
+    return 1 - (mi / (entropy(Xc, k, logbase, metric::Chebyshev<T>()) + entropy(Yc, k, logbase, metric::Chebyshev<T>()) - mi));
 }
 
 template <typename V>
@@ -183,8 +180,7 @@ typename std::enable_if_t<!std::is_integral_v<El>, V>  // only real values are a
 VOI<V>::operator()(const C& a, const C& b) const
 {
     using Cheb = metric::Chebyshev<El>;
-    auto e = entropy<void, Cheb>();
-    return e(a, k, logbase) + e(b, k, logbase)
+    return entropy(a, k, logbase, Cheb()) + entropy(b, k, logbase, Cheb())
         - 2 * mutualInformation(a, b, k);
 }
 
@@ -194,9 +190,7 @@ typename std::enable_if_t<std::is_integral_v<El>, V>  // only real values are ac
 VOI<V>::operator()(const C& a, const C& b) const
 {
     using Cheb = metric::Chebyshev<El>;
-
-    auto e = entropy<void, Cheb>();
-    return e(a, k, logbase) + e(b, k, logbase)
+    return entropy(a, k, logbase, Cheb()) + entropy(b, k, logbase, Cheb())
         - 2 * mutualInformation(a, b, k);
 }
 
@@ -207,11 +201,10 @@ VOI_normalized<V>::operator()(const C& a, const C& b) const
 {
     using Cheb = metric::Chebyshev<El>;
     auto mi = mutualInformation(a, b, this->k);
-    auto e = entropy<void, Cheb>();
     return 1
         - (mi
-            / (e(a, this->k, this->logbase)
-                + e(b, this->k, this->logbase) - mi));
+            / (entropy(a, this->k, this->logbase, Cheb())
+                + entropy(b, this->k, this->logbase, Cheb()) - mi));
 }
 
 // VOI based on Kozachenko-Leonenko entropy estimator

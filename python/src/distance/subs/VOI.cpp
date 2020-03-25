@@ -7,7 +7,6 @@
 */
 
 #include "modules/distance/k-random/VOI.hpp"
-#include "../../metric_types.hpp"
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <pybind11/numpy.h>
@@ -15,7 +14,7 @@
 #include <string>
 
 namespace py = pybind11;
-
+//
 template<typename Value>
 void wrap_metric_VOI_kl(py::module& m) {
     using Metric = metric::VOI_kl<Value>;
@@ -45,13 +44,15 @@ void export_metric_VOI(py::module& m) {
 
 template <typename Container, typename Metric>
 void wrap_metric_entropy(py::module& m) {
-    using Value = double ;//typename Container::value_type::value_type;
-    std::string name = "entropy_" + getMetricName<Metric>();
-    m.def(name.c_str(), +[](const Container& data, std::size_t k = 3, Value logbase = 2) {
-            return metric::entropy<Container, Metric, Value>(data, k, logbase);
-        },
+    using Value = double ;
+    std::string name = "entropy";
+    m.def(name.c_str(), &metric::entropy<Container, Metric>,
         "Continuous entropy estimator",
-        py::arg("data"), py::arg("k") = 3, py::arg("logbase") = 2
+        py::arg("data"),
+        py::arg("k") = 3,
+        py::arg("logbase") = 2,
+        py::arg("metric") = Metric(),
+        py::arg("exp") = false
     );
 }
 
