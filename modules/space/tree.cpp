@@ -741,7 +741,7 @@ std::vector<recType> Tree<recType, Metric>::toVector()
     while (stack.size() > 0) {
         current = stack.top();
         stack.pop();
-        zipped.push_back(std::make_pair(current->data, current->ID));  // Add to dataset
+        zipped.push_back(std::make_pair(current->get_data(), current->ID));  // Add to dataset
         for (const auto& child : *current)
             stack.push(child);
     }
@@ -897,9 +897,9 @@ void Tree<recType, Metric>::print_(NodeType* node_p, std::ostream& ostr) const
 
 template <class recType, class Metric>
 auto Tree<recType, Metric>::get_all_nodes() -> std::vector<Node_ptr>
-{	
+{
 	std::vector<Node_ptr> all_nodes;
-	
+
 	all_nodes.push_back(root);
 	get_all_nodes_(root, all_nodes);
 
@@ -908,8 +908,8 @@ auto Tree<recType, Metric>::get_all_nodes() -> std::vector<Node_ptr>
 
 template <class recType, class Metric>
 void Tree<recType, Metric>::get_all_nodes_(Node_ptr node_p, std::vector<Node_ptr>& output)
-{	
-	for (std::size_t i = 0; i < node_p->children.size(); ++i) 
+{
+	for (std::size_t i = 0; i < node_p->children.size(); ++i)
 	{
 		output.push_back(node_p->children[i]);
 		get_all_nodes_(node_p->children[i], output);

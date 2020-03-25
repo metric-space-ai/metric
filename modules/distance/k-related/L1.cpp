@@ -15,7 +15,7 @@ namespace metric {
 // the UNFINISHED code for L1 metrics from the review papaer
 
 template <typename T>
-double sorensen(T& a, T& b)
+double sorensen(const T& a, const T& b)
 {
     double sum1 = 0;
     double sum2 = 0;
@@ -46,7 +46,7 @@ double sorensen(T& a, T& b)
 }
 
 template <typename Value>
-double sorensen(blaze::CompressedVector<Value>& a, blaze::CompressedVector<Value>& b)
+double sorensen(const blaze::CompressedVector<Value>& a, const blaze::CompressedVector<Value>& b)
 {
     double sum1 = 0;
     double sum2 = 0;

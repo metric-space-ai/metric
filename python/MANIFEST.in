@@ -1,0 +1,2 @@
+include src/*.py
+include CMakeLists.txt

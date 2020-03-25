@@ -1,0 +1,37 @@
+# action.yml
+name: 'Python wheels manylinux build'
+author: 'Jura Gresko'
+description: 'Build manylinux wheels for a Python package'
+inputs:
+  python-versions:
+    description: 'Python versions to target, space-separated'
+    required: true
+    default: 'cp36-cp36m cp37-cp37m cp38-cp38'
+  build-requirements:
+    description: 'pip packages required at build time, space-separated'
+    required: false
+    default: ''
+  system-packages:
+    description: 'yum packages to install, space-separated'
+    required: false
+    default: ''
+  package-path:
+    description: 'path to python package to build, relative to repository root'
+    required: false
+    default: ''
+  pip-wheel-args:
+    description: 'extra arguments to pass to the `pip wheel` command'
+    required: false
+    default: '--no-deps'
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+  args:
+    - ${{ inputs.python-versions }}
+    - ${{ inputs.build-requirements }}
+    - ${{ inputs.system-packages }}
+    - ${{ inputs.package-path }}
+    - ${{ inputs.pip-wheel-args}}
+branding:
+  icon: 'package'
+  color: 'green'

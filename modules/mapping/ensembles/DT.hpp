@@ -41,7 +41,7 @@ public:
      * @param response 
      */
     template <typename ConType, typename VariantType>
-    void train(ConType& payments, std::vector<VariantType>, std::function<int(const Record&)>& response);
+    void train(const ConType& payments, std::vector<VariantType> dimensions, std::function<int(const Record&)>& response);
 
     /**
      * @brief 
@@ -51,7 +51,7 @@ public:
      * @param predictions 
      */
     template <typename ConType, typename VariantType>
-    void predict(ConType& input_data, std::vector<VariantType> dimensions, std::vector<int>& predictions);
+    void predict(const ConType& input_data, std::vector<VariantType> dimensions, std::vector<int>& predictions);
 
 private:
     struct Node  // of the tree

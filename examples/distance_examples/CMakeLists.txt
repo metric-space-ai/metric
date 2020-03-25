@@ -19,11 +19,11 @@ include_directories(${Boost_INCLUDE_DIRS})
 file(COPY "assets" DESTINATION ".") 
 
 file(GLOB EXAMPLE_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.cpp) 
-find_package(JPEG) 
+find_package(JPEG)
 
 #Run through each source
 foreach(exampleSrc ${EXAMPLE_SRCS})
-	
+
 	#Extract the filename without an extension (NAME_WE)
 	get_filename_component(exampleName ${exampleSrc} NAME_WE)
 	if( ${exampleName} STREQUAL "earth_mover_distance_2_example")
@@ -44,9 +44,9 @@ foreach(exampleSrc ${EXAMPLE_SRCS})
 		target_compile_options(${exampleName} PRIVATE -pthread)
 		set_target_properties(${exampleName} PROPERTIES LINK_FLAGS -pthread) 
 		target_link_libraries(${exampleName} ${JPEG_LIBRARIES})
-	endif(UNIX) 
+	endif(UNIX)
         if(CMAKE_SYSTEM_NAME MATCHES Windows)
-	    target_link_libraries(earth_mover_distance_example ${PROJECT_SOURCE_DIR}/../../3rdparty/jpeglib/Release/jpeg.lib) 
+	    target_link_libraries(earth_mover_distance_example ${PROJECT_SOURCE_DIR}/../../3rdparty/jpeglib/Release/jpeg.lib)
 	endif()
 
 endforeach(exampleSrc)

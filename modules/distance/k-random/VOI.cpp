@@ -88,6 +88,17 @@ namespace {
 }  // namespace
 
 
+template <typename Container, typename Metric, typename L>
+double entropy(
+    const Container & data, std::size_t k, L logbase, const Metric & metric)
+{
+    using T_underlaying = type_traits::underlaying_type_t<Container>;
+    using T = type_traits::index_value_type_t<Container>;
+    if (data.size() == 0 || data[0].size() == 0) {
+        return 0;
+    }
+    if (data.size() < k + 1)
+        throw std::invalid_argument("number of points in dataset must be larger than k");
 
 
 template <typename Container, typename Metric>
@@ -103,10 +114,14 @@ mutualInformation(
     if (N < k + 1 || Yc.size() < k + 1)
         throw std::invalid_argument("number of points in dataset must be larger than k");
 
-    auto X = Xc;
-    auto Y = Yc;
-    //add_noise(X);
-    //add_noise(Y);
+    std::vector<std::vector<T>> X;
+    for (const auto& e: Xc)
+        X.push_back(std::vector<T>(std::begin(e), std::end(e)));
+
+    std::vector<std::vector<T>> Y;
+    for (const auto& e: Yc)
+        Y.push_back(std::vector<T>(std::begin(e), std::end(e)));
+
     std::vector<std::vector<T>> XY = combine(X, Y);
     metric::Tree<std::vector<T>, Metric> tree(XY, -1, metric);
     auto entropyEstimate = boost::math::digamma(k) + boost::math::digamma(N);
@@ -189,7 +204,7 @@ VOI<V>::operator()(const C& a, const C& b) const
 template <typename V>
 template <typename C, typename El>
 typename std::enable_if_t<std::is_integral_v<El>, V>  // only real values are accepted
-VOI<V>::operator()(const C& a, const C& b) const 
+VOI<V>::operator()(const C& a, const C& b) const
 {
     using Cheb = metric::Chebyshev<El>;
 
