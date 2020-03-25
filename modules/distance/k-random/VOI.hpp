@@ -10,34 +10,12 @@ Copyright (c) 2019 Panda Team
 #define _METRIC_DISTANCE_K_RANDOM_VOI_HPP
 
 #include "modules/distance/k-related/Standards.hpp"
+#include "modules/correlation/entropy.hpp"
 #include "modules/utils/type_traits.hpp"
-
 #include <type_traits>
 #include <vector>
 namespace metric {
-/**
- * @brief Continuous entropy estimator
- *
- * @param data
- * @param k
- * @param logbase
- * @param metric
- * @return value of entropy estimation of the data 
- */
-template<typename Container,
-         typename Metric = metric::Euclidian<type_traits::underlaying_type_t<Container>>,
-         typename L = double
-         >
-double entropy(const Container & data, std::size_t k = 3, L logbase = 2, const Metric & metric = Metric());
 
-/**
- * @brief
- *
- * @param Y
- * @return
- */
-template <typename Container, typename T = type_traits::underlaying_type_t<Container>>
-std::pair<std::vector<double>, std::vector<std::vector<T>>> pluginEstimator(const Container& Y);
 
 /**
  * @brief
@@ -170,6 +148,12 @@ struct VOI_normalized : VOI<V> {
 template <typename V>
 VOI_normalized(int, V)->VOI_normalized<double>;
 
+
+
+// functions based on Kozachenko-Leonenko entropy estimator
+// WARNING the entropy_kl estimator function used in functions declared below, is not finished and seems to have BUGS
+
+
 /**
  * @class VOI_kl
  * 
@@ -247,6 +231,9 @@ struct VOI_normalized_kl : VOI_kl<V> {
 // deduction guide for VOI_normalized_kl
 template <typename V>
 VOI_normalized_kl(int, V)->VOI_normalized_kl<double>;
+
+
+
 
 }  // namespace metric
 
