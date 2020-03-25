@@ -88,19 +88,6 @@ namespace {
 }  // namespace
 
 
-template <typename Container, typename Metric, typename L>
-double entropy(
-    const Container & data, std::size_t k, L logbase, const Metric & metric)
-{
-    using T_underlaying = type_traits::underlaying_type_t<Container>;
-    using T = type_traits::index_value_type_t<Container>;
-    if (data.size() == 0 || data[0].size() == 0) {
-        return 0;
-    }
-    if (data.size() < k + 1)
-        throw std::invalid_argument("number of points in dataset must be larger than k");
-
-
 template <typename Container, typename Metric>
 typename std::enable_if_t<!type_traits::is_container_of_integrals_v<Container>,
                           type_traits::underlaying_type_t<Container>>
@@ -219,7 +206,6 @@ typename std::enable_if_t<!std::is_integral_v<El>, V>  // only real values are a
 VOI_normalized<V>::operator()(const C& a, const C& b) const
 {
     using Cheb = metric::Chebyshev<El>;
-
     auto mi = mutualInformation(a, b, this->k);
     auto e = entropy<void, Cheb>();
     return 1
@@ -253,13 +239,6 @@ VOI_normalized_kl<V>::operator()(const C& a, const C& b) const
     auto mi = entropy_a + entropy_b - joint_entropy;
     return 1 - (mi / (entropy_a + entropy_b - mi));
 }
-
-
-
-
-
-
-
 
 }  // namespace metric
 #endif
