@@ -1,4 +1,4 @@
-from metric.distance import entropy
+from metric.distance import entropy, Euclidean, Manhatten
 import numpy
 
 

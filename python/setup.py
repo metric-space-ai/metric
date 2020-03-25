@@ -32,7 +32,10 @@ setuptools.setup(
     long_description=get_file_content('README.md'),
     long_description_content_type="text/markdown",
     url="https://github.com/panda-official/metric",
-    packages=setuptools.find_packages(),
+    packages=setuptools.find_packages(where='pkg'),
+    package_dir={
+        '': 'pkg',
+    },
     python_requires='>=3.6',
     install_requires=[],
     license='MPL v2.0',
