@@ -94,7 +94,21 @@ class Conv2d: public Layer<Scalar>
         {
 	        this->inputSize = inputChannels * inputWidth * inputHeight;
 	        this->outputSize = outputChannels * outputWidth * outputHeight;
+
+	        // Set data dimension
+	        const int kernelDataSize = inputChannels * outputChannels * kernelWidth * kernelHeight;
+
+	        kernelsData.resize(kernelDataSize);
+	        df_data.resize(kernelDataSize);
+
+	        // Bias term
+	        bias.resize(outputChannels);
+	        db.resize(outputChannels);
+
 	        isTranspose = false;
+
+	        calculateUnrolledKernelStructure();
+	        getUnrolledKernel();
         }
 
 		Conv2d(const nlohmann::json& json) : inputWidth(json["inputWidth"].get<int>()),
@@ -110,28 +124,30 @@ class Conv2d: public Layer<Scalar>
 
 			this->inputSize = inputChannels * inputWidth * inputHeight;
 			this->outputSize = outputChannels * outputWidth * outputHeight;
+
+			// Set data dimension
+			const int kernelDataSize = inputChannels * outputChannels * kernelWidth * kernelHeight;
+
+			kernelsData.resize(kernelDataSize);
+			df_data.resize(kernelDataSize);
+
+			// Bias term
+			bias.resize(outputChannels);
+			db.resize(outputChannels);
+
 			isTranspose = false;
+			calculateUnrolledKernelStructure();
+			getUnrolledKernel();
 		}
 
 	void init(const Scalar& mu, const Scalar& sigma, std::mt19937& rng)
 		{
-            // Set data dimension
-            const int kernelDataSize = inputChannels * outputChannels * kernelWidth * kernelHeight;
-
-            kernelsData.resize(kernelDataSize);
-            df_data.resize(kernelDataSize);
 
             // Random initialization of filter parameters
-            internal::set_normal_random(kernelsData.data(), kernelDataSize, rng, mu, sigma);
-
-
-            // Bias term
-            bias.resize(outputChannels);
-            db.resize(outputChannels);
+            internal::set_normal_random(kernelsData.data(), kernelsData.size(), rng, mu, sigma);
 
             internal::set_normal_random(bias.data(), outputChannels, rng, mu, sigma);
 
-            calculateUnrolledKernelStructure();
 			getUnrolledKernel();
 		}
 
@@ -375,11 +391,14 @@ class Conv2d: public Layer<Scalar>
 				throw std::invalid_argument("Parameter size does not match");
 			}*/
 
+			std::cout << parameters[0].size() << " " << kernelsData.size() << std::endl;
 			assert(parameters[0].size() == kernelsData.size());
 			assert(parameters[1].size() == bias.size());
 
 			std::copy(parameters[0].begin(), parameters[0].begin() + blaze::size(kernelsData), kernelsData.data());
 			std::copy(parameters[1].begin(), parameters[1].begin() + blaze::size(bias), bias.data());
+
+			getUnrolledKernel();
 		}
 
 		std::vector<Scalar> get_derivatives() const
