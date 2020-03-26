@@ -90,3 +90,27 @@ operations in real time. On the other hand, the METRIC | UTILS
 module also contains a nonlinear and nonparametric
 signifcance test for independent features (PMQ) of a
 metric space that were obtained by mapping.
+
+
+
+
+**Function Calls Cpp**
+
+| Module      | Constructor                                                                                            | ()-Operator                                                | Encode                                | Decode                                |
+|-------------|--------------------------------------------------------------------------------------------------------|------------------------------------------------------------|---------------------------------------|---------------------------------------|
+| Example     | auto functor = metric::myClass<data>(par1,[par_optional1, par_optional2]);                             | auto result = functor(dataA, dataB, par1, [par_optional]); | auto result1 = functor.encode(dataA); | auto result2 = functor.decode(dataB); |
+| Correlation | auto functor = MGC<None, metric::Euclidean<double>, None, metric::Euclidean<double>>(metric1, metric2) | auto result = functor(dataA, dataB)                        | -                                     | -                                     |
+| Distance    | auto functor = metric::VOI_kl(3, 2);                                                                   | auto result = functor(dataA, dataB)                        | -                                     | -                                     |
+| Distance    | auto functor = metric::VOI_kl<double>(3, 2);                                                           | auto result = functor(dataA, dataB)                        | -                                     | -                                     |
+| Distance    | auto functor = metric::sorensen                                                                        | auto result = functor(dataA, dataB)                        | -                                     | -                                     |
+| Distance    | auto functor = metric::Euclidean<double>()                                                             | auto result = functor(dataA, dataB)                        | -                                     | -                                     |
+| Distance    | auto functor = metric::Manhatten<double>()                                                             | auto result = functor(dataA, dataB)                        | -                                     | -                                     |
+| Distance    | auto functor = metric::P_norm<double>(1)                                                               | auto result = functor(dataA, dataB)                        | -                                     | -                                     |
+| Distance    | auto functor = metric::Euclidean_thresholded<double>(1, 3)                                             | auto result = functor(dataA, dataB)                        | -                                     | -                                     |
+| Distance    | auto functor = metric::Cosine<double>()                                                                | auto result = functor(dataA, dataB)                        | -                                     | -                                     |
+| Distance    | auto functor = metric::Chebyshev<double>()                                                             | auto result = functor(dataA, dataB)                        | -                                     | -                                     |
+| Distance    | auto functor = metric::EMD<double>(cost_mat, max_cost)                                                 | auto result = functor(dataA, dataB)                        | -                                     | -                                     |
+| Distance    | auto functor = metric::Edit<char>                                                                      | auto result = functor("asdsd", "dffdf")                    |                                       |                                       |
+| Distance    | auto functor = metric::SSIM<double, std::vector<double>>(100, 1)                                       | auto result = functor(img1, img2)                          |                                       |                                       |
+| Distance    | auto functor = metric::TWED<double>(1, 2)                                                              | auto result = functor(dataA, dataB)                        |                                       |                                       |
+| Distance    | auto functor = metric::entropy<std::vector<std::vector<double>>, Manhatten<double>>                    | auto result = functor(dataA)                               |                                       |                                       |
