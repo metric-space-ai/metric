@@ -109,6 +109,27 @@ namespace metric {
         return result;
     }
 
+    void get_min_values_indices_on_columns(blaze::DynamicMatrix<double> input, blaze::DynamicVector<int>& output)
+    {
+        output.reset();
+        output.resize(input.rows());
+        for (int i = 0; i < input.rows(); i++) {
+            double min = 0;
+            for (int j = 0; j < input.columns(); j++) {
+                if (j == 0) {
+                    output[i] = 0;
+                    min = input(i, j);
+                }
+                else {
+                    if (input(i, j) < min) {
+                        min = input(i, j);
+                        output[i] = j;
+                    }
+                }
+            }
+        }
+    }
+
     int perform_graph_partition(blaze::DynamicMatrix<double> distance_matrix, blaze::DynamicMatrix<int>& partition_matrix,
         int global_optimum_attempts, int processing_chunk_size, __int64 random_seed)
     {
@@ -253,23 +274,7 @@ namespace metric {
 
                     rw = rw.transpose();
 
-                    ff.reset();
-                    ff.resize(rw.rows());
-                    for (int i = 0; i < rw.rows(); i++) {
-                        double min = 0;
-                        for (int j = 0; j < rw.columns(); j++) {
-                            if (j == 0) {
-                                ff[i] = 0;
-                                min = rw(i, j);
-                            }
-                            else {
-                                if (rw(i, j) < min) {
-                                    min = rw(i, j);
-                                    ff[i] = j;
-                                }
-                            }
-                        }
-                    }
+                    get_min_values_indices_on_columns(rw, ff);
 
                     blaze::DynamicVector<double> aux_table(n1);
                     for (int i = 0; i < n1; i++) {
