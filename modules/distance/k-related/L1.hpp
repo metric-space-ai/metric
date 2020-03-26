@@ -20,7 +20,7 @@ namespace metric {
  * @return
  */
 template <typename T>
-double sorensen(T& a, T& b);
+double sorensen(const T& a, const T& b);
 
 /**
  * @brief
@@ -30,7 +30,7 @@ double sorensen(T& a, T& b);
  * @return
  */
 template <typename Value>
-double sorensen(blaze::CompressedVector<Value>& a, blaze::CompressedVector<Value>& b);
+double sorensen(const blaze::CompressedVector<Value>& a, const blaze::CompressedVector<Value>& b);
 
 }  // namespace metric
 

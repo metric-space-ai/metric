@@ -4,10 +4,10 @@
 
 //#include "../../modules/transform.hpp"
 //#include "transform/wavelet.hpp"
-#include "../../modules/transform/wavelet.hpp"
+#include "modules/transform/wavelet.hpp"
 
 #include "assets/helpers.cpp"
-#include "../../modules/utils/visualizer.hpp"
+#include "modules/utils/visualizer.hpp"
 
 //#include "transform/helper_functions.cpp" // TODO remove
 

@@ -1,0 +1,39 @@
+name: Python package build
+on:
+  push:
+    branches:
+      - issue_35
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: recursive
+    - name: Set up Python
+      uses: actions/setup-python@v1
+      with:
+        python-version: 3.8
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install twine flake8
+    - name: Lint with flake8 for syntax errors
+      run: |
+        pip install flake8
+        flake8 ./python --count --select=E9,F63,F7,F82 --show-source --statistics
+        flake8 ./python --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+    - name: Build manylinux Python wheels
+      uses: ./.github/actions/build-manylinux
+      with:
+        python-versions: 'cp36-cp36m cp37-cp37m cp38-cp38'
+        system-packages: 'cmake3 openblas-devel boost-devel devtoolset-9'
+        build-requirements: 'auditwheel==3.1.0'
+        package-path: './python/'
+    - name: Publish wheels to PyPI
+      env:
+        TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
+        TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+      run: |
+        twine upload --repository-url https://test.pypi.org/legacy/ wheelhouse/*-manylinux*.whl

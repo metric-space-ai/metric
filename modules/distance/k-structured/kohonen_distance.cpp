@@ -27,7 +27,7 @@ kohonen_distance<D, Sample, Graph, Metric, Distribution>::kohonen_distance(metri
 	
 
 template <typename D, typename Sample, typename Graph, typename Metric, typename Distribution>
-kohonen_distance<D, Sample, Graph, Metric, Distribution>::kohonen_distance(const std::vector<Sample>& samples, size_t nodesWidth, size_t nodesHeight) : 
+kohonen_distance<D, Sample, Graph, Metric, Distribution>::kohonen_distance(const std::vector<Sample>& samples, size_t nodesWidth, size_t nodesHeight) :
 	som_model_(Graph(nodesWidth, nodesHeight), Metric(), 0.8, 0.2, 20)
 {
 	som_model_.train(samples);
@@ -37,7 +37,7 @@ kohonen_distance<D, Sample, Graph, Metric, Distribution>::kohonen_distance(const
 	
 
 template <typename D, typename Sample, typename Graph, typename Metric, typename Distribution>
-kohonen_distance<D, Sample, Graph, Metric, Distribution>::kohonen_distance(const std::vector<Sample>& samples, Graph graph, Metric metric, 
+kohonen_distance<D, Sample, Graph, Metric, Distribution>::kohonen_distance(const std::vector<Sample>& samples, Graph graph, Metric metric,
 	double start_learn_rate, double finish_learn_rate, size_t iterations, Distribution distribution) : 
 	som_model_(graph, metric, start_learn_rate, finish_learn_rate, iterations, distribution)
 {
@@ -63,10 +63,10 @@ void kohonen_distance<D, Sample, Graph, Metric, Distribution>::calculate_distanc
 {
 	std::vector<Sample> nodes = som_model_.get_weights();
     Metric distance;
-		
+
 	auto matrix = som_model_.get_graph().get_matrix();
 	blaze::CompressedMatrix<D> blaze_matrix(matrix.rows(),  matrix.columns());
-	for (size_t i = 0; i < matrix.rows(); ++i) 
+	for (size_t i = 0; i < matrix.rows(); ++i)
 	{
 		for (size_t j = i + 1; j < matrix.columns(); ++j) 
 		{
@@ -77,7 +77,7 @@ void kohonen_distance<D, Sample, Graph, Metric, Distribution>::calculate_distanc
 			}
 		}
 	}
-		
+
 	std::vector<D> distances;
 	std::vector<int> predecessor;
 	for (auto i = 0; i < nodes.size(); i++)
@@ -95,12 +95,12 @@ void kohonen_distance<D, Sample, Graph, Metric, Distribution>::print_shortest_pa
     if(to_node == from_node)
 	{
 		std::cout << to_node << " -> ";
-    } 
+    }
 	else if(predecessors_[from_node][to_node] == -1)
 	{
         std::cout << "No path from " << from_node << " to " << to_node << std::endl;
-    } 
-	else 
+    }
+	else
 	{
         print_shortest_path(from_node,  predecessors_[from_node][to_node]);
         std::cout << to_node << " -> ";
@@ -113,9 +113,9 @@ int kohonen_distance<D, Sample, Graph, Metric, Distribution>::get_closest_unmark
 {
     D minDistance = INFINITY;
     int closestUnmarkedNode = -1;
-    for(int i = 0; i < nodes_count; i++) 
+    for(int i = 0; i < nodes_count; i++)
 	{
-        if( (!mark[i]) && (minDistance >= distance[i]) ) 
+        if( (!mark[i]) && (minDistance >= distance[i]) )
 		{
             minDistance = distance[i];
             closestUnmarkedNode = i;
@@ -130,11 +130,11 @@ std::tuple<std::vector<D>, std::vector<int>> kohonen_distance<D, Sample, Graph, 
 {
     std::vector<bool> mark(nodes_count);
     std::vector<D> distances(nodes_count);
-    std::vector<int> predecessor(nodes_count);	
+    std::vector<int> predecessor(nodes_count);
 
-	// initialize 
+	// initialize
 
-    for(int i = 0; i < nodes_count; i++) 
+    for(int i = 0; i < nodes_count; i++)
 	{
         mark[i] = false;
         predecessor[i] = -1;
@@ -146,7 +146,7 @@ std::tuple<std::vector<D>, std::vector<int>> kohonen_distance<D, Sample, Graph, 
 
     int closestUnmarkedNode;
     int count = 0;
-    while(count < nodes_count) 
+    while(count < nodes_count)
 	{
         closestUnmarkedNode = get_closest_unmarked_node(distances, mark, nodes_count);
 		mark[closestUnmarkedNode] = true;
@@ -154,7 +154,7 @@ std::tuple<std::vector<D>, std::vector<int>> kohonen_distance<D, Sample, Graph, 
 		{
 			if (!mark[i] && adjust_matrix(closestUnmarkedNode, i) > 0)
 			{
-				if (distances[i] > distances[closestUnmarkedNode] + adjust_matrix(closestUnmarkedNode, i)) 
+				if (distances[i] > distances[closestUnmarkedNode] + adjust_matrix(closestUnmarkedNode, i))
 				{
 					distances[i] = distances[closestUnmarkedNode] + adjust_matrix(closestUnmarkedNode, i);
 					predecessor[i] = closestUnmarkedNode;

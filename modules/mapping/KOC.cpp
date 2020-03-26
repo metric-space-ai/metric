@@ -163,21 +163,11 @@ namespace metric {
 		}
 
 		template <class recType, class Graph, class Metric, class Distribution>
-		std::tuple<std::vector<int>, std::vector<recType>, std::vector<int>> KOC<recType, Graph, Metric, Distribution>::clusterize_nodes(int num_clusters, int min_cluster_size)
+		std::tuple<std::vector<int>, std::vector<int>, std::vector<int>> KOC<recType, Graph, Metric, Distribution>::clusterize_nodes(int num_clusters, int min_cluster_size)
 		{
 			int current_min_cluster_size = -1;
 
 			auto nodes_data = som_.get_weights();
-
-			std::string metric_name = "euclidian";
-			if (typeid(Metric) == typeid(metric::CosineInverted<typename Metric::value_type>))
-			{
-				metric_name = "cosine_inverted";
-			}
-			else if (typeid(Metric) == typeid(metric::Manhatten<typename Metric::value_type>))
-			{
-				metric_name = "manhatten";
-			}
 
 			if (min_cluster_size > nodes_data.size())
 			{
@@ -188,7 +178,8 @@ namespace metric {
 			{
 				// clustering on the reduced data
 				
-				auto [assignments, exemplars, counts] = metric::kmeans(nodes_data, num_clusters, iterations_, metric_name, random_seed_);
+				metric::Matrix<recType, Metric> matrix(nodes_data);
+				auto[assignments, seeds, counts] = metric::kmedoids(matrix, num_clusters);
 
 				std::vector<int>::iterator result = std::min_element(counts.begin(), counts.end());
 				current_min_cluster_size = counts[std::distance(counts.begin(), result)];
@@ -222,11 +213,11 @@ namespace metric {
 						assignments[i]++;
 					}
 
-					return { assignments, exemplars, counts };
+					return { assignments, seeds, counts };
 				}
 			}
 
-			return { std::vector<int>(), std::vector<recType>(), std::vector<int>() };
+			return { std::vector<int>(), std::vector<int>(), std::vector<int>() };
 		}
 
 		template <class recType, class Graph, class Metric, class Distribution>

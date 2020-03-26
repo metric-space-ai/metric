@@ -29,6 +29,7 @@ Copyright (c) 2018 M.Welsch
 #include <string>
 #include <random>
 #include <cassert>
+#include <algorithm>
 #include "../distance/k-related/Standards.hpp"
 namespace metric {
 
@@ -228,6 +229,7 @@ std::tuple<std::vector<int>, std::vector<std::vector<T>>, std::vector<int>> kmea
     int t = 0;
     int updated_number_of_means = 0;
     std::vector<int> counts(k, int(0));
+	
     do {
         kmeans_details::update_assignments(assignments, data, means, distance_measure);
         auto [updated_counts, updated_number_of_means] = kmeans_details::update_means(means, data, assignments, k);

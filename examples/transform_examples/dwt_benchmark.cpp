@@ -5,7 +5,7 @@
 #include <random>
 
 //#include "transform/wavelet.hpp"
-#include "../../modules/transform/energy_encoder.cpp"
+#include "modules/transform/energy_encoder.cpp"
 
 
 template <typename T>
