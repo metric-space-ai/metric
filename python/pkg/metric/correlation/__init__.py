@@ -1,2 +1,2 @@
-from .mgc import MGC, MGC_direct
-from _correlation import entropy
+from _mgc import MGC, MGC_direct
+from _entropy import entropy

@@ -42,3 +42,8 @@ void export_metric_entropy(py::module& m) {
     wrap_metric_entropy<Container, metric::P_norm<Value>>(m);
     wrap_metric_entropy<Container, std::function<double(const RecType&, const RecType&)>>(m);
 }
+
+
+PYBIND11_MODULE(_entropy, m) {
+    export_metric_entropy(m);
+}

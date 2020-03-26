@@ -23,23 +23,29 @@ template <class ValueType, class Metric1, class Metric2>
 void wrap_metric_MGC(py::module& m) {
     using namespace metric::MGC;
     using Container = std::vector<std::vector<ValueType>>;
-    m.def("correlation", &correlation<Container, Metric1, Container, Metric2>,
-//        "Multiscale Graph Correlation between a and b",
+
+//    double (*corr_ptr)(const Container&, const Container&, const Metric1&, const Metric2&)
+    auto corr_ptr = &correlation<Container, Metric1, Container, Metric2>;
+    m.def("correlation", corr_ptr,
+        "Multiscale Graph Correlation between a and b",
         py::arg("a"),
         py::arg("b"),
         py::arg("metric1"),
         py::arg("metric2")
     );
-    m.def("xcorr", &xcorr<Container, Metric1, Container, Metric2>,
-//        "Return vector of MGC values calculated for different data shifts",
+
+    auto xcorr_ptr = &xcorr<Container, Metric1, Container, Metric2>;
+    m.def("xcorr", xcorr_ptr,
+        "Return vector of MGC values calculated for different data shifts",
         py::arg("a"),
         py::arg("b"),
         py::arg("metric1"),
         py::arg("metric2"),
         py::arg("n")
     );
-    m.def("estimate", &estimate<Container, Container>,
-//        "Estimate of the correlation between a and b",
+    auto estimate_ptr = &estimate<Container, Container>;
+    m.def("estimate", estimate_ptr,
+        "Estimate of the correlation between a and b",
         py::arg("a"),
         py::arg("b"),
         py::arg("correlation"),
@@ -106,4 +112,9 @@ void export_metric_MGC(py::module& m)
     wrap_metric_MGC<T, metric::P_norm<T>, metric::P_norm<T>>(mgc);
 
     wrap_metric_MGC_direct<T>(m);
+}
+
+
+PYBIND11_MODULE(_mgc, m) {
+    export_metric_MGC(m);
 }

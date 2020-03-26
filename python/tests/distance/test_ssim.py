@@ -1,5 +1,9 @@
+import numpy
 from metric.distance import SSIM
-from examples.distance.test_data import img1, img2
+
+
+img1 = numpy.loadtxt('test_data/img1.csv')
+img2 = numpy.loadtxt('test_data/img1.csv')
 
 
 def test_distance():
