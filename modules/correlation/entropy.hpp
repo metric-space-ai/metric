@@ -19,6 +19,8 @@ Copyright (c) 2019 Panda Team
 namespace metric {
 
 
+//namespace entropy {
+
 
 template <typename recType, typename Metric = metric::Euclidian<typename recType::value_type>>
 struct entropy { // averaged entropy estimation: code COPIED from mgc.*pp with only mgc replaced with entropy, TODO refactor to avoid code dubbing
@@ -101,6 +103,7 @@ template <typename T>
 std::pair<std::vector<double>, std::vector<std::vector<T>>> pluginEstimator(const std::vector<std::vector<T>>& Y);
 
 
+//} // namespace entropy
 
 } // namespace metric
 

@@ -23,7 +23,6 @@ Copyright (c) 2019 Panda Team
 //#include <boost/math/special_functions/gamma.hpp>
 
 #include "../../space/tree.hpp"
-//#include "estimator_helpers.cpp"
 #include "VOI.hpp"
 
 namespace metric {

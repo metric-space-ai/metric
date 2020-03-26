@@ -192,7 +192,7 @@ int main() {
     auto rf_voi = metric::VOI<double>();
     std::cout << "using VOI: " << rf_voi(urv, urv2) << std::endl;
 
-    std::cout << "conv test " << metric::conv_diff_entropy_inv(metric::conv_diff_entropy(-0.118)) << std::endl;
+    std::cout << "conv test " << metric::entropy_details::conv_diff_entropy_inv(metric::entropy_details::conv_diff_entropy(-0.118)) << std::endl;
 
 
 
