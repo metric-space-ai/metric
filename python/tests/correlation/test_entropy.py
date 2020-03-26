@@ -1,4 +1,5 @@
-from metric.distance import entropy, Euclidean, Manhatten, Chebyshev, P_norm
+from metric.distance import Euclidean, Manhatten, Chebyshev, P_norm
+from mteric.correlation import entropy
 import numpy
 import math
 

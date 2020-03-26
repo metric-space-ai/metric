@@ -10,7 +10,9 @@
 namespace py = pybind11;
 
 void export_metric_MGC(py::module& m);
+void export_metric_entropy(py::module& m);
 
 PYBIND11_MODULE(_correlation, m) {
     export_metric_MGC(m);
+    export_metric_entropy(m);
 }
