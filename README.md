@@ -135,44 +135,43 @@ Mapping|kmedios.hpp|kmedios|auto functor = metric::kmedoids<std::vector<double>>
 Utiils|crossfilter.hpp|dimension| | 
  
  
-**Function Calls Python**
+**FUNCTION CALLS PYTHON**
 
-| Module      | Constructor                                                                                | ()-Operator                                               | Encode                          | Decode                          |
-|-------------|--------------------------------------------------------------------------------------------|-----------------------------------------------------------|---------------------------------|---------------------------------|
-| Example     | functor = myClass(data, par1 ,[par_optional1, par_optional2])                              | result = functor(dataA, dataB, par1, [par_optional])      | result1 = functor.encode(dataA) | result2 = functor.decode(dataB) |
-| Correlation | functor = partial(correlation.MGC, metric1=metric.Euclidean(), metric2=metric.Euclidean()) | auto result = functor(dataA, dataB)                       | -                               | -                               |
-| Distance    | functor = distance.VOI(k=3, logbase=2)                                                     | result = functor(dataA, dataB)                            | -                               | -                               |
-| Distance    | functor = distance.VOI(k=3, logbase=2)                                                     | result = functor(dataA, dataB)                            | -                               | -                               |
-| Distance    | functor = distance.sorensen                                                                | result = functor(dataA, dataB)                            | -                               | -                               |
-| Distance    | functor = distance.Euclidean()                                                             | result = functor(dataA, dataB)                            | -                               | -                               |
-| Distance    | functor = distance.Manhatten()                                                             | result = functor(dataA, dataB)                            | -                               | -                               |
-| Distance    | functor = distance.P_norm(p=1)                                                             | result = functor(dataA, dataB)                            | -                               | -                               |
-| Distance    | functor = distance.Euclidean_thresholded(thres=1, factor=3)                                | result = functor(dataA, dataB)                            | -                               | -                               |
-| Distance    | functor = distance.Cosine()                                                                | result = functor(dataA, dataB)                            | -                               | -                               |
-| Distance    | functor = distance.Chebyshev()                                                             | result = functor(dataA, dataB)                            | -                               | -                               |
-| Distance    | functor = distance.EMD(cost_mat, max_cost)                                                 | result = functor(dataA, dataB)                            | -                               | -                               |
-| Distance    | functor = distance.Edit()                                                                  | result = functor("asdsd", "dffdf")                        | -                               | -                               |
-| Distance    | functor = distance.SSIM(dynamic_range=100, masking=1)                                      | result = functor(img1, img2)                              | -                               | -                               |
-| Distance    | functor = distance.TWED(penalty=1, elastic=2)                                              | result = functor(dataA, dataB)                            | -                               | -                               |
-| Distance    | functor = partial(distance.entropy, metric=Manhatten(), k=3, logbase=20)                   | result = functor(dataA)                                   | -                               | -                               |
-| Distance    | functor = distance.Kohonen(train_data, w, h)                                               | result = functor(sample1, sample2)                        |                                 |                                 |
-| Mapping     | functor = mapping.DSPCC(dataset, n_features=1)                                             | -                                                         | functor.encode(data)            | result = functor.decode(codes)  |
-| Mapping     | functor = mapping.KOC_factory(w, h)                                                        | koc = functor(samples, num_clusters)                      |                                 |                                 |
-| Mapping     | -                                                                                          | -                                                         | result = functor.encode(sample) | result = functor.decode(sample) |
-| Mapping     | functor = mapping.dbscan                                                                   | assignments, seeds, counts = functor(matrix, eps, minpts) | -                               | -                               |
-| Space       | functor = space.Matrix(data, Euclidean())                                                  | result = functor(i, j)                                    | -                               | -                               |
-| Space       | -                                                                                          | -                                                         | -                               | -                               |
-| Transform   | functor = partial(transform.dwt, wavelet_type=3)                                           | result = functor(a)                                       | -                               | -                               |
-| Transform   | functor = partial(transform.idwt, wavelet_type=1, lx=3)                                    | result = functor(a, b)                                    | -                               | -                               |
-| Transform   | functor = partial(transform.wmaxlev, wavelet_type=t)                                       | result = functor(size_x)                                  | -                               | -                               |
-| Utils       | functor = partial(utils.sparsify_effective_resistance, ep=0.1)                             | result = functor(data)                                    | -                               | -                               |
-| Utils       | functor = partial(utils.sparsify_spanning_tree, minimum=False)                             | result = functor(data)                                    | -                               | -                               |
-| Utils       |                                                                                            |                                                           |                                 |                                 |
-| Mapping     | functor = partial(mapping.ESN(w_size=400).train(slices, target).predict)                   | result = functor(slices)                                  | -                               | -                               |
-| Mapping     | functor = partial(mapping.affprop, preference=1.0, maxiter=100)                            | result = functor(data)                                    | -                               | -                               |
-| Mapping     | -                                                                                          | -                                                         | -                               | -                               |
-| Mapping     | -                                                                                          | -                                                         | -                               | -                               |
-| Mapping     | functor = partial(mapping.kmeans, maxiter=100, distance_measure='manhatten')               | result = functor(data, k)                                 | -                               | -                               |
-| Mapping     | functor = mapping.kmedoids                                                                 | result = functor(data, k)                                 | -                               | -                               |
-| Utils       | -                                                                                          | -                                                         | -                               | -                               |
-| Mapping     | -                                                                                          | -                                                         | -                               | -                               |
+**Module**|**File**|**Class**|**Constructor**|**()-Operator**|**Encode**|**Decode**
+:-----:|:-----:|:-----:|:-----:|:-----:|:-----:|:-----:
+Example|myFile.hpp|myClass|functor = myClass(data, par1 ,[par\_optional1, par\_optional2])|result = functor(dataA, dataB, par1, [par\_optional])|result1 = functor.encode(dataA)|result2 = functor.decode(dataB)
+Correlation|mgc.hpp|MGC|functor = partial(correlation.MGC, metric1=metric.Euclidean(), metric2=metric.Euclidean())|auto result = functor(dataA, dataB)|-|-
+Distance|VOI.hpp|VOI\_kl|functor = distance.VOI(k=3, logbase=2)|result = functor(dataA, dataB)|-|-
+Distance|VOI.hpp|VOI\_normalized|functor = distance.VOI(k=3, logbase=2)|result = functor(dataA, dataB)|-|-
+Distance|L1.hpp|sorensen|functor = distance.sorensen|result = functor(dataA, dataB)|-|-
+Distance|Standards.hpp|Euclidean|functor = distance.Euclidean()|result = functor(dataA, dataB)|-|-
+Distance|Standards.hpp|Manhatten|functor = distance.Manhatten()|result = functor(dataA, dataB)|-|-
+Distance|Standards.hpp|P\_norm|functor = distance.P\_norm(p=1)|result = functor(dataA, dataB)|-|-
+Distance|Standards.hpp|Euclidean\_threshold|functor = distance.Euclidean\_thresholded(thres=1, factor=3)|result = functor(dataA, dataB)|-|-
+Distance|Standards.hpp|Cosine|functor = distance.Cosine()|result = functor(dataA, dataB)|-|-
+Distance|Standards.hpp|Chebyshev|functor = distance.Chebyshev()|result = functor(dataA, dataB)|-|-
+Distance|EMD.hpp|EMD|functor = distance.EMD(cost\_mat, max\_cost)|result = functor(dataA, dataB)|-|-
+Distance|Edit.hpp|Edit|functor = distance.Edit()|result = functor("asdsd", "dffdf")|-|-
+Distance|SSIM.hpp|SSIM|functor = distance.SSIM(dynamic\_range=100, masking=1)|result = functor(img1, img2)|-|-
+Distance|TWED.hpp|TWED|functor = distance.TWED(penalty=1, elastic=2)|result = functor(dataA, dataB)|-|-
+Distance|VOI.hpp|entropy|functor = partial(distance.entropy, metric=Manhatten(), k=3, logbase=20)|result = functor(dataA)|-|-
+Distance|kohonen\_distance.hpp|kohonen\_distance|functor = distance.Kohonen(train\_data, w, h)|result = functor(sample1, sample2)| | 
+Mapping|DSPCC.hpp|DSPCC|functor = mapping.DSPCC(dataset, n\_features=1)|-|functor.encode(data)|result = functor.decode(codes)
+Mapping|KOC.hpp|KOC|functor = mapping.KOC\_factory(w, h)(samples, num\_clusters)|-|-|-
+Mapping|autoencoder.hpp|Autoencoder|-|-|result = functor.encode(sample)|result = functor.decode(sample)
+Mapping|dbscan.hpp|dbscan|functor = mapping.dbscan|assignments, seeds, counts = functor(matrix, eps, minpts)|-|-
+Space|matrix.hpp|Matrix|functor = space.Matrix(data, Euclidean())|result = functor(i, j)|-|-
+Space|tree.hpp|Tree|-|-|-|-
+Transform|wavelet\_new.hpp|dwt|functor = partial(transform.dwt, wavelet\_type=3)|result = functor(a)|-|-
+Transform|wavelet\_new.hpp|idwt|functor = partial(transform.idwt, wavelet\_type=1, lx=3)|result = functor(a, b)|-|-
+Transform|wavelet\_new.hpp|wmaxlev|functor = partial(transform.wmaxlev, wavelet\_type=t)|result = functor(size\_x)|-|-
+Utils|sparsify.hpp|sparsify\_effective\_resistance|functor = partial(utils.sparsify\_effective\_resistance, ep=0.1)|result = functor(data)|-|-
+Utils|sparsify.hpp|sparsify\_spanning\_tree|functor = partial(utils.sparsify\_spanning\_tree, minimum=False)|result = functor(data)|-|-
+Mapping|ESN.hpp|ESN|functor = partial(mapping.ESN(w\_size=400).train(slices, target).predict)|result = functor(slices)|-|-
+Mapping|affprop.hpp|affprop|functor = partial(mapping.affprop, preference=1.0, maxiter=100)|result = functor(data)|-|-
+Mapping|ensembles.hpp|Boosting|-|-|-|-
+Mapping|ensembles.hpp|Bagging|-|-|-|-
+Mapping|kmeans.hpp|kmeans|functor = partial(mapping.kmeans, maxiter=100, distance\_measure='manhatten')|result = functor(data, k)|-|-
+Mapping|kmedios.hpp|kmedios|functor = mapping.kmedoids|result = functor(data, k)|-|-
+Utils|crossfilter.hpp|dimension|-|-|-|-
+Mapping|DT.hpp|DT|-|-|-|-
