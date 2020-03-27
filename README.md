@@ -94,27 +94,47 @@ metric space that were obtained by mapping.
 
 
 
-**Function Calls Cpp**
+**FUNCTION CALLS C++**
 
-| Module      | Constructor                                                                                            | ()-Operator                                                | Encode                                | Decode                                |
-|-------------|--------------------------------------------------------------------------------------------------------|------------------------------------------------------------|---------------------------------------|---------------------------------------|
-| Example     | auto functor = metric::myClass<data>(par1,[par_optional1, par_optional2]);                             | auto result = functor(dataA, dataB, par1, [par_optional]); | auto result1 = functor.encode(dataA); | auto result2 = functor.decode(dataB); |
-| Correlation | auto functor = MGC<None, metric::Euclidean<double>, None, metric::Euclidean<double>>(metric1, metric2) | auto result = functor(dataA, dataB)                        | -                                     | -                                     |
-| Distance    | auto functor = metric::VOI_kl(3, 2);                                                                   | auto result = functor(dataA, dataB)                        | -                                     | -                                     |
-| Distance    | auto functor = metric::VOI_kl<double>(3, 2);                                                           | auto result = functor(dataA, dataB)                        | -                                     | -                                     |
-| Distance    | auto functor = metric::sorensen                                                                        | auto result = functor(dataA, dataB)                        | -                                     | -                                     |
-| Distance    | auto functor = metric::Euclidean<double>()                                                             | auto result = functor(dataA, dataB)                        | -                                     | -                                     |
-| Distance    | auto functor = metric::Manhatten<double>()                                                             | auto result = functor(dataA, dataB)                        | -                                     | -                                     |
-| Distance    | auto functor = metric::P_norm<double>(1)                                                               | auto result = functor(dataA, dataB)                        | -                                     | -                                     |
-| Distance    | auto functor = metric::Euclidean_thresholded<double>(1, 3)                                             | auto result = functor(dataA, dataB)                        | -                                     | -                                     |
-| Distance    | auto functor = metric::Cosine<double>()                                                                | auto result = functor(dataA, dataB)                        | -                                     | -                                     |
-| Distance    | auto functor = metric::Chebyshev<double>()                                                             | auto result = functor(dataA, dataB)                        | -                                     | -                                     |
-| Distance    | auto functor = metric::EMD<double>(cost_mat, max_cost)                                                 | auto result = functor(dataA, dataB)                        | -                                     | -                                     |
-| Distance    | auto functor = metric::Edit<char>                                                                      | auto result = functor("asdsd", "dffdf")                    |                                       |                                       |
-| Distance    | auto functor = metric::SSIM<double, std::vector<double>>(100, 1)                                       | auto result = functor(img1, img2)                          |                                       |                                       |
-| Distance    | auto functor = metric::TWED<double>(1, 2)                                                              | auto result = functor(dataA, dataB)                        |                                       |                                       |
-| Distance    | auto functor = metric::entropy<std::vector<std::vector<double>>, Manhatten<double>>                    | auto result = functor(dataA)                               |                                       |                                       |
-
+**Module**|**File**|**Class**|**Constructor**|**()-Operator**
+:-----:|:-----:|:-----:|:-----:|:-----:
+Example|myFile.hpp|myClass|auto functor = metric::myClass<data>(par1,[par\_optional1, par\_optional2]);|auto result = functor(dataA, dataB, par1, [par\_optional]);
+Correlation|mgc.hpp|MGC|auto functor = MGC<None, metric::Euclidean<double>, None, metric::Euclidean<double>>(metric1, metric2)|auto result = functor(dataA, dataB)
+Distance|VOI.hpp|VOI\_kl|auto functor = metric::VOI\_kl(3, 2);|auto result = functor(dataA, dataB)
+Distance|VOI.hpp|VOI\_normalized|auto functor = metric::VOI\_kl<double>(3, 2);|auto result = functor(dataA, dataB)
+Distance|L1.hpp|sorensen|auto functor = metric::sorensen|auto result = functor(dataA, dataB)
+Distance|Standards.hpp|Euclidean|auto functor = metric::Euclidean<double>()|auto result = functor(dataA, dataB)
+Distance|Standards.hpp|Manhatten|auto functor = metric::Manhatten<double>()|auto result = functor(dataA, dataB)
+Distance|Standards.hpp|P\_norm|auto functor = metric::P\_norm<double>(1)|auto result = functor(dataA, dataB)
+Distance|Standards.hpp|Euclidean\_threshold|auto functor = metric::Euclidean\_thresholded<double>(1, 3)|auto result = functor(dataA, dataB)
+Distance|Standards.hpp|Cosine|auto functor = metric::Cosine<double>()|auto result = functor(dataA, dataB)
+Distance|Standards.hpp|Chebyshev|auto functor = metric::Chebyshev<double>()|auto result = functor(dataA, dataB)
+Distance|EMD.hpp|EMD|auto functor = metric::EMD<double>(cost\_mat, max\_cost)|auto result = functor(dataA, dataB)
+Distance|Edit.hpp|Edit|auto functor = metric::Edit<char>|auto result = functor("asdsd", "dffdf")
+Distance|SSIM.hpp|SSIM|auto functor = metric::SSIM<double, std::vector<double>>(100, 1)|auto result = functor(img1, img2)
+Distance|TWED.hpp|TWED|auto functor = metric::TWED<double>(1, 2)|auto result = functor(dataA, dataB)
+Distance|VOI.hpp|entropy|auto functor = metric::entropy<std::vector<std::vector<double>>, Manhatten<double>>|auto result = functor(dataA)
+Distance|kohonen\_distance.hpp|kohonen\_distance|auto functor = metric::kohonen\_distance<double>(train\_data, w, h)|auto result = functor(sample1, sample2)
+Mapping|DSPCC.hpp|DSPCC| | 
+Mapping|KOC.hpp|KOC|auto functor = mapping::KOC\_factory(w, h)(samples, num\_clusters)|-
+Mapping|autoencoder.hpp|Autoencoder| | 
+Mapping|dbscan.hpp|dbscan|auto functor = mapping::dbscan<std::vector<double>>|auto result = functor(matrix, eps, minpts)
+Space|matrix.hpp|Matrix|auto functor = metric::Matrix<std::vector<double>>(data)|auto result = functor(i, j)
+Space|tree.hpp|Tree| | 
+Transform|wavelet\_new.hpp|dwt|auto functor = std::bind(metric::dwt<std::vector<double>>, std::\_1, 3)|auto result = functor(a)
+Transform|wavelet\_new.hpp|idwt|auto functor = std::bind(metric::idwt<std::vector<double>>, std::\_1, std::\_2, 1, 3)|auto result = functor(a, b)
+Transform|wavelet\_new.hpp|wmaxlev|auto functor = std::bind(metric::wmaxlev, std::\_1, t)|auto result = functor(size\_x)
+Utils|sparsify.hpp|sparsify\_effective\_resistance|auto functor = std::bind(metric::sparsify\_effective\_resistance, std::\_1, 0.1)|auto result = functor(data)
+Utils|sparsify.hpp|sparsify\_spanning\_tree|auto functor = std::bind(metric::sparsify\_spanning\_tree, std::\_1, false)|auto result = functor(data)
+Mapping|ESN.hpp|ESN|-|-
+Mapping|affprop.hpp|affprop|auto functor = std::bind(mapping.affprop<std::vector<double>>, std::\_1, 1.0, 100)|auto result = functor(data)
+Mapping|ensembles.hpp|Boosting| | 
+Mapping|ensembles.hpp|Bagging| | 
+Mapping|kmeans.hpp|kmeans|auto functor = std::bind(metric::kmeans, std::\_1, std::\_2, 100, "manhatten")|auto result = functor(data, k)
+Mapping|kmedios.hpp|kmedios|auto functor = metric::kmedoids<std::vector<double>>|auto result = functor(data, k)
+Utiils|crossfilter.hpp|dimension| | 
+ 
+ 
 **Function Calls Python**
 
 | Module      | Constructor                                                                                | ()-Operator                                               | Encode                          | Decode                          |
