@@ -19,7 +19,7 @@ namespace metric {
 
 
 template <typename recType, typename Metric = metric::Euclidian<typename recType::value_type>>
-struct entropy { // averaged entropy estimation: code COPIED from mgc.*pp with only mgc replaced with entropy, TODO refactor to avoid code dubbing
+struct entropy_simple { // averaged entropy estimation: code COPIED from mgc.*pp with only mgc replaced with entropy, TODO refactor to avoid code dubbing
 
     template <template <typename, typename> class OuterContainer, typename Container, typename OuterAllocator>
     double operator()(
@@ -56,7 +56,7 @@ struct entropy { // averaged entropy estimation: code COPIED from mgc.*pp with o
 
 
 template <typename recType, typename Metric = metric::Chebyshev<typename recType::value_type>>
-struct entropy_kpN {
+struct entropy {
 
     template <template <typename, typename> class OuterContainer, typename Container, typename OuterAllocator>
     double operator()(

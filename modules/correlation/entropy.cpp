@@ -376,7 +376,7 @@ double estimate_func(
 // averaged entropy estimation: code COPIED from mgc.*pp with only mgc replaced with entropy, TODO refactor to avoid code dubbing
 template <typename recType, typename Metric>
 template <template <typename, typename> class OuterContainer, typename Container, typename OuterAllocator>
-double entropy<recType, Metric>::operator()(
+double entropy_simple<recType, Metric>::operator()(
         const OuterContainer<Container, OuterAllocator> & data,
         std::size_t k,
         double logbase,
@@ -432,7 +432,7 @@ double entropy<recType, Metric>::operator()(
 // averaged entropy estimation: code COPIED from mgc.*pp with only mgc replaced with entropy, TODO refactor to avoid code dubbing
 template <typename recType, typename Metric>
 template <typename Container>
-double entropy<recType, Metric>::estimate(
+double entropy_simple<recType, Metric>::estimate(
         const Container & a,
         const size_t sampleSize,
         const double threshold,
@@ -443,7 +443,7 @@ double entropy<recType, Metric>::estimate(
         bool exp // TODO apply to returning value!
         )
 {
-    return entropy_details::estimate_func<Container, entropy<recType, Metric>, Metric>(a, sampleSize, threshold, maxIterations, k, logbase, metric, exp);
+    return entropy_details::estimate_func<Container, entropy_simple<recType, Metric>, Metric>(a, sampleSize, threshold, maxIterations, k, logbase, metric, exp);
 }
 
 
@@ -452,11 +452,11 @@ double entropy<recType, Metric>::estimate(
 
 
 
-// ----------------------------------- entropy_kpN
+// ----------------------------------- entropy with kpN approximation
 
 template <typename recType, typename Metric>
 template <template <typename, typename> class OuterContainer, typename Container, typename OuterAllocator>
-double entropy_kpN<recType, Metric>::operator()(
+double entropy<recType, Metric>::operator()(
         const OuterContainer<Container, OuterAllocator> X,
         Metric metric, // = Metric(),
         size_t k, // = 7,
@@ -526,7 +526,7 @@ double entropy_kpN<recType, Metric>::operator()(
 // averaged entropy estimation: code COPIED from mgc.*pp with only mgc replaced with entropy, TODO refactor to avoid code dubbing
 template <typename recType, typename Metric>
 template <typename Container>
-double entropy_kpN<recType, Metric>::estimate(
+double entropy<recType, Metric>::estimate(
         const Container & a,
         const size_t sampleSize,
         const double threshold,
@@ -537,7 +537,7 @@ double entropy_kpN<recType, Metric>::estimate(
         bool exp // TODO apply to returning value!
         )
 {
-    return entropy_details::estimate_func<Container, entropy_kpN<recType, Metric>, Metric>(a, sampleSize, threshold, maxIterations, k, logbase, metric, exp);
+    return entropy_details::estimate_func<Container, entropy<recType, Metric>, Metric>(a, sampleSize, threshold, maxIterations, k, logbase, metric, exp);
 }
 
 
