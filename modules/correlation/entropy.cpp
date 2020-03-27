@@ -301,10 +301,10 @@ double estimate_func(
         maxIterations = dataSize / sampleSize;
     }
 
-    auto e = EntropyFunctor();
+    auto e = EntropyFunctor(Metric(), k);
 
     if (maxIterations < 1) {
-        return e(a, k, logbase, metric);
+        return e(a);
     }
 
     // Create shuffle indexes
@@ -335,7 +335,7 @@ double estimate_func(
         }
 
         // Get sample mgc value
-        double sample_entopy = e(sampleA, k, logbase, metric);
+        double sample_entopy = e(sampleA);
         entropyValues.push_back(sample_entopy);
 
         std::sort(entropyValues.begin(), entropyValues.end());
@@ -377,11 +377,11 @@ double estimate_func(
 template <typename recType, typename Metric>
 template <template <typename, typename> class OuterContainer, typename Container, typename OuterAllocator>
 double entropy_simple<recType, Metric>::operator()(
-        const OuterContainer<Container, OuterAllocator> & data,
-        std::size_t k,
-        double logbase,
-        Metric metric,
-        bool exp
+        const OuterContainer<Container, OuterAllocator> & data
+        //std::size_t k,
+        //double logbase,
+        //Metric metric,
+        //bool exp
         ) const
 {
     using T = typename Container::value_type;
@@ -436,11 +436,11 @@ double entropy_simple<recType, Metric>::estimate(
         const Container & a,
         const size_t sampleSize,
         const double threshold,
-        size_t maxIterations,
-        std::size_t k,
-        double logbase,
-        Metric metric,
-        bool exp // TODO apply to returning value!
+        size_t maxIterations
+        //std::size_t k,
+        //double logbase,
+        //Metric metric,
+        //bool exp // TODO apply to returning value!
         )
 {
     return entropy_details::estimate_func<Container, entropy_simple<recType, Metric>, Metric>(a, sampleSize, threshold, maxIterations, k, logbase, metric, exp);
@@ -454,14 +454,12 @@ double entropy_simple<recType, Metric>::estimate(
 
 // ----------------------------------- entropy with kpN approximation
 
+
+
+
 template <typename recType, typename Metric>
 template <template <typename, typename> class OuterContainer, typename Container, typename OuterAllocator>
-double entropy<recType, Metric>::operator()(
-        const OuterContainer<Container, OuterAllocator> X,
-        Metric metric, // = Metric(),
-        size_t k, // = 7,
-        size_t p // = 70
-        ) const
+double entropy<recType, Metric>::operator()(const OuterContainer<Container, OuterAllocator> X) const
 {
     size_t n = X.size();
     size_t d = X[0].size();
@@ -509,7 +507,7 @@ double entropy<recType, Metric>::operator()(
         auto g_local = epmgp::local_gaussian_axis_aligned_hyperrectangles<double>(mu, K, lb, ub);
         double logG = std::get<0>(g_local);
 
-        if (!std::isnan(logG)) { // UNLIKE original Matlab code, we exclude points that result in NaN, TODO check validity
+        if (!std::isnan(logG)) { // UNLIKE original Matlab code, we exclude points that result in NaN
             double g = entropy_details::mvnpdf(x_vector, mu, K);
             h += logG - std::log(g);
             got_results++;
@@ -517,9 +515,13 @@ double entropy<recType, Metric>::operator()(
 
     }
 
+    double result;
     if (got_results <= 20) // this absents in Matlab original code. TODO adjust min number of points
-        return std::nan("estimation failed");
-    return boost::math::digamma(n) - boost::math::digamma(k) + h/n;
+        result = std::nan("estimation failed");
+    result = boost::math::digamma(n) - boost::math::digamma(k) + h/n;
+    if (exp)
+        return entropy_details::conv_diff_entropy(result); // conversion of values below 1 to exp scale
+    return result;
 }
 
 
@@ -530,14 +532,10 @@ double entropy<recType, Metric>::estimate(
         const Container & a,
         const size_t sampleSize,
         const double threshold,
-        size_t maxIterations,
-        std::size_t k,
-        double logbase,
-        Metric metric,
-        bool exp // TODO apply to returning value!
+        size_t maxIterations
         )
 {
-    return entropy_details::estimate_func<Container, entropy<recType, Metric>, Metric>(a, sampleSize, threshold, maxIterations, k, logbase, metric, exp);
+    return entropy_details::estimate_func<Container, entropy<recType, Metric>, Metric>(a, sampleSize, threshold, maxIterations, k, 2, metric, exp);
 }
 
 

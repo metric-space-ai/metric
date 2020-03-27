@@ -21,22 +21,30 @@ namespace metric {
 template <typename recType, typename Metric = metric::Euclidian<typename recType::value_type>>
 struct entropy_simple { // averaged entropy estimation: code COPIED from mgc.*pp with only mgc replaced with entropy, TODO refactor to avoid code dubbing
 
+    entropy_simple(Metric metric_ = Metric(), size_t k_ = 3, bool exp_ = false) :
+        metric(metric_),
+        k(k_),
+        exp(exp_)
+    {
+        logbase = 2;
+    }
+
     template <template <typename, typename> class OuterContainer, typename Container, typename OuterAllocator>
     double operator()(
-            const OuterContainer<Container, OuterAllocator> & data,
-            std::size_t k = 3,
-            double logbase = 2,
-            Metric metric = Metric(),
-            bool exp = false
+            const OuterContainer<Container, OuterAllocator> & data
+            //std::size_t k = 3,
+            //double logbase = 2,
+            //Metric metric = Metric(),
+            //bool exp = false
             ) const;
 
     template <template <typename, typename> class OuterContainer, template <typename, bool> class InnerContainer, class OuterAllocator, typename ValueType, bool F>
     double operator()( // TODO implement
-            const OuterContainer<InnerContainer<ValueType, F>, OuterAllocator> & data, // inner cpntainer is specialized with bool F
-            std::size_t k = 3,
-            double logbase = 2,
-            Metric metric = Metric(),
-            bool exp = false
+            const OuterContainer<InnerContainer<ValueType, F>, OuterAllocator> & data // inner cpntainer is specialized with bool F
+            //std::size_t k = 3,
+            //double logbase = 2,
+            //Metric metric = Metric(),
+            //bool exp = false
             ) const;
 
     template <typename Container>
@@ -44,12 +52,19 @@ struct entropy_simple { // averaged entropy estimation: code COPIED from mgc.*pp
             const Container & a,
             const size_t sampleSize = 250,
             const double threshold = 0.05,
-            size_t maxIterations = 1000,
-            std::size_t k = 3,
-            double logbase = 2,
-            Metric metric = Metric(),
-            bool exp = false
+            size_t maxIterations = 1000
+            //std::size_t k = 3,
+            //double logbase = 2,
+            //Metric metric = Metric(),
+            //bool exp = false
             );
+
+private:
+    size_t k;
+    size_t p;
+    Metric metric;
+    double logbase;
+    bool exp;
 };
 
 
@@ -58,25 +73,28 @@ struct entropy_simple { // averaged entropy estimation: code COPIED from mgc.*pp
 template <typename recType, typename Metric = metric::Chebyshev<typename recType::value_type>>
 struct entropy {
 
+    entropy(Metric metric_ = Metric(), size_t k_ = 7, size_t p_ = 70, bool exp_ = false) :
+        metric(metric_),
+        k(k_),
+        p(p_),
+        exp(exp_) {}
+
     template <template <typename, typename> class OuterContainer, typename Container, typename OuterAllocator>
-    double operator()(
-            const OuterContainer<Container, OuterAllocator> X,
-            Metric metric = Metric(),
-            size_t k = 7,
-            size_t p = 70
-            ) const;
+    double operator()(const OuterContainer<Container, OuterAllocator> X) const;
 
     template <typename Container>
     double estimate(
             const Container & a,
             const size_t sampleSize = 250,
             const double threshold = 0.05,
-            size_t maxIterations = 1000,
-            std::size_t k = 3,
-            double logbase = 2,
-            Metric metric = Metric(),
-            bool exp = false
+            size_t maxIterations = 1000
             );
+
+private:
+    size_t k;
+    size_t p;
+    Metric metric;
+    bool exp;
 };
 
 

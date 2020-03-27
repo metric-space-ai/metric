@@ -89,8 +89,7 @@ namespace {
 template <typename Container, typename Metric>
 typename std::enable_if_t<!type_traits::is_container_of_integrals_v<Container>,
                           type_traits::underlaying_type_t<Container>>
-mutualInformation(
-                  const Container & Xc, const Container & Yc, int k, const Metric & metric, int version)
+mutualInformation(const Container & Xc, const Container & Yc, int k, const Metric & metric, int version)
 {
     using T = type_traits::underlaying_type_t<Container>;
     using V = type_traits::index_value_type_t<Container>;
@@ -144,23 +143,23 @@ mutualInformation(
 }
 
 
-template <typename Container, typename T>
-std::enable_if_t<type_traits::is_container_of_integrals_v<Container>, T>
-mutualInformation(const Container& Xc, const Container& Yc, T logbase)
-{
-    std::vector<std::vector<T>> XY = combine(Xc, Yc);
-    return entropy_simple(Xc, logbase)
-        + entropy_simple(Yc,
-            logbase)  // entropy overload for integers is not implemented yet
-        - entropy_simple(XY, logbase);
-}
+//template <typename Container, typename T>
+//std::enable_if_t<type_traits::is_container_of_integrals_v<Container>, T>
+//mutualInformation(const Container& Xc, const Container& Yc, T logbase)
+//{
+//    std::vector<std::vector<T>> XY = combine(Xc, Yc);
+//    auto e = entropy<void>();
+//    return e(Xc)
+//        + e(Yc)  // entropy overload for integers is not implemented yet
+//        - e(XY);
+//}
 
 template <typename C, typename Metric, typename T>
 typename std::enable_if_t<!type_traits::is_container_of_integrals_v<C>, T>
 variationOfInformation(const C& Xc, const C& Yc, int k, T logbase)
 {
-    auto e = entropy_simple<void, Metric>();
-    return e(Xc, k, logbase) + e(Yc, k, logbase) // TODD probably metric metaparameters needed!
+    auto e = entropy_simple<void, Metric>(Metric(), k);
+    return e(Xc) + e(Yc)
         - 2 * mutualInformation<C>(Xc, Yc, k);
 }
 
@@ -171,8 +170,8 @@ variationOfInformation_normalized(
 {
     using Cheb = metric::Chebyshev<T>;
     auto mi = mutualInformation<C>(Xc, Yc, k);
-    auto e = entropy_simple<void, Cheb>();
-    return 1 - (mi / (e(Xc, k, logbase) + e(Yc, k, logbase) - mi));
+    auto e = entropy_simple<void, Cheb>(Cheb(), k);
+    return 1 - (mi / (e(Xc) + e(Yc) - mi));
 }
 
 template <typename V>
@@ -181,8 +180,8 @@ typename std::enable_if_t<!std::is_integral_v<El>, V>  // only real values are a
 VOI<V>::operator()(const C& a, const C& b) const
 {
     using Cheb = metric::Chebyshev<El>;
-    auto e = entropy_simple<void, Cheb>();
-    return e(a, k, logbase) + e(b, k, logbase)
+    auto e = entropy_simple<void, Cheb>(Cheb(), k);
+    return e(a) + e(b)
         - 2 * mutualInformation(a, b, k);
 }
 
@@ -193,8 +192,8 @@ VOI<V>::operator()(const C& a, const C& b) const
 {
     using Cheb = metric::Chebyshev<El>;
 
-    auto e = entropy_simple<void, Cheb>();
-    return e(a, k, logbase) + e(b, k, logbase)
+    auto e = entropy_simple<void, Cheb>(Cheb(), k);
+    return e(a) + e(b)
         - 2 * mutualInformation(a, b, k);
 }
 
@@ -206,11 +205,9 @@ VOI_normalized<V>::operator()(const C& a, const C& b) const
     using Cheb = metric::Chebyshev<El>;
 
     auto mi = mutualInformation(a, b, this->k);
-    auto e = entropy_simple<void, Cheb>();
+    auto e = entropy_simple<void, Cheb>(Cheb(), this->k);
     return 1
-        - (mi
-            / (e(a, this->k, this->logbase)
-                + e(b, this->k, this->logbase) - mi));
+        - (mi / (e(a) + e(b) - mi));
 }
 
 // VOI based on Kozachenko-Leonenko entropy estimator
