@@ -29,6 +29,8 @@ Copyright (c) 2019 Panda Team
 #include "../../modules/mapping.hpp"
 #include "../../modules/utils/poor_mans_quantum.hpp"
 
+#include <algorithm>
+
 
 using json = nlohmann::json;
 

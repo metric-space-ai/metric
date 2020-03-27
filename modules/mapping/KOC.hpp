@@ -203,6 +203,7 @@ namespace metric {
 	struct KOC_factory {
 		
 		typedef typename recType::value_type T;
+		typedef typename KOC_details::KOC<recType, Graph, Metric, Distribution> KOC;
 
 		/**
 		 * @brief
@@ -242,7 +243,7 @@ namespace metric {
 		 * @param random_seed - the value used to initialize the random number generator, which is used for the initial distribution of weight (positions).
 		 */
 		KOC_factory(size_t nodesNumber, double anomaly_sigma,
-			double start_learn_rate, double finish_learn_rate, size_t iterations, T distribution_min, T distribution_max, 
+			double start_learn_rate, double finish_learn_rate, size_t iterations, T distribution_min, T distribution_max,
 			double neighborhood_start_size, double neigbour_range_decay, long long random_seed);
 
 		/**
@@ -271,7 +272,7 @@ namespace metric {
 		 *
 		 * @return KOC_details::KOC<recType, Graph, Metric, Distribution>
 		 */
-		KOC_details::KOC<recType, Graph, Metric, Distribution> operator()(const std::vector<recType>& samples, int num_clusters, int min_cluster_size = 1);
+		KOC operator()(const std::vector<recType>& samples, int num_clusters, int min_cluster_size = 1);
 
 	private:
 

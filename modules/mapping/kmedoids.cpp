@@ -9,10 +9,11 @@ Copyright (c) 2018 M.Welsch
 #ifndef _METRIC_MAPPING_KMEDOIDS_CPP
 #define _METRIC_MAPPING_KMEDOIDS_CPP
 
+#include "../space/matrix.hpp"
 #include <tuple>
 #include <vector>
 #include <limits>
-#include "../space/matrix.hpp"
+#include <algorithm>
 
 namespace metric {
 namespace kmedoids_details {

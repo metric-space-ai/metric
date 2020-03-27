@@ -3,23 +3,19 @@ This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
 file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-Copyright (c) 2019 Panda Team
+Copyright (c) 2020 Panda Team
 */
 
 #ifndef _METRIC_DISTANCE_K_RANDOM_ENTROPY_HPP
 #define _METRIC_DISTANCE_K_RANDOM_ENTROPY_HPP
 
-#include <type_traits>
+//#include <type_traits>
 
 #include "../../3rdparty/blaze/Blaze.h"
 #include "../distance/k-related/Standards.hpp"
 
-//#include <vector>
 
 namespace metric {
-
-
-//namespace entropy {
 
 
 template <typename recType, typename Metric = metric::Euclidian<typename recType::value_type>>
@@ -87,11 +83,6 @@ struct entropy_kpN {
 
 // -------------------------------- to be debugged
 
-
-
-
-
-
 // ported from Julia, not in use
 /**
  * @brief
@@ -102,8 +93,6 @@ struct entropy_kpN {
 template <typename T>
 std::pair<std::vector<double>, std::vector<std::vector<T>>> pluginEstimator(const std::vector<std::vector<T>>& Y);
 
-
-//} // namespace entropy
 
 } // namespace metric
 

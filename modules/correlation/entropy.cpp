@@ -8,22 +8,16 @@ Copyright (c) 2019 Panda Team
 #ifndef _METRIC_DISTANCE_K_RANDOM_ENTROPY_CPP
 #define _METRIC_DISTANCE_K_RANDOM_ENTROPY_CPP
 
-//#include <algorithm>
-#include <cmath>
-//#include <iostream>
-//#include <random>
-//#include <unordered_set>
-#include <vector>
-
-//#include <boost/functional/hash.hpp>
-
-//#include <boost/math/constants/constants.hpp>
 #include <boost/math/special_functions/digamma.hpp>
 #include <boost/math/special_functions/gamma.hpp>
 
-#include "../space/tree.hpp"
+#include "modules/utils/type_traits.hpp"
+#include "modules/space/tree.hpp"
+#include "estimator_helpers.cpp"
 #include "epmgp.cpp"
 
+#include <cmath>
+#include <vector>
 
 namespace metric {
 
@@ -255,36 +249,11 @@ T conv_diff_entropy_inv(T in) {
 }
 
 
-
-/* // good code, but all calls are disabled
-template <template <typename, typename> class OuterContainer, typename Container, typename OuterAllocator>
-void add_noise(OuterContainer<Container, OuterAllocator> & data)
-{
-    using T = typename Container::value_type;
-
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::normal_distribution<T> dis(0, 1);
-    double c = 1e-10;
-    for (auto& v : data) {
-        std::transform(v.begin(), v.end(), v.begin(), [&gen, c, &dis](T e) {
-            auto g = dis(gen);
-            auto k = e + c * g;
-            return k;
-        });
-    }
-}
-*/
-
-
 template <typename T1, typename T2>
 T1 log(T1 logbase, T2 x)
 {
     return std::log(x) / std::log(logbase);
 }
-
-
-
 
 
 double mvnpdf(blaze::DynamicVector<double> x, blaze::DynamicVector<double> mu, blaze::DynamicMatrix<double> Sigma) {
@@ -439,6 +408,8 @@ double entropy<recType, Metric>::operator()(
     entropyEstimate = entropyEstimate * d / (double)N; // mean log * d
     entropyEstimate += boost::math::digamma(N) - boost::math::digamma(k) + d*std::log(2.0);
 
+    // FIXME: really WTF? is this?
+    // if not chebyshev do this
     if constexpr (!std::is_same<Metric, typename metric::Chebyshev<T>>::value) {
         double p = 1; // Manhatten and other metrics (TODO check if it is correct for them!)
         if constexpr (std::is_same<Metric, typename metric::Euclidian<T>>::value) {
@@ -546,12 +517,10 @@ double entropy_kpN<recType, Metric>::operator()(
 
     }
 
-    if (got_results > 20) // this absents in Matlab original code. TODO adjust min number of points
-        return boost::math::digamma(n) - boost::math::digamma(k) + h/n;
-    else
+    if (got_results <= 20) // this absents in Matlab original code. TODO adjust min number of points
         return std::nan("estimation failed");
+    return boost::math::digamma(n) - boost::math::digamma(k) + h/n;
 }
-
 
 
 // averaged entropy estimation: code COPIED from mgc.*pp with only mgc replaced with entropy, TODO refactor to avoid code dubbing
@@ -619,7 +588,6 @@ typename std::enable_if<!std::is_integral<typename Container::value_type>::value
 } // TODO debug!!
 
 
-
 // ported from Julia, not in use
 template <typename T>
 std::pair<std::vector<double>, std::vector<std::vector<T>>> pluginEstimator(const std::vector<std::vector<T>>& Y)
@@ -637,7 +605,6 @@ std::pair<std::vector<double>, std::vector<std::vector<T>>> pluginEstimator(cons
 
     return std::make_pair(counts, uniqueVal);
 }
-
 
 
 

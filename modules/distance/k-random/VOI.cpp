@@ -20,7 +20,6 @@ Copyright (c) 2019 Panda Team
 
 #include <boost/math/constants/constants.hpp>
 #include <boost/math/special_functions/digamma.hpp>
-//#include <boost/math/special_functions/gamma.hpp>
 
 #include "../../space/tree.hpp"
 #include "VOI.hpp"
@@ -87,8 +86,6 @@ namespace {
 }  // namespace
 
 
-
-
 template <typename Container, typename Metric>
 typename std::enable_if_t<!type_traits::is_container_of_integrals_v<Container>,
                           type_traits::underlaying_type_t<Container>>
@@ -102,10 +99,14 @@ mutualInformation(
     if (N < k + 1 || Yc.size() < k + 1)
         throw std::invalid_argument("number of points in dataset must be larger than k");
 
-    auto X = Xc;
-    auto Y = Yc;
-    //add_noise(X);
-    //add_noise(Y);
+    std::vector<std::vector<T>> X;
+    for (const auto& e: Xc)
+        X.push_back(std::vector<T>(std::begin(e), std::end(e)));
+
+    std::vector<std::vector<T>> Y;
+    for (const auto& e: Yc)
+        Y.push_back(std::vector<T>(std::begin(e), std::end(e)));
+
     std::vector<std::vector<T>> XY = combine(X, Y);
     metric::Tree<std::vector<T>, Metric> tree(XY, -1, metric);
     auto entropyEstimate = boost::math::digamma(k) + boost::math::digamma(N);
@@ -188,7 +189,7 @@ VOI<V>::operator()(const C& a, const C& b) const
 template <typename V>
 template <typename C, typename El>
 typename std::enable_if_t<std::is_integral_v<El>, V>  // only real values are accepted
-VOI<V>::operator()(const C& a, const C& b) const 
+VOI<V>::operator()(const C& a, const C& b) const
 {
     using Cheb = metric::Chebyshev<El>;
 
@@ -237,10 +238,6 @@ VOI_normalized_kl<V>::operator()(const C& a, const C& b) const
     auto mi = entropy_a + entropy_b - joint_entropy;
     return 1 - (mi / (entropy_a + entropy_b - mi));
 }
-
-
-
-
 
 
 

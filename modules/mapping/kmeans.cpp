@@ -29,6 +29,7 @@ Copyright (c) 2018 M.Welsch
 #include <string>
 #include <random>
 #include <cassert>
+#include <algorithm>
 #include "../distance/k-related/Standards.hpp"
 namespace metric {
 
