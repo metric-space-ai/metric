@@ -26,7 +26,7 @@ struct entropy_simple { // averaged entropy estimation: code COPIED from mgc.*pp
         k(k_),
         exp(exp_)
     {
-        logbase = 2;
+        logbase = 2; // TODO remove (?)
     }
 
     template <template <typename, typename> class OuterContainer, typename Container, typename OuterAllocator>

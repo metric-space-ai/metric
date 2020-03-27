@@ -31,7 +31,7 @@ template <typename Container, typename Metric = metric::Chebyshev<type_traits::u
 typename std::enable_if_t<!type_traits::is_container_of_integrals_v<Container>,
                           type_traits::underlaying_type_t<Container>>
 mutualInformation(const Container& Xc,
-    const Container & Yc, int k = 3, const Metric & metric = Metric(), int version = 2);
+    const Container & Yc, int k = 3, const Metric & metric = Metric(), int logbase = 2);
 
 template <typename Container, typename T = type_traits::underlaying_type_t<Container> >
 std::enable_if_t<type_traits::is_container_of_integrals_v<Container>, T>
@@ -49,7 +49,7 @@ mutualInformation(const Container& Xc, const Container& Yc, T logbase = 2.0);
 template <typename C, typename Metric = metric::Chebyshev<type_traits::underlaying_type_t<C>>,
           typename T = type_traits::underlaying_type_t<C>>
 typename std::enable_if_t<!type_traits::is_container_of_integrals_v<C>, T>
-variationOfInformation(const C& Xc, const C& Yc, int k = 3, T logbase = 2.0);
+variationOfInformation(const C& Xc, const C& Yc, int k = 3, int p = 25, T logbase = 2.0);
 
 
 /**
@@ -64,7 +64,7 @@ variationOfInformation(const C& Xc, const C& Yc, int k = 3, T logbase = 2.0);
     template <typename C, typename T = type_traits::underlaying_type_t<C>>
     typename std::enable_if_t<!type_traits::is_container_of_integrals_v<C>,T>
     variationOfInformation_normalized(
-    const C & Xc, const C& Yc, int k = 3, T logbase = 2.0);
+    const C & Xc, const C& Yc, int k = 3, int p = 25, T logbase = 2.0);
 
 /**
  * @brief
@@ -76,6 +76,7 @@ struct VOI {
     using distance_type = V;
 
     int k = 3;
+    int p = 25;
     V logbase = 2;
 
     /**
@@ -84,8 +85,9 @@ struct VOI {
      * @param k_
      * @param logbase_
      */
-    explicit VOI(int k_ = 3, V logbase_ = 2)
+    explicit VOI(int k_ = 3, int p_ = 25, V logbase_ = 2)
         : k(k_)
+        , p(p_)
         , logbase(logbase_)
     {
     }

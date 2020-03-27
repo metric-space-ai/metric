@@ -121,23 +121,23 @@ int main() {
 	
 	std::cout << "Variation of Information, normalized Variation of Information:" << std::endl;
 	
-	std::cout << "VOI = " << metric::variationOfInformation(v1, v2) << std::endl;
-	std::cout << "VOI (Manhatten) = " << metric::variationOfInformation<std::vector<std::vector<double>>, metric::Manhatten<double>>(v1, v2) << std::endl;
-	std::cout << "VOI norm = " << metric::variationOfInformation_normalized(v1, v2) << std::endl;
+    std::cout << "VOI = " << metric::variationOfInformation(v1, v2, 2, 3) << std::endl;
+    std::cout << "VOI (Manhatten) = " << metric::variationOfInformation<std::vector<std::vector<double>>, metric::Manhatten<double>>(v1, v2, 2, 3) << std::endl;
+    std::cout << "VOI norm = " << metric::variationOfInformation_normalized(v1, v2, 2, 3) << std::endl;
 
 	// functor
 
-    auto f_voi = metric::VOI<long double>();
+    auto f_voi = metric::VOI<long double>(2, 3);
     std::cout << "VOI functor = " << f_voi(v1, v2) << std::endl;
 
-    auto f_voi_norm = metric::VOI_normalized<long double>();
+    auto f_voi_norm = metric::VOI_normalized<long double>(2, 3);
     std::cout << "VOI functor norm = " << f_voi_norm(v1, v2) << std::endl;
 
     // KL functor
-    auto f_voi_kl = metric::VOI_kl<long double>();
+    auto f_voi_kl = metric::VOI_kl<long double>(2, 3);
     std::cout << "KL VOI functor = " << f_voi_kl(v1, v2) << std::endl;
 
-    auto f_voi_norm_kl = metric::VOI_normalized_kl<long double>();
+    auto f_voi_norm_kl = metric::VOI_normalized_kl<long double>(2, 3);
     std::cout << "KL VOI functor norm = " << f_voi_norm_kl(v1, v2) << std::endl;
 
 

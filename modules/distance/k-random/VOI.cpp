@@ -156,21 +156,21 @@ mutualInformation(const Container & Xc, const Container & Yc, int k, const Metri
 
 template <typename C, typename Metric, typename T>
 typename std::enable_if_t<!type_traits::is_container_of_integrals_v<C>, T>
-variationOfInformation(const C& Xc, const C& Yc, int k, T logbase)
+variationOfInformation(const C& Xc, const C& Yc, int k, int p, T logbase)
 {
-    auto e = entropy_simple<void, Metric>(Metric(), k);
+    auto e = entropy<void, Metric>(Metric(), k, p);
     return e(Xc) + e(Yc)
-        - 2 * mutualInformation<C>(Xc, Yc, k);
+        - 2 * mutualInformation<C>(Xc, Yc, p);
 }
 
 template <typename C, typename T>
 typename std::enable_if_t<!type_traits::is_container_of_integrals_v<C>, T>
 variationOfInformation_normalized(
-        const C& Xc, const C& Yc, int k, T logbase)
+        const C& Xc, const C& Yc, int k, int p, T logbase)
 {
     using Cheb = metric::Chebyshev<T>;
-    auto mi = mutualInformation<C>(Xc, Yc, k);
-    auto e = entropy_simple<void, Cheb>(Cheb(), k);
+    auto mi = mutualInformation<C>(Xc, Yc, p);
+    auto e = entropy<void, Cheb>(Cheb(), k, p);
     return 1 - (mi / (e(Xc) + e(Yc) - mi));
 }
 
@@ -180,7 +180,7 @@ typename std::enable_if_t<!std::is_integral_v<El>, V>  // only real values are a
 VOI<V>::operator()(const C& a, const C& b) const
 {
     using Cheb = metric::Chebyshev<El>;
-    auto e = entropy_simple<void, Cheb>(Cheb(), k);
+    auto e = entropy<void, Cheb>(Cheb(), k, p);
     return e(a) + e(b)
         - 2 * mutualInformation(a, b, k);
 }
@@ -192,7 +192,7 @@ VOI<V>::operator()(const C& a, const C& b) const
 {
     using Cheb = metric::Chebyshev<El>;
 
-    auto e = entropy_simple<void, Cheb>(Cheb(), k);
+    auto e = entropy<void, Cheb>(Cheb(), k, p);
     return e(a) + e(b)
         - 2 * mutualInformation(a, b, k);
 }
@@ -205,7 +205,7 @@ VOI_normalized<V>::operator()(const C& a, const C& b) const
     using Cheb = metric::Chebyshev<El>;
 
     auto mi = mutualInformation(a, b, this->k);
-    auto e = entropy_simple<void, Cheb>(Cheb(), this->k);
+    auto e = entropy<void, Cheb>(Cheb(), this->k, this->p);
     return 1
         - (mi / (e(a) + e(b) - mi));
 }
