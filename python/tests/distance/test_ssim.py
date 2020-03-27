@@ -1,9 +1,11 @@
 import numpy
+import os
 from metric.distance import SSIM
 
 
-img1 = numpy.loadtxt('test_data/img1.csv')
-img2 = numpy.loadtxt('test_data/img1.csv')
+CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
+img1 = numpy.loadtxt(os.path.join(CURRENT_DIR, 'fixtures/img1.csv'))
+img2 = numpy.loadtxt(os.path.join(CURRENT_DIR, 'fixtures/img2.csv'))
 
 
 def test_distance():
