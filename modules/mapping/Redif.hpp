@@ -29,7 +29,7 @@ public:
     );
     blaze::DynamicMatrix<Tv> decode(
         const blaze::DynamicMatrix<Tv>& xEncoded,
-        const blaze::DynamicMatrix<Tv>& xTrainEncoded,
+        blaze::DynamicMatrix<Tv>& xTrainEncoded,
         const blaze::DynamicVector<size_t>& l_idx
     );
 private:
@@ -45,9 +45,12 @@ private:
         size_t end
     );
 
-    blaze::DynamicMatrix<Tv> getLocalDistMatrix(const blaze::DynamicMatrix<Tv>& dataSample);
+    template <class Metric = metric::Euclidian<Tv>>
+    blaze::DynamicMatrix<Tv> getLocalDistMatrix(const blaze::DynamicMatrix<Tv>& dataSample, Metric metric = Metric());
     blaze::DynamicMatrix<Tv> calcWeightedGraphLaplacian(const blaze::DynamicMatrix<Tv>& localDist);
-    blaze::DynamicMatrix<Tv> trainModel(size_t nIter);
+
+    template <class Metric = metric::Euclidian<Tv>>
+    blaze::DynamicMatrix<Tv> trainModel(size_t nIter, Metric metric = Metric());
 
     blaze::DynamicMatrix<Tv> xTrain;
     std::vector<blaze::DynamicMatrix<Tv>> LArray;
