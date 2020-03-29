@@ -12,7 +12,7 @@ Copyright (c) 2019 Panda Team
 //#include "../../modules/distance.hpp"
 #include "../../modules/distance/k-random/VOI.hpp"
 
-#include "distance/k-structured/Edit.hpp"
+#include "../../modules/distance/k-structured/Edit.hpp"
 
 
 

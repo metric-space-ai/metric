@@ -90,3 +90,95 @@ operations in real time. On the other hand, the METRIC | UTILS
 module also contains a nonlinear and nonparametric
 signifcance test for independent features (PMQ) of a
 metric space that were obtained by mapping.
+
+
+
+
+**FUNCTION CALLS C++**
+
+
+
+**Module**|**File**|**Class**|**Constructor**|**()-Operator**|**Encode**|**Decode**
+:-----:|:-----:|:-----:|:-----:|:-----:|:-----:|:-----:
+Correlation|mgc.hpp|MGC|auto functor = MGC<None, metric::Euclidean<double>, None, metric::Euclidean<double>>(metric1, metric2)|auto result = functor(dataA, dataB)|-|-
+Distance|VOI.hpp|VOI\_kl|auto functor = metric::VOI\_kl(3, 2);|auto result = functor(dataA, dataB)|-|-
+Distance|VOI.hpp|VOI\_normalized|auto functor = metric::VOI\_kl<double>(3, 2);|auto result = functor(dataA, dataB)|-|-
+Distance|L1.hpp|sorensen|auto functor = metric::sorensen|auto result = functor(dataA, dataB)|-|-
+Distance|Standards.hpp|Euclidean|auto functor = metric::Euclidean<double>()|auto result = functor(dataA, dataB)|-|-
+Distance|Standards.hpp|Manhatten|auto functor = metric::Manhatten<double>()|auto result = functor(dataA, dataB)|-|-
+Distance|Standards.hpp|P\_norm|auto functor = metric::P\_norm<double>(1)|auto result = functor(dataA, dataB)|-|-
+Distance|Standards.hpp|Euclidean\_threshold|auto functor = metric::Euclidean\_thresholded<double>(1, 3)|auto result = functor(dataA, dataB)|-|-
+Distance|Standards.hpp|Cosine|auto functor = metric::Cosine<double>()|auto result = functor(dataA, dataB)|-|-
+Distance|Standards.hpp|Chebyshev|auto functor = metric::Chebyshev<double>()|auto result = functor(dataA, dataB)|-|-
+Distance|EMD.hpp|EMD|auto functor = metric::EMD<double>(cost\_mat, max\_cost)|auto result = functor(dataA, dataB)|-|-
+Distance|Edit.hpp|Edit|auto functor = metric::Edit<char>|auto result = functor("asdsd", "dffdf")| | 
+Distance|SSIM.hpp|SSIM|auto functor = metric::SSIM<double, std::vector<double>>(100, 1)|auto result = functor(img1, img2)| | 
+Distance|TWED.hpp|TWED|auto functor = metric::TWED<double>(1, 2)|auto result = functor(dataA, dataB)| | 
+Distance|VOI.hpp|entropy|auto functor = metric::entropy<std::vector<std::vector<double>>, Manhatten<double>>|auto result = functor(dataA)| | 
+Distance|kohonen\_distance.hpp|kohonen\_distance|auto functor = metric::kohonen\_distance<double>(train\_data, w, h)|auto result = functor(sample1, sample2)| | 
+Example|myFile.hpp|myClass|auto functor = metric::myClass<data>(par1,[par\_optional1, par\_optional2]);|auto result = functor(dataA, dataB, par1, [par\_optional]);|auto result1 = functor.encode(dataA);|auto result2 = functor.decode(dataB);
+Mapping|DSPCC.hpp|DSPCC| | | | 
+Mapping|KOC.hpp|KOC|auto functor = mapping::KOC\_factory(w, h)(samples, num\_clusters)|-|-|-
+Mapping|autoencoder.hpp|Autoencoder| | | | 
+Mapping|dbscan.hpp|dbscan|auto functor = mapping::dbscan<std::vector<double>>|auto result = functor(matrix, eps, minpts)| | 
+Mapping|ESN.hpp|ESN|-|-| | 
+Mapping|affprop.hpp|affprop|auto functor = std::bind(mapping.affprop<std::vector<double>>, std::\_1, 1.0, 100)|auto result = functor(data)| | 
+Mapping|ensembles.hpp|Boosting| | | | 
+Mapping|ensembles.hpp|Bagging| | | | 
+Mapping|kmeans.hpp|kmeans|auto functor = std::bind(metric::kmeans, std::\_1, std::\_2, 100, "manhatten")|auto result = functor(data, k)| | 
+Mapping|kmedios.hpp|kmedios|auto functor = metric::kmedoids<std::vector<double>>|auto result = functor(data, k)| | 
+Mapping|DT.hpp|DT| | | | 
+Space|matrix.hpp|Matrix|auto functor = metric::Matrix<std::vector<double>>(data)|auto result = functor(i, j)| | 
+Space|tree.hpp|Tree| | | | 
+Transform|wavelet\_new.hpp|dwt|auto functor = std::bind(metric::dwt<std::vector<double>>, std::\_1, 3)|auto result = functor(a)|-|-
+Transform|wavelet\_new.hpp|idwt|auto functor = std::bind(metric::idwt<std::vector<double>>, std::\_1, std::\_2, 1, 3)|auto result = functor(a, b)| | 
+Transform|wavelet\_new.hpp|wmaxlev|auto functor = std::bind(metric::wmaxlev, std::\_1, t)|auto result = functor(size\_x)| | 
+Utiils|crossfilter.hpp|dimension| | | | 
+Utils|sparsify.hpp|sparsify\_effective\_resistance|auto functor = std::bind(metric::sparsify\_effective\_resistance, std::\_1, 0.1)|auto result = functor(data)| | 
+Utils|sparsify.hpp|sparsify\_spanning\_tree|auto functor = std::bind(metric::sparsify\_spanning\_tree, std::\_1, false)|auto result = functor(data)| | 
+ 
+ 
+ 
+ 
+**FUNCTION CALLS PYTHON**
+
+
+
+**Module**|**File**|**Class**|**Constructor**|**()-Operator**|**Encode**|**Decode**
+:-----:|:-----:|:-----:|:-----:|:-----:|:-----:|:-----:
+Correlation|mgc.hpp|MGC|functor = partial(correlation.MGC, metric1=metric.Euclidean(), metric2=metric.Euclidean())|auto result = functor(dataA, dataB)|-|-
+Distance|VOI.hpp|VOI\_kl|functor = distance.VOI(k=3, logbase=2)|result = functor(dataA, dataB)|-|-
+Distance|VOI.hpp|VOI\_normalized|functor = distance.VOI(k=3, logbase=2)|result = functor(dataA, dataB)|-|-
+Distance|L1.hpp|sorensen|functor = distance.sorensen|result = functor(dataA, dataB)|-|-
+Distance|Standards.hpp|Euclidean|functor = distance.Euclidean()|result = functor(dataA, dataB)|-|-
+Distance|Standards.hpp|Manhatten|functor = distance.Manhatten()|result = functor(dataA, dataB)|-|-
+Distance|Standards.hpp|P\_norm|functor = distance.P\_norm(p=1)|result = functor(dataA, dataB)|-|-
+Distance|Standards.hpp|Euclidean\_threshold|functor = distance.Euclidean\_thresholded(thres=1, factor=3)|result = functor(dataA, dataB)|-|-
+Distance|Standards.hpp|Cosine|functor = distance.Cosine()|result = functor(dataA, dataB)|-|-
+Distance|Standards.hpp|Chebyshev|functor = distance.Chebyshev()|result = functor(dataA, dataB)|-|-
+Distance|EMD.hpp|EMD|functor = distance.EMD(cost\_mat, max\_cost)|result = functor(dataA, dataB)|-|-
+Distance|Edit.hpp|Edit|functor = distance.Edit()|result = functor("asdsd", "dffdf")|-|-
+Distance|SSIM.hpp|SSIM|functor = distance.SSIM(dynamic\_range=100, masking=1)|result = functor(img1, img2)|-|-
+Distance|TWED.hpp|TWED|functor = distance.TWED(penalty=1, elastic=2)|result = functor(dataA, dataB)|-|-
+Distance|VOI.hpp|entropy|functor = partial(distance.entropy, metric=Manhatten(), k=3, logbase=20)|result = functor(dataA)|-|-
+Distance|kohonen\_distance.hpp|kohonen\_distance|functor = distance.Kohonen(train\_data, w, h)|result = functor(sample1, sample2)| | 
+Example|myFile.hpp|myClass|functor = myClass(data, par1 ,[par\_optional1, par\_optional2])|result = functor(dataA, dataB, par1, [par\_optional])|result1 = functor.encode(dataA)|result2 = functor.decode(dataB)
+Mapping|DSPCC.hpp|DSPCC|functor = mapping.DSPCC(dataset, n\_features=1)|-|functor.encode(data)|result = functor.decode(codes)
+Mapping|KOC.hpp|KOC|functor = mapping.KOC\_factory(w, h)(samples, num\_clusters)|-|-|-
+Mapping|autoencoder.hpp|Autoencoder|-|-|result = functor.encode(sample)|result = functor.decode(sample)
+Mapping|dbscan.hpp|dbscan|functor = mapping.dbscan|assignments, seeds, counts = functor(matrix, eps, minpts)|-|-
+Mapping|ESN.hpp|ESN|functor = partial(mapping.ESN(w\_size=400).train(slices, target).predict)|result = functor(slices)|-|-
+Mapping|affprop.hpp|affprop|functor = partial(mapping.affprop, preference=1.0, maxiter=100)|result = functor(data)|-|-
+Mapping|ensembles.hpp|Boosting|-|-|-|-
+Mapping|ensembles.hpp|Bagging|-|-|-|-
+Mapping|kmeans.hpp|kmeans|functor = partial(mapping.kmeans, maxiter=100, distance\_measure='manhatten')|result = functor(data, k)|-|-
+Mapping|kmedios.hpp|kmedios|functor = mapping.kmedoids|result = functor(data, k)|-|-
+Mapping|DT.hpp|DT|-|-|-|-
+Space|matrix.hpp|Matrix|functor = space.Matrix(data, Euclidean())|result = functor(i, j)|-|-
+Space|tree.hpp|Tree|-|-|-|-
+Transform|wavelet\_new.hpp|dwt|functor = partial(transform.dwt, wavelet\_type=3)|result = functor(a)|-|-
+Transform|wavelet\_new.hpp|idwt|functor = partial(transform.idwt, wavelet\_type=1, lx=3)|result = functor(a, b)|-|-
+Transform|wavelet\_new.hpp|wmaxlev|functor = partial(transform.wmaxlev, wavelet\_type=t)|result = functor(size\_x)|-|-
+Utils|sparsify.hpp|sparsify\_effective\_resistance|functor = partial(utils.sparsify\_effective\_resistance, ep=0.1)|result = functor(data)|-|-
+Utils|sparsify.hpp|sparsify\_spanning\_tree|functor = partial(utils.sparsify\_spanning\_tree, minimum=False)|result = functor(data)|-|-
+Utils|crossfilter.hpp|dimension|-|-|-|-

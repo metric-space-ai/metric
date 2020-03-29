@@ -145,7 +145,7 @@ namespace metric {
 			long long random_seed_;
 
 			std::vector<int> clusters;	
-			std::vector<recType> centroids;
+			std::vector<int> centroids;
 			std::vector<int> clusters_counts;	
 
 			std::vector<T> nodes_std_deviations;
@@ -165,9 +165,9 @@ namespace metric {
 				 * 
 				 * @param num_clusters
 				 *
-				 * @return std::tuple<std::vector<int>, std::vector<recType>, std::vector<int>>
+				 * @return std::tuple<std::vector<int>, std::vector<int>, std::vector<int>>
 				 */
-			std::tuple<std::vector<int>, std::vector<recType>, std::vector<int>> clusterize_nodes(int num_clusters, int min_cluster_size = 1);
+			std::tuple<std::vector<int>, std::vector<int>, std::vector<int>> clusterize_nodes(int num_clusters, int min_cluster_size = 1);
 
 			/**
 				 * @brief 
