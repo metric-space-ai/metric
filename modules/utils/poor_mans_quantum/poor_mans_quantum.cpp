@@ -169,7 +169,7 @@ PMQ<Distribution, T>::PMQ(std::vector<T> data, Distribution d)
 	_dist._data.clear();
 	_dist._prob.clear();
 	T cumulative_sum = 0;
-	for(auto it = hist.begin(); it != hist.end(); ++it) 
+	for(auto it = hist.begin(); it != hist.end(); ++it)
 	{
 		_dist._data.push_back(it->first);
 		cumulative_sum += (T) it->second / data.size();

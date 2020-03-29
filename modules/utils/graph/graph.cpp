@@ -757,7 +757,6 @@ template <typename Container,  typename>
 void KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::make_edge_pairs(const Container & samples)
 {
     this->m.resize(samples.size(), samples.size());
-
     std::vector<int> ids(samples.size());
     std::iota(ids.begin(), ids.end(), 0);
 

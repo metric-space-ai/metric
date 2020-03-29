@@ -9,8 +9,10 @@ Copyright (c) 2018 Michael Welsch
 #define _METRIC_DISTANCE_K_RELATED_STANDARDS_CPP
 
 #include "Standards.hpp"
+#include <algorithm>
 
 #include <cmath>
+#include <algorithm>
 
 namespace metric {
 
@@ -45,7 +47,7 @@ auto Euclidian_thresholded<V>::operator()(const Container& a, const Container& b
     for (auto it1 = a.begin(), it2 = b.begin(); it1 != a.end() || it2 != b.end(); ++it1, ++it2) {
         sum += (*it1 - *it2) * (*it1 - *it2);
     }
-    return std::min(thres, value_type(factor * sqrt(sum)));
+    return std::min(thres, value_type(factor * std::sqrt(sum)));
 }
 
 template <typename V>
@@ -95,7 +97,7 @@ auto CosineInverted<V>::operator()(const Container& A, const Container& B) const
         denom_a += *it1 * *it1;
         denom_b += *it2 * *it2;
     }
-    return abs(1 - dot / (std::sqrt(denom_a) * std::sqrt(denom_b)));
+    return std::abs(1 - dot / (std::sqrt(denom_a) * std::sqrt(denom_b)));
 }
 
 template <typename V>

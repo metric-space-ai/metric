@@ -354,7 +354,7 @@ public:
      *
      * @return return all nodes of the tree
      */	
-     auto get_all_nodes() -> std::vector<Node_ptr>;
+	auto get_all_nodes() -> std::vector<Node_ptr>;
 
     /**
      * @brief compare tree with another

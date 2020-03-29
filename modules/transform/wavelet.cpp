@@ -11,6 +11,7 @@ Copyright (c) 2019  Michael Welsch
 #include "wavelet.hpp"
 #include <type_traits>
 #include <memory>
+#include <algorithm>
 
 /********************/
 // vector operation overloads

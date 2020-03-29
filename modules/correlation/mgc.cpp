@@ -18,8 +18,26 @@
 #if defined(_MSC_VER)
 /* Microsoft C/C++-compatible compiler */
 #include <intrin.h>
-#else
+#elif defined(GNUC) && (defined(x86_64) || defined(i386))
+     /* GCC-compatible compiler, targeting x86/x86-64 */
+
 #include <x86intrin.h>
+#elif defined(GNUC) && defined(ARM_NEON)
+     /* GCC-compatible compiler, targeting ARM with NEON */
+
+#include <arm_neon.h>
+#elif defined(GNUC) && defined(IWMMXT)
+     /* GCC-compatible compiler, targeting ARM with WMMX */
+
+#include <mmintrin.h>
+#elif (defined(GNUC) || defined(xlC)) && (defined(VEC) || defined(ALTIVEC))
+     /* XLC or GCC-compatible compiler, targeting PowerPC with VMX/VSX */
+
+#include <altivec.h>
+#elif defined(GNUC) && defined(SPE)
+     /* GCC-compatible compiler, targeting PowerPC with SPE */
+
+ #include <spe.h>
 #endif
 
 #include <math.h>
