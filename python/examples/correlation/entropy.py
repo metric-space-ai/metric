@@ -1,5 +1,5 @@
 import numpy
-from metric.distance import entropy
+from metric.correlation import entropy
 
 aent = numpy.float_([
     [5.0, 5.0],
