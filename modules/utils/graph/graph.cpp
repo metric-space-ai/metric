@@ -679,8 +679,15 @@ void RandomUniform<WType, isDense>::fill(MType& matrix, WType lower_bound, WType
 // KNN-Graph
 
 template <typename Sample, typename Distance, typename WeightType, bool isDense, bool isSymmetric>
-KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::KNNGraph(const std::vector<Sample> & samples, size_t neighbors_num, size_t max_bruteforce_size, int max_iterations, double update_range)
-    : Graph<WeightType, isDense, isSymmetric>(samples.size()), _nodes(samples), _neighbors_num(neighbors_num), _max_bruteforce_size(max_bruteforce_size), _max_iterations(max_iterations), _update_range(update_range)
+template <typename Container, typename>
+KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::KNNGraph(const Container & samples,
+    size_t neighbors_num, size_t max_bruteforce_size, int max_iterations, double update_range)
+    : Graph<WeightType, isDense, isSymmetric>(samples.size())
+    , _nodes(samples)
+    , _neighbors_num(neighbors_num)
+    , _max_bruteforce_size(max_bruteforce_size)
+    , _max_iterations(max_iterations)
+    , _update_range(update_range)
 {
     construct(samples);
 }
@@ -724,7 +731,8 @@ KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::KNNGraph(const KNN
 //}
 
 template <typename Sample, typename Distance, typename WeightType, bool isDense, bool isSymmetric>
-void KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::calculate_distance_matrix(const std::vector<Sample> &samples)
+template <typename Container,  typename>
+void KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::calculate_distance_matrix( const Container & samples)
 {
 	Distance distance;
 	
@@ -745,7 +753,8 @@ void KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::calculate_dis
 }
 
 template <typename Sample, typename Distance, typename WeightType, bool isDense, bool isSymmetric>
-void KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::make_edge_pairs(const std::vector<Sample> & samples)
+template <typename Container,  typename>
+void KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::make_edge_pairs(const Container & samples)
 {
     this->m.resize(samples.size(), samples.size());
 
@@ -795,7 +804,8 @@ void KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::make_edge_pai
 }
 
 template <typename Sample, typename Distance, typename WeightType, bool isDense, bool isSymmetric>
-void KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::construct(const std::vector<Sample> & samples)
+template <typename Container, typename>
+void KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::construct(const Container& samples)
 {
     calculate_distance_matrix(samples);
 
@@ -804,9 +814,12 @@ void KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::construct(con
     this->valid = true;
 }
 
-
 template <typename Sample, typename Distance, typename WeightType, bool isDense, bool isSymmetric>
-std::vector<std::pair<size_t, size_t>> KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::random_pair_division(const std::vector<Sample> & samples, const std::vector<int> &ids, int max_size)
+template <typename Container, typename>
+std::vector<std::pair<size_t, size_t>>
+KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::random_pair_division(const Container & samples,
+                                                                                   const std::vector<int>& ids,
+                                                                                   int max_size)
 {
 	Distance d;
 	std::vector<Sample> A;
@@ -865,7 +878,10 @@ std::vector<std::pair<size_t, size_t>> KNNGraph<Sample, Distance, WeightType, is
 }
 
 template <typename Sample, typename Distance, typename WeightType, bool isDense, bool isSymmetric>
-std::vector<std::pair<size_t, size_t>> KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::brute_force(const std::vector<Sample> & samples, const std::vector<int> & ids)
+template<typename Container, typename>
+std::vector<std::pair<size_t, size_t>>
+KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::brute_force(const Container & samples,
+                                                                          const std::vector<int> & ids)
 {
     std::vector<std::pair<size_t, size_t>> edgesPairs;
 
@@ -1063,7 +1079,9 @@ std::size_t KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::insert
     return _nodes.size()-1;
 }
 template <typename Sample, typename Distance, typename WeightType, bool isDense, bool isSymmetric>
-std::vector<std::size_t> KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::insert(const std::vector<Sample>& p)
+template <typename Container, typename>
+std::vector<std::size_t>
+KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::insert(const Container & p)
 {
     auto sz = _nodes.size();
     _nodes.insert(_nodes.end(), std::begin(p), std::end(p));
@@ -1084,8 +1102,10 @@ std::pair<std::size_t, bool> KNNGraph<Sample, Distance, WeightType, isDense, isS
 }
 
 template <typename Sample, typename Distance, typename WeightType, bool isDense, bool isSymmetric>
+template<typename Container, typename>
 std::vector<std::pair<std::size_t, bool>>
-KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::insert_if(const std::vector<Sample>& items, typename Distance::distance_type threshold) {
+KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::insert_if(const Container & items,
+                                                                        typename Distance::distance_type threshold) {
     Distance metric;
     std::vector<std::pair<std::size_t, bool>> v;
     v.reserve(items.size());

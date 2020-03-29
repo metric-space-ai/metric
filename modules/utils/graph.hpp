@@ -11,6 +11,7 @@ Copyright (c) 2019 Michael Welsch
 
 #include "../../3rdparty/blaze/Blaze.h"
 #include "../space/tree.hpp"
+#include "type_traits.hpp"
 
 #include <stack>
 #include <type_traits>
@@ -342,7 +343,10 @@ public:
      * @brief Construct a new KNN Graph object
      * 
      */
-    KNNGraph(const std::vector<Sample>& X, size_t neighbors_num, size_t max_bruteforce_size, int max_iterations = 100, double update_range = 0.02);
+    template<typename Container,
+             typename = std::enable_if<std::is_same_v<Sample, type_traits::index_value_type_t<Container>>>>
+    KNNGraph(const Container& X, size_t neighbors_num, size_t max_bruteforce_size, int max_iterations = 100,
+             double update_range = 0.02);
 
     /**
      * @brief Construct a new KNN Graph object
@@ -396,7 +400,10 @@ public:
      * @param p - container with new elements
      * @return vector of indexes of the new elements
      */
-    std::vector<std::size_t> insert(const std::vector<Sample>& p);
+    template <typename Container,
+        typename = std::enable_if<
+            std::is_same<Sample, typename std::decay<decltype(std::declval<Container&>().operator[](0))>::type>::value>>
+    std::vector<std::size_t> insert(const Container& p);
 
     /**
      * @brief insert new element into the graph if distance between this element and its NN is greater than threshold
@@ -413,7 +420,11 @@ public:
      * @param treshold distance threshold
      * @return vector of pairs consists of indexes and results of insertion
      */
-    std::vector<std::pair<std::size_t,bool>> insert_if(const std::vector<Sample>& items, typename Distance::distance_type threshold);
+    template <typename Container,
+        typename = std::enable_if<
+            std::is_same<Sample, typename std::decay<decltype(std::declval<Container&>().operator[](0))>::type>::value>>
+    std::vector<std::pair<std::size_t, bool>> insert_if(const Container& items,
+                                                        typename Distance::distance_type threshold);
 
     /**
      * @brief erase element from graph
@@ -443,38 +454,49 @@ private:
      * @brief 
      * 
      */
-    void construct(const std::vector<Sample> &X);
+    template <typename Container,
+        typename = std::enable_if<std::is_same_v<Sample, type_traits::index_value_type_t<Container>>>>
+    void construct(const Container& X);
 
     /**
      * @brief 
      * 
      */
-    void calculate_distance_matrix(const std::vector<Sample> &X);
+    template <typename Container,
+        typename = std::enable_if<std::is_same_v<Sample, type_traits::index_value_type_t<Container>>>>
+    void calculate_distance_matrix(const Container& X);
 
     /**
      * @brief 
      * 
      */
-    void make_edge_pairs(const std::vector<Sample> &X);
-	
-    /**
-     * @brief 
-     * 
-     */
-	std::vector<std::pair<size_t, size_t>> brute_force(const std::vector<Sample> &samples, const std::vector<int> &ids);
-	
-    /**
-     * @brief 
-     * 
-     */
-	std::vector<std::pair<size_t, size_t>> random_pair_division(const std::vector<Sample> &samples, const std::vector<int> &ids, int max_size);
+    template <typename Container,
+        typename = std::enable_if<std::is_same_v<Sample, type_traits::index_value_type_t<Container>>>>
+    void make_edge_pairs(const Container& X);
 
     /**
      * @brief 
      * 
      */
-	template <typename T1>
-	std::vector<size_t> sort_indexes(const std::vector<T1> &v);
+    template <typename Container,
+        typename = std::enable_if<std::is_same_v<Sample, type_traits::index_value_type_t<Container>>>>
+    std::vector<std::pair<size_t, size_t>> brute_force(const Container& samples, const std::vector<int>& ids);
+
+    /**
+     * @brief 
+     * 
+     */
+    template <typename Container,
+        typename = std::enable_if<std::is_same_v<Sample, type_traits::index_value_type_t<Container>>>>
+    std::vector<std::pair<size_t, size_t>> random_pair_division(const Container& samples,
+                                                                const std::vector<int>& ids, int max_size);
+
+    /**
+     * @brief 
+     * 
+     */
+    template <typename T1>
+    std::vector<size_t> sort_indexes(const std::vector<T1> &v);
 
     using distance_value_type_t = typename Distance::value_type;
 };

@@ -207,7 +207,7 @@ BOOST_AUTO_TEST_CASE(empty_dataset)
 	///
 
 	// empty dataset
-	auto g_3 = metric::KNNGraph<std::vector<double>, metric::Euclidian<double>>({}, neighbors_num, 2.5 * neighbors_num);
+	auto g_3 = metric::KNNGraph<std::vector<double>, metric::Euclidian<double>>(std::vector<std::vector<double>>{}, neighbors_num, 2.5 * neighbors_num);
 
 	// nothing bad should be happened
     std::cout << std::endl;
@@ -254,7 +254,7 @@ BOOST_AUTO_TEST_CASE(dataset_and_query_with_different_dimensions)
 	///
 
 	// dataset and query with different dimensions
-	auto g_4 = metric::KNNGraph<std::vector<double>, metric::Euclidian<double>>({}, neighbors_num, 2.5 * neighbors_num);
+	auto g_4 = metric::KNNGraph<std::vector<double>, metric::Euclidian<double>>(std::vector<std::vector<double>>{}, neighbors_num, 2.5 * neighbors_num);
 
 	// nothing bad should be happened
     std::cout << std::endl;
