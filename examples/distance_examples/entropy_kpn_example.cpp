@@ -1,4 +1,3 @@
-
 #include <vector>
 #include <iostream>
 #include <tuple>
@@ -165,8 +164,8 @@ int main() {
     std::vector<std::vector<double>> v = { {5,5}, {2,2}, {3,3}, {5,1} };
 
     {
-        //auto e_f = metric::entropy<void, metric::Chebyshev<double>>();
-        auto ekpn = metric::entropy<void, metric::Chebyshev<double>>(metric::Chebyshev<double>(), 2, 3);
+        //auto e_f = metric::Entropy<void, metric::Chebyshev<double>>();
+        auto ekpn = metric::Entropy<void, metric::Chebyshev<double>>(metric::Chebyshev<double>(), 2, 3);
         auto e = ekpn(v);
         std::cout << "using Chebyshev: " << e << std::endl;
     }
@@ -201,9 +200,9 @@ int main() {
         //urv3.push_back({dis(gen), dis(gen)});
     //}
 
-    auto ekpn_cheb3 = metric::entropy<void, metric::Chebyshev<double>>(metric::Chebyshev<double>(), 3, 10);
-    auto ekpn_cheb7 = metric::entropy<void, metric::Chebyshev<double>>(metric::Chebyshev<double>(), 7, 10);
-    auto ekpn_eucl = metric::entropy<void, metric::Euclidian<double>>(metric::Euclidian<double>(), 3, 10);
+    auto ekpn_cheb3 = metric::Entropy<void, metric::Chebyshev<double>>(metric::Chebyshev<double>(), 3, 10);
+    auto ekpn_cheb7 = metric::Entropy<void, metric::Chebyshev<double>>(metric::Chebyshev<double>(), 7, 10);
+    auto ekpn_eucl = metric::Entropy<void, metric::Euclidian<double>>(metric::Euclidian<double>(), 3, 10);
 
     std::cout << "using Chebyshev: "
               << ekpn_cheb3(urv)
@@ -211,17 +210,12 @@ int main() {
               << ekpn_cheb7(urv)
               << std::endl;
 
-    //auto e = metric::entropy_kpN<std::vector<double>, metric::Euclidian<double>>(urv, metric::Euclidian<double>(), 3, 10);
+    //auto e = metric::Entropy_kpN<std::vector<double>, metric::Euclidian<double>>(urv, metric::Euclidian<double>(), 3, 10);
     auto e = ekpn_eucl(urv);
     std::cout << "using Euclidean: " << e << std::endl;
 
 
-
-
-
     // */
-
-
 
 
 

@@ -452,24 +452,6 @@ std::cout << "result: " << result << std::endl;
 // normalized Variation of Information as normalized functor
 // result: 0.927254
 ```
-KL functor:
-```cpp
-auto f_voi_kl = metric::VOI_kl<long double>();
-auto result = f_voi_kl(v1, v2);
-std::cout << "result: " << result << std::endl;
-// out:
-// Variation of Information as KL functor
-// result: 49.8917
-```
-Normalized KL functor:
-```cpp
-auto f_voi_norm_kl = metric::VOI_normalized_kl<long double>();
-auto result = f_voi_norm_kl(v1, v2);
-std::cout << "result: " << result << std::endl;
-// out:
-// Variation of Information as normalized KL functor
-// result: 1.06191
-```
 
 *For a full example and more details see `examples/distance_examples/entropy_example.cpp`*
 
