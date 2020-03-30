@@ -53,16 +53,9 @@ void wrap_metric_MGC(py::module& m) {
         py::arg("threshold") = 0.05,
         py::arg("max_iterations") = 1000
     );
-    m.def("compute_distance_matrix", &computeDistanceMatrix<Container, Metric1>);
-    m.def("compute_distance_matrix", &computeDistanceMatrix<Container, Metric2>);
-    m.def("mean", &mean);
-    m.def("variance", &variance);
-    m.def("icdf", &icdf);
-    m.def("erfcinv", &erfcinv);
-    m.def("erfinv_imp", &erfinv_imp);
-    m.def("polyeval", &polyeval);
-    m.def("peak2ems", &peak2ems);
-    m.def("linspace", &linspace);
+    // should be private
+//    m.def("compute_distance_matrix", &computeDistanceMatrix<Container, Metric1>);
+//    m.def("compute_distance_matrix", &computeDistanceMatrix<Container, Metric2>);
 }
 
 template <class T>
@@ -115,6 +108,6 @@ void export_metric_MGC(py::module& m)
 }
 
 
-PYBIND11_MODULE(_mgc, m) {
+PYBIND11_MODULE(mgc, m) {
     export_metric_MGC(m);
 }

@@ -9,8 +9,6 @@ Copyright (c) 2020 Panda Team
 #ifndef _METRIC_DISTANCE_K_RANDOM_ENTROPY_HPP
 #define _METRIC_DISTANCE_K_RANDOM_ENTROPY_HPP
 
-//#include <type_traits>
-
 #include "../../3rdparty/blaze/Blaze.h"
 #include "../distance/k-related/Standards.hpp"
 
@@ -29,23 +27,13 @@ struct Entropy_simple { // averaged entropy estimation: code COPIED from mgc.*pp
         logbase = 2; // TODO remove (?)
     }
 
-    template <template <typename, typename> class OuterContainer, typename Container, typename OuterAllocator>
-    double operator()(
-            const OuterContainer<Container, OuterAllocator> & data
-            //std::size_t k = 3,
-            //double logbase = 2,
-            //Metric metric = Metric(),
-            //bool exp = false
-            ) const;
+    template <typename Container>
+    double operator()(const Container& data) const;
 
     template <template <typename, typename> class OuterContainer, template <typename, bool> class InnerContainer, class OuterAllocator, typename ValueType, bool F>
     double operator()( // TODO implement
             const OuterContainer<InnerContainer<ValueType, F>, OuterAllocator> & data // inner cpntainer is specialized with bool F
-            //std::size_t k = 3,
-            //double logbase = 2,
-            //Metric metric = Metric(),
-            //bool exp = false
-            ) const;
+    ) const;
 
     template <typename Container>
     double estimate(
@@ -53,11 +41,7 @@ struct Entropy_simple { // averaged entropy estimation: code COPIED from mgc.*pp
             const size_t sampleSize = 250,
             const double threshold = 0.05,
             size_t maxIterations = 1000
-            //std::size_t k = 3,
-            //double logbase = 2,
-            //Metric metric = Metric(),
-            //bool exp = false
-            );
+    ) const;
 
 private:
     size_t k;
@@ -79,8 +63,8 @@ struct Entropy {
         p(p_),
         exp(exp_) {}
 
-    template <template <typename, typename> class OuterContainer, typename Container, typename OuterAllocator>
-    double operator()(const OuterContainer<Container, OuterAllocator> X) const;
+    template <typename Container>
+    double operator()(const Container& data) const;
 
     template <typename Container>
     double estimate(
@@ -88,7 +72,7 @@ struct Entropy {
             const size_t sampleSize = 250,
             const double threshold = 0.05,
             size_t maxIterations = 1000
-            );
+    ) const;
 
 private:
     size_t k;

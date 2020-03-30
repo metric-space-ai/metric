@@ -390,10 +390,9 @@ template<typename T> std::vector<double> MGC_direct::xcorr(const DistanceMatrix<
 	return result;
 }
 
-namespace MGC {
-
-template<typename Container1, typename Metric1, typename Container2, typename Metric2>
-double correlation(const Container1& a, const Container2& b, const Metric1& metric1, const Metric2& metric2)
+	template <class recType1, class Metric1, class recType2, class Metric2>
+template <typename Container1, typename Container2>
+double MGC<recType1, Metric1, recType2, Metric2>::operator()(const Container1& a, const Container2& b) const
 {
     assert(a.size() == b.size());
 
@@ -404,22 +403,9 @@ double correlation(const Container1& a, const Container2& b, const Metric1& metr
     return MGC_direct()(X, Y);
 }
 
-
-template<typename Container1, typename Metric1, typename Container2, typename Metric2>
-std::vector<double> xcorr(const Container1 &a, const Container2 &b, const Metric1& metric1, const Metric2& metric2, const int n)
-{
-	assert(a.size() == b.size());
-
-	/* Compute distance matrices */
-	auto X = computeDistanceMatrix<Container1>(a, metric1);
-	auto Y = computeDistanceMatrix<Container2>(b, metric2);
-
-	return MGC_direct().xcorr(X, Y, n);
-}
-
-
+template <class recType1, class Metric1, class recType2, class Metric2>
 template <typename Container, typename Metric>
-DistanceMatrix<double> computeDistanceMatrix(const Container &c, const Metric & metric)
+DistanceMatrix<double> MGC<recType1, Metric1, recType2, Metric2>::computeDistanceMatrix(const Container &c, const Metric & metric) const
 {
 	DistanceMatrix<double> X(c.size());
 	for (size_t i = 0; i < X.rows(); ++i) {
@@ -434,14 +420,12 @@ DistanceMatrix<double> computeDistanceMatrix(const Container &c, const Metric & 
 }
 
 
+template <class recType1, class Metric1, class recType2, class Metric2>
 template <typename Container1, typename Container2>
-double estimate(const Container1& a,
-                const Container2& b,
-                const std::function<double(const Container1&, const Container2&)>& corr,
-                const size_t sampleSize,
-                const double threshold,
-                size_t maxIterations
-){
+double MGC<recType1, Metric1, recType2, Metric2>::estimate(const Container1& a, const Container2& b,
+															const size_t sampleSize, const double threshold,
+															size_t maxIterations)
+{
     assert(a.size() == b.size());
 
     const size_t dataSize = a.size();
@@ -456,7 +440,7 @@ double estimate(const Container1& a,
     }
 
     if (maxIterations < 1) {
-        return corr(a, b);
+        return operator()(a, b);
     }
 
     /* Create shuffle indexes */
@@ -492,7 +476,7 @@ double estimate(const Container1& a,
         }
 
         /* Get sample mgc value */
-        double mgc = corr(sampleA, sampleB);
+        double mgc = operator()(sampleA, sampleB);
         mgcValues.push_back(mgc);
 
         std::sort(mgcValues.begin(), mgcValues.end());
@@ -520,8 +504,8 @@ double estimate(const Container1& a,
     return mu;
 }
 
-
-double mean(const std::vector<double>& data)
+template <class recType1, class Metric1, class recType2, class Metric2>
+double MGC<recType1, Metric1, recType2, Metric2>::mean(const std::vector<double>& data)
 {
     double sum = 0;
     for (size_t i = 0; i < data.size(); ++i) {
@@ -532,8 +516,8 @@ double mean(const std::vector<double>& data)
     return value;
 }
 
-
-double variance(const std::vector<double>& data, const double mean)
+template <class recType1, class Metric1, class recType2, class Metric2>
+double MGC<recType1, Metric1, recType2, Metric2>::variance(const std::vector<double>& data, const double mean)
 {
     double sum = 0;
     for (size_t i = 0; i < data.size(); ++i) {
@@ -543,8 +527,9 @@ double variance(const std::vector<double>& data, const double mean)
     return sum;
 }
 
-
-std::vector<double> icdf(const std::vector<double>& prob, const double mu, const double sigma)
+template <class recType1, class Metric1, class recType2, class Metric2>
+std::vector<double> MGC<recType1, Metric1, recType2, Metric2>::icdf(
+    const std::vector<double>& prob, const double mu, const double sigma)
 {
     std::vector<double> synth;
     synth.reserve(prob.size());
@@ -555,8 +540,8 @@ std::vector<double> icdf(const std::vector<double>& prob, const double mu, const
     return synth;
 }
 
-
-double erfcinv(const double z)
+template <class recType1, class Metric1, class recType2, class Metric2>
+double MGC<recType1, Metric1, recType2, Metric2>::erfcinv(const double z)
 {
     if ((z < 0) || (z > 2))
         std::cout << "Argument outside range [0,2] in inverse erfc function (got p=%1%)." << std::endl;
@@ -574,8 +559,8 @@ double erfcinv(const double z)
     return s * erfinv_imp(p, q);
 }
 
-
-double erfinv_imp(const double p, const double q)
+template <class recType1, class Metric1, class recType2, class Metric2>
+double MGC<recType1, Metric1, recType2, Metric2>::erfinv_imp(const double p, const double q)
 {
     double result = 0;
 
@@ -668,8 +653,8 @@ double erfinv_imp(const double p, const double q)
     return result;
 }
 
-
-double polyeval(const std::vector<double>& poly, const double z)
+template <class recType1, class Metric1, class recType2, class Metric2>
+double MGC<recType1, Metric1, recType2, Metric2>::polyeval(const std::vector<double>& poly, const double z)
 {
     const int n = poly.size();
     double sum = poly[n - 1];
@@ -680,8 +665,8 @@ double polyeval(const std::vector<double>& poly, const double z)
     return sum;
 }
 
-
-double peak2ems(const std::vector<double>& data)
+template <class recType1, class Metric1, class recType2, class Metric2>
+double MGC<recType1, Metric1, recType2, Metric2>::peak2ems(const std::vector<double>& data)
 {
     double maxAbs = -1;
     double rms = 0;
@@ -700,8 +685,8 @@ double peak2ems(const std::vector<double>& data)
     return maxAbs / rms;
 }
 
-
-std::vector<double> linspace(double a, double b, int n)
+template <class recType1, class Metric1, class recType2, class Metric2>
+std::vector<double> MGC<recType1, Metric1, recType2, Metric2>::linspace(double a, double b, int n)
 {
     std::vector<double> array;
     if (n > 1) {
@@ -718,6 +703,20 @@ std::vector<double> linspace(double a, double b, int n)
     return array;
 }
 
-}  // namespace MGC
+template<class recType1, class Metric1, class recType2, class Metric2>
+template<typename Container1, typename Container2>
+std::vector<double>
+MGC<recType1, Metric1, recType2, Metric2>::xcorr(const Container1 &a, const Container2 &b,
+																const int n) const
+{
+	assert(a.size() == b.size());
+
+	/* Compute distance matrices */
+	auto X = computeDistanceMatrix<Container1>(a, metric1);
+	auto Y = computeDistanceMatrix<Container2>(b, metric2);
+
+
+	return MGC_direct().xcorr(X, Y, n);
+}
 
 }  // namespace metric

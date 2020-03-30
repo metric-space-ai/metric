@@ -13,7 +13,7 @@ void export_metric_sparsify(py::module& m);
 void export_metric_dimension(py::module& m);
 void export_metric_datasets(py::module& m);
 
-PYBIND11_MODULE(_utils, m) {
+PYBIND11_MODULE(utils, m) {
     export_metric_sparsify(m);
     export_metric_dimension(m);
     export_metric_datasets(m);

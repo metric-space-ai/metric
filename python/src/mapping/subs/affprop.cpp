@@ -33,6 +33,6 @@ void export_metric_affprop(py::module& m) {
     register_wrapper_affprop<std::vector<double>, metric::Euclidian<double>, float>(m);
 }
 
-PYBIND11_MODULE(_affprop, m) {
+PYBIND11_MODULE(affprop, m) {
     export_metric_affprop(m);
 }

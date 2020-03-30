@@ -12,25 +12,29 @@
 #include <pybind11/numpy.h>
 #include <pybind11/functional.h>
 #include <vector>
-#include <string>
-#include <functional>
 
 namespace py = pybind11;
+
+template<typename Container, typename Metric>
+double entropy(const Container& data, Metric metric, size_t k, size_t p, bool exp)
+{
+    return metric::Entropy<double, Metric>(metric, k, p, exp)(data);
+}
 
 
 template <typename Container, typename Metric>
 void wrap_metric_entropy(py::module& m) {
-    using Value = double ;
-    std::string name = "entropy";
-    m.def(name.c_str(), &metric::entropy<Container, Metric>,
-        "Continuous entropy estimator",
+    m.def("entropy", &entropy<Container, Metric>,
+        "internal function to create instantiate template Entropy classes",
         py::arg("data"),
-        py::arg("k") = 3,
-        py::arg("logbase") = 2,
-        py::arg("metric") = Metric(),
-        py::arg("exp") = false
+        py::arg("metric"),
+        py::arg("k"),
+        py::arg("p"),
+        py::arg("exp")
     );
+    m.def("estimate", &metric::entropy_details::estimate<Container>);
 }
+
 
 void export_metric_entropy(py::module& m) {
     using Value = double;
@@ -44,6 +48,6 @@ void export_metric_entropy(py::module& m) {
 }
 
 
-PYBIND11_MODULE(_entropy, m) {
+PYBIND11_MODULE(entropy, m) {
     export_metric_entropy(m);
 }
