@@ -20,10 +20,16 @@ void wrap_metric_VOI_normalized(py::module& m) {
     using Metric = metric::VOI_normalized<Value>;
     using Container = std::vector<std::vector<Value>>;
     py::class_<Metric>(m, "VOI_normalized", "Normalized Variation of Information")
-        .def(py::init<int, Value>(), py::arg("k") = 3, py::arg("logbase") = 2)
-        .def("__call__", +[](Metric& self, const Container& a, const Container& b) {
-            return self(a, b);
-        }, "Calculate Variation of Information");
+        .def(py::init<int, Value>(),
+            "Construct",
+            py::arg("k") = 3,
+            py::arg("logbase") = 2
+        )
+        .def("__call__", &Metric::template operator()<Container>,
+            "Calculate Variation of Information",
+            py::arg("a"),
+            py::arg("b")
+        );
 }
 
 void export_metric_VOI(py::module& m) {
