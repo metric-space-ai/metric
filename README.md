@@ -3,6 +3,56 @@
 **PANDA | METRIC** is a framework for processing arbitrary data. 
 project page: https://panda.technology/de/metric
 
+## intro
+
+```cpp
+//file.cpp
+#include "metric.hpp"
+
+int main()
+{	
+    // some data
+    std::vector<std::vector<int>> A = {
+        { 0, 1, 1, 1, 1, 1, 2, 3 },
+        { 1, 1, 1, 1, 1, 2, 3, 4 },
+        { 2, 2, 2, 1, 1, 2, 0, 0 },
+        { 3, 3, 2, 2, 1, 1, 0, 0 },
+        { 4, 3, 2, 1, 0, 0, 0, 0 },
+        { 5, 3, 2, 1, 0, 0, 0, 0 },
+        { 4, 6, 2, 2, 1, 1, 0, 0 },
+    };
+	
+    // some other data
+    std::deque<std::string> B = {
+        "this",
+        "test",
+        "tests",
+        "correlation",
+        "of",
+        "arbitrary",
+        "data",
+    };
+
+	
+    // bind the types and metrics with an constructor to return a functor
+    auto mgc_corr = metric::MGC<std::vector<int>, metric::Euclidian<int>, std::string, metric::Edit<std::string>>();
+
+    // compute the correlation
+    auto result = mgc_corr(A, B);
+
+    std::cout << "Multiscale graph correlation: " << result << std::endl;
+    // output Multiscale graph correlation: 0.0791671 (Time = 7.8e-05s)
+    // row 2 and 3 are similar in both data sets, so there is a minimal correlation.
+
+    return 0;
+}
+```
+
+compile with
+```
+clang++ -std=c++17 -lopenblas file.cpp
+```
+
 ## Overview
 
 **PANDA | METRIC** extends the capabilities of machine
