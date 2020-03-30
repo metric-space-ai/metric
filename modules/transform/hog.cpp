@@ -151,6 +151,30 @@ namespace metric {
 		return features;
 	}
 
+	template<typename T>
+	blaze::DynamicMatrix<T> HOG<T>::groundDistance(blaze::DynamicMatrix<T> image)
+	{
+		T threshold = 0;
+		size_t blocks_per_image = floor((img_size./cell_size - block_size)./(block_size - block_stride) + 1);
+		size_t n_hog_bins = prod([blocks_per_image, block_size, orientations]);
+
+		/* Spatial distance matrix */
+		size_t spatial_dist_mat = spatial_dist(n_hog_bins,orientations, block_size, blocks_per_image);
+		if (threshold != 0) {
+			spatial_dist_mat(spatial_dist_mat > threshold) = threshold;
+		} else {
+			spatial_dist_mat = repelem(spatial_dist_mat, orientations, orientations);
+		}
+
+		/* Orientations distance matrix */
+		size_t orient_dist_cell = rotation_dist(orientations,signed);
+		size_t orient_dist_mat = repmat(orient_dist_cell,n_hog_bins/orientations);
+
+		/* Total ground distance matrix */
+		size_t ground_dist = rotation_cost * orient_dist_mat + move_cost * spatial_dist_mat;
+
+		return blaze::DynamicMatrix<T>();
+	}
 
 
 }

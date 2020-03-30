@@ -14,6 +14,7 @@ namespace metric {
 
 			HOG(const size_t orientations, const size_t cellSize, const size_t blockSize);
 			Vector encode(const HOG::Matrix &image) const;
+			blaze::DynamicMatrix<T> groundDistance(blaze::DynamicMatrix<T> image);
 
 		private:
 			size_t orientations;
