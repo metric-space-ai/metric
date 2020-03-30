@@ -1,5 +1,4 @@
 import numpy
-#from metric.distance import VOI_kl, VOI_normalized # *_kl removed
 from metric.distance import VOI_normalized
 
 v1 = numpy.float_([
@@ -16,8 +15,5 @@ v2 = numpy.float_([
     [1.0, 1.0],
 ])
 
-#result = VOI_kl()(v1, v2)
-#print(f'KL VOI: {result:.5f}')
-
-result = VOI_normalized()(v1, v2)
+result = VOI_normalized(3, 2)(v1, v2)
 print(f'VOI normalized: {result:.5f}')

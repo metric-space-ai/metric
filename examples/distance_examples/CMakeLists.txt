@@ -33,7 +33,7 @@ foreach(exampleSrc ${EXAMPLE_SRCS})
 	add_executable(${exampleName} ${exampleSrc})
  
 	#link to Boost libraries AND your targets and dependencies 
-	target_link_libraries(${exampleName} ${Boost_LIBRARIES})
+	target_link_libraries(${exampleName} ${Boost_LIBRARIES} ${LAPACK_LIBRARIES})
 	set_target_properties(${exampleName} PROPERTIES CXX_STANDARD 17)
 	if(UNIX) 
 		set(THREADS_PREFER_PTHREAD_FLAG ON)

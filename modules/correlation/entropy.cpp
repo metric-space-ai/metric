@@ -425,7 +425,7 @@ double Entropy_simple<recType, Metric>::estimate(
         size_t maxIterations
 ) const
 {
-    return entropy_details::estimate(a, this, sampleSize, threshold, maxIterations);
+    return entropy_details::estimate(a, *this, sampleSize, threshold, maxIterations);
 }
 
 
@@ -519,7 +519,7 @@ double Entropy<recType, Metric>::estimate(
         size_t maxIterations
 ) const
 {
-    return entropy_details::estimate(a, this, sampleSize, threshold, maxIterations);
+    return entropy_details::estimate(a, *this, sampleSize, threshold, maxIterations);
 }
 
 

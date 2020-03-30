@@ -22,10 +22,8 @@ struct Entropy_simple { // averaged entropy estimation: code COPIED from mgc.*pp
     Entropy_simple(Metric metric_ = Metric(), size_t k_ = 3, bool exp_ = false) :
         metric(metric_),
         k(k_),
-        exp(exp_)
-    {
-        logbase = 2; // TODO remove (?)
-    }
+        exp(exp_),
+        logbase(2) {} // TODO remove (?)
 
     template <typename Container>
     double operator()(const Container& data) const;
