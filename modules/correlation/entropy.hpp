@@ -19,9 +19,9 @@ namespace metric {
 
 
 template <typename recType, typename Metric = metric::Euclidian<typename recType::value_type>>
-struct entropy_simple { // averaged entropy estimation: code COPIED from mgc.*pp with only mgc replaced with entropy, TODO refactor to avoid code dubbing
+struct Entropy_simple { // averaged entropy estimation: code COPIED from mgc.*pp with only mgc replaced with entropy, TODO refactor to avoid code dubbing
 
-    entropy_simple(Metric metric_ = Metric(), size_t k_ = 3, bool exp_ = false) :
+    Entropy_simple(Metric metric_ = Metric(), size_t k_ = 3, bool exp_ = false) :
         metric(metric_),
         k(k_),
         exp(exp_)
@@ -71,9 +71,9 @@ private:
 
 
 template <typename recType, typename Metric = metric::Chebyshev<typename recType::value_type>>
-struct entropy {
+struct Entropy {
 
-    entropy(Metric metric_ = Metric(), size_t k_ = 7, size_t p_ = 70, bool exp_ = false) :
+    Entropy(Metric metric_ = Metric(), size_t k_ = 7, size_t p_ = 70, bool exp_ = false) :
         metric(metric_),
         k(k_),
         p(p_),
