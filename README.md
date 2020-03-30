@@ -1,6 +1,6 @@
 # PANDA | METRIC
 
-**PANDA | METRIC** is a framework for machine learning with arbitrary data 
+**PANDA | METRIC** is a framework for machine learning based on the concept of metric spaces, which makes it possible to use arbitrary data instead of numeric tables of data. 
 
 ## intro
 
