@@ -1,14 +1,17 @@
-//
-// Created by Aleksey Timin on 3/27/20.
-//
+/*
+  This Source Code Form is subject to the terms of the Mozilla Public
+  License, v. 2.0. If a copy of the MPL was not distributed with this
+  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+	
+	Created by Aleksey Timin on 3/29/20.
+*/
 
 #ifndef IMAGEFILTER_H
 #define IMAGEFILTER_H
 
 #include <algorithm>
 #include <cmath>
-#include <blaze/Math.h>
-#include <blaze/Blaze.h>
+#include "../../../3rdparty/blaze/Math.h"
 
 /**
  * Module of image filters based on 2 convolution.

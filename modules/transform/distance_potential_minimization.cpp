@@ -7,6 +7,7 @@
 */
 
 #include "distance_potential_minimization.hpp"
+#include "../../modules/utils/image_processing/image_filter.hpp"
 #include <iostream>
 #include <tuple>
 #include <set>
@@ -639,7 +640,6 @@ std::vector<double> fit_hysteresis(blaze::DynamicVector<double> x, blaze::Dynami
 
 std::vector<double> fit_hysteresis(blaze::DynamicMatrix<double> I, size_t steps, std::vector<double> sigma)
 {
-
     auto [xc0, yc0, r0] = DPM_detail::initialCircle(I);  // initial guess
     std::vector<double> ep = { xc0, yc0, r0, r0, 0 };  // initial parameter guess
     blaze::DynamicVector<double> increment = { 0.2, 0.2, 0.2, 0.2, M_PI / 180 * 0.2 };  // increment in each iteration
