@@ -401,6 +401,15 @@ public:
      *
      */
     blaze::CompressedMatrix<Distance, blaze::rowMajor> matrix() const;
+
+    /**
+     * @brief distance between two nodes
+     * @param id1 ID of the first node
+     * @param id2 ID of the second node
+     * @return distance between nodes
+     */
+    Distance operator()(std::size_t id1, std::size_t id2) const;
+    
 private:
     friend class Node<recType, Metric>;
 
