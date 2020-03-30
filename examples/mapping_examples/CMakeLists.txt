@@ -8,7 +8,8 @@ project(mapping_examples)
 
 
 include_directories(
-	${PROJECT_SOURCE_DIR}
+	${PROJECT_SOURCE_DIR} 
+    ${PROJECT_SOURCE_DIR}/../..
 )
 	 
 file(COPY "assets" DESTINATION ".")
