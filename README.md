@@ -33,7 +33,7 @@ int main()
     };
 
 	
-    // bind the types and metrics with an constructor to return a functor
+    // bind the types and corresponding metrics with an constructor
     auto mgc_corr = metric::MGC<std::vector<int>, metric::Euclidian<int>, std::string, metric::Edit<std::string>>();
 
     // compute the correlation
