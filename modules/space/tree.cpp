@@ -1506,6 +1506,18 @@ auto Tree<recType, Metric>::matrix() const
     }
     return m;
 }
+template <typename recType, typename Metric>
+auto Tree<recType, Metric>::operator()(std::size_t id1, std::size_t id2) const -> Distance {
+    if (data[id1].second->parent == data[id2].second) {
+        // node J is a parent for node I, so we can use parent_dist
+        return  data[id1].second->parent_dist;
+    }
+    if (data[id2].second->parent == data[id1].second) {
+        // node I is a parent for node J, so we can use parent_dist
+        return data[id2].second->parent_dist;
+    }
+    return metric(data[id1].first, data[id2].first);
+}
 }  // namespace metric
 
 #endif
