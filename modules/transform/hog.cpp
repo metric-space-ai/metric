@@ -25,25 +25,26 @@ namespace metric {
 		assert(image.rows() % blockSize * cellSize == 0);
 		assert(image.columns() % blockSize * cellSize == 0);
 
+
 		/* Compute dx */
-		blaze::DynamicMatrix<T> dx(image.rows(), image.columns());
-		blaze::row(dx, 0) = blaze::row(image, 1);
-		for (auto i = 0; i < image.rows() - 2; ++i) {
-			blaze::row(dx, i + 1) = blaze::row(image, i + 2) - blaze::row(image, i);
+		blaze::DynamicMatrix<T, blaze::columnMajor> imageColumnMajor = image;
+		blaze::DynamicMatrix<T, blaze::columnMajor> dxColumnMajor(image.rows(), image.columns());
+		blaze::column(dxColumnMajor, 0) = blaze::column(image, 1);
+		for (auto i = 1; i < image.columns() - 1; ++i) {
+			blaze::column(dxColumnMajor, i) = blaze::column(image, i + 1) - blaze::column(image, i - 1);
 		}
-		blaze::row(dx, image.rows() - 1) = -blaze::row(image, image.rows() - 2);
+		blaze::column(dxColumnMajor, image.columns() - 1) = -blaze::column(image, image.columns() - 2);
+
+		blaze::DynamicMatrix<T> dx = dxColumnMajor;
 
 
 		/* Compute dy */
-		blaze::DynamicMatrix<T, blaze::columnMajor> imageColumnMajor = image;
-		blaze::DynamicMatrix<T, blaze::columnMajor> dyColumnMajor(image.rows(), image.columns());
-		blaze::column(dyColumnMajor, 0) = blaze::column(image, 1);
-		for (auto i = 0; i < image.columns() - 2; ++i) {
-			blaze::column(dyColumnMajor, i + 1) = blaze::column(image, i + 2) - blaze::column(image, i);
+		blaze::DynamicMatrix<T> dy(image.rows(), image.columns());
+		blaze::row(dy, 0) = blaze::row(image, 1);
+		for (auto i = 1; i < image.rows() - 1; ++i) {
+			blaze::row(dy, i) = blaze::row(image, i + 1) - blaze::row(image, i - 1);
 		}
-		blaze::column(dyColumnMajor, image.columns() - 1) = -blaze::column(image, image.columns() - 2);
-
-		blaze::DynamicMatrix<T> dy = dyColumnMajor;
+		blaze::row(dy, image.rows() - 1) = -blaze::row(image, image.rows() - 2);
 
 
 		/* Compute magnitude */
@@ -62,14 +63,25 @@ namespace metric {
 
 		//std::cout << " dev" << std::endl;
 		//std::cout << blaze::row(angle, 0) << std::endl;
+		//std::cout << "---" << std::endl;
+		//std::cout << blaze::min(angle) << std::endl;
+		//std::cout << blaze::max(angle) << std::endl;
 		angle = blaze::atan(angle);
 		//std::cout << " atan" << std::endl;
 		//std::cout << blaze::row(angle, 0) << std::endl;
 
+		//std::cout << blaze::min(angle) << std::endl;
+		//std::cout << blaze::max(angle) << std::endl;
 		angle += M_PI / T(2);
 		//std::cout << " norm" << std::endl;
 		//std::cout << blaze::row(angle, 0) << std::endl;
+		//std::cout << blaze::min(angle) << std::endl;
+		//std::cout << blaze::max(angle) << std::endl;
 		angle /= M_PI / T(orientations);
+		//angle *= 0.9999;//T(1) - 20 * std::numeric_limits<T>::epsilon();
+
+		//std::cout << blaze::min(angle) << std::endl;
+		//std::cout << blaze::max(angle) << std::endl;
 		//std::cout << " norm" << std::endl;
 		//std::cout << blaze::row(angle, 0) << std::endl;
 		//std::cout << angle << std::endl;
@@ -87,7 +99,7 @@ namespace metric {
 		/* Number of blocks in image */
 		const size_t blockNumbers = (image.rows() / blockCellSize) * (image.columns() / blockCellSize);
 
-		/* Resulting fetures vector */
+		/* Resulting features vector */
 		Vector features(blockNumbers * blockHistogramSize);
 
 		size_t blockCount = 0;
@@ -99,10 +111,12 @@ namespace metric {
 				for (auto i = 0; i < blockCellSize; ++i) {
 					for (auto j = 0; j < blockCellSize; ++j) {
 						const size_t cellNumber = (i / cellSize) * blockSize + (j / cellSize);
-						const T angleBin = std::floor(angle(blockStartRow + i, blockStartColumn + j));
+						T angleBin = std::floor(angle(blockStartRow + i, blockStartColumn + j));
+						if (angleBin == orientations) {
+							--angleBin;
+						}
 						//std::cout << i << " " << j << " " << cellNumber << " " << angleBin << std::endl;
 						blockHistogram(cellNumber, angleBin) += magnitude(blockStartRow + i, blockStartColumn + j);
-
 					}
 				}
 
@@ -126,7 +140,7 @@ namespace metric {
 				}
 				//std::cout << blaze::trans(features) << std::endl;
 				++blockCount;
-				std::cout << blockCount << std::endl;
+				//std::cout << blockCount << std::endl;
 			}
 		}
 

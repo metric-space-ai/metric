@@ -17,7 +17,7 @@ using Vector = blaze::DynamicVector<double>;
 
 BOOST_AUTO_TEST_CASE(base)
 {
-	auto hog = HOG<double>(9, 8, 4);
+	auto hog = HOG<double>(9, 512, 1);
 
 	auto [shape, data] = Datasets::loadImages("images-list");
 
@@ -33,5 +33,6 @@ BOOST_AUTO_TEST_CASE(base)
 	//std::cout << image << std::endl;
 
 	blaze::DynamicVector<double, blaze::rowVector> r = blaze::trans(hog.encode(image));
+	std::cout << r.size() << std::endl;
 	std::cout << r << std::endl;
 }
