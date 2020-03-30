@@ -13,14 +13,19 @@
 /**
  * Module of image filters based on 2 convolution.
  *
- * Usage:
+ * Usage for RGB:
  *
  * auto input = iminit<uint8_t, 3>(1920, 1080, 50);
- *
- * MotionFilter filter(5, 45)
- * PadModel<uint8_t> padmodel(PadDirection::BOTH, PadType::CONST);
+ * imfilter<uint8_t, 3, FilterType::GAUSSIAN, PadDirection::BOTH, PadType::CONST> f(3, 3, 0.3);
+ * Image<uint8_t, 3> filterImage = f(input);
  *
  * Image<uint8_t, 3> ouput = imfilter(input, filter, padmodel);
+ *
+ * Usage for one gray channel
+ *
+ * auto input = Channel<double>(1920, 1080, 50.0);
+ * imfilter<double, 1, FilterType::AVERAGE, PadDirection::BOTH, PadType::CONST> f(3, 3);
+ * Channel<double> out = f(input);
  *
  * Implemented filters:
  *   AverageFilter
@@ -98,213 +103,219 @@ namespace metric {
 		T _initValue;
 	};
 
-	/**
-	 * Filter an image
-	 * @tparam Filter type of the filter
-	 * @tparam ChannelType type of the chanel (RGB or gray)
-	 * @param img image to filter
-	 * @param impl implementation of the filter
-	 * @param padmodel padding
-	 * @param full if true it returns the matrix with padding, else returns only the image
-	 * @return the filtered image
-	 */
-	template<typename Filter, typename ChannelType, size_t ChannelNumber>
-	Image<ChannelType, ChannelNumber>
-	imfilter(const Image<ChannelType, ChannelNumber> &img, const Filter &impl,
-			 const PadModel <ChannelType> &padmodel, bool full = true);
-	/**
-	 * 	Average filter
-	 */
-	class AverageFilter {
-	public:
-		/**
-		 * Creates an averaging filter
-		  * @param shape the shape of the kernel
-		  */
-		AverageFilter(const Shape &shape);
 
-		FilterKernel operator()() const {
-			return _kernel;
+
+	template <typename ChannelType, size_t N, typename Filter, PadDirection PadDir, PadType PadType>
+	class imfilter {
+	public:
+		template <typename ...FilterArgs>
+		imfilter(FilterArgs... args) : _padModel(PadDir, PadType), _filter(args...) {
 		}
 
+		Channel<ChannelType> operator()(const Channel<ChannelType>& input);
+		Image<ChannelType, N> operator()(const Image<ChannelType, N>& input);
 	private:
-		FilterKernel _kernel;
+		PadModel<ChannelType> _padModel;
+		Filter _filter;
 	};
 
-	/**
-	 * Disk average filer
-	 */
-	class DiskFilter {
+	class FilterType {
 	public:
 		/**
-		 * Creates circular averaging filter. Kernel size 2*rad+1
-		 * @param rad the radius of the kernel
+		 * 	Average filter
 		 */
-		explicit DiskFilter(double rad) : _rad(rad) {};
+		class AVERAGE {
+		public:
+			/**
+			 * Creates an averaging filter
+			  * @param shape the shape of the kernel
+			  */
+			AVERAGE(size_t rows, size_t columns);
 
-		FilterKernel operator()() const {
-			// TODO: Next steps are not clear. Implement!!!
-			return FilterKernel();
-		}
+			FilterKernel operator()() const {
+				return _kernel;
+			}
 
-
-	private:
-		FilterKernel::ElementType _rad;
-	};
-
-	/**
-	 * Gaussian lowpass filter
-	 */
-	class GaussianFilter {
-		friend class LogFilter;
-
-	public:
-		/**
-		 * Creates a rotationally symmetric Gaussian lowpass filter
-		 * @param shape the shape of the filter
-		 * @param sigma standard deviation
-		 */
-		GaussianFilter(const Shape &shape, double sigma);
-
-		FilterKernel operator()() const {
-			return _kernel;
-		}
-
-	private:
-		FilterKernel _kernel;
-		FilterKernel _xMat;
-		FilterKernel _yMat;
-	};
-
-	/**
-	 * Laplacian filter
-	 */
-	class LaplacianFilter {
-	public:
-		/**
-		 * Creates a 3-by-3 filter approximating the shape
-		 * of the two-dimensional Laplacian operator.
-		 * @param alpha must be in the range 0.0 to 1.0.
-		 */
-		explicit LaplacianFilter(double alpha);
-
-		FilterKernel operator()() const {
-			return _kernel;
-		}
-
-	private:
-		FilterKernel _kernel;
-
-	};
-
-	/**
-	 * Rotationally symmetric Laplacian of Gaussian filter
-	 */
-	class LogFilter {
-	public:
-		/**
-		 * Creates a rotationally symmetric Laplacian of Gaussian filter
-		 * @param shape the shape of the kernel
-		 * @param sigma sigma standard deviation
-		 */
-		LogFilter(const Shape &shape, double sigma);
-
-		FilterKernel operator()() const {
-			return _kernel;
-		}
-
-	private:
-		FilterKernel _kernel;
-	};
-
-	/**
-	 * Filter to approximate, once convolved with an image,
-	 * the linear motion of a camera
-	 */
-	class MotionFilter {
-	public:
-		/**
-		 * Creates a filter
-		 * @param len linear motion of a camera in pixels
-		 * @param theta motion angle in degrees
-		 */
-		MotionFilter(double len, int theta);
-
-		FilterKernel operator()() const {
-			return _kernel;
-		}
-
-	private:
-		FilterKernel _kernel;
-	};
-
-	/**
-	 * Prewitt filter
-	 */
-	class PrewittFilter {
-	public:
+		private:
+			FilterKernel _kernel;
+		};
 
 		/**
-		 * Creates 3-by-3 filter that emphasize
-		 * horizontal edges by approximating a vertical gradient.
+		 * Disk average filer
 		 */
-		PrewittFilter() :
-				_kernel{
-						{1,  1,  1},
-						{0,  0,  0},
-						{-1, -1, -1}
-				} {}
+		class DISK {
+		public:
+			/**
+			 * Creates circular averaging filter. Kernel size 2*rad+1
+			 * @param rad the radius of the kernel
+			 */
+			explicit DISK(double rad) : _rad(rad) {};
 
-		FilterKernel operator()() const {
-			return _kernel;
-		}
+			FilterKernel operator()() const {
+				// TODO: Next steps are not clear. Implement!!!
+				return FilterKernel();
+			}
 
-	private:
-		FilterKernel _kernel;
-	};
 
-	/**
-	 * Unsharp filter
-	 */
-	class UnsharpFilter {
-	public:
+		private:
+			FilterKernel::ElementType _rad;
+		};
+
+		class LOG;
 		/**
-		 * Creates 3-by-3 unsharp contra enhancement filter.
-		 * @param alpha must be in the range 0.0 to 1.0
+		 * Gaussian lowpass filter
 		 */
-		UnsharpFilter(double alpha);
+		class GAUSSIAN {
+			friend class FilterType::LOG;
 
-		FilterKernel operator()() const {
-			return _kernel;
-		}
+		public:
+			/**
+			 * Creates a rotationally symmetric Gaussian lowpass filter
+			 * @param shape the shape of the filter
+			 * @param sigma standard deviation
+			 */
+			GAUSSIAN(size_t rows, size_t columns, double sigma);
 
-	private:
-		FilterKernel _kernel;
-	};
+			FilterKernel operator()() const {
+				return _kernel;
+			}
 
-	/**
- 	* Sobel filter
- 	*/
-	class SobelFilter {
-	public:
+		private:
+			FilterKernel _kernel;
+			FilterKernel _xMat;
+			FilterKernel _yMat;
+		};
+
 		/**
-		 * Creates 3-by-3 filter that emphasizes
-		 * horizontal edges utilizing the smoothing effect by approximating a
-		 * vertical gradient
+		 * Laplacian filter
 		 */
-		SobelFilter() :
-				_kernel{
-						{1,  2,  1},
-						{0,  0,  0},
-						{-1, -2, -1}
-				} {}
+		class LAPLACIAN {
+		public:
+			/**
+			 * Creates a 3-by-3 filter approximating the shape
+			 * of the two-dimensional Laplacian operator.
+			 * @param alpha must be in the range 0.0 to 1.0.
+			 */
+			explicit LAPLACIAN(double alpha);
 
-		FilterKernel operator()() const {
-			return _kernel;
-		}
+			FilterKernel operator()() const {
+				return _kernel;
+			}
 
-	private:
-		FilterKernel _kernel;
+		private:
+			FilterKernel _kernel;
+
+		};
+
+		/**
+		 * Rotationally symmetric Laplacian of Gaussian filter
+		 */
+		class LOG {
+		public:
+			/**
+			 * Creates a rotationally symmetric Laplacian of Gaussian filter
+			 * @param shape the shape of the kernel
+			 * @param sigma sigma standard deviation
+			 */
+			LOG(size_t rows, size_t columns, double sigma);
+
+			FilterKernel operator()() const {
+				return _kernel;
+			}
+
+		private:
+			FilterKernel _kernel;
+		};
+
+		/**
+		 * Filter to approximate, once convolved with an image,
+		 * the linear motion of a camera
+		 */
+		class MOTION {
+		public:
+			/**
+			 * Creates a filter
+			 * @param len linear motion of a camera in pixels
+			 * @param theta motion angle in degrees
+			 */
+			MOTION(double len, int theta);
+
+			FilterKernel operator()() const {
+				return _kernel;
+			}
+
+		private:
+			FilterKernel _kernel;
+		};
+
+		/**
+		 * Prewitt filter
+		 */
+		class PREWITT {
+		public:
+
+			/**
+			 * Creates 3-by-3 filter that emphasize
+			 * horizontal edges by approximating a vertical gradient.
+			 */
+			PREWITT() :
+					_kernel{
+							{1,  1,  1},
+							{0,  0,  0},
+							{-1, -1, -1}
+					} {}
+
+			FilterKernel operator()() const {
+				return _kernel;
+			}
+
+		private:
+			FilterKernel _kernel;
+		};
+
+		/**
+		 * Unsharp filter
+		 */
+		class UNSHARP {
+		public:
+			/**
+			 * Creates 3-by-3 unsharp contra enhancement filter.
+			 * @param alpha must be in the range 0.0 to 1.0
+			 */
+			UNSHARP(double alpha);
+
+			FilterKernel operator()() const {
+				return _kernel;
+			}
+
+		private:
+			FilterKernel _kernel;
+		};
+
+		/**
+		 * Sobel filter
+		 */
+		class SOBEL {
+		public:
+			/**
+			 * Creates 3-by-3 filter that emphasizes
+			 * horizontal edges utilizing the smoothing effect by approximating a
+			 * vertical gradient
+			 */
+			SOBEL() :
+					_kernel{
+							{1,  2,  1},
+							{0,  0,  0},
+							{-1, -2, -1}
+					} {}
+
+			FilterKernel operator()() const {
+				return _kernel;
+			}
+
+		private:
+			FilterKernel _kernel;
+		};
 	};
 
 	namespace image_processing_details {
@@ -377,6 +388,37 @@ namespace metric {
 		 * @return
 		 */
 		blaze::DynamicMatrix<double> imgcov2(const blaze::DynamicMatrix<double> &input, const FilterKernel &kernel);
+
+
+		/**
+		 * Filter an one channel
+		 * @tparam ChannelType type of the channel
+		 * @param img image to filter (onlye a channel)
+		 * @param impl implementation of the filter
+		 * @param padmodel padding
+		 * @param full if true it returns the matrix with padding, else returns only the image
+		 * @return the filtered image
+		 */
+		template<typename Filter, typename ChannelType>
+		Channel<ChannelType>
+		filter(const Channel<ChannelType> &img, const Filter &impl,
+				 const PadModel <ChannelType> &padmodel, bool full = true);
+
+		/**
+		 * Filter an image
+		 * @tparam Filter type of the filter
+		 * @tparam ChannelType type of the chanel
+		 * @param img image to filter
+		 * @param impl implementation of the filter
+		 * @param padmodel padding
+		 * @param full if true it returns the matrix with padding, else returns only the image
+		 * @return the filtered image
+		 */
+		template<typename Filter, typename ChannelType, size_t ChannelNumber>
+		Image<ChannelType, ChannelNumber>
+		filter(const Image<ChannelType, ChannelNumber> &img, const Filter &impl,
+				 const PadModel <ChannelType> &padmodel, bool full = true);
+
 	}
 }
 

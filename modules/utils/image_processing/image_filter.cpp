@@ -12,31 +12,6 @@ namespace metric {
 		return Image<T, N>(blaze::DynamicMatrix<T>(rows, columns, initValue));
 	}
 
-
-	template<typename Filter, typename ChannelType, size_t ChannelNumber>
-	Image <ChannelType, ChannelNumber>
-	imfilter(const Image <ChannelType, ChannelNumber> &img, const Filter &impl,
-			 const PadModel <ChannelType> &padmodel, bool full) {
-		auto kernel = impl();
-		Shape padShape{kernel.rows() - 1, kernel.columns() - 1};
-		Image<ChannelType, ChannelNumber> result;
-		for (size_t ch = 0; ch < img.size(); ++ch) {
-			auto[paddedCh, imgCord] = padmodel.pad(padShape, img[ch]);
-			auto filteredChannel = imgcov2(paddedCh, kernel);
-			if (full) {
-				result[ch] = filteredChannel;
-			} else {
-				result[ch] = blaze::submatrix(filteredChannel,
-											  std::max<size_t>(0, imgCord[0] - 1),
-											  std::max<size_t>(0, imgCord[1] - 1),
-											  img[ch].rows(),
-											  img[ch].columns());
-			}
-		}
-
-		return result;
-	}
-
 	template<typename T>
 	std::pair<blaze::DynamicMatrix<T>, Shape>
 	PadModel<T>::pad(const Shape &shape, const blaze::DynamicMatrix<T> &src) const {
@@ -117,12 +92,29 @@ namespace metric {
 		return std::make_pair(dst, Shape{padRow, padCol});
 	}
 
-	AverageFilter::AverageFilter(const Shape &shape) {
-		FilterKernel f(shape[0], shape[1], 1.0);
-		_kernel = f / blaze::prod(shape);
+//	template <typename ImgT, typename Filter, PadDirection PadDir, PadType PadType>
+//	ImgT imfilter<ImgT, Filter, PadDir, PadType>::operator()(const ImgT& input) {
+//		return ::metric::image_processing_details::filter(input, _filter, _padModel);
+//	}
+	template <typename ChannelType, size_t N, typename Filter, PadDirection PadDir, PadType PadType>
+	Channel<ChannelType>
+	imfilter<ChannelType, N, Filter, PadDir, PadType>::operator()(const Channel<ChannelType>& input) {
+		return ::metric::image_processing_details::filter(input, _filter, _padModel);
 	}
 
-	GaussianFilter::GaussianFilter(const Shape &shape, double sigma) {
+	template <typename ChannelType, size_t N, typename Filter, PadDirection PadDir, PadType PadType>
+	Image<ChannelType, N>
+	imfilter<ChannelType, N, Filter, PadDir, PadType>::operator()(const Image<ChannelType, N>& input) {
+		return ::metric::image_processing_details::filter(input, _filter, _padModel);
+	}
+
+	FilterType::AVERAGE::AVERAGE(size_t rows, size_t columns) {
+		FilterKernel f(rows, columns, 1.0);
+		_kernel = f / blaze::prod(Shape{rows, columns});
+	}
+
+	FilterType::GAUSSIAN::GAUSSIAN(size_t rows, size_t columns, double sigma) {
+		Shape shape{rows, columns};
 		auto halfShape =
 				(static_cast<blaze::StaticVector<FilterKernel::ElementType, 2>>(shape) - 1) / 2;
 
@@ -143,7 +135,7 @@ namespace metric {
 		_yMat = yMat;
 	}
 
-	LaplacianFilter::LaplacianFilter(double alpha) {
+	FilterType::LAPLACIAN::LAPLACIAN(double alpha) {
 		alpha = std::max<double>(0, std::min<double>(alpha, 1));
 		auto h1 = alpha / (alpha + 1);
 		auto h2 = (1 - alpha) / (alpha + 1);
@@ -154,9 +146,10 @@ namespace metric {
 				{h1, h2,               h1}};
 	}
 
-	LogFilter::LogFilter(const Shape &shape, double sigma) {
+	FilterType::LOG::LOG(size_t rows, size_t columns, double sigma) {
+		Shape shape{rows, columns};
 		auto std2 = sigma * sigma;
-		GaussianFilter gausFilter(shape, sigma);
+		GAUSSIAN gausFilter(rows, columns, sigma);
 
 		auto h = gausFilter();
 		_kernel = h % (gausFilter._xMat % gausFilter._xMat + gausFilter._yMat % gausFilter._yMat - 2 * std2)
@@ -164,7 +157,7 @@ namespace metric {
 		_kernel -= blaze::sum(_kernel) / blaze::prod(shape);
 	}
 
-	MotionFilter::MotionFilter(double len, int theta) {
+	FilterType::MOTION::MOTION(double len, int theta) {
 		len = std::max<double>(1, len);
 		auto half = (len - 1) / 2;
 		auto phi = static_cast<double>(theta % 180) / 180 * M_PI;
@@ -219,12 +212,12 @@ namespace metric {
 		}
 	}
 
-	UnsharpFilter::UnsharpFilter(double alpha) {
+	FilterType::UNSHARP::UNSHARP(double alpha) {
 		_kernel = FilterKernel{
 				{0, 0, 0},
 				{0, 1, 0},
 				{0, 0, 0}
-		} - LaplacianFilter(alpha)();
+		} - LAPLACIAN(alpha)();
 	}
 
 	namespace image_processing_details {
@@ -290,7 +283,7 @@ namespace metric {
 			size_t funcCols = kernel.columns();
 
 			blaze::DynamicMatrix<double> resultMat(input.rows() - std::ceil((double) funcRows / 2),
-											  input.columns() - std::ceil((double) funcCols / 2));
+												   input.columns() - std::ceil((double) funcCols / 2));
 			for (auto i = 0; i < input.rows() - funcRows; ++i) {
 				for (auto j = 0; j < input.columns() - funcCols; ++j) {
 					auto bwProd = blaze::submatrix(input, i, j, funcRows, funcCols) % kernel;
@@ -301,6 +294,53 @@ namespace metric {
 			}
 
 			return resultMat;
+		}
+
+
+		template<typename Filter, typename ChannelType>
+		Channel <ChannelType>
+		filter(const Channel <ChannelType> &channel, const Filter &impl,
+				 const PadModel <ChannelType> &padmodel, bool full) {
+			auto kernel = impl();
+			Channel<ChannelType> result;
+			Shape padShape{kernel.rows() - 1, kernel.columns() - 1};
+			auto[paddedCh, imgCord] = padmodel.pad(padShape, channel);
+			auto filteredChannel = imgcov2(paddedCh, kernel);
+			if (full) {
+				result = filteredChannel;
+			} else {
+				result = blaze::submatrix(filteredChannel,
+										  std::max<size_t>(0, imgCord[0] - 1),
+										  std::max<size_t>(0, imgCord[1] - 1),
+										  channel.rows(),
+										  channel.columns());
+			}
+
+			return result;
+		}
+
+		template<typename Filter, typename ChannelType, size_t ChannelNumber>
+		Image <ChannelType, ChannelNumber>
+		filter(const Image <ChannelType, ChannelNumber> &img, const Filter &impl,
+				 const PadModel <ChannelType> &padmodel, bool full) {
+			auto kernel = impl();
+			Shape padShape{kernel.rows() - 1, kernel.columns() - 1};
+			Image<ChannelType, ChannelNumber> result;
+			for (size_t ch = 0; ch < img.size(); ++ch) {
+				auto[paddedCh, imgCord] = padmodel.pad(padShape, img[ch]);
+				auto filteredChannel = imgcov2(paddedCh, kernel);
+				if (full) {
+					result[ch] = filteredChannel;
+				} else {
+					result[ch] = blaze::submatrix(filteredChannel,
+												  std::max<size_t>(0, imgCord[0] - 1),
+												  std::max<size_t>(0, imgCord[1] - 1),
+												  img[ch].rows(),
+												  img[ch].columns());
+				}
+			}
+
+			return result;
 		}
 	}
 }
