@@ -27,19 +27,34 @@ namespace metric {
 template <typename T>
 using DistanceMatrix = blaze::SymmetricMatrix<blaze::DynamicMatrix<T>>;
 
-/**
+/** @class MGC
  *  @brief Multiscale graph correlation
+ *  @tparam recType1 type of the left hand input
+ *  @tparam Metric1  type of metric associated with recType1
+ *  @tparam recType2  type of the right hand input
+ *  @tparam Metric2 type of metric associated with recType2
  */
-namespace MGC {
-    /** @brief return correlation between a and b
+template <class recType1, class Metric1, class recType2, class Metric2>
+struct MGC {
+
+    /**
+     * @brief Construct MGC object
+     *
+     * @param m1 Metric1 object
+     * @param m2 Metric1 object
+     *
+     */
+    explicit MGC(const Metric1 & m1 = Metric1(), const Metric2 & m2 = Metric2()) : metric1(m1), metric2(m2) {}
+
+    /** @brief return correlation betweeen a and b
      * @param a container of values of type recType1
      * @param b container of values of type recType2
-     * @return correlation between a and b
+     * @return correlation betwen a and b
      */
-    template<typename Container1, typename Metric1, typename Container2, typename Metric2>
-    double correlation(const Container1& a, const Container2& b, const Metric1& metric1, const Metric2& metric2);
+    template <typename Container1, typename Container2>
+    double operator()(const Container1& a, const Container2& b) const;
 
-    /** @brief return estimate of the correlation between a and b
+    /** @brief return estimate of the correlation betweeen a and b
      * @param a container of values of type recType1
      * @param b container of values of type recType2
      * @param sampleSize
@@ -48,14 +63,8 @@ namespace MGC {
      * @return estimate of the correlation betwen a and b
      */
     template <typename Container1, typename Container2>
-    double estimate(
-        const Container1& a,
-        const Container2& b,
-        const std::function<double(const Container1&, const Container2&)>& corr,
-        const size_t sampleSize = 250,
-        const double threshold = 0.05,
-        size_t maxIterations = 1000
-    );
+    double estimate(const Container1& a, const Container2& b, const size_t sampleSize = 250,
+                            const double threshold = 0.05, size_t maxIterations = 1000);
 
 	/** @brief return vector of mgc values calculated for different data shifts
 	 * @param a container of values of type recType1
@@ -63,8 +72,8 @@ namespace MGC {
 	 * @param n number of delayed computations in +/- direction
 	 * @return vector of mgc values calculated for different data shifts
 	 */
-    template<typename Container1, typename Metric1, typename Container2, typename Metric2>
-    std::vector<double> xcorr(const Container1& a, const Container2& b, const Metric1& m1, const Metric2& m2, const int n);
+	template <typename Container1, typename Container2>
+    std::vector<double> xcorr(const Container1& a, const Container2& b, const int n) const;
 
 	/**
 	 * @brief return distance matrix
@@ -73,7 +82,7 @@ namespace MGC {
 	 * @return distance matrix
 	 */
 	template <typename Container, typename Metric>
-	DistanceMatrix<double> computeDistanceMatrix(const Container &c, const Metric & metric);
+  DistanceMatrix<double> computeDistanceMatrix(const Container &c, const Metric & metric) const;
     /**
      * @brief
      *
@@ -143,7 +152,11 @@ namespace MGC {
      * @return
      */
     std::vector<double> linspace(double a, double b, int n);
-}
+
+private:
+    Metric1 metric1;
+    Metric2 metric2;
+};
 
 /**
  * @class MGC_direct
