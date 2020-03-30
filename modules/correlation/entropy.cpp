@@ -376,7 +376,7 @@ double estimate_func(
 // averaged entropy estimation: code COPIED from mgc.*pp with only mgc replaced with entropy, TODO refactor to avoid code dubbing
 template <typename recType, typename Metric>
 template <template <typename, typename> class OuterContainer, typename Container, typename OuterAllocator>
-double entropy_simple<recType, Metric>::operator()(
+double Entropy_simple<recType, Metric>::operator()(
         const OuterContainer<Container, OuterAllocator> & data
         //std::size_t k,
         //double logbase,
@@ -432,7 +432,7 @@ double entropy_simple<recType, Metric>::operator()(
 // averaged entropy estimation: code COPIED from mgc.*pp with only mgc replaced with entropy, TODO refactor to avoid code dubbing
 template <typename recType, typename Metric>
 template <typename Container>
-double entropy_simple<recType, Metric>::estimate(
+double Entropy_simple<recType, Metric>::estimate(
         const Container & a,
         const size_t sampleSize,
         const double threshold,
@@ -443,7 +443,7 @@ double entropy_simple<recType, Metric>::estimate(
         //bool exp // TODO apply to returning value!
         )
 {
-    return entropy_details::estimate_func<Container, entropy_simple<recType, Metric>, Metric>(a, sampleSize, threshold, maxIterations, k, logbase, metric, exp);
+    return entropy_details::estimate_func<Container, Entropy_simple<recType, Metric>, Metric>(a, sampleSize, threshold, maxIterations, k, logbase, metric, exp);
 }
 
 
@@ -459,7 +459,7 @@ double entropy_simple<recType, Metric>::estimate(
 
 template <typename recType, typename Metric>
 template <template <typename, typename> class OuterContainer, typename Container, typename OuterAllocator>
-double entropy<recType, Metric>::operator()(const OuterContainer<Container, OuterAllocator> X) const
+double Entropy<recType, Metric>::operator()(const OuterContainer<Container, OuterAllocator> X) const
 {
     size_t n = X.size();
     size_t d = X[0].size();
@@ -528,81 +528,16 @@ double entropy<recType, Metric>::operator()(const OuterContainer<Container, Oute
 // averaged entropy estimation: code COPIED from mgc.*pp with only mgc replaced with entropy, TODO refactor to avoid code dubbing
 template <typename recType, typename Metric>
 template <typename Container>
-double entropy<recType, Metric>::estimate(
+double Entropy<recType, Metric>::estimate(
         const Container & a,
         const size_t sampleSize,
         const double threshold,
         size_t maxIterations
         )
 {
-    return entropy_details::estimate_func<Container, entropy<recType, Metric>, Metric>(a, sampleSize, threshold, maxIterations, k, 2, metric, exp);
+    return entropy_details::estimate_func<Container, Entropy<recType, Metric>, Metric>(a, sampleSize, threshold, maxIterations, k, 2, metric, exp);
 }
 
-
-
-
-
-
-
-// ---------------------------------- estimators to be debugged
-
-
-
-
-// Kozachenko-Leonenko estimator based on https://hal.archives-ouvertes.fr/hal-00331300/document (Shannon diff. entropy,
-// q = 1)
-// WARNING: this estimator is sill under construction, it seems to have bugs and needs debugging
-
-template <typename Container, typename Metric = metric::Euclidian<typename Container::value_type>, typename L = double>  // TODO check if L = T is correct
-typename std::enable_if<!std::is_integral<typename Container::value_type>::value, double>::type entropy_kl(
-    std::vector<Container> data, std::size_t k = 3, L logbase = 2, Metric metric = Metric())
-{
-    using T = typename Container::value_type;
-
-    if (data.empty() || data[0].empty())
-        return 0;
-    if (data.size() < k + 1)
-        throw std::invalid_argument("number of points in dataset must be larger than k");
-    if constexpr (!std::is_same<Metric, typename metric::Euclidian<T>>::value)
-        throw std::logic_error("entropy function is now implemented only for Euclidean distance");
-
-    metric::Tree<Container, Metric> tree(data, -1, metric);
-
-    size_t N = data.size();
-    size_t m = data[0].size();
-    double two = 2.0;  // this is in order to make types match the log template function
-    double sum = 0;
-    auto Pi = boost::math::constants::pi<T>();
-    double half_m = m / two;
-    auto coeff = (N - 1) * exp(-boost::math::digamma(k + 1)) * std::pow(Pi, half_m) / boost::math::tgamma(half_m + 1);
-
-    for (std::size_t i = 0; i < N; i++) {
-        auto neighbors = tree.knn(data[i], k + 1);
-        auto ro = neighbors.back().second;
-        sum = sum + entropy_details::log(logbase, coeff * std::pow(ro, m));
-    }
-
-    return sum;
-} // TODO debug!!
-
-
-// ported from Julia, not in use
-template <typename T>
-std::pair<std::vector<double>, std::vector<std::vector<T>>> pluginEstimator(const std::vector<std::vector<T>>& Y)
-{
-    std::vector<std::vector<T>> uniqueVal = unique(Y);
-    std::vector<double> counts(uniqueVal.size());
-    for (std::size_t i = 0; i < counts.size(); i++) {
-        for (std::size_t j = 0; j < Y.size(); j++) {
-            if (Y[j] == uniqueVal[i])
-                counts[i]++;
-        }
-    }
-    std::size_t length = Y.size() * Y[0].size();
-    std::transform(counts.begin(), counts.end(), counts.begin(), [&length](auto& i) { return i / length; });
-
-    return std::make_pair(counts, uniqueVal);
-}
 
 
 

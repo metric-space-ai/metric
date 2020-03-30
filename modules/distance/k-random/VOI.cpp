@@ -158,7 +158,7 @@ template <typename C, typename Metric, typename T>
 typename std::enable_if_t<!type_traits::is_container_of_integrals_v<C>, T>
 variationOfInformation(const C& Xc, const C& Yc, int k, int p, T logbase)
 {
-    auto e = entropy<void, Metric>(Metric(), k, p);
+    auto e = Entropy<void, Metric>(Metric(), k, p);
     return e(Xc) + e(Yc)
         - 2 * mutualInformation<C>(Xc, Yc, p);
 }
@@ -170,7 +170,7 @@ variationOfInformation_normalized(
 {
     using Cheb = metric::Chebyshev<T>;
     auto mi = mutualInformation<C>(Xc, Yc, p);
-    auto e = entropy<void, Cheb>(Cheb(), k, p);
+    auto e = Entropy<void, Cheb>(Cheb(), k, p);
     return 1 - (mi / (e(Xc) + e(Yc) - mi));
 }
 
@@ -180,7 +180,7 @@ typename std::enable_if_t<!std::is_integral_v<El>, V>  // only real values are a
 VOI<V>::operator()(const C& a, const C& b) const
 {
     using Cheb = metric::Chebyshev<El>;
-    auto e = entropy<void, Cheb>(Cheb(), k, p);
+    auto e = Entropy<void, Cheb>(Cheb(), k, p);
     return e(a) + e(b)
         - 2 * mutualInformation(a, b, k);
 }
@@ -192,7 +192,7 @@ VOI<V>::operator()(const C& a, const C& b) const
 {
     using Cheb = metric::Chebyshev<El>;
 
-    auto e = entropy<void, Cheb>(Cheb(), k, p);
+    auto e = Entropy<void, Cheb>(Cheb(), k, p);
     return e(a) + e(b)
         - 2 * mutualInformation(a, b, k);
 }
@@ -205,37 +205,10 @@ VOI_normalized<V>::operator()(const C& a, const C& b) const
     using Cheb = metric::Chebyshev<El>;
 
     auto mi = mutualInformation(a, b, this->k);
-    auto e = entropy<void, Cheb>(Cheb(), this->k, this->p);
+    auto e = Entropy<void, Cheb>(Cheb(), this->k, this->p);
     return 1
         - (mi / (e(a) + e(b) - mi));
 }
-
-// VOI based on Kozachenko-Leonenko entropy estimator
-// WARNING: the entropy_kl function called below, seems to have bugs!
-// TODO debug entropy_kl, add support of arbitrary metric
-
-template <typename V>
-template <typename C, typename El>
-typename std::enable_if_t<!std::is_integral_v<El>, V>  // only real values are accepted
-    VOI_kl<V>::operator()(const C& a, const C& b) const
-{
-    std::vector<std::vector<El>> ab = combine(a, b);
-    return 2 * entropy_kl(ab) - entropy_kl(a) - entropy_kl(b);
-}
-
-template <typename V>
-template <typename C, typename El>
-typename std::enable_if_t<!std::is_integral_v<El>, V>  // only real values are accepted
-VOI_normalized_kl<V>::operator()(const C& a, const C& b) const
-{
-    auto entropy_a = entropy_kl(a);
-    auto entropy_b = entropy_kl(b);
-    std::vector<std::vector<El>> ab = combine(a, b);
-    auto joint_entropy = entropy_kl(ab);
-    auto mi = entropy_a + entropy_b - joint_entropy;
-    return 1 - (mi / (entropy_a + entropy_b - mi));
-}
-
 
 
 
