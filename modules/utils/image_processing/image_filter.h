@@ -15,12 +15,12 @@
  *
  * Usage:
  *
- * Image<RGB> input(1920, 1080, RGB{50, 50, 50});
+ * auto input = iminit<uint8_t, 3>(1920, 1080, 50);
  *
  * MotionFilter filter(5, 45)
- * PadModel<RGB> padmodel(PadDirection::BOTH, PadType::CONST);
+ * PadModel<uint8_t> padmodel(PadDirection::BOTH, PadType::CONST);
  *
- * Image<RGB> ouput = imfilter(input, filter, padmodel);
+ * Image<uint8_t, 3> ouput = imfilter(input, filter, padmodel);
  *
  * Implemented filters:
  *   AverageFilter
@@ -33,14 +33,26 @@
  *   SobelFilter
  */
 namespace metric {
-	using RGB = blaze::StaticVector<uint8_t, 3>;
-	using Gray32 = uint32_t;
-	using Gray16 = uint16_t;
-
 	template<typename T>
-	using Image = blaze::DynamicMatrix<T>;
+	using Channel = blaze::DynamicMatrix<T>;
+
+	template<typename T, size_t N>
+	using Image = blaze::StaticVector<Channel<T>, N>;
+
 	using FilterKernel = blaze::DynamicMatrix<double>;
 	using Shape = blaze::StaticVector<size_t, 2>;
+
+	/**
+	 * Creates an Image
+	 * @tparam T type of the element in a channel
+	 * @tparam N number of channels
+	 * @param rows number of rows (height)
+	 * @param columns  number of columns (width)
+	 * @param initValue default value for all elements in a channel
+	 * @return
+	 */
+	template<typename T, size_t N>
+	Image<T,N> iminit(size_t rows, size_t columns, T initValue={});
 
 	enum class PadDirection {
 		POST,
@@ -56,7 +68,7 @@ namespace metric {
 	};
 
 	/**
-	 * Implements different ways to pad images before to apply a filter on them
+	 * Implements different ways to pad a channel before to apply a filter on them
 	 * see Matlab's padarray for more details
 	 * @tparam T
 	 */
@@ -96,9 +108,9 @@ namespace metric {
 	 * @param full if true it returns the matrix with padding, else returns only the image
 	 * @return the filtered image
 	 */
-	template<typename Filter, typename ChannelType>
-	Image<ChannelType>
-	imfilter(const Image<ChannelType> &img, const Filter &impl,
+	template<typename Filter, typename ChannelType, size_t ChannelNumber>
+	Image<ChannelType, ChannelNumber>
+	imfilter(const Image<ChannelType, ChannelNumber> &img, const Filter &impl,
 			 const PadModel <ChannelType> &padmodel, bool full = true);
 	/**
 	 * 	Average filter
@@ -361,12 +373,10 @@ namespace metric {
 
 		/**
 		 * Returns the two-dimensional convolution of a matrix and kernel
-		 * @param input input matrix
-		 * @param kernel the kernel to convole
+		 * @param kernel the kernel to convolute
 		 * @return
 		 */
-		template<typename T>
-		blaze::DynamicMatrix<T> imgcov2(const blaze::DynamicMatrix<T> &input, const FilterKernel &kernel);
+		blaze::DynamicMatrix<double> imgcov2(const blaze::DynamicMatrix<double> &input, const FilterKernel &kernel);
 	}
 }
 

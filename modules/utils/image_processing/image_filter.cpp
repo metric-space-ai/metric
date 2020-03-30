@@ -7,26 +7,37 @@
 namespace metric {
 	using namespace metric::image_processing_details;
 
-	template<typename Filter, typename ChannelType>
-	Image <ChannelType>
-	imfilter(const Image <ChannelType> &img, const Filter &impl,
+	template<typename T, size_t N>
+	Image <T, N> iminit(size_t rows, size_t columns, T initValue) {
+		return Image<T, N>(blaze::DynamicMatrix<T>(rows, columns, initValue));
+	}
+
+
+	template<typename Filter, typename ChannelType, size_t ChannelNumber>
+	Image <ChannelType, ChannelNumber>
+	imfilter(const Image <ChannelType, ChannelNumber> &img, const Filter &impl,
 			 const PadModel <ChannelType> &padmodel, bool full) {
 		auto kernel = impl();
 		Shape padShape{kernel.rows() - 1, kernel.columns() - 1};
-		auto[paddedImage, imgCord] = padmodel.pad(padShape, img);
-		auto ret = imgcov2(paddedImage, kernel);
-		if (full) {
-			return ret;
-		} else {
-			return blaze::submatrix(ret,
-									std::max<size_t>(0, imgCord[0] - 1),
-									std::max<size_t>(0, imgCord[1] - 1),
-									img.rows(),
-									img.columns());
+		Image<ChannelType, ChannelNumber> result;
+		for (size_t ch = 0; ch < img.size(); ++ch) {
+			auto[paddedCh, imgCord] = padmodel.pad(padShape, img[ch]);
+			auto filteredChannel = imgcov2(paddedCh, kernel);
+			if (full) {
+				result[ch] = filteredChannel;
+			} else {
+				result[ch] = blaze::submatrix(filteredChannel,
+											  std::max<size_t>(0, imgCord[0] - 1),
+											  std::max<size_t>(0, imgCord[1] - 1),
+											  img[ch].rows(),
+											  img[ch].columns());
+			}
 		}
+
+		return result;
 	}
 
-	template <typename T>
+	template<typename T>
 	std::pair<blaze::DynamicMatrix<T>, Shape>
 	PadModel<T>::pad(const Shape &shape, const blaze::DynamicMatrix<T> &src) const {
 		using namespace blaze;
@@ -274,18 +285,18 @@ namespace metric {
 			return out;
 		}
 
-		template<typename T>
-		blaze::DynamicMatrix<T> imgcov2(const blaze::DynamicMatrix<T> &input, const FilterKernel &kernel) {
+		blaze::DynamicMatrix<double> imgcov2(const blaze::DynamicMatrix<double> &input, const FilterKernel &kernel) {
 			size_t funcRows = kernel.rows();
 			size_t funcCols = kernel.columns();
 
-			blaze::DynamicMatrix<T> resultMat(input.rows() - std::ceil((double) funcRows / 2),
+			blaze::DynamicMatrix<double> resultMat(input.rows() - std::ceil((double) funcRows / 2),
 											  input.columns() - std::ceil((double) funcCols / 2));
 			for (auto i = 0; i < input.rows() - funcRows; ++i) {
 				for (auto j = 0; j < input.columns() - funcCols; ++j) {
 					auto bwProd = blaze::submatrix(input, i, j, funcRows, funcCols) % kernel;
 					auto filteredVal = blaze::sum(bwProd);
-					resultMat(i, j) = blaze::round(filteredVal);
+					double val = blaze::round(filteredVal);
+					resultMat(i, j) = val > 0 ? val : 0;
 				}
 			}
 
