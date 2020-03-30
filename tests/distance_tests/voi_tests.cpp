@@ -30,22 +30,23 @@ BOOST_AUTO_TEST_CASE(entropy) {
     std::vector<std::array<double,2>> v3 = { { 5, 5 }, { 2, 2 }, { 3, 3 }, { 5, 1 } };
     std::deque<std::vector<double>>   v4 = { { 5, 5 }, { 2, 2 }, { 3, 3 }, { 5, 1 } };
     std::deque<std::array<double, 2>> v7 = { { 5, 5 }, { 2, 2 }, { 3, 3 }, { 5, 1 } };
-    BOOST_TEST(float_eq(metric::entropy(v1, 3, 2.0, metric::Chebyshev<double>()), 7.625814583693912));
-    BOOST_TEST(float_eq(metric::entropy(v2, 3, 2.0, metric::Chebyshev<double>()), 7.625814583693912));
-    BOOST_TEST(float_eq(metric::entropy(v3, 3, 2.0, metric::Chebyshev<double>()), 7.625814583693912));
-    BOOST_TEST(float_eq(metric::entropy(v4, 3, 2.0, metric::Chebyshev<double>()), 7.625814583693912));
-    // BOOST_TEST(metric::entropy(v5, 3, 2.0, metric::Chebyshev<double>()) == 7.625814583693912);
-    // BOOST_TEST(metric::entropy(v6, 3, 2.0, metric::Chebyshev<double>()) == 7.625814583693912);
-    BOOST_TEST(float_eq(metric::entropy(v7, 3, 2.0, metric::Chebyshev<double>()), 7.625814583693912));
+    using Metric = metric::Chebyshev<double>;
+    BOOST_TEST(float_eq(metric::Entropy<void, Metric>(Metric(), 3, 2)(v1), 7.625814583693912));
+    BOOST_TEST(float_eq(metric::Entropy<void, Metric>(Metric(), 3, 2)(v2), 7.625814583693912));
+    BOOST_TEST(float_eq(metric::Entropy<void, Metric>(Metric(), 3, 2)(v3), 7.625814583693912));
+    BOOST_TEST(float_eq(metric::Entropy<void, Metric>(Metric(), 3, 2)(v4), 7.625814583693912));
+    // BOOST_TEST(metric::Entropy(v5, 3, 2.0, metric::Chebyshev<double>()) == 7.625814583693912);
+    // BOOST_TEST(metric::Entropy(v6, 3, 2.0, metric::Chebyshev<double>()) == 7.625814583693912);
+    BOOST_TEST(float_eq(metric::Entropy<void, Metric>(Metric(), 3, 2.0)(v7), 7.625814583693912));
 
-    BOOST_TEST(float_eq(metric::entropy(v1),7.8197919635268081 ));
-    BOOST_TEST(float_eq(metric::entropy(v2), 7.8197919635268081));
-    BOOST_TEST(float_eq(metric::entropy(v3), 7.8197919635268081));
-    BOOST_TEST(float_eq(metric::entropy(v4), 7.8197919635268081));
-    BOOST_TEST(float_eq(metric::entropy(v7), 7.8197919635268081));
+    BOOST_TEST(float_eq(metric::Entropy<void, Metric>()(v1),7.8197919635268081 ));
+    BOOST_TEST(float_eq(metric::Entropy<void, Metric>()(v2), 7.8197919635268081));
+    BOOST_TEST(float_eq(metric::Entropy<void, Metric>()(v3), 7.8197919635268081));
+    BOOST_TEST(float_eq(metric::Entropy<void, Metric>()(v4), 7.8197919635268081));
+    BOOST_TEST(float_eq(metric::Entropy<void, Metric>()(v7), 7.8197919635268081));
 
     std::vector<std::string> v8 = { "AAA", "HJGJHFG", "BBB", "AAAA", "long long long long long long string" };
-    BOOST_TEST(float_eq(metric::entropy(v8, 3, 2.0, metric::Edit<int>()), 13.837977646415816));
+    BOOST_TEST(float_eq(metric::Entropy<void, metric::Edit<int>>(metric::Edit<int>(), 3, 2.0)(v8), 13.837977646415816));
 }
 
 BOOST_AUTO_TEST_CASE(mutual_information_float) {
