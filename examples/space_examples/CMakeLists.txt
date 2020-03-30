@@ -31,6 +31,7 @@ foreach(exampleSrc ${EXAMPLE_SRCS})
  
   if(UNIX)
     target_compile_options(${exampleName} PRIVATE -pthread)
+    target_link_libraries(${exampleName} ${LAPACK_LIBRARIES})
     set_target_properties(${exampleName} PROPERTIES LINK_FLAGS -pthread) 
   endif(UNIX)
 
