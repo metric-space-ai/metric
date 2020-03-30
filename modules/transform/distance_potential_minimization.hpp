@@ -23,6 +23,7 @@ size_t steps = 200, std::vector<double> sigma = {50,30,15,5});
 std::vector<double> fit_hysteresis(blaze::DynamicMatrix<double> I,
 size_t steps = 200, std::vector<double> sigma = {50,30,15,5});
 
+
 }  // end metric namespace
 
 #include "distance_potential_minimization.cpp"

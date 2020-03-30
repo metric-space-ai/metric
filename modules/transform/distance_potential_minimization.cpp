@@ -129,15 +129,18 @@ namespace DPM_detail {
         return std::make_tuple(fx, fy);
     }
 
+
     blaze::DynamicMatrix<double> laplacian(const blaze::DynamicMatrix<double>& A)
     {
         size_t m = A.rows();
         size_t n = A.columns();
         blaze::DynamicMatrix<double> B(m, n);
 
+
         for (size_t i = 0; i < m; i++) {
             for (size_t j = 0; j < n; j++) {
                 if (i == 0 || i == m - 1 || j == 0 || j == n - 1) {
+
                     B(i, j) = 0;
                 } else {
                     B(i, j) = A(i + 1, j) + A(i - 1, j) + A(i, j + 1) + A(i, j - 1) - double(4) * A(i, j);
@@ -145,6 +148,7 @@ namespace DPM_detail {
             }
         }
         return B;
+
     }
     std::tuple<double, double, double> initialCircle(const blaze::DynamicMatrix<double>& A)
     {
@@ -332,6 +336,7 @@ namespace DPM_detail {
         }
         return force / N;
     }
+
 /*  searching for the equliribirum of the vector partial differential equation. 
 taking two pictures, where one picture is static and one is based on a parametric model (an ellipse).
 the algorithm finds the best model parameters to minimimize the distance potential aka gradient vector field.
@@ -355,15 +360,6 @@ v(x,y,t+􏰀t)= v(x,y,t)+ 􏰀t/(􏰀x􏰀y) g (|∇f|) L * v(x,y,t) −􏰀th(|
 
             // compute grid points from ellipse parameter
             std::vector<blaze::DynamicVector<double>> x_y_theta = ellipse2grid(m, n, xc, yc, a, b, phi);
-
-            // std::vector<double> x(x_y_theta[0].size());
-            // std::vector<double> theta(x_y_theta[0].size());
-            // std::vector<double> y(x_y_theta[0].size());
-            // for (size_t i = 0; i < x_y_theta[0].size(); ++i) {
-            //     x[i] = x_y_theta[0][i];
-            //     y[i] = x_y_theta[1][i];
-            //     theta[i] = x_y_theta[2][i];
-            // }
 
             // torsion along the ellpise about center
             double torsion = torsion_moment(gvf_x, gvf_y, x_y_theta[0], x_y_theta[1], x_y_theta[2], xc, yc, phi);
@@ -545,6 +541,7 @@ v(x,y,t+􏰀t)= v(x,y,t)+ 􏰀t/(􏰀x􏰀y) g (|∇f|) L * v(x,y,t) −􏰀th(|
                 for (size_t j = 0; j < (n + 2); ++j) {
                     u1(i, j) = u1(i, j) + alpha * (mu * Lu1(i, j) - fxy_square(i, j) * (u1(i, j) - fx(i, j)));
                     v1(i, j) = v1(i, j) + alpha * (mu * Lv1(i, j) - fxy_square(i, j) * (v1(i, j) - fy(i, j)));
+
                 }
             }
         }
@@ -631,15 +628,18 @@ std::vector<double> fit_hysteresis(blaze::DynamicVector<double> x, blaze::Dynami
 
     blaze::DynamicMatrix<double> I = blaze::zero<double>(grid_row, grid_column);
 
+
     for (size_t i = 0; i < x.size(); ++i) {
         I(y[i], x[i]) = 100;
     }
+
 
     return fit_hysteresis(I, steps, sigma);
 }
 
 std::vector<double> fit_hysteresis(blaze::DynamicMatrix<double> I, size_t steps, std::vector<double> sigma)
 {
+
     auto [xc0, yc0, r0] = DPM_detail::initialCircle(I);  // initial guess
     std::vector<double> ep = { xc0, yc0, r0, r0, 0 };  // initial parameter guess
     blaze::DynamicVector<double> increment = { 0.2, 0.2, 0.2, 0.2, M_PI / 180 * 0.2 };  // increment in each iteration
@@ -651,7 +651,9 @@ std::vector<double> fit_hysteresis(blaze::DynamicMatrix<double> I, size_t steps,
         blaze::DynamicMatrix<double> I1 = I;  // TODO: replace with gaussian filter
         //auto I1=gaussianBlur(I,sigma[i]);
         auto [h1, v1] = DPM_detail::gvf(I1, 1, 0.1, 10);
+
         ep = DPM_detail::fit_ellipse(ep, sigma[i] / 5 * increment, sigma[i] / 5 * threshold, bound, h1, v1, steps / sigma.size());
+
     }
     // ep == ellipse parameter [xc, yc, a, b, phi]
 

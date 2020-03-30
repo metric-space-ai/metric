@@ -7,15 +7,13 @@
 */
 
 #include "modules/distance/k-random/VOI.hpp"
-#include "../../metric_types.hpp"
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <pybind11/numpy.h>
 #include <vector>
-#include <string>
 
 namespace py = pybind11;
-
+//
 template<typename Value>
 void wrap_metric_VOI_kl(py::module& m) {
     using Metric = metric::VOI_kl<Value>;
@@ -43,6 +41,7 @@ void export_metric_VOI(py::module& m) {
     wrap_metric_VOI_kl<double>(m);
 }
 
+
 template <typename Container, typename Metric>
 void wrap_metric_entropy(py::module& m) {
     using Value = double ;//typename Container::value_type::value_type;
@@ -66,5 +65,4 @@ void export_metric_entropy(py::module& m) {
 
 PYBIND11_MODULE(_voi, m) {
     export_metric_VOI(m);
-    export_metric_entropy(m);
 }

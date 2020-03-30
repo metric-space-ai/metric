@@ -1,4 +1,4 @@
-from metric.distance import VOI_kl, VOI_normalized, entropy
+from metric.distance import VOI_kl, VOI_normalized
 import numpy
 import pytest
 
