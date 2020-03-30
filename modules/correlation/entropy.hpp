@@ -12,40 +12,75 @@ Copyright (c) 2020 Panda Team
 #include "../../3rdparty/blaze/Blaze.h"
 #include "../distance/k-related/Standards.hpp"
 
-#include <type_traits>
-#include <functional>
-
 
 namespace metric {
 
-// code COPIED from mgc.*pp with only mgc replaced with entropy, TODO refactor to avoid code dubbing
-template <typename Container>
-double estimate(
-    const Container& a,
-    const std::function<double(const Container&)>& entropy,
-    const size_t sampleSize = 250,
-    const double threshold = 0.05,
-    size_t maxIterations = 1000
-);
 
-// averaged entropy estimation: code COPIED from mgc.*pp with only mgc replaced with entropy, TODO refactor to avoid code dubbing
-template <typename Container, typename Metric>
-double entropy(
-    const Container& data,
-    std::size_t k = 3,
-    double logbase = 2,
-    Metric metric = Metric(),
-    bool exp = false
-);
+template <typename recType, typename Metric = metric::Euclidian<typename recType::value_type>>
+struct entropy_simple { // averaged entropy estimation: code COPIED from mgc.*pp with only mgc replaced with entropy, TODO refactor to avoid code dubbing
+
+    entropy_simple(Metric metric_ = Metric(), size_t k_ = 3, bool exp_ = false) :
+        metric(metric_),
+        k(k_),
+        exp(exp_)
+    {
+        logbase = 2; // TODO remove (?)
+    }
+
+    template <typename Container>
+    double operator()(const OuterContainer<Container, OuterAllocator> & data) const;
+
+    template <template Container, template <typename, bool> class InnerContainer, class OuterAllocator, typename ValueType, bool F>
+    double operator()( // TODO implement
+            const OuterContainer<InnerContainer<ValueType, F>, OuterAllocator> & data // inner cpntainer is specialized with bool F
+    ) const;
+
+    template <typename Container>
+    double estimate(
+            const Container & a,
+            const size_t sampleSize = 250,
+            const double threshold = 0.05,
+            size_t maxIterations = 1000
+    ) const;
+
+private:
+    size_t k;
+    size_t p;
+    Metric metric;
+    double logbase;
+    bool exp;
+};
 
 
-template <typename Container, typename Metric>
-double entropy_kpN(
-    const Container& data,
-    size_t k = 7,
-    size_t p = 70,
-    Metric metric = Metric()
-);
+
+
+template <typename recType, typename Metric = metric::Chebyshev<typename recType::value_type>>
+struct entropy {
+
+    entropy(Metric metric_ = Metric(), size_t k_ = 7, size_t p_ = 70, bool exp_ = false) :
+        metric(metric_),
+        k(k_),
+        p(p_),
+        exp(exp_) {}
+
+    template <typename Container>
+    double operator()(const OuterContainer<Container, OuterAllocator> X) const;
+
+    template <typename Container>
+    double estimate(
+            const Container & a,
+            const size_t sampleSize = 250,
+            const double threshold = 0.05,
+            size_t maxIterations = 1000
+    ) const;
+
+private:
+    size_t k;
+    size_t p;
+    Metric metric;
+    bool exp;
+};
+
 
 
 // -------------------------------- to be debugged
