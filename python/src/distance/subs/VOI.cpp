@@ -41,6 +41,6 @@ void export_metric_VOI(py::module& m) {
     wrap_metric_VOI_kl<double>(m);
 }
 
-PYBIND11_MODULE(_voi, m) {
+PYBIND11_MODULE(voi, m) {
     export_metric_VOI(m);
 }

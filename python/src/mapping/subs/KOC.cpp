@@ -116,6 +116,6 @@ void export_metric_KOC(py::module& m) {
     wrap_metric_KOC<std::vector<double>, metric::Grid6, metric::P_norm<double>>(m);
 }
 
-PYBIND11_MODULE(_koc, m) {
+PYBIND11_MODULE(koc, m) {
     export_metric_KOC(m);
 }

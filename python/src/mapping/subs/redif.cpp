@@ -28,6 +28,6 @@ void export_metric_Redif(py::module& m) {
     register_wrapper_Redif<Value, metric::Euclidian<Value>>(m);
 }
 
-PYBIND11_MODULE(_redif, m) {
+PYBIND11_MODULE(redif, m) {
     export_metric_Redif(m);
 }

@@ -23,6 +23,6 @@ void export_metric_dbscan(py::module& m) {
     register_wrapper_dbscan<std::vector<double>, metric::Euclidian<double>, double>(m);
 }
 
-PYBIND11_MODULE(_dbscan, m) {
+PYBIND11_MODULE(dbscan, m) {
     export_metric_dbscan(m);
 }

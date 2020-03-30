@@ -115,6 +115,6 @@ void export_metric_MGC(py::module& m)
 }
 
 
-PYBIND11_MODULE(_mgc, m) {
+PYBIND11_MODULE(mgc, m) {
     export_metric_MGC(m);
 }

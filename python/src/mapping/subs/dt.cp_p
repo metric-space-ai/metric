@@ -108,6 +108,6 @@ void export_metric_DT(py::module& m) {
 //        ;
 }
 
-PYBIND11_MODULE(_dt, m) {
+PYBIND11_MODULE(dt, m) {
     export_metric_DT(m);
 }

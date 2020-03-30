@@ -68,7 +68,7 @@ namespace py = pybind11;
 }*/
 
 
-PYBIND11_MODULE(_metric, m) {
+PYBIND11_MODULE(metric, m) {
     //export_converters();
     // exposing C++ return types
     //export_containers();

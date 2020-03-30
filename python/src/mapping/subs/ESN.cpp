@@ -32,6 +32,6 @@ void export_metric_ESN(py::module& m) {
     register_wrapper_ESN<std::vector<double>, metric::Euclidian<double>>(m);
 }
 
-PYBIND11_MODULE(_esn, m) {
+PYBIND11_MODULE(esn, m) {
     export_metric_ESN(m);
 }

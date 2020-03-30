@@ -44,6 +44,6 @@ void export_metric_entropy(py::module& m) {
 }
 
 
-PYBIND11_MODULE(_entropy, m) {
+PYBIND11_MODULE(entropy, m) {
     export_metric_entropy(m);
 }
