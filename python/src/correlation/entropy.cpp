@@ -12,16 +12,13 @@
 #include <pybind11/numpy.h>
 #include <pybind11/functional.h>
 #include <vector>
-#include <string>
-#include <functional>
 
 namespace py = pybind11;
 
 template<typename Container, typename Metric>
 double entropy(const Container& data, Metric metric, size_t k, size_t p, bool exp)
 {
-    auto instance = metric::entropy<double, Metric>(metric, k, p, exp);
-    return instance(data);
+    return metric::Entropy<double, Metric>(metric, k, p, exp)(data);
 }
 
 

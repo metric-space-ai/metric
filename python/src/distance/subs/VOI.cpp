@@ -14,24 +14,12 @@
 
 namespace py = pybind11;
 //
-/* // *kl removed
-template<typename Value>
-void wrap_metric_VOI_kl(py::module& m) {
-    using Metric = metric::VOI_kl<Value>;
-    using Container = std::vector<std::vector<Value>>;
-    py::class_<Metric>(m, "VOI_kl")
-        .def(py::init<int, Value>(), py::arg("k") = 3, py::arg("logbase") = 2)
-        .def("__call__", +[](Metric& self, const Container& a, const Container& b) {
-            return self(a, b);
-        }, "Calculate variation of information based on Kozachenko-Leonenko entropy estimator");
-}
-*/
 
 template<typename Value>
 void wrap_metric_VOI_normalized(py::module& m) {
     using Metric = metric::VOI_normalized<Value>;
     using Container = std::vector<std::vector<Value>>;
-    py::class_<Metric>(m, "VOI_normalized")
+    py::class_<Metric>(m, "VOI_normalized", "Normalized Variation of Information")
         .def(py::init<int, Value>(), py::arg("k") = 3, py::arg("logbase") = 2)
         .def("__call__", +[](Metric& self, const Container& a, const Container& b) {
             return self(a, b);
@@ -40,7 +28,6 @@ void wrap_metric_VOI_normalized(py::module& m) {
 
 void export_metric_VOI(py::module& m) {
     wrap_metric_VOI_normalized<double>(m);
-    //wrap_metric_VOI_kl<double>(m); // *_kl removed
 }
 
 PYBIND11_MODULE(voi, m) {
