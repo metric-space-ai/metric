@@ -1,5 +1,6 @@
 import numpy
-from metric.correlation import entropy
+from metric.correlation import Entropy
+from metric.distance import Euclidean, P_norm, Manhatten
 
 aent = numpy.float_([
     [5.0, 5.0],
@@ -9,9 +10,9 @@ aent = numpy.float_([
 ])
 
 print("Entropies:")
-for metric in ('chebyshev', 'p-norm', 'euclidean', 'manhatten'):
-    res = entropy(aent, 3, 2.0, metric=metric)
+for metric in (Euclidean, P_norm, Manhatten):
+    res = Entropy(metric=metric(), p=3, k=2)(aent)
     print(f'using {metric}: {res:.5f}')
 
-res = entropy(aent)
+res = Entropy(p=3, k=2)(aent)
 print(f'using Default: {res:.5f}')

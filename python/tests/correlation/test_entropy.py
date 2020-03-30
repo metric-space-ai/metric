@@ -1,7 +1,8 @@
 from metric.distance import Euclidean, Manhatten, Chebyshev, P_norm
-from metric.correlation import entropy
+from metric.correlation import Entropy
 import numpy
 import math
+from functools import partial
 
 
 def my_euclidean(a, b):
@@ -10,11 +11,12 @@ def my_euclidean(a, b):
 
 def test_entropy():
     v = numpy.float_([[5, 5], [2, 2], [3, 3], [5, 1]])
+    entropy = partial(Entropy, p=3, k=2)
 
-    assert entropy(v) == 5.967356977156464
-    assert entropy(v, metric=Euclidean()) == 5.967356977156464
-    assert entropy(v, metric=Manhatten()) == 6.065860847684145
-    assert entropy(v, metric=Chebyshev()) == 5.773379597323566
-    assert entropy(v, metric=P_norm()) == 6.065860847684145
-    assert entropy(v, metric=P_norm(p=10)) == 5.852646926226563
-    assert entropy(v, metric=my_euclidean) == 5.315860847684144  # different value because of hardcoded Euclidean (p)
+    assert entropy()(v) == 5.967356977156464
+    assert entropy(metric=Euclidean())(v) == 5.967356977156464
+    assert entropy(metric=Manhatten())(v) == 6.065860847684145
+    assert entropy(metric=Chebyshev())(v) == 5.773379597323566
+    assert entropy(metric=P_norm())(v) == 6.065860847684145
+    assert entropy(metric=P_norm(p=10))(v) == 5.852646926226563
+    assert entropy(metric=my_euclidean)(v) == 5.315860847684144  # different value because of hardcoded Euclidean (p)

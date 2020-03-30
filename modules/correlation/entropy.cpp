@@ -275,14 +275,15 @@ double mvnpdf(blaze::DynamicVector<double> x) {
 // averaged entropy estimation: code COPIED from mgc.*pp with only mgc replaced with entropy, TODO refactor to avoid code dubbing
 template <typename Container>
 double estimate(
-        const Container & a,
+        const Container & data,
         const std::function<double(const Container&)>& entropy,
         const size_t sampleSize,
         const double threshold,
         size_t maxIterations
 ){
     using T = type_traits::underlaying_type_t<Container>;
-    const size_t dataSize = a.size();
+    using V = type_traits::index_value_type_t<Container>;
+    const size_t dataSize = data.size();
 
     // Update maxIterations
     if (maxIterations == 0) {
@@ -294,7 +295,7 @@ double estimate(
     }
 
     if (maxIterations < 1) {
-        return entropy(a);
+        return entropy(data);
     }
 
     // Create shuffle indexes
@@ -305,10 +306,10 @@ double estimate(
     std::shuffle(indexes.begin(), indexes.end(), rng);
 
     // Create vector container for fast random access
-    const std::vector<typename Container::value_type> vectorA(a.begin(), a.end());
+    const std::vector<V> vectorA(data.begin(), data.end());
 
     // Create samples
-    std::vector<typename Container::value_type> sampleA;
+    std::vector<V> sampleA;
     sampleA.reserve(sampleSize);
 
     std::vector<double> entropyValues;
@@ -367,12 +368,8 @@ double estimate(
 template <typename recType, typename Metric>
 template <typename Container>
 double entropy_simple<recType, Metric>::operator()(
-        const Container& data,
-        //std::size_t k,
-        //double logbase,
-        //Metric metric,
-        //bool exp
-        ) const
+        const Container& data
+) const
 {
     using T = type_traits::underlaying_type_t<Container>;
     using V = type_traits::index_value_type_t<Container>;
@@ -426,13 +423,9 @@ double entropy_simple<recType, Metric>::estimate(
         const size_t sampleSize,
         const double threshold,
         size_t maxIterations
-        //std::size_t k,
-        //double logbase,
-        //Metric metric,
-        //bool exp // TODO apply to returning value!
-        )
+) const
 {
-    return entropy_details::estimate_func<Container, entropy_simple<recType, Metric>, Metric>(a, sampleSize, threshold, maxIterations, k, logbase, metric, exp);
+    return entropy_details::estimate(a, this, sampleSize, threshold, maxIterations);
 }
 
 
@@ -447,11 +440,13 @@ double entropy_simple<recType, Metric>::estimate(
 
 
 template <typename recType, typename Metric>
-template <template <typename, typename> class OuterContainer, typename Container, typename OuterAllocator>
-double entropy<recType, Metric>::operator()(const OuterContainer<Container, OuterAllocator>& data) const
+template <typename Container>
+double entropy<recType, Metric>::operator()(const Container& data) const
 {
-    size_t n = X.size();
-    size_t d = X[0].size();
+    using T = type_traits::underlaying_type_t<Container>;
+    using V = type_traits::index_value_type_t<Container>;
+    size_t n = data.size();
+    size_t d = data[0].size();
 
     assert(p < n);
     assert(k < p);
@@ -459,7 +454,7 @@ double entropy<recType, Metric>::operator()(const OuterContainer<Container, Oute
     double h = 0;
     int got_results = 0;  // absents in Matlab original code
 
-    metric::Tree<Container, Metric> tree (data, -1, metric);
+    metric::Tree<V, Metric> tree (data, -1, metric);
     blaze::DynamicMatrix<double> Nodes (p, d, 0);
     blaze::DynamicVector<double> mu (d, 0);
     blaze::DynamicVector<double> lb (d, 0);
@@ -522,9 +517,9 @@ double entropy<recType, Metric>::estimate(
         const size_t sampleSize,
         const double threshold,
         size_t maxIterations
-        )
+) const
 {
-    return entropy_details::estimate_func<Container, entropy<recType, Metric>, Metric>(a, sampleSize, threshold, maxIterations, k, 2, metric, exp);
+    return entropy_details::estimate(a, this, sampleSize, threshold, maxIterations);
 }
 
 
@@ -534,6 +529,10 @@ double entropy<recType, Metric>::estimate(
 
 
 // ---------------------------------- estimators to be debugged
+
+
+
+
 // Kozachenko-Leonenko estimator based on https://hal.archives-ouvertes.fr/hal-00331300/document (Shannon diff. entropy,
 // q = 1)
 // WARNING: this estimator is sill under construction, it seems to have bugs and needs debugging

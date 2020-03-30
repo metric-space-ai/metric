@@ -28,9 +28,9 @@ struct entropy_simple { // averaged entropy estimation: code COPIED from mgc.*pp
     }
 
     template <typename Container>
-    double operator()(const OuterContainer<Container, OuterAllocator> & data) const;
+    double operator()(const Container& data) const;
 
-    template <template Container, template <typename, bool> class InnerContainer, class OuterAllocator, typename ValueType, bool F>
+    template <template <typename, typename> class OuterContainer, template <typename, bool> class InnerContainer, class OuterAllocator, typename ValueType, bool F>
     double operator()( // TODO implement
             const OuterContainer<InnerContainer<ValueType, F>, OuterAllocator> & data // inner cpntainer is specialized with bool F
     ) const;
@@ -64,7 +64,7 @@ struct entropy {
         exp(exp_) {}
 
     template <typename Container>
-    double operator()(const OuterContainer<Container, OuterAllocator> X) const;
+    double operator()(const Container& data) const;
 
     template <typename Container>
     double estimate(
