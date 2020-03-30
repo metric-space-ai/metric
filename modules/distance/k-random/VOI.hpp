@@ -85,7 +85,7 @@ struct VOI {
      * @param k_
      * @param logbase_
      */
-    explicit VOI(int k_ = 3, int p_ = 25, V logbase_ = 2)
+    explicit VOI(int k_ = 3, V logbase_ = 2, int p_ = 25)
         : k(k_)
         , p(p_)
         , logbase(logbase_)
