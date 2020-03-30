@@ -7,7 +7,7 @@ Copyright (c) 2019 Panda Team
 */
 
 #include <iostream>
-#include "../../modules/utils/graph.hpp"
+#include "../../modules/space/knn_graph.hpp"
 #include "../../modules/distance.hpp"
 
 
