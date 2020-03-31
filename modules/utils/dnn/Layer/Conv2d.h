@@ -410,6 +410,18 @@ class Conv2d: public Layer<Scalar>
                       res.begin() + df_data.size());
             return res;
         }
+
+        size_t getOuputWidth() const
+        {
+        	return outputWidth;
+
+        }
+
+		size_t getOuputHeight() const
+		{
+			return outputHeight;
+
+		}
 };
 
 
