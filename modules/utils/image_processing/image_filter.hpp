@@ -12,8 +12,6 @@
 
 #include <algorithm>
 #include <cmath>
-#include <blaze/Math.h>
-#include <blaze/Blaze.h>
 #include "../../../3rdparty/blaze/Math.h"
 
 /**
