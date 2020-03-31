@@ -3,7 +3,7 @@ This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
 file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-Copyright (c) 2019 Panda Team
+Copyright (c) 2020 Panda Team
 */
 
 #if defined(__linux__)
@@ -27,6 +27,7 @@ Copyright (c) 2019 Panda Team
 
 #include "assets/json.hpp"
 #include "../../modules/mapping.hpp"
+#include "../../modules/utils/poor_mans_quantum.hpp"
 
 
 using json = nlohmann::json;
@@ -419,6 +420,7 @@ int main(int argc, char *argv[])
 	//std::cout << std::endl;
 	//std::cout << distance(test_set[3], test_set[4]) << std::endl; // noise(0..255) and noise(0..255)
 	//std::cout << distance(test_set[3], test_set[5]) << std::endl; // noise(0..255) and noise(0..1)
+	
 
 
     return 0;
