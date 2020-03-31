@@ -20,3 +20,13 @@ def test_entropy():
     assert entropy(metric=P_norm())(v) == 1.582185490039048
     assert entropy(metric=P_norm(p=10))(v) == -1.6957132689132957
     assert entropy(metric=my_euclidean)(v) == 1.014045451620507  # different value because of hardcoded Euclidean (p)
+
+
+def test_estimate():
+    v = numpy.float_([[5, 5], [2, 2], [3, 3], [5, 1]] * 100)
+    entropy = Entropy(p=10, k=5)
+
+    assert entropy.estimate(v) == 4.009325851842218
+    assert entropy.estimate(v, sample_size=10) == 4.009325851842218
+    assert entropy.estimate(v, threshold=0) == 1.014045451620507
+    assert entropy.estimate(v, max_iterations=2) == 1.014045451620507
