@@ -2,15 +2,17 @@ import sys
 import numpy
 from metric.distance import EMD
 from metric.utils.misc import time_n_log
-import test_data
 
 
 def main():
-    rows, cols = test_data.img1.shape
+    img1 = numpy.loadtxt('test_data/img1.csv')
+    img2 = numpy.loadtxt('test_data/img1.csv')
+
+    rows, cols = img1.shape
     rows //= 6
     cols //= 6
-    img1 = test_data.img1[:rows, :cols]
-    img2 = test_data.img2[:rows, :cols]
+    img1 = img1[:rows, :cols]
+    img2 = img2[:rows, :cols]
     print(f'size {rows} x {cols}')
     cost_mat = EMD.ground_distance_matrix_of_2dgrid(cols=cols, rows=rows)
     max_cost = EMD.max_in_distance_matrix(cost_mat)

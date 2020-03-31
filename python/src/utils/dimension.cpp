@@ -56,8 +56,9 @@ void register_wrapper_dimension(py::module& m) {
 
 
 void export_metric_dimension(py::module& m) {
-    register_wrapper_dimension<double, py::object>(m);
-    register_wrapper_dimension<int, py::object>(m);
-    register_wrapper_dimension<std::string, py::object>(m);
-    register_wrapper_dimension<py::object, py::object>(m);
+// disable for now, as there is no example of usage and no way to test it
+//    register_wrapper_dimension<double, py::object>(m);
+//    register_wrapper_dimension<int, py::object>(m);
+//    register_wrapper_dimension<std::string, py::object>(m);
+//    register_wrapper_dimension<py::object, py::object>(m);
 }

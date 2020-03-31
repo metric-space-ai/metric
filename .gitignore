@@ -19,3 +19,5 @@ build
 *.bmp
 /test
 *~
+*.dSYM
+*.o

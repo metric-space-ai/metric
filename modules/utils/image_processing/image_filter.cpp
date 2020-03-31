@@ -1,8 +1,12 @@
-//
-// Created by Aleksey Timin on 3/29/20.
-//
+/*
+  This Source Code Form is subject to the terms of the Mozilla Public
+  License, v. 2.0. If a copy of the MPL was not distributed with this
+  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+	
+	Created by Aleksey Timin on 3/29/20.
+*/
 
-#include "image_filter.h"
+#include "image_filter.hpp"
 
 namespace metric {
 	using namespace metric::image_processing_details;
@@ -295,7 +299,6 @@ namespace metric {
 
 			return resultMat;
 		}
-
 
 		template<typename Filter, typename ChannelType>
 		Channel <ChannelType>

@@ -33,6 +33,7 @@ if(UNIX)
     find_package(Threads REQUIRED)
     set_target_properties(mapping_tests PROPERTIES CXX_STANDARD 17)
     target_compile_options(mapping_tests PRIVATE -DBOOST_TEST_DYN_LINK)
+    target_link_libraries(mapping_tests PRIVATE ${LAPACK_LIBRARIES})
 endif(UNIX)
 
 add_test(NAME mapping_tests COMMAND mapping_tests)

@@ -34,6 +34,7 @@ Copyright (c) PANDA Team
 #include "distance/k-related/L1.hpp"
 
 #include "distance/k-random/VOI.hpp"
+
 #include "distance/k-random/KolmogorovSmirnov.hpp"
 #include "distance/k-random/RandomEMD.hpp"
 #include "distance/k-random/CramervonNises.hpp"

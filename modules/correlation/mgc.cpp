@@ -54,7 +54,7 @@
 
 namespace metric {
 
-// computes the (pairwaise) distance matrix for abritrary random acces matrix like containers.
+// computes the (pairwise) distance matrix for arbitrary random access matrix like containers.
 template <typename Container>
 Container distance_matrix(const Container& data)
 {
@@ -495,7 +495,6 @@ double MGC<recType1, Metric1, recType2, Metric2>::estimate(const Container1& a, 
         }
 
         auto convergence = peak2ems(diff) / n;
-        std::cout << n << " " << convergence << " " << mgc << " " << mu << std::endl;
 
         if (convergence < threshold) {
             return mu;

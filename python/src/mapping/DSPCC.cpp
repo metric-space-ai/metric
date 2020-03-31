@@ -18,10 +18,10 @@ void register_wrapper_DSPCC(py::module& m) {
     auto dspcc = py::class_<Mapping>(m, "DSPCC");
     dspcc.def(py::init<const std::vector<recType>&, size_t, size_t, float, size_t>(),
         py::arg("training_dataset"),
-        py::arg("n_features_") = 1,
-        py::arg("n_subbands_") = 4,
-        py::arg("time_freq_balance_") = 0.5,
-        py::arg("n_top_features_") = 16
+        py::arg("n_features") = 1,
+        py::arg("n_subbands") = 4,
+        py::arg("time_freq_balance") = 0.5,
+        py::arg("n_top_features") = 16
     );
     Matrix (Mapping::*encode) (const std::vector<recType>&) = &Mapping::time_freq_PCFA_encode;
     dspcc.def("time_freq_PCFA_encode", encode);

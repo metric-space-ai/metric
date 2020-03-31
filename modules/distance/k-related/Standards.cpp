@@ -21,7 +21,7 @@ template <typename Container>
 auto Euclidian<V>::operator()(const Container& a, const Container& b) const ->
     typename std::enable_if<!std::is_same<Container, V>::value, distance_type>::type
 {
-    static_assert(std::is_floating_point<value_type>::value, "T must be a float type");
+    //static_assert(std::is_floating_point<value_type>::value, "T must be a float type");
     distance_type sum = 0;
     for (auto it1 = a.begin(), it2 = b.begin(); it1 != a.end() && it2 != b.end(); ++it1, ++it2) {
         sum += (*it1 - *it2) * (*it1 - *it2);

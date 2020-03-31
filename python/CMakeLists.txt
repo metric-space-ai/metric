@@ -20,7 +20,6 @@ endif()
 
 find_package(Python3 COMPONENTS Interpreter Development)
 
-set(Boost_DEBUG on)
 find_package(Boost REQUIRED)
 
 find_package(LAPACK REQUIRED)
@@ -30,18 +29,15 @@ else ()
 find_package(PkgConfig REQUIRED)
 endif ()
 
-set(COMMON_LIBRARIES
-    #${Boost_LIBRARIES}
-    ${LAPACK_LIBRARIES}
-)
-
-SET(HEADER_INCLUDE_PATH
+add_library(base_python_module INTERFACE)
+target_include_directories(base_python_module INTERFACE
     ${Boost_INCLUDE_DIR}
     ${SOURCE_PATH}
     ${METRIC_SOURCE_PATH}
 )
-
-include_directories(${HEADER_INCLUDE_PATH})
+target_link_libraries(base_python_module INTERFACE
+    ${LAPACK_LIBRARIES}
+)
 
 add_subdirectory(pybind11)
 add_subdirectory(src)

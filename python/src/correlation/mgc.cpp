@@ -14,59 +14,58 @@
 #include <pybind11/numpy.h>
 #include <string>
 #include <vector>
+#include <typeinfo>
 
 class NotUsed {};
 
 namespace py = pybind11;
 
+template<typename Metric1, typename Metric2>
+metric::MGC<NotUsed, Metric1, NotUsed, Metric2> createMGC(Metric1 metric1, Metric2 metric2) {
+    return metric::MGC<NotUsed, Metric1, NotUsed, Metric2>(metric1, metric2);
+}
+
 template <class ValueType, class Metric1, class Metric2>
 void wrap_metric_MGC(py::module& m) {
-    using Metric = metric::MGC<NotUsed, Metric1, NotUsed, Metric2>;
     using Container = std::vector<std::vector<ValueType>>;
-    std::string name = "MGC_" + getMetricName<Metric1>() + "_" + getMetricName<Metric2>();
-    auto mgc = py::class_<Metric>(m, name.c_str(), "Multiscale Graph Correlation");
-    mgc.def(py::init<>(),
-        "Construct Multiscale Graph Correlation"
+    using Class = metric::MGC<NotUsed, Metric1, NotUsed, Metric2>;
+    m.def("create_mgc", &createMGC<Metric1, Metric2>,
+        "internal method to create MGC instances",
+        py::arg("metric1"),
+        py::arg("metric2")
     );
-    mgc.def(py::init<const Metric1&, const Metric2&>(),
-        "Construct Multiscale Graph Correlation",
-        py::arg("m1"),
-        py::arg("m2")
-    );
-    // both methods means the same, but bind function much easier
-    mgc.def("__call__", &Metric::template operator()<Container, Container>,
-        "Return correlation betweeen a and b",
+
+    const std::string name = std::string("MGC__")
+        + std::string(typeid(Metric1).name())
+        + "__"
+        + std::string(typeid(Metric2).name());
+    auto mgc = py::class_<Class>(m, name.c_str());
+    auto corr_ptr = &Class::template operator()<Container, Container>;
+    mgc.def("__call__", corr_ptr,
+        "Multiscale Graph Correlation between a and b",
         py::arg("a"),
         py::arg("b")
     );
-    mgc.def("xcorr", &Metric::template xcorr<Container, Container>,
-        "Return vector of mgc values calculated for different data shifts",
+
+    auto xcorr_ptr = &Class::template xcorr<Container, Container>;
+    mgc.def("xcorr", xcorr_ptr,
+        "Return vector of MGC values calculated for different data shifts",
         py::arg("a"),
         py::arg("b"),
         py::arg("n")
     );
-    mgc.def("estimate", &Metric::template estimate<Container, Container>,
-        "Return estimate of the correlation between a and b",
+    auto estimate_ptr = &Class::template estimate<Container, Container>;
+    mgc.def("estimate", estimate_ptr,
+        "Estimate of the correlation between a and b",
         py::arg("a"),
         py::arg("b"),
         py::arg("b_sample_size") = 250,
         py::arg("threshold") = 0.05,
         py::arg("max_iterations") = 1000
     );
-
-//    mgc.def("compute_distance_matrix", &Metric::template computeDistanceMatrix<Container, Metric+[](Metric& self,  FIXME: Metric parameter undefined
-//        const WrapStlMatrix<double>& c) {
-//            return self.computeDistanceMatrix(c);
-//        }
-//    );
-    mgc.def("mean", &Metric::mean);
-    mgc.def("variance", &Metric::variance);
-    mgc.def("icdf", &Metric::icdf);
-    mgc.def("erfcinv", &Metric::erfcinv);
-    mgc.def("erfinv_imp", &Metric::erfinv_imp);
-    mgc.def("polyeval", &Metric::polyeval);
-    mgc.def("peak2ems", &Metric::peak2ems);
-    mgc.def("linspace", &Metric::linspace);
+// should be private
+//    m.def("compute_distance_matrix", &computeDistanceMatrix<Container, Metric1>);
+//    m.def("compute_distance_matrix", &computeDistanceMatrix<Container, Metric2>);
 }
 
 template <class T>
@@ -74,7 +73,7 @@ void wrap_metric_MGC_direct(py::module& m) {
     using Metric = metric::MGC_direct;
     auto mgc = py::class_<Metric>(m, "MGC_direct");
     mgc.def("__call__", &Metric::xcorr<T>);   // FIXME: unsupported argument types
-    mgc.def("xcorr", &Metric::xcorr<T>);           // FIXME: unsupported argument types
+    mgc.def("xcorr", &Metric::xcorr<T>);      // FIXME: unsupported argument types
     mgc.def("center_distance_matrix", &Metric::center_distance_matrix<T>);
     mgc.def("rank_distance_matrix", &Metric::rank_distance_matrix<T>);
     mgc.def("rank_distance_matrix", &Metric::rank_distance_matrix<T>);
@@ -115,4 +114,9 @@ void export_metric_MGC(py::module& m)
     wrap_metric_MGC<T, metric::P_norm<T>, metric::P_norm<T>>(m);
 
     wrap_metric_MGC_direct<T>(m);
+}
+
+
+PYBIND11_MODULE(mgc, m) {
+    export_metric_MGC(m);
 }

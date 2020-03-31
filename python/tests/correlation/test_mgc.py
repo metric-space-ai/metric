@@ -1,4 +1,5 @@
 from metric.correlation import MGC, MGC_direct
+from metric.distance import Euclidean, Manhatten, P_norm
 import numpy
 import pytest
 
@@ -24,14 +25,14 @@ b1 = numpy.float_([[2.70625143351230], [1.41259513494005], [0.666086793692617],
 
 def test_symmetry():
     tolerance = 1e-13
-    expected_distance = 0.28845660296530595
+    expected_distance = 0.28845659117728745
 
-    mgc_corr = MGC(metric1='euclidean', metric2='manhatten')
+    mgc_corr = MGC(metric1=Euclidean(), metric2=Manhatten())
 
     result = mgc_corr(a1, b1)
     assert result == pytest.approx(expected_distance, tolerance)
 
-    mgc_corr2 = MGC(metric1='manhatten', metric2='euclidean')
+    mgc_corr2 = MGC(metric1=Manhatten(), metric2=Euclidean())
 
     result = mgc_corr2(b1, a1)
     assert result == pytest.approx(expected_distance, tolerance)
@@ -49,7 +50,7 @@ def test_xcorr():
                             0.3811881240213428,
                             0.44657481646290537]
 
-    mgc = MGC(metric1='euclidean', metric2='euclidean')
+    mgc = MGC(metric1=Euclidean(), metric2=Euclidean())
     correlation = mgc.xcorr(a1, b1, n=4)
 
     assert len(expected_correlation) == len(correlation)
