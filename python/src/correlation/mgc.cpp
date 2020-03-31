@@ -14,7 +14,6 @@
 #include <pybind11/numpy.h>
 #include <string>
 #include <vector>
-#include <typeinfo>
 
 class NotUsed {};
 
@@ -26,7 +25,7 @@ metric::MGC<NotUsed, Metric1, NotUsed, Metric2> createMGC(Metric1 metric1, Metri
 }
 
 template <class ValueType, class Metric1, class Metric2>
-void wrap_metric_MGC(py::module& m) {
+void wrap_metric_MGC(py::module& m, const std::string& prefix) {
     using Container = std::vector<std::vector<ValueType>>;
     using Class = metric::MGC<NotUsed, Metric1, NotUsed, Metric2>;
     m.def("create_mgc", &createMGC<Metric1, Metric2>,
