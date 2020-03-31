@@ -9,11 +9,11 @@ class Entropy:
         self.entropy_impl = partial(impl.entropy, metric=metric, k=k, p=p, exp=exp)
         self.estimate_impl = partial(impl.estimate, entropy=self.entropy_impl)
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, *args, **kwargs) -> float:
         return self.entropy_impl(*args, **kwargs)
 
-    def estimate(self, *args, **kwargs):
-        return self.estimate_impl(*args, **kwargs)
+    def estimate(self, sample_size=250, threshold=0.05, max_iterations=1000) -> float:
+        return self.estimate_impl(sample_size=sample_size, threshold=threshold, max_iterations=max_iterations)
 
     def __str__(self):
         return "{cls}(metric={metric})".format(cls=self.__class__.__name__, metric=self.metric)

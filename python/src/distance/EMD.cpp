@@ -26,7 +26,7 @@ void export_metric_EMD(py::module& m) {
 
     auto emd = py::class_<Class>(m, "EMD", "Earth mover's distance");
     emd.def(py::init<>(), "Default constructor");
-    emd.def(py::init<Container&&>(), "Move constructor"
+    emd.def(py::init<Container&&>(), "Move constructor",
         py::arg("cost_matrix")
     );
     emd.def(py::init<const Container&, const V&>(),

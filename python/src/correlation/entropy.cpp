@@ -25,14 +25,20 @@ double entropy(const Container& data, Metric metric, size_t k, size_t p, bool ex
 template <typename Container, typename Metric>
 void wrap_metric_entropy(py::module& m) {
     m.def("entropy", &entropy<Container, Metric>,
-        "internal function to create instantiate template Entropy classes",
+        "Calculate entropy",
         py::arg("data"),
         py::arg("metric"),
         py::arg("k"),
         py::arg("p"),
         py::arg("exp")
     );
-    m.def("estimate", &metric::entropy_details::estimate<Container>);
+    m.def("estimate", &metric::entropy_details::estimate<Container>,
+        py::arg("data"),
+        py::arg("entropy"),
+        py::arg("sample_size") = 250,
+        py::arg("threshold") = 0.05,
+        py::arg("max_iterations") = 100
+    );
 }
 
 
