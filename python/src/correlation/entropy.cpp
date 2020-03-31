@@ -15,26 +15,38 @@
 
 namespace py = pybind11;
 
-template<typename Container, typename Metric>
-double entropy(const Container& data, Metric metric, size_t k, size_t p, bool exp)
-{
-    return metric::Entropy<double, Metric>(metric, k, p, exp)(data);
+template <typename Metric = metric::Euclidian<double>()>
+metric::Entropy<void, Metric> createEntropy(
+    const Metric& metric,
+    size_t k = 7,
+    size_t p = 70,
+    bool exp = false
+){
+    return metric::Entropy<void, Metric>(metric, k, p, exp);
 }
-
 
 template <typename Container, typename Metric>
 void wrap_metric_entropy(py::module& m) {
-    m.def("entropy", &entropy<Container, Metric>,
-        "Calculate entropy",
-        py::arg("data"),
+    using Class = metric::Entropy<void, Metric>;
+
+    m.def("Entropy", &createEntropy<Metric>,
+        "Factory of Entropy instances",
         py::arg("metric"),
-        py::arg("k"),
-        py::arg("p"),
-        py::arg("exp")
+        py::arg("k") = 7,
+        py::arg("p") = 70,
+        py::arg("exp") = false
     );
-    m.def("estimate", &metric::entropy_details::estimate<Container>,
+
+    const std::string name = std::string("Entropy__") + std::string(typeid(Metric).name());
+    auto cls = py::class_<Class>(m, name.c_str());
+    cls.def("__call__", &Class::template operator()<Container>,
+        "Calculate entropy",
+        py::arg("data")
+    );
+
+    cls.def("estimate", &Class::template estimate<Container>,
+        "Estimate",
         py::arg("data"),
-        py::arg("entropy"),
         py::arg("sample_size") = 250,
         py::arg("threshold") = 0.05,
         py::arg("max_iterations") = 100

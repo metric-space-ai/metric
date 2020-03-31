@@ -273,10 +273,10 @@ double mvnpdf(blaze::DynamicVector<double> x) {
 
 
 // averaged entropy estimation: code COPIED from mgc.*pp with only mgc replaced with entropy, TODO refactor to avoid code dubbing
-template <typename Container>
+template <typename Container, typename Functor>
 double estimate(
         const Container & data,
-        const std::function<double(const Container&)>& entropy,
+        const Functor& entropy,
         const size_t sampleSize,
         const double threshold,
         size_t maxIterations
