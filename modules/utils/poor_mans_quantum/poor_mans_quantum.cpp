@@ -14,6 +14,7 @@
 
 #include <limits>
 #include <random>
+#include <map>
 
 #ifdef USE_VECTOR_SORT
 #include "3dparty/vector_sort.hpp"
