@@ -34,10 +34,14 @@ Copyright (c) 2019 Michael Welsch
 #endif
 
 #include "poor_mans_quantum/distributions/Discrete.hpp"
+
 namespace metric {
 template <typename Distribution = Discrete<float>, typename T = float>
 class PMQ {
+
 public:
+    Distribution _dist;
+
     /**
      * @brief Construct a new PMQ object
      * 
@@ -47,23 +51,15 @@ public:
      * @param d 
      */
     PMQ(T par1 = 1.0, T par2 = 0.0, size_t n = 1000, Distribution d = Distribution());
-
+	
     /**
      * @brief Construct a new PMQ object
      * 
      * @param data 
      * @param d 
      */
-    PMQ(std::vector<double> data, Distribution d = Distribution());
-
-    /**
-     * @brief Construct a new PMQ object
-     * 
-     * @param data 
-     * @param d 
-     */
-    PMQ(std::vector<float> data, Distribution d = Distribution());
-
+    PMQ(std::vector<T> data, Distribution d = Distribution());
+	
     /**
      * @brief 
      * 
@@ -147,7 +143,8 @@ public:
      * @param confidencelevel 
      * @return
      */
-    std::tuple<PMQ<Discrete<float>>, PMQ<Discrete<float>>> confidence(const T& confidencelevel = 1 - RV_ERROR) const;
+    std::tuple<PMQ<Discrete<float>>, PMQ<Discrete<float>>>
+    confidence(const T & confidencelevelb = 1 - RV_ERROR) const;
 
     /**
      * @brief 
@@ -160,8 +157,8 @@ public:
      * @return
      */
     template <typename mT1, typename mT2>
-    std::tuple<PMQ<Discrete<float>>, PMQ<Discrete<float>>> merged_confidence(
-        const mT1& set_0_left, const mT2& set_0_right, const T confidencelevel = 1 - RV_ERROR) const;
+    std::tuple<PMQ<Discrete<float>>, PMQ<Discrete<float>>>
+	merged_confidence(const mT1 & set_0_left, const mT2 & set_0_right, const T confidencelevel = 1 - RV_ERROR) const;
 
     /**
      * @brief 
@@ -173,7 +170,7 @@ public:
      * @return
      */
     template <typename mT1, typename mT2>
-    float in_confidence(const mT1& set_left, const mT2& set_right) const;
+    float in_confidence(const mT1 & set_left, const mT2 & set_right) const;
 
     /**
      * @brief 
@@ -185,7 +182,7 @@ public:
      * @return 
      */
     template <typename mT1, typename mT2>
-    float out_confidence(const mT1& set_left, const mT2& set_right) const;
+    float out_confidence(const mT1 & set_left, const mT2 & set_right) const;
 
     /**
      * @brief 
@@ -203,7 +200,6 @@ public:
 
 
 private:
-    Distribution _dist;
     std::mt19937_64 _generator;
 };
 

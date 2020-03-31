@@ -19,7 +19,7 @@ namespace metric {
  *
  * @brief 
  * 
- * The idea of the Kohonen distance is: to train a SOM on a dataset and then compute the EMD for two records in the Kohonen space.
+ * The idea of the Kohonen distance is: to train a SOM on a dataset and then compute the EMD (shortest path between SOM's graph nodes) for two records in the Kohonen space.
  * 
  * The egdes of the SOM graph (distances between nodes) are the ground distance for the EMD.
  * Then for every record, to get a vector of distances between all SOM nodes, it is weights for ground distances.
@@ -45,7 +45,7 @@ struct kohonen_distance {
      * @param nodesWidth - width of the SOM grid
      * @param nodesHeight - height of the SOM grid
      */
-	kohonen_distance(std::vector<Sample>& samples, size_t nodesWidth, size_t nodesHeight);
+	kohonen_distance(const std::vector<Sample>& samples, size_t nodesWidth, size_t nodesHeight);
 
     /**
      * @brief Construct a new kohonen_distance object
@@ -58,7 +58,7 @@ struct kohonen_distance {
      * @param iterations
      * @param distribution
      */
-	kohonen_distance(std::vector<Sample>& samples, Graph graph, Metric metric = Metric(), double start_learn_rate = 0.8, double finish_learn_rate = 0.0, size_t iterations = 20, 
+	kohonen_distance(const std::vector<Sample>& samples, Graph graph, Metric metric = Metric(), double start_learn_rate = 0.8, double finish_learn_rate = 0.0, size_t iterations = 20,
 		Distribution distribution = Distribution(-1, 1));
 
     /**
@@ -70,14 +70,35 @@ struct kohonen_distance {
      */
     distance_return_type operator()(const Sample& sample_1, const Sample& sample_2);
 
+    /**
+     * @brief
+	 * Recursive function that reconstructs the shortest backwards node by node
+     *
+     * @param from_node - index of the SOM's graph start node
+     * @param to_node second sample - index of the SOM's graph end node
+     */
+	void print_shortest_path(int from_node, int to_node);
+
 private:
 	
 	void calculate_distance_matrix();
 
+	/**
+	 * @brief get_closest_unmarked_node
+	 * @return the index of closest nodes not visited
+	 */
+	int get_closest_unmarked_node(const std::vector<D>& distance, const std::vector<bool>& mark, int numOfVertices);
+
+	/**
+	 * @brief calculate_distance
+	 * Computes the shortest path
+	 */
+	std::tuple<std::vector<D>, std::vector<int>> calculate_distance(const blaze::CompressedMatrix<D>& adjMatrix, int from_node, int num);
+
 	metric::SOM<Sample, Graph, Metric, Distribution> som_model_;
-	
-	//metric::EMD<D> emd_distance_;
+
 	std::vector<std::vector<D>> distance_matrix_;
+	std::vector<std::vector<int>> predecessors_;
 };
 
 }  // namespace metric

@@ -24,5 +24,5 @@ Copyright (c) PANDA Team
 
 #include "space/tree.hpp"
 #include "space/matrix.hpp"
-
+#include "space/knn_graph.hpp"
 #endif

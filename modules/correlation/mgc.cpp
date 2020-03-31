@@ -18,8 +18,26 @@
 #if defined(_MSC_VER)
 /* Microsoft C/C++-compatible compiler */
 #include <intrin.h>
-#else
+#elif defined(GNUC) && (defined(x86_64) || defined(i386))
+     /* GCC-compatible compiler, targeting x86/x86-64 */
+
 #include <x86intrin.h>
+#elif defined(GNUC) && defined(ARM_NEON)
+     /* GCC-compatible compiler, targeting ARM with NEON */
+
+#include <arm_neon.h>
+#elif defined(GNUC) && defined(IWMMXT)
+     /* GCC-compatible compiler, targeting ARM with WMMX */
+
+#include <mmintrin.h>
+#elif (defined(GNUC) || defined(xlC)) && (defined(VEC) || defined(ALTIVEC))
+     /* XLC or GCC-compatible compiler, targeting PowerPC with VMX/VSX */
+
+#include <altivec.h>
+#elif defined(GNUC) && defined(SPE)
+     /* GCC-compatible compiler, targeting PowerPC with SPE */
+
+ #include <spe.h>
 #endif
 
 #include <math.h>
@@ -36,7 +54,7 @@
 
 namespace metric {
 
-// computes the (pairwaise) distance matrix for abritrary random acces matrix like containers.
+// computes the (pairwise) distance matrix for arbitrary random access matrix like containers.
 template <typename Container>
 Container distance_matrix(const Container& data)
 {
@@ -379,21 +397,21 @@ double MGC<recType1, Metric1, recType2, Metric2>::operator()(const Container1& a
     assert(a.size() == b.size());
 
     /* Compute distance matrices */
-	auto X = computeDistanceMatrix<Container1, Metric1>(a);
-    auto Y = computeDistanceMatrix<Container2, Metric2>(b);
+    auto X = computeDistanceMatrix<Container1>(a, metric1);
+    auto Y = computeDistanceMatrix<Container2>(b, metric2);
 
     return MGC_direct()(X, Y);
 }
 
 template <class recType1, class Metric1, class recType2, class Metric2>
 template <typename Container, typename Metric>
-DistanceMatrix<double> MGC<recType1, Metric1, recType2, Metric2>::computeDistanceMatrix(const Container &c) const
+DistanceMatrix<double> MGC<recType1, Metric1, recType2, Metric2>::computeDistanceMatrix(const Container &c, const Metric & metric) const
 {
 	DistanceMatrix<double> X(c.size());
 	for (size_t i = 0; i < X.rows(); ++i) {
 		X(i, i) = 0;
 		for (size_t j = i + 1; j < X.columns(); ++j) {
-			double distance = Metric()(c[i], c[j]);
+			double distance = metric(c[i], c[j]);
 			X(i, j) = distance;
 		}
 	}
@@ -477,7 +495,6 @@ double MGC<recType1, Metric1, recType2, Metric2>::estimate(const Container1& a, 
         }
 
         auto convergence = peak2ems(diff) / n;
-        std::cout << n << " " << convergence << " " << mgc << " " << mu << std::endl;
 
         if (convergence < threshold) {
             return mu;
@@ -695,8 +712,8 @@ MGC<recType1, Metric1, recType2, Metric2>::xcorr(const Container1 &a, const Cont
 	assert(a.size() == b.size());
 
 	/* Compute distance matrices */
-	auto X = computeDistanceMatrix<Container1, Metric1>(a);
-	auto Y = computeDistanceMatrix<Container2, Metric2>(b);
+	auto X = computeDistanceMatrix<Container1>(a, metric1);
+	auto Y = computeDistanceMatrix<Container2>(b, metric2);
 
 
 	return MGC_direct().xcorr(X, Y, n);

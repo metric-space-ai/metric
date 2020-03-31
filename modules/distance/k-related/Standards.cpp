@@ -9,8 +9,10 @@ Copyright (c) 2018 Michael Welsch
 #define _METRIC_DISTANCE_K_RELATED_STANDARDS_CPP
 
 #include "Standards.hpp"
+#include <algorithm>
 
 #include <cmath>
+#include <algorithm>
 
 namespace metric {
 
@@ -19,7 +21,7 @@ template <typename Container>
 auto Euclidian<V>::operator()(const Container& a, const Container& b) const ->
     typename std::enable_if<!std::is_same<Container, V>::value, distance_type>::type
 {
-    static_assert(std::is_floating_point<value_type>::value, "T must be a float type");
+    //static_assert(std::is_floating_point<value_type>::value, "T must be a float type");
     distance_type sum = 0;
     for (auto it1 = a.begin(), it2 = b.begin(); it1 != a.end() && it2 != b.end(); ++it1, ++it2) {
         sum += (*it1 - *it2) * (*it1 - *it2);
@@ -45,7 +47,7 @@ auto Euclidian_thresholded<V>::operator()(const Container& a, const Container& b
     for (auto it1 = a.begin(), it2 = b.begin(); it1 != a.end() || it2 != b.end(); ++it1, ++it2) {
         sum += (*it1 - *it2) * (*it1 - *it2);
     }
-    return std::min(thres, value_type(factor * sqrt(sum)));
+    return std::min(thres, value_type(factor * std::sqrt(sum)));
 }
 
 template <typename V>
@@ -83,6 +85,19 @@ auto Cosine<V>::operator()(const Container& A, const Container& B) const -> dist
         denom_b += *it2 * *it2;
     }
     return dot / (std::sqrt(denom_a) * std::sqrt(denom_b));
+}
+
+template <typename V>
+template <typename Container>
+auto CosineInverted<V>::operator()(const Container& A, const Container& B) const -> distance_type
+{
+    value_type dot = 0, denom_a = 0, denom_b = 0;
+    for (auto it1 = A.begin(), it2 = B.begin(); it1 != A.end() || it2 != B.end(); ++it1, ++it2) {
+        dot += *it1 * *it2;
+        denom_a += *it1 * *it1;
+        denom_b += *it2 * *it2;
+    }
+    return std::abs(1 - dot / (std::sqrt(denom_a) * std::sqrt(denom_b)));
 }
 
 template <typename V>

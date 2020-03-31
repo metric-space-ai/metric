@@ -8,6 +8,8 @@ Copyright (c) 2018 Michael Welsch
 #ifndef _METRIC_DISTANCE_K_RELATED_STANDARDS_HPP
 #define _METRIC_DISTANCE_K_RELATED_STANDARDS_HPP
 
+#include <type_traits>
+
 namespace metric {
 
 /**
@@ -152,6 +154,29 @@ struct Euclidian_thresholded {
 
 template <typename V = double>
 struct Cosine {
+    using value_type = V;
+    using distance_type = value_type;
+
+    /**
+     * @brief calculate cosine similariy between two non-zero vector
+     *
+     * @param a first vector
+     * @param b second vector
+     * @return cosine similarity between a and b
+     */
+    template <typename Container>
+    distance_type operator()(const Container& a, const Container& b) const;
+};
+
+/**
+ * @class CosineInverted
+ *
+ * @brief CosineInverted similarity. Means 1 - Cosine.
+ *
+ */
+
+template <typename V = double>
+struct CosineInverted {
     using value_type = V;
     using distance_type = value_type;
 
