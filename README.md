@@ -140,7 +140,7 @@ metric space that were obtained by mapping and more.
 
 
 
-|**Module **    | **File**                 | **Class**                         | **Constructor**                                                                                            | **()-Operator**                                |
+|**Module**    | **File**                 | **Class**                         | **Constructor**                                                                                            | **()-Operator**                                |
 |-------------|----------------------|-------------------------------|--------------------------------------------------------------------------------------------------------|--------------------------------------------|
 | Correlation | mgc.hpp              | MGC                           | auto functor = MGC<None, metric::Euclidean<double>, None, metric::Euclidean<double>>(metric1, metric2) | auto result = functor(dataA, dataB)        |
 | Correlation | VOI.hpp              | entropy                       | auto functor = metric::Entropy<void, Manhatten<double>>(metric, k, p, exp)                             | auto result = functor(dataA)               |
