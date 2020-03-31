@@ -15,6 +15,7 @@ Copyright (c) 2019 Panda Team
 #include <unordered_set>
 #include <utility>
 #include <vector>
+#include <iterator>
 
 #include <boost/functional/hash.hpp>
 

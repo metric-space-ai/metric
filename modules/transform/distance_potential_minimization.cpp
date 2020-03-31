@@ -654,7 +654,8 @@ std::vector<double> fit_hysteresis(blaze::DynamicMatrix<double> I, size_t steps,
 
         //blaze::DynamicMatrix<double> I1 = I;  // TODO: replace with gaussian filter
         //auto out = f(ch1);
-        metric::imfilter<double, 1, metric::FilterType::GAUSSIAN, metric::PadDirection::BOTH, metric::PadType::CONST> gaussianBlur(3, 3,sigma[i]);
+        int kernelsize= sigma[i]*3+1;
+        metric::imfilter<double, 1, metric::FilterType::GAUSSIAN, metric::PadDirection::BOTH, metric::PadType::CONST> gaussianBlur(kernelsize, kernelsize,sigma[i]);
         auto I1=gaussianBlur(I);
         auto [h1, v1] = DPM_detail::gvf(I1, 1, 0.1, 10);
 
