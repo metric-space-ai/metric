@@ -155,11 +155,12 @@ namespace metric {
 	blaze::DynamicMatrix<T> HOG<T>::groundDistance(blaze::DynamicMatrix<T> image)
 	{
 		T threshold = 0;
-		size_t blocks_per_image = floor((img_size./cell_size - block_size)./(block_size - block_stride) + 1);
-		size_t n_hog_bins = prod([blocks_per_image, block_size, orientations]);
+		size_t block_stride = 0;
+		size_t blocks_per_image = floor((img_size./cell_size - blockSize)./(blockSize - block_stride) + 1);
+		size_t n_hog_bins = prod([blocks_per_image, blockSize, orientations]);
 
 		/* Spatial distance matrix */
-		size_t spatial_dist_mat = spatial_dist(n_hog_bins,orientations, block_size, blocks_per_image);
+		size_t spatial_dist_mat = spatial_dist(n_hog_bins,orientations, blockSize, blocks_per_image);
 		if (threshold != 0) {
 			spatial_dist_mat(spatial_dist_mat > threshold) = threshold;
 		} else {
