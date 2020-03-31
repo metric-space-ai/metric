@@ -25,8 +25,10 @@ namespace dnn
 template <typename Scalar, typename Activation>
 class Conv2d: public Layer<Scalar>
 {
-    protected:
+	public:
 		using Matrix = blaze::DynamicMatrix<Scalar>;
+
+    protected:
 		using SparseMatrix = blaze::CompressedMatrix<Scalar, blaze::columnMajor>;
 		using ColumnMatrix = blaze::DynamicMatrix<Scalar, blaze::columnMajor>;
 		using Vector = blaze::DynamicVector<Scalar, blaze::rowVector>;
