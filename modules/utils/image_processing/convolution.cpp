@@ -5,7 +5,7 @@ namespace metric {
 	template <typename T, size_t Channels>
 	Convolution2d<T, Channels>::Convolution2d(size_t imageWidth, size_t imageHeight, size_t kernelWidth, size_t kernelHeight)
 	{
-		convLayer = std::make_unique(new ConvLayer2d(imageWidth, imageHeight, Channels, Channels, kernelWidth, kernelHeight));
+		convLayer = std::make_unique<ConvLayer2d>(imageWidth, imageHeight, Channels, Channels, kernelWidth, kernelHeight);
 	}
 
 	template<typename T, size_t Channels>

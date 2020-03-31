@@ -1,5 +1,5 @@
-#ifndef CONVOLUTIONAL_HPP
-#define CONVOLUTIONAL_HPP
+#ifndef CONVOLUTION_HPP
+#define CONVOLUTION_HPP
 
 #include "../dnn/Activation/Identity.h"
 #include "../dnn/Layer/Conv2d.h"
@@ -14,7 +14,7 @@ namespace metric {
 			using FilterKernel = blaze::DynamicMatrix<T>;
 
 			using ConvLayer2d = dnn::Conv2d<T, dnn::Identity<T>>;
-			using typename ConvLayer2d::Matrix;
+			using Matrix = typename ConvLayer2d::Matrix;
 
 			Convolution2d(size_t imageWidth, size_t imageHeight, size_t kernelWidth, size_t kernelHeight);
 
@@ -23,11 +23,9 @@ namespace metric {
 			Matrix operator()(Matrix image, std::vector<T> kernelData);
 
 
-
 		private:
 			std::unique_ptr<ConvLayer2d> convLayer;
 	};
-
 }
 
 
