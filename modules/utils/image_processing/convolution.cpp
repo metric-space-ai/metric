@@ -12,7 +12,7 @@ namespace metric {
 	typename Convolution2d<T, Channels>::Image Convolution2d<T, Channels>::operator()(Image image, FilterKernel kernel)
 	{
 		/* Convert image */
-		Matrix imageData(image.rows() * image.columns() * Channels);
+		Matrix imageData(1, image[0].rows() * image[0].columns() * Channels);
 		size_t e = 0;
 		for (size_t c = 0; c < image.size(); ++c) {
 			auto& imageChannel = image[c];
@@ -43,7 +43,7 @@ namespace metric {
 
 		e = 0;
 		for (size_t c = 0; c < output.size(); ++c) {
-			auto channel = Channel(convLayer->getOuputHeight(), convLayer->getOutputWidth());
+			auto channel = Channel(convLayer->getOutputHeight(), convLayer->getOutputWidth());
 			for (size_t i = 0; i < channel.rows(); ++i) {
 				for (size_t j = 0; j < channel.columns(); ++j) {
 					channel(i, j) = outputData(0, e++);
@@ -58,7 +58,8 @@ namespace metric {
 	template <typename T, size_t Channels>
 	typename Convolution2d<T, Channels>::Matrix Convolution2d<T, Channels>::operator()(Matrix image, std::vector<T> kernelData)
 	{
-		convLayer->setParameters(kernelData, {});
+		std::vector<T> bias(Channels);
+		convLayer->setParameters({kernelData, bias});
 
 		convLayer->forward(image);
 

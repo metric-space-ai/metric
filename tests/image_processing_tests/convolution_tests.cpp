@@ -12,5 +12,14 @@ using namespace metric;
 
 BOOST_AUTO_TEST_CASE(base)
 {
-	auto conv = Convolution2d<double, 3>(100, 100, 4, 4);
+	using Conv = Convolution2d<double, 3>;
+	auto conv = Conv(100, 100, 4, 4);
+
+
+	Conv::Channel channel;
+	Conv::Image image = {channel, channel, channel};
+
+	Conv::FilterKernel kernel = {{1, 2}, {3, 4}};
+
+	conv(image, kernel);
 }
