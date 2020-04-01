@@ -5,7 +5,7 @@ namespace metric {
 	template <typename T, size_t Channels>
 	Convolution2d<T, Channels>::Convolution2d(size_t imageWidth, size_t imageHeight, size_t kernelWidth, size_t kernelHeight)
 	{
-		convLayer = std::make_unique<ConvLayer2d>(imageWidth, imageHeight, 1, 1, kernelWidth, kernelHeight);
+		convLayer = std::make_shared<ConvLayer2d>(imageWidth, imageHeight, 1, 1, kernelWidth, kernelHeight);
 	}
 
 	template<typename T, size_t Channels>
@@ -47,7 +47,7 @@ namespace metric {
 
 			/* Convert output */
 			e = 0;
-			auto outputChannel = Channel(convLayer->getOutputHeight(), convLayer->getOutputWidth());
+			auto outputChannel = Channel(convLayer->getOutputShape()[0], convLayer->getOutputShape()[0]);
 			for (size_t i = 0; i < outputChannel.rows(); ++i) {
 				for (size_t j = 0; j < outputChannel.columns(); ++j) {
 					outputChannel(i, j) = outputData(0, e++);

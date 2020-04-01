@@ -48,9 +48,6 @@ class Layer
 		        inputSize(inputSize), outputSize(outputSize)
         {}
 
-        ///
-        /// Virtual destructor
-        ///
         virtual ~Layer() {}
 
         Layer(const nlohmann::json& json)
@@ -78,6 +75,8 @@ class Layer
         {
             return outputSize;
         }
+
+        virtual std::vector<Scalar> getOutputShape() const = 0;
 
 		virtual void init(const std::map<std::string, std::shared_ptr<Initializer<Scalar>>> initializer) = 0;
 

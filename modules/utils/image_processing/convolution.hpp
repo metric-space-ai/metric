@@ -22,7 +22,7 @@ namespace metric {
 
 
 		private:
-			std::unique_ptr<ConvLayer2d> convLayer;
+			std::shared_ptr<dnn::Layer<T>> convLayer;
 	};
 }
 
