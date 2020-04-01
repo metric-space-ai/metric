@@ -23,7 +23,7 @@ def test_entropy():
 
 
 def test_estimate():
-    v = numpy.float_([[5, 5], [2, 2], [3, 3], [5, 1]] * 100)
+    v = numpy.float_([[5, 5], [2, 2], [3, 3], [5, 1]])
     entropy = Entropy(p=10, k=5)
 
     assert entropy.estimate(v) == 4.009325851842218

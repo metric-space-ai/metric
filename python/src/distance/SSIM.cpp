@@ -12,12 +12,18 @@ void register_wrapper_SSIM(py::module& m) {
     using Metric = metric::SSIM<DistanceType, Value>;
     using ValueType = typename Value::value_type;
     using Container = typename std::vector<Value>;
-    py::class_<Metric>(m, "SSIM")
-        .def(py::init<>())
-        .def(py::init<ValueType, ValueType>(), py::arg("dynamic_range"), py::arg("masking"))
-        .def("__call__", &Metric::template operator()<Container>)
-        .def_readonly("dynamic_range", &Metric::dynamic_range)
-        .def_readonly("masking", &Metric::masking);
+    py::class_<Metric>(m, "SSIM", "Structural similarity (for images)")
+        .def(py::init<>(), "Default constructor")
+        .def(py::init<ValueType, ValueType>(),
+            "Init constructor",
+            py::arg("dynamic_range"),
+            py::arg("masking")
+        )
+        .def("__call__", &Metric::template operator()<Container>,
+            "Calculate structural similarity for images in given containers"
+        )
+        .def_readonly("dynamic_range", &Metric::dynamic_range, "dynamic range of the pixel values (default: 255.0)")
+        .def_readonly("masking", &Metric::masking, "masking (default: 2.0)");
 }
 
 void export_metric_SSIM(py::module& m) {
