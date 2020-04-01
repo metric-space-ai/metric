@@ -20,8 +20,6 @@ namespace metric {
 
 			Image operator()(Image image, FilterKernel kernel);
 
-			Matrix operator()(Matrix image, std::vector<T> kernelData);
-
 
 		private:
 			std::unique_ptr<ConvLayer2d> convLayer;

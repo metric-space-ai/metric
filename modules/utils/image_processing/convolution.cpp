@@ -5,64 +5,58 @@ namespace metric {
 	template <typename T, size_t Channels>
 	Convolution2d<T, Channels>::Convolution2d(size_t imageWidth, size_t imageHeight, size_t kernelWidth, size_t kernelHeight)
 	{
-		convLayer = std::make_unique<ConvLayer2d>(imageWidth, imageHeight, Channels, Channels, kernelWidth, kernelHeight);
+		convLayer = std::make_unique<ConvLayer2d>(imageWidth, imageHeight, 1, 1, kernelWidth, kernelHeight);
 	}
 
 	template<typename T, size_t Channels>
 	typename Convolution2d<T, Channels>::Image Convolution2d<T, Channels>::operator()(Image image, FilterKernel kernel)
 	{
-		/* Convert image */
-		Matrix imageData(1, image[0].rows() * image[0].columns() * Channels);
-		size_t e = 0;
-		for (size_t c = 0; c < image.size(); ++c) {
-			auto& imageChannel = image[c];
-			for (size_t i = 0; i < imageChannel.rows(); ++i) {
-				for (size_t j = 0; j < imageChannel.columns(); ++j) {
-					imageData(0, e++) = imageChannel(i, j);
-				}
-			}
-		}
-
-
 		/* Convert kernel */
-		std::vector<T> kernelData(kernel.rows() * kernel.columns() * Channels);
-		e = 0;
-		for (size_t c = 0; c < image.size(); ++c) {
-			for (size_t i = 0; i < kernel.rows(); ++i) {
-				for (size_t j = 0; j < kernel.columns(); ++j) {
-					kernelData[e++] = kernel(i, j);
-				}
+		std::vector<T> kernelData(kernel.rows() * kernel.columns());
+		size_t e = 0;
+		for (size_t i = 0; i < kernel.rows(); ++i) {
+			for (size_t j = 0; j < kernel.columns(); ++j) {
+				kernelData[e++] = kernel(i, j);
 			}
 		}
 
-		/* Process */
-		auto outputData = operator()(imageData, kernelData);
+		/* Set kernel */
+		convLayer->setParameters({kernelData, {0}});
 
-		/* Convert output */
+
+		/* Create output image */
 		Image output;
 
-		e = 0;
-		for (size_t c = 0; c < output.size(); ++c) {
-			auto channel = Channel(convLayer->getOutputHeight(), convLayer->getOutputWidth());
+		for (size_t c = 0; c < image.size(); ++c) {
+			auto& channel = image[c];
+
+			/* Convert image */
+			Matrix imageData(1, channel.rows() * channel.columns());
+			e = 0;
 			for (size_t i = 0; i < channel.rows(); ++i) {
 				for (size_t j = 0; j < channel.columns(); ++j) {
-					channel(i, j) = outputData(0, e++);
+					imageData(0, e++) = channel(i, j);
 				}
 			}
+
+
+			/* Process */
+			convLayer->forward(imageData);
+			auto outputData = convLayer->output();
+
+
+			/* Convert output */
+			e = 0;
+			auto outputChannel = Channel(convLayer->getOutputHeight(), convLayer->getOutputWidth());
+			for (size_t i = 0; i < outputChannel.rows(); ++i) {
+				for (size_t j = 0; j < outputChannel.columns(); ++j) {
+					outputChannel(i, j) = outputData(0, e++);
+				}
+			}
+
 			output[c] = channel;
 		}
 
 		return output;
-	}
-
-	template <typename T, size_t Channels>
-	typename Convolution2d<T, Channels>::Matrix Convolution2d<T, Channels>::operator()(Matrix image, std::vector<T> kernelData)
-	{
-		std::vector<T> bias(Channels);
-		convLayer->setParameters({kernelData, bias});
-
-		convLayer->forward(image);
-
-		return convLayer->output();
 	}
 }
