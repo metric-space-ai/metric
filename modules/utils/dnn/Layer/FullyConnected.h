@@ -207,6 +207,7 @@ class FullyConnected: public Layer<Scalar>
             std::copy(m_db.data(), m_db.data() + m_db.size(), res.begin() + blaze::size(m_dw));
             return res;
         }
+
 };
 
 

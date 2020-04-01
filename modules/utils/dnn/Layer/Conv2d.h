@@ -413,16 +413,9 @@ class Conv2d: public Layer<Scalar>
             return res;
         }
 
-        size_t getOutputWidth() const
-        {
-        	return outputWidth;
-
-        }
-
-		size_t getOutputHeight() const
+		std::vector<Scalar> getOutputShape() const
 		{
-			return outputHeight;
-
+        	return {outputWidth, outputHeight};
 		}
 };
 
