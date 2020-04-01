@@ -413,13 +413,13 @@ class Conv2d: public Layer<Scalar>
             return res;
         }
 
-        size_t getOuputWidth() const
+        size_t getOutputWidth() const
         {
         	return outputWidth;
 
         }
 
-		size_t getOuputHeight() const
+		size_t getOutputHeight() const
 		{
 			return outputHeight;
 
