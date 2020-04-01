@@ -7,6 +7,8 @@
 #include "../../../3rdparty/blaze/Math.h"
 #include "../../../3rdparty/json/json.hpp"
 
+#include "Initializer.h"
+
 #include "Optimizer.h"
 
 namespace metric::dnn
@@ -77,7 +79,9 @@ class Layer
             return outputSize;
         }
 
-        ///
+		virtual void init(const std::map<std::string, std::shared_ptr<Initializer<Scalar>>> initializer) = 0;
+
+	///
         /// Initialize layer parameters using \f$N(\mu, \sigma^2)\f$ distribution
         ///
         /// \param mu    Mean of the normal distribution.
