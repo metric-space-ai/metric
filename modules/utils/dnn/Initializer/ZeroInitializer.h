@@ -13,12 +13,12 @@ namespace metric::dnn {
 		using typename Initializer<Scalar>::RowVector;
 
 	public:
-		void init(const size_t rows, const size_t columns, ColumnMatrix &matrix) const
+		void init(const size_t rows, const size_t columns, ColumnMatrix &matrix)
 		{
-			matrix = blaze::zero<Scalar>(rows, columns);
+			matrix = blaze::zero<Scalar, blaze::columnMajor>(rows, columns);
 		}
 
-		void init(const size_t size, RowVector &vector) const
+		void init(const size_t size, RowVector &vector)
 		{
 			vector = blaze::zero<Scalar, blaze::rowVector>(size);
 		}

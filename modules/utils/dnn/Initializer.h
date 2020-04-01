@@ -13,9 +13,9 @@ namespace metric::dnn {
 		using RowVector = blaze::DynamicVector<Scalar, blaze::rowVector>;
 
 	public:
-		virtual void init(const size_t rows, const size_t columns, ColumnMatrix &matrix) const = 0;
+		virtual void init(const size_t rows, const size_t columns, ColumnMatrix &matrix) = 0;
 
-		virtual void init(const size_t size, RowVector &matrix) const = 0;
+		virtual void init(const size_t size, RowVector &matrix) = 0;
 	};
 }
 #endif // INITIALIZER_H

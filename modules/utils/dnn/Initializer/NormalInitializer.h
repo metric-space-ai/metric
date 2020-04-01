@@ -23,14 +23,14 @@ namespace metric::dnn {
 																							normalDistribution(mu, sigma)
 		{}
 
-		void init(const size_t rows, const size_t columns, ColumnMatrix &matrix) const
+		void init(const size_t rows, const size_t columns, ColumnMatrix &matrix)
 		{
-			matrix = blaze::generate<Scalar>(rows, columns, [this](size_t i, size_t j){return normalDistribution(randomEngine);});
+			matrix = blaze::generate<blaze::columnMajor>(rows, columns, [this](size_t i, size_t j) {return normalDistribution(randomEngine);});
 		}
 
-		void init(const size_t size, RowVector &vector) const
+		void init(const size_t size, RowVector &vector)
 		{
-			vector = blaze::generate<Scalar, blaze::rowVector>(size, [this](size_t pos){return normalDistribution(randomEngine);});
+			vector = blaze::generate<blaze::rowVector>(size, [this](size_t pos) {return normalDistribution(randomEngine);});
 		}
 
 	};

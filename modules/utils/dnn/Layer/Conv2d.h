@@ -142,7 +142,7 @@ class Conv2d: public Layer<Scalar>
 			getUnrolledKernel();
 		}
 
-	void init(const Scalar& mu, const Scalar& sigma, std::mt19937& rng)
+		void init(const Scalar& mu, const Scalar& sigma, std::mt19937& rng)
 		{
 
             // Random initialization of filter parameters
@@ -153,7 +153,13 @@ class Conv2d: public Layer<Scalar>
 			getUnrolledKernel();
 		}
 
-        void calculateUnrolledKernelStructure()
+		void init(const std::map<std::string, std::shared_ptr<Initializer<Scalar>>> initializers)
+		{
+			initializers.at("normal")->init(kernelsData.size(), kernelsData);
+			initializers.at("zero")->init(bias.size(), bias);
+		}
+
+		void calculateUnrolledKernelStructure()
         {
 	        /* Init unrolled kernels */
 			unrolledKernels.resize(outputChannels, SparseMatrix(inputChannels * inputWidth * inputHeight,
