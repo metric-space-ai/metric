@@ -18,7 +18,7 @@ std::unordered_map<std::type_index, std::string> metricTypeNames = {
     {std::type_index(typeid(metric::Euclidian<double>)), "euclidean"},
     {std::type_index(typeid(metric::Manhatten<double>)), "manhatten"},
     {std::type_index(typeid(metric::Chebyshev<double>)), "chebyshev"},
-    {std::type_index(typeid(metric::P_norm<double>)), "p-norm"}
+    {std::type_index(typeid(metric::P_norm<double>)), "pnorm"}
 };
 
 template<typename Metric>
