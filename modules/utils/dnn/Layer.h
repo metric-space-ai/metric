@@ -76,7 +76,7 @@ class Layer
             return outputSize;
         }
 
-        virtual std::vector<Scalar> getOutputShape() const = 0;
+        virtual std::vector<size_t> getOutputShape() const = 0;
 
 		virtual void init(const std::map<std::string, std::shared_ptr<Initializer<Scalar>>> initializer) = 0;
 

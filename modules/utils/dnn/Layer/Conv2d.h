@@ -165,6 +165,13 @@ class Conv2d: public Layer<Scalar>
 			unrolledKernels.resize(outputChannels, SparseMatrix(inputChannels * inputWidth * inputHeight,
 		                                                            outputWidth * outputHeight));
 
+			auto& unrolledKernel = unrolledKernels[0];
+			unrolledKernel.reserve(unrolledKernel.columns() * kernelWidth * kernelHeight);
+			//for (auto j = 0; j < unrolledKernel.columns(); ++j) {
+			//	unrolledKernel.reserve(j, kernelWidth * kernelHeight);
+				//unrolledKernel.finalize(j);
+			//}
+
 	        const size_t dr = (isTranspose ? outputWidth : inputWidth) - kernelWidth;
 
 	        kernelRow.resize(1, kernelWidth * kernelHeight + (kernelHeight - 1) * dr);
@@ -237,11 +244,19 @@ class Conv2d: public Layer<Scalar>
 							}
 						}
 					} else {
+						std::cout << unrolledKernel.capacity() << std::endl;
+						std::cout << blaze::column(unrolledKernel, 0).capacity() << std::endl;
 						for (size_t i = 0; i < unrolledKernel.columns(); ++i) {
 							//blaze::submatrix(unrolledKernel, jDeltas[i], i, kernelRow.columns(), 1) = blaze::trans(kernelRow);
-							for (size_t j = 0; j < kernelRow.columns(); ++j) {
+							/*for (size_t j = 0; j < kernelRow.columns(); ++j) {
 								unrolledKernel(jDeltas[i] + j, i) = kernelRow(0, j);
 							}
+							 */
+							for (auto element = kernelRow.begin(0); element != kernelRow.end(0); ++element) {
+								//unrolledKernel(jDeltas[i] + element->index(), i) = element->value();
+								unrolledKernel.append(jDeltas[i] + element->index(), i, element->value());
+							}
+							unrolledKernel.finalize(i);
 						}
 					}
 				}
@@ -419,7 +434,7 @@ class Conv2d: public Layer<Scalar>
             return res;
         }
 
-		std::vector<Scalar> getOutputShape() const
+		std::vector<size_t> getOutputShape() const
 		{
         	return {outputWidth, outputHeight};
 		}
