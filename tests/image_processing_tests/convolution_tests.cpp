@@ -17,9 +17,17 @@ BOOST_AUTO_TEST_CASE(base)
 	std::mt19937 randomEngine{std::random_device()()};
 
 	using Conv = Convolution2d<T, 3>;
-	size_t rows = 100;
-	size_t columns = 100;
-	auto conv = Conv(100, 100, 2, 2);
+
+	size_t kernelWidth = 3;
+	size_t kernelHeight = 3;
+
+	Conv::FilterKernel kernel = blaze::generate(kernelHeight, kernelWidth, [&normalDistribution, &randomEngine](size_t i, size_t j) {
+									return normalDistribution(randomEngine);
+								});
+
+	size_t rows = 2160;
+	size_t columns = 1920;
+	auto conv = Conv(rows, columns, kernel.columns(), kernel.rows());
 
 
 	Conv::Image image;
@@ -30,7 +38,17 @@ BOOST_AUTO_TEST_CASE(base)
 		image[c] = channel;
 	}
 
-	Conv::FilterKernel kernel = {{1, 2}, {3, 4}};
 
-	conv(image, kernel);
+
+	using Clock = std::chrono::high_resolution_clock;
+
+	auto t1 = Clock::now();
+	auto r = conv(image, kernel);
+	auto t2 = Clock::now();
+	auto d = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1);
+	std::cout << " total convolution() time: " << d.count() << " s" << std::endl;
+
+	//std::cout << image << std::endl;
+	//std::cout << kernel << std::endl;
+	//std::cout << r << std::endl;
 }

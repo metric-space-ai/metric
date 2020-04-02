@@ -15,6 +15,7 @@ namespace metric {
 
 			using ConvLayer2d = dnn::Conv2d<T, dnn::Identity<T>>;
 			using Matrix = typename ConvLayer2d::Matrix;
+			using Clock = std::chrono::high_resolution_clock;
 
 			Convolution2d(size_t imageWidth, size_t imageHeight, size_t kernelWidth, size_t kernelHeight);
 
