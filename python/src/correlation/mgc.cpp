@@ -7,7 +7,7 @@
 */
 
 #include "modules/correlation/mgc.hpp"
-#include "../metric_types.hpp"
+#include "metric_types.hpp"
 
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>

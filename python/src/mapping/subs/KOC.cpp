@@ -1,5 +1,4 @@
-#include "../../metric_types.hpp"
-#include "modules/mapping/kmeans.hpp"   // FIXME: someone forgot this in KOC
+#include "metric_types.hpp"
 #include "modules/distance/k-random/VOI.hpp"    // FIXME: and this
 #include "modules/mapping/KOC.hpp"
 
