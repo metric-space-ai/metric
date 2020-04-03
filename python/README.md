@@ -36,13 +36,14 @@ python3 -m pip install dist/*
 TODO
 ## OS X
 ```
-pip3 install dist/*
+python3 -m pip install dist/*
 ```
 ## Examples
 
 ```python
 import numpy
-from metric.distance import entropy
+from metric.correlation import Entropy
+from metric.distance import Euclidean, P_norm, Manhatten
 
 aent = numpy.float_([
     [5.0, 5.0],
@@ -52,11 +53,40 @@ aent = numpy.float_([
 ])
 
 print("Entropies:")
-for metric in ('chebyshev', 'p-norm', 'euclidean', 'manhatten'):
-    res = entropy(aent, 3, 2.0, metric=metric)
+for metric in (Euclidean, P_norm, Manhatten):
+    res = Entropy(metric=metric(), p=3, k=2)(aent)
     print(f'using {metric}: {res:.5f}')
 
-res = entropy(aent)
+res = Entropy(p=3, k=2)(aent)
 print(f'using Default: {res:.5f}')
 ```
 for more examples please check `examples/` folder
+
+## For developers
+One of the core idea of metric-py is to find the balance between performance of C++ and the beauty of Python.
+By its nature METRIC library heavily relies on compile time generation with multiple level of C++ templates.
+Even tiny C++ code snippet could generate tens of classes, on the bright side you pay only for what you use.
+Python in its turns lacks compile time optimization, so to stay on level it needs to have multiple variants of the same
+code, but generated with different parameters and scenarios of use.
+In general Metric-py uses two approaches to decide which implementation to use:
+- class factories
+- dynamic routing
+
+### Class Factories
+Class factories in general a functions that mimics class constructor. They use C++ function overloading mechanism, the
+concrete function overload will return only specific implementation. It means that class implementation should be completely
+described by function arguments. One example of class factories is Entropy factory:
+```
+template <typename Metric = metric::Euclidian<double>()>
+metric::Entropy<void, Metric> createEntropy(
+    const Metric& metric,
+    size_t k = 7,
+    size_t p = 70,
+    bool exp = false
+){
+    return metric::Entropy<void, Metric>(metric, k, p, exp);
+}
+```
+
+### Dynamic routing
+This approach construct the name of implementation class/function from arguments of factory:
