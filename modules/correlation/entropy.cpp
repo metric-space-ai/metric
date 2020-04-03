@@ -448,25 +448,36 @@ double Entropy<recType, Metric>::operator()(const Container& data) const
     size_t n = data.size();
     size_t d = data[0].size();
 
-    assert(p < n);
-    assert(k < p);
+    size_t k_ = k;
+    size_t p_ = p;
+    if (p_ >= n)
+        p_ = n - 1; // TODO we need to signal somehow that parameters are altered
+    if (k_ >= p_)
+        k_ = p_ - 1;
+    if (p_ < 3)
+        p_ = 3;
+    if (k_ < 2)
+        k_ = 2;
+
+    if (n < 4)
+        return std::nan("estimation failed");
 
     double h = 0;
     int got_results = 0;  // absents in Matlab original code
 
     metric::Tree<V, Metric> tree (data, -1, metric);
-    blaze::DynamicMatrix<double> Nodes (p, d, 0);
+    blaze::DynamicMatrix<double> Nodes (p_, d, 0);
     blaze::DynamicVector<double> mu (d, 0);
     blaze::DynamicVector<double> lb (d, 0);
     blaze::DynamicVector<double> ub (d, 0);
     blaze::DynamicVector<double> x_vector (d, 0);
     for (size_t i = 0; i < n; ++i) {
 
-        auto res = tree.knn(data[i], p);
-        auto eps = res[k-1].second;
+        auto res = tree.knn(data[i], p_);
+        auto eps = res[k_-1].second;
 
         blaze::reset(mu);
-        for (size_t p_idx= 0; p_idx < p; ++p_idx) { // r v realizations from the tree
+        for (size_t p_idx= 0; p_idx < p_; ++p_idx) { // r v realizations from the tree
             for (size_t d_idx = 0; d_idx < d; ++d_idx) { // dimensions
                 //Nodes(p_idx, d_idx) = res[p_idx].first->data[d_idx];
                 //mu[d_idx] += res[p_idx].first->data[d_idx];
@@ -474,11 +485,11 @@ double Entropy<recType, Metric>::operator()(const Container& data) const
                 mu[d_idx] += res[p_idx].first->get_data()[d_idx];
             }
         }
-        mu = mu/p;
+        mu = mu/p_;
         Nodes = Nodes - blaze::expand(blaze::trans(mu), Nodes.rows());
         double offset = 1e-8;
         //double offset = 1e-5; // TODO consider dependence on machine epsilon
-        auto K = blaze::evaluate( (blaze::trans(Nodes) * Nodes)*p/(p - 1) + blaze::IdentityMatrix<double>(d)*offset );
+        auto K = blaze::evaluate( (blaze::trans(Nodes) * Nodes)*p_/(p_ - 1) + blaze::IdentityMatrix<double>(d)*offset );
 
         blaze::reset(lb);
         blaze::reset(ub);

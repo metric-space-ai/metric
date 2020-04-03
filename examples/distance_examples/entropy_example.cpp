@@ -21,6 +21,56 @@ int main() {
     std::cout << "Entropy, Mutual Information and Variation of Information example have started" << std::endl;
     std::cout << std::endl;
 
+    {
+        // from README.md
+        std::vector<std::vector<double>> v = { {5,5}, {2,2}, {3,3}, {5,1} };
+        std::vector<std::vector<double>> v1 = {{5,5}, {2,2}, {3,3}, {5,5}};
+        std::vector<std::vector<double>> v2 = {{5,5}, {2,2}, {3,3}, {1,1}};
+        {
+            auto estimator = metric::Entropy<std::vector<double>>();
+            auto result = estimator(v);
+            std::cout << "default result: " << result << std::endl;
+        }
+        {
+            auto estimator = metric::Entropy<void, metric::Manhatten<double>>();
+            auto result = estimator(v);
+            std::cout << "Manhatten result: " << result << std::endl;
+        }
+        {
+            auto result = metric::mutualInformation(v1, v2);
+            std::cout << "MI default result: " << result << std::endl;
+        }
+        {
+            auto result = metric::mutualInformation(v1, v2, 3, metric::Euclidian<double>());
+            std::cout << "MI Euclidean result: " << result << std::endl;
+        }
+        {
+            auto result = metric::variationOfInformation(v1, v2);
+            std::cout << "VOI default result: " << result << std::endl;
+        }
+        {
+            auto result = metric::variationOfInformation<std::vector<std::vector<double>>, metric::Manhatten<double>>(v1, v2);
+            std::cout << "VOI Manhatten result: " << result << std::endl;
+        }
+        {
+            auto result = metric::variationOfInformation_normalized(v1, v2);
+            std::cout << "VOI normalized result: " << result << std::endl;
+        }
+        {
+            auto f_voi = metric::VOI<double>();
+            auto result = f_voi(v1, v2);
+            std::cout << "VOI functor result: " << result << std::endl;
+        }
+        {
+            auto f_voi_norm = metric::VOI_normalized<long double>();
+            auto result = f_voi_norm(v1, v2);
+            std::cout << "VOI functor normalized result: " << result << std::endl;
+        }
+
+    }
+
+    std::cout << std::endl << "=====" << std::endl;
+
 
     // Entropy
 
