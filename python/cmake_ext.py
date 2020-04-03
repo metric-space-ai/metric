@@ -58,7 +58,6 @@ class CMakeBuildExt(build_ext):
             subprocess.check_call(['make', '-j', ext.name],
                                   cwd=self.build_temp,
                                   env=env)
-            print()
         else:
             super().build_extension(ext)
 
