@@ -67,8 +67,11 @@ namespace py = pybind11;
 
 }*/
 
+void export_blaze_matrices(py::module& m);
+
 
 PYBIND11_MODULE(metric, m) {
+    export_blaze_matrices(m);
     //export_converters();
     // exposing C++ return types
     //export_containers();
