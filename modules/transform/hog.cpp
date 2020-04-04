@@ -166,9 +166,9 @@ namespace metric {
 
 		/* Spatial distance matrix */
 		DistanceMatrix spatial_dist_mat0 = spatial_dist(n_hog_bins, orientations, blockSize, blocks_per_image_rows, blocks_per_image_columns);
-		//if (threshold != 0) {
-		//	spatial_dist_mat(spatial_dist_mat > threshold) = threshold;
-		//}
+		if (threshold != 0) {
+			spatial_dist_mat0 = blaze::map(spatial_dist_mat0, [threshold](T d) { return (d > threshold) ? threshold : d; });
+		}
 
 
 		DistanceMatrix spatial_dist_mat(spatial_dist_mat0.rows() * orientations);
