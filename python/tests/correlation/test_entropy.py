@@ -3,7 +3,6 @@ from metric.correlation import Entropy
 import numpy
 import math
 from functools import partial
-import pytest
 
 
 def my_euclidean(a, b):
@@ -27,7 +26,7 @@ def test_estimate():
     v = numpy.float_([[5, 5], [2, 2], [3, 3], [5, 1]])
     entropy = Entropy(p=10, k=5)
 
-    assert entropy.estimate(v) == 4.009325851842218
-    assert entropy.estimate(v, sample_size=10) == 4.009325851842218
-    assert entropy.estimate(v, threshold=0) == 1.014045451620507
-    assert entropy.estimate(v, max_iterations=2) == 1.014045451620507
+    assert entropy.estimate(v) == -0.0692878817128263
+    assert entropy.estimate(v, sample_size=10) == -0.0692878817128263
+    assert entropy.estimate(v, threshold=0) == -0.0692878817128263
+    assert entropy.estimate(v, max_iterations=2) == -0.0692878817128263

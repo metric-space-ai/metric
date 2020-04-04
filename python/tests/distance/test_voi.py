@@ -9,4 +9,4 @@ def test_small_dataset():
     distance = VOI_normalized()
 
     assert not (distance(v2, v1) == pytest.approx(distance(v1, v2)))
-    assert distance(v1, v2) == pytest.approx(0.9272535656800133)
+    assert distance(v1, v2) == pytest.approx(1.089816954003486)
