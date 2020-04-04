@@ -17,7 +17,7 @@ using Vector = blaze::DynamicVector<double>;
 
 BOOST_AUTO_TEST_CASE(base)
 {
-	auto hog = HOG<double>(2, 256, 2);
+	auto hog = HOG<double>(4, 128, 2);
 
 	auto [shape, data] = Datasets::loadImages("images-list");
 

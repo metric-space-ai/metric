@@ -159,12 +159,13 @@ namespace metric {
 
 		size_t block_stride = 0;
 		//floor((img_size./cell_size - blockSize)./(blockSize - block_stride) + 1);
-		size_t blocks_per_image_rows = (image.rows() / cellSize - blockSize) / (blockSize - block_stride) + 1;
-		size_t blocks_per_image_columns = (image.columns() / cellSize - blockSize) / (blockSize - block_stride) + 1;
+		size_t blocks_per_image_rows = (image.rows() / T(cellSize) - blockSize) / (blockSize - block_stride) + 1;
+		size_t blocks_per_image_columns = (image.columns() / T(cellSize) - blockSize) / (blockSize - block_stride) + 1;
 		size_t n_hog_bins = blocks_per_image_rows * blocks_per_image_columns * blockSize * blockSize * orientations;
 
+
 		/* Spatial distance matrix */
-		Matrix spatial_dist_mat;// = spatial_dist(n_hog_bins, orientations, blockSize, blocks_per_image_rows, blocks_per_image_columns);
+		Matrix spatial_dist_mat = spatial_dist(n_hog_bins, orientations, blockSize, blocks_per_image_rows, blocks_per_image_columns);
 		//if (threshold != 0) {
 		//	spatial_dist_mat(spatial_dist_mat > threshold) = threshold;
 		//}
@@ -202,31 +203,32 @@ namespace metric {
 		Vector cell_j_vect = cell_i_vect;
 
 		size_t idx = 0;
-		for (size_t b_i =0; b_i < blocks_per_image_rows; ++b_i) {
-			for (size_t b_j = 0; b_j < blocks_per_image_columns; ++b_j) {
-				for (size_t cb_j = 0; cb_j < blockSize; ++cb_j) {
-					for (size_t cb_i = 0; cb_i < blockSize; ++cb_i) {
+		for (size_t b_i = 1; b_i <= blocks_per_image_rows; ++b_i) {
+			for (size_t b_j = 1; b_j <= blocks_per_image_columns; ++b_j) {
+				for (size_t cb_j = 1; cb_j <= blockSize; ++cb_j) {
+					for (size_t cb_i = 1; cb_i <= blockSize; ++cb_i) {
 						size_t cell_j;
-						if (b_j == 0) {
+						if (b_j == 1) {
 							cell_j = cb_j;
 						} else {
 							cell_j = cb_j + (b_j - 1);
 						}
 
 						size_t cell_i;
-						if (b_i == 0) {
+						if (b_i == 1) {
 							cell_i = cb_i;
 						} else {
 							cell_i = cb_i + (b_i - 1);
 						}
 
-						cell_i_vect(idx) = cell_i;
-						cell_j_vect(idx) = cell_j;
+						cell_i_vect[idx] = cell_i;
+						cell_j_vect[idx] = cell_j;
 						idx = idx + 1;
 					}
 				}
 			}
 		}
+
 
 		blaze::SymmetricMatrix<Matrix> spatial_dist_mat(cell_i_vect.size());
 		for (size_t i = 0; i < spatial_dist_mat.rows(); ++i) {
@@ -253,17 +255,16 @@ namespace metric {
 			orients_vect[i] = max_angle * (T(1) - T(1) / orientations) / orientations * i;
 		}
 
-		size_t idx = 0;
-		Vector orients_dist_vect(orientations * (orientations - 1));
-		for (size_t i = 0; i < orientations - 1; ++i) {
-			for (size_t j = i + 1; j < orientations; ++j) {
+
+		blaze::SymmetricMatrix<Matrix> diff_mat(orientations);
+		for (size_t i = 0; i < orients_vect.size(); ++i) {
+			for (size_t j = i + 1; j < orients_vect.size(); ++j) {
 				T normDeg = std::fmod(orients_vect[i] - orients_vect[j], max_angle);
-				orients_dist_vect[++idx] = std::min(max_angle - normDeg, normDeg);
+				diff_mat(i, j) = std::min(max_angle - normDeg, normDeg);
 			}
 		}
 
 		T angle_unit_cost = 20; // angle difference which is mapped to one cost unit
-		Matrix diff_mat;// = squareform(orients_dist_vect);
 		diff_mat = diff_mat / angle_unit_cost;
 
 
