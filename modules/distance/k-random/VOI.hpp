@@ -128,8 +128,8 @@ struct VOI_normalized : VOI<V> {
      * @param k_
      * @param logbase_
      */
-    explicit VOI_normalized(int k_ = 3, V logbase_ = 2)
-        : VOI<V>(k_, logbase_)
+    explicit VOI_normalized(int k_ = 3, int p_ = 25, V logbase_ = 2)
+        : VOI<V>(k_, p_, logbase_)
     {
     }
 

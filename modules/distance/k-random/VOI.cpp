@@ -15,6 +15,7 @@ Copyright (c) 2019 Panda Team
 #include <unordered_set>
 #include <utility>
 #include <vector>
+#include <iterator>
 
 #include <boost/functional/hash.hpp>
 
@@ -159,8 +160,13 @@ typename std::enable_if_t<!type_traits::is_container_of_integrals_v<C>, T>
 variationOfInformation(const C& Xc, const C& Yc, int k, int p, T logbase)
 {
     auto e = Entropy<void, Metric>(Metric(), k, p);
-    return e(Xc) + e(Yc)
-        - 2 * mutualInformation<C>(Xc, Yc, p);
+    //auto e = Entropy<void, metric::Chebyshev<T>>(metric::Chebyshev<T>(), k, p);
+    //auto e = Entropy_simple<void, Metric>(Metric(), k);
+    //auto e = Entropy_simple<void, metric::Chebyshev<T>>(metric::Chebyshev<T>(), k);
+    auto result = e(Xc) + e(Yc) - 2 * mutualInformation<C>(Xc, Yc, k);
+    if (result < 0)
+        return 0;
+    return result;
 }
 
 template <typename C, typename T>
@@ -169,7 +175,7 @@ variationOfInformation_normalized(
         const C& Xc, const C& Yc, int k, int p, T logbase)
 {
     using Cheb = metric::Chebyshev<T>;
-    auto mi = mutualInformation<C>(Xc, Yc, p);
+    auto mi = mutualInformation<C>(Xc, Yc, k);
     auto e = Entropy<void, Cheb>(Cheb(), k, p);
     return 1 - (mi / (e(Xc) + e(Yc) - mi));
 }
@@ -181,13 +187,15 @@ VOI<V>::operator()(const C& a, const C& b) const
 {
     using Cheb = metric::Chebyshev<El>;
     auto e = Entropy<void, Cheb>(Cheb(), k, p);
-    return e(a) + e(b)
-        - 2 * mutualInformation(a, b, k);
+    auto result = e(a) + e(b) - 2 * mutualInformation(a, b, k);
+    if (result < 0)
+        return 0;
+    return result;
 }
 
 template <typename V>
 template <typename C, typename El>
-typename std::enable_if_t<std::is_integral_v<El>, V>  // only real values are accepted
+typename std::enable_if_t<std::is_integral_v<El>, V>
 VOI<V>::operator()(const C& a, const C& b) const
 {
     using Cheb = metric::Chebyshev<El>;

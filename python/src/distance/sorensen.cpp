@@ -13,7 +13,9 @@ void register_wrapper(py::module& m) {
     {
         using Specialization = double (*)(const blaze::CompressedVector<Value>&, const blaze::CompressedVector<Value>&);
         m.def<Specialization>("sorensen", &metric::sorensen<Value>,
-            "Sørensen–Dice coefficient"
+            "Sørensen–Dice coefficient",
+            py::arg("a"),
+            py::arg("b")
         );
     }
 

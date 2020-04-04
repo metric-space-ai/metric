@@ -72,6 +72,16 @@ T Discrete<T>::variance()
     return sum;
 }
 
+
+/*** pdf ***/
+
+template <typename T>
+T Discrete<T>::pdf(const T x)
+{	
+	// TODO:NEED TO IMPLEMENT!!!
+    return (T) 0;
+}
+
 /*** cdf ***/
 template <typename T>
 T Discrete<T>::cdf(const T x)
@@ -94,6 +104,14 @@ T Discrete<T>::cdf(const T x)
 	}
 
 	return result;
+}
+
+/*** icdf ***/
+template <typename T>
+T Discrete<T>::icdf(const T x) { 
+
+	// TODO:NEED TO IMPLEMENT!!!
+    return (T) 0;
 }
 
 }  // end namespace metric

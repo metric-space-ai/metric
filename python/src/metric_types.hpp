@@ -6,7 +6,7 @@
 #include <string>
 #include <unordered_map>
 
-// define list of metric and thier names
+// define list of metric and their names
 using MetricTypes = boost::mpl::vector<
     metric::Euclidian<double>
     , metric::Manhatten<double>
@@ -15,10 +15,10 @@ using MetricTypes = boost::mpl::vector<
 >;
 
 std::unordered_map<std::type_index, std::string> metricTypeNames = {
-    {std::type_index(typeid(metric::Euclidian<double>)), "euclidean"},
-    {std::type_index(typeid(metric::Manhatten<double>)), "manhatten"},
-    {std::type_index(typeid(metric::Chebyshev<double>)), "chebyshev"},
-    {std::type_index(typeid(metric::P_norm<double>)), "p-norm"}
+    {std::type_index(typeid(metric::Euclidian<double>)), "Euclidean"},
+    {std::type_index(typeid(metric::Manhatten<double>)), "Manhatten"},
+    {std::type_index(typeid(metric::Chebyshev<double>)), "Chebyshev"},
+    {std::type_index(typeid(metric::P_norm<double>)), "Pnorm"}
 };
 
 template<typename Metric>
@@ -27,9 +27,9 @@ std::string getMetricName() {
 }
 
 std::unordered_map<std::type_index, std::string> graphTypeNames = {
-    {std::type_index(typeid(metric::Grid4)), "grid4"},
-    {std::type_index(typeid(metric::Grid6)), "grid6"},
-    {std::type_index(typeid(metric::Grid8)), "grid8"}
+    {std::type_index(typeid(metric::Grid4)), "Grid4"},
+    {std::type_index(typeid(metric::Grid6)), "Grid6"},
+    {std::type_index(typeid(metric::Grid8)), "Grid8"}
 };
 template<typename Graph>
 std::string getGraphName() {

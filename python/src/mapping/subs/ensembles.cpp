@@ -60,6 +60,6 @@ void export_metric_ensembles(py::module& m) {
     register_wrapper_Bagging<Record, WeakLearnerVariant, metric::SubsampleRUS<Record>>(m);
 }
 
-PYBIND11_MODULE(_ensembles, m) {
+PYBIND11_MODULE(ensembles, m) {
     export_metric_ensembles(m);
 }

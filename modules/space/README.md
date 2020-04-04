@@ -7,6 +7,11 @@ Module provides classes for the
 representation of metric spaces including basic operations
 such as the search for neighboring elements.
 
+|**Module**|**File**|**Class**|**Constructor**|**operator()**|**opeator[]**|**inser**|**insert_if**|**nn**|**knn**|**rnn**|**erase**
+|:------:|:-----:|:-----|:-----|:-----|:-----|:-----|:-----|:-----|:-----|:-----|:-----|
+|Space|matrix.hpp|Matrix|metric::Matrix<float, metric::Euclidean\<float>> m;|auto distance = m(id1,id2)|auto value = m[id]|std::size_t id = m.insert(1.0); <br> std::vector\<std::size_t>ids = m.insert(std::vector\<float>{1,2,3});|std::pair\<std::size_t,bool> id = m.insert_if(1.0, 10); <br>std::vecto<std::pair<std::size_t, bool>>ids = m.insert_if(std::vector\<float>{1,2,3}, 10);|size_t id = m.nn(1.5)|std::vector\<std::size_t> ids = m.knn(1.5, 10);|std::vector\<std::size_t> ids = m.rnn(1.5, 11.5);|m.erase(0)|
+|Space|tree.hpp  |Tree  |metric::Tree<float, metric::Euclidian\<float>> t;  |auto distance = t(id1,id2)|auto value = t[id]|std::size_t id = t.insert(1.0); <br> std::vector\<std::size_t>ids = t.insert(std::vector\<float>{1,2,3});|std::pair\<std::size_t,bool> id = t.insert_if(1.0, 10); <br>std::vecto<std::pair<std::size_t, bool>>ids = t.insert_if(std::vector\<float>{1,2,3}, 10);|size_t id = t.nn(1.5)|std::vector\<std::size_t> ids = t.knn(1.5, 10);|std::vector\<std::size_t> ids = t.rnn(1.5, 11.5);|t.erase(0)|
+| Space|knn_graph.hpp|KNNGraph|metric::KNNGraph<float, metric::Euclidian\<float>> g(data, neighbours_num, 3*neighbours_num); | auto distance = g(id1, id2) | auto value = g[id]; | std::size_t id = g.insert(1.0); <br> std::vector\<std::size_t>ids = g.insert(std::vector\<float>{1,2,3}); | std::pair\<std::size_t,bool> id = g.insert_if(1.0, 10); <br>std::vector\<std::pair<std::size_t, bool>>ids = g.insert_if(std::vector\<float>{1,2,3}, 10); | size_t id = g.nn(1.5) | std::vector\<std::size_t> ids = t.knn(1.5, 10); | std::vector\<std::size_t> ids = t.rnn(1.5, 11.5); | t.erase(0) |
 
 ## Space types
 

@@ -17,7 +17,7 @@ void export_metric_standards(py::module& m);
 void export_metric_TWED(py::module& m);
 void export_metric_Edit(py::module& m);
 
-PYBIND11_MODULE(_distance, m) {
+PYBIND11_MODULE(distance, m) {
     export_metric_EMD(m);
     export_metric_kohonen(m);
     export_metric_sorensen(m);

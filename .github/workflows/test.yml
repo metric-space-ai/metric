@@ -1,0 +1,36 @@
+name: Test C++ code
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: recursive
+    - name: Set up Python
+      uses: actions/setup-python@v1
+      with:
+        python-version: 3.6
+    - name: Install system packages
+      run: |
+        sudo apt update
+        sudo apt-get install cmake
+        sudo apt-get install libboost-all-dev
+        sudo apt-get install libopenblas-dev
+        sudo apt-get install -y g++-9 g++-9-multilib
+        echo "::set-env name=CC::gcc-9"
+        echo "::set-env name=CXX::g++-9"
+    - name: Build tests
+      run: |
+        export MAKE='make -j1'
+        mkdir build
+        cd build
+        cmake -DCMAKE_BUILD_TYPE=Release ../
+        make

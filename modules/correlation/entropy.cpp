@@ -11,8 +11,8 @@ Copyright (c) 2019 Panda Team
 #include <boost/math/special_functions/digamma.hpp>
 #include <boost/math/special_functions/gamma.hpp>
 
-#include "modules/utils/type_traits.hpp"
-#include "modules/space/tree.hpp"
+#include "../../modules/utils/type_traits.hpp"
+#include "../../modules/space/tree.hpp"
 #include "estimator_helpers.cpp"
 #include "epmgp.cpp"
 
@@ -230,8 +230,6 @@ double peak2ems(const std::vector<double>& data)
 }
 
 
-
-
 template <typename T>
 T conv_diff_entropy(T in) {
     if (in < 1)
@@ -274,23 +272,18 @@ double mvnpdf(blaze::DynamicVector<double> x) {
 }
 
 
-
-
 // averaged entropy estimation: code COPIED from mgc.*pp with only mgc replaced with entropy, TODO refactor to avoid code dubbing
-
-template <typename Container, typename EntropyFunctor, typename Metric>
-double estimate_func(
-        const Container & a,
+template <typename Container, typename Functor>
+double estimate(
+        const Container & data,
+        const Functor& entropy,
         const size_t sampleSize,
         const double threshold,
-        size_t maxIterations,
-        std::size_t k,
-        double logbase,
-        Metric metric,
-        bool exp // TODO apply to returning value!
-        )
-{
-    const size_t dataSize = a.size();
+        size_t maxIterations
+){
+    using T = type_traits::underlaying_type_t<Container>;
+    using V = type_traits::index_value_type_t<Container>;
+    const size_t dataSize = data.size();
 
     // Update maxIterations
     if (maxIterations == 0) {
@@ -301,10 +294,8 @@ double estimate_func(
         maxIterations = dataSize / sampleSize;
     }
 
-    auto e = EntropyFunctor(Metric(), k);
-
     if (maxIterations < 1) {
-        return e(a);
+        return entropy(data);
     }
 
     // Create shuffle indexes
@@ -315,10 +306,10 @@ double estimate_func(
     std::shuffle(indexes.begin(), indexes.end(), rng);
 
     // Create vector container for fast random access
-    const std::vector<typename Container::value_type> vectorA(a.begin(), a.end());
+    const std::vector<V> vectorA(data.begin(), data.end());
 
     // Create samples
-    std::vector<typename Container::value_type> sampleA;
+    std::vector<V> sampleA;
     sampleA.reserve(sampleSize);
 
     std::vector<double> entropyValues;
@@ -335,7 +326,7 @@ double estimate_func(
         }
 
         // Get sample mgc value
-        double sample_entopy = e(sampleA);
+        double sample_entopy = entropy(sampleA);
         entropyValues.push_back(sample_entopy);
 
         std::sort(entropyValues.begin(), entropyValues.end());
@@ -375,16 +366,13 @@ double estimate_func(
 // updated version, for different metric
 // averaged entropy estimation: code COPIED from mgc.*pp with only mgc replaced with entropy, TODO refactor to avoid code dubbing
 template <typename recType, typename Metric>
-template <template <typename, typename> class OuterContainer, typename Container, typename OuterAllocator>
+template <typename Container>
 double Entropy_simple<recType, Metric>::operator()(
-        const OuterContainer<Container, OuterAllocator> & data
-        //std::size_t k,
-        //double logbase,
-        //Metric metric,
-        //bool exp
-        ) const
+        const Container& data
+) const
 {
-    using T = typename Container::value_type;
+    using T = type_traits::underlaying_type_t<Container>;
+    using V = type_traits::index_value_type_t<Container>;
 
     if (data.empty() || data[0].empty()) {
         return 0;
@@ -396,7 +384,7 @@ double Entropy_simple<recType, Metric>::operator()(
     double d = data[0].size();
 
     //add_noise(data); // TODO test
-    metric::Tree<Container, Metric> tree(data, -1, metric);
+    metric::Tree<V, Metric> tree(data, -1, metric);
 
     double entropyEstimate = 0;
     double log_sum = 0;
@@ -408,8 +396,6 @@ double Entropy_simple<recType, Metric>::operator()(
     entropyEstimate = entropyEstimate * d / (double)N; // mean log * d
     entropyEstimate += boost::math::digamma(N) - boost::math::digamma(k) + d*std::log(2.0);
 
-    // FIXME: really WTF? is this?
-    // if not chebyshev do this
     if constexpr (!std::is_same<Metric, typename metric::Chebyshev<T>>::value) {
         double p = 1; // Manhatten and other metrics (TODO check if it is correct for them!)
         if constexpr (std::is_same<Metric, typename metric::Euclidian<T>>::value) {
@@ -437,13 +423,9 @@ double Entropy_simple<recType, Metric>::estimate(
         const size_t sampleSize,
         const double threshold,
         size_t maxIterations
-        //std::size_t k,
-        //double logbase,
-        //Metric metric,
-        //bool exp // TODO apply to returning value!
-        )
+) const
 {
-    return entropy_details::estimate_func<Container, Entropy_simple<recType, Metric>, Metric>(a, sampleSize, threshold, maxIterations, k, logbase, metric, exp);
+    return entropy_details::estimate(a, *this, sampleSize, threshold, maxIterations);
 }
 
 
@@ -458,31 +440,44 @@ double Entropy_simple<recType, Metric>::estimate(
 
 
 template <typename recType, typename Metric>
-template <template <typename, typename> class OuterContainer, typename Container, typename OuterAllocator>
-double Entropy<recType, Metric>::operator()(const OuterContainer<Container, OuterAllocator> X) const
+template <typename Container>
+double Entropy<recType, Metric>::operator()(const Container& data) const
 {
-    size_t n = X.size();
-    size_t d = X[0].size();
+    using T = type_traits::underlaying_type_t<Container>;
+    using V = type_traits::index_value_type_t<Container>;
+    size_t n = data.size();
+    size_t d = data[0].size();
 
-    assert(p < n);
-    assert(k < p);
+    size_t k_ = k;
+    size_t p_ = p;
+    if (p_ >= n)
+        p_ = n - 1; // TODO we need to signal somehow that parameters are altered
+    if (k_ >= p_)
+        k_ = p_ - 1;
+    if (p_ < 3)
+        p_ = 3;
+    if (k_ < 2)
+        k_ = 2;
+
+    if (n < 4)
+        return std::nan("estimation failed");
 
     double h = 0;
     int got_results = 0;  // absents in Matlab original code
 
-    metric::Tree<Container, Metric> tree (X, -1, metric);
-    blaze::DynamicMatrix<double> Nodes (p, d, 0);
+    metric::Tree<V, Metric> tree (data, -1, metric);
+    blaze::DynamicMatrix<double> Nodes (p_, d, 0);
     blaze::DynamicVector<double> mu (d, 0);
     blaze::DynamicVector<double> lb (d, 0);
     blaze::DynamicVector<double> ub (d, 0);
     blaze::DynamicVector<double> x_vector (d, 0);
     for (size_t i = 0; i < n; ++i) {
 
-        auto res = tree.knn(X[i], p);
-        auto eps = res[k-1].second;
+        auto res = tree.knn(data[i], p_);
+        auto eps = res[k_-1].second;
 
         blaze::reset(mu);
-        for (size_t p_idx= 0; p_idx < p; ++p_idx) { // r v realizations from the tree
+        for (size_t p_idx= 0; p_idx < p_; ++p_idx) { // r v realizations from the tree
             for (size_t d_idx = 0; d_idx < d; ++d_idx) { // dimensions
                 //Nodes(p_idx, d_idx) = res[p_idx].first->data[d_idx];
                 //mu[d_idx] += res[p_idx].first->data[d_idx];
@@ -490,18 +485,18 @@ double Entropy<recType, Metric>::operator()(const OuterContainer<Container, Oute
                 mu[d_idx] += res[p_idx].first->get_data()[d_idx];
             }
         }
-        mu = mu/p;
+        mu = mu/p_;
         Nodes = Nodes - blaze::expand(blaze::trans(mu), Nodes.rows());
         double offset = 1e-8;
         //double offset = 1e-5; // TODO consider dependence on machine epsilon
-        auto K = blaze::evaluate( (blaze::trans(Nodes) * Nodes)*p/(p - 1) + blaze::IdentityMatrix<double>(d)*offset );
+        auto K = blaze::evaluate( (blaze::trans(Nodes) * Nodes)*p_/(p_ - 1) + blaze::IdentityMatrix<double>(d)*offset );
 
         blaze::reset(lb);
         blaze::reset(ub);
         for (size_t d_idx = 0; d_idx < d; ++d_idx) { // dimensions
-            lb[d_idx] = X[i][d_idx] - eps;
-            ub[d_idx] = X[i][d_idx] + eps;
-            x_vector[d_idx] = X[i][d_idx];
+            lb[d_idx] = data[i][d_idx] - eps;
+            ub[d_idx] = data[i][d_idx] + eps;
+            x_vector[d_idx] = data[i][d_idx];
         }
 
         auto g_local = epmgp::local_gaussian_axis_aligned_hyperrectangles<double>(mu, K, lb, ub);
@@ -533,9 +528,9 @@ double Entropy<recType, Metric>::estimate(
         const size_t sampleSize,
         const double threshold,
         size_t maxIterations
-        )
+) const
 {
-    return entropy_details::estimate_func<Container, Entropy<recType, Metric>, Metric>(a, sampleSize, threshold, maxIterations, k, 2, metric, exp);
+    return entropy_details::estimate(a, *this, sampleSize, threshold, maxIterations);
 }
 
 

@@ -640,6 +640,10 @@ std::vector<double> fit_hysteresis(blaze::DynamicVector<double> x, blaze::Dynami
 
 std::vector<double> fit_hysteresis(blaze::DynamicMatrix<double> I, size_t steps, std::vector<double> sigma)
 {
+
+    
+    
+
     auto [xc0, yc0, r0] = DPM_detail::initialCircle(I);  // initial guess
     std::vector<double> ep = { xc0, yc0, r0, r0, 0 };  // initial parameter guess
     blaze::DynamicVector<double> increment = { 0.2, 0.2, 0.2, 0.2, M_PI / 180 * 0.2 };  // increment in each iteration
@@ -648,8 +652,11 @@ std::vector<double> fit_hysteresis(blaze::DynamicMatrix<double> I, size_t steps,
 
     for (size_t i = 0; i < sigma.size(); ++i) {
 
-        blaze::DynamicMatrix<double> I1 = I;  // TODO: replace with gaussian filter
-        //auto I1=gaussianBlur(I,sigma[i]);
+        //blaze::DynamicMatrix<double> I1 = I;  // TODO: replace with gaussian filter
+        //auto out = f(ch1);
+        int kernelsize= sigma[i]*3+1;
+        metric::imfilter<double, 1, metric::FilterType::GAUSSIAN, metric::PadDirection::BOTH, metric::PadType::CONST> gaussianBlur(kernelsize, kernelsize,sigma[i]);
+        auto I1=gaussianBlur(I);
         auto [h1, v1] = DPM_detail::gvf(I1, 1, 0.1, 10);
 
         ep = DPM_detail::fit_ellipse(ep, sigma[i] / 5 * increment, sigma[i] / 5 * threshold, bound, h1, v1, steps / sigma.size());

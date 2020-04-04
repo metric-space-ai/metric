@@ -30,9 +30,11 @@ void register_wrapper_affprop(py::module& m) {
 }
 
 void export_metric_affprop(py::module& m) {
-    register_wrapper_affprop<std::vector<double>, metric::Euclidian<double>, float>(m);
+    using Value = double;
+    using Container = std::vector<Value>;
+    register_wrapper_affprop<Container, metric::Euclidian<Value>, Value>(m);
 }
 
-PYBIND11_MODULE(_affprop, m) {
+PYBIND11_MODULE(affprop, m) {
     export_metric_affprop(m);
 }

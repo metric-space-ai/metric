@@ -12,7 +12,7 @@ namespace py = pybind11;
 void export_metric_matrix(py::module& m);
 void export_metric_Tree(py::module& m);
 
-PYBIND11_MODULE(_space, m) {
+PYBIND11_MODULE(space, m) {
     export_metric_matrix(m);
     export_metric_Tree(m);
 }

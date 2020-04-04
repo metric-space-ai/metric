@@ -1,2 +1,2 @@
-from _distance import *
-from _voi import *
+from metric._impl.distance import *
+from metric._impl.voi import *

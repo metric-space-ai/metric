@@ -1,1 +1,2 @@
-from _space import *
+from metric._impl.space import *
+from .matrix import Matrix

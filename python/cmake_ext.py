@@ -20,10 +20,11 @@ class CMakeExtension(Extension):
     setuptools.Extension for cmake
     """
 
-    def __init__(self, name, sourcedir=''):
+    def __init__(self, name, source_dir='', output_dir=''):
         check_for_cmake()
         Extension.__init__(self, name, sources=[])
-        self.sourcedir = os.path.abspath(sourcedir)
+        self.source_dir = os.path.abspath(source_dir)
+        self.output_dir = output_dir
 
 
 class CMakeBuildExt(build_ext):
@@ -35,14 +36,13 @@ class CMakeBuildExt(build_ext):
     def build_extension(self, ext):
         check_for_cmake()
         if isinstance(ext, CMakeExtension):
-            output_dir = os.path.abspath(
-                os.path.dirname(self.get_ext_fullpath(ext.name)))
+            output_dir = os.path.abspath(os.path.dirname(self.get_ext_fullpath(ext.name)))
 
             build_type = 'Debug' if self.debug else 'Release'
             cmake_args = [CMAKE_EXE,
-                          ext.sourcedir,
+                          ext.source_dir,
                           '-DPYTHON_EXECUTABLE:FILEPATH=' + sys.executable,
-                          '-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=' + output_dir,
+                          '-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=' + os.path.join(output_dir, ext.output_dir),
                           '-DCMAKE_BUILD_TYPE=' + build_type]
             cmake_args.extend(
                 [x for x in
@@ -58,7 +58,6 @@ class CMakeBuildExt(build_ext):
             subprocess.check_call(['make', '-j', ext.name],
                                   cwd=self.build_temp,
                                   env=env)
-            print()
         else:
             super().build_extension(ext)
 

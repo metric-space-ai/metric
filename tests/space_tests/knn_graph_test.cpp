@@ -10,7 +10,7 @@ Copyright (c) 2019 Panda Team
 #include <boost/test/unit_test.hpp>
 
 #include <iostream>
-#include "modules/utils/graph.hpp"
+#include "modules/space/knn_graph.hpp"
 #include "modules/distance.hpp"
 namespace std{ 
 std::ostream & operator <<(std::ostream & ostr, const std::pair<std::size_t, bool> & p) {

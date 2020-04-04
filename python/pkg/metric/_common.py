@@ -10,3 +10,12 @@ def cpp_implementation_router(impl, **template_parameters):
             return getattr(impl, '_'.join([prefix, *params]))(*args, **kwargs)
         return wrapper
     return concrete_wrapper
+
+
+def factory_with_default(**template_parameters):
+    def concrete_wrapper(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            return func(*args, **{**template_parameters, **kwargs})
+        return wrapper
+    return concrete_wrapper
