@@ -82,7 +82,7 @@ void eat_donut(int number)
 {
 
     boost::gil::rgb8_image_t img;
-    boost::gil::read_image("/Users/michaelwelsch/Documents/panda_github/metric/examples/transform_examples/assets/"
+    boost::gil::read_image("./assets/"
             + std::to_string(number) + ".jpg",
         img, boost::gil::jpeg_tag());
     auto gray = boost::gil::color_converted_view<boost::gil::gray8_pixel_t>(const_view(img));
