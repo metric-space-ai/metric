@@ -38,6 +38,7 @@ jobs:
         flake8 ./python --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Build package wheel
       run: |
+        cd ./python
         python setup.py bdist_wheel
         pip install dist/*
     - name: Run tests
