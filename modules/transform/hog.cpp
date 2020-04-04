@@ -10,7 +10,7 @@ namespace metric {
 																				cellSize(cellSize),
 																				blockSize(blockSize)
 	{
-		assert(orientations > 2);
+		assert(orientations > 1);
 		assert(cellSize > 0);
 		assert(blockSize > 0);
 		//assert(cellSize % 2 == 0);
@@ -152,29 +152,122 @@ namespace metric {
 	}
 
 	template<typename T>
-	blaze::DynamicMatrix<T> HOG<T>::groundDistance(blaze::DynamicMatrix<T> image)
+	blaze::DynamicMatrix<T> HOG<T>::groundDistance(blaze::DynamicMatrix<T> image, T rotation_cost, T move_cost)
 	{
 		T threshold = 0;
+		bool isSigned = false;
+
 		size_t block_stride = 0;
-		size_t blocks_per_image = floor((img_size./cell_size - blockSize)./(blockSize - block_stride) + 1);
-		size_t n_hog_bins = prod([blocks_per_image, blockSize, orientations]);
+		//floor((img_size./cell_size - blockSize)./(blockSize - block_stride) + 1);
+		size_t blocks_per_image_rows = (image.rows() / cellSize - blockSize) / (blockSize - block_stride) + 1;
+		size_t blocks_per_image_columns = (image.columns() / cellSize - blockSize) / (blockSize - block_stride) + 1;
+		size_t n_hog_bins = blocks_per_image_rows * blocks_per_image_columns * blockSize * blockSize * orientations;
 
 		/* Spatial distance matrix */
-		size_t spatial_dist_mat = spatial_dist(n_hog_bins,orientations, blockSize, blocks_per_image);
-		if (threshold != 0) {
-			spatial_dist_mat(spatial_dist_mat > threshold) = threshold;
-		} else {
-			spatial_dist_mat = repelem(spatial_dist_mat, orientations, orientations);
+		Matrix spatial_dist_mat;// = spatial_dist(n_hog_bins, orientations, blockSize, blocks_per_image_rows, blocks_per_image_columns);
+		//if (threshold != 0) {
+		//	spatial_dist_mat(spatial_dist_mat > threshold) = threshold;
+		//}
+
+		spatial_dist_mat.resize(spatial_dist_mat.rows() * orientations, spatial_dist_mat.columns() * orientations);
+		for (auto i = 0; i < spatial_dist_mat.rows(); ++i) {
+			for (auto j = 0; j < spatial_dist_mat.columns(); ++j) {
+				spatial_dist_mat(i, j) = spatial_dist_mat(i / orientations, j / orientations);
+			}
 		}
 
 		/* Orientations distance matrix */
-		size_t orient_dist_cell = rotation_dist(orientations,signed);
-		size_t orient_dist_mat = repmat(orient_dist_cell,n_hog_bins/orientations);
+		Matrix orient_dist_cell = rotation_dist(orientations, isSigned);
+
+		Matrix orient_dist_mat(orient_dist_cell.rows(), orient_dist_cell.columns());
+		size_t scale = n_hog_bins / orientations;
+		for (auto i = 0; i < orient_dist_mat.rows(); ++i) {
+			for (auto j = 0; j < orient_dist_mat.columns(); ++j) {
+				orient_dist_mat(i, j) = orient_dist_cell(i % orient_dist_cell.rows(), j % orient_dist_cell.columns());
+			}
+		}
 
 		/* Total ground distance matrix */
-		size_t ground_dist = rotation_cost * orient_dist_mat + move_cost * spatial_dist_mat;
+		blaze::DynamicMatrix<T> ground_dist = rotation_cost * orient_dist_mat + move_cost * spatial_dist_mat;
 
-		return blaze::DynamicMatrix<T>();
+		return ground_dist;
+	}
+
+	template<typename T>
+	typename HOG<T>::Matrix
+	HOG<T>::spatial_dist(size_t n_hog_bins, size_t orientations, size_t blockSize, size_t blocks_per_image_rows,
+	                     size_t blocks_per_image_columns)
+	{
+		Vector cell_i_vect = blaze::zero<T>(n_hog_bins / orientations);
+		Vector cell_j_vect = cell_i_vect;
+
+		size_t idx = 0;
+		for (size_t b_i =0; b_i < blocks_per_image_rows; ++b_i) {
+			for (size_t b_j = 0; b_j < blocks_per_image_columns; ++b_j) {
+				for (size_t cb_j = 0; cb_j < blockSize; ++cb_j) {
+					for (size_t cb_i = 0; cb_i < blockSize; ++cb_i) {
+						size_t cell_j;
+						if (b_j == 0) {
+							cell_j = cb_j;
+						} else {
+							cell_j = cb_j + (b_j - 1);
+						}
+
+						size_t cell_i;
+						if (b_i == 0) {
+							cell_i = cb_i;
+						} else {
+							cell_i = cb_i + (b_i - 1);
+						}
+
+						cell_i_vect(idx) = cell_i;
+						cell_j_vect(idx) = cell_j;
+						idx = idx + 1;
+					}
+				}
+			}
+		}
+
+		blaze::SymmetricMatrix<Matrix> spatial_dist_mat(cell_i_vect.size());
+		for (size_t i = 0; i < spatial_dist_mat.rows(); ++i) {
+			for (size_t j = i + 1; j < spatial_dist_mat.columns(); ++j) {
+				spatial_dist_mat(i, j) = std::abs(cell_i_vect[i] - cell_i_vect[j]) + std::abs(cell_j_vect[i] - cell_j_vect[j]);
+			}
+		}
+
+		return spatial_dist_mat;
+	}
+
+	template<typename T>
+	typename HOG<T>::Matrix HOG<T>::rotation_dist(size_t orientations, bool isSigned)
+	{
+		size_t max_angle;
+		if (isSigned == 1) {
+			max_angle = 360;
+		} else {
+			max_angle = 180;
+		}
+
+		Vector orients_vect(orientations);
+		for (size_t i = 0; i < orientations; ++i) {
+			orients_vect[i] = max_angle * (T(1) - T(1) / orientations) / orientations * i;
+		}
+
+		size_t idx = 0;
+		Vector orients_dist_vect(orientations * (orientations - 1));
+		for (size_t i = 0; i < orientations - 1; ++i) {
+			for (size_t j = i + 1; j < orientations; ++j) {
+				T normDeg = std::fmod(orients_vect[i] - orients_vect[j], max_angle);
+				orients_dist_vect[++idx] = std::min(max_angle - normDeg, normDeg);
+			}
+		}
+
+		T angle_unit_cost = 20; // angle difference which is mapped to one cost unit
+		Matrix diff_mat;// = squareform(orients_dist_vect);
+		diff_mat = diff_mat / angle_unit_cost;
+
+
+		return diff_mat;
 	}
 
 
