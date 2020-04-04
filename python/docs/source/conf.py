@@ -22,7 +22,6 @@ from unittest import TestCase
 
 my_build_dir = os.path.abspath('../../build/lib*/')
 sys.path.append(glob.glob(my_build_dir)[0])
-print(sys.path)
 
 # -- Project information -----------------------------------------------------
 
