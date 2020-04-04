@@ -17,15 +17,17 @@ namespace metric {
 
 			Vector encode(const HOG::Matrix &image) const;
 
-			DistanceMatrix groundDistance(blaze::DynamicMatrix<T> image, T rotation_cost, T move_cost);
+			typename HOG<T>::DistanceMatrix
+			groundDistance(const blaze::DynamicMatrix<T> &image, const T rotation_cost, const T move_cost,
+			               const T threshold = 0);
 
 		private:
 			size_t orientations;
 			size_t cellSize;
 			size_t blockSize;
 
-			DistanceMatrix spatial_dist(size_t n_hog_bins, size_t orientations, size_t blockSize, size_t blocks_per_image_rows, size_t blocks_per_image_columns);
-			DistanceMatrix rotation_dist(size_t orientations, bool isSigned = false);
+			DistanceMatrix spatial_dist(size_t n_hog_bins, size_t blocks_per_image_rows, size_t blocks_per_image_columns);
+			DistanceMatrix rotation_dist();
 	};
 
 }

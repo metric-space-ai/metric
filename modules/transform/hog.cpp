@@ -152,11 +152,10 @@ namespace metric {
 	}
 
 	template<typename T>
-	typename HOG<T>::DistanceMatrix HOG<T>::groundDistance(blaze::DynamicMatrix<T> image, T rotation_cost, T move_cost)
+	typename HOG<T>::DistanceMatrix
+	HOG<T>::groundDistance(const blaze::DynamicMatrix<T> &image, const T rotation_cost, const T move_cost,
+	                       const T threshold)
 	{
-		T threshold = 0;
-		bool isSigned = false;
-
 		size_t block_stride = 0;
 		//floor((img_size./cell_size - blockSize)./(blockSize - block_stride) + 1);
 		size_t blocks_per_image_rows = (image.rows() / T(cellSize) - blockSize) / (blockSize - block_stride) + 1;
@@ -165,7 +164,7 @@ namespace metric {
 
 
 		/* Spatial distance matrix */
-		DistanceMatrix spatial_dist_mat0 = spatial_dist(n_hog_bins, orientations, blockSize, blocks_per_image_rows, blocks_per_image_columns);
+		DistanceMatrix spatial_dist_mat0 = spatial_dist(n_hog_bins, blocks_per_image_rows, blocks_per_image_columns);
 		if (threshold != 0) {
 			spatial_dist_mat0 = blaze::map(spatial_dist_mat0, [threshold](T d) { return (d > threshold) ? threshold : d; });
 		}
@@ -180,7 +179,7 @@ namespace metric {
 
 
 		/* Orientations distance matrix */
-		DistanceMatrix orient_dist_cell = rotation_dist(orientations, isSigned);
+		DistanceMatrix orient_dist_cell = rotation_dist();
 
 		size_t scale = n_hog_bins / orientations;
 		DistanceMatrix orient_dist_mat(orient_dist_cell.rows() * scale);
@@ -198,7 +197,7 @@ namespace metric {
 
 	template<typename T>
 	typename HOG<T>::DistanceMatrix
-	HOG<T>::spatial_dist(size_t n_hog_bins, size_t orientations, size_t blockSize, size_t blocks_per_image_rows,
+	HOG<T>::spatial_dist(size_t n_hog_bins, size_t blocks_per_image_rows,
 	                     size_t blocks_per_image_columns)
 	{
 		Vector cell_i_vect = blaze::zero<T>(n_hog_bins / orientations);
@@ -243,9 +242,10 @@ namespace metric {
 	}
 
 	template<typename T>
-	typename HOG<T>::DistanceMatrix HOG<T>::rotation_dist(size_t orientations, bool isSigned)
+	typename HOG<T>::DistanceMatrix HOG<T>::rotation_dist()
 	{
 		size_t max_angle;
+		bool isSigned = false;
 		if (isSigned == true) {
 			max_angle = 360;
 		} else {
