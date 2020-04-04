@@ -532,7 +532,7 @@ class Network
 			        callback->postTrainingBatch(this, x_batches[i], y_batches[i]);
 			        auto t2 = std::chrono::high_resolution_clock::now();
 			        auto d = std::chrono::duration_cast < std::chrono::duration < double >> (t2 - t1);
-			        std::cout << "Training time: " << d.count() << " s" << std::endl;
+			        //std::cout << "Training time: " << d.count() << " s" << std::endl;
 		        }
 	        }
 
