@@ -152,7 +152,7 @@ namespace metric {
 	}
 
 	template<typename T>
-	blaze::DynamicMatrix<T> HOG<T>::groundDistance(blaze::DynamicMatrix<T> image, T rotation_cost, T move_cost)
+	typename HOG<T>::DistanceMatrix HOG<T>::groundDistance(blaze::DynamicMatrix<T> image, T rotation_cost, T move_cost)
 	{
 		T threshold = 0;
 		bool isSigned = false;
@@ -165,37 +165,39 @@ namespace metric {
 
 
 		/* Spatial distance matrix */
-		Matrix spatial_dist_mat = spatial_dist(n_hog_bins, orientations, blockSize, blocks_per_image_rows, blocks_per_image_columns);
+		DistanceMatrix spatial_dist_mat0 = spatial_dist(n_hog_bins, orientations, blockSize, blocks_per_image_rows, blocks_per_image_columns);
 		//if (threshold != 0) {
 		//	spatial_dist_mat(spatial_dist_mat > threshold) = threshold;
 		//}
 
-		spatial_dist_mat.resize(spatial_dist_mat.rows() * orientations, spatial_dist_mat.columns() * orientations);
+
+		DistanceMatrix spatial_dist_mat(spatial_dist_mat0.rows() * orientations);
 		for (auto i = 0; i < spatial_dist_mat.rows(); ++i) {
-			for (auto j = 0; j < spatial_dist_mat.columns(); ++j) {
-				spatial_dist_mat(i, j) = spatial_dist_mat(i / orientations, j / orientations);
+			for (auto j = i + 1; j < spatial_dist_mat.columns(); ++j) {
+				spatial_dist_mat(i, j) = spatial_dist_mat0(i / orientations, j / orientations);
 			}
 		}
 
-		/* Orientations distance matrix */
-		Matrix orient_dist_cell = rotation_dist(orientations, isSigned);
 
-		Matrix orient_dist_mat(orient_dist_cell.rows(), orient_dist_cell.columns());
+		/* Orientations distance matrix */
+		DistanceMatrix orient_dist_cell = rotation_dist(orientations, isSigned);
+
 		size_t scale = n_hog_bins / orientations;
+		DistanceMatrix orient_dist_mat(orient_dist_cell.rows() * scale);
 		for (auto i = 0; i < orient_dist_mat.rows(); ++i) {
-			for (auto j = 0; j < orient_dist_mat.columns(); ++j) {
+			for (auto j = i + 1; j < orient_dist_mat.columns(); ++j) {
 				orient_dist_mat(i, j) = orient_dist_cell(i % orient_dist_cell.rows(), j % orient_dist_cell.columns());
 			}
 		}
 
 		/* Total ground distance matrix */
-		blaze::DynamicMatrix<T> ground_dist = rotation_cost * orient_dist_mat + move_cost * spatial_dist_mat;
+		DistanceMatrix ground_dist = rotation_cost * orient_dist_mat + move_cost * spatial_dist_mat;
 
 		return ground_dist;
 	}
 
 	template<typename T>
-	typename HOG<T>::Matrix
+	typename HOG<T>::DistanceMatrix
 	HOG<T>::spatial_dist(size_t n_hog_bins, size_t orientations, size_t blockSize, size_t blocks_per_image_rows,
 	                     size_t blocks_per_image_columns)
 	{
@@ -230,7 +232,7 @@ namespace metric {
 		}
 
 
-		blaze::SymmetricMatrix<Matrix> spatial_dist_mat(cell_i_vect.size());
+		DistanceMatrix spatial_dist_mat(cell_i_vect.size());
 		for (size_t i = 0; i < spatial_dist_mat.rows(); ++i) {
 			for (size_t j = i + 1; j < spatial_dist_mat.columns(); ++j) {
 				spatial_dist_mat(i, j) = std::abs(cell_i_vect[i] - cell_i_vect[j]) + std::abs(cell_j_vect[i] - cell_j_vect[j]);
@@ -241,10 +243,10 @@ namespace metric {
 	}
 
 	template<typename T>
-	typename HOG<T>::Matrix HOG<T>::rotation_dist(size_t orientations, bool isSigned)
+	typename HOG<T>::DistanceMatrix HOG<T>::rotation_dist(size_t orientations, bool isSigned)
 	{
 		size_t max_angle;
-		if (isSigned == 1) {
+		if (isSigned == true) {
 			max_angle = 360;
 		} else {
 			max_angle = 180;
@@ -252,21 +254,21 @@ namespace metric {
 
 		Vector orients_vect(orientations);
 		for (size_t i = 0; i < orientations; ++i) {
-			orients_vect[i] = max_angle * (T(1) - T(1) / orientations) / orientations * i;
+			orients_vect[i] = max_angle * (T(1) - T(1) / orientations) / (orientations - 1) * i;
 		}
 
 
 		blaze::SymmetricMatrix<Matrix> diff_mat(orientations);
 		for (size_t i = 0; i < orients_vect.size(); ++i) {
 			for (size_t j = i + 1; j < orients_vect.size(); ++j) {
-				T normDeg = std::fmod(orients_vect[i] - orients_vect[j], max_angle);
+				T normDeg = std::fabs(std::fmod(orients_vect[i] - orients_vect[j], max_angle));
 				diff_mat(i, j) = std::min(max_angle - normDeg, normDeg);
 			}
 		}
 
+
 		T angle_unit_cost = 20; // angle difference which is mapped to one cost unit
 		diff_mat = diff_mat / angle_unit_cost;
-
 
 		return diff_mat;
 	}
