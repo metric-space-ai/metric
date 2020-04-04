@@ -5,8 +5,13 @@ from metric._impl.distance import Euclidean
 def Matrix(data=None, metric=Euclidean()) -> object:
     """ Matrix factory
 
-    :param data: container with data
-    :param metric: metric for second container
+    :param data: container with items or one item
+    :type data: :class:`numpy.array`
+    :param callable metric: metric for container
     :return: instance of Matrix_<Metric>
     """
-    return impl.create_matrix(data=data, metric=metric) if data else impl.create_matrix(metric=metric)
+    if data is None:
+        return impl.create_matrix(metric=metric)
+    if len(data.shape) > 1:
+        return impl.create_matrix(items=data, metric=metric)
+    return impl.create_matrix(item=data, metric=metric)

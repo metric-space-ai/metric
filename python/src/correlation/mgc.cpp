@@ -7,14 +7,13 @@
 */
 
 #include "modules/correlation/mgc.hpp"
-#include "../metric_types.hpp"
+#include "metric_types.hpp"
 
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <pybind11/numpy.h>
 #include <string>
 #include <vector>
-#include <typeinfo>
 
 class NotUsed {};
 
@@ -26,7 +25,7 @@ metric::MGC<NotUsed, Metric1, NotUsed, Metric2> createMGC(Metric1 metric1, Metri
 }
 
 template <class ValueType, class Metric1, class Metric2>
-void wrap_metric_MGC(py::module& m) {
+void wrap_metric_MGC(py::module& m, const std::string& prefix) {
     using Container = std::vector<std::vector<ValueType>>;
     using Class = metric::MGC<NotUsed, Metric1, NotUsed, Metric2>;
     m.def("create_mgc", &createMGC<Metric1, Metric2>,
@@ -35,10 +34,7 @@ void wrap_metric_MGC(py::module& m) {
         py::arg("metric2")
     );
 
-    const std::string name = std::string("MGC__")
-        + std::string(typeid(Metric1).name())
-        + "__"
-        + std::string(typeid(Metric2).name());
+    const std::string name = std::string("MGC__") + prefix;
     auto mgc = py::class_<Class>(m, name.c_str());
     auto corr_ptr = &Class::template operator()<Container, Container>;
     mgc.def("__call__", corr_ptr,
@@ -93,25 +89,25 @@ void export_metric_MGC(py::module& m)
 {
     using T = double;
     // TODO: loop
-    wrap_metric_MGC<T, metric::Euclidian<T>, metric::Euclidian<T>>(m);
-    wrap_metric_MGC<T, metric::Euclidian<T>, metric::Manhatten<T>>(m);
+    wrap_metric_MGC<T, metric::Euclidian<T>, metric::Euclidian<T>>(m, "Euclidean_Euclidean");
+    wrap_metric_MGC<T, metric::Euclidian<T>, metric::Manhatten<T>>(m, "Euclidean_Manhatten");
 //    wrap_metric_MGC<T, metric::Euclidian<T>, metric::Chebyshev<T>>(m);
-    wrap_metric_MGC<T, metric::Euclidian<T>, metric::P_norm<T>>(m);
+    wrap_metric_MGC<T, metric::Euclidian<T>, metric::P_norm<T>>(m, "Euclidean_Pnorm");
 
-    wrap_metric_MGC<T, metric::Manhatten<T>, metric::Euclidian<T>>(m);
-    wrap_metric_MGC<T, metric::Manhatten<T>, metric::Manhatten<T>>(m);
+    wrap_metric_MGC<T, metric::Manhatten<T>, metric::Euclidian<T>>(m, "Manhatten_Euclidean");
+    wrap_metric_MGC<T, metric::Manhatten<T>, metric::Manhatten<T>>(m, "Manhatten_Manhatten");
 //    wrap_metric_MGC<T, metric::Manhatten<T>, metric::Chebyshev<T>>(m);
-    wrap_metric_MGC<T, metric::Manhatten<T>, metric::P_norm<T>>(m);
+    wrap_metric_MGC<T, metric::Manhatten<T>, metric::P_norm<T>>(m, "Manhatten_Pnorm");
 
 //    wrap_metric_MGC<T, metric::Chebyshev<T>, metric::Euclidian<T>>();
 //    wrap_metric_MGC<T, metric::Chebyshev<T>, metric::Manhatten<T>>();
 //    wrap_metric_MGC<T, metric::Chebyshev<T>, metric::Chebyshev<T>>();
 //    wrap_metric_MGC<T, metric::Chebyshev<T>, metric::P_norm<T>>();
 
-    wrap_metric_MGC<T, metric::P_norm<T>, metric::Euclidian<T>>(m);
-    wrap_metric_MGC<T, metric::P_norm<T>, metric::Manhatten<T>>(m);
+    wrap_metric_MGC<T, metric::P_norm<T>, metric::Euclidian<T>>(m, "Pnorm_Euclidean");
+    wrap_metric_MGC<T, metric::P_norm<T>, metric::Manhatten<T>>(m, "Pnorm_Manhatten");
 //    wrap_metric_MGC<T, metric::P_norm<T>, metric::Chebyshev<T>>();
-    wrap_metric_MGC<T, metric::P_norm<T>, metric::P_norm<T>>(m);
+    wrap_metric_MGC<T, metric::P_norm<T>, metric::P_norm<T>>(m, "Pnorm_Pnorm");
 
     wrap_metric_MGC_direct<T>(m);
 }

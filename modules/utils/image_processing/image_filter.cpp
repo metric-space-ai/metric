@@ -119,7 +119,7 @@ namespace metric {
 
 	FilterType::GAUSSIAN::GAUSSIAN(size_t rows, size_t columns, double sigma) {
 		Shape shape{rows, columns};
-		auto halfShape =
+		blaze::StaticVector<FilterKernel::ElementType, 2> halfShape =
 				(static_cast<blaze::StaticVector<FilterKernel::ElementType, 2>>(shape) - 1) / 2;
 
 		auto xrange = range<FilterKernel::ElementType, blaze::rowVector>(-halfShape[1], halfShape[1]);
@@ -128,6 +128,13 @@ namespace metric {
 
 		auto arg = -(xMat % xMat + yMat % yMat) / (2 * sigma * sigma);
 		_kernel = blaze::exp(arg);
+		FilterKernel::ElementType max = blaze::max(_kernel);
+		for (int i = 0; i < _kernel.rows(); ++i) {
+			for (int j = 0; j < _kernel.columns(); ++j) {
+				_kernel(i, j) = _kernel(i, j)  < max * std::numeric_limits<FilterKernel::ElementType>::epsilon()?
+						0 :  _kernel(i, j);
+			}
+		}
 
 		auto sumh = blaze::sum(_kernel);
 		if (sumh != 0) {

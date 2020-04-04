@@ -366,20 +366,22 @@ std::vector<std::vector<double>> v = { {5,5}, {2,2}, {3,3}, {5,1} };
 
 Then we can calculate the entropy of the given data:
 ```cpp
-auto result = metric::entropy(v);
+auto estimator = metric::Entropy<std::vector<double>>();
+auto result = estimator(v);
 std::cout << "result: " << result << std::endl;
 // out:
 // Entropy using default distance metric
-// result: 7.81979
+// result: -5.39891
 ```
 
 Of cause, we can calculate entropy using any distance metric:
 ```cpp
-auto result = entropy(v, 3, 2.0, metric::Manhatten<double>());
+auto estimator = metric::Entropy<void, metric::Manhatten<double>>();
+auto result = estimator(v);
 std::cout << "result: " << result << std::endl;
 // out:
 // Entropy using Manhatten distance metric
-// result: 7.9183
+// result: 0.132185
 ```
 
 And now suppose we have two vectors with a data:
@@ -400,11 +402,11 @@ std::cout << "result: " << result << std::endl;
 
 Of cause we can specify distance metric:
 ```cpp
-auto result = metric::mutualInformation(v1, v2, 3, metric::Chebyshev<double>());
+auto result = metric::mutualInformation(v1, v2, 3, metric::Euclidian<double>());
 std::cout << "result: " << result << std::endl;
 // out:
-// Mutual Information using Chebyshev distance metric
-// result: 1.08945 
+// Mutual Information using Euclidean distance metric
+// result: 0.797784 
 ```
 
 For the same data we can calculate Variation of Information:
@@ -413,16 +415,17 @@ auto result = metric::variationOfInformation(v1, v2);
 std::cout << "result: " << result << std::endl;
 // out:
 // Variation of Information using default distance metric
-// result: 12.6577
+// result: 0
 ```
 
 Again we can specify distance metric:
 ```cpp
-auto result = metric::variationOfInformation<double, metric::Manhatten<double>>(v1, v2);
+auto result = metric::variationOfInformation<std::vector<std::vector<double>>, metric::Manhatten<double>>(v1, v2);
+std::cout << "VOI Manhatten result: " << result << std::endl;
 std::cout << "result: " << result << std::endl;
 // out:
 // Variation of Information Information using Manhatten distance metric
-// result: 14.8244
+// result: 0
 ```
 
 We can calculate normalized Variation of Information:
@@ -431,7 +434,7 @@ auto result = metric::variationOfInformation_normalized(v1, v2);
 std::cout << "result: " << result << std::endl;
 // out:
 // normalized Variation of Information
-// result: 0.920751
+// result: 1.08982
 ```
 
 Instead function we can use functor for Variation of Information:
@@ -441,7 +444,7 @@ auto result = f_voi(v1, v2);
 std::cout << "result: " << result << std::endl;
 // out:
 // Variation of Information as functor
-// result: 12.6577
+// result: 0
 ```
 Normalized functor:
 ```cpp
@@ -450,7 +453,7 @@ auto result = f_voi_norm(v1, v2);
 std::cout << "result: " << result << std::endl;
 // out:
 // normalized Variation of Information as normalized functor
-// result: 0.927254
+// result: 1.08982
 ```
 
 *For a full example and more details see `examples/distance_examples/entropy_example.cpp`*
