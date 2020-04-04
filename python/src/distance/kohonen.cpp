@@ -3,6 +3,8 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <pybind11/numpy.h>
+#include <pybind11/iostream.h>
+
 #include <vector>
 
 namespace py = pybind11;
@@ -42,6 +44,7 @@ void register_wrapper_kohonen(py::module& m) {
         py::arg("sample2")
     );
     metric.def("print_shortest_path", &Class::print_shortest_path,
+        py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>(),
         "Recursive function that reconstructs the shortest backwards node by node.",
         py::arg("from_node"),
         py::arg("to_node")

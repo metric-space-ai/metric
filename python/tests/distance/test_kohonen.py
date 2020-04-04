@@ -34,5 +34,5 @@ def test_print_shortest_path(capsys):
     ])
 
     distance = Kohonen(simple_grid, nodes_width=grid_w, nodes_height=grid_h)
-    distance.print_shortest_path(from_node=0, to_node=0)
-    assert capsys.readouterr().out == "test"
+    distance.print_shortest_path(from_node=0, to_node=2)
+    assert capsys.readouterr().out == '0 -> 1 -> 2 -> '
