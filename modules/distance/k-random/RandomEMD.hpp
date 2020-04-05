@@ -25,7 +25,7 @@ namespace metric {
  */
 template <typename Sample, typename D = double>
 struct RandomEMD {
-    using distance_return_type = D;
+    using distance_type = D;
 
     /**
      * @brief Construct a new EMD object
@@ -51,7 +51,7 @@ struct RandomEMD {
      * @param sample_2 second sample
      * @return distance
      */
-    distance_return_type operator()(const Sample& sample_1, const Sample& sample_2);
+    distance_type operator()(const Sample& sample_1, const Sample& sample_2) const;
 
 private:
 	double precision_ = 0.01;
