@@ -18,16 +18,16 @@ namespace metric {
 			Vector encode(const HOG::Matrix &image) const;
 
 			typename HOG<T>::DistanceMatrix
-			groundDistance(const blaze::DynamicMatrix<T> &image, const T rotation_cost, const T move_cost,
-			               const T threshold = 0);
+			getGroundDistance(const blaze::DynamicMatrix<T> &image, const T rotation_cost, const T move_cost,
+																					  const T threshold = 0);
 
 		private:
 			size_t orientations;
 			size_t cellSize;
 			size_t blockSize;
 
-			DistanceMatrix spatial_dist(size_t n_hog_bins, size_t blocks_per_image_rows, size_t blocks_per_image_columns);
-			DistanceMatrix rotation_dist();
+			DistanceMatrix getSpatialDistance(size_t n_hog_bins, size_t blocks_per_image_rows, size_t blocks_per_image_columns);
+			typename HOG<T>::DistanceMatrix getOrientationDistance(const T angleUnitCost = 20);
 	};
 
 }

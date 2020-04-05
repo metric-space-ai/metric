@@ -153,54 +153,58 @@ namespace metric {
 
 	template<typename T>
 	typename HOG<T>::DistanceMatrix
-	HOG<T>::groundDistance(const blaze::DynamicMatrix<T> &image, const T rotation_cost, const T move_cost,
-	                       const T threshold)
+	HOG<T>::getGroundDistance(const blaze::DynamicMatrix<T> &image, const T rotation_cost, const T move_cost,
+	                          const T threshold)
 	{
-		size_t block_stride = 0;
-		//floor((img_size./cell_size - blockSize)./(blockSize - block_stride) + 1);
-		size_t blocks_per_image_rows = (image.rows() / T(cellSize) - blockSize) / (blockSize - block_stride) + 1;
-		size_t blocks_per_image_columns = (image.columns() / T(cellSize) - blockSize) / (blockSize - block_stride) + 1;
-		size_t n_hog_bins = blocks_per_image_rows * blocks_per_image_columns * blockSize * blockSize * orientations;
+		size_t blockStride = 0;
+
+		size_t blocks_per_image_rows = (image.rows() / T(cellSize) - blockSize) / (blockSize - blockStride) + 1;
+		size_t blocks_per_image_columns = (image.columns() / T(cellSize) - blockSize) / (blockSize - blockStride) + 1;
+
+		size_t totalBinsNumber = blocks_per_image_rows * blocks_per_image_columns * blockSize * blockSize * orientations;
 
 
 		/* Spatial distance matrix */
-		DistanceMatrix spatial_dist_mat0 = spatial_dist(n_hog_bins, blocks_per_image_rows, blocks_per_image_columns);
+		DistanceMatrix spatialDistance0 = getSpatialDistance(totalBinsNumber, blocks_per_image_rows,
+		                                                      blocks_per_image_columns);
+
+		/* Thresholding */
 		if (threshold != 0) {
-			spatial_dist_mat0 = blaze::map(spatial_dist_mat0, [threshold](T d) { return (d > threshold) ? threshold : d; });
+			spatialDistance0 = blaze::map(spatialDistance0, [threshold](T d) { return (d > threshold) ? threshold : d; });
 		}
 
-
-		DistanceMatrix spatial_dist_mat(spatial_dist_mat0.rows() * orientations);
-		for (auto i = 0; i < spatial_dist_mat.rows(); ++i) {
-			for (auto j = i + 1; j < spatial_dist_mat.columns(); ++j) {
-				spatial_dist_mat(i, j) = spatial_dist_mat0(i / orientations, j / orientations);
+		DistanceMatrix spatialDistance(spatialDistance0.rows() * orientations);
+		for (auto i = 0; i < spatialDistance.rows(); ++i) {
+			for (auto j = i + 1; j < spatialDistance.columns(); ++j) {
+				spatialDistance(i, j) = spatialDistance0(i / orientations, j / orientations);
 			}
 		}
 
 
 		/* Orientations distance matrix */
-		DistanceMatrix orient_dist_cell = rotation_dist();
+		DistanceMatrix orientationDistance0 = getOrientationDistance();
 
-		size_t scale = n_hog_bins / orientations;
-		DistanceMatrix orient_dist_mat(orient_dist_cell.rows() * scale);
-		for (auto i = 0; i < orient_dist_mat.rows(); ++i) {
-			for (auto j = i + 1; j < orient_dist_mat.columns(); ++j) {
-				orient_dist_mat(i, j) = orient_dist_cell(i % orient_dist_cell.rows(), j % orient_dist_cell.columns());
+		size_t scale = totalBinsNumber / orientations;
+		DistanceMatrix orientationDistance(orientationDistance0.rows() * scale);
+		for (auto i = 0; i < orientationDistance.rows(); ++i) {
+			for (auto j = i + 1; j < orientationDistance.columns(); ++j) {
+				orientationDistance(i, j) = orientationDistance0(i % orientationDistance0.rows(), j % orientationDistance0.columns());
 			}
 		}
 
-		/* Total ground distance matrix */
-		DistanceMatrix ground_dist = rotation_cost * orient_dist_mat + move_cost * spatial_dist_mat;
 
-		return ground_dist;
+		/* Total ground distance matrix */
+		DistanceMatrix groundDistance = rotation_cost * orientationDistance + move_cost * spatialDistance;
+
+		return groundDistance;
 	}
 
 	template<typename T>
 	typename HOG<T>::DistanceMatrix
-	HOG<T>::spatial_dist(size_t n_hog_bins, size_t blocks_per_image_rows,
-	                     size_t blocks_per_image_columns)
+	HOG<T>::getSpatialDistance(size_t totalBinsNumber, size_t blocks_per_image_rows,
+	                           size_t blocks_per_image_columns)
 	{
-		Vector cell_i_vect = blaze::zero<T>(n_hog_bins / orientations);
+		Vector cell_i_vect = blaze::zero<T>(totalBinsNumber / orientations);
 		Vector cell_j_vect = cell_i_vect;
 
 		size_t idx = 0;
@@ -224,7 +228,7 @@ namespace metric {
 
 						cell_i_vect[idx] = cell_i;
 						cell_j_vect[idx] = cell_j;
-						idx = idx + 1;
+						++idx;
 					}
 				}
 			}
@@ -242,35 +246,35 @@ namespace metric {
 	}
 
 	template<typename T>
-	typename HOG<T>::DistanceMatrix HOG<T>::rotation_dist()
+	typename HOG<T>::DistanceMatrix HOG<T>::getOrientationDistance(const T angleUnitCost)
 	{
-		size_t max_angle;
+		size_t maxAngle;
 		bool isSigned = false;
 		if (isSigned == true) {
-			max_angle = 360;
+			maxAngle = 360;
 		} else {
-			max_angle = 180;
+			maxAngle = 180;
 		}
 
-		Vector orients_vect(orientations);
+		Vector orientsVector(orientations);
 		for (size_t i = 0; i < orientations; ++i) {
-			orients_vect[i] = max_angle * (T(1) - T(1) / orientations) / (orientations - 1) * i;
+			orientsVector[i] = maxAngle * (T(1) - T(1) / orientations) / (orientations - 1) * i;
 		}
 
 
-		blaze::SymmetricMatrix<Matrix> diff_mat(orientations);
-		for (size_t i = 0; i < orients_vect.size(); ++i) {
-			for (size_t j = i + 1; j < orients_vect.size(); ++j) {
-				T normDeg = std::fabs(std::fmod(orients_vect[i] - orients_vect[j], max_angle));
-				diff_mat(i, j) = std::min(max_angle - normDeg, normDeg);
+		blaze::SymmetricMatrix<Matrix> orientationsDistance(orientations);
+		for (size_t i = 0; i < orientsVector.size(); ++i) {
+			for (size_t j = i + 1; j < orientsVector.size(); ++j) {
+				T normDeg = std::fabs(std::fmod(orientsVector[i] - orientsVector[j], maxAngle));
+				orientationsDistance(i, j) = std::min(maxAngle - normDeg, normDeg);
 			}
 		}
 
 
-		T angle_unit_cost = 20; // angle difference which is mapped to one cost unit
-		diff_mat = diff_mat / angle_unit_cost;
+		orientationsDistance = orientationsDistance / angleUnitCost;
 
-		return diff_mat;
+
+		return orientationsDistance;
 	}
 
 
