@@ -20,6 +20,8 @@ jobs:
         python-version: 3.6
     - name: Install system packages
       run: |
+        sudo add-apt-repository ppa:mhier/libboost-latest
+        sudo apt update
         sudo apt update
         sudo apt-get install cmake
         sudo apt install libboost1.68-dev
