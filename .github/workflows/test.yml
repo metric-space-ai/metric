@@ -22,9 +22,10 @@ jobs:
       run: |
         sudo apt update
         sudo apt-get install cmake
-        sudo apt-get install libboost-all-dev
+        sudo apt install libboost1.68-dev
+#        sudo apt-get install libboost-all-dev
         sudo apt-get install libopenblas-dev
-        sudo apt-get install libjpeg-dev
+#        sudo apt-get install libjpeg-dev
         sudo apt-get install -y g++-9 g++-9-multilib
         echo "::set-env name=CC::gcc-9"
         echo "::set-env name=CXX::g++-9"
