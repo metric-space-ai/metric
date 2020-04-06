@@ -35,9 +35,9 @@ namespace metric {
  * @param damp
  * @return
 */
-    template <typename recType, typename Metric, typename T = typename Metric::distance_type>
+    template <typename RecType, typename Metric, typename T = typename Metric::distance_type>
 std::tuple<std::vector<std::size_t>, std::vector<std::size_t>, std::vector<std::size_t>> affprop(
-    const Matrix<recType, Metric>& DM, T preference = 0.5, int maxiter = 200, T tol = 1.0e-6, T damp = 0.5)
+    const Matrix<RecType, Metric>& DM, T preference = 0.5, int maxiter = 200, T tol = 1.0e-6, T damp = 0.5)
 {
 
     // check arguments

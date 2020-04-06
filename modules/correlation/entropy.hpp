@@ -16,7 +16,7 @@ Copyright (c) 2020 Panda Team
 namespace metric {
 
 
-template <typename recType, typename Metric = metric::Euclidian<typename recType::value_type>>
+template <typename RecType, typename Metric = metric::Euclidean<typename RecType::value_type>>
 struct Entropy_simple { // averaged entropy estimation: code COPIED from mgc.*pp with only mgc replaced with entropy, TODO refactor to avoid code dubbing
 
     Entropy_simple(Metric metric_ = Metric(), size_t k_ = 3, bool exp_ = false) :
@@ -52,7 +52,7 @@ private:
 
 
 
-template <typename recType, typename Metric = metric::Chebyshev<typename recType::value_type>>
+template <typename RecType, typename Metric = metric::Chebyshev<typename RecType::value_type>>
 struct Entropy {
 
     Entropy(Metric metric_ = Metric(), size_t k_ = 7, size_t p_ = 70, bool exp_ = false) :

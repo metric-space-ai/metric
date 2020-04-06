@@ -17,7 +17,7 @@ namespace metric {
 
 // MOVED TO ENTROPY.*PP
 /*
-template <typename recType, typename Metric = metric::Chebyshev<typename recType::value_type>>
+template <typename RecType, typename Metric = metric::Chebyshev<typename RecType::value_type>>
 struct entropy_kpN {
 
     template <template <typename, typename> class OuterContainer, typename Container, typename OuterAllocator>

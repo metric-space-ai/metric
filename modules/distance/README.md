@@ -48,8 +48,8 @@ Using **METRIC** framework we can calculate a set of standard metrics for this r
 
 - **Euclidean (L2) metric**
 ``` cpp
-metric::Euclidian<double> euclidianL2Distance;
-auto result_1 = euclidianL2Distance(v0, v1);
+metric::Euclidean<double> euclideanL2Distance;
+auto result_1 = euclideanL2Distance(v0, v1);
 std::cout << "result: " << result_1 << std::endl;
 // out:
 // Euclidean (L2) metric
@@ -58,8 +58,8 @@ std::cout << "result: " << result_1 << std::endl;
 
 - **Euclidean Threshold metric**
 ``` cpp
-metric::Euclidian_thresholded<double> euclidianThresholdDistance(1000.0, 3000.0);
-auto result_2 = euclidianThresholdDistance(v0, v1);
+metric::Euclidean_thresholded<double> euclideanThresholdDistance(1000.0, 3000.0);
+auto result_2 = euclideanThresholdDistance(v0, v1);
 std::cout << "result: " << result_2 << std::endl;
 // out:
 // Euclidean Threshold metric
@@ -333,7 +333,7 @@ int grid_w = 6;
 int grid_h = 4;
 	
 using Vector = std::vector<double>;
-using Metric = metric::Euclidian<double>;
+using Metric = metric::Euclidean<double>;
 using Graph = metric::Grid6; 
 using Distribution = std::uniform_real_distribution<double>; 
 
@@ -402,7 +402,7 @@ std::cout << "result: " << result << std::endl;
 
 Of cause we can specify distance metric:
 ```cpp
-auto result = metric::mutualInformation(v1, v2, 3, metric::Euclidian<double>());
+auto result = metric::mutualInformation(v1, v2, 3, metric::Euclidean<double>());
 std::cout << "result: " << result << std::endl;
 // out:
 // Mutual Information using Euclidean distance metric

@@ -8,8 +8,8 @@
 
 namespace py = pybind11;
 
-template<typename recType, typename Metric, typename T>
-py::tuple affprop(const metric::Matrix<recType, Metric>& DM,
+template<typename RecType, typename Metric, typename T>
+py::tuple affprop(const metric::Matrix<RecType, Metric>& DM,
                   T preference = 0.5,
                   int maxiter = 200,
                   T tol = 1.0e-6,
@@ -18,9 +18,9 @@ py::tuple affprop(const metric::Matrix<recType, Metric>& DM,
     return py::make_tuple(std::get<0>(result), std::get<1>(result), std::get<2>(result));
 }
 
-template <typename recType, typename Metric, typename T>
+template <typename RecType, typename Metric, typename T>
 void register_wrapper_affprop(py::module& m) {
-    m.def("affprop", &affprop<recType, Metric, T>,
+    m.def("affprop", &affprop<RecType, Metric, T>,
         py::arg("dm"),
         py::arg("preference") = 0.5,
         py::arg("maxiter") = 200,
@@ -32,7 +32,7 @@ void register_wrapper_affprop(py::module& m) {
 void export_metric_affprop(py::module& m) {
     using Value = double;
     using Container = std::vector<Value>;
-    register_wrapper_affprop<Container, metric::Euclidian<Value>, Value>(m);
+    register_wrapper_affprop<Container, metric::Euclidean<Value>, Value>(m);
 }
 
 PYBIND11_MODULE(affprop, m) {

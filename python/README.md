@@ -77,7 +77,7 @@ Class factories in general a functions that mimics class constructor. They use C
 concrete function overload will return only specific implementation. It means that class implementation should be completely
 described by function arguments. One example of class factories is Entropy factory:
 ```
-template <typename Metric = metric::Euclidian<double>()>
+template <typename Metric = metric::Euclidean<double>()>
 metric::Entropy<void, Metric> createEntropy(
     const Metric& metric,
     size_t k = 7,

@@ -10,8 +10,8 @@ Copyright (c) 2019 Panda Team
 #include "SOM.hpp"
 namespace metric {
 
-template <class recType, class Graph, class Metric, class Distribution>
-SOM<recType, Graph, Metric, Distribution>::SOM(size_t nodesNumber, Metric metric)
+template <class RecType, class Graph, class Metric, class Distribution>
+SOM<RecType, Graph, Metric, Distribution>::SOM(size_t nodesNumber, Metric metric)
     : input_dimensions(0)
     , metric(metric)
     , graph(nodesNumber)
@@ -29,8 +29,8 @@ SOM<recType, Graph, Metric, Distribution>::SOM(size_t nodesNumber, Metric metric
 	neigbour_range_decay = 2.0;
 }
 
-template <class recType, class Graph, class Metric, class Distribution>
-SOM<recType, Graph, Metric, Distribution>::SOM(size_t nodesWidth, size_t nodesHeight, Metric metric)
+template <class RecType, class Graph, class Metric, class Distribution>
+SOM<RecType, Graph, Metric, Distribution>::SOM(size_t nodesWidth, size_t nodesHeight, Metric metric)
     : input_dimensions(0)
     , metric(metric)
     , graph(nodesWidth, nodesHeight)
@@ -49,8 +49,8 @@ SOM<recType, Graph, Metric, Distribution>::SOM(size_t nodesWidth, size_t nodesHe
 	neigbour_range_decay = 2.0;
 }
 
-template <class recType, class Graph, class Metric, class Distribution>
-SOM<recType, Graph, Metric, Distribution>::SOM(Graph graph, Metric metric, double start_learn_rate, double finish_learn_rate, size_t iterations, Distribution distribution)
+template <class RecType, class Graph, class Metric, class Distribution>
+SOM<RecType, Graph, Metric, Distribution>::SOM(Graph graph, Metric metric, double start_learn_rate, double finish_learn_rate, size_t iterations, Distribution distribution)
     : input_dimensions(0)
     , metric(metric)
     , graph(graph)
@@ -68,8 +68,8 @@ SOM<recType, Graph, Metric, Distribution>::SOM(Graph graph, Metric metric, doubl
 	neigbour_range_decay = 2.0;
 }
 
-template <class recType, class Graph, class Metric, class Distribution>
-SOM<recType, Graph, Metric, Distribution>::SOM(Graph graph, Metric metric, double start_learn_rate,  double finish_learn_rate, size_t iterations, 
+template <class RecType, class Graph, class Metric, class Distribution>
+SOM<RecType, Graph, Metric, Distribution>::SOM(Graph graph, Metric metric, double start_learn_rate,  double finish_learn_rate, size_t iterations, 
 	Distribution distribution, double neighborhood_start_size, double neigbour_range_decay, long long random_seed)
     : input_dimensions(0)
     , metric(metric)
@@ -85,25 +85,25 @@ SOM<recType, Graph, Metric, Distribution>::SOM(Graph graph, Metric metric, doubl
     valid = graph.isValid();
 }
 
-//template <class recType, class Metric, class Graph>
-//SOM<recType, Metric, Graph>::~SOM() = default;
+//template <class RecType, class Metric, class Graph>
+//SOM<RecType, Metric, Graph>::~SOM() = default;
 
-template <class recType, class Graph, class Metric, class Distribution>
-void SOM<recType, Graph, Metric, Distribution>::train(
+template <class RecType, class Graph, class Metric, class Distribution>
+void SOM<RecType, Graph, Metric, Distribution>::train(
     const std::vector<std::vector<T>>& samples)
 {
 	subsampled_train_(samples, samples.size());
 }
 
 
-template <class recType, class Graph, class Metric, class Distribution>
-void SOM<recType, Graph, Metric, Distribution>::estimate(const std::vector<std::vector<T>>& samples, const size_t sampleSize)
+template <class RecType, class Graph, class Metric, class Distribution>
+void SOM<RecType, Graph, Metric, Distribution>::estimate(const std::vector<std::vector<T>>& samples, const size_t sampleSize)
 {
 	subsampled_train_(samples, sampleSize);
 }
 
-template <class recType, class Graph, class Metric, class Distribution>
-std::vector<double> SOM<recType, Graph, Metric, Distribution>::encode(const recType& sample)
+template <class RecType, class Graph, class Metric, class Distribution>
+std::vector<double> SOM<RecType, Graph, Metric, Distribution>::encode(const RecType& sample)
 {
     std::vector<double> dim_reduced(getNodesNumber());
 
@@ -115,8 +115,8 @@ std::vector<double> SOM<recType, Graph, Metric, Distribution>::encode(const recT
 }
 
 /** Best matching unit **/
-template <class recType, class Graph, class Metric, class Distribution>
-size_t SOM<recType, Graph, Metric, Distribution>::BMU(const recType& sample) const
+template <class RecType, class Graph, class Metric, class Distribution>
+size_t SOM<RecType, Graph, Metric, Distribution>::BMU(const RecType& sample) const
 {
     assert(sample.size() == input_dimensions);  // input sample has not same getNodesNumber than SOM;
 
@@ -136,8 +136,8 @@ size_t SOM<recType, Graph, Metric, Distribution>::BMU(const recType& sample) con
 }
 
 
-template <class recType, class Graph, class Metric, class Distribution>
-double SOM<recType, Graph, Metric, Distribution>::std_deviation(const std::vector<std::vector<T>>& samples)
+template <class RecType, class Graph, class Metric, class Distribution>
+double SOM<RecType, Graph, Metric, Distribution>::std_deviation(const std::vector<std::vector<T>>& samples)
 {
 	double total_distances = 0;
 	double std_deviation = 0;
@@ -158,8 +158,8 @@ double SOM<recType, Graph, Metric, Distribution>::std_deviation(const std::vecto
 
 // PRIVATE
 
-template <class recType, class Graph, class Metric, class Distribution>
-void SOM<recType, Graph, Metric, Distribution>::subsampled_train_(const std::vector<std::vector<T>>& samples, int sampleSize)
+template <class RecType, class Graph, class Metric, class Distribution>
+void SOM<RecType, Graph, Metric, Distribution>::subsampled_train_(const std::vector<std::vector<T>>& samples, int sampleSize)
 {
 	
     // initialize weight matrix at first training call

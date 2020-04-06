@@ -8,10 +8,10 @@ def main():
     v1 = numpy.float_([1, 1, 1, 1, 1, 2, 3, 4])
 
     distance = Euclidean()
-    print('Euclidian distance:', distance(v0, v1))
+    print('Euclidean distance:', distance(v0, v1))
 
     distance = Euclidean_thresholded(thres=1000.0, factor=3000.0)
-    print('Euclidian Threshold distance:', distance(v0, v1))
+    print('Euclidean Threshold distance:', distance(v0, v1))
 
     distance = Manhatten()
     print('Manhatten distance:', distance(v0, v1))

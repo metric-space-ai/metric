@@ -50,14 +50,14 @@ int main()
     // small dataset
     /*
 
-    using recType = std::vector<double>;
+    using RecType = std::vector<double>;
 
-    recType d0 {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18};
-    recType d1 {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 100};
-    std::vector<recType> d = {d0, d1};
+    RecType d0 {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18};
+    RecType d1 {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 100};
+    std::vector<RecType> d = {d0, d1};
 
     float freq_time_balance = 1; // try values from 0 to 1 (e g 0, 0.5, 1) to get the following portions of freq-domain: 0, 4/9, 8/9
-    auto bundle = metric::DSPCC1<recType, void>(d, 2, 4, freq_time_balance, 0.5);
+    auto bundle = metric::DSPCC1<RecType, void>(d, 2, 4, freq_time_balance, 0.5);
 
     //auto pre_encoded = bundle.test_public_wrapper_encode(d);
     //auto pre_decoded = bundle.test_public_wrapper_decode(pre_encoded);

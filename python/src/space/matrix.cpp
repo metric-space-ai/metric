@@ -10,43 +10,43 @@
 
 namespace py = pybind11;
 
-template<typename Container, typename recType, typename Metric>
-metric::Matrix<recType, Metric> createMatrix(const Metric& m, const Container& data) {
-    return metric::Matrix<recType, Metric>(data, m);
+template<typename Container, typename RecType, typename Metric>
+metric::Matrix<RecType, Metric> createMatrix(const Metric& m, const Container& data) {
+    return metric::Matrix<RecType, Metric>(data, m);
 }
 
-template<typename recType, typename Metric>
-metric::Matrix<recType, Metric> createMatrixEmpty(const Metric& m) {
-    return metric::Matrix<recType, Metric>(m);
+template<typename RecType, typename Metric>
+metric::Matrix<RecType, Metric> createMatrixEmpty(const Metric& m) {
+    return metric::Matrix<RecType, Metric>(m);
 }
 
-template<typename recType, typename Metric>
+template<typename RecType, typename Metric>
 void register_wrapper_matrix(py::module& m, const std::string& postfix) {
-    using Matrix = metric::Matrix<recType, Metric>;
-    using Container = std::vector<recType>;
+    using Matrix = metric::Matrix<RecType, Metric>;
+    using Container = std::vector<RecType>;
 
-    m.def("create_matrix", &createMatrix<Container, recType, Metric>,
+    m.def("create_matrix", &createMatrix<Container, RecType, Metric>,
         "Distance matrix factory",
         py::arg("metric"),
         py::arg("items")
     );
-    m.def("create_matrix", &createMatrix<recType, recType, Metric>,
+    m.def("create_matrix", &createMatrix<RecType, RecType, Metric>,
         py::arg("metric"),
         py::arg("item")
     );
-    m.def("create_matrix", &createMatrixEmpty<recType, Metric>,
+    m.def("create_matrix", &createMatrixEmpty<RecType, Metric>,
         py::arg("metric")
     );
 
-    size_t (Matrix::*insert1)(const recType&) = &Matrix::insert;
+    size_t (Matrix::*insert1)(const RecType&) = &Matrix::insert;
     std::vector<size_t> (Matrix::*insert2)(const Container&) = &Matrix::insert;
-    std::pair<std::size_t, bool> (Matrix::*insert_if1)(const recType&, typename Matrix::distType) = &Matrix::insert_if;
+    std::pair<std::size_t, bool> (Matrix::*insert_if1)(const RecType&, typename Matrix::distType) = &Matrix::insert_if;
     std::vector<std::pair<std::size_t, bool>> (Matrix::*insert_if2)(const Container&, typename Matrix::distType) = &Matrix::insert_if;
 
     const std::string name = std::string("Matrix_") + postfix;
     py::class_<Matrix>(m, name.c_str())
         .def(py::init<>(), "empty matrix")
-        .def(py::init<const recType&>(),
+        .def(py::init<const RecType&>(),
             "Construct a new Matrix with one data record",
             py::arg("p")
         )
@@ -111,7 +111,7 @@ void register_wrapper_matrix(py::module& m, const std::string& postfix) {
 }
 
 void export_metric_matrix(py::module& m) {
-    register_wrapper_matrix<std::vector<double>, metric::Euclidian<double>>(m, "Euclidean");
+    register_wrapper_matrix<std::vector<double>, metric::Euclidean<double>>(m, "Euclidean");
     register_wrapper_matrix<std::vector<double>, metric::Manhatten<double>>(m, "Manhatten");
     register_wrapper_matrix<std::vector<double>, metric::P_norm<double>>(m, "P_norm");
 }

@@ -89,22 +89,22 @@ void export_metric_MGC(py::module& m)
 {
     using T = double;
     // TODO: loop
-    wrap_metric_MGC<T, metric::Euclidian<T>, metric::Euclidian<T>>(m, "Euclidean_Euclidean");
-    wrap_metric_MGC<T, metric::Euclidian<T>, metric::Manhatten<T>>(m, "Euclidean_Manhatten");
-//    wrap_metric_MGC<T, metric::Euclidian<T>, metric::Chebyshev<T>>(m);
-    wrap_metric_MGC<T, metric::Euclidian<T>, metric::P_norm<T>>(m, "Euclidean_Pnorm");
+    wrap_metric_MGC<T, metric::Euclidean<T>, metric::Euclidean<T>>(m, "Euclidean_Euclidean");
+    wrap_metric_MGC<T, metric::Euclidean<T>, metric::Manhatten<T>>(m, "Euclidean_Manhatten");
+//    wrap_metric_MGC<T, metric::Euclidean<T>, metric::Chebyshev<T>>(m);
+    wrap_metric_MGC<T, metric::Euclidean<T>, metric::P_norm<T>>(m, "Euclidean_Pnorm");
 
-    wrap_metric_MGC<T, metric::Manhatten<T>, metric::Euclidian<T>>(m, "Manhatten_Euclidean");
+    wrap_metric_MGC<T, metric::Manhatten<T>, metric::Euclidean<T>>(m, "Manhatten_Euclidean");
     wrap_metric_MGC<T, metric::Manhatten<T>, metric::Manhatten<T>>(m, "Manhatten_Manhatten");
 //    wrap_metric_MGC<T, metric::Manhatten<T>, metric::Chebyshev<T>>(m);
     wrap_metric_MGC<T, metric::Manhatten<T>, metric::P_norm<T>>(m, "Manhatten_Pnorm");
 
-//    wrap_metric_MGC<T, metric::Chebyshev<T>, metric::Euclidian<T>>();
+//    wrap_metric_MGC<T, metric::Chebyshev<T>, metric::Euclidean<T>>();
 //    wrap_metric_MGC<T, metric::Chebyshev<T>, metric::Manhatten<T>>();
 //    wrap_metric_MGC<T, metric::Chebyshev<T>, metric::Chebyshev<T>>();
 //    wrap_metric_MGC<T, metric::Chebyshev<T>, metric::P_norm<T>>();
 
-    wrap_metric_MGC<T, metric::P_norm<T>, metric::Euclidian<T>>(m, "Pnorm_Euclidean");
+    wrap_metric_MGC<T, metric::P_norm<T>, metric::Euclidean<T>>(m, "Pnorm_Euclidean");
     wrap_metric_MGC<T, metric::P_norm<T>, metric::Manhatten<T>>(m, "Pnorm_Manhatten");
 //    wrap_metric_MGC<T, metric::P_norm<T>, metric::Chebyshev<T>>();
     wrap_metric_MGC<T, metric::P_norm<T>, metric::P_norm<T>>(m, "Pnorm_Pnorm");

@@ -13,34 +13,34 @@ Copyright (c) 2018 Michael Welsch
 namespace metric {
 
 /**
- * @class Euclidian
+ * @class Euclidean
  * 
- * @brief Euclidian (L2) Metric
+ * @brief Euclidean (L2) Metric
  */
 template <typename V = double>
-struct Euclidian {
+struct Euclidean {
     using value_type = V;
     using distance_type = value_type;
 
-    explicit Euclidian() = default;
+    explicit Euclidean() = default;
 
     /**
-     * @brief Calculate Euclidian distance in R^n
+     * @brief Calculate Euclidean distance in R^n
      *
      * @param a first vector
      * @param b second vector
-     * @return euclidian distance between a and b
+     * @return Euclidean distance between a and b
      */
     template <typename Container>
     typename std::enable_if<!std::is_same<Container, V>::value, distance_type>::type operator()(
         const Container& a, const Container& b) const;
 
     /**
-     * @brief Calculate Euclidian distance in R
+     * @brief Calculate Euclidean distance in R
      *
      * @param a first value 
      * @param b second value
-     * @return euclidian distance between a and b
+     * @return Euclidean distance between a and b
      */
 
     distance_type operator()(const V& a, const V& b) const;
@@ -107,25 +107,25 @@ struct P_norm {
 };
 
 /**
- * @class Euclidian_threshold
+ * @class Euclidean_threshold
  *
  * @brief Minkowski Metric (L... / P_Norm)
  *
  */
 template <typename V = double>
-struct Euclidian_thresholded {
+struct Euclidean_thresholded {
     using value_type = V;
     using distance_type = value_type;
 
-    explicit Euclidian_thresholded() = default;
+    explicit Euclidean_thresholded() = default;
 
     /**
-     * @brief Construct a new Euclidian_thresholded object
+     * @brief Construct a new Euclidean_thresholded object
      *
      * @param thres_
      * @param factor_
      */
-    Euclidian_thresholded(value_type thres_, value_type factor_)
+    Euclidean_thresholded(value_type thres_, value_type factor_)
         : thres(thres_)
         , factor(factor_)
     {

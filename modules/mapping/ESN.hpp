@@ -69,12 +69,12 @@ namespace metric {
  * 
  * @brief 
  */
-template <typename recType, typename Metric>
+template <typename RecType, typename Metric>
 class ESN {
 
 public:
 
-    using value_type = typename determine_element_type<recType>::type;
+    using value_type = typename determine_element_type<RecType>::type;
 
     /**
      * @brief Construct a new ESN object
@@ -108,7 +108,7 @@ public:
      * @param Slices
      * @param Target
      */
-    void train(const std::vector<recType> & Slices, const std::vector<recType> & Target);
+    void train(const std::vector<RecType> & Slices, const std::vector<RecType> & Target);
 
 
     /**
@@ -125,7 +125,7 @@ public:
      * @param Slices
      * @return
      */
-    std::vector<recType> predict(const std::vector<recType> & Slices);
+    std::vector<RecType> predict(const std::vector<RecType> & Slices);
 
 
 private:
@@ -140,21 +140,21 @@ private:
 
     void create_W(size_t w_size, value_type w_connections, value_type w_sr);
 
-    blaze::DynamicMatrix<value_type> vector_to_blaze(const std::vector<recType> & In);
+    blaze::DynamicMatrix<value_type> vector_to_blaze(const std::vector<RecType> & In);
 
     template <typename R>
     typename std::enable_if <
      determine_container_type<R>::code == 1,
      std::vector<R>
     >::type
-    blaze2rectype(const blaze::DynamicMatrix<typename ESN<R, Metric>::value_type> & In);
+    blaze2RecType(const blaze::DynamicMatrix<typename ESN<R, Metric>::value_type> & In);
 
     template <typename R>
     typename std::enable_if<
      determine_container_type<R>::code == 2,
      std::vector<R>
     >::type
-    blaze2rectype(const blaze::DynamicMatrix<typename ESN<R, Metric>::value_type> & In);
+    blaze2RecType(const blaze::DynamicMatrix<typename ESN<R, Metric>::value_type> & In);
 
 };  // class ESN
 

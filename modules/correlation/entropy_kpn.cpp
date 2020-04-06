@@ -44,9 +44,9 @@ double mvnpdf(blaze::DynamicVector<double> x) {
 
 
 
-//template <typename recType, typename Metric = metric::Chebyshev<typename recType::value_type>>
+//template <typename RecType, typename Metric = metric::Chebyshev<typename RecType::value_type>>
 //double entropy_kpN(
-//        std::vector<recType> X,
+//        std::vector<RecType> X,
 //        Metric metric = Metric(),
 //        size_t k = 7,
 //        size_t p = 70
@@ -58,7 +58,7 @@ double mvnpdf(blaze::DynamicVector<double> x) {
 
 //    double h = 0;
 
-//    metric::Tree<recType, Metric> tree (X, -1, metric);
+//    metric::Tree<RecType, Metric> tree (X, -1, metric);
 //    blaze::DynamicMatrix<double> Nodes (p, d, 0);
 //    blaze::DynamicVector<double> mu (d, 0);
 //    blaze::DynamicVector<double> lb (d, 0);
@@ -108,9 +108,9 @@ double mvnpdf(blaze::DynamicVector<double> x) {
 
 // MOVED TO ENTROPY.*PP
 /*
-template <typename recType, typename Metric>
+template <typename RecType, typename Metric>
 template <template <typename, typename> class OuterContainer, typename Container, typename OuterAllocator>
-double entropy_kpN<recType, Metric>::operator()(
+double entropy_kpN<RecType, Metric>::operator()(
         const OuterContainer<Container, OuterAllocator> X,
         Metric metric, // = Metric(),
         size_t k, // = 7,
@@ -177,9 +177,9 @@ double entropy_kpN<recType, Metric>::operator()(
 
 
 // averaged entropy estimation: code COPIED from mgc.*pp with only mgc replaced with entropy, TODO refactor to avoid code dubbing
-template <typename recType, typename Metric>
+template <typename RecType, typename Metric>
 template <typename Container>
-double entropy_kpN<recType, Metric>::estimate(
+double entropy_kpN<RecType, Metric>::estimate(
         const Container & a,
         const size_t sampleSize,
         const double threshold,
