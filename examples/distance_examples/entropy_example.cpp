@@ -41,7 +41,7 @@ int main() {
             std::cout << "MI default result: " << result << std::endl;
         }
         {
-            auto result = metric::mutualInformation(v1, v2, 3, metric::Euclidian<double>());
+            auto result = metric::mutualInformation(v1, v2, 3, metric::Euclidean<double>());
             std::cout << "MI Euclidean result: " << result << std::endl;
         }
         {
@@ -97,7 +97,7 @@ int main() {
     }
 
     {
-        auto e_f = metric::Entropy_simple<void, metric::Euclidian<double>>(metric::Euclidian<double>(), 3);
+        auto e_f = metric::Entropy_simple<void, metric::Euclidean<double>>(metric::Euclidean<double>(), 3);
         auto e = e_f(v);
         std::cout << "using Euclidean: " << e << std::endl;
     }
@@ -210,12 +210,12 @@ int main() {
               << e_f_cheb(urv2)
               << std::endl;
 
-    auto e_f_eucl = metric::Entropy_simple<void, metric::Euclidian<double>>(metric::Euclidian<double>(), 3);
+    auto e_f_eucl = metric::Entropy_simple<void, metric::Euclidean<double>>(metric::Euclidean<double>(), 3);
     auto e = e_f_eucl(urv);
     std::cout << "using Euclidean: " << e << std::endl;
 
     auto ekpn_cheb = metric::Entropy<void, metric::Chebyshev<double>>(metric::Chebyshev<double>(), 3, 10);
-    auto ekpn_eucl = metric::Entropy<void, metric::Euclidian<double>>(metric::Euclidian<double>(), 3, 10);
+    auto ekpn_eucl = metric::Entropy<void, metric::Euclidean<double>>(metric::Euclidean<double>(), 3, 10);
 
     std::cout << "entropy_kpN, using Chebyshev: "
               << ekpn_cheb(urv) << "\n";
@@ -278,7 +278,7 @@ int main() {
 
     std::vector<std::deque<double>> urv5;
 
-    auto e_f_eucl500 = metric::Entropy_simple<void, metric::Euclidian<double>>(metric::Euclidian<double>(), 500);
+    auto e_f_eucl500 = metric::Entropy_simple<void, metric::Euclidean<double>>(metric::Euclidean<double>(), 500);
     std::cout << "\nlength | entropy | kpN entropy\n";
     for (size_t i = 0; i<25; ++i) {
         for (size_t i = 0; i<step; ++i) {

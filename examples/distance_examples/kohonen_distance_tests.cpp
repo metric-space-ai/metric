@@ -109,7 +109,7 @@ int main()
 	///
 	
     using Vector = std::vector<double>;
-    using Metric = metric::Euclidian<double>;
+    using Metric = metric::Euclidean<double>;
     using Graph = metric::Grid6; 
     using Distribution = std::uniform_real_distribution<double>; 
 

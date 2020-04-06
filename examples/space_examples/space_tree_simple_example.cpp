@@ -23,7 +23,7 @@ int main()
 
 
     /*** initialize the tree ***/
-    metric::Tree<std::vector<double>, metric::Euclidian<double>> cTree;
+    metric::Tree<std::vector<double>, metric::Euclidean<double>> cTree;
 
     /*** add data records ***/
     cTree.insert(v0);
@@ -58,7 +58,7 @@ int main()
         { 4, 6, 2, 2, 1, 1, 0, 0 },
     };
 
-    metric::Tree<std::vector<double>, metric::Euclidian<double>> cTree2(table);
+    metric::Tree<std::vector<double>, metric::Euclidean<double>> cTree2(table);
 
     std::vector<std::vector<double>> table2 = { { 3, 7, 2, 1, 0, 0, 0, 0 }, { 2, 8, 2, 1, 0, 0, 0, 0 } };
 

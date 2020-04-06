@@ -30,7 +30,7 @@ void register_wrapper_ESN(py::module& m) {
 void export_metric_ESN(py::module& m) {
     using Value = double;
     using RecType = std::vector<Value>;
-    register_wrapper_ESN<RecType, metric::Euclidian<Value>>(m);
+    register_wrapper_ESN<RecType, metric::Euclidean<Value>>(m);
 }
 
 PYBIND11_MODULE(esn, m) {

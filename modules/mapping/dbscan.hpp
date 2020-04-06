@@ -34,8 +34,8 @@ namespace metric {
  *          of corresponding source point, second contains indices of center points of clusters, third vector contains
  *          size of corresponding cluster.
  */
-template <typename recType, typename Metric, typename T>
-std::tuple<std::vector<int>, std::vector<int>, std::vector<int>> dbscan(const metric::Matrix<recType, Metric>& dm, T eps, std::size_t minpts);
+template <typename RecType, typename Metric, typename T>
+std::tuple<std::vector<int>, std::vector<int>, std::vector<int>> dbscan(const metric::Matrix<RecType, Metric>& dm, T eps, std::size_t minpts);
 
 }  // namespace metric
 

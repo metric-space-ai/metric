@@ -13,7 +13,7 @@ namespace py = pybind11;
 template <typename D,
             typename Sample,
             typename Graph = metric::Grid4,
-            typename Metric = metric::Euclidian<D>,
+            typename Metric = metric::Euclidean<D>,
 	        typename Distribution = std::uniform_real_distribution<typename Sample::value_type>>
     // D is a distance return type
 
@@ -54,5 +54,5 @@ void register_wrapper_kohonen(py::module& m) {
 void export_metric_kohonen(py::module& m) {
     using DistanceType = double;
     using SampleType = std::vector<DistanceType>;
-    register_wrapper_kohonen<DistanceType, SampleType, metric::Grid4, metric::Euclidian<DistanceType>>(m);
+    register_wrapper_kohonen<DistanceType, SampleType, metric::Grid4, metric::Euclidean<DistanceType>>(m);
 }

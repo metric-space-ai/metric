@@ -25,7 +25,7 @@ int main()
         { 5.81414000000000, 8.14015000000000, 3.22950000000000, 139.539000000000, 139.539000000000 },
         { 2.57927000000000, 2.63399000000000, 2.46802000000000, 61.9026000000000, 61.9026000000000 } 
 	};
-    metric::Matrix<std::vector<double>, metric::Euclidian<double>> distance_matrix(data);
+    metric::Matrix<std::vector<double>, metric::Euclidean<double>> distance_matrix(data);
     
     auto [assignments, exemplars, counts] = metric::affprop(distance_matrix);
 	// out:

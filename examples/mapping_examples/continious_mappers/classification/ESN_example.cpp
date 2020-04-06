@@ -82,14 +82,14 @@ int main()
 
 
     //*
-    // run ESN for vector<recType> dataset, data points in recType containers (in rows)
+    // run ESN for vector<RecType> dataset, data points in RecType containers (in rows)
     // data is exactly the same as in the example above
 
-    //using recType = std::deque<float>;
-    using recType = std::vector<double>;
-    //using recType = blaze::DynamicVector<double>; // also supported
+    //using RecType = std::deque<float>;
+    using RecType = std::vector<double>;
+    //using RecType = blaze::DynamicVector<double>; // also supported
 
-    std::vector<recType> SlicesRV {
+    std::vector<RecType> SlicesRV {
         {   1,    0,    0,    0,    0,    0}, // time = 0
         {0.75, 0.25,    0,    0,    0,    0}, // time = 1
         {0.5 ,  0.5,    0,    0,    0,    0}, // etc
@@ -110,7 +110,7 @@ int main()
         {   0,    0,    0,    0, 0.75, 0.25}
     };
 
-    std::vector<recType> TargetRV {
+    std::vector<RecType> TargetRV {
         {-0.45,  0.5},
         {- 0.4, 0.25},
         {-0.35,    0},
@@ -132,7 +132,7 @@ int main()
     };
     // first line (position of peak) is easy to predict, second is much harder. ESN predicts it better in no-echo mode
 
-    std::vector<recType> SlicesTestRV {
+    std::vector<RecType> SlicesTestRV {
         {   0,    0,    0,    0,    0,    1},
         {   0,    0,    0,    0, 0.25, 0.75},
         {   0,    0,    0,    0,  0.5,  0.5},
@@ -153,13 +153,13 @@ int main()
         {0.25, 0.75,    0,    0,    0,    0}
     };
 
-    auto esnV = metric::ESN<recType, void>(500, 4, 0.99, 0.5, 5, 0.9); // echo
-    //auto esnV = metric::ESN<recType, void>(500, 4, 0.99, 1, 0, 0.9); // no echo (alpha=1 and no washout)
+    auto esnV = metric::ESN<RecType, void>(500, 4, 0.99, 0.5, 5, 0.9); // echo
+    //auto esnV = metric::ESN<RecType, void>(500, 4, 0.99, 1, 0, 0.9); // no echo (alpha=1 and no washout)
     esnV.train(SlicesRV, TargetRV);
 
     auto predictionV = esnV.predict(SlicesTestRV);
 
-    std::cout << "ESN small test prediction, data in vector of recType resords (in ROWS):\n";
+    std::cout << "ESN small test prediction, data in vector of RecType resords (in ROWS):\n";
     for (size_t i = 0; i<predictionV.size(); ++i) {
         for (size_t j = 0; j<predictionV[0].size(); ++j)
             std::cout << predictionV[i][j] << " ";

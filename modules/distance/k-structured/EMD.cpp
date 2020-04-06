@@ -73,7 +73,7 @@ namespace EMD_details {
     }
 
     template <typename Container>
-    struct Euclidian_thresholded_EMD_default {
+    struct Euclidean_thresholded_EMD_default {
         typedef typename Container::value_type T;
         static_assert(std::is_floating_point<T>::value, "T must be a float type");
 
@@ -87,14 +87,14 @@ namespace EMD_details {
             }
             return std::min(thres, T(factor * sqrt(sum)));
         }
-        Euclidian_thresholded_EMD_default(T thres = 1000, T factor = 3000)
+        Euclidean_thresholded_EMD_default(T thres = 1000, T factor = 3000)
             : thres(thres)
             , factor(factor)
         {
         }
     };
 
-    template <typename T, typename Metric = Euclidian_thresholded_EMD_default<std::vector<double>>>
+    template <typename T, typename Metric = Euclidean_thresholded_EMD_default<std::vector<double>>>
     std::vector<std::vector<T>> ground_distance_matrix_of_2dgrid(size_t cols, size_t rows)
     {
         size_t n = rows * cols;
@@ -119,7 +119,7 @@ namespace EMD_details {
         return distM;
     }
 
-    template <typename T, typename Metric = Euclidian_thresholded_EMD_default<std::vector<double>>>
+    template <typename T, typename Metric = Euclidean_thresholded_EMD_default<std::vector<double>>>
     std::vector<std::vector<T>> ground_distance_matrix_of_2dgrid(std::vector<std::vector<T>> grid)
     {
         size_t n = grid.size();

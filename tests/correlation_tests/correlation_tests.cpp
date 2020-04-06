@@ -68,18 +68,18 @@ BOOST_AUTO_TEST_CASE(Metrics)
 {
     auto vectorNull = generateVector<double>(0);
 
-    metric::Euclidian<double> euclidian;
+    metric::Euclidean<double> Euclidean;
     metric::Manhatten<double> manhatten;
 
-    BOOST_CHECK_EQUAL(euclidian(vectorNull, vectorNull), 0);
+    BOOST_CHECK_EQUAL(Euclidean(vectorNull, vectorNull), 0);
     BOOST_CHECK_EQUAL(manhatten(vectorNull, vectorNull), 0);
 
     std::vector<double> vector0(1000, 0);
-    BOOST_CHECK_EQUAL(euclidian(vector0, vector0), 0);
+    BOOST_CHECK_EQUAL(Euclidean(vector0, vector0), 0);
     BOOST_CHECK_EQUAL(manhatten(vector0, vector0), 0);
 
     auto vector = generateVector<double>(2000);
-    BOOST_CHECK_EQUAL(euclidian(vector, vector), 0);
+    BOOST_CHECK_EQUAL(Euclidean(vector, vector), 0);
     BOOST_CHECK_EQUAL(manhatten(vector, vector), 0);
 }
 
@@ -116,7 +116,7 @@ BOOST_AUTO_TEST_CASE(MGC)
     typedef std::vector<double> Rec1;
     typedef std::array<float, 1> Rec2;
 
-    typedef metric::Euclidian<double> Met1;
+    typedef metric::Euclidean<double> Met1;
     typedef metric::Manhatten<float> Met2;
 
     auto mgc_corr = metric::MGC<Rec1, Met1, Rec2, Met2>();
@@ -177,7 +177,7 @@ BOOST_AUTO_TEST_CASE(MGC_Estimate)
     }
 
     typedef std::vector<double> Rec;
-    typedef metric::Euclidian<double> Met;
+    typedef metric::Euclidean<double> Met;
 
     auto mgc = metric::MGC<Rec, Met, Rec, Met>();
 
@@ -188,28 +188,28 @@ BOOST_AUTO_TEST_CASE(MGC_Estimate)
 BOOST_AUTO_TEST_CASE(MGC_construct) {
     // this test has no asserts, it just checks compilation
 
-    metric::MGC<float, metric::Euclidian<float>, float, metric::Euclidian<float>> m1;
+    metric::MGC<float, metric::Euclidean<float>, float, metric::Euclidean<float>> m1;
     m1(std::vector<float>{}, std::vector<float>{});
 
-    metric::MGC<float, metric::Euclidian<float>, std::vector<float>, metric::Manhatten<float>> m2;
+    metric::MGC<float, metric::Euclidean<float>, std::vector<float>, metric::Manhatten<float>> m2;
     m2(std::vector<float> {}, std::vector<std::vector<float>> {});
 
-    metric::MGC<float, metric::Euclidian<float>, std::vector<double>, metric::Manhatten<double>> m3;
+    metric::MGC<float, metric::Euclidean<float>, std::vector<double>, metric::Manhatten<double>> m3;
     m3(std::vector<float> {}, std::vector<std::vector<double>> {});
 
-    metric::MGC<float, metric::Euclidian<float>,
-                std::vector<double>, metric::Manhatten<double>> m4(metric::Euclidian<float>{});
+    metric::MGC<float, metric::Euclidean<float>,
+                std::vector<double>, metric::Manhatten<double>> m4(metric::Euclidean<float>{});
     m4(std::vector<float> {}, std::vector<std::vector<double>> {});
 
-    metric::MGC<float, metric::Euclidian<float>,
-                std::vector<double>, metric::Manhatten<double>> m5(metric::Euclidian<float> {},
+    metric::MGC<float, metric::Euclidean<float>,
+                std::vector<double>, metric::Manhatten<double>> m5(metric::Euclidean<float> {},
                                                                    metric::Manhatten<double>{});
     m5(std::vector<float> {}, std::vector<std::vector<double>> {});
 
-    metric::Euclidian<float> e1;
+    metric::Euclidean<float> e1;
     metric::Manhatten<double> e2;
 
-    metric::MGC<float, metric::Euclidian<float>, std::vector<double>, metric::Manhatten<double>> m6(e1, e2);
+    metric::MGC<float, metric::Euclidean<float>, std::vector<double>, metric::Manhatten<double>> m6(e1, e2);
     m6(std::vector<float> {}, std::vector<std::vector<double>> {});
 
     std::function<float(float, float)> f1 = [](float, float) ->float {return 0;};

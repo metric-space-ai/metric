@@ -365,9 +365,9 @@ double estimate(
 
 // updated version, for different metric
 // averaged entropy estimation: code COPIED from mgc.*pp with only mgc replaced with entropy, TODO refactor to avoid code dubbing
-template <typename recType, typename Metric>
+template <typename RecType, typename Metric>
 template <typename Container>
-double Entropy_simple<recType, Metric>::operator()(
+double Entropy_simple<RecType, Metric>::operator()(
         const Container& data
 ) const
 {
@@ -398,7 +398,7 @@ double Entropy_simple<recType, Metric>::operator()(
 
     if constexpr (!std::is_same<Metric, typename metric::Chebyshev<T>>::value) {
         double p = 1; // Manhatten and other metrics (TODO check if it is correct for them!)
-        if constexpr (std::is_same<Metric, typename metric::Euclidian<T>>::value) {
+        if constexpr (std::is_same<Metric, typename metric::Euclidean<T>>::value) {
             p = 2; // Euclidean
         } else if constexpr (std::is_same<Metric, typename metric::P_norm<T>>::value) {
             p = metric.p; // general Minkowsky
@@ -416,9 +416,9 @@ double Entropy_simple<recType, Metric>::operator()(
 
 
 // averaged entropy estimation: code COPIED from mgc.*pp with only mgc replaced with entropy, TODO refactor to avoid code dubbing
-template <typename recType, typename Metric>
+template <typename RecType, typename Metric>
 template <typename Container>
-double Entropy_simple<recType, Metric>::estimate(
+double Entropy_simple<RecType, Metric>::estimate(
         const Container & a,
         const size_t sampleSize,
         const double threshold,
@@ -439,9 +439,9 @@ double Entropy_simple<recType, Metric>::estimate(
 
 
 
-template <typename recType, typename Metric>
+template <typename RecType, typename Metric>
 template <typename Container>
-double Entropy<recType, Metric>::operator()(const Container& data) const
+double Entropy<RecType, Metric>::operator()(const Container& data) const
 {
     using T = type_traits::underlaying_type_t<Container>;
     using V = type_traits::index_value_type_t<Container>;
@@ -521,9 +521,9 @@ double Entropy<recType, Metric>::operator()(const Container& data) const
 
 
 // averaged entropy estimation: code COPIED from mgc.*pp with only mgc replaced with entropy, TODO refactor to avoid code dubbing
-template <typename recType, typename Metric>
+template <typename RecType, typename Metric>
 template <typename Container>
-double Entropy<recType, Metric>::estimate(
+double Entropy<RecType, Metric>::estimate(
         const Container & a,
         const size_t sampleSize,
         const double threshold,

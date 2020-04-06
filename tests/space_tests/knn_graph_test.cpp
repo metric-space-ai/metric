@@ -52,7 +52,7 @@ BOOST_AUTO_TEST_CASE(valid_params)
 	///	
 
 	// valid params
-    auto g_0 = metric::KNNGraph<std::vector<double>, metric::Euclidian<double>>(table, neighbors_num, 2.5 * neighbors_num);
+    auto g_0 = metric::KNNGraph<std::vector<double>, metric::Euclidean<double>>(table, neighbors_num, 2.5 * neighbors_num);
 
 	// nothing bad should be happened
     std::cout << std::endl;
@@ -104,7 +104,7 @@ BOOST_AUTO_TEST_CASE(negative_params)
 	///	
 
 	// negative params
-    auto g_1 = metric::KNNGraph<std::vector<double>, metric::Euclidian<double>>(table, -neighbors_num, -2.5 * neighbors_num);
+    auto g_1 = metric::KNNGraph<std::vector<double>, metric::Euclidean<double>>(table, -neighbors_num, -2.5 * neighbors_num);
 
 	// nothing bad should be happened
     std::cout << std::endl;
@@ -160,7 +160,7 @@ BOOST_AUTO_TEST_CASE(params_more_than_nodes_exists)
 	///
 
 	// params more than nodes exists
-    auto g_2 = metric::KNNGraph<std::vector<double>, metric::Euclidian<double>>(table, table.size() * 10, table.size() * 25);
+    auto g_2 = metric::KNNGraph<std::vector<double>, metric::Euclidean<double>>(table, table.size() * 10, table.size() * 25);
 
 	// nothing bad should be happened
     std::cout << std::endl;
@@ -207,7 +207,7 @@ BOOST_AUTO_TEST_CASE(empty_dataset)
 	///
 
 	// empty dataset
-	auto g_3 = metric::KNNGraph<std::vector<double>, metric::Euclidian<double>>(std::vector<std::vector<double>>{}, neighbors_num, 2.5 * neighbors_num);
+	auto g_3 = metric::KNNGraph<std::vector<double>, metric::Euclidean<double>>(std::vector<std::vector<double>>{}, neighbors_num, 2.5 * neighbors_num);
 
 	// nothing bad should be happened
     std::cout << std::endl;
@@ -254,7 +254,7 @@ BOOST_AUTO_TEST_CASE(dataset_and_query_with_different_dimensions)
 	///
 
 	// dataset and query with different dimensions
-	auto g_4 = metric::KNNGraph<std::vector<double>, metric::Euclidian<double>>(std::vector<std::vector<double>>{}, neighbors_num, 2.5 * neighbors_num);
+	auto g_4 = metric::KNNGraph<std::vector<double>, metric::Euclidean<double>>(std::vector<std::vector<double>>{}, neighbors_num, 2.5 * neighbors_num);
 
 	// nothing bad should be happened
     std::cout << std::endl;
@@ -301,7 +301,7 @@ BOOST_AUTO_TEST_CASE(copy_constructor)
 	///
 	
 	//	
-    auto g_0 = metric::KNNGraph<std::vector<double>, metric::Euclidian<double>>(table, neighbors_num, 2.5 * neighbors_num);
+    auto g_0 = metric::KNNGraph<std::vector<double>, metric::Euclidean<double>>(table, neighbors_num, 2.5 * neighbors_num);
 	auto found_0 = g_0.gnnn_search(query, search_neighbors_num);
 
     auto g_5 = metric::KNNGraph(g_0);
@@ -318,7 +318,7 @@ BOOST_AUTO_TEST_CASE(copy_constructor)
 
 BOOST_AUTO_TEST_CASE(knngraph_insert) {
     std::vector<double> data = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
-    auto graph = metric::KNNGraph<double, metric::Euclidian<double>>(data, 3, 8);
+    auto graph = metric::KNNGraph<double, metric::Euclidean<double>>(data, 3, 8);
     auto nn = graph.gnnn_search(1.1, 1);
     BOOST_TEST(nn.size() == 1);
     auto nn1 = graph.gnnn_search(1.8, 2);

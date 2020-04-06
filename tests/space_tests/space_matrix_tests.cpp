@@ -22,22 +22,22 @@ std::basic_ostream<char> &operator<<(std::basic_ostream<char> &ostr, const std::
 
 BOOST_AUTO_TEST_CASE(matrix_constructor) {
     // create empty matrix
-    metric::Matrix<std::vector<float>, metric::Euclidian<float>> m;
+    metric::Matrix<std::vector<float>, metric::Euclidean<float>> m;
     BOOST_TEST(m.size() == 0);
 
     // create matrix with initial values
-    metric::Matrix<std::vector<float>, metric::Euclidian<float>> m1(std::vector<float>{1});
+    metric::Matrix<std::vector<float>, metric::Euclidean<float>> m1(std::vector<float>{1});
     //    m1.print();
     BOOST_TEST(m1.size() == 1);
 
     std::vector<std::vector<float>> data = {{1}, {2}, {3}};
-    metric::Matrix<std::vector<float>, metric::Euclidian<float>> m2(data);
+    metric::Matrix<std::vector<float>, metric::Euclidean<float>> m2(data);
     //    m2.print();
     BOOST_TEST(m2.size() == 3);
 }
 
 BOOST_AUTO_TEST_CASE(matrix_insert) {
-    metric::Matrix<float, metric::Euclidian<float>> m;
+    metric::Matrix<float, metric::Euclidean<float>> m;
     BOOST_TEST(m.size() == 0);
     std::size_t id1 = m.insert(1.0);
     BOOST_TEST(id1 == 0);
@@ -56,7 +56,7 @@ BOOST_AUTO_TEST_CASE(matrix_insert) {
     BOOST_TEST(m.check_matrix());
 }
 BOOST_AUTO_TEST_CASE(matrix_insert_if) {
-    metric::Matrix<float, metric::Euclidian<float>> m;
+    metric::Matrix<float, metric::Euclidean<float>> m;
     BOOST_TEST(m.size() == 0);
     auto i1 = m.insert_if(1, 10);
     BOOST_TEST(m.size() == 1);
@@ -84,7 +84,7 @@ BOOST_AUTO_TEST_CASE(matrix_insert_if) {
 BOOST_AUTO_TEST_CASE(matrix_set) {
     std::vector<float> data(10);
     std::iota(data.begin(), data.end(), 0);
-    metric::Matrix<float, metric::Euclidian<float>> m(data);
+    metric::Matrix<float, metric::Euclidean<float>> m(data);
     BOOST_TEST(m.size() == 10);
     BOOST_TEST(m.check_matrix());
 
@@ -101,7 +101,7 @@ BOOST_AUTO_TEST_CASE(matrix_erase) {
     std::vector<float> data(10);
     std::iota(data.begin(), data.end(), 0);
 
-    metric::Matrix<float, metric::Euclidian<float>> m(data);
+    metric::Matrix<float, metric::Euclidean<float>> m(data);
 
     BOOST_TEST(m.check_matrix());
     BOOST_TEST(m.size() == 10);
@@ -125,7 +125,7 @@ BOOST_AUTO_TEST_CASE(matrix_erase) {
 }
 
 BOOST_AUTO_TEST_CASE(test_knn) {
-    metric::Matrix<double, metric::Euclidian<double>> m;
+    metric::Matrix<double, metric::Euclidean<double>> m;
     for(int i = 0; i < 10; i++) {
         m.insert(static_cast<double>(i));
     }
@@ -153,7 +153,7 @@ BOOST_AUTO_TEST_CASE(test_knn) {
 }
 
 BOOST_AUTO_TEST_CASE(test_rnn) {
-    metric::Matrix<double, metric::Euclidian<double>> m{};
+    metric::Matrix<double, metric::Euclidean<double>> m{};
     
     for (int i = 0; i < 10; i++) {
         m.insert(static_cast<double>(i));

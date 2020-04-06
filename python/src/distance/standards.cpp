@@ -9,7 +9,7 @@ namespace py = pybind11;
 
 template<typename Value, typename Container>
 void register_wrapper_euclidean(py::module& m) {
-    using Metric = metric::Euclidian<Value>;
+    using Metric = metric::Euclidean<Value>;
     auto p1 = &Metric::template operator()<Container>;
     Value (Metric::*p2)(const Value&, const Value&) const = &Metric::operator();
     py::class_<Metric>(m, "Euclidean")
@@ -42,7 +42,7 @@ void register_wrapper_pnorm(py::module& m) {
 
 template<typename Value, typename Container>
 void register_wrapper_euclidean_thresholded(py::module& m) {
-    using Metric = metric::Euclidian_thresholded<Value>;
+    using Metric = metric::Euclidean_thresholded<Value>;
     py::class_<Metric>(m, "Euclidean_thresholded")
         .def(py::init<>())
         .def(py::init<Value, Value>(), py::arg("thres"), py::arg("factor"))

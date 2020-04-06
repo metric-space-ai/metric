@@ -148,7 +148,7 @@ int main()
 	int grid_h = 4;
 	
     using Vector = std::vector<double>;
-    using Metric = metric::Euclidian<double>;
+    using Metric = metric::Euclidean<double>;
     //using Metric = metric::SSIM<double, std::vector<double>>;
     using Graph = metric::Grid6; 
 	std::uniform_real_distribution<double> distr(0, 255);

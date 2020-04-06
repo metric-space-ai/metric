@@ -8,14 +8,14 @@
 
 // define list of metric and their names
 using MetricTypes = boost::mpl::vector<
-    metric::Euclidian<double>
+    metric::Euclidean<double>
     , metric::Manhatten<double>
     //, metric::Chebyshev<double>
     , metric::P_norm<double> // TODO: constructor argument
 >;
 
 std::unordered_map<std::type_index, std::string> metricTypeNames = {
-    {std::type_index(typeid(metric::Euclidian<double>)), "Euclidean"},
+    {std::type_index(typeid(metric::Euclidean<double>)), "Euclidean"},
     {std::type_index(typeid(metric::Manhatten<double>)), "Manhatten"},
     {std::type_index(typeid(metric::Chebyshev<double>)), "Chebyshev"},
     {std::type_index(typeid(metric::P_norm<double>)), "Pnorm"}

@@ -26,7 +26,7 @@ namespace metric {
  * Having the vectors and ground distances we can compute EMD. It is a Kohonen distance.
  *
  */
-template <typename D, typename Sample, typename Graph = metric::Grid4, typename Metric = metric::Euclidian<D>, 
+template <typename D, typename Sample, typename Graph = metric::Grid4, typename Metric = metric::Euclidean<D>, 
 	typename Distribution = std::uniform_real_distribution<typename Sample::value_type>> // D is a distance return type
 struct kohonen_distance {
     using distance_return_type = D;
