@@ -43,4 +43,4 @@ jobs:
         pip install dist/*
     - name: Run tests
       run:
-        pytest tests/
+        pytest ./python/tests/
