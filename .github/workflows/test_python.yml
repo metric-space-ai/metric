@@ -43,7 +43,7 @@ jobs:
     - name: Build package wheel
       run: |
         cd ./python
-        python setup.py bdist_wheel
+        MAKE='make -j1' python setup.py bdist_wheel
         pip install dist/*
     - name: Run tests
       run:
