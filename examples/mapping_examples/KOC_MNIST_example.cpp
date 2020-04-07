@@ -341,8 +341,8 @@ int main(int argc, char *argv[])
 
 	using Record = std::vector<double>;
 
-	size_t best_w_grid_size = 4;
-	size_t best_h_grid_size = 4;
+	size_t best_w_grid_size = 20;
+	size_t best_h_grid_size = 20;
 
 	// if overrided from arguments
 
@@ -357,7 +357,7 @@ int main(int argc, char *argv[])
 	std::vector<Record> test_set;
 	std::vector<int> test_labels;
 
-	std::tie(dataset, labels) = readMnist("assets/mnist_train.csv", ',', 200);
+	std::tie(dataset, labels) = readMnist("assets/mnist_train.csv", ',', 1000);
 
 	//std::cout << std::endl;
 	//std::cout << "labels:" << std::endl;
