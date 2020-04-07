@@ -3,9 +3,13 @@ on:
   push:
     branches:
       - master
+    paths-ignore:
+      - 'python/**'
   pull_request:
     branches:
       - master
+    paths-ignore:
+      - 'python/**'
 
 jobs:
   deploy:
@@ -28,7 +32,7 @@ jobs:
         sudo apt-get install -y g++-9 g++-9-multilib
         echo "::set-env name=CC::gcc-9"
         echo "::set-env name=CXX::g++-9"
-    - name: Build tests
+    - name: Build tests and examples
       run: |
         export MAKE='make -j1'
         mkdir build
