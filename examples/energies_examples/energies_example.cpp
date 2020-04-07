@@ -29,6 +29,8 @@ Copyright (c) 2019 Panda Team
 #include "../../modules/mapping.hpp"
 #include "../../modules/utils/poor_mans_quantum.hpp"
 
+#include <algorithm>
+
 
 using json = nlohmann::json;
 
@@ -1039,8 +1041,8 @@ double iterateThroughDistances(int metric_type, int distribution_type, int i, st
 
 	if (metric_type == 0)
 	{
-		// Euclidian
-		metric::Euclidian<double> distance;
+		// Euclidean
+		metric::Euclidean<double> distance;
 		score = iterateThroughDistributions(distribution_type, i, speeds, distance, graph, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 	}
 	else if (metric_type == 1)
@@ -1057,8 +1059,8 @@ double iterateThroughDistances(int metric_type, int distribution_type, int i, st
 	}
 	else if (metric_type == 3)
 	{
-		// Euclidian_thresholded
-		metric::Euclidian_thresholded<double> distance;
+		// Euclidean_thresholded
+		metric::Euclidean_thresholded<double> distance;
 		score = iterateThroughDistributions(distribution_type, i, speeds, distance, graph, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 	}
 	else if (metric_type == 4)
@@ -1251,8 +1253,8 @@ iterateThroughDistancesBest(int w_grid_size, int h_grid_size, int metric_type, i
 
 	if (metric_type == 0)
 	{
-		// Euclidian
-		metric::Euclidian<double> distance;
+		// Euclidean
+		metric::Euclidean<double> distance;
 		return iterateThroughDistributionsBest(w_grid_size, h_grid_size, distribution_type, speeds, distance, graph, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 	}
 	else if (metric_type == 1)
@@ -1269,8 +1271,8 @@ iterateThroughDistancesBest(int w_grid_size, int h_grid_size, int metric_type, i
 	}
 	else if (metric_type == 3)
 	{
-		// Euclidian_thresholded
-		metric::Euclidian_thresholded<double> distance;
+		// Euclidean_thresholded
+		metric::Euclidean_thresholded<double> distance;
 		return iterateThroughDistributionsBest(w_grid_size, h_grid_size, distribution_type, speeds, distance, graph, iterations, s_learn_rate, f_learn_rate, initial_neighbour_size, neigbour_range_decay, random_seed);
 	}
 	else if (metric_type == 4)
@@ -1527,7 +1529,7 @@ int main(int argc, char *argv[])
 
 	//
 	std::vector<std::string> graph_type_names = {"Grid4", "Grid6", "Grid8", "Paley", "LPS", "Margulis"};
-	std::vector<std::string> metric_type_names = {"Euclidian", "Manhatten", "P_norm", "Euclidian_thresholded", "Cosine", "Chebyshev"};
+	std::vector<std::string> metric_type_names = {"Euclidean", "Manhatten", "P_norm", "Euclidean_thresholded", "Cosine", "Chebyshev"};
 	std::vector<std::string> distribution_type_names = {"uniform_real_distribution", "normal_distribution", "exponential_distribution"};
 
 	////

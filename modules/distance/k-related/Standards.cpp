@@ -9,17 +9,19 @@ Copyright (c) 2018 Michael Welsch
 #define _METRIC_DISTANCE_K_RELATED_STANDARDS_CPP
 
 #include "Standards.hpp"
+#include <algorithm>
 
 #include <cmath>
+#include <algorithm>
 
 namespace metric {
 
 template <typename V>
 template <typename Container>
-auto Euclidian<V>::operator()(const Container& a, const Container& b) const ->
+auto Euclidean<V>::operator()(const Container& a, const Container& b) const ->
     typename std::enable_if<!std::is_same<Container, V>::value, distance_type>::type
 {
-    static_assert(std::is_floating_point<value_type>::value, "T must be a float type");
+    //static_assert(std::is_floating_point<value_type>::value, "T must be a float type");
     distance_type sum = 0;
     for (auto it1 = a.begin(), it2 = b.begin(); it1 != a.end() && it2 != b.end(); ++it1, ++it2) {
         sum += (*it1 - *it2) * (*it1 - *it2);
@@ -28,7 +30,7 @@ auto Euclidian<V>::operator()(const Container& a, const Container& b) const ->
 }
 
 template <typename V>
-auto Euclidian<V>::operator()(const V& a, const V& b) const -> distance_type
+auto Euclidean<V>::operator()(const V& a, const V& b) const -> distance_type
 {
     static_assert(std::is_floating_point<value_type>::value, "T must be a float type");
     distance_type sum = 0;
@@ -38,14 +40,14 @@ auto Euclidian<V>::operator()(const V& a, const V& b) const -> distance_type
 
 template <typename V>
 template <typename Container>
-auto Euclidian_thresholded<V>::operator()(const Container& a, const Container& b) const -> distance_type
+auto Euclidean_thresholded<V>::operator()(const Container& a, const Container& b) const -> distance_type
 {
     static_assert(std::is_floating_point<value_type>::value, "T must be a float type");
     distance_type sum = 0;
     for (auto it1 = a.begin(), it2 = b.begin(); it1 != a.end() || it2 != b.end(); ++it1, ++it2) {
         sum += (*it1 - *it2) * (*it1 - *it2);
     }
-    return std::min(thres, value_type(factor * sqrt(sum)));
+    return std::min(thres, value_type(factor * std::sqrt(sum)));
 }
 
 template <typename V>
