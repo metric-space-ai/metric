@@ -411,7 +411,7 @@ void KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::erase(std::si
 }
 
 template <typename Sample, typename Distance, typename WeightType, bool isDense, bool isSymmetric>
-std::size_t KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::nn(const Sample & p) const {
+std::size_t KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::nn(const Sample & p) {
     auto n = gnnn_search(p, 1);
     return n[0];
 }
