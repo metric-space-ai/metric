@@ -184,6 +184,48 @@ std::tuple<std::vector<std::vector<double>>, std::vector<int>> readCsvData(std::
 	return { rows, labels };
 }
 
+std::tuple<std::vector<std::vector<double>>, std::vector<int>> readMnist(std::string filename, char delimeter, int max_rows)
+{
+	std::fstream fin;
+
+	fin.open(filename, std::ios::in);
+	
+	std::vector<double> row;
+	std::string line, word, w;
+
+	std::vector<std::vector<double>> rows;
+	std::vector<int> labels;
+
+	// omit header
+	getline(fin, line);
+
+	int i = 0;
+	while (getline(fin, line))
+	{
+		i++;
+		std::stringstream s(line);
+
+		// get label
+		getline(s, word, delimeter);
+		labels.push_back(std::stoi(word));
+
+		row.clear();
+		while (getline(s, word, delimeter))
+		{			
+			row.push_back(std::stod(word));
+		}
+
+		rows.push_back(row);
+
+		if (i >= max_rows)
+		{
+			break;
+		}
+	}
+
+	return { rows, labels };
+}
+
 std::tuple<std::vector<std::string>, std::vector<std::vector<double>>> readCsvData2(std::string filename, char delimeter)
 {
 	std::fstream fin;
@@ -256,9 +298,10 @@ std::vector<double> generate_image(size_t size, size_t min, size_t max)
 	return result;
 }
 
-std::vector<double> noise_image(std::vector<double> image, int min, int max)
+template <typename T>
+std::vector<T> noise_image(std::vector<T> image, int min, int max)
 {	
-	std::vector<double> result;
+	std::vector<T> result;
 		
 	auto random_seed = std::chrono::system_clock::now().time_since_epoch().count();
 	std::default_random_engine random_generator(random_seed);	
@@ -275,6 +318,20 @@ std::vector<double> noise_image(std::vector<double> image, int min, int max)
 	return image;
 }
 
+template <class ContainerType>
+void write_csv(ContainerType data, std::string filename, std::string sep=",")  // container of containers expected, TODO add check
+{
+    std::ofstream outputFile;
+    outputFile.open(filename);
+        for (auto i = 0; i < data.size(); ++i) {
+            for (auto j = 0; j < data[i].size(); j++) {
+                outputFile << std::to_string(static_cast<int>(data[i][j])) << sep;
+            }
+            outputFile << std::endl;
+        }
+        outputFile.close();
+}
+
 ///
 
 int main(int argc, char *argv[])
@@ -283,29 +340,29 @@ int main(int argc, char *argv[])
 	std::cout << std::endl;
 
 	using Record = std::vector<double>;
-				
-	size_t best_w_grid_size = 4;
-	size_t best_h_grid_size = 3;
+
+	size_t best_w_grid_size = 10;
+	size_t best_h_grid_size = 10;
 
 	// if overrided from arguments
-	
+
 	if (argc > 3)
 	{
 		best_w_grid_size = std::stod(argv[2]);
 		best_h_grid_size = std::stod(argv[3]);
 	}
-	
+
 	std::vector<Record> dataset;
 	std::vector<int> labels;
 	std::vector<Record> test_set;
 	std::vector<int> test_labels;
-	
-	std::tie(dataset, labels) = readCsvData("assets/mnist100.csv", ',');
-	
-	std::cout << std::endl;
-	std::cout << "labels:" << std::endl;
-	vector_print(labels);
-	   
+
+	std::tie(dataset, labels) = readMnist("assets/mnist_train.csv", ',', 1000);
+
+	//std::cout << std::endl;
+	//std::cout << "labels:" << std::endl;
+	//vector_print(labels);
+
 	std::tie(test_set, test_labels) = readCsvData("assets/MNIST_anomalies.csv", ',');
 	test_set.push_back(dataset[0]);
 	test_set.push_back(dataset[1]);
@@ -327,22 +384,33 @@ int main(int argc, char *argv[])
 	// extra deviation of the clusters from original in the KOC
 	double sigma = 1.75;
 
-	metric::KOC_factory<Record, metric::Grid4, metric::EMD<double>> simple_koc_factory(best_w_grid_size, best_h_grid_size, sigma, 0.8, 0.0, 200, 0, 255, 4, 2.0, random_seed);    
-	auto simple_koc = simple_koc_factory(dataset, num_clusters); 
+	auto cost_mat = metric::EMD_details::ground_distance_matrix_of_2dgrid<double>(28, 28);
+    auto maxCost = metric::EMD_details::max_in_distance_matrix(cost_mat);
+    metric::EMD<double> distance(cost_mat, maxCost);
+	auto distribution = std::uniform_real_distribution<double>(0, 255);
+	auto graph = metric::Grid4(best_w_grid_size, best_h_grid_size);
 	
+	metric::KOC_details::KOC<
+		Record, 
+		metric::Grid4, 
+		metric::EMD<double>,
+		std::uniform_real_distribution<double>
+	> 
+	simple_koc(graph, distance, sigma, 0.8, 0.0, 200, distribution, 4, 2.0, random_seed); 
+	simple_koc.train(dataset, num_clusters);
 	
-	std::cout << std::endl;
-	std::cout << "train dataset:" << std::endl;
+	//std::cout << std::endl;
+	//std::cout << "train dataset:" << std::endl;
 
-	auto anomalies = simple_koc.check_if_anomaly(dataset);	
-	std::cout << std::endl;
-	std::cout << "anomalies:" << std::endl;
-	vector_print(anomalies);
-	
+	//auto anomalies = simple_koc.check_if_anomaly(dataset);	
+	//std::cout << std::endl;
+	//std::cout << "anomalies:" << std::endl;
+	//vector_print(anomalies);
+	//
 	auto assignments = simple_koc.assign_to_clusters(dataset);	
-	std::cout << std::endl;
-	std::cout << "assignments:" << std::endl;
-	vector_print(assignments);
+	//std::cout << std::endl;
+	//std::cout << "assignments:" << std::endl;
+	//vector_print(assignments);
 
 
 	// accuracy
@@ -380,19 +448,19 @@ int main(int argc, char *argv[])
 
 	// test dataset	
 	
-	std::cout << std::endl;
-	std::cout << std::endl;
-	std::cout << "test dataset:" << std::endl;
+	//std::cout << std::endl;
+	//std::cout << std::endl;
+	//std::cout << "test dataset:" << std::endl;
 
-	anomalies = simple_koc.check_if_anomaly(test_set);	
-	std::cout << std::endl;
-	std::cout << "anomalies:" << std::endl;
-	vector_print(anomalies);
-	
-	assignments = simple_koc.assign_to_clusters(test_set);	
-	std::cout << std::endl;
-	std::cout << "assignments:" << std::endl;
-	vector_print(assignments);
+	//anomalies = simple_koc.check_if_anomaly(test_set);	
+	//std::cout << std::endl;
+	//std::cout << "anomalies:" << std::endl;
+	//vector_print(anomalies);
+	//
+	//assignments = simple_koc.assign_to_clusters(test_set);	
+	//std::cout << std::endl;
+	//std::cout << "assignments:" << std::endl;
+	//vector_print(assignments);
 
 	///
 	//

@@ -235,17 +235,17 @@ void SOM<RecType, Graph, Metric, Distribution>::subsampled_train_(const std::vec
 
 					const size_t neighbour_index = neighbours[deep][i];
 
-					T remoteness_factor = 1;
+					double remoteness_factor = 1;
 					// if no more neighbours are affected, the remoteness_factor returns to 1!
 					if (neighbours_num != 0) {
 
-						const T sigma = T(neighborhood_size / neigbour_range_decay);
-						remoteness_factor = std::exp(T(deep * deep) / T(-2 * sigma * sigma));
+						const double sigma = neighborhood_size / neigbour_range_decay;
+						remoteness_factor = std::exp((deep * deep) / (-2 * sigma * sigma));
 					}
 
 					// correct coordinates in the input_dimensions space (in other words: weights) depends from the error
 					for (size_t k = 0; k < input_dimensions; ++k) {
-						const T error = samples[samples_idx][k] - weights[neighbour_index][k];
+						const double error = samples[samples_idx][k] - weights[neighbour_index][k];
 						weights[neighbour_index][k] += T(error * curr_learn_rate * remoteness_factor);
 					}
 				}

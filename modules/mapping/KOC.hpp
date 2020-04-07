@@ -61,6 +61,7 @@ namespace metric {
 				 */
 			KOC(Graph graph, Metric metric, double anomaly_sigma = 1.0, double start_learn_rate = 0.8, double finish_learn_rate = 0.0, size_t iterations = 20, Distribution distribution = Distribution(-1, 1))
 				: som_(graph, metric::Euclidean<double>(), start_learn_rate, finish_learn_rate, iterations, distribution),
+				metric_(metric),
 				anomaly_sigma_(anomaly_sigma),
 				iterations_(iterations),
 				random_seed_(std::chrono::system_clock::now().time_since_epoch().count()) {};
@@ -82,6 +83,7 @@ namespace metric {
 			KOC(Graph graph, Metric metric, double anomaly_sigma, double start_learn_rate, double finish_learn_rate, size_t iterations,
 				Distribution distribution, double neighborhood_start_size, double neigbour_range_decay, long long random_seed)
 				: som_(graph, metric::Euclidean<double>(), start_learn_rate, finish_learn_rate, iterations, distribution, neighborhood_start_size, neigbour_range_decay, random_seed),
+				metric_(metric),
 				anomaly_sigma_(anomaly_sigma),
 				iterations_(iterations),
 				random_seed_(random_seed) {};
@@ -149,7 +151,8 @@ namespace metric {
 			std::vector<int> clusters_counts;	
 
 			std::vector<T> nodes_std_deviations;
-
+			
+			Metric metric_;
 			SOM<RecType, Graph, metric::Euclidean<double>, Distribution> som_;
 
 			/**
