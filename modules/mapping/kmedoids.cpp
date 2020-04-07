@@ -108,19 +108,25 @@ namespace kmedoids_details {
             int mi = seeds[i];  // object id of medoid i
             T dhj = DM(h, j);  // distance between object h and object j
 
+			std::cout << "cost1" << std::endl;
             int mj1 = seeds[assignments[j]];  // object id of j's nearest medoid
             T dj1 = DM(mj1, j);  // distance to j's nearest medoid
+			std::cout << "cost2" << std::endl;
 
             // check if D bt/w medoid i and j is same as j's current nearest medoid.
             if (DM(mi, j) == dj1) {
+				std::cout << "cost3" << std::endl;
                 T dj2 = std::numeric_limits<T>::max();
                 if (seeds.size() > 1) {  // look at 2nd nearest if there's more than one medoid.
+					std::cout << "cost4" << std::endl;
                     int mj2 = seeds[sec_nearest[j]];  // object id of j's 2nd-nearest medoid
                     dj2 = DM(mj2, j);  // D to j's 2nd-nearest medoid
+					std::cout << "cost5" << std::endl;
                 }
                 total += std::min(dj2, dhj) - dj1;
 
             } else if (dhj < dj1) {
+				std::cout << "cost3" << std::endl;
                 total += dhj - dj1;
             }
         }
