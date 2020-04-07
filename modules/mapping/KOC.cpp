@@ -180,7 +180,7 @@ namespace metric {
 			{
 				// clustering on the reduced data
 				
-				metric::Matrix<RecType, Metric> matrix(nodes_data);
+				metric::Matrix<RecType, Metric> matrix(nodes_data, metric_);
 				auto[assignments, seeds, counts] = metric::kmedoids(matrix, num_clusters);
 
 				std::vector<int>::iterator result = std::min_element(counts.begin(), counts.end());
