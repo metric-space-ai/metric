@@ -24,7 +24,7 @@ def find_version(*file_paths):
 setuptools.setup(
     name='metric-py',
     version=find_version('pkg', 'metric', '__init__.py'),
-    ext_modules=[CMakeExtension('all', output_dir='metric/_impl')],
+    ext_modules=[CMakeExtension('all', output_dir=path.join('metric', '_impl'))],
     cmdclass={'build_ext': CMakeBuildExt},
     author="Jura Gresko",
     author_email="juragresko@gmail.com",
