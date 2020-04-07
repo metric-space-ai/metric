@@ -341,8 +341,8 @@ int main(int argc, char *argv[])
 
 	using Record = std::vector<double>;
 
-	size_t best_w_grid_size = 10;
-	size_t best_h_grid_size = 10;
+	size_t best_w_grid_size = 4;
+	size_t best_h_grid_size = 4;
 
 	// if overrided from arguments
 
