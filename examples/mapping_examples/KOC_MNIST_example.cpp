@@ -357,7 +357,7 @@ int main(int argc, char *argv[])
 	std::vector<Record> test_set;
 	std::vector<int> test_labels;
 
-	std::tie(dataset, labels) = readMnist("assets/mnist_train.csv", ',', 1000);
+	std::tie(dataset, labels) = readMnist("assets/mnist_train.csv", ',', 100);
 
 	//std::cout << std::endl;
 	//std::cout << "labels:" << std::endl;
