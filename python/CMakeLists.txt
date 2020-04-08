@@ -1,13 +1,29 @@
 cmake_minimum_required(VERSION 3.10)
-set(CMAKE_VERBOSE_MAKEFILE ON)
 
-#set(CMAKE_BUILD_TYPE Debug)
+if (POLICY CMP0025)
+    cmake_policy(SET CMP0025 NEW)
+endif ()
+if (POLICY CMP0074)
+    cmake_policy(SET CMP0074 NEW)
+endif()
 
-#set(CMAKE_CXX_FLAGS "-Wall")
-#set(CMAKE_CXX_FLAGS_DEBUG "-g")
-#set(CMAKE_CXX_FLAGS_RELEASE "-O3")
+# TODO
+if(CMAKE_SYSTEM_NAME MATCHES Windows)
+    if(CMAKE_SYSTEM_PROCESSOR MATCHES ".*64$")
+        message("Build architecture: x64")
+        set(CMAKE_GENERATOR_PLATFORM x64)
+    else()
+        message("Build architecture: x86")
+        set(CMAKE_GENERATOR_PLATFORM Win32)
+    endif()
+endif()
 
-set(PYBIND11_CPP_STANDARD -std=c++1z)
+# TODO: check compiler, not OS
+if (WIN32)
+    set(PYBIND11_CPP_STANDARD /std:c++latest) # Enables some MSVC C++17 features
+else ()
+    set(PYBIND11_CPP_STANDARD -std=c++1z)
+endif ()
 
 project(metric_py DESCRIPTION "metric python binding")
 
@@ -22,7 +38,7 @@ find_package(Python3 COMPONENTS Interpreter Development)
 
 find_package(Boost REQUIRED)
 
-find_package(LAPACK REQUIRED)
+find_package(BLAS)
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 else ()
@@ -36,7 +52,7 @@ target_include_directories(base_python_module INTERFACE
     ${METRIC_SOURCE_PATH}
 )
 target_link_libraries(base_python_module INTERFACE
-    ${LAPACK_LIBRARIES}
+    ${BLAS_LIBRARIES}
 )
 
 add_subdirectory(pybind11)

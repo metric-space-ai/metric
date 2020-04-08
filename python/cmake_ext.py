@@ -52,12 +52,19 @@ class CMakeBuildExt(build_ext):
             env = os.environ.copy()
             if not os.path.exists(self.build_temp):
                 os.makedirs(self.build_temp)
-            subprocess.check_call(cmake_args,
+
+            subprocess.check_call(' '.join(cmake_args),
                                   cwd=self.build_temp,
                                   env=env)
-            subprocess.check_call(['make', '-j', ext.name],
-                                  cwd=self.build_temp,
-                                  env=env)
+            if sys.platform == 'win32':
+                subprocess.check_call(' '.join([CMAKE_EXE, '--build', '.']),
+                                      cwd=self.build_temp,
+                                      env=env)
+
+            else:
+                subprocess.check_call(['make', '-j', ext.name],
+                                      cwd=self.build_temp,
+                                      env=env)
         else:
             super().build_extension(ext)
 
