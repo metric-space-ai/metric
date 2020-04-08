@@ -42,7 +42,7 @@ find_package(BLAS)
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 else ()
-find_package(PkgConfig REQUIRED)
+    find_package(PkgConfig REQUIRED)
 endif ()
 
 add_library(base_python_module INTERFACE)
@@ -51,6 +51,12 @@ target_include_directories(base_python_module INTERFACE
     ${SOURCE_PATH}
     ${METRIC_SOURCE_PATH}
 )
+if (NOT ${BLAS_LIBRARIES})
+    SET(BLAS_LIBRARIES
+        C:\\OpenBLAS-v0.2.15-Win64-int32\\lib\\libopenblas.dll.a
+    )
+endif ()
+
 target_link_libraries(base_python_module INTERFACE
     ${BLAS_LIBRARIES}
 )
