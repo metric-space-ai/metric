@@ -56,5 +56,11 @@ target_link_libraries(base_python_module INTERFACE
     ${BLAS_LIBRARIES}
 )
 
+if (MSVC)
+    target_compile_options(base_python_module INTERFACE
+        /wd"4267" /wd"4305" /wd"4244" /wd"4996"
+    )
+endif ()
+
 add_subdirectory(pybind11)
 add_subdirectory(src)
