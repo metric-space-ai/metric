@@ -27,6 +27,7 @@ endif ()
 
 project(metric_py DESCRIPTION "metric python binding")
 
+# we need this workaround as wheel copies package directory to temp folder and metric/modules is not one level up anymore
 SET(SOURCE_PATH ${CMAKE_SOURCE_DIR}/src)
 if(NOT DEFINED ENV{METRIC_SOURCE_PATH})
     SET(METRIC_SOURCE_PATH ${CMAKE_SOURCE_DIR}/..)
@@ -35,10 +36,8 @@ else ()
 endif()
 
 find_package(Python3 COMPONENTS Interpreter Development)
-
 find_package(Boost REQUIRED)
-
-find_package(BLAS)
+find_package(BLAS REQUIRED)
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 else ()
