@@ -55,8 +55,7 @@ class CMakeBuildExt(build_ext):
             if not os.path.exists(self.build_temp):
                 os.makedirs(self.build_temp)
 
-            print(' '.join(cmake_args))
-            subprocess.check_call(' '.join(cmake_args),
+            subprocess.check_call(cmake_args,
                                   cwd=self.build_temp,
                                   env=env)
             if sys.platform == 'win32':
