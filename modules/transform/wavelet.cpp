@@ -794,8 +794,8 @@ Container upsconv(Container const& x, Container const& f, int len)
 {
 
     //initialize std::vector dyay
-    typename Container::value_type tmp[x.size() * 2];
-    Container dyay(tmp, tmp + x.size() * 2);
+    //typename Container::value_type tmp[x.size() * 2];
+    Container dyay(x.size() * 2);
 
     for (int i = 0, j = 0; i < x.size(); ++i, j = j + 2) {
         dyay[j] = x[i];
