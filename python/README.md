@@ -19,14 +19,16 @@ python -m pip install metric-py -i https://test.pypi.org/simple/
 ```
 # Build from the source
 ```
-git clone https://github.com/panda-official/metric
+git clone --recurse-submodules https://github.com/panda-official/metric
 ```
 Download and extract [Boost](https://www.boost.org/users/download/) (1.67+).
 For Windows there are pre-build binaries available.
-## Install requirements
+## Install Prerequisites
 ### Ubuntu
 ```
-sudo apt-get install python-numpy
+sudo apt-get install cmake
+sudo apt-get install libboost-all-dev
+sudo apt-get install libopenblas-dev
 ```
 ### Windows
 Install [Miniconda](https://docs.conda.io/en/latest/miniconda.html).
