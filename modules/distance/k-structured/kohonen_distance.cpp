@@ -82,7 +82,7 @@ void kohonen_distance<D, Sample, Graph, Metric, Distribution>::calculate_distanc
 	std::vector<int> predecessor;
 	for (auto i = 0; i < nodes.size(); i++)
 	{
-		std:tie(distances, predecessor) = calculate_distance(blaze_matrix, i, matrix.rows());
+		std::tie(distances, predecessor) = calculate_distance(blaze_matrix, i, matrix.rows());
 		distance_matrix_.push_back(distances);
 		predecessors_.push_back(predecessor);
 	}
