@@ -59,9 +59,9 @@ void wrap_metric_KOC(py::module& m) {
         py::arg("start_learn_rate") = 0.8,
         py::arg("finish_learn_rate") = 0.0,
         py::arg("iterations") = 20,
-        py::arg("nbh_start_size"),
+        py::arg("nbh_start_size") = (double *) nullptr,
         py::arg("nbh_range_decay") = 2.0,
-        py::arg("random_seed")
+        py::arg("random_seed") = (long long *) nullptr
     );
 
     // KOC implementation
