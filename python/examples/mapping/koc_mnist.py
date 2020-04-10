@@ -35,7 +35,10 @@ def main():
     args = parser.parse_args()
 
     print('KOC for MNIST example have started')
-    dataset = numpy.loadtxt(path.join(args.assets, 'mnist100.csv'), max_rows=1000, skiprows=1)
+    dataset = numpy.loadtxt(path.join(args.assets, 'mnist100.csv'),
+                            max_rows=1000,
+                            skiprows=1,
+                            delimiter=',')
 
     num_clusters = 10
     # random seed for repeatable results
@@ -46,22 +49,25 @@ def main():
     cost_mat = EMD.ground_distance_matrix_of_2dgrid(cols=28, rows=28)
     max_cost = EMD.max_in_distance_matrix(cost_mat)
     distance = EMD(cost_mat, max_cost)
-    simple_koc = KOC(graph=Grid4(args.best_width, args.best_height),
+    simple_koc = KOC(graph=Grid4(args.width, args.height),
                      metric=distance,
+                     distribution=distribution.Uniform(0, 255),
                      anomality_sigma=sigma,
                      start_learn_rate=0.8,
                      finish_learn_rate=0.0,
                      iterations=200,
-                     distribution=distribution.Uniform(0, 255),
                      nbh_start_size=4,
                      nbh_range_decay=2.0,
                      random_seed=random_seed)
     simple_koc.train(dataset, num_clusters)
 
     assignments = simple_koc.assign_to_clusters(dataset)
+    print('assignments:', assignments)
 
+
+"""
     # accuracy
-"""    std::vector<std::vector<int>> clusters(11)
+    std::vector<std::vector<int>> clusters(11)
     for (auto i = 0; i < assignments.size(); ++i):
         clusters[assignments[i]].push_back(labels[i])
 
@@ -82,6 +88,5 @@ def main():
     print('num_matched: ', num_matched)
     print('accuracy: ', num_matched / assignments.size())
 """
-    # return 0
 
 sys.exit(main())
