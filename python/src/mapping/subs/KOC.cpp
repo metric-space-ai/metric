@@ -8,6 +8,7 @@
 #include <typeindex>
 #include <tuple>
 #include <random>
+#include <optional>
 
 namespace py = pybind11;
 
@@ -21,14 +22,11 @@ auto create_KOC(
     double start_learn_rate = 0.8,
     double finish_learn_rate = 0.0,
     size_t iterations = 20,
-    double* nbh_start_size_opt = nullptr,
+    std::optional<double> nbh_start_size = std::nullopt,
     double nbh_range_decay = 2.0,
-    long long* random_seed_opt = nullptr
+    std::optional<long long> random_seed = std::nullopt
 ) -> metric::KOC_details::KOC<recType, Graph, Metric, Distribution>
 {
-    const long long random_seed = random_seed_opt ? *random_seed_opt : std::chrono::system_clock::now().time_since_epoch().count();
-    const double nbh_start_size = nbh_start_size_opt ? *nbh_start_size_opt : std::sqrt(double(graph.getNodesNumber()));
-
     return metric::KOC_details::KOC<recType, Graph, Metric, Distribution>(
         graph,
         metric,
@@ -37,9 +35,9 @@ auto create_KOC(
         finish_learn_rate,
         iterations,
         distribution,
-        nbh_start_size,
+        nbh_start_size.value_or(std::sqrt(double(graph.getNodesNumber()))),
         nbh_range_decay,
-        random_seed
+        random_seed.value_or(std::chrono::system_clock::now().time_since_epoch().count())
     );
 }
 

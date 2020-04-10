@@ -25,7 +25,6 @@ def test_ok():
     ])
 
     koc = KOC(graph=Grid6(best_w_grid_size, best_h_grid_size),
-              metric=Euclidean(),
               anomaly_sigma=anomaly_threshold,
               start_learn_rate=0.5,
               finish_learn_rate=0.0,
