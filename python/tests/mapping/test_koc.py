@@ -1,5 +1,7 @@
 import numpy
-from metric.mapping import KOC_factory
+from metric.mapping import KOC
+from metric.utils import Grid6
+from metric.distance import Euclidean
 
 
 def test_ok():
@@ -22,13 +24,13 @@ def test_ok():
         [8, 0, 0],
     ])
 
-    koc_factory = KOC_factory(nodes_width=best_w_grid_size,
-                              nodes_height=best_h_grid_size,
-                              anomaly_sigma=anomaly_threshold,
-                              start_learn_rate=0.5,
-                              finish_learn_rate=0.0,
-                              iterations=100)
-    koc = koc_factory(dataset, 5)
+    koc = KOC(graph=Grid6(best_w_grid_size, best_h_grid_size),
+              metric=Euclidean(),
+              anomaly_sigma=anomaly_threshold,
+              start_learn_rate=0.5,
+              finish_learn_rate=0.0,
+              iterations=100)
+    koc.train(dataset, 5)
 
     anomaly1 = koc.check_if_anomaly(samples=dataset)
     anomaly2 = koc.check_if_anomaly(samples=dataset)

@@ -1,7 +1,6 @@
 import metric._impl.koc as impl
-from metric._common import cpp_implementation_router
+from metric._impl.distance import Euclidean
+from metric._common import factory_with_default
 
 
-@cpp_implementation_router(impl=impl, graph='Grid6', metric='Euclidean')
-def KOC_factory(*args, **kwargs):
-    pass
+KOC = factory_with_default(metric=Euclidean())(impl.KOC)
