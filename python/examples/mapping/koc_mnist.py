@@ -1,9 +1,21 @@
 import sys
 import argparse
 import numpy
+from os import path
 from metric.distance import EMD
 from metric.utils import distribution, Grid4
 from metric.mapping import KOC
+
+
+def get_assets_default_folder():
+    folder = path.join(path.dirname(__file__),
+                       '..',  # examples
+                       '..',  # python
+                       '..',  # metric
+                       'examples',
+                       'mapping_examples',
+                       'assets')
+    return path.abspath(folder)
 
 
 def generate_image(size: int, low: int, high: int):
@@ -17,12 +29,13 @@ def noise_image(image, low: int, high: int):
 
 def main():
     parser = argparse.ArgumentParser(description='KOC for MNIST example')
-    parser.add_argument('best_width', action='store_const', default=20, help='best width for grid')
-    parser.add_argument('best_height', action='store_const', default=20, help='best height for grid')
-    args = parser.parse_args(sys.argv)
+    parser.add_argument('--width', type=int, default=20, help='best width for grid')
+    parser.add_argument('--height', type=int, default=20, help='best height for grid')
+    parser.add_argument('--assets', default=get_assets_default_folder(), help='folder with assets')
+    args = parser.parse_args()
 
     print('KOC for MNIST example have started')
-    dataset = numpy.loadtxt('assets/mnist100.csv', max_rows=1000)
+    dataset = numpy.loadtxt(path.join(args.assets, 'mnist100.csv'), max_rows=1000, skiprows=1)
 
     num_clusters = 10
     # random seed for repeatable results
@@ -70,3 +83,5 @@ def main():
     print('accuracy: ', num_matched / assignments.size())
 """
     # return 0
+
+sys.exit(main())
