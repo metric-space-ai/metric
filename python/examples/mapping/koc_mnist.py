@@ -39,6 +39,7 @@ def main():
                             max_rows=1000,
                             skiprows=1,
                             delimiter=',')
+    dataset, labels = dataset[:, range(1, dataset.shape[1])],  dataset[:, 0]
 
     num_clusters = 10
     # random seed for repeatable results
@@ -51,8 +52,8 @@ def main():
     distance = EMD(cost_mat, max_cost)
     simple_koc = KOC(graph=Grid4(args.width, args.height),
                      metric=distance,
-                     distribution=distribution.Uniform(0, 255),
-                     anomality_sigma=sigma,
+                     #distribution=distribution.Uniform(0, 255),
+                     anomaly_sigma=sigma,
                      start_learn_rate=0.8,
                      finish_learn_rate=0.0,
                      iterations=200,

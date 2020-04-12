@@ -1,10 +1,15 @@
 #include "metric_types.hpp"
+#include "distance/custom.hpp"
 #include "modules/distance/k-random/VOI.hpp"    // FIXME: and this
 #include "modules/mapping/KOC.hpp"
+
+#include <boost/mpl/for_each.hpp>
+#include <boost/mpl/vector.hpp>
 
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <pybind11/numpy.h>
+#include <pybind11/functional.h>
 #include <typeindex>
 #include <tuple>
 #include <random>
@@ -63,7 +68,7 @@ void wrap_metric_KOC(py::module& m) {
     );
 
     // KOC implementation
-    const std::string className = "KOC_" + getGraphName<Graph>() + "_" + getMetricName<Metric>();
+    const std::string className = "KOC_" + metric::getTypeName<Graph>() + "_" + metric::getTypeName<Metric>();
     auto koc = py::class_<KOC>(m, className.c_str());
     std::vector<bool> (KOC::*check_if_anomaly1)(const std::vector<Record>&) = &KOC::check_if_anomaly;
     bool (KOC::*check_if_anomaly2)(const Record&) = &KOC::check_if_anomaly;
@@ -84,26 +89,36 @@ void wrap_metric_KOC(py::module& m) {
     koc.def("check_if_anomaly", check_if_anomaly2, (py::arg("sample")));
 }
 
-// TODO: make loop over metrics and graphs
+// TODO: make loop over metrics, graphs and distribution
 // TODO: add distribution
-// TODO: add python graphs, metrics and distribution
+// TODO: add python graphs and distribution
+
 void export_metric_KOC(py::module& m) {
     using Value = double;
-    using Container = std::vector<double>;
-    wrap_metric_KOC<Container, metric::Grid4, metric::Euclidean<Value>>(m);
-    wrap_metric_KOC<Container, metric::Grid4, metric::Manhatten<Value>>(m);
-    wrap_metric_KOC<Container, metric::Grid4, metric::Chebyshev<Value>>(m);
-    wrap_metric_KOC<Container, metric::Grid4, metric::P_norm<Value>>(m);
+    using Container = std::vector<Value>;
 
-    wrap_metric_KOC<Container, metric::Grid6, metric::Euclidean<Value>>(m);
-    wrap_metric_KOC<Container, metric::Grid6, metric::Manhatten<Value>>(m);
-    wrap_metric_KOC<Container, metric::Grid6, metric::Chebyshev<Value>>(m);
-    wrap_metric_KOC<Container, metric::Grid6, metric::P_norm<Value>>(m);
+    using MetricTypes = boost::mpl::vector<
+        metric::Euclidean<Value>
+        ,metric::Manhatten<Value>
+        ,metric::Chebyshev<Value>
+        ,metric::P_norm<Value>
+        ,metric::EMD<Value>
+//        ,metric::PythonMetric<Container>
+    >;
 
-    wrap_metric_KOC<Container, metric::Grid8, metric::Euclidean<Value>>(m);
-    wrap_metric_KOC<Container, metric::Grid8, metric::Manhatten<Value>>(m);
-    wrap_metric_KOC<Container, metric::Grid8, metric::Chebyshev<Value>>(m);
-    wrap_metric_KOC<Container, metric::Grid8, metric::P_norm<Value>>(m);
+    using GraphTypes = boost::mpl::vector<
+        metric::Grid4
+        ,metric::Grid6
+        ,metric::Grid8
+    >;
+
+    boost::mpl::for_each<MetricTypes, boost::mpl::make_identity<boost::mpl::_1>>([&](auto metr) {
+        using MetricType = typename decltype(metr)::type;
+        boost::mpl::for_each<GraphTypes, boost::mpl::make_identity<boost::mpl::_1>>([&](auto graph) {
+            using GraphType = typename decltype(graph)::type;
+            wrap_metric_KOC<Container, GraphType, MetricType>(m);
+        });
+    });
 }
 
 PYBIND11_MODULE(koc, m) {
