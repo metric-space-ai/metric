@@ -273,7 +273,22 @@ class Network
 			boa(jsonString, layersParameters);
         }
 
-        void load(const std::string filepath)
+		void save(std::stringstream& ss) const
+		{
+			std::string jsonString = toJson().dump();
+
+			std::map<size_t, std::vector<std::vector<Scalar>>> layersParameters;
+
+			for (auto i = 0; i < layers.size(); ++i) {
+				layersParameters[i] = layers[i]->getParameters();
+			}
+
+			cereal::BinaryOutputArchive boa(ss);
+
+			boa(jsonString, layersParameters);
+		}
+
+		void load(const std::string filepath)
         {
         	std::ifstream file(filepath);
         	cereal::BinaryInputArchive bia(file);
@@ -288,10 +303,26 @@ class Network
         		layers[e.first]->setParameters(e.second);
         	}
         }
-        ///
-        /// Add a hidden layer to the neural network
-        ///
-        /// \param layer A pointer to a Layer object, typically constructed from
+
+		void load(std::stringstream& ss)
+		{
+			cereal::BinaryInputArchive bia(ss);
+
+			std::string jsonString;
+			std::map<size_t, std::vector<std::vector<Scalar>>> layersParameters;
+			bia(jsonString, layersParameters);
+
+			constructFromJsonString(jsonString);
+
+			for (auto& e: layersParameters) {
+				layers[e.first]->setParameters(e.second);
+			}
+		}
+
+		///
+		/// Add a hidden layer to the neural network
+		///
+		/// \param layer A pointer to a Layer object, typically constructed from
         ///              layer classes such as FullyConnected and Convolutional.
         ///              **NOTE**: the pointer will be handled and freed by the
         ///              network object, so do not delete it manually.
