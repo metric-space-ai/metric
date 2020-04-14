@@ -18,9 +18,6 @@ Copyright (c) 2019 Panda Team
 #include <vector>
 #include <iterator>
 
-#include <boost/functional/hash.hpp>
-#include <boost/math/constants/constants.hpp>
-#include <boost/math/special_functions/digamma.hpp>
 
 
 namespace metric {
@@ -70,18 +67,39 @@ std::vector<std::vector<T>> combine(const C1& X, const C2& Y)
 }
 
 
-template <typename Container, typename T = type_traits::underlying_type_t<Container>>
-std::vector<T> unique(const Container& data)
+
+// neede only for unique without Boost
+template <typename ForwardIterator>
+ForwardIterator remove_duplicates( ForwardIterator first, ForwardIterator last )
 {
-    std::unordered_set<std::size_t> hashes;
-    std::vector<T> result;
-    result.reserve(data.size());
-    std::copy_if(data.begin(), data.end(), std::back_inserter(result),
-        [&hashes](const T& i) { return hashes.insert(boost::hash_value(i)).second; });
-    return result;
+    auto new_last = first;
+
+    for ( auto current = first; current != last; ++current )
+    {
+        if ( std::find( first, new_last, *current ) == new_last )
+        {
+            if ( new_last != current ) *new_last = *current;
+            ++new_last;
+        }
+    }
+
+    return new_last;
 }
 
+// unique without Boost, never called, TODO remove if not needed
+template <typename Container, typename T = metric::type_traits::underlying_type_t<Container>>
+std::vector<T> unique(const Container & in)
+{
+    auto out = in;
+    out.erase( remove_duplicates( out.begin(), out.end() ), out.end() );
+    return out;
+}
+
+
 }  // namespace
+
+
+
 
 template <typename Container, typename Metric>
 typename std::enable_if_t<!type_traits::is_container_of_integrals_v<Container>,
@@ -105,7 +123,8 @@ mutualInformation(const Container & Xc, const Container & Yc, int k, const Metri
 
     std::vector<std::vector<T>> XY = combine(X, Y);
     metric::Tree<std::vector<T>, Metric> tree(XY, -1, metric);
-    auto entropyEstimate = boost::math::digamma(k) + boost::math::digamma(N);
+    //auto entropyEstimate = boost::math::digamma(k) + boost::math::digamma(N);
+    auto entropyEstimate = entropy_details::digamma(k) + entropy_details::digamma(N);
     if (version == 2) {
         entropyEstimate -= 1 / static_cast<double>(k);
     }
@@ -134,7 +153,8 @@ mutualInformation(const Container & Xc, const Container & Yc, int k, const Metri
         } else {
             throw std::runtime_error("this version is not allowed");
         }
-        entropyEstimate -= 1.0 / N * boost::math::digamma(static_cast<double>(nx));
+        //entropyEstimate -= 1.0 / N * boost::math::digamma(static_cast<double>(nx));
+        entropyEstimate -= 1.0 / N * entropy_details::digamma(static_cast<double>(nx));
     }
     return entropyEstimate;
 }
