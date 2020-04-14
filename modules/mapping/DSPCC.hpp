@@ -29,9 +29,7 @@ namespace metric {
 template <typename RecType, typename Metric>
 class DSPCC {
 
-
 private:
-
 
     template<typename C, int = determine_container_type<C>::code>
     struct determine_RecTypeInner // type for internal processing, that can not be Blaze vector
@@ -45,14 +43,11 @@ private:
         using type = C;
     };
 
-
     template<typename C>
     struct determine_RecTypeInner<C, 2> // Blaze vector
     {
         using type = std::vector<typename C::ElementType>; // we use STL vector for internal computations
     };
-
-
 
 public:
 
@@ -69,13 +64,12 @@ public:
    * @param n_top_features_ - number of featores of top PCFA
    */
     DSPCC(
-            const std::vector<RecType> & TrainingDataset,
-            size_t n_features_ = 1,
-            size_t n_subbands_ = 4,
-            float time_freq_balance_ = 0.5,
-            size_t n_top_features_ = 16
-            );
-
+        const std::vector<RecType> & TrainingDataset,
+        size_t n_features_ = 1,
+        size_t n_subbands_ = 4,
+        float time_freq_balance_ = 0.5,
+        size_t n_top_features_ = 16
+    );
 
 
     /**
@@ -87,7 +81,6 @@ public:
     std::vector<std::vector<RecTypeInner>> time_freq_PCFA_encode(const std::vector<RecTypeInner> & Data);
 
 
-
     /**
    * @brief restores waveforms fromf features computed by time_freq_PCFA_encode
    *
@@ -95,7 +88,6 @@ public:
    * @return
    */
     std::vector<RecTypeInner> time_freq_PCFA_decode(const std::vector<std::vector<RecTypeInner>> & Codes);
-
 
 
     /**
@@ -116,29 +108,28 @@ public:
     std::vector<RecType> decode(const std::vector<RecType> & Codes);
 
 
-
-
     std::tuple<std::deque<std::vector<RecType>>, std::deque<std::vector<RecType>>>
     test_public_wrapper_encode(const std::vector<RecType> & Curves) { // TODO remove when tested
         return outer_encode(Curves);
     }
 
     std::vector<RecType>
-    test_public_wrapper_decode(const std::tuple<std::deque<std::vector<RecType>>, std::deque<std::vector<RecType>>> & TimeFreqMixedData) { // TODO remove when tested
+    test_public_wrapper_decode(
+        const std::tuple<std::deque<std::vector<RecType>>,
+        std::deque<std::vector<RecType>>> & TimeFreqMixedData
+    ) { // TODO remove when tested
       return outer_decode(TimeFreqMixedData);
     }
 
 
     /**
-   * @brief returns size of subband
-   *
-   * @return
-   */
+    * @brief returns size of subband
+    *
+    * @return
+    */
     size_t get_subband_size() {
         return resulting_subband_length;
     }
-
-
 
 private:
 
@@ -173,12 +164,12 @@ private:
      void
     >::type
     select_train(
-            const std::vector<RecType> & TrainingDataset,
-            size_t n_features_,
-            size_t n_subbands_,
-            float time_freq_balance_,
-            size_t n_top_features_
-            );
+        const std::vector<RecType> & TrainingDataset,
+        size_t n_features_,
+        size_t n_subbands_,
+        float time_freq_balance_,
+        size_t n_top_features_
+    );
 
     /**
    * @brief conditionally compiled function for selection between outer and inner RecType: Blaze case
@@ -196,12 +187,12 @@ private:
      void
     >::type
     select_train(
-            const std::vector<RecType> & TrainingDataset,
-            size_t n_features_,
-            size_t n_subbands_,
-            float time_freq_balance_,
-            size_t n_top_features_
-            );
+        const std::vector<RecType> & TrainingDataset,
+        size_t n_features_,
+        size_t n_subbands_,
+        float time_freq_balance_,
+        size_t n_top_features_
+    );
 
     /**
    * @brief training procedure called in constructor
@@ -214,12 +205,12 @@ private:
    * @return
    */
     void train(
-            const std::vector<DSPCC<RecType, Metric>::RecTypeInner> & TrainingDataset,
-            size_t n_features_,
-            size_t n_subbands_,
-            float time_freq_balance_,
-            size_t n_top_features_
-            );
+        const std::vector<DSPCC<RecType, Metric>::RecTypeInner> & TrainingDataset,
+        size_t n_features_,
+        size_t n_subbands_,
+        float time_freq_balance_,
+        size_t n_top_features_
+    );
 
     /**
    * @brief conditionally compiled function for selection betwween outer and inner RecType: STL case
@@ -276,7 +267,6 @@ private:
     select_decode(const std::vector<RecType> & Codes);
 
 
-
     /**
    * @brief get features for arbitrary waveforms by subbands
    *
@@ -284,8 +274,6 @@ private:
    * @return
    */
     std::vector<std::vector<RecTypeInner>> time_freq_PCFA_encode(const std::tuple<std::deque<std::vector<RecTypeInner>>, std::deque<std::vector<RecTypeInner>>> & PreEncoded);
-
-
 
 
     /**
@@ -297,7 +285,6 @@ private:
     std::vector<RecTypeInner> mixed_code_serialize(const std::vector<std::vector<RecTypeInner>> & PCFA_encoded);
 
 
-
     /**
    * @brief
    *
@@ -305,7 +292,6 @@ private:
    * @return
    */
     std::vector<std::vector<RecTypeInner>> mixed_code_deserialize(const std::vector<RecTypeInner> & Codes);
-
 
 
     /**
@@ -323,7 +309,6 @@ private:
    * @return - vector of decoded RecType curves
    */
     std::vector<RecTypeInner> outer_decode(const std::tuple<std::deque<std::vector<RecTypeInner>>, std::deque<std::vector<RecTypeInner>>> & TimeFreqMixedData);
-
 
 
     /**
@@ -368,13 +353,7 @@ private:
    */
     size_t original_size(size_t subband_size, size_t depth, size_t wavelet_length=10);
 
-
-
 };
-
-
-
-
 
 
 }  // namespace metric
