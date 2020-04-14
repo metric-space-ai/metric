@@ -11,40 +11,27 @@ namespace metric {
 
 template <class RecType, class Graph, class Metric, class Distribution>
 SOM<RecType, Graph, Metric, Distribution>::SOM(size_t nodesNumber, Metric metric)
-    : input_dimensions(0)
-    , metric(metric)
+    : metric(metric)
     , graph(nodesNumber)
-    , distribution(-1, 1)
 {
     valid = graph.isValid();
-
-	start_learn_rate = 0.8;
-	finish_learn_rate = 0.0;
-	iterations = 20;
 	
 	random_seed = std::chrono::system_clock::now().time_since_epoch().count();
 	
-	neighborhood_start_size = std::sqrt(double(nodesNumber));
+	neighborhood_start_size = std::sqrt(double(getNodesNumber()));
 	neighborhood_range_decay = 2.0;
 }
 
 template <class RecType, class Graph, class Metric, class Distribution>
 SOM<RecType, Graph, Metric, Distribution>::SOM(size_t nodesWidth, size_t nodesHeight, Metric metric)
-    : input_dimensions(0)
-    , metric(metric)
+    : metric(metric)
     , graph(nodesWidth, nodesHeight)
-    , distribution(-1, 1)
 {
     valid = graph.isValid();
 
-	start_learn_rate = 0.8;
-	finish_learn_rate = 0.0;
-	iterations = 20;
-
 	random_seed = std::chrono::system_clock::now().time_since_epoch().count();
-	
-    const size_t nodesNumber = getNodesNumber();
-	neighborhood_start_size = std::sqrt(double(nodesNumber));
+
+	neighborhood_start_size = std::sqrt(double(getNodesNumber()));
 	neighborhood_range_decay = 2.0;
 }
 
@@ -57,8 +44,7 @@ SOM<RecType, Graph, Metric, Distribution>::SOM(
     size_t iterations,
     Distribution distribution
 )
-    : input_dimensions(0)
-    , metric(metric)
+    : metric(metric)
     , graph(graph)
     , distribution(distribution)
     , start_learn_rate(start_learn_rate)
@@ -69,8 +55,7 @@ SOM<RecType, Graph, Metric, Distribution>::SOM(
 	
 	random_seed = std::chrono::system_clock::now().time_since_epoch().count();
 
-    const size_t nodesNumber = getNodesNumber();
-	neighborhood_start_size = std::sqrt(double(nodesNumber));
+	neighborhood_start_size = std::sqrt(double(getNodesNumber()));
 	neighborhood_range_decay = 2.0;
 }
 
@@ -86,8 +71,7 @@ SOM<RecType, Graph, Metric, Distribution>::SOM(
 	double neighborhood_range_decay,
 	long long random_seed
 )
-    : input_dimensions(0)
-    , metric(metric)
+    : metric(metric)
     , graph(graph)
     , distribution(distribution)
 	, start_learn_rate(start_learn_rate)
