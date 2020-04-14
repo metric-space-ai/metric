@@ -2,6 +2,7 @@
 add_executable(correlation_tests correlation_tests.cpp)
 target_include_directories(correlation_tests PRIVATE ${Boost_INCLUDE_DIRS})
 target_link_libraries(correlation_tests ${Boost_LIBRARIES})
+target_link_libraries(correlation_tests ${Boost_LIBRARIES} ${LAPACK_LIBRARIES})
 
 #FIXME: fix Connected_components_Test
 #add_executable(Connected_components_Test Connected_Components_Test.cpp)

@@ -70,12 +70,28 @@ public:
     T variance();
 
     /**
+     * @brief probability density function 
+     * 
+     * @param x 
+     * @return
+     */
+    T pdf(const T x);
+
+    /**
      * @brief cumulative distribution function 
      * 
      * @param x 
      * @return
      */
     T cdf(const T x);
+
+    /**
+     * @brief  inverse cumulative distribution function 
+     * 
+     * @param x 
+     * @return
+     */
+    T icdf(const T x);
 
     T _p1;
     T _p2;

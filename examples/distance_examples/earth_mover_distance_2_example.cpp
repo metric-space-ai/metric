@@ -168,16 +168,16 @@ int main()
 	/*** initialize the tree ***/
 	std::cout << "tree for 5 pictures been creating" << std::endl;
 	std::vector<std::vector<edm_Type>> grayJpegs5(grayJpegs.begin(), grayJpegs.begin() + 5);
-	metric::Tree<std::vector < edm_Type >, metric::Euclidian<double>> cTree5(grayJpegs5);
+	metric::Tree<std::vector < edm_Type >, metric::Euclidean<double>> cTree5(grayJpegs5);
 	std::cout << "tree for 5 pictures has created" << std::endl;
 	cTree5.print();
 
 	std::vector<std::vector<edm_Type>> grayJpegs10(grayJpegs.begin(), grayJpegs.begin() + 10);
-	metric::Tree<std::vector < edm_Type >, metric::Euclidian<double>> cTree10(grayJpegs10);
+	metric::Tree<std::vector < edm_Type >, metric::Euclidean<double>> cTree10(grayJpegs10);
 	std::cout << "tree for 10 pictures has created" << std::endl;
 	cTree10.print();
 
-	metric::Tree<std::vector < edm_Type >, metric::Euclidian<double>> cTree20(grayJpegs);
+	metric::Tree<std::vector < edm_Type >, metric::Euclidean<double>> cTree20(grayJpegs);
 	std::cout << "tree for 20 pictures has created" << std::endl;
 	cTree20.print();
 

@@ -9,6 +9,7 @@
 #define _METRIC_UTILS_GRAPH_GRAPH_CPP
 #include "../graph.hpp"
 #include <unordered_map>
+#include <algorithm>
 
 namespace metric {
 
@@ -44,7 +45,7 @@ template <typename WeightType, bool isDense, bool isSymmetric>
 Graph<WeightType, isDense, isSymmetric>::~Graph() = default;
 
 template <typename WeightType, bool isDense, bool isSymmetric>
-size_t Graph<WeightType, isDense, isSymmetric>::getNodesNumber()
+size_t Graph<WeightType, isDense, isSymmetric>::getNodesNumber() const
 {
     return nodesNumber;
 }
@@ -675,10 +676,13 @@ void RandomUniform<WType, isDense>::fill(MType& matrix, WType lower_bound, WType
         }
 }
 
-// Graph factory based on Blaze matrix of 4 allowed types
+// KNN-Graph
 
-template <class ValueType>
-Graph<ValueType, false, false> make_graph(blaze::CompressedMatrix<ValueType>&& matrix)
+
+    // Graph factory based on Blaze matrix of 4 allowed types
+
+    template <class ValueType>
+    Graph<ValueType, false, false> make_graph(blaze::CompressedMatrix<ValueType>&& matrix)
 {
     return Graph<ValueType, false, false>(std::move(matrix));
 }

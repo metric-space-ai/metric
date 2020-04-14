@@ -57,21 +57,21 @@ int main()
 	std::cout << '\n';
 
     // // PCFA works with arbitrary Blaze vector or STL container type that has appropriate interface, for example:
-    // using recType = blaze::DynamicVector<float, blaze::rowVector>;
-    // using recType = blaze::DynamicVector<float, blaze::columnVector>;
-    // using recType = std::vector<float>;
-    using recType = std::deque<double>;
+    // using RecType = blaze::DynamicVector<float, blaze::rowVector>;
+    // using RecType = blaze::DynamicVector<float, blaze::columnVector>;
+    // using RecType = std::vector<float>;
+    using RecType = std::deque<double>;
 
-    recType d0_blaze {0, 1, 2};
-    recType d1_blaze {0, 1, 3};
-    std::vector<recType> d_train = {d0_blaze, d1_blaze};
+    RecType d0_blaze {0, 1, 2};
+    RecType d1_blaze {0, 1, 3};
+    std::vector<RecType> d_train = {d0_blaze, d1_blaze};
 
-    auto pcfa = metric::PCFA<recType, void>(d_train, 2);
+    auto pcfa = metric::PCFA<RecType, void>(d_train, 2);
     // auto pcfa = metric::PCFA_factory(d_train, 2);  // we also can use factory for autodeduction
 
-    recType d2_blaze {0, 1, 4};
-    recType d3_blaze {0, 2, 2};
-    std::vector<recType> d_test = {d0_blaze, d2_blaze, d3_blaze};
+    RecType d2_blaze {0, 1, 4};
+    RecType d3_blaze {0, 2, 2};
+    std::vector<RecType> d_test = {d0_blaze, d2_blaze, d3_blaze};
 
     auto d_compressed = pcfa.encode(d_test);
 

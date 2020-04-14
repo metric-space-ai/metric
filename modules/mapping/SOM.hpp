@@ -16,6 +16,9 @@ International Journal of Modeling and Optimization, Vol. 6, No. 1, February 2016
 W. Natita, W. Wiboonsak, and S. Dusadee
 */
 
+#include "../distance/k-related/Standards.hpp"
+#include "../utils/graph.hpp"
+
 #include <assert.h>
 
 #include <iostream>
@@ -28,155 +31,170 @@ W. Natita, W. Wiboonsak, and S. Dusadee
 #include <cmath>
 #include <numeric>
 
-//#include "metric.tpp"
-//#include "../distance.hpp"
-#include "../distance/k-related/Standards.hpp"
-#include "../utils/graph.hpp"
-
 #ifndef M_PI
 #define M_PI (3.14159265358979323846)
 #endif
 
 namespace metric {
 /**
-	 * @class SOM
-	 * 
-	 *@brief 
-	 * 
-	 */
-template <typename recType, class Graph = metric::Grid6, class Metric = metric::Euclidian<typename recType::value_type>, class Distribution = std::uniform_real_distribution<typename recType::value_type>>
+ * @class SOM
+ *
+ *@brief
+ *
+ */
+template <
+    typename RecType,
+    class Graph = metric::Grid6,
+    class Metric = metric::Euclidean<typename RecType::value_type>,
+    class Distribution = std::uniform_real_distribution<typename RecType::value_type>
+>
 class SOM {
-    typedef typename recType::value_type T;
+    using T = typename RecType::value_type;
 
 public:
     /**
-	     * @brief Construct a new SOM object
-	     * 
-	     * @param nodesNumber 
-	     * @param metric 
-	     */
+     * @brief Construct a new SOM object
+     *
+     * @param nodesNumber
+     * @param metric
+     */
     explicit SOM(size_t nodesNumber, Metric metric = Metric());
 
     /**
-		 * @brief Construct a new SOM object
-		 * 
-		 * @param nodesWidth 
-		 * @param nodesHeight 
-		 * @param metric 
-		 */
+     * @brief Construct a new SOM object
+     *
+     * @param nodesWidth
+     * @param nodesHeight
+     * @param metric
+     */
     SOM(size_t nodesWidth, size_t nodesHeight, Metric metric = Metric());
 
     /**
-	     * @brief Construct a new SOM object
-	     * 
-	     * @param graph 
-	     * @param metric 
-		 * @param s_learn_rate 
-		 * @param f_learn_rate 
-		 * @param iterations 
-	     * @param distribution 
-	     */
-    SOM(Graph graph, Metric metric = Metric(), double start_learn_rate = 0.8, double finish_learn_rate = 0.0, size_t iterations = 20, 
-		Distribution distribution = Distribution(-1, 1));
+     * @brief Construct a new SOM object
+     *
+     * @param graph
+     * @param metric
+     * @param s_learn_rate
+     * @param f_learn_rate
+     * @param iterations
+     * @param distribution
+     */
+    SOM(
+        const Graph& graph,
+        const Metric& metric = Metric(),
+        double start_learn_rate = 0.8,
+        double finish_learn_rate = 0.0,
+        size_t iterations = 20,
+		Distribution distribution = Distribution(-1, 1)
+    );
 
     /**
-	     * @brief Construct a new SOM object
-	     * 
-	     * @param graph 
-	     * @param metric 
-		 * @param s_learn_rate 
-		 * @param f_learn_rate 
-		 * @param iterations 
-	     * @param distribution 
-		 * @param neighborhood_start_size 
-		 * @param neigbour_range_decay 
-		 * @param random_seed 
-	     */
-    SOM(Graph graph, Metric metric, double start_learn_rate, double finish_learn_rate, size_t iterations, 
-		Distribution distribution, double neighborhood_start_size, double neigbour_range_decay, long long random_seed);
+     * @brief Construct a new SOM object
+     *
+     * @param graph
+     * @param metric
+     * @param s_learn_rate
+     * @param f_learn_rate
+     * @param iterations
+     * @param distribution
+     * @param neighborhood_start_size
+     * @param neighborhood_range_decay
+     * @param random_seed
+     */
+    SOM(
+        const Graph& graph,
+        const Metric& metric,
+        double start_learn_rate,
+        double finish_learn_rate,
+        size_t iterations,
+		Distribution distribution,
+		double neighborhood_start_size,
+		double neighborhood_range_decay,
+		long long random_seed
+    );
 
     /**
-		 * @brief Destroy the SOM object
-		 * 
-		 */
+     * @brief Destroy the SOM object
+     *
+     */
     ~SOM() = default;
 
     /**
-		 * @brief 
-		 * 
-		 * @param samples 
-		 */
+     * @brief
+     *
+     * @param samples
+     */
     virtual void train(const std::vector<std::vector<T>>& samples);
 
     /**
-		 * @brief 
-		 * 
-		 * @param samples 
-		 */
+     * @brief
+     *
+     * @param samples
+     */
     virtual void estimate(const std::vector<std::vector<T>>& samples, const size_t sampleSize);
 
     /**
-		 * @brief 
-		 * 
-		 * @param sample 
-		 * @return
-		 */
-    virtual std::vector<double> encode(const recType& sample);
+     * @brief
+     *
+     * @param sample
+     * @return
+     */
+    virtual std::vector<double> encode(const RecType& sample) const;
 
     /**
-		 * @brief Best matching unit
-		 * 
-		 * @param sample 
-		 * @return size_t 
-		 */
-    virtual size_t BMU(const recType& sample) const;
+     * @brief Best matching unit
+     *
+     * @param sample
+     * @return size_t
+     */
+    virtual size_t BMU(const RecType& sample) const;
 
     /**
-		 * @brief 
-		 * 
-		 * @return true 
-		 * @return false 
-		 */
-	bool isValid()
+     * @brief
+     *
+     * @return true
+     * @return false
+     */
+	bool isValid() const
 	{
 		return valid;
 	}
 
     /**
-		 * @brief 
-		 * 
-		 * @param samples 
-		 * 
-		 * @return double 
-		 */
-	double std_deviation(const std::vector<std::vector<T>>& samples);
+     * @brief
+     *
+     * @param samples
+     *
+     * @return double
+     */
+	double std_deviation(const std::vector<std::vector<T>>& samples) const;
 
     /**
-		 * @brief 
-		 * 
-		 * @return
-		 */
-    size_t getNodesNumber()
+     * @brief
+     *
+     * @return
+     */
+    size_t getNodesNumber() const
 	{
 		return graph.getNodesNumber();
 	}
 
     /**
-		 * @brief
-		 * 
-		 * @return
-		 */
-	std::vector<std::vector<T>> get_weights()
+     * @brief
+     *
+     * @return
+     */
+	const std::vector<std::vector<T>>& get_weights() const
 	{
 		return weights;
 	}
 
     /**
-		 * @brief
-		 * 
-		 * @return
-		 */
-	Graph get_graph()
+     * @brief
+     *
+     * @return
+     */
+	const Graph& get_graph() const
 	{
 		return graph;
 	}
@@ -193,15 +211,15 @@ protected:
 	size_t iterations;
 
 	double neighborhood_start_size;
-	double neigbour_range_decay;
+	double neighborhood_range_decay;
 	long long random_seed;
 	
     /**
-		 * @brief 
-		 * 
-		 * @param samples 
-		 */
-    void subsampled_train_(const std::vector<std::vector<T>>& samples, int sampleSize);
+     * @brief
+     *
+     * @param samples
+     */
+    void subsampled_train(const std::vector<std::vector<T>>& samples, int sampleSize);
 	
 private:
     bool valid;

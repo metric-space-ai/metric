@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.10)
 
 project(correlation_examples)
 
@@ -25,7 +25,7 @@ foreach(exampleSrc ${EXAMPLE_SRCS})
 	add_executable(${exampleName} ${exampleSrc})
  
 	#link to Boost libraries AND your targets and dependencies
-	target_link_libraries(${exampleName} ${Boost_LIBRARIES})
+	target_link_libraries(${exampleName} ${Boost_LIBRARIES} ${LAPACK_LIBRARIES})
 	set_target_properties(${exampleName} PROPERTIES CXX_STANDARD 17)
 
 endforeach(exampleSrc)

@@ -10,6 +10,8 @@ Copyright (c) 2019 Michael Welsch
 #define _METRIC_UTILS_GRAPH_HPP
 
 #include "../../3rdparty/blaze/Blaze.h"
+#include "../space/tree.hpp"
+#include "type_traits.hpp"
 
 #include <stack>
 #include <type_traits>
@@ -62,6 +64,7 @@ public:
      * @param edgesPairs 
      */
     Graph(const std::vector<std::pair<size_t, size_t>> & edgesPairs);
+
     /**
      * @brief Construct a new Graph object
      * 
@@ -80,7 +83,7 @@ public:
      * 
      * @return
      */
-    size_t getNodesNumber();
+    size_t getNodesNumber() const;
 
     /**
      * @brief 
@@ -322,6 +325,9 @@ private:
     template <typename MType>
     void fill(MType & matrix, WType lower_bound, WType upper_bound);
 };
+
+
+
 
 
 

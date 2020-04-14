@@ -8,3 +8,5 @@ add_subdirectory(space_tests)
 add_subdirectory(sparsification_tests)
 add_subdirectory(transform_test)
 add_subdirectory(utils)
+add_subdirectory(distance_tests)
+

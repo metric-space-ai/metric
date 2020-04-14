@@ -48,8 +48,8 @@ Using **METRIC** framework we can calculate a set of standard metrics for this r
 
 - **Euclidean (L2) metric**
 ``` cpp
-metric::Euclidian<double> euclidianL2Distance;
-auto result_1 = euclidianL2Distance(v0, v1);
+metric::Euclidean<double> euclideanL2Distance;
+auto result_1 = euclideanL2Distance(v0, v1);
 std::cout << "result: " << result_1 << std::endl;
 // out:
 // Euclidean (L2) metric
@@ -58,8 +58,8 @@ std::cout << "result: " << result_1 << std::endl;
 
 - **Euclidean Threshold metric**
 ``` cpp
-metric::Euclidian_thresholded<double> euclidianThresholdDistance(1000.0, 3000.0);
-auto result_2 = euclidianThresholdDistance(v0, v1);
+metric::Euclidean_thresholded<double> euclideanThresholdDistance(1000.0, 3000.0);
+auto result_2 = euclideanThresholdDistance(v0, v1);
 std::cout << "result: " << result_2 << std::endl;
 // out:
 // Euclidean Threshold metric
@@ -317,7 +317,7 @@ Kohonen distance object will train incapsulated SOM on that dataset.
 int grid_w = 6;
 int grid_h = 4;
 
-metric::kohonen_distance<double, std::vector<double>> distance(train_dataset, grid_w, grid_h);
+metric::Kohonen<double, std::vector<double>> distance(train_dataset, grid_w, grid_h);
 
 auto result = distance(train_dataset[0], train_dataset[1]);
 std::cout << "result: " << result << std::endl;
@@ -333,7 +333,7 @@ int grid_w = 6;
 int grid_h = 4;
 	
 using Vector = std::vector<double>;
-using Metric = metric::Euclidian<double>;
+using Metric = metric::Euclidean<double>;
 using Graph = metric::Grid6; 
 using Distribution = std::uniform_real_distribution<double>; 
 
@@ -342,7 +342,7 @@ Distribution distr(-1, 1);
 metric::SOM<Vector, Graph, Metric> som_model(Graph(grid_w, grid_h), Metric(), 0.8, 0.2, 20, distr);
 som_model.train(train_dataset);
 	
-metric::kohonen_distance<double, Vector, Graph, Metric> distance(som_model);
+metric::Kohonen<double, Vector, Graph, Metric> distance(som_model);
 
 auto result = distance(train_dataset[0], train_dataset[1]);
 std::cout << "result: " << result << std::endl;
@@ -350,7 +350,7 @@ std::cout << "result: " << result << std::endl;
 // Kohonen metric
 // result: 772.109
 ```
-*For a full example and more details see `examples/distance_examples/kohonen_distance_example.cpp`*
+*For a full example and more details see `examples/distance_examples/Kohonen_example.cpp`*
 
 
 
@@ -366,20 +366,22 @@ std::vector<std::vector<double>> v = { {5,5}, {2,2}, {3,3}, {5,1} };
 
 Then we can calculate the entropy of the given data:
 ```cpp
-auto result = metric::entropy(v);
+auto estimator = metric::Entropy<std::vector<double>>();
+auto result = estimator(v);
 std::cout << "result: " << result << std::endl;
 // out:
 // Entropy using default distance metric
-// result: 7.81979
+// result: -5.39891
 ```
 
 Of cause, we can calculate entropy using any distance metric:
 ```cpp
-auto result = entropy(v, 3, 2.0, metric::Manhatten<double>());
+auto estimator = metric::Entropy<void, metric::Manhatten<double>>();
+auto result = estimator(v);
 std::cout << "result: " << result << std::endl;
 // out:
 // Entropy using Manhatten distance metric
-// result: 7.9183
+// result: 0.132185
 ```
 
 And now suppose we have two vectors with a data:
@@ -400,11 +402,11 @@ std::cout << "result: " << result << std::endl;
 
 Of cause we can specify distance metric:
 ```cpp
-auto result = metric::mutualInformation(v1, v2, 3, metric::Chebyshev<double>());
+auto result = metric::mutualInformation(v1, v2, 3, metric::Euclidean<double>());
 std::cout << "result: " << result << std::endl;
 // out:
-// Mutual Information using Chebyshev distance metric
-// result: 1.08945 
+// Mutual Information using Euclidean distance metric
+// result: 0.797784 
 ```
 
 For the same data we can calculate Variation of Information:
@@ -413,16 +415,17 @@ auto result = metric::variationOfInformation(v1, v2);
 std::cout << "result: " << result << std::endl;
 // out:
 // Variation of Information using default distance metric
-// result: 12.6577
+// result: 0
 ```
 
 Again we can specify distance metric:
 ```cpp
-auto result = metric::variationOfInformation<double, metric::Manhatten<double>>(v1, v2);
+auto result = metric::variationOfInformation<std::vector<std::vector<double>>, metric::Manhatten<double>>(v1, v2);
+std::cout << "VOI Manhatten result: " << result << std::endl;
 std::cout << "result: " << result << std::endl;
 // out:
 // Variation of Information Information using Manhatten distance metric
-// result: 14.8244
+// result: 0
 ```
 
 We can calculate normalized Variation of Information:
@@ -431,7 +434,7 @@ auto result = metric::variationOfInformation_normalized(v1, v2);
 std::cout << "result: " << result << std::endl;
 // out:
 // normalized Variation of Information
-// result: 0.920751
+// result: 1.08982
 ```
 
 Instead function we can use functor for Variation of Information:
@@ -441,7 +444,7 @@ auto result = f_voi(v1, v2);
 std::cout << "result: " << result << std::endl;
 // out:
 // Variation of Information as functor
-// result: 12.6577
+// result: 0
 ```
 Normalized functor:
 ```cpp
@@ -450,25 +453,7 @@ auto result = f_voi_norm(v1, v2);
 std::cout << "result: " << result << std::endl;
 // out:
 // normalized Variation of Information as normalized functor
-// result: 0.927254
-```
-KL functor:
-```cpp
-auto f_voi_kl = metric::VOI_kl<long double>();
-auto result = f_voi_kl(v1, v2);
-std::cout << "result: " << result << std::endl;
-// out:
-// Variation of Information as KL functor
-// result: 49.8917
-```
-Normalized KL functor:
-```cpp
-auto f_voi_norm_kl = metric::VOI_normalized_kl<long double>();
-auto result = f_voi_norm_kl(v1, v2);
-std::cout << "result: " << result << std::endl;
-// out:
-// Variation of Information as normalized KL functor
-// result: 1.06191
+// result: 1.08982
 ```
 
 *For a full example and more details see `examples/distance_examples/entropy_example.cpp`*

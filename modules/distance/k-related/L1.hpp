@@ -12,25 +12,36 @@ Copyright (c) 2019 Panda Team
 #include "../../../3rdparty/blaze/Blaze.h"
 
 namespace metric {
-/**
- * @brief
- *
- * @param a
- * @param b
- * @return
- */
-template <typename T>
-double sorensen(T& a, T& b);
 
-/**
- * @brief
- *
- * @param a
- * @param b
- * @return
- */
-template <typename Value>
-double sorensen(blaze::CompressedVector<Value>& a, blaze::CompressedVector<Value>& b);
+template <typename V = double>
+class Sorensen {
+public:
+    using distance_type = V;
+
+    explicit Sorensen() = default;
+
+    /**
+     * @brief
+     *
+     * @param a
+     * @param b
+     * @return
+     */
+    template <typename Container>
+    typename std::enable_if<!std::is_same<Container, V>::value, distance_type>::type
+    operator()(const Container& a, const Container& b) const;
+
+    /**
+     * @brief
+     *
+     * @param a
+     * @param b
+     * @return
+     */
+    distance_type operator()(const blaze::CompressedVector<V>& a, const blaze::CompressedVector<V>& b) const;
+
+    // TODO add support of 1D random values passed in simple containers
+};
 
 }  // namespace metric
 
