@@ -21,7 +21,7 @@ namespace metric {
 		void KOC<RecType, Graph, Metric, Distribution>::train(
 			const std::vector<RecType>& samples, int num_clusters, int min_cluster_size)
 		{
-			som_.train(samples);
+			som.train(samples);
 			calculate_std_deviations_for_nodes(samples, samples.size());
 			std::tie(clusters, centroids, clusters_counts) = clusterize_nodes(num_clusters, min_cluster_size);
 		}
@@ -53,10 +53,10 @@ namespace metric {
 		template <class RecType, class Graph, class Metric, class Distribution>
 		bool KOC<RecType, Graph, Metric, Distribution>::check_if_anomaly(const RecType& sample)
 		{
-			auto reduced = som_.encode(sample);
-			auto bmu = som_.BMU(sample);
+			auto reduced = som.encode(sample);
+			auto bmu = som.BMU(sample);
 			// if closest distance more then max closest distance level then it is anomaly
-			return reduced[bmu] > nodes_std_deviations[bmu] * anomaly_sigma_;
+			return reduced[bmu] > nodes_std_deviations[bmu] * anomaly_sigma;
 		}
 
 		
@@ -75,7 +75,7 @@ namespace metric {
 				}
 				else
 				{
-					auto bmu = som_.BMU(samples[i]);
+					auto bmu = som.BMU(samples[i]);
 					assignments.push_back(clusters[bmu]);
 				}
 			}
@@ -93,8 +93,8 @@ namespace metric {
 			std::vector<T> distances;
 			for (int i = 0; i < samples.size(); i++)
 			{
-				auto reduced = som_.encode(samples[i]);
-				auto bmu = som_.BMU(samples[i]);
+				auto reduced = som.encode(samples[i]);
+				auto bmu = som.BMU(samples[i]);
 				distances.push_back(reduced[bmu] - nodes_std_deviations[bmu] * anomaly_sigma_);
 			}
 
@@ -134,7 +134,7 @@ namespace metric {
 
 			std::shuffle(randomized_samples.begin(), randomized_samples.end(), random_generator);
 	
-			int num_nodes = som_.getNodesNumber();
+			int num_nodes = som.getNodesNumber();
 
 			std::vector<int> closest_distances(num_nodes, 0);
 			std::vector<T> square_distances_sum(num_nodes, 0);
@@ -143,8 +143,8 @@ namespace metric {
 				size_t sample_idx = randomized_samples[i];
 		
 				auto sample = next(samples.begin(), sample_idx);
-				auto reduced = som_.encode(*sample);
-				auto bmu = som_.BMU(*sample);
+				auto reduced = som.encode(*sample);
+				auto bmu = som.BMU(*sample);
 
 				square_distances_sum[bmu] += reduced[bmu] * reduced[bmu];
 				closest_distances[bmu]++;
@@ -169,7 +169,7 @@ namespace metric {
 		{
 			int current_min_cluster_size = -1;
 
-			auto nodes_data = som_.get_weights();
+			auto nodes_data = som.get_weights();
 
 			if (min_cluster_size > nodes_data.size())
 			{

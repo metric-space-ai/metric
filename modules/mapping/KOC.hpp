@@ -9,10 +9,8 @@ Copyright (c) 2019 Panda Team
 #ifndef _METRIC_MAPPING_KOC_HPP
 #define _METRIC_MAPPING_KOC_HPP
 
+#include "SOM.hpp"
 
-#include <assert.h>
-
-#include <iostream>
 #include <array>
 #include <vector>
 
@@ -21,8 +19,6 @@ Copyright (c) 2019 Panda Team
 #include <algorithm>
 #include <cmath>
 #include <numeric>
-
-#include "SOM.hpp"
 
 #ifndef M_PI
 #define M_PI (3.14159265358979323846)
@@ -77,7 +73,7 @@ namespace metric {
 				 * @param iterations - maximum number of iterations for SOM training.
 				 * @param distribution - distribution used for creating initial weights (positions) of the SOM nodes. 
 				 * @param neighborhood_start_size - number of neighbours of the checking node which weights (positions) will be corrected while SOM training. 
-				 * @param neigbour_range_decay - shows how distance from the checking node influence to weights (positions) of the checking node neighbours while SOM training. 
+				 * @param neighborhood_range_decay - shows how distance from the checking node influence to weights (positions) of the checking node neighbours while SOM training.
 				 * @param random_seed - the value used to initialize the random number generator, which is used for the initial distribution of weight (positions).
 				 */
 			KOC(Graph graph, Metric metric, double anomaly_sigma, double start_learn_rate, double finish_learn_rate, size_t iterations,
@@ -141,10 +137,10 @@ namespace metric {
 			std::tuple<std::vector<size_t>, std::vector<typename RecType::value_type>> top_outliers(const std::vector<RecType>& samples, int count = 10);
 
 		private:
-			int min_cluster_size_ = 1;
-			double anomaly_sigma_ = 1;
-			size_t iterations_;
-			long long random_seed_;
+			int min_cluster_size = 1;
+			double anomaly_sigma = 1;
+			size_t iterations;
+			long long random_seed;
 
 			std::vector<int> clusters;	
 			std::vector<int> centroids;
@@ -152,8 +148,8 @@ namespace metric {
 
 			std::vector<T> nodes_std_deviations;
 			
-			Metric metric_;
-			SOM<RecType, Graph, metric::Euclidean<double>, Distribution> som_;
+			Metric metric;
+			SOM<RecType, Graph, metric::Euclidean<double>, Distribution> som;
 
 			/**
 				 * @brief 
@@ -217,7 +213,15 @@ namespace metric {
 		 * @param distribution_min - left side (minimum) of the distribution used for creating initial weights (positions) of the SOM nodes. 
 		 * @param distribution_max - right side (maximum) of the distribution used for creating initial weights (positions) of the SOM nodes. 
 		 */
-		KOC_factory(size_t nodesNumber, double anomaly_sigma, double start_learn_rate = 0.8, double finish_learn_rate = 0.0, size_t iterations = 20, T distribution_min = -1, T distribution_max = 1);
+		KOC_factory(
+		    size_t nodesNumber,
+		    double anomaly_sigma,
+		    double start_learn_rate = 0.8,
+		    double finish_learn_rate = 0.0,
+		    size_t iterations = 20,
+		    T distribution_min = -1,
+		    T distribution_max = 1
+        );
 
 		/**
 		 * @brief
@@ -230,7 +234,16 @@ namespace metric {
 		 * @param distribution_min - left side (minimum) of the distribution used for creating initial weights (positions) of the SOM nodes. 
 		 * @param distribution_max - right side (maximum) of the distribution used for creating initial weights (positions) of the SOM nodes. 
 		 */
-		KOC_factory(size_t nodesWidth = 5, size_t nodesHeight = 4, double anomaly_sigma = 1.0, double start_learn_rate = 0.8, double finish_learn_rate = 0.0, size_t iterations = 20, T distribution_min = -1, T distribution_max = 1);
+		KOC_factory(
+		    size_t nodesWidth = 5,
+		    size_t nodesHeight = 4,
+		    double anomaly_sigma = 1.0,
+		    double start_learn_rate = 0.8,
+		    double finish_learn_rate = 0.0,
+		    size_t iterations = 20,
+		    T distribution_min = -1,
+		    T distribution_max = 1
+        );
 
 		/**
 		 * @brief
@@ -245,9 +258,18 @@ namespace metric {
 		 * @param neigbour_range_decay - shows how distance from the checking node influence to weights (positions) of the checking node neighbours while SOM training. 
 		 * @param random_seed - the value used to initialize the random number generator, which is used for the initial distribution of weight (positions).
 		 */
-		KOC_factory(size_t nodesNumber, double anomaly_sigma,
-			double start_learn_rate, double finish_learn_rate, size_t iterations, T distribution_min, T distribution_max,
-			double neighborhood_start_size, double neighborhood_range_decay, long long random_seed);
+		KOC_factory(
+		    size_t nodesNumber,
+		    double anomaly_sigma,
+			double start_learn_rate,
+			double finish_learn_rate,
+			size_t iterations,
+			T distribution_min,
+			T distribution_max,
+			double neighborhood_start_size,
+			double neighborhood_range_decay,
+			long long random_seed
+        );
 
 		/**
 		 * @brief
@@ -263,9 +285,19 @@ namespace metric {
 		 * @param neigbour_range_decay - shows how distance from the checking node influence to weights (positions) of the checking node neighbours while SOM training. 
 		 * @param random_seed - the value used to initialize the random number generator, which is used for the initial distribution of weight (positions).
 		 */
-		KOC_factory(size_t nodesWidth, size_t nodesHeight, double anomaly_sigma,
-			double start_learn_rate, double finish_learn_rate, size_t iterations, T distribution_min, T distribution_max, 
-			double neighborhood_start_size, double neighborhood_range_decay, long long random_seed);
+		KOC_factory(
+		    size_t nodesWidth,
+		    size_t nodesHeight,
+		    double anomaly_sigma,
+			double start_learn_rate,
+			double finish_learn_rate,
+			size_t iterations,
+			T distribution_min,
+			T distribution_max,
+			double neighborhood_start_size,
+			double neighborhood_range_decay,
+			long long random_seed
+        );
 
 		/**
 		 * @brief 
@@ -279,18 +311,18 @@ namespace metric {
 
 	private:
 
-		Metric metric_;
-		Graph graph_;
-		Distribution distribution_;
+		Metric metric;
+		Graph graph;
+		Distribution distribution;
 
-		double start_learn_rate_;
-		double finish_learn_rate_; 
-		size_t iterations_;
+		double start_learn_rate;
+		double finish_learn_rate;
+		size_t iterations;
 
-		double neighborhood_start_size_;
-		double neighborhood_range_decay_;
-		long long random_seed_;
-		double anomaly_sigma_;
+		double neighborhood_start_size;
+		double neighborhood_range_decay;
+		long long random_seed;
+		double anomaly_sigma;
 	};
 
 } // namespace metric

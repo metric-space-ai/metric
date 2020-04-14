@@ -15,11 +15,14 @@ Copyright (c) 2020 Panda Team
 #include <vector>
 
 namespace metric {
-    /**
-     * @class KNNGraph
-     * @brief Fast hierarchial method algorithm that constructs an approximate kNN graph. The method is simple and it works with any type of data for which a distance function can be provided. 
-     * Algorith has two parts. In the first part we create a crude approximation of the graph by subdividing the dataset until each subset reaches given max_bruteforce_size.
-     * In the second part this approximation is iteratively fine-tuned by combining the first algorithm with NN-descent method. 
+// FIXME CC
+/**
+ * @class KNNGraph
+ * @brief Fast hierarchial method algorithm that constructs an approximate kNN graph.
+ * The method is simple and it works with any type of data for which a distance function can be provided.
+ * Algorith has two parts. In the first part we create a crude approximation of the graph by subdividing
+ * the dataset until each subset reaches given max_bruteforce_size.
+ * In the second part this approximation is iteratively fine-tuned by combining the first algorithm with NN-descent method.
  * 
  */
 template <typename Sample, typename Distance, typename WeightType = bool, bool isDense = false, bool isSymmetric = true>

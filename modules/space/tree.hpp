@@ -52,6 +52,7 @@ struct bad_distribution_exception : public std::exception {
     _| _|  \___| \___|
 
 */
+// FIXME CC
 /*** Cover Tree Implementation ***/
 template <class RecType, class Metric>
 class Tree {
