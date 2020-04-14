@@ -11,7 +11,6 @@
 #include <pybind11/numpy.h>
 #include <pybind11/functional.h>
 #include <typeindex>
-#include <tuple>
 #include <random>
 #include <optional>
 
@@ -77,10 +76,7 @@ void wrap_metric_KOC(py::module& m) {
         py::arg("num_clusters"),
         py::arg("min_cluster_size") = 1
     );
-    koc.def("top_outliers", +[](KOC& self, const std::vector<Record>& samples, int count){
-            auto result = self.top_outliers(samples, count);
-            return py::make_tuple(std::get<0>(result), std::get<1>(result));
-        },
+    koc.def("top_outliers", KOC::top_outliers,
         py::arg("samples"),
         py::arg("count") = 10
     );

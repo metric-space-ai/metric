@@ -5,6 +5,7 @@
 #include <pybind11/stl.h>
 #include <pybind11/numpy.h>
 #include <vector>
+#include <tuple>
 
 namespace py = pybind11;
 /*  TODO:
