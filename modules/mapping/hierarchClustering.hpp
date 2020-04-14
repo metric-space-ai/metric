@@ -11,6 +11,7 @@
 #include <vector>
 
 namespace metric {
+// FIXME CC
 /**
  * @class Cluster
  * 
