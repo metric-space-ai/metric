@@ -20,5 +20,7 @@ build
 *.bmp
 /test
 *~
+/utils/
 *.dSYM
 *.o
+
