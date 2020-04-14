@@ -5,11 +5,8 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 Copyright (c) 2018 Michael Welsch
 */
-#ifndef _METRIC_DISTANCE_K_RELATED_STANDARDS_CPP
-#define _METRIC_DISTANCE_K_RELATED_STANDARDS_CPP
 
 #include "Standards.hpp"
-#include <algorithm>
 
 #include <cmath>
 #include <algorithm>
@@ -102,7 +99,7 @@ auto CosineInverted<V>::operator()(const Container& A, const Container& B) const
 
 template <typename V>
 template <typename Container>
-V Chebyshev<V>::operator()(const Container& lhs, const Container& rhs) const
+auto Chebyshev<V>::operator()(const Container& lhs, const Container& rhs) const -> distance_type
 {
     distance_type res = 0;
     for (std::size_t i = 0; i < lhs.size(); i++) {
@@ -114,4 +111,3 @@ V Chebyshev<V>::operator()(const Container& lhs, const Container& rhs) const
 }
 
 }  // namespace metric
-#endif

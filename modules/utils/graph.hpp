@@ -83,7 +83,7 @@ public:
      * 
      * @return
      */
-    size_t getNodesNumber();
+    size_t getNodesNumber() const;
 
     /**
      * @brief 

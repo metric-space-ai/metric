@@ -7,28 +7,24 @@
 
 namespace py = pybind11;
 
-
-template<typename Value>
+template<typename Value, typename Container>
 void register_wrapper(py::module& m) {
-    {
-        using Specialization = double (*)(const blaze::CompressedVector<Value>&, const blaze::CompressedVector<Value>&);
-        m.def<Specialization>("sorensen", &metric::sorensen<Value>,
-            "Sørensen–Dice coefficient",
-            py::arg("a"),
-            py::arg("b")
-        );
-    }
+    using Metric = metric::Sorensen<Value>;
+    using BContainer = blaze::CompressedVector<Value>;
 
-    {
-        using Specialization = double (*)(const std::vector<Value>&, const std::vector<Value>&);
-        m.def<Specialization>("sorensen", &metric::sorensen<std::vector<Value>>,
-            "Sørensen–Dice coefficient",
-            py::arg("a"),
-            py::arg("b")
-        );
-    }
+    auto cls = py::class_<Metric>(m, "Sorensen", "Sørensen–Dice coefficient");
+    cls.def(py::init<>());
+    cls.def("__call__", (Value (Metric::*)(const Container&, const Container&) const) &Metric::operator(),
+        py::arg("a"),
+        py::arg("b")
+    );
+    cls.def("__call__", (Value (Metric::*)(const BContainer&, const BContainer&) const) &Metric::operator(),
+        py::arg("a"),
+        py::arg("b")
+    );
+    cls.def("__repr__", [](const Metric &a) { return "<Sorensen>"; });
 }
 
 void export_metric_sorensen(py::module& m) {
-    register_wrapper<double>(m);
+    register_wrapper<double, std::vector<double>>(m);
 }

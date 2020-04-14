@@ -1,9 +1,21 @@
 import sys
 import argparse
 import numpy
+from os import path
 from metric.distance import EMD
 from metric.utils import distribution, Grid4
 from metric.mapping import KOC
+
+
+def get_assets_default_folder():
+    folder = path.join(path.dirname(__file__),
+                       '..',  # examples
+                       '..',  # python
+                       '..',  # metric
+                       'examples',
+                       'mapping_examples',
+                       'assets')
+    return path.abspath(folder)
 
 
 def generate_image(size: int, low: int, high: int):
@@ -17,12 +29,17 @@ def noise_image(image, low: int, high: int):
 
 def main():
     parser = argparse.ArgumentParser(description='KOC for MNIST example')
-    parser.add_argument('best_width', action='store_const', default=20, help='best width for grid')
-    parser.add_argument('best_height', action='store_const', default=20, help='best height for grid')
-    args = parser.parse_args(sys.argv)
+    parser.add_argument('--width', type=int, default=20, help='best width for grid')
+    parser.add_argument('--height', type=int, default=20, help='best height for grid')
+    parser.add_argument('--assets', default=get_assets_default_folder(), help='folder with assets')
+    args = parser.parse_args()
 
     print('KOC for MNIST example have started')
-    dataset = numpy.loadtxt('assets/mnist100.csv', max_rows=1000)
+    dataset = numpy.loadtxt(path.join(args.assets, 'mnist100.csv'),
+                            max_rows=1000,
+                            skiprows=1,
+                            delimiter=',')
+    dataset, labels = dataset[:, range(1, dataset.shape[1])],  dataset[:, 0]
 
     num_clusters = 10
     # random seed for repeatable results
@@ -33,22 +50,25 @@ def main():
     cost_mat = EMD.ground_distance_matrix_of_2dgrid(cols=28, rows=28)
     max_cost = EMD.max_in_distance_matrix(cost_mat)
     distance = EMD(cost_mat, max_cost)
-    simple_koc = KOC(graph=Grid4(args.best_width, args.best_height),
+    simple_koc = KOC(graph=Grid4(args.width, args.height),
                      metric=distance,
-                     anomality_sigma=sigma,
+                     #distribution=distribution.Uniform(0, 255),
+                     anomaly_sigma=sigma,
                      start_learn_rate=0.8,
                      finish_learn_rate=0.0,
                      iterations=200,
-                     distribution=distribution.Uniform(0, 255),
                      nbh_start_size=4,
                      nbh_range_decay=2.0,
                      random_seed=random_seed)
     simple_koc.train(dataset, num_clusters)
 
     assignments = simple_koc.assign_to_clusters(dataset)
+    print('assignments:', assignments)
 
+
+"""
     # accuracy
-"""    std::vector<std::vector<int>> clusters(11)
+    std::vector<std::vector<int>> clusters(11)
     for (auto i = 0; i < assignments.size(); ++i):
         clusters[assignments[i]].push_back(labels[i])
 
@@ -69,4 +89,5 @@ def main():
     print('num_matched: ', num_matched)
     print('accuracy: ', num_matched / assignments.size())
 """
-    # return 0
+
+sys.exit(main())

@@ -24,7 +24,7 @@ namespace metric {
 template <typename RecType, typename Metric>
 class Matrix {
 public:
-    using distType = typename Metric::distance_type;
+    using distType = typename std::invoke_result<Metric, const RecType&, const RecType&>::type;
     
     /*** Constructors ***/
 

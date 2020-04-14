@@ -1,4 +1,5 @@
-#include "ThreadPool.h"
+#include "ThreadPool.hpp"
+
 #include <iostream>
 
 ThreadPool::ThreadPool(size_t maxThreads)

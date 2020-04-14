@@ -5,17 +5,13 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 Copyright (c) 2019 Panda Team
 */
-
-#ifndef _ESTIMATOR_HELPERS_CPP
-#define _ESTIMATOR_HELPERS_CPP
+#include "estimator_helpers.hpp"
 
 #include <vector>
 #include <cmath>
 #include <iostream>
 
 namespace metric {
-
-
 
 // averaged entropy estimation: code COPIED from mgc.*pp with only mgc replaced with entropy, TODO refactor to avoid code dubbing
 
@@ -223,8 +219,4 @@ double peak2ems(const std::vector<double>& data)
 }
 
 
-
 }  // namespace metric
-
-
-#endif

@@ -15,7 +15,7 @@ Copyright (c) 2018 Panda Team
 namespace metric {
 
 /**
- * @class kohonen_distance
+ * @class Kohonen
  *
  * @brief 
  * 
@@ -27,28 +27,29 @@ namespace metric {
  *
  */
 template <typename D, typename Sample, typename Graph = metric::Grid4, typename Metric = metric::Euclidean<D>, 
-	typename Distribution = std::uniform_real_distribution<typename Sample::value_type>> // D is a distance return type
-struct kohonen_distance {
-    using distance_return_type = D;
+	typename Distribution = std::uniform_real_distribution<typename Sample::value_type>>
+class Kohonen {
+public:
+    using distance_type = D;
 
     /**
-     * @brief Construct a new kohonen_distance object
+     * @brief Construct a new Kohonen object
      *
      * @param som_model - trained SOM model
      */
-	kohonen_distance(metric::SOM<Sample, Graph, Metric, Distribution> som_model);
+	Kohonen(const metric::SOM<Sample, Graph, Metric, Distribution>& som_model);
 
     /**
-     * @brief Construct a new kohonen_distance object
+     * @brief Construct a new Kohonen object
      *
      * @param samples - samples for SOM train
      * @param nodesWidth - width of the SOM grid
      * @param nodesHeight - height of the SOM grid
      */
-	kohonen_distance(const std::vector<Sample>& samples, size_t nodesWidth, size_t nodesHeight);
+	Kohonen(const std::vector<Sample>& samples, size_t nodesWidth, size_t nodesHeight);
 
     /**
-     * @brief Construct a new kohonen_distance object
+     * @brief Construct a new Kohonen object
      *
      * @param samples - samples for SOM train
      * @param graph
@@ -58,8 +59,15 @@ struct kohonen_distance {
      * @param iterations
      * @param distribution
      */
-	kohonen_distance(const std::vector<Sample>& samples, Graph graph, Metric metric = Metric(), double start_learn_rate = 0.8, double finish_learn_rate = 0.0, size_t iterations = 20,
-		Distribution distribution = Distribution(-1, 1));
+	Kohonen(
+	    const std::vector<Sample>& samples,
+	    Graph graph,
+	    Metric metric = Metric(),
+	    double start_learn_rate = 0.8,
+	    double finish_learn_rate = 0.0,
+	    size_t iterations = 20,
+		Distribution distribution = Distribution(-1, 1)
+    );
 
     /**
      * @brief Compute the EMD for two records in the Kohonen space.
@@ -68,7 +76,7 @@ struct kohonen_distance {
      * @param sample_2 second sample
      * @return distance on kohonen space
      */
-    distance_return_type operator()(const Sample& sample_1, const Sample& sample_2);
+    distance_type operator()(const Sample& sample_1, const Sample& sample_2) const;
 
     /**
      * @brief
@@ -77,32 +85,36 @@ struct kohonen_distance {
      * @param from_node - index of the SOM's graph start node
      * @param to_node second sample - index of the SOM's graph end node
      */
-	void print_shortest_path(int from_node, int to_node);
+	void print_shortest_path(int from_node, int to_node) const;
 
 private:
-	
 	void calculate_distance_matrix();
 
 	/**
 	 * @brief get_closest_unmarked_node
 	 * @return the index of closest nodes not visited
 	 */
-	int get_closest_unmarked_node(const std::vector<D>& distance, const std::vector<bool>& mark, int numOfVertices);
+	int get_closest_unmarked_node(
+	    const std::vector<D>& distance,
+	    const std::vector<bool>& mark,
+	    int numOfVertices
+    ) const;
 
 	/**
 	 * @brief calculate_distance
 	 * Computes the shortest path
 	 */
-	std::tuple<std::vector<D>, std::vector<int>> calculate_distance(const blaze::CompressedMatrix<D>& adjMatrix, int from_node, int num);
+	auto calculate_distance(const blaze::CompressedMatrix<D>& adjMatrix, int from_node, int num) const
+	    -> std::tuple<std::vector<D>, std::vector<int>>;
 
-	metric::SOM<Sample, Graph, Metric, Distribution> som_model_;
+	metric::SOM<Sample, Graph, Metric, Distribution> som_model;
 
-	std::vector<std::vector<D>> distance_matrix_;
-	std::vector<std::vector<int>> predecessors_;
+	std::vector<std::vector<D>> distance_matrix;
+	std::vector<std::vector<int>> predecessors;
 };
 
 }  // namespace metric
 
-#include "kohonen_distance.cpp"
+#include "Kohonen.cpp"
 
 #endif  // Header Guard

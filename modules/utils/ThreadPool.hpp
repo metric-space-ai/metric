@@ -33,4 +33,6 @@ private:
     callable getFromQueue();
 };
 
+#include "ThreadPool.cpp"
+
 #endif //VINCENT_CPP_THREADPOOL_H

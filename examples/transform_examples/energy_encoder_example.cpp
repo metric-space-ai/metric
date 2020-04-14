@@ -1,5 +1,5 @@
 
-#include "modules/transform/energy_encoder.cpp"
+#include "modules/transform/energy_encoder.hpp"
 
 #include <iostream>
 
@@ -16,7 +16,7 @@ int main() {
 //        data.push_back((double)i);
 //    }
 
-    auto e = metric::energy_encoder(5, 1);
+    auto e = metric::EnergyEncoder(5, 1);
     //auto e = metric::energy_encoder();
     auto result = e(data);
 
@@ -56,7 +56,7 @@ int main() {
 
     std::cout << "\n\ntesting computation of frequency bounds for 4 splits, 40000 points:\n";
 
-    auto e2 = metric::energy_encoder(5, 4);
+    auto e2 = metric::EnergyEncoder(5, 4);
     auto bounds = e2.freq_bounds(40000);
     for (size_t i=0; i< bounds.size(); ++i)
         std::cout << bounds[i] << "\n";

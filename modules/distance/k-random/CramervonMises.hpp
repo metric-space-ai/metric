@@ -6,11 +6,10 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 Copyright (c) 2020 Panda Team
 */
 
-#ifndef _METRIC_DISTANCE_K_RANDOM_CRAMER_VON_NISES_HPP
-#define _METRIC_DISTANCE_K_RANDOM_CRAMER_VON_NISES_HPP
+#ifndef _METRIC_DISTANCE_K_RANDOM_CRAMER_VON_MISES_HPP
+#define _METRIC_DISTANCE_K_RANDOM_CRAMER_VON_MISES_HPP
 
 namespace metric {
-	
 
 /**
  * @brief
@@ -23,23 +22,22 @@ namespace metric {
  * @tparam D - distance return type
  */
 template <typename Sample, typename D = double>
-struct CramervonNises {
-    using distance_return_type = D;
+class CramervonMises {
+public:
+    using distance_type = D;
 
     /**
      * @brief Construct a new Cramer-von Nises object
      *
      */
-    explicit CramervonNises()
-    {
-    }
+    explicit CramervonMises() = default;
 
     /**
      * @brief Construct a new Cramer-von Nises object
      *
      * @param precision  for integration. Should be in (0, 1). Less means more accurate.
      */
-    explicit CramervonNises(double precision) : precision_(precision)
+    explicit CramervonMises(double precision) : precision(precision)
     {
     }
 
@@ -50,14 +48,14 @@ struct CramervonNises {
      * @param sample_2 second sample
      * @return distance
      */
-    distance_return_type operator()(const Sample& sample_1, const Sample& sample_2);
+    distance_type operator()(const Sample& sample_1, const Sample& sample_2) const;
 
 private:
-	double precision_ = 0.01;
+	double precision = 0.01;
 };
 
 
 }  // namespace metric
 
-#include "CramervonNises.cpp"
+#include "CramervonMises.cpp"
 #endif

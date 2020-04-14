@@ -5,16 +5,14 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 Copyright (c) 2020 Panda Team
 */
-#ifndef _METRIC_DISTANCE_K_RANDOM_CRAMER_VON_NISES_CPP
-#define _METRIC_DISTANCE_K_RANDOM_CRAMER_VON_NISES_CPP
 
-#include "CramervonNises.hpp"
+#include "CramervonMises.hpp"
 #include "../../utils/poor_mans_quantum.hpp"
 
 namespace metric {
 
 template <typename Sample, typename D>
-auto CramervonNises<Sample, D>::operator()(const Sample& sample_1, const Sample& sample_2) -> distance_return_type
+auto CramervonMises<Sample, D>::operator()(const Sample& sample_1, const Sample& sample_2) const -> distance_type
 {
 	PMQ pmq_1(sample_1);
 	PMQ pmq_2(sample_2);
@@ -35,7 +33,7 @@ auto CramervonNises<Sample, D>::operator()(const Sample& sample_1, const Sample&
 	//
 	
 	D area = 0;
-	double step = (concat_data[concat_data.size() - 1] - concat_data[0]) * precision_;
+	double step = (concat_data[concat_data.size() - 1] - concat_data[0]) * precision;
 
 	for (double value = concat_data[0]; value <= concat_data[concat_data.size() - 1]; value += step)
 	{
@@ -47,4 +45,3 @@ auto CramervonNises<Sample, D>::operator()(const Sample& sample_1, const Sample&
 
 
 }  // namespace metric
-#endif

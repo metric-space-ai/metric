@@ -53,8 +53,8 @@ public:
 
 /**
  * @brief extract returning type of operator[] in container, in case of STL containers is equivalent ot value_type
- * for example: underlaying_type<std::vector<int>> == int,
- *              underlaying_type<std::vector<std::vector<int>>> == std::vector<int>,
+ * for example: underlying_type<std::vector<int>> == int,
+ *              underlying_type<std::vector<std::vector<int>>> == std::vector<int>,
  
  * @tparam T Container type
  */
@@ -74,7 +74,7 @@ template <typename T>
 inline constexpr bool is_has_resize_method_v = is_has_resize_method<T>::value;
 
 /**
- * @brief if T is a container supported [] operator and underlaying type of container is integral type
+ * @brief if T is a container supported [] operator and underlying type of container is integral type
  * value is true, otherwise value is false
  */
 template <typename T>
@@ -103,35 +103,35 @@ template <typename T>
 inline constexpr bool is_container_of_integrals_v = is_container_of_integrals<T>::value;
 
 template <typename T>
-struct underlaying_type_impl0 {
+struct underlying_type_impl0 {
     using type = typename std::decay<T>::type;
 };
 template <typename T>
-using underlaying0_t = typename underlaying_type_impl0<T>::type;
+using underlaying0_t = typename underlying_type_impl0<T>::type;
 
 template <typename T>
-struct underlaying_type_impl1 {
+struct underlying_type_impl1 {
     using type = typename std::decay<typename is_has_index_operator<T>::type>::type;
 };
 template <typename T>
-using underlaying1_t = typename underlaying_type_impl1<T>::type;
+using underlaying1_t = typename underlying_type_impl1<T>::type;
 
 template <typename T>
-struct underlaying_type_impl2 {
+struct underlying_type_impl2 {
     using type =
         typename std::decay<typename is_has_index_operator<typename is_has_index_operator<T>::type>::type>::type;
 };
 template <typename T>
-using underlaying2_t = typename underlaying_type_impl2<T>::type;
+using underlaying2_t = typename underlying_type_impl2<T>::type;
 
 /**
- * @brief extract underlaying type of container,
- * for example: underlaying_type<std::vector<int>> == int,
- *              underlaying_type<std::vector<std::vector<int>>> == int,
+ * @brief extract underlying type of container,
+ * for example: underlying_type<std::vector<int>> == int,
+ *              underlying_type<std::vector<std::vector<int>>> == int,
  *
  */
 template <typename T>
-struct underlaying_type {
+struct underlying_type {
     static constexpr auto level() -> int
     {
         if constexpr (is_has_index_operator_v<T>) {
@@ -148,10 +148,10 @@ struct underlaying_type {
 };
 
 /**
- * @brief helper for underlaying_type metafunction
+ * @brief helper for underlying_type metafunction
  */
 template <typename T>
-using underlaying_type_t = typename underlaying_type<T>::type;
+using underlying_type_t = typename underlying_type<T>::type;
 
-};
+}
 #endif
