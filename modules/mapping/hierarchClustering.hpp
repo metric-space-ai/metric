@@ -11,7 +11,6 @@
 #include <vector>
 
 namespace metric {
-// FIXME CC
 /**
  * @class Cluster
  * 
@@ -20,14 +19,23 @@ namespace metric {
 template <typename T>
 class Cluster {
 public:
+
+    explicit Cluster() = default;
+
     /**
      * @brief Construct a new Cluster object
      *
      * @param d 
      */
-    Cluster(const std::vector<T>& d)
+    explicit Cluster(const std::vector<T>& d)
+        : data(d)
     {
-        data = d;
+        calculateCentroid();
+    }
+
+    explicit Cluster(std::vector<T>&& d)
+        : data(d)
+    {
         calculateCentroid();
     }
 
