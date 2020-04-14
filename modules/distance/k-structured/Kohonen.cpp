@@ -14,6 +14,13 @@ Copyright (c) 2019 PANDA Team
 namespace metric {
 
 template <typename D, typename Sample, typename Graph, typename Metric, typename Distribution>
+Kohonen<D, Sample, Graph, Metric, Distribution>::Kohonen(metric::SOM<Sample, Graph, Metric, Distribution>&& som_model)
+    : som_model(som_model)
+{
+	calculate_distance_matrix();
+}
+
+template <typename D, typename Sample, typename Graph, typename Metric, typename Distribution>
 Kohonen<D, Sample, Graph, Metric, Distribution>::Kohonen(const metric::SOM<Sample, Graph, Metric, Distribution>& som_model)
     : som_model(som_model)
 {

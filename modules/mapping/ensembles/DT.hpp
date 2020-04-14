@@ -23,16 +23,17 @@ namespace metric {
  * 
  * @brief Metric decision tree
  */
+ // FIXME CC
 template <class Record>
 class DT {
 public:
     /**
      * @brief Construct a new DT object
      * 
-     * @param entropy_threshold_ 
-     * @param gain_threshold_ 
+     * @param entropy_threshold
+     * @param gain_threshold
      */
-    DT(double entropy_threshold_ = 0, double gain_threshold_ = 0);
+    DT(double entropy_threshold = 0, double gain_threshold = 0);
 
     /**
      * @brief train classifier on test dataset
@@ -63,10 +64,10 @@ private:
         std::vector<int> prediction_distribution = {};
     };
 
-    struct
-        NodeDataUnit  // queue is used instead of recursion; we need subset only in queue when building tree, not in resulting tree
+    // queue is used instead of recursion; we need subset only in queue when building tree, not in resulting tree
+    struct NodeDataUnit
     {
-        std::shared_ptr<Node> node;  //
+        std::shared_ptr<Node> node;
         std::shared_ptr<std::vector<int>> subset;
         double entropy = 0;
         int debug_id;

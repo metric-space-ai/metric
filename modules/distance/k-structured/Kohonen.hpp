@@ -37,6 +37,13 @@ public:
      *
      * @param som_model - trained SOM model
      */
+
+    Kohonen(metric::SOM<Sample, Graph, Metric, Distribution>&& som_model);
+    /**
+     * @brief Construct a new Kohonen object
+     *
+     * @param som_model - trained SOM model
+     */
 	Kohonen(const metric::SOM<Sample, Graph, Metric, Distribution>& som_model);
 
     /**

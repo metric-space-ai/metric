@@ -14,16 +14,17 @@
 namespace metric {
 
 template <class Record>
-DT<Record>::DT(double entropy_threshold_, double gain_threshold_)
+DT<Record>::DT(double entropy_threshold, double gain_threshold)
+    : entropy_threshold(entropy_threshold)
+    , gain_threshold(gain_threshold)
 {
-    entropy_threshold = entropy_threshold_;
-    gain_threshold = gain_threshold_;
 }
 
 template <class Record>
 template <typename ConType, typename VariantType>
 void DT<Record>::train(
-    const ConType& payments, std::vector<VariantType> dimensions, std::function<int(const Record&)>& response)
+    const ConType& payments, std::vector<VariantType> dimensions, std::function<int(const Record&)>& response
+)
 {
     typedef double NumType;  // TODO replace hardcode
 

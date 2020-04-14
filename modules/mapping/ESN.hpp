@@ -17,53 +17,6 @@ Copyright (c) 2019 Panda Team
 namespace metric {
 
 
-
-//// common metafunctions for ESN, PCFA and DSPCC - included from PCFA.hpp
-
-
-//template <typename>
-//struct determine_container_type  // checks whether container is STL container (1) or Blaze vector (2)
-//{
-//    constexpr static int code = 0;
-//};
-
-//template <template <typename, typename> class Container, typename ValueType, typename Allocator>
-//struct determine_container_type<Container<ValueType, Allocator>>
-//{
-//    constexpr static int code = 1;
-//};
-
-//template <template <typename, bool> class Container, typename ValueType, bool F>
-//struct determine_container_type<Container<ValueType, F>>
-//{
-//    constexpr static int code = 2;
-//};
-
-
-
-//template<typename C, int = determine_container_type<C>::code>
-//struct determine_element_type  // determines type of element both for STL containers and Blaze vectors
-//{
-//    using type = void;
-//};
-
-//template<typename C>
-//struct determine_element_type<C, 1>
-//{
-//    using type = typename C::value_type;
-//};
-
-//template<typename C>
-//struct determine_element_type<C, 2>
-//{
-//    using type = typename C::ElementType;
-//};
-
-
-
-
-
-
 /**
  * @class ESN
  * 
@@ -86,7 +39,8 @@ public:
      * @param washout_ 
      * @param beta_ 
      */
-    ESN(size_t w_size = 500,  // number of elements in reservoir
+    ESN(
+        size_t w_size = 500,  // number of elements in reservoir
         value_type w_connections = 10,  // number of interconnections (for each reservoir element)
         value_type w_sr = 0.6,  // desired spectral radius of the reservoir
         value_type alpha_ = 0.5,  // leak rate

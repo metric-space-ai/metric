@@ -80,8 +80,8 @@ public:
      * @param distribution
      */
     SOM(
-        Graph graph,
-        Metric metric = Metric(),
+        const Graph& graph,
+        const Metric& metric = Metric(),
         double start_learn_rate = 0.8,
         double finish_learn_rate = 0.0,
         size_t iterations = 20,
@@ -102,8 +102,8 @@ public:
      * @param random_seed
      */
     SOM(
-        Graph graph,
-        Metric metric,
+        const Graph& graph,
+        const Metric& metric,
         double start_learn_rate,
         double finish_learn_rate,
         size_t iterations,
@@ -184,7 +184,7 @@ public:
      *
      * @return
      */
-	std::vector<std::vector<T>> get_weights() const
+	const std::vector<std::vector<T>>& get_weights() const
 	{
 		return weights;
 	}
@@ -194,7 +194,7 @@ public:
      *
      * @return
      */
-	Graph get_graph() const
+	const Graph& get_graph() const
 	{
 		return graph;
 	}
