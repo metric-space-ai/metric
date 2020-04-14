@@ -35,14 +35,13 @@ using DistanceMatrix = blaze::SymmetricMatrix<blaze::DynamicMatrix<T>>;
  *  @tparam Metric2 type of metric associated with RecType2
  */
 template <class RecType1, class Metric1, class RecType2, class Metric2>
-struct MGC {
-
+class MGC {
+public:
     /**
      * @brief Construct MGC object
      *
      * @param m1 Metric1 object
      * @param m2 Metric1 object
-     *
      */
     explicit MGC(const Metric1 & m1 = Metric1(), const Metric2 & m2 = Metric2()) : metric1(m1), metric2(m2) {}
 
@@ -63,8 +62,13 @@ struct MGC {
      * @return estimate of the correlation betwen a and b
      */
     template <typename Container1, typename Container2>
-    double estimate(const Container1& a, const Container2& b, const size_t sampleSize = 250,
-                            const double threshold = 0.05, size_t maxIterations = 1000);
+    double estimate(
+        const Container1& a,
+        const Container2& b,
+        const size_t sampleSize = 250,
+        const double threshold = 0.05,
+        size_t maxIterations = 1000
+    ) const;
 
 	/** @brief return vector of mgc values calculated for different data shifts
 	 * @param a container of values of type RecType1
@@ -82,76 +86,7 @@ struct MGC {
 	 * @return distance matrix
 	 */
 	template <typename Container, typename Metric>
-  DistanceMatrix<double> computeDistanceMatrix(const Container &c, const Metric & metric) const;
-    /**
-     * @brief
-     *
-     * @param data
-     * @return
-     */
-    double mean(const std::vector<double>& data);
-
-    /**
-     * @brief
-     *
-     * @param data
-     * @param mean
-     * @return double
-     */
-    double variance(const std::vector<double>& data, const double mean);
-
-    /**
-     * @brief
-     *
-     * @param prob
-     * @param mu
-     * @param sigma
-     * @return
-     */
-    std::vector<double> icdf(const std::vector<double>& prob, const double mu, const double sigma);
-
-    /**
-     * @brief
-     *
-     * @param z
-     * @return
-     */
-    double erfcinv(const double z);
-
-    /**
-     * @brief
-     *
-     * @param p
-     * @param q
-     * @return
-     */
-    double erfinv_imp(const double p, const double q);
-
-    /**
-     * @brief
-     *
-     * @param poly
-     * @param z
-     * @return
-     */
-    double polyeval(const std::vector<double>& poly, const double z);
-    /**
-     * @brief
-     *
-     * @param data
-     * @return
-     */
-    double peak2ems(const std::vector<double>& data);
-
-    /**
-     * @brief
-     *
-     * @param a
-     * @param b
-     * @param n
-     * @return
-     */
-    std::vector<double> linspace(double a, double b, int n);
+	DistanceMatrix<double> computeDistanceMatrix(const Container &c, const Metric & metric) const;
 
 private:
     Metric1 metric1;

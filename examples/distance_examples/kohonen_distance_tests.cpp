@@ -86,7 +86,7 @@ int main()
 
 	///
 	
-	metric::kohonen_distance<double, std::vector<double>> distance_1(train_dataset, grid_w, grid_h);
+	metric::Kohonen<double, std::vector<double>> distance_1(train_dataset, grid_w, grid_h);
 
 	for (int i = 1; i < 6; i++)
 	{
@@ -124,7 +124,7 @@ int main()
 
 	som_model.train(train_dataset);
 	
-	metric::kohonen_distance<double, Vector, Graph, Metric> distance_2(som_model);
+	metric::Kohonen<double, Vector, Graph, Metric> distance_2(som_model);
 	
 	for (int i = 1; i < 6; i++)
 	{
@@ -150,7 +150,7 @@ int main()
     metric::SOM<Vector, Graph, Metric> negative_som_model(Graph(grid_w, grid_h), Metric(), -0.8, -0.2, 50, distr);
 	negative_som_model.train(train_dataset);
 	
-	metric::kohonen_distance<double, Vector, Graph, Metric> distance_3(negative_som_model);
+	metric::Kohonen<double, Vector, Graph, Metric> distance_3(negative_som_model);
 	
 	for (int i = 1; i < 6; i++)
 	{

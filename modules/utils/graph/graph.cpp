@@ -45,7 +45,7 @@ template <typename WeightType, bool isDense, bool isSymmetric>
 Graph<WeightType, isDense, isSymmetric>::~Graph() = default;
 
 template <typename WeightType, bool isDense, bool isSymmetric>
-size_t Graph<WeightType, isDense, isSymmetric>::getNodesNumber()
+size_t Graph<WeightType, isDense, isSymmetric>::getNodesNumber() const
 {
     return nodesNumber;
 }

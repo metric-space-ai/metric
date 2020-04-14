@@ -1,4 +1,4 @@
-#include "modules/distance/k-structured/kohonen_distance.hpp"
+#include "modules/distance/k-structured/Kohonen.hpp"
 
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
@@ -18,12 +18,12 @@ template <typename D,
     // D is a distance return type
 
 
-	kohonen_distance(metric::SOM<Sample, Graph, Metric, Distribution> som_model);   <---------- ???
+	Kohonen(metric::SOM<Sample, Graph, Metric, Distribution> som_model);   <---------- ???
 */
 
 template<typename DistanceType, typename Sample, typename Graph, typename Metric>
 void register_wrapper_kohonen(py::module& m) {
-    using Class = metric::kohonen_distance<DistanceType, Sample>;
+    using Class = metric::Kohonen<DistanceType, Sample>;
     auto metric = py::class_<Class>(m, "Kohonen");
     metric.def(py::init<const std::vector<Sample>&, Graph, Metric, double, double, size_t>(),
         py::arg("samples"),

@@ -148,7 +148,7 @@ int main() {
     auto muOUT2 = std::get<1>(result2);
     auto sigmaOUT2 = std::get<2>(result2);
 
-    std::cout << "\n\logZ2 = " << logZ2 << "\n";
+    std::cout << "\nlogZ2 = " << logZ2 << "\n";
     std::cout << "muOUT2 = \n" << muOUT2 << "\n";
     std::cout << "sigmaOUT2 = \n" << sigmaOUT2 << "\n";
 

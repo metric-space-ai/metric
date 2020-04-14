@@ -13,8 +13,8 @@ Copyright (c) 2019 Panda Team
 
 #include "../../modules/utils/type_traits.hpp"
 #include "../../modules/space/tree.hpp"
-#include "estimator_helpers.cpp"
-#include "epmgp.cpp"
+#include "estimator_helpers.hpp"
+#include "epmgp.hpp"
 
 #include <cmath>
 #include <vector>
@@ -285,7 +285,7 @@ double estimate(
         const double threshold,
         size_t maxIterations
 ){
-    using T = type_traits::underlaying_type_t<Container>;
+    using T = type_traits::underlying_type_t<Container>;
     using V = type_traits::index_value_type_t<Container>;
     const size_t dataSize = data.size();
 
@@ -371,11 +371,11 @@ double estimate(
 // averaged entropy estimation: code COPIED from mgc.*pp with only mgc replaced with entropy, TODO refactor to avoid code dubbing
 template <typename RecType, typename Metric>
 template <typename Container>
-double Entropy_simple<RecType, Metric>::operator()(
+double EntropySimple<RecType, Metric>::operator()(
         const Container& data
 ) const
 {
-    using T = type_traits::underlaying_type_t<Container>;
+    using T = type_traits::underlying_type_t<Container>;
     using V = type_traits::index_value_type_t<Container>;
 
     if (data.empty() || data[0].empty()) {
@@ -422,7 +422,7 @@ double Entropy_simple<RecType, Metric>::operator()(
 // averaged entropy estimation: code COPIED from mgc.*pp with only mgc replaced with entropy, TODO refactor to avoid code dubbing
 template <typename RecType, typename Metric>
 template <typename Container>
-double Entropy_simple<RecType, Metric>::estimate(
+double EntropySimple<RecType, Metric>::estimate(
         const Container & a,
         const size_t sampleSize,
         const double threshold,
@@ -447,7 +447,7 @@ template <typename RecType, typename Metric>
 template <typename Container>
 double Entropy<RecType, Metric>::operator()(const Container& data) const
 {
-    using T = type_traits::underlaying_type_t<Container>;
+    using T = type_traits::underlying_type_t<Container>;
     using V = type_traits::index_value_type_t<Container>;
     size_t n = data.size();
     size_t d = data[0].size();

@@ -253,7 +253,7 @@ namespace metric {
 		iterations_(iterations),
 		random_seed_(std::chrono::system_clock::now().time_since_epoch().count()),
 		neighborhood_start_size_(std::sqrt(double(nodesNumber))),
-		neigbour_range_decay_(2.0)
+		neighborhood_range_decay_(2.0)
 	{
 
 	}
@@ -270,14 +270,14 @@ namespace metric {
 		iterations_(iterations),
 		random_seed_(std::chrono::system_clock::now().time_since_epoch().count()),
 		neighborhood_start_size_(std::sqrt(double(nodesWidth * nodesHeight))),
-		neigbour_range_decay_(2.0)
+		neighborhood_range_decay_(2.0)
 	{
 	}
 	
 	template <class RecType, class Graph, class Metric, class Distribution>
 	KOC_factory<RecType, Graph, Metric, Distribution>::KOC_factory(size_t nodesNumber, double anomaly_sigma,
 			double start_learn_rate, double finish_learn_rate, size_t iterations, T distribution_min, T distribution_max, 
-			double neighborhood_start_size, double neigbour_range_decay, long long random_seed) : 
+			double neighborhood_start_size, double neighborhood_range_decay, long long random_seed) :
 		graph_(nodesNumber), 
 		metric_(), 
 		distribution_(distribution_min, distribution_max),
@@ -287,14 +287,14 @@ namespace metric {
 		iterations_(iterations),
 		random_seed_(random_seed),
 		neighborhood_start_size_(neighborhood_start_size),
-		neigbour_range_decay_(neigbour_range_decay)
+		neighborhood_range_decay_(neighborhood_range_decay)
 	{
 	}
 	
 	template <class RecType, class Graph, class Metric, class Distribution>
 	KOC_factory<RecType, Graph, Metric, Distribution>::KOC_factory(size_t nodesWidth, size_t nodesHeight, double anomaly_sigma,
 			double start_learn_rate, double finish_learn_rate, size_t iterations, T distribution_min, T distribution_max, 
-			double neighborhood_start_size, double neigbour_range_decay, long long random_seed) : 
+			double neighborhood_start_size, double neighborhood_range_decay, long long random_seed) :
 		graph_(nodesWidth, nodesHeight), 
 		metric_(), 
 		distribution_(distribution_min, distribution_max),
@@ -304,7 +304,7 @@ namespace metric {
 		iterations_(iterations),
 		random_seed_(random_seed),
 		neighborhood_start_size_(neighborhood_start_size),
-		neigbour_range_decay_(neigbour_range_decay)
+		neighborhood_range_decay_(neighborhood_range_decay)
 	{
 	}
 
@@ -313,7 +313,7 @@ namespace metric {
 	KOC_details::KOC<RecType, Graph, Metric, Distribution> KOC_factory<RecType, Graph, Metric, Distribution>::operator()(const std::vector<RecType>& samples, int num_clusters, int min_cluster_size)
 	{
 		KOC_details::KOC<RecType, Graph, Metric, Distribution> koc(graph_, metric_, anomaly_sigma_, start_learn_rate_, finish_learn_rate_, iterations_, distribution_,
-			neighborhood_start_size_, neigbour_range_decay_, random_seed_);
+			neighborhood_start_size_, neighborhood_range_decay_, random_seed_);
 
 		koc.train(samples, num_clusters, min_cluster_size);
 

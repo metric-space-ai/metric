@@ -19,7 +19,7 @@ BOOST_AUTO_TEST_CASE(basic_use)
 	std::vector<double> samples_1 = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
 	std::vector<double> samples_2 = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 };
 	   
-    metric::CramervonNises<std::vector<double>, double> distance;
+    metric::CramervonMises<std::vector<double>, double> distance;
 
     auto result = distance(samples_1, samples_2);
 	
@@ -35,7 +35,7 @@ BOOST_AUTO_TEST_CASE(different_dimensions)
 	std::vector<double> samples_1 = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
 	std::vector<double> samples_2 = { 1, 2, 3, 4, 5 };
 	   
-    metric::CramervonNises<std::vector<double>, double> distance;
+    metric::CramervonMises<std::vector<double>, double> distance;
 
     auto result = distance(samples_1, samples_2);
 	
@@ -51,7 +51,7 @@ BOOST_AUTO_TEST_CASE(equal_samples)
 	std::vector<double> samples_1 = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
 	std::vector<double> samples_2 = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
 	   
-    metric::CramervonNises<std::vector<double>, double> distance;
+    metric::CramervonMises<std::vector<double>, double> distance;
 
     auto result = distance(samples_1, samples_2);
 	
@@ -67,7 +67,7 @@ BOOST_AUTO_TEST_CASE(single_value_distribution)
 	std::vector<double> samples_1 = { 0, 0, 0, 0, 0, 0, 0 };
 	std::vector<double> samples_2 = { 1, 1, 1, 1, 1, 1, 1 };
 	   
-    metric::CramervonNises<std::vector<double>, double> distance;
+    metric::CramervonMises<std::vector<double>, double> distance;
 
     auto result = distance(samples_1, samples_2);
 	
@@ -82,7 +82,7 @@ BOOST_AUTO_TEST_CASE(non_intersect_distribution)
 	std::vector<double> samples_1 = { 0, 1, 1, 2, 2, 2, 2, 1, 1, 0 };
 	std::vector<double> samples_2 = { 10, 11, 11, 12, 12, 12, 12, 11, 11, 10 };
 	   
-    metric::CramervonNises<std::vector<double>, double> distance;
+    metric::CramervonMises<std::vector<double>, double> distance;
 
     auto result = distance(samples_1, samples_2);
 	

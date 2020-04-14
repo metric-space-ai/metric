@@ -103,6 +103,7 @@ void export_metric_KOC(py::module& m) {
         ,metric::Chebyshev<Value>
         ,metric::P_norm<Value>
         ,metric::EMD<Value>
+//        ,std::function<Value(const Container&, const Container&)>
 //        ,metric::PythonMetric<Container>
     >;
 

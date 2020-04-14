@@ -6,65 +6,68 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 Copyright (c) 2019 PANDA Team
 */
 
-#ifndef _METRIC_DISTANCE_K_STRUCTURED_KOHONEN_CPP
-#define _METRIC_DISTANCE_K_STRUCTURED_KOHONEN_CPP
-
-#include "kohonen_distance.hpp"
+#include "Kohonen.hpp"
 #include "../../../3rdparty/blaze/Blaze.h"
 #include <cmath>
 #include <vector>
 
-#endif
-
 namespace metric {
-	
-	
+
 template <typename D, typename Sample, typename Graph, typename Metric, typename Distribution>
-kohonen_distance<D, Sample, Graph, Metric, Distribution>::kohonen_distance(metric::SOM<Sample, Graph, Metric, Distribution> som_model) : som_model_(som_model)
+Kohonen<D, Sample, Graph, Metric, Distribution>::Kohonen(const metric::SOM<Sample, Graph, Metric, Distribution>& som_model)
+    : som_model(som_model)
 {
+	calculate_distance_matrix();
+}
+
+
+template <typename D, typename Sample, typename Graph, typename Metric, typename Distribution>
+Kohonen<D, Sample, Graph, Metric, Distribution>::Kohonen(const std::vector<Sample>& samples, size_t nodesWidth, size_t nodesHeight)
+    : som_model(Graph(nodesWidth, nodesHeight), Metric(), 0.8, 0.2, 20)
+{
+	som_model.train(samples);
+
 	calculate_distance_matrix();
 }
 	
 
 template <typename D, typename Sample, typename Graph, typename Metric, typename Distribution>
-kohonen_distance<D, Sample, Graph, Metric, Distribution>::kohonen_distance(const std::vector<Sample>& samples, size_t nodesWidth, size_t nodesHeight) :
-	som_model_(Graph(nodesWidth, nodesHeight), Metric(), 0.8, 0.2, 20)
+Kohonen<D, Sample, Graph, Metric, Distribution>::Kohonen(
+    const std::vector<Sample>& samples,
+    Graph graph,
+    Metric metric,
+	double start_learn_rate,
+	double finish_learn_rate,
+	size_t iterations,
+	Distribution distribution
+)
+	 : som_model(graph, metric, start_learn_rate, finish_learn_rate, iterations, distribution)
 {
-	som_model_.train(samples);
-
-	calculate_distance_matrix();
-}
-	
-
-template <typename D, typename Sample, typename Graph, typename Metric, typename Distribution>
-kohonen_distance<D, Sample, Graph, Metric, Distribution>::kohonen_distance(const std::vector<Sample>& samples, Graph graph, Metric metric,
-	double start_learn_rate, double finish_learn_rate, size_t iterations, Distribution distribution) : 
-	som_model_(graph, metric, start_learn_rate, finish_learn_rate, iterations, distribution)
-{
-	som_model_.train(samples);
+	som_model.train(samples);
 	
 	calculate_distance_matrix();
 }
 
 
 template <typename D, typename Sample, typename Graph, typename Metric, typename Distribution>
-auto kohonen_distance<D, Sample, Graph, Metric, Distribution>::operator()(const Sample& sample_1, const Sample& sample_2) -> distance_return_type
+auto Kohonen<D, Sample, Graph, Metric, Distribution>::operator()(const Sample& sample_1, const Sample& sample_2) const
+    -> distance_type
 {
 	// then we calculate distributions over SOM space for samples	
-	auto bmu_1 = som_model_.BMU(sample_1);
-	auto bmu_2 = som_model_.BMU(sample_2);
+	auto bmu_1 = som_model.BMU(sample_1);
+	auto bmu_2 = som_model.BMU(sample_2);
 
-	return distance_matrix_[bmu_1][bmu_2];
+	return distance_matrix[bmu_1][bmu_2];
 }
 
 
 template <typename D, typename Sample, typename Graph, typename Metric, typename Distribution>
-void kohonen_distance<D, Sample, Graph, Metric, Distribution>::calculate_distance_matrix()
+void Kohonen<D, Sample, Graph, Metric, Distribution>::calculate_distance_matrix()
 {
-	std::vector<Sample> nodes = som_model_.get_weights();
+	std::vector<Sample> nodes = som_model.get_weights();
     Metric distance;
 
-	auto matrix = som_model_.get_graph().get_matrix();
+	auto matrix = som_model.get_graph().get_matrix();
 	blaze::CompressedMatrix<D> blaze_matrix(matrix.rows(),  matrix.columns());
 	for (size_t i = 0; i < matrix.rows(); ++i)
 	{
@@ -83,33 +86,37 @@ void kohonen_distance<D, Sample, Graph, Metric, Distribution>::calculate_distanc
 	for (auto i = 0; i < nodes.size(); i++)
 	{
 		std::tie(distances, predecessor) = calculate_distance(blaze_matrix, i, matrix.rows());
-		distance_matrix_.push_back(distances);
-		predecessors_.push_back(predecessor);
+		distance_matrix.push_back(distances);
+		predecessors.push_back(predecessor);
 	}
 }
 
 
 template <typename D, typename Sample, typename Graph, typename Metric, typename Distribution>
-void kohonen_distance<D, Sample, Graph, Metric, Distribution>::print_shortest_path(int from_node, int to_node)
+void Kohonen<D, Sample, Graph, Metric, Distribution>::print_shortest_path(int from_node, int to_node) const
 {
     if(to_node == from_node)
 	{
 		std::cout << to_node << " -> ";
     }
-	else if(predecessors_[from_node][to_node] == -1)
+	else if(predecessors[from_node][to_node] == -1)
 	{
         std::cout << "No path from " << from_node << " to " << to_node << std::endl;
     }
 	else
 	{
-        print_shortest_path(from_node,  predecessors_[from_node][to_node]);
+        print_shortest_path(from_node,  predecessors[from_node][to_node]);
         std::cout << to_node << " -> ";
     }
 }
 
 
 template <typename D, typename Sample, typename Graph, typename Metric, typename Distribution>
-int kohonen_distance<D, Sample, Graph, Metric, Distribution>::get_closest_unmarked_node(const std::vector<D>& distance, const std::vector<bool>& mark, int nodes_count)
+int Kohonen<D, Sample, Graph, Metric, Distribution>::get_closest_unmarked_node(
+    const std::vector<D>& distance,
+    const std::vector<bool>& mark,
+    int nodes_count
+) const
 {
     D minDistance = INFINITY;
     int closestUnmarkedNode = -1;
@@ -126,7 +133,12 @@ int kohonen_distance<D, Sample, Graph, Metric, Distribution>::get_closest_unmark
 
 
 template <typename D, typename Sample, typename Graph, typename Metric, typename Distribution>
-std::tuple<std::vector<D>, std::vector<int>> kohonen_distance<D, Sample, Graph, Metric, Distribution>::calculate_distance(const blaze::CompressedMatrix<D>& adjust_matrix, int from_node, int nodes_count)
+auto Kohonen<D, Sample, Graph, Metric, Distribution>::calculate_distance(
+    const blaze::CompressedMatrix<D>& adjust_matrix,
+    int from_node,
+    int nodes_count
+) const
+    -> std::tuple<std::vector<D>, std::vector<int>>
 {
     std::vector<bool> mark(nodes_count);
     std::vector<D> distances(nodes_count);

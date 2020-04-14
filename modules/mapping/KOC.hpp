@@ -81,8 +81,8 @@ namespace metric {
 				 * @param random_seed - the value used to initialize the random number generator, which is used for the initial distribution of weight (positions).
 				 */
 			KOC(Graph graph, Metric metric, double anomaly_sigma, double start_learn_rate, double finish_learn_rate, size_t iterations,
-				Distribution distribution, double neighborhood_start_size, double neigbour_range_decay, long long random_seed)
-				: som_(graph, metric::Euclidean<double>(), start_learn_rate, finish_learn_rate, iterations, distribution, neighborhood_start_size, neigbour_range_decay, random_seed),
+				Distribution distribution, double neighborhood_start_size, double neighborhood_range_decay, long long random_seed)
+				: som_(graph, metric::Euclidean<double>(), start_learn_rate, finish_learn_rate, iterations, distribution, neighborhood_start_size, neighborhood_range_decay, random_seed),
 				metric_(metric),
 				anomaly_sigma_(anomaly_sigma),
 				iterations_(iterations),
@@ -247,7 +247,7 @@ namespace metric {
 		 */
 		KOC_factory(size_t nodesNumber, double anomaly_sigma,
 			double start_learn_rate, double finish_learn_rate, size_t iterations, T distribution_min, T distribution_max,
-			double neighborhood_start_size, double neigbour_range_decay, long long random_seed);
+			double neighborhood_start_size, double neighborhood_range_decay, long long random_seed);
 
 		/**
 		 * @brief
@@ -265,7 +265,7 @@ namespace metric {
 		 */
 		KOC_factory(size_t nodesWidth, size_t nodesHeight, double anomaly_sigma,
 			double start_learn_rate, double finish_learn_rate, size_t iterations, T distribution_min, T distribution_max, 
-			double neighborhood_start_size, double neigbour_range_decay, long long random_seed);
+			double neighborhood_start_size, double neighborhood_range_decay, long long random_seed);
 
 		/**
 		 * @brief 
@@ -288,7 +288,7 @@ namespace metric {
 		size_t iterations_;
 
 		double neighborhood_start_size_;
-		double neigbour_range_decay_;
+		double neighborhood_range_decay_;
 		long long random_seed_;
 		double anomaly_sigma_;
 	};
