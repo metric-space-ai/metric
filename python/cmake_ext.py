@@ -43,6 +43,8 @@ class CMakeBuildExt(build_ext):
                           ext.source_dir,
                           '-DPYTHON_EXECUTABLE:FILEPATH=' + sys.executable,
                           '-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=' + os.path.join(output_dir, ext.output_dir),
+                          '-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_DEBUG=' + os.path.join(output_dir, ext.output_dir),
+                          '-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE=' + os.path.join(output_dir, ext.output_dir),
                           '-DCMAKE_BUILD_TYPE=' + build_type]
             cmake_args.extend(
                 [x for x in
@@ -52,12 +54,19 @@ class CMakeBuildExt(build_ext):
             env = os.environ.copy()
             if not os.path.exists(self.build_temp):
                 os.makedirs(self.build_temp)
+
             subprocess.check_call(cmake_args,
                                   cwd=self.build_temp,
                                   env=env)
-            subprocess.check_call(['make', '-j', ext.name],
-                                  cwd=self.build_temp,
-                                  env=env)
+            if sys.platform == 'win32':
+                subprocess.check_call(' '.join([CMAKE_EXE, '--build', '.', '--config', build_type]),
+                                      cwd=self.build_temp,
+                                      env=env)
+
+            else:
+                subprocess.check_call(['make', '-j', ext.name],
+                                      cwd=self.build_temp,
+                                      env=env)
         else:
             super().build_extension(ext)
 

@@ -24,7 +24,7 @@ int main()
 	std::vector<double> samples_1 = { 0, 1, 2, 3, 3, 2, 1, 0, 2, 2 };
 	std::vector<double> samples_2 = { 0, 0, 2, 3, 3, 2, 1, 0, 2, 2 };
 	   
-    metric::CramervonNises<std::vector<double>, double> distance_1;
+    metric::CramervonMises<std::vector<double>, double> distance_1;
 
     auto t1 = std::chrono::steady_clock::now();
     auto result = distance_1(samples_1, samples_2);
@@ -36,7 +36,7 @@ int main()
 
 	//
 	   
-    metric::CramervonNises<std::vector<double>, double> distance_2(0.0001);
+    metric::CramervonMises<std::vector<double>, double> distance_2(0.0001);
 
     t1 = std::chrono::steady_clock::now();
     result = distance_2(samples_1, samples_2);
@@ -48,7 +48,7 @@ int main()
 
 	//
 	   
-    metric::CramervonNises<std::vector<double>, double> distance_3(0.1);
+    metric::CramervonMises<std::vector<double>, double> distance_3(0.1);
 
     t1 = std::chrono::steady_clock::now();
     result = distance_3(samples_1, samples_2);

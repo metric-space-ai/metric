@@ -189,10 +189,10 @@ int main()
 
 	auto best_metric = adm.detect<Record, Graph>(graph, graph_w, graph_h, dataset, false);
 	
-	if (best_metric == "Euclidian")
+	if (best_metric == "Euclidean")
 	{
-		// Euclidian
-		using Metric = metric::Euclidian<double>;
+		// Euclidean
+		using Metric = metric::Euclidean<double>;
 		metric::SOM<Record, Graph, Metric> som_model(graph, Metric(), 0.8, 0.2, 20);
 		checkSOM(som_model, dataset);
 	}
@@ -210,10 +210,10 @@ int main()
 		metric::SOM<Record, Graph, Metric> som_model(graph, Metric(), 0.8, 0.2, 20);
 		checkSOM(som_model, dataset);
 	}
-	else if (best_metric == "Euclidian_thresholded")
+	else if (best_metric == "Euclidean_thresholded")
 	{
-		// Euclidian_thresholded
-		using Metric = metric::Euclidian_thresholded<double>;
+		// Euclidean_thresholded
+		using Metric = metric::Euclidean_thresholded<double>;
 		metric::SOM<Record, Graph, Metric> som_model(graph, Metric(), 0.8, 0.2, 20);
 		checkSOM(som_model, dataset);
 	}

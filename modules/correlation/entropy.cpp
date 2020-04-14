@@ -13,11 +13,15 @@ Copyright (c) 2019 Panda Team
 
 #include "../../modules/utils/type_traits.hpp"
 #include "../../modules/space/tree.hpp"
-#include "estimator_helpers.cpp"
-#include "epmgp.cpp"
+#include "estimator_helpers.hpp"
+#include "epmgp.hpp"
 
 #include <cmath>
 #include <vector>
+
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
 
 namespace metric {
 
@@ -281,7 +285,7 @@ double estimate(
         const double threshold,
         size_t maxIterations
 ){
-    using T = type_traits::underlaying_type_t<Container>;
+    using T = type_traits::underlying_type_t<Container>;
     using V = type_traits::index_value_type_t<Container>;
     const size_t dataSize = data.size();
 
@@ -365,13 +369,13 @@ double estimate(
 
 // updated version, for different metric
 // averaged entropy estimation: code COPIED from mgc.*pp with only mgc replaced with entropy, TODO refactor to avoid code dubbing
-template <typename recType, typename Metric>
+template <typename RecType, typename Metric>
 template <typename Container>
-double Entropy_simple<recType, Metric>::operator()(
+double EntropySimple<RecType, Metric>::operator()(
         const Container& data
 ) const
 {
-    using T = type_traits::underlaying_type_t<Container>;
+    using T = type_traits::underlying_type_t<Container>;
     using V = type_traits::index_value_type_t<Container>;
 
     if (data.empty() || data[0].empty()) {
@@ -398,7 +402,7 @@ double Entropy_simple<recType, Metric>::operator()(
 
     if constexpr (!std::is_same<Metric, typename metric::Chebyshev<T>>::value) {
         double p = 1; // Manhatten and other metrics (TODO check if it is correct for them!)
-        if constexpr (std::is_same<Metric, typename metric::Euclidian<T>>::value) {
+        if constexpr (std::is_same<Metric, typename metric::Euclidean<T>>::value) {
             p = 2; // Euclidean
         } else if constexpr (std::is_same<Metric, typename metric::P_norm<T>>::value) {
             p = metric.p; // general Minkowsky
@@ -416,9 +420,9 @@ double Entropy_simple<recType, Metric>::operator()(
 
 
 // averaged entropy estimation: code COPIED from mgc.*pp with only mgc replaced with entropy, TODO refactor to avoid code dubbing
-template <typename recType, typename Metric>
+template <typename RecType, typename Metric>
 template <typename Container>
-double Entropy_simple<recType, Metric>::estimate(
+double EntropySimple<RecType, Metric>::estimate(
         const Container & a,
         const size_t sampleSize,
         const double threshold,
@@ -439,11 +443,11 @@ double Entropy_simple<recType, Metric>::estimate(
 
 
 
-template <typename recType, typename Metric>
+template <typename RecType, typename Metric>
 template <typename Container>
-double Entropy<recType, Metric>::operator()(const Container& data) const
+double Entropy<RecType, Metric>::operator()(const Container& data) const
 {
-    using T = type_traits::underlaying_type_t<Container>;
+    using T = type_traits::underlying_type_t<Container>;
     using V = type_traits::index_value_type_t<Container>;
     size_t n = data.size();
     size_t d = data[0].size();
@@ -521,9 +525,9 @@ double Entropy<recType, Metric>::operator()(const Container& data) const
 
 
 // averaged entropy estimation: code COPIED from mgc.*pp with only mgc replaced with entropy, TODO refactor to avoid code dubbing
-template <typename recType, typename Metric>
+template <typename RecType, typename Metric>
 template <typename Container>
-double Entropy<recType, Metric>::estimate(
+double Entropy<RecType, Metric>::estimate(
         const Container & a,
         const size_t sampleSize,
         const double threshold,

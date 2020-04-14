@@ -13,7 +13,7 @@ template<typename T>
 py::tuple kmeans(const std::vector<std::vector<T>>& data,
                  int k,
                  int maxiter = 200,
-                 std::string distance_measure = "euclidian") {
+                 std::string distance_measure = "Euclidean") {
     auto result = metric::kmeans(data, k, maxiter, distance_measure);
     return py::make_tuple(std::get<0>(result), std::get<1>(result), std::get<2>(result));
 }
@@ -24,7 +24,7 @@ void register_wrapper_kmeans(py::module& m) {
         py::arg("data"),
         py::arg("k") = 0.5,
         py::arg("maxiter") = 200,
-        py::arg("distance_measure") = "euclidian"   // TODO: fix typo
+        py::arg("distance_measure") = "Euclidean"   // TODO: fix typo
     );
 }
 

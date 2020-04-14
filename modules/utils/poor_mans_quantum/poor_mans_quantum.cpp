@@ -50,29 +50,24 @@ PMQ<Distribution, T>::PMQ(T par1, T par2, size_t n, Distribution d)
 /*** constructor for discrete samples ***/
 template <typename Distribution, typename T>
 PMQ<Distribution, T>::PMQ(std::vector<T> data, Distribution d)
-    : _dist(d), _generator(std::random_device {}())
+    : _dist(d)
+    , _generator(std::random_device {}())
 {
-#if USE_VECTOR_SORT
-	vector_sort::sort(data);
-#else
-	std::sort(data.begin(), data.end());
-#endif
-
-	std::map<float, int> hist{};
-	for (int i = 0; i < data.size(); i++)
-	{
-        ++hist[float(data[i])];
+    _dist._data.resize(data.size());
+    for (size_t i = 0; i < data.size(); ++i) {
+        _dist._data[i] = T(data[i]);
     }
-	
-	_dist._data.clear();
-	_dist._prob.clear();
-	float cumulative_sum = 0;
-	for(auto it = hist.begin(); it != hist.end(); ++it)
-	{
-		_dist._data.push_back(it->first);
-		cumulative_sum += (float) it->second / data.size();
-		_dist._prob.push_back(cumulative_sum);
-	}
+#if USE_VECTOR_SORT
+    vector_sort::sort(_dist._data);
+#else
+    std::sort(_dist._data.begin(), _dist._data.end());
+#endif
+    auto prob = linspace(T(0.5) / T(data.size()), T(1) - T(0.5) / T(data.size()), data.size());
+
+    _dist._prob.resize(prob.size());
+    for (size_t i = 0; i < prob.size(); ++i) {
+        _dist._prob[i] = T(prob[i]);
+    }
 }
 
 template <typename Distribution, typename T>

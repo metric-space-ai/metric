@@ -12,7 +12,7 @@ template<typename Tv = double>
 class Redif
 {
 public:
-    template <class Metric = metric::Euclidian<Tv>>
+    template <class Metric = metric::Euclidean<Tv>>
     Redif(
         const std::vector<std::vector<Tv>>& trainData,
         size_t nNeighbors = 10,
@@ -21,7 +21,7 @@ public:
     );
     ~Redif() = default;
 
-    template <class Metric = metric::Euclidian<Tv>>
+    template <class Metric = metric::Euclidean<Tv>>
     blaze::DynamicMatrix<Tv> encode(
         const blaze::DynamicMatrix<Tv>& x,
         blaze::DynamicVector<Tv> & l_idx,
@@ -45,11 +45,11 @@ private:
         size_t end
     );
 
-    template <class Metric = metric::Euclidian<Tv>>
+    template <class Metric = metric::Euclidean<Tv>>
     blaze::DynamicMatrix<Tv> getLocalDistMatrix(const blaze::DynamicMatrix<Tv>& dataSample, Metric metric = Metric());
     blaze::DynamicMatrix<Tv> calcWeightedGraphLaplacian(const blaze::DynamicMatrix<Tv>& localDist);
 
-    template <class Metric = metric::Euclidian<Tv>>
+    template <class Metric = metric::Euclidean<Tv>>
     blaze::DynamicMatrix<Tv> trainModel(size_t nIter, Metric metric = Metric());
 
     blaze::DynamicMatrix<Tv> xTrain;

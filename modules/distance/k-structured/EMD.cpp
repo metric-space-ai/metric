@@ -29,6 +29,9 @@ Copyright (c) 2018 Michael Welsch
 #include <vector>
 
 #include <cassert>  // uncommented by Max F in order to build under Clang & QMake
+
+namespace {
+
 template <typename T>
 inline void print_vector(const std::vector<T>& v)
 {
@@ -49,6 +52,8 @@ inline void print_matrix(const std::vector<std::vector<T>>& m)
     }
     std::cout << "]";
 }
+
+} // namespace
 
 namespace metric {
 
@@ -73,7 +78,7 @@ namespace EMD_details {
     }
 
     template <typename Container>
-    struct Euclidian_thresholded_EMD_default {
+    struct Euclidean_thresholded_EMD_default {
         typedef typename Container::value_type T;
         static_assert(std::is_floating_point<T>::value, "T must be a float type");
 
@@ -87,14 +92,14 @@ namespace EMD_details {
             }
             return std::min(thres, T(factor * sqrt(sum)));
         }
-        Euclidian_thresholded_EMD_default(T thres = 1000, T factor = 3000)
+        Euclidean_thresholded_EMD_default(T thres = 1000, T factor = 3000)
             : thres(thres)
             , factor(factor)
         {
         }
     };
 
-    template <typename T, typename Metric = Euclidian_thresholded_EMD_default<std::vector<double>>>
+    template <typename T, typename Metric = Euclidean_thresholded_EMD_default<std::vector<double>>>
     std::vector<std::vector<T>> ground_distance_matrix_of_2dgrid(size_t cols, size_t rows)
     {
         size_t n = rows * cols;
@@ -119,7 +124,7 @@ namespace EMD_details {
         return distM;
     }
 
-    template <typename T, typename Metric = Euclidian_thresholded_EMD_default<std::vector<double>>>
+    template <typename T, typename Metric = Euclidean_thresholded_EMD_default<std::vector<double>>>
     std::vector<std::vector<T>> ground_distance_matrix_of_2dgrid(std::vector<std::vector<T>> grid)
     {
         size_t n = grid.size();
@@ -1161,7 +1166,7 @@ auto EMD<V>::operator()(const Container& Pc, const Container& Qc) const -> dista
     return EMD_details::emd_impl<Container, FLOW_TYPE>()(Pc, Qc, P, Q, C, extra_mass_penalty,
         F);  // turned to original state by Max F
 
-};  // EMD
+}  // EMD
 
 }  // namespace metric
 

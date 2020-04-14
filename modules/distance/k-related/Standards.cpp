@@ -5,11 +5,8 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 Copyright (c) 2018 Michael Welsch
 */
-#ifndef _METRIC_DISTANCE_K_RELATED_STANDARDS_CPP
-#define _METRIC_DISTANCE_K_RELATED_STANDARDS_CPP
 
 #include "Standards.hpp"
-#include <algorithm>
 
 #include <cmath>
 #include <algorithm>
@@ -18,7 +15,7 @@ namespace metric {
 
 template <typename V>
 template <typename Container>
-auto Euclidian<V>::operator()(const Container& a, const Container& b) const ->
+auto Euclidean<V>::operator()(const Container& a, const Container& b) const ->
     typename std::enable_if<!std::is_same<Container, V>::value, distance_type>::type
 {
     //static_assert(std::is_floating_point<value_type>::value, "T must be a float type");
@@ -30,7 +27,7 @@ auto Euclidian<V>::operator()(const Container& a, const Container& b) const ->
 }
 
 template <typename V>
-auto Euclidian<V>::operator()(const V& a, const V& b) const -> distance_type
+auto Euclidean<V>::operator()(const V& a, const V& b) const -> distance_type
 {
     static_assert(std::is_floating_point<value_type>::value, "T must be a float type");
     distance_type sum = 0;
@@ -40,7 +37,7 @@ auto Euclidian<V>::operator()(const V& a, const V& b) const -> distance_type
 
 template <typename V>
 template <typename Container>
-auto Euclidian_thresholded<V>::operator()(const Container& a, const Container& b) const -> distance_type
+auto Euclidean_thresholded<V>::operator()(const Container& a, const Container& b) const -> distance_type
 {
     static_assert(std::is_floating_point<value_type>::value, "T must be a float type");
     distance_type sum = 0;
@@ -102,7 +99,7 @@ auto CosineInverted<V>::operator()(const Container& A, const Container& B) const
 
 template <typename V>
 template <typename Container>
-V Chebyshev<V>::operator()(const Container& lhs, const Container& rhs) const
+auto Chebyshev<V>::operator()(const Container& lhs, const Container& rhs) const -> distance_type
 {
     distance_type res = 0;
     for (std::size_t i = 0; i < lhs.size(); i++) {
@@ -114,4 +111,3 @@ V Chebyshev<V>::operator()(const Container& lhs, const Container& rhs) const
 }
 
 }  // namespace metric
-#endif

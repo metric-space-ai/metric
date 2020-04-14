@@ -22,16 +22,15 @@ namespace metric {
  * @tparam D - distance return type
  */
 template <typename Sample, typename D = double>
-struct KolmogorovSmirnov {
-    using distance_return_type = D;
+class KolmogorovSmirnov {
+public:
+    using distance_type = D;
 
     /**
      * @brief Construct a new Kolmogorov-Smirnov object
      *
      */
-    explicit KolmogorovSmirnov()
-    {
-    }
+    explicit KolmogorovSmirnov() = default;
 
     /**
      * @brief calculate Kolmogorov-Smirnov distance between two samples
@@ -40,7 +39,7 @@ struct KolmogorovSmirnov {
      * @param sample_2 second sample
      * @return distance
      */
-    distance_return_type operator()(const Sample& sample_1, const Sample& sample_2);
+    distance_type operator()(const Sample& sample_1, const Sample& sample_2) const;
 };
 
 

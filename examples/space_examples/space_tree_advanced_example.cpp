@@ -24,8 +24,8 @@ struct recMetric_Blaze {
 };
 
 /*** simulation helper functions ***/
-template <class recType, class Metric>
-void insert_random(metric::Tree<recType, Metric>& cTree, int samples, int dimension)
+template <class RecType, class Metric>
+void insert_random(metric::Tree<RecType, Metric>& cTree, int samples, int dimension)
 {
     // random generator
     std::random_device rnd_device;

@@ -16,13 +16,13 @@ Copyright (c) 2020 Panda Team
 namespace metric {
 
 
-template <typename recType, typename Metric = metric::Euclidian<typename recType::value_type>>
-struct Entropy_simple { // averaged entropy estimation: code COPIED from mgc.*pp with only mgc replaced with entropy, TODO refactor to avoid code dubbing
-
-    Entropy_simple(Metric metric_ = Metric(), size_t k_ = 3, bool exp_ = false) :
-        metric(metric_),
-        k(k_),
-        exp(exp_),
+template <typename RecType, typename Metric = metric::Euclidean<typename RecType::value_type>>
+class EntropySimple { // averaged entropy estimation: code COPIED from mgc.*pp with only mgc replaced with entropy, TODO refactor to avoid code dubbing
+public:
+    EntropySimple(Metric metric = Metric(), size_t k = 3, bool exp = false) :
+        metric(metric),
+        k(k),
+        exp(exp),
         logbase(2) {} // TODO remove (?)
 
     template <typename Container>
@@ -52,14 +52,14 @@ private:
 
 
 
-template <typename recType, typename Metric = metric::Chebyshev<typename recType::value_type>>
-struct Entropy {
-
-    Entropy(Metric metric_ = Metric(), size_t k_ = 7, size_t p_ = 70, bool exp_ = false) :
-        metric(metric_),
-        k(k_),
-        p(p_),
-        exp(exp_) {}
+template <typename RecType, typename Metric = metric::Chebyshev<typename RecType::value_type>>
+class Entropy {
+public:
+    Entropy(Metric metric = Metric(), size_t k = 7, size_t p = 70, bool exp = false) :
+        metric(metric),
+        k(k),
+        p(p),
+        exp(exp) {}
 
     template <typename Container>
     double operator()(const Container& data) const;

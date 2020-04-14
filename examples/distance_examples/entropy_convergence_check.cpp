@@ -41,11 +41,11 @@ void print_entropies(size_t step, size_t dim, size_t k) {
         }
 
 
-        auto e_kpn_cheb2 = metric::Entropy<void, metric::Euclidian<T>>(metric::Euclidian<T>(), k, k+2);
-        auto e_kpn_cheb3 = metric::Entropy<void, metric::Euclidian<T>>(metric::Euclidian<T>(), k, k+3);
-        auto e_kpn_cheb4 = metric::Entropy<void, metric::Euclidian<T>>(metric::Euclidian<T>(), k, k+4);
-        auto e_kpn_cheb10 = metric::Entropy<void, metric::Euclidian<T>>(metric::Euclidian<T>(), k, k+10);
-        auto e_eucl = metric::Entropy_simple<void, metric::Chebyshev<T>>(metric::Chebyshev<T>(), k);
+        auto e_kpn_cheb2 = metric::Entropy<void, metric::Euclidean<T>>(metric::Euclidean<T>(), k, k+2);
+        auto e_kpn_cheb3 = metric::Entropy<void, metric::Euclidean<T>>(metric::Euclidean<T>(), k, k+3);
+        auto e_kpn_cheb4 = metric::Entropy<void, metric::Euclidean<T>>(metric::Euclidean<T>(), k, k+4);
+        auto e_kpn_cheb10 = metric::Entropy<void, metric::Euclidean<T>>(metric::Euclidean<T>(), k, k+10);
+        auto e_eucl = metric::EntropySimple<void, metric::Chebyshev<T>>(metric::Chebyshev<T>(), k);
 
         std::cout
                 << v.size() << " | "

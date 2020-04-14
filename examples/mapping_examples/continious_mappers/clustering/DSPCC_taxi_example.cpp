@@ -7,7 +7,7 @@
 #include "examples/mapping_examples/assets/helpers.cpp" // for .csv reader
 
 #include "../../../../modules/utils/visualizer.hpp"
-#include "../../../../modules/utils/metric_err.cpp"
+#include "../../../../modules/utils/metric_err.hpp"
 
 #include "../../../../modules/distance/k-related/Standards.hpp" // we use Euclidean metric for mean squared error evaluation
 
@@ -134,7 +134,7 @@ int main()
         std::cout << " decoded record length:  " << v_decoded[0].size() << "\n";
 
         std::cout << "\ndecompression with only time-freq PSFAs done, decoded data saved\n";
-        auto err_tf = normalized_err_stats<metric::Euclidian<double>>(vdata, v_decoded);
+        auto err_tf = normalized_err_stats<metric::Euclidean<double>>(vdata, v_decoded);
         print_stats(err_tf);
         errs_tf.push_back(std::get<4>(err_tf));
 
@@ -151,7 +151,7 @@ int main()
         }
 
         std::cout << "\ntest of pre-compression done, pre-decoded data saved\n";
-        auto err_pre = normalized_err_stats<metric::Euclidian<double>>(vdata, v_pre_decoded);
+        auto err_pre = normalized_err_stats<metric::Euclidean<double>>(vdata, v_pre_decoded);
         print_stats(err_pre);
         errs_pre.push_back(std::get<4>(err_pre));
 
@@ -170,7 +170,7 @@ int main()
 
 
         std::cout << "\ncompletely encoded data saved\n";
-        auto err_full = normalized_err_stats<metric::Euclidian<double>>(vdata, v_decoded2);
+        auto err_full = normalized_err_stats<metric::Euclidean<double>>(vdata, v_decoded2);
         print_stats(err_full);
         errs_full.push_back(std::get<4>(err_full));
 

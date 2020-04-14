@@ -1,91 +1,74 @@
 #include "metric_types.hpp"
+#include "distance/custom.hpp"
 #include "modules/distance/k-random/VOI.hpp"    // FIXME: and this
 #include "modules/mapping/KOC.hpp"
 
+#include <boost/mpl/for_each.hpp>
+#include <boost/mpl/vector.hpp>
 
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <pybind11/numpy.h>
+#include <pybind11/functional.h>
 #include <typeindex>
 #include <tuple>
+#include <random>
+#include <optional>
 
 namespace py = pybind11;
 
-/*
-  koc = KOC(rec_type="double", graph="grid6", metric="euclidean", distribution="uniform")
 
-  constructor will be a factory
-  it will pickup pre-built C++ class
-  all template methods of this class will be generated for popular cases only
-*/
-template <typename Record, class Graph, class Metric>
+template <typename recType, typename Graph, typename Metric, typename Distribution>
+auto create_KOC(
+    Graph graph,
+    Metric metric,
+    Distribution distribution,
+    double anomaly_sigma = 1.0,
+    double start_learn_rate = 0.8,
+    double finish_learn_rate = 0.0,
+    size_t iterations = 20,
+    std::optional<double> nbh_start_size = std::nullopt,
+    double nbh_range_decay = 2.0,
+    std::optional<long long> random_seed = std::nullopt
+) -> metric::KOC_details::KOC<recType, Graph, Metric, Distribution>
+{
+    return metric::KOC_details::KOC<recType, Graph, Metric, Distribution>(
+        graph,
+        metric,
+        anomaly_sigma,
+        start_learn_rate,
+        finish_learn_rate,
+        iterations,
+        distribution,
+        nbh_start_size.value_or(std::sqrt(double(graph.getNodesNumber()))),
+        nbh_range_decay,
+        random_seed.value_or(std::chrono::system_clock::now().time_since_epoch().count())
+    );
+}
+
+
+template <typename Record, class Graph, class Metric, class Distribution = std::normal_distribution<double>>
 void wrap_metric_KOC(py::module& m) {
-    using Factory = metric::KOC_factory<Record, Graph, Metric>;
+    using Factory = metric::KOC_factory<Record, Graph, Metric, Distribution>;
     using KOC = typename Factory::KOC;
     using value_type = typename Factory::T;
 
-    std::string className = "KOC_factory_" + getGraphName<Graph>() + "_" + getMetricName<Metric>();
-
-    auto factory = py::class_<Factory>(m, className.c_str());
-
-    factory.def(
-        py::init<size_t, double, double, double, size_t, value_type, value_type>(),
-        py::arg("nodes_number"),
-        py::arg("anomaly_sigma"),
-        py::arg("start_learn_rate")= 0.8,
-        py::arg("finish_learn_rate") = 0.0,
-        py::arg("iterations") = 20,
-        py::arg("distribution_min") = -1,
-        py::arg("distribution_max") = 1
-    );
-    factory.def(
-        py::init<size_t, size_t, double, double, double, size_t, value_type, value_type>(),
-        py::arg("nodes_width") = 5,
-        py::arg("nodes_height") = 4,
+    // KOC factory
+    m.def("KOC", &create_KOC<Record, Graph, Metric, Distribution>,
+        py::arg("graph"),
+        py::arg("metric"),
+        py::arg("distribution"),
         py::arg("anomaly_sigma") = 1.0,
         py::arg("start_learn_rate") = 0.8,
         py::arg("finish_learn_rate") = 0.0,
         py::arg("iterations") = 20,
-        py::arg("distribution_min") = -1,
-        py::arg("distribution_max") = 1
-    );
-    factory.def(
-        py::init<size_t, double, double, double, size_t, value_type, value_type, double, double, long long>(),
-        py::arg("nodes_number"),
-        py::arg("anomaly_sigma"),
-        py::arg("start_learn_rate"),
-        py::arg("finish_learn_rate"),
-        py::arg("iterations"),
-        py::arg("distribution_min"),
-        py::arg("distribution_max"),
-        py::arg("neighborhood_start_size"),
-        py::arg("neigbour_range_decay"),
-        py::arg("random_seed")
-    );
-    factory.def(
-        py::init<size_t, size_t, double, double, double, size_t, value_type, value_type, double, double, long long>(),
-        py::arg("nodes_width"),
-        py::arg("nodes_height"),
-        py::arg("anomaly_sigma"),
-        py::arg("start_learn_rate"),
-        py::arg("finish_learn_rate"),
-        py::arg("iterations"),
-        py::arg("distribution_min"),
-        py::arg("distribution_max"),
-        py::arg("neighborhood_start_size"),
-        py::arg("neigbour_range_decay"),
-        py::arg("random_seed")
+        py::arg("nbh_start_size") = (double *) nullptr,
+        py::arg("nbh_range_decay") = 2.0,
+        py::arg("random_seed") = (long long *) nullptr
     );
 
-    factory.def("__call__", &Factory::operator(),
-        py::arg("samples"),
-        py::arg("num_clusters"),
-        py::arg("min_cluster_size") = 1,
-         "construct KOC"
-    );
-
-    // KOC
-    className = "KOC_" + getGraphName<Graph>() + "_" + getMetricName<Metric>();
+    // KOC implementation
+    const std::string className = "KOC_" + metric::getTypeName<Graph>() + "_" + metric::getTypeName<Metric>();
     auto koc = py::class_<KOC>(m, className.c_str());
     std::vector<bool> (KOC::*check_if_anomaly1)(const std::vector<Record>&) = &KOC::check_if_anomaly;
     bool (KOC::*check_if_anomaly2)(const Record&) = &KOC::check_if_anomaly;
@@ -106,13 +89,37 @@ void wrap_metric_KOC(py::module& m) {
     koc.def("check_if_anomaly", check_if_anomaly2, (py::arg("sample")));
 }
 
-// TODO: make loop over metrics and graphs
+// TODO: make loop over metrics, graphs and distribution
 // TODO: add distribution
+// TODO: add python graphs and distribution
+
 void export_metric_KOC(py::module& m) {
-    wrap_metric_KOC<std::vector<double>, metric::Grid6, metric::Euclidian<double>>(m);
-    wrap_metric_KOC<std::vector<double>, metric::Grid6, metric::Manhatten<double>>(m);
-    wrap_metric_KOC<std::vector<double>, metric::Grid6, metric::Chebyshev<double>>(m);
-    wrap_metric_KOC<std::vector<double>, metric::Grid6, metric::P_norm<double>>(m);
+    using Value = double;
+    using Container = std::vector<Value>;
+
+    using MetricTypes = boost::mpl::vector<
+        metric::Euclidean<Value>
+        ,metric::Manhatten<Value>
+        ,metric::Chebyshev<Value>
+        ,metric::P_norm<Value>
+        ,metric::EMD<Value>
+//        ,std::function<Value(const Container&, const Container&)>
+//        ,metric::PythonMetric<Container>
+    >;
+
+    using GraphTypes = boost::mpl::vector<
+        metric::Grid4
+        ,metric::Grid6
+        ,metric::Grid8
+    >;
+
+    boost::mpl::for_each<MetricTypes, boost::mpl::make_identity<boost::mpl::_1>>([&](auto metr) {
+        using MetricType = typename decltype(metr)::type;
+        boost::mpl::for_each<GraphTypes, boost::mpl::make_identity<boost::mpl::_1>>([&](auto graph) {
+            using GraphType = typename decltype(graph)::type;
+            wrap_metric_KOC<Container, GraphType, MetricType>(m);
+        });
+    });
 }
 
 PYBIND11_MODULE(koc, m) {

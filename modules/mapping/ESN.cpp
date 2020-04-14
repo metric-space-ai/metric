@@ -115,8 +115,8 @@ namespace ESN_details {
 
 }  // namespace ESN_details
 
-template <typename recType, typename Metric>
-void ESN<recType, Metric>::create_W(size_t w_size, value_type w_connections, value_type w_sr)
+template <typename RecType, typename Metric>
+void ESN<RecType, Metric>::create_W(size_t w_size, value_type w_connections, value_type w_sr)
 {
     W = blaze::CompressedMatrix<value_type>(w_size, w_size, 0.0);  // TODO make sparse
 
@@ -151,8 +151,8 @@ void ESN<recType, Metric>::create_W(size_t w_size, value_type w_connections, val
     }
 }
 
-template <typename recType, typename Metric>
-ESN<recType, Metric>::ESN(size_t w_size,  // = 500, // number of elements in reservoir
+template <typename RecType, typename Metric>
+ESN<RecType, Metric>::ESN(size_t w_size,  // = 500, // number of elements in reservoir
     value_type w_connections,  // = 10, // number of interconnections (for each reservoir element)
     value_type w_sr,  // = 0.6, // desired spectral radius of the reservoir
     value_type alpha_,  // = 0.5, // leak rate
@@ -168,8 +168,8 @@ ESN<recType, Metric>::ESN(size_t w_size,  // = 500, // number of elements in res
     create_W(w_size, w_connections, w_sr);
 }
 
-template <typename recType, typename Metric>
-void ESN<recType, Metric>::train(const blaze::DynamicMatrix<value_type>& Slices, const blaze::DynamicMatrix<value_type>& Target)
+template <typename RecType, typename Metric>
+void ESN<RecType, Metric>::train(const blaze::DynamicMatrix<value_type>& Slices, const blaze::DynamicMatrix<value_type>& Target)
 {
 
     size_t in_size = Slices.rows();
@@ -194,8 +194,8 @@ void ESN<recType, Metric>::train(const blaze::DynamicMatrix<value_type>& Slices,
     trained = true;
 }
 
-template <typename recType, typename Metric>
-void ESN<recType, Metric>::train(const std::vector<recType> & Slices, const std::vector<recType> & Target)
+template <typename RecType, typename Metric>
+void ESN<RecType, Metric>::train(const std::vector<RecType> & Slices, const std::vector<RecType> & Target)
 {
     auto SlicesMat = vector_to_blaze(Slices);
     auto TargetMat = vector_to_blaze(Target);
@@ -204,8 +204,8 @@ void ESN<recType, Metric>::train(const std::vector<recType> & Slices, const std:
 
 
 
-template <typename recType, typename Metric>
-blaze::DynamicMatrix<typename ESN<recType, Metric>::value_type> ESN<recType, Metric>::predict(const blaze::DynamicMatrix<value_type>& Slices)
+template <typename RecType, typename Metric>
+blaze::DynamicMatrix<typename ESN<RecType, Metric>::value_type> ESN<RecType, Metric>::predict(const blaze::DynamicMatrix<value_type>& Slices)
 {
     assert(trained);
 
@@ -218,18 +218,18 @@ blaze::DynamicMatrix<typename ESN<recType, Metric>::value_type> ESN<recType, Met
     return W_out * Readout;
 }
 
-template <typename recType, typename Metric>
-std::vector<recType> ESN<recType, Metric>::predict(const std::vector<recType>& Slices)
+template <typename RecType, typename Metric>
+std::vector<RecType> ESN<RecType, Metric>::predict(const std::vector<RecType>& Slices)
 {
     auto SlicesMat = vector_to_blaze(Slices);
     auto PredictionMat = predict(SlicesMat);
-    return blaze2rectype<recType>(PredictionMat);
+    return blaze2RecType<RecType>(PredictionMat);
 }
 
 
-template <typename recType, typename Metric>
-blaze::DynamicMatrix<typename ESN<recType, Metric>::value_type>
-ESN<recType, Metric>::vector_to_blaze(const std::vector<recType> & In) {
+template <typename RecType, typename Metric>
+blaze::DynamicMatrix<typename ESN<RecType, Metric>::value_type>
+ESN<RecType, Metric>::vector_to_blaze(const std::vector<RecType> & In) {
     blaze::DynamicMatrix<value_type> Out(In[0].size(), In.size(), 0);  // transpose
     for (size_t i = 0; i < In.size(); ++i) // TODO optimize by using iterators
         for (size_t j = 0; j < In[0].size(); ++j)
@@ -238,16 +238,16 @@ ESN<recType, Metric>::vector_to_blaze(const std::vector<recType> & In) {
 }
 
 
-template <typename recType, typename Metric>
+template <typename RecType, typename Metric>
 template <typename R>
 typename std::enable_if <
  determine_container_type<R>::code == 1,
  std::vector<R>
 >::type
-ESN<recType, Metric>::blaze2rectype(const blaze::DynamicMatrix<typename ESN<R, Metric>::value_type> & In) {
-    std::vector<recType> Out;
+ESN<RecType, Metric>::blaze2RecType(const blaze::DynamicMatrix<typename ESN<R, Metric>::value_type> & In) {
+    std::vector<RecType> Out;
     for (size_t i = 0; i < In.columns(); ++i) {
-        recType rec;
+        RecType rec;
         for (size_t j = 0; j < In.rows(); ++j)
             rec.push_back(In(j, i)); // transpose
         Out.push_back(rec);
@@ -256,16 +256,16 @@ ESN<recType, Metric>::blaze2rectype(const blaze::DynamicMatrix<typename ESN<R, M
 }
 
 
-template <typename recType, typename Metric>
+template <typename RecType, typename Metric>
 template <typename R>
 typename std::enable_if<
  determine_container_type<R>::code == 2,
  std::vector<R>
 >::type
-ESN<recType, Metric>::blaze2rectype(const blaze::DynamicMatrix<typename ESN<R, Metric>::value_type> & In) { // only blaze row-vector
-    std::vector<recType> Out;
+ESN<RecType, Metric>::blaze2RecType(const blaze::DynamicMatrix<typename ESN<R, Metric>::value_type> & In) { // only blaze row-vector
+    std::vector<RecType> Out;
     for (size_t i = 0; i < In.columns(); ++i) {
-        recType rec(In.rows()); // blaze specific
+        RecType rec(In.rows()); // blaze specific
         for (size_t j = 0; j < In.rows(); ++j)
             rec[j] = In(j, i);  // blaze specific  // transpose
         Out.push_back(rec);

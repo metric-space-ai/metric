@@ -81,7 +81,7 @@ int main()
 		{2, 1},
 	};
 	
-	metric::kohonen_distance<double, std::vector<double>> distance_1(simple_grid, grid_w, grid_h);
+	metric::Kohonen<double, std::vector<double>> distance_1(simple_grid, grid_w, grid_h);
 
 	auto t1 = std::chrono::steady_clock::now();
 	auto result = distance_1(simple_grid[2], simple_grid[3]);
@@ -94,7 +94,7 @@ int main()
 	/* Load data */
 	auto [train_dataset, labels] = readData("assets/Compound.txt");	
 	
-	metric::kohonen_distance<double, std::vector<double>> distance_2(train_dataset, grid_w, grid_h);
+	metric::Kohonen<double, std::vector<double>> distance_2(train_dataset, grid_w, grid_h);
 
 	t1 = std::chrono::steady_clock::now();
 	result = distance_2(train_dataset[0], train_dataset[1]);
@@ -105,7 +105,7 @@ int main()
 	//
 	
     using Vector = std::vector<double>;
-    using Metric = metric::Euclidian<double>;
+    using Metric = metric::Euclidean<double>;
     using Graph = metric::Grid6; 
     using Distribution = std::uniform_real_distribution<double>; 
 
@@ -120,7 +120,7 @@ int main()
 
 	som_model.train(train_dataset);
 	
-	metric::kohonen_distance<double, Vector, Graph, Metric> distance_3(som_model);
+	metric::Kohonen<double, Vector, Graph, Metric> distance_3(som_model);
 
 	t1 = std::chrono::steady_clock::now();
 	result = distance_3(train_dataset[0], train_dataset[1]);

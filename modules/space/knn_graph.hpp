@@ -117,7 +117,7 @@ public:
      * @param p searching value
      * @return index of NN in graph
      */
-    std::size_t nn(const Sample & p) const;
+    std::size_t nn(const Sample & p);
 
     /**
      * @brief find K nearest neighbours

@@ -13,8 +13,8 @@ Copyright (c) 2019  Panda Team
 
 namespace metric {
 
-template <typename recType, typename Metric>
-auto Matrix<recType, Metric>::operator()(size_t i, size_t j) const -> distType
+template <typename RecType, typename Metric>
+auto Matrix<RecType, Metric>::operator()(size_t i, size_t j) const -> distType
 {
     check_index(i);
     check_index(j);
@@ -23,20 +23,20 @@ auto Matrix<recType, Metric>::operator()(size_t i, size_t j) const -> distType
     return D_(j, i);
 }
 
-template <typename recType, typename Metric>
-auto Matrix<recType, Metric>::operator[](size_t index) const -> recType
+template <typename RecType, typename Metric>
+auto Matrix<RecType, Metric>::operator[](size_t index) const -> RecType
 {
     return data_[index];
 }
 
-template <typename recType, typename Metric>
-auto Matrix<recType, Metric>::size() const -> std::size_t
+template <typename RecType, typename Metric>
+auto Matrix<RecType, Metric>::size() const -> std::size_t
 {
     return data_.size();
 }
 
-template <typename recType, typename Metric>
-auto Matrix<recType, Metric>::insert(const recType& item) -> std::size_t
+template <typename RecType, typename Metric>
+auto Matrix<RecType, Metric>::insert(const RecType& item) -> std::size_t
 {
     std::size_t old_size = data_.size();
     D_.resize(old_size + 1, old_size + 1, true);
@@ -47,9 +47,9 @@ auto Matrix<recType, Metric>::insert(const recType& item) -> std::size_t
     return data_.size()-1;
 }
 
-template <typename recType, typename Metric>
+template <typename RecType, typename Metric>
 template <typename Container, typename>
-auto Matrix<recType, Metric>::insert(const Container& items) -> std::vector<std::size_t>
+auto Matrix<RecType, Metric>::insert(const Container& items) -> std::vector<std::size_t>
 {
     std::vector<std::size_t> ids;
     ids.reserve(items.size());
@@ -60,8 +60,8 @@ auto Matrix<recType, Metric>::insert(const Container& items) -> std::vector<std:
     return ids;
 }
 
-template <typename recType, typename Metric>
-auto Matrix<recType, Metric>::insert_if(const recType& item, distType treshold) -> std::pair<std::size_t, bool>
+template <typename RecType, typename Metric>
+auto Matrix<RecType, Metric>::insert_if(const RecType& item, distType treshold) -> std::pair<std::size_t, bool>
 {
     if (size() == 0) {
         return std::pair{insert(item), true};
@@ -73,9 +73,9 @@ auto Matrix<recType, Metric>::insert_if(const recType& item, distType treshold) 
     return std::pair{insert(item), true};
 }
 
-template <typename recType, typename Metric>
+template <typename RecType, typename Metric>
 template <typename Container, typename>
-auto Matrix<recType, Metric>::insert_if(const Container& items, distType treshold)
+auto Matrix<RecType, Metric>::insert_if(const Container& items, distType treshold)
     -> std::vector<std::pair<std::size_t, bool>>
 {
     std::vector<std::pair<std::size_t, bool>> ids {};
@@ -86,8 +86,8 @@ auto Matrix<recType, Metric>::insert_if(const Container& items, distType treshol
     return ids;
 }
 
-template <typename recType, typename Metric>
-auto Matrix<recType, Metric>::erase(std::size_t index) -> bool
+template <typename RecType, typename Metric>
+auto Matrix<RecType, Metric>::erase(std::size_t index) -> bool
 {
     check_index(index);
     auto rows = D_.rows();
@@ -108,8 +108,8 @@ auto Matrix<recType, Metric>::erase(std::size_t index) -> bool
     return true;
 }
 
-template <typename recType, typename Metric>
-void Matrix<recType, Metric>::set(std::size_t index, const recType& p)
+template <typename RecType, typename Metric>
+void Matrix<RecType, Metric>::set(std::size_t index, const RecType& p)
 {
     check_index(index);
     std::size_t old_size = D_.rows();
@@ -123,14 +123,14 @@ void Matrix<recType, Metric>::set(std::size_t index, const recType& p)
     data_[index] = p;
 }
 
-template <typename recType, typename Metric>
-auto Matrix<recType, Metric>::nn(const recType& p) const -> std::size_t
+template <typename RecType, typename Metric>
+auto Matrix<RecType, Metric>::nn(const RecType& p) const -> std::size_t
  {
      return nn_(p).first;
 }
 
-template <typename recType, typename Metric>
-auto Matrix<recType, Metric>::knn(const recType& query, unsigned k) const -> std::vector<std::pair<std::size_t, distType>>
+template <typename RecType, typename Metric>
+auto Matrix<RecType, Metric>::knn(const RecType& query, unsigned k) const -> std::vector<std::pair<std::size_t, distType>>
 {
     auto nnp = nn_(query);
     std::size_t nn_index = nnp.first;
@@ -150,8 +150,8 @@ auto Matrix<recType, Metric>::knn(const recType& query, unsigned k) const -> std
     return result;
 }
 
-template <typename recType, typename Metric>
-auto Matrix<recType, Metric>::rnn(const recType& query, distType range) const
+template <typename RecType, typename Metric>
+auto Matrix<RecType, Metric>::rnn(const RecType& query, distType range) const
     -> std::vector<std::pair<std::size_t, distType>>
 {
     std::unordered_map<std::size_t, distType> metric_cache;
@@ -174,8 +174,8 @@ auto Matrix<recType, Metric>::rnn(const recType& query, distType range) const
     return result;
 }
 
-template <typename recType, typename Metric>
-auto Matrix<recType, Metric>::nn_(const recType& p) const -> std::pair<std::size_t, distType>
+template <typename RecType, typename Metric>
+auto Matrix<RecType, Metric>::nn_(const RecType& p) const -> std::pair<std::size_t, distType>
 {
     // brute force first nearest neighbour
     std::size_t nn_index = 0;
@@ -190,8 +190,8 @@ auto Matrix<recType, Metric>::nn_(const recType& p) const -> std::pair<std::size
     return std::pair { nn_index, min_dist };
 }
 
-template <typename recType, typename Metric>
-auto Matrix<recType, Metric>::nn_(const recType& p, std::unordered_map<std::size_t, distType> & metric_cache) const
+template <typename RecType, typename Metric>
+auto Matrix<RecType, Metric>::nn_(const RecType& p, std::unordered_map<std::size_t, distType> & metric_cache) const
     -> std::pair<std::size_t, distType>
 {
     // brute force first nearest neighbour

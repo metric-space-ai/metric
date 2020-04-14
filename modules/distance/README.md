@@ -48,8 +48,8 @@ Using **METRIC** framework we can calculate a set of standard metrics for this r
 
 - **Euclidean (L2) metric**
 ``` cpp
-metric::Euclidian<double> euclidianL2Distance;
-auto result_1 = euclidianL2Distance(v0, v1);
+metric::Euclidean<double> euclideanL2Distance;
+auto result_1 = euclideanL2Distance(v0, v1);
 std::cout << "result: " << result_1 << std::endl;
 // out:
 // Euclidean (L2) metric
@@ -58,8 +58,8 @@ std::cout << "result: " << result_1 << std::endl;
 
 - **Euclidean Threshold metric**
 ``` cpp
-metric::Euclidian_thresholded<double> euclidianThresholdDistance(1000.0, 3000.0);
-auto result_2 = euclidianThresholdDistance(v0, v1);
+metric::Euclidean_thresholded<double> euclideanThresholdDistance(1000.0, 3000.0);
+auto result_2 = euclideanThresholdDistance(v0, v1);
 std::cout << "result: " << result_2 << std::endl;
 // out:
 // Euclidean Threshold metric
@@ -317,7 +317,7 @@ Kohonen distance object will train incapsulated SOM on that dataset.
 int grid_w = 6;
 int grid_h = 4;
 
-metric::kohonen_distance<double, std::vector<double>> distance(train_dataset, grid_w, grid_h);
+metric::Kohonen<double, std::vector<double>> distance(train_dataset, grid_w, grid_h);
 
 auto result = distance(train_dataset[0], train_dataset[1]);
 std::cout << "result: " << result << std::endl;
@@ -333,7 +333,7 @@ int grid_w = 6;
 int grid_h = 4;
 	
 using Vector = std::vector<double>;
-using Metric = metric::Euclidian<double>;
+using Metric = metric::Euclidean<double>;
 using Graph = metric::Grid6; 
 using Distribution = std::uniform_real_distribution<double>; 
 
@@ -342,7 +342,7 @@ Distribution distr(-1, 1);
 metric::SOM<Vector, Graph, Metric> som_model(Graph(grid_w, grid_h), Metric(), 0.8, 0.2, 20, distr);
 som_model.train(train_dataset);
 	
-metric::kohonen_distance<double, Vector, Graph, Metric> distance(som_model);
+metric::Kohonen<double, Vector, Graph, Metric> distance(som_model);
 
 auto result = distance(train_dataset[0], train_dataset[1]);
 std::cout << "result: " << result << std::endl;
@@ -350,7 +350,7 @@ std::cout << "result: " << result << std::endl;
 // Kohonen metric
 // result: 772.109
 ```
-*For a full example and more details see `examples/distance_examples/kohonen_distance_example.cpp`*
+*For a full example and more details see `examples/distance_examples/Kohonen_example.cpp`*
 
 
 
@@ -402,7 +402,7 @@ std::cout << "result: " << result << std::endl;
 
 Of cause we can specify distance metric:
 ```cpp
-auto result = metric::mutualInformation(v1, v2, 3, metric::Euclidian<double>());
+auto result = metric::mutualInformation(v1, v2, 3, metric::Euclidean<double>());
 std::cout << "result: " << result << std::endl;
 // out:
 // Mutual Information using Euclidean distance metric

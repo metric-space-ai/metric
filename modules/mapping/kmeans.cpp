@@ -34,23 +34,23 @@ Copyright (c) 2018 M.Welsch
 namespace metric {
 
 namespace kmeans_details {
-    std::string default_measure(void) { return "euclidian"; }
+    std::string default_measure(void) { return "Euclidean"; }
     template <typename T>
     T distance(const std::vector<T>& a, const std::vector<T>& b, std::string distance_measure)
     {
 
         assert(a.size() == b.size());  // data vectors have not the same length
-        if (distance_measure.compare("euclidian") == 0)
-            return metric::Euclidian<T>()(a, b);
+        if (distance_measure.compare("Euclidean") == 0)
+            return metric::Euclidean<T>()(a, b);
         else if (distance_measure.compare("rms") == 0) {
-            T val = metric::Euclidian<T>()(a, b);
+            T val = metric::Euclidean<T>()(a, b);
             return val * val;
         } else if (distance_measure.compare("manhatten") == 0)
             return metric::Manhatten<T>()(a, b);
 		else if (distance_measure.compare("cosine_inverted") == 0)
             return metric::CosineInverted<T>()(a, b);
         else {
-            return metric::Euclidian<T>()(a, b);
+            return metric::Euclidean<T>()(a, b);
         }
     }
 

@@ -16,7 +16,7 @@
 
 namespace py = pybind11;
 
-template <typename Metric = metric::Euclidian<double>()>
+template <typename Metric = metric::Euclidean<double>()>
 metric::Entropy<void, Metric> createEntropy(
     const Metric& metric,
     size_t k = 7,
@@ -59,7 +59,7 @@ void export_metric_entropy(py::module& m) {
     using Value = double;
     using RecType = std::vector<Value>;
     using Container = std::vector<RecType>;
-    wrap_metric_entropy<Container, metric::Euclidian<Value>>(m, "Euclidean");
+    wrap_metric_entropy<Container, metric::Euclidean<Value>>(m, "Euclidean");
     wrap_metric_entropy<Container, metric::Manhatten<Value>>(m, "Manhatten");
     wrap_metric_entropy<Container, metric::Chebyshev<Value>>(m, "Chebyshev");
     wrap_metric_entropy<Container, metric::P_norm<Value>>(m, "P_norm");
