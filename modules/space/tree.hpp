@@ -127,10 +127,10 @@ public:
      * Set of default methods
      *
      */
-    Matrix(const Matrix &) = delete;
-    Matrix(Matrix&&) noexcept = default;    // need to clone the tree
-    auto operator = (Matrix&&) noexcept -> Matrix& = default;
-    auto operator = (const Matrix&) -> Matrix& = delete; // need to clone the tree
+    Tree(const Tree&) = delete;
+    Tree(Tree&&) noexcept = default;    // need to clone the tree
+    auto operator = (Tree&&) noexcept -> Tree& = default;
+    auto operator = (const Tree&) -> Tree& = delete; // need to clone the tree
 
     /*** Constructors ***/
 

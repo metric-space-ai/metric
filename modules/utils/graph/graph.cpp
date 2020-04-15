@@ -249,7 +249,8 @@ Graph<WeightType, isDense, isSymmetric>::getNeighbours(const size_t index, const
 }
 
 template <typename WeightType, bool isDense, bool isSymmetric>
-typename Graph<WeightType, isDense, isSymmetric>::MatrixType Graph<WeightType, isDense, isSymmetric>::get_matrix()
+auto Graph<WeightType, isDense, isSymmetric>::get_matrix() const
+    -> const typename Graph<WeightType, isDense, isSymmetric>::MatrixType&
 {
     return matrix;
 }

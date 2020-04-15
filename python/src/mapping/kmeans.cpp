@@ -14,7 +14,8 @@ void register_wrapper_kmeans(py::module& m) {
         py::arg("data"),
         py::arg("k") = 0.5,
         py::arg("maxiter") = 200,
-        py::arg("distance_measure") = "Euclidean"   // TODO: fix typo
+        py::arg("metric") = "Euclidean",   // TODO: fix typo
+        py::arg("random_see") = -1
     );
 }
 

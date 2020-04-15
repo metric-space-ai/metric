@@ -10,6 +10,8 @@ Copyright (c) 2018 M.Welsch
 #define _METRIC_MAPPING_KMEDOIDS_CPP
 
 #include "../space/matrix.hpp"
+#include "../distance.hpp"
+
 #include <tuple>
 #include <vector>
 #include <limits>

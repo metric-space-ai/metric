@@ -30,13 +30,13 @@ class Graph {
     // used only in getNeighboursOld, TODO remove if method removed
     static constexpr bool isWeighted = !std::is_same<WeightType, bool>::value;
 
-    using InnerMatrixType = std::conditional<
+    using InnerMatrixType = typename std::conditional<
         isDense,
         blaze::DynamicMatrix<WeightType>,
         blaze::CompressedMatrix<WeightType>
     >::type;
 
-    using MatrixType = std::conditional<
+    using MatrixType = typename std::conditional<
         isSymmetric,
         blaze::SymmetricMatrix<InnerMatrixType>,
         InnerMatrixType
@@ -137,7 +137,7 @@ public:
      * 
      * @return
      */
-    MatrixType get_matrix();
+    const MatrixType& get_matrix() const;
 
     /**
      * @brief 

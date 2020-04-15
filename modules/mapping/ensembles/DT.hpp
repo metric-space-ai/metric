@@ -89,7 +89,7 @@ private:
     ) -> std::tuple<std::vector<std::vector<NumType>>, std::vector<int>>;
 
     template <typename ConType, typename NumType>
-    split_subset(
+    auto split_subset(
         const std::vector<int>& subset,
         const std::vector<std::vector<std::vector<NumType>>>& distances,
         const ConType& data,

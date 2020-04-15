@@ -10,8 +10,12 @@ Copyright (c) 2018 Michael Welsch
 #ifndef _METRIC_SPACE_MATRIX_HPP
 #define _METRIC_SPACE_MATRIX_HPP
 
+#include "../../../3rdparty/blaze/Blaze.h"
+
 #include <type_traits>
 #include <unordered_map>
+#include <vector>
+#include <iostream>
 
 namespace metric {
 
@@ -72,8 +76,8 @@ public:
     ~Matrix() = default;
     Matrix(const Matrix &) = default;
     Matrix(Matrix&&) noexcept = default;
-    auto  operator = (Matrix&&) noexcept -> Matrix& = default;
-    auto operator =(const Matrix&) -> Matrix& = default;
+    auto operator = (Matrix&&) noexcept -> Matrix& = default;
+    auto operator = (const Matrix&) -> Matrix& = default;
 
     /**
      * @brief append data record to the matrix

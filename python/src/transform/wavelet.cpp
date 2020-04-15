@@ -10,7 +10,7 @@ namespace py = pybind11;
 void export_metric_wavelet(py::module& m) {
     using T = double;
     using Container = std::vector<T>;
-    m.def("dwt", &wavelet::dwt,
+    m.def("dwt", &wavelet::dwt<Container>,
         py::arg("x"),
         py::arg("wavelet_type")
     );

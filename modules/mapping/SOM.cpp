@@ -37,8 +37,8 @@ SOM<RecType, Graph, Metric, Distribution>::SOM(size_t nodesWidth, size_t nodesHe
 
 template <class RecType, class Graph, class Metric, class Distribution>
 SOM<RecType, Graph, Metric, Distribution>::SOM(
-    Graph graph,
-    Metric metric,
+    const Graph& graph,
+    const Metric& metric,
     double start_learn_rate,
     double finish_learn_rate,
     size_t iterations,
@@ -61,8 +61,8 @@ SOM<RecType, Graph, Metric, Distribution>::SOM(
 
 template <class RecType, class Graph, class Metric, class Distribution>
 SOM<RecType, Graph, Metric, Distribution>::SOM(
-    Graph graph,
-    Metric metric,
+    const Graph& graph,
+    const Metric& metric,
     double start_learn_rate,
     double finish_learn_rate,
     size_t iterations,
