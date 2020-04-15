@@ -23,10 +23,15 @@ namespace metric {
  * 
  * @brief Metric decision tree
  */
- // FIXME CC
 template <class Record>
 class DT {
 public:
+    // forbid creation of copies and allow only move
+    DT(const DT&) = delete;
+    DT(DT&&) = default;             // need to clone the tree
+    DT& operator=(const DT&) = delete;
+    DT& operator=(DT&&) = default;  // need to clone the tree
+
     /**
      * @brief Construct a new DT object
      * 
@@ -42,7 +47,11 @@ public:
      * @param response 
      */
     template <typename ConType, typename VariantType>
-    void train(const ConType& payments, std::vector<VariantType> dimensions, std::function<int(const Record&)>& response);
+    void train(
+        const ConType& payments,
+        std::vector<VariantType> dimensions,
+        std::function<int(const Record&)>& response
+    );
 
     /**
      * @brief 
@@ -74,22 +83,30 @@ private:
     };
 
     template <typename NumType>
-    std::tuple<std::vector<std::vector<NumType>>, std::vector<int>> distance_matrix_of_subset(
-        const std::vector<int>& subset, const std::vector<std::vector<NumType>>& feature_dist);
+    auto distance_matrix_of_subset(
+        const std::vector<int>& subset,
+        const std::vector<std::vector<NumType>>& feature_dist
+    ) -> std::tuple<std::vector<std::vector<NumType>>, std::vector<int>>;
 
     template <typename ConType, typename NumType>
-    std::tuple<std::vector<std::shared_ptr<std::vector<int>>>, std::vector<double>, std::vector<int>, int, double>
-    split_subset(const std::vector<int>& subset, const std::vector<std::vector<std::vector<NumType>>>& distances,
-        const ConType& data, const std::function<int(Record)>& response);
+    auto split_subset(
+        const std::vector<int>& subset,
+        const std::vector<std::vector<std::vector<NumType>>>& distances,
+        const ConType& data,
+        const std::function<int(Record)>& response
+    ) -> std::tuple<std::vector<std::shared_ptr<std::vector<int>>>, std::vector<double>, std::vector<int>, int, double>;
 
     template <typename ConType, typename NumType>
-    std::tuple<std::vector<std::vector<std::vector<NumType>>>, std::vector<int>>
-    read_data(  // TODO return without copying!!
-        ConType& payments, std::vector<std::function<NumType(Record)>>& features, std::function<int(Record)>& response);
+    auto read_data(  // TODO return without copying!!
+        ConType& payments,
+        std::vector<std::function<NumType(Record)>>& features,
+        std::function<int(Record)>& response
+    ) -> std::tuple<std::vector<std::vector<std::vector<NumType>>>, std::vector<int>>;
 
     template <typename ConType>
     inline void add_distribution_to_node(  // mutates *new_node!
-        const ConType& payments, const std::function<int(Record)>& response,
+        const ConType& payments,
+        const std::function<int(Record)>& response,
         const std::shared_ptr<std::vector<int>>& new_subset,
         const std::shared_ptr<Node>& new_node  // subject to change
     );

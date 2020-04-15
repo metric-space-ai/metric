@@ -124,14 +124,14 @@ public:
      *
      * @param samples
      */
-    virtual void train(const std::vector<std::vector<T>>& samples);
+    void train(const std::vector<std::vector<T>>& samples);
 
     /**
      * @brief
      *
      * @param samples
      */
-    virtual void estimate(const std::vector<std::vector<T>>& samples, const size_t sampleSize);
+    void estimate(const std::vector<std::vector<T>>& samples, const size_t sampleSize);
 
     /**
      * @brief
@@ -139,7 +139,17 @@ public:
      * @param sample
      * @return
      */
-    virtual std::vector<double> encode(const RecType& sample) const;
+    std::vector<double> operator()(const RecType& samples) const {
+        return encode(samples);
+    }
+
+    /**
+     * @brief
+     *
+     * @param sample
+     * @return
+     */
+    std::vector<double> encode(const RecType& sample) const;
 
     /**
      * @brief Best matching unit
@@ -147,7 +157,7 @@ public:
      * @param sample
      * @return size_t
      */
-    virtual size_t BMU(const RecType& sample) const;
+    size_t BMU(const RecType& sample) const;
 
     /**
      * @brief
@@ -200,15 +210,15 @@ public:
 	}
 
 protected:
-    size_t input_dimensions;  // dimensions of inputs vector
+    size_t input_dimensions = 0;  // dimensions of inputs vector
 
     Metric metric;
     Graph graph;
-    Distribution distribution;
+    Distribution distribution = Distribution(-1, 1);
 
-	double start_learn_rate;
-	double finish_learn_rate; 
-	size_t iterations;
+	double start_learn_rate = 0.8;
+	double finish_learn_rate = 0.0;
+	size_t iterations = 20;
 
 	double neighborhood_start_size;
 	double neighborhood_range_decay;

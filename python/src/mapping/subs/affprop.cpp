@@ -4,19 +4,8 @@
 #include <pybind11/stl.h>
 #include <pybind11/numpy.h>
 #include <vector>
-#include <tuple>
 
 namespace py = pybind11;
-
-//template<typename RecType, typename Metric, typename T>
-//py::tuple affprop(const metric::Matrix<RecType, Metric>& DM,
-//                  T preference = 0.5,
-//                  int maxiter = 200,
-//                  T tol = 1.0e-6,
-//                  T damp = 0.5) {
-//    auto result = metric::affprop(DM, preference, maxiter, tol, damp);
-//    return py::make_tuple(std::get<0>(result), std::get<1>(result), std::get<2>(result));
-//}
 
 template <typename RecType, typename Metric>
 void register_wrapper_affprop(py::module& m) {

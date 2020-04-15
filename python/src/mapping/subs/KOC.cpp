@@ -11,7 +11,6 @@
 #include <pybind11/numpy.h>
 #include <pybind11/functional.h>
 #include <typeindex>
-#include <tuple>
 #include <random>
 #include <optional>
 
@@ -50,7 +49,7 @@ auto create_KOC(
 template <typename Record, class Graph, class Metric, class Distribution = std::normal_distribution<double>>
 void wrap_metric_KOC(py::module& m) {
     using Factory = metric::KOC_factory<Record, Graph, Metric, Distribution>;
-    using KOC = typename Factory::KOC;
+    using Class = typename Factory::KOC;
     using value_type = typename Factory::T;
 
     // KOC factory
@@ -69,27 +68,23 @@ void wrap_metric_KOC(py::module& m) {
 
     // KOC implementation
     const std::string className = "KOC_" + metric::getTypeName<Graph>() + "_" + metric::getTypeName<Metric>();
-    auto koc = py::class_<KOC>(m, className.c_str());
-    std::vector<bool> (KOC::*check_if_anomaly1)(const std::vector<Record>&) = &KOC::check_if_anomaly;
-    bool (KOC::*check_if_anomaly2)(const Record&) = &KOC::check_if_anomaly;
-    koc.def("train", &KOC::train,
+    auto koc = py::class_<Class>(m, className.c_str());
+    std::vector<bool> (Class::*check_if_anomaly1)(const std::vector<Record>&) = &Class::check_if_anomaly;
+    bool (Class::*check_if_anomaly2)(const Record&) = &Class::check_if_anomaly;
+    koc.def("train", &Class::train,
         py::arg("samples"),
         py::arg("num_clusters"),
         py::arg("min_cluster_size") = 1
     );
-    koc.def("top_outliers", +[](KOC& self, const std::vector<Record>& samples, int count){
-            auto result = self.top_outliers(samples, count);
-            return py::make_tuple(std::get<0>(result), std::get<1>(result));
-        },
+    koc.def("top_outliers", &Class::top_outliers,
         py::arg("samples"),
         py::arg("count") = 10
     );
-    koc.def("assign_to_clusters", &KOC::assign_to_clusters, (py::arg("samples")));
+    koc.def("assign_to_clusters", &Class::assign_to_clusters, (py::arg("samples")));
     koc.def("check_if_anomaly", check_if_anomaly1, (py::arg("samples")));
     koc.def("check_if_anomaly", check_if_anomaly2, (py::arg("sample")));
 }
 
-// TODO: make loop over metrics, graphs and distribution
 // TODO: add distribution
 // TODO: add python graphs and distribution
 

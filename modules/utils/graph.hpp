@@ -10,7 +10,6 @@ Copyright (c) 2019 Michael Welsch
 #define _METRIC_UTILS_GRAPH_HPP
 
 #include "../../3rdparty/blaze/Blaze.h"
-#include "../space/tree.hpp"
 #include "type_traits.hpp"
 
 #include <stack>
@@ -18,8 +17,6 @@ Copyright (c) 2019 Michael Welsch
 
 
 namespace metric {
-
-
 
 // Graph based on blaze-lib
 
@@ -30,33 +27,34 @@ namespace metric {
  */
 template <typename WeightType = bool, bool isDense = false, bool isSymmetric = true>
 class Graph {
-        static constexpr bool isWeighted = !std::is_same<WeightType, bool>::value; // used only in getNeighboursOld, TODO remive if method removed
+    // used only in getNeighboursOld, TODO remove if method removed
+    static constexpr bool isWeighted = !std::is_same<WeightType, bool>::value;
 
-    typedef typename std::conditional<
+    using InnerMatrixType = typename std::conditional<
         isDense,
         blaze::DynamicMatrix<WeightType>,
         blaze::CompressedMatrix<WeightType>
-        >::type InnerMatrixType;
+    >::type;
 
-    typedef typename std::conditional<
+    using MatrixType = typename std::conditional<
         isSymmetric,
         blaze::SymmetricMatrix<InnerMatrixType>,
         InnerMatrixType
-        >::type MatrixType;
+    >::type;
 
 public:
+    /**
+     * @brief Construct a new Graph object
+     *
+     */
+    Graph();
+
     /**
      * @brief Construct a new Graph object
      * 
      * @param nodesNumber 
      */
     explicit Graph(size_t nodesNumber);
-
-    /**
-     * @brief Construct a new Graph object
-     * 
-     */
-    Graph();
 
     /**
      * @brief Construct a new Graph object
@@ -76,7 +74,7 @@ public:
      * @brief Destroy the Graph object
      * 
      */
-    ~Graph();
+    ~Graph() = default;
 
     /**
      * @brief 
@@ -90,7 +88,7 @@ public:
      * 
      * @return
      */
-    bool isValid();
+    bool isValid() const;
 
     /**
      * @brief 
@@ -139,7 +137,7 @@ public:
      * 
      * @return
      */
-    MatrixType get_matrix();
+    const MatrixType& get_matrix() const;
 
     /**
      * @brief 
@@ -149,10 +147,10 @@ public:
     void buildEdges(const std::vector<std::pair<size_t, size_t>> &edgesPairs);
 
 protected:
-    size_t nodesNumber;
-    bool valid;
+    size_t nodesNumber = 0;
+    bool valid = false;
 
-    MatrixType m;
+    MatrixType matrix;
 
     size_t modularPow(const size_t base, const size_t exponent, const size_t modulus);
 };
@@ -327,12 +325,6 @@ private:
 };
 
 
-
-
-
-
-
-
 /**
  * @brief create Graph object based on blaze::CompressedMatrix
  * 
@@ -373,11 +365,7 @@ Graph<ValueType, true, false> make_graph(blaze::DynamicMatrix<ValueType> && matr
 template <class ValueType>
 Graph<ValueType, true, true> make_graph(blaze::SymmetricMatrix<blaze::DynamicMatrix<ValueType>> && matrix);
 
-
-
-
 } // end namespace metric
-
 
 #include "graph/graph.cpp"
 
