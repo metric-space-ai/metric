@@ -3,7 +3,6 @@
 
 #include <cmath>
 #include <vector>
-//#include <map>
 
 #include "3rdparty/blaze/Blaze.h"
 
@@ -81,20 +80,17 @@ public:
     using Rec_T = rec_t;
     using Val_T = determine_val_t<Rec_T>;
 
-    MetricBase<rec_t>() {}
-
     double operator () (const rec_t & a, const rec_t & b) { // to be overridden in derived metrics
-        return 0;
+        double dnan = std::nan("Base class, not intended to be used directly");
+        return dnan;
     }
-
-private:
 
 };
 
 
 
 
-template <typename Metric = MetricBase<double>>
+template <typename Metric = MetricBase<std::vector<double>>>
 class Algorithm {
 
 public:
@@ -102,18 +98,7 @@ public:
     //using Rec_T = rec_t;
     //using Val_T = determine_val_t<Rec_T>;
 
-    Algorithm<Metric>(Metric metric_) : metric(metric_) {}
-
-    typename Metric::Rec_T process_single(typename Metric::Rec_T in) {
-        return in;
-    }
-
-    template <typename set_t>
-    set_t process_batch(set_t in) {
-        return in;
-    }
-
-
+    Algorithm<Metric>(Metric metric_ = Metric()) : metric(metric_) {}
 
     template <typename set_t_l>
     typename std::enable_if <
@@ -290,7 +275,7 @@ public:
 //template <typename rec_t> class Euclidean {};
 
 
-template <typename rec_t>
+template <typename rec_t = std::vector<double>>
 class Euclidean : public MetricBase<rec_t> {
 
 public:
@@ -393,6 +378,15 @@ public:
 //        }
 //        return out;
 //    }
+
+    typename Metric::Rec_T process_single(typename Metric::Rec_T in) {
+        return in;
+    }
+
+    template <typename set_t>
+    set_t process_batch(set_t in) {
+        return in;
+    }
 
 
 };

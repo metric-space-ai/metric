@@ -102,7 +102,33 @@ int main()
     for (size_t i = 0; i<result_norm_batch.size(); ++i) {
         std::cout << result_norm_batch[i] << "\t";
     }
-    std::cout << "\n";
+    std::cout << "\n\n";
+
+
+    // trying defaults
+
+    std::vector<std::vector<double>> v_in = {{1, 1}, {2, 2}, {2, 3}};
+
+    auto default_alg = metric::Algorithm();
+    auto default_result_sorted = default_alg.sort_by_distance(v_in, {3, 3});
+    std::cout << "\nresult for set of records, default algorithm , default nan returning metric:\n";
+    for (size_t i = 0; i<default_result_sorted.size(); ++i) {
+        for (size_t j = 0; j<default_result_sorted[0].size(); ++j) {
+            std::cout << default_result_sorted[i][j] << " \t";
+        }
+        std::cout << "\n";
+    }
+
+    auto default_alg_eucl = metric::Algorithm<metric::Euclidean<>>();
+    auto default_result_sorted_eucl = default_alg_eucl.sort_by_distance(v_in, {3, 3});
+    std::cout << "\nresult for set of records, default algorithm, Euclidean:\n";
+    for (size_t i = 0; i<default_result_sorted_eucl.size(); ++i) {
+        for (size_t j = 0; j<default_result_sorted_eucl[0].size(); ++j) {
+            std::cout << default_result_sorted_eucl[i][j] << " \t";
+        }
+        std::cout << "\n";
+    }
+
 
 
 
