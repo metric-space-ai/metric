@@ -7,14 +7,14 @@
 
 namespace py = pybind11;
 
-template <typename RecType, typename Metric, typename T>
+template <typename RecType, typename Metric>
 void register_wrapper_kmedoids(py::module& m) {
-    m.def("kmedoids", &metric::kmedoids<RecType, Metric, T>,
+    m.def("kmedoids", &metric::kmedoids<RecType, Metric>,
         py::arg("dm"),
         py::arg("k")
     );
 }
 
 void export_metric_kmedoids(py::module& m) {
-    register_wrapper_kmedoids<std::vector<double>, metric::Euclidean<double>, double>(m);
+    register_wrapper_kmedoids<std::vector<double>, metric::Euclidean<double>>(m);
 }

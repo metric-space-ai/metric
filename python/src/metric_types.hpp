@@ -31,9 +31,15 @@ std::unordered_map<std::type_index, std::string> typeNames = {
 template<typename Type>
 std::string getTypeName() {
     auto it = typeNames.find(std::type_index(typeid(Type)));
-    if (it != typeNames.end())
+    if (it != typeNames.end()) {
         return it->second;
-    return typeid(Type).name();
+    }
+    const std::string name = typeid(Type).name();
+    if (name.find("function") != std::string::npos) {
+        return "Generic";
+    }
+
+    return name;
 }
 
 } // metric

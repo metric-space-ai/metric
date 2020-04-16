@@ -130,11 +130,13 @@ namespace kmedoids_details {
     }
 }  // namespace kmedoids_details
 
-template <typename RecType, typename Metric, typename T>
-std::tuple<std::vector<int>, std::vector<int>, std::vector<int>> kmedoids(
-    const metric::Matrix<RecType, Metric>& DM, int k)
+template <typename RecType, typename Metric>
+auto kmedoids(
+    const metric::Matrix<RecType, Metric>& DM,
+    int k
+) -> std::tuple<std::vector<int>, std::vector<int>, std::vector<int>>
 {
-
+    using T = typename std::invoke_result<Metric, const RecType&, const RecType&>::type;
     // check arguments
     size_t n = DM.size();
 

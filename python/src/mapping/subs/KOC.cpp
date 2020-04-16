@@ -1,6 +1,6 @@
 #include "metric_types.hpp"
 #include "distance/custom.hpp"
-#include "modules/distance/k-random/VOI.hpp"    // FIXME: and this
+
 #include "modules/mapping/KOC.hpp"
 
 #include <boost/mpl/for_each.hpp>
@@ -97,9 +97,7 @@ void export_metric_KOC(py::module& m) {
         ,metric::Manhatten<Value>
         ,metric::Chebyshev<Value>
         ,metric::P_norm<Value>
-        ,metric::EMD<Value>
-//        ,std::function<Value(const Container&, const Container&)>
-//        ,metric::PythonMetric<Container>
+        ,std::function<Value(const Container&, const Container&)>
     >;
 
     using GraphTypes = boost::mpl::vector<
