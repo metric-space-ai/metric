@@ -10,9 +10,13 @@ Copyright (c) 2018 Michael Welsch
 #ifndef _METRIC_SPACE_MATRIX_HPP
 #define _METRIC_SPACE_MATRIX_HPP
 
-#include "../distance.hpp"
+#include "../../../3rdparty/blaze/Blaze.h"
+
 #include <type_traits>
 #include <unordered_map>
+#include <vector>
+#include <iostream>
+
 namespace metric {
 
 /**
@@ -24,7 +28,7 @@ namespace metric {
 template <typename RecType, typename Metric>
 class Matrix {
 public:
-    using distType = typename Metric::distance_type;
+    using distType = typename std::invoke_result<Metric, const RecType&, const RecType&>::type;
     
     /*** Constructors ***/
 
@@ -33,7 +37,10 @@ public:
      *
      * @param d metric object to use as distance
      */
-    explicit Matrix(Metric d = Metric()):metric_(d) {}
+    explicit Matrix(Metric d = Metric())
+        : metric_(d)
+    {
+    }
 
     /**
      * @brief Construct a new Matrix with one data record
@@ -41,7 +48,9 @@ public:
      * @param p data record
      * @param d metric object to use as distance
      */
-    explicit Matrix(const RecType& p, Metric d = Metric()): metric_(d) {
+    explicit Matrix(const RecType& p, Metric d = Metric())
+        : metric_(d)
+    {
         insert(p);
     }
 
@@ -67,9 +76,9 @@ public:
     ~Matrix() = default;
     Matrix(const Matrix &) = default;
     Matrix(Matrix&&) noexcept = default;
-    auto  operator = (Matrix&&) noexcept -> Matrix& = default;
-    auto operator =(const Matrix&) -> Matrix& = default;
-    
+    auto operator = (Matrix&&) noexcept -> Matrix& = default;
+    auto operator = (const Matrix&) -> Matrix& = default;
+
     /**
      * @brief append data record to the matrix
      *
@@ -190,7 +199,7 @@ public:
      *
      * @return  true if matrix is OK, false otherwise.
      */
-    auto check_matrix() -> bool {
+    auto check_matrix() const -> bool {
         for(std::size_t i = 0; i < data_.size(); i++) {
             for(std::size_t j = 0; j < data_.size(); j++) {
                 auto m = metric_(data_[i], data_[j]);
@@ -209,7 +218,7 @@ public:
      * @brief debug function, print distance matrix to stdout
      *
      */
-    void print()
+    void print() const
     {
         std::cout << "D_=\n" << D_ << std::endl;
         std::cout << "non_zeros=" << D_.nonZeros() << std::endl;

@@ -57,9 +57,9 @@ template <class RecType, class Metric>
 class Tree {
 
 public:
-    typedef Node<RecType, Metric> NodeType;
-    typedef Node<RecType, Metric>* Node_ptr;
-    typedef Tree<RecType, Metric> TreeType;
+    using NodeType = Node<RecType, Metric>;
+    using Node_ptr = Node<RecType, Metric>*;
+    using TreeType = Tree<RecType, Metric>;
     using rset_t = std::tuple<Node_ptr, std::vector<Node_ptr>, std::vector<Node_ptr>>;
     using Distance = typename std::result_of<Metric(RecType, RecType)>::type;
 
@@ -123,6 +123,15 @@ public:
     template <class Archive>
     void serialize(Archive& archive);
 
+    /*
+     * Set of default methods
+     *
+     */
+    Tree(const Tree&) = delete;
+    Tree(Tree&&) noexcept = default;    // need to clone the tree
+    auto operator = (Tree&&) noexcept -> Tree& = default;
+    auto operator = (const Tree&) -> Tree& = delete; // need to clone the tree
+
     /*** Constructors ***/
 
     /**
@@ -156,7 +165,7 @@ public:
      * @brief Destroy the Tree object
      *
      */
-    ~Tree();  // Destuctor
+    ~Tree();  // Destructor
 
     /*** Access Operations ***/
 
@@ -417,8 +426,8 @@ private:
     Metric metric_;
 
     /*** Properties ***/
-    Distance base = 2;  // Base for estemating the covering of the tree
-    Node_ptr root;  // Root of the tree
+    Distance base = 2;  // Base for estimating the covering of the tree
+    Node_ptr root = nullptr;  // Root of the tree
     std::atomic<int> min_scale;  // Minimum scale
     std::atomic<int> max_scale;  // Minimum scale
     int truncate_level = -1;  // Relative level below which the tree is truncated
@@ -428,7 +437,7 @@ private:
 
     std::unordered_map<std::size_t, std::size_t> index_map;  // ID -> data index mapping
 
-    // /*** Imlementation Methodes ***/
+    // /*** Implementation Methods ***/
 
     Node_ptr insert(Node_ptr p, Node_ptr x);
 

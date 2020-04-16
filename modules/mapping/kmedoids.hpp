@@ -8,9 +8,10 @@ Copyright (c) 2018 M.Welsch */
 #ifndef _METRIC_MAPPING_KMEDOIDS_HPP
 #define _METRIC_MAPPING_KMEDOIDS_HPP
 
+#include "../space/matrix.hpp"
+
 #include <tuple>
 #include <vector>
-#include "../space/matrix.hpp"
 
 namespace metric {
 /**
@@ -20,9 +21,11 @@ namespace metric {
  * @param k 
  * @return 
  */
-    template <typename RecType, typename Metric, typename T = typename Metric::distance_type>
-std::tuple<std::vector<int>, std::vector<int>, std::vector<int>> kmedoids(
-    const metric::Matrix<RecType, Metric>& DM, int k);
+template <typename RecType, typename Metric>
+auto kmedoids(
+    const metric::Matrix<RecType, Metric>& DM,
+    int k
+) -> std::tuple<std::vector<int>, std::vector<int>, std::vector<int>>;
 
 }  // namespace metric
 

@@ -29,6 +29,9 @@ Copyright (c) 2018 Michael Welsch
 #include <vector>
 
 #include <cassert>  // uncommented by Max F in order to build under Clang & QMake
+
+namespace {
+
 template <typename T>
 inline void print_vector(const std::vector<T>& v)
 {
@@ -49,6 +52,8 @@ inline void print_matrix(const std::vector<std::vector<T>>& m)
     }
     std::cout << "]";
 }
+
+} // namespace
 
 namespace metric {
 
@@ -1161,7 +1166,7 @@ auto EMD<V>::operator()(const Container& Pc, const Container& Qc) const -> dista
     return EMD_details::emd_impl<Container, FLOW_TYPE>()(Pc, Qc, P, Q, C, extra_mass_penalty,
         F);  // turned to original state by Max F
 
-};  // EMD
+}  // EMD
 
 }  // namespace metric
 

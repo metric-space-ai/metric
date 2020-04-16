@@ -3,9 +3,13 @@ on:
   push:
     branches:
       - master
+    paths-ignore:
+      - 'python/**'
   pull_request:
     branches:
       - master
+    paths-ignore:
+      - 'python/**'
 
 jobs:
   deploy:
@@ -20,17 +24,19 @@ jobs:
         python-version: 3.6
     - name: Install system packages
       run: |
-        sudo add-apt-repository ppa:mhier/libboost-latest
-        sudo apt update
-        sudo apt update
+        sudo apt-get install ruby-dev
+        sudo gem install apt-spy2
+        sudo apt-spy2 check
+        sudo apt-spy2 fix --commit
+        sudo apt-get update
         sudo apt-get install cmake
-        sudo apt install libboost1.68-dev
+        sudo apt-get install libboost-all-dev
         sudo apt-get install libopenblas-dev
         sudo apt-get install libjpeg-dev
         sudo apt-get install -y g++-9 g++-9-multilib
         echo "::set-env name=CC::gcc-9"
         echo "::set-env name=CXX::g++-9"
-    - name: Build tests
+    - name: Build tests and examples
       run: |
         export MAKE='make -j1'
         mkdir build
