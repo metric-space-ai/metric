@@ -32,6 +32,7 @@ void register_wrapper_graph(py::module& m) {
     cls.def("build", &Class::buildEdges,
         py::arg("edges_pairs")
     );
+    cls.def("__repr__", [](const Class &a) { return "<Graph>"; });
 }
 
 void register_wrapper_grids(py::module& m) {
@@ -39,15 +40,18 @@ void register_wrapper_grids(py::module& m) {
 
     py::class_<Grid4, metric::Graph<>>(m, "Grid4")
         .def(py::init<size_t>(), py::arg("nodes_number"))
-        .def(py::init<size_t, size_t>(), py::arg("width"), py::arg("height"));
+        .def(py::init<size_t, size_t>(), py::arg("width"), py::arg("height"))
+        .def("__repr__", [](const Grid4 &a) { return "<Grid4>"; });
 
     py::class_<Grid6, metric::Graph<>>(m, "Grid6", "Hexagonal grid")
         .def(py::init<size_t>(), py::arg("nodes_number"))
-        .def(py::init<size_t, size_t>(), py::arg("width"), py::arg("height"));
+        .def(py::init<size_t, size_t>(), py::arg("width"), py::arg("height"))
+        .def("__repr__", [](const Grid6 &a) { return "<Grid6>"; });
 
     py::class_<Grid8, metric::Graph<>>(m, "Grid8")
         .def(py::init<size_t>(), py::arg("nodes_number"))
-        .def(py::init<size_t, size_t>(), py::arg("width"), py::arg("height"));
+        .def(py::init<size_t, size_t>(), py::arg("width"), py::arg("height"))
+        .def("__repr__", [](const Grid8 &a) { return "<Grid8>"; });
 }
 
 void export_metric_graphs(py::module& m) {

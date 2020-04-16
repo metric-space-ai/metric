@@ -21,7 +21,7 @@ namespace metric {
  * @param k 
  * @return 
  */
-template <typename RecType, typename Metric, typename T = typename Metric::distance_type>
+template <typename RecType, typename Metric>
 auto kmedoids(
     const metric::Matrix<RecType, Metric>& DM,
     int k
