@@ -98,6 +98,9 @@ public:
     //using Rec_T = rec_t;
     //using Val_T = determine_val_t<Rec_T>;
 
+    //using Dist_T = typename std::invoke_result<Metric, const typename Metric::Rec_T &, const typename Metric::Rec_T &>::type;
+    using Dist_T = typename std::invoke_result<Metric, typename Metric::Rec_T, typename Metric::Rec_T>::type;
+
     Algorithm<Metric>(Metric metric_ = Metric()) : metric(metric_) {}
 
     template <typename set_t_l>
@@ -109,17 +112,17 @@ public:
 
         set_t_l out;
 
-        auto cmp = [](std::pair<size_t, double> const & a, std::pair<size_t, double> const & b)
+        auto cmp = [](std::pair<size_t, Dist_T> const & a, std::pair<size_t, Dist_T> const & b)
         {
             return a.second != b.second ? a.second < b.second : a.first < b.first;
         };
 
-        std::vector<std::pair<size_t, double>> distances;
+        std::vector<std::pair<size_t, Dist_T>> distances;
         for (size_t i = 0; i<in.size(); i++) {
             distances.push_back(std::make_pair(i, metric(in[i], center)));
         }
         sort(distances.begin(), distances.end(), cmp);
-        for (std::vector<std::pair<size_t, double>>::iterator i = distances.begin(); i != distances.end(); i++) {
+        for (typename std::vector<std::pair<size_t, Dist_T>>::iterator i = distances.begin(); i != distances.end(); i++) {
             out.push_back(in[i->first]);
         }
         return out;
@@ -215,7 +218,7 @@ public:
 
 
 
-template <typename rec_t>
+template <typename rec_t, typename ret_t = double>
 class EuclideanTypeSpecific : public MetricBase<rec_t> {
 
 public:
@@ -223,14 +226,14 @@ public:
     template <typename rec_t_l>
     typename std::enable_if <
      std::is_same<rec_t_l, rec_t>::value && determine_container_type<rec_t_l>::code == 1, // STL, we can use iterators
-     double
+     ret_t
     >::type
     operator()(const rec_t_l & a, const rec_t_l & b) const { // STL overload, TODO add Blaze overload
         if (a.size() != b.size()) {
-            double dnan = std::nan("Input container sizes do not match");
+            ret_t dnan = std::nan("Input container sizes do not match");
             return dnan;
         }
-        double sum = 0;
+        ret_t sum = 0;
         for (auto it1 = a.begin(), it2 = b.begin(); it1 != a.end() && it2 != b.end(); ++it1, ++it2) {
             sum += (*it1 - *it2) * (*it1 - *it2);
         }
@@ -240,27 +243,27 @@ public:
     template <typename rec_t_l>
     typename std::enable_if <
      std::is_same<rec_t_l, rec_t>::value && determine_container_type<rec_t_l>::code == 2, // Blaze, we can use Blaze matrx operations
-     double
+     ret_t
     >::type
     operator()(const rec_t_l & a, const rec_t_l & b) const { // STL overload, TODO add Blaze overload
         if (a.size() != b.size()) {
-            double dnan = std::nan("Input container sizes do not match");
+            ret_t dnan = std::nan("Input container sizes do not match");
             return dnan;
         }
         auto diff = a - b;
-        double sum = blaze::sum(diff*diff);
+        ret_t sum = blaze::sum(diff*diff);
         return std::sqrt(sum);
     }
 
     template <typename rec_t_l>
     typename std::enable_if <
      std::is_same<rec_t_l, rec_t>::value && determine_container_type<rec_t_l>::code == 3, // Eigen, [] to access elements (or we can use Eigen-specific matrix operations)
-     double
+     ret_t
     >::type
     operator()(const rec_t_l & a, const rec_t_l & b) const {
-        double sum = 0;
+        ret_t sum = 0;
         if (a.size() != b.size()) {
-            double dnan = std::nan("Input container sizes do not match");
+            ret_t dnan = std::nan("Input container sizes do not match");
             return dnan;
         }
         for (size_t i = 0; i < a.size(); ++i) {
@@ -272,8 +275,7 @@ public:
 };
 
 
-//template <typename rec_t> class Euclidean {};
-
+/*
 
 template <typename rec_t = std::vector<double>>
 class Euclidean : public MetricBase<rec_t> {
@@ -308,7 +310,7 @@ public:
 //    }
 
 
-    double operator()(const rec_t & a, const rec_t & b) const  { // siuts both Blaze and STL
+    double operator()(const rec_t & a, const rec_t & b) const  { // siuts both Blaze and STL, but not Eigen
         double sum = 0;
         for (auto it1 = a.begin(), it2 = b.begin(); it1 != a.end() && it2 != b.end(); ++it1, ++it2) {
             sum += (*it1 - *it2) * (*it1 - *it2);
@@ -319,6 +321,24 @@ public:
 
 };
 
+// */
+
+
+
+template <typename rec_t = std::vector<double>, typename ret_t = double>
+class Euclidean : public MetricBase<rec_t> {
+
+public:
+
+    ret_t operator()(const rec_t & a, const rec_t & b) const  { // suits both Blaze and STL, but not Eigen
+        ret_t sum = 0;
+        for (auto it1 = a.begin(), it2 = b.begin(); it1 != a.end() && it2 != b.end(); ++it1, ++it2) {
+            sum += (*it1 - *it2) * (*it1 - *it2);
+        }
+        return std::sqrt(sum);
+    }
+
+};
 
 
 
@@ -328,6 +348,8 @@ template <typename Metric = Euclidean<std::vector<double>>>
 class Norm : public Algorithm<Metric> {
 
 public:
+
+
 
     Norm(Metric metric_) : Algorithm<Metric>(metric_) {};
 
