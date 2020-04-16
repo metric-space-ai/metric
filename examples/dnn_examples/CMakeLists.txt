@@ -4,7 +4,8 @@ project(dnn_example)
 find_package(BLAS)
 
 add_executable(dnn_example dnn_example.cpp)
-#add_executable(dnn_example_classification_fc dnn_example_classification.cpp)
+# broken -  error: ‘Softmax’ was not declared in this scope; did you mean ‘fmax’?
+# add_executable(dnn_example_classification_fc dnn_example_classification.cpp)
 add_executable(dnn_example_pgm dnn_example_pgm.cpp)
 
 target_link_libraries(dnn_example_pgm ${BLAS_LIBRARIES})

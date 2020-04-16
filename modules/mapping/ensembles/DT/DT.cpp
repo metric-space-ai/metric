@@ -23,7 +23,7 @@ DT<Record>::DT(double entropy_threshold_, double gain_threshold_)
 template <class Record>
 template <typename ConType, typename VariantType>
 void DT<Record>::train(
-    ConType& payments, std::vector<VariantType> dimensions, std::function<int(const Record&)>& response)
+    const ConType& payments, std::vector<VariantType> dimensions, std::function<int(const Record&)>& response)
 {
     typedef double NumType;  // TODO replace hardcode
 
@@ -135,7 +135,7 @@ void DT<Record>::train(
 
 template <class Record>
 template <typename ConType, typename VariantType>
-void DT<Record>::predict(ConType& input_data, std::vector<VariantType> dimensions, std::vector<int>& predictions)
+void DT<Record>::predict(const ConType& input_data, std::vector<VariantType> dimensions, std::vector<int>& predictions)
 {
     typedef double NumType;  // TODO replace hardcode
 

@@ -80,7 +80,7 @@ int main()
 	std::cout << '\n';
 	
     using Vector = std::vector<double>;
-    using Metric = metric::Euclidian<Vector::value_type>;
+    using Metric = metric::Euclidean<Vector::value_type>;
     using Graph = metric::Grid6; 
 
     metric::SOM<Vector, Graph, Metric> som_model(Graph(6, 5), Metric(), 0.8, 0.2, 20);

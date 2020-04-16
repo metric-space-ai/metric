@@ -14,7 +14,7 @@ napi_value New(napi_env env, napi_callback_info info)
     js_function jsf = extract_function(env, info, 1);
     metric_search_js* obj;
     if (jsf.args.empty()) {
-        obj = new metric_search_js(env, jsf.jsthis, is_euclidian);
+        obj = new metric_search_js(env, jsf.jsthis, is_Euclidean);
     } else {
         napi_valuetype valuetype;
         napi_typeof(env, jsf.args[0], &valuetype);

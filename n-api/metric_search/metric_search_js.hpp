@@ -13,9 +13,9 @@ Copyright (c) 2019 Panda Team
 #include <string>
 #include "../../modules/distance.hpp"
 enum {
-    is_euclidian,
+    is_Euclidean,
     is_manhatten,
-    is_euclidian_thresholded,
+    is_Euclidean_thresholded,
     is_cosine,
     is_p_norm,
     is_emd,
@@ -29,7 +29,7 @@ struct MetricWrapper {
     using metric_input_type_t = std::variant<std::vector<double>, std::vector<char>, std::vector<std::vector<double>>>;
     napi_env env;
     int metric_type;
-    std::variant<metric::Euclidian<double>, metric::Euclidian_thresholded<double>, metric::Manhatten<double>,
+    std::variant<metric::Euclidean<double>, metric::Euclidean_thresholded<double>, metric::Manhatten<double>,
         metric::P_norm<double>, metric::Cosine<double>, metric::EMD<double>, metric::TWED<double>,
         //               metric::Edit<char>,
         metric::SSIM<std::vector<double>>>
@@ -41,14 +41,14 @@ struct MetricWrapper {
         , metric_type(metric_type_)
     {
         switch (metric_type) {
-        case is_euclidian:
-            metric_variant = metric::Euclidian<double>();
+        case is_Euclidean:
+            metric_variant = metric::Euclidean<double>();
             break;
         case is_manhatten:
             metric_variant = metric::Manhatten<double>();
             break;
-        case is_euclidian_thresholded:
-            metric_variant = metric::Euclidian_thresholded<double>();
+        case is_Euclidean_thresholded:
+            metric_variant = metric::Euclidean_thresholded<double>();
             break;
         case is_cosine:
             metric_variant = metric::Cosine<double>();
@@ -114,11 +114,11 @@ struct MetricWrapper {
     double metric(T&& t1, T&& t2) const
     {
         switch (metric_type) {
-        case is_euclidian:
+        case is_Euclidean:
             return std::get<0>(metric_variant)(std::get<0>(t1), std::get<0>(t2));
         case is_manhatten:
             return std::get<1>(metric_variant)(std::get<0>(t1), std::get<0>(t2));
-        case is_euclidian_thresholded:
+        case is_Euclidean_thresholded:
             return std::get<2>(metric_variant)(std::get<0>(t1), std::get<0>(t2));
         case is_cosine:
             return std::get<3>(metric_variant)(std::get<0>(t1), std::get<0>(t2));

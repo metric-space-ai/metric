@@ -16,7 +16,7 @@ namespace metric {
 	template <typename Record, typename Graph>
 	std::string MetricAutoDetector::detect(Graph &graph, int graph_w, int graph_h, std::vector<Record> dataset, bool isEstimate)
 	{
-		std::vector<std::string> metric_type_names = {"Euclidian", "Manhatten", "P_norm", "Euclidian_thresholded", "Cosine", "Chebyshev", 
+		std::vector<std::string> metric_type_names = {"Euclidean", "Manhatten", "P_norm", "Euclidean_thresholded", "Cosine", "Chebyshev", 
 			"Earth Mover Distance", "SSIM", "TWED"};
 
 		// Random updating 
@@ -29,11 +29,11 @@ namespace metric {
 		std::vector<double> relative_diff_means;
 		for (auto metric_type : metric_type_names)
 		{
-			if (metric_type == "Euclidian")
+			if (metric_type == "Euclidean")
 			{
-				// Euclidian
-				metric::Euclidian<double> distance;
-				relative_diff_mean = get_mean_distance_difference<Record, Graph, metric::Euclidian<double>>(graph, distance, dataset, randomized_indexes, isEstimate);
+				// Euclidean
+				metric::Euclidean<double> distance;
+				relative_diff_mean = get_mean_distance_difference<Record, Graph, metric::Euclidean<double>>(graph, distance, dataset, randomized_indexes, isEstimate);
 			}
 			else if (metric_type == "Manhatten")
 			{
@@ -47,11 +47,11 @@ namespace metric {
 				metric::P_norm<double> distance;
 				relative_diff_mean = get_mean_distance_difference<Record, Graph, metric::P_norm<double>>(graph, distance, dataset, randomized_indexes, isEstimate);
 			}
-			else if (metric_type == "Euclidian_thresholded")
+			else if (metric_type == "Euclidean_thresholded")
 			{
-				// Euclidian_thresholded
-				metric::Euclidian_thresholded<double> distance;
-				relative_diff_mean = get_mean_distance_difference<Record, Graph, metric::Euclidian_thresholded<double>>(graph, distance, dataset, randomized_indexes, isEstimate);
+				// Euclidean_thresholded
+				metric::Euclidean_thresholded<double> distance;
+				relative_diff_mean = get_mean_distance_difference<Record, Graph, metric::Euclidean_thresholded<double>>(graph, distance, dataset, randomized_indexes, isEstimate);
 			}
 			else if (metric_type == "Cosine")
 			{
@@ -106,7 +106,7 @@ namespace metric {
 		return metric_type_names[best_index];
 	}
 	
-	template <typename Record, typename Graph, typename Metric = metric::Euclidian<double>>
+	template <typename Record, typename Graph, typename Metric = metric::Euclidean<double>>
 	double get_mean_distance_difference(Graph &graph, Metric distance, std::vector<Record> dataset, std::vector<size_t> randomized_indexes, bool isEstimate)
 	{		
 		metric::SOM<Record, Graph, Metric> som(graph, Metric());

@@ -7,6 +7,11 @@ Module provides classes for the
 representation of metric spaces including basic operations
 such as the search for neighboring elements.
 
+|**Module**|**File**|**Class**|**Constructor**|**operator()**|**opeator[]**|**inser**|**insert_if**|**nn**|**knn**|**rnn**|**erase**
+|:------:|:-----:|:-----|:-----|:-----|:-----|:-----|:-----|:-----|:-----|:-----|:-----|
+|Space|matrix.hpp|Matrix|metric::Matrix<float, metric::Euclidean\<float>> m;|auto distance = m(id1,id2)|auto value = m[id]|std::size_t id = m.insert(1.0); <br> std::vector\<std::size_t>ids = m.insert(std::vector\<float>{1,2,3});|std::pair\<std::size_t,bool> id = m.insert_if(1.0, 10); <br>std::vecto<std::pair<std::size_t, bool>>ids = m.insert_if(std::vector\<float>{1,2,3}, 10);|size_t id = m.nn(1.5)|std::vector\<std::size_t> ids = m.knn(1.5, 10);|std::vector\<std::size_t> ids = m.rnn(1.5, 11.5);|m.erase(0)|
+|Space|tree.hpp  |Tree  |metric::Tree<float, metric::Euclidean\<float>> t;  |auto distance = t(id1,id2)|auto value = t[id]|std::size_t id = t.insert(1.0); <br> std::vector\<std::size_t>ids = t.insert(std::vector\<float>{1,2,3});|std::pair\<std::size_t,bool> id = t.insert_if(1.0, 10); <br>std::vecto<std::pair<std::size_t, bool>>ids = t.insert_if(std::vector\<float>{1,2,3}, 10);|size_t id = t.nn(1.5)|std::vector\<std::size_t> ids = t.knn(1.5, 10);|std::vector\<std::size_t> ids = t.rnn(1.5, 11.5);|t.erase(0)|
+| Space|knn_graph.hpp|KNNGraph|metric::KNNGraph<float, metric::Euclidean\<float>> g(data, neighbours_num, 3*neighbours_num); | auto distance = g(id1, id2) | auto value = g[id]; | std::size_t id = g.insert(1.0); <br> std::vector\<std::size_t>ids = g.insert(std::vector\<float>{1,2,3}); | std::pair\<std::size_t,bool> id = g.insert_if(1.0, 10); <br>std::vector\<std::pair<std::size_t, bool>>ids = g.insert_if(std::vector\<float>{1,2,3}, 10); | size_t id = g.nn(1.5) | std::vector\<std::size_t> ids = t.knn(1.5, 10); | std::vector\<std::size_t> ids = t.rnn(1.5, 11.5); | t.erase(0) |
 
 ## Space types
 
@@ -63,16 +68,16 @@ std::cout << "nn for v4 is v" << nn->ID << std::endl;
 #### Initialize a Tree
 Construct an empty tree or fill it directly with data records.
 ```c++
-typedef std::vector<double> recType;
-typedef std::vector<recType> recList;
+typedef std::vector<double> RecType;
+typedef std::vector<RecType> recList;
 
-/*** Tree with default L2 metric (Euclidian distance measure) ***/
-metric::Tree<recType> cTree;             // empty tree
-metric::Tree<recType> cTree(recType v1); // with one data record
-metric::Tree<recType> cTree(recList m1); // a container with records.
+/*** Tree with default L2 metric (Euclidean distance measure) ***/
+metric::Tree<RecType> cTree;             // empty tree
+metric::Tree<RecType> cTree(RecType v1); // with one data record
+metric::Tree<RecType> cTree(recList m1); // a container with records.
 
 /** A Tree with a custom metric. ***/
-metric::Tree<recType, customMetric> cTree;
+metric::Tree<RecType, customMetric> cTree;
 ```
 
  #### Search options
@@ -138,7 +143,7 @@ std::cout << data_record[data_record.size() - 1] << "}" << std::endl;
 
 Custom metric:
 ```c++
-using recType = Eigen::VectorXd;
+using RecType = Eigen::VectorXd;
 
 template <typename T>
 struct recMetric {
@@ -151,9 +156,9 @@ struct recMetric {
 
 Then we can create the data and the tree:
 ```c++
-recType x(8);
+RecType x(8);
 	
-std::vector<recType> table;
+std::vector<RecType> table;
 
 x << 0, 1, 1, 1, 1, 1, 2, 3;
 table.push_back(x);
@@ -170,7 +175,7 @@ table.push_back(x);
 x << 4, 6, 2, 2, 1, 1, 0, 0;
 table.push_back(x);
 		
-metric::Tree<recType, recMetric<double>> cTree(table);
+metric::Tree<RecType, recMetric<double>> cTree(table);
 ``` 
 
 #### Details
@@ -180,7 +185,7 @@ metric::Tree<recType, recMetric<double>> cTree(table);
 
 - `distance` is one value, that represents the similarty of two data records. Less distance means more similar. 
 For geometric points, it is just the geometric distance. For high dimensional points it's exatly the same math, 
-but called `Euclidian Distance` or `L2 Metric`. But there are other `Metrics` as well, who sometimes works better.
+but called `Euclidean Distance` or `L2 Metric`. But there are other `Metrics` as well, who sometimes works better.
 
 The Tree Implementation is based on the Cover Tree Approach (https://en.wikipedia.org/wiki/Cover_tree),
 that means in comparsion to a binary search tree an additionally "covering" distance (that only depends on the tree level) is used togehter with the actual metric between the data records. It decides if a data record becomes a sibling or a child in the tree.

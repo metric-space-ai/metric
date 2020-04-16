@@ -170,11 +170,11 @@ public:
 /**
      * @class pattern_compressor_factory
      *
-     * @tparam recType  type of input data
+     * @tparam RecType  type of input data
      * @tparam Metric metric used for similarity check
      * @tparam Ts types of arguments for Metric constructor
      */
-template <typename recType, typename Metric, typename... Ts>
+template <typename RecType, typename Metric, typename... Ts>
 class pattern_compressor_factory {
     const int wavelet_type;
     const std::size_t batch_size;
@@ -221,10 +221,10 @@ public:
          * @return vector with default values of threshold for each subband
          */
 
-    std::vector<recType> make_noise_threshold() const
+    std::vector<RecType> make_noise_threshold() const
     {
-        std::vector<recType> threshold;
-        recType factor = std::sqrt(recType { 2.0 });
+        std::vector<RecType> threshold;
+        RecType factor = std::sqrt(RecType { 2.0 });
         for (std::size_t i = 0; i < subbands_size; ++i) {
             if (i < 2) {
                 threshold.push_back(0.01);
@@ -243,8 +243,8 @@ public:
          * @param threads number of thread in internal thread_pool, default value is 2
          * @return pattern_compressor object
          */
-    pattern_compressor<recType, Metric> operator()(
-        std::vector<recType>&& similarity_threshold, std::vector<recType>&& noise_threshold, int threads = 2) const
+    pattern_compressor<RecType, Metric> operator()(
+        std::vector<RecType>&& similarity_threshold, std::vector<RecType>&& noise_threshold, int threads = 2) const
     {
         if(similarity_threshold.size() != get_subbands_size()) {
             throw std::runtime_error("size of similarity_threshold should be equal to get_subbands_size()");
@@ -253,8 +253,8 @@ public:
             throw std::runtime_error("size of similarity_threshold should be equal to get_subbands_size()");
         }
 
-        return pattern_compressor<recType, Metric>(std::forward<std::vector<recType>>(similarity_threshold),
-                                                   std::forward<std::vector<recType>>(noise_threshold),
+        return pattern_compressor<RecType, Metric>(std::forward<std::vector<RecType>>(similarity_threshold),
+                                                   std::forward<std::vector<RecType>>(noise_threshold),
                                                    batch_size, wavelet_type, make_metric(metric_args), threads);
     }
 
@@ -265,13 +265,13 @@ public:
          * @param threads number of thread in internal thread_pool, default value is 2
          * @return pattern_compressor object
          */
-    pattern_compressor<recType, Metric> operator()(std::vector<recType>&& similarity_threshold, int threads = 2) const
+    pattern_compressor<RecType, Metric> operator()(std::vector<RecType>&& similarity_threshold, int threads = 2) const
     {
         if (similarity_threshold.size() != get_subbands_size()) {
             throw std::runtime_error("size of similarity_threshold should be equal to get_subbands_size()");
         }
 
-        return pattern_compressor<recType, Metric>(std::forward<std::vector<recType>>(similarity_threshold),
+        return pattern_compressor<RecType, Metric>(std::forward<std::vector<RecType>>(similarity_threshold),
                                                    make_noise_threshold(),
                                                    batch_size, wavelet_type, make_metric(metric_args), threads);
     }
@@ -280,18 +280,18 @@ public:
 /**
      * \brief Create compressor factory
      *
-     * @tparam recType type of input data
+     * @tparam RecType type of input data
      * @tparam Metric metric class used to similarity check
      *
      * @param wavelet_type type of wavelet used for decomposition
      * @param batch_size size of batch of input data
      * @param args arguments for Metric constructor
      */
-template <typename recType, typename Metric, typename... Ts>
-inline pattern_compressor_factory<recType, Metric, Ts...> make_compressor_factory(
+template <typename RecType, typename Metric, typename... Ts>
+inline pattern_compressor_factory<RecType, Metric, Ts...> make_compressor_factory(
     int wavelet_type, std::size_t batch_size, Ts&&... args)
 {
-    return pattern_compressor_factory<recType, Metric, Ts...>(wavelet_type, batch_size, std::forward<Ts>(args)...);
+    return pattern_compressor_factory<RecType, Metric, Ts...>(wavelet_type, batch_size, std::forward<Ts>(args)...);
 }
 }  // namespace metric
 

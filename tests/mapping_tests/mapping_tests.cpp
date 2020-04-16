@@ -11,15 +11,15 @@
 
 #include "modules/utils/graph.hpp"
 
-#define BOOST_TEST_MODULE Main
-#define BOOST_TEST_DYN_LINK
+#define BOOST_TEST_MODULE mapping_tests
+//#define BOOST_TEST_DYN_LINK
 
 #include <boost/test/unit_test.hpp>
 
 BOOST_AUTO_TEST_CASE(Metric)
 {
     using Vector = std::vector<double>;
-    metric::Euclidian<double> metric;
+    metric::Euclidean<double> metric;
 
     Vector vNull = {};
     Vector v0 = { 0, 0, 0, 0, 0 };

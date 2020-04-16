@@ -26,7 +26,7 @@ int main()
         { 4, 6, 2, 2, 1, 1, 0, 0 },
     };
 
-    metric::Tree<std::vector<double>, metric::Euclidian<double>> cTree(table);
+    metric::Tree<std::vector<double>, metric::Euclidean<double>> cTree(table);
 
     cTree.print();
     std::cout << std::endl;

@@ -6,6 +6,7 @@ set(Boost_DEBUG on)
 find_package(Boost COMPONENTS serialization iostreams program_options)
 find_package(ZLIB)
 find_package(Threads)
+find_package(LAPACK)
 
 include_directories(
     ${PROJECT_SOURCE_DIR}
@@ -30,6 +31,9 @@ foreach(exampleSrc ${EXAMPLE_SRCS})
 	target_link_libraries(${exampleName} ${Boost_LIBRARIES})
 	target_link_libraries(${exampleName} ${ZLIB_LIBRARIES})
 	target_link_libraries(${exampleName} Threads::Threads)
+    if(LAPACK_LIBRARIES)
+		target_link_libraries(${exampleName} ${LAPACK_LIBRARIES})
+	endif(LAPACK_LIBRARIES)
 	set_target_properties(${exampleName} PROPERTIES CXX_STANDARD 17)
 	if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS 8.0)
 	    target_link_libraries(${exampleName} stdc++fs)

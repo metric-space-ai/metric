@@ -29,12 +29,12 @@ using DistanceMatrix = blaze::SymmetricMatrix<blaze::DynamicMatrix<T>>;
 
 /** @class MGC
  *  @brief Multiscale graph correlation
- *  @tparam recType1 type of the left hand input
- *  @tparam Metric1  type of metric associated with recType1
- *  @tparam recType2  type of the right hand input
- *  @tparam Metric2 type of metric associated with recType2
+ *  @tparam RecType1 type of the left hand input
+ *  @tparam Metric1  type of metric associated with RecType1
+ *  @tparam RecType2  type of the right hand input
+ *  @tparam Metric2 type of metric associated with RecType2
  */
-template <class recType1, class Metric1, class recType2, class Metric2>
+template <class RecType1, class Metric1, class RecType2, class Metric2>
 struct MGC {
 
     /**
@@ -47,16 +47,16 @@ struct MGC {
     explicit MGC(const Metric1 & m1 = Metric1(), const Metric2 & m2 = Metric2()) : metric1(m1), metric2(m2) {}
 
     /** @brief return correlation betweeen a and b
-     * @param a container of values of type recType1
-     * @param b container of values of type recType2
+     * @param a container of values of type RecType1
+     * @param b container of values of type RecType2
      * @return correlation betwen a and b
      */
     template <typename Container1, typename Container2>
     double operator()(const Container1& a, const Container2& b) const;
 
     /** @brief return estimate of the correlation betweeen a and b
-     * @param a container of values of type recType1
-     * @param b container of values of type recType2
+     * @param a container of values of type RecType1
+     * @param b container of values of type RecType2
      * @param sampleSize
      * @param threshold
      * @param maxIterations
@@ -67,8 +67,8 @@ struct MGC {
                             const double threshold = 0.05, size_t maxIterations = 1000);
 
 	/** @brief return vector of mgc values calculated for different data shifts
-	 * @param a container of values of type recType1
-	 * @param b container of values of type recType2
+	 * @param a container of values of type RecType1
+	 * @param b container of values of type RecType2
 	 * @param n number of delayed computations in +/- direction
 	 * @return vector of mgc values calculated for different data shifts
 	 */

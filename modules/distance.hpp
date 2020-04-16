@@ -38,4 +38,8 @@ Copyright (c) PANDA Team
 #include "distance/k-random/RandomEMD.hpp"
 #include "distance/k-random/CramervonNises.hpp"
 
+#include "distance/k-random/KolmogorovSmirnov.hpp"
+#include "distance/k-random/RandomEMD.hpp"
+#include "distance/k-random/CramervonNises.hpp"
+
 #endif //_METRIC_DISTANCE_HPP

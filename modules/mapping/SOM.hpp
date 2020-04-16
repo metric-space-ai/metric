@@ -44,9 +44,9 @@ namespace metric {
 	 *@brief 
 	 * 
 	 */
-template <typename recType, class Graph = metric::Grid6, class Metric = metric::Euclidian<typename recType::value_type>, class Distribution = std::uniform_real_distribution<typename recType::value_type>>
+template <typename RecType, class Graph = metric::Grid6, class Metric = metric::Euclidean<typename RecType::value_type>, class Distribution = std::uniform_real_distribution<typename RecType::value_type>>
 class SOM {
-    typedef typename recType::value_type T;
+    typedef typename RecType::value_type T;
 
 public:
     /**
@@ -121,7 +121,7 @@ public:
 		 * @param sample 
 		 * @return
 		 */
-    virtual std::vector<double> encode(const recType& sample);
+    virtual std::vector<double> encode(const RecType& sample);
 
     /**
 		 * @brief Best matching unit
@@ -129,7 +129,7 @@ public:
 		 * @param sample 
 		 * @return size_t 
 		 */
-    virtual size_t BMU(const recType& sample) const;
+    virtual size_t BMU(const RecType& sample) const;
 
     /**
 		 * @brief 
