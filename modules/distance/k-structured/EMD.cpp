@@ -1117,7 +1117,6 @@ auto EMD<V>::operator()(const Container& Pc, const Container& Qc) const -> dista
 
     assert((F != NULL) || (FLOW_TYPE == EMD_details::NO_FLOW));
 
-	// changed from std::vector<T> to Container by Stepan Mamontov 21.01.2020
     std::vector<T> P(std::begin(Pc), std::end(Pc));
     std::vector<T> Q(std::begin(Qc), std::end(Qc));
 
