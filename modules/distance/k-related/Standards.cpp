@@ -11,6 +11,8 @@ Copyright (c) 2018 Michael Welsch
 #include <cmath>
 #include <algorithm>
 
+#include "../../../3rdparty/blaze/Blaze.h"
+
 namespace metric {
 
 template <typename V>
@@ -35,12 +37,12 @@ auto Euclidean<V>::operator()(const V& a, const V& b) const -> distance_type
     return std::sqrt(sum);
 }
 
-//template <typename V>
-//template <template <typename, bool> class Container, typename ValueType, bool F> // detect Blaze object by signature
-//double Euclidean<V>::operator()(
-//        const Container<ValueType, F> & a, const Container<ValueType, F> & b) const {
-//    return blaze::norm(a - b);
-//}
+template <typename V>
+template <template <typename, bool> class Container, typename ValueType, bool F> // detect Blaze object by signature
+double Euclidean<V>::operator()(
+        const Container<ValueType, F> & a, const Container<ValueType, F> & b) const {
+    return blaze::norm(a - b);
+}
 
 template <typename V>
 template <typename Container>
