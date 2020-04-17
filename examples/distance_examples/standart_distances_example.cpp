@@ -87,23 +87,23 @@ int main()
 	// Cosine Metric
 	// result: 0.970143 (Time = 0.038 ms)
 
-    /************* examples for Euclidean Metric with Blaze input ***************/
-    std::cout << "Blaze overload of Euclidean Metric" << std::endl;
-    //blaze::DynamicVector<double> vb0; // this will not compile!!
-    //blaze::DynamicVector<double> vb1;
-    blaze::CompressedVector<double> vb0 = { 0, 1, 1, 1, 1, 1, 2, 3 }; // OK
-    blaze::CompressedVector<double> vb1 = { 1, 1, 1, 1, 1, 2, 3, 4 };
-    //blaze::CompressedMatrix<double> vb0 = { {0, 1, 1, 1}, {1, 1, 2, 3} }; // OK
-    //blaze::CompressedMatrix<double> vb1 = { {1, 1, 1, 1}, {1, 2, 3, 4} };
-    // we reuse metric::Euclidean<double> EuclideanL2Distance;
-    auto startTime_6 = std::chrono::steady_clock::now();
-    auto result_6 = EuclideanL2Distance(vb0, vb1);
-    auto endTime_6 = std::chrono::steady_clock::now();
-    std::cout << "result: " << result_6 << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(endTime_6 - startTime_6).count()) / 1000 << " ms)" << std::endl;
-    std::cout << "" << std::endl;
-    // out:
-    // Blaze overload of Euclidean Metric
-    // result: 2 (Time = 0.036 ms)
+//    /************* examples for Euclidean Metric with Blaze input ***************/
+//    std::cout << "Blaze overload of Euclidean Metric" << std::endl;
+//    //blaze::DynamicVector<double> vb0; // this will not compile!!
+//    //blaze::DynamicVector<double> vb1;
+//    blaze::CompressedVector<double> vb0 = { 0, 1, 1, 1, 1, 1, 2, 3 }; // OK
+//    blaze::CompressedVector<double> vb1 = { 1, 1, 1, 1, 1, 2, 3, 4 };
+//    //blaze::CompressedMatrix<double> vb0 = { {0, 1, 1, 1}, {1, 1, 2, 3} }; // OK
+//    //blaze::CompressedMatrix<double> vb1 = { {1, 1, 1, 1}, {1, 2, 3, 4} };
+//    // we reuse metric::Euclidean<double> EuclideanL2Distance;
+//    auto startTime_6 = std::chrono::steady_clock::now();
+//    auto result_6 = EuclideanL2Distance(vb0, vb1);
+//    auto endTime_6 = std::chrono::steady_clock::now();
+//    std::cout << "result: " << result_6 << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(endTime_6 - startTime_6).count()) / 1000 << " ms)" << std::endl;
+//    std::cout << "" << std::endl;
+//    // out:
+//    // Blaze overload of Euclidean Metric
+//    // result: 2 (Time = 0.036 ms)
 
 
 	return 0;

@@ -35,12 +35,12 @@ auto Euclidean<V>::operator()(const V& a, const V& b) const -> distance_type
     return std::sqrt(sum);
 }
 
-template <typename V>
-template <template <typename, bool> class Container, typename ValueType, bool F> // detect Blaze object by signature
-double Euclidean<V>::operator()(
-        const Container<ValueType, F> & a, const Container<ValueType, F> & b) const {
-    return blaze::norm(a - b);
-}
+//template <typename V>
+//template <template <typename, bool> class Container, typename ValueType, bool F> // detect Blaze object by signature
+//double Euclidean<V>::operator()(
+//        const Container<ValueType, F> & a, const Container<ValueType, F> & b) const {
+//    return blaze::norm(a - b);
+//}
 
 template <typename V>
 template <typename Container>
