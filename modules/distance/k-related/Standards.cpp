@@ -36,6 +36,13 @@ auto Euclidean<V>::operator()(const V& a, const V& b) const -> distance_type
 }
 
 template <typename V>
+template <template <typename, bool> class Container, typename ValueType, bool F> // detect Blaze object by signature
+double Euclidean<V>::operator()(
+        const Container<ValueType, F> & a, const Container<ValueType, F> & b) const {
+    return blaze::norm(blaze::evaluate(a - b));
+}
+
+template <typename V>
 template <typename Container>
 auto Euclidean_thresholded<V>::operator()(const Container& a, const Container& b) const -> distance_type
 {
