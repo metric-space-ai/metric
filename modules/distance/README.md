@@ -103,9 +103,26 @@ std::cout << "result: " << result_5 << std::endl;
 
 ### Earth Mover Distance metric
 
-Suppose we have an images as matrices: `img1`, `img2`.
+In mathematics, also is known as the `Wasserstein` metric.
 
-Now we can reshape matrices to vectors:
+Informally, if the distributions are interpreted as two different ways of piling up a certain amount of dirt over the region `D`, 
+the `EMD` is the minimum cost of turning one pile into the other; where the cost is assumed to be amount of dirt moved times 
+the distance by which it is moved.
+
+Before creating EMD object you need to construct ground distance matrix. Where each value is a distance for move 
+a single pile from one point of matrix to another. You can do it by one of the predefined functions or by self:
+
+```cpp
+auto ground_distance_mat = metric::EMD_details::ground_distance_matrix_of_2dgrid<T, Metric>(columns, rows);
+auto ground_distance_mat = metric::EMD_details::ground_distance_matrix_of_2dgrid<T, Metric>(2d_vector);
+```
+
+_Note: For images you should serialize the pixel's 2D array in a vector and compute the ground distance matrix 
+of the original picture sized grid._
+
+***For example***, suppose we have an images as matrices: `img1`, `img2`.
+
+Now we should reshape matrices to vectors:
 ```cpp
 typedef int emd_Type;
 
@@ -128,16 +145,16 @@ for (size_t i = 0; i < im1_R; ++i)
 
 And now we can compare two vectors using Earth Mover Distance. 
 
-First we should calculate a cost matrix: 
+First we should calculate a ground distance matrix: 
 
 ```cpp
-auto cost_mat = metric::EMD_details::ground_distance_matrix_of_2dgrid<emd_Type>(im1_C, im1_R);
-auto maxCost = metric::EMD_details::max_in_distance_matrix(cost_mat);
+auto ground_distance_mat = metric::EMD_details::ground_distance_matrix_of_2dgrid<emd_Type>(im1_C, im1_R);
+auto max_distance = metric::EMD_details::max_in_distance_matrix(ground_distance_mat);
 ```
 Then declare EMD (Earth Mover Distance) metric and use it:
 
 ```cpp
-metric::EMD<emd_Type> distance(cost_mat, maxCost);
+metric::EMD<emd_Type> distance(ground_distance_mat, max_distance);
 
 auto result = distance(i1, i2);
 std::cout << "result: " << result << std::endl;
