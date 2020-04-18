@@ -3,7 +3,6 @@ set(BOOST_TEST_LIB ${Boost_LIBRARIES})
 
 enable_testing()
 
-set(Boost_DEBUG on)  
 find_package(Boost)
 
 project(distance_tests)
