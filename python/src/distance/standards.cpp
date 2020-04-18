@@ -1,6 +1,6 @@
 #include "modules/distance/k-related/Standards.hpp"
 #include "../stl_wrappers.hpp"
-#include "custom.hpp"
+#include "metric_types.hpp"
 
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
@@ -8,6 +8,11 @@
 #include <pybind11/functional.h>
 
 namespace py = pybind11;
+
+tmeplate <typename T>
+const std::string python__str__(const T&) {
+    return "<" + getMetricName<T>() + ">";
+}
 
 template<typename Value, typename Container>
 void register_wrapper_euclidean(py::module& m) {
@@ -19,7 +24,7 @@ void register_wrapper_euclidean(py::module& m) {
         .def("__call__", p1)
         .def("__call__", p2)
         .def("__call__", &Metric::template operator()<std::vector<Value>>)
-        .def("__repr__", [](const Metric &a) { return "<Euclidean>"; });
+        .def("__repr__", &python__str__);
 }
 
 template<typename Value, typename Container>
@@ -29,7 +34,7 @@ void register_wrapper_manhatten(py::module& m) {
         .def(py::init<>())
         .def("__call__", &Metric::template operator()<Container>)
         .def("__call__", &Metric::template operator()<std::vector<Value>>)
-        .def("__repr__", [](const Metric &a) { return "<Manhatten>"; });
+        .def("__repr__", &python__str__);
 }
 
 template<typename Value, typename Container>
@@ -39,7 +44,7 @@ void register_wrapper_pnorm(py::module& m) {
         .def(py::init<Value>(), py::arg("p") = 1)
         .def("__call__", &Metric::template operator()<Container>)
         .def("__call__", &Metric::template operator()<std::vector<Value>>)
-        .def("__repr__", [](const Metric &a) { return "<P_norm>"; });
+        .def("__repr__", &python__str__);
 }
 
 template<typename Value, typename Container>
@@ -50,7 +55,7 @@ void register_wrapper_euclidean_thresholded(py::module& m) {
         .def(py::init<Value, Value>(), py::arg("thres"), py::arg("factor"))
         .def("__call__", &Metric::template operator()<Container>)
         .def("__call__", &Metric::template operator()<std::vector<Value>>)
-        .def("__repr__", [](const Metric &a) { return "<Euclidean_thresholded>"; });
+        .def("__repr__", &python__str__);
 }
 
 template<typename Value, typename Container>
@@ -60,7 +65,7 @@ void register_wrapper_cosine(py::module& m) {
         .def(py::init<>())
         .def("__call__", &Metric::template operator()<Container>)
         .def("__call__", &Metric::template operator()<std::vector<Value>>)
-        .def("__repr__", [](const Metric &a) { return "<Cosine>"; });
+        .def("__repr__", &python__str__);
 }
 
 template<typename Value, typename Container>
@@ -70,19 +75,9 @@ void register_wrapper_chebyshev(py::module& m) {
         .def(py::init<>())
         .def("__call__", &Metric::template operator()<Container>)
         .def("__call__", &Metric::template operator()<std::vector<Value>>)
-        .def("__repr__", [](const Metric &a) { return "<Chebyshev>"; });
+        .def("__repr__", &python__str__);
 }
 
-//template<typename Value, typename Container>
-//void register_wrapper_custom(py::module& m) {
-//    using Metric = metric::PythonMetric<Container, Value>;
-//    using Callable = typename Metric::Callable;
-//    py::class_<Metric>(m, "Metric")
-//        .def(py::init<>());
-//        .def(py::init<const Callable&>());
-//        .def("__call__", &Metric::template operator()<Container>);
-//        .def("__repr__", [](const Metric &a) { return "<Metric>"; });
-//}
 
 void export_metric_standards(py::module& m) {
     register_wrapper_euclidean<double, NumpyToVectorAdapter<double>>(m);
@@ -91,5 +86,4 @@ void export_metric_standards(py::module& m) {
     register_wrapper_euclidean_thresholded<double, NumpyToVectorAdapter<double>>(m);
     register_wrapper_cosine<double, NumpyToVectorAdapter<double>>(m);
     register_wrapper_chebyshev<double, NumpyToVectorAdapter<double>>(m);
-//    register_wrapper_custom<double, NumpyToVectorAdapter<double>>(m);
 }

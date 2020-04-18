@@ -12,7 +12,7 @@ void register_wrapper(py::module& m) {
     using Metric = metric::Sorensen<Value>;
     using BContainer = blaze::CompressedVector<Value>;
 
-    auto cls = py::class_<Metric>(m, "Sorensen", "Sørensen–Dice coefficient");
+    auto cls = py::class_<Metric>(m, "Sorensen", "Sorensen–Dice coefficient");
     cls.def(py::init<>());
     cls.def("__call__", (Value (Metric::*)(const Container&, const Container&) const) &Metric::operator(),
         py::arg("a"),

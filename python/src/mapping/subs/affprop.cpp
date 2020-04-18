@@ -8,7 +8,7 @@
 namespace py = pybind11;
 
 template <typename RecType, typename Metric>
-void register_wrapper_affprop(py::module& m) {
+void wrap_affprop(py::module& m) {
     using Class = metric::AffProp<RecType, Metric>;
     using Value = typename Metric::distance_type;
 
@@ -28,7 +28,13 @@ void register_wrapper_affprop(py::module& m) {
 void export_metric_affprop(py::module& m) {
     using Value = double;
     using Container = std::vector<Value>;
-    register_wrapper_affprop<Container, metric::Euclidean<Value>>(m);
+    using Functor = std::function<Value(const Container&, const Container&)>;
+
+    boost::mpl::for_each<metric::MetricTypes, boost::mpl::make_identity<boost::mpl::_1>>([&](auto metr) {
+        using Metric = typename decltype(metr1)::type;
+        wrap_affprop<Container, Metric>(m);
+    });
+    wrap_affprop<Container, Functor>;
 }
 
 PYBIND11_MODULE(affprop, m) {

@@ -5,6 +5,7 @@
 
   Copyright (c) 2020 Panda Team
 */
+#include "metric_types.hpp"
 
 #include "modules/correlation/entropy.hpp"
 #include <pybind11/pybind11.h>
@@ -27,7 +28,7 @@ metric::Entropy<void, Metric> createEntropy(
 }
 
 template <typename Container, typename Metric>
-void wrap_metric_entropy(py::module& m, const std::string& postfix) {
+void wrap_metric_entropy(py::module& m) {
     using Class = metric::Entropy<void, Metric>;
 
     m.def("Entropy", &createEntropy<Metric>,
@@ -38,7 +39,7 @@ void wrap_metric_entropy(py::module& m, const std::string& postfix) {
         py::arg("exp") = false
     );
 
-    const std::string name = std::string("Entropy_") + postfix;
+    const std::string name = std::string("Entropy_") + metric::getTypeName<Metric>();
     auto cls = py::class_<Class>(m, name.c_str());
     cls.def("__call__", &Class::template operator()<Container>,
         "Calculate entropy",
@@ -59,11 +60,14 @@ void export_metric_entropy(py::module& m) {
     using Value = double;
     using RecType = std::vector<Value>;
     using Container = std::vector<RecType>;
-    wrap_metric_entropy<Container, metric::Euclidean<Value>>(m, "Euclidean");
-    wrap_metric_entropy<Container, metric::Manhatten<Value>>(m, "Manhatten");
-    wrap_metric_entropy<Container, metric::Chebyshev<Value>>(m, "Chebyshev");
-    wrap_metric_entropy<Container, metric::P_norm<Value>>(m, "P_norm");
-    wrap_metric_entropy<Container, std::function<double(const RecType&, const RecType&)>>(m, "Generic");
+    using Functor = std::function<Value(const Container&, const Container&)>;
+
+    boost::mpl::for_each<metric::MetricTypes, boost::mpl::make_identity<boost::mpl::_1>>([&](auto metr) {
+        using MetricType = typename decltype(metr)::type;
+        wrap_metric_entropy<Container, MetricType>(m);
+    });
+
+    wrap_metric_entropy<Container, Functor>(m);
 }
 
 
