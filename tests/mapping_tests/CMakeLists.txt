@@ -2,7 +2,6 @@ cmake_minimum_required(VERSION 3.10)
 
 enable_testing()
 
-#set(Boost_DEBUG on)  
 find_package(Boost COMPONENTS unit_test_framework)
 find_package(LAPACK)
 

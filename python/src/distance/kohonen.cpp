@@ -9,17 +9,6 @@
 
 namespace py = pybind11;
 
-/*
-template <typename D,
-            typename Sample,
-            typename Graph = metric::Grid4,
-            typename Metric = metric::Euclidean<D>,
-	        typename Distribution = std::uniform_real_distribution<typename Sample::value_type>>
-    // D is a distance return type
-
-
-	Kohonen(metric::SOM<Sample, Graph, Metric, Distribution> som_model);   <---------- ???
-*/
 
 template<typename DistanceType, typename Sample, typename Graph, typename Metric>
 void register_wrapper_kohonen(py::module& m) {

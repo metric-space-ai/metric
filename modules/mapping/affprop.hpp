@@ -14,6 +14,7 @@ Copyright (c) 2018 M.Welsch
 #include <vector>
 #include <tuple>
 #include <algorithm>
+#include <type_traits>
 
 namespace metric {
 
@@ -27,7 +28,7 @@ namespace metric {
 //
 template <typename RecType, typename Metric>
 class AffProp {
-    using Value = typename Metric::distance_type;
+    using Value = typename std::invoke_result<Metric, const RecType&, const RecType&>::type;
 
 public:
     AffProp() = default;

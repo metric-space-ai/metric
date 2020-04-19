@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.10)
 
 enable_testing()
 
+find_package(Boost)
+
 project(distance_tests)
 
 set(Boost_DEBUG on)  

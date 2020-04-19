@@ -1,7 +1,10 @@
 #include "modules/utils/graph.hpp"
 #include "modules/distance/k-related/Standards.hpp"
 #include "modules/distance/k-structured/EMD.hpp"
+
+#include <boost/mpl/for_each.hpp>
 #include <boost/mpl/vector.hpp>
+
 #include <typeindex>
 #include <string>
 #include <unordered_map>
@@ -12,12 +15,13 @@ namespace metric {
 using MetricTypes = boost::mpl::vector<
     metric::Euclidean<double>
     , metric::Manhatten<double>
-    //, metric::Chebyshev<double>
-    , metric::P_norm<double> // TODO: constructor argument
+    , metric::Chebyshev<double>
+    , metric::P_norm<double>
 >;
 
 std::unordered_map<std::type_index, std::string> typeNames = {
     {std::type_index(typeid(metric::Euclidean<double>)), "Euclidean"},
+    {std::type_index(typeid(metric::Euclidean_thresholded<double>)), "Euclidean_thresholded"},
     {std::type_index(typeid(metric::Manhatten<double>)), "Manhatten"},
     {std::type_index(typeid(metric::Chebyshev<double>)), "Chebyshev"},
     {std::type_index(typeid(metric::P_norm<double>)), "Pnorm"},

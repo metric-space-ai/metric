@@ -16,40 +16,6 @@
 
 namespace py = pybind11;
 
-/**
-So there are two types of classes:
-- statically initialized templates (when algorithm known at compile time)
-- generic implementation that calls function pointer, guaranteed: argument numbers and types, return type
-
-In the future we can provide:
-- generic scalar type
-- automatic selection of scalar based on type of inputs (we don't need to create Euclidean(type=float), just Euclidean())
-
-unfortunately we can't support multiple types at the same time because this will require manual work for each individual
-class, with diving into implementation detail of that class (i.e. can it be copyable?, etc)
-
-
-EMD(type=double) -> Any[EMD_int, EMD_double]
-
-EMD_int -> EMD<int>
-EMD_double -> EMD<double>
-
-KOC(type=double) -> KOC_Euclidean_Grid4_Normal_double
-KOC(metric=Metric(lambda x, y: sqrt(x - y)), type=int, distribution=MyDist()) -> KOC_Custom_Grid4_Custom_double
-
-the problem when there is 2+ constructors, we need to have 2+ functions to create using each constructor.
-we can use second approach with dynamic routing:
-def KOC(type=int, *arg, **kwargs):
-    impl[build_name(type)](*arg, **kwargs)
-
-
-the problem with intermediate function is that docstring and autocomplete of arguments difficult to do with overloaded
-constructors (something that happens on pybind11 side).
-
-another problem with static methods (utils for classes)
-we need to get proper static method of proper class, but we don't know proper class without call -> i.e constructing
-is there a way to get class object without calling its constructor?
-*/
 
 template<typename Value>
 void wrap_metric_EMD(py::module& m) {
