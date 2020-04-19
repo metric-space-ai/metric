@@ -10,6 +10,10 @@ Copyright (c) 2018, Michael Welsch
 #ifndef _METRIC_SPACE_TREE_HPP
 #define _METRIC_SPACE_TREE_HPP
 
+#include "../../3rdparty/blaze/Math.h"
+#include "../../3rdparty/blaze/math/Matrix.h"
+#include "../../3rdparty/blaze/math/adaptors/SymmetricMatrix.h"
+
 #include <atomic>
 #include <cmath>
 #include <fstream>
@@ -24,9 +28,7 @@ Copyright (c) 2018, Michael Welsch
 #include <unordered_set>
 #include <unordered_map>
 #include <vector>
-#include "../../3rdparty/blaze/Math.h"
-#include "../../3rdparty/blaze/math/Matrix.h"
-#include "../../3rdparty/blaze/math/adaptors/SymmetricMatrix.h"
+
 namespace metric {
 /*
   _ \         _|             |  |       \  |        |       _)
@@ -61,7 +63,7 @@ public:
     using Node_ptr = Node<RecType, Metric>*;
     using TreeType = Tree<RecType, Metric>;
     using rset_t = std::tuple<Node_ptr, std::vector<Node_ptr>, std::vector<Node_ptr>>;
-    using Distance = typename std::result_of<Metric(RecType, RecType)>::type;
+    using Distance = typename std::invoke_result<Metric, const RecType&, const RecType&>::type;
 
     /***
       @brief cluster tree nodes according to distribution
