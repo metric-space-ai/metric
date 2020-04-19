@@ -24,17 +24,17 @@ Copyright (c) PANDA Team
 #define _METRIC_DISTANCE_HPP
 
 // include the implementation
+
 #include "distance/k-related/Standards.hpp"
+#include "distance/k-related/L1.hpp"
+
 #include "distance/k-structured/SSIM.hpp"
 #include "distance/k-structured/TWED.hpp"
 #include "distance/k-structured/EMD.hpp"
 #include "distance/k-structured/Edit.hpp"
 #include "distance/k-structured/Kohonen.hpp"
 
-#include "distance/k-related/L1.hpp"
-
 #include "distance/k-random/VOI.hpp"
-
 #include "distance/k-random/KolmogorovSmirnov.hpp"
 #include "distance/k-random/RandomEMD.hpp"
 #include "distance/k-random/CramervonMises.hpp"

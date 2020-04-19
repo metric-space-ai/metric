@@ -8,9 +8,6 @@ Copyright (c) 2019 Panda Team
 #ifndef _METRIC_DISTANCE_K_RANDOM_ENTROPY_CPP
 #define _METRIC_DISTANCE_K_RANDOM_ENTROPY_CPP
 
-#include <boost/math/special_functions/digamma.hpp>
-#include <boost/math/special_functions/gamma.hpp>
-
 #include "../../modules/utils/type_traits.hpp"
 #include "../../modules/space/tree.hpp"
 #include "estimator_helpers.hpp"
@@ -276,6 +273,83 @@ double mvnpdf(blaze::DynamicVector<double> x) {
 }
 
 
+
+/* from https://github.com/masakazu-ishihata/irand.git
+   The digamma function is the derivative of gammaln.
+
+   Reference:
+    J Bernardo,
+    Psi ( Digamma ) Function,
+    Algorithm AS 103,
+    Applied Statistics,
+    Volume 25, Number 3, pages 315-317, 1976.
+
+    From http://www.psc.edu/~burkardt/src/dirichlet/dirichlet.f
+    (with modifications for negative numbers and extra precision)
+*/
+double digamma(double x)
+{
+  double result;
+  static const double
+          neginf = -1.0/0.0,
+          c = 12,
+          s = 1e-6,
+          d1 = -0.57721566490153286,
+          d2 = 1.6449340668482264365, /* pi^2/6 */
+          s3 = 1./12,
+          s4 = 1./120,
+          s5 = 1./252,
+          s6 = 1./240,
+    s7 = 1./132;
+    //	  s8 = 691/32760,
+    //	  s9 = 1/12,
+    //	  s10 = 3617/8160;
+  /* Illegal arguments */
+  if((x == neginf) || std::isnan(x)) {
+    return 0.0/0.0;
+  }
+  /* Singularities */
+  if((x <= 0) && (floor(x) == x)) {
+    return neginf;
+  }
+  /* Negative values */
+  /* Use the reflection formula (Jeffrey 11.1.6):
+   * digamma(-x) = digamma(x+1) + pi*cot(pi*x)
+   *
+   * This is related to the identity
+   * digamma(-x) = digamma(x+1) - digamma(z) + digamma(1-z)
+   * where z is the fractional part of x
+   * For example:
+   * digamma(-3.1) = 1/3.1 + 1/2.1 + 1/1.1 + 1/0.1 + digamma(1-0.1)
+   *               = digamma(4.1) - digamma(0.1) + digamma(1-0.1)
+   * Then we use
+   * digamma(1-z) - digamma(z) = pi*cot(pi*z)
+   */
+  if(x < 0) {
+    return digamma(1-x) + M_PI/tan(-M_PI*x);
+  }
+  /* Use Taylor series if argument <= S */
+  if(x <= s) return d1 - 1/x + d2*x;
+  /* Reduce to digamma(X + N) where (X + N) >= C */
+  result = 0;
+  while(x < c) {
+    result -= 1/x;
+    x++;
+  }
+  /* Use de Moivre's expansion if argument >= C */
+  /* This expansion can be computed in Maple via asympt(Psi(x),x) */
+  if(x >= c) {
+    double r = 1/x;
+    result += std::log(x) - 0.5*r; // added "std::"
+    r *= r;
+    result -= r * (s3 - r * (s4 - r * (s5 - r * (s6 - r * s7))));
+  }
+  return result;
+}
+
+
+
+
 // averaged entropy estimation: code COPIED from mgc.*pp with only mgc replaced with entropy, TODO refactor to avoid code dubbing
 template <typename Container, typename Functor>
 double estimate(
@@ -398,7 +472,8 @@ double EntropySimple<RecType, Metric>::operator()(
         entropyEstimate += std::log(res.back().second);
     }
     entropyEstimate = entropyEstimate * d / (double)N; // mean log * d
-    entropyEstimate += boost::math::digamma(N) - boost::math::digamma(k) + d*std::log(2.0);
+    //entropyEstimate += boost::math::digamma(N) - boost::math::digamma(k) + d*std::log(2.0);
+    entropyEstimate += entropy_details::digamma(N) - entropy_details::digamma(k) + d*std::log(2.0);
 
     if constexpr (!std::is_same<Metric, typename metric::Chebyshev<T>>::value) {
         double p = 1; // Manhatten and other metrics (TODO check if it is correct for them!)
@@ -407,7 +482,8 @@ double EntropySimple<RecType, Metric>::operator()(
         } else if constexpr (std::is_same<Metric, typename metric::P_norm<T>>::value) {
             p = metric.p; // general Minkowsky
         }
-        entropyEstimate += d * std::log(std::tgamma(1 + 1 / p)) - std::log(std::tgamma(1 + d / p));
+        //entropyEstimate += d * std::log(std::tgamma(1 + 1 / p)) - std::log(std::tgamma(1 + d / p)); // boost
+        entropyEstimate += d * std::log(tgamma(1 + 1 / p)) - std::log(tgamma(1 + d / p));
     }
     entropyEstimate /= std::log(logbase);
     if (exp)
@@ -517,7 +593,8 @@ double Entropy<RecType, Metric>::operator()(const Container& data) const
     double result;
     if (got_results <= 20) // this absents in Matlab original code. TODO adjust min number of points
         result = std::nan("estimation failed");
-    result = boost::math::digamma(n) - boost::math::digamma(k) + h/n;
+    //result = boost::math::digamma(n) - boost::math::digamma(k) + h/n;
+    result = entropy_details::digamma(n) - entropy_details::digamma(k) + h/n;
     if (exp)
         return entropy_details::conv_diff_entropy(result); // conversion of values below 1 to exp scale
     return result;
