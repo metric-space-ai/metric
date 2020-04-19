@@ -67,7 +67,7 @@ void export_metric_entropy(py::module& m) {
         wrap_metric_entropy<Container, MetricType>(m);
     });
 
-    wrap_metric_entropy<Container, Functor>(m);
+//    wrap_metric_entropy<Container, Functor>(m);
 }
 
 

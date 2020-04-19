@@ -92,13 +92,13 @@ void export_metric_MGC(py::module& m)
 {
     using T = double;
     using Container = std::vector<T>;
-    using Functor = std::function<Value(const Container&, const Container&)>;
+    using Functor = std::function<T(const Container&, const Container&)>;
 
     boost::mpl::for_each<metric::MetricTypes, boost::mpl::make_identity<boost::mpl::_1>>([&](auto metr1) {
         using Metric1 = typename decltype(metr1)::type;
         boost::mpl::for_each<metric::MetricTypes, boost::mpl::make_identity<boost::mpl::_1>>([&](auto metr2) {
             using Metric2 = typename decltype(metr2)::type;
-            wrap_metric_MGC<T, MetricType1, MetricType2>(m);
+            wrap_metric_MGC<T, Metric1, Metric2>(m);
         });
     });
 

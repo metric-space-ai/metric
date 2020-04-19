@@ -1,7 +1,10 @@
 #include "modules/utils/graph.hpp"
 #include "modules/distance/k-related/Standards.hpp"
 #include "modules/distance/k-structured/EMD.hpp"
+
+#include <boost/mpl/for_each.hpp>
 #include <boost/mpl/vector.hpp>
+
 #include <typeindex>
 #include <string>
 #include <unordered_map>
