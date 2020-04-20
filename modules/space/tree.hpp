@@ -222,7 +222,7 @@ public:
      * @return data record with ID == id
      * @throws std::runtime_error when tree has no element with ID
      */
-    RecType operator[](size_t id);
+    RecType operator[](size_t id) const;
 
     /*** Nearest Neighbour search ***/
 
