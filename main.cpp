@@ -141,7 +141,7 @@ int main()
 
         std::deque<RecType> v_in = {{1, 1}, {2, 2}, {2, 3}};
 
-        auto default_alg_eucl = metric::Algorithm<metric::Euclidean<RecType, float>>();
+        auto default_alg_eucl = metric::Algorithm<metric::Euclidean<RecType>>();
         auto default_result_sorted_eucl = default_alg_eucl.sort_by_distance(v_in, {3, 3});
         std::cout << "\nresult for set of records, default algorithm, Euclidean, custom return type:\n";
         for (size_t i = 0; i<default_result_sorted_eucl.size(); ++i) {

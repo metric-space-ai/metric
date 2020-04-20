@@ -10,6 +10,11 @@
 namespace metric {
 
 
+// global setup
+
+using DistanceType = double;
+
+
 
 
 // --------
@@ -43,25 +48,25 @@ struct determine_container_type<Container<ValueType, _Rows, _Cols, _Options, _Ma
 
 
 template<typename C, int = determine_container_type<C>::code>
-struct determine_val_t  // determines type of element both for STL containers and Blaze vectors
+struct determine_ValueType  // determines type of element both for STL containers and Blaze vectors
 {
     using type = void;
 };
 
 template<typename C>
-struct determine_val_t<C, 1>
+struct determine_ValueType<C, 1>
 {
     using type = typename C::value_type;
 };
 
 template<typename C>
-struct determine_val_t<C, 2>
+struct determine_ValueType<C, 2>
 {
     using type = typename C::ElementType;
 };
 
 template<typename C>
-struct determine_val_t<C, 3>
+struct determine_ValueType<C, 3>
 {
     using type = typename C::Scalar;
 };
@@ -72,15 +77,15 @@ struct determine_val_t<C, 3>
 // base classes
 
 
-template <typename rec_t>
+template <typename RT>
 class MetricBase { // all metrics to be derived from
 
 public:
 
-    using Rec_T = rec_t;
-    using Val_T = determine_val_t<Rec_T>;
+    using RecordType = RT;
+    using ValueType = determine_ValueType<RecordType>;
 
-    double operator () (const rec_t & a, const rec_t & b) { // to be overridden in derived metrics
+    double operator () (const RecordType & a, const RecordType & b) { // to be overridden in derived metrics
         double dnan = std::nan("Base class, not intended to be used directly");
         return dnan;
     }
@@ -90,104 +95,47 @@ public:
 
 
 
-template <typename Metric = MetricBase<std::vector<double>>>
+template <typename MT = MetricBase<std::vector<double>>>
 class Algorithm {
 
 public:
 
-    //using Rec_T = rec_t;
-    //using Val_T = determine_val_t<Rec_T>;
+    //using RecordType = Metric::RecordType;
+    //using ValueType = determine_ValueType<RecordType>;
 
-    //using Dist_T = typename std::invoke_result<Metric, const typename Metric::Rec_T &, const typename Metric::Rec_T &>::type;
-    using Dist_T = typename std::invoke_result<Metric, typename Metric::Rec_T, typename Metric::Rec_T>::type;
+    //using DistanceType = typename std::invoke_result<Metric, const typename Metric::RecordType &, const typename Metric::RecordType &>::type;
+    //using DistanceType = typename std::invoke_result<Metric, typename Metric::RecordType, typename Metric::RecordType>::type;
 
-    Algorithm<Metric>(Metric metric_ = Metric()) : metric(metric_) {}
+    Algorithm<MT>(MT metric_ = MT()) : metric(metric_) {}
 
-    template <typename set_t_l>
+    template <typename ST>
     typename std::enable_if <
-     std::is_same<typename determine_val_t<set_t_l>::type, typename Metric::Rec_T>::value, // set_t matches with val_t
-     set_t_l
+     std::is_same<typename determine_ValueType<ST>::type, typename MT::RecordType>::value, // set_t matches with ValueType
+     ST
     >::type
-    sort_by_distance(set_t_l in, typename Metric::Rec_T center) {
+    sort_by_distance(ST in, typename MT::RecordType center) {
 
-        set_t_l out;
+        ST out;
 
-        auto cmp = [](std::pair<size_t, Dist_T> const & a, std::pair<size_t, Dist_T> const & b)
+        auto cmp = [](std::pair<size_t, DistanceType> const & a, std::pair<size_t, DistanceType> const & b)
         {
             return a.second != b.second ? a.second < b.second : a.first < b.first;
         };
 
-        std::vector<std::pair<size_t, Dist_T>> distances;
+        std::vector<std::pair<size_t, DistanceType>> distances;
         for (size_t i = 0; i<in.size(); i++) {
             distances.push_back(std::make_pair(i, metric(in[i], center)));
         }
         sort(distances.begin(), distances.end(), cmp);
-        for (typename std::vector<std::pair<size_t, Dist_T>>::iterator i = distances.begin(); i != distances.end(); i++) {
+        for (typename std::vector<std::pair<size_t, DistanceType>>::iterator i = distances.begin(); i != distances.end(); i++) {
             out.push_back(in[i->first]);
         }
         return out;
     }
-
-
-    /* // STL and Blaze versions apart, not needed in this case
-    template <typename set_t_l>
-    typename std::enable_if <
-     std::is_same<typename determine_val_t<set_t_l>::type, typename Metric::Rec_T>::value
-       && determine_container_type<typename determine_val_t<set_t_l>::type>::code == 1, // STL
-     set_t_l
-    >::type
-    sort_by_distance(set_t_l in, typename Metric::Rec_T center) {
-
-        set_t_l out;
-
-        auto cmp = [](std::pair<size_t, double> const & a, std::pair<size_t, double> const & b)
-        {
-            return a.second != b.second ? a.second < b.second : a.first < b.first;
-        };
-
-        std::vector<std::pair<size_t, double>> distances;
-        for (size_t i = 0; i<in.size(); i++) {
-            distances.push_back(std::make_pair(i, metric(in[i], center)));
-        }
-        sort(distances.begin(), distances.end(), cmp);
-        for (std::vector<std::pair<size_t, double>>::iterator i = distances.begin(); i != distances.end(); i++) {
-            out.push_back(in[i->first]);
-        }
-        return out;
-    }
-
-
-    template <typename set_t_l>
-    typename std::enable_if <
-     std::is_same<typename determine_val_t<set_t_l>::type, typename Metric::Rec_T>::value
-       && determine_container_type<typename determine_val_t<set_t_l>::type>::code == 2, // Blaze
-     set_t_l
-    >::type
-    sort_by_distance(set_t_l in, typename Metric::Rec_T center) { // only STP version now
-
-        set_t_l out (in.size());
-
-        auto cmp = [](std::pair<size_t, double> const & a, std::pair<size_t, double> const & b)
-        {
-            return a.second != b.second ? a.second < b.second : a.first < b.first;
-        };
-
-        std::vector<std::pair<size_t, double>> distances;
-        for (size_t i = 0; i<in.size(); i++) {
-            distances.push_back(std::make_pair(i, metric(in[i], center)));
-        }
-        sort(distances.begin(), distances.end(), cmp);
-        for (size_t i = 0; i<distances.size(); i++) {
-            out[i] = in[distances[i].first];
-        }
-        return out;
-    }
-    // */
-
 
 protected:
 
-    Metric metric;
+    MT metric;
 };
 
 
@@ -197,12 +145,12 @@ protected:
 // derived classes
 
 
-template <typename rec_t>
-class EuclideanNoIter : public MetricBase<rec_t> {
+template <typename RT>
+class EuclideanNoIter : public MetricBase<RT> {
 
 public:
 
-    double operator()(const rec_t & a, const rec_t & b) const  { // siuts both Blaze and STL
+    double operator()(const RT & a, const RT & b) const  { // siuts both Blaze and STL
         double sum = 0;
         if (a.size() != b.size()) {
             double dnan = std::nan("Input container sizes do not match");
@@ -218,52 +166,52 @@ public:
 
 
 
-template <typename rec_t, typename ret_t = double>
-class EuclideanTypeSpecific : public MetricBase<rec_t> {
+template <typename RT>
+class EuclideanTypeSpecific : public MetricBase<RT> {
 
 public:
 
-    template <typename rec_t_l>
+    template <typename R>
     typename std::enable_if <
-     std::is_same<rec_t_l, rec_t>::value && determine_container_type<rec_t_l>::code == 1, // STL, we can use iterators
-     ret_t
+     std::is_same<R, RT>::value && determine_container_type<R>::code == 1, // STL, we can use iterators
+     DistanceType
     >::type
-    operator()(const rec_t_l & a, const rec_t_l & b) const { // STL overload, TODO add Blaze overload
+    operator()(const R & a, const R & b) const { // STL overload, TODO add Blaze overload
         if (a.size() != b.size()) {
-            ret_t dnan = std::nan("Input container sizes do not match");
+            DistanceType dnan = std::nan("Input container sizes do not match");
             return dnan;
         }
-        ret_t sum = 0;
+        DistanceType sum = 0;
         for (auto it1 = a.begin(), it2 = b.begin(); it1 != a.end() && it2 != b.end(); ++it1, ++it2) {
             sum += (*it1 - *it2) * (*it1 - *it2);
         }
         return std::sqrt(sum);
     }
 
-    template <typename rec_t_l>
+    template <typename R>
     typename std::enable_if <
-     std::is_same<rec_t_l, rec_t>::value && determine_container_type<rec_t_l>::code == 2, // Blaze, we can use Blaze matrx operations
-     ret_t
+     std::is_same<R, RT>::value && determine_container_type<R>::code == 2, // Blaze, we can use Blaze matrx operations
+     DistanceType
     >::type
-    operator()(const rec_t_l & a, const rec_t_l & b) const { // STL overload, TODO add Blaze overload
+    operator()(const R & a, const R & b) const { // STL overload, TODO add Blaze overload
         if (a.size() != b.size()) {
-            ret_t dnan = std::nan("Input container sizes do not match");
+            DistanceType dnan = std::nan("Input container sizes do not match");
             return dnan;
         }
         auto diff = a - b;
-        ret_t sum = blaze::sum(diff*diff);
+        DistanceType sum = blaze::sum(diff*diff);
         return std::sqrt(sum);
     }
 
-    template <typename rec_t_l>
+    template <typename R>
     typename std::enable_if <
-     std::is_same<rec_t_l, rec_t>::value && determine_container_type<rec_t_l>::code == 3, // Eigen, [] to access elements (or we can use Eigen-specific matrix operations)
-     ret_t
+     std::is_same<R, RT>::value && determine_container_type<R>::code == 3, // Eigen, [] to access elements (or we can use Eigen-specific matrix operations)
+     DistanceType
     >::type
-    operator()(const rec_t_l & a, const rec_t_l & b) const {
-        ret_t sum = 0;
+    operator()(const R & a, const R & b) const {
+        DistanceType sum = 0;
         if (a.size() != b.size()) {
-            ret_t dnan = std::nan("Input container sizes do not match");
+            DistanceType dnan = std::nan("Input container sizes do not match");
             return dnan;
         }
         for (size_t i = 0; i < a.size(); ++i) {
@@ -275,63 +223,14 @@ public:
 };
 
 
-/*
 
-template <typename rec_t = std::vector<double>>
-class Euclidean : public MetricBase<rec_t> {
-
-public:
-
-    // STL-specific, not needed in this case
-//    template <typename rec_t_l>
-//    typename std::enable_if <
-//     std::is_same<rec_t_l, rec_t>::value && determine_container_type<rec_t_l>::code == 1, // STL
-//     double
-//    >::type
-//    operator()(const rec_t_l & a, const rec_t_l & b) const { // STL overload, TODO add Blaze overload
-//        double sum = 0;
-//        for (auto it1 = a.begin(), it2 = b.begin(); it1 != a.end() && it2 != b.end(); ++it1, ++it2) {
-//            sum += (*it1 - *it2) * (*it1 - *it2);
-//        }
-//        return std::sqrt(sum);
-//    }
-
-
-    // Blaze-specific code, not needed in thios case
-//    template <typename rec_t_l>
-//    typename std::enable_if <
-//     std::is_same<rec_t_l, rec_t>::value && determine_container_type<rec_t_l>::code == 2, // Blaze
-//     double
-//    >::type
-//    operator()(const rec_t_l & a, const rec_t_l & b) const { // STL overload, TODO add Blaze overload
-//        auto diff = a - b;
-//        double sum = blaze::sum(diff*diff);
-//        return std::sqrt(sum);
-//    }
-
-
-    double operator()(const rec_t & a, const rec_t & b) const  { // siuts both Blaze and STL, but not Eigen
-        double sum = 0;
-        for (auto it1 = a.begin(), it2 = b.begin(); it1 != a.end() && it2 != b.end(); ++it1, ++it2) {
-            sum += (*it1 - *it2) * (*it1 - *it2);
-        }
-        return std::sqrt(sum);
-    }
-
-
-};
-
-// */
-
-
-
-template <typename rec_t = std::vector<double>, typename ret_t = double>
-class Euclidean : public MetricBase<rec_t> {
+template <typename RT = std::vector<double>>
+class Euclidean : public MetricBase<RT> {
 
 public:
 
-    ret_t operator()(const rec_t & a, const rec_t & b) const  { // suits both Blaze and STL, but not Eigen
-        ret_t sum = 0;
+    DistanceType operator()(const RT & a, const RT & b) const  { // suits both Blaze and STL, but not Eigen
+        DistanceType sum = 0;
         for (auto it1 = a.begin(), it2 = b.begin(); it1 != a.end() && it2 != b.end(); ++it1, ++it2) {
             sum += (*it1 - *it2) * (*it1 - *it2);
         }
@@ -343,23 +242,20 @@ public:
 
 
 
-
-template <typename Metric = Euclidean<std::vector<double>>>
-class Norm : public Algorithm<Metric> {
+template <typename MT = Euclidean<std::vector<double>>>
+class Norm : public Algorithm<MT> {
 
 public:
 
+    Norm(MT metric_) : Algorithm<MT>(metric_) {};
 
-
-    Norm(Metric metric_) : Algorithm<Metric>(metric_) {};
-
-    template <typename rec_t_l>
+    template <typename R>
     typename std::enable_if <
-     std::is_same<rec_t_l, typename Metric::Rec_T>::value && determine_container_type<rec_t_l>::code == 1, // STL
+     std::is_same<R, typename MT::RecordType>::value && determine_container_type<R>::code == 1, // STL
      double
     >::type
-    operator()(const rec_t_l & in) {
-        typename Metric::Rec_T zero;
+    operator()(const R & in) {
+        typename MT::RecordType zero;
         for (size_t i = 0; i<in.size(); ++i) {
             zero.push_back(0); // STL-specific
         }
@@ -367,19 +263,19 @@ public:
     }
 
 
-    template <typename rec_t_l>
+    template <typename R>
     typename std::enable_if <
-     std::is_same<rec_t_l, typename Metric::Rec_T>::value && determine_container_type<rec_t_l>::code == 2, // Blaze
+     std::is_same<R, typename MT::RecordType>::value && determine_container_type<R>::code == 2, // Blaze
      double
     >::type
-    operator()(const rec_t_l & in) {
-        typename Metric::Rec_T zero (in.size(), 0); // Blaze-specific
+    operator()(const R & in) {
+        typename MT::RecordType zero (in.size(), 0); // Blaze-specific
         return this->metric(in, zero);
     }
 
 
-    template <typename set_t_l>
-    std::vector<double> norm_batch(set_t_l in) {
+    template <typename ST>
+    std::vector<double> norm_batch(ST in) {
         std::vector<double> out (in.size());
         for  (size_t i = 0; i<in.size(); ++i) {
             out[i] = this->operator()(in[i]);
@@ -388,25 +284,13 @@ public:
     }
 
 
-//    template <typename set_t>
-//    typename std::enable_if <
-//     determine_container_type<set_t>::code == 1, // STL
-//     std::vector<double>
-//    >::type
-//    norm_batch(set_t & in) {
-//        std::vector<double> out;
-//        for (size_t i = 0; i<in.size(); ++i) {
-//            out.push_back(this->operator()(in[i]));
-//        }
-//        return out;
-//    }
 
-    typename Metric::Rec_T process_single(typename Metric::Rec_T in) {
+    typename MT::RecordType process_single(typename MT::RecordType in) {
         return in;
     }
 
-    template <typename set_t>
-    set_t process_batch(set_t in) {
+    template <typename ST>
+    ST process_batch(ST in) {
         return in;
     }
 
