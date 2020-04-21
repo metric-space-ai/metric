@@ -8,224 +8,61 @@ Copyright (c) 2018 Michael Welsch
 #ifndef _METRIC_DISTANCE_K_RELATED_STANDARDS_HPP
 #define _METRIC_DISTANCE_K_RELATED_STANDARDS_HPP
 
-#include <type_traits>
+#include <cmath>
+
+#include "../../utils.hpp"
 
 
 namespace metric {
 
-/**
- * @class Euclidean
- * 
- * @brief Euclidean (L2) Metric
- */
-template <typename V = double>
-struct Euclidean {
-    using value_type = V;
-    using distance_type = value_type;
 
-    explicit Euclidean() = default;
 
-    /**
-     * @brief Calculate Euclidean distance in R^n
-     *
-     * @param a first vector
-     * @param b second vector
-     * @return Euclidean distance between a and b
-     */
-    template <typename Container>
-    typename std::enable_if<!std::is_same<Container, V>::value, distance_type>::type operator()(
-        const Container& a, const Container& b) const;
+template <typename RT>
+class Euclidean {
 
-    /**
-     * @brief Calculate Euclidean distance in R
-     *
-     * @param a first value 
-     * @param b second value
-     * @return Euclidean distance between a and b
-     */
+public:
 
-    distance_type operator()(const V& a, const V& b) const;
+    using RecordType = RT;
+    using ValueType = determine_ValueType<RecordType>;
 
-    /**
-     * @brief Calculate Euclidean distance for Blaze input
-     *
-     * @param a first value
-     * @param b second value
-     * @return Euclidean distance between a and b
-     */
-    template <template <typename, bool> class Container, typename ValueType, bool F> // detect Blaze object by signature
-    double operator()(
-        const Container<ValueType, F> & a, const Container<ValueType, F> & b) const;
-};
-
-/**
- * @class Manhatten
- * 
- * @brief Manhatten/Cityblock (L1) Metric
- *
- */
-template <typename V = double>
-struct Manhatten {
-    using value_type = V;
-    using distance_type = value_type;
-
-    explicit Manhatten() = default;
-
-    /**
-     * @brief Calculate Manhatten distance in R^n
-     *
-     * @param a first vector
-     * @param b second vector
-     * @return Manhatten distance between a and b
-     */
-
-    template <typename Container>
-    distance_type operator()(const Container& a, const Container& b) const;
-};
-
-/**
- * @class P_norm
- * 
- * @brief Minkowski (L general) Metric
- *
- */
-template <typename V = double>
-struct P_norm {
-    using value_type = V;
-    using distance_type = value_type;
-
-    //P_norm() = default;
-    /**
-     * @brief Construct a new P_norm object
-     *
-     * @param p_
-     */
-    explicit P_norm(const value_type& p_ = 1)
-        : p(p_)
-    {
+    template <typename R>
+    typename std::enable_if <
+     std::is_same<R, RT>::value && determine_container_type<R>::code != 3, // non-Eigen type
+     DistanceType
+    >::type
+    operator()(const R & a, const R & b) const {
+        if (a.size() != b.size()) {
+            DistanceType dnan = std::nan("Input container sizes do not match");
+            return dnan;
+        }
+        DistanceType sum = 0;
+        for (auto it1 = a.begin(), it2 = b.begin(); it1 != a.end() && it2 != b.end(); ++it1, ++it2) {
+            sum += (*it1 - *it2) * (*it1 - *it2);
+        }
+        return std::sqrt(sum);
     }
 
-    /**
-     * @brief calculate Minkowski distance 
-     *
-     * @param a first vector
-     * @param b second vector
-     * @return Minkowski distance between a and b
-     */
-    template <typename Container>
-    distance_type operator()(const Container& a, const Container& b) const;
 
-    value_type p = 1;
-};
-
-/**
- * @class Euclidean_threshold
- *
- * @brief Minkowski Metric (L... / P_Norm)
- *
- */
-template <typename V = double>
-struct Euclidean_thresholded {
-    using value_type = V;
-    using distance_type = value_type;
-
-    explicit Euclidean_thresholded() = default;
-
-    /**
-     * @brief Construct a new Euclidean_thresholded object
-     *
-     * @param thres_
-     * @param factor_
-     */
-    Euclidean_thresholded(value_type thres_, value_type factor_)
-        : thres(thres_)
-        , factor(factor_)
-    {
+    template <typename R>
+    typename std::enable_if <
+     std::is_same<R, RT>::value && determine_container_type<R>::code == 3, // Eigen, [] to access elements (or we can use Eigen-specific matrix operations)
+     DistanceType
+    >::type
+    operator()(const R & a, const R & b) const {
+        DistanceType sum = 0;
+        if (a.size() != b.size()) {
+            DistanceType dnan = std::nan("Input container sizes do not match");
+            return dnan;
+        }
+        for (size_t i = 0; i < a.size(); ++i) {
+            sum += (a[i] - b[i]) * (a[i] - b[i]);
+        }
+        return std::sqrt(sum);
     }
 
-    /**
-     * @brief
-     *
-     * @param a
-     * @param b
-     * @return
-     */
-    template <typename Container>
-    distance_type operator()(const Container& a, const Container& b) const;
-
-    value_type thres = 1000.0;
-    value_type factor = 3000.0;
 };
 
-/**
- * @class Cosine
- *
- * @brief Cosine similarity
- *
- */
 
-template <typename V = double>
-struct Cosine {
-    using value_type = V;
-    using distance_type = value_type;
-
-    /**
-     * @brief calculate cosine similariy between two non-zero vector
-     *
-     * @param a first vector
-     * @param b second vector
-     * @return cosine similarity between a and b
-     */
-    template <typename Container>
-    distance_type operator()(const Container& a, const Container& b) const;
-};
-
-/**
- * @class CosineInverted
- *
- * @brief CosineInverted similarity. Means 1 - Cosine.
- *
- */
-
-template <typename V = double>
-struct CosineInverted {
-    using value_type = V;
-    using distance_type = value_type;
-
-    /**
-     * @brief calculate cosine similariy between two non-zero vector
-     *
-     * @param a first vector
-     * @param b second vector
-     * @return cosine similarity between a and b
-     */
-    template <typename Container>
-    distance_type operator()(const Container& a, const Container& b) const;
-};
-
-/**
- * @class Chebyshev
- *
- * @brief Chebyshev metric
- *
- */
-template <typename V = double>
-struct Chebyshev {
-    using value_type = V;
-    using distance_type = value_type;
-
-    explicit Chebyshev() = default;
-
-    /**
-     * @brief calculate chebyshev metric
-     *
-     * @param lhs first container
-     * @param rhs second container
-     * @return Chebtshev distance between lhs and rhs
-     */
-    template <typename Container>
-    distance_type operator()(const Container& lhs, const Container& rhs) const;
-};
 
 }  // namespace metric
 
