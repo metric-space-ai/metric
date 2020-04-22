@@ -28,10 +28,20 @@ public:
 
     template <typename R>
     typename std::enable_if <
-     std::is_same<R, RT>::value && determine_container_type<R>::code != 3, // non-Eigen type
+     std::is_same<R, RT>::value
+      && determine_container_type<R>::code != 2  // non-Blaze type
+      && determine_container_type<R>::code != 3, // non-Eigen type
      DistanceType
     >::type
     operator()(const R & a, const R & b) const;
+
+    template <typename R>
+    typename std::enable_if <
+     std::is_same<R, RT>::value && determine_container_type<R>::code == 2, // Blaze vectors and sparse matrices
+     DistanceType
+    >::type
+    operator()(const R & a, const R & b) const;
+
 
     template <typename R>
     typename std::enable_if <

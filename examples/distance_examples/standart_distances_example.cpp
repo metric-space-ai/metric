@@ -32,6 +32,9 @@ int main()
     blaze::DynamicVector<double> blazev0 = { 0, 1, 1, 1, 1, 1, 2, 3 };
     blaze::DynamicVector<double> blazev1 = { 1, 1, 1, 1, 1, 2, 3, 4 };
 
+    blaze::CompressedMatrix<double> blazem0 = { {0, 1, 1, 1}, {1, 1, 2, 3} };
+    blaze::CompressedMatrix<double> blazem1 = { {1, 1, 1, 1}, {1, 2, 3, 4} };
+
     auto eigenv0 = Eigen::Array<double, 1, Eigen::Dynamic>(8);
     auto eigenv1 = Eigen::Array<double, 1, Eigen::Dynamic>(8);
     eigenv0 << 0, 1, 1, 1, 1, 1, 2, 3;
@@ -61,6 +64,18 @@ int main()
         metric::Euclidean<blaze::DynamicVector<double>> EuclideanL2Distance;
         auto startTime = std::chrono::steady_clock::now();
         auto result = EuclideanL2Distance(blazev0, blazev1);
+        auto endTime = std::chrono::steady_clock::now();
+        std::cout << "result: " << result << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count()) / 1000 << " ms)" << std::endl;
+        std::cout << "" << std::endl;
+        // out:
+        // Euclidean (L2) Metric
+        // result: 2 (Time = 0.003 ms)
+    }
+    {
+        std::cout << "Euclidean (L2) Metric in Blaze matrices" << std::endl;
+        metric::Euclidean<blaze::CompressedMatrix<double>> EuclideanL2Distance;
+        auto startTime = std::chrono::steady_clock::now();
+        auto result = EuclideanL2Distance(blazem0, blazem1);
         auto endTime = std::chrono::steady_clock::now();
         std::cout << "result: " << result << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count()) / 1000 << " ms)" << std::endl;
         std::cout << "" << std::endl;
