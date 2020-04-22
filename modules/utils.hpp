@@ -77,6 +77,29 @@ struct determine_ValueType<C, 3>
 
 
 
+template <typename>
+struct isBlazeDynamicVector{
+    constexpr static bool value = false;
+};
+
+template <typename ElementType, bool F>
+struct isBlazeDynamicVector<blaze::DynamicVector<ElementType, F>> {
+    constexpr static bool value = true;
+};
+
+
+
+// the same but universal, TODO test
+template <typename>
+struct isContainerOfType{
+    constexpr static bool value = false;
+};
+
+template <template<typename...> class T, typename ElementType>
+struct isContainerOfType<T<ElementType>> {
+    constexpr static bool value = true;
+};
+
 
 }  // namespace metric
 

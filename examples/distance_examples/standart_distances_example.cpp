@@ -175,5 +175,17 @@ int main()
 #endif
 
 
+    // test code to show how type detection works, TODO remove
+    {
+        auto metric = metric::TestMetric<Eigen::Array<double, 1, Eigen::Dynamic>>();
+        //auto metric = metric::TestMetric<blaze::CompressedMatrix<double>>();
+        //auto metric = metric::TestMetric<blaze::DynamicVector<double>>();
+        auto result = metric(eigenv0, eigenv1);
+        //auto result = metric(blazem0, blazem1);
+        //auto result = metric(blazev0, blazev1);
+        std::cout << "\n\ntest result: " << result << "\n";
+    }
+
+
 	return 0;
 }
