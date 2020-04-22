@@ -9,9 +9,10 @@ Copyright (c) 2019 Panda Team
 #include <vector>
 #include <iostream>
 #include <chrono>
+#include "../../3rdparty/blaze/Blaze.h"
+#include "../../3rdparty/Eigen/Dense"
 
 #include "../../modules/distance.hpp"
-#include "../../3rdparty/blaze/Blaze.h"
 
 int main()
 {
@@ -23,6 +24,10 @@ int main()
     std::vector<double> stlv1 = { 1, 1, 1, 1, 1, 2, 3, 4 };
     blaze::DynamicVector<double> blazev0 = { 0, 1, 1, 1, 1, 1, 2, 3 };
     blaze::DynamicVector<double> blazev1 = { 1, 1, 1, 1, 1, 2, 3, 4 };
+    auto eigenv0 = Eigen::Array<double, 1, Eigen::Dynamic>(8);
+    auto eigenv1 = Eigen::Array<double, 1, Eigen::Dynamic>(8);
+    eigenv0 << 0, 1, 1, 1, 1, 1, 2, 3;
+    eigenv1 << 1, 1, 1, 1, 1, 2, 3, 4;
 
 
 
@@ -44,6 +49,18 @@ int main()
         metric::Euclidean<blaze::DynamicVector<double>> EuclideanL2Distance;
         auto startTime = std::chrono::steady_clock::now();
         auto result = EuclideanL2Distance(blazev0, blazev1);
+        auto endTime = std::chrono::steady_clock::now();
+        std::cout << "result: " << result << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count()) / 1000 << " ms)" << std::endl;
+        std::cout << "" << std::endl;
+        // out:
+        // Euclidean (L2) Metric
+        // result: 2 (Time = 0.006 ms)
+    }
+    {
+        std::cout << "Euclidean (L2) Metric in Eigen vectors" << std::endl;
+        metric::Euclidean<Eigen::Array<double, 1, Eigen::Dynamic>> EuclideanL2Distance;
+        auto startTime = std::chrono::steady_clock::now();
+        auto result = EuclideanL2Distance(eigenv0, eigenv1);
         auto endTime = std::chrono::steady_clock::now();
         std::cout << "result: " << result << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count()) / 1000 << " ms)" << std::endl;
         std::cout << "" << std::endl;
