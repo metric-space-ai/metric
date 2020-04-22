@@ -52,10 +52,10 @@ Euclidean<RT>::operator()(const R & a, const R & b) const {
     //}
     return blaze::norm(a - b); // slower than the iterator-based approach above
 }
-// NOTE: we can tell apart Blaze DyncmicVector and CompressedMatrix via signature,
-// ans processing CompressedMatrix via iterators will skip zero elements and result in wring output,
+// NOTE: we can not tell apart Blaze DyncmicVector and CompressedMatrix via signature,
+// but processing CompressedMatrix via iterators will skip zero elements and result in wring output,
 // so we use Blaze norm function for both Blaze types.
-// Although, processing DynamicVector via iterators is correct and mush faster than via norm function. So
+// Although, processing DynamicVector via iterators is correct and much faster than via norm function. So
 // TODO add DynamicVector type detector and process this type apart
 
 
