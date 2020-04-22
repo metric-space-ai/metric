@@ -9,8 +9,13 @@ Copyright (c) 2019 Panda Team
 #include <vector>
 #include <iostream>
 #include <chrono>
+
 #include "../../3rdparty/blaze/Blaze.h"
 #include "../../3rdparty/Eigen/Dense"
+#if __has_include(<armadillo>)
+    #include <armadillo>
+    #define ARMA_EXISTS
+#endif // linker parameter: -larmadillo
 
 #include "../../modules/distance.hpp"
 
@@ -20,15 +25,22 @@ int main()
 	std::cout << "" << std::endl;
 
 	/*** here are some data records ***/
+
     std::vector<double> stlv0 = { 0, 1, 1, 1, 1, 1, 2, 3 };
     std::vector<double> stlv1 = { 1, 1, 1, 1, 1, 2, 3, 4 };
+
     blaze::DynamicVector<double> blazev0 = { 0, 1, 1, 1, 1, 1, 2, 3 };
     blaze::DynamicVector<double> blazev1 = { 1, 1, 1, 1, 1, 2, 3, 4 };
+
     auto eigenv0 = Eigen::Array<double, 1, Eigen::Dynamic>(8);
     auto eigenv1 = Eigen::Array<double, 1, Eigen::Dynamic>(8);
     eigenv0 << 0, 1, 1, 1, 1, 1, 2, 3;
     eigenv1 << 1, 1, 1, 1, 1, 2, 3, 4;
 
+    auto armav0 = arma::Row<double>();
+    auto armav1 = arma::Row<double>();
+    armav0 = { 0, 1, 1, 1, 1, 1, 2, 3 };
+    armav1 = { 1, 1, 1, 1, 1, 2, 3, 4 };
 
 
 	/******************** examples for Euclidean (L2) Metric **************************/
@@ -54,7 +66,7 @@ int main()
         std::cout << "" << std::endl;
         // out:
         // Euclidean (L2) Metric
-        // result: 2 (Time = 0.006 ms)
+        // result: 2 (Time = 0.003 ms)
     }
     {
         std::cout << "Euclidean (L2) Metric in Eigen vectors" << std::endl;
@@ -66,8 +78,22 @@ int main()
         std::cout << "" << std::endl;
         // out:
         // Euclidean (L2) Metric
-        // result: 2 (Time = 0.006 ms)
+        // result: 2 (Time = 0.009 ms)
     }
+#ifdef ARMA_EXISTS
+    {
+        std::cout << "Euclidean (L2) Metric in Armadillo vectors" << std::endl;
+        metric::Euclidean<arma::Row<double>> EuclideanL2Distance;
+        auto startTime = std::chrono::steady_clock::now();
+        auto result = EuclideanL2Distance(armav0, armav1);
+        auto endTime = std::chrono::steady_clock::now();
+        std::cout << "result: " << result << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count()) / 1000 << " ms)" << std::endl;
+        std::cout << "" << std::endl;
+        // out:
+        // Euclidean (L2) Metric
+        // result: 2 (Time = 0.002 ms)
+    }
+#endif
 
 
 	return 0;
