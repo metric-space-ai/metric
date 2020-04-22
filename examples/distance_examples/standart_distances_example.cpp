@@ -110,6 +110,70 @@ int main()
     }
 #endif
 
+    /******************** examples for Euclidean thresholded Metric **************************/
+    {
+        std::cout << "Euclidean Thresholded Metric in STL vectors" << std::endl;
+        auto metric = metric::Euclidean_thresholded<std::vector<double>>(1.5, 10);
+        auto startTime = std::chrono::steady_clock::now();
+        auto result = metric(stlv0, stlv1);
+        auto endTime = std::chrono::steady_clock::now();
+        std::cout << "result: " << result << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count()) / 1000 << " ms)" << std::endl;
+        std::cout << "" << std::endl;
+        // out:
+        // Euclidean (L2) Metric
+        // result: 2 (Time = 0.018 ms)
+    }
+    {
+        std::cout << "Euclidean Thresholded Metric in Blaze vectors" << std::endl;
+        auto metric = metric::Euclidean_thresholded<blaze::DynamicVector<double>>(1.5, 10);
+        auto startTime = std::chrono::steady_clock::now();
+        auto result = metric(blazev0, blazev1);
+        auto endTime = std::chrono::steady_clock::now();
+        std::cout << "result: " << result << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count()) / 1000 << " ms)" << std::endl;
+        std::cout << "" << std::endl;
+        // out:
+        // Euclidean (L2) Metric
+        // result: 2 (Time = 0.003 ms)
+    }
+    {
+        std::cout << "Euclidean Thresholded Metric in Blaze matrices" << std::endl;
+        auto metric = metric::Euclidean_thresholded<blaze::CompressedMatrix<double>>(1.5, 10);
+        auto startTime = std::chrono::steady_clock::now();
+        auto result = metric(blazem0, blazem1);
+        auto endTime = std::chrono::steady_clock::now();
+        std::cout << "result: " << result << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count()) / 1000 << " ms)" << std::endl;
+        std::cout << "" << std::endl;
+        // out:
+        // Euclidean (L2) Metric
+        // result: 2 (Time = 0.003 ms)
+    }
+    {
+        std::cout << "Euclidean Thresholded Metric in Eigen vectors" << std::endl;
+        auto metric = metric::Euclidean_thresholded<Eigen::Array<double, 1, Eigen::Dynamic>>(1.5, 10);
+        auto startTime = std::chrono::steady_clock::now();
+        auto result = metric(eigenv0, eigenv1);
+        auto endTime = std::chrono::steady_clock::now();
+        std::cout << "result: " << result << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count()) / 1000 << " ms)" << std::endl;
+        std::cout << "" << std::endl;
+        // out:
+        // Euclidean (L2) Metric
+        // result: 2 (Time = 0.009 ms)
+    }
+#ifdef ARMA_EXISTS
+    {
+        std::cout << "Euclidean Thresholded Metric in Armadillo vectors" << std::endl;
+        auto metric = metric::Euclidean_thresholded<arma::Row<double>>(1.5, 10);
+        auto startTime = std::chrono::steady_clock::now();
+        auto result = metric(armav0, armav1);
+        auto endTime = std::chrono::steady_clock::now();
+        std::cout << "result: " << result << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count()) / 1000 << " ms)" << std::endl;
+        std::cout << "" << std::endl;
+        // out:
+        // Euclidean (L2) Metric
+        // result: 2 (Time = 0.002 ms)
+    }
+#endif
+
 
 	return 0;
 }

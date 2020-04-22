@@ -54,6 +54,53 @@ public:
 
 
 
+template <typename RT>
+class Euclidean_thresholded {
+
+public:
+
+    using RecordType = RT;
+    using ValueType = determine_ValueType<RecordType>;
+
+    Euclidean_thresholded(DistanceType thres_, double factor_)
+        : thres(thres_)
+        , factor(factor_)
+    {}
+
+    template <typename R>
+    typename std::enable_if <
+     std::is_same<R, RT>::value
+      && determine_container_type<R>::code != 2  // non-Blaze type
+      && determine_container_type<R>::code != 3, // non-Eigen type
+     DistanceType
+    >::type
+    operator()(const R & a, const R & b) const;
+
+    template <typename R>
+    typename std::enable_if <
+     std::is_same<R, RT>::value && determine_container_type<R>::code == 2, // Blaze vectors and sparse matrices
+     DistanceType
+    >::type
+    operator()(const R & a, const R & b) const;
+
+
+    template <typename R>
+    typename std::enable_if <
+     std::is_same<R, RT>::value && determine_container_type<R>::code == 3, // Eigen, [] to access elements (or we can use Eigen-specific matrix operations)
+     DistanceType
+    >::type
+    operator()(const R & a, const R & b) const;
+
+
+private:
+
+    DistanceType thres = 1000.0;
+    double factor = 3000.0;
+
+};
+
+
+
 }  // namespace metric
 
 #include "Standards.cpp"
