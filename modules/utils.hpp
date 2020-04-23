@@ -106,7 +106,7 @@ struct isContainerOfType<T<ElementType>> {
 
 
 template<typename C, int = container_type<C>::code>
-struct isIterCompatibleStruct // specialized only for 2 and 3 below
+struct isIterCompatibleStruct // specialized below all but 2 and 3
 {
     constexpr static bool value = false;
 };
@@ -129,7 +129,7 @@ using isIterCompatible = std::enable_if_t<isIterCompatibleStruct<T>::value, Dist
 
 
 template<typename C, int = container_type<C>::code>
-struct isBlazeCompatibleStruct // specialized only for 2 and 3 below
+struct isBlazeCompatibleStruct
 {
     constexpr static bool value = false;
 };
@@ -146,7 +146,7 @@ using isBlazeCompatible = std::enable_if_t<isBlazeCompatibleStruct<T>::value, Di
 
 
 template<typename C, int = container_type<C>::code>
-struct isEigenCompatibleStruct // specialized only for 2 and 3 below
+struct isEigenCompatibleStruct
 {
     constexpr static bool value = false;
 };
