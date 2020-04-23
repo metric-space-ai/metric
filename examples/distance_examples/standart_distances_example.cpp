@@ -12,10 +12,10 @@ Copyright (c) 2019 Panda Team
 
 #include "../../3rdparty/blaze/Blaze.h"
 #include "../../3rdparty/Eigen/Dense"
-#if __has_include(<armadillo>)
-    #include <armadillo>
-    #define ARMA_EXISTS
-#endif // linker parameter: -larmadillo
+//#if __has_include(<armadillo>)
+//    #include <armadillo>
+//    #define ARMA_EXISTS
+//#endif // linker parameter: -larmadillo
 
 #include "../../modules/distance.hpp"
 
@@ -40,10 +40,12 @@ int main()
     eigenv0 << 0, 1, 1, 1, 1, 1, 2, 3;
     eigenv1 << 1, 1, 1, 1, 1, 2, 3, 4;
 
+#ifdef ARMA_EXISTS
     auto armav0 = arma::Row<double>();
     auto armav1 = arma::Row<double>();
     armav0 = { 0, 1, 1, 1, 1, 1, 2, 3 };
     armav1 = { 1, 1, 1, 1, 1, 2, 3, 4 };
+#endif
 
 
 	/******************** examples for Euclidean (L2) Metric **************************/

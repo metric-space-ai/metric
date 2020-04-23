@@ -103,6 +103,66 @@ struct isContainerOfType<T<ElementType>> {
 };
 
 
+
+
+template<typename C, int = container_type<C>::code>
+struct isIterCompatibleStruct // specialized only for 2 and 3 below
+{
+    constexpr static bool value = false;
+};
+
+template<typename C>
+struct isIterCompatibleStruct<C, 1>
+{
+    constexpr static bool value = true;
+};
+
+template<typename C>
+struct isIterCompatibleStruct<C, 4>
+{
+    constexpr static bool value = true;
+};
+
+template <typename T>
+using isIterCompatible = std::enable_if_t<isIterCompatibleStruct<T>::value, DistanceType>;
+
+
+
+template<typename C, int = container_type<C>::code>
+struct isBlazeCompatibleStruct // specialized only for 2 and 3 below
+{
+    constexpr static bool value = false;
+};
+
+template<typename C>
+struct isBlazeCompatibleStruct<C, 2>
+{
+    constexpr static bool value = true;
+};
+
+template <typename T>
+using isBlazeCompatible = std::enable_if_t<isBlazeCompatibleStruct<T>::value, DistanceType>;
+
+
+
+template<typename C, int = container_type<C>::code>
+struct isEigenCompatibleStruct // specialized only for 2 and 3 below
+{
+    constexpr static bool value = false;
+};
+
+template<typename C>
+struct isEigenCompatibleStruct<C, 3>
+{
+    constexpr static bool value = true;
+};
+
+template <typename T>
+using isEigenCompatible = std::enable_if_t<isEigenCompatibleStruct<T>::value, DistanceType>;
+
+
+
+
 }  // namespace metric
 
 

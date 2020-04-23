@@ -23,20 +23,7 @@ public:
     using RecordType = RT;
     using ValueType = contained_value_t<RecordType>;
 
-    // this could be generic or per class
-    template<typename C>
-    using isIterCompatible = std::enable_if_t<container_type_c<C> != 2 && container_type_c<C> != 3 , DistanceType>;
 
-    template<typename C>
-    using isBlazeCompatible = std::enable_if_t<container_type_c<C> == 2, DistanceType>;
-
-    template<typename C>
-    using isEigenCompatible = std::enable_if_t<container_type_c<C> == 3, DistanceType>;
-
-    // this doesn't compile, yet :(
-    // but the idea behind it is to have single simple condition, that can easy explain what is the branch here
-    // ALSO, I have remove is_same checks, they prevent at least NumpyAdapter to work in STL case, in other cases I'm
-    // not sure that we need it, the only benefit of having it that I can see is cleaner error message when compile...
     template <typename R>
     isIterCompatible<R>
     operator()(const R & a, const R & b) const;
