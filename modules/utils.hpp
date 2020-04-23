@@ -26,57 +26,65 @@ using DistanceType = double;
 //-------- common type trait metafunctions
 
 
+enum class Container {OTHER = 0, STL = 1, BLAZE = 2, EIGEN = 4};
+
 
 template <typename>
-struct determine_container_type  // checks whether container is STL container (1) or Blaze vector (2)
+struct container_type  // checks whether container is STL container (1) or Blaze vector (2)
 {
     constexpr static int code = 0;
 };
 
 template <template <typename, typename> class Container, typename ValueType, typename Allocator>
-struct determine_container_type<Container<ValueType, Allocator>>
+struct container_type<Container<ValueType, Allocator>>
 {
     constexpr static int code = 1; // STL
 };
 
 template <template <typename, bool> class Container, typename ValueType, bool F>
-struct determine_container_type<Container<ValueType, F>>
+struct container_type<Container<ValueType, F>>
 {
     constexpr static int code = 2; // blaze::DynamicVector
 };
 
 template <template <typename, int, int, int, int, int> class Container, typename ValueType, int _Rows, int _Cols, int _Options, int _MaxRows, int _MaxCols>
-struct determine_container_type<Container<ValueType, _Rows, _Cols, _Options, _MaxRows, _MaxCols>>
+struct container_type<Container<ValueType, _Rows, _Cols, _Options, _MaxRows, _MaxCols>>
 {
     constexpr static int code = 3; // Eigen::Array
 };
 
 
+template<typename C>
+using container_type_c = typename container_type<C>::code;
 
-template<typename C, int = determine_container_type<C>::code>
-struct determine_ValueType  // determines type of element both for STL containers and Blaze vectors
+
+template<typename C, int = container_type<C>::code>
+struct contained_value  // determines type of element both for STL containers and Blaze vectors
 {
     using type = void;
 };
 
 template<typename C>
-struct determine_ValueType<C, 1>
+struct contained_value<C, 1>
 {
     using type = typename C::value_type;
 };
 
 template<typename C>
-struct determine_ValueType<C, 2>
+struct contained_value<C, 2>
 {
     using type = typename C::ElementType;
 };
 
 template<typename C>
-struct determine_ValueType<C, 3>
+struct contained_value<C, 3>
 {
     using type = typename C::Scalar;
 };
 
+
+template<typename C>
+using contained_value_t = typename contained_value<C>::type;
 
 
 template <typename>

@@ -22,8 +22,8 @@ template <typename RT>
 template <typename R>
 typename std::enable_if <
  std::is_same<R, RT>::value
-  && determine_container_type<R>::code != 2  // non-Blaze type
-  && determine_container_type<R>::code != 3, // non-Eigen type
+  && container_type<R>::code != 2  // non-Blaze type
+  && container_type<R>::code != 3, // non-Eigen type
  DistanceType
 >::type
 Euclidean<RT>::operator()(const R & a, const R & b) const {
@@ -42,7 +42,7 @@ Euclidean<RT>::operator()(const R & a, const R & b) const {
 template <typename RT>
 template <typename R>
 typename std::enable_if <
- std::is_same<R, RT>::value && determine_container_type<R>::code == 2, // Blaze vectors and sparse matrices
+ std::is_same<R, RT>::value && container_type<R>::code == 2, // Blaze vectors and sparse matrices
  DistanceType
 >::type
 Euclidean<RT>::operator()(const R & a, const R & b) const {
@@ -62,7 +62,7 @@ Euclidean<RT>::operator()(const R & a, const R & b) const {
 template <typename RT>
 template <typename R>
 typename std::enable_if <
- std::is_same<R, RT>::value && determine_container_type<R>::code == 3, // Eigen, [] to access elements (or we can use Eigen-specific matrix operations)
+ std::is_same<R, RT>::value && container_type<R>::code == 3, // Eigen, [] to access elements (or we can use Eigen-specific matrix operations)
  DistanceType
 >::type
 Euclidean<RT>::operator()(const R & a, const R & b) const {
@@ -85,8 +85,8 @@ template <typename RT>
 template <typename R>
 typename std::enable_if <
  std::is_same<R, RT>::value
-  && determine_container_type<R>::code != 2  // non-Blaze type
-  && determine_container_type<R>::code != 3, // non-Eigen type
+  && container_type<R>::code != 2  // non-Blaze type
+  && container_type<R>::code != 3, // non-Eigen type
  DistanceType
 >::type
 Euclidean_thresholded<RT>::operator()(const R & a, const R & b) const {
@@ -105,7 +105,7 @@ Euclidean_thresholded<RT>::operator()(const R & a, const R & b) const {
 template <typename RT>
 template <typename R>
 typename std::enable_if <
- std::is_same<R, RT>::value && determine_container_type<R>::code == 2, // Blaze vectors and sparse matrices
+ std::is_same<R, RT>::value && container_type<R>::code == 2, // Blaze vectors and sparse matrices
  DistanceType
 >::type
 Euclidean_thresholded<RT>::operator()(const R & a, const R & b) const {
@@ -122,7 +122,7 @@ Euclidean_thresholded<RT>::operator()(const R & a, const R & b) const {
 template <typename RT>
 template <typename R>
 typename std::enable_if <
- std::is_same<R, RT>::value && determine_container_type<R>::code == 3, // Eigen, [] to access elements (or we can use Eigen-specific matrix operations)
+ std::is_same<R, RT>::value && container_type<R>::code == 3, // Eigen, [] to access elements (or we can use Eigen-specific matrix operations)
  DistanceType
 >::type
 Euclidean_thresholded<RT>::operator()(const R & a, const R & b) const {

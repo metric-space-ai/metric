@@ -23,20 +23,20 @@ class Euclidean {
 public:
 
     using RecordType = RT;
-    using ValueType = determine_ValueType<RecordType>;
+    using ValueType = contained_value<RecordType>;
 
     template <typename R>
     typename std::enable_if <
      std::is_same<R, RT>::value
-      && determine_container_type<R>::code != 2  // non-Blaze type
-      && determine_container_type<R>::code != 3, // non-Eigen type
+      && container_type<R>::code != 2  // non-Blaze type
+      && container_type<R>::code != 3, // non-Eigen type
      DistanceType
     >::type
     operator()(const R & a, const R & b) const;
 
     template <typename R>
     typename std::enable_if <
-     std::is_same<R, RT>::value && determine_container_type<R>::code == 2, // Blaze vectors and sparse matrices
+     std::is_same<R, RT>::value && container_type<R>::code == 2, // Blaze vectors and sparse matrices
      DistanceType
     >::type
     operator()(const R & a, const R & b) const;
@@ -44,7 +44,7 @@ public:
 
     template <typename R>
     typename std::enable_if <
-     std::is_same<R, RT>::value && determine_container_type<R>::code == 3, // Eigen, [] to access elements (or we can use Eigen-specific matrix operations)
+     std::is_same<R, RT>::value && container_type<R>::code == 3, // Eigen, [] to access elements (or we can use Eigen-specific matrix operations)
      DistanceType
     >::type
     operator()(const R & a, const R & b) const;
@@ -59,25 +59,25 @@ class Euclidean_thresholded {
 public:
 
     using RecordType = RT;
-    using ValueType = determine_ValueType<RecordType>;
+    using ValueType = contained_value<RecordType>;
 
-    Euclidean_thresholded(DistanceType thres_, double factor_)
-        : thres(thres_)
-        , factor(factor_)
+    Euclidean_thresholded(DistanceType thres, double factor)
+        : thres(thres)
+        , factor(factor)
     {}
 
     template <typename R>
     typename std::enable_if <
      std::is_same<R, RT>::value
-      && determine_container_type<R>::code != 2  // non-Blaze type
-      && determine_container_type<R>::code != 3, // non-Eigen type
+      && container_type<R>::code != 2  // non-Blaze type
+      && container_type<R>::code != 3, // non-Eigen type
      DistanceType
     >::type
     operator()(const R & a, const R & b) const;
 
     template <typename R>
     typename std::enable_if <
-     std::is_same<R, RT>::value && determine_container_type<R>::code == 2, // Blaze vectors and sparse matrices
+     std::is_same<R, RT>::value && container_type<R>::code == 2, // Blaze vectors and sparse matrices
      DistanceType
     >::type
     operator()(const R & a, const R & b) const;
@@ -85,7 +85,7 @@ public:
 
     template <typename R>
     typename std::enable_if <
-     std::is_same<R, RT>::value && determine_container_type<R>::code == 3, // Eigen, [] to access elements (or we can use Eigen-specific matrix operations)
+     std::is_same<R, RT>::value && container_type<R>::code == 3, // Eigen, [] to access elements (or we can use Eigen-specific matrix operations)
      DistanceType
     >::type
     operator()(const R & a, const R & b) const;
@@ -141,7 +141,7 @@ class TestMetric {
 public:
 
     using RecordType = RT;
-    using ValueType = determine_ValueType<RecordType>;
+    using ValueType = contained_value<RecordType>;
 
     template <typename R>
     typename std::enable_if <
