@@ -6,14 +6,12 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 Copyright (c) 2018 Michael Welsch
 */
 
-#include <cmath> // std::nan, std::sqrt
+#include "Standards.hpp"
 #include "../../../3rdparty/blaze/Blaze.h" // blaze::norm
 
-#include "Standards.hpp"
-
+#include <cmath> // std::nan, std::sqrt
 
 namespace metric {
-
 
 
 // Euclidean
@@ -22,8 +20,8 @@ template <typename RT>
 template <typename R>
 typename std::enable_if <
  std::is_same<R, RT>::value
-  && determine_container_type<R>::code != 2  // non-Blaze type
-  && determine_container_type<R>::code != 3, // non-Eigen type
+  && container_type<R>::code != 2  // non-Blaze type
+  && container_type<R>::code != 3, // non-Eigen type
  DistanceType
 >::type
 Euclidean<RT>::operator()(const R & a, const R & b) const {
@@ -42,7 +40,7 @@ Euclidean<RT>::operator()(const R & a, const R & b) const {
 template <typename RT>
 template <typename R>
 typename std::enable_if <
- std::is_same<R, RT>::value && determine_container_type<R>::code == 2, // Blaze vectors and sparse matrices
+ std::is_same<R, RT>::value && container_type<R>::code == 2, // Blaze vectors and sparse matrices
  DistanceType
 >::type
 Euclidean<RT>::operator()(const R & a, const R & b) const {
@@ -62,7 +60,7 @@ Euclidean<RT>::operator()(const R & a, const R & b) const {
 template <typename RT>
 template <typename R>
 typename std::enable_if <
- std::is_same<R, RT>::value && determine_container_type<R>::code == 3, // Eigen, [] to access elements (or we can use Eigen-specific matrix operations)
+ std::is_same<R, RT>::value && container_type<R>::code == 3, // Eigen, [] to access elements (or we can use Eigen-specific matrix operations)
  DistanceType
 >::type
 Euclidean<RT>::operator()(const R & a, const R & b) const {
@@ -78,15 +76,14 @@ Euclidean<RT>::operator()(const R & a, const R & b) const {
 }
 
 
-
 // Euclidean_thresholded
 
 template <typename RT>
 template <typename R>
 typename std::enable_if <
  std::is_same<R, RT>::value
-  && determine_container_type<R>::code != 2  // non-Blaze type
-  && determine_container_type<R>::code != 3, // non-Eigen type
+  && container_type<R>::code != 2  // non-Blaze type
+  && container_type<R>::code != 3, // non-Eigen type
  DistanceType
 >::type
 Euclidean_thresholded<RT>::operator()(const R & a, const R & b) const {
@@ -105,7 +102,7 @@ Euclidean_thresholded<RT>::operator()(const R & a, const R & b) const {
 template <typename RT>
 template <typename R>
 typename std::enable_if <
- std::is_same<R, RT>::value && determine_container_type<R>::code == 2, // Blaze vectors and sparse matrices
+ std::is_same<R, RT>::value && container_type<R>::code == 2, // Blaze vectors and sparse matrices
  DistanceType
 >::type
 Euclidean_thresholded<RT>::operator()(const R & a, const R & b) const {
@@ -122,7 +119,7 @@ Euclidean_thresholded<RT>::operator()(const R & a, const R & b) const {
 template <typename RT>
 template <typename R>
 typename std::enable_if <
- std::is_same<R, RT>::value && determine_container_type<R>::code == 3, // Eigen, [] to access elements (or we can use Eigen-specific matrix operations)
+ std::is_same<R, RT>::value && container_type<R>::code == 3, // Eigen, [] to access elements (or we can use Eigen-specific matrix operations)
  DistanceType
 >::type
 Euclidean_thresholded<RT>::operator()(const R & a, const R & b) const {
@@ -136,7 +133,6 @@ Euclidean_thresholded<RT>::operator()(const R & a, const R & b) const {
     }
     return std::min(thres, factor * std::sqrt(sum));
 }
-
 
 
 }  // namespace metric
