@@ -326,8 +326,8 @@ int main(int argc, char *argv[])
 	// random seed for repeateable results
 	long long random_seed = 777;
 	double sigma = 1.5;
-
-	metric::KOC_factory<Record, metric::Grid4> simple_koc_factory(best_w_grid_size, best_h_grid_size, sigma, 0.5, 0.0, 300, -1, 1, 2, 0.5, random_seed);
+	int num_clusters = 5;
+	int min_nodes_in_cluster = 1;
 
 	for (int i = 0; i < datasets.size(); i++)
 	{
@@ -336,12 +336,11 @@ int main(int argc, char *argv[])
 		std::cout << "--------------" << std::endl;
 		std::cout << std::endl;
 
-		int num_clusters = 5;
 
 		dataset = datasets[i];
 		test_set = test_sets[i];
 
-		auto simple_koc = simple_koc_factory(dataset, num_clusters);
+		metric::KOC<Record, metric::Grid4> simple_koc = metric::KOC<Record, metric::Grid4>(dataset, best_w_grid_size, best_h_grid_size, num_clusters, sigma, min_nodes_in_cluster, 0.5, 0.0, 300, -1, 1, 2, 0.5, random_seed);
 
 
 		std::cout << "train dataset:" << std::endl;

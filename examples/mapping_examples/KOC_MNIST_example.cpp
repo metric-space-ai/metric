@@ -341,8 +341,8 @@ int main(int argc, char *argv[])
 
 	using Record = std::vector<double>;
 
-	size_t best_w_grid_size = 20;
-	size_t best_h_grid_size = 20;
+	size_t best_w_grid_size = 5;
+	size_t best_h_grid_size = 5;
 
 	// if overrided from arguments
 
@@ -357,7 +357,7 @@ int main(int argc, char *argv[])
 	std::vector<Record> test_set;
 	std::vector<int> test_labels;
 
-	std::tie(dataset, labels) = readMnist("assets/mnist100.csv", ',', 1000);
+	std::tie(dataset, labels) = readMnist("assets/mnist100.csv", ',', 100);
 
 	//std::cout << std::endl;
 	//std::cout << "labels:" << std::endl;
@@ -375,8 +375,9 @@ int main(int argc, char *argv[])
 
 	///
 	//
-
+	
 	int num_clusters = 10;
+	int min_nodes_in_cluster = 1;
 
 	// random seed for repeateable results
 	long long random_seed = 777;
@@ -390,14 +391,14 @@ int main(int argc, char *argv[])
 	auto distribution = std::uniform_real_distribution<double>(0, 255);
 	auto graph = metric::Grid4(best_w_grid_size, best_h_grid_size);
 	
-	metric::KOC_details::KOC<
+	metric::KOC<
 		Record, 
 		metric::Grid4, 
 		metric::EMD<double>,
 		std::uniform_real_distribution<double>
 	> 
-	simple_koc(graph, distance, sigma, 0.8, 0.0, 200, distribution, 4, 2.0, random_seed); 
-	simple_koc.train(dataset, num_clusters);
+	simple_koc(dataset, graph, distance, num_clusters, sigma, min_nodes_in_cluster, 0.8, 0.0, 200, distribution, 4, 2.0, random_seed); 
+	//simple_koc.train(dataset, num_clusters);
 	
 	//std::cout << std::endl;
 	//std::cout << "train dataset:" << std::endl;
