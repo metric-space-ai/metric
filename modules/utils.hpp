@@ -50,7 +50,7 @@ struct container_type<Container<ValueType, _Rows, _Cols, _Options, _MaxRows, _Ma
 };
 
 template<typename C>
-using container_type_c = typename container_type<C>::type;
+using container_type_c = typename container_type<C>::code;
 
 template<typename C, int = container_type<C>::code>
 struct contained_value  // determines type of element both for STL containers and Blaze vectors

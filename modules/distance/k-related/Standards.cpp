@@ -18,12 +18,7 @@ namespace metric {
 
 template <typename RT>
 template <typename R>
-typename std::enable_if <
- std::is_same<R, RT>::value
-  && container_type<R>::code != 2  // non-Blaze type
-  && container_type<R>::code != 3, // non-Eigen type
- DistanceType
->::type
+isIterCompatible<R>
 Euclidean<RT>::operator()(const R & a, const R & b) const {
     if (a.size() != b.size()) {
         DistanceType dnan = std::nan("Input container sizes do not match");
@@ -39,10 +34,7 @@ Euclidean<RT>::operator()(const R & a, const R & b) const {
 
 template <typename RT>
 template <typename R>
-typename std::enable_if <
- std::is_same<R, RT>::value && container_type<R>::code == 2, // Blaze vectors and sparse matrices
- DistanceType
->::type
+isBlazeCompatible<R>
 Euclidean<RT>::operator()(const R & a, const R & b) const {
     //if (a.size() != b.size()) { // no .size method in martices, TODO restore this check!
         //DistanceType dnan = std::nan("Input container sizes do not match");
@@ -59,10 +51,7 @@ Euclidean<RT>::operator()(const R & a, const R & b) const {
 
 template <typename RT>
 template <typename R>
-typename std::enable_if <
- std::is_same<R, RT>::value && container_type<R>::code == 3, // Eigen, [] to access elements (or we can use Eigen-specific matrix operations)
- DistanceType
->::type
+isEigenCompatible<R>
 Euclidean<RT>::operator()(const R & a, const R & b) const {
     if (a.size() != b.size()) {
         DistanceType dnan = std::nan("Input container sizes do not match");
