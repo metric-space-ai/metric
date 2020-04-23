@@ -9,6 +9,8 @@ Copyright (c) 2018 Michael Welsch
 #ifndef _METRIC_UTILS_HPP
 #define _METRIC_UTILS_HPP
 
+#include "../3rdparty/blaze/Blaze.h" // for blaze::DynamicVector in isBlazeDynamicVector
+
 namespace metric {
 
 
@@ -78,7 +80,7 @@ struct determine_ValueType<C, 3>
 
 
 template <typename>
-struct isBlazeDynamicVector{
+struct isBlazeDynamicVector {
     constexpr static bool value = false;
 };
 
@@ -88,17 +90,18 @@ struct isBlazeDynamicVector<blaze::DynamicVector<ElementType, F>> {
 };
 
 
-
+/*
 // the same but universal, TODO test
-template <typename>
-struct isContainerOfType{
+template <typename, typename>
+struct isContainerOfType {
     constexpr static bool value = false;
 };
 
-template <template<typename...> class T, typename ElementType>
-struct isContainerOfType<T<ElementType>> {
+template <typename RefT, template<typename...> class T, typename ElementType>
+struct isContainerOfType<RefT, T<ElementType>> {
     constexpr static bool value = true;
 };
+// */
 
 
 }  // namespace metric

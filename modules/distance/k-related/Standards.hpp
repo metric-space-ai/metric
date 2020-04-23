@@ -13,7 +13,6 @@ Copyright (c) 2018 Michael Welsch
 
 #include "../../utils.hpp"
 
-
 namespace metric {
 
 
@@ -101,6 +100,41 @@ private:
 
 
 // test code to show how type detection works, TODO remove
+
+/*
+
+template <typename RT>
+class TestMetric {
+
+public:
+
+    using RecordType = RT;
+    using ValueType = determine_ValueType<RecordType>;
+
+    template <typename R>
+    typename std::enable_if <
+     std::is_same<R, RT>::value
+      && isBlazeDynamicVector<R>::value,
+     DistanceType
+    >::type
+    operator()(const R & a, const R & b) const {
+        return 1;
+    }
+
+    template <typename R>
+    typename std::enable_if <
+     std::is_same<R, RT>::value
+      && !isBlazeDynamicVector<R>::value,
+     DistanceType
+    >::type
+    operator()(const R & a, const R & b) const {
+        return 0;
+    }
+
+};
+
+// */
+
 template <typename RT>
 class TestMetric {
 
