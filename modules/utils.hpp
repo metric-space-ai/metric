@@ -118,7 +118,7 @@ struct isIterCompatibleStruct<C, 1>
 };
 
 template<typename C>
-struct isIterCompatibleStruct<C, 4>
+struct isIterCompatibleStruct<C, 0>
 {
     constexpr static bool value = true;
 };

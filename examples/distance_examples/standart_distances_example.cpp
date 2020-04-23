@@ -12,10 +12,10 @@ Copyright (c) 2019 Panda Team
 
 #include "../../3rdparty/blaze/Blaze.h"
 #include "../../3rdparty/Eigen/Dense"
-//#if __has_include(<armadillo>)
-//    #include <armadillo>
-//    #define ARMA_EXISTS
-//#endif // linker parameter: -larmadillo
+#if __has_include(<armadillo>)
+    #include <armadillo>
+    #define ARMA_EXISTS
+#endif // linker parameter: -larmadillo
 
 #include "../../modules/distance.hpp"
 
