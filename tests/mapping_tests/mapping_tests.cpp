@@ -19,7 +19,7 @@
 BOOST_AUTO_TEST_CASE(Metric)
 {
     using Vector = std::vector<double>;
-    metric::Euclidian<double> metric;
+    metric::Euclidean<double> metric;
 
     Vector vNull = {};
     Vector v0 = { 0, 0, 0, 0, 0 };

@@ -1,8 +1,10 @@
 name: Python package build
 on:
   push:
-    branches:
-      - issue_35
+#    branches:
+#      - issue_35
+    branches-ignore:
+      - '**'
 
 jobs:
   deploy:

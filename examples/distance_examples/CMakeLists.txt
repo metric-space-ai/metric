@@ -2,7 +2,6 @@ cmake_minimum_required(VERSION 3.10)
 
 project(distance_examples)
 
-set(Boost_DEBUG on)  
 find_package(Boost)
 
 if(UNIX) 
@@ -33,7 +32,7 @@ foreach(exampleSrc ${EXAMPLE_SRCS})
 	add_executable(${exampleName} ${exampleSrc})
  
 	#link to Boost libraries AND your targets and dependencies 
-	target_link_libraries(${exampleName} ${Boost_LIBRARIES})
+	target_link_libraries(${exampleName} ${Boost_LIBRARIES} ${LAPACK_LIBRARIES})
 	set_target_properties(${exampleName} PROPERTIES CXX_STANDARD 17)
 	if(UNIX) 
 		set(THREADS_PREFER_PTHREAD_FLAG ON)
@@ -45,17 +44,18 @@ foreach(exampleSrc ${EXAMPLE_SRCS})
 		set_target_properties(${exampleName} PROPERTIES LINK_FLAGS -pthread) 
 		target_link_libraries(${exampleName} ${JPEG_LIBRARIES})
 	endif(UNIX)
-        if(CMAKE_SYSTEM_NAME MATCHES Windows)
-	    target_link_libraries(earth_mover_distance_example ${PROJECT_SOURCE_DIR}/../../3rdparty/jpeglib/Release/jpeg.lib)
-	endif()
+	
+	if(CMAKE_SYSTEM_NAME MATCHES Windows)
+		target_link_directories(${exampleName} PRIVATE ${PROJECT_SOURCE_DIR}/../../mkl/lib/intel64_win)
+		target_link_libraries(${exampleName} PRIVATE mkl_core.lib mkl_sequential.lib mkl_intel_lp64.lib)
+    endif()
 
 endforeach(exampleSrc)
 
 if(Boost_VERSION GREATER_EQUAL 107200)
     add_executable (earth_mover_distance_2_example earth_mover_distance_2_example.cpp)
     if(CMAKE_SYSTEM_NAME MATCHES Windows)
-	target_link_libraries(earth_mover_distance_example ${PROJECT_SOURCE_DIR}/../../3rdparty/jpeglib/Release/jpeg.lib) 
-	target_link_libraries(earth_mover_distance_2_example ${PROJECT_SOURCE_DIR}/../../3rdparty/jpeglib/Release/jpeg.lib) 
+		# target_link_libraries(earth_mover_distance_2_example ${PROJECT_SOURCE_DIR}/../../3rdparty/jpeglib/Release/jpeg.lib) 
     else()
 	if(UNIX)
 	    target_link_libraries(earth_mover_distance_2_example ${JPEG_LIBRARIES})

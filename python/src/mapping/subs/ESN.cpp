@@ -1,6 +1,5 @@
+#include "modules/distance/k-related/Standards.hpp"
 #include "modules/mapping/ESN.hpp"
-
-#include "../../metric_types.hpp"
 
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
@@ -9,11 +8,11 @@
 
 namespace py = pybind11;
 
-template <typename recType, typename Metric>
+template <typename RecType, typename Metric>
 void register_wrapper_ESN(py::module& m) {
-    using Mapping = metric::ESN<recType, Metric>;
-    using Container = std::vector<recType>;
-    auto esn = py::class_<Mapping>(m, "ESN");
+    using Class = metric::ESN<RecType, Metric>;
+    using Container = std::vector<RecType>;
+    auto esn = py::class_<Class>(m, "ESN");
     esn.def(py::init<size_t, double, double, double, size_t, double>(),
         py::arg("w_size") = 500,
         py::arg("w_connections") = 10,
@@ -22,16 +21,18 @@ void register_wrapper_ESN(py::module& m) {
         py::arg("washout") = 1,
         py::arg("beta") = 0.5
     );
-    void (Mapping::*train)(const Container&, const Container&) = &Mapping::train;
-    Container (Mapping::*predict)(const Container&) = &Mapping::predict;
+    void (Class::*train)(const Container&, const Container&) = &Class::train;
+    Container (Class::*predict)(const Container&) = &Class::predict;
     esn.def("train", train);
     esn.def("predict", predict);
 }
 
 void export_metric_ESN(py::module& m) {
-    register_wrapper_ESN<std::vector<double>, metric::Euclidian<double>>(m);
+    using Value = double;
+    using RecType = std::vector<Value>;
+    register_wrapper_ESN<RecType, metric::Euclidean<Value>>(m);
 }
 
-PYBIND11_MODULE(_esn, m) {
+PYBIND11_MODULE(esn, m) {
     export_metric_ESN(m);
 }

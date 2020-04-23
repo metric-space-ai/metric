@@ -1,8 +1,11 @@
-set(LIB_NAME correlation)
+file(GLOB SUBS_SOURCE_FILES ./*.cpp)
+foreach(modulePath ${SUBS_SOURCE_FILES})
 
-file(GLOB DISTANCE_SOURCE_FILES ${SOURCE_PATH}/correlation/*.cpp)
+	# Extract the filename without an extension (NAME_WE)
+	get_filename_component(fileName ${modulePath} NAME_WE)
+	string(TOLOWER "${fileName}" moduleName)
 
-pybind11_add_module(${LIB_NAME} ${DISTANCE_SOURCE_FILES})
-set_target_properties(${LIB_NAME} PROPERTIES CXX_STANDARD 17)
-set_target_properties(${LIB_NAME} PROPERTIES PREFIX "_")
-target_link_libraries(${LIB_NAME} PRIVATE ${COMMON_LIBRARIES})
+	pybind11_add_module(${moduleName} ${modulePath})
+	target_link_libraries(${moduleName} PUBLIC base_python_module)
+
+endforeach(modulePath)

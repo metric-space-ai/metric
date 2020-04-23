@@ -5,6 +5,7 @@
 #include <pybind11/stl.h>
 #include <pybind11/numpy.h>
 #include <vector>
+#include <tuple>
 
 namespace py = pybind11;
 /*  TODO:
@@ -13,23 +14,23 @@ namespace py = pybind11;
 
     void traverse(const std::function<void(Node_ptr)>& f);
     void print(std::ostream& ostr) const;
-    std::string to_json(std::function<std::string(const recType&)> printer);
+    std::string to_json(std::function<std::string(const RecType&)> printer);
     void traverse_child(const std::function<void(Node_ptr)>& f);
     bool same_tree(const Node_ptr lhs, const Node_ptr rhs) const;
     friend std::ostream& operator<<(std::ostream& ostr, const Tree& t);
     blaze::SymmetricMatrix<blaze::DynamicMatrix<Distance, blaze::rowMajor>> matrix() const;
 */
 
-template <typename recType, typename Metric>
+template <typename RecType, typename Metric>
 void register_wrapper_Tree(py::module& m) {
-    using Tree = metric::Tree<recType, Metric>;
-    using Node = metric::Node<recType, Metric>;
-    using Container = std::vector<recType>;
+    using Tree = metric::Tree<RecType, Metric>;
+    using Node = metric::Node<RecType, Metric>;
+    using Container = std::vector<RecType>;
     using Distance = typename Tree::Distance;
     auto tree = py::class_<Tree>(m, "Tree");
     tree.def(py::init<int>(), "Empty tree", py::arg("truncate") = -1);
 // FIXME: broken in C++ add_value
-//    tree.def(py::init<const recType&, int>(
+//    tree.def(py::init<const RecType&, int>(
 //        (
 //            py::arg("p"),
 //            py::arg("truncate") = -1
@@ -42,7 +43,7 @@ void register_wrapper_Tree(py::module& m) {
     std::vector<std::vector<std::size_t>> (Tree::*clustering1) (
         const std::vector<double>&,
         const std::vector<std::size_t>&,
-        const std::vector<recType>&
+        const std::vector<RecType>&
     ) = &Tree::clustering;
 
 // FIXME: broken in C++
@@ -53,13 +54,13 @@ void register_wrapper_Tree(py::module& m) {
 
     std::vector<std::vector<std::size_t>> (Tree::*clustering3) (
         const std::vector<double>&,
-        const std::vector<recType>&
+        const std::vector<RecType>&
     ) = &Tree::clustering;
 
-    size_t (Tree::*insert1) (const recType&) = &Tree::insert;
-    bool (Tree::*insert2) (const std::vector<recType>&) = &Tree::insert;
-    std::tuple<std::size_t, bool> (Tree::*insert_if1) (const recType&, Distance) = &Tree::insert_if;
-    std::size_t (Tree::*insert_if2) (const std::vector<recType>&, Distance) = &Tree::insert_if;
+    size_t (Tree::*insert1) (const RecType&) = &Tree::insert;
+    bool (Tree::*insert2) (const std::vector<RecType>&) = &Tree::insert;
+    std::tuple<std::size_t, bool> (Tree::*insert_if1) (const RecType&, Distance) = &Tree::insert_if;
+    std::size_t (Tree::*insert_if2) (const std::vector<RecType>&, Distance) = &Tree::insert_if;
 
     tree.def("clustering", clustering1);
 //    tree.def("clustering", clustering2);
@@ -81,7 +82,7 @@ void register_wrapper_Tree(py::module& m) {
     tree.def("distance_by_id", &Tree::distance_by_id);
     tree.def("distance", &Tree::distance);
 
-    std::string (Tree::*to_json1)(std::function<std::string(const recType&)>) = &Tree::to_json;
+    std::string (Tree::*to_json1)(std::function<std::string(const RecType&)>) = &Tree::to_json;
     std::string (Tree::*to_json2)() = &Tree::to_json;
     tree.def("to_json", to_json1);
     tree.def("to_json", to_json2);
@@ -99,5 +100,5 @@ void register_wrapper_Tree(py::module& m) {
 }
 
 void export_metric_Tree(py::module& m) {
-    register_wrapper_Tree<std::vector<double>, metric::Euclidian<double>>(m);
+    register_wrapper_Tree<std::vector<double>, metric::Euclidean<double>>(m);
 }

@@ -1,6 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
 
-set(Boost_DEBUG on)  
 find_package(Boost)
 
 project(space_examples)
@@ -31,6 +30,7 @@ foreach(exampleSrc ${EXAMPLE_SRCS})
  
   if(UNIX)
     target_compile_options(${exampleName} PRIVATE -pthread)
+    target_link_libraries(${exampleName} ${LAPACK_LIBRARIES})
     set_target_properties(${exampleName} PROPERTIES LINK_FLAGS -pthread) 
   endif(UNIX)
 

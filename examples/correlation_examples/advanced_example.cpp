@@ -43,7 +43,7 @@ void vector_print(const std::vector<T>& vec)
     std::cout << vec[vec.size() - 1] << " ]" << std::endl;
 }
 
-struct simple_user_euclidian {
+struct simple_user_Euclidean {
     double operator()(const std::vector<double>& a, const std::vector<double>& b) const
     {
         double sum = 0;
@@ -104,7 +104,7 @@ int main()
 	std::cout << "" << std::endl;
 
     /* Build functors (function objects) with user types and metrics */
-    typedef simple_user_euclidian Met;
+    typedef simple_user_Euclidean Met;
 
     /* Set up the correlation function */
     auto mgc_corr = metric::MGC<RecType, Met, RecType, Met>();

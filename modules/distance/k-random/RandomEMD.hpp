@@ -15,9 +15,9 @@ namespace metric {
 /**
  * @brief
  *
- * Earth Mover’s Distance (EMD), also known as the first Wasserstein distance. 
- * Çhysical interpretation ùà the EMDis easy to understand: imagine the two datasets to be piles of earth, and the goal is to move the first pile around to match the second. 
- * The Earth Mover’s Distance is the minimum amount of work involved, where “amount of work” is the amount of earth you have to move multiplied by the distance you have to move it. 
+ * Earth Moverï¿½s Distance (EMD), also known as the first Wasserstein distance. 
+ * ï¿½hysical interpretation ï¿½ï¿½ the EMDis easy to understand: imagine the two datasets to be piles of earth, and the goal is to move the first pile around to match the second. 
+ * The Earth Moverï¿½s Distance is the minimum amount of work involved, where ï¿½amount of workï¿½ is the amount of earth you have to move multiplied by the distance you have to move it. 
  * The EMD can also be shown to be equal to the area between the two empirical CDFs, which is calculated py PMQ. 
  *
  * @tparam Sample - sample type
@@ -25,22 +25,20 @@ namespace metric {
  */
 template <typename Sample, typename D = double>
 struct RandomEMD {
-    using distance_return_type = D;
+    using distance_type = D;
 
     /**
      * @brief Construct a new EMD object
      *
      */
-    explicit RandomEMD()
-    {
-    }
+    explicit RandomEMD() = default;
 
     /**
      * @brief Construct a new EMD object
      *
      * @param precision used for integration. Should be in (0, 1). Less means more accurate.
      */
-    explicit RandomEMD(double precision) : precision_(precision)
+    explicit RandomEMD(double precision) : precision(precision)
     {
     }
 
@@ -51,10 +49,10 @@ struct RandomEMD {
      * @param sample_2 second sample
      * @return distance
      */
-    distance_return_type operator()(const Sample& sample_1, const Sample& sample_2);
+    distance_type operator()(const Sample& sample_1, const Sample& sample_2) const;
 
 private:
-	double precision_ = 0.01;
+	const double precision = 0.01;
 };
 
 

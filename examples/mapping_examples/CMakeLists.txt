@@ -1,14 +1,13 @@
 cmake_minimum_required(VERSION 3.10)
 
-set(Boost_DEBUG on)  
 find_package(Boost)
-
 
 project(mapping_examples)
 
 
 include_directories(
-	${PROJECT_SOURCE_DIR}
+	${PROJECT_SOURCE_DIR} 
+    ${PROJECT_SOURCE_DIR}/../..
 )
 	 
 file(COPY "assets" DESTINATION ".")
@@ -56,6 +55,10 @@ add_executable(KOC_MNIST_example KOC_MNIST_example.cpp)
 
 
 if(UNIX)
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pg")
+    SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pg")
+    SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -pg")
+
 	set_target_properties(KMedoids_example PROPERTIES CXX_STANDARD 17)
 	set_target_properties(KMeans_example PROPERTIES CXX_STANDARD 17)
 	set_target_properties(DBScan_example PROPERTIES CXX_STANDARD 17)

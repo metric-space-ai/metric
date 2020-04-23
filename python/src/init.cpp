@@ -10,6 +10,10 @@
 //#include "stl_wrappers.hpp"
 
 #include <pybind11/pybind11.h>
+#include <pybind11/stl_bind.h>
+
+#include <vector>
+#include <iostream>
 
 namespace py = pybind11;
 
@@ -67,9 +71,30 @@ namespace py = pybind11;
 
 }*/
 
+void export_blaze_matrices(py::module& m);
 
-PYBIND11_MODULE(_metric, m) {
+
+std::vector<long> data(const std::vector<long>& ro_a, std::vector<long>& rw_a) {
+    std::vector<long> result = {1, 2, 3};
+    std::cout << &ro_a << " x " << &rw_a << " -> " << &result << std::endl;
+    result.insert(result.end(), ro_a.begin(), ro_a.end());
+    rw_a.front() = 777;
+    return result;
+}
+
+PYBIND11_MAKE_OPAQUE(std::vector<long>);
+
+PYBIND11_MODULE(metric, m) {
+    py::bind_vector<std::vector<long>>(m, "LongVector", py::buffer_protocol())
+        .def("ptr", [](std::vector<long>& self){ return (unsigned long)&self; });
+    py::bind_vector<std::vector<double>>(m, "DoubleVector", py::buffer_protocol());
     //export_converters();
     // exposing C++ return types
     //export_containers();
+
+    export_blaze_matrices(m);
+    m.def("test", &data,
+        py::arg("a"),
+        py::arg("b")
+    );
 }

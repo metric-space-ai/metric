@@ -125,20 +125,20 @@ int main()
     using a3_type = decltype(field3accessors);
     using a4_type = decltype(field4accessors);
 
-    auto dim0 = metric::make_dimension(metric::Euclidian<InternalType>(), field0accessors);
+    auto dim0 = metric::make_dimension(metric::Euclidean<InternalType>(), field0accessors);
     auto dim1 = metric::make_dimension(metric::Manhatten<InternalType>(), field1accessors);
     auto dim2 = metric::make_dimension(metric::P_norm<InternalType>(), field2accessors);
-    auto dim3 = metric::make_dimension(metric::Euclidian_thresholded<InternalType>(), field2accessors);
+    auto dim3 = metric::make_dimension(metric::Euclidean_thresholded<InternalType>(), field2accessors);
     auto dim4 = metric::make_dimension(metric::Cosine<InternalType>(), field2accessors);
     auto dim5 = metric::make_dimension(metric::SSIM<double, std::vector<InternalType>>(), field3accessors);
     auto dim6 = metric::make_dimension(metric::TWED<InternalType>(0, 1), field2accessors);
     auto dim7 = metric::make_dimension(metric::Edit<char>(), field4accessors);
     auto dim10 = metric::make_dimension(metric::EMD<InternalType>(8, 8), field2accessors);
 
-    typedef std::variant<metric::Dimension<metric::Euclidian<InternalType>, a0_type>,
+    typedef std::variant<metric::Dimension<metric::Euclidean<InternalType>, a0_type>,
         metric::Dimension<metric::Manhatten<InternalType>, a1_type>,
         metric::Dimension<metric::P_norm<InternalType>, a2_type>,
-        metric::Dimension<metric::Euclidian_thresholded<InternalType>, a2_type>,
+        metric::Dimension<metric::Euclidean_thresholded<InternalType>, a2_type>,
         metric::Dimension<metric::Cosine<InternalType>, a2_type>,
         metric::Dimension<metric::SSIM<double, std::vector<InternalType>>, a3_type>,
         metric::Dimension<metric::TWED<InternalType>, a2_type>,

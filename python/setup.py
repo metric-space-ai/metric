@@ -23,8 +23,8 @@ def find_version(*file_paths):
 
 setuptools.setup(
     name='metric-py',
-    version=find_version('metric', '__init__.py'),
-    ext_modules=[CMakeExtension('all')],
+    version=find_version('pkg', 'metric', '__init__.py'),
+    ext_modules=[CMakeExtension('all', output_dir=path.join('metric', '_impl'))],
     cmdclass={'build_ext': CMakeBuildExt},
     author="Jura Gresko",
     author_email="juragresko@gmail.com",
@@ -32,7 +32,10 @@ setuptools.setup(
     long_description=get_file_content('README.md'),
     long_description_content_type="text/markdown",
     url="https://github.com/panda-official/metric",
-    packages=setuptools.find_packages(),
+    packages=setuptools.find_packages(where='pkg'),
+    package_dir={
+        '': 'pkg',
+    },
     python_requires='>=3.6',
     install_requires=[],
     license='MPL v2.0',
@@ -42,6 +45,10 @@ setuptools.setup(
         "Intended Audience :: Developers",
         "License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)",
         "Operating System :: Unix",
+        "Operating System :: MacOS",
+        "Operating System :: MacOS :: MacOS X",
+        "Operating System :: Microsoft :: Windows",
+        "Operating System :: Microsoft :: Windows :: Windows 10",
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",

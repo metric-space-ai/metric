@@ -52,6 +52,42 @@ void register_wrapper_Bagging(py::module& m) {
         .def("predict", predict);
 }
 
+// TODO: implement WeakLearner interface class to provide in python
+template <class Record>
+class PythonWeekLearner {
+public:
+    /**
+     * @brief train model on test dataset
+     *
+     * @param payments test dataset
+     * @param features
+     * @param response
+     */
+    virtual void train(
+        py::array& payments,
+        std::vector<std::function<double(Record)>>& features,
+        std::function<bool(Record)>& response
+    );
+
+    /**
+    * @brief use model to classify input data
+    *
+    * @param data input data
+    * @param features
+    * @param predictions[out] prediction result
+    */
+    virtual void predict(
+        py::array& data,
+        std::vector<std::function<double(Record)>>& features,
+        std::vector<bool>& predictions
+    );
+
+    /**
+     * @brief clone object
+     */
+    virtual std::shared_ptr<PythonWeekLearner<Record>> clone();
+};
+
 void export_metric_ensembles(py::module& m) {
     using Record = std::vector<double>;
     using WeakLearner = metric::edmClassifier<Record, CSVM>;
@@ -60,6 +96,6 @@ void export_metric_ensembles(py::module& m) {
     register_wrapper_Bagging<Record, WeakLearnerVariant, metric::SubsampleRUS<Record>>(m);
 }
 
-PYBIND11_MODULE(_ensembles, m) {
+PYBIND11_MODULE(ensembles, m) {
     export_metric_ensembles(m);
 }
