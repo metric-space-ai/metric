@@ -28,6 +28,9 @@ using DistanceType = double;
 enum class Container {OTHER = 0, STL = 1, BLAZE = 2, EIGEN = 4};
 
 
+
+// container_type<T>::code - int code of container type
+
 template <typename>
 struct container_type  // checks whether container is STL container (1) or Blaze vector (2)
 {
@@ -52,10 +55,9 @@ struct container_type<Container<ValueType, _Rows, _Cols, _Options, _MaxRows, _Ma
     constexpr static int code = 3; // Eigen::Array
 };
 
-template<typename C>
-using container_type_c = typename container_type<C>::code;
 
 
+// contained_value_t - type of element detected for any supported container
 
 template<typename C, int = container_type<C>::code>
 struct contained_value  // determines type of element both for STL containers and Blaze vectors
@@ -81,12 +83,12 @@ struct contained_value<C, 3>
     using type = typename C::Scalar;
 };
 
-//template<typename C>
-//using contained_value_t = typename contained_value<C>::type;
-
 template<typename C>
 using contained_value_t = typename contained_value<C>::type;
 
+
+
+// isBlazeDynamicVector<T>::value - test for DynamicVector
 
 template <typename>
 struct isBlazeDynamicVector {
@@ -99,7 +101,9 @@ struct isBlazeDynamicVector<blaze::DynamicVector<ElementType, F>> {
 };
 
 
-// the same but universal, TODO test
+
+// isContainerOfType<T>::value - test for any container type
+
 template <typename, typename>
 struct isContainerOfType {
     constexpr static bool value = false;
@@ -112,6 +116,7 @@ struct isContainerOfType<RefT, T<ElementType>> {
 
 
 
+// isIterCompatible
 
 template<typename C, int = container_type<C>::code>
 struct isIterCompatibleStruct // specialized below all but 2 and 3
@@ -136,6 +141,8 @@ using isIterCompatible = std::enable_if_t<isIterCompatibleStruct<T>::value, Dist
 
 
 
+// isBlazeCompatible
+
 template<typename C, int = container_type<C>::code>
 struct isBlazeCompatibleStruct
 {
@@ -152,6 +159,8 @@ template <typename T>
 using isBlazeCompatible = std::enable_if_t<isBlazeCompatibleStruct<T>::value, DistanceType>;
 
 
+
+// isEigenCompatible
 
 template<typename C, int = container_type<C>::code>
 struct isEigenCompatibleStruct
