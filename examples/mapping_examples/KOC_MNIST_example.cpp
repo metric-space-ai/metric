@@ -398,7 +398,6 @@ int main(int argc, char *argv[])
 		std::uniform_real_distribution<double>
 	> 
 	simple_koc(dataset, graph, distance, num_clusters, sigma, min_nodes_in_cluster, 0.8, 0.0, 200, distribution, 4, 2.0, random_seed); 
-	//simple_koc.train(dataset, num_clusters);
 	
 	//std::cout << std::endl;
 	//std::cout << "train dataset:" << std::endl;
