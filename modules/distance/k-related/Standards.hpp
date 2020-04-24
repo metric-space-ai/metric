@@ -160,21 +160,13 @@ public:
     using ValueType = contained_value<RecordType>;
 
     template <typename R>
-    typename std::enable_if <
-     std::is_same<R, RT>::value
-      && isContainerOfType<blaze::DynamicVector<ValueType>, R>::value,
-     DistanceType
-    >::type
+    isContainerOfTypeT<blaze::DynamicVector<void>, R> // void inner type does not matter
     operator()(const R & a, const R & b) const {
         return 1;
     }
 
     template <typename R>
-    typename std::enable_if <
-     std::is_same<R, RT>::value
-      && !isContainerOfType<blaze::DynamicVector<ValueType>, R>::value,
-     DistanceType
-    >::type
+    isNotContainerOfTypeT<blaze::DynamicVector<void>, R> // void inner type does not matter
     operator()(const R & a, const R & b) const {
         return 0;
     }

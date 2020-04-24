@@ -102,7 +102,7 @@ struct isBlazeDynamicVector<blaze::DynamicVector<ElementType, F>> {
 
 
 
-// isContainerOfType<T>::value - test for any container type
+// isContainerOfType<RefT, T>::value - test for any container type
 
 template <typename, typename>
 struct isContainerOfType {
@@ -114,6 +114,11 @@ struct isContainerOfType<RefT, T<ElementType>> {
     constexpr static bool value = true;
 };
 
+template <typename RefT, typename T>
+using isContainerOfTypeT = std::enable_if_t<isContainerOfType<RefT, T>::value, DistanceType>;
+
+template <typename RefT, typename T>
+using isNotContainerOfTypeT = std::enable_if_t<!isContainerOfType<RefT, T>::value, DistanceType>;
 
 
 // isIterCompatible

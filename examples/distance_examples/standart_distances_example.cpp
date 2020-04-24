@@ -177,6 +177,10 @@ int main()
 #endif
 
 
+    // tiny benchmark
+
+
+
     // test code to show how type detection works, TODO remove
     {
         auto metric = metric::TestMetric<Eigen::Array<double, 1, Eigen::Dynamic>>();
