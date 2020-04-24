@@ -1,7 +1,8 @@
 #include <vector>
+#include "../../modules/distance.hpp"
+
 #include <iostream>
 #include <chrono>
-
 #include "../../3rdparty/blaze/Blaze.h"
 #include "../../3rdparty/Eigen/Dense"
 #if __has_include(<armadillo>)
@@ -9,7 +10,6 @@
     #define ARMA_EXISTS
 #endif // linker parameter: -larmadillo
 
-#include "../../modules/distance.hpp"
 
 
 
@@ -32,20 +32,23 @@ int main()
 
     int sample_size = 1000;
 
-    std::vector<double> stlv0(sample_size, 0);
-    std::vector<double> stlv1(sample_size, 0);
+    using R = std::vector<double>;
+    using V = metric::contained_value_t<R>;
+
+    R stlv0(sample_size, 0);
+    R stlv1(sample_size, 0);
     double lower_bound = 0;
     double upper_bound = 1;
-    std::uniform_real_distribution<double> unif(lower_bound, upper_bound);
+    std::uniform_real_distribution<V> unif(lower_bound, upper_bound);
     std::default_random_engine re;
-    for (double& v : stlv0) {
+    for (V& v : stlv0) {
         v = unif(re);
     }
-    for (double& v : stlv1) {
+    for (V& v : stlv1) {
         v = unif(re);
     }
 
-    auto m = metric::Euclidean<double>();
+    auto m = metric::Euclidean<V>();
 
     std::cout << "Time = " << timeIt(m, 10, stlv0, stlv1) << " ns" << std::endl;
 
