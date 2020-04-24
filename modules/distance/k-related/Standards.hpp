@@ -151,6 +151,37 @@ public:
 };
 
 
+template <typename RT>
+class TestMetric2 {
+
+public:
+
+    using RecordType = RT;
+    using ValueType = contained_value<RecordType>;
+
+    template <typename R>
+    typename std::enable_if <
+     std::is_same<R, RT>::value
+      && isContainerOfType<blaze::DynamicVector<ValueType>, R>::value,
+     DistanceType
+    >::type
+    operator()(const R & a, const R & b) const {
+        return 1;
+    }
+
+    template <typename R>
+    typename std::enable_if <
+     std::is_same<R, RT>::value
+      && !isContainerOfType<blaze::DynamicVector<ValueType>, R>::value,
+     DistanceType
+    >::type
+    operator()(const R & a, const R & b) const {
+        return 0;
+    }
+
+};
+
+
 }  // namespace metric
 
 #include "Standards.cpp"
