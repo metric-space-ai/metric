@@ -177,9 +177,6 @@ int main()
 #endif
 
 
-    // tiny benchmark
-
-
 
     // test code to show how type detection works, TODO remove
     {
