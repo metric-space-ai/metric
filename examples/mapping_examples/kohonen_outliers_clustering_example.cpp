@@ -340,7 +340,17 @@ int main(int argc, char *argv[])
 		dataset = datasets[i];
 		test_set = test_sets[i];
 
-		metric::KOC<Record, metric::Grid4> simple_koc = metric::KOC<Record, metric::Grid4>(dataset, best_w_grid_size, best_h_grid_size, num_clusters, sigma, min_nodes_in_cluster, 0.5, 0.0, 300, -1, 1, 2, 0.5, random_seed);
+		metric::KOC<Record, metric::Grid4> simple_koc = 
+			metric::KOC<Record, metric::Grid4>(
+				dataset, 
+				best_w_grid_size, 
+				best_h_grid_size, 
+				num_clusters, 
+				sigma, 
+				min_nodes_in_cluster, 
+				0.5, 0.0, 300, -1, 1, 2, 0.5, 
+				random_seed
+				);
 
 
 		std::cout << "train dataset:" << std::endl;

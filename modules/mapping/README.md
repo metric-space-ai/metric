@@ -417,6 +417,118 @@ auto bmu = som_model.BMU(img1[0]);
 
 ---
 
+#### Kohonen Outliers Clustering
+
+*Kohonen Outliers Clustering (KOC)* is used for clustering with outliers detection. Found outliers is labeling as `0` cluster, 
+other samples is clustering to lableled groups starting `1` label. 
+
+First of all *KOC* create *SOM grid* over train data. Then over this reduced space *KOC* run *kmedoids clustering*. 
+In a third step *KOC* calculate *std deviations* for each cluster. And after that steps *KOC* is ready for predictions. 
+
+If sample for detection in the *reduced SOM space* has distance more than *std deviation* for assigned cluster then it means it is outlier. 
+Otherwise found cluster label is assigned. 
+Cluster label is assigned by searching nearest *SOM's grid* node and looking for which cluster that 
+node belongs to (on the second stage of *KOC* training). 
+
+
+Suppose we have the following dataset and want to cluster it and found outliers in the test data.
+``` cpp
+using Record = std::vector<double>;
+
+std::vector<Record> dataset = {
+
+	{0, 0.1},
+	{0.2, 0},
+
+	{0, 1.2},
+	{0.1, 1},
+
+	{0.1, 2},
+	{0.2, 2},
+
+	{1, 0},
+	{1.2, 0.1},
+
+	{1.3, 1.1},
+	{0.9, 1},
+
+	{1.1, 2},
+	{0.9, 1.9},
+};
+
+
+std::vector<Record> test_set = {
+	{0, 0},
+	{0, 1},
+	{0.5, 0.5},
+	{0.0, 0.3},
+	{5, 5},
+};
+```
+
+For this we should create *KOC* object:
+
+``` cpp
+
+size_t best_w_grid_size = 3;
+size_t best_h_grid_size = 2;
+int num_clusters = 5;
+
+metric::KOC<Record, metric::Grid4> simple_koc = 
+	metric::KOC<Record, metric::Grid4>(
+		dataset, 
+		best_w_grid_size, 
+		best_h_grid_size, 
+		num_clusters
+        ); 
+```
+
+Created *KOC* object already trained, ready for use and can be run for original train dataset and test dataset. 
+
+*Note: `check_if_anomaly()` method labeling as `1` a sample that is outlier and as `0` if it is a regular sample. 
+But `assign_to_clusters()` method labeling outliers as `0` cluster.*
+
+``` cpp
+auto anomalies = simple_koc.check_if_anomaly(dataset);
+std::cout << std::endl;
+std::cout << "anomalies:" << std::endl;
+vector_print(anomalies);
+
+auto assignments = simple_koc.assign_to_clusters(dataset);
+std::cout << std::endl;
+std::cout << "assignments:" << std::endl;
+vector_print(assignments);
+
+// anomalies:
+// [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+
+// assignments:
+// [ 4, 4, 2, 2, 5, 5, 3, 3, 1, 1, 5, 5 ]
+```
+
+``` cpp
+auto anomalies = simple_koc.check_if_anomaly(test_set);
+std::cout << std::endl;
+std::cout << "anomalies:" << std::endl;
+vector_print(anomalies);
+
+auto assignments = simple_koc.assign_to_clusters(test_set);
+std::cout << std::endl;
+std::cout << "assignments:" << std::endl;
+vector_print(assignments);
+
+// anomalies:
+// [ 0, 0, 1, 1, 1 ]
+
+// assignments:
+// [ 4, 2, 0, 0, 0 ]
+```
+
+*For a full example and more details see `examples/mapping_examples/kohonen_outliers_clustering_example.cpp` and
+`examples/mapping_examples/KOC_MNIST_example.cpp`*
+
+---
+
 #### PCFA
 
 First of all let's create a simple datasets:
