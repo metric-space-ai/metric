@@ -25,7 +25,6 @@ using DistanceType = double;
 
 //-------- common type trait metafunctions
 
-
 enum class Container {OTHER = 0, STL = 1, BLAZE = 2, EIGEN = 4};
 
 
@@ -53,9 +52,9 @@ struct container_type<Container<ValueType, _Rows, _Cols, _Options, _MaxRows, _Ma
     constexpr static int code = 3; // Eigen::Array
 };
 
-
 template<typename C>
 using container_type_c = typename container_type<C>::code;
+
 
 
 template<typename C, int = container_type<C>::code>
@@ -82,6 +81,8 @@ struct contained_value<C, 3>
     using type = typename C::Scalar;
 };
 
+//template<typename C>
+//using contained_value_t = typename contained_value<C>::type;
 
 template<typename C>
 using contained_value_t = typename contained_value<C>::type;
@@ -98,7 +99,6 @@ struct isBlazeDynamicVector<blaze::DynamicVector<ElementType, F>> {
 };
 
 
-/*
 // the same but universal, TODO test
 template <typename, typename>
 struct isContainerOfType {
@@ -109,7 +109,66 @@ template <typename RefT, template<typename...> class T, typename ElementType>
 struct isContainerOfType<RefT, T<ElementType>> {
     constexpr static bool value = true;
 };
-// */
+
+
+
+
+template<typename C, int = container_type<C>::code>
+struct isIterCompatibleStruct // specialized below all but 2 and 3
+{
+    constexpr static bool value = false;
+};
+
+template<typename C>
+struct isIterCompatibleStruct<C, 1>
+{
+    constexpr static bool value = true;
+};
+
+template<typename C>
+struct isIterCompatibleStruct<C, 0>
+{
+    constexpr static bool value = true;
+};
+
+template <typename T>
+using isIterCompatible = std::enable_if_t<isIterCompatibleStruct<T>::value, DistanceType>;
+
+
+
+template<typename C, int = container_type<C>::code>
+struct isBlazeCompatibleStruct
+{
+    constexpr static bool value = false;
+};
+
+template<typename C>
+struct isBlazeCompatibleStruct<C, 2>
+{
+    constexpr static bool value = true;
+};
+
+template <typename T>
+using isBlazeCompatible = std::enable_if_t<isBlazeCompatibleStruct<T>::value, DistanceType>;
+
+
+
+template<typename C, int = container_type<C>::code>
+struct isEigenCompatibleStruct
+{
+    constexpr static bool value = false;
+};
+
+template<typename C>
+struct isEigenCompatibleStruct<C, 3>
+{
+    constexpr static bool value = true;
+};
+
+template <typename T>
+using isEigenCompatible = std::enable_if_t<isEigenCompatibleStruct<T>::value, DistanceType>;
+
+
 
 
 }  // namespace metric

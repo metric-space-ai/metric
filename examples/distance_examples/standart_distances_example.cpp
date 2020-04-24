@@ -40,10 +40,12 @@ int main()
     eigenv0 << 0, 1, 1, 1, 1, 1, 2, 3;
     eigenv1 << 1, 1, 1, 1, 1, 2, 3, 4;
 
+#ifdef ARMA_EXISTS
     auto armav0 = arma::Row<double>();
     auto armav1 = arma::Row<double>();
     armav0 = { 0, 1, 1, 1, 1, 1, 2, 3 };
     armav1 = { 1, 1, 1, 1, 1, 2, 3, 4 };
+#endif
 
 
 	/******************** examples for Euclidean (L2) Metric **************************/

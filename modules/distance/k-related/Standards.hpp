@@ -9,12 +9,9 @@ Copyright (c) 2018 Michael Welsch
 #ifndef _METRIC_DISTANCE_K_RELATED_STANDARDS_HPP
 #define _METRIC_DISTANCE_K_RELATED_STANDARDS_HPP
 
-#include <cmath>
-
 #include "../../utils.hpp"
 
 namespace metric {
-
 
 
 template <typename RT>
@@ -23,34 +20,24 @@ class Euclidean {
 public:
 
     using RecordType = RT;
-    using ValueType = contained_value<RecordType>;
+    using ValueType = contained_value_t<RecordType>;
+
 
     template <typename R>
-    typename std::enable_if <
-     std::is_same<R, RT>::value
-      && container_type<R>::code != 2  // non-Blaze type
-      && container_type<R>::code != 3, // non-Eigen type
-     DistanceType
-    >::type
+    isIterCompatible<R>
     operator()(const R & a, const R & b) const;
 
+    // Blaze vectors and sparse matrices
     template <typename R>
-    typename std::enable_if <
-     std::is_same<R, RT>::value && container_type<R>::code == 2, // Blaze vectors and sparse matrices
-     DistanceType
-    >::type
+    isBlazeCompatible<R>
     operator()(const R & a, const R & b) const;
 
-
+    // Eigen, [] to access elements (or we can use Eigen-specific matrix operations)
     template <typename R>
-    typename std::enable_if <
-     std::is_same<R, RT>::value && container_type<R>::code == 3, // Eigen, [] to access elements (or we can use Eigen-specific matrix operations)
-     DistanceType
-    >::type
+    isEigenCompatible<R>
     operator()(const R & a, const R & b) const;
 
 };
-
 
 
 template <typename RT>
@@ -59,7 +46,7 @@ class Euclidean_thresholded {
 public:
 
     using RecordType = RT;
-    using ValueType = contained_value<RecordType>;
+    using ValueType = contained_value_t<RecordType>;
 
     Euclidean_thresholded(DistanceType thres, double factor)
         : thres(thres)
@@ -82,14 +69,12 @@ public:
     >::type
     operator()(const R & a, const R & b) const;
 
-
     template <typename R>
     typename std::enable_if <
      std::is_same<R, RT>::value && container_type<R>::code == 3, // Eigen, [] to access elements (or we can use Eigen-specific matrix operations)
      DistanceType
     >::type
     operator()(const R & a, const R & b) const;
-
 
 private:
 
@@ -109,7 +94,7 @@ class TestMetric {
 public:
 
     using RecordType = RT;
-    using ValueType = determine_ValueType<RecordType>;
+    using ValueType = contained_value<RecordType>;
 
     template <typename R>
     typename std::enable_if <
@@ -164,7 +149,6 @@ public:
     }
 
 };
-
 
 
 }  // namespace metric
