@@ -757,7 +757,7 @@ std::vector<RecType> Tree<RecType, Metric>::toVector()
 }
 
 template <class RecType, class Metric>
-RecType Tree<RecType, Metric>::operator[](size_t id)
+RecType Tree<RecType, Metric>::operator[](size_t id) const
 {
     auto p = index_map.find(id);
     if(p == index_map.end()) {
