@@ -5,10 +5,10 @@
 #include <limits>
 
 #include <iostream>
-#include "modules/utils/wrappers/lapack.cpp"
+#include "modules/utils/wrappers/lapack.hpp"
 
 
-using namespace metric::dnn;
+using namespace metric;
 
 using Matrix = blaze::DynamicMatrix<double>;
 using Vector = blaze::DynamicVector<double>;
