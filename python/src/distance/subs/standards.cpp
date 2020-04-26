@@ -78,7 +78,6 @@ void register_wrapper_chebyshev(py::module& m) {
         .def("__repr__", &python__str__<Metric>);
 }
 
-
 void export_metric_standards(py::module& m) {
     register_wrapper_euclidean<double, NumpyToVectorAdapter<double>>(m);
     register_wrapper_manhatten<double, NumpyToVectorAdapter<double>>(m);
@@ -86,4 +85,8 @@ void export_metric_standards(py::module& m) {
     register_wrapper_euclidean_thresholded<double, NumpyToVectorAdapter<double>>(m);
     register_wrapper_cosine<double, NumpyToVectorAdapter<double>>(m);
     register_wrapper_chebyshev<double, NumpyToVectorAdapter<double>>(m);
+}
+
+PYBIND11_MODULE(standards, m) {
+    export_metric_standards(m);
 }

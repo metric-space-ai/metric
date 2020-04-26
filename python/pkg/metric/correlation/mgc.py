@@ -1,5 +1,5 @@
 import metric._impl.mgc as impl
-from metric._impl.distance import Euclidean
+from metric._impl.standards import Euclidean
 
 
 def MGC(metric1=Euclidean(), metric2=Euclidean()) -> object:

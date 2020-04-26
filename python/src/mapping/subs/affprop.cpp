@@ -30,12 +30,13 @@ void export_metric_affprop(py::module& m) {
     using Value = double;
     using RecType = std::vector<Value>;
     using Functor = std::function<Value(const RecType&, const RecType&)>;
+    using Metric = metric::Euclidean<Value>;
 
-    boost::mpl::for_each<metric::MetricTypes, boost::mpl::make_identity<boost::mpl::_1>>([&](auto metr) {
-        using Metric = typename decltype(metr)::type;
+//    boost::mpl::for_each<metric::MetricTypes, boost::mpl::make_identity<boost::mpl::_1>>([&](auto metr) {
+//        using Metric = typename decltype(metr)::type;
         wrap_affprop<RecType, Metric>(m);
-    });
-    wrap_affprop<RecType, Functor>;
+//    });
+//    wrap_affprop<RecType, Functor>;
 }
 
 PYBIND11_MODULE(affprop, m) {
