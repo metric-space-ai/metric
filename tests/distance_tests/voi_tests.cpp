@@ -7,19 +7,18 @@ Copyright (c) 2020 Panda Team
 */
 
 #include "modules/utils/type_traits.hpp"
-#include <stdexcept>
-//#define BOOST_TEST_DYN_LINK
-//#define BOOST_TEST_MAIN
-#define BOOST_TEST_MODULE voi_test
-#include <boost/test/unit_test.hpp>
-
 #include "modules/distance/k-random/VOI.hpp"
 #include "modules/distance/k-structured/Edit.hpp"
 #include "modules/distance/k-related/Standards.hpp"
+
+#define BOOST_TEST_MODULE voi_test
+#include <boost/test/unit_test.hpp>
+
 #include <vector>
 #include <deque>
 #include <array>
 #include <numeric>
+#include <stdexcept>
 
 template <typename T>
 bool float_eq(T l, T r) {
