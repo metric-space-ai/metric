@@ -120,7 +120,7 @@ namespace metric {
 		{
 			som.train(dataset);
 		}
-		metric::kohonen_distance<double, Record, Graph, Metric> kohonen_distance_object(som);
+		metric::Kohonen<double, Record, Graph, Metric> Kohonen_object(som);
 			
 		auto iterations = 20;
 		if (iterations > dataset.size())
@@ -135,16 +135,16 @@ namespace metric {
 				if (i != j)
 				{						
 					// we get the same bmu for both records
-					auto kohonen_distance = kohonen_distance_object(dataset[randomized_indexes[i]], dataset[randomized_indexes[j]]);
+					auto Kohonen = Kohonen_object(dataset[randomized_indexes[i]], dataset[randomized_indexes[j]]);
 					auto direct_distance = distance(dataset[randomized_indexes[i]], dataset[randomized_indexes[j]]);
-					auto diff = abs(abs(kohonen_distance) - abs(direct_distance));
+					auto diff = abs(abs(Kohonen) - abs(direct_distance));
 					auto relative_diff = diff / abs(direct_distance);
 					if (direct_distance != 0)
 					{
 						relative_diffs.push_back(relative_diff);
 					}
 					
-					//std::cout << " kohonen_distance: " << kohonen_distance << " direct_distance: " << direct_distance << " diff: " << diff << " relative_diff: " << relative_diff << std::endl;
+					//std::cout << " Kohonen: " << Kohonen << " direct_distance: " << direct_distance << " diff: " << diff << " relative_diff: " << relative_diff << std::endl;
 				}
 			}
 		}

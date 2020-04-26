@@ -5,54 +5,46 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 Copyright (c) 2019 Panda Team
 */
-#ifndef _METRIC_MAPPING_SOM_CPP
-#define _METRIC_MAPPING_SOM_CPP
 #include "SOM.hpp"
+
 namespace metric {
 
 template <class RecType, class Graph, class Metric, class Distribution>
 SOM<RecType, Graph, Metric, Distribution>::SOM(size_t nodesNumber, Metric metric)
-    : input_dimensions(0)
-    , metric(metric)
+    : metric(metric)
     , graph(nodesNumber)
-    , distribution(-1, 1)
 {
     valid = graph.isValid();
-
-	start_learn_rate = 0.8;
-	finish_learn_rate = 0.0;
-	iterations = 20;
 	
 	random_seed = std::chrono::system_clock::now().time_since_epoch().count();
 	
-	neighborhood_start_size = std::sqrt(double(nodesNumber));
-	neigbour_range_decay = 2.0;
+	neighborhood_start_size = std::sqrt(double(getNodesNumber()));
+	neighborhood_range_decay = 2.0;
 }
 
 template <class RecType, class Graph, class Metric, class Distribution>
 SOM<RecType, Graph, Metric, Distribution>::SOM(size_t nodesWidth, size_t nodesHeight, Metric metric)
-    : input_dimensions(0)
-    , metric(metric)
+    : metric(metric)
     , graph(nodesWidth, nodesHeight)
-    , distribution(-1, 1)
 {
     valid = graph.isValid();
 
-	start_learn_rate = 0.8;
-	finish_learn_rate = 0.0;
-	iterations = 20;
-
 	random_seed = std::chrono::system_clock::now().time_since_epoch().count();
-	
-    const size_t nodesNumber = getNodesNumber();
-	neighborhood_start_size = std::sqrt(double(nodesNumber));
-	neigbour_range_decay = 2.0;
+
+	neighborhood_start_size = std::sqrt(double(getNodesNumber()));
+	neighborhood_range_decay = 2.0;
 }
 
 template <class RecType, class Graph, class Metric, class Distribution>
-SOM<RecType, Graph, Metric, Distribution>::SOM(Graph graph, Metric metric, double start_learn_rate, double finish_learn_rate, size_t iterations, Distribution distribution)
-    : input_dimensions(0)
-    , metric(metric)
+SOM<RecType, Graph, Metric, Distribution>::SOM(
+    const Graph& graph,
+    const Metric& metric,
+    double start_learn_rate,
+    double finish_learn_rate,
+    size_t iterations,
+    Distribution distribution
+)
+    : metric(metric)
     , graph(graph)
     , distribution(distribution)
     , start_learn_rate(start_learn_rate)
@@ -63,23 +55,30 @@ SOM<RecType, Graph, Metric, Distribution>::SOM(Graph graph, Metric metric, doubl
 	
 	random_seed = std::chrono::system_clock::now().time_since_epoch().count();
 
-    const size_t nodesNumber = getNodesNumber();
-	neighborhood_start_size = std::sqrt(double(nodesNumber));
-	neigbour_range_decay = 2.0;
+	neighborhood_start_size = std::sqrt(double(getNodesNumber()));
+	neighborhood_range_decay = 2.0;
 }
 
 template <class RecType, class Graph, class Metric, class Distribution>
-SOM<RecType, Graph, Metric, Distribution>::SOM(Graph graph, Metric metric, double start_learn_rate,  double finish_learn_rate, size_t iterations, 
-	Distribution distribution, double neighborhood_start_size, double neigbour_range_decay, long long random_seed)
-    : input_dimensions(0)
-    , metric(metric)
+SOM<RecType, Graph, Metric, Distribution>::SOM(
+    const Graph& graph,
+    const Metric& metric,
+    double start_learn_rate,
+    double finish_learn_rate,
+    size_t iterations,
+	Distribution distribution,
+	double neighborhood_start_size,
+	double neighborhood_range_decay,
+	long long random_seed
+)
+    : metric(metric)
     , graph(graph)
     , distribution(distribution)
 	, start_learn_rate(start_learn_rate)
 	, finish_learn_rate(finish_learn_rate)
 	, iterations(iterations)
 	, neighborhood_start_size(neighborhood_start_size)
-	, neigbour_range_decay(neigbour_range_decay)
+	, neighborhood_range_decay(neighborhood_range_decay)
 	, random_seed(random_seed)
 {
     valid = graph.isValid();
@@ -89,21 +88,23 @@ SOM<RecType, Graph, Metric, Distribution>::SOM(Graph graph, Metric metric, doubl
 //SOM<RecType, Metric, Graph>::~SOM() = default;
 
 template <class RecType, class Graph, class Metric, class Distribution>
-void SOM<RecType, Graph, Metric, Distribution>::train(
-    const std::vector<std::vector<T>>& samples)
+void SOM<RecType, Graph, Metric, Distribution>::train(const std::vector<std::vector<T>>& samples)
 {
-	subsampled_train_(samples, samples.size());
+	subsampled_train(samples, samples.size());
 }
 
 
 template <class RecType, class Graph, class Metric, class Distribution>
-void SOM<RecType, Graph, Metric, Distribution>::estimate(const std::vector<std::vector<T>>& samples, const size_t sampleSize)
+void SOM<RecType, Graph, Metric, Distribution>::estimate(
+    const std::vector<std::vector<T>>& samples,
+    const size_t sampleSize
+)
 {
-	subsampled_train_(samples, sampleSize);
+	subsampled_train(samples, sampleSize);
 }
 
 template <class RecType, class Graph, class Metric, class Distribution>
-std::vector<double> SOM<RecType, Graph, Metric, Distribution>::encode(const RecType& sample)
+std::vector<double> SOM<RecType, Graph, Metric, Distribution>::encode(const RecType& sample) const
 {
     std::vector<double> dim_reduced(getNodesNumber());
 
@@ -137,7 +138,7 @@ size_t SOM<RecType, Graph, Metric, Distribution>::BMU(const RecType& sample) con
 
 
 template <class RecType, class Graph, class Metric, class Distribution>
-double SOM<RecType, Graph, Metric, Distribution>::std_deviation(const std::vector<std::vector<T>>& samples)
+double SOM<RecType, Graph, Metric, Distribution>::std_deviation(const std::vector<std::vector<T>>& samples) const
 {
 	double total_distances = 0;
 	double std_deviation = 0;
@@ -159,7 +160,7 @@ double SOM<RecType, Graph, Metric, Distribution>::std_deviation(const std::vecto
 // PRIVATE
 
 template <class RecType, class Graph, class Metric, class Distribution>
-void SOM<RecType, Graph, Metric, Distribution>::subsampled_train_(const std::vector<std::vector<T>>& samples, int sampleSize)
+void SOM<RecType, Graph, Metric, Distribution>::subsampled_train(const std::vector<std::vector<T>>& samples, int sampleSize)
 {
 	
     // initialize weight matrix at first training call
@@ -239,7 +240,7 @@ void SOM<RecType, Graph, Metric, Distribution>::subsampled_train_(const std::vec
 					// if no more neighbours are affected, the remoteness_factor returns to 1!
 					if (neighbours_num != 0) {
 
-						const double sigma = neighborhood_size / neigbour_range_decay;
+						const double sigma = neighborhood_size / neighborhood_range_decay;
 						remoteness_factor = std::exp((deep * deep) / (-2 * sigma * sigma));
 					}
 
@@ -258,7 +259,3 @@ void SOM<RecType, Graph, Metric, Distribution>::subsampled_train_(const std::vec
 }
 
 }  // namespace metric
-
-
-
-#endif

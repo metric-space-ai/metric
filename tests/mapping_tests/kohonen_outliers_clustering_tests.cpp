@@ -61,7 +61,6 @@ BOOST_AUTO_TEST_CASE(Main) {
 	metric::KOC_factory<Record, metric::Grid4> simple_koc_factory(best_w_grid_size, best_h_grid_size, sigma, 0.5, 0.0, 300, -1, 1, 2, 0.5, random_seed);    
 	auto simple_koc = simple_koc_factory(dataset, num_clusters); 
 
-
 	// original dataset
 
 	auto anomalies = simple_koc.check_if_anomaly(dataset);	

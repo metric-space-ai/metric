@@ -6,20 +6,19 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 Copyright (c) 2019 Panda Team
 */
 
-#ifndef _METRIC_DISTANCE_K_RELATED_L1_CPP
-#define _METRIC_DISTANCE_K_RELATED_L1_CPP
-
 #include "L1.hpp"
 namespace metric {
 
 // the UNFINISHED code for L1 metrics from the review papaer
 
-template <typename T>
-double sorensen(const T& a, const T& b)
+template <typename V>
+template <typename Container>
+auto Sorensen<V>::operator()(const Container& a, const Container& b) const
+    -> typename std::enable_if<!std::is_same<Container, V>::value, distance_type>::type
 {
     double sum1 = 0;
     double sum2 = 0;
-    T z { 0 };
+    Container z { 0 };
     auto it1 = a.begin();
     auto it2 = b.begin();
 
@@ -45,12 +44,13 @@ double sorensen(const T& a, const T& b)
     return sum1 / sum2;  // here the type is changed
 }
 
-template <typename Value>
-double sorensen(const blaze::CompressedVector<Value>& a, const blaze::CompressedVector<Value>& b)
+template <typename V>
+auto Sorensen<V>::operator()(const blaze::CompressedVector<V>& a, const blaze::CompressedVector<V>& b) const
+    -> distance_type
 {
     double sum1 = 0;
     double sum2 = 0;
-    blaze::CompressedVector<Value> z { 0 };
+    blaze::CompressedVector<V> z { 0 };
     auto it1 = a.begin();
     auto it2 = b.begin();
 
@@ -113,4 +113,3 @@ auto Ruzicka<V>::operator()(const Container& A, const Container& B) const -> dis
 }
 
 }  // namespace metric
-#endif

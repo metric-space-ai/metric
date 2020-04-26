@@ -2,7 +2,6 @@ cmake_minimum_required(VERSION 3.10)
 
 project(correlation_examples)
 
-set(Boost_DEBUG on)  
 find_package(Boost)
 
 include_directories(

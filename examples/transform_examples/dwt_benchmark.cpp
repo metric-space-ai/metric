@@ -5,7 +5,7 @@
 #include <random>
 
 //#include "transform/wavelet.hpp"
-#include "modules/transform/energy_encoder.cpp"
+#include "modules/transform/energy_encoder.hpp"
 
 
 template <typename T>
@@ -92,7 +92,7 @@ int main() {
 
     std::cout << "running energy extractors " << runs << " times on vector of length " << len << "\n";
 
-    auto e = metric::energy_encoder(5, 3);
+    auto e = metric::EnergyEncoder(5, 3);
 
     sum = 0;
     for (size_t i = 0; i<runs; ++i) {

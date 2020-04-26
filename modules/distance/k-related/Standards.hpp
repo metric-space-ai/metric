@@ -12,6 +12,7 @@ Copyright (c) 2018 Michael Welsch
 #include <vector>
 #include <cmath>
 
+
 namespace metric {
 
 /**
@@ -46,6 +47,17 @@ struct Euclidean {
      */
 
     distance_type operator()(const V& a, const V& b) const;
+
+    /**
+     * @brief Calculate Euclidean distance for Blaze input
+     *
+     * @param a first value
+     * @param b second value
+     * @return Euclidean distance between a and b
+     */
+    template <template <typename, bool> class Container, typename ValueType, bool F> // detect Blaze object by signature
+    double operator()(
+        const Container<ValueType, F> & a, const Container<ValueType, F> & b) const;
 };
 
 /**

@@ -5,8 +5,6 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 Copyright (c) 2020 Panda Team
 */
-#ifndef _METRIC_DISTANCE_K_RANDOM_KOLMOGOROV_SMIRNOV_CPP
-#define _METRIC_DISTANCE_K_RANDOM_KOLMOGOROV_SMIRNOV_CPP
 
 #include "KolmogorovSmirnov.hpp"
 #include "../../utils/poor_mans_quantum.hpp"
@@ -14,7 +12,7 @@ Copyright (c) 2020 Panda Team
 namespace metric {
 
 template <typename Sample, typename D>
-auto KolmogorovSmirnov<Sample, D>::operator()(const Sample& sample_1, const Sample& sample_2) -> distance_return_type
+auto KolmogorovSmirnov<Sample, D>::operator()(const Sample& sample_1, const Sample& sample_2) const -> distance_type
 {
 	PMQ pmq_1(sample_1);
 	PMQ pmq_2(sample_2);
@@ -41,10 +39,8 @@ auto KolmogorovSmirnov<Sample, D>::operator()(const Sample& sample_1, const Samp
 		}
 	}
 
-
     return max_difference;
 }
 
 
 }  // namespace metric
-#endif

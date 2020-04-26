@@ -5,19 +5,20 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 Copyright (c) 2018 M.Welsch
 */
+#include "affprop.hpp"
 
-#ifndef _METRIC_MAPPING_AFFPROP_CPP
-#define _METRIC_MAPPING_AFFPROP_CPP
+#include "../../3rdparty/blaze/Math.h"
+#include "../distance/k-related/Standards.hpp"
 
 #include <vector>
 #include <string>
 #include <tuple>
 #include <cassert>
-#include "../../3rdparty/blaze/Math.h"
 
-#include "../distance/k-related/Standards.hpp"
 namespace metric {
+
 namespace affprop_details {
+
     //build similarity matrix
     template <typename T, typename DistanceMatrix>
     blaze::SymmetricMatrix<blaze::DynamicMatrix<T, blaze::rowMajor>> similarity_matrix(
@@ -198,6 +199,51 @@ namespace affprop_details {
 
 }  // end namespace affprop_details
 
+/**
+ * @brief
+ *
+ * @param data distance matrix
+ * @param preference
+ * @param maxiter
+ * @param tol
+ * @param damp
+ * @return
+*/
+template <typename RecType, typename Metric>
+auto AffProp<RecType, Metric>::operator()(const Matrix<RecType, Metric>& DM) const
+    -> std::tuple<std::vector<std::size_t>, std::vector<std::size_t>, std::vector<std::size_t>>
+{
+    // check arguments
+    auto n = DM.size();
+    assert(n >= 2);  //the number of samples must be at least 2.
+    assert(tol > 0);  //tol must be a positive value.
+    assert(0 <= damp && damp < 1);  // damp must be between 0 and 1.
+    assert(0 <= preference && preference < 1);  // preference must be between 0 and 1.
+
+    // build similarity matrix with preference
+    auto S = metric::affprop_details::similarity_matrix(DM, preference);
+    // initialize messages
+    blaze::DynamicMatrix<Value, blaze::rowMajor> R(n, n);
+    blaze::DynamicMatrix<Value, blaze::rowMajor> A(n, n);
+    // main loop
+    int t = 0;
+    bool isConverged = false;
+    while (!isConverged && t < maxiter) {
+        t += 1;
+
+        // compute new messages
+        Value maxabsR = metric::affprop_details::update_responsibilities(R, S, A, damp);
+        Value maxabsA = metric::affprop_details::update_availabilities(A, R, damp);
+
+        // determine convergence
+        Value ch = std::max(maxabsA, maxabsR) / (1 - damp);
+        isConverged = (ch < tol);
+    }
+    // extract exemplars and assignments
+    auto exemplars = metric::affprop_details::extract_exemplars<Value>(A, R);
+    auto [assignments, counts] = metric::affprop_details::get_assignments<Value>(S, exemplars);
+
+    return { assignments, exemplars, counts };
 }
 
-#endif
+} // metric

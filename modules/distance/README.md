@@ -67,25 +67,58 @@ Several distance in the literatue are based on the Manhatten metric, more precis
 https://en.wikipedia.org/wiki/Canberra_distance
 similiar to Sørensen (Bray-Curtis) distance, but it's known to be very sensitive to small changes near zero. Instead of Sørensen distance, it's a metric.
 
-### Hassanat (metric!)
-optimized version of the Wave Hedges metric.
-Hassanat  B.  A. Dimensionality  Invariant  Similarity  Measure. J  Am  Sci 2014;10(8):221-226].  (ISSN:  1545-1003
-### Ružička (metric!)
-The  one-complement of the Ružička index, that is also known as Jaccardized Czekanowsk index
+In mathematics, also is known as the `Wasserstein` metric.
 
-## The Inner Product Family
+Informally, if the distributions are interpreted as two different ways of piling up a certain amount of dirt over the region `D`, 
+the `EMD` is the minimum cost of turning one pile into the other; where the cost is assumed to be amount of dirt moved times 
+the distance by which it is moved.
+
+Before creating EMD object you need to construct ground distance matrix. Where each value is a distance for move 
+a single pile from one point of matrix to another. You can do it by one of the predefined functions or by self:
+
+```cpp
+auto ground_distance_mat = metric::EMD_details::ground_distance_matrix_of_2dgrid<T, Metric>(columns, rows);
+auto ground_distance_mat = metric::EMD_details::ground_distance_matrix_of_2dgrid<T, Metric>(2d_vector);
+```
+
+_Note: For images you should serialize the pixel's 2D array in a vector and compute the ground distance matrix 
+of the original picture sized grid._
+
+***For example***, suppose we have an images as matrices: `img1`, `img2`.
+
+Now we should reshape matrices to vectors:
+```cpp
+typedef int emd_Type;
+
+size_t im1_R = img1.size();
+size_t im1_C = img1[0].size();
+
+// serialize_mat2vec
+std::vector<emd_Type> i1;
+std::vector<emd_Type> i2;
+
+for (size_t i = 0; i < im1_R; ++i)
+{
+	for (size_t j = 0; j < im1_C; ++j)
+	{
+		i1.push_back(img1[i][j]);
+		i2.push_back(img2[i][j]);
+	}
+}
+```
 
 ### Inner Product (metric!)
 
-### Cosine (metric!)
-Cosine distance uses the inner product to measures the cosine of the angle between vectors. It is implemented as the metric version, also known as angular distance, and not the cosine similiarty measure
-https://en.wikipedia.org/wiki/Cosine_similarity
+First we should calculate a ground distance matrix: 
 
-### Weierstrass (metric!)
-### Jaccard (metric!)
-https://en.wikipedia.org/wiki/Jaccard_index
+```cpp
+auto ground_distance_mat = metric::EMD_details::ground_distance_matrix_of_2dgrid<emd_Type>(im1_C, im1_R);
+auto max_distance = metric::EMD_details::max_in_distance_matrix(ground_distance_mat);
+```
+Then declare EMD (Earth Mover Distance) metric and use it:
 
-### Hellinger (metric!)
+```cpp
+metric::EMD<emd_Type> distance(ground_distance_mat, max_distance);
 
 
 
@@ -170,16 +203,224 @@ auto result2 = euclidean_scaled_and_limited(v0, v1);
 ```
 The threshold [0.01..0.99] is realated to the max_distance value and defines the percentage level where the saturation starts. Below that point, the value is scaled linearly with the scal factor. The scal factor must be positve. values greater one will shorten the range until saturation takes place and a value less one will longer the range until the limitting starts.
 
-|  standard     |    hard_clipped (max_distance = 8)  | soft_clipped (max_distance = 8, thresh = 0.8, scal = 2)|
-| --- | --- | --- |
-|0,00	|0,00	|0,00|
-|1,00	|1,00	|2,00|
-|2,00	|2,00	|4,00|
-|3,00	|3,00	|6,00|
-|4,00	|4,00	|7,41|
-|5,00	|5,00	|7,83|
-|6,00	|6,00	|7,95|
-|7,00	|7,00	|7,99|
-|8,00	|8,00	|8,00|
-|9,00	|8,00	|8,00|
-|10,00	|8,00	|8,00|
+*For a full example and more details see `examples/distance_examples/sorensen_distance_example.cpp`*
+
+---
+
+### Kohonen distance
+The idea of the Kohonen distance is: to train a SOM on a dataset and then compute the EMD for two records in the Kohonen space.
+ 
+Suppose we have a set of values:
+
+```cpp
+std::vector<std::vector<double>> train_dataset = {
+    { 26.75,	22.15 },
+    { 29.8,	22.15 },
+    { 31.55,	21.1 },
+    { 27.7,	20.85 }
+};
+```
+
+Then we can create Kohonen distance object and calculate distance. When dataset is passed to the constructor, 
+Kohonen distance object will train incapsulated SOM on that dataset. 
+
+```cpp
+int grid_w = 6;
+int grid_h = 4;
+
+metric::Kohonen<double, std::vector<double>> distance(train_dataset, grid_w, grid_h);
+
+auto result = distance(train_dataset[0], train_dataset[1]);
+std::cout << "result: " << result << std::endl;
+// out:
+// Kohonen metric
+// result: 824.567
+```
+
+Other way to initialize Kohonen distance object is to pass pretrained SOM object to the constructor:
+
+```cpp	
+int grid_w = 6;
+int grid_h = 4;
+	
+using Vector = std::vector<double>;
+using Metric = metric::Euclidean<double>;
+using Graph = metric::Grid6; 
+using Distribution = std::uniform_real_distribution<double>; 
+
+Distribution distr(-1, 1);
+
+metric::SOM<Vector, Graph, Metric> som_model(Graph(grid_w, grid_h), Metric(), 0.8, 0.2, 20, distr);
+som_model.train(train_dataset);
+	
+metric::Kohonen<double, Vector, Graph, Metric> distance(som_model);
+
+auto result = distance(train_dataset[0], train_dataset[1]);
+std::cout << "result: " << result << std::endl;
+// out:
+// Kohonen metric
+// result: 772.109
+```
+*For a full example and more details see `examples/distance_examples/Kohonen_example.cpp`*
+
+
+
+---
+
+
+### Entropy, Mutual Information and Variation of Information
+Suppose we have a some data:
+
+```cpp
+std::vector<std::vector<double>> v = { {5,5}, {2,2}, {3,3}, {5,1} };
+```
+
+Then we can calculate the entropy of the given data:
+```cpp
+auto estimator = metric::Entropy<std::vector<double>>();
+auto result = estimator(v);
+std::cout << "result: " << result << std::endl;
+// out:
+// Entropy using default distance metric
+// result: -5.39891
+```
+
+Of cause, we can calculate entropy using any distance metric:
+```cpp
+auto estimator = metric::Entropy<void, metric::Manhatten<double>>();
+auto result = estimator(v);
+std::cout << "result: " << result << std::endl;
+// out:
+// Entropy using Manhatten distance metric
+// result: 0.132185
+```
+
+And now suppose we have two vectors with a data:
+
+```cpp
+std::vector<std::vector<double>> v1 = {{5,5}, {2,2}, {3,3}, {5,5}};
+std::vector<std::vector<double>> v2 = {{5,5}, {2,2}, {3,3}, {1,1}};
+```
+
+Then we can calculate Mutual Information:
+```cpp
+auto result = metric::mutualInformation(v1, v2);
+std::cout << "result: " << result << std::endl;
+// out:
+// Mutual Information using default distance metric
+// result: 1.00612
+```
+
+Of cause we can specify distance metric:
+```cpp
+auto result = metric::mutualInformation(v1, v2, 3, metric::Euclidean<double>());
+std::cout << "result: " << result << std::endl;
+// out:
+// Mutual Information using Euclidean distance metric
+// result: 0.797784 
+```
+
+For the same data we can calculate Variation of Information:
+```cpp
+auto result = metric::variationOfInformation(v1, v2);
+std::cout << "result: " << result << std::endl;
+// out:
+// Variation of Information using default distance metric
+// result: 0
+```
+
+Again we can specify distance metric:
+```cpp
+auto result = metric::variationOfInformation<std::vector<std::vector<double>>, metric::Manhatten<double>>(v1, v2);
+std::cout << "VOI Manhatten result: " << result << std::endl;
+std::cout << "result: " << result << std::endl;
+// out:
+// Variation of Information Information using Manhatten distance metric
+// result: 0
+```
+
+We can calculate normalized Variation of Information:
+```cpp
+auto result = metric::variationOfInformation_normalized(v1, v2);
+std::cout << "result: " << result << std::endl;
+// out:
+// normalized Variation of Information
+// result: 1.08982
+```
+
+Instead function we can use functor for Variation of Information:
+```cpp
+auto f_voi = metric::VOI<long double>();
+auto result = f_voi(v1, v2);
+std::cout << "result: " << result << std::endl;
+// out:
+// Variation of Information as functor
+// result: 0
+```
+Normalized functor:
+```cpp
+auto f_voi_norm = metric::VOI_normalized<long double>();
+auto result = f_voi_norm(v1, v2);
+std::cout << "result: " << result << std::endl;
+// out:
+// normalized Variation of Information as normalized functor
+// result: 1.08982
+```
+
+*For a full example and more details see `examples/distance_examples/entropy_example.cpp`*
+
+---
+
+## Run
+*You need STL and C++17 support to compile.*
+
+METRIC | DISTANCE works headonly. Just include the header into your project.
+
+```cpp
+#include "modules/distance.hpp"
+```
+
+or directly include one of specified distance from the following:
+
+```cpp
+#include "modules/distance/k-related/Standards.hpp"
+#include "modules/distance/k-related/L1.hpp"
+
+#include "modules/distance/k-structured/SSIM.hpp"
+#include "modules/distance/k-structured/TWED.hpp"
+#include "modules/distance/k-structured/EMD.hpp"
+#include "modules/distance/k-structured/Edit.hpp"
+
+#include "modules/distance/k-random/VOI.hpp"
+```
+
+
+
+#### CMake compilation
+
+Inside folder with your cpp file or inside `examples/distance_examples/` run the following commands:
+
+_Windows_
+
+```bash
+mkdir build
+cd build
+cmake .. -A x64 -T llvm
+```
+Then open solution in the Microsoft Visual Studio
+
+_Linux_
+
+Just run cmake
+```bash
+mkdir build
+cd build
+cmake ..
+make
+```
+
+#### Direct compilation, using compiler
+
+```bash
+$ clang++ ./examples/distance_examples/standart_distances_example.cpp -std=c++17
+```

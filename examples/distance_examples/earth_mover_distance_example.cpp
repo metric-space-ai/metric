@@ -36,12 +36,12 @@ int main()
         }
     }
 
-    auto cost_mat = metric::EMD_details::ground_distance_matrix_of_2dgrid<emd_Type>(im1_C, im1_R);
-    auto maxCost = metric::EMD_details::max_in_distance_matrix(cost_mat);
+    auto ground_distance_mat = metric::EMD_details::ground_distance_matrix_of_2dgrid<emd_Type>(im1_C, im1_R);
+    auto max_distance = metric::EMD_details::max_in_distance_matrix(ground_distance_mat);
 
     std::cout << "" << std::endl;
 
-    metric::EMD<emd_Type> distance(cost_mat, maxCost);
+    metric::EMD<emd_Type> distance(ground_distance_mat, max_distance);
 
     // assumes that i1 and i2 are serialized vectors of the image matrices, and cost_mat contains a distance matrix that takes into account the original pixel locations.
     auto t1 = std::chrono::steady_clock::now();
@@ -65,9 +65,9 @@ int main()
 
 	//	
 	
-    cost_mat = metric::EMD_details::ground_distance_matrix_of_2dgrid<emd_Type>(3, 3);
-    maxCost = metric::EMD_details::max_in_distance_matrix(cost_mat);
-    distance = metric::EMD<emd_Type>(cost_mat, maxCost);
+    ground_distance_mat = metric::EMD_details::ground_distance_matrix_of_2dgrid<emd_Type>(3, 3);
+    max_distance = metric::EMD_details::max_in_distance_matrix(ground_distance_mat);
+    distance = metric::EMD<emd_Type>(ground_distance_mat, max_distance);
 
 	// vector
 

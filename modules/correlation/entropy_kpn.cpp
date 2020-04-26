@@ -14,8 +14,8 @@ Copyright (c) 2019 Panda Team
 
 #include <boost/math/special_functions/digamma.hpp>
 
-#include "epmgp.cpp"
-#include "estimator_helpers.cpp"
+#include "epmgp.hpp"
+#include "estimator_helpers.hpp"
 #include "../../space/tree.hpp"
 
 

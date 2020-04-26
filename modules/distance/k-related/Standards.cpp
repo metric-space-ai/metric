@@ -5,14 +5,13 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 Copyright (c) 2018 Michael Welsch
 */
-#ifndef _METRIC_DISTANCE_K_RELATED_STANDARDS_CPP
-#define _METRIC_DISTANCE_K_RELATED_STANDARDS_CPP
 
 #include "Standards.hpp"
-#include <algorithm>
 
 #include <cmath>
 #include <algorithm>
+
+#include "../../../3rdparty/blaze/Blaze.h"
 
 namespace metric {
 
@@ -36,6 +35,13 @@ auto Euclidean<V>::operator()(const V& a, const V& b) const -> distance_type
     distance_type sum = 0;
     sum += (a - b) * (a - b);
     return std::sqrt(sum);
+}
+
+template <typename V>
+template <template <typename, bool> class Container, typename ValueType, bool F> // detect Blaze object by signature
+double Euclidean<V>::operator()(
+        const Container<ValueType, F> & a, const Container<ValueType, F> & b) const {
+    return blaze::norm(a - b);
 }
 
 template <typename V>
@@ -220,7 +226,7 @@ auto CosineInverted<V>::operator()(const Container& A, const Container& B) const
 
 template <typename V>
 template <typename Container>
-V Chebyshev<V>::operator()(const Container& lhs, const Container& rhs) const
+auto Chebyshev<V>::operator()(const Container& lhs, const Container& rhs) const -> distance_type
 {
     distance_type res = 0;
     for (std::size_t i = 0; i < lhs.size(); i++) {
@@ -232,4 +238,3 @@ V Chebyshev<V>::operator()(const Container& lhs, const Container& rhs) const
 }
 
 }  // namespace metric
-#endif
