@@ -143,26 +143,6 @@ BOOST_AUTO_TEST_CASE(VOI) {
     //metric::VOI_kl<long double>()(v11, v12);
     //metric::VOI_normalized_kl<long double>()(v11, v12);
     
-<<<<<<< HEAD
-    std::vector<std::deque<double>> v21 = { { 5, 5 }, { 2, 2 }, { 3, 3 }, { 5, 5 } };
-    std::vector<std::deque<double>> v22 = { { 5, 5 }, { 2, 2 }, { 3, 3 }, { 1, 1 } };
-    metric::VOI<long double>()(v21, v22);
-    metric::VOI_normalized<long double>()(v21, v22);
-    //metric::VOI_kl<long double>()(v21, v22);
-    //metric::VOI_normalized_kl<long double>()(v21, v22);
-
-    std::deque<std::vector<double>> v31 = { { 5, 5 }, { 2, 2 }, { 3, 3 }, { 5, 5 } };
-    std::deque<std::vector<double>> v32 = { { 5, 5 }, { 2, 2 }, { 3, 3 }, { 1, 1 } };
-    metric::VOI<long double>()(v31, v32);
-    metric::VOI_normalized<long double>()(v31, v32);
-    //metric::VOI_kl<long double>()(v31, v32);
-    //metric::VOI_normalized_kl<long double>()(v31, v32);
-
-    std::deque<std::deque<double>> v41 = { { 5, 5 }, { 2, 2 }, { 3, 3 }, { 5, 5 } };
-    std::deque<std::deque<double>> v42 = { { 5, 5 }, { 2, 2 }, { 3, 3 }, { 1, 1 } };
-    metric::VOI<long double>()(v41, v42);
-    metric::VOI_normalized<long double>()(v41, v42);
-=======
     // std::vector<std::deque<double>> v21 = { { 5, 5 }, { 2, 2 }, { 3, 3 }, { 5, 5 } };
     // std::vector<std::deque<double>> v22 = { { 5, 5 }, { 2, 2 }, { 3, 3 }, { 1, 1 } };
     // metric::VOI<long double>()(v21, v22);
@@ -181,7 +161,6 @@ BOOST_AUTO_TEST_CASE(VOI) {
     // std::deque<std::deque<double>> v42 = { { 5, 5 }, { 2, 2 }, { 3, 3 }, { 1, 1 } };
     // metric::VOI<long double>()(v41, v42);
     // metric::VOI_normalized<long double>()(v41, v42);
->>>>>>> 886ed6456a92c9b09818684c913fb46b9b803c6a
     //metric::VOI_kl<long double>()(v41, v42);
     //metric::VOI_normalized_kl<long double>()(v41, v42);
 }
