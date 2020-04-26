@@ -12,5 +12,5 @@ def test_cosine():
     assert isinstance(distance, Cosine)
     assert callable(distance)
 
-    assert distance(v0, v1) == 0.970142500145332
-    assert distance(v1, v0) == 0.970142500145332
+    assert distance(v0, v1) == 0.07797913037736921
+    assert distance(v1, v0) == 0.07797913037736921
