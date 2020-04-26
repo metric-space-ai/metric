@@ -13,6 +13,7 @@ Copyright (c) 2020 Panda Team
 #include <boost/test/unit_test.hpp>
 
 #include "modules/space.hpp"
+#include "modules/distance.hpp"
 
 namespace std {
 std::basic_ostream<char> &operator<<(std::basic_ostream<char> &ostr, const std::pair<std::size_t, double> &v) {
