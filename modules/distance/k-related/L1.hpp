@@ -32,6 +32,49 @@ double sorensen(const T& a, const T& b);
 template <typename Value>
 double sorensen(const blaze::CompressedVector<Value>& a, const blaze::CompressedVector<Value>& b);
 
+template <typename V = double>
+struct Hassanat {
+    using value_type = V;
+    using distance_type = value_type;
+
+    explicit Hassanat() = default;
+
+    /**
+     * @brief Calculate Hassanat distance in R^n
+     *
+     * @param a first vector
+     * @param b second vector
+     * @return Hassanat distance between a and b
+     */
+
+    template <typename Container>
+    distance_type operator()(const Container& a, const Container& b) const;
+};
+
+template <typename Value>
+double sorensen(const blaze::CompressedVector<Value>& a, const blaze::CompressedVector<Value>& b);
+
+template <typename V = double>
+struct Ruzicka {
+    using value_type = V;
+    using distance_type = value_type;
+
+    explicit Ruzicka() = default;
+
+    /**
+     * @brief Calculate Ruzicka distance in R^n
+     *
+     * @param a first vector
+     * @param b second vector
+     * @return Ruzicka distance between a and b
+     */
+
+    template <typename Container>
+    distance_type operator()(const Container& a, const Container& b) const;
+};
+
+
+
 }  // namespace metric
 
 #include "L1.cpp"

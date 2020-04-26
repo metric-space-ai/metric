@@ -9,6 +9,8 @@ Copyright (c) 2018 Michael Welsch
 #define _METRIC_DISTANCE_K_RELATED_STANDARDS_HPP
 
 #include <type_traits>
+#include <vector>
+#include <cmath>
 
 namespace metric {
 
@@ -145,6 +147,140 @@ struct Euclidean_thresholded {
     value_type factor = 3000.0;
 };
 
+template <typename V = double>
+struct Euclidean_hard_clipped {
+    using value_type = V;
+    using distance_type = value_type;
+
+    value_type max_distance_;
+    value_type scal_;
+    explicit Euclidean_hard_clipped() = default;
+
+    /**
+     * @brief Construct a new Euclidean_hard_clipped object
+     *
+     * @param max_distance
+     * @param scal
+     */
+    Euclidean_hard_clipped(value_type max_distance = 100, value_type scal = 1)
+        : max_distance_(max_distance)
+        , scal_(scal)
+    {
+    }
+
+    /**
+     * @brief
+     *
+     * @param a
+     * @param b
+     * @return
+     */
+    template <typename Container>
+    distance_type operator()(const Container& a, const Container& b) const;
+};
+
+template <typename V = double>
+struct Euclidean_soft_clipped {
+    using value_type = V;
+    using distance_type = value_type;
+
+    value_type max_distance_;
+    value_type scal_;
+    value_type thresh_;
+    value_type F_;
+    value_type x_;
+    value_type T_;
+    value_type y_;
+
+    explicit Euclidean_soft_clipped() = default;
+
+    /**
+     * @brief Construct a new Euclidean_hard_clipped object
+     *
+     * @param max_distance
+     * @param scal
+     * @param threshold
+     */
+    Euclidean_soft_clipped(value_type max_distance = 100, value_type scal = 1, value_type thresh = 0.8)
+        : max_distance_(max_distance)
+        , scal_(scal)
+        , thresh_(thresh)
+    {
+        F_ = (value_type(1) - thresh_) * max_distance;
+        x_ = thresh_ * max_distance / scal;
+        T_ = F_ / scal_;
+        y_ = thresh_ * max_distance;
+    }
+
+    /**
+     * @brief
+     *
+     * @param a
+     * @param b
+     * @return
+     */
+    template <typename Container>
+    distance_type operator()(const Container& a, const Container& b) const;
+};
+
+template <typename V = double>
+struct Euclidean_standardized {
+    using value_type = V;
+    using distance_type = value_type;
+
+    std::vector<value_type> mean;
+    std::vector<value_type> sigma;
+
+    explicit Euclidean_standardized() = default;
+
+    /**
+     * @brief Construct a new Euclidean_hard_clipped object
+     *
+     * @param A
+     */
+    template <typename Container>
+    Euclidean_standardized(const Container& A);
+
+    /**
+     * @brief
+     *
+     * @param a
+     * @param b
+     * @return
+     */
+    template <typename Container>
+    auto operator()(const Container& a, const Container& b) const -> distance_type;
+};
+
+template <typename V = double>
+struct Manhatten_standardized {
+    using value_type = V;
+    using distance_type = value_type;
+
+    std::vector<value_type> mean;
+    std::vector<value_type> sigma;
+
+    explicit Manhatten_standardized() = default;
+
+    /**
+     * @brief Construct a new Manhatten_hard_clipped object
+     *
+     * @param A
+     */
+    template <typename Container>
+    Manhatten_standardized(const Container& A);
+
+    /**
+     * @brief
+     *
+     * @param a
+     * @param b
+     * @return
+     */
+    template <typename Container>
+    auto operator()(const Container& a, const Container& b) const -> distance_type;
+};
+
 /**
  * @class Cosine
  *
@@ -167,6 +303,23 @@ struct Cosine {
     template <typename Container>
     distance_type operator()(const Container& a, const Container& b) const;
 };
+
+template <typename V = double>
+struct Weierstrass {
+    using value_type = V;
+    using distance_type = value_type;
+
+    /**
+     * @brief calculate Weierstrass distance between two non-zero vector
+     *
+     * @param a first vector
+     * @param b second vector
+     * @return Weierstrass distance between a and b
+     */
+    template <typename Container>
+    distance_type operator()(const Container& a, const Container& b) const;
+};
+
 
 /**
  * @class CosineInverted
