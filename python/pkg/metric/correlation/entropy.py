@@ -1,5 +1,5 @@
 import metric._impl.entropy as impl
-from metric._impl.distance import Euclidean
+from metric._impl.standards import Euclidean
 from metric._common import factory_with_default
 
 

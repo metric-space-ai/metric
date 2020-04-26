@@ -1,4 +1,11 @@
-set(LIB_NAME voi)
+file(GLOB SUBS_SOURCE_FILES ./*.cpp)
+foreach(modulePath ${SUBS_SOURCE_FILES})
 
-pybind11_add_module(${LIB_NAME} ./VOI.cpp)
-target_link_libraries(${LIB_NAME} PUBLIC base_python_module)
+	# Extract the filename without an extension (NAME_WE)
+	get_filename_component(fileName ${modulePath} NAME_WE)
+	string(TOLOWER "${fileName}" moduleName)
+
+	pybind11_add_module(${moduleName} ${modulePath})
+    target_link_libraries(${moduleName} PUBLIC base_python_module)
+
+endforeach(modulePath)

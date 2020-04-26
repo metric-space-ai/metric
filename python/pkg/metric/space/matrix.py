@@ -1,5 +1,5 @@
 import metric._impl.space as impl
-from metric._impl.distance import Euclidean
+from metric._impl.standards import Euclidean
 
 
 def Matrix(data=None, metric=Euclidean()) -> object:

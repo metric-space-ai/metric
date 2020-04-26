@@ -60,14 +60,14 @@ void export_metric_entropy(py::module& m) {
     using Value = double;
     using RecType = std::vector<Value>;
     using Container = std::vector<RecType>;
-    using Functor = std::function<Value(const Container&, const Container&)>;
+    using Functor = std::function<Value(const RecType&, const RecType&)>;
 
     boost::mpl::for_each<metric::MetricTypes, boost::mpl::make_identity<boost::mpl::_1>>([&](auto metr) {
         using MetricType = typename decltype(metr)::type;
         wrap_metric_entropy<Container, MetricType>(m);
     });
 
-//    wrap_metric_entropy<Container, Functor>(m);
+    wrap_metric_entropy<Container, Functor>(m);
 }
 
 
