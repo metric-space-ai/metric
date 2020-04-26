@@ -6,8 +6,6 @@ find_package(Boost)
 
 project(distance_tests)
 
-set(Boost_DEBUG on)  
-set(Boost_USE_STATIC_LIBS ON)
 find_package(Boost COMPONENTS unit_test_framework REQUIRED)
 
 include_directories(
@@ -27,7 +25,6 @@ if(UNIX)
     set(THREADS_PREFER_PTHREAD_FLAG ON)
     find_package(Threads REQUIRED)
 endif(UNIX)
-
 
 AUX_SOURCE_DIRECTORY(. TEST_SRCS)
 #Run through each source

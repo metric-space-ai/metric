@@ -12,7 +12,6 @@ Copyright (c) 2020 Panda Team
 #define BOOST_TEST_MODULE space_matrix_test
 #include <boost/test/unit_test.hpp>
 
-#include "modules/space.hpp"
 #include "metric.hpp"
 
 namespace std {
