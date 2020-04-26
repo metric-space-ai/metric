@@ -31,9 +31,11 @@ namespace metric {
     template <typename MT, typename VT>
     void sygv(blaze::DynamicMatrix<MT, blaze::rowMajor> A, blaze::DynamicMatrix<MT, blaze::rowMajor> B, blaze::DynamicVector<VT, blaze::columnVector>& w)
     {
+        w.resize(A.rows());
         int lwork = 3 * A.rows() - 1;
         double work[lwork];
         int info;
+
         dsygv(1, 'N', 'U', A.rows(), A.data(), A.spacing(), B.data(), B.spacing(), w.data(), work, lwork, info);
     }
 }

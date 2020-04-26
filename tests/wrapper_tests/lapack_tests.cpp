@@ -5,7 +5,8 @@
 #include <limits>
 
 #include <iostream>
-#include "modules/utils/wrappers/lapack.hpp"
+//#include "modules/utils/wrappers/lapack.hpp"
+#include "modules/distance/d-spaced/Riemannian.hpp"
 
 
 using namespace metric;
@@ -37,4 +38,13 @@ BOOST_AUTO_TEST_CASE(sygv_blaze)
     sygv<double, double>(A, B, w);
 
     std::cout << w[0] << " " << w[1] << std::endl;
+}
+
+BOOST_AUTO_TEST_CASE(riemannian_distance)
+{
+    Matrix A{{1, 2}, {2, 4}};
+    Matrix B{{5, 6}, {6, 8}};
+
+    RiemannianDistance rd;
+    std::cout << rd(A, B) << std::endl;
 }
