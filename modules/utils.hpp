@@ -183,6 +183,41 @@ template <typename T>
 using isEigenCompatible = std::enable_if_t<isEigenCompatibleStruct<T>::value, DistanceType>;
 
 
+// indexing
+// TODO move to type_traits or unite files
+
+
+/**
+ * @brief if T is a container and implemented operator[] value is true, otherwise value is false
+ *
+ * @tparam T checking type
+ *
+ */
+template <typename T>
+class is_has_index_operator {
+    struct nil_t {
+    };
+    template <typename U>
+    static constexpr auto test(U*) -> decltype(std::declval<U&>()[0]);
+    template <typename>
+    static constexpr auto test(...) -> nil_t;
+
+public:
+    using type = typename std::decay<decltype(test<T>(nullptr))>::type;
+    static const bool value = !std::is_same<type, nil_t>::value;
+};
+
+/**
+ * @brief extract returning type of operator[] in container, in case of STL containers is equivalent ot value_type
+ * for example: underlying_type<std::vector<int>> == int,
+ *              underlying_type<std::vector<std::vector<int>>> == std::vector<int>,
+
+ * @tparam T Container type
+ */
+template <typename T>
+using index_value_type_t = typename is_has_index_operator<T>::type;
+
+
 
 
 }  // namespace metric

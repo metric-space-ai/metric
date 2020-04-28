@@ -6,7 +6,7 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 Copyright (c) 2020 Panda Team
 */
 
-// TODO complete refactoring!!
+// TODO continue refactoring!!
 
 #ifndef _METRIC_CORRELATION_ENTROPY_HPP
 #define _METRIC_CORRELATION_ENTROPY_HPP
@@ -20,10 +20,10 @@ namespace metric {
 
 
 
-template <typename MT = metric::Chebyshev<double>>
+template <typename MT> // TODO add  = metric::Chebyshev<double>
 class Entropy {
 public:
-    Entropy(Metric metric = MT(), size_t k = 7, size_t p = 70, bool exp = false) :
+    Entropy(MT metric = MT(), size_t k = 7, size_t p = 70, bool exp = false) :
         metric(metric),
         k(k),
         p(p),
@@ -43,7 +43,7 @@ public:
 private:
     size_t k;
     size_t p;
-    Metric metric;
+    MT metric;
     bool exp;
 };
 
@@ -51,5 +51,5 @@ private:
 
 } // namespace metric
 
-//#include "entropy.cpp"
+#include "entropy.cpp"
 #endif

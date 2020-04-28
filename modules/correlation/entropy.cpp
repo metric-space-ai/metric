@@ -6,7 +6,7 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 Copyright (c) 2019 Panda Team
 */
 
-// TODO complete refactoring!!
+// TODO continue refactoring!!
 
 #include "../utils.hpp"
 #include "../../modules/space/tree.hpp"
@@ -360,8 +360,9 @@ double estimate(
         const double threshold,
         size_t maxIterations
 ){
-    using T = type_traits::underlying_type_t<Container>;
-    using V = type_traits::index_value_type_t<Container>;
+    using T = contained_value_t<Container>; //type_traits::underlying_type_t<Container>;
+    //using V = type_traits::index_value_type_t<Container>;
+    using V = index_value_type_t<Container>; // TODO updater to support Blaze, Eigen, etc
     const size_t dataSize = data.size();
 
     // Update maxIterations
@@ -434,17 +435,17 @@ double estimate(
     return mu;
 }
 
-
+} // namespace
 
 // ----------------------------------- entropy with kpN approximation
 
 
 template <typename MT>
 template <typename Container>
-double Entropy<RecType, Metric>::operator()(const Container& data) const
+double Entropy<MT>::operator()(const Container& data) const
 {
-    using T = MT::RecordType;
-    using V = MT::ValueType;
+    using T = typename MT::RecordType;
+    using V = typename MT::ValueType;
     size_t n = data.size();
     size_t d = data[0].size();
 
@@ -465,7 +466,7 @@ double Entropy<RecType, Metric>::operator()(const Container& data) const
     double h = 0;
     int got_results = 0;  // absents in Matlab original code
 
-    metric::Tree<V, Metric> tree (data, -1, metric);
+    metric::Tree<MT> tree (data, -1, metric);
     blaze::DynamicMatrix<double> Nodes (p_, d, 0);
     blaze::DynamicVector<double> mu (d, 0);
     blaze::DynamicVector<double> lb (d, 0);
@@ -524,7 +525,7 @@ double Entropy<RecType, Metric>::operator()(const Container& data) const
 // averaged entropy estimation: code COPIED from mgc.*pp with only mgc replaced with entropy, TODO refactor to avoid code dubbing
 template <typename MT>
 template <typename Container>
-double Entropy<RecType, Metric>::estimate(
+double Entropy<MT>::estimate(
         const Container & a,
         const size_t sampleSize,
         const double threshold,
