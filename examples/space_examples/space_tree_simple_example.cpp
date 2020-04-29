@@ -32,7 +32,7 @@ int main()
 #if defined(USE_STL)
     using Record = std::deque<double>;
 #elif defined(USE_BLAZE)
-    using Record = blaze::DynamicVector<double>; // works ok
+    using Record = blaze::DynamicVector<double>;
 #elif defined(USE_EIGEN)
     using Record = Eigen::Array<double, 1, Eigen::Dynamic>;
 #elif defined(USE_ARMA)
