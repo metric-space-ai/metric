@@ -121,8 +121,17 @@ int main() {
         }
 
         auto ekpn = metric::Entropy<metric::Euclidean<Record>>(metric::Euclidean<Record>(), 2, 3);
-        std::cout << "entropy_kpN, Euclidean, Blaze, 1000 elements: " << ekpn(v)
-                  << " | " << ekpn.estimate(v)
+        auto startTime = std::chrono::steady_clock::now();
+        auto result1 = ekpn(v);
+        auto endTime = std::chrono::steady_clock::now();
+        auto time1 = double(std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count()) / 1000;
+        startTime = std::chrono::steady_clock::now();
+        auto result2 = ekpn.estimate(v);
+        endTime = std::chrono::steady_clock::now();
+        auto time2 = double(std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count()) / 1000;
+        std::cout << "entropy_kpN, Euclidean, Blaze, 1000 elements: "
+                  << result1 << " (" << time1 << "ns) | "
+                  << result2 << " (" << time2 << "ns) "
                   << std::endl;
     }
     {
@@ -138,8 +147,17 @@ int main() {
         for (size_t i = 0; i < v_stl.size(); ++i)
             v.push_back(Record::Map(v_stl[i].data(), v_stl[i].size()));
         auto ekpn = metric::Entropy<metric::Euclidean<Record>>(metric::Euclidean<Record>(), 2, 3);
-        std::cout << "entropy_kpN, Euclidean, Eigen, 1000 elements: " << ekpn(v)
-                  << " | " << ekpn.estimate(v)
+        auto startTime = std::chrono::steady_clock::now();
+        auto result1 = ekpn(v);
+        auto endTime = std::chrono::steady_clock::now();
+        auto time1 = double(std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count()) / 1000;
+        startTime = std::chrono::steady_clock::now();
+        auto result2 = ekpn.estimate(v);
+        endTime = std::chrono::steady_clock::now();
+        auto time2 = double(std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count()) / 1000;
+        std::cout << "entropy_kpN, Euclidean, Eigen, 1000 elements: "
+                  << result1 << " (" << time1 << "ns) | "
+                  << result2 << " (" << time2 << "ns) "
                   << std::endl;
     }
 #ifdef ARMA_EXISTS
@@ -153,8 +171,17 @@ int main() {
             v.push_back({dis(gen), dis(gen)});
         }
         auto ekpn = metric::Entropy<metric::Euclidean<Record>>(metric::Euclidean<Record>(), 2, 3);
-        std::cout << "entropy_kpN, Euclidean, Armadillo, 1000 elements: " << ekpn(v)
-                  << " | " << ekpn.estimate(v)
+        auto startTime = std::chrono::steady_clock::now();
+        auto result1 = ekpn(v);
+        auto endTime = std::chrono::steady_clock::now();
+        auto time1 = double(std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count()) / 1000;
+        startTime = std::chrono::steady_clock::now();
+        auto result2 = ekpn.estimate(v);
+        endTime = std::chrono::steady_clock::now();
+        auto time2 = double(std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count()) / 1000;
+        std::cout << "entropy_kpN, Euclidean, Armadillo, 1000 elements: "
+                  << result1 << " (" << time1 << "ns) | "
+                  << result2 << " (" << time2 << "ns) "
                   << std::endl;
     }
 #endif
