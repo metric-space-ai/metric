@@ -425,7 +425,7 @@ double estimate(
         }
 
         auto convergence = entropy_details::peak2ems(diff) / n;
-        std::cout << n << " " << convergence << " " << sample_entopy << " " << mu << std::endl;
+        //std::cout << n << " " << convergence << " " << sample_entopy << " " << mu << std::endl;
 
         if (convergence < threshold) {
             return mu;
@@ -449,6 +449,9 @@ double Entropy<MT>::operator()(const Container& data) const
     size_t n = data.size();
     size_t d = data[0].size();
 
+    if (n < 4)
+        return std::nan("estimation failed");
+
     size_t k_ = k;
     size_t p_ = p;
     if (p_ >= n)
@@ -459,9 +462,6 @@ double Entropy<MT>::operator()(const Container& data) const
         p_ = 3;
     if (k_ < 2)
         k_ = 2;
-
-    if (n < 4)
-        return std::nan("estimation failed");
 
     double h = 0;
     int got_results = 0;  // absents in Matlab original code
@@ -534,6 +534,82 @@ double Entropy<MT>::estimate(
 {
     return entropy_details::estimate(a, *this, sampleSize, threshold, maxIterations);
 }
+
+
+
+
+// ----------------------------------- simple entropy estimator
+
+
+template <typename MT>
+template <typename Container>
+double EntropySimple<MT>::operator()(
+        const Container& data
+) const
+{
+    using T = typename MT::RecordType;
+    using V = typename MT::ValueType;
+
+    if (data.size() < 4)
+        return std::nan("estimation failed");
+
+    if (data.empty() || data[0].empty()) {
+        return std::nan("empty data");;
+    }
+    if (data.size() < k + 1)
+        throw std::invalid_argument("number of points in dataset must be larger than k"); // TODO replace by nan? fix k?
+
+    double N = data.size();
+    double d = data[0].size();
+
+    //add_noise(data); // TODO test
+    metric::Tree<MT> tree(data, -1, metric);
+
+    double entropyEstimate = 0;
+    double log_sum = 0;
+
+    for (std::size_t i = 0; i < N; i++) {
+        auto res = tree.knn(data[i], k + 1);
+        entropyEstimate += std::log(res.back().second);
+    }
+    entropyEstimate = entropyEstimate * d / (double)N; // mean log * d
+    //entropyEstimate += boost::math::digamma(N) - boost::math::digamma(k) + d*std::log(2.0);
+    entropyEstimate += entropy_details::digamma(N) - entropy_details::digamma(k) + d*std::log(2.0);
+
+//    if constexpr (!std::is_same<MT, typename metric::Chebyshev<T>>::value) { // TODO enable after adding Chebychev!!!!!
+//        double p = 1; // Manhatten and other metrics (TODO check if it is correct for them!)
+//        if constexpr (std::is_same<MT, typename metric::Euclidean<T>>::value) {
+//            p = 2; // Euclidean
+//        } else if constexpr (std::is_same<MT, typename metric::P_norm<T>>::value) {
+//            p = metric.p; // general Minkowsky
+//        }
+//        //entropyEstimate += d * std::log(std::tgamma(1 + 1 / p)) - std::log(std::tgamma(1 + d / p)); // boost
+//        entropyEstimate += d * std::log(tgamma(1 + 1 / p)) - std::log(tgamma(1 + d / p));
+//    }
+    entropyEstimate /= std::log(logbase);
+    if (exp)
+        return entropy_details::conv_diff_entropy(entropyEstimate); // conversion of values below 1 to exp scale
+    else
+        return entropyEstimate;
+}
+
+
+
+
+// averaged entropy estimation: code COPIED from mgc.*pp with only mgc replaced with entropy, TODO refactor to avoid code dubbing
+template <typename MT>
+template <typename Container>
+double EntropySimple<MT>::estimate(
+        const Container & a,
+        const size_t sampleSize,
+        const double threshold,
+        size_t maxIterations
+) const
+{
+    return entropy_details::estimate(a, *this, sampleSize, threshold, maxIterations);
+}
+
+
 
 
 
