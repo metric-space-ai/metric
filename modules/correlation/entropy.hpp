@@ -34,7 +34,7 @@ public:
 
     template <typename Container>
     double estimate(
-            const Container & a,
+            const Container& a,
             const size_t sampleSize = 250,
             const double threshold = 0.05,
             size_t maxIterations = 1000
@@ -64,7 +64,7 @@ public:
 
     template <typename Container>
     double estimate(
-            const Container & a,
+            const Container& a,
             const size_t sampleSize = 250,
             const double threshold = 0.05,
             size_t maxIterations = 1000

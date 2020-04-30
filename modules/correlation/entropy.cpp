@@ -354,7 +354,7 @@ double digamma(double x)
 // averaged entropy estimation: code COPIED from mgc.*pp with only mgc replaced with entropy, TODO refactor to avoid code dubbing
 template <typename Container, typename Functor>
 double estimate(
-        const Container & data,
+        const Container& data,
         const Functor& entropy,
         const size_t sampleSize,
         const double threshold,
@@ -526,7 +526,7 @@ double Entropy<MT>::operator()(const Container& data) const
 template <typename MT>
 template <typename Container>
 double Entropy<MT>::estimate(
-        const Container & a,
+        const Container& a,
         const size_t sampleSize,
         const double threshold,
         size_t maxIterations
@@ -600,7 +600,7 @@ double EntropySimple<MT>::operator()(
 template <typename MT>
 template <typename Container>
 double EntropySimple<MT>::estimate(
-        const Container & a,
+        const Container& a,
         const size_t sampleSize,
         const double threshold,
         size_t maxIterations
