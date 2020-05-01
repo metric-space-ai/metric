@@ -12,9 +12,13 @@ Copyright (c) 2019 Panda Team
     #define M_PI 3.14159265358979323846
 #endif
 
+//#include "../../../../3rdparty/Eigen/Dense" // for Eigen example
+//#include <armadillo>  // for Armadillo example, linker parameter: -larmadillo
+
 #include "../../../../modules/mapping.hpp"
 
 #include "../../../../modules/utils/visualizer.hpp"
+
 
 int main()
 {
@@ -88,6 +92,7 @@ int main()
     //using RecType = std::deque<float>;
     using RecType = std::vector<double>;
     //using RecType = blaze::DynamicVector<double>; // also supported
+    //using RecType = arma::Row<double>; // now fails, TODO debug!!
 
     std::vector<RecType> SlicesRV {
         {   1,    0,    0,    0,    0,    0}, // time = 0

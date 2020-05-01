@@ -26,9 +26,7 @@ public:
     using ValueType = contained_value_t<RecordType>;
 
     template <typename R>
-    auto operator()(const R&, const R&) -> DistanceType {
-        return 0;
-    }
+    auto operator()(const R&, const R&) -> DistanceType;
 };
 
 
@@ -43,8 +41,8 @@ class ESN {
 
 public:
 
-    using ValueType = typename MT::ValueType;
     using RecordType = typename MT::RecordType;
+    using ValueType = index_value_type_t<RecordType>; // typename MT::ValueType;
 
     /**
      * @brief Construct a new ESN object
