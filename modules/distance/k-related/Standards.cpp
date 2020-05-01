@@ -19,7 +19,7 @@ namespace metric {
 template <typename RT>
 template <typename R>
 isIterCompatible<R>
-Euclidean<RT>::operator()(const R & a, const R & b) const {
+Euclidean<RT>::operator()(const R& a, const R& b) const {
     if (a.size() != b.size()) {
         DistanceType dnan = std::nan("Input container sizes do not match");
         return dnan;
@@ -35,7 +35,7 @@ Euclidean<RT>::operator()(const R & a, const R & b) const {
 template <typename RT>
 template <typename R>
 isBlazeCompatible<R>
-Euclidean<RT>::operator()(const R & a, const R & b) const {
+Euclidean<RT>::operator()(const R& a, const R& b) const {
     //if (a.size() != b.size()) { // no .size method in martices, TODO restore this check!
         //DistanceType dnan = std::nan("Input container sizes do not match");
         //return dnan;
@@ -52,7 +52,7 @@ Euclidean<RT>::operator()(const R & a, const R & b) const {
 template <typename RT>
 template <typename R>
 isEigenCompatible<R>
-Euclidean<RT>::operator()(const R & a, const R & b) const {
+Euclidean<RT>::operator()(const R& a, const R& b) const {
     if (a.size() != b.size()) {
         DistanceType dnan = std::nan("Input container sizes do not match");
         return dnan;
@@ -75,7 +75,7 @@ typename std::enable_if <
   && container_type<R>::code != 3, // non-Eigen type
  DistanceType
 >::type
-Euclidean_thresholded<RT>::operator()(const R & a, const R & b) const {
+Euclidean_thresholded<RT>::operator()(const R& a, const R& b) const {
     if (a.size() != b.size()) {
         DistanceType dnan = std::nan("Input container sizes do not match");
         return dnan;
@@ -94,7 +94,7 @@ typename std::enable_if <
  std::is_same<R, RT>::value && container_type<R>::code == 2, // Blaze vectors and sparse matrices
  DistanceType
 >::type
-Euclidean_thresholded<RT>::operator()(const R & a, const R & b) const {
+Euclidean_thresholded<RT>::operator()(const R& a, const R& b) const {
     //if (a.size() != b.size()) { // no .size method in martices, TODO restore this check!
         //DistanceType dnan = std::nan("Input container sizes do not match");
         //return dnan;
@@ -111,7 +111,7 @@ typename std::enable_if <
  std::is_same<R, RT>::value && container_type<R>::code == 3, // Eigen, [] to access elements (or we can use Eigen-specific matrix operations)
  DistanceType
 >::type
-Euclidean_thresholded<RT>::operator()(const R & a, const R & b) const {
+Euclidean_thresholded<RT>::operator()(const R& a, const R& b) const {
     if (a.size() != b.size()) {
         DistanceType dnan = std::nan("Input container sizes do not match");
         return dnan;
@@ -123,5 +123,34 @@ Euclidean_thresholded<RT>::operator()(const R & a, const R & b) const {
     return std::min(thres, factor * std::sqrt(sum));
 }
 
+
+template <typename RT>
+template <typename R>
+auto P_norm<RT>::operator()(const R& a, const R& b) const -> DistanceType
+{
+    DistanceType sum = 0;
+    //for (auto [a1, b1] : zip(a, b)) {
+    //    sum += std::pow(std::abs(a1 - b1), p);
+    //}
+    for (size_t i = 0; i < a.size(); ++i) {
+        sum += std::pow(std::abs(a[i] - b[i]), p);
+    }
+    return std::pow(sum, 1 / p);
+}
+
+
+template <typename RT>
+template <typename R>
+auto Chebyshev<RT>::operator()(const R& a, const R& b) const -> DistanceType
+{
+    DistanceType res = 0;
+    //for (auto [a1, b1] : zip(a, b)) {
+    //    res = std::max(res, std::abs(a1 - b1));
+    //}
+    for (size_t i = 0; i < a.size(); ++i) {
+        res = std::max(res, std::abs(a[i] - b[i]));
+    }
+    return res;
+}
 
 }  // namespace metric

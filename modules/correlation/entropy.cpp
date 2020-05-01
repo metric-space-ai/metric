@@ -6,8 +6,6 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 Copyright (c) 2019 Panda Team
 */
 
-// TODO continue refactoring!!
-
 #include "../utils.hpp"
 #include "../../modules/space/tree.hpp"
 //#include "estimator_helpers.hpp"
@@ -362,7 +360,7 @@ double estimate(
 ){
     using T = contained_value_t<Container>; //type_traits::underlying_type_t<Container>;
     //using V = type_traits::index_value_type_t<Container>;
-    using V = index_value_type_t<Container>; // TODO updater to support Blaze, Eigen, etc
+    using V = index_value_type_t<Container>;
     const size_t dataSize = data.size();
 
     // Update maxIterations
@@ -553,9 +551,9 @@ double EntropySimple<MT>::operator()(
     if (data.size() < 4)
         return std::nan("estimation failed");
 
-    if (data.empty() || data[0].empty()) {
-        return std::nan("empty data");;
-    }
+    //if (data.empty() || data[0].empty()) {
+    //    return std::nan("empty data");;
+    //}
     if (data.size() < k + 1)
         throw std::invalid_argument("number of points in dataset must be larger than k"); // TODO replace by nan? fix k?
 
@@ -576,16 +574,16 @@ double EntropySimple<MT>::operator()(
     //entropyEstimate += boost::math::digamma(N) - boost::math::digamma(k) + d*std::log(2.0);
     entropyEstimate += entropy_details::digamma(N) - entropy_details::digamma(k) + d*std::log(2.0);
 
-//    if constexpr (!std::is_same<MT, typename metric::Chebyshev<T>>::value) { // TODO enable after adding Chebychev!!!!!
-//        double p = 1; // Manhatten and other metrics (TODO check if it is correct for them!)
-//        if constexpr (std::is_same<MT, typename metric::Euclidean<T>>::value) {
-//            p = 2; // Euclidean
-//        } else if constexpr (std::is_same<MT, typename metric::P_norm<T>>::value) {
-//            p = metric.p; // general Minkowsky
-//        }
-//        //entropyEstimate += d * std::log(std::tgamma(1 + 1 / p)) - std::log(std::tgamma(1 + d / p)); // boost
-//        entropyEstimate += d * std::log(tgamma(1 + 1 / p)) - std::log(tgamma(1 + d / p));
-//    }
+    if constexpr (!std::is_same<MT, typename metric::Chebyshev<T>>::value) { // TODO test after adding Chebychev!!!!!
+        double p = 1; // Manhatten and other metrics (TODO check if it is correct for them!)
+        if constexpr (std::is_same<MT, typename metric::Euclidean<T>>::value) {
+            p = 2; // Euclidean
+        } else if constexpr (std::is_same<MT, typename metric::P_norm<T>>::value) {
+            p = metric.p; // general Minkowsky
+        }
+        //entropyEstimate += d * std::log(std::tgamma(1 + 1 / p)) - std::log(std::tgamma(1 + d / p)); // boost
+        entropyEstimate += d * std::log(tgamma(1 + 1 / p)) - std::log(tgamma(1 + d / p));
+    }
     entropyEstimate /= std::log(logbase);
     if (exp)
         return entropy_details::conv_diff_entropy(entropyEstimate); // conversion of values below 1 to exp scale

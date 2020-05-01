@@ -47,7 +47,7 @@ int main() {
         std::cout << "entropy_kpN, Euclidean, Blaze: " << ekpn(v)
                   << " | " << ekpn.estimate(v, 2)
                   << std::endl;
-        auto e = metric::Entropy<metric::Euclidean<Record>>(metric::Euclidean<Record>(), 2);
+        auto e = metric::EntropySimple<metric::Euclidean<Record>>(metric::Euclidean<Record>(), 2);
         std::cout << "entropy_simple, Euclidean, Blaze: " << e(v)
                   << " | " << e.estimate(v, 2)
                   << std::endl;
@@ -62,7 +62,7 @@ int main() {
         std::cout << "entropy_kpN, Euclidean, Eigen: " << ekpn(v)
                   << " | " << ekpn.estimate(v, 2)
                   << std::endl;
-        auto e = metric::Entropy<metric::Euclidean<Record>>(metric::Euclidean<Record>(), 2);
+        auto e = metric::EntropySimple<metric::Euclidean<Record>>(metric::Euclidean<Record>(), 2);
         std::cout << "entropy_simple, Euclidean, Blaze: " << e(v)
                   << " | " << e.estimate(v, 2)
                   << std::endl;
@@ -75,12 +75,14 @@ int main() {
         std::cout << "entropy_kpN, Euclidean, Armadillo: " << ekpn(v)
                   << " | " << ekpn.estimate(v, 2)
                   << std::endl;
-        auto e = metric::Entropy<metric::Euclidean<Record>>(metric::Euclidean<Record>(), 2);
+        auto e = metric::EntropySimple<metric::Euclidean<Record>>(metric::Euclidean<Record>(), 2);
         std::cout << "entropy_simple, Euclidean, Blaze: " << e(v)
                   << " | " << e.estimate(v, 2)
                   << std::endl;
     }
 #endif
+
+    // TODO add examples for different metric types and default metrics, test well
 
     std::cout << std::endl;
 

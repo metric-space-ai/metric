@@ -25,17 +25,17 @@ public:
 
     template <typename R>
     isIterCompatible<R>
-    operator()(const R & a, const R & b) const;
+    operator()(const R& a, const R& b) const;
 
     // Blaze vectors and sparse matrices
     template <typename R>
     isBlazeCompatible<R>
-    operator()(const R & a, const R & b) const;
+    operator()(const R& a, const R& b) const;
 
     // Eigen, [] to access elements (or we can use Eigen-specific matrix operations)
     template <typename R>
     isEigenCompatible<R>
-    operator()(const R & a, const R & b) const;
+    operator()(const R& a, const R& b) const;
 
 };
 
@@ -60,21 +60,21 @@ public:
       && container_type<R>::code != 3, // non-Eigen type
      DistanceType
     >::type
-    operator()(const R & a, const R & b) const;
+    operator()(const R& a, const R& b) const;
 
     template <typename R>
     typename std::enable_if <
      std::is_same<R, RT>::value && container_type<R>::code == 2, // Blaze vectors and sparse matrices
      DistanceType
     >::type
-    operator()(const R & a, const R & b) const;
+    operator()(const R& a, const R& b) const;
 
     template <typename R>
     typename std::enable_if <
      std::is_same<R, RT>::value && container_type<R>::code == 3, // Eigen, [] to access elements (or we can use Eigen-specific matrix operations)
      DistanceType
     >::type
-    operator()(const R & a, const R & b) const;
+    operator()(const R& a, const R& b) const;
 
 private:
 
@@ -82,6 +82,73 @@ private:
     double factor = 3000.0;
 
 };
+
+
+
+
+/**
+ * @class P_norm
+ *
+ * @brief Minkowski (L general) Metric
+ *
+ */
+template <typename RT>
+class P_norm {
+public:
+    using RecordType = RT;
+    using ValueType = contained_value_t<RecordType>;
+    //using typename BaseMetric<RT>::ValueType;
+    static_assert(std::is_floating_point<ValueType>::value, "T must be a float type");
+    /**
+     * @brief Construct a new P_norm object
+     *
+     * @param p_
+     */
+    P_norm(const ValueType& p)
+        : p(p)
+    {
+    }
+
+    /**
+     * @brief calculate Minkowski distance
+     *
+     * @param a first vector
+     * @param b second vector
+     * @return Minkowski distance between a and b
+     */
+    template <typename R>
+    auto operator()(const R& a, const R& b) const -> DistanceType;
+
+private:
+    ValueType p = 1;
+};
+
+
+
+/**
+ * @class Chebyshev
+ *
+ * @brief P. Chebyshev's metric
+ *
+ */
+template <typename RT>
+class Chebyshev {
+public:
+    using RecordType = RT;
+    using ValueType = contained_value_t<RecordType>;
+    //using typename BaseMetric<RT>::ValueType;
+    static_assert(std::is_floating_point<ValueType>::value, "T must be a float type");
+    /**
+     * @brief calculate chebyshev metric
+     *
+     * @param lhs first container
+     * @param rhs second container
+     * @return Chebyshev distance between lhs and rhs
+     */
+    template <typename R>
+    auto operator()(const R& a, const R& b) const -> DistanceType;
+};
+
 
 
 // test code to show how type detection works, TODO remove
@@ -172,6 +239,8 @@ public:
     }
 
 };
+
+
 
 
 }  // namespace metric
