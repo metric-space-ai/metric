@@ -8,9 +8,9 @@ Copyright (c) 2018 Panda Team
 
 
 // select here any single option to choose example data type:
-//#define USE_STL // STL containers
+#define USE_STL // STL containers
 //#define USE_BLAZE // Blaze DynamicVector
-#define USE_EIGEN // Eigen Array
+//#define USE_EIGEN // Eigen Array
 //#define USE_ARMA // Armadillo Row, requires linker parameter: -larmadillo
 
 #include "../../modules/distance.hpp"

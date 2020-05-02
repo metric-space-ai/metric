@@ -146,6 +146,12 @@ struct isIterCompatibleStruct<C, 0>
     constexpr static bool value = true;
 };
 
+template<typename C>
+struct isIterCompatibleStruct<C, 4>
+{
+    constexpr static bool value = true;
+};
+
 template <typename T>
 using isIterCompatible = std::enable_if_t<isIterCompatibleStruct<T>::value, DistanceType>;
 
