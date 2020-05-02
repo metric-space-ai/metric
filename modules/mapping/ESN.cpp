@@ -13,6 +13,7 @@ Copyright (c) 2019 Panda Team
 
 #include <cassert>
 
+
 namespace metric {
 
 namespace ESN_details {
@@ -262,7 +263,7 @@ ESN<MT>::blaze2RecType(const blaze::DynamicMatrix<contained_value_t<R>> & In) {
 template <typename MT>
 template <typename R>
 typename std::enable_if<
- container_type<R>::code == 2,
+ container_type<R>::code == 2 || container_type<R>::code == 4,
  std::vector<R>
 >::type
 ESN<MT>::blaze2RecType(const blaze::DynamicMatrix<contained_value_t<R>> & In) { // only blaze row-vector
@@ -270,13 +271,29 @@ ESN<MT>::blaze2RecType(const blaze::DynamicMatrix<contained_value_t<R>> & In) { 
     for (size_t i = 0; i < In.columns(); ++i) {
         RecordType rec(In.rows()); // blaze specific
         for (size_t j = 0; j < In.rows(); ++j)
-            rec[j] = In(j, i);  // blaze specific  // transpose
+            rec[j] = In(j, i);  // blaze & Armadillo specific  // transpose
         Out.push_back(rec);
     }
     return Out;
 }
 
 
+//template <typename MT>
+//template <typename R>
+//typename std::enable_if <
+// container_type<R>::code == 4,
+// std::vector<R>
+//>::type
+//ESN<MT>::blaze2RecType(const blaze::DynamicMatrix<contained_value_t<R>> & In) {
+//    std::vector<RecordType> Out;
+//    for (size_t i = 0; i < In.columns(); ++i) {
+//        RecordType rec;
+//        for (size_t j = 0; j < In.rows(); ++j)
+//            rec.push_back(In(j, i)); // transpose
+//        Out.push_back(rec);
+//    }
+//    return Out;
+//}
 
 
 

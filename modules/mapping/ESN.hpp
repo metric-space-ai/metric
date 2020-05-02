@@ -120,10 +120,18 @@ private:
 
     template <typename R>
     typename std::enable_if<
-     container_type<R>::code == 2,
+     container_type<R>::code == 2 || container_type<R>::code == 4,
      std::vector<R>
     >::type
     blaze2RecType(const blaze::DynamicMatrix<contained_value_t<R>> & In);
+
+//    template <typename R>
+//    typename std::enable_if<
+//     container_type<R>::code == 4,
+//     std::vector<R>
+//    >::type
+//    blaze2RecType(const blaze::DynamicMatrix<contained_value_t<R>> & In);
+
 
 };  // class ESN
 
