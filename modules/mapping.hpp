@@ -25,7 +25,7 @@ Copyright (c) PANDA Team
 
 //#include "mapping/SOM.hpp"
 //#include "mapping/PCFA.hpp"
-#include "mapping/ESN.hpp"
+#include "mapping/esn.hpp"
 //#include "mapping/ensembles.hpp"
 //#include "mapping/affprop.hpp"
 //#include "mapping/dbscan.hpp"

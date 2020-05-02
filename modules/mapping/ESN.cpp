@@ -9,7 +9,7 @@ Copyright (c) 2019 Panda Team
 #ifndef _METRIC_MAPPING_ESN_CPP
 #define _METRIC_MAPPING_ESN_CPP
 
-#include "ESN.hpp"
+#include "esn.hpp"
 
 #include <cassert>
 

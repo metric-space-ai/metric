@@ -25,7 +25,7 @@ using DistanceType = double;
 
 //-------- common type trait metafunctions
 
-enum class Container {OTHER = 0, STL = 1, BLAZE = 2, EIGEN = 4};
+enum class Container {OTHER = 0, STL = 1, BLAZE = 2, EIGEN = 3};
 
 
 
@@ -55,6 +55,11 @@ struct container_type<Container<ValueType, _Rows, _Cols, _Options, _MaxRows, _Ma
     constexpr static int code = 3; // Eigen::Array
 };
 
+template <template <typename> class Container, typename ValueType>
+struct container_type<Container<ValueType>>
+{
+    constexpr static int code = 4; // arma::Row
+};
 
 
 // contained_value_t - type of element detected for any supported container
@@ -194,7 +199,7 @@ using isEigenCompatible = std::enable_if_t<isEigenCompatibleStruct<T>::value, Di
  *
  */
 template <typename T>
-class is_has_index_operator {
+class has_index_operator {
     struct nil_t {
     };
     template <typename U>
@@ -215,7 +220,7 @@ public:
  * @tparam T Container type
  */
 template <typename T>
-using index_value_type_t = typename is_has_index_operator<T>::type;
+using index_value_type_t = typename has_index_operator<T>::type;
 
 
 
