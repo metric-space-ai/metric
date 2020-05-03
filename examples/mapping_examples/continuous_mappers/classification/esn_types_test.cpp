@@ -10,10 +10,10 @@
 
 int main() {
 
-    //using Record = std::deque<double>;
-    using Record = blaze::DynamicVector<double>;
+    using Record = std::deque<double>;
+    //using Record = blaze::DynamicVector<double>;
     //using Record = Eigen::Array<double, 1, Eigen::Dynamic>; // TODO add support
-    //using Record = arma::Row<double>; // TODO add overloads (OR CHANGE the whole type detection scheme?..)
+    //using Record = arma::Row<double>; // maybe it's better to CHANGE the whole type detection scheme..
 
     std::vector<Record> data = { {1, 2, 3, 4}, {5, 6, 7, 8}, {9, 10, 11, 12} };
     std::vector<Record> target = { {0, 1}, {1, 2}, {2, 3} };
