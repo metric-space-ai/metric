@@ -78,4 +78,10 @@ BOOST_AUTO_TEST_CASE(network_json)
 	nt.load("net.cereal");
 
 	BOOST_CHECK_EQUAL(json, nt.toJson());
+
+	std::stringstream ss;
+	nt.save(ss);
+	nt.load(ss);
+
+	BOOST_CHECK_EQUAL(json, nt.toJson());
 }
