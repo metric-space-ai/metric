@@ -83,129 +83,128 @@ class Conv2d: public Layer<Scalar>
                const int inputChannels, const int outputChannels,
                const int kernelWidth, const int kernelHeight,
                const size_t stride = 1) :
-											Layer<Scalar>(inputWidth * inputHeight * inputChannels,
-											  ((inputWidth - kernelWidth) / stride + 1) *
-											    ((inputHeight - kernelHeight) / stride + 1) * outputChannels),
+                                            Layer<Scalar>(inputWidth * inputHeight * inputChannels,
+                                              ((inputWidth - kernelWidth) / stride + 1) *
+                                                ((inputHeight - kernelHeight) / stride + 1) * outputChannels),
 
-											  inputWidth(inputWidth), inputHeight(inputHeight),
-											  kernelWidth(kernelWidth), kernelHeight(kernelHeight),
-											  inputChannels(inputChannels), outputChannels(outputChannels),
-											  stride(stride),
-											  outputWidth((inputWidth - kernelWidth) / stride + 1),
-											  outputHeight((inputHeight - kernelHeight) / stride + 1)
+                                              inputWidth(inputWidth), inputHeight(inputHeight),
+                                              kernelWidth(kernelWidth), kernelHeight(kernelHeight),
+                                              inputChannels(inputChannels), outputChannels(outputChannels),
+                                              stride(stride),
+                                              outputWidth((inputWidth - kernelWidth) / stride + 1),
+                                              outputHeight((inputHeight - kernelHeight) / stride + 1)
         {
-	        this->inputSize = inputChannels * inputWidth * inputHeight;
-	        this->outputSize = outputChannels * outputWidth * outputHeight;
+            this->inputSize = inputChannels * inputWidth * inputHeight;
+            this->outputSize = outputChannels * outputWidth * outputHeight;
 
-	        // Set data dimension
-	        const int kernelDataSize = inputChannels * outputChannels * kernelWidth * kernelHeight;
+            // Set data dimension
+            const int kernelDataSize = inputChannels * outputChannels * kernelWidth * kernelHeight;
 
-	        kernelsData.resize(kernelDataSize);
-	        df_data.resize(kernelDataSize);
+            kernelsData.resize(kernelDataSize);
+            df_data.resize(kernelDataSize);
 
-	        // Bias term
-	        bias.resize(outputChannels);
-	        db.resize(outputChannels);
+            // Bias term
+            bias.resize(outputChannels);
+            db.resize(outputChannels);
 
-	        isTranspose = false;
+            isTranspose = false;
 
-	        calculateUnrolledKernelStructure();
-	        getUnrolledKernel();
+            calculateUnrolledKernelStructure();
+            getUnrolledKernel();
         }
 
-		Conv2d(const nlohmann::json& json) : inputWidth(json["inputWidth"].get<int>()),
-		                                     inputHeight(json["inputHeight"].get<int>()),
-		                                     kernelWidth(json["kernelWidth"].get<int>()),
-		                                     kernelHeight(json["kernelHeight"].get<int>()),
-		                                     inputChannels(json["inputChannels"].get<int>()),
-		                                     outputChannels(json["outputChannels"].get<int>()),
-		                                     stride(json["stride"].get<int>())
-		{
-			outputWidth = (inputWidth - kernelWidth) / stride + 1;
-			outputHeight = (inputHeight - kernelHeight) / stride + 1;
+        Conv2d(const nlohmann::json& json) : inputWidth(json["inputWidth"].get<int>()),
+                                             inputHeight(json["inputHeight"].get<int>()),
+                                             kernelWidth(json["kernelWidth"].get<int>()),
+                                             kernelHeight(json["kernelHeight"].get<int>()),
+                                             inputChannels(json["inputChannels"].get<int>()),
+                                             outputChannels(json["outputChannels"].get<int>()),
+                                             stride(json["stride"].get<int>())
+        {
+            outputWidth = (inputWidth - kernelWidth) / stride + 1;
+            outputHeight = (inputHeight - kernelHeight) / stride + 1;
 
-			this->inputSize = inputChannels * inputWidth * inputHeight;
-			this->outputSize = outputChannels * outputWidth * outputHeight;
+            this->inputSize = inputChannels * inputWidth * inputHeight;
+            this->outputSize = outputChannels * outputWidth * outputHeight;
 
-			// Set data dimension
-			const int kernelDataSize = inputChannels * outputChannels * kernelWidth * kernelHeight;
+            // Set data dimension
+            const int kernelDataSize = inputChannels * outputChannels * kernelWidth * kernelHeight;
 
-			kernelsData.resize(kernelDataSize);
-			df_data.resize(kernelDataSize);
+            kernelsData.resize(kernelDataSize);
+            df_data.resize(kernelDataSize);
 
-			// Bias term
-			bias.resize(outputChannels);
-			db.resize(outputChannels);
+            // Bias term
+            bias.resize(outputChannels);
+            db.resize(outputChannels);
 
-			isTranspose = false;
-			calculateUnrolledKernelStructure();
-			getUnrolledKernel();
-		}
+            isTranspose = false;
+            calculateUnrolledKernelStructure();
+            getUnrolledKernel();
+        }
 
-		void init(const Scalar& mu, const Scalar& sigma, std::mt19937& rng)
-		{
-
+        void init(const Scalar& mu, const Scalar& sigma, std::mt19937& rng)
+        {
             // Random initialization of filter parameters
             internal::set_normal_random(kernelsData.data(), kernelsData.size(), rng, mu, sigma);
 
             internal::set_normal_random(bias.data(), outputChannels, rng, mu, sigma);
 
-			getUnrolledKernel();
-		}
+            getUnrolledKernel();
+        }
 
-		void init(const std::map<std::string, std::shared_ptr<Initializer<Scalar>>> initializers)
-		{
-			initializers.at("normal")->init(kernelsData.size(), kernelsData);
-			initializers.at("zero")->init(bias.size(), bias);
-		}
-
-		void calculateUnrolledKernelStructure()
+        void init(const std::map<std::string, std::shared_ptr<Initializer<Scalar>>> initializers)
         {
-	        /* Init unrolled kernels */
-			unrolledKernels.resize(outputChannels, SparseMatrix(inputChannels * inputWidth * inputHeight,
-		                                                            outputWidth * outputHeight));
+            initializers.at("normal")->init(kernelsData.size(), kernelsData);
+            initializers.at("zero")->init(bias.size(), bias);
+        }
 
-			auto& unrolledKernel = unrolledKernels[0];
-			unrolledKernel.reserve(unrolledKernel.columns() * kernelWidth * kernelHeight);
-			//for (auto j = 0; j < unrolledKernel.columns(); ++j) {
-			//	unrolledKernel.reserve(j, kernelWidth * kernelHeight);
-				//unrolledKernel.finalize(j);
-			//}
+        void calculateUnrolledKernelStructure()
+        {
+            /* Init unrolled kernels */
+            unrolledKernels.resize(outputChannels, SparseMatrix(inputChannels * inputWidth * inputHeight,
+                                                                outputWidth * outputHeight));
 
-	        const size_t dr = (isTranspose ? outputWidth : inputWidth) - kernelWidth;
+            auto& unrolledKernel = unrolledKernels[0];
+            unrolledKernel.reserve(unrolledKernel.columns() * kernelWidth * kernelHeight);
+            //for (auto j = 0; j < unrolledKernel.columns(); ++j) {
+            //	unrolledKernel.reserve(j, kernelWidth * kernelHeight);
+                    //unrolledKernel.finalize(j);
+            //}
 
-	        kernelRow.resize(1, kernelWidth * kernelHeight + (kernelHeight - 1) * dr);
+            const size_t dr = (isTranspose ? outputWidth : inputWidth) - kernelWidth;
 
-			iDeltas.resize(kernelWidth * kernelHeight);
+            kernelRow.resize(1, kernelWidth * kernelHeight + (kernelHeight - 1) * dr);
 
-			size_t p = 0;
-			for (size_t i = 0; i < iDeltas.size(); ++i) {
-				iDeltas[i] = ++p;
+            iDeltas.resize(kernelWidth * kernelHeight);
 
-				if ((i + 1) % kernelWidth == 0) {
-					p += dr;
-				}
-			}
+            size_t p = 0;
+            for (size_t i = 0; i < iDeltas.size(); ++i) {
+                    iDeltas[i] = ++p;
 
-			if (!isTranspose) {
-				jDeltas.resize(outputWidth * outputHeight);
-			} else {
-				jDeltas.resize(inputWidth * inputHeight);
-			}
+                    if ((i + 1) % kernelWidth == 0) {
+                            p += dr;
+                    }
+            }
 
-			/* Fill unrolled kernel */
-			const size_t fromWidth = isTranspose ? outputWidth : inputWidth;
-			size_t j00 = 0;
-			size_t j0 = 0;
-			for (size_t i = 0; i < jDeltas.size(); ++i) {
-				jDeltas[i] = (j00 * fromWidth) + j0;
+            if (!isTranspose) {
+                    jDeltas.resize(outputWidth * outputHeight);
+            } else {
+                    jDeltas.resize(inputWidth * inputHeight);
+            }
 
-				j0 += stride;
-				if (j0 + kernelWidth > fromWidth) {
-					j0 = 0;
-					j00 += stride;
-				}
-			}
+            /* Fill unrolled kernel */
+            const size_t fromWidth = isTranspose ? outputWidth : inputWidth;
+            size_t j00 = 0;
+            size_t j0 = 0;
+            for (size_t i = 0; i < jDeltas.size(); ++i) {
+                    jDeltas[i] = (j00 * fromWidth) + j0;
+
+                    j0 += stride;
+                    if (j0 + kernelWidth > fromWidth) {
+                            j0 = 0;
+                            j00 += stride;
+                    }
+            }
         }
 
         void getUnrolledKernel()
