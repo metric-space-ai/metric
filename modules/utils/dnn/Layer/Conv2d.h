@@ -209,57 +209,57 @@ class Conv2d: public Layer<Scalar>
 
         void getUnrolledKernel()
         {
-	        const size_t kernelOneLength = kernelWidth * kernelHeight;
-	        const size_t kernelOutputChannelLength = inputChannels * kernelOneLength;
+            const size_t kernelOneLength = kernelWidth * kernelHeight;
+            const size_t kernelOutputChannelLength = inputChannels * kernelOneLength;
 
-			for (size_t outputChannel = 0; outputChannel < outputChannels; ++outputChannel) {
-				auto &unrolledKernelInputChannels = unrolledKernels[outputChannel];
-				auto kernelDataInputChannels = blaze::subvector(kernelsData, outputChannel * kernelOutputChannelLength, kernelOutputChannelLength);
+            for (size_t outputChannel = 0; outputChannel < outputChannels; ++outputChannel) {
+                auto &unrolledKernelInputChannels = unrolledKernels[outputChannel];
+                auto kernelDataInputChannels = blaze::subvector(kernelsData, outputChannel * kernelOutputChannelLength, kernelOutputChannelLength);
 
-				const size_t unrolledKernelRowsNumber = unrolledKernelInputChannels.rows() / inputChannels;
-				for (size_t inputChannel = 0; inputChannel < inputChannels; ++inputChannel) {
-					auto unrolledKernel = blaze::submatrix(unrolledKernelInputChannels,
-															inputChannel * unrolledKernelRowsNumber, 0,
-															unrolledKernelRowsNumber, unrolledKernelInputChannels.columns());
+                const size_t unrolledKernelRowsNumber = unrolledKernelInputChannels.rows() / inputChannels;
+                for (size_t inputChannel = 0; inputChannel < inputChannels; ++inputChannel) {
+                    auto unrolledKernel = blaze::submatrix(unrolledKernelInputChannels,
+                                                            inputChannel * unrolledKernelRowsNumber, 0,
+                                                                unrolledKernelRowsNumber, unrolledKernelInputChannels.columns());
 
-					auto kernelData = blaze::subvector(kernelDataInputChannels, inputChannel * kernelOneLength, kernelOneLength);
-
-
-					/* Construct kernel row (convolutional for one output pixel) */
-					for (size_t i = 0; i < iDeltas.size(); ++i) {
-						kernelRow(0, iDeltas[i]) = kernelData[i];
-					}
+                                    auto kernelData = blaze::subvector(kernelDataInputChannels, inputChannel * kernelOneLength, kernelOneLength);
 
 
-					/* Fill unrolled kernel */
-					if (isTranspose) {
-						for (size_t i = 0; i < unrolledKernel.rows(); ++i) {
-							assert(unrolledKernel.rows() == jDeltas.size());
-							//std::cout << i << " " << jDeltas[i] << std::endl;
-							assert(jDeltas[i] + kernelRow.columns() <= unrolledKernel.columns());
-							//blaze::submatrix(unrolledKernel, i, jDeltas[i], 1, kernelRow.columns()) = kernelRow;
-							for (size_t j = 0; j < kernelRow.columns(); ++j) {
-								unrolledKernel(i, jDeltas[i] + j) = kernelRow(0, j);
-							}
-						}
-					} else {
-						std::cout << unrolledKernel.capacity() << std::endl;
-						std::cout << blaze::column(unrolledKernel, 0).capacity() << std::endl;
-						for (size_t i = 0; i < unrolledKernel.columns(); ++i) {
-							//blaze::submatrix(unrolledKernel, jDeltas[i], i, kernelRow.columns(), 1) = blaze::trans(kernelRow);
-							/*for (size_t j = 0; j < kernelRow.columns(); ++j) {
-								unrolledKernel(jDeltas[i] + j, i) = kernelRow(0, j);
-							}
-							 */
-							for (auto element = kernelRow.begin(0); element != kernelRow.end(0); ++element) {
-								//unrolledKernel(jDeltas[i] + element->index(), i) = element->value();
-								unrolledKernel.append(jDeltas[i] + element->index(), i, element->value());
-							}
-							unrolledKernel.finalize(i);
-						}
-					}
-				}
-			}
+                                    /* Construct kernel row (convolutional for one output pixel) */
+                                    for (size_t i = 0; i < iDeltas.size(); ++i) {
+                                            kernelRow(0, iDeltas[i]) = kernelData[i];
+                                    }
+
+
+                                    /* Fill unrolled kernel */
+                                    if (isTranspose) {
+                                            for (size_t i = 0; i < unrolledKernel.rows(); ++i) {
+                                                    assert(unrolledKernel.rows() == jDeltas.size());
+                                                    //std::cout << i << " " << jDeltas[i] << std::endl;
+                                                    assert(jDeltas[i] + kernelRow.columns() <= unrolledKernel.columns());
+                                                    //blaze::submatrix(unrolledKernel, i, jDeltas[i], 1, kernelRow.columns()) = kernelRow;
+                                                    for (size_t j = 0; j < kernelRow.columns(); ++j) {
+                                                            unrolledKernel(i, jDeltas[i] + j) = kernelRow(0, j);
+                                                    }
+                                            }
+                                    } else {
+                                            std::cout << unrolledKernel.capacity() << std::endl;
+                                            std::cout << blaze::column(unrolledKernel, 0).capacity() << std::endl;
+                                            for (size_t i = 0; i < unrolledKernel.columns(); ++i) {
+                                                    //blaze::submatrix(unrolledKernel, jDeltas[i], i, kernelRow.columns(), 1) = blaze::trans(kernelRow);
+                                                    /*for (size_t j = 0; j < kernelRow.columns(); ++j) {
+                                                            unrolledKernel(jDeltas[i] + j, i) = kernelRow(0, j);
+                                                    }
+                                                     */
+                                                    for (auto element = kernelRow.begin(0); element != kernelRow.end(0); ++element) {
+                                                            //unrolledKernel(jDeltas[i] + element->index(), i) = element->value();
+                                                            unrolledKernel.append(jDeltas[i] + element->index(), i, element->value());
+                                                    }
+                                                    unrolledKernel.finalize(i);
+                                            }
+                                    }
+                            }
+                    }
         }
 
 
