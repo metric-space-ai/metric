@@ -78,7 +78,7 @@ class Layer
 
         virtual std::vector<size_t> getOutputShape() const = 0;
 
-		virtual void init(const std::map<std::string, std::shared_ptr<Initializer<Scalar>>> initializer) = 0;
+        virtual void init(const std::map<std::string, std::shared_ptr<Initializer<Scalar>>> initializer) = 0;
 
 	///
         /// Initialize layer parameters using \f$N(\mu, \sigma^2)\f$ distribution
