@@ -111,23 +111,6 @@ private:
 
     blaze::DynamicMatrix<ValueType> vector_to_blaze(const std::vector<RecordType> & In);
 
-//    template <typename R>
-//    typename std::enable_if <
-//     container_type<R>::code == 1,
-//     std::vector<R>
-//    >::type
-//    //blaze2RecType(const blaze::DynamicMatrix<contained_value_t<R>> & In);
-//    blaze2RecType(const blaze::DynamicMatrix<index_value_type_t<R>> & In);
-
-//    template <typename R>
-//    typename std::enable_if<
-//     //container_type<R>::code == 2 || container_type<R>::code == 3 || container_type<R>::code == 4,
-//     container_type<R>::code != 1,
-//     std::vector<R>
-//    >::type
-//    //blaze2RecType(const blaze::DynamicMatrix<contained_value_t<R>> & In);
-//    blaze2RecType(const blaze::DynamicMatrix<index_value_type_t<R>> & In);
-
     template <typename R>
     std::vector<R> blaze2RecType(const blaze::DynamicMatrix<index_value_type_t<R>> & In);
 

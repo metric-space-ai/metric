@@ -10,18 +10,18 @@
 
 int main() {
 
-    //using Record = std::deque<double>;
+    using Record = std::deque<double>;
     //using Record = blaze::DynamicVector<double>;
-    using Record = Eigen::Array<double, 1, Eigen::Dynamic>; // TODO add support
+    //using Record = Eigen::Array<double, 1, Eigen::Dynamic>; // TODO add support
     //using Record = arma::Row<double>; // maybe it's better to CHANGE the whole type detection scheme..
 
-    /* // Non-Eigen init
+    //* // Non-Eigen init
     std::vector<Record> data = { {1, 2, 3, 4}, {5, 6, 7, 8}, {9, 10, 11, 12} };
     std::vector<Record> target = { {0, 1}, {1, 2}, {2, 3} };
     std::vector<Record> test = { {5, 6, 7, 8}, {1, 2, 3, 4} };
     // */
 
-    //* // Eigen init
+    /* // Eigen init
     Record r1 (4), r2 (4), r3 (4), t1 (2), t2 (2), t3 (2);
     r1 << 1, 2, 3, 4;
     r2 << 5, 6, 7, 8;

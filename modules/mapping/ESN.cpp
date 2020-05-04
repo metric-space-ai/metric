@@ -242,45 +242,6 @@ ESN<MT>::vector_to_blaze(const std::vector<RecordType> & In) {
 }
 
 
-//template <typename MT>
-//template <typename R>
-//typename std::enable_if <
-// container_type<R>::code == 1,
-// std::vector<R>
-//>::type
-////ESN<MT>::blaze2RecType(const blaze::DynamicMatrix<contained_value_t<R>> & In) {
-//ESN<MT>::blaze2RecType(const blaze::DynamicMatrix<index_value_type_t<R>> & In) {
-//    std::vector<RecordType> Out;
-//    for (size_t i = 0; i < In.columns(); ++i) {
-//        RecordType rec;
-//        for (size_t j = 0; j < In.rows(); ++j)
-//            rec.push_back(In(j, i)); // transpose
-//        Out.push_back(rec);
-//    }
-//    return Out;
-//}
-
-
-//template <typename MT>
-//template <typename R>
-//typename std::enable_if<
-// //container_type<R>::code == 2 || container_type<R>::code == 3 || container_type<R>::code == 4,
-// container_type<R>::code != 1,
-// std::vector<R>
-//>::type
-////ESN<MT>::blaze2RecType(const blaze::DynamicMatrix<contained_value_t<R>> & In) {
-//ESN<MT>::blaze2RecType(const blaze::DynamicMatrix<index_value_type_t<R>> & In) {
-//    std::vector<RecordType> Out;
-//    for (size_t i = 0; i < In.columns(); ++i) {
-//        RecordType rec(In.rows()); // blaze specific
-//        for (size_t j = 0; j < In.rows(); ++j)
-//            rec[j] = In(j, i);  // blaze & Armadillo specific  // transpose
-//        Out.push_back(rec);
-//    }
-//    return Out;
-//}
-
-
 template <typename MT>
 template <typename R>
 std::vector<R> ESN<MT>::blaze2RecType(const blaze::DynamicMatrix<index_value_type_t<R>> & In) {
