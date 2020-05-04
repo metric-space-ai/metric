@@ -89,6 +89,12 @@ struct contained_value<C, 3>
 };
 
 template<typename C>
+struct contained_value<C, 4>
+{
+    using type = typename C::elem_type;
+};
+
+template<typename C>
 using contained_value_t = typename contained_value<C>::type;
 
 
