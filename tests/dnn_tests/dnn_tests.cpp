@@ -100,7 +100,7 @@ BOOST_AUTO_TEST_CASE(convolutional)
 
 	convLayer.forward(X);
 
-	blaze::DynamicMatrix<double> Y {{20, 26, 38, 44}};
+	blaze::DynamicMatrix<double> Y {{20, 26, 38, 44, 53, 75, 119, 141}};
 
 	std::cout << convLayer.output() << std::endl;
 	BOOST_CHECK_EQUAL(convLayer.output(), Y);

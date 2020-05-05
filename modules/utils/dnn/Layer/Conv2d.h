@@ -176,7 +176,7 @@ class Conv2d: public Layer<Scalar>
 
             size_t p = 0;
             for (size_t i = 0; i < iDeltas.size(); ++i) {
-                iDeltas[i] = ++p;
+                iDeltas[i] = p++;
 
                 if ((i + 1) % kernelWidth == 0) {
                         p += dr;
@@ -277,31 +277,32 @@ class Conv2d: public Layer<Scalar>
             // Each row is an observation
             const int nobs = prev_layer_data.rows();
 
-	        // Linear term, z = conv(in, w) + b
+            // Linear term, z = conv(in, w) + b
             z.resize(nobs, this->outputSize);
 
 
-	        //cout << prev_layer_data;
-	        //cout << getUnrolledKernel() << endl;
-	        //cout << m_filter_data << endl;
-	        //cout << unrolledKernel << endl;
-	        const int channel_nelem = outputWidth * outputHeight;
+            //cout << prev_layer_data;
+            //cout << getUnrolledKernel() << endl;
+            //cout << m_filter_data << endl;
+            //cout << unrolledKernel << endl;
+            const int channel_nelem = outputWidth * outputHeight;
 
-			for (size_t channel = 0; channel < outputChannels; ++channel) {
-				blaze::submatrix(z, 0, channel * channel_nelem, nobs, channel_nelem) = prev_layer_data * unrolledKernels[channel];
-			}
+            for (size_t channel = 0; channel < outputChannels; ++channel) {
+                blaze::submatrix(z, 0, channel * channel_nelem, nobs, channel_nelem) = prev_layer_data * unrolledKernels[channel];
+                std::cout << unrolledKernels[channel] << std::endl;
+            }
 
 
-	        // Add bias terms
+	    // Add bias terms
             // Each row of z contains m_dim.out_channels channels, and each channel has
             // m_dim.conv_rows * m_dim.conv_cols elements
             int channel_start_row = 0;
-	        for (int i = 0; i < outputChannels; i++, channel_start_row += channel_nelem) {
-		        submatrix(z, 0, channel_start_row, nobs, channel_nelem) += bias[i];
-	        }
+            for (int i = 0; i < outputChannels; i++, channel_start_row += channel_nelem) {
+                submatrix(z, 0, channel_start_row, nobs, channel_nelem) += bias[i];
+            }
 
 
-	        /* Apply activation function */
+            /* Apply activation function */
             a.resize(nobs, this->outputSize);
             Activation::activate(z, a);
         }
