@@ -128,12 +128,15 @@ namespace wavelet {
 template <typename Container>
 Container conv_valid(Container const& f, Container const& g)
 {
+    using El = types::index_value_type_t<Container>;
+
     int const nf = f.size();
     int const ng = g.size();
     Container const& min_v = (nf < ng) ? f : g;
     Container const& max_v = (nf < ng) ? g : f;
     int const n = std::max(nf, ng) - std::min(nf, ng) + 1;
-    Container out(n, typename Container::value_type());
+    //Container out(n, typename Container::value_type());
+    Container out(n, El());
     for (auto i(0); i < n; ++i) {
         for (int j(min_v.size() - 1), k(i); j >= 0; --j) {
             out[i] += min_v[j] * max_v[k];
@@ -148,10 +151,13 @@ Container conv_valid(Container const& f, Container const& g)
 template <typename Container>
 Container conv(Container const& f, Container const& g)
 {
+    using El = types::index_value_type_t<Container>;
+
     int const nf = f.size();
     int const ng = g.size();
     int const n = nf + ng - 1;
-    Container out(n, typename Container::value_type());
+    //Container out(n, typename Container::value_type());
+    Container out(n, El());
     for (auto i(0); i < n; ++i) {
         int const jmn = (i >= ng - 1) ? i - (ng - 1) : 0;
         int const jmx = (i < nf - 1) ? i : nf - 1;
@@ -817,7 +823,8 @@ Container upsconv(Container const& x, Container const& f, int len)
 
 
 template <typename Container>
-Container dbwavf(int const wnum, typename Container::value_type returnTypeExample)
+//Container dbwavf(int const wnum, typename Container::value_type returnTypeExample)
+Container dbwavf(int const wnum, types::index_value_type_t<Container> returnTypeExample)
 {
     static const std::vector<std::function<Container()>> F { []() {
                                                                      Container F0 = {};
@@ -891,9 +898,14 @@ Container dbwavf(int const wnum, typename Container::value_type returnTypeExampl
 template <typename Container>
 std::tuple<Container, Container, Container, Container> orthfilt(Container const& W_in)
 {
+    using El = types::index_value_type_t<Container>;
 
     auto qmf = [](Container const& x) {
-        Container y(x.rbegin(), x.rend());
+        //Container y(x.rbegin(), x.rend());
+        Container y(x.size());
+        for (size_t i = 0; i<x.size(); ++i)
+            y[i] = x[x.size()-1-i];
+
         auto isEven = [](int n) {
             if (n % 2 == 0)
                 return true;
@@ -912,21 +924,33 @@ std::tuple<Container, Container, Container, Container> orthfilt(Container const&
         return y;
     };
     auto sqrt = [](Container const& x) {
-        Container out;
+        //Container out;
         //out.reserve(x.size());
+        Container out(x.size());
         for (int i = 0; i < x.size(); ++i) {
-            out.push_back(std::sqrt(2) * (x[i]));
+            //out.push_back(std::sqrt(2) * (x[i]));
+            out[i] = std::sqrt(2) * (x[i]);
         }
 
         return out;
     };
 
-    typename Container::value_type W_in_sum = std::accumulate(W_in.begin(), W_in.end(), 0);
+    //typename Container::value_type W_in_sum = std::accumulate(W_in.begin(), W_in.end(), 0);
+    El W_in_sum = 0;
+    for (size_t i = 0; i<W_in.size(); ++i)
+        W_in_sum += W_in[i];
 
     Container Lo_R = sqrt(W_in);
     Container Hi_R = qmf(Lo_R);
-    Container Hi_D(Hi_R.rbegin(), Hi_R.rend());
-    Container Lo_D(Lo_R.rbegin(), Lo_R.rend());
+    //Container Hi_D(Hi_R.rbegin(), Hi_R.rend());
+    Container Hi_D(Hi_R.size());
+    for (size_t i = 0; i<Hi_R.size(); ++i)
+        Hi_D[i] = Hi_R[Hi_R.size()-1-i];
+    //Container Lo_D(Lo_R.rbegin(), Lo_R.rend());
+    Container Lo_D(Lo_R.size());
+    for (size_t i = 0; i<Lo_R.size(); ++i)
+        Lo_D[i] = Lo_R[Lo_R.size()-1-i];
+
 
     return { Lo_D, Hi_D, Lo_R, Hi_R };
 }

@@ -20,6 +20,49 @@
 
 namespace wavelet {
 
+
+namespace types {
+
+// type traits // TODO move to some commonly included file
+
+
+/**
+ * @brief if T is a container and implemented operator[] value is true, otherwise value is false
+ *
+ * @tparam T checking type
+ *
+ */
+template <typename T>
+class has_index_operator {
+    struct nil_t {
+    };
+    template <typename U>
+    static constexpr auto test(U*) -> decltype(std::declval<U&>()[0]);
+    template <typename>
+    static constexpr auto test(...) -> nil_t;
+
+public:
+    using type = typename std::decay<decltype(test<T>(nullptr))>::type;
+    static const bool value = !std::is_same<type, nil_t>::value;
+};
+
+/**
+ * @brief extract returning type of operator[] in container, in case of STL containers is equivalent ot value_type
+ * for example: underlying_type<std::vector<int>> == int,
+ *              underlying_type<std::vector<std::vector<int>>> == std::vector<int>,
+
+ * @tparam T Container type
+ */
+template <typename T>
+using index_value_type_t = typename has_index_operator<T>::type;
+
+
+}
+
+
+// wavelet functions
+
+
 ///**
 // * @brief valid convolution
 // *
@@ -115,8 +158,8 @@ Container upsconv(Container const& x, Container const& f, int len); // overload 
  * @return
  */
 template <typename Container>
-Container dbwavf(int const wnum, typename Container::value_type dings); // overload added by Max F
-
+//Container dbwavf(int const wnum, typename Container::value_type dings); // overload added by Max F
+Container dbwavf(int const wnum, types::index_value_type_t<Container> dings); // overload added by Max F
 
 ///**
 // * @brief
