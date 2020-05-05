@@ -289,7 +289,6 @@ class Conv2d: public Layer<Scalar>
 
             for (size_t channel = 0; channel < outputChannels; ++channel) {
                 blaze::submatrix(z, 0, channel * channel_nelem, nobs, channel_nelem) = prev_layer_data * unrolledKernels[channel];
-                std::cout << unrolledKernels[channel] << std::endl;
             }
 
 
