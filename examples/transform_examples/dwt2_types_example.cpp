@@ -1,16 +1,28 @@
 
 #include "modules/transform/wavelet.hpp"
 
-#include "3rdparty/blaze/Blaze.h"
+//#include "3rdparty/blaze/Blaze.h"
 
 #include <vector>
 #include <iostream>
 
 
+template<typename T>
+std::ostream& operator<<(std::ostream& out, std::deque<T> const& a) {
+    //out << "[ ";
+    for(auto x : a) {
+        out << x << "\n";
+    }
+    //out << "]";
+    return out;
+}
+
+
 int main() {
 
     {
-        using T = blaze::DynamicVector<double>;
+        //using T = blaze::DynamicVector<double>;
+        using T = std::deque<double>;
         T a {0, 0, 0, 0, 1, 0, 0, 0};
         T b {0, 1, 1, 1, 0};
         auto result = wavelet::conv_valid(a, b);
@@ -20,6 +32,8 @@ int main() {
         std::cout << "\n" << coeffs << "\n";
         auto filters = wavelet::orthfilt(coeffs);
         std::cout << "\nfilters:\n" << std::get<0>(filters) << "\n" << std::get<1>(filters) << "\n" << std::get<2>(filters) << "\n" << std::get<3>(filters) << "\n" ;
+        auto filtered = wavelet::dwt(a, 4);
+        std::cout << "\nfiltered:\n" << std::get<0>(filtered) << "\n" << std::get<1>(filtered) << "\n";
 
     }
     return 0;
