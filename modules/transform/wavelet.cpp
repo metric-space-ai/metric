@@ -962,8 +962,10 @@ std::tuple<Container, Container, Container, Container> orthfilt(Container const&
 template <typename Container>
 std::tuple<Container, Container> dwt(Container const& x, int waveletType)
 {
+    using El = types::index_value_type_t<Container>;
 
-    Container F = dbwavf<Container>(waveletType, typename Container::value_type(1.0));
+    //Container F = dbwavf<Container>(waveletType, typename Container::value_type(1.0));
+    Container F = dbwavf<Container>(waveletType, El(1.0));
 
     auto [Lo_D, Hi_D, Lo_R, Hi_R] = orthfilt(F);
 
@@ -974,22 +976,37 @@ std::tuple<Container, Container> dwt(Container const& x, int waveletType)
     int lenEXT = lf - 1;
     int last = lx + lf - 1;
 
-    Container x_ext;
+    //Container x_ext;
     //x_ext.reserve(lx + 2 * lenEXT);  // preallocate memory
-    x_ext.insert(x_ext.end(), x.rbegin() + (lx - lenEXT), x.rend());
-    x_ext.insert(x_ext.end(), x.begin(), x.end());
-    x_ext.insert(x_ext.end(), x.rbegin(), x.rend() - (lx - lenEXT));
+    Container x_ext(lx + 2 * lenEXT);
+    //x_ext.insert(x_ext.end(), x.rbegin() + (lx - lenEXT), x.rend());
+    size_t offset = x.size() - lx + lenEXT;
+    for (size_t i = 0; i < offset; ++i)
+        x_ext[i] = x[offset - 1 - i];
+    //x_ext.insert(x_ext.end(), x.begin(), x.end());
+    for (size_t i = 0; i < x.size(); ++i)
+        x_ext[offset + i] = x[i];
+    //x_ext.insert(x_ext.end(), x.rbegin(), x.rend() - (lx - lenEXT));
+    for (size_t i = offset + x.size(); i < x_ext.size(); ++i)
+        x_ext[i] = x[x_ext.size() - i];
 
     Container z1 = conv_valid(x_ext, Lo_D);
     Container z2 = conv_valid(x_ext, Hi_D);
-    Container a;
-    Container d;
+    //Container a;
+    //Container d;
     //a.reserve(last);
     //d.reserve(last);
+    size_t len = (last - first + 2)/2;
+    Container a(len);
+    Container d(len);
 
+    size_t cnt = 0;
     for (int i = first - 1; i < last; i = i + 2) {
-        a.push_back(z1[i]);
-        d.push_back(z2[i]);
+        //a.push_back(z1[i]);
+        //d.push_back(z2[i]);
+        a[cnt] = z1[i];
+        d[cnt] = z2[i];
+        ++cnt;
     }
 
     return { a, d };
