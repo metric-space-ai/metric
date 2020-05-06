@@ -23,7 +23,7 @@ int main() {
     {
         //using T = blaze::DynamicVector<double>;
         using T = std::deque<double>;
-        T a {0, 0, 0, 0, 1, 0, 0, 0};
+        T a {0, 0, 0, 0, 1, 0, 0, 0, 0};
         T b {0, 1, 1, 1, 0};
         auto result = wavelet::conv_valid(a, b);
         std::cout << result << "\n";
