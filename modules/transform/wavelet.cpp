@@ -988,7 +988,7 @@ std::tuple<Container, Container> dwt(Container const& x, int waveletType)
         x_ext[offset + i] = x[i];
     //x_ext.insert(x_ext.end(), x.rbegin(), x.rend() - (lx - lenEXT));
     for (size_t i = offset + x.size(); i < x_ext.size(); ++i)
-        x_ext[i] = x[x_ext.size() - i];
+        x_ext[i] = x[x_ext.size() - i + 1];
 
     Container z1 = conv_valid(x_ext, Lo_D);
     Container z2 = conv_valid(x_ext, Hi_D);
