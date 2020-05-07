@@ -809,14 +809,18 @@ Container upsconv(Container const& x, Container const& f, int len)
     }
     dyay.pop_back();
 
-    Container out = conv(dyay, f);
+    Container cnv = conv(dyay, f);
 
-    int d = (out.size() - len) / 2;
-    int first = 1 + (out.size() - len) / 2;  //floor inclucded
+    int d = (cnv.size() - len) / 2;
+    int first = 1 + (cnv.size() - len) / 2;  //floor inclucded
     int last = first + len;
 
-    out.erase(out.begin() + last - 1, out.end());
-    out.erase(out.begin(), out.begin() + first - 1);
+    //cnv.erase(cnv.begin() + last - 1, cnv.end());
+    //cnv.erase(cnv.begin(), cnv.begin() + first - 1);
+    Container out (len);
+    for (int i = first - 1; i < last; ++i)
+        out[i - first + 1] = cnv[i];
+    //return cnv;
     return out;
 }
 
@@ -1017,8 +1021,10 @@ std::tuple<Container, Container> dwt(Container const& x, int waveletType)
 template <typename Container>
 Container idwt(Container a, Container d, int waveletType, int lx)
 {
+    using El = types::index_value_type_t<Container>;
 
-    Container F = dbwavf<Container>(waveletType, typename Container::value_type(1.0));
+    //Container F = dbwavf<Container>(waveletType, typename Container::value_type(1.0));
+    Container F = dbwavf<Container>(waveletType, El(1.0));
     auto [Lo_D, Hi_D, Lo_R, Hi_R] = orthfilt(F);
 
     Container out1 = upsconv(a, Lo_R, lx);
