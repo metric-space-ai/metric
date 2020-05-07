@@ -980,15 +980,14 @@ std::tuple<Container, Container> dwt(Container const& x, int waveletType)
     //x_ext.reserve(lx + 2 * lenEXT);  // preallocate memory
     Container x_ext(lx + 2 * lenEXT);
     //x_ext.insert(x_ext.end(), x.rbegin() + (lx - lenEXT), x.rend());
-    size_t offset = x.size() - lx + lenEXT;
-    for (size_t i = 0; i < offset; ++i)
-        x_ext[i] = x[offset - 1 - i];
+    for (int i = 0; i < lenEXT; ++i)
+        x_ext[i] = x[lenEXT - 1 - i];
     //x_ext.insert(x_ext.end(), x.begin(), x.end());
-    for (size_t i = 0; i < x.size(); ++i)
-        x_ext[offset + i] = x[i];
+    for (int i = 0; i < lx; ++i)
+        x_ext[lenEXT + i] = x[i];
     //x_ext.insert(x_ext.end(), x.rbegin(), x.rend() - (lx - lenEXT));
-    for (size_t i = offset + x.size(); i < x_ext.size(); ++i)
-        x_ext[i] = x[x_ext.size() - i + 1];
+    for (int i = 0; i < lenEXT; ++i)
+        x_ext[lenEXT + lx + i] = x[lx - 1 - i];
 
     Container z1 = conv_valid(x_ext, Lo_D);
     Container z2 = conv_valid(x_ext, Hi_D);
