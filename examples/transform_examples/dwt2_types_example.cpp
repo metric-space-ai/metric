@@ -23,7 +23,7 @@ int main() {
     {
         //using T = blaze::DynamicVector<double>;
         using T = std::deque<double>;
-        T a {0, 0, 0, 0, 1, 0, 0, 0};
+        T a {0, 0, 0, 0, 1, 0, 0, 0, 0};
         T b {0, 1, 1, 1, 0};
         auto result = wavelet::conv_valid(a, b);
         std::cout << result << "\n";
@@ -34,6 +34,8 @@ int main() {
         std::cout << "\nfilters:\n" << std::get<0>(filters) << "\n" << std::get<1>(filters) << "\n" << std::get<2>(filters) << "\n" << std::get<3>(filters) << "\n" ;
         auto filtered = wavelet::dwt(a, 4);
         std::cout << "\nfiltered:\n" << std::get<0>(filtered) << "\n" << std::get<1>(filtered) << "\n";
+        auto restored = wavelet::idwt(std::get<0>(filtered), std::get<1>(filtered), 4, a.size());
+        std::cout << "\nrestored:\n" << restored << "\n";
 
     }
     //return 0;
