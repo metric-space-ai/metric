@@ -473,56 +473,61 @@ dwt2(Container const & x, int waveletType) {
 
 
 
-template <typename Container>
-std::vector<Container> idwt2(
-            std::vector<Container> const & ll,
-            std::vector<Container> const & lh,
-            std::vector<Container> const & hl,
-            std::vector<Container> const & hh,
-            int waveletType,
-            int hx,
-            int wx)
-{
-    std::vector<Container> out;
-    //
-    assert(ll.size()==lh.size()); // TODO remove after testing and add exception
-    assert(ll.size()==hl.size());
-    assert(ll.size()==hh.size());
-    assert(ll[0].size()==lh[0].size());
-    assert(ll[0].size()==hl[0].size());
-    assert(ll[0].size()==hh[0].size());
+    template <typename Container>
+    std::vector<Container> idwt2(
+                std::vector<Container> const & ll,
+                std::vector<Container> const & lh,
+                std::vector<Container> const & hl,
+                std::vector<Container> const & hh,
+                int waveletType,
+                int hx,
+                int wx)
+    {
 
-    std::vector<Container> l_colmajor, h_colmajor;
-    for (size_t col_idx = 0; col_idx<ll[0].size(); col_idx++) {
-        Container col_ll, col_lh, col_hl, col_hh, col_split_l, col_split_h;
-        for (size_t row_idx = 0; row_idx<ll.size(); ++row_idx) {
-            col_ll.push_back(ll[row_idx][col_idx]);
-            col_lh.push_back(lh[row_idx][col_idx]);
-            col_hl.push_back(hl[row_idx][col_idx]);
-            col_hh.push_back(hh[row_idx][col_idx]);
+        assert(ll.size()==lh.size()); // TODO remove after testing and add exception
+        assert(ll.size()==hl.size());
+        assert(ll.size()==hh.size());
+        assert(ll[0].size()==lh[0].size());
+        assert(ll[0].size()==hl[0].size());
+        assert(ll[0].size()==hh[0].size());
+
+        std::vector<Container> l_colmajor (ll[0].size());
+        std::vector<Container> h_colmajor (ll[0].size());
+        for (size_t col_idx = 0; col_idx<ll[0].size(); col_idx++) {
+            Container col_split_l, col_split_h;
+            Container col_ll (ll.size());
+            Container col_lh (ll.size());
+            Container col_hl (ll.size());
+            Container col_hh (ll.size());
+            for (size_t row_idx = 0; row_idx<ll.size(); ++row_idx) {
+                col_ll[row_idx] = ll[row_idx][col_idx];
+                col_lh[row_idx] = lh[row_idx][col_idx];
+                col_hl[row_idx] = hl[row_idx][col_idx];
+                col_hh[row_idx] = hh[row_idx][col_idx];
+            }
+            col_split_l = wavelet::idwt(col_ll, col_lh, waveletType, hx);
+            l_colmajor[col_idx] = col_split_l;
+            col_split_h = wavelet::idwt(col_hl, col_hh, waveletType, hx);
+            h_colmajor[col_idx] = col_split_h;
         }
-        col_split_l = wavelet::idwt(col_ll, col_lh, waveletType, hx);
-        l_colmajor.push_back(col_split_l);
-        col_split_h = wavelet::idwt(col_hl, col_hh, waveletType, hx);
-        h_colmajor.push_back(col_split_h);
-    }
 
-    assert(l_colmajor.size()==h_colmajor.size()); // TODO remove after testing
-    assert(l_colmajor[0].size()==h_colmajor[0].size());
+        assert(l_colmajor[0].size()==h_colmajor[0].size());
 
-    // transpose and apply second idwt
-    for (size_t row_idx = 0; row_idx<l_colmajor[0].size(); ++row_idx) {
-        Container row_split_l, row_split_h;
-        for (size_t col_idx = 0; col_idx<l_colmajor.size(); col_idx++) {
-            row_split_l.push_back(l_colmajor[col_idx][row_idx]);
-            row_split_h.push_back(h_colmajor[col_idx][row_idx]);
+        // transpose and apply second idwt
+        std::vector<Container> out (l_colmajor[0].size());
+        for (size_t row_idx = 0; row_idx<l_colmajor[0].size(); ++row_idx) {
+            Container row_split_l (l_colmajor.size());
+            Container row_split_h (l_colmajor.size());
+            for (size_t col_idx = 0; col_idx<l_colmajor.size(); col_idx++) {
+                row_split_l[col_idx] = l_colmajor[col_idx][row_idx];
+                row_split_h[col_idx] = h_colmajor[col_idx][row_idx];
+            }
+            //Container row = idwt(row_split_l, row_split_h, waveletType, wx);
+            out[row_idx] = idwt(row_split_l, row_split_h, waveletType, wx);
         }
-        //Container row = idwt(row_split_l, row_split_h, waveletType, wx);
-        out.push_back(idwt(row_split_l, row_split_h, waveletType, wx));
-    }
 
-    return out;
-}
+        return out;
+    }
 
 
 template <typename Container>
