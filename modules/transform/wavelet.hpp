@@ -363,6 +363,19 @@ dwt2(std::vector<Container> const & x, int waveletType);
 /**
  * @brief
  *
+ * @param x
+ * @param waveletType
+ * @return
+ */
+template <typename Container>
+std::tuple<Container, Container, Container, Container>
+dwt2(Container const & x, int waveletType);
+
+
+
+/**
+ * @brief
+ *
  * @param ll
  * @param lh
  * @param hl
@@ -397,6 +410,31 @@ std::vector<Container> idwt2(
             int waveletType,
             int hx,
             int wx);
+
+
+/**
+ * @brief
+ *
+ * @param ll
+ * @param lh
+ * @param hl
+ * @param hh
+ * @param waveletType
+ * @param hx
+ * @param wx
+ * @return
+ */
+template <typename Container>
+Container idwt2(
+            Container const & ll,
+            Container const & lh,
+            Container const & hl,
+            Container const & hh,
+            int waveletType,
+            int hx,
+            int wx);
+
+
 
 
 }  // namespace
