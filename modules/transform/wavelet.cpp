@@ -95,15 +95,19 @@ template <typename Container>
 Container upsconv(Container const& x, Container const& f, int len)
 {
 
+    using El = types::index_value_type_t<Container>;
+
     //initialize std::vector dyay
     //typename Container::value_type tmp[x.size() * 2];
-    Container dyay(x.size() * 2);
+    //Container dyay(x.size() * 2);
+    Container dyay(x.size() * 2 - 1);
 
     for (int i = 0, j = 0; i < x.size(); ++i, j = j + 2) {
         dyay[j] = x[i];
-        dyay[j + 1] = 0.0;
+        if (j + 1 < dyay.size())
+            dyay[j + 1] = 0.0;
     }
-    dyay.pop_back();
+    //dyay.pop_back();
 
     Container cnv = conv(dyay, f);
 
