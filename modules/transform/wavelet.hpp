@@ -16,7 +16,7 @@
 #include <algorithm>
 #include <functional>
 #include <deque>
-#include "../../3rdparty/blaze/Math.h"
+#include "../../3rdparty/blaze/Blaze.h"
 
 namespace wavelet {
 
@@ -348,15 +348,29 @@ T TWED(blaze::CompressedVector<T> const& As, blaze::CompressedVector<T> const& B
 // 2d functions
 
 
+///**
+// * @brief non-blaze dwt2
+// *
+// * @param x
+// * @param waveletType
+// * @return
+// */
+//template <typename Container>
+//dwt2(std::vector<Container> const & x, int waveletType);
+
 /**
- * @brief
+ * @brief blaze matrix overload of dwt2
  *
  * @param x
  * @param waveletType
  * @return
  */
 template <typename Container>
-std::tuple<std::vector<Container>, std::vector<Container>, std::vector<Container>, std::vector<Container>>
+typename std::enable_if<
+ blaze::IsMatrix<
+  Container>::value,
+  std::tuple<std::vector<Container>, std::vector<Container>, std::vector<Container>, std::vector<Container>>
+ >::type
 dwt2(std::vector<Container> const & x, int waveletType);
 
 
