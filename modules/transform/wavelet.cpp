@@ -95,8 +95,6 @@ template <typename Container>
 Container upsconv(Container const& x, Container const& f, int len)
 {
 
-    using El = types::index_value_type_t<Container>;
-
     //initialize std::vector dyay
     //typename Container::value_type tmp[x.size() * 2];
     //Container dyay(x.size() * 2);
@@ -403,9 +401,17 @@ Container waverec(std::deque<Container> const& subBands, int waveletType)
 // 2d functions
 
 
+
 template <typename Container>
-std::tuple<std::vector<Container>, std::vector<Container>, std::vector<Container>, std::vector<Container>>
+typename std::enable_if<
+ !blaze::IsMatrix<
+  Container>::value,
+  std::tuple<std::vector<Container>, std::vector<Container>, std::vector<Container>, std::vector<Container>>
+ >::type
 dwt2(std::vector<Container> const & x, int waveletType)
+//template <typename Container>
+//std::tuple<std::vector<Container>, std::vector<Container>, std::vector<Container>, std::vector<Container>>
+//dwt2(std::vector<Container> const & x, int waveletType)
 {
     std::vector<Container> ll, lh, hl, hh, l, h;
 

@@ -1,10 +1,29 @@
 
 #include "modules/transform/wavelet.hpp"
 
-//#include "3rdparty/blaze/Blaze.h"
+#include "3rdparty/blaze/Blaze.h"
 
 #include <vector>
 #include <iostream>
+#include <type_traits> // for IsMatrixCheck
+
+
+// ---- IsMatrix test
+
+template <typename Container>
+typename std::enable_if<blaze::IsMatrix<Container>::value, void>::type
+MatrixCheck(Container) {
+    std::cout << "\nMatrix\n";
+}
+
+template <typename Container>
+typename std::enable_if<!blaze::IsMatrix<Container>::value, void>::type
+MatrixCheck(Container) {
+    std::cout << "\nNot matrix\n";
+}
+
+// ----
+
 
 
 template<typename T>
@@ -39,6 +58,23 @@ int main() {
 
     }
     //return 0;
+
+    {
+        // IsMatrix test
+
+        blaze::DynamicMatrix<double> a { {0} };
+        std::vector<std::vector<double>> b { {0} };
+        blaze::DynamicVector<double> c {0};
+        blaze::CompressedMatrix<double> d { {0} };
+        blaze::SymmetricMatrix<blaze::CompressedMatrix<double>> e { {0} };
+        MatrixCheck(a);
+        MatrixCheck(b);
+        MatrixCheck(c);
+        MatrixCheck(d);
+        MatrixCheck(e);
+        //MatrixCheck(b);
+
+    }
 
     // old test
 
