@@ -5,8 +5,8 @@ from metric.utils.misc import time_n_log
 
 
 def main():
-    img1 = numpy.loadtxt('test_data/img1.csv')
-    img2 = numpy.loadtxt('test_data/img1.csv')
+    img1 = numpy.loadtxt('examples/distance/test_data/img3.csv')
+    img2 = numpy.loadtxt('examples/distance/test_data/img4.csv')
 
     rows, cols = img1.shape
     rows //= 6
