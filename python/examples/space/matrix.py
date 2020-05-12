@@ -1,5 +1,5 @@
 import sys
-import metric
+from metric.space import Matrix
 import numpy
 
 
@@ -13,8 +13,8 @@ def main():
         [2.57927000000000, 2.63399000000000, 2.46802000000000, 61.9026000000000, 61.9026000000000]
     ])
 
-    matrix = metric.Matrix(data)
-    print(matrix.size())
+    matrix = Matrix(data)
+    print(len(matrix))
     print(matrix(1, 3))
 
 
