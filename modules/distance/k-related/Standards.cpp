@@ -8,10 +8,15 @@ Copyright (c) 2018 Michael Welsch
 
 #include "Standards.hpp"
 
+#include "../../../3rdparty/blaze/Blaze.h"
+
 #include <cmath>
 #include <algorithm>
 
-#include "../../../3rdparty/blaze/Blaze.h"
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
+
 
 namespace metric {
 
