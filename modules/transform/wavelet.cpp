@@ -478,25 +478,16 @@ dwt2(Container2d const & x, int waveletType) {
     Container2d ll, lh, hl, hh, l, h; // TODO use sparsed if input is sparsed
 
     for (size_t row_idx = 0; row_idx<x.rows(); ++row_idx) { // top-level split, by rows
-        blaze::DynamicVector<El> curr_row (x.columns());
-        auto r = blaze::row(x, row_idx);
-        for (size_t i = 0; i < x.columns(); ++i)
-            curr_row[i] = r[i]; // not efficient
-        //curr_row = blaze::row(x, row_idx); // not posible
+        blaze::DynamicVector<El, blaze::rowVector> curr_row (x.columns());
+        curr_row = blaze::row(x, row_idx);
         //auto row_split = dwt(blaze::row(x, row_idx), waveletType); // TODO check if it's possible!!
         auto row_split = dwt(curr_row, waveletType);
         if (row_idx < 1) { // first iteration only
             l = Container2d(x.rows(), std::get<0>(row_split).size());
             h = Container2d(x.rows(), std::get<1>(row_split).size());
-            //l = Container2d(x.rows(), std::get<0>(row_split).columns());
-            //h = Container2d(x.size(), std::get<1>(row_split).columns());
         }
-        for (size_t i = 0; i < std::get<0>(row_split).size(); ++i) {
-            blaze::row(l, row_idx)[i] = std::get<0>(row_split)[i]; // TODO optimize!!
-            blaze::row(h, row_idx)[i] = std::get<1>(row_split)[i];
-        }
-        //blaze::row(l, row_idx) = std::get<0>(row_split);
-        //blaze::row(h, row_idx) = std::get<1>(row_split);
+        blaze::row(l, row_idx) = std::get<0>(row_split);
+        blaze::row(h, row_idx) = std::get<1>(row_split);
     }
 
     for (size_t col_idx = 0; col_idx<l.columns(); col_idx++) { // 2 lower level splits, by colmns
@@ -522,7 +513,6 @@ dwt2(Container2d const & x, int waveletType) {
     }
 
     return std::make_tuple(ll, lh, hl, hh);
-
 
 }
 
