@@ -15,6 +15,7 @@ Copyright (c) 2019 Panda Team
 
 #include <cmath>
 #include <vector>
+#include <numeric_limits>
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -291,7 +292,7 @@ double digamma(double x)
 {
   double result;
   static const double
-          neginf = -1.0/0.0,
+          neginf = -std::numeric_limits<double>::infinity(),
           c = 12,
           s = 1e-6,
           d1 = -0.57721566490153286,
@@ -306,7 +307,7 @@ double digamma(double x)
     //	  s10 = 3617/8160;
   /* Illegal arguments */
   if((x == neginf) || std::isnan(x)) {
-    return 0.0/0.0;
+    return -std::numeric_limits<double>::infinity();
   }
   /* Singularities */
   if((x <= 0) && (floor(x) == x)) {
