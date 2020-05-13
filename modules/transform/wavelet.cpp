@@ -470,16 +470,62 @@ dwt2(std::vector<Container> const & x, int waveletType)
 }
 
 
-/* TODO implement
-template <typename Container>
-std::tuple<Container, Container, Container, Container>
-dwt2(Container const & x, int waveletType) {
+template <typename Container2d>
+std::tuple<Container2d, Container2d, Container2d, Container2d>
+dwt2(Container2d const & x, int waveletType) {
 
-    Container ll, lh, hl, hh, l, h;
+    using El = typename Container2d::ElementType; // now we support only Blaze matrices, TODO add type traits, generalize!!
+    Container2d ll, lh, hl, hh, l, h; // TODO use sparsed if input is sparsed
+
+    for (size_t row_idx = 0; row_idx<x.rows(); ++row_idx) { // top-level split, by rows
+        blaze::DynamicVector<El> curr_row (x.columns());
+        auto r = blaze::row(x, row_idx);
+        for (size_t i = 0; i < x.columns(); ++i)
+            curr_row[i] = r[i]; // not efficient
+        //curr_row = blaze::row(x, row_idx); // not posible
+        //auto row_split = dwt(blaze::row(x, row_idx), waveletType); // TODO check if it's possible!!
+        auto row_split = dwt(curr_row, waveletType);
+        if (row_idx < 1) { // first iteration only
+            l = Container2d(x.rows(), std::get<0>(row_split).size());
+            h = Container2d(x.rows(), std::get<1>(row_split).size());
+            //l = Container2d(x.rows(), std::get<0>(row_split).columns());
+            //h = Container2d(x.size(), std::get<1>(row_split).columns());
+        }
+        for (size_t i = 0; i < std::get<0>(row_split).size(); ++i) {
+            blaze::row(l, row_idx)[i] = std::get<0>(row_split)[i]; // TODO optimize!!
+            blaze::row(h, row_idx)[i] = std::get<1>(row_split)[i];
+        }
+        //blaze::row(l, row_idx) = std::get<0>(row_split);
+        //blaze::row(h, row_idx) = std::get<1>(row_split);
+    }
+
+    for (size_t col_idx = 0; col_idx<l.columns(); col_idx++) { // 2 lower level splits, by colmns
+        blaze::DynamicVector<El> l_col = blaze::column(l, col_idx);
+        blaze::DynamicVector<El> h_col = blaze::column(h, col_idx);;
+        {
+            auto col_split_l = dwt(l_col, waveletType);
+            if (col_idx < 1) { // first iteration only
+                size_t r_sz = std::get<0>(col_split_l).size();
+                ll = Container2d (r_sz, l.columns());
+                lh = Container2d (r_sz, l.columns());
+                hl = Container2d (r_sz, l.columns());
+                hh = Container2d (r_sz, l.columns());
+            }
+            blaze::column(ll, col_idx) = std::get<0>(col_split_l);
+            blaze::column(lh, col_idx) = std::get<1>(col_split_l);
+        } // remove col_split_l from memory
+        {
+            auto col_split_h = dwt(h_col, waveletType);
+            blaze::column(hl, col_idx) = std::get<0>(col_split_h);
+            blaze::column(hh, col_idx) = std::get<1>(col_split_h);
+        }
+    }
+
+    return std::make_tuple(ll, lh, hl, hh);
 
 
 }
-// */
+
 
 
 
