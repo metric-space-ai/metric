@@ -381,9 +381,9 @@ dwt2(std::vector<Container> const & x, int waveletType);
  * @param waveletType
  * @return
  */
-template <typename Container>
-std::tuple<Container, Container, Container, Container>
-dwt2(Container const & x, int waveletType);
+template <typename Container2d>
+std::tuple<Container2d, Container2d, Container2d, Container2d>
+dwt2(Container2d const & x, int waveletType);
 
 
 
