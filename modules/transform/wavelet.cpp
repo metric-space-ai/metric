@@ -519,61 +519,61 @@ dwt2(Container2d const & x, int waveletType) {
 
 
 
-    template <typename Container>
-    std::vector<Container> idwt2(
-                std::vector<Container> const & ll,
-                std::vector<Container> const & lh,
-                std::vector<Container> const & hl,
-                std::vector<Container> const & hh,
-                int waveletType,
-                int hx,
-                int wx)
-    {
+template <typename Container>
+std::vector<Container> idwt2(
+            std::vector<Container> const & ll,
+            std::vector<Container> const & lh,
+            std::vector<Container> const & hl,
+            std::vector<Container> const & hh,
+            int waveletType,
+            int hx,
+            int wx)
+{
 
-        assert(ll.size()==lh.size()); // TODO remove after testing and add exception
-        assert(ll.size()==hl.size());
-        assert(ll.size()==hh.size());
-        assert(ll[0].size()==lh[0].size());
-        assert(ll[0].size()==hl[0].size());
-        assert(ll[0].size()==hh[0].size());
+    assert(ll.size()==lh.size()); // TODO remove after testing and add exception
+    assert(ll.size()==hl.size());
+    assert(ll.size()==hh.size());
+    assert(ll[0].size()==lh[0].size());
+    assert(ll[0].size()==hl[0].size());
+    assert(ll[0].size()==hh[0].size());
 
-        std::vector<Container> l_colmajor (ll[0].size());
-        std::vector<Container> h_colmajor (ll[0].size());
-        for (size_t col_idx = 0; col_idx<ll[0].size(); col_idx++) {
-            Container col_split_l, col_split_h;
-            Container col_ll (ll.size());
-            Container col_lh (ll.size());
-            Container col_hl (ll.size());
-            Container col_hh (ll.size());
-            for (size_t row_idx = 0; row_idx<ll.size(); ++row_idx) {
-                col_ll[row_idx] = ll[row_idx][col_idx];
-                col_lh[row_idx] = lh[row_idx][col_idx];
-                col_hl[row_idx] = hl[row_idx][col_idx];
-                col_hh[row_idx] = hh[row_idx][col_idx];
-            }
-            col_split_l = wavelet::idwt(col_ll, col_lh, waveletType, hx);
-            l_colmajor[col_idx] = col_split_l;
-            col_split_h = wavelet::idwt(col_hl, col_hh, waveletType, hx);
-            h_colmajor[col_idx] = col_split_h;
+    std::vector<Container> l_colmajor (ll[0].size());
+    std::vector<Container> h_colmajor (ll[0].size());
+    for (size_t col_idx = 0; col_idx<ll[0].size(); col_idx++) {
+        Container col_split_l, col_split_h;
+        Container col_ll (ll.size());
+        Container col_lh (ll.size());
+        Container col_hl (ll.size());
+        Container col_hh (ll.size());
+        for (size_t row_idx = 0; row_idx<ll.size(); ++row_idx) {
+            col_ll[row_idx] = ll[row_idx][col_idx];
+            col_lh[row_idx] = lh[row_idx][col_idx];
+            col_hl[row_idx] = hl[row_idx][col_idx];
+            col_hh[row_idx] = hh[row_idx][col_idx];
         }
-
-        assert(l_colmajor[0].size()==h_colmajor[0].size());
-
-        // transpose and apply second idwt
-        std::vector<Container> out (l_colmajor[0].size());
-        for (size_t row_idx = 0; row_idx<l_colmajor[0].size(); ++row_idx) {
-            Container row_split_l (l_colmajor.size());
-            Container row_split_h (l_colmajor.size());
-            for (size_t col_idx = 0; col_idx<l_colmajor.size(); col_idx++) {
-                row_split_l[col_idx] = l_colmajor[col_idx][row_idx];
-                row_split_h[col_idx] = h_colmajor[col_idx][row_idx];
-            }
-            //Container row = idwt(row_split_l, row_split_h, waveletType, wx);
-            out[row_idx] = idwt(row_split_l, row_split_h, waveletType, wx);
-        }
-
-        return out;
+        col_split_l = wavelet::idwt(col_ll, col_lh, waveletType, hx);
+        l_colmajor[col_idx] = col_split_l;
+        col_split_h = wavelet::idwt(col_hl, col_hh, waveletType, hx);
+        h_colmajor[col_idx] = col_split_h;
     }
+
+    assert(l_colmajor[0].size()==h_colmajor[0].size());
+
+    // transpose and apply second idwt
+    std::vector<Container> out (l_colmajor[0].size());
+    for (size_t row_idx = 0; row_idx<l_colmajor[0].size(); ++row_idx) {
+        Container row_split_l (l_colmajor.size());
+        Container row_split_h (l_colmajor.size());
+        for (size_t col_idx = 0; col_idx<l_colmajor.size(); col_idx++) {
+            row_split_l[col_idx] = l_colmajor[col_idx][row_idx];
+            row_split_h[col_idx] = h_colmajor[col_idx][row_idx];
+        }
+        //Container row = idwt(row_split_l, row_split_h, waveletType, wx);
+        out[row_idx] = idwt(row_split_l, row_split_h, waveletType, wx);
+    }
+
+    return out;
+}
 
 
 template <typename Container>
@@ -585,6 +585,73 @@ std::vector<Container> idwt2(
 {
     return idwt2(std::get<0>(in), std::get<1>(in), std::get<2>(in), std::get<3>(in), waveletType, hx, wx);
 }
+
+
+
+
+
+template <typename Container2d>
+Container2d idwt2(
+            Container2d const & ll,
+            Container2d const & lh,
+            Container2d const & hl,
+            Container2d const & hh,
+            int waveletType,
+            int hx,
+            int wx)
+{
+    using El = typename Container2d::ElementType; // now we support only Blaze matrices, TODO add type traits, generalize!!
+    // TODO use sparsed if input is sparsed
+
+
+    assert(ll.rows()==lh.rows()); // TODO replace with exception of nan return
+    assert(ll.rows()==hl.rows());
+    assert(ll.rows()==hh.rows());
+    assert(ll.columns()==lh.columns());
+    assert(ll.columns()==hl.columns());
+    assert(ll.columns()==hh.columns());
+
+    Container2d l;
+    Container2d h;
+    for (size_t row_idx = 0; row_idx<ll.rows(); row_idx++) {
+
+        blaze::DynamicVector<El, blaze::rowVector> row_ll = blaze::row(ll, row_idx);
+        blaze::DynamicVector<El, blaze::rowVector> row_lh = blaze::row(lh, row_idx);
+        blaze::DynamicVector<El, blaze::rowVector> row_hl = blaze::row(hl, row_idx);
+        blaze::DynamicVector<El, blaze::rowVector> row_hh = blaze::row(hh, row_idx);
+
+        auto row_split_l = wavelet::idwt(row_ll, row_lh, waveletType, hx);
+        auto row_split_h = wavelet::idwt(row_hl, row_hh, waveletType, hx);
+        if (row_idx < 1) {
+            l = blaze::DynamicMatrix<El>(ll.rows(), row_split_l.size());
+            h = blaze::DynamicMatrix<El>(ll.rows(), row_split_h.size());
+        }
+        blaze::row(l, row_idx) = row_split_l;
+        blaze::row(h, row_idx) = row_split_h;
+    }
+
+    // transpose and apply second idwt
+    Container2d out; //(l.columns());
+    //auto out_col_major = trans(out);
+    blaze::DynamicMatrix<El, blaze::columnMajor> out_col_major; // temporary
+    for (size_t col_idx = 0; col_idx<l.columns(); ++col_idx) {
+        blaze::DynamicVector<El> row_split_l (l.rows()); // column vector
+        blaze::DynamicVector<El> row_split_h (l.rows());
+        for (size_t row_idx = 0; row_idx<l.rows(); row_idx++) { // row-major to column-major
+            row_split_l[row_idx] = l(row_idx, col_idx);
+            row_split_h[row_idx] = h(row_idx, col_idx);
+        }
+        auto curr_column = idwt(row_split_l, row_split_h, waveletType, wx);
+        if (col_idx < 1) {
+            out_col_major = blaze::DynamicMatrix<El, blaze::columnMajor> (curr_column.size(), l.columns());
+        }
+        blaze::column(out_col_major, col_idx) = curr_column;
+    }
+    out = out_col_major; // col-major to row-major
+
+    return out;
+}
+
 
 
 
