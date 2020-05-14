@@ -620,8 +620,8 @@ Container2d idwt2(
         blaze::DynamicVector<El, blaze::rowVector> row_hl = blaze::row(hl, row_idx);
         blaze::DynamicVector<El, blaze::rowVector> row_hh = blaze::row(hh, row_idx);
 
-        auto row_split_l = wavelet::idwt(row_ll, row_lh, waveletType, hx);
-        auto row_split_h = wavelet::idwt(row_hl, row_hh, waveletType, hx);
+        auto row_split_l = wavelet::idwt(row_ll, row_lh, waveletType, wx);
+        auto row_split_h = wavelet::idwt(row_hl, row_hh, waveletType, wx);
         if (row_idx < 1) {
             l = blaze::DynamicMatrix<El>(ll.rows(), row_split_l.size());
             h = blaze::DynamicMatrix<El>(ll.rows(), row_split_h.size());
@@ -630,24 +630,22 @@ Container2d idwt2(
         blaze::row(h, row_idx) = row_split_h;
     }
 
-    // transpose and apply second idwt
-    Container2d out; //(l.columns());
-    //auto out_col_major = trans(out);
-    blaze::DynamicMatrix<El, blaze::columnMajor> out_col_major; // temporary
+    // second idwt
+    blaze::DynamicMatrix<El, blaze::columnMajor> out_col_major; // temporary, TODO replace using type trait
     for (size_t col_idx = 0; col_idx<l.columns(); ++col_idx) {
-        blaze::DynamicVector<El> row_split_l (l.rows()); // column vector
-        blaze::DynamicVector<El> row_split_h (l.rows());
-        for (size_t row_idx = 0; row_idx<l.rows(); row_idx++) { // row-major to column-major
-            row_split_l[row_idx] = l(row_idx, col_idx);
-            row_split_h[row_idx] = h(row_idx, col_idx);
+        blaze::DynamicVector<El> col_split_l (l.rows()); // column vector
+        blaze::DynamicVector<El> col_split_h (l.rows());
+        for (size_t row_idx = 0; row_idx<l.rows(); row_idx++) { // row-major to column-major, TODO optimize
+            col_split_l[row_idx] = l(row_idx, col_idx);
+            col_split_h[row_idx] = h(row_idx, col_idx);
         }
-        auto curr_column = idwt(row_split_l, row_split_h, waveletType, wx);
+        auto curr_column = idwt(col_split_l, col_split_h, waveletType, hx);
         if (col_idx < 1) {
             out_col_major = blaze::DynamicMatrix<El, blaze::columnMajor> (curr_column.size(), l.columns());
         }
         blaze::column(out_col_major, col_idx) = curr_column;
     }
-    out = out_col_major; // col-major to row-major
+    Container2d out = out_col_major; // col-major to row-major
 
     return out;
 }
