@@ -88,9 +88,9 @@ int main() {
             { 0, 0, 0, 0, 0, 0, 0, 0, 0 },
         };
         auto splitted = wavelet::dwt2(data2d, 4);
-        std::cout << "\n\nblaze 2d test: restored:\n" << std::get<0>(splitted) << "\n\n";
-        //auto restored = wavelet::idwt2(std::get<0>(splitted), std::get<1>(splitted), std::get<2>(splitted), std::get<3>(splitted), 4, data2d.rows(), data2d.columns());
-        //std::cout << "\n\nblaze 2d test: restored:\n" << restored << "\n\n";
+        std::cout << "\n\nblaze 2d test: splitted 1:\n" << std::get<0>(splitted) << "\n\n";
+        auto restored = wavelet::idwt2(std::get<0>(splitted), std::get<1>(splitted), std::get<2>(splitted), std::get<3>(splitted), 4, data2d.rows(), data2d.columns());
+        std::cout << "\n\nblaze 2d test: restored:\n" << restored << "\n\n";
     }
 
     // old test
