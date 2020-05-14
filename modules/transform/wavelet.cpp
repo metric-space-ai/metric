@@ -588,7 +588,7 @@ std::vector<Container> idwt2(
 
 
 
-
+/* // sequence 1
 
 template <typename Container2d>
 Container2d idwt2(
@@ -650,6 +650,76 @@ Container2d idwt2(
     return out;
 }
 
+// */
+
+
+
+template <typename Container2d>
+Container2d idwt2(
+            Container2d const & ll,
+            Container2d const & lh,
+            Container2d const & hl,
+            Container2d const & hh,
+            int waveletType,
+            int hx,
+            int wx)
+{
+    using El = typename Container2d::ElementType; // now we support only Blaze matrices, TODO add type traits, generalize!!
+    // TODO use sparsed if input is sparsed
+
+
+    assert(ll.rows()==lh.rows()); // TODO replace with exception of nan return
+    assert(ll.rows()==hl.rows());
+    assert(ll.rows()==hh.rows());
+    assert(ll.columns()==lh.columns());
+    assert(ll.columns()==hl.columns());
+    assert(ll.columns()==hh.columns());
+
+    blaze::DynamicMatrix<El, blaze::columnMajor> ll_cm = ll; // type is temporary, TODO add type trait
+    blaze::DynamicMatrix<El, blaze::columnMajor> lh_cm = lh;
+    blaze::DynamicMatrix<El, blaze::columnMajor> hl_cm = hl;
+    blaze::DynamicMatrix<El, blaze::columnMajor> hh_cm = hh;
+
+    blaze::DynamicMatrix<El, blaze::columnMajor> l_cm;
+    blaze::DynamicMatrix<El, blaze::columnMajor> h_cm;
+    for (size_t col_idx = 0; col_idx<ll_cm.columns(); col_idx++) {
+
+        blaze::DynamicVector<El> col_ll = blaze::column(ll_cm, col_idx);
+        blaze::DynamicVector<El> col_lh = blaze::column(lh_cm, col_idx);
+        blaze::DynamicVector<El> col_hl = blaze::column(hl_cm, col_idx);
+        blaze::DynamicVector<El> col_hh = blaze::column(hh_cm, col_idx);
+
+        auto col_split_l = wavelet::idwt(col_ll, col_lh, waveletType, hx);
+        auto col_split_h = wavelet::idwt(col_hl, col_hh, waveletType, hx);
+        if (col_idx < 1) {
+            l_cm = blaze::DynamicMatrix<El, blaze::columnMajor>(col_split_l.size(), ll_cm.columns());
+            h_cm = blaze::DynamicMatrix<El, blaze::columnMajor>(col_split_h.size(), ll_cm.columns());
+        }
+        blaze::column(l_cm, col_idx) = col_split_l;
+        blaze::column(h_cm, col_idx) = col_split_h;
+    }
+
+    Container2d l = l_cm; // col-major to row-major
+    Container2d h = h_cm;
+
+    // second idwt
+    Container2d out;
+    for (size_t row_idx = 0; row_idx<l.rows(); ++row_idx) {
+        blaze::DynamicVector<El, blaze::rowVector> row_split_l (l.columns()); // column vector
+        blaze::DynamicVector<El, blaze::rowVector> row_split_h (l.columns());
+        for (size_t col_idx = 0; col_idx<l.columns(); col_idx++) { // row-major to column-major, TODO optimize
+            row_split_l[col_idx] = l(row_idx, col_idx);
+            row_split_h[col_idx] = h(row_idx, col_idx);
+        }
+        auto curr_row = idwt(row_split_l, row_split_h, waveletType, wx);
+        if (row_idx < 1) {
+            out = Container2d (l.rows(), curr_row.size());
+        }
+        blaze::row(out, row_idx) = curr_row;
+    }
+
+    return out;
+}
 
 
 
