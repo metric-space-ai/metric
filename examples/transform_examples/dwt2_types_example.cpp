@@ -77,7 +77,9 @@ int main() {
     }
 
     {
-        using T = blaze::DynamicMatrix<double>;
+        //using T = blaze::DynamicMatrix<double>;
+        using T = blaze::CompressedMatrix<double>;
+
         T data2d = {
             { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
             { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },

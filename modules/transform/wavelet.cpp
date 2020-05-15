@@ -478,8 +478,7 @@ dwt2(Container2d const & x, int waveletType) {
     Container2d ll, lh, hl, hh, l, h; // TODO use sparsed if input is sparsed
 
     for (size_t row_idx = 0; row_idx<x.rows(); ++row_idx) { // top-level split, by rows
-        blaze::DynamicVector<El, blaze::rowVector> curr_row (x.columns());
-        curr_row = blaze::row(x, row_idx);
+        blaze::DynamicVector<El, blaze::rowVector> curr_row = blaze::row(x, row_idx);
         //auto row_split = dwt(blaze::row(x, row_idx), waveletType); // TODO check if it's possible!!
         auto row_split = dwt(curr_row, waveletType);
         if (row_idx < 1) { // first iteration only
@@ -667,7 +666,6 @@ Container2d idwt2(
     using El = typename Container2d::ElementType; // now we support only Blaze matrices, TODO add type traits, generalize!!
     // TODO use sparsed if input is sparsed
 
-
     assert(ll.rows()==lh.rows()); // TODO replace with exception of nan return
     assert(ll.rows()==hl.rows());
     assert(ll.rows()==hh.rows());
@@ -675,7 +673,7 @@ Container2d idwt2(
     assert(ll.columns()==hl.columns());
     assert(ll.columns()==hh.columns());
 
-    blaze::DynamicMatrix<El, blaze::columnMajor> ll_cm = ll; // type is temporary, TODO add type trait
+    blaze::DynamicMatrix<El, blaze::columnMajor> ll_cm = ll; // row-major to col-major // type is temporary, TODO add type trait
     blaze::DynamicMatrix<El, blaze::columnMajor> lh_cm = lh;
     blaze::DynamicMatrix<El, blaze::columnMajor> hl_cm = hl;
     blaze::DynamicMatrix<El, blaze::columnMajor> hh_cm = hh;
@@ -705,12 +703,8 @@ Container2d idwt2(
     // second idwt
     Container2d out;
     for (size_t row_idx = 0; row_idx<l.rows(); ++row_idx) {
-        blaze::DynamicVector<El, blaze::rowVector> row_split_l (l.columns()); // column vector
-        blaze::DynamicVector<El, blaze::rowVector> row_split_h (l.columns());
-        for (size_t col_idx = 0; col_idx<l.columns(); col_idx++) { // row-major to column-major, TODO optimize
-            row_split_l[col_idx] = l(row_idx, col_idx);
-            row_split_h[col_idx] = h(row_idx, col_idx);
-        }
+        blaze::DynamicVector<El, blaze::rowVector> row_split_l = blaze::row(l, row_idx);
+        blaze::DynamicVector<El, blaze::rowVector> row_split_h = blaze::row(h, row_idx);
         auto curr_row = idwt(row_split_l, row_split_h, waveletType, wx);
         if (row_idx < 1) {
             out = Container2d (l.rows(), curr_row.size());
