@@ -60,6 +60,34 @@ using index_value_type_t = typename has_index_operator<T>::type;
 }
 
 
+
+
+template <typename Container2d, bool SO, bool F = blaze::IsDenseMatrix<Container2d>::value>
+struct InternalBlazeType {}; // internal matrix and vector types of sparsity as Container2d, TODO use on dwt2 or remove
+
+template <typename Container2d, bool SO>
+struct InternalBlazeType <Container2d, SO, true> {
+    using El = typename Container2d::ElementType;
+    using vector_type = blaze::DynamicVector<El, SO>;
+    using matrix_type = blaze::DynamicMatrix<El, SO>;
+};
+
+template <typename Container2d, bool SO>
+struct InternalBlazeType <Container2d, SO, false> {
+    using El = typename Container2d::ElementType;
+    using vector_type = blaze::CompressedVector<El, SO>;
+    using matrix_type = blaze::CompressedMatrix<El, SO>;
+};
+
+template <typename Container2d, bool SO = blaze::rowMajor>
+using InternalBlazeVecT = typename InternalBlazeType<Container2d, SO>::vector_type;
+
+template <typename Container2d, bool SO = blaze::rowMajor>
+using InternalBlazeMatT = typename InternalBlazeType<Container2d, SO>::matrix_type;
+
+
+
+
 // wavelet functions
 
 
