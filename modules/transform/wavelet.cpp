@@ -471,7 +471,12 @@ dwt2(std::vector<Container> const & x, int waveletType)
 
 
 template <typename Container2d>
-std::tuple<Container2d, Container2d, Container2d, Container2d>
+//std::tuple<Container2d, Container2d, Container2d, Container2d>
+typename std::enable_if<
+ blaze::IsMatrix<Container2d>::value,
+ std::tuple<Container2d, Container2d, Container2d, Container2d>
+>::type
+
 dwt2(Container2d const & x, int waveletType) {
 
     using El = typename Container2d::ElementType; // now we support only Blaze matrices, TODO add type traits, generalize!!
@@ -654,7 +659,8 @@ Container2d idwt2(
 
 
 template <typename Container2d>
-Container2d idwt2(
+//Container2d idwt2(
+typename std::enable_if<blaze::IsMatrix<Container2d>::value, Container2d>::type idwt2(
             Container2d const & ll,
             Container2d const & lh,
             Container2d const & hl,

@@ -79,6 +79,7 @@ int main() {
     {
         //using T = blaze::DynamicMatrix<double>;
         using T = blaze::CompressedMatrix<double>;
+        //using T = std::vector<blaze::DynamicVector<double>>; // runs old overload
 
         T data2d = {
             { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
@@ -98,7 +99,8 @@ int main() {
         };
         auto splitted = wavelet::dwt2(data2d, 4);
         std::cout << "\n\nblaze 2d test: splitted 1:\n" << std::get<0>(splitted) << "\n\n";
-        auto restored = wavelet::idwt2(std::get<0>(splitted), std::get<1>(splitted), std::get<2>(splitted), std::get<3>(splitted), 4, data2d.rows(), data2d.columns());
+        auto restored = wavelet::idwt2(std::get<0>(splitted), std::get<1>(splitted), std::get<2>(splitted), std::get<3>(splitted), 4, data2d.rows(), data2d.columns()); // for non-matrix type
+        //auto restored = wavelet::idwt2(std::get<0>(splitted), std::get<1>(splitted), std::get<2>(splitted), std::get<3>(splitted), 4, data2d.size(), data2d[0].size());
         std::cout << "\n\nblaze 2d test: restored:\n" << restored << "\n\n";
     }
 
