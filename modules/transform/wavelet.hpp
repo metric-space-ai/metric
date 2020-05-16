@@ -382,7 +382,11 @@ dwt2(std::vector<Container> const & x, int waveletType);
  * @return
  */
 template <typename Container2d>
-std::tuple<Container2d, Container2d, Container2d, Container2d>
+//std::tuple<Container2d, Container2d, Container2d, Container2d>
+typename std::enable_if<
+ blaze::IsMatrix<Container2d>::value,
+ std::tuple<Container2d, Container2d, Container2d, Container2d>
+>::type
 dwt2(Container2d const & x, int waveletType);
 
 
@@ -438,12 +442,13 @@ std::vector<Container> idwt2(
  * @param wx
  * @return
  */
-template <typename Container>
-Container idwt2(
-            Container const & ll,
-            Container const & lh,
-            Container const & hl,
-            Container const & hh,
+template <typename Container2d>
+//Container2d idwt2(
+typename std::enable_if<blaze::IsMatrix<Container2d>::value, Container2d>::type idwt2(
+            Container2d const & ll,
+            Container2d const & lh,
+            Container2d const & hl,
+            Container2d const & hh,
             int waveletType,
             int hx,
             int wx);
