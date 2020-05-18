@@ -1,7 +1,9 @@
 #define BOOST_TEST_MODULE dwt_tests
 #define BOOST_TEST_DYN_LINK
 #include <boost/test/unit_test.hpp>
-//#include <vector>
+#include <boost/test/test_case_template.hpp>
+#include <boost/mpl/list.hpp>
+#include <vector>
 //#include <deque>
 //#include <array>
 //#include <numeric>
@@ -11,10 +13,18 @@
 #include "modules/transform/wavelet.hpp"
 
 
+using DM = blaze::DynamicMatrix<double>;
+using SM = blaze::CompressedMatrix<double>;
+using VBM = std::vector<blaze::DynamicVector<double>>;
+using VVM = std::vector<std::vector<double>>;
+//using MatrixTypes = boost::mpl::list<DM, SM, VBM, VVM>; //TODO fix old container support
+using MatrixTypes = boost::mpl::list<DM, SM>;
 
-BOOST_AUTO_TEST_CASE(dwt2) {
-    using T = blaze::DynamicMatrix<double>;
-    //using T = std::vector<blaze::DynamicVector<double>>; // runs old overload
+using DV = blaze::DynamicVector<double>;
+using SV = blaze::CompressedVector<double>;
+using VectorTypes = boost::mpl::list<DV, SV>;
+
+BOOST_AUTO_TEST_CASE_TEMPLATE(dwt2, T, MatrixTypes) {
 
     T data2d = {
         { 0, 0, 0, 0, 0, 0, 1, 2, 3, 4 },
