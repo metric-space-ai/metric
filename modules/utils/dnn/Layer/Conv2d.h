@@ -68,6 +68,11 @@ class Conv2d: public Layer<Scalar>
         // Note that input of this layer is also the output of previous layer
 
     public:
+        Conv2d(const int inputSize, const int outputSize) : Layer<Scalar>(inputSize, outputSize)
+        {
+
+        }
+
         ///
         /// Constructor
         ///
@@ -205,10 +210,10 @@ class Conv2d: public Layer<Scalar>
             }
 
             for (auto& unrolledKernel: unrolledKernels) {
-                unrolledKernel.reserve(unrolledKernel.columns() * iDeltas.size());
 
                 /* Fill unrolled kernel */
                 if (isTranspose) {
+                    unrolledKernel.reserve(unrolledKernel.rows() * iDeltas.size());
                     for (size_t i = 0; i < unrolledKernel.rows(); ++i) {
                         //assert(unrolledKernel.rows() == jDeltas.size());
                         //assert(jDeltas[i] + kernelRow.columns() <= unrolledKernel.columns());
@@ -218,6 +223,7 @@ class Conv2d: public Layer<Scalar>
                         unrolledKernel.finalize(i);
                     }
                 } else {
+                    unrolledKernel.reserve(unrolledKernel.columns() * iDeltas.size());
                     for (size_t i = 0; i < unrolledKernel.columns(); ++i) {
                         for (size_t id = 0; id < iDeltas.size(); ++id) {
                             unrolledKernel.append(jDeltas[i] + iDeltas[id], i, 1);
@@ -253,6 +259,7 @@ class Conv2d: public Layer<Scalar>
 
                     /* Fill unrolled kernel */
                     if (isTranspose) {
+                        //std::cout << unrolledKernel << std::endl;
                         for (size_t i = 0; i < unrolledKernel.rows(); ++i) {
                             //assert(unrolledKernel.rows() == jDeltas.size());
                             //assert(jDeltas[i] + kernelRow.columns() <= unrolledKernel.columns());

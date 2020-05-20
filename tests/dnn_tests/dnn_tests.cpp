@@ -125,22 +125,22 @@ BOOST_AUTO_TEST_CASE(convolutional)
 	std::cout << A * blaze::trans(B) << std::endl;*/
 }
 
-/*BOOST_AUTO_TEST_CASE(deconvolutional)
+BOOST_AUTO_TEST_CASE(deconvolutional)
 {
 	Conv2dTranspose<double, Identity<double>> convTransposeLayer(2, 2, 1, 1, 2, 2);
-	blaze::DynamicMatrix<double, blaze::columnMajor> X{{1, 2, 3, 4}};
+	blaze::DynamicMatrix<double> X{{1, 2, 3, 4}};
 	std::vector<double> K = {1, 2, 3, 4};
-	std::vector<double> bias = {0};
+	std::vector<double> bias = {1};
 
 	convTransposeLayer.setParameters({K, bias});
 
 	convTransposeLayer.forward(X);
 
-	blaze::DynamicMatrix<double, blaze::columnMajor> Y {{1, 4, 4, 6, 20, 16, 9, 24, 16}};
+	blaze::DynamicMatrix<double> Y {{1, 1, 2, 1, 5, 7, 5, 13, 10}};
 
 	BOOST_CHECK_EQUAL(convTransposeLayer.output(), Y);
 }
-*/
+
 
 /*BOOST_AUTO_TEST_CASE(network_json)
 {
