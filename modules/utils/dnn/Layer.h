@@ -48,6 +48,9 @@ class Layer
 		        inputSize(inputSize), outputSize(outputSize)
         {}
 
+        ///
+        /// Virtual destructor
+        ///
         virtual ~Layer() {}
 
         Layer(const nlohmann::json& json)
