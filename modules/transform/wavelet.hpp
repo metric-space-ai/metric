@@ -16,9 +16,80 @@
 #include <algorithm>
 #include <functional>
 #include <deque>
-#include "../../3rdparty/blaze/Math.h"
+#include "../../3rdparty/blaze/Blaze.h"
 
 namespace wavelet {
+
+
+namespace types {
+
+// type traits // TODO move to some commonly included file
+
+
+/**
+ * @brief if T is a container and implemented operator[] value is true, otherwise value is false
+ *
+ * @tparam T checking type
+ *
+ */
+template <typename T>
+class has_index_operator {
+    struct nil_t {
+    };
+    template <typename U>
+    static constexpr auto test(U*) -> decltype(std::declval<U&>()[0]);
+    template <typename>
+    static constexpr auto test(...) -> nil_t;
+
+public:
+    using type = typename std::decay<decltype(test<T>(nullptr))>::type;
+    static const bool value = !std::is_same<type, nil_t>::value;
+};
+
+/**
+ * @brief extract returning type of operator[] in container, in case of STL containers is equivalent ot value_type
+ * for example: underlying_type<std::vector<int>> == int,
+ *              underlying_type<std::vector<std::vector<int>>> == std::vector<int>,
+
+ * @tparam T Container type
+ */
+template <typename T>
+using index_value_type_t = typename has_index_operator<T>::type;
+
+
+}
+
+
+
+
+template <typename Container2d, bool SO, bool F = blaze::IsDenseMatrix<Container2d>::value>
+struct InternalBlazeType {}; // internal matrix and vector types of sparsity as Container2d, TODO use on dwt2 or remove
+
+template <typename Container2d, bool SO>
+struct InternalBlazeType <Container2d, SO, true> {
+    using El = typename Container2d::ElementType;
+    using vector_type = blaze::DynamicVector<El, SO>;
+    using matrix_type = blaze::DynamicMatrix<El, SO>;
+};
+
+template <typename Container2d, bool SO>
+struct InternalBlazeType <Container2d, SO, false> {
+    using El = typename Container2d::ElementType;
+    using vector_type = blaze::CompressedVector<El, SO>;
+    using matrix_type = blaze::CompressedMatrix<El, SO>;
+};
+
+template <typename Container2d, bool SO = blaze::rowMajor>
+using InternalBlazeVecT = typename InternalBlazeType<Container2d, SO>::vector_type;
+
+template <typename Container2d, bool SO = blaze::rowMajor>
+using InternalBlazeMatT = typename InternalBlazeType<Container2d, SO>::matrix_type;
+
+
+
+
+// wavelet functions
+
 
 ///**
 // * @brief valid convolution
@@ -115,8 +186,8 @@ Container upsconv(Container const& x, Container const& f, int len); // overload 
  * @return
  */
 template <typename Container>
-Container dbwavf(int const wnum, typename Container::value_type dings); // overload added by Max F
-
+//Container dbwavf(int const wnum, typename Container::value_type dings); // overload added by Max F
+Container dbwavf(int const wnum, types::index_value_type_t<Container> dings); // overload added by Max F
 
 ///**
 // * @brief
@@ -305,6 +376,32 @@ T TWED(blaze::CompressedVector<T> const& As, blaze::CompressedVector<T> const& B
 // 2d functions
 
 
+///**
+// * @brief non-blaze dwt2
+// *
+// * @param x
+// * @param waveletType
+// * @return
+// */
+//template <typename Container>
+//dwt2(std::vector<Container> const & x, int waveletType);
+
+/**
+ * @brief blaze matrix overload of dwt2
+ *
+ * @param x
+ * @param waveletType
+ * @return
+ */
+template <typename Container>
+typename std::enable_if<
+ blaze::IsMatrix<
+  Container>::value,
+  std::tuple<std::vector<Container>, std::vector<Container>, std::vector<Container>, std::vector<Container>>
+ >::type
+dwt2(std::vector<Container> const & x, int waveletType);
+
+
 /**
  * @brief
  *
@@ -312,9 +409,14 @@ T TWED(blaze::CompressedVector<T> const& As, blaze::CompressedVector<T> const& B
  * @param waveletType
  * @return
  */
-template <typename Container>
-std::tuple<std::vector<Container>, std::vector<Container>, std::vector<Container>, std::vector<Container>>
-dwt2(std::vector<Container> const & x, int waveletType);
+template <typename Container2d>
+//std::tuple<Container2d, Container2d, Container2d, Container2d>
+typename std::enable_if<
+ blaze::IsMatrix<Container2d>::value,
+ std::tuple<Container2d, Container2d, Container2d, Container2d>
+>::type
+dwt2(Container2d const & x, int waveletType);
+
 
 
 /**
@@ -354,6 +456,32 @@ std::vector<Container> idwt2(
             int waveletType,
             int hx,
             int wx);
+
+
+/**
+ * @brief
+ *
+ * @param ll
+ * @param lh
+ * @param hl
+ * @param hh
+ * @param waveletType
+ * @param hx
+ * @param wx
+ * @return
+ */
+template <typename Container2d>
+//Container2d idwt2(
+typename std::enable_if<blaze::IsMatrix<Container2d>::value, Container2d>::type idwt2(
+            Container2d const & ll,
+            Container2d const & lh,
+            Container2d const & hl,
+            Container2d const & hh,
+            int waveletType,
+            int hx,
+            int wx);
+
+
 
 
 }  // namespace
