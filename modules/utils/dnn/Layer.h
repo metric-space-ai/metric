@@ -5,7 +5,7 @@
 #include <random>
 
 #include "../../../3rdparty/blaze/Math.h"
-#include "../../../3rdparty/json/json.hpp"
+#include "../../../3rdparty/nlohmann/json.hpp"
 
 #include "Optimizer.h"
 
