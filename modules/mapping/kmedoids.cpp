@@ -10,6 +10,8 @@ Copyright (c) 2018 M.Welsch
 #define _METRIC_MAPPING_KMEDOIDS_CPP
 
 #include "../space/matrix.hpp"
+#include "../distance.hpp"
+
 #include <tuple>
 #include <vector>
 #include <limits>
@@ -17,8 +19,8 @@ Copyright (c) 2018 M.Welsch
 
 namespace metric {
 namespace kmedoids_details {
-    template <typename recType, typename Metric, typename T = typename metric::Matrix<recType, Metric>::distType >
-    T update_cluster(const metric::Matrix<recType, Metric>& DM, std::vector<int>& seeds,
+    template <typename RecType, typename Metric, typename T = typename metric::Matrix<RecType, Metric>::distType >
+    T update_cluster(const metric::Matrix<RecType, Metric>& DM, std::vector<int>& seeds,
         std::vector<int>& assignments, std::vector<int>& sec_nearest, std::vector<int>& counts)
     {
 
@@ -53,14 +55,14 @@ namespace kmedoids_details {
         return total_distance;
     }
 
-    template <typename recType, typename Metric>
-    void init_medoids(int k, const metric::Matrix<recType, Metric>& DM, std::vector<int>& seeds,
+    template <typename RecType, typename Metric>
+    void init_medoids(int k, const metric::Matrix<RecType, Metric>& DM, std::vector<int>& seeds,
         std::vector<int>& assignments, std::vector<int>& sec_nearest, std::vector<int>& counts)
     {
         seeds.clear();
         // find first object: object minimum distance to others
         int first_medoid = 0;
-        using T = typename metric::Matrix<recType,Metric>::distType;
+        using T = typename metric::Matrix<RecType,Metric>::distType;
         T min_dissim = std::numeric_limits<T>::max();
         for (int i = 0; i < DM.size(); i++) {
             T total = 0;
@@ -99,8 +101,8 @@ namespace kmedoids_details {
         }
     }
 
-    template <typename recType, typename Metric, typename T = typename metric::Matrix<recType, Metric>::distType>
-    T cost(int i, int h, const metric::Matrix<recType, Metric>& DM, std::vector<int>& seeds,
+    template <typename RecType, typename Metric, typename T = typename metric::Matrix<RecType, Metric>::distType>
+    T cost(int i, int h, const metric::Matrix<RecType, Metric>& DM, std::vector<int>& seeds,
         std::vector<int>& assignments, std::vector<int>& sec_nearest)
     {
         T total = 0;
@@ -128,11 +130,13 @@ namespace kmedoids_details {
     }
 }  // namespace kmedoids_details
 
-template <typename recType, typename Metric, typename T>
-std::tuple<std::vector<int>, std::vector<int>, std::vector<int>> kmedoids(
-    const metric::Matrix<recType, Metric>& DM, int k)
+template <typename RecType, typename Metric>
+auto kmedoids(
+    const metric::Matrix<RecType, Metric>& DM,
+    int k
+) -> std::tuple<std::vector<int>, std::vector<int>, std::vector<int>>
 {
-
+    using T = typename std::invoke_result<Metric, const RecType&, const RecType&>::type;
     // check arguments
     size_t n = DM.size();
 
@@ -233,7 +237,7 @@ std::tuple<std::vector<int>, std::vector<int>, std::vector<int>> kmedoids_(const
     T epsilon = 1e-15;  /// Normalized sensitivity for convergence
 
     // set initianl medoids
-    metric::Matrix<std::vector<T>, metric::Euclidian<T>> dm(D);
+    metric::Matrix<std::vector<T>, metric::Euclidean<T>> dm(D);
     kmedoids_details::init_medoids(k, dm, seeds, assignments, sec_nearest, counts);
 
     T tolerance = epsilon * Dsum / (D[0].size() * D.size());

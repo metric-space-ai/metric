@@ -25,7 +25,7 @@ void register_wrapper_Redif(py::module& m) {
 
 void export_metric_Redif(py::module& m) {
     using Value = double;
-    register_wrapper_Redif<Value, metric::Euclidian<Value>>(m);
+    register_wrapper_Redif<Value, metric::Euclidean<Value>>(m);
 }
 
 PYBIND11_MODULE(redif, m) {

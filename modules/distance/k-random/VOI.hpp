@@ -14,6 +14,7 @@ Copyright (c) 2019 Panda Team
 #include "../../../modules/utils/type_traits.hpp"
 #include <type_traits>
 #include <vector>
+
 namespace metric {
 
 
@@ -27,13 +28,18 @@ namespace metric {
  * @param version
  * @return
  */
-template <typename Container, typename Metric = metric::Chebyshev<type_traits::underlaying_type_t<Container>>>
+template <typename Container, typename Metric = metric::Chebyshev<type_traits::underlying_type_t<Container>>>
 typename std::enable_if_t<!type_traits::is_container_of_integrals_v<Container>,
-                          type_traits::underlaying_type_t<Container>>
-mutualInformation(const Container& Xc,
-    const Container & Yc, int k = 3, const Metric & metric = Metric(), int logbase = 2);
+                          type_traits::underlying_type_t<Container>>
+mutualInformation(
+    const Container & Xc,
+    const Container & Yc,
+    int k = 3,
+    const Metric & metric = Metric(),
+    int logbase = 2
+);
 
-template <typename Container, typename T = type_traits::underlaying_type_t<Container> >
+template <typename Container, typename T = type_traits::underlying_type_t<Container> >
 std::enable_if_t<type_traits::is_container_of_integrals_v<Container>, T>
 mutualInformation(const Container& Xc, const Container& Yc, T logbase = 2.0);
 
@@ -46,8 +52,8 @@ mutualInformation(const Container& Xc, const Container& Yc, T logbase = 2.0);
  * @param logbase
  * @return
  */
-template <typename C, typename Metric = metric::Chebyshev<type_traits::underlaying_type_t<C>>,
-          typename T = type_traits::underlaying_type_t<C>>
+template <typename C, typename Metric = metric::Chebyshev<type_traits::underlying_type_t<C>>,
+          typename T = type_traits::underlying_type_t<C>>
 typename std::enable_if_t<!type_traits::is_container_of_integrals_v<C>, T>
 variationOfInformation(const C& Xc, const C& Yc, int k = 3, int p = 25, T logbase = 2.0);
 
@@ -61,10 +67,9 @@ variationOfInformation(const C& Xc, const C& Yc, int k = 3, int p = 25, T logbas
  * @param logbase
  * @return
  */
-    template <typename C, typename T = type_traits::underlaying_type_t<C>>
-    typename std::enable_if_t<!type_traits::is_container_of_integrals_v<C>,T>
-    variationOfInformation_normalized(
-    const C & Xc, const C& Yc, int k = 3, int p = 25, T logbase = 2.0);
+template <typename C, typename T = type_traits::underlying_type_t<C>>
+typename std::enable_if_t<!type_traits::is_container_of_integrals_v<C>,T>
+variationOfInformation_normalized(const C & Xc, const C& Yc, int k = 3, int p = 25, T logbase = 2.0);
 
 /**
  * @brief
@@ -72,7 +77,8 @@ variationOfInformation(const C& Xc, const C& Yc, int k = 3, int p = 25, T logbas
  * @tparam V
  */
 template <typename V = double>
-struct VOI {
+class VOI {
+public:
     using distance_type = V;
 
     int k = 3;
@@ -85,10 +91,10 @@ struct VOI {
      * @param k_
      * @param logbase_
      */
-    explicit VOI(int k_ = 3, V logbase_ = 2, int p_ = 25)
-        : k(k_)
-        , p(p_)
-        , logbase(logbase_)
+    explicit VOI(int k = 3, int p = 25, V logbase = 2)
+        : k(k)
+        , p(p)
+        , logbase(logbase)
     {
     }
 
@@ -100,11 +106,11 @@ struct VOI {
      * @return variation of information between a and b
      */
 
-    template <typename Container, typename T = type_traits::underlaying_type_t<Container>>
+    template <typename Container, typename T = type_traits::underlying_type_t<Container>>
     typename std::enable_if_t<!std::is_integral_v<T>, V>  // only real values are accepted
     operator()(const Container& a, const Container& b) const;
 
-    template <typename Container, typename T = type_traits::underlaying_type_t<Container>>
+    template <typename Container, typename T = type_traits::underlying_type_t<Container>>
     typename std::enable_if_t<std::is_integral_v<T>, V>  // only real values are accepted
     operator()(const Container& a, const Container& b) const;
 
@@ -112,7 +118,7 @@ struct VOI {
 };
 // deduction guide for VOI
 template <typename V>
-VOI(int, V)->VOI<double>;
+VOI(int, V) -> VOI<double>;
 
 /**
  * @class VOI_normalized 
@@ -121,17 +127,15 @@ VOI(int, V)->VOI<double>;
  *
  */
 template <typename V = double>
-struct VOI_normalized : VOI<V> {
+class VOI_normalized : public VOI<V> {
+public:
     /**
      * @brief Construct a new VOI_normalized object
      *
      * @param k_
      * @param logbase_
      */
-    explicit VOI_normalized(int k_ = 3, V logbase_ = 2)
-        : VOI<V>(k_, logbase_)
-    {
-    }
+    using VOI<V>::VOI;
 
     /**
      * @brief Calculate Variation of Information 
@@ -140,16 +144,15 @@ struct VOI_normalized : VOI<V> {
      * @param b second container
      * @return varition of information between a and b
      */
-    template <typename Container, typename T = type_traits::underlaying_type_t<Container>>
-    typename std::enable_if_t<!std::is_integral_v<T>, V>  // only real values are accepted
+    template <typename Container, typename T = type_traits::underlying_type_t<Container>>
+              typename std::enable_if_t<!std::is_integral_v<T>, V>  // only real values are accepted
     operator()(const Container& a, const Container& b) const;
 
     // TODO add support of 1D random values passed in simple containers
 };
 
 template <typename V>
-VOI_normalized(int, V)->VOI_normalized<double>;
-
+VOI_normalized(int, V) -> VOI_normalized<double>;
 
 
 }  // namespace metric

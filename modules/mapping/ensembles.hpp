@@ -9,6 +9,8 @@ Copyright (c) 2019 Panda Team
 #ifndef _METRIC_MAPPING_ENSEMBLES_HPP
 #define _METRIC_MAPPING_ENSEMBLES_HPP
 
+#include "ensembles/DT.hpp"
+
 #include <vector>
 #include <functional>
 #include <memory>
@@ -376,6 +378,5 @@ private:
 }  // namespace metric
 
 #include "ensembles/ensembles.cpp"
-#include "ensembles/DT.hpp"
 
 #endif

@@ -1,6 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
 
-set(Boost_DEBUG on)  
 find_package(Boost)
 
 project(space_examples)

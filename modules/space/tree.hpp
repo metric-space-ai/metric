@@ -10,6 +10,10 @@ Copyright (c) 2018, Michael Welsch
 #ifndef _METRIC_SPACE_TREE_HPP
 #define _METRIC_SPACE_TREE_HPP
 
+#include "../../3rdparty/blaze/Math.h"
+#include "../../3rdparty/blaze/math/Matrix.h"
+#include "../../3rdparty/blaze/math/adaptors/SymmetricMatrix.h"
+
 #include <atomic>
 #include <cmath>
 #include <fstream>
@@ -24,9 +28,7 @@ Copyright (c) 2018, Michael Welsch
 #include <unordered_set>
 #include <unordered_map>
 #include <vector>
-#include "../../3rdparty/blaze/Math.h"
-#include "../../3rdparty/blaze/math/Matrix.h"
-#include "../../3rdparty/blaze/math/adaptors/SymmetricMatrix.h"
+
 namespace metric {
 /*
   _ \         _|             |  |       \  |        |       _)
@@ -34,7 +36,7 @@ namespace metric {
   ___/ \___| _| \__,_| \_,_| _| \__|   _|  _| \___| \__| _|  _| \__|
 
 */
-/*** standard euclidian (L2) Metric ***/
+/*** standard Euclidean (L2) Metric ***/
 template <typename, typename>
 struct SerializedNode;
 
@@ -53,15 +55,15 @@ struct bad_distribution_exception : public std::exception {
 
 */
 /*** Cover Tree Implementation ***/
-template <class recType, class Metric>
+template <class RecType, class Metric>
 class Tree {
 
 public:
-    typedef Node<recType, Metric> NodeType;
-    typedef Node<recType, Metric>* Node_ptr;
-    typedef Tree<recType, Metric> TreeType;
+    using NodeType = Node<RecType, Metric>;
+    using Node_ptr = Node<RecType, Metric>*;
+    using TreeType = Tree<RecType, Metric>;
     using rset_t = std::tuple<Node_ptr, std::vector<Node_ptr>, std::vector<Node_ptr>>;
-    using Distance = typename std::result_of<Metric(recType, recType)>::type;
+    using Distance = typename std::invoke_result<Metric, const RecType&, const RecType&>::type;
 
     /***
       @brief cluster tree nodes according to distribution
@@ -76,7 +78,7 @@ public:
       @return vector of vector of node IDs according to distribution
      */
     std::vector<std::vector<std::size_t>> clustering(const std::vector<double>& distribution,
-        const std::vector<std::size_t>& indexes, const std::vector<recType>& points);
+        const std::vector<std::size_t>& indexes, const std::vector<RecType>& points);
 
     /***
       @brief cluster tree nodes according to distribution
@@ -104,7 +106,7 @@ public:
     */
 
     std::vector<std::vector<std::size_t>> clustering(
-        const std::vector<double>& distribution, const std::vector<recType>& points);
+        const std::vector<double>& distribution, const std::vector<RecType>& points);
 
     /**
      * @brief deserialize tree from Archive
@@ -123,6 +125,15 @@ public:
     template <class Archive>
     void serialize(Archive& archive);
 
+    /*
+     * Set of default methods
+     *
+     */
+    Tree(const Tree&) = delete;
+    Tree(Tree&&) noexcept = default;    // need to clone the tree
+    auto operator = (Tree&&) noexcept -> Tree& = default;
+    auto operator = (const Tree&) -> Tree& = delete; // need to clone the tree
+
     /*** Constructors ***/
 
     /**
@@ -140,7 +151,7 @@ public:
      * @param truncate truncate parameter
      * @param d metric object
      */
-    Tree(const recType& p, int truncate = -1, Metric d = Metric());  // cover tree with one data record as root
+    Tree(const RecType& p, int truncate = -1, Metric d = Metric());  // cover tree with one data record as root
 
     /**
      * @brief Construct a Tree object from data vector
@@ -156,7 +167,7 @@ public:
      * @brief Destroy the Tree object
      *
      */
-    ~Tree();  // Destuctor
+    ~Tree();  // Destructor
 
     /*** Access Operations ***/
 
@@ -166,7 +177,7 @@ public:
      * @param p data record
      * @return ID of inserted node
      */
-    std::size_t insert(const recType& p);
+    std::size_t insert(const RecType& p);
 
     /**
      * @brief Insert set of data records to the cover tree
@@ -176,7 +187,7 @@ public:
      * @return false if inserting unsuccessful
      */
 
-    bool insert(const std::vector<recType>& p);
+    bool insert(const std::vector<RecType>& p);
 
     /**
      * @brief inser data record to the tree if distance between NN and new point is greater than a threshold
@@ -186,7 +197,7 @@ public:
      * @return ID of inserted node and true if inserting successful
      * @return ID of NN node and false if inserting unsuccessful
      */
-    std::tuple<std::size_t, bool> insert_if(const recType& p, Distance treshold);
+    std::tuple<std::size_t, bool> insert_if(const RecType& p, Distance treshold);
 
     /**
      * @brief inser set of data records to the tree if distance between root and new point is greater than a threshold
@@ -195,7 +206,7 @@ public:
      * @param treshold distance threshold
      * @return std::size_t amount of inserted points
      */
-    std::size_t insert_if(const std::vector<recType>& p, Distance treshold);
+    std::size_t insert_if(const std::vector<RecType>& p, Distance treshold);
 
     /**
      * @brief erase data record from cover tree
@@ -204,7 +215,7 @@ public:
      * @return true if erase successful
      * @return false if erase unsuccessful
      */
-    bool erase(const recType& p);
+    bool erase(const RecType& p);
 
     /**
      * @brief access data record by ID
@@ -213,7 +224,7 @@ public:
      * @return data record with ID == id
      * @throws std::runtime_error when tree has no element with ID
      */
-    recType operator[](size_t id);
+    RecType operator[](size_t id) const;
 
     /*** Nearest Neighbour search ***/
 
@@ -223,7 +234,7 @@ public:
      * @param p searching data record
      * @return Node containing nearest neigbour to p
      */
-    Node_ptr nn(const recType& p) const;
+    Node_ptr nn(const RecType& p) const;
 
     /**
      * @brief find K-nearest neighbour of data record
@@ -232,7 +243,7 @@ public:
      * @param k amount of nearest neighbours
      * @return vector of pair of node pointer and distance to searching point
      */
-    std::vector<std::pair<Node_ptr, Distance>> knn(const recType& p, unsigned k = 10) const;
+    std::vector<std::pair<Node_ptr, Distance>> knn(const RecType& p, unsigned k = 10) const;
 
     /**
      * @brief find all nearest neighbour in range [0;distance]
@@ -241,7 +252,7 @@ public:
      * @param distance max distance to searching point
      * @return vector of pair of node pointer and distance to searching point
      */
-    std::vector<std::pair<Node_ptr, Distance>> rnn(const recType& p, Distance distance = 1.0) const;
+    std::vector<std::pair<Node_ptr, Distance>> rnn(const RecType& p, Distance distance = 1.0) const;
 
     /*** utilitys ***/
 
@@ -293,7 +304,7 @@ public:
      *
      * @return vector of data records  stored in the tree
      */
-    std::vector<recType> toVector();
+    std::vector<RecType> toVector();
 
     /**
      * @brief serialize tree to JSON, with custom data record serialzer
@@ -301,7 +312,7 @@ public:
      * @param printer function converting data record to JSON
      * @return JSON representation of tree
      */
-    std::string to_json(std::function<std::string(const recType&)> printer);
+    std::string to_json(std::function<std::string(const RecType&)> printer);
 
     /**
      * @brief serialize tree to JSON
@@ -391,7 +402,7 @@ public:
      * @param p2  - second record
      * @return weighted sum of edges between nodes nearest to p1 and p2
      */
-    Distance distance(const recType & p1, const recType & p2) const;
+    Distance distance(const RecType & p1, const RecType & p2) const;
 
     /**
      * @brief convert cover tree to distance matrix
@@ -411,50 +422,50 @@ public:
     Distance operator()(std::size_t id1, std::size_t id2) const;
     
 private:
-    friend class Node<recType, Metric>;
+    friend class Node<RecType, Metric>;
 
     /*** Types ***/
     Metric metric_;
 
     /*** Properties ***/
-    Distance base = 2;  // Base for estemating the covering of the tree
-    Node_ptr root;  // Root of the tree
+    Distance base = 2;  // Base for estimating the covering of the tree
+    Node_ptr root = nullptr;  // Root of the tree
     std::atomic<int> min_scale;  // Minimum scale
     std::atomic<int> max_scale;  // Minimum scale
     int truncate_level = -1;  // Relative level below which the tree is truncated
     std::atomic<std::size_t> nextID = 0;  // Next node ID
     mutable std::shared_timed_mutex global_mut;  // lock for changing the root
-    std::vector<std::pair<recType, Node_ptr>> data;
+    std::vector<std::pair<RecType, Node_ptr>> data;
 
     std::unordered_map<std::size_t, std::size_t> index_map;  // ID -> data index mapping
 
-    // /*** Imlementation Methodes ***/
+    // /*** Implementation Methods ***/
 
     Node_ptr insert(Node_ptr p, Node_ptr x);
 
     template <typename pointOrNodeType>
     std::tuple<std::vector<int>, std::vector<Distance>> sortChildrenByDistance(Node_ptr p, pointOrNodeType x) const;
 
-    bool grab_sub_tree(Node_ptr proot, const recType& center, std::unordered_set<std::size_t>& parsed_points,
+    bool grab_sub_tree(Node_ptr proot, const RecType& center, std::unordered_set<std::size_t>& parsed_points,
         const std::vector<std::size_t>& distribution_sizes, std::size_t& cur_idx,
         std::vector<std::vector<std::size_t>>& result);
 
-    bool grab_tree(Node_ptr start_point, const recType& center, std::unordered_set<std::size_t>& parsed_points,
+    bool grab_tree(Node_ptr start_point, const RecType& center, std::unordered_set<std::size_t>& parsed_points,
         const std::vector<std::size_t>& distribution_sizes, std::size_t& cur_idx,
         std::vector<std::vector<std::size_t>>& result);
 
-    double find_neighbour_radius(const std::vector<std::size_t>& IDS, const std::vector<recType>& points);
+    double find_neighbour_radius(const std::vector<std::size_t>& IDS, const std::vector<RecType>& points);
     double find_neighbour_radius(const std::vector<std::size_t>& IDS);
 
-    double find_neighbour_radius(const std::vector<recType>& points);
+    double find_neighbour_radius(const std::vector<RecType>& points);
 
     //  template <typename pointOrNodeType>
     Node_ptr insert_(Node_ptr p, Node_ptr x);
 
-    void nn_(Node_ptr current, Distance dist_current, const recType& p, std::pair<Node_ptr, Distance>& nn) const;
-    std::size_t knn_(Node_ptr current, Distance dist_current, const recType& p,
+    void nn_(Node_ptr current, Distance dist_current, const RecType& p, std::pair<Node_ptr, Distance>& nn) const;
+    std::size_t knn_(Node_ptr current, Distance dist_current, const RecType& p,
         std::vector<std::pair<Node_ptr, Distance>>& nnList, std::size_t nnSize) const;
-    void rnn_(Node_ptr current, Distance dist_current, const recType& p, Distance distance,
+    void rnn_(Node_ptr current, Distance dist_current, const RecType& p, Distance distance,
         std::vector<std::pair<Node_ptr, Distance>>& nnList) const;
 
     void print_(NodeType* node_p, std::ostream& ostr) const;
@@ -471,25 +482,25 @@ private:
     rset_t rebalance_(Node_ptr p, Node_ptr q, Node_ptr x);
 
     std::vector<std::vector<std::size_t>> clustering_impl(
-        const std::vector<double>& distribution, const recType& center, double radius);
+        const std::vector<double>& distribution, const RecType& center, double radius);
 
     bool update_idx(std::size_t& cur_idx, const std::vector<std::size_t>& distribution_sizes,
         std::vector<std::vector<std::size_t>>& result);
 
-    Distance metric(const recType& p1, const recType& p2) const { return metric_(p1, p2); }
+    Distance metric(const RecType& p1, const RecType& p2) const { return metric_(p1, p2); }
     Distance metric_by_id(const std::size_t id1, const std::size_t id2) {
         return metric_(data[index_map[id1]].first, data[index_map[id2]].first);
     }
     template <class Archive>
-    auto deserialize_node(Archive& istr) -> SerializedNode<recType, Metric>;
+    auto deserialize_node(Archive& istr) -> SerializedNode<RecType, Metric>;
 
-    std::size_t add_data(const recType & p, Node_ptr ptr) {
+    std::size_t add_data(const RecType & p, Node_ptr ptr) {
         data.push_back(std::pair{p,ptr});
         auto id = nextID++;
         index_map[id] = data.size()-1;
         return id;
     }
-    const recType & get_data(std::size_t ID) {
+    const RecType & get_data(std::size_t ID) {
         return data[index_map[ID]].first;
     }
     void remove_data(std::size_t ID) {

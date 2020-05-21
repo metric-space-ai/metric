@@ -5,54 +5,46 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 Copyright (c) 2019 Panda Team
 */
-#ifndef _METRIC_MAPPING_SOM_CPP
-#define _METRIC_MAPPING_SOM_CPP
 #include "SOM.hpp"
+
 namespace metric {
 
-template <class recType, class Graph, class Metric, class Distribution>
-SOM<recType, Graph, Metric, Distribution>::SOM(size_t nodesNumber, Metric metric)
-    : input_dimensions(0)
-    , metric(metric)
+template <class RecType, class Graph, class Metric, class Distribution>
+SOM<RecType, Graph, Metric, Distribution>::SOM(size_t nodesNumber, Metric metric)
+    : metric(metric)
     , graph(nodesNumber)
-    , distribution(-1, 1)
 {
     valid = graph.isValid();
-
-	start_learn_rate = 0.8;
-	finish_learn_rate = 0.0;
-	iterations = 20;
 	
 	random_seed = std::chrono::system_clock::now().time_since_epoch().count();
 	
-	neighborhood_start_size = std::sqrt(double(nodesNumber));
-	neigbour_range_decay = 2.0;
+	neighborhood_start_size = std::sqrt(double(getNodesNumber()));
+	neighborhood_range_decay = 2.0;
 }
 
-template <class recType, class Graph, class Metric, class Distribution>
-SOM<recType, Graph, Metric, Distribution>::SOM(size_t nodesWidth, size_t nodesHeight, Metric metric)
-    : input_dimensions(0)
-    , metric(metric)
+template <class RecType, class Graph, class Metric, class Distribution>
+SOM<RecType, Graph, Metric, Distribution>::SOM(size_t nodesWidth, size_t nodesHeight, Metric metric)
+    : metric(metric)
     , graph(nodesWidth, nodesHeight)
-    , distribution(-1, 1)
 {
     valid = graph.isValid();
 
-	start_learn_rate = 0.8;
-	finish_learn_rate = 0.0;
-	iterations = 20;
-
 	random_seed = std::chrono::system_clock::now().time_since_epoch().count();
-	
-    const size_t nodesNumber = getNodesNumber();
-	neighborhood_start_size = std::sqrt(double(nodesNumber));
-	neigbour_range_decay = 2.0;
+
+	neighborhood_start_size = std::sqrt(double(getNodesNumber()));
+	neighborhood_range_decay = 2.0;
 }
 
-template <class recType, class Graph, class Metric, class Distribution>
-SOM<recType, Graph, Metric, Distribution>::SOM(Graph graph, Metric metric, double start_learn_rate, double finish_learn_rate, size_t iterations, Distribution distribution)
-    : input_dimensions(0)
-    , metric(metric)
+template <class RecType, class Graph, class Metric, class Distribution>
+SOM<RecType, Graph, Metric, Distribution>::SOM(
+    const Graph& graph,
+    const Metric& metric,
+    double start_learn_rate,
+    double finish_learn_rate,
+    size_t iterations,
+    Distribution distribution
+)
+    : metric(metric)
     , graph(graph)
     , distribution(distribution)
     , start_learn_rate(start_learn_rate)
@@ -63,47 +55,56 @@ SOM<recType, Graph, Metric, Distribution>::SOM(Graph graph, Metric metric, doubl
 	
 	random_seed = std::chrono::system_clock::now().time_since_epoch().count();
 
-    const size_t nodesNumber = getNodesNumber();
-	neighborhood_start_size = std::sqrt(double(nodesNumber));
-	neigbour_range_decay = 2.0;
+	neighborhood_start_size = std::sqrt(double(getNodesNumber()));
+	neighborhood_range_decay = 2.0;
 }
 
-template <class recType, class Graph, class Metric, class Distribution>
-SOM<recType, Graph, Metric, Distribution>::SOM(Graph graph, Metric metric, double start_learn_rate,  double finish_learn_rate, size_t iterations, 
-	Distribution distribution, double neighborhood_start_size, double neigbour_range_decay, long long random_seed)
-    : input_dimensions(0)
-    , metric(metric)
+template <class RecType, class Graph, class Metric, class Distribution>
+SOM<RecType, Graph, Metric, Distribution>::SOM(
+    const Graph& graph,
+    const Metric& metric,
+    double start_learn_rate,
+    double finish_learn_rate,
+    size_t iterations,
+	Distribution distribution,
+	double neighborhood_start_size,
+	double neighborhood_range_decay,
+	long long random_seed
+)
+    : metric(metric)
     , graph(graph)
     , distribution(distribution)
 	, start_learn_rate(start_learn_rate)
 	, finish_learn_rate(finish_learn_rate)
 	, iterations(iterations)
 	, neighborhood_start_size(neighborhood_start_size)
-	, neigbour_range_decay(neigbour_range_decay)
+	, neighborhood_range_decay(neighborhood_range_decay)
 	, random_seed(random_seed)
 {
     valid = graph.isValid();
 }
 
-//template <class recType, class Metric, class Graph>
-//SOM<recType, Metric, Graph>::~SOM() = default;
+//template <class RecType, class Metric, class Graph>
+//SOM<RecType, Metric, Graph>::~SOM() = default;
 
-template <class recType, class Graph, class Metric, class Distribution>
-void SOM<recType, Graph, Metric, Distribution>::train(
-    const std::vector<std::vector<T>>& samples)
+template <class RecType, class Graph, class Metric, class Distribution>
+void SOM<RecType, Graph, Metric, Distribution>::train(const std::vector<std::vector<T>>& samples)
 {
-	subsampled_train_(samples, samples.size());
+	subsampled_train(samples, samples.size());
 }
 
 
-template <class recType, class Graph, class Metric, class Distribution>
-void SOM<recType, Graph, Metric, Distribution>::estimate(const std::vector<std::vector<T>>& samples, const size_t sampleSize)
+template <class RecType, class Graph, class Metric, class Distribution>
+void SOM<RecType, Graph, Metric, Distribution>::estimate(
+    const std::vector<std::vector<T>>& samples,
+    const size_t sampleSize
+)
 {
-	subsampled_train_(samples, sampleSize);
+	subsampled_train(samples, sampleSize);
 }
 
-template <class recType, class Graph, class Metric, class Distribution>
-std::vector<double> SOM<recType, Graph, Metric, Distribution>::encode(const recType& sample)
+template <class RecType, class Graph, class Metric, class Distribution>
+std::vector<double> SOM<RecType, Graph, Metric, Distribution>::encode(const RecType& sample) const
 {
     std::vector<double> dim_reduced(getNodesNumber());
 
@@ -115,8 +116,8 @@ std::vector<double> SOM<recType, Graph, Metric, Distribution>::encode(const recT
 }
 
 /** Best matching unit **/
-template <class recType, class Graph, class Metric, class Distribution>
-size_t SOM<recType, Graph, Metric, Distribution>::BMU(const recType& sample) const
+template <class RecType, class Graph, class Metric, class Distribution>
+size_t SOM<RecType, Graph, Metric, Distribution>::BMU(const RecType& sample) const
 {
     assert(sample.size() == input_dimensions);  // input sample has not same getNodesNumber than SOM;
 
@@ -136,8 +137,8 @@ size_t SOM<recType, Graph, Metric, Distribution>::BMU(const recType& sample) con
 }
 
 
-template <class recType, class Graph, class Metric, class Distribution>
-double SOM<recType, Graph, Metric, Distribution>::std_deviation(const std::vector<std::vector<T>>& samples)
+template <class RecType, class Graph, class Metric, class Distribution>
+double SOM<RecType, Graph, Metric, Distribution>::std_deviation(const std::vector<std::vector<T>>& samples) const
 {
 	double total_distances = 0;
 	double std_deviation = 0;
@@ -158,8 +159,8 @@ double SOM<recType, Graph, Metric, Distribution>::std_deviation(const std::vecto
 
 // PRIVATE
 
-template <class recType, class Graph, class Metric, class Distribution>
-void SOM<recType, Graph, Metric, Distribution>::subsampled_train_(const std::vector<std::vector<T>>& samples, int sampleSize)
+template <class RecType, class Graph, class Metric, class Distribution>
+void SOM<RecType, Graph, Metric, Distribution>::subsampled_train(const std::vector<std::vector<T>>& samples, int sampleSize)
 {
 	
     // initialize weight matrix at first training call
@@ -235,17 +236,17 @@ void SOM<recType, Graph, Metric, Distribution>::subsampled_train_(const std::vec
 
 					const size_t neighbour_index = neighbours[deep][i];
 
-					T remoteness_factor = 1;
+					double remoteness_factor = 1;
 					// if no more neighbours are affected, the remoteness_factor returns to 1!
 					if (neighbours_num != 0) {
 
-						const T sigma = T(neighborhood_size / neigbour_range_decay);
-						remoteness_factor = std::exp(T(deep * deep) / T(-2 * sigma * sigma));
+						const double sigma = neighborhood_size / neighborhood_range_decay;
+						remoteness_factor = std::exp((deep * deep) / (-2 * sigma * sigma));
 					}
 
 					// correct coordinates in the input_dimensions space (in other words: weights) depends from the error
 					for (size_t k = 0; k < input_dimensions; ++k) {
-						const T error = samples[samples_idx][k] - weights[neighbour_index][k];
+						const double error = samples[samples_idx][k] - weights[neighbour_index][k];
 						weights[neighbour_index][k] += T(error * curr_learn_rate * remoteness_factor);
 					}
 				}
@@ -258,7 +259,3 @@ void SOM<recType, Graph, Metric, Distribution>::subsampled_train_(const std::vec
 }
 
 }  // namespace metric
-
-
-
-#endif

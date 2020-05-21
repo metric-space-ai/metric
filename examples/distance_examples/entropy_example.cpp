@@ -21,6 +21,56 @@ int main() {
     std::cout << "Entropy, Mutual Information and Variation of Information example have started" << std::endl;
     std::cout << std::endl;
 
+    {
+        // from README.md
+        std::vector<std::vector<double>> v = { {5,5}, {2,2}, {3,3}, {5,1} };
+        std::vector<std::vector<double>> v1 = {{5,5}, {2,2}, {3,3}, {5,5}};
+        std::vector<std::vector<double>> v2 = {{5,5}, {2,2}, {3,3}, {1,1}};
+        {
+            auto estimator = metric::Entropy<std::vector<double>>();
+            auto result = estimator(v);
+            std::cout << "default result: " << result << std::endl;
+        }
+        {
+            auto estimator = metric::Entropy<void, metric::Manhatten<double>>();
+            auto result = estimator(v);
+            std::cout << "Manhatten result: " << result << std::endl;
+        }
+        {
+            auto result = metric::mutualInformation(v1, v2);
+            std::cout << "MI default result: " << result << std::endl;
+        }
+        {
+            auto result = metric::mutualInformation(v1, v2, 3, metric::Euclidean<double>());
+            std::cout << "MI Euclidean result: " << result << std::endl;
+        }
+        {
+            auto result = metric::variationOfInformation(v1, v2);
+            std::cout << "VOI default result: " << result << std::endl;
+        }
+        {
+            auto result = metric::variationOfInformation<std::vector<std::vector<double>>, metric::Manhatten<double>>(v1, v2);
+            std::cout << "VOI Manhatten result: " << result << std::endl;
+        }
+        {
+            auto result = metric::variationOfInformation_normalized(v1, v2);
+            std::cout << "VOI normalized result: " << result << std::endl;
+        }
+        {
+            auto f_voi = metric::VOI<double>();
+            auto result = f_voi(v1, v2);
+            std::cout << "VOI functor result: " << result << std::endl;
+        }
+        {
+            auto f_voi_norm = metric::VOI_normalized<long double>();
+            auto result = f_voi_norm(v1, v2);
+            std::cout << "VOI functor normalized result: " << result << std::endl;
+        }
+
+    }
+
+    std::cout << std::endl << "=====" << std::endl;
+
 
     // Entropy
 
@@ -29,14 +79,14 @@ int main() {
     std::vector<std::vector<double>> v = { {5,5}, {2,2}, {3,3}, {5,1} };
 
     {
-        auto e_f = metric::Entropy_simple<void, metric::Chebyshev<double>>(metric::Chebyshev<double>(), 3);
+        auto e_f = metric::EntropySimple<void, metric::Chebyshev<double>>(metric::Chebyshev<double>(), 3);
         auto e = e_f(v);
         std::cout << "using Chebyshev: " << e << std::endl;
     }
 
-    auto e_f3 = metric::Entropy_simple<void, metric::P_norm<double>>(metric::P_norm<double>(3), 3);
-    auto e_f2 = metric::Entropy_simple<void, metric::P_norm<double>>(metric::P_norm<double>(2), 3);
-    auto e_f1 = metric::Entropy_simple<void, metric::P_norm<double>>(metric::P_norm<double>(1), 3);
+    auto e_f3 = metric::EntropySimple<void, metric::P_norm<double>>(metric::P_norm<double>(3), 3);
+    auto e_f2 = metric::EntropySimple<void, metric::P_norm<double>>(metric::P_norm<double>(2), 3);
+    auto e_f1 = metric::EntropySimple<void, metric::P_norm<double>>(metric::P_norm<double>(1), 3);
     {
         auto e = e_f3(v);
         std::cout << "using General Minkowsky, 3: " << e << std::endl;
@@ -47,7 +97,7 @@ int main() {
     }
 
     {
-        auto e_f = metric::Entropy_simple<void, metric::Euclidian<double>>(metric::Euclidian<double>(), 3);
+        auto e_f = metric::EntropySimple<void, metric::Euclidean<double>>(metric::Euclidean<double>(), 3);
         auto e = e_f(v);
         std::cout << "using Euclidean: " << e << std::endl;
     }
@@ -58,13 +108,13 @@ int main() {
     }
 
     {
-        auto e_f = metric::Entropy_simple<void, metric::Manhatten<double>>(metric::Manhatten<double>(), 3);
+        auto e_f = metric::EntropySimple<void, metric::Manhatten<double>>(metric::Manhatten<double>(), 3);
         auto e = e_f(v);
         std::cout << "using Manhatten: " << e << std::endl;
     }
 
     {
-        auto e_f = metric::Entropy_simple<std::vector<double>>();
+        auto e_f = metric::EntropySimple<std::vector<double>>();
         auto e = e_f(v);
         std::cout << "using Default: " << e << std::endl;
     }
@@ -87,7 +137,7 @@ int main() {
             "long long long long long long string"
     };
 
-    auto ee_f = metric::Entropy_simple<void, metric::Edit<void>>(metric::Edit<void>(), 3); // <void> or <char> or anything in Edit does not matter here since Container type is deduced
+    auto ee_f = metric::EntropySimple<void, metric::Edit<void>>(metric::Edit<void>(), 3); // <void> or <char> or anything in Edit does not matter here since Container type is deduced
     auto ee =  ee_f(input);
 
     std::cout << "using Edit with strings: " << ee << std::endl << std::endl;
@@ -153,19 +203,19 @@ int main() {
         urv3.push_back({dis(gen), dis(gen)});
     }
 
-    auto e_f_cheb = metric::Entropy_simple<void, metric::Chebyshev<double>>(metric::Chebyshev<double>(), 3);
+    auto e_f_cheb = metric::EntropySimple<void, metric::Chebyshev<double>>(metric::Chebyshev<double>(), 3);
     std::cout << "using Chebyshev: "
               << e_f_cheb(urv)
               << ", "
               << e_f_cheb(urv2)
               << std::endl;
 
-    auto e_f_eucl = metric::Entropy_simple<void, metric::Euclidian<double>>(metric::Euclidian<double>(), 3);
+    auto e_f_eucl = metric::EntropySimple<void, metric::Euclidean<double>>(metric::Euclidean<double>(), 3);
     auto e = e_f_eucl(urv);
     std::cout << "using Euclidean: " << e << std::endl;
 
     auto ekpn_cheb = metric::Entropy<void, metric::Chebyshev<double>>(metric::Chebyshev<double>(), 3, 10);
-    auto ekpn_eucl = metric::Entropy<void, metric::Euclidian<double>>(metric::Euclidian<double>(), 3, 10);
+    auto ekpn_eucl = metric::Entropy<void, metric::Euclidean<double>>(metric::Euclidean<double>(), 3, 10);
 
     std::cout << "entropy_kpN, using Chebyshev: "
               << ekpn_cheb(urv) << "\n";
@@ -194,7 +244,7 @@ int main() {
     // testing types
 
     {
-        auto e_f = metric::Entropy_simple<void, metric::Chebyshev<double>>(metric::Chebyshev<double>(), 3);
+        auto e_f = metric::EntropySimple<void, metric::Chebyshev<double>>(metric::Chebyshev<double>(), 3);
         std::cout << "\n\ntesting deque type\n\nChebyshev, full: " << e_f(urv4) << std::endl;
         std::cout << "Chebyshev estimation:\n" << e_f.estimate(urv4) << std::endl;
     }
@@ -212,9 +262,9 @@ int main() {
     std::cout << "\nshort test vector result: " << urv6.size() << " | " << e_f_cheb(urv6) << "\n\n";
 
 
-    auto e_f_mink1 = metric::Entropy_simple<void, metric::P_norm<ElType>>(metric::P_norm<ElType>(1), 3);
-    auto e_f_mink2 = metric::Entropy_simple<void, metric::P_norm<ElType>>(metric::P_norm<ElType>(2), 3);
-    auto e_f_manh = metric::Entropy_simple<void, metric::Manhatten<ElType>>(metric::Manhatten<ElType>(), 3);
+    auto e_f_mink1 = metric::EntropySimple<void, metric::P_norm<ElType>>(metric::P_norm<ElType>(1), 3);
+    auto e_f_mink2 = metric::EntropySimple<void, metric::P_norm<ElType>>(metric::P_norm<ElType>(2), 3);
+    auto e_f_manh = metric::EntropySimple<void, metric::Manhatten<ElType>>(metric::Manhatten<ElType>(), 3);
     auto e_kpn_cheb = metric::Entropy<void, metric::Chebyshev<ElType>>(metric::Chebyshev<ElType>(), 3, 5);
 
     std::cout << "short test vector result,  manh: " << urv6.size() << " | " << e_f_manh(urv6) << "\n";
@@ -228,7 +278,7 @@ int main() {
 
     std::vector<std::deque<double>> urv5;
 
-    auto e_f_eucl500 = metric::Entropy_simple<void, metric::Euclidian<double>>(metric::Euclidian<double>(), 500);
+    auto e_f_eucl500 = metric::EntropySimple<void, metric::Euclidean<double>>(metric::Euclidean<double>(), 500);
     std::cout << "\nlength | entropy | kpN entropy\n";
     for (size_t i = 0; i<25; ++i) {
         for (size_t i = 0; i<step; ++i) {

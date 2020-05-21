@@ -42,7 +42,7 @@ int main()
         { 0, 8 },
     };
 	
-    auto g = metric::KNNGraph<std::vector<double>, metric::Euclidian<double>>(table, neighbors_num, 2.5 * neighbors_num);
+    auto g = metric::KNNGraph<std::vector<double>, metric::Euclidean<double>>(table, neighbors_num, 2.5 * neighbors_num);
 	
     std::cout << "graph:" << std::endl;
     std::cout << g.get_matrix() << std::endl;
@@ -81,7 +81,7 @@ int main()
 
 	//
 
- //   metric::Tree<std::vector<double>, metric::Euclidian<double>> tree(table);
+ //   metric::Tree<std::vector<double>, metric::Euclidean<double>> tree(table);
 	//
  //   auto graph_from_tree = metric::KNNGraph(tree, neighbors_num, 2.5 * neighbors_num);
 	//

@@ -8,16 +8,17 @@ Copyright (c) 2019 Panda Team
 #ifndef _METRIC_DISTANCE_K_RANDOM_ENTROPY_CPP
 #define _METRIC_DISTANCE_K_RANDOM_ENTROPY_CPP
 
-#include <boost/math/special_functions/digamma.hpp>
-#include <boost/math/special_functions/gamma.hpp>
-
 #include "../../modules/utils/type_traits.hpp"
 #include "../../modules/space/tree.hpp"
-#include "estimator_helpers.cpp"
-#include "epmgp.cpp"
+#include "estimator_helpers.hpp"
+#include "epmgp.hpp"
 
 #include <cmath>
 #include <vector>
+
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
 
 namespace metric {
 
@@ -272,6 +273,83 @@ double mvnpdf(blaze::DynamicVector<double> x) {
 }
 
 
+
+/* from https://github.com/masakazu-ishihata/irand.git
+   The digamma function is the derivative of gammaln.
+
+   Reference:
+    J Bernardo,
+    Psi ( Digamma ) Function,
+    Algorithm AS 103,
+    Applied Statistics,
+    Volume 25, Number 3, pages 315-317, 1976.
+
+    From http://www.psc.edu/~burkardt/src/dirichlet/dirichlet.f
+    (with modifications for negative numbers and extra precision)
+*/
+double digamma(double x)
+{
+  double result;
+  static const double
+          neginf = -1.0/0.0,
+          c = 12,
+          s = 1e-6,
+          d1 = -0.57721566490153286,
+          d2 = 1.6449340668482264365, /* pi^2/6 */
+          s3 = 1./12,
+          s4 = 1./120,
+          s5 = 1./252,
+          s6 = 1./240,
+    s7 = 1./132;
+    //	  s8 = 691/32760,
+    //	  s9 = 1/12,
+    //	  s10 = 3617/8160;
+  /* Illegal arguments */
+  if((x == neginf) || std::isnan(x)) {
+    return 0.0/0.0;
+  }
+  /* Singularities */
+  if((x <= 0) && (floor(x) == x)) {
+    return neginf;
+  }
+  /* Negative values */
+  /* Use the reflection formula (Jeffrey 11.1.6):
+   * digamma(-x) = digamma(x+1) + pi*cot(pi*x)
+   *
+   * This is related to the identity
+   * digamma(-x) = digamma(x+1) - digamma(z) + digamma(1-z)
+   * where z is the fractional part of x
+   * For example:
+   * digamma(-3.1) = 1/3.1 + 1/2.1 + 1/1.1 + 1/0.1 + digamma(1-0.1)
+   *               = digamma(4.1) - digamma(0.1) + digamma(1-0.1)
+   * Then we use
+   * digamma(1-z) - digamma(z) = pi*cot(pi*z)
+   */
+  if(x < 0) {
+    return digamma(1-x) + M_PI/tan(-M_PI*x);
+  }
+  /* Use Taylor series if argument <= S */
+  if(x <= s) return d1 - 1/x + d2*x;
+  /* Reduce to digamma(X + N) where (X + N) >= C */
+  result = 0;
+  while(x < c) {
+    result -= 1/x;
+    x++;
+  }
+  /* Use de Moivre's expansion if argument >= C */
+  /* This expansion can be computed in Maple via asympt(Psi(x),x) */
+  if(x >= c) {
+    double r = 1/x;
+    result += std::log(x) - 0.5*r; // added "std::"
+    r *= r;
+    result -= r * (s3 - r * (s4 - r * (s5 - r * (s6 - r * s7))));
+  }
+  return result;
+}
+
+
+
+
 // averaged entropy estimation: code COPIED from mgc.*pp with only mgc replaced with entropy, TODO refactor to avoid code dubbing
 template <typename Container, typename Functor>
 double estimate(
@@ -281,7 +359,7 @@ double estimate(
         const double threshold,
         size_t maxIterations
 ){
-    using T = type_traits::underlaying_type_t<Container>;
+    using T = type_traits::underlying_type_t<Container>;
     using V = type_traits::index_value_type_t<Container>;
     const size_t dataSize = data.size();
 
@@ -365,13 +443,13 @@ double estimate(
 
 // updated version, for different metric
 // averaged entropy estimation: code COPIED from mgc.*pp with only mgc replaced with entropy, TODO refactor to avoid code dubbing
-template <typename recType, typename Metric>
+template <typename RecType, typename Metric>
 template <typename Container>
-double Entropy_simple<recType, Metric>::operator()(
+double EntropySimple<RecType, Metric>::operator()(
         const Container& data
 ) const
 {
-    using T = type_traits::underlaying_type_t<Container>;
+    using T = type_traits::underlying_type_t<Container>;
     using V = type_traits::index_value_type_t<Container>;
 
     if (data.empty() || data[0].empty()) {
@@ -394,16 +472,18 @@ double Entropy_simple<recType, Metric>::operator()(
         entropyEstimate += std::log(res.back().second);
     }
     entropyEstimate = entropyEstimate * d / (double)N; // mean log * d
-    entropyEstimate += boost::math::digamma(N) - boost::math::digamma(k) + d*std::log(2.0);
+    //entropyEstimate += boost::math::digamma(N) - boost::math::digamma(k) + d*std::log(2.0);
+    entropyEstimate += entropy_details::digamma(N) - entropy_details::digamma(k) + d*std::log(2.0);
 
     if constexpr (!std::is_same<Metric, typename metric::Chebyshev<T>>::value) {
         double p = 1; // Manhatten and other metrics (TODO check if it is correct for them!)
-        if constexpr (std::is_same<Metric, typename metric::Euclidian<T>>::value) {
+        if constexpr (std::is_same<Metric, typename metric::Euclidean<T>>::value) {
             p = 2; // Euclidean
         } else if constexpr (std::is_same<Metric, typename metric::P_norm<T>>::value) {
             p = metric.p; // general Minkowsky
         }
-        entropyEstimate += d * std::log(std::tgamma(1 + 1 / p)) - std::log(std::tgamma(1 + d / p));
+        //entropyEstimate += d * std::log(std::tgamma(1 + 1 / p)) - std::log(std::tgamma(1 + d / p)); // boost
+        entropyEstimate += d * std::log(tgamma(1 + 1 / p)) - std::log(tgamma(1 + d / p));
     }
     entropyEstimate /= std::log(logbase);
     if (exp)
@@ -416,9 +496,9 @@ double Entropy_simple<recType, Metric>::operator()(
 
 
 // averaged entropy estimation: code COPIED from mgc.*pp with only mgc replaced with entropy, TODO refactor to avoid code dubbing
-template <typename recType, typename Metric>
+template <typename RecType, typename Metric>
 template <typename Container>
-double Entropy_simple<recType, Metric>::estimate(
+double EntropySimple<RecType, Metric>::estimate(
         const Container & a,
         const size_t sampleSize,
         const double threshold,
@@ -439,34 +519,45 @@ double Entropy_simple<recType, Metric>::estimate(
 
 
 
-template <typename recType, typename Metric>
+template <typename RecType, typename Metric>
 template <typename Container>
-double Entropy<recType, Metric>::operator()(const Container& data) const
+double Entropy<RecType, Metric>::operator()(const Container& data) const
 {
-    using T = type_traits::underlaying_type_t<Container>;
+    using T = type_traits::underlying_type_t<Container>;
     using V = type_traits::index_value_type_t<Container>;
     size_t n = data.size();
     size_t d = data[0].size();
 
-    assert(p < n);
-    assert(k < p);
+    size_t k_ = k;
+    size_t p_ = p;
+    if (p_ >= n)
+        p_ = n - 1; // TODO we need to signal somehow that parameters are altered
+    if (k_ >= p_)
+        k_ = p_ - 1;
+    if (p_ < 3)
+        p_ = 3;
+    if (k_ < 2)
+        k_ = 2;
+
+    if (n < 4)
+        return std::nan("estimation failed");
 
     double h = 0;
     int got_results = 0;  // absents in Matlab original code
 
     metric::Tree<V, Metric> tree (data, -1, metric);
-    blaze::DynamicMatrix<double> Nodes (p, d, 0);
+    blaze::DynamicMatrix<double> Nodes (p_, d, 0);
     blaze::DynamicVector<double> mu (d, 0);
     blaze::DynamicVector<double> lb (d, 0);
     blaze::DynamicVector<double> ub (d, 0);
     blaze::DynamicVector<double> x_vector (d, 0);
     for (size_t i = 0; i < n; ++i) {
 
-        auto res = tree.knn(data[i], p);
-        auto eps = res[k-1].second;
+        auto res = tree.knn(data[i], p_);
+        auto eps = res[k_-1].second;
 
         blaze::reset(mu);
-        for (size_t p_idx= 0; p_idx < p; ++p_idx) { // r v realizations from the tree
+        for (size_t p_idx= 0; p_idx < p_; ++p_idx) { // r v realizations from the tree
             for (size_t d_idx = 0; d_idx < d; ++d_idx) { // dimensions
                 //Nodes(p_idx, d_idx) = res[p_idx].first->data[d_idx];
                 //mu[d_idx] += res[p_idx].first->data[d_idx];
@@ -474,11 +565,11 @@ double Entropy<recType, Metric>::operator()(const Container& data) const
                 mu[d_idx] += res[p_idx].first->get_data()[d_idx];
             }
         }
-        mu = mu/p;
+        mu = mu/p_;
         Nodes = Nodes - blaze::expand(blaze::trans(mu), Nodes.rows());
         double offset = 1e-8;
         //double offset = 1e-5; // TODO consider dependence on machine epsilon
-        auto K = blaze::evaluate( (blaze::trans(Nodes) * Nodes)*p/(p - 1) + blaze::IdentityMatrix<double>(d)*offset );
+        auto K = blaze::evaluate( (blaze::trans(Nodes) * Nodes)*p_/(p_ - 1) + blaze::IdentityMatrix<double>(d)*offset );
 
         blaze::reset(lb);
         blaze::reset(ub);
@@ -502,7 +593,8 @@ double Entropy<recType, Metric>::operator()(const Container& data) const
     double result;
     if (got_results <= 20) // this absents in Matlab original code. TODO adjust min number of points
         result = std::nan("estimation failed");
-    result = boost::math::digamma(n) - boost::math::digamma(k) + h/n;
+    //result = boost::math::digamma(n) - boost::math::digamma(k) + h/n;
+    result = entropy_details::digamma(n) - entropy_details::digamma(k) + h/n;
     if (exp)
         return entropy_details::conv_diff_entropy(result); // conversion of values below 1 to exp scale
     return result;
@@ -510,9 +602,9 @@ double Entropy<recType, Metric>::operator()(const Container& data) const
 
 
 // averaged entropy estimation: code COPIED from mgc.*pp with only mgc replaced with entropy, TODO refactor to avoid code dubbing
-template <typename recType, typename Metric>
+template <typename RecType, typename Metric>
 template <typename Container>
-double Entropy<recType, Metric>::estimate(
+double Entropy<RecType, Metric>::estimate(
         const Container & a,
         const size_t sampleSize,
         const double threshold,

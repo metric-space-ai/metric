@@ -32,7 +32,7 @@ int main()
     blaze::DynamicVector<V_type> bdv2 {vt0, vt1, vt3};
 	
 	auto t1 = std::chrono::steady_clock::now();	
-	auto result = metric::sorensen(bdv1, bdv2);
+	auto result = metric::Sorensen<V_type>()(bdv1, bdv2);
 	auto t2 = std::chrono::steady_clock::now();
     std::cout << "Sorensen Distance result from function on DynamicVector: " << result
 		<< " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000 << " ms)" << std::endl;
@@ -44,7 +44,7 @@ int main()
     blaze::StaticVector<V_type, 4UL> bsv2 {vt0, vt1, vt3, vt0};
 	
 	t1 = std::chrono::steady_clock::now();
-	result = metric::sorensen(bsv1, bsv2);
+	result = metric::Sorensen<V_type>()(bsv1, bsv2);
 	t2 = std::chrono::steady_clock::now();
     std::cout << "Sorensen Distance result from function on StativVector: " << result
 		<< " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000 << " ms)" << std::endl;
@@ -56,7 +56,7 @@ int main()
     blaze::HybridVector<V_type, 4UL> bhv2 {vt0, vt1, vt3, vt0};
 	
 	t1 = std::chrono::steady_clock::now();
-	result = metric::sorensen(bhv1, bhv2);
+	result = metric::Sorensen<V_type>()(bhv1, bhv2);
 	t2 = std::chrono::steady_clock::now();
     std::cout << "Sorensen Distance result from function on HybridVector: " << result
 		<< " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000 << " ms)" << std::endl;
@@ -68,7 +68,7 @@ int main()
     blaze::CompressedVector<V_type> bcv2 {vt0, vt1, vt3};
 	
 	t1 = std::chrono::steady_clock::now();
-	result = metric::sorensen(bcv1, bcv2);
+	result = metric::Sorensen<V_type>()(bcv1, bcv2);
 	t2 = std::chrono::steady_clock::now();
     std::cout << "Sorensen Distance result from function on CompressedVector: " << result
 		<< " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000 << " ms)" << std::endl;
@@ -80,7 +80,7 @@ int main()
     std::vector<V_type> obj2 = {vt0, vt1, vt3};
 	
 	t1 = std::chrono::steady_clock::now();
-	result = metric::sorensen(obj1, obj2);
+	result = metric::Sorensen<V_type>()(obj1, obj2);
 	t2 = std::chrono::steady_clock::now();
     std::cout << "Sorensen Distance result from function on STL Vector: " << result
 		<< " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000 << " ms)" << std::endl;

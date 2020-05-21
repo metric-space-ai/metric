@@ -54,7 +54,7 @@ sys.exit(main())
         std::cout << "Num records: " << speeds.size() << std::endl;
         std::cout << "Num values in the record: " << speeds[0].size() << std::endl;
 
-        metric::KOC_factory < Record, metric::Grid4, metric::Euclidian < double >, std::uniform_real_distribution < double >>
+        metric::KOC_factory < Record, metric::Grid4, metric::Euclidean < double >, std::uniform_real_distribution < double >>
         koc_factory(best_w_grid_size, best_h_grid_size, 0.8, 0.0, 20);
 
         auto
@@ -77,7 +77,7 @@ sys.exit(main())
 
         // metric::Grid4
         graph(best_w_grid_size, best_h_grid_size);
-        metric::Euclidian < double > distance;
+        metric::Euclidean < double > distance;
         // std::uniform_real_distribution < double > distribution;
 
         auto
@@ -87,7 +87,7 @@ sys.exit(main())
         std::vector < double > entropies;
         double
         entropies_sum = 0;
-        metric::SOM < Record, metric::Grid4, metric::Euclidian < double >, std::uniform_real_distribution < double >> & som_version = koc;
+        metric::SOM < Record, metric::Grid4, metric::Euclidean < double >, std::uniform_real_distribution < double >> & som_version = koc;
         for (size_t i = 0; i < speeds.size(); i++)
         {
 

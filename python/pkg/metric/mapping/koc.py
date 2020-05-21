@@ -1,7 +1,10 @@
 import metric._impl.koc as impl
-from metric._common import cpp_implementation_router
+from metric._impl.distance import Euclidean
+from metric._impl.utils import distribution
+from metric._common import factory_with_default
 
 
-@cpp_implementation_router(impl=impl, graph='grid6', metric='euclidean')
-def KOC_factory(*args, **kwargs):
-    pass
+KOC = factory_with_default(
+    metric=Euclidean(),
+    distribution=distribution.Normal(-1, 1)
+)(impl.KOC)

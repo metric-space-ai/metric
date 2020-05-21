@@ -1,6 +1,6 @@
 import sys
 import numpy
-from metric.mapping import affprop
+from metric.mapping import AffProp
 from metric.space import Matrix
 
 
@@ -13,7 +13,7 @@ def main():
         [5.81414000000000, 8.14015000000000, 3.22950000000000, 139.539000000000, 139.539000000000],
         [2.57927000000000, 2.63399000000000, 2.46802000000000, 61.9026000000000, 61.9026000000000]
     ])
-    assignments, exemplars, counts = affprop(Matrix(data))
+    assignments, exemplars, counts = AffProp()(Matrix(data))
     print('assignments', list(assignments))
     print('exemplars', list(exemplars))
     print('counts', list(counts))

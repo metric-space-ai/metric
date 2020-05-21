@@ -7,7 +7,7 @@
 #include "examples/mapping_examples/assets/helpers.cpp" // for .csv reader
 
 #include "../../../../modules/utils/visualizer.hpp"
-#include "../../../../modules/utils/metric_err.cpp"
+#include "../../../../modules/utils/metric_err.hpp"
 
 #include "../../../../modules/distance/k-related/Standards.hpp" // we use Euclidean metric for mean squared error evaluation
 
@@ -96,14 +96,14 @@ int main()
     // small dataset
     //*
 
-    using recType = std::deque<double>;
+    using RecType = std::deque<double>;
 
-    recType d0 {0, 1, 2, 3, 4, 5, 6, 100, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23};
-    recType d1 {0, 1, 2, 3, 4, 5, 6, 7,   8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 100};
-    std::vector<recType> d = {d0, d1};
+    RecType d0 {0, 1, 2, 3, 4, 5, 6, 100, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23};
+    RecType d1 {0, 1, 2, 3, 4, 5, 6, 7,   8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 100};
+    std::vector<RecType> d = {d0, d1};
 
     float freq_time_balance = 0.5; // try values from 0 to 1 (e g 0, 0.5, 1) to get the following portions of freq-domain: 0, 4/9, 8/9
-    auto bundle = metric::DSPCC<recType, void>(d, 4, 2, freq_time_balance, 4);
+    auto bundle = metric::DSPCC<RecType, void>(d, 4, 2, freq_time_balance, 4);
 
     auto pre_encoded = bundle.test_public_wrapper_encode(d);
     auto pre_decoded = bundle.test_public_wrapper_decode(pre_encoded);
@@ -121,7 +121,7 @@ int main()
     print_table(decoded);
 
     std::cout << "\nsimple test done\n";
-    auto err_full_1 = normalized_err_stats<metric::Euclidian<double>>(d, decoded);
+    auto err_full_1 = normalized_err_stats<metric::Euclidean<double>>(d, decoded);
     print_stats(err_full_1);
     std::cout << "average RMSE = " << mean_square_error(d, decoded) << "\n";
 
@@ -132,13 +132,13 @@ int main()
 
     // test Blaze vector input
 
-    //using recTypeBlaze = blaze::DynamicVector<double, blaze::columnVector>; // also works
-    using recTypeBlaze = blaze::DynamicVector<double, blaze::rowVector>;
+    //using RecTypeBlaze = blaze::DynamicVector<double, blaze::columnVector>; // also works
+    using RecTypeBlaze = blaze::DynamicVector<double, blaze::rowVector>;
 
-    recTypeBlaze dBlaze1 {0, 1, 2, 3, 4, 5, 6, 100, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23};
-    recTypeBlaze dBlaze2 {0, 1, 2, 3, 4, 5, 6, 7,   8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 100};
-    std::vector<recTypeBlaze> dBlaze {dBlaze1, dBlaze2};
-    auto bundleBlaze = metric::DSPCC<recTypeBlaze, void>(dBlaze, 3, 2, 0.5, 3);
+    RecTypeBlaze dBlaze1 {0, 1, 2, 3, 4, 5, 6, 100, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23};
+    RecTypeBlaze dBlaze2 {0, 1, 2, 3, 4, 5, 6, 7,   8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 100};
+    std::vector<RecTypeBlaze> dBlaze {dBlaze1, dBlaze2};
+    auto bundleBlaze = metric::DSPCC<RecTypeBlaze, void>(dBlaze, 3, 2, 0.5, 3);
     auto encodedBlaze = bundleBlaze.encode(dBlaze);
     auto decodedBlaze = bundleBlaze.decode(encodedBlaze);
 
@@ -157,11 +157,11 @@ int main()
     // RMSE and metric error check
     /*
 
-    using recType = std::vector<double>;
+    using RecType = std::vector<double>;
 
-    recType d0 {0, 1, 2, 3};
-    recType d1 {0, 1, 2, 3};
-    std::vector<recType> d = {d0, d1};
+    RecType d0 {0, 1, 2, 3};
+    RecType d1 {0, 1, 2, 3};
+    std::vector<RecType> d = {d0, d1};
 
     auto d_upd = d;
     d_upd[0][3] = 5;
@@ -172,7 +172,7 @@ int main()
     std::cout << "\nd_upd:\n";
     print_table(d_upd); // some normalization issue when using DCT persists..
 
-    print_stats(normalized_err_stats<metric::Euclidian<double>>(d, d_upd));
+    print_stats(normalized_err_stats<metric::Euclidean<double>>(d, d_upd));
 
     std::cout << "average RMSE = " << mean_square_error(d, d_upd) << "\n";
 
@@ -240,7 +240,7 @@ int main()
         std::cout << " decoded record length:  " << v_decoded[0].size() << "\n";
 
         std::cout << "\ndecompression with only time-freq PSFAs done, decoded data saved\n";
-        auto err_tf = normalized_err_stats<metric::Euclidian<double>>(vdata, v_decoded);
+        auto err_tf = normalized_err_stats<metric::Euclidean<double>>(vdata, v_decoded);
         print_stats(err_tf);
         errs_tf.push_back(std::get<4>(err_tf));
 
@@ -257,7 +257,7 @@ int main()
         }
 
         std::cout << "\ntest of pre-compression done, pre-decoded data saved\n";
-        auto err_pre = normalized_err_stats<metric::Euclidian<double>>(vdata, v_pre_decoded);
+        auto err_pre = normalized_err_stats<metric::Euclidean<double>>(vdata, v_pre_decoded);
         print_stats(err_pre);
         errs_pre.push_back(std::get<4>(err_pre));
 
@@ -276,14 +276,14 @@ int main()
 
 
         std::cout << "\ncompletely encoded data saved\n";
-        auto err_full = normalized_err_stats<metric::Euclidian<double>>(vdata, v_decoded2);
+        auto err_full = normalized_err_stats<metric::Euclidean<double>>(vdata, v_decoded2);
         print_stats(err_full);
         errs_full.push_back(std::get<4>(err_full));
 
         std::cout << "average RMSE = " << mean_square_error(v_decoded2, vdata) << "\n";
 
 
-//        auto errors2 = normalized_errors<metric::Euclidian<double>>(vdata, v_decoded2);
+//        auto errors2 = normalized_errors<metric::Euclidean<double>>(vdata, v_decoded2);
 //        std::cout << "err/norm per record:\n";
 //        for (size_t i = 0; i< errors2.size(); ++i) {
 //            std::cout << errors2[i] << "\n";

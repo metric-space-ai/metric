@@ -6,15 +6,19 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 Copyright (c) 2020 Panda Team
 
 */
-
-#ifndef _METRIC_SPACE_KNN_GRAPH_CPP
-#define _METRIC_SPACE_KNN_GRAPH_CPP
 #include "knn_graph.hpp"
+
 namespace metric {
+
 template <typename Sample, typename Distance, typename WeightType, bool isDense, bool isSymmetric>
 template <typename Container, typename>
 KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::KNNGraph(
-    const Container& samples, size_t neighbors_num, size_t max_bruteforce_size, int max_iterations, double update_range)
+    const Container& samples,
+    size_t neighbors_num,
+    size_t max_bruteforce_size,
+    int max_iterations,
+    double update_range
+)
     : Graph<WeightType, isDense, isSymmetric>(samples.size())
     , _nodes(samples)
     , _neighbors_num(neighbors_num)
@@ -26,21 +30,6 @@ KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::KNNGraph(
 }
 
 template <typename Sample, typename Distance, typename WeightType, bool isDense, bool isSymmetric>
-KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::KNNGraph(const KNNGraph& graph)
-    : Graph<WeightType, isDense, isSymmetric>()
-    , _neighbors_num(graph._neighbors_num)
-    , _max_bruteforce_size(graph._max_bruteforce_size)
-    , _max_iterations(graph._max_iterations)
-    , _update_range(graph._update_range)
-{
-    _nodes = graph._nodes;
-    // copy assignment
-    this->m = graph.m;
-    this->valid = true;
-}
-
-
-template <typename Sample, typename Distance, typename WeightType, bool isDense, bool isSymmetric>
 template <typename Container, typename>
 void KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::calculate_distance_matrix(const Container& samples)
 {
@@ -49,7 +38,7 @@ void KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::calculate_dis
     for (int i = 0; i < samples.size(); i++) {
         // take each node
         auto i_point = samples[i];
-        std::vector<distance_value_type_t> distances;
+        std::vector<distance_type> distances;
         // then calculate distances for all other nodes
         for (int j = 0; j < samples.size(); j++) {
             auto i_other_point = samples[j];
@@ -64,7 +53,7 @@ template <typename Sample, typename Distance, typename WeightType, bool isDense,
 template <typename Container, typename>
 void KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::make_edge_pairs(const Container& samples)
 {
-    this->m.resize(samples.size(), samples.size());
+    this->matrix.resize(samples.size(), samples.size());
     std::vector<int> ids(samples.size());
     std::iota(ids.begin(), ids.end(), 0);
 
@@ -183,8 +172,8 @@ std::vector<std::pair<size_t, size_t>> KNNGraph<Sample, Distance, WeightType, is
     std::vector<std::pair<size_t, size_t>> edgesPairs;
 
     int update_count = 0;
-    std::vector<std::vector<distance_value_type_t>> distances;
-    std::vector<distance_value_type_t> distance_row;
+    std::vector<std::vector<distance_type>> distances;
+    std::vector<distance_type> distance_row;
     for (int i = 0; i < ids.size(); i++) {
         distance_row.clear();
         for (int j = 0; j < ids.size(); j++) {
@@ -247,12 +236,12 @@ std::vector<size_t> KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>
     std::vector<size_t> result;
 
     // variables for choosen nodes during search
-    std::vector<distance_value_type_t> choosen_distances;
+    std::vector<distance_type> choosen_distances;
     std::vector<int> choosen_nodes;
 
     // temp variables
-    std::vector<distance_value_type_t> distances;
-    distance_value_type_t distance;
+    std::vector<distance_type> distances;
+    distance_type distance;
 
     Distance distancer;
 
@@ -344,6 +333,7 @@ std::vector<size_t> KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>
 
     return idx;
 }
+
 template <typename Sample, typename Distance, typename WeightType, bool isDense, bool isSymmetric>
 std::size_t KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::insert(const Sample& p)
 {
@@ -351,6 +341,7 @@ std::size_t KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::insert
     construct(_nodes);
     return _nodes.size() - 1;
 }
+
 template <typename Sample, typename Distance, typename WeightType, bool isDense, bool isSymmetric>
 template <typename Container, typename>
 std::vector<std::size_t> KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::insert(const Container& p)
@@ -362,6 +353,7 @@ std::vector<std::size_t> KNNGraph<Sample, Distance, WeightType, isDense, isSymme
     std::iota(res.begin(), res.end(), sz);
     return res;
 }
+
 template <typename Sample, typename Distance, typename WeightType, bool isDense, bool isSymmetric>
 std::pair<std::size_t, bool> KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::insert_if(
     const Sample& p, typename Distance::distance_type threshold)
@@ -401,6 +393,7 @@ std::vector<std::pair<std::size_t, bool>> KNNGraph<Sample, Distance, WeightType,
     construct(_nodes);
     return v;
 }
+
 template <typename Sample, typename Distance, typename WeightType, bool isDense, bool isSymmetric>
 void KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::erase(std::size_t idx)
 {
@@ -411,10 +404,11 @@ void KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::erase(std::si
 }
 
 template <typename Sample, typename Distance, typename WeightType, bool isDense, bool isSymmetric>
-std::size_t KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::nn(const Sample & p) const {
+std::size_t KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::nn(const Sample & p) {
     auto n = gnnn_search(p, 1);
     return n[0];
 }
+
 template <typename Sample, typename Distance, typename WeightType, bool isDense, bool isSymmetric>
 std::vector<std::size_t> KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::knn(const Sample& p, std::size_t K) const
 {
@@ -429,12 +423,12 @@ KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::rnn(const Sample& 
     std::vector<std::pair<size_t, typename Distance::distance_type>> result;
 
     // variables for choosen nodes during search
-    std::vector<distance_value_type_t> choosen_distances;
+    std::vector<distance_type> choosen_distances;
     std::vector<int> choosen_nodes;
 
     // temp variables
-    std::vector<distance_value_type_t> distances;
-    distance_value_type_t distance;
+    std::vector<distance_type> distances;
+    distance_type distance;
 
     Distance distancer;
 
@@ -499,5 +493,5 @@ KNNGraph<Sample, Distance, WeightType, isDense, isSymmetric>::rnn(const Sample& 
     }
     return result;
 }
-}
-#endif
+
+} // metric
