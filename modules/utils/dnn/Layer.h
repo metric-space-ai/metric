@@ -7,6 +7,8 @@
 #include "../../../3rdparty/blaze/Math.h"
 #include "../../../3rdparty/nlohmann/json.hpp"
 
+#include "Initializer.h"
+
 #include "Optimizer.h"
 
 namespace metric::dnn
@@ -30,9 +32,10 @@ class Layer
     public:
 		using Matrix = blaze::DynamicMatrix<Scalar>;
 
-		const int inputSize;  // Size of input units
-		const int outputSize; // Size of output units
+		int inputSize;  // Size of input units
+		int outputSize; // Size of output units
 
+		Layer() {};
 		///
         /// Constructor
         ///
@@ -50,8 +53,7 @@ class Layer
         ///
         virtual ~Layer() {}
 
-        Layer(const nlohmann::json& json) : inputSize(json["inputSize"].get<int>()),
-                                                outputSize(json["outputSize"].get<int>())
+        Layer(const nlohmann::json& json)
         {}
 
 	virtual nlohmann::json toJson()
@@ -77,7 +79,11 @@ class Layer
             return outputSize;
         }
 
-        ///
+        virtual std::vector<size_t> getOutputShape() const = 0;
+
+        virtual void init(const std::map<std::string, std::shared_ptr<Initializer<Scalar>>> initializer) = 0;
+
+	///
         /// Initialize layer parameters using \f$N(\mu, \sigma^2)\f$ distribution
         ///
         /// \param mu    Mean of the normal distribution.

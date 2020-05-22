@@ -3,9 +3,7 @@
 
 #include <stdexcept>
 
-namespace metric
-{
-namespace dnn
+namespace metric::dnn
 {
 
 
@@ -45,7 +43,7 @@ class RegressionMSE: public Output<Scalar>
             // d(L) / d(in) = yhat - y
             m_din.resize(nobs, nvar);
             //noalises
-            m_din = prev_layer_data - target;
+            m_din = 2*(prev_layer_data - target);
         }
 
         const Matrix& backprop_data() const
@@ -56,13 +54,12 @@ class RegressionMSE: public Output<Scalar>
         Scalar loss() const
         {
             // L = 0.5 * ||yhat - y||^2
-            return blaze::sqrNorm(m_din) / m_din.rows() * Scalar(0.5);
+            return blaze::sqrNorm(m_din/2.) / m_din.rows();
         }
 };
 
 
-} // namespace dnn
-} // namespace metric
+} // namespace metric::dnn
 
 
 #endif /* OUTPUT_REGRESSIONMSE_H_ */

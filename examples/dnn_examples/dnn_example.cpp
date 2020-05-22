@@ -87,17 +87,31 @@ int main()
 						{
 							"type": "FullyConnected",
 							"inputSize": 128,
-							"outputSize": 6,
+							"outputSize": 64,
 							"activation": "ReLU"
 						},
 					"2":
 						{
 							"type": "FullyConnected",
-							"inputSize": 6,
-							"outputSize": 128,
+							"inputSize": 64,
+							"outputSize": 32,
 							"activation": "ReLU"
 						},
 					"3":
+						{
+							"type": "FullyConnected",
+							"inputSize": 32,
+							"outputSize": 64,
+							"activation": "ReLU"
+						},
+					"4":
+						{
+							"type": "FullyConnected",
+							"inputSize": 64,
+							"outputSize": 128,
+							"activation": "ReLU"
+						},
+					"5":
 						{
 							"type": "FullyConnected",
 							"inputSize": 128,
@@ -115,11 +129,72 @@ int main()
 					}
 				)"_json;
 
-	Autoencoder<uint8_t, double> autoencoder(json.dump());
+
+	auto jsonConv = R"({
+					"0":
+						{
+							"type": "Conv2d",
+							"inputWidth": 28,
+							"inputHeight": 28,
+							"inputChannels": 1,
+							"outputChannels": 16,
+							"kernelWidth": 4,
+							"kernelHeight": 4,
+							"stride": 2,
+							"activation": "ReLU"
+						},
+					"1":
+						{
+							"type": "Conv2d",
+							"inputWidth": 13,
+							"inputHeight": 13,
+							"inputChannels": 16,
+							"outputChannels": 8,
+							"kernelWidth": 3,
+							"kernelHeight": 3,
+							"stride": 2,
+							"activation": "ReLU"
+						},
+					"2":
+						{
+							"type": "Conv2dTranspose",
+							"inputWidth": 6,
+							"inputHeight": 6,
+							"inputChannels": 8,
+							"outputChannels": 16,
+							"kernelWidth": 3,
+							"kernelHeight": 3,
+							"stride": 2,
+							"activation": "Sigmoid"
+						},
+					"3":
+						{
+							"type": "Conv2dTranspose",
+							"inputWidth": 13,
+							"inputHeight": 13,
+							"inputChannels": 16,
+							"outputChannels": 1,
+							"kernelWidth": 4,
+							"kernelHeight": 4,
+							"stride": 2,
+							"activation": "Sigmoid"
+						},
+					"train":
+						{
+							"loss": "RegressionMSE",
+							"optimizer": {"type": "RMSProp",
+											"learningRate": 0.01,
+											"eps": 1e-6,
+											"decay": 0.9}
+						}
+					}
+				)"_json;
+
+	Autoencoder<uint8_t, double> autoencoder(jsonConv.dump());
 	autoencoder.setCallback(dnn::VerboseCallback<double>());
 
 	cout << "Train" << endl;
-	autoencoder.train(features, 5, 256);
+	autoencoder.train(features, 1, 256);
 
 	cout << "Sample:" << endl;
 	vector<uint8_t> sample(features.begin(), features.begin() + shape[1] * shape[2]);
