@@ -335,7 +335,7 @@ Container idwt(Container a, Container d, int waveletType, int lx)
 }
 
 
-int wmaxlev(int sizeX, int waveletType)
+static int wmaxlev(int sizeX, int waveletType)
 {
     std::vector<double> F = dbwavf<std::vector<double>>(waveletType, double(1.0));
     auto [Lo_D, Hi_D, Lo_R, Hi_R] = orthfilt(F);
