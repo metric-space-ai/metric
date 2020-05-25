@@ -261,7 +261,7 @@ Container idwt(Container a, Container d, int waveletType, int lx); // overload a
  * @param waveletType 
  * @return
  */
-int wmaxlev(int sizeX, int waveletType);
+static int wmaxlev(int sizeX, int waveletType);
 
 ///**
 // * @brief
