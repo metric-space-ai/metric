@@ -14,7 +14,6 @@
 #include <cmath>
 #include "../../../3rdparty/blaze/Math.h"
 
-#include "convolution.hpp"
 
 /**
  * Module of image filters based on 2 convolution.
