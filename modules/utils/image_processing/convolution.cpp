@@ -1,12 +1,16 @@
 #include "convolution.hpp"
 
+
 namespace metric {
 
 	template <typename T, size_t Channels>
-	Convolution2d<T, Channels>::Convolution2d(size_t imageWidth, size_t imageHeight, size_t kernelWidth, size_t kernelHeight)
+	Convolution2d<T, Channels>::Convolution2d(size_t imageWidth, size_t imageHeight, size_t kernelWidth, size_t kernelHeight) :
+                                                                    padWidth(kernelWidth - 1), padHeight(kernelHeight - 1)
 	{
+                padModel = std::make_shared<PadModel<T>>(PadDirection::BOTH, PadType::CONST, 0);
+
 		auto t1 = Clock::now();
-		convLayer = std::make_shared<ConvLayer2d>(imageWidth, imageHeight, 1, 1, kernelWidth, kernelHeight);
+		convLayer = std::make_shared<ConvLayer2d>(imageWidth + padWidth, imageHeight + padHeight, 1, 1, kernelWidth, kernelHeight);
 		auto t2 = Clock::now();
 		auto d = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1);
 		std::cout << " convolution constructor time: " << d.count() << " s" << std::endl;
@@ -36,7 +40,8 @@ namespace metric {
 		Image output;
 
 		for (size_t c = 0; c < image.size(); ++c) {
-			auto& channel = image[c];
+                        padModel->pad({}, image[c]).first;
+			const auto& channel = padModel->pad({padWidth / 2, padHeight / 2}, image[c]).first;
 
 			/* Convert image */
 			Matrix imageData(1, channel.rows() * channel.columns());
