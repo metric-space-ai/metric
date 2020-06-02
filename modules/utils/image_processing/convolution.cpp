@@ -13,7 +13,7 @@ namespace metric {
 		convLayer = std::make_shared<ConvLayer2d>(imageWidth + padWidth, imageHeight + padHeight, 1, 1, kernelWidth, kernelHeight);
 		auto t2 = Clock::now();
 		auto d = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1);
-		std::cout << " convolution constructor time: " << d.count() << " s" << std::endl;
+		//std::cout << " convolution constructor time: " << d.count() << " s" << std::endl;
 	}
 
 	template<typename T, size_t Channels>
@@ -33,7 +33,7 @@ namespace metric {
 		convLayer->setParameters({kernelData, {0}});
 		auto t2 = Clock::now();
 		auto d = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1);
-		std::cout << " convolution() set kernel time: " << d.count() << " s" << std::endl;
+		//std::cout << " convolution() set kernel time: " << d.count() << " s" << std::endl;
 
 
 		/* Create output image */
@@ -60,7 +60,7 @@ namespace metric {
 
 			auto t2 = Clock::now();
 			auto d = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1);
-			std::cout << " convolution() time: " << d.count() << " s" << std::endl;
+			//std::cout << " convolution() time: " << d.count() << " s" << std::endl;
 
 			/* Convert output */
 			e = 0;

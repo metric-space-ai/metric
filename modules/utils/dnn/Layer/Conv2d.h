@@ -429,7 +429,7 @@ class Conv2d: public Layer<Scalar>
 				throw std::invalid_argument("Parameter size does not match");
 			}*/
 
-			std::cout << parameters[0].size() << " " << kernelsData.size() << std::endl;
+			//std::cout << parameters[0].size() << " " << kernelsData.size() << std::endl;
 			assert(parameters[0].size() == kernelsData.size());
 			assert(parameters[1].size() == bias.size());
 
