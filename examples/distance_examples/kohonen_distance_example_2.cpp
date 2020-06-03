@@ -178,10 +178,20 @@ int main()
 	for (size_t i = 0; i < path.size(); i++)
 	{
 		matrix_path.push_back({path[i]});
-		result_for_check += eu_distance(prev_node, som_nodes[path[i]]);
+		if (i > 0) {
+			result_for_check += eu_distance(prev_node, som_nodes[path[i]]);
+		}
 		prev_node = som_nodes[path[i]];
 	}
-	result_for_check += eu_distance(prev_node, max_point);
+	std::cout << "result test: " << result_for_check << std::endl;
+	
+	double from_min_distance = eu_distance(min_point, som_nodes[path[0]]);
+	std::cout << "from_min_distance: " << from_min_distance << std::endl;
+	double from_max_distance = eu_distance(som_nodes[path[path.size() - 1]], max_point);
+	std::cout << "from_max_distance test: " << from_max_distance << std::endl;
+	
+	result_for_check += from_min_distance;
+	result_for_check += from_max_distance;
 	std::cout << "result test: " << result_for_check << std::endl;
 
 	

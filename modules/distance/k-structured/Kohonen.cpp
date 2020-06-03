@@ -68,13 +68,16 @@ auto Kohonen<D, Sample, Graph, Metric, Distribution>::operator()(const Sample& s
 	std::vector<Sample> nodes = som_model.get_weights();
 	
 	auto direct_distance = distance(sample_1, sample_2);
-	auto path_distance = distance(sample_1, nodes[bmu_1]) + distance_matrix[bmu_1][bmu_2] + distance(nodes[bmu_2], sample_2);
+	
+	double to_nearest_1 = distance(sample_1, nodes[bmu_1]);
+	double to_nearest_2 = distance(nodes[bmu_2], sample_2);
 
-	if (direct_distance < path_distance)
+	if (direct_distance < to_nearest_1 + to_nearest_2)
 	{
 		return direct_distance;
 	}
-	return path_distance;
+
+	return to_nearest_1 + distance_matrix[bmu_1][bmu_2] + to_nearest_2;
 }
 
 
