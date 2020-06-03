@@ -68,7 +68,7 @@ class Conv2d: public Layer<Scalar>
         // Note that input of this layer is also the output of previous layer
 
     public:
-        Conv2d(const int inputSize, const int outputSize) : Layer<Scalar>(inputSize, outputSize)
+        Conv2d(const size_t inputSize, const size_t outputSize) : Layer<Scalar>(inputSize, outputSize)
         {
 
         }
@@ -83,9 +83,9 @@ class Conv2d: public Layer<Scalar>
         /// \param kernelWidth  Width of the filter.
         /// \param kernelHeight Height of the filter.
         ///
-        Conv2d(const int inputWidth, const int inputHeight,
-               const int inputChannels, const int outputChannels,
-               const int kernelWidth, const int kernelHeight,
+        Conv2d(const size_t inputWidth, const size_t inputHeight,
+               const size_t inputChannels, const size_t outputChannels,
+               const size_t kernelWidth, const size_t kernelHeight,
                const size_t stride = 1) :
                                             Layer<Scalar>(inputWidth * inputHeight * inputChannels,
                                               ((inputWidth - kernelWidth) / stride + 1) *
@@ -102,7 +102,7 @@ class Conv2d: public Layer<Scalar>
             this->outputSize = outputChannels * outputWidth * outputHeight;
 
             // Set data dimension
-            const int kernelDataSize = inputChannels * outputChannels * kernelWidth * kernelHeight;
+            const size_t kernelDataSize = inputChannels * outputChannels * kernelWidth * kernelHeight;
 
             kernelsData.resize(kernelDataSize);
             df_data.resize(kernelDataSize);
@@ -132,7 +132,7 @@ class Conv2d: public Layer<Scalar>
             this->outputSize = outputChannels * outputWidth * outputHeight;
 
             // Set data dimension
-            const int kernelDataSize = inputChannels * outputChannels * kernelWidth * kernelHeight;
+            const size_t kernelDataSize = inputChannels * outputChannels * kernelWidth * kernelHeight;
 
             kernelsData.resize(kernelDataSize);
             df_data.resize(kernelDataSize);
@@ -282,7 +282,7 @@ class Conv2d: public Layer<Scalar>
         void forward(const Matrix& prev_layer_data)
         {
             // Each row is an observation
-            const int nobs = prev_layer_data.rows();
+            const size_t nobs = prev_layer_data.rows();
 
             // Linear term, z = conv(in, w) + b
             z.resize(nobs, this->outputSize);
@@ -292,7 +292,7 @@ class Conv2d: public Layer<Scalar>
             //cout << getUnrolledKernel() << endl;
             //cout << m_filter_data << endl;
             //cout << unrolledKernel << endl;
-            const int channel_nelem = outputWidth * outputHeight;
+            const size_t channel_nelem = outputWidth * outputHeight;
 
             for (size_t channel = 0; channel < outputChannels; ++channel) {
                 blaze::submatrix(z, 0, channel * channel_nelem, nobs, channel_nelem) = prev_layer_data * unrolledKernels[channel];
@@ -302,8 +302,8 @@ class Conv2d: public Layer<Scalar>
 	    // Add bias terms
             // Each row of z contains m_dim.out_channels channels, and each channel has
             // m_dim.conv_rows * m_dim.conv_cols elements
-            int channel_start_row = 0;
-            for (int i = 0; i < outputChannels; i++, channel_start_row += channel_nelem) {
+            size_t channel_start_row = 0;
+            for (size_t i = 0; i < outputChannels; i++, channel_start_row += channel_nelem) {
                 submatrix(z, 0, channel_start_row, nobs, channel_nelem) += bias[i];
             }
 

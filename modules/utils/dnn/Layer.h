@@ -32,8 +32,8 @@ class Layer
     public:
 		using Matrix = blaze::DynamicMatrix<Scalar>;
 
-		int inputSize;  // Size of input units
-		int outputSize; // Size of output units
+		size_t inputSize;  // Size of input units
+		size_t outputSize; // Size of output units
 
 		Layer() {};
 		///
@@ -44,7 +44,7 @@ class Layer
         /// \param outputSize Number of output units of this hidden layer. It must be
         ///                 equal to the number of input units of the next layer.
         ///
-        Layer(const int inputSize, const int outputSize) :
+        Layer(const size_t inputSize, const size_t outputSize) :
 		        inputSize(inputSize), outputSize(outputSize)
         {}
 
@@ -67,14 +67,14 @@ class Layer
 	///
 	/// Get the number of input units of this hidden layer.
         ///
-        int getInputSize() const
+        size_t getInputSize() const
         {
             return inputSize;
         }
         ///
         /// Get the number of output units of this hidden layer.
         ///
-        int getOutputSize() const
+        size_t getOutputSize() const
         {
             return outputSize;
         }

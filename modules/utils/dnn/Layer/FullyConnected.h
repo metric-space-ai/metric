@@ -48,7 +48,7 @@ class FullyConnected: public Layer<Scalar>
         /// \param in_size  Number of input units.
         /// \param out_size Number of output units.
         ///
-        FullyConnected(const int in_size, const int out_size) :
+        FullyConnected(const size_t in_size, const size_t out_size) :
             Layer<Scalar>(in_size, out_size)
         {}
 
@@ -107,7 +107,7 @@ class FullyConnected: public Layer<Scalar>
 		// prev_layer_data: getInputSize x nobs
         void forward(const Matrix& prev_layer_data)
         {
-            const int nobs = prev_layer_data.rows();
+            const size_t nobs = prev_layer_data.rows();
 
             // Linear term z = W' * in + b
             m_z.resize(nobs, this->outputSize);
@@ -132,7 +132,7 @@ class FullyConnected: public Layer<Scalar>
         // next_layer_data: getOutputSize x nobs
         void backprop(const Matrix& prev_layer_data, const Matrix& next_layer_data)
         {
-            const int nobs = prev_layer_data.rows();
+            const size_t nobs = prev_layer_data.rows();
             // After forward stage, m_z contains z = W' * in + b
             // Now we need to calculate d(L) / d(z) = [d(a) / d(z)] * [d(L) / d(a)]
             // d(L) / d(a) is computed in the next layer, contained in next_layer_data
