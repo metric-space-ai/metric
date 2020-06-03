@@ -64,7 +64,17 @@ auto Kohonen<D, Sample, Graph, Metric, Distribution>::operator()(const Sample& s
 	auto bmu_1 = som_model.BMU(sample_1);
 	auto bmu_2 = som_model.BMU(sample_2);
 
-	return distance_matrix[bmu_1][bmu_2];
+    Metric distance;
+	std::vector<Sample> nodes = som_model.get_weights();
+	
+	auto direct_distance = distance(sample_1, sample_2);
+	auto path_distance = distance(sample_1, nodes[bmu_1]) + distance_matrix[bmu_1][bmu_2] + distance(nodes[bmu_2], sample_2);
+
+	if (direct_distance < path_distance)
+	{
+		return direct_distance;
+	}
+	return path_distance;
 }
 
 
@@ -115,6 +125,34 @@ void Kohonen<D, Sample, Graph, Metric, Distribution>::print_shortest_path(int fr
         print_shortest_path(from_node,  predecessors[from_node][to_node]);
         std::cout << to_node << " -> ";
     }
+}
+
+
+template <typename D, typename Sample, typename Graph, typename Metric, typename Distribution>
+std::vector<int> Kohonen<D, Sample, Graph, Metric, Distribution>::get_shortest_path(int from_node, int to_node) const
+{
+	std::vector<int> path;
+	return get_shortest_path_(path, from_node, to_node);
+}
+
+
+template <typename D, typename Sample, typename Graph, typename Metric, typename Distribution>
+std::vector<int> Kohonen<D, Sample, Graph, Metric, Distribution>::get_shortest_path_(std::vector<int> &path, int from_node, int to_node) const
+{
+    if(to_node == from_node)
+	{
+		path.push_back(to_node);
+    }
+	else if(predecessors[from_node][to_node] == -1)
+	{
+    }
+	else
+	{
+        get_shortest_path_(path, from_node,  predecessors[from_node][to_node]);
+		path.push_back(to_node);
+    }
+
+	return path;
 }
 
 

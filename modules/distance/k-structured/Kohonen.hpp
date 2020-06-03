@@ -87,15 +87,31 @@ public:
 
     /**
      * @brief
-	 * Recursive function that reconstructs the shortest backwards node by node
+	 * Recursive function that reconstructs the shortest path backwards node by node and print it
      *
      * @param from_node - index of the SOM's graph start node
      * @param to_node second sample - index of the SOM's graph end node
      */
 	void print_shortest_path(int from_node, int to_node) const;
 
+    /**
+     * @brief
+	 * Recursive function that reconstructs the shortest path backwards node by node
+     *
+     * @param from_node - index of the SOM's graph start node
+     * @param to_node second sample - index of the SOM's graph end node
+     */
+	std::vector<int> get_shortest_path(int from_node, int to_node) const;
+
+	metric::SOM<Sample, Graph, Metric, Distribution> som_model;
+
+	std::vector<std::vector<D>> distance_matrix;
+	std::vector<std::vector<int>> predecessors;
+
 private:
 	void calculate_distance_matrix();
+
+	std::vector<int> get_shortest_path_(std::vector<int> &path, int from_node, int to_node) const;
 
 	/**
 	 * @brief get_closest_unmarked_node
@@ -113,11 +129,6 @@ private:
 	 */
 	auto calculate_distance(const blaze::CompressedMatrix<D>& adjMatrix, int from_node, int num) const
 	    -> std::tuple<std::vector<D>, std::vector<int>>;
-
-	metric::SOM<Sample, Graph, Metric, Distribution> som_model;
-
-	std::vector<std::vector<D>> distance_matrix;
-	std::vector<std::vector<int>> predecessors;
 };
 
 }  // namespace metric
