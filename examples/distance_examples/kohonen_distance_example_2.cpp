@@ -105,9 +105,6 @@ int main()
 	std::cout << "Kohonen Distance example have started" << std::endl;
 	std::cout << "" << std::endl;
 
-	int grid_w = 5;
-	int grid_h = 5;
-
 	metric::Euclidean<double> euclidean_distance;
 	
 	using Record = std::vector<double>;
@@ -121,8 +118,8 @@ int main()
 		data.push_back({ double (std::rand() % 100), double (std::rand() % 100) });
 	}
 	
-	std::vector<double> rect_1 = { 20, 20, 80, 20 };
-	std::vector<double> rect_2 = { 0, 60, 80, 20 };
+	std::vector<double> rect_1 = { 30, 20, 70, 20 };
+	std::vector<double> rect_2 = { 0, 60, 70, 20 };
 
 	std::vector<double> zero_point = { 0, 100 };
 	std::vector<double> opposite_zero_point = { 100, 0 };
@@ -153,57 +150,111 @@ int main()
 	}
 
 	saveToCsv("data.csv", filtered_data, {"X", "Y"});
-	
-	metric::Kohonen<double, std::vector<double>> distance_1(filtered_data, grid_w, grid_h);
 
-	auto t1 = std::chrono::steady_clock::now();
+	//
+	
+	int grid_w = 10;
+	int grid_h = 10;
+
+	double start_learn_rate = 1.0;
+	double finish_learn_rate = 0.1;
+	size_t iterations = 100;
+
+	// basic Kohonen distance
+	
+	metric::Kohonen<double, std::vector<double>, metric::Grid8> distance_1(
+		filtered_data,
+		metric::Grid8(grid_w, grid_h),
+		euclidean_distance, 
+		start_learn_rate, finish_learn_rate, iterations,
+		std::uniform_real_distribution<double>(0, 100)
+	);
+
 	auto result = distance_1(min_point, max_point);
-	auto t2 = std::chrono::steady_clock::now();
-	std::cout << "result: " << result << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000 << " s)" << std::endl;
-	std::cout << "" << std::endl;
+	std::cout << "result: " << result << std::endl;
 
-	auto bmu_1 = distance_1.som_model.BMU(min_point);
-	auto bmu_2 = distance_1.som_model.BMU(max_point);
-	
-	distance_1.print_shortest_path(bmu_1, bmu_2);
-    std::cout << std::endl;
-	auto path = distance_1.get_shortest_path(bmu_1, bmu_2);
-
-	double result_for_check = 0;
+	//
 	
 	std::vector<Record> som_nodes = distance_1.som_model.get_weights();
-	metric::Euclidean<double> eu_distance;
+	saveToCsv("basic_som.csv", som_nodes, {"X", "Y"});
+	
+	//
+
+	auto bmu_1 = distance_1.som_model.BMU(min_point);
+	auto bmu_2 = distance_1.som_model.BMU(max_point);	
+	auto path = distance_1.get_shortest_path(bmu_1, bmu_2);
+
 	std::vector<std::vector<int>> matrix_path;
-	auto prev_node = min_point;
 	for (size_t i = 0; i < path.size(); i++)
 	{
 		matrix_path.push_back({path[i]});
-		if (i > 0) {
-			result_for_check += eu_distance(prev_node, som_nodes[path[i]]);
-		}
-		prev_node = som_nodes[path[i]];
 	}
-	std::cout << "result test: " << result_for_check << std::endl;
-	
-	double from_min_distance = eu_distance(min_point, som_nodes[path[0]]);
-	std::cout << "from_min_distance: " << from_min_distance << std::endl;
-	double from_max_distance = eu_distance(som_nodes[path[path.size() - 1]], max_point);
-	std::cout << "from_max_distance test: " << from_max_distance << std::endl;
-	
-	result_for_check += from_min_distance;
-	result_for_check += from_max_distance;
-	std::cout << "result test: " << result_for_check << std::endl;
+	saveToCsv("basic_path.csv", matrix_path, {"node"});
 
-	
-	std::cout << "result: " << distance_1(zero_point, min_point) << std::endl;
-	std::cout << "result test: " << eu_distance(zero_point, min_point) << std::endl;
+	//
 
-	saveToCsv("som.csv", som_nodes, {"X", "Y"});
+	std::vector<std::vector<int>> edges;
+	auto matrix = distance_1.som_model.get_graph().get_matrix();
+	for (int i = 0; i < matrix.rows(); ++i)
+	{
+		for (int j = i + 1; j < matrix.columns(); ++j) 
+		{
+			if (matrix(i, j) > 0)
+			{
+				edges.push_back({i, j});
+			}
+		}
+	}
+	saveToCsv("basic_som_edges.csv", edges, {"start", "end"});
 
-	saveToCsv("path.csv", matrix_path, {"node"});
+	// sparced Kohonen distance
 	
-	std::cout << distance_1.som_model.BMU(min_point) << std::endl;
-	std::cout << distance_1.som_model.BMU(max_point) << std::endl;
+	metric::Kohonen<double, std::vector<double>, metric::Grid8> distance_2(
+		filtered_data,
+		metric::Grid8(grid_w, grid_h),
+		euclidean_distance,
+		start_learn_rate, finish_learn_rate, iterations, 
+		std::uniform_real_distribution<double>(0, 100), 
+		"sparsification", 
+		0.55
+	);
+
+	result = distance_2(min_point, max_point);
+	std::cout << "result: " << result << std::endl;
+
+	//
+	
+	som_nodes = distance_2.som_model.get_weights();
+	saveToCsv("sparced_som.csv", som_nodes, {"X", "Y"});
+	
+	//
+
+	bmu_1 = distance_2.som_model.BMU(min_point);
+	bmu_2 = distance_2.som_model.BMU(max_point);	
+	path = distance_2.get_shortest_path(bmu_1, bmu_2);
+
+	matrix_path.clear();
+	for (size_t i = 0; i < path.size(); i++)
+	{
+		matrix_path.push_back({path[i]});
+	}
+	saveToCsv("sparced_path.csv", matrix_path, {"node"});
+
+	//
+
+	edges.clear();
+	matrix = distance_2.som_model.get_graph().get_matrix();
+	for (int i = 0; i < matrix.rows(); ++i)
+	{
+		for (int j = i + 1; j < matrix.columns(); ++j) 
+		{
+			if (matrix(i, j) > 0)
+			{
+				edges.push_back({i, j});
+			}
+		}
+	}
+	saveToCsv("sparced_som_edges.csv", edges, {"start", "end"});
 
 
 	return 0;

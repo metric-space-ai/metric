@@ -38,13 +38,13 @@ public:
      * @param som_model - trained SOM model
      */
 
-    Kohonen(metric::SOM<Sample, Graph, Metric, Distribution>&& som_model);
+    Kohonen(metric::SOM<Sample, Graph, Metric, Distribution>&& som_model, std::string graph_optimization = "none", double graph_optimization_coef = 1.0);
     /**
      * @brief Construct a new Kohonen object
      *
      * @param som_model - trained SOM model
      */
-	Kohonen(const metric::SOM<Sample, Graph, Metric, Distribution>& som_model);
+	Kohonen(const metric::SOM<Sample, Graph, Metric, Distribution>& som_model, std::string graph_optimization = "none", double graph_optimization_coef = 1.0);
 
     /**
      * @brief Construct a new Kohonen object
@@ -53,7 +53,7 @@ public:
      * @param nodesWidth - width of the SOM grid
      * @param nodesHeight - height of the SOM grid
      */
-	Kohonen(const std::vector<Sample>& samples, size_t nodesWidth, size_t nodesHeight);
+	Kohonen(const std::vector<Sample>& samples, size_t nodesWidth, size_t nodesHeight, std::string graph_optimization = "none", double graph_optimization_coef = 1.0);
 
     /**
      * @brief Construct a new Kohonen object
@@ -73,7 +73,9 @@ public:
 	    double start_learn_rate = 0.8,
 	    double finish_learn_rate = 0.0,
 	    size_t iterations = 20,
-		Distribution distribution = Distribution(-1, 1)
+		Distribution distribution = Distribution(-1, 1), 
+		std::string graph_optimization = "none", 
+		double graph_optimization_coef = 1.0
     );
 
     /**
@@ -109,7 +111,13 @@ public:
 	std::vector<std::vector<int>> predecessors;
 
 private:
+
+	std::string graph_optimization_ = "none";
+	double graph_optimization_coef_ = 1;
+
 	void calculate_distance_matrix();
+
+	void optimize_graph(blaze::CompressedMatrix<D>& distance_matrix);
 
 	std::vector<int> get_shortest_path_(std::vector<int> &path, int from_node, int to_node) const;
 
@@ -129,6 +137,8 @@ private:
 	 */
 	auto calculate_distance(const blaze::CompressedMatrix<D>& adjMatrix, int from_node, int num) const
 	    -> std::tuple<std::vector<D>, std::vector<int>>;
+
+	std::vector<std::pair<size_t, size_t>> sort_indexes(const blaze::CompressedMatrix<D>& matrix);
 };
 
 }  // namespace metric

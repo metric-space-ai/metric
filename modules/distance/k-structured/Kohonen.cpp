@@ -14,23 +14,23 @@ Copyright (c) 2019 PANDA Team
 namespace metric {
 
 template <typename D, typename Sample, typename Graph, typename Metric, typename Distribution>
-Kohonen<D, Sample, Graph, Metric, Distribution>::Kohonen(metric::SOM<Sample, Graph, Metric, Distribution>&& som_model)
-    : som_model(som_model)
+Kohonen<D, Sample, Graph, Metric, Distribution>::Kohonen(metric::SOM<Sample, Graph, Metric, Distribution>&& som_model, std::string graph_optimization, double graph_optimization_coef)
+    : som_model(som_model), graph_optimization_(graph_optimization), graph_optimization_coef_(graph_optimization_coef)
 {
 	calculate_distance_matrix();
 }
 
 template <typename D, typename Sample, typename Graph, typename Metric, typename Distribution>
-Kohonen<D, Sample, Graph, Metric, Distribution>::Kohonen(const metric::SOM<Sample, Graph, Metric, Distribution>& som_model)
-    : som_model(som_model)
+Kohonen<D, Sample, Graph, Metric, Distribution>::Kohonen(const metric::SOM<Sample, Graph, Metric, Distribution>& som_model, std::string graph_optimization, double graph_optimization_coef)
+    : som_model(som_model), graph_optimization_(graph_optimization), graph_optimization_coef_(graph_optimization_coef)
 {
 	calculate_distance_matrix();
 }
 
 
 template <typename D, typename Sample, typename Graph, typename Metric, typename Distribution>
-Kohonen<D, Sample, Graph, Metric, Distribution>::Kohonen(const std::vector<Sample>& samples, size_t nodesWidth, size_t nodesHeight)
-    : som_model(Graph(nodesWidth, nodesHeight), Metric(), 0.8, 0.2, 20)
+Kohonen<D, Sample, Graph, Metric, Distribution>::Kohonen(const std::vector<Sample>& samples, size_t nodesWidth, size_t nodesHeight, std::string graph_optimization, double graph_optimization_coef)
+    : som_model(Graph(nodesWidth, nodesHeight), Metric(), 0.8, 0.2, 20), graph_optimization_(graph_optimization), graph_optimization_coef_(graph_optimization_coef)
 {
 	som_model.train(samples);
 
@@ -46,9 +46,11 @@ Kohonen<D, Sample, Graph, Metric, Distribution>::Kohonen(
 	double start_learn_rate,
 	double finish_learn_rate,
 	size_t iterations,
-	Distribution distribution
+	Distribution distribution, 
+	std::string graph_optimization, 
+	double graph_optimization_coef
 )
-	 : som_model(graph, metric, start_learn_rate, finish_learn_rate, iterations, distribution)
+	 : som_model(graph, metric, start_learn_rate, finish_learn_rate, iterations, distribution), graph_optimization_(graph_optimization), graph_optimization_coef_(graph_optimization_coef)
 {
 	som_model.train(samples);
 	
@@ -101,6 +103,10 @@ void Kohonen<D, Sample, Graph, Metric, Distribution>::calculate_distance_matrix(
 		}
 	}
 
+	optimize_graph(blaze_matrix);
+
+	matrix = som_model.get_graph().get_matrix();
+
 	std::vector<D> distances;
 	std::vector<int> predecessor;
 	for (auto i = 0; i < nodes.size(); i++)
@@ -109,6 +115,34 @@ void Kohonen<D, Sample, Graph, Metric, Distribution>::calculate_distance_matrix(
 		distance_matrix.push_back(distances);
 		predecessors.push_back(predecessor);
 	}
+}
+
+
+template <typename D, typename Sample, typename Graph, typename Metric, typename Distribution>
+void Kohonen<D, Sample, Graph, Metric, Distribution>::optimize_graph(blaze::CompressedMatrix<D>& distance_matrix)
+{
+	auto matrix = som_model.get_graph().get_matrix();
+	if (graph_optimization_ == "none")
+	{
+
+	}
+	else if (graph_optimization_ == "sparsification")
+	{
+		auto sorted_pairs = sort_indexes(distance_matrix); 
+		for (size_t i = 0; i < sorted_pairs.size() * (1 - graph_optimization_coef_); ++i)
+		{
+			auto p = sorted_pairs[i];
+			matrix(p.first, p.second) = 0;
+			distance_matrix(p.first, p.second) = 0;
+			distance_matrix(p.second, p.first) = 0;
+		}
+	}
+	else if (graph_optimization_ == "reverse diffusion")
+	{
+
+	}
+
+	som_model.get_graph().updateEdges(matrix);
 }
 
 
@@ -225,6 +259,46 @@ auto Kohonen<D, Sample, Graph, Metric, Distribution>::calculate_distance(
     }
 
 	return { distances, predecessor };
+}
+
+template <typename D, typename Sample, typename Graph, typename Metric, typename Distribution>
+std::vector<std::pair<size_t, size_t>> Kohonen<D, Sample, Graph, Metric, Distribution>::sort_indexes(const blaze::CompressedMatrix<D>& matrix) 
+{
+
+	// initialize original index locations
+	// std::vector<std::pair<size_t, size_t>>& idx
+
+	std::vector<D> v;
+	std::vector<std::pair<size_t, size_t>> idx_pairs;
+	for (size_t i = 0; i < matrix.rows(); ++i)
+	{
+		for (size_t j = i + 1; j < matrix.columns(); ++j)
+		{
+			if (matrix(i, j) > 0)
+			{
+				v.push_back(matrix(i, j));
+				idx_pairs.push_back({i, j});
+			}
+		}
+	}
+	std::vector<size_t> idx(v.size());
+	std::iota(idx.begin(), idx.end(), 0);
+
+	// sort indexes based on comparing values in v
+	// using std::stable_sort instead of std::sort
+	// to avoid unnecessary index re-orderings
+	// when v contains elements of equal values 
+	stable_sort(idx.begin(), idx.end(),
+		[&v](size_t i1, size_t i2) {return v[i1] > v[i2];});
+
+	
+	std::vector<std::pair<size_t, size_t>> sorted_idx_pairs;
+	for (size_t i = 0; i < idx.size(); ++i)
+	{
+		sorted_idx_pairs.push_back(idx_pairs[idx[i]]);
+	}
+
+	return sorted_idx_pairs;
 }
 
 }  // namespace metric

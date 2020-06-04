@@ -204,7 +204,7 @@ public:
      *
      * @return
      */
-	const Graph& get_graph() const
+	Graph& get_graph()
 	{
 		return graph;
 	}
