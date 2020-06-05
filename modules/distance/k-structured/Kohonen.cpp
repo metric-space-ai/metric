@@ -8,6 +8,7 @@ Copyright (c) 2019 PANDA Team
 
 #include "Kohonen.hpp"
 #include "../../../3rdparty/blaze/Blaze.h"
+#include "../../../modules/utils/poor_mans_quantum.hpp"
 #include <cmath>
 #include <vector>
 
@@ -170,6 +171,37 @@ std::vector<int> Kohonen<D, Sample, Graph, Metric, Distribution>::get_shortest_p
 {
 	std::vector<int> path;
 	return get_shortest_path_(path, from_node, to_node);
+}
+
+
+template <typename D, typename Sample, typename Graph, typename Metric, typename Distribution>
+double Kohonen<D, Sample, Graph, Metric, Distribution>::distortion_estimate(const std::vector<Sample>& samples)
+{
+	metric::Euclidean<D> euclidean_distance;
+	std::vector<D> factor_histogram;
+	for (size_t i = 0; i < samples.size(); ++i)
+	{
+		for (size_t j = 0; j < samples.size(); ++j)
+		{
+			if (i != j)
+			{
+				auto euclidean = euclidean_distance(samples[i], samples[j]);
+				auto kohonen = operator()(samples[i], samples[j]);
+				if (euclidean != 0 && kohonen != 0)
+				{
+					factor_histogram.push_back(kohonen / euclidean);
+				}
+				else 
+				{
+					factor_histogram.push_back(0);
+				}
+			}
+		}
+	}
+	
+    metric::PMQ<Discrete<D>, double> pmq(factor_histogram);
+
+	return pmq.variance();
 }
 
 

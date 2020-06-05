@@ -59,6 +59,38 @@ std::tuple<std::vector<std::vector<double>>, std::vector<double>> readData(std::
 }
 
 
+template <typename Record>
+void saveToCsv(std::string filename, const std::vector<Record> &mat, const std::vector<std::string> &features)
+{
+	std::ofstream outputFile;
+
+	// create and open the .csv file
+	outputFile.open(filename);
+
+	// write the file headers
+	for (auto i = 0; i < features.size(); ++i)
+	{
+		outputFile << features[i];
+		outputFile << ",";
+	}
+	outputFile << std::endl;
+
+	// last item in the mat is date
+	for (auto i = 0; i < mat.size(); ++i)
+	{
+		//outputFile << dates[i] << ";";
+		for (auto j = 0; j < mat[i].size(); j++)
+		{
+			outputFile << mat[i][j] << ",";
+		}
+		outputFile << std::endl;
+	}
+
+	// close the output file
+	outputFile.close();
+}
+
+
 int main()
 {
 	/******************** examples for Kohonen Distance **************************/
@@ -127,7 +159,50 @@ int main()
 	t2 = std::chrono::steady_clock::now();
 	std::cout << "result: " << result << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000 << " s)" << std::endl;
 	std::cout << "" << std::endl;
+	
+	// distortion
 
+
+	double start_learn_rate = 1.0;
+	double finish_learn_rate = 0.2;
+	size_t iterations = 300;
+	double neighborhood_start_size = 10;
+	double neighborhood_range_decay = 10;
+	long long random_seed = std::chrono::system_clock::now().time_since_epoch().count();
+
+	Distribution distr_4(0, 5);
+
+    metric::SOM<Record, Graph, Metric> som_model_5(Graph(grid_w, grid_h), Metric(), start_learn_rate, finish_learn_rate, iterations, distr_4, neighborhood_start_size, neighborhood_range_decay, random_seed);
+	som_model_5.train(simple_grid);
+	metric::Kohonen<double, Record, Graph, Metric> distance_5(som_model_5);
+
+	t1 = std::chrono::steady_clock::now();
+	result = distance_5.distortion_estimate(simple_grid);
+	t2 = std::chrono::steady_clock::now();
+	std::cout << "distortion estimate result: " << result << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000 << " s)" << std::endl;
+	std::cout << "" << std::endl;
+
+
+	
+    metric::SOM<Record, Graph, Metric> som_model_4(Graph(grid_w, grid_h), Metric(), start_learn_rate, finish_learn_rate, iterations, distr_4, neighborhood_start_size, neighborhood_range_decay, random_seed);
+		
+	std::vector<Record> linear_dataset = {
+		{0, 0},
+		{1, 0},
+		{2, 0},
+
+		{3, 0},
+		{4, 0},
+		{5, 0},
+	};
+	som_model_4.train(linear_dataset);
+	metric::Kohonen<double, Record, Graph, Metric> distance_4(som_model_4);
+
+	t1 = std::chrono::steady_clock::now();
+	result = distance_4.distortion_estimate(linear_dataset);
+	t2 = std::chrono::steady_clock::now();
+	std::cout << "distortion estimate result for linear dataset: " << result << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000 << " s)" << std::endl;
+	std::cout << "" << std::endl;
 
 
 	return 0;

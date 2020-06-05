@@ -39,6 +39,7 @@ public:
      */
 
     Kohonen(metric::SOM<Sample, Graph, Metric, Distribution>&& som_model, std::string graph_optimization = "none", double graph_optimization_coef = 1.0);
+
     /**
      * @brief Construct a new Kohonen object
      *
@@ -104,6 +105,17 @@ public:
      * @param to_node second sample - index of the SOM's graph end node
      */
 	std::vector<int> get_shortest_path(int from_node, int to_node) const;
+
+    /**
+     * @brief
+	 * Distortion estimate method. it is a measure of the nonlinearity of a dataset. 
+	 * Calculates by taking the factor between all euclidean and Kohonen distances of a dataset. 
+	 * Then rescaling these factors from all pair-wise comparisons (like rescaling a histogram). 
+	 * And the distortion is the variance of this histogram. 
+     *
+     * @param samples - dataset for estimation. 
+     */
+	double distortion_estimate(const std::vector<Sample>& samples);
 
 	metric::SOM<Sample, Graph, Metric, Distribution> som_model;
 
