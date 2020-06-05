@@ -112,12 +112,12 @@ namespace metric {
 		return ::metric::image_processing_details::filter(input, _filter, _padModel);
 	}
 
-	FilterType::AVERAGE::AVERAGE(size_t rows, size_t columns) {
+	inline FilterType::AVERAGE::AVERAGE(size_t rows, size_t columns) {
 		FilterKernel f(rows, columns, 1.0);
 		_kernel = f / blaze::prod(Shape{rows, columns});
 	}
 
-	FilterType::GAUSSIAN::GAUSSIAN(size_t rows, size_t columns, double sigma) {
+	inline FilterType::GAUSSIAN::GAUSSIAN(size_t rows, size_t columns, double sigma) {
 		Shape shape{rows, columns};
 		blaze::StaticVector<FilterKernel::ElementType, 2> halfShape =
 				(static_cast<blaze::StaticVector<FilterKernel::ElementType, 2>>(shape) - 1) / 2;
@@ -146,7 +146,7 @@ namespace metric {
 		_yMat = yMat;
 	}
 
-	FilterType::LAPLACIAN::LAPLACIAN(double alpha) {
+	inline FilterType::LAPLACIAN::LAPLACIAN(double alpha) {
 		alpha = std::max<double>(0, std::min<double>(alpha, 1));
 		auto h1 = alpha / (alpha + 1);
 		auto h2 = (1 - alpha) / (alpha + 1);
@@ -157,7 +157,7 @@ namespace metric {
 				{h1, h2,               h1}};
 	}
 
-	FilterType::LOG::LOG(size_t rows, size_t columns, double sigma) {
+	inline FilterType::LOG::LOG(size_t rows, size_t columns, double sigma) {
 		Shape shape{rows, columns};
 		auto std2 = sigma * sigma;
 		GAUSSIAN gausFilter(rows, columns, sigma);
@@ -168,7 +168,7 @@ namespace metric {
 		_kernel -= blaze::sum(_kernel) / blaze::prod(shape);
 	}
 
-	FilterType::MOTION::MOTION(double len, int theta) {
+	inline FilterType::MOTION::MOTION(double len, int theta) {
 		len = std::max<double>(1, len);
 		auto half = (len - 1) / 2;
 		auto phi = static_cast<double>(theta % 180) / 180 * M_PI;
@@ -223,7 +223,7 @@ namespace metric {
 		}
 	}
 
-	FilterType::UNSHARP::UNSHARP(double alpha) {
+	inline FilterType::UNSHARP::UNSHARP(double alpha) {
 		_kernel = FilterKernel{
 				{0, 0, 0},
 				{0, 1, 0},
@@ -289,7 +289,7 @@ namespace metric {
 			return out;
 		}
 
-		blaze::DynamicMatrix<double> imgcov2(const blaze::DynamicMatrix<double> &input, const FilterKernel &kernel) {
+		static blaze::DynamicMatrix<double> imgcov2(const blaze::DynamicMatrix<double> &input, const FilterKernel &kernel) {
 			size_t funcRows = kernel.rows();
 			size_t funcCols = kernel.columns();
 
@@ -352,5 +352,5 @@ namespace metric {
 
 			return result;
 		}
-	}
-}
+	}  // namespace image_processing_details
+}  // namespace metric

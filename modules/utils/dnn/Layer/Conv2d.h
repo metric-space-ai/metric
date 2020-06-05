@@ -370,7 +370,7 @@ class Conv2d: public Layer<Scalar>
 
 	        auto t2 = std::chrono::high_resolution_clock::now();
 	        auto d = std::chrono::duration_cast < std::chrono::duration < double >> (t2 - t1);
-	        std::cout << "time: " << d.count() << " s" << std::endl;
+	        //std::cout << "time: " << d.count() << " s" << std::endl;
 
 	        /* Average over observations */
 	        df_data = blaze::mean<blaze::columnwise>(kernelDerivatives);
