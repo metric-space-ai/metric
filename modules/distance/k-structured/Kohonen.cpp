@@ -120,7 +120,7 @@ void Kohonen<D, Sample, Graph, Metric, Distribution>::calculate_distance_matrix(
 
 
 template <typename D, typename Sample, typename Graph, typename Metric, typename Distribution>
-void Kohonen<D, Sample, Graph, Metric, Distribution>::optimize_graph(blaze::CompressedMatrix<D>& distance_matrix)
+void Kohonen<D, Sample, Graph, Metric, Distribution>::optimize_graph(blaze::CompressedMatrix<D>& direct_distance_matrix)
 {
 	auto matrix = som_model.get_graph().get_matrix();
 	if (graph_optimization_ == "none")
@@ -129,13 +129,13 @@ void Kohonen<D, Sample, Graph, Metric, Distribution>::optimize_graph(blaze::Comp
 	}
 	else if (graph_optimization_ == "sparsification")
 	{
-		auto sorted_pairs = sort_indexes(distance_matrix); 
+		auto sorted_pairs = sort_indexes(direct_distance_matrix); 
 		for (size_t i = 0; i < sorted_pairs.size() * (1 - graph_optimization_coef_); ++i)
 		{
 			auto p = sorted_pairs[i];
 			matrix(p.first, p.second) = 0;
-			distance_matrix(p.first, p.second) = 0;
-			distance_matrix(p.second, p.first) = 0;
+			direct_distance_matrix(p.first, p.second) = 0;
+			direct_distance_matrix(p.second, p.first) = 0;
 		}
 	}
 	else if (graph_optimization_ == "reverse diffusion")
