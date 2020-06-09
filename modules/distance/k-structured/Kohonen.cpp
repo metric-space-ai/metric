@@ -15,27 +15,47 @@ Copyright (c) 2019 PANDA Team
 namespace metric {
 
 template <typename D, typename Sample, typename Graph, typename Metric, typename Distribution>
-Kohonen<D, Sample, Graph, Metric, Distribution>::Kohonen(metric::SOM<Sample, Graph, Metric, Distribution>&& som_model, std::string graph_optimization, double graph_optimization_coef)
-    : som_model(som_model), graph_optimization_(graph_optimization), graph_optimization_coef_(graph_optimization_coef)
+Kohonen<D, Sample, Graph, Metric, Distribution>::Kohonen(
+	metric::SOM<Sample, Graph, Metric, Distribution>&& som_model,
+	const std::vector<Sample>& samples,
+	bool use_sparsification, double sparsification_coef, 
+	bool use_reverse_diffusion, size_t reverse_diffusion_neighbors
+	)
+    : som_model(som_model), 
+	use_sparsification_(use_sparsification), sparsification_coef_(sparsification_coef), 
+	use_reverse_diffusion_(use_reverse_diffusion), reverse_diffusion_neighbors_(reverse_diffusion_neighbors)
 {
-	calculate_distance_matrix();
+	calculate_distance_matrix(samples);
 }
 
 template <typename D, typename Sample, typename Graph, typename Metric, typename Distribution>
-Kohonen<D, Sample, Graph, Metric, Distribution>::Kohonen(const metric::SOM<Sample, Graph, Metric, Distribution>& som_model, std::string graph_optimization, double graph_optimization_coef)
-    : som_model(som_model), graph_optimization_(graph_optimization), graph_optimization_coef_(graph_optimization_coef)
+Kohonen<D, Sample, Graph, Metric, Distribution>::Kohonen(
+	const metric::SOM<Sample, Graph, Metric, Distribution>& som_model, 
+	const std::vector<Sample>& samples,
+	bool use_sparsification, double sparsification_coef, 
+	bool use_reverse_diffusion, size_t reverse_diffusion_neighbors
+	)
+    : som_model(som_model), 
+	use_sparsification_(use_sparsification), sparsification_coef_(sparsification_coef), 
+	use_reverse_diffusion_(use_reverse_diffusion), reverse_diffusion_neighbors_(reverse_diffusion_neighbors)
 {
-	calculate_distance_matrix();
+	calculate_distance_matrix(samples);
 }
 
 
 template <typename D, typename Sample, typename Graph, typename Metric, typename Distribution>
-Kohonen<D, Sample, Graph, Metric, Distribution>::Kohonen(const std::vector<Sample>& samples, size_t nodesWidth, size_t nodesHeight, std::string graph_optimization, double graph_optimization_coef)
-    : som_model(Graph(nodesWidth, nodesHeight), Metric(), 0.8, 0.2, 20), graph_optimization_(graph_optimization), graph_optimization_coef_(graph_optimization_coef)
+Kohonen<D, Sample, Graph, Metric, Distribution>::Kohonen(
+	const std::vector<Sample>& samples, size_t nodesWidth, size_t nodesHeight, 
+	bool use_sparsification, double sparsification_coef, 
+	bool use_reverse_diffusion, size_t reverse_diffusion_neighbors
+	)
+    : som_model(Graph(nodesWidth, nodesHeight), Metric(), 0.8, 0.2, 20), 
+	use_sparsification_(use_sparsification), sparsification_coef_(sparsification_coef), 
+	use_reverse_diffusion_(use_reverse_diffusion), reverse_diffusion_neighbors_(reverse_diffusion_neighbors)
 {
 	som_model.train(samples);
 
-	calculate_distance_matrix();
+	calculate_distance_matrix(samples);
 }
 	
 
@@ -48,14 +68,18 @@ Kohonen<D, Sample, Graph, Metric, Distribution>::Kohonen(
 	double finish_learn_rate,
 	size_t iterations,
 	Distribution distribution, 
-	std::string graph_optimization, 
-	double graph_optimization_coef
-)
-	 : som_model(graph, metric, start_learn_rate, finish_learn_rate, iterations, distribution), graph_optimization_(graph_optimization), graph_optimization_coef_(graph_optimization_coef)
+	bool use_sparsification, 
+	double sparsification_coef, 
+	bool use_reverse_diffusion, 
+	size_t reverse_diffusion_neighbors
+	)
+	 : som_model(graph, metric, start_learn_rate, finish_learn_rate, iterations, distribution), 
+	use_sparsification_(use_sparsification), sparsification_coef_(sparsification_coef), 
+	use_reverse_diffusion_(use_reverse_diffusion), reverse_diffusion_neighbors_(reverse_diffusion_neighbors)
 {
 	som_model.train(samples);
 	
-	calculate_distance_matrix();
+	calculate_distance_matrix(samples);
 }
 
 
@@ -85,10 +109,15 @@ auto Kohonen<D, Sample, Graph, Metric, Distribution>::operator()(const Sample& s
 
 
 template <typename D, typename Sample, typename Graph, typename Metric, typename Distribution>
-void Kohonen<D, Sample, Graph, Metric, Distribution>::calculate_distance_matrix()
+void Kohonen<D, Sample, Graph, Metric, Distribution>::calculate_distance_matrix(const std::vector<Sample>& samples)
 {
 	std::vector<Sample> nodes = som_model.get_weights();
     Metric distance;
+
+	if (use_reverse_diffusion_)
+	{
+		make_reverese_diffusion(samples);
+	}
 
 	auto matrix = som_model.get_graph().get_matrix();
 	blaze::CompressedMatrix<D> blaze_matrix(matrix.rows(),  matrix.columns());
@@ -104,7 +133,10 @@ void Kohonen<D, Sample, Graph, Metric, Distribution>::calculate_distance_matrix(
 		}
 	}
 
-	optimize_graph(blaze_matrix);
+	if (use_sparsification_)
+	{
+		sparcify_graph(blaze_matrix);
+	}
 
 	matrix = som_model.get_graph().get_matrix();
 
@@ -120,30 +152,28 @@ void Kohonen<D, Sample, Graph, Metric, Distribution>::calculate_distance_matrix(
 
 
 template <typename D, typename Sample, typename Graph, typename Metric, typename Distribution>
-void Kohonen<D, Sample, Graph, Metric, Distribution>::optimize_graph(blaze::CompressedMatrix<D>& direct_distance_matrix)
+void Kohonen<D, Sample, Graph, Metric, Distribution>::sparcify_graph(blaze::CompressedMatrix<D>& direct_distance_matrix)
 {
 	auto matrix = som_model.get_graph().get_matrix();
-	if (graph_optimization_ == "none")
+	auto sorted_pairs = sort_indexes(direct_distance_matrix); 
+	for (size_t i = 0; i < sorted_pairs.size() * (1 - sparsification_coef_); ++i)
 	{
-
-	}
-	else if (graph_optimization_ == "sparsification")
-	{
-		auto sorted_pairs = sort_indexes(direct_distance_matrix); 
-		for (size_t i = 0; i < sorted_pairs.size() * (1 - graph_optimization_coef_); ++i)
-		{
-			auto p = sorted_pairs[i];
-			matrix(p.first, p.second) = 0;
-			direct_distance_matrix(p.first, p.second) = 0;
-			direct_distance_matrix(p.second, p.first) = 0;
-		}
-	}
-	else if (graph_optimization_ == "reverse diffusion")
-	{
-
+		auto p = sorted_pairs[i];
+		matrix(p.first, p.second) = 0;
+		direct_distance_matrix(p.first, p.second) = 0;
+		direct_distance_matrix(p.second, p.first) = 0;
 	}
 
 	som_model.get_graph().updateEdges(matrix);
+}
+
+
+template <typename D, typename Sample, typename Graph, typename Metric, typename Distribution>
+void Kohonen<D, Sample, Graph, Metric, Distribution>::make_reverese_diffusion(const std::vector<Sample>& samples)
+{
+	//metric::Redif redif(samples, 100, 10, Metric());
+	//
+	//auto [redif_encoded, redif_indicies] = redif.encode(som_model.get_weights());
 }
 
 

@@ -176,7 +176,7 @@ int main()
 
 	// basic Kohonen distance
 	
-	metric::Kohonen<double, Record, Graph, Metric> distance_1(som_model);
+	metric::Kohonen<double, Record, Graph, Metric> distance_1(som_model, filtered_data);
 
 	auto result = distance_1(min_point, max_point);
 	std::cout << "result: " << result << std::endl;
@@ -217,7 +217,7 @@ int main()
 
 	// sparced Kohonen distance
 	
-	metric::Kohonen<double, Record, Graph, Metric> distance_2(som_model, "sparsification", 0.6);
+	metric::Kohonen<double, Record, Graph, Metric> distance_2(som_model, filtered_data, true, 0.6);
 
 	result = distance_2(min_point, max_point);
 	std::cout << "result: " << result << std::endl;
@@ -259,7 +259,7 @@ int main()
 
 	// Reverse Diffused Kohonen distance
 
-	metric::Kohonen<double, Record, Graph, Metric> distance_3(som_model, "sparsification", 0.6);
+	metric::Kohonen<double, Record, Graph, Metric> distance_3(som_model, filtered_data, false, 0.0, true, 10);
 
 	result = distance_3(min_point, max_point);
 	std::cout << "result: " << result << std::endl;
@@ -298,14 +298,8 @@ int main()
 	}
 	saveToCsv("rev_diff_som_edges.csv", edges, {"start", "end"});
 
-	//
-
-	//metric::Redif redif(som_nodes, 10, 15, Metric());
-
-	//blaze::DynamicVector<double> l_idx;
-
-	//blaze::DynamicVector<double> redif_result = redif.encode(som_nodes, l_idx, Metric());
-
+	//////////
+	
 
 	return 0;
 }

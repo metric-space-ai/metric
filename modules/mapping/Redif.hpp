@@ -1,18 +1,17 @@
 #pragma once
 
-#include "3rdparty/blaze/Blaze.h"
-#include "modules/distance.hpp"
+#include "../../3rdparty/blaze/Blaze.h"
+#include "../../modules/distance.hpp"
 
 #include <vector>
 
 namespace metric
 {
 
-template<typename Tv = double>
+template<typename Tv = double, class Metric = metric::Euclidean<Tv>>
 class Redif
 {
 public:
-    template <class Metric = metric::Euclidean<Tv>>
     Redif(
         const std::vector<std::vector<Tv>>& trainData,
         size_t nNeighbors = 10,
@@ -21,12 +20,10 @@ public:
     );
     ~Redif() = default;
 
-    template <class Metric = metric::Euclidean<Tv>>
-    blaze::DynamicMatrix<Tv> encode(
-        const blaze::DynamicMatrix<Tv>& x,
-        blaze::DynamicVector<Tv> & l_idx,
-        Metric metric = Metric()
+    std::tuple<std::vector<std::vector<Tv>>, std::vector<size_t>> encode(
+        const std::vector<std::vector<Tv>>& x
     );
+
     blaze::DynamicMatrix<Tv> decode(
         const blaze::DynamicMatrix<Tv>& xEncoded,
         blaze::DynamicMatrix<Tv>& xTrainEncoded,
@@ -45,16 +42,19 @@ private:
         size_t end
     );
 
-    template <class Metric = metric::Euclidean<Tv>>
+    std::tuple<blaze::DynamicMatrix<Tv>, blaze::DynamicVector<size_t>> encode(
+        const blaze::DynamicMatrix<Tv>& x
+    );
+
     blaze::DynamicMatrix<Tv> getLocalDistMatrix(const blaze::DynamicMatrix<Tv>& dataSample, Metric metric = Metric());
     blaze::DynamicMatrix<Tv> calcWeightedGraphLaplacian(const blaze::DynamicMatrix<Tv>& localDist);
 
-    template <class Metric = metric::Euclidean<Tv>>
     blaze::DynamicMatrix<Tv> trainModel(size_t nIter, Metric metric = Metric());
 
+    size_t nNeighbors;
+    Metric metric_;
     blaze::DynamicMatrix<Tv> xTrain;
     std::vector<blaze::DynamicMatrix<Tv>> LArray;
-    size_t nNeighbors;
 };
 
 }

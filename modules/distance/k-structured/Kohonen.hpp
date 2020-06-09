@@ -47,7 +47,12 @@ public:
      * @param graph_optimization_coef - coefficient using for optimization. See `graph_optimization` description for meanings with concrete optimization type.
      */
 
-    Kohonen(metric::SOM<Sample, Graph, Metric, Distribution>&& som_model, std::string graph_optimization = "none", double graph_optimization_coef = 1.0);
+    Kohonen(
+		metric::SOM<Sample, Graph, Metric, Distribution>&& som_model, 
+	    const std::vector<Sample>& samples,
+		bool use_sparsification = false, double sparsification_coef = 1.0, 
+		bool use_reverse_diffusion = false, size_t reverse_diffusion_neighbors = 10
+	);
 
     /**
      * @brief Construct a new Kohonen object
@@ -63,7 +68,12 @@ public:
 	 * </ul>
      * @param graph_optimization_coef - coefficient using for optimization. See `graph_optimization` description for meanings with concrete optimization type.
      */
-	Kohonen(const metric::SOM<Sample, Graph, Metric, Distribution>& som_model, std::string graph_optimization = "none", double graph_optimization_coef = 1.0);
+	Kohonen(
+		const metric::SOM<Sample, Graph, Metric, Distribution>& som_model,
+	    const std::vector<Sample>& samples,
+		bool use_sparsification = false, double sparsification_coef = 1.0, 
+		bool use_reverse_diffusion = false, size_t reverse_diffusion_neighbors = 10
+	);
 
     /**
      * @brief Construct a new Kohonen object
@@ -81,7 +91,11 @@ public:
 	 * </ul>
      * @param graph_optimization_coef - coefficient using for optimization. See `graph_optimization` description for meanings with concrete optimization type.
      */
-	Kohonen(const std::vector<Sample>& samples, size_t nodesWidth, size_t nodesHeight, std::string graph_optimization = "none", double graph_optimization_coef = 1.0);
+	Kohonen(
+		const std::vector<Sample>& samples, size_t nodesWidth, size_t nodesHeight, 
+		bool use_sparsification = false, double sparsification_coef = 1.0, 
+		bool use_reverse_diffusion = false, size_t reverse_diffusion_neighbors = 10
+	);
 
     /**
      * @brief Construct a new Kohonen object
@@ -111,9 +125,11 @@ public:
 	    double finish_learn_rate = 0.0,
 	    size_t iterations = 20,
 		Distribution distribution = Distribution(-1, 1), 
-		std::string graph_optimization = "none", 
-		double graph_optimization_coef = 1.0
-    );
+		bool use_sparsification = false, 
+		double sparsification_coef = 1.0, 
+		bool use_reverse_diffusion = false, 
+		size_t reverse_diffusion_neighbors = 10
+	);
 
     /**
      * @brief Compute the EMD for two records in the Kohonen space.
@@ -182,19 +198,36 @@ private:
 	 * <li>"reverse diffusion" - graph will be optimized using reverse diffusion method.</li>
 	 * </ul>
      */
-	std::string graph_optimization_ = "none";
+	bool use_sparsification_ = false;
 
     /**
      * @brief
 	 * Coefficient using for optimization. See `graph_optimization` description for meanings with concrete optimization type.
      */
-	double graph_optimization_coef_ = 1;
+	double sparsification_coef_ = 1;
+	
+    /**
+     * @brief
+	 * Type of optimization that can be performed on the graph. This optimizations delete some edges of the graph to fit better thetrain dataset. Can be: 
+	 * <ul>
+	 * <li>"none" - no optimization.</li> 
+	 * <li>"sparsification" - graph will be sparced by deleting a percent of the largest edges. Percent of remained edges set by `graph_optimization_coef` parameter. </li> 
+	 * <li>"reverse diffusion" - graph will be optimized using reverse diffusion method.</li>
+	 * </ul>
+     */
+	bool use_reverse_diffusion_ = false;
+
+    /**
+     * @brief
+	 * Coefficient using for optimization. See `graph_optimization` description for meanings with concrete optimization type.
+     */
+	double reverse_diffusion_neighbors_ = 10;
 	
     /**
      * @brief
 	 * Method calculates matrix with direct (based for SOM) distances between SOM nodes.
      */
-	void calculate_distance_matrix();
+	void calculate_distance_matrix(const std::vector<Sample>& samples);
 	
 	
     /**
@@ -203,7 +236,13 @@ private:
      *
      * @param direct_distance_matrix - direct (based for SOM) distance matrix between SOM nodes. This matrix will be modifed while optimization.
      */
-	void optimize_graph(blaze::CompressedMatrix<D>& direct_distance_matrix);
+	void sparcify_graph(blaze::CompressedMatrix<D>& direct_distance_matrix);
+	
+	
+    /**
+     * @brief
+     */
+	void make_reverese_diffusion(const std::vector<Sample>& samples);
 	
     /**
      * @brief
