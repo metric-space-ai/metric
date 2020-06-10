@@ -209,6 +209,28 @@ public:
 		return graph;
 	}
 
+    /**
+     * @brief
+     *
+     * @return
+     */
+	const Metric& get_metric() const
+	{
+		return metric;
+	}
+
+    /**
+     * @brief 
+     * 
+     * @param weights 
+     */
+    void updateWeights(const std::vector<std::vector<T>> &new_weights);
+
+	bool is_weights_changed()
+	{
+		return weights_changed_;
+	}
+
 protected:
     size_t input_dimensions = 0;  // dimensions of inputs vector
 
@@ -223,6 +245,8 @@ protected:
 	double neighborhood_start_size;
 	double neighborhood_range_decay;
 	long long random_seed;
+	
+	bool weights_changed_ = false;
 	
     /**
      * @brief

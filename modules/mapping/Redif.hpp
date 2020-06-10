@@ -20,15 +20,23 @@ public:
     );
     ~Redif() = default;
 
-    std::tuple<std::vector<std::vector<Tv>>, std::vector<size_t>> encode(
-        const std::vector<std::vector<Tv>>& x
-    );
+    std::vector<std::vector<Tv>> encode(const std::vector<std::vector<Tv>>& x);
 
     blaze::DynamicMatrix<Tv> decode(
         const blaze::DynamicMatrix<Tv>& xEncoded,
         blaze::DynamicMatrix<Tv>& xTrainEncoded,
         const blaze::DynamicVector<size_t>& l_idx
     );
+
+	std::vector<std::vector<Tv>> get_train_encoded()
+	{
+		std::vector<std::vector<Tv>> encoded_data_as_vectors(xTrainEncoded.rows(), std::vector<Tv>(xTrainEncoded.columns()));	
+		for (size_t i = 0; i < xTrainEncoded.rows(); i++)
+			for (size_t j = 0; j < xTrainEncoded.columns(); j++)
+				encoded_data_as_vectors[i][j] = xTrainEncoded(i, j);
+
+		return encoded_data_as_vectors;
+	}
 private:
 
     template<bool flag = blaze::rowVector>
@@ -42,18 +50,17 @@ private:
         size_t end
     );
 
-    std::tuple<blaze::DynamicMatrix<Tv>, blaze::DynamicVector<size_t>> encode(
-        const blaze::DynamicMatrix<Tv>& x
-    );
+    blaze::DynamicMatrix<Tv> encode(const blaze::DynamicMatrix<Tv>& x);
 
-    blaze::DynamicMatrix<Tv> getLocalDistMatrix(const blaze::DynamicMatrix<Tv>& dataSample, Metric metric = Metric());
+    blaze::DynamicMatrix<Tv> getLocalDistMatrix(const blaze::DynamicMatrix<Tv>& dataSample);
     blaze::DynamicMatrix<Tv> calcWeightedGraphLaplacian(const blaze::DynamicMatrix<Tv>& localDist);
 
-    blaze::DynamicMatrix<Tv> trainModel(size_t nIter, Metric metric = Metric());
+    blaze::DynamicMatrix<Tv> trainModel(size_t nIter);
 
     size_t nNeighbors;
-    Metric metric_;
+    Metric metric;
     blaze::DynamicMatrix<Tv> xTrain;
+    blaze::DynamicMatrix<Tv> xTrainEncoded;
     std::vector<blaze::DynamicMatrix<Tv>> LArray;
 };
 

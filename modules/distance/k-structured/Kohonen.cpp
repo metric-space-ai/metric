@@ -25,6 +25,7 @@ Kohonen<D, Sample, Graph, Metric, Distribution>::Kohonen(
 	use_sparsification_(use_sparsification), sparsification_coef_(sparsification_coef), 
 	use_reverse_diffusion_(use_reverse_diffusion), reverse_diffusion_neighbors_(reverse_diffusion_neighbors)
 {
+	this->metric = som_model.get_metric();
 	calculate_distance_matrix(samples);
 }
 
@@ -39,6 +40,7 @@ Kohonen<D, Sample, Graph, Metric, Distribution>::Kohonen(
 	use_sparsification_(use_sparsification), sparsification_coef_(sparsification_coef), 
 	use_reverse_diffusion_(use_reverse_diffusion), reverse_diffusion_neighbors_(reverse_diffusion_neighbors)
 {
+	this->metric = som_model.get_metric();
 	calculate_distance_matrix(samples);
 }
 
@@ -53,6 +55,7 @@ Kohonen<D, Sample, Graph, Metric, Distribution>::Kohonen(
 	use_sparsification_(use_sparsification), sparsification_coef_(sparsification_coef), 
 	use_reverse_diffusion_(use_reverse_diffusion), reverse_diffusion_neighbors_(reverse_diffusion_neighbors)
 {
+	this->metric = som_model.get_metric();
 	som_model.train(samples);
 
 	calculate_distance_matrix(samples);
@@ -77,6 +80,7 @@ Kohonen<D, Sample, Graph, Metric, Distribution>::Kohonen(
 	use_sparsification_(use_sparsification), sparsification_coef_(sparsification_coef), 
 	use_reverse_diffusion_(use_reverse_diffusion), reverse_diffusion_neighbors_(reverse_diffusion_neighbors)
 {
+	this->metric = som_model.get_metric();
 	som_model.train(samples);
 	
 	calculate_distance_matrix(samples);
@@ -91,13 +95,12 @@ auto Kohonen<D, Sample, Graph, Metric, Distribution>::operator()(const Sample& s
 	auto bmu_1 = som_model.BMU(sample_1);
 	auto bmu_2 = som_model.BMU(sample_2);
 
-    Metric distance;
 	std::vector<Sample> nodes = som_model.get_weights();
 	
-	auto direct_distance = distance(sample_1, sample_2);
+	auto direct_distance = metric(sample_1, sample_2);
 	
-	double to_nearest_1 = distance(sample_1, nodes[bmu_1]);
-	double to_nearest_2 = distance(nodes[bmu_2], sample_2);
+	double to_nearest_1 = metric(sample_1, nodes[bmu_1]);
+	double to_nearest_2 = metric(nodes[bmu_2], sample_2);
 
 	if (direct_distance < to_nearest_1 + to_nearest_2)
 	{
@@ -112,7 +115,6 @@ template <typename D, typename Sample, typename Graph, typename Metric, typename
 void Kohonen<D, Sample, Graph, Metric, Distribution>::calculate_distance_matrix(const std::vector<Sample>& samples)
 {
 	std::vector<Sample> nodes = som_model.get_weights();
-    Metric distance;
 
 	if (use_reverse_diffusion_)
 	{
@@ -127,8 +129,8 @@ void Kohonen<D, Sample, Graph, Metric, Distribution>::calculate_distance_matrix(
 		{
 			if (matrix(i, j) > 0)
 			{
-				blaze_matrix(i, j) = distance(nodes[i], nodes[j]);
-				blaze_matrix(j, i) = distance(nodes[i], nodes[j]);
+				blaze_matrix(i, j) = metric(nodes[i], nodes[j]);
+				blaze_matrix(j, i) = metric(nodes[i], nodes[j]);
 			}
 		}
 	}
@@ -171,9 +173,11 @@ void Kohonen<D, Sample, Graph, Metric, Distribution>::sparcify_graph(blaze::Comp
 template <typename D, typename Sample, typename Graph, typename Metric, typename Distribution>
 void Kohonen<D, Sample, Graph, Metric, Distribution>::make_reverese_diffusion(const std::vector<Sample>& samples)
 {
-	//metric::Redif redif(samples, 100, 10, Metric());
-	//
-	//auto [redif_encoded, redif_indicies] = redif.encode(som_model.get_weights());
+	metric::Redif redif(samples, reverse_diffusion_neighbors_, 10, metric);
+	
+	auto redif_encoded = redif.encode(som_model.get_weights());
+
+	som_model.updateWeights(redif_encoded);
 }
 
 

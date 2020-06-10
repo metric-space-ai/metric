@@ -222,6 +222,11 @@ private:
 	 * Coefficient using for optimization. See `graph_optimization` description for meanings with concrete optimization type.
      */
 	double reverse_diffusion_neighbors_ = 10;
+
+    /**
+     * @brief
+     */
+	Metric metric;
 	
     /**
      * @brief

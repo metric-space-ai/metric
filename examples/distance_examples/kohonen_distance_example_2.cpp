@@ -217,7 +217,7 @@ int main()
 
 	// sparced Kohonen distance
 	
-	metric::Kohonen<double, Record, Graph, Metric> distance_2(som_model, filtered_data, true, 0.6);
+	metric::Kohonen<double, Record, Graph, Metric> distance_2(som_model, filtered_data, true, 0.5);
 
 	result = distance_2(min_point, max_point);
 	std::cout << "result: " << result << std::endl;
@@ -259,7 +259,7 @@ int main()
 
 	// Reverse Diffused Kohonen distance
 
-	metric::Kohonen<double, Record, Graph, Metric> distance_3(som_model, filtered_data, false, 0.0, true, 10);
+	metric::Kohonen<double, Record, Graph, Metric> distance_3(som_model, filtered_data, false, 0.0, true, 7);
 
 	result = distance_3(min_point, max_point);
 	std::cout << "result: " << result << std::endl;
@@ -298,7 +298,49 @@ int main()
 	}
 	saveToCsv("rev_diff_som_edges.csv", edges, {"start", "end"});
 
-	//////////
+
+	// Reverse Diffused ad Sparced Kohonen distance
+
+	metric::Kohonen<double, Record, Graph, Metric> distance_4(som_model, filtered_data, true, 0.5, true, 7);
+
+	result = distance_4(min_point, max_point);
+	std::cout << "result: " << result << std::endl;
+
+	//
+	
+	som_nodes = distance_4.som_model.get_weights();
+	saveToCsv("rev_diff_and_sparced_som.csv", som_nodes, {"X", "Y"});
+	
+	//
+
+	bmu_1 = distance_4.som_model.BMU(min_point);
+	bmu_2 = distance_4.som_model.BMU(max_point);	
+	path = distance_4.get_shortest_path(bmu_1, bmu_2);
+
+	matrix_path.clear();
+	for (size_t i = 0; i < path.size(); i++)
+	{
+		matrix_path.push_back({path[i]});
+	}
+	saveToCsv("rev_diff_and_sparced_path.csv", matrix_path, {"node"});
+
+	//
+
+	edges.clear();
+	matrix = distance_4.som_model.get_graph().get_matrix();
+	for (int i = 0; i < matrix.rows(); ++i)
+	{
+		for (int j = i + 1; j < matrix.columns(); ++j) 
+		{
+			if (matrix(i, j) > 0)
+			{
+				edges.push_back({i, j});
+			}
+		}
+	}
+	saveToCsv("rev_diff_and_sparced_som_edges.csv", edges, {"start", "end"});
+
+	/////////
 	
 
 	return 0;
