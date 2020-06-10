@@ -98,38 +98,6 @@ std::vector<std::vector<double>> readCsvData(std::string filename, char delimete
 	return rows;
 }
 
-
-template <typename Record>
-void saveToCsv(std::string filename, const std::vector<Record> &mat, const std::vector<std::string> &features)
-{
-	std::ofstream outputFile;
-
-	// create and open the .csv file
-	outputFile.open(filename);
-
-	// write the file headers
-	for (auto i = 0; i < features.size(); ++i)
-	{
-		outputFile << features[i];
-		outputFile << ",";
-	}
-	outputFile << std::endl;
-
-	// last item in the mat is date
-	for (auto i = 0; i < mat.size(); ++i)
-	{
-		//outputFile << dates[i] << ";";
-		for (auto j = 0; j < mat[i].size(); j++)
-		{
-			outputFile << mat[i][j] << ",";
-		}
-		outputFile << std::endl;
-	}
-
-	// close the output file
-	outputFile.close();
-}
-
 ///
 
 int main(int argc, char *argv[])
@@ -139,9 +107,6 @@ int main(int argc, char *argv[])
 
 	using Record = std::vector<double>;
     using Metric = metric::Euclidean<double>;
-
-	size_t best_w_grid_size = 20;
-	size_t best_h_grid_size = 20;
 	
 	std::vector<Record> dataset = readCsvData("./assets/testdataset/compound.csv", ',');
 	std::vector<Record> test_dataset;
@@ -153,8 +118,33 @@ int main(int argc, char *argv[])
 
 	metric::Redif redif(dataset, 7, 15, Metric());
 	
-	auto [encoded_data, indecies] = redif.encode(test_dataset);
+	auto [encoded_data, indicies] = redif.encode(test_dataset);
+	auto decoded_data = redif.decode(test_dataset, indicies);	
 
+	auto is_equal = std::equal(
+		test_dataset.begin(),
+		test_dataset.end(),
+		decoded_data.begin(),
+		[](Record l_record, Record r_record) {
+			return std::equal(
+						l_record.begin(),
+						l_record.end(),
+						r_record.begin(),
+						[](double l, double r) { return (round(l * 10000) == round(r * 10000)); }
+			);
+		}
+	);
+	
+	
+	std::cout << "original dataset: " << std::endl;
+	matrix_print(test_dataset);
+	std::cout << std::endl;
+	std::cout << "encoded and decoded back dataset: " << std::endl;
+	matrix_print(decoded_data);
+	std::cout << std::endl;
+	std::cout << std::endl;
+	
+	std::cout << "is encoded and decoded back dataset is equal with original: " << (is_equal ? "true" : "false") << std::endl;
 
     return 0;
 }

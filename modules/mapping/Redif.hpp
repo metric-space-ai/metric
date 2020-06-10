@@ -20,13 +20,9 @@ public:
     );
     ~Redif() = default;
 
-    std::vector<std::vector<Tv>> encode(const std::vector<std::vector<Tv>>& x);
+    std::tuple<std::vector<std::vector<Tv>>, std::vector<size_t>> encode(const std::vector<std::vector<Tv>>& x);
 
-    blaze::DynamicMatrix<Tv> decode(
-        const blaze::DynamicMatrix<Tv>& xEncoded,
-        blaze::DynamicMatrix<Tv>& xTrainEncoded,
-        const blaze::DynamicVector<size_t>& l_idx
-    );
+    std::vector<std::vector<Tv>> decode(const std::vector<std::vector<Tv>>& xEncoded, const std::vector<size_t>& l_idx);
 
 	std::vector<std::vector<Tv>> get_train_encoded()
 	{
@@ -50,7 +46,9 @@ private:
         size_t end
     );
 
-    blaze::DynamicMatrix<Tv> encode(const blaze::DynamicMatrix<Tv>& x);
+    std::tuple<blaze::DynamicMatrix<Tv>, blaze::DynamicVector<size_t>> encode(const blaze::DynamicMatrix<Tv>& x);
+
+    blaze::DynamicMatrix<Tv> decode(const blaze::DynamicMatrix<Tv>& xEncoded, const blaze::DynamicVector<size_t>& l_idx);
 
     blaze::DynamicMatrix<Tv> getLocalDistMatrix(const blaze::DynamicMatrix<Tv>& dataSample);
     blaze::DynamicMatrix<Tv> calcWeightedGraphLaplacian(const blaze::DynamicMatrix<Tv>& localDist);

@@ -37,14 +37,12 @@ public:
 	 * 
 	 * This construtor used when you have custom and pretrained SOM model. 
      *
-     * @param som_model - trained SOM model
-     * @param graph_optimization - type of optimization that can be performed on the graph. This optimizations delete some edges of the graph to fit better thetrain dataset. Can be: 
-	 * <ul>
-	 * <li>"none" - no optimization.</li> 
-	 * <li>"sparsification" - graph will be sparced by deleting a percent of the largest edges. Percent of remained edges set by `graph_optimization_coef` parameter. </li> 
-	 * <li>"reverse diffusion" - graph will be optimized using reverse diffusion method.</li>
-	 * </ul>
-     * @param graph_optimization_coef - coefficient using for optimization. See `graph_optimization` description for meanings with concrete optimization type.
+     * @param som_model - trained SOM model.
+     * @param samples - training dataset.
+     * @param use_sparsification - if true then sparcification optimization will be performed on the graph. This optimization delete some edges of the graph to fit the train dataset better. 
+     * @param sparsification_coef - coefficient using for sparcification. Should be from 0 to 1. Value is set a percent of the edges that will be left in the graph.
+     * @param use_reverse_diffusion - if true then reverse diffusion optimization will be performed on the graph. This optimization move graph nodes to the encoded points from trained on dataset Rediff object. See `metric::Redif` for details.
+     * @param reverse_diffusion_neighbors - number of neighbors used for reverse diffusion optimization.
      */
 
     Kohonen(
@@ -59,14 +57,12 @@ public:
 	 * 
 	 * This construtor used when you have custom and pretrained SOM model. 
      *
-     * @param som_model - trained SOM model
-     * @param graph_optimization - type of optimization that can be performed on the graph. This optimizations delete some edges of the graph to fit better thetrain dataset. Can be: 
-	 * <ul>
-	 * <li>"none" - no optimization.</li> 
-	 * <li>"sparsification" - graph will be sparced by deleting a percent of the largest edges. Percent of remained edges set by `graph_optimization_coef` parameter. </li> 
-	 * <li>"reverse diffusion" - graph will be optimized using reverse diffusion method.</li>
-	 * </ul>
-     * @param graph_optimization_coef - coefficient using for optimization. See `graph_optimization` description for meanings with concrete optimization type.
+     * @param som_model - trained SOM model.
+     * @param samples - training dataset.
+     * @param use_sparsification - if true then sparcification optimization will be performed on the graph. This optimization delete some edges of the graph to fit the train dataset better. 
+     * @param sparsification_coef - coefficient using for sparcification. Should be from 0 to 1. Value is set a percent of the edges that will be left in the graph.
+     * @param use_reverse_diffusion - if true then reverse diffusion optimization will be performed on the graph. This optimization move graph nodes to the encoded points from trained on dataset Rediff object. See `metric::Redif` for details.
+     * @param reverse_diffusion_neighbors - number of neighbors used for reverse diffusion optimization.
      */
 	Kohonen(
 		const metric::SOM<Sample, Graph, Metric, Distribution>& som_model,
@@ -83,13 +79,10 @@ public:
      * @param samples - samples for SOM train.
      * @param nodesWidth - width of the SOM grid.
      * @param nodesHeight - height of the SOM grid.
-     * @param graph_optimization - type of optimization that can be performed on the graph. This optimizations delete some edges of the graph to fit better thetrain dataset. Can be: 
-	 * <ul>
-	 * <li>"none" - no optimization.</li> 
-	 * <li>"sparsification" - graph will be sparced by deleting a percent of the largest edges. Percent of remained edges set by `graph_optimization_coef` parameter. </li> 
-	 * <li>"reverse diffusion" - graph will be optimized using reverse diffusion method.</li>
-	 * </ul>
-     * @param graph_optimization_coef - coefficient using for optimization. See `graph_optimization` description for meanings with concrete optimization type.
+     * @param use_sparsification - if true then sparcification optimization will be performed on the graph. This optimization delete some edges of the graph to fit the train dataset better. 
+     * @param sparsification_coef - coefficient using for sparcification. Should be from 0 to 1. Value is set a percent of the edges that will be left in the graph.
+     * @param use_reverse_diffusion - if true then reverse diffusion optimization will be performed on the graph. This optimization move graph nodes to the encoded points from trained on dataset Rediff object. See `metric::Redif` for details.
+     * @param reverse_diffusion_neighbors - number of neighbors used for reverse diffusion optimization.
      */
 	Kohonen(
 		const std::vector<Sample>& samples, size_t nodesWidth, size_t nodesHeight, 
@@ -109,13 +102,10 @@ public:
      * @param finish_learn_rate - learning rate for SOM model at the end of train.
      * @param iterations - number of iterations for SOM model train.
      * @param distribution - initial distribution of the weights of the SOM model before train.
-     * @param graph_optimization - type of optimization that can be performed on the graph. This optimizations delete some edges of the graph to fit better thetrain dataset. Can be: 
-	 * <ul>
-	 * <li>"none" - no optimization.</li> 
-	 * <li>"sparsification" - graph will be sparced by deleting a percent of the largest edges. Percent of remained edges set by `graph_optimization_coef` parameter. </li> 
-	 * <li>"reverse diffusion" - graph will be optimized using reverse diffusion method.</li>
-	 * </ul>
-     * @param graph_optimization_coef - coefficient using for optimization. See `graph_optimization` description for meanings with concrete optimization type.
+     * @param use_sparsification - if true then sparcification optimization will be performed on the graph. This optimization delete some edges of the graph to fit the train dataset better. 
+     * @param sparsification_coef - coefficient using for sparcification. Should be from 0 to 1. Value is set a percent of the edges that will be left in the graph.
+     * @param use_reverse_diffusion - if true then reverse diffusion optimization will be performed on the graph. This optimization move graph nodes to the encoded points from trained on dataset Rediff object. See `metric::Redif` for details.
+     * @param reverse_diffusion_neighbors - number of neighbors used for reverse diffusion optimization.
      */
 	Kohonen(
 	    const std::vector<Sample>& samples,
@@ -191,35 +181,25 @@ private:
 	
     /**
      * @brief
-	 * Type of optimization that can be performed on the graph. This optimizations delete some edges of the graph to fit better thetrain dataset. Can be: 
-	 * <ul>
-	 * <li>"none" - no optimization.</li> 
-	 * <li>"sparsification" - graph will be sparced by deleting a percent of the largest edges. Percent of remained edges set by `graph_optimization_coef` parameter. </li> 
-	 * <li>"reverse diffusion" - graph will be optimized using reverse diffusion method.</li>
-	 * </ul>
+	 * If true then sparcification optimization will be performed on the graph. This optimization delete some edges of the graph to fit the train dataset better. 
      */
 	bool use_sparsification_ = false;
 
     /**
      * @brief
-	 * Coefficient using for optimization. See `graph_optimization` description for meanings with concrete optimization type.
+	 * Coefficient using for sparcification. Should be from 0 to 1. Value is set a percent of the edges that will be left in the graph.
      */
 	double sparsification_coef_ = 1;
 	
     /**
      * @brief
-	 * Type of optimization that can be performed on the graph. This optimizations delete some edges of the graph to fit better thetrain dataset. Can be: 
-	 * <ul>
-	 * <li>"none" - no optimization.</li> 
-	 * <li>"sparsification" - graph will be sparced by deleting a percent of the largest edges. Percent of remained edges set by `graph_optimization_coef` parameter. </li> 
-	 * <li>"reverse diffusion" - graph will be optimized using reverse diffusion method.</li>
-	 * </ul>
+	 * If true then reverse diffusion optimization will be performed on the graph. This optimization move graph nodes to the encoded points from trained on dataset Rediff object. See `metric::Redif` for details.
      */
 	bool use_reverse_diffusion_ = false;
 
     /**
      * @brief
-	 * Coefficient using for optimization. See `graph_optimization` description for meanings with concrete optimization type.
+	 * Number of neighbors used for reverse diffusion optimization.
      */
 	double reverse_diffusion_neighbors_ = 10;
 
@@ -237,7 +217,7 @@ private:
 	
     /**
      * @brief
-	 * Method optimizing graph based for the SOM according to `graph_optimization` and `graph_optimization_coef`.
+	 * This optimization delete some edges of the graph to fit the train dataset better. 
      *
      * @param direct_distance_matrix - direct (based for SOM) distance matrix between SOM nodes. This matrix will be modifed while optimization.
      */
@@ -246,6 +226,7 @@ private:
 	
     /**
      * @brief
+	 * This optimization move graph nodes to the encoded points from trained on dataset Rediff object. See `metric::Redif` for details.
      */
 	void make_reverese_diffusion(const std::vector<Sample>& samples);
 	
