@@ -171,8 +171,8 @@ int main()
 	size_t iterations = 1000;
 	double neighborhood_start_size = 40;
 	double neighborhood_range_decay = 40;
-	long long random_seed = std::chrono::system_clock::now().time_since_epoch().count();
-	// long long random_seed = 15918678724411133;
+	//long long random_seed = std::chrono::system_clock::now().time_since_epoch().count();
+	long long random_seed = 15918678724411133;
 	std::cout << "random_seed: " << random_seed << std::endl;
 
 	Distribution distr(0, 100);

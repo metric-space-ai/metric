@@ -11,6 +11,7 @@ Copyright (c) 2018 Panda Team
 
 #include "../../mapping/SOM.hpp"
 #include "../../utils/graph.hpp"
+#include "../../mapping/Redif.hpp"
 
 namespace metric {
 
