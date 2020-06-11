@@ -152,7 +152,7 @@ int main()
 
 	som_model.train(train_dataset);
 	
-	metric::Kohonen<double, Vector, Graph, Metric> distance_3(som_model);
+	metric::Kohonen<double, Vector, Graph, Metric> distance_3(som_model, train_dataset);
 
 	t1 = std::chrono::steady_clock::now();
 	result = distance_3(train_dataset[0], train_dataset[1]);
@@ -174,7 +174,7 @@ int main()
 
     metric::SOM<Record, Graph, Metric> som_model_5(Graph(grid_w, grid_h), Metric(), start_learn_rate, finish_learn_rate, iterations, distr_4, neighborhood_start_size, neighborhood_range_decay, random_seed);
 	som_model_5.train(simple_grid);
-	metric::Kohonen<double, Record, Graph, Metric> distance_5(som_model_5);
+	metric::Kohonen<double, Record, Graph, Metric> distance_5(som_model_5, simple_grid);
 
 	t1 = std::chrono::steady_clock::now();
 	result = distance_5.distortion_estimate(simple_grid);
@@ -196,7 +196,7 @@ int main()
 		{5, 0},
 	};
 	som_model_4.train(linear_dataset);
-	metric::Kohonen<double, Record, Graph, Metric> distance_4(som_model_4);
+	metric::Kohonen<double, Record, Graph, Metric> distance_4(som_model_4, linear_dataset);
 
 	t1 = std::chrono::steady_clock::now();
 	result = distance_4.distortion_estimate(linear_dataset);
