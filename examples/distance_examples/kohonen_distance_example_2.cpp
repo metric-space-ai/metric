@@ -159,7 +159,7 @@ int main()
     using Distribution = std::uniform_real_distribution<double>; 
 	
 	int grid_w = 40;
-	int grid_h = 3;
+	int grid_h = 3; 
 	
 	//double start_learn_rate = 1.0;
 	//double finish_learn_rate = 0.3;

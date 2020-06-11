@@ -30,7 +30,7 @@ foreach(exampleSrc ${EXAMPLE_SRCS})
 	    continue()
 	endif()
 	#Add compile target
-	add_executable(${exampleName} ${exampleSrc})
+	add_executable(${exampleName} ${exampleSrc}) 
  
 	#link to Boost libraries AND your targets and dependencies 
 	target_link_libraries(${exampleName} ${Boost_LIBRARIES} ${LAPACK_LIBRARIES})
