@@ -19,6 +19,7 @@ file(COPY "assets" DESTINATION ".")
 
 file(GLOB EXAMPLE_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.cpp) 
 find_package(JPEG)
+find_package(LAPACK)
 
 #Run through each source
 foreach(exampleSrc ${EXAMPLE_SRCS})
