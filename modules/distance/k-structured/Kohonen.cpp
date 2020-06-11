@@ -173,11 +173,9 @@ void Kohonen<D, Sample, Graph, Metric, Distribution>::sparcify_graph(blaze::Comp
 template <typename D, typename Sample, typename Graph, typename Metric, typename Distribution>
 void Kohonen<D, Sample, Graph, Metric, Distribution>::make_reverese_diffusion(const std::vector<Sample>& samples)
 {
-	metric::Redif redif(samples, reverse_diffusion_neighbors_, 10, metric);
-	
-	auto [redif_encoded, indicies] = redif.encode(som_model.get_weights());
+	metric::Redif redif(som_model.get_weights(), reverse_diffusion_neighbors_, 10, metric);
 
-	som_model.updateWeights(redif_encoded);
+	som_model.updateWeights(redif.get_train_encoded());
 }
 
 

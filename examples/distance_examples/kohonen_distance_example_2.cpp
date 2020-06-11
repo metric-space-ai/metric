@@ -158,15 +158,22 @@ int main()
     using Graph = metric::Grid8; 
     using Distribution = std::uniform_real_distribution<double>; 
 	
-	int grid_w = 10;
-	int grid_h = 10;
-
+	int grid_w = 40;
+	int grid_h = 3;
+	
+	//double start_learn_rate = 1.0;
+	//double finish_learn_rate = 0.3;
+	//size_t iterations = 300;
+	//double neighborhood_start_size = 100;
+	//double neighborhood_range_decay = 100;
 	double start_learn_rate = 1.0;
-	double finish_learn_rate = 0.3;
-	size_t iterations = 300;
-	double neighborhood_start_size = 100;
-	double neighborhood_range_decay = 100;
+	double finish_learn_rate = 0.0;
+	size_t iterations = 1000;
+	double neighborhood_start_size = 40;
+	double neighborhood_range_decay = 40;
 	long long random_seed = std::chrono::system_clock::now().time_since_epoch().count();
+	// long long random_seed = 15918678724411133;
+	std::cout << "random_seed: " << random_seed << std::endl;
 
 	Distribution distr(0, 100);
 
@@ -217,7 +224,7 @@ int main()
 
 	// sparced Kohonen distance
 	
-	metric::Kohonen<double, Record, Graph, Metric> distance_2(som_model, filtered_data, true, 0.5);
+	metric::Kohonen<double, Record, Graph, Metric> distance_2(som_model, filtered_data, true, 0.75);
 
 	result = distance_2(min_point, max_point);
 	std::cout << "result: " << result << std::endl;
@@ -259,7 +266,7 @@ int main()
 
 	// Reverse Diffused Kohonen distance
 
-	metric::Kohonen<double, Record, Graph, Metric> distance_3(som_model, filtered_data, false, 0.0, true, 7);
+	metric::Kohonen<double, Record, Graph, Metric> distance_3(som_model, filtered_data, false, 0.0, true, 6);
 
 	result = distance_3(min_point, max_point);
 	std::cout << "result: " << result << std::endl;
@@ -296,12 +303,12 @@ int main()
 			}
 		}
 	}
-	saveToCsv("rev_diff_som_edges.csv", edges, {"start", "end"});
+	saveToCsv("rev_diff_som_edges.csv", edges, {"start", "end"}); 
 
 
 	// Reverse Diffused ad Sparced Kohonen distance
 
-	metric::Kohonen<double, Record, Graph, Metric> distance_4(som_model, filtered_data, true, 0.5, true, 7);
+	metric::Kohonen<double, Record, Graph, Metric> distance_4(som_model, filtered_data, true, 0.75, true, 6);
 
 	result = distance_4(min_point, max_point);
 	std::cout << "result: " << result << std::endl;
