@@ -7,6 +7,7 @@ Copyright (c) 2019 PANDA Team
 */
 
 #include "Kohonen.hpp"
+#include "../../../modules/mapping/Redif.hpp"
 #include "../../../3rdparty/blaze/Blaze.h"
 #include "../../../modules/utils/poor_mans_quantum.hpp"
 #include <cmath>
