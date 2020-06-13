@@ -20,6 +20,9 @@
 #include "Callback.h"
 #include "Utils/Random.h"
 
+#include "Initializer/ZeroInitializer.h"
+#include "Initializer/NormalInitializer.h"
+
 
 namespace metric::dnn
 {
@@ -48,6 +51,9 @@ class Network
         std::shared_ptr<Callback<Scalar>>           callback;         // Points to user-provided callback function,
 
 		std::shared_ptr<Optimizer<Scalar>>          opt;
+
+		std::map<std::string, std::shared_ptr<Initializer<Scalar>>> initializers;
+
 
         /* Check dimensions of layers */
         void check_unit_sizes() const
@@ -100,31 +106,30 @@ class Network
 		        return;
 	        }
 
-            std::shared_ptr<Layer<Scalar>> first_layer = layers[0];
-            std::shared_ptr<Layer<Scalar>> last_layer = layers[nlayer - 1];
+            auto firstLayer = layers[0];
+            auto lastLayer = layers[nlayer - 1];
+
             // Let output layer compute back-propagation data
             outputLayer->check_target_data(target);
-            outputLayer->evaluate(last_layer->output(), target);
+            outputLayer->evaluate(lastLayer->output(), target);
 
             // If there is only one hidden layer, "prev_layer_data" will be the input data
-            if (nlayer == 1)
-            {
-                first_layer->backprop(input, outputLayer->backprop_data());
-                return;
-            }
+	        if (nlayer == 1) {
+		        firstLayer->backprop(input, outputLayer->backprop_data());
+		        return;
+	        }
 
             // Compute gradients for the last hidden layer
-            last_layer->backprop(layers[nlayer - 2]->output(), outputLayer->backprop_data());
+            lastLayer->backprop(layers[nlayer - 2]->output(), outputLayer->backprop_data());
 
             // Compute gradients for all the hidden layers except for the first one and the last one
-            for (int i = nlayer - 2; i > 0; i--)
-            {
-                layers[i]->backprop(layers[i - 1]->output(),
-                                    layers[i + 1]->backprop_data());
-            }
+	        for (int i = nlayer - 2; i > 0; i--) {
+		        layers[i]->backprop(layers[i - 1]->output(),
+		                            layers[i + 1]->backprop_data());
+	        }
 
             // Compute gradients for the first layer
-            first_layer->backprop(input, layers[1]->backprop_data());
+            firstLayer->backprop(input, layers[1]->backprop_data());
         }
 
         // Update parameters
@@ -151,6 +156,9 @@ class Network
 					outputLayer(NULL)
         {
         	setDefaultCallback();
+
+	        setInitializer("normal", dnn::NormalInitializer<Scalar>(0, 0.01, randomEngine));
+	        setInitializer("zero", dnn::ZeroInitializer<Scalar>());
         }
 
         Network(const std::string& jsonString) : Network()
@@ -173,13 +181,30 @@ class Network
 				auto type = layerJson["type"].get<std::string>();
 				if (type == "FullyConnected") {
 					if (activation == "Identity") {
-						addLayer(FullyConnected<double, Identity<double>>(layerJson));
+						addLayer(FullyConnected<Scalar, Identity<Scalar>>(layerJson));
 					} else if (activation == "ReLU") {
-						addLayer(FullyConnected<double, ReLU<double>>(layerJson));
+						addLayer(FullyConnected<Scalar, ReLU<Scalar>>(layerJson));
 					} else if (activation == "Sigmoid") {
-						addLayer(FullyConnected<double, Sigmoid<double>>(layerJson));
+						addLayer(FullyConnected<Scalar, Sigmoid<Scalar>>(layerJson));
 					//} else if (activation == "Softmax") {
-					//	addLayer(FullyConnected<double, Softmax<double>>(layerJson));
+					//	addLayer(FullyConnected<Scalar, Softmax<Scalar>>(layerJson));
+					}
+				} else if (type == "Conv2d") {
+					if (activation == "Identity") {
+						addLayer(Conv2d<Scalar, Identity<Scalar>>(layerJson));
+					} else if (activation == "ReLU") {
+						addLayer(Conv2d<Scalar, ReLU<Scalar>>(layerJson));
+					} else if (activation == "Sigmoid") {
+						addLayer(Conv2d<Scalar, Sigmoid<Scalar>>(layerJson));
+					}
+
+				} else if (type == "Conv2dTranspose") {
+					if (activation == "Identity") {
+						addLayer(Conv2dTranspose<Scalar, Identity<Scalar>>(layerJson));
+					} else if (activation == "ReLU") {
+						addLayer(Conv2dTranspose<Scalar, ReLU<Scalar>>(layerJson));
+					} else if (activation == "Sigmoid") {
+						addLayer(Conv2dTranspose<Scalar, Sigmoid<Scalar>>(layerJson));
 					}
 				}
 			}
@@ -248,7 +273,22 @@ class Network
 			boa(jsonString, layersParameters);
         }
 
-        void load(const std::string filepath)
+		void save(std::stringstream& ss) const
+		{
+			std::string jsonString = toJson().dump();
+
+			std::map<size_t, std::vector<std::vector<Scalar>>> layersParameters;
+
+			for (auto i = 0; i < layers.size(); ++i) {
+				layersParameters[i] = layers[i]->getParameters();
+			}
+
+			cereal::BinaryOutputArchive boa(ss);
+
+			boa(jsonString, layersParameters);
+		}
+
+		void load(const std::string filepath)
         {
         	std::ifstream file(filepath);
         	cereal::BinaryInputArchive bia(file);
@@ -263,10 +303,26 @@ class Network
         		layers[e.first]->setParameters(e.second);
         	}
         }
-        ///
-        /// Add a hidden layer to the neural network
-        ///
-        /// \param layer A pointer to a Layer object, typically constructed from
+
+		void load(std::stringstream& ss)
+		{
+			cereal::BinaryInputArchive bia(ss);
+
+			std::string jsonString;
+			std::map<size_t, std::vector<std::vector<Scalar>>> layersParameters;
+			bia(jsonString, layersParameters);
+
+			constructFromJsonString(jsonString);
+
+			for (auto& e: layersParameters) {
+				layers[e.first]->setParameters(e.second);
+			}
+		}
+
+		///
+		/// Add a hidden layer to the neural network
+		///
+		/// \param layer A pointer to a Layer object, typically constructed from
         ///              layer classes such as FullyConnected and Convolutional.
         ///              **NOTE**: the pointer will be handled and freed by the
         ///              network object, so do not delete it manually.
@@ -348,6 +404,12 @@ class Network
 			randomEngine.seed(seed);
 		}
 
+		template <typename T>
+		void setInitializer(const std::string name, const T& initializer)
+		{
+        	initializers[name] = std::make_shared<T>(initializer);
+		}
+
         ///
         /// Initialize layer parameters in the network using normal distribution
         ///
@@ -366,15 +428,16 @@ class Network
 
 	        const int nlayer = num_layers();
 
-	        for (int i = 0; i < nlayer; i++) {
-		        layers[i]->init(mu, sigma, randomEngine);
+			for (auto layer: layers) {
+		        layer->init(this->initializers);
 	        }
         }
 
-        ///
-        /// Get the serialized layer parameters
-        ///
-        std::vector< std::vector<Scalar>> get_parameters() const
+
+	///
+	/// Get the serialized layer parameters
+	///
+	std::vector< std::vector<Scalar>> get_parameters() const
         {
             const int nlayer = num_layers();
             std::vector< std::vector<Scalar>> res;
@@ -521,19 +584,21 @@ class Network
 	        for (int k = 0; k < epoch; k++) {
 		        callback->epochId = k;
 
+		        callback->preTrainingEpoch(this);
+
 		        // Train on each mini-batch
 		        for (int i = 0; i < nbatch; i++) {
-			        auto t1 = std::chrono::high_resolution_clock::now();
 			        callback->batchId = i;
-			        //callback->preTrainingBatch(this, x_batches[i], y_batches[i]);
+
+			        callback->preTrainingBatch(this, x_batches[i], y_batches[i]);
+
 			        this->forward(x_batches[i]);
 			        this->backprop(x_batches[i], y_batches[i]);
 			        this->update();
+
 			        callback->postTrainingBatch(this, x_batches[i], y_batches[i]);
-			        auto t2 = std::chrono::high_resolution_clock::now();
-			        auto d = std::chrono::duration_cast < std::chrono::duration < double >> (t2 - t1);
-			        //std::cout << "Training time: " << d.count() << " s" << std::endl;
 		        }
+		        callback->postTrainingEpoch(this);
 	        }
 
             return true;

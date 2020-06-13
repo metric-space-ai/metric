@@ -2,10 +2,11 @@
 
 void distance_example()
 {
+    using namespace metric;
 
     // configure the metric
-    metric::Euclidean<double> euclidean_distance;
-    // new: metric::Euclidean<std::vector<double>> euclidean_distance;
+    Euclidean<double> euclidean_distance;
+    // new: Euclidean<std::vector<double>> euclidean_distance;
 
     //apply the metric
     std::vector<double> a = { 1, 2, 5, 3, 1 };
@@ -16,6 +17,7 @@ void distance_example()
 
 void correlation_example()
 {
+    using namespace metric;
     // some data
     std::vector<std::vector<int>> A = {
         { 0, 1, 1, 1, 1, 1, 2, 3 },
@@ -39,8 +41,8 @@ void correlation_example()
     };
 
     // configure the correlation
-    auto mgc_corr = metric::MGC<std::vector<int>, metric::Euclidean<int>, std::string, metric::Edit<std::string>>();
-    // new auto mgc_corr = metric::MGC<metric::Euclidean<std::vector<int>>, metric::Edit<std::string>>();
+    auto mgc_corr = MGC<std::vector<int>, Euclidean<int>, std::string, Edit<std::string>>();
+    // new auto mgc_corr = MGC<Euclidean<std::vector<int>>, Edit<std::string>>();
 
     // apply the correlation
     auto result = mgc_corr(A, B);
@@ -52,9 +54,11 @@ void correlation_example()
 
 void knn_example()
 {
+using namespace metric;
+using rec_t = std::vector<double>;
 
     // some data
-    std::vector<std::vector<double>> A = {
+    std::vector<rec_t> A = {
         { 0, 1, 1, 1, 1, 1, 2, 3 },
         { 1, 1, 1, 1, 1, 2, 3, 4 },
         { 2, 2, 2, 1, 1, 2, 0, 0 },
@@ -68,10 +72,10 @@ void knn_example()
     // std::vector<double> v1 = {1, 1, 1, 1, 1, 2, 3, 4};
     // std::vector<double> v2 = {2, 2, 2, 1, 1, 2, 0, 0};
     // std::vector<double> v3 = {3, 3, 2, 2, 1, 1, 0, 0};
-    std::vector<double> b = { 2, 8, 2, 1, 0, 0, 0, 0 };
+    rec_t b = { 2, 8, 2, 1, 0, 0, 0, 0 };
 
     // configure the tree
-    metric::Tree<std::vector<double>, metric::Manhatten<double>> searchTree(A);
+    Tree<rec_t, Manhatten<double>> searchTree(A);
 
     //apply a method of the seach tree
     auto nn = searchTree.nn(b);
@@ -79,15 +83,21 @@ void knn_example()
 
 
     // configure the graph
-    metric::KNNGraph<std::vector<double>, metric::Manhatten<double>> searchGraph(A, 2, 4);
+    KNNGraph<rec_t, Manhatten<double>> searchGraph(A, 2, 4);
 
     auto nn_ID = searchGraph.nn(b);
     std::cout << "Graph: best match for b is A[" << nn_ID << "]" << std::endl;
 
 
     // configure the search tree
-    metric::Matrix<std::vector<double>, metric::Manhatten<double>> searchMatrix(A);
+    Matrix<rec_t, Manhatten<double>> searchMatrix(A);
     std::cout << "Matrix: best match for b is A[" << searchMatrix.nn(b) << "]" << std::endl;
+
+
+    std::cout << searchMatrix(0,3) << std::endl;
+    std::cout << searchGraph(0,3) << std::endl;
+    std::cout << searchTree(0,3) << std::endl;
+
 
 }
 

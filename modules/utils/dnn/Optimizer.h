@@ -24,6 +24,8 @@ class Optimizer
 	protected:
 		using AlignedMapVec = blaze::CustomVector<Scalar, blaze::aligned, blaze::unpadded>;
 		using ConstAlignedMapVec = const blaze::CustomVector<Scalar, blaze::aligned, blaze::unpadded>;
+		using RowVector = blaze::DynamicVector<Scalar, blaze::rowVector>;
+		using ColumnMatrix = blaze::DynamicMatrix<Scalar, blaze::columnMajor>;
 
 	public:
         virtual ~Optimizer() {}
@@ -46,10 +48,14 @@ class Optimizer
         ///             updated parameters.
         ///
         virtual void update(ConstAlignedMapVec& dvec, AlignedMapVec& vec) = 0;
+
+        virtual void update(const RowVector& dvec, RowVector& vec) = 0;
+
+		virtual void update(const ColumnMatrix& dvec, ColumnMatrix& vec) = 0;
 };
 
 
-} // namespace dnn
+	} // namespace dnn
 } // namespace metric
 
 

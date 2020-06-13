@@ -78,4 +78,38 @@ auto Sorensen<V>::operator()(const blaze::CompressedVector<V>& a, const blaze::C
     return sum1 / sum2;  // here the type is changed
 }
 
+template <typename V>
+template <typename Container>
+auto Hassanat<V>::operator()(const Container& A, const Container& B) const -> distance_type
+{
+    value_type sum = 0;
+    value_type min;
+    value_type max;
+    for (auto it1 = A.begin(), it2 = B.begin(); it1 != A.end() || it2 != B.end(); ++it1, ++it2) {
+        min=std::min(*it1,*it2);
+        max=std::max(*it1,*it2);
+        if (min>=0){
+            sum += 1- (1+min)/(1+max);
+        }
+        else{
+            sum += 1- (1+min+min)/(1+max+min);
+        }
+
+    }
+    return sum;
+}
+
+template <typename V>
+template <typename Container>
+auto Ruzicka<V>::operator()(const Container& A, const Container& B) const -> distance_type
+{
+    value_type sum = 0;
+    value_type min;
+    value_type max;
+    for (auto it1 = A.begin(), it2 = B.begin(); it1 != A.end() || it2 != B.end(); ++it1, ++it2) {
+        sum += std::max(*it1,*it2)/min=std::min(*it1,*it2);
+    }
+    return double(1) - sum;
+}
+
 }  // namespace metric

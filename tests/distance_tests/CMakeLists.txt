@@ -6,8 +6,6 @@ find_package(Boost)
 
 project(distance_tests)
 
-set(Boost_DEBUG on)  
-set(Boost_USE_STATIC_LIBS ON)
 find_package(Boost COMPONENTS unit_test_framework REQUIRED)
 
 include_directories(
@@ -27,7 +25,6 @@ if(UNIX)
     set(THREADS_PREFER_PTHREAD_FLAG ON)
     find_package(Threads REQUIRED)
 endif(UNIX)
-
 
 AUX_SOURCE_DIRECTORY(. TEST_SRCS)
 #Run through each source
@@ -51,7 +48,7 @@ foreach(testSrc ${TEST_SRCS})
 	endif()
 	if(UNIX)
 		target_compile_options(${testName} PRIVATE -DBOOST_TEST_DYN_LINK)
-		target_link_libraries(${testName} Threads::Threads)
+		target_link_libraries(${testName} PRIVATE Threads::Threads)
 	endif(UNIX)
         #I like to move testing binaries into a testBin directory
 #        set_target_properties(${testName} PROPERTIES RUNTIME_OUTPUT_DIRECTORY  ${CMAKE_CURRENT_SOURCE_DIR})

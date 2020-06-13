@@ -147,7 +147,7 @@ public:
      * @param threshold  radius of threshold sphere
      * @return vector of indexes of NN's in graph and distances to searching value
      */
-    auto rnn(const Sample & x, distance_type threshold) const -> std::vector<std::pair<std::size_t, distance_type>>
+    auto rnn(const Sample & x, distance_type threshold) const -> std::vector<std::pair<std::size_t, distance_type>>;
     
     /**
      * @brief erase element from graph
