@@ -53,8 +53,9 @@ class Conv2d: public Layer<Scalar>
         std::vector<SparseMatrix> unrolledKernels;
         std::vector<size_t> jDeltas;
         std::vector<size_t> iDeltas;
+		std::vector<std::vector<size_t>> kernelMasks;
 
-        Vector kernelsData;           // Filter parameters. Total length is
+	Vector kernelsData;           // Filter parameters. Total length is
         // (in_channels x out_channels x filter_rows x filter_cols)
         // See Utils/Convolution.h for its layout
 
@@ -181,6 +182,56 @@ class Conv2d: public Layer<Scalar>
             /* Prepare iDeltas */
             iDeltas.resize(kernelWidth * kernelHeight);
 
+            /* Parse padded input */
+            size_t paddingWidth = (kernelWidth - 1) / 2;
+	        size_t paddingHeight = (kernelHeight - 1) / 2;
+
+	        auto &unrolledKernel0 = unrolledKernels[0];
+	        unrolledKernel0.reserve(unrolledKernel0.rows() * iDeltas.size());
+	        for (int i = - paddingHeight; i < inputHeight + paddingHeight; ++i) {
+		        for (int j = -paddingWidth; j < inputWidth + paddingWidth; ++j) {
+		        	size_t kis = 0;
+			        size_t kie = kernelHeight;
+		        	size_t kjs = 0;
+			        size_t kje = kernelWidth;
+		        	//size_t width0 =
+		        	if (i < 0) {
+		        		kis = -i;
+		        		kie -= kis;
+		        	}
+
+		        	if (i + kernelHeight > inputHeight) {
+		        		kie -= i + kernelHeight - inputHeight;
+		        	}
+
+		        	if (j < 0) {
+		        		kjs = -j;
+		        		kje -= kjs;
+		        	}
+
+		        	if (j + kernelWidth > inputWidth) {
+		        		kje -= j + kernelWidth - inputWidth;
+		        	}
+
+
+		        	std::vector<size_t> kernelMask;
+		        	size_t c = 0;
+		            for (size_t ki = 0; ki < kernelHeight; ++ki) {
+		            	for (size_t kj = 0; kj < kernelWidth; ++kj) {
+		            		if ((ki < kis) or (ki > kie) or (kj < kjs) or (kj > kje)) {
+		            			kernelMask.push_back(c);
+		            		} else {
+								unrolledKernel0.append((i + ki) * 1 + (j + kj), i * outputWidth + j, 1);
+		            		}
+
+		            		++c;
+		            	}
+		            }
+		            unrolledKernel0.finalize(i * outputWidth + j);
+		            kernelMasks.push_back(kernelMask);
+		        }
+	        }
+
             size_t p = 0;
             for (size_t i = 0; i < iDeltas.size(); ++i) {
                 iDeltas[i] = p++;
@@ -211,9 +262,10 @@ class Conv2d: public Layer<Scalar>
                 }
             }
 
-            for (auto& unrolledKernel: unrolledKernels) {
 
-                /* Fill unrolled kernel */
+
+	        /* Fill unrolled kernels */
+	        for (auto& unrolledKernel: unrolledKernels) {
                 if (isTranspose) {
                     unrolledKernel.reserve(unrolledKernel.rows() * iDeltas.size());
                     for (size_t i = 0; i < unrolledKernel.rows(); ++i) {
@@ -271,8 +323,14 @@ class Conv2d: public Layer<Scalar>
                         }
                     } else {
                         for (size_t i = 0; i < unrolledKernel.columns(); ++i) {
-                            for (auto [element, kd] = std::tuple(unrolledKernel.begin(i), kernelData.begin()); element != unrolledKernel.end(i); ++element, ++kd) {
-                                element->value() = *kd;
+							auto me = kernelMasks[i].begin();
+							auto element = unrolledKernel.begin(i);
+							for (auto k = 0; k < kernelData.size(); ++k) {
+								if (*me == k) {
+									++me;
+								} else {
+		                            element++->value() = kernelData[k];
+	                            }
                             }
                         }
                     }
@@ -357,12 +415,14 @@ class Conv2d: public Layer<Scalar>
 					for (size_t inputChannel = 0; inputChannel < inputChannels; ++inputChannel) {
 						auto kdic = blaze::submatrix(kernelDerivativesChannel, 0, inputChannel * kernelWidth * kernelHeight, nobs, kernelWidth * kernelHeight);
 						auto wic = blaze::submatrix(W, inputChannel * inputWidth * inputHeight, 0, inputWidth * inputHeight, W.columns());
-						for (size_t j = 0; j < kdic.columns(); ++j) {
-							for (size_t k = 0; k < jDeltas.size(); ++k) {
-								if (isTranspose) {
-									kdic(observation, j) += wic(k, jDeltas[k] + iDeltas[j]);
+						for (size_t k = 0; k < jDeltas.size(); ++k) {
+							auto wice = wic.begin(k);
+							auto me = kernelMasks[k].begin();
+							for (size_t j = 0; j < kdic.columns(); ++j) {
+								if (*me == j) {
+									++me;
 								} else {
-									kdic(observation, j) += wic(jDeltas[k] + iDeltas[j], k);
+									kdic(observation, j) += wice++->value;
 								}
 							}
 						}
