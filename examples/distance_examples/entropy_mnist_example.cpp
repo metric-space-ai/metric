@@ -61,7 +61,7 @@ int main()
     images.push_back(img); // last
 
 
-    size_t ds_size = 5400; //5400;
+    size_t ds_size = 5400;
 
     //std::vector<std::vector<int>> lbls (10); // for debug
     std::vector<std::vector<std::vector<double>>> imgs_by_digit (10);

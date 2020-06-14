@@ -187,16 +187,41 @@ variationOfInformation(const C& Xc, const C& Yc, int k, int p, T logbase)
 
 
 
-template <typename C, typename Metric, typename T>
-typename std::enable_if_t<!type_traits::is_container_of_integrals_v<C>, T>
-variationOfInformationSimple(const C& Xc, const C& Yc, int k, T logbase)
+template <typename C, typename Metric>
+typename std::enable_if_t<!type_traits::is_container_of_integrals_v<C>, type_traits::underlying_type_t<C>>
+variationOfInformationSimple(const C& Xc, const C& Yc, int k)
 {
+    using T = type_traits::underlying_type_t<C>;
+
+    T N = Xc.size();
+
+    if (N < k + 1 || Yc.size() < k + 1)
+        throw std::invalid_argument("number of points in dataset must be larger than k");
+
+    std::vector<std::vector<T>> X;
+    for (const auto& e: Xc)
+        X.push_back(std::vector<T>(std::begin(e), std::end(e)));
+
+    std::vector<std::vector<T>> Y;
+    for (const auto& e: Yc)
+        Y.push_back(std::vector<T>(std::begin(e), std::end(e)));
+
+    std::vector<std::vector<T>> XY = combine(X, Y);
+
     auto e = EntropySimple<void, Metric>(Metric(), k);
-    auto result = e(Xc) + e(Yc) - 2 * mutualInformation<C, Metric>(Xc, Yc, k);
-    if (result < 0)
-        return 0;
+
+    //auto eX = e(Xc); // for debug, TODO remove
+    //auto eY = e(Yc);
+    //auto eXY = e(XY);
+    //std::cout << "    " << eX << " | " << eY << " | " << eXY << "\n";
+
+    auto result = e(Xc) + e(Yc) - 2 * e(XY);
+    //auto result = eX + eY - 2 * eXY; // TODO remove
+    //if (result < 0)
+        //return 0;
     return result;
 }
+
 
 template <typename C, typename T>
 typename std::enable_if_t<!type_traits::is_container_of_integrals_v<C>, T>
