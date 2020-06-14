@@ -55,7 +55,23 @@ mutualInformation(const Container& Xc, const Container& Yc, T logbase = 2.0);
 template <typename C, typename Metric = metric::Chebyshev<type_traits::underlying_type_t<C>>,
           typename T = type_traits::underlying_type_t<C>>
 typename std::enable_if_t<!type_traits::is_container_of_integrals_v<C>, T>
+variationOfInformationSimple(const C& Xc, const C& Yc, int k = 3, T logbase = 2.0);
+
+
+/**
+ * @brief
+ *
+ * @param Xc
+ * @param Yc
+ * @param k
+ * @param logbase
+ * @return
+ */
+template <typename C, typename Metric = metric::Chebyshev<type_traits::underlying_type_t<C>>,
+          typename T = type_traits::underlying_type_t<C>>
+typename std::enable_if_t<!type_traits::is_container_of_integrals_v<C>, T>
 variationOfInformation(const C& Xc, const C& Yc, int k = 3, int p = 25, T logbase = 2.0);
+
 
 
 /**

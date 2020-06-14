@@ -185,6 +185,19 @@ variationOfInformation(const C& Xc, const C& Yc, int k, int p, T logbase)
     return result;
 }
 
+
+
+template <typename C, typename Metric, typename T>
+typename std::enable_if_t<!type_traits::is_container_of_integrals_v<C>, T>
+variationOfInformationSimple(const C& Xc, const C& Yc, int k, T logbase)
+{
+    auto e = EntropySimple<void, Metric>(Metric(), k);
+    auto result = e(Xc) + e(Yc) - 2 * mutualInformation<C, Metric>(Xc, Yc, k);
+    if (result < 0)
+        return 0;
+    return result;
+}
+
 template <typename C, typename T>
 typename std::enable_if_t<!type_traits::is_container_of_integrals_v<C>, T>
 variationOfInformation_normalized(const C& Xc, const C& Yc, int k, int p, T logbase)
