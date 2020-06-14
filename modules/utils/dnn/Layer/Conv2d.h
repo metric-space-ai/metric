@@ -46,6 +46,7 @@ class Conv2d: public Layer<Scalar>
         size_t inputChannels;
         size_t outputChannels;
         size_t stride;
+		bool isZeroPadding;
 
         bool isTranspose;
 
@@ -86,7 +87,7 @@ class Conv2d: public Layer<Scalar>
         Conv2d(const size_t inputWidth, const size_t inputHeight,
                const size_t inputChannels, const size_t outputChannels,
                const size_t kernelWidth, const size_t kernelHeight,
-               const size_t stride = 1) :
+               const size_t stride = 1, bool isZeroPadding = false) :
                                             Layer<Scalar>(inputWidth * inputHeight * inputChannels,
                                               ((inputWidth - kernelWidth) / stride + 1) *
                                                 ((inputHeight - kernelHeight) / stride + 1) * outputChannels),
@@ -94,9 +95,9 @@ class Conv2d: public Layer<Scalar>
                                               inputWidth(inputWidth), inputHeight(inputHeight),
                                               kernelWidth(kernelWidth), kernelHeight(kernelHeight),
                                               inputChannels(inputChannels), outputChannels(outputChannels),
-                                              stride(stride),
-                                              outputWidth((inputWidth - kernelWidth) / stride + 1),
-                                              outputHeight((inputHeight - kernelHeight) / stride + 1)
+                                              stride(stride), isZeroPadding(isZeroPadding),
+                                              outputWidth(isZeroPadding ? inputWidth : (inputWidth - kernelWidth) / stride + 1),
+                                              outputHeight(isZeroPadding ? inputHeight : (inputHeight - kernelHeight) / stride + 1)
         {
             this->inputSize = inputChannels * inputWidth * inputHeight;
             this->outputSize = outputChannels * outputWidth * outputHeight;
@@ -123,10 +124,11 @@ class Conv2d: public Layer<Scalar>
                                              kernelHeight(json["kernelHeight"].get<int>()),
                                              inputChannels(json["inputChannels"].get<int>()),
                                              outputChannels(json["outputChannels"].get<int>()),
-                                             stride(json["stride"].get<int>())
+                                             stride(json["stride"].get<int>()),
+                                             isZeroPadding(json["zeroPadding"].get<bool>())
         {
-            outputWidth = (inputWidth - kernelWidth) / stride + 1;
-            outputHeight = (inputHeight - kernelHeight) / stride + 1;
+            outputWidth = isZeroPadding ? inputWidth : (inputWidth - kernelWidth) / stride + 1;
+            outputHeight = isZeroPadding ? inputHeight : (inputHeight - kernelHeight) / stride + 1;
 
             this->inputSize = inputChannels * inputWidth * inputHeight;
             this->outputSize = outputChannels * outputWidth * outputHeight;
