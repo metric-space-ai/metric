@@ -19,11 +19,11 @@ void register_wrapper_Redif(py::module& m) {
         py::arg("n_iter") = 15,
         py::arg("metric") = Metric()
     );
-    std::tuple<std::vector<std::vector<Tv>>, std::vector<size_t>> (Class::*encode_vector)(const std::vector<std::vector<Tv>>&) = &Class::encode;
+    std::tuple<Container, std::vector<size_t>> (Class::*encode_vector)(const Container&) = &Class::encode;
     cls.def("encode", encode_vector,
         py::arg("x")
 	);
-    std::vector<std::vector<Tv>> (Class::*decode_vector)(const std::vector<std::vector<Tv>>&, const std::vector<size_t>&) = &Class::decode;
+    Container (Class::*decode_vector)(const Container&, const std::vector<size_t>&) = &Class::decode;
     cls.def("decode", decode_vector,
         py::arg("xEncoded"),
         py::arg("l_idx")
