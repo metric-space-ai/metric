@@ -3,7 +3,7 @@
 #define _METRIC_MAPPING_REDIF_HPP
 
 #include "../../3rdparty/blaze/Blaze.h"
-#include "../../modules/distance.hpp"
+#include "../../modules/distance/k-related/Standards.hpp"
 
 #include <vector>
 
