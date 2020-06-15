@@ -7,6 +7,7 @@ find_package(Boost)
 project(distance_tests)
 
 find_package(Boost COMPONENTS unit_test_framework REQUIRED)
+find_package(LAPACK)
 
 include_directories(
 	${PROJECT_SOURCE_DIR} 
@@ -28,7 +29,7 @@ endif(UNIX)
 
 AUX_SOURCE_DIRECTORY(. TEST_SRCS)
 #Run through each source
-foreach(testSrc ${TEST_SRCS})
+foreach(testSrc ${TEST_SRCS}) 
 
     #Extract the filename without an extension (NAME_WE)
     get_filename_component(testName ${testSrc} NAME_WE)
