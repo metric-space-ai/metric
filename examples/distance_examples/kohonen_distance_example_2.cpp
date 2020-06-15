@@ -187,6 +187,9 @@ int main()
 
 	auto result = distance_1(min_point, max_point);
 	std::cout << "result: " << result << std::endl;
+	result = distance_1.distortion_estimate(filtered_data);
+	std::cout << "distortion estimate: " << result << std::endl;
+	std::cout << "" << std::endl;
 
 	//
 	
@@ -228,6 +231,9 @@ int main()
 
 	result = distance_2(min_point, max_point);
 	std::cout << "result: " << result << std::endl;
+	result = distance_2.distortion_estimate(filtered_data);
+	std::cout << "distortion estimate: " << result << std::endl;
+	std::cout << "" << std::endl;
 
 	//
 	
@@ -270,6 +276,9 @@ int main()
 
 	result = distance_3(min_point, max_point);
 	std::cout << "result: " << result << std::endl;
+	result = distance_3.distortion_estimate(filtered_data);
+	std::cout << "distortion estimate: " << result << std::endl;
+	std::cout << "" << std::endl;
 
 	//
 	
@@ -312,6 +321,9 @@ int main()
 
 	result = distance_4(min_point, max_point);
 	std::cout << "result: " << result << std::endl;
+	result = distance_4.distortion_estimate(filtered_data);
+	std::cout << "distortion estimate: " << result << std::endl;
+	std::cout << "" << std::endl;
 
 	//
 	
