@@ -9,7 +9,7 @@ namespace py = pybind11;
 
 template <typename Value, typename Metric>
 void register_wrapper_Redif(py::module& m) {
-    using Class = metric::Redif<Value>;
+    using Class = metric::Redif<Value, Metric>;
     using Container = std::vector<std::vector<Value>>;
 
     auto cls = py::class_<Class>(m, "Redif");
@@ -19,8 +19,13 @@ void register_wrapper_Redif(py::module& m) {
         py::arg("n_iter") = 15,
         py::arg("metric") = Metric()
     );
-    cls.def("encode", &Class::template encode<Metric>);
-    cls.def("decode", &Class::decode);
+    cls.def("encode", &Class::encode,
+        py::arg("x")
+	);
+    cls.def("decode", &Class::decode,
+        py::arg("xEncoded"),
+        py::arg("l_idx")
+	);
 }
 
 void export_metric_Redif(py::module& m) {
