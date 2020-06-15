@@ -246,36 +246,36 @@ int main()
 
 	///////////////////////////////////////////////////////////////////////////////////////////
 
-	std::vector<std::string> dataset_names;
-	dataset_names.push_back("BOD2");
-	dataset_names.push_back("Chloride");
-	dataset_names.push_back("Coal");
-	dataset_names.push_back("Ethyl");
-	dataset_names.push_back("Isom");
-	dataset_names.push_back("Leaves");
-	dataset_names.push_back("Lipo");
-	dataset_names.push_back("Lubricant");
-	//dataset_names.push_back("Nitren");
-	dataset_names.push_back("Nitrite");
-	dataset_names.push_back("O.xylene");
-	dataset_names.push_back("Oilshale");
-	dataset_names.push_back("PCB");
-	dataset_names.push_back("Pinene");
-	//dataset_names.push_back("Pinene2");
-	dataset_names.push_back("Rumford");
-	dataset_names.push_back("Sacch2");
-	dataset_names.push_back("Saccharin");
-	
-	for (size_t i = 0; i < dataset_names.size(); i++)
-	{
-		std::vector<Record> r_dataset = readCsvData("assets/" + dataset_names[i] + ".csv");
+	//std::vector<std::string> dataset_names;
+	//dataset_names.push_back("BOD2");
+	//dataset_names.push_back("Chloride");
+	//dataset_names.push_back("Coal");
+	//dataset_names.push_back("Ethyl");
+	//dataset_names.push_back("Isom");
+	//dataset_names.push_back("Leaves");
+	//dataset_names.push_back("Lipo");
+	//dataset_names.push_back("Lubricant");
+	////dataset_names.push_back("Nitren");
+	//dataset_names.push_back("Nitrite");
+	//dataset_names.push_back("O.xylene");
+	//dataset_names.push_back("Oilshale");
+	//dataset_names.push_back("PCB");
+	//dataset_names.push_back("Pinene");
+	////dataset_names.push_back("Pinene2");
+	//dataset_names.push_back("Rumford");
+	//dataset_names.push_back("Sacch2");
+	//dataset_names.push_back("Saccharin");
+	//
+	//for (size_t i = 0; i < dataset_names.size(); i++)
+	//{
+	//	std::vector<Record> r_dataset = readCsvData("assets/" + dataset_names[i] + ".csv");
 
-		metric::Kohonen<double, Record, Graph, Metric> r_distance(r_dataset, grid_w, grid_h);
+	//	metric::Kohonen<double, Record, Graph, Metric> r_distance(r_dataset, grid_w, grid_h);
 
-		result = r_distance.distortion_estimate(r_dataset);
-		std::cout << "distortion estimate result for " << dataset_names[i] << ": " << result << std::endl;
-		std::cout << "" << std::endl;
-	}
+	//	result = r_distance.distortion_estimate(r_dataset);
+	//	std::cout << "distortion estimate result for " << dataset_names[i] << ": " << result << std::endl;
+	//	std::cout << "" << std::endl;
+	//}
 
 
 	return 0;

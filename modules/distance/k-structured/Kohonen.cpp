@@ -210,7 +210,8 @@ template <typename D, typename Sample, typename Graph, typename Metric, typename
 double Kohonen<D, Sample, Graph, Metric, Distribution>::distortion_estimate(const std::vector<Sample>& samples)
 {
 	metric::Euclidean<D> euclidean_distance;
-	std::vector<D> factor_histogram;
+	double sum = 0;
+	int count = 0;
 	for (size_t i = 0; i < samples.size(); ++i)
 	{
 		for (size_t j = 0; j < samples.size(); ++j)
@@ -219,21 +220,18 @@ double Kohonen<D, Sample, Graph, Metric, Distribution>::distortion_estimate(cons
 			{
 				auto euclidean = euclidean_distance(samples[i], samples[j]);
 				auto kohonen = operator()(samples[i], samples[j]);
-				if (euclidean != 0 && kohonen != 0)
+				if (euclidean != 0)
 				{
-					factor_histogram.push_back(kohonen / euclidean);
-				}
-				else 
-				{
-					factor_histogram.push_back(0);
+					sum += kohonen / euclidean;
+					count++;
 				}
 			}
 		}
 	}
 	
-    metric::PMQ<Discrete<D>, double> pmq(factor_histogram);
+	double mean = sum / count;
 
-	return pmq.variance();
+	return mean - 1;
 }
 
 
