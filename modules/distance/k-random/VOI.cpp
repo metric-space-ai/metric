@@ -200,7 +200,7 @@ variationOfInformationSimple(const C& Xc, const C& Yc, int k)
 
     std::vector<std::vector<T>> X;
     for (const auto& e: Xc)
-        X.push_back(std::vector<T>(std::begin(e), std::end(e)));
+        X.push_back(std::vector<T>(std::begin(e), std::end(e))); // TODO optimize
 
     std::vector<std::vector<T>> Y;
     for (const auto& e: Yc)
@@ -215,7 +215,7 @@ variationOfInformationSimple(const C& Xc, const C& Yc, int k)
     //auto eXY = e(XY);
     //std::cout << "    " << eX << " | " << eY << " | " << eXY << "\n";
 
-    auto result = e(Xc) + e(Yc) - 2 * e(XY);
+    auto result = 2 * e(XY) - e(Xc) - e(Yc);
     //auto result = eX + eY - 2 * eXY; // TODO remove
     //if (result < 0)
         //return 0;
@@ -236,7 +236,7 @@ variationOfInformation_kpN(const C& Xc, const C& Yc, int k, int p)
 
     std::vector<std::vector<T>> X;
     for (const auto& e: Xc)
-        X.push_back(std::vector<T>(std::begin(e), std::end(e)));
+        X.push_back(std::vector<T>(std::begin(e), std::end(e))); // TODO optimize
 
     std::vector<std::vector<T>> Y;
     for (const auto& e: Yc)
@@ -251,7 +251,7 @@ variationOfInformation_kpN(const C& Xc, const C& Yc, int k, int p)
     //auto eXY = e(XY);
     //std::cout << "    " << eX << " | " << eY << " | " << eXY << "\n";
 
-    auto result = e(Xc) + e(Yc) - 2 * e(XY);
+    auto result = 2 * e(XY) - e(Xc) - e(Yc);
     //auto result = eX + eY - 2 * eXY; // TODO remove
     //if (result < 0)
         //return 0;

@@ -147,8 +147,8 @@ int main()
             std::cout <<
                          "VOI for digits " << i << ", " << j << ": " <<
                          //metric::variationOfInformation(imgs_by_digit_encoded[i], imgs_by_digit_encoded[j]) <<
-                         //metric::variationOfInformationSimple(imgs_by_digit_encoded[i], imgs_by_digit_encoded[j], 7) <<
-                         metric::variationOfInformation_kpN(imgs_by_digit_encoded[i], imgs_by_digit_encoded[j], 7, 70) <<
+                         metric::variationOfInformationSimple(imgs_by_digit_encoded[i], imgs_by_digit_encoded[j], 7) <<
+                         //metric::variationOfInformation_kpN(imgs_by_digit_encoded[i], imgs_by_digit_encoded[j], 7, 70) <<
                          std::endl;
         }
 //        std::cout <<
@@ -157,8 +157,8 @@ int main()
 //                     std::endl;
         std::cout <<
                      "VOI for digits " << i << ", all: " <<
-                     //metric::variationOfInformationSimple(imgs_by_digit_encoded[i], imgs_mixed_encoded, 7) <<
-                     metric::variationOfInformation_kpN(imgs_by_digit_encoded[i], imgs_mixed_encoded, 7, 70) <<
+                     metric::variationOfInformationSimple(imgs_by_digit_encoded[i], imgs_mixed_encoded, 7) <<
+                     //metric::variationOfInformation_kpN(imgs_by_digit_encoded[i], imgs_mixed_encoded, 7, 70) <<
                      std::endl;
     }
 
