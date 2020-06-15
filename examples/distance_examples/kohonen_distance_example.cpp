@@ -59,6 +59,44 @@ std::tuple<std::vector<std::vector<double>>, std::vector<double>> readData(std::
 }
 
 
+std::vector<std::vector<double>> readCsvData(std::string filename, char delimeter = ',')
+{
+	std::fstream fin;
+
+	fin.open(filename, std::ios::in);
+	
+	std::vector<double> row;
+	std::string line, word, w;
+
+	std::vector<std::vector<double>> rows;
+	std::vector<int> labels;
+
+	// omit header
+	getline(fin, line);
+
+	int i = 0;
+	while (getline(fin, line))
+	{
+		i++;
+		std::stringstream s(line);
+
+		// get label
+		//getline(s, word, delimeter);
+		//labels.push_back(std::stoi(word));
+
+		row.clear();
+		while (getline(s, word, delimeter))
+		{			
+			row.push_back(std::stod(word));
+		}
+
+		rows.push_back(row);
+	}
+
+	return rows;
+}
+
+
 template <typename Record>
 void saveToCsv(std::string filename, const std::vector<Record> &mat, const std::vector<std::string> &features)
 {
@@ -203,6 +241,41 @@ int main()
 	t2 = std::chrono::steady_clock::now();
 	std::cout << "distortion estimate result for linear dataset: " << result << " (Time = " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000 << " s)" << std::endl;
 	std::cout << "" << std::endl;
+
+
+
+	///////////////////////////////////////////////////////////////////////////////////////////
+
+	std::vector<std::string> dataset_names;
+	dataset_names.push_back("BOD2");
+	dataset_names.push_back("Chloride");
+	dataset_names.push_back("Coal");
+	dataset_names.push_back("Ethyl");
+	dataset_names.push_back("Isom");
+	dataset_names.push_back("Leaves");
+	dataset_names.push_back("Lipo");
+	dataset_names.push_back("Lubricant");
+	//dataset_names.push_back("Nitren");
+	dataset_names.push_back("Nitrite");
+	dataset_names.push_back("O.xylene");
+	dataset_names.push_back("Oilshale");
+	dataset_names.push_back("PCB");
+	dataset_names.push_back("Pinene");
+	//dataset_names.push_back("Pinene2");
+	dataset_names.push_back("Rumford");
+	dataset_names.push_back("Sacch2");
+	dataset_names.push_back("Saccharin");
+	
+	for (size_t i = 0; i < dataset_names.size(); i++)
+	{
+		std::vector<Record> r_dataset = readCsvData("assets/" + dataset_names[i] + ".csv");
+
+		metric::Kohonen<double, Record, Graph, Metric> r_distance(r_dataset, grid_w, grid_h);
+
+		result = r_distance.distortion_estimate(r_dataset);
+		std::cout << "distortion estimate result for " << dataset_names[i] << ": " << result << std::endl;
+		std::cout << "" << std::endl;
+	}
 
 
 	return 0;
