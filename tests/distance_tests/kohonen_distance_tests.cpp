@@ -66,8 +66,8 @@ int main()
 	std::cout << "Kohonen Distance example have started" << std::endl;
 	std::cout << "" << std::endl;
 
-	int grid_w = 3;
-	int grid_h = 2;
+	size_t grid_w = 3;
+	size_t grid_h = 2;
 	
 	using Record = std::vector<double>;
 		
@@ -86,7 +86,7 @@ int main()
 
 	///
 	
-	metric::Kohonen<double, std::vector<double>> distance_1(train_dataset, grid_w, grid_h);
+	metric::Kohonen<double, Record> distance_1(train_dataset, grid_w, grid_h);
 
 	for (int i = 1; i < 6; i++)
 	{
@@ -124,7 +124,7 @@ int main()
 
 	som_model.train(train_dataset);
 	
-	metric::Kohonen<double, Vector, Graph, Metric> distance_2(som_model);
+	metric::Kohonen<double, Vector, Graph, Metric> distance_2(som_model, train_dataset);
 	
 	for (int i = 1; i < 6; i++)
 	{
@@ -150,7 +150,7 @@ int main()
     metric::SOM<Vector, Graph, Metric> negative_som_model(Graph(grid_w, grid_h), Metric(), -0.8, -0.2, 50, distr);
 	negative_som_model.train(train_dataset);
 	
-	metric::Kohonen<double, Vector, Graph, Metric> distance_3(negative_som_model);
+	metric::Kohonen<double, Vector, Graph, Metric> distance_3(negative_som_model, train_dataset);
 	
 	for (int i = 1; i < 6; i++)
 	{
@@ -159,15 +159,15 @@ int main()
 	}
 	std::cout << "" << std::endl;
 	result = distance_3(train_dataset[0], train_dataset[1]);
-	assert(result == 0);
+	assert(result > 0 && result < 2);
 	result = distance_3(train_dataset[0], train_dataset[2]);
-	assert(result == 0);
+	assert(result > 1 && result < 3);
 	result = distance_3(train_dataset[0], train_dataset[3]);
-	assert(result == 0);
+	assert(result > 0 && result < 2);
 	result = distance_3(train_dataset[0], train_dataset[4]);
-	assert(result == 0);
+	assert(result > 1 && result < 3);
 	result = distance_3(train_dataset[0], train_dataset[5]);
-	assert(result == 0);
+	assert(result > 2 && result < 4);
 
 	
 

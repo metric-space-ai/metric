@@ -210,7 +210,7 @@ class FullyConnected: public Layer<Scalar>
 
         std::vector<size_t> getOutputShape() const
         {
-            return {this->outputSize};
+            return {(size_t) this->outputSize};
         }
 };
 

@@ -157,6 +157,14 @@ double SOM<RecType, Graph, Metric, Distribution>::std_deviation(const std::vecto
 	return sqrt(total_distances / samples.size());
 }
 
+
+template <class RecType, class Graph, class Metric, class Distribution>
+void SOM<RecType, Graph, Metric, Distribution>::updateWeights(const std::vector<std::vector<T>> &new_weights)
+{
+	weights = new_weights;
+	weights_changed_ = true;
+}
+
 // PRIVATE
 
 template <class RecType, class Graph, class Metric, class Distribution>
