@@ -220,7 +220,7 @@ double Kohonen<D, Sample, Graph, Metric, Distribution>::distortion_estimate(cons
 			{
 				auto euclidean = euclidean_distance(samples[i], samples[j]);
 				auto kohonen = operator()(samples[i], samples[j]);
-				if (euclidean != 0 && !isinf(kohonen))
+				if (euclidean != 0 && !std::isinf(kohonen))
 				{
 					sum += kohonen / euclidean;
 					count++;
