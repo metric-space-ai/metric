@@ -15,9 +15,9 @@ namespace metric::dnn
 			using typename Conv2d<Scalar, Activation>::SparseMatrix;
 
 		public:
-			Conv2dTranspose(const int inputWidth, const int inputHeight,
-							   const int inputChannels, const int outputChannels,
-							   const int kernelWidth, const int kernelHeight,
+			Conv2dTranspose(const size_t inputWidth, const size_t inputHeight,
+							   const size_t inputChannels, const size_t outputChannels,
+							   const size_t kernelWidth, const size_t kernelHeight,
 							   const size_t stride = 1) :
                                                             Conv2d<Scalar, Activation>(inputWidth * inputHeight * inputChannels,
                                                                           ((inputWidth - kernelWidth) / stride + 1) *
@@ -38,7 +38,7 @@ namespace metric::dnn
                             this->outputSize = this->outputChannels * this->outputWidth * this->outputHeight;
 
                             // Set data dimension
-                            const int kernelDataSize = inputChannels * outputChannels * kernelWidth * kernelHeight;
+                            const size_t kernelDataSize = inputChannels * outputChannels * kernelWidth * kernelHeight;
 
                             this->kernelsData.resize(kernelDataSize);
                             this->df_data.resize(kernelDataSize);

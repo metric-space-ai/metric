@@ -40,7 +40,6 @@ namespace metric {
 		Image output;
 
 		for (size_t c = 0; c < image.size(); ++c) {
-                        padModel->pad({}, image[c]).first;
 			const auto& channel = padModel->pad({padWidth / 2, padHeight / 2}, image[c]).first;
 
 			/* Convert image */
