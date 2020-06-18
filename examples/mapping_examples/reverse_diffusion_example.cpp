@@ -134,19 +134,7 @@ int main(int argc, char *argv[])
 			);
 		}
 	);
-	
-	
-	std::cout << "original dataset: " << std::endl;
-	matrix_print(test_dataset);
-	std::cout << std::endl;
-	std::cout << "encoded dataset: " << std::endl;
-	matrix_print(encoded_data);
-	std::cout << std::endl;
-	std::cout << "decoded dataset: " << std::endl;
-	matrix_print(decoded_data);
-	std::cout << std::endl;
-	std::cout << std::endl;
-	
+		
 	std::cout << "is encoded and decoded back dataset is equal with original: " << (is_equal ? "true" : "false") << std::endl;
 
     return 0;
