@@ -108,24 +108,18 @@ int main(int argc, char *argv[])
 	using Record = std::vector<double>;
 	using Metric = metric::Euclidean<double>;
 
-	//std::vector<Record> dataset = readCsvData("./assets/testdataset/compound.csv", ',');
-
-	std::vector<Record> dataset = {{0, 0}, {1, 1}, {2, 2}, {2, 0}, {0, 2}};
+	std::vector<Record> dataset = readCsvData("./assets/testdataset/compound.csv", ',');
 	std::vector<Record> test_dataset = dataset;
 	
-	//for (int i = 0; i < 4; ++i)
-	//{
-	//	test_dataset.push_back(dataset[i]);
-	//}
+	for (int i = 0; i < 4; ++i)
+	{
+		test_dataset.push_back(dataset[i]);
+	}
 
 	metric::Redif redif(dataset, 4, 10, Metric());
 	
-	
-	std::cout << "encode " << std::endl;
 	auto encoded_data = redif.encode(test_dataset);
-	std::cout << "decode " << std::endl;
 	auto decoded_data = redif.decode(encoded_data);	
-	std::cout << "comparision " << std::endl;
 
 	auto is_equal = std::equal(
 		test_dataset.begin(),
