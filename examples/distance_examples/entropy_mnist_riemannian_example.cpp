@@ -3,6 +3,7 @@
 #include "../../modules/distance/k-related/Standards.hpp"
 #include "../../modules/utils/type_traits.hpp"
 //#include "../../modules/distance/d-spaced/Riemannian.hpp"
+#include "../../modules/mapping/PCFA.hpp"
 #include "../../modules/utils/wrappers/lapack.hpp"
 
 #include <iostream>
@@ -149,7 +150,7 @@ int main() {
     images.push_back(img); // last
 
 
-    size_t ds_size = 300; //5400;
+    size_t ds_size = 5400; //5400;
 
     //std::vector<std::vector<int>> lbls (10); // for debug
     std::vector<std::vector<std::vector<double>>> imgs_by_digit (10);
@@ -191,18 +192,32 @@ int main() {
 //    }
 
 
+    auto pcfa = metric::PCFA<std::vector<double>, void>(imgs_mixed, 20);
+    //std::cout << "\neigenmodes:" << pcfa.eigenmodes_mat() << "\n";
+    auto imgs_mixed_encoded = pcfa.encode(imgs_mixed);
+    std::vector<std::vector<std::vector<double>>> imgs_by_digit_encoded;
+    for (size_t i = 0; i<10; ++i) {
+        imgs_by_digit_encoded.push_back(pcfa.encode(imgs_by_digit[i]));
+    }
+
+
     for (size_t i = 0; i<10; ++i) {
         for (size_t j = i; j<10; ++j) {
             std::cout <<
                          "Riemannian distance for digits " << i << ", " << j << ": " <<
                          //RiemannianDatasetDistance<std::vector<std::vector<double>>, metric::Euclidean<double>>(imgs_by_digit[i], imgs_by_digit[j]) <<
-                         RiemannianDatasetDistance<std::vector<std::vector<double>>, metric::Chebyshev<double>>(imgs_by_digit[i], imgs_by_digit[j]) <<
+                         //RiemannianDatasetDistance<std::vector<std::vector<double>>, metric::Chebyshev<double>>(imgs_by_digit[i], imgs_by_digit[j]) <<
+                         //RiemannianDatasetDistance<std::vector<std::vector<double>>, metric::Chebyshev<double>>(imgs_by_digit_encoded[i], imgs_by_digit_encoded[j]) <<
+                         RiemannianDatasetDistance<std::vector<std::vector<double>>, metric::Euclidean<double>>(imgs_by_digit_encoded[i], imgs_by_digit_encoded[j]) <<
                          std::endl;
         }
-//        std::cout <<
-//                     "VOI for digits " << i << ", all: " <<
-//                     RiemannianDatasetDistance<std::vector<std::vector<double>>, metric::Euclidean<double>>(imgs_by_digit[i], imgs_mixed) <<
-//                     std::endl;
+        std::cout <<
+                     "Riemannian distance for digits " << i << ", all: " <<
+                     //RiemannianDatasetDistance<std::vector<std::vector<double>>, metric::Euclidean<double>>(imgs_by_digit[i], imgs_mixed) <<
+                     //RiemannianDatasetDistance<std::vector<std::vector<double>>, metric::Chebyshev<double>>(imgs_by_digit[i], imgs_mixed) <<
+                     //RiemannianDatasetDistance<std::vector<std::vector<double>>, metric::Chebyshev<double>>(imgs_by_digit_encoded[i], imgs_mixed_encoded) <<
+                     RiemannianDatasetDistance<std::vector<std::vector<double>>, metric::Euclidean<double>>(imgs_by_digit_encoded[i], imgs_mixed_encoded) <<
+                     std::endl;
     }
 
 

@@ -36,36 +36,36 @@ int main() {
             auto result = estimator(v);
             std::cout << "Manhatten result: " << result << std::endl;
         }
-        {
-            auto result = metric::mutualInformation(v1, v2);
-            std::cout << "MI default result: " << result << std::endl;
-        }
-        {
-            auto result = metric::mutualInformation(v1, v2, 3, metric::Euclidean<double>());
-            std::cout << "MI Euclidean result: " << result << std::endl;
-        }
-        {
-            auto result = metric::variationOfInformation(v1, v2);
-            std::cout << "VOI default result: " << result << std::endl;
-        }
-        {
-            auto result = metric::variationOfInformation<std::vector<std::vector<double>>, metric::Manhatten<double>>(v1, v2);
-            std::cout << "VOI Manhatten result: " << result << std::endl;
-        }
-        {
-            auto result = metric::variationOfInformation_normalized(v1, v2);
-            std::cout << "VOI normalized result: " << result << std::endl;
-        }
-        {
-            auto f_voi = metric::VOI<double>();
-            auto result = f_voi(v1, v2);
-            std::cout << "VOI functor result: " << result << std::endl;
-        }
-        {
-            auto f_voi_norm = metric::VOI_normalized<long double>();
-            auto result = f_voi_norm(v1, v2);
-            std::cout << "VOI functor normalized result: " << result << std::endl;
-        }
+//        {
+//            auto result = metric::mutualInformation(v1, v2);
+//            std::cout << "MI default result: " << result << std::endl;
+//        }
+//        {
+//            auto result = metric::mutualInformation(v1, v2, 3, metric::Euclidean<double>());
+//            std::cout << "MI Euclidean result: " << result << std::endl;
+//        }
+//        {
+//            auto result = metric::variationOfInformation(v1, v2);
+//            std::cout << "VOI default result: " << result << std::endl;
+//        }
+//        {
+//            auto result = metric::variationOfInformation<std::vector<std::vector<double>>, metric::Manhatten<double>>(v1, v2);
+//            std::cout << "VOI Manhatten result: " << result << std::endl;
+//        }
+//        {
+//            auto result = metric::variationOfInformation_normalized(v1, v2);
+//            std::cout << "VOI normalized result: " << result << std::endl;
+//        }
+//        {
+//            auto f_voi = metric::VOI<double>();
+//            auto result = f_voi(v1, v2);
+//            std::cout << "VOI functor result: " << result << std::endl;
+//        }
+//        {
+//            auto f_voi_norm = metric::VOI_normalized<long double>();
+//            auto result = f_voi_norm(v1, v2);
+//            std::cout << "VOI functor normalized result: " << result << std::endl;
+//        }
 
     }
 
@@ -143,40 +143,40 @@ int main() {
     std::cout << "using Edit with strings: " << ee << std::endl << std::endl;
 
 
-    // Mutual Information
 
-    std::vector<std::vector<double>> v1 = {{5,5}, {2,2}, {3,3}, {5,5}};
-    std::vector<std::vector<double>> v2 = {{5,5}, {2,2}, {3,3}, {1,1}};
+//    std::vector<std::vector<double>> v1 = {{5,5}, {2,2}, {3,3}, {5,5}};
+//    std::vector<std::vector<double>> v2 = {{5,5}, {2,2}, {3,3}, {1,1}};
 
-    std::cout << "Mutual Information:" << std::endl;
+//    // Mutual Information
+//    std::cout << "Mutual Information:" << std::endl;
 
-    std::cout << "MI (version 2) for v1, v1: " << metric::mutualInformation(v1, v1) << std::endl;
-    std::cout << "MI (version 1) for v1, v1: " << metric::mutualInformation(v1, v1, 3, metric::Chebyshev<double>(), 1) << std::endl;
-    std::cout << "MI (version 2) for v2, v2: " << metric::mutualInformation(v2, v2) << std::endl;
-    std::cout << "MI (version 1) for v2, v2: " << metric::mutualInformation(v2, v2, 3, metric::Chebyshev<double>(), 1) << std::endl;
-    std::cout << "MI (version 2) for v1, v2: " << metric::mutualInformation(v1, v2) << std::endl;
-    std::cout << "MI (version 1) for v1, v2: " << metric::mutualInformation(v1, v2, 3, metric::Chebyshev<double>()) << std::endl;
-    std::cout << "MI (version 2) for v2, v1: " << metric::mutualInformation(v2, v1) << std::endl;
-    std::cout << "MI (version 1) for v2, v1: " << metric::mutualInformation(v2, v1, 3, metric::Chebyshev<double>(), 1) << std::endl;
+//    std::cout << "MI (version 2) for v1, v1: " << metric::mutualInformation(v1, v1) << std::endl;
+//    std::cout << "MI (version 1) for v1, v1: " << metric::mutualInformation(v1, v1, 3, metric::Chebyshev<double>(), 1) << std::endl;
+//    std::cout << "MI (version 2) for v2, v2: " << metric::mutualInformation(v2, v2) << std::endl;
+//    std::cout << "MI (version 1) for v2, v2: " << metric::mutualInformation(v2, v2, 3, metric::Chebyshev<double>(), 1) << std::endl;
+//    std::cout << "MI (version 2) for v1, v2: " << metric::mutualInformation(v1, v2) << std::endl;
+//    std::cout << "MI (version 1) for v1, v2: " << metric::mutualInformation(v1, v2, 3, metric::Chebyshev<double>()) << std::endl;
+//    std::cout << "MI (version 2) for v2, v1: " << metric::mutualInformation(v2, v1) << std::endl;
+//    std::cout << "MI (version 1) for v2, v1: " << metric::mutualInformation(v2, v1, 3, metric::Chebyshev<double>(), 1) << std::endl;
 
-	std::cout << std::endl;
+//	std::cout << std::endl;
 
 		
-	// Variation of Information, normalized Variation of Information
+//	// Variation of Information, normalized Variation of Information
 	
-	std::cout << "Variation of Information, normalized Variation of Information:" << std::endl;
+//	std::cout << "Variation of Information, normalized Variation of Information:" << std::endl;
 	
-    std::cout << "VOI = " << metric::variationOfInformation(v1, v2, 2, 3) << std::endl;
-    std::cout << "VOI (Manhatten) = " << metric::variationOfInformation<std::vector<std::vector<double>>, metric::Manhatten<double>>(v1, v2, 2, 3) << std::endl;
-    std::cout << "VOI norm = " << metric::variationOfInformation_normalized(v1, v2, 2, 3) << std::endl;
+//    std::cout << "VOI = " << metric::variationOfInformation(v1, v2, 2, 3) << std::endl;
+//    std::cout << "VOI (Manhatten) = " << metric::variationOfInformation<std::vector<std::vector<double>>, metric::Manhatten<double>>(v1, v2, 2, 3) << std::endl;
+//    std::cout << "VOI norm = " << metric::variationOfInformation_normalized(v1, v2, 2, 3) << std::endl;
 
-	// functor
+//	// functor
 
-    auto f_voi = metric::VOI<long double>(2, 3);
-    std::cout << "VOI functor = " << f_voi(v1, v2) << std::endl;
+//    auto f_voi = metric::VOI<long double>(2, 3);
+//    std::cout << "VOI functor = " << f_voi(v1, v2) << std::endl;
 
-    auto f_voi_norm = metric::VOI_normalized<long double>(2, 3);
-    std::cout << "VOI functor norm = " << f_voi_norm(v1, v2) << std::endl;
+//    auto f_voi_norm = metric::VOI_normalized<long double>(2, 3);
+//    std::cout << "VOI functor norm = " << f_voi_norm(v1, v2) << std::endl;
 
 
     std::cout << "\n\nTesting entropy function on uniformly distributed r. v.s:\n";
@@ -223,8 +223,8 @@ int main() {
     std::cout << "entropy_kpN, using Euclidean: " << ekpn_eucl(urv) << std::endl;
 
 
-    auto rf_voi = metric::VOI<double>();
-    std::cout << "using VOI: " << rf_voi(urv, urv2) << std::endl;
+//    auto rf_voi = metric::VOI<double>();
+//    std::cout << "using VOI: " << rf_voi(urv, urv2) << std::endl;
 
     std::cout << "conv test " << metric::entropy_details::conv_diff_entropy_inv(metric::entropy_details::conv_diff_entropy(-0.118)) << std::endl;
 

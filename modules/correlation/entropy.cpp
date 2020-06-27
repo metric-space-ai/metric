@@ -448,6 +448,7 @@ template <typename RecType, typename Metric>
 template <typename Container>
 double EntropySimple<RecType, Metric>::operator()(
         const Container& data
+        //bool avoid_repeated
 ) const
 {
     using T = type_traits::underlying_type_t<Container>;
@@ -459,20 +460,43 @@ double EntropySimple<RecType, Metric>::operator()(
     if (data.size() < k + 1)
         throw std::invalid_argument("number of points in dataset must be larger than k");
 
-    double N = data.size();
+    //double N = data.size();
     double d = data[0].size();
 
     //add_noise(data); // TODO test
-    metric::Tree<V, Metric> tree(data, -1, metric);
 
     double entropyEstimate = 0;
     double log_sum = 0;
 
-    for (std::size_t i = 0; i < N; i++) {
+//    if (avoid_repeated) {
+//        metric::Tree<V, Metric> tree(data[0], -1, metric);
+//        for (std::size_t i = 1; i < data.size(); ++i) {
+//            tree.insert_if(data[i], std::numeric_limits<T>::epsilon());
+//        }
+//        N = tree.size();
+//        for (std::size_t i = 0; i < N; i++) {
+//            auto res = tree.knn(data[i], k + 1);
+//            entropyEstimate += std::log(res.back().second);
+//        }
+//    } else {
+//        metric::Tree<V, Metric> tree(data, -1, metric);
+//        for (std::size_t i = 0; i < data.size(); i++) {
+//            auto res = tree.knn(data[i], k + 1);
+//            entropyEstimate += std::log(res.back().second);
+//        }
+//        N = tree.size();
+//    }
+    metric::Tree<V, Metric> tree(data[0], -1, metric);
+    for (std::size_t i = 1; i < data.size(); ++i) {
+        tree.insert_if(data[i], std::numeric_limits<T>::epsilon());
+    }
+    auto n = tree.size();
+    for (std::size_t i = 0; i < n; i++) {
         auto res = tree.knn(data[i], k + 1);
         entropyEstimate += std::log(res.back().second);
     }
-    entropyEstimate = entropyEstimate * d / (double)N; // mean log * d
+    double N = (double)n;
+    entropyEstimate = entropyEstimate * d / N; // mean log * d
     //entropyEstimate += boost::math::digamma(N) - boost::math::digamma(k) + d*std::log(2.0);
     entropyEstimate += entropy_details::digamma(N) - entropy_details::digamma(k) + d*std::log(2.0);
 

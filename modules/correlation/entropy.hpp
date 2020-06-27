@@ -27,10 +27,12 @@ public:
 
     template <typename Container>
     double operator()(const Container& data) const;
+    //double operator()(const Container& data, bool avoid_repeated = false) const;
 
     template <template <typename, typename> class OuterContainer, template <typename, bool> class InnerContainer, class OuterAllocator, typename ValueType, bool F>
     double operator()( // TODO implement
             const OuterContainer<InnerContainer<ValueType, F>, OuterAllocator> & data // inner cpntainer is specialized with bool F
+
     ) const;
 
     template <typename Container>
@@ -51,7 +53,7 @@ private:
 
 
 
-
+// https://hal.inria.fr/hal-01272527/document
 template <typename RecType, typename Metric = metric::Chebyshev<typename RecType::value_type>>
 class Entropy {
 public:
