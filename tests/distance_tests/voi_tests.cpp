@@ -22,7 +22,7 @@ Copyright (c) 2020 Panda Team
 #include <stdexcept>
 //#include <limits> // only for cout precision
 
-//typedef std::numeric_limits< double > dbl;
+//typedef std::numeric_limits< double > dbl; // only for cout precision
 
 template <typename T>
 bool float_eq(T l, T r) {
@@ -58,31 +58,37 @@ BOOST_AUTO_TEST_CASE(voi) {
 
     std::vector<std::vector<double>> v11 = { { 5, 5 }, { 2, 2 }, { 3, 3 }, { 5, 0 } };
     std::vector<std::vector<double>> v12 = { { 5, 5 }, { 2, 2 }, { 3, 3 }, { 1, 0 } };
-    //metric::mutualInformation(v11, v12);
-    metric::variationOfInformationSimple(v11, v12);
-    metric::variationMixedSimple(v11, v12);
-    metric::variationOfInformation_kpN(v11, v12);
+//    std::cout.precision(dbl::max_digits10);
+//    std::cout <<
+//                 metric::variationOfInformationSimple(v11, v12) << "\n" <<
+//                 metric::variationMixedSimple(v11, v12) << "\n" <<
+//                 metric::variationOfInformation_kpN(v11, v12) << "\n" <<
+//                 metric::variationMixed_kpN(v11, v12);
+    BOOST_TEST(float_eq(metric::variationOfInformationSimple(v11, v12), 11.813781191217037));
+    BOOST_TEST(float_eq(metric::variationMixedSimple(v11, v12), 0.75859128220107586));
+    BOOST_TEST(float_eq(metric::variationOfInformation_kpN(v11, v12), -31.36271401282686));
+    BOOST_TEST(float_eq(metric::variationMixed_kpN(v11, v12), 12.708672404008247));
 
      std::vector<std::deque<double>> v21 = { { 5, 5 }, { 2, 2 }, { 3, 3 }, { 5, 0 } };
      std::vector<std::deque<double>> v22 = { { 5, 5 }, { 2, 2 }, { 3, 3 }, { 1, 0 } };
-    // metric::mutualInformation(v21, v22);
-    metric::variationOfInformationSimple(v21, v22);
-    metric::variationMixedSimple(v21, v22);
-    metric::variationOfInformation_kpN(v21, v22);
+     BOOST_TEST(float_eq(metric::variationOfInformationSimple(v21, v22), 11.813781191217037));
+     BOOST_TEST(float_eq(metric::variationMixedSimple(v21, v22), 0.75859128220107586));
+     BOOST_TEST(float_eq(metric::variationOfInformation_kpN(v21, v22), -31.36271401282686));
+     BOOST_TEST(float_eq(metric::variationMixed_kpN(v21, v22), 12.708672404008247));
 
      std::deque<std::vector<double>> v31 = { { 5, 5 }, { 2, 2 }, { 3, 3 }, { 5, 0 } };
      std::deque<std::vector<double>> v32 = { { 5, 5 }, { 2, 2 }, { 3, 3 }, { 1, 0 } };
-    // metric::mutualInformation(v31, v32);
-     metric::variationOfInformationSimple(v31, v32);
-     metric::variationMixedSimple(v31, v32);
-     metric::variationOfInformation_kpN(v31, v32);
+     BOOST_TEST(float_eq(metric::variationOfInformationSimple(v31, v32), 11.813781191217037));
+     BOOST_TEST(float_eq(metric::variationMixedSimple(v31, v32), 0.75859128220107586));
+     BOOST_TEST(float_eq(metric::variationOfInformation_kpN(v31, v32), -31.36271401282686));
+     BOOST_TEST(float_eq(metric::variationMixed_kpN(v31, v32), 12.708672404008247));
 
      std::deque<std::deque<double>> v41 = { { 5, 5 }, { 2, 2 }, { 3, 3 }, { 5, 0 } };
      std::deque<std::deque<double>> v42 = { { 5, 5 }, { 2, 2 }, { 3, 3 }, { 1, 0 } };
-    // metric::mutualInformation(v41, v42);
-     metric::variationOfInformationSimple(v41, v42);
-     metric::variationMixedSimple(v41, v42);
-     metric::variationOfInformation_kpN(v41, v42);
+     BOOST_TEST(float_eq(metric::variationOfInformationSimple(v41, v42), 11.813781191217037));
+     BOOST_TEST(float_eq(metric::variationMixedSimple(v41, v42), 0.75859128220107586));
+     BOOST_TEST(float_eq(metric::variationOfInformation_kpN(v41, v42), -31.36271401282686));
+     BOOST_TEST(float_eq(metric::variationMixed_kpN(v41, v42), 12.708672404008247));
 
 }
 //BOOST_AUTO_TEST_CASE(mutual_information_int)
