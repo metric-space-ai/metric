@@ -61,7 +61,7 @@ int main()
     images.push_back(img); // last
 
 
-    size_t ds_size = 5400; // set dataset size here
+    size_t ds_size = 50; //5400; // set dataset size here
 
     //std::vector<std::vector<int>> lbls (10); // for debug
     std::vector<std::vector<std::vector<double>>> imgs_by_digit (10);
@@ -125,8 +125,8 @@ int main()
 
 
     //auto estimator = metric::Entropy<void, metric::Euclidean<double>>();
-//    auto estimator = metric::EntropySimple<void, metric::Euclidean<double>>(metric::Euclidean<double>(), 7);
-    auto estimator = metric::EntropySimple<void, metric::Chebyshev<double>>(metric::Chebyshev<double>(), 7);
+    auto estimator = metric::EntropySimple<void, metric::Euclidean<double>>(metric::Euclidean<double>(), 7);
+//    auto estimator = metric::EntropySimple<void, metric::Chebyshev<double>>(metric::Chebyshev<double>(), 7);
 //    auto estimator = metric::Entropy<std::vector<double>>();
 //    auto estimator = metric::EntropySimple<std::vector<double>>();
 
@@ -146,7 +146,8 @@ int main()
     //std::cout << "digit1 digit2 entropy1 entropy2 | entropy_mixed entropy_mixed_half entropy_mixed_u entropy_mixed_half_u entropy_joint | diff_mixed diff_mixed_half diff_mixed_u diff_mixed_half_u VOI\n";
     //std::cout << "digit1 digit2 entropy1 entropy2 | entropy_mixed entropy_joint | diff_mixed VOI\n";
     //std::cout << "digit1 digit2 entropy1 entropy2 | entropy_mixed entropy_mixed_half entropy_joint | diff_mixed diff_mixed_half VOI\n";
-    std::cout << "digit1 digit2 entropy1 entropy2 | entropy_mixed | diff_mixed \n";
+    //std::cout << "digit1 digit2 entropy1 entropy2 | entropy_mixed | diff_mixed \n";
+    std::cout << "digit1 digit2 entropy1 entropy2 | entropy_mixed | diff_mixed | diff_mixed \n";
     for (size_t i = 0; i<10; ++i) { // TODO set i = 0
         for (size_t j = i; j<10; ++j) {
             std::vector<std::vector<double>> concat_ds;
@@ -174,11 +175,12 @@ int main()
                          H_concat*2 - H_i - H_j << " " <<
 //                         H_concat_half*2 - H_i - H_j << " " <<
 //                         H_joint*2 - H_i - H_j << " " <<
+                         " | " <<
                          //metric::variationOfInformation(imgs_by_digit_encoded[i], imgs_by_digit_encoded[j]) <<
                          //metric::variationOfInformationSimple(imgs_by_digit_encoded[i], imgs_by_digit_encoded[j], 7) <<
                          //metric::variationOfInformationSimple<std::vector<std::vector<double>>, metric::Euclidean<double>>(imgs_by_digit_encoded[i], imgs_by_digit_encoded[j], 7) <<
                          //metric::variationOfInformation_kpN(imgs_by_digit_encoded[i], imgs_by_digit_encoded[j], 7, 70) <<
-//                         metric::variationMixedSimple<std::vector<std::vector<double>>, metric::Euclidean<double>>(imgs_by_digit_encoded[i], imgs_by_digit_encoded[j], 7) <<
+                         metric::variationMixed_kpN<std::vector<std::vector<double>>, metric::Euclidean<double>>(imgs_by_digit_encoded[i], imgs_by_digit_encoded[j], 7) <<
                          std::endl;
         }
 
@@ -205,10 +207,11 @@ int main()
                      H_concat*2 - H_i - H_j << " " <<
 //                     H_concat_half*2 - H_i - H_j << " " <<
 //                     H_joint*2 - H_i - H_j << " " <<
+                     " | " <<
 //                     "VMixed for digits " << i << ", all: " <<
                      //metric::variationOfInformationSimple(imgs_by_digit_encoded[i], imgs_mixed_encoded, 7) <<
                      //metric::variationOfInformationSimple<std::vector<std::vector<double>>, metric::Euclidean<double>>(imgs_by_digit_encoded[i], imgs_mixed_encoded, 7) <<
-//                     metric::variationMixedSimple<std::vector<std::vector<double>>, metric::Euclidean<double>>(imgs_by_digit_encoded[i], imgs_mixed_encoded, 7) <<
+                     metric::variationMixed_kpN<std::vector<std::vector<double>>, metric::Euclidean<double>>(imgs_by_digit_encoded[i], imgs_mixed_encoded, 7) <<
                      //metric::variationOfInformation_kpN(imgs_by_digit_encoded[i], imgs_mixed_encoded, 7, 70) <<
                      std::endl;
     }
@@ -235,10 +238,11 @@ int main()
                  H_concat*2 - H_i - H_j << " " <<
 //                 H_concat_half*2 - H_i - H_j << " " <<
 //                 H_joint*2 - H_i - H_j << " " <<
+                 " | " <<
 //                     "VMixed for digits " << i << ", all: " <<
                  //metric::variationOfInformationSimple(imgs_by_digit_encoded[i], imgs_mixed_encoded, 7) <<
-                 //metric::variationOfInformationSimple<std::vector<std::vector<double>>, metric::Euclidean<double>>(imgs_by_digit_encoded[i], imgs_mixed_encoded, 7) <<
-//                     metric::variationMixedSimple<std::vector<std::vector<double>>, metric::Euclidean<double>>(imgs_by_digit_encoded[i], imgs_mixed_encoded, 7) <<
+                 //metric::variationOfInformationSimple<std::vector<std::vector<double>>, metric::Euclidean<double>>(imgs_mixed_encoded, imgs_mixed_encoded, 7) <<
+                 metric::variationMixed_kpN<std::vector<std::vector<double>>, metric::Euclidean<double>>(imgs_mixed_encoded, imgs_mixed_encoded, 7) <<
                  //metric::variationOfInformation_kpN(imgs_by_digit_encoded[i], imgs_mixed_encoded, 7, 70) <<
                  std::endl;
 
