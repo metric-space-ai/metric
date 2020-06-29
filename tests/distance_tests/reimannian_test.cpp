@@ -41,6 +41,7 @@ BOOST_AUTO_TEST_CASE(riemannian_distance) {
     //std::cout.precision(dbl::max_digits10);
     //std::cout << rd(ds1, ds2) << "\n";
     BOOST_TEST(float_eq(rd(ds1, ds2), 0.8086438137089399));
+    BOOST_TEST(float_eq(rd.estimate(ds1, ds2, 2), 0.0)); // TODO run with larger dataset
 }
 
 

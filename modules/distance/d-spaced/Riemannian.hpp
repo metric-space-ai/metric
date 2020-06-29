@@ -19,9 +19,10 @@ public:
     template<typename T>
     T matDistance(blaze::DynamicMatrix<T> A, blaze::DynamicMatrix<T> B) const;
 
-    template <typename C>
+    template <typename Container>
     double estimate(
-            const C& a,
+            const Container& a,
+            const Container& b,
             const size_t sampleSize = 250,
             const double threshold = 0.05,
             size_t maxIterations = 1000
