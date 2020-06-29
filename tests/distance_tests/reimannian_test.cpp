@@ -35,6 +35,12 @@ BOOST_AUTO_TEST_CASE(riemannian_distance) {
     //std::cout.precision(dbl::max_digits10);
     //std::cout << rd(A, B) << "\n";
     BOOST_TEST(float_eq(rd.matDistance(A, B), 0.6931471805599455));
+
+    std::vector<std::vector<double>> ds1 {{0, 1}, {0, 0}, {1, 1}, {1, 0}};
+    std::vector<std::vector<double>> ds2 {{0, 0}, {1, 1}, {2, 2}, {2, 1}};
+    //std::cout.precision(dbl::max_digits10);
+    //std::cout << rd(ds1, ds2) << "\n";
+    BOOST_TEST(float_eq(rd(ds1, ds2), 0.8086438137089399));
 }
 
 

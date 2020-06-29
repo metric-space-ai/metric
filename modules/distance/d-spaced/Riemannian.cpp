@@ -117,8 +117,6 @@ double RiemannianDistance<RecType, Metric>::operator()(const C& Xc, const C& Yc)
                 distancesX(i, i) += d;
                 distancesX(j, j) += d;
             }
-            //distancesX(i, j) = d; // filling blaze distance matrix for dataset Xc
-            //distancesX(j, i) = d;
         }
     }
     for (size_t i = 0; i<Yc.size(); ++i) {
@@ -129,11 +127,8 @@ double RiemannianDistance<RecType, Metric>::operator()(const C& Xc, const C& Yc)
                 distancesY(i, i) += d;
                 distancesY(j, j) += d;
             }
-            //distancesY(i, j) = d; // filling blaze distance matrix for dataset Xc
-            //distancesY(j, i) = d;
         }
     }
-    //std::cout << distancesX << distancesY; // TODO remove
     return matDistance(distancesX, distancesY); // applying Riemannian to these distance matrices
 }
 
