@@ -30,18 +30,6 @@ void print_img(std::vector<double> img, size_t h, size_t w) {
 
 int main() {
 
-    blaze::DynamicMatrix<double> A {{0, 1, 0}, {0, 0, 1}, {0, 0, 0}};
-    blaze::DynamicMatrix<double> B {{0, 1, 0}, {0, 0, 2}, {0, 0, 0}};
-
-    blaze::DynamicVector<double> gen_eigenv;
-    metric::sygv(A, B, gen_eigenv);
-    std::cout << gen_eigenv << "\n";
-
-    auto rd = metric::RiemannianDistance();
-    std::cout << rd(A, B) << "\n";
-
-    //return 0;
-
     Datasets datasets;
     /* shape: [batches, rows, cols, channels] */
     auto [labels, shape, features] = datasets.getMnist("data.cereal");
@@ -125,23 +113,17 @@ int main() {
         imgs_by_digit_encoded.push_back(pcfa.encode(imgs_by_digit[i]));
     }
 
-
+    auto rd = metric::RiemannianDistance<void, metric::Euclidean<double>>();
     for (size_t i = 0; i<10; ++i) {
         for (size_t j = i; j<10; ++j) {
             std::cout <<
                          "Riemannian distance for digits " << i << ", " << j << ": " <<
-                         //metric::RiemannianDatasetDistance<std::vector<std::vector<double>>, metric::Euclidean<double>>(imgs_by_digit[i], imgs_by_digit[j]) <<
-                         //metric::RiemannianDatasetDistance<std::vector<std::vector<double>>, metric::Chebyshev<double>>(imgs_by_digit[i], imgs_by_digit[j]) <<
-                         //metric::RiemannianDatasetDistance<std::vector<std::vector<double>>, metric::Chebyshev<double>>(imgs_by_digit_encoded[i], imgs_by_digit_encoded[j]) <<
-                         metric::RiemannianDatasetDistance<std::vector<std::vector<double>>, metric::Euclidean<double>>(imgs_by_digit_encoded[i], imgs_by_digit_encoded[j]) <<
+                         rd(imgs_by_digit_encoded[i], imgs_by_digit_encoded[j]) <<
                          std::endl;
         }
         std::cout <<
                      "Riemannian distance for digits " << i << ", all: " <<
-                     //metric::RiemannianDatasetDistance<std::vector<std::vector<double>>, metric::Euclidean<double>>(imgs_by_digit[i], imgs_mixed) <<
-                     //metric::RiemannianDatasetDistance<std::vector<std::vector<double>>, metric::Chebyshev<double>>(imgs_by_digit[i], imgs_mixed) <<
-                     //metric::RiemannianDatasetDistance<std::vector<std::vector<double>>, metric::Chebyshev<double>>(imgs_by_digit_encoded[i], imgs_mixed_encoded) <<
-                     metric::RiemannianDatasetDistance<std::vector<std::vector<double>>, metric::Euclidean<double>>(imgs_by_digit_encoded[i], imgs_mixed_encoded) <<
+                     rd(imgs_by_digit_encoded[i], imgs_mixed_encoded) <<
                      std::endl;
     }
 
