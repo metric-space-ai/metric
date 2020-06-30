@@ -539,7 +539,7 @@ double estimate(
 // averaged entropy estimation: code COPIED from mgc.*pp with only mgc replaced with entropy, TODO refactor to avoid code dubbing
 template <typename RecType, typename Metric>
 template <typename Container>
-double EntropySimple<RecType, Metric>::operator()(
+double EntropySimple<RecType, Metric>::operator()( // non-kpN version, DEPRECATED
         const Container& data
         //bool avoid_repeated
 ) const
@@ -716,40 +716,14 @@ double Entropy<RecType, Metric>::estimate(
 
 
 
-// --------------------------- VOI & VMixing
-
-
-namespace voi_details {
-
-template <typename C1, typename C2, typename T=type_traits::underlying_type_t<C1>>
-std::vector<std::vector<T>> combine(const C1& X, const C2& Y)
-{
-    std::size_t N = X.size();
-    std::size_t dx = X[0].size();
-    std::size_t dy = Y[0].size();
-    std::vector<std::vector<T>> XY(N);
-    for (std::size_t i = 0; i < N; i++) {
-        XY[i].resize(dx + dy);
-        std::size_t k = 0;
-        for (std::size_t j = 0; j < dx; j++, k++) {
-            XY[i][k] = X[i][j];
-        }
-        for (std::size_t j = 0; j < dy; j++, k++) {
-            XY[i][k] = Y[i][j];
-        }
-    }
-    return XY;
-}
-
-
-}
+// --------------------------- VMixing
 
 
 
 template <typename RecType, typename Metric>
 template <typename C>
 typename std::enable_if_t<!type_traits::is_container_of_integrals_v<C>, type_traits::underlying_type_t<C>>
-VMixing_simple<RecType, Metric>::operator()(const C& Xc, const C& Yc) const {
+VMixing_simple<RecType, Metric>::operator()(const C& Xc, const C& Yc) const { // non-kpN version, DEPRECATED
 
     using T = type_traits::underlying_type_t<C>;
 
@@ -837,7 +811,32 @@ double VMixing<RecType, Metric>::estimate(
 }
 
 
-// non-functor code
+
+/* // VOI code, works and may be enabled
+namespace voi_details {
+
+template <typename C1, typename C2, typename T=type_traits::underlying_type_t<C1>>
+std::vector<std::vector<T>> combine(const C1& X, const C2& Y)
+{
+    std::size_t N = X.size();
+    std::size_t dx = X[0].size();
+    std::size_t dy = Y[0].size();
+    std::vector<std::vector<T>> XY(N);
+    for (std::size_t i = 0; i < N; i++) {
+        XY[i].resize(dx + dy);
+        std::size_t k = 0;
+        for (std::size_t j = 0; j < dx; j++, k++) {
+            XY[i][k] = X[i][j];
+        }
+        for (std::size_t j = 0; j < dy; j++, k++) {
+            XY[i][k] = Y[i][j];
+        }
+    }
+    return XY;
+}
+
+}
+
 
 template <typename C, typename Metric>
 typename std::enable_if_t<!type_traits::is_container_of_integrals_v<C>, type_traits::underlying_type_t<C>>
@@ -861,16 +860,7 @@ VOI_simple(const C& Xc, const C& Yc, int k)
     std::vector<std::vector<T>> XY = voi_details::combine(X, Y);
 
     auto e = EntropySimple<void, Metric>(Metric(), k);
-
-    //auto eX = e(Xc); // for debug, TODO remove
-    //auto eY = e(Yc);
-    //auto eXY = e(XY);
-    //std::cout << "    " << eX << " | " << eY << " | " << eXY << "\n";
-
     auto result = 2 * e(XY) - e(Xc) - e(Yc);
-    //auto result = eX + eY - 2 * eXY; // TODO remove
-    //if (result < 0)
-        //return 0;
     return result;
 }
 
@@ -898,84 +888,11 @@ VOI(const C& Xc, const C& Yc, int k, int p)
     std::vector<std::vector<T>> XY = voi_details::combine(X, Y);
 
     auto e = Entropy<void, Metric>(Metric(), k, p);
-
-    //auto eX = e(Xc); // for debug, TODO remove
-    //auto eY = e(Yc);
-    //auto eXY = e(XY);
-    //std::cout << "    " << eX << " | " << eY << " | " << eXY << "\n";
-
-    auto result = 2 * e(XY) - e(Xc) - e(Yc);
-    //auto result = eX + eY - 2 * eXY; // TODO remove
-    //if (result < 0)
-        //return 0;
-    return result;
-}
-
-
-/*
-
-template <typename C, typename Metric>
-typename std::enable_if_t<!type_traits::is_container_of_integrals_v<C>, type_traits::underlying_type_t<C>>
-VMixing_simple(const C& Xc, const C& Yc, int k)
-{
-    using T = type_traits::underlying_type_t<C>;
-
-    auto N = Xc.size();
-
-    if (N < k + 1 || Yc.size() < k + 1)
-        throw std::invalid_argument("number of points in dataset must be larger than k");
-
-    std::vector<std::vector<T>> X;
-    for (const auto& e: Xc)
-        X.push_back(std::vector<T>(std::begin(e), std::end(e))); // TODO optimize
-
-    std::vector<std::vector<T>> Y;
-    for (const auto& e: Yc)
-        Y.push_back(std::vector<T>(std::begin(e), std::end(e)));
-
-    std::vector<std::vector<T>> XY; // concatenation instead of combine(X, Y);
-    XY.reserve(X.size() + Y.size());
-    XY.insert(XY.end(), X.begin(), X.end());
-    XY.insert(XY.end(), Y.begin(), Y.end());
-
-    auto e = EntropySimple<void, Metric>(Metric(), k);
-    auto result = 2 * e(XY) - e(Xc) - e(Yc);
-    return result;
-}
-
-
-
-template <typename C, typename Metric>
-typename std::enable_if_t<!type_traits::is_container_of_integrals_v<C>, type_traits::underlying_type_t<C>>
-VMixing(const C& Xc, const C& Yc, int k, int p)
-{
-    using T = type_traits::underlying_type_t<C>;
-
-    auto N = Xc.size();
-
-    if (N < k + 1 || Yc.size() < k + 1)
-        throw std::invalid_argument("number of points in dataset must be larger than k");
-
-    std::vector<std::vector<T>> X;
-    for (const auto& e: Xc)
-        X.push_back(std::vector<T>(std::begin(e), std::end(e))); // TODO optimize
-
-    std::vector<std::vector<T>> Y;
-    for (const auto& e: Yc)
-        Y.push_back(std::vector<T>(std::begin(e), std::end(e)));
-
-    std::vector<std::vector<T>> XY; // concatenation instead of combine(X, Y);
-    XY.reserve(X.size() + Y.size());
-    XY.insert(XY.end(), X.begin(), X.end());
-    XY.insert(XY.end(), Y.begin(), Y.end());
-
-    auto e = Entropy<void, Metric>(Metric(), k, p);
     auto result = 2 * e(XY) - e(Xc) - e(Yc);
     return result;
 }
 
 // */
-
 
 
 } // namespace metric

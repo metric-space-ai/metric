@@ -25,6 +25,28 @@ void print_img(std::vector<double> img, size_t h, size_t w) {
 }
 
 
+template <typename T>
+std::vector<std::vector<T>> combine(const std::vector<std::vector<T>>& X, const std::vector<std::vector<T>>& Y)
+{
+    std::size_t N = X.size();
+    std::size_t dx = X[0].size();
+    std::size_t dy = Y[0].size();
+    std::vector<std::vector<T>> XY(N);
+    for (std::size_t i = 0; i < N; i++) {
+        XY[i].resize(dx + dy);
+        std::size_t k = 0;
+        for (std::size_t j = 0; j < dx; j++, k++) {
+            XY[i][k] = X[i][j];
+        }
+        for (std::size_t j = 0; j < dy; j++, k++) {
+            XY[i][k] = Y[i][j];
+        }
+    }
+    return XY;
+}
+
+
+
 int main()
 {
     Datasets datasets;
@@ -156,7 +178,7 @@ int main()
             concat_ds.reserve(imgs_by_digit_encoded[i].size() + imgs_by_digit_encoded[j].size());
             concat_ds.insert(concat_ds.end(), imgs_by_digit_encoded[i].begin(), imgs_by_digit_encoded[i].end());
             concat_ds.insert(concat_ds.end(), imgs_by_digit_encoded[j].begin(), imgs_by_digit_encoded[j].end());
-            std::vector<std::vector<double>> joint_ds = metric::voi_details::combine(imgs_by_digit_encoded[i], imgs_by_digit_encoded[j]);
+            std::vector<std::vector<double>> joint_ds = combine(imgs_by_digit_encoded[i], imgs_by_digit_encoded[j]);
             auto H_i = estimator(imgs_by_digit_encoded[i]);
             auto H_j = estimator(imgs_by_digit_encoded[j]);
             auto H_concat = estimator(concat_ds);
@@ -189,7 +211,7 @@ int main()
         concat_ds.reserve(imgs_by_digit_encoded[i].size() + imgs_mixed_encoded.size());
         concat_ds.insert(concat_ds.end(), imgs_by_digit_encoded[i].begin(), imgs_by_digit_encoded[i].end());
         concat_ds.insert(concat_ds.end(), imgs_mixed_encoded.begin(), imgs_mixed_encoded.end());
-        std::vector<std::vector<double>> joint_ds = metric::voi_details::combine(imgs_by_digit_encoded[i], imgs_mixed_encoded);
+        std::vector<std::vector<double>> joint_ds = combine(imgs_by_digit_encoded[i], imgs_mixed_encoded);
         auto H_i = estimator(imgs_by_digit_encoded[i]);
         auto H_j = estimator(imgs_mixed_encoded);
         auto H_concat = estimator(concat_ds);
@@ -220,7 +242,7 @@ int main()
     concat_ds.reserve(imgs_mixed_encoded.size() + imgs_mixed_encoded.size());
     concat_ds.insert(concat_ds.end(), imgs_mixed_encoded.begin(), imgs_mixed_encoded.end());
     concat_ds.insert(concat_ds.end(), imgs_mixed_encoded.begin(), imgs_mixed_encoded.end());
-    std::vector<std::vector<double>> joint_ds = metric::voi_details::combine(imgs_mixed_encoded, imgs_mixed_encoded);
+    std::vector<std::vector<double>> joint_ds = combine(imgs_mixed_encoded, imgs_mixed_encoded);
     auto H_i = estimator(imgs_mixed_encoded);
     auto H_j = estimator(imgs_mixed_encoded);
     auto H_concat = estimator(concat_ds);

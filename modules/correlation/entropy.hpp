@@ -16,6 +16,7 @@ Copyright (c) 2020 Panda Team
 namespace metric {
 
 
+// non-kpN version, DEPRECATED
 template <typename RecType, typename Metric = metric::Euclidean<typename RecType::value_type>>
 class EntropySimple { // averaged entropy estimation: code COPIED from mgc.*pp with only mgc replaced with entropy, TODO refactor to avoid code dubbing
 public:
@@ -82,10 +83,10 @@ private:
 };
 
 
-// VOI & VMixing
+// VMixing
 
 template <typename RecType, typename Metric = metric::Euclidean<typename RecType::value_type>>
-class VMixing_simple {
+class VMixing_simple { // non-kpN version, DEPRECATED
 
 public:
     VMixing_simple(Metric metric = Metric(), int k = 3) :
@@ -142,35 +143,19 @@ private:
 
 
 
-// non-functor code
+/* // VOI code, works and may be enabled
+
 
 template <typename C, typename Metric = metric::Chebyshev<type_traits::underlying_type_t<C>>>
 typename std::enable_if_t<!type_traits::is_container_of_integrals_v<C>, type_traits::underlying_type_t<C>>
 VOI_simple(const C& Xc, const C& Yc, int k = 3);
 
 
-
 template <typename C, typename Metric = metric::Chebyshev<type_traits::underlying_type_t<C>>>
 typename std::enable_if_t<!type_traits::is_container_of_integrals_v<C>, type_traits::underlying_type_t<C>>
 VOI(const C& Xc, const C& Yc, int k = 3, int p = 25);
 
-
-/*
-
-template <typename C, typename Metric = metric::Chebyshev<type_traits::underlying_type_t<C>>>
-typename std::enable_if_t<!type_traits::is_container_of_integrals_v<C>, type_traits::underlying_type_t<C>>
-VMixing_simple(const C& Xc, const C& Yc, int k = 3);
-
-
-
-template <typename C, typename Metric = metric::Chebyshev<type_traits::underlying_type_t<C>>>
-typename std::enable_if_t<!type_traits::is_container_of_integrals_v<C>, type_traits::underlying_type_t<C>>
-VMixing(const C& Xc, const C& Yc, int k = 3, int p = 25);
-
-
 // */
-
-
 
 
 } // namespace metric
