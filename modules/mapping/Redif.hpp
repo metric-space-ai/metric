@@ -53,9 +53,9 @@ public:
 	 * 
      * @param x - 'Noisy' Records.
      *
-     * @return The tuple of denoised (encoded) records and indices of nearest samples in training set to records.
+     * @return denoised (encoded) records.
      */
-    std::tuple<std::vector<std::vector<Tv>>, std::vector<size_t>> encode(const std::vector<std::vector<Tv>>& x);
+    std::vector<std::vector<Tv>> encode(const std::vector<std::vector<Tv>>& x);
 	
     /**
      * @brief
@@ -64,11 +64,10 @@ public:
 	 * iterations of the reverse diffusion process, the process is reveresed back.
 	 * 
      * @param xEncoded - Denoised (encoded) records.
-     * @param l_idx - Indices of nearest Sample in training set to records.
      *
      * @return Decoded records.
      */
-    std::vector<std::vector<Tv>> decode(const std::vector<std::vector<Tv>>& xEncoded, const std::vector<size_t>& l_idx);
+    std::vector<std::vector<Tv>> decode(const std::vector<std::vector<Tv>>& xEncoded);
 	
     /**
      * @brief
@@ -112,9 +111,9 @@ private:
 	 * 
      * @param x - 'Noisy' Records
      *
-     * @return The tuple of denoised (encoded) records and indices of nearest samples in training set to records.
+     * @return denoised (encoded) records.
      */
-    std::tuple<blaze::DynamicMatrix<Tv>, blaze::DynamicVector<size_t>> encode(const blaze::DynamicMatrix<Tv>& x);
+    blaze::DynamicMatrix<Tv> encode(const blaze::DynamicMatrix<Tv>& x);
 	
     /**
      * @brief
@@ -123,11 +122,10 @@ private:
 	 * iterations of the reverse diffusion process, the process is reveresed back.
 	 * 
      * @param xEncoded - Denoised (encoded) records.
-     * @param l_idx - Indices of nearest Sample in training set to records.
      *
      * @return Decoded records.
      */
-    blaze::DynamicMatrix<Tv> decode(const blaze::DynamicMatrix<Tv>& xEncoded, const blaze::DynamicVector<size_t>& l_idx);
+    blaze::DynamicMatrix<Tv> decode(const blaze::DynamicMatrix<Tv>& xEncoded);
 	
     /**
      * @brief

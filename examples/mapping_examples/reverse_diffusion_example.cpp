@@ -106,20 +106,20 @@ int main(int argc, char *argv[])
 	std::cout << std::endl;
 
 	using Record = std::vector<double>;
-    using Metric = metric::Euclidean<double>;
-	
+	using Metric = metric::Euclidean<double>;
+
 	std::vector<Record> dataset = readCsvData("./assets/testdataset/compound.csv", ',');
-	std::vector<Record> test_dataset;
+	std::vector<Record> test_dataset = dataset;
 	
 	for (int i = 0; i < 4; ++i)
 	{
 		test_dataset.push_back(dataset[i]);
 	}
 
-	metric::Redif redif(dataset, 7, 15, Metric());
+	metric::Redif redif(dataset, 4, 10, Metric());
 	
-	auto [encoded_data, indicies] = redif.encode(test_dataset);
-	auto decoded_data = redif.decode(test_dataset, indicies);	
+	auto encoded_data = redif.encode(test_dataset);
+	auto decoded_data = redif.decode(encoded_data);	
 
 	auto is_equal = std::equal(
 		test_dataset.begin(),
@@ -134,16 +134,7 @@ int main(int argc, char *argv[])
 			);
 		}
 	);
-	
-	
-	std::cout << "original dataset: " << std::endl;
-	matrix_print(test_dataset);
-	std::cout << std::endl;
-	std::cout << "encoded and decoded back dataset: " << std::endl;
-	matrix_print(decoded_data);
-	std::cout << std::endl;
-	std::cout << std::endl;
-	
+		
 	std::cout << "is encoded and decoded back dataset is equal with original: " << (is_equal ? "true" : "false") << std::endl;
 
     return 0;
