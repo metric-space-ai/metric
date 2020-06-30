@@ -2,7 +2,6 @@
 #include "../../modules/utils/datasets.hpp"
 #include "../../modules/correlation/entropy.hpp"
 #include "../../modules/mapping/PCFA.hpp"
-//#include "../../modules/distance/k-random/VOI.hpp"
 
 
 #include <iostream>
@@ -176,11 +175,10 @@ int main()
 //                         H_concat_half*2 - H_i - H_j << " " <<
 //                         H_joint*2 - H_i - H_j << " " <<
                          " | " <<
-                         //metric::variationOfInformation(imgs_by_digit_encoded[i], imgs_by_digit_encoded[j]) <<
-                         //metric::variationOfInformationSimple(imgs_by_digit_encoded[i], imgs_by_digit_encoded[j], 7) <<
-                         //metric::variationOfInformationSimple<std::vector<std::vector<double>>, metric::Euclidean<double>>(imgs_by_digit_encoded[i], imgs_by_digit_encoded[j], 7) <<
-                         //metric::variationOfInformation_kpN(imgs_by_digit_encoded[i], imgs_by_digit_encoded[j], 7, 70) <<
-                         metric::variationMixed_kpN<std::vector<std::vector<double>>, metric::Euclidean<double>>(imgs_by_digit_encoded[i], imgs_by_digit_encoded[j], 7) <<
+                         //metric::VOI_simple(imgs_by_digit_encoded[i], imgs_by_digit_encoded[j], 7) <<
+                         //metric::VOI_simple<std::vector<std::vector<double>>, metric::Euclidean<double>>(imgs_by_digit_encoded[i], imgs_by_digit_encoded[j], 7) <<
+                         metric::VMixing_simple<std::vector<std::vector<double>>, metric::Euclidean<double>>(imgs_by_digit_encoded[i], imgs_by_digit_encoded[j], 7) <<
+                         //metric::VMixing(imgs_by_digit_encoded[i], imgs_by_digit_encoded[j], 7, 70) <<
                          std::endl;
         }
 
@@ -208,11 +206,11 @@ int main()
 //                     H_concat_half*2 - H_i - H_j << " " <<
 //                     H_joint*2 - H_i - H_j << " " <<
                      " | " <<
-//                     "VMixed for digits " << i << ", all: " <<
-                     //metric::variationOfInformationSimple(imgs_by_digit_encoded[i], imgs_mixed_encoded, 7) <<
-                     //metric::variationOfInformationSimple<std::vector<std::vector<double>>, metric::Euclidean<double>>(imgs_by_digit_encoded[i], imgs_mixed_encoded, 7) <<
-                     metric::variationMixed_kpN<std::vector<std::vector<double>>, metric::Euclidean<double>>(imgs_by_digit_encoded[i], imgs_mixed_encoded, 7) <<
-                     //metric::variationOfInformation_kpN(imgs_by_digit_encoded[i], imgs_mixed_encoded, 7, 70) <<
+//                     "VMixing for digits " << i << ", all: " <<
+                     //metric::VOI_simple(imgs_by_digit_encoded[i], imgs_mixed_encoded, 7) <<
+                     //metric::VOI_simple<std::vector<std::vector<double>>, metric::Euclidean<double>>(imgs_by_digit_encoded[i], imgs_mixed_encoded, 7) <<
+                     metric::VMixing_simple<std::vector<std::vector<double>>, metric::Euclidean<double>>(imgs_by_digit_encoded[i], imgs_mixed_encoded, 7) <<
+                     //metric::VMixing(imgs_by_digit_encoded[i], imgs_mixed_encoded, 7, 70) <<
                      std::endl;
     }
     std::vector<std::vector<double>> concat_ds;
@@ -240,10 +238,10 @@ int main()
 //                 H_joint*2 - H_i - H_j << " " <<
                  " | " <<
 //                     "VMixed for digits " << i << ", all: " <<
-                 //metric::variationOfInformationSimple(imgs_by_digit_encoded[i], imgs_mixed_encoded, 7) <<
-                 //metric::variationOfInformationSimple<std::vector<std::vector<double>>, metric::Euclidean<double>>(imgs_mixed_encoded, imgs_mixed_encoded, 7) <<
-                 metric::variationMixed_kpN<std::vector<std::vector<double>>, metric::Euclidean<double>>(imgs_mixed_encoded, imgs_mixed_encoded, 7) <<
-                 //metric::variationOfInformation_kpN(imgs_by_digit_encoded[i], imgs_mixed_encoded, 7, 70) <<
+                 //metric::VOI_simple(imgs_by_digit_encoded[i], imgs_mixed_encoded, 7) <<
+                 //metric::VOI_simple<std::vector<std::vector<double>>, metric::Euclidean<double>>(imgs_mixed_encoded, imgs_mixed_encoded, 7) <<
+                 metric::VMixing_simple<std::vector<std::vector<double>>, metric::Euclidean<double>>(imgs_mixed_encoded, imgs_mixed_encoded, 7) <<
+                 //metric::VMixing(imgs_by_digit_encoded[i], imgs_mixed_encoded, 7, 70) <<
                  std::endl;
 
 

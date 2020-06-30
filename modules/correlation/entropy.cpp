@@ -675,7 +675,7 @@ std::vector<std::vector<T>> combine(const C1& X, const C2& Y)
 
 template <typename C, typename Metric>
 typename std::enable_if_t<!type_traits::is_container_of_integrals_v<C>, type_traits::underlying_type_t<C>>
-variationOfInformationSimple(const C& Xc, const C& Yc, int k)
+VOI_simple(const C& Xc, const C& Yc, int k)
 {
     using T = type_traits::underlying_type_t<C>;
 
@@ -711,7 +711,7 @@ variationOfInformationSimple(const C& Xc, const C& Yc, int k)
 
 template <typename C, typename Metric>
 typename std::enable_if_t<!type_traits::is_container_of_integrals_v<C>, type_traits::underlying_type_t<C>>
-variationMixedSimple(const C& Xc, const C& Yc, int k)
+VMixing_simple(const C& Xc, const C& Yc, int k)
 {
     using T = type_traits::underlying_type_t<C>;
 
@@ -741,7 +741,7 @@ variationMixedSimple(const C& Xc, const C& Yc, int k)
 
 template <typename C, typename Metric>
 typename std::enable_if_t<!type_traits::is_container_of_integrals_v<C>, type_traits::underlying_type_t<C>>
-variationOfInformation_kpN(const C& Xc, const C& Yc, int k, int p)
+VOI(const C& Xc, const C& Yc, int k, int p)
 {
     using T = type_traits::underlying_type_t<C>;
 
@@ -777,7 +777,7 @@ variationOfInformation_kpN(const C& Xc, const C& Yc, int k, int p)
 
 template <typename C, typename Metric>
 typename std::enable_if_t<!type_traits::is_container_of_integrals_v<C>, type_traits::underlying_type_t<C>>
-variationMixed_kpN(const C& Xc, const C& Yc, int k, int p)
+VMixing(const C& Xc, const C& Yc, int k, int p)
 {
     using T = type_traits::underlying_type_t<C>;
 

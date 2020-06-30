@@ -96,7 +96,7 @@ private:
  */
 template <typename C, typename Metric = metric::Chebyshev<type_traits::underlying_type_t<C>>>
 typename std::enable_if_t<!type_traits::is_container_of_integrals_v<C>, type_traits::underlying_type_t<C>>
-variationOfInformationSimple(const C& Xc, const C& Yc, int k = 3);
+VOI_simple(const C& Xc, const C& Yc, int k = 3);
 
 
 /**
@@ -110,22 +110,7 @@ variationOfInformationSimple(const C& Xc, const C& Yc, int k = 3);
  */
 template <typename C, typename Metric = metric::Chebyshev<type_traits::underlying_type_t<C>>>
 typename std::enable_if_t<!type_traits::is_container_of_integrals_v<C>, type_traits::underlying_type_t<C>>
-variationMixedSimple(const C& Xc, const C& Yc, int k = 3);
-
-
-
-/**
- * @brief
- *
- * @param Xc
- * @param Yc
- * @param k
- * @param logbase
- * @return
- */
-template <typename C, typename Metric = metric::Chebyshev<type_traits::underlying_type_t<C>>>
-typename std::enable_if_t<!type_traits::is_container_of_integrals_v<C>, type_traits::underlying_type_t<C>>
-variationOfInformation_kpN(const C& Xc, const C& Yc, int k = 3, int p = 25);
+VMixing_simple(const C& Xc, const C& Yc, int k = 3);
 
 
 
@@ -140,7 +125,22 @@ variationOfInformation_kpN(const C& Xc, const C& Yc, int k = 3, int p = 25);
  */
 template <typename C, typename Metric = metric::Chebyshev<type_traits::underlying_type_t<C>>>
 typename std::enable_if_t<!type_traits::is_container_of_integrals_v<C>, type_traits::underlying_type_t<C>>
-variationMixed_kpN(const C& Xc, const C& Yc, int k = 3, int p = 25);
+VOI(const C& Xc, const C& Yc, int k = 3, int p = 25);
+
+
+
+/**
+ * @brief
+ *
+ * @param Xc
+ * @param Yc
+ * @param k
+ * @param logbase
+ * @return
+ */
+template <typename C, typename Metric = metric::Chebyshev<type_traits::underlying_type_t<C>>>
+typename std::enable_if_t<!type_traits::is_container_of_integrals_v<C>, type_traits::underlying_type_t<C>>
+VMixing(const C& Xc, const C& Yc, int k = 3, int p = 25);
 
 
 
