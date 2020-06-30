@@ -553,32 +553,13 @@ double EntropySimple<RecType, Metric>::operator()(
     if (data.size() < k + 1)
         throw std::invalid_argument("number of points in dataset must be larger than k");
 
-    //double N = data.size();
     double d = data[0].size();
 
-    //add_noise(data); // TODO test
+    //add_noise(data);
 
     double entropyEstimate = 0;
     double log_sum = 0;
 
-//    if (avoid_repeated) {
-//        metric::Tree<V, Metric> tree(data[0], -1, metric);
-//        for (std::size_t i = 1; i < data.size(); ++i) {
-//            tree.insert_if(data[i], std::numeric_limits<T>::epsilon());
-//        }
-//        N = tree.size();
-//        for (std::size_t i = 0; i < N; i++) {
-//            auto res = tree.knn(data[i], k + 1);
-//            entropyEstimate += std::log(res.back().second);
-//        }
-//    } else {
-//        metric::Tree<V, Metric> tree(data, -1, metric);
-//        for (std::size_t i = 0; i < data.size(); i++) {
-//            auto res = tree.knn(data[i], k + 1);
-//            entropyEstimate += std::log(res.back().second);
-//        }
-//        N = tree.size();
-//    }
     metric::Tree<V, Metric> tree(data[0], -1, metric);
     for (std::size_t i = 1; i < data.size(); ++i) {
         tree.insert_if(data[i], std::numeric_limits<T>::epsilon());
@@ -796,6 +777,19 @@ VMixing_simple<RecType, Metric>::operator()(const C& Xc, const C& Yc) const {
 }
 
 
+template <typename RecType, typename Metric>
+template <typename C>
+double VMixing_simple<RecType, Metric>::estimate(
+        const C& a,
+        const C& b,
+        const size_t sampleSize,
+        const double threshold,
+        size_t maxIterations
+) const
+{
+    return entropy_details::estimate(a, b, *this, sampleSize, threshold, maxIterations);
+}
+
 
 
 template <typename RecType, typename Metric>
@@ -829,7 +823,18 @@ VMixing<RecType, Metric>::operator()(const C& Xc, const C& Yc) const {
 }
 
 
-
+template <typename RecType, typename Metric>
+template <typename C>
+double VMixing<RecType, Metric>::estimate(
+        const C& a,
+        const C& b,
+        const size_t sampleSize,
+        const double threshold,
+        size_t maxIterations
+) const
+{
+    return entropy_details::estimate(a, b, *this, sampleSize, threshold, maxIterations);
+}
 
 
 // non-functor code

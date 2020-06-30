@@ -96,10 +96,10 @@ public:
     typename std::enable_if_t<!type_traits::is_container_of_integrals_v<C>, type_traits::underlying_type_t<C>>
     operator()(const C& Xc, const C& Yc) const;
 
-    template <typename Container>
+    template <typename C>
     double estimate(
-            const Container & a,
-            const Container & b,
+            const C& a,
+            const C& b,
             const size_t sampleSize = 250,
             const double threshold = 0.05,
             size_t maxIterations = 1000
@@ -124,10 +124,10 @@ public:
     typename std::enable_if_t<!type_traits::is_container_of_integrals_v<C>, type_traits::underlying_type_t<C>>
     operator()(const C& Xc, const C& Yc) const;
 
-    template <typename Container>
+    template <typename C>
     double estimate(
-            const Container & a,
-            const Container & b,
+            const C& a,
+            const C& b,
             const size_t sampleSize = 250,
             const double threshold = 0.05,
             size_t maxIterations = 1000
