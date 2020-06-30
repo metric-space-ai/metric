@@ -2,7 +2,7 @@
 #include "../../modules/utils/datasets.hpp"
 #include "../../modules/correlation/entropy.hpp"
 #include "../../modules/mapping/PCFA.hpp"
-#include "../../modules/distance/k-random/VOI.hpp"
+//#include "../../modules/distance/k-random/VOI.hpp"
 
 
 #include <iostream>
@@ -154,7 +154,7 @@ int main()
             concat_ds.reserve(imgs_by_digit_encoded[i].size() + imgs_by_digit_encoded[j].size());
             concat_ds.insert(concat_ds.end(), imgs_by_digit_encoded[i].begin(), imgs_by_digit_encoded[i].end());
             concat_ds.insert(concat_ds.end(), imgs_by_digit_encoded[j].begin(), imgs_by_digit_encoded[j].end());
-            std::vector<std::vector<double>> joint_ds = metric::combine(imgs_by_digit_encoded[i], imgs_by_digit_encoded[j]);
+            std::vector<std::vector<double>> joint_ds = metric::voi_details::combine(imgs_by_digit_encoded[i], imgs_by_digit_encoded[j]);
             auto H_i = estimator(imgs_by_digit_encoded[i]);
             auto H_j = estimator(imgs_by_digit_encoded[j]);
             auto H_concat = estimator(concat_ds);
@@ -188,7 +188,7 @@ int main()
         concat_ds.reserve(imgs_by_digit_encoded[i].size() + imgs_mixed_encoded.size());
         concat_ds.insert(concat_ds.end(), imgs_by_digit_encoded[i].begin(), imgs_by_digit_encoded[i].end());
         concat_ds.insert(concat_ds.end(), imgs_mixed_encoded.begin(), imgs_mixed_encoded.end());
-        std::vector<std::vector<double>> joint_ds = metric::combine(imgs_by_digit_encoded[i], imgs_mixed_encoded);
+        std::vector<std::vector<double>> joint_ds = metric::voi_details::combine(imgs_by_digit_encoded[i], imgs_mixed_encoded);
         auto H_i = estimator(imgs_by_digit_encoded[i]);
         auto H_j = estimator(imgs_mixed_encoded);
         auto H_concat = estimator(concat_ds);
@@ -219,7 +219,7 @@ int main()
     concat_ds.reserve(imgs_mixed_encoded.size() + imgs_mixed_encoded.size());
     concat_ds.insert(concat_ds.end(), imgs_mixed_encoded.begin(), imgs_mixed_encoded.end());
     concat_ds.insert(concat_ds.end(), imgs_mixed_encoded.begin(), imgs_mixed_encoded.end());
-    std::vector<std::vector<double>> joint_ds = metric::combine(imgs_mixed_encoded, imgs_mixed_encoded);
+    std::vector<std::vector<double>> joint_ds = metric::voi_details::combine(imgs_mixed_encoded, imgs_mixed_encoded);
     auto H_i = estimator(imgs_mixed_encoded);
     auto H_j = estimator(imgs_mixed_encoded);
     auto H_concat = estimator(concat_ds);
