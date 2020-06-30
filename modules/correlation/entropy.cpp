@@ -435,6 +435,99 @@ double estimate(
 }
 
 
+
+template <typename Container, typename Functor>
+double estimate(
+    const Container& a,
+    const Container& b,
+    const Functor& f,
+    const size_t sampleSize,
+    const double threshold,
+    size_t maxIterations
+)
+{
+    using T = type_traits::underlying_type_t<Container>;
+    using V = type_traits::index_value_type_t<Container>;
+
+    assert(a.size() == b.size());
+
+    const size_t dataSize = a.size();
+
+    /* Update maxIterations */
+    if (maxIterations == 0) {
+        maxIterations = dataSize / sampleSize;
+    }
+
+    if (maxIterations > dataSize / sampleSize) {
+        maxIterations = dataSize / sampleSize;
+    }
+
+    if (maxIterations < 1) {
+        return f(a, b);
+    }
+
+    /* Create shuffle indexes */
+    std::vector<size_t> indexes(dataSize);
+    std::iota(indexes.begin(), indexes.end(), 0);
+
+    auto rng = std::default_random_engine();
+    std::shuffle(indexes.begin(), indexes.end(), rng);
+
+    /* Create vector container for fast random access */
+    const std::vector<V> vectorA(a.begin(), a.end());
+    const std::vector<V> vectorB(b.begin(), b.end());
+
+    /* Create samples */
+    std::vector<V> sampleA;
+    std::vector<V> sampleB;
+    sampleA.reserve(sampleSize);
+    sampleB.reserve(sampleSize);
+
+    std::vector<double> mgcValues;
+    double mu = 0;
+    for (auto i = 1; i <= maxIterations; ++i) {
+        size_t start = (i - 1) * sampleSize;
+        size_t end = std::min(i * sampleSize - 1, dataSize - 1);
+
+        /* Create samples */
+        sampleA.clear();
+        sampleB.clear();
+
+        for (auto j = start; j < end; ++j) {
+            sampleA.push_back(vectorA[indexes[j]]);
+            sampleB.push_back(vectorB[indexes[j]]);
+        }
+
+        /* Get sample mgc value */
+        double mgc = f(sampleA, sampleB);
+        mgcValues.push_back(mgc);
+
+        std::sort(mgcValues.begin(), mgcValues.end());
+
+        const size_t n = mgcValues.size();
+        const auto p0 = linspace(0.5 / n, 1 - 0.5 / n, n);
+
+        mu = mean(mgcValues);
+        double sigma = variance(mgcValues, mu);
+
+        const std::vector<double> synth = icdf(p0, mu, sigma);
+        std::vector<double> diff;
+        diff.reserve(n);
+        for (auto i = 0; i < n; ++i) {
+            diff.push_back(mgcValues[i] - synth[i]);
+        }
+
+        auto convergence = peak2ems(diff) / n;
+
+        if (convergence < threshold) {
+            return mu;
+        }
+    }
+
+    return mu;
+}
+
+
 } // namespace entropy_details
 
 
@@ -672,6 +765,74 @@ std::vector<std::vector<T>> combine(const C1& X, const C2& Y)
 
 
 
+template <typename RecType, typename Metric>
+template <typename C>
+typename std::enable_if_t<!type_traits::is_container_of_integrals_v<C>, type_traits::underlying_type_t<C>>
+VMixing_simple<RecType, Metric>::operator()(const C& Xc, const C& Yc) const {
+
+    using T = type_traits::underlying_type_t<C>;
+
+    auto N = Xc.size();
+
+    if (N < k + 1 || Yc.size() < k + 1)
+        throw std::invalid_argument("number of points in dataset must be larger than k");
+
+    std::vector<std::vector<T>> X;
+    for (const auto& e: Xc)
+        X.push_back(std::vector<T>(std::begin(e), std::end(e))); // TODO optimize
+
+    std::vector<std::vector<T>> Y;
+    for (const auto& e: Yc)
+        Y.push_back(std::vector<T>(std::begin(e), std::end(e)));
+
+    std::vector<std::vector<T>> XY; // concatenation instead of combine(X, Y);
+    XY.reserve(X.size() + Y.size());
+    XY.insert(XY.end(), X.begin(), X.end());
+    XY.insert(XY.end(), Y.begin(), Y.end());
+
+    auto e = EntropySimple<void, Metric>(metric, k);
+    auto result = 2 * e(XY) - e(Xc) - e(Yc);
+    return result;
+}
+
+
+
+
+template <typename RecType, typename Metric>
+template <typename C>
+typename std::enable_if_t<!type_traits::is_container_of_integrals_v<C>, type_traits::underlying_type_t<C>>
+VMixing<RecType, Metric>::operator()(const C& Xc, const C& Yc) const {
+
+    using T = type_traits::underlying_type_t<C>;
+
+    auto N = Xc.size();
+
+    if (N < k + 1 || Yc.size() < k + 1)
+        throw std::invalid_argument("number of points in dataset must be larger than k");
+
+    std::vector<std::vector<T>> X;
+    for (const auto& e: Xc)
+        X.push_back(std::vector<T>(std::begin(e), std::end(e))); // TODO optimize
+
+    std::vector<std::vector<T>> Y;
+    for (const auto& e: Yc)
+        Y.push_back(std::vector<T>(std::begin(e), std::end(e)));
+
+    std::vector<std::vector<T>> XY; // concatenation instead of combine(X, Y);
+    XY.reserve(X.size() + Y.size());
+    XY.insert(XY.end(), X.begin(), X.end());
+    XY.insert(XY.end(), Y.begin(), Y.end());
+
+    auto e = Entropy<void, Metric>(metric, k, p);
+    auto result = 2 * e(XY) - e(Xc) - e(Yc);
+    return result;
+}
+
+
+
+
+
+// non-functor code
 
 template <typename C, typename Metric>
 typename std::enable_if_t<!type_traits::is_container_of_integrals_v<C>, type_traits::underlying_type_t<C>>
@@ -708,35 +869,6 @@ VOI_simple(const C& Xc, const C& Yc, int k)
     return result;
 }
 
-
-template <typename C, typename Metric>
-typename std::enable_if_t<!type_traits::is_container_of_integrals_v<C>, type_traits::underlying_type_t<C>>
-VMixing_simple(const C& Xc, const C& Yc, int k)
-{
-    using T = type_traits::underlying_type_t<C>;
-
-    auto N = Xc.size();
-
-    if (N < k + 1 || Yc.size() < k + 1)
-        throw std::invalid_argument("number of points in dataset must be larger than k");
-
-    std::vector<std::vector<T>> X;
-    for (const auto& e: Xc)
-        X.push_back(std::vector<T>(std::begin(e), std::end(e))); // TODO optimize
-
-    std::vector<std::vector<T>> Y;
-    for (const auto& e: Yc)
-        Y.push_back(std::vector<T>(std::begin(e), std::end(e)));
-
-    std::vector<std::vector<T>> XY; // concatenation instead of combine(X, Y);
-    XY.reserve(X.size() + Y.size());
-    XY.insert(XY.end(), X.begin(), X.end());
-    XY.insert(XY.end(), Y.begin(), Y.end());
-
-    auto e = EntropySimple<void, Metric>(Metric(), k);
-    auto result = 2 * e(XY) - e(Xc) - e(Yc);
-    return result;
-}
 
 
 template <typename C, typename Metric>
@@ -775,6 +907,39 @@ VOI(const C& Xc, const C& Yc, int k, int p)
 }
 
 
+/*
+
+template <typename C, typename Metric>
+typename std::enable_if_t<!type_traits::is_container_of_integrals_v<C>, type_traits::underlying_type_t<C>>
+VMixing_simple(const C& Xc, const C& Yc, int k)
+{
+    using T = type_traits::underlying_type_t<C>;
+
+    auto N = Xc.size();
+
+    if (N < k + 1 || Yc.size() < k + 1)
+        throw std::invalid_argument("number of points in dataset must be larger than k");
+
+    std::vector<std::vector<T>> X;
+    for (const auto& e: Xc)
+        X.push_back(std::vector<T>(std::begin(e), std::end(e))); // TODO optimize
+
+    std::vector<std::vector<T>> Y;
+    for (const auto& e: Yc)
+        Y.push_back(std::vector<T>(std::begin(e), std::end(e)));
+
+    std::vector<std::vector<T>> XY; // concatenation instead of combine(X, Y);
+    XY.reserve(X.size() + Y.size());
+    XY.insert(XY.end(), X.begin(), X.end());
+    XY.insert(XY.end(), Y.begin(), Y.end());
+
+    auto e = EntropySimple<void, Metric>(Metric(), k);
+    auto result = 2 * e(XY) - e(Xc) - e(Yc);
+    return result;
+}
+
+
+
 template <typename C, typename Metric>
 typename std::enable_if_t<!type_traits::is_container_of_integrals_v<C>, type_traits::underlying_type_t<C>>
 VMixing(const C& Xc, const C& Yc, int k, int p)
@@ -804,7 +969,7 @@ VMixing(const C& Xc, const C& Yc, int k, int p)
     return result;
 }
 
-
+// */
 
 
 

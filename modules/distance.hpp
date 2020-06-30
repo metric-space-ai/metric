@@ -34,7 +34,7 @@ Copyright (c) PANDA Team
 #include "distance/k-structured/Edit.hpp"
 #include "distance/k-structured/Kohonen.hpp"
 
-#include "distance/k-random/VOI.hpp"
+//#include "distance/k-random/VOI.hpp"
 #include "distance/k-random/KolmogorovSmirnov.hpp"
 #include "distance/k-random/RandomEMD.hpp"
 #include "distance/k-random/CramervonMises.hpp"

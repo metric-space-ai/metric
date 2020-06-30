@@ -10,7 +10,7 @@ Copyright (c) 2019 Panda Team
 #include <random>
 
 //#include "../../modules/distance.hpp"
-#include "../../modules/distance/k-random/VOI.hpp"
+#include "../../modules/correlation/entropy.hpp"
 
 #include "../../modules/distance/k-structured/Edit.hpp"
 

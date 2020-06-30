@@ -1,4 +1,4 @@
-#include "../../modules/distance/k-random/VOI.hpp"
+#include "../../modules/correlation/entropy.hpp"
 
 //#include <iostream>
 //#include <fstream>

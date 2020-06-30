@@ -84,80 +84,93 @@ private:
 
 // VOI & VMixing
 
+template <typename RecType, typename Metric = metric::Euclidean<typename RecType::value_type>>
+class VMixing_simple {
 
-/**
- * @brief
- *
- * @param Xc
- * @param Yc
- * @param k
- * @param logbase
- * @return
- */
+public:
+    VMixing_simple(Metric metric = Metric(), int k = 3) :
+        metric(metric),
+        k(k) {}
+
+    template <typename C>
+    typename std::enable_if_t<!type_traits::is_container_of_integrals_v<C>, type_traits::underlying_type_t<C>>
+    operator()(const C& Xc, const C& Yc) const;
+
+    template <typename Container>
+    double estimate(
+            const Container & a,
+            const Container & b,
+            const size_t sampleSize = 250,
+            const double threshold = 0.05,
+            size_t maxIterations = 1000
+    ) const;
+
+private:
+    int k;
+    Metric metric;
+};
+
+
+template <typename RecType, typename Metric = metric::Euclidean<typename RecType::value_type>>
+class VMixing {
+
+public:
+    VMixing(Metric metric = Metric(), int k = 3, int p = 25) :
+        metric(metric),
+        k(k),
+        p(p) {}
+
+    template <typename C>
+    typename std::enable_if_t<!type_traits::is_container_of_integrals_v<C>, type_traits::underlying_type_t<C>>
+    operator()(const C& Xc, const C& Yc) const;
+
+    template <typename Container>
+    double estimate(
+            const Container & a,
+            const Container & b,
+            const size_t sampleSize = 250,
+            const double threshold = 0.05,
+            size_t maxIterations = 1000
+    ) const;
+
+private:
+    int k;
+    int p;
+    Metric metric;
+};
+
+
+
+
+// non-functor code
+
 template <typename C, typename Metric = metric::Chebyshev<type_traits::underlying_type_t<C>>>
 typename std::enable_if_t<!type_traits::is_container_of_integrals_v<C>, type_traits::underlying_type_t<C>>
 VOI_simple(const C& Xc, const C& Yc, int k = 3);
 
 
-/**
- * @brief
- *
- * @param Xc
- * @param Yc
- * @param k
- * @param logbase
- * @return
- */
+
+template <typename C, typename Metric = metric::Chebyshev<type_traits::underlying_type_t<C>>>
+typename std::enable_if_t<!type_traits::is_container_of_integrals_v<C>, type_traits::underlying_type_t<C>>
+VOI(const C& Xc, const C& Yc, int k = 3, int p = 25);
+
+
+/*
+
 template <typename C, typename Metric = metric::Chebyshev<type_traits::underlying_type_t<C>>>
 typename std::enable_if_t<!type_traits::is_container_of_integrals_v<C>, type_traits::underlying_type_t<C>>
 VMixing_simple(const C& Xc, const C& Yc, int k = 3);
 
 
 
-/**
- * @brief
- *
- * @param Xc
- * @param Yc
- * @param k
- * @param logbase
- * @return
- */
-template <typename C, typename Metric = metric::Chebyshev<type_traits::underlying_type_t<C>>>
-typename std::enable_if_t<!type_traits::is_container_of_integrals_v<C>, type_traits::underlying_type_t<C>>
-VOI(const C& Xc, const C& Yc, int k = 3, int p = 25);
-
-
-
-/**
- * @brief
- *
- * @param Xc
- * @param Yc
- * @param k
- * @param logbase
- * @return
- */
 template <typename C, typename Metric = metric::Chebyshev<type_traits::underlying_type_t<C>>>
 typename std::enable_if_t<!type_traits::is_container_of_integrals_v<C>, type_traits::underlying_type_t<C>>
 VMixing(const C& Xc, const C& Yc, int k = 3, int p = 25);
 
 
+// */
 
 
-
-
-// -------------------------------- to be debugged
-
-// ported from Julia, not in use
-/**
- * @brief
- *
- * @param Y
- * @return
- */
-template <typename T>
-std::pair<std::vector<double>, std::vector<std::vector<T>>> pluginEstimator(const std::vector<std::vector<T>>& Y);
 
 
 } // namespace metric
