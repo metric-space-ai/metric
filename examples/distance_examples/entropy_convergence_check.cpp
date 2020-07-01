@@ -4,7 +4,6 @@
 #include <iostream>
 
 #include "../../modules/correlation/entropy.hpp"
-//#include "../../modules/distance/k-random/VOI.hpp"
 
 template <typename T>
 void print_entropies(size_t step, size_t dim, size_t k) {

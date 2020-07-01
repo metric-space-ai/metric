@@ -268,8 +268,8 @@ std::cout << "result: " << result << std::endl;
 ---
 
 
-### Entropy, Mutual Information and Variation of Information
-Suppose we have a some data:
+### Entropy and VMixing
+Suppose we have some data:
 
 ```cpp
 std::vector<std::vector<double>> v = { {5,5}, {2,2}, {3,3}, {5,1} };
@@ -302,72 +302,22 @@ std::vector<std::vector<double>> v1 = {{5,5}, {2,2}, {3,3}, {5,5}};
 std::vector<std::vector<double>> v2 = {{5,5}, {2,2}, {3,3}, {1,1}};
 ```
 
-Then we can calculate Mutual Information:
+For the same data we can calculate "variation for mixing": or, in short words, compare entopies of each dataset to entropy of concatenated datset:
 ```cpp
-auto result = metric::mutualInformation(v1, v2);
+auto vm = VMixing(); // default parameters
+auto result = metric::vm(v1, v2);
 std::cout << "result: " << result << std::endl;
-// out:
-// Mutual Information using default distance metric
-// result: 1.00612
-```
-
-Of cause we can specify distance metric:
-```cpp
-auto result = metric::mutualInformation(v1, v2, 3, metric::Euclidean<double>());
-std::cout << "result: " << result << std::endl;
-// out:
-// Mutual Information using Euclidean distance metric
-// result: 0.797784 
-```
-
-For the same data we can calculate Variation of Information:
-```cpp
-auto result = metric::variationOfInformation(v1, v2);
-std::cout << "result: " << result << std::endl;
-// out:
-// Variation of Information using default distance metric
-// result: 0
 ```
 
 Again we can specify distance metric:
 ```cpp
-auto result = metric::variationOfInformation<std::vector<std::vector<double>>, metric::Manhatten<double>>(v1, v2);
-std::cout << "VOI Manhatten result: " << result << std::endl;
+auto vm = metric::VMixing_simple<void, metric::Manhatten<double>>(metric::Manhatten<double>())
+auto result = vm(v1, v2);
+std::cout << "VMixed Manhatten result: " << result << std::endl;
 std::cout << "result: " << result << std::endl;
-// out:
-// Variation of Information Information using Manhatten distance metric
-// result: 0
 ```
 
-We can calculate normalized Variation of Information:
-```cpp
-auto result = metric::variationOfInformation_normalized(v1, v2);
-std::cout << "result: " << result << std::endl;
-// out:
-// normalized Variation of Information
-// result: 1.08982
-```
-
-Instead function we can use functor for Variation of Information:
-```cpp
-auto f_voi = metric::VOI<long double>();
-auto result = f_voi(v1, v2);
-std::cout << "result: " << result << std::endl;
-// out:
-// Variation of Information as functor
-// result: 0
-```
-Normalized functor:
-```cpp
-auto f_voi_norm = metric::VOI_normalized<long double>();
-auto result = f_voi_norm(v1, v2);
-std::cout << "result: " << result << std::endl;
-// out:
-// normalized Variation of Information as normalized functor
-// result: 1.08982
-```
-
-*For a full example and more details see `examples/distance_examples/entropy_example.cpp`*
+*For a full example and more details see `examples/distance_examples/entropy_example.cpp`, `tests/distance_tests/entropy_vmixing_tests.cpp`*
 
 ---
 
@@ -390,8 +340,6 @@ or directly include one of specified distance from the following:
 #include "modules/distance/k-structured/TWED.hpp"
 #include "modules/distance/k-structured/EMD.hpp"
 #include "modules/distance/k-structured/Edit.hpp"
-
-#include "modules/distance/k-random/VOI.hpp"
 ```
 
 
