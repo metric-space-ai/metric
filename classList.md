@@ -31,6 +31,7 @@
 |                                                                                                                                                        |C++     |auto f = metric::TWED<double>(1, 2)                                   |auto result = f(dataA, dataB)|                                                      |
 |Kohonen Distance Metric                                                                                                                                 |Python  |f = distance.Kohonen(train_data, w, h)                                |result = f(sample1, sample2) |defaults: start_learn_rate=0.8, finish_learn_rate=0.0, iterations=20|
 |                                                                                                                                                        |C++     |auto f = metric::kohonen_distance<double>(train_data, w, h)           |auto result = f(sample1, sample2)|defaults: start_learn_rate=0.8, finish_learn_rate=0.0, iterations=20|
+|Riemannian Distance Metric                                                                                                                              |C++     |auto rd = metric::RiemannianDistance<void, metric::Euclidean<double>>() |auto result = rd(ds1, ds2) |defaults: metric=metric::Euclidean<T>                 |
 
 
 **Calls METRIC | SPACE**

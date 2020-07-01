@@ -18,7 +18,7 @@ Copyright (c) 2019 Panda Team
 
 int main() {
 
-    std::cout << "Entropy, Mutual Information and Variation of Information example have started" << std::endl;
+    std::cout << "Entropy example has started" << std::endl;
     std::cout << std::endl;
 
     {

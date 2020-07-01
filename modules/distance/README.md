@@ -20,8 +20,8 @@ This is the equivalent of the Euclidean metric for random sampled data.
 This is the equilvalent for the Chebychev metric for random sampled data.
 
 ## The entropy family
-### Variation of Information
-This metric uilizes the entropy to compute a pseudo-metric .
+### VMixing
+This a measure of difference between entropies of datasets and entropy of concatenated dataset. Not a true metric.
 
 # Related metrics
 ## The norm family
