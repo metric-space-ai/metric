@@ -11,7 +11,7 @@ Copyright (c) 2020 Panda Team
 
 #include "../../3rdparty/blaze/Blaze.h"
 #include "../distance/k-related/Standards.hpp"
-#include "../modules/utils/type_traits.hpp"
+#include "../../modules/utils/type_traits.hpp"
 
 namespace metric {
 
