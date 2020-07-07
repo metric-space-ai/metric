@@ -723,5 +723,32 @@ typename std::enable_if<blaze::IsMatrix<Container2d>::value, Container2d>::type 
 
 
 
+// ------------------------------ DWT based on matrix multiplication
+
+template <typename T>
+blaze::DynamicMatrix<T> DaubechiesMat(size_t size, int degree = 4) {
+
+    std::vector<T> c (degree);
+    c[0] = (1+sqrt(3))/(4*sqrt(2)); // TODO replace hardcode with coeff computation procedure
+    c[1] = (3+sqrt(3))/(4*sqrt(2));
+    c[2] = (3-sqrt(3))/(4*sqrt(2));
+    c[3] = (1-sqrt(3))/(4*sqrt(2));
+
+    auto mat = blaze::DynamicMatrix<T>(size, size, 0);
+    size_t split_size = size/2;
+    for (size_t i = 0; i < split_size; ++i) {
+        int sign = 1;
+        for (size_t ci = 0; ci < c.size(); ++ci) {
+            mat(i, (i*2 + ci) % size) = c[ci];
+            mat(i + split_size, (i*2 + ci) % size) = c[degree - 1 - ci]*sign;
+            sign *= -1;
+        }
+    }
+
+    return mat;
+}
+
+
+
 }  // end namespace
 #endif
