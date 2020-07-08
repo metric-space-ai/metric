@@ -316,10 +316,12 @@ Tree<RecType, Metric>::Tree(const RecType& p, int truncateArg /*=-1*/, Metric d)
     max_scale = 0;
     truncate_level = truncateArg;
 
-    root = std::make_unique<NodeType>();
+    //root = std::make_unique<NodeType>();
+    root = new NodeType(this);  // replaced by Max F
     root->level = 0;
     root->parent_dist = 0;
-    root->ID = add_value(p);
+    //root->ID = add_value(p);
+    root->ID = add_data(p, root);  // replaced by Max F
 }
 
 /*** constructor: with a vector data records **/
