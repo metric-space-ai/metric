@@ -19,5 +19,20 @@ int main() {
     auto decoded = db4.transpose()*encoded;
     std::cout << decoded << "\n";
 
+    blaze::DynamicMatrix<double> img {
+        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 1, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+    };
+    auto db4_w = wavelet::DaubechiesMat<double>(img.columns());
+    auto db4_h = wavelet::DaubechiesMat<double>(img.rows());
+    auto encoded_img = wavelet::dwt2(img, db4_w, db4_h);
+    std::cout << std::get<0>(encoded_img) << "\n";
+
     return 0;
 }
