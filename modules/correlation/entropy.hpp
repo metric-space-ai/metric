@@ -11,11 +11,12 @@ Copyright (c) 2020 Panda Team
 
 #include "../../3rdparty/blaze/Blaze.h"
 #include "../distance/k-related/Standards.hpp"
-
+#include "../../modules/utils/type_traits.hpp"
 
 namespace metric {
 
 
+// non-kpN version, DEPRECATED
 template <typename RecType, typename Metric = metric::Euclidean<typename RecType::value_type>>
 class EntropySimple { // averaged entropy estimation: code COPIED from mgc.*pp with only mgc replaced with entropy, TODO refactor to avoid code dubbing
 public:
@@ -27,10 +28,12 @@ public:
 
     template <typename Container>
     double operator()(const Container& data) const;
+    //double operator()(const Container& data, bool avoid_repeated = false) const;
 
     template <template <typename, typename> class OuterContainer, template <typename, bool> class InnerContainer, class OuterAllocator, typename ValueType, bool F>
     double operator()( // TODO implement
             const OuterContainer<InnerContainer<ValueType, F>, OuterAllocator> & data // inner cpntainer is specialized with bool F
+
     ) const;
 
     template <typename Container>
@@ -51,7 +54,7 @@ private:
 
 
 
-
+// https://hal.inria.fr/hal-01272527/document
 template <typename RecType, typename Metric = metric::Chebyshev<typename RecType::value_type>>
 class Entropy {
 public:
@@ -80,18 +83,79 @@ private:
 };
 
 
+// VMixing
 
-// -------------------------------- to be debugged
+template <typename RecType, typename Metric = metric::Euclidean<typename RecType::value_type>>
+class VMixing_simple { // non-kpN version, DEPRECATED
 
-// ported from Julia, not in use
-/**
- * @brief
- *
- * @param Y
- * @return
- */
-template <typename T>
-std::pair<std::vector<double>, std::vector<std::vector<T>>> pluginEstimator(const std::vector<std::vector<T>>& Y);
+public:
+    VMixing_simple(Metric metric = Metric(), int k = 3) :
+        metric(metric),
+        k(k) {}
+
+    template <typename C>
+    typename std::enable_if_t<!type_traits::is_container_of_integrals_v<C>, type_traits::underlying_type_t<C>>
+    operator()(const C& Xc, const C& Yc) const;
+
+    template <typename C>
+    double estimate(
+            const C& a,
+            const C& b,
+            const size_t sampleSize = 250,
+            const double threshold = 0.05,
+            size_t maxIterations = 1000
+    ) const;
+
+private:
+    int k;
+    Metric metric;
+};
+
+
+template <typename RecType, typename Metric = metric::Euclidean<typename RecType::value_type>>
+class VMixing {
+
+public:
+    VMixing(Metric metric = Metric(), int k = 3, int p = 25) :
+        metric(metric),
+        k(k),
+        p(p) {}
+
+    template <typename C>
+    typename std::enable_if_t<!type_traits::is_container_of_integrals_v<C>, type_traits::underlying_type_t<C>>
+    operator()(const C& Xc, const C& Yc) const;
+
+    template <typename C>
+    double estimate(
+            const C& a,
+            const C& b,
+            const size_t sampleSize = 250,
+            const double threshold = 0.05,
+            size_t maxIterations = 1000
+    ) const;
+
+private:
+    int k;
+    int p;
+    Metric metric;
+};
+
+
+
+
+/* // VOI code, works and may be enabled
+
+
+template <typename C, typename Metric = metric::Chebyshev<type_traits::underlying_type_t<C>>>
+typename std::enable_if_t<!type_traits::is_container_of_integrals_v<C>, type_traits::underlying_type_t<C>>
+VOI_simple(const C& Xc, const C& Yc, int k = 3);
+
+
+template <typename C, typename Metric = metric::Chebyshev<type_traits::underlying_type_t<C>>>
+typename std::enable_if_t<!type_traits::is_container_of_integrals_v<C>, type_traits::underlying_type_t<C>>
+VOI(const C& Xc, const C& Yc, int k = 3, int p = 25);
+
+// */
 
 
 } // namespace metric
