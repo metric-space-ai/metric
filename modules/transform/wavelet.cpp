@@ -799,8 +799,41 @@ dwt2(Container2d const & x, Container2d const & dmat_w, Container2d const & dmat
 
 
 
+template <typename Container2d>
+typename std::enable_if<
+ blaze::IsMatrix<Container2d>::value,
+ Container2d
+>::type
+dwt2s(Container2d const & x, Container2d const & dmat_w, Container2d const & dmat_h) {
+
+    assert(dmat_w.columns() == dmat_w.rows());
+    assert(dmat_h.columns() == dmat_h.rows());
+    assert(dmat_w.rows() == x.columns());
+    assert(dmat_h.rows() == x.rows());
+
+    using El = typename Container2d::ElementType; // now we support only Blaze matrices, TODO add type traits, generalize!!
+
+    Container2d intermediate (x.rows(), x.columns());
+    Container2d out (x.rows(), x.columns());
+
+    for (size_t row_idx = 0; row_idx<x.rows(); ++row_idx) { // top-level split, by rows
+        blaze::DynamicVector<El, blaze::rowVector> curr_row = blaze::row(x, row_idx);
+        blaze::DynamicVector<El> row_split = dmat_w*blaze::trans(curr_row);
+        blaze::row(intermediate, row_idx) = blaze::trans(row_split);
+    }
+
+    for (size_t col_idx = 0; col_idx<x.columns(); ++col_idx) { // 2 lower level splits, by columns
+        blaze::DynamicVector<El> curr_col = blaze::column(intermediate, col_idx);
+        blaze::DynamicVector<El> col_split = dmat_h*curr_col;
+        blaze::column(out, col_idx) = col_split;
+    }
+
+    return out;
+}
 
 
+
+// // TODO debug
 //template <typename Container2d>
 //typename std::enable_if<blaze::IsMatrix<Container2d>::value, Container2d>::type dwt2_reordered(
 //            Container2d const & ll,
@@ -839,8 +872,6 @@ dwt2(Container2d const & x, Container2d const & dmat_w, Container2d const & dmat
 //        //auto col_split_l = wavelet::idwt(col_ll, col_lh, waveletType, hx);
 //        //auto col_split_h = wavelet::idwt(col_hl, col_hh, waveletType, hx);
 //        blaze::DynamicVector<El> col_composed_v = dmat_h_t*blaze::trans(col_concat);
-
-//        // till here
 
 //        //if (col_idx < 1) {
 //            //col_composed_cm = blaze::DynamicMatrix<El, blaze::columnMajor>(col_composed.size(), ll_cm.columns());
