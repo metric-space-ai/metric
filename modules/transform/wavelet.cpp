@@ -754,7 +754,7 @@ typename std::enable_if<
  blaze::IsMatrix<Container2d>::value,
  std::tuple<Container2d, Container2d, Container2d, Container2d>
 >::type
-dwt2(Container2d const & x, Container2d const & dmat_w, Container2d const & dmat_h) {
+dwt2t(Container2d const & x, Container2d const & dmat_w, Container2d const & dmat_h) { // splitting each vector
 
     assert(dmat_w.columns() == dmat_w.rows());
     assert(dmat_h.columns() == dmat_h.rows());
@@ -804,7 +804,7 @@ typename std::enable_if<
  blaze::IsMatrix<Container2d>::value,
  Container2d
 >::type
-dwt2s(Container2d const & x, Container2d const & dmat_w, Container2d const & dmat_h) {
+dwt2s(Container2d const & x, Container2d const & dmat_w, Container2d const & dmat_h) { // single matrix transform, no dividing by subbands
 
     assert(dmat_w.columns() == dmat_w.rows());
     assert(dmat_h.columns() == dmat_h.rows());
@@ -831,6 +831,72 @@ dwt2s(Container2d const & x, Container2d const & dmat_w, Container2d const & dma
     return out;
 }
 
+
+template <typename Container2d>
+typename std::enable_if<
+ blaze::IsMatrix<Container2d>::value,
+ std::tuple<Container2d, Container2d, Container2d, Container2d>
+>::type
+dwt2(Container2d const & x, Container2d const & dmat_w, Container2d const & dmat_h) {
+
+    Container2d r = dwt2s(x, dmat_w, dmat_h);
+
+    size_t split_sz_w = dmat_w.columns()/2;
+    size_t split_sz_h = dmat_h.columns()/2;
+
+    Container2d ll (split_sz_h, split_sz_w);
+    Container2d lh (split_sz_h, split_sz_w);
+    Container2d hl (split_sz_h, split_sz_w);
+    Container2d hh (split_sz_h, split_sz_w);
+    ll = blaze::submatrix(r, 0, 0, split_sz_h, split_sz_w);
+    lh = blaze::submatrix(r, split_sz_h, 0, split_sz_h, split_sz_w);
+    hl = blaze::submatrix(r, 0, split_sz_w, split_sz_h, split_sz_w);
+    //lh = blaze::submatrix(r, 0, split_sz_w, split_sz_h, split_sz_w);
+    //hl = blaze::submatrix(r, split_sz_h, 0, split_sz_h, split_sz_w);
+    hh = blaze::submatrix(r, split_sz_h, split_sz_w, split_sz_h, split_sz_w);
+
+    return std::make_tuple(ll, lh, hl, hh);
+}
+
+
+template <typename Container2d>
+typename std::enable_if<blaze::IsMatrix<Container2d>::value, Container2d>::type idwt2(
+            Container2d const & ll,
+            Container2d const & lh,
+            Container2d const & hl,
+            Container2d const & hh,
+            Container2d const & dmat_w,
+            Container2d const & dmat_h)
+{
+    using El = typename Container2d::ElementType; // now we support only Blaze matrices
+
+    assert(ll.rows()==lh.rows());
+    assert(ll.rows()==hl.rows());
+    assert(ll.rows()==hh.rows());
+    assert(ll.columns()==lh.columns());
+    assert(ll.columns()==hl.columns());
+    assert(ll.columns()==hh.columns());
+    assert(dmat_w.rows() == ll.columns()*2);
+    assert(dmat_h.rows() == ll.rows()*2);
+
+    Container2d out (dmat_h.rows(), dmat_w.rows());
+    blaze::submatrix(out, 0, 0, ll.rows(), ll.columns()) = ll;
+    blaze::submatrix(out, ll.rows(), 0, lh.rows(), lh.columns()) = lh;
+    blaze::submatrix(out, 0, ll.columns(), hl.rows(), hl.columns()) = hl;
+    blaze::submatrix(out, ll.rows(), ll.columns(), hh.rows(), hh.columns()) = hh;
+
+    return dwt2s(out, dmat_w, dmat_h);
+}
+
+
+template <typename Container2d>
+typename std::enable_if<blaze::IsMatrix<Container2d>::value, Container2d>::type idwt2(
+            std::tuple<Container2d, Container2d, Container2d, Container2d> const & in,
+            Container2d const & dmat_w,
+            Container2d const & dmat_h)
+{
+    return idwt2(std::get<0>(in), std::get<1>(in), std::get<2>(in), std::get<3>(in), dmat_w, dmat_h);
+}
 
 
 // // TODO debug

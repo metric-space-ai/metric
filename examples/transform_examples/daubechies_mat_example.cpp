@@ -40,6 +40,12 @@ int main() {
     std::cout << encoded_img << "\n";
     std::cout << decoded_img << "\n";
 
+    auto encoded_img_tuple = wavelet::dwt2(img, db4_w, db4_h);
+    auto decoded_img_2 = wavelet::idwt2(encoded_img_tuple, db4_w_t, db4_h_t);
+
+    std::cout << std::get<0>(encoded_img_tuple) << "\n";
+    std::cout << decoded_img_2 << "\n";
+
 //    auto encoded_img = wavelet::dwt2(img, db4_w, db4_h);
 //    std::cout << std::get<0>(encoded_img) << "\n";
 //    blaze::DynamicMatrix<double> db4_w_t = blaze::trans(db4_w);
