@@ -727,7 +727,7 @@ typename std::enable_if<blaze::IsMatrix<Container2d>::value, Container2d>::type 
 
 
 template <typename T>
-blaze::DynamicMatrix<T> DaubechiesMat(size_t size, int degree = 4) { // Daubechies Transform matrix generator
+blaze::CompressedMatrix<T> DaubechiesMat(size_t size, int degree = 4) { // Daubechies Transform matrix generator
 
     std::vector<T> c (degree);
     c[0] = (1+sqrt(3))/(4*sqrt(2)); // TODO replace hardcode with coeff computation procedure
@@ -735,7 +735,7 @@ blaze::DynamicMatrix<T> DaubechiesMat(size_t size, int degree = 4) { // Daubechi
     c[2] = (3-sqrt(3))/(4*sqrt(2));
     c[3] = (1-sqrt(3))/(4*sqrt(2));
 
-    auto mat = blaze::DynamicMatrix<T>(size, size, 0);
+    auto mat = blaze::CompressedMatrix<T>(size, size, 0);
     size_t split_size = size/2;
     for (size_t i = 0; i < split_size; ++i) {
         int sign = 1;
@@ -751,12 +751,12 @@ blaze::DynamicMatrix<T> DaubechiesMat(size_t size, int degree = 4) { // Daubechi
 
 
 
-template <typename Container2d>
+template <typename Container2d, typename Container2ds>
 typename std::enable_if<
  blaze::IsMatrix<Container2d>::value,
  Container2d
 >::type
-dwt2s(Container2d const & x, Container2d const & dmat_w, Container2d const & dmat_h) { // whole image transform, no dividing by subbands
+dwt2s(Container2d const & x, Container2ds const & dmat_w, Container2ds const & dmat_h) { // whole image transform, no dividing by subbands
 
     assert(dmat_w.columns() == dmat_w.rows());
     assert(dmat_h.columns() == dmat_h.rows());
@@ -765,16 +765,16 @@ dwt2s(Container2d const & x, Container2d const & dmat_w, Container2d const & dma
 
     using El = typename Container2d::ElementType; // now we support only Blaze matrices, TODO add type traits, generalize!!
 
-    Container2d intermediate (x.rows(), x.columns());
-    Container2d out (x.rows(), x.columns());
+    Container2ds intermediate (x.rows(), x.columns());
+    Container2ds out (x.rows(), x.columns());
 
-    for (size_t row_idx = 0; row_idx<x.rows(); ++row_idx) { // top-level split, by rows
+    for (size_t row_idx = 0; row_idx<x.rows(); ++row_idx) { // split by rows
         blaze::DynamicVector<El, blaze::rowVector> curr_row = blaze::row(x, row_idx);
         blaze::DynamicVector<El> row_split = dmat_w*blaze::trans(curr_row);
         blaze::row(intermediate, row_idx) = blaze::trans(row_split);
     }
 
-    for (size_t col_idx = 0; col_idx<x.columns(); ++col_idx) { // 2 lower level splits, by columns
+    for (size_t col_idx = 0; col_idx<x.columns(); ++col_idx) { // split by columns
         blaze::DynamicVector<El> curr_col = blaze::column(intermediate, col_idx);
         blaze::DynamicVector<El> col_split = dmat_h*curr_col;
         blaze::column(out, col_idx) = col_split;
@@ -784,12 +784,12 @@ dwt2s(Container2d const & x, Container2d const & dmat_w, Container2d const & dma
 }
 
 
-template <typename Container2d>
+template <typename Container2d, typename Container2ds>
 typename std::enable_if<
  blaze::IsMatrix<Container2d>::value,
  std::tuple<Container2d, Container2d, Container2d, Container2d>
 >::type
-dwt2(Container2d const & x, Container2d const & dmat_w, Container2d const & dmat_h) { // wrapper for dividing by subbands
+dwt2(Container2d const & x, Container2ds const & dmat_w, Container2ds const & dmat_h) { // wrapper for dividing by subbands
 
     Container2d r = dwt2s(x, dmat_w, dmat_h);
 
@@ -809,14 +809,14 @@ dwt2(Container2d const & x, Container2d const & dmat_w, Container2d const & dmat
 }
 
 
-template <typename Container2d>
+template <typename Container2d, typename Container2ds>
 typename std::enable_if<blaze::IsMatrix<Container2d>::value, Container2d>::type idwt2( // wrapper for composing from subbands
             Container2d const & ll,
             Container2d const & lh,
             Container2d const & hl,
             Container2d const & hh,
-            Container2d const & dmat_w,
-            Container2d const & dmat_h)
+            Container2ds const & dmat_w,
+            Container2ds const & dmat_h)
 {
     using El = typename Container2d::ElementType; // now we support only Blaze matrices
 
@@ -839,11 +839,11 @@ typename std::enable_if<blaze::IsMatrix<Container2d>::value, Container2d>::type 
 }
 
 
-template <typename Container2d>
+template <typename Container2d, typename Container2ds>
 typename std::enable_if<blaze::IsMatrix<Container2d>::value, Container2d>::type idwt2( // wrapper for composing from subbands passed in tuple
             std::tuple<Container2d, Container2d, Container2d, Container2d> const & in,
-            Container2d const & dmat_w,
-            Container2d const & dmat_h)
+            Container2ds const & dmat_w,
+            Container2ds const & dmat_h)
 {
     return idwt2(std::get<0>(in), std::get<1>(in), std::get<2>(in), std::get<3>(in), dmat_w, dmat_h);
 }
