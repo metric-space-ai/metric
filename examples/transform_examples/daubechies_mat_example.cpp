@@ -36,8 +36,9 @@ int main() {
         {0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
     };
 
-    auto db4_w = wavelet::DaubechiesMat<double>(img.columns()); // transform matrix for ROWS of approptiate size (as width of the image)
-    auto db4_h = wavelet::DaubechiesMat<double>(img.rows()); // for COLUMNS (image height)
+    auto db4_w = wavelet::DaubechiesMat<double>(img.columns(), 6); // transform matrix for ROWS of approptiate size (as width of the image)
+    auto db4_h = wavelet::DaubechiesMat<double>(img.rows(), 6); // for COLUMNS (image height)
+    // order (number of coefficients) should not be greater than length of input vector!
 
     blaze::DynamicMatrix<double> db4_w_t = blaze::trans(db4_w); // transposed matrices for inverse trancform
     blaze::DynamicMatrix<double> db4_h_t = blaze::trans(db4_h);

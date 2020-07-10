@@ -12,6 +12,7 @@ Copyright (c) 2019  Michael Welsch
 #include <type_traits>
 #include <memory>
 #include <algorithm>
+#include <cmath> // for only sqrt in DaubechiesMat
 
 
 
@@ -727,13 +728,20 @@ typename std::enable_if<blaze::IsMatrix<Container2d>::value, Container2d>::type 
 
 
 template <typename T>
-blaze::CompressedMatrix<T> DaubechiesMat(size_t size, int degree = 4) { // Daubechies Transform matrix generator
+blaze::CompressedMatrix<T> DaubechiesMat(size_t size, int order = 4) { // Daubechies Transform matrix generator
 
-    std::vector<T> c (degree);
-    c[0] = (1+sqrt(3))/(4*sqrt(2)); // TODO replace hardcode with coeff computation procedure
-    c[1] = (3+sqrt(3))/(4*sqrt(2));
-    c[2] = (3-sqrt(3))/(4*sqrt(2));
-    c[3] = (1-sqrt(3))/(4*sqrt(2));
+    assert(order % 2 == 0);
+
+    std::vector<T> c (order);
+    //c[0] = (1+sqrt(3))/(4*sqrt(2)); // D4
+    //c[1] = (3+sqrt(3))/(4*sqrt(2));
+    //c[2] = (3-sqrt(3))/(4*sqrt(2));
+    //c[3] = (1-sqrt(3))/(4*sqrt(2));
+    T coeff = 2/sqrt(2);
+    c = dbwavf<std::vector<T>>(order/2, coeff);
+    for (size_t i = 0; i < c.size(); ++i) {
+        c[i] = c[i]*coeff;
+    }
 
     auto mat = blaze::CompressedMatrix<T>(size, size, 0);
     size_t split_size = size/2;
@@ -741,7 +749,7 @@ blaze::CompressedMatrix<T> DaubechiesMat(size_t size, int degree = 4) { // Daube
         int sign = 1;
         for (size_t ci = 0; ci < c.size(); ++ci) {
             mat(i, (i*2 + ci) % size) = c[ci];
-            mat(i + split_size, (i*2 + ci) % size) = c[degree - 1 - ci]*sign;
+            mat(i + split_size, (i*2 + ci) % size) = c[order - 1 - ci]*sign;
             sign *= -1;
         }
     }
