@@ -773,8 +773,8 @@ dwt2s(Container2d const & x, Container2ds const & dmat_w, Container2ds const & d
 
     using El = typename Container2d::ElementType; // now we support only Blaze matrices, TODO add type traits, generalize!!
 
-    Container2ds intermediate (x.rows(), x.columns());
-    Container2ds out (x.rows(), x.columns());
+    Container2d intermediate (x.rows(), x.columns());
+    Container2d out (x.rows(), x.columns());
 
     for (size_t row_idx = 0; row_idx<x.rows(); ++row_idx) { // split by rows
         blaze::DynamicVector<El, blaze::rowVector> curr_row = blaze::row(x, row_idx);
