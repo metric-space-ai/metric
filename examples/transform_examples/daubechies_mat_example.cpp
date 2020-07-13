@@ -5,6 +5,9 @@
 //#include "../../modules/transform.hpp"
 #include "modules/transform/wavelet.hpp"
 
+#include "assets/helpers.cpp"
+#include "modules/utils/visualizer.hpp"
+
 
 int main() {
 
@@ -56,6 +59,26 @@ int main() {
 
     std::cout << "low-low subband of decomposed image: \n" << std::get<0>(encoded_img_tuple) << "\n";
     std::cout << "restored image: \n" << decoded_img_2 << "\n";
+
+
+    {
+        // DWT periodizided example
+
+        auto cm_b = read_csv_blaze<double>("assets/cameraman.csv", ",");
+
+        auto db4_w = wavelet::DaubechiesMat<double>(cm_b.columns(), 6); // transform matrix for ROWS of approptiate size (as width of the image)
+        auto db4_h = wavelet::DaubechiesMat<double>(cm_b.rows(), 6); // for COLUMNS (image height)
+        blaze::DynamicMatrix<double> db4_w_t = blaze::trans(db4_w); // transposed matrices for inverse trancform
+        blaze::DynamicMatrix<double> db4_h_t = blaze::trans(db4_h);
+
+        auto cm_splitted_periodized = wavelet::dwt2s(cm_b, db4_w, db4_h);
+        auto cm_decoded_periodized = wavelet::dwt2s(cm_splitted_periodized, db4_w_t, db4_h_t);
+
+        mat2bmp::blaze2bmp(cm_splitted_periodized/255, "cm_splited_per.bmp");
+        mat2bmp::blaze2bmp(cm_decoded_periodized/255, "cm_restored_per.bmp");
+
+
+    }
 
 
     return 0;
