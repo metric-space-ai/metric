@@ -25,12 +25,13 @@ def test_ok():
         [8, 0, 0],
     ])
 
-    koc = KOC(graph=Grid6(best_w_grid_size, best_h_grid_size),
+    koc = KOC(samples=dataset, 
+			  graph=Grid6(best_w_grid_size, best_h_grid_size),
+			  num_clusters=5,
               anomaly_sigma=anomaly_threshold,
               start_learn_rate=0.5,
               finish_learn_rate=0.0,
               iterations=100)
-    koc.train(dataset, 5)
 
     anomaly1 = koc.check_if_anomaly(samples=dataset)
     anomaly2 = koc.check_if_anomaly(samples=dataset)
@@ -64,10 +65,11 @@ def test_different_templates():
     ])
 
     for metric, graph in itertools.product(metrics, graphs):
-        koc = KOC(graph=graph,
-                  metric=metric)
+        koc = KOC(samples=dataset, 
+				  graph=graph,
+                  metric=metric, 
+				  num_clusters=5)
         print('constructed KOC {} with {} {}'.format(koc, metric, graph))
-        koc.train(dataset, 5)
 
         koc.check_if_anomaly(samples=dataset)
         indexes, distances = koc.top_outliers(dataset)
