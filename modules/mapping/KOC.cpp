@@ -65,7 +65,7 @@ bool KOC<RecType, Graph, Metric, Distribution>::check_if_anomaly(const RecType& 
     auto reduced = som.encode(sample);
     auto bmu = som.BMU(sample);
     // if closest distance more then max closest distance level then it is anomaly
-    return reduced[bmu] > nodes_std_deviations[bmu] * anomaly_sigma;
+    return reduced[bmu] - node_means[bmu] > nodes_std_deviations[bmu] * anomaly_sigma;
 }
 
 
@@ -147,6 +147,7 @@ void KOC<RecType, Graph, Metric, Distribution>::calculate_std_deviations_for_nod
 
     std::vector<int> closest_distances(num_nodes, 0);
     std::vector<T> square_distances_sum(num_nodes, 0);
+    node_means = std::vector<T>(num_nodes);
     for (size_t i = 0; i < sampleSize; i++)
     {
         size_t sample_idx = randomized_samples[i];
@@ -155,8 +156,25 @@ void KOC<RecType, Graph, Metric, Distribution>::calculate_std_deviations_for_nod
         auto reduced = som.encode(*sample);
         auto bmu = som.BMU(*sample);
 
-        square_distances_sum[bmu] += reduced[bmu] * reduced[bmu];
+        node_means[bmu] += reduced[bmu];
         closest_distances[bmu]++;
+    }
+	for (size_t i = 0; i < num_nodes; i++)
+	{
+		if (closest_distances[i] > 0)
+		{
+			node_means[i] /= closest_distances[i];
+		}
+	}
+    for (size_t i = 0; i < sampleSize; i++)
+    {
+        size_t sample_idx = randomized_samples[i];
+
+        auto sample = next(samples.begin(), sample_idx);
+        auto reduced = som.encode(*sample);
+        auto bmu = som.BMU(*sample);
+
+        square_distances_sum[bmu] += (reduced[bmu] - node_means[bmu]) * (reduced[bmu] - node_means[bmu]);
     }
 
     nodes_std_deviations = std::vector<T>(num_nodes);

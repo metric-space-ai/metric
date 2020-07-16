@@ -270,6 +270,7 @@ private:
     std::vector<int> clusters_counts;
 
     std::vector<T> nodes_std_deviations;
+	std::vector<T> node_means;
 
     Metric metric;
     SOM<RecType, Graph, metric::Euclidean<double>, Distribution> som;
