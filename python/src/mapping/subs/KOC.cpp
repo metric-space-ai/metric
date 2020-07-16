@@ -29,9 +29,9 @@ auto create_KOC(
     std::optional<double> nbh_start_size = std::nullopt,
     double nbh_range_decay = 2.0,
     std::optional<long long> random_seed = std::nullopt
-) -> metric::KOC_details::KOC<recType, Graph, Metric, Distribution>
+) -> metric::KOC<recType, Graph, Metric, Distribution>
 {
-    return metric::KOC_details::KOC<recType, Graph, Metric, Distribution>(
+    return metric::KOC<recType, Graph, Metric, Distribution>(
         graph,
         metric,
         anomaly_sigma,
@@ -48,9 +48,8 @@ auto create_KOC(
 
 template <typename Record, class Graph, class Metric, class Distribution = std::normal_distribution<double>>
 void wrap_metric_KOC(py::module& m) {
-    using Factory = metric::KOC_factory<Record, Graph, Metric, Distribution>;
-    using Class = typename Factory::KOC;
-    using value_type = typename Factory::T;
+    using Class = metric::KOC<Record, Graph, Metric, Distribution>;
+    using value_type = typename Class::T;
 
     // KOC factory
     m.def("KOC", &create_KOC<Record, Graph, Metric, Distribution>,
