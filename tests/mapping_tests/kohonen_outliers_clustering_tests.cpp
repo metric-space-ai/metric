@@ -58,8 +58,7 @@ BOOST_AUTO_TEST_CASE(Main) {
 	double sigma = 1.5;
 	double random_seed = 777;
 		
-	metric::KOC_factory<Record, metric::Grid4> simple_koc_factory(best_w_grid_size, best_h_grid_size, sigma, 0.5, 0.0, 300, -1, 1, 2, 0.5, random_seed);    
-	auto simple_koc = simple_koc_factory(dataset, num_clusters); 
+	metric::KOC<Record, metric::Grid4> simple_koc(dataset, best_w_grid_size, best_h_grid_size, num_clusters, sigma, 0.5, 0.0, 300, -1, 1, 2, 0.5, random_seed);    
 
 	// original dataset
 
@@ -149,8 +148,7 @@ BOOST_AUTO_TEST_CASE(Empty) {
 	
 	std::vector<Record> empty_set;
 			
-	metric::KOC_factory<Record, metric::Grid4> koc_factory_1(best_w_grid_size, best_h_grid_size, sigma, 0.5, 0.0, 300, -1, 1, 2, 0.5, random_seed);    
-	auto koc_1 = koc_factory_1(dataset, num_clusters); 
+	metric::KOC<Record, metric::Grid4> koc_1(dataset, best_w_grid_size, best_h_grid_size, num_clusters, sigma, 0.5, 0.0, 300, -1, 1, 2, 0.5, random_seed); 
 
 	auto anomalies = koc_1.check_if_anomaly(empty_set);
 	// all should be ok, but zero sized result
