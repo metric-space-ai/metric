@@ -19,9 +19,11 @@ namespace py = pybind11;
 
 template <typename recType, typename Graph, typename Metric, typename Distribution>
 auto create_KOC(
+	std::vector<recType>& samples,
     Graph graph,
     Metric metric,
     Distribution distribution,
+	int num_clusters,
     double anomaly_sigma = 1.0,
     double start_learn_rate = 0.8,
     double finish_learn_rate = 0.0,
@@ -32,8 +34,10 @@ auto create_KOC(
 ) -> metric::KOC<recType, Graph, Metric, Distribution>
 {
     return metric::KOC<recType, Graph, Metric, Distribution>(
+		samples,
         graph,
         metric,
+		num_clusters,
         anomaly_sigma,
         start_learn_rate,
         finish_learn_rate,
@@ -50,11 +54,13 @@ template <typename Record, class Graph, class Metric, class Distribution = std::
 void wrap_metric_KOC(py::module& m) {
     using Class = metric::KOC<Record, Graph, Metric, Distribution>;
 
-    // KOC factory
+    // KOC
     m.def("KOC", &create_KOC<Record, Graph, Metric, Distribution>,
+        py::arg("samples"),
         py::arg("graph"),
         py::arg("metric"),
         py::arg("distribution"),
+        py::arg("num_clusters"),
         py::arg("anomaly_sigma") = 1.0,
         py::arg("start_learn_rate") = 0.8,
         py::arg("finish_learn_rate") = 0.0,
