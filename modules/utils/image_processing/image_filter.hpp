@@ -14,6 +14,7 @@
 #include <cmath>
 #include "../../../3rdparty/blaze/Math.h"
 
+
 /**
  * Module of image filters based on 2 convolution.
  *
@@ -391,7 +392,7 @@ namespace metric {
 		 * @param kernel the kernel to convolute
 		 * @return
 		 */
-		blaze::DynamicMatrix<double> imgcov2(const blaze::DynamicMatrix<double> &input, const FilterKernel &kernel);
+		static blaze::DynamicMatrix<double> imgcov2(const blaze::DynamicMatrix<double> &input, const FilterKernel &kernel);
 
 
 		/**

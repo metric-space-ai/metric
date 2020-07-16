@@ -8,13 +8,14 @@ Copyright (c) 2019 Panda Team
 #ifndef _METRIC_DISTANCE_K_RANDOM_ENTROPY_CPP
 #define _METRIC_DISTANCE_K_RANDOM_ENTROPY_CPP
 
-#include "../../modules/utils/type_traits.hpp"
+//#include "../../modules/utils/type_traits.hpp"
 #include "../../modules/space/tree.hpp"
 #include "estimator_helpers.hpp"
 #include "epmgp.hpp"
 
 #include <cmath>
 #include <vector>
+#include <limits>
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -291,7 +292,7 @@ double digamma(double x)
 {
   double result;
   static const double
-          neginf = -1.0/0.0,
+          neginf = -std::numeric_limits<double>::infinity(),
           c = 12,
           s = 1e-6,
           d1 = -0.57721566490153286,
@@ -306,7 +307,7 @@ double digamma(double x)
     //	  s10 = 3617/8160;
   /* Illegal arguments */
   if((x == neginf) || std::isnan(x)) {
-    return 0.0/0.0;
+    return -std::numeric_limits<double>::infinity();
   }
   /* Singularities */
   if((x <= 0) && (floor(x) == x)) {
@@ -434,6 +435,99 @@ double estimate(
 }
 
 
+
+template <typename Container, typename Functor>
+double estimate(
+    const Container& a,
+    const Container& b,
+    const Functor& f,
+    const size_t sampleSize,
+    const double threshold,
+    size_t maxIterations
+)
+{
+    using T = type_traits::underlying_type_t<Container>;
+    using V = type_traits::index_value_type_t<Container>;
+
+    assert(a.size() == b.size());
+
+    const size_t dataSize = a.size();
+
+    /* Update maxIterations */
+    if (maxIterations == 0) {
+        maxIterations = dataSize / sampleSize;
+    }
+
+    if (maxIterations > dataSize / sampleSize) {
+        maxIterations = dataSize / sampleSize;
+    }
+
+    if (maxIterations < 1) {
+        return f(a, b);
+    }
+
+    /* Create shuffle indexes */
+    std::vector<size_t> indexes(dataSize);
+    std::iota(indexes.begin(), indexes.end(), 0);
+
+    auto rng = std::default_random_engine();
+    std::shuffle(indexes.begin(), indexes.end(), rng);
+
+    /* Create vector container for fast random access */
+    const std::vector<V> vectorA(a.begin(), a.end());
+    const std::vector<V> vectorB(b.begin(), b.end());
+
+    /* Create samples */
+    std::vector<V> sampleA;
+    std::vector<V> sampleB;
+    sampleA.reserve(sampleSize);
+    sampleB.reserve(sampleSize);
+
+    std::vector<double> mgcValues;
+    double mu = 0;
+    for (auto i = 1; i <= maxIterations; ++i) {
+        size_t start = (i - 1) * sampleSize;
+        size_t end = std::min(i * sampleSize - 1, dataSize - 1);
+
+        /* Create samples */
+        sampleA.clear();
+        sampleB.clear();
+
+        for (auto j = start; j < end; ++j) {
+            sampleA.push_back(vectorA[indexes[j]]);
+            sampleB.push_back(vectorB[indexes[j]]);
+        }
+
+        /* Get sample mgc value */
+        double mgc = f(sampleA, sampleB);
+        mgcValues.push_back(mgc);
+
+        std::sort(mgcValues.begin(), mgcValues.end());
+
+        const size_t n = mgcValues.size();
+        const auto p0 = linspace(0.5 / n, 1 - 0.5 / n, n);
+
+        mu = mean(mgcValues);
+        double sigma = variance(mgcValues, mu);
+
+        const std::vector<double> synth = icdf(p0, mu, sigma);
+        std::vector<double> diff;
+        diff.reserve(n);
+        for (auto i = 0; i < n; ++i) {
+            diff.push_back(mgcValues[i] - synth[i]);
+        }
+
+        auto convergence = peak2ems(diff) / n;
+
+        if (convergence < threshold) {
+            return mu;
+        }
+    }
+
+    return mu;
+}
+
+
 } // namespace entropy_details
 
 
@@ -445,8 +539,9 @@ double estimate(
 // averaged entropy estimation: code COPIED from mgc.*pp with only mgc replaced with entropy, TODO refactor to avoid code dubbing
 template <typename RecType, typename Metric>
 template <typename Container>
-double EntropySimple<RecType, Metric>::operator()(
+double EntropySimple<RecType, Metric>::operator()( // non-kpN version, DEPRECATED
         const Container& data
+        //bool avoid_repeated
 ) const
 {
     using T = type_traits::underlying_type_t<Container>;
@@ -458,20 +553,24 @@ double EntropySimple<RecType, Metric>::operator()(
     if (data.size() < k + 1)
         throw std::invalid_argument("number of points in dataset must be larger than k");
 
-    double N = data.size();
     double d = data[0].size();
 
-    //add_noise(data); // TODO test
-    metric::Tree<V, Metric> tree(data, -1, metric);
+    //add_noise(data);
 
     double entropyEstimate = 0;
     double log_sum = 0;
 
-    for (std::size_t i = 0; i < N; i++) {
+    metric::Tree<V, Metric> tree(data[0], -1, metric);
+    for (std::size_t i = 1; i < data.size(); ++i) {
+        tree.insert_if(data[i], std::numeric_limits<T>::epsilon());
+    }
+    auto n = tree.size();
+    for (std::size_t i = 0; i < n; i++) {
         auto res = tree.knn(data[i], k + 1);
         entropyEstimate += std::log(res.back().second);
     }
-    entropyEstimate = entropyEstimate * d / (double)N; // mean log * d
+    double N = (double)n;
+    entropyEstimate = entropyEstimate * d / N; // mean log * d
     //entropyEstimate += boost::math::digamma(N) - boost::math::digamma(k) + d*std::log(2.0);
     entropyEstimate += entropy_details::digamma(N) - entropy_details::digamma(k) + d*std::log(2.0);
 
@@ -615,6 +714,185 @@ double Entropy<RecType, Metric>::estimate(
 }
 
 
+
+
+// --------------------------- VMixing
+
+
+
+template <typename RecType, typename Metric>
+template <typename C>
+typename std::enable_if_t<!type_traits::is_container_of_integrals_v<C>, type_traits::underlying_type_t<C>>
+VMixing_simple<RecType, Metric>::operator()(const C& Xc, const C& Yc) const { // non-kpN version, DEPRECATED
+
+    using T = type_traits::underlying_type_t<C>;
+
+    auto N = Xc.size();
+
+    if (N < k + 1 || Yc.size() < k + 1)
+        throw std::invalid_argument("number of points in dataset must be larger than k");
+
+    std::vector<std::vector<T>> X;
+    for (const auto& e: Xc)
+        X.push_back(std::vector<T>(std::begin(e), std::end(e))); // TODO optimize
+
+    std::vector<std::vector<T>> Y;
+    for (const auto& e: Yc)
+        Y.push_back(std::vector<T>(std::begin(e), std::end(e)));
+
+    std::vector<std::vector<T>> XY; // concatenation instead of combine(X, Y);
+    XY.reserve(X.size() + Y.size());
+    XY.insert(XY.end(), X.begin(), X.end());
+    XY.insert(XY.end(), Y.begin(), Y.end());
+
+    auto e = EntropySimple<void, Metric>(metric, k);
+    auto result = 2 * e(XY) - e(Xc) - e(Yc);
+    return result;
+}
+
+
+template <typename RecType, typename Metric>
+template <typename C>
+double VMixing_simple<RecType, Metric>::estimate(
+        const C& a,
+        const C& b,
+        const size_t sampleSize,
+        const double threshold,
+        size_t maxIterations
+) const
+{
+    return entropy_details::estimate(a, b, *this, sampleSize, threshold, maxIterations);
+}
+
+
+
+template <typename RecType, typename Metric>
+template <typename C>
+typename std::enable_if_t<!type_traits::is_container_of_integrals_v<C>, type_traits::underlying_type_t<C>>
+VMixing<RecType, Metric>::operator()(const C& Xc, const C& Yc) const {
+
+    using T = type_traits::underlying_type_t<C>;
+
+    auto N = Xc.size();
+
+    if (N < k + 1 || Yc.size() < k + 1)
+        throw std::invalid_argument("number of points in dataset must be larger than k");
+
+    std::vector<std::vector<T>> X;
+    for (const auto& e: Xc)
+        X.push_back(std::vector<T>(std::begin(e), std::end(e))); // TODO optimize
+
+    std::vector<std::vector<T>> Y;
+    for (const auto& e: Yc)
+        Y.push_back(std::vector<T>(std::begin(e), std::end(e)));
+
+    std::vector<std::vector<T>> XY; // concatenation instead of combine(X, Y);
+    XY.reserve(X.size() + Y.size());
+    XY.insert(XY.end(), X.begin(), X.end());
+    XY.insert(XY.end(), Y.begin(), Y.end());
+
+    auto e = Entropy<void, Metric>(metric, k, p);
+    auto result = 2 * e(XY) - e(Xc) - e(Yc);
+    return result;
+}
+
+
+template <typename RecType, typename Metric>
+template <typename C>
+double VMixing<RecType, Metric>::estimate(
+        const C& a,
+        const C& b,
+        const size_t sampleSize,
+        const double threshold,
+        size_t maxIterations
+) const
+{
+    return entropy_details::estimate(a, b, *this, sampleSize, threshold, maxIterations);
+}
+
+
+
+/* // VOI code, works and may be enabled
+namespace voi_details {
+
+template <typename C1, typename C2, typename T=type_traits::underlying_type_t<C1>>
+std::vector<std::vector<T>> combine(const C1& X, const C2& Y)
+{
+    std::size_t N = X.size();
+    std::size_t dx = X[0].size();
+    std::size_t dy = Y[0].size();
+    std::vector<std::vector<T>> XY(N);
+    for (std::size_t i = 0; i < N; i++) {
+        XY[i].resize(dx + dy);
+        std::size_t k = 0;
+        for (std::size_t j = 0; j < dx; j++, k++) {
+            XY[i][k] = X[i][j];
+        }
+        for (std::size_t j = 0; j < dy; j++, k++) {
+            XY[i][k] = Y[i][j];
+        }
+    }
+    return XY;
+}
+
+}
+
+
+template <typename C, typename Metric>
+typename std::enable_if_t<!type_traits::is_container_of_integrals_v<C>, type_traits::underlying_type_t<C>>
+VOI_simple(const C& Xc, const C& Yc, int k)
+{
+    using T = type_traits::underlying_type_t<C>;
+
+    auto N = Xc.size();
+
+    if (N < k + 1 || Yc.size() < k + 1)
+        throw std::invalid_argument("number of points in dataset must be larger than k");
+
+    std::vector<std::vector<T>> X;
+    for (const auto& e: Xc)
+        X.push_back(std::vector<T>(std::begin(e), std::end(e))); // TODO optimize
+
+    std::vector<std::vector<T>> Y;
+    for (const auto& e: Yc)
+        Y.push_back(std::vector<T>(std::begin(e), std::end(e)));
+
+    std::vector<std::vector<T>> XY = voi_details::combine(X, Y);
+
+    auto e = EntropySimple<void, Metric>(Metric(), k);
+    auto result = 2 * e(XY) - e(Xc) - e(Yc);
+    return result;
+}
+
+
+
+template <typename C, typename Metric>
+typename std::enable_if_t<!type_traits::is_container_of_integrals_v<C>, type_traits::underlying_type_t<C>>
+VOI(const C& Xc, const C& Yc, int k, int p)
+{
+    using T = type_traits::underlying_type_t<C>;
+
+    auto N = Xc.size();
+
+    if (N < k + 1 || Yc.size() < k + 1)
+        throw std::invalid_argument("number of points in dataset must be larger than k");
+
+    std::vector<std::vector<T>> X;
+    for (const auto& e: Xc)
+        X.push_back(std::vector<T>(std::begin(e), std::end(e))); // TODO optimize
+
+    std::vector<std::vector<T>> Y;
+    for (const auto& e: Yc)
+        Y.push_back(std::vector<T>(std::begin(e), std::end(e)));
+
+    std::vector<std::vector<T>> XY = voi_details::combine(X, Y);
+
+    auto e = Entropy<void, Metric>(Metric(), k, p);
+    auto result = 2 * e(XY) - e(Xc) - e(Yc);
+    return result;
+}
+
+// */
 
 
 } // namespace metric

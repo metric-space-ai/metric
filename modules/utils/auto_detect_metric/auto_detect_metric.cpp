@@ -120,7 +120,7 @@ namespace metric {
 		{
 			som.train(dataset);
 		}
-		metric::Kohonen<double, Record, Graph, Metric> Kohonen_object(som);
+		metric::Kohonen<double, Record, Graph, Metric> Kohonen_object(som, dataset);
 			
 		auto iterations = 20;
 		if (iterations > dataset.size())

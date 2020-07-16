@@ -26,14 +26,14 @@ class MaxPooling: public Layer<Scalar>
 		using Matrix = blaze::DynamicMatrix<Scalar>;
 		using IntegerMatrix = blaze::DynamicMatrix<int>;
 
-		const int inputHeight;
-        const int inputWidth;
-        const int inputChannels;
-        const int poolingHeight;
-        const int poolingWidth;
+		const size_t inputHeight;
+        const size_t inputWidth;
+        const size_t inputChannels;
+        const size_t poolingHeight;
+        const size_t poolingWidth;
 
-        const int outputHeight;
-        const int outputWidth;
+        const size_t outputHeight;
+        const size_t outputWidth;
 
         IntegerMatrix m_loc;             // Record the locations of maximums
         Matrix m_z;                  // Max pooling results
@@ -53,8 +53,8 @@ class MaxPooling: public Layer<Scalar>
         /// \param poolingWidth  Width of the pooling window.
         /// \param poolingHeight Height of the pooling window.
         ///
-        MaxPooling(const int inputWidth, const int inputHeight, const int inputChannels,
-                   const int poolingWidth, const int poolingHeight) :
+        MaxPooling(const size_t inputWidth, const size_t inputHeight, const size_t inputChannels,
+                   const size_t poolingWidth, const size_t poolingHeight) :
 		        Layer<Scalar>(inputWidth * inputHeight * inputChannels,
 		                      (inputWidth / poolingWidth) * (inputHeight / poolingHeight) * inputChannels),
 		        inputHeight(inputHeight), inputWidth(inputWidth), inputChannels(inputChannels),
@@ -71,25 +71,25 @@ class MaxPooling: public Layer<Scalar>
         void forward(const Matrix& prev_layer_data)
         {
             // Each row is an observation
-            const int nobs = prev_layer_data.rows();
+            const size_t nobs = prev_layer_data.rows();
             m_loc.resize(nobs, this->outputSize);
             m_z.resize(nobs, this->outputSize);
 
             // Use m_loc to store the address of each pooling block relative to the beginning of the data
             int* loc_data = m_loc.data();
-            const int channel_end = blaze::size(prev_layer_data);
-            const int channel_stride = inputHeight * inputWidth;
-            const int col_end_gap = inputHeight * poolingWidth * outputWidth;
-            const int col_stride = inputHeight * poolingWidth;
-            const int row_end_gap = outputHeight * poolingHeight;
+            const size_t channel_end = blaze::size(prev_layer_data);
+            const size_t channel_stride = inputHeight * inputWidth;
+            const size_t col_end_gap = inputHeight * poolingWidth * outputWidth;
+            const size_t col_stride = inputHeight * poolingWidth;
+            const size_t row_end_gap = outputHeight * poolingHeight;
 
-	        for (int channel_start = 0; channel_start < channel_end; channel_start += channel_stride) {
-		        const int col_end = channel_start + col_end_gap;
+	        for (size_t channel_start = 0; channel_start < channel_end; channel_start += channel_stride) {
+		        const size_t col_end = channel_start + col_end_gap;
 
-		        for (int col_start = channel_start; col_start < col_end; col_start += col_stride) {
-			        const int row_end = col_start + row_end_gap;
+		        for (size_t col_start = channel_start; col_start < col_end; col_start += col_stride) {
+			        const size_t row_end = col_start + row_end_gap;
 
-			        for (int row_start = col_start; row_start < row_end; row_start += poolingHeight, loc_data++) {
+			        for (size_t row_start = col_start; row_start < row_end; row_start += poolingHeight, loc_data++) {
 				        *loc_data = row_start;
 			        }
 		        }
@@ -102,7 +102,7 @@ class MaxPooling: public Layer<Scalar>
             const Scalar* src = prev_layer_data.data();
 
 	        for (; loc_data < loc_end; loc_data++, z_data++) {
-		        const int offset = *loc_data;
+		        const size_t offset = *loc_data;
 		        *z_data = internal::find_block_max(src + offset, poolingHeight, poolingWidth,
 		                                           inputHeight, *loc_data);
 		        *loc_data += offset;
@@ -122,7 +122,7 @@ class MaxPooling: public Layer<Scalar>
         // next_layer_data: getOutputSize x nobs
         void backprop(const Matrix& prev_layer_data, const Matrix& next_layer_data)
         {
-            const int nobs = prev_layer_data.rows();
+            const size_t nobs = prev_layer_data.rows();
             // After forward stage, m_z contains z = max_pooling(in)
             // Now we need to calculate d(L) / d(z) = [d(a) / d(z)] * [d(L) / d(a)]
             // d(L) / d(z) is computed in the next layer, contained in next_layer_data
@@ -136,12 +136,13 @@ class MaxPooling: public Layer<Scalar>
             m_din.resize(nobs, this->inputSize);
             m_din = 0;
 
-            const int dLz_size = blaze::size(dLz);
+            const size_t dLz_size = blaze::size(dLz);
             const Scalar* dLz_data = dLz.data();
             const int* loc_data = m_loc.data();
             Scalar* din_data = m_din.data();
 
-	        for (int i = 0; i < dLz_size; i++) {
+
+            for (size_t i = 0; i < dLz_size; i++) {
 		        din_data[loc_data[i]] += dLz_data[i];
 	        }
         }

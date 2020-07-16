@@ -8,11 +8,11 @@ def main():
 
     a = numpy.float_([vt0, vt1, vt2, vt0])
     b = numpy.float_([vt0, vt1, vt3])
-    print('Sorensen Distance result: ', Sorensen(a, b))
+    print('Sorensen Distance result: ', Sorensen()(a, b))
 
     a = numpy.float_([vt0, vt1, vt2, vt0])
     b = numpy.float_([vt0, vt1, vt3, vt0])
-    print('Sorensen Distance result: ', Sorensen(a, b))
+    print('Sorensen Distance result: ', Sorensen()(a, b))
 
 
 sys.exit(main())

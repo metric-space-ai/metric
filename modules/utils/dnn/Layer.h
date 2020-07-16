@@ -5,7 +5,9 @@
 #include <random>
 
 #include "../../../3rdparty/blaze/Math.h"
-#include "../../../3rdparty/json/json.hpp"
+#include "../../../3rdparty/nlohmann/json.hpp"
+
+#include "Initializer.h"
 
 #include "Optimizer.h"
 
@@ -30,9 +32,10 @@ class Layer
     public:
 		using Matrix = blaze::DynamicMatrix<Scalar>;
 
-		const int inputSize;  // Size of input units
-		const int outputSize; // Size of output units
+		size_t inputSize;  // Size of input units
+		size_t outputSize; // Size of output units
 
+		Layer() {};
 		///
         /// Constructor
         ///
@@ -41,7 +44,7 @@ class Layer
         /// \param outputSize Number of output units of this hidden layer. It must be
         ///                 equal to the number of input units of the next layer.
         ///
-        Layer(const int inputSize, const int outputSize) :
+        Layer(const size_t inputSize, const size_t outputSize) :
 		        inputSize(inputSize), outputSize(outputSize)
         {}
 
@@ -50,8 +53,7 @@ class Layer
         ///
         virtual ~Layer() {}
 
-        Layer(const nlohmann::json& json) : inputSize(json["inputSize"].get<int>()),
-                                                outputSize(json["outputSize"].get<int>())
+        Layer(const nlohmann::json& json)
         {}
 
 	virtual nlohmann::json toJson()
@@ -65,19 +67,23 @@ class Layer
 	///
 	/// Get the number of input units of this hidden layer.
         ///
-        int getInputSize() const
+        size_t getInputSize() const
         {
             return inputSize;
         }
         ///
         /// Get the number of output units of this hidden layer.
         ///
-        int getOutputSize() const
+        size_t getOutputSize() const
         {
             return outputSize;
         }
 
-        ///
+        virtual std::vector<size_t> getOutputShape() const = 0;
+
+        virtual void init(const std::map<std::string, std::shared_ptr<Initializer<Scalar>>> initializer) = 0;
+
+	///
         /// Initialize layer parameters using \f$N(\mu, \sigma^2)\f$ distribution
         ///
         /// \param mu    Mean of the normal distribution.

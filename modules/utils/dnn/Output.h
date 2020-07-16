@@ -6,9 +6,7 @@
 #include "../../../3rdparty/blaze/Math.h"
 
 
-namespace metric
-{
-namespace dnn
+namespace metric::dnn
 {
 
 
@@ -71,8 +69,7 @@ class Output
 };
 
 
-} // namespace dnn
-} // namespace metric
+} // namespace metric::dnn
 
 
 #endif /* OUTPUT_H_ */

@@ -8,6 +8,7 @@ namespace py = pybind11;
 void register_wrapper_datasets(py::module& m) {
     using Class = Datasets;
     auto dim = py::class_<Class>(m, "Datasets");
+    dim.def(py::init<>());
     dim.def("get_mnist", &Class::getMnist,
         py::arg("filename")
     );

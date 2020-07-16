@@ -1,12 +1,8 @@
 #ifndef CALLBACK_H_
 #define CALLBACK_H_
 
-//#include "Network.h"
 
-
-namespace metric
-{
-namespace dnn
+namespace metric::dnn
 {
 
 template <typename Scalar>
@@ -48,7 +44,11 @@ class Callback
 
         virtual ~Callback() {}
 
-        // Before training a mini-batch
+		virtual void preTrainingEpoch(const Network<Scalar> *net) {};
+
+		virtual void postTrainingEpoch(const Network<Scalar> *net) {};
+
+		// Before training a mini-batch
         virtual void preTrainingBatch(const Network<Scalar>* net, const Matrix& x,
                                       const Matrix& y) {}
         //virtual void preTrainingBatch(const Network<Scalar>* net, const Matrix& x,
@@ -62,8 +62,7 @@ class Callback
 };
 
 
-} // namespace dnn
-} // namespace metric
+} // namespace metric::dnn
 
 
 #endif /* CALLBACK_H_ */

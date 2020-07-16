@@ -6,9 +6,8 @@ find_package(Boost)
 
 project(distance_tests)
 
-set(Boost_DEBUG on)  
-set(Boost_USE_STATIC_LIBS ON)
 find_package(Boost COMPONENTS unit_test_framework REQUIRED)
+find_package(LAPACK)
 
 include_directories(
 	${PROJECT_SOURCE_DIR} 
@@ -28,10 +27,9 @@ if(UNIX)
     find_package(Threads REQUIRED)
 endif(UNIX)
 
-
 AUX_SOURCE_DIRECTORY(. TEST_SRCS)
 #Run through each source
-foreach(testSrc ${TEST_SRCS})
+foreach(testSrc ${TEST_SRCS}) 
 
     #Extract the filename without an extension (NAME_WE)
     get_filename_component(testName ${testSrc} NAME_WE)
@@ -51,7 +49,7 @@ foreach(testSrc ${TEST_SRCS})
 	endif()
 	if(UNIX)
 		target_compile_options(${testName} PRIVATE -DBOOST_TEST_DYN_LINK)
-		target_link_libraries(${testName} Threads::Threads)
+		target_link_libraries(${testName} PRIVATE Threads::Threads)
 	endif(UNIX)
         #I like to move testing binaries into a testBin directory
 #        set_target_properties(${testName} PROPERTIES RUNTIME_OUTPUT_DIRECTORY  ${CMAKE_CURRENT_SOURCE_DIR})

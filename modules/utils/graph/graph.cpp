@@ -151,6 +151,15 @@ void Graph<WeightType, isDense, isSymmetric>::buildEdges(const std::vector<std::
 }
 
 template <typename WeightType, bool isDense, bool isSymmetric>
+void Graph<WeightType, isDense, isSymmetric>::updateEdges(const MatrixType &edgeMatrix)
+{
+    assert (matrix.rows() == edgeMatrix.rows());
+    assert (matrix.columns() == edgeMatrix.columns());
+	matrix = edgeMatrix;
+	matrix_changed_ = true;
+}
+
+template <typename WeightType, bool isDense, bool isSymmetric>
 template <typename T, bool denseFlag>
 typename std::enable_if_t<!std::is_same<T, bool>::value, std::vector<std::vector<size_t>>>
 Graph<WeightType, isDense, isSymmetric>::getNeighbours(const size_t index, const size_t maxDeep)
