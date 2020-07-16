@@ -49,7 +49,6 @@ auto create_KOC(
 template <typename Record, class Graph, class Metric, class Distribution = std::normal_distribution<double>>
 void wrap_metric_KOC(py::module& m) {
     using Class = metric::KOC<Record, Graph, Metric, Distribution>;
-    using value_type = typename Class::T;
 
     // KOC factory
     m.def("KOC", &create_KOC<Record, Graph, Metric, Distribution>,
