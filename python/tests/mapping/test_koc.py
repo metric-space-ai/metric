@@ -8,7 +8,7 @@ from metric.distance import Euclidean, EMD
 def test_ok():
     best_w_grid_size = 5
     best_h_grid_size = 4
-    anomaly_threshold = -0.5
+    anomaly_threshold = 1.5
 
     dataset = numpy.float_([
         [0, 0, 0],
