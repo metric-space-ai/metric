@@ -448,19 +448,19 @@ int main(int argc, char *argv[])
 
 	// test dataset	
 	
-	//std::cout << std::endl;
-	//std::cout << std::endl;
-	//std::cout << "test dataset:" << std::endl;
+	std::cout << std::endl;
+	std::cout << std::endl;
+	std::cout << "test dataset:" << std::endl;
 
-	//anomalies = simple_koc.check_if_anomaly(test_set);	
-	//std::cout << std::endl;
-	//std::cout << "anomalies:" << std::endl;
-	//vector_print(anomalies);
-	//
-	//assignments = simple_koc.assign_to_clusters(test_set);	
-	//std::cout << std::endl;
-	//std::cout << "assignments:" << std::endl;
-	//vector_print(assignments);
+	auto anomalies = simple_koc.check_if_anomaly(test_set);	
+	std::cout << std::endl;
+	std::cout << "anomalies:" << std::endl;
+	vector_print(anomalies);
+	
+	assignments = simple_koc.assign_to_clusters(test_set);	
+	std::cout << std::endl;
+	std::cout << "assignments:" << std::endl;
+	vector_print(assignments);
 
 	///
 	//

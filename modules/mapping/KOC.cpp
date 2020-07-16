@@ -256,12 +256,12 @@ KOC<RecType, Graph, Metric, Distribution>::KOC(
     const Graph& graph,
     const Metric& metric,
 	int num_clusters, 
-    double anomaly_sigma = 1.0,
-	int min_cluster_size = 1, 
-    double start_learn_rate = 0.8,
-    double finish_learn_rate = 0.0,
-    size_t iterations = 20,
-    Distribution distribution = Distribution(-1, 1)
+    double anomaly_sigma,
+	int min_cluster_size, 
+    double start_learn_rate,
+    double finish_learn_rate,
+    size_t iterations,
+    Distribution distribution
 )
     : 
 	som(
@@ -380,7 +380,7 @@ KOC<RecType, Graph, Metric, Distribution>::KOC(
     iterations(iterations),
     random_seed(std::chrono::system_clock::now().time_since_epoch().count())
 {
-	auto graph = Graph(nodesNumber);
+	auto graph = Graph(nodesWidth * nodesHeight);
 	auto distribution = Distribution(distribution_min, distribution_max);
 	auto neighborhood_start_size = std::sqrt(double(nodesWidth * nodesHeight));
 	auto neighborhood_range_decay = 2.0;
