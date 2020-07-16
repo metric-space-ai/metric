@@ -19,7 +19,7 @@ namespace py = pybind11;
 
 template <typename recType, typename Graph, typename Metric, typename Distribution>
 auto create_KOC(
-	std::vector<recType>& samples,
+	std::vector<recType> samples,
     Graph graph,
     Metric metric,
     Distribution distribution,
