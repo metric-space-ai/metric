@@ -422,7 +422,7 @@ class Conv2d: public Layer<Scalar>
 								if (*me == j) {
 									++me;
 								} else {
-									kdic(observation, j) += wice++->value;
+									kdic(observation, j) += wice++->value();
 								}
 							}
 						}
