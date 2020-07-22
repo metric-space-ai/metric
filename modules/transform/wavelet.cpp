@@ -758,6 +758,21 @@ blaze::CompressedMatrix<T> DaubechiesMat(size_t size, int order = 4) { // Daubec
 }
 
 
+template <typename T>
+blaze::CompressedMatrix<T> DaubechiesMat_e(size_t vector_size, size_t overall_size, int order = 4) { // Daubechies Transform matrix generator for serialized image
+
+    assert(overall_size % vector_size == 0);
+
+    auto mat = DaubechiesMat<T>(vector_size, order);
+    blaze::CompressedMatrix<T> out (overall_size, overall_size, 0);
+    int n_vectors = overall_size / vector_size;
+    for (size_t i = 0; i < n_vectors; ++i) {
+        blaze::submatrix(out, i*vector_size, i*vector_size, vector_size, vector_size) = mat;
+    }
+    return out;
+}
+
+
 
 template <typename Container2d, typename Container2ds>
 typename std::enable_if<

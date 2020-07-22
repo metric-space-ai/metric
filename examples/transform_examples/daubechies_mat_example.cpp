@@ -1,6 +1,7 @@
 
 //#include <vector>
 #include <iostream>
+#include <chrono>
 
 //#include "../../modules/transform.hpp"
 #include "modules/transform/wavelet.hpp"
@@ -85,15 +86,26 @@ int main() {
         auto cm_splitted_periodized_3 = wavelet::dwt2s(cm_splitted_periodized_2, db4_w, db4_h);
         auto cm_splitted_periodized_4 = wavelet::dwt2s(cm_splitted_periodized_3, db4_w, db4_h);
 
+        std::chrono::time_point<std::chrono::steady_clock, std::chrono::nanoseconds> t1, t2;
+        t1 = std::chrono::steady_clock::now();
         auto cm_decoded_periodized_cascade = wavelet::dwt2s(cm_splitted_periodized_4, db4_w_t, db4_h_t);
         cm_decoded_periodized_cascade = wavelet::dwt2s(cm_decoded_periodized_cascade, db4_w_t, db4_h_t);
         cm_decoded_periodized_cascade = wavelet::dwt2s(cm_decoded_periodized_cascade, db4_w_t, db4_h_t);
         cm_decoded_periodized_cascade = wavelet::dwt2s(cm_decoded_periodized_cascade, db4_w_t, db4_h_t);
+        t2 = std::chrono::steady_clock::now();
+        std::cout << "4x split time: " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000 << "\n";
 
         mat2bmp::blaze2bmp(cm_splitted_periodized_2/l_scale, "cm_splited_per_2.bmp");
         mat2bmp::blaze2bmp(cm_splitted_periodized_3/l_scale, "cm_splited_per_3.bmp");
         mat2bmp::blaze2bmp(cm_splitted_periodized_4/l_scale, "cm_splited_per_4.bmp");
         mat2bmp::blaze2bmp(cm_decoded_periodized_cascade/l_scale, "cm_restored_per_cascade.bmp");
+
+    }
+
+    {  // testing setialized version, TODO remove
+
+        auto dmat_n = wavelet::DaubechiesMat_e<double>(6, 24, 4);
+        std::cout << "dmat 10*6, d4: " << dmat_n << "\n";
 
     }
 
