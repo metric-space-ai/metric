@@ -64,10 +64,11 @@ int main() {
     {
         // DWT periodizided example
 
-        int DaubechiesOrder = 6; // SETUP HERE wavelet type (2 till 20 eve only)
-        int l_scale = 300; // SETUP HERE lum scaling in visualizer
+        int DaubechiesOrder = 6; //10; // SETUP HERE wavelet type (2 till 20 even only)
+        int l_scale = 300; //3000; // SETUP HERE lum scaling in visualizer
 
         auto cm_b = read_csv_blaze<double>("assets/cameraman.csv", ",");
+        //auto cm_b = read_csv_blaze<double>("assets/test.csv", ",");
 
         auto db4_w = wavelet::DaubechiesMat<double>(cm_b.columns(), DaubechiesOrder); // transform matrix for ROWS of approptiate size (as width of the image)
         auto db4_h = wavelet::DaubechiesMat<double>(cm_b.rows(), DaubechiesOrder); // for COLUMNS (image height)
