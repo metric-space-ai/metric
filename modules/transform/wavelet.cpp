@@ -786,7 +786,7 @@ dwt2s(Container2d const & x, Container2ds const & dmat_w, Container2ds const & d
     assert(dmat_w.rows() == x.columns());
     assert(dmat_h.rows() == x.rows());
 
-    using El = typename Container2d::ElementType; // now we support only Blaze matrices, TODO add type traits, generalize!!
+    using El = typename Container2d::ElementType; // now we support only Blaze matrices
 
     Container2d intermediate (x.rows(), x.columns());
     Container2d out (x.rows(), x.columns());
@@ -801,6 +801,46 @@ dwt2s(Container2d const & x, Container2ds const & dmat_w, Container2ds const & d
         blaze::DynamicVector<El> curr_col = blaze::column(intermediate, col_idx);
         blaze::DynamicVector<El> col_split = dmat_h*curr_col;
         blaze::column(out, col_idx) = col_split;
+    }
+
+    return out;
+}
+
+
+template <typename Container2d, typename Container2ds> // TODO complete!
+typename std::enable_if<
+ blaze::IsMatrix<Container2d>::value,
+ Container2d
+>::type
+dwt2s_e(Container2d const & x, Container2ds const & dmat_e_w, Container2ds const & dmat_e_h) { // whole image transform, no dividing by subbands
+
+    using El = typename Container2d::ElementType; // now we support only Blaze matrices
+
+    // TODO debug
+    blaze::DynamicMatrix<El, blaze::columnMajor> intermediate_cm;
+    {
+        blaze::DynamicVector<El> ser_rows (x.columns()*x.rows());
+        for (size_t i=0; i<x.rows(); ++i) {
+            blaze::subvector(ser_rows, i*x.columns(), x.columns()) = blaze::row(x, i);
+        }
+        blaze::DynamicVector<El> ser_intermed = dmat_e_w * ser_rows;
+        blaze::DynamicMatrix<El> intermediate (x.rows, x.columns);
+        for (size_t i=0; i<x.rows(); ++i) {
+            blaze::row(intermediate, i) = blaze::subvector(ser_intermed, i*x.columns(), x.columns());
+        }
+        intermediate_cm = intermediate;  // to column-major
+    }
+
+    Container2d out;
+    {
+        blaze::DynamicVector<El> ser_cols (x.columns()*x.rows());
+        for (size_t i=0; i<intermediate_cm.columns(); ++i) {
+            blaze::subvector(ser_cols, i*x.rows(), x.rowss()) = blaze::column(intermediate_cm, i);
+        }
+        blaze::DynamicVector<El> ser_intermed = dmat_e_h * ser_cols;
+        for (size_t i=0; i<intermediate_cm.columns(); ++i) {
+            blaze::column(out, i) = blaze::subvector(ser_intermed, i*x.rows(), x.rows()); // TODO check if efficient
+        }
     }
 
     return out;
