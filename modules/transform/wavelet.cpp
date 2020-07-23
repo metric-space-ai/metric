@@ -821,21 +821,21 @@ dwt2s_e(Container2d const & x, Container2ds const & dmat_e_w, Container2ds const
     {
         blaze::DynamicVector<El> ser_rows (x.columns()*x.rows());
         for (size_t i=0; i<x.rows(); ++i) {
-            blaze::subvector(ser_rows, i*x.columns(), x.columns()) = blaze::row(x, i);
+            blaze::subvector(ser_rows, i*x.columns(), x.columns()) = blaze::trans(blaze::row(x, i));
         }
         blaze::DynamicVector<El> ser_intermed = dmat_e_w * ser_rows;
-        blaze::DynamicMatrix<El> intermediate (x.rows, x.columns);
+        blaze::DynamicMatrix<El> intermediate (x.rows(), x.columns());
         for (size_t i=0; i<x.rows(); ++i) {
-            blaze::row(intermediate, i) = blaze::subvector(ser_intermed, i*x.columns(), x.columns());
+            blaze::row(intermediate, i) = blaze::trans(blaze::subvector(ser_intermed, i*x.columns(), x.columns()));
         }
         intermediate_cm = intermediate;  // to column-major
     }
 
-    Container2d out;
+    Container2d out (x.rows(), x.columns());
     {
         blaze::DynamicVector<El> ser_cols (x.columns()*x.rows());
         for (size_t i=0; i<intermediate_cm.columns(); ++i) {
-            blaze::subvector(ser_cols, i*x.rows(), x.rowss()) = blaze::column(intermediate_cm, i);
+            blaze::subvector(ser_cols, i*x.rows(), x.rows()) = blaze::column(intermediate_cm, i);
         }
         blaze::DynamicVector<El> ser_intermed = dmat_e_h * ser_cols;
         for (size_t i=0; i<intermediate_cm.columns(); ++i) {

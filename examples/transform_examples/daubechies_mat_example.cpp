@@ -109,42 +109,42 @@ int main() {
 
         // TODO make the following work
 
-//        // DWT periodizided example
+        // DWT periodizided example
 
-//        int DaubechiesOrder = 6; //10; // SETUP HERE wavelet type (2 till 20 even only)
-//        int l_scale = 300; //3000; // SETUP HERE lum scaling in visualizer
+        int DaubechiesOrder = 6; //10; // SETUP HERE wavelet type (2 till 20 even only)
+        int l_scale = 300; //3000; // SETUP HERE lum scaling in visualizer
 
-//        auto cm_b = read_csv_blaze<double>("assets/cameraman.csv", ",");
-//        //auto cm_b = read_csv_blaze<double>("assets/test.csv", ",");
+        auto cm_b = read_csv_blaze<double>("assets/cameraman.csv", ",");
+        //auto cm_b = read_csv_blaze<double>("assets/test.csv", ",");
 
-//        auto db4_w = wavelet::DaubechiesMat_e<double>(cm_b.columns(), cm_b.columns()*cm_b.rows(), DaubechiesOrder); // transform matrix for ROWS of approptiate size (as width of the image)
-//        auto db4_h = wavelet::DaubechiesMat_e<double>(cm_b.rows(), cm_b.columns()*cm_b.rows(), DaubechiesOrder); // for COLUMNS (image height)
-//        blaze::CompressedMatrix<double> db4_w_t = blaze::trans(db4_w); // transposed matrices for inverse trancform
-//        blaze::CompressedMatrix<double> db4_h_t = blaze::trans(db4_h);
+        auto db4_w = wavelet::DaubechiesMat_e<double>(cm_b.columns(), cm_b.columns()*cm_b.rows(), DaubechiesOrder); // transform matrix for ROWS of approptiate size (as width of the image)
+        auto db4_h = wavelet::DaubechiesMat_e<double>(cm_b.rows(), cm_b.columns()*cm_b.rows(), DaubechiesOrder); // for COLUMNS (image height)
+        blaze::CompressedMatrix<double> db4_w_t = blaze::trans(db4_w); // transposed matrices for inverse trancform
+        blaze::CompressedMatrix<double> db4_h_t = blaze::trans(db4_h);
 
-//        auto cm_splitted_periodized = wavelet::dwt2s_e(cm_b, db4_w, db4_h);
-//        auto cm_decoded_periodized = wavelet::dwt2s_e(cm_splitted_periodized, db4_w_t, db4_h_t);
+        auto cm_splitted_periodized = wavelet::dwt2s_e(cm_b, db4_w, db4_h);
+        auto cm_decoded_periodized = wavelet::dwt2s_e(cm_splitted_periodized, db4_w_t, db4_h_t);
 
-//        mat2bmp::blaze2bmp(cm_splitted_periodized/l_scale, "cm_splited_per_e.bmp");
-//        mat2bmp::blaze2bmp(cm_decoded_periodized/l_scale, "cm_restored_per_e.bmp");
+        mat2bmp::blaze2bmp(cm_splitted_periodized/l_scale, "cm_splited_per_e.bmp");
+        mat2bmp::blaze2bmp(cm_decoded_periodized/l_scale, "cm_restored_per_e.bmp");
 
-//        auto cm_splitted_periodized_2 = wavelet::dwt2s_e(cm_splitted_periodized, db4_w, db4_h);
-//        auto cm_splitted_periodized_3 = wavelet::dwt2s_e(cm_splitted_periodized_2, db4_w, db4_h);
-//        auto cm_splitted_periodized_4 = wavelet::dwt2s_e(cm_splitted_periodized_3, db4_w, db4_h);
+        auto cm_splitted_periodized_2 = wavelet::dwt2s_e(cm_splitted_periodized, db4_w, db4_h);
+        auto cm_splitted_periodized_3 = wavelet::dwt2s_e(cm_splitted_periodized_2, db4_w, db4_h);
+        auto cm_splitted_periodized_4 = wavelet::dwt2s_e(cm_splitted_periodized_3, db4_w, db4_h);
 
-//        std::chrono::time_point<std::chrono::steady_clock, std::chrono::nanoseconds> t1, t2;
-//        t1 = std::chrono::steady_clock::now();
-//        auto cm_decoded_periodized_cascade = wavelet::dwt2s_e(cm_splitted_periodized_4, db4_w_t, db4_h_t);
-//        cm_decoded_periodized_cascade = wavelet::dwt2s_e(cm_decoded_periodized_cascade, db4_w_t, db4_h_t);
-//        cm_decoded_periodized_cascade = wavelet::dwt2s_e(cm_decoded_periodized_cascade, db4_w_t, db4_h_t);
-//        cm_decoded_periodized_cascade = wavelet::dwt2s_e(cm_decoded_periodized_cascade, db4_w_t, db4_h_t);
-//        t2 = std::chrono::steady_clock::now();
-//        std::cout << "4x split time (serialized ver): " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000 << "\n";
+        std::chrono::time_point<std::chrono::steady_clock, std::chrono::nanoseconds> t1, t2;
+        t1 = std::chrono::steady_clock::now();
+        auto cm_decoded_periodized_cascade = wavelet::dwt2s_e(cm_splitted_periodized_4, db4_w_t, db4_h_t);
+        cm_decoded_periodized_cascade = wavelet::dwt2s_e(cm_decoded_periodized_cascade, db4_w_t, db4_h_t);
+        cm_decoded_periodized_cascade = wavelet::dwt2s_e(cm_decoded_periodized_cascade, db4_w_t, db4_h_t);
+        cm_decoded_periodized_cascade = wavelet::dwt2s_e(cm_decoded_periodized_cascade, db4_w_t, db4_h_t);
+        t2 = std::chrono::steady_clock::now();
+        std::cout << "4x split time (serialized ver): " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000 << "\n";
 
-//        mat2bmp::blaze2bmp(cm_splitted_periodized_2/l_scale, "cm_splited_per_2_e.bmp");
-//        mat2bmp::blaze2bmp(cm_splitted_periodized_3/l_scale, "cm_splited_per_3_e.bmp");
-//        mat2bmp::blaze2bmp(cm_splitted_periodized_4/l_scale, "cm_splited_per_4_e.bmp");
-//        mat2bmp::blaze2bmp(cm_decoded_periodized_cascade/l_scale, "cm_restored_per_cascade_e.bmp");
+        mat2bmp::blaze2bmp(cm_splitted_periodized_2/l_scale, "cm_splited_per_2_e.bmp");
+        mat2bmp::blaze2bmp(cm_splitted_periodized_3/l_scale, "cm_splited_per_3_e.bmp");
+        mat2bmp::blaze2bmp(cm_splitted_periodized_4/l_scale, "cm_splited_per_4_e.bmp");
+        mat2bmp::blaze2bmp(cm_decoded_periodized_cascade/l_scale, "cm_restored_per_cascade_e.bmp");
 
     }
 
