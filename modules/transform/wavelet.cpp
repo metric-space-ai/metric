@@ -843,7 +843,11 @@ dwt2s(Container2d const & x, Container2ds const & dmat_w, Container2ds const & d
 //    return out;
 //}
 
-template <typename Container2d, typename Container2ds> // TODO complete!
+
+
+/*  // working code, basic version
+
+template <typename Container2d, typename Container2ds>
 typename std::enable_if<
  blaze::IsMatrix<Container2d>::value,
  Container2d
@@ -877,6 +881,44 @@ dwt2s_e(Container2d const & x, Container2ds const & dmat_e_w, Container2ds const
         for (size_t i=0; i<intermediate_cm.columns(); ++i) {
             blaze::column(out, i) = blaze::subvector(ser_intermed, i*x.rows(), x.rows()); // TODO check if efficient
         }
+    }
+
+    return out;
+}
+
+// */
+
+
+template <typename Container2d, typename Container2ds> // alternative code woth CustomMatrix, TODO test!
+typename std::enable_if<
+ blaze::IsMatrix<Container2d>::value,
+ Container2d
+>::type
+dwt2s_e(Container2d const & x, Container2ds const & dmat_e_w, Container2ds const & dmat_e_h) { // whole image transform, no dividing by subbands
+
+    using El = typename Container2d::ElementType; // now we support only Blaze matrices
+
+    // TODO test well
+    blaze::DynamicVector<El> ser_cols (x.columns()*x.rows());
+    blaze::CustomMatrix<El, blaze::unaligned, blaze::unpadded, blaze::columnMajor> intermediate_cm (&ser_cols[0], x.rows(), x.columns());
+
+    {
+        blaze::DynamicVector<El, blaze::rowVector> ser_rows (x.columns()*x.rows());
+        for (size_t i=0; i<x.rows(); ++i) {
+            blaze::subvector(ser_rows, i*x.columns(), x.columns()) = blaze::row(x, i);
+        }
+
+        blaze::DynamicVector<El, blaze::rowVector> ser_intermed = blaze::trans(dmat_e_w * blaze::trans(ser_rows));
+
+        blaze::CustomMatrix<El, blaze::unaligned, blaze::unpadded, blaze::rowMajor> intermediate (&ser_intermed[0], x.rows(), x.columns());
+        intermediate_cm = intermediate;  // to column-major
+    }
+
+    blaze::DynamicVector<El> ser_intermed = dmat_e_h * ser_cols;
+
+    Container2d out (x.rows(), x.columns());
+    for (size_t i=0; i<intermediate_cm.columns(); ++i) {
+        blaze::column(out, i) = blaze::subvector(ser_intermed, i*x.rows(), x.rows()); // TODO check if efficient
     }
 
     return out;

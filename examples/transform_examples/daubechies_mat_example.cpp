@@ -181,5 +181,30 @@ int main() {
     }
 
 
+    {
+        // test reshape trick
+        blaze::DynamicVector<double> v {1, 2, 3, 4, 5, 6};
+        blaze::DynamicVector<double> u (6); // {0, 0, 0, 0, 0, 0};
+
+        blaze::DynamicMatrix<double> space_matrix{{1, 0}, {0, -1}};
+
+        blaze::CustomMatrix<double, blaze::unaligned, blaze::unpadded, blaze::rowMajor> vit(&v[0], 2, 3);
+        blaze::CustomMatrix<double, blaze::unaligned, blaze::unpadded, blaze::rowMajor> ujs(&u[0], 2, 3);
+
+        ujs = space_matrix * vit;
+
+        std::cout << ujs << '\n';
+        std::cout << u << std::endl;
+
+        std::cout << vit << '\n';
+        std::cout << v << std::endl;
+
+        std::cout << space_matrix << std::endl;
+        std::cout << "\ndone\n" << std::endl;
+
+
+    }
+
+
     return 0;
 }
