@@ -916,8 +916,8 @@ dwt2_e(Container2d const & x, Container2ds const & dmat_w_e, Container2ds const 
 
     Container2d r = dwt2s_e(x, dmat_w_e, dmat_h_e);
 
-    size_t split_sz_w = dmat_w_e.columns()/2;
-    size_t split_sz_h = dmat_h_e.columns()/2;
+    size_t split_sz_w = x.columns()/2;
+    size_t split_sz_h = x.rows()/2;
 
     Container2d ll (split_sz_h, split_sz_w);
     Container2d lh (split_sz_h, split_sz_w);
@@ -978,16 +978,16 @@ typename std::enable_if<blaze::IsMatrix<Container2d>::value, Container2d>::type 
     assert(ll.columns()==lh.columns());
     assert(ll.columns()==hl.columns());
     assert(ll.columns()==hh.columns());
-    assert(dmat_w_e.rows() == ll.columns()*2);
-    assert(dmat_h_e.rows() == ll.rows()*2);
+    assert(dmat_w_e.rows() == ll.columns()*ll.rows()*4);
+    assert(dmat_h_e.rows() == dmat_w_e.rows());
 
-    Container2d out (dmat_h_e.rows(), dmat_w_e.rows());
+    Container2d out (ll.rows()*2, ll.columns()*2);
     blaze::submatrix(out, 0, 0, ll.rows(), ll.columns()) = ll;
     blaze::submatrix(out, ll.rows(), 0, lh.rows(), lh.columns()) = lh;
     blaze::submatrix(out, 0, ll.columns(), hl.rows(), hl.columns()) = hl;
     blaze::submatrix(out, ll.rows(), ll.columns(), hh.rows(), hh.columns()) = hh;
 
-    return dwt2s(out, dmat_w_e, dmat_h_e);
+    return dwt2s_e(out, dmat_w_e, dmat_h_e);
 }
 
 
@@ -1006,7 +1006,7 @@ typename std::enable_if<blaze::IsMatrix<Container2d>::value, Container2d>::type 
             Container2ds const & dmat_w_e,
             Container2ds const & dmat_h_e)
 {
-    return idwt2(std::get<0>(in), std::get<1>(in), std::get<2>(in), std::get<3>(in), dmat_w_e, dmat_h_e);
+    return idwt2_e(std::get<0>(in), std::get<1>(in), std::get<2>(in), std::get<3>(in), dmat_w_e, dmat_h_e);
 }
 
 
