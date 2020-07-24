@@ -65,6 +65,34 @@ int main() {
 
     // DWT periodizided examples
 
+
+    { // serialized matrix example
+        auto db4_w = wavelet::DaubechiesMat_e<double>(img.columns(), img.columns()*img.rows(), 6); // transform matrix for ROWS of approptiate size (as width of the image)
+        auto db4_h = wavelet::DaubechiesMat_e<double>(img.rows(), img.columns()*img.rows(), 6); // for COLUMNS (image height)
+        // order (number of coefficients) should not be greater than length of input vector!
+
+        blaze::DynamicMatrix<double> db4_w_t = blaze::trans(db4_w); // transposed matrices for inverse trancform
+        blaze::DynamicMatrix<double> db4_h_t = blaze::trans(db4_h);
+
+
+        auto encoded_img = wavelet::dwt2s_e(img, db4_w, db4_h); // whole image transform, results in single image of all subbands concatenated
+        auto decoded_img = wavelet::dwt2s_e(encoded_img, db4_w_t, db4_h_t); // same function, transposed transform matrices for inverse transform
+
+        std::cout << "decomposed image (sm ver) :\n" << encoded_img << "\n";
+        std::cout << "restored image (sm ver) :\n" << decoded_img << "\n";
+
+
+        auto encoded_img_tuple = wavelet::dwt2_e(img, db4_w, db4_h); // transform with outputting subbands apart in a tuple
+        auto decoded_img_2 = wavelet::idwt2_e(encoded_img_tuple, db4_w_t, db4_h_t); // here we also need transposed matrices for inverse transform
+
+        std::cout << "low-low subband of decomposed image (sm ver) : \n" << std::get<0>(encoded_img_tuple) << "\n";
+        std::cout << "restored image (sm ver) : \n" << decoded_img_2 << "\n";
+
+    }
+
+
+    // Cameraman
+
     int DaubechiesOrder = 6; //10; // SETUP HERE wavelet type (2 till 20 even only)
     int l_scale = 300; //3000; // SETUP HERE lum scaling in visualizer
 
