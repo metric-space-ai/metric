@@ -1052,6 +1052,63 @@ typename std::enable_if<blaze::IsMatrix<Container2d>::value, Container2d>::type 
 }
 
 
+// loop-based version
+
+
+
+template <typename Container2d>
+typename std::enable_if<
+ blaze::IsMatrix<Container2d>::value,
+ Container2d
+>::type
+dwt2_l(Container2d const & x, int order = 4) { // Daubechies Transform matrix generator
+
+    using El = typename Container2d::ElementType; // now we support only Blaze matrices
+
+    assert(order % 2 == 0);
+
+    std::vector<El> c (order);
+    //c[0] = (1+sqrt(3))/(4*sqrt(2)); // D4
+    //c[1] = (3+sqrt(3))/(4*sqrt(2));
+    //c[2] = (3-sqrt(3))/(4*sqrt(2));
+    //c[3] = (1-sqrt(3))/(4*sqrt(2));
+    El coeff = 2/sqrt(2);
+    c = dbwavf<std::vector<El>>(order/2, coeff);
+    for (size_t i = 0; i < c.size(); ++i) {
+        c[i] = c[i]*coeff;
+    }
+
+    Container2d intermediate (x.rows(), x.columns());
+    //auto mat = blaze::CompressedMatrix<El>(size, size, 0);
+    size_t split_size = x.columns()/2;
+    for (size_t r_idx = 0; r_idx < x.rows(); ++r_idx) {  // input row
+        for (size_t i = 0; i < split_size; ++i) { // offsets
+            int sign = 1;
+            for (size_t ci = 0; ci < c.size(); ++ci) {  // Daubechies coeffs
+                intermediate(r_idx, i) +=  x(r_idx, (i*2 + ci) % x.columns()) * c[ci];  // TODO remove %
+                intermediate(r_idx, i + split_size) +=  x(r_idx, (i*2 + ci) % x.columns()) * c[order - 1 - ci]*sign;
+                sign *= -1;
+            }
+        }
+    }
+
+    Container2d out (x.rows(), x.columns());
+    split_size = x.columns()/2;
+    for (size_t c_idx = 0; c_idx < x.columns(); ++c_idx) {  // input column
+        for (size_t i = 0; i < split_size; ++i) { // offsets
+            int sign = 1;
+            for (size_t ci = 0; ci < c.size(); ++ci) {  // Daubechies coeffs
+                out(i, c_idx) +=  intermediate((i*2 + ci) % x.rows(), c_idx) * c[ci];  // TODO remove %
+                out(i + split_size, c_idx) +=  intermediate((i*2 + ci) % x.rows(), c_idx) * c[order - 1 - ci]*sign;
+                sign *= -1;
+            }
+        }
+    }
+
+    return out;
+}
+
+
 
 // ---- vector by vector versions
 

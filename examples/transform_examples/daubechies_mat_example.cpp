@@ -180,30 +180,53 @@ int main() {
 
     }
 
+    {  // loop-based periodized convolution version
 
-    {
-        // test reshape trick
-        blaze::DynamicVector<double> v {1, 2, 3, 4, 5, 6};
-        blaze::DynamicVector<double> u (6); // {0, 0, 0, 0, 0, 0};
+        t1 = std::chrono::steady_clock::now();
+        auto cm_splitted_periodized = wavelet::dwt2_l(cm_b, DaubechiesOrder);
+        auto cm_splitted_periodized_2 = wavelet::dwt2_l(cm_splitted_periodized, DaubechiesOrder);
+        auto cm_splitted_periodized_3 = wavelet::dwt2_l(cm_splitted_periodized_2, DaubechiesOrder);
+        auto cm_splitted_periodized_4 = wavelet::dwt2_l(cm_splitted_periodized_3, DaubechiesOrder);
+        t2 = std::chrono::steady_clock::now();
+        std::cout << "4x split time (loop ver): " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000 << "\n";
 
-        blaze::DynamicMatrix<double> space_matrix{{1, 0}, {0, -1}};
+        //auto cm_decoded_periodized = wavelet::dwt2s_e(cm_splitted_periodized, db4_w_t, db4_h_t);
 
-        blaze::CustomMatrix<double, blaze::unaligned, blaze::unpadded, blaze::rowMajor> vit(&v[0], 2, 3);
-        blaze::CustomMatrix<double, blaze::unaligned, blaze::unpadded, blaze::rowMajor> ujs(&u[0], 2, 3);
+        mat2bmp::blaze2bmp(cm_splitted_periodized/l_scale, "cm_splited_loop_e.bmp");
+        //mat2bmp::blaze2bmp(cm_decoded_periodized/l_scale, "cm_restored_loop_per_e.bmp");
 
-        ujs = space_matrix * vit;
+        // TODO add composition
 
-        std::cout << ujs << '\n';
-        std::cout << u << std::endl;
-
-        std::cout << vit << '\n';
-        std::cout << v << std::endl;
-
-        std::cout << space_matrix << std::endl;
-        std::cout << "\ndone\n" << std::endl;
-
+        mat2bmp::blaze2bmp(cm_splitted_periodized_2/l_scale, "cm_splited_loop_2_e.bmp");
+        mat2bmp::blaze2bmp(cm_splitted_periodized_3/l_scale, "cm_splited_loop_3_e.bmp");
+        mat2bmp::blaze2bmp(cm_splitted_periodized_4/l_scale, "cm_splited_loop_4_e.bmp");
 
     }
+
+
+//    {
+//        // test reshape trick
+//        blaze::DynamicVector<double> v {1, 2, 3, 4, 5, 6};
+//        blaze::DynamicVector<double> u (6); // {0, 0, 0, 0, 0, 0};
+
+//        blaze::DynamicMatrix<double> space_matrix{{1, 0}, {0, -1}};
+
+//        blaze::CustomMatrix<double, blaze::unaligned, blaze::unpadded, blaze::rowMajor> vit(&v[0], 2, 3);
+//        blaze::CustomMatrix<double, blaze::unaligned, blaze::unpadded, blaze::rowMajor> ujs(&u[0], 2, 3);
+
+//        ujs = space_matrix * vit;
+
+//        std::cout << ujs << '\n';
+//        std::cout << u << std::endl;
+
+//        std::cout << vit << '\n';
+//        std::cout << v << std::endl;
+
+//        std::cout << space_matrix << std::endl;
+//        std::cout << "\ndone\n" << std::endl;
+
+
+//    }
 
 
     return 0;
