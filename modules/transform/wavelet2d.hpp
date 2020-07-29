@@ -68,7 +68,7 @@ namespace wavelet {
         std::vector<El> scaling (order);
         std::vector<El> wavelet (order);
         scaling = wavelet::dbwavf<std::vector<El>>(order/2, coeff);
-        int sign = 1;
+        int sign = -1;  // because we start filling wavelet vwctorfrom the last point
         for (size_t i = 0; i < scaling.size(); ++i) {
             scaling[i] = scaling[i]*coeff;
             wavelet[wavelet.size() - i - 1] = scaling[i] * sign;
@@ -79,21 +79,21 @@ namespace wavelet {
         Container2d lh (order, order);
         Container2d hl (order, order);
         Container2d hh (order, order);
-        El ll_el, lh_el, hl_el, hh_el;
+        El ll_el, hh_el;
         for (size_t i = 0; i < scaling.size(); ++i) {
-            for (size_t j = 0; j <= i; ++j) {
+            for (size_t j = 0; j <= i; ++j) {  // hh, ll are symmetric cases
                 ll_el = scaling[i] * scaling[j];
                 ll(i, j) = ll_el;
                 ll(j, i) = ll_el;
-                lh_el = scaling[i] * wavelet[j]; // TODO check order!!
-                lh(i, j) = lh_el;
-                lh(j, i) = lh_el;
-                hl_el = wavelet[i] * scaling[j];
-                hl(i, j) = hl_el;
-                hl(j, i) = hl_el;
                 hh_el = wavelet[i] * wavelet[j];
                 hh(i, j) = hh_el;
                 hh(j, i) = hh_el;
+            }
+        }
+        for (size_t i = 0; i < scaling.size(); ++i) {
+            for (size_t j = 0; j < scaling.size(); ++j) {  // non-symmetric, loop through all values
+                lh(i, j) = scaling[i] * wavelet[j];
+                hl(i, j) = wavelet[i] * scaling[j];
             }
         }
 
