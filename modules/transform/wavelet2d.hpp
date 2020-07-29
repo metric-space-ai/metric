@@ -98,10 +98,41 @@ namespace wavelet {
         }
 
         return std::make_tuple(ll, lh, hl, hh);
-
     }
 
 
+
+//    template <typename Container2d>
+//    typename std::enable_if<
+//     blaze::IsMatrix<Container2d>::value,
+//     std::tuple<Container2d, Container2d, Container2d, Container2d>
+//    >::type
+//    dwt2_conv2(Container2d const & x, std::tuple<Container2d, Container2d, Container2d, Container2d> const & kernels) { // based on 2d convolution
+    template <typename T>
+    std::tuple<blaze::DynamicMatrix<T>, blaze::DynamicMatrix<T>, blaze::DynamicMatrix<T>, blaze::DynamicMatrix<T>>
+    dwt2_conv2(blaze::DynamicMatrix<T> const & x, std::tuple<blaze::DynamicMatrix<T>, blaze::DynamicMatrix<T>, blaze::DynamicMatrix<T>, blaze::DynamicMatrix<T>> const & kernels) { // based on 2d convolution
+
+        auto ll_k = std::get<0>(kernels);
+        auto lh_k = std::get<1>(kernels);
+        auto hl_k = std::get<2>(kernels);
+        auto hh_k = std::get<3>(kernels);
+
+        assert(ll_k.rows()==lh_k.rows());
+        assert(ll_k.rows()==hl_k.rows());
+        assert(ll_k.rows()==hh_k.rows());
+        assert(ll_k.columns()==lh_k.columns());
+        assert(ll_k.columns()==hl_k.columns());
+        assert(ll_k.columns()==hh_k.columns());
+
+        auto c2d = wavelet::Convolution2dCustom<double, 1>(x.rows(), x.columns(), ll_k.rows(), ll_k.columns());
+        blaze::StaticVector<blaze::DynamicMatrix<double>, 1> vx {x};
+        auto ll = c2d(vx, ll_k);
+        auto lh = c2d(vx, lh_k);
+        auto hl = c2d(vx, hl_k);
+        auto hh = c2d(vx, hh_k);
+
+        return std::make_tuple(ll[0], lh[0], hl[0], hh[0]);
+    }
 }
 
 

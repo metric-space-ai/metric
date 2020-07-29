@@ -22,21 +22,20 @@ int main() {
     //auto cm_b = read_csv_blaze<double>("assets/test.csv", ",");
 
 
-//    std::vector<double> c (DaubechiesOrder);
-//    double coeff = 2/sqrt(2);
-//    c = dbwavf<std::vector<double>>(DaubechiesOrder/2, coeff);
-//    for (size_t i = 0; i < c.size(); ++i) {
-//        c[i] = c[i]*coeff;
-//    }
-
-
-    auto c2d = wavelet::Convolution2dCustom<double, 1>(cm_b.rows(), cm_b.columns(), DaubechiesOrder, DaubechiesOrder);
+    //auto c2d = wavelet::Convolution2dCustom<double, 1>(cm_b.rows(), cm_b.columns(), DaubechiesOrder, DaubechiesOrder);
 
     auto kernels = wavelet::create2dKernels<blaze::DynamicMatrix<double>>(DaubechiesOrder);
     std::cout << std::get<0>(kernels) << "\n";
     std::cout << std::get<1>(kernels) << "\n";
     std::cout << std::get<2>(kernels) << "\n";
     std::cout << std::get<3>(kernels) << "\n";
+
+    auto splitted = wavelet::dwt2_conv2(cm_b, kernels);
+    mat2bmp::blaze2bmp(std::get<0>(splitted), "cm_splited_conv2d_ll.bmp");
+    mat2bmp::blaze2bmp(std::get<1>(splitted), "cm_splited_conv2d_lh.bmp");
+    mat2bmp::blaze2bmp(std::get<2>(splitted), "cm_splited_conv2d_hl.bmp");
+    mat2bmp::blaze2bmp(std::get<3>(splitted), "cm_splited_conv2d_hh.bmp");
+
 
 
     /*  // old example
