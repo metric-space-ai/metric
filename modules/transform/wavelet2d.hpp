@@ -32,14 +32,19 @@ namespace wavelet {
                 //const PadType pt = PadType::CIRCULAR,
                 //const size_t stride = 1
                 )
-            //: padWidth(kernelWidth - 1), padHeight(kernelHeight - 1) {
-            //: Convolution2d<T, Channels>(imageWidth, imageHeight, kernelWidth, kernelHeight) {//}, this->padWidth(0), this->padHeight(0) {
         {
+//            this->padWidth = kernelWidth - 1;
+//            this->padHeight = kernelHeight - 1;
+//            metric::Convolution2d<T, Channels>(imageWidth, imageHeight, kernelWidth, kernelHeight); // TODO remove
+
+
             this->padWidth = 0;
             this->padHeight = 0;
 
             metric::PadDirection pd = metric::PadDirection::POST;
+            //metric::PadDirection pd = metric::PadDirection::BOTH;
             metric::PadType pt = metric::PadType::CIRCULAR;
+            //metric::PadType pt = metric::PadType::REPLICATE;
             size_t stride = 2;
 
             this->padModel = std::make_shared<metric::PadModel<T>>(pd, pt, 0);
@@ -102,12 +107,6 @@ namespace wavelet {
 
 
 
-//    template <typename Container2d>
-//    typename std::enable_if<
-//     blaze::IsMatrix<Container2d>::value,
-//     std::tuple<Container2d, Container2d, Container2d, Container2d>
-//    >::type
-//    dwt2_conv2(Container2d const & x, std::tuple<Container2d, Container2d, Container2d, Container2d> const & kernels) { // based on 2d convolution
     template <typename T>
     std::tuple<blaze::DynamicMatrix<T>, blaze::DynamicMatrix<T>, blaze::DynamicMatrix<T>, blaze::DynamicMatrix<T>>
     dwt2_conv2(blaze::DynamicMatrix<T> const & x, std::tuple<blaze::DynamicMatrix<T>, blaze::DynamicMatrix<T>, blaze::DynamicMatrix<T>, blaze::DynamicMatrix<T>> const & kernels) { // based on 2d convolution
@@ -125,6 +124,7 @@ namespace wavelet {
         assert(ll_k.columns()==hh_k.columns());
 
         auto c2d = wavelet::Convolution2dCustom<double, 1>(x.rows(), x.columns(), ll_k.rows(), ll_k.columns());
+        //auto c2d = metric::Convolution2d<double, 1>(x.rows(), x.columns(), ll_k.rows(), ll_k.columns());
         blaze::StaticVector<blaze::DynamicMatrix<double>, 1> vx {x};
         auto ll = c2d(vx, ll_k);
         auto lh = c2d(vx, lh_k);

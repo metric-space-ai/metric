@@ -1061,7 +1061,7 @@ typename std::enable_if<
  blaze::IsMatrix<Container2d>::value,
  Container2d
 >::type
-dwt2_l(Container2d const & x, int order = 4) { // Daubechies Transform matrix generator
+dwt2_l(Container2d const & x, int order = 4) {
 
     using El = typename Container2d::ElementType; // now we support only Blaze matrices
 
@@ -1078,7 +1078,7 @@ dwt2_l(Container2d const & x, int order = 4) { // Daubechies Transform matrix ge
         c[i] = c[i]*coeff;
     }
 
-    Container2d intermediate (x.rows(), x.columns());
+    Container2d intermediate (x.rows(), x.columns(), 0);
     //auto mat = blaze::CompressedMatrix<El>(size, size, 0);
     size_t split_size = x.columns()/2;
     for (size_t r_idx = 0; r_idx < x.rows(); ++r_idx) {  // input row
@@ -1092,8 +1092,8 @@ dwt2_l(Container2d const & x, int order = 4) { // Daubechies Transform matrix ge
         }
     }
 
-    Container2d out (x.rows(), x.columns());
-    split_size = x.columns()/2;
+    Container2d out (x.rows(), x.columns(), 0);
+    split_size = x.rows()/2;
     for (size_t c_idx = 0; c_idx < x.columns(); ++c_idx) {  // input column
         for (size_t i = 0; i < split_size; ++i) { // offsets
             int sign = 1;
