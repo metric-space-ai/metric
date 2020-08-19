@@ -15,12 +15,25 @@
 namespace metric {
 
 //output = ellipse parameter [xc, yc, a, b, phi]
-std::vector<double> fit_hysteresis(blaze::DynamicVector<double> x, blaze::DynamicVector<double> y,
+std::vector<double> fit_hysteresis(const blaze::DynamicVector<double> & x, const blaze::DynamicVector<double> & y,
 size_t grid_row, 
 size_t grid_column,
 size_t steps = 200, std::vector<double> sigma = {50,30,15,5});
 
-std::vector<double> fit_hysteresis(blaze::DynamicMatrix<double> I,
+
+std::vector<double> fit_hysteresis(
+        const blaze::DynamicMatrix<double> & I,
+        double xc0,
+        double yc0,
+        double r0,
+        size_t steps = 200,
+        std::vector<double> sigma = {50,30,15,5},
+        double thresh = 1e-6,
+        double incr = 0.2
+        );
+
+
+std::vector<double> fit_hysteresis(const blaze::DynamicMatrix<double> & I,
 size_t steps = 200, std::vector<double> sigma = {50,30,15,5});
 
 
