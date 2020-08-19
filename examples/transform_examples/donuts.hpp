@@ -2,6 +2,7 @@
 #define DONUTS_HPP
 
 #include "../../modules/transform/distance_potential_minimization.hpp"
+#include "../../modules/transform/wavelet2d.hpp" // for only Convolution2dCustom
 
 #include <cmath>
 //#include <tuple>
@@ -493,6 +494,66 @@ blaze::DynamicMatrix<T> gaussianKernel(T sigma) {
     }
     return kernel;
 }
+
+
+
+// using Convolurion2d.hpp
+
+template <typename T, size_t Channels>
+class Convolution2dCustomStride1 : public metric::Convolution2d<T, Channels> {
+
+  public:
+    Convolution2dCustomStride1(
+            size_t imageWidth,
+            size_t imageHeight,
+            size_t kernelWidth,
+            size_t kernelHeight
+            //const PadDirection pd = PadDirection::POST,
+            //const PadType pt = PadType::CIRCULAR,
+            //const size_t stride = 1
+            )
+    {
+        //this->padWidth = kernelWidth - 1;
+        //this->padHeight = kernelHeight - 1;
+//        metric::Convolution2d<T, Channels>(imageWidth, imageHeight, kernelWidth, kernelHeight); // TODO remove
+
+        this->padWidth = 0;
+        this->padHeight = 0;
+
+        metric::PadDirection pd = metric::PadDirection::POST;
+        //metric::PadDirection pd = metric::PadDirection::BOTH;
+        metric::PadType pt = metric::PadType::CIRCULAR;
+        //metric::PadType pt = metric::PadType::REPLICATE;
+        //metric::PadType pt = metric::PadType::SYMMETRIC;
+        size_t stride = 1;
+
+        this->padModel = std::make_shared<metric::PadModel<T>>(pd, pt, 0);
+
+        //auto t1 = Clock::now();
+        this->convLayer = std::make_shared<typename metric::Convolution2d<T, Channels>::ConvLayer2d>(imageWidth + this->padWidth, imageHeight + this->padHeight, 1, 1, kernelWidth, kernelHeight, stride);
+        //auto t2 = Clock::now();
+        //auto d = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1);
+
+    }
+};
+
+
+
+template <typename T>
+blaze::DynamicMatrix<T> gaussianBlur(const blaze::DynamicMatrix<T> & img, T sigma) {
+    auto kernel = gaussianKernel(sigma);
+    auto conv = Convolution2dCustomStride1<T, 1>(img.columns(), img.rows(), kernel.columns(), kernel.rows());
+    auto blurred = conv({img}, kernel)[0];
+    blaze::DynamicMatrix<T> padded (img.rows(), img.columns(), 0);
+    blaze::submatrix( // padding with black after conv
+                padded,
+                (img.rows() - blurred.rows())/2, (img.columns() - blurred.columns())/2,
+                blurred.rows(), blurred.columns()
+                ) = blurred;
+    return padded;
+}
+
+
 
 
 

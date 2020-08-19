@@ -1,7 +1,8 @@
 
 //#include "../../modules/utils/image_processing/image_filter.hpp"
+//#include "../../modules/utils/image_processing/convolution.hpp"
+#include "../../modules/transform/wavelet2d.hpp"
 
-#include "../../modules/utils/image_processing/convolution.hpp"
 #include "donuts.hpp" // for gaussianKernel
 
 #include "assets/helpers.cpp"
@@ -25,18 +26,40 @@ int main() {
     mat2bmp::blaze2bmp_norm(cm_blurred, "cropped_blurred_cameraman.bmp");
     // */
 
-    //* using convolution.hpp
+    /* using convolution.hpp
 
     auto kernel = gaussianKernel(sigma);
     mat2bmp::blaze2bmp_norm(kernel, "gkernel.bmp");
 
-    auto conv = metric::Convolution2d<double, 1>(cm.columns(), cm.rows(), kernel.columns(), kernel.rows());
+    //auto conv = metric::Convolution2d<double, 1>(cm.columns(), cm.rows(), kernel.columns(), kernel.rows());
+    auto conv = metric::Convolution2d<double, 1>(cm.rows(), cm.columns(), kernel.rows(), kernel.columns());
     auto cm_blurred = conv({cm}, kernel)[0];
     mat2bmp::blaze2bmp_norm(cm_blurred, "cameraman_blurred.bmp");
 
     // */
 
+    //* using wavelet2d.hpp
 
+//    auto kernel = gaussianKernel(sigma);
+//    mat2bmp::blaze2bmp_norm(kernel, "gkernel.bmp");
+
+//    //auto conv = wavelet::Convolution2dCustom<double, 1>(cm.rows(), cm.columns(), kernel.rows(), kernel.columns());
+//    auto conv = Convolution2dCustomStride1<double, 1>(cm.columns(), cm.rows(), kernel.columns(), kernel.rows());
+//    //auto conv = wavelet::Convolution2dCustom<double, 1>(cm.columns(), cm.rows(), kernel.columns(), kernel.rows());
+//    auto cm_blurred = conv({cm}, kernel)[0];
+//    mat2bmp::blaze2bmp_norm(cm_blurred, "cameraman_blurred.bmp");
+//    blaze::DynamicMatrix<double> cm_blurred_padded (cm.rows(), cm.columns(), 0);
+//    blaze::submatrix(
+//                cm_blurred_padded,
+//                (cm.rows() - cm_blurred.rows())/2, (cm.columns() - cm_blurred.columns())/2,
+//                cm_blurred.rows(), cm_blurred.columns()
+//                ) = cm_blurred;
+//    mat2bmp::blaze2bmp_norm(cm_blurred_padded, "cameraman_blurred_padded.bmp");
+    auto cm_blurred_padded = gaussianBlur(cm, sigma);
+    mat2bmp::blaze2bmp_norm(cm_blurred_padded, "cameraman_blurred_padded.bmp");
+
+
+    // */
 
     return 0;
 
