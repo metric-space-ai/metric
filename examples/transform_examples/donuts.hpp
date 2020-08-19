@@ -2,7 +2,6 @@
 #define DONUTS_HPP
 
 #include "../../modules/transform/distance_potential_minimization.hpp"
-#include "../../modules/transform/wavelet2d.hpp" // for only Convolution2dCustom
 
 #include <cmath>
 //#include <tuple>
@@ -448,13 +447,6 @@ std::vector<std::vector<T>> matrix2vv(blaze::DynamicMatrix<T> mat) {
 }
 
 
-template <typename T>
-
-T gauss(T x, T mu, T sigma) {
-    T expVal = -1 * (pow(x - mu, 2) / pow(2 * sigma, 2));
-    return exp(expVal) / (sqrt(2 * M_PI * pow(sigma, 2)));
-}
-
 
 template <typename T>
 blaze::DynamicMatrix<T> weightingMask(size_t h, size_t w, T radius, T sigma) { // radius is where we expect the donut outline
@@ -471,90 +463,6 @@ blaze::DynamicMatrix<T> weightingMask(size_t h, size_t w, T radius, T sigma) { /
     }
     return mask;
 }
-
-
-template <typename T>
-blaze::DynamicMatrix<T> gaussianKernel(T sigma) {
-    size_t sz = round(sigma * 6) + 2;
-    if (sz % 2 != 0)
-        ++sz;
-    T center = T(sz) / 2.0;
-    size_t c = center;
-    auto kernel = blaze::DynamicMatrix<T>(sz, sz);
-    T r, value;
-    for (size_t i = 0; i < c; ++i) {
-        for (size_t j = 0; j < c; ++j) {
-            r = sqrt(pow(i - center, 2) + pow(j - center, 2));
-            value = gauss(r, 0.0, sigma);
-            kernel(i, j) = value;
-            kernel(sz - 1 - i, j) = value;
-            kernel(i, sz - 1- j) = value;
-            kernel(sz - 1 - i, sz - 1 - j) = value;
-        }
-    }
-    return kernel;
-}
-
-
-
-// using Convolurion2d.hpp
-
-template <typename T, size_t Channels>
-class Convolution2dCustomStride1 : public metric::Convolution2d<T, Channels> {
-
-  public:
-    Convolution2dCustomStride1(
-            size_t imageWidth,
-            size_t imageHeight,
-            size_t kernelWidth,
-            size_t kernelHeight
-            //const PadDirection pd = PadDirection::POST,
-            //const PadType pt = PadType::CIRCULAR,
-            //const size_t stride = 1
-            )
-    {
-        //this->padWidth = kernelWidth - 1;
-        //this->padHeight = kernelHeight - 1;
-//        metric::Convolution2d<T, Channels>(imageWidth, imageHeight, kernelWidth, kernelHeight); // TODO remove
-
-        this->padWidth = 0;
-        this->padHeight = 0;
-
-        metric::PadDirection pd = metric::PadDirection::POST;
-        //metric::PadDirection pd = metric::PadDirection::BOTH;
-        metric::PadType pt = metric::PadType::CIRCULAR;
-        //metric::PadType pt = metric::PadType::REPLICATE;
-        //metric::PadType pt = metric::PadType::SYMMETRIC;
-        size_t stride = 1;
-
-        this->padModel = std::make_shared<metric::PadModel<T>>(pd, pt, 0);
-
-        //auto t1 = Clock::now();
-        this->convLayer = std::make_shared<typename metric::Convolution2d<T, Channels>::ConvLayer2d>(imageWidth + this->padWidth, imageHeight + this->padHeight, 1, 1, kernelWidth, kernelHeight, stride);
-        //auto t2 = Clock::now();
-        //auto d = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1);
-
-    }
-};
-
-
-
-template <typename T>
-blaze::DynamicMatrix<T> gaussianBlur(const blaze::DynamicMatrix<T> & img, T sigma) {
-    auto kernel = gaussianKernel(sigma);
-    auto conv = Convolution2dCustomStride1<T, 1>(img.columns(), img.rows(), kernel.columns(), kernel.rows());
-    auto blurred = conv({img}, kernel)[0];
-    blaze::DynamicMatrix<T> padded (img.rows(), img.columns(), 0);
-    blaze::submatrix( // padding with black after conv
-                padded,
-                (img.rows() - blurred.rows())/2, (img.columns() - blurred.columns())/2,
-                blurred.rows(), blurred.columns()
-                ) = blurred;
-    return padded;
-}
-
-
-
 
 
 

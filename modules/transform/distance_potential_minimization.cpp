@@ -9,7 +9,9 @@
 #define MEASURE
 
 #include "distance_potential_minimization.hpp"
-#include "../../modules/utils/image_processing/image_filter.hpp"
+//#include "../../modules/utils/image_processing/image_filter.hpp"
+#include "../../modules/transform/wavelet2d.hpp" // for only Convolution2dCustom
+
 #include <iostream>
 #include <tuple>
 #include <set>
@@ -704,6 +706,118 @@ v(x,y,t+􏰀t)= v(x,y,t)+ 􏰀t/(􏰀x􏰀y) g (|∇f|) L * v(x,y,t) −􏰀th(|
         return R;
     }
 
+
+
+    // added by Max F
+
+
+
+
+    template <typename T>
+
+    T gauss(T x, T mu, T sigma) {
+        T expVal = -1 * (pow(x - mu, 2) / pow(2 * sigma, 2));
+        return exp(expVal) / (sqrt(2 * M_PI * pow(sigma, 2)));
+    }
+
+
+
+    template <typename T>
+    blaze::DynamicMatrix<T> gaussianKernel(T sigma) {
+        size_t sz = round(sigma * 6) + 2;
+        if (sz % 2 != 0)
+            ++sz;
+        T center = T(sz) / 2.0;
+        size_t c = center;
+        auto kernel = blaze::DynamicMatrix<T>(sz, sz);
+        T r, value;
+        for (size_t i = 0; i < c; ++i) {
+            for (size_t j = 0; j < c; ++j) {
+                r = sqrt(pow(i - center, 2) + pow(j - center, 2));
+                value = gauss(r, 0.0, sigma);
+                kernel(i, j) = value;
+                kernel(sz - 1 - i, j) = value;
+                kernel(i, sz - 1- j) = value;
+                kernel(sz - 1 - i, sz - 1 - j) = value;
+            }
+        }
+        return kernel;
+    }
+
+
+
+    // using Convolurion2d.hpp
+
+    template <typename T, size_t Channels>
+    class Convolution2dCustomStride1 : public metric::Convolution2d<T, Channels> {
+
+      public:
+        Convolution2dCustomStride1(
+                size_t imageWidth,
+                size_t imageHeight,
+                size_t kernelWidth,
+                size_t kernelHeight
+                //const PadDirection pd = PadDirection::POST,
+                //const PadType pt = PadType::CIRCULAR,
+                //const size_t stride = 1
+                )
+        {
+            //this->padWidth = kernelWidth - 1;
+            //this->padHeight = kernelHeight - 1;
+    //        metric::Convolution2d<T, Channels>(imageWidth, imageHeight, kernelWidth, kernelHeight); // TODO remove
+
+            this->padWidth = 0;
+            this->padHeight = 0;
+
+            metric::PadDirection pd = metric::PadDirection::POST;
+            //metric::PadDirection pd = metric::PadDirection::BOTH;
+            metric::PadType pt = metric::PadType::CIRCULAR;
+            //metric::PadType pt = metric::PadType::REPLICATE;
+            //metric::PadType pt = metric::PadType::SYMMETRIC;
+            size_t stride = 1;
+
+            this->padModel = std::make_shared<metric::PadModel<T>>(pd, pt, 0);
+
+            //auto t1 = Clock::now();
+            this->convLayer = std::make_shared<typename metric::Convolution2d<T, Channels>::ConvLayer2d>(imageWidth + this->padWidth, imageHeight + this->padHeight, 1, 1, kernelWidth, kernelHeight, stride);
+            //auto t2 = Clock::now();
+            //auto d = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1);
+
+        }
+    };
+
+
+
+    template <typename T>
+    blaze::DynamicMatrix<T> gaussianBlur(const blaze::DynamicMatrix<T> & img, T sigma) {
+        auto kernel = gaussianKernel(sigma);
+        auto conv = Convolution2dCustomStride1<T, 1>(img.columns(), img.rows(), kernel.columns(), kernel.rows());
+        auto blurred = conv({img}, kernel)[0];
+        blaze::DynamicMatrix<T> padded (img.rows(), img.columns(), 0);
+        blaze::submatrix( // padding with black after conv
+                    padded,
+                    (img.rows() - blurred.rows())/2, (img.columns() - blurred.columns())/2,
+                    blurred.rows(), blurred.columns()
+                    ) = blurred;
+        return padded;
+    }
+
+
+    template <typename T> // very temporary solution, TODO update!!
+    blaze::DynamicMatrix<T> blackPaddedConv(const blaze::DynamicMatrix<T> & img, const blaze::DynamicMatrix<T> & kernel) {
+        auto conv = Convolution2dCustomStride1<T, 1>(img.columns(), img.rows(), kernel.columns(), kernel.rows());
+        auto blurred = conv({img}, kernel)[0];
+        blaze::DynamicMatrix<T> padded (img.rows(), img.columns(), 0);
+        blaze::submatrix( // padding with black after conv
+                    padded,
+                    (img.rows() - blurred.rows())/2, (img.columns() - blurred.columns())/2,
+                    blurred.rows(), blurred.columns()
+                    ) = blurred;
+        return padded;
+    }
+
+
+
 }  // end namespace DPM_detail
 
 std::vector<double> fit_hysteresis(const blaze::DynamicVector<double> & x, const blaze::DynamicVector<double> & y, size_t grid_row,
@@ -744,22 +858,24 @@ std::vector<double> fit_hysteresis(
 
     for (size_t i = 0; i < sigma.size(); ++i) {
         //size_t filtersize = round(sigma[i] * 7 + 2);
-        size_t filtersize = round(sigma[i] * 6); // 3 sigma
+        //size_t filtersize = round(sigma[i] * 6); // 3 sigma
 #ifdef MEASURE
         auto t1 = std::chrono::steady_clock::now();
 #endif
-        imfilter<double, 1, FilterType::GAUSSIAN, PadDirection::BOTH, PadType::SYMMETRIC> f(filtersize, filtersize, sigma[i]);
+        //imfilter<double, 1, FilterType::GAUSSIAN, PadDirection::BOTH, PadType::SYMMETRIC> f(filtersize, filtersize, sigma[i]);
+        auto gk = DPM_detail::gaussianKernel(sigma[i]);
 #ifdef MEASURE
         auto t2 = std::chrono::steady_clock::now();
         auto seconds = double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000;
-        std::cout << "-- in fit_hysteresis: construction #" << i << " of imfilter (gaussian blur) took " << seconds << " s\n";
+        std::cout << "-- in fit_hysteresis: construction #" << i << " of gaussian kernel took " << seconds << " s\n";
         t1 = std::chrono::steady_clock::now();
 #endif
-        blaze::DynamicMatrix<double> I1 = f(I);
+        //blaze::DynamicMatrix<double> I1 = f(I);
+        blaze::DynamicMatrix<double> I1 = DPM_detail::blackPaddedConv(I, gk);
 #ifdef MEASURE
         t2 = std::chrono::steady_clock::now();
         seconds = double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000;
-        std::cout << "-- in fit_hysteresis: call #" << i << " of imfilter (gaussian blur) took " << seconds << " s\n";
+        std::cout << "-- in fit_hysteresis: call #" << i << " gaussian blur took " << seconds << " s\n";
         t1 = std::chrono::steady_clock::now();
 #endif
         //auto [h1, v1] = DPM_detail::gvf(I1, 1, 0.1, 10);

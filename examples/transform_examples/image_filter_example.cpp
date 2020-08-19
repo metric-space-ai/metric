@@ -1,9 +1,10 @@
 
 //#include "../../modules/utils/image_processing/image_filter.hpp"
 //#include "../../modules/utils/image_processing/convolution.hpp"
-#include "../../modules/transform/wavelet2d.hpp"
+//#include "../../modules/transform/wavelet2d.hpp"
 
-#include "donuts.hpp" // for gaussianKernel
+#include "../../modules/transform/distance_potential_minimization.hpp"
+
 
 #include "assets/helpers.cpp"
 #include "modules/utils/visualizer.hpp"
@@ -55,7 +56,7 @@ int main() {
 //                cm_blurred.rows(), cm_blurred.columns()
 //                ) = cm_blurred;
 //    mat2bmp::blaze2bmp_norm(cm_blurred_padded, "cameraman_blurred_padded.bmp");
-    auto cm_blurred_padded = gaussianBlur(cm, sigma);
+    auto cm_blurred_padded = metric::DPM_detail::gaussianBlur(cm, sigma);
     mat2bmp::blaze2bmp_norm(cm_blurred_padded, "cameraman_blurred_padded.bmp");
 
 

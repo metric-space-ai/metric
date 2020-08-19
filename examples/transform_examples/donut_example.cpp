@@ -182,8 +182,9 @@ int main()
     //* // fit_ellipse & forces test, TODO delete
 
     size_t filtersize = round(sigma[0] * 6); // 3 sigma
-    metric::imfilter<double, 1, metric::FilterType::GAUSSIAN, metric::PadDirection::BOTH, metric::PadType::CONST> f(filtersize, filtersize, sigma[0]);
-    auto I1 = f(donut);
+    //metric::imfilter<double, 1, metric::FilterType::GAUSSIAN, metric::PadDirection::BOTH, metric::PadType::CONST> f(filtersize, filtersize, sigma[0]);
+    //auto I1 = f(donut);
+    auto I1 = metric::DPM_detail::gaussianBlur(donut, sigma[0]);
     vector2bmp(matrix2vv(I1), "blurred.bmp");
     I1 = blaze::submatrix(I1, (I1.rows() - donut.rows()) / 2, (I1.columns() - donut.columns()) / 2, donut.rows(), donut.columns());
     vector2bmp(matrix2vv(I1), "blurred_cropped.bmp");
