@@ -5,6 +5,7 @@
 
 #include "../../modules/transform/distance_potential_minimization.hpp"
 
+#include "donuts.hpp" // for only png reader
 
 #include "assets/helpers.cpp"
 #include "modules/utils/visualizer.hpp"
@@ -14,7 +15,7 @@ int main() {
     blaze::DynamicMatrix<double> cm = read_csv_blaze<double>("assets/cameraman.csv", ",");
     mat2bmp::blaze2bmp_norm(cm, "input_cameraman.bmp");
 
-    double sigma = 1.45;
+    double sigma = 5; //1.45;
 
     /* // using image_filter.hpp
     size_t filtersize = round(sigma * 6); // 3 sigma
@@ -56,8 +57,23 @@ int main() {
 //                cm_blurred.rows(), cm_blurred.columns()
 //                ) = cm_blurred;
 //    mat2bmp::blaze2bmp_norm(cm_blurred_padded, "cameraman_blurred_padded.bmp");
-    auto cm_blurred_padded = metric::DPM_detail::gaussianBlur(cm, sigma);
-    mat2bmp::blaze2bmp_norm(cm_blurred_padded, "cameraman_blurred_padded.bmp");
+
+
+    cm = read_png_donut<double>("assets/donuts/crop/donut_6_radial_outer_128.png");
+    std::cout << "input: " << blaze::max(cm) << ".." << blaze::min(cm) << "\n";
+    mat2bmp::blaze2bmp_norm(cm, "input_1.bmp");
+    vector2bmp(matrix2vv(blaze::DynamicMatrix<double>(cm/256.0)), "input_2.bmp");
+    vector2bmp(matrix2vv(cm), "input_3.bmp");
+
+    //auto cm_blurred_padded = metric::DPM_detail::gaussianBlur(cm, sigma);
+    auto kernel = metric::DPM_detail::gaussianKernel(sigma);
+    auto cm_blurred_padded = metric::DPM_detail::blackPaddedConv(cm, kernel);
+
+    mat2bmp::blaze2bmp_norm(cm_blurred_padded, "blurred_padded_1.bmp");
+    vector2bmp(matrix2vv(blaze::DynamicMatrix<double>(cm_blurred_padded/256.0)), "blurred_padded_2.bmp");
+    vector2bmp(matrix2vv(cm_blurred_padded), "blurred_padded_3.bmp");
+    //std::cout << cm_blurred_padded << "\n";
+    std::cout << "output: " << blaze::max(cm_blurred_padded) << ".." << blaze::min(cm_blurred_padded) << "\n";
 
 
     // */

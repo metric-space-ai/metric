@@ -3,15 +3,30 @@
 #include "donuts.hpp"
 #include <iostream>
 
-#include "../../modules/utils/image_processing/image_filter.hpp" // for only test call of imfilter,TODO remove
-
+//#include "../../modules/utils/image_processing/image_filter.hpp" // for only test call of imfilter,TODO remove
+#include "assets/helpers.cpp"
+#include "modules/utils/visualizer.hpp" // for only blaze2bmp_norm
 
 int main()
 {
 
-    auto donut = read_png_donut<double>("assets/donuts/crop/donut_6_radial_outer_128.png");
-    //auto donut = read_png_donut<double>("assets/donuts/crop/donut_6_radial_outer_256.png");
+    auto donut = read_png_donut<double>("assets/donuts/crop/crop_2020-07-27_16_23_01_776_donut1_128.png");
+    vector2bmp(matrix2vv(donut), "input.bmp");
+    donut = radial_diff(donut);
+
+    auto mask = weightingMask<double>(donut.rows(), donut.columns(), donut.columns()/3, 6);
+    vector2bmp(matrix2vv(mask), "mask_outer.bmp");
+    //mask = weightingMask<double>(128, 128, 10, 2);
+    //vector2bmp(matrix2vv(mask), "mask_inner.bmp");
+
+    donut = mask % donut;
+    vector2bmp(matrix2vv(donut), "mask_applied.bmp");
+
+
     //auto donut = read_png_donut<double>("assets/donuts/crop/crop_2020-07-27_16_23_01_776_donut1.png");
+
+    //auto donut = read_png_donut<double>("assets/donuts/crop/donut_6_radial_outer_128.png");
+    //auto donut = read_png_donut<double>("assets/donuts/crop/donut_6_radial_outer_256.png");
 
     //size_t steps = 200;
     //std::vector<double> sigma = {50,30,15,5};
@@ -33,7 +48,7 @@ int main()
     std::cout << " (Overall time: " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000
               << " s)" << std::endl;
 
-    vector2bmp(matrix2vv(donut), "input.bmp");
+    vector2bmp(matrix2vv(donut), "input_filtered.bmp");
 
     auto points = metric::DPM_detail::ellipse2grid(
             donut.rows(), donut.columns(),
@@ -186,8 +201,9 @@ int main()
     //auto I1 = f(donut);
     auto I1 = metric::DPM_detail::gaussianBlur(donut, sigma[0]);
     vector2bmp(matrix2vv(I1), "blurred.bmp");
-    I1 = blaze::submatrix(I1, (I1.rows() - donut.rows()) / 2, (I1.columns() - donut.columns()) / 2, donut.rows(), donut.columns());
-    vector2bmp(matrix2vv(I1), "blurred_cropped.bmp");
+    mat2bmp::blaze2bmp_norm(I1, "blurred_norm.bmp");
+    //I1 = blaze::submatrix(I1, (I1.rows() - donut.rows()) / 2, (I1.columns() - donut.columns()) / 2, donut.rows(), donut.columns());
+    //vector2bmp(matrix2vv(I1), "blurred_cropped.bmp");
     auto [h1, v1] = metric::DPM_detail::gvf(I1, 0.1, 1, 10);
     vector2bmp(matrix2vv(h1), "h1.bmp");
     vector2bmp(matrix2vv(v1), "v1.bmp");

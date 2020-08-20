@@ -385,6 +385,46 @@ std::vector<std::vector<double>> radial_diff(std::vector<std::vector<double>> in
 }
 
 
+template <typename T>
+blaze::DynamicMatrix<T> radial_diff(const blaze::DynamicMatrix<T> & in, double step=1.5) {
+
+    size_t height = in.rows();
+    assert(height>0);
+    size_t width = in.columns();
+
+    int y0 = (int)round(height/2);
+    int x0 = (int)round(width/2);
+
+    blaze::DynamicMatrix<T> out(in.rows(), in.columns());
+    for (int y=0; y<(int)in.rows(); ++y) {
+        for (int x=0; x<(int)in.columns(); ++x) {
+
+            double fi = atan2(x - x0, y - y0); // TODO remove trigonometry functions, components can be computed without angle!
+            double xi = x - sin(fi) * step; // point for interpolation, '-' for direction to center
+            double yi = y - cos(fi) * step;
+
+            size_t bxi = (size_t)floor(xi); // base
+            size_t byi = (size_t)floor(yi);
+
+            double oxi = xi - bxi; // offset
+            double oyi = yi - byi;
+
+            double c_i = // biliniar interpolation
+                    in(byi, bxi) * (1 - oxi) * (1 - oyi) +
+                    in(byi + 1, bxi) * oxi * (1 - oyi) +
+                    in(byi, bxi + 1) * (1 - oxi) * oyi +
+                    in(byi + 1, bxi + 1) * oxi * oyi;
+            out(y, x) = abs(c_i - in(y, x));
+        }
+    }
+
+    return out;
+}
+
+
+
+
+
 //*
 template <typename T> // TODO debug!!
 std::tuple<std::vector<std::vector<T>>, std::vector<std::vector<T>>>
