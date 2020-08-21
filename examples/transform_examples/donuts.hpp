@@ -474,7 +474,7 @@ blaze::DynamicMatrix<T> read_png_donut(std::string filename) {
 
 
 template <typename T>
-std::vector<std::vector<T>> matrix2vv(blaze::DynamicMatrix<T> mat) {
+std::vector<std::vector<T>> matrix2vv(const blaze::DynamicMatrix<T> & mat) {
     std::vector<std::vector<double>> v;
     for (size_t i = 0; i < mat.rows(); ++i) {
         std::vector<double> line;

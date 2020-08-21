@@ -50,27 +50,29 @@ int main()
 
     vector2bmp(matrix2vv(donut), "input_filtered.bmp");
 
+    blaze::DynamicMatrix<double> donut_painted = donut;
+
     auto points = metric::DPM_detail::ellipse2grid(
-            donut.rows(), donut.columns(),
+            donut_painted.rows(), donut_painted.columns(),
             result[0], result[1],
             result[2], result[3],
             result[4]
             );
     for (size_t i = 0; i < points[0].size(); ++i) {
-        donut(points[0][i], points[1][i]) = -1;
+        donut_painted(points[0][i], points[1][i]) = -1;
     }
 
     auto init_points = metric::DPM_detail::ellipse2grid(
-            donut.rows(), donut.columns(),
+            donut_painted.rows(), donut_painted.columns(),
             init_x, init_y,
             init_r, init_r,
             0
             );
     for (size_t i = 0; i < init_points[0].size(); ++i) {
-        donut(init_points[0][i], init_points[1][i]) = -0.5;
+        donut_painted(init_points[0][i], init_points[1][i]) = -0.5;
     }
 
-    vector2bmp(matrix2vv(donut), "fitting_result.bmp");
+    vector2bmp(matrix2vv(donut_painted), "fitting_result.bmp");
 
     std::cout << "initial ellipse position:\n xc = " << init_x << " yc = " << init_y << " a = " << init_r << " b = " << init_r
               << " phi = " << 0 << std::endl;
@@ -196,21 +198,33 @@ int main()
 
     //* // fit_ellipse & forces test, TODO delete
 
-    size_t filtersize = round(sigma[0] * 6); // 3 sigma
+    init_x = donut.columns() / 2;
+    init_y = donut.rows() / 2;
+    init_r = donut.columns() / 3;
+
+    //size_t filtersize = round(sigma[0] * 6); // 3 sigma
     //metric::imfilter<double, 1, metric::FilterType::GAUSSIAN, metric::PadDirection::BOTH, metric::PadType::CONST> f(filtersize, filtersize, sigma[0]);
     //auto I1 = f(donut);
-    auto I1 = metric::DPM_detail::gaussianBlur(donut, sigma[0]);
+    //auto I1 = metric::DPM_detail::gaussianBlur(donut, sigma[0]);
+
+
+    auto gk = metric::DPM_detail::gaussianKernel(sigma[0]);
+    blaze::DynamicMatrix<double> I1 = metric::DPM_detail::blackPaddedConv(donut, gk);
     vector2bmp(matrix2vv(I1), "blurred.bmp");
     mat2bmp::blaze2bmp_norm(I1, "blurred_norm.bmp");
     //I1 = blaze::submatrix(I1, (I1.rows() - donut.rows()) / 2, (I1.columns() - donut.columns()) / 2, donut.rows(), donut.columns());
     //vector2bmp(matrix2vv(I1), "blurred_cropped.bmp");
-    auto [h1, v1] = metric::DPM_detail::gvf(I1, 0.1, 1, 10);
-    vector2bmp(matrix2vv(h1), "h1.bmp");
+
+    std::cout << "blur input: min: " << blaze::min(donut) << ", max: " << blaze::max(donut) << "\n";
+    std::cout << "GVF input: min: " << blaze::min(I1) << ", max: " << blaze::max(I1) << "\n";
+
+    auto [u1, v1] = metric::DPM_detail::gvf(I1, 0.1, 1, 10);
+    vector2bmp(matrix2vv(u1), "u1.bmp");
     vector2bmp(matrix2vv(v1), "v1.bmp");
 
-    std::cout << "\ninput: \n" << donut << "\n";
-    std::cout << "\nblurred: \n" << I1 << "\n";
-    std::cout << "\nforse field: \n" << h1 << "\n" << v1 << "\n";
+    //std::cout << "\ninput: \n" << donut << "\n";
+    //std::cout << "\nblurred: \n" << I1 << "\n";
+    //std::cout << "\nforse field: \n" << u1 << "\n" << v1 << "\n";
 
     std::vector<double> ep = { init_x, init_y, init_r, init_r, 0 };  // initial parameter guess
     double thresh = 1e-6;
@@ -222,15 +236,15 @@ int main()
 
     std::cout << "\nfit_ellipse test:\n";
 
-//    ep = metric::DPM_detail::fit_ellipse(ep, sigma[0] / 5 * increment, sigma[0] / 5 * threshold, bound, h1, v1, steps / sigma.size());
+//    ep = metric::DPM_detail::fit_ellipse(ep, sigma[0] / 5 * increment, sigma[0] / 5 * threshold, bound, u1, v1, steps / sigma.size());
 //    for (size_t i = 0; i < ep.size(); ++i) {
 //        std::cout << ep[i] << "\t";
 //    }
 //    std::cout << "\n  by parts:\n";
 
 
-    size_t m = h1.rows();
-    size_t n = h1.columns();
+    size_t m = u1.rows();
+    size_t n = u1.columns();
 
     double xc = init_x;
     double yc = init_y;
@@ -246,7 +260,12 @@ int main()
         std::vector<blaze::DynamicVector<double>> x_y_theta = metric::DPM_detail::ellipse2grid(m, n, xc, yc, a, b, phi);
 
         // torsion along the ellpise about center
-        double torsion = metric::DPM_detail::torsion_moment(v1, h1, x_y_theta[0], x_y_theta[1], x_y_theta[2], xc, yc, phi);
+        double torsion = metric::DPM_detail::torsion_moment(u1, v1, x_y_theta[0], x_y_theta[1], x_y_theta[2], xc, yc, phi);
+
+        //std::cout << "theta: \n" << x_y_theta[0] << "\n" << x_y_theta[1] << "\n" << x_y_theta[2] << "\n";
+        std::cout << "gvf_x: min: " << blaze::min(u1) << ", max: " << blaze::max(u1) << "\n";
+        std::cout << "gvf_y: min: " << blaze::min(v1) << ", max: " << blaze::max(v1) << "\n";
+
 
         // update phi
         if (torsion > threshold[4]) {

@@ -7,6 +7,8 @@
 */
 
 #define MEASURE
+#define DEBUG_OUTPUT
+#define BLAZE_DEBUG_MODE
 
 #include "distance_potential_minimization.hpp"
 //#include "../../modules/utils/image_processing/image_filter.hpp"
@@ -396,7 +398,12 @@ v(x,y,t+􏰀t)= v(x,y,t)+ 􏰀t/(􏰀x􏰀y) g (|∇f|) L * v(x,y,t) −􏰀th(|
 
             // torsion along the ellpise about center
             double torsion = torsion_moment(gvf_x, gvf_y, x_y_theta[0], x_y_theta[1], x_y_theta[2], xc, yc, phi);
-
+#ifdef DEBUG_OUTPUT
+            //std::cout << "theta: \n" << x_y_theta[0] << "\n" << x_y_theta[1] << "\n" << x_y_theta[2] << "\n";
+            std::cout << "iteration " << it << ":\n";
+            std::cout << "gvf_x: min: " << blaze::min(gvf_x) << ", max: " << blaze::max(gvf_x) << "\n";
+            std::cout << "gvf_y: min: " << blaze::min(gvf_y) << ", max: " << blaze::max(gvf_y) << "\n";
+#endif
             // update phi
             if (torsion > threshold[4]) {
                 phi = phi + increment[4];
@@ -878,8 +885,12 @@ std::vector<double> fit_hysteresis(
         std::cout << "-- in fit_hysteresis: call #" << i << " gaussian blur took " << seconds << " s\n";
         t1 = std::chrono::steady_clock::now();
 #endif
-        //auto [h1, v1] = DPM_detail::gvf(I1, 1, 0.1, 10);
-        auto [h1, v1] = DPM_detail::gvf(I1, 0.1, 1, 10);
+#ifdef DEBUG_OUTPUT
+        std::cout << "blur input: min: " << blaze::min(I) << ", max: " << blaze::max(I) << "\n";
+        std::cout << "GVF input: min: " << blaze::min(I1) << ", max: " << blaze::max(I1) << "\n";
+#endif
+        //auto [u1, v1] = DPM_detail::gvf(I1, 1, 0.1, 10);
+        auto [u1, v1] = DPM_detail::gvf(I1, 0.1, 1, 10);
 
 #ifdef MEASURE
         t2 = std::chrono::steady_clock::now();
@@ -887,7 +898,7 @@ std::vector<double> fit_hysteresis(
         std::cout << "-- in fit_hysteresis: call #" << i << " of gvf took " << seconds << " s, queried 10 iterations\n";
         t1 = std::chrono::steady_clock::now();
 #endif
-        ep = DPM_detail::fit_ellipse(ep, sigma[i] / 5 * increment, sigma[i] / 5 * threshold, bound, h1, v1, steps / sigma.size());
+        ep = DPM_detail::fit_ellipse(ep, sigma[i] / 5 * increment, sigma[i] / 5 * threshold, bound, u1, v1, steps / sigma.size());
 
 #ifdef MEASURE
         t2 = std::chrono::steady_clock::now();
@@ -927,7 +938,7 @@ std::vector<double> fit_hysteresis(const blaze::DynamicMatrix<double> & I, size_
 #ifdef MEASURE
         auto t1 = std::chrono::steady_clock::now();
 #endif
-        auto [h1, v1] = DPM_detail::gvf(I1, 1, 0.1, 10);
+        auto [u1, v1] = DPM_detail::gvf(I1, 1, 0.1, 10);
 
 #ifdef MEASURE
         auto t2 = std::chrono::steady_clock::now();
@@ -935,7 +946,7 @@ std::vector<double> fit_hysteresis(const blaze::DynamicMatrix<double> & I, size_
         std::cout << "-- in fit_hysteresis: call #" << i << " of gvf took " << seconds << " s, queried 10 iterations\n";
         t1 = std::chrono::steady_clock::now();
 #endif
-        ep = DPM_detail::fit_ellipse(ep, sigma[i] / 5 * increment, sigma[i] / 5 * threshold, bound, h1, v1, steps / sigma.size());
+        ep = DPM_detail::fit_ellipse(ep, sigma[i] / 5 * increment, sigma[i] / 5 * threshold, bound, u1, v1, steps / sigma.size());
 
 #ifdef MEASURE
         t2 = std::chrono::steady_clock::now();
