@@ -3,24 +3,31 @@
 #include "donuts.hpp"
 #include <iostream>
 
+#include <filesystem>
+
+
 //#include "../../modules/utils/image_processing/image_filter.hpp" // for only test call of imfilter,TODO remove
 #include "assets/helpers.cpp"
 #include "modules/utils/visualizer.hpp" // for only blaze2bmp_norm
 
-int main()
+
+
+void fit_donut(std::string filename)
 {
 
-    auto donut = read_png_donut<double>("assets/donuts/crop/crop_2020-07-27_16_23_01_776_donut1_128.png");
-    vector2bmp(matrix2vv(donut), "input.bmp");
+    //auto donut = read_png_donut<double>("assets/donuts/crop/crop_2020-07-27_16_23_01_776_donut1_128.png");
+    auto donut = read_png_donut<double>(filename);
+    vector2bmp(matrix2vv(donut), filename + ".input.bmp");
+    std::cout << "processing " << filename  << "\n";
     donut = radial_diff(donut);
 
     auto mask = weightingMask<double>(donut.rows(), donut.columns(), donut.columns()/3, 6);
-    vector2bmp(matrix2vv(mask), "mask_outer.bmp");
+    //vector2bmp(matrix2vv(mask), "mask_outer.bmp");
     //mask = weightingMask<double>(128, 128, 10, 2);
     //vector2bmp(matrix2vv(mask), "mask_inner.bmp");
 
     donut = mask % donut;
-    vector2bmp(matrix2vv(donut), "mask_applied.bmp");
+    //vector2bmp(matrix2vv(donut), "mask_applied.bmp");
 
 
     //auto donut = read_png_donut<double>("assets/donuts/crop/crop_2020-07-27_16_23_01_776_donut1.png");
@@ -31,7 +38,7 @@ int main()
     //size_t steps = 200;
     //std::vector<double> sigma = {50,30,15,5};
     size_t steps = 20;
-    std::vector<double> sigma = {5, 2}; // {15, 2}
+    std::vector<double> sigma = {4, 1.25}; //{2, 1.25}; //{5, 2}; // {15, 2}
 
     double init_x = donut.columns() / 2;
     double init_y = donut.rows() / 2;
@@ -48,7 +55,7 @@ int main()
     std::cout << " (Overall time: " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000
               << " s)" << std::endl;
 
-    vector2bmp(matrix2vv(donut), "input_filtered.bmp");
+    //vector2bmp(matrix2vv(donut), filename + "input_filtered.bmp");
 
     blaze::DynamicMatrix<double> donut_painted = donut;
 
@@ -72,10 +79,10 @@ int main()
         donut_painted(init_points[0][i], init_points[1][i]) = -0.5;
     }
 
-    vector2bmp(matrix2vv(donut_painted), "fitting_result.bmp");
+    vector2bmp(matrix2vv(donut_painted), filename + ".fitting_result.bmp");
 
-    std::cout << "initial ellipse position:\n xc = " << init_x << " yc = " << init_y << " a = " << init_r << " b = " << init_r
-              << " phi = " << 0 << std::endl;
+//    std::cout << "initial ellipse position:\n xc = " << init_x << " yc = " << init_y << " a = " << init_r << " b = " << init_r
+//              << " phi = " << 0 << std::endl;
 
     //* // padding & gradient tests, TODO delete
 //    blaze::DynamicMatrix<double> A {{1, 2, 3, 4, 5}, {6, 7, 8, 9, 10}, {11, 12, 13, 14, 15}, {16, 17, 18, 19, 20}};
@@ -299,5 +306,32 @@ int main()
     // */
 
 
+    //return 0;
+}
+
+
+//* single file provided in the repo
+
+int main() {
+    fit_donut("assets/donuts/crop/crop_2020-07-27_16_23_01_776_donut1_128.png");
     return 0;
 }
+
+//*/
+
+
+/* batch
+
+int main() {
+
+    std::string path = "assets/donuts/crop/crop128";
+    for (const auto & entry : std::filesystem::directory_iterator(path)) {
+        //std::cout << entry.path() << std::endl;
+        if (entry.path().extension() == ".png")
+            fit_donut(entry.path());
+    }
+
+    return 0;
+}
+
+// */
