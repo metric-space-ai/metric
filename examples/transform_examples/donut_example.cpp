@@ -196,7 +196,7 @@ int main()
     // */
 
 
-    //* // fit_ellipse & forces test, TODO delete
+    /* // fit_ellipse & forces test, TODO delete
 
     init_x = donut.columns() / 2;
     init_y = donut.rows() / 2;

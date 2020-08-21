@@ -6,9 +6,9 @@
   Copyright (c) 2020 Michael Welsch
 */
 
-#define MEASURE
-#define DEBUG_OUTPUT
-#define BLAZE_DEBUG_MODE
+//#define MEASURE
+//#define DEBUG_OUTPUT
+//#define BLAZE_DEBUG_MODE
 
 #include "distance_potential_minimization.hpp"
 //#include "../../modules/utils/image_processing/image_filter.hpp"
