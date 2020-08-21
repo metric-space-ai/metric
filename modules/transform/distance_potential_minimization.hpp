@@ -28,8 +28,8 @@ std::vector<double> fit_hysteresis(
         double r0,
         size_t steps = 200,
         std::vector<double> sigma = {50,30,15,5},
-        double thresh = 1e-6,
-        double incr = 0.2
+        double incr = 0.2,
+        double thresh = 1e-6
         );
 
 

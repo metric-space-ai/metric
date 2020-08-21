@@ -39,7 +39,7 @@ int main()
 
     auto t1 = std::chrono::steady_clock::now();
 
-    auto result = metric::fit_hysteresis(donut, init_x, init_y, init_r, steps, sigma);
+    auto result = metric::fit_hysteresis(donut, init_x, init_y, init_r, steps, sigma); //, 0.2, 1e-8); // TODO remove non-default thresold
 
     auto t2 = std::chrono::steady_clock::now();
 
@@ -276,6 +276,22 @@ int main()
         }
 
         std::cout << "torsion_moment: \n" << torsion << "\n";
+
+        // F_around
+        blaze::DynamicMatrix<double> iresult = metric::DPM_detail::contourForces(u1, v1, x_y_theta[0], x_y_theta[1]);
+        blaze::DynamicVector<double, blaze::rowVector> F_round = blaze::sum<blaze::columnwise>(iresult);
+
+        for (size_t i = 0; i < F_round.size(); ++i) {
+            F_round[i] = F_round[i] / double(x_y_theta[2].size());
+        }
+
+        std::vector<double> Fround(F_round.size());
+        for (size_t i = 0; i < F_round.size(); ++i) {
+            Fround[i] = F_round[i];
+        }
+
+        std::cout << "f_round: \n" << F_round << "\n";
+
     }
 
 
