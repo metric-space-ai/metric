@@ -22,12 +22,18 @@ void fit_donut(std::string filename)
     donut = radial_diff(donut);
 
     auto mask = weightingMask<double>(donut.rows(), donut.columns(), donut.columns()/3, 6);
+    donut = mask % donut;
+
     //vector2bmp(matrix2vv(mask), "mask_outer.bmp");
+
     //mask = weightingMask<double>(128, 128, 10, 2);
     //vector2bmp(matrix2vv(mask), "mask_inner.bmp");
 
-    donut = mask % donut;
     //vector2bmp(matrix2vv(donut), "mask_applied.bmp");
+
+//    auto [u, v] = metric::DPM_detail::gvf(donut, 0.1, 1, 10);
+//    vector2bmp(matrix2vv(u), filename + ".u.bmp");
+//    vector2bmp(matrix2vv(v), filename + ".v.bmp");
 
 
     //auto donut = read_png_donut<double>("assets/donuts/crop/crop_2020-07-27_16_23_01_776_donut1.png");
@@ -37,8 +43,8 @@ void fit_donut(std::string filename)
 
     //size_t steps = 200;
     //std::vector<double> sigma = {50,30,15,5};
-    size_t steps = 20;
-    std::vector<double> sigma = {4, 1.25}; //{2, 1.25}; //{5, 2}; // {15, 2}
+    size_t steps = 20; //1000; // 20;
+    std::vector<double> sigma = {2}; //{1.75}; //{2, 1.25}; //{5, 2}; // {15, 2}
 
     double init_x = donut.columns() / 2;
     double init_y = donut.rows() / 2;
@@ -46,7 +52,7 @@ void fit_donut(std::string filename)
 
     auto t1 = std::chrono::steady_clock::now();
 
-    auto result = metric::fit_hysteresis(donut, init_x, init_y, init_r, steps, sigma); //, 0.2, 1e-8); // TODO remove non-default thresold
+    auto result = metric::fit_hysteresis(donut, init_x, init_y, init_r, steps, sigma);//, 0.2, 1e-8); // TODO remove non-default thresold
 
     auto t2 = std::chrono::steady_clock::now();
 
@@ -80,6 +86,79 @@ void fit_donut(std::string filename)
     }
 
     vector2bmp(matrix2vv(donut_painted), filename + ".fitting_result.bmp");
+
+
+}
+
+
+//* single file provided in the repo
+
+int main() {
+    fit_donut("assets/donuts/crop/crop_2020-07-27_16_23_01_776_donut1_128.png");
+    //fit_donut("ring.png");
+    return 0;
+}
+
+//*/
+
+
+/* batch
+
+int main() {
+
+    std::string path = "assets/donuts/crop/crop256";
+    for (const auto & entry : std::filesystem::directory_iterator(path)) {
+        //std::cout << entry.path() << std::endl;
+        if (entry.path().extension() == ".png")
+            fit_donut(entry.path());
+    }
+
+    return 0;
+}
+
+// */
+
+
+
+// fit_ellipse by parts
+
+int f() {
+//int main() {
+
+//    auto donut = read_png_donut<double>("assets/donuts/crop/crop_2020-07-27_16_23_01_776_donut1_128.png");
+//    donut = radial_diff(donut);
+
+//    auto mask = weightingMask<double>(donut.rows(), donut.columns(), donut.columns()/3, 6);
+//    donut = mask % donut;
+
+    auto ring = weightingMask<double>(128 - 7, 128 - 7, 40, 6);
+    blaze::DynamicMatrix<double> donut (128, 128, 0);
+    blaze::submatrix(donut, 7, 7, 128 - 7, 128 - 7) = ring;
+    blaze_dm_to_csv(donut, "ring.csv");
+    vector2bmp(matrix2vv(donut), "ring.bmp");
+
+    //vector2bmp(matrix2vv(mask), "mask_outer.bmp");
+
+    //mask = weightingMask<double>(128, 128, 10, 2);
+    //vector2bmp(matrix2vv(mask), "mask_inner.bmp");
+
+    //vector2bmp(matrix2vv(donut), "mask_applied.bmp");
+
+
+    //auto donut = read_png_donut<double>("assets/donuts/crop/crop_2020-07-27_16_23_01_776_donut1.png");
+
+    //auto donut = read_png_donut<double>("assets/donuts/crop/donut_6_radial_outer_128.png");
+    //auto donut = read_png_donut<double>("assets/donuts/crop/donut_6_radial_outer_256.png");
+
+    //size_t steps = 200;
+    //std::vector<double> sigma = {50,30,15,5};
+    //size_t steps = 1000; // 20;
+    std::vector<double> sigma = {2}; //{1.75}; //{2, 1.25}; //{5, 2}; // {15, 2}
+
+    double init_x = donut.columns() / 2;
+    double init_y = donut.rows() / 2;
+    double init_r = donut.columns() / 3;
+
 
 //    std::cout << "initial ellipse position:\n xc = " << init_x << " yc = " << init_y << " a = " << init_r << " b = " << init_r
 //              << " phi = " << 0 << std::endl;
@@ -123,6 +202,7 @@ void fit_donut(std::string filename)
     auto [h_1, v_1] = metric::DPM_detail::gvf(I, 0.1, 1, 10);
 
     std::cout << h_1 << "\n" << v_1 << "\n";
+    return 0;
 
 //            // original code
 //            blaze::DynamicMatrix<double> f(I);
@@ -203,7 +283,7 @@ void fit_donut(std::string filename)
     // */
 
 
-    /* // fit_ellipse & forces test, TODO delete
+    //* // fit_ellipse & forces test, TODO delete
 
     init_x = donut.columns() / 2;
     init_y = donut.rows() / 2;
@@ -215,15 +295,18 @@ void fit_donut(std::string filename)
     //auto I1 = metric::DPM_detail::gaussianBlur(donut, sigma[0]);
 
 
-    auto gk = metric::DPM_detail::gaussianKernel(sigma[0]);
-    blaze::DynamicMatrix<double> I1 = metric::DPM_detail::blackPaddedConv(donut, gk);
-    vector2bmp(matrix2vv(I1), "blurred.bmp");
-    mat2bmp::blaze2bmp_norm(I1, "blurred_norm.bmp");
-    //I1 = blaze::submatrix(I1, (I1.rows() - donut.rows()) / 2, (I1.columns() - donut.columns()) / 2, donut.rows(), donut.columns());
-    //vector2bmp(matrix2vv(I1), "blurred_cropped.bmp");
+//    auto gk = metric::DPM_detail::gaussianKernel(sigma[0]);
+//    blaze::DynamicMatrix<double> I1 = metric::DPM_detail::blackPaddedConv(donut, gk);
+//    vector2bmp(matrix2vv(I1), "blurred.bmp");
+//    mat2bmp::blaze2bmp_norm(I1, "blurred_norm.bmp");
+//    //I1 = blaze::submatrix(I1, (I1.rows() - donut.rows()) / 2, (I1.columns() - donut.columns()) / 2, donut.rows(), donut.columns());
+//    //vector2bmp(matrix2vv(I1), "blurred_cropped.bmp");
 
-    std::cout << "blur input: min: " << blaze::min(donut) << ", max: " << blaze::max(donut) << "\n";
-    std::cout << "GVF input: min: " << blaze::min(I1) << ", max: " << blaze::max(I1) << "\n";
+//    std::cout << "blur input: min: " << blaze::min(donut) << ", max: " << blaze::max(donut) << "\n";
+//    std::cout << "GVF input: min: " << blaze::min(I1) << ", max: " << blaze::max(I1) << "\n";
+
+
+    auto I1 = donut;
 
     auto [u1, v1] = metric::DPM_detail::gvf(I1, 0.1, 1, 10);
     vector2bmp(matrix2vv(u1), "u1.bmp");
@@ -259,6 +342,9 @@ void fit_donut(std::string filename)
     double b = init_r;
     double phi = 0;
 
+    increment = sigma[0] / 5 * increment;
+    threshold = sigma[0] / 5 * threshold;
+
     size_t local_n_iter = 1;
 
     for (size_t it = 0; it < local_n_iter; ++it) {
@@ -269,7 +355,7 @@ void fit_donut(std::string filename)
         // torsion along the ellpise about center
         double torsion = metric::DPM_detail::torsion_moment(u1, v1, x_y_theta[0], x_y_theta[1], x_y_theta[2], xc, yc, phi);
 
-        //std::cout << "theta: \n" << x_y_theta[0] << "\n" << x_y_theta[1] << "\n" << x_y_theta[2] << "\n";
+        std::cout << "theta: \n" << x_y_theta[0] << "\n" << x_y_theta[1] << "\n" << x_y_theta[2] << "\n";
         std::cout << "gvf_x: min: " << blaze::min(u1) << ", max: " << blaze::max(u1) << "\n";
         std::cout << "gvf_y: min: " << blaze::min(v1) << ", max: " << blaze::max(v1) << "\n";
 
@@ -299,39 +385,116 @@ void fit_donut(std::string filename)
 
         std::cout << "f_round: \n" << F_round << "\n";
 
+
+        std::vector<double> x_index1;
+        std::vector<double> y_index1;
+        std::vector<double> x_index2;
+        std::vector<double> y_index2;
+        std::vector<double> x_index3;
+        std::vector<double> y_index3;
+        std::vector<double> x_index4;
+        std::vector<double> y_index4;
+
+        for (size_t i = 0; i < x_y_theta[0].size(); ++i) {
+            if (x_y_theta[2][i] > M_PI * 3 / 4 && x_y_theta[2][i] < M_PI * 5 / 4) {
+                x_index1.push_back(x_y_theta[0][i]);
+                y_index1.push_back(x_y_theta[1][i]);
+            }
+            if (x_y_theta[2][i] < M_PI / 4 || x_y_theta[2][i] > M_PI * 7 / 4) {
+                x_index2.push_back(x_y_theta[0][i]);
+                y_index2.push_back(x_y_theta[1][i]);
+            }
+            if (x_y_theta[2][i] > M_PI / 4 && x_y_theta[2][i] < M_PI * 3 / 4) {
+                x_index3.push_back(x_y_theta[0][i]);
+                y_index3.push_back(x_y_theta[1][i]);
+            }
+            if (x_y_theta[2][i] > M_PI * 5 / 4 && x_y_theta[2][i] < M_PI * 7 / 4) {
+                x_index4.push_back(x_y_theta[0][i]);
+                y_index4.push_back(x_y_theta[1][i]);
+            }
+        }
+
+        double F_left = metric::DPM_detail::force(u1, v1, x_index1, y_index1, std::cos(phi), std::sin(phi));
+        double F_right = metric::DPM_detail::force(u1, v1, x_index2, y_index2, -std::cos(phi), -std::sin(phi));
+        double F_up = metric::DPM_detail::force(u1, v1, x_index3, y_index3, std::sin(phi), -std::cos(phi));
+        double F_down = metric::DPM_detail::force(u1, v1, x_index4, y_index4, -std::sin(phi), std::cos(phi));
+
+        // std::cout << "it=" << it << " --> " << F_left << " " << F_right << " " << F_up << " " << F_down
+        //           << std::endl;
+
+        // update xc and yc
+        double F_left_right = F_round[0] * 1 + F_round[1] * 0;
+        if (F_left_right > threshold[0]) {
+            xc = xc + increment[0];
+            ;
+        } else if (F_left_right < -threshold[0]) {
+            xc = xc - increment[0];
+        }
+
+        double F_down_up = F_round[0] * 0 + F_round[1] * 1;
+        if (F_down_up > threshold[1]) {
+            yc = yc + increment[1];
+        } else if (F_down_up < -threshold[1]) {
+            yc = yc - increment[1];
+        }
+
+        // update xc and yc again according to diagonal force
+        double F_diag1 = F_round[0] * 0.7071 + F_round[1] * 0.7071;
+        if (F_diag1 > threshold[0] + threshold[1]) {
+            xc = xc + increment[0];
+            yc = yc + increment[1];
+        } else if (F_diag1 < -threshold[0] - threshold[1]) {
+            xc = xc - increment[0];
+            yc = yc - increment[1];
+        }
+
+        double F_diag2 = F_round[0] * (-0.7071) + F_round[1] * 0.7071;
+        if (F_diag2 > threshold[0] + threshold[1]) {
+            xc = xc - increment[0];
+            yc = yc + increment[1];
+        } else if (F_diag2 < -threshold[0] - threshold[1]) {
+            xc = xc + increment[0];
+            yc = yc - increment[1];
+        }
+
+        // update a and b
+
+        if (F_left + F_right > threshold[2])
+            a = a - increment[2];
+        else if (F_left + F_right < -threshold[2])
+            a = a + increment[2];
+
+        if (F_up + F_down > threshold[3])
+            b = b - increment[3];
+        else if (F_up + F_down < -threshold[3])
+            b = b + increment[3];
+
+        if (b > a) {
+            std::swap(a, b);
+            phi = std::fmod(phi + M_PI / 2, M_PI);
+        }
+
+        // restrict a and b using lower and upper bounds
+        if (a > bound[1])
+            a = bound[1];
+
+        if (a < bound[0])
+            a = bound[0];
+
+        if (b > bound[3])
+            b = bound[3];
+
+        if (b < bound[2])
+            b = bound[2];
+
+        std::cout << "iner result: " << xc << " " << yc << " " << a << " " << b << " " << phi << " | " << it << "\n";  // TODO remove
+
     }
-
-
 
     // */
 
-
-    //return 0;
-}
-
-
-//* single file provided in the repo
-
-int main() {
-    fit_donut("assets/donuts/crop/crop_2020-07-27_16_23_01_776_donut1_128.png");
     return 0;
 }
 
-//*/
 
 
-/* batch
-
-int main() {
-
-    std::string path = "assets/donuts/crop/crop128";
-    for (const auto & entry : std::filesystem::directory_iterator(path)) {
-        //std::cout << entry.path() << std::endl;
-        if (entry.path().extension() == ".png")
-            fit_donut(entry.path());
-    }
-
-    return 0;
-}
-
-// */

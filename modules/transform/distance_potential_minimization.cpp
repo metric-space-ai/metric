@@ -362,6 +362,8 @@ namespace DPM_detail {
             c = (size_t)x[i] - 1;
             fx = u(r, c);
             fy = v(r, c);
+            //fx = u(y[i], x[i]);
+            //fy = v(y[i], x[i]);
             force += (fx * p_cos + fy * p_sin);
         }
         return force / N;
@@ -642,7 +644,8 @@ v(x,y,t+􏰀t)= v(x,y,t)+ 􏰀t/(􏰀x􏰀y) g (|∇f|) L * v(x,y,t) −􏰀th(|
 #endif
         //std::cout << "u:\n" << u2 << "v:\n" << v2 << "\n"; // TODO remove
 
-        return std::make_tuple(u2, v2);
+        //return std::make_tuple(u2, v2);
+        return std::make_tuple(v2, u2); // replaced by Max F
     }
 
     double ln_gamma(double x)

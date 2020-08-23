@@ -79,7 +79,10 @@ void blaze_dm_to_csv(blaze::DynamicMatrix<ValueType> data, std::string filename,
     outputFile.open(filename);
         for (auto i = 0; i < data.rows(); ++i) {
             for (auto j = 0; j < data.columns(); j++) {
-                outputFile << std::to_string(data(i, j)) << sep;
+                //outputFile << std::to_string(data(i, j)) << sep;
+                outputFile << std::to_string(data(i, j));
+                if (j < data.columns() - 1)
+                    outputFile << sep;
             }
             outputFile << std::endl;
         }
