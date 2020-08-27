@@ -339,7 +339,7 @@ namespace DPM_detail {
 
         blaze::DynamicMatrix<double> F(N, 2);
         for (size_t i = 0; i < N; i++) {
-            r = (size_t)y[i] - 1;
+            r = (size_t)y[i] - 1; // TODO recheck!!
             c = (size_t)x[i] - 1;
             F(i, 0) = u(r, c);
             F(i, 1) = v(r, c);
@@ -358,7 +358,7 @@ namespace DPM_detail {
         size_t r, c;
         double fx, fy;
         for (size_t i = 0; i < N; i++) {
-            r = (size_t)y[i] - 1;
+            r = (size_t)y[i] - 1; // TODO recheck!!!
             c = (size_t)x[i] - 1;
             fx = u(r, c);
             fy = v(r, c);

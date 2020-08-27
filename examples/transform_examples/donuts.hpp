@@ -345,6 +345,7 @@ imgToGraph4(std::vector<std::vector<int>> in) {
 // */
 
 
+
 std::vector<std::vector<double>> radial_diff(std::vector<std::vector<double>> in, double step=1.5) {
 
     size_t height = in.size();
@@ -385,6 +386,7 @@ std::vector<std::vector<double>> radial_diff(std::vector<std::vector<double>> in
 }
 
 
+
 template <typename T>
 blaze::DynamicMatrix<T> radial_diff(const blaze::DynamicMatrix<T> & in, double step=1.5) {
 
@@ -399,9 +401,13 @@ blaze::DynamicMatrix<T> radial_diff(const blaze::DynamicMatrix<T> & in, double s
     for (int y=0; y<(int)in.rows(); ++y) {
         for (int x=0; x<(int)in.columns(); ++x) {
 
-            double fi = atan2(x - x0, y - y0); // TODO remove trigonometry functions, components can be computed without angle!
-            double xi = x - sin(fi) * step; // point for interpolation, '-' for direction to center
-            double yi = y - cos(fi) * step;
+            //double fi = atan2(x - x0, y - y0); // components can be computed without angle!
+            //double xi = x - sin(fi) * step; // point for interpolation, '-' for direction to center
+            //double yi = y - cos(fi) * step;
+            double d_center = sqrt(pow(x - x0, 2) + pow(y - y0, 2));
+            double xi = x - (x - x0) * step / d_center; // point for interpolation, '-' for direction to center
+            double yi = y - (y - y0) * step / d_center;
+
 
             size_t bxi = (size_t)floor(xi); // base
             size_t byi = (size_t)floor(yi);

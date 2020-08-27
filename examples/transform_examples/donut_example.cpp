@@ -12,6 +12,19 @@
 
 
 
+void filter_donut(std::string filename) {
+    auto donut = read_png_donut<double>(filename);
+    vector2bmp(matrix2vv(donut), filename + ".input.bmp");
+    std::cout << "processing " << filename  << "\n";
+    donut = radial_diff(donut);
+
+    auto mask = weightingMask<double>(donut.rows(), donut.columns(), donut.columns()/3, 6);
+    donut = mask % donut;
+    vector2bmp(matrix2vv(donut), filename + "filtered.bmp");
+}
+
+
+
 void fit_donut(std::string filename)
 {
 
@@ -102,15 +115,98 @@ int main() {
 //*/
 
 
+
+/* single file
+
+int main() {
+    fit_donut("test01.png");
+    return 0;
+}
+
+//*/
+
+
+
+/* ellipse2grid test
+
+int main() {
+    auto ellipse = metric::DPM_detail::ellipse2grid(50, 50, 24, 15.7, 5.3, 10.5, -1.1);
+    for (auto v : ellipse) {
+        std::cout << v << "\n length: " << v.size() << "\n";
+    }
+    return 0;
+}
+
+//*/
+
+
+
+/* gvf & torsioin test, fits ok
+
+int main() {
+
+    blaze::DynamicMatrix<double> I = {
+        {1, 0, 0, 0, 0 ,0, 0, 0, 0, 1},
+        {0, 8, 2, 0, 0 ,0, 0, 0, 7, 0},
+        {0, 0, 2, 0, 0 ,0, 0, 0, 0, 0},
+        {0, 0, 2, 5, 0 ,0, 0, 0, 0, 0},
+        {0, 0, 3, 6, 2 ,0, 0, 0, 0, 0},
+        {1, 0, 2, 4, 1 ,0, 0, 1, 0, 0},
+        {0, 0, 2, 0, 0 ,0, 1, 2, 1, 0},
+        {0, 0, 1, 0, 0 ,1, 2, 3, 2, 1},
+        {0, 5, 0, 0, 0 ,0, 1, 2, 6, 0},
+        {1, 0, 2, 0, 0 ,0, 0, 1, 0, 1}
+    };
+
+    auto [u, v] = metric::DPM_detail::gvf(I, 0.1, 1, 10);
+
+    std::cout << "u:\n" << u << "v:\n" << v << "\n";
+
+    std::vector<blaze::DynamicVector<double>> x_y_theta = metric::DPM_detail::ellipse2grid(10, 10, 5, 5, 2, 3, 0.1);
+
+    std::cout << "x:\n" << x_y_theta[0] << "y:\n" << x_y_theta[1] << "theta:\n" <<x_y_theta[2] << "\n";
+
+    double torsion = metric::DPM_detail::torsion_moment(u, v, x_y_theta[0], x_y_theta[1], x_y_theta[2], 5, 5, 0.1);
+
+    std::cout << "torsion moment: " << torsion << "\n";
+
+    return 0;
+}
+
+
+// */
+
+
+/*
+
+int main() { // convert single file to csv, png reader fails!
+
+    auto donut = read_png_donut<double>("test01.png");
+    blaze::DynamicMatrix<double> fragm = blaze::submatrix(donut, 0, 0, 20, 20);
+    std::cout << fragm;
+    blaze_dm_to_csv(fragm, "fragm01.csv");
+    blaze_dm_to_csv(donut, "test01.csv");
+
+    return 0;
+}
+
+
+// */
+
+
+
+
 /* batch
 
 int main() {
 
-    std::string path = "assets/donuts/crop/crop256";
+    //std::string path = "assets/donuts/crop/crop256";
+    std::string path = "assets/donuts/crop/crop128";
     for (const auto & entry : std::filesystem::directory_iterator(path)) {
         //std::cout << entry.path() << std::endl;
         if (entry.path().extension() == ".png")
             fit_donut(entry.path());
+            //filter_donut(entry.path());
     }
 
     return 0;
@@ -131,11 +227,16 @@ int f() {
 //    auto mask = weightingMask<double>(donut.rows(), donut.columns(), donut.columns()/3, 6);
 //    donut = mask % donut;
 
+    /* // generate & save ring
     auto ring = weightingMask<double>(128 - 7, 128 - 7, 40, 6);
     blaze::DynamicMatrix<double> donut (128, 128, 0);
     blaze::submatrix(donut, 7, 7, 128 - 7, 128 - 7) = ring;
     blaze_dm_to_csv(donut, "ring.csv");
     vector2bmp(matrix2vv(donut), "ring.bmp");
+    // */
+
+    auto donut = read_csv_blaze<double>("test01.csv", ",");
+
 
     //vector2bmp(matrix2vv(mask), "mask_outer.bmp");
 
@@ -312,6 +413,19 @@ int f() {
     vector2bmp(matrix2vv(u1), "u1.bmp");
     vector2bmp(matrix2vv(v1), "v1.bmp");
 
+    u1 = read_csv_blaze<double>("u.csv", ","); // TODO remove
+    v1 = read_csv_blaze<double>("v.csv", ",");
+    vector2bmp(matrix2vv(u1), "u2.bmp");
+    vector2bmp(matrix2vv(v1), "v2.bmp");
+
+    std::cout << "input: " << blaze::min(I1) << ".." << blaze::max(I1) << "\n";
+    std::cout << "u1: " << blaze::min(u1) << ".." << blaze::max(u1) << "\n";
+    std::cout << "v1: " << blaze::min(v1) << ".." << blaze::max(v1) << "\n";
+
+    //blaze_dm_to_csv(I1, "test01_read.csv");
+    //blaze_dm_to_csv(u1, "u1.csv");
+    //blaze_dm_to_csv(v1, "v1.csv");
+
     //std::cout << "\ninput: \n" << donut << "\n";
     //std::cout << "\nblurred: \n" << I1 << "\n";
     //std::cout << "\nforse field: \n" << u1 << "\n" << v1 << "\n";
@@ -345,7 +459,7 @@ int f() {
     increment = sigma[0] / 5 * increment;
     threshold = sigma[0] / 5 * threshold;
 
-    size_t local_n_iter = 1;
+    size_t local_n_iter = 2000;
 
     for (size_t it = 0; it < local_n_iter; ++it) {
 
@@ -355,9 +469,9 @@ int f() {
         // torsion along the ellpise about center
         double torsion = metric::DPM_detail::torsion_moment(u1, v1, x_y_theta[0], x_y_theta[1], x_y_theta[2], xc, yc, phi);
 
-        std::cout << "theta: \n" << x_y_theta[0] << "\n" << x_y_theta[1] << "\n" << x_y_theta[2] << "\n";
-        std::cout << "gvf_x: min: " << blaze::min(u1) << ", max: " << blaze::max(u1) << "\n";
-        std::cout << "gvf_y: min: " << blaze::min(v1) << ", max: " << blaze::max(v1) << "\n";
+        //std::cout << "theta: \n" << x_y_theta[0] << "\n" << x_y_theta[1] << "\n" << x_y_theta[2] << "\n";
+        //std::cout << "gvf_x: min: " << blaze::min(u1) << ", max: " << blaze::max(u1) << "\n";
+        //std::cout << "gvf_y: min: " << blaze::min(v1) << ", max: " << blaze::max(v1) << "\n";
 
 
         // update phi
@@ -487,7 +601,7 @@ int f() {
         if (b < bound[2])
             b = bound[2];
 
-        std::cout << "iner result: " << xc << " " << yc << " " << a << " " << b << " " << phi << " | " << it << "\n";  // TODO remove
+        std::cout << "iter result: " << xc << " " << yc << " " << a << " " << b << " " << phi << " | " << it << "\n\n";  // TODO remove
 
     }
 
