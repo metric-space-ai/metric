@@ -29,7 +29,7 @@ namespace metric {
 
 namespace DPM_detail {
 
-    blaze::DynamicMatrix<double> addPad(const blaze::DynamicMatrix<double>& A)
+    static blaze::DynamicMatrix<double> addPad(const blaze::DynamicMatrix<double>& A)
     {
         size_t m = A.rows();
         size_t n = A.columns();
@@ -67,7 +67,7 @@ namespace DPM_detail {
         return B;
     }
 
-    blaze::DynamicMatrix<double> removePad(const blaze::DynamicMatrix<double>& A)
+    static blaze::DynamicMatrix<double> removePad(const blaze::DynamicMatrix<double>& A)
     {
 
         size_t m = A.rows();
@@ -82,7 +82,7 @@ namespace DPM_detail {
         return B;
     }
 
-    void updatePad(blaze::DynamicMatrix<double>& A)
+    static void updatePad(blaze::DynamicMatrix<double>& A)
     {
         size_t m = A.rows();
         size_t n = A.columns();
@@ -113,7 +113,7 @@ namespace DPM_detail {
         A(m - 1, n - 1) = A(m - 3, n - 3);
     }
 
-    std::tuple<blaze::DynamicMatrix<double>, blaze::DynamicMatrix<double>> gradient(
+    static std::tuple<blaze::DynamicMatrix<double>, blaze::DynamicMatrix<double>> gradient(
         const blaze::DynamicMatrix<double>& f)
     {
         size_t m = f.rows();
@@ -152,7 +152,7 @@ namespace DPM_detail {
     }
 
 
-    blaze::DynamicMatrix<double> laplacian(const blaze::DynamicMatrix<double>& A)
+    static blaze::DynamicMatrix<double> laplacian(const blaze::DynamicMatrix<double>& A)
     {
         size_t m = A.rows();
         size_t n = A.columns();
@@ -172,7 +172,8 @@ namespace DPM_detail {
         return B;
 
     }
-    std::tuple<double, double, double> initialCircle(const blaze::DynamicMatrix<double>& A)
+
+    static std::tuple<double, double, double> initialCircle(const blaze::DynamicMatrix<double>& A)
     {
         size_t m = A.rows();
         size_t n = A.columns();
@@ -202,7 +203,7 @@ namespace DPM_detail {
         return std::make_tuple(xc, yc, r);
     }
 
-    std::vector<double> linspace(double a, double b, size_t n)
+    static std::vector<double> linspace(double a, double b, size_t n)
     {
         std::vector<double> array;
         if (n > 1) {
@@ -230,7 +231,7 @@ namespace DPM_detail {
     b: elliptic parameter b
     phi: arc
 */
-    std::vector<blaze::DynamicVector<double>> ellipse2grid(
+    static std::vector<blaze::DynamicVector<double>> ellipse2grid(
         size_t m, size_t n, double xc, double yc, double a, double b, double phi)
     {
 
@@ -300,7 +301,7 @@ namespace DPM_detail {
         return result;
     }
 
-    double torsion_moment(const blaze::DynamicMatrix<double>& u, const blaze::DynamicMatrix<double>& v,
+    static double torsion_moment(const blaze::DynamicMatrix<double>& u, const blaze::DynamicMatrix<double>& v,
         const blaze::DynamicVector<double>& x, const blaze::DynamicVector<double>& y,
         const blaze::DynamicVector<double>& theta, double xc, double yc, double phi)
     {
@@ -328,7 +329,7 @@ namespace DPM_detail {
         return torsional_moment;
     }
 
-    blaze::DynamicMatrix<double> contourForces(const blaze::DynamicMatrix<double>& u,
+    static blaze::DynamicMatrix<double> contourForces(const blaze::DynamicMatrix<double>& u,
         const blaze::DynamicMatrix<double>& v, const blaze::DynamicVector<double>& x,
         const blaze::DynamicVector<double>& y)
     {
@@ -347,7 +348,7 @@ namespace DPM_detail {
         return F;
     }
 
-    double force(const blaze::DynamicMatrix<double>& u, const blaze::DynamicMatrix<double>& v,
+    static double force(const blaze::DynamicMatrix<double>& u, const blaze::DynamicMatrix<double>& v,
         const std::vector<double>& x, const std::vector<double>& y, double p_cos, double p_sin)
     {
         size_t m = u.rows();
@@ -375,7 +376,7 @@ the algorithm finds the best model parameters to minimimize the distance potenti
 gvf field is implemented using an explicit finite difference scheme.
 v(x,y,t+􏰀t)= v(x,y,t)+ 􏰀t/(􏰀x􏰀y) g (|∇f|) L * v(x,y,t) −􏰀th(|∇f |) [v(x, y, t) − ∇f ].
 */ 
-    std::vector<double> fit_ellipse(const std::vector<double>& init, const blaze::DynamicVector<double>& increment,
+    static std::vector<double> fit_ellipse(const std::vector<double>& init, const blaze::DynamicVector<double>& increment,
         const blaze::DynamicVector<double>& threshold, const std::vector<double>& bound,
         const blaze::DynamicMatrix<double>& gvf_x, const blaze::DynamicMatrix<double>& gvf_y, size_t iter)
     {
@@ -542,7 +543,7 @@ v(x,y,t+􏰀t)= v(x,y,t)+ 􏰀t/(􏰀x􏰀y) g (|∇f|) L * v(x,y,t) −􏰀th(|
     }
 
     /* Gradient Vector Flow (GVF) */
-    std::tuple<blaze::DynamicMatrix<double>, blaze::DynamicMatrix<double>> gvf(
+    static std::tuple<blaze::DynamicMatrix<double>, blaze::DynamicMatrix<double>> gvf(
         const blaze::DynamicMatrix<double>& f0, double alpha, double mu, size_t iter)
     {
         blaze::DynamicMatrix<double> f(f0);
@@ -648,7 +649,7 @@ v(x,y,t+􏰀t)= v(x,y,t)+ 􏰀t/(􏰀x􏰀y) g (|∇f|) L * v(x,y,t) −􏰀th(|
         return std::make_tuple(v2, u2); // replaced by Max F
     }
 
-    double ln_gamma(double x)
+    static double ln_gamma(double x)
     {
         double g;
         if (x < 0) {
@@ -665,7 +666,7 @@ v(x,y,t+􏰀t)= v(x,y,t)+ 􏰀t/(􏰀x􏰀y) g (|∇f|) L * v(x,y,t) −􏰀th(|
         return g;
     }
 
-    double ln_besseli(double _nu, double _z)
+    static double ln_besseli(double _nu, double _z)
     {
         double t0 = _nu * std::log(0.5 * _z);
         double t1 = 0.0;
@@ -690,7 +691,7 @@ v(x,y,t+􏰀t)= v(x,y,t)+ 􏰀t/(􏰀x􏰀y) g (|∇f|) L * v(x,y,t) −􏰀th(|
     }
 
     // I_v(z) : Modified Bessel function of the first kind
-    double besseli(double nu, double z) { return std::exp(ln_besseli(nu, z)); }
+    static double besseli(double nu, double z) { return std::exp(ln_besseli(nu, z)); }
 
     /* Correct for the radius of curvature
    input: 
@@ -700,7 +701,7 @@ v(x,y,t+􏰀t)= v(x,y,t)+ 􏰀t/(􏰀x􏰀y) g (|∇f|) L * v(x,y,t) −􏰀th(|
    output:
    R: corrected radius
 */
-    double correctCurve(double r, double sigma, size_t iter)
+    static double correctCurve(double r, double sigma, size_t iter)
     {
         double var = sigma * sigma;
         double R = r;
@@ -725,7 +726,7 @@ v(x,y,t+􏰀t)= v(x,y,t)+ 􏰀t/(􏰀x􏰀y) g (|∇f|) L * v(x,y,t) −􏰀th(|
 
     template <typename T>
 
-    T gauss(T x, T mu, T sigma) {
+    static T gauss(T x, T mu, T sigma) {
         T expVal = -1 * (pow(x - mu, 2) / pow(2 * sigma, 2));
         return exp(expVal) / (sqrt(2 * M_PI * pow(sigma, 2)));
     }
@@ -733,7 +734,7 @@ v(x,y,t+􏰀t)= v(x,y,t)+ 􏰀t/(􏰀x􏰀y) g (|∇f|) L * v(x,y,t) −􏰀th(|
 
 
     template <typename T>
-    blaze::DynamicMatrix<T> gaussianKernel(T sigma) {
+    static blaze::DynamicMatrix<T> gaussianKernel(T sigma) {
         size_t sz = round(sigma * 6) + 2;
         if (sz % 2 != 0)
             ++sz;
@@ -799,7 +800,7 @@ v(x,y,t+􏰀t)= v(x,y,t)+ 􏰀t/(􏰀x􏰀y) g (|∇f|) L * v(x,y,t) −􏰀th(|
 
 
     template <typename T>
-    blaze::DynamicMatrix<T> gaussianBlur(const blaze::DynamicMatrix<T> & img, T sigma) {
+    static blaze::DynamicMatrix<T> gaussianBlur(const blaze::DynamicMatrix<T> & img, T sigma) {
         auto kernel = gaussianKernel(sigma);
         auto conv = Convolution2dCustomStride1<T, 1>(img.columns(), img.rows(), kernel.columns(), kernel.rows());
         auto blurred = conv({img}, kernel)[0];
@@ -814,7 +815,7 @@ v(x,y,t+􏰀t)= v(x,y,t)+ 􏰀t/(􏰀x􏰀y) g (|∇f|) L * v(x,y,t) −􏰀th(|
 
 
     template <typename T> // very temporary solution, TODO update!!
-    blaze::DynamicMatrix<T> blackPaddedConv(const blaze::DynamicMatrix<T> & img, const blaze::DynamicMatrix<T> & kernel) {
+    static blaze::DynamicMatrix<T> blackPaddedConv(const blaze::DynamicMatrix<T> & img, const blaze::DynamicMatrix<T> & kernel) {
         auto conv = Convolution2dCustomStride1<T, 1>(img.columns(), img.rows(), kernel.columns(), kernel.rows());
         auto blurred = conv({img}, kernel)[0];
         blaze::DynamicMatrix<T> padded (img.rows(), img.columns(), 0);
@@ -830,7 +831,7 @@ v(x,y,t+􏰀t)= v(x,y,t)+ 􏰀t/(􏰀x􏰀y) g (|∇f|) L * v(x,y,t) −􏰀th(|
 
 }  // end namespace DPM_detail
 
-std::vector<double> fit_hysteresis(const blaze::DynamicVector<double> & x, const blaze::DynamicVector<double> & y, size_t grid_row,
+static std::vector<double> fit_hysteresis(const blaze::DynamicVector<double> & x, const blaze::DynamicVector<double> & y, size_t grid_row,
     size_t grid_column, size_t steps, std::vector<double> sigma)
 {
 
@@ -847,7 +848,7 @@ std::vector<double> fit_hysteresis(const blaze::DynamicVector<double> & x, const
 
 
 
-std::vector<double> fit_hysteresis(
+static std::vector<double> fit_hysteresis(
         const blaze::DynamicMatrix<double> & I,
         double xc0,
         double yc0,
@@ -925,7 +926,7 @@ std::vector<double> fit_hysteresis(
 
 
 
-std::vector<double> fit_hysteresis(const blaze::DynamicMatrix<double> & I, size_t steps, std::vector<double> sigma)
+static std::vector<double> fit_hysteresis(const blaze::DynamicMatrix<double> & I, size_t steps, std::vector<double> sigma)
 {
 
     auto [xc0, yc0, r0] = DPM_detail::initialCircle(I);  // initial guess

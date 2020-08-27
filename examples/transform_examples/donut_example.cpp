@@ -31,22 +31,26 @@ void fit_donut(std::string filename)
     //auto donut = read_png_donut<double>("assets/donuts/crop/crop_2020-07-27_16_23_01_776_donut1_128.png");
     auto donut = read_png_donut<double>(filename);
     vector2bmp(matrix2vv(donut), filename + ".input.bmp");
-    std::cout << "processing " << filename  << "\n";
+    std::cout << "processing " << filename  << ": " << donut.columns() << "*" << donut.rows() << "\n";
+
+    auto donut_input = donut;
+
     donut = radial_diff(donut);
 
-    auto mask = weightingMask<double>(donut.rows(), donut.columns(), donut.columns()/3, 6);
+    //auto mask = weightingMask<double>(donut.rows(), donut.columns(), donut.columns()/3, 6);
+    auto mask = weightingMask<double>(donut.rows(), donut.columns(), donut.columns()*0.4, 15); // new donuts
     donut = mask % donut;
 
-    //vector2bmp(matrix2vv(mask), "mask_outer.bmp");
+    vector2bmp(matrix2vv(mask), filename + "mask_outer.bmp");
 
     //mask = weightingMask<double>(128, 128, 10, 2);
     //vector2bmp(matrix2vv(mask), "mask_inner.bmp");
 
-    //vector2bmp(matrix2vv(donut), "mask_applied.bmp");
+    vector2bmp(matrix2vv(donut), filename + "mask_applied.bmp");
 
-//    auto [u, v] = metric::DPM_detail::gvf(donut, 0.1, 1, 10);
-//    vector2bmp(matrix2vv(u), filename + ".u.bmp");
-//    vector2bmp(matrix2vv(v), filename + ".v.bmp");
+    auto [u, v] = metric::DPM_detail::gvf(donut, 0.1, 1, 10);
+    vector2bmp(matrix2vv(u), filename + ".u.bmp");
+    vector2bmp(matrix2vv(v), filename + ".v.bmp");
 
 
     //auto donut = read_png_donut<double>("assets/donuts/crop/crop_2020-07-27_16_23_01_776_donut1.png");
@@ -56,12 +60,17 @@ void fit_donut(std::string filename)
 
     //size_t steps = 200;
     //std::vector<double> sigma = {50,30,15,5};
-    size_t steps = 20; //1000; // 20;
+    size_t steps = 200; //1000; // 20;
     std::vector<double> sigma = {2}; //{1.75}; //{2, 1.25}; //{5, 2}; // {15, 2}
 
+//    double init_x = donut.columns() / 2;
+//    double init_y = donut.rows() / 2;
+//    double init_r = donut.columns() / 3;
     double init_x = donut.columns() / 2;
     double init_y = donut.rows() / 2;
-    double init_r = donut.columns() / 3;
+    double init_r = donut.columns() / 2;
+
+
 
     auto t1 = std::chrono::steady_clock::now();
 
@@ -69,14 +78,17 @@ void fit_donut(std::string filename)
 
     auto t2 = std::chrono::steady_clock::now();
 
-    std::cout << " xc = " << result[0] << " yc = " << result[1] << " a = " << result[2] << " b = " << result[3]
+    std::cout << "fitting result:\n xc = " << result[0] << " yc = " << result[1] << " a = " << result[2] << " b = " << result[3]
               << " phi = " << result[4] << std::endl;
+    std::cout << "initial guess:\n xc = " << init_x << " yc = " << init_y << " a = " << init_r << " b = " << init_r
+              << " phi = " << 0 << std::endl;
     std::cout << " (Overall time: " << double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000
               << " s)" << std::endl;
 
+
     //vector2bmp(matrix2vv(donut), filename + "input_filtered.bmp");
 
-    blaze::DynamicMatrix<double> donut_painted = donut;
+    blaze::DynamicMatrix<double> donut_painted = donut_input;
 
     auto points = metric::DPM_detail::ellipse2grid(
             donut_painted.rows(), donut_painted.columns(),
@@ -88,15 +100,15 @@ void fit_donut(std::string filename)
         donut_painted(points[0][i], points[1][i]) = -1;
     }
 
-    auto init_points = metric::DPM_detail::ellipse2grid(
-            donut_painted.rows(), donut_painted.columns(),
-            init_x, init_y,
-            init_r, init_r,
-            0
-            );
-    for (size_t i = 0; i < init_points[0].size(); ++i) {
-        donut_painted(init_points[0][i], init_points[1][i]) = -0.5;
-    }
+//    auto init_points = metric::DPM_detail::ellipse2grid(
+//            donut_painted.columns(), donut_painted.rows(),
+//            init_x, init_y,
+//            init_r, init_r,
+//            0
+//            );
+//    for (size_t i = 0; i < init_points[0].size(); ++i) {
+//        donut_painted(init_points[0][i], init_points[1][i]) = -0.5;
+//    }
 
     vector2bmp(matrix2vv(donut_painted), filename + ".fitting_result.bmp");
 
@@ -107,8 +119,9 @@ void fit_donut(std::string filename)
 //* single file provided in the repo
 
 int main() {
-    fit_donut("assets/donuts/crop/crop_2020-07-27_16_23_01_776_donut1_128.png");
+    //fit_donut("assets/donuts/crop/crop_2020-07-27_16_23_01_776_donut1_128.png");
     //fit_donut("ring.png");
+    fit_donut("assets/donuts/crop/donut2.png");
     return 0;
 }
 
