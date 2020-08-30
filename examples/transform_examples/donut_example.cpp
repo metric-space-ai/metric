@@ -60,7 +60,7 @@ void fit_donut(std::string filename)
 
     //size_t steps = 200;
     //std::vector<double> sigma = {50,30,15,5};
-    size_t steps = 200; //1000; // 20;
+    size_t steps = 50; //1000; // 20;
     std::vector<double> sigma = {2}; //{1.75}; //{2, 1.25}; //{5, 2}; // {15, 2}
 
 //    double init_x = donut.columns() / 2;
@@ -68,7 +68,12 @@ void fit_donut(std::string filename)
 //    double init_r = donut.columns() / 3;
     double init_x = donut.columns() / 2;
     double init_y = donut.rows() / 2;
-    double init_r = donut.columns() / 2;
+    double init_r = donut.columns() / 2 * 0.85;
+
+
+
+    auto blurred = metric::DPM_detail::gaussianBlur(donut, sigma[0]);
+    vector2bmp(matrix2vv(blurred), filename + ".blurred.bmp");
 
 
 
@@ -88,7 +93,7 @@ void fit_donut(std::string filename)
 
     //vector2bmp(matrix2vv(donut), filename + "input_filtered.bmp");
 
-    blaze::DynamicMatrix<double> donut_painted = donut_input;
+    blaze::DynamicMatrix<double> donut_painted = donut;
 
     auto points = metric::DPM_detail::ellipse2grid(
             donut_painted.rows(), donut_painted.columns(),
@@ -97,20 +102,28 @@ void fit_donut(std::string filename)
             result[4]
             );
     for (size_t i = 0; i < points[0].size(); ++i) {
-        donut_painted(points[0][i], points[1][i]) = -1;
+        donut_painted(points[1][i], points[0][i]) = -1;
+        donut_input(points[1][i], points[0][i]) = -1;
     }
 
-//    auto init_points = metric::DPM_detail::ellipse2grid(
-//            donut_painted.columns(), donut_painted.rows(),
-//            init_x, init_y,
-//            init_r, init_r,
-//            0
-//            );
-//    for (size_t i = 0; i < init_points[0].size(); ++i) {
-//        donut_painted(init_points[0][i], init_points[1][i]) = -0.5;
-//    }
+    auto init_points = metric::DPM_detail::ellipse2grid(
+            donut_painted.rows(), donut_painted.columns(),
+            init_x, init_y,
+            init_r, init_r,
+            0
+            );
+    for (size_t i = 0; i < init_points[0].size(); ++i) {
+        if (init_points[0][i] < donut_input.columns() && init_points[1][i] < donut_input.rows()) {
+            donut_painted(init_points[1][i], init_points[0][i]) = -0.5;
+            donut_input(init_points[1][i], init_points[0][i]) = -0.5;
+        } else {
+            std::cout << init_points[0][i] << " " << init_points[1][i] << "\n";
+        }
+
+    }
 
     vector2bmp(matrix2vv(donut_painted), filename + ".fitting_result.bmp");
+    vector2bmp(matrix2vv(donut_input), filename + ".fitting_result_on_filtered.bmp");
 
 
 }
@@ -121,6 +134,7 @@ void fit_donut(std::string filename)
 int main() {
     //fit_donut("assets/donuts/crop/crop_2020-07-27_16_23_01_776_donut1_128.png");
     //fit_donut("ring.png");
+    fit_donut("assets/donuts/crop/donut1.png");
     fit_donut("assets/donuts/crop/donut2.png");
     return 0;
 }

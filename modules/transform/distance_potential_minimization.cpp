@@ -799,18 +799,40 @@ v(x,y,t+􏰀t)= v(x,y,t)+ 􏰀t/(􏰀x􏰀y) g (|∇f|) L * v(x,y,t) −􏰀th(|
 
 
 
+//    template <typename T>  // original version with bad black padding
+//    static blaze::DynamicMatrix<T> gaussianBlur(const blaze::DynamicMatrix<T> & img, T sigma) {
+//        auto kernel = gaussianKernel(sigma);
+//        auto conv = Convolution2dCustomStride1<T, 1>(img.columns(), img.rows(), kernel.columns(), kernel.rows());
+//        auto blurred = conv({img}, kernel)[0];
+//        blaze::DynamicMatrix<T> padded (img.rows(), img.columns(), 0);
+//        blaze::submatrix( // padding with black after conv
+//                    padded,
+//                    (img.rows() - blurred.rows())/2, (img.columns() - blurred.columns())/2,
+//                    blurred.rows(), blurred.columns()
+//                    ) = blurred;
+//        return padded;
+//    }
+
     template <typename T>
     static blaze::DynamicMatrix<T> gaussianBlur(const blaze::DynamicMatrix<T> & img, T sigma) {
         auto kernel = gaussianKernel(sigma);
-        auto conv = Convolution2dCustomStride1<T, 1>(img.columns(), img.rows(), kernel.columns(), kernel.rows());
-        auto blurred = conv({img}, kernel)[0];
-        blaze::DynamicMatrix<T> padded (img.rows(), img.columns(), 0);
-        blaze::submatrix( // padding with black after conv
+        blaze::DynamicMatrix<T> padded (img.rows() + kernel.rows() - 1, img.columns() + kernel.columns() - 1, 0);
+        blaze::submatrix( // padding with black before conv
                     padded,
-                    (img.rows() - blurred.rows())/2, (img.columns() - blurred.columns())/2,
-                    blurred.rows(), blurred.columns()
-                    ) = blurred;
-        return padded;
+                    (padded.rows() - img.rows())/2, (padded.columns() - img.columns())/2,
+                    img.rows(), img.columns()
+                    ) = img;
+        // we can try constant padding here, BUT black padded area looks more useful since all except the contour is noise,
+        // and we expect that the countur line should not cross the border of the picture.
+        // Anyways, even if it crosses the border, constant padding is unable to reconstruct it properly and only
+        // distorts it (by adding bright pixels out of the image border).
+        // THis will cause irrelevant additional brightness
+        // in such places near image borders after blur (convolution) is applied.
+
+        auto conv = Convolution2dCustomStride1<T, 1>(padded.columns(), padded.rows(), kernel.columns(), kernel.rows());
+        auto blurred = conv({padded}, kernel)[0];
+
+        return blurred;
     }
 
 
