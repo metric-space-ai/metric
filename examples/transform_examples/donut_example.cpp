@@ -31,11 +31,19 @@ void fit_donut(std::string filename)
     //auto donut = read_png_donut<double>("assets/donuts/crop/crop_2020-07-27_16_23_01_776_donut1_128.png");
     auto donut = read_png_donut<double>(filename);
     vector2bmp(matrix2vv(donut), filename + ".input.bmp");
+
     std::cout << "processing " << filename  << ": " << donut.columns() << "*" << donut.rows() << "\n";
+
+    //blaze::DynamicMatrix<double> debug_out = blaze::submatrix(donut, 0, 0, 10, 10);
+    //std::cout << "input:\n" << debug_out << "\n";
 
     auto donut_input = donut;
 
     donut = radial_diff(donut);
+    vector2bmp(matrix2vv(donut), filename + "filtered.bmp");
+
+    //debug_out = blaze::submatrix(donut, 0, 0, 10, 10);
+    //std::cout << "filtered:\n" << debug_out << "\n";
 
     //auto mask = weightingMask<double>(donut.rows(), donut.columns(), donut.columns()/3, 6);
     auto mask = weightingMask<double>(donut.rows(), donut.columns(), donut.columns()*0.4, 15); // new donuts
@@ -147,6 +155,31 @@ int main() {
 
 int main() {
     fit_donut("test01.png");
+    return 0;
+}
+
+//*/
+
+
+/* blur test
+
+int main() {
+
+//    blaze::DynamicMatrix<double> a = { {0.5, 0.5, 0.5, 0.5, 0.5},
+//                                       {0.5, 0.8, 0.5, 0.5, 0.5},
+//                                       {0.5, 0.5, 0.5, 0.5, 0.5},
+//                                       {0.5, 0.5, 0.5, 0.5, 0.5},
+//                                       {0.5, 0.5, 0.5, 0.5, 0.5}
+//                                     };
+    blaze::DynamicMatrix<double> a = { {0.5, 0.5, 0.5, 0.5},
+                                       {0.5, 0.8, 0.5, 0.5},
+                                       {0.5, 0.5, 0.5, 0.5},
+                                       {0.5, 0.5, 0.5, 0.5},
+                                       {0.5, 0.5, 0.5, 0.5}
+                                     };
+
+    std::cout << radial_diff(a) << "\n";
+
     return 0;
 }
 

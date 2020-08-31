@@ -473,7 +473,7 @@ blaze::DynamicMatrix<T> read_png_donut(std::string filename) {
 
     blaze::DynamicMatrix<T> p (gray.height(), gray.width());
     for (int y=0; y<gray.height(); ++y) {
-        for (int x=1; x<gray.width(); ++x) {
+        for (int x=0; x<gray.width(); ++x) {
             p(y, x) = gray(x, y)/255.0;
         }
     }
