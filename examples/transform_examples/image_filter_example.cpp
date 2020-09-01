@@ -59,7 +59,7 @@ int main() {
 //    mat2bmp::blaze2bmp_norm(cm_blurred_padded, "cameraman_blurred_padded.bmp");
 
 
-    cm = read_png_donut<double>("assets/donuts/crop/donut_6_radial_outer_128.png");
+    //cm = read_png_donut<double>("assets/donuts/crop/donut_6_radial_outer_128.png");
     std::cout << "input: " << blaze::max(cm) << ".." << blaze::min(cm) << "\n";
     mat2bmp::blaze2bmp_norm(cm, "input_1.bmp");
     vector2bmp(matrix2vv(blaze::DynamicMatrix<double>(cm/256.0)), "input_2.bmp");
