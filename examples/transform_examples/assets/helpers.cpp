@@ -10,6 +10,7 @@ Copyright (c) 2018 Panda Team
 #include <vector>
 #include <string>
 #include <sstream>
+#include <cstring>
 //#include <boost/gil/extension/io/png.hpp>  // for read_png_donut, may be enabled  // needs -lpng
 
 #include "../../../3rdparty/blaze/Blaze.h"
