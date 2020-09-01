@@ -1,7 +1,8 @@
 
 #include "../../modules/transform/distance_potential_minimization.hpp"
 
-#include "donuts_test_io.hpp"
+//#include "donuts_test_io.hpp"
+#include "assets/helpers.cpp"
 #include "donuts.hpp"
 
 #include <iostream>
@@ -12,16 +13,16 @@
 
 
 
-void filter_donut(std::string filename) {
-    auto donut = read_png_donut<double>(filename);
-    vector2bmp(matrix2vv(donut), filename + ".input.bmp");
-    std::cout << "processing " << filename  << "\n";
-    donut = radial_diff(donut);
+//void filter_donut(std::string filename) {
+//    auto donut = read_png_donut<double>(filename);
+//    vector2bmp(matrix2vv(donut), filename + ".input.bmp");
+//    std::cout << "processing " << filename  << "\n";
+//    donut = radial_diff(donut);
 
-    auto mask = weightingMask<double>(donut.rows(), donut.columns(), donut.columns()/3, 6);
-    donut = mask % donut;
-    vector2bmp(matrix2vv(donut), filename + ".filtered.bmp");
-}
+//    auto mask = weightingMask<double>(donut.rows(), donut.columns(), donut.columns()/3, 6);
+//    donut = mask % donut;
+//    vector2bmp(matrix2vv(donut), filename + ".filtered.bmp");
+//}
 
 
 
@@ -29,7 +30,8 @@ void fit_donut(std::string filename)
 {
 
     //auto donut = read_png_donut<double>("assets/donuts/crop/crop_2020-07-27_16_23_01_776_donut1_128.png");
-    auto donut = read_png_donut<double>(filename);
+    //auto donut = read_png_donut<double>(filename);
+    auto donut = read_csv_blaze<double>(filename, ",");
     vector2bmp(matrix2vv(donut), filename + ".input.bmp");
 
     std::cout << "processing " << filename  << ": " << donut.columns() << "*" << donut.rows() << "\n";
@@ -137,13 +139,19 @@ void fit_donut(std::string filename)
 }
 
 
-//* single file
+//* donut images
 
 int main() {
+
     //fit_donut("assets/donuts/crop/crop_2020-07-27_16_23_01_776_donut1_128.png");
     //fit_donut("ring.png");
-    fit_donut("assets/donuts/crop/donut1.png");
-    fit_donut("assets/donuts/crop/donut2.png");
+
+    //fit_donut("assets/donuts/crop/donut1.png");
+    //fit_donut("assets/donuts/crop/donut2.png");
+
+    fit_donut("assets/donuts/crop/donut1.csv");
+    fit_donut("assets/donuts/crop/donut2.csv");
+
     return 0;
 }
 
@@ -211,6 +219,15 @@ int main() { // convert single file to csv, png reader fails!
     std::cout << fragm;
     blaze_dm_to_csv(fragm, "fragm01.csv");
     blaze_dm_to_csv(donut, "test01.csv");
+
+//    auto donut = read_png_donut<double>("assets/donuts/crop/donut1.png");
+//    blaze_dm_to_csv(donut, "assets/donuts/crop/donut1.csv");
+//    donut = read_png_donut<double>("assets/donuts/crop/donut2.png");
+//    blaze_dm_to_csv(donut, "assets/donuts/crop/donut2.csv");
+//    donut = read_png_donut<double>("assets/donuts/crop/donut_6_radial_outer_128.png");
+//    blaze_dm_to_csv(donut, "assets/donuts/crop/donut_6_radial_outer_128.csv");
+//    donut = read_png_donut<double>("assets/donuts/crop/donut_6_radial_outer_256.png");
+//    blaze_dm_to_csv(donut, "assets/donuts/crop/donut_6_radial_outer_256.csv");
 
     return 0;
 }
