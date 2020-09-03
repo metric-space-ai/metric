@@ -284,7 +284,7 @@ blaze::DynamicMatrix<T> radial_diff(const blaze::DynamicMatrix<T> & in, double s
             //double xi = x - sin(fi) * step; // point for interpolation, '-' for direction to center
             //double yi = y - cos(fi) * step;
             double d_center = sqrt(pow(x - x0, 2) + pow(y - y0, 2));
-            if (d_center < 1) {
+            if (d_center < 1.5) {
                 out(y, x) = 0;
                 continue;
             }
