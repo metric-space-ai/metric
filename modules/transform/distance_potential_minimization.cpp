@@ -6,19 +6,28 @@
   Copyright (c) 2020 Michael Welsch
 */
 
+//#define MEASURE
+//#define DEBUG_OUTPUT
+
 #include "distance_potential_minimization.hpp"
-#include "../../modules/utils/image_processing/image_filter.hpp"
+#include "../../modules/transform/wavelet2d.hpp" // for only Convolution2dCustom
+
 #include <iostream>
 #include <tuple>
 #include <set>
 #include <iterator>
 #include <algorithm>
+#include <cmath>
+
+#ifdef MEASURE
+#include <chrono>
+#endif
 
 namespace metric {
 
 namespace DPM_detail {
 
-    blaze::DynamicMatrix<double> addPad(const blaze::DynamicMatrix<double>& A)
+    static blaze::DynamicMatrix<double> addPad(const blaze::DynamicMatrix<double>& A)
     {
         size_t m = A.rows();
         size_t n = A.columns();
@@ -49,14 +58,14 @@ namespace DPM_detail {
         // //last row
         B(m + 1, 0) = A(m - 2, 1);
         for (size_t j = 0; j < n; ++j) {
-            B(m + 1, j + 1) = A(n - 2, j);
+            B(m + 1, j + 1) = A(m - 2, j);
         }
         B(m + 1, n + 1) = A(m - 2, n - 2);
 
         return B;
     }
 
-    blaze::DynamicMatrix<double> removePad(const blaze::DynamicMatrix<double>& A)
+    static blaze::DynamicMatrix<double> removePad(const blaze::DynamicMatrix<double>& A)
     {
 
         size_t m = A.rows();
@@ -71,7 +80,7 @@ namespace DPM_detail {
         return B;
     }
 
-    void updatePad(blaze::DynamicMatrix<double>& A)
+    static void updatePad(blaze::DynamicMatrix<double>& A)
     {
         size_t m = A.rows();
         size_t n = A.columns();
@@ -81,23 +90,28 @@ namespace DPM_detail {
         for (size_t j = 1; j < n - 1; j++) {
             A(0, j) = A(2, j);
         }
-        A(0, n) = A(2, n - 3);
+        //A(0, n) = A(2, n - 3);
+        A(0, n - 1) = A(2, n - 3);
 
         // middle rows
         for (size_t i = 1; i < m - 1; ++i) {
             A(i, 0) = A(i, 2);
-            A(i, n) = A(i, n - 3);
+            //A(i, n) = A(i, n - 3);
+            A(i, n - 1) = A(i, n - 3);
         }
 
         // last row
-        A(m, 0) = A(m - 2, 2);
+        //A(m, 0) = A(m - 2, 2);
+        A(m - 1, 0) = A(m - 3, 2);
         for (size_t j = 1; j < n - 1; j++) {
-            A(m, j) = A(m - 3, j);
+            //A(m, j) = A(m - 3, j);
+            A(m - 1, j) = A(m - 3, j);
         }
-        A(m, n) = A(m - 3, n - 3);
+        //A(m, n) = A(m - 3, n - 3);
+        A(m - 1, n - 1) = A(m - 3, n - 3);
     }
 
-    std::tuple<blaze::DynamicMatrix<double>, blaze::DynamicMatrix<double>> gradient(
+    static std::tuple<blaze::DynamicMatrix<double>, blaze::DynamicMatrix<double>> gradient(
         const blaze::DynamicMatrix<double>& f)
     {
         size_t m = f.rows();
@@ -111,27 +125,32 @@ namespace DPM_detail {
                 // fx
                 if (j == 0) {
                     fx(i, j) = f(i, j + 1) - f(i, j);
-                } else if (j == (n - 1)) {
-                    fx(i, j) = f(i, j) - f(i, j - 1);
                 } else {
-                    fx(i, j) = (f(i, j + 1) - f(i, j - 1)) / 2;
+                    if (j == (n - 1)) {
+                        fx(i, j) = f(i, j) - f(i, j - 1);
+                    } else {
+                        fx(i, j) = (f(i, j + 1) - f(i, j - 1)) / 2;
+                    }
                 }
 
                 // fy
                 if (i == 0) {
                     fy(i, j) = f(i + 1, j) - f(i, j);
-                } else if (i == (m - 1)) {
-                    fy(i, j) = f(i, j) - f(i - 1, j);
                 } else {
-                    fy(i, j) = (f(i + 1, j) - f(i - 1, j)) / 2;
+                    if (i == (m - 1)) {
+                        fy(i, j) = f(i, j) - f(i - 1, j);
+                    } else {
+                        fy(i, j) = (f(i + 1, j) - f(i - 1, j)) / 2;
+                    }
                 }
             }
         }
-        return std::make_tuple(fx, fy);
+        //return std::make_tuple(fx, fy);
+        return std::make_tuple(fy, fx); // replaced by Max F
     }
 
 
-    blaze::DynamicMatrix<double> laplacian(const blaze::DynamicMatrix<double>& A)
+    static blaze::DynamicMatrix<double> laplacian(const blaze::DynamicMatrix<double>& A)
     {
         size_t m = A.rows();
         size_t n = A.columns();
@@ -151,7 +170,8 @@ namespace DPM_detail {
         return B;
 
     }
-    std::tuple<double, double, double> initialCircle(const blaze::DynamicMatrix<double>& A)
+
+    static std::tuple<double, double, double> initialCircle(const blaze::DynamicMatrix<double>& A)
     {
         size_t m = A.rows();
         size_t n = A.columns();
@@ -181,7 +201,7 @@ namespace DPM_detail {
         return std::make_tuple(xc, yc, r);
     }
 
-    std::vector<double> linspace(double a, double b, size_t n)
+    static std::vector<double> linspace(double a, double b, size_t n)
     {
         std::vector<double> array;
         if (n > 1) {
@@ -209,7 +229,7 @@ namespace DPM_detail {
     b: elliptic parameter b
     phi: arc
 */
-    std::vector<blaze::DynamicVector<double>> ellipse2grid(
+    static std::vector<blaze::DynamicVector<double>> ellipse2grid(
         size_t m, size_t n, double xc, double yc, double a, double b, double phi)
     {
 
@@ -218,10 +238,18 @@ namespace DPM_detail {
         blaze::DynamicVector<double> x(theta.size());
         blaze::DynamicVector<double> y(theta.size());
 
+//#ifdef MEASURE
+//        auto t1 = std::chrono::steady_clock::now();
+//#endif
         for (size_t i = 0; i < theta.size(); ++i) {
             x[i] = std::round(xc + a * std::cos(theta[i]) * std::cos(phi) - b * std::sin(theta[i]) * std::sin(phi));
             y[i] = std::round(yc + a * std::cos(theta[i]) * std::sin(phi) + b * std::sin(theta[i]) * std::cos(phi));
         }
+//#ifdef MEASURE
+//        auto t2 = std::chrono::steady_clock::now();
+//        auto seconds = double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000;
+//        std::cout << "---- in ellipse2grid: theta loop of " << theta.size() << " iterations took " << seconds << " s\n";
+//#endif
 
         // filter our non unique pairs.
         std::vector<int> liste(theta.size(), 1);
@@ -271,7 +299,7 @@ namespace DPM_detail {
         return result;
     }
 
-    double torsion_moment(const blaze::DynamicMatrix<double>& u, const blaze::DynamicMatrix<double>& v,
+    static double torsion_moment(const blaze::DynamicMatrix<double>& u, const blaze::DynamicMatrix<double>& v,
         const blaze::DynamicVector<double>& x, const blaze::DynamicVector<double>& y,
         const blaze::DynamicVector<double>& theta, double xc, double yc, double phi)
     {
@@ -299,7 +327,7 @@ namespace DPM_detail {
         return torsional_moment;
     }
 
-    blaze::DynamicMatrix<double> contourForces(const blaze::DynamicMatrix<double>& u,
+    static blaze::DynamicMatrix<double> contourForces(const blaze::DynamicMatrix<double>& u,
         const blaze::DynamicMatrix<double>& v, const blaze::DynamicVector<double>& x,
         const blaze::DynamicVector<double>& y)
     {
@@ -318,7 +346,7 @@ namespace DPM_detail {
         return F;
     }
 
-    double force(const blaze::DynamicMatrix<double>& u, const blaze::DynamicMatrix<double>& v,
+    static double force(const blaze::DynamicMatrix<double>& u, const blaze::DynamicMatrix<double>& v,
         const std::vector<double>& x, const std::vector<double>& y, double p_cos, double p_sin)
     {
         size_t m = u.rows();
@@ -344,7 +372,7 @@ the algorithm finds the best model parameters to minimimize the distance potenti
 gvf field is implemented using an explicit finite difference scheme.
 v(x,y,t+􏰀t)= v(x,y,t)+ 􏰀t/(􏰀x􏰀y) g (|∇f|) L * v(x,y,t) −􏰀th(|∇f |) [v(x, y, t) − ∇f ].
 */ 
-    std::vector<double> fit_ellipse(const std::vector<double>& init, const blaze::DynamicVector<double>& increment,
+    static std::vector<double> fit_ellipse(const std::vector<double>& init, const blaze::DynamicVector<double>& increment,
         const blaze::DynamicVector<double>& threshold, const std::vector<double>& bound,
         const blaze::DynamicMatrix<double>& gvf_x, const blaze::DynamicMatrix<double>& gvf_y, size_t iter)
     {
@@ -357,6 +385,11 @@ v(x,y,t+􏰀t)= v(x,y,t)+ 􏰀t/(􏰀x􏰀y) g (|∇f|) L * v(x,y,t) −􏰀th(|
         double b = init[3];
         double phi = init[4];
 
+//#ifdef MEASURE
+//        auto t1 = std::chrono::steady_clock::now();
+//#endif
+        //std::cout << xc << " " << yc << " " << a << " " << b << " " << phi << "\n";  // TODO remove
+
         for (size_t it = 0; it < iter; ++it) {
 
             // compute grid points from ellipse parameter
@@ -364,7 +397,12 @@ v(x,y,t+􏰀t)= v(x,y,t)+ 􏰀t/(􏰀x􏰀y) g (|∇f|) L * v(x,y,t) −􏰀th(|
 
             // torsion along the ellpise about center
             double torsion = torsion_moment(gvf_x, gvf_y, x_y_theta[0], x_y_theta[1], x_y_theta[2], xc, yc, phi);
-
+#ifdef DEBUG_OUTPUT
+            //std::cout << "theta: \n" << x_y_theta[0] << "\n" << x_y_theta[1] << "\n" << x_y_theta[2] << "\n";
+            std::cout << "iteration " << it << ":\n";
+            std::cout << "gvf_x: min: " << blaze::min(gvf_x) << ", max: " << blaze::max(gvf_x) << "\n";
+            std::cout << "gvf_y: min: " << blaze::min(gvf_y) << ", max: " << blaze::max(gvf_y) << "\n";
+#endif
             // update phi
             if (torsion > threshold[4]) {
                 phi = phi + increment[4];
@@ -486,14 +524,22 @@ v(x,y,t+􏰀t)= v(x,y,t)+ 􏰀t/(􏰀x􏰀y) g (|∇f|) L * v(x,y,t) −􏰀th(|
 
             if (b < bound[2])
                 b = bound[2];
+
+            //std::cout << xc << " " << yc << " " << a << " " << b << " " << phi << " | " << it << "\n";  // TODO remove
         }
+
+//#ifdef MEASURE
+//        auto t2 = std::chrono::steady_clock::now();
+//        auto seconds = double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000;
+//        std::cout << "---- in fit_ellipse: " << iter << " iterations completed in " << seconds << " s\n";
+//#endif
 
         std::vector<double> result = { xc, yc, a, b, phi };
         return result;
     }
 
     /* Gradient Vector Flow (GVF) */
-    std::tuple<blaze::DynamicMatrix<double>, blaze::DynamicMatrix<double>> gvf(
+    static std::tuple<blaze::DynamicMatrix<double>, blaze::DynamicMatrix<double>> gvf(
         const blaze::DynamicMatrix<double>& f0, double alpha, double mu, size_t iter)
     {
         blaze::DynamicMatrix<double> f(f0);
@@ -515,10 +561,26 @@ v(x,y,t+􏰀t)= v(x,y,t)+ 􏰀t/(􏰀x􏰀y) g (|∇f|) L * v(x,y,t) −􏰀th(|
         }
 
         // add pads around the grid for processing
+#ifdef MEASURE
+        auto t1 = std::chrono::steady_clock::now();
+#endif
         auto f2 = metric::DPM_detail::addPad(f);
+#ifdef MEASURE
+        auto t2 = std::chrono::steady_clock::now();
+        auto seconds = double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000;
+        std::cout << "--- in gvf: call of addPad took " << seconds << " s\n";
+#endif
 
         // compute the gradient field
+#ifdef MEASURE
+        t1 = std::chrono::steady_clock::now();
+#endif
         auto [fx, fy] = metric::DPM_detail::gradient(f2);
+#ifdef MEASURE
+        t2 = std::chrono::steady_clock::now();
+        seconds = double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000;
+        std::cout << "--- in gvf: call of gradient took " << seconds << " s\n";
+#endif
 
         // square of magnitude
         blaze::DynamicMatrix<double> fxy_square((m + 2), (n + 2));
@@ -530,14 +592,32 @@ v(x,y,t+􏰀t)= v(x,y,t)+ 􏰀t/(􏰀x􏰀y) g (|∇f|) L * v(x,y,t) −􏰀th(|
 
         blaze::DynamicMatrix<double> u1(fx);
         blaze::DynamicMatrix<double> v1(fy);
-        blaze::DynamicMatrix<double> Lu1((m + 2), (n + 2));
-        blaze::DynamicMatrix<double> Lv1((m + 2), (n + 2));
+        //blaze::DynamicMatrix<double> Lu1((m + 2), (n + 2));
+        //blaze::DynamicMatrix<double> Lv1((m + 2), (n + 2));
+        blaze::DynamicMatrix<double> Lu1;//((m + 2), (n + 2), 0);
+        blaze::DynamicMatrix<double> Lv1;//((m + 2), (n + 2), 0);
+
+#ifdef MEASURE
+        seconds = 0;
+        auto useconds2 = 0;
+#endif
         for (size_t it = 0; it < iter; it++) {
+#ifdef MEASURE
+            t1 = std::chrono::steady_clock::now();
+#endif
             metric::DPM_detail::updatePad(u1);
             metric::DPM_detail::updatePad(v1);
+#ifdef MEASURE
+            t2 = std::chrono::steady_clock::now();
+            seconds += double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000;
+            t1 = std::chrono::steady_clock::now();
+#endif
             Lu1 = metric::DPM_detail::laplacian(u1);
             Lv1 = metric::DPM_detail::laplacian(v1);
-
+#ifdef MEASURE
+            t2 = std::chrono::steady_clock::now();
+            useconds2 += double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count());
+#endif
             for (size_t i = 0; i < (m + 2); i++) {
                 for (size_t j = 0; j < (n + 2); ++j) {
                     u1(i, j) = u1(i, j) + alpha * (mu * Lu1(i, j) - fxy_square(i, j) * (u1(i, j) - fx(i, j)));
@@ -546,14 +626,26 @@ v(x,y,t+􏰀t)= v(x,y,t)+ 􏰀t/(􏰀x􏰀y) g (|∇f|) L * v(x,y,t) −􏰀th(|
                 }
             }
         }
+#ifdef MEASURE
+        std::cout << "--- in gvf: " << iter << "*2 calls of updatePad took " << seconds << " s\n";
+        std::cout << "--- in gvf: " << iter << "*2 calls of laplacian took " << useconds2 / 1000000 << " s\n";
+        t1 = std::chrono::steady_clock::now();
+#endif
 
         auto u2 = metric::DPM_detail::removePad(u1);
         auto v2 = metric::DPM_detail::removePad(v1);
+#ifdef MEASURE
+        t2 = std::chrono::steady_clock::now();
+        seconds = double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000;
+        std::cout << "--- in gvf: 2 calls of removePad took " << seconds << " s\n";
+#endif
+        //std::cout << "u:\n" << u2 << "v:\n" << v2 << "\n"; // TODO remove
 
-        return std::make_tuple(u2, v2);
+        //return std::make_tuple(u2, v2);
+        return std::make_tuple(v2, u2); // replaced by Max F
     }
 
-    double ln_gamma(double x)
+    static double ln_gamma(double x)
     {
         double g;
         if (x < 0) {
@@ -570,7 +662,7 @@ v(x,y,t+􏰀t)= v(x,y,t)+ 􏰀t/(􏰀x􏰀y) g (|∇f|) L * v(x,y,t) −􏰀th(|
         return g;
     }
 
-    double ln_besseli(double _nu, double _z)
+    static double ln_besseli(double _nu, double _z)
     {
         double t0 = _nu * std::log(0.5 * _z);
         double t1 = 0.0;
@@ -595,7 +687,7 @@ v(x,y,t+􏰀t)= v(x,y,t)+ 􏰀t/(􏰀x􏰀y) g (|∇f|) L * v(x,y,t) −􏰀th(|
     }
 
     // I_v(z) : Modified Bessel function of the first kind
-    double besseli(double nu, double z) { return std::exp(ln_besseli(nu, z)); }
+    static double besseli(double nu, double z) { return std::exp(ln_besseli(nu, z)); }
 
     /* Correct for the radius of curvature
    input: 
@@ -605,7 +697,7 @@ v(x,y,t+􏰀t)= v(x,y,t)+ 􏰀t/(􏰀x􏰀y) g (|∇f|) L * v(x,y,t) −􏰀th(|
    output:
    R: corrected radius
 */
-    double correctCurve(double r, double sigma, size_t iter)
+    static double correctCurve(double r, double sigma, size_t iter)
     {
         double var = sigma * sigma;
         double R = r;
@@ -621,9 +713,142 @@ v(x,y,t+􏰀t)= v(x,y,t)+ 􏰀t/(􏰀x􏰀y) g (|∇f|) L * v(x,y,t) −􏰀th(|
         return R;
     }
 
+
+
+
+
+
+
+    // added by Max F
+
+
+
+    template <typename T>
+
+    static T gauss(T x, T mu, T sigma) {
+        T expVal = -1 * (pow(x - mu, 2) / pow(2 * sigma, 2));
+        return exp(expVal) / (sqrt(2 * M_PI * pow(sigma, 2)));
+    }
+
+
+
+    template <typename T>
+    static blaze::DynamicMatrix<T> gaussianKernel(T sigma) {
+        size_t sz = round(sigma * 6) + 2;
+        if (sz % 2 != 0)
+            ++sz;
+        T center = T(sz) / 2.0;
+        size_t c = center;
+        auto kernel = blaze::DynamicMatrix<T>(sz, sz);
+        T r, value;
+        for (size_t i = 0; i < c; ++i) {
+            for (size_t j = 0; j < c; ++j) {
+                r = sqrt(pow(i - center, 2) + pow(j - center, 2));
+                value = gauss(r, 0.0, sigma);
+                kernel(i, j) = value;
+                kernel(sz - 1 - i, j) = value;
+                kernel(i, sz - 1- j) = value;
+                kernel(sz - 1 - i, sz - 1 - j) = value;
+            }
+        }
+        return kernel;
+    }
+
+
+
+    // using Convolurion2d.hpp
+
+    template <typename T, size_t Channels>
+    class Convolution2dCustomStride1 : public metric::Convolution2d<T, Channels> {
+
+      public:
+        Convolution2dCustomStride1(
+                size_t imageWidth,
+                size_t imageHeight,
+                size_t kernelWidth,
+                size_t kernelHeight
+                //const PadDirection pd = PadDirection::POST,
+                //const PadType pt = PadType::CIRCULAR,
+                //const size_t stride = 1
+                )
+        {
+            this->padWidth = 0;
+            this->padHeight = 0;
+
+            metric::PadDirection pd = metric::PadDirection::POST;
+            //metric::PadDirection pd = metric::PadDirection::BOTH;
+            metric::PadType pt = metric::PadType::CIRCULAR;
+            //metric::PadType pt = metric::PadType::REPLICATE;
+            //metric::PadType pt = metric::PadType::SYMMETRIC;
+            size_t stride = 1;
+
+            this->padModel = std::make_shared<metric::PadModel<T>>(pd, pt, 0);
+
+            //auto t1 = Clock::now();
+            this->convLayer = std::make_shared<typename metric::Convolution2d<T, Channels>::ConvLayer2d>(imageWidth + this->padWidth, imageHeight + this->padHeight, 1, 1, kernelWidth, kernelHeight, stride);
+            //auto t2 = Clock::now();
+            //auto d = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1);
+
+        }
+    };
+
+
+
+//    template <typename T>  // first version with bad black padding
+//    static blaze::DynamicMatrix<T> gaussianBlur(const blaze::DynamicMatrix<T> & img, T sigma) {
+//        auto kernel = gaussianKernel(sigma);
+//        auto conv = Convolution2dCustomStride1<T, 1>(img.columns(), img.rows(), kernel.columns(), kernel.rows());
+//        auto blurred = conv({img}, kernel)[0];
+//        blaze::DynamicMatrix<T> padded (img.rows(), img.columns(), 0);
+//        blaze::submatrix( // padding with black after conv
+//                    padded,
+//                    (img.rows() - blurred.rows())/2, (img.columns() - blurred.columns())/2,
+//                    blurred.rows(), blurred.columns()
+//                    ) = blurred;
+//        return padded;
+//    }
+
+    template <typename T>
+    static blaze::DynamicMatrix<T> gaussianBlur(const blaze::DynamicMatrix<T> & img, T sigma) {
+        auto kernel = gaussianKernel(sigma);
+        blaze::DynamicMatrix<T> padded (img.rows() + kernel.rows() - 1, img.columns() + kernel.columns() - 1, 0);
+        blaze::submatrix( // padding with black before conv
+                    padded,
+                    (padded.rows() - img.rows())/2, (padded.columns() - img.columns())/2,
+                    img.rows(), img.columns()
+                    ) = img;
+        // we can try constant padding here, BUT black padded area looks more useful since all except the contour is noise,
+        // and we expect that the countur line should not cross the border of the picture.
+        // Anyways, even if it crosses the border, constant padding is unable to reconstruct it properly and only
+        // distorts it (by adding bright pixels out of the image border).
+        // THis will cause irrelevant additional brightness
+        // in such places near image borders after blur (convolution) is applied.
+
+        auto conv = Convolution2dCustomStride1<T, 1>(padded.columns(), padded.rows(), kernel.columns(), kernel.rows());
+        auto blurred = conv({padded}, kernel)[0];
+
+        return blurred;
+    }
+
+
+    template <typename T>
+    static blaze::DynamicMatrix<T> blackPaddedConv(const blaze::DynamicMatrix<T> & img, const blaze::DynamicMatrix<T> & kernel) {
+        auto conv = Convolution2dCustomStride1<T, 1>(img.columns(), img.rows(), kernel.columns(), kernel.rows());
+        auto blurred = conv({img}, kernel)[0];
+        blaze::DynamicMatrix<T> padded (img.rows(), img.columns(), 0);
+        blaze::submatrix( // padding with black after conv
+                    padded,
+                    (img.rows() - blurred.rows())/2, (img.columns() - blurred.columns())/2,
+                    blurred.rows(), blurred.columns()
+                    ) = blurred;
+        return padded;
+    }
+
+
+
 }  // end namespace DPM_detail
 
-std::vector<double> fit_hysteresis(blaze::DynamicVector<double> x, blaze::DynamicVector<double> y, size_t grid_row,
+static std::vector<double> fit_hysteresis(const blaze::DynamicVector<double> & x, const blaze::DynamicVector<double> & y, size_t grid_row,
     size_t grid_column, size_t steps, std::vector<double> sigma)
 {
 
@@ -631,35 +856,77 @@ std::vector<double> fit_hysteresis(blaze::DynamicVector<double> x, blaze::Dynami
 
 
     for (size_t i = 0; i < x.size(); ++i) {
-        I(y[i], x[i]) = 100;
+        I((int)y[i], (int)x[i]) = 100;
     }
 
 
     return fit_hysteresis(I, steps, sigma);
 }
 
-std::vector<double> fit_hysteresis(blaze::DynamicMatrix<double> I, size_t steps, std::vector<double> sigma)
+
+
+static std::vector<double> fit_hysteresis(
+        const blaze::DynamicMatrix<double> & I,
+        double xc0,
+        double yc0,
+        double r0,
+        size_t steps,
+        std::vector<double> sigma,
+        double incr,
+        double thresh
+        )
 {
 
-    
-    
-
-    auto [xc0, yc0, r0] = DPM_detail::initialCircle(I);  // initial guess
     std::vector<double> ep = { xc0, yc0, r0, r0, 0 };  // initial parameter guess
-    blaze::DynamicVector<double> increment = { 0.2, 0.2, 0.2, 0.2, M_PI / 180 * 0.2 };  // increment in each iteration
-    blaze::DynamicVector<double> threshold = { 1e-6, 1e-6, 1e-6, 1e-6, 1e-6 };  // threshold for forces/torsinal moments
-    std::vector<double> bound = { 10, 200, 10, 200 };  // the lower/upper bounds of a and b
+    blaze::DynamicVector<double> increment = { incr, incr, incr, incr, M_PI / 180 * incr };  // increment in each iteration
+    blaze::DynamicVector<double> threshold = { thresh, thresh, thresh, thresh, thresh };  // threshold for forces/torsinal moments
+
+    double half_min_size = (I.rows() < I.columns() ? I.rows() : I.columns()) / 2.0;
+    std::vector<double> bound = { 5, half_min_size, 5, half_min_size };  // the lower/upper bounds of a and b
 
     for (size_t i = 0; i < sigma.size(); ++i) {
+        //size_t filtersize = round(sigma[i] * 7 + 2);
+        //size_t filtersize = round(sigma[i] * 6); // 3 sigma
+#ifdef MEASURE
+        auto t1 = std::chrono::steady_clock::now();
+#endif
+        //imfilter<double, 1, FilterType::GAUSSIAN, PadDirection::BOTH, PadType::SYMMETRIC> f(filtersize, filtersize, sigma[i]);
+        auto gk = DPM_detail::gaussianKernel(sigma[i]); // kernel may be saved outside the function, TODO optimize this way if needed
+#ifdef MEASURE
+        auto t2 = std::chrono::steady_clock::now();
+        auto seconds = double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000;
+        std::cout << "-- in fit_hysteresis: construction #" << i << " of gaussian kernel took " << seconds << " s\n";
+        t1 = std::chrono::steady_clock::now();
+#endif
+        //blaze::DynamicMatrix<double> I1 = f(I);
+        blaze::DynamicMatrix<double> I1 = DPM_detail::blackPaddedConv(I, gk);
+#ifdef MEASURE
+        t2 = std::chrono::steady_clock::now();
+        seconds = double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000;
+        std::cout << "-- in fit_hysteresis: call #" << i << " gaussian blur took " << seconds << " s\n";
+        t1 = std::chrono::steady_clock::now();
+#endif
+#ifdef DEBUG_OUTPUT
+        std::cout << "blur input: min: " << blaze::min(I) << ", max: " << blaze::max(I) << "\n";
+        std::cout << "GVF input: min: " << blaze::min(I1) << ", max: " << blaze::max(I1) << "\n";
+#endif
+        //auto [u1, v1] = DPM_detail::gvf(I1, 1, 0.1, 10);
+        auto [u1, v1] = DPM_detail::gvf(I1, 0.1, 1, 10);
 
-        //blaze::DynamicMatrix<double> I1 = I;  // TODO: replace with gaussian filter
-        //auto out = f(ch1);
-        int kernelsize= sigma[i]*3+1;
-        metric::imfilter<double, 1, metric::FilterType::GAUSSIAN, metric::PadDirection::BOTH, metric::PadType::CONST> gaussianBlur(kernelsize, kernelsize,sigma[i]);
-        auto I1=gaussianBlur(I);
-        auto [h1, v1] = DPM_detail::gvf(I1, 1, 0.1, 10);
+#ifdef MEASURE
+        t2 = std::chrono::steady_clock::now();
+        seconds = double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000;
+        std::cout << "-- in fit_hysteresis: call #" << i << " of gvf took " << seconds << " s, queried 10 iterations\n";
+        t1 = std::chrono::steady_clock::now();
+#endif
+        ep = DPM_detail::fit_ellipse(ep, sigma[i] / 5 * increment, sigma[i] / 5 * threshold, bound, u1, v1, steps / sigma.size());
 
-        ep = DPM_detail::fit_ellipse(ep, sigma[i] / 5 * increment, sigma[i] / 5 * threshold, bound, h1, v1, steps / sigma.size());
+#ifdef MEASURE
+        t2 = std::chrono::steady_clock::now();
+        seconds = double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000;
+        std::cout << "-- in fit_hysteresis: call #" << i << " of fit_ellipse took " << seconds << " s, queried " << steps / sigma.size() << " iterations\n";
+#endif
+
 
     }
     // ep == ellipse parameter [xc, yc, a, b, phi]
@@ -673,5 +940,56 @@ std::vector<double> fit_hysteresis(blaze::DynamicMatrix<double> I, size_t steps,
 
     return ep;
 }
+
+
+
+static std::vector<double> fit_hysteresis(const blaze::DynamicMatrix<double> & I, size_t steps, std::vector<double> sigma)
+{
+
+    auto [xc0, yc0, r0] = DPM_detail::initialCircle(I);  // initial guess
+    std::vector<double> ep = { xc0, yc0, r0, r0, 0 };  // initial parameter guess
+    blaze::DynamicVector<double> increment = { 0.2, 0.2, 0.2, 0.2, M_PI / 180 * 0.2 };  // increment in each iteration
+    blaze::DynamicVector<double> threshold = { 1e-6, 1e-6, 1e-6, 1e-6, 1e-6 };  // threshold for forces/torsinal moments
+    std::vector<double> bound = { 10, 200, 10, 200 };  // the lower/upper bounds of a and b
+
+    for (size_t i = 0; i < sigma.size(); ++i) {
+
+        //blaze::DynamicMatrix<double> I1 = I;  // TODO: replace with gaussian filter
+        //auto I1=gaussianBlur(I,sigma[i]);
+        auto gk = DPM_detail::gaussianKernel(sigma[i]); // kernel may be saved outside the function, TODO optimize this way if needed
+        blaze::DynamicMatrix<double> I1 = DPM_detail::blackPaddedConv(I, gk);
+#ifdef MEASURE
+        auto t1 = std::chrono::steady_clock::now();
+#endif
+        auto [u1, v1] = DPM_detail::gvf(I1, 1, 0.1, 10);
+
+#ifdef MEASURE
+        auto t2 = std::chrono::steady_clock::now();
+        auto seconds = double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000;
+        std::cout << "-- in fit_hysteresis: call #" << i << " of gvf took " << seconds << " s, queried 10 iterations\n";
+        t1 = std::chrono::steady_clock::now();
+#endif
+        ep = DPM_detail::fit_ellipse(ep, sigma[i] / 5 * increment, sigma[i] / 5 * threshold, bound, u1, v1, steps / sigma.size());
+
+#ifdef MEASURE
+        t2 = std::chrono::steady_clock::now();
+        seconds = double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000;
+        std::cout << "-- in fit_hysteresis: call #" << i << " of fit_ellipse took " << seconds << " s, queried " << steps / sigma.size() << " iterations\n";
+#endif
+
+
+    }
+    // ep == ellipse parameter [xc, yc, a, b, phi]
+
+    ep[4] = std::fmod(ep[4], M_PI);
+    //curve correction
+    double r1 = DPM_detail::correctCurve(std::pow(ep[3], 2) / ep[2], sigma[sigma.size() - 1], 100);
+    double r2 = DPM_detail::correctCurve(std::pow(ep[2], 2) / ep[3], sigma[sigma.size() - 1], 100);
+    ep[2] = std::pow(r1 * r2 * r2, (1.0 / 3.0));
+    ep[3] = std::pow(r1 * r1 * r2, (1.0 / 3.0));
+
+    return ep;
+}
+
 
 }  // end namespace metric
