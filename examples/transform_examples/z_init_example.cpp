@@ -2,7 +2,7 @@
 #include "assets/helpers.cpp"
 #include "donuts.hpp"
 
-#include "../../modules/transform/distance_potential_minimization.hpp"  // for only ellipse2grid, TODO remove
+//#include "../../modules/transform/distance_potential_minimization.hpp"  // for only ellipse2grid, TODO remove
 
 
 int main() {
@@ -16,14 +16,14 @@ int main() {
 
     z = z / blaze::max(z);
 
-    auto inner = metric::DPM_detail::ellipse2grid(400, 500, 250, 200, 10, 20, 0.5);
-    auto outer = metric::DPM_detail::ellipse2grid(400, 500, 260, 190, 160, 140, 1);
-    for (size_t i = 0; i < inner[0].size(); ++i) {
-        z(inner[1][i], inner[0][i]) = -1;
-    }
-    for (size_t i = 0; i < outer[0].size(); ++i) {
-        z(outer[1][i], outer[0][i]) = -1;
-    }
+//    auto inner = metric::DPM_detail::ellipse2grid(400, 500, 250, 200, 10, 20, 0.5);
+//    auto outer = metric::DPM_detail::ellipse2grid(400, 500, 260, 190, 160, 140, 1);
+//    for (size_t i = 0; i < inner[0].size(); ++i) {
+//        z(inner[1][i], inner[0][i]) = -1;
+//    }
+//    for (size_t i = 0; i < outer[0].size(); ++i) {
+//        z(outer[1][i], outer[0][i]) = -1;
+//    }
 
 
 

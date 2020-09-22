@@ -469,30 +469,33 @@ static blaze::DynamicMatrix<double> z_init(
 {
     blaze::DynamicMatrix<double> out (m, n, 0);
 
-    int y0 = (int)round(xc_i); // we put the center into the center of inner ellipse rather than into the center of image  // (int)round(m/2);
-    int x0 = (int)round(yc_i); // (int)round(n/2);
+    int y0 = (int)round(yc_i); // we put the center into the center of inner ellipse rather than into the center of image  // (int)round(m/2);
+    int x0 = (int)round(xc_i); // (int)round(n/2);
     double alpha = 2 * M_PI / arc;
 
-    for (size_t y=0; y<m; ++y) {
-        for (size_t x=0; x<m; ++x) {
-            double theta = atan2(x - x0, y - y0);  // TODO remove trigonometry functions
+    for (int y=0; y<(int)m; ++y) {
+        for (int x=0; x<(int)n; ++x) {
+            double theta = atan2(y - y0, x - x0);  // TODO remove trigonometry functions
             double x_i = xc_i + a_i * std::cos(theta) * std::cos(phi_i) - b_i * std::sin(theta) * std::sin(phi_i);
             double y_i = yc_i + a_i * std::cos(theta) * std::sin(phi_i) + b_i * std::sin(theta) * std::cos(phi_i);
             double x_o = xc_o + a_o * std::cos(theta) * std::cos(phi_o) - b_o * std::sin(theta) * std::sin(phi_o);
             double y_o = yc_o + a_o * std::cos(theta) * std::sin(phi_o) + b_o * std::sin(theta) * std::cos(phi_o);
-            double arc_i = std::sqrt(std::pow(x_i - x0, 2) + std::pow(y_i - y0, 2)); // 1d arc along radius
-            double arc_o = std::sqrt(std::pow(x_o - x0, 2) + std::pow(y_o - y0, 2));
-            double arc_p = std::sqrt(std::pow(x   - x0, 2) + std::pow(y   - y0, 2));
-            if (arc_i < arc_p && arc_p < arc_o) {
-                double center = arc_i + (arc_o - arc_i) / 2;
-                double xp = arc_p - center;
-                double arc_r = std::sqrt( std::pow((arc_o - arc_i)/2*std::cos(alpha), 2) + std::pow(std::sin(alpha), 2) ); // TODO replace with 1 and scale later!
-                double yp = std::sqrt( arc_r*arc_r - xp*xp );
-                out(y, x) = yp - sin(alpha);
+            double r_i = std::sqrt(std::pow(x_i - x0, 2) + std::pow(y_i - y0, 2)); // 1d arc along radius
+            double r_o = std::sqrt(std::pow(x_o - x0, 2) + std::pow(y_o - y0, 2));
+            double r_p = std::sqrt(std::pow(x   - x0, 2) + std::pow(y   - y0, 2));
+            //out(std::round(y_i), std::round(x_i)) = -100; // TODO remove
+            //out(std::round(y_o), std::round(x_o)) = -100; // TODO remove
+            if (r_i < r_p && r_p < r_o) {
+                double r_center = r_i + (r_o - r_i) / 2;
+                double r_xp = r_p - r_center;
+                double r_rad = std::sqrt( std::pow((r_o - r_i)/2*std::cos(alpha), 2) + std::pow(std::sin(alpha), 2) ); // TODO replace with 1 and scale later!
+                double r_yp = std::sqrt( r_rad*r_rad - r_xp*r_xp );
+                out(y, x) = r_yp - std::sin(alpha);
                 //out(y, x) = std::sqrt( arc_r*arc_r - pow(arc_p - arc_r, 2) ) - std::sin(M_PI/2 - alpha/2);  // TODO FIXME
                 //out(y, x) = std::sqrt( std::pow((arc_o - arc_i)/2*std::cos(alpha), 2) - arc_r*arc_r );
                 //// z = sqrt(r*r - x*x) - sin(Pi/2 - alpha/2)
-                std::cout << out(y, x) << "\n";  // TODO remove
+                //if (out(y, x) > 0)
+                    std::cout << out(y, x) << " " << r_yp << " " << x << " " << y << "\n";  // TODO remove
             }// else {
             //    out(y, x) = 0;
             //}
