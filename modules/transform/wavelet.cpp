@@ -991,8 +991,6 @@ typename std::enable_if<blaze::IsMatrix<Container2d>::value, Container2d>::type 
     assert(ll.columns()==lh.columns());
     assert(ll.columns()==hl.columns());
     assert(ll.columns()==hh.columns());
-    assert(dmat_w.rows() == ll.columns()*2);
-    assert(dmat_h.rows() == ll.rows()*2);
 
     Container2d out (dmat_h.rows(), dmat_w.rows());
     blaze::submatrix(out, 0, 0, ll.rows(), ll.columns()) = ll;
