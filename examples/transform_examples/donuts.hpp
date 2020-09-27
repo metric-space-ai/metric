@@ -458,23 +458,6 @@ void eat_donut(int number) {  // old test batch procewssing function
 // --------------- functions for Photometric Stereo
 
 
-//static std::vector<double> linspace_(double a, double b, size_t n)  // TODO remove
-//{
-//    std::vector<double> array;
-//    if (n > 1) {
-//        double step = (b - a) / double(n - 1);
-//        int count = 0;
-//        while (count < n) {
-//            array.push_back(a + count * step);
-//            ++count;
-//        }
-//    } else {
-//        array.push_back(b);
-//    }
-//    return array;
-//}
-
-
 
 // donut depth init function
 
@@ -494,51 +477,44 @@ static blaze::DynamicMatrix<double> z_init(
     for (double y=0; y<m; ++y) {
         for (double x=0; x<n; ++x) {
             double theta = atan2(y - y0, x - x0);  // TODO remove trigonometry functions
-            theta = theta + M_PI; // TODO remove and check equality
-            // TODO redefine ellipse in true polar coordinates!!
-            double x_i = xc_i + a_i * std::cos(theta) * std::cos(phi_i) - b_i * std::sin(theta) * std::sin(phi_i);
-            double y_i = yc_i + a_i * std::cos(theta) * std::sin(phi_i) + b_i * std::sin(theta) * std::cos(phi_i);
-            double x_o = xc_o + a_o * std::cos(theta) * std::cos(phi_o) - b_o * std::sin(theta) * std::sin(phi_o);
-            double y_o = yc_o + a_o * std::cos(theta) * std::sin(phi_o) + b_o * std::sin(theta) * std::cos(phi_o);
-            double r_i = std::sqrt(std::pow(x_i - x0, 2) + std::pow(y_i - y0, 2)); // along radius
-            double r_o = std::sqrt(std::pow(x_o - x0, 2) + std::pow(y_o - y0, 2));
-            double r_p = std::sqrt(std::pow(x   - x0, 2) + std::pow(y   - y0, 2));
+            //theta = theta + M_PI; // TODO remove and check equality
 
-            if (r_i < r_p && r_p < r_o && theta < M_PI) { // TODO remove theta < M_PI condition!!
-                //out(std::round(y_i), std::round(x_i)) = -100; // TODO remove
+            double r_i = a_i * b_i /
+                    (sqrt( pow(b_i*cos(theta-phi_i), 2) + pow(a_i*sin(theta-phi_i), 2) ));
+
+            double r_p = sqrt(pow(x - x0, 2) + pow(y - y0, 2));
+
+            double slope = tan(theta - phi_o);
+            double shift = y0 - yc_o - slope*(x0 - xc_o);
+            double x_intersect_o;
+            if (cos(theta - phi_o) < 0)
+                x_intersect_o = (-a_o*b_o*sqrt(-shift*shift + a_o*a_o*slope*slope + b_o*b_o) - a_o*a_o*slope*shift)
+                        / (a_o*a_o*slope*slope + b_o*b_o);
+            else
+                x_intersect_o = (a_o*b_o*sqrt(-shift*shift + a_o*a_o*slope*slope + b_o*b_o) - a_o*a_o*slope*shift)
+                        / (a_o*a_o*slope*slope + b_o*b_o);  // TODO add sign choise!!!
+            double y_intersect_o = slope*x_intersect_o + shift;
+            double x_o = x_intersect_o * cos(phi_o) - y_intersect_o * sin(phi_o) + xc_o;
+            double y_o = x_intersect_o * sin(phi_o) + y_intersect_o * cos(phi_o) + yc_o;
+            double r_o = sqrt(pow(x_o - x0, 2) + pow(y_o - y0, 2));
+
+            if (r_i < r_p && r_p < r_o) { // && theta < M_PI/2) { // TODO remove theta < M_PI condition!!
                 //out(std::round(y_o), std::round(x_o)) = -100; // TODO remove
                 double r_rad = (r_o - r_i) / 2;
                 double r_center = r_i + r_rad;
                 double r_xp = r_p - r_center;
-                //double r_rad = std::sqrt( std::pow((r_o - r_i)/2*std::cos(alpha), 2) + std::pow(std::sin(alpha), 2) ); // TODO replace with 1 and scale later!
                 double r_yp = std::sqrt( r_rad*r_rad - r_xp*r_xp );
-                //out(y, x) = r_yp - std::sin(alpha); // TODO enable
+                out(y, x) = r_yp - std::sin(alpha); // TODO enable
                 //out(0, 0) = r_yp - std::sin(alpha); // TODO remove
                 //out(std::round(r_center*std::sin(theta) + y0), std::round(r_center*std::cos(theta) + x0)) = -100; // TODO remove
-                out(std::round(r_o*std::sin(theta) + y0), std::round(r_o*std::cos(theta) + x0)) = -100; // TODO remove
-                out(std::round(r_i*std::sin(theta) + y0), std::round(r_i*std::cos(theta) + x0)) = -100; // TODO remove
-                out(std::round(r_p*std::sin(theta) + y0), std::round(r_p*std::cos(theta) + x0)) = r_yp - std::sin(alpha);; // TODO remove
-                //if (theta>0)
-                    //out(std::round(theta*20*std::sin(theta) + y0), std::round(theta*20*std::cos(theta) + x0)) = -100; // TODO remove
-                //out(y, x) = std::sqrt( arc_r*arc_r - pow(arc_p - arc_r, 2) ) - std::sin(M_PI/2 - alpha/2);  // TODO FIXME
-                //out(y, x) = std::sqrt( std::pow((arc_o - arc_i)/2*std::cos(alpha), 2) - arc_r*arc_r );
-                //// z = sqrt(r*r - x*x) - sin(Pi/2 - alpha/2)
-                //if (out(y, x) > 0)
-                    std::cout << out(y, x) << " " << r_yp << " " << x << " " << y << "\n";  // TODO remove
-            }// else {
-            //    out(y, x) = 0;
-            //}
-        }
+                //out(std::round(r_o*std::sin(theta) + y0), std::round(r_o*std::cos(theta) + x0)) = -100; // TODO remove
+                //out(std::round(r_i*std::sin(theta) + y0), std::round(r_i*std::cos(theta) + x0)) = -100; // TODO remove
+                //out(std::round(r_p*std::sin(theta) + y0), std::round(r_p*std::cos(theta) + x0)) = r_yp - std::sin(alpha);; // TODO remove
 
-//        // TODO remove
-//        {
-//            auto theta_arr = linspace_(0, 2 * M_PI, std::round(2 * M_PI * std::max(a_o, b_o)));
-//            for (size_t i = 0; i < theta_arr.size(); ++i) {
-//                int x = std::round(xc_o + a_o * std::cos(theta_arr[i]) * std::cos(phi_o) - b_o * std::sin(theta_arr[i]) * std::sin(phi_o));
-//                int y = std::round(yc_o + a_o * std::cos(theta_arr[i]) * std::sin(phi_o) + b_o * std::sin(theta_arr[i]) * std::cos(phi_o));
-//                out(y, x) = -100;
-//            }
-//        }
+                //if (out(y, x) > 0)
+                    //std::cout << out(y, x) << " " << r_yp << " " << x << " " << y << "\n";  // TODO remove
+            }
+        }
     }
 
     return out;
