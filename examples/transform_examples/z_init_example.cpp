@@ -4,6 +4,7 @@
 
 #include "../../modules/transform/distance_potential_minimization.hpp"  // for only ellipse2grid, TODO remove
 #include <cmath>  // for only M_PI
+#include <iostream>
 
 
 int main() {
@@ -18,31 +19,36 @@ int main() {
 //     double yc_o = 180;
 //     double a_o = 170;
 //     double b_o = 130;
-//     double phi_o = 0;
+//     double phi_o = 1;
 
     double xc_i = 250;
     double yc_i = 200;
-    double a_i = 40;
+    double a_i = 60;
     double b_i = 20;
-    double phi_i = 2*M_PI/3;
+    double phi_i = 1;
 
     double xc_o = 250;
     double yc_o = 220;
-    double a_o = 170;
-    double b_o = 130;
-    double phi_o = M_PI/3;
+    double a_o = 180;
+    double b_o = 120;
+    double phi_o = 0.5;
+
+    size_t m = 601;
+    size_t n = 501;
+
+    double arc = 0.3;
 
     auto z = z_init(
                 xc_i, yc_i, a_i, b_i, phi_i,
                 xc_o, yc_o, a_o, b_o, phi_o,
-                400, 500,
-                0.3333
+                m, n,
+                arc
                 );
 
     z = z / blaze::max(z);
 
-    auto inner = metric::DPM_detail::ellipse2grid(400, 500, xc_i, yc_i, a_i, b_i, phi_i);
-    auto outer = metric::DPM_detail::ellipse2grid(400, 500, xc_o, yc_o, a_o, b_o, phi_o);
+    auto inner = metric::DPM_detail::ellipse2grid(m, n, xc_i, yc_i, a_i, b_i, phi_i);
+    auto outer = metric::DPM_detail::ellipse2grid(m, n, xc_o, yc_o, a_o, b_o, phi_o);
     for (size_t i = 0; i < inner[0].size(); ++i) {
         z(inner[1][i], inner[0][i]) = -1;
     }
@@ -50,9 +56,18 @@ int main() {
         z(outer[1][i], outer[0][i]) = -1;
     }
 
-
-
     vector2bmp(matrix2vv(z), "z_init.bmp");
+
+
+//    std::cout.precision(30);
+//    double angle = M_PI*0.5;
+//    //angle -= 3 * nextafter(angle, angle+1);
+//    for (size_t i = 0; i<3; ++i)
+//        angle = nextafter(angle, angle-1);
+//    for (size_t i = 0; i<7; ++i) {
+//        std::cout  << angle << " " << M_PI*0.5 - angle << " " << tan(angle) << "\n";
+//        angle = nextafter(angle, angle+1);
+//    }
 
     return 0;
 }

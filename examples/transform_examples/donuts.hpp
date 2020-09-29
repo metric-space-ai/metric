@@ -467,12 +467,17 @@ static blaze::DynamicMatrix<double> z_init(
         size_t m, size_t n,  // map size
         double arc)  // arc segment share
 {
+    if (arc <= 0)
+        arc = 0;
+    if (arc>1)
+        arc = 1;
+
     blaze::DynamicMatrix<double> out (m, n, 0);
 
     double y0 = yc_i; // we put the center into the center of inner ellipse rather than into the center of image  // (int)round(m/2);
     double x0 = xc_i;
     //int x0 = (int)round(xc_i); // (int)round(n/2);
-    double alpha = 2 * M_PI / arc;
+    double alpha = M_PI * arc * 0.5;  // half arc angle
 
     for (double y=0; y<m; ++y) {
         for (double x=0; x<n; ++x) {
@@ -480,11 +485,11 @@ static blaze::DynamicMatrix<double> z_init(
             //theta = theta + M_PI; // TODO remove and check equality
 
             double r_i = a_i * b_i /
-                    (sqrt( pow(b_i*cos(theta-phi_i), 2) + pow(a_i*sin(theta-phi_i), 2) ));
+                    (sqrt( pow(b_i*cos(theta-phi_i), 2) + pow(a_i*sin(theta-phi_i), 2) )); // inner ellipse in polar coordinates
 
-            double r_p = sqrt(pow(x - x0, 2) + pow(y - y0, 2));
+            double r_p = sqrt(pow(x - x0, 2) + pow(y - y0, 2));  // point being curremntly processed
 
-            double slope = tan(theta - phi_o);
+            double slope = tan(theta - phi_o);  // TODO protect from y/x->Inf
             double shift = y0 - yc_o - slope*(x0 - xc_o);
             double x_intersect_o;
             if (cos(theta - phi_o) < 0)
@@ -492,19 +497,20 @@ static blaze::DynamicMatrix<double> z_init(
                         / (a_o*a_o*slope*slope + b_o*b_o);
             else
                 x_intersect_o = (a_o*b_o*sqrt(-shift*shift + a_o*a_o*slope*slope + b_o*b_o) - a_o*a_o*slope*shift)
-                        / (a_o*a_o*slope*slope + b_o*b_o);  // TODO add sign choise!!!
-            double y_intersect_o = slope*x_intersect_o + shift;
-            double x_o = x_intersect_o * cos(phi_o) - y_intersect_o * sin(phi_o) + xc_o;
+                        / (a_o*a_o*slope*slope + b_o*b_o);
+            double y_intersect_o = slope*x_intersect_o + shift; // found intersection in coordinates associated with outer ellipse
+            double x_o = x_intersect_o * cos(phi_o) - y_intersect_o * sin(phi_o) + xc_o;  // converting to Cartesian coordinates centered in x0, y0
             double y_o = x_intersect_o * sin(phi_o) + y_intersect_o * cos(phi_o) + yc_o;
-            double r_o = sqrt(pow(x_o - x0, 2) + pow(y_o - y0, 2));
+            double r_o = sqrt(pow(x_o - x0, 2) + pow(y_o - y0, 2));  // outer ellipse in polar coordinates centered in x0, y0
 
             if (r_i < r_p && r_p < r_o) { // && theta < M_PI/2) { // TODO remove theta < M_PI condition!!
                 //out(std::round(y_o), std::round(x_o)) = -100; // TODO remove
-                double r_rad = (r_o - r_i) / 2;
+                double r_rad = (r_o - r_i) * 0.5;
                 double r_center = r_i + r_rad;
                 double r_xp = r_p - r_center;
-                double r_yp = std::sqrt( r_rad*r_rad - r_xp*r_xp );
-                out(y, x) = r_yp - std::sin(alpha); // TODO enable
+                r_rad = r_rad / sin(alpha);
+                double r_yp = sqrt( r_rad*r_rad - r_xp*r_xp );
+                out(y, x) = r_yp - r_rad*cos(alpha); // TODO enable
                 //out(0, 0) = r_yp - std::sin(alpha); // TODO remove
                 //out(std::round(r_center*std::sin(theta) + y0), std::round(r_center*std::cos(theta) + x0)) = -100; // TODO remove
                 //out(std::round(r_o*std::sin(theta) + y0), std::round(r_o*std::cos(theta) + x0)) = -100; // TODO remove
