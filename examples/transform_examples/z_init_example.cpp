@@ -33,7 +33,7 @@ int main() {
     double b_o = 120;
     double phi_o = 0.5;
 
-    size_t m = 601;
+    size_t m = 401;
     size_t n = 501;
 
     double arc = 0.3;
