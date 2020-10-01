@@ -492,18 +492,20 @@ static blaze::DynamicMatrix<double> z_init(
             double theta_phi_o = theta - phi_o;
             theta_phi_o = std::remainder(theta_phi_o, 2*M_PI);
             double slope = tan(theta_phi_o);  // TODO protect from y/x->Inf
-            double shift;
-            if (
-                (theta_phi_o > M_PI*0.25 && theta_phi_o <= M_PI*0.75) ||
-                (theta_phi_o < -M_PI*0.25 && theta_phi_o >= -M_PI*0.75)
-                //abs(tan(theta_phi_o)) > 1
-                ) {
-                shift = x0 - xc_o - slope*(y0 - yc_o);
-            } else {
-                shift = y0 - yc_o - slope*(x0 - xc_o);
-            }
-            //if (std::abs(slope) > 0.99)  // TODO remove
-                //std::cout << slope << " " << theta_phi_o / M_PI << "\n";
+            double shift = x0 - xc_o - slope*(y0 - yc_o);
+            //double shift;
+            //if (
+                ////(theta_phi_o > M_PI*0.25 && theta_phi_o <= M_PI*0.75) ||
+                ////(theta_phi_o < -M_PI*0.25 && theta_phi_o >= -M_PI*0.75)
+                //abs(slope) > 1
+                //) {
+                //shift = x0 - xc_o - slope*(y0 - yc_o);
+            //} else {
+                //shift = y0 - yc_o - slope*(x0 - xc_o);
+            //}
+            //if (std::abs(slope) > 0.99) {  // TODO remove
+                //std::cout << slope << " " << theta_phi_o / M_PI << " " << theta / M_PI << "\n";
+            //}
             double x_intersect_o;
             if (cos(theta_phi_o) < 0)
                 x_intersect_o = (-a_o*b_o*sqrt(-shift*shift + a_o*a_o*slope*slope + b_o*b_o) - a_o*a_o*slope*shift)
@@ -513,7 +515,7 @@ static blaze::DynamicMatrix<double> z_init(
                         / (a_o*a_o*slope*slope + b_o*b_o);
             double y_intersect_o = slope*x_intersect_o + shift; // found intersection in coordinates associated with outer ellipse
 
-            double x_o = x_intersect_o * cos(phi_o) - y_intersect_o * sin(phi_o) + xc_o;  // converting to Cartesian coordinates centered in x0, y0
+            double x_o = x_intersect_o * cos(phi_o) - y_intersect_o * sin(phi_o) + xc_o;  // converting to Cartesian centered in x0, y0
             double y_o = x_intersect_o * sin(phi_o) + y_intersect_o * cos(phi_o) + yc_o;
             double r_o = sqrt(pow(x_o - x0, 2) + pow(y_o - y0, 2));  // outer ellipse in polar coordinates centered in x0, y0
 

@@ -45,6 +45,7 @@ int main() {
                 arc
                 );
 
+    std::cout << "max z: " << max(z) << "\n\n";
     z = z / blaze::max(z);
 
     auto inner = metric::DPM_detail::ellipse2grid(m, n, xc_i, yc_i, a_i, b_i, phi_i);
