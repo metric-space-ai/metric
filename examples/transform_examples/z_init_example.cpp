@@ -9,29 +9,29 @@
 
 int main() {
 
-//     double xc_i = 250;
-//     double yc_i = 200;
-//     double a_i = 20;
-//     double b_i = 40;
-//     double phi_i = 0.5;
+     double xc_i = 250;
+     double yc_i = 200;
+     double a_i = 20;
+     double b_i = 40;
+     double phi_i = 0.5;
 
-//     double xc_o = 270;
-//     double yc_o = 180;
-//     double a_o = 170;
-//     double b_o = 130;
-//     double phi_o = 1;
+     double xc_o = 270;
+     double yc_o = 180;
+     double a_o = 170;
+     double b_o = 130;
+     double phi_o = 1;
 
-    double xc_i = 250;
-    double yc_i = 200;
-    double a_i = 30;
-    double b_i = 20;
-    double phi_i = 1;
+//    double xc_i = 250;
+//    double yc_i = 200;
+//    double a_i = 30;
+//    double b_i = 20;
+//    double phi_i = 1;
 
-    double xc_o = 290;
-    double yc_o = 270;
-    double a_o = 180;
-    double b_o = 120;
-    double phi_o = -0.5;
+//    double xc_o = 290;
+//    double yc_o = 270;
+//    double a_o = 180;
+//    double b_o = 120;
+//    double phi_o = -0.5;
 
     size_t m = 501;
     size_t n = 601;

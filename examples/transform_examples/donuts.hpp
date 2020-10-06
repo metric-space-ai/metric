@@ -964,15 +964,21 @@ static blaze::DynamicMatrix<double> z_init_fill(
 
             double r_p = sqrt(pow(x - x0, 2) + pow(y - y0, 2));  // point being curremntly processed
 
-            double r_o = a_o * 1.3;
+            double r_o = a_o * 1.1;
             double r_o_max = r_o;
             double r_o_min = 0;
             double y_o = yc_o + r_o*sin(theta);
             double x_o = xc_o + r_o*cos(theta);
             bool find = false;
-            //r_o_prev = 0;
             while (!find) {
-                //r_o_prev = r_o;
+                if (y_o < 0)
+                    y_o = 0;
+                if (x_o < 0)
+                    x_o = 0;
+                if (y_o > n - 1)
+                    y_o = n - 1;
+                if (x_o > m - 1)
+                    x_o = m - 1;
                 if (!ell((int)round(y_o), (int)round(x_o))) {
                     r_o_max = r_o;
                     r_o -= (r_o - r_o_min) * 0.5;
