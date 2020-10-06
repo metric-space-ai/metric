@@ -38,7 +38,14 @@ int main() {
 
     double arc = 0.3;
 
-    auto z = z_init(
+//    auto z = z_init(
+//                xc_i, yc_i, a_i, b_i, phi_i,
+//                xc_o, yc_o, a_o, b_o, phi_o,
+//                m, n,
+//                arc
+//                );
+
+    auto z = z_init_fill(
                 xc_i, yc_i, a_i, b_i, phi_i,
                 xc_o, yc_o, a_o, b_o, phi_o,
                 m, n,
