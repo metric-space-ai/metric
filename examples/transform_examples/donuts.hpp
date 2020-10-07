@@ -937,7 +937,7 @@ static blaze::DynamicMatrix<double> z_init_fill(
         arc = 1;
 
     blaze::DynamicMatrix<double> out (m, n, 0);
-    blaze::DynamicMatrix<bool> ell (m, n, false);
+    blaze::DynamicMatrix<double> ell (m, n, 0);
 
     double y0 = yc_i; // we put the rotation center into the center of inner ellipse rather than into the center of image  // (int)round(m/2);
     double x0 = xc_i;
@@ -946,11 +946,11 @@ static blaze::DynamicMatrix<double> z_init_fill(
     for (double y=0; y<m; ++y) {  // filling the ellipse image
         for (double x=0; x<n; ++x) {
             double theta = atan2(y - yc_o, x - xc_o);
-            double r_mo = a_o * b_o /  // TODO move out of loop
+            double r_mo = a_o * b_o /
                     (sqrt( pow(b_o*cos(theta-phi_o), 2) + pow(a_o*sin(theta-phi_o), 2) )); // outer ellipse in polar coordinates, centered
-            if (sqrt(pow(x - xc_o, 2) + pow(y - yc_o, 2)) < r_mo) {
-                ell(y, x) = true;
-            }
+            //if (sqrt(pow(x - xc_o, 2) + pow(y - yc_o, 2)) < r_mo) {
+            ell(y, x) = sqrt(pow(x - xc_o, 2) + pow(y - yc_o, 2)) - r_mo;
+            //}
         }
     }
 
@@ -969,8 +969,8 @@ static blaze::DynamicMatrix<double> z_init_fill(
             double r_o_min = 0;
             double y_o = yc_o + r_o*sin(theta);
             double x_o = xc_o + r_o*cos(theta);
-            bool find = false;
-            while (!find) {
+            //bool find = false; // TODO while true
+            while (true) {
                 if (y_o < 0)
                     y_o = 0;
                 if (x_o < 0)
@@ -979,7 +979,18 @@ static blaze::DynamicMatrix<double> z_init_fill(
                     y_o = n - 1;
                 if (x_o > m - 1)
                     x_o = m - 1;
-                if (!ell((int)round(y_o), (int)round(x_o))) {
+                double ell_point =
+                        0.545*ell((int)round(y_o - 1), (int)round(x_o - 1)) +
+                        0.972*ell((int)round(y_o - 1), (int)round(x_o)) +
+                        0.545*ell((int)round(y_o - 1), (int)round(x_o + 1)) +
+                        0.972*ell((int)round(y_o), (int)round(x_o - 1)) +
+                        ell((int)round(y_o), (int)round(x_o)) +
+                        0.972*ell((int)round(y_o), (int)round(x_o + 1)) +
+                        0.545*ell((int)round(y_o + 1), (int)round(x_o - 1)) +
+                        0.972*ell((int)round(y_o + 1), (int)round(x_o)) +
+                        0.545*ell((int)round(y_o + 1), (int)round(x_o + 1));
+                //if (ell((int)round(y_o), (int)round(x_o)) > 0) {
+                if (ell_point > 0) {
                     r_o_max = r_o;
                     r_o -= (r_o - r_o_min) * 0.5;
                     y_o = y0 + r_o*sin(theta);
@@ -990,8 +1001,9 @@ static blaze::DynamicMatrix<double> z_init_fill(
                     y_o = y0 + r_o*sin(theta);
                     x_o = x0 + r_o*cos(theta);
                 }
-                if (r_o_max - r_o_min < 1.5)
-                    find = true;
+                if (r_o_max - r_o_min < 0.5)
+                    break;
+                    //find = true;
             }
 
             if (r_i < r_p && r_p < r_o) { // && theta < M_PI/2 && theta > -M_PI/2) { // TODO remove theta < M_PI condition!!
