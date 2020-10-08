@@ -979,18 +979,18 @@ static blaze::DynamicMatrix<double> z_init_fill(
                     y_o = n - 1;
                 if (x_o > m - 1)
                     x_o = m - 1;
-                double ell_point =
-                        0.545*ell((int)round(y_o - 1), (int)round(x_o - 1)) +
-                        0.972*ell((int)round(y_o - 1), (int)round(x_o)) +
-                        0.545*ell((int)round(y_o - 1), (int)round(x_o + 1)) +
-                        0.972*ell((int)round(y_o), (int)round(x_o - 1)) +
-                        ell((int)round(y_o), (int)round(x_o)) +
-                        0.972*ell((int)round(y_o), (int)round(x_o + 1)) +
-                        0.545*ell((int)round(y_o + 1), (int)round(x_o - 1)) +
-                        0.972*ell((int)round(y_o + 1), (int)round(x_o)) +
-                        0.545*ell((int)round(y_o + 1), (int)round(x_o + 1));
-                //if (ell((int)round(y_o), (int)round(x_o)) > 0) {
-                if (ell_point > 0) {
+//                double ell_point =
+//                        0.545*ell((int)round(y_o - 1), (int)round(x_o - 1)) +
+//                        0.972*ell((int)round(y_o - 1), (int)round(x_o)) +
+//                        0.545*ell((int)round(y_o - 1), (int)round(x_o + 1)) +
+//                        0.972*ell((int)round(y_o), (int)round(x_o - 1)) +
+//                        ell((int)round(y_o), (int)round(x_o)) +
+//                        0.972*ell((int)round(y_o), (int)round(x_o + 1)) +
+//                        0.545*ell((int)round(y_o + 1), (int)round(x_o - 1)) +
+//                        0.972*ell((int)round(y_o + 1), (int)round(x_o)) +
+//                        0.545*ell((int)round(y_o + 1), (int)round(x_o + 1));
+                if (ell((int)round(y_o), (int)round(x_o)) > 0) {
+//                if (ell_point > 0) {
                     r_o_max = r_o;
                     r_o -= (r_o - r_o_min) * 0.5;
                     y_o = y0 + r_o*sin(theta);
@@ -1001,10 +1001,35 @@ static blaze::DynamicMatrix<double> z_init_fill(
                     y_o = y0 + r_o*sin(theta);
                     x_o = x0 + r_o*cos(theta);
                 }
-                if (r_o_max - r_o_min < 0.5)
+                if (r_o_max - r_o_min < 0.5)  // TODO check threshold
                     break;
                     //find = true;
             }
+            // get interpolated r_o value
+            double step = 3;
+            double xi1 = x0 + (r_o - step)*cos(theta); // points for interpolation
+            double yi1 = y0 + (r_o - step)*sin(theta);
+            double xi2 = x0 + (r_o + step)*cos(theta);
+            double yi2 = y0 + (r_o + step)*sin(theta);
+            size_t bxi1 = (size_t)floor(xi1); // base
+            size_t byi1 = (size_t)floor(yi1);
+            size_t bxi2 = (size_t)floor(xi2);
+            size_t byi2 = (size_t)floor(yi2);
+            double oxi1 = xi1 - bxi1; // offset
+            double oyi1 = yi1 - byi1;
+            double oxi2 = xi2 - bxi2;
+            double oyi2 = yi2 - byi2;
+            double h1 = // biliniar interpolation
+                    ell(byi1, bxi1) * (1 - oxi1) * (1 - oyi1) +
+                    ell(byi1 + 1, bxi1) * oxi1 * (1 - oyi1) +
+                    ell(byi1, bxi1 + 1) * (1 - oxi1) * oyi1 +
+                    ell(byi1 + 1, bxi1 + 1) * oxi1 * oyi1;
+            double h2 =
+                    ell(byi2, bxi2) * (1 - oxi2) * (1 - oyi2) +
+                    ell(byi2 + 1, bxi2) * oxi2 * (1 - oyi2) +
+                    ell(byi2, bxi2 + 1) * (1 - oxi2) * oyi2 +
+                    ell(byi2 + 1, bxi2 + 1) * oxi2 * oyi2;
+            r_o = (h2*(r_o + 1) - h1*(r_o - 1)) / (h2 - h1);  // update r_o
 
             if (r_i < r_p && r_p < r_o) { // && theta < M_PI/2 && theta > -M_PI/2) { // TODO remove theta < M_PI condition!!
                 //out(std::round(y_o), std::round(x_o)) = -100; // TODO remove
