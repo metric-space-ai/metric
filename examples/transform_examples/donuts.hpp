@@ -925,6 +925,10 @@ static blaze::DynamicMatrix<double> z_init(
 
 // */
 
+/*
+
+// first version with filling, works well, but artifacts due to pixel precision of the ellipse
+
 static blaze::DynamicMatrix<double> z_init_fill(
         double xc_i, double yc_i, double a_i, double b_i, double phi_i,  // inner ellipse
         double xc_o, double yc_o, double a_o, double b_o, double phi_o,  // outer ellipse
@@ -937,7 +941,9 @@ static blaze::DynamicMatrix<double> z_init_fill(
         arc = 1;
 
     blaze::DynamicMatrix<double> out (m, n, 0);
-    blaze::DynamicMatrix<double> ell (m, n, 0);
+    //blaze::DynamicMatrix<double> ell (m, n, 0); // needed for interpolation!
+    blaze::DynamicMatrix<bool> ell (m, n, 0);
+
 
     double y0 = yc_i; // we put the rotation center into the center of inner ellipse rather than into the center of image  // (int)round(m/2);
     double x0 = xc_i;
@@ -948,9 +954,10 @@ static blaze::DynamicMatrix<double> z_init_fill(
             double theta = atan2(y - yc_o, x - xc_o);
             double r_mo = a_o * b_o /
                     (sqrt( pow(b_o*cos(theta-phi_o), 2) + pow(a_o*sin(theta-phi_o), 2) )); // outer ellipse in polar coordinates, centered
-            //if (sqrt(pow(x - xc_o, 2) + pow(y - yc_o, 2)) < r_mo) {
-            ell(y, x) = sqrt(pow(x - xc_o, 2) + pow(y - yc_o, 2)) - r_mo;
-            //}
+            //ell(y, x) = sqrt(pow(x - xc_o, 2) + pow(y - yc_o, 2)) - r_mo; // needed for interpolation!
+            if (sqrt(pow(x - xc_o, 2) + pow(y - yc_o, 2)) > r_mo) {
+                ell(y, x) = 1;
+            }
         }
     }
 
@@ -969,7 +976,6 @@ static blaze::DynamicMatrix<double> z_init_fill(
             double r_o_min = 0;
             double y_o = yc_o + r_o*sin(theta);
             double x_o = xc_o + r_o*cos(theta);
-            //bool find = false; // TODO while true
             while (true) {
                 if (y_o < 0)
                     y_o = 0;
@@ -1003,33 +1009,34 @@ static blaze::DynamicMatrix<double> z_init_fill(
                 }
                 if (r_o_max - r_o_min < 0.5)  // TODO check threshold
                     break;
-                    //find = true;
             }
-            // get interpolated r_o value
-            double step = 3;
-            double xi1 = x0 + (r_o - step)*cos(theta); // points for interpolation
-            double yi1 = y0 + (r_o - step)*sin(theta);
-            double xi2 = x0 + (r_o + step)*cos(theta);
-            double yi2 = y0 + (r_o + step)*sin(theta);
-            size_t bxi1 = (size_t)floor(xi1); // base
-            size_t byi1 = (size_t)floor(yi1);
-            size_t bxi2 = (size_t)floor(xi2);
-            size_t byi2 = (size_t)floor(yi2);
-            double oxi1 = xi1 - bxi1; // offset
-            double oyi1 = yi1 - byi1;
-            double oxi2 = xi2 - bxi2;
-            double oyi2 = yi2 - byi2;
-            double h1 = // biliniar interpolation
-                    ell(byi1, bxi1) * (1 - oxi1) * (1 - oyi1) +
-                    ell(byi1 + 1, bxi1) * oxi1 * (1 - oyi1) +
-                    ell(byi1, bxi1 + 1) * (1 - oxi1) * oyi1 +
-                    ell(byi1 + 1, bxi1 + 1) * oxi1 * oyi1;
-            double h2 =
-                    ell(byi2, bxi2) * (1 - oxi2) * (1 - oyi2) +
-                    ell(byi2 + 1, bxi2) * oxi2 * (1 - oyi2) +
-                    ell(byi2, bxi2 + 1) * (1 - oxi2) * oyi2 +
-                    ell(byi2 + 1, bxi2 + 1) * oxi2 * oyi2;
-            r_o = (h2*(r_o + 1) - h1*(r_o - 1)) / (h2 - h1);  // update r_o
+
+//            // update r_o using interpolated values, may be disabled
+//            double step = 3;
+//            double xi1 = x0 + (r_o - step)*cos(theta); // points for interpolation
+//            double yi1 = y0 + (r_o - step)*sin(theta);
+//            double xi2 = x0 + (r_o + step)*cos(theta);
+//            double yi2 = y0 + (r_o + step)*sin(theta);
+//            size_t bxi1 = (size_t)floor(xi1); // base
+//            size_t byi1 = (size_t)floor(yi1);
+//            size_t bxi2 = (size_t)floor(xi2);
+//            size_t byi2 = (size_t)floor(yi2);
+//            double oxi1 = xi1 - bxi1; // offset
+//            double oyi1 = yi1 - byi1;
+//            double oxi2 = xi2 - bxi2;
+//            double oyi2 = yi2 - byi2;
+//            double h1 = // biliniar interpolation
+//                    ell(byi1, bxi1) * (1 - oxi1) * (1 - oyi1) +
+//                    ell(byi1 + 1, bxi1) * oxi1 * (1 - oyi1) +
+//                    ell(byi1, bxi1 + 1) * (1 - oxi1) * oyi1 +
+//                    ell(byi1 + 1, bxi1 + 1) * oxi1 * oyi1;
+//            double h2 =
+//                    ell(byi2, bxi2) * (1 - oxi2) * (1 - oyi2) +
+//                    ell(byi2 + 1, bxi2) * oxi2 * (1 - oyi2) +
+//                    ell(byi2, bxi2 + 1) * (1 - oxi2) * oyi2 +
+//                    ell(byi2 + 1, bxi2 + 1) * oxi2 * oyi2;
+//            r_o = (h2*(r_o + 1) - h1*(r_o - 1)) / (h2 - h1);  // update r_o
+//            // end of interpolation piece of code
 
             if (r_i < r_p && r_p < r_o) { // && theta < M_PI/2 && theta > -M_PI/2) { // TODO remove theta < M_PI condition!!
                 //out(std::round(y_o), std::round(x_o)) = -100; // TODO remove
@@ -1052,10 +1059,149 @@ static blaze::DynamicMatrix<double> z_init_fill(
     return out;
 }
 
+
+// */
+
+
+
+
 //*
 
 
+// filling, scaled ellipse map, works well
 
+static blaze::DynamicMatrix<double> z_init(
+        double xc_i, double yc_i, double a_i, double b_i, double phi_i,  // inner ellipse
+        double xc_o, double yc_o, double a_o, double b_o, double phi_o,  // outer ellipse
+        size_t m, size_t n,  // map size
+        double arc,  // arc segment share
+        int scale = 3)  // internal ellipse image scaling, affects precision
+{
+    if (arc <= 0)
+        arc = 0;
+    if (arc>1)
+        arc = 1;
+
+    if (scale < 1)
+        scale = 1;
+
+    blaze::DynamicMatrix<bool> ell (m*scale, n*scale, 0);  // scaled outer ellipse image
+    //blaze::DynamicMatrix<double> ell (m*scale, n*scale, 0); // needed for interpolation!
+    for (double y=0; y<m*scale; ++y) {  // filling the ellipse image
+        for (double x=0; x<n*scale; ++x) {
+            double theta = atan2(y - yc_o*scale, x - xc_o*scale);
+            double r_mo = a_o * b_o /
+                    (sqrt( pow(b_o*cos(theta-phi_o), 2) + pow(a_o*sin(theta-phi_o), 2) )); // outer ellipse in polar coordinates, centered
+            //ell(y, x) = sqrt(pow(x - xc_o, 2) + pow(y - yc_o, 2)) - r_mo; // needed for interpolation!
+            if (sqrt(pow(x - xc_o*scale, 2) + pow(y - yc_o*scale, 2)) > r_mo*scale) {
+                ell(y, x) = 1;
+            }
+        }
+    }
+
+    double alpha = M_PI * arc * 0.5;  // half arc angle
+
+    blaze::DynamicMatrix<double> out (m, n, 0);
+    for (double y=0; y<m; ++y) {
+        for (double x=0; x<n; ++x) {
+
+            double theta = atan2(y - yc_i, x - xc_i);
+            //theta = theta + M_PI; // TODO remove
+            double sin_theta = sin(theta);
+            double cos_theta = cos(theta);
+
+            double r_i = a_i * b_i /
+                    (sqrt( pow(b_i*cos(theta-phi_i), 2) + pow(a_i*sin(theta-phi_i), 2) )); // inner ellipse in polar coordinates
+
+            double r_p = sqrt(pow(x - xc_i, 2) + pow(y - yc_i, 2));  // point being curremntly processed
+
+            double r_o = a_o * 1.1;
+            double r_o_max = r_o;
+            double r_o_min = 0;
+            double y_o = yc_o + r_o*sin_theta;
+            double x_o = xc_o + r_o*cos_theta;
+            while (true) {
+                if (y_o < 0)
+                    y_o = 0;
+                if (x_o < 0)
+                    x_o = 0;
+                if (y_o > n - 1)
+                    y_o = n - 1;
+                if (x_o > m - 1)
+                    x_o = m - 1;
+//                double ell_point =
+//                        0.545*ell((int)round(y_o*scale - 1), (int)round(x_o*scale - 1)) +
+//                        0.972*ell((int)round(y_o*scale - 1), (int)round(x_o*scale)) +
+//                        0.545*ell((int)round(y_o*scale - 1), (int)round(x_o*scale + 1)) +
+//                        0.972*ell((int)round(y_o*scale), (int)round(x_o*scale - 1)) +
+//                        ell((int)round(y_o*scale), (int)round(x_o*scale)) +
+//                        0.972*ell((int)round(y_o*scale), (int)round(x_o*scale + 1)) +
+//                        0.545*ell((int)round(y_o*scale + 1), (int)round(x_o*scale - 1)) +
+//                        0.972*ell((int)round(y_o*scale + 1), (int)round(x_o*scale)) +
+//                        0.545*ell((int)round(y_o*scale + 1), (int)round(x_o*scale + 1));
+//                if (ell_point > 0) {
+                if (ell((int)round(y_o*scale), (int)round(x_o*scale)) > 0) {
+                    r_o_max = r_o;
+                    r_o -= (r_o - r_o_min) * 0.5;
+                    y_o = yc_i + r_o*sin_theta;
+                    x_o = xc_i + r_o*cos_theta;
+                } else {
+                    r_o_min = r_o;
+                    r_o += (r_o_max - r_o) * 0.5;
+                    y_o = yc_i + r_o*sin_theta;
+                    x_o = xc_i + r_o*cos_theta;
+                }
+                if (r_o_max - r_o_min < 0.5)  // TODO check threshold
+                    break;
+            }
+
+//            // update r_o using interpolated values, may be disabled
+//            double step = 3;
+//            double xi1 = x0 + (r_o - step)*cos(theta); // points for interpolation
+//            double yi1 = y0 + (r_o - step)*sin(theta);
+//            double xi2 = x0 + (r_o + step)*cos(theta);
+//            double yi2 = y0 + (r_o + step)*sin(theta);
+//            size_t bxi1 = (size_t)floor(xi1*scale); // base
+//            size_t byi1 = (size_t)floor(yi1*scale);
+//            size_t bxi2 = (size_t)floor(xi2*scale);
+//            size_t byi2 = (size_t)floor(yi2*scale);
+//            double oxi1 = xi1*scale - bxi1; // offset
+//            double oyi1 = yi1*scale - byi1;
+//            double oxi2 = xi2*scale - bxi2;
+//            double oyi2 = yi2*scale - byi2;
+//            double h1 = // biliniar interpolation
+//                    ell(byi1, bxi1) * (1 - oxi1) * (1 - oyi1) +
+//                    ell(byi1 + 1, bxi1) * oxi1 * (1 - oyi1) +
+//                    ell(byi1, bxi1 + 1) * (1 - oxi1) * oyi1 +
+//                    ell(byi1 + 1, bxi1 + 1) * oxi1 * oyi1;
+//            double h2 =
+//                    ell(byi2, bxi2) * (1 - oxi2) * (1 - oyi2) +
+//                    ell(byi2 + 1, bxi2) * oxi2 * (1 - oyi2) +
+//                    ell(byi2, bxi2 + 1) * (1 - oxi2) * oyi2 +
+//                    ell(byi2 + 1, bxi2 + 1) * oxi2 * oyi2;
+//            r_o = (h2*(r_o + 1) - h1*(r_o - 1)) / (h2 - h1);  // update r_o
+//            // end of interpolation piece of code
+
+            if (r_i < r_p && r_p < r_o) {
+                //out(std::round(y_o), std::round(x_o)) = -100; // TODO remove
+                double r_rad = (r_o - r_i) * 0.5;
+                double r_center = r_i + r_rad;
+                double r_xp = r_p - r_center;
+                r_rad = r_rad / sin(alpha);
+                double r_yp = sqrt( r_rad*r_rad - r_xp*r_xp );
+                out(y, x) = r_yp - r_rad*cos(alpha);
+                //out(std::round(r_center*std::sin(theta) + y0), std::round(r_center*std::cos(theta) + x0)) = -100; // TODO remove
+                //out(std::round(r_o*std::sin(theta) + y0), std::round(r_o*std::cos(theta) + x0)) = -100; // TODO remove
+                //out(std::round(r_i*std::sin(theta) + y0), std::round(r_i*std::cos(theta) + x0)) = -100; // TODO remove
+                //out(std::round(r_p*std::sin(theta) + y0), std::round(r_p*std::cos(theta) + x0)) = r_yp - std::sin(alpha);; // TODO remove
+                //if (out(y, x) > 0)
+                    //std::cout << out(y, x) << " " << r_yp << " " << x << " " << y << "\n";  // TODO remove
+            }
+        }
+    }
+
+    return out;
+}
 
 // */
 

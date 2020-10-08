@@ -64,11 +64,12 @@ int main() {
 
     auto t1 = std::chrono::steady_clock::now();
 
-    auto z = z_init_fill(
+    auto z = z_init(
                 xc_i, yc_i, a_i, b_i, phi_i,
                 xc_o, yc_o, a_o, b_o, phi_o,
                 m, n,
-                arc
+                arc,
+                2 // set this coeff to 1 for no internal scaling
                 );
     auto t2 = std::chrono::steady_clock::now();
 
@@ -88,7 +89,6 @@ int main() {
     }
 
     vector2bmp(matrix2vv(z), "z_init.bmp");
-
 
 //    std::cout.precision(30);
 //    double angle = M_PI*0.5;
