@@ -5,6 +5,7 @@
 
 #include <cmath>
 #include <iostream>
+#include <fstream>  // for only obj writer
 //#include <tuple>
 //#include <opencv2/opencv.hpp>
 
@@ -1115,7 +1116,8 @@ static blaze::DynamicMatrix<double> z_init(
 
             double r_p = sqrt(pow(x - xc_i, 2) + pow(y - yc_i, 2));  // point being curremntly processed
 
-            double r_o = a_o * 1.1;
+            double r_o = (a_o > b_o ? a_o : b_o) * 1.1;
+            //double r_o = (a_o + b_o) * 1.1;
             double r_o_max = r_o;
             double r_o_min = 0;
             double y_o = yc_o + r_o*sin_theta;
@@ -1151,7 +1153,7 @@ static blaze::DynamicMatrix<double> z_init(
                     y_o = yc_i + r_o*sin_theta;
                     x_o = xc_i + r_o*cos_theta;
                 }
-                if (r_o_max - r_o_min < 0.5)  // TODO check threshold
+                if (r_o_max - r_o_min < 1)  // TODO check threshold
                     break;
             }
 
@@ -1204,6 +1206,44 @@ static blaze::DynamicMatrix<double> z_init(
 }
 
 // */
+
+
+// ----------------------------------
+
+// obj writer
+
+
+template <typename T>
+void write_obj(blaze::DynamicMatrix<T> zmap, std::string filename) {
+
+    std::ofstream f;
+    f.open(filename);
+    size_t m = zmap.rows();
+    size_t n = zmap.columns();
+    for (size_t i = 0; i < m; ++i) {
+        for (size_t j = 0; j < n; ++j) {
+            f <<
+                 "v " <<
+                 i << " " <<
+                 j << " " <<
+                 zmap(i, j) << "\n";
+        }
+    }
+    for (size_t i = 1; i < m; i++) {
+        for (size_t j = 1; j < n; j++) {
+            f << "f " <<
+                (i - 1)*n + j << " " <<
+                i*n + j << " " <<
+                i*n + j + 1 << "\n";
+            f << "f " <<
+                i*n + j + 1<< " " <<
+                (i - 1)*n + j + 1 << " " <<
+                (i - 1)*n + j << "\n";
+        }
+    }
+    f.close();
+}
+
 
 
 
