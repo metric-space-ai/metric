@@ -857,7 +857,7 @@ static blaze::DynamicMatrix<double> z_init(
 //*  // ellipse-centered basis, basic version, low precision
 // donut depth init function
 
-static blaze::DynamicMatrix<double> z_init(
+static blaze::DynamicMatrix<double> z_init_s(
         double xc_i, double yc_i, double a_i, double b_i, double phi_i,  // inner ellipse
         double xc_o, double yc_o, double a_o, double b_o, double phi_o,  // outer ellipse
         size_t m, size_t n,  // map size
