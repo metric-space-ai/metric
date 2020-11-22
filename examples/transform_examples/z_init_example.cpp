@@ -75,20 +75,20 @@ int main() {
 
     auto t1 = std::chrono::steady_clock::now();
 
-    auto z = z_init_s(
-                xc_i, yc_i, a_i, b_i, phi_i,
-                xc_o, yc_o, a_o, b_o, phi_o,
-                m, n,
-                arc
-                );
-
-//    auto z = z_init(
+//    auto z = z_init_s(
 //                xc_i, yc_i, a_i, b_i, phi_i,
 //                xc_o, yc_o, a_o, b_o, phi_o,
 //                m, n,
-//                arc,
-//                2 // set this coeff to 1 for no internal scaling
+//                arc
 //                );
+
+    auto z = z_init(
+                xc_i, yc_i, a_i, b_i, phi_i,
+                xc_o, yc_o, a_o, b_o, phi_o,
+                m, n,
+                arc,
+                2 // set this coeff to 1 for no internal scaling
+                );
 
     auto t2 = std::chrono::steady_clock::now();
 
