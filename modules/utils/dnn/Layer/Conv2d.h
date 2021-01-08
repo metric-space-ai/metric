@@ -188,51 +188,36 @@ class Conv2d: public Layer<Scalar>
 
 	        auto &unrolledKernel0 = unrolledKernels[0];
 	        unrolledKernel0.reserve(unrolledKernel0.rows() * iDeltas.size());
-	        for (int i = - paddingHeight; i < inputHeight + paddingHeight; ++i) {
-		        for (int j = -paddingWidth; j < inputWidth + paddingWidth; ++j) {
-		        	size_t kis = 0;
-			        size_t kie = kernelHeight;
-		        	size_t kjs = 0;
-			        size_t kje = kernelWidth;
-		        	//size_t width0 =
-		        	if (i < 0) {
-		        		kis = -i;
-		        		kie -= kis;
-		        	}
-
-		        	if (i + kernelHeight > inputHeight) {
-		        		kie -= i + kernelHeight - inputHeight;
-		        	}
-
-		        	if (j < 0) {
-		        		kjs = -j;
-		        		kje -= kjs;
-		        	}
-
-		        	if (j + kernelWidth > inputWidth) {
-		        		kje -= j + kernelWidth - inputWidth;
-		        	}
-
+	        size_t column = 0;
+	        for (int i0 = - paddingHeight; i0 <= (int)(inputHeight + paddingHeight - kernelHeight); i0 += stride) {
+		        for (int j0 = - paddingWidth; j0 <= (int)(inputWidth + paddingWidth - kernelWidth); j0 += stride) {
 
 		        	std::vector<size_t> kernelMask;
 		        	size_t c = 0;
-		            for (size_t ki = 0; ki < kernelHeight; ++ki) {
-		            	for (size_t kj = 0; kj < kernelWidth; ++kj) {
-		            		if ((ki < kis) or (ki > kie) or (kj < kjs) or (kj > kje)) {
+		            for (int ki = 0; ki < kernelHeight; ++ki) {
+		            	for (int kj = 0; kj < kernelWidth; ++kj) {
+
+		            		int i = i0 + ki;
+		            		int j = j0 + kj;
+		            		if ((i < 0) or (i >= inputHeight) or
+						            (j < 0) or (j >= inputWidth)) {
 		            			kernelMask.push_back(c);
 		            		} else {
-								unrolledKernel0.append((i + ki) * 1 + (j + kj), i * outputWidth + j, 1);
+								unrolledKernel0.append(i * inputWidth + j, column, 1);
 		            		}
 
 		            		++c;
 		            	}
 		            }
-		            unrolledKernel0.finalize(i * outputWidth + j);
+		            unrolledKernel0.finalize(column);
 		            kernelMasks.push_back(kernelMask);
+
+		            ++column;
 		        }
 	        }
+	        std::cout << unrolledKernel0 << std::endl;
 
-            size_t p = 0;
+          /*  size_t p = 0;
             for (size_t i = 0; i < iDeltas.size(); ++i) {
                 iDeltas[i] = p++;
 
@@ -242,7 +227,7 @@ class Conv2d: public Layer<Scalar>
             }
 
 
-            /* Prepare unrolledKernel and jDeltas */
+            *//* Prepare unrolledKernel and jDeltas *//*
             if (!isTranspose) {
                 jDeltas.resize(outputWidth * outputHeight);
             } else {
@@ -264,7 +249,7 @@ class Conv2d: public Layer<Scalar>
 
 
 
-	        /* Fill unrolled kernels */
+	        *//* Fill unrolled kernels *//*
 	        for (auto& unrolledKernel: unrolledKernels) {
                 if (isTranspose) {
                     unrolledKernel.reserve(unrolledKernel.rows() * iDeltas.size());
@@ -285,7 +270,7 @@ class Conv2d: public Layer<Scalar>
                         unrolledKernel.finalize(i);
                     }
                 }
-            }
+            }*/
         }
 
         void getUnrolledKernel()
@@ -326,7 +311,7 @@ class Conv2d: public Layer<Scalar>
 							auto me = kernelMasks[i].begin();
 							auto element = unrolledKernel.begin(i);
 							for (auto k = 0; k < kernelData.size(); ++k) {
-								if (*me == k) {
+								if (!kernelMasks[i].empty() and (*me == k)) {
 									++me;
 								} else {
 		                            element++->value() = kernelData[k];
@@ -422,7 +407,7 @@ class Conv2d: public Layer<Scalar>
 								if (*me == j) {
 									++me;
 								} else {
-									kdic(observation, j) += wice++->value();
+									kdic(observation, j) += *wice;
 								}
 							}
 						}

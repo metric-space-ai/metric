@@ -130,7 +130,7 @@ BOOST_AUTO_TEST_CASE(convolution_same)
 	Conv2d<double, Identity<double>> convLayer(3, 3, 1, 1, 3, 3, 1, true);
 	blaze::DynamicMatrix<double> X{{0, 1, 2, 3, 4, 5, 6, 7, 8}};
 
-	std::vector<double> K = {0, 0, 0, 0, 1, 0, 0, 0};
+	std::vector<double> K = {0, 0, 0, 0, 1, 0, 0, 0, 0};
 	std::vector<double> bias = {0};
 
 	convLayer.setParameters({K, bias});
