@@ -16,7 +16,7 @@ using Vector = blaze::DynamicVector<double>;
 using RowVector = blaze::DynamicVector<double, blaze::rowVector>;
 
 
-BOOST_AUTO_TEST_CASE(base)
+/*BOOST_AUTO_TEST_CASE(base)
 {
 	Network<double> net;
 
@@ -24,7 +24,7 @@ BOOST_AUTO_TEST_CASE(base)
 
 	RMSProp<double> opt;
 	//RegressionMSE<double> output;
-}
+}*/
 
 BOOST_AUTO_TEST_CASE(identity)
 {

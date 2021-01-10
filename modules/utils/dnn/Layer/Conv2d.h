@@ -176,18 +176,14 @@ class Conv2d: public Layer<Scalar>
                     //unrolledKernel.finalize(j);
             //}
 
-            const size_t dr = (isTranspose ? outputWidth : inputWidth) - kernelWidth;
-
-
-            /* Prepare iDeltas */
-            iDeltas.resize(kernelWidth * kernelHeight);
 
             /* Parse padded input */
             size_t paddingWidth = (kernelWidth - 1) / 2;
 	        size_t paddingHeight = (kernelHeight - 1) / 2;
 
-	        auto &unrolledKernel0 = unrolledKernels[0];
-	        unrolledKernel0.reserve(unrolledKernel0.rows() * iDeltas.size());
+	        auto unrolledKernel0 = SparseMatrix(inputWidth * inputHeight, outputWidth * outputHeight);
+
+	        unrolledKernel0.reserve(outputHeight * outputWidth * kernelHeight * kernelWidth);
 	        size_t column = 0;
 	        for (int i0 = - paddingHeight; i0 <= (int)(inputHeight + paddingHeight - kernelHeight); i0 += stride) {
 		        for (int j0 = - paddingWidth; j0 <= (int)(inputWidth + paddingWidth - kernelWidth); j0 += stride) {
@@ -216,6 +212,13 @@ class Conv2d: public Layer<Scalar>
 		        }
 	        }
 	        std::cout << unrolledKernel0 << std::endl;
+
+	        for (auto& unrolledKernel: unrolledKernels) {
+	        	for (size_t inputChannel = 0; inputChannel < inputChannels; ++inputChannel) {
+	        		blaze::submatrix(unrolledKernel, inputChannel * inputHeight * inputWidth, 0,
+			                         inputHeight * inputWidth, unrolledKernel.columns()) = unrolledKernel0;
+	        	}
+	        }
 
           /*  size_t p = 0;
             for (size_t i = 0; i < iDeltas.size(); ++i) {
