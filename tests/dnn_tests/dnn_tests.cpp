@@ -16,7 +16,7 @@ using Vector = blaze::DynamicVector<double>;
 using RowVector = blaze::DynamicVector<double, blaze::rowVector>;
 
 
-/*BOOST_AUTO_TEST_CASE(base)
+BOOST_AUTO_TEST_CASE(base)
 {
 	Network<double> net;
 
@@ -24,7 +24,7 @@ using RowVector = blaze::DynamicVector<double, blaze::rowVector>;
 
 	RMSProp<double> opt;
 	//RegressionMSE<double> output;
-}*/
+}
 
 BOOST_AUTO_TEST_CASE(identity)
 {
@@ -146,8 +146,8 @@ BOOST_AUTO_TEST_CASE(convolution_same)
 BOOST_AUTO_TEST_CASE(deconvolutional)
 {
 	Conv2dTranspose<double, Identity<double>> convTransposeLayer(2, 2, 1, 1, 2, 2);
-	blaze::DynamicMatrix<double> X{{1, 2, 3, 4}};
-	std::vector<double> K = {1, 2, 3, 4};
+	blaze::DynamicMatrix<double> X{{0, 1, 2, 3}};
+	std::vector<double> K = {0, 1, 2, 3};
 	std::vector<double> bias = {1};
 
 	convTransposeLayer.setParameters({K, bias});

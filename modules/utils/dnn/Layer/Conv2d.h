@@ -52,10 +52,10 @@ class Conv2d: public Layer<Scalar>
 
         std::vector<SparseMatrix> unrolledKernels;
         std::vector<size_t> jDeltas;
-        std::vector<size_t> iDeltas;
+        blaze::CompressedMatrix<size_t, blaze::columnMajor> unrolledKernelMap;
 		std::vector<std::vector<size_t>> kernelMasks;
 
-	Vector kernelsData;           // Filter parameters. Total length is
+		Vector kernelsData;           // Filter parameters. Total length is
         // (in_channels x out_channels x filter_rows x filter_cols)
         // See Utils/Convolution.h for its layout
 
@@ -165,7 +165,53 @@ class Conv2d: public Layer<Scalar>
             initializers.at("zero")->init(bias.size(), bias);
         }
 
-        void calculateUnrolledKernelStructure()
+        SparseMatrix constructBaseUnrolledKernel(size_t fromWidth, size_t fromHeight,
+                                                size_t toWidth, size_t toHeight)
+        {
+	        /* Parse padded input */
+	        size_t paddingWidth = 0;
+	        size_t paddingHeight = 0;
+
+	        if (isZeroPadding) {
+		        paddingWidth = (kernelWidth - 1) / 2;
+		        paddingHeight = (kernelHeight - 1) / 2;
+	        }
+
+	        SparseMatrix unrolledKernel(fromWidth * fromHeight, toWidth * toHeight);
+
+	        unrolledKernel.reserve(toHeight * toWidth * kernelHeight * kernelWidth);
+	        size_t column = 0;
+	        for (int i0 = - paddingHeight; i0 <= (int)(fromHeight + paddingHeight - kernelHeight); i0 += stride) {
+		        for (int j0 = - paddingWidth; j0 <= (int)(fromWidth + paddingWidth - kernelWidth); j0 += stride) {
+
+			        std::vector<size_t> kernelMask;
+			        size_t c = 0;
+			        for (int ki = 0; ki < kernelHeight; ++ki) {
+				        for (int kj = 0; kj < kernelWidth; ++kj) {
+
+					        int i = i0 + ki;
+					        int j = j0 + kj;
+					        if ((i < 0) or (i >= fromHeight) or
+					            (j < 0) or (j >= fromWidth)) {
+						        kernelMask.push_back(c);
+					        } else {
+						        unrolledKernel.append(i * fromWidth + j, column, ki * kernelWidth + kj + 1);
+					        }
+
+					        ++c;
+				        }
+			        }
+			        unrolledKernel.finalize(column);
+			        kernelMasks.push_back(kernelMask);
+
+			        ++column;
+		        }
+	        }
+
+	        return unrolledKernel;
+        }
+
+	void calculateUnrolledKernelStructure()
         {
             /* Init unrolled kernels */
             unrolledKernels.resize(outputChannels, SparseMatrix(inputChannels * inputWidth * inputHeight,
@@ -177,41 +223,24 @@ class Conv2d: public Layer<Scalar>
             //}
 
 
-            /* Parse padded input */
-            size_t paddingWidth = (kernelWidth - 1) / 2;
-	        size_t paddingHeight = (kernelHeight - 1) / 2;
-
-	        auto unrolledKernel0 = SparseMatrix(inputWidth * inputHeight, outputWidth * outputHeight);
-
-	        unrolledKernel0.reserve(outputHeight * outputWidth * kernelHeight * kernelWidth);
-	        size_t column = 0;
-	        for (int i0 = - paddingHeight; i0 <= (int)(inputHeight + paddingHeight - kernelHeight); i0 += stride) {
-		        for (int j0 = - paddingWidth; j0 <= (int)(inputWidth + paddingWidth - kernelWidth); j0 += stride) {
-
-		        	std::vector<size_t> kernelMask;
-		        	size_t c = 0;
-		            for (int ki = 0; ki < kernelHeight; ++ki) {
-		            	for (int kj = 0; kj < kernelWidth; ++kj) {
-
-		            		int i = i0 + ki;
-		            		int j = j0 + kj;
-		            		if ((i < 0) or (i >= inputHeight) or
-						            (j < 0) or (j >= inputWidth)) {
-		            			kernelMask.push_back(c);
-		            		} else {
-								unrolledKernel0.append(i * inputWidth + j, column, 1);
-		            		}
-
-		            		++c;
-		            	}
-		            }
-		            unrolledKernel0.finalize(column);
-		            kernelMasks.push_back(kernelMask);
-
-		            ++column;
-		        }
-	        }
+            SparseMatrix unrolledKernel0;
+            if (isTranspose) {
+	            unrolledKernel0 = blaze::trans(constructBaseUnrolledKernel(outputWidth, outputHeight,
+	                                                          inputWidth, inputHeight));
+	            unrolledKernelMap = unrolledKernel0;
+            } else {
+	            unrolledKernel0 = constructBaseUnrolledKernel(inputWidth, inputHeight,
+	                                                          outputWidth, outputHeight);
+            }
 	        std::cout << unrolledKernel0 << std::endl;
+
+            std::cout << blaze::size(unrolledKernel0) << std::endl;
+	        std::cout << unrolledKernel0.capacity() << std::endl;
+	        std::cout << unrolledKernel0.nonZeros() << std::endl;
+
+	        //unrolledKernelMap = unrolledKernel0;
+            //std::cout << "map" << std::endl;
+	        //std::cout << unrolledKernelMap << std::endl;
 
 	        for (auto& unrolledKernel: unrolledKernels) {
 	        	for (size_t inputChannel = 0; inputChannel < inputChannels; ++inputChannel) {
@@ -302,11 +331,12 @@ class Conv2d: public Layer<Scalar>
                     /* Fill unrolled kernel */
                     if (isTranspose) {
                         //std::cout << unrolledKernel << std::endl;
-                        for (size_t i = 0; i < unrolledKernel.rows(); ++i) {
-                            //assert(unrolledKernel.rows() == jDeltas.size());
-                            //assert(jDeltas[i] + kernelRow.columns() <= unrolledKernel.columns());
-                            for (auto [element, kd] = std::tuple(unrolledKernel.begin(i), kernelData.begin()); element != unrolledKernel.end(i); ++element, ++kd) {
-                                element->value() = *kd;
+                        for (size_t i = 0; i < unrolledKernel.columns(); ++i) {
+                        	assert(blaze::column(unrolledKernel, i).nonZeros() == blaze::column(unrolledKernelMap, i).nonZeros());
+
+                            for (auto [element, map] = std::tuple(unrolledKernel.begin(i), unrolledKernelMap.begin(i));
+                                                    element != unrolledKernel.end(i); ++element, ++map) {
+                                element->value() = kernelData[map->value() - 1];
                             }
                         }
                     } else {
@@ -323,7 +353,10 @@ class Conv2d: public Layer<Scalar>
                         }
                     }
                 }
+	            std::cout << "unrolled kernel" << std::endl;
+	            std::cout << unrolledKernelInputChannels << std::endl;
             }
+
         }
 
 
