@@ -49,7 +49,6 @@ class Conv2d: public Layer<Scalar>
         bool isTranspose;
 
         std::vector<SparseMatrix> unrolledKernels;
-        std::vector<size_t> jDeltas;
         blaze::CompressedMatrix<size_t, blaze::columnMajor> unrolledKernelMap;
 		std::vector<std::vector<size_t>> kernelMasks;
 
@@ -124,7 +123,7 @@ class Conv2d: public Layer<Scalar>
                                              inputChannels(json["inputChannels"].get<int>()),
                                              outputChannels(json["outputChannels"].get<int>()),
                                              stride(json["stride"].get<int>()),
-                                             isZeroPadding(json["zeroPadding"].get<bool>())
+                                             isZeroPadding(json.value("zeroPadding", false))
         {
             outputWidth = isZeroPadding ? inputWidth : (inputWidth - kernelWidth) / stride + 1;
             outputHeight = isZeroPadding ? inputHeight : (inputHeight - kernelHeight) / stride + 1;
@@ -360,7 +359,7 @@ class Conv2d: public Layer<Scalar>
 					for (size_t inputChannel = 0; inputChannel < inputChannels; ++inputChannel) {
 						auto kdic = blaze::submatrix(kernelDerivativesChannel, 0, inputChannel * kernelWidth * kernelHeight, nobs, kernelWidth * kernelHeight);
 						auto wic = blaze::submatrix(W, inputChannel * inputWidth * inputHeight, 0, inputWidth * inputHeight, W.columns());
-						for (size_t k = 0; k < jDeltas.size(); ++k) {
+						for (size_t k = 0; k < wic.columns(); ++k) {
 							auto wice = wic.begin(k);
 							auto me = kernelMasks[k].begin();
 							for (size_t j = 0; j < kdic.columns(); ++j) {
