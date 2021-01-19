@@ -9,9 +9,7 @@
 #include "../Utils/Random.h"
 
 
-namespace metric
-{
-namespace dnn
+namespace metric::dnn
 {
 
 
@@ -119,7 +117,7 @@ class Conv2d: public Layer<Scalar>
             getUnrolledKernel();
         }
 
-        Conv2d(const nlohmann::json& json) : inputWidth(json["inputWidth"].get<int>()),
+        explicit Conv2d(const nlohmann::json& json) : inputWidth(json["inputWidth"].get<int>()),
                                              inputHeight(json["inputHeight"].get<int>()),
                                              kernelWidth(json["kernelWidth"].get<int>()),
                                              kernelHeight(json["kernelHeight"].get<int>()),
@@ -217,10 +215,6 @@ class Conv2d: public Layer<Scalar>
             unrolledKernels.resize(outputChannels, SparseMatrix(inputChannels * inputWidth * inputHeight,
                                                                 outputWidth * outputHeight));
 
-            //for (auto j = 0; j < unrolledKernel.columns(); ++j) {
-            //	unrolledKernel.reserve(j, kernelWidth * kernelHeight);
-                    //unrolledKernel.finalize(j);
-            //}
 
 
             SparseMatrix unrolledKernel0;
@@ -232,15 +226,7 @@ class Conv2d: public Layer<Scalar>
 	            unrolledKernel0 = constructBaseUnrolledKernel(inputWidth, inputHeight,
 	                                                          outputWidth, outputHeight);
             }
-	        std::cout << unrolledKernel0 << std::endl;
 
-            std::cout << blaze::size(unrolledKernel0) << std::endl;
-	        std::cout << unrolledKernel0.capacity() << std::endl;
-	        std::cout << unrolledKernel0.nonZeros() << std::endl;
-
-	        //unrolledKernelMap = unrolledKernel0;
-            //std::cout << "map" << std::endl;
-	        //std::cout << unrolledKernelMap << std::endl;
 
 	        for (auto& unrolledKernel: unrolledKernels) {
 	        	for (size_t inputChannel = 0; inputChannel < inputChannels; ++inputChannel) {
@@ -248,61 +234,6 @@ class Conv2d: public Layer<Scalar>
 			                         inputHeight * inputWidth, unrolledKernel.columns()) = unrolledKernel0;
 	        	}
 	        }
-
-          /*  size_t p = 0;
-            for (size_t i = 0; i < iDeltas.size(); ++i) {
-                iDeltas[i] = p++;
-
-                if ((i + 1) % kernelWidth == 0) {
-                        p += dr;
-                }
-            }
-
-
-            *//* Prepare unrolledKernel and jDeltas *//*
-            if (!isTranspose) {
-                jDeltas.resize(outputWidth * outputHeight);
-            } else {
-                jDeltas.resize(inputWidth * inputHeight);
-            }
-
-            const size_t fromWidth = isTranspose ? outputWidth : inputWidth;
-            size_t j00 = 0;
-            size_t j0 = 0;
-            for (size_t i = 0; i < jDeltas.size(); ++i) {
-                jDeltas[i] = (j00 * fromWidth) + j0;
-
-                j0 += stride;
-                if (j0 + kernelWidth > fromWidth) {
-                    j0 = 0;
-                    j00 += stride;
-                }
-            }
-
-
-
-	        *//* Fill unrolled kernels *//*
-	        for (auto& unrolledKernel: unrolledKernels) {
-                if (isTranspose) {
-                    unrolledKernel.reserve(unrolledKernel.rows() * iDeltas.size());
-                    for (size_t i = 0; i < unrolledKernel.rows(); ++i) {
-                        //assert(unrolledKernel.rows() == jDeltas.size());
-                        //assert(jDeltas[i] + kernelRow.columns() <= unrolledKernel.columns());
-                        for (size_t id = 0; id < iDeltas.size(); ++id) {
-                            unrolledKernel.append(i, jDeltas[i] + iDeltas[id], 1);
-                        }
-                        unrolledKernel.finalize(i);
-                    }
-                } else {
-                    unrolledKernel.reserve(unrolledKernel.columns() * iDeltas.size());
-                    for (size_t i = 0; i < unrolledKernel.columns(); ++i) {
-                        for (size_t id = 0; id < iDeltas.size(); ++id) {
-                            unrolledKernel.append(jDeltas[i] + iDeltas[id], i, 1);
-                        }
-                        unrolledKernel.finalize(i);
-                    }
-                }
-            }*/
         }
 
         void getUnrolledKernel()
@@ -323,14 +254,9 @@ class Conv2d: public Layer<Scalar>
                     auto kernelData = blaze::subvector(kernelDataInputChannels, inputChannel * kernelOneLength, kernelOneLength);
 
 
-                    /* Construct kernel row (convolutional for one output pixel) */
-                    //for (size_t i = 0; i < iDeltas.size(); ++i) {
-                    //    kernelRow(0, iDeltas[i]) = kernelData[i];
-                    //}
 
                     /* Fill unrolled kernel */
                     if (isTranspose) {
-                        //std::cout << unrolledKernel << std::endl;
                         for (size_t i = 0; i < unrolledKernel.columns(); ++i) {
                         	assert(blaze::column(unrolledKernel, i).nonZeros() == blaze::column(unrolledKernelMap, i).nonZeros());
 
@@ -353,8 +279,6 @@ class Conv2d: public Layer<Scalar>
                         }
                     }
                 }
-	            std::cout << "unrolled kernel" << std::endl;
-	            std::cout << unrolledKernelInputChannels << std::endl;
             }
 
         }
@@ -539,7 +463,6 @@ class Conv2d: public Layer<Scalar>
 };
 
 
-} // namespace dnn
 } // namespace metric
 
 
