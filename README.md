@@ -1,3 +1,6 @@
+![C++](https://github.com/panda-official/metric/workflows/Test%20C++%20code/badge.svg)
+![Python](https://github.com/panda-official/metric/workflows/Test%20Python%20package/badge.svg)
+
 # PANDA | METRIC
 
 **PANDA | METRIC** is a framework for machine learning based on the concept of metric spaces, which makes it possible to use arbitrary data instead of single numeric values in tables. 
