@@ -125,11 +125,29 @@ BOOST_AUTO_TEST_CASE(convolutional)
 	std::cout << A * blaze::trans(B) << std::endl;*/
 }
 
+BOOST_AUTO_TEST_CASE(convolution_same)
+{
+	Conv2d<double, Identity<double>> convLayer(3, 3, 1, 1, 3, 3, 1, true);
+	blaze::DynamicMatrix<double> X{{0, 1, 2, 3, 4, 5, 6, 7, 8}};
+
+	std::vector<double> K = {0, 0, 0, 0, 1, 0, 0, 0, 0};
+	std::vector<double> bias = {0};
+
+	convLayer.setParameters({K, bias});
+
+	convLayer.forward(X);
+
+	blaze::DynamicMatrix<double> Y{{0, 1, 2, 3, 4, 5, 6, 7, 8}};
+
+	std::cout << convLayer.output() << std::endl;
+	BOOST_CHECK_EQUAL(convLayer.output(), Y);
+}
+
 BOOST_AUTO_TEST_CASE(deconvolutional)
 {
 	Conv2dTranspose<double, Identity<double>> convTransposeLayer(2, 2, 1, 1, 2, 2);
-	blaze::DynamicMatrix<double> X{{1, 2, 3, 4}};
-	std::vector<double> K = {1, 2, 3, 4};
+	blaze::DynamicMatrix<double> X{{0, 1, 2, 3}};
+	std::vector<double> K = {0, 1, 2, 3};
 	std::vector<double> bias = {1};
 
 	convTransposeLayer.setParameters({K, bias});

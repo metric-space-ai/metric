@@ -22,35 +22,35 @@ namespace metric::dnn
                                                             Conv2d<Scalar, Activation>(inputWidth * inputHeight * inputChannels,
                                                                           ((inputWidth - kernelWidth) / stride + 1) *
                                                                           ((inputHeight - kernelHeight) / stride + 1) * outputChannels)
-                        {
-                            this->inputWidth = inputWidth;
-                            this->inputHeight = inputHeight;
-                            this->kernelWidth = kernelWidth;
-                            this->kernelHeight = kernelHeight;
-                            this->inputChannels = inputChannels;
-                            this->outputChannels = outputChannels;
-                            this->stride = stride;
+				{
+					this->inputWidth = inputWidth;
+					this->inputHeight = inputHeight;
+					this->kernelWidth = kernelWidth;
+					this->kernelHeight = kernelHeight;
+					this->inputChannels = inputChannels;
+					this->outputChannels = outputChannels;
+					this->stride = stride;
 
-                            this->outputWidth = (inputWidth - 1) * stride + kernelWidth;
-                            this->outputHeight = (inputHeight  - 1) * stride + kernelWidth;
+					this->outputWidth = (inputWidth - 1) * stride + kernelWidth;
+					this->outputHeight = (inputHeight  - 1) * stride + kernelWidth;
 
-                            this->inputSize = inputChannels * inputWidth * inputHeight;
-                            this->outputSize = this->outputChannels * this->outputWidth * this->outputHeight;
+					this->inputSize = inputChannels * inputWidth * inputHeight;
+					this->outputSize = this->outputChannels * this->outputWidth * this->outputHeight;
 
-                            // Set data dimension
-                            const size_t kernelDataSize = inputChannels * outputChannels * kernelWidth * kernelHeight;
+					// Set data dimension
+					const size_t kernelDataSize = inputChannels * outputChannels * kernelWidth * kernelHeight;
 
-                            this->kernelsData.resize(kernelDataSize);
-                            this->df_data.resize(kernelDataSize);
+					this->kernelsData.resize(kernelDataSize);
+					this->df_data.resize(kernelDataSize);
 
-                            // Bias term
-                            this->bias.resize(outputChannels);
-                            this->db.resize(outputChannels);
+					// Bias term
+					this->bias.resize(outputChannels);
+					this->db.resize(outputChannels);
 
-                            this->isTranspose = true;
+					this->isTranspose = true;
 
-                            this->calculateUnrolledKernelStructure();
-                            this->getUnrolledKernel();
+					this->calculateUnrolledKernelStructure();
+					this->getUnrolledKernel();
 
 			}
 
