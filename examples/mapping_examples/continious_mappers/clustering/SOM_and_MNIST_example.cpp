@@ -13,8 +13,8 @@ Copyright (c) 2019 Panda Team
 #include <chrono>
 
 #include "../../assets/json.hpp"
-#include "../../modules/mapping.hpp"
-#include "assets/mnist/mnist_reader.hpp"
+#include "../../../../modules/mapping.hpp"
+#include "../../assets/mnist/mnist_reader.hpp"
 
 
 using json = nlohmann::json;

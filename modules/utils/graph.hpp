@@ -146,8 +146,21 @@ public:
      */
     void buildEdges(const std::vector<std::pair<size_t, size_t>> &edgesPairs);
 
+    /**
+     * @brief 
+     * 
+     * @param edgeMatrix 
+     */
+    void updateEdges(const MatrixType &edgeMatrix);
+
+	bool is_matrix_changed()
+	{
+		return matrix_changed_;
+	}
+
 protected:
     size_t nodesNumber = 0;
+    bool matrix_changed_ = false;
     bool valid = false;
 
     MatrixType matrix;

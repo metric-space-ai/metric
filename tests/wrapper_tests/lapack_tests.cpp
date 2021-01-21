@@ -45,6 +45,12 @@ BOOST_AUTO_TEST_CASE(riemannian_distance)
     Matrix A{{1, 2}, {2, 4}};
     Matrix B{{5, 6}, {6, 8}};
 
-    RiemannianDistance rd;
-    std::cout << rd(A, B) << std::endl;
+    auto rd = metric::RiemannianDistance<void, metric::Euclidean<double>>();
+    std::cout << rd.matDistance(A, B) << std::endl;
+
+    std::vector<std::vector<double>> ds1 {{0, 1}, {0, 0}, {1, 1}, {1, 0}};
+    std::vector<std::vector<double>> ds2 {{0, 0}, {1, 1}, {2, 2}, {2, 1}};
+
+    std::cout << rd(ds1, ds2) << "\n";
+    std::cout << rd.estimate(ds1, ds2) << "\n";
 }

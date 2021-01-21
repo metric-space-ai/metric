@@ -53,6 +53,7 @@ class Conv2d: public Layer<Scalar>
 		std::vector<std::vector<size_t>> kernelMasks;
 
 		Vector kernelsData;           // Filter parameters. Total length is
+
         // (in_channels x out_channels x filter_rows x filter_cols)
         // See Utils/Convolution.h for its layout
 
@@ -124,6 +125,7 @@ class Conv2d: public Layer<Scalar>
                                              outputChannels(json["outputChannels"].get<int>()),
                                              stride(json["stride"].get<int>()),
                                              isZeroPadding(json.value("zeroPadding", false))
+
         {
             outputWidth = isZeroPadding ? inputWidth : (inputWidth - kernelWidth) / stride + 1;
             outputHeight = isZeroPadding ? inputHeight : (inputHeight - kernelHeight) / stride + 1;
@@ -367,6 +369,7 @@ class Conv2d: public Layer<Scalar>
 									++me;
 								} else {
 									kdic(observation, j) += *wice;
+
 								}
 							}
 						}

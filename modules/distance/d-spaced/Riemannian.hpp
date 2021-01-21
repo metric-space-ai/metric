@@ -1,32 +1,38 @@
 #ifndef PANDA_METRIC_RIEMANNIAN_HPP
 #define PANDA_METRIC_RIEMANNIAN_HPP
 
+#include "../../../modules/distance/k-related/Standards.hpp"
 
-#include "../../utils/wrappers/lapack.hpp"
 
 
 namespace metric {
 
-    class RiemannianDistance {
 
-        public:
-            RiemannianDistance() = default;
+template <typename RecType, typename Metric = Euclidean<typename RecType::value_type>>
+class RiemannianDistance {
+public:
+    RiemannianDistance(Metric metric = Metric()) : metric(metric) {}
 
-            template<typename T>
-            T operator()(blaze::DynamicMatrix<T> A, blaze::DynamicMatrix<T> B)
-            {
-                blaze::DynamicVector<T> eigenValues;
-                sygv(A, B, eigenValues);
+    template <typename C>
+    double operator()(const C& Xc, const C& Yc) const;
 
-                for (T& e : eigenValues) {
-                    if (e <= std::numeric_limits<T>::epsilon()) {
-                        e = 1;
-                    }
-                }
+    template<typename T>
+    T matDistance(blaze::DynamicMatrix<T> A, blaze::DynamicMatrix<T> B) const;
 
-                return sqrt(blaze::sum(blaze::pow(blaze::log(eigenValues), 2)));
-            }
-    };
+    template <typename Container>
+    double estimate(
+            const Container& a,
+            const Container& b,
+            const size_t sampleSize = 250,
+            const double threshold = 0.05,
+            size_t maxIterations = 1000
+    ) const;
+
+private:
+    Metric metric;
+};
+
 }
 
+#include "Riemannian.cpp"
 #endif  //PANDA_METRIC_RIEMANNIAN_HPP
