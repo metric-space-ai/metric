@@ -6,9 +6,19 @@ find_package(BLAS)
 
 include_directories(${Boost_INCLUDE_DIR})
 
+Include(FetchContent)
+
+# Catch2 installtion
+FetchContent_Declare(
+		Catch2
+		GIT_REPOSITORY https://github.com/catchorg/Catch2.git
+		GIT_TAG        v2.13.1)
+
+FetchContent_MakeAvailable(Catch2)
+
 
 add_executable(dnn_tests dnn_tests.cpp)
-target_link_libraries(dnn_tests ${Boost_LIBRARIES} ${BLAS_LIBRARIES})
+target_link_libraries(dnn_tests PRIVATE Catch2::Catch2)
 
 add_executable(dnn_json_tests dnn_json_tests.cpp)
 target_link_libraries(dnn_json_tests ${Boost_LIBRARIES})
@@ -16,8 +26,12 @@ target_link_libraries(dnn_json_tests ${Boost_LIBRARIES})
 add_executable(datasets_test datasets_test.cpp)
 target_link_libraries(datasets_test ${Boost_LIBRARIES})
 
+list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/contrib)
 
-add_test(NAME dnn_test COMMAND dnn_tests)
+include(CTest)
+include(Catch)
+catch_discover_tests(dnn_tests)
+
 add_test(NAME dnn_json_test COMMAND dnn_json_tests)
 
 

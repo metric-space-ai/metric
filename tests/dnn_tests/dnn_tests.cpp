@@ -1,7 +1,6 @@
-#define BOOST_TEST_DYN_LINK
-#define BOOST_TEST_MAIN
+#define CATCH_CONFIG_MAIN
+#include <catch2/catch.hpp>
 
-#include <boost/test/unit_test.hpp>
 #include <limits>
 
 #include <iostream>
@@ -16,7 +15,7 @@ using Vector = blaze::DynamicVector<double>;
 using RowVector = blaze::DynamicVector<double, blaze::rowVector>;
 
 
-BOOST_AUTO_TEST_CASE(base)
+TEST_CASE("base", "[dnn]")
 {
 	Network<double> net;
 
@@ -26,27 +25,27 @@ BOOST_AUTO_TEST_CASE(base)
 	//RegressionMSE<double> output;
 }
 
-BOOST_AUTO_TEST_CASE(identity)
+TEST_CASE("identity", "[dnn]")
 {
-	Matrix input{ {-2, -1, 0, 1, 2, 3, 4, 5}};
-	Matrix output{ {-2, -1, 0, 1, 2, 3, 4, 5}};
+	Matrix input{{-2, -1, 0, 1, 2, 3, 4, 5}};
+	Matrix output{{-2, -1, 0, 1, 2, 3, 4, 5}};
 	Matrix result;
 
 	Identity<double>::activate(input, result);
-	BOOST_CHECK_EQUAL(result, output);
+	REQUIRE(result == output);
 }
 
-BOOST_AUTO_TEST_CASE(relu)
+TEST_CASE("relu")
 {
 	Matrix input{ {-2, -1, 0, 1, 2, 3, 4, 5}};
 	Matrix output{ {0, 0, 0, 1, 2, 3, 4, 5}};
 	Matrix result(input.rows(), input.columns());
 
 	ReLU<double>::activate(input, result);
-	BOOST_CHECK_EQUAL(result, output);
+	REQUIRE(result == output);
 }
 
-BOOST_AUTO_TEST_CASE(sigmoid)
+TEST_CASE("sigmoid")
 {
 	Matrix input{ {-10, -1, 0, 1, 10}};
 	Matrix output{ {0.00004539786870,
@@ -57,9 +56,9 @@ BOOST_AUTO_TEST_CASE(sigmoid)
 	Matrix result;
 
 	Sigmoid<double>::activate(input, result);
-	BOOST_CHECK_EQUAL(result.rows(), output.rows());
+	REQUIRE(result.rows() == output.rows());
 	for (auto i = 0; i < output.columns(); ++i) {
-		BOOST_CHECK_SMALL(result(0, i) - output(0, i), 1e-13);
+		REQUIRE(result(0, i)  == Approx(output(0, i)));
 	}
 }
 
@@ -75,7 +74,7 @@ BOOST_AUTO_TEST_CASE(sigmoid)
 //	BOOST_CHECK_EQUAL(maxPolling.output(), output);
 //}
 
-BOOST_AUTO_TEST_CASE(fullyconnected)
+TEST_CASE("fullyconnected")
 {
 	FullyConnected<double, ReLU<double>> fc(4, 2);
 	fc.initConstant(1, 0.5);
@@ -85,10 +84,10 @@ BOOST_AUTO_TEST_CASE(fullyconnected)
 
 	Matrix output{{6.5, 6.5}};
 
-	BOOST_CHECK_EQUAL(fc.output(), output);
+	REQUIRE(fc.output() == output);
 }
 
-BOOST_AUTO_TEST_CASE(convolutional)
+TEST_CASE("convolutional")
 {
 	Conv2d<double, Identity<double>> convLayer(3, 3, 1, 2, 2, 2, 1);
 	blaze::DynamicMatrix<double> X{{0, 1, 2, 3, 4, 5, 6, 7, 8}};
@@ -100,21 +99,23 @@ BOOST_AUTO_TEST_CASE(convolutional)
 
 	convLayer.forward(X);
 
-	blaze::DynamicMatrix<double> Y {{20, 26, 38, 44, 53, 75, 119, 141}};
+	blaze::DynamicMatrix<double> Y{{20, 26, 38, 44, 53, 75, 119, 141}};
 
 	std::cout << convLayer.output() << std::endl;
-	BOOST_CHECK_EQUAL(convLayer.output(), Y);
+	REQUIRE(convLayer.output() == Y);
+}
 
-	/*blaze::DynamicMatrix<double> A = {{0, 1, 2, 3},
+/*blaze::DynamicMatrix<double> A = {{0, 1, 2, 3},
 	                                  {4, 5, 6, 7}};
 	blaze::DynamicMatrix<double> B = {{8, 9, 10, 1.2},
 	                                  {1.2, 1.3, 1.4, 1.5}};
 
 	blaze::DynamicMatrix<double> C(2, 2);
-*/
+
 	//blaze::gemm(CblasRowMajor, CblasNoTrans, CblasTrans, 2, 2, 4,
 	 //           1, A.data(), 4, B.data(), 2, 1, C.data(), 2);
-	/*double A0[] = {0, 1, 2, 3, 4, 5, 6, 7};
+	*/
+/*double A0[] = {0, 1, 2, 3, 4, 5, 6, 7};
 	double B0[] = {8, 9, 10, 1.2, 1.3, 1.4, 1.5};
 	double C0[4];
 	blaze::gemm(CblasRowMajor, CblasNoTrans, CblasTrans, 2, 2, 4,
@@ -122,10 +123,11 @@ BOOST_AUTO_TEST_CASE(convolutional)
 	//blaze::gemm(CblasRowMajor, CblasNoTrans, CblasTrans, 2, 2, 4,
 	//		   1, A0, 4, B0, 4, 0, C0, 2);
 	std::cout << C << std::endl;
-	std::cout << A * blaze::trans(B) << std::endl;*/
-}
+	std::cout << A * blaze::trans(B) << std::endl;*//*
 
-BOOST_AUTO_TEST_CASE(convolution_same)
+}
+*/
+TEST_CASE("convolution_same")
 {
 	Conv2d<double, Identity<double>> convLayer(3, 3, 1, 1, 3, 3, 1, true);
 	blaze::DynamicMatrix<double> X{{0, 1, 2, 3, 4, 5, 6, 7, 8}};
@@ -140,10 +142,10 @@ BOOST_AUTO_TEST_CASE(convolution_same)
 	blaze::DynamicMatrix<double> Y{{0, 1, 2, 3, 4, 5, 6, 7, 8}};
 
 	std::cout << convLayer.output() << std::endl;
-	BOOST_CHECK_EQUAL(convLayer.output(), Y);
+	REQUIRE(convLayer.output() == Y);
 }
 
-BOOST_AUTO_TEST_CASE(deconvolutional)
+TEST_CASE("deconvolutional")
 {
 	Conv2dTranspose<double, Identity<double>> convTransposeLayer(2, 2, 1, 1, 2, 2);
 	blaze::DynamicMatrix<double> X{{0, 1, 2, 3}};
@@ -156,7 +158,7 @@ BOOST_AUTO_TEST_CASE(deconvolutional)
 
 	blaze::DynamicMatrix<double> Y {{1, 1, 2, 1, 5, 7, 5, 13, 10}};
 
-	BOOST_CHECK_EQUAL(convTransposeLayer.output(), Y);
+	REQUIRE(convTransposeLayer.output() == Y);
 }
 
 
@@ -197,7 +199,8 @@ BOOST_AUTO_TEST_CASE(deconvolutional)
 	nt.fit(data, labels, 1, 1);
 
 	std::cout << nt.predict(data) << std::endl;
-}*/
+}*//*
+
 
 BOOST_AUTO_TEST_CASE(rmsprop)
 {
@@ -222,4 +225,4 @@ BOOST_AUTO_TEST_CASE(rmsprop)
 		BOOST_TEST(std::abs(second_update[i] - weights[i]) < 1e-3);
 	}
 
-}
+}*/
