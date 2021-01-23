@@ -6,12 +6,12 @@ target_link_libraries(dnn_tests PRIVATE Catch2::Catch2)
 add_executable(dnn_json_tests dnn_json_tests.cpp)
 target_link_libraries(dnn_json_tests PRIVATE Catch2::Catch2)
 
-add_executable(datasets_test datasets_test.cpp)
-target_link_libraries(datasets_test PRIVATE Catch2::Catch2)
+add_executable(datasets_tests datasets_tests.cpp)
+target_link_libraries(datasets_tests PRIVATE Catch2::Catch2)
 
 catch_discover_tests(dnn_tests)
 catch_discover_tests(dnn_json_tests)
-#catch_discover_tests(datasets_tests)
+catch_discover_tests(datasets_tests)
 
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/empty ${CMAKE_CURRENT_BINARY_DIR}/empty COPYONLY)

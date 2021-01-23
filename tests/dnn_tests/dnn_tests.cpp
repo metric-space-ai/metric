@@ -101,7 +101,6 @@ TEST_CASE("convolutional")
 
 	blaze::DynamicMatrix<double> Y{{20, 26, 38, 44, 53, 75, 119, 141}};
 
-	std::cout << convLayer.output() << std::endl;
 	REQUIRE(convLayer.output() == Y);
 }
 
@@ -141,7 +140,6 @@ TEST_CASE("convolution_same")
 
 	blaze::DynamicMatrix<double> Y{{0, 1, 2, 3, 4, 5, 6, 7, 8}};
 
-	std::cout << convLayer.output() << std::endl;
 	REQUIRE(convLayer.output() == Y);
 }
 
