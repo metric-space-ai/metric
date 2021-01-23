@@ -43,3 +43,6 @@ jobs:
         cd build
         cmake -DCMAKE_BUILD_TYPE=Release ../
         make
+    - name: Run tests
+      run: |
+        make test
