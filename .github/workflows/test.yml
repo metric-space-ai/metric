@@ -45,5 +45,5 @@ jobs:
         make
     - name: Run tests
       run: |
-        cd build/tests
-        make tests
+        cd build
+        make test
