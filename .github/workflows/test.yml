@@ -34,8 +34,8 @@ jobs:
         sudo apt-get install libopenblas-dev
         sudo apt-get install libjpeg-dev
         sudo apt-get install -y g++-9 g++-9-multilib
-        echo "CC=gcc-9" >> $GITHUB_ENV
-        echo "CXX=g++-9" >> $GITHUB_ENV
+        echo "CC=gcc-10" >> $GITHUB_ENV
+        echo "CXX=g++-10" >> $GITHUB_ENV
     - name: Build tests and examples
       run: |
         export MAKE='make -j1'
