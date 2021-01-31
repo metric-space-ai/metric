@@ -15,7 +15,7 @@ namespace metric {
 	}
 
 	template<typename T, size_t Channels>
-	void Convolution2d<T, Channels>::setKernel(FilterKernel kernel)
+	void Convolution2d<T, Channels>::setKernel(const FilterKernel& kernel)
 	{
 		/* Convert kernel */
 		std::vector<T> kernelData(kernel.rows() * kernel.columns());
@@ -31,7 +31,7 @@ namespace metric {
 	}
 
 	template<typename T, size_t Channels>
-	typename Convolution2d<T, Channels>::Image Convolution2d<T, Channels>::operator()(Image image)
+	typename Convolution2d<T, Channels>::Image Convolution2d<T, Channels>::operator()(const Image& image)
 	{
 		/* Create output image */
 		Image output;
@@ -67,5 +67,13 @@ namespace metric {
 		}
 
 		return output;
+	}
+
+	template<typename T, size_t Channels>
+	typename Convolution2d<T, Channels>::Image Convolution2d<T, Channels>::operator()(const Image& image,
+																						const FilterKernel& kernel)
+	{
+		setKernel(kernel);
+		return operator()(image);
 	}
 }

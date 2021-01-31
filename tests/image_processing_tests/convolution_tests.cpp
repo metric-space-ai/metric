@@ -9,7 +9,7 @@
 using namespace metric;
 
 
-TEMPLATE_TEST_CASE("base", "[convolution]", float, double)
+TEMPLATE_TEST_CASE("Convolution2d", "[convolution]", float, double)
 {
 	using Conv = Convolution2d<TestType, 1>;
 
@@ -32,7 +32,13 @@ TEMPLATE_TEST_CASE("base", "[convolution]", float, double)
 													   {146, 194, 153, 77}}
 								};
 
-	conv.setKernel(kernel);
+	SECTION("operator()(image)") {
+		conv.setKernel(kernel);
 
-	REQUIRE(conv(image) == result);
+		REQUIRE(conv(image) == result);
+	}
+
+	SECTION("operator()(image, kernel)") {
+		REQUIRE(conv(image, kernel) == result);
+	}
 }
