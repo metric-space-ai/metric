@@ -1,7 +1,6 @@
-#define BOOST_TEST_DYN_LINK
-#define BOOST_TEST_MAIN
+#define CATCH_CONFIG_MAIN
+#include <catch2/catch.hpp>
 
-#include <boost/test/unit_test.hpp>
 
 #include <iostream>
 #include "modules/utils/image_processing/convolution.hpp"
@@ -10,45 +9,36 @@
 using namespace metric;
 
 
-BOOST_AUTO_TEST_CASE(base)
+TEMPLATE_TEST_CASE("Convolution2d", "[convolution]", float, double)
 {
-	using T = double;
-	std::normal_distribution<T> normalDistribution(0.5, 0.25);
-	std::mt19937 randomEngine{std::random_device()()};
+	using Conv = Convolution2d<TestType, 1>;
 
-	using Conv = Convolution2d<T, 3>;
+	typename Conv::Image image{
+								typename Conv::Channel{{0,1,2,2},
+													   {3,4,5,5},
+													   {6,7,8,1}}
+								};
 
-	size_t kernelWidth = 3;
-	size_t kernelHeight = 3;
+	typename Conv::FilterKernel kernel{{5,7,2},
+									  {1,9,9},
+									  {4,3,2}};
 
-	Conv::FilterKernel kernel = blaze::generate(kernelHeight, kernelWidth, [&normalDistribution, &randomEngine](size_t i, size_t j) {
-									return normalDistribution(randomEngine);
-								});
+	auto conv = Conv(image[0].columns(), image[0].rows(),
+				                kernel.columns(), kernel.rows());
 
-	size_t rows = 2160;
-	size_t columns = 1920;
-	auto conv = Conv(rows, columns, kernel.columns(), kernel.rows());
+	typename Conv::Image result{
+								typename Conv::Channel{{26, 61, 78, 55,},
+														{97, 156, 171, 109},
+													   {146, 194, 153, 77}}
+								};
 
+	SECTION("operator()(image)") {
+		conv.setKernel(kernel);
 
-	Conv::Image image;
-	for (auto c = 0; c < 3; ++c) {
-		Conv::Channel channel = blaze::generate(rows, columns, [&normalDistribution, &randomEngine](size_t i, size_t j) {
-			return normalDistribution(randomEngine);
-		});
-		image[c] = channel;
+		REQUIRE(conv(image) == result);
 	}
 
-
-
-	using Clock = std::chrono::high_resolution_clock;
-
-	auto t1 = Clock::now();
-	auto r = conv(image, kernel);
-	auto t2 = Clock::now();
-	auto d = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1);
-	std::cout << " total convolution() time: " << d.count() << " s" << std::endl;
-
-	//std::cout << image << std::endl;
-	//std::cout << kernel << std::endl;
-	//std::cout << r << std::endl;
+	SECTION("operator()(image, kernel)") {
+		REQUIRE(conv(image, kernel) == result);
+	}
 }
