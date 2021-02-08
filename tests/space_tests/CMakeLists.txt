@@ -20,9 +20,13 @@ cmake_minimum_required(VERSION 3.10)
 
 
 add_executable(knn_graph_tests knn_graph_tests.cpp)
+add_executable(space_matrix_tests space_matrix_tests.cpp)
+
 target_link_libraries(knn_graph_tests Catch2::Catch2)
+target_link_libraries(space_matrix_tests Catch2::Catch2)
 
 catch_discover_tests(knn_graph_tests)
+catch_discover_tests(space_matrix_tests)
 
 #AUX_SOURCE_DIRECTORY(. TEST_SRCS)
 ##Run through each source
