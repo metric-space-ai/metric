@@ -102,22 +102,18 @@ TEMPLATE_TEST_CASE("negaive parameters", "[space]", float, double)
     auto g_1 = metric::KNNGraph<std::vector<TestType>, metric::Euclidean<TestType>>(table, -neighbors_num, -2.5 * neighbors_num);
 
 	// nothing bad should be happened
-    std::cout << std::endl;
-    std::cout << " --- negative params --- " << std::endl;
-    std::cout << "gnn search:" << std::endl;
+    //std::cout << " --- negative params --- " << std::endl;
+    //std::cout << "gnn search:" << std::endl;
 	auto found_1 = g_1.gnnn_search(query, search_neighbors_num);
-	print_vector(found_1);
+	//print_vector(found_1);
 	REQUIRE(found_1.size() > 0);
-    std::cout << std::endl;
 
 	// negative params for search, nothing bad should be happened too
-    std::cout << std::endl;
-    std::cout << "gnn search:" << std::endl;
+    //std::cout << "gnn search:" << std::endl;
 	found_1 = g_1.gnnn_search(query, -search_neighbors_num, -10);
-	print_vector(found_1);
+	//print_vector(found_1);
 	REQUIRE(found_1.size() == 0);
-    std::cout << std::endl;
-	
+
 }
 
 TEMPLATE_TEST_CASE("params more than nodes exists", "[space]", float, double)
@@ -158,13 +154,11 @@ TEMPLATE_TEST_CASE("params more than nodes exists", "[space]", float, double)
     auto g_2 = metric::KNNGraph<std::vector<TestType>, metric::Euclidean<TestType>>(table, table.size() * 10, table.size() * 25);
 
 	// nothing bad should be happened
-    std::cout << std::endl;
-    std::cout << " --- params more than nodes exists --- " << std::endl;
-    std::cout << "gnn search:" << std::endl;
+    //std::cout << " --- params more than nodes exists --- " << std::endl;
+    //std::cout << "gnn search:" << std::endl;
 	auto found_2 = g_2.gnnn_search(query, table.size() * 50);
-	print_vector(found_2);
+	//print_vector(found_2);
 	REQUIRE(found_2.size() > 0);
-    std::cout << std::endl;
 }
 
 TEMPLATE_TEST_CASE("empty dataset", "[space]", float, double)
@@ -205,13 +199,11 @@ TEMPLATE_TEST_CASE("empty dataset", "[space]", float, double)
 	auto g_3 = metric::KNNGraph<std::vector<TestType>, metric::Euclidean<TestType>>(std::vector<std::vector<TestType>>{}, neighbors_num, 2.5 * neighbors_num);
 
 	// nothing bad should be happened
-    std::cout << std::endl;
-    std::cout << " --- empty dataset --- " << std::endl;
-    std::cout << "gnn search:" << std::endl;
+    //std::cout << " --- empty dataset --- " << std::endl;
+    //std::cout << "gnn search:" << std::endl;
 	auto found_3 = g_3.gnnn_search(query, search_neighbors_num);
-	print_vector(found_3);
+	//print_vector(found_3);
 	REQUIRE(found_3.size() == 0);
-    std::cout << std::endl;
 }
 
 TEMPLATE_TEST_CASE("dataset and query with different dimensions", "[space]", float, double)
@@ -252,13 +244,11 @@ TEMPLATE_TEST_CASE("dataset and query with different dimensions", "[space]", flo
 	auto g_4 = metric::KNNGraph<std::vector<TestType>, metric::Euclidean<TestType>>(std::vector<std::vector<TestType>>{}, neighbors_num, 2.5 * neighbors_num);
 
 	// nothing bad should be happened
-    std::cout << std::endl;
-    std::cout << " --- dataset and query with different dimensions --- " << std::endl;
-    std::cout << "gnn search:" << std::endl;
+    //std::cout << " --- dataset and query with different dimensions --- " << std::endl;
+    //std::cout << "gnn search:" << std::endl;
 	auto found_4 = g_4.gnnn_search({ 7, 5, 7, 5, 7, 5, 7, 5 }, search_neighbors_num);
-	print_vector(found_4);
+	//print_vector(found_4);
 	REQUIRE(found_4.size() == 0);
-    std::cout << std::endl;
 }
 
 TEMPLATE_TEST_CASE("copy constructor", "[space]", float, double)
@@ -302,13 +292,11 @@ TEMPLATE_TEST_CASE("copy constructor", "[space]", float, double)
     auto g_5 = metric::KNNGraph(g_0);
 
 	// nothing bad should be happened
-    std::cout << std::endl;
-    std::cout << " --- nothing bad should be happened --- " << std::endl;
-    std::cout << "gnn search:" << std::endl;
+    //std::cout << " --- nothing bad should be happened --- " << std::endl;
+    //std::cout << "gnn search:" << std::endl;
 	auto found_5 = g_5.gnnn_search(query, search_neighbors_num);
-	print_vector(found_5);
+	//print_vector(found_5);
 	REQUIRE(found_5.size() == found_0.size());
-    std::cout << std::endl;
 }
 
 TEMPLATE_TEST_CASE("knn graph insert", "[space]", float, double)
