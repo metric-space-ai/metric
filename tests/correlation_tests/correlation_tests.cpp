@@ -5,19 +5,19 @@
 
   Copyright (c) 2019 Panda Team
 */
+#define CATCH_CONFIG_MAIN
+#include <catch2/catch.hpp>
+
 #include <algorithm>
 #include <deque>
 #include "modules/correlation.hpp"
-//#include "details/metrics.hpp"
 #include "modules/distance.hpp"
 #include "modules/utils/graph/connected_components.hpp"
 
-#define BOOST_TEST_MODULE Main
-#define BOOST_TEST_DYN_LINK
-
-#include <boost/test/unit_test.hpp>
 #include <random>
 #include <limits>
+
+using namespace Catch::literals;
 
 template <typename T>
 std::vector<T> generateVector(size_t size)
@@ -64,26 +64,26 @@ blaze::DynamicMatrix<T> generateRandomMatrix(size_t rows, size_t cols)
     return matrix;
 }
 
-BOOST_AUTO_TEST_CASE(Metrics)
+TEMPLATE_TEST_CASE("Metrics", "correlation", float, double)
 {
-    auto vectorNull = generateVector<double>(0);
+    auto vectorNull = generateVector<TestType>(0);
 
-    metric::Euclidean<double> Euclidean;
-    metric::Manhatten<double> manhatten;
+    metric::Euclidean<TestType> Euclidean;
+    metric::Manhatten<TestType> manhatten;
 
-    BOOST_CHECK_EQUAL(Euclidean(vectorNull, vectorNull), 0);
-    BOOST_CHECK_EQUAL(manhatten(vectorNull, vectorNull), 0);
+    REQUIRE(Euclidean(vectorNull, vectorNull) == 0);
+    REQUIRE(manhatten(vectorNull, vectorNull) == 0);
 
-    std::vector<double> vector0(1000, 0);
-    BOOST_CHECK_EQUAL(Euclidean(vector0, vector0), 0);
-    BOOST_CHECK_EQUAL(manhatten(vector0, vector0), 0);
+    std::vector<TestType> vector0(1000, 0);
+    REQUIRE(Euclidean(vector0, vector0) == 0);
+    REQUIRE(manhatten(vector0, vector0) == 0);
 
-    auto vector = generateVector<double>(2000);
-    BOOST_CHECK_EQUAL(Euclidean(vector, vector), 0);
-    BOOST_CHECK_EQUAL(manhatten(vector, vector), 0);
+    auto vector = generateVector<TestType>(2000);
+    REQUIRE(Euclidean(vector, vector) == 0);
+    REQUIRE(manhatten(vector, vector) == 0);
 }
 
-BOOST_AUTO_TEST_CASE(CRACKER)
+TEST_CASE("CRACKER")
 {
     blaze::DynamicMatrix<bool> M(10, 10, true);
     blaze::row(M, 2) = false;
@@ -91,7 +91,7 @@ BOOST_AUTO_TEST_CASE(CRACKER)
     auto result = metric::graph::largest_connected_component(M)[0];
 }
 
-BOOST_AUTO_TEST_CASE(MGC)
+TEST_CASE("MGC")
 {
 
     double t = 1e-13;
@@ -122,11 +122,11 @@ BOOST_AUTO_TEST_CASE(MGC)
     auto mgc_corr = metric::MGC<Rec1, Met1, Rec2, Met2>();
 
     auto result = mgc_corr(A1, B1);
-    BOOST_CHECK_CLOSE(result, 0.28845660296530595, t);
+    REQUIRE(result == 0.28845660296530595_a);
 
     auto mgc_corr2 = metric::MGC<Rec2, Met2, Rec1, Met1>();
     result = mgc_corr2(B1, A1);
-    BOOST_CHECK_CLOSE(result, 0.28845660296530595, t);
+    REQUIRE(result == 0.28845660296530595_a);
 
     typedef std::vector<double> Rec;
     auto mgc = metric::MGC<Rec, Met1, Rec, Met1>();
@@ -146,46 +146,45 @@ BOOST_AUTO_TEST_CASE(MGC)
 												0.44657481646290537};
     auto correlation = mgc.xcorr(A1, B1, 4);
 
-    BOOST_CHECK_EQUAL(correlationReference.size(), correlation.size());
+    REQUIRE(correlationReference.size() == correlation.size());
 
 	for (auto i = 0; i < correlation.size(); ++i) {
-		BOOST_CHECK_CLOSE(correlationReference[i], correlation[i], 1e-5);
+		REQUIRE(correlationReference[i] == Approx(correlation[i]));
 	}
-
 }
 
-BOOST_AUTO_TEST_CASE(MGC_Estimate)
+TEMPLATE_TEST_CASE("MGC_Estimate", "[correlation]", float, double)
 {
     const int dataSize = 1e6;
     std::default_random_engine generator;
-    std::normal_distribution<double> normal(0, 0.5);
+    std::normal_distribution<TestType> normal(0, 0.5);
 
-    std::vector<std::vector<double>> dataX;
-    std::vector<std::vector<double>> dataY;
+    std::vector<std::vector<TestType>> dataX;
+    std::vector<std::vector<TestType>> dataY;
 
-    std::uniform_real_distribution<double> uniform(0, 1);
+    std::uniform_real_distribution<TestType> uniform(0, 1);
     for (auto i = 0; i < dataSize; ++i) {
-        double x1 = uniform(generator);
-        double x2 = uniform(generator);
-        double x3 = uniform(generator);
-        double y1 = x1 * x1 + normal(generator);
-        double y2 = x2 * x2 * x2 + normal(generator);
-        double y3 = std::pow(x3, 0.5) + normal(generator);
+        TestType x1 = uniform(generator);
+        TestType x2 = uniform(generator);
+        TestType x3 = uniform(generator);
+        TestType y1 = x1 * x1 + normal(generator);
+        TestType y2 = x2 * x2 * x2 + normal(generator);
+        TestType y3 = std::pow(x3, 0.5) + normal(generator);
 
-        dataX.emplace_back(std::initializer_list<double> { x1, x2, x3 });
-        dataY.emplace_back(std::initializer_list<double> { y1, y2, y3 });
+        dataX.emplace_back(std::initializer_list<TestType> { x1, x2, x3 });
+        dataY.emplace_back(std::initializer_list<TestType> { y1, y2, y3 });
     }
 
-    typedef std::vector<double> Rec;
-    typedef metric::Euclidean<double> Met;
+    typedef std::vector<TestType> Rec;
+    typedef metric::Euclidean<TestType> Met;
 
     auto mgc = metric::MGC<Rec, Met, Rec, Met>();
 
     auto result = mgc.estimate(dataX, dataY);
-    std::cout << result << std::endl;
 }
 
-BOOST_AUTO_TEST_CASE(MGC_construct) {
+TEST_CASE("MGC_construct")
+{
     // this test has no asserts, it just checks compilation
 
     metric::MGC<float, metric::Euclidean<float>, float, metric::Euclidean<float>> m1;
