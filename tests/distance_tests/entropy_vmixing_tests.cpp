@@ -21,11 +21,6 @@ Copyright (c) 2020 Panda Team
 
 using namespace Catch::literals;
 
-//template <typename T>
-//bool Approx(T l, T r) {
-//    return std::abs(l -r) <= std::numeric_limits<T>::epsilon() * 50; // relaxed, but still unstable, TODO improve
-//}
-
 TEMPLATE_TEST_CASE("entropy", "[distance]", float, double)
 {
     std::vector<std::vector<TestType>>  v1 = { { 5, 5 }, { 2, 2 }, { 3, 3 }, { 5, 1 } };
