@@ -9,7 +9,7 @@ add_executable(reimannian_test reimannian_test.cpp)
 
 target_link_libraries(cramervon_mises_tests PRIVATE Catch2::Catch2)
 target_link_libraries(entropy_vmixing_tests PRIVATE Catch2::Catch2 ${LAPACK_LIBRARIES})
-target_link_libraries(kohonen_distance_tests PRIVATE Catch2::Catch2)
+target_link_libraries(kohonen_distance_tests PRIVATE Catch2::Catch2 ${LAPACK_LIBRARIES})
 target_link_libraries(kolmogorov_smirnov_tests PRIVATE Catch2::Catch2)
 target_link_libraries(random_emd_tests PRIVATE Catch2::Catch2)
 target_link_libraries(reimannian_test PRIVATE Catch2::Catch2)
