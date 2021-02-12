@@ -1,3 +1,10 @@
+add_executable(ensemble_tests ensemble_tests.cpp)
+
+target_link_libraries(ensemble_tests PRIVATE Catch2::Catch2)
+
+catch_discover_tests(ensemble_tests)
+
+#[[
 find_package (Boost COMPONENTS unit_test_framework serialization REQUIRED)
 include_directories(
     ${PROJECT_SOURCE_DIR}
@@ -26,3 +33,4 @@ foreach(testSrc ${TEST_SRCS})
                  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} 
                  COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/${testName} )
 endforeach(testSrc)
+]]
