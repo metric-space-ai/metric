@@ -1,3 +1,27 @@
+find_package(LAPACK)
+
+add_executable(cramervon_mises_tests cramervon_mises_tests.cpp)
+add_executable(entropy_vmixing_tests entropy_vmixing_tests.cpp)
+add_executable(kohonen_distance_tests kohonen_distance_tests.cpp)
+add_executable(kolmogorov_smirnov_tests kolmogorov_smirnov_tests.cpp)
+add_executable(random_emd_tests random_emd_tests.cpp)
+add_executable(reimannian_test reimannian_test.cpp)
+
+target_link_libraries(cramervon_mises_tests PRIVATE Catch2::Catch2)
+target_link_libraries(entropy_vmixing_tests PRIVATE Catch2::Catch2 ${LAPACK_LIBRARIES})
+target_link_libraries(kohonen_distance_tests PRIVATE Catch2::Catch2 ${LAPACK_LIBRARIES})
+target_link_libraries(kolmogorov_smirnov_tests PRIVATE Catch2::Catch2)
+target_link_libraries(random_emd_tests PRIVATE Catch2::Catch2)
+target_link_libraries(reimannian_test PRIVATE Catch2::Catch2 ${LAPACK_LIBRARIES})
+
+catch_discover_tests(cramervon_mises_tests)
+catch_discover_tests(entropy_vmixing_tests)
+catch_discover_tests(kohonen_distance_tests)
+catch_discover_tests(kolmogorov_smirnov_tests)
+catch_discover_tests(random_emd_tests)
+catch_discover_tests(reimannian_test)
+
+#[[
 cmake_minimum_required(VERSION 3.10)
 
 enable_testing()
@@ -58,3 +82,4 @@ foreach(testSrc ${TEST_SRCS})
         add_test(NAME ${testName} COMMAND ${testName})
 
 endforeach(testSrc)
+]]
