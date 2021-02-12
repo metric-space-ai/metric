@@ -6,13 +6,8 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 Copyright (c) 2018 Panda Team
 */
 
-// clang++ tests/test_0.cpp -std=c++17 -o run.o -Ofast -l
-// boost_unit_test_framework
-#define BOOST_TEST_DYN_LINK
-#define BOOST_TEST_MODULE MetricClassificationTest
-#include <boost/test/unit_test.hpp>
-#include <boost/test/test_case_template.hpp>
-#include <boost/mpl/list.hpp>
+#define CATCH_CONFIG_MAIN
+#include <catch2/catch.hpp>
 
 #include "modules/mapping.hpp"
 
@@ -208,21 +203,19 @@ typedef typename metric::edmClassifier<TypeV, CSVM> SVM_V;
 typedef typename metric::edmClassifier<TypeD, CC45> C45_D;
 typedef typename metric::edmClassifier<TypeD, CSVM> SVM_D;
 
-typedef boost::mpl::list<C45_V, SVM_V> weak_types;  // all needed types to loop through
 
 // weak learners against all datasets ans all test samples defined
 // with datasets based on vector
-BOOST_AUTO_TEST_CASE_TEMPLATE(test_weak_V, Learner, weak_types)
+TEMPLATE_TEST_CASE("test_weak_V", "[ensemble]", C45_V, SVM_V)
 {
     AllDatasets<ContainerTypeV> DS;
     AllExamples<ContainerTypeV> EX;
     for (auto ds : DS.dataset) {
-        Learner l = Learner();
-        BOOST_CHECK_NO_THROW(l.train(ds.data, ds.features, ds.response););
-        //        BOOST_CHECK_NO_THROW( throw "test"; );
+        TestType l = TestType();
+        REQUIRE_NOTHROW(l.train(ds.data, ds.features, ds.response));
         for (auto ex : EX.dataset) {
             std::vector<bool> prediction;
-            BOOST_CHECK_NO_THROW(l.predict(ex.data, ex.features, prediction););
+            REQUIRE_NOTHROW(l.predict(ex.data, ex.features, prediction));
         }
     }
 }
@@ -230,12 +223,12 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(test_weak_V, Learner, weak_types)
 //*
 // boosting with both weak learners against all datasets ans all test samples defined
 // with datasets based on vector
-BOOST_AUTO_TEST_CASE_TEMPLATE(test_boosting_V, Learner, weak_types)
+TEMPLATE_TEST_CASE("test_boosting_V", "[ensemble]", C45_V, SVM_V)
 {
     AllDatasets<ContainerTypeV> DS;
     AllExamples<ContainerTypeV> EX;
     for (auto ds : DS.dataset) {
-        Learner wl = Learner();  // weak
+        TestType wl = TestType();  // weak
         int ens_len[6] = { -2, -1, 0, 1, 2, 10 };  // ensemble length
         for (int idx1 = 0; idx1 < 6; idx1++) {
             double share[10] = { -0.5, 0, 0.0001, 0.1, 0.5, 0.75, 0.9, 0.9999, 1.0, 0.5 };
@@ -243,32 +236,32 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(test_boosting_V, Learner, weak_types)
                 double share_minor[10] = { -0.5, 0, 0.0001, 0.1, 0.5, 0.75, 0.9, 0.9999, 1.0, 0.5 };
                 for (int idx3 = 0; idx3 < 10; idx3++) {
                     // boosting with weak learner of Learner type
-                    auto boosting = metric::Boosting<TypeV, Learner, metric::SubsampleRUS<TypeV>>(
+                    auto boosting = metric::Boosting<TypeV, TestType, metric::SubsampleRUS<TypeV>>(
                         ens_len[idx1], share[idx2], share_minor[idx3], wl);
                     // test traing
-                    BOOST_CHECK_NO_THROW(boosting.train(ds.data, ds.features, ds.response););
+                    REQUIRE_NOTHROW(boosting.train(ds.data, ds.features, ds.response));
                     for (auto ex : EX.dataset) {
                         std::vector<bool> prediction;
-                        BOOST_CHECK_NO_THROW(boosting.predict(ex.data, ex.features, prediction););
+                        REQUIRE_NOTHROW(boosting.predict(ex.data, ex.features, prediction));
                     }
                     // additional parameter loop for Bagging only
                     double share_learner_type[10] = { -0.5, 0, 0.0001, 0.1, 0.5, 0.75, 0.9, 0.9999, 1.0, 0.5 };
                     for (int idx4 = 0; idx4 < 10; idx4++) {
                         // bagging  of 2 weak learners: types are edmC45 and Learner
-                        using WeakLrnVariant = std::variant<metric::edmC45<TypeV>, Learner>;
+                        using WeakLrnVariant = std::variant<metric::edmC45<TypeV>, TestType>;
                         std::vector<WeakLrnVariant> clSet2 = {};
                         WeakLrnVariant weak1 = metric::edmC45<TypeV>(2, 1e-3, 0.25, true);
-                        WeakLrnVariant weak2 = Learner();
+                        WeakLrnVariant weak2 = TestType();
                         clSet2.push_back(weak1);
                         clSet2.push_back(weak2);
                         auto bagging = metric::Bagging<TypeV, WeakLrnVariant, metric::SubsampleRUS<TypeV>>(
                             ens_len[idx1], share[idx2], share_minor[idx3],
                             { share_learner_type[idx3], 1.0 - share_learner_type[idx3] }, clSet2);
                         // test traing
-                        BOOST_CHECK_NO_THROW(bagging.train(ds.data, ds.features, ds.response););
+                        REQUIRE_NOTHROW(bagging.train(ds.data, ds.features, ds.response));
                         for (auto ex : EX.dataset) {
                             std::vector<bool> prediction;
-                            BOOST_CHECK_NO_THROW(bagging.predict(ex.data, ex.features, prediction););
+                            REQUIRE_NOTHROW(bagging.predict(ex.data, ex.features, prediction));
                         }
                     }
                 }
@@ -276,18 +269,15 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(test_boosting_V, Learner, weak_types)
         }
     }
 }
-//*/
 
-typedef boost::mpl::list<ContainerTypeV, ContainerTypeD> container_types;
 
-//*
 // testing both subsamlers againt satasets, weight vectors and container types
-BOOST_AUTO_TEST_CASE_TEMPLATE(test_subsamplers, ContainerType, container_types)
+TEMPLATE_TEST_CASE("test_subsamplers", "[enemble]", ContainerTypeV, ContainerTypeD)
 {
-    AllDatasets<ContainerType> DS;
+    AllDatasets<TestType> DS;
 
     for (auto ds : DS.dataset) {
-        ContainerType subset = {};
+        TestType subset = {};
         metric::Subsample<TypeD> sSimple;
         metric::SubsampleRUS<TypeD> sRUS;
 
@@ -301,10 +291,10 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(test_subsamplers, ContainerType, container_types)
                     for (int idx3 = 0; idx3 < 10; idx3++) {
                         bool replacement[2] = { true, false };
                         for (int idx4 = 0; idx4 < 2; idx4++) {
-                            BOOST_CHECK_NO_THROW(sSimple(ds.data, ds.features, ds.response, w.w, share[idx2],
-                                1 - share_minor[idx3], subset, replacement[idx4]););
-                            BOOST_CHECK_NO_THROW(sRUS(ds.data, ds.features, ds.response, w.w, share[idx2],
-                                1 - share_minor[idx3], subset, replacement[idx4]););
+                            REQUIRE_NOTHROW(sSimple(ds.data, ds.features, ds.response, w.w, share[idx2],
+                                1 - share_minor[idx3], subset, replacement[idx4]));
+                            REQUIRE_NOTHROW(sRUS(ds.data, ds.features, ds.response, w.w, share[idx2],
+                                1 - share_minor[idx3], subset, replacement[idx4]));
                         }
                     }
                 }
@@ -312,4 +302,3 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(test_subsamplers, ContainerType, container_types)
         }
     }
 }
-//*/
