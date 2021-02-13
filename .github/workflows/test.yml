@@ -42,8 +42,8 @@ jobs:
         mkdir build
         cd build
         cmake -DCMAKE_BUILD_TYPE=Release ../
-        make
+        cmake --build .
     - name: Run tests
       run: |
         cd build
-        make test
+        ctest --ouput-on-failure
