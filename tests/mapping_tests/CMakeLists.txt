@@ -1,3 +1,13 @@
+add_executable(kohonen_outliers_clustering_tests kohonen_outliers_clustering_tests.cpp)
+add_executable(mapping_tests mapping_tests.cpp)
+
+target_link_libraries(kohonen_outliers_clustering_tests PRIVATE Catch2::Catch2)
+target_link_libraries(mapping_tests PRIVATE Catch2::Catch2)
+
+catch_discover_tests(kohonen_outliers_clustering_tests)
+catch_discover_tests(mapping_tests)
+
+#[[
 cmake_minimum_required(VERSION 3.10)
 
 enable_testing()
@@ -7,10 +17,10 @@ find_package(LAPACK)
 
 project(mapping_tests)
 
-include_directories(${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/../..)	
+include_directories(${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/../..)
 
 # for Visual Studio
-if(MSVC) 
+if(MSVC)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++17")
 endif(MSVC)
 
@@ -68,3 +78,4 @@ add_test(NAME koc_tests COMMAND mapping_tests)
 
 #
 
+]]
