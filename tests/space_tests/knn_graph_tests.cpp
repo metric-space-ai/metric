@@ -64,7 +64,7 @@ TEMPLATE_TEST_CASE("valid_params", "[space]", float, double)
 }
 
 
-TEMPLATE_TEST_CASE("negaive parameters", "[space]", float, double)
+/*TEMPLATE_TEST_CASE("negaive parameters", "[space]", float, double)
 {
     size_t neighbors_num = 3;
     size_t search_neighbors_num = 3;
@@ -115,7 +115,7 @@ TEMPLATE_TEST_CASE("negaive parameters", "[space]", float, double)
 	REQUIRE(found_1.size() == 0);
 
 }
-
+*/
 TEMPLATE_TEST_CASE("params more than nodes exists", "[space]", float, double)
 {
     size_t neighbors_num = 3;
