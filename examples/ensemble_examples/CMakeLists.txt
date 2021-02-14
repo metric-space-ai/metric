@@ -2,8 +2,6 @@ cmake_minimum_required(VERSION 3.10)
 
 project(ensemble_examples)
 
-find_package(Boost)
-
 if(UNIX)
     find_package(Threads REQUIRED)
 endif(UNIX)
@@ -13,8 +11,6 @@ include_directories(
 )
 
 file(COPY "assets" DESTINATION ".")
-
-include_directories(${Boost_INCLUDE_DIRS}) 
 
 find_package(LAPACK)
 
@@ -29,12 +25,10 @@ foreach(exampleSrc ${EXAMPLE_SRCS})
 	#Add compile target
 	add_executable(${exampleName} ${exampleSrc})
  
-	#link to Boost libraries AND your targets and dependencies
 	if(CMAKE_SYSTEM_NAME MATCHES Windows)
 		target_link_directories(${exampleName} PRIVATE ${PROJECT_SOURCE_DIR}/../../mkl/lib/intel64_win)
 		target_link_libraries(${exampleName} PRIVATE mkl_core.lib mkl_sequential.lib mkl_intel_lp64.lib)
 	endif()
-	target_link_libraries(${exampleName} ${Boost_LIBRARIES})
 	target_link_libraries(${exampleName} ${LAPACK_LIBRARIES})
 	set_target_properties(${exampleName} PROPERTIES CXX_STANDARD 17)	
 	
