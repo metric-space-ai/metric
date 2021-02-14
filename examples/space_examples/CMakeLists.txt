@@ -1,13 +1,9 @@
 cmake_minimum_required(VERSION 3.10)
 
-find_package(Boost)
-
 project(space_examples)
 
 file(GLOB EXAMPLE_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.cpp)
 
-
-include_directories(${Boost_INCLUDE_DIRS}) 
 
 # for Visual Studio
 if(MSVC)
@@ -24,8 +20,6 @@ foreach(exampleSrc ${EXAMPLE_SRCS})
   add_executable(${exampleName} ${exampleSrc}) 
   
  
-  #link to Boost libraries AND your targets and dependencies
-  target_link_libraries(${exampleName} ${Boost_LIBRARIES})
   set_target_properties(${exampleName} PROPERTIES CXX_STANDARD 17)
  
   if(UNIX)
