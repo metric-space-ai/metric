@@ -1,7 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
 
-find_package(Boost REQUIRED)
-
 project(energies_examples)
 
 
@@ -19,8 +17,6 @@ if(MSVC)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++17")
 endif(MSVC) 
 
-include_directories(${Boost_INCLUDE_DIRS}) 
- 
 
 file(GLOB EXAMPLE_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.cpp) 
 
@@ -52,7 +48,6 @@ foreach(exampleSrc ${EXAMPLE_SRCS})
 		target_link_libraries(${exampleName} PRIVATE mkl_core.lib mkl_sequential.lib mkl_intel_lp64.lib)
 	endif()
 
-	target_link_libraries(${exampleName} PRIVATE ${Boost_LIBRARIES})
 endforeach(exampleSrc)
 
 
