@@ -19,7 +19,7 @@ find_program(CCACHE_PATH ccache)
 if(CCACHE_PATH)
 	message(STATUS "CCache found in ${CCACHE_PATH}")
 	set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ccache)
-endif(CCACHE_FOUND)
+endif(CCACHE_PATH)
 
 
 #if(UNIX) 
