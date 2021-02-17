@@ -11,6 +11,17 @@ project(panda_metric)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+
+# CCache
+set(METRIC_USE_CCACHE ON)
+
+find_program(CCACHE_PATH ccache)
+if(CCACHE_PATH AND METRIC_USE_CCACHE)
+	message(STATUS "CCache found in ${CCACHE_PATH}")
+	set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ccache)
+endif(CCACHE_FOUND)
+
+
 #if(UNIX) 
 #    append(CMAKE_CXX_FLAGS 
 #endif(UNIX)
