@@ -24,15 +24,15 @@
 namespace fs = std::filesystem;
 #endif
 //#include <experimental/filesystem> // edited by Max F
+
 #include <boost/iostreams/filter/zlib.hpp>
-#include <boost/program_options.hpp>
 
 #include "assets/AudioFile.h"
 
 #include "../../modules/distance/k-related/Standards.hpp"
 
 #include "../../modules/utils/pattern_compressor.hpp"
-namespace po = boost::program_options;
+
 
 template <typename Compressor>
 void compress_file(const std::string& file_name, std::string out_name, Compressor compressor)
@@ -98,74 +98,26 @@ void decompress_file(const std::string& file_name, const std::string& outfile, C
     audio.save(outfile);
 }
 
-void usage(const po::options_description& desc)
-{
-    std::cout << "Usage: wav_compressor [-h] [-d] [-o output_file] input_file \n";
-    std::cout << desc;
-}
-
 int main(int argc, char** argv)
 {
 
-    bool is_decompress = false;
-    std::string file_name;
-    std::string output_file;
-    std::size_t threads = 1;
-    double similarity_threshold = 0.05;
-    std::size_t slice_size = 4096;
-    try {
-        po::options_description desc("wav_compressor");
-        desc.add_options()
-            ("help,h", "produce help message")
-            ("decompress,d", "Decompress")
-            ("threshold,r", po::value<double>()->default_value(0.05), "Similarity threshold")
-            ("slice-size,s", po::value<std::size_t>()->default_value(4096), "Size of input data slices")
-            ("threads,t", po::value<std::size_t>()->default_value(2), "Number of threads to use while compressing")
-            ("output-file,o", po::value<std::string>(), "output file, default == 'input-file'.z")
-            ("input-file", po::value<std::string>(), "input file");
+	if ((argc < 5) or (argc > 6)) {
+		std::cout << "Usage: wav_compressor input_file slice_size[4096] threshold[0.05] threads [output_file]" << std::endl;
+		return -1;
+	}
 
-        po::positional_options_description p;
-        p.add("input-file", 1);
+	std::string file_name = argv[1];
+	std::size_t slice_size = std::atol(argv[2]);
+	double similarity_threshold = std::atof(argv[3]);
+	std::size_t threads = std::atol(argv[4]);
 
-        po::variables_map vm;
-        po::store(po::command_line_parser(argc, argv).options(desc).positional(p).run(), vm);
-        po::notify(vm);
+	std::string output_file;
+	bool is_decompress = false;
+	if (argc == 6) {
+		output_file = argv[5];
+		is_decompress = true;
+	}
 
-        if (vm.count("help")) {
-            usage(desc);
-            return 0;
-        }
-        if (vm.count("threads")) {
-            threads = vm["threads"].as<std::size_t>();
-        }
-        if (vm.count("input-file")) {
-            file_name = vm["input-file"].as<std::string>();
-        } else {
-            usage(desc);
-            return 1;
-        }
-        if (vm.count("output-file")) {
-            output_file = vm["output-file"].as<std::string>();
-        } 
-
-        if(vm.count("threshold")) {
-            similarity_threshold = vm["threshold"].as<double>();
-        }
-        if (vm.count("slice-size")) {
-            slice_size = vm["slice-size"].as<std::size_t>();
-        }
-        if (vm.count("decompress")) {
-            if (!vm.count("output-file")) {
-                usage(desc);
-                return 1;
-            }
-            is_decompress = true;
-        }
-
-    } catch (std::exception& ex) {
-        std::cout << ex.what() << std::endl;
-        return 1;
-    }
 
     // create compressor for double time series with rate = 4096 and wavelet_type = 5
     auto cf = metric::make_compressor_factory<double, metric::TWED<double>>(5, slice_size, 1, 0);

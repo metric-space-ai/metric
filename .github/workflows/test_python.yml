@@ -26,7 +26,6 @@ jobs:
         sudo apt-get install libboost-test-dev
         sudo apt-get install libboost-serialization-dev
         sudo apt-get install libboost-iostreams-dev
-        sudo apt-get install libboost-program-options-dev
         sudo apt-get install libopenblas-dev
         sudo apt-get install ccache
         sudo apt-get install -y g++-9 g++-9-multilib
