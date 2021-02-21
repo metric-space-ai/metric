@@ -31,6 +31,14 @@ jobs:
         path: /var/cache/apt/archives
         key: ${{ runner.os }}-build-${{ env.cache-name }}
 
+    - name: Cache ccache
+      uses: actions/cache@v2
+      env:
+        cache-name: cache-ccache
+      with:
+        path: ~/.ccache
+        key: ${{ runner.os }}-build-${{ env.cache-ccache }}
+
     - name: Install system packages
       run: |
         sudo apt-get install ruby-dev
