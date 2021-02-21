@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.10)
 
 project(transform_examples)
 
-find_package(Boost COMPONENTS serialization iostreams program_options)
+find_package(Boost COMPONENTS serialization iostreams)
 find_package(ZLIB)
 find_package(Threads)
 find_package(LAPACK)
