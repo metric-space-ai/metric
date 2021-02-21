@@ -70,4 +70,4 @@ jobs:
     - name: Run tests
       run: |
         cd build
-        ctest --ouput-on-failure
+        ctest --output-on-failure
