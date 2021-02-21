@@ -22,20 +22,39 @@ jobs:
       uses: actions/setup-python@v1
       with:
         python-version: 3.6
+
+    - name: Cache apt
+      uses: actions/cache@v2
+      env:
+        cache-name: cache-apt
+      with:
+        path: /var/cache/apt/archives
+        key: ${{ runner.os }}-build-${{ env.cache-name }}
+
+    - name: Cache ccache
+      uses: actions/cache@v2
+      env:
+        cache-name: cache-ccache
+      with:
+        path: ~/.ccache
+        key: ${{ runner.os }}-build-${{ env.cache-ccache }}
+
     - name: Install system packages
       run: |
-        sudo apt-get install ruby-dev
-        sudo gem install apt-spy2
-        sudo apt-spy2 check
-        sudo apt-spy2 fix --commit
         sudo apt-get update
         sudo apt-get install cmake
-        sudo apt-get install libboost-all-dev
+        sudo apt-get install libboost-date-time-dev
+        sudo apt-get install libboost-test-dev
+        sudo apt-get install libboost-serialization-dev
+        sudo apt-get install libboost-iostreams-dev
+        sudo apt-get install libboost-program-options-dev
         sudo apt-get install libopenblas-dev
         sudo apt-get install libjpeg-dev
         sudo apt-get install -y g++-9 g++-9-multilib
+        sudo apt-get install ccache
         echo "CC=gcc-9" >> $GITHUB_ENV
         echo "CXX=g++-9" >> $GITHUB_ENV
+
     - name: Build tests and examples
       run: |
         export MAKE='make -j1'
@@ -43,7 +62,8 @@ jobs:
         cd build
         cmake -DCMAKE_BUILD_TYPE=Release ../
         cmake --build .
+
     - name: Run tests
       run: |
         cd build
-        ctest --ouput-on-failure
+        ctest --output-on-failure
