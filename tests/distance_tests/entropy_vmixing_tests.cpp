@@ -45,7 +45,7 @@ TEMPLATE_TEST_CASE("entropy", "[distance]", float, double)
 
     std::vector<std::string> v8 = { "AAA", "HJGJHFG", "BBB", "AAAA", "long long long long long long string", "abcdefghjklmnopqrstuvwxyz" };
 
-    REQUIRE(metric::Entropy<void, metric::Edit<int>>(metric::Edit<int>(), 3, 2.0)(v8) == -9.3586210470159283); //0.58333333333333337));
+    REQUIRE(metric::Entropy<void, metric::Edit<int>>(metric::Edit<int>(), 3, 2.0)(v8) == -9.3586210470159283_a); //0.58333333333333337));
 }
 
 TEMPLATE_TEST_CASE("vmixing", "[distance]", float, double)
