@@ -14,6 +14,9 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        build_type: [Debug, Release]
     steps:
     - uses: actions/checkout@v2
       with:
@@ -59,7 +62,7 @@ jobs:
         export MAKE='make -j1'
         mkdir build
         cd build
-        cmake -DCMAKE_BUILD_TYPE=Release ../
+        cmake -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} ../
         cmake --build .
 
     - name: Run tests
