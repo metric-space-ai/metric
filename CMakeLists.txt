@@ -51,16 +51,16 @@ endif()
 
 
 if(MSVC)
-add_definitions("/w")
+	add_definitions("/w")
 endif()
+
+
 find_package(Boost REQUIRED unit_test_framework)
 include_directories(
     ${Boost_INCLUDE_DIR}
     ${PROJECT_SOURCE_DIR}
 )
 
-
-enable_testing()
 
 # Catch2 installtion
 Include(FetchContent)
@@ -73,8 +73,12 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(Catch2)
 
 list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/contrib)
+
+
+enable_testing()
 include(CTest)
 include(Catch)
+
 
 add_subdirectory(tests)
 #add_subdirectory(benchmarks)

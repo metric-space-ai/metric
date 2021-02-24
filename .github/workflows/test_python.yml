@@ -3,9 +3,13 @@ on:
   push:
     branches:
       - master
+    paths-ignore:
+      - '.github/workflows/cmake.yml'
   pull_request:
     branches:
       - master
+    paths-ignore:
+      - '.github/workflows/cmake.yml'
 
 jobs:
   deploy:
