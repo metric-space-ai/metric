@@ -28,13 +28,12 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-    - name: ls
-      shell: bash
-      run: ls $CONDA || ls $CONDA\bin
+    - name: intall conda
+      uses: s-weigand/setup-conda@v1
 
-    - name: mkl
+    - name: install mkl
       shell: bash
-      run: $CONDA/bin/conda install mkl || $CONDA/conda
+      run: conda install mkl
 
     - name: Create Build Environment
       # Some projects don't allow in-source building, so create a separate build directory
