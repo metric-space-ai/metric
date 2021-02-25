@@ -38,7 +38,9 @@ jobs:
       run: conda install mkl
 
     - run: echo $CONDA_PREFIX
+      shell: bash
     - run: echo $CONDA
+      shell: bash
 
     - name: Setup tmate session
       uses: mxschmitt/action-tmate@v3
