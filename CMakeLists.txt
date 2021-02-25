@@ -37,6 +37,7 @@ if(CMAKE_SYSTEM_NAME MATCHES Windows)
     endif()
 endif()
 
+find_package(MKL)
 find_package(LAPACK) 
 if(NOT LAPACK_FOUND)
 	set(BLA_VENDOR Intel10_64lp_seq)
