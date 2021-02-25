@@ -30,10 +30,15 @@ jobs:
 
     - name: intall conda
       uses: s-weigand/setup-conda@v1
+      with:
+        activate-conda: true
 
     - name: install mkl
       shell: bash
       run: conda install mkl
+
+    - run: echo $CONDA_PREFIX
+    - run: echo $CONDA
 
     - name: Setup tmate session
       uses: mxschmitt/action-tmate@v3
