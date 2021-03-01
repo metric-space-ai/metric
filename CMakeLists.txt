@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.19)
 if (POLICY CMP0025)
   cmake_policy(SET CMP0025 NEW)
 endif ()
@@ -37,7 +37,7 @@ if(CMAKE_SYSTEM_NAME MATCHES Windows)
     endif()
 endif()
 
-find_package(LAPACK) 
+find_package(LAPACK)
 if(NOT LAPACK_FOUND)
 	set(BLA_VENDOR Intel10_64lp_seq)
 	message("Generic LAPACK not Found, trying Intel MKL")
@@ -51,16 +51,16 @@ endif()
 
 
 if(MSVC)
-add_definitions("/w")
+	add_definitions("/w")
 endif()
+
+
 find_package(Boost REQUIRED unit_test_framework)
 include_directories(
     ${Boost_INCLUDE_DIR}
     ${PROJECT_SOURCE_DIR}
 )
 
-
-enable_testing()
 
 # Catch2 installtion
 Include(FetchContent)
@@ -73,9 +73,13 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(Catch2)
 
 list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/contrib)
+
+
+enable_testing()
 include(CTest)
 include(Catch)
 
+
 add_subdirectory(tests)
-add_subdirectory(benchmarks)
-add_subdirectory(examples)
+#add_subdirectory(benchmarks)
+#add_subdirectory(examples)
