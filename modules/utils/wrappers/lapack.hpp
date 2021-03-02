@@ -33,10 +33,10 @@ namespace metric {
     {
         w.resize(A.rows());
         int lwork = 3 * A.rows() - 1;
-        double work[lwork];
+        std::vector<double> work(lwork);
         int info;
 
-        dsygv(1, 'N', 'U', A.rows(), A.data(), A.spacing(), B.data(), B.spacing(), w.data(), work, lwork, info);
+        dsygv(1, 'N', 'U', A.rows(), A.data(), A.spacing(), B.data(), B.spacing(), w.data(), work.data(), lwork, info);
     }
 }
 
