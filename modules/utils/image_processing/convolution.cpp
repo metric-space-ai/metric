@@ -9,7 +9,7 @@ namespace metric {
 																		padWidth(kernelWidth - 1),
 																		padHeight(kernelHeight - 1)
 	{
-		padModel = std::make_shared<PadModel<T>>(PadDirection::BOTH, PadType::CONST, 0);
+		padModel = std::make_shared<PadModel<T>>(PadDirection::BOTH, PadType::CONSTANT, 0);
 
 		convLayer = std::make_shared<ConvLayer2d>(imageWidth + padWidth, imageHeight + padHeight, 1, 1, kernelWidth, kernelHeight);
 	}

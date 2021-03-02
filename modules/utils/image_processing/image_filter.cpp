@@ -54,7 +54,7 @@ namespace metric {
 					j += src.columns();    //work only in pad area
 				} else {
 					switch (_padType) {
-						case PadType::CONST:
+						case PadType::CONSTANT:
 							break;
 
 						case PadType::REPLICATE:
