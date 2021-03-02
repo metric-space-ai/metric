@@ -7,6 +7,7 @@
 */
 
 #include "image_filter.hpp"
+#define _USE_MATH_DEFINES
 #include <cmath>
 
 namespace metric {
