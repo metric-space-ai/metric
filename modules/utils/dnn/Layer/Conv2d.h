@@ -190,8 +190,8 @@ class Conv2d: public Layer<Scalar>
 
 					        int i = i0 + ki;
 					        int j = j0 + kj;
-					        if ((i < 0) or (i >= fromHeight) or
-					            (j < 0) or (j >= fromWidth)) {
+					        if ((i < 0) || (i >= fromHeight) ||
+					            (j < 0) || (j >= fromWidth)) {
 						        kernelMask.push_back(c);
 					        } else {
 						        unrolledKernel.append(i * fromWidth + j, column, ki * kernelWidth + kj + 1);
@@ -271,7 +271,7 @@ class Conv2d: public Layer<Scalar>
 							auto me = kernelMasks[i].begin();
 							auto element = unrolledKernel.begin(i);
 							for (auto k = 0; k < kernelData.size(); ++k) {
-								if (!kernelMasks[i].empty() and (*me == k)) {
+								if (!kernelMasks[i].empty() && (*me == k)) {
 									++me;
 								} else {
 		                            element++->value() = kernelData[k];
