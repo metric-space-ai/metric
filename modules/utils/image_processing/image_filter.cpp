@@ -7,8 +7,8 @@
 */
 
 #include "image_filter.hpp"
-#define _USE_MATH_DEFINES
-#include <cmath>
+
+constexpr double PI = 3.14159265358979323846;
 
 namespace metric {
 	using namespace metric::image_processing_details;
@@ -173,7 +173,7 @@ namespace metric {
 	inline FilterType::MOTION::MOTION(double len, int theta) {
 		len = std::max<double>(1, len);
 		auto half = (len - 1) / 2;
-		auto phi = static_cast<double>(theta % 180) / 180 * M_PI;
+		auto phi = static_cast<double>(theta % 180) / 180 * PI;
 
 
 		double cosphi = std::cos(phi);
