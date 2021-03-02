@@ -7,6 +7,7 @@
 */
 
 #include "image_filter.hpp"
+#include <math.h>
 
 namespace metric {
 	using namespace metric::image_processing_details;
