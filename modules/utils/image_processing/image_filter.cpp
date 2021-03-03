@@ -8,6 +8,8 @@
 
 #include "image_filter.hpp"
 
+constexpr double PI = 3.14159265358979323846;
+
 namespace metric {
 	using namespace metric::image_processing_details;
 
@@ -54,7 +56,7 @@ namespace metric {
 					j += src.columns();    //work only in pad area
 				} else {
 					switch (_padType) {
-						case PadType::CONST:
+						case PadType::CONSTANT:
 							break;
 
 						case PadType::REPLICATE:
@@ -171,7 +173,7 @@ namespace metric {
 	inline FilterType::MOTION::MOTION(double len, int theta) {
 		len = std::max<double>(1, len);
 		auto half = (len - 1) / 2;
-		auto phi = static_cast<double>(theta % 180) / 180 * M_PI;
+		auto phi = static_cast<double>(theta % 180) / 180 * PI;
 
 
 		double cosphi = std::cos(phi);
