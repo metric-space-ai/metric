@@ -6,12 +6,6 @@ on:
     paths-ignore:
       - 'python/**'
       - '.github/workflows/cmake.yml'
-  pull_request:
-    branches:
-      - master
-    paths-ignore:
-      - 'python/**'
-      - '.github/workflows/cmake.yml'
 
 jobs:
   benchmark:
@@ -62,7 +56,7 @@ jobs:
 
     - name: Run benchmark
       run: |
-        ./build/benchmarks/image_processing_benchmarks/convolution_benchmarks --benchmark-samples 3 --out convolution-benchmark-output
+        ./build/benchmarks/image_processing_benchmarks/convolution_benchmarks --out convolution-benchmark-output
 
     - name: Store benchmark result
       uses: rhysd/github-action-benchmark@v1
