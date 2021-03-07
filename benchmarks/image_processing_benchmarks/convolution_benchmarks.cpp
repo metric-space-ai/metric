@@ -36,17 +36,20 @@ std::tuple<Conv::Image, Conv::FilterKernel> generateImageAndKernel(size_t imageW
 
 TEST_CASE("Convolution2d benchmarks")
 {
-	auto [imageWidth, imageHeight] = GENERATE(table<size_t, size_t>({{320, 240},
+	/*auto [imageWidth, imageHeight] = GENERATE(table<size_t, size_t>({{320, 240},
 															{640, 480},
-															 {1920, 1080}}));
+															 {1920, 1080}}));*/
+	size_t imageWidth = 1920;
+	size_t imageHeight = 1080;
 
-	auto kernelSize = GENERATE(3, 5, 7);
+//auto kernelSize = GENERATE(3, 5, 7);
+	size_t kernelSize = 5;
 
 	size_t kernelWidth = kernelSize;
 	size_t kernelHeight = kernelSize;
 
 
-	BENCHMARK("Convolution2d()")
+	/*BENCHMARK("Convolution2d()")
 	{
 		return Conv(imageWidth, imageHeight, kernelWidth, kernelHeight);
 	};
@@ -54,12 +57,16 @@ TEST_CASE("Convolution2d benchmarks")
 
 	auto [image, kernel] = generateImageAndKernel(imageWidth, imageHeight, kernelWidth, kernelHeight);
 	auto conv = Conv(imageWidth, imageHeight, kernelWidth, kernelHeight);
+	return conv;
 
 	BENCHMARK("Convolution2d.setKernel()")
 	{
 		return conv.setKernel(kernel);
 	};
 
+	*/
+	auto [image, kernel] = generateImageAndKernel(imageWidth, imageHeight, kernelWidth, kernelHeight);
+	auto conv = Conv(imageWidth, imageHeight, kernelWidth, kernelHeight);
 	conv.setKernel(kernel);
 
 	BENCHMARK("Convolution2d.operator()")

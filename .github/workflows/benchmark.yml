@@ -1,0 +1,82 @@
+name: Test C++ code
+on:
+  push:
+    branches:
+      - master
+    paths-ignore:
+      - 'python/**'
+      - '.github/workflows/cmake.yml'
+  pull_request:
+    branches:
+      - master
+    paths-ignore:
+      - 'python/**'
+      - '.github/workflows/cmake.yml'
+
+jobs:
+  benchmark:
+    name: Performance check
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: recursive
+
+    - name: Cache apt
+      uses: actions/cache@v2
+      env:
+        cache-name: cache-apt
+      with:
+        path: /var/cache/apt/archives
+        key: ${{ runner.os }}-build-${{ env.cache-name }}
+
+    - name: Cache ccache
+      uses: actions/cache@v2
+      env:
+        cache-name: cache-ccache
+      with:
+        path: ~/.ccache
+        key: ${{ runner.os }}-benchmark-${{ env.cache-name }}
+
+    - name: Install system packages
+      run: |
+        sudo apt-get update
+        sudo apt-get install cmake
+        sudo apt-get install libboost-date-time-dev
+        sudo apt-get install libboost-test-dev
+        sudo apt-get install libboost-serialization-dev
+        sudo apt-get install libboost-iostreams-dev
+        sudo apt-get install libopenblas-dev
+        sudo apt-get install libjpeg-dev
+        sudo apt-get install -y g++-9 g++-9-multilib
+        sudo apt-get install ccache
+        echo "CC=gcc-9" >> $GITHUB_ENV
+        echo "CXX=g++-9" >> $GITHUB_ENV
+
+    - name: Build benchmark
+      run: |
+        mkdir build
+        cd build
+        cmake -DCMAKE_BUILD_TYPE=Release ..
+        cmake --build . --target convolution_benchmarks
+
+    - name: Download previous benchmark data
+      uses: actions/cache@v1
+      with:
+        path: ./cache
+        key: ${{ runner.os }}-benchmark-results
+
+    - name: Run benchmark
+      run: |
+        ./build/benchmarks/image_processing_benchmarks/convolution_benchmarks --benchmark-samples 3 --out convolution-benchmark-output
+
+  - name: Store benchmark result
+      uses: rhysd/github-action-benchmark@v1
+      with:
+        name: Convolution (image=[1920x1080], kerne=5)
+        tool: 'catch2'
+        output-file-path: convolution-benchmark-output
+        # Personal access token to deploy GitHub Pages branch
+        github-token: ${{ secrets.PERSONAL_GITHUB_TOKEN }}
+        # Push and deploy GitHub pages branch automatically
+        auto-push: true
