@@ -70,7 +70,7 @@ jobs:
       run: |
         ./build/benchmarks/image_processing_benchmarks/convolution_benchmarks --benchmark-samples 3 --out convolution-benchmark-output
 
-  - name: Store benchmark result
+    - name: Store benchmark result
       uses: rhysd/github-action-benchmark@v1
       with:
         name: Convolution (image=[1920x1080], kerne=5)
