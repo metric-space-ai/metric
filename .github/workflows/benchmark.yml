@@ -60,12 +60,6 @@ jobs:
         cmake -DCMAKE_BUILD_TYPE=Release ..
         cmake --build . --target convolution_benchmarks
 
-    - name: Download previous benchmark data
-      uses: actions/cache@v1
-      with:
-        path: ./cache
-        key: ${{ runner.os }}-benchmark-results
-
     - name: Run benchmark
       run: |
         ./build/benchmarks/image_processing_benchmarks/convolution_benchmarks --benchmark-samples 3 --out convolution-benchmark-output
@@ -73,7 +67,7 @@ jobs:
     - name: Store benchmark result
       uses: rhysd/github-action-benchmark@v1
       with:
-        name: Convolution (image=[1920x1080], kerne=5)
+        name: Convolution (image=[1920x1080], kernel=5)
         tool: 'catch2'
         output-file-path: convolution-benchmark-output
         # Personal access token to deploy GitHub Pages branch
