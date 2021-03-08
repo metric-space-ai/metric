@@ -1,18 +1,9 @@
-cmake_minimum_required(VERSION 3.10)
-
-project(ensemble_examples)
-
-if(UNIX)
-    find_package(Threads REQUIRED)
-endif(UNIX)
-
 include_directories(
     ${PROJECT_SOURCE_DIR}
 )
 
 file(COPY "assets" DESTINATION ".")
 
-find_package(LAPACK)
 
 file(GLOB EXAMPLE_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.cpp) 
 
@@ -25,21 +16,6 @@ foreach(exampleSrc ${EXAMPLE_SRCS})
 	#Add compile target
 	add_executable(${exampleName} ${exampleSrc})
  
-	if(CMAKE_SYSTEM_NAME MATCHES Windows)
-		target_link_directories(${exampleName} PRIVATE ${PROJECT_SOURCE_DIR}/../../mkl/lib/intel64_win)
-		target_link_libraries(${exampleName} PRIVATE mkl_core.lib mkl_sequential.lib mkl_intel_lp64.lib)
-	endif()
 	target_link_libraries(${exampleName} ${LAPACK_LIBRARIES})
-	set_target_properties(${exampleName} PROPERTIES CXX_STANDARD 17)	
-	
-	if(UNIX)
-		set(THREADS_PREFER_PTHREAD_FLAG ON)
-		set(CMAKE_CXX_FLAGS "-O3")
-
-		target_link_libraries(${exampleName} Threads::Threads)
-
-		target_compile_options(${exampleName} PRIVATE -pthread)
-		set_target_properties(${exampleName} PROPERTIES LINK_FLAGS -pthread)
-	endif(UNIX)
 
 endforeach(exampleSrc)
