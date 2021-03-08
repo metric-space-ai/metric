@@ -1,7 +1,3 @@
-include_directories( ${PROJECT_SOURCE_DIR} )
-
-
-
 add_subdirectory(correlation_tests)
 add_subdirectory(dnn_tests)
 add_subdirectory(ensembles_tests)

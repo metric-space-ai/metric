@@ -1,11 +1,5 @@
-include_directories(
-    ${PROJECT_SOURCE_DIR}
-)
-
 file(COPY "assets" DESTINATION ".")
-
-
-file(GLOB EXAMPLE_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.cpp) 
+file(GLOB EXAMPLE_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.cpp)
 
 #Run through each source
 foreach(exampleSrc ${EXAMPLE_SRCS})
