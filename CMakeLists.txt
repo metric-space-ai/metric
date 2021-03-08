@@ -22,9 +22,6 @@ if(CCACHE_PATH)
 endif(CCACHE_PATH)
 
 
-#if(UNIX) 
-#    append(CMAKE_CXX_FLAGS 
-#endif(UNIX)
 option(BUILD_TESTS "build tests" ON)
 
 if(CMAKE_SYSTEM_NAME MATCHES Windows)
@@ -37,27 +34,15 @@ if(CMAKE_SYSTEM_NAME MATCHES Windows)
     endif()
 endif()
 
-find_package(LAPACK)
-if(NOT LAPACK_FOUND)
-	set(BLA_VENDOR Intel10_64lp_seq)
-	message("Generic LAPACK not Found, trying Intel MKL")
-	if(NOT BLAS_ROOT)
-	     if(WIN32)
-		     set(BLAS_ROOT "C:/Program\ Files\ (x86)/IntelSWTools/compilers_and_libraries/windows/mkl/lib/intel64")
-	     endif()
-	endif()
-	find_package(LAPACK QUIET)
-endif()
 
+find_package(LAPACK REQUIRED)
 
 if(MSVC)
 	add_definitions("/w")
 endif()
 
 
-find_package(Boost REQUIRED unit_test_framework)
 include_directories(
-    ${Boost_INCLUDE_DIR}
     ${PROJECT_SOURCE_DIR}
 )
 
