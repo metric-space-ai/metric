@@ -1,15 +1,11 @@
 find_package(Threads REQUIRED)
 
-include_directories(
-	${PROJECT_SOURCE_DIR} 
-    ${PROJECT_SOURCE_DIR}/../..
-)
-	 
+
 file(COPY "assets" DESTINATION ".")
 
 
 # quantized_mappers / clustering
-#add_executable(KMedoids_example quantized_mappers/clustering/KMedoids_example.cpp)
+add_executable(KMedoids_example quantized_mappers/clustering/KMedoids_example.cpp)
 add_executable(KMeans_example quantized_mappers/clustering/KMeans_example.cpp)
 add_executable(DBScan_example quantized_mappers/clustering/DBScan_example.cpp)
 add_executable(AffinityPropagation_example quantized_mappers/clustering/AffinityPropagation_example.cpp)
@@ -33,12 +29,12 @@ add_executable(ESN_example continious_mappers/classification/ESN_example.cpp)
 
 # other
 add_executable(auto_detect_metric_example auto_detect_metric_example.cpp)
-#add_executable(kohonen_outliers_clustering_example kohonen_outliers_clustering_example.cpp)
+add_executable(kohonen_outliers_clustering_example kohonen_outliers_clustering_example.cpp)
 add_executable(KOC_MNIST_example KOC_MNIST_example.cpp)
 add_executable(reverse_diffusion_example reverse_diffusion_example.cpp)
 
 
-#target_link_libraries(KMedoids_example PRIVATE ${LAPACK_LIBRARIES})
+target_link_libraries(KMedoids_example PRIVATE ${LAPACK_LIBRARIES})
 target_link_libraries(KMeans_example PRIVATE ${LAPACK_LIBRARIES})
 target_link_libraries(DBScan_example PRIVATE ${LAPACK_LIBRARIES})
 target_link_libraries(AffinityPropagation_example PRIVATE ${LAPACK_LIBRARIES})
@@ -52,12 +48,12 @@ target_link_libraries(PCFA_example PRIVATE ${LAPACK_LIBRARIES})
 target_link_libraries(SOM_and_MNIST_example PRIVATE ${LAPACK_LIBRARIES})
 target_link_libraries(ESN_example PRIVATE ${LAPACK_LIBRARIES})
 target_link_libraries(auto_detect_metric_example PRIVATE ${LAPACK_LIBRARIES})
-#target_link_libraries(kohonen_outliers_clustering_example PRIVATE ${LAPACK_LIBRARIES})
+target_link_libraries(kohonen_outliers_clustering_example PRIVATE ${LAPACK_LIBRARIES})
 target_link_libraries(KOC_MNIST_example PRIVATE ${LAPACK_LIBRARIES})
 target_link_libraries(reverse_diffusion_example PRIVATE ${LAPACK_LIBRARIES})
 
 
 target_link_libraries(C45_example PRIVATE Threads::Threads)
 target_link_libraries(KOC_MNIST_example PRIVATE Threads::Threads)
-#target_link_libraries(kohonen_outliers_clustering_example PRIVATE Threads::Threads)
+target_link_libraries(kohonen_outliers_clustering_example PRIVATE Threads::Threads)
 
