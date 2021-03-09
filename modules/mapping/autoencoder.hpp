@@ -113,7 +113,7 @@ namespace metric
 	std::vector<InputDataType> Autoencoder<InputDataType, Scalar>::convertToOutput(const Matrix &data, bool doDenormalization)
 	{
 		Matrix temp(data);
-		if (doDenormalization and (normValue != 0)) {
+		if (doDenormalization && (normValue != 0)) {
 			temp *= normValue;
 		}
 
