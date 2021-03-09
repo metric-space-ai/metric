@@ -38,10 +38,6 @@ endif()
 
 find_package(LAPACK REQUIRED)
 
-if(MSVC)
-	add_definitions("/w")
-endif()
-
 
 include_directories(
     ${PROJECT_SOURCE_DIR}
