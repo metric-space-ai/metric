@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1615153977312,
+  "lastUpdate": 1615258632738,
   "repoUrl": "https://github.com/panda-official/metric",
   "entries": {
     "Convolution (image=[1920x1080], kernel=5)": [
@@ -83,6 +83,37 @@ window.BENCHMARK_DATA = {
             "name": "Convolution2d.operator()",
             "value": 127.867,
             "range": "± 2.59575",
+            "unit": "ms",
+            "extra": "100 samples\n1 iterations"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "kataev.victor.1234@gmail.com",
+            "name": "Victor",
+            "username": "victor1234"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "58874af82130fbee7f91cc866e21995f0f8a9789",
+          "message": "Cmake scripts refactor (#264)\n\n* remove boost, commented code, unnecessary find, etc\r\n\r\n* refactor examples cmake, turn off mapping examples\r\n\r\n* turn on mapping examples\r\n\r\n* remove include_directories",
+          "timestamp": "2021-03-09T05:55:29+03:00",
+          "tree_id": "7923b3882f8aca977b5f09b6d249458d38170122",
+          "url": "https://github.com/panda-official/metric/commit/58874af82130fbee7f91cc866e21995f0f8a9789"
+        },
+        "date": 1615258631668,
+        "tool": "catch2",
+        "benches": [
+          {
+            "name": "Convolution2d.operator()",
+            "value": 131.856,
+            "range": "± 3.81307",
             "unit": "ms",
             "extra": "100 samples\n1 iterations"
           }
