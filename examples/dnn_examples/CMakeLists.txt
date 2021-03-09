@@ -1,6 +1,3 @@
-cmake_minimum_required(VERSION 3.10)
-project(dnn_example)
-
 find_package(BLAS)
 
 add_executable(dnn_example dnn_example.cpp)

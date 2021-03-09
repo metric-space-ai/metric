@@ -8,6 +8,7 @@
 #include <mutex>
 #include <condition_variable>
 #include <atomic>
+#include <list>
 
 class ThreadPool {
 public:
@@ -15,8 +16,8 @@ public:
     ThreadPool(size_t maxThreads);
     void execute(const callable &block);
     void close();
-    size_t getQueueSize() const { return queue_.size(); }
-    size_t getThreadsCount() const { return threads_.size(); }
+	size_t getThreadsCount() const { return threads_.size(); }
+	size_t getQueueSize() const { return queue_.size(); }
 
 private:
     class CloseException : public std::exception {};

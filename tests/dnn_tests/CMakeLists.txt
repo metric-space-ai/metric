@@ -1,5 +1,3 @@
-find_package(BLAS)
-
 add_executable(dnn_tests dnn_tests.cpp)
 target_link_libraries(dnn_tests PRIVATE Catch2::Catch2)
 

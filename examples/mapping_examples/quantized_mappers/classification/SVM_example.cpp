@@ -10,7 +10,7 @@ Copyright (c) 2018 Panda Team
 #include <deque> // for Record test
 
 #include "../../assets/helpers.cpp" // csv reader
-#include "../../modules/mapping.hpp"
+#include "modules/mapping.hpp"
 
 template <typename T>
 void vector_print(const std::vector<T> &vec)
