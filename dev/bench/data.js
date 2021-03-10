@@ -2,7 +2,7 @@ window.BENCHMARK_DATA = {
   "lastUpdate": 1615258632738,
   "repoUrl": "https://github.com/panda-official/metric",
   "entries": {
-    "Convolution (image=[1920x1080], kernel=5)": [
+    "Convolution": [
       {
         "commit": {
           "author": {
