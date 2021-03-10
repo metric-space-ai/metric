@@ -61,7 +61,7 @@ jobs:
     - name: Store benchmark result
       uses: rhysd/github-action-benchmark@v1
       with:
-        name: Convolution (image=[1920x1080], kernel=5)
+        name: Convolution
         tool: 'catch2'
         output-file-path: convolution-benchmark-output
         # Personal access token to deploy GitHub Pages branch
