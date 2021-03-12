@@ -58,6 +58,12 @@ METRIC is header-only and can be used without installation. just include the met
 ```
 clang++ -std=c++17 -lopenblas file.cpp
 ```
+You can install it as Pyhton lib with pip.
+```
+python -m pip install metric-py -i https://test.pypi.org/simple/
+```
+Check out the Python sub directory for more helps and system requirements.
+
 # Build of examples
 The following dependencies are required additionally for building examples and tests:
 
