@@ -36,11 +36,11 @@ std::tuple<Conv::Image, Conv::FilterKernel> generateImageAndKernel(size_t imageW
 
 TEST_CASE("Convolution2d benchmarks")
 {
-	const auto [imageWidth, imageHeight] = GENERATE(table<size_t, size_t>({/*{320, 240},
-															{640, 480},*/
+	const auto [imageWidth, imageHeight] = GENERATE(table<size_t, size_t>({{320, 240},
+															{640, 480},
 															 {1920, 1080}}));
 
-	const auto kernelSize = GENERATE(5/*3, 5, 7*/);
+	const auto kernelSize = GENERATE(3, 5, 7);
 
 	const size_t kernelWidth = kernelSize;
 	const size_t kernelHeight = kernelSize;
@@ -50,14 +50,14 @@ TEST_CASE("Convolution2d benchmarks")
 	const std::string kernelSizeString = std::to_string(kernelWidth) + "x" + std::to_string(kernelHeight);
 	const std::string postfix = "[" + imageSizeString + " " + kernelSizeString + "]";
 
-	/*BENCHMARK("Convolution2d() " + postfix)
+	BENCHMARK("Convolution2d() " + postfix)
 	{
 		return Conv(imageWidth, imageHeight, kernelWidth, kernelHeight);
 	};
 
 
 
-	BENCHMARK_ADVANCED("Convolution2d.setKernel() " + postfix)(Catch::Benchmark::Chronometer meter)
+	BENCHMARK_ADVANCED("setKernel() " + postfix)(Catch::Benchmark::Chronometer meter)
 	{
 		const auto [image, kernel] = generateImageAndKernel(imageWidth, imageHeight, kernelWidth, kernelHeight);
 		auto conv = Conv(imageWidth, imageHeight, kernelWidth, kernelHeight);
@@ -65,7 +65,6 @@ TEST_CASE("Convolution2d benchmarks")
 		meter.measure([&conv, &kernel] { return conv.setKernel(kernel); });
 	};
 
-*/
 	BENCHMARK_ADVANCED("operator() " + postfix)(Catch::Benchmark::Chronometer meter)
 	{
 		const auto [image, kernel] = generateImageAndKernel(imageWidth, imageHeight, kernelWidth, kernelHeight);
