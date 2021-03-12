@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1615258632738,
+  "lastUpdate": 1615551018383,
   "repoUrl": "https://github.com/panda-official/metric",
   "entries": {
     "Convolution": [
@@ -116,6 +116,33 @@ window.BENCHMARK_DATA = {
             "range": "± 3.81307",
             "unit": "ms",
             "extra": "100 samples\n1 iterations"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "panda-official",
+            "username": "panda-official"
+          },
+          "committer": {
+            "name": "panda-official",
+            "username": "panda-official"
+          },
+          "id": "4b354f05bd294cac79979f14138c0c369e24fd09",
+          "message": "Benchmarks convolution improve",
+          "timestamp": "2021-03-10T08:12:17Z",
+          "url": "https://github.com/panda-official/metric/pull/269/commits/4b354f05bd294cac79979f14138c0c369e24fd09"
+        },
+        "date": 1615551017379,
+        "tool": "catch2",
+        "benches": [
+          {
+            "name": "Convolution2d.operator()",
+            "value": 167.475,
+            "range": "± 3.52624",
+            "unit": "ms",
+            "extra": "10 samples\n1 iterations"
           }
         ]
       }
