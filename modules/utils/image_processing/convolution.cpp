@@ -5,13 +5,11 @@ namespace metric {
 
 	template <typename T, size_t Channels>
 	Convolution2d<T, Channels>::Convolution2d(size_t imageWidth, size_t imageHeight,
-											   size_t kernelWidth, size_t kernelHeight) :
-																		padWidth(kernelWidth - 1),
-																		padHeight(kernelHeight - 1)
+											   size_t kernelWidth, size_t kernelHeight)
 	{
-		padModel = std::make_shared<PadModel<T>>(PadDirection::BOTH, PadType::CONSTANT, 0);
-
-		convLayer = std::make_shared<ConvLayer2d>(imageWidth + padWidth, imageHeight + padHeight, 1, 1, kernelWidth, kernelHeight);
+		convLayer = std::make_shared<ConvLayer2d>(imageWidth, imageHeight, 1, 1,
+													kernelWidth, kernelHeight,
+													1, true);
 	}
 
 	template<typename T, size_t Channels>
@@ -37,7 +35,7 @@ namespace metric {
 		Image output;
 
 		for (size_t c = 0; c < image.size(); ++c) {
-			const auto& channel = padModel->pad({padWidth / 2, padHeight / 2}, image[c]).first;
+			const auto& channel = image[c];
 
 			/* Convert image */
 			Matrix imageData(1, channel.rows() * channel.columns());
@@ -51,7 +49,7 @@ namespace metric {
 
 			/* Process */
 			convLayer->forward(imageData);
-			auto outputData = convLayer->output();
+			const auto outputData = convLayer->output();
 
 
 			/* Convert output */
