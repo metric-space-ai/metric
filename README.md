@@ -3,7 +3,7 @@
 
 # PANDA | METRIC
 
-**PANDA | METRIC** is a framework for machine learning based on the concept of metric spaces, which makes it possible to use arbitrary data instead of single numeric values in tables. 
+**PANDA | METRIC** is a framework for machine learning based on the concept of metric spaces, which makes it possible to use and combine arbitrary data to build models. METRIC is written in modern C++ to provide the best performance. However, due to Python bindings, you can use it direktly in Python.
 
 # Intro example
 
