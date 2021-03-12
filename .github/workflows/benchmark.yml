@@ -6,6 +6,11 @@ on:
     paths-ignore:
       - 'python/**'
       - '.github/workflows/cmake.yml'
+  pull_request:
+    branches:
+      - master
+    paths-ignore:
+      - 'python/**'
 
 jobs:
   benchmark:
