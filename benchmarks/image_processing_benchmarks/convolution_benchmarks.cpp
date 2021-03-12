@@ -66,7 +66,7 @@ TEST_CASE("Convolution2d benchmarks")
 	};
 
 */
-	BENCHMARK_ADVANCED("Convolution2d.operator() " + postfix)(Catch::Benchmark::Chronometer meter)
+	BENCHMARK_ADVANCED("operator() " + postfix)(Catch::Benchmark::Chronometer meter)
 	{
 		const auto [image, kernel] = generateImageAndKernel(imageWidth, imageHeight, kernelWidth, kernelHeight);
 		auto conv = Conv(imageWidth, imageHeight, kernelWidth, kernelHeight);
