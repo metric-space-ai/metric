@@ -46,8 +46,8 @@ TEST_CASE("Convolution2d benchmarks")
 	const size_t kernelHeight = kernelSize;
 
 
-	const std::string imageSizeString = "image: " + std::to_string(imageWidth) + "x" + std::to_string(imageHeight);
-	const std::string kernelSizeString = "kernel: " + std::to_string(kernelWidth) + "x" + std::to_string(kernelHeight);
+	const std::string imageSizeString = std::to_string(imageWidth) + "x" + std::to_string(imageHeight);
+	const std::string kernelSizeString = std::to_string(kernelWidth) + "x" + std::to_string(kernelHeight);
 	const std::string postfix = "[" + imageSizeString + " " + kernelSizeString + "]";
 
 	BENCHMARK("Convolution2d() " + postfix)
@@ -57,7 +57,7 @@ TEST_CASE("Convolution2d benchmarks")
 
 
 
-	BENCHMARK_ADVANCED("Convolution2d.setKernel() " + postfix)(Catch::Benchmark::Chronometer meter)
+	BENCHMARK_ADVANCED("setKernel() " + postfix)(Catch::Benchmark::Chronometer meter)
 	{
 		const auto [image, kernel] = generateImageAndKernel(imageWidth, imageHeight, kernelWidth, kernelHeight);
 		auto conv = Conv(imageWidth, imageHeight, kernelWidth, kernelHeight);
@@ -65,8 +65,7 @@ TEST_CASE("Convolution2d benchmarks")
 		meter.measure([&conv, &kernel] { return conv.setKernel(kernel); });
 	};
 
-
-	BENCHMARK_ADVANCED("Convolution2d.operator() " + postfix)(Catch::Benchmark::Chronometer meter)
+	BENCHMARK_ADVANCED("operator() " + postfix)(Catch::Benchmark::Chronometer meter)
 	{
 		const auto [image, kernel] = generateImageAndKernel(imageWidth, imageHeight, kernelWidth, kernelHeight);
 		auto conv = Conv(imageWidth, imageHeight, kernelWidth, kernelHeight);
