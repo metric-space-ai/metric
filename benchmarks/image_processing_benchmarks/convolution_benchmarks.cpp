@@ -46,8 +46,8 @@ TEST_CASE("Convolution2d benchmarks")
 	const size_t kernelHeight = kernelSize;
 
 
-	const std::string imageSizeString = "image: " + std::to_string(imageWidth) + "x" + std::to_string(imageHeight);
-	const std::string kernelSizeString = "kernel: " + std::to_string(kernelWidth) + "x" + std::to_string(kernelHeight);
+	const std::string imageSizeString = std::to_string(imageWidth) + "x" + std::to_string(imageHeight);
+	const std::string kernelSizeString = std::to_string(kernelWidth) + "x" + std::to_string(kernelHeight);
 	const std::string postfix = "[" + imageSizeString + " " + kernelSizeString + "]";
 
 	/*BENCHMARK("Convolution2d() " + postfix)
