@@ -71,7 +71,7 @@ namespace metric {
 	};
 
 	enum class PadType {
-		CONST,
+		CONSTANT,
 		REPLICATE,
 		SYMMETRIC,
 		CIRCULAR,

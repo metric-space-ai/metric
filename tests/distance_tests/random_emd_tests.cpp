@@ -6,86 +6,74 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 Copyright (c) 2020 Panda Team
 */
 
+#define CATCH_CONFIG_MAIN
+#include <catch2/catch.hpp>
+
 #include <vector>
 #include "modules/distance.hpp"
 
-#define BOOST_TEST_MODULE Main
+using namespace Catch::literals;
 
-#include <boost/test/unit_test.hpp>
 
-BOOST_AUTO_TEST_CASE(basic_use) 
+TEMPLATE_TEST_CASE("basic_use", "[distance]", float, double)
 {
-	/*** here are some data records ***/
-	std::vector<double> samples_1 = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
-	std::vector<double> samples_2 = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 };
+	std::vector<TestType> samples_1 = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
+	std::vector<TestType> samples_2 = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 };
 	   
-    metric::RandomEMD<std::vector<double>, double> distance;
+    metric::RandomEMD<std::vector<TestType>, TestType> distance;
 
     auto result = distance(samples_1, samples_2);
 	
-    std::cout << "basic use result: " << result << std::endl;
-
-    double t = 1.0; // 1.0%
-    BOOST_CHECK_CLOSE(result, 1.0, t);
-}
-BOOST_AUTO_TEST_CASE(different_dimensions) 
-{
-	/*** here are some data records ***/
-	std::vector<double> samples_1 = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
-	std::vector<double> samples_2 = { 1, 2, 3, 4, 5 };
-	   
-    metric::RandomEMD<std::vector<double>, double> distance;
-
-    auto result = distance(samples_1, samples_2);
-	
-    std::cout << "different dimensions result: " << result << std::endl;
-	
-    double t = 1.0; // 1.0%
-    BOOST_CHECK_CLOSE(result, 2.18, t);
+    //TestType t = 1.0; // 1.0%
+    REQUIRE(result == Approx(1.0).margin(0.01));
 }
 
-BOOST_AUTO_TEST_CASE(equal_samples) 
+TEMPLATE_TEST_CASE("different_dimensions", "[distance]", float, double)
 {
-	/*** here are some data records ***/
-	std::vector<double> samples_1 = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
-	std::vector<double> samples_2 = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
+	std::vector<TestType> samples_1 = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
+	std::vector<TestType> samples_2 = { 1, 2, 3, 4, 5 };
 	   
-    metric::RandomEMD<std::vector<double>, double> distance;
+    metric::RandomEMD<std::vector<TestType>, TestType> distance;
 
     auto result = distance(samples_1, samples_2);
 	
-    std::cout << "equal samples result: " << result << std::endl;
-	
-    double t = 0.01; // 0.01%
-    BOOST_CHECK_CLOSE(result, 0.0, t);
+    //TestType t = 1.0; // 1.0%
+    REQUIRE(result == Approx(2.18).margin(0.0218));
 }
 
-BOOST_AUTO_TEST_CASE(single_value_distribution) 
+TEMPLATE_TEST_CASE("equal_samples", "[distance]", float, double)
 {
-	/*** here are some data records ***/
-	std::vector<double> samples_1 = { 0, 0, 0, 0, 0, 0, 0 };
-	std::vector<double> samples_2 = { 1, 1, 1, 1, 1, 1, 1 };
+	std::vector<TestType> samples_1 = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
+	std::vector<TestType> samples_2 = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
 	   
-    metric::RandomEMD<std::vector<double>, double> distance;
+    metric::RandomEMD<std::vector<TestType>, TestType> distance;
 
     auto result = distance(samples_1, samples_2);
 	
-    std::cout << "single value distribution result: " << result << std::endl;
-
-    BOOST_CHECK( std::isnan( result ) );
+    //TestType t = 0.01; // 0.01%
+    REQUIRE(result == Approx(0.0));
 }
 
-BOOST_AUTO_TEST_CASE(non_intersect_distribution) 
+TEMPLATE_TEST_CASE("single_value_distribution", "[distance]", float, double)
 {
-	/*** here are some data records ***/
-	std::vector<double> samples_1 = { 0, 1, 1, 2, 2, 2, 2, 1, 1, 0 };
-	std::vector<double> samples_2 = { 10, 11, 11, 12, 12, 12, 12, 11, 11, 10 };
+	std::vector<TestType> samples_1 = { 0, 0, 0, 0, 0, 0, 0 };
+	std::vector<TestType> samples_2 = { 1, 1, 1, 1, 1, 1, 1 };
 	   
-    metric::RandomEMD<std::vector<double>, double> distance;
+    metric::RandomEMD<std::vector<TestType>, TestType> distance;
 
     auto result = distance(samples_1, samples_2);
 	
-    std::cout << "non intersect distributionn result: " << result << std::endl;
+    REQUIRE(std::isnan(result));
+}
 
-    BOOST_CHECK( std::isnan( result ) );
+TEMPLATE_TEST_CASE("non_intersect_distribution", "[distance]", float, double)
+{
+	std::vector<TestType> samples_1 = { 0, 1, 1, 2, 2, 2, 2, 1, 1, 0 };
+	std::vector<TestType> samples_2 = { 10, 11, 11, 12, 12, 12, 12, 11, 11, 10 };
+	   
+    metric::RandomEMD<std::vector<TestType>, TestType> distance;
+
+    auto result = distance(samples_1, samples_2);
+	
+    REQUIRE(std::isnan(result));
 }

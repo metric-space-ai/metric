@@ -20,12 +20,15 @@ namespace metric {
             using Clock = std::chrono::high_resolution_clock;
 
 
+            Convolution2d() {} // added by Max F 28 jul 2020 in order to derive from this
             Convolution2d(size_t imageWidth, size_t imageHeight, size_t kernelWidth, size_t kernelHeight);
 
-            Image operator()(Image image, FilterKernel kernel);
+            void setKernel(const FilterKernel& kernel);
+            Image operator()(const Image& image);
+			Image operator()(const Image& image, const FilterKernel& kernel);
 
 
-        private:
+    protected://private: // changed by Max F 28 jul 2020 in order to derive from this
             std::shared_ptr<PadModel<T>> padModel;
             size_t padWidth;
             size_t padHeight;

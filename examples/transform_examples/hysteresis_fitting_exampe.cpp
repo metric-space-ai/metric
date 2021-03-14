@@ -1,7 +1,9 @@
-#include "../../metric.hpp"
 #include "../../modules/transform/distance_potential_minimization.hpp"
 #include <iostream>
 #include <chrono>
+
+//#define MEASURE
+
 
 int main()
 {
@@ -28,6 +30,7 @@ int main()
 
     auto t1 = std::chrono::steady_clock::now();
     auto result = metric::fit_hysteresis(x, y, 400, 500);
+    //auto result = metric::fit_hysteresis(x, y, 500, 600);
     auto t2 = std::chrono::steady_clock::now();
 
     std::cout << " xc " << result[0] << " yc= " << result[1] << " a " << result[2] << " b= " << result[3]

@@ -395,7 +395,7 @@ T TWED(blaze::CompressedVector<T> const& As, blaze::CompressedVector<T> const& B
  */
 template <typename Container>
 typename std::enable_if<
- blaze::IsMatrix<
+ !blaze::IsMatrix<
   Container>::value,
   std::tuple<std::vector<Container>, std::vector<Container>, std::vector<Container>, std::vector<Container>>
  >::type

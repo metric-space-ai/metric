@@ -1,7 +1,6 @@
-#define BOOST_TEST_DYN_LINK
-#define BOOST_TEST_MAIN
+#define CATCH_CONFIG_MAIN
+#include <catch2/catch.hpp>
 
-#include <boost/test/unit_test.hpp>
 #include <limits>
 
 #include <iostream>
@@ -14,7 +13,7 @@ using Matrix = blaze::DynamicMatrix<double>;
 using Vector = blaze::DynamicVector<double>;
 
 
-BOOST_AUTO_TEST_CASE(fullyconnected_json)
+TEST_CASE("fullyconnected_json", "[dnn]")
 {
 	auto json = R"(
 					{
@@ -27,10 +26,10 @@ BOOST_AUTO_TEST_CASE(fullyconnected_json)
 
 	FullyConnected<double, Identity<double>> fc(json);
 
-	BOOST_CHECK_EQUAL(fc.getInputSize(), 100);
-	BOOST_CHECK_EQUAL(fc.getOutputSize(), 10);
+	REQUIRE(fc.getInputSize() == 100);
+	REQUIRE(fc.getOutputSize() == 10);
 
-	BOOST_CHECK_EQUAL(json, fc.toJson());
+	REQUIRE(json == fc.toJson());
 }
 
 //BOOST_AUTO_TEST_CASE(maxpolling_json)
@@ -50,7 +49,7 @@ BOOST_AUTO_TEST_CASE(fullyconnected_json)
 //	BOOST_CHECK_EQUAL(json, mp.toJson());
 //}
 
-BOOST_AUTO_TEST_CASE(network_json)
+TEST_CASE("network_json", "[dnn]")
 {
 	auto json = R"({
 					"0":
@@ -72,16 +71,16 @@ BOOST_AUTO_TEST_CASE(network_json)
 				)"_json;
 
 	Network<double> nt(json.dump());
-	BOOST_CHECK_EQUAL(json, nt.toJson());
+	REQUIRE(json == nt.toJson());
 
 	nt.save("net.cereal");
 	nt.load("net.cereal");
 
-	BOOST_CHECK_EQUAL(json, nt.toJson());
+	REQUIRE(json == nt.toJson());
 
 	std::stringstream ss;
 	nt.save(ss);
 	nt.load(ss);
 
-	BOOST_CHECK_EQUAL(json, nt.toJson());
+	REQUIRE(json == nt.toJson());
 }

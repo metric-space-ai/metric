@@ -20,7 +20,7 @@ endif()
 
 # TODO: check compiler, not OS
 if (WIN32)
-    set(PYBIND11_CPP_STANDARD /std:c++latest) # Enables some MSVC C++17 features
+    set(PYBIND11_CPP_STANDARD /std:c++17)
 else ()
     set(PYBIND11_CPP_STANDARD -std=c++1z)
 endif ()

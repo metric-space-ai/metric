@@ -1,11 +1,8 @@
-#define BOOST_TEST_DYN_LINK
-#define BOOST_TEST_MAIN
+#define CATCH_CONFIG_MAIN
+#include <catch2/catch.hpp>
 
-#include <boost/test/unit_test.hpp>
 #include <limits>
-
 #include <iostream>
-#include <chrono>
 
 #include "modules/utils/datasets.hpp"
 
@@ -14,13 +11,12 @@ using namespace std;
 using namespace metric;
 
 
-using Matrix = blaze::DynamicMatrix<double, blaze::columnMajor>;
-using Vector = blaze::DynamicVector<double>;
-
-
-BOOST_AUTO_TEST_CASE(base)
+TEMPLATE_TEST_CASE("base","[utils]", float, double)
 {
-	blaze::DynamicMatrix<double> m{{1, 2, 3},
+	using Matrix = blaze::DynamicMatrix<TestType, blaze::columnMajor>;
+	using Vector = blaze::DynamicVector<TestType>;
+
+	blaze::DynamicMatrix<TestType> m{{1, 2, 3},
 	                               {4, 5, 6},
 	                               {7, 8, 9},
 	                               {1, 1.1, 1.2},
@@ -43,13 +39,7 @@ BOOST_AUTO_TEST_CASE(base)
 		file << "[-25,26,27] " << std::endl;
 		file << " [-2,8e-8 29 3,0e007] " << std::endl;
 		file.close();
-		BOOST_CHECK_EQUAL(Datasets::readDenseMatrixFromFile<double>("matrix.dsv"), m);
-	}
 
-	/*auto t1 = std::chrono::high_resolution_clock::now();
-	auto dm = Datasets::readDenseMatrixFromFile<double>("/tmp/d.dsv");
-	auto t2 = std::chrono::high_resolution_clock::now();
-	std::cout << dm << std::endl;
-	std::cout << std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count() << std::endl;
-	*/
+		REQUIRE(Datasets::readDenseMatrixFromFile<TestType>("matrix.dsv") == m);
+	}
 }

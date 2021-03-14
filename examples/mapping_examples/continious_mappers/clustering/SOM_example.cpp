@@ -13,7 +13,7 @@ Copyright (c) 2019 Panda Team
 #include <chrono>
 
 #include "../../assets/json.hpp"
-#include "../../modules/mapping.hpp"
+#include "modules/mapping.hpp"
 
 
 using json = nlohmann::json;

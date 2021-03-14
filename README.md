@@ -1,6 +1,9 @@
+![C++](https://github.com/panda-official/metric/workflows/Test%20C++%20code/badge.svg)
+![Python](https://github.com/panda-official/metric/workflows/Test%20Python%20package/badge.svg)
+
 # PANDA | METRIC
 
-**PANDA | METRIC** is a framework for machine learning based on the concept of metric spaces, which makes it possible to use arbitrary data instead of single numeric values in tables. 
+**PANDA | METRIC** is a framework for machine learning based on the concept of metric spaces, which makes it possible to use and combine arbitrary data to build models. METRIC is written in modern C++ to provide the best performance. However, due to Python bindings, you can use it direktly in Python.
 
 # Intro example
 
@@ -55,79 +58,11 @@ METRIC is header-only and can be used without installation. just include the met
 ```
 clang++ -std=c++17 -lopenblas file.cpp
 ```
-# Build of examples
-The following dependencies are required additionally for building examples and tests:
-
-1. C++ compiler supported C++17
-2. Cmake 3.10+ (https://www.cmake.org)
-3. Boost libraries (https://www.boost.org)
-4. BLAS and LAPACK libraries
-5. Libpqxx (for SensorExample)
-
-## Ubuntu
-### Install dependencies
-On Ubuntu one can install dependencies from Ubuntu repositories.
-
-Note that CMake 3.10+ is available in default repositories since Ubuntu 18.04 LTS.
-If you are using an earlier version of Ubuntu, you may need to build CMake from [source code](https://gitlab.kitware.com/cmake/cmake).
-
+You can install it as Pyhton lib with pip.
 ```
-$ sudo apt install cmake
-$ sudo apt install libboost-all-dev
-$ sudo apt install libopenblas-dev
-$ sudo apt install libpqxx-dev postgresql-server-dev-all
+python -m pip install metric-py -i https://test.pypi.org/simple/
 ```
-### Build
-
-If you are building it from inside a virtual machine, make sure to provision at least **2 GiB of virtual memory** for the build process to succeed.
-
-```
-  $ mkdir build
-  $ cd build
-  $ cmake -DCMAKE_BUILD_TYPE=Release ../
-  $ make
-```
-
-## macOS
-
-### Install dependencies
-Use Homebrew tool to install dependencies
-
-```
-$ brew install cmake
-$ brew install boost
-$ brew install openblas
-$ brew install libpqxx
-```
-
-### Build
-```
-  $ mkdir build
-  $ cd build
-  $ cmake -DCMAKE_BUILD_TYPE=Release ../
-  $ make
-```
-
-## Windows
-
-### Install dependencies
-On Windows one can install some dependencies using vcpkg (https://github.com/microsoft/vcpkg)
-
-```
-> vcpkg install --triplet=x64-windows-static libpqxx
-> vcpkg install --triplet=x64-windows-static boost
-```
-Install Intel MKL Library (https://software.intel.com/en-us/mkl/choose-download/windows)
-
-### Build
-```
-> mkdir build
-> cd build
-> cmake -DCMAKE_TOOLCHAIN_FILE=[path_to_vcpkg_root]\scripts\buildsystems\vcpkg.cmake ../
-> cmake --build .
-```
-
-
+Check out the Python sub directory for more helps and system requirements.
 
 # Short introduction
 
@@ -501,3 +436,76 @@ metric space that were obtained by mapping and more.
 |                                                                                                                                                        |Python  |f = partial(utils.sparsify_effective_resistance, ep=0.1)              |result = f(data)             |Default params: ep=0.3, max_conc_const=4.0, jl_fac=4.0|
 |A minimum spanning tree is a graph consisting of the subset of edges which together connect all connected nodes, while minimizing the total sum of weights on the edges. This is computed using the Kruskal algorithm.|C++     |auto f = metric::sparsify_spanning_tree                               |auto result = f(data)        |Default params: minimum=true                          |
 |                                                                                                                                                        |Python  |f = partial(utils.sparsify_spanning_tree, minimum=False)              |result = f(data)             |Default params: minimum=True                          |
+
+# Build of examples
+The following dependencies are required additionally for building examples and tests in the example folder
+
+1. C++ compiler supported C++17
+2. Cmake 3.10+ (https://www.cmake.org)
+3. Boost libraries (https://www.boost.org)
+4. BLAS and LAPACK libraries
+5. Libpqxx (for SensorExample)
+
+## Ubuntu
+### Install dependencies
+On Ubuntu one can install dependencies from Ubuntu repositories.
+
+Note that CMake 3.10+ is available in default repositories since Ubuntu 18.04 LTS.
+If you are using an earlier version of Ubuntu, you may need to build CMake from [source code](https://gitlab.kitware.com/cmake/cmake).
+
+```
+$ sudo apt install cmake
+$ sudo apt install libboost-all-dev
+$ sudo apt install libopenblas-dev
+$ sudo apt install libpqxx-dev postgresql-server-dev-all
+```
+### Build
+
+If you are building it from inside a virtual machine, make sure to provision at least **2 GiB of virtual memory** for the build process to succeed.
+
+```
+  $ mkdir build
+  $ cd build
+  $ cmake -DCMAKE_BUILD_TYPE=Release ../
+  $ make
+```
+
+## macOS
+
+### Install dependencies
+Use Homebrew tool to install dependencies
+
+```
+$ brew install cmake
+$ brew install boost
+$ brew install openblas
+$ brew install libpqxx
+```
+
+### Build
+```
+  $ mkdir build
+  $ cd build
+  $ cmake -DCMAKE_BUILD_TYPE=Release ../
+  $ make
+```
+
+## Windows
+
+### Install dependencies
+On Windows one can install some dependencies using vcpkg (https://github.com/microsoft/vcpkg)
+
+```
+> vcpkg install --triplet=x64-windows-static libpqxx
+> vcpkg install --triplet=x64-windows-static boost
+```
+Install Intel MKL Library (https://software.intel.com/en-us/mkl/choose-download/windows)
+
+### Build
+```
+> mkdir build
+> cd build
+> cmake -DCMAKE_TOOLCHAIN_FILE=[path_to_vcpkg_root]\scripts\buildsystems\vcpkg.cmake ../
+> cmake --build .
+```
+
