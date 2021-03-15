@@ -109,14 +109,14 @@ public:
 
 
     // public wrapper  of the private method, FOR TEST PURPOSE ONLY, to be deleted after testing
-    std::tuple<std::deque<std::vector<recType>>, std::deque<std::vector<recType>>>
-    test_public_wrapper_encode(const std::vector<recType> & Curves) { // TODO remove when tested
+    std::tuple<std::deque<std::vector<RecType>>, std::deque<std::vector<RecType>>>
+    test_public_wrapper_encode(const std::vector<RecType> & Curves) { // TODO remove when tested
         return outer_encode(Curves);
     }
 
     // public wrapper  of the private method, FOR TEST PURPOSE ONLY, to be deleted after testing
-    std::vector<recType>
-    test_public_wrapper_decode(const std::tuple<std::deque<std::vector<recType>>, std::deque<std::vector<recType>>> & TimeFreqMixedData) { // TODO remove when tested
+    std::vector<RecType>
+    test_public_wrapper_decode(const std::tuple<std::deque<std::vector<RecType>>, std::deque<std::vector<RecType>>> & TimeFreqMixedData) { // TODO remove when tested
       return outer_decode(TimeFreqMixedData);
     }
 
