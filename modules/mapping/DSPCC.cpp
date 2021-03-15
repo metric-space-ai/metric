@@ -574,7 +574,7 @@ DSPCC<RecType, Metric>::select_decode(const std::vector<RecType> & Codes) {
 
 template <typename RecType, typename Metric>
 size_t
-DSPCC<recType, Metric>::crop_index(size_t length, float crop_share) {
+DSPCC<RecType, Metric>::crop_index(size_t length, float crop_share) {
     // computing 2^n value nearest to given share value
     float crop_factor = crop_share * length; // TODO check in time_freq_balance_ is in [0, 1]
     size_t n = 4; // we skip 2^1
