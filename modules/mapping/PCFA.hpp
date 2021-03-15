@@ -193,7 +193,7 @@ struct determine_element_type<C, 2>
  *@brief simple linear encoder based on PCA
  *
  */
-template <typename recType, typename Metric>
+template <typename RecType, typename Metric>
 class PCFA {
 
 //private:
@@ -202,9 +202,9 @@ class PCFA {
 
 public:
 
-    using value_type = typename determine_element_type<recType>::type;
+    using value_type = typename determine_element_type<RecType>::type;
 
-    //constexpr static int ContainerCode = determine_container_type<recType>::code;
+    //constexpr static int ContainerCode = determine_container_type<RecType>::code;
 
     /**
    * @brief Construct a new PCFA object from dataset in blaze DynamicMatrix
@@ -220,7 +220,7 @@ public:
    * @param TrainingData - training dataset, vector of records
    * @param n_features - desired length of compressed code
    */
-    PCFA(std::vector<recType> & TrainingData, size_t n_features = 1);
+    PCFA(std::vector<RecType> & TrainingData, size_t n_features = 1);
 
 
     /**
@@ -237,7 +237,7 @@ public:
    * @param Data
    * @return
    */
-    std::vector<recType> encode(const std::vector<recType> & Data);
+    std::vector<RecType> encode(const std::vector<RecType> & Data);
 
 
     /**
@@ -255,7 +255,7 @@ public:
    * @param Data
    * @return
    */
-    std::vector<recType> decode(const std::vector<recType> & Data, bool unshift=true);
+    std::vector<RecType> decode(const std::vector<RecType> & Data, bool unshift=true);
 
 
     /**
@@ -270,7 +270,7 @@ public:
    *
    * @return blaze::DynamicMatrix<value_type>
    */
-    std::vector<recType> average();
+    std::vector<RecType> average();
 
     /**
    * @brief returns the encoder matrix concatenated with the average curve of training dataset, used for center shift
@@ -284,7 +284,7 @@ public:
    *
    * @return blaze::DynamicMatrix<value_type>
    */
-    std::vector<recType> eigenmodes();
+    std::vector<RecType> eigenmodes();
 
 
 private:
@@ -293,7 +293,7 @@ private:
     blaze::DynamicVector<value_type, blaze::rowVector> averages;
     std::default_random_engine rgen;
 
-    blaze::DynamicMatrix<value_type> vector_to_blaze(const std::vector<recType> & In);
+    blaze::DynamicMatrix<value_type> vector_to_blaze(const std::vector<RecType> & In);
 
 
     template <typename R>
@@ -301,14 +301,14 @@ private:
      determine_container_type<R>::code == 1,
      std::vector<R>
     >::type
-    blaze2rectype(const blaze::DynamicMatrix<typename PCFA<R, Metric>::value_type> & In);
+    blaze2RecType(const blaze::DynamicMatrix<typename PCFA<R, Metric>::value_type> & In);
 
     template <typename R>
     typename std::enable_if<
      determine_container_type<R>::code == 2,
      std::vector<R>
     >::type
-    blaze2rectype(const blaze::DynamicMatrix<typename PCFA<R, Metric>::value_type> & In);
+    blaze2RecType(const blaze::DynamicMatrix<typename PCFA<R, Metric>::value_type> & In);
 
 };
 

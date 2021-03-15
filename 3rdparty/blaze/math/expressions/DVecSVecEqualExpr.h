@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/DVecSVecEqualExpr.h
 //  \brief Header file for the dense vector/sparse vector equality comparison expression
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -46,8 +46,8 @@
 #include "../../math/RelaxationFlag.h"
 #include "../../math/shims/Equal.h"
 #include "../../math/shims/IsDefault.h"
+#include "../../system/MacroDisable.h"
 #include "../../util/Types.h"
-#include "../../util/typetraits/RemoveReference.h"
 
 
 namespace blaze {
@@ -72,16 +72,15 @@ namespace blaze {
 // function offers the possibility to compare two floating-point vectors with a certain accuracy
 // margin.
 */
-template< bool RF       // Relaxation flag
-        , typename VT1  // Type of the left-hand side dense vector
-        , bool TF1      // Transpose flag of the left-hand side dense vector
-        , typename VT2  // Type of the right-hand side sparse vector
-        , bool TF2 >    // Transpose flag of the right-hand side sparse vector
+template< RelaxationFlag RF  // Relaxation flag
+        , typename VT1       // Type of the left-hand side dense vector
+        , bool TF1           // Transpose flag of the left-hand side dense vector
+        , typename VT2       // Type of the right-hand side sparse vector
+        , bool TF2 >         // Transpose flag of the right-hand side sparse vector
 inline bool equal( const DenseVector<VT1,TF1>& lhs, const SparseVector<VT2,TF2>& rhs )
 {
    using CT1 = CompositeType_t<VT1>;
    using CT2 = CompositeType_t<VT2>;
-   using ConstIterator = ConstIterator_t< RemoveReference_t<CT2> >;
 
    // Early exit in case the vector sizes don't match
    if( (~lhs).size() != (~rhs).size() ) return false;
@@ -94,7 +93,7 @@ inline bool equal( const DenseVector<VT1,TF1>& lhs, const SparseVector<VT2,TF2>&
    // type are converted to the higher-order data type within the equal function.
    size_t i( 0UL );
 
-   for( ConstIterator element=b.begin(); element!=b.end(); ++element, ++i ) {
+   for( auto element=b.begin(); element!=b.end(); ++element, ++i ) {
       for( ; i<element->index(); ++i ) {
          if( !isDefault<RF>( a[i] ) ) return false;
       }
@@ -124,11 +123,11 @@ inline bool equal( const DenseVector<VT1,TF1>& lhs, const SparseVector<VT2,TF2>&
 // function offers the possibility to compare two floating-point vectors with a certain accuracy
 // margin.
 */
-template< bool RF       // Relaxation flag
-        , typename VT1  // Type of the left-hand side sparse vector
-        , bool TF1      // Transpose flag of the left-hand side sparse vector
-        , typename VT2  // Type of the right-hand side dense vector
-        , bool TF2 >    // Transpose flag of the right-hand side dense vector
+template< RelaxationFlag RF  // Relaxation flag
+        , typename VT1       // Type of the left-hand side sparse vector
+        , bool TF1           // Transpose flag of the left-hand side sparse vector
+        , typename VT2       // Type of the right-hand side dense vector
+        , bool TF2 >         // Transpose flag of the right-hand side dense vector
 inline bool equal( const SparseVector<VT1,TF1>& lhs, const DenseVector<VT2,TF2>& rhs )
 {
    return equal<RF>( rhs, lhs );

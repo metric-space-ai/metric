@@ -3,7 +3,7 @@
 //  \file blaze/math/views/subvector/Sparse.h
 //  \brief Subvector specialization for sparse vectors
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -55,7 +55,6 @@
 #include "../../../math/expressions/SparseVector.h"
 #include "../../../math/expressions/View.h"
 #include "../../../math/InitializerList.h"
-#include "../../../math/RelaxationFlag.h"
 #include "../../../math/shims/IsDefault.h"
 #include "../../../math/shims/Serial.h"
 #include "../../../math/sparse/SparseElement.h"
@@ -70,15 +69,15 @@
 #include "../../../math/views/Check.h"
 #include "../../../math/views/subvector/BaseTemplate.h"
 #include "../../../math/views/subvector/SubvectorData.h"
+#include "../../../system/MacroDisable.h"
 #include "../../../util/Assert.h"
-#include "../../../util/DisableIf.h"
+#include "../../../util/EnableIf.h"
 #include "../../../util/mpl/If.h"
 #include "../../../util/TypeList.h"
 #include "../../../util/Types.h"
 #include "../../../util/typetraits/IsConst.h"
 #include "../../../util/typetraits/IsIntegral.h"
 #include "../../../util/typetraits/IsReference.h"
-#include "../../../util/typetraits/RemoveReference.h"
 
 
 namespace blaze {
@@ -423,6 +422,9 @@ class Subvector<VT,AF,TF,false,CSAs...>
    //**Compilation flags***************************************************************************
    //! Compilation switch for the expression template assignment strategy.
    static constexpr bool smpAssignable = VT::smpAssignable;
+
+   //! Compilation switch for the expression template evaluation strategy.
+   static constexpr bool compileTimeArgs = DataType::compileTimeArgs;
    //**********************************************************************************************
 
    //**Constructors********************************************************************************
@@ -430,12 +432,16 @@ class Subvector<VT,AF,TF,false,CSAs...>
    //@{
    template< typename... RSAs >
    explicit inline Subvector( VT& vector, RSAs... args );
-   // No explicitly declared copy constructor.
+
+   Subvector( const Subvector& ) = default;
    //@}
    //**********************************************************************************************
 
    //**Destructor**********************************************************************************
-   // No explicitly declared destructor.
+   /*!\name Destructor */
+   //@{
+   ~Subvector() = default;
+   //@}
    //**********************************************************************************************
 
    //**Data access functions***********************************************************************
@@ -954,7 +960,7 @@ inline Subvector<VT,AF,TF,false,CSAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( rhs.canAlias( &vector_ ) ) {
+   if( rhs.canAlias( this ) ) {
       const ResultType tmp( rhs );
       reset();
       assign( left, tmp );
@@ -1010,7 +1016,7 @@ inline Subvector<VT,AF,TF,false,CSAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( IsReference_v<Right> || right.canAlias( &vector_ ) ) {
+   if( IsReference_v<Right> || right.canAlias( this ) ) {
       const ResultType_t<VT2> tmp( right );
       reset();
       assign( left, tmp );
@@ -1914,7 +1920,7 @@ template< typename VT       // Type of the sparse vector
 template< typename Other >  // Data type of the foreign expression
 inline bool Subvector<VT,AF,TF,false,CSAs...>::canAlias( const Other* alias ) const noexcept
 {
-   return vector_.isAliased( alias );
+   return vector_.isAliased( &unview( *alias ) );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -1938,7 +1944,7 @@ template< typename VT       // Type of the sparse vector
 template< typename Other >  // Data type of the foreign expression
 inline bool Subvector<VT,AF,TF,false,CSAs...>::isAliased( const Other* alias ) const noexcept
 {
-   return vector_.isAliased( alias );
+   return vector_.isAliased( &unview( *alias ) );
 }
 /*! \endcond */
 //*************************************************************************************************

@@ -3,7 +3,7 @@
 //  \file blaze/math/dense/DenseMatrix.h
 //  \brief Header file for utility functions for dense matrices
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -40,14 +40,22 @@
 // Includes
 //*************************************************************************************************
 
+#include <algorithm>
 #include "../../math/Aliases.h"
+#include "../../math/constraints/BLASCompatible.h"
+#include "../../math/constraints/Computation.h"
 #include "../../math/constraints/RequiresEvaluation.h"
 #include "../../math/constraints/Triangular.h"
 #include "../../math/constraints/UniTriangular.h"
+#include "../../math/Epsilon.h"
 #include "../../math/expressions/DenseMatrix.h"
+#include "../../math/lapack/clapack/potrf.h"
+#include "../../math/ReductionFlag.h"
+#include "../../math/RelaxationFlag.h"
 #include "../../math/shims/Conjugate.h"
 #include "../../math/shims/Equal.h"
 #include "../../math/shims/IsDefault.h"
+#include "../../math/shims/IsDivisor.h"
 #include "../../math/shims/IsNaN.h"
 #include "../../math/shims/IsOne.h"
 #include "../../math/shims/IsReal.h"
@@ -59,6 +67,7 @@
 #include "../../math/typetraits/IsIdentity.h"
 #include "../../math/typetraits/IsLower.h"
 #include "../../math/typetraits/IsRestricted.h"
+#include "../../math/typetraits/IsRowMajorMatrix.h"
 #include "../../math/typetraits/IsStrictlyLower.h"
 #include "../../math/typetraits/IsStrictlyUpper.h"
 #include "../../math/typetraits/IsSymmetric.h"
@@ -68,12 +77,17 @@
 #include "../../math/typetraits/IsUniTriangular.h"
 #include "../../math/typetraits/IsUniUpper.h"
 #include "../../math/typetraits/IsUpper.h"
+#include "../../math/typetraits/IsZero.h"
+#include "../../math/typetraits/RemoveAdaptor.h"
+#include "../../math/typetraits/UnderlyingBuiltin.h"
+#include "../../math/views/Check.h"
+#include "../../util/algorithms/Max.h"
 #include "../../util/Assert.h"
-#include "../../util/DecltypeAuto.h"
 #include "../../util/EnableIf.h"
-#include "../../util/FalseType.h"
+#include "../../util/IntegralConstant.h"
+#include "../../util/Limits.h"
 #include "../../util/mpl/If.h"
-#include "../../util/TrueType.h"
+#include "../../util/NumericCast.h"
 #include "../../util/Types.h"
 #include "../../util/typetraits/IsBuiltin.h"
 #include "../../util/typetraits/IsNumeric.h"
@@ -91,40 +105,122 @@ namespace blaze {
 /*!\name DenseMatrix operators */
 //@{
 template< typename T1, typename T2 >
-inline auto operator==( const DenseMatrix<T1,false>& mat, T2 scalar )
+auto operator==( const DenseMatrix<T1,false>& mat, T2 scalar )
    -> EnableIf_t< IsNumeric_v<T2>, bool >;
 
 template< typename T1, typename T2 >
-inline auto operator==( const DenseMatrix<T1,true>& mat, T2 scalar )
+auto operator==( const DenseMatrix<T1,true>& mat, T2 scalar )
    -> EnableIf_t< IsNumeric_v<T2>, bool >;
 
 template< typename T1, typename T2, bool SO >
-inline auto operator==( T1 scalar, const DenseMatrix<T2,SO>& mat )
+auto operator==( T1 scalar, const DenseMatrix<T2,SO>& mat )
    -> EnableIf_t< IsNumeric_v<T2>, bool >;
 
 template< typename T1, typename T2, bool SO >
-inline auto operator!=( const DenseMatrix<T1,SO>& mat, T2 scalar )
+auto operator!=( const DenseMatrix<T1,SO>& mat, T2 scalar )
    -> EnableIf_t< IsNumeric_v<T2>, bool >;
 
 template< typename T1, typename T2, bool SO >
-inline auto operator!=( T1 scalar, const DenseMatrix<T2,SO>& mat )
+auto operator!=( T1 scalar, const DenseMatrix<T2,SO>& mat )
    -> EnableIf_t< IsNumeric_v<T2>, bool >;
 
 template< typename MT, bool SO, typename ST >
-inline auto operator*=( DenseMatrix<MT,SO>& mat, ST scalar )
+auto operator+=( DenseMatrix<MT,SO>& mat, ST scalar )
    -> EnableIf_t< IsNumeric_v<ST>, MT& >;
 
 template< typename MT, bool SO, typename ST >
-inline auto operator*=( DenseMatrix<MT,SO>&& mat, ST scalar )
+auto operator+=( DenseMatrix<MT,SO>&& mat, ST scalar )
    -> EnableIf_t< IsNumeric_v<ST>, MT& >;
 
 template< typename MT, bool SO, typename ST >
-inline auto operator/=( DenseMatrix<MT,SO>& mat, ST scalar )
+auto operator-=( DenseMatrix<MT,SO>& mat, ST scalar )
    -> EnableIf_t< IsNumeric_v<ST>, MT& >;
 
 template< typename MT, bool SO, typename ST >
-inline auto operator/=( DenseMatrix<MT,SO>&& mat, ST scalar )
+auto operator-=( DenseMatrix<MT,SO>&& mat, ST scalar )
    -> EnableIf_t< IsNumeric_v<ST>, MT& >;
+
+template< typename MT, bool SO, typename ST >
+auto operator*=( DenseMatrix<MT,SO>& mat, ST scalar )
+   -> EnableIf_t< IsNumeric_v<ST>, MT& >;
+
+template< typename MT, bool SO, typename ST >
+auto operator*=( DenseMatrix<MT,SO>&& mat, ST scalar )
+   -> EnableIf_t< IsNumeric_v<ST>, MT& >;
+
+template< typename MT, bool SO, typename ST >
+auto operator/=( DenseMatrix<MT,SO>& mat, ST scalar )
+   -> EnableIf_t< IsNumeric_v<ST>, MT& >;
+
+template< typename MT, bool SO, typename ST >
+auto operator/=( DenseMatrix<MT,SO>&& mat, ST scalar )
+   -> EnableIf_t< IsNumeric_v<ST>, MT& >;
+
+template< typename MT, bool SO >
+MT& operator<<=( DenseMatrix<MT,SO>& mat, int count );
+
+template< typename MT, bool SO >
+MT& operator<<=( DenseMatrix<MT,SO>&& mat, int count );
+
+template< typename MT1, bool SO1, typename MT2, bool SO2 >
+MT1& operator<<=( DenseMatrix<MT1,SO1>& lhs, const DenseMatrix<MT2,SO2>& rhs );
+
+template< typename MT1, bool SO1, typename MT2, bool SO2 >
+MT1& operator<<=( DenseMatrix<MT1,SO1>&& lhs, const DenseMatrix<MT2,SO2>& rhs );
+
+template< typename MT, bool SO >
+MT& operator>>=( DenseMatrix<MT,SO>& mat, int count );
+
+template< typename MT, bool SO >
+MT& operator>>=( DenseMatrix<MT,SO>&& mat, int count );
+
+template< typename MT1, bool SO1, typename MT2, bool SO2 >
+MT1& operator>>=( DenseMatrix<MT1,SO1>& lhs, const DenseMatrix<MT2,SO2>& rhs );
+
+template< typename MT1, bool SO1, typename MT2, bool SO2 >
+MT1& operator>>=( DenseMatrix<MT1,SO1>&& lhs, const DenseMatrix<MT2,SO2>& rhs );
+
+template< typename MT, bool SO, typename ST >
+auto operator&=( DenseMatrix<MT,SO>& mat, ST scalar )
+   -> EnableIf_t< IsNumeric_v<ST>, MT& >;
+
+template< typename MT, bool SO, typename ST >
+auto operator&=( DenseMatrix<MT,SO>&& mat, ST scalar )
+   -> EnableIf_t< IsNumeric_v<ST>, MT& >;
+
+template< typename MT1, bool SO1, typename MT2, bool SO2 >
+MT1& operator&=( DenseMatrix<MT1,SO1>& lhs, const DenseMatrix<MT2,SO2>& rhs );
+
+template< typename MT1, bool SO1, typename MT2, bool SO2 >
+MT1& operator&=( DenseMatrix<MT1,SO1>&& lhs, const DenseMatrix<MT2,SO2>& rhs );
+
+template< typename MT, bool SO, typename ST >
+auto operator|=( DenseMatrix<MT,SO>& mat, ST scalar )
+   -> EnableIf_t< IsNumeric_v<ST>, MT& >;
+
+template< typename MT, bool SO, typename ST >
+auto operator|=( DenseMatrix<MT,SO>&& mat, ST scalar )
+   -> EnableIf_t< IsNumeric_v<ST>, MT& >;
+
+template< typename MT1, bool SO1, typename MT2, bool SO2 >
+MT1& operator|=( DenseMatrix<MT1,SO1>& lhs, const DenseMatrix<MT2,SO2>& rhs );
+
+template< typename MT1, bool SO1, typename MT2, bool SO2 >
+MT1& operator|=( DenseMatrix<MT1,SO1>&& lhs, const DenseMatrix<MT2,SO2>& rhs );
+
+template< typename MT, bool SO, typename ST >
+auto operator^=( DenseMatrix<MT,SO>& mat, ST scalar )
+   -> EnableIf_t< IsNumeric_v<ST>, MT& >;
+
+template< typename MT, bool SO, typename ST >
+auto operator^=( DenseMatrix<MT,SO>&& mat, ST scalar )
+   -> EnableIf_t< IsNumeric_v<ST>, MT& >;
+
+template< typename MT1, bool SO1, typename MT2, bool SO2 >
+MT1& operator^=( DenseMatrix<MT1,SO1>& lhs, const DenseMatrix<MT2,SO2>& rhs );
+
+template< typename MT1, bool SO1, typename MT2, bool SO2 >
+MT1& operator^=( DenseMatrix<MT1,SO1>&& lhs, const DenseMatrix<MT2,SO2>& rhs );
 //@}
 //*************************************************************************************************
 
@@ -269,6 +365,130 @@ inline auto operator!=( T1 scalar, const DenseMatrix<T2,SO>& mat )
 
 
 //*************************************************************************************************
+/*!\brief Addition assignment operator for the addition of a dense matrix and a scalar value
+//        (\f$ A+=s \f$).
+// \ingroup dense_matrix
+//
+// \param mat The left-hand side dense matrix for the addition.
+// \param scalar The right-hand side scalar value for the addition.
+// \return Reference to the left-hand side dense matrix.
+// \exception std::invalid_argument Invalid addition to restricted matrix.
+//
+// In case the matrix \a MT is restricted and the assignment would violate an invariant of the
+// matrix, a \a std::invalid_argument exception is thrown.
+*/
+template< typename MT    // Type of the left-hand side dense matrix
+        , bool SO        // Storage order
+        , typename ST >  // Data type of the right-hand side scalar
+inline auto operator+=( DenseMatrix<MT,SO>& mat, ST scalar )
+   -> EnableIf_t< IsNumeric_v<ST>, MT& >
+{
+   BLAZE_CONSTRAINT_MUST_NOT_BE_UNITRIANGULAR_MATRIX_TYPE( MT );
+
+   if( IsRestricted_v<MT> ) {
+      if( !tryAdd( ~mat, 0UL, 0UL, (~mat).rows(), (~mat).columns(), scalar ) ) {
+         BLAZE_THROW_INVALID_ARGUMENT( "Invalid addition to restricted matrix" );
+      }
+   }
+
+   decltype(auto) left( derestrict( ~mat ) );
+
+   smpAssign( left, left + scalar );
+
+   BLAZE_INTERNAL_ASSERT( isIntact( ~mat ), "Invariant violation detected" );
+
+   return ~mat;
+}
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*!\brief Addition assignment operator for the addition of a temporary dense matrix and a scalar
+//        value (\f$ A+=s \f$).
+// \ingroup dense_matrix
+//
+// \param mat The left-hand side temporary dense matrix for the addition.
+// \param scalar The right-hand side scalar value for the addition.
+// \return Reference to the left-hand side dense matrix.
+// \exception std::invalid_argument Invalid addition to restricted matrix.
+//
+// In case the matrix \a MT is restricted and the assignment would violate an invariant of the
+// matrix, a \a std::invalid_argument exception is thrown.
+*/
+template< typename MT    // Type of the left-hand side dense matrix
+        , bool SO        // Storage order
+        , typename ST >  // Data type of the right-hand side scalar
+inline auto operator+=( DenseMatrix<MT,SO>&& mat, ST scalar )
+   -> EnableIf_t< IsNumeric_v<ST>, MT& >
+{
+   return operator+=( ~mat, scalar );
+}
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*!\brief Subtraction assignment operator for the subtraction of a dense matrix and a scalar value
+//        (\f$ A-=s \f$).
+// \ingroup dense_matrix
+//
+// \param mat The left-hand side dense matrix for the subtraction.
+// \param scalar The right-hand side scalar value for the subtraction.
+// \return Reference to the left-hand side dense matrix.
+// \exception std::invalid_argument Invalid subtraction from restricted matrix.
+//
+// In case the matrix \a MT is restricted and the assignment would violate an invariant of the
+// matrix, a \a std::invalid_argument exception is thrown.
+*/
+template< typename MT    // Type of the left-hand side dense matrix
+        , bool SO        // Storage order
+        , typename ST >  // Data type of the right-hand side scalar
+inline auto operator-=( DenseMatrix<MT,SO>& mat, ST scalar )
+   -> EnableIf_t< IsNumeric_v<ST>, MT& >
+{
+   BLAZE_CONSTRAINT_MUST_NOT_BE_UNITRIANGULAR_MATRIX_TYPE( MT );
+
+   if( IsRestricted_v<MT> ) {
+      if( !trySub( ~mat, 0UL, 0UL, (~mat).rows(), (~mat).columns(), scalar ) ) {
+         BLAZE_THROW_INVALID_ARGUMENT( "Invalid subtraction from restricted matrix" );
+      }
+   }
+
+   decltype(auto) left( derestrict( ~mat ) );
+
+   smpAssign( left, left - scalar );
+
+   BLAZE_INTERNAL_ASSERT( isIntact( ~mat ), "Invariant violation detected" );
+
+   return ~mat;
+}
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*!\brief Subtraction assignment operator for the subtraction of a temporary dense matrix and a
+//        scalar value (\f$ A-=s \f$).
+// \ingroup dense_matrix
+//
+// \param mat The left-hand side temporary dense matrix for the subtraction.
+// \param scalar The right-hand side scalar value for the subtraction.
+// \return Reference to the left-hand side dense matrix.
+// \exception std::invalid_argument Invalid subtraction from restricted matrix.
+//
+// In case the matrix \a MT is restricted and the assignment would violate an invariant of the
+// matrix, a \a std::invalid_argument exception is thrown.
+*/
+template< typename MT    // Type of the left-hand side dense matrix
+        , bool SO        // Storage order
+        , typename ST >  // Data type of the right-hand side scalar
+inline auto operator-=( DenseMatrix<MT,SO>&& mat, ST scalar )
+   -> EnableIf_t< IsNumeric_v<ST>, MT& >
+{
+   return operator-=( ~mat, scalar );
+}
+//*************************************************************************************************
+
+
+//*************************************************************************************************
 /*!\brief Multiplication assignment operator for the multiplication of a dense matrix and
 //        a scalar value (\f$ A*=s \f$).
 // \ingroup dense_matrix
@@ -295,7 +515,7 @@ inline auto operator*=( DenseMatrix<MT,SO>& mat, ST scalar )
       }
    }
 
-   BLAZE_DECLTYPE_AUTO( left, derestrict( ~mat ) );
+   decltype(auto) left( derestrict( ~mat ) );
 
    smpAssign( left, left * scalar );
 
@@ -353,7 +573,7 @@ inline auto operator/=( DenseMatrix<MT,SO>& mat, ST scalar )
 {
    BLAZE_CONSTRAINT_MUST_NOT_BE_UNITRIANGULAR_MATRIX_TYPE( MT );
 
-   BLAZE_USER_ASSERT( !isZero( scalar ), "Division by zero detected" );
+   BLAZE_USER_ASSERT( isDivisor( scalar ), "Division by zero detected" );
 
    if( IsRestricted_v<MT> ) {
       if( !tryDiv( ~mat, 0UL, 0UL, (~mat).rows(), (~mat).columns(), scalar ) ) {
@@ -361,7 +581,7 @@ inline auto operator/=( DenseMatrix<MT,SO>& mat, ST scalar )
       }
    }
 
-   BLAZE_DECLTYPE_AUTO( left, derestrict( ~mat ) );
+   decltype(auto) left( derestrict( ~mat ) );
 
    smpAssign( left, left / scalar );
 
@@ -398,6 +618,591 @@ inline auto operator/=( DenseMatrix<MT,SO>&& mat, ST scalar )
 //*************************************************************************************************
 
 
+//*************************************************************************************************
+/*!\brief Left-shift assignment operator for the uniform left-shift of a dense matrix.
+// \ingroup dense_matrix
+//
+// \param mat The dense matrix for the uniform left-shift operation.
+// \param count The number of bits to shift all matrix elements.
+// \return Reference to the dense matrix.
+// \exception std::invalid_argument Invalid left-shift of restricted matrix.
+//
+// In case the matrix \a MT is restricted and the assignment would violate an invariant of the
+// matrix, a \a std::invalid_argument exception is thrown.
+*/
+template< typename MT  // Type of the dense matrix
+        , bool SO >    // Storage order
+inline MT& operator<<=( DenseMatrix<MT,SO>& mat, int count )
+{
+   BLAZE_CONSTRAINT_MUST_NOT_BE_UNITRIANGULAR_MATRIX_TYPE( MT );
+
+   if( IsRestricted_v<MT> ) {
+      if( !tryShift( ~mat, 0UL, 0UL, (~mat).rows(), (~mat).columns(), count ) ) {
+         BLAZE_THROW_INVALID_ARGUMENT( "Invalid left-shift of restricted matrix" );
+      }
+   }
+
+   decltype(auto) left( derestrict( ~mat ) );
+
+   smpAssign( left, left << count );
+
+   BLAZE_INTERNAL_ASSERT( isIntact( ~mat ), "Invariant violation detected" );
+
+   return ~mat;
+}
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*!\brief Left-shift assignment operator for the uniform left-shift of a temporary dense matrix.
+// \ingroup dense_matrix
+//
+// \param mat The temporary dense matrix for the uniform left-shift operation.
+// \param count The number of bits to shift all matrix elements.
+// \return Reference to the dense matrix.
+// \exception std::invalid_argument Invalid left-shift of restricted matrix.
+//
+// In case the matrix \a MT is restricted and the assignment would violate an invariant of the
+// matrix, a \a std::invalid_argument exception is thrown.
+*/
+template< typename MT  // Type of the dense matrix
+        , bool SO >    // Storage order
+inline MT& operator<<=( DenseMatrix<MT,SO>&& mat, int count )
+{
+   return operator<<=( ~mat, count );
+}
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*!\brief Left-shift assignment operator for the elementwise left-shift of a dense matrix.
+// \ingroup dense_matrix
+//
+// \param lhs The left-hand side dense matrix to be shifted.
+// \param rhs The right-hand side dense matrix of bits to shift.
+// \return Reference to the dense matrix.
+// \exception std::invalid_argument Invalid left-shift of restricted matrix.
+//
+// In case the matrix \a MT is restricted and the assignment would violate an invariant of the
+// matrix, a \a std::invalid_argument exception is thrown.
+*/
+template< typename MT1  // Type of the left-hand side dense matrix
+        , bool SO1      // Storage order of the left-hand side dense matrix
+        , typename MT2  // Type of the right-hand side dense matrix
+        , bool SO2 >    // Storage order of the right-hand side dense matrix
+inline MT1& operator<<=( DenseMatrix<MT1,SO1>& lhs, const DenseMatrix<MT2,SO2>& rhs )
+{
+   if( IsRestricted_v<MT1> ) {
+      if( !tryShiftAssign( ~lhs, ~rhs, 0UL, 0UL ) ) {
+         BLAZE_THROW_INVALID_ARGUMENT( "Invalid left-shift of restricted matrix" );
+      }
+   }
+
+   decltype(auto) left( derestrict( ~lhs ) );
+
+   smpAssign( left, left << (~rhs) );
+
+   BLAZE_INTERNAL_ASSERT( isIntact( ~lhs ), "Invariant violation detected" );
+
+   return ~lhs;
+}
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*!\brief Left-shift assignment operator for the elementwise left-shift of a temporary dense matrix.
+// \ingroup dense_matrix
+//
+// \param lhs The left-hand side temporary dense matrix to be shifted.
+// \param rhs The right-hand side dense matrix of bits to shift.
+// \return Reference to the dense matrix.
+// \exception std::invalid_argument Invalid left-shift of restricted matrix.
+//
+// In case the matrix \a MT is restricted and the assignment would violate an invariant of the
+// matrix, a \a std::invalid_argument exception is thrown.
+*/
+template< typename MT1  // Type of the left-hand side dense matrix
+        , bool SO1      // Storage order of the left-hand side dense matrix
+        , typename MT2  // Type of the right-hand side dense matrix
+        , bool SO2 >    // Storage order of the right-hand side dense matrix
+inline MT1& operator<<=( DenseMatrix<MT1,SO1>&& lhs, const DenseMatrix<MT2,SO2>& rhs )
+{
+   return operator<<=( ~lhs, ~rhs );
+}
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*!\brief Right-shift assignment operator for the uniform right-shift of a dense matrix.
+// \ingroup dense_matrix
+//
+// \param mat The dense matrix for the uniform right-shift operation.
+// \param count The number of bits to shift all matrix elements.
+// \return Reference to the dense matrix.
+// \exception std::invalid_argument Invalid right-shift of restricted matrix.
+//
+// In case the matrix \a MT is restricted and the assignment would violate an invariant of the
+// matrix, a \a std::invalid_argument exception is thrown.
+*/
+template< typename MT  // Type of the dense matrix
+        , bool SO >    // Storage order
+inline MT& operator>>=( DenseMatrix<MT,SO>& mat, int count )
+{
+   BLAZE_CONSTRAINT_MUST_NOT_BE_UNITRIANGULAR_MATRIX_TYPE( MT );
+
+   if( IsRestricted_v<MT> ) {
+      if( !tryShift( ~mat, 0UL, 0UL, (~mat).rows(), (~mat).columns(), count ) ) {
+         BLAZE_THROW_INVALID_ARGUMENT( "Invalid right-shift of restricted matrix" );
+      }
+   }
+
+   decltype(auto) left( derestrict( ~mat ) );
+
+   smpAssign( left, left >> count );
+
+   BLAZE_INTERNAL_ASSERT( isIntact( ~mat ), "Invariant violation detected" );
+
+   return ~mat;
+}
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*!\brief Right-shift assignment operator for the uniform right-shift of a temporary dense matrix.
+// \ingroup dense_matrix
+//
+// \param mat The temporary dense matrix for the uniform right-shift operation.
+// \param count The number of bits to shift all matrix elements.
+// \return Reference to the dense matrix.
+// \exception std::invalid_argument Invalid right-shift of restricted matrix.
+//
+// In case the matrix \a MT is restricted and the assignment would violate an invariant of the
+// matrix, a \a std::invalid_argument exception is thrown.
+*/
+template< typename MT  // Type of the dense matrix
+        , bool SO >    // Storage order
+inline MT& operator>>=( DenseMatrix<MT,SO>&& mat, int count )
+{
+   return operator>>=( ~mat, count );
+}
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*!\brief Right-shift assignment operator for the elementwise right-shift of a dense matrix.
+// \ingroup dense_matrix
+//
+// \param lhs The left-hand side dense matrix to be shifted.
+// \param rhs The right-hand side dense matrix of bits to shift.
+// \return Reference to the dense matrix.
+// \exception std::invalid_argument Invalid right-shift of restricted matrix.
+//
+// In case the matrix \a MT is restricted and the assignment would violate an invariant of the
+// matrix, a \a std::invalid_argument exception is thrown.
+*/
+template< typename MT1  // Type of the left-hand side dense matrix
+        , bool SO1      // Storage order of the left-hand side dense matrix
+        , typename MT2  // Type of the right-hand side dense matrix
+        , bool SO2 >    // Storage order of the right-hand side dense matrix
+inline MT1& operator>>=( DenseMatrix<MT1,SO1>& lhs, const DenseMatrix<MT2,SO2>& rhs )
+{
+   if( IsRestricted_v<MT1> ) {
+      if( !tryShiftAssign( ~lhs, ~rhs, 0UL, 0UL ) ) {
+         BLAZE_THROW_INVALID_ARGUMENT( "Invalid right-shift of restricted matrix" );
+      }
+   }
+
+   decltype(auto) left( derestrict( ~lhs ) );
+
+   smpAssign( left, left >> (~rhs) );
+
+   BLAZE_INTERNAL_ASSERT( isIntact( ~lhs ), "Invariant violation detected" );
+
+   return ~lhs;
+}
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*!\brief Right-shift assignment operator for the elementwise right-shift of a temporary dense.
+// \ingroup dense_matrix
+//
+// \param lhs The left-hand side temporary dense matrix to be shifted.
+// \param rhs The right-hand side dense matrix of bits to shift.
+// \return Reference to the dense matrix.
+// \exception std::invalid_argument Invalid right-shift of restricted matrix.
+//
+// In case the matrix \a MT is restricted and the assignment would violate an invariant of the
+// matrix, a \a std::invalid_argument exception is thrown.
+*/
+template< typename MT1  // Type of the left-hand side dense matrix
+        , bool SO1      // Storage order of the left-hand side dense matrix
+        , typename MT2  // Type of the right-hand side dense matrix
+        , bool SO2 >    // Storage order of the right-hand side dense matrix
+inline MT1& operator>>=( DenseMatrix<MT1,SO1>&& lhs, const DenseMatrix<MT2,SO2>& rhs )
+{
+   return operator>>=( ~lhs, ~rhs );
+}
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*!\brief Bitwise AND assignment operator for the bitwise AND of a dense matrix and a scalar value.
+// \ingroup dense_matrix
+//
+// \param mat The left-hand side dense matrix for the bitwise AND.
+// \param scalar The right-hand side scalar value for the bitwise AND.
+// \return Reference to the left-hand side dense matrix.
+// \exception std::invalid_argument Invalid bitwise AND of restricted matrix.
+//
+// In case the matrix \a MT is restricted and the assignment would violate an invariant of the
+// matrix, a \a std::invalid_argument exception is thrown.
+*/
+template< typename MT    // Type of the left-hand side dense matrix
+        , bool SO        // Storage order
+        , typename ST >  // Data type of the right-hand side scalar
+inline auto operator&=( DenseMatrix<MT,SO>& mat, ST scalar )
+   -> EnableIf_t< IsNumeric_v<ST>, MT& >
+{
+   BLAZE_CONSTRAINT_MUST_NOT_BE_UNITRIANGULAR_MATRIX_TYPE( MT );
+
+   if( IsRestricted_v<MT> ) {
+      if( !tryBitand( ~mat, 0UL, 0UL, (~mat).rows(), (~mat).columns(), scalar ) ) {
+         BLAZE_THROW_INVALID_ARGUMENT( "Invalid bitwise AND of restricted matrix" );
+      }
+   }
+
+   decltype(auto) left( derestrict( ~mat ) );
+
+   smpAssign( left, left & scalar );
+
+   BLAZE_INTERNAL_ASSERT( isIntact( ~mat ), "Invariant violation detected" );
+
+   return ~mat;
+}
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*!\brief Bitwise AND assignment operator for the bitwise AND of a temporary dense matrix and a
+//        scalar value.
+// \ingroup dense_matrix
+//
+// \param mat The left-hand side temporary dense matrix for the bitwise AND.
+// \param scalar The right-hand side scalar value for the bitwise AND.
+// \return Reference to the left-hand side dense matrix.
+// \exception std::invalid_argument Invalid bitwise AND of restricted matrix.
+//
+// In case the matrix \a MT is restricted and the assignment would violate an invariant of the
+// matrix, a \a std::invalid_argument exception is thrown.
+*/
+template< typename MT    // Type of the left-hand side dense matrix
+        , bool SO        // Storage order
+        , typename ST >  // Data type of the right-hand side scalar
+inline auto operator&=( DenseMatrix<MT,SO>&& mat, ST scalar )
+   -> EnableIf_t< IsNumeric_v<ST>, MT& >
+{
+   return operator&=( ~mat, scalar );
+}
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*!\brief Bitwise AND assignment operator for the bitwise AND of a dense matrix.
+// \ingroup dense_matrix
+//
+// \param lhs The left-hand side dense matrix for the bitwise AND operation.
+// \param rhs The right-hand side dense matrix for the bitwise AND operation.
+// \return Reference to the dense matrix.
+// \exception std::invalid_argument Invalid bitwise AND of restricted matrix.
+//
+// In case the matrix \a MT is restricted and the assignment would violate an invariant of the
+// matrix, a \a std::invalid_argument exception is thrown.
+*/
+template< typename MT1  // Type of the left-hand side dense matrix
+        , bool SO1      // Storage order of the left-hand side dense matrix
+        , typename MT2  // Type of the right-hand side dense matrix
+        , bool SO2 >    // Storage order of the right-hand side dense matrix
+inline MT1& operator&=( DenseMatrix<MT1,SO1>& lhs, const DenseMatrix<MT2,SO2>& rhs )
+{
+   if( IsRestricted_v<MT1> ) {
+      if( !tryBitandAssign( ~lhs, ~rhs, 0UL, 0UL ) ) {
+         BLAZE_THROW_INVALID_ARGUMENT( "Invalid bitwise AND of restricted matrix" );
+      }
+   }
+
+   decltype(auto) left( derestrict( ~lhs ) );
+
+   smpAssign( left, left & (~rhs) );
+
+   BLAZE_INTERNAL_ASSERT( isIntact( ~lhs ), "Invariant violation detected" );
+
+   return ~lhs;
+}
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*!\brief Bitwise AND assignment operator for the bitwise AND of a temporary dense matrix.
+// \ingroup dense_matrix
+//
+// \param lhs The left-hand side temporary dense matrix for the bitwise AND operation.
+// \param rhs The right-hand side dense matrix for the bitwise AND operation.
+// \return Reference to the dense matrix.
+// \exception std::invalid_argument Invalid bitwise AND of restricted matrix.
+//
+// In case the matrix \a MT is restricted and the assignment would violate an invariant of the
+// matrix, a \a std::invalid_argument exception is thrown.
+*/
+template< typename MT1  // Type of the left-hand side dense matrix
+        , bool SO1      // Storage order of the left-hand side dense matrix
+        , typename MT2  // Type of the right-hand side dense matrix
+        , bool SO2 >    // Storage order of the right-hand side dense matrix
+inline MT1& operator&=( DenseMatrix<MT1,SO1>&& lhs, const DenseMatrix<MT2,SO2>& rhs )
+{
+   return operator&=( ~lhs, ~rhs );
+}
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*!\brief Bitwise OR assignment operator for the bitwise OR of a dense matrix and a scalar value.
+// \ingroup dense_matrix
+//
+// \param mat The left-hand side dense matrix for the bitwise OR.
+// \param scalar The right-hand side scalar value for the bitwise OR.
+// \return Reference to the left-hand side dense matrix.
+// \exception std::invalid_argument Invalid bitwise OR of restricted matrix.
+//
+// In case the matrix \a MT is restricted and the assignment would violate an invariant of the
+// matrix, a \a std::invalid_argument exception is thrown.
+*/
+template< typename MT    // Type of the left-hand side dense matrix
+        , bool SO        // Storage order
+        , typename ST >  // Data type of the right-hand side scalar
+inline auto operator|=( DenseMatrix<MT,SO>& mat, ST scalar )
+   -> EnableIf_t< IsNumeric_v<ST>, MT& >
+{
+   BLAZE_CONSTRAINT_MUST_NOT_BE_UNITRIANGULAR_MATRIX_TYPE( MT );
+
+   if( IsRestricted_v<MT> ) {
+      if( !tryBitor( ~mat, 0UL, 0UL, (~mat).rows(), (~mat).columns(), scalar ) ) {
+         BLAZE_THROW_INVALID_ARGUMENT( "Invalid bitwise OR of restricted matrix" );
+      }
+   }
+
+   decltype(auto) left( derestrict( ~mat ) );
+
+   smpAssign( left, left | scalar );
+
+   BLAZE_INTERNAL_ASSERT( isIntact( ~mat ), "Invariant violation detected" );
+
+   return ~mat;
+}
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*!\brief Bitwise OR assignment operator for the bitwise OR of a temporary dense matrix and a
+//        scalar value.
+// \ingroup dense_matrix
+//
+// \param mat The left-hand side temporary dense matrix for the bitwise OR.
+// \param scalar The right-hand side scalar value for the bitwise OR.
+// \return Reference to the left-hand side dense matrix.
+// \exception std::invalid_argument Invalid bitwise OR of restricted matrix.
+//
+// In case the matrix \a MT is restricted and the assignment would violate an invariant of the
+// matrix, a \a std::invalid_argument exception is thrown.
+*/
+template< typename MT    // Type of the left-hand side dense matrix
+        , bool SO        // Storage order
+        , typename ST >  // Data type of the right-hand side scalar
+inline auto operator|=( DenseMatrix<MT,SO>&& mat, ST scalar )
+   -> EnableIf_t< IsNumeric_v<ST>, MT& >
+{
+   return operator|=( ~mat, scalar );
+}
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*!\brief Bitwise OR assignment operator for the bitwise OR of a dense matrix.
+// \ingroup dense_matrix
+//
+// \param lhs The left-hand side dense matrix for the bitwise OR operation.
+// \param rhs The right-hand side dense matrix for the bitwise OR operation.
+// \return Reference to the dense matrix.
+// \exception std::invalid_argument Invalid bitwise OR of restricted matrix.
+//
+// In case the matrix \a MT is restricted and the assignment would violate an invariant of the
+// matrix, a \a std::invalid_argument exception is thrown.
+*/
+template< typename MT1  // Type of the left-hand side dense matrix
+        , bool SO1      // Storage order of the left-hand side dense matrix
+        , typename MT2  // Type of the right-hand side dense matrix
+        , bool SO2 >    // Storage order of the right-hand side dense matrix
+inline MT1& operator|=( DenseMatrix<MT1,SO1>& lhs, const DenseMatrix<MT2,SO2>& rhs )
+{
+   if( IsRestricted_v<MT1> ) {
+      if( !tryBitorAssign( ~lhs, ~rhs, 0UL, 0UL ) ) {
+         BLAZE_THROW_INVALID_ARGUMENT( "Invalid bitwise OR of restricted matrix" );
+      }
+   }
+
+   decltype(auto) left( derestrict( ~lhs ) );
+
+   smpAssign( left, left | (~rhs) );
+
+   BLAZE_INTERNAL_ASSERT( isIntact( ~lhs ), "Invariant violation detected" );
+
+   return ~lhs;
+}
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*!\brief Bitwise OR assignment operator for the bitwise OR of a temporary dense matrix.
+// \ingroup dense_matrix
+//
+// \param lhs The left-hand side temporary dense matrix for the bitwise OR operation.
+// \param rhs The right-hand side dense matrix for the bitwise OR operation.
+// \return Reference to the dense matrix.
+// \exception std::invalid_argument Invalid bitwise OR of restricted matrix.
+//
+// In case the matrix \a MT is restricted and the assignment would violate an invariant of the
+// matrix, a \a std::invalid_argument exception is thrown.
+*/
+template< typename MT1  // Type of the left-hand side dense matrix
+        , bool SO1      // Storage order of the left-hand side dense matrix
+        , typename MT2  // Type of the right-hand side dense matrix
+        , bool SO2 >    // Storage order of the right-hand side dense matrix
+inline MT1& operator|=( DenseMatrix<MT1,SO1>&& lhs, const DenseMatrix<MT2,SO2>& rhs )
+{
+   return operator|=( ~lhs, ~rhs );
+}
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*!\brief Bitwise XOR assignment operator for the bitwise XOR of a dense matrix and a scalar value.
+// \ingroup dense_matrix
+//
+// \param mat The left-hand side dense matrix for the bitwise XOR.
+// \param scalar The right-hand side scalar value for the bitwise XOR.
+// \return Reference to the left-hand side dense matrix.
+// \exception std::invalid_argument Invalid bitwise XOR of restricted matrix.
+//
+// In case the matrix \a MT is restricted and the assignment would violate an invariant of the
+// matrix, a \a std::invalid_argument exception is thrown.
+*/
+template< typename MT    // Type of the left-hand side dense matrix
+        , bool SO        // Storage order
+        , typename ST >  // Data type of the right-hand side scalar
+inline auto operator^=( DenseMatrix<MT,SO>& mat, ST scalar )
+   -> EnableIf_t< IsNumeric_v<ST>, MT& >
+{
+   BLAZE_CONSTRAINT_MUST_NOT_BE_UNITRIANGULAR_MATRIX_TYPE( MT );
+
+   if( IsRestricted_v<MT> ) {
+      if( !tryBitxor( ~mat, 0UL, 0UL, (~mat).rows(), (~mat).columns(), scalar ) ) {
+         BLAZE_THROW_INVALID_ARGUMENT( "Invalid bitwise XOR of restricted matrix" );
+      }
+   }
+
+   decltype(auto) left( derestrict( ~mat ) );
+
+   smpAssign( left, left ^ scalar );
+
+   BLAZE_INTERNAL_ASSERT( isIntact( ~mat ), "Invariant violation detected" );
+
+   return ~mat;
+}
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*!\brief Bitwise XOR assignment operator for the bitwise XOR of a temporary dense matrix and a
+//        scalar value.
+// \ingroup dense_matrix
+//
+// \param mat The left-hand side temporary dense matrix for the bitwise XOR.
+// \param scalar The right-hand side scalar value for the bitwise XOR.
+// \return Reference to the left-hand side dense matrix.
+// \exception std::invalid_argument Invalid bitwise XOR of restricted matrix.
+//
+// In case the matrix \a MT is restricted and the assignment would violate an invariant of the
+// matrix, a \a std::invalid_argument exception is thrown.
+*/
+template< typename MT    // Type of the left-hand side dense matrix
+        , bool SO        // Storage order
+        , typename ST >  // Data type of the right-hand side scalar
+inline auto operator^=( DenseMatrix<MT,SO>&& mat, ST scalar )
+   -> EnableIf_t< IsNumeric_v<ST>, MT& >
+{
+   return operator^=( ~mat, scalar );
+}
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*!\brief Bitwise XOR assignment operator for the bitwise XOR of a dense matrix.
+// \ingroup dense_matrix
+//
+// \param lhs The left-hand side dense matrix for the bitwise XOR operation.
+// \param rhs The right-hand side dense matrix for the bitwise XOR operation.
+// \return Reference to the dense matrix.
+// \exception std::invalid_argument Invalid bitwise XOR of restricted matrix.
+//
+// In case the matrix \a MT is restricted and the assignment would violate an invariant of the
+// matrix, a \a std::invalid_argument exception is thrown.
+*/
+template< typename MT1  // Type of the left-hand side dense matrix
+        , bool SO1      // Storage order of the left-hand side dense matrix
+        , typename MT2  // Type of the right-hand side dense matrix
+        , bool SO2 >    // Storage order of the right-hand side dense matrix
+inline MT1& operator^=( DenseMatrix<MT1,SO1>& lhs, const DenseMatrix<MT2,SO2>& rhs )
+{
+   if( IsRestricted_v<MT1> ) {
+      if( !tryBitxorAssign( ~lhs, ~rhs, 0UL, 0UL ) ) {
+         BLAZE_THROW_INVALID_ARGUMENT( "Invalid bitwise XOR of restricted matrix" );
+      }
+   }
+
+   decltype(auto) left( derestrict( ~lhs ) );
+
+   smpAssign( left, left ^ (~rhs) );
+
+   BLAZE_INTERNAL_ASSERT( isIntact( ~lhs ), "Invariant violation detected" );
+
+   return ~lhs;
+}
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*!\brief Bitwise XOR assignment operator for the bitwise XOR of a temporary dense matrix.
+// \ingroup dense_matrix
+//
+// \param lhs The left-hand side temporary dense matrix for the bitwise XOR operation.
+// \param rhs The right-hand side dense matrix for the bitwise XOR operation.
+// \return Reference to the dense matrix.
+// \exception std::invalid_argument Invalid bitwise XOR of restricted matrix.
+//
+// In case the matrix \a MT is restricted and the assignment would violate an invariant of the
+// matrix, a \a std::invalid_argument exception is thrown.
+*/
+template< typename MT1  // Type of the left-hand side dense matrix
+        , bool SO1      // Storage order of the left-hand side dense matrix
+        , typename MT2  // Type of the right-hand side dense matrix
+        , bool SO2 >    // Storage order of the right-hand side dense matrix
+inline MT1& operator^=( DenseMatrix<MT1,SO1>&& lhs, const DenseMatrix<MT2,SO2>& rhs )
+{
+   return operator^=( ~lhs, ~rhs );
+}
+//*************************************************************************************************
+
+
 
 
 //=================================================================================================
@@ -412,41 +1217,44 @@ inline auto operator/=( DenseMatrix<MT,SO>&& mat, ST scalar )
 template< typename MT, bool SO >
 bool isnan( const DenseMatrix<MT,SO>& dm );
 
-template< bool RF, typename MT, bool SO >
+template< RelaxationFlag RF, typename MT, bool SO >
 bool isSymmetric( const DenseMatrix<MT,SO>& dm );
 
-template< bool RF, typename MT, bool SO >
+template< RelaxationFlag RF, typename MT, bool SO >
 bool isHermitian( const DenseMatrix<MT,SO>& dm );
 
-template< bool RF, typename MT, bool SO >
+template< RelaxationFlag RF, typename MT, bool SO >
 bool isUniform( const DenseMatrix<MT,SO>& dm );
 
-template< bool RF, typename MT, bool SO >
+template< RelaxationFlag RF, typename MT, bool SO >
+bool isZero( const DenseMatrix<MT,SO>& dm );
+
+template< RelaxationFlag RF, typename MT, bool SO >
 bool isLower( const DenseMatrix<MT,SO>& dm );
 
-template< bool RF, typename MT, bool SO >
+template< RelaxationFlag RF, typename MT, bool SO >
 bool isUniLower( const DenseMatrix<MT,SO>& dm );
 
-template< bool RF, typename MT, bool SO >
+template< RelaxationFlag RF, typename MT, bool SO >
 bool isStrictlyLower( const DenseMatrix<MT,SO>& dm );
 
-template< bool RF, typename MT, bool SO >
+template< RelaxationFlag RF, typename MT, bool SO >
 bool isUpper( const DenseMatrix<MT,SO>& dm );
 
-template< bool RF, typename MT, bool SO >
+template< RelaxationFlag RF, typename MT, bool SO >
 bool isUniUpper( const DenseMatrix<MT,SO>& dm );
 
-template< bool RF, typename MT, bool SO >
+template< RelaxationFlag RF, typename MT, bool SO >
 bool isStrictlyUpper( const DenseMatrix<MT,SO>& dm );
 
-template< bool RF, typename MT, bool SO >
+template< RelaxationFlag RF, typename MT, bool SO >
 bool isDiagonal( const DenseMatrix<MT,SO>& dm );
 
-template< bool RF, typename MT, bool SO >
+template< RelaxationFlag RF, typename MT, bool SO >
 bool isIdentity( const DenseMatrix<MT,SO>& dm );
 
 template< typename MT, bool SO >
-auto softmax( const DenseMatrix<MT,SO>& dm );
+bool isPositiveDefinite( const DenseMatrix<MT,SO>& dm );
 //@}
 //*************************************************************************************************
 
@@ -521,7 +1329,7 @@ bool isnan( const DenseMatrix<MT,SO>& dm )
    if( isSymmetric<relaxed>( A ) ) { ... }
    \endcode
 
-// It is also possible to check if a matrix expression results in a symmetric matrix:
+// It is also possible to check if a matrix expression results is a symmetric matrix:
 
    \code
    if( isSymmetric( A * B ) ) { ... }
@@ -530,9 +1338,9 @@ bool isnan( const DenseMatrix<MT,SO>& dm )
 // However, note that this might require the complete evaluation of the expression, including
 // the generation of a temporary matrix.
 */
-template< bool RF      // Relaxation flag
-        , typename MT  // Type of the dense matrix
-        , bool SO >    // Storage order
+template< RelaxationFlag RF  // Relaxation flag
+        , typename MT        // Type of the dense matrix
+        , bool SO >          // Storage order
 bool isSymmetric( const DenseMatrix<MT,SO>& dm )
 {
    using CT = CompositeType_t<MT>;
@@ -608,9 +1416,9 @@ bool isSymmetric( const DenseMatrix<MT,SO>& dm )
 // However, note that this might require the complete evaluation of the expression, including
 // the generation of a temporary matrix.
 */
-template< bool RF      // Relaxation flag
-        , typename MT  // Type of the dense matrix
-        , bool SO >    // Storage order
+template< RelaxationFlag RF  // Relaxation flag
+        , typename MT        // Type of the dense matrix
+        , bool SO >          // Storage order
 bool isHermitian( const DenseMatrix<MT,SO>& dm )
 {
    using ET = ElementType_t<MT>;
@@ -661,8 +1469,8 @@ bool isHermitian( const DenseMatrix<MT,SO>& dm )
 // \param dm The dense matrix to be checked.
 // \return \a true if the matrix is a uniform matrix, \a false if not.
 */
-template< bool RF        // Relaxation flag
-        , typename MT >  // Type of the dense matrix
+template< RelaxationFlag RF  // Relaxation flag
+        , typename MT >      // Type of the dense matrix
 bool isUniform_backend( const DenseMatrix<MT,false>& dm, TrueType )
 {
    BLAZE_CONSTRAINT_MUST_BE_TRIANGULAR_MATRIX_TYPE( MT );
@@ -705,8 +1513,8 @@ bool isUniform_backend( const DenseMatrix<MT,false>& dm, TrueType )
 // \param dm The dense matrix to be checked.
 // \return \a true if the matrix is a uniform matrix, \a false if not.
 */
-template< bool RF        // Relaxation flag
-        , typename MT >  // Type of the dense matrix
+template< RelaxationFlag RF  // Relaxation flag
+        , typename MT >      // Type of the dense matrix
 bool isUniform_backend( const DenseMatrix<MT,true>& dm, TrueType )
 {
    BLAZE_CONSTRAINT_MUST_BE_TRIANGULAR_MATRIX_TYPE( MT );
@@ -749,8 +1557,8 @@ bool isUniform_backend( const DenseMatrix<MT,true>& dm, TrueType )
 // \param dm The dense matrix to be checked.
 // \return \a true if the matrix is a uniform matrix, \a false if not.
 */
-template< bool RF        // Relaxation flag
-        , typename MT >  // Type of the dense matrix
+template< RelaxationFlag RF  // Relaxation flag
+        , typename MT >      // Type of the dense matrix
 bool isUniform_backend( const DenseMatrix<MT,false>& dm, FalseType )
 {
    BLAZE_CONSTRAINT_MUST_NOT_BE_TRIANGULAR_MATRIX_TYPE( MT );
@@ -759,11 +1567,11 @@ bool isUniform_backend( const DenseMatrix<MT,false>& dm, FalseType )
    BLAZE_INTERNAL_ASSERT( (~dm).rows()    != 0UL, "Invalid number of rows detected"    );
    BLAZE_INTERNAL_ASSERT( (~dm).columns() != 0UL, "Invalid number of columns detected" );
 
-   ConstReference_t<MT> cmp( (~dm)(0UL,0UL) );
+   const auto& cmp( (~dm)(0UL,0UL) );
 
    for( size_t i=0UL; i<(~dm).rows(); ++i ) {
       for( size_t j=0UL; j<(~dm).columns(); ++j ) {
-         if( (~dm)(i,j) != cmp )
+         if( !equal<RF>( (~dm)(i,j), cmp ) )
             return false;
       }
    }
@@ -782,8 +1590,8 @@ bool isUniform_backend( const DenseMatrix<MT,false>& dm, FalseType )
 // \param dm The dense matrix to be checked.
 // \return \a true if the matrix is a uniform matrix, \a false if not.
 */
-template< bool RF        // Relaxation flag
-        , typename MT >  // Type of the dense matrix
+template< RelaxationFlag RF  // Relaxation flag
+        , typename MT >      // Type of the dense matrix
 bool isUniform_backend( const DenseMatrix<MT,true>& dm, FalseType )
 {
    BLAZE_CONSTRAINT_MUST_NOT_BE_TRIANGULAR_MATRIX_TYPE( MT );
@@ -792,11 +1600,11 @@ bool isUniform_backend( const DenseMatrix<MT,true>& dm, FalseType )
    BLAZE_INTERNAL_ASSERT( (~dm).rows()    != 0UL, "Invalid number of rows detected"    );
    BLAZE_INTERNAL_ASSERT( (~dm).columns() != 0UL, "Invalid number of columns detected" );
 
-   ConstReference_t<MT> cmp( (~dm)(0UL,0UL) );
+   const auto& cmp( (~dm)(0UL,0UL) );
 
    for( size_t j=0UL; j<(~dm).columns(); ++j ) {
       for( size_t i=0UL; i<(~dm).rows(); ++i ) {
-         if( (~dm)(i,j) != cmp )
+         if( !equal<RF>( (~dm)(i,j), cmp ) )
             return false;
       }
    }
@@ -831,7 +1639,7 @@ bool isUniform_backend( const DenseMatrix<MT,true>& dm, FalseType )
    if( isUniform<relaxed>( A ) ) { ... }
    \endcode
 
-// It is also possible to check if a matrix expression results in a uniform matrix:
+// It is also possible to check if a matrix expression results is a uniform matrix:
 
    \code
    if( isUniform( A * B ) ) { ... }
@@ -840,22 +1648,114 @@ bool isUniform_backend( const DenseMatrix<MT,true>& dm, FalseType )
 // However, note that this might require the complete evaluation of the expression, including
 // the generation of a temporary matrix.
 */
-template< bool RF      // Relaxation flag
-        , typename MT  // Type of the dense matrix
-        , bool SO >    // Storage order
+template< RelaxationFlag RF  // Relaxation flag
+        , typename MT        // Type of the dense matrix
+        , bool SO >          // Storage order
 bool isUniform( const DenseMatrix<MT,SO>& dm )
 {
-   if( IsUniTriangular_v<MT> )
-      return false;
-
    if( IsUniform_v<MT> ||
        (~dm).rows() == 0UL || (~dm).columns() == 0UL ||
        ( (~dm).rows() == 1UL && (~dm).columns() == 1UL ) )
       return true;
 
+   if( IsUniTriangular_v<MT> )
+      return false;
+
    CompositeType_t<MT> A( ~dm );  // Evaluation of the dense matrix operand
 
    return isUniform_backend<RF>( A, typename IsTriangular<MT>::Type() );
+}
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*!\brief Checks if the given dense matrix is a zero matrix.
+// \ingroup dense_matrix
+//
+// \param dm The dense matrix to be checked.
+// \return \a true if the matrix is a zero matrix, \a false if not.
+//
+// This function checks if the given dense matrix is a zero matrix. The matrix is considered to
+// be zero if all its elements are zero. The following code example demonstrates the use of the
+// function:
+
+   \code
+   blaze::DynamicMatrix<int,blaze::rowMajor> A, B;
+   // ... Initialization
+   if( isZero( A ) ) { ... }
+   \endcode
+
+// Optionally, it is possible to switch between strict semantics (blaze::strict) and relaxed
+// semantics (blaze::relaxed):
+
+   \code
+   if( isZero<relaxed>( A ) ) { ... }
+   \endcode
+
+// It is also possible to check if a matrix expression results is a zero matrix:
+
+   \code
+   if( isZero( A * B ) ) { ... }
+   \endcode
+
+// However, note that this might require the complete evaluation of the expression, including
+// the generation of a temporary matrix.
+*/
+template< RelaxationFlag RF  // Relaxation flag
+        , typename MT        // Type of the dense matrix
+        , bool SO >          // Storage order
+bool isZero( const DenseMatrix<MT,SO>& dm )
+{
+   const size_t M( (~dm).rows()    );
+   const size_t N( (~dm).columns() );
+
+   if( IsZero_v<MT> || M == 0UL || N == 0UL )
+      return true;
+
+   if( IsUniTriangular_v<MT> )
+      return false;
+
+   if( IsUniform_v<MT> )
+      return isZero<RF>( (~dm)(0UL,0UL) );
+
+   CompositeType_t<MT> A( ~dm );  // Evaluation of the dense matrix operand
+
+   if( SO == rowMajor )
+   {
+      for( size_t i=0UL; i<M; ++i )
+      {
+         const size_t jbegin( IsUpper_v<MT>
+                              ? ( IsStrictlyUpper_v<MT> ? i+1UL : i )
+                              : 0UL );
+         const size_t jend  ( IsLower_v<MT> || IsSymmetric_v<MT> || IsHermitian_v<MT>
+                              ? ( IsStrictlyLower_v<MT> ? i : i+1UL )
+                              : N );
+
+         for( size_t j=jbegin; j<jend; ++j ) {
+            if( !isZero<RF>( A(i,j) ) )
+               return false;
+         }
+      }
+   }
+   else
+   {
+      for( size_t j=0UL; j<N; ++j )
+      {
+         const size_t ibegin( IsLower_v<MT>
+                              ? ( IsStrictlyLower_v<MT> ? j+1UL : j )
+                              : 0UL );
+         const size_t iend  ( IsUpper_v<MT> || IsSymmetric_v<MT> || IsHermitian_v<MT>
+                              ? ( IsStrictlyUpper_v<MT> ? j : j+1UL )
+                              : M );
+
+         for( size_t i=ibegin; i<iend; ++i ) {
+            if( !isZero<RF>( A(i,j) ) )
+               return false;
+         }
+      }
+   }
+
+   return true;
 }
 //*************************************************************************************************
 
@@ -894,7 +1794,7 @@ bool isUniform( const DenseMatrix<MT,SO>& dm )
    if( isLower<relaxed>( A ) ) { ... }
    \endcode
 
-// It is also possible to check if a matrix expression results in a lower triangular matrix:
+// It is also possible to check if a matrix expression results is a lower triangular matrix:
 
    \code
    if( isLower( A * B ) ) { ... }
@@ -903,9 +1803,9 @@ bool isUniform( const DenseMatrix<MT,SO>& dm )
 // However, note that this might require the complete evaluation of the expression, including
 // the generation of a temporary matrix.
 */
-template< bool RF      // Relaxation flag
-        , typename MT  // Type of the dense matrix
-        , bool SO >    // Storage order
+template< RelaxationFlag RF  // Relaxation flag
+        , typename MT        // Type of the dense matrix
+        , bool SO >          // Storage order
 bool isLower( const DenseMatrix<MT,SO>& dm )
 {
    using RT  = ResultType_t<MT>;
@@ -919,10 +1819,13 @@ bool isLower( const DenseMatrix<MT,SO>& dm )
    if( !isSquare( ~dm ) )
       return false;
 
-   if( (~dm).rows() < 2UL )
+   if( IsZero_v<MT> || (~dm).rows() < 2UL )
       return true;
 
    Tmp A( ~dm );  // Evaluation of the dense matrix operand
+
+   if( IsUniform_v<MT> )
+      return isDefault<RF>( A(0UL,0UL) );
 
    if( SO == rowMajor ) {
       for( size_t i=0UL; i<A.rows()-1UL; ++i ) {
@@ -979,7 +1882,7 @@ bool isLower( const DenseMatrix<MT,SO>& dm )
    if( isUniLower<relaxed>( A ) ) { ... }
    \endcode
 
-// It is also possible to check if a matrix expression results in a lower unitriangular matrix:
+// It is also possible to check if a matrix expression results is a lower unitriangular matrix:
 
    \code
    if( isUniLower( A * B ) ) { ... }
@@ -988,9 +1891,9 @@ bool isLower( const DenseMatrix<MT,SO>& dm )
 // However, note that this might require the complete evaluation of the expression, including
 // the generation of a temporary matrix.
 */
-template< bool RF      // Relaxation flag
-        , typename MT  // Type of the dense matrix
-        , bool SO >    // Storage order
+template< RelaxationFlag RF  // Relaxation flag
+        , typename MT        // Type of the dense matrix
+        , bool SO >          // Storage order
 bool isUniLower( const DenseMatrix<MT,SO>& dm )
 {
    using RT  = ResultType_t<MT>;
@@ -1065,7 +1968,7 @@ bool isUniLower( const DenseMatrix<MT,SO>& dm )
    if( isStrictlyLower<relaxed>( A ) ) { ... }
    \endcode
 
-// It is also possible to check if a matrix expression results in a strictly lower triangular
+// It is also possible to check if a matrix expression results is a strictly lower triangular
 // matrix:
 
    \code
@@ -1075,9 +1978,9 @@ bool isUniLower( const DenseMatrix<MT,SO>& dm )
 // However, note that this might require the complete evaluation of the expression, including
 // the generation of a temporary matrix.
 */
-template< bool RF      // Relaxation flag
-        , typename MT  // Type of the dense matrix
-        , bool SO >    // Storage order
+template< RelaxationFlag RF  // Relaxation flag
+        , typename MT        // Type of the dense matrix
+        , bool SO >          // Storage order
 bool isStrictlyLower( const DenseMatrix<MT,SO>& dm )
 {
    using RT  = ResultType_t<MT>;
@@ -1088,10 +1991,19 @@ bool isStrictlyLower( const DenseMatrix<MT,SO>& dm )
    if( IsStrictlyLower_v<MT> )
       return true;
 
-   if( IsUniLower_v<MT> || IsUniUpper_v<MT> || !isSquare( ~dm ) )
+   if( !isSquare( ~dm ) )
+      return false;
+
+   if( IsZero_v<MT> || (~dm).rows() < 2UL )
+      return true;
+
+   if( IsUniLower_v<MT> || IsUniUpper_v<MT> )
       return false;
 
    Tmp A( ~dm );  // Evaluation of the dense matrix operand
+
+   if( IsUniform_v<MT> )
+      return isDefault<RF>( A(0UL,0UL) );
 
    if( SO == rowMajor ) {
       for( size_t i=0UL; i<A.rows(); ++i ) {
@@ -1158,9 +2070,9 @@ bool isStrictlyLower( const DenseMatrix<MT,SO>& dm )
 // However, note that this might require the complete evaluation of the expression, including
 // the generation of a temporary matrix.
 */
-template< bool RF      // Relaxation flag
-        , typename MT  // Type of the dense matrix
-        , bool SO >    // Storage order
+template< RelaxationFlag RF  // Relaxation flag
+        , typename MT        // Type of the dense matrix
+        , bool SO >          // Storage order
 bool isUpper( const DenseMatrix<MT,SO>& dm )
 {
    using RT  = ResultType_t<MT>;
@@ -1174,10 +2086,13 @@ bool isUpper( const DenseMatrix<MT,SO>& dm )
    if( !isSquare( ~dm ) )
       return false;
 
-   if( (~dm).rows() < 2UL )
+   if( IsZero_v<MT> || (~dm).rows() < 2UL )
       return true;
 
    Tmp A( ~dm );  // Evaluation of the dense matrix operand
+
+   if( IsUniform_v<MT> )
+      return isDefault<RF>( A(0UL,0UL) );
 
    if( SO == rowMajor ) {
       for( size_t i=1UL; i<A.rows(); ++i ) {
@@ -1243,9 +2158,9 @@ bool isUpper( const DenseMatrix<MT,SO>& dm )
 // However, note that this might require the complete evaluation of the expression, including
 // the generation of a temporary matrix.
 */
-template< bool RF      // Relaxation flag
-        , typename MT  // Type of the dense matrix
-        , bool SO >    // Storage order
+template< RelaxationFlag RF  // Relaxation flag
+        , typename MT        // Type of the dense matrix
+        , bool SO >          // Storage order
 bool isUniUpper( const DenseMatrix<MT,SO>& dm )
 {
    using RT  = ResultType_t<MT>;
@@ -1320,7 +2235,7 @@ bool isUniUpper( const DenseMatrix<MT,SO>& dm )
    if( isStrictlyUpper<relaxed>( A ) ) { ... }
    \endcode
 
-// It is also possible to check if a matrix expression results in a strictly upper triangular
+// It is also possible to check if a matrix expression results is a strictly upper triangular
 // matrix:
 
    \code
@@ -1330,9 +2245,9 @@ bool isUniUpper( const DenseMatrix<MT,SO>& dm )
 // However, note that this might require the complete evaluation of the expression, including
 // the generation of a temporary matrix.
 */
-template< bool RF      // Relaxation flag
-        , typename MT  // Type of the dense matrix
-        , bool SO >    // Storage order
+template< RelaxationFlag RF  // Relaxation flag
+        , typename MT        // Type of the dense matrix
+        , bool SO >          // Storage order
 bool isStrictlyUpper( const DenseMatrix<MT,SO>& dm )
 {
    using RT  = ResultType_t<MT>;
@@ -1343,10 +2258,19 @@ bool isStrictlyUpper( const DenseMatrix<MT,SO>& dm )
    if( IsStrictlyUpper_v<MT> )
       return true;
 
-   if( IsUniLower_v<MT> || IsUniUpper_v<MT> || !isSquare( ~dm ) )
+   if( !isSquare( ~dm ) )
+      return false;
+
+   if( IsZero_v<MT> || (~dm).rows() < 2UL )
+      return true;
+
+   if( IsUniLower_v<MT> || IsUniUpper_v<MT> )
       return false;
 
    Tmp A( ~dm );  // Evaluation of the dense matrix operand
+
+   if( IsUniform_v<MT> )
+      return isDefault<RF>( A(0UL,0UL) );
 
    if( SO == rowMajor ) {
       for( size_t i=0UL; i<A.rows(); ++i ) {
@@ -1371,7 +2295,7 @@ bool isStrictlyUpper( const DenseMatrix<MT,SO>& dm )
 
 
 //*************************************************************************************************
-/*!\brief Checks if the give dense matrix is diagonal.
+/*!\brief Checks if the given dense matrix is diagonal.
 // \ingroup dense_matrix
 //
 // \param dm The dense matrix to be checked.
@@ -1405,7 +2329,7 @@ bool isStrictlyUpper( const DenseMatrix<MT,SO>& dm )
    if( isDiagonal<relaxed>( A ) ) { ... }
    \endcode
 
-// It is also possible to check if a matrix expression results in a diagonal matrix:
+// It is also possible to check if a matrix expression results is a diagonal matrix:
 
    \code
    if( isDiagonal( A * B ) ) { ... }
@@ -1414,9 +2338,9 @@ bool isStrictlyUpper( const DenseMatrix<MT,SO>& dm )
 // However, note that this might require the complete evaluation of the expression, including
 // the generation of a temporary matrix.
 */
-template< bool RF      // Relaxation flag
-        , typename MT  // Type of the dense matrix
-        , bool SO >    // Storage order
+template< RelaxationFlag RF  // Relaxation flag
+        , typename MT        // Type of the dense matrix
+        , bool SO >          // Storage order
 bool isDiagonal( const DenseMatrix<MT,SO>& dm )
 {
    using RT  = ResultType_t<MT>;
@@ -1430,10 +2354,13 @@ bool isDiagonal( const DenseMatrix<MT,SO>& dm )
    if( !isSquare( ~dm ) )
       return false;
 
-   if( (~dm).rows() < 2UL )
+   if( IsZero_v<MT> || (~dm).rows() < 2UL )
       return true;
 
    Tmp A( ~dm );  // Evaluation of the dense matrix operand
+
+   if( IsUniform_v<MT> )
+      return isDefault<RF>( A(0UL,0UL) );
 
    if( SO == rowMajor ) {
       for( size_t i=0UL; i<A.rows(); ++i ) {
@@ -1474,7 +2401,7 @@ bool isDiagonal( const DenseMatrix<MT,SO>& dm )
 
 
 //*************************************************************************************************
-/*!\brief Checks if the give dense matrix is an identity matrix.
+/*!\brief Checks if the given dense matrix is an identity matrix.
 // \ingroup dense_matrix
 //
 // \param dm The dense matrix to be checked.
@@ -1516,9 +2443,9 @@ bool isDiagonal( const DenseMatrix<MT,SO>& dm )
 // However, note that this might require the complete evaluation of the expression, including
 // the generation of a temporary matrix.
 */
-template< bool RF      // Relaxation flag
-        , typename MT  // Type of the dense matrix
-        , bool SO >    // Storage order
+template< RelaxationFlag RF  // Relaxation flag
+        , typename MT        // Type of the dense matrix
+        , bool SO >          // Storage order
 bool isIdentity( const DenseMatrix<MT,SO>& dm )
 {
    using RT  = ResultType_t<MT>;
@@ -1582,24 +2509,108 @@ bool isIdentity( const DenseMatrix<MT,SO>& dm )
 
 
 //*************************************************************************************************
-/*!\brief Computes the softmax function for the given dense matrix.
+/*!\brief Checks if the given dense matrix is a positive definite matrix.
 // \ingroup dense_matrix
 //
-// \param dm The given dense matrix for the softmax computation.
-// \return The resulting matrix.
+// \param dm The dense matrix to be checked.
+// \return \a true if the matrix is a positive definite matrix, \a false if not.
 //
-// This function computes the softmax function (i.e. the normalized exponential function) for
-// the given dense matrix \a dm (see also https://en.wikipedia.org/wiki/Softmax_function). The
-// resulting dense matrix consists of real values in the range (0..1], which add up to 1.
+// This function tests whether the matrix is a positive definite matrix. The following example
+// demonstrates the use of the function:
+
+   \code
+   blaze::DynamicMatrix<int,blaze::rowMajor> A, B;
+   // ... Initialization
+   if( isPositiveDefinite( A ) ) { ... }
+   \endcode
+
+// It is also possible to check if a matrix expression results in a positive definite matrix:
+
+   \code
+   if( isPositiveDefinite( A * B ) ) { ... }
+   \endcode
+
+// However, note that this might require the complete evaluation of the expression, including
+// the generation of a temporary matrix.
+//
+// \note This function only works for matrices with \c float, \c double, \c complex<float>, or
+// \c complex<double> element type. The attempt to call the function with matrices of any other
+// element type results in a compile time error!
+//
+// \note This function can only be used if a fitting LAPACK library is available and linked to
+// the executable. Otherwise a call to this function will result in a linker error.
 */
 template< typename MT  // Type of the dense matrix
         , bool SO >    // Storage order
-auto softmax( const DenseMatrix<MT,SO>& dm )
+bool isPositiveDefinite( const DenseMatrix<MT,SO>& dm )
 {
-   auto tmp( evaluate( exp( ~dm ) ) );
-   const auto scalar( sum( ~tmp ) );
-   tmp /= scalar;
-   return tmp;
+   BLAZE_CONSTRAINT_MUST_BE_BLAS_COMPATIBLE_TYPE( ElementType_t<MT> );
+
+   if( !isSquare( ~dm ) )
+      return false;
+
+   if( (~dm).rows() < 2UL )
+      return true;
+
+   RemoveAdaptor_t< ResultType_t<MT> > L( ~dm );
+
+   char uplo( IsRowMajorMatrix_v<MT> ? 'U' : 'L' );
+   int  n   ( numeric_cast<int>( (~L).rows()    ) );
+   int  lda ( numeric_cast<int>( (~L).spacing() ) );
+   int  info( 0 );
+
+   potrf( uplo, n, (~L).data(), lda, &info );
+
+   return ( info == 0 );
+}
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*!\brief Computes the rank of the given dense matrix.
+// \ingroup dense_matrix
+//
+// \param dm The dense matrix for the rank computation.
+// \return The rank of the given dense matrix.
+//
+// This function computes the rank of the given dense matrix \a dm. The rank is determined as
+// the number of singular values greater than a given tolerance. This tolerance is computed as
+
+   \code
+   tolerance = max(m,n) * max(s) * epsilon,
+   \endcode
+
+// where \c m is the number of rows of \a dm, \c n is the number of columns of \a dm, \c max(s)
+// is the maximum singular value of \a dm and epsilon is the difference between 1 and the least
+// value greater than 1 that is representable by the floating point type of the singular values.
+// Example:
+
+   \code
+   blaze::DynamicMatrix<double> A( 5UL, 8UL );
+   // ... Initialization
+   rank( A );
+   \endcode
+
+// \note This function only works for matrices with \c float, \c double, \c complex<float>, or
+// \c complex<double> element type. The attempt to call the function with matrices of any other
+// element type results in a compile time error!
+//
+// \note This function can only be used if a fitting LAPACK library is available and linked to
+// the executable. Otherwise a call to this function will result in a linker error.
+*/
+template< typename MT  // Type of the dense matrix
+        , bool SO >    // Storage order
+size_t rank( const DenseMatrix<MT,SO>& dm )
+{
+   BLAZE_CONSTRAINT_MUST_NOT_BE_COMPUTATION_TYPE( MT );
+   BLAZE_CONSTRAINT_MUST_BE_BLAS_COMPATIBLE_TYPE( ElementType_t<MT> );
+
+   using BT = UnderlyingBuiltin_t<MT>;
+
+   const auto s( evaluate( svd( ~dm ) ) );
+
+   const BT tolerance( max( rows(dm), columns(dm) ) * Limits<BT>::epsilon() * max(s) );
+   return std::count_if( begin(s), end(s), [tolerance]( auto val ) { return abs(val) > tolerance; } );
 }
 //*************************************************************************************************
 

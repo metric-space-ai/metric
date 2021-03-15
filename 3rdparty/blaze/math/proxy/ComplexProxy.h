@@ -3,7 +3,7 @@
 //  \file blaze/math/proxy/ComplexProxy.h
 //  \brief Header file for the ComplexProxy class
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -88,6 +88,19 @@ class ComplexProxy
    //@{
    BLAZE_ALWAYS_INLINE PT&       operator~();
    BLAZE_ALWAYS_INLINE const PT& operator~() const;
+   //@}
+   //**********************************************************************************************
+
+ protected:
+   //**Special member functions********************************************************************
+   /*!\name Special member functions */
+   //@{
+   ComplexProxy() = default;
+   ComplexProxy( const ComplexProxy& ) = default;
+   ComplexProxy( ComplexProxy&& ) = default;
+   ~ComplexProxy() = default;
+   ComplexProxy& operator=( const ComplexProxy& ) = default;
+   ComplexProxy& operator=( ComplexProxy&& ) = default;
    //@}
    //**********************************************************************************************
 

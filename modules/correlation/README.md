@@ -18,7 +18,7 @@ as correlation coefficient to find nonlinear dependencies in data sets. It is op
 
 Compute the mgc correlation based on two datasets A and B.
 
-If you don't have distance matrices, yo can build them at first (euclidian metric will be used with this embedded functions).
+If you don't have distance matrices, yo can build them at first (euclidean metric will be used with this embedded functions).
 
 ```C++
 auto A = metric::distance_matrix(dataset) // std::vector<std::vector<double> dataset 
@@ -28,7 +28,7 @@ Then just create MGC object and call `()` operator:
 
 ```C++
 typedef std::vector<int> Record;
-typedef metric::Euclidian<double> Distance;
+typedef metric::Euclidean<double> Distance;
 
 auto mgc_corr = metric::MGC<Record, Distance, Record, Distance>();
 auto result = mgc_corr(A, B);
@@ -48,7 +48,7 @@ which will save a lot of time. For use it just call `estimate()` on MGC object:
 
 ```C++
 typedef std::vector<int> Record;
-typedef metric::Euclidian<double> Distance;
+typedef metric::Euclidean<double> Distance;
 
 auto mgc_corr = metric::MGC<Record, Distance, Record, Distance>();
 auto result = mgc_corr.estimate(A, B);

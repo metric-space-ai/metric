@@ -3,7 +3,7 @@
 //  \file blaze/system/Version.h
 //  \brief Header file for the current version of the Blaze library
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -47,7 +47,7 @@
 // \ingroup system
 //
 // This value corresponds to the major version of the Blaze library. For instance, for Blaze
-// version 3.4, the BLAZE_MAJOR_VERSION corresponds to 3.
+// version 3.7.0, the BLAZE_MAJOR_VERSION corresponds to 3.
 */
 #define BLAZE_MAJOR_VERSION 3
 //*************************************************************************************************
@@ -58,9 +58,20 @@
 // \ingroup system
 //
 // This value corresponds to the minor version of the Blaze library. For instance, for Blaze
-// version 3.4, the BLAZE_MINOR_VERSION corresponds to 4.
+// version 3.7.0, the BLAZE_MINOR_VERSION corresponds to 7.
 */
-#define BLAZE_MINOR_VERSION 4
+#define BLAZE_MINOR_VERSION 7
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*!\brief Patch version of the Blaze library.
+// \ingroup system
+//
+// This value corresponds to the patch version of the Blaze library. For instance, for Blaze
+// version 3.7.0, the BLAZE_PATCH_VERSION corresponds to 0.
+*/
+#define BLAZE_PATCH_VERSION 0
 //*************************************************************************************************
 
 #endif

@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/DVecDVecEqualExpr.h
 //  \brief Header file for the dense vector/dense vector equality comparison expression
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -44,11 +44,12 @@
 #include "../../math/expressions/DenseVector.h"
 #include "../../math/RelaxationFlag.h"
 #include "../../math/shims/Equal.h"
+#include "../../math/shims/PrevMultiple.h"
 #include "../../math/SIMD.h"
 #include "../../math/typetraits/HasSIMDEqual.h"
 #include "../../math/typetraits/IsPadded.h"
+#include "../../system/MacroDisable.h"
 #include "../../system/Optimizations.h"
-#include "../../util/DisableIf.h"
 #include "../../util/EnableIf.h"
 #include "../../util/Types.h"
 #include "../../util/typetraits/RemoveReference.h"
@@ -112,13 +113,13 @@ struct DVecDVecEqualExprHelper
 // a direct comparison of two floating point numbers should be avoided. This function offers the
 // possibility to compare two floating-point vectors with a certain accuracy margin.
 */
-template< bool RF       // Relaxation flag
-        , typename VT1  // Type of the left-hand side dense vector
-        , bool TF1      // Transpose flag of the left-hand side dense vector
-        , typename VT2  // Type of the right-hand side dense vector
-        , bool TF2 >    // Transpose flag of the right-hand side dense vector
-inline DisableIf_t< DVecDVecEqualExprHelper<VT1,VT2>::value, bool >
-   equal( const DenseVector<VT1,TF1>& lhs, const DenseVector<VT2,TF2>& rhs )
+template< RelaxationFlag RF  // Relaxation flag
+        , typename VT1       // Type of the left-hand side dense vector
+        , bool TF1           // Transpose flag of the left-hand side dense vector
+        , typename VT2       // Type of the right-hand side dense vector
+        , bool TF2 >         // Transpose flag of the right-hand side dense vector
+inline auto equal( const DenseVector<VT1,TF1>& lhs, const DenseVector<VT2,TF2>& rhs )
+   -> DisableIf_t< DVecDVecEqualExprHelper<VT1,VT2>::value, bool >
 {
    using CT1 = CompositeType_t<VT1>;
    using CT2 = CompositeType_t<VT2>;
@@ -153,13 +154,13 @@ inline DisableIf_t< DVecDVecEqualExprHelper<VT1,VT2>::value, bool >
 // a direct comparison of two floating point numbers should be avoided. This function offers the
 // possibility to compare two floating-point vectors with a certain accuracy margin.
 */
-template< bool RF       // Relaxation flag
-        , typename VT1  // Type of the left-hand side dense vector
-        , bool TF1      // Transpose flag of the left-hand side dense vector
-        , typename VT2  // Type of the right-hand side dense vector
-        , bool TF2 >    // Transpose flag of the right-hand side dense vector
-inline EnableIf_t< DVecDVecEqualExprHelper<VT1,VT2>::value, bool >
-   equal( const DenseVector<VT1,TF1>& lhs, const DenseVector<VT2,TF2>& rhs )
+template< RelaxationFlag RF  // Relaxation flag
+        , typename VT1       // Type of the left-hand side dense vector
+        , bool TF1           // Transpose flag of the left-hand side dense vector
+        , typename VT2       // Type of the right-hand side dense vector
+        , bool TF2 >         // Transpose flag of the right-hand side dense vector
+inline auto equal( const DenseVector<VT1,TF1>& lhs, const DenseVector<VT2,TF2>& rhs )
+   -> EnableIf_t< DVecDVecEqualExprHelper<VT1,VT2>::value, bool >
 {
    using CT1 = CompositeType_t<VT1>;
    using CT2 = CompositeType_t<VT2>;
@@ -174,12 +175,12 @@ inline EnableIf_t< DVecDVecEqualExprHelper<VT1,VT2>::value, bool >
    CT2 b( ~rhs );
 
    constexpr size_t SIMDSIZE = SIMDTrait< ElementType_t<VT1> >::size;
-   constexpr bool remainder( !usePadding || !IsPadded_v<XT1> || !IsPadded_v<XT2> );
+   constexpr bool remainder( !IsPadded_v<XT1> || !IsPadded_v<XT2> );
 
    const size_t N( a.size() );
 
-   const size_t ipos( ( remainder )?( N & size_t(-SIMDSIZE) ):( N ) );
-   BLAZE_INTERNAL_ASSERT( !remainder || ( N - ( N % SIMDSIZE ) ) == ipos, "Invalid end calculation" );
+   const size_t ipos( remainder ? prevMultiple( N, SIMDSIZE ) : N );
+   BLAZE_INTERNAL_ASSERT( ipos <= N, "Invalid end calculation" );
 
    size_t i( 0UL );
 

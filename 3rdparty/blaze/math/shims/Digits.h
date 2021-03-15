@@ -3,7 +3,7 @@
 //  \file blaze/math/shims/Digits.h
 //  \brief Header file for the digits shim
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -71,7 +71,7 @@ namespace blaze {
 // other type will result in a compile time error.
 */
 template< typename T >
-inline constexpr size_t digits( T a ) noexcept
+constexpr size_t digits( T a ) noexcept
 {
    BLAZE_CONSTRAINT_MUST_BE_INTEGRAL_TYPE( T );
 

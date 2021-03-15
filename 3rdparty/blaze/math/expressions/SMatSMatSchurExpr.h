@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/SMatSMatSchurExpr.h
 //  \brief Header file for the sparse matrix/sparse matrix Schur product expression
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -42,10 +42,12 @@
 
 #include <utility>
 #include "../../math/Aliases.h"
+#include "../../math/constraints/Identity.h"
 #include "../../math/constraints/RowMajorMatrix.h"
 #include "../../math/constraints/SchurExpr.h"
 #include "../../math/constraints/SparseMatrix.h"
 #include "../../math/constraints/Symmetric.h"
+#include "../../math/constraints/Zero.h"
 #include "../../math/Exception.h"
 #include "../../math/expressions/Computation.h"
 #include "../../math/expressions/Forward.h"
@@ -53,12 +55,9 @@
 #include "../../math/expressions/SparseMatrix.h"
 #include "../../math/shims/Serial.h"
 #include "../../math/sparse/Forward.h"
-#include "../../math/traits/MultTrait.h"
 #include "../../math/traits/SchurTrait.h"
 #include "../../math/typetraits/IsColumnMajorMatrix.h"
-#include "../../math/typetraits/IsComputation.h"
 #include "../../math/typetraits/IsExpression.h"
-#include "../../math/typetraits/IsHermitian.h"
 #include "../../math/typetraits/IsLower.h"
 #include "../../math/typetraits/IsStrictlyLower.h"
 #include "../../math/typetraits/IsStrictlyUpper.h"
@@ -67,17 +66,16 @@
 #include "../../math/typetraits/IsUniLower.h"
 #include "../../math/typetraits/IsUniUpper.h"
 #include "../../math/typetraits/IsUpper.h"
+#include "../../math/typetraits/IsZero.h"
 #include "../../util/algorithms/Max.h"
 #include "../../util/algorithms/Min.h"
 #include "../../util/Assert.h"
-#include "../../util/DisableIf.h"
 #include "../../util/EnableIf.h"
 #include "../../util/FunctionTrace.h"
 #include "../../util/IntegralConstant.h"
+#include "../../util/MaybeUnused.h"
 #include "../../util/mpl/If.h"
 #include "../../util/Types.h"
-#include "../../util/typetraits/RemoveReference.h"
-#include "../../util/Unused.h"
 
 
 namespace blaze {
@@ -140,6 +138,7 @@ class SMatSMatSchurExpr
  public:
    //**Type definitions****************************************************************************
    using This          = SMatSMatSchurExpr<MT1,MT2>;   //!< Type of this SMatSMatSchurExpr instance.
+   using BaseType      = SparseMatrix<This,false>;     //!< Base type of this SMatSMatSchurExpr instance.
    using ResultType    = SchurTrait_t<RT1,RT2>;        //!< Result type for expression template evaluations.
    using OppositeType  = OppositeType_t<ResultType>;   //!< Result type with opposite storage order for expression template evaluations.
    using TransposeType = TransposeType_t<ResultType>;  //!< Transpose type for expression template evaluations.
@@ -169,7 +168,7 @@ class SMatSMatSchurExpr
    // \param lhs The left-hand side sparse matrix operand of the Schur product expression.
    // \param rhs The right-hand side sparse matrix operand of the Schur product expression.
    */
-   explicit inline SMatSMatSchurExpr( const MT1& lhs, const MT2& rhs ) noexcept
+   inline SMatSMatSchurExpr( const MT1& lhs, const MT2& rhs ) noexcept
       : lhs_( lhs )  // Left-hand side sparse matrix of the Schur product expression
       , rhs_( rhs )  // Right-hand side sparse matrix of the Schur product expression
    {
@@ -316,16 +315,13 @@ class SMatSMatSchurExpr
    */
    template< typename MT  // Type of the target dense matrix
            , bool SO >    // Storage order of the target dense matrix
-   friend inline DisableIf_t< UseSymmetricKernel_v<MT,MT1,MT2> >
-      assign( DenseMatrix<MT,SO>& lhs, const SMatSMatSchurExpr& rhs )
+   friend inline auto assign( DenseMatrix<MT,SO>& lhs, const SMatSMatSchurExpr& rhs )
+      -> DisableIf_t< UseSymmetricKernel_v<MT,MT1,MT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
       BLAZE_INTERNAL_ASSERT( (~lhs).rows()    == rhs.rows()   , "Invalid number of rows"    );
       BLAZE_INTERNAL_ASSERT( (~lhs).columns() == rhs.columns(), "Invalid number of columns" );
-
-      using LeftIterator  = ConstIterator_t< RemoveReference_t<CT1> >;
-      using RightIterator = ConstIterator_t< RemoveReference_t<CT2> >;
 
       CT1 A( serial( rhs.lhs_ ) );  // Evaluation of the left-hand side sparse matrix operand
       CT2 B( serial( rhs.rhs_ ) );  // Evaluation of the right-hand side sparse matrix operand
@@ -339,11 +335,11 @@ class SMatSMatSchurExpr
 
       for( size_t i=0UL; i<(~lhs).rows(); ++i )
       {
-         const LeftIterator  lend( A.end(i) );
-         const RightIterator rend( B.end(i) );
+         const auto lend( A.end(i) );
+         const auto rend( B.end(i) );
 
-         LeftIterator  l( A.begin(i) );
-         RightIterator r( B.begin(i) );
+         auto l( A.begin(i) );
+         auto r( B.begin(i) );
 
          for( ; l!=lend; ++l ) {
             while( r!=rend && r->index() < l->index() ) ++r;
@@ -378,9 +374,6 @@ class SMatSMatSchurExpr
       BLAZE_INTERNAL_ASSERT( (~lhs).rows()    == rhs.rows()   , "Invalid number of rows"    );
       BLAZE_INTERNAL_ASSERT( (~lhs).columns() == rhs.columns(), "Invalid number of columns" );
 
-      using LeftIterator  = ConstIterator_t< RemoveReference_t<CT1> >;
-      using RightIterator = ConstIterator_t< RemoveReference_t<CT2> >;
-
       CT1 A( serial( rhs.lhs_ ) );  // Evaluation of the left-hand side sparse matrix operand
       CT2 B( serial( rhs.rhs_ ) );  // Evaluation of the right-hand side sparse matrix operand
 
@@ -397,11 +390,11 @@ class SMatSMatSchurExpr
       // Performing the Schur product
       for( size_t i=0UL; i<(~lhs).rows(); ++i )
       {
-         const LeftIterator  lend( A.end(i) );
-         const RightIterator rend( B.end(i) );
+         const auto lend( A.end(i) );
+         const auto rend( B.end(i) );
 
-         LeftIterator  l( A.begin(i) );
-         RightIterator r( B.begin(i) );
+         auto l( A.begin(i) );
+         auto r( B.begin(i) );
 
          for( ; l!=lend; ++l ) {
             while( r!=rend && r->index() < l->index() ) ++r;
@@ -432,8 +425,8 @@ class SMatSMatSchurExpr
    // product expression to a column-major sparse matrix.
    */
    template< typename MT >  // Type of the target sparse matrix
-   friend inline DisableIf_t< UseSymmetricKernel_v<MT,MT1,MT2> >
-      assign( SparseMatrix<MT,true>& lhs, const SMatSMatSchurExpr& rhs )
+   friend inline auto assign( SparseMatrix<MT,true>& lhs, const SMatSMatSchurExpr& rhs )
+      -> DisableIf_t< UseSymmetricKernel_v<MT,MT1,MT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -441,9 +434,6 @@ class SMatSMatSchurExpr
 
       BLAZE_INTERNAL_ASSERT( (~lhs).rows()    == rhs.rows()   , "Invalid number of rows"    );
       BLAZE_INTERNAL_ASSERT( (~lhs).columns() == rhs.columns(), "Invalid number of columns" );
-
-      using LeftIterator  = ConstIterator_t< RemoveReference_t<CT1> >;
-      using RightIterator = ConstIterator_t< RemoveReference_t<CT2> >;
 
       CT1 A( serial( rhs.lhs_ ) );  // Evaluation of the left-hand side sparse matrix operand
       CT2 B( serial( rhs.rhs_ ) );  // Evaluation of the right-hand side sparse matrix operand
@@ -462,11 +452,11 @@ class SMatSMatSchurExpr
       std::vector<size_t> nonzeros( n, 0UL );
       for( size_t i=0UL; i<m; ++i )
       {
-         const LeftIterator  lend( A.end(i) );
-         const RightIterator rend( B.end(i) );
+         const auto lend( A.end(i) );
+         const auto rend( B.end(i) );
 
-         LeftIterator  l( A.begin(i) );
-         RightIterator r( B.begin(i) );
+         auto l( A.begin(i) );
+         auto r( B.begin(i) );
 
          for( ; l!=lend; ++l ) {
             while( r!=rend && r->index() < l->index() ) ++r;
@@ -486,11 +476,11 @@ class SMatSMatSchurExpr
       // Performing the Schur product
       for( size_t i=0UL; i<m; ++i )
       {
-         const LeftIterator  lend( A.end(i) );
-         const RightIterator rend( B.end(i) );
+         const auto lend( A.end(i) );
+         const auto rend( B.end(i) );
 
-         LeftIterator  l( A.begin(i) );
-         RightIterator r( B.begin(i) );
+         auto l( A.begin(i) );
+         auto r( B.begin(i) );
 
          for( ; l!=lend; ++l ) {
             while( r!=rend && r->index() < l->index() ) ++r;
@@ -519,8 +509,8 @@ class SMatSMatSchurExpr
    // matrix Schur product expression to a column-major matrix.
    */
    template< typename MT >  // Type of the target matrix
-   friend inline EnableIf_t< UseSymmetricKernel_v<MT,MT1,MT2> >
-      assign( Matrix<MT,true>& lhs, const SMatSMatSchurExpr& rhs )
+   friend inline auto assign( Matrix<MT,true>& lhs, const SMatSMatSchurExpr& rhs )
+      -> EnableIf_t< UseSymmetricKernel_v<MT,MT1,MT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -548,16 +538,13 @@ class SMatSMatSchurExpr
    */
    template< typename MT  // Type of the target dense matrix
            , bool SO >    // Storage order of the target dense matrix
-   friend inline DisableIf_t< UseSymmetricKernel_v<MT,MT1,MT2> >
-      addAssign( DenseMatrix<MT,SO>& lhs, const SMatSMatSchurExpr& rhs )
+   friend inline auto addAssign( DenseMatrix<MT,SO>& lhs, const SMatSMatSchurExpr& rhs )
+      -> DisableIf_t< UseSymmetricKernel_v<MT,MT1,MT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
       BLAZE_INTERNAL_ASSERT( (~lhs).rows()    == rhs.rows()   , "Invalid number of rows"    );
       BLAZE_INTERNAL_ASSERT( (~lhs).columns() == rhs.columns(), "Invalid number of columns" );
-
-      using LeftIterator  = ConstIterator_t< RemoveReference_t<CT1> >;
-      using RightIterator = ConstIterator_t< RemoveReference_t<CT2> >;
 
       CT1 A( serial( rhs.lhs_ ) );  // Evaluation of the left-hand side sparse matrix operand
       CT2 B( serial( rhs.rhs_ ) );  // Evaluation of the right-hand side sparse matrix operand
@@ -571,11 +558,11 @@ class SMatSMatSchurExpr
 
       for( size_t i=0UL; i<(~lhs).rows(); ++i )
       {
-         const LeftIterator  lend( A.end(i) );
-         const RightIterator rend( B.end(i) );
+         const auto lend( A.end(i) );
+         const auto rend( B.end(i) );
 
-         LeftIterator  l( A.begin(i) );
-         RightIterator r( B.begin(i) );
+         auto l( A.begin(i) );
+         auto r( B.begin(i) );
 
          for( ; l!=lend; ++l ) {
             while( r!=rend && r->index() < l->index() ) ++r;
@@ -604,8 +591,8 @@ class SMatSMatSchurExpr
    // sparse matrix Schur product expression to a column-major matrix.
    */
    template< typename MT >  // Type of the target matrix
-   friend inline EnableIf_t< UseSymmetricKernel_v<MT,MT1,MT2> >
-      addAssign( Matrix<MT,true>& lhs, const SMatSMatSchurExpr& rhs )
+   friend inline auto addAssign( Matrix<MT,true>& lhs, const SMatSMatSchurExpr& rhs )
+      -> EnableIf_t< UseSymmetricKernel_v<MT,MT1,MT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -638,16 +625,13 @@ class SMatSMatSchurExpr
    */
    template< typename MT  // Type of the target dense matrix
            , bool SO >    // Storage order of the target dense matrix
-   friend inline DisableIf_t< UseSymmetricKernel_v<MT,MT1,MT2> >
-      subAssign( DenseMatrix<MT,SO>& lhs, const SMatSMatSchurExpr& rhs )
+   friend inline auto subAssign( DenseMatrix<MT,SO>& lhs, const SMatSMatSchurExpr& rhs )
+      -> DisableIf_t< UseSymmetricKernel_v<MT,MT1,MT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
       BLAZE_INTERNAL_ASSERT( (~lhs).rows()    == rhs.rows()   , "Invalid number of rows"    );
       BLAZE_INTERNAL_ASSERT( (~lhs).columns() == rhs.columns(), "Invalid number of columns" );
-
-      using LeftIterator  = ConstIterator_t< RemoveReference_t<CT1> >;
-      using RightIterator = ConstIterator_t< RemoveReference_t<CT2> >;
 
       CT1 A( serial( rhs.lhs_ ) );  // Evaluation of the left-hand side sparse matrix operand
       CT2 B( serial( rhs.rhs_ ) );  // Evaluation of the right-hand side sparse matrix operand
@@ -661,11 +645,11 @@ class SMatSMatSchurExpr
 
       for( size_t i=0UL; i<(~lhs).rows(); ++i )
       {
-         const LeftIterator  lend( A.end(i) );
-         const RightIterator rend( B.end(i) );
+         const auto lend( A.end(i) );
+         const auto rend( B.end(i) );
 
-         LeftIterator  l( A.begin(i) );
-         RightIterator r( B.begin(i) );
+         auto l( A.begin(i) );
+         auto r( B.begin(i) );
 
          for( ; l!=lend; ++l ) {
             while( r!=rend && r->index() < l->index() ) ++r;
@@ -694,8 +678,8 @@ class SMatSMatSchurExpr
    // sparse matrix Schur product expression to a column-major matrix.
    */
    template< typename MT >  // Type of the target matrix
-   friend inline EnableIf_t< UseSymmetricKernel_v<MT,MT1,MT2> >
-      subAssign( Matrix<MT,true>& lhs, const SMatSMatSchurExpr& rhs )
+   friend inline auto subAssign( Matrix<MT,true>& lhs, const SMatSMatSchurExpr& rhs )
+      -> EnableIf_t< UseSymmetricKernel_v<MT,MT1,MT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -728,16 +712,13 @@ class SMatSMatSchurExpr
    */
    template< typename MT  // Type of the target dense matrix
            , bool SO >    // Storage order of the target dense matrix
-   friend inline DisableIf_t< UseSymmetricKernel_v<MT,MT1,MT2> >
-      schurAssign( DenseMatrix<MT,SO>& lhs, const SMatSMatSchurExpr& rhs )
+   friend inline auto schurAssign( DenseMatrix<MT,SO>& lhs, const SMatSMatSchurExpr& rhs )
+      -> DisableIf_t< UseSymmetricKernel_v<MT,MT1,MT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
       BLAZE_INTERNAL_ASSERT( (~lhs).rows()    == rhs.rows()   , "Invalid number of rows"    );
       BLAZE_INTERNAL_ASSERT( (~lhs).columns() == rhs.columns(), "Invalid number of columns" );
-
-      using LeftIterator  = ConstIterator_t< RemoveReference_t<CT1> >;
-      using RightIterator = ConstIterator_t< RemoveReference_t<CT2> >;
 
       CT1 A( serial( rhs.lhs_ ) );  // Evaluation of the left-hand side sparse matrix operand
       CT2 B( serial( rhs.rhs_ ) );  // Evaluation of the right-hand side sparse matrix operand
@@ -751,13 +732,13 @@ class SMatSMatSchurExpr
 
       for( size_t i=0UL; i<(~lhs).rows(); ++i )
       {
-         const LeftIterator  lend( A.end(i) );
-         const RightIterator rend( B.end(i) );
+         const auto lend( A.end(i) );
+         const auto rend( B.end(i) );
 
-         LeftIterator  l( A.begin(i) );
-         RightIterator r( B.begin(i) );
+         auto l( A.begin(i) );
+         auto r( B.begin(i) );
 
-         size_t j( 0 );
+         size_t j( 0UL );
 
          for( ; l!=lend; ++l ) {
             while( r!=rend && r->index() < l->index() ) ++r;
@@ -792,8 +773,8 @@ class SMatSMatSchurExpr
    // matrix-sparse matrix Schur product expression to a column-major matrix.
    */
    template< typename MT >  // Type of the target matrix
-   friend inline EnableIf_t< UseSymmetricKernel_v<MT,MT1,MT2> >
-      schurAssign( Matrix<MT,true>& lhs, const SMatSMatSchurExpr& rhs )
+   friend inline auto schurAssign( Matrix<MT,true>& lhs, const SMatSMatSchurExpr& rhs )
+      -> EnableIf_t< UseSymmetricKernel_v<MT,MT1,MT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -887,8 +868,10 @@ class SMatSMatSchurExpr
    /*! \cond BLAZE_INTERNAL */
    BLAZE_CONSTRAINT_MUST_BE_SPARSE_MATRIX_TYPE( MT1 );
    BLAZE_CONSTRAINT_MUST_BE_ROW_MAJOR_MATRIX_TYPE( MT1 );
+   BLAZE_CONSTRAINT_MUST_NOT_BE_ZERO_TYPE( MT1 );
    BLAZE_CONSTRAINT_MUST_BE_SPARSE_MATRIX_TYPE( MT2 );
    BLAZE_CONSTRAINT_MUST_BE_ROW_MAJOR_MATRIX_TYPE( MT2 );
+   BLAZE_CONSTRAINT_MUST_NOT_BE_ZERO_TYPE( MT2 );
    BLAZE_CONSTRAINT_MUST_FORM_VALID_SCHUREXPR( MT1, MT2 );
    /*! \endcond */
    //**********************************************************************************************
@@ -919,8 +902,13 @@ class SMatSMatSchurExpr
 */
 template< typename MT1  // Type of the left-hand side sparse matrix
         , typename MT2  // Type of the right-hand side sparse matrix
-        , typename = DisableIf_t< ( IsUniLower_v<MT1> && IsUniUpper_v<MT2> ) ||
-                                  ( IsUniUpper_v<MT1> && IsUniLower_v<MT2> ) > >
+        , DisableIf_t< ( IsUniLower_v<MT1> && IsUniUpper_v<MT2> ) ||
+                       ( IsUniUpper_v<MT1> && IsUniLower_v<MT2> ) ||
+                       ( IsStrictlyLower_v<MT1> && IsUpper_v<MT2> ) ||
+                       ( IsStrictlyUpper_v<MT1> && IsLower_v<MT2> ) ||
+                       ( IsLower_v<MT1> && IsStrictlyUpper_v<MT2> ) ||
+                       ( IsUpper_v<MT1> && IsStrictlyLower_v<MT2> ) ||
+                       ( IsZero_v<MT1> || IsZero_v<MT2> ) >* = nullptr >
 inline const SMatSMatSchurExpr<MT1,MT2>
    smatsmatschur( const SparseMatrix<MT1,false>& lhs, const SparseMatrix<MT2,false>& rhs )
 {
@@ -943,26 +931,72 @@ inline const SMatSMatSchurExpr<MT1,MT2>
 //
 // \param lhs The left-hand side sparse matrix for the Schur product.
 // \param rhs The right-hand side sparse matrix for the Schur product.
-// \return The Schur product of the two matrices.
+// \return The resulting identity matrix.
 //
 // This function implements a performance optimized treatment of the Schur product between two
-// unitriangular row-major sparse matrices.
+// unitriangular row-major sparse matrices. It returns an identity matrix.
 */
 template< typename MT1  // Type of the left-hand side sparse matrix
         , typename MT2  // Type of the right-hand side sparse matrix
-        , typename = EnableIf_t< ( IsUniLower_v<MT1> && IsUniUpper_v<MT2> ) ||
-                                 ( IsUniUpper_v<MT1> && IsUniLower_v<MT2> ) > >
-inline const IdentityMatrix< MultTrait_t< ElementType_t<MT1>, ElementType_t<MT2> >, false >
+        , EnableIf_t< ( IsUniLower_v<MT1> && IsUniUpper_v<MT2> ) ||
+                      ( IsUniUpper_v<MT1> && IsUniLower_v<MT2> ) >* = nullptr >
+inline decltype(auto)
    smatsmatschur( const SparseMatrix<MT1,false>& lhs, const SparseMatrix<MT2,false>& rhs )
 {
    BLAZE_FUNCTION_TRACE;
 
-   UNUSED_PARAMETER( rhs );
+   MAYBE_UNUSED( rhs );
 
    BLAZE_INTERNAL_ASSERT( (~lhs).rows()    == (~rhs).rows()   , "Invalid number of rows"    );
    BLAZE_INTERNAL_ASSERT( (~lhs).columns() == (~rhs).columns(), "Invalid number of columns" );
 
-   return IdentityMatrix< MultTrait_t< ElementType_t<MT1>, ElementType_t<MT2> >, false >( (~lhs).rows() );
+   using ReturnType = const SchurTrait_t< ResultType_t<MT1>, ResultType_t<MT2> >;
+
+   BLAZE_CONSTRAINT_MUST_BE_ROW_MAJOR_MATRIX_TYPE( ReturnType );
+   BLAZE_CONSTRAINT_MUST_BE_IDENTITY_MATRIX_TYPE( ReturnType );
+
+   return ReturnType( (~lhs).rows() );
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Backend implementation of the Schur product between two (strictly) triangular row-major
+//        sparse matrices (\f$ A=B \circ C \f$).
+// \ingroup sparse_matrix
+//
+// \param lhs The left-hand side sparse matrix for the Schur product.
+// \param rhs The right-hand side sparse matrix for the Schur product.
+// \return The resulting zero matrix.
+//
+// This function implements a performance optimized treatment of the Schur product between two
+// (strictly) triangular row-major sparse matrices. It returns a zero matrix.
+*/
+template< typename MT1  // Type of the left-hand side sparse matrix
+        , typename MT2  // Type of the right-hand side sparse matrix
+        , EnableIf_t< ( IsStrictlyLower_v<MT1> && IsUpper_v<MT2> ) ||
+                      ( IsStrictlyUpper_v<MT1> && IsLower_v<MT2> ) ||
+                      ( IsLower_v<MT1> && IsStrictlyUpper_v<MT2> ) ||
+                      ( IsUpper_v<MT1> && IsStrictlyLower_v<MT2> ) ||
+                      ( IsZero_v<MT1> || IsZero_v<MT2> ) >* = nullptr >
+inline decltype(auto)
+   smatsmatschur( const SparseMatrix<MT1,false>& lhs, const SparseMatrix<MT2,false>& rhs )
+{
+   BLAZE_FUNCTION_TRACE;
+
+   MAYBE_UNUSED( rhs );
+
+   BLAZE_INTERNAL_ASSERT( (~lhs).rows()    == (~rhs).rows()   , "Invalid number of rows"    );
+   BLAZE_INTERNAL_ASSERT( (~lhs).columns() == (~rhs).columns(), "Invalid number of columns" );
+
+   using ReturnType = const SchurTrait_t< ResultType_t<MT1>, ResultType_t<MT2> >;
+
+   BLAZE_CONSTRAINT_MUST_BE_ROW_MAJOR_MATRIX_TYPE( ReturnType );
+   BLAZE_CONSTRAINT_MUST_BE_ZERO_TYPE( ReturnType );
+
+   return ReturnType( (~lhs).rows(), (~lhs).columns() );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -1007,150 +1041,6 @@ inline decltype(auto)
 
    return smatsmatschur( ~lhs, ~rhs );
 }
-//*************************************************************************************************
-
-
-
-
-//=================================================================================================
-//
-//  ISSYMMETRIC SPECIALIZATIONS
-//
-//=================================================================================================
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-template< typename MT1, typename MT2 >
-struct IsSymmetric< SMatSMatSchurExpr<MT1,MT2> >
-   : public BoolConstant< IsSymmetric_v<MT1> && IsSymmetric_v<MT2> >
-{};
-/*! \endcond */
-//*************************************************************************************************
-
-
-
-
-//=================================================================================================
-//
-//  ISHERMITIAN SPECIALIZATIONS
-//
-//=================================================================================================
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-template< typename MT1, typename MT2 >
-struct IsHermitian< SMatSMatSchurExpr<MT1,MT2> >
-   : public BoolConstant< IsHermitian_v<MT1> && IsHermitian_v<MT2> >
-{};
-/*! \endcond */
-//*************************************************************************************************
-
-
-
-
-//=================================================================================================
-//
-//  ISLOWER SPECIALIZATIONS
-//
-//=================================================================================================
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-template< typename MT1, typename MT2 >
-struct IsLower< SMatSMatSchurExpr<MT1,MT2> >
-   : public BoolConstant< IsLower_v<MT1> || IsLower_v<MT2> >
-{};
-/*! \endcond */
-//*************************************************************************************************
-
-
-
-
-//=================================================================================================
-//
-//  ISUNILOWER SPECIALIZATIONS
-//
-//=================================================================================================
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-template< typename MT1, typename MT2 >
-struct IsUniLower< SMatSMatSchurExpr<MT1,MT2> >
-   : public BoolConstant< IsUniLower_v<MT1> && IsUniLower_v<MT2> >
-{};
-/*! \endcond */
-//*************************************************************************************************
-
-
-
-
-//=================================================================================================
-//
-//  ISSTRICTLYLOWER SPECIALIZATIONS
-//
-//=================================================================================================
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-template< typename MT1, typename MT2 >
-struct IsStrictlyLower< SMatSMatSchurExpr<MT1,MT2> >
-   : public BoolConstant< IsStrictlyLower_v<MT1> || IsStrictlyLower_v<MT2> >
-{};
-/*! \endcond */
-//*************************************************************************************************
-
-
-
-
-//=================================================================================================
-//
-//  ISUPPER SPECIALIZATIONS
-//
-//=================================================================================================
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-template< typename MT1, typename MT2 >
-struct IsUpper< SMatSMatSchurExpr<MT1,MT2> >
-   : public BoolConstant< IsUpper_v<MT1> || IsUpper_v<MT2> >
-{};
-/*! \endcond */
-//*************************************************************************************************
-
-
-
-
-//=================================================================================================
-//
-//  ISUNIUPPER SPECIALIZATIONS
-//
-//=================================================================================================
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-template< typename MT1, typename MT2 >
-struct IsUniUpper< SMatSMatSchurExpr<MT1,MT2> >
-   : public BoolConstant< IsUniUpper_v<MT1> && IsUniUpper_v<MT2> >
-{};
-/*! \endcond */
-//*************************************************************************************************
-
-
-
-
-//=================================================================================================
-//
-//  ISSTRICTLYUPPER SPECIALIZATIONS
-//
-//=================================================================================================
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-template< typename MT1, typename MT2 >
-struct IsStrictlyUpper< SMatSMatSchurExpr<MT1,MT2> >
-   : public BoolConstant< IsStrictlyUpper_v<MT1> || IsStrictlyUpper_v<MT2> >
-{};
-/*! \endcond */
 //*************************************************************************************************
 
 } // namespace blaze

@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/SVecEvalExpr.h
 //  \brief Header file for the sparse vector evaluation expression
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -48,8 +48,8 @@
 #include "../../math/expressions/Forward.h"
 #include "../../math/expressions/VecEvalExpr.h"
 #include "../../math/expressions/SparseVector.h"
-#include "../../math/typetraits/IsComputation.h"
 #include "../../math/typetraits/IsExpression.h"
+#include "../../system/MacroDisable.h"
 #include "../../util/Assert.h"
 #include "../../util/FunctionTrace.h"
 #include "../../util/mpl/If.h"
@@ -79,11 +79,12 @@ class SVecEvalExpr
 {
  public:
    //**Type definitions****************************************************************************
-   using This          = SVecEvalExpr<VT,TF>;  //!< Type of this SVecEvalExpr instance.
-   using ResultType    = ResultType_t<VT>;     //!< Result type for expression template evaluations.
-   using TransposeType = TransposeType_t<VT>;  //!< Transpose type for expression template evaluations.
-   using ElementType   = ElementType_t<VT>;    //!< Resulting element type.
-   using ReturnType    = ReturnType_t<VT>;     //!< Return type for expression template evaluations.
+   using This          = SVecEvalExpr<VT,TF>;    //!< Type of this SVecEvalExpr instance.
+   using BaseType      = SparseVector<This,TF>;  //!< Base type of this SVecEvalExpr instance.
+   using ResultType    = ResultType_t<VT>;       //!< Result type for expression template evaluations.
+   using TransposeType = TransposeType_t<VT>;    //!< Transpose type for expression template evaluations.
+   using ElementType   = ElementType_t<VT>;      //!< Resulting element type.
+   using ReturnType    = ReturnType_t<VT>;       //!< Return type for expression template evaluations.
 
    //! Data type for composite expression templates.
    using CompositeType = const ResultType;
@@ -631,35 +632,6 @@ inline decltype(auto) eval( const SparseVector<VT,TF>& sv )
    using ReturnType = const SVecEvalExpr<VT,TF>;
    return ReturnType( ~sv );
 }
-//*************************************************************************************************
-
-
-
-
-//=================================================================================================
-//
-//  GLOBAL RESTRUCTURING FUNCTIONS
-//
-//=================================================================================================
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-/*!\brief Evaluation of the given sparse vector evaluation expression \a sv.
-// \ingroup sparse_vector
-//
-// \param sv The input evaluation expression.
-// \return The evaluated sparse vector.
-//
-// This function implements a performance optimized treatment of the evaluation of a sparse vector
-// evaluation expression.
-*/
-template< typename VT  // Type of the sparse vector
-        , bool TF >    // Transpose flag
-inline decltype(auto) eval( const SVecEvalExpr<VT,TF>& sv )
-{
-   return sv;
-}
-/*! \endcond */
 //*************************************************************************************************
 
 } // namespace blaze

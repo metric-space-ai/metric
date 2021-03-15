@@ -3,7 +3,7 @@
 //  \file blaze/math/views/subvector/Dense.h
 //  \brief Subvector specialization for dense vectors
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -59,6 +59,8 @@
 #include "../../../math/InitializerList.h"
 #include "../../../math/shims/Clear.h"
 #include "../../../math/shims/IsDefault.h"
+#include "../../../math/shims/PrevMultiple.h"
+#include "../../../math/shims/Reset.h"
 #include "../../../math/SIMD.h"
 #include "../../../math/traits/CrossTrait.h"
 #include "../../../math/traits/SubvectorTrait.h"
@@ -67,6 +69,7 @@
 #include "../../../math/typetraits/HasSIMDDiv.h"
 #include "../../../math/typetraits/HasSIMDMult.h"
 #include "../../../math/typetraits/HasSIMDSub.h"
+#include "../../../math/typetraits/IsContiguous.h"
 #include "../../../math/typetraits/IsExpression.h"
 #include "../../../math/typetraits/IsRestricted.h"
 #include "../../../math/typetraits/IsSIMDCombinable.h"
@@ -75,13 +78,14 @@
 #include "../../../math/views/subvector/BaseTemplate.h"
 #include "../../../math/views/subvector/SubvectorData.h"
 #include "../../../system/CacheSize.h"
+#include "../../../system/HostDevice.h"
 #include "../../../system/Inline.h"
+#include "../../../system/MacroDisable.h"
 #include "../../../system/Optimizations.h"
 #include "../../../system/Thresholds.h"
 #include "../../../util/AlignmentCheck.h"
 #include "../../../util/Assert.h"
 #include "../../../util/constraints/Vectorizable.h"
-#include "../../../util/DisableIf.h"
 #include "../../../util/EnableIf.h"
 #include "../../../util/mpl/If.h"
 #include "../../../util/TypeList.h"
@@ -179,7 +183,7 @@ class Subvector<VT,unaligned,TF,true,CSAs...>
       //**Constructor******************************************************************************
       /*!\brief Default constructor of the SubvectorIterator class.
       */
-      inline SubvectorIterator()
+      inline BLAZE_DEVICE_CALLABLE SubvectorIterator()
          : iterator_ (       )  // Iterator to the current subvector element
          , isAligned_( false )  // Memory alignment flag
       {}
@@ -191,7 +195,7 @@ class Subvector<VT,unaligned,TF,true,CSAs...>
       // \param iterator Iterator to the initial element.
       // \param isMemoryAligned Memory alignment flag.
       */
-      inline SubvectorIterator( IteratorType iterator, bool isMemoryAligned )
+      inline BLAZE_DEVICE_CALLABLE SubvectorIterator( IteratorType iterator, bool isMemoryAligned )
          : iterator_ ( iterator        )  // Iterator to the current subvector element
          , isAligned_( isMemoryAligned )  // Memory alignment flag
       {}
@@ -203,7 +207,7 @@ class Subvector<VT,unaligned,TF,true,CSAs...>
       // \param it The subvector iterator to be copied
       */
       template< typename IteratorType2 >
-      inline SubvectorIterator( const SubvectorIterator<IteratorType2>& it )
+      inline BLAZE_DEVICE_CALLABLE SubvectorIterator( const SubvectorIterator<IteratorType2>& it )
          : iterator_ ( it.base()      )  // Iterator to the current subvector element
          , isAligned_( it.isAligned() )  // Memory alignment flag
       {}
@@ -215,7 +219,7 @@ class Subvector<VT,unaligned,TF,true,CSAs...>
       // \param inc The increment of the iterator.
       // \return The incremented iterator.
       */
-      inline SubvectorIterator& operator+=( size_t inc ) {
+      inline BLAZE_DEVICE_CALLABLE SubvectorIterator& operator+=( size_t inc ) {
          iterator_ += inc;
          return *this;
       }
@@ -227,7 +231,7 @@ class Subvector<VT,unaligned,TF,true,CSAs...>
       // \param dec The decrement of the iterator.
       // \return The decremented iterator.
       */
-      inline SubvectorIterator& operator-=( size_t dec ) {
+      inline BLAZE_DEVICE_CALLABLE SubvectorIterator& operator-=( size_t dec ) {
          iterator_ -= dec;
          return *this;
       }
@@ -238,7 +242,7 @@ class Subvector<VT,unaligned,TF,true,CSAs...>
       //
       // \return Reference to the incremented iterator.
       */
-      inline SubvectorIterator& operator++() {
+      inline BLAZE_DEVICE_CALLABLE SubvectorIterator& operator++() {
          ++iterator_;
          return *this;
       }
@@ -249,7 +253,7 @@ class Subvector<VT,unaligned,TF,true,CSAs...>
       //
       // \return The previous position of the iterator.
       */
-      inline const SubvectorIterator operator++( int ) {
+      inline BLAZE_DEVICE_CALLABLE const SubvectorIterator operator++( int ) {
          return SubvectorIterator( iterator_++, isAligned_ );
       }
       //*******************************************************************************************
@@ -259,7 +263,7 @@ class Subvector<VT,unaligned,TF,true,CSAs...>
       //
       // \return Reference to the decremented iterator.
       */
-      inline SubvectorIterator& operator--() {
+      inline BLAZE_DEVICE_CALLABLE SubvectorIterator& operator--() {
          --iterator_;
          return *this;
       }
@@ -270,7 +274,7 @@ class Subvector<VT,unaligned,TF,true,CSAs...>
       //
       // \return The previous position of the iterator.
       */
-      inline const SubvectorIterator operator--( int ) {
+      inline BLAZE_DEVICE_CALLABLE const SubvectorIterator operator--( int ) {
          return SubvectorIterator( iterator_--, isAligned_ );
       }
       //*******************************************************************************************
@@ -280,7 +284,7 @@ class Subvector<VT,unaligned,TF,true,CSAs...>
       //
       // \return Reference to the current value.
       */
-      inline ReferenceType operator*() const {
+      inline BLAZE_DEVICE_CALLABLE ReferenceType operator*() const {
          return *iterator_;
       }
       //*******************************************************************************************
@@ -290,7 +294,7 @@ class Subvector<VT,unaligned,TF,true,CSAs...>
       //
       // \return Pointer to the element at the current iterator position.
       */
-      inline IteratorType operator->() const {
+      inline BLAZE_DEVICE_CALLABLE IteratorType operator->() const {
          return iterator_;
       }
       //*******************************************************************************************
@@ -306,7 +310,12 @@ class Subvector<VT,unaligned,TF,true,CSAs...>
       // result in erroneous results and/or in compilation errors.
       */
       inline SIMDType load() const {
-         return loadu();
+         if( isAligned_ ) {
+            return loada();
+         }
+         else {
+            return loadu();
+         }
       }
       //*******************************************************************************************
 
@@ -336,12 +345,7 @@ class Subvector<VT,unaligned,TF,true,CSAs...>
       // might result in erroneous results and/or in compilation errors.
       */
       inline SIMDType loadu() const {
-         if( isAligned_ ) {
-            return iterator_.loada();
-         }
-         else {
-            return iterator_.loadu();
-         }
+         return iterator_.loadu();
       }
       //*******************************************************************************************
 
@@ -357,7 +361,12 @@ class Subvector<VT,unaligned,TF,true,CSAs...>
       // result in erroneous results and/or in compilation errors.
       */
       inline void store( const SIMDType& value ) const {
-         storeu( value );
+         if( isAligned_ ) {
+            storea( value );
+         }
+         else {
+            storeu( value );
+         }
       }
       //*******************************************************************************************
 
@@ -389,12 +398,7 @@ class Subvector<VT,unaligned,TF,true,CSAs...>
       // might result in erroneous results and/or in compilation errors.
       */
       inline void storeu( const SIMDType& value ) const {
-         if( isAligned_ ) {
-            iterator_.storea( value );
-         }
-         else {
-            iterator_.storeu( value );
-         }
+         iterator_.storeu( value );
       }
       //*******************************************************************************************
 
@@ -420,7 +424,7 @@ class Subvector<VT,unaligned,TF,true,CSAs...>
       // \param rhs The right-hand side iterator.
       // \return \a true if the iterators refer to the same element, \a false if not.
       */
-      inline bool operator==( const SubvectorIterator& rhs ) const {
+      inline BLAZE_DEVICE_CALLABLE bool operator==( const SubvectorIterator& rhs ) const {
          return iterator_ == rhs.iterator_;
       }
       //*******************************************************************************************
@@ -431,7 +435,7 @@ class Subvector<VT,unaligned,TF,true,CSAs...>
       // \param rhs The right-hand side iterator.
       // \return \a true if the iterators don't refer to the same element, \a false if they do.
       */
-      inline bool operator!=( const SubvectorIterator& rhs ) const {
+      inline BLAZE_DEVICE_CALLABLE bool operator!=( const SubvectorIterator& rhs ) const {
          return iterator_ != rhs.iterator_;
       }
       //*******************************************************************************************
@@ -442,7 +446,7 @@ class Subvector<VT,unaligned,TF,true,CSAs...>
       // \param rhs The right-hand side iterator.
       // \return \a true if the left-hand side iterator is smaller, \a false if not.
       */
-      inline bool operator<( const SubvectorIterator& rhs ) const {
+      inline BLAZE_DEVICE_CALLABLE bool operator<( const SubvectorIterator& rhs ) const {
          return iterator_ < rhs.iterator_;
       }
       //*******************************************************************************************
@@ -453,7 +457,7 @@ class Subvector<VT,unaligned,TF,true,CSAs...>
       // \param rhs The right-hand side iterator.
       // \return \a true if the left-hand side iterator is greater, \a false if not.
       */
-      inline bool operator>( const SubvectorIterator& rhs ) const {
+      inline BLAZE_DEVICE_CALLABLE bool operator>( const SubvectorIterator& rhs ) const {
          return iterator_ > rhs.iterator_;
       }
       //*******************************************************************************************
@@ -464,7 +468,7 @@ class Subvector<VT,unaligned,TF,true,CSAs...>
       // \param rhs The right-hand side iterator.
       // \return \a true if the left-hand side iterator is smaller or equal, \a false if not.
       */
-      inline bool operator<=( const SubvectorIterator& rhs ) const {
+      inline BLAZE_DEVICE_CALLABLE bool operator<=( const SubvectorIterator& rhs ) const {
          return iterator_ <= rhs.iterator_;
       }
       //*******************************************************************************************
@@ -475,7 +479,7 @@ class Subvector<VT,unaligned,TF,true,CSAs...>
       // \param rhs The right-hand side iterator.
       // \return \a true if the left-hand side iterator is greater or equal, \a false if not.
       */
-      inline bool operator>=( const SubvectorIterator& rhs ) const {
+      inline BLAZE_DEVICE_CALLABLE bool operator>=( const SubvectorIterator& rhs ) const {
          return iterator_ >= rhs.iterator_;
       }
       //*******************************************************************************************
@@ -486,7 +490,7 @@ class Subvector<VT,unaligned,TF,true,CSAs...>
       // \param rhs The right-hand side iterator.
       // \return The number of elements between the two iterators.
       */
-      inline DifferenceType operator-( const SubvectorIterator& rhs ) const {
+      inline BLAZE_DEVICE_CALLABLE DifferenceType operator-( const SubvectorIterator& rhs ) const {
          return iterator_ - rhs.iterator_;
       }
       //*******************************************************************************************
@@ -498,7 +502,7 @@ class Subvector<VT,unaligned,TF,true,CSAs...>
       // \param inc The number of elements the iterator is incremented.
       // \return The incremented iterator.
       */
-      friend inline const SubvectorIterator operator+( const SubvectorIterator& it, size_t inc ) {
+      friend inline BLAZE_DEVICE_CALLABLE const SubvectorIterator operator+( const SubvectorIterator& it, size_t inc ) {
          return SubvectorIterator( it.iterator_ + inc, it.isAligned_ );
       }
       //*******************************************************************************************
@@ -510,7 +514,7 @@ class Subvector<VT,unaligned,TF,true,CSAs...>
       // \param it The iterator to be incremented.
       // \return The incremented iterator.
       */
-      friend inline const SubvectorIterator operator+( size_t inc, const SubvectorIterator& it ) {
+      friend inline BLAZE_DEVICE_CALLABLE const SubvectorIterator operator+( size_t inc, const SubvectorIterator& it ) {
          return SubvectorIterator( it.iterator_ + inc, it.isAligned_ );
       }
       //*******************************************************************************************
@@ -522,7 +526,7 @@ class Subvector<VT,unaligned,TF,true,CSAs...>
       // \param dec The number of elements the iterator is decremented.
       // \return The decremented iterator.
       */
-      friend inline const SubvectorIterator operator-( const SubvectorIterator& it, size_t dec ) {
+      friend inline BLAZE_DEVICE_CALLABLE const SubvectorIterator operator-( const SubvectorIterator& it, size_t dec ) {
          return SubvectorIterator( it.iterator_ - dec, it.isAligned_ );
       }
       //*******************************************************************************************
@@ -532,7 +536,7 @@ class Subvector<VT,unaligned,TF,true,CSAs...>
       //
       // \return The current position of the subvector iterator.
       */
-      inline IteratorType base() const {
+      inline BLAZE_DEVICE_CALLABLE IteratorType base() const {
          return iterator_;
       }
       //*******************************************************************************************
@@ -569,6 +573,9 @@ class Subvector<VT,unaligned,TF,true,CSAs...>
 
    //! Compilation switch for the expression template assignment strategy.
    static constexpr bool smpAssignable = VT::smpAssignable;
+
+   //! Compilation switch for the expression template evaluation strategy.
+   static constexpr bool compileTimeArgs = DataType::compileTimeArgs;
    //**********************************************************************************************
 
    //**Constructors********************************************************************************
@@ -576,12 +583,16 @@ class Subvector<VT,unaligned,TF,true,CSAs...>
    //@{
    template< typename... RSAs >
    explicit inline Subvector( VT& vector, RSAs... args );
-   // No explicitly declared copy constructor.
+
+   Subvector( const Subvector& ) = default;
    //@}
    //**********************************************************************************************
 
    //**Destructor**********************************************************************************
-   // No explicitly declared destructor.
+   /*!\name Destructor */
+   //@{
+   ~Subvector() = default;
+   //@}
    //**********************************************************************************************
 
    //**Data access functions***********************************************************************
@@ -654,9 +665,7 @@ class Subvector<VT,unaligned,TF,true,CSAs...>
    //! Helper structure for the explicit application of the SFINAE principle.
    template< typename VT2 >
    static constexpr bool VectorizedAddAssign_v =
-      ( useOptimizedKernels &&
-        simdEnabled && VT2::simdEnabled &&
-        IsSIMDCombinable_v< ElementType, ElementType_t<VT2> > &&
+      ( VectorizedAssign_v<VT2> &&
         HasSIMDAdd_v< ElementType, ElementType_t<VT2> > );
    //**********************************************************************************************
 
@@ -664,19 +673,15 @@ class Subvector<VT,unaligned,TF,true,CSAs...>
    //! Helper structure for the explicit application of the SFINAE principle.
    template< typename VT2 >
    static constexpr bool VectorizedSubAssign_v =
-      ( useOptimizedKernels &&
-        simdEnabled && VT2::simdEnabled &&
-        IsSIMDCombinable_v< ElementType, ElementType_t<VT2> > &&
-       HasSIMDSub_v< ElementType, ElementType_t<VT2> > );
+      ( VectorizedAssign_v<VT2> &&
+        HasSIMDSub_v< ElementType, ElementType_t<VT2> > );
    //**********************************************************************************************
 
    //**********************************************************************************************
    //! Helper structure for the explicit application of the SFINAE principle.
    template< typename VT2 >
    static constexpr bool VectorizedMultAssign_v =
-      ( useOptimizedKernels &&
-        simdEnabled && VT2::simdEnabled &&
-        IsSIMDCombinable_v< ElementType, ElementType_t<VT2> > &&
+      ( VectorizedAssign_v<VT2> &&
         HasSIMDMult_v< ElementType, ElementType_t<VT2> > );
    //**********************************************************************************************
 
@@ -684,9 +689,7 @@ class Subvector<VT,unaligned,TF,true,CSAs...>
    //! Helper structure for the explicit application of the SFINAE principle.
    template< typename VT2 >
    static constexpr bool VectorizedDivAssign_v =
-      ( useOptimizedKernels &&
-        simdEnabled && VT2::simdEnabled &&
-        IsSIMDCombinable_v< ElementType, ElementType_t<VT2> > &&
+      ( VectorizedAssign_v<VT2> &&
         HasSIMDDiv_v< ElementType, ElementType_t<VT2> > );
    //**********************************************************************************************
 
@@ -823,7 +826,8 @@ template< typename... RSAs >  // Runtime subvector arguments
 inline Subvector<VT,unaligned,TF,true,CSAs...>::Subvector( VT& vector, RSAs... args )
    : DataType  ( args... )  // Base class initialization
    , vector_   ( vector  )  // The vector containing the subvector
-   , isAligned_( simdEnabled && vector.data() != nullptr && checkAlignment( data() ) )
+   , isAligned_( simdEnabled && IsContiguous_v<VT> &&
+                 vector.data() != nullptr && checkAlignment( data() ) )
 {
    if( !Contains_v< TypeList<RSAs...>, Unchecked > ) {
       if( offset() + size() > vector.size() ) {
@@ -1218,7 +1222,7 @@ inline Subvector<VT,unaligned,TF,true,CSAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( rhs.canAlias( &vector_ ) ) {
+   if( rhs.canAlias( this ) ) {
       const ResultType tmp( rhs );
       smpAssign( left, tmp );
    }
@@ -1269,7 +1273,7 @@ inline Subvector<VT,unaligned,TF,true,CSAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( IsReference_v<Right> && right.canAlias( &vector_ ) ) {
+   if( IsReference_v<Right> && right.canAlias( this ) ) {
       const ResultType_t<VT2> tmp( right );
       smpAssign( left, tmp );
    }
@@ -1322,7 +1326,7 @@ inline Subvector<VT,unaligned,TF,true,CSAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( IsReference_v<Right> && right.canAlias( &vector_ ) ) {
+   if( IsReference_v<Right> && right.canAlias( this ) ) {
       const ResultType_t<VT2> tmp( right );
       smpAddAssign( left, tmp );
    }
@@ -1373,7 +1377,7 @@ inline Subvector<VT,unaligned,TF,true,CSAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( IsReference_v<Right> && right.canAlias( &vector_ ) ) {
+   if( IsReference_v<Right> && right.canAlias( this ) ) {
       const ResultType_t<VT2> tmp( right );
       smpSubAssign( left, tmp );
    }
@@ -1425,7 +1429,7 @@ inline Subvector<VT,unaligned,TF,true,CSAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( IsReference_v<Right> && right.canAlias( &vector_ ) ) {
+   if( IsReference_v<Right> && right.canAlias( this ) ) {
       const ResultType_t<VT2> tmp( right );
       smpMultAssign( left, tmp );
    }
@@ -1476,7 +1480,7 @@ inline Subvector<VT,unaligned,TF,true,CSAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( IsReference_v<Right> && right.canAlias( &vector_ ) ) {
+   if( IsReference_v<Right> && right.canAlias( this ) ) {
       const ResultType_t<VT2> tmp( right );
       smpDivAssign( left, tmp );
    }
@@ -1733,7 +1737,7 @@ template< typename VT       // Type of the dense vector
 template< typename Other >  // Data type of the foreign expression
 inline bool Subvector<VT,unaligned,TF,true,CSAs...>::canAlias( const Other* alias ) const noexcept
 {
-   return vector_.isAliased( alias );
+   return vector_.isAliased( &unview( *alias ) );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -1785,7 +1789,7 @@ template< typename VT       // Type of the dense vector
 template< typename Other >  // Data type of the foreign expression
 inline bool Subvector<VT,unaligned,TF,true,CSAs...>::isAliased( const Other* alias ) const noexcept
 {
-   return vector_.isAliased( alias );
+   return vector_.isAliased( &unview( *alias ) );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -1948,7 +1952,6 @@ BLAZE_ALWAYS_INLINE typename Subvector<VT,unaligned,TF,true,CSAs...>::SIMDType
 
    BLAZE_INTERNAL_ASSERT( index < size()            , "Invalid subvector access index" );
    BLAZE_INTERNAL_ASSERT( index + SIMDSIZE <= size(), "Invalid subvector access index" );
-   BLAZE_INTERNAL_ASSERT( index % SIMDSIZE == 0UL   , "Invalid subvector access index" );
 
    return vector_.loadu( offset()+index );
 }
@@ -2044,7 +2047,6 @@ BLAZE_ALWAYS_INLINE void
 
    BLAZE_INTERNAL_ASSERT( index < size()            , "Invalid subvector access index" );
    BLAZE_INTERNAL_ASSERT( index + SIMDSIZE <= size(), "Invalid subvector access index" );
-   BLAZE_INTERNAL_ASSERT( index % SIMDSIZE == 0UL   , "Invalid subvector access index" );
 
    vector_.storeu( offset()+index, value );
 }
@@ -2109,7 +2111,9 @@ inline auto Subvector<VT,unaligned,TF,true,CSAs...>::assign( const DenseVector<V
 {
    BLAZE_INTERNAL_ASSERT( size() == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t ipos( size() & size_t(-2) );
+   const size_t ipos( prevMultiple( size(), 2UL ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= size(), "Invalid end calculation" );
+
    for( size_t i=0UL; i<ipos; i+=2UL ) {
       vector_[offset()+i    ] = (~rhs)[i    ];
       vector_[offset()+i+1UL] = (~rhs)[i+1UL];
@@ -2145,8 +2149,8 @@ inline auto Subvector<VT,unaligned,TF,true,CSAs...>::assign( const DenseVector<V
 
    BLAZE_INTERNAL_ASSERT( size() == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t ipos( size() & size_t(-SIMDSIZE) );
-   BLAZE_INTERNAL_ASSERT( ( size() - ( size() % (SIMDSIZE) ) ) == ipos, "Invalid end calculation" );
+   const size_t ipos( prevMultiple( size(), SIMDSIZE ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= size(), "Invalid end calculation" );
 
    size_t i( 0UL );
    Iterator left( begin() );
@@ -2154,7 +2158,7 @@ inline auto Subvector<VT,unaligned,TF,true,CSAs...>::assign( const DenseVector<V
 
    if( useStreaming && isAligned_ &&
        ( size() > ( cacheSize/( sizeof(ElementType) * 3UL ) ) ) &&
-       !(~rhs).isAliased( &vector_ ) )
+       !(~rhs).isAliased( this ) )
    {
       for( ; i<ipos; i+=SIMDSIZE ) {
          left.stream( right.load() ); left += SIMDSIZE; right += SIMDSIZE;
@@ -2231,7 +2235,9 @@ inline auto Subvector<VT,unaligned,TF,true,CSAs...>::addAssign( const DenseVecto
 {
    BLAZE_INTERNAL_ASSERT( size() == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t ipos( size() & size_t(-2) );
+   const size_t ipos( prevMultiple( size(), 2UL ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= size(), "Invalid end calculation" );
+
    for( size_t i=0UL; i<ipos; i+=2UL ) {
       vector_[offset()+i    ] += (~rhs)[i    ];
       vector_[offset()+i+1UL] += (~rhs)[i+1UL];
@@ -2267,8 +2273,8 @@ inline auto Subvector<VT,unaligned,TF,true,CSAs...>::addAssign( const DenseVecto
 
    BLAZE_INTERNAL_ASSERT( size() == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t ipos( size() & size_t(-SIMDSIZE) );
-   BLAZE_INTERNAL_ASSERT( ( size() - ( size() % (SIMDSIZE) ) ) == ipos, "Invalid end calculation" );
+   const size_t ipos( prevMultiple( size(), SIMDSIZE ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= size(), "Invalid end calculation" );
 
    size_t i( 0UL );
    Iterator left( begin() );
@@ -2339,7 +2345,9 @@ inline auto Subvector<VT,unaligned,TF,true,CSAs...>::subAssign( const DenseVecto
 {
    BLAZE_INTERNAL_ASSERT( size() == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t ipos( size() & size_t(-2) );
+   const size_t ipos( prevMultiple( size(), 2UL ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= size(), "Invalid end calculation" );
+
    for( size_t i=0UL; i<ipos; i+=2UL ) {
       vector_[offset()+i    ] -= (~rhs)[i    ];
       vector_[offset()+i+1UL] -= (~rhs)[i+1UL];
@@ -2375,8 +2383,8 @@ inline auto Subvector<VT,unaligned,TF,true,CSAs...>::subAssign( const DenseVecto
 
    BLAZE_INTERNAL_ASSERT( size() == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t ipos( size() & size_t(-SIMDSIZE) );
-   BLAZE_INTERNAL_ASSERT( ( size() - ( size() % (SIMDSIZE) ) ) == ipos, "Invalid end calculation" );
+   const size_t ipos( prevMultiple( size(), SIMDSIZE ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= size(), "Invalid end calculation" );
 
    size_t i( 0UL );
    Iterator left( begin() );
@@ -2447,7 +2455,9 @@ inline auto Subvector<VT,unaligned,TF,true,CSAs...>::multAssign( const DenseVect
 {
    BLAZE_INTERNAL_ASSERT( size() == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t ipos( size() & size_t(-2) );
+   const size_t ipos( prevMultiple( size(), 2UL ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= size(), "Invalid end calculation" );
+
    for( size_t i=0UL; i<ipos; i+=2UL ) {
       vector_[offset()+i    ] *= (~rhs)[i    ];
       vector_[offset()+i+1UL] *= (~rhs)[i+1UL];
@@ -2483,8 +2493,8 @@ inline auto Subvector<VT,unaligned,TF,true,CSAs...>::multAssign( const DenseVect
 
    BLAZE_INTERNAL_ASSERT( size() == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t ipos( size() & size_t(-SIMDSIZE) );
-   BLAZE_INTERNAL_ASSERT( ( size() - ( size() % (SIMDSIZE) ) ) == ipos, "Invalid end calculation" );
+   const size_t ipos( prevMultiple( size(), SIMDSIZE ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= size(), "Invalid end calculation" );
 
    size_t i( 0UL );
    Iterator left( begin() );
@@ -2568,7 +2578,9 @@ inline auto Subvector<VT,unaligned,TF,true,CSAs...>::divAssign( const DenseVecto
 {
    BLAZE_INTERNAL_ASSERT( size() == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t ipos( size() & size_t(-2) );
+   const size_t ipos( prevMultiple( size(), 2UL ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= size(), "Invalid end calculation" );
+
    for( size_t i=0UL; i<ipos; i+=2UL ) {
       vector_[offset()+i    ] /= (~rhs)[i    ];
       vector_[offset()+i+1UL] /= (~rhs)[i+1UL];
@@ -2604,8 +2616,8 @@ inline auto Subvector<VT,unaligned,TF,true,CSAs...>::divAssign( const DenseVecto
 
    BLAZE_INTERNAL_ASSERT( size() == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t ipos( size() & size_t(-SIMDSIZE) );
-   BLAZE_INTERNAL_ASSERT( ( size() - ( size() % (SIMDSIZE) ) ) == ipos, "Invalid end calculation" );
+   const size_t ipos( prevMultiple( size(), SIMDSIZE ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= size(), "Invalid end calculation" );
 
    size_t i( 0UL );
    Iterator left( begin() );
@@ -2700,6 +2712,9 @@ class Subvector<VT,aligned,TF,true,CSAs...>
 
    //! Compilation switch for the expression template assignment strategy.
    static constexpr bool smpAssignable = VT::smpAssignable;
+
+   //! Compilation switch for the expression template evaluation strategy.
+   static constexpr bool compileTimeArgs = DataType::compileTimeArgs;
    //**********************************************************************************************
 
    //**Constructors********************************************************************************
@@ -2707,12 +2722,16 @@ class Subvector<VT,aligned,TF,true,CSAs...>
    //@{
    template< typename... RSAs >
    explicit inline Subvector( VT& vector, RSAs... args );
-   // No explicitly declared copy constructor.
+
+   Subvector( const Subvector& ) = default;
    //@}
    //**********************************************************************************************
 
    //**Destructor**********************************************************************************
-   // No explicitly declared destructor.
+   /*!\name Destructor */
+   //@{
+   ~Subvector() = default;
+   //@}
    //**********************************************************************************************
 
    //**Data access functions***********************************************************************
@@ -2785,9 +2804,7 @@ class Subvector<VT,aligned,TF,true,CSAs...>
    //! Helper structure for the explicit application of the SFINAE principle.
    template< typename VT2 >
    static constexpr bool VectorizedAddAssign_v =
-      ( useOptimizedKernels &&
-        simdEnabled && VT2::simdEnabled &&
-        IsSIMDCombinable_v< ElementType, ElementType_t<VT2> > &&
+      ( VectorizedAssign_v<VT2> &&
         HasSIMDAdd_v< ElementType, ElementType_t<VT2> > );
    //**********************************************************************************************
 
@@ -2795,9 +2812,7 @@ class Subvector<VT,aligned,TF,true,CSAs...>
    //! Helper structure for the explicit application of the SFINAE principle.
    template< typename VT2 >
    static constexpr bool VectorizedSubAssign_v =
-      ( useOptimizedKernels &&
-        simdEnabled && VT2::simdEnabled &&
-        IsSIMDCombinable_v< ElementType, ElementType_t<VT2> > &&
+      ( VectorizedAssign_v<VT2> &&
         HasSIMDSub_v< ElementType, ElementType_t<VT2> > );
    //**********************************************************************************************
 
@@ -2805,9 +2820,7 @@ class Subvector<VT,aligned,TF,true,CSAs...>
    //! Helper structure for the explicit application of the SFINAE principle.
    template< typename VT2 >
    static constexpr bool VectorizedMultAssign_v =
-      ( useOptimizedKernels &&
-        simdEnabled && VT2::simdEnabled &&
-        IsSIMDCombinable_v< ElementType, ElementType_t<VT2> > &&
+      ( VectorizedAssign_v<VT2> &&
         HasSIMDMult_v< ElementType, ElementType_t<VT2> > );
    //**********************************************************************************************
 
@@ -2815,9 +2828,7 @@ class Subvector<VT,aligned,TF,true,CSAs...>
    //! Helper structure for the explicit application of the SFINAE principle.
    template< typename VT2 >
    static constexpr bool VectorizedDivAssign_v =
-      ( useOptimizedKernels &&
-        simdEnabled && VT2::simdEnabled &&
-        IsSIMDCombinable_v< ElementType, ElementType_t<VT2> > &&
+      ( VectorizedAssign_v<VT2> &&
         HasSIMDDiv_v< ElementType, ElementType_t<VT2> > );
    //**********************************************************************************************
 
@@ -2954,13 +2965,14 @@ inline Subvector<VT,aligned,TF,true,CSAs...>::Subvector( VT& vector, RSAs... arg
          BLAZE_THROW_INVALID_ARGUMENT( "Invalid subvector specification" );
       }
 
-      if( simdEnabled && vector_.data() != nullptr && !checkAlignment( data() ) ) {
+      if( simdEnabled && IsContiguous_v<VT> && !checkAlignment( data() ) ) {
          BLAZE_THROW_INVALID_ARGUMENT( "Invalid subvector alignment" );
       }
    }
-   else {
+   else
+   {
       BLAZE_USER_ASSERT( offset() + size() <= vector.size(), "Invalid subvector specification" );
-      BLAZE_USER_ASSERT( !simdEnabled || vector_.data() == nullptr || checkAlignment( data() ), "Invalid subvector alignment" );
+      BLAZE_USER_ASSERT( !simdEnabled || !IsContiguous_v<VT> || checkAlignment( data() ), "Invalid subvector alignment" );
    }
 }
 /*! \endcond */
@@ -3338,7 +3350,7 @@ inline Subvector<VT,aligned,TF,true,CSAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( rhs.canAlias( &vector_ ) ) {
+   if( rhs.canAlias( this ) ) {
       const ResultType tmp( ~rhs );
       smpAssign( left, tmp );
    }
@@ -3389,7 +3401,7 @@ inline Subvector<VT,aligned,TF,true,CSAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( IsReference_v<Right> && right.canAlias( &vector_ ) ) {
+   if( IsReference_v<Right> && right.canAlias( this ) ) {
       const ResultType_t<VT2> tmp( right );
       smpAssign( left, tmp );
    }
@@ -3442,7 +3454,7 @@ inline Subvector<VT,aligned,TF,true,CSAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( IsReference_v<Right> && right.canAlias( &vector_ ) ) {
+   if( IsReference_v<Right> && right.canAlias( this ) ) {
       const ResultType_t<VT2> tmp( right );
       smpAddAssign( left, tmp );
    }
@@ -3493,7 +3505,7 @@ inline Subvector<VT,aligned,TF,true,CSAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( IsReference_v<Right> && right.canAlias( &vector_ ) ) {
+   if( IsReference_v<Right> && right.canAlias( this ) ) {
       const ResultType_t<VT2> tmp( right );
       smpSubAssign( left, tmp );
    }
@@ -3545,7 +3557,7 @@ inline Subvector<VT,aligned,TF,true,CSAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( IsReference_v<Right> && right.canAlias( &vector_ ) ) {
+   if( IsReference_v<Right> && right.canAlias( this ) ) {
       const ResultType_t<VT2> tmp( right );
       smpMultAssign( left, tmp );
    }
@@ -3596,7 +3608,7 @@ inline Subvector<VT,aligned,TF,true,CSAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( IsReference_v<Right> && right.canAlias( &vector_ ) ) {
+   if( IsReference_v<Right> && right.canAlias( this ) ) {
       const ResultType_t<VT2> tmp( right );
       smpDivAssign( left, tmp );
    }
@@ -3853,7 +3865,7 @@ template< typename VT       // Type of the dense vector
 template< typename Other >  // Data type of the foreign expression
 inline bool Subvector<VT,aligned,TF,true,CSAs...>::canAlias( const Other* alias ) const noexcept
 {
-   return vector_.isAliased( alias );
+   return vector_.isAliased( &unview( *alias ) );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -3905,7 +3917,7 @@ template< typename VT       // Type of the dense vector
 template< typename Other >  // Data type of the foreign expression
 inline bool Subvector<VT,aligned,TF,true,CSAs...>::isAliased( const Other* alias ) const noexcept
 {
-   return vector_.isAliased( alias );
+   return vector_.isAliased( &unview( *alias ) );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -4065,7 +4077,6 @@ BLAZE_ALWAYS_INLINE typename Subvector<VT,aligned,TF,true,CSAs...>::SIMDType
 
    BLAZE_INTERNAL_ASSERT( index < size()            , "Invalid subvector access index" );
    BLAZE_INTERNAL_ASSERT( index + SIMDSIZE <= size(), "Invalid subvector access index" );
-   BLAZE_INTERNAL_ASSERT( index % SIMDSIZE == 0UL   , "Invalid subvector access index" );
 
    return vector_.loadu( offset()+index );
 }
@@ -4158,7 +4169,6 @@ BLAZE_ALWAYS_INLINE void
 
    BLAZE_INTERNAL_ASSERT( index < size()            , "Invalid subvector access index" );
    BLAZE_INTERNAL_ASSERT( index + SIMDSIZE <= size(), "Invalid subvector access index" );
-   BLAZE_INTERNAL_ASSERT( index % SIMDSIZE == 0UL   , "Invalid subvector access index" );
 
    vector_.storeu( offset()+index, value );
 }
@@ -4220,7 +4230,9 @@ inline auto Subvector<VT,aligned,TF,true,CSAs...>::assign( const DenseVector<VT2
 {
    BLAZE_INTERNAL_ASSERT( size() == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t ipos( size() & size_t(-2) );
+   const size_t ipos( prevMultiple( size(), 2UL ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= size(), "Invalid end calculation" );
+
    for( size_t i=0UL; i<ipos; i+=2UL ) {
       vector_[offset()+i    ] = (~rhs)[i    ];
       vector_[offset()+i+1UL] = (~rhs)[i+1UL];
@@ -4256,14 +4268,14 @@ inline auto Subvector<VT,aligned,TF,true,CSAs...>::assign( const DenseVector<VT2
 
    BLAZE_INTERNAL_ASSERT( size() == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t ipos( size() & size_t(-SIMDSIZE) );
-   BLAZE_INTERNAL_ASSERT( ( size() - ( size() % (SIMDSIZE) ) ) == ipos, "Invalid end calculation" );
+   const size_t ipos( prevMultiple( size(), SIMDSIZE ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= size(), "Invalid end calculation" );
 
    size_t i( 0UL );
    Iterator left( begin() );
    ConstIterator_t<VT2> right( (~rhs).begin() );
 
-   if( useStreaming && size() > ( cacheSize/( sizeof(ElementType) * 3UL ) ) && !(~rhs).isAliased( &vector_ ) )
+   if( useStreaming && size() > ( cacheSize/( sizeof(ElementType) * 3UL ) ) && !(~rhs).isAliased( this ) )
    {
       for( ; i<ipos; i+=SIMDSIZE ) {
          left.stream( right.load() ); left += SIMDSIZE; right += SIMDSIZE;
@@ -4340,7 +4352,9 @@ inline auto Subvector<VT,aligned,TF,true,CSAs...>::addAssign( const DenseVector<
 {
    BLAZE_INTERNAL_ASSERT( size() == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t ipos( size() & size_t(-2) );
+   const size_t ipos( prevMultiple( size(), 2UL ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= size(), "Invalid end calculation" );
+
    for( size_t i=0UL; i<ipos; i+=2UL ) {
       vector_[offset()+i    ] += (~rhs)[i    ];
       vector_[offset()+i+1UL] += (~rhs)[i+1UL];
@@ -4376,8 +4390,8 @@ inline auto Subvector<VT,aligned,TF,true,CSAs...>::addAssign( const DenseVector<
 
    BLAZE_INTERNAL_ASSERT( size() == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t ipos( size() & size_t(-SIMDSIZE) );
-   BLAZE_INTERNAL_ASSERT( ( size() - ( size() % (SIMDSIZE) ) ) == ipos, "Invalid end calculation" );
+   const size_t ipos( prevMultiple( size(), SIMDSIZE ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= size(), "Invalid end calculation" );
 
    size_t i( 0UL );
    Iterator left( begin() );
@@ -4448,7 +4462,9 @@ inline auto Subvector<VT,aligned,TF,true,CSAs...>::subAssign( const DenseVector<
 {
    BLAZE_INTERNAL_ASSERT( size() == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t ipos( size() & size_t(-2) );
+   const size_t ipos( prevMultiple( size(), 2UL ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= size(), "Invalid end calculation" );
+
    for( size_t i=0UL; i<ipos; i+=2UL ) {
       vector_[offset()+i    ] -= (~rhs)[i    ];
       vector_[offset()+i+1UL] -= (~rhs)[i+1UL];
@@ -4484,8 +4500,8 @@ inline auto Subvector<VT,aligned,TF,true,CSAs...>::subAssign( const DenseVector<
 
    BLAZE_INTERNAL_ASSERT( size() == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t ipos( size() & size_t(-SIMDSIZE) );
-   BLAZE_INTERNAL_ASSERT( ( size() - ( size() % (SIMDSIZE) ) ) == ipos, "Invalid end calculation" );
+   const size_t ipos( prevMultiple( size(), SIMDSIZE ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= size(), "Invalid end calculation" );
 
    size_t i( 0UL );
    Iterator left( begin() );
@@ -4556,7 +4572,9 @@ inline auto Subvector<VT,aligned,TF,true,CSAs...>::multAssign( const DenseVector
 {
    BLAZE_INTERNAL_ASSERT( size() == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t ipos( size() & size_t(-2) );
+   const size_t ipos( prevMultiple( size(), 2UL ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= size(), "Invalid end calculation" );
+
    for( size_t i=0UL; i<ipos; i+=2UL ) {
       vector_[offset()+i    ] *= (~rhs)[i    ];
       vector_[offset()+i+1UL] *= (~rhs)[i+1UL];
@@ -4592,8 +4610,8 @@ inline auto Subvector<VT,aligned,TF,true,CSAs...>::multAssign( const DenseVector
 
    BLAZE_INTERNAL_ASSERT( size() == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t ipos( size() & size_t(-SIMDSIZE) );
-   BLAZE_INTERNAL_ASSERT( ( size() - ( size() % (SIMDSIZE) ) ) == ipos, "Invalid end calculation" );
+   const size_t ipos( prevMultiple( size(), SIMDSIZE ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= size(), "Invalid end calculation" );
 
    size_t i( 0UL );
    Iterator left( begin() );
@@ -4677,7 +4695,9 @@ inline auto Subvector<VT,aligned,TF,true,CSAs...>::divAssign( const DenseVector<
 {
    BLAZE_INTERNAL_ASSERT( size() == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t ipos( size() & size_t(-2) );
+   const size_t ipos( prevMultiple( size(), 2UL ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= size(), "Invalid end calculation" );
+
    for( size_t i=0UL; i<ipos; i+=2UL ) {
       vector_[offset()+i    ] /= (~rhs)[i    ];
       vector_[offset()+i+1UL] /= (~rhs)[i+1UL];
@@ -4713,8 +4733,8 @@ inline auto Subvector<VT,aligned,TF,true,CSAs...>::divAssign( const DenseVector<
 
    BLAZE_INTERNAL_ASSERT( size() == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t ipos( size() & size_t(-SIMDSIZE) );
-   BLAZE_INTERNAL_ASSERT( ( size() - ( size() % (SIMDSIZE) ) ) == ipos, "Invalid end calculation" );
+   const size_t ipos( prevMultiple( size(), SIMDSIZE ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= size(), "Invalid end calculation" );
 
    size_t i( 0UL );
    Iterator left( begin() );
@@ -4792,6 +4812,9 @@ class Subvector< DVecDVecCrossExpr<VT1,VT2,TF>, unaligned, TF, true, CSAs... >
 
    //! Compilation switch for the expression template assignment strategy.
    static constexpr bool smpAssignable = false;
+
+   //! Compilation switch for the expression template evaluation strategy.
+   static constexpr bool compileTimeArgs = DataType::compileTimeArgs;
    //**********************************************************************************************
 
    //**Constructor*********************************************************************************
@@ -4867,7 +4890,7 @@ class Subvector< DVecDVecCrossExpr<VT1,VT2,TF>, unaligned, TF, true, CSAs... >
    */
    template< typename T >
    inline bool canAlias( const T* alias ) const noexcept {
-      return vector_.canAlias( alias );
+      return vector_.canAlias( &unview( *alias ) );
    }
    //**********************************************************************************************
 
@@ -4879,7 +4902,7 @@ class Subvector< DVecDVecCrossExpr<VT1,VT2,TF>, unaligned, TF, true, CSAs... >
    */
    template< typename T >
    inline bool isAliased( const T* alias ) const noexcept {
-      return vector_.isAliased( alias );
+      return vector_.isAliased( &unview( *alias ) );
    }
    //**********************************************************************************************
 
@@ -4947,6 +4970,9 @@ class Subvector< DVecSVecCrossExpr<VT1,VT2,TF>, unaligned, TF, true, CSAs... >
 
    //! Compilation switch for the expression template assignment strategy.
    static constexpr bool smpAssignable = false;
+
+   //! Compilation switch for the expression template evaluation strategy.
+   static constexpr bool compileTimeArgs = DataType::compileTimeArgs;
    //**********************************************************************************************
 
    //**Constructor*********************************************************************************
@@ -5022,7 +5048,7 @@ class Subvector< DVecSVecCrossExpr<VT1,VT2,TF>, unaligned, TF, true, CSAs... >
    */
    template< typename T >
    inline bool canAlias( const T* alias ) const noexcept {
-      return vector_.canAlias( alias );
+      return vector_.canAlias( &unview( *alias ) );
    }
    //**********************************************************************************************
 
@@ -5034,7 +5060,7 @@ class Subvector< DVecSVecCrossExpr<VT1,VT2,TF>, unaligned, TF, true, CSAs... >
    */
    template< typename T >
    inline bool isAliased( const T* alias ) const noexcept {
-      return vector_.isAliased( alias );
+      return vector_.isAliased( &unview( *alias ) );
    }
    //**********************************************************************************************
 
@@ -5102,6 +5128,9 @@ class Subvector< SVecDVecCrossExpr<VT1,VT2,TF>, unaligned, TF, true, CSAs... >
 
    //! Compilation switch for the expression template assignment strategy.
    static constexpr bool smpAssignable = false;
+
+   //! Compilation switch for the expression template evaluation strategy.
+   static constexpr bool compileTimeArgs = DataType::compileTimeArgs;
    //**********************************************************************************************
 
    //**Constructor*********************************************************************************
@@ -5177,7 +5206,7 @@ class Subvector< SVecDVecCrossExpr<VT1,VT2,TF>, unaligned, TF, true, CSAs... >
    */
    template< typename T >
    inline bool canAlias( const T* alias ) const noexcept {
-      return vector_.canAlias( alias );
+      return vector_.canAlias( &unview( *alias ) );
    }
    //**********************************************************************************************
 
@@ -5189,7 +5218,7 @@ class Subvector< SVecDVecCrossExpr<VT1,VT2,TF>, unaligned, TF, true, CSAs... >
    */
    template< typename T >
    inline bool isAliased( const T* alias ) const noexcept {
-      return vector_.isAliased( alias );
+      return vector_.isAliased( &unview( *alias ) );
    }
    //**********************************************************************************************
 
@@ -5257,6 +5286,9 @@ class Subvector< SVecSVecCrossExpr<VT1,VT2,TF>, unaligned, TF, true, CSAs... >
 
    //! Compilation switch for the expression template assignment strategy.
    static constexpr bool smpAssignable = false;
+
+   //! Compilation switch for the expression template evaluation strategy.
+   static constexpr bool compileTimeArgs = DataType::compileTimeArgs;
    //**********************************************************************************************
 
    //**Constructor*********************************************************************************
@@ -5332,7 +5364,7 @@ class Subvector< SVecSVecCrossExpr<VT1,VT2,TF>, unaligned, TF, true, CSAs... >
    */
    template< typename T >
    inline bool canAlias( const T* alias ) const noexcept {
-      return vector_.canAlias( alias );
+      return vector_.canAlias( &unview( *alias ) );
    }
    //**********************************************************************************************
 
@@ -5344,7 +5376,7 @@ class Subvector< SVecSVecCrossExpr<VT1,VT2,TF>, unaligned, TF, true, CSAs... >
    */
    template< typename T >
    inline bool isAliased( const T* alias ) const {
-      return vector_.isAliased( alias );
+      return vector_.isAliased( &unview( *alias ) );
    }
    //**********************************************************************************************
 

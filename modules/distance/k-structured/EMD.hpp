@@ -18,7 +18,8 @@ namespace metric {
  *
  */
 template <typename V>
-struct EMD {
+class EMD {
+public:
     using value_type = V;
     using distance_type = value_type;
 

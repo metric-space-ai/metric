@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/DVecScalarMultExpr.h
 //  \brief Header file for the dense vector/scalar multiplication expression
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -67,7 +67,9 @@
 #include "../../math/typetraits/RequiresEvaluation.h"
 #include "../../math/typetraits/UnderlyingBuiltin.h"
 #include "../../math/typetraits/UnderlyingElement.h"
+#include "../../system/HostDevice.h"
 #include "../../system/Inline.h"
+#include "../../system/MacroDisable.h"
 #include "../../system/Thresholds.h"
 #include "../../util/Assert.h"
 #include "../../util/constraints/FloatingPoint.h"
@@ -157,6 +159,7 @@ class DVecScalarMultExpr
  public:
    //**Type definitions****************************************************************************
    using This          = DVecScalarMultExpr<VT,ST,TF>;  //!< Type of this DVecScalarMultExpr instance.
+   using BaseType      = DenseVector<This,TF>;          //!< Base type of this DVecScalarMultExpr instance.
    using ResultType    = MultTrait_t<RT,ST>;            //!< Result type for expression template evaluations.
    using TransposeType = TransposeType_t<ResultType>;   //!< Transpose type for expression template evaluations.
    using ElementType   = ElementType_t<ResultType>;     //!< Resulting element type.
@@ -204,7 +207,7 @@ class DVecScalarMultExpr
       // \param iterator Iterator to the initial element.
       // \param scalar Scalar of the multiplication expression.
       */
-      explicit inline ConstIterator( IteratorType iterator, RightOperand scalar )
+      inline BLAZE_DEVICE_CALLABLE ConstIterator( IteratorType iterator, RightOperand scalar )
          : iterator_( iterator )  // Iterator to the current element
          , scalar_  ( scalar   )  // Scalar of the multiplication expression
       {}
@@ -216,7 +219,7 @@ class DVecScalarMultExpr
       // \param inc The increment of the iterator.
       // \return The incremented iterator.
       */
-      inline ConstIterator& operator+=( size_t inc ) {
+      inline BLAZE_DEVICE_CALLABLE ConstIterator& operator+=( size_t inc ) {
          iterator_ += inc;
          return *this;
       }
@@ -228,7 +231,7 @@ class DVecScalarMultExpr
       // \param dec The decrement of the iterator.
       // \return The decremented iterator.
       */
-      inline ConstIterator& operator-=( size_t dec ) {
+      inline BLAZE_DEVICE_CALLABLE ConstIterator& operator-=( size_t dec ) {
          iterator_ -= dec;
          return *this;
       }
@@ -239,7 +242,7 @@ class DVecScalarMultExpr
       //
       // \return Reference to the incremented iterator.
       */
-      inline ConstIterator& operator++() {
+      inline BLAZE_DEVICE_CALLABLE ConstIterator& operator++() {
          ++iterator_;
          return *this;
       }
@@ -250,8 +253,8 @@ class DVecScalarMultExpr
       //
       // \return The previous position of the iterator.
       */
-      inline const ConstIterator operator++( int ) {
-         return ConstIterator( iterator_++ );
+      inline BLAZE_DEVICE_CALLABLE const ConstIterator operator++( int ) {
+         return ConstIterator( iterator_++, scalar_ );
       }
       //*******************************************************************************************
 
@@ -260,7 +263,7 @@ class DVecScalarMultExpr
       //
       // \return Reference to the decremented iterator.
       */
-      inline ConstIterator& operator--() {
+      inline BLAZE_DEVICE_CALLABLE ConstIterator& operator--() {
          --iterator_;
          return *this;
       }
@@ -271,8 +274,8 @@ class DVecScalarMultExpr
       //
       // \return The previous position of the iterator.
       */
-      inline const ConstIterator operator--( int ) {
-         return ConstIterator( iterator_-- );
+      inline BLAZE_DEVICE_CALLABLE const ConstIterator operator--( int ) {
+         return ConstIterator( iterator_--, scalar_ );
       }
       //*******************************************************************************************
 
@@ -281,7 +284,7 @@ class DVecScalarMultExpr
       //
       // \return The resulting value.
       */
-      inline ReturnType operator*() const {
+      inline BLAZE_DEVICE_CALLABLE ReturnType operator*() const {
          return *iterator_ * scalar_;
       }
       //*******************************************************************************************
@@ -302,7 +305,7 @@ class DVecScalarMultExpr
       // \param rhs The right-hand side iterator.
       // \return \a true if the iterators refer to the same element, \a false if not.
       */
-      inline bool operator==( const ConstIterator& rhs ) const {
+      inline BLAZE_DEVICE_CALLABLE bool operator==( const ConstIterator& rhs ) const {
          return iterator_ == rhs.iterator_;
       }
       //*******************************************************************************************
@@ -313,7 +316,7 @@ class DVecScalarMultExpr
       // \param rhs The right-hand side iterator.
       // \return \a true if the iterators don't refer to the same element, \a false if they do.
       */
-      inline bool operator!=( const ConstIterator& rhs ) const {
+      inline BLAZE_DEVICE_CALLABLE bool operator!=( const ConstIterator& rhs ) const {
          return iterator_ != rhs.iterator_;
       }
       //*******************************************************************************************
@@ -324,7 +327,7 @@ class DVecScalarMultExpr
       // \param rhs The right-hand side iterator.
       // \return \a true if the left-hand side iterator is smaller, \a false if not.
       */
-      inline bool operator<( const ConstIterator& rhs ) const {
+      inline BLAZE_DEVICE_CALLABLE bool operator<( const ConstIterator& rhs ) const {
          return iterator_ < rhs.iterator_;
       }
       //*******************************************************************************************
@@ -335,7 +338,7 @@ class DVecScalarMultExpr
       // \param rhs The right-hand side iterator.
       // \return \a true if the left-hand side iterator is greater, \a false if not.
       */
-      inline bool operator>( const ConstIterator& rhs ) const {
+      inline BLAZE_DEVICE_CALLABLE bool operator>( const ConstIterator& rhs ) const {
          return iterator_ > rhs.iterator_;
       }
       //*******************************************************************************************
@@ -346,7 +349,7 @@ class DVecScalarMultExpr
       // \param rhs The right-hand side iterator.
       // \return \a true if the left-hand side iterator is smaller or equal, \a false if not.
       */
-      inline bool operator<=( const ConstIterator& rhs ) const {
+      inline BLAZE_DEVICE_CALLABLE bool operator<=( const ConstIterator& rhs ) const {
          return iterator_ <= rhs.iterator_;
       }
       //*******************************************************************************************
@@ -357,7 +360,7 @@ class DVecScalarMultExpr
       // \param rhs The right-hand side iterator.
       // \return \a true if the left-hand side iterator is greater or equal, \a false if not.
       */
-      inline bool operator>=( const ConstIterator& rhs ) const {
+      inline BLAZE_DEVICE_CALLABLE bool operator>=( const ConstIterator& rhs ) const {
          return iterator_ >= rhs.iterator_;
       }
       //*******************************************************************************************
@@ -368,7 +371,7 @@ class DVecScalarMultExpr
       // \param rhs The right-hand side iterator.
       // \return The number of elements between the two iterators.
       */
-      inline DifferenceType operator-( const ConstIterator& rhs ) const {
+      inline BLAZE_DEVICE_CALLABLE DifferenceType operator-( const ConstIterator& rhs ) const {
          return iterator_ - rhs.iterator_;
       }
       //*******************************************************************************************
@@ -380,8 +383,8 @@ class DVecScalarMultExpr
       // \param inc The number of elements the iterator is incremented.
       // \return The incremented iterator.
       */
-      friend inline const ConstIterator operator+( const ConstIterator& it, size_t inc ) {
-         return ConstIterator( it.iterator_ + inc );
+      friend inline BLAZE_DEVICE_CALLABLE const ConstIterator operator+( const ConstIterator& it, size_t inc ) {
+         return ConstIterator( it.iterator_ + inc, it.scalar_ );
       }
       //*******************************************************************************************
 
@@ -392,8 +395,8 @@ class DVecScalarMultExpr
       // \param it The iterator to be incremented.
       // \return The incremented iterator.
       */
-      friend inline const ConstIterator operator+( size_t inc, const ConstIterator& it ) {
-         return ConstIterator( it.iterator_ + inc );
+      friend inline BLAZE_DEVICE_CALLABLE const ConstIterator operator+( size_t inc, const ConstIterator& it ) {
+         return ConstIterator( it.iterator_ + inc, it.scalar_ );
       }
       //*******************************************************************************************
 
@@ -404,8 +407,8 @@ class DVecScalarMultExpr
       // \param dec The number of elements the iterator is decremented.
       // \return The decremented iterator.
       */
-      friend inline const ConstIterator operator-( const ConstIterator& it, size_t dec ) {
-         return ConstIterator( it.iterator_ - dec );
+      friend inline BLAZE_DEVICE_CALLABLE const ConstIterator operator-( const ConstIterator& it, size_t dec ) {
+         return ConstIterator( it.iterator_ - dec, it.scalar_ );
       }
       //*******************************************************************************************
 
@@ -438,7 +441,7 @@ class DVecScalarMultExpr
    // \param vector The left-hand side dense vector of the multiplication expression.
    // \param scalar The right-hand side scalar of the multiplication expression.
    */
-   explicit inline DVecScalarMultExpr( const VT& vector, ST scalar ) noexcept
+   inline DVecScalarMultExpr( const VT& vector, ST scalar ) noexcept
       : vector_( vector )  // Left-hand side dense vector of the multiplication expression
       , scalar_( scalar )  // Right-hand side scalar of the multiplication expression
    {}
@@ -599,8 +602,8 @@ class DVecScalarMultExpr
    // operand is a computation expression and requires an intermediate evaluation.
    */
    template< typename VT2 >  // Type of the target dense vector
-   friend inline EnableIf_t< UseAssign_v<VT2> >
-      assign( DenseVector<VT2,TF>& lhs, const DVecScalarMultExpr& rhs )
+   friend inline auto assign( DenseVector<VT2,TF>& lhs, const DVecScalarMultExpr& rhs )
+      -> EnableIf_t< UseAssign_v<VT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -627,8 +630,8 @@ class DVecScalarMultExpr
    // operand is a computation expression and requires an intermediate evaluation.
    */
    template< typename VT2 >  // Type of the target sparse vector
-   friend inline EnableIf_t< UseAssign_v<VT2> >
-      assign( SparseVector<VT2,TF>& lhs, const DVecScalarMultExpr& rhs )
+   friend inline auto assign( SparseVector<VT2,TF>& lhs, const DVecScalarMultExpr& rhs )
+      -> EnableIf_t< UseAssign_v<VT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -655,8 +658,8 @@ class DVecScalarMultExpr
    // vector operand is a computation expression and requires an intermediate evaluation.
    */
    template< typename VT2 >  // Type of the target dense vector
-   friend inline EnableIf_t< UseAssign_v<VT2> >
-      addAssign( DenseVector<VT2,TF>& lhs, const DVecScalarMultExpr& rhs )
+   friend inline auto addAssign( DenseVector<VT2,TF>& lhs, const DVecScalarMultExpr& rhs )
+      -> EnableIf_t< UseAssign_v<VT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -691,8 +694,8 @@ class DVecScalarMultExpr
    // operand is a computation expression and requires an intermediate evaluation.
    */
    template< typename VT2 >  // Type of the target dense vector
-   friend inline EnableIf_t< UseAssign_v<VT2> >
-      subAssign( DenseVector<VT2,TF>& lhs, const DVecScalarMultExpr& rhs )
+   friend inline auto subAssign( DenseVector<VT2,TF>& lhs, const DVecScalarMultExpr& rhs )
+      -> EnableIf_t< UseAssign_v<VT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -727,8 +730,8 @@ class DVecScalarMultExpr
    // vector operand is a computation expression and requires an intermediate evaluation.
    */
    template< typename VT2 >  // Type of the target dense vector
-   friend inline EnableIf_t< UseAssign_v<VT2> >
-      multAssign( DenseVector<VT2,TF>& lhs, const DVecScalarMultExpr& rhs )
+   friend inline auto multAssign( DenseVector<VT2,TF>& lhs, const DVecScalarMultExpr& rhs )
+      -> EnableIf_t< UseAssign_v<VT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -763,8 +766,8 @@ class DVecScalarMultExpr
    // vector operand is a computation expression and requires an intermediate evaluation.
    */
    template< typename VT2 >  // Type of the target dense vector
-   friend inline EnableIf_t< UseAssign_v<VT2> >
-      divAssign( DenseVector<VT2,TF>& lhs, const DVecScalarMultExpr& rhs )
+   friend inline auto divAssign( DenseVector<VT2,TF>& lhs, const DVecScalarMultExpr& rhs )
+      -> EnableIf_t< UseAssign_v<VT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -799,8 +802,8 @@ class DVecScalarMultExpr
    // specific parallel evaluation strategy is selected.
    */
    template< typename VT2 >  // Type of the target dense vector
-   friend inline EnableIf_t< UseSMPAssign_v<VT2> >
-      smpAssign( DenseVector<VT2,TF>& lhs, const DVecScalarMultExpr& rhs )
+   friend inline auto smpAssign( DenseVector<VT2,TF>& lhs, const DVecScalarMultExpr& rhs )
+      -> EnableIf_t< UseSMPAssign_v<VT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -827,8 +830,8 @@ class DVecScalarMultExpr
    // specific parallel evaluation strategy is selected.
    */
    template< typename VT2 >  // Type of the target sparse vector
-   friend inline EnableIf_t< UseSMPAssign_v<VT2> >
-      smpAssign( SparseVector<VT2,TF>& lhs, const DVecScalarMultExpr& rhs )
+   friend inline auto smpAssign( SparseVector<VT2,TF>& lhs, const DVecScalarMultExpr& rhs )
+      -> EnableIf_t< UseSMPAssign_v<VT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -855,8 +858,8 @@ class DVecScalarMultExpr
    // expression specific parallel evaluation strategy is selected.
    */
    template< typename VT2 >  // Type of the target dense vector
-   friend inline EnableIf_t< UseSMPAssign_v<VT2> >
-      smpAddAssign( DenseVector<VT2,TF>& lhs, const DVecScalarMultExpr& rhs )
+   friend inline auto smpAddAssign( DenseVector<VT2,TF>& lhs, const DVecScalarMultExpr& rhs )
+      -> EnableIf_t< UseSMPAssign_v<VT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -891,8 +894,8 @@ class DVecScalarMultExpr
    // expression specific parallel evaluation strategy is selected.
    */
    template< typename VT2 >  // Type of the target dense vector
-   friend inline EnableIf_t< UseSMPAssign_v<VT2> >
-      smpSubAssign( DenseVector<VT2,TF>& lhs, const DVecScalarMultExpr& rhs )
+   friend inline auto smpSubAssign( DenseVector<VT2,TF>& lhs, const DVecScalarMultExpr& rhs )
+      -> EnableIf_t< UseSMPAssign_v<VT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -927,8 +930,8 @@ class DVecScalarMultExpr
    // expression specific parallel evaluation strategy is selected.
    */
    template< typename VT2 >  // Type of the target dense vector
-   friend inline EnableIf_t< UseSMPAssign_v<VT2> >
-      smpMultAssign( DenseVector<VT2,TF>& lhs, const DVecScalarMultExpr& rhs )
+   friend inline auto smpMultAssign( DenseVector<VT2,TF>& lhs, const DVecScalarMultExpr& rhs )
+      -> EnableIf_t< UseSMPAssign_v<VT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -963,8 +966,8 @@ class DVecScalarMultExpr
    // specific parallel evaluation strategy is selected.
    */
    template< typename VT2 >  // Type of the target dense vector
-   friend inline EnableIf_t< UseSMPAssign_v<VT2> >
-      smpDivAssign( DenseVector<VT2,TF>& lhs, const DVecScalarMultExpr& rhs )
+   friend inline auto smpDivAssign( DenseVector<VT2,TF>& lhs, const DVecScalarMultExpr& rhs )
+      -> EnableIf_t< UseSMPAssign_v<VT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -1067,7 +1070,7 @@ inline decltype(auto) operator-( const DenseVector<VT,TF>& dv )
 template< typename VT  // Type of the left-hand side dense vector
         , typename ST  // Type of the right-hand side scalar
         , bool TF      // Transpose flag
-        , typename = EnableIf_t< IsNumeric_v<ST> > >
+        , EnableIf_t< IsNumeric_v<ST> >* = nullptr >
 inline decltype(auto) operator*( const DenseVector<VT,TF>& vec, ST scalar )
 {
    BLAZE_FUNCTION_TRACE;
@@ -1104,7 +1107,7 @@ inline decltype(auto) operator*( const DenseVector<VT,TF>& vec, ST scalar )
 template< typename ST  // Type of the left-hand side scalar
         , typename VT  // Type of the right-hand side dense vector
         , bool TF      // Transpose flag
-        , typename = EnableIf_t< IsNumeric_v<ST> > >
+        , EnableIf_t< IsNumeric_v<ST> >* = nullptr >
 inline decltype(auto) operator*( ST scalar, const DenseVector<VT,TF>& vec )
 {
    BLAZE_FUNCTION_TRACE;
@@ -1218,7 +1221,7 @@ template< typename VT   // Type of the dense vector of the left-hand side expres
         , typename ST1  // Type of the scalar of the left-hand side expression
         , bool TF       // Transpose flag of the dense vector
         , typename ST2  // Type of the right-hand side scalar
-        , typename = EnableIf_t< IsNumeric_v<ST2> > >
+        , EnableIf_t< IsNumeric_v<ST2> >* = nullptr >
 inline decltype(auto) operator*( const DVecScalarMultExpr<VT,ST1,TF>& vec, ST2 scalar )
 {
    BLAZE_FUNCTION_TRACE;
@@ -1246,7 +1249,7 @@ template< typename ST1  // Type of the left-hand side scalar
         , typename VT   // Type of the dense vector of the right-hand side expression
         , typename ST2  // Type of the scalar of the right-hand side expression
         , bool TF       // Transpose flag of the dense vector
-        , typename = EnableIf_t< IsNumeric_v<ST1> > >
+        , EnableIf_t< IsNumeric_v<ST1> >* = nullptr >
 inline decltype(auto) operator*( ST1 scalar, const DVecScalarMultExpr<VT,ST2,TF>& vec )
 {
    BLAZE_FUNCTION_TRACE;
@@ -1274,7 +1277,7 @@ template< typename VT   // Type of the dense vector of the left-hand side expres
         , typename ST1  // Type of the scalar of the left-hand side expression
         , bool TF       // Transpose flag of the dense vector
         , typename ST2  // Type of the right-hand side scalar
-        , typename = EnableIf_t< ( IsNumeric_v<ST2> && ( IsInvertible_v<ST1> || IsInvertible_v<ST2> ) ) > >
+        , EnableIf_t< ( IsNumeric_v<ST2> && ( IsInvertible_v<ST1> || IsInvertible_v<ST2> ) ) >* = nullptr >
 inline decltype(auto) operator/( const DVecScalarMultExpr<VT,ST1,TF>& vec, ST2 scalar )
 {
    BLAZE_FUNCTION_TRACE;

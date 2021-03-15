@@ -5,10 +5,9 @@
 
   Copyright (c) 2019 Michael Welsch
 */
-#ifndef _METRIC_UTILS_GRAPH_GRAPH_CPP
-#define _METRIC_UTILS_GRAPH_GRAPH_CPP
 #include "../graph.hpp"
 #include <unordered_map>
+#include <algorithm>
 
 namespace metric {
 
@@ -34,23 +33,21 @@ Graph<WeightType, isDense, isSymmetric>::Graph(const std::vector<std::pair<size_
     buildEdges(edgesPairs);
 }
 
+// FIXME: check what to do with other fields
 template <typename WeightType, bool isDense, bool isSymmetric>
 Graph<WeightType, isDense, isSymmetric>::Graph(MatrixType&& matrix)
-    : m(std::move(matrix))
+    : matrix(std::move(matrix))
 {
 }
 
 template <typename WeightType, bool isDense, bool isSymmetric>
-Graph<WeightType, isDense, isSymmetric>::~Graph() = default;
-
-template <typename WeightType, bool isDense, bool isSymmetric>
-size_t Graph<WeightType, isDense, isSymmetric>::getNodesNumber()
+size_t Graph<WeightType, isDense, isSymmetric>::getNodesNumber() const
 {
     return nodesNumber;
 }
 
 template <typename WeightType, bool isDense, bool isSymmetric>
-bool Graph<WeightType, isDense, isSymmetric>::isValid()
+bool Graph<WeightType, isDense, isSymmetric>::isValid() const
 {
     return valid;
 }
@@ -71,14 +68,14 @@ std::vector<std::vector<size_t>> Graph<WeightType, isDense, isSymmetric>::getNei
     std::unordered_map<size_t, size_t> indices;
 
     row_stack.push(index);
-    iterator_stack.push(m.begin(index));  // stacks are ever processed together (so they are always of the same size)
+    iterator_stack.push(matrix.begin(index));  // stacks are ever processed together (so they are always of the same size)
 
     indices[row_stack.top()] = 0;
 
     size_t depth = 1;
 
     while (true) {
-        if (iterator_stack.top() == m.end(row_stack.top()) || depth > maxDeep)  // end of row or max depth reached
+        if (iterator_stack.top() == matrix.end(row_stack.top()) || depth > maxDeep)  // end of row or max depth reached
         {
             row_stack.pop();  // return to the previous level
             iterator_stack.pop();
@@ -88,7 +85,7 @@ std::vector<std::vector<size_t>> Graph<WeightType, isDense, isSymmetric>::getNei
                 break;
         } else {
             row_stack.push(iterator_stack.top()->index());  // enter the next level
-            iterator_stack.push(m.begin(row_stack.top()));
+            iterator_stack.push(matrix.begin(row_stack.top()));
             depth++;
 
             auto search = indices.find(row_stack.top());
@@ -140,17 +137,26 @@ void Graph<WeightType, isDense, isSymmetric>::buildEdges(const std::vector<std::
     if (max > nodesNumber)
         nodesNumber = max;
 
-    m.resize((unsigned long)max, (unsigned long)max);
-    m.reset();
+    matrix.resize((unsigned long)max, (unsigned long)max);
+    matrix.reset();
 
-    //m.reserve(edgePairs.size()); // TODO optimize via reserve-insert-finalize idiom
+    //matrix.reserve(edgePairs.size()); // TODO optimize via reserve-insert-finalize idiom
     for (const auto& [i, j] : edgesPairs) {
         if (i != j) {
-            m(i, j) = 1;
+            matrix(i, j) = 1;
         }
 
         // TODO on the final optimization stage: restore faster insertion via .insert(...) with compile-time check/specialization
     }
+}
+
+template <typename WeightType, bool isDense, bool isSymmetric>
+void Graph<WeightType, isDense, isSymmetric>::updateEdges(const MatrixType &edgeMatrix)
+{
+    assert (matrix.rows() == edgeMatrix.rows());
+    assert (matrix.columns() == edgeMatrix.columns());
+	matrix = edgeMatrix;
+	matrix_changed_ = true;
 }
 
 template <typename WeightType, bool isDense, bool isSymmetric>
@@ -169,12 +175,12 @@ Graph<WeightType, isDense, isSymmetric>::getNeighbours(const size_t index, const
 {
     std::vector<std::vector<size_t>> neighboursList(maxDeep + 1);
 
-    if (index >= m.columns())
+    if (index >= matrix.columns())
         return neighboursList;
 
     std::vector<size_t> parents;
     std::vector<size_t> children;
-    std::vector<bool> nodes = std::vector<bool>(m.columns(), false);
+    std::vector<bool> nodes = std::vector<bool>(matrix.columns(), false);
 
     parents.push_back(index);
     neighboursList[0].push_back(index);
@@ -186,8 +192,8 @@ Graph<WeightType, isDense, isSymmetric>::getNeighbours(const size_t index, const
         typename MatrixType::Iterator it;
 
         for (auto el : parents) {
-            for (it = m.begin(el); it != m.end(el);
-                 it++)  // for dense and for sparse m.end(...) has different meaning!..
+            for (it = matrix.begin(el); it != matrix.end(el);
+                 it++)  // for dense and for sparse matrix.end(...) has different meaning!..
             {
                 // tested on sparse only
                 if (!nodes[it->index()]) {
@@ -211,15 +217,15 @@ template <typename T, bool denseFlag>
 typename std::enable_if_t<std::is_same<T, bool>::value && denseFlag, std::vector<std::vector<size_t>>>
 Graph<WeightType, isDense, isSymmetric>::getNeighbours(const size_t index, const size_t maxDeep)
 {
-    // similar to sparse specialization except the way m elements are accessed
+    // similar to sparse specialization except the way matrix elements are accessed
     std::vector<std::vector<size_t>> neighboursList(maxDeep + 1);
 
-    if (index >= m.columns())
+    if (index >= matrix.columns())
         return neighboursList;
 
     std::vector<size_t> parents;
     std::vector<size_t> children;
-    std::vector<bool> nodes = std::vector<bool>(m.columns(), false);
+    std::vector<bool> nodes = std::vector<bool>(matrix.columns(), false);
 
     parents.push_back(index);
     neighboursList[0].push_back(index);
@@ -231,9 +237,9 @@ Graph<WeightType, isDense, isSymmetric>::getNeighbours(const size_t index, const
         typename MatrixType::Iterator it;
 
         for (auto el : parents) {
-            for (it = m.begin(el); it != m.end(el); it++) {
-                size_t idx = it - m.begin(el);
-                if (m(el, idx) != 1)
+            for (it = matrix.begin(el); it != matrix.end(el); it++) {
+                size_t idx = it - matrix.begin(el);
+                if (matrix(el, idx) != 1)
                     continue;
                 if (!nodes[idx]) {
                     neighboursList[depth].push_back(idx);  // write node into output
@@ -252,9 +258,10 @@ Graph<WeightType, isDense, isSymmetric>::getNeighbours(const size_t index, const
 }
 
 template <typename WeightType, bool isDense, bool isSymmetric>
-typename Graph<WeightType, isDense, isSymmetric>::MatrixType Graph<WeightType, isDense, isSymmetric>::get_matrix()
+auto Graph<WeightType, isDense, isSymmetric>::get_matrix() const
+    -> const typename Graph<WeightType, isDense, isSymmetric>::MatrixType&
 {
-    return m;
+    return matrix;
 }
 
 // end of base class implementation
@@ -281,7 +288,7 @@ Grid4::Grid4(size_t width, size_t height)
 void Grid4::construct(size_t width, size_t height)
 {
     unsigned long n_nodes = width * height;
-    m.resize(n_nodes, n_nodes);
+    matrix.resize(n_nodes, n_nodes);
 
     std::vector<std::pair<size_t, size_t>> edgesPairs;
 
@@ -342,7 +349,7 @@ Grid6::Grid6(size_t width, size_t height)
 void Grid6::construct(size_t width, size_t height)
 {
     unsigned long n_nodes = width * height;
-    m.resize(n_nodes, n_nodes);
+    matrix.resize(n_nodes, n_nodes);
 
     std::vector<std::pair<size_t, size_t>> edgesPairs;
 
@@ -431,7 +438,7 @@ Grid8::Grid8(size_t width, size_t height)
 void Grid8::construct(size_t width, size_t height)
 {
     unsigned long n_nodes = width * height;
-    m.resize(n_nodes, n_nodes);
+    matrix.resize(n_nodes, n_nodes);
 
     std::vector<std::pair<size_t, size_t>> edgesPairs;
 
@@ -555,7 +562,7 @@ bool LPS::millerRabin(const size_t nodesNumber)
 
 bool LPS::miller_rabin_pass(const size_t a, const size_t s, const size_t d, const size_t nodesNumber)
 {
-    auto p = size_t(pow(a, d)) % nodesNumber;
+    auto p = size_t(std::pow(a, d)) % nodesNumber;
     if (p == 1) {
         return true;
     }
@@ -606,11 +613,11 @@ RandomUniform<WType, isDense>::RandomUniform(size_t nNodes, WType lower_bound, W
 
     using MType = typename std::conditional<isDense, blaze::DynamicMatrix<WType>, blaze::CompressedMatrix<WType>>::type;
 
-    this->m = MType(nNodes, nNodes);
+    this->matrix = MType(nNodes, nNodes);
     if (nConnections > 0)
-        this->fill(this->m, lower_bound, upper_bound, nConnections);
+        this->fill(this->matrix, lower_bound, upper_bound, nConnections);
     else
-        this->fill(this->m, lower_bound, upper_bound);
+        this->fill(this->matrix, lower_bound, upper_bound);
 
     this->valid = true;
 }
@@ -675,10 +682,13 @@ void RandomUniform<WType, isDense>::fill(MType& matrix, WType lower_bound, WType
         }
 }
 
-// Graph factory based on Blaze matrix of 4 allowed types
+// KNN-Graph
 
-template <class ValueType>
-Graph<ValueType, false, false> make_graph(blaze::CompressedMatrix<ValueType>&& matrix)
+
+    // Graph factory based on Blaze matrix of 4 allowed types
+
+    template <class ValueType>
+    Graph<ValueType, false, false> make_graph(blaze::CompressedMatrix<ValueType>&& matrix)
 {
     return Graph<ValueType, false, false>(std::move(matrix));
 }
@@ -702,4 +712,3 @@ Graph<ValueType, true, true> make_graph(blaze::SymmetricMatrix<blaze::DynamicMat
 }
 
 }  // end namespace metric
-#endif

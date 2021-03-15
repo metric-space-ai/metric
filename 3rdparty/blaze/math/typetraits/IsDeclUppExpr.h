@@ -3,7 +3,7 @@
 //  \file blaze/math/typetraits/IsDeclUppExpr.h
 //  \brief Header file for the IsDeclUppExpr type trait class
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -40,10 +40,8 @@
 // Includes
 //*************************************************************************************************
 
-#include <utility>
 #include "../../math/expressions/DeclUppExpr.h"
-#include "../../util/FalseType.h"
-#include "../../util/TrueType.h"
+#include "../../util/IntegralConstant.h"
 
 
 namespace blaze {
@@ -64,18 +62,20 @@ struct IsDeclUppExprHelper
 {
  private:
    //**********************************************************************************************
-   template< typename MT >
-   static TrueType test( const DeclUppExpr<MT>& );
+   static T* create();
 
    template< typename MT >
-   static TrueType test( const volatile DeclUppExpr<MT>& );
+   static TrueType test( const DeclUppExpr<MT>* );
+
+   template< typename MT >
+   static TrueType test( const volatile DeclUppExpr<MT>* );
 
    static FalseType test( ... );
    //**********************************************************************************************
 
  public:
    //**********************************************************************************************
-   using Type = decltype( test( std::declval<T&>() ) );
+   using Type = decltype( test( create() ) );
    //**********************************************************************************************
 };
 /*! \endcond */
@@ -101,8 +101,21 @@ struct IsDeclUppExpr
 
 
 //*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Specialization of the IsDeclUppExpr type trait for references.
+// \ingroup math_type_traits
+*/
+template< typename T >
+struct IsDeclUppExpr<T&>
+   : public FalseType
+{};
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
 /*!\brief Auxiliary variable template for the IsDeclUppExpr type trait.
-// \ingroup type_traits
+// \ingroup math_type_traits
 //
 // The IsDeclUppExpr_v variable template provides a convenient shortcut to access the nested
 // \a value of the IsDeclUppExpr class template. For instance, given the type \a T the

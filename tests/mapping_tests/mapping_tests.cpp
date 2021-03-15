@@ -5,45 +5,46 @@
 
   Copyright (c) 2019 Panda Team
 */
+
+#define CATCH_CONFIG_MAIN
+#include <catch2/catch.hpp>
+
 #include <algorithm>
 
 #include "modules/distance.hpp"
 
 #include "modules/utils/graph.hpp"
 
-#define BOOST_TEST_MODULE Main
-#define BOOST_TEST_DYN_LINK
+using namespace Catch::literals;
 
-#include <boost/test/unit_test.hpp>
-
-BOOST_AUTO_TEST_CASE(Metric)
+TEMPLATE_TEST_CASE("Metric", "[mapping]", float, double)
 {
-    using Vector = std::vector<double>;
-    metric::Euclidian<double> metric;
+    using Vector = std::vector<TestType>;
+    metric::Euclidean<TestType> metric;
 
     Vector vNull = {};
     Vector v0 = { 0, 0, 0, 0, 0 };
     Vector v7 = { 7, 7, 7.5, 7, 7 };
     Vector v = { 1, 2.3, -2.7, 0, 3 };
 
-    double t = 0.0000001;
-    BOOST_CHECK_CLOSE(metric(vNull, vNull), 0, t);
-    BOOST_CHECK_CLOSE(metric(v0, v0), 0, t);
-    BOOST_CHECK_CLOSE(metric(v7, v), 15.070832757349542, t);
+    //TestType t = 0.0000001;
+    REQUIRE(metric(vNull, vNull) == 0_a);
+    REQUIRE(metric(v0, v0) == 0_a);
+    REQUIRE(metric(v7, v) == 15.070832757349542_a);
 }
 
-BOOST_AUTO_TEST_CASE(Grid4)
+TEST_CASE("Grid4", "[mapping]")
 {
     metric::Grid4 grid5(5);  // replaced everywhere mapping::SOM_details with graph by Max F, 2019-05-16
-    BOOST_CHECK(!grid5.isValid());
+    REQUIRE_FALSE(grid5.isValid());
 
     metric::Grid4 grid25(25);
-    BOOST_CHECK(grid25.isValid());
-    BOOST_CHECK_EQUAL(grid25.getNodesNumber(), 25);
+    REQUIRE(grid25.isValid());
+    REQUIRE(grid25.getNodesNumber() == 25);
 
     metric::Grid4 grid32(3, 2);
-    BOOST_CHECK(grid32.isValid());
-    BOOST_CHECK_EQUAL(grid32.getNodesNumber(), 6);
+    REQUIRE(grid32.isValid());
+    REQUIRE(grid32.getNodesNumber() == 6);
 
     auto neighboursList = grid25.getNeighbours(9, 3);
     for (auto& neighbours : neighboursList) {
@@ -51,30 +52,27 @@ BOOST_AUTO_TEST_CASE(Grid4)
     }
 
     std::vector<size_t> neighbours0 = { 9 };
-    BOOST_CHECK_EQUAL_COLLECTIONS(
-        neighboursList[0].begin(), neighboursList[0].end(), neighbours0.begin(), neighbours0.end());
+    REQUIRE(neighboursList[0] == neighbours0);
 
     std::vector<size_t> neighbours1 = { 4, 8, 14 };
-    BOOST_CHECK_EQUAL_COLLECTIONS(
-        neighboursList[1].begin(), neighboursList[1].end(), neighbours1.begin(), neighbours1.end());
+	REQUIRE(neighboursList[1] == neighbours1);
 
-    std::vector<size_t> neighbours2 = { 3, 7, 13, 19 };
-    BOOST_CHECK_EQUAL_COLLECTIONS(
-        neighboursList[2].begin(), neighboursList[2].end(), neighbours2.begin(), neighbours2.end());
+	std::vector<size_t> neighbours2 = { 3, 7, 13, 19 };
+	REQUIRE(neighboursList[2] == neighbours2);
 }
 
-BOOST_AUTO_TEST_CASE(Grid6)
+TEST_CASE("Grid6", "[mapping]")
 {
     metric::Grid6 grid5(5);
-    BOOST_CHECK(!grid5.isValid());
+    REQUIRE_FALSE(grid5.isValid());
 
     metric::Grid6 grid25(25);
-    BOOST_CHECK(grid25.isValid());
-    BOOST_CHECK_EQUAL(grid25.getNodesNumber(), 25);
+    REQUIRE(grid25.isValid());
+    REQUIRE(grid25.getNodesNumber() == 25);
 
     metric::Grid6 grid30(6, 5);
-    BOOST_CHECK(grid30.isValid());
-    BOOST_CHECK_EQUAL(grid30.getNodesNumber(), 30);
+    REQUIRE(grid30.isValid());
+    REQUIRE(grid30.getNodesNumber() == 30);
 
     auto neighboursList = grid30.getNeighbours(12, 3);
     for (auto& neighbours : neighboursList) {
@@ -82,29 +80,28 @@ BOOST_AUTO_TEST_CASE(Grid6)
     }
 
     std::vector<size_t> neighbours0 = { 12 };
-    BOOST_CHECK_EQUAL_COLLECTIONS(
-        neighboursList[0].begin(), neighboursList[0].end(), neighbours0.begin(), neighbours0.end());
+	REQUIRE(neighboursList[0] == neighbours0);
 
-    std::vector<size_t> neighbours1 = { 6, 13, 18 };
-    BOOST_CHECK_EQUAL_COLLECTIONS(
-        neighboursList[1].begin(), neighboursList[1].end(), neighbours1.begin(), neighbours1.end());
 
-    std::vector<size_t> neighbours2 = { 0, 1, 7, 14, 19, 24, 25 };
-    BOOST_CHECK_EQUAL_COLLECTIONS(
-        neighboursList[2].begin(), neighboursList[2].end(), neighbours2.begin(), neighbours2.end());
+	std::vector<size_t> neighbours1 = { 6, 13, 18 };
+	REQUIRE(neighboursList[1] == neighbours1);
+
+
+	std::vector<size_t> neighbours2 = { 0, 1, 7, 14, 19, 24, 25 };
+	REQUIRE(neighboursList[2] == neighbours2);
 }
-BOOST_AUTO_TEST_CASE(Grid8)
+TEST_CASE("Grid8", "[mapping]")
 {
     metric::Grid8 grid5(5);
-    BOOST_CHECK(!grid5.isValid());
+    REQUIRE_FALSE(grid5.isValid());
 
     metric::Grid8 grid25(25);
-    BOOST_CHECK(grid25.isValid());
-    BOOST_CHECK_EQUAL(grid25.getNodesNumber(), 25);
+    REQUIRE(grid25.isValid());
+    REQUIRE(grid25.getNodesNumber() == 25);
 
     metric::Grid8 grid6(3, 2);
-    BOOST_CHECK(grid6.isValid());
-    BOOST_CHECK_EQUAL(grid6.getNodesNumber(), 6);
+    REQUIRE(grid6.isValid());
+    REQUIRE(grid6.getNodesNumber() == 6);
 
     auto neighboursList = grid25.getNeighbours(9, 3);
     for (auto& neighbours : neighboursList) {
@@ -112,29 +109,25 @@ BOOST_AUTO_TEST_CASE(Grid8)
     }
 
     std::vector<size_t> neighbours0 = { 9 };
-    BOOST_CHECK_EQUAL_COLLECTIONS(
-        neighboursList[0].begin(), neighboursList[0].end(), neighbours0.begin(), neighbours0.end());
+	REQUIRE(neighboursList[0] == neighbours0);
 
     std::vector<size_t> neighbours1 = { 3, 4, 8, 13, 14 };
-    BOOST_CHECK_EQUAL_COLLECTIONS(
-        neighboursList[1].begin(), neighboursList[1].end(), neighbours1.begin(), neighbours1.end());
+	REQUIRE(neighboursList[1] == neighbours1);
 
     std::vector<size_t> neighbours2 = { 2, 7, 12, 17, 18, 19 };
-    BOOST_CHECK_EQUAL_COLLECTIONS(
-        neighboursList[2].begin(), neighboursList[2].end(), neighbours2.begin(), neighbours2.end());
+	REQUIRE(neighboursList[2] == neighbours2);
 
     std::vector<size_t> neighbours3 = { 1, 6, 11, 16, 21, 22, 23, 24 };
-    BOOST_CHECK_EQUAL_COLLECTIONS(
-        neighboursList[3].begin(), neighboursList[3].end(), neighbours3.begin(), neighbours3.end());
+	REQUIRE(neighboursList[3] == neighbours3);
 }
 
-BOOST_AUTO_TEST_CASE(LPS)
+TEST_CASE("LPS", "[mapping]")
 {
     metric::LPS lps5(5);
-    BOOST_CHECK_EQUAL(lps5.isValid(), true);
+    REQUIRE(lps5.isValid());
 
     metric::LPS lps(11);
-    BOOST_CHECK_EQUAL(lps.isValid(), true);
+    REQUIRE(lps.isValid());
 
     auto neighboursList = lps.getNeighbours(9, 2);
     for (auto& neighbours : neighboursList) {
@@ -142,20 +135,17 @@ BOOST_AUTO_TEST_CASE(LPS)
     }
 
     std::vector<size_t> neighbours0 = { 9 };
-    BOOST_CHECK_EQUAL_COLLECTIONS(
-        neighboursList[0].begin(), neighboursList[0].end(), neighbours0.begin(), neighbours0.end());
+	REQUIRE(neighboursList[0] == neighbours0);
 
     std::vector<size_t> neighbours1 = { 5, 8, 10 };
-    BOOST_CHECK_EQUAL_COLLECTIONS(
-        neighboursList[1].begin(), neighboursList[1].end(), neighbours1.begin(), neighbours1.end());
+	REQUIRE(neighboursList[1] == neighbours1);
 
     std::vector<size_t> neighbours2 = { 0, 4, 6, 7 };
-    BOOST_CHECK_EQUAL_COLLECTIONS(
-        neighboursList[2].begin(), neighboursList[2].end(), neighbours2.begin(), neighbours2.end());
+	REQUIRE(neighboursList[2] == neighbours2);
 
     /* LPS(41) */
     metric::LPS lps41(41);
-    BOOST_CHECK_EQUAL(lps41.isValid(), true);
+    REQUIRE(lps41.isValid());
 
     neighboursList = lps41.getNeighbours(9, 2);
     for (auto& neighbours : neighboursList) {
@@ -163,25 +153,22 @@ BOOST_AUTO_TEST_CASE(LPS)
     }
 
     neighbours0 = { 9 };
-    BOOST_CHECK_EQUAL_COLLECTIONS(
-        neighboursList[0].begin(), neighboursList[0].end(), neighbours0.begin(), neighbours0.end());
+	REQUIRE(neighboursList[0] == neighbours0);
 
     neighbours1 = { 8, 10, 32 };
-    BOOST_CHECK_EQUAL_COLLECTIONS(
-        neighboursList[1].begin(), neighboursList[1].end(), neighbours1.begin(), neighbours1.end());
+	REQUIRE(neighboursList[1] == neighbours1);
 
     neighbours2 = { 7, 11, 31, 33, 36, 37 };
-    BOOST_CHECK_EQUAL_COLLECTIONS(
-        neighboursList[2].begin(), neighboursList[2].end(), neighbours2.begin(), neighbours2.end());
+	REQUIRE(neighboursList[2] == neighbours2);
 }
 
-BOOST_AUTO_TEST_CASE(Paley)
+TEST_CASE("Paley", "[mapping]")
 {
     metric::Paley paley12(12);
-    BOOST_CHECK_EQUAL(paley12.isValid(), false);
+    REQUIRE_FALSE(paley12.isValid());
 
     metric::Paley paley13(13);
-    BOOST_CHECK_EQUAL(paley13.isValid(), true);
+    REQUIRE(paley13.isValid());
 
     auto neighboursList = paley13.getNeighbours(9, 1);
     for (auto& neighbours : neighboursList) {
@@ -189,21 +176,19 @@ BOOST_AUTO_TEST_CASE(Paley)
     }
 
     std::vector<size_t> neighbours0 = { 9 };
-    BOOST_CHECK_EQUAL_COLLECTIONS(
-        neighboursList[0].begin(), neighboursList[0].end(), neighbours0.begin(), neighbours0.end());
+	REQUIRE(neighboursList[0] == neighbours0);
 
     std::vector<size_t> neighbours1 = { 0, 5, 6, 8, 10, 12 };
-    BOOST_CHECK_EQUAL_COLLECTIONS(
-        neighboursList[1].begin(), neighboursList[1].end(), neighbours1.begin(), neighbours1.end());
+	REQUIRE(neighboursList[1] == neighbours1);
 }
 
-BOOST_AUTO_TEST_CASE(Margulis)
+TEST_CASE("Margulis", "[mapping]")
 {
     metric::Margulis margulis5(5);
-    BOOST_CHECK_EQUAL(margulis5.isValid(), false);
+    REQUIRE_FALSE(margulis5.isValid());
 
     metric::Margulis margulis25(25);
-    BOOST_CHECK_EQUAL(margulis25.isValid(), true);
+    REQUIRE(margulis25.isValid());
 
     auto neighboursList = margulis25.getNeighbours(7, 1);
     for (auto& neighbours : neighboursList) {
@@ -211,10 +196,8 @@ BOOST_AUTO_TEST_CASE(Margulis)
     }
 
     std::vector<size_t> neighbours0 = { 7 };
-    BOOST_CHECK_EQUAL_COLLECTIONS(
-        neighboursList[0].begin(), neighboursList[0].end(), neighbours0.begin(), neighbours0.end());
+	REQUIRE(neighboursList[0] == neighbours0);
 
     std::vector<size_t> neighbours1 = { 2, 5, 9, 12 };
-    BOOST_CHECK_EQUAL_COLLECTIONS(
-        neighboursList[1].begin(), neighboursList[1].end(), neighbours1.begin(), neighbours1.end());
+	REQUIRE(neighboursList[1] == neighbours1);
 }

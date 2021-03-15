@@ -3,7 +3,7 @@
 //  \file blaze/math/sparse/VectorAccessProxy.h
 //  \brief Header file for the VectorAccessProxy class
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -470,34 +470,34 @@ inline VectorAccessProxy<VT>::operator RawReference() const noexcept
 /*!\name VectorAccessProxy global functions */
 //@{
 template< typename VT >
-inline void reset( const VectorAccessProxy<VT>& proxy );
+void reset( const VectorAccessProxy<VT>& proxy );
 
 template< typename VT >
-inline void clear( const VectorAccessProxy<VT>& proxy );
+void clear( const VectorAccessProxy<VT>& proxy );
 
-template< bool RF, typename VT >
-inline bool isDefault( const VectorAccessProxy<VT>& proxy );
+template< RelaxationFlag RF, typename VT >
+bool isDefault( const VectorAccessProxy<VT>& proxy );
 
-template< bool RF, typename VT >
-inline bool isReal( const VectorAccessProxy<VT>& proxy );
+template< RelaxationFlag RF, typename VT >
+bool isReal( const VectorAccessProxy<VT>& proxy );
 
-template< bool RF, typename VT >
-inline bool isZero( const VectorAccessProxy<VT>& proxy );
+template< RelaxationFlag RF, typename VT >
+bool isZero( const VectorAccessProxy<VT>& proxy );
 
-template< bool RF, typename VT >
-inline bool isOne( const VectorAccessProxy<VT>& proxy );
-
-template< typename VT >
-inline bool isnan( const VectorAccessProxy<VT>& proxy );
+template< RelaxationFlag RF, typename VT >
+bool isOne( const VectorAccessProxy<VT>& proxy );
 
 template< typename VT >
-inline void swap( const VectorAccessProxy<VT>& a, const VectorAccessProxy<VT>& b ) noexcept;
+bool isnan( const VectorAccessProxy<VT>& proxy );
+
+template< typename VT >
+void swap( const VectorAccessProxy<VT>& a, const VectorAccessProxy<VT>& b ) noexcept;
 
 template< typename VT, typename T >
-inline void swap( const VectorAccessProxy<VT>& a, T& b ) noexcept;
+void swap( const VectorAccessProxy<VT>& a, T& b ) noexcept;
 
 template< typename T, typename VT >
-inline void swap( T& a, const VectorAccessProxy<VT>& v ) noexcept;
+void swap( T& a, const VectorAccessProxy<VT>& v ) noexcept;
 //@}
 //*************************************************************************************************
 
@@ -546,7 +546,7 @@ inline void clear( const VectorAccessProxy<VT>& proxy )
 // This function checks whether the element represented by the access proxy is in default state.
 // In case it is in default state, the function returns \a true, otherwise it returns \a false.
 */
-template< bool RF, typename VT >
+template< RelaxationFlag RF, typename VT >
 inline bool isDefault( const VectorAccessProxy<VT>& proxy )
 {
    using blaze::isDefault;
@@ -568,7 +568,7 @@ inline bool isDefault( const VectorAccessProxy<VT>& proxy )
 // the element is of complex type, the function returns \a true if the imaginary part is equal
 // to 0. Otherwise it returns \a false.
 */
-template< bool RF, typename VT >
+template< RelaxationFlag RF, typename VT >
 inline bool isReal( const VectorAccessProxy<VT>& proxy )
 {
    using blaze::isReal;
@@ -588,7 +588,7 @@ inline bool isReal( const VectorAccessProxy<VT>& proxy )
 // This function checks whether the element represented by the access proxy represents the numeric
 // value 0. In case it is 0, the function returns \a true, otherwise it returns \a false.
 */
-template< bool RF, typename VT >
+template< RelaxationFlag RF, typename VT >
 inline bool isZero( const VectorAccessProxy<VT>& proxy )
 {
    using blaze::isZero;
@@ -608,7 +608,7 @@ inline bool isZero( const VectorAccessProxy<VT>& proxy )
 // This function checks whether the element represented by the access proxy represents the numeric
 // value 1. In case it is 1, the function returns \a true, otherwise it returns \a false.
 */
-template< bool RF, typename VT >
+template< RelaxationFlag RF, typename VT >
 inline bool isOne( const VectorAccessProxy<VT>& proxy )
 {
    using blaze::isOne;

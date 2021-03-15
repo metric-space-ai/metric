@@ -3,7 +3,7 @@
 //  \file blaze/math/adaptors/uniuppermatrix/UniUpperProxy.h
 //  \brief Header file for the UniUpperProxy class
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -41,14 +41,17 @@
 //*************************************************************************************************
 
 #include "../../../math/Aliases.h"
-#include "../../../math/constraints/Expression.h"
+#include "../../../math/constraints/Computation.h"
 #include "../../../math/constraints/Hermitian.h"
 #include "../../../math/constraints/Lower.h"
 #include "../../../math/constraints/Matrix.h"
 #include "../../../math/constraints/Symmetric.h"
+#include "../../../math/constraints/Transformation.h"
 #include "../../../math/constraints/Upper.h"
+#include "../../../math/constraints/View.h"
 #include "../../../math/Exception.h"
 #include "../../../math/proxy/Proxy.h"
+#include "../../../math/RelaxationFlag.h"
 #include "../../../math/shims/Clear.h"
 #include "../../../math/shims/Invert.h"
 #include "../../../math/shims/IsDefault.h"
@@ -141,13 +144,16 @@ class UniUpperProxy
    //**Constructors********************************************************************************
    /*!\name Constructors */
    //@{
-   explicit inline UniUpperProxy( MT& matrix, size_t row, size_t column );
-            inline UniUpperProxy( const UniUpperProxy& uup );
+   inline UniUpperProxy( MT& matrix, size_t row, size_t column );
+   inline UniUpperProxy( const UniUpperProxy& uup );
    //@}
    //**********************************************************************************************
 
    //**Destructor**********************************************************************************
-   // No explicitly declared destructor.
+   /*!\name Destructor */
+   //@{
+   ~UniUpperProxy() = default;
+   //@}
    //**********************************************************************************************
 
    //**Assignment operators************************************************************************
@@ -216,7 +222,9 @@ class UniUpperProxy
    BLAZE_CONSTRAINT_MUST_NOT_BE_POINTER_TYPE         ( MT );
    BLAZE_CONSTRAINT_MUST_NOT_BE_CONST                ( MT );
    BLAZE_CONSTRAINT_MUST_NOT_BE_VOLATILE             ( MT );
-   BLAZE_CONSTRAINT_MUST_NOT_BE_EXPRESSION_TYPE      ( MT );
+   BLAZE_CONSTRAINT_MUST_NOT_BE_VIEW_TYPE            ( MT );
+   BLAZE_CONSTRAINT_MUST_NOT_BE_COMPUTATION_TYPE     ( MT );
+   BLAZE_CONSTRAINT_MUST_NOT_BE_TRANSFORMATION_TYPE  ( MT );
    BLAZE_CONSTRAINT_MUST_NOT_BE_SYMMETRIC_MATRIX_TYPE( MT );
    BLAZE_CONSTRAINT_MUST_NOT_BE_HERMITIAN_MATRIX_TYPE( MT );
    BLAZE_CONSTRAINT_MUST_NOT_BE_LOWER_MATRIX_TYPE    ( MT );
@@ -681,28 +689,28 @@ inline void UniUpperProxy<MT>::imag( ValueType value ) const
 /*!\name UniUpperProxy global functions */
 //@{
 template< typename MT >
-inline void reset( const UniUpperProxy<MT>& proxy );
+void reset( const UniUpperProxy<MT>& proxy );
 
 template< typename MT >
-inline void clear( const UniUpperProxy<MT>& proxy );
+void clear( const UniUpperProxy<MT>& proxy );
 
 template< typename MT >
-inline void invert( const UniUpperProxy<MT>& proxy );
+void invert( const UniUpperProxy<MT>& proxy );
 
-template< bool RF, typename MT >
-inline bool isDefault( const UniUpperProxy<MT>& proxy );
+template< RelaxationFlag RF, typename MT >
+bool isDefault( const UniUpperProxy<MT>& proxy );
 
-template< bool RF, typename MT >
-inline bool isReal( const UniUpperProxy<MT>& proxy );
+template< RelaxationFlag RF, typename MT >
+bool isReal( const UniUpperProxy<MT>& proxy );
 
-template< bool RF, typename MT >
-inline bool isZero( const UniUpperProxy<MT>& proxy );
+template< RelaxationFlag RF, typename MT >
+bool isZero( const UniUpperProxy<MT>& proxy );
 
-template< bool RF, typename MT >
-inline bool isOne( const UniUpperProxy<MT>& proxy );
+template< RelaxationFlag RF, typename MT >
+bool isOne( const UniUpperProxy<MT>& proxy );
 
 template< typename MT >
-inline bool isnan( const UniUpperProxy<MT>& proxy );
+bool isnan( const UniUpperProxy<MT>& proxy );
 //@}
 //*************************************************************************************************
 
@@ -768,7 +776,7 @@ inline void invert( const UniUpperProxy<MT>& proxy )
 // This function checks whether the element represented by the access proxy is in default state.
 // In case it is in default state, the function returns \a true, otherwise it returns \a false.
 */
-template< bool RF, typename MT >
+template< RelaxationFlag RF, typename MT >
 inline bool isDefault( const UniUpperProxy<MT>& proxy )
 {
    using blaze::isDefault;
@@ -790,7 +798,7 @@ inline bool isDefault( const UniUpperProxy<MT>& proxy )
 // the element is of complex type, the function returns \a true if the imaginary part is equal
 // to 0. Otherwise it returns \a false.
 */
-template< bool RF, typename MT >
+template< RelaxationFlag RF, typename MT >
 inline bool isReal( const UniUpperProxy<MT>& proxy )
 {
    using blaze::isReal;
@@ -810,7 +818,7 @@ inline bool isReal( const UniUpperProxy<MT>& proxy )
 // This function checks whether the element represented by the access proxy represents the numeric
 // value 0. In case it is 0, the function returns \a true, otherwise it returns \a false.
 */
-template< bool RF, typename MT >
+template< RelaxationFlag RF, typename MT >
 inline bool isZero( const UniUpperProxy<MT>& proxy )
 {
    using blaze::isZero;
@@ -830,7 +838,7 @@ inline bool isZero( const UniUpperProxy<MT>& proxy )
 // This function checks whether the element represented by the access proxy represents the numeric
 // value 1. In case it is 1, the function returns \a true, otherwise it returns \a false.
 */
-template< bool RF, typename MT >
+template< RelaxationFlag RF, typename MT >
 inline bool isOne( const UniUpperProxy<MT>& proxy )
 {
    using blaze::isOne;

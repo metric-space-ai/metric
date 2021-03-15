@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/DMatTransposer.h
 //  \brief Header file for the dense matrix transposer
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -49,6 +49,7 @@
 #include "../../math/typetraits/HasConstDataAccess.h"
 #include "../../math/typetraits/HasMutableDataAccess.h"
 #include "../../math/typetraits/IsAligned.h"
+#include "../../math/typetraits/IsContiguous.h"
 #include "../../math/typetraits/IsPadded.h"
 #include "../../math/typetraits/MaxSize.h"
 #include "../../math/typetraits/Size.h"
@@ -79,6 +80,7 @@ class DMatTransposer
  public:
    //**Type definitions****************************************************************************
    using This           = DMatTransposer<MT,SO>;     //!< Type of this DMatTransposer instance.
+   using BaseType       = DenseMatrix<This,SO>;      //!< Base type of this DMatTransposer instance.
    using ResultType     = TransposeType_t<MT>;       //!< Result type for expression template evaluations.
    using OppositeType   = OppositeType_t<MT>;        //!< Result type with opposite storage order for expression template evaluations.
    using TransposeType  = ResultType_t<MT>;          //!< Transpose type for expression template evaluations.
@@ -337,6 +339,19 @@ class DMatTransposer
    */
    inline void reset() {
       return dm_.reset();
+   }
+   //**********************************************************************************************
+
+   //**Resize function*****************************************************************************
+   /*!\brief Changing the size of the matrix.
+   //
+   // \param m The new number of rows of the matrix.
+   // \param n The new number of columns of the matrix.
+   // \param preserve \a true if the old values of the matrix should be preserved, \a false if not.
+   // \return void
+   */
+   inline void resize( size_t m, size_t n, bool preserve=true ) {
+      dm_.resize( m, n, preserve );
    }
    //**********************************************************************************************
 
@@ -756,6 +771,24 @@ struct HasMutableDataAccess< DMatTransposer<MT,SO> >
 template< typename MT, bool SO >
 struct IsAligned< DMatTransposer<MT,SO> >
    : public IsAligned<MT>
+{};
+/*! \endcond */
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
+//  ISCONTIGUOUS SPECIALIZATIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+template< typename MT, bool SO >
+struct IsContiguous< DMatTransposer<MT,SO> >
+   : public IsContiguous<MT>
 {};
 /*! \endcond */
 //*************************************************************************************************

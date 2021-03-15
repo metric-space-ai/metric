@@ -3,7 +3,7 @@
 //  \file blaze/math/typetraits/HasSIMDAtan2.h
 //  \brief Header file for the HasSIMDAtan2 type trait
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -42,10 +42,10 @@
 
 #include "../../system/Vectorization.h"
 #include "../../util/IntegralConstant.h"
-#include "../../util/typetraits/Decay.h"
 #include "../../util/typetraits/IsDouble.h"
 #include "../../util/typetraits/IsFloat.h"
 #include "../../util/typetraits/IsSame.h"
+#include "../../util/typetraits/RemoveCVRef.h"
 
 
 namespace blaze {
@@ -100,14 +100,14 @@ using HasSIMDAtan2Helper =
 template< typename T1    // Type of the left-hand side operand
         , typename T2 >  // Type of the right-hand side operand
 struct HasSIMDAtan2
-   : public BoolConstant< HasSIMDAtan2Helper< Decay_t<T1>, Decay_t<T2> >::value >
+   : public BoolConstant< HasSIMDAtan2Helper< RemoveCVRef_t<T1>, RemoveCVRef_t<T2> >::value >
 {};
 //*************************************************************************************************
 
 
 //*************************************************************************************************
 /*!\brief Auxiliary variable template for the HasSIMDAtan2 type trait.
-// \ingroup type_traits
+// \ingroup math_type_traits
 //
 // The HasSIMDAtan2_v variable template provides a convenient shortcut to access the nested
 // \a value of the HasSIMDAtan2 class template. For instance, given the types \a T1 and \a T2

@@ -29,6 +29,9 @@ Copyright (c) 2018 Michael Welsch
 #include <vector>
 
 #include <cassert>  // uncommented by Max F in order to build under Clang & QMake
+
+namespace {
+
 template <typename T>
 inline void print_vector(const std::vector<T>& v)
 {
@@ -41,13 +44,16 @@ inline void print_vector(const std::vector<T>& v)
 template <typename T>
 inline void print_matrix(const std::vector<std::vector<T>>& m)
 {
-    std::cout << "[ ";
+    std::cout << "[ "<< std::endl;
     for (auto& r : m) {
+		std::cout << "  ";
         print_vector(r);
         std::cout << std::endl;
     }
     std::cout << "]";
 }
+
+} // namespace
 
 namespace metric {
 
@@ -72,7 +78,7 @@ namespace EMD_details {
     }
 
     template <typename Container>
-    struct Euclidian_thresholded_EMD_default {
+    struct Euclidean_thresholded_EMD_default {
         typedef typename Container::value_type T;
         static_assert(std::is_floating_point<T>::value, "T must be a float type");
 
@@ -86,14 +92,14 @@ namespace EMD_details {
             }
             return std::min(thres, T(factor * sqrt(sum)));
         }
-        Euclidian_thresholded_EMD_default(T thres = 1000, T factor = 3000)
+        Euclidean_thresholded_EMD_default(T thres = 1000, T factor = 3000)
             : thres(thres)
             , factor(factor)
         {
         }
     };
 
-    template <typename T, typename Metric = Euclidian_thresholded_EMD_default<std::vector<double>>>
+    template <typename T, typename Metric = Euclidean_thresholded_EMD_default<std::vector<double>>>
     std::vector<std::vector<T>> ground_distance_matrix_of_2dgrid(size_t cols, size_t rows)
     {
         size_t n = rows * cols;
@@ -118,7 +124,7 @@ namespace EMD_details {
         return distM;
     }
 
-    template <typename T, typename Metric = Euclidian_thresholded_EMD_default<std::vector<double>>>
+    template <typename T, typename Metric = Euclidean_thresholded_EMD_default<std::vector<double>>>
     std::vector<std::vector<T>> ground_distance_matrix_of_2dgrid(std::vector<std::vector<T>> grid)
     {
         size_t n = grid.size();
@@ -650,8 +656,8 @@ namespace EMD_details {
     template <typename Container, FLOW_TYPE_T FLOW_TYPE>
     struct emd_impl_integral_types {
         typedef typename Container::value_type T;
-        T operator()(const Container& POrig, const Container& QOrig, const Container& Pc,
-            const Container& Qc,  // P, Q, C replaced with Pc, Qc, Cc by Max F
+        T operator()(const Container& POrig, const Container& QOrig, const std::vector<T>& Pc,
+            const std::vector<T>& Qc,  // P, Q, C replaced with Pc, Qc, Cc by Max F
             const std::vector<std::vector<T>>& Cc,
             // T maxC, // disabled by MaxF //now updated inside
             T extra_mass_penalty,
@@ -932,7 +938,7 @@ namespace EMD_details {
         typedef long long int CONVERT_TO_T;
         // typedef int T;
 
-        T operator()(const Container& POrig, const Container& QOrig, const Container& P, const Container& Q,
+        T operator()(const Container& POrig, const Container& QOrig, const std::vector<T>& P, const std::vector<T>& Q,
             const std::vector<std::vector<T>>& C,
             // T maxC, // disabled by Max F
             T extra_mass_penalty,
@@ -1097,7 +1103,7 @@ auto EMD<V>::operator()(const Container& Pc, const Container& Qc) const -> dista
         C = default_ground_matrix(Pc.size(), Pc.size());
         is_C_initialized = true;
     }
-    // typedef typename Container::value_type T;
+
     using T = value_type;
     const EMD_details::FLOW_TYPE_T FLOW_TYPE = EMD_details::NO_FLOW;
     //    // if maxC is not given seperatly // disabled by Max F when rolled back to original version
@@ -1159,7 +1165,7 @@ auto EMD<V>::operator()(const Container& Pc, const Container& Qc) const -> dista
     return EMD_details::emd_impl<Container, FLOW_TYPE>()(Pc, Qc, P, Q, C, extra_mass_penalty,
         F);  // turned to original state by Max F
 
-};  // EMD
+}  // EMD
 
 }  // namespace metric
 

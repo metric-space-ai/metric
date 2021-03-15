@@ -3,7 +3,7 @@
 //  \file blaze/math/adaptors/hermitianmatrix/Dense.h
 //  \brief HermitianMatrix specialization for dense matrices
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -45,14 +45,16 @@
 #include "../../../math/adaptors/hermitianmatrix/BaseTemplate.h"
 #include "../../../math/adaptors/hermitianmatrix/HermitianProxy.h"
 #include "../../../math/Aliases.h"
+#include "../../../math/constraints/Computation.h"
 #include "../../../math/constraints/DenseMatrix.h"
-#include "../../../math/constraints/Expression.h"
 #include "../../../math/constraints/Hermitian.h"
 #include "../../../math/constraints/Lower.h"
 #include "../../../math/constraints/Resizable.h"
 #include "../../../math/constraints/StorageOrder.h"
 #include "../../../math/constraints/Symmetric.h"
+#include "../../../math/constraints/Transformation.h"
 #include "../../../math/constraints/Upper.h"
+#include "../../../math/constraints/View.h"
 #include "../../../math/dense/DenseMatrix.h"
 #include "../../../math/dense/InitializerMatrix.h"
 #include "../../../math/Exception.h"
@@ -60,6 +62,7 @@
 #include "../../../math/expressions/Forward.h"
 #include "../../../math/InitializerList.h"
 #include "../../../math/InversionFlag.h"
+#include "../../../math/RelaxationFlag.h"
 #include "../../../math/shims/Clear.h"
 #include "../../../math/shims/Conjugate.h"
 #include "../../../math/shims/IsZero.h"
@@ -80,16 +83,15 @@
 #include "../../../util/constraints/Pointer.h"
 #include "../../../util/constraints/Reference.h"
 #include "../../../util/constraints/Volatile.h"
-#include "../../../util/DisableIf.h"
 #include "../../../util/EnableIf.h"
+#include "../../../util/IntegralConstant.h"
+#include "../../../util/MaybeUnused.h"
 #include "../../../util/mpl/If.h"
 #include "../../../util/StaticAssert.h"
-#include "../../../util/TrueType.h"
 #include "../../../util/Types.h"
 #include "../../../util/typetraits/IsBuiltin.h"
 #include "../../../util/typetraits/IsComplex.h"
 #include "../../../util/typetraits/IsNumeric.h"
-#include "../../../util/Unused.h"
 
 
 namespace blaze {
@@ -731,18 +733,18 @@ class HermitianMatrix<MT,SO,true>
    //**Constructors********************************************************************************
    /*!\name Constructors */
    //@{
-   explicit inline HermitianMatrix();
+            inline HermitianMatrix();
    explicit inline HermitianMatrix( size_t n );
-   explicit inline HermitianMatrix( initializer_list< initializer_list<ElementType> > list );
+            inline HermitianMatrix( initializer_list< initializer_list<ElementType> > list );
 
    template< typename Other >
-   explicit inline HermitianMatrix( size_t n, const Other* array );
+   inline HermitianMatrix( size_t n, const Other* array );
 
    template< typename Other, size_t N >
-   explicit inline HermitianMatrix( const Other (&array)[N][N] );
+   inline HermitianMatrix( const Other (&array)[N][N] );
 
-   explicit inline HermitianMatrix( ElementType* ptr, size_t n );
-   explicit inline HermitianMatrix( ElementType* ptr, size_t n, size_t nn );
+   inline HermitianMatrix( ElementType* ptr, size_t n );
+   inline HermitianMatrix( ElementType* ptr, size_t n, size_t nn );
 
    inline HermitianMatrix( const HermitianMatrix& m );
    inline HermitianMatrix( HermitianMatrix&& m ) noexcept;
@@ -753,7 +755,10 @@ class HermitianMatrix<MT,SO,true>
    //**********************************************************************************************
 
    //**Destructor**********************************************************************************
-   // No explicitly declared destructor.
+   /*!\name Destructor */
+   //@{
+   ~HermitianMatrix() = default;
+   //@}
    //**********************************************************************************************
 
    //**Data access functions***********************************************************************
@@ -924,7 +929,7 @@ class HermitianMatrix<MT,SO,true>
    //**********************************************************************************************
 
    //**Friend declarations*************************************************************************
-   template< bool RF, typename MT2, bool SO2, bool DF2 >
+   template< RelaxationFlag RF, typename MT2, bool SO2, bool DF2 >
    friend bool isDefault( const HermitianMatrix<MT2,SO2,DF2>& m );
 
 
@@ -938,7 +943,9 @@ class HermitianMatrix<MT,SO,true>
    BLAZE_CONSTRAINT_MUST_NOT_BE_POINTER_TYPE         ( MT );
    BLAZE_CONSTRAINT_MUST_NOT_BE_CONST                ( MT );
    BLAZE_CONSTRAINT_MUST_NOT_BE_VOLATILE             ( MT );
-   BLAZE_CONSTRAINT_MUST_NOT_BE_EXPRESSION_TYPE      ( MT );
+   BLAZE_CONSTRAINT_MUST_NOT_BE_VIEW_TYPE            ( MT );
+   BLAZE_CONSTRAINT_MUST_NOT_BE_COMPUTATION_TYPE     ( MT );
+   BLAZE_CONSTRAINT_MUST_NOT_BE_TRANSFORMATION_TYPE  ( MT );
    BLAZE_CONSTRAINT_MUST_NOT_BE_SYMMETRIC_MATRIX_TYPE( MT );
    BLAZE_CONSTRAINT_MUST_NOT_BE_HERMITIAN_MATRIX_TYPE( MT );
    BLAZE_CONSTRAINT_MUST_NOT_BE_LOWER_MATRIX_TYPE    ( MT );
@@ -2509,7 +2516,7 @@ void HermitianMatrix<MT,SO,true>::resize( size_t n, bool preserve )
 {
    BLAZE_CONSTRAINT_MUST_BE_RESIZABLE_TYPE( MT );
 
-   UNUSED_PARAMETER( preserve );
+   MAYBE_UNUSED( preserve );
 
    BLAZE_INTERNAL_ASSERT( isSquare( matrix_ ), "Non-square Hermitian matrix detected" );
 
@@ -2546,7 +2553,7 @@ inline void HermitianMatrix<MT,SO,true>::extend( size_t n, bool preserve )
 {
    BLAZE_CONSTRAINT_MUST_BE_RESIZABLE_TYPE( MT );
 
-   UNUSED_PARAMETER( preserve );
+   MAYBE_UNUSED( preserve );
 
    resize( rows() + n, true );
 }

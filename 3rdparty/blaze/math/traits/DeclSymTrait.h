@@ -3,7 +3,7 @@
 //  \file blaze/math/traits/DeclSymTrait.h
 //  \brief Header file for the declsym trait
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -44,6 +44,7 @@
 #include "../../math/adaptors/symmetricmatrix/BaseTemplate.h"
 #include "../../math/typetraits/IsMatrix.h"
 #include "../../math/typetraits/Size.h"
+#include "../../util/EnableIf.h"
 #include "../../util/InvalidType.h"
 
 
@@ -188,7 +189,7 @@ struct DeclSymTraitEval< MT
                                        Size_v<MT,1UL> == DefaultSize_v ||
                                        Size_v<MT,0UL> == Size_v<MT,1UL> ) > >
 {
-   using Type = SymmetricMatrix<MT>;
+   using Type = SymmetricMatrix<typename MT::ResultType>;
 };
 /*! \endcond */
 //*************************************************************************************************

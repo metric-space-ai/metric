@@ -3,7 +3,7 @@
 //  \file blaze/math/StrictlyUpperMatrix.h
 //  \brief Header file for the complete StrictlyUpperMatrix implementation
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -52,12 +52,12 @@
 #include "../math/DenseMatrix.h"
 #include "../math/Exception.h"
 #include "../math/SparseMatrix.h"
-#include "../math/typetraits/IsDenseMatrix.h"
 #include "../math/StrictlyLowerMatrix.h"
-#include "../util/FalseType.h"
+#include "../math/typetraits/IsDenseMatrix.h"
+#include "../math/ZeroMatrix.h"
 #include "../util/Indices.h"
+#include "../util/IntegralConstant.h"
 #include "../util/Random.h"
-#include "../util/TrueType.h"
 #include "../util/Types.h"
 
 

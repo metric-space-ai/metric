@@ -16,10 +16,10 @@ namespace metric {
 	template <typename Record, typename Graph>
 	std::string MetricAutoDetector::detect(Graph &graph, int graph_w, int graph_h, std::vector<Record> dataset, bool isEstimate)
 	{
-		//std::vector<std::string> metric_type_names = {"Euclidian", "Manhatten", "P_norm", "Euclidian_thresholded", "Cosine", "Chebyshev", 
+		//std::vector<std::string> metric_type_names = {"Euclidean", "Manhatten", "P_norm", "Euclidean_thresholded", "Cosine", "Chebyshev", 
 		//	"Earth Mover Distance", "SSIM", "TWED"};
-		std::vector<std::string> metric_type_names = {"Euclidian", "Manhatten", "P_norm", "Cosine", "Chebyshev"};
-		//std::vector<std::string> metric_type_names = {"Euclidian", "Manhatten"};
+		std::vector<std::string> metric_type_names = {"Euclidean", "Manhatten", "P_norm", "Cosine", "Chebyshev"};
+		//std::vector<std::string> metric_type_names = {"Euclidean", "Manhatten"};
 
 		// Random updating 
 		std::vector<size_t> randomized_indexes(dataset.size());
@@ -31,11 +31,11 @@ namespace metric {
 		std::vector<double> relative_diff_means;
 		for (auto metric_type : metric_type_names)
 		{
-			if (metric_type == "Euclidian")
+			if (metric_type == "Euclidean")
 			{
-				// Euclidian
-				metric::Euclidian<double> distance;
-				relative_diff_mean = get_mean_distance_difference<Record, Graph, metric::Euclidian<double>>(graph, distance, dataset, randomized_indexes, isEstimate);
+				// Euclidean
+				metric::Euclidean<double> distance;
+				relative_diff_mean = get_mean_distance_difference<Record, Graph, metric::Euclidean<double>>(graph, distance, dataset, randomized_indexes, isEstimate);
 			}
 			else if (metric_type == "Manhatten")
 			{
@@ -49,11 +49,11 @@ namespace metric {
 				metric::P_norm<double> distance;
 				relative_diff_mean = get_mean_distance_difference<Record, Graph, metric::P_norm<double>>(graph, distance, dataset, randomized_indexes, isEstimate);
 			}
-			else if (metric_type == "Euclidian_thresholded")
+			else if (metric_type == "Euclidean_thresholded")
 			{
-				// Euclidian_thresholded
-				metric::Euclidian_thresholded<double> distance;
-				relative_diff_mean = get_mean_distance_difference<Record, Graph, metric::Euclidian_thresholded<double>>(graph, distance, dataset, randomized_indexes, isEstimate);
+				// Euclidean_thresholded
+				metric::Euclidean_thresholded<double> distance;
+				relative_diff_mean = get_mean_distance_difference<Record, Graph, metric::Euclidean_thresholded<double>>(graph, distance, dataset, randomized_indexes, isEstimate);
 			}
 			else if (metric_type == "Cosine")
 			{
@@ -120,7 +120,7 @@ namespace metric {
 		{
 			som.train(dataset);
 		}
-		metric::kohonen_distance<double, Record, Graph, Metric> kohonen_distance_object(som);
+		metric::Kohonen<double, Record, Graph, Metric> Kohonen_object(som, dataset);
 			
 		auto iterations = 20;
 		if (iterations > dataset.size())
@@ -135,16 +135,16 @@ namespace metric {
 				if (i != j)
 				{						
 					// we get the same bmu for both records
-					auto kohonen_distance = kohonen_distance_object(dataset[randomized_indexes[i]], dataset[randomized_indexes[j]]);
+					auto Kohonen = Kohonen_object(dataset[randomized_indexes[i]], dataset[randomized_indexes[j]]);
 					auto direct_distance = distance(dataset[randomized_indexes[i]], dataset[randomized_indexes[j]]);
-					auto diff = abs(abs(kohonen_distance) - abs(direct_distance));
+					auto diff = abs(abs(Kohonen) - abs(direct_distance));
 					auto relative_diff = diff / abs(direct_distance);
 					if (direct_distance != 0)
 					{
 						relative_diffs.push_back(relative_diff);
 					}
 					
-					//std::cout << " kohonen_distance: " << kohonen_distance << " direct_distance: " << direct_distance << " diff: " << diff << " relative_diff: " << relative_diff << std::endl;
+					//std::cout << " Kohonen: " << Kohonen << " direct_distance: " << direct_distance << " diff: " << diff << " relative_diff: " << relative_diff << std::endl;
 				}
 			}
 		}

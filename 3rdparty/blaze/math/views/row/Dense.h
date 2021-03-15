@@ -3,7 +3,7 @@
 //  \file blaze/math/views/row/Dense.h
 //  \brief Row specialization for dense matrices
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -61,6 +61,7 @@
 #include "../../../math/InitializerList.h"
 #include "../../../math/shims/Clear.h"
 #include "../../../math/shims/IsDefault.h"
+#include "../../../math/shims/PrevMultiple.h"
 #include "../../../math/shims/Reset.h"
 #include "../../../math/SIMD.h"
 #include "../../../math/traits/CrossTrait.h"
@@ -93,14 +94,12 @@
 #include "../../../util/constraints/Pointer.h"
 #include "../../../util/constraints/Reference.h"
 #include "../../../util/constraints/Vectorizable.h"
-#include "../../../util/DisableIf.h"
 #include "../../../util/EnableIf.h"
 #include "../../../util/mpl/If.h"
 #include "../../../util/TypeList.h"
 #include "../../../util/Types.h"
 #include "../../../util/typetraits/IsConst.h"
 #include "../../../util/typetraits/IsReference.h"
-#include "../../../util/typetraits/RemoveReference.h"
 
 
 namespace blaze {
@@ -171,6 +170,9 @@ class Row<MT,true,true,SF,CRAs...>
 
    //! Compilation switch for the expression template assignment strategy.
    static constexpr bool smpAssignable = MT::smpAssignable;
+
+   //! Compilation switch for the expression template evaluation strategy.
+   static constexpr bool compileTimeArgs = DataType::compileTimeArgs;
    //**********************************************************************************************
 
    //**Constructors********************************************************************************
@@ -178,12 +180,16 @@ class Row<MT,true,true,SF,CRAs...>
    //@{
    template< typename... RRAs >
    explicit inline Row( MT& matrix, RRAs... args );
-   // No explicitly declared copy constructor.
+
+   Row( const Row& ) = default;
    //@}
    //**********************************************************************************************
 
    //**Destructor**********************************************************************************
-   // No explicitly declared destructor.
+   /*!\name Destructor */
+   //@{
+   ~Row() = default;
+   //@}
    //**********************************************************************************************
 
    //**Data access functions***********************************************************************
@@ -257,9 +263,7 @@ class Row<MT,true,true,SF,CRAs...>
    //! Helper variable template for the explicit application of the SFINAE principle.
    template< typename VT >
    static constexpr bool VectorizedAddAssign_v =
-      ( useOptimizedKernels &&
-        simdEnabled && VT::simdEnabled &&
-        IsSIMDCombinable_v< ElementType, ElementType_t<VT> > &&
+      ( VectorizedAssign_v<VT> &&
         HasSIMDAdd_v< ElementType, ElementType_t<VT> > );
    //**********************************************************************************************
 
@@ -267,9 +271,7 @@ class Row<MT,true,true,SF,CRAs...>
    //! Helper variable template for the explicit application of the SFINAE principle.
    template< typename VT >
    static constexpr bool VectorizedSubAssign_v =
-      ( useOptimizedKernels &&
-        simdEnabled && VT::simdEnabled &&
-        IsSIMDCombinable_v< ElementType, ElementType_t<VT> > &&
+      ( VectorizedAssign_v<VT> &&
         HasSIMDSub_v< ElementType, ElementType_t<VT> > );
    //**********************************************************************************************
 
@@ -277,9 +279,7 @@ class Row<MT,true,true,SF,CRAs...>
    //! Helper variable template for the explicit application of the SFINAE principle.
    template< typename VT >
    static constexpr bool VectorizedMultAssign_v =
-      ( useOptimizedKernels &&
-        simdEnabled && VT::simdEnabled &&
-        IsSIMDCombinable_v< ElementType, ElementType_t<VT> > &&
+      ( VectorizedAssign_v<VT> &&
         HasSIMDMult_v< ElementType, ElementType_t<VT> > );
    //**********************************************************************************************
 
@@ -287,9 +287,7 @@ class Row<MT,true,true,SF,CRAs...>
    //! Helper variable template for the explicit application of the SFINAE principle.
    template< typename VT >
    static constexpr bool VectorizedDivAssign_v =
-      ( useOptimizedKernels &&
-        simdEnabled && VT::simdEnabled &&
-        IsSIMDCombinable_v< ElementType, ElementType_t<VT> > &&
+      ( VectorizedAssign_v<VT> &&
         HasSIMDDiv_v< ElementType, ElementType_t<VT> > );
    //**********************************************************************************************
 
@@ -827,7 +825,7 @@ inline Row<MT,true,true,SF,CRAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( IsExpression_v<MT> && rhs.canAlias( &matrix_ ) ) {
+   if( IsExpression_v<MT> && rhs.canAlias( this ) ) {
       const ResultType tmp( rhs );
       smpAssign( left, tmp );
    }
@@ -880,7 +878,7 @@ inline Row<MT,true,true,SF,CRAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( IsReference_v<Right> && right.canAlias( &matrix_ ) ) {
+   if( IsReference_v<Right> && right.canAlias( this ) ) {
       const ResultType_t<VT> tmp( right );
       smpAssign( left, tmp );
    }
@@ -935,7 +933,7 @@ inline Row<MT,true,true,SF,CRAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( IsReference_v<Right> && right.canAlias( &matrix_ ) ) {
+   if( IsReference_v<Right> && right.canAlias( this ) ) {
       const ResultType_t<VT> tmp( right );
       smpAddAssign( left, tmp );
    }
@@ -988,7 +986,7 @@ inline Row<MT,true,true,SF,CRAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( IsReference_v<Right> && right.canAlias( &matrix_ ) ) {
+   if( IsReference_v<Right> && right.canAlias( this ) ) {
       const ResultType_t<VT> tmp( right );
       smpSubAssign( left, tmp );
    }
@@ -1040,7 +1038,7 @@ inline Row<MT,true,true,SF,CRAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( IsReference_v<Right> && right.canAlias( &matrix_ ) ) {
+   if( IsReference_v<Right> && right.canAlias( this ) ) {
       const ResultType_t<VT> tmp( right );
       smpMultAssign( left, tmp );
    }
@@ -1091,7 +1089,7 @@ inline Row<MT,true,true,SF,CRAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( IsReference_v<Right> && right.canAlias( &matrix_ ) ) {
+   if( IsReference_v<Right> && right.canAlias( this ) ) {
       const ResultType_t<VT> tmp( right );
       smpDivAssign( left, tmp );
    }
@@ -1369,7 +1367,7 @@ template< typename MT       // Type of the dense matrix
 template< typename Other >  // Data type of the foreign expression
 inline bool Row<MT,true,true,SF,CRAs...>::canAlias( const Other* alias ) const noexcept
 {
-   return matrix_.isAliased( alias );
+   return matrix_.isAliased( &unview( *alias ) );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -1419,7 +1417,7 @@ template< typename MT       // Type of the dense matrix
 template< typename Other >  // Data type of the foreign expression
 inline bool Row<MT,true,true,SF,CRAs...>::isAliased( const Other* alias ) const noexcept
 {
-   return matrix_.isAliased( alias );
+   return matrix_.isAliased( &unview( *alias ) );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -1695,7 +1693,9 @@ inline auto Row<MT,true,true,SF,CRAs...>::assign( const DenseVector<VT,true>& rh
 {
    BLAZE_INTERNAL_ASSERT( size() == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t jpos( (~rhs).size() & size_t(-2) );
+   const size_t jpos( prevMultiple( (~rhs).size(), 2UL ) );
+   BLAZE_INTERNAL_ASSERT( jpos <= (~rhs).size(), "Invalid end calculation" );
+
    for( size_t j=0UL; j<jpos; j+=2UL ) {
       matrix_(row(),j    ) = (~rhs)[j    ];
       matrix_(row(),j+1UL) = (~rhs)[j+1UL];
@@ -1734,14 +1734,14 @@ inline auto Row<MT,true,true,SF,CRAs...>::assign( const DenseVector<VT,true>& rh
 
    const size_t columns( size() );
 
-   const size_t jpos( ( remainder )?( columns & size_t(-SIMDSIZE) ):( columns ) );
-   BLAZE_INTERNAL_ASSERT( !remainder || ( columns - ( columns % (SIMDSIZE) ) ) == jpos, "Invalid end calculation" );
+   const size_t jpos( remainder ? prevMultiple( columns, SIMDSIZE ) : columns );
+   BLAZE_INTERNAL_ASSERT( jpos <= columns, "Invalid end calculation" );
 
    size_t j( 0UL );
    Iterator left( begin() );
    ConstIterator_t<VT> right( (~rhs).begin() );
 
-   if( useStreaming && columns > ( cacheSize/( sizeof(ElementType) * 3UL ) ) && !(~rhs).isAliased( &matrix_ ) )
+   if( useStreaming && columns > ( cacheSize/( sizeof(ElementType) * 3UL ) ) && !(~rhs).isAliased( this ) )
    {
       for( ; j<jpos; j+=SIMDSIZE ) {
          left.stream( right.load() ); left += SIMDSIZE; right += SIMDSIZE;
@@ -1818,7 +1818,9 @@ inline auto Row<MT,true,true,SF,CRAs...>::addAssign( const DenseVector<VT,true>&
 {
    BLAZE_INTERNAL_ASSERT( size() == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t jpos( (~rhs).size() & size_t(-2) );
+   const size_t jpos( prevMultiple( (~rhs).size(), 2UL ) );
+   BLAZE_INTERNAL_ASSERT( jpos <= (~rhs).size(), "Invalid end calculation" );
+
    for( size_t j=0UL; j<jpos; j+=2UL ) {
       matrix_(row(),j    ) += (~rhs)[j    ];
       matrix_(row(),j+1UL) += (~rhs)[j+1UL];
@@ -1857,8 +1859,8 @@ inline auto Row<MT,true,true,SF,CRAs...>::addAssign( const DenseVector<VT,true>&
 
    const size_t columns( size() );
 
-   const size_t jpos( ( remainder )?( columns & size_t(-SIMDSIZE) ):( columns ) );
-   BLAZE_INTERNAL_ASSERT( !remainder || ( columns - ( columns % (SIMDSIZE) ) ) == jpos, "Invalid end calculation" );
+   const size_t jpos( remainder ? prevMultiple( columns, SIMDSIZE ) : columns );
+   BLAZE_INTERNAL_ASSERT( jpos <= columns, "Invalid end calculation" );
 
    size_t j( 0UL );
    Iterator left( begin() );
@@ -1929,7 +1931,9 @@ inline auto Row<MT,true,true,SF,CRAs...>::subAssign( const DenseVector<VT,true>&
 {
    BLAZE_INTERNAL_ASSERT( size() == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t jpos( (~rhs).size() & size_t(-2) );
+   const size_t jpos( prevMultiple( (~rhs).size(), 2UL ) );
+   BLAZE_INTERNAL_ASSERT( jpos <= (~rhs).size(), "Invalid end calculation" );
+
    for( size_t j=0UL; j<jpos; j+=2UL ) {
       matrix_(row(),j    ) -= (~rhs)[j    ];
       matrix_(row(),j+1UL) -= (~rhs)[j+1UL];
@@ -1968,8 +1972,8 @@ inline auto Row<MT,true,true,SF,CRAs...>::subAssign( const DenseVector<VT,true>&
 
    const size_t columns( size() );
 
-   const size_t jpos( ( remainder )?( columns & size_t(-SIMDSIZE) ):( columns ) );
-   BLAZE_INTERNAL_ASSERT( !remainder || ( columns - ( columns % (SIMDSIZE) ) ) == jpos, "Invalid end calculation" );
+   const size_t jpos( remainder ? prevMultiple( columns, SIMDSIZE ) : columns );
+   BLAZE_INTERNAL_ASSERT( jpos <= columns, "Invalid end calculation" );
 
    size_t j( 0UL );
    Iterator left( begin() );
@@ -2040,7 +2044,9 @@ inline auto Row<MT,true,true,SF,CRAs...>::multAssign( const DenseVector<VT,true>
 {
    BLAZE_INTERNAL_ASSERT( size() == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t jpos( (~rhs).size() & size_t(-2) );
+   const size_t jpos( prevMultiple( (~rhs).size(), 2UL ) );
+   BLAZE_INTERNAL_ASSERT( jpos <= (~rhs).size(), "Invalid end calculation" );
+
    for( size_t j=0UL; j<jpos; j+=2UL ) {
       matrix_(row(),j    ) *= (~rhs)[j    ];
       matrix_(row(),j+1UL) *= (~rhs)[j+1UL];
@@ -2079,8 +2085,8 @@ inline auto Row<MT,true,true,SF,CRAs...>::multAssign( const DenseVector<VT,true>
 
    const size_t columns( size() );
 
-   const size_t jpos( ( remainder )?( columns & size_t(-SIMDSIZE) ):( columns ) );
-   BLAZE_INTERNAL_ASSERT( !remainder || ( columns - ( columns % (SIMDSIZE) ) ) == jpos, "Invalid end calculation" );
+   const size_t jpos( remainder ? prevMultiple( columns, SIMDSIZE ) : columns );
+   BLAZE_INTERNAL_ASSERT( jpos <= columns, "Invalid end calculation" );
 
    size_t j( 0UL );
    Iterator left( begin() );
@@ -2164,7 +2170,9 @@ inline auto Row<MT,true,true,SF,CRAs...>::divAssign( const DenseVector<VT,true>&
 {
    BLAZE_INTERNAL_ASSERT( size() == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t jpos( (~rhs).size() & size_t(-2) );
+   const size_t jpos( prevMultiple( (~rhs).size(), 2UL ) );
+   BLAZE_INTERNAL_ASSERT( jpos <= (~rhs).size(), "Invalid end calculation" );
+
    for( size_t j=0UL; j<jpos; j+=2UL ) {
       matrix_(row(),j    ) /= (~rhs)[j    ];
       matrix_(row(),j+1UL) /= (~rhs)[j+1UL];
@@ -2201,8 +2209,8 @@ inline auto Row<MT,true,true,SF,CRAs...>::divAssign( const DenseVector<VT,true>&
 
    const size_t columns( size() );
 
-   const size_t jpos( columns & size_t(-SIMDSIZE) );
-   BLAZE_INTERNAL_ASSERT( ( columns - ( columns % (SIMDSIZE) ) ) == jpos, "Invalid end calculation" );
+   const size_t jpos( prevMultiple( columns, SIMDSIZE ) );
+   BLAZE_INTERNAL_ASSERT( jpos <= columns, "Invalid end calculation" );
 
    size_t j( 0UL );
    Iterator left( begin() );
@@ -2624,6 +2632,9 @@ class Row<MT,false,true,false,CRAs...>
 
    //! Compilation switch for the expression template assignment strategy.
    static constexpr bool smpAssignable = MT::smpAssignable;
+
+   //! Compilation switch for the expression template evaluation strategy.
+   static constexpr bool compileTimeArgs = DataType::compileTimeArgs;
    //**********************************************************************************************
 
    //**Constructors********************************************************************************
@@ -2631,12 +2642,16 @@ class Row<MT,false,true,false,CRAs...>
    //@{
    template< typename... RRAs >
    explicit inline Row( MT& matrix, RRAs... args );
-   // No explicitly declared copy constructor.
+
+   Row( const Row& ) = default;
    //@}
    //**********************************************************************************************
 
    //**Destructor**********************************************************************************
-   // No explicitly declared destructor.
+   /*!\name Destructor */
+   //@{
+   ~Row() = default;
+   //@}
    //**********************************************************************************************
 
    //**Data access functions***********************************************************************
@@ -3172,7 +3187,7 @@ inline Row<MT,false,true,false,CRAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( IsExpression_v<MT> && rhs.canAlias( &matrix_ ) ) {
+   if( IsExpression_v<MT> && rhs.canAlias( this ) ) {
       const ResultType tmp( rhs );
       smpAssign( left, tmp );
    }
@@ -3225,7 +3240,7 @@ inline Row<MT,false,true,false,CRAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( IsReference_v<Right> && right.canAlias( &matrix_ ) ) {
+   if( IsReference_v<Right> && right.canAlias( this ) ) {
       const ResultType tmp( right );
       smpAssign( left, tmp );
    }
@@ -3279,7 +3294,7 @@ inline Row<MT,false,true,false,CRAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( IsReference_v<Right> && right.canAlias( &matrix_ ) ) {
+   if( IsReference_v<Right> && right.canAlias( this ) ) {
       const ResultType_t<VT> tmp( right );
       smpAddAssign( left, tmp );
    }
@@ -3331,7 +3346,7 @@ inline Row<MT,false,true,false,CRAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( IsReference_v<Right> && right.canAlias( &matrix_ ) ) {
+   if( IsReference_v<Right> && right.canAlias( this ) ) {
       const ResultType_t<VT> tmp( right );
       smpSubAssign( left, tmp );
    }
@@ -3382,7 +3397,7 @@ inline Row<MT,false,true,false,CRAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( IsReference_v<Right> && right.canAlias( &matrix_ ) ) {
+   if( IsReference_v<Right> && right.canAlias( this ) ) {
       const ResultType_t<VT> tmp( right );
       smpMultAssign( left, tmp );
    }
@@ -3432,7 +3447,7 @@ inline Row<MT,false,true,false,CRAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( IsReference_v<Right> && right.canAlias( &matrix_ ) ) {
+   if( IsReference_v<Right> && right.canAlias( this ) ) {
       const ResultType_t<VT> tmp( right );
       smpDivAssign( left, tmp );
    }
@@ -3721,7 +3736,7 @@ template< typename MT       // Type of the dense matrix
 template< typename Other >  // Data type of the foreign expression
 inline bool Row<MT,false,true,false,CRAs...>::canAlias( const Other* alias ) const noexcept
 {
-   return matrix_.isAliased( alias );
+   return matrix_.isAliased( &unview( *alias ) );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -3769,7 +3784,7 @@ template< typename MT       // Type of the dense matrix
 template< typename Other >  // Data type of the foreign expression
 inline bool Row<MT,false,true,false,CRAs...>::isAliased( const Other* alias ) const noexcept
 {
-   return matrix_.isAliased( alias );
+   return matrix_.isAliased( &unview( *alias ) );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -3861,7 +3876,9 @@ inline void Row<MT,false,true,false,CRAs...>::assign( const DenseVector<VT,true>
 {
    BLAZE_INTERNAL_ASSERT( size() == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t jpos( (~rhs).size() & size_t(-2) );
+   const size_t jpos( prevMultiple( (~rhs).size(), 2UL ) );
+   BLAZE_INTERNAL_ASSERT( jpos <= (~rhs).size(), "Invalid end calculation" );
+
    for( size_t j=0UL; j<jpos; j+=2UL ) {
       matrix_(row(),j    ) = (~rhs)[j    ];
       matrix_(row(),j+1UL) = (~rhs)[j+1UL];
@@ -3918,7 +3935,9 @@ inline void Row<MT,false,true,false,CRAs...>::addAssign( const DenseVector<VT,tr
 {
    BLAZE_INTERNAL_ASSERT( size() == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t jpos( (~rhs).size() & size_t(-2) );
+   const size_t jpos( prevMultiple( (~rhs).size(), 2UL ) );
+   BLAZE_INTERNAL_ASSERT( jpos <= (~rhs).size(), "Invalid end calculation" );
+
    for( size_t j=0UL; j<jpos; j+=2UL ) {
       matrix_(row(),j    ) += (~rhs)[j    ];
       matrix_(row(),j+1UL) += (~rhs)[j+1UL];
@@ -3975,7 +3994,9 @@ inline void Row<MT,false,true,false,CRAs...>::subAssign( const DenseVector<VT,tr
 {
    BLAZE_INTERNAL_ASSERT( size() == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t jpos( (~rhs).size() & size_t(-2) );
+   const size_t jpos( prevMultiple( (~rhs).size(), 2UL ) );
+   BLAZE_INTERNAL_ASSERT( jpos <= (~rhs).size(), "Invalid end calculation" );
+
    for( size_t j=0UL; j<jpos; j+=2UL ) {
       matrix_(row(),j    ) -= (~rhs)[j    ];
       matrix_(row(),j+1UL) -= (~rhs)[j+1UL];
@@ -4032,7 +4053,9 @@ inline void Row<MT,false,true,false,CRAs...>::multAssign( const DenseVector<VT,t
 {
    BLAZE_INTERNAL_ASSERT( size() == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t jpos( (~rhs).size() & size_t(-2) );
+   const size_t jpos( prevMultiple( (~rhs).size(), 2UL ) );
+   BLAZE_INTERNAL_ASSERT( jpos <= (~rhs).size(), "Invalid end calculation" );
+
    for( size_t j=0UL; j<jpos; j+=2UL ) {
       matrix_(row(),j    ) *= (~rhs)[j    ];
       matrix_(row(),j+1UL) *= (~rhs)[j+1UL];
@@ -4102,7 +4125,9 @@ inline void Row<MT,false,true,false,CRAs...>::divAssign( const DenseVector<VT,tr
 {
    BLAZE_INTERNAL_ASSERT( size() == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t jpos( (~rhs).size() & size_t(-2) );
+   const size_t jpos( prevMultiple( (~rhs).size(), 2UL ) );
+   BLAZE_INTERNAL_ASSERT( jpos <= (~rhs).size(), "Invalid end calculation" );
+
    for( size_t j=0UL; j<jpos; j+=2UL ) {
       matrix_(row(),j    ) /= (~rhs)[j    ];
       matrix_(row(),j+1UL) /= (~rhs)[j+1UL];
@@ -4185,6 +4210,9 @@ class Row<MT,false,true,true,CRAs...>
 
    //! Compilation switch for the expression template assignment strategy.
    static constexpr bool smpAssignable = MT::smpAssignable;
+
+   //! Compilation switch for the expression template evaluation strategy.
+   static constexpr bool compileTimeArgs = DataType::compileTimeArgs;
    //**********************************************************************************************
 
    //**Constructors********************************************************************************
@@ -4192,12 +4220,16 @@ class Row<MT,false,true,true,CRAs...>
    //@{
    template< typename... RRAs >
    explicit inline Row( MT& matrix, RRAs... args );
-   // No explicitly declared copy constructor.
+
+   Row( const Row& ) = default;
    //@}
    //**********************************************************************************************
 
    //**Destructor**********************************************************************************
-   // No explicitly declared destructor.
+   /*!\name Destructor */
+   //@{
+   ~Row() = default;
+   //@}
    //**********************************************************************************************
 
    //**Data access functions***********************************************************************
@@ -4271,9 +4303,7 @@ class Row<MT,false,true,true,CRAs...>
    //! Helper variable template for the explicit application of the SFINAE principle.
    template< typename VT >
    static constexpr bool VectorizedAddAssign_v =
-      ( useOptimizedKernels &&
-        simdEnabled && VT::simdEnabled &&
-        IsSIMDCombinable_v< ElementType, ElementType_t<VT> > &&
+      ( VectorizedAssign_v<VT> &&
         HasSIMDAdd_v< ElementType, ElementType_t<VT> > );
    //**********************************************************************************************
 
@@ -4281,9 +4311,7 @@ class Row<MT,false,true,true,CRAs...>
    //! Helper variable template for the explicit application of the SFINAE principle.
    template< typename VT >
    static constexpr bool VectorizedSubAssign_v =
-      ( useOptimizedKernels &&
-        simdEnabled && VT::simdEnabled &&
-        IsSIMDCombinable_v< ElementType, ElementType_t<VT> > &&
+      ( VectorizedAssign_v<VT> &&
         HasSIMDSub_v< ElementType, ElementType_t<VT> > );
    //**********************************************************************************************
 
@@ -4291,9 +4319,7 @@ class Row<MT,false,true,true,CRAs...>
    //! Helper variable template for the explicit application of the SFINAE principle.
    template< typename VT >
    static constexpr bool VectorizedMultAssign_v =
-      ( useOptimizedKernels &&
-        simdEnabled && VT::simdEnabled &&
-        IsSIMDCombinable_v< ElementType, ElementType_t<VT> > &&
+      ( VectorizedAssign_v<VT> &&
         HasSIMDMult_v< ElementType, ElementType_t<VT> > );
    //**********************************************************************************************
 
@@ -4301,9 +4327,7 @@ class Row<MT,false,true,true,CRAs...>
    //! Helper variable template for the explicit application of the SFINAE principle.
    template< typename VT >
    static constexpr bool VectorizedDivAssign_v =
-      ( useOptimizedKernels &&
-        simdEnabled && VT::simdEnabled &&
-        IsSIMDCombinable_v< ElementType, ElementType_t<VT> > &&
+      ( VectorizedAssign_v<VT> &&
         HasSIMDDiv_v< ElementType, ElementType_t<VT> > );
    //**********************************************************************************************
 
@@ -4822,7 +4846,7 @@ inline Row<MT,false,true,true,CRAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( IsExpression_v<MT> && rhs.canAlias( &matrix_ ) ) {
+   if( IsExpression_v<MT> && rhs.canAlias( this ) ) {
       const ResultType tmp( rhs );
       smpAssign( left, tmp );
    }
@@ -4874,7 +4898,7 @@ inline Row<MT,false,true,true,CRAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( IsReference_v<Right> && right.canAlias( &matrix_ ) ) {
+   if( IsReference_v<Right> && right.canAlias( this ) ) {
       const ResultType_t<VT> tmp( right );
       smpAssign( left, tmp );
    }
@@ -4928,7 +4952,7 @@ inline Row<MT,false,true,true,CRAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( IsReference_v<Right> && right.canAlias( &matrix_ ) ) {
+   if( IsReference_v<Right> && right.canAlias( this ) ) {
       const ResultType_t<VT> tmp( right );
       smpAddAssign( left, tmp );
    }
@@ -4980,7 +5004,7 @@ inline Row<MT,false,true,true,CRAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( IsReference_v<Right> && right.canAlias( &matrix_ ) ) {
+   if( IsReference_v<Right> && right.canAlias( this ) ) {
       const ResultType_t<VT> tmp( right );
       smpSubAssign( left, tmp );
    }
@@ -5031,7 +5055,7 @@ inline Row<MT,false,true,true,CRAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( IsReference_v<Right> && right.canAlias( &matrix_ ) ) {
+   if( IsReference_v<Right> && right.canAlias( this ) ) {
       const ResultType_t<VT> tmp( right );
       smpMultAssign( left, tmp );
    }
@@ -5081,7 +5105,7 @@ inline Row<MT,false,true,true,CRAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( IsReference_v<Right> && right.canAlias( &matrix_ ) ) {
+   if( IsReference_v<Right> && right.canAlias( this ) ) {
       const ResultType_t<VT> tmp( right );
       smpDivAssign( left, tmp );
    }
@@ -5349,7 +5373,7 @@ template< typename MT       // Type of the dense matrix
 template< typename Other >  // Data type of the foreign expression
 inline bool Row<MT,false,true,true,CRAs...>::canAlias( const Other* alias ) const noexcept
 {
-   return matrix_.isAliased( alias );
+   return matrix_.isAliased( &unview( *alias ) );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -5397,7 +5421,7 @@ template< typename MT       // Type of the dense matrix
 template< typename Other >  // Data type of the foreign expression
 inline bool Row<MT,false,true,true,CRAs...>::isAliased( const Other* alias ) const noexcept
 {
-   return matrix_.isAliased( alias );
+   return matrix_.isAliased( &unview( *alias ) );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -5662,7 +5686,9 @@ inline auto Row<MT,false,true,true,CRAs...>::assign( const DenseVector<VT,true>&
 {
    BLAZE_INTERNAL_ASSERT( size() == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t ipos( (~rhs).size() & size_t(-2) );
+   const size_t ipos( prevMultiple( (~rhs).size(), 2UL ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= (~rhs).size(), "Invalid end calculation" );
+
    for( size_t i=0UL; i<ipos; i+=2UL ) {
       matrix_(i    ,row()) = (~rhs)[i    ];
       matrix_(i+1UL,row()) = (~rhs)[i+1UL];
@@ -5700,14 +5726,14 @@ inline auto Row<MT,false,true,true,CRAs...>::assign( const DenseVector<VT,true>&
 
    const size_t rows( size() );
 
-   const size_t ipos( ( remainder )?( rows & size_t(-SIMDSIZE) ):( rows ) );
-   BLAZE_INTERNAL_ASSERT( !remainder || ( rows - ( rows % (SIMDSIZE) ) ) == ipos, "Invalid end calculation" );
+   const size_t ipos( remainder ? prevMultiple( rows, SIMDSIZE ) : rows );
+   BLAZE_INTERNAL_ASSERT( ipos <= rows, "Invalid end calculation" );
 
    size_t i( 0UL );
    Iterator left( begin() );
    ConstIterator_t<VT> right( (~rhs).begin() );
 
-   if( useStreaming && rows > ( cacheSize/( sizeof(ElementType) * 3UL ) ) && !(~rhs).isAliased( &matrix_ ) )
+   if( useStreaming && rows > ( cacheSize/( sizeof(ElementType) * 3UL ) ) && !(~rhs).isAliased( this ) )
    {
       for( ; i<ipos; i+=SIMDSIZE ) {
          left.stream( right.load() ); left += SIMDSIZE; right += SIMDSIZE;
@@ -5782,7 +5808,9 @@ inline auto Row<MT,false,true,true,CRAs...>::addAssign( const DenseVector<VT,tru
 {
    BLAZE_INTERNAL_ASSERT( size() == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t ipos( (~rhs).size() & size_t(-2) );
+   const size_t ipos( prevMultiple( (~rhs).size(), 2UL ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= (~rhs).size(), "Invalid end calculation" );
+
    for( size_t i=0UL; i<ipos; i+=2UL ) {
       matrix_(i    ,row()) += (~rhs)[i    ];
       matrix_(i+1UL,row()) += (~rhs)[i+1UL];
@@ -5820,8 +5848,8 @@ inline auto Row<MT,false,true,true,CRAs...>::addAssign( const DenseVector<VT,tru
 
    const size_t rows( size() );
 
-   const size_t ipos( ( remainder )?( rows & size_t(-SIMDSIZE) ):( rows ) );
-   BLAZE_INTERNAL_ASSERT( !remainder || ( rows - ( rows % (SIMDSIZE) ) ) == ipos, "Invalid end calculation" );
+   const size_t ipos( remainder ? prevMultiple( rows, SIMDSIZE ) : rows );
+   BLAZE_INTERNAL_ASSERT( ipos <= rows, "Invalid end calculation" );
 
    size_t i( 0UL );
    Iterator left( begin() );
@@ -5890,7 +5918,9 @@ inline auto Row<MT,false,true,true,CRAs...>::subAssign( const DenseVector<VT,tru
 {
    BLAZE_INTERNAL_ASSERT( size() == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t ipos( (~rhs).size() & size_t(-2) );
+   const size_t ipos( prevMultiple( (~rhs).size(), 2UL ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= (~rhs).size(), "Invalid end calculation" );
+
    for( size_t i=0UL; i<ipos; i+=2UL ) {
       matrix_(i    ,row()) -= (~rhs)[i    ];
       matrix_(i+1UL,row()) -= (~rhs)[i+1UL];
@@ -5928,8 +5958,8 @@ inline auto Row<MT,false,true,true,CRAs...>::subAssign( const DenseVector<VT,tru
 
    const size_t rows( size() );
 
-   const size_t ipos( ( remainder )?( rows & size_t(-SIMDSIZE) ):( rows ) );
-   BLAZE_INTERNAL_ASSERT( !remainder || ( rows - ( rows % (SIMDSIZE) ) ) == ipos, "Invalid end calculation" );
+   const size_t ipos( remainder ? prevMultiple( rows, SIMDSIZE ) : rows );
+   BLAZE_INTERNAL_ASSERT( ipos <= rows, "Invalid end calculation" );
 
    size_t i( 0UL );
    Iterator left( begin() );
@@ -5998,7 +6028,9 @@ inline auto Row<MT,false,true,true,CRAs...>::multAssign( const DenseVector<VT,tr
 {
    BLAZE_INTERNAL_ASSERT( size() == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t ipos( (~rhs).size() & size_t(-2) );
+   const size_t ipos( prevMultiple( (~rhs).size(), 2UL ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= (~rhs).size(), "Invalid end calculation" );
+
    for( size_t i=0UL; i<ipos; i+=2UL ) {
       matrix_(i    ,row()) *= (~rhs)[i    ];
       matrix_(i+1UL,row()) *= (~rhs)[i+1UL];
@@ -6036,8 +6068,8 @@ inline auto Row<MT,false,true,true,CRAs...>::multAssign( const DenseVector<VT,tr
 
    const size_t rows( size() );
 
-   const size_t ipos( ( remainder )?( rows & size_t(-SIMDSIZE) ):( rows ) );
-   BLAZE_INTERNAL_ASSERT( !remainder || ( rows - ( rows % (SIMDSIZE) ) ) == ipos, "Invalid end calculation" );
+   const size_t ipos( remainder ? prevMultiple( rows, SIMDSIZE ) : rows );
+   BLAZE_INTERNAL_ASSERT( ipos <= rows, "Invalid end calculation" );
 
    size_t i( 0UL );
    Iterator left( begin() );
@@ -6119,7 +6151,9 @@ inline auto Row<MT,false,true,true,CRAs...>::divAssign( const DenseVector<VT,tru
 {
    BLAZE_INTERNAL_ASSERT( size() == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t ipos( (~rhs).size() & size_t(-2) );
+   const size_t ipos( prevMultiple( (~rhs).size(), 2UL ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= (~rhs).size(), "Invalid end calculation" );
+
    for( size_t i=0UL; i<ipos; i+=2UL ) {
       matrix_(i    ,row()) /= (~rhs)[i    ];
       matrix_(i+1UL,row()) /= (~rhs)[i+1UL];
@@ -6155,8 +6189,8 @@ inline auto Row<MT,false,true,true,CRAs...>::divAssign( const DenseVector<VT,tru
 
    const size_t rows( size() );
 
-   const size_t ipos( rows & size_t(-SIMDSIZE) );
-   BLAZE_INTERNAL_ASSERT( ( rows - ( rows % (SIMDSIZE) ) ) == ipos, "Invalid end calculation" );
+   const size_t ipos( prevMultiple( rows, SIMDSIZE ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= rows, "Invalid end calculation" );
 
    size_t i( 0UL );
    Iterator left( begin() );

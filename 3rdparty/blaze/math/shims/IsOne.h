@@ -3,7 +3,7 @@
 //  \file blaze/math/shims/IsOne.h
 //  \brief Header file for the isOne shim
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -43,10 +43,9 @@
 #include "../../math/RelaxationFlag.h"
 #include "../../math/shims/Equal.h"
 #include "../../system/Inline.h"
-#include "../../util/DisableIf.h"
 #include "../../util/EnableIf.h"
+#include "../../util/MaybeUnused.h"
 #include "../../util/typetraits/IsNumeric.h"
-#include "../../util/Unused.h"
 
 
 namespace blaze {
@@ -101,8 +100,8 @@ namespace blaze {
    complex<double> c4( 0.0, 1.0 );       //    false            |     false
    \endcode
 */
-template< bool RF          // Relaxation flag
-        , typename Type >  // Type of the given value/object
+template< RelaxationFlag RF  // Relaxation flag
+        , typename Type >    // Type of the given value/object
 BLAZE_ALWAYS_INLINE EnableIf_t< IsNumeric_v<Type>, bool > isOne( const Type& v )
 {
    return equal<RF>( v, Type(1) );
@@ -118,11 +117,11 @@ BLAZE_ALWAYS_INLINE EnableIf_t< IsNumeric_v<Type>, bool > isOne( const Type& v )
 // \param v The value/object to be tested.
 // \return \a false.
 */
-template< bool RF          // Relaxation flag
-        , typename Type >  // Type of the given value/object
+template< RelaxationFlag RF  // Relaxation flag
+        , typename Type >    // Type of the given value/object
 BLAZE_ALWAYS_INLINE DisableIf_t< IsNumeric_v<Type>, bool > isOne( const Type& v ) noexcept
 {
-   UNUSED_PARAMETER( v );
+   MAYBE_UNUSED( v );
 
    return false;
 }

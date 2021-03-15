@@ -3,7 +3,7 @@
 //  \file blaze/math/views/band/Dense.h
 //  \brief Band specialization for dense matrices
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -59,6 +59,8 @@
 #include "../../../math/InitializerList.h"
 #include "../../../math/shims/Clear.h"
 #include "../../../math/shims/IsDefault.h"
+#include "../../../math/shims/PrevMultiple.h"
+#include "../../../math/shims/Reset.h"
 #include "../../../math/traits/BandTrait.h"
 #include "../../../math/traits/CrossTrait.h"
 #include "../../../math/typetraits/HasMutableDataAccess.h"
@@ -80,6 +82,7 @@
 #include "../../../math/views/band/BaseTemplate.h"
 #include "../../../math/views/Check.h"
 #include "../../../system/Thresholds.h"
+#include "../../../util/algorithms/Min.h"
 #include "../../../util/Assert.h"
 #include "../../../util/constraints/Pointer.h"
 #include "../../../util/constraints/Reference.h"
@@ -518,6 +521,9 @@ class Band<MT,TF,true,false,CBAs...>
 
    //! Compilation switch for the expression template assignment strategy.
    static constexpr bool smpAssignable = MT::smpAssignable;
+
+   //! Compilation switch for the expression template evaluation strategy.
+   static constexpr bool compileTimeArgs = DataType::compileTimeArgs;
    //**********************************************************************************************
 
    //**Constructors********************************************************************************
@@ -525,12 +531,16 @@ class Band<MT,TF,true,false,CBAs...>
    //@{
    template< typename... RBAs >
    explicit inline Band( MT& matrix, RBAs... args );
-   // No explicitly declared copy constructor.
+
+   Band( const Band& ) = default;
    //@}
    //**********************************************************************************************
 
    //**Destructor**********************************************************************************
-   // No explicitly declared destructor.
+   /*!\name Destructor */
+   //@{
+   ~Band() = default;
+   //@}
    //**********************************************************************************************
 
    //**Data access functions***********************************************************************
@@ -1088,7 +1098,7 @@ inline Band<MT,TF,true,false,CBAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( IsExpression_v<MT> && rhs.canAlias( &matrix_ ) ) {
+   if( IsExpression_v<MT> && rhs.canAlias( this ) ) {
       const ResultType tmp( rhs );
       smpAssign( left, tmp );
    }
@@ -1141,7 +1151,7 @@ inline Band<MT,TF,true,false,CBAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( IsReference_v<Right> && right.canAlias( &matrix_ ) ) {
+   if( IsReference_v<Right> && right.canAlias( this ) ) {
       const ResultType_t<VT> tmp( right );
       smpAssign( left, tmp );
    }
@@ -1196,7 +1206,7 @@ inline Band<MT,TF,true,false,CBAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( IsReference_v<Right> && right.canAlias( &matrix_ ) ) {
+   if( IsReference_v<Right> && right.canAlias( this ) ) {
       const ResultType_t<VT> tmp( right );
       smpAddAssign( left, tmp );
    }
@@ -1249,7 +1259,7 @@ inline Band<MT,TF,true,false,CBAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( IsReference_v<Right> && right.canAlias( &matrix_ ) ) {
+   if( IsReference_v<Right> && right.canAlias( this ) ) {
       const ResultType_t<VT> tmp( right );
       smpSubAssign( left, tmp );
    }
@@ -1304,7 +1314,7 @@ inline Band<MT,TF,true,false,CBAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( IsReference_v<Right> && right.canAlias( &matrix_ ) ) {
+   if( IsReference_v<Right> && right.canAlias( this ) ) {
       const ResultType_t<VT> tmp( right );
       smpMultAssign( left, tmp );
    }
@@ -1355,7 +1365,7 @@ inline Band<MT,TF,true,false,CBAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( IsReference_v<Right> && right.canAlias( &matrix_ ) ) {
+   if( IsReference_v<Right> && right.canAlias( this ) ) {
       const ResultType_t<VT> tmp( right );
       smpDivAssign( left, tmp );
    }
@@ -1646,7 +1656,7 @@ template< typename MT          // Type of the dense matrix
 template< typename Other >     // Data type of the foreign expression
 inline bool Band<MT,TF,true,false,CBAs...>::canAlias( const Other* alias ) const noexcept
 {
-   return matrix_.isAliased( alias );
+   return matrix_.isAliased( &unview( *alias ) );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -1694,7 +1704,7 @@ template< typename MT          // Type of the dense matrix
 template< typename Other >     // Data type of the foreign expression
 inline bool Band<MT,TF,true,false,CBAs...>::isAliased( const Other* alias ) const noexcept
 {
-   return matrix_.isAliased( alias );
+   return matrix_.isAliased( &unview( *alias ) );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -1788,7 +1798,9 @@ inline void Band<MT,TF,true,false,CBAs...>::assign( const DenseVector<VT,TF>& rh
 {
    BLAZE_INTERNAL_ASSERT( size() == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t ipos( (~rhs).size() & size_t(-2) );
+   const size_t ipos( prevMultiple( (~rhs).size(), 2UL ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= (~rhs).size(), "Invalid end calculation" );
+
    for( size_t i=0UL; i<ipos; i+=2UL ) {
       matrix_(row()+i    ,column()+i    ) = (~rhs)[i    ];
       matrix_(row()+i+1UL,column()+i+1UL) = (~rhs)[i+1UL];
@@ -1850,7 +1862,9 @@ inline void Band<MT,TF,true,false,CBAs...>::addAssign( const DenseVector<VT,TF>&
 {
    BLAZE_INTERNAL_ASSERT( size() == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t ipos( (~rhs).size() & size_t(-2) );
+   const size_t ipos( prevMultiple( (~rhs).size(), 2UL ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= (~rhs).size(), "Invalid end calculation" );
+
    for( size_t i=0UL; i<ipos; i+=2UL ) {
       matrix_(row()+i    ,column()+i    ) += (~rhs)[i    ];
       matrix_(row()+i+1UL,column()+i+1UL) += (~rhs)[i+1UL];
@@ -1912,7 +1926,9 @@ inline void Band<MT,TF,true,false,CBAs...>::subAssign( const DenseVector<VT,TF>&
 {
    BLAZE_INTERNAL_ASSERT( size() == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t ipos( (~rhs).size() & size_t(-2) );
+   const size_t ipos( prevMultiple( (~rhs).size(), 2UL ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= (~rhs).size(), "Invalid end calculation" );
+
    for( size_t i=0UL; i<ipos; i+=2UL ) {
       matrix_(row()+i    ,column()+i    ) -= (~rhs)[i    ];
       matrix_(row()+i+1UL,column()+i+1UL) -= (~rhs)[i+1UL];
@@ -1974,7 +1990,9 @@ inline void Band<MT,TF,true,false,CBAs...>::multAssign( const DenseVector<VT,TF>
 {
    BLAZE_INTERNAL_ASSERT( size() == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t ipos( (~rhs).size() & size_t(-2) );
+   const size_t ipos( prevMultiple( (~rhs).size(), 2UL ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= (~rhs).size(), "Invalid end calculation" );
+
    for( size_t i=0UL; i<ipos; i+=2UL ) {
       matrix_(row()+i    ,column()+i    ) *= (~rhs)[i    ];
       matrix_(row()+i+1UL,column()+i+1UL) *= (~rhs)[i+1UL];
@@ -2047,7 +2065,9 @@ inline void Band<MT,TF,true,false,CBAs...>::divAssign( const DenseVector<VT,TF>&
 {
    BLAZE_INTERNAL_ASSERT( size() == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t ipos( (~rhs).size() & size_t(-2) );
+   const size_t ipos( prevMultiple( (~rhs).size(), 2UL ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= (~rhs).size(), "Invalid end calculation" );
+
    for( size_t i=0UL; i<ipos; i+=2UL ) {
       matrix_(row()+i    ,column()+i    ) /= (~rhs)[i    ];
       matrix_(row()+i+1UL,column()+i+1UL) /= (~rhs)[i+1UL];
@@ -2136,6 +2156,9 @@ class Band<MT,TF,true,true,CBAs...>
 
    //! Compilation switch for the expression template assignment strategy.
    static constexpr bool smpAssignable = false;
+
+   //! Compilation switch for the expression template evaluation strategy.
+   static constexpr bool compileTimeArgs = DataType::compileTimeArgs;
    //**********************************************************************************************
 
    //**Constructor*********************************************************************************
@@ -2224,7 +2247,7 @@ class Band<MT,TF,true,true,CBAs...>
    */
    template< typename T >
    inline bool canAlias( const T* alias ) const noexcept {
-      return matrix_.isAliased( alias );
+      return matrix_.isAliased( &unview( *alias ) );
    }
    //**********************************************************************************************
 
@@ -2236,7 +2259,7 @@ class Band<MT,TF,true,true,CBAs...>
    */
    template< typename T >
    inline bool isAliased( const T* alias ) const noexcept {
-      return matrix_.isAliased( alias );
+      return matrix_.isAliased( &unview( *alias ) );
    }
    //**********************************************************************************************
 
@@ -2245,7 +2268,7 @@ class Band<MT,TF,true,true,CBAs...>
    //
    // \return \a true in case the operands are aligned, \a false if not.
    */
-   inline constexpr bool isAligned() const noexcept {
+   constexpr bool isAligned() const noexcept {
       return false;
    }
    //**********************************************************************************************

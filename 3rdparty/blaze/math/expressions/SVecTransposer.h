@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/SVecTransposer.h
 //  \brief Header file for the sparse vector transposer
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -49,6 +49,7 @@
 #include "../../math/shims/IsDefault.h"
 #include "../../math/typetraits/MaxSize.h"
 #include "../../math/typetraits/Size.h"
+#include "../../system/MacroDisable.h"
 #include "../../util/algorithms/Max.h"
 #include "../../util/algorithms/Min.h"
 #include "../../util/Assert.h"
@@ -77,6 +78,7 @@ class SVecTransposer
  public:
    //**Type definitions****************************************************************************
    using This           = SVecTransposer<VT,TF>;  //!< Type of this SVecTransposer instance.
+   using BaseType       = SparseVector<This,TF>;  //!< Base type of this SVecTransposer instance.
    using ResultType     = TransposeType_t<VT>;    //!< Result type for expression template evaluations.
    using TransposeType  = ResultType_t<VT>;       //!< Transpose type for expression template evaluations.
    using ElementType    = ElementType_t<VT>;      //!< Resulting element type.

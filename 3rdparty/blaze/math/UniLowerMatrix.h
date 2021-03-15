@@ -3,7 +3,7 @@
 //  \file blaze/math/UniLowerMatrix.h
 //  \brief Header file for the complete UniLowerMatrix implementation
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -54,12 +54,11 @@
 #include "../math/SparseMatrix.h"
 #include "../math/typetraits/IsDenseMatrix.h"
 #include "../math/UniUpperMatrix.h"
-#include "../util/FalseType.h"
 #include "../util/Indices.h"
+#include "../util/IntegralConstant.h"
+#include "../util/MaybeUnused.h"
 #include "../util/Random.h"
-#include "../util/TrueType.h"
 #include "../util/Types.h"
-#include "../util/Unused.h"
 
 
 namespace blaze {
@@ -715,7 +714,7 @@ template< typename MT     // Type of the adapted matrix
         , typename Arg >  // Min/max argument type
 void makeSymmetric( UniLowerMatrix<MT,SO,DF>& matrix, const Arg& min, const Arg& max )
 {
-   UNUSED_PARAMETER( min, max );
+   MAYBE_UNUSED( min, max );
 
    makeSymmetric( matrix );
 }
@@ -758,7 +757,7 @@ template< typename MT     // Type of the adapted matrix
         , typename Arg >  // Min/max argument type
 void makeHermitian( UniLowerMatrix<MT,SO,DF>& matrix, const Arg& min, const Arg& max )
 {
-   UNUSED_PARAMETER( min, max );
+   MAYBE_UNUSED( min, max );
 
    makeHermitian( matrix );
 }

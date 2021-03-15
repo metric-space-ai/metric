@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/SMatReduceExpr.h
 //  \brief Header file for the sparse matrix reduce expression
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -65,18 +65,15 @@
 #include "../../math/typetraits/IsExpression.h"
 #include "../../math/typetraits/RequiresEvaluation.h"
 #include "../../math/views/Check.h"
+#include "../../system/MacroDisable.h"
 #include "../../system/Thresholds.h"
 #include "../../util/Assert.h"
-#include "../../util/DisableIf.h"
 #include "../../util/EnableIf.h"
 #include "../../util/FunctionTrace.h"
 #include "../../util/mpl/If.h"
 #include "../../util/StaticAssert.h"
-#include "../../util/Template.h"
 #include "../../util/Types.h"
 #include "../../util/typetraits/HasMember.h"
-#include "../../util/typetraits/IsSame.h"
-#include "../../util/typetraits/RemoveReference.h"
 
 
 namespace blaze {
@@ -88,16 +85,16 @@ namespace blaze {
 //=================================================================================================
 
 //*************************************************************************************************
-/*!\brief Base template for row-major sparse matrix reduction operations.
+/*!\brief Base template for row-major sparse matrix partial reduction operations.
 // \ingroup dense_vector_expression
 //
 // The SMatReduceExpr class represents the compile time expression for partial reduction operations
 // of row-major sparse matrices.
 */
-template< typename MT  // Type of the sparse matrix
-        , typename OP  // Type of the reduction operation
-        , size_t RF >  // Reduction flag
-struct SMatReduceExpr
+template< typename MT         // Type of the sparse matrix
+        , typename OP         // Type of the reduction operation
+        , ReductionFlag RF >  // Reduction flag
+class SMatReduceExpr
 {};
 //*************************************************************************************************
 
@@ -119,8 +116,8 @@ struct SMatReduceExpr
 */
 template< typename MT    // Type of the sparse matrix
         , typename OP >  // Type of the reduction operation
-struct SMatReduceExpr<MT,OP,0UL>
-   : public MatReduceExpr< DenseVector< SMatReduceExpr<MT,OP,0UL>, true >, 0UL >
+class SMatReduceExpr<MT,OP,columnwise>
+   : public MatReduceExpr< DenseVector< SMatReduceExpr<MT,OP,columnwise>, true >, columnwise >
    , private Computation
 {
  private:
@@ -145,13 +142,14 @@ struct SMatReduceExpr<MT,OP,0UL>
 
  public:
    //**Type definitions****************************************************************************
-   using This          = SMatReduceExpr<MT,OP,0UL>;    //!< Type of this SMatReduceExpr instance.
-   using ResultType    = ReduceTrait_t<RT,OP,0UL>;     //!< Result type for expression template evaluations.
-   using TransposeType = TransposeType_t<ResultType>;  //!< Transpose type for expression template evaluations.
-   using ElementType   = ElementType_t<ResultType>;    //!< Resulting element type.
-   using SIMDType      = SIMDTrait_t<ElementType>;     //!< Resulting SIMD element type.
-   using ReturnType    = const ElementType;            //!< Return type for expression template evaluations.
-   using CompositeType = const ResultType;             //!< Data type for composite expression templates.
+   using This          = SMatReduceExpr<MT,OP,columnwise>;  //!< Type of this SMatReduceExpr instance.
+   using BaseType      = DenseVector<This,true>;            //!< Base type of this SMatReduceExpr instance.
+   using ResultType    = ReduceTrait_t<RT,OP,columnwise>;   //!< Result type for expression template evaluations.
+   using TransposeType = TransposeType_t<ResultType>;       //!< Transpose type for expression template evaluations.
+   using ElementType   = ElementType_t<ResultType>;         //!< Resulting element type.
+   using SIMDType      = SIMDTrait_t<ElementType>;          //!< Resulting SIMD element type.
+   using ReturnType    = const ElementType;                 //!< Return type for expression template evaluations.
+   using CompositeType = const ResultType;                  //!< Data type for composite expression templates.
 
    //! Composite type of the left-hand side sparse matrix expression.
    using Operand = If_t< IsExpression_v<MT>, const MT, const MT& >;
@@ -174,9 +172,9 @@ struct SMatReduceExpr<MT,OP,0UL>
    // \param sm The matrix operand of the reduction expression.
    // \param op The reduction operation.
    */
-   explicit inline SMatReduceExpr( const MT& sm, OP op ) noexcept
-      : sm_( sm )  // Sparse matrix of the reduction expression
-      , op_( op )  // The reduction operation
+   inline SMatReduceExpr( const MT& sm, OP op ) noexcept
+      : sm_( sm )             // Sparse matrix of the reduction expression
+      , op_( std::move(op) )  // The reduction operation
    {}
    //**********************************************************************************************
 
@@ -311,7 +309,7 @@ struct SMatReduceExpr<MT,OP,0UL>
       BLAZE_INTERNAL_ASSERT( (~lhs).size() == rhs.size(), "Invalid vector sizes" );
 
       const OT tmp( serial( rhs.sm_ ) );
-      assign( ~lhs, reduce<0UL>( tmp, rhs.op_ ) );
+      assign( ~lhs, reduce<columnwise>( tmp, rhs.op_ ) );
    }
    /*! \endcond */
    //**********************************************************************************************
@@ -371,7 +369,7 @@ struct SMatReduceExpr<MT,OP,0UL>
       BLAZE_INTERNAL_ASSERT( (~lhs).size() == rhs.size(), "Invalid vector sizes" );
 
       const OT tmp( serial( rhs.sm_ ) );
-      addAssign( ~lhs, reduce<0UL>( tmp, rhs.op_ ) );
+      addAssign( ~lhs, reduce<columnwise>( tmp, rhs.op_ ) );
    }
    /*! \endcond */
    //**********************************************************************************************
@@ -431,7 +429,7 @@ struct SMatReduceExpr<MT,OP,0UL>
       BLAZE_INTERNAL_ASSERT( (~lhs).size() == rhs.size(), "Invalid vector sizes" );
 
       const OT tmp( serial( rhs.sm_ ) );
-      subAssign( ~lhs, reduce<0UL>( tmp, rhs.op_ ) );
+      subAssign( ~lhs, reduce<columnwise>( tmp, rhs.op_ ) );
    }
    /*! \endcond */
    //**********************************************************************************************
@@ -491,7 +489,7 @@ struct SMatReduceExpr<MT,OP,0UL>
       BLAZE_INTERNAL_ASSERT( (~lhs).size() == rhs.size(), "Invalid vector sizes" );
 
       const OT tmp( serial( rhs.sm_ ) );
-      multAssign( ~lhs, reduce<0UL>( tmp, rhs.op_ ) );
+      multAssign( ~lhs, reduce<columnwise>( tmp, rhs.op_ ) );
    }
    /*! \endcond */
    //**********************************************************************************************
@@ -551,7 +549,7 @@ struct SMatReduceExpr<MT,OP,0UL>
       BLAZE_INTERNAL_ASSERT( (~lhs).size() == rhs.size(), "Invalid vector sizes" );
 
       const OT tmp( serial( rhs.sm_ ) );
-      divAssign( ~lhs, reduce<0UL>( tmp, rhs.op_ ) );
+      divAssign( ~lhs, reduce<columnwise>( tmp, rhs.op_ ) );
    }
    /*! \endcond */
    //**********************************************************************************************
@@ -609,7 +607,7 @@ struct SMatReduceExpr<MT,OP,0UL>
       BLAZE_INTERNAL_ASSERT( (~lhs).size() == rhs.size(), "Invalid vector sizes" );
 
       const RT tmp( rhs.sm_ );  // Evaluation of the sparse matrix operand
-      smpAssign( ~lhs, reduce<0UL>( tmp, rhs.op_ ) );
+      smpAssign( ~lhs, reduce<columnwise>( tmp, rhs.op_ ) );
    }
    /*! \endcond */
    //**********************************************************************************************
@@ -638,7 +636,7 @@ struct SMatReduceExpr<MT,OP,0UL>
       BLAZE_INTERNAL_ASSERT( (~lhs).size() == rhs.size(), "Invalid vector sizes" );
 
       const RT tmp( rhs.sm_ );  // Evaluation of the sparse matrix operand
-      smpAddAssign( ~lhs, reduce<0UL>( tmp, rhs.op_ ) );
+      smpAddAssign( ~lhs, reduce<columnwise>( tmp, rhs.op_ ) );
    }
    /*! \endcond */
    //**********************************************************************************************
@@ -667,7 +665,7 @@ struct SMatReduceExpr<MT,OP,0UL>
       BLAZE_INTERNAL_ASSERT( (~lhs).size() == rhs.size(), "Invalid vector sizes" );
 
       const RT tmp( rhs.sm_ );  // Evaluation of the sparse matrix operand
-      smpSubAssign( ~lhs, reduce<0UL>( tmp, rhs.op_ ) );
+      smpSubAssign( ~lhs, reduce<columnwise>( tmp, rhs.op_ ) );
    }
    /*! \endcond */
    //**********************************************************************************************
@@ -696,7 +694,7 @@ struct SMatReduceExpr<MT,OP,0UL>
       BLAZE_INTERNAL_ASSERT( (~lhs).size() == rhs.size(), "Invalid vector sizes" );
 
       const RT tmp( rhs.sm_ );  // Evaluation of the sparse matrix operand
-      smpMultAssign( ~lhs, reduce<0UL>( tmp, rhs.op_ ) );
+      smpMultAssign( ~lhs, reduce<columnwise>( tmp, rhs.op_ ) );
    }
    /*! \endcond */
    //**********************************************************************************************
@@ -725,7 +723,7 @@ struct SMatReduceExpr<MT,OP,0UL>
       BLAZE_INTERNAL_ASSERT( (~lhs).size() == rhs.size(), "Invalid vector sizes" );
 
       const RT tmp( rhs.sm_ );  // Evaluation of the sparse matrix operand
-      smpDivAssign( ~lhs, reduce<0UL>( tmp, rhs.op_ ) );
+      smpDivAssign( ~lhs, reduce<columnwise>( tmp, rhs.op_ ) );
    }
    /*! \endcond */
    //**********************************************************************************************
@@ -757,7 +755,7 @@ struct SMatReduceExpr<MT,OP,0UL>
 */
 template< typename MT    // Type of the sparse matrix
         , typename OP >  // Type of the reduction operation
-struct SMatReduceExpr<MT,OP,rowwise>
+class SMatReduceExpr<MT,OP,rowwise>
    : public MatReduceExpr< DenseVector< SMatReduceExpr<MT,OP,rowwise>, false >, rowwise >
    , private Computation
 {
@@ -799,6 +797,7 @@ struct SMatReduceExpr<MT,OP,rowwise>
  public:
    //**Type definitions****************************************************************************
    using This          = SMatReduceExpr<MT,OP,rowwise>;  //!< Type of this SMatReduceExpr instance.
+   using BaseType      = DenseVector<This,false>;        //!< Base type of this SMatReduceExpr instance.
    using ResultType    = ReduceTrait_t<RT,OP,rowwise>;   //!< Result type for expression template evaluations.
    using TransposeType = TransposeType_t<ResultType>;    //!< Transpose type for expression template evaluations.
    using ElementType   = ElementType_t<ResultType>;      //!< Resulting element type.
@@ -843,10 +842,10 @@ struct SMatReduceExpr<MT,OP,rowwise>
       // \param index Index to the initial matrix row.
       // \param op The reduction operation.
       */
-      explicit inline ConstIterator( Operand sm, size_t index, OP op )
-         : sm_   ( sm    )  // Sparse matrix of the reduction expression
-         , index_( index )  // Index to the current matrix row
-         , op_   ( op    )  // The reduction operation
+      inline ConstIterator( Operand sm, size_t index, OP op )
+         : sm_   ( sm )             // Sparse matrix of the reduction expression
+         , index_( index )          // Index to the current matrix row
+         , op_   ( std::move(op) )  // The reduction operation
       {}
       //*******************************************************************************************
 
@@ -1062,9 +1061,9 @@ struct SMatReduceExpr<MT,OP,rowwise>
    // \param sm The matrix operand of the reduction expression.
    // \param op The reduction operation.
    */
-   explicit inline SMatReduceExpr( const MT& sm, OP op ) noexcept
-      : sm_( sm )  // Sparse matrix of the reduction expression
-      , op_( op )  // The reduction operation
+   inline SMatReduceExpr( const MT& sm, OP op ) noexcept
+      : sm_( sm )             // Sparse matrix of the reduction expression
+      , op_( std::move(op) )  // The reduction operation
    {}
    //**********************************************************************************************
 
@@ -1582,12 +1581,13 @@ inline decltype(auto) reduce( const SparseMatrix<MT,SO>& sm, OP op )
 // \param op The reduction operation.
 // \return The result of the reduction operation.
 */
-template< size_t RF      // Reduction flag
-        , typename MT    // Type of the sparse matrix
-        , typename OP >  // Type of the reduction operation
+template< ReductionFlag RF  // Reduction flag
+        , typename MT       // Type of the sparse matrix
+        , typename OP >     // Type of the reduction operation
 inline const SMatReduceExpr<MT,OP,RF> reduce_backend( const SparseMatrix<MT,false>& sm, OP op )
 {
-   return SMatReduceExpr<MT,OP,RF>( ~sm, op );
+   using ReturnType = const SMatReduceExpr<MT,OP,RF>;
+   return ReturnType( ~sm, std::move(op) );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -1602,12 +1602,13 @@ inline const SMatReduceExpr<MT,OP,RF> reduce_backend( const SparseMatrix<MT,fals
 // \param op The reduction operation.
 // \return The result of the reduction operation.
 */
-template< size_t RF      // Reduction flag
-        , typename MT    // Type of the sparse matrix
-        , typename OP >  // Type of the reduction operation
+template< ReductionFlag RF  // Reduction flag
+        , typename MT       // Type of the sparse matrix
+        , typename OP >     // Type of the reduction operation
 inline decltype(auto) reduce_backend( const SparseMatrix<MT,true>& sm, OP op )
 {
-   return trans( reduce<1UL-RF>( trans( ~sm ), op ) );
+   constexpr ReductionFlag RF2( RF == rowwise ? columnwise : rowwise );
+   return trans( reduce<RF2>( trans( ~sm ), std::move(op) ) );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -1653,17 +1654,17 @@ inline decltype(auto) reduce_backend( const SparseMatrix<MT,true>& sm, OP op )
 // behavior is non-deterministic if \a op is not associative or not commutative. Also, the
 // operation is undefined if the given reduction operation modifies the values.
 */
-template< size_t RF      // Reduction flag
-        , typename MT    // Type of the sparse matrix
-        , bool SO        // Storage order
-        , typename OP >  // Type of the reduction operation
+template< ReductionFlag RF  // Reduction flag
+        , typename MT       // Type of the sparse matrix
+        , bool SO           // Storage order
+        , typename OP >     // Type of the reduction operation
 inline decltype(auto) reduce( const SparseMatrix<MT,SO>& sm, OP op )
 {
    BLAZE_FUNCTION_TRACE;
 
    BLAZE_STATIC_ASSERT_MSG( RF < 2UL, "Invalid reduction flag" );
 
-   return reduce_backend<RF>( ~sm, op );
+   return reduce_backend<RF>( ~sm, std::move(op) );
 }
 //*************************************************************************************************
 
@@ -1730,9 +1731,9 @@ inline decltype(auto) sum( const SparseMatrix<MT,SO>& sm )
 
 // Please note that the evaluation order of the reduction operation is unspecified.
 */
-template< size_t RF    // Reduction flag
-        , typename MT  // Type of the sparse matrix
-        , bool SO >    // Storage order
+template< ReductionFlag RF  // Reduction flag
+        , typename MT       // Type of the sparse matrix
+        , bool SO >         // Storage order
 inline decltype(auto) sum( const SparseMatrix<MT,SO>& sm )
 {
    BLAZE_FUNCTION_TRACE;
@@ -1804,9 +1805,9 @@ inline decltype(auto) prod( const SparseMatrix<MT,SO>& sm )
 
 // Please note that the evaluation order of the reduction operation is unspecified.
 */
-template< size_t RF    // Reduction flag
-        , typename MT  // Type of the sparse matrix
-        , bool SO >    // Storage order
+template< ReductionFlag RF  // Reduction flag
+        , typename MT       // Type of the sparse matrix
+        , bool SO >         // Storage order
 inline decltype(auto) prod( const SparseMatrix<MT,SO>& sm )
 {
    BLAZE_FUNCTION_TRACE;
@@ -1882,9 +1883,9 @@ inline decltype(auto) min( const SparseMatrix<MT,SO>& sm )
    rowmin = min<rowwise>( A );  // Results in ( 1, 1 )
    \endcode
 */
-template< size_t RF    // Reduction flag
-        , typename MT  // Type of the sparse matrix
-        , bool SO >    // Storage order
+template< ReductionFlag RF  // Reduction flag
+        , typename MT       // Type of the sparse matrix
+        , bool SO >         // Storage order
 inline decltype(auto) min( const SparseMatrix<MT,SO>& sm )
 {
    BLAZE_FUNCTION_TRACE;
@@ -1960,9 +1961,9 @@ inline decltype(auto) max( const SparseMatrix<MT,SO>& sm )
    rowmax = max<rowwise>( A );  // Results in ( -1, -1 )
    \endcode
 */
-template< size_t RF    // Reduction flag
-        , typename MT  // Type of the sparse matrix
-        , bool SO >    // Storage order
+template< ReductionFlag RF  // Reduction flag
+        , typename MT       // Type of the sparse matrix
+        , bool SO >         // Storage order
 inline decltype(auto) max( const SparseMatrix<MT,SO>& sm )
 {
    BLAZE_FUNCTION_TRACE;

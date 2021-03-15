@@ -3,7 +3,7 @@
 //  \file blaze/math/functors/InvCbrt.h
 //  \brief Header file for the InvCbrt functor
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -45,7 +45,10 @@
 #include "../../math/simd/InvCbrt.h"
 #include "../../math/typetraits/HasSIMDInvCbrt.h"
 #include "../../math/typetraits/IsSymmetric.h"
+#include "../../math/typetraits/IsUniform.h"
 #include "../../math/typetraits/YieldsSymmetric.h"
+#include "../../math/typetraits/YieldsUniform.h"
+#include "../../system/HostDevice.h"
 #include "../../system/Inline.h"
 
 
@@ -64,20 +67,13 @@ namespace blaze {
 struct InvCbrt
 {
    //**********************************************************************************************
-   /*!\brief Default constructor of the InvCbrt functor.
-   */
-   explicit inline InvCbrt()
-   {}
-   //**********************************************************************************************
-
-   //**********************************************************************************************
    /*!\brief Returns the result of the invcbrt() function for the given object/value.
    //
    // \param a The given object/value.
    // \return The result of the invcbrt() function for the given object/value.
    */
    template< typename T >
-   BLAZE_ALWAYS_INLINE decltype(auto) operator()( const T& a ) const
+   BLAZE_ALWAYS_INLINE BLAZE_DEVICE_CALLABLE decltype(auto) operator()( const T& a ) const
    {
       return invcbrt( a );
    }
@@ -90,6 +86,14 @@ struct InvCbrt
    */
    template< typename T >
    static constexpr bool simdEnabled() { return HasSIMDInvCbrt_v<T>; }
+   //**********************************************************************************************
+
+   //**********************************************************************************************
+   /*!\brief Returns whether the operation supports padding, i.e. whether it can deal with zeros.
+   //
+   // \return \a true in case padding is supported, \a false if not.
+   */
+   static constexpr bool paddingEnabled() { return false; }
    //**********************************************************************************************
 
    //**********************************************************************************************
@@ -106,6 +110,24 @@ struct InvCbrt
    }
    //**********************************************************************************************
 };
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
+//  YIELDSUNIFORM SPECIALIZATIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+template< typename T >
+struct YieldsUniform<InvCbrt,T>
+   : public IsUniform<T>
+{};
+/*! \endcond */
 //*************************************************************************************************
 
 

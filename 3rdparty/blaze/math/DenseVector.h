@@ -3,7 +3,7 @@
 //  \file blaze/math/DenseVector.h
 //  \brief Header file for all basic DenseVector functionality
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -47,20 +47,29 @@
 #include "../math/expressions/DVecDVecDivExpr.h"
 #include "../math/expressions/DVecDVecEqualExpr.h"
 #include "../math/expressions/DVecDVecInnerExpr.h"
+#include "../math/expressions/DVecDVecKronExpr.h"
 #include "../math/expressions/DVecDVecMapExpr.h"
 #include "../math/expressions/DVecDVecMultExpr.h"
 #include "../math/expressions/DVecDVecSubExpr.h"
 #include "../math/expressions/DVecEvalExpr.h"
+#include "../math/expressions/DVecExpandExpr.h"
+#include "../math/expressions/DVecGenExpr.h"
 #include "../math/expressions/DVecMapExpr.h"
+#include "../math/expressions/DVecMeanExpr.h"
+#include "../math/expressions/DVecNoAliasExpr.h"
 #include "../math/expressions/DVecNormExpr.h"
+#include "../math/expressions/DVecNoSIMDExpr.h"
 #include "../math/expressions/DVecReduceExpr.h"
 #include "../math/expressions/DVecScalarDivExpr.h"
 #include "../math/expressions/DVecScalarMultExpr.h"
 #include "../math/expressions/DVecSerialExpr.h"
+#include "../math/expressions/DVecSoftmaxExpr.h"
+#include "../math/expressions/DVecStdDevExpr.h"
 #include "../math/expressions/DVecSVecAddExpr.h"
 #include "../math/expressions/DVecSVecCrossExpr.h"
 #include "../math/expressions/DVecSVecSubExpr.h"
 #include "../math/expressions/DVecTransExpr.h"
+#include "../math/expressions/DVecVarExpr.h"
 #include "../math/expressions/SparseVector.h"
 #include "../math/expressions/SVecDVecCrossExpr.h"
 #include "../math/expressions/SVecDVecSubExpr.h"

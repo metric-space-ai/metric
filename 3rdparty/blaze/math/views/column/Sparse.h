@@ -3,7 +3,7 @@
 //  \file blaze/math/views/column/Sparse.h
 //  \brief Column specialization for sparse matrices
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -58,7 +58,6 @@
 #include "../../../math/Exception.h"
 #include "../../../math/expressions/SparseVector.h"
 #include "../../../math/expressions/View.h"
-#include "../../../math/RelaxationFlag.h"
 #include "../../../math/shims/IsDefault.h"
 #include "../../../math/shims/Reset.h"
 #include "../../../math/shims/Serial.h"
@@ -69,6 +68,7 @@
 #include "../../../math/traits/DivTrait.h"
 #include "../../../math/traits/MultTrait.h"
 #include "../../../math/traits/SubTrait.h"
+#include "../../../math/typetraits/IsExpression.h"
 #include "../../../math/typetraits/IsLower.h"
 #include "../../../math/typetraits/IsRestricted.h"
 #include "../../../math/typetraits/IsStrictlyLower.h"
@@ -84,14 +84,14 @@
 #include "../../../util/Assert.h"
 #include "../../../util/constraints/Pointer.h"
 #include "../../../util/constraints/Reference.h"
-#include "../../../util/DisableIf.h"
+#include "../../../util/EnableIf.h"
+#include "../../../util/MaybeUnused.h"
 #include "../../../util/mpl/If.h"
 #include "../../../util/TypeList.h"
 #include "../../../util/Types.h"
 #include "../../../util/typetraits/IsConst.h"
 #include "../../../util/typetraits/IsIntegral.h"
 #include "../../../util/typetraits/IsReference.h"
-#include "../../../util/Unused.h"
 
 
 namespace blaze {
@@ -152,6 +152,9 @@ class Column<MT,true,false,SF,CCAs...>
    //**Compilation flags***************************************************************************
    //! Compilation switch for the expression template assignment strategy.
    static constexpr bool smpAssignable = false;
+
+   //! Compilation switch for the expression template evaluation strategy.
+   static constexpr bool compileTimeArgs = DataType::compileTimeArgs;
    //**********************************************************************************************
 
    //**Constructors********************************************************************************
@@ -159,12 +162,16 @@ class Column<MT,true,false,SF,CCAs...>
    //@{
    template< typename... RCAs >
    explicit inline Column( MT& matrix, RCAs... args );
-   // No explicitly declared copy constructor.
+
+   Column( const Column& ) = default;
    //@}
    //**********************************************************************************************
 
    //**Destructor**********************************************************************************
-   // No explicitly declared destructor.
+   /*!\name Destructor */
+   //@{
+   ~Column() = default;
+   //@}
    //**********************************************************************************************
 
    //**Data access functions***********************************************************************
@@ -665,7 +672,7 @@ inline Column<MT,true,false,SF,CCAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( rhs.canAlias( &matrix_ ) ) {
+   if( rhs.canAlias( this ) ) {
       const ResultType tmp( rhs );
       left.reset();
       left.reserve( tmp.nonZeros() );
@@ -725,7 +732,7 @@ inline Column<MT,true,false,SF,CCAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( IsReference_v<Right> && right.canAlias( &matrix_ ) ) {
+   if( IsReference_v<Right> && right.canAlias( this ) ) {
       const ResultType_t<VT> tmp( right );
       left.reset();
       assign( left, tmp );
@@ -783,7 +790,7 @@ inline Column<MT,true,false,SF,CCAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( IsReference_v<Right> && right.canAlias( &matrix_ ) ) {
+   if( IsReference_v<Right> && right.canAlias( this ) ) {
       const ResultType_t<VT> tmp( right );
       left.reset();
       left.reserve( tmp.nonZeros() );
@@ -1833,7 +1840,7 @@ template< typename MT       // Type of the sparse matrix
 template< typename Other >  // Data type of the foreign expression
 inline bool Column<MT,true,false,SF,CCAs...>::canAlias( const Other* alias ) const noexcept
 {
-   return matrix_.isAliased( alias );
+   return matrix_.isAliased( &unview( *alias ) );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -1856,7 +1863,7 @@ template< typename MT       // Type of the sparse matrix
 template< typename Other >  // Data type of the foreign expression
 inline bool Column<MT,true,false,SF,CCAs...>::isAliased( const Other* alias ) const noexcept
 {
-   return matrix_.isAliased( alias );
+   return matrix_.isAliased( &unview( *alias ) );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -2433,6 +2440,9 @@ class Column<MT,false,false,false,CCAs...>
    //**Compilation flags***************************************************************************
    //! Compilation switch for the expression template assignment strategy.
    static constexpr bool smpAssignable = false;
+
+   //! Compilation switch for the expression template evaluation strategy.
+   static constexpr bool compileTimeArgs = DataType::compileTimeArgs;
    //**********************************************************************************************
 
    //**Constructors********************************************************************************
@@ -2440,12 +2450,16 @@ class Column<MT,false,false,false,CCAs...>
    //@{
    template< typename... RCAs >
    explicit inline Column( MT& matrix, RCAs... args );
-   // No explicitly declared copy constructor.
+
+   Column( const Column& ) = default;
    //@}
    //**********************************************************************************************
 
    //**Destructor**********************************************************************************
-   // No explicitly declared destructor.
+   /*!\name Destructor */
+   //@{
+   ~Column() = default;
+   //@}
    //**********************************************************************************************
 
    //**Data access functions***********************************************************************
@@ -2921,7 +2935,7 @@ inline Column<MT,false,false,false,CCAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( rhs.canAlias( &matrix_ ) ) {
+   if( rhs.canAlias( this ) ) {
       const ResultType tmp( rhs );
       assign( left, tmp );
    }
@@ -3390,7 +3404,7 @@ template< typename MT       // Type of the sparse matrix
         , size_t... CCAs >  // Compile time column arguments
 void Column<MT,false,false,false,CCAs...>::reserve( size_t n )
 {
-   UNUSED_PARAMETER( n );
+   MAYBE_UNUSED( n );
 
    return;
 }
@@ -3901,7 +3915,7 @@ template< typename MT       // Type of the sparse matrix
 template< typename Other >  // Data type of the foreign expression
 inline bool Column<MT,false,false,false,CCAs...>::canAlias( const Other* alias ) const
 {
-   return matrix_.isAliased( alias );
+   return matrix_.isAliased( &unview( *alias ) );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -3919,7 +3933,7 @@ template< typename MT       // Type of the sparse matrix
 template< typename Other >  // Data type of the foreign expression
 inline bool Column<MT,false,false,false,CCAs...>::isAliased( const Other* alias ) const
 {
-   return matrix_.isAliased( alias );
+   return matrix_.isAliased( &unview( *alias ) );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -4109,6 +4123,9 @@ class Column<MT,false,false,true,CCAs...>
    //**Compilation flags***************************************************************************
    //! Compilation switch for the expression template assignment strategy.
    static constexpr bool smpAssignable = false;
+
+   //! Compilation switch for the expression template evaluation strategy.
+   static constexpr bool compileTimeArgs = DataType::compileTimeArgs;
    //**********************************************************************************************
 
    //**Constructors********************************************************************************
@@ -4116,12 +4133,16 @@ class Column<MT,false,false,true,CCAs...>
    //@{
    template< typename... RCAs >
    explicit inline Column( MT& matrix, RCAs... args );
-   // No explicitly declared copy constructor.
+
+   Column( const Column& ) = default;
    //@}
    //**********************************************************************************************
 
    //**Destructor**********************************************************************************
-   // No explicitly declared destructor.
+   /*!\name Destructor */
+   //@{
+   ~Column() = default;
+   //@}
    //**********************************************************************************************
 
    //**Data access functions***********************************************************************
@@ -4610,7 +4631,7 @@ inline Column<MT,false,false,true,CCAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( rhs.canAlias( &matrix_ ) ) {
+   if( rhs.canAlias( this ) ) {
       const ResultType tmp( rhs );
       left.reset();
       left.reserve( tmp.nonZeros() );
@@ -4669,7 +4690,7 @@ inline Column<MT,false,false,true,CCAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( IsReference_v<Right> && right.canAlias( &matrix_ ) ) {
+   if( IsReference_v<Right> && right.canAlias( this ) ) {
       const ResultType_t<VT> tmp( right );
       left.reset();
       assign( left, tmp );
@@ -4726,7 +4747,7 @@ inline Column<MT,false,false,true,CCAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( IsReference_v<Right> && right.canAlias( &matrix_ ) ) {
+   if( IsReference_v<Right> && right.canAlias( this ) ) {
       const ResultType_t<VT> tmp( right);
       left.reset();
       left.reserve( tmp.nonZeros() );
@@ -5745,7 +5766,7 @@ template< typename MT       // Type of the sparse matrix
 template< typename Other >  // Data type of the foreign expression
 inline bool Column<MT,false,false,true,CCAs...>::canAlias( const Other* alias ) const noexcept
 {
-   return matrix_.isAliased( alias );
+   return matrix_.isAliased( &unview( *alias ) );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -5767,7 +5788,7 @@ template< typename MT       // Type of the sparse matrix
 template< typename Other >  // Data type of the foreign expression
 inline bool Column<MT,false,false,true,CCAs...>::isAliased( const Other* alias ) const noexcept
 {
-   return matrix_.isAliased( alias );
+   return matrix_.isAliased( &unview( *alias ) );
 }
 /*! \endcond */
 //*************************************************************************************************

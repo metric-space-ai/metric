@@ -3,7 +3,7 @@
 //  \file blaze/math/sparse/MatrixAccessProxy.h
 //  \brief Header file for the MatrixAccessProxy class
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -482,34 +482,34 @@ inline MatrixAccessProxy<MT>::operator RawReference() const noexcept
 /*!\name MatrixAccessProxy global functions */
 //@{
 template< typename MT >
-inline void reset( const MatrixAccessProxy<MT>& proxy );
+void reset( const MatrixAccessProxy<MT>& proxy );
 
 template< typename MT >
-inline void clear( const MatrixAccessProxy<MT>& proxy );
+void clear( const MatrixAccessProxy<MT>& proxy );
 
-template< bool RF, typename MT >
-inline bool isDefault( const MatrixAccessProxy<MT>& proxy );
+template< RelaxationFlag RF, typename MT >
+bool isDefault( const MatrixAccessProxy<MT>& proxy );
 
-template< bool RF, typename MT >
-inline bool isReal( const MatrixAccessProxy<MT>& proxy );
+template< RelaxationFlag RF, typename MT >
+bool isReal( const MatrixAccessProxy<MT>& proxy );
 
-template< bool RF, typename MT >
-inline bool isZero( const MatrixAccessProxy<MT>& proxy );
+template< RelaxationFlag RF, typename MT >
+bool isZero( const MatrixAccessProxy<MT>& proxy );
 
-template< bool RF, typename MT >
-inline bool isOne( const MatrixAccessProxy<MT>& proxy );
-
-template< typename MT >
-inline bool isnan( const MatrixAccessProxy<MT>& proxy );
+template< RelaxationFlag RF, typename MT >
+bool isOne( const MatrixAccessProxy<MT>& proxy );
 
 template< typename MT >
-inline void swap( const MatrixAccessProxy<MT>& a, const MatrixAccessProxy<MT>& b ) noexcept;
+bool isnan( const MatrixAccessProxy<MT>& proxy );
+
+template< typename MT >
+void swap( const MatrixAccessProxy<MT>& a, const MatrixAccessProxy<MT>& b ) noexcept;
 
 template< typename MT, typename T >
-inline void swap( const MatrixAccessProxy<MT>& a, T& b ) noexcept;
+void swap( const MatrixAccessProxy<MT>& a, T& b ) noexcept;
 
 template< typename T, typename MT >
-inline void swap( T& a, const MatrixAccessProxy<MT>& v ) noexcept;
+void swap( T& a, const MatrixAccessProxy<MT>& v ) noexcept;
 //@}
 //*************************************************************************************************
 
@@ -567,7 +567,7 @@ inline void clear( const MatrixAccessProxy<MT>& proxy )
 // This function checks whether the element represented by the access proxy is in default state.
 // In case it is in default state, the function returns \a true, otherwise it returns \a false.
 */
-template< bool RF, typename MT >
+template< RelaxationFlag RF, typename MT >
 inline bool isDefault( const MatrixAccessProxy<MT>& proxy )
 {
    using blaze::isDefault;
@@ -589,7 +589,7 @@ inline bool isDefault( const MatrixAccessProxy<MT>& proxy )
 // the element is of complex type, the function returns \a true if the imaginary part is equal
 // to 0. Otherwise it returns \a false.
 */
-template< bool RF, typename MT >
+template< RelaxationFlag RF, typename MT >
 inline bool isReal( const MatrixAccessProxy<MT>& proxy )
 {
    using blaze::isReal;
@@ -609,7 +609,7 @@ inline bool isReal( const MatrixAccessProxy<MT>& proxy )
 // This function checks whether the element represented by the access proxy represents the numeric
 // value 0. In case it is 0, the function returns \a true, otherwise it returns \a false.
 */
-template< bool RF, typename MT >
+template< RelaxationFlag RF, typename MT >
 inline bool isZero( const MatrixAccessProxy<MT>& proxy )
 {
    using blaze::isZero;
@@ -629,7 +629,7 @@ inline bool isZero( const MatrixAccessProxy<MT>& proxy )
 // This function checks whether the element represented by the access proxy represents the numeric
 // value 1. In case it is 1, the function returns \a true, otherwise it returns \a false.
 */
-template< bool RF, typename MT >
+template< RelaxationFlag RF, typename MT >
 inline bool isOne( const MatrixAccessProxy<MT>& proxy )
 {
    using blaze::isOne;

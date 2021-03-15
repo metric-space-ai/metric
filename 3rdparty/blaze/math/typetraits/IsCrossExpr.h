@@ -3,7 +3,7 @@
 //  \file blaze/math/typetraits/IsCrossExpr.h
 //  \brief Header file for the IsCrossExpr type trait class
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -40,10 +40,8 @@
 // Includes
 //*************************************************************************************************
 
-#include <utility>
 #include "../../math/expressions/CrossExpr.h"
-#include "../../util/FalseType.h"
-#include "../../util/TrueType.h"
+#include "../../util/IntegralConstant.h"
 
 
 namespace blaze {
@@ -64,18 +62,20 @@ struct IsCrossExprHelper
 {
  private:
    //**********************************************************************************************
-   template< typename VT >
-   static TrueType test( const CrossExpr<VT>& );
+   static T* create();
 
    template< typename VT >
-   static TrueType test( const volatile CrossExpr<VT>& );
+   static TrueType test( const CrossExpr<VT>* );
+
+   template< typename VT >
+   static TrueType test( const volatile CrossExpr<VT>* );
 
    static FalseType test( ... );
    //**********************************************************************************************
 
  public:
    //**********************************************************************************************
-   using Type = decltype( test( std::declval<T&>() ) );
+   using Type = decltype( test( create() ) );
    //**********************************************************************************************
 };
 /*! \endcond */
@@ -102,8 +102,21 @@ struct IsCrossExpr
 
 
 //*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Specialization of the IsCrossExpr type trait for references.
+// \ingroup math_type_traits
+*/
+template< typename T >
+struct IsCrossExpr<T&>
+   : public FalseType
+{};
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
 /*!\brief Auxiliary variable template for the IsCrossExpr type trait.
-// \ingroup type_traits
+// \ingroup math_type_traits
 //
 // The IsCrossExpr_v variable template provides a convenient shortcut to access the nested
 // \a value of the IsCrossExpr class template. For instance, given the type \a T the

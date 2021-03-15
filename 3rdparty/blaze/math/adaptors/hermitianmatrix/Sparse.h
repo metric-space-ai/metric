@@ -3,7 +3,7 @@
 //  \file blaze/math/adaptors/hermitianmatrix/Sparse.h
 //  \brief HermitianMatrix specialization for sparse matrices
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -47,19 +47,22 @@
 #include "../../../math/adaptors/hermitianmatrix/HermitianElement.h"
 #include "../../../math/adaptors/hermitianmatrix/HermitianProxy.h"
 #include "../../../math/Aliases.h"
-#include "../../../math/constraints/Expression.h"
+#include "../../../math/constraints/Computation.h"
 #include "../../../math/constraints/Hermitian.h"
 #include "../../../math/constraints/Lower.h"
 #include "../../../math/constraints/Resizable.h"
 #include "../../../math/constraints/SparseMatrix.h"
 #include "../../../math/constraints/StorageOrder.h"
 #include "../../../math/constraints/Symmetric.h"
+#include "../../../math/constraints/Transformation.h"
 #include "../../../math/constraints/Upper.h"
+#include "../../../math/constraints/View.h"
 #include "../../../math/dense/InitializerMatrix.h"
 #include "../../../math/Exception.h"
 #include "../../../math/expressions/Forward.h"
 #include "../../../math/expressions/SparseMatrix.h"
 #include "../../../math/InitializerList.h"
+#include "../../../math/RelaxationFlag.h"
 #include "../../../math/shims/Clear.h"
 #include "../../../math/shims/IsDefault.h"
 #include "../../../math/shims/IsReal.h"
@@ -76,15 +79,14 @@
 #include "../../../util/constraints/Pointer.h"
 #include "../../../util/constraints/Reference.h"
 #include "../../../util/constraints/Volatile.h"
-#include "../../../util/DisableIf.h"
 #include "../../../util/EnableIf.h"
+#include "../../../util/IntegralConstant.h"
+#include "../../../util/MaybeUnused.h"
 #include "../../../util/StaticAssert.h"
-#include "../../../util/TrueType.h"
 #include "../../../util/Types.h"
 #include "../../../util/typetraits/IsBuiltin.h"
 #include "../../../util/typetraits/IsComplex.h"
 #include "../../../util/typetraits/IsNumeric.h"
-#include "../../../util/Unused.h"
 
 
 namespace blaze {
@@ -311,11 +313,11 @@ class HermitianMatrix<MT,SO,false>
    //**Constructors********************************************************************************
    /*!\name Constructors */
    //@{
-   explicit inline HermitianMatrix();
+            inline HermitianMatrix();
    explicit inline HermitianMatrix( size_t n );
-   explicit inline HermitianMatrix( size_t n, size_t nonzeros );
-   explicit inline HermitianMatrix( size_t n, const std::vector<size_t>& nonzeros );
-   explicit inline HermitianMatrix( initializer_list< initializer_list<ElementType> > list );
+            inline HermitianMatrix( size_t n, size_t nonzeros );
+            inline HermitianMatrix( size_t n, const std::vector<size_t>& nonzeros );
+            inline HermitianMatrix( initializer_list< initializer_list<ElementType> > list );
 
    inline HermitianMatrix( const HermitianMatrix& m );
    inline HermitianMatrix( HermitianMatrix&& m ) noexcept;
@@ -326,7 +328,10 @@ class HermitianMatrix<MT,SO,false>
    //**********************************************************************************************
 
    //**Destructor**********************************************************************************
-   // No explicitly declared destructor.
+   /*!\name Destructor */
+   //@{
+   ~HermitianMatrix() = default;
+   //@}
    //**********************************************************************************************
 
    //**Data access functions***********************************************************************
@@ -515,7 +520,7 @@ class HermitianMatrix<MT,SO,false>
    //**********************************************************************************************
 
    //**Friend declarations*************************************************************************
-   template< bool RF, typename MT2, bool SO2, bool DF2 >
+   template< RelaxationFlag RF, typename MT2, bool SO2, bool DF2 >
    friend bool isDefault( const HermitianMatrix<MT2,SO2,DF2>& m );
    //**********************************************************************************************
 
@@ -525,7 +530,9 @@ class HermitianMatrix<MT,SO,false>
    BLAZE_CONSTRAINT_MUST_NOT_BE_POINTER_TYPE         ( MT );
    BLAZE_CONSTRAINT_MUST_NOT_BE_CONST                ( MT );
    BLAZE_CONSTRAINT_MUST_NOT_BE_VOLATILE             ( MT );
-   BLAZE_CONSTRAINT_MUST_NOT_BE_EXPRESSION_TYPE      ( MT );
+   BLAZE_CONSTRAINT_MUST_NOT_BE_VIEW_TYPE            ( MT );
+   BLAZE_CONSTRAINT_MUST_NOT_BE_COMPUTATION_TYPE     ( MT );
+   BLAZE_CONSTRAINT_MUST_NOT_BE_TRANSFORMATION_TYPE  ( MT );
    BLAZE_CONSTRAINT_MUST_NOT_BE_SYMMETRIC_MATRIX_TYPE( MT );
    BLAZE_CONSTRAINT_MUST_NOT_BE_HERMITIAN_MATRIX_TYPE( MT );
    BLAZE_CONSTRAINT_MUST_NOT_BE_LOWER_MATRIX_TYPE    ( MT );
@@ -1756,7 +1763,9 @@ template< typename MT  // Type of the adapted sparse matrix
         , bool SO >    // Storage order of the adapted sparse matrix
 inline void HermitianMatrix<MT,SO,false>::reset( size_t i )
 {
-   for( Iterator_t<MT> it=matrix_.begin(i); it!=matrix_.end(i); ++it )
+   using blaze::erase;
+
+   for( auto it=matrix_.begin(i); it!=matrix_.end(i); ++it )
    {
       const size_t j( it->index() );
 
@@ -1766,12 +1775,12 @@ inline void HermitianMatrix<MT,SO,false>::reset( size_t i )
       if( SO ) {
          const Iterator_t<MT> pos( matrix_.find( i, j ) );
          BLAZE_INTERNAL_ASSERT( pos != matrix_.end( j ), "Missing element detected" );
-         matrix_.erase( j, pos );
+         erase( matrix_, j, pos );
       }
       else {
          const Iterator_t<MT> pos( matrix_.find( j, i ) );
          BLAZE_INTERNAL_ASSERT( pos != matrix_.end( j ), "Missing element detected" );
-         matrix_.erase( j, pos );
+         erase( matrix_, j, pos );
       }
    }
 
@@ -1822,7 +1831,7 @@ void HermitianMatrix<MT,SO,false>::resize( size_t n, bool preserve )
 {
    BLAZE_CONSTRAINT_MUST_BE_RESIZABLE_TYPE( MT );
 
-   UNUSED_PARAMETER( preserve );
+   MAYBE_UNUSED( preserve );
 
    BLAZE_INTERNAL_ASSERT( isSquare( matrix_ ), "Non-square Hermitian matrix detected" );
 
@@ -2159,9 +2168,11 @@ template< typename MT  // Type of the adapted sparse matrix
         , bool SO >    // Storage order of the adapted sparse matrix
 inline void HermitianMatrix<MT,SO,false>::erase( size_t i, size_t j )
 {
-   matrix_.erase( i, j );
+   using blaze::erase;
+
+   erase( matrix_, i, j );
    if( i != j )
-      matrix_.erase( j, i );
+      erase( matrix_, j, i );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -2184,6 +2195,8 @@ template< typename MT  // Type of the adapted sparse matrix
 inline typename HermitianMatrix<MT,SO,false>::Iterator
    HermitianMatrix<MT,SO,false>::erase( size_t i, Iterator pos )
 {
+   using blaze::erase;
+
    const Iterator_t<MT> base( pos.base() );
 
    if( base == matrix_.end( i ) )
@@ -2193,18 +2206,18 @@ inline typename HermitianMatrix<MT,SO,false>::Iterator
 
    if( i == j ) {
       BLAZE_INTERNAL_ASSERT( matrix_.find( i, i ) != matrix_.end( i ), "Missing element detected" );
-      return Iterator( matrix_.erase( i, base ), matrix_, i );
+      return Iterator( erase( matrix_, i, base ), matrix_, i );
    }
 
    if( SO ) {
       BLAZE_INTERNAL_ASSERT( matrix_.find( i, j ) != matrix_.end( j ), "Missing element detected" );
-      matrix_.erase( j, matrix_.find( i, j ) );
-      return Iterator( matrix_.erase( i, base ), matrix_, i );
+      erase( matrix_, j, matrix_.find( i, j ) );
+      return Iterator( erase( matrix_, i, base ), matrix_, i );
    }
    else {
       BLAZE_INTERNAL_ASSERT( matrix_.find( j, i ) != matrix_.end( j ), "Missing element detected" );
-      matrix_.erase( j, matrix_.find( j, i ) );
-      return Iterator( matrix_.erase( i, base ), matrix_, i );
+      erase( matrix_, j, matrix_.find( j, i ) );
+      return Iterator( erase( matrix_, i, base ), matrix_, i );
    }
 }
 /*! \endcond */
@@ -2230,7 +2243,9 @@ template< typename MT  // Type of the adapted sparse matrix
 inline typename HermitianMatrix<MT,SO,false>::Iterator
    HermitianMatrix<MT,SO,false>::erase( size_t i, Iterator first, Iterator last )
 {
-   for( Iterator_t<MT> it=first.base(); it!=last.base(); ++it )
+   using blaze::erase;
+
+   for( auto it=first.base(); it!=last.base(); ++it )
    {
       const size_t j( it->index() );
 
@@ -2239,15 +2254,15 @@ inline typename HermitianMatrix<MT,SO,false>::Iterator
 
       if( SO ) {
          BLAZE_INTERNAL_ASSERT( matrix_.find( i, j ) != matrix_.end( j ), "Missing element detected" );
-         matrix_.erase( i, j );
+         erase( matrix_, i, j );
       }
       else {
          BLAZE_INTERNAL_ASSERT( matrix_.find( j, i ) != matrix_.end( j ), "Missing element detected" );
-         matrix_.erase( j, i );
+         erase( matrix_, j, i );
       }
    }
 
-   return Iterator( matrix_.erase( i, first.base(), last.base() ), matrix_, i );
+   return Iterator( erase( matrix_, i, first.base(), last.base() ), matrix_, i );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -2280,9 +2295,11 @@ template< typename MT  // Type of the adapted sparse matrix
 template< typename Pred >  // Type of the unary predicate
 inline void HermitianMatrix<MT,SO,false>::erase( Pred predicate )
 {
-   matrix_.erase( [predicate=predicate]( const ElementType& value ) {
-                     return predicate( value ) || predicate( conj( value ) );
-                  } );
+   using blaze::erase;
+
+   erase( matrix_, [predicate=predicate]( const ElementType& value ) {
+                      return predicate( value ) || predicate( conj( value ) );
+                   } );
 
    BLAZE_INTERNAL_ASSERT( isIntact(), "Broken invariant detected" );
 }
@@ -2324,17 +2341,19 @@ template< typename Pred >  // Type of the unary predicate
 inline void
    HermitianMatrix<MT,SO,false>::erase( size_t i, Iterator first, Iterator last, Pred predicate )
 {
-   for( Iterator it=first; it!=last; ++it ) {
+   using blaze::erase;
+
+   for( auto it=first; it!=last; ++it ) {
       const size_t j( it->index() );
       if( i != j && predicate( it->value() ) ) {
          if( SO )
-            matrix_.erase( i, j );
+            erase( matrix_, i, j );
          else
-            matrix_.erase( j, i );
+            erase( matrix_, j, i );
       }
    }
 
-   matrix_.erase( i, first.base(), last.base(), predicate );
+   erase( matrix_, i, first.base(), last.base(), predicate );
 
    BLAZE_INTERNAL_ASSERT( isIntact(), "Broken invariant detected" );
 }

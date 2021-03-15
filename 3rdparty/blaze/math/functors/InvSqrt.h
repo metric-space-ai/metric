@@ -3,7 +3,7 @@
 //  \file blaze/math/functors/InvSqrt.h
 //  \brief Header file for the InvSqrt functor
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -46,8 +46,11 @@
 #include "../../math/typetraits/HasSIMDInvSqrt.h"
 #include "../../math/typetraits/IsHermitian.h"
 #include "../../math/typetraits/IsSymmetric.h"
+#include "../../math/typetraits/IsUniform.h"
 #include "../../math/typetraits/YieldsHermitian.h"
 #include "../../math/typetraits/YieldsSymmetric.h"
+#include "../../math/typetraits/YieldsUniform.h"
+#include "../../system/HostDevice.h"
 #include "../../system/Inline.h"
 
 
@@ -66,20 +69,13 @@ namespace blaze {
 struct InvSqrt
 {
    //**********************************************************************************************
-   /*!\brief Default constructor of the InvSqrt functor.
-   */
-   explicit inline InvSqrt()
-   {}
-   //**********************************************************************************************
-
-   //**********************************************************************************************
    /*!\brief Returns the result of the invsqrt() function for the given object/value.
    //
    // \param a The given object/value.
    // \return The result of the invsqrt() function for the given object/value.
    */
    template< typename T >
-   BLAZE_ALWAYS_INLINE decltype(auto) operator()( const T& a ) const
+   BLAZE_ALWAYS_INLINE BLAZE_DEVICE_CALLABLE decltype(auto) operator()( const T& a ) const
    {
       return invsqrt( a );
    }
@@ -92,6 +88,14 @@ struct InvSqrt
    */
    template< typename T >
    static constexpr bool simdEnabled() { return HasSIMDInvSqrt_v<T>; }
+   //**********************************************************************************************
+
+   //**********************************************************************************************
+   /*!\brief Returns whether the operation supports padding, i.e. whether it can deal with zeros.
+   //
+   // \return \a true in case padding is supported, \a false if not.
+   */
+   static constexpr bool paddingEnabled() { return false; }
    //**********************************************************************************************
 
    //**********************************************************************************************
@@ -108,6 +112,24 @@ struct InvSqrt
    }
    //**********************************************************************************************
 };
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
+//  YIELDSUNIFORM SPECIALIZATIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+template< typename T >
+struct YieldsUniform<InvSqrt,T>
+   : public IsUniform<T>
+{};
+/*! \endcond */
 //*************************************************************************************************
 
 

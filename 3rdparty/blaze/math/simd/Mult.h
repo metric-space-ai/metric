@@ -3,7 +3,7 @@
 //  \file blaze/math/simd/Mult.h
 //  \brief Header file for the SIMD multiplication functionality
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -514,9 +514,9 @@ BLAZE_ALWAYS_INLINE const T
    operator*( const SIMDci32<T>& a, const SIMDci32<T>& b ) noexcept
 #if BLAZE_AVX512F_MODE
 {
-   const __m512i a_ii = _mm512_shuffle_epi32( (~a).value, 0b11'11'01'01 );
-   const __m512i b_ri = _mm512_shuffle_epi32( (~b).value, 0b10'11'00'01 );
-   const __m512i a_rr = _mm512_shuffle_epi32( (~a).value, 0b10'10'00'00 );
+   const __m512i a_ii = _mm512_shuffle_epi32( (~a).value, _MM_PERM_DDBB );
+   const __m512i b_ri = _mm512_shuffle_epi32( (~b).value, _MM_PERM_CDAB );
+   const __m512i a_rr = _mm512_shuffle_epi32( (~a).value, _MM_PERM_CCAA );
 
    const __m512i a_rr_b = _mm512_mullo_epi32( a_rr, (~b).value );
    const __m512i a_ii_b_ri = _mm512_mullo_epi32( a_ii, b_ri );
@@ -765,7 +765,7 @@ struct SIMDf32MultExpr
    // \param a The left-hand side operand for the multiplication.
    // \param b The right-hand side operand for the multiplication.
    */
-   explicit BLAZE_ALWAYS_INLINE SIMDf32MultExpr( const T1& a, const T2& b )
+   BLAZE_ALWAYS_INLINE SIMDf32MultExpr( const T1& a, const T2& b )
       : a_( a )  // The left-hand side operand for the multiplication
       , b_( b )  // The right-hand side operand for the multiplication
    {}
@@ -960,7 +960,7 @@ struct SIMDf64MultExpr
    // \param a The left-hand side operand for the multiplication.
    // \param b The right-hand side operand for the multiplication.
    */
-   explicit BLAZE_ALWAYS_INLINE SIMDf64MultExpr( const T1& a, const T2& b )
+   BLAZE_ALWAYS_INLINE SIMDf64MultExpr( const T1& a, const T2& b )
       : a_( a )  // The left-hand side operand for the multiplication
       , b_( b )  // The right-hand side operand for the multiplication
    {}

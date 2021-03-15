@@ -9,6 +9,7 @@ Copyright (c) 2018 Michael Welsch
 #define _METRIC_DISTANCE_K_STRUCTURED_TWED_CPP
 #include "TWED.hpp"
 #include <vector>
+#include <algorithm>
 
 namespace metric {
 
@@ -29,13 +30,23 @@ auto TWED<V>::operator()(const Container& As, const Container& Bs) const -> dist
     timeB.reserve(Bs.size());
 
     for (auto it = As.cbegin(); it != As.cend(); ++it) {
-        timeA.push_back(std::distance(As.begin(), it));  // Read access to the index of the non-zero element.
-        A.push_back(*it);  // Read access to the value of the non-zero element.
+        if constexpr(std::is_same<blaze::CompressedVector<V>, Container>::value) {
+                timeA.push_back(it->index());  // Read access to the index of the non-zero element.
+                A.push_back(it->value());  // Read access to the value of the non-zero element.
+        } else {
+            timeA.push_back(std::distance(As.begin(), it));  // Read access to the index of the non-zero element.
+            A.push_back(*it);  // Read access to the value of the non-zero element.
+        }
     }
 
     for (auto it = Bs.cbegin(); it != Bs.cend(); ++it) {
-        timeB.push_back(std::distance(Bs.begin(), it));  // Read access to the index of the non-zero element.
-        B.push_back(*it);  // Read access to the value of the non-zero element.
+        if constexpr (std::is_same<blaze::CompressedVector<V>, Container>::value) {
+            timeB.push_back(it->index());  // Read access to the index of the non-zero element.
+            B.push_back(it->value());  // Read access to the value of the non-zero element.
+        } else {
+            timeB.push_back(std::distance(Bs.begin(), it));  // Read access to the index of the non-zero element.
+            B.push_back(*it);  // Read access to the value of the non-zero element.
+        }
     }
 
     value_type C1, C2, C3;
@@ -44,7 +55,7 @@ auto TWED<V>::operator()(const Container& As, const Container& Bs) const -> dist
     int sizeA = A.size();
 
     std::vector<value_type> D0(sizeB);
-    std::vector<value_type> Di(sizeA);
+    std::vector<value_type> Di(sizeB);
 
     // first element
     D0[0] = std::abs(A[0] - B[0]) + elastic * (std::abs(timeA[0] - 0));  // C3

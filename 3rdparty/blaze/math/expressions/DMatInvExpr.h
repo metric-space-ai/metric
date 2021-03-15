@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/DMatInvExpr.h
 //  \brief Header file for the dense matrix inversion expression
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -49,15 +49,9 @@
 #include "../../math/expressions/DenseMatrix.h"
 #include "../../math/expressions/Forward.h"
 #include "../../math/expressions/MatInvExpr.h"
+#include "../../math/shims/Invert.h"
 #include "../../math/shims/Serial.h"
-#include "../../math/typetraits/IsDiagonal.h"
 #include "../../math/typetraits/IsExpression.h"
-#include "../../math/typetraits/IsHermitian.h"
-#include "../../math/typetraits/IsLower.h"
-#include "../../math/typetraits/IsSymmetric.h"
-#include "../../math/typetraits/IsUniLower.h"
-#include "../../math/typetraits/IsUniUpper.h"
-#include "../../math/typetraits/IsUpper.h"
 #include "../../util/Assert.h"
 #include "../../util/FunctionTrace.h"
 #include "../../util/mpl/If.h"
@@ -92,12 +86,13 @@ class DMatInvExpr
 
  public:
    //**Type definitions****************************************************************************
-   using This          = DMatInvExpr<MT,SO>;   //!< Type of this DMatInvExpr instance.
-   using ResultType    = ResultType_t<MT>;     //!< Result type for expression template evaluations.
-   using OppositeType  = OppositeType_t<MT>;   //!< Result type with opposite storage order for expression template evaluations.
-   using TransposeType = TransposeType_t<MT>;  //!< Transpose type for expression template evaluations.
-   using ElementType   = ElementType_t<MT>;    //!< Resulting element type.
-   using ReturnType    = ReturnType_t<MT>;     //!< Return type for expression template evaluations.
+   using This          = DMatInvExpr<MT,SO>;    //!< Type of this DMatInvExpr instance.
+   using BaseType      = DenseMatrix<This,SO>;  //!< Base type of this DMatInvExpr instance.
+   using ResultType    = ResultType_t<MT>;      //!< Result type for expression template evaluations.
+   using OppositeType  = OppositeType_t<MT>;    //!< Result type with opposite storage order for expression template evaluations.
+   using TransposeType = TransposeType_t<MT>;   //!< Transpose type for expression template evaluations.
+   using ElementType   = ElementType_t<MT>;     //!< Resulting element type.
+   using ReturnType    = ReturnType_t<MT>;      //!< Return type for expression template evaluations.
 
    //! Data type for composite expression templates.
    using CompositeType = const ResultType;
@@ -121,7 +116,9 @@ class DMatInvExpr
    */
    explicit inline DMatInvExpr( const MT& dm ) noexcept
       : dm_( dm )  // Dense matrix of the inversion expression
-   {}
+   {
+      BLAZE_INTERNAL_ASSERT( isSquare( ~dm ), "Non-square matrix detected" );
+   }
    //**********************************************************************************************
 
    //**Rows function*******************************************************************************
@@ -183,25 +180,6 @@ class DMatInvExpr
    Operand dm_;  //!< Dense matrix of the inversion expression.
    //**********************************************************************************************
 
-   //**********************************************************************************************
-   /*! \cond BLAZE_INTERNAL */
-   /*!\brief Returns the proper inversion flag for the given matrix type \a MT.
-   //
-   // \return The proper inversion flag for the matrix type \a MT.
-   */
-   static constexpr InversionFlag getInversionFlag() noexcept {
-      return ( IsDiagonal_v<MT>  ? asDiagonal
-             : IsUniUpper_v<MT>  ? asUniUpper
-             : IsUpper_v<MT>     ? asUpper
-             : IsUniLower_v<MT>  ? asUniLower
-             : IsLower_v<MT>     ? asLower
-             : IsHermitian_v<MT> ? asHermitian
-             : IsSymmetric_v<MT> ? asSymmetric
-             :                     asGeneral );
-   }
-   /*! \endcond */
-   //**********************************************************************************************
-
    //**Assignment to dense matrices****************************************************************
    /*! \cond BLAZE_INTERNAL */
    /*!\brief Assignment of a dense matrix inversion expression to a dense matrix.
@@ -227,7 +205,7 @@ class DMatInvExpr
          assign( ~lhs, rhs.dm_ );
       }
 
-      invert< DMatInvExpr::getInversionFlag() >( ~lhs );
+      invert( ~lhs );
    }
    /*! \endcond */
    //**********************************************************************************************
@@ -393,6 +371,7 @@ class DMatInvExpr
 //
 // \param dm The dense matrix to be inverted.
 // \return The inverse of the matrix.
+// \exception std::invalid_argument Invalid non-square matrix provided.
 //
 // This function returns an expression representing the inverse of the given dense matrix:
 
@@ -430,154 +409,6 @@ inline decltype(auto) inv( const DenseMatrix<MT,SO>& dm )
    using ReturnType = const DMatInvExpr<MT,SO>;
    return ReturnType( ~dm );
 }
-//*************************************************************************************************
-
-
-
-
-//=================================================================================================
-//
-//  GLOBAL RESTRUCTURING FUNCTIONS
-//
-//=================================================================================================
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-/*!\brief Calculating the inverse of a dense matrix inversion.
-// \ingroup dense_matrix
-//
-// \param dm The dense matrix to be (re-)inverted.
-// \return The inverse of the inverted matrix.
-//
-// This function implements a performance optimized treatment of the inversion operation on a
-// dense matrix inversion expression. It returns an expression representing the inverse of a
-// dense matrix inversion:
-
-   \code
-   using blaze::rowMajor;
-
-   blaze::DynamicMatrix<double,rowMajor> A, B;
-   // ... Resizing and initialization
-   B = inv( inv( A ) );
-   \endcode
-*/
-template< typename MT  // Type of the dense matrix
-        , bool SO >    // Storage order
-inline decltype(auto) inv( const DMatInvExpr<MT,SO>& dm )
-{
-   BLAZE_FUNCTION_TRACE;
-
-   return dm.operand();
-}
-/*! \endcond */
-//*************************************************************************************************
-
-
-
-
-//=================================================================================================
-//
-//  ISSYMMETRIC SPECIALIZATIONS
-//
-//=================================================================================================
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-template< typename MT, bool SO >
-struct IsSymmetric< DMatInvExpr<MT,SO> >
-   : public IsSymmetric<MT>
-{};
-/*! \endcond */
-//*************************************************************************************************
-
-
-
-
-//=================================================================================================
-//
-//  ISHERMITIAN SPECIALIZATIONS
-//
-//=================================================================================================
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-template< typename MT, bool SO >
-struct IsHermitian< DMatInvExpr<MT,SO> >
-   : public IsHermitian<MT>
-{};
-/*! \endcond */
-//*************************************************************************************************
-
-
-
-
-//=================================================================================================
-//
-//  ISLOWER SPECIALIZATIONS
-//
-//=================================================================================================
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-template< typename MT, bool SO >
-struct IsLower< DMatInvExpr<MT,SO> >
-   : public IsLower<MT>
-{};
-/*! \endcond */
-//*************************************************************************************************
-
-
-
-
-//=================================================================================================
-//
-//  ISUNILOWER SPECIALIZATIONS
-//
-//=================================================================================================
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-template< typename MT, bool SO >
-struct IsUniLower< DMatInvExpr<MT,SO> >
-   : public IsUniLower<MT>
-{};
-/*! \endcond */
-//*************************************************************************************************
-
-
-
-
-//=================================================================================================
-//
-//  ISUPPER SPECIALIZATIONS
-//
-//=================================================================================================
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-template< typename MT, bool SO >
-struct IsUpper< DMatInvExpr<MT,SO> >
-   : public IsUpper<MT>
-{};
-/*! \endcond */
-//*************************************************************************************************
-
-
-
-
-//=================================================================================================
-//
-//  ISUNIUPPER SPECIALIZATIONS
-//
-//=================================================================================================
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-template< typename MT, bool SO >
-struct IsUniUpper< DMatInvExpr<MT,SO> >
-   : public IsUniUpper<MT>
-{};
-/*! \endcond */
 //*************************************************************************************************
 
 } // namespace blaze

@@ -3,7 +3,7 @@
 //  \file blaze/math/typetraits/HighType.h
 //  \brief Header file for the HighType type trait
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -41,6 +41,7 @@
 //*************************************************************************************************
 
 #include "../../util/Complex.h"
+#include "../../util/EnableIf.h"
 #include "../../util/InvalidType.h"
 #include "../../util/mpl/If.h"
 #include "../../util/typetraits/IsComplex.h"
@@ -331,7 +332,7 @@ struct HighType
 
 //*************************************************************************************************
 /*!\brief Auxiliary alias declaration for the HighType type trait.
-// \ingroup type_traits
+// \ingroup math_type_traits
 //
 // The HighType_t alias declaration provides a convenient shortcut to access the nested \a Type of
 // the HighType class template. For instance, given the types \a T1 and \a T2 the following two

@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/SMatMapExpr.h
 //  \brief Header file for the sparse matrix map expression
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -56,23 +56,10 @@
 #include "../../math/sparse/ValueIndexPair.h"
 #include "../../math/traits/MapTrait.h"
 #include "../../math/traits/MultTrait.h"
-#include "../../math/typetraits/IsComputation.h"
 #include "../../math/typetraits/IsExpression.h"
-#include "../../math/typetraits/IsHermitian.h"
-#include "../../math/typetraits/IsLower.h"
-#include "../../math/typetraits/IsStrictlyLower.h"
-#include "../../math/typetraits/IsStrictlyUpper.h"
-#include "../../math/typetraits/IsSymmetric.h"
-#include "../../math/typetraits/IsUniLower.h"
-#include "../../math/typetraits/IsUniUpper.h"
-#include "../../math/typetraits/IsUpper.h"
 #include "../../math/typetraits/RequiresEvaluation.h"
 #include "../../math/typetraits/UnderlyingBuiltin.h"
 #include "../../math/typetraits/UnderlyingNumeric.h"
-#include "../../math/typetraits/YieldsHermitian.h"
-#include "../../math/typetraits/YieldsSymmetric.h"
-#include "../../math/typetraits/YieldsUniLower.h"
-#include "../../math/typetraits/YieldsUniUpper.h"
 #include "../../util/Assert.h"
 #include "../../util/EnableIf.h"
 #include "../../util/FunctionTrace.h"
@@ -147,6 +134,7 @@ class SMatMapExpr
  public:
    //**Type definitions****************************************************************************
    using This          = SMatMapExpr<MT,OP,SO>;        //!< Type of this SMatMapExpr instance.
+   using BaseType      = SparseMatrix<This,SO>;        //!< Base type of this SMatMapExpr instance.
    using ResultType    = MapTrait_t<RT,OP>;            //!< Result type for expression template evaluations.
    using OppositeType  = OppositeType_t<ResultType>;   //!< Result type with opposite storage order for expression template evaluations.
    using TransposeType = TransposeType_t<ResultType>;  //!< Transpose type for expression template evaluations.
@@ -199,8 +187,8 @@ class SMatMapExpr
       // \param op The custom unary operation.
       */
       inline ConstIterator( IteratorType it, OP op )
-         : it_( it )  // Iterator over the elements of the sparse matrix expression
-         , op_( op )  // The custom unary operation
+         : it_( it )             // Iterator over the elements of the sparse matrix expression
+         , op_( std::move(op) )  // The custom unary operation
       {}
       //*******************************************************************************************
 
@@ -307,9 +295,9 @@ class SMatMapExpr
    // \param sm The sparse matrix operand of the map expression.
    // \param op The custom unary operation.
    */
-   explicit inline SMatMapExpr( const MT& sm, OP op ) noexcept
-      : sm_( sm )  // Sparse matrix of the map expression
-      , op_( op )  // The custom unary operation
+   inline SMatMapExpr( const MT& sm, OP op ) noexcept
+      : sm_( sm )             // Sparse matrix of the map expression
+      , op_( std::move(op) )  // The custom unary operation
    {}
    //**********************************************************************************************
 
@@ -347,10 +335,10 @@ class SMatMapExpr
    //**********************************************************************************************
 
    //**Begin function******************************************************************************
-   /*!\brief Returns an iterator to the first non-zero element of row \a i.
+   /*!\brief Returns an iterator to the first non-zero element of row/column \a i.
    //
-   // \param i The row index.
-   // \return Iterator to the first non-zero element of row \a i.
+   // \param i The row/column index.
+   // \return Iterator to the first non-zero element of row/column \a i.
    */
    inline ConstIterator begin( size_t i ) const {
       return ConstIterator( sm_.begin(i), op_ );
@@ -358,10 +346,10 @@ class SMatMapExpr
    //**********************************************************************************************
 
    //**End function********************************************************************************
-   /*!\brief Returns an iterator just past the last non-zero element of row \a i.
+   /*!\brief Returns an iterator just past the last non-zero element of row/column \a i.
    //
-   // \param i The row index.
-   // \return Iterator just past the last non-zero element of row \a i.
+   // \param i The row/column index.
+   // \return Iterator just past the last non-zero element of row/column \a i.
    */
    inline ConstIterator end( size_t i ) const {
       return ConstIterator( sm_.end(i), op_ );
@@ -524,8 +512,8 @@ class SMatMapExpr
    */
    template< typename MT2  // Type of the target dense matrix
            , bool SO2 >    // Storage order of the target dense matrix
-   friend inline EnableIf_t< UseAssign_v<MT2> >
-      assign( DenseMatrix<MT2,SO2>& lhs, const SMatMapExpr& rhs )
+   friend inline auto assign( DenseMatrix<MT2,SO2>& lhs, const SMatMapExpr& rhs )
+      -> EnableIf_t< UseAssign_v<MT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -558,24 +546,22 @@ class SMatMapExpr
    // target matrix are identical.
    */
    template< typename MT2 >  // Type of the target sparse matrix
-   friend inline EnableIf_t< UseAssign_v<MT2> &&
-                             IsSame_v< UnderlyingNumeric_t<MT>, UnderlyingNumeric_t<MT2> > >
-      assign( SparseMatrix<MT2,false>& lhs, const SMatMapExpr& rhs )
+   friend inline auto assign( SparseMatrix<MT2,false>& lhs, const SMatMapExpr& rhs )
+      -> EnableIf_t< UseAssign_v<MT2> &&
+                     IsSame_v< UnderlyingNumeric_t<MT>, UnderlyingNumeric_t<MT2> > >
    {
       BLAZE_FUNCTION_TRACE;
 
       BLAZE_INTERNAL_ASSERT( (~lhs).rows()    == rhs.rows()   , "Invalid number of rows"    );
       BLAZE_INTERNAL_ASSERT( (~lhs).columns() == rhs.columns(), "Invalid number of columns" );
 
-      using Iterator = Iterator_t<MT2>;
-
       assign( ~lhs, rhs.sm_ );
 
       const size_t m( rhs.rows() );
 
       for( size_t i=0UL; i<m; ++i ) {
-         const Iterator end( (~lhs).end(i) );
-         for( Iterator element=(~lhs).begin(i); element!=end; ++element ) {
+         const auto end( (~lhs).end(i) );
+         for( auto element=(~lhs).begin(i); element!=end; ++element ) {
             element->value() = rhs.op_( element->value() );
          }
       }
@@ -599,24 +585,22 @@ class SMatMapExpr
    // target matrix are identical.
    */
    template< typename MT2 >  // Type of the target sparse matrix
-   friend inline EnableIf_t< UseAssign_v<MT2> &&
-                             IsSame_v< UnderlyingNumeric_t<MT>, UnderlyingNumeric_t<MT2> > >
-      assign( SparseMatrix<MT2,true>& lhs, const SMatMapExpr& rhs )
+   friend inline auto assign( SparseMatrix<MT2,true>& lhs, const SMatMapExpr& rhs )
+      -> EnableIf_t< UseAssign_v<MT2> &&
+                     IsSame_v< UnderlyingNumeric_t<MT>, UnderlyingNumeric_t<MT2> > >
    {
       BLAZE_FUNCTION_TRACE;
 
       BLAZE_INTERNAL_ASSERT( (~lhs).rows()    == rhs.rows()   , "Invalid number of rows"    );
       BLAZE_INTERNAL_ASSERT( (~lhs).columns() == rhs.columns(), "Invalid number of columns" );
 
-      using Iterator = Iterator_t<MT2>;
-
       assign( ~lhs, rhs.sm_ );
 
       const size_t n( rhs.columns() );
 
       for( size_t j=0UL; j<n; ++j ) {
-         const Iterator end( (~lhs).end(j) );
-         for( Iterator element=(~lhs).begin(j); element!=end; ++element ) {
+         const auto end( (~lhs).end(j) );
+         for( auto element=(~lhs).begin(j); element!=end; ++element ) {
             element->value() = rhs.op_( element->value() );
          }
       }
@@ -641,9 +625,9 @@ class SMatMapExpr
    */
    template< typename MT2  // Type of the target sparse matrix
            , bool SO2 >    // Storage order of the target sparse matrix
-   friend inline EnableIf_t< UseAssign_v<MT2> &&
-                             !IsSame_v< UnderlyingNumeric_t<MT>, UnderlyingNumeric_t<MT2> > >
-      assign( SparseMatrix<MT2,SO2>& lhs, const SMatMapExpr& rhs )
+   friend inline auto assign( SparseMatrix<MT2,SO2>& lhs, const SMatMapExpr& rhs )
+      -> EnableIf_t< UseAssign_v<MT2> &&
+                     !IsSame_v< UnderlyingNumeric_t<MT>, UnderlyingNumeric_t<MT2> > >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -677,8 +661,8 @@ class SMatMapExpr
    */
    template< typename MT2  // Type of the target dense matrix
            , bool SO2 >    // Storage order of the target dense matrix
-   friend inline EnableIf_t< UseAssign_v<MT2> >
-      addAssign( DenseMatrix<MT2,SO2>& lhs, const SMatMapExpr& rhs )
+   friend inline auto addAssign( DenseMatrix<MT2,SO2>& lhs, const SMatMapExpr& rhs )
+      -> EnableIf_t< UseAssign_v<MT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -715,8 +699,8 @@ class SMatMapExpr
    */
    template< typename MT2  // Type of the target dense matrix
            , bool SO2 >    // Storage order of the target sparse matrix
-   friend inline EnableIf_t< UseAssign_v<MT2> >
-      subAssign( DenseMatrix<MT2,SO2>& lhs, const SMatMapExpr& rhs )
+   friend inline auto subAssign( DenseMatrix<MT2,SO2>& lhs, const SMatMapExpr& rhs )
+      -> EnableIf_t< UseAssign_v<MT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -753,8 +737,8 @@ class SMatMapExpr
    */
    template< typename MT2  // Type of the target dense matrix
            , bool SO2 >    // Storage order of the target dense matrix
-   friend inline EnableIf_t< UseAssign_v<MT2> >
-      schurAssign( DenseMatrix<MT2,SO2>& lhs, const SMatMapExpr& rhs )
+   friend inline auto schurAssign( DenseMatrix<MT2,SO2>& lhs, const SMatMapExpr& rhs )
+      -> EnableIf_t< UseAssign_v<MT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -799,8 +783,8 @@ class SMatMapExpr
    */
    template< typename MT2  // Type of the target dense matrix
            , bool SO2 >    // Storage order of the target dense matrix
-   friend inline EnableIf_t< UseSMPAssign_v<MT2> >
-      smpAssign( DenseMatrix<MT2,SO2>& lhs, const SMatMapExpr& rhs )
+   friend inline auto smpAssign( DenseMatrix<MT2,SO2>& lhs, const SMatMapExpr& rhs )
+      -> EnableIf_t< UseSMPAssign_v<MT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -837,8 +821,8 @@ class SMatMapExpr
    */
    template< typename MT2  // Type of the target dense matrix
            , bool SO2 >    // Storage order of the target dense matrix
-   friend inline EnableIf_t< UseSMPAssign_v<MT2> >
-      smpAddAssign( DenseMatrix<MT2,SO2>& lhs, const SMatMapExpr& rhs )
+   friend inline auto smpAddAssign( DenseMatrix<MT2,SO2>& lhs, const SMatMapExpr& rhs )
+      -> EnableIf_t< UseSMPAssign_v<MT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -875,8 +859,8 @@ class SMatMapExpr
    */
    template< typename MT2  // Type of the target dense matrix
            , bool SO2 >    // Storage order of the target sparse matrix
-   friend inline EnableIf_t< UseSMPAssign_v<MT2> >
-      smpSubAssign( DenseMatrix<MT2,SO2>& lhs, const SMatMapExpr& rhs )
+   friend inline auto smpSubAssign( DenseMatrix<MT2,SO2>& lhs, const SMatMapExpr& rhs )
+      -> EnableIf_t< UseSMPAssign_v<MT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -913,8 +897,8 @@ class SMatMapExpr
    */
    template< typename MT2  // Type of the target dense matrix
            , bool SO2 >    // Storage order of the target dense matrix
-   friend inline EnableIf_t< UseSMPAssign_v<MT2> >
-      smpSchurAssign( DenseMatrix<MT2,SO2>& lhs, const SMatMapExpr& rhs )
+   friend inline auto smpSchurAssign( DenseMatrix<MT2,SO2>& lhs, const SMatMapExpr& rhs )
+      -> EnableIf_t< UseSMPAssign_v<MT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -987,7 +971,7 @@ inline decltype(auto) map( const SparseMatrix<MT,SO>& sm, OP op )
    BLAZE_FUNCTION_TRACE;
 
    using ReturnType = const SMatMapExpr<MT,OP,SO>;
-   return ReturnType( ~sm, op );
+   return ReturnType( ~sm, std::move(op) );
 }
 //*************************************************************************************************
 
@@ -1017,8 +1001,7 @@ inline decltype(auto) forEach( const SparseMatrix<MT,SO>& sm, OP op )
 {
    BLAZE_FUNCTION_TRACE;
 
-   using ReturnType = const SMatMapExpr<MT,OP,SO>;
-   return ReturnType( ~sm, op );
+   return map( ~sm, std::move(op) );
 }
 //*************************************************************************************************
 
@@ -1046,8 +1029,7 @@ inline decltype(auto) abs( const SparseMatrix<MT,SO>& sm )
 {
    BLAZE_FUNCTION_TRACE;
 
-   using ReturnType = const SMatMapExpr<MT,Abs,SO>;
-   return ReturnType( ~sm, Abs() );
+   return map( ~sm, Abs() );
 }
 //*************************************************************************************************
 
@@ -1075,8 +1057,7 @@ inline decltype(auto) sign( const SparseMatrix<MT,SO>& sm )
 {
    BLAZE_FUNCTION_TRACE;
 
-   using ReturnType = const SMatMapExpr<MT,Sign,SO>;
-   return ReturnType( ~sm, Sign() );
+   return map( ~sm, Sign() );
 }
 //*************************************************************************************************
 
@@ -1104,8 +1085,7 @@ inline decltype(auto) floor( const SparseMatrix<MT,SO>& sm )
 {
    BLAZE_FUNCTION_TRACE;
 
-   using ReturnType = const SMatMapExpr<MT,Floor,SO>;
-   return ReturnType( ~sm, Floor() );
+   return map( ~sm, Floor() );
 }
 //*************************************************************************************************
 
@@ -1133,8 +1113,7 @@ inline decltype(auto) ceil( const SparseMatrix<MT,SO>& sm )
 {
    BLAZE_FUNCTION_TRACE;
 
-   using ReturnType = const SMatMapExpr<MT,Ceil,SO>;
-   return ReturnType( ~sm, Ceil() );
+   return map( ~sm, Ceil() );
 }
 //*************************************************************************************************
 
@@ -1162,8 +1141,7 @@ inline decltype(auto) trunc( const SparseMatrix<MT,SO>& sm )
 {
    BLAZE_FUNCTION_TRACE;
 
-   using ReturnType = const SMatMapExpr<MT,Trunc,SO>;
-   return ReturnType( ~sm, Trunc() );
+   return map( ~sm, Trunc() );
 }
 //*************************************************************************************************
 
@@ -1191,8 +1169,7 @@ inline decltype(auto) round( const SparseMatrix<MT,SO>& sm )
 {
    BLAZE_FUNCTION_TRACE;
 
-   using ReturnType = const SMatMapExpr<MT,Round,SO>;
-   return ReturnType( ~sm, Round() );
+   return map( ~sm, Round() );
 }
 //*************************************************************************************************
 
@@ -1204,9 +1181,9 @@ inline decltype(auto) round( const SparseMatrix<MT,SO>& sm )
 // \param sm The input matrix.
 // \return The complex conjugate of each single element of \a sm.
 //
-// The \a conj function calculates the complex conjugate of each element of the input matrix
+// The \a conj() function calculates the complex conjugate of each element of the input matrix
 // \a sm. The function returns an expression representing this operation.\n
-// The following example demonstrates the use of the \a conj function:
+// The following example demonstrates the use of the \a conj() function:
 
    \code
    blaze::CompressedMatrix< complex<double> > A, B;
@@ -1220,8 +1197,7 @@ inline decltype(auto) conj( const SparseMatrix<MT,SO>& sm )
 {
    BLAZE_FUNCTION_TRACE;
 
-   using ReturnType = const SMatMapExpr<MT,Conj,SO>;
-   return ReturnType( ~sm, Conj() );
+   return map( ~sm, Conj() );
 }
 //*************************************************************************************************
 
@@ -1233,10 +1209,10 @@ inline decltype(auto) conj( const SparseMatrix<MT,SO>& sm )
 // \param sm The input matrix.
 // \return The conjugate transpose of \a sm.
 //
-// The \a ctrans function returns an expression representing the conjugate transpose (also called
-// adjoint matrix, Hermitian conjugate matrix or transjugate matrix) of the given input matrix
-// \a sm.\n
-// The following example demonstrates the use of the \a ctrans function:
+// The \a ctrans() function returns an expression representing the conjugate transpose (also
+// called adjoint matrix, Hermitian conjugate matrix or transjugate matrix) of the given input
+// matrix \a sm.\n
+// The following example demonstrates the use of the \a ctrans() function:
 
    \code
    blaze::CompressedMatrix< complex<double> > A, B;
@@ -1244,7 +1220,7 @@ inline decltype(auto) conj( const SparseMatrix<MT,SO>& sm )
    B = ctrans( A );
    \endcode
 
-// Note that the \a ctrans function has the same effect as manually applying the \a conj and
+// Note that the \a ctrans() function has the same effect as manually applying the \a conj() and
 // \a trans function in any order:
 
    \code
@@ -1270,9 +1246,9 @@ inline decltype(auto) ctrans( const SparseMatrix<MT,SO>& sm )
 // \param sm The input matrix.
 // \return The real part of each single element of \a sm.
 //
-// The \a real function calculates the real part of each element of the input matrix \a sm.
+// The \a real() function calculates the real part of each element of the input matrix \a sm.
 // The function returns an expression representing this operation.\n
-// The following example demonstrates the use of the \a real function:
+// The following example demonstrates the use of the \a real() function:
 
    \code
    blaze::CompressedMatrix<double> A, B;
@@ -1286,8 +1262,7 @@ inline decltype(auto) real( const SparseMatrix<MT,SO>& sm )
 {
    BLAZE_FUNCTION_TRACE;
 
-   using ReturnType = const SMatMapExpr<MT,Real,SO>;
-   return ReturnType( ~sm, Real() );
+   return map( ~sm, Real() );
 }
 //*************************************************************************************************
 
@@ -1299,9 +1274,9 @@ inline decltype(auto) real( const SparseMatrix<MT,SO>& sm )
 // \param sm The input matrix.
 // \return The imaginary part of each single element of \a sm.
 //
-// The \a imag function calculates the imaginary part of each element of the input matrix \a sm.
+// The \a imag() function calculates the imaginary part of each element of the input matrix \a sm.
 // The function returns an expression representing this operation.\n
-// The following example demonstrates the use of the \a imag function:
+// The following example demonstrates the use of the \a imag() function:
 
    \code
    blaze::CompressedMatrix<double> A, B;
@@ -1315,8 +1290,35 @@ inline decltype(auto) imag( const SparseMatrix<MT,SO>& sm )
 {
    BLAZE_FUNCTION_TRACE;
 
-   using ReturnType = const SMatMapExpr<MT,Imag,SO>;
-   return ReturnType( ~sm, Imag() );
+   return map( ~sm, Imag() );
+}
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*!\brief Returns a matrix containing the phase angle of each single element of \a sm.
+// \ingroup sparse_matrix
+//
+// \param sm The input matrix.
+// \return The phase angle of each single element of \a sm.
+//
+// The \a arg() function calculates the phase angle of each element of the input matrix \a sm.
+// The function returns an expression representing this operation.\n
+// The following example demonstrates the use of the \a arg() function:
+
+   \code
+   blaze::CompressedMatrix<double> A, B;
+   // ... Resizing and initialization
+   B = arg( A );
+   \endcode
+*/
+template< typename MT  // Type of the sparse matrix
+        , bool SO >    // Storage order
+inline decltype(auto) arg( const SparseMatrix<MT,SO>& sm )
+{
+   BLAZE_FUNCTION_TRACE;
+
+   return map( ~sm, Arg() );
 }
 //*************************************************************************************************
 
@@ -1347,8 +1349,7 @@ inline decltype(auto) sqrt( const SparseMatrix<MT,SO>& sm )
 {
    BLAZE_FUNCTION_TRACE;
 
-   using ReturnType = const SMatMapExpr<MT,Sqrt,SO>;
-   return ReturnType( ~sm, Sqrt() );
+   return map( ~sm, Sqrt() );
 }
 //*************************************************************************************************
 
@@ -1379,8 +1380,7 @@ inline decltype(auto) invsqrt( const SparseMatrix<MT,SO>& sm )
 {
    BLAZE_FUNCTION_TRACE;
 
-   using ReturnType = const SMatMapExpr<MT,InvSqrt,SO>;
-   return ReturnType( ~sm, InvSqrt() );
+   return map( ~sm, InvSqrt() );
 }
 //*************************************************************************************************
 
@@ -1411,8 +1411,7 @@ inline decltype(auto) cbrt( const SparseMatrix<MT,SO>& sm )
 {
    BLAZE_FUNCTION_TRACE;
 
-   using ReturnType = const SMatMapExpr<MT,Cbrt,SO>;
-   return ReturnType( ~sm, Cbrt() );
+   return map( ~sm, Cbrt() );
 }
 //*************************************************************************************************
 
@@ -1443,8 +1442,7 @@ inline decltype(auto) invcbrt( const SparseMatrix<MT,SO>& sm )
 {
    BLAZE_FUNCTION_TRACE;
 
-   using ReturnType = const SMatMapExpr<MT,InvCbrt,SO>;
-   return ReturnType( ~sm, InvCbrt() );
+   return map( ~sm, InvCbrt() );
 }
 //*************************************************************************************************
 
@@ -1475,8 +1473,7 @@ inline decltype(auto) clamp( const SparseMatrix<MT,SO>& sm, const DT& min, const
 {
    BLAZE_FUNCTION_TRACE;
 
-   using ReturnType = const SMatMapExpr<MT,Clamp<DT>,SO>;
-   return ReturnType( ~sm, Clamp<DT>( min, max ) );
+   return map( ~sm, bind2nd( bind3rd( Clamp(), max ), min ) );
 }
 //*************************************************************************************************
 
@@ -1502,14 +1499,13 @@ inline decltype(auto) clamp( const SparseMatrix<MT,SO>& sm, const DT& min, const
 template< typename MT  // Type of the sparse matrix
         , bool SO      // Storage order
         , typename ST  // Type of the scalar exponent
-        , typename = EnableIf_t< IsNumeric_v<ST> > >
+        , EnableIf_t< IsNumeric_v<ST> >* = nullptr >
 inline decltype(auto) pow( const SparseMatrix<MT,SO>& sm, ST exp )
 {
    BLAZE_FUNCTION_TRACE;
 
    using ScalarType = MultTrait_t< UnderlyingBuiltin_t<MT>, ST >;
-   using ReturnType = const SMatMapExpr<MT,UnaryPow<ScalarType>,SO>;
-   return ReturnType( ~sm, UnaryPow<ScalarType>( exp ) );
+   return map( ~sm, blaze::bind2nd( Pow(), ScalarType( exp ) ) );
 }
 //*************************************************************************************************
 
@@ -1537,8 +1533,7 @@ inline decltype(auto) exp( const SparseMatrix<MT,SO>& sm )
 {
    BLAZE_FUNCTION_TRACE;
 
-   using ReturnType = const SMatMapExpr<MT,Exp,SO>;
-   return ReturnType( ~sm, Exp() );
+   return map( ~sm, Exp() );
 }
 //*************************************************************************************************
 
@@ -1566,8 +1561,7 @@ inline decltype(auto) exp2( const SparseMatrix<MT,SO>& sm )
 {
    BLAZE_FUNCTION_TRACE;
 
-   using ReturnType = const SMatMapExpr<MT,Exp2,SO>;
-   return ReturnType( ~sm, Exp2() );
+   return map( ~sm, Exp2() );
 }
 //*************************************************************************************************
 
@@ -1595,8 +1589,7 @@ inline decltype(auto) exp10( const SparseMatrix<MT,SO>& sm )
 {
    BLAZE_FUNCTION_TRACE;
 
-   using ReturnType = const SMatMapExpr<MT,Exp10,SO>;
-   return ReturnType( ~sm, Exp10() );
+   return map( ~sm, Exp10() );
 }
 //*************************************************************************************************
 
@@ -1627,8 +1620,7 @@ inline decltype(auto) log( const SparseMatrix<MT,SO>& sm )
 {
    BLAZE_FUNCTION_TRACE;
 
-   using ReturnType = const SMatMapExpr<MT,Log,SO>;
-   return ReturnType( ~sm, Log() );
+   return map( ~sm, Log() );
 }
 //*************************************************************************************************
 
@@ -1659,8 +1651,7 @@ inline decltype(auto) log2( const SparseMatrix<MT,SO>& sm )
 {
    BLAZE_FUNCTION_TRACE;
 
-   using ReturnType = const SMatMapExpr<MT,Log2,SO>;
-   return ReturnType( ~sm, Log2() );
+   return map( ~sm, Log2() );
 }
 //*************************************************************************************************
 
@@ -1691,8 +1682,7 @@ inline decltype(auto) log10( const SparseMatrix<MT,SO>& sm )
 {
    BLAZE_FUNCTION_TRACE;
 
-   using ReturnType = const SMatMapExpr<MT,Log10,SO>;
-   return ReturnType( ~sm, Log10() );
+   return map( ~sm, Log10() );
 }
 //*************************************************************************************************
 
@@ -1720,8 +1710,7 @@ inline decltype(auto) sin( const SparseMatrix<MT,SO>& sm )
 {
    BLAZE_FUNCTION_TRACE;
 
-   using ReturnType = const SMatMapExpr<MT,Sin,SO>;
-   return ReturnType( ~sm, Sin() );
+   return map( ~sm, Sin() );
 }
 //*************************************************************************************************
 
@@ -1752,8 +1741,7 @@ inline decltype(auto) asin( const SparseMatrix<MT,SO>& sm )
 {
    BLAZE_FUNCTION_TRACE;
 
-   using ReturnType = const SMatMapExpr<MT,Asin,SO>;
-   return ReturnType( ~sm, Asin() );
+   return map( ~sm, Asin() );
 }
 //*************************************************************************************************
 
@@ -1781,8 +1769,7 @@ inline decltype(auto) sinh( const SparseMatrix<MT,SO>& sm )
 {
    BLAZE_FUNCTION_TRACE;
 
-   using ReturnType = const SMatMapExpr<MT,Sinh,SO>;
-   return ReturnType( ~sm, Sinh() );
+   return map( ~sm, Sinh() );
 }
 //*************************************************************************************************
 
@@ -1810,8 +1797,7 @@ inline decltype(auto) asinh( const SparseMatrix<MT,SO>& sm )
 {
    BLAZE_FUNCTION_TRACE;
 
-   using ReturnType = const SMatMapExpr<MT,Asinh,SO>;
-   return ReturnType( ~sm, Asinh() );
+   return map( ~sm, Asinh() );
 }
 //*************************************************************************************************
 
@@ -1839,8 +1825,7 @@ inline decltype(auto) cos( const SparseMatrix<MT,SO>& sm )
 {
    BLAZE_FUNCTION_TRACE;
 
-   using ReturnType = const SMatMapExpr<MT,Cos,SO>;
-   return ReturnType( ~sm, Cos() );
+   return map( ~sm, Cos() );
 }
 //*************************************************************************************************
 
@@ -1871,8 +1856,7 @@ inline decltype(auto) acos( const SparseMatrix<MT,SO>& sm )
 {
    BLAZE_FUNCTION_TRACE;
 
-   using ReturnType = const SMatMapExpr<MT,Acos,SO>;
-   return ReturnType( ~sm, Acos() );
+   return map( ~sm, Acos() );
 }
 //*************************************************************************************************
 
@@ -1900,8 +1884,7 @@ inline decltype(auto) cosh( const SparseMatrix<MT,SO>& sm )
 {
    BLAZE_FUNCTION_TRACE;
 
-   using ReturnType = const SMatMapExpr<MT,Cosh,SO>;
-   return ReturnType( ~sm, Cosh() );
+   return map( ~sm, Cosh() );
 }
 //*************************************************************************************************
 
@@ -1932,8 +1915,7 @@ inline decltype(auto) acosh( const SparseMatrix<MT,SO>& sm )
 {
    BLAZE_FUNCTION_TRACE;
 
-   using ReturnType = const SMatMapExpr<MT,Acosh,SO>;
-   return ReturnType( ~sm, Acosh() );
+   return map( ~sm, Acosh() );
 }
 //*************************************************************************************************
 
@@ -1961,8 +1943,7 @@ inline decltype(auto) tan( const SparseMatrix<MT,SO>& sm )
 {
    BLAZE_FUNCTION_TRACE;
 
-   using ReturnType = const SMatMapExpr<MT,Tan,SO>;
-   return ReturnType( ~sm, Tan() );
+   return map( ~sm, Tan() );
 }
 //*************************************************************************************************
 
@@ -1990,8 +1971,7 @@ inline decltype(auto) atan( const SparseMatrix<MT,SO>& sm )
 {
    BLAZE_FUNCTION_TRACE;
 
-   using ReturnType = const SMatMapExpr<MT,Atan,SO>;
-   return ReturnType( ~sm, Atan() );
+   return map( ~sm, Atan() );
 }
 //*************************************************************************************************
 
@@ -2022,8 +2002,7 @@ inline decltype(auto) tanh( const SparseMatrix<MT,SO>& sm )
 {
    BLAZE_FUNCTION_TRACE;
 
-   using ReturnType = const SMatMapExpr<MT,Tanh,SO>;
-   return ReturnType( ~sm, Tanh() );
+   return map( ~sm, Tanh() );
 }
 //*************************************************************************************************
 
@@ -2054,8 +2033,7 @@ inline decltype(auto) atanh( const SparseMatrix<MT,SO>& sm )
 {
    BLAZE_FUNCTION_TRACE;
 
-   using ReturnType = const SMatMapExpr<MT,Atanh,SO>;
-   return ReturnType( ~sm, Atanh() );
+   return map( ~sm, Atanh() );
 }
 //*************************************************************************************************
 
@@ -2083,8 +2061,7 @@ inline decltype(auto) erf( const SparseMatrix<MT,SO>& sm )
 {
    BLAZE_FUNCTION_TRACE;
 
-   using ReturnType = const SMatMapExpr<MT,Erf,SO>;
-   return ReturnType( ~sm, Erf() );
+   return map( ~sm, Erf() );
 }
 //*************************************************************************************************
 
@@ -2113,8 +2090,7 @@ inline decltype(auto) erfc( const SparseMatrix<MT,SO>& sm )
 {
    BLAZE_FUNCTION_TRACE;
 
-   using ReturnType = const SMatMapExpr<MT,Erfc,SO>;
-   return ReturnType( ~sm, Erfc() );
+   return map( ~sm, Erfc() );
 }
 //*************************************************************************************************
 
@@ -2319,8 +2295,7 @@ inline decltype(auto) conj( const SMatTransExpr<SMatMapExpr<MT,Conj,SO>,!SO>& sm
 {
    BLAZE_FUNCTION_TRACE;
 
-   using ReturnType = const SMatTransExpr<MT,!SO>;
-   return ReturnType( sm.operand().operand() );
+   return trans( sm.operand().operand() );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -2368,150 +2343,6 @@ inline decltype(auto) imag( const SMatMapExpr<MT,Imag,SO>& sm )
 
    return sm;
 }
-/*! \endcond */
-//*************************************************************************************************
-
-
-
-
-//=================================================================================================
-//
-//  ISSYMMETRIC SPECIALIZATIONS
-//
-//=================================================================================================
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-template< typename MT, typename OP, bool SO >
-struct IsSymmetric< SMatMapExpr<MT,OP,SO> >
-   : public YieldsSymmetric<OP,MT>
-{};
-/*! \endcond */
-//*************************************************************************************************
-
-
-
-
-//=================================================================================================
-//
-//  ISHERMITIAN SPECIALIZATIONS
-//
-//=================================================================================================
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-template< typename MT, typename OP, bool SO >
-struct IsHermitian< SMatMapExpr<MT,OP,SO> >
-   : public YieldsHermitian<OP,MT>
-{};
-/*! \endcond */
-//*************************************************************************************************
-
-
-
-
-//=================================================================================================
-//
-//  ISLOWER SPECIALIZATIONS
-//
-//=================================================================================================
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-template< typename MT, typename OP, bool SO >
-struct IsLower< SMatMapExpr<MT,OP,SO> >
-   : public IsLower<MT>
-{};
-/*! \endcond */
-//*************************************************************************************************
-
-
-
-
-//=================================================================================================
-//
-//  ISUNILOWER SPECIALIZATIONS
-//
-//=================================================================================================
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-template< typename MT, typename OP, bool SO >
-struct IsUniLower< SMatMapExpr<MT,OP,SO> >
-   : public YieldsUniLower<OP,MT>
-{};
-/*! \endcond */
-//*************************************************************************************************
-
-
-
-
-//=================================================================================================
-//
-//  ISSTRICTLYLOWER SPECIALIZATIONS
-//
-//=================================================================================================
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-template< typename MT, typename OP, bool SO >
-struct IsStrictlyLower< SMatMapExpr<MT,OP,SO> >
-   : public IsStrictlyLower<MT>
-{};
-/*! \endcond */
-//*************************************************************************************************
-
-
-
-
-//=================================================================================================
-//
-//  ISUPPER SPECIALIZATIONS
-//
-//=================================================================================================
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-template< typename MT, typename OP, bool SO >
-struct IsUpper< SMatMapExpr<MT,OP,SO> >
-   : public IsUpper<MT>
-{};
-/*! \endcond */
-//*************************************************************************************************
-
-
-
-
-//=================================================================================================
-//
-//  ISUNIUPPER SPECIALIZATIONS
-//
-//=================================================================================================
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-template< typename MT, typename OP, bool SO >
-struct IsUniUpper< SMatMapExpr<MT,OP,SO> >
-   : public YieldsUniUpper<OP,MT>
-{};
-/*! \endcond */
-//*************************************************************************************************
-
-
-
-
-//=================================================================================================
-//
-//  ISSTRICTLYUPPER SPECIALIZATIONS
-//
-//=================================================================================================
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-template< typename MT, typename OP, bool SO >
-struct IsStrictlyUpper< SMatMapExpr<MT,OP,SO> >
-   : public IsStrictlyUpper<MT>
-{};
 /*! \endcond */
 //*************************************************************************************************
 

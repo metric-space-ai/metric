@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/SMatSMatEqualExpr.h
 //  \brief Header file for the sparse matrix/sparse matrix equality comparison expression
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -46,7 +46,6 @@
 #include "../../math/shims/Equal.h"
 #include "../../math/shims/IsDefault.h"
 #include "../../util/Types.h"
-#include "../../util/typetraits/RemoveReference.h"
 
 
 namespace blaze {
@@ -70,15 +69,13 @@ namespace blaze {
 // a direct comparison of two floating point numbers should be avoided. This function offers the
 // possibility to compare two floating-point matrices with a certain accuracy margin.
 */
-template< bool RF         // Relaxation flag
-        , typename MT1    // Type of the left-hand side sparse matrix
-        , typename MT2 >  // Type of the right-hand side sparse matrix
+template< RelaxationFlag RF  // Relaxation flag
+        , typename MT1       // Type of the left-hand side sparse matrix
+        , typename MT2 >     // Type of the right-hand side sparse matrix
 inline bool equal( const SparseMatrix<MT1,false>& lhs, const SparseMatrix<MT2,false>& rhs )
 {
    using CT1 = CompositeType_t<MT1>;
    using CT2 = CompositeType_t<MT2>;
-   using LhsConstIterator = ConstIterator_t< RemoveReference_t<CT1> >;
-   using RhsConstIterator = ConstIterator_t< RemoveReference_t<CT2> >;
 
    // Early exit in case the matrix sizes don't match
    if( (~lhs).rows() != (~rhs).rows() || (~lhs).columns() != (~rhs).columns() )
@@ -92,11 +89,11 @@ inline bool equal( const SparseMatrix<MT1,false>& lhs, const SparseMatrix<MT2,fa
    // type are converted to the higher-order data type within the equal function.
    for( size_t i=0UL; i<A.rows(); ++i )
    {
-      const LhsConstIterator lend( A.end(i) );
-      const RhsConstIterator rend( B.end(i) );
+      const auto lend( A.end(i) );
+      const auto rend( B.end(i) );
 
-      LhsConstIterator lelem( A.begin(i) );
-      RhsConstIterator relem( B.begin(i) );
+      auto lelem( A.begin(i) );
+      auto relem( B.begin(i) );
 
       while( lelem != lend && relem != rend )
       {
@@ -151,15 +148,13 @@ inline bool equal( const SparseMatrix<MT1,false>& lhs, const SparseMatrix<MT2,fa
 // a direct comparison of two floating point numbers should be avoided. This function offers the
 // possibility to compare two floating-point matrices with a certain accuracy margin.
 */
-template< bool RF         // Relaxation flag
-        , typename MT1    // Type of the left-hand side sparse matrix
-        , typename MT2 >  // Type of the right-hand side sparse matrix
+template< RelaxationFlag RF  // Relaxation flag
+        , typename MT1       // Type of the left-hand side sparse matrix
+        , typename MT2 >     // Type of the right-hand side sparse matrix
 inline bool equal( const SparseMatrix<MT1,true>& lhs, const SparseMatrix<MT2,true>& rhs )
 {
    using CT1 = CompositeType_t<MT1>;
    using CT2 = CompositeType_t<MT2>;
-   using LhsConstIterator = ConstIterator_t< RemoveReference_t<CT1> >;
-   using RhsConstIterator = ConstIterator_t< RemoveReference_t<CT2> >;
 
    // Early exit in case the matrix sizes don't match
    if( (~lhs).rows() != (~rhs).rows() || (~lhs).columns() != (~rhs).columns() )
@@ -173,11 +168,11 @@ inline bool equal( const SparseMatrix<MT1,true>& lhs, const SparseMatrix<MT2,tru
    // type are converted to the higher-order data type within the equal function.
    for( size_t j=0UL; j<A.columns(); ++j )
    {
-      const LhsConstIterator lend( A.end(j) );
-      const RhsConstIterator rend( B.end(j) );
+      const auto lend( A.end(j) );
+      const auto rend( B.end(j) );
 
-      LhsConstIterator lelem( A.begin(j) );
-      RhsConstIterator relem( B.begin(j) );
+      auto lelem( A.begin(j) );
+      auto relem( B.begin(j) );
 
       while( lelem != lend && relem != rend )
       {
@@ -232,10 +227,10 @@ inline bool equal( const SparseMatrix<MT1,true>& lhs, const SparseMatrix<MT2,tru
 // a direct comparison of two floating point numbers should be avoided. This function offers the
 // possibility to compare two floating-point matrices with a certain accuracy margin.
 */
-template< bool RF       // Relaxation flag
-        , typename MT1  // Type of the left-hand side sparse matrix
-        , typename MT2  // Type of the right-hand side sparse matrix
-        , bool SO >     // Storage order
+template< RelaxationFlag RF  // Relaxation flag
+        , typename MT1       // Type of the left-hand side sparse matrix
+        , typename MT2       // Type of the right-hand side sparse matrix
+        , bool SO >          // Storage order
 inline bool equal( const SparseMatrix<MT1,SO>& lhs, const SparseMatrix<MT2,!SO>& rhs )
 {
    const OppositeType_t<MT2> tmp( ~rhs );

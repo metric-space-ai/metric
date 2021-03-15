@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/DVecSerialExpr.h
 //  \brief Header file for the dense vector serial evaluation expression
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -50,6 +50,7 @@
 #include "../../math/expressions/VecSerialExpr.h"
 #include "../../math/typetraits/IsAligned.h"
 #include "../../math/typetraits/IsExpression.h"
+#include "../../system/MacroDisable.h"
 #include "../../util/Assert.h"
 #include "../../util/FunctionTrace.h"
 #include "../../util/mpl/If.h"
@@ -80,6 +81,7 @@ class DVecSerialExpr
  public:
    //**Type definitions****************************************************************************
    using This          = DVecSerialExpr<VT,TF>;  //!< Type of this DVecSerialExpr instance.
+   using BaseType      = DenseVector<This,TF>;   //!< Base type of this DVecSerialExpr instance.
    using ResultType    = ResultType_t<VT>;       //!< Result type for expression template evaluations.
    using TransposeType = TransposeType_t<VT>;    //!< Transpose type for expression template evaluations.
    using ElementType   = ElementType_t<VT>;      //!< Resulting element type.
@@ -294,7 +296,7 @@ class DVecSerialExpr
    // \ingroup dense_vector
    //
    // \param lhs The target left-hand side sparse vector.
-   // \param rhs The right-hand side evaulation expression to be added.
+   // \param rhs The right-hand side serial evaluation expression to be added.
    // \return void
    //
    // This function implements the performance optimized addition assignment of a dense vector
@@ -752,35 +754,6 @@ inline decltype(auto) serial( const DenseVector<VT,TF>& dv )
    using ReturnType = const DVecSerialExpr<VT,TF>;
    return ReturnType( ~dv );
 }
-//*************************************************************************************************
-
-
-
-
-//=================================================================================================
-//
-//  GLOBAL RESTRUCTURING FUNCTIONS
-//
-//=================================================================================================
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-/*!\brief Evaluation of the given dense vector serial evaluation expression \a dv.
-// \ingroup dense_vector
-//
-// \param dv The input serial evaluation expression.
-// \return The evaluated dense vector.
-//
-// This function implements a performance optimized treatment of the serial evaluation of a dense
-// vector serial evaluation expression.
-*/
-template< typename VT  // Type of the dense vector
-        , bool TF >    // Transpose flag
-inline decltype(auto) serial( const DVecSerialExpr<VT,TF>& dv )
-{
-   return dv;
-}
-/*! \endcond */
 //*************************************************************************************************
 
 

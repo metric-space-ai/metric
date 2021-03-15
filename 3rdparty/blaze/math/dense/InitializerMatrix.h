@@ -3,7 +3,7 @@
 //  \file blaze/math/dense/InitializerMatrix.h
 //  \brief Header file for the implementation of a matrix representation of an initializer list
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -56,9 +56,9 @@
 #include "../../util/constraints/Pointer.h"
 #include "../../util/constraints/Reference.h"
 #include "../../util/constraints/Volatile.h"
-#include "../../util/TrueType.h"
+#include "../../util/IntegralConstant.h"
+#include "../../util/MaybeUnused.h"
 #include "../../util/Types.h"
-#include "../../util/Unused.h"
 
 
 namespace blaze {
@@ -233,14 +233,18 @@ class InitializerMatrix
    //**Constructors********************************************************************************
    /*!\name Constructors */
    //@{
-   explicit inline InitializerMatrix( initializer_list< initializer_list<Type> > list ) noexcept;
-   explicit inline InitializerMatrix( initializer_list< initializer_list<Type> > list, size_t n );
-   // No explicitly declared copy constructor.
+   inline InitializerMatrix( initializer_list< initializer_list<Type> > list ) noexcept;
+   inline InitializerMatrix( initializer_list< initializer_list<Type> > list, size_t n );
+
+   InitializerMatrix( const InitializerMatrix& ) = default;
    //@}
    //**********************************************************************************************
 
    //**Destructor**********************************************************************************
-   // No explicitly declared destructor.
+   /*!\name Destructor */
+   //@{
+   ~InitializerMatrix() = default;
+   //@}
    //**********************************************************************************************
 
    //**Data access functions***********************************************************************
@@ -260,7 +264,7 @@ class InitializerMatrix
    //**Assignment operators************************************************************************
    /*!\name Assignment operators */
    //@{
-   InitializerMatrix( const InitializerMatrix& ) = delete;
+   InitializerMatrix& operator=( const InitializerMatrix& ) = delete;
    //@}
    //**********************************************************************************************
 
@@ -622,7 +626,7 @@ inline size_t InitializerMatrix<Type>::capacity() const noexcept
 template< typename Type >  // Data type of the matrix
 inline size_t InitializerMatrix<Type>::capacity( size_t i ) const noexcept
 {
-   UNUSED_PARAMETER( i );
+   MAYBE_UNUSED( i );
    BLAZE_USER_ASSERT( i < rows(), "Invalid row access index" );
    return n_;
 }
@@ -747,10 +751,10 @@ inline bool InitializerMatrix<Type>::isAliased( const Other* alias ) const noexc
 /*!\name InitializerMatrix operators */
 //@{
 template< typename Type >
-inline bool isIntact( const InitializerMatrix<Type>& m ) noexcept;
+bool isIntact( const InitializerMatrix<Type>& m ) noexcept;
 
 template< typename Type >
-inline void swap( InitializerMatrix<Type>& a, InitializerMatrix<Type>& b ) noexcept;
+void swap( InitializerMatrix<Type>& a, InitializerMatrix<Type>& b ) noexcept;
 //@}
 //*************************************************************************************************
 
@@ -775,7 +779,7 @@ inline void swap( InitializerMatrix<Type>& a, InitializerMatrix<Type>& b ) noexc
 template< typename Type >
 inline bool isIntact( const InitializerMatrix<Type>& m ) noexcept
 {
-   UNUSED_PARAMETER( m );
+   MAYBE_UNUSED( m );
 
    return true;
 }

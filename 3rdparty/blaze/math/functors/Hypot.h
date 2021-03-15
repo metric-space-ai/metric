@@ -3,7 +3,7 @@
 //  \file blaze/math/functors/Hypot.h
 //  \brief Header file for the Hypot functor
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -48,12 +48,17 @@
 #include "../../math/typetraits/IsStrictlyLower.h"
 #include "../../math/typetraits/IsStrictlyUpper.h"
 #include "../../math/typetraits/IsSymmetric.h"
+#include "../../math/typetraits/IsUniform.h"
 #include "../../math/typetraits/IsUpper.h"
+#include "../../math/typetraits/IsZero.h"
 #include "../../math/typetraits/YieldsLower.h"
 #include "../../math/typetraits/YieldsStrictlyLower.h"
 #include "../../math/typetraits/YieldsStrictlyUpper.h"
 #include "../../math/typetraits/YieldsSymmetric.h"
+#include "../../math/typetraits/YieldsUniform.h"
 #include "../../math/typetraits/YieldsUpper.h"
+#include "../../math/typetraits/YieldsZero.h"
+#include "../../system/HostDevice.h"
 #include "../../system/Inline.h"
 #include "../../util/IntegralConstant.h"
 
@@ -73,13 +78,6 @@ namespace blaze {
 struct Hypot
 {
    //**********************************************************************************************
-   /*!\brief Default constructor of the Hypot functor.
-   */
-   explicit inline Hypot()
-   {}
-   //**********************************************************************************************
-
-   //**********************************************************************************************
    /*!\brief Returns the result of the hypot() function for the given objects/values.
    //
    // \param a The left-hand side object/value.
@@ -87,7 +85,7 @@ struct Hypot
    // \return The result of the hypot() function for the given objects/values.
    */
    template< typename T1, typename T2 >
-   BLAZE_ALWAYS_INLINE decltype(auto) operator()( const T1& a, const T2& b ) const
+   BLAZE_ALWAYS_INLINE BLAZE_DEVICE_CALLABLE decltype(auto) operator()( const T1& a, const T2& b ) const
    {
       return hypot( a, b );
    }
@@ -100,6 +98,14 @@ struct Hypot
    */
    template< typename T1, typename T2 >
    static constexpr bool simdEnabled() { return HasSIMDHypot_v<T1,T2>; }
+   //**********************************************************************************************
+
+   //**********************************************************************************************
+   /*!\brief Returns whether the operation supports padding, i.e. whether it can deal with zeros.
+   //
+   // \return \a true in case padding is supported, \a false if not.
+   */
+   static constexpr bool paddingEnabled() { return true; }
    //**********************************************************************************************
 
    //**********************************************************************************************
@@ -118,6 +124,24 @@ struct Hypot
    }
    //**********************************************************************************************
 };
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
+//  YIELDSUNIFORM SPECIALIZATIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+template< typename T1, typename T2 >
+struct YieldsUniform<Hypot,T1,T2>
+   : public BoolConstant< IsUniform_v<T1> && IsUniform_v<T2> >
+{};
+/*! \endcond */
 //*************************************************************************************************
 
 
@@ -206,6 +230,24 @@ struct YieldsUpper<Hypot,MT1,MT2>
 template< typename MT1, typename MT2 >
 struct YieldsStrictlyUpper<Hypot,MT1,MT2>
    : public BoolConstant< IsStrictlyUpper_v<MT1> && IsStrictlyUpper_v<MT2> >
+{};
+/*! \endcond */
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
+//  YIELDSZERO SPECIALIZATIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+template< typename T1, typename T2 >
+struct YieldsZero<Hypot,T1,T2>
+   : public BoolConstant< IsZero_v<T1> && IsZero_v<T2> >
 {};
 /*! \endcond */
 //*************************************************************************************************

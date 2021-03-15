@@ -3,7 +3,7 @@
 //  \file blaze/math/adaptors/hermitianmatrix/HermitianValue.h
 //  \brief Header file for the HermitianValue class
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -41,14 +41,17 @@
 //*************************************************************************************************
 
 #include "../../../math/Aliases.h"
-#include "../../../math/constraints/Expression.h"
+#include "../../../math/constraints/Computation.h"
 #include "../../../math/constraints/Hermitian.h"
 #include "../../../math/constraints/Lower.h"
 #include "../../../math/constraints/SparseMatrix.h"
 #include "../../../math/constraints/Symmetric.h"
+#include "../../../math/constraints/Transformation.h"
 #include "../../../math/constraints/Upper.h"
+#include "../../../math/constraints/View.h"
 #include "../../../math/Exception.h"
 #include "../../../math/proxy/Proxy.h"
+#include "../../../math/RelaxationFlag.h"
 #include "../../../math/shims/Clear.h"
 #include "../../../math/shims/Conjugate.h"
 #include "../../../math/shims/Invert.h"
@@ -219,7 +222,9 @@ class HermitianValue
    BLAZE_CONSTRAINT_MUST_NOT_BE_POINTER_TYPE         ( MT );
    BLAZE_CONSTRAINT_MUST_NOT_BE_CONST                ( MT );
    BLAZE_CONSTRAINT_MUST_NOT_BE_VOLATILE             ( MT );
-   BLAZE_CONSTRAINT_MUST_NOT_BE_EXPRESSION_TYPE      ( MT );
+   BLAZE_CONSTRAINT_MUST_NOT_BE_VIEW_TYPE            ( MT );
+   BLAZE_CONSTRAINT_MUST_NOT_BE_COMPUTATION_TYPE     ( MT );
+   BLAZE_CONSTRAINT_MUST_NOT_BE_TRANSFORMATION_TYPE  ( MT );
    BLAZE_CONSTRAINT_MUST_NOT_BE_SYMMETRIC_MATRIX_TYPE( MT );
    BLAZE_CONSTRAINT_MUST_NOT_BE_HERMITIAN_MATRIX_TYPE( MT );
    BLAZE_CONSTRAINT_MUST_NOT_BE_LOWER_MATRIX_TYPE    ( MT );
@@ -631,28 +636,28 @@ inline void HermitianValue<MT>::imag( ValueType value ) const
 /*!\name HermitianValue global functions */
 //@{
 template< typename MT >
-inline void reset( const HermitianValue<MT>& value );
+void reset( const HermitianValue<MT>& value );
 
 template< typename MT >
-inline void clear( const HermitianValue<MT>& value );
+void clear( const HermitianValue<MT>& value );
 
 template< typename MT >
-inline void invert( const HermitianValue<MT>& value );
+void invert( const HermitianValue<MT>& value );
 
-template< bool RF, typename MT >
-inline bool isDefault( const HermitianValue<MT>& value );
+template< RelaxationFlag RF, typename MT >
+bool isDefault( const HermitianValue<MT>& value );
 
-template< bool RF, typename MT >
-inline bool isReal( const HermitianValue<MT>& value );
+template< RelaxationFlag RF, typename MT >
+bool isReal( const HermitianValue<MT>& value );
 
-template< bool RF, typename MT >
-inline bool isZero( const HermitianValue<MT>& value );
+template< RelaxationFlag RF, typename MT >
+bool isZero( const HermitianValue<MT>& value );
 
-template< bool RF, typename MT >
-inline bool isOne( const HermitianValue<MT>& value );
+template< RelaxationFlag RF, typename MT >
+bool isOne( const HermitianValue<MT>& value );
 
 template< typename MT >
-inline bool isnan( const HermitianValue<MT>& value );
+bool isnan( const HermitianValue<MT>& value );
 //@}
 //*************************************************************************************************
 
@@ -716,7 +721,7 @@ inline void invert( const HermitianValue<MT>& value )
 // This function checks whether the Hermitian value is in default state. In case it is in
 // default state, the function returns \a true, otherwise it returns \a false.
 */
-template< bool RF, typename MT >
+template< RelaxationFlag RF, typename MT >
 inline bool isDefault( const HermitianValue<MT>& value )
 {
    using blaze::isDefault;
@@ -738,7 +743,7 @@ inline bool isDefault( const HermitianValue<MT>& value )
 // type, the function returns \a true if the imaginary part is equal to 0. Otherwise it returns
 // \a false.
 */
-template< bool RF, typename MT >
+template< RelaxationFlag RF, typename MT >
 inline bool isReal( const HermitianValue<MT>& value )
 {
    using blaze::isReal;
@@ -758,7 +763,7 @@ inline bool isReal( const HermitianValue<MT>& value )
 // This function checks whether the Hermitian value represents the numeric value 0. In case it
 // is 0, the function returns \a true, otherwise it returns \a false.
 */
-template< bool RF, typename MT >
+template< RelaxationFlag RF, typename MT >
 inline bool isZero( const HermitianValue<MT>& value )
 {
    using blaze::isZero;
@@ -778,7 +783,7 @@ inline bool isZero( const HermitianValue<MT>& value )
 // This function checks whether the Hermitian value represents the numeric value 1. In case it
 // is 1, the function returns \a true, otherwise it returns \a false.
 */
-template< bool RF, typename MT >
+template< RelaxationFlag RF, typename MT >
 inline bool isOne( const HermitianValue<MT>& value )
 {
    using blaze::isOne;

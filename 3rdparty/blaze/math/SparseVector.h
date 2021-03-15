@@ -3,7 +3,7 @@
 //  \file blaze/math/SparseVector.h
 //  \brief Header file for all basic SparseVector functionality
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -43,24 +43,33 @@
 #include "../math/expressions/DenseVector.h"
 #include "../math/expressions/DVecSVecEqualExpr.h"
 #include "../math/expressions/DVecSVecInnerExpr.h"
+#include "../math/expressions/DVecSVecKronExpr.h"
 #include "../math/expressions/DVecSVecMultExpr.h"
 #include "../math/expressions/SparseVector.h"
 #include "../math/expressions/SVecDVecDivExpr.h"
 #include "../math/expressions/SVecDVecInnerExpr.h"
+#include "../math/expressions/SVecDVecKronExpr.h"
 #include "../math/expressions/SVecDVecMultExpr.h"
 #include "../math/expressions/SVecEvalExpr.h"
+#include "../math/expressions/SVecExpandExpr.h"
 #include "../math/expressions/SVecMapExpr.h"
+#include "../math/expressions/SVecMeanExpr.h"
+#include "../math/expressions/SVecNoAliasExpr.h"
 #include "../math/expressions/SVecNormExpr.h"
+#include "../math/expressions/SVecNoSIMDExpr.h"
 #include "../math/expressions/SVecReduceExpr.h"
 #include "../math/expressions/SVecScalarDivExpr.h"
 #include "../math/expressions/SVecScalarMultExpr.h"
 #include "../math/expressions/SVecSerialExpr.h"
+#include "../math/expressions/SVecStdDevExpr.h"
 #include "../math/expressions/SVecSVecAddExpr.h"
 #include "../math/expressions/SVecSVecEqualExpr.h"
 #include "../math/expressions/SVecSVecInnerExpr.h"
+#include "../math/expressions/SVecSVecKronExpr.h"
 #include "../math/expressions/SVecSVecMultExpr.h"
 #include "../math/expressions/SVecSVecSubExpr.h"
 #include "../math/expressions/SVecTransExpr.h"
+#include "../math/expressions/SVecVarExpr.h"
 #include "../math/smp/DenseVector.h"
 #include "../math/smp/SparseVector.h"
 #include "../math/sparse/SparseVector.h"

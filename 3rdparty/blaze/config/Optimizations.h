@@ -3,7 +3,7 @@
 //  \file blaze/config/Optimizations.h
 //  \brief Configuration of performance optimizations
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -31,37 +31,6 @@
 //  DAMAGE.
 */
 //=================================================================================================
-
-
-//*************************************************************************************************
-/*!\brief Configuration of the padding of dense vectors and matrices.
-// \ingroup config
-//
-// This configuration switch enables/disables the padding of dense vectors and matrices. Padding
-// is used by the Blaze library in order to achieve maximum performance for both dense vector
-// and matrix operations. Due to padding, the proper alignment of data elements can be guaranteed
-// and the need for remainder loops is minimized. In case padding is enabled, it is enabled for
-// all native dense vectors and matrices. If padding is disabled, it is generally disabled.
-//
-// Possible settings for padding:
-//  - Disabled: \b 0
-//  - Enabled : \b 1
-//
-// \warning Note that disabling padding can considerably reduce the performance of all dense
-// vector and matrix operations!
-//
-// \note It is possible to (de-)activate padding via command line or by defining this symbol
-// manually before including any Blaze header file:
-
-   \code
-   #define BLAZE_USE_PADDING 1
-   #include "../Blaze.h"
-   \endcode
-*/
-#ifndef BLAZE_USE_PADDING
-#define BLAZE_USE_PADDING 1
-#endif
-//*************************************************************************************************
 
 
 //*************************************************************************************************
@@ -97,9 +66,9 @@
 // \ingroup config
 //
 // This configuration switch enables/disables all optimized compute kernels of the Blaze library,
-// including all vectorized and data type depending kernels. In case the switch is set to \a true
-// the optimized kernels are used whenever possible. In case the switch is set to \a false all
-// optimized kernels are not used, even if it would be possible.
+// including all vectorized and data type depending kernels. In case the switch is set to 1 the
+// optimized kernels are used whenever possible. In case the switch is set to 0 all optimized
+// kernels are not used, even if it would be possible.
 //
 // Possible settings for the optimized kernels:
 //  - Disabled: \b 0
@@ -118,5 +87,34 @@
 */
 #ifndef BLAZE_USE_OPTIMIZED_KERNELS
 #define BLAZE_USE_OPTIMIZED_KERNELS 1
+#endif
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*!\brief Configuration switch for the initialization in default constructors.
+// \ingroup config
+//
+// This configuration switch enables/disables the element initialization in the default
+// constructors of the \a StaticVector and \a StaticMatrix class templates. In case the switch
+// is set to 1 all elements are initialized to their respective default. In case the switch is
+// set to 0 the default initialization is skipped and the elements are not initialized. Please
+// note that this switch is only effective in case the elements are of fundamental type (i.e.
+// integral or floating point). In case the elements are of class type, this switch has no effect.
+//
+// Possible settings for the default initialization:
+//  - Disabled: \b 0
+//  - Enabled : \b 1
+//
+// \note It is possible to (de-)activate the default initialization via command line or by
+// defining this symbol manually before including any Blaze header file:
+
+   \code
+   #define BLAZE_USE_DEFAULT_INITIALIZATION 1
+   #include "../Blaze.h"
+   \endcode
+*/
+#ifndef BLAZE_USE_DEFAULT_INITIALIZATION
+#define BLAZE_USE_DEFAULT_INITIALIZATION 1
 #endif
 //*************************************************************************************************

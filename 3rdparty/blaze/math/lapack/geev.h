@@ -3,7 +3,7 @@
 //  \file blaze/math/lapack/geev.h
 //  \brief Header file for the LAPACK general matrix eigenvalue functions (geev)
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -45,19 +45,18 @@
 #include "../../math/constraints/Adaptor.h"
 #include "../../math/constraints/BLASCompatible.h"
 #include "../../math/constraints/Computation.h"
+#include "../../math/constraints/Contiguous.h"
 #include "../../math/constraints/MutableDataAccess.h"
 #include "../../math/Exception.h"
 #include "../../math/expressions/DenseMatrix.h"
 #include "../../math/expressions/DenseVector.h"
 #include "../../math/lapack/clapack/geev.h"
 #include "../../math/shims/Equal.h"
-#include "../../math/typetraits/IsResizable.h"
 #include "../../math/typetraits/UnderlyingElement.h"
 #include "../../util/Assert.h"
 #include "../../util/Complex.h"
 #include "../../util/constraints/Builtin.h"
 #include "../../util/constraints/Complex.h"
-#include "../../util/DisableIf.h"
 #include "../../util/EnableIf.h"
 #include "../../util/NumericCast.h"
 #include "../../util/typetraits/IsComplex.h"
@@ -75,17 +74,17 @@ namespace blaze {
 /*!\name LAPACK general matrix eigenvalue functions (geev) */
 //@{
 template< typename MT, bool SO, typename VT, bool TF >
-inline void geev( DenseMatrix<MT,SO>& A, DenseVector<VT,TF>& w );
+void geev( DenseMatrix<MT,SO>& A, DenseVector<VT,TF>& w );
 
 template< typename MT1, bool SO1, typename MT2, bool SO2, typename VT, bool TF >
-inline void geev( DenseMatrix<MT1,SO1>& A, DenseMatrix<MT2,SO2>& VL, DenseVector<VT,TF>& w );
+void geev( DenseMatrix<MT1,SO1>& A, DenseMatrix<MT2,SO2>& VL, DenseVector<VT,TF>& w );
 
 template< typename MT1, bool SO1, typename VT, bool TF, typename MT2, bool SO2 >
-inline void geev( DenseMatrix<MT1,SO1>& A, DenseVector<VT,TF>& w, DenseMatrix<MT2,SO2>& VR );
+void geev( DenseMatrix<MT1,SO1>& A, DenseVector<VT,TF>& w, DenseMatrix<MT2,SO2>& VR );
 
 template< typename MT1, bool SO1, typename MT2, bool SO2, typename VT, bool TF, typename MT3, bool SO3 >
-inline void geev( DenseMatrix<MT1,SO1>& A, DenseMatrix<MT2,SO2>& VL,
-                  DenseVector<VT,TF>& w, DenseMatrix<MT3,SO3>& VR );
+void geev( DenseMatrix<MT1,SO1>& A, DenseMatrix<MT2,SO2>& VL,
+           DenseVector<VT,TF>& w, DenseMatrix<MT3,SO3>& VR );
 //@}
 //*************************************************************************************************
 
@@ -111,8 +110,8 @@ template< typename MT  // Type of the matrix A
         , bool SO      // Storage order of the matrix A
         , typename VT  // Type of the vector w
         , bool TF >    // Transpose flag of the vector w
-inline DisableIf_t< IsComplex_v< ElementType_t<MT> > >
-   geev_backend( DenseMatrix<MT,SO>& A, DenseVector<VT,TF>& w )
+inline auto geev_backend( DenseMatrix<MT,SO>& A, DenseVector<VT,TF>& w )
+   -> DisableIf_t< IsComplex_v< ElementType_t<MT> > >
 {
    BLAZE_INTERNAL_ASSERT( isSquare( ~A ), "Invalid non-square matrix detected" );
    BLAZE_INTERNAL_ASSERT( (~w).size() == (~A).rows(), "Invalid vector dimension detected" );
@@ -123,11 +122,11 @@ inline DisableIf_t< IsComplex_v< ElementType_t<MT> > >
    BLAZE_CONSTRAINT_MUST_BE_COMPLEX_TYPE( CT );
    BLAZE_CONSTRAINT_MUST_BE_BUILTIN_TYPE( BT );
 
-   int n   ( numeric_cast<int>( (~A).rows() ) );
-   int lda ( numeric_cast<int>( (~A).spacing() ) );
-   int info( 0 );
+   blas_int_t n   ( numeric_cast<blas_int_t>( (~A).rows() ) );
+   blas_int_t lda ( numeric_cast<blas_int_t>( (~A).spacing() ) );
+   blas_int_t info( 0 );
 
-   int lwork( 3*n + 2 );
+   blas_int_t lwork( 3*n + 2 );
    const std::unique_ptr<BT[]> wr  ( new BT[n] );
    const std::unique_ptr<BT[]> wi  ( new BT[n] );
    const std::unique_ptr<BT[]> work( new BT[lwork] );
@@ -170,8 +169,8 @@ template< typename MT  // Type of the matrix A
         , bool SO      // Storage order of the matrix A
         , typename VT  // Type of the vector w
         , bool TF >    // Transpose flag of the vector w
-inline EnableIf_t< IsComplex_v< ElementType_t<MT> > >
-   geev_backend( DenseMatrix<MT,SO>& A, DenseVector<VT,TF>& w )
+inline auto geev_backend( DenseMatrix<MT,SO>& A, DenseVector<VT,TF>& w )
+   -> EnableIf_t< IsComplex_v< ElementType_t<MT> > >
 {
    BLAZE_INTERNAL_ASSERT( isSquare( ~A ), "Invalid non-square matrix detected" );
    BLAZE_INTERNAL_ASSERT( (~w).size() == (~A).rows(), "Invalid vector dimension detected" );
@@ -182,11 +181,11 @@ inline EnableIf_t< IsComplex_v< ElementType_t<MT> > >
    BLAZE_CONSTRAINT_MUST_BE_COMPLEX_TYPE( CT );
    BLAZE_CONSTRAINT_MUST_BE_BUILTIN_TYPE( BT );
 
-   int n   ( numeric_cast<int>( (~A).rows() ) );
-   int lda ( numeric_cast<int>( (~A).spacing() ) );
-   int info( 0 );
+   blas_int_t n   ( numeric_cast<blas_int_t>( (~A).rows() ) );
+   blas_int_t lda ( numeric_cast<blas_int_t>( (~A).spacing() ) );
+   blas_int_t info( 0 );
 
-   int lwork( 2*n + 2 );
+   blas_int_t lwork( 2*n + 2 );
    const std::unique_ptr<CT[]> work ( new CT[lwork] );
    const std::unique_ptr<BT[]> rwork( new BT[2*n] );
 
@@ -267,10 +266,12 @@ inline void geev( DenseMatrix<MT,SO>& A, DenseVector<VT,TF>& w )
    BLAZE_CONSTRAINT_MUST_NOT_BE_ADAPTOR_TYPE( MT );
    BLAZE_CONSTRAINT_MUST_NOT_BE_COMPUTATION_TYPE( MT );
    BLAZE_CONSTRAINT_MUST_HAVE_MUTABLE_DATA_ACCESS( MT );
+   BLAZE_CONSTRAINT_MUST_BE_CONTIGUOUS_TYPE( MT );
    BLAZE_CONSTRAINT_MUST_BE_BLAS_COMPATIBLE_TYPE( ElementType_t<MT> );
 
    BLAZE_CONSTRAINT_MUST_NOT_BE_COMPUTATION_TYPE( VT );
    BLAZE_CONSTRAINT_MUST_HAVE_MUTABLE_DATA_ACCESS( VT );
+   BLAZE_CONSTRAINT_MUST_BE_CONTIGUOUS_TYPE( VT );
    BLAZE_CONSTRAINT_MUST_BE_BLAS_COMPATIBLE_TYPE( ElementType_t<VT> );
    BLAZE_CONSTRAINT_MUST_BE_COMPLEX_TYPE( ElementType_t<VT> );
 
@@ -315,8 +316,8 @@ template< typename MT1  // Type of the matrix A
         , bool SO2      // Storage order of the matrix VL
         , typename VT   // Type of the vector w
         , bool TF >     // Transpose flag of the vector w
-inline DisableIf_t< IsComplex_v< ElementType_t<MT1> > >
-   geev_backend( DenseMatrix<MT1,SO1>& A, DenseMatrix<MT2,SO2>& VL, DenseVector<VT,TF>& w )
+inline auto geev_backend( DenseMatrix<MT1,SO1>& A, DenseMatrix<MT2,SO2>& VL, DenseVector<VT,TF>& w )
+   -> DisableIf_t< IsComplex_v< ElementType_t<MT1> > >
 {
    BLAZE_INTERNAL_ASSERT( isSquare( ~A ) , "Invalid non-square matrix detected" );
    BLAZE_INTERNAL_ASSERT( isSquare( ~VL ), "Invalid non-square matrix detected" );
@@ -329,11 +330,11 @@ inline DisableIf_t< IsComplex_v< ElementType_t<MT1> > >
    BLAZE_CONSTRAINT_MUST_BE_COMPLEX_TYPE( CT );
    BLAZE_CONSTRAINT_MUST_BE_BUILTIN_TYPE( BT );
 
-   int n   ( numeric_cast<int>( (~A).rows() ) );
-   int lda ( numeric_cast<int>( (~A).spacing() ) );
-   int info( 0 );
+   blas_int_t n   ( numeric_cast<blas_int_t>( (~A).rows() ) );
+   blas_int_t lda ( numeric_cast<blas_int_t>( (~A).spacing() ) );
+   blas_int_t info( 0 );
 
-   int lwork( 4*n + 2 );
+   blas_int_t lwork( 4*n + 2 );
    const std::unique_ptr<BT[]> vl  ( new BT[n*n] );
    const std::unique_ptr<BT[]> wr  ( new BT[n] );
    const std::unique_ptr<BT[]> wi  ( new BT[n] );
@@ -407,8 +408,8 @@ template< typename MT1  // Type of the matrix A
         , bool SO2      // Storage order of the matrix VL
         , typename VT   // Type of the vector w
         , bool TF >     // Transpose flag of the vector w
-inline EnableIf_t< IsComplex_v< ElementType_t<MT1> > >
-   geev_backend( DenseMatrix<MT1,SO1>& A, DenseMatrix<MT2,SO2>& VL, DenseVector<VT,TF>& w )
+inline auto geev_backend( DenseMatrix<MT1,SO1>& A, DenseMatrix<MT2,SO2>& VL, DenseVector<VT,TF>& w )
+   -> EnableIf_t< IsComplex_v< ElementType_t<MT1> > >
 {
    BLAZE_INTERNAL_ASSERT( isSquare( ~A ) , "Invalid non-square matrix detected" );
    BLAZE_INTERNAL_ASSERT( isSquare( ~VL ), "Invalid non-square matrix detected" );
@@ -421,12 +422,12 @@ inline EnableIf_t< IsComplex_v< ElementType_t<MT1> > >
    BLAZE_CONSTRAINT_MUST_BE_COMPLEX_TYPE( CT );
    BLAZE_CONSTRAINT_MUST_BE_BUILTIN_TYPE( BT );
 
-   int n   ( numeric_cast<int>( (~A).rows() ) );
-   int lda ( numeric_cast<int>( (~A).spacing() ) );
-   int ldvl( numeric_cast<int>( (~VL).spacing() ) );
-   int info( 0 );
+   blas_int_t n   ( numeric_cast<blas_int_t>( (~A).rows() ) );
+   blas_int_t lda ( numeric_cast<blas_int_t>( (~A).spacing() ) );
+   blas_int_t ldvl( numeric_cast<blas_int_t>( (~VL).spacing() ) );
+   blas_int_t info( 0 );
 
-   int lwork( 2*n + 2 );
+   blas_int_t lwork( 2*n + 2 );
    const std::unique_ptr<CT[]> work ( new CT[lwork] );
    const std::unique_ptr<BT[]> rwork( new BT[2*n] );
 
@@ -525,16 +526,19 @@ inline void geev( DenseMatrix<MT1,SO1>& A, DenseMatrix<MT2,SO2>& VL, DenseVector
    BLAZE_CONSTRAINT_MUST_NOT_BE_ADAPTOR_TYPE( MT1 );
    BLAZE_CONSTRAINT_MUST_NOT_BE_COMPUTATION_TYPE( MT1 );
    BLAZE_CONSTRAINT_MUST_HAVE_MUTABLE_DATA_ACCESS( MT1 );
+   BLAZE_CONSTRAINT_MUST_BE_CONTIGUOUS_TYPE( MT1 );
    BLAZE_CONSTRAINT_MUST_BE_BLAS_COMPATIBLE_TYPE( ElementType_t<MT1> );
 
    BLAZE_CONSTRAINT_MUST_NOT_BE_ADAPTOR_TYPE( MT2 );
    BLAZE_CONSTRAINT_MUST_NOT_BE_COMPUTATION_TYPE( MT2 );
    BLAZE_CONSTRAINT_MUST_HAVE_MUTABLE_DATA_ACCESS( MT2 );
+   BLAZE_CONSTRAINT_MUST_BE_CONTIGUOUS_TYPE( MT2 );
    BLAZE_CONSTRAINT_MUST_BE_BLAS_COMPATIBLE_TYPE( ElementType_t<MT2> );
    BLAZE_CONSTRAINT_MUST_BE_COMPLEX_TYPE( ElementType_t<MT2> );
 
    BLAZE_CONSTRAINT_MUST_NOT_BE_COMPUTATION_TYPE( VT );
    BLAZE_CONSTRAINT_MUST_HAVE_MUTABLE_DATA_ACCESS( VT );
+   BLAZE_CONSTRAINT_MUST_BE_CONTIGUOUS_TYPE( VT );
    BLAZE_CONSTRAINT_MUST_BE_BLAS_COMPATIBLE_TYPE( ElementType_t<VT> );
    BLAZE_CONSTRAINT_MUST_BE_COMPLEX_TYPE( ElementType_t<VT> );
 
@@ -580,8 +584,8 @@ template< typename MT1  // Type of the matrix A
         , bool TF       // Transpose flag of the vector w
         , typename MT2  // Type of the matrix VR
         , bool SO2 >    // Storage order of the matrix VR
-inline DisableIf_t< IsComplex_v< ElementType_t<MT1> > >
-   geev_backend( DenseMatrix<MT1,SO1>& A, DenseVector<VT,TF>& w, DenseMatrix<MT2,SO2>& VR )
+inline auto geev_backend( DenseMatrix<MT1,SO1>& A, DenseVector<VT,TF>& w, DenseMatrix<MT2,SO2>& VR )
+   -> DisableIf_t< IsComplex_v< ElementType_t<MT1> > >
 {
    BLAZE_INTERNAL_ASSERT( isSquare( ~A ) , "Invalid non-square matrix detected" );
    BLAZE_INTERNAL_ASSERT( isSquare( ~VR ), "Invalid non-square matrix detected" );
@@ -594,11 +598,11 @@ inline DisableIf_t< IsComplex_v< ElementType_t<MT1> > >
    BLAZE_CONSTRAINT_MUST_BE_COMPLEX_TYPE( CT );
    BLAZE_CONSTRAINT_MUST_BE_BUILTIN_TYPE( BT );
 
-   int n   ( numeric_cast<int>( (~A).rows() ) );
-   int lda ( numeric_cast<int>( (~A).spacing() ) );
-   int info( 0 );
+   blas_int_t n   ( numeric_cast<blas_int_t>( (~A).rows() ) );
+   blas_int_t lda ( numeric_cast<blas_int_t>( (~A).spacing() ) );
+   blas_int_t info( 0 );
 
-   int lwork( 4*n + 2 );
+   blas_int_t lwork( 4*n + 2 );
    const std::unique_ptr<BT[]> vr  ( new BT[n*n] );
    const std::unique_ptr<BT[]> wr  ( new BT[n] );
    const std::unique_ptr<BT[]> wi  ( new BT[n] );
@@ -672,8 +676,8 @@ template< typename MT1  // Type of the matrix A
         , bool TF       // Transpose flag of the vector w
         , typename MT2  // Type of the matrix VR
         , bool SO2 >    // Storage order of the matrix VR
-inline EnableIf_t< IsComplex_v< ElementType_t<MT1> > >
-   geev_backend( DenseMatrix<MT1,SO1>& A, DenseVector<VT,TF>& w, DenseMatrix<MT2,SO2>& VR )
+inline auto geev_backend( DenseMatrix<MT1,SO1>& A, DenseVector<VT,TF>& w, DenseMatrix<MT2,SO2>& VR )
+   -> EnableIf_t< IsComplex_v< ElementType_t<MT1> > >
 {
    BLAZE_INTERNAL_ASSERT( isSquare( ~A ) , "Invalid non-square matrix detected" );
    BLAZE_INTERNAL_ASSERT( isSquare( ~VR ), "Invalid non-square matrix detected" );
@@ -686,12 +690,12 @@ inline EnableIf_t< IsComplex_v< ElementType_t<MT1> > >
    BLAZE_CONSTRAINT_MUST_BE_COMPLEX_TYPE( CT );
    BLAZE_CONSTRAINT_MUST_BE_BUILTIN_TYPE( BT );
 
-   int n   ( numeric_cast<int>( (~A).rows() ) );
-   int lda ( numeric_cast<int>( (~A).spacing() ) );
-   int ldvr( numeric_cast<int>( (~VR).spacing() ) );
-   int info( 0 );
+   blas_int_t n   ( numeric_cast<blas_int_t>( (~A).rows() ) );
+   blas_int_t lda ( numeric_cast<blas_int_t>( (~A).spacing() ) );
+   blas_int_t ldvr( numeric_cast<blas_int_t>( (~VR).spacing() ) );
+   blas_int_t info( 0 );
 
-   int lwork( 2*n + 2 );
+   blas_int_t lwork( 2*n + 2 );
    const std::unique_ptr<CT[]> work ( new CT[lwork] );
    const std::unique_ptr<BT[]> rwork( new BT[2*n] );
 
@@ -848,9 +852,9 @@ template< typename MT1  // Type of the matrix A
         , bool TF       // Transpose flag of the vector w
         , typename MT3  // Type of the matrix VR
         , bool SO3 >    // Storage order of the matrix VR
-inline DisableIf_t< IsComplex_v< ElementType_t<MT1> > >
-   geev_backend( DenseMatrix<MT1,SO1>& A, DenseMatrix<MT2,SO2>& VL,
-                 DenseVector<VT,TF>& w, DenseMatrix<MT3,SO3>& VR )
+inline auto geev_backend( DenseMatrix<MT1,SO1>& A, DenseMatrix<MT2,SO2>& VL,
+                          DenseVector<VT,TF>& w, DenseMatrix<MT3,SO3>& VR )
+   -> DisableIf_t< IsComplex_v< ElementType_t<MT1> > >
 {
    BLAZE_INTERNAL_ASSERT( isSquare( ~A ) , "Invalid non-square matrix detected" );
    BLAZE_INTERNAL_ASSERT( isSquare( ~VL ), "Invalid non-square matrix detected" );
@@ -865,11 +869,11 @@ inline DisableIf_t< IsComplex_v< ElementType_t<MT1> > >
    BLAZE_CONSTRAINT_MUST_BE_COMPLEX_TYPE( CT );
    BLAZE_CONSTRAINT_MUST_BE_BUILTIN_TYPE( BT );
 
-   int n   ( numeric_cast<int>( (~A).rows() ) );
-   int lda ( numeric_cast<int>( (~A).spacing() ) );
-   int info( 0 );
+   blas_int_t n   ( numeric_cast<blas_int_t>( (~A).rows() ) );
+   blas_int_t lda ( numeric_cast<blas_int_t>( (~A).spacing() ) );
+   blas_int_t info( 0 );
 
-   int lwork( 4*n + 2 );
+   blas_int_t lwork( 4*n + 2 );
    const std::unique_ptr<BT[]> vl  ( new BT[n*n] );
    const std::unique_ptr<BT[]> vr  ( new BT[n*n] );
    const std::unique_ptr<BT[]> wr  ( new BT[n] );
@@ -951,9 +955,9 @@ template< typename MT1  // Type of the matrix A
         , bool TF       // Transpose flag of the vector w
         , typename MT3  // Type of the matrix VR
         , bool SO3 >    // Storage order of the matrix VR
-inline EnableIf_t< IsComplex_v< ElementType_t<MT1> > >
-   geev_backend( DenseMatrix<MT1,SO1>& A, DenseMatrix<MT2,SO2>& VL,
-                 DenseVector<VT,TF>& w, DenseMatrix<MT3,SO3>& VR )
+inline auto geev_backend( DenseMatrix<MT1,SO1>& A, DenseMatrix<MT2,SO2>& VL,
+                          DenseVector<VT,TF>& w, DenseMatrix<MT3,SO3>& VR )
+   -> EnableIf_t< IsComplex_v< ElementType_t<MT1> > >
 {
    BLAZE_INTERNAL_ASSERT( isSquare( ~A ) , "Invalid non-square matrix detected" );
    BLAZE_INTERNAL_ASSERT( isSquare( ~VL ), "Invalid non-square matrix detected" );
@@ -968,13 +972,13 @@ inline EnableIf_t< IsComplex_v< ElementType_t<MT1> > >
    BLAZE_CONSTRAINT_MUST_BE_COMPLEX_TYPE( CT );
    BLAZE_CONSTRAINT_MUST_BE_BUILTIN_TYPE( BT );
 
-   int n   ( numeric_cast<int>( (~A).rows() ) );
-   int lda ( numeric_cast<int>( (~A).spacing() ) );
-   int ldvl( numeric_cast<int>( (~VL).spacing() ) );
-   int ldvr( numeric_cast<int>( (~VR).spacing() ) );
-   int info( 0 );
+   blas_int_t n   ( numeric_cast<blas_int_t>( (~A).rows() ) );
+   blas_int_t lda ( numeric_cast<blas_int_t>( (~A).spacing() ) );
+   blas_int_t ldvl( numeric_cast<blas_int_t>( (~VL).spacing() ) );
+   blas_int_t ldvr( numeric_cast<blas_int_t>( (~VR).spacing() ) );
+   blas_int_t info( 0 );
 
-   int lwork( 2*n + 2 );
+   blas_int_t lwork( 2*n + 2 );
    const std::unique_ptr<CT[]> work ( new CT[lwork] );
    const std::unique_ptr<BT[]> rwork( new BT[2*n] );
 

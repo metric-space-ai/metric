@@ -26,38 +26,33 @@ namespace metric {
  *@brief wrapper for PCFA that combines it with DWT decomposition and DCT pre- and postprocessing
  *
  */
-template <typename recType, typename Metric>
+template <typename RecType, typename Metric>
 class DSPCC {
-
 
 private:
 
-
     template<typename C, int = determine_container_type<C>::code>
-    struct determine_recTypeInner // type for internal processing, that can not be Blaze vector
+    struct determine_RecTypeInner // type for internal processing, that can not be Blaze vector
     {
         using type = void;
     };
 
     template<typename C>
-    struct determine_recTypeInner<C, 1> // STL container
+    struct determine_RecTypeInner<C, 1> // STL container
     {
         using type = C;
     };
 
-
     template<typename C>
-    struct determine_recTypeInner<C, 2> // Blaze vector
+    struct determine_RecTypeInner<C, 2> // Blaze vector
     {
         using type = std::vector<typename C::ElementType>; // we use STL vector for internal computations
     };
 
-
-
 public:
 
-    using value_type = typename determine_element_type<recType>::type;
-    using recTypeInner = typename determine_recTypeInner<recType>::type;
+    using value_type = typename determine_element_type<RecType>::type;
+    using RecTypeInner = typename determine_RecTypeInner<RecType>::type;
 
     /**
    * @brief
@@ -69,13 +64,12 @@ public:
    * @param n_top_features_ - number of featores of top PCFA
    */
     DSPCC(
-            const std::vector<recType> & TrainingDataset,
-            size_t n_features_ = 1,
-            size_t n_subbands_ = 4,
-            float time_freq_balance_ = 0.5,
-            size_t n_top_features_ = 16
-            );
-
+        const std::vector<RecType> & TrainingDataset,
+        size_t n_features_ = 1,
+        size_t n_subbands_ = 4,
+        float time_freq_balance_ = 0.5,
+        size_t n_top_features_ = 16
+    );
 
 
     /**
@@ -84,8 +78,7 @@ public:
    * @param Data - waveforms of same length and format as TrainingDataset
    * @return
    */
-    std::vector<std::vector<recTypeInner>> time_freq_PCFA_encode(const std::vector<recTypeInner> & Data);
-
+    std::vector<std::vector<RecTypeInner>> time_freq_PCFA_encode(const std::vector<RecTypeInner> & Data);
 
 
     /**
@@ -94,8 +87,7 @@ public:
    * @param Codes - compressed codes
    * @return
    */
-    std::vector<recTypeInner> time_freq_PCFA_decode(const std::vector<std::vector<recTypeInner>> & Codes);
-
+    std::vector<RecTypeInner> time_freq_PCFA_decode(const std::vector<std::vector<RecTypeInner>> & Codes);
 
 
     /**
@@ -104,7 +96,7 @@ public:
    * @param Data - waveforms of same length and format as TrainingDataset
    * @return
    */
-    std::vector<recType> encode(const std::vector<recType> & Data);
+    std::vector<RecType> encode(const std::vector<RecType> & Data);
 
 
     /**
@@ -113,8 +105,7 @@ public:
    * @param Codes - compressed codes
    * @return
    */
-    std::vector<recType> decode(const std::vector<recType> & Codes);
-
+    std::vector<RecType> decode(const std::vector<RecType> & Codes);
 
 
     // public wrapper  of the private method, FOR TEST PURPOSE ONLY, to be deleted after testing
@@ -131,21 +122,19 @@ public:
 
 
     /**
-   * @brief returns size of subband
-   *
-   * @return
-   */
+    * @brief returns size of subband
+    *
+    * @return
+    */
     size_t get_subband_size() {
         return resulting_subband_length;
     }
 
-
-
 private:
 
-    std::vector<metric::PCFA<recTypeInner, Metric>> freq_PCA_models;
-    std::vector<metric::PCFA<recTypeInner, Metric>> time_PCA_models;
-    std::vector<metric::PCFA<recTypeInner, Metric>> top_PCA_model; // TODO solve initialization issue, remove wrapping vector
+    std::vector<metric::PCFA<RecTypeInner, Metric>> freq_PCA_models;
+    std::vector<metric::PCFA<RecTypeInner, Metric>> time_PCA_models;
+    std::vector<metric::PCFA<RecTypeInner, Metric>> top_PCA_model; // TODO solve initialization issue, remove wrapping vector
     std::stack<size_t> subband_length;
     size_t n_subbands;
     size_t resulting_subband_length;
@@ -158,7 +147,7 @@ private:
 
 
     /**
-   * @brief conditionally compiled function for selection between outer and inner recType: STL case
+   * @brief conditionally compiled function for selection between outer and inner RecType: STL case
    *
    * @param TrainingDataset - training dataset
    * @param n_features_ - desired number of features of frequency and time PCFAs
@@ -169,20 +158,20 @@ private:
    */
     template <typename R>
     typename std::enable_if <
-     //DSPCC<recType, Metric>:: template determine_container_type<R>::code == 1,
+     //DSPCC<RecType, Metric>:: template determine_container_type<R>::code == 1,
      determine_container_type<R>::code == 1,
      void
     >::type
     select_train(
-            const std::vector<recType> & TrainingDataset,
-            size_t n_features_,
-            size_t n_subbands_,
-            float time_freq_balance_,
-            size_t n_top_features_
-            );
+        const std::vector<RecType> & TrainingDataset,
+        size_t n_features_,
+        size_t n_subbands_,
+        float time_freq_balance_,
+        size_t n_top_features_
+    );
 
     /**
-   * @brief conditionally compiled function for selection between outer and inner recType: Blaze case
+   * @brief conditionally compiled function for selection between outer and inner RecType: Blaze case
    *
    * @param TrainingDataset - training dataset
    * @param n_features_ - desired number of features of frequency and time PCFAs
@@ -197,12 +186,12 @@ private:
      void
     >::type
     select_train(
-            const std::vector<recType> & TrainingDataset,
-            size_t n_features_,
-            size_t n_subbands_,
-            float time_freq_balance_,
-            size_t n_top_features_
-            );
+        const std::vector<RecType> & TrainingDataset,
+        size_t n_features_,
+        size_t n_subbands_,
+        float time_freq_balance_,
+        size_t n_top_features_
+    );
 
     /**
    * @brief training procedure called in constructor
@@ -215,15 +204,15 @@ private:
    * @return
    */
     void train(
-            const std::vector<DSPCC<recType, Metric>::recTypeInner> & TrainingDataset,
-            size_t n_features_,
-            size_t n_subbands_,
-            float time_freq_balance_,
-            size_t n_top_features_
-            );
+        const std::vector<DSPCC<RecType, Metric>::RecTypeInner> & TrainingDataset,
+        size_t n_features_,
+        size_t n_subbands_,
+        float time_freq_balance_,
+        size_t n_top_features_
+    );
 
     /**
-   * @brief conditionally compiled function for selection betwween outer and inner recType: STL case
+   * @brief conditionally compiled function for selection betwween outer and inner RecType: STL case
    *
    * @param Data - waveforms of same length and format as TrainingDataset
    * @return
@@ -231,27 +220,27 @@ private:
     template <typename R>
     typename std::enable_if <
      determine_container_type<R>::code == 1, // STL case
-     std::vector<recType>
+     std::vector<RecType>
     >::type
-    select_encode(const std::vector<recType> & Data);
+    select_encode(const std::vector<RecType> & Data);
 
     /**
-   * @brief conditionally compiled function for selection betwween outer and inner recType: Blaze case
+   * @brief conditionally compiled function for selection betwween outer and inner RecType: Blaze case
    *
    * @param Data - waveforms of same length and format as TrainingDataset
    * @return
    */
     template <typename R>
     typename std::enable_if <
-     //DSPCC<recType, Metric>:: template determine_container_type<R>::code == 2, // Blaze case
+     //DSPCC<RecType, Metric>:: template determine_container_type<R>::code == 2, // Blaze case
      determine_container_type<R>::code == 2, // Blaze case
-     std::vector<recType>
+     std::vector<RecType>
     >::type
-    select_encode(const std::vector<recType> & Data);
+    select_encode(const std::vector<RecType> & Data);
 
 
     /**
-   * @brief conditionally compiled function for selection betwween outer and inner recType: STL case
+   * @brief conditionally compiled function for selection betwween outer and inner RecType: STL case
    *
    * @param Codes - compressed codes
    * @return
@@ -259,12 +248,12 @@ private:
     template <typename R>
     typename std::enable_if <
      determine_container_type<R>::code == 1, // STL case
-     std::vector<recType>
+     std::vector<RecType>
     >::type
-    select_decode(const std::vector<recType> & Codes);
+    select_decode(const std::vector<RecType> & Codes);
 
     /**
-   * @brief conditionally compiled function for selection betwween outer and inner recType: Blaze case
+   * @brief conditionally compiled function for selection betwween outer and inner RecType: Blaze case
    *
    * @param Codes - compressed codes
    * @return
@@ -272,10 +261,9 @@ private:
     template <typename R>
     typename std::enable_if <
      determine_container_type<R>::code == 2, // Blaze case
-     std::vector<recType>
+     std::vector<RecType>
     >::type
-    select_decode(const std::vector<recType> & Codes);
-
+    select_decode(const std::vector<RecType> & Codes);
 
 
     /**
@@ -284,19 +272,7 @@ private:
    * @param Data - waveforms of same length and format as TrainingDataset
    * @return
    */
-    std::vector<std::vector<recTypeInner>> time_freq_PCFA_encode(const std::tuple<std::deque<std::vector<recTypeInner>>, std::deque<std::vector<recTypeInner>>> & PreEncoded);
-
-
-
-
-    /**
-   * @brief
-   *
-   * @param
-   * @return
-   */
-    std::vector<recTypeInner> mixed_code_serialize(const std::vector<std::vector<recTypeInner>> & PCFA_encoded);
-
+    std::vector<std::vector<RecTypeInner>> time_freq_PCFA_encode(const std::tuple<std::deque<std::vector<RecTypeInner>>, std::deque<std::vector<RecTypeInner>>> & PreEncoded);
 
 
     /**
@@ -305,26 +281,33 @@ private:
    * @param
    * @return
    */
-    std::vector<std::vector<recTypeInner>> mixed_code_deserialize(const std::vector<recTypeInner> & Codes);
+    std::vector<RecTypeInner> mixed_code_serialize(const std::vector<std::vector<RecTypeInner>> & PCFA_encoded);
 
+
+    /**
+   * @brief
+   *
+   * @param
+   * @return
+   */
+    std::vector<std::vector<RecTypeInner>> mixed_code_deserialize(const std::vector<RecTypeInner> & Codes);
 
 
     /**
    * @brief apply DWT, DCT to input data, mix wave and spectrum, rearrande by subbands
    *
    * @param Curves - waveforms of same length and format as TrainingDataset
-   * @return - recType containers grouped in vectors by subband, which are collected in the single vector
+   * @return - RecType containers grouped in vectors by subband, which are collected in the single vector
    */
-    std::tuple<std::deque<std::vector<recTypeInner>>, std::deque<std::vector<recTypeInner>>> outer_encode(const std::vector<recTypeInner> & Curves);
+    std::tuple<std::deque<std::vector<RecTypeInner>>, std::deque<std::vector<RecTypeInner>>> outer_encode(const std::vector<RecTypeInner> & Curves);
 
     /**
    * @brief separates mix wave and spectrum, apply iDCT, reconstructs the subband waveform, applies iDWT, rearrande by records
    *
-   * @param TimeFreqMixedData - vector of vectors (per subband) of recType wave-time combined vectors for each compressed record
-   * @return - vector of decoded recType curves
+   * @param TimeFreqMixedData - vector of vectors (per subband) of RecType wave-time combined vectors for each compressed record
+   * @return - vector of decoded RecType curves
    */
-    std::vector<recTypeInner> outer_decode(const std::tuple<std::deque<std::vector<recTypeInner>>, std::deque<std::vector<recTypeInner>>> & TimeFreqMixedData);
-
+    std::vector<RecTypeInner> outer_decode(const std::tuple<std::deque<std::vector<RecTypeInner>>, std::deque<std::vector<RecTypeInner>>> & TimeFreqMixedData);
 
 
     /**
@@ -333,7 +316,7 @@ private:
    * @param Codes_by_subbands - vector of vectors (per subband) of compressed codes for each record
    * @return - the same compressed codes grouped in vectors by records, all collected in the single vector
    */
-    std::vector<std::vector<recType>> rearrange_to_records(const std::vector<recType> & Codes_by_subbands);
+    std::vector<std::vector<RecType>> rearrange_to_records(const std::vector<RecType> & Codes_by_subbands);
 
     /**
    * @brief rearranges data from record-major to per-subband order
@@ -341,7 +324,7 @@ private:
    * @param Codes_by_records - compressed codes grouped in vectors by records, all collected in the single vector
    * @return - vector of vectors (per subband) of compressed codes for each record
    */
-    std::vector<std::vector<recType>> rearrange_to_subbands(const std::vector<recType> & Codes_by_records);
+    std::vector<std::vector<RecType>> rearrange_to_subbands(const std::vector<RecType> & Codes_by_records);
 
 
     /**
@@ -370,13 +353,7 @@ private:
    */
     size_t original_size(size_t subband_size, size_t depth, size_t wavelet_length=10);
 
-
-
 };
-
-
-
-
 
 
 }  // namespace metric

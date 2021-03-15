@@ -3,7 +3,7 @@
 //  \file blaze/math/smp/hpx/DenseMatrix.h
 //  \brief Header file for the HPX-based dense matrix SMP implementation
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -248,8 +248,8 @@ template< typename MT1  // Type of the left-hand side dense matrix
         , bool SO1      // Storage order of the left-hand side dense matrix
         , typename MT2  // Type of the right-hand side matrix
         , bool SO2 >    // Storage order of the right-hand side matrix
-inline EnableIf_t< IsDenseMatrix_v<MT1> && ( !IsSMPAssignable_v<MT1> || !IsSMPAssignable_v<MT2> ) >
-   smpAssign( Matrix<MT1,SO1>& lhs, const Matrix<MT2,SO2>& rhs )
+inline auto smpAssign( Matrix<MT1,SO1>& lhs, const Matrix<MT2,SO2>& rhs )
+   -> EnableIf_t< IsDenseMatrix_v<MT1> && ( !IsSMPAssignable_v<MT1> || !IsSMPAssignable_v<MT2> ) >
 {
    BLAZE_FUNCTION_TRACE;
 
@@ -284,8 +284,8 @@ template< typename MT1  // Type of the left-hand side dense matrix
         , bool SO1      // Storage order of the left-hand side dense matrix
         , typename MT2  // Type of the right-hand side matrix
         , bool SO2 >    // Storage order of the right-hand side matrix
-inline EnableIf_t< IsDenseMatrix_v<MT1> && IsSMPAssignable_v<MT1> && IsSMPAssignable_v<MT2> >
-   smpAssign( Matrix<MT1,SO1>& lhs, const Matrix<MT2,SO2>& rhs )
+inline auto smpAssign( Matrix<MT1,SO1>& lhs, const Matrix<MT2,SO2>& rhs )
+   -> EnableIf_t< IsDenseMatrix_v<MT1> && IsSMPAssignable_v<MT1> && IsSMPAssignable_v<MT2> >
 {
    BLAZE_FUNCTION_TRACE;
 
@@ -299,7 +299,7 @@ inline EnableIf_t< IsDenseMatrix_v<MT1> && IsSMPAssignable_v<MT1> && IsSMPAssign
       assign( ~lhs, ~rhs );
    }
    else {
-      hpxAssign( ~lhs, ~rhs, Assign() );
+      hpxAssign( ~lhs, ~rhs, []( auto& a, const auto& b ){ assign( a, b ); } );
    }
 }
 /*! \endcond */
@@ -336,8 +336,8 @@ template< typename MT1  // Type of the left-hand side dense matrix
         , bool SO1      // Storage order of the left-hand side dense matrix
         , typename MT2  // Type of the right-hand side matrix
         , bool SO2 >    // Storage order of the right-hand side matrix
-inline EnableIf_t< IsDenseMatrix_v<MT1> && ( !IsSMPAssignable_v<MT1> || !IsSMPAssignable_v<MT2> ) >
-   smpAddAssign( Matrix<MT1,SO1>& lhs, const Matrix<MT2,SO2>& rhs )
+inline auto smpAddAssign( Matrix<MT1,SO1>& lhs, const Matrix<MT2,SO2>& rhs )
+   -> EnableIf_t< IsDenseMatrix_v<MT1> && ( !IsSMPAssignable_v<MT1> || !IsSMPAssignable_v<MT2> ) >
 {
    BLAZE_FUNCTION_TRACE;
 
@@ -372,8 +372,8 @@ template< typename MT1  // Type of the left-hand side dense matrix
         , bool SO1      // Storage order of the left-hand side dense matrix
         , typename MT2  // Type of the right-hand side matrix
         , bool SO2 >    // Storage order of the right-hand side matrix
-inline EnableIf_t< IsDenseMatrix_v<MT1> && IsSMPAssignable_v<MT1> && IsSMPAssignable_v<MT2> >
-   smpAddAssign( Matrix<MT1,SO1>& lhs, const Matrix<MT2,SO2>& rhs )
+inline auto smpAddAssign( Matrix<MT1,SO1>& lhs, const Matrix<MT2,SO2>& rhs )
+   -> EnableIf_t< IsDenseMatrix_v<MT1> && IsSMPAssignable_v<MT1> && IsSMPAssignable_v<MT2> >
 {
    BLAZE_FUNCTION_TRACE;
 
@@ -387,7 +387,7 @@ inline EnableIf_t< IsDenseMatrix_v<MT1> && IsSMPAssignable_v<MT1> && IsSMPAssign
       addAssign( ~lhs, ~rhs );
    }
    else {
-      hpxAssign( ~lhs, ~rhs, AddAssign() );
+      hpxAssign( ~lhs, ~rhs, []( auto& a, const auto& b ){ addAssign( a, b ); } );
    }
 }
 /*! \endcond */
@@ -424,8 +424,8 @@ template< typename MT1  // Type of the left-hand side dense matrix
         , bool SO1      // Storage order of the left-hand side dense matrix
         , typename MT2  // Type of the right-hand side matrix
         , bool SO2 >    // Storage order of the right-hand side matrix
-inline EnableIf_t< IsDenseMatrix_v<MT1> && ( !IsSMPAssignable_v<MT1> || !IsSMPAssignable_v<MT2> ) >
-   smpSubAssign( Matrix<MT1,SO1>& lhs, const Matrix<MT2,SO2>& rhs )
+inline auto smpSubAssign( Matrix<MT1,SO1>& lhs, const Matrix<MT2,SO2>& rhs )
+   -> EnableIf_t< IsDenseMatrix_v<MT1> && ( !IsSMPAssignable_v<MT1> || !IsSMPAssignable_v<MT2> ) >
 {
    BLAZE_FUNCTION_TRACE;
 
@@ -460,8 +460,8 @@ template< typename MT1  // Type of the left-hand side dense matrix
         , bool SO1      // Storage order of the left-hand side dense matrix
         , typename MT2  // Type of the right-hand side matrix
         , bool SO2 >    // Storage order of the right-hand side matrix
-inline EnableIf_t< IsDenseMatrix_v<MT1> && IsSMPAssignable_v<MT1> && IsSMPAssignable_v<MT2> >
-   smpSubAssign( Matrix<MT1,SO1>& lhs, const Matrix<MT2,SO2>& rhs )
+inline auto smpSubAssign( Matrix<MT1,SO1>& lhs, const Matrix<MT2,SO2>& rhs )
+   -> EnableIf_t< IsDenseMatrix_v<MT1> && IsSMPAssignable_v<MT1> && IsSMPAssignable_v<MT2> >
 {
    BLAZE_FUNCTION_TRACE;
 
@@ -475,7 +475,7 @@ inline EnableIf_t< IsDenseMatrix_v<MT1> && IsSMPAssignable_v<MT1> && IsSMPAssign
       subAssign( ~lhs, ~rhs );
    }
    else {
-      hpxAssign( ~lhs, ~rhs, SubAssign() );
+      hpxAssign( ~lhs, ~rhs, []( auto& a, const auto& b ){ subAssign( a, b ); } );
    }
 }
 /*! \endcond */
@@ -512,8 +512,8 @@ template< typename MT1  // Type of the left-hand side dense matrix
         , bool SO1      // Storage order of the left-hand side dense matrix
         , typename MT2  // Type of the right-hand side matrix
         , bool SO2 >    // Storage order of the right-hand side matrix
-inline EnableIf_t< IsDenseMatrix_v<MT1> && ( !IsSMPAssignable_v<MT1> || !IsSMPAssignable_v<MT2> ) >
-   smpSchurAssign( Matrix<MT1,SO1>& lhs, const Matrix<MT2,SO2>& rhs )
+inline auto smpSchurAssign( Matrix<MT1,SO1>& lhs, const Matrix<MT2,SO2>& rhs )
+   -> EnableIf_t< IsDenseMatrix_v<MT1> && ( !IsSMPAssignable_v<MT1> || !IsSMPAssignable_v<MT2> ) >
 {
    BLAZE_FUNCTION_TRACE;
 
@@ -548,8 +548,8 @@ template< typename MT1  // Type of the left-hand side dense matrix
         , bool SO1      // Storage order of the left-hand side dense matrix
         , typename MT2  // Type of the right-hand side matrix
         , bool SO2 >    // Storage order of the right-hand side matrix
-inline EnableIf_t< IsDenseMatrix_v<MT1> && IsSMPAssignable_v<MT1> && IsSMPAssignable_v<MT2> >
-   smpSchurAssign( Matrix<MT1,SO1>& lhs, const Matrix<MT2,SO2>& rhs )
+inline auto smpSchurAssign( Matrix<MT1,SO1>& lhs, const Matrix<MT2,SO2>& rhs )
+   -> EnableIf_t< IsDenseMatrix_v<MT1> && IsSMPAssignable_v<MT1> && IsSMPAssignable_v<MT2> >
 {
    BLAZE_FUNCTION_TRACE;
 
@@ -563,7 +563,7 @@ inline EnableIf_t< IsDenseMatrix_v<MT1> && IsSMPAssignable_v<MT1> && IsSMPAssign
       schurAssign( ~lhs, ~rhs );
    }
    else {
-      hpxAssign( ~lhs, ~rhs, SchurAssign() );
+      hpxAssign( ~lhs, ~rhs, []( auto& a, const auto& b ){ schurAssign( a, b ); } );
    }
 }
 /*! \endcond */
@@ -598,8 +598,8 @@ template< typename MT1  // Type of the left-hand side dense matrix
         , bool SO1      // Storage order of the left-hand side matrix
         , typename MT2  // Type of the right-hand side matrix
         , bool SO2 >    // Storage order of the right-hand side matrix
-inline EnableIf_t< IsDenseMatrix_v<MT1> >
-   smpMultAssign( Matrix<MT1,SO1>& lhs, const Matrix<MT2,SO2>& rhs )
+inline auto smpMultAssign( Matrix<MT1,SO1>& lhs, const Matrix<MT2,SO2>& rhs )
+   -> EnableIf_t< IsDenseMatrix_v<MT1> >
 {
    BLAZE_FUNCTION_TRACE;
 

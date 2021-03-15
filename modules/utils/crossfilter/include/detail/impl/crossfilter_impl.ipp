@@ -83,6 +83,17 @@ namespace impl {
         //  dim.init_slots();
         return dim;
     }
+    template <typename T, typename H>
+    template <typename G>
+    inline auto filter_impl<T, H>::dimension_ptr(G getter)
+        -> cross::dimension<decltype(getter(std::declval<T>())), T, cross::non_iterable, H>*
+    {
+        auto dimension_filter = add_row_to_filters();
+        auto dim = new cross::dimension<decltype(getter(std::declval<record_type_t>())), T, cross::non_iterable, H>(
+            this, std::get<0>(dimension_filter), std::get<1>(dimension_filter), getter);
+        dim->add(0, data.begin(), data.end());
+        return dim;
+    }
 
     template <typename T, typename H>
     template <typename V, typename G>
@@ -92,6 +103,19 @@ namespace impl {
         cross::dimension<V, T, cross::iterable, H> dim(
             this, std::get<0>(dimension_filter), std::get<1>(dimension_filter), getter);
         dim.add(0, data.begin(), data.end());
+        //  dim.init_slots();
+        return dim;
+    }
+
+    template <typename T, typename H>
+    template <typename V, typename G>
+    inline auto filter_impl<T, H>::iterable_dimension_ptr(G getter) -> cross::dimension<V, T, cross::iterable, H>*
+    {
+        auto dimension_filter = add_row_to_filters();
+        auto dim = new cross::dimension<V, T, cross::iterable, H>(
+                                                                  this, std::get<0>(dimension_filter),
+                                                                  std::get<1>(dimension_filter), getter);
+        dim->add(0, data.begin(), data.end());
         //  dim.init_slots();
         return dim;
     }

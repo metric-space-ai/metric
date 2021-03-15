@@ -14,7 +14,7 @@
 #include "../../modules/correlation.hpp"
 
 
-struct simple_user_euclidian {
+struct simple_user_Euclidean {
 
     double operator()(const std::vector<double>& a, const std::vector<double>& b) const
     {
@@ -53,7 +53,7 @@ int main()
     };
 
     typedef std::vector<int> Record;
-    typedef metric::Euclidian<double> Distance;
+    typedef metric::Euclidean<double> Distance;
 	
 	auto mgc_corr = metric::MGC<Record, Distance, Record, Distance>();
 
@@ -83,7 +83,7 @@ int main()
     // build functors (function objects) with user types and metrics
     typedef std::vector<double> Record1;
 	// custom distance metric
-    typedef simple_user_euclidian Distance1;
+    typedef simple_user_Euclidean Distance1;
 
     // set up the correlation function
     auto mgc_corr_1 = metric::MGC<Record1, Distance1, Record1, Distance1>();

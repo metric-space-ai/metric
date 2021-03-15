@@ -3,7 +3,7 @@
 //  \file blaze/util/MPL.h
 //  \brief Header file for all meta-programming tools
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -41,27 +41,20 @@
 //*************************************************************************************************
 
 #include "../util/mpl/And.h"
-#include "../util/mpl/Bool.h"
-#include "../util/mpl/Char.h"
 #include "../util/mpl/Equal.h"
 #include "../util/mpl/Greater.h"
 #include "../util/mpl/If.h"
-#include "../util/mpl/Int.h"
 #include "../util/mpl/Less.h"
-#include "../util/mpl/Long.h"
-#include "../util/mpl/Maximum.h"
-#include "../util/mpl/Minimum.h"
+#include "../util/mpl/Max.h"
+#include "../util/mpl/Min.h"
 #include "../util/mpl/Minus.h"
-#include "../util/mpl/Modulus.h"
+#include "../util/mpl/Modulo.h"
 #include "../util/mpl/Nand.h"
 #include "../util/mpl/Nor.h"
 #include "../util/mpl/Not.h"
 #include "../util/mpl/Or.h"
 #include "../util/mpl/Plus.h"
-#include "../util/mpl/PtrdiffT.h"
-#include "../util/mpl/SizeT.h"
 #include "../util/mpl/Times.h"
-#include "../util/mpl/Xnor.h"
 #include "../util/mpl/Xor.h"
 
 #endif

@@ -3,7 +3,7 @@
 //  \file blaze/math/typetraits/HasSIMDLog2.h
 //  \brief Header file for the HasSIMDLog2 type trait
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -42,9 +42,9 @@
 
 #include "../../system/Vectorization.h"
 #include "../../util/IntegralConstant.h"
-#include "../../util/typetraits/Decay.h"
 #include "../../util/typetraits/IsDouble.h"
 #include "../../util/typetraits/IsFloat.h"
+#include "../../util/typetraits/RemoveCVRef.h"
 
 
 namespace blaze {
@@ -95,14 +95,14 @@ using HasSIMDLog2Helper =
 */
 template< typename T >  // Type of the operand
 struct HasSIMDLog2
-   : public BoolConstant< HasSIMDLog2Helper< Decay_t<T> >::value >
+   : public BoolConstant< HasSIMDLog2Helper< RemoveCVRef_t<T> >::value >
 {};
 //*************************************************************************************************
 
 
 //*************************************************************************************************
 /*!\brief Auxiliary variable template for the HasSIMDLog2 type trait.
-// \ingroup type_traits
+// \ingroup math_type_traits
 //
 // The HasSIMDLog2_v variable template provides a convenient shortcut to access the nested
 // \a value of the HasSIMDLog2 class template. For instance, given the type \a T the following

@@ -3,7 +3,7 @@
 //  \file blaze/math/dense/CustomVector.h
 //  \brief Header file for the implementation of a customizable vector
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -41,6 +41,7 @@
 //*************************************************************************************************
 
 #include <algorithm>
+#include <array>
 #include <utility>
 #include "../../math/Aliases.h"
 #include "../../math/AlignmentFlag.h"
@@ -48,16 +49,18 @@
 #include "../../math/constraints/RequiresEvaluation.h"
 #include "../../math/constraints/TransposeFlag.h"
 #include "../../math/dense/DenseIterator.h"
-#include "../../math/dense/DynamicVector.h"
+#include "../../math/dense/Forward.h"
 #include "../../math/Exception.h"
 #include "../../math/expressions/DenseVector.h"
 #include "../../math/expressions/SparseVector.h"
 #include "../../math/Forward.h"
 #include "../../math/InitializerList.h"
 #include "../../math/PaddingFlag.h"
+#include "../../math/RelaxationFlag.h"
 #include "../../math/shims/Clear.h"
 #include "../../math/shims/IsDefault.h"
 #include "../../math/shims/NextMultiple.h"
+#include "../../math/shims/PrevMultiple.h"
 #include "../../math/shims/Serial.h"
 #include "../../math/SIMD.h"
 #include "../../math/traits/CrossTrait.h"
@@ -80,22 +83,20 @@
 #include "../../system/Inline.h"
 #include "../../system/Optimizations.h"
 #include "../../system/Thresholds.h"
-#include "../../system/TransposeFlag.h"
 #include "../../util/AlignmentCheck.h"
 #include "../../util/Assert.h"
 #include "../../util/constraints/Pointer.h"
 #include "../../util/constraints/Reference.h"
 #include "../../util/constraints/Vectorizable.h"
 #include "../../util/constraints/Volatile.h"
-#include "../../util/DisableIf.h"
 #include "../../util/EnableIf.h"
+#include "../../util/IntegralConstant.h"
+#include "../../util/MaybeUnused.h"
 #include "../../util/StaticAssert.h"
-#include "../../util/TrueType.h"
 #include "../../util/Types.h"
 #include "../../util/typetraits/IsIntegral.h"
 #include "../../util/typetraits/IsVectorizable.h"
 #include "../../util/typetraits/RemoveConst.h"
-#include "../../util/Unused.h"
 
 
 namespace blaze {
@@ -125,16 +126,18 @@ namespace blaze {
 // flag of the vector can be specified via the following four template parameters:
 
    \code
-   template< typename Type, bool AF, bool PF, bool TF >
+   template< typename Type, AlignmentFlag AF, PaddingFlag PF, bool TF >
    class CustomVector;
    \endcode
 
 //  - Type: specifies the type of the vector elements. CustomVector can be used with any
 //          non-cv-qualified, non-reference, non-pointer element type.
 //  - AF  : specifies whether the represented, external arrays are properly aligned with
-//          respect to the available instruction set (SSE, AVX, ...) or not.
+//          respect to the available instruction set (SSE, AVX, ...) or not (\a blaze::aligned
+//          or \a blaze::unaligned).
 //  - PF  : specified whether the represented, external arrays are properly padded with
-//          respect to the available instruction set (SSE, AVX, ...) or not.
+//          respect to the available instruction set (SSE, AVX, ...) or not (\a blaze::padded
+//          or \a blaze::unpadded).
 //  - TF  : specifies whether the vector is a row vector (\a blaze::rowVector) or a column
 //          vector (\a blaze::columnVector). The default value is \a blaze::columnVector.
 //
@@ -273,9 +276,9 @@ namespace blaze {
 
    using CustomType = CustomVector<double,aligned,padded>;
 
-   std::unique_ptr<int[],Deallocate> memory1( allocate<double>( 4UL ) );
-   std::unique_ptr<int[],Deallocate> memory2( allocate<double>( 4UL ) );
-   std::unique_ptr<int[],Deallocate> memory3( allocate<double>( 4UL ) );
+   std::unique_ptr<double[],Deallocate> memory1( allocate<double>( 4UL ) );
+   std::unique_ptr<double[],Deallocate> memory2( allocate<double>( 4UL ) );
+   std::unique_ptr<double[],Deallocate> memory3( allocate<double>( 4UL ) );
 
    // Creating padded custom vectors of size 3 and a capacity of 4
    CustomType a( memory1.get(), 3UL, 4UL );
@@ -299,9 +302,9 @@ namespace blaze {
 
    using CustomType = CustomVector<double,aligned,unpadded>;
 
-   std::unique_ptr<int[],Deallocate> memory1( allocate<double>( 3UL ) );
-   std::unique_ptr<int[],Deallocate> memory2( allocate<double>( 3UL ) );
-   std::unique_ptr<int[],Deallocate> memory3( allocate<double>( 3UL ) );
+   std::unique_ptr<double[],Deallocate> memory1( allocate<double>( 3UL ) );
+   std::unique_ptr<double[],Deallocate> memory2( allocate<double>( 3UL ) );
+   std::unique_ptr<double[],Deallocate> memory3( allocate<double>( 3UL ) );
 
    // Creating unpadded custom vector of size 3
    CustomType a( allocate<double>( 3UL ), 3UL );
@@ -359,7 +362,7 @@ namespace blaze {
 
    // Non-initialized custom column vector of size 2 and capacity 4. All given arrays are required
    // to be properly aligned and padded. The memory is managed via a 'std::unique_ptr'.
-   std::unique_ptr<int[],Deallocate> memory2( allocate<double>( 4UL ) );
+   std::unique_ptr<double[],Deallocate> memory2( allocate<double>( 4UL ) );
    CustomVector<double,aligned,padded> b( memory2.get(), 2UL, 4UL );
 
    b = 2.0;  // Homogeneous initialization of all elements
@@ -385,11 +388,11 @@ namespace blaze {
    A = a * trans( b );  // Outer product between two vectors
    \endcode
 */
-template< typename Type                                          // Data type of the vector
-        , bool AF                                                // Alignment flag
-        , bool PF                                                // Padding flag
-        , bool TF = defaultTransposeFlag                         // Transpose flag
-        , typename RT = DynamicVector<RemoveConst_t<Type>,TF> >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF    // Padding flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 class CustomVector
    : public DenseVector< CustomVector<Type,AF,PF,TF,RT>, TF >
 {
@@ -456,17 +459,19 @@ class CustomVector
    //**Constructors********************************************************************************
    /*!\name Constructors */
    //@{
-   explicit inline CustomVector();
-   explicit inline CustomVector( Type* ptr, size_t n );
-   explicit inline CustomVector( Type* ptr, size_t n, size_t nn );
-
+   inline CustomVector();
+   inline CustomVector( Type* ptr, size_t n );
+   inline CustomVector( Type* ptr, size_t n, size_t nn );
    inline CustomVector( const CustomVector& v );
    inline CustomVector( CustomVector&& v ) noexcept;
    //@}
    //**********************************************************************************************
 
    //**Destructor**********************************************************************************
-   // No explicitly declared destructor.
+   /*!\name Destructor */
+   //@{
+   ~CustomVector() = default;
+   //@}
    //**********************************************************************************************
 
    //**Data access functions***********************************************************************
@@ -493,8 +498,11 @@ class CustomVector
    inline CustomVector& operator=( const Type& rhs );
    inline CustomVector& operator=( initializer_list<Type> list );
 
-   template< typename Other, size_t N >
-   inline CustomVector& operator=( const Other (&array)[N] );
+   template< typename Other, size_t Dim >
+   inline CustomVector& operator=( const Other (&array)[Dim] );
+
+   template< typename Other, size_t Dim >
+   inline CustomVector& operator=( const std::array<Other,Dim>& array );
 
    inline CustomVector& operator=( const CustomVector& rhs );
    inline CustomVector& operator=( CustomVector&& rhs ) noexcept;
@@ -553,9 +561,7 @@ class CustomVector
    //! Helper variable template for the explicit application of the SFINAE principle.
    template< typename VT >
    static constexpr bool VectorizedAddAssign_v =
-      ( useOptimizedKernels &&
-        simdEnabled && VT::simdEnabled &&
-        IsSIMDCombinable_v< Type, ElementType_t<VT> > &&
+      ( VectorizedAssign_v<VT> &&
         HasSIMDAdd_v< Type, ElementType_t<VT> > );
    /*! \endcond */
    //**********************************************************************************************
@@ -565,9 +571,7 @@ class CustomVector
    //! Helper variable template for the explicit application of the SFINAE principle.
    template< typename VT >
    static constexpr bool VectorizedSubAssign_v =
-      ( useOptimizedKernels &&
-        simdEnabled && VT::simdEnabled &&
-        IsSIMDCombinable_v< Type, ElementType_t<VT> > &&
+      ( VectorizedAssign_v<VT> &&
         HasSIMDSub_v< Type, ElementType_t<VT> > );
    /*! \endcond */
    //**********************************************************************************************
@@ -577,9 +581,7 @@ class CustomVector
    //! Helper variable template for the explicit application of the SFINAE principle.
    template< typename VT >
    static constexpr bool VectorizedMultAssign_v =
-      ( useOptimizedKernels &&
-        simdEnabled && VT::simdEnabled &&
-        IsSIMDCombinable_v< Type, ElementType_t<VT> > &&
+      ( VectorizedAssign_v<VT> &&
         HasSIMDMult_v< Type, ElementType_t<VT> > );
    /*! \endcond */
    //**********************************************************************************************
@@ -589,9 +591,7 @@ class CustomVector
    //! Helper variable template for the explicit application of the SFINAE principle.
    template< typename VT >
    static constexpr bool VectorizedDivAssign_v =
-      ( useOptimizedKernels &&
-        simdEnabled && VT::simdEnabled &&
-        IsSIMDCombinable_v< Type, ElementType_t<VT> > &&
+      ( VectorizedAssign_v<VT> &&
         HasSIMDDiv_v< Type, ElementType_t<VT> > );
    /*! \endcond */
    //**********************************************************************************************
@@ -698,11 +698,11 @@ class CustomVector
 //*************************************************************************************************
 /*!\brief The default constructor for CustomVector.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool PF        // Padding flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF    // Padding flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 inline CustomVector<Type,AF,PF,TF,RT>::CustomVector()
    : size_( 0UL )      // The size/dimension of the vector
    , v_   ( nullptr )  // The custom array of elements
@@ -728,11 +728,11 @@ inline CustomVector<Type,AF,PF,TF,RT>::CustomVector()
 // \note This constructor is \b NOT available for padded custom vectors!
 // \note The custom vector does \b NOT take responsibility for the given array of elements!
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool PF        // Padding flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF    // Padding flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 inline CustomVector<Type,AF,PF,TF,RT>::CustomVector( Type* ptr, size_t n )
    : size_( n )    // The size/dimension of the vector
    , v_   ( ptr )  // The custom array of elements
@@ -770,18 +770,18 @@ inline CustomVector<Type,AF,PF,TF,RT>::CustomVector( Type* ptr, size_t n )
 // \note This constructor is \b NOT available for unpadded custom vectors!
 // \note The custom vector does \b NOT take responsibility for the given array of elements!
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool PF        // Padding flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF    // Padding flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 inline CustomVector<Type,AF,PF,TF,RT>::CustomVector( Type* ptr, size_t n, size_t nn )
    : size_( 0UL )      // The size/dimension of the vector
    , v_   ( nullptr )  // The custom array of elements
 {
    BLAZE_STATIC_ASSERT( PF == padded );
 
-   UNUSED_PARAMETER( ptr, n, nn );
+   MAYBE_UNUSED( ptr, n, nn );
 }
 //*************************************************************************************************
 
@@ -793,11 +793,11 @@ inline CustomVector<Type,AF,PF,TF,RT>::CustomVector( Type* ptr, size_t n, size_t
 //
 // The copy constructor initializes the custom vector as an exact copy of the given custom vector.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool PF        // Padding flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF    // Padding flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 inline CustomVector<Type,AF,PF,TF,RT>::CustomVector( const CustomVector& v )
    : size_( v.size_ )  // The size/dimension of the vector
    , v_   ( v.v_ )     // The custom array of elements
@@ -810,11 +810,11 @@ inline CustomVector<Type,AF,PF,TF,RT>::CustomVector( const CustomVector& v )
 //
 // \param v The vector to be moved into this instance.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool PF        // Padding flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF    // Padding flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 inline CustomVector<Type,AF,PF,TF,RT>::CustomVector( CustomVector&& v ) noexcept
    : size_( v.size_ )             // The size/dimension of the vector
    , v_   ( v.v_ )                // The custom array of elements
@@ -844,11 +844,11 @@ inline CustomVector<Type,AF,PF,TF,RT>::CustomVector( CustomVector&& v ) noexcept
 // This function only performs an index check in case BLAZE_USER_ASSERT() is active. In contrast,
 // the at() function is guaranteed to perform a check of the given access index.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool PF        // Padding flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF    // Padding flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 inline typename CustomVector<Type,AF,PF,TF,RT>::Reference
    CustomVector<Type,AF,PF,TF,RT>::operator[]( size_t index ) noexcept
 {
@@ -867,11 +867,11 @@ inline typename CustomVector<Type,AF,PF,TF,RT>::Reference
 // This function only performs an index check in case BLAZE_USER_ASSERT() is active. In contrast,
 // the at() function is guaranteed to perform a check of the given access index.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool PF        // Padding flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF    // Padding flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 inline typename CustomVector<Type,AF,PF,TF,RT>::ConstReference
    CustomVector<Type,AF,PF,TF,RT>::operator[]( size_t index ) const noexcept
 {
@@ -891,11 +891,11 @@ inline typename CustomVector<Type,AF,PF,TF,RT>::ConstReference
 // In contrast to the subscript operator this function always performs a check of the given
 // access index.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool PF        // Padding flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF    // Padding flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 inline typename CustomVector<Type,AF,PF,TF,RT>::Reference
    CustomVector<Type,AF,PF,TF,RT>::at( size_t index )
 {
@@ -917,11 +917,11 @@ inline typename CustomVector<Type,AF,PF,TF,RT>::Reference
 // In contrast to the subscript operator this function always performs a check of the given
 // access index.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool PF        // Padding flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF    // Padding flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 inline typename CustomVector<Type,AF,PF,TF,RT>::ConstReference
    CustomVector<Type,AF,PF,TF,RT>::at( size_t index ) const
 {
@@ -940,11 +940,11 @@ inline typename CustomVector<Type,AF,PF,TF,RT>::ConstReference
 //
 // This function returns a pointer to the internal storage of the custom vector.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool PF        // Padding flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF    // Padding flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 inline typename CustomVector<Type,AF,PF,TF,RT>::Pointer
    CustomVector<Type,AF,PF,TF,RT>::data() noexcept
 {
@@ -960,11 +960,11 @@ inline typename CustomVector<Type,AF,PF,TF,RT>::Pointer
 //
 // This function returns a pointer to the internal storage of the custom vector.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool PF        // Padding flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF    // Padding flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 inline typename CustomVector<Type,AF,PF,TF,RT>::ConstPointer
    CustomVector<Type,AF,PF,TF,RT>::data() const noexcept
 {
@@ -978,11 +978,11 @@ inline typename CustomVector<Type,AF,PF,TF,RT>::ConstPointer
 //
 // \return Iterator to the first element of the custom vector.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool PF        // Padding flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF    // Padding flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 inline typename CustomVector<Type,AF,PF,TF,RT>::Iterator
    CustomVector<Type,AF,PF,TF,RT>::begin() noexcept
 {
@@ -996,11 +996,11 @@ inline typename CustomVector<Type,AF,PF,TF,RT>::Iterator
 //
 // \return Iterator to the first element of the custom vector.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool PF        // Padding flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF    // Padding flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 inline typename CustomVector<Type,AF,PF,TF,RT>::ConstIterator
    CustomVector<Type,AF,PF,TF,RT>::begin() const noexcept
 {
@@ -1014,11 +1014,11 @@ inline typename CustomVector<Type,AF,PF,TF,RT>::ConstIterator
 //
 // \return Iterator to the first element of the custom vector.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool PF        // Padding flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF    // Padding flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 inline typename CustomVector<Type,AF,PF,TF,RT>::ConstIterator
    CustomVector<Type,AF,PF,TF,RT>::cbegin() const noexcept
 {
@@ -1032,11 +1032,11 @@ inline typename CustomVector<Type,AF,PF,TF,RT>::ConstIterator
 //
 // \return Iterator just past the last element of the custom vector.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool PF        // Padding flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF    // Padding flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 inline typename CustomVector<Type,AF,PF,TF,RT>::Iterator
    CustomVector<Type,AF,PF,TF,RT>::end() noexcept
 {
@@ -1050,11 +1050,11 @@ inline typename CustomVector<Type,AF,PF,TF,RT>::Iterator
 //
 // \return Iterator just past the last element of the custom vector.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool PF        // Padding flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF    // Padding flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 inline typename CustomVector<Type,AF,PF,TF,RT>::ConstIterator
    CustomVector<Type,AF,PF,TF,RT>::end() const noexcept
 {
@@ -1068,11 +1068,11 @@ inline typename CustomVector<Type,AF,PF,TF,RT>::ConstIterator
 //
 // \return Iterator just past the last element of the custom vector.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool PF        // Padding flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF    // Padding flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 inline typename CustomVector<Type,AF,PF,TF,RT>::ConstIterator
    CustomVector<Type,AF,PF,TF,RT>::cend() const noexcept
 {
@@ -1095,11 +1095,11 @@ inline typename CustomVector<Type,AF,PF,TF,RT>::ConstIterator
 // \param rhs Scalar value to be assigned to all vector elements.
 // \return Reference to the assigned vector.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool PF        // Padding flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF    // Padding flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 inline CustomVector<Type,AF,PF,TF,RT>& CustomVector<Type,AF,PF,TF,RT>::operator=( const Type& rhs )
 {
    for( size_t i=0UL; i<size_; ++i )
@@ -1133,11 +1133,11 @@ inline CustomVector<Type,AF,PF,TF,RT>& CustomVector<Type,AF,PF,TF,RT>::operator=
 // are reset to their default state. Note that in case the size of the initializer list exceeds
 // the size of the vector, a \a std::invalid_argument exception is thrown.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool PF        // Padding flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF    // Padding flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 inline CustomVector<Type,AF,PF,TF,RT>&
    CustomVector<Type,AF,PF,TF,RT>::operator=( initializer_list<Type> list )
 {
@@ -1155,7 +1155,7 @@ inline CustomVector<Type,AF,PF,TF,RT>&
 //*************************************************************************************************
 /*!\brief Array assignment to all vector elements.
 //
-// \param array N-dimensional array for the assignment.
+// \param array Static array for the assignment.
 // \return Reference to the assigned vector.
 // \exception std::invalid_argument Invalid array size.
 //
@@ -1174,26 +1174,77 @@ inline CustomVector<Type,AF,PF,TF,RT>&
    v = init;
    \endcode
 
-// The vector is assigned the values from the given array. Missing values are initialized with
-// default values (as e.g. the fourth element in the example). Note that the size of the array
-// must match the size of the custom vector. Otherwise a \a std::invalid_argument exception is
-// thrown. Also note that after the assignment \a array will have the same entries as \a init.
+// The vector is assigned the values from the given static array. Missing values are initialized
+// with default values (as e.g. the fourth element in the example). Note that the size of the
+// static array must match the size of the custom vector. Otherwise a \a std::invalid_argument
+// exception is thrown. Also note that after the assignment \a array will have the same entries
+// as \a init.
 */
-template< typename Type   // Data type of the vector
-        , bool AF         // Alignment flag
-        , bool PF         // Padding flag
-        , bool TF         // Transpose flag
-        , typename RT >   // Result type
-template< typename Other  // Data type of the initialization array
-        , size_t N >      // Dimension of the initialization array
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF    // Padding flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
+template< typename Other    // Data type of the static array
+        , size_t Dim >      // Dimension of the static array
 inline CustomVector<Type,AF,PF,TF,RT>&
-   CustomVector<Type,AF,PF,TF,RT>::operator=( const Other (&array)[N] )
+   CustomVector<Type,AF,PF,TF,RT>::operator=( const Other (&array)[Dim] )
 {
-   if( size_ != N ) {
+   if( size_ != Dim ) {
       BLAZE_THROW_INVALID_ARGUMENT( "Invalid array size" );
    }
 
-   for( size_t i=0UL; i<N; ++i )
+   for( size_t i=0UL; i<Dim; ++i )
+      v_[i] = array[i];
+
+   return *this;
+}
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*!\brief Array assignment to all vector elements.
+//
+// \param array The given std::array for the assignment.
+// \return Reference to the assigned vector.
+// \exception std::invalid_argument Invalid std::array size.
+//
+// This assignment operator offers the option to directly set all elements of the vector. The
+// following example demonstrates this by means of an unaligned, unpadded custom vector:
+
+   \code
+   using blaze::CustomVector;
+   using blaze::unaliged;
+   using blaze::unpadded;
+
+   const int array[4] = { 1, 2, 3, 4 };
+   const std::array<int,4UL> init{ 5, 6, 7 };
+
+   CustomVector<double,unaligned,unpadded> v( array, 4UL );
+   v = init;
+   \endcode
+
+// The vector is assigned the values from the given std::array. Missing values are initialized
+// with default values (as e.g. the fourth element in the example). Note that the size of the
+// std::array must match the size of the custom vector. Otherwise a \a std::invalid_argument
+// exception is thrown. Also note that after the assignment \a array will have the same entries
+// as \a init.
+*/
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF    // Padding flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
+template< typename Other    // Data type of the std::array
+        , size_t Dim >      // Dimension of the std::array
+inline CustomVector<Type,AF,PF,TF,RT>&
+   CustomVector<Type,AF,PF,TF,RT>::operator=( const std::array<Other,Dim>& array )
+{
+   if( size_ != Dim ) {
+      BLAZE_THROW_INVALID_ARGUMENT( "Invalid array size" );
+   }
+
+   for( size_t i=0UL; i<Dim; ++i )
       v_[i] = array[i];
 
    return *this;
@@ -1211,11 +1262,11 @@ inline CustomVector<Type,AF,PF,TF,RT>&
 // The vector is initialized as a copy of the given vector. In case the current sizes of the two
 // vectors don't match, a \a std::invalid_argument exception is thrown.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool PF        // Padding flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF    // Padding flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 inline CustomVector<Type,AF,PF,TF,RT>&
    CustomVector<Type,AF,PF,TF,RT>::operator=( const CustomVector& rhs )
 {
@@ -1236,11 +1287,11 @@ inline CustomVector<Type,AF,PF,TF,RT>&
 // \param rhs The vector to be moved into this instance.
 // \return Reference to the assigned vector.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool PF        // Padding flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF    // Padding flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 inline CustomVector<Type,AF,PF,TF,RT>&
    CustomVector<Type,AF,PF,TF,RT>::operator=( CustomVector&& rhs ) noexcept
 {
@@ -1267,11 +1318,11 @@ inline CustomVector<Type,AF,PF,TF,RT>&
 // The vector is initialized as a copy of the given vector. In case the current sizes of the two
 // vectors don't match, a \a std::invalid_argument exception is thrown.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool PF        // Padding flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF    // Padding flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 template< typename VT >  // Type of the right-hand side vector
 inline CustomVector<Type,AF,PF,TF,RT>&
    CustomVector<Type,AF,PF,TF,RT>::operator=( const Vector<VT,TF>& rhs )
@@ -1305,11 +1356,11 @@ inline CustomVector<Type,AF,PF,TF,RT>&
 // In case the current sizes of the two vectors don't match, a \a std::invalid_argument exception
 // is thrown.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool PF        // Padding flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF    // Padding flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 template< typename VT >  // Type of the right-hand side vector
 inline CustomVector<Type,AF,PF,TF,RT>&
    CustomVector<Type,AF,PF,TF,RT>::operator+=( const Vector<VT,TF>& rhs )
@@ -1342,11 +1393,11 @@ inline CustomVector<Type,AF,PF,TF,RT>&
 // In case the current sizes of the two vectors don't match, a \a std::invalid_argument exception
 // is thrown.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool PF        // Padding flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF    // Padding flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 template< typename VT >  // Type of the right-hand side vector
 inline CustomVector<Type,AF,PF,TF,RT>&
    CustomVector<Type,AF,PF,TF,RT>::operator-=( const Vector<VT,TF>& rhs )
@@ -1379,11 +1430,11 @@ inline CustomVector<Type,AF,PF,TF,RT>&
 // In case the current sizes of the two vectors don't match, a \a std::invalid_argument exception
 // is thrown.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool PF        // Padding flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF    // Padding flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 template< typename VT >  // Type of the right-hand side vector
 inline CustomVector<Type,AF,PF,TF,RT>&
    CustomVector<Type,AF,PF,TF,RT>::operator*=( const Vector<VT,TF>& rhs )
@@ -1425,11 +1476,11 @@ inline CustomVector<Type,AF,PF,TF,RT>&
 // In case the current sizes of the two vectors don't match, a \a std::invalid_argument exception
 // is thrown.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool PF        // Padding flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF    // Padding flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 template< typename VT >  // Type of the right-hand side vector
 inline CustomVector<Type,AF,PF,TF,RT>&
    CustomVector<Type,AF,PF,TF,RT>::operator/=( const DenseVector<VT,TF>& rhs )
@@ -1471,18 +1522,18 @@ inline CustomVector<Type,AF,PF,TF,RT>&
 // In case the current size of any of the two vectors is not equal to 3, a \a std::invalid_argument
 // exception is thrown.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool PF        // Padding flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF    // Padding flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 template< typename VT >  // Type of the right-hand side vector
 inline CustomVector<Type,AF,PF,TF,RT>&
    CustomVector<Type,AF,PF,TF,RT>::operator%=( const Vector<VT,TF>& rhs )
 {
    using blaze::assign;
 
-   BLAZE_CONSTRAINT_MUST_BE_VECTOR_WITH_TRANSPOSE_FLAG( VT, TF );
+   BLAZE_CONSTRAINT_MUST_BE_VECTOR_WITH_TRANSPOSE_FLAG( ResultType_t<VT>, TF );
    BLAZE_CONSTRAINT_MUST_NOT_REQUIRE_EVALUATION( ResultType_t<VT> );
 
    using CrossType = CrossTrait_t< ResultType, ResultType_t<VT> >;
@@ -1516,11 +1567,11 @@ inline CustomVector<Type,AF,PF,TF,RT>&
 //
 // \return The size of the vector.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool PF        // Padding flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF    // Padding flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 inline size_t CustomVector<Type,AF,PF,TF,RT>::size() const noexcept
 {
    return size_;
@@ -1536,11 +1587,11 @@ inline size_t CustomVector<Type,AF,PF,TF,RT>::size() const noexcept
 // This function returns the minimum capacity of the vector, which corresponds to the current
 // size plus padding.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool PF        // Padding flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF    // Padding flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 inline size_t CustomVector<Type,AF,PF,TF,RT>::spacing() const noexcept
 {
    return size_;
@@ -1553,11 +1604,11 @@ inline size_t CustomVector<Type,AF,PF,TF,RT>::spacing() const noexcept
 //
 // \return The maximum capacity of the vector.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool PF        // Padding flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF    // Padding flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 inline size_t CustomVector<Type,AF,PF,TF,RT>::capacity() const noexcept
 {
    return size_;
@@ -1573,11 +1624,11 @@ inline size_t CustomVector<Type,AF,PF,TF,RT>::capacity() const noexcept
 // Note that the number of non-zero elements is always less than or equal to the current size
 // of the vector.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool PF        // Padding flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF    // Padding flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 inline size_t CustomVector<Type,AF,PF,TF,RT>::nonZeros() const
 {
    size_t nonzeros( 0 );
@@ -1597,11 +1648,11 @@ inline size_t CustomVector<Type,AF,PF,TF,RT>::nonZeros() const
 //
 // \return void
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool PF        // Padding flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF    // Padding flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 inline void CustomVector<Type,AF,PF,TF,RT>::reset()
 {
    using blaze::clear;
@@ -1619,11 +1670,11 @@ inline void CustomVector<Type,AF,PF,TF,RT>::reset()
 // This function clears the vector to its default state. In case the vector has been passed the
 // responsibility to manage the given array, it disposes the resource via the specified deleter.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool PF        // Padding flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF    // Padding flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 inline void CustomVector<Type,AF,PF,TF,RT>::clear()
 {
    size_ = 0UL;
@@ -1638,11 +1689,11 @@ inline void CustomVector<Type,AF,PF,TF,RT>::clear()
 // \param v The vector to be swapped.
 // \return void
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool PF        // Padding flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF    // Padding flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 inline void CustomVector<Type,AF,PF,TF,RT>::swap( CustomVector& v ) noexcept
 {
    using std::swap;
@@ -1683,8 +1734,8 @@ inline void CustomVector<Type,AF,PF,TF,RT>::swap( CustomVector& v ) noexcept
    \endcode
 */
 template< typename Type     // Data type of the vector
-        , bool AF           // Alignment flag
-        , bool PF           // Padding flag
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF    // Padding flag
         , bool TF           // Transpose flag
         , typename RT >     // Result type
 template< typename Other >  // Data type of the scalar value
@@ -1727,11 +1778,11 @@ inline CustomVector<Type,AF,PF,TF,RT>& CustomVector<Type,AF,PF,TF,RT>::scale( co
 //       when the last custom vector referencing the array goes out of scope.
 // \note The custom vector does NOT take responsibility for the new array of elements!
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool PF        // Padding flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF    // Padding flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 inline void CustomVector<Type,AF,PF,TF,RT>::reset( Type* ptr, size_t n )
 {
    CustomVector tmp( ptr, n );
@@ -1765,16 +1816,16 @@ inline void CustomVector<Type,AF,PF,TF,RT>::reset( Type* ptr, size_t n )
 //       when the last custom vector referencing the array goes out of scope.
 // \note The custom vector does NOT take responsibility for the new array of elements!
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool PF        // Padding flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF    // Padding flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 inline void CustomVector<Type,AF,PF,TF,RT>::reset( Type* ptr, size_t n, size_t nn )
 {
    BLAZE_STATIC_ASSERT( PF == padded );
 
-   UNUSED_PARAMETER( ptr, n, nn );
+   MAYBE_UNUSED( ptr, n, nn );
 }
 //*************************************************************************************************
 
@@ -1798,8 +1849,8 @@ inline void CustomVector<Type,AF,PF,TF,RT>::reset( Type* ptr, size_t n, size_t n
 // to optimize the evaluation.
 */
 template< typename Type     // Data type of the vector
-        , bool AF           // Alignment flag
-        , bool PF           // Padding flag
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF    // Padding flag
         , bool TF           // Transpose flag
         , typename RT >     // Result type
 template< typename Other >  // Data type of the foreign expression
@@ -1821,8 +1872,8 @@ inline bool CustomVector<Type,AF,PF,TF,RT>::canAlias( const Other* alias ) const
 // to optimize the evaluation.
 */
 template< typename Type     // Data type of the vector
-        , bool AF           // Alignment flag
-        , bool PF           // Padding flag
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF    // Padding flag
         , bool TF           // Transpose flag
         , typename RT >     // Result type
 template< typename Other >  // Data type of the foreign expression
@@ -1842,11 +1893,11 @@ inline bool CustomVector<Type,AF,PF,TF,RT>::isAliased( const Other* alias ) cons
 // whether the beginning and the end of the vector are guaranteed to conform to the alignment
 // restrictions of the element type \a Type.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool PF        // Padding flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF    // Padding flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 inline bool CustomVector<Type,AF,PF,TF,RT>::isAligned() const noexcept
 {
    return ( AF || checkAlignment( v_ ) );
@@ -1864,11 +1915,11 @@ inline bool CustomVector<Type,AF,PF,TF,RT>::isAligned() const noexcept
 // function additionally provides runtime information (as for instance the current size of the
 // vector).
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool PF        // Padding flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF    // Padding flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 inline bool CustomVector<Type,AF,PF,TF,RT>::canSMPAssign() const noexcept
 {
    return ( size() > SMP_DVECASSIGN_THRESHOLD );
@@ -1888,11 +1939,11 @@ inline bool CustomVector<Type,AF,PF,TF,RT>::canSMPAssign() const noexcept
 // used internally for the performance optimized evaluation of expression templates. Calling
 // this function explicitly might result in erroneous results and/or in compilation errors.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool PF        // Padding flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF    // Padding flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 BLAZE_ALWAYS_INLINE typename CustomVector<Type,AF,PF,TF,RT>::SIMDType
    CustomVector<Type,AF,PF,TF,RT>::load( size_t index ) const noexcept
 {
@@ -1917,11 +1968,11 @@ BLAZE_ALWAYS_INLINE typename CustomVector<Type,AF,PF,TF,RT>::SIMDType
 // Calling this function explicitly might result in erroneous results and/or in compilation
 // errors.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool PF        // Padding flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF    // Padding flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 BLAZE_ALWAYS_INLINE typename CustomVector<Type,AF,PF,TF,RT>::SIMDType
    CustomVector<Type,AF,PF,TF,RT>::loada( size_t index ) const noexcept
 {
@@ -1952,11 +2003,11 @@ BLAZE_ALWAYS_INLINE typename CustomVector<Type,AF,PF,TF,RT>::SIMDType
 // Calling this function explicitly might result in erroneous results and/or in compilation
 // errors.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool PF        // Padding flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF    // Padding flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 BLAZE_ALWAYS_INLINE typename CustomVector<Type,AF,PF,TF,RT>::SIMDType
    CustomVector<Type,AF,PF,TF,RT>::loadu( size_t index ) const noexcept
 {
@@ -1985,11 +2036,11 @@ BLAZE_ALWAYS_INLINE typename CustomVector<Type,AF,PF,TF,RT>::SIMDType
 // used internally for the performance optimized evaluation of expression templates. Calling
 // this function explicitly might result in erroneous results and/or in compilation errors.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool PF        // Padding flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF    // Padding flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 BLAZE_ALWAYS_INLINE void
    CustomVector<Type,AF,PF,TF,RT>::store( size_t index, const SIMDType& value ) noexcept
 {
@@ -2014,11 +2065,11 @@ BLAZE_ALWAYS_INLINE void
 // is used internally for the performance optimized evaluation of expression templates. Calling
 // this function explicitly might result in erroneous results and/or in compilation errors.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool PF        // Padding flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF    // Padding flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 BLAZE_ALWAYS_INLINE void
    CustomVector<Type,AF,PF,TF,RT>::storea( size_t index, const SIMDType& value ) noexcept
 {
@@ -2049,11 +2100,11 @@ BLAZE_ALWAYS_INLINE void
 // is used internally for the performance optimized evaluation of expression templates. Calling
 // this function explicitly might result in erroneous results and/or in compilation errors.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool PF        // Padding flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF    // Padding flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 BLAZE_ALWAYS_INLINE void
    CustomVector<Type,AF,PF,TF,RT>::storeu( size_t index, const SIMDType& value ) noexcept
 {
@@ -2083,11 +2134,11 @@ BLAZE_ALWAYS_INLINE void
 // expression templates. Calling this function explicitly might result in erroneous results
 // and/or in compilation errors.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool PF        // Padding flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF    // Padding flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 BLAZE_ALWAYS_INLINE void
    CustomVector<Type,AF,PF,TF,RT>::stream( size_t index, const SIMDType& value ) noexcept
 {
@@ -2116,19 +2167,19 @@ BLAZE_ALWAYS_INLINE void
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool PF        // Padding flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF    // Padding flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 template< typename VT >  // Type of the right-hand side dense vector
 inline auto CustomVector<Type,AF,PF,TF,RT>::assign( const DenseVector<VT,TF>& rhs )
    -> DisableIf_t< VectorizedAssign_v<VT> >
 {
    BLAZE_INTERNAL_ASSERT( size_ == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t ipos( size_ & size_t(-2) );
-   BLAZE_INTERNAL_ASSERT( ( size_ - ( size_ % 2UL ) ) == ipos, "Invalid end calculation" );
+   const size_t ipos( prevMultiple( size_, 2UL ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= size_, "Invalid end calculation" );
 
    for( size_t i=0UL; i<ipos; i+=2UL ) {
       v_[i    ] = (~rhs)[i    ];
@@ -2151,11 +2202,11 @@ inline auto CustomVector<Type,AF,PF,TF,RT>::assign( const DenseVector<VT,TF>& rh
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool PF        // Padding flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF    // Padding flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 template< typename VT >  // Type of the right-hand side dense vector
 inline auto CustomVector<Type,AF,PF,TF,RT>::assign( const DenseVector<VT,TF>& rhs )
    -> EnableIf_t< VectorizedAssign_v<VT> >
@@ -2164,8 +2215,8 @@ inline auto CustomVector<Type,AF,PF,TF,RT>::assign( const DenseVector<VT,TF>& rh
 
    BLAZE_INTERNAL_ASSERT( size_ == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t ipos( size_ & size_t(-SIMDSIZE) );
-   BLAZE_INTERNAL_ASSERT( ( size_ - ( size_ % SIMDSIZE ) ) == ipos, "Invalid end calculation" );
+   const size_t ipos( prevMultiple( size_, SIMDSIZE ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= size_, "Invalid end calculation" );
 
    if( AF && useStreaming && size_ > ( cacheSize/( sizeof(Type) * 3UL ) ) && !(~rhs).isAliased( this ) )
    {
@@ -2180,9 +2231,8 @@ inline auto CustomVector<Type,AF,PF,TF,RT>::assign( const DenseVector<VT,TF>& rh
    }
    else
    {
-      const size_t i4way( size_ & size_t(-SIMDSIZE*4) );
-      BLAZE_INTERNAL_ASSERT( ( size_ - ( size_ % (SIMDSIZE*4UL) ) ) == i4way, "Invalid end calculation" );
-      BLAZE_INTERNAL_ASSERT( i4way <= ipos, "Invalid end calculation" );
+      const size_t i4way( prevMultiple( size_, SIMDSIZE*4UL ) );
+      BLAZE_INTERNAL_ASSERT( i4way <= size_, "Invalid end calculation" );
 
       size_t i( 0UL );
       ConstIterator_t<VT> it( (~rhs).begin() );
@@ -2215,17 +2265,17 @@ inline auto CustomVector<Type,AF,PF,TF,RT>::assign( const DenseVector<VT,TF>& rh
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool PF        // Padding flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF    // Padding flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 template< typename VT >  // Type of the right-hand side sparse vector
 inline void CustomVector<Type,AF,PF,TF,RT>::assign( const SparseVector<VT,TF>& rhs )
 {
    BLAZE_INTERNAL_ASSERT( size_ == (~rhs).size(), "Invalid vector sizes" );
 
-   for( ConstIterator_t<VT> element=(~rhs).begin(); element!=(~rhs).end(); ++element )
+   for( auto element=(~rhs).begin(); element!=(~rhs).end(); ++element )
       v_[element->index()] = element->value();
 }
 //*************************************************************************************************
@@ -2242,19 +2292,19 @@ inline void CustomVector<Type,AF,PF,TF,RT>::assign( const SparseVector<VT,TF>& r
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool PF        // Padding flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF    // Padding flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 template< typename VT >  // Type of the right-hand side dense vector
 inline auto CustomVector<Type,AF,PF,TF,RT>::addAssign( const DenseVector<VT,TF>& rhs )
    -> DisableIf_t< VectorizedAddAssign_v<VT> >
 {
    BLAZE_INTERNAL_ASSERT( size_ == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t ipos( size_ & size_t(-2) );
-   BLAZE_INTERNAL_ASSERT( ( size_ - ( size_ % 2UL ) ) == ipos, "Invalid end calculation" );
+   const size_t ipos( prevMultiple( size_, 2UL ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= size_, "Invalid end calculation" );
 
    for( size_t i=0UL; i<ipos; i+=2UL ) {
       v_[i    ] += (~rhs)[i    ];
@@ -2277,11 +2327,11 @@ inline auto CustomVector<Type,AF,PF,TF,RT>::addAssign( const DenseVector<VT,TF>&
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool PF        // Padding flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF    // Padding flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 template< typename VT >  // Type of the right-hand side dense vector
 inline auto CustomVector<Type,AF,PF,TF,RT>::addAssign( const DenseVector<VT,TF>& rhs )
    -> EnableIf_t< VectorizedAddAssign_v<VT> >
@@ -2290,12 +2340,11 @@ inline auto CustomVector<Type,AF,PF,TF,RT>::addAssign( const DenseVector<VT,TF>&
 
    BLAZE_INTERNAL_ASSERT( size_ == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t ipos( size_ & size_t(-SIMDSIZE) );
-   BLAZE_INTERNAL_ASSERT( ( size_ - ( size_ % SIMDSIZE ) ) == ipos, "Invalid end calculation" );
+   const size_t ipos( prevMultiple( size_, SIMDSIZE ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= size_, "Invalid end calculation" );
 
-   const size_t i4way( size_ & size_t(-SIMDSIZE*4) );
-   BLAZE_INTERNAL_ASSERT( ( size_ - ( size_ % (SIMDSIZE*4UL) ) ) == i4way, "Invalid end calculation" );
-   BLAZE_INTERNAL_ASSERT( i4way <= ipos, "Invalid end calculation" );
+   const size_t i4way( prevMultiple( size_, SIMDSIZE*4UL ) );
+   BLAZE_INTERNAL_ASSERT( i4way <= size_, "Invalid end calculation" );
 
    size_t i( 0UL );
    ConstIterator_t<VT> it( (~rhs).begin() );
@@ -2327,17 +2376,17 @@ inline auto CustomVector<Type,AF,PF,TF,RT>::addAssign( const DenseVector<VT,TF>&
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool PF        // Padding flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF    // Padding flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 template< typename VT >  // Type of the right-hand side sparse vector
 inline void CustomVector<Type,AF,PF,TF,RT>::addAssign( const SparseVector<VT,TF>& rhs )
 {
    BLAZE_INTERNAL_ASSERT( size_ == (~rhs).size(), "Invalid vector sizes" );
 
-   for( ConstIterator_t<VT> element=(~rhs).begin(); element!=(~rhs).end(); ++element )
+   for( auto element=(~rhs).begin(); element!=(~rhs).end(); ++element )
       v_[element->index()] += element->value();
 }
 //*************************************************************************************************
@@ -2354,19 +2403,19 @@ inline void CustomVector<Type,AF,PF,TF,RT>::addAssign( const SparseVector<VT,TF>
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool PF        // Padding flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF    // Padding flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 template< typename VT >  // Type of the right-hand side dense vector
 inline auto CustomVector<Type,AF,PF,TF,RT>::subAssign( const DenseVector<VT,TF>& rhs )
    -> DisableIf_t< VectorizedSubAssign_v<VT> >
 {
    BLAZE_INTERNAL_ASSERT( size_ == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t ipos( size_ & size_t(-2) );
-   BLAZE_INTERNAL_ASSERT( ( size_ - ( size_ % 2UL ) ) == ipos, "Invalid end calculation" );
+   const size_t ipos( prevMultiple( size_, 2UL ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= size_, "Invalid end calculation" );
 
    for( size_t i=0UL; i<ipos; i+=2UL ) {
       v_[i    ] -= (~rhs)[i    ];
@@ -2389,11 +2438,11 @@ inline auto CustomVector<Type,AF,PF,TF,RT>::subAssign( const DenseVector<VT,TF>&
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool PF        // Padding flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF    // Padding flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 template< typename VT >  // Type of the right-hand side dense vector
 inline auto CustomVector<Type,AF,PF,TF,RT>::subAssign( const DenseVector<VT,TF>& rhs )
    -> EnableIf_t< VectorizedSubAssign_v<VT> >
@@ -2402,12 +2451,11 @@ inline auto CustomVector<Type,AF,PF,TF,RT>::subAssign( const DenseVector<VT,TF>&
 
    BLAZE_INTERNAL_ASSERT( size_ == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t ipos( size_ & size_t(-SIMDSIZE) );
-   BLAZE_INTERNAL_ASSERT( ( size_ - ( size_ % SIMDSIZE ) ) == ipos, "Invalid end calculation" );
+   const size_t ipos( prevMultiple( size_, SIMDSIZE ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= size_, "Invalid end calculation" );
 
-   const size_t i4way( size_ & size_t(-SIMDSIZE*4) );
-   BLAZE_INTERNAL_ASSERT( ( size_ - ( size_ % (SIMDSIZE*4UL) ) ) == i4way, "Invalid end calculation" );
-   BLAZE_INTERNAL_ASSERT( i4way <= ipos, "Invalid end calculation" );
+   const size_t i4way( prevMultiple( size_, SIMDSIZE*4UL ) );
+   BLAZE_INTERNAL_ASSERT( i4way <= size_, "Invalid end calculation" );
 
    size_t i( 0UL );
    ConstIterator_t<VT> it( (~rhs).begin() );
@@ -2439,17 +2487,17 @@ inline auto CustomVector<Type,AF,PF,TF,RT>::subAssign( const DenseVector<VT,TF>&
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool PF        // Padding flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF    // Padding flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 template< typename VT >  // Type of the right-hand side sparse vector
 inline void CustomVector<Type,AF,PF,TF,RT>::subAssign( const SparseVector<VT,TF>& rhs )
 {
    BLAZE_INTERNAL_ASSERT( size_ == (~rhs).size(), "Invalid vector sizes" );
 
-   for( ConstIterator_t<VT> element=(~rhs).begin(); element!=(~rhs).end(); ++element )
+   for( auto element=(~rhs).begin(); element!=(~rhs).end(); ++element )
       v_[element->index()] -= element->value();
 }
 //*************************************************************************************************
@@ -2466,19 +2514,19 @@ inline void CustomVector<Type,AF,PF,TF,RT>::subAssign( const SparseVector<VT,TF>
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool PF        // Padding flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF    // Padding flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 template< typename VT >  // Type of the right-hand side dense vector
 inline auto CustomVector<Type,AF,PF,TF,RT>::multAssign( const DenseVector<VT,TF>& rhs )
    -> DisableIf_t< VectorizedMultAssign_v<VT> >
 {
    BLAZE_INTERNAL_ASSERT( size_ == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t ipos( size_ & size_t(-2) );
-   BLAZE_INTERNAL_ASSERT( ( size_ - ( size_ % 2UL ) ) == ipos, "Invalid end calculation" );
+   const size_t ipos( prevMultiple( size_, 2UL ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= size_, "Invalid end calculation" );
 
    for( size_t i=0UL; i<ipos; i+=2UL ) {
       v_[i    ] *= (~rhs)[i    ];
@@ -2501,11 +2549,11 @@ inline auto CustomVector<Type,AF,PF,TF,RT>::multAssign( const DenseVector<VT,TF>
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool PF        // Padding flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF    // Padding flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 template< typename VT >  // Type of the right-hand side dense vector
 inline auto CustomVector<Type,AF,PF,TF,RT>::multAssign( const DenseVector<VT,TF>& rhs )
    -> EnableIf_t< VectorizedMultAssign_v<VT> >
@@ -2514,12 +2562,11 @@ inline auto CustomVector<Type,AF,PF,TF,RT>::multAssign( const DenseVector<VT,TF>
 
    BLAZE_INTERNAL_ASSERT( size_ == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t ipos( size_ & size_t(-SIMDSIZE) );
-   BLAZE_INTERNAL_ASSERT( ( size_ - ( size_ % SIMDSIZE ) ) == ipos, "Invalid end calculation" );
+   const size_t ipos( prevMultiple( size_, SIMDSIZE ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= size_, "Invalid end calculation" );
 
-   const size_t i4way( size_ & size_t(-SIMDSIZE*4) );
-   BLAZE_INTERNAL_ASSERT( ( size_ - ( size_ % (SIMDSIZE*4UL) ) ) == i4way, "Invalid end calculation" );
-   BLAZE_INTERNAL_ASSERT( i4way <= ipos, "Invalid end calculation" );
+   const size_t i4way( prevMultiple( size_, SIMDSIZE*4UL ) );
+   BLAZE_INTERNAL_ASSERT( i4way <= size_, "Invalid end calculation" );
 
    size_t i( 0UL );
    ConstIterator_t<VT> it( (~rhs).begin() );
@@ -2551,11 +2598,11 @@ inline auto CustomVector<Type,AF,PF,TF,RT>::multAssign( const DenseVector<VT,TF>
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool PF        // Padding flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF    // Padding flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 template< typename VT >  // Type of the right-hand side sparse vector
 inline void CustomVector<Type,AF,PF,TF,RT>::multAssign( const SparseVector<VT,TF>& rhs )
 {
@@ -2565,7 +2612,7 @@ inline void CustomVector<Type,AF,PF,TF,RT>::multAssign( const SparseVector<VT,TF
 
    reset();
 
-   for( ConstIterator_t<VT> element=(~rhs).begin(); element!=(~rhs).end(); ++element )
+   for( auto element=(~rhs).begin(); element!=(~rhs).end(); ++element )
       v_[element->index()] = tmp[element->index()] * element->value();
 }
 //*************************************************************************************************
@@ -2582,19 +2629,19 @@ inline void CustomVector<Type,AF,PF,TF,RT>::multAssign( const SparseVector<VT,TF
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool PF        // Padding flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF    // Padding flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 template< typename VT >  // Type of the right-hand side dense vector
 inline auto CustomVector<Type,AF,PF,TF,RT>::divAssign( const DenseVector<VT,TF>& rhs )
    -> DisableIf_t< VectorizedDivAssign_v<VT> >
 {
    BLAZE_INTERNAL_ASSERT( size_ == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t ipos( size_ & size_t(-2) );
-   BLAZE_INTERNAL_ASSERT( ( size_ - ( size_ % 2UL ) ) == ipos, "Invalid end calculation" );
+   const size_t ipos( prevMultiple( size_, 2UL ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= size_, "Invalid end calculation" );
 
    for( size_t i=0UL; i<ipos; i+=2UL ) {
       v_[i    ] /= (~rhs)[i    ];
@@ -2617,11 +2664,11 @@ inline auto CustomVector<Type,AF,PF,TF,RT>::divAssign( const DenseVector<VT,TF>&
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool PF        // Padding flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF    // Padding flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 template< typename VT >  // Type of the right-hand side dense vector
 inline auto CustomVector<Type,AF,PF,TF,RT>::divAssign( const DenseVector<VT,TF>& rhs )
    -> EnableIf_t< VectorizedDivAssign_v<VT> >
@@ -2630,12 +2677,11 @@ inline auto CustomVector<Type,AF,PF,TF,RT>::divAssign( const DenseVector<VT,TF>&
 
    BLAZE_INTERNAL_ASSERT( size_ == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t ipos( size_ & size_t(-SIMDSIZE) );
-   BLAZE_INTERNAL_ASSERT( ( size_ - ( size_ % SIMDSIZE ) ) == ipos, "Invalid end calculation" );
+   const size_t ipos( prevMultiple( size_, SIMDSIZE ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= size_, "Invalid end calculation" );
 
-   const size_t i4way( size_ & size_t(-SIMDSIZE*4) );
-   BLAZE_INTERNAL_ASSERT( ( size_ - ( size_ % (SIMDSIZE*4UL) ) ) == i4way, "Invalid end calculation" );
-   BLAZE_INTERNAL_ASSERT( i4way <= ipos, "Invalid end calculation" );
+   const size_t i4way( prevMultiple( size_, SIMDSIZE*4UL ) );
+   BLAZE_INTERNAL_ASSERT( i4way <= size_, "Invalid end calculation" );
 
    size_t i( 0UL );
    ConstIterator_t<VT> it( (~rhs).begin() );
@@ -2676,10 +2722,10 @@ inline auto CustomVector<Type,AF,PF,TF,RT>::divAssign( const DenseVector<VT,TF>&
 // This specialization of CustomVector adapts the class template to the requirements of padded
 // vectors.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 class CustomVector<Type,AF,padded,TF,RT>
    : public DenseVector< CustomVector<Type,AF,padded,TF,RT>, TF >
 {
@@ -2746,16 +2792,18 @@ class CustomVector<Type,AF,padded,TF,RT>
    //**Constructors********************************************************************************
    /*!\name Constructors */
    //@{
-   explicit inline CustomVector();
-   explicit inline CustomVector( Type* ptr, size_t n, size_t nn );
-
+   inline CustomVector();
+   inline CustomVector( Type* ptr, size_t n, size_t nn );
    inline CustomVector( const CustomVector& v );
    inline CustomVector( CustomVector&& v ) noexcept;
    //@}
    //**********************************************************************************************
 
    //**Destructor**********************************************************************************
-   // No explicitly declared destructor.
+   /*!\name Destructor */
+   //@{
+   ~CustomVector() = default;
+   //@}
    //**********************************************************************************************
 
    //**Data access functions***********************************************************************
@@ -2782,8 +2830,11 @@ class CustomVector<Type,AF,padded,TF,RT>
    inline CustomVector& operator=( const Type& rhs );
    inline CustomVector& operator=( initializer_list<Type> list );
 
-   template< typename Other, size_t N >
-   inline CustomVector& operator=( const Other (&array)[N] );
+   template< typename Other, size_t Dim >
+   inline CustomVector& operator=( const Other (&array)[Dim] );
+
+   template< typename Other, size_t Dim >
+   inline CustomVector& operator=( const std::array<Other,Dim>& array );
 
    inline CustomVector& operator=( const CustomVector& rhs );
    inline CustomVector& operator=( CustomVector&& rhs ) noexcept;
@@ -2838,9 +2889,7 @@ class CustomVector<Type,AF,padded,TF,RT>
    //! Helper variable template for the explicit application of the SFINAE principle.
    template< typename VT >
    static constexpr bool VectorizedAddAssign_v =
-      ( useOptimizedKernels &&
-        simdEnabled && VT::simdEnabled &&
-        IsSIMDCombinable_v< Type, ElementType_t<VT> > &&
+      ( VectorizedAssign_v<VT> &&
         HasSIMDAdd_v< Type, ElementType_t<VT> > );
    //**********************************************************************************************
 
@@ -2848,9 +2897,7 @@ class CustomVector<Type,AF,padded,TF,RT>
    //! Helper variable template for the explicit application of the SFINAE principle.
    template< typename VT >
    static constexpr bool VectorizedSubAssign_v =
-      ( useOptimizedKernels &&
-        simdEnabled && VT::simdEnabled &&
-        IsSIMDCombinable_v< Type, ElementType_t<VT> > &&
+      ( VectorizedAssign_v<VT> &&
         HasSIMDSub_v< Type, ElementType_t<VT> > );
    //**********************************************************************************************
 
@@ -2858,9 +2905,7 @@ class CustomVector<Type,AF,padded,TF,RT>
    //! Helper variable template for the explicit application of the SFINAE principle.
    template< typename VT >
    static constexpr bool VectorizedMultAssign_v =
-      ( useOptimizedKernels &&
-        simdEnabled && VT::simdEnabled &&
-        IsSIMDCombinable_v< Type, ElementType_t<VT> > &&
+      ( VectorizedAssign_v<VT> &&
         HasSIMDMult_v< Type, ElementType_t<VT> > );
    //**********************************************************************************************
 
@@ -2868,9 +2913,7 @@ class CustomVector<Type,AF,padded,TF,RT>
    //! Helper variable template for the explicit application of the SFINAE principle.
    template< typename VT >
    static constexpr bool VectorizedDivAssign_v =
-      ( useOptimizedKernels &&
-        simdEnabled && VT::simdEnabled &&
-        IsSIMDCombinable_v< Type, ElementType_t<VT> > &&
+      ( VectorizedAssign_v<VT> &&
         HasSIMDDiv_v< Type, ElementType_t<VT> > );
    //**********************************************************************************************
 
@@ -2977,10 +3020,10 @@ class CustomVector<Type,AF,padded,TF,RT>
 /*! \cond BLAZE_INTERNAL */
 /*!\brief The default constructor for CustomVector.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 inline CustomVector<Type,AF,padded,TF,RT>::CustomVector()
    : size_    ( 0UL )      // The size/dimension of the vector
    , capacity_( 0UL )      // The maximum capacity of the vector
@@ -3012,10 +3055,10 @@ inline CustomVector<Type,AF,padded,TF,RT>::CustomVector()
 //
 // \note The custom vector does NOT take responsibility for the given array of elements!
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 inline CustomVector<Type,AF,padded,TF,RT>::CustomVector( Type* ptr, size_t n, size_t nn )
    : size_    ( n )    // The size/dimension of the vector
    , capacity_( nn )   // The maximum capacity of the vector
@@ -3052,10 +3095,10 @@ inline CustomVector<Type,AF,padded,TF,RT>::CustomVector( Type* ptr, size_t n, si
 //
 // The copy constructor initializes the custom vector as an exact copy of the given custom vector.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 inline CustomVector<Type,AF,padded,TF,RT>::CustomVector( const CustomVector& v )
    : size_    ( v.size_ )      // The size/dimension of the vector
    , capacity_( v.capacity_ )  // The maximum capacity of the vector
@@ -3071,10 +3114,10 @@ inline CustomVector<Type,AF,padded,TF,RT>::CustomVector( const CustomVector& v )
 //
 // \param v The vector to be moved into this instance.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 inline CustomVector<Type,AF,padded,TF,RT>::CustomVector( CustomVector&& v ) noexcept
    : size_    ( v.size_ )             // The size/dimension of the vector
    , capacity_( v.capacity_ )         // The maximum capacity of the vector
@@ -3108,10 +3151,10 @@ inline CustomVector<Type,AF,padded,TF,RT>::CustomVector( CustomVector&& v ) noex
 // This function only performs an index check in case BLAZE_USER_ASSERT() is active. In contrast,
 // the at() function is guaranteed to perform a check of the given access index.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 inline typename CustomVector<Type,AF,padded,TF,RT>::Reference
    CustomVector<Type,AF,padded,TF,RT>::operator[]( size_t index ) noexcept
 {
@@ -3132,10 +3175,10 @@ inline typename CustomVector<Type,AF,padded,TF,RT>::Reference
 // This function only performs an index check in case BLAZE_USER_ASSERT() is active. In contrast,
 // the at() function is guaranteed to perform a check of the given access index.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 inline typename CustomVector<Type,AF,padded,TF,RT>::ConstReference
    CustomVector<Type,AF,padded,TF,RT>::operator[]( size_t index ) const noexcept
 {
@@ -3157,10 +3200,10 @@ inline typename CustomVector<Type,AF,padded,TF,RT>::ConstReference
 // In contrast to the subscript operator this function always performs a check of the given
 // access index.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 inline typename CustomVector<Type,AF,padded,TF,RT>::Reference
    CustomVector<Type,AF,padded,TF,RT>::at( size_t index )
 {
@@ -3184,10 +3227,10 @@ inline typename CustomVector<Type,AF,padded,TF,RT>::Reference
 // In contrast to the subscript operator this function always performs a check of the given
 // access index.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 inline typename CustomVector<Type,AF,padded,TF,RT>::ConstReference
    CustomVector<Type,AF,padded,TF,RT>::at( size_t index ) const
 {
@@ -3208,10 +3251,10 @@ inline typename CustomVector<Type,AF,padded,TF,RT>::ConstReference
 //
 // This function returns a pointer to the internal storage of the custom vector.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 inline typename CustomVector<Type,AF,padded,TF,RT>::Pointer
    CustomVector<Type,AF,padded,TF,RT>::data() noexcept
 {
@@ -3229,10 +3272,10 @@ inline typename CustomVector<Type,AF,padded,TF,RT>::Pointer
 //
 // This function returns a pointer to the internal storage of the custom vector.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 inline typename CustomVector<Type,AF,padded,TF,RT>::ConstPointer
    CustomVector<Type,AF,padded,TF,RT>::data() const noexcept
 {
@@ -3248,10 +3291,10 @@ inline typename CustomVector<Type,AF,padded,TF,RT>::ConstPointer
 //
 // \return Iterator to the first element of the custom vector.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 inline typename CustomVector<Type,AF,padded,TF,RT>::Iterator
    CustomVector<Type,AF,padded,TF,RT>::begin() noexcept
 {
@@ -3267,10 +3310,10 @@ inline typename CustomVector<Type,AF,padded,TF,RT>::Iterator
 //
 // \return Iterator to the first element of the custom vector.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 inline typename CustomVector<Type,AF,padded,TF,RT>::ConstIterator
    CustomVector<Type,AF,padded,TF,RT>::begin() const noexcept
 {
@@ -3286,10 +3329,10 @@ inline typename CustomVector<Type,AF,padded,TF,RT>::ConstIterator
 //
 // \return Iterator to the first element of the custom vector.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 inline typename CustomVector<Type,AF,padded,TF,RT>::ConstIterator
    CustomVector<Type,AF,padded,TF,RT>::cbegin() const noexcept
 {
@@ -3305,10 +3348,10 @@ inline typename CustomVector<Type,AF,padded,TF,RT>::ConstIterator
 //
 // \return Iterator just past the last element of the custom vector.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 inline typename CustomVector<Type,AF,padded,TF,RT>::Iterator
    CustomVector<Type,AF,padded,TF,RT>::end() noexcept
 {
@@ -3324,10 +3367,10 @@ inline typename CustomVector<Type,AF,padded,TF,RT>::Iterator
 //
 // \return Iterator just past the last element of the custom vector.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 inline typename CustomVector<Type,AF,padded,TF,RT>::ConstIterator
    CustomVector<Type,AF,padded,TF,RT>::end() const noexcept
 {
@@ -3343,10 +3386,10 @@ inline typename CustomVector<Type,AF,padded,TF,RT>::ConstIterator
 //
 // \return Iterator just past the last element of the custom vector.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 inline typename CustomVector<Type,AF,padded,TF,RT>::ConstIterator
    CustomVector<Type,AF,padded,TF,RT>::cend() const noexcept
 {
@@ -3371,10 +3414,10 @@ inline typename CustomVector<Type,AF,padded,TF,RT>::ConstIterator
 // \param rhs Scalar value to be assigned to all vector elements.
 // \return Reference to the assigned vector.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 inline CustomVector<Type,AF,padded,TF,RT>&
    CustomVector<Type,AF,padded,TF,RT>::operator=( const Type& rhs )
 {
@@ -3411,10 +3454,10 @@ inline CustomVector<Type,AF,padded,TF,RT>&
 // are reset to their default state. Note that in case the size of the initializer list exceeds
 // the size of the vector, a \a std::invalid_argument exception is thrown.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 inline CustomVector<Type,AF,padded,TF,RT>&
    CustomVector<Type,AF,padded,TF,RT>::operator=( initializer_list<Type> list )
 {
@@ -3434,7 +3477,7 @@ inline CustomVector<Type,AF,padded,TF,RT>&
 /*! \cond BLAZE_INTERNAL */
 /*!\brief Array assignment to all vector elements.
 //
-// \param array N-dimensional array for the assignment.
+// \param array Static array for the assignment.
 // \return Reference to the assigned vector.
 // \exception std::invalid_argument Invalid array size.
 //
@@ -3453,25 +3496,77 @@ inline CustomVector<Type,AF,padded,TF,RT>&
    v = init;
    \endcode
 
-// The vector is assigned the values from the given array. Missing values are initialized with
-// default values (as e.g. the fourth element in the example). Note that the size of the array
-// must match the size of the custom vector. Otherwise a \a std::invalid_argument exception is
-// thrown. Also note that after the assignment \a array will have the same entries as \a init.
+// The vector is assigned the values from the given static array. Missing values are initialized
+// with default values (as e.g. the fourth element in the example). Note that the size of the
+// static array must match the size of the custom vector. Otherwise a \a std::invalid_argument
+// exception is thrown. Also note that after the assignment \a array will have the same entries
+// as \a init.
 */
-template< typename Type   // Data type of the vector
-        , bool AF         // Alignment flag
-        , bool TF         // Transpose flag
-        , typename RT >   // Result type
-template< typename Other  // Data type of the initialization array
-        , size_t N >      // Dimension of the initialization array
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
+template< typename Other    // Data type of the static array
+        , size_t Dim >      // Dimension of the static array
 inline CustomVector<Type,AF,padded,TF,RT>&
-   CustomVector<Type,AF,padded,TF,RT>::operator=( const Other (&array)[N] )
+   CustomVector<Type,AF,padded,TF,RT>::operator=( const Other (&array)[Dim] )
 {
-   if( size_ != N ) {
+   if( size_ != Dim ) {
       BLAZE_THROW_INVALID_ARGUMENT( "Invalid array size" );
    }
 
-   for( size_t i=0UL; i<N; ++i )
+   for( size_t i=0UL; i<Dim; ++i )
+      v_[i] = array[i];
+
+   return *this;
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Array assignment to all vector elements.
+//
+// \param array The given std::array for the assignment.
+// \return Reference to the assigned vector.
+// \exception std::invalid_argument Invalid std::array size.
+//
+// This assignment operator offers the option to directly set all elements of the vector. The
+// following example demonstrates this by means of an unaligned, padded custom vector:
+
+   \code
+   using blaze::CustomVector;
+   using blaze::unaliged;
+   using blaze::padded;
+
+   const int array[8] = { 1, 2, 3, 4, 0, 0, 0, 0 };
+   const std::array<int,4UL> init{ 5, 6, 7 };
+
+   CustomVector<double,unaligned,padded> v( array, 4UL, 8UL );
+   v = init;
+   \endcode
+
+// The vector is assigned the values from the given std::array. Missing values are initialized
+// with default values (as e.g. the fourth element in the example). Note that the size of the
+// std::array must match the size of the custom vector. Otherwise a \a std::invalid_argument
+// exception is thrown. Also note that after the assignment \a array will have the same entries
+// as \a init.
+*/
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
+template< typename Other    // Data type of the std::array
+        , size_t Dim >      // Dimension of the std::array
+inline CustomVector<Type,AF,padded,TF,RT>&
+   CustomVector<Type,AF,padded,TF,RT>::operator=( const std::array<Other,Dim>& array )
+{
+   if( size_ != Dim ) {
+      BLAZE_THROW_INVALID_ARGUMENT( "Invalid array size" );
+   }
+
+   for( size_t i=0UL; i<Dim; ++i )
       v_[i] = array[i];
 
    return *this;
@@ -3491,10 +3586,10 @@ inline CustomVector<Type,AF,padded,TF,RT>&
 // The vector is initialized as a copy of the given vector. In case the current sizes of the two
 // vectors don't match, a \a std::invalid_argument exception is thrown.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 inline CustomVector<Type,AF,padded,TF,RT>&
    CustomVector<Type,AF,padded,TF,RT>::operator=( const CustomVector& rhs )
 {
@@ -3517,10 +3612,10 @@ inline CustomVector<Type,AF,padded,TF,RT>&
 // \param rhs The vector to be moved into this instance.
 // \return Reference to the assigned vector.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 inline CustomVector<Type,AF,padded,TF,RT>&
    CustomVector<Type,AF,padded,TF,RT>::operator=( CustomVector&& rhs ) noexcept
 {
@@ -3551,10 +3646,10 @@ inline CustomVector<Type,AF,padded,TF,RT>&
 // The vector is initialized as a copy of the given vector. In case the current sizes of the two
 // vectors don't match, a \a std::invalid_argument exception is thrown.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 template< typename VT >  // Type of the right-hand side vector
 inline CustomVector<Type,AF,padded,TF,RT>&
    CustomVector<Type,AF,padded,TF,RT>::operator=( const Vector<VT,TF>& rhs )
@@ -3590,10 +3685,10 @@ inline CustomVector<Type,AF,padded,TF,RT>&
 // In case the current sizes of the two vectors don't match, a \a std::invalid_argument exception
 // is thrown.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 template< typename VT >  // Type of the right-hand side vector
 inline CustomVector<Type,AF,padded,TF,RT>&
    CustomVector<Type,AF,padded,TF,RT>::operator+=( const Vector<VT,TF>& rhs )
@@ -3628,10 +3723,10 @@ inline CustomVector<Type,AF,padded,TF,RT>&
 // In case the current sizes of the two vectors don't match, a \a std::invalid_argument exception
 // is thrown.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 template< typename VT >  // Type of the right-hand side vector
 inline CustomVector<Type,AF,padded,TF,RT>&
    CustomVector<Type,AF,padded,TF,RT>::operator-=( const Vector<VT,TF>& rhs )
@@ -3666,10 +3761,10 @@ inline CustomVector<Type,AF,padded,TF,RT>&
 // In case the current sizes of the two vectors don't match, a \a std::invalid_argument exception
 // is thrown.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 template< typename VT >  // Type of the right-hand side vector
 inline CustomVector<Type,AF,padded,TF,RT>&
    CustomVector<Type,AF,padded,TF,RT>::operator*=( const Vector<VT,TF>& rhs )
@@ -3713,10 +3808,10 @@ inline CustomVector<Type,AF,padded,TF,RT>&
 // In case the current sizes of the two vectors don't match, a \a std::invalid_argument exception
 // is thrown.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 template< typename VT >  // Type of the right-hand side vector
 inline CustomVector<Type,AF,padded,TF,RT>&
    CustomVector<Type,AF,padded,TF,RT>::operator/=( const DenseVector<VT,TF>& rhs )
@@ -3760,10 +3855,10 @@ inline CustomVector<Type,AF,padded,TF,RT>&
 // In case the current size of any of the two vectors is not equal to 3, a \a std::invalid_argument
 // exception is thrown.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 template< typename VT >  // Type of the right-hand side vector
 inline CustomVector<Type,AF,padded,TF,RT>&
    CustomVector<Type,AF,padded,TF,RT>::operator%=( const Vector<VT,TF>& rhs )
@@ -3806,10 +3901,10 @@ inline CustomVector<Type,AF,padded,TF,RT>&
 //
 // \return The size of the vector.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 inline size_t CustomVector<Type,AF,padded,TF,RT>::size() const noexcept
 {
    return size_;
@@ -3827,10 +3922,10 @@ inline size_t CustomVector<Type,AF,padded,TF,RT>::size() const noexcept
 // This function returns the minimum capacity of the vector, which corresponds to the current
 // size plus padding.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 inline size_t CustomVector<Type,AF,padded,TF,RT>::spacing() const noexcept
 {
    return capacity_;
@@ -3845,10 +3940,10 @@ inline size_t CustomVector<Type,AF,padded,TF,RT>::spacing() const noexcept
 //
 // \return The maximum capacity of the vector.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 inline size_t CustomVector<Type,AF,padded,TF,RT>::capacity() const noexcept
 {
    return capacity_;
@@ -3866,10 +3961,10 @@ inline size_t CustomVector<Type,AF,padded,TF,RT>::capacity() const noexcept
 // Note that the number of non-zero elements is always less than or equal to the current size
 // of the vector.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 inline size_t CustomVector<Type,AF,padded,TF,RT>::nonZeros() const
 {
    size_t nonzeros( 0 );
@@ -3891,10 +3986,10 @@ inline size_t CustomVector<Type,AF,padded,TF,RT>::nonZeros() const
 //
 // \return void
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 inline void CustomVector<Type,AF,padded,TF,RT>::reset()
 {
    using blaze::clear;
@@ -3914,10 +4009,10 @@ inline void CustomVector<Type,AF,padded,TF,RT>::reset()
 // This function clears the vector to its default state. In case the vector has been passed the
 // responsibility to manage the given array, it disposes the resource via the specified deleter.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 inline void CustomVector<Type,AF,padded,TF,RT>::clear()
 {
    size_     = 0UL;
@@ -3935,10 +4030,10 @@ inline void CustomVector<Type,AF,padded,TF,RT>::clear()
 // \param v The vector to be swapped.
 // \return void
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 inline void CustomVector<Type,AF,padded,TF,RT>::swap( CustomVector& v ) noexcept
 {
    using std::swap;
@@ -3982,7 +4077,7 @@ inline void CustomVector<Type,AF,padded,TF,RT>::swap( CustomVector& v ) noexcept
    \endcode
 */
 template< typename Type     // Data type of the vector
-        , bool AF           // Alignment flag
+        , AlignmentFlag AF  // Alignment flag
         , bool TF           // Transpose flag
         , typename RT >     // Result type
 template< typename Other >  // Data type of the scalar value
@@ -4028,10 +4123,10 @@ inline CustomVector<Type,AF,padded,TF,RT>&
 //       when the last custom vector referencing the array goes out of scope.
 // \note The custom vector does NOT take responsibility for the new array of elements!
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 inline void CustomVector<Type,AF,padded,TF,RT>::reset( Type* ptr, size_t n, size_t nn )
 {
    CustomVector tmp( ptr, n, nn );
@@ -4061,7 +4156,7 @@ inline void CustomVector<Type,AF,padded,TF,RT>::reset( Type* ptr, size_t n, size
 // to optimize the evaluation.
 */
 template< typename Type     // Data type of the vector
-        , bool AF           // Alignment flag
+        , AlignmentFlag AF  // Alignment flag
         , bool TF           // Transpose flag
         , typename RT >     // Result type
 template< typename Other >  // Data type of the foreign expression
@@ -4085,7 +4180,7 @@ inline bool CustomVector<Type,AF,padded,TF,RT>::canAlias( const Other* alias ) c
 // to optimize the evaluation.
 */
 template< typename Type     // Data type of the vector
-        , bool AF           // Alignment flag
+        , AlignmentFlag AF  // Alignment flag
         , bool TF           // Transpose flag
         , typename RT >     // Result type
 template< typename Other >  // Data type of the foreign expression
@@ -4107,10 +4202,10 @@ inline bool CustomVector<Type,AF,padded,TF,RT>::isAliased( const Other* alias ) 
 // whether the beginning and the end of the vector are guaranteed to conform to the alignment
 // restrictions of the element type \a Type.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 inline bool CustomVector<Type,AF,padded,TF,RT>::isAligned() const noexcept
 {
    return ( AF || checkAlignment( v_ ) );
@@ -4130,10 +4225,10 @@ inline bool CustomVector<Type,AF,padded,TF,RT>::isAligned() const noexcept
 // function additionally provides runtime information (as for instance the current size of the
 // vector).
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 inline bool CustomVector<Type,AF,padded,TF,RT>::canSMPAssign() const noexcept
 {
    return ( size() > SMP_DVECASSIGN_THRESHOLD );
@@ -4155,10 +4250,10 @@ inline bool CustomVector<Type,AF,padded,TF,RT>::canSMPAssign() const noexcept
 // used internally for the performance optimized evaluation of expression templates. Calling
 // this function explicitly might result in erroneous results and/or in compilation errors.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 BLAZE_ALWAYS_INLINE typename CustomVector<Type,AF,padded,TF,RT>::SIMDType
    CustomVector<Type,AF,padded,TF,RT>::load( size_t index ) const noexcept
 {
@@ -4185,10 +4280,10 @@ BLAZE_ALWAYS_INLINE typename CustomVector<Type,AF,padded,TF,RT>::SIMDType
 // Calling this function explicitly might result in erroneous results and/or in compilation
 // errors.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 BLAZE_ALWAYS_INLINE typename CustomVector<Type,AF,padded,TF,RT>::SIMDType
    CustomVector<Type,AF,padded,TF,RT>::loada( size_t index ) const noexcept
 {
@@ -4221,10 +4316,10 @@ BLAZE_ALWAYS_INLINE typename CustomVector<Type,AF,padded,TF,RT>::SIMDType
 // Calling this function explicitly might result in erroneous results and/or in compilation
 // errors.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 BLAZE_ALWAYS_INLINE typename CustomVector<Type,AF,padded,TF,RT>::SIMDType
    CustomVector<Type,AF,padded,TF,RT>::loadu( size_t index ) const noexcept
 {
@@ -4255,10 +4350,10 @@ BLAZE_ALWAYS_INLINE typename CustomVector<Type,AF,padded,TF,RT>::SIMDType
 // used internally for the performance optimized evaluation of expression templates. Calling
 // this function explicitly might result in erroneous results and/or in compilation errors.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 BLAZE_ALWAYS_INLINE void
    CustomVector<Type,AF,padded,TF,RT>::store( size_t index, const SIMDType& value ) noexcept
 {
@@ -4285,10 +4380,10 @@ BLAZE_ALWAYS_INLINE void
 // is used internally for the performance optimized evaluation of expression templates. Calling
 // this function explicitly might result in erroneous results and/or in compilation errors.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 BLAZE_ALWAYS_INLINE void
    CustomVector<Type,AF,padded,TF,RT>::storea( size_t index, const SIMDType& value ) noexcept
 {
@@ -4321,10 +4416,10 @@ BLAZE_ALWAYS_INLINE void
 // is used internally for the performance optimized evaluation of expression templates. Calling
 // this function explicitly might result in erroneous results and/or in compilation errors.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 BLAZE_ALWAYS_INLINE void
    CustomVector<Type,AF,padded,TF,RT>::storeu( size_t index, const SIMDType& value ) noexcept
 {
@@ -4356,10 +4451,10 @@ BLAZE_ALWAYS_INLINE void
 // expression templates. Calling this function explicitly might result in erroneous results
 // and/or in compilation errors.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 BLAZE_ALWAYS_INLINE void
    CustomVector<Type,AF,padded,TF,RT>::stream( size_t index, const SIMDType& value ) noexcept
 {
@@ -4389,18 +4484,18 @@ BLAZE_ALWAYS_INLINE void
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 template< typename VT >  // Type of the right-hand side dense vector
 inline auto CustomVector<Type,AF,padded,TF,RT>::assign( const DenseVector<VT,TF>& rhs )
    -> DisableIf_t< VectorizedAssign_v<VT> >
 {
    BLAZE_INTERNAL_ASSERT( size_ == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t ipos( size_ & size_t(-2) );
-   BLAZE_INTERNAL_ASSERT( ( size_ - ( size_ % 2UL ) ) == ipos, "Invalid end calculation" );
+   const size_t ipos( prevMultiple( size_, 2UL ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= size_, "Invalid end calculation" );
 
    for( size_t i=0UL; i<ipos; i+=2UL ) {
       v_[i    ] = (~rhs)[i    ];
@@ -4425,10 +4520,10 @@ inline auto CustomVector<Type,AF,padded,TF,RT>::assign( const DenseVector<VT,TF>
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 template< typename VT >  // Type of the right-hand side dense vector
 inline auto CustomVector<Type,AF,padded,TF,RT>::assign( const DenseVector<VT,TF>& rhs )
    -> EnableIf_t< VectorizedAssign_v<VT> >
@@ -4439,8 +4534,8 @@ inline auto CustomVector<Type,AF,padded,TF,RT>::assign( const DenseVector<VT,TF>
 
    constexpr bool remainder( !IsPadded_v<VT> );
 
-   const size_t ipos( ( remainder )?( size_ & size_t(-SIMDSIZE) ):( size_ ) );
-   BLAZE_INTERNAL_ASSERT( !remainder || ( size_ - ( size_ % SIMDSIZE ) ) == ipos, "Invalid end calculation" );
+   const size_t ipos( remainder ? prevMultiple( size_, SIMDSIZE ) : size_ );
+   BLAZE_INTERNAL_ASSERT( ipos <= size_, "Invalid end calculation" );
 
    if( AF && useStreaming && size_ > ( cacheSize/( sizeof(Type) * 3UL ) ) && !(~rhs).isAliased( this ) )
    {
@@ -4455,9 +4550,8 @@ inline auto CustomVector<Type,AF,padded,TF,RT>::assign( const DenseVector<VT,TF>
    }
    else
    {
-      const size_t i4way( size_ & size_t(-SIMDSIZE*4) );
-      BLAZE_INTERNAL_ASSERT( ( size_ - ( size_ % (SIMDSIZE*4UL) ) ) == i4way, "Invalid end calculation" );
-      BLAZE_INTERNAL_ASSERT( i4way <= ipos, "Invalid end calculation" );
+      const size_t i4way( prevMultiple( size_, SIMDSIZE*4UL ) );
+      BLAZE_INTERNAL_ASSERT( i4way <= size_, "Invalid end calculation" );
 
       size_t i( 0UL );
       ConstIterator_t<VT> it( (~rhs).begin() );
@@ -4492,16 +4586,16 @@ inline auto CustomVector<Type,AF,padded,TF,RT>::assign( const DenseVector<VT,TF>
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 template< typename VT >  // Type of the right-hand side sparse vector
 inline void CustomVector<Type,AF,padded,TF,RT>::assign( const SparseVector<VT,TF>& rhs )
 {
    BLAZE_INTERNAL_ASSERT( size_ == (~rhs).size(), "Invalid vector sizes" );
 
-   for( ConstIterator_t<VT> element=(~rhs).begin(); element!=(~rhs).end(); ++element )
+   for( auto element=(~rhs).begin(); element!=(~rhs).end(); ++element )
       v_[element->index()] = element->value();
 }
 /*! \endcond */
@@ -4520,18 +4614,18 @@ inline void CustomVector<Type,AF,padded,TF,RT>::assign( const SparseVector<VT,TF
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 template< typename VT >  // Type of the right-hand side dense vector
 inline auto CustomVector<Type,AF,padded,TF,RT>::addAssign( const DenseVector<VT,TF>& rhs )
    -> DisableIf_t< VectorizedAddAssign_v<VT> >
 {
    BLAZE_INTERNAL_ASSERT( size_ == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t ipos( size_ & size_t(-2) );
-   BLAZE_INTERNAL_ASSERT( ( size_ - ( size_ % 2UL ) ) == ipos, "Invalid end calculation" );
+   const size_t ipos( prevMultiple( size_, 2UL ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= size_, "Invalid end calculation" );
 
    for( size_t i=0UL; i<ipos; i+=2UL ) {
       v_[i    ] += (~rhs)[i    ];
@@ -4556,10 +4650,10 @@ inline auto CustomVector<Type,AF,padded,TF,RT>::addAssign( const DenseVector<VT,
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 template< typename VT >  // Type of the right-hand side dense vector
 inline auto CustomVector<Type,AF,padded,TF,RT>::addAssign( const DenseVector<VT,TF>& rhs )
    -> EnableIf_t< VectorizedAddAssign_v<VT> >
@@ -4570,12 +4664,11 @@ inline auto CustomVector<Type,AF,padded,TF,RT>::addAssign( const DenseVector<VT,
 
    constexpr bool remainder( !IsPadded_v<VT> );
 
-   const size_t ipos( ( remainder )?( size_ & size_t(-SIMDSIZE) ):( size_ ) );
-   BLAZE_INTERNAL_ASSERT( !remainder || ( size_ - ( size_ % SIMDSIZE ) ) == ipos, "Invalid end calculation" );
+   const size_t ipos( remainder ? prevMultiple( size_, SIMDSIZE ) : size_ );
+   BLAZE_INTERNAL_ASSERT( ipos <= size_, "Invalid end calculation" );
 
-   const size_t i4way( size_ & size_t(-SIMDSIZE*4) );
-   BLAZE_INTERNAL_ASSERT( ( size_ - ( size_ % (SIMDSIZE*4UL) ) ) == i4way, "Invalid end calculation" );
-   BLAZE_INTERNAL_ASSERT( i4way <= ipos, "Invalid end calculation" );
+   const size_t i4way( prevMultiple( size_, SIMDSIZE*4UL ) );
+   BLAZE_INTERNAL_ASSERT( i4way <= size_, "Invalid end calculation" );
 
    size_t i( 0UL );
    ConstIterator_t<VT> it( (~rhs).begin() );
@@ -4609,16 +4702,16 @@ inline auto CustomVector<Type,AF,padded,TF,RT>::addAssign( const DenseVector<VT,
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 template< typename VT >  // Type of the right-hand side sparse vector
 inline void CustomVector<Type,AF,padded,TF,RT>::addAssign( const SparseVector<VT,TF>& rhs )
 {
    BLAZE_INTERNAL_ASSERT( size_ == (~rhs).size(), "Invalid vector sizes" );
 
-   for( ConstIterator_t<VT> element=(~rhs).begin(); element!=(~rhs).end(); ++element )
+   for( auto element=(~rhs).begin(); element!=(~rhs).end(); ++element )
       v_[element->index()] += element->value();
 }
 /*! \endcond */
@@ -4637,18 +4730,18 @@ inline void CustomVector<Type,AF,padded,TF,RT>::addAssign( const SparseVector<VT
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 template< typename VT >  // Type of the right-hand side dense vector
 inline auto CustomVector<Type,AF,padded,TF,RT>::subAssign( const DenseVector<VT,TF>& rhs )
    -> DisableIf_t< VectorizedSubAssign_v<VT> >
 {
    BLAZE_INTERNAL_ASSERT( size_ == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t ipos( size_ & size_t(-2) );
-   BLAZE_INTERNAL_ASSERT( ( size_ - ( size_ % 2UL ) ) == ipos, "Invalid end calculation" );
+   const size_t ipos( prevMultiple( size_, 2UL ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= size_, "Invalid end calculation" );
 
    for( size_t i=0UL; i<ipos; i+=2UL ) {
       v_[i    ] -= (~rhs)[i    ];
@@ -4673,10 +4766,10 @@ inline auto CustomVector<Type,AF,padded,TF,RT>::subAssign( const DenseVector<VT,
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 template< typename VT >  // Type of the right-hand side dense vector
 inline auto CustomVector<Type,AF,padded,TF,RT>::subAssign( const DenseVector<VT,TF>& rhs )
    -> EnableIf_t< VectorizedSubAssign_v<VT> >
@@ -4687,12 +4780,11 @@ inline auto CustomVector<Type,AF,padded,TF,RT>::subAssign( const DenseVector<VT,
 
    constexpr bool remainder( !IsPadded_v<VT> );
 
-   const size_t ipos( ( remainder )?( size_ & size_t(-SIMDSIZE) ):( size_ ) );
-   BLAZE_INTERNAL_ASSERT( !remainder || ( size_ - ( size_ % SIMDSIZE ) ) == ipos, "Invalid end calculation" );
+   const size_t ipos( remainder ? prevMultiple( size_, SIMDSIZE ) : size_ );
+   BLAZE_INTERNAL_ASSERT( ipos <= size_, "Invalid end calculation" );
 
-   const size_t i4way( size_ & size_t(-SIMDSIZE*4) );
-   BLAZE_INTERNAL_ASSERT( ( size_ - ( size_ % (SIMDSIZE*4UL) ) ) == i4way, "Invalid end calculation" );
-   BLAZE_INTERNAL_ASSERT( i4way <= ipos, "Invalid end calculation" );
+   const size_t i4way( prevMultiple( size_, SIMDSIZE*4UL ) );
+   BLAZE_INTERNAL_ASSERT( i4way <= size_, "Invalid end calculation" );
 
    size_t i( 0UL );
    ConstIterator_t<VT> it( (~rhs).begin() );
@@ -4726,16 +4818,16 @@ inline auto CustomVector<Type,AF,padded,TF,RT>::subAssign( const DenseVector<VT,
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 template< typename VT >  // Type of the right-hand side sparse vector
 inline void CustomVector<Type,AF,padded,TF,RT>::subAssign( const SparseVector<VT,TF>& rhs )
 {
    BLAZE_INTERNAL_ASSERT( size_ == (~rhs).size(), "Invalid vector sizes" );
 
-   for( ConstIterator_t<VT> element=(~rhs).begin(); element!=(~rhs).end(); ++element )
+   for( auto element=(~rhs).begin(); element!=(~rhs).end(); ++element )
       v_[element->index()] -= element->value();
 }
 /*! \endcond */
@@ -4754,18 +4846,18 @@ inline void CustomVector<Type,AF,padded,TF,RT>::subAssign( const SparseVector<VT
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 template< typename VT >  // Type of the right-hand side dense vector
 inline auto CustomVector<Type,AF,padded,TF,RT>::multAssign( const DenseVector<VT,TF>& rhs )
    -> DisableIf_t< VectorizedMultAssign_v<VT> >
 {
    BLAZE_INTERNAL_ASSERT( size_ == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t ipos( size_ & size_t(-2) );
-   BLAZE_INTERNAL_ASSERT( ( size_ - ( size_ % 2UL ) ) == ipos, "Invalid end calculation" );
+   const size_t ipos( prevMultiple( size_, 2UL ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= size_, "Invalid end calculation" );
 
    for( size_t i=0UL; i<ipos; i+=2UL ) {
       v_[i    ] *= (~rhs)[i    ];
@@ -4790,10 +4882,10 @@ inline auto CustomVector<Type,AF,padded,TF,RT>::multAssign( const DenseVector<VT
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 template< typename VT >  // Type of the right-hand side dense vector
 inline auto CustomVector<Type,AF,padded,TF,RT>::multAssign( const DenseVector<VT,TF>& rhs )
    -> EnableIf_t< VectorizedMultAssign_v<VT> >
@@ -4804,12 +4896,11 @@ inline auto CustomVector<Type,AF,padded,TF,RT>::multAssign( const DenseVector<VT
 
    constexpr bool remainder( !IsPadded_v<VT> );
 
-   const size_t ipos( ( remainder )?( size_ & size_t(-SIMDSIZE) ):( size_ ) );
-   BLAZE_INTERNAL_ASSERT( !remainder || ( size_ - ( size_ % SIMDSIZE ) ) == ipos, "Invalid end calculation" );
+   const size_t ipos( remainder ? prevMultiple( size_, SIMDSIZE ) : size_ );
+   BLAZE_INTERNAL_ASSERT( ipos <= size_, "Invalid end calculation" );
 
-   const size_t i4way( size_ & size_t(-SIMDSIZE*4) );
-   BLAZE_INTERNAL_ASSERT( ( size_ - ( size_ % (SIMDSIZE*4UL) ) ) == i4way, "Invalid end calculation" );
-   BLAZE_INTERNAL_ASSERT( i4way <= ipos, "Invalid end calculation" );
+   const size_t i4way( prevMultiple( size_, SIMDSIZE*4UL ) );
+   BLAZE_INTERNAL_ASSERT( i4way <= size_, "Invalid end calculation" );
 
    size_t i( 0UL );
    ConstIterator_t<VT> it( (~rhs).begin() );
@@ -4843,10 +4934,10 @@ inline auto CustomVector<Type,AF,padded,TF,RT>::multAssign( const DenseVector<VT
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 template< typename VT >  // Type of the right-hand side sparse vector
 inline void CustomVector<Type,AF,padded,TF,RT>::multAssign( const SparseVector<VT,TF>& rhs )
 {
@@ -4856,7 +4947,7 @@ inline void CustomVector<Type,AF,padded,TF,RT>::multAssign( const SparseVector<V
 
    reset();
 
-   for( ConstIterator_t<VT> element=(~rhs).begin(); element!=(~rhs).end(); ++element )
+   for( auto element=(~rhs).begin(); element!=(~rhs).end(); ++element )
       v_[element->index()] = tmp[element->index()] * element->value();
 }
 /*! \endcond */
@@ -4875,18 +4966,18 @@ inline void CustomVector<Type,AF,padded,TF,RT>::multAssign( const SparseVector<V
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 template< typename VT >  // Type of the right-hand side dense vector
 inline auto CustomVector<Type,AF,padded,TF,RT>::divAssign( const DenseVector<VT,TF>& rhs )
    -> DisableIf_t< VectorizedDivAssign_v<VT> >
 {
    BLAZE_INTERNAL_ASSERT( size_ == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t ipos( size_ & size_t(-2) );
-   BLAZE_INTERNAL_ASSERT( ( size_ - ( size_ % 2UL ) ) == ipos, "Invalid end calculation" );
+   const size_t ipos( prevMultiple( size_, 2UL ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= size_, "Invalid end calculation" );
 
    for( size_t i=0UL; i<ipos; i+=2UL ) {
       v_[i    ] /= (~rhs)[i    ];
@@ -4911,10 +5002,10 @@ inline auto CustomVector<Type,AF,padded,TF,RT>::divAssign( const DenseVector<VT,
 // in erroneous results and/or in compilation errors. Instead of using this function use the
 // assignment operator.
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 template< typename VT >  // Type of the right-hand side dense vector
 inline auto CustomVector<Type,AF,padded,TF,RT>::divAssign( const DenseVector<VT,TF>& rhs )
    -> EnableIf_t< VectorizedDivAssign_v<VT> >
@@ -4923,12 +5014,11 @@ inline auto CustomVector<Type,AF,padded,TF,RT>::divAssign( const DenseVector<VT,
 
    BLAZE_INTERNAL_ASSERT( size_ == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t ipos( size_ & size_t(-SIMDSIZE) );
-   BLAZE_INTERNAL_ASSERT( ( size_ - ( size_ % SIMDSIZE ) ) == ipos, "Invalid end calculation" );
+   const size_t ipos( prevMultiple( size_, SIMDSIZE ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= size_, "Invalid end calculation" );
 
-   const size_t i4way( size_ & size_t(-SIMDSIZE*4) );
-   BLAZE_INTERNAL_ASSERT( ( size_ - ( size_ % (SIMDSIZE*4UL) ) ) == i4way, "Invalid end calculation" );
-   BLAZE_INTERNAL_ASSERT( i4way <= ipos, "Invalid end calculation" );
+   const size_t i4way( prevMultiple( size_, SIMDSIZE*4UL ) );
+   BLAZE_INTERNAL_ASSERT( i4way <= size_, "Invalid end calculation" );
 
    size_t i( 0UL );
    ConstIterator_t<VT> it( (~rhs).begin() );
@@ -4965,20 +5055,20 @@ inline auto CustomVector<Type,AF,padded,TF,RT>::divAssign( const DenseVector<VT,
 //*************************************************************************************************
 /*!\name CustomVector operators */
 //@{
-template< typename Type, bool AF, bool PF, bool TF, typename RT >
-inline void reset( CustomVector<Type,AF,PF,TF,RT>& v );
+template< typename Type, AlignmentFlag AF, PaddingFlag PF, bool TF, typename RT >
+void reset( CustomVector<Type,AF,PF,TF,RT>& v );
 
-template< typename Type, bool AF, bool PF, bool TF, typename RT >
-inline void clear( CustomVector<Type,AF,PF,TF,RT>& v );
+template< typename Type, AlignmentFlag AF, PaddingFlag PF, bool TF, typename RT >
+void clear( CustomVector<Type,AF,PF,TF,RT>& v );
 
-template< bool RF, typename Type, bool AF, bool PF, bool TF, typename RT >
-inline bool isDefault( const CustomVector<Type,AF,PF,TF,RT>& v );
+template< RelaxationFlag RF, typename Type, AlignmentFlag AF, PaddingFlag PF, bool TF, typename RT >
+bool isDefault( const CustomVector<Type,AF,PF,TF,RT>& v );
 
-template< typename Type, bool AF, bool PF, bool TF, typename RT >
-inline bool isIntact( const CustomVector<Type,AF,PF,TF,RT>& v ) noexcept;
+template< typename Type, AlignmentFlag AF, PaddingFlag PF, bool TF, typename RT >
+bool isIntact( const CustomVector<Type,AF,PF,TF,RT>& v ) noexcept;
 
-template< typename Type, bool AF, bool PF, bool TF, typename RT >
-inline void swap( CustomVector<Type,AF,PF,TF,RT>& a, CustomVector<Type,AF,PF,TF,RT>& b ) noexcept;
+template< typename Type, AlignmentFlag AF, PaddingFlag PF, bool TF, typename RT >
+void swap( CustomVector<Type,AF,PF,TF,RT>& a, CustomVector<Type,AF,PF,TF,RT>& b ) noexcept;
 //@}
 //*************************************************************************************************
 
@@ -4990,11 +5080,11 @@ inline void swap( CustomVector<Type,AF,PF,TF,RT>& a, CustomVector<Type,AF,PF,TF,
 // \param v The custom vector to be resetted.
 // \return void
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool PF        // Padding flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF    // Padding flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 inline void reset( CustomVector<Type,AF,PF,TF,RT>& v )
 {
    v.reset();
@@ -5009,11 +5099,11 @@ inline void reset( CustomVector<Type,AF,PF,TF,RT>& v )
 // \param v The custom vector to be cleared.
 // \return void
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool PF        // Padding flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF    // Padding flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 inline void clear( CustomVector<Type,AF,PF,TF,RT>& v )
 {
    v.clear();
@@ -5049,12 +5139,12 @@ inline void clear( CustomVector<Type,AF,PF,TF,RT>& v )
    if( isDefault<relaxed>( a ) ) { ... }
    \endcode
 */
-template< bool RF        // Relaxation flag
-        , typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool PF        // Padding flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< RelaxationFlag RF  // Relaxation flag
+        , typename Type      // Data type of the vector
+        , AlignmentFlag AF   // Alignment flag
+        , PaddingFlag PF     // Padding flag
+        , bool TF            // Transpose flag
+        , typename RT >      // Result type
 inline bool isDefault( const CustomVector<Type,AF,PF,TF,RT>& v )
 {
    return ( v.size() == 0UL );
@@ -5083,11 +5173,11 @@ inline bool isDefault( const CustomVector<Type,AF,PF,TF,RT>& v )
    if( isIntact( a ) ) { ... }
    \endcode
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool PF        // Padding flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF    // Padding flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 inline bool isIntact( const CustomVector<Type,AF,PF,TF,RT>& v ) noexcept
 {
    return ( v.size() <= v.capacity() );
@@ -5103,11 +5193,11 @@ inline bool isIntact( const CustomVector<Type,AF,PF,TF,RT>& v ) noexcept
 // \param b The second vector to be swapped.
 // \return void
 */
-template< typename Type  // Data type of the vector
-        , bool AF        // Alignment flag
-        , bool PF        // Padding flag
-        , bool TF        // Transpose flag
-        , typename RT >  // Result type
+template< typename Type     // Data type of the vector
+        , AlignmentFlag AF  // Alignment flag
+        , PaddingFlag PF    // Padding flag
+        , bool TF           // Transpose flag
+        , typename RT >     // Result type
 inline void swap( CustomVector<Type,AF,PF,TF,RT>& a, CustomVector<Type,AF,PF,TF,RT>& b ) noexcept
 {
    a.swap( b );
@@ -5125,7 +5215,7 @@ inline void swap( CustomVector<Type,AF,PF,TF,RT>& a, CustomVector<Type,AF,PF,TF,
 
 //*************************************************************************************************
 /*! \cond BLAZE_INTERNAL */
-template< typename T, bool AF, bool PF, bool TF, typename RT >
+template< typename T, AlignmentFlag AF, PaddingFlag PF, bool TF, typename RT >
 struct HasConstDataAccess< CustomVector<T,AF,PF,TF,RT> >
    : public TrueType
 {};
@@ -5143,7 +5233,7 @@ struct HasConstDataAccess< CustomVector<T,AF,PF,TF,RT> >
 
 //*************************************************************************************************
 /*! \cond BLAZE_INTERNAL */
-template< typename T, bool AF, bool PF, bool TF, typename RT >
+template< typename T, AlignmentFlag AF, PaddingFlag PF, bool TF, typename RT >
 struct HasMutableDataAccess< CustomVector<T,AF,PF,TF,RT> >
    : public TrueType
 {};
@@ -5161,7 +5251,7 @@ struct HasMutableDataAccess< CustomVector<T,AF,PF,TF,RT> >
 
 //*************************************************************************************************
 /*! \cond BLAZE_INTERNAL */
-template< typename T, bool AF, bool PF, bool TF, typename RT >
+template< typename T, AlignmentFlag AF, PaddingFlag PF, bool TF, typename RT >
 struct IsCustom< CustomVector<T,AF,PF,TF,RT> >
    : public TrueType
 {};
@@ -5179,7 +5269,7 @@ struct IsCustom< CustomVector<T,AF,PF,TF,RT> >
 
 //*************************************************************************************************
 /*! \cond BLAZE_INTERNAL */
-template< typename T, bool PF, bool TF, typename RT >
+template< typename T, PaddingFlag PF, bool TF, typename RT >
 struct IsAligned< CustomVector<T,aligned,PF,TF,RT> >
    : public TrueType
 {};
@@ -5197,7 +5287,7 @@ struct IsAligned< CustomVector<T,aligned,PF,TF,RT> >
 
 //*************************************************************************************************
 /*! \cond BLAZE_INTERNAL */
-template< typename T, bool PF, bool TF, typename RT >
+template< typename T, PaddingFlag PF, bool TF, typename RT >
 struct IsContiguous< CustomVector<T,aligned,PF,TF,RT> >
    : public TrueType
 {};
@@ -5215,7 +5305,7 @@ struct IsContiguous< CustomVector<T,aligned,PF,TF,RT> >
 
 //*************************************************************************************************
 /*! \cond BLAZE_INTERNAL */
-template< typename T, bool AF, bool TF, typename RT >
+template< typename T, AlignmentFlag AF, bool TF, typename RT >
 struct IsPadded< CustomVector<T,AF,padded,TF,RT> >
    : public TrueType
 {};

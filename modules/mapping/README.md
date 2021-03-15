@@ -216,7 +216,7 @@ std::vector<std::vector<float>> data{
 ```
 And here is example of how can be found clusters using Affinity Propagation:
 ```cpp	   	 
-auto hc = metric::HierarchicalClustering<Record, metric::Euclidian<Record::value_type>>(data, 3);
+auto hc = metric::HierarchicalClustering<Record, metric::Euclidean<Record::value_type>>(data, 3);
 hc.hierarchical_clustering();
 
 for (size_t i = 0; i < hc.clusters.size(); i++)
@@ -387,7 +387,7 @@ Then we can create and train SOM (reduce dimensions):
 ```cpp
 using Vector = std::vector<double>;
 using Graph = metric::Grid6;
-using Metric = metric::Euclidian<Vector::value_type>;
+using Metric = metric::Euclidean<Vector::value_type>;
 
 metric::SOM<Vector, Graph, Metric> som_model(6, 5);
 
@@ -422,21 +422,21 @@ auto bmu = som_model.BMU(img1[0]);
 First of all let's create a simple datasets:
 
 ```cpp
-using recType = std::vector<float>;
+using RecType = std::vector<float>;
 
-recType d0_blaze {0, 1, 2};
-recType d1_blaze {0, 1, 3};
-std::vector<recType> d_train = {d0_blaze, d1_blaze};
+RecType d0_blaze {0, 1, 2};
+RecType d1_blaze {0, 1, 3};
+std::vector<RecType> d_train = {d0_blaze, d1_blaze};
 
-recType d2_blaze {0, 1, 4};
-recType d3_blaze {0, 2, 2};
-std::vector<recType> d_test = {d0_blaze, d2_blaze, d3_blaze};
+RecType d2_blaze {0, 1, 4};
+RecType d3_blaze {0, 2, 2};
+std::vector<RecType> d_test = {d0_blaze, d2_blaze, d3_blaze};
 ```
 
 And now we can create PCFA model on train data:
 
 ```cpp
-auto pcfa = metric::PCFA<recType, void>(d_train, 2);
+auto pcfa = metric::PCFA<RecType, void>(d_train, 2);
 ```
 
 With PCFA model we are ready to encode test data:
@@ -827,20 +827,20 @@ Then we should create accessors:
     using a3_type = decltype(field3accessors);
     using a4_type = decltype(field4accessors);
 
-    auto dim0 = metric::make_dimension(metric::Euclidian<InternalType>(), field0accessors);
+    auto dim0 = metric::make_dimension(metric::Euclidean<InternalType>(), field0accessors);
     auto dim1 = metric::make_dimension(metric::Manhatten<InternalType>(), field1accessors);
     auto dim2 = metric::make_dimension(metric::P_norm<InternalType>(), field2accessors);
-    auto dim3 = metric::make_dimension(metric::Euclidian_thresholded<InternalType>(), field2accessors);
+    auto dim3 = metric::make_dimension(metric::Euclidean_thresholded<InternalType>(), field2accessors);
     auto dim4 = metric::make_dimension(metric::Cosine<InternalType>(), field2accessors);
     auto dim5 = metric::make_dimension(metric::SSIM<double, std::vector<InternalType>>(), field3accessors);
     auto dim6 = metric::make_dimension(metric::TWED<InternalType>(0, 1), field2accessors);
     auto dim7 = metric::make_dimension(metric::Edit<char>(), field4accessors);
     auto dim10 = metric::make_dimension(metric::EMD<InternalType>(8, 8), field2accessors);
 
-    typedef std::variant<metric::Dimension<metric::Euclidian<InternalType>, a0_type>,
+    typedef std::variant<metric::Dimension<metric::Euclidean<InternalType>, a0_type>,
         metric::Dimension<metric::Manhatten<InternalType>, a1_type>,
         metric::Dimension<metric::P_norm<InternalType>, a2_type>,
-        metric::Dimension<metric::Euclidian_thresholded<InternalType>, a2_type>,
+        metric::Dimension<metric::Euclidean_thresholded<InternalType>, a2_type>,
         metric::Dimension<metric::Cosine<InternalType>, a2_type>,
         metric::Dimension<metric::SSIM<double, std::vector<InternalType>>, a3_type>,
         metric::Dimension<metric::TWED<InternalType>, a2_type>,

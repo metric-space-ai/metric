@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/DMatDeclSymExpr.h
 //  \brief Header file for the dense matrix symmetry declaration expression
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -59,23 +59,15 @@
 #include "../../math/typetraits/HasConstDataAccess.h"
 #include "../../math/typetraits/IsAligned.h"
 #include "../../math/typetraits/IsExpression.h"
-#include "../../math/typetraits/IsHermitian.h"
-#include "../../math/typetraits/IsLower.h"
-#include "../../math/typetraits/IsStrictlyLower.h"
-#include "../../math/typetraits/IsStrictlyUpper.h"
 #include "../../math/typetraits/IsSymmetric.h"
-#include "../../math/typetraits/IsUniLower.h"
 #include "../../math/typetraits/IsUniTriangular.h"
-#include "../../math/typetraits/IsUniUpper.h"
-#include "../../math/typetraits/IsUpper.h"
 #include "../../math/typetraits/RequiresEvaluation.h"
 #include "../../util/Assert.h"
-#include "../../util/DisableIf.h"
 #include "../../util/EnableIf.h"
 #include "../../util/FunctionTrace.h"
+#include "../../util/IntegralConstant.h"
 #include "../../util/InvalidType.h"
 #include "../../util/mpl/If.h"
-#include "../../util/TrueType.h"
 #include "../../util/Types.h"
 #include "../../util/typetraits/GetMemberType.h"
 
@@ -142,6 +134,7 @@ class DMatDeclSymExpr
  public:
    //**Type definitions****************************************************************************
    using This          = DMatDeclSymExpr<MT,SO>;       //!< Type of this DMatDeclSymExpr instance.
+   using BaseType      = DenseMatrix<This,SO>;         //!< Base type of this DMatDeclSymExpr instance.
    using ResultType    = DeclSymTrait_t<RT>;           //!< Result type for expression template evaluations.
    using OppositeType  = OppositeType_t<ResultType>;   //!< Result type with opposite storage order for expression template evaluations.
    using TransposeType = TransposeType_t<ResultType>;  //!< Transpose type for expression template evaluations.
@@ -357,8 +350,8 @@ class DMatDeclSymExpr
    */
    template< typename MT2  // Type of the target dense matrix
            , bool SO2 >    // Storage order of the target dense matrix
-   friend inline EnableIf_t< UseAssign_v<MT2> >
-      assign( DenseMatrix<MT2,SO2>& lhs, const DMatDeclSymExpr& rhs )
+   friend inline auto assign( DenseMatrix<MT2,SO2>& lhs, const DMatDeclSymExpr& rhs )
+      -> EnableIf_t< UseAssign_v<MT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -384,8 +377,8 @@ class DMatDeclSymExpr
    */
    template< typename MT2  // Type of the target sparse matrix
            , bool SO2 >    // Storage order of the target dense matrix
-   friend inline EnableIf_t< UseAssign_v<MT2> >
-      assign( SparseMatrix<MT2,SO2>& lhs, const DMatDeclSymExpr& rhs )
+   friend inline auto assign( SparseMatrix<MT2,SO2>& lhs, const DMatDeclSymExpr& rhs )
+      -> EnableIf_t< UseAssign_v<MT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -411,8 +404,8 @@ class DMatDeclSymExpr
    */
    template< typename MT2  // Type of the target dense matrix
            , bool SO2 >    // Storage order of the target dense matrix
-   friend inline EnableIf_t< UseAssign_v<MT2> >
-      addAssign( DenseMatrix<MT2,SO2>& lhs, const DMatDeclSymExpr& rhs )
+   friend inline auto addAssign( DenseMatrix<MT2,SO2>& lhs, const DMatDeclSymExpr& rhs )
+      -> EnableIf_t< UseAssign_v<MT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -438,8 +431,8 @@ class DMatDeclSymExpr
    */
    template< typename MT2  // Type of the target sparse matrix
            , bool SO2 >    // Storage order of the target dense matrix
-   friend inline EnableIf_t< UseAssign_v<MT2> >
-      addAssign( SparseMatrix<MT2,SO2>& lhs, const DMatDeclSymExpr& rhs )
+   friend inline auto addAssign( SparseMatrix<MT2,SO2>& lhs, const DMatDeclSymExpr& rhs )
+      -> EnableIf_t< UseAssign_v<MT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -465,8 +458,8 @@ class DMatDeclSymExpr
    */
    template< typename MT2  // Type of the target dense matrix
            , bool SO2 >    // Storage order of the target dense matrix
-   friend inline EnableIf_t< UseAssign_v<MT2> >
-      subAssign( DenseMatrix<MT2,SO2>& lhs, const DMatDeclSymExpr& rhs )
+   friend inline auto subAssign( DenseMatrix<MT2,SO2>& lhs, const DMatDeclSymExpr& rhs )
+      -> EnableIf_t< UseAssign_v<MT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -492,8 +485,8 @@ class DMatDeclSymExpr
    */
    template< typename MT2  // Type of the target sparse matrix
            , bool SO2 >    // Storage order of the target dense matrix
-   friend inline EnableIf_t< UseAssign_v<MT2> >
-      subAssign( SparseMatrix<MT2,SO2>& lhs, const DMatDeclSymExpr& rhs )
+   friend inline auto subAssign( SparseMatrix<MT2,SO2>& lhs, const DMatDeclSymExpr& rhs )
+      -> EnableIf_t< UseAssign_v<MT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -519,8 +512,8 @@ class DMatDeclSymExpr
    */
    template< typename MT2  // Type of the target dense matrix
            , bool SO2 >    // Storage order of the target dense matrix
-   friend inline EnableIf_t< UseAssign_v<MT2> >
-      schurAssign( DenseMatrix<MT2,SO2>& lhs, const DMatDeclSymExpr& rhs )
+   friend inline auto schurAssign( DenseMatrix<MT2,SO2>& lhs, const DMatDeclSymExpr& rhs )
+      -> EnableIf_t< UseAssign_v<MT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -546,8 +539,8 @@ class DMatDeclSymExpr
    */
    template< typename MT2  // Type of the target sparse matrix
            , bool SO2 >    // Storage order of the target dense matrix
-   friend inline EnableIf_t< UseAssign_v<MT2> >
-      schurAssign( SparseMatrix<MT2,SO2>& lhs, const DMatDeclSymExpr& rhs )
+   friend inline auto schurAssign( SparseMatrix<MT2,SO2>& lhs, const DMatDeclSymExpr& rhs )
+      -> EnableIf_t< UseAssign_v<MT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -573,8 +566,8 @@ class DMatDeclSymExpr
    */
    template< typename MT2  // Type of the target dense matrix
            , bool SO2 >    // Storage order of the target dense matrix
-   friend inline EnableIf_t< UseAssign_v<MT2> >
-      multAssign( DenseMatrix<MT2,SO2>& lhs, const DMatDeclSymExpr& rhs )
+   friend inline auto multAssign( DenseMatrix<MT2,SO2>& lhs, const DMatDeclSymExpr& rhs )
+      -> EnableIf_t< UseAssign_v<MT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -600,8 +593,8 @@ class DMatDeclSymExpr
    */
    template< typename MT2  // Type of the target sparse matrix
            , bool SO2 >    // Storage order of the target dense matrix
-   friend inline EnableIf_t< UseAssign_v<MT2> >
-      multAssign( SparseMatrix<MT2,SO2>& lhs, const DMatDeclSymExpr& rhs )
+   friend inline auto multAssign( SparseMatrix<MT2,SO2>& lhs, const DMatDeclSymExpr& rhs )
+      -> EnableIf_t< UseAssign_v<MT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -627,8 +620,8 @@ class DMatDeclSymExpr
    */
    template< typename MT2  // Type of the target dense matrix
            , bool SO2 >    // Storage order of the target dense matrix
-   friend inline EnableIf_t< UseSMPAssign_v<MT2> >
-      smpAssign( DenseMatrix<MT2,SO2>& lhs, const DMatDeclSymExpr& rhs )
+   friend inline auto smpAssign( DenseMatrix<MT2,SO2>& lhs, const DMatDeclSymExpr& rhs )
+      -> EnableIf_t< UseSMPAssign_v<MT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -654,8 +647,8 @@ class DMatDeclSymExpr
    */
    template< typename MT2  // Type of the target sparse matrix
            , bool SO2 >    // Storage order of the target dense matrix
-   friend inline EnableIf_t< UseSMPAssign_v<MT2> >
-      smpAssign( SparseMatrix<MT2,SO2>& lhs, const DMatDeclSymExpr& rhs )
+   friend inline auto smpAssign( SparseMatrix<MT2,SO2>& lhs, const DMatDeclSymExpr& rhs )
+      -> EnableIf_t< UseSMPAssign_v<MT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -681,8 +674,8 @@ class DMatDeclSymExpr
    */
    template< typename MT2  // Type of the target dense matrix
            , bool SO2 >    // Storage order of the target dense matrix
-   friend inline EnableIf_t< UseSMPAssign_v<MT2> >
-      smpAddAssign( DenseMatrix<MT2,SO2>& lhs, const DMatDeclSymExpr& rhs )
+   friend inline auto smpAddAssign( DenseMatrix<MT2,SO2>& lhs, const DMatDeclSymExpr& rhs )
+      -> EnableIf_t< UseSMPAssign_v<MT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -708,8 +701,8 @@ class DMatDeclSymExpr
    */
    template< typename MT2  // Type of the target sparse matrix
            , bool SO2 >    // Storage order of the target dense matrix
-   friend inline EnableIf_t< UseSMPAssign_v<MT2> >
-      smpAddAssign( SparseMatrix<MT2,SO2>& lhs, const DMatDeclSymExpr& rhs )
+   friend inline auto smpAddAssign( SparseMatrix<MT2,SO2>& lhs, const DMatDeclSymExpr& rhs )
+      -> EnableIf_t< UseSMPAssign_v<MT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -735,8 +728,8 @@ class DMatDeclSymExpr
    */
    template< typename MT2  // Type of the target dense matrix
            , bool SO2 >    // Storage order of the target dense matrix
-   friend inline EnableIf_t< UseSMPAssign_v<MT2> >
-      smpSubAssign( DenseMatrix<MT2,SO2>& lhs, const DMatDeclSymExpr& rhs )
+   friend inline auto smpSubAssign( DenseMatrix<MT2,SO2>& lhs, const DMatDeclSymExpr& rhs )
+      -> EnableIf_t< UseSMPAssign_v<MT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -762,8 +755,8 @@ class DMatDeclSymExpr
    */
    template< typename MT2  // Type of the target sparse matrix
            , bool SO2 >    // Storage order of the target dense matrix
-   friend inline EnableIf_t< UseSMPAssign_v<MT2> >
-      smpSubAssign( SparseMatrix<MT2,SO2>& lhs, const DMatDeclSymExpr& rhs )
+   friend inline auto smpSubAssign( SparseMatrix<MT2,SO2>& lhs, const DMatDeclSymExpr& rhs )
+      -> EnableIf_t< UseSMPAssign_v<MT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -789,8 +782,8 @@ class DMatDeclSymExpr
    */
    template< typename MT2  // Type of the target dense matrix
            , bool SO2 >    // Storage order of the target dense matrix
-   friend inline EnableIf_t< UseSMPAssign_v<MT2> >
-      smpSchurAssign( DenseMatrix<MT2,SO2>& lhs, const DMatDeclSymExpr& rhs )
+   friend inline auto smpSchurAssign( DenseMatrix<MT2,SO2>& lhs, const DMatDeclSymExpr& rhs )
+      -> EnableIf_t< UseSMPAssign_v<MT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -816,8 +809,8 @@ class DMatDeclSymExpr
    */
    template< typename MT2  // Type of the target sparse matrix
            , bool SO2 >    // Storage order of the target dense matrix
-   friend inline EnableIf_t< UseSMPAssign_v<MT2> >
-      smpSchurAssign( SparseMatrix<MT2,SO2>& lhs, const DMatDeclSymExpr& rhs )
+   friend inline auto smpSchurAssign( SparseMatrix<MT2,SO2>& lhs, const DMatDeclSymExpr& rhs )
+      -> EnableIf_t< UseSMPAssign_v<MT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -844,8 +837,8 @@ class DMatDeclSymExpr
    */
    template< typename MT2  // Type of the target dense matrix
            , bool SO2 >    // Storage order of the target dense matrix
-   friend inline EnableIf_t< UseSMPAssign_v<MT2> >
-      smpMultAssign( DenseMatrix<MT2,SO2>& lhs, const DMatDeclSymExpr& rhs )
+   friend inline auto smpMultAssign( DenseMatrix<MT2,SO2>& lhs, const DMatDeclSymExpr& rhs )
+      -> EnableIf_t< UseSMPAssign_v<MT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -872,8 +865,8 @@ class DMatDeclSymExpr
    */
    template< typename MT2  // Type of the target sparse matrix
            , bool SO2 >    // Storage order of the target dense matrix
-   friend inline EnableIf_t< UseSMPAssign_v<MT2> >
-      smpMultAssign( SparseMatrix<MT2,SO2>& lhs, const DMatDeclSymExpr& rhs )
+   friend inline auto smpMultAssign( SparseMatrix<MT2,SO2>& lhs, const DMatDeclSymExpr& rhs )
+      -> EnableIf_t< UseSMPAssign_v<MT2> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -919,7 +912,7 @@ class DMatDeclSymExpr
 */
 template< typename MT  // Type of the dense matrix
         , bool SO      // Storage order
-        , typename = DisableIf_t< IsSymmetric_v<MT> || IsUniTriangular_v<MT> > >
+        , DisableIf_t< IsSymmetric_v<MT> || IsUniTriangular_v<MT> >* = nullptr >
 inline const DMatDeclSymExpr<MT,SO> declsym_backend( const DenseMatrix<MT,SO>& dm )
 {
    BLAZE_FUNCTION_TRACE;
@@ -945,7 +938,7 @@ inline const DMatDeclSymExpr<MT,SO> declsym_backend( const DenseMatrix<MT,SO>& d
 */
 template< typename MT  // Type of the dense matrix
         , bool SO      // Storage order
-        , typename = EnableIf_t< !IsSymmetric_v<MT> && IsUniTriangular_v<MT> > >
+        , EnableIf_t< !IsSymmetric_v<MT> && IsUniTriangular_v<MT> >* = nullptr >
 inline const IdentityMatrix<ElementType_t<MT>,SO> declsym_backend( const DenseMatrix<MT,SO>& dm )
 {
    BLAZE_FUNCTION_TRACE;
@@ -971,7 +964,7 @@ inline const IdentityMatrix<ElementType_t<MT>,SO> declsym_backend( const DenseMa
 */
 template< typename MT  // Type of the dense matrix
         , bool SO      // Storage order
-        , typename = EnableIf_t< IsSymmetric_v<MT> > >
+        , EnableIf_t< IsSymmetric_v<MT> >* = nullptr >
 inline const MT& declsym_backend( const DenseMatrix<MT,SO>& dm )
 {
    BLAZE_FUNCTION_TRACE;
@@ -1015,46 +1008,6 @@ inline decltype(auto) declsym( const DenseMatrix<MT,SO>& dm )
 
    return declsym_backend( ~dm );
 }
-//*************************************************************************************************
-
-
-
-
-//=================================================================================================
-//
-//  GLOBAL RESTRUCTURING FUNCTIONS
-//
-//=================================================================================================
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-/*!\brief Declares the given non-symmetric dense matrix-scalar multiplication expression as symmetric.
-// \ingroup dense_matrix
-//
-// \param dm The input dense matrix-scalar multiplication expression.
-// \return The redeclared expression.
-// \exception std::invalid_argument Invalid symmetric matrix specification.
-//
-// This function implements the application of the \a declsym operation on a dense matrix-
-// scalar multiplication. It restructures the expression \f$ A=declsym(B*s1) \f$ to the
-// expression \f$ A=declsym(B)*s1 \f$. In case the given matrix is not a square matrix,
-// a \a std::invalid_argument exception is thrown.
-*/
-template< typename MT  // Type of the left-hand side dense matrix
-        , typename ST  // Type of the right-hand side scalar value
-        , bool SO      // Storage order
-        , typename = DisableIf_t< IsSymmetric_v<MT> > >
-inline decltype(auto) declsym( const DMatScalarMultExpr<MT,ST,SO>& dm )
-{
-   BLAZE_FUNCTION_TRACE;
-
-   if( !isSquare( dm ) ) {
-      BLAZE_THROW_INVALID_ARGUMENT( "Invalid symmetric matrix specification" );
-   }
-
-   return declsym( dm.leftOperand() ) * dm.rightOperand();
-}
-/*! \endcond */
 //*************************************************************************************************
 
 
@@ -1107,132 +1060,6 @@ struct IsAligned< DMatDeclSymExpr<MT,SO> >
 template< typename MT, bool SO >
 struct IsSymmetric< DMatDeclSymExpr<MT,SO> >
    : public TrueType
-{};
-/*! \endcond */
-//*************************************************************************************************
-
-
-
-
-//=================================================================================================
-//
-//  ISHERMITIAN SPECIALIZATIONS
-//
-//=================================================================================================
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-template< typename MT, bool SO >
-struct IsHermitian< DMatDeclSymExpr<MT,SO> >
-   : public IsHermitian<MT>
-{};
-/*! \endcond */
-//*************************************************************************************************
-
-
-
-
-//=================================================================================================
-//
-//  ISLOWER SPECIALIZATIONS
-//
-//=================================================================================================
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-template< typename MT, bool SO >
-struct IsLower< DMatDeclSymExpr<MT,SO> >
-   : public IsLower<MT>
-{};
-/*! \endcond */
-//*************************************************************************************************
-
-
-
-
-//=================================================================================================
-//
-//  ISUNILOWER SPECIALIZATIONS
-//
-//=================================================================================================
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-template< typename MT, bool SO >
-struct IsUniLower< DMatDeclSymExpr<MT,SO> >
-   : public IsUniLower<MT>
-{};
-/*! \endcond */
-//*************************************************************************************************
-
-
-
-
-//=================================================================================================
-//
-//  ISSTRICTLYLOWER SPECIALIZATIONS
-//
-//=================================================================================================
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-template< typename MT, bool SO >
-struct IsStrictlyLower< DMatDeclSymExpr<MT,SO> >
-   : public IsStrictlyLower<MT>
-{};
-/*! \endcond */
-//*************************************************************************************************
-
-
-
-
-//=================================================================================================
-//
-//  ISUPPER SPECIALIZATIONS
-//
-//=================================================================================================
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-template< typename MT, bool SO >
-struct IsUpper< DMatDeclSymExpr<MT,SO> >
-   : public IsUpper<MT>
-{};
-/*! \endcond */
-//*************************************************************************************************
-
-
-
-
-//=================================================================================================
-//
-//  ISUNIUPPER SPECIALIZATIONS
-//
-//=================================================================================================
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-template< typename MT, bool SO >
-struct IsUniUpper< DMatDeclSymExpr<MT,SO> >
-   : public IsUniUpper<MT>
-{};
-/*! \endcond */
-//*************************************************************************************************
-
-
-
-
-//=================================================================================================
-//
-//  ISSTRICTLYUPPER SPECIALIZATIONS
-//
-//=================================================================================================
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-template< typename MT, bool SO >
-struct IsStrictlyUpper< DMatDeclSymExpr<MT,SO> >
-   : public IsStrictlyUpper<MT>
 {};
 /*! \endcond */
 //*************************************************************************************************

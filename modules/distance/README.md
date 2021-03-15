@@ -1,111 +1,92 @@
-# METRIC | DISTANCE
-*A templated, header only C++17 implementation of a Metric Distance Functions.*
+# Distances
+A distance function d(a,b) must fullfill four requriements to be metric.
+1. d(a, b) ≥ 0 (non-negativity)
+2. d(a, b) = 0 if and only if a = b (identity of indiscernibles)
+3. d(a, b) = d(b, a) (symmetry)
+4. d(a, b) ≤ d(a, c) + d(c, b) (triangle inequality)
 
-## Overview
+When 2. holds only d(a, b) = 0 but not the identity of indisccernibles it is a semi-metric or pseudo-metric. When 4. is not valid then it is only a distance but not a metric. 
+Only "real" metrics and pseudo-metrics are provided in the library. Pseudo-metrics are used for random data, because there is not deterministic indentity 
+In principle, it is possible to use an arbitrary distance definition for some of the algorihm, but it is conceptual very invalid to do so and no garantees can be given.
 
-METRIC | DISTANCE provide a extensive collection of metrics,
-including factory functions for configuring complex metrics.  
-They are organized into severals levels of complexity and aprio knowledge about the data. 
-Basically the user give a priori information, how the data should be connected for reason, like 
-a picuture is a 2d array of pixels. A metric type is basically a function, which compares 
-two samples of data and gives back the numeric distance between them.
+# Random metrics
+## The cdf family
+*cdf = cummulative distribution function*
+### Wasserstein (L1 norm on cdf)
+This is the equivalent for the Manhatten metric for random sampled data, also know as Wasserstein distance.
+### Cramér-von Mises (L2 norm on cdf)
+This is the equivalent of the Euclidean metric for random sampled data.
+### Kolmogorov-Smirnov (L∞ norm on cdf)
+This is the equilvalent for the Chebychev metric for random sampled data.
 
-If we can assign each feature from the data a metric, we have won. Then all algorithms run on the dataset without the need for 
-further restrictions or special features. 
+## The entropy family
+### VMixing
+This a measure of difference between entropies of datasets and entropy of concatenated dataset. Not a true metric.
 
+# Related metrics
+## The norm family
+Based on the concept of norm induced metric spaces, one can derive serveral distance functions.
+### Euclidean (L2 norm, geometric difference)
+In the two-dimensional plane or in three-dimensional space, the Euclidean distance d(a,b) corresponds to the distance between the points a and b, that can be computed by the law of pythagoras. In the more general case of n-dimensions, the euclidean distance is defined by the L2 Norm of the difference vector. If the points a and b are defined by the coordinates a=(a_1,...,a_n) and b=(b_1,...,b_n), then the equations leads to the distance:
+d(a,b)=sqrt( (a_1 - b_1)^2 + ... + (a_n - b_n)^2 )
+https://en.wikipedia.org/wiki/Euclidean_distance
 
-There are a lot of metrics in the world, that can be grouped to:
-- **k-related**: number of entries in column is always the same and the metric applied to the corresponding 
-entries in the compared records. You can switch the entries order pairwise without changing the resulting metric. 
-And metric calculated as costs to adapt one value to the other. It calls a *scale function* in METRIC terms. 
-Then all adapt costs reduce to a single metric value. It calls a *reduce function* in METRIC terms.
-- **k-structured**: number of entries in column can be various and it has a structure. The metric is calculated 
-between all entries with *cost matrix*, that represents entries structure. *Scale function* and *costs matrix* gives 
-costs of transforming one record to the other. 
-- **k-random**: opposing entries not related, they are just sampled. It's the same as others, but more abstract. 
-It's about the costs of transforming one bunch of samples to the other, with pure scale information.
-
-In **METRIC** framework terms a metric is the cost to transform one record to the other record!
-
-And framework thinks about all the metrics as one metric with a *scale function*, a *reduce function* or a *cost matrix*. 
-
-**METRIC** framework have one universal metric factory function. To specify needed metric the user should only specify a 
-*scale function*, a *reduce function* or a *cost matrix*. And of course framework provide the common metrics by name.
-
-The framework's metric factory backes the metric, which is than just a function. 
-
-## Examples
-
-### Standard metrics
-
-Suppose we have a table with two records, where each columns is simple one-dimensional entry of double value:
+Example
 ```cpp
 std::vector<double> v0 = { 0, 1, 1, 1, 1, 1, 2, 3 };
 std::vector<double> v1 = { 1, 1, 1, 1, 1, 2, 3, 4 };
+
+metric::Euclidean<std::vector<double>> euclideanDistance;
+auto result = euclideanDistance(v0, v1);
+// result = 2
+
+```
+### Manhatten (L1 norm, absolute difference)
+The Manhatten metric is also known as rectilinear distance, L1 distance, L1 norm, snake distance, city block distance, taxicab distance or Manhattan length. It is the sum of the absolute difference of the vector entries.
+d(a,b)= abs(a_1 - b_1) + ... + abs(a_n - b_n) )
+https://en.wikipedia.org/wiki/Taxicab_geometry
+
+
+### Chebychev (L∞ norm, maximum difference)
+The Chebyshev distance (also known as Tchebychev distance, maximum metric, or L∞ metric is defined as the distance between two vectors, that is the greatest of their differences along any coordinate dimension.
+d(a,b)= max(abs(a_1 - b_1), ..., abs(a_n - b_n) )
+https://en.wikipedia.org/wiki/Chebyshev_distance
+
+### Minkowski (Lp norm)
+
+The Minkowski distance can be considered as a generalization of the Euclidean, Manhattan and Chebychev distance. The parameter p defines the metric. p=Inf is Chebychev metric, p=1.0 in the Manhatten metric and p=2.0 in the Euclidean metric. The parameter could be freely choosen between [0.0 ... Inf]
+
+d(a,b)=( (a_1 - b_1)^p + ... + (a_n - b_n)^p )^(1/p)
+
+https://en.wikipedia.org/wiki/Minkowski_distance
+
+## The absolute difference family
+Several distance in the literatue are based on the Manhatten metric, more precisely on the idea of the absolute difference vector, but utilizes some kind of build-in normalization instead of using pre-scaled values per standardization or after scaled distances by thresholding.
+
+### Canberra (metric)
+https://en.wikipedia.org/wiki/Canberra_distance
+similiar to Sørensen (Bray-Curtis) distance, but it's known to be very sensitive to small changes near zero. Instead of Sørensen distance, it's a metric.
+
+In mathematics, also is known as the `Wasserstein` metric.
+
+Informally, if the distributions are interpreted as two different ways of piling up a certain amount of dirt over the region `D`, 
+the `EMD` is the minimum cost of turning one pile into the other; where the cost is assumed to be amount of dirt moved times 
+the distance by which it is moved.
+
+Before creating EMD object you need to construct ground distance matrix. Where each value is a distance for move 
+a single pile from one point of matrix to another. You can do it by one of the predefined functions or by self:
+
+```cpp
+auto ground_distance_mat = metric::EMD_details::ground_distance_matrix_of_2dgrid<T, Metric>(columns, rows);
+auto ground_distance_mat = metric::EMD_details::ground_distance_matrix_of_2dgrid<T, Metric>(2d_vector);
 ```
 
-Using **METRIC** framework we can calculate a set of standard metrics for this records. 
+_Note: For images you should serialize the pixel's 2D array in a vector and compute the ground distance matrix 
+of the original picture sized grid._
 
-- **Euclidean (L2) metric**
-``` cpp
-metric::Euclidian<double> euclidianL2Distance;
-auto result_1 = euclidianL2Distance(v0, v1);
-std::cout << "result: " << result_1 << std::endl;
-// out:
-// Euclidean (L2) metric
-// result: 2
-```
+***For example***, suppose we have an images as matrices: `img1`, `img2`.
 
-- **Euclidean Threshold metric**
-``` cpp
-metric::Euclidian_thresholded<double> euclidianThresholdDistance(1000.0, 3000.0);
-auto result_2 = euclidianThresholdDistance(v0, v1);
-std::cout << "result: " << result_2 << std::endl;
-// out:
-// Euclidean Threshold metric
-// result: 1000
-```
-
-- **Manhatten/Cityblock (L1) metric**
-``` cpp
-metric::Manhatten<double> manhattenL1Distance;
-auto result_3 = manhattenL1Distance(v0, v1);
-std::cout << "result: " << result_3 << std::endl;
-// out:
-// Manhatten/Cityblock (L1) metric
-// result: 4
-```
-
-- **Minkowski (L general) metric**
-``` cpp
-metric::P_norm<double> pNormDistance(2);
-auto result_4 = pNormDistance(v0, v1);
-std::cout << "result: " << result_4 << std::endl;
-// out:
-// Minkowski (L general) metric
-// result: 2
-```
-
-- **Cosine metric**
-``` cpp
-metric::Cosine<double> cosineDistance;
-auto result_5 = cosineDistance(v0, v1);
-std::cout << "result: " << result_5 << std::endl;
-// out:
-// Cosine metric
-// result: 0.970143
-```
-
-
-*For a full example and more details see `examples/distance_examples/standart_distances_example.cpp`*
-
----
-
-### Earth Mover Distance metric
-
-Suppose we have an images as matrices: `img1`, `img2`.
-
-Now we can reshape matrices to vectors:
+Now we should reshape matrices to vectors:
 ```cpp
 typedef int emd_Type;
 
@@ -126,171 +107,101 @@ for (size_t i = 0; i < im1_R; ++i)
 }
 ```
 
-And now we can compare two vectors using Earth Mover Distance. 
+### Inner Product (metric!)
 
-First we should calculate a cost matrix: 
+First we should calculate a ground distance matrix: 
 
 ```cpp
-auto cost_mat = metric::EMD_details::ground_distance_matrix_of_2dgrid<emd_Type>(im1_C, im1_R);
-auto maxCost = metric::EMD_details::max_in_distance_matrix(cost_mat);
+auto ground_distance_mat = metric::EMD_details::ground_distance_matrix_of_2dgrid<emd_Type>(im1_C, im1_R);
+auto max_distance = metric::EMD_details::max_in_distance_matrix(ground_distance_mat);
 ```
 Then declare EMD (Earth Mover Distance) metric and use it:
 
 ```cpp
-metric::EMD<emd_Type> distance(cost_mat, maxCost);
-
-auto result = distance(i1, i2);
-std::cout << "result: " << result << std::endl;
-// out:
-// Earth Mover Distance metric
-// result: 4531000
-```
+metric::EMD<emd_Type> distance(ground_distance_mat, max_distance);
 
 
-*For a full example and more details see `examples/distance_examples/earth_mover_distance_example.cpp` and `examples/distance_examples/earth_mover_distance_2_example.cpp`*
 
----
 
-### Edit Distance metric (for strings)
+# Structured metrics
+## The Edit family
+The idea of an edit distance is to transform one record to another by basic edit operations. Each basic operation is assign to a cost, for example to shift one entry to the next index. The distance is the minimum possible sum of costs and therefor realted to the optimal transforming path. Here, an optimization problem is solved, for example by dynamical programming.
 
-Suppose we have two strings:
+### Levenshtein
+Also known as edit distance, can be used for character arrays aka strings.
+### Longest Common Subsequence (LCS)
+### Dynamic Time Warping (DTW)
+### Time Warp Edit Distance (TWED)
+Costs are defined for an y-value and x-value edit, often the time. Therefor it can be used to compare two curves that are not in phase.
 
+
+## The Earth Mover's Distance
+The Earth Mover's distance is some kind of universial metric. the entries of the records are modelled as nodes of a graph. the distance is the minimal cost to flow mass through the edges of the graph. The costs are configured by a ground distance matrix, which represents the basic costs between the nodes, the edge values of the graph.
+
+ground_distance_matrix_for_1dgrid
+ground_distance_matrix_for_2dgrid(w,h)
+
+ground_distance_matrix_for_Image(c,w,h)
+ground_distance_matrix_for_hog(w,...)
+
+
+# metric for metric spaces
+## Riemannian
+A metric space can be represented through a pairwise distance matrix. This matrix is symmetric and positive definite. One can measure the distance between two metric spaces by the Riemannian metric.
+
+coming soon
+
+## Graph Edit
+coming soon
+
+## Hausdorf 
+coming soon
+
+## Tree Edit
+comming soon
+
+
+# Standardization of a metric (pre-processing)
+Often, some form of standardization of the input values can help to balance out the contributions of different scales in the dimensions of the record. The conventional way to do this is to transform the values so they all have the same variance of 1 and at the same time to centre the values at their means.
+
+To etimate the mean and the standard deviation the metric and build with a referenz data set, which provides samples of the expected data. The mean and standard deviation are computed from that set and stored inside the distance function. The transformation of the value it done on the fly, when the metric is called.
+standardized value = (original value – mean) / standard deviation
+
+The Standardization works as wrapper for an abritrary metric.
+
+Example
 ```cpp
-std::string str1 = "1011001100110011001111111";
-std::string str2 = "1000011001100110011011100";
-```
-We can use Edit Distance metric for compare that strings:
+std::vector<double> reference_sample = {
+        { 0, 1, 1, 0.01, 1, 1, 200, 3 },
+        { 1, 1, 1, 0.01, 1, 2, 300, 4 },
+        { 2, 2, 2, 0.01, 1, 2, 0, 0 },
+        { 3, 3, 2, 0.02, 1, 1, 0, 0 },
+        { 4, 3, 2, 0.01, 0, 0, 0, 0 },
+        { 5, 3, 2, 0.01, 0, 0, 0, 0 },
+        { 4, 6, 2, 0.02, 1, 1, 0, 0 }};
 
+metric::standardized<Euclidean<double>> s_euclidean_distance(reference_sample);
+
+double result = s_euclidean_distance(A[0], A[4]);
+```
+
+However, the results are not necessary better by standardization, because outliners could have a huge impact and lead to a collapse of the variance.
+
+
+# Thresholdding of a metric (post-processing)
+For high dimensional vectors, it could make sense to non-linear deform the resulting distance of a metric by hard or soft clipping the distance value. Additionally the distance value can be scaled below the threhshold to clipp faster or slower againt the threshold. Clipping leads to better computation times, when used for the EMD ground distance for example.
+
+Example
 ```cpp
-metric::Edit<std::string> distance;
-
-auto result = distance(str1, str2);
-std::cout << "result: " << result << std::endl;
-// out:
-// Edit Distance metric
-// result: 5
+metric::hard_clipped<metric::Euclidean<double>> euclidean_thresholded(8.0/*,1.0*/);
+auto result1 = euclidean_thresholded(v0, v1);
 ```
-
-*For a full example and more details see `examples/distance_examples/edit_distance_example.cpp`*
-
----
-
-### Time Warp Elastic Distance metric (for curves, series or time-series)
-
-Suppose we have two series:
-
+Instead of hard clipping the values, you can use a continous saturation, that is modeled with an exponential function.
 ```cpp
-std::vector<double> v0 = { 0, 1, 1, 1, 1, 1, 2, 3 };
-std::vector<double> v1 = { 1, 1, 1, 1, 1, 2, 3, 4 };
+metric::soft_clipped<metric::Euclidean<double>> euclidean_scaled_and_limited(8.0 ,0.8, 2.0);
+auto result2 = euclidean_scaled_and_limited(v0, v1);
 ```
-We can use Time Warp Elastic Distance metric for compare that series:
-
-```cpp
-metric::TWED<double> distance;
-
-auto result = distance(v0, v1);
-std::cout << "result: " << result << std::endl;
-// out:
-// Time Warp Elastic Distance metric
-// result: 7
-```
-
-*For a full example and more details see `examples/distance_examples/time_warp_elastic_distance_example.cpp`*
-
----
-
-### Structural Similarity metric (for images)
-
-Suppose we have two images `img1` and `img2` as `std::vector<std::vector<int>>`.
-Then we can use Structural Similarity metric for compare that images:
-
-```cpp
-metric::SSIM<double, std::vector<int>> distance;
-
-auto result = distance(img1, img2);
-std::cout << "result: " << result << std::endl;
-// out:
-// Structural Similarity metric
-// result: 0.0907458
-```
-
-*For a full example and more details see `examples/distance_examples/structural_similarity_example.cpp`*
-
----
-
-### Sorensen
-Suppose we have a set of values:
-
-```cpp
-typedef double V_type;
-
-V_type vt0 = 0;
-V_type vt1 = 1;
-V_type vt2 = 2;
-V_type vt3 = 3;
-```
-
-Then we can calculate Sorensen distances various vector types.
-
-`STL`:
-```cpp
-std::vector<V_type> obj1 = {vt0, vt1, vt2, vt0};
-std::vector<V_type> obj2 = {vt0, vt1, vt3};
-	
-auto result = metric::sorensen(obj1, obj2);
-std::cout << "result: " << result << std::endl;
-// out:
-// Sorensen distance for std::vector
-// result: 0.142857
-```
-
-`blaze::DynamicVector`:
-```cpp
-blaze::DynamicVector<V_type> bdv1 {vt0, vt1, vt2, vt0};
-blaze::DynamicVector<V_type> bdv2 {vt0, vt1, vt3};
-	
-auto result = metric::sorensen(bdv1, bdv2);
-std::cout << "result: " << result << std::endl;
-// out:
-// Sorensen distance for blaze::DynamicVector
-// result: 0.142857
-```
-
-`blaze::StaticVector`:
-```cpp
-blaze::StaticVector<V_type, 4UL> bsv1 {vt0, vt1, vt2, vt0};
-blaze::StaticVector<V_type, 4UL> bsv2 {vt0, vt1, vt3, vt0};
-	
-auto result = metric::sorensen(bsv1, bsv2);
-std::cout << "result: " << result << std::endl;
-// out:
-// Sorensen distance for blaze::StaticVector
-// result: 0.142857
-```
-
-`blaze::HybridVector`:
-```cpp
-blaze::HybridVector<V_type, 4UL> bhv1 {vt0, vt1, vt2, vt0};
-blaze::HybridVector<V_type, 4UL> bhv2 {vt0, vt1, vt3, vt0};
-	
-auto result = metric::sorensen(bhv1, bhv2);
-std::cout << "result: " << result << std::endl;
-// out:
-// Sorensen distance for blaze::HybridVector
-// result: 0.142857
-```
-
-`blaze::CompressedVector`:
-```cpp
-blaze::CompressedVector<V_type> bcv1 {vt0, vt1, vt2, vt0};
-blaze::CompressedVector<V_type> bcv2 {vt0, vt1, vt3};
-	
-auto result = metric::sorensen(bcv1, bcv2);
-std::cout << "result: " << result << std::endl;
-// out:
-// Sorensen distance for blaze::CompressedVector
-// result: 0.142857
-```
+The threshold [0.01..0.99] is realated to the max_distance value and defines the percentage level where the saturation starts. Below that point, the value is scaled linearly with the scal factor. The scal factor must be positve. values greater one will shorten the range until saturation takes place and a value less one will longer the range until the limitting starts.
 
 *For a full example and more details see `examples/distance_examples/sorensen_distance_example.cpp`*
 
@@ -317,7 +228,7 @@ Kohonen distance object will train incapsulated SOM on that dataset.
 int grid_w = 6;
 int grid_h = 4;
 
-metric::kohonen_distance<double, std::vector<double>> distance(train_dataset, grid_w, grid_h);
+metric::Kohonen<double, std::vector<double>> distance(train_dataset, grid_w, grid_h);
 
 auto result = distance(train_dataset[0], train_dataset[1]);
 std::cout << "result: " << result << std::endl;
@@ -333,7 +244,7 @@ int grid_w = 6;
 int grid_h = 4;
 	
 using Vector = std::vector<double>;
-using Metric = metric::Euclidian<double>;
+using Metric = metric::Euclidean<double>;
 using Graph = metric::Grid6; 
 using Distribution = std::uniform_real_distribution<double>; 
 
@@ -342,7 +253,7 @@ Distribution distr(-1, 1);
 metric::SOM<Vector, Graph, Metric> som_model(Graph(grid_w, grid_h), Metric(), 0.8, 0.2, 20, distr);
 som_model.train(train_dataset);
 	
-metric::kohonen_distance<double, Vector, Graph, Metric> distance(som_model);
+metric::Kohonen<double, Vector, Graph, Metric> distance(som_model);
 
 auto result = distance(train_dataset[0], train_dataset[1]);
 std::cout << "result: " << result << std::endl;
@@ -350,15 +261,15 @@ std::cout << "result: " << result << std::endl;
 // Kohonen metric
 // result: 772.109
 ```
-*For a full example and more details see `examples/distance_examples/kohonen_distance_example.cpp`*
+*For a full example and more details see `examples/distance_examples/Kohonen_example.cpp`*
 
 
 
 ---
 
 
-### Entropy, Mutual Information and Variation of Information
-Suppose we have a some data:
+### Entropy and VMixing
+Suppose we have some data:
 
 ```cpp
 std::vector<std::vector<double>> v = { {5,5}, {2,2}, {3,3}, {5,1} };
@@ -366,20 +277,22 @@ std::vector<std::vector<double>> v = { {5,5}, {2,2}, {3,3}, {5,1} };
 
 Then we can calculate the entropy of the given data:
 ```cpp
-auto result = metric::entropy(v);
+auto estimator = metric::Entropy<std::vector<double>>();
+auto result = estimator(v);
 std::cout << "result: " << result << std::endl;
 // out:
 // Entropy using default distance metric
-// result: 7.81979
+// result: -5.39891
 ```
 
 Of cause, we can calculate entropy using any distance metric:
 ```cpp
-auto result = entropy(v, 3, 2.0, metric::Manhatten<double>());
+auto estimator = metric::Entropy<void, metric::Manhatten<double>>();
+auto result = estimator(v);
 std::cout << "result: " << result << std::endl;
 // out:
 // Entropy using Manhatten distance metric
-// result: 7.9183
+// result: 0.132185
 ```
 
 And now suppose we have two vectors with a data:
@@ -389,89 +302,22 @@ std::vector<std::vector<double>> v1 = {{5,5}, {2,2}, {3,3}, {5,5}};
 std::vector<std::vector<double>> v2 = {{5,5}, {2,2}, {3,3}, {1,1}};
 ```
 
-Then we can calculate Mutual Information:
+For the same data we can calculate "variation for mixing": or, in short words, compare entopies of each dataset to entropy of concatenated datset:
 ```cpp
-auto result = metric::mutualInformation(v1, v2);
+auto vm = VMixing(); // default parameters
+auto result = metric::vm(v1, v2);
 std::cout << "result: " << result << std::endl;
-// out:
-// Mutual Information using default distance metric
-// result: 1.00612
-```
-
-Of cause we can specify distance metric:
-```cpp
-auto result = metric::mutualInformation(v1, v2, 3, metric::Chebyshev<double>());
-std::cout << "result: " << result << std::endl;
-// out:
-// Mutual Information using Chebyshev distance metric
-// result: 1.08945 
-```
-
-For the same data we can calculate Variation of Information:
-```cpp
-auto result = metric::variationOfInformation(v1, v2);
-std::cout << "result: " << result << std::endl;
-// out:
-// Variation of Information using default distance metric
-// result: 12.6577
 ```
 
 Again we can specify distance metric:
 ```cpp
-auto result = metric::variationOfInformation<double, metric::Manhatten<double>>(v1, v2);
+auto vm = metric::VMixing_simple<void, metric::Manhatten<double>>(metric::Manhatten<double>())
+auto result = vm(v1, v2);
+std::cout << "VMixed Manhatten result: " << result << std::endl;
 std::cout << "result: " << result << std::endl;
-// out:
-// Variation of Information Information using Manhatten distance metric
-// result: 14.8244
 ```
 
-We can calculate normalized Variation of Information:
-```cpp
-auto result = metric::variationOfInformation_normalized(v1, v2);
-std::cout << "result: " << result << std::endl;
-// out:
-// normalized Variation of Information
-// result: 0.920751
-```
-
-Instead function we can use functor for Variation of Information:
-```cpp
-auto f_voi = metric::VOI<long double>();
-auto result = f_voi(v1, v2);
-std::cout << "result: " << result << std::endl;
-// out:
-// Variation of Information as functor
-// result: 12.6577
-```
-Normalized functor:
-```cpp
-auto f_voi_norm = metric::VOI_normalized<long double>();
-auto result = f_voi_norm(v1, v2);
-std::cout << "result: " << result << std::endl;
-// out:
-// normalized Variation of Information as normalized functor
-// result: 0.927254
-```
-KL functor:
-```cpp
-auto f_voi_kl = metric::VOI_kl<long double>();
-auto result = f_voi_kl(v1, v2);
-std::cout << "result: " << result << std::endl;
-// out:
-// Variation of Information as KL functor
-// result: 49.8917
-```
-Normalized KL functor:
-```cpp
-auto f_voi_norm_kl = metric::VOI_normalized_kl<long double>();
-auto result = f_voi_norm_kl(v1, v2);
-std::cout << "result: " << result << std::endl;
-// out:
-// Variation of Information as normalized KL functor
-// result: 1.06191
-```
-
-*For a full example and more details see `examples/distance_examples/entropy_example.cpp`*
+*For a full example and more details see `examples/distance_examples/entropy_example.cpp`, `tests/distance_tests/entropy_vmixing_tests.cpp`*
 
 ---
 
@@ -494,8 +340,6 @@ or directly include one of specified distance from the following:
 #include "modules/distance/k-structured/TWED.hpp"
 #include "modules/distance/k-structured/EMD.hpp"
 #include "modules/distance/k-structured/Edit.hpp"
-
-#include "modules/distance/k-random/VOI.hpp"
 ```
 
 

@@ -3,7 +3,7 @@
 //  \file blaze/util/Memory.h
 //  \brief Header file for memory allocation and deallocation functionality
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -40,13 +40,12 @@
 // Includes
 //*************************************************************************************************
 
-#if BLAZE_WIN64_PLATFORM || BLAZE_MINGW64_PLATFORM || BLAZE_MINGW32_PLATFORM
+#if BLAZE_WIN32_PLATFORM || BLAZE_WIN64_PLATFORM || BLAZE_MINGW64_PLATFORM || BLAZE_MINGW32_PLATFORM
 #  include <malloc.h>
 #endif
 #include <cstdlib>
 #include <new>
 #include "../util/Assert.h"
-#include "../util/DisableIf.h"
 #include "../util/EnableIf.h"
 #include "../util/Exception.h"
 #include "../util/Types.h"
@@ -80,13 +79,14 @@ inline byte_t* allocate_backend( size_t size, size_t alignment )
 {
    void* raw( nullptr );
 
-#if BLAZE_WIN64_PLATFORM || BLAZE_MINGW64_PLATFORM
+#if BLAZE_WIN32_PLATFORM || BLAZE_WIN64_PLATFORM || BLAZE_MINGW64_PLATFORM
    raw = _aligned_malloc( size, alignment );
    if( raw == nullptr ) {
 #elif BLAZE_MINGW32_PLATFORM
    raw = __mingw_aligned_malloc( size, alignment );
    if( raw == nullptr ) {
 #else
+   alignment = ( alignment < sizeof(void*) ? sizeof(void*) : alignment );
    if( posix_memalign( &raw, alignment, size ) ) {
 #endif
       BLAZE_THROW_BAD_ALLOC;
@@ -111,7 +111,7 @@ inline byte_t* allocate_backend( size_t size, size_t alignment )
 */
 inline void deallocate_backend( const void* address ) noexcept
 {
-#if BLAZE_WIN64_PLATFORM || BLAZE_MINGW64_PLATFORM
+#if BLAZE_WIN32_PLATFORM || BLAZE_WIN64_PLATFORM || BLAZE_MINGW64_PLATFORM
    _aligned_free( const_cast<void*>( address ) );
 #elif BLAZE_MINGW32_PLATFORM
    __mingw_aligned_free( const_cast<void*>( address ) );
@@ -154,12 +154,9 @@ inline void deallocate_backend( const void* address ) noexcept
 template< typename T >
 EnableIf_t< IsBuiltin_v<T>, T* > allocate( size_t size )
 {
-   const size_t alignment( AlignmentOf_v<T> );
+   constexpr size_t alignment( AlignmentOf_v<T> );
 
-   if( alignment >= 8UL ) {
-      return reinterpret_cast<T*>( allocate_backend( size*sizeof(T), alignment ) );
-   }
-   else return ::new T[size];
+   return reinterpret_cast<T*>( allocate_backend( size*sizeof(T), alignment ) );
 }
 //*************************************************************************************************
 
@@ -183,35 +180,31 @@ EnableIf_t< IsBuiltin_v<T>, T* > allocate( size_t size )
 template< typename T >
 DisableIf_t< IsBuiltin_v<T>, T* > allocate( size_t size )
 {
-   const size_t alignment ( AlignmentOf_v<T> );
-   const size_t headersize( ( sizeof(size_t) < alignment ) ? ( alignment ) : ( sizeof( size_t ) ) );
+   constexpr size_t alignment ( AlignmentOf_v<T> );
+   constexpr size_t headersize( ( sizeof(size_t) < alignment ) ? ( alignment ) : ( sizeof( size_t ) ) );
 
    BLAZE_INTERNAL_ASSERT( headersize >= alignment      , "Invalid header size detected" );
    BLAZE_INTERNAL_ASSERT( headersize % alignment == 0UL, "Invalid header size detected" );
 
-   if( alignment >= 8UL )
-   {
-      byte_t* const raw( allocate_backend( size*sizeof(T)+headersize, alignment ) );
+   byte_t* const raw( allocate_backend( size*sizeof(T)+headersize, alignment ) );
 
-      *reinterpret_cast<size_t*>( raw ) = size;
+   *reinterpret_cast<size_t*>( raw ) = size;
 
-      T* const address( reinterpret_cast<T*>( raw + headersize ) );
-      size_t i( 0UL );
+   T* const address( reinterpret_cast<T*>( raw + headersize ) );
+   size_t i( 0UL );
 
-      try {
-         for( ; i<size; ++i )
-            ::new (address+i) T();
-      }
-      catch( ... ) {
-         while( i != 0UL )
-            address[--i].~T();
-         deallocate_backend( raw );
-         throw;
-      }
-
-      return address;
+   try {
+      for( ; i<size; ++i )
+         ::new (address+i) T();
    }
-   else return ::new T[size];
+   catch( ... ) {
+      while( i != 0UL )
+         address[--i].~T();
+      deallocate_backend( raw );
+      throw;
+   }
+
+   return address;
 }
 //*************************************************************************************************
 
@@ -232,12 +225,7 @@ EnableIf_t< IsBuiltin_v<T> > deallocate( T* address ) noexcept
    if( address == nullptr )
       return;
 
-   const size_t alignment( AlignmentOf_v<T> );
-
-   if( alignment >= 8UL ) {
-      deallocate_backend( address );
-   }
-   else ::delete[] address;
+   deallocate_backend( address );
 }
 //*************************************************************************************************
 
@@ -258,23 +246,19 @@ DisableIf_t< IsBuiltin_v<T> > deallocate( T* address )
    if( address == nullptr )
       return;
 
-   const size_t alignment ( AlignmentOf_v<T> );
-   const size_t headersize( ( sizeof(size_t) < alignment ) ? ( alignment ) : ( sizeof( size_t ) ) );
+   constexpr size_t alignment ( AlignmentOf_v<T> );
+   constexpr size_t headersize( ( sizeof(size_t) < alignment ) ? ( alignment ) : ( sizeof( size_t ) ) );
 
    BLAZE_INTERNAL_ASSERT( headersize >= alignment      , "Invalid header size detected" );
    BLAZE_INTERNAL_ASSERT( headersize % alignment == 0UL, "Invalid header size detected" );
 
-   if( alignment >= 8UL )
-   {
-      const byte_t* const raw = reinterpret_cast<byte_t*>( address ) - headersize;
+   const byte_t* const raw = reinterpret_cast<byte_t*>( address ) - headersize;
 
-      const size_t size( *reinterpret_cast<const size_t*>( raw ) );
-      for( size_t i=0UL; i<size; ++i )
-         address[i].~T();
+   const size_t size( *reinterpret_cast<const size_t*>( raw ) );
+   for( size_t i=0UL; i<size; ++i )
+      address[i].~T();
 
-      deallocate_backend( raw );
-   }
-   else ::delete[] address;
+   deallocate_backend( raw );
 }
 //*************************************************************************************************
 

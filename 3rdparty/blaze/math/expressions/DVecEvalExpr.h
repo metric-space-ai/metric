@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/DVecEvalExpr.h
 //  \brief Header file for the dense vector evaluation expression
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -50,6 +50,7 @@
 #include "../../math/expressions/VecEvalExpr.h"
 #include "../../math/typetraits/IsAligned.h"
 #include "../../math/typetraits/IsExpression.h"
+#include "../../system/MacroDisable.h"
 #include "../../util/Assert.h"
 #include "../../util/FunctionTrace.h"
 #include "../../util/mpl/If.h"
@@ -79,11 +80,12 @@ class DVecEvalExpr
 {
  public:
    //**Type definitions****************************************************************************
-   using This          = DVecEvalExpr<VT,TF>;  //!< Type of this DVecEvalExpr instance.
-   using ResultType    = ResultType_t<VT>;     //!< Result type for expression template evaluations.
-   using TransposeType = TransposeType_t<VT>;  //!< Transpose type for expression template evaluations.
-   using ElementType   = ElementType_t<VT>;    //!< Resulting element type.
-   using ReturnType    = ReturnType_t<VT>;     //!< Return type for expression template evaluations.
+   using This          = DVecEvalExpr<VT,TF>;   //!< Type of this DVecEvalExpr instance.
+   using BaseType      = DenseVector<This,TF>;  //!< Base type of this DVecEvalExpr instance.
+   using ResultType    = ResultType_t<VT>;      //!< Result type for expression template evaluations.
+   using TransposeType = TransposeType_t<VT>;   //!< Transpose type for expression template evaluations.
+   using ElementType   = ElementType_t<VT>;     //!< Resulting element type.
+   using ReturnType    = ReturnType_t<VT>;      //!< Return type for expression template evaluations.
 
    //! Data type for composite expression templates.
    using CompositeType = const ResultType;
@@ -284,7 +286,7 @@ class DVecEvalExpr
    // \ingroup dense_vector
    //
    // \param lhs The target left-hand side sparse vector.
-   // \param rhs The right-hand side evaulation expression to be added.
+   // \param rhs The right-hand side evaluation expression to be added.
    // \return void
    //
    // This function implements the performance optimized addition assignment of a dense vector
@@ -730,35 +732,6 @@ inline decltype(auto) eval( const DenseVector<VT,TF>& dv )
    using ReturnType = const DVecEvalExpr<VT,TF>;
    return ReturnType( ~dv );
 }
-//*************************************************************************************************
-
-
-
-
-//=================================================================================================
-//
-//  GLOBAL RESTRUCTURING FUNCTIONS
-//
-//=================================================================================================
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-/*!\brief Evaluation of the given dense vector evaluation expression \a dv.
-// \ingroup dense_vector
-//
-// \param dv The input evaluation expression.
-// \return The evaluated dense vector.
-//
-// This function implements a performance optimized treatment of the evaluation of a dense vector
-// evaluation expression.
-*/
-template< typename VT  // Type of the dense vector
-        , bool TF >    // Transpose flag
-inline decltype(auto) eval( const DVecEvalExpr<VT,TF>& dv )
-{
-   return dv;
-}
-/*! \endcond */
 //*************************************************************************************************
 
 

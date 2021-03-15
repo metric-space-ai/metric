@@ -177,6 +177,9 @@ namespace impl {
 
         template <typename G>
         auto dimension(G getter) -> cross::dimension<decltype(getter(std::declval<T>())), T, cross::non_iterable, Hash>;
+        template <typename G>
+        auto dimension_ptr(G getter) -> cross::dimension<decltype(getter(std::declval<T>())), T, cross::non_iterable, Hash>*;
+
         // {
         //auto dimension_filter = add_row_to_filters();
         //cross::dimension<decltype(getter(std::declval<record_type_t>())), T, cross::non_iterable, Hash> dim(this, std::get<0>(dimension_filter), std::get<1>(dimension_filter), getter);
@@ -188,6 +191,9 @@ namespace impl {
 
         template <typename V, typename G>
         auto iterable_dimension(G getter) -> cross::dimension<V, T, cross::iterable, Hash>;
+
+        template <typename V, typename G>
+        auto iterable_dimension_ptr(G getter) -> cross::dimension<V, T, cross::iterable, Hash>*;
 
         void flip_bit_for_dimension(std::size_t index, std::size_t dimension_offset, int dimension_bit_index);
 

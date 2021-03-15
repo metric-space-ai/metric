@@ -6,8 +6,8 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 Copyright (c) 2019 Panda Team
 */
 
-#include "../../modules/mapping.hpp"
-#include "../../modules/distance.hpp"
+#include "modules/mapping.hpp"
+#include "modules/distance.hpp"
 
 
 
@@ -32,7 +32,7 @@ int main()
 		   {2.57927000000000, 2.63399000000000, 2.46802000000000, 61.9026000000000, 61.9026000000000}
 	};
 	   	 
-	auto hc = metric::HierarchicalClustering<Record, metric::Euclidian<Record::value_type>>(data, 3);
+	auto hc = metric::HierarchicalClustering<Record, metric::Euclidean<Record::value_type>>(data, 3);
 	hc.hierarchical_clustering();
 
 	for (size_t i = 0; i < hc.clusters.size(); i++)

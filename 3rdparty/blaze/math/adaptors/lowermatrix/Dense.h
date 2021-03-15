@@ -3,7 +3,7 @@
 //  \file blaze/math/adaptors/lowermatrix/Dense.h
 //  \brief LowerMatrix specialization for dense matrices
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -46,8 +46,8 @@
 #include "../../../math/adaptors/lowermatrix/BaseTemplate.h"
 #include "../../../math/adaptors/lowermatrix/LowerProxy.h"
 #include "../../../math/Aliases.h"
+#include "../../../math/constraints/Computation.h"
 #include "../../../math/constraints/DenseMatrix.h"
-#include "../../../math/constraints/Expression.h"
 #include "../../../math/constraints/Hermitian.h"
 #include "../../../math/constraints/Lower.h"
 #include "../../../math/constraints/Resizable.h"
@@ -55,12 +55,15 @@
 #include "../../../math/constraints/Static.h"
 #include "../../../math/constraints/StorageOrder.h"
 #include "../../../math/constraints/Symmetric.h"
+#include "../../../math/constraints/Transformation.h"
 #include "../../../math/constraints/Upper.h"
+#include "../../../math/constraints/View.h"
 #include "../../../math/dense/DenseMatrix.h"
 #include "../../../math/dense/InitializerMatrix.h"
 #include "../../../math/Exception.h"
 #include "../../../math/expressions/DenseMatrix.h"
 #include "../../../math/InitializerList.h"
+#include "../../../math/RelaxationFlag.h"
 #include "../../../math/shims/Clear.h"
 #include "../../../math/shims/IsDefault.h"
 #include "../../../math/shims/IsZero.h"
@@ -77,14 +80,12 @@
 #include "../../../util/constraints/Reference.h"
 #include "../../../util/constraints/Vectorizable.h"
 #include "../../../util/constraints/Volatile.h"
-#include "../../../util/DisableIf.h"
 #include "../../../util/EnableIf.h"
-#include "../../../util/FalseType.h"
+#include "../../../util/IntegralConstant.h"
+#include "../../../util/MaybeUnused.h"
 #include "../../../util/StaticAssert.h"
-#include "../../../util/TrueType.h"
 #include "../../../util/Types.h"
 #include "../../../util/typetraits/IsNumeric.h"
-#include "../../../util/Unused.h"
 
 
 namespace blaze {
@@ -639,20 +640,20 @@ class LowerMatrix<MT,SO,true>
    //**Constructors********************************************************************************
    /*!\name Constructors */
    //@{
-                           explicit inline LowerMatrix();
+                                    inline LowerMatrix();
    template< typename A1 > explicit inline LowerMatrix( const A1& a1 );
-                           explicit inline LowerMatrix( size_t n, const ElementType& init );
+                                    inline LowerMatrix( size_t n, const ElementType& init );
 
-   explicit inline LowerMatrix( initializer_list< initializer_list<ElementType> > list );
+   inline LowerMatrix( initializer_list< initializer_list<ElementType> > list );
 
    template< typename Other >
-   explicit inline LowerMatrix( size_t n, const Other* array );
+   inline LowerMatrix( size_t n, const Other* array );
 
    template< typename Other, size_t N >
-   explicit inline LowerMatrix( const Other (&array)[N][N] );
+   inline LowerMatrix( const Other (&array)[N][N] );
 
-   explicit inline LowerMatrix( ElementType* ptr, size_t n );
-   explicit inline LowerMatrix( ElementType* ptr, size_t n, size_t nn );
+   inline LowerMatrix( ElementType* ptr, size_t n );
+   inline LowerMatrix( ElementType* ptr, size_t n, size_t nn );
 
    inline LowerMatrix( const LowerMatrix& m );
    inline LowerMatrix( LowerMatrix&& m ) noexcept;
@@ -660,7 +661,10 @@ class LowerMatrix<MT,SO,true>
    //**********************************************************************************************
 
    //**Destructor**********************************************************************************
-   // No explicitly declared destructor.
+   /*!\name Destructor */
+   //@{
+   ~LowerMatrix() = default;
+   //@}
    //**********************************************************************************************
 
    //**Data access functions***********************************************************************
@@ -747,8 +751,8 @@ class LowerMatrix<MT,SO,true>
    inline void   shrinkToFit();
    inline void   swap( LowerMatrix& m ) noexcept;
 
-   static inline constexpr size_t maxNonZeros()  noexcept;
-   static inline constexpr size_t maxNonZeros( size_t n ) noexcept;
+   static constexpr size_t maxNonZeros()  noexcept;
+   static constexpr size_t maxNonZeros( size_t n ) noexcept;
    //@}
    //**********************************************************************************************
 
@@ -801,7 +805,7 @@ class LowerMatrix<MT,SO,true>
    //**********************************************************************************************
 
    //**Friend declarations*************************************************************************
-   template< bool RF, typename MT2, bool SO2, bool DF2 >
+   template< RelaxationFlag RF, typename MT2, bool SO2, bool DF2 >
    friend bool isDefault( const LowerMatrix<MT2,SO2,DF2>& m );
 
    template< typename MT2, bool SO2, bool DF2 >
@@ -814,7 +818,9 @@ class LowerMatrix<MT,SO,true>
    BLAZE_CONSTRAINT_MUST_NOT_BE_POINTER_TYPE         ( MT );
    BLAZE_CONSTRAINT_MUST_NOT_BE_CONST                ( MT );
    BLAZE_CONSTRAINT_MUST_NOT_BE_VOLATILE             ( MT );
-   BLAZE_CONSTRAINT_MUST_NOT_BE_EXPRESSION_TYPE      ( MT );
+   BLAZE_CONSTRAINT_MUST_NOT_BE_VIEW_TYPE            ( MT );
+   BLAZE_CONSTRAINT_MUST_NOT_BE_COMPUTATION_TYPE     ( MT );
+   BLAZE_CONSTRAINT_MUST_NOT_BE_TRANSFORMATION_TYPE  ( MT );
    BLAZE_CONSTRAINT_MUST_NOT_BE_SYMMETRIC_MATRIX_TYPE( MT );
    BLAZE_CONSTRAINT_MUST_NOT_BE_HERMITIAN_MATRIX_TYPE( MT );
    BLAZE_CONSTRAINT_MUST_NOT_BE_LOWER_MATRIX_TYPE    ( MT );
@@ -2259,7 +2265,7 @@ void LowerMatrix<MT,SO,true>::resize( size_t n, bool preserve )
 {
    BLAZE_CONSTRAINT_MUST_BE_RESIZABLE_TYPE( MT );
 
-   UNUSED_PARAMETER( preserve );
+   MAYBE_UNUSED( preserve );
 
    BLAZE_INTERNAL_ASSERT( isSquare( matrix_ ), "Non-square lower matrix detected" );
 
@@ -2295,7 +2301,7 @@ inline void LowerMatrix<MT,SO,true>::extend( size_t n, bool preserve )
 {
    BLAZE_CONSTRAINT_MUST_BE_RESIZABLE_TYPE( MT );
 
-   UNUSED_PARAMETER( preserve );
+   MAYBE_UNUSED( preserve );
 
    resize( rows() + n, true );
 }
@@ -2375,7 +2381,7 @@ inline void LowerMatrix<MT,SO,true>::swap( LowerMatrix& m ) noexcept
 */
 template< typename MT  // Type of the adapted dense matrix
         , bool SO >    // Storage order of the adapted dense matrix
-inline constexpr size_t LowerMatrix<MT,SO,true>::maxNonZeros() noexcept
+constexpr size_t LowerMatrix<MT,SO,true>::maxNonZeros() noexcept
 {
    BLAZE_CONSTRAINT_MUST_BE_STATIC_TYPE( MT );
 
@@ -2397,7 +2403,7 @@ inline constexpr size_t LowerMatrix<MT,SO,true>::maxNonZeros() noexcept
 */
 template< typename MT  // Type of the adapted dense matrix
         , bool SO >    // Storage order of the adapted dense matrix
-inline constexpr size_t LowerMatrix<MT,SO,true>::maxNonZeros( size_t n ) noexcept
+constexpr size_t LowerMatrix<MT,SO,true>::maxNonZeros( size_t n ) noexcept
 {
    return ( ( n + 1UL ) * n ) / 2UL;
 }

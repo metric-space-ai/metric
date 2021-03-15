@@ -3,7 +3,7 @@
 //  \file blaze/util/Algorithms.h
 //  \brief Headerfile for generic algorithms
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -44,6 +44,7 @@
 #include "../util/algorithms/DestroyAt.h"
 #include "../util/algorithms/Max.h"
 #include "../util/algorithms/Min.h"
+#include "../util/algorithms/Minmax.h"
 #include "../util/algorithms/Transfer.h"
 #include "../util/algorithms/UninitializedDefaultConstruct.h"
 #include "../util/algorithms/UninitializedMove.h"

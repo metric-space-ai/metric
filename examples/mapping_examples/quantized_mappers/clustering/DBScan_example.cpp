@@ -6,7 +6,7 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 Copyright (c) 2019 Panda Team
 */
 
-#include "../../modules/mapping.hpp"
+#include "modules/mapping.hpp"
 
 
 
@@ -21,7 +21,7 @@ int main()
         { 2.85493000000000, 3.25380000000000, 2.50559000000000, 68.5184000000000, 68.5184000000000 },
         { 5.81414000000000, 8.14015000000000, 3.22950000000000, 139.539000000000, 139.539000000000 },
         { 2.57927000000000, 2.63399000000000, 2.46802000000000, 61.9026000000000, 61.9026000000000 } };
-    metric::Matrix<std::vector<float>, metric::Euclidian<float>> distance_matrix(data);
+    metric::Matrix<std::vector<float>, metric::Euclidean<float>> distance_matrix(data);
 
     auto [assignments, seeds, counts] = metric::dbscan(distance_matrix, (float)64.0, 1);
 	// out:

@@ -26,13 +26,19 @@ namespace metric {
 template <class Record>
 class DT {
 public:
+    // forbid creation of copies and allow only move
+    DT(const DT&) = delete;
+    DT(DT&&) = default;             // need to clone the tree
+    DT& operator=(const DT&) = delete;
+    DT& operator=(DT&&) = default;  // need to clone the tree
+
     /**
      * @brief Construct a new DT object
      * 
-     * @param entropy_threshold_ 
-     * @param gain_threshold_ 
+     * @param entropy_threshold
+     * @param gain_threshold
      */
-    DT(double entropy_threshold_ = 0, double gain_threshold_ = 0);
+    DT(double entropy_threshold = 0, double gain_threshold = 0);
 
     /**
      * @brief train classifier on test dataset
@@ -41,7 +47,11 @@ public:
      * @param response 
      */
     template <typename ConType, typename VariantType>
-    void train(ConType& payments, std::vector<VariantType>, std::function<int(const Record&)>& response);
+    void train(
+        const ConType& payments,
+        std::vector<VariantType> dimensions,
+        std::function<int(const Record&)>& response
+    );
 
     /**
      * @brief 
@@ -51,7 +61,7 @@ public:
      * @param predictions 
      */
     template <typename ConType, typename VariantType>
-    void predict(ConType& input_data, std::vector<VariantType> dimensions, std::vector<int>& predictions);
+    void predict(const ConType& input_data, std::vector<VariantType> dimensions, std::vector<int>& predictions);
 
 private:
     struct Node  // of the tree
@@ -63,32 +73,40 @@ private:
         std::vector<int> prediction_distribution = {};
     };
 
-    struct
-        NodeDataUnit  // queue is used instead of recursion; we need subset only in queue when building tree, not in resulting tree
+    // queue is used instead of recursion; we need subset only in queue when building tree, not in resulting tree
+    struct NodeDataUnit
     {
-        std::shared_ptr<Node> node;  //
+        std::shared_ptr<Node> node;
         std::shared_ptr<std::vector<int>> subset;
         double entropy = 0;
         int debug_id;
     };
 
     template <typename NumType>
-    std::tuple<std::vector<std::vector<NumType>>, std::vector<int>> distance_matrix_of_subset(
-        const std::vector<int>& subset, const std::vector<std::vector<NumType>>& feature_dist);
+    auto distance_matrix_of_subset(
+        const std::vector<int>& subset,
+        const std::vector<std::vector<NumType>>& feature_dist
+    ) -> std::tuple<std::vector<std::vector<NumType>>, std::vector<int>>;
 
     template <typename ConType, typename NumType>
-    std::tuple<std::vector<std::shared_ptr<std::vector<int>>>, std::vector<double>, std::vector<int>, int, double>
-    split_subset(const std::vector<int>& subset, const std::vector<std::vector<std::vector<NumType>>>& distances,
-        const ConType& data, const std::function<int(Record)>& response);
+    auto split_subset(
+        const std::vector<int>& subset,
+        const std::vector<std::vector<std::vector<NumType>>>& distances,
+        const ConType& data,
+        const std::function<int(Record)>& response
+    ) -> std::tuple<std::vector<std::shared_ptr<std::vector<int>>>, std::vector<double>, std::vector<int>, int, double>;
 
     template <typename ConType, typename NumType>
-    std::tuple<std::vector<std::vector<std::vector<NumType>>>, std::vector<int>>
-    read_data(  // TODO return without copying!!
-        ConType& payments, std::vector<std::function<NumType(Record)>>& features, std::function<int(Record)>& response);
+    auto read_data(  // TODO return without copying!!
+        ConType& payments,
+        std::vector<std::function<NumType(Record)>>& features,
+        std::function<int(Record)>& response
+    ) -> std::tuple<std::vector<std::vector<std::vector<NumType>>>, std::vector<int>>;
 
     template <typename ConType>
     inline void add_distribution_to_node(  // mutates *new_node!
-        const ConType& payments, const std::function<int(Record)>& response,
+        const ConType& payments,
+        const std::function<int(Record)>& response,
         const std::shared_ptr<std::vector<int>>& new_subset,
         const std::shared_ptr<Node>& new_node  // subject to change
     );

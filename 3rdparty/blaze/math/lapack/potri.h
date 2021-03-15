@@ -3,7 +3,7 @@
 //  \file blaze/math/lapack/potri.h
 //  \brief Header file for the LAPACK matrix Cholesky-based inversion functions (potri)
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -44,6 +44,7 @@
 #include "../../math/constraints/Adaptor.h"
 #include "../../math/constraints/BLASCompatible.h"
 #include "../../math/constraints/Computation.h"
+#include "../../math/constraints/Contiguous.h"
 #include "../../math/constraints/MutableDataAccess.h"
 #include "../../math/Exception.h"
 #include "../../math/expressions/DenseMatrix.h"
@@ -65,7 +66,7 @@ namespace blaze {
 /*!\name LAPACK LLH-based inversion functions (potri) */
 //@{
 template< typename MT, bool SO >
-inline void potri( DenseMatrix<MT,SO>& A, char uplo );
+void potri( DenseMatrix<MT,SO>& A, char uplo );
 //@}
 //*************************************************************************************************
 
@@ -116,6 +117,7 @@ inline void potri( DenseMatrix<MT,SO>& A, char uplo )
    BLAZE_CONSTRAINT_MUST_NOT_BE_ADAPTOR_TYPE( MT );
    BLAZE_CONSTRAINT_MUST_NOT_BE_COMPUTATION_TYPE( MT );
    BLAZE_CONSTRAINT_MUST_HAVE_MUTABLE_DATA_ACCESS( MT );
+   BLAZE_CONSTRAINT_MUST_BE_CONTIGUOUS_TYPE( MT );
    BLAZE_CONSTRAINT_MUST_BE_BLAS_COMPATIBLE_TYPE( ElementType_t<MT> );
 
    if( !isSquare( ~A ) ) {
@@ -126,9 +128,9 @@ inline void potri( DenseMatrix<MT,SO>& A, char uplo )
       BLAZE_THROW_INVALID_ARGUMENT( "Invalid uplo argument provided" );
    }
 
-   int n   ( numeric_cast<int>( (~A).columns() ) );
-   int lda ( numeric_cast<int>( (~A).spacing() ) );
-   int info( 0 );
+   blas_int_t n   ( numeric_cast<blas_int_t>( (~A).columns() ) );
+   blas_int_t lda ( numeric_cast<blas_int_t>( (~A).spacing() ) );
+   blas_int_t info( 0 );
 
    if( n == 0 ) {
       return;

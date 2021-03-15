@@ -3,7 +3,7 @@
 //  \file blaze/math/shims/IsZero.h
 //  \brief Header file for the isZero shim
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -43,10 +43,8 @@
 #include "../../math/RelaxationFlag.h"
 #include "../../math/shims/IsDefault.h"
 #include "../../system/Inline.h"
-#include "../../util/DisableIf.h"
 #include "../../util/EnableIf.h"
 #include "../../util/typetraits/IsNumeric.h"
-#include "../../util/Unused.h"
 
 
 namespace blaze {
@@ -99,32 +97,12 @@ namespace blaze {
    complex<double> c3( 1.0, 0.0  );  //    false              |    false
    \endcode
 */
-template< bool RF          // Relaxation flag
-        , typename Type >  // Type of the given value/object
+template< RelaxationFlag RF  // Relaxation flag
+        , typename Type >    // Type of the given value/object
 BLAZE_ALWAYS_INLINE EnableIf_t< IsNumeric_v<Type>, bool > isZero( const Type& v ) noexcept
 {
    return isDefault<RF>( v );
 }
-//*************************************************************************************************
-
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-/*!\brief Overload of the \a isZero function for non-numeric data types.
-// \ingroup math_shims
-//
-// \param v The value/object to be tested.
-// \return \a false.
-*/
-template< bool RF          // Relaxation flag
-        , typename Type >  // Type of the given value/object
-BLAZE_ALWAYS_INLINE DisableIf_t< IsNumeric_v<Type>, bool > isZero( const Type& v ) noexcept
-{
-   UNUSED_PARAMETER( v );
-
-   return false;
-}
-/*! \endcond */
 //*************************************************************************************************
 
 

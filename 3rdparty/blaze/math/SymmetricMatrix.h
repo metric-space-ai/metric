@@ -3,7 +3,7 @@
 //  \file blaze/math/SymmetricMatrix.h
 //  \brief Header file for the complete SymmetricMatrix implementation
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -41,6 +41,7 @@
 //*************************************************************************************************
 
 #include <cmath>
+#include <vector>
 #include "../math/Aliases.h"
 #include "../math/adaptors/DiagonalMatrix.h"
 #include "../math/adaptors/SymmetricMatrix.h"
@@ -54,9 +55,8 @@
 #include "../math/typetraits/IsDenseMatrix.h"
 #include "../math/typetraits/UnderlyingBuiltin.h"
 #include "../util/Assert.h"
-#include "../util/FalseType.h"
+#include "../util/IntegralConstant.h"
 #include "../util/Random.h"
-#include "../util/TrueType.h"
 #include "../util/Types.h"
 
 
@@ -533,11 +533,41 @@ inline void Rand< SymmetricMatrix<MT,SO,DF,NF> >::randomize( SymmetricMatrix<MT,
 
    if( n == 0UL ) return;
 
-   matrix.reset();
-   matrix.reserve( nonzeros+1UL );
+   std::vector<size_t> dist( n );
+   std::vector<bool> structure( n*n );
+   size_t nz( 0UL );
 
-   while( matrix.nonZeros() < nonzeros ) {
-      matrix( rand<size_t>( 0UL, n-1UL ), rand<size_t>( 0UL, n-1UL ) ) = rand<ET>( min, max );
+   while( nz < nonzeros )
+   {
+      const size_t row = rand<size_t>( 0UL, n-1UL );
+      const size_t col = rand<size_t>( 0UL, n-1UL );
+
+      if( structure[row*n+col] ) continue;
+
+      ++dist[row];
+      structure[row*n+col] = true;
+      ++nz;
+
+      if( row != col ) {
+         ++dist[col];
+         structure[col*n+row] = true;
+         ++nz;
+      }
+   }
+
+   matrix.reset();
+   matrix.reserve( nz );
+
+   for( size_t i=0UL; i<n; ++i ) {
+      matrix.reserve( i, dist[i] );
+   }
+
+   for( size_t i=0UL; i<n; ++i ) {
+      for( size_t j=i; j<n; ++j ) {
+         if( structure[i*n+j] ) {
+            matrix.append( i, j, rand<ET>( min, max ) );
+         }
+      }
    }
 }
 /*! \endcond */

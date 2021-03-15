@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/DVecReduceExpr.h
 //  \brief Header file for the dense vector reduce expression
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -46,13 +46,15 @@
 #include "../../math/functors/Max.h"
 #include "../../math/functors/Min.h"
 #include "../../math/functors/Mult.h"
+#include "../../math/shims/PrevMultiple.h"
 #include "../../math/SIMD.h"
-#include "../../system/Compiler.h"
+#include "../../math/typetraits/HasLoad.h"
+#include "../../math/typetraits/IsPadded.h"
+#include "../../math/typetraits/IsSIMDEnabled.h"
+#include "../../math/typetraits/IsUniform.h"
 #include "../../util/Assert.h"
-#include "../../util/DisableIf.h"
 #include "../../util/EnableIf.h"
 #include "../../util/FunctionTrace.h"
-#include "../../util/Template.h"
 #include "../../util/Types.h"
 #include "../../util/typetraits/HasMember.h"
 #include "../../util/typetraits/RemoveReference.h"
@@ -81,27 +83,12 @@ struct DVecReduceExprHelper
 
    //! Element type of the dense vector expression.
    using ET = ElementType_t<CT>;
-
-   //! Definition of the HasSIMDEnabled type trait.
-   BLAZE_CREATE_HAS_DATA_OR_FUNCTION_MEMBER_TYPE_TRAIT( HasSIMDEnabled, simdEnabled );
-
-   //! Definition of the HasLoad type trait.
-   BLAZE_CREATE_HAS_DATA_OR_FUNCTION_MEMBER_TYPE_TRAIT( HasLoad, load );
-   //**********************************************************************************************
-
-   //**SIMD support detection**********************************************************************
-   //! Helper structure for the detection of the SIMD capabilities of the given custom operation.
-   struct UseSIMDEnabledFlag {
-      static constexpr bool test( bool (*fnc)() ) { return fnc(); }
-      static constexpr bool test( bool b ) { return b; }
-      static constexpr bool value = test( OP::BLAZE_TEMPLATE simdEnabled<ET,ET> );
-   };
    //**********************************************************************************************
 
    //**********************************************************************************************
    static constexpr bool value =
       ( CT::simdEnabled &&
-        If_t< HasSIMDEnabled_v<OP>, UseSIMDEnabledFlag, HasLoad<OP> >::value );
+        If_t< HasSIMDEnabled_v<OP>, GetSIMDEnabled<OP,ET,ET>, HasLoad<OP> >::value );
    //**********************************************************************************************
 };
 /*! \endcond */
@@ -205,8 +192,8 @@ inline auto dvecreduce( const DenseVector<VT,TF>& dv, OP op )
 
    if( N >= SIMDSIZE )
    {
-      const size_t ipos( N & size_t(-SIMDSIZE) );
-      BLAZE_INTERNAL_ASSERT( ( N - ( N % SIMDSIZE ) ) == ipos, "Invalid end calculation" );
+      const size_t ipos( prevMultiple( N, SIMDSIZE ) );
+      BLAZE_INTERNAL_ASSERT( ipos <= N, "Invalid end calculation" );
 
       SIMDTrait_t<ET> xmm1( tmp.load(0UL) );
 
@@ -273,30 +260,15 @@ inline auto dvecreduce( const DenseVector<VT,TF>& dv, Add /*op*/ )
 
    BLAZE_INTERNAL_ASSERT( tmp.size() == N, "Invalid vector size" );
 
-   constexpr bool remainder( !usePadding || !IsPadded_v< RemoveReference_t<CT> > );
+   constexpr bool remainder( !IsPadded_v< RemoveReference_t<CT> > );
    constexpr size_t SIMDSIZE = SIMDTrait<ET>::size;
 
    ET redux{};
 
-   if( !BLAZE_CLANG_COMPILER && !remainder )
+   if( !remainder || N >= SIMDSIZE )
    {
-      SIMDTrait_t<ET> xmm1, xmm2;
-      size_t i( 0UL );
-
-      for( ; (i+SIMDSIZE) < N; i+=SIMDSIZE*2UL ) {
-         xmm1 += tmp.load(i         );
-         xmm2 += tmp.load(i+SIMDSIZE);
-      }
-      if( i < N ) {
-         xmm1 += tmp.load(i);
-      }
-
-      redux = sum( xmm1 + xmm2 );
-   }
-   else if( !remainder || N >= SIMDSIZE )
-   {
-      const size_t ipos( ( remainder )?( N & size_t(-SIMDSIZE) ):( N ) );
-      BLAZE_INTERNAL_ASSERT( !remainder || ( N - ( N % SIMDSIZE ) ) == ipos, "Invalid end calculation" );
+      const size_t ipos( remainder ? prevMultiple( N, SIMDSIZE ) : N );
+      BLAZE_INTERNAL_ASSERT( ipos <= N, "Invalid end calculation" );
 
       SIMDTrait_t<ET> xmm1( tmp.load(0UL) );
 
@@ -330,6 +302,50 @@ inline auto dvecreduce( const DenseVector<VT,TF>& dv, Add /*op*/ )
    }
 
    return redux;
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Optimized backend implementation of the minimum evaluation of a uniform dense vector.
+// \ingroup dense_vector
+//
+// \param dv The given dense vector.
+// \return The smallest dense vector element.
+//
+// This function implements the performance optimized minimum evaluation for a given uniform
+// dense vector.
+*/
+template< typename VT  // Type of the dense vector
+        , bool TF >    // Transpose flag
+inline auto dvecreduce( const DenseVector<VT,TF>& dv, Min /*op*/ )
+   -> EnableIf_t< IsUniform_v<VT>, ElementType_t<VT> >
+{
+   return (~dv)[0UL];
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Optimized backend implementation of the maximum evaluation of a uniform dense vector.
+// \ingroup dense_vector
+//
+// \param dv The given dense vector.
+// \return The smallest dense vector element.
+//
+// This function implements the performance optimized maximum evaluation for a given uniform
+// dense vector.
+*/
+template< typename VT  // Type of the dense vector
+        , bool TF >    // Transpose flag
+inline auto dvecreduce( const DenseVector<VT,TF>& dv, Max /*op*/ )
+   -> EnableIf_t< IsUniform_v<VT>, ElementType_t<VT> >
+{
+   return (~dv)[0UL];
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -371,7 +387,7 @@ inline decltype(auto) reduce( const DenseVector<VT,TF>& dv, OP op )
 {
    BLAZE_FUNCTION_TRACE;
 
-   return dvecreduce( ~dv, op );
+   return dvecreduce( ~dv, std::move(op) );
 }
 //*************************************************************************************************
 
@@ -483,6 +499,90 @@ inline decltype(auto) max( const DenseVector<VT,TF>& dv )
    BLAZE_FUNCTION_TRACE;
 
    return reduce( ~dv, Max() );
+}
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*!\brief Returns the index of the first smallest element of the dense vector.
+// \ingroup dense_vector
+//
+// \param dv The given dense vector.
+// \return The index of the first smallest dense vector element.
+//
+// This function returns the index of the first smallest element of the given dense vector. This
+// function can only be used for element types that support the smaller-than relationship. In
+// case the given vector currently has a size of 0, the returned index is 0.
+
+   \code
+   blaze::DynamicVector<int> a{ 1, -2, 3, 0 };
+   const size_t minindex = argmin( a );  // Results in 1
+   \endcode
+*/
+template< typename VT  // Type of the dense vector
+        , bool TF >    // Transpose flag
+inline size_t argmin( const DenseVector<VT,TF>& dv )
+{
+   if( (~dv).size() < 2UL )
+      return 0UL;
+
+   CompositeType_t<VT> a( ~dv );  // Evaluation of the dense vector operand
+
+   const size_t size( a.size() );
+   size_t index( 0UL );
+   auto min( a[0UL] );
+
+   for( size_t i=1UL; i<size; ++i ) {
+      auto cur( a[i] );
+      if( cur < min ) {
+         index = i;
+         min = std::move( cur );
+      }
+   }
+
+   return index;
+}
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*!\brief Returns the index of the first largest element of the dense vector.
+// \ingroup dense_vector
+//
+// \param dv The given dense vector.
+// \return The index of the first largest dense vector element.
+//
+// This function returns the index of the first largest element of the given dense vector. This
+// function can only be used for element types that support the smaller-than relationship. In
+// case the given vector currently has a size of 0, the returned index is 0.
+
+   \code
+   blaze::DynamicVector<int> a{ 1, -2, 3, 0 };
+   const size_t maxindex = argmax( a );  // Results in 2
+   \endcode
+*/
+template< typename VT  // Type of the dense vector
+        , bool TF >    // Transpose flag
+inline size_t argmax( const DenseVector<VT,TF>& dv )
+{
+   if( (~dv).size() < 2UL )
+      return 0UL;
+
+   CompositeType_t<VT> a( ~dv );  // Evaluation of the dense vector operand
+
+   const size_t size( a.size() );
+   size_t index( 0UL );
+   auto max( a[0UL] );
+
+   for( size_t i=1UL; i<size; ++i ) {
+      auto cur( a[i] );
+      if( max < cur ) {
+         index = i;
+         max = std::move( cur );
+      }
+   }
+
+   return index;
 }
 //*************************************************************************************************
 

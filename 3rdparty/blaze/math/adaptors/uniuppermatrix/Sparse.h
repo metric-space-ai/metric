@@ -3,7 +3,7 @@
 //  \file blaze/math/adaptors/uniuppermatrix/Sparse.h
 //  \brief UniUpperMatrix specialization for sparse matrices
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -49,7 +49,7 @@
 #include "../../../math/adaptors/uniuppermatrix/UniUpperProxy.h"
 #include "../../../math/adaptors/uniuppermatrix/UniUpperValue.h"
 #include "../../../math/Aliases.h"
-#include "../../../math/constraints/Expression.h"
+#include "../../../math/constraints/Computation.h"
 #include "../../../math/constraints/Hermitian.h"
 #include "../../../math/constraints/Lower.h"
 #include "../../../math/constraints/Resizable.h"
@@ -57,7 +57,10 @@
 #include "../../../math/constraints/Static.h"
 #include "../../../math/constraints/StorageOrder.h"
 #include "../../../math/constraints/Symmetric.h"
+#include "../../../math/constraints/Transformation.h"
+#include "../../../math/constraints/Uniform.h"
 #include "../../../math/constraints/Upper.h"
+#include "../../../math/constraints/View.h"
 #include "../../../math/dense/InitializerMatrix.h"
 #include "../../../math/Exception.h"
 #include "../../../math/expressions/SparseMatrix.h"
@@ -82,7 +85,6 @@
 #include "../../../util/constraints/Pointer.h"
 #include "../../../util/constraints/Reference.h"
 #include "../../../util/constraints/Volatile.h"
-#include "../../../util/DisableIf.h"
 #include "../../../util/EnableIf.h"
 #include "../../../util/StaticAssert.h"
 #include "../../../util/Types.h"
@@ -308,11 +310,11 @@ class UniUpperMatrix<MT,SO,false>
    //**Constructors********************************************************************************
    /*!\name Constructors */
    //@{
-   explicit inline UniUpperMatrix();
+            inline UniUpperMatrix();
    explicit inline UniUpperMatrix( size_t n );
-   explicit inline UniUpperMatrix( size_t n, size_t nonzeros );
-   explicit inline UniUpperMatrix( size_t n, const std::vector<size_t>& nonzeros );
-   explicit inline UniUpperMatrix( initializer_list< initializer_list<ElementType> > list );
+            inline UniUpperMatrix( size_t n, size_t nonzeros );
+            inline UniUpperMatrix( size_t n, const std::vector<size_t>& nonzeros );
+            inline UniUpperMatrix( initializer_list< initializer_list<ElementType> > list );
 
    inline UniUpperMatrix( const UniUpperMatrix& m );
    inline UniUpperMatrix( UniUpperMatrix&& m ) noexcept;
@@ -323,7 +325,10 @@ class UniUpperMatrix<MT,SO,false>
    //**********************************************************************************************
 
    //**Destructor**********************************************************************************
-   // No explicitly declared destructor.
+   /*!\name Destructor */
+   //@{
+   ~UniUpperMatrix() = default;
+   //@}
    //**********************************************************************************************
 
    //**Data access functions***********************************************************************
@@ -399,8 +404,8 @@ class UniUpperMatrix<MT,SO,false>
    inline void   shrinkToFit();
    inline void   swap( UniUpperMatrix& m ) noexcept;
 
-   static inline constexpr size_t maxNonZeros() noexcept;
-   static inline constexpr size_t maxNonZeros( size_t n ) noexcept;
+   static constexpr size_t maxNonZeros() noexcept;
+   static constexpr size_t maxNonZeros( size_t n ) noexcept;
    //@}
    //**********************************************************************************************
 
@@ -484,7 +489,10 @@ class UniUpperMatrix<MT,SO,false>
    BLAZE_CONSTRAINT_MUST_NOT_BE_POINTER_TYPE         ( MT );
    BLAZE_CONSTRAINT_MUST_NOT_BE_CONST                ( MT );
    BLAZE_CONSTRAINT_MUST_NOT_BE_VOLATILE             ( MT );
-   BLAZE_CONSTRAINT_MUST_NOT_BE_EXPRESSION_TYPE      ( MT );
+   BLAZE_CONSTRAINT_MUST_NOT_BE_VIEW_TYPE            ( MT );
+   BLAZE_CONSTRAINT_MUST_NOT_BE_COMPUTATION_TYPE     ( MT );
+   BLAZE_CONSTRAINT_MUST_NOT_BE_TRANSFORMATION_TYPE  ( MT );
+   BLAZE_CONSTRAINT_MUST_NOT_BE_UNIFORM_TYPE         ( MT );
    BLAZE_CONSTRAINT_MUST_NOT_BE_SYMMETRIC_MATRIX_TYPE( MT );
    BLAZE_CONSTRAINT_MUST_NOT_BE_HERMITIAN_MATRIX_TYPE( MT );
    BLAZE_CONSTRAINT_MUST_NOT_BE_LOWER_MATRIX_TYPE    ( MT );
@@ -1778,7 +1786,7 @@ inline void UniUpperMatrix<MT,SO,false>::swap( UniUpperMatrix& m ) noexcept
 */
 template< typename MT  // Type of the adapted dense matrix
         , bool SO >    // Storage order of the adapted dense matrix
-inline constexpr size_t UniUpperMatrix<MT,SO,false>::maxNonZeros() noexcept
+constexpr size_t UniUpperMatrix<MT,SO,false>::maxNonZeros() noexcept
 {
    BLAZE_CONSTRAINT_MUST_BE_STATIC_TYPE( MT );
 
@@ -1800,7 +1808,7 @@ inline constexpr size_t UniUpperMatrix<MT,SO,false>::maxNonZeros() noexcept
 */
 template< typename MT  // Type of the adapted dense matrix
         , bool SO >    // Storage order of the adapted dense matrix
-inline constexpr size_t UniUpperMatrix<MT,SO,false>::maxNonZeros( size_t n ) noexcept
+constexpr size_t UniUpperMatrix<MT,SO,false>::maxNonZeros( size_t n ) noexcept
 {
    return ( ( n + 1UL ) * n ) / 2UL;
 }

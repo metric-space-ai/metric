@@ -3,7 +3,7 @@
 //  \file blaze/math/lapack/gesvdx.h
 //  \brief Header file for the LAPACK singular value decomposition functions (gesvdx)
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -45,6 +45,7 @@
 #include "../../math/constraints/Adaptor.h"
 #include "../../math/constraints/BLASCompatible.h"
 #include "../../math/constraints/Computation.h"
+#include "../../math/constraints/Contiguous.h"
 #include "../../math/constraints/MutableDataAccess.h"
 #include "../../math/Exception.h"
 #include "../../math/expressions/DenseMatrix.h"
@@ -57,7 +58,6 @@
 #include "../../util/algorithms/Min.h"
 #include "../../util/Assert.h"
 #include "../../util/constraints/Builtin.h"
-#include "../../util/DisableIf.h"
 #include "../../util/EnableIf.h"
 #include "../../util/NumericCast.h"
 #include "../../util/Types.h"
@@ -77,32 +77,32 @@ namespace blaze {
 /*!\name LAPACK SVD functions (gesvdx) */
 //@{
 template< typename MT, bool SO, typename VT, bool TF >
-inline size_t gesvdx( DenseMatrix<MT,SO>& A, DenseVector<VT,TF>& s );
+size_t gesvdx( DenseMatrix<MT,SO>& A, DenseVector<VT,TF>& s );
 
 template< typename MT, bool SO, typename VT, bool TF, typename ST >
-inline size_t gesvdx( DenseMatrix<MT,SO>& A, DenseVector<VT,TF>& s, ST low, ST upp );
+size_t gesvdx( DenseMatrix<MT,SO>& A, DenseVector<VT,TF>& s, ST low, ST upp );
 
 template< typename MT1, bool SO, typename MT2, typename VT, bool TF >
-inline size_t gesvdx( DenseMatrix<MT1,SO>& A, DenseMatrix<MT2,SO>& U, DenseVector<VT,TF>& s );
+size_t gesvdx( DenseMatrix<MT1,SO>& A, DenseMatrix<MT2,SO>& U, DenseVector<VT,TF>& s );
 
 template< typename MT1, bool SO, typename MT2, typename VT, bool TF, typename ST >
-inline size_t gesvdx( DenseMatrix<MT1,SO>& A, DenseMatrix<MT2,SO>& U,
-                      DenseVector<VT,TF>& s, ST low, ST upp );
+size_t gesvdx( DenseMatrix<MT1,SO>& A, DenseMatrix<MT2,SO>& U,
+               DenseVector<VT,TF>& s, ST low, ST upp );
 
 template< typename MT1, bool SO, typename VT, bool TF, typename MT2 >
-inline size_t gesvdx( DenseMatrix<MT1,SO>& A, DenseVector<VT,TF>& s, DenseMatrix<MT2,SO>& V );
+size_t gesvdx( DenseMatrix<MT1,SO>& A, DenseVector<VT,TF>& s, DenseMatrix<MT2,SO>& V );
 
 template< typename MT1, bool SO, typename VT, bool TF, typename MT2, typename ST >
-inline size_t gesvdx( DenseMatrix<MT1,SO>& A, DenseVector<VT,TF>& s,
-                      DenseMatrix<MT2,SO>& V, ST low, ST upp );
+size_t gesvdx( DenseMatrix<MT1,SO>& A, DenseVector<VT,TF>& s,
+               DenseMatrix<MT2,SO>& V, ST low, ST upp );
 
 template< typename MT1, bool SO, typename MT2, typename VT, bool TF, typename MT3 >
-inline size_t gesvdx( DenseMatrix<MT1,SO>& A, DenseMatrix<MT2,SO>& U,
-                      DenseVector<VT,TF>& s, DenseMatrix<MT3,SO>& V );
+size_t gesvdx( DenseMatrix<MT1,SO>& A, DenseMatrix<MT2,SO>& U,
+               DenseVector<VT,TF>& s, DenseMatrix<MT3,SO>& V );
 
 template< typename MT1, bool SO, typename MT2, typename VT, bool TF, typename MT3, typename ST >
-inline size_t gesvdx( DenseMatrix<MT1,SO>& A, DenseMatrix<MT2,SO>& U,
-                      DenseVector<VT,TF>& s, DenseMatrix<MT3,SO>& V, ST low, ST upp );
+size_t gesvdx( DenseMatrix<MT1,SO>& A, DenseMatrix<MT2,SO>& U,
+               DenseVector<VT,TF>& s, DenseMatrix<MT3,SO>& V, ST low, ST upp );
 //@}
 //*************************************************************************************************
 
@@ -134,9 +134,9 @@ template< typename MT    // Type of the matrix A
         , typename VT    // Type of the vector s
         , bool TF        // Transpose flag of the vector s
         , typename ST >  // Type of the scalar boundary values
-inline DisableIf_t< IsComplex_v< ElementType_t<MT> >, size_t >
-   gesvdx_backend( DenseMatrix<MT,SO>& A, DenseVector<VT,TF>& s,
-                   char range, ST vl, ST vu, int il, int iu )
+inline auto gesvdx_backend( DenseMatrix<MT,SO>& A, DenseVector<VT,TF>& s,
+                            char range, ST vl, ST vu, blas_int_t il, blas_int_t iu )
+   -> DisableIf_t< IsComplex_v< ElementType_t<MT> >, size_t >
 {
    BLAZE_INTERNAL_ASSERT( range == 'A' || range == 'V' || range == 'I', "Invalid range flag detected" );
    BLAZE_INTERNAL_ASSERT( range != 'A' || (~s).size() == min( (~A).rows(), (~A).columns() ), "Invalid vector dimension detected" );
@@ -151,11 +151,11 @@ inline DisableIf_t< IsComplex_v< ElementType_t<MT> >, size_t >
    const size_t N( (~A).columns() );
    const size_t mindim( min( M, N ) );
 
-   int m   ( numeric_cast<int>( SO ? (~A).rows() : (~A).columns() ) );
-   int n   ( numeric_cast<int>( SO ? (~A).columns() : (~A).rows() ) );
-   int lda ( numeric_cast<int>( (~A).spacing() ) );
-   int ns  ( 0 );
-   int info( 0 );
+   blas_int_t m   ( numeric_cast<blas_int_t>( SO ? (~A).rows() : (~A).columns() ) );
+   blas_int_t n   ( numeric_cast<blas_int_t>( SO ? (~A).columns() : (~A).rows() ) );
+   blas_int_t lda ( numeric_cast<blas_int_t>( (~A).spacing() ) );
+   blas_int_t ns  ( 0 );
+   blas_int_t info( 0 );
 
    ET* sptr( (~s).data() );
    std::unique_ptr<ET[]> stmp;
@@ -167,11 +167,11 @@ inline DisableIf_t< IsComplex_v< ElementType_t<MT> >, size_t >
       sptr = stmp.get();
    }
 
-   const int minimum( min( m, n ) );
+   const blas_int_t minimum( min( m, n ) );
 
-   int lwork( minimum*( minimum*3 + 20 ) + 2 );
+   blas_int_t lwork( minimum*( minimum*3 + 20 ) + 2 );
    const std::unique_ptr<ET[]>  work ( new ET[lwork] );
-   const std::unique_ptr<int[]> iwork( new int[12*minimum] );
+   const std::unique_ptr<blas_int_t[]> iwork( new blas_int_t[12*minimum] );
 
    gesvdx( 'N', 'N', range, m, n, (~A).data(), lda, vl, vu, il, iu, &ns, sptr,
            nullptr, 1, nullptr, 1, work.get(), lwork, iwork.get(), &info );
@@ -224,9 +224,9 @@ template< typename MT    // Type of the matrix A
         , typename VT    // Type of the vector s
         , bool TF        // Transpose flag of the vector s
         , typename ST >  // Type of the scalar boundary values
-inline EnableIf_t< IsComplex_v< ElementType_t<MT> >, size_t >
-   gesvdx_backend( DenseMatrix<MT,SO>& A, DenseVector<VT,TF>& s,
-                   char range, ST vl, ST vu, int il, int iu )
+inline auto gesvdx_backend( DenseMatrix<MT,SO>& A, DenseVector<VT,TF>& s,
+                            char range, ST vl, ST vu, blas_int_t il, blas_int_t iu )
+   -> EnableIf_t< IsComplex_v< ElementType_t<MT> >, size_t >
 {
    BLAZE_INTERNAL_ASSERT( range == 'A' || range == 'V' || range == 'I', "Invalid range flag detected" );
    BLAZE_INTERNAL_ASSERT( range != 'A' || (~s).size() == min( (~A).rows(), (~A).columns() ), "Invalid vector dimension detected" );
@@ -242,11 +242,11 @@ inline EnableIf_t< IsComplex_v< ElementType_t<MT> >, size_t >
    const size_t N( (~A).columns() );
    const size_t mindim( min( M, N ) );
 
-   int m   ( numeric_cast<int>( SO ? (~A).rows() : (~A).columns() ) );
-   int n   ( numeric_cast<int>( SO ? (~A).columns() : (~A).rows() ) );
-   int lda ( numeric_cast<int>( (~A).spacing() ) );
-   int ns  ( 0 );
-   int info( 0 );
+   blas_int_t m   ( numeric_cast<blas_int_t>( SO ? (~A).rows() : (~A).columns() ) );
+   blas_int_t n   ( numeric_cast<blas_int_t>( SO ? (~A).columns() : (~A).rows() ) );
+   blas_int_t lda ( numeric_cast<blas_int_t>( (~A).spacing() ) );
+   blas_int_t ns  ( 0 );
+   blas_int_t info( 0 );
 
    BT* sptr( (~s).data() );
    std::unique_ptr<BT[]> stmp;
@@ -258,12 +258,12 @@ inline EnableIf_t< IsComplex_v< ElementType_t<MT> >, size_t >
       sptr = stmp.get();
    }
 
-   const int minimum( min( m, n ) );
+   const blas_int_t minimum( min( m, n ) );
 
-   int lwork( minimum*( minimum*3 + 20 ) + 2 );
+   blas_int_t lwork( minimum*( minimum*3 + 20 ) + 2 );
    const std::unique_ptr<CT[]>  work ( new CT[lwork] );
    const std::unique_ptr<BT[]>  rwork( new BT[17*minimum*minimum] );
-   const std::unique_ptr<int[]> iwork( new int[12*minimum] );
+   const std::unique_ptr<blas_int_t[]> iwork( new blas_int_t[12*minimum] );
 
    gesvdx( 'N', 'N', range, m, n, (~A).data(), lda, vl, vu, il, iu, &ns, sptr,
            nullptr, 1, nullptr, 1, work.get(), lwork, rwork.get(), iwork.get(), &info );
@@ -350,10 +350,12 @@ inline size_t gesvdx( DenseMatrix<MT,SO>& A, DenseVector<VT,TF>& s )
    BLAZE_CONSTRAINT_MUST_NOT_BE_ADAPTOR_TYPE( MT );
    BLAZE_CONSTRAINT_MUST_NOT_BE_COMPUTATION_TYPE( MT );
    BLAZE_CONSTRAINT_MUST_HAVE_MUTABLE_DATA_ACCESS( MT );
+   BLAZE_CONSTRAINT_MUST_BE_CONTIGUOUS_TYPE( MT );
    BLAZE_CONSTRAINT_MUST_BE_BLAS_COMPATIBLE_TYPE( ElementType_t<MT> );
 
    BLAZE_CONSTRAINT_MUST_NOT_BE_COMPUTATION_TYPE( VT );
    BLAZE_CONSTRAINT_MUST_HAVE_MUTABLE_DATA_ACCESS( VT );
+   BLAZE_CONSTRAINT_MUST_BE_CONTIGUOUS_TYPE( VT );
    BLAZE_CONSTRAINT_MUST_BE_BLAS_COMPATIBLE_TYPE( ElementType_t<VT> );
 
    using ET = ElementType_t<MT>;
@@ -465,10 +467,12 @@ inline size_t gesvdx( DenseMatrix<MT,SO>& A, DenseVector<VT,TF>& s, ST low, ST u
    BLAZE_CONSTRAINT_MUST_NOT_BE_ADAPTOR_TYPE( MT );
    BLAZE_CONSTRAINT_MUST_NOT_BE_COMPUTATION_TYPE( MT );
    BLAZE_CONSTRAINT_MUST_HAVE_MUTABLE_DATA_ACCESS( MT );
+   BLAZE_CONSTRAINT_MUST_BE_CONTIGUOUS_TYPE( MT );
    BLAZE_CONSTRAINT_MUST_BE_BLAS_COMPATIBLE_TYPE( ElementType_t<MT> );
 
    BLAZE_CONSTRAINT_MUST_NOT_BE_COMPUTATION_TYPE( VT );
    BLAZE_CONSTRAINT_MUST_HAVE_MUTABLE_DATA_ACCESS( VT );
+   BLAZE_CONSTRAINT_MUST_BE_CONTIGUOUS_TYPE( VT );
    BLAZE_CONSTRAINT_MUST_BE_BLAS_COMPATIBLE_TYPE( ElementType_t<VT> );
 
    BLAZE_CONSTRAINT_MUST_BE_BUILTIN_TYPE( ST );
@@ -496,11 +500,11 @@ inline size_t gesvdx( DenseMatrix<MT,SO>& A, DenseVector<VT,TF>& s, ST low, ST u
       return 0;
    }
 
-   const char range( IsFloatingPoint_v<ST> ? 'V' : 'I' );
-   const ST   vl   ( IsFloatingPoint_v<ST> ? low : ST() );
-   const ST   vu   ( IsFloatingPoint_v<ST> ? upp : ST() );
-   const int  il   ( IsFloatingPoint_v<ST> ? 0 : numeric_cast<int>( low ) );
-   const int  iu   ( IsFloatingPoint_v<ST> ? 0 : numeric_cast<int>( upp ) );
+   const char       range( IsFloatingPoint_v<ST> ? 'V' : 'I' );
+   const ST         vl   ( IsFloatingPoint_v<ST> ? low : ST() );
+   const ST         vu   ( IsFloatingPoint_v<ST> ? upp : ST() );
+   const blas_int_t il   ( IsFloatingPoint_v<ST> ? 0 : numeric_cast<blas_int_t>( low ) );
+   const blas_int_t iu   ( IsFloatingPoint_v<ST> ? 0 : numeric_cast<blas_int_t>( upp ) );
 
    const size_t actual( gesvdx_backend( ~A, ~s, range, vl, vu, il, iu ) );
 
@@ -542,9 +546,9 @@ template< typename MT1   // Type of the matrix A
         , typename VT    // Type of the vector s
         , bool TF        // Transpose flag of the vector s
         , typename ST >  // Type of the scalar boundary values
-inline DisableIf_t< IsComplex_v< ElementType_t<MT1> >, size_t >
-   gesvdx_backend( DenseMatrix<MT1,SO>& A, DenseMatrix<MT2,SO>& U, DenseVector<VT,TF>& s,
-                   char range, ST vl, ST vu, int il, int iu )
+inline auto gesvdx_backend( DenseMatrix<MT1,SO>& A, DenseMatrix<MT2,SO>& U, DenseVector<VT,TF>& s,
+                            char range, ST vl, ST vu, blas_int_t il, blas_int_t iu )
+   -> DisableIf_t< IsComplex_v< ElementType_t<MT1> >, size_t >
 {
    BLAZE_INTERNAL_ASSERT( range == 'A' || range == 'V' || range == 'I', "Invalid range flag detected" );
    BLAZE_INTERNAL_ASSERT( range != 'A' || (~s).size() == min( (~A).rows(), (~A).columns() ), "Invalid vector dimension detected" );
@@ -561,12 +565,12 @@ inline DisableIf_t< IsComplex_v< ElementType_t<MT1> >, size_t >
    const size_t N( (~A).columns() );
    const size_t mindim( min( M, N ) );
 
-   int m   ( numeric_cast<int>( SO ? M : N ) );
-   int n   ( numeric_cast<int>( SO ? N : M ) );
-   int lda ( numeric_cast<int>( (~A).spacing() ) );
-   int ldu ( numeric_cast<int>( (~U).spacing() ) );
-   int ns  ( 0 );
-   int info( 0 );
+   blas_int_t m   ( numeric_cast<blas_int_t>( SO ? M : N ) );
+   blas_int_t n   ( numeric_cast<blas_int_t>( SO ? N : M ) );
+   blas_int_t lda ( numeric_cast<blas_int_t>( (~A).spacing() ) );
+   blas_int_t ldu ( numeric_cast<blas_int_t>( (~U).spacing() ) );
+   blas_int_t ns  ( 0 );
+   blas_int_t info( 0 );
 
    ET* sptr( (~s).data() );
    ET* uptr( (~U).data() );
@@ -582,11 +586,11 @@ inline DisableIf_t< IsComplex_v< ElementType_t<MT1> >, size_t >
       uptr = utmp.get();
    }
 
-   const int minimum( min( m, n ) );
+   const blas_int_t minimum( min( m, n ) );
 
-   int lwork( minimum*( minimum*3 + 20 ) + 2 );
+   blas_int_t lwork( minimum*( minimum*3 + 20 ) + 2 );
    const std::unique_ptr<ET[]>  work ( new ET[lwork] );
-   const std::unique_ptr<int[]> iwork( new int[12*minimum] );
+   const std::unique_ptr<blas_int_t[]> iwork( new blas_int_t[12*minimum] );
 
    gesvdx( ( SO ? 'V' : 'N' ), ( SO ? 'N' : 'V' ), range, m, n,
            (~A).data(), lda, vl, vu, il, iu, &ns, sptr,
@@ -662,9 +666,9 @@ template< typename MT1   // Type of the matrix A
         , typename VT    // Type of the vector s
         , bool TF        // Transpose flag of the vector s
         , typename ST >  // Type of the scalar boundary values
-inline EnableIf_t< IsComplex_v< ElementType_t<MT1> >, size_t >
-   gesvdx_backend( DenseMatrix<MT1,SO>& A, DenseMatrix<MT2,SO>& U, DenseVector<VT,TF>& s,
-                   char range, ST vl, ST vu, int il, int iu )
+inline auto gesvdx_backend( DenseMatrix<MT1,SO>& A, DenseMatrix<MT2,SO>& U, DenseVector<VT,TF>& s,
+                            char range, ST vl, ST vu, blas_int_t il, blas_int_t iu )
+   -> EnableIf_t< IsComplex_v< ElementType_t<MT1> >, size_t >
 {
    BLAZE_INTERNAL_ASSERT( range == 'A' || range == 'V' || range == 'I', "Invalid range flag detected" );
    BLAZE_INTERNAL_ASSERT( range != 'A' || (~s).size() == min( (~A).rows(), (~A).columns() ), "Invalid vector dimension detected" );
@@ -682,12 +686,12 @@ inline EnableIf_t< IsComplex_v< ElementType_t<MT1> >, size_t >
    const size_t N( (~A).columns() );
    const size_t mindim( min( M, N ) );
 
-   int m   ( numeric_cast<int>( SO ? M : N ) );
-   int n   ( numeric_cast<int>( SO ? N : M ) );
-   int lda ( numeric_cast<int>( (~A).spacing() ) );
-   int ldu ( numeric_cast<int>( (~U).spacing() ) );
-   int ns  ( 0 );
-   int info( 0 );
+   blas_int_t m   ( numeric_cast<blas_int_t>( SO ? M : N ) );
+   blas_int_t n   ( numeric_cast<blas_int_t>( SO ? N : M ) );
+   blas_int_t lda ( numeric_cast<blas_int_t>( (~A).spacing() ) );
+   blas_int_t ldu ( numeric_cast<blas_int_t>( (~U).spacing() ) );
+   blas_int_t ns  ( 0 );
+   blas_int_t info( 0 );
 
    BT* sptr( (~s).data() );
    CT* uptr( (~U).data() );
@@ -703,12 +707,12 @@ inline EnableIf_t< IsComplex_v< ElementType_t<MT1> >, size_t >
       uptr = utmp.get();
    }
 
-   const int minimum( min( m, n ) );
+   const blas_int_t minimum( min( m, n ) );
 
-   int lwork( minimum*( minimum*3 + 20 ) + 2 );
+   blas_int_t lwork( minimum*( minimum*3 + 20 ) + 2 );
    const std::unique_ptr<CT[]>  work ( new CT[lwork] );
    const std::unique_ptr<BT[]>  rwork( new BT[17*minimum*minimum] );
-   const std::unique_ptr<int[]> iwork( new int[12*minimum] );
+   const std::unique_ptr<blas_int_t[]> iwork( new blas_int_t[12*minimum] );
 
    gesvdx( ( SO ? 'V' : 'N' ), ( SO ? 'N' : 'V' ), range, m, n,
            (~A).data(), lda, vl, vu, il, iu, &ns, sptr,
@@ -822,15 +826,18 @@ inline size_t gesvdx( DenseMatrix<MT1,SO>& A, DenseMatrix<MT2,SO>& U, DenseVecto
    BLAZE_CONSTRAINT_MUST_NOT_BE_ADAPTOR_TYPE( MT1 );
    BLAZE_CONSTRAINT_MUST_NOT_BE_COMPUTATION_TYPE( MT1 );
    BLAZE_CONSTRAINT_MUST_HAVE_MUTABLE_DATA_ACCESS( MT1 );
+   BLAZE_CONSTRAINT_MUST_BE_CONTIGUOUS_TYPE( MT1 );
    BLAZE_CONSTRAINT_MUST_BE_BLAS_COMPATIBLE_TYPE( ElementType_t<MT1> );
 
    BLAZE_CONSTRAINT_MUST_NOT_BE_ADAPTOR_TYPE( MT2 );
    BLAZE_CONSTRAINT_MUST_NOT_BE_COMPUTATION_TYPE( MT2 );
    BLAZE_CONSTRAINT_MUST_HAVE_MUTABLE_DATA_ACCESS( MT2 );
+   BLAZE_CONSTRAINT_MUST_BE_CONTIGUOUS_TYPE( MT2 );
    BLAZE_CONSTRAINT_MUST_BE_BLAS_COMPATIBLE_TYPE( ElementType_t<MT2> );
 
    BLAZE_CONSTRAINT_MUST_NOT_BE_COMPUTATION_TYPE( VT );
    BLAZE_CONSTRAINT_MUST_HAVE_MUTABLE_DATA_ACCESS( VT );
+   BLAZE_CONSTRAINT_MUST_BE_CONTIGUOUS_TYPE( VT );
    BLAZE_CONSTRAINT_MUST_BE_BLAS_COMPATIBLE_TYPE( ElementType_t<VT> );
 
    using ET = ElementType_t<MT1>;
@@ -954,15 +961,18 @@ inline size_t gesvdx( DenseMatrix<MT1,SO>& A, DenseMatrix<MT2,SO>& U,
    BLAZE_CONSTRAINT_MUST_NOT_BE_ADAPTOR_TYPE( MT1 );
    BLAZE_CONSTRAINT_MUST_NOT_BE_COMPUTATION_TYPE( MT1 );
    BLAZE_CONSTRAINT_MUST_HAVE_MUTABLE_DATA_ACCESS( MT1 );
+   BLAZE_CONSTRAINT_MUST_BE_CONTIGUOUS_TYPE( MT1 );
    BLAZE_CONSTRAINT_MUST_BE_BLAS_COMPATIBLE_TYPE( ElementType_t<MT1> );
 
    BLAZE_CONSTRAINT_MUST_NOT_BE_ADAPTOR_TYPE( MT2 );
    BLAZE_CONSTRAINT_MUST_NOT_BE_COMPUTATION_TYPE( MT2 );
    BLAZE_CONSTRAINT_MUST_HAVE_MUTABLE_DATA_ACCESS( MT2 );
+   BLAZE_CONSTRAINT_MUST_BE_CONTIGUOUS_TYPE( MT2 );
    BLAZE_CONSTRAINT_MUST_BE_BLAS_COMPATIBLE_TYPE( ElementType_t<MT2> );
 
    BLAZE_CONSTRAINT_MUST_NOT_BE_COMPUTATION_TYPE( VT );
    BLAZE_CONSTRAINT_MUST_HAVE_MUTABLE_DATA_ACCESS( VT );
+   BLAZE_CONSTRAINT_MUST_BE_CONTIGUOUS_TYPE( VT );
    BLAZE_CONSTRAINT_MUST_BE_BLAS_COMPATIBLE_TYPE( ElementType_t<VT> );
 
    BLAZE_CONSTRAINT_MUST_BE_BUILTIN_TYPE( ST );
@@ -991,11 +1001,11 @@ inline size_t gesvdx( DenseMatrix<MT1,SO>& A, DenseMatrix<MT2,SO>& U,
       return 0;
    }
 
-   const char range( IsFloatingPoint_v<ST> ? 'V' : 'I' );
-   const ST   vl   ( IsFloatingPoint_v<ST> ? low : ST() );
-   const ST   vu   ( IsFloatingPoint_v<ST> ? upp : ST() );
-   const int  il   ( IsFloatingPoint_v<ST> ? 0 : numeric_cast<int>( low ) );
-   const int  iu   ( IsFloatingPoint_v<ST> ? 0 : numeric_cast<int>( upp ) );
+   const char       range( IsFloatingPoint_v<ST> ? 'V' : 'I' );
+   const ST         vl   ( IsFloatingPoint_v<ST> ? low : ST() );
+   const ST         vu   ( IsFloatingPoint_v<ST> ? upp : ST() );
+   const blas_int_t il   ( IsFloatingPoint_v<ST> ? 0 : numeric_cast<blas_int_t>( low ) );
+   const blas_int_t iu   ( IsFloatingPoint_v<ST> ? 0 : numeric_cast<blas_int_t>( upp ) );
 
    const size_t actual( gesvdx_backend( ~A, ~U, ~s, range, vl, vu, il, iu ) );
 
@@ -1041,9 +1051,9 @@ template< typename MT1   // Type of the matrix A
         , bool TF        // Transpose flag of the vector s
         , typename MT2   // Type of the matrix V
         , typename ST >  // Type of the scalar boundary values
-inline DisableIf_t< IsComplex_v< ElementType_t<MT1> >, size_t >
-   gesvdx_backend( DenseMatrix<MT1,SO>& A, DenseVector<VT,TF>& s, DenseMatrix<MT2,SO>& V,
-                   char range, ST vl, ST vu, int il, int iu )
+inline auto gesvdx_backend( DenseMatrix<MT1,SO>& A, DenseVector<VT,TF>& s, DenseMatrix<MT2,SO>& V,
+                            char range, ST vl, ST vu, blas_int_t il, blas_int_t iu )
+   -> DisableIf_t< IsComplex_v< ElementType_t<MT1> >, size_t >
 {
    BLAZE_INTERNAL_ASSERT( range == 'A' || range == 'V' || range == 'I', "Invalid range flag detected" );
    BLAZE_INTERNAL_ASSERT( range != 'A' || (~s).size() == min( (~A).rows(), (~A).columns() ), "Invalid vector dimension detected" );
@@ -1060,12 +1070,12 @@ inline DisableIf_t< IsComplex_v< ElementType_t<MT1> >, size_t >
    const size_t N( (~A).columns() );
    const size_t mindim( min( M, N ) );
 
-   int m   ( numeric_cast<int>( SO ? M : N ) );
-   int n   ( numeric_cast<int>( SO ? N : M ) );
-   int lda ( numeric_cast<int>( (~A).spacing() ) );
-   int ldv ( numeric_cast<int>( (~V).spacing() ) );
-   int ns  ( 0 );
-   int info( 0 );
+   blas_int_t m   ( numeric_cast<blas_int_t>( SO ? M : N ) );
+   blas_int_t n   ( numeric_cast<blas_int_t>( SO ? N : M ) );
+   blas_int_t lda ( numeric_cast<blas_int_t>( (~A).spacing() ) );
+   blas_int_t ldv ( numeric_cast<blas_int_t>( (~V).spacing() ) );
+   blas_int_t ns  ( 0 );
+   blas_int_t info( 0 );
 
    ET* sptr( (~s).data() );
    ET* vptr( (~V).data() );
@@ -1081,11 +1091,11 @@ inline DisableIf_t< IsComplex_v< ElementType_t<MT1> >, size_t >
       vptr = vtmp.get();
    }
 
-   const int minimum( min( m, n ) );
+   const blas_int_t minimum( min( m, n ) );
 
-   int lwork( minimum*( minimum*3 + 20 ) + 2 );
+   blas_int_t lwork( minimum*( minimum*3 + 20 ) + 2 );
    const std::unique_ptr<ET[]>  work ( new ET[lwork] );
-   const std::unique_ptr<int[]> iwork( new int[12*minimum] );
+   const std::unique_ptr<blas_int_t[]> iwork( new blas_int_t[12*minimum] );
 
    gesvdx( ( SO ? 'N' : 'V' ), ( SO ? 'V' : 'N' ), range, m, n,
            (~A).data(), lda, vl, vu, il, iu, &ns, sptr,
@@ -1161,9 +1171,9 @@ template< typename MT1   // Type of the matrix A
         , bool TF        // Transpose flag of the vector s
         , typename MT2   // Type of the matrix V
         , typename ST >  // Type of the scalar boundary values
-inline EnableIf_t< IsComplex_v< ElementType_t<MT1> >, size_t >
-   gesvdx_backend( DenseMatrix<MT1,SO>& A, DenseVector<VT,TF>& s, DenseMatrix<MT2,SO>& V,
-                   char range, ST vl, ST vu, int il, int iu )
+inline auto gesvdx_backend( DenseMatrix<MT1,SO>& A, DenseVector<VT,TF>& s, DenseMatrix<MT2,SO>& V,
+                            char range, ST vl, ST vu, blas_int_t il, blas_int_t iu )
+   -> EnableIf_t< IsComplex_v< ElementType_t<MT1> >, size_t >
 {
    BLAZE_INTERNAL_ASSERT( range == 'A' || range == 'V' || range == 'I', "Invalid range flag detected" );
    BLAZE_INTERNAL_ASSERT( range != 'A' || (~s).size() == min( (~A).rows(), (~A).columns() ), "Invalid vector dimension detected" );
@@ -1181,12 +1191,12 @@ inline EnableIf_t< IsComplex_v< ElementType_t<MT1> >, size_t >
    const size_t N( (~A).columns() );
    const size_t mindim( min( M, N ) );
 
-   int m   ( numeric_cast<int>( SO ? M : N ) );
-   int n   ( numeric_cast<int>( SO ? N : M ) );
-   int lda ( numeric_cast<int>( (~A).spacing() ) );
-   int ldv ( numeric_cast<int>( (~V).spacing() ) );
-   int ns  ( 0 );
-   int info( 0 );
+   blas_int_t m   ( numeric_cast<blas_int_t>( SO ? M : N ) );
+   blas_int_t n   ( numeric_cast<blas_int_t>( SO ? N : M ) );
+   blas_int_t lda ( numeric_cast<blas_int_t>( (~A).spacing() ) );
+   blas_int_t ldv ( numeric_cast<blas_int_t>( (~V).spacing() ) );
+   blas_int_t ns  ( 0 );
+   blas_int_t info( 0 );
 
    BT* sptr( (~s).data() );
    CT* vptr( (~V).data() );
@@ -1202,12 +1212,12 @@ inline EnableIf_t< IsComplex_v< ElementType_t<MT1> >, size_t >
       vptr = vtmp.get();
    }
 
-   const int minimum( min( m, n ) );
+   const blas_int_t minimum( min( m, n ) );
 
-   int lwork( minimum*( minimum*3 + 20 ) + 2 );
+   blas_int_t lwork( minimum*( minimum*3 + 20 ) + 2 );
    const std::unique_ptr<CT[]>  work ( new CT[lwork] );
    const std::unique_ptr<BT[]>  rwork( new BT[17*minimum*minimum] );
-   const std::unique_ptr<int[]> iwork( new int[12*minimum] );
+   const std::unique_ptr<blas_int_t[]> iwork( new blas_int_t[12*minimum] );
 
    gesvdx( ( SO ? 'N' : 'V' ), ( SO ? 'V' : 'N' ), range, m, n,
            (~A).data(), lda, vl, vu, il, iu, &ns, sptr,
@@ -1321,15 +1331,18 @@ inline size_t gesvdx( DenseMatrix<MT1,SO>& A, DenseVector<VT,TF>& s, DenseMatrix
    BLAZE_CONSTRAINT_MUST_NOT_BE_ADAPTOR_TYPE( MT1 );
    BLAZE_CONSTRAINT_MUST_NOT_BE_COMPUTATION_TYPE( MT1 );
    BLAZE_CONSTRAINT_MUST_HAVE_MUTABLE_DATA_ACCESS( MT1 );
+   BLAZE_CONSTRAINT_MUST_BE_CONTIGUOUS_TYPE( MT1 );
    BLAZE_CONSTRAINT_MUST_BE_BLAS_COMPATIBLE_TYPE( ElementType_t<MT1> );
 
    BLAZE_CONSTRAINT_MUST_NOT_BE_COMPUTATION_TYPE( VT );
    BLAZE_CONSTRAINT_MUST_HAVE_MUTABLE_DATA_ACCESS( VT );
+   BLAZE_CONSTRAINT_MUST_BE_CONTIGUOUS_TYPE( VT );
    BLAZE_CONSTRAINT_MUST_BE_BLAS_COMPATIBLE_TYPE( ElementType_t<VT> );
 
    BLAZE_CONSTRAINT_MUST_NOT_BE_ADAPTOR_TYPE( MT2 );
    BLAZE_CONSTRAINT_MUST_NOT_BE_COMPUTATION_TYPE( MT2 );
    BLAZE_CONSTRAINT_MUST_HAVE_MUTABLE_DATA_ACCESS( MT2 );
+   BLAZE_CONSTRAINT_MUST_BE_CONTIGUOUS_TYPE( MT2 );
    BLAZE_CONSTRAINT_MUST_BE_BLAS_COMPATIBLE_TYPE( ElementType_t<MT2> );
 
    using ET = ElementType_t<MT1>;
@@ -1453,15 +1466,18 @@ inline size_t gesvdx( DenseMatrix<MT1,SO>& A, DenseVector<VT,TF>& s,
    BLAZE_CONSTRAINT_MUST_NOT_BE_ADAPTOR_TYPE( MT1 );
    BLAZE_CONSTRAINT_MUST_NOT_BE_COMPUTATION_TYPE( MT1 );
    BLAZE_CONSTRAINT_MUST_HAVE_MUTABLE_DATA_ACCESS( MT1 );
+   BLAZE_CONSTRAINT_MUST_BE_CONTIGUOUS_TYPE( MT1 );
    BLAZE_CONSTRAINT_MUST_BE_BLAS_COMPATIBLE_TYPE( ElementType_t<MT1> );
 
    BLAZE_CONSTRAINT_MUST_NOT_BE_COMPUTATION_TYPE( VT );
    BLAZE_CONSTRAINT_MUST_HAVE_MUTABLE_DATA_ACCESS( VT );
+   BLAZE_CONSTRAINT_MUST_BE_CONTIGUOUS_TYPE( VT );
    BLAZE_CONSTRAINT_MUST_BE_BLAS_COMPATIBLE_TYPE( ElementType_t<VT> );
 
    BLAZE_CONSTRAINT_MUST_NOT_BE_ADAPTOR_TYPE( MT2 );
    BLAZE_CONSTRAINT_MUST_NOT_BE_COMPUTATION_TYPE( MT2 );
    BLAZE_CONSTRAINT_MUST_HAVE_MUTABLE_DATA_ACCESS( MT2 );
+   BLAZE_CONSTRAINT_MUST_BE_CONTIGUOUS_TYPE( MT2 );
    BLAZE_CONSTRAINT_MUST_BE_BLAS_COMPATIBLE_TYPE( ElementType_t<MT2> );
 
    BLAZE_CONSTRAINT_MUST_BE_BUILTIN_TYPE( ST );
@@ -1490,11 +1506,11 @@ inline size_t gesvdx( DenseMatrix<MT1,SO>& A, DenseVector<VT,TF>& s,
       return 0;
    }
 
-   const char range( IsFloatingPoint_v<ST> ? 'V' : 'I' );
-   const ST   vl   ( IsFloatingPoint_v<ST> ? low : ST() );
-   const ST   vu   ( IsFloatingPoint_v<ST> ? upp : ST() );
-   const int  il   ( IsFloatingPoint_v<ST> ? 0 : numeric_cast<int>( low ) );
-   const int  iu   ( IsFloatingPoint_v<ST> ? 0 : numeric_cast<int>( upp ) );
+   const char       range( IsFloatingPoint_v<ST> ? 'V' : 'I' );
+   const ST         vl   ( IsFloatingPoint_v<ST> ? low : ST() );
+   const ST         vu   ( IsFloatingPoint_v<ST> ? upp : ST() );
+   const blas_int_t il   ( IsFloatingPoint_v<ST> ? 0 : numeric_cast<blas_int_t>( low ) );
+   const blas_int_t iu   ( IsFloatingPoint_v<ST> ? 0 : numeric_cast<blas_int_t>( upp ) );
 
    const size_t actual( gesvdx_backend( ~A, ~s, ~V, range, vl, vu, il, iu ) );
 
@@ -1542,9 +1558,10 @@ template< typename MT1   // Type of the matrix A
         , bool TF        // Transpose flag of the vector s
         , typename MT3   // Type of the matrix V
         , typename ST >  // Type of the scalar boundary values
-inline DisableIf_t< IsComplex_v< ElementType_t<MT1> >, size_t >
-   gesvdx_backend( DenseMatrix<MT1,SO>& A, DenseMatrix<MT2,SO>& U, DenseVector<VT,TF>& s,
-                   DenseMatrix<MT3,SO>& V, char range, ST vl, ST vu, int il, int iu )
+inline auto gesvdx_backend( DenseMatrix<MT1,SO>& A, DenseMatrix<MT2,SO>& U, DenseVector<VT,TF>& s,
+                            DenseMatrix<MT3,SO>& V, char range, ST vl, ST vu,
+                            blas_int_t il, blas_int_t iu )
+   -> DisableIf_t< IsComplex_v< ElementType_t<MT1> >, size_t >
 {
    BLAZE_INTERNAL_ASSERT( range == 'A' || range == 'V' || range == 'I', "Invalid range flag detected" );
    BLAZE_INTERNAL_ASSERT( range != 'A' || (~s).size() == min( (~A).rows(), (~A).columns() ), "Invalid vector dimension detected" );
@@ -1563,13 +1580,13 @@ inline DisableIf_t< IsComplex_v< ElementType_t<MT1> >, size_t >
    const size_t N( (~A).columns() );
    const size_t mindim( min( M, N ) );
 
-   int m   ( numeric_cast<int>( SO ? M : N ) );
-   int n   ( numeric_cast<int>( SO ? N : M ) );
-   int lda ( numeric_cast<int>( (~A).spacing() ) );
-   int ldu ( numeric_cast<int>( (~U).spacing() ) );
-   int ldv ( numeric_cast<int>( (~V).spacing() ) );
-   int ns  ( 0 );
-   int info( 0 );
+   blas_int_t m   ( numeric_cast<blas_int_t>( SO ? M : N ) );
+   blas_int_t n   ( numeric_cast<blas_int_t>( SO ? N : M ) );
+   blas_int_t lda ( numeric_cast<blas_int_t>( (~A).spacing() ) );
+   blas_int_t ldu ( numeric_cast<blas_int_t>( (~U).spacing() ) );
+   blas_int_t ldv ( numeric_cast<blas_int_t>( (~V).spacing() ) );
+   blas_int_t ns  ( 0 );
+   blas_int_t info( 0 );
 
    ET* sptr( (~s).data() );
    ET* uptr( (~U).data() );
@@ -1589,11 +1606,11 @@ inline DisableIf_t< IsComplex_v< ElementType_t<MT1> >, size_t >
       vptr = vtmp.get();
    }
 
-   const int minimum( min( m, n ) );
+   const blas_int_t minimum( min( m, n ) );
 
-   int lwork( minimum*( minimum*3 + 20 ) + 2 );
+   blas_int_t lwork( minimum*( minimum*3 + 20 ) + 2 );
    const std::unique_ptr<ET[]>  work ( new ET[lwork] );
-   const std::unique_ptr<int[]> iwork( new int[12*minimum] );
+   const std::unique_ptr<blas_int_t[]> iwork( new blas_int_t[12*minimum] );
 
    gesvdx( 'V', 'V', range, m, n, (~A).data(), lda, vl, vu, il, iu, &ns, sptr,
            ( SO ? uptr : vptr ), ( tmpRequired ? m : ( SO ? ldu : ldv ) ),
@@ -1682,9 +1699,10 @@ template< typename MT1   // Type of the matrix A
         , bool TF        // Transpose flag of the vector s
         , typename MT3   // Type of the matrix V
         , typename ST >  // Type of the scalar boundary values
-inline EnableIf_t< IsComplex_v< ElementType_t<MT1> >, size_t >
-   gesvdx_backend( DenseMatrix<MT1,SO>& A, DenseMatrix<MT2,SO>& U, DenseVector<VT,TF>& s,
-                   DenseMatrix<MT3,SO>& V, char range, ST vl, ST vu, int il, int iu )
+inline auto gesvdx_backend( DenseMatrix<MT1,SO>& A, DenseMatrix<MT2,SO>& U, DenseVector<VT,TF>& s,
+                            DenseMatrix<MT3,SO>& V, char range, ST vl, ST vu,
+                            blas_int_t il, blas_int_t iu )
+   -> EnableIf_t< IsComplex_v< ElementType_t<MT1> >, size_t >
 {
    BLAZE_INTERNAL_ASSERT( range == 'A' || range == 'V' || range == 'I', "Invalid range flag detected" );
    BLAZE_INTERNAL_ASSERT( range != 'A' || (~s).size() == min( (~A).rows(), (~A).columns() ), "Invalid vector dimension detected" );
@@ -1704,13 +1722,13 @@ inline EnableIf_t< IsComplex_v< ElementType_t<MT1> >, size_t >
    const size_t N( (~A).columns() );
    const size_t mindim( min( M, N ) );
 
-   int m   ( numeric_cast<int>( SO ? M : N ) );
-   int n   ( numeric_cast<int>( SO ? N : M ) );
-   int lda ( numeric_cast<int>( (~A).spacing() ) );
-   int ldu ( numeric_cast<int>( (~U).spacing() ) );
-   int ldv ( numeric_cast<int>( (~V).spacing() ) );
-   int ns  ( 0 );
-   int info( 0 );
+   blas_int_t m   ( numeric_cast<blas_int_t>( SO ? M : N ) );
+   blas_int_t n   ( numeric_cast<blas_int_t>( SO ? N : M ) );
+   blas_int_t lda ( numeric_cast<blas_int_t>( (~A).spacing() ) );
+   blas_int_t ldu ( numeric_cast<blas_int_t>( (~U).spacing() ) );
+   blas_int_t ldv ( numeric_cast<blas_int_t>( (~V).spacing() ) );
+   blas_int_t ns  ( 0 );
+   blas_int_t info( 0 );
 
    BT* sptr( (~s).data() );
    CT* uptr( (~U).data() );
@@ -1730,12 +1748,12 @@ inline EnableIf_t< IsComplex_v< ElementType_t<MT1> >, size_t >
       vptr = vtmp.get();
    }
 
-   const int minimum( min( m, n ) );
+   const blas_int_t minimum( min( m, n ) );
 
-   int lwork( minimum*( minimum*3 + 20 ) + 2 );
+   blas_int_t lwork( minimum*( minimum*3 + 20 ) + 2 );
    const std::unique_ptr<CT[]>  work ( new CT[lwork] );
    const std::unique_ptr<BT[]>  rwork( new BT[17*minimum*minimum] );
-   const std::unique_ptr<int[]> iwork( new int[12*minimum] );
+   const std::unique_ptr<blas_int_t[]> iwork( new blas_int_t[12*minimum] );
 
    gesvdx( 'V', 'V', range, m, n, (~A).data(), lda, vl, vu, il, iu, &ns, sptr,
            ( SO ? uptr : vptr ), ( tmpRequired ? m : ( SO ? ldu : ldv ) ),
@@ -1866,20 +1884,24 @@ inline size_t gesvdx( DenseMatrix<MT1,SO>& A, DenseMatrix<MT2,SO>& U,
    BLAZE_CONSTRAINT_MUST_NOT_BE_ADAPTOR_TYPE( MT1 );
    BLAZE_CONSTRAINT_MUST_NOT_BE_COMPUTATION_TYPE( MT1 );
    BLAZE_CONSTRAINT_MUST_HAVE_MUTABLE_DATA_ACCESS( MT1 );
+   BLAZE_CONSTRAINT_MUST_BE_CONTIGUOUS_TYPE( MT1 );
    BLAZE_CONSTRAINT_MUST_BE_BLAS_COMPATIBLE_TYPE( ElementType_t<MT1> );
 
    BLAZE_CONSTRAINT_MUST_NOT_BE_ADAPTOR_TYPE( MT2 );
    BLAZE_CONSTRAINT_MUST_NOT_BE_COMPUTATION_TYPE( MT2 );
    BLAZE_CONSTRAINT_MUST_HAVE_MUTABLE_DATA_ACCESS( MT2 );
+   BLAZE_CONSTRAINT_MUST_BE_CONTIGUOUS_TYPE( MT2 );
    BLAZE_CONSTRAINT_MUST_BE_BLAS_COMPATIBLE_TYPE( ElementType_t<MT2> );
 
    BLAZE_CONSTRAINT_MUST_NOT_BE_COMPUTATION_TYPE( VT );
    BLAZE_CONSTRAINT_MUST_HAVE_MUTABLE_DATA_ACCESS( VT );
+   BLAZE_CONSTRAINT_MUST_BE_CONTIGUOUS_TYPE( VT );
    BLAZE_CONSTRAINT_MUST_BE_BLAS_COMPATIBLE_TYPE( ElementType_t<VT> );
 
    BLAZE_CONSTRAINT_MUST_NOT_BE_ADAPTOR_TYPE( MT3 );
    BLAZE_CONSTRAINT_MUST_NOT_BE_COMPUTATION_TYPE( MT3 );
    BLAZE_CONSTRAINT_MUST_HAVE_MUTABLE_DATA_ACCESS( MT3 );
+   BLAZE_CONSTRAINT_MUST_BE_CONTIGUOUS_TYPE( MT3 );
    BLAZE_CONSTRAINT_MUST_BE_BLAS_COMPATIBLE_TYPE( ElementType_t<MT3> );
 
    using ET = ElementType_t<MT1>;
@@ -2012,20 +2034,24 @@ inline size_t gesvdx( DenseMatrix<MT1,SO>& A, DenseMatrix<MT2,SO>& U,
    BLAZE_CONSTRAINT_MUST_NOT_BE_ADAPTOR_TYPE( MT1 );
    BLAZE_CONSTRAINT_MUST_NOT_BE_COMPUTATION_TYPE( MT1 );
    BLAZE_CONSTRAINT_MUST_HAVE_MUTABLE_DATA_ACCESS( MT1 );
+   BLAZE_CONSTRAINT_MUST_BE_CONTIGUOUS_TYPE( MT1 );
    BLAZE_CONSTRAINT_MUST_BE_BLAS_COMPATIBLE_TYPE( ElementType_t<MT1> );
 
    BLAZE_CONSTRAINT_MUST_NOT_BE_ADAPTOR_TYPE( MT2 );
    BLAZE_CONSTRAINT_MUST_NOT_BE_COMPUTATION_TYPE( MT2 );
    BLAZE_CONSTRAINT_MUST_HAVE_MUTABLE_DATA_ACCESS( MT2 );
+   BLAZE_CONSTRAINT_MUST_BE_CONTIGUOUS_TYPE( MT2 );
    BLAZE_CONSTRAINT_MUST_BE_BLAS_COMPATIBLE_TYPE( ElementType_t<MT2> );
 
    BLAZE_CONSTRAINT_MUST_NOT_BE_COMPUTATION_TYPE( VT );
    BLAZE_CONSTRAINT_MUST_HAVE_MUTABLE_DATA_ACCESS( VT );
+   BLAZE_CONSTRAINT_MUST_BE_CONTIGUOUS_TYPE( VT );
    BLAZE_CONSTRAINT_MUST_BE_BLAS_COMPATIBLE_TYPE( ElementType_t<VT> );
 
    BLAZE_CONSTRAINT_MUST_NOT_BE_ADAPTOR_TYPE( MT3 );
    BLAZE_CONSTRAINT_MUST_NOT_BE_COMPUTATION_TYPE( MT3 );
    BLAZE_CONSTRAINT_MUST_HAVE_MUTABLE_DATA_ACCESS( MT3 );
+   BLAZE_CONSTRAINT_MUST_BE_CONTIGUOUS_TYPE( MT3 );
    BLAZE_CONSTRAINT_MUST_BE_BLAS_COMPATIBLE_TYPE( ElementType_t<MT3> );
 
    BLAZE_CONSTRAINT_MUST_BE_BUILTIN_TYPE( ST );
@@ -2055,11 +2081,11 @@ inline size_t gesvdx( DenseMatrix<MT1,SO>& A, DenseMatrix<MT2,SO>& U,
       return 0;
    }
 
-   const char range( IsFloatingPoint_v<ST> ? 'V' : 'I' );
-   const ST   vl   ( IsFloatingPoint_v<ST> ? low : ST() );
-   const ST   vu   ( IsFloatingPoint_v<ST> ? upp : ST() );
-   const int  il   ( IsFloatingPoint_v<ST> ? 0 : numeric_cast<int>( low ) );
-   const int  iu   ( IsFloatingPoint_v<ST> ? 0 : numeric_cast<int>( upp ) );
+   const char       range( IsFloatingPoint_v<ST> ? 'V' : 'I' );
+   const ST         vl   ( IsFloatingPoint_v<ST> ? low : ST() );
+   const ST         vu   ( IsFloatingPoint_v<ST> ? upp : ST() );
+   const blas_int_t il   ( IsFloatingPoint_v<ST> ? 0 : numeric_cast<blas_int_t>( low ) );
+   const blas_int_t iu   ( IsFloatingPoint_v<ST> ? 0 : numeric_cast<blas_int_t>( upp ) );
 
    const size_t actual( gesvdx_backend( ~A, ~U, ~s, ~V, range, vl, vu, il, iu ) );
 

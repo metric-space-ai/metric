@@ -3,7 +3,7 @@
 //  \file blaze/math/expressions/TDMatSMatSubExpr.h
 //  \brief Header file for the transpose dense matrix/sparse matrix subtraction expression
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -57,22 +57,17 @@
 #include "../../math/shims/Serial.h"
 #include "../../math/traits/SubTrait.h"
 #include "../../math/typetraits/IsExpression.h"
-#include "../../math/typetraits/IsHermitian.h"
-#include "../../math/typetraits/IsLower.h"
 #include "../../math/typetraits/IsOperation.h"
-#include "../../math/typetraits/IsStrictlyLower.h"
-#include "../../math/typetraits/IsStrictlyUpper.h"
-#include "../../math/typetraits/IsSymmetric.h"
 #include "../../math/typetraits/IsTemporary.h"
-#include "../../math/typetraits/IsUniLower.h"
-#include "../../math/typetraits/IsUniUpper.h"
-#include "../../math/typetraits/IsUpper.h"
+#include "../../math/typetraits/IsZero.h"
 #include "../../util/Assert.h"
 #include "../../util/EnableIf.h"
 #include "../../util/FunctionTrace.h"
 #include "../../util/IntegralConstant.h"
+#include "../../util/MaybeUnused.h"
 #include "../../util/mpl/If.h"
 #include "../../util/Types.h"
+#include "../../util/typetraits/IsSame.h"
 
 
 namespace blaze {
@@ -132,6 +127,7 @@ class TDMatSMatSubExpr
  public:
    //**Type definitions****************************************************************************
    using This          = TDMatSMatSubExpr<MT1,MT2>;    //!< Type of this TDMatSMatSubExpr instance.
+   using BaseType      = DenseMatrix<This,true>;       //!< Base type of this TDMatSMatSubExpr instance.
    using ResultType    = SubTrait_t<RT1,RT2>;          //!< Result type for expression template evaluations.
    using OppositeType  = OppositeType_t<ResultType>;   //!< Result type with opposite storage order for expression template evaluations.
    using TransposeType = TransposeType_t<ResultType>;  //!< Transpose type for expression template evaluations.
@@ -164,7 +160,7 @@ class TDMatSMatSubExpr
    // \param lhs The left-hand side dense matrix operand of the subtraction expression.
    // \param rhs The right-hand side sparse matrix operand of the subtraction expression.
    */
-   explicit inline TDMatSMatSubExpr( const MT1& lhs, const MT2& rhs ) noexcept
+   inline TDMatSMatSubExpr( const MT1& lhs, const MT2& rhs ) noexcept
       : lhs_( lhs )  // Left-hand side dense matrix of the subtraction expression
       , rhs_( rhs )  // Right-hand side sparse matrix of the subtraction expression
    {
@@ -469,8 +465,8 @@ class TDMatSMatSubExpr
    */
    template< typename MT  // Type of the target dense matrix
            , bool SO2 >   // Storage order of the target dense matrix
-   friend inline EnableIf_t< UseSMPAssign_v<MT> >
-      smpAssign( DenseMatrix<MT,SO2>& lhs, const TDMatSMatSubExpr& rhs )
+   friend inline auto smpAssign( DenseMatrix<MT,SO2>& lhs, const TDMatSMatSubExpr& rhs )
+      -> EnableIf_t< UseSMPAssign_v<MT> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -504,8 +500,8 @@ class TDMatSMatSubExpr
    */
    template< typename MT  // Type of the target sparse matrix
            , bool SO2 >   // Storage order of the target sparse matrix
-   friend inline EnableIf_t< UseSMPAssign_v<MT> >
-      smpAssign( SparseMatrix<MT,SO2>& lhs, const TDMatSMatSubExpr& rhs )
+   friend inline auto smpAssign( SparseMatrix<MT,SO2>& lhs, const TDMatSMatSubExpr& rhs )
+      -> EnableIf_t< UseSMPAssign_v<MT> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -544,8 +540,8 @@ class TDMatSMatSubExpr
    */
    template< typename MT  // Type of the target dense matrix
            , bool SO2 >   // Storage order of the target dense matrix
-   friend inline EnableIf_t< UseSMPAssign_v<MT> >
-      smpAddAssign( DenseMatrix<MT,SO2>& lhs, const TDMatSMatSubExpr& rhs )
+   friend inline auto smpAddAssign( DenseMatrix<MT,SO2>& lhs, const TDMatSMatSubExpr& rhs )
+      -> EnableIf_t< UseSMPAssign_v<MT> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -579,8 +575,8 @@ class TDMatSMatSubExpr
    */
    template< typename MT  // Type of the target dense matrix
            , bool SO2 >   // Storage order of the target dense matrix
-   friend inline EnableIf_t< UseSMPAssign_v<MT> >
-      smpSubAssign( DenseMatrix<MT,SO2>& lhs, const TDMatSMatSubExpr& rhs )
+   friend inline auto smpSubAssign( DenseMatrix<MT,SO2>& lhs, const TDMatSMatSubExpr& rhs )
+      -> EnableIf_t< UseSMPAssign_v<MT> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -614,8 +610,8 @@ class TDMatSMatSubExpr
    */
    template< typename MT  // Type of the target dense matrix
            , bool SO2 >   // Storage order of the target dense matrix
-   friend inline EnableIf_t< UseSMPAssign_v<MT> >
-      smpSchurAssign( DenseMatrix<MT,SO2>& lhs, const TDMatSMatSubExpr& rhs )
+   friend inline auto smpSchurAssign( DenseMatrix<MT,SO2>& lhs, const TDMatSMatSubExpr& rhs )
+      -> EnableIf_t< UseSMPAssign_v<MT> >
    {
       BLAZE_FUNCTION_TRACE;
 
@@ -666,8 +662,73 @@ class TDMatSMatSubExpr
 //=================================================================================================
 
 //*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Backend implementation of the subtraction between a column-major dense matrix and a
+//        row-major sparse matrix (\f$ A=B-C \f$).
+// \ingroup dense_matrix
+//
+// \param lhs The left-hand side dense matrix for the subtraction.
+// \param rhs The right-hand side sparse matrix for the subtraction.
+// \return The difference of the two matrices.
+//
+// This function implements a performance optimized treatment of the subtraction between a
+// column-major dense matrix and a row-major sparse matrix.
+*/
+template< typename MT1  // Type of the left-hand side dense matrix
+        , typename MT2  // Type of the right-hand side sparse matrix
+        , DisableIf_t< IsZero_v<MT2> &&
+                       IsSame_v< ElementType_t<MT1>, ElementType_t<MT2> > >* = nullptr >
+inline const TDMatSMatSubExpr<MT1,MT2>
+   tdmatsmatsub( const DenseMatrix<MT1,true>& lhs, const SparseMatrix<MT2,false>& rhs )
+{
+   BLAZE_FUNCTION_TRACE;
+
+   BLAZE_INTERNAL_ASSERT( (~lhs).rows()    == (~rhs).rows()   , "Invalid number of rows"    );
+   BLAZE_INTERNAL_ASSERT( (~lhs).columns() == (~rhs).columns(), "Invalid number of columns" );
+
+   return TDMatSMatSubExpr<MT1,MT2>( ~lhs, ~rhs );
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Backend implementation of the subtraction between a column-major dense matrix and a
+//        row-major zero matrix (\f$ A=B-C \f$).
+// \ingroup dense_matrix
+//
+// \param lhs The left-hand side dense matrix for the subtraction.
+// \param rhs The right-hand side zero matrix for the subtraction.
+// \return Reference to the left-hand side dense matrix.
+//
+// This function implements a performance optimized treatment of the subtraction between
+// a column-major dense matrix and a row-major zero matrix. It returns a reference to the
+// left-hand side dense matrix.
+*/
+template< typename MT1  // Type of the left-hand side dense matrix
+        , typename MT2  // Type of the right-hand side sparse matrix
+        , EnableIf_t< IsZero_v<MT2> &&
+                      IsSame_v< ElementType_t<MT1>, ElementType_t<MT2> > >* = nullptr >
+inline const MT1&
+   tdmatsmatsub( const DenseMatrix<MT1,true>& lhs, const SparseMatrix<MT2,false>& rhs )
+{
+   BLAZE_FUNCTION_TRACE;
+
+   MAYBE_UNUSED( rhs );
+
+   BLAZE_INTERNAL_ASSERT( (~lhs).rows()    == (~rhs).rows()   , "Invalid number of rows"    );
+   BLAZE_INTERNAL_ASSERT( (~lhs).columns() == (~rhs).columns(), "Invalid number of columns" );
+
+   return (~lhs);
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
 /*!\brief Subtraction operator for the subtraction of a column-major dense matrix and a row-major
-//        sparse matrix (\f$ A=B+C \f$).
+//        sparse matrix (\f$ A=B-C \f$).
 // \ingroup dense_matrix
 //
 // \param lhs The left-hand side dense matrix for the matrix subtraction.
@@ -707,8 +768,7 @@ inline decltype(auto)
       BLAZE_THROW_INVALID_ARGUMENT( "Matrix sizes do not match" );
    }
 
-   using ReturnType = const TDMatSMatSubExpr<MT1,MT2>;
-   return ReturnType( ~lhs, ~rhs );
+   return tdmatsmatsub( ~lhs, ~rhs );
 }
 //*************************************************************************************************
 
@@ -773,150 +833,6 @@ inline decltype(auto)
 
    return ( lhs.leftOperand() - (~rhs) ) - lhs.rightOperand();
 }
-/*! \endcond */
-//*************************************************************************************************
-
-
-
-
-//=================================================================================================
-//
-//  ISSYMMETRIC SPECIALIZATIONS
-//
-//=================================================================================================
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-template< typename MT1, typename MT2 >
-struct IsSymmetric< TDMatSMatSubExpr<MT1,MT2> >
-   : public BoolConstant< IsSymmetric_v<MT1> && IsSymmetric_v<MT2> >
-{};
-/*! \endcond */
-//*************************************************************************************************
-
-
-
-
-//=================================================================================================
-//
-//  ISHERMITIAN SPECIALIZATIONS
-//
-//=================================================================================================
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-template< typename MT1, typename MT2 >
-struct IsHermitian< TDMatSMatSubExpr<MT1,MT2> >
-   : public BoolConstant< IsHermitian_v<MT1> && IsHermitian_v<MT2> >
-{};
-/*! \endcond */
-//*************************************************************************************************
-
-
-
-
-//=================================================================================================
-//
-//  ISLOWER SPECIALIZATIONS
-//
-//=================================================================================================
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-template< typename MT1, typename MT2 >
-struct IsLower< TDMatSMatSubExpr<MT1,MT2> >
-   : public BoolConstant< IsLower_v<MT1> && IsLower_v<MT2> >
-{};
-/*! \endcond */
-//*************************************************************************************************
-
-
-
-
-//=================================================================================================
-//
-//  ISUNILOWER SPECIALIZATIONS
-//
-//=================================================================================================
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-template< typename MT1, typename MT2 >
-struct IsUniLower< TDMatSMatSubExpr<MT1,MT2> >
-   : public BoolConstant< IsUniLower_v<MT1> && IsStrictlyLower_v<MT2> >
-{};
-/*! \endcond */
-//*************************************************************************************************
-
-
-
-
-//=================================================================================================
-//
-//  ISSTRICTLYLOWER SPECIALIZATIONS
-//
-//=================================================================================================
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-template< typename MT1, typename MT2 >
-struct IsStrictlyLower< TDMatSMatSubExpr<MT1,MT2> >
-   : public BoolConstant< IsStrictlyLower_v<MT1> && IsStrictlyLower_v<MT2> >
-{};
-/*! \endcond */
-//*************************************************************************************************
-
-
-
-
-//=================================================================================================
-//
-//  ISUPPER SPECIALIZATIONS
-//
-//=================================================================================================
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-template< typename MT1, typename MT2 >
-struct IsUpper< TDMatSMatSubExpr<MT1,MT2> >
-   : public BoolConstant< IsUpper_v<MT1> && IsUpper_v<MT2> >
-{};
-/*! \endcond */
-//*************************************************************************************************
-
-
-
-
-//=================================================================================================
-//
-//  ISUNIUPPER SPECIALIZATIONS
-//
-//=================================================================================================
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-template< typename MT1, typename MT2 >
-struct IsUniUpper< TDMatSMatSubExpr<MT1,MT2> >
-   : public BoolConstant< IsUniUpper_v<MT1> && IsStrictlyUpper_v<MT2> >
-{};
-/*! \endcond */
-//*************************************************************************************************
-
-
-
-
-//=================================================================================================
-//
-//  ISSTRICTLYUPPER SPECIALIZATIONS
-//
-//=================================================================================================
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-template< typename MT1, typename MT2 >
-struct IsStrictlyUpper< TDMatSMatSubExpr<MT1,MT2> >
-   : public BoolConstant< IsStrictlyUpper_v<MT1> && IsStrictlyUpper_v<MT2> >
-{};
 /*! \endcond */
 //*************************************************************************************************
 

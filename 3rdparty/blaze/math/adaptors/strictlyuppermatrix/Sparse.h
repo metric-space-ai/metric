@@ -3,7 +3,7 @@
 //  \file blaze/math/adaptors/strictlyuppermatrix/Sparse.h
 //  \brief StrictlyUpperMatrix specialization for sparse matrices
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -46,15 +46,17 @@
 #include "../../../math/adaptors/strictlyuppermatrix/BaseTemplate.h"
 #include "../../../math/adaptors/strictlyuppermatrix/StrictlyUpperProxy.h"
 #include "../../../math/Aliases.h"
-#include "../../../math/constraints/Expression.h"
+#include "../../../math/constraints/Computation.h"
 #include "../../../math/constraints/Hermitian.h"
 #include "../../../math/constraints/Lower.h"
 #include "../../../math/constraints/Resizable.h"
 #include "../../../math/constraints/SparseMatrix.h"
 #include "../../../math/constraints/Static.h"
 #include "../../../math/constraints/StorageOrder.h"
+#include "../../../math/constraints/Transformation.h"
 #include "../../../math/constraints/Symmetric.h"
 #include "../../../math/constraints/Upper.h"
+#include "../../../math/constraints/View.h"
 #include "../../../math/dense/InitializerMatrix.h"
 #include "../../../math/Exception.h"
 #include "../../../math/expressions/SparseMatrix.h"
@@ -74,7 +76,6 @@
 #include "../../../util/constraints/Pointer.h"
 #include "../../../util/constraints/Reference.h"
 #include "../../../util/constraints/Volatile.h"
-#include "../../../util/DisableIf.h"
 #include "../../../util/EnableIf.h"
 #include "../../../util/StaticAssert.h"
 #include "../../../util/Types.h"
@@ -153,11 +154,11 @@ class StrictlyUpperMatrix<MT,SO,false>
    //**Constructors********************************************************************************
    /*!\name Constructors */
    //@{
-   explicit inline StrictlyUpperMatrix();
+            inline StrictlyUpperMatrix();
    explicit inline StrictlyUpperMatrix( size_t n );
-   explicit inline StrictlyUpperMatrix( size_t n, size_t nonzeros );
-   explicit inline StrictlyUpperMatrix( size_t n, const std::vector<size_t>& nonzeros );
-   explicit inline StrictlyUpperMatrix( initializer_list< initializer_list<ElementType> > list );
+            inline StrictlyUpperMatrix( size_t n, size_t nonzeros );
+            inline StrictlyUpperMatrix( size_t n, const std::vector<size_t>& nonzeros );
+            inline StrictlyUpperMatrix( initializer_list< initializer_list<ElementType> > list );
 
    inline StrictlyUpperMatrix( const StrictlyUpperMatrix& m );
    inline StrictlyUpperMatrix( StrictlyUpperMatrix&& m ) noexcept;
@@ -168,7 +169,10 @@ class StrictlyUpperMatrix<MT,SO,false>
    //**********************************************************************************************
 
    //**Destructor**********************************************************************************
-   // No explicitly declared destructor.
+   /*!\name Destructor */
+   //@{
+   ~StrictlyUpperMatrix() = default;
+   //@}
    //**********************************************************************************************
 
    //**Data access functions***********************************************************************
@@ -244,8 +248,8 @@ class StrictlyUpperMatrix<MT,SO,false>
    inline void   shrinkToFit();
    inline void   swap( StrictlyUpperMatrix& m ) noexcept;
 
-   static inline constexpr size_t maxNonZeros() noexcept;
-   static inline constexpr size_t maxNonZeros( size_t n ) noexcept;
+   static constexpr size_t maxNonZeros() noexcept;
+   static constexpr size_t maxNonZeros( size_t n ) noexcept;
    //@}
    //**********************************************************************************************
 
@@ -336,7 +340,9 @@ class StrictlyUpperMatrix<MT,SO,false>
    BLAZE_CONSTRAINT_MUST_NOT_BE_POINTER_TYPE         ( MT );
    BLAZE_CONSTRAINT_MUST_NOT_BE_CONST                ( MT );
    BLAZE_CONSTRAINT_MUST_NOT_BE_VOLATILE             ( MT );
-   BLAZE_CONSTRAINT_MUST_NOT_BE_EXPRESSION_TYPE      ( MT );
+   BLAZE_CONSTRAINT_MUST_NOT_BE_VIEW_TYPE            ( MT );
+   BLAZE_CONSTRAINT_MUST_NOT_BE_COMPUTATION_TYPE     ( MT );
+   BLAZE_CONSTRAINT_MUST_NOT_BE_TRANSFORMATION_TYPE  ( MT );
    BLAZE_CONSTRAINT_MUST_NOT_BE_SYMMETRIC_MATRIX_TYPE( MT );
    BLAZE_CONSTRAINT_MUST_NOT_BE_HERMITIAN_MATRIX_TYPE( MT );
    BLAZE_CONSTRAINT_MUST_NOT_BE_LOWER_MATRIX_TYPE    ( MT );
@@ -379,12 +385,12 @@ inline StrictlyUpperMatrix<MT,SO,false>::StrictlyUpperMatrix()
 //
 // \param n The number of rows and columns of the matrix.
 //
-// The matrix is initialized as identity matrix and has no additional free capacity.
+// The matrix is initialized as empty \f$ n \times n \f$ matrix without free capacity.
 */
 template< typename MT  // Type of the adapted sparse matrix
         , bool SO >    // Storage order of the adapted sparse matrix
 inline StrictlyUpperMatrix<MT,SO,false>::StrictlyUpperMatrix( size_t n )
-   : matrix_( n, n, n )  // The adapted sparse matrix
+   : matrix_( n, n )  // The adapted sparse matrix
 {
    BLAZE_CONSTRAINT_MUST_BE_RESIZABLE_TYPE( MT );
 
@@ -1356,14 +1362,16 @@ template< typename MT  // Type of the adapted sparse matrix
         , bool SO >    // Storage order of the adapted sparse matrix
 inline void StrictlyUpperMatrix<MT,SO,false>::reset()
 {
+   using blaze::erase;
+
    if( SO ) {
       for( size_t j=1UL; j<columns(); ++j ) {
-         matrix_.erase( j, matrix_.begin(j), matrix_.lowerBound(j,j) );
+         erase( matrix_, j, matrix_.begin(j), matrix_.lowerBound(j,j) );
       }
    }
    else {
       for( size_t i=0UL; i<rows(); ++i ) {
-         matrix_.erase( i, matrix_.lowerBound(i,i+1UL), matrix_.end(i) );
+         erase( matrix_, i, matrix_.lowerBound(i,i+1UL), matrix_.end(i) );
       }
    }
 }
@@ -1388,11 +1396,13 @@ template< typename MT  // Type of the adapted sparse matrix
         , bool SO >    // Storage order of the adapted sparse matrix
 inline void StrictlyUpperMatrix<MT,SO,false>::reset( size_t i )
 {
+   using blaze::erase;
+
    if( SO ) {
-      matrix_.erase( i, matrix_.begin(i), matrix_.lowerBound(i,i) );
+      erase( matrix_, i, matrix_.begin(i), matrix_.lowerBound(i,i) );
    }
    else {
-      matrix_.erase( i, matrix_.lowerBound(i,i+1UL), matrix_.end(i) );
+      erase( matrix_, i, matrix_.lowerBound(i,i+1UL), matrix_.end(i) );
    }
 }
 /*! \endcond */
@@ -1595,7 +1605,7 @@ inline void StrictlyUpperMatrix<MT,SO,false>::swap( StrictlyUpperMatrix& m ) noe
 */
 template< typename MT  // Type of the adapted dense matrix
         , bool SO >    // Storage order of the adapted dense matrix
-inline constexpr size_t StrictlyUpperMatrix<MT,SO,false>::maxNonZeros() noexcept
+constexpr size_t StrictlyUpperMatrix<MT,SO,false>::maxNonZeros() noexcept
 {
    BLAZE_CONSTRAINT_MUST_BE_STATIC_TYPE( MT );
 
@@ -1617,7 +1627,7 @@ inline constexpr size_t StrictlyUpperMatrix<MT,SO,false>::maxNonZeros() noexcept
 */
 template< typename MT  // Type of the adapted dense matrix
         , bool SO >    // Storage order of the adapted dense matrix
-inline constexpr size_t StrictlyUpperMatrix<MT,SO,false>::maxNonZeros( size_t n ) noexcept
+constexpr size_t StrictlyUpperMatrix<MT,SO,false>::maxNonZeros( size_t n ) noexcept
 {
    return ( ( n - 1UL ) * n ) / 2UL;
 }
@@ -1635,13 +1645,15 @@ template< typename MT  // Type of the adapted dense matrix
         , bool SO >    // Storage order of the adapted dense matrix
 inline void StrictlyUpperMatrix<MT,SO,false>::resetLower()
 {
+   using blaze::erase;
+
    if( SO ) {
       for( size_t j=0UL; j<columns(); ++j )
-         matrix_.erase( j, matrix_.upperBound( j, j ), matrix_.end( j ) );
+         erase( matrix_, j, matrix_.upperBound( j, j ), matrix_.end( j ) );
    }
    else {
       for( size_t i=1UL; i<rows(); ++i )
-         matrix_.erase( i, matrix_.begin( i ), matrix_.lowerBound( i, i ) );
+         erase( matrix_, i, matrix_.begin( i ), matrix_.lowerBound( i, i ) );
    }
 }
 /*! \endcond */
@@ -1829,7 +1841,9 @@ template< typename MT  // Type of the adapted sparse matrix
         , bool SO >    // Storage order of the adapted sparse matrix
 inline void StrictlyUpperMatrix<MT,SO,false>::erase( size_t i, size_t j )
 {
-   matrix_.erase( i, j );
+   using blaze::erase;
+
+   erase( matrix_, i, j );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -1852,7 +1866,9 @@ template< typename MT  // Type of the adapted sparse matrix
 inline typename StrictlyUpperMatrix<MT,SO,false>::Iterator
    StrictlyUpperMatrix<MT,SO,false>::erase( size_t i, Iterator pos )
 {
-   return matrix_.erase( i, pos );
+   using blaze::erase;
+
+   return erase( matrix_, i, pos );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -1877,7 +1893,9 @@ template< typename MT  // Type of the adapted sparse matrix
 inline typename StrictlyUpperMatrix<MT,SO,false>::Iterator
    StrictlyUpperMatrix<MT,SO,false>::erase( size_t i, Iterator first, Iterator last )
 {
-   return matrix_.erase( i, first, last );
+   using blaze::erase;
+
+   return erase( matrix_, i, first, last );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -1910,7 +1928,9 @@ template< typename MT      // Type of the adapted sparse matrix
 template< typename Pred >  // Type of the unary predicate
 inline void StrictlyUpperMatrix<MT,SO,false>::erase( Pred predicate )
 {
-   matrix_.erase( predicate );
+   using blaze::erase;
+
+   erase( matrix_, predicate );
 
    BLAZE_INTERNAL_ASSERT( isIntact(), "Broken invariant detected" );
 }
@@ -1951,7 +1971,9 @@ template< typename MT      // Type of the adapted sparse matrix
 template< typename Pred >  // Type of the unary predicate
 inline void StrictlyUpperMatrix<MT,SO,false>::erase( size_t i, Iterator first, Iterator last, Pred predicate )
 {
-   matrix_.erase( i, first, last, predicate );
+   using blaze::erase;
+
+   erase( matrix_, i, first, last, predicate );
 
    BLAZE_INTERNAL_ASSERT( isIntact(), "Broken invariant detected" );
 }

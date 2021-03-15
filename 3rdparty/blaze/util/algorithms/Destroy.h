@@ -3,7 +3,7 @@
 //  \file blaze/util/algorithms/Destroy.h
 //  \brief Headerfile for the generic destroy algorithm
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -48,7 +48,7 @@ namespace blaze {
 
 //=================================================================================================
 //
-//  DESTROY_AT ALGORITHM
+//  DESTROY ALGORITHM
 //
 //=================================================================================================
 
@@ -66,7 +66,7 @@ template< typename ForwardIt >
 void destroy( ForwardIt first, ForwardIt last )
 {
    for( ; first!=last; ++first ) {
-      destroy_at( std::addressof( *first ) );
+      blaze::destroy_at( std::addressof( *first ) );
    }
 }
 //*************************************************************************************************

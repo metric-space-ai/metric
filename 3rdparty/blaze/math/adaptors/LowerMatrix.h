@@ -3,7 +3,7 @@
 //  \file blaze/math/adaptors/LowerMatrix.h
 //  \brief Header file for the implementation of a lower matrix adaptor
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -54,15 +54,21 @@
 #include "../../math/Exception.h"
 #include "../../math/Forward.h"
 #include "../../math/InversionFlag.h"
+#include "../../math/RelaxationFlag.h"
 #include "../../math/shims/IsDefault.h"
 #include "../../math/shims/IsDivisor.h"
 #include "../../math/traits/AddTrait.h"
 #include "../../math/traits/DeclDiagTrait.h"
 #include "../../math/traits/DeclHermTrait.h"
 #include "../../math/traits/DeclLowTrait.h"
+#include "../../math/traits/DeclStrLowTrait.h"
+#include "../../math/traits/DeclStrUppTrait.h"
 #include "../../math/traits/DeclSymTrait.h"
+#include "../../math/traits/DeclUniLowTrait.h"
+#include "../../math/traits/DeclUniUppTrait.h"
 #include "../../math/traits/DeclUppTrait.h"
 #include "../../math/traits/DivTrait.h"
+#include "../../math/traits/KronTrait.h"
 #include "../../math/traits/MapTrait.h"
 #include "../../math/traits/MultTrait.h"
 #include "../../math/traits/SchurTrait.h"
@@ -74,15 +80,22 @@
 #include "../../math/typetraits/IsAligned.h"
 #include "../../math/typetraits/IsContiguous.h"
 #include "../../math/typetraits/IsDiagonal.h"
+#include "../../math/typetraits/IsHermitian.h"
+#include "../../math/typetraits/IsIdentity.h"
 #include "../../math/typetraits/IsLower.h"
+#include "../../math/typetraits/IsMatrix.h"
 #include "../../math/typetraits/IsPadded.h"
 #include "../../math/typetraits/IsResizable.h"
 #include "../../math/typetraits/IsRestricted.h"
 #include "../../math/typetraits/IsShrinkable.h"
 #include "../../math/typetraits/IsSquare.h"
 #include "../../math/typetraits/IsStrictlyLower.h"
+#include "../../math/typetraits/IsStrictlyUpper.h"
+#include "../../math/typetraits/IsSymmetric.h"
+#include "../../math/typetraits/IsUniform.h"
 #include "../../math/typetraits/IsUniLower.h"
 #include "../../math/typetraits/IsUpper.h"
+#include "../../math/typetraits/IsZero.h"
 #include "../../math/typetraits/LowType.h"
 #include "../../math/typetraits/MaxSize.h"
 #include "../../math/typetraits/RemoveAdaptor.h"
@@ -95,9 +108,9 @@
 #include "../../util/algorithms/Min.h"
 #include "../../util/Assert.h"
 #include "../../util/EnableIf.h"
-#include "../../util/TrueType.h"
+#include "../../util/IntegralConstant.h"
+#include "../../util/MaybeUnused.h"
 #include "../../util/typetraits/IsNumeric.h"
-#include "../../util/Unused.h"
 
 
 namespace blaze {
@@ -112,22 +125,22 @@ namespace blaze {
 /*!\name LowerMatrix operators */
 //@{
 template< typename MT, bool SO, bool DF >
-inline void reset( LowerMatrix<MT,SO,DF>& m );
+void reset( LowerMatrix<MT,SO,DF>& m );
 
 template< typename MT, bool SO, bool DF >
-inline void reset( LowerMatrix<MT,SO,DF>& m, size_t i );
+void reset( LowerMatrix<MT,SO,DF>& m, size_t i );
 
 template< typename MT, bool SO, bool DF >
-inline void clear( LowerMatrix<MT,SO,DF>& m );
+void clear( LowerMatrix<MT,SO,DF>& m );
 
-template< bool RF, typename MT, bool SO, bool DF >
-inline bool isDefault( const LowerMatrix<MT,SO,DF>& m );
-
-template< typename MT, bool SO, bool DF >
-inline bool isIntact( const LowerMatrix<MT,SO,DF>& m );
+template< RelaxationFlag RF, typename MT, bool SO, bool DF >
+bool isDefault( const LowerMatrix<MT,SO,DF>& m );
 
 template< typename MT, bool SO, bool DF >
-inline void swap( LowerMatrix<MT,SO,DF>& a, LowerMatrix<MT,SO,DF>& b ) noexcept;
+bool isIntact( const LowerMatrix<MT,SO,DF>& m );
+
+template< typename MT, bool SO, bool DF >
+void swap( LowerMatrix<MT,SO,DF>& a, LowerMatrix<MT,SO,DF>& b ) noexcept;
 //@}
 //*************************************************************************************************
 
@@ -217,10 +230,10 @@ inline void clear( LowerMatrix<MT,SO,DF>& m )
    if( isDefault<relaxed>( A ) ) { ... }
    \endcode
 */
-template< bool RF      // Relaxation flag
-        , typename MT  // Type of the adapted matrix
-        , bool SO      // Storage order of the adapted matrix
-        , bool DF >    // Density flag
+template< RelaxationFlag RF  // Relaxation flag
+        , typename MT        // Type of the adapted matrix
+        , bool SO            // Storage order of the adapted matrix
+        , bool DF >          // Density flag
 inline bool isDefault( const LowerMatrix<MT,SO,DF>& m )
 {
    return isDefault<RF>( m.matrix_ );
@@ -388,7 +401,7 @@ inline void lu( const LowerMatrix<MT1,SO1,true>& A, DenseMatrix<MT2,SO1>& L,
 //*************************************************************************************************
 /*! \cond BLAZE_INTERNAL */
 /*!\brief Predict invariant violations by setting a single element of a lower matrix.
-// \ingroup matrix
+// \ingroup lower_matrix
 //
 // \param mat The target lower matrix.
 // \param i The row index of the element to be set.
@@ -410,7 +423,7 @@ inline bool trySet( const LowerMatrix<MT,SO,DF>& mat, size_t i, size_t j, const 
    BLAZE_INTERNAL_ASSERT( i < (~mat).rows(), "Invalid row access index" );
    BLAZE_INTERNAL_ASSERT( j < (~mat).columns(), "Invalid column access index" );
 
-   UNUSED_PARAMETER( mat );
+   MAYBE_UNUSED( mat );
 
    return ( i >= j || isDefault( value ) );
 }
@@ -420,8 +433,49 @@ inline bool trySet( const LowerMatrix<MT,SO,DF>& mat, size_t i, size_t j, const 
 
 //*************************************************************************************************
 /*! \cond BLAZE_INTERNAL */
+/*!\brief Predict invariant violations by setting a range of elements of a lower matrix.
+// \ingroup lower_matrix
+//
+// \param mat The target lower matrix.
+// \param row The index of the first row of the range to be multiplied.
+// \param column The index of the first column of the range to be multiplied.
+// \param m The number of rows of the range to be multiplied.
+// \param n The number of columns of the range to be multiplied.
+// \param value The value to be set to the range of elements.
+// \return \a true in case the operation would be successful, \a false if not.
+//
+// This function must \b NOT be called explicitly! It is used internally for the performance
+// optimized evaluation of expression templates. Calling this function explicitly might result
+// in erroneous results and/or in compilation errors. Instead of using this function use the
+// assignment operator.
+*/
+template< typename MT    // Type of the adapted matrix
+        , bool SO        // Storage order of the adapted matrix
+        , bool DF        // Density flag
+        , typename ET >  // Type of the element
+BLAZE_ALWAYS_INLINE bool
+   trySet( const LowerMatrix<MT,SO,DF>& mat, size_t row, size_t column, size_t m, size_t n, const ET& value )
+{
+   BLAZE_INTERNAL_ASSERT( row <= (~mat).rows(), "Invalid row access index" );
+   BLAZE_INTERNAL_ASSERT( column <= (~mat).columns(), "Invalid column access index" );
+   BLAZE_INTERNAL_ASSERT( row + m <= (~mat).rows(), "Invalid number of rows" );
+   BLAZE_INTERNAL_ASSERT( column + n <= (~mat).columns(), "Invalid number of columns" );
+
+   MAYBE_UNUSED( mat );
+
+   return ( m == 0UL ) ||
+          ( n == 0UL ) ||
+          ( row + 1UL >= column + n ) ||
+          isDefault( value );
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
 /*!\brief Predict invariant violations by adding to a single element of a lower matrix.
-// \ingroup matrix
+// \ingroup lower_matrix
 //
 // \param mat The target lower matrix.
 // \param i The row index of the element to be modified.
@@ -448,8 +502,39 @@ inline bool tryAdd( const LowerMatrix<MT,SO,DF>& mat, size_t i, size_t j, const 
 
 //*************************************************************************************************
 /*! \cond BLAZE_INTERNAL */
+/*!\brief Predict invariant violations by adding to a range of elements of a lower matrix.
+// \ingroup lower_matrix
+//
+// \param mat The target lower matrix.
+// \param row The index of the first row of the range to be multiplied.
+// \param column The index of the first column of the range to be multiplied.
+// \param m The number of rows of the range to be multiplied.
+// \param n The number of columns of the range to be multiplied.
+// \param value The value to be added to the range of elements.
+// \return \a true in case the operation would be successful, \a false if not.
+//
+// This function must \b NOT be called explicitly! It is used internally for the performance
+// optimized evaluation of expression templates. Calling this function explicitly might result
+// in erroneous results and/or in compilation errors. Instead of using this function use the
+// assignment operator.
+*/
+template< typename MT    // Type of the adapted matrix
+        , bool SO        // Storage order of the adapted matrix
+        , bool DF        // Density flag
+        , typename ET >  // Type of the element
+BLAZE_ALWAYS_INLINE bool
+   tryAdd( const LowerMatrix<MT,SO,DF>& mat, size_t row, size_t column, size_t m, size_t n, const ET& value )
+{
+   return trySet( mat, row, column, m, n, value );
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
 /*!\brief Predict invariant violations by subtracting from a single element of a lower matrix.
-// \ingroup matrix
+// \ingroup lower_matrix
 //
 // \param mat The target lower matrix.
 // \param i The row index of the element to be modified.
@@ -469,6 +554,155 @@ template< typename MT    // Type of the adapted matrix
 inline bool trySub( const LowerMatrix<MT,SO,DF>& mat, size_t i, size_t j, const ET& value )
 {
    return trySet( mat, i, j, value );
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Predict invariant violations by subtracting from a range of elements of a lower matrix.
+// \ingroup lower_matrix
+//
+// \param mat The target lower matrix.
+// \param row The index of the first row of the range to be multiplied.
+// \param column The index of the first column of the range to be multiplied.
+// \param m The number of rows of the range to be multiplied.
+// \param n The number of columns of the range to be multiplied.
+// \param value The value to be subtracted from the range of elements.
+// \return \a true in case the operation would be successful, \a false if not.
+//
+// This function must \b NOT be called explicitly! It is used internally for the performance
+// optimized evaluation of expression templates. Calling this function explicitly might result
+// in erroneous results and/or in compilation errors. Instead of using this function use the
+// assignment operator.
+*/
+template< typename MT    // Type of the adapted matrix
+        , bool SO        // Storage order of the adapted matrix
+        , bool DF        // Density flag
+        , typename ET >  // Type of the element
+BLAZE_ALWAYS_INLINE bool
+   trySub( const LowerMatrix<MT,SO,DF>& mat, size_t row, size_t column, size_t m, size_t n, const ET& value )
+{
+   return trySet( mat, row, column, m, n, value );
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Predict invariant violations by a bitwise OR on a single element of a lower matrix.
+// \ingroup lower_matrix
+//
+// \param mat The target lower matrix.
+// \param i The row index of the element to be modified.
+// \param j The column index of the element to be modified.
+// \param value The bit pattern to be used on the element.
+// \return \a true in case the operation would be successful, \a false if not.
+//
+// This function must \b NOT be called explicitly! It is used internally for the performance
+// optimized evaluation of expression templates. Calling this function explicitly might result
+// in erroneous results and/or in compilation errors. Instead of using this function use the
+// assignment operator.
+*/
+template< typename MT    // Type of the adapted matrix
+        , bool SO        // Storage order of the adapted matrix
+        , bool DF        // Density flag
+        , typename ET >  // Type of the element
+inline bool tryBitor( const LowerMatrix<MT,SO,DF>& mat, size_t i, size_t j, const ET& value )
+{
+   return trySet( mat, i, j, value );
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Predict invariant violations by a bitwise OR on a range of elements of a lower matrix.
+// \ingroup lower_matrix
+//
+// \param mat The target lower matrix.
+// \param row The index of the first row of the range to be modified.
+// \param column The index of the first column of the range to be modified.
+// \param m The number of rows of the range to be modified.
+// \param n The number of columns of the range to be modified.
+// \param value The bit pattern to be used on the range of elements.
+// \return \a true in case the operation would be successful, \a false if not.
+//
+// This function must \b NOT be called explicitly! It is used internally for the performance
+// optimized evaluation of expression templates. Calling this function explicitly might result
+// in erroneous results and/or in compilation errors. Instead of using this function use the
+// assignment operator.
+*/
+template< typename MT    // Type of the adapted matrix
+        , bool SO        // Storage order of the adapted matrix
+        , bool DF        // Density flag
+        , typename ET >  // Type of the element
+BLAZE_ALWAYS_INLINE bool
+   tryBitor( const LowerMatrix<MT,SO,DF>& mat, size_t row, size_t column, size_t m, size_t n, const ET& value )
+{
+   return trySet( mat, row, column, m, n, value );
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Predict invariant violations by a bitwise XOR on a single element of a lower matrix.
+// \ingroup lower_matrix
+//
+// \param mat The target lower matrix.
+// \param i The row index of the element to be modified.
+// \param j The column index of the element to be modified.
+// \param value The bit pattern to be used on the element.
+// \return \a true in case the operation would be successful, \a false if not.
+//
+// This function must \b NOT be called explicitly! It is used internally for the performance
+// optimized evaluation of expression templates. Calling this function explicitly might result
+// in erroneous results and/or in compilation errors. Instead of using this function use the
+// assignment operator.
+*/
+template< typename MT    // Type of the adapted matrix
+        , bool SO        // Storage order of the adapted matrix
+        , bool DF        // Density flag
+        , typename ET >  // Type of the element
+inline bool tryBitxor( const LowerMatrix<MT,SO,DF>& mat, size_t i, size_t j, const ET& value )
+{
+   return tryAdd( mat, i, j, value );
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Predict invariant violations by a bitwise XOR on a range of elements of a lower matrix.
+// \ingroup lower_matrix
+//
+// \param mat The target lower matrix.
+// \param row The index of the first row of the range to be modified.
+// \param column The index of the first column of the range to be modified.
+// \param m The number of rows of the range to be modified.
+// \param n The number of columns of the range to be modified.
+// \param value The bit pattern to be used on the range of elements.
+// \return \a true in case the operation would be successful, \a false if not.
+//
+// This function must \b NOT be called explicitly! It is used internally for the performance
+// optimized evaluation of expression templates. Calling this function explicitly might result
+// in erroneous results and/or in compilation errors. Instead of using this function use the
+// assignment operator.
+*/
+template< typename MT    // Type of the adapted matrix
+        , bool SO        // Storage order of the adapted matrix
+        , bool DF        // Density flag
+        , typename ET >  // Type of the element
+BLAZE_ALWAYS_INLINE bool
+   tryBitxor( const LowerMatrix<MT,SO,DF>& mat, size_t row, size_t column, size_t m, size_t n, const ET& value )
+{
+   return tryAdd( mat, row, column, m, n, value );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -503,7 +737,7 @@ inline bool tryAssign( const LowerMatrix<MT,SO,DF>& lhs,
    BLAZE_INTERNAL_ASSERT( column <= lhs.columns(), "Invalid column access index" );
    BLAZE_INTERNAL_ASSERT( row + (~rhs).size() <= lhs.rows(), "Invalid number of rows" );
 
-   UNUSED_PARAMETER( lhs );
+   MAYBE_UNUSED( lhs );
 
    if( column <= row )
       return true;
@@ -550,7 +784,7 @@ inline bool tryAssign( const LowerMatrix<MT,SO,DF>& lhs,
    BLAZE_INTERNAL_ASSERT( column <= lhs.columns(), "Invalid column access index" );
    BLAZE_INTERNAL_ASSERT( column + (~rhs).size() <= lhs.columns(), "Invalid number of columns" );
 
-   UNUSED_PARAMETER( lhs );
+   MAYBE_UNUSED( lhs );
 
    const size_t ibegin( ( row < column )?( 0UL ):( row - column + 1UL ) );
 
@@ -598,7 +832,7 @@ inline bool tryAssign( const LowerMatrix<MT,SO,DF>& lhs, const DenseVector<VT,TF
    BLAZE_INTERNAL_ASSERT( row + (~rhs).size() <= lhs.rows(), "Invalid number of rows" );
    BLAZE_INTERNAL_ASSERT( column + (~rhs).size() <= lhs.columns(), "Invalid number of columns" );
 
-   UNUSED_PARAMETER( lhs, row, column );
+   MAYBE_UNUSED( lhs, row, column );
 
    if( band > 0L ) {
       for( size_t i=0UL; i<(~rhs).size(); ++i ) {
@@ -642,16 +876,14 @@ inline bool tryAssign( const LowerMatrix<MT,SO,DF>& lhs,
    BLAZE_INTERNAL_ASSERT( column <= lhs.columns(), "Invalid column access index" );
    BLAZE_INTERNAL_ASSERT( row + (~rhs).size() <= lhs.rows(), "Invalid number of rows" );
 
-   UNUSED_PARAMETER( lhs );
-
-   using RhsIterator = typename VT::ConstIterator;
+   MAYBE_UNUSED( lhs );
 
    if( column <= row )
       return true;
 
-   const RhsIterator last( (~rhs).lowerBound( column - row ) );
+   const auto last( (~rhs).lowerBound( column - row ) );
 
-   for( RhsIterator element=(~rhs).begin(); element!=last; ++element ) {
+   for( auto element=(~rhs).begin(); element!=last; ++element ) {
       if( !isDefault( element->value() ) )
          return false;
    }
@@ -691,12 +923,10 @@ inline bool tryAssign( const LowerMatrix<MT,SO,DF>& lhs,
    BLAZE_INTERNAL_ASSERT( column <= lhs.columns(), "Invalid column access index" );
    BLAZE_INTERNAL_ASSERT( column + (~rhs).size() <= lhs.columns(), "Invalid number of columns" );
 
-   UNUSED_PARAMETER( lhs );
+   MAYBE_UNUSED( lhs );
 
-   using RhsIterator = typename VT::ConstIterator;
-
-   const RhsIterator last( (~rhs).end() );
-   RhsIterator element( (~rhs).lowerBound( ( row < column )?( 0UL ):( row - column + 1UL ) ) );
+   const auto last( (~rhs).end() );
+   auto element( (~rhs).lowerBound( ( row < column )?( 0UL ):( row - column + 1UL ) ) );
 
    for( ; element!=last; ++element ) {
       if( !isDefault( element->value() ) )
@@ -742,7 +972,7 @@ inline bool tryAssign( const LowerMatrix<MT,SO,DF>& lhs, const SparseVector<VT,T
    BLAZE_INTERNAL_ASSERT( row + (~rhs).size() <= lhs.rows(), "Invalid number of rows" );
    BLAZE_INTERNAL_ASSERT( column + (~rhs).size() <= lhs.columns(), "Invalid number of columns" );
 
-   UNUSED_PARAMETER( lhs, row, column );
+   MAYBE_UNUSED( lhs, row, column );
 
    if( band > 0L ) {
       for( const auto& element : ~rhs ) {
@@ -787,7 +1017,7 @@ inline bool tryAssign( const LowerMatrix<MT1,SO,DF>& lhs,
    BLAZE_INTERNAL_ASSERT( row + (~rhs).rows() <= lhs.rows(), "Invalid number of rows" );
    BLAZE_INTERNAL_ASSERT( column + (~rhs).columns() <= lhs.columns(), "Invalid number of columns" );
 
-   UNUSED_PARAMETER( lhs );
+   MAYBE_UNUSED( lhs );
 
    const size_t M( (~rhs).rows()    );
    const size_t N( (~rhs).columns() );
@@ -844,7 +1074,7 @@ inline bool tryAssign( const LowerMatrix<MT1,SO,DF>& lhs,
    BLAZE_INTERNAL_ASSERT( row + (~rhs).rows() <= lhs.rows(), "Invalid number of rows" );
    BLAZE_INTERNAL_ASSERT( column + (~rhs).columns() <= lhs.columns(), "Invalid number of columns" );
 
-   UNUSED_PARAMETER( lhs );
+   MAYBE_UNUSED( lhs );
 
    const size_t M( (~rhs).rows()    );
    const size_t N( (~rhs).columns() );
@@ -900,9 +1130,7 @@ inline bool tryAssign( const LowerMatrix<MT1,SO,DF>& lhs,
    BLAZE_INTERNAL_ASSERT( row + (~rhs).rows() <= lhs.rows(), "Invalid number of rows" );
    BLAZE_INTERNAL_ASSERT( column + (~rhs).columns() <= lhs.columns(), "Invalid number of columns" );
 
-   UNUSED_PARAMETER( lhs );
-
-   using RhsIterator = typename MT2::ConstIterator;
+   MAYBE_UNUSED( lhs );
 
    const size_t M( (~rhs).rows()    );
    const size_t N( (~rhs).columns() );
@@ -917,8 +1145,8 @@ inline bool tryAssign( const LowerMatrix<MT1,SO,DF>& lhs,
       const bool containsDiagonal( row + i >= column );
       const size_t index( ( containsDiagonal )?( row + i - column + 1UL ):( 0UL ) );
 
-      const RhsIterator last( (~rhs).end(i) );
-      RhsIterator element( (~rhs).lowerBound( i, index ) );
+      const auto last( (~rhs).end(i) );
+      auto element( (~rhs).lowerBound( i, index ) );
 
       for( ; element!=last; ++element ) {
          if( !isDefault( element->value() ) )
@@ -962,9 +1190,7 @@ inline bool tryAssign( const LowerMatrix<MT1,SO,DF>& lhs,
    BLAZE_INTERNAL_ASSERT( row + (~rhs).rows() <= lhs.rows(), "Invalid number of rows" );
    BLAZE_INTERNAL_ASSERT( column + (~rhs).columns() <= lhs.columns(), "Invalid number of columns" );
 
-   UNUSED_PARAMETER( lhs );
-
-   using RhsIterator = typename MT2::ConstIterator;
+   MAYBE_UNUSED( lhs );
 
    const size_t M( (~rhs).rows()    );
    const size_t N( (~rhs).columns() );
@@ -977,9 +1203,9 @@ inline bool tryAssign( const LowerMatrix<MT1,SO,DF>& lhs,
    for( size_t j=jbegin; j<N; ++j )
    {
       const size_t index( column + j - row );
-      const RhsIterator last( (~rhs).lowerBound( min( index, M ), j ) );
+      const auto last( (~rhs).lowerBound( min( index, M ), j ) );
 
-      for( RhsIterator element=(~rhs).begin(j); element!=last; ++element ) {
+      for( auto element=(~rhs).begin(j); element!=last; ++element ) {
          if( !isDefault( element->value() ) )
             return false;
       }
@@ -1177,6 +1403,190 @@ inline bool trySubAssign( const LowerMatrix<MT1,SO1,DF>& lhs,
 
 //*************************************************************************************************
 /*! \cond BLAZE_INTERNAL */
+/*!\brief Predict invariant violations by the bitwise OR assignment of a vector to a lower
+//        matrix.
+// \ingroup lower_matrix
+//
+// \param lhs The target left-hand side lower matrix.
+// \param rhs The right-hand side vector for the bitwise OR operation.
+// \param row The row index of the first element to be modified.
+// \param column The column index of the first element to be modified.
+// \return \a true in case the assignment would be successful, \a false if not.
+//
+// This function must \b NOT be called explicitly! It is used internally for the performance
+// optimized evaluation of expression templates. Calling this function explicitly might result
+// in erroneous results and/or in compilation errors. Instead of using this function use the
+// assignment operator.
+*/
+template< typename MT  // Type of the adapted matrix
+        , bool SO      // Storage order of the adapted matrix
+        , bool DF      // Density flag
+        , typename VT  // Type of the right-hand side vector
+        , bool TF >    // Transpose flag of the right-hand side vector
+inline bool tryBitorAssign( const LowerMatrix<MT,SO,DF>& lhs,
+                            const Vector<VT,TF>& rhs, size_t row, size_t column )
+{
+   return tryAssign( lhs, ~rhs, row, column );
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Predict invariant violations by the bitwise OR assignment of a vector to the band of
+//        a lower matrix.
+// \ingroup lower_matrix
+// \param lhs The target left-hand side lower matrix.
+// \param rhs The right-hand side vector for the bitwise OR operation.
+// \param band The index of the band the right-hand side vector is assigned to.
+// \param row The row index of the first element to be modified.
+// \param column The column index of the first element to be modified.
+// \return \a true in case the assignment would be successful, \a false if not.
+//
+// This function must \b NOT be called explicitly! It is used internally for the performance
+// optimized evaluation of expression templates. Calling this function explicitly might result
+// in erroneous results and/or in compilation errors. Instead of using this function use the
+// assignment operator.
+*/
+template< typename MT  // Type of the adapted matrix
+        , bool SO      // Storage order of the adapted matrix
+        , bool DF      // Density flag
+        , typename VT  // Type of the right-hand side vector
+        , bool TF >    // Transpose flag of the right-hand side vector
+inline bool tryBitorAssign( const LowerMatrix<MT,SO,DF>& lhs, const Vector<VT,TF>& rhs,
+                            ptrdiff_t band, size_t row, size_t column )
+{
+   return tryAssign( lhs, ~rhs, band, row, column );
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Predict invariant violations by the bitwise OR assignment of a matrix to a lower matrix.
+// \ingroup lower_matrix
+//
+// \param lhs The target left-hand side lower matrix.
+// \param rhs The right-hand side matrix for the bitwise OR operation.
+// \param row The row index of the first element to be modified.
+// \param column The column index of the first element to be modified.
+// \return \a true in case the assignment would be successful, \a false if not.
+//
+// This function must \b NOT be called explicitly! It is used internally for the performance
+// optimized evaluation of expression templates. Calling this function explicitly might result
+// in erroneous results and/or in compilation errors. Instead of using this function use the
+// assignment operator.
+*/
+template< typename MT1  // Type of the adapted matrix
+        , bool SO1      // Storage order of the adapted matrix
+        , bool DF       // Density flag
+        , typename MT2  // Type of the right-hand side matrix
+        , bool SO2 >    // Storage order of the right-hand side matrix
+inline bool tryBitorAssign( const LowerMatrix<MT1,SO1,DF>& lhs,
+                            const Matrix<MT2,SO2>& rhs, size_t row, size_t column )
+{
+   return tryAssign( lhs, ~rhs, row, column );
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Predict invariant violations by the bitwise XOR assignment of a vector to a lower
+//        matrix.
+// \ingroup lower_matrix
+//
+// \param lhs The target left-hand side lower matrix.
+// \param rhs The right-hand side vector for the bitwise XOR operation.
+// \param row The row index of the first element to be modified.
+// \param column The column index of the first element to be modified.
+// \return \a true in case the assignment would be successful, \a false if not.
+//
+// This function must \b NOT be called explicitly! It is used internally for the performance
+// optimized evaluation of expression templates. Calling this function explicitly might result
+// in erroneous results and/or in compilation errors. Instead of using this function use the
+// assignment operator.
+*/
+template< typename MT  // Type of the adapted matrix
+        , bool SO      // Storage order of the adapted matrix
+        , bool DF      // Density flag
+        , typename VT  // Type of the right-hand side vector
+        , bool TF >    // Transpose flag of the right-hand side vector
+inline bool tryBitxorAssign( const LowerMatrix<MT,SO,DF>& lhs,
+                             const Vector<VT,TF>& rhs, size_t row, size_t column )
+{
+   return tryAssign( lhs, ~rhs, row, column );
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Predict invariant violations by the bitwise XOR assignment of a vector to the band of
+//        a lower matrix.
+// \ingroup lower_matrix
+// \param lhs The target left-hand side lower matrix.
+// \param rhs The right-hand side vector for the bitwise XOR operation.
+// \param band The index of the band the right-hand side vector is assigned to.
+// \param row The row index of the first element to be modified.
+// \param column The column index of the first element to be modified.
+// \return \a true in case the assignment would be successful, \a false if not.
+//
+// This function must \b NOT be called explicitly! It is used internally for the performance
+// optimized evaluation of expression templates. Calling this function explicitly might result
+// in erroneous results and/or in compilation errors. Instead of using this function use the
+// assignment operator.
+*/
+template< typename MT  // Type of the adapted matrix
+        , bool SO      // Storage order of the adapted matrix
+        , bool DF      // Density flag
+        , typename VT  // Type of the right-hand side vector
+        , bool TF >    // Transpose flag of the right-hand side vector
+inline bool tryBitxorAssign( const LowerMatrix<MT,SO,DF>& lhs, const Vector<VT,TF>& rhs,
+                             ptrdiff_t band, size_t row, size_t column )
+{
+   return tryAssign( lhs, ~rhs, band, row, column );
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+/*!\brief Predict invariant violations by the bitwise XOR assignment of a matrix to a lower matrix.
+// \ingroup lower_matrix
+//
+// \param lhs The target left-hand side lower matrix.
+// \param rhs The right-hand side matrix for the bitwise XOR operation.
+// \param row The row index of the first element to be modified.
+// \param column The column index of the first element to be modified.
+// \return \a true in case the assignment would be successful, \a false if not.
+//
+// This function must \b NOT be called explicitly! It is used internally for the performance
+// optimized evaluation of expression templates. Calling this function explicitly might result
+// in erroneous results and/or in compilation errors. Instead of using this function use the
+// assignment operator.
+*/
+template< typename MT1  // Type of the adapted matrix
+        , bool SO1      // Storage order of the adapted matrix
+        , bool DF       // Density flag
+        , typename MT2  // Type of the right-hand side matrix
+        , bool SO2 >    // Storage order of the right-hand side matrix
+inline bool tryBitxorAssign( const LowerMatrix<MT1,SO1,DF>& lhs,
+                            const Matrix<MT2,SO2>& rhs, size_t row, size_t column )
+{
+   return tryAssign( lhs, ~rhs, row, column );
+}
+/*! \endcond */
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
 /*!\brief Returns a reference to the instance without the access restrictions to the upper part.
 // \ingroup lower_matrix
 //
@@ -1268,6 +1678,60 @@ struct IsSquare< LowerMatrix<MT,SO,DF> >
 
 //=================================================================================================
 //
+//  ISUNIFORM SPECIALIZATIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+template< typename MT, bool SO, bool DF >
+struct IsUniform< LowerMatrix<MT,SO,DF> >
+   : public IsUniform<MT>
+{};
+/*! \endcond */
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
+//  ISSYMMETRIC SPECIALIZATIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+template< typename MT, bool SO, bool DF >
+struct IsSymmetric< LowerMatrix<MT,SO,DF> >
+   : public IsZero<MT>
+{};
+/*! \endcond */
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
+//  ISHERMITIAN SPECIALIZATIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+template< typename MT, bool SO, bool DF >
+struct IsHermitian< LowerMatrix<MT,SO,DF> >
+   : public IsZero<MT>
+{};
+/*! \endcond */
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
 //  ISLOWER SPECIALIZATIONS
 //
 //=================================================================================================
@@ -1277,6 +1741,42 @@ struct IsSquare< LowerMatrix<MT,SO,DF> >
 template< typename MT, bool SO, bool DF >
 struct IsLower< LowerMatrix<MT,SO,DF> >
    : public TrueType
+{};
+/*! \endcond */
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
+//  ISSTRICTLYLOWER SPECIALIZATIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+template< typename MT, bool SO, bool DF >
+struct IsStrictlyLower< LowerMatrix<MT,SO,DF> >
+   : public IsZero<MT>
+{};
+/*! \endcond */
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
+//  ISSTRICTLYUPPER SPECIALIZATIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+template< typename MT, bool SO, bool DF >
+struct IsStrictlyUpper< LowerMatrix<MT,SO,DF> >
+   : public IsZero<MT>
 {};
 /*! \endcond */
 //*************************************************************************************************
@@ -1457,13 +1957,16 @@ struct RemoveAdaptor< LowerMatrix<MT,SO,DF> >
 /*! \cond BLAZE_INTERNAL */
 template< typename T1, typename T2 >
 struct AddTraitEval1< T1, T2
-                    , EnableIf_t< ( ( IsLower_v<T1> && IsLower_v<T2> ) ||
+                    , EnableIf_t< IsMatrix_v<T1> &&
+                                  IsMatrix_v<T2> &&
+                                  ( ( IsLower_v<T1> && IsLower_v<T2> ) ||
                                     ( IsLower_v<T1> && IsDiagonal_v<T2> ) ||
                                     ( IsDiagonal_v<T1> && IsLower_v<T2> ) ) &&
                                   !( IsUniLower_v<T1> && IsStrictlyLower_v<T2> ) &&
-                                  !( IsStrictlyLower_v<T1> && IsUniLower_v<T2> ) &&
-                                  !( IsStrictlyLower_v<T1> && IsStrictlyLower_v<T2> ) &&
-                                  !( IsDiagonal_v<T1> && IsDiagonal_v<T2> ) > >
+                                  !( IsStrictlyLower_v<T1> && ( IsUniLower_v<T2> || IsStrictlyLower_v<T2> ) ) &&
+                                  !( IsDiagonal_v<T1> && IsDiagonal_v<T2> ) &&
+                                  !( IsUniform_v<T1> && IsUniform_v<T2> ) &&
+                                  !( IsZero_v<T1> || IsZero_v<T2> ) > >
 {
    using Type = LowerMatrix< typename AddTraitEval2<T1,T2>::Type >;
 };
@@ -1483,13 +1986,16 @@ struct AddTraitEval1< T1, T2
 /*! \cond BLAZE_INTERNAL */
 template< typename T1, typename T2 >
 struct SubTraitEval1< T1, T2
-                    , EnableIf_t< ( ( IsLower_v<T1> && IsLower_v<T2> ) ||
+                    , EnableIf_t< IsMatrix_v<T1> &&
+                                  IsMatrix_v<T2> &&
+                                  ( ( IsLower_v<T1> && IsLower_v<T2> ) ||
                                     ( IsLower_v<T1> && IsDiagonal_v<T2> ) ||
                                     ( IsDiagonal_v<T1> && IsLower_v<T2> ) ) &&
                                   !( IsUniLower_v<T1> && IsStrictlyLower_v<T2> ) &&
                                   !( IsUniLower_v<T1> && IsUniLower_v<T2> ) &&
                                   !( IsStrictlyLower_v<T1> && IsStrictlyLower_v<T2> ) &&
-                                  !( IsDiagonal_v<T1> && IsDiagonal_v<T2> ) > >
+                                  !( IsDiagonal_v<T1> && IsDiagonal_v<T2> ) &&
+                                  !( IsZero_v<T1> || IsZero_v<T2> ) > >
 {
    using Type = LowerMatrix< typename SubTraitEval2<T1,T2>::Type >;
 };
@@ -1509,11 +2015,14 @@ struct SubTraitEval1< T1, T2
 /*! \cond BLAZE_INTERNAL */
 template< typename T1, typename T2 >
 struct SchurTraitEval1< T1, T2
-                      , EnableIf_t< ( ( IsLower_v<T1> && !IsUpper_v<T2> ) ||
+                      , EnableIf_t< IsMatrix_v<T1> &&
+                                    IsMatrix_v<T2> &&
+                                    ( ( IsLower_v<T1> && !IsUpper_v<T2> ) ||
                                       ( !IsUpper_v<T1> && IsLower_v<T2> ) ) &&
                                     !( IsUniLower_v<T1> && IsUniLower_v<T2> ) &&
                                     !( IsStrictlyLower_v<T1> || IsStrictlyLower_v<T2> ) &&
-                                    !( IsDiagonal_v<T1> || IsDiagonal_v<T2> ) > >
+                                    !( IsDiagonal_v<T1> || IsDiagonal_v<T2> ) &&
+                                    !( IsZero_v<T1> || IsZero_v<T2> ) > >
 {
    using Type = LowerMatrix< typename SchurTraitEval2<T1,T2>::Type >;
 };
@@ -1533,15 +2042,63 @@ struct SchurTraitEval1< T1, T2
 /*! \cond BLAZE_INTERNAL */
 template< typename T1, typename T2 >
 struct MultTraitEval1< T1, T2
-                     , EnableIf_t< ( IsLower_v<T1> && !IsStrictlyLower_v<T1> && !IsDiagonal_v<T1> && IsNumeric_v<T2> ) ||
-                                   ( IsNumeric_v<T1> && IsLower_v<T2> && !IsStrictlyLower_v<T2> && !IsDiagonal_v<T2> ) ||
-                                   ( ( IsLower_v<T1> && IsLower_v<T2> ) &&
-                                     !( IsUniLower_v<T1> && IsUniLower_v<T2> ) &&
-                                     !( IsStrictlyLower_v<T1> && IsLower_v<T2> ) &&
-                                     !( IsLower_v<T1> && IsStrictlyLower_v<T2> ) &&
-                                     !( IsDiagonal_v<T1> && IsDiagonal_v<T2> ) ) > >
+                     , EnableIf_t< IsMatrix_v<T1> &&
+                                   IsNumeric_v<T2> &&
+                                   ( IsLower_v<T1> && !IsStrictlyLower_v<T1> &&
+                                     !IsDiagonal_v<T1> && !IsUniform_v<T1> ) > >
 {
    using Type = LowerMatrix< typename MultTraitEval2<T1,T2>::Type >;
+};
+
+template< typename T1, typename T2 >
+struct MultTraitEval1< T1, T2
+                     , EnableIf_t< IsNumeric_v<T1> &&
+                                   IsMatrix_v<T2> &&
+                                   ( IsLower_v<T2> && !IsStrictlyLower_v<T2> &&
+                                     !IsDiagonal_v<T2> && !IsUniform_v<T2> ) > >
+{
+   using Type = LowerMatrix< typename MultTraitEval2<T1,T2>::Type >;
+};
+
+template< typename T1, typename T2 >
+struct MultTraitEval1< T1, T2
+                     , EnableIf_t< IsMatrix_v<T1> &&
+                                   IsMatrix_v<T2> &&
+                                   ( IsLower_v<T1> && IsLower_v<T2> ) &&
+                                   !( IsUniLower_v<T1> && IsUniLower_v<T2> ) &&
+                                   !( IsStrictlyLower_v<T1> && IsLower_v<T2> ) &&
+                                   !( IsLower_v<T1> && IsStrictlyLower_v<T2> ) &&
+                                   !( IsDiagonal_v<T1> && IsDiagonal_v<T2> ) &&
+                                   !( IsIdentity_v<T1> || IsIdentity_v<T2> ) &&
+                                   !( IsZero_v<T1> || IsZero_v<T2> ) > >
+{
+   using Type = LowerMatrix< typename MultTraitEval2<T1,T2>::Type >;
+};
+/*! \endcond */
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
+//  KRONTRAIT SPECIALIZATIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+template< typename T1, typename T2 >
+struct KronTraitEval1< T1, T2
+                     , EnableIf_t< IsMatrix_v<T1> &&
+                                   IsMatrix_v<T2> &&
+                                   ( IsLower_v<T1> && IsLower_v<T2> ) &&
+                                   !( IsUniLower_v<T1> && IsUniLower_v<T2> ) &&
+                                   !( IsStrictlyLower_v<T1> || IsStrictlyLower_v<T2> ) &&
+                                   !( IsDiagonal_v<T1> && IsDiagonal_v<T2> ) &&
+                                   !( IsZero_v<T1> || IsZero_v<T2> ) > >
+{
+   using Type = LowerMatrix< typename KronTraitEval2<T1,T2>::Type >;
 };
 /*! \endcond */
 //*************************************************************************************************
@@ -1621,7 +2178,7 @@ struct BinaryMapTraitEval1< T1, T2, OP
 template< typename MT, bool SO, bool DF >
 struct DeclSymTrait< LowerMatrix<MT,SO,DF> >
 {
-   using Type = DiagonalMatrix<MT>;
+   using Type = DiagonalMatrix<MT,SO,DF>;
 };
 /*! \endcond */
 //*************************************************************************************************
@@ -1640,7 +2197,7 @@ struct DeclSymTrait< LowerMatrix<MT,SO,DF> >
 template< typename MT, bool SO, bool DF >
 struct DeclHermTrait< LowerMatrix<MT,SO,DF> >
 {
-   using Type = HermitianMatrix<MT>;
+   using Type = HermitianMatrix<MT,SO,DF>;
 };
 /*! \endcond */
 //*************************************************************************************************
@@ -1669,6 +2226,44 @@ struct DeclLowTrait< LowerMatrix<MT,SO,DF> >
 
 //=================================================================================================
 //
+//  DECLUNILOWTRAIT SPECIALIZATIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+template< typename MT, bool SO, bool DF >
+struct DeclUniLowTrait< LowerMatrix<MT,SO,DF> >
+{
+   using Type = UniLowerMatrix<MT,SO,DF>;
+};
+/*! \endcond */
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
+//  DECLSTRLOWTRAIT SPECIALIZATIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+template< typename MT, bool SO, bool DF >
+struct DeclStrLowTrait< LowerMatrix<MT,SO,DF> >
+{
+   using Type = StrictlyLowerMatrix<MT,SO,DF>;
+};
+/*! \endcond */
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
 //  DECLUPPTRAIT SPECIALIZATIONS
 //
 //=================================================================================================
@@ -1679,6 +2274,44 @@ template< typename MT, bool SO, bool DF >
 struct DeclUppTrait< LowerMatrix<MT,SO,DF> >
 {
    using Type = DiagonalMatrix<MT,SO,DF>;
+};
+/*! \endcond */
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
+//  DECLUNIUPPTRAIT SPECIALIZATIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+template< typename MT, bool SO, bool DF >
+struct DeclUniUppTrait< LowerMatrix<MT,SO,DF> >
+{
+   using Type = IdentityMatrix< ElementType_t<MT>, SO >;
+};
+/*! \endcond */
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
+//  DECLSTRUPPTRAIT SPECIALIZATIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*! \cond BLAZE_INTERNAL */
+template< typename MT, bool SO, bool DF >
+struct DeclStrUppTrait< LowerMatrix<MT,SO,DF> >
+{
+   using Type = ZeroMatrix< ElementType_t<MT>, SO >;
 };
 /*! \endcond */
 //*************************************************************************************************

@@ -3,7 +3,7 @@
 //  \file blaze/math/views/submatrix/Sparse.h
 //  \brief Submatrix specialization for sparse matrices
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -60,14 +60,12 @@
 #include "../../../math/expressions/SparseMatrix.h"
 #include "../../../math/expressions/View.h"
 #include "../../../math/InitializerList.h"
-#include "../../../math/RelaxationFlag.h"
 #include "../../../math/shims/IsDefault.h"
 #include "../../../math/shims/Serial.h"
 #include "../../../math/shims/Reset.h"
 #include "../../../math/StorageOrder.h"
 #include "../../../math/sparse/SparseElement.h"
 #include "../../../math/traits/AddTrait.h"
-#include "../../../math/traits/MultTrait.h"
 #include "../../../math/traits/SchurTrait.h"
 #include "../../../math/traits/SubmatrixTrait.h"
 #include "../../../math/traits/SubTrait.h"
@@ -437,6 +435,9 @@ class Submatrix<MT,AF,false,false,CSAs...>
    //**Compilation flags***************************************************************************
    //! Compilation switch for the expression template assignment strategy.
    static constexpr bool smpAssignable = MT::smpAssignable;
+
+   //! Compilation switch for the expression template evaluation strategy.
+   static constexpr bool compileTimeArgs = DataType::compileTimeArgs;
    //**********************************************************************************************
 
    //**Constructors********************************************************************************
@@ -444,12 +445,16 @@ class Submatrix<MT,AF,false,false,CSAs...>
    //@{
    template< typename... RSAs >
    explicit inline Submatrix( MT& matrix, RSAs... args );
-   // No explicitly declared copy constructor.
+
+   Submatrix( const Submatrix& ) = default;
    //@}
    //**********************************************************************************************
 
    //**Destructor**********************************************************************************
-   // No explicitly declared destructor.
+   /*!\name Destructor */
+   //@{
+   ~Submatrix() = default;
+   //@}
    //**********************************************************************************************
 
    //**Data access functions***********************************************************************
@@ -570,13 +575,6 @@ class Submatrix<MT,AF,false,false,CSAs...>
    //**********************************************************************************************
 
  private:
-   //**Utility functions***************************************************************************
-   /*!\name Utility functions */
-   //@{
-   inline bool hasOverlap() const noexcept;
-   //@}
-   //**********************************************************************************************
-
    //**Member variables****************************************************************************
    /*!\name Member variables */
    //@{
@@ -1027,7 +1025,7 @@ inline Submatrix<MT,AF,false,false,CSAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( rhs.canAlias( &matrix_ ) ) {
+   if( rhs.canAlias( this ) ) {
       const ResultType tmp( rhs );
       left.reset();
       assign( left, tmp );
@@ -1085,7 +1083,7 @@ inline Submatrix<MT,AF,false,false,CSAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( IsReference_v<Right> && right.canAlias( &matrix_ ) ) {
+   if( IsReference_v<Right> && right.canAlias( this ) ) {
       const ResultType_t<MT2> tmp( right );
       left.reset();
       assign( left, tmp );
@@ -1566,31 +1564,6 @@ void Submatrix<MT,AF,false,false,CSAs...>::trim( size_t i )
 {
    BLAZE_USER_ASSERT( i < rows(), "Invalid row access index" );
    matrix_.trim( row() + i );
-}
-/*! \endcond */
-//*************************************************************************************************
-
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-/*!\brief Checking whether there exists an overlap in the context of a symmetric matrix.
-//
-// \return \a true in case an overlap exists, \a false if not.
-//
-// This function checks if in the context of a symmetric matrix the submatrix has an overlap with
-// its counterpart. In case an overlap exists, the function return \a true, otherwise it returns
-// \a false.
-*/
-template< typename MT       // Type of the sparse matrix
-        , AlignmentFlag AF  // Alignment flag
-        , size_t... CSAs >  // Compile time submatrix arguments
-inline bool Submatrix<MT,AF,false,false,CSAs...>::hasOverlap() const noexcept
-{
-   BLAZE_INTERNAL_ASSERT( IsSymmetric_v<MT> || IsHermitian_v<MT>, "Invalid matrix detected" );
-
-   if( ( row() + rows() <= column() ) || ( column() + columns() <= row() ) )
-      return false;
-   else return true;
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -2248,7 +2221,7 @@ template< typename MT       // Type of the sparse matrix
 template< typename Other >  // Data type of the foreign expression
 inline bool Submatrix<MT,AF,false,false,CSAs...>::canAlias( const Other* alias ) const noexcept
 {
-   return matrix_.isAliased( alias );
+   return matrix_.isAliased( &unview( *alias ) );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -2271,7 +2244,7 @@ template< typename MT       // Type of the sparse matrix
 template< typename Other >  // Data type of the foreign expression
 inline bool Submatrix<MT,AF,false,false,CSAs...>::isAliased( const Other* alias ) const noexcept
 {
-   return matrix_.isAliased( alias );
+   return matrix_.isAliased( &unview( *alias ) );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -2405,12 +2378,10 @@ inline void Submatrix<MT,AF,false,false,CSAs...>::assign( const SparseMatrix<MT2
    BLAZE_INTERNAL_ASSERT( rows()    == (~rhs).rows()   , "Invalid number of rows"    );
    BLAZE_INTERNAL_ASSERT( columns() == (~rhs).columns(), "Invalid number of columns" );
 
-   using RhsIterator = ConstIterator_t<MT2>;
-
    // Counting the number of elements per row
    std::vector<size_t> rowLengths( rows(), 0UL );
    for( size_t j=0UL; j<columns(); ++j ) {
-      for( RhsIterator element=(~rhs).begin(j); element!=(~rhs).end(j); ++element )
+      for( auto element=(~rhs).begin(j); element!=(~rhs).end(j); ++element )
          ++rowLengths[element->index()];
    }
 
@@ -2421,7 +2392,7 @@ inline void Submatrix<MT,AF,false,false,CSAs...>::assign( const SparseMatrix<MT2
 
    // Appending the elements to the rows of the sparse submatrix
    for( size_t j=0UL; j<columns(); ++j ) {
-      for( RhsIterator element=(~rhs).begin(j); element!=(~rhs).end(j); ++element )
+      for( auto element=(~rhs).begin(j); element!=(~rhs).end(j); ++element )
          if( IsSymmetric_v<MT> || IsHermitian_v<MT> ) {
             const ElementType& value( element->value() );
             if( !isDefault<strict>( value ) )
@@ -2885,6 +2856,9 @@ class Submatrix<MT,AF,true,false,CSAs...>
    //**Compilation flags***************************************************************************
    //! Compilation switch for the expression template assignment strategy.
    static constexpr bool smpAssignable = MT::smpAssignable;
+
+   //! Compilation switch for the expression template evaluation strategy.
+   static constexpr bool compileTimeArgs = DataType::compileTimeArgs;
    //**********************************************************************************************
 
    //**Constructors********************************************************************************
@@ -2892,12 +2866,16 @@ class Submatrix<MT,AF,true,false,CSAs...>
    //@{
    template< typename... RSAs >
    explicit inline Submatrix( MT& matrix, RSAs... args );
-   // No explicitly declared copy constructor.
+
+   Submatrix( const Submatrix& ) = default;
    //@}
    //**********************************************************************************************
 
    //**Destructor**********************************************************************************
-   // No explicitly declared destructor.
+   /*!\name Destructor */
+   //@{
+   ~Submatrix() = default;
+   //@}
    //**********************************************************************************************
 
    //**Data access functions***********************************************************************
@@ -3018,13 +2996,6 @@ class Submatrix<MT,AF,true,false,CSAs...>
    //**********************************************************************************************
 
  private:
-   //**Utility functions***************************************************************************
-   /*!\name Utility functions */
-   //@{
-   inline bool hasOverlap() const noexcept;
-   //@}
-   //**********************************************************************************************
-
    //**Member variables****************************************************************************
    /*!\name Member variables */
    //@{
@@ -3445,7 +3416,7 @@ inline Submatrix<MT,AF,true,false,CSAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( rhs.canAlias( &matrix_ ) ) {
+   if( rhs.canAlias( this ) ) {
       const ResultType tmp( rhs );
       left.reset();
       assign( left, tmp );
@@ -3503,7 +3474,7 @@ inline Submatrix<MT,AF,true,false,CSAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( IsReference_v<Right> && right.canAlias( &matrix_ ) ) {
+   if( IsReference_v<Right> && right.canAlias( this ) ) {
       const ResultType_t<MT2> tmp( right );
       left.reset();
       assign( left, tmp );
@@ -3963,31 +3934,6 @@ void Submatrix<MT,AF,true,false,CSAs...>::trim( size_t j )
 {
    BLAZE_USER_ASSERT( j < columns(), "Invalid column access index" );
    matrix_.trim( column() + j );
-}
-/*! \endcond */
-//*************************************************************************************************
-
-
-//*************************************************************************************************
-/*! \cond BLAZE_INTERNAL */
-/*!\brief Checking whether there exists an overlap in the context of a symmetric matrix.
-//
-// \return \a true in case an overlap exists, \a false if not.
-//
-// This function checks if in the context of a symmetric matrix the submatrix has an overlap with
-// its counterpart. In case an overlap exists, the function return \a true, otherwise it returns
-// \a false.
-*/
-template< typename MT       // Type of the sparse matrix
-        , AlignmentFlag AF  // Alignment flag
-        , size_t... CSAs >  // Compile time submatrix arguments
-inline bool Submatrix<MT,AF,true,false,CSAs...>::hasOverlap() const noexcept
-{
-   BLAZE_INTERNAL_ASSERT( IsSymmetric_v<MT> || IsHermitian_v<MT>, "Invalid matrix detected" );
-
-   if( ( row() + rows() <= column() ) || ( column() + columns() <= row() ) )
-      return false;
-   else return true;
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -4637,7 +4583,7 @@ template< typename MT       // Type of the sparse matrix
 template< typename Other >  // Data type of the foreign expression
 inline bool Submatrix<MT,AF,true,false,CSAs...>::canAlias( const Other* alias ) const noexcept
 {
-   return matrix_.isAliased( alias );
+   return matrix_.isAliased( &unview( *alias ) );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -4660,7 +4606,7 @@ template< typename MT       // Type of the sparse matrix
 template< typename Other >  // Data type of the foreign expression
 inline bool Submatrix<MT,AF,true,false,CSAs...>::isAliased( const Other* alias ) const noexcept
 {
-   return matrix_.isAliased( alias );
+   return matrix_.isAliased( &unview( *alias ) );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -4793,12 +4739,10 @@ inline void Submatrix<MT,AF,true,false,CSAs...>::assign( const SparseMatrix<MT2,
    BLAZE_INTERNAL_ASSERT( rows()    == (~rhs).rows()   , "Invalid number of rows"    );
    BLAZE_INTERNAL_ASSERT( columns() == (~rhs).columns(), "Invalid number of columns" );
 
-   using RhsIterator = ConstIterator_t<MT2>;
-
    // Counting the number of elements per column
    std::vector<size_t> columnLengths( columns(), 0UL );
    for( size_t i=0UL; i<rows(); ++i ) {
-      for( RhsIterator element=(~rhs).begin(i); element!=(~rhs).end(i); ++element )
+      for( auto element=(~rhs).begin(i); element!=(~rhs).end(i); ++element )
          ++columnLengths[element->index()];
    }
 
@@ -4809,7 +4753,7 @@ inline void Submatrix<MT,AF,true,false,CSAs...>::assign( const SparseMatrix<MT2,
 
    // Appending the elements to the columns of the sparse matrix
    for( size_t i=0UL; i<rows(); ++i ) {
-      for( RhsIterator element=(~rhs).begin(i); element!=(~rhs).end(i); ++element )
+      for( auto element=(~rhs).begin(i); element!=(~rhs).end(i); ++element )
          if( IsSymmetric_v<MT> || IsHermitian_v<MT> ) {
             const ElementType& value( element->value() );
             if( !isDefault<strict>( value ) )

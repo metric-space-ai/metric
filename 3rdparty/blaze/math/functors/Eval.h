@@ -3,7 +3,7 @@
 //  \file blaze/math/functors/Eval.h
 //  \brief Header file for the Eval functor
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -41,6 +41,7 @@
 //*************************************************************************************************
 
 #include "../../math/shims/Eval.h"
+#include "../../system/HostDevice.h"
 #include "../../system/Inline.h"
 
 
@@ -59,20 +60,13 @@ namespace blaze {
 struct Eval
 {
    //**********************************************************************************************
-   /*!\brief Default constructor of the Eval functor.
-   */
-   explicit inline Eval()
-   {}
-   //**********************************************************************************************
-
-   //**********************************************************************************************
    /*!\brief Returns the result of the eval() function for the given object/value.
    //
    // \param a The given object/value.
    // \return The result of the eval() function for the given object/value.
    */
    template< typename T >
-   BLAZE_ALWAYS_INLINE decltype(auto) operator()( const T& a ) const
+   BLAZE_ALWAYS_INLINE BLAZE_DEVICE_CALLABLE decltype(auto) operator()( const T& a ) const
    {
       return eval( a );
    }

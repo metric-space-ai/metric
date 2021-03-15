@@ -1,9 +1,8 @@
-enable_testing()
-
+add_executable(kohonen_outliers_clustering_tests kohonen_outliers_clustering_tests.cpp)
 add_executable(mapping_tests mapping_tests.cpp)
 
-target_include_directories(mapping_tests PRIVATE ${Boost_INCLUDE_DIRS})
-target_link_libraries(mapping_tests ${Boost_LIBRARIES})
+target_link_libraries(kohonen_outliers_clustering_tests PRIVATE Catch2::Catch2)
+target_link_libraries(mapping_tests PRIVATE Catch2::Catch2)
 
-add_test(NAME mapping_tests COMMAND mapping_tests)
-
+catch_discover_tests(kohonen_outliers_clustering_tests)
+catch_discover_tests(mapping_tests)

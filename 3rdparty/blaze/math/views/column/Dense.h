@@ -3,7 +3,7 @@
 //  \file blaze/math/views/column/Dense.h
 //  \brief Column specialization for dense matrices
 //
-//  Copyright (C) 2012-2018 Klaus Iglberger - All Rights Reserved
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
 //
 //  This file is part of the Blaze library. You can redistribute it and/or modify it under
 //  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
@@ -61,6 +61,8 @@
 #include "../../../math/InitializerList.h"
 #include "../../../math/shims/Clear.h"
 #include "../../../math/shims/IsDefault.h"
+#include "../../../math/shims/PrevMultiple.h"
+#include "../../../math/shims/Reset.h"
 #include "../../../math/SIMD.h"
 #include "../../../math/traits/ColumnTrait.h"
 #include "../../../math/traits/CrossTrait.h"
@@ -92,15 +94,12 @@
 #include "../../../util/constraints/Pointer.h"
 #include "../../../util/constraints/Reference.h"
 #include "../../../util/constraints/Vectorizable.h"
-#include "../../../util/DisableIf.h"
 #include "../../../util/EnableIf.h"
 #include "../../../util/mpl/If.h"
-#include "../../../util/TrueType.h"
 #include "../../../util/TypeList.h"
 #include "../../../util/Types.h"
 #include "../../../util/typetraits/IsConst.h"
 #include "../../../util/typetraits/IsReference.h"
-#include "../../../util/typetraits/RemoveReference.h"
 
 
 namespace blaze {
@@ -171,6 +170,9 @@ class Column<MT,true,true,SF,CCAs...>
 
    //! Compilation switch for the expression template assignment strategy.
    static constexpr bool smpAssignable = MT::smpAssignable;
+
+   //! Compilation switch for the expression template evaluation strategy.
+   static constexpr bool compileTimeArgs = DataType::compileTimeArgs;
    //**********************************************************************************************
 
    //**Constructors********************************************************************************
@@ -178,12 +180,16 @@ class Column<MT,true,true,SF,CCAs...>
    //@{
    template< typename... RCAs >
    explicit inline Column( MT& matrix, RCAs... args );
-   // No explicitly declared copy constructor.
+
+   Column( const Column& ) = default;
    //@}
    //**********************************************************************************************
 
    //**Destructor**********************************************************************************
-   // No explicitly declared destructor.
+   /*!\name Destructor */
+   //@{
+   ~Column() = default;
+   //@}
    //**********************************************************************************************
 
    //**Data access functions***********************************************************************
@@ -257,9 +263,7 @@ class Column<MT,true,true,SF,CCAs...>
    //! Helper variable template for the explicit application of the SFINAE principle.
    template< typename VT >
    static constexpr bool VectorizedAddAssign_v =
-      ( useOptimizedKernels &&
-        simdEnabled && VT::simdEnabled &&
-        IsSIMDCombinable_v< ElementType, ElementType_t<VT> > &&
+      ( VectorizedAssign_v<VT> &&
         HasSIMDAdd_v< ElementType, ElementType_t<VT> > );
    //**********************************************************************************************
 
@@ -267,9 +271,7 @@ class Column<MT,true,true,SF,CCAs...>
    //! Helper variable template for the explicit application of the SFINAE principle.
    template< typename VT >
    static constexpr bool VectorizedSubAssign_v =
-      ( useOptimizedKernels &&
-        simdEnabled && VT::simdEnabled &&
-        IsSIMDCombinable_v< ElementType, ElementType_t<VT> > &&
+      ( VectorizedAssign_v<VT> &&
         HasSIMDSub_v< ElementType, ElementType_t<VT> > );
    //**********************************************************************************************
 
@@ -277,9 +279,7 @@ class Column<MT,true,true,SF,CCAs...>
    //! Helper variable template for the explicit application of the SFINAE principle.
    template< typename VT >
    static constexpr bool VectorizedMultAssign_v =
-      ( useOptimizedKernels &&
-        simdEnabled && VT::simdEnabled &&
-        IsSIMDCombinable_v< ElementType, ElementType_t<VT> > &&
+      ( VectorizedAssign_v<VT> &&
         HasSIMDMult_v< ElementType, ElementType_t<VT> > );
    //**********************************************************************************************
 
@@ -287,9 +287,7 @@ class Column<MT,true,true,SF,CCAs...>
    //! Helper variable template for the explicit application of the SFINAE principle.
    template< typename VT >
    static constexpr bool VectorizedDivAssign_v =
-      ( useOptimizedKernels &&
-        simdEnabled && VT::simdEnabled &&
-        IsSIMDCombinable_v< ElementType, ElementType_t<VT> > &&
+      ( VectorizedAssign_v<VT> &&
         HasSIMDDiv_v< ElementType, ElementType_t<VT> > );
    //**********************************************************************************************
 
@@ -827,7 +825,7 @@ inline Column<MT,true,true,SF,CCAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( IsExpression_v<MT> && rhs.canAlias( &matrix_ ) ) {
+   if( IsExpression_v<MT> && rhs.canAlias( this ) ) {
       const ResultType tmp( rhs );
       smpAssign( left, tmp );
    }
@@ -880,7 +878,7 @@ inline Column<MT,true,true,SF,CCAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( IsReference_v<Right> && right.canAlias( &matrix_ ) ) {
+   if( IsReference_v<Right> && right.canAlias( this ) ) {
       const ResultType_t<VT> tmp( right );
       smpAssign( left, tmp );
    }
@@ -935,7 +933,7 @@ inline Column<MT,true,true,SF,CCAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( IsReference_v<Right> && right.canAlias( &matrix_ ) ) {
+   if( IsReference_v<Right> && right.canAlias( this ) ) {
       const ResultType_t<VT> tmp( right );
       smpAddAssign( left, tmp );
    }
@@ -988,7 +986,7 @@ inline Column<MT,true,true,SF,CCAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( IsReference_v<Right> && right.canAlias( &matrix_ ) ) {
+   if( IsReference_v<Right> && right.canAlias( this ) ) {
       const ResultType_t<VT> tmp( right );
       smpSubAssign( left, tmp );
    }
@@ -1040,7 +1038,7 @@ inline Column<MT,true,true,SF,CCAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( IsReference_v<Right> && right.canAlias( &matrix_ ) ) {
+   if( IsReference_v<Right> && right.canAlias( this ) ) {
       const ResultType_t<VT> tmp( right );
       smpMultAssign( left, tmp );
    }
@@ -1091,7 +1089,7 @@ inline Column<MT,true,true,SF,CCAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( IsReference_v<Right> && right.canAlias( &matrix_ ) ) {
+   if( IsReference_v<Right> && right.canAlias( this ) ) {
       const ResultType_t<VT> tmp( right );
       smpDivAssign( left, tmp );
    }
@@ -1369,7 +1367,7 @@ template< typename MT       // Type of the dense matrix
 template< typename Other >  // Data type of the foreign expression
 inline bool Column<MT,true,true,SF,CCAs...>::canAlias( const Other* alias ) const noexcept
 {
-   return matrix_.isAliased( alias );
+   return matrix_.isAliased( &unview( *alias ) );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -1396,7 +1394,7 @@ template< typename MT2       // Data type of the foreign dense column
 inline bool
    Column<MT,true,true,SF,CCAs...>::canAlias( const Column<MT2,SO2,true,SF2,CCAs2...>* alias ) const noexcept
 {
-   return matrix_.isAliased( alias->matrix_ ) && ( column() == alias->column() );
+   return matrix_.isAliased( &alias->matrix_ ) && ( column() == alias->column() );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -1419,7 +1417,7 @@ template< typename MT       // Type of the dense matrix
 template< typename Other >  // Data type of the foreign expression
 inline bool Column<MT,true,true,SF,CCAs...>::isAliased( const Other* alias ) const noexcept
 {
-   return matrix_.isAliased( alias );
+   return matrix_.isAliased( &unview( *alias ) );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -1693,7 +1691,9 @@ inline auto Column<MT,true,true,SF,CCAs...>::assign( const DenseVector<VT,false>
 {
    BLAZE_INTERNAL_ASSERT( size() == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t ipos( (~rhs).size() & size_t(-2) );
+   const size_t ipos( prevMultiple( (~rhs).size(), 2UL ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= (~rhs).size(), "Invalid end calculation" );
+
    for( size_t i=0UL; i<ipos; i+=2UL ) {
       matrix_(i    ,column()) = (~rhs)[i    ];
       matrix_(i+1UL,column()) = (~rhs)[i+1UL];
@@ -1732,8 +1732,8 @@ inline auto Column<MT,true,true,SF,CCAs...>::assign( const DenseVector<VT,false>
 
    const size_t rows( size() );
 
-   const size_t ipos( ( remainder )?( rows & size_t(-SIMDSIZE) ):( rows ) );
-   BLAZE_INTERNAL_ASSERT( !remainder || ( rows - ( rows % (SIMDSIZE) ) ) == ipos, "Invalid end calculation" );
+   const size_t ipos( remainder ? prevMultiple( rows, SIMDSIZE ) : rows );
+   BLAZE_INTERNAL_ASSERT( ipos <= rows, "Invalid end calculation" );
 
    size_t i( 0UL );
    Iterator left( begin() );
@@ -1816,7 +1816,9 @@ inline auto Column<MT,true,true,SF,CCAs...>::addAssign( const DenseVector<VT,fal
 {
    BLAZE_INTERNAL_ASSERT( size() == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t ipos( (~rhs).size() & size_t(-2) );
+   const size_t ipos( prevMultiple( (~rhs).size(), 2UL ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= (~rhs).size(), "Invalid end calculation" );
+
    for( size_t i=0UL; i<ipos; i+=2UL ) {
       matrix_(i    ,column()) += (~rhs)[i    ];
       matrix_(i+1UL,column()) += (~rhs)[i+1UL];
@@ -1855,8 +1857,8 @@ inline auto Column<MT,true,true,SF,CCAs...>::addAssign( const DenseVector<VT,fal
 
    const size_t rows( size() );
 
-   const size_t ipos( ( remainder )?( rows & size_t(-SIMDSIZE) ):( rows ) );
-   BLAZE_INTERNAL_ASSERT( !remainder || ( rows - ( rows % (SIMDSIZE) ) ) == ipos, "Invalid end calculation" );
+   const size_t ipos( remainder ? prevMultiple( rows, SIMDSIZE ) : rows );
+   BLAZE_INTERNAL_ASSERT( ipos <= rows, "Invalid end calculation" );
 
    size_t i( 0UL );
    Iterator left( begin() );
@@ -1927,7 +1929,9 @@ inline auto Column<MT,true,true,SF,CCAs...>::subAssign( const DenseVector<VT,fal
 {
    BLAZE_INTERNAL_ASSERT( size() == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t ipos( (~rhs).size() & size_t(-2) );
+   const size_t ipos( prevMultiple( (~rhs).size(), 2UL ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= (~rhs).size(), "Invalid end calculation" );
+
    for( size_t i=0UL; i<ipos; i+=2UL ) {
       matrix_(i    ,column()) -= (~rhs)[i    ];
       matrix_(i+1UL,column()) -= (~rhs)[i+1UL];
@@ -1966,8 +1970,8 @@ inline auto Column<MT,true,true,SF,CCAs...>::subAssign( const DenseVector<VT,fal
 
    const size_t rows( size() );
 
-   const size_t ipos( ( remainder )?( rows & size_t(-SIMDSIZE) ):( rows ) );
-   BLAZE_INTERNAL_ASSERT( !remainder || ( rows - ( rows % (SIMDSIZE) ) ) == ipos, "Invalid end calculation" );
+   const size_t ipos( remainder ? prevMultiple( rows, SIMDSIZE ) : rows );
+   BLAZE_INTERNAL_ASSERT( ipos <= rows, "Invalid end calculation" );
 
    size_t i( 0UL );
    Iterator left( begin() );
@@ -2038,7 +2042,9 @@ inline auto Column<MT,true,true,SF,CCAs...>::multAssign( const DenseVector<VT,fa
 {
    BLAZE_INTERNAL_ASSERT( size() == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t ipos( (~rhs).size() & size_t(-2) );
+   const size_t ipos( prevMultiple( (~rhs).size(), 2UL ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= (~rhs).size(), "Invalid end calculation" );
+
    for( size_t i=0UL; i<ipos; i+=2UL ) {
       matrix_(i    ,column()) *= (~rhs)[i    ];
       matrix_(i+1UL,column()) *= (~rhs)[i+1UL];
@@ -2077,8 +2083,8 @@ inline auto Column<MT,true,true,SF,CCAs...>::multAssign( const DenseVector<VT,fa
 
    const size_t rows( size() );
 
-   const size_t ipos( ( remainder )?( rows & size_t(-SIMDSIZE) ):( rows ) );
-   BLAZE_INTERNAL_ASSERT( !remainder || ( rows - ( rows % (SIMDSIZE) ) ) == ipos, "Invalid end calculation" );
+   const size_t ipos( remainder ? prevMultiple( rows, SIMDSIZE ) : rows );
+   BLAZE_INTERNAL_ASSERT( ipos <= rows, "Invalid end calculation" );
 
    size_t i( 0UL );
    Iterator left( begin() );
@@ -2162,7 +2168,9 @@ inline auto Column<MT,true,true,SF,CCAs...>::divAssign( const DenseVector<VT,fal
 {
    BLAZE_INTERNAL_ASSERT( size() == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t ipos( (~rhs).size() & size_t(-2) );
+   const size_t ipos( prevMultiple( (~rhs).size(), 2UL ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= (~rhs).size(), "Invalid end calculation" );
+
    for( size_t i=0UL; i<ipos; i+=2UL ) {
       matrix_(i    ,column()) /= (~rhs)[i    ];
       matrix_(i+1UL,column()) /= (~rhs)[i+1UL];
@@ -2199,8 +2207,8 @@ inline auto Column<MT,true,true,SF,CCAs...>::divAssign( const DenseVector<VT,fal
 
    const size_t rows( size() );
 
-   const size_t ipos( rows & size_t(-SIMDSIZE) );
-   BLAZE_INTERNAL_ASSERT( ( rows - ( rows % (SIMDSIZE) ) ) == ipos, "Invalid end calculation" );
+   const size_t ipos( prevMultiple( rows, SIMDSIZE ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= rows, "Invalid end calculation" );
 
    size_t i( 0UL );
    Iterator left( begin() );
@@ -2622,6 +2630,9 @@ class Column<MT,false,true,false,CCAs...>
 
    //! Compilation switch for the expression template assignment strategy.
    static constexpr bool smpAssignable = MT::smpAssignable;
+
+   //! Compilation switch for the expression template evaluation strategy.
+   static constexpr bool compileTimeArgs = DataType::compileTimeArgs;
    //**********************************************************************************************
 
    //**Constructors********************************************************************************
@@ -2629,12 +2640,16 @@ class Column<MT,false,true,false,CCAs...>
    //@{
    template< typename... RCAs >
    explicit inline Column( MT& matrix, RCAs... args );
-   // No explicitly declared copy constructor.
+
+   Column( const Column& ) = default;
    //@}
    //**********************************************************************************************
 
    //**Destructor**********************************************************************************
-   // No explicitly declared destructor.
+   /*!\name Destructor */
+   //@{
+   ~Column() = default;
+   //@}
    //**********************************************************************************************
 
    //**Data access functions***********************************************************************
@@ -3170,7 +3185,7 @@ inline Column<MT,false,true,false,CCAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( IsExpression_v<MT> && rhs.canAlias( &matrix_ ) ) {
+   if( IsExpression_v<MT> && rhs.canAlias( this ) ) {
       const ResultType tmp( rhs );
       smpAssign( left, tmp );
    }
@@ -3223,7 +3238,7 @@ inline Column<MT,false,true,false,CCAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( IsReference_v<Right> && right.canAlias( &matrix_ ) ) {
+   if( IsReference_v<Right> && right.canAlias( this ) ) {
       const ResultType tmp( right );
       smpAssign( left, tmp );
    }
@@ -3277,7 +3292,7 @@ inline Column<MT,false,true,false,CCAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( IsReference_v<Right> && right.canAlias( &matrix_ ) ) {
+   if( IsReference_v<Right> && right.canAlias( this ) ) {
       const ResultType_t<VT> tmp( right );
       smpAddAssign( left, tmp );
    }
@@ -3329,7 +3344,7 @@ inline Column<MT,false,true,false,CCAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( IsReference_v<Right> && right.canAlias( &matrix_ ) ) {
+   if( IsReference_v<Right> && right.canAlias( this ) ) {
       const ResultType_t<VT> tmp( right );
       smpSubAssign( left, tmp );
    }
@@ -3380,7 +3395,7 @@ inline Column<MT,false,true,false,CCAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( IsReference_v<Right> && right.canAlias( &matrix_ ) ) {
+   if( IsReference_v<Right> && right.canAlias( this ) ) {
       const ResultType_t<VT> tmp( right );
       smpMultAssign( left, tmp );
    }
@@ -3430,7 +3445,7 @@ inline Column<MT,false,true,false,CCAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( IsReference_v<Right> && right.canAlias( &matrix_ ) ) {
+   if( IsReference_v<Right> && right.canAlias( this ) ) {
       const ResultType_t<VT> tmp( right );
       smpDivAssign( left, tmp );
    }
@@ -3719,7 +3734,7 @@ template< typename MT       // Type of the dense matrix
 template< typename Other >  // Data type of the foreign expression
 inline bool Column<MT,false,true,false,CCAs...>::canAlias( const Other* alias ) const noexcept
 {
-   return matrix_.isAliased( alias );
+   return matrix_.isAliased( &unview( *alias ) );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -3767,7 +3782,7 @@ template< typename MT       // Type of the dense matrix
 template< typename Other >  // Data type of the foreign expression
 inline bool Column<MT,false,true,false,CCAs...>::isAliased( const Other* alias ) const noexcept
 {
-   return matrix_.isAliased( alias );
+   return matrix_.isAliased( &unview( *alias ) );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -3859,7 +3874,9 @@ inline void Column<MT,false,true,false,CCAs...>::assign( const DenseVector<VT,fa
 {
    BLAZE_INTERNAL_ASSERT( size() == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t ipos( (~rhs).size() & size_t(-2) );
+   const size_t ipos( prevMultiple( (~rhs).size(), 2UL ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= (~rhs).size(), "Invalid end calculation" );
+
    for( size_t i=0UL; i<ipos; i+=2UL ) {
       matrix_(i    ,column()) = (~rhs)[i    ];
       matrix_(i+1UL,column()) = (~rhs)[i+1UL];
@@ -3916,7 +3933,9 @@ inline void Column<MT,false,true,false,CCAs...>::addAssign( const DenseVector<VT
 {
    BLAZE_INTERNAL_ASSERT( size() == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t ipos( (~rhs).size() & size_t(-2) );
+   const size_t ipos( prevMultiple( (~rhs).size(), 2UL ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= (~rhs).size(), "Invalid end calculation" );
+
    for( size_t i=0UL; i<ipos; i+=2UL ) {
       matrix_(i    ,column()) += (~rhs)[i    ];
       matrix_(i+1UL,column()) += (~rhs)[i+1UL];
@@ -3973,7 +3992,9 @@ inline void Column<MT,false,true,false,CCAs...>::subAssign( const DenseVector<VT
 {
    BLAZE_INTERNAL_ASSERT( size() == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t ipos( (~rhs).size() & size_t(-2) );
+   const size_t ipos( prevMultiple( (~rhs).size(), 2UL ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= (~rhs).size(), "Invalid end calculation" );
+
    for( size_t i=0UL; i<ipos; i+=2UL ) {
       matrix_(i    ,column()) -= (~rhs)[i    ];
       matrix_(i+1UL,column()) -= (~rhs)[i+1UL];
@@ -4030,7 +4051,9 @@ inline void Column<MT,false,true,false,CCAs...>::multAssign( const DenseVector<V
 {
    BLAZE_INTERNAL_ASSERT( size() == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t ipos( (~rhs).size() & size_t(-2) );
+   const size_t ipos( prevMultiple( (~rhs).size(), 2UL ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= (~rhs).size(), "Invalid end calculation" );
+
    for( size_t i=0UL; i<ipos; i+=2UL ) {
       matrix_(i    ,column()) *= (~rhs)[i    ];
       matrix_(i+1UL,column()) *= (~rhs)[i+1UL];
@@ -4100,7 +4123,9 @@ inline void Column<MT,false,true,false,CCAs...>::divAssign( const DenseVector<VT
 {
    BLAZE_INTERNAL_ASSERT( size() == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t ipos( (~rhs).size() & size_t(-2) );
+   const size_t ipos( prevMultiple( (~rhs).size(), 2UL ) );
+   BLAZE_INTERNAL_ASSERT( ipos <= (~rhs).size(), "Invalid end calculation" );
+
    for( size_t i=0UL; i<ipos; i+=2UL ) {
       matrix_(i    ,column()) /= (~rhs)[i    ];
       matrix_(i+1UL,column()) /= (~rhs)[i+1UL];
@@ -4183,6 +4208,9 @@ class Column<MT,false,true,true,CCAs...>
 
    //! Compilation switch for the expression template assignment strategy.
    static constexpr bool smpAssignable = MT::smpAssignable;
+
+   //! Compilation switch for the expression template evaluation strategy.
+   static constexpr bool compileTimeArgs = DataType::compileTimeArgs;
    //**********************************************************************************************
 
    //**Constructors********************************************************************************
@@ -4190,12 +4218,16 @@ class Column<MT,false,true,true,CCAs...>
    //@{
    template< typename... RCAs >
    explicit inline Column( MT& matrix, RCAs... args );
-   // No explicitly declared copy constructor.
+
+   Column( const Column& ) = default;
    //@}
    //**********************************************************************************************
 
    //**Destructor**********************************************************************************
-   // No explicitly declared destructor.
+   /*!\name Destructor */
+   //@{
+   ~Column() = default;
+   //@}
    //**********************************************************************************************
 
    //**Data access functions***********************************************************************
@@ -4269,9 +4301,7 @@ class Column<MT,false,true,true,CCAs...>
    //! Helper variable template for the explicit application of the SFINAE principle.
    template< typename VT >
    static constexpr bool VectorizedAddAssign_v =
-      ( useOptimizedKernels &&
-        simdEnabled && VT::simdEnabled &&
-        IsSIMDCombinable_v< ElementType, ElementType_t<VT> > &&
+      ( VectorizedAssign_v<VT> &&
         HasSIMDAdd_v< ElementType, ElementType_t<VT> > );
    //**********************************************************************************************
 
@@ -4279,9 +4309,7 @@ class Column<MT,false,true,true,CCAs...>
    //! Helper variable template for the explicit application of the SFINAE principle.
    template< typename VT >
    static constexpr bool VectorizedSubAssign_v =
-      ( useOptimizedKernels &&
-        simdEnabled && VT::simdEnabled &&
-        IsSIMDCombinable_v< ElementType, ElementType_t<VT> > &&
+      ( VectorizedAssign_v<VT> &&
         HasSIMDSub_v< ElementType, ElementType_t<VT> > );
    //**********************************************************************************************
 
@@ -4289,9 +4317,7 @@ class Column<MT,false,true,true,CCAs...>
    //! Helper variable template for the explicit application of the SFINAE principle.
    template< typename VT >
    static constexpr bool VectorizedMultAssign_v =
-      ( useOptimizedKernels &&
-        simdEnabled && VT::simdEnabled &&
-        IsSIMDCombinable_v< ElementType, ElementType_t<VT> > &&
+      ( VectorizedAssign_v<VT> &&
         HasSIMDMult_v< ElementType, ElementType_t<VT> > );
    //**********************************************************************************************
 
@@ -4299,9 +4325,7 @@ class Column<MT,false,true,true,CCAs...>
    //! Helper variable template for the explicit application of the SFINAE principle.
    template< typename VT >
    static constexpr bool VectorizedDivAssign_v =
-      ( useOptimizedKernels &&
-        simdEnabled && VT::simdEnabled &&
-        IsSIMDCombinable_v< ElementType, ElementType_t<VT> > &&
+      ( VectorizedAssign_v<VT> &&
         HasSIMDDiv_v< ElementType, ElementType_t<VT> > );
    //**********************************************************************************************
 
@@ -4820,7 +4844,7 @@ inline Column<MT,false,true,true,CCAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( IsExpression_v<MT> && rhs.canAlias( &matrix_ ) ) {
+   if( IsExpression_v<MT> && rhs.canAlias( this ) ) {
       const ResultType tmp( rhs );
       smpAssign( left, tmp );
    }
@@ -4872,7 +4896,7 @@ inline Column<MT,false,true,true,CCAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( IsReference_v<Right> && right.canAlias( &matrix_ ) ) {
+   if( IsReference_v<Right> && right.canAlias( this ) ) {
       const ResultType_t<VT> tmp( right );
       smpAssign( left, tmp );
    }
@@ -4926,7 +4950,7 @@ inline Column<MT,false,true,true,CCAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( IsReference_v<Right> && right.canAlias( &matrix_ ) ) {
+   if( IsReference_v<Right> && right.canAlias( this ) ) {
       const ResultType_t<VT> tmp( right );
       smpAddAssign( left, tmp );
    }
@@ -4978,7 +5002,7 @@ inline Column<MT,false,true,true,CCAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( IsReference_v<Right> && right.canAlias( &matrix_ ) ) {
+   if( IsReference_v<Right> && right.canAlias( this ) ) {
       const ResultType_t<VT> tmp( right );
       smpSubAssign( left, tmp );
    }
@@ -5029,7 +5053,7 @@ inline Column<MT,false,true,true,CCAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( IsReference_v<Right> && right.canAlias( &matrix_ ) ) {
+   if( IsReference_v<Right> && right.canAlias( this ) ) {
       const ResultType_t<VT> tmp( right );
       smpMultAssign( left, tmp );
    }
@@ -5079,7 +5103,7 @@ inline Column<MT,false,true,true,CCAs...>&
 
    decltype(auto) left( derestrict( *this ) );
 
-   if( IsReference_v<Right> && right.canAlias( &matrix_ ) ) {
+   if( IsReference_v<Right> && right.canAlias( this ) ) {
       const ResultType_t<VT> tmp( right );
       smpDivAssign( left, tmp );
    }
@@ -5347,7 +5371,7 @@ template< typename MT       // Type of the dense matrix
 template< typename Other >  // Data type of the foreign expression
 inline bool Column<MT,false,true,true,CCAs...>::canAlias( const Other* alias ) const noexcept
 {
-   return matrix_.isAliased( alias );
+   return matrix_.isAliased( &unview( *alias ) );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -5373,7 +5397,7 @@ template< typename MT2       // Data type of the foreign dense column
 inline bool
    Column<MT,false,true,true,CCAs...>::canAlias( const Column<MT2,SO2,true,SF2,CCAs2...>* alias ) const noexcept
 {
-   return matrix_.isAliased( alias->matrix_ ) && ( column() == alias->column() );
+   return matrix_.isAliased( &alias->matrix_ ) && ( column() == alias->column() );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -5395,7 +5419,7 @@ template< typename MT       // Type of the dense matrix
 template< typename Other >  // Data type of the foreign expression
 inline bool Column<MT,false,true,true,CCAs...>::isAliased( const Other* alias ) const noexcept
 {
-   return matrix_.isAliased( alias );
+   return matrix_.isAliased( &unview( *alias ) );
 }
 /*! \endcond */
 //*************************************************************************************************
@@ -5658,7 +5682,9 @@ inline auto Column<MT,false,true,true,CCAs...>::assign( const DenseVector<VT,fal
 {
    BLAZE_INTERNAL_ASSERT( size() == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t jpos( (~rhs).size() & size_t(-2) );
+   const size_t jpos( prevMultiple( (~rhs).size(), 2UL ) );
+   BLAZE_INTERNAL_ASSERT( jpos <= (~rhs).size(), "Invalid end calculation" );
+
    for( size_t j=0UL; j<jpos; j+=2UL ) {
       matrix_(column(),j    ) = (~rhs)[j    ];
       matrix_(column(),j+1UL) = (~rhs)[j+1UL];
@@ -5696,8 +5722,8 @@ inline auto Column<MT,false,true,true,CCAs...>::assign( const DenseVector<VT,fal
 
    const size_t columns( size() );
 
-   const size_t jpos( ( remainder )?( columns & size_t(-SIMDSIZE) ):( columns ) );
-   BLAZE_INTERNAL_ASSERT( !remainder || ( columns - ( columns % (SIMDSIZE) ) ) == jpos, "Invalid end calculation" );
+   const size_t jpos( remainder ? prevMultiple( columns, SIMDSIZE ) : columns );
+   BLAZE_INTERNAL_ASSERT( jpos <= columns, "Invalid end calculation" );
 
    size_t j( 0UL );
    Iterator left( begin() );
@@ -5778,7 +5804,9 @@ inline auto Column<MT,false,true,true,CCAs...>::addAssign( const DenseVector<VT,
 {
    BLAZE_INTERNAL_ASSERT( size() == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t jpos( (~rhs).size() & size_t(-2) );
+   const size_t jpos( prevMultiple( (~rhs).size(), 2UL ) );
+   BLAZE_INTERNAL_ASSERT( jpos <= (~rhs).size(), "Invalid end calculation" );
+
    for( size_t j=0UL; j<jpos; j+=2UL ) {
       matrix_(column(),j    ) += (~rhs)[j    ];
       matrix_(column(),j+1UL) += (~rhs)[j+1UL];
@@ -5816,8 +5844,8 @@ inline auto Column<MT,false,true,true,CCAs...>::addAssign( const DenseVector<VT,
 
    const size_t columns( size() );
 
-   const size_t jpos( ( remainder )?( columns & size_t(-SIMDSIZE) ):( columns ) );
-   BLAZE_INTERNAL_ASSERT( !remainder || ( columns - ( columns % (SIMDSIZE) ) ) == jpos, "Invalid end calculation" );
+   const size_t jpos( remainder ? prevMultiple( columns, SIMDSIZE ) : columns );
+   BLAZE_INTERNAL_ASSERT( jpos <= columns, "Invalid end calculation" );
 
    size_t j( 0UL );
    Iterator left( begin() );
@@ -5886,7 +5914,9 @@ inline auto Column<MT,false,true,true,CCAs...>::subAssign( const DenseVector<VT,
 {
    BLAZE_INTERNAL_ASSERT( size() == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t jpos( (~rhs).size() & size_t(-2) );
+   const size_t jpos( prevMultiple( (~rhs).size(), 2UL ) );
+   BLAZE_INTERNAL_ASSERT( jpos <= (~rhs).size(), "Invalid end calculation" );
+
    for( size_t j=0UL; j<jpos; j+=2UL ) {
       matrix_(column(),j    ) -= (~rhs)[j    ];
       matrix_(column(),j+1UL) -= (~rhs)[j+1UL];
@@ -5924,8 +5954,8 @@ inline auto Column<MT,false,true,true,CCAs...>::subAssign( const DenseVector<VT,
 
    const size_t columns( size() );
 
-   const size_t jpos( ( remainder )?( columns & size_t(-SIMDSIZE) ):( columns ) );
-   BLAZE_INTERNAL_ASSERT( !remainder || ( columns - ( columns % (SIMDSIZE) ) ) == jpos, "Invalid end calculation" );
+   const size_t jpos( remainder ? prevMultiple( columns, SIMDSIZE ) : columns );
+   BLAZE_INTERNAL_ASSERT( jpos <= columns, "Invalid end calculation" );
 
    size_t j( 0UL );
    Iterator left( begin() );
@@ -5994,7 +6024,9 @@ inline auto Column<MT,false,true,true,CCAs...>::multAssign( const DenseVector<VT
 {
    BLAZE_INTERNAL_ASSERT( size() == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t jpos( (~rhs).size() & size_t(-2) );
+   const size_t jpos( prevMultiple( (~rhs).size(), 2UL ) );
+   BLAZE_INTERNAL_ASSERT( jpos <= (~rhs).size(), "Invalid end calculation" );
+
    for( size_t j=0UL; j<jpos; j+=2UL ) {
       matrix_(column(),j    ) *= (~rhs)[j    ];
       matrix_(column(),j+1UL) *= (~rhs)[j+1UL];
@@ -6032,8 +6064,8 @@ inline auto Column<MT,false,true,true,CCAs...>::multAssign( const DenseVector<VT
 
    const size_t columns( size() );
 
-   const size_t jpos( ( remainder )?( columns & size_t(-SIMDSIZE) ):( columns ) );
-   BLAZE_INTERNAL_ASSERT( !remainder || ( columns - ( columns % (SIMDSIZE) ) ) == jpos, "Invalid end calculation" );
+   const size_t jpos( remainder ? prevMultiple( columns, SIMDSIZE ) : columns );
+   BLAZE_INTERNAL_ASSERT( jpos <= columns, "Invalid end calculation" );
 
    size_t j( 0UL );
    Iterator left( begin() );
@@ -6115,7 +6147,9 @@ inline auto Column<MT,false,true,true,CCAs...>::divAssign( const DenseVector<VT,
 {
    BLAZE_INTERNAL_ASSERT( size() == (~rhs).size(), "Invalid vector sizes" );
 
-   const size_t jpos( (~rhs).size() & size_t(-2) );
+   const size_t jpos( prevMultiple( (~rhs).size(), 2UL ) );
+   BLAZE_INTERNAL_ASSERT( jpos <= (~rhs).size(), "Invalid end calculation" );
+
    for( size_t j=0UL; j<jpos; j+=2UL ) {
       matrix_(column(),j    ) /= (~rhs)[j    ];
       matrix_(column(),j+1UL) /= (~rhs)[j+1UL];
@@ -6151,8 +6185,8 @@ inline auto Column<MT,false,true,true,CCAs...>::divAssign( const DenseVector<VT,
 
    const size_t columns( size() );
 
-   const size_t jpos( columns & size_t(-SIMDSIZE) );
-   BLAZE_INTERNAL_ASSERT( ( columns - ( columns % (SIMDSIZE) ) ) == jpos, "Invalid end calculation" );
+   const size_t jpos( prevMultiple( columns, SIMDSIZE ) );
+   BLAZE_INTERNAL_ASSERT( jpos <= columns, "Invalid end calculation" );
 
    size_t j( 0UL );
    Iterator left( begin() );
