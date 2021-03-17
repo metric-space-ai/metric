@@ -52,6 +52,7 @@ target_link_libraries(auto_detect_metric_example PRIVATE ${LAPACK_LIBRARIES})
 target_link_libraries(kohonen_outliers_clustering_example PRIVATE ${LAPACK_LIBRARIES})
 target_link_libraries(KOC_MNIST_example PRIVATE ${LAPACK_LIBRARIES})
 target_link_libraries(reverse_diffusion_example PRIVATE ${LAPACK_LIBRARIES})
+target_link_libraries(DSPCC_example PRIVATE ${LAPACK_LIBRARIES})
 
 
 target_link_libraries(C45_example PRIVATE Threads::Threads)
