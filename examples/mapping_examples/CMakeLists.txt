@@ -23,6 +23,7 @@ add_executable(SOM_2_example continious_mappers/clustering/SOM_2_example.cpp)
 add_executable(SOM_3_example continious_mappers/clustering/SOM_3_example.cpp)
 add_executable(PCFA_example continious_mappers/clustering/PCFA_example.cpp)
 add_executable(SOM_and_MNIST_example continious_mappers/clustering/SOM_and_MNIST_example.cpp)
+add_executable(DSPCC_example continious_mappers/clustering/DSPCC_example.cpp)
 
 # continious_mappers / classification
 add_executable(ESN_example continious_mappers/classification/ESN_example.cpp)
