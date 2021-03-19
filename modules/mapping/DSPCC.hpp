@@ -108,16 +108,15 @@ public:
     std::vector<RecType> decode(const std::vector<RecType> & Codes);
 
 
+    // public wrapper  of the private method, FOR TEST PURPOSE ONLY, to be deleted after testing
     std::tuple<std::deque<std::vector<RecType>>, std::deque<std::vector<RecType>>>
     test_public_wrapper_encode(const std::vector<RecType> & Curves) { // TODO remove when tested
         return outer_encode(Curves);
     }
 
+    // public wrapper  of the private method, FOR TEST PURPOSE ONLY, to be deleted after testing
     std::vector<RecType>
-    test_public_wrapper_decode(
-        const std::tuple<std::deque<std::vector<RecType>>,
-        std::deque<std::vector<RecType>>> & TimeFreqMixedData
-    ) { // TODO remove when tested
+    test_public_wrapper_decode(const std::tuple<std::deque<std::vector<RecType>>, std::deque<std::vector<RecType>>> & TimeFreqMixedData) { // TODO remove when tested
       return outer_decode(TimeFreqMixedData);
     }
 
@@ -332,9 +331,10 @@ private:
    * @brief determines break index using given length of the subband waveform
    *
    * @param length - length of the filtered suband waveform
+   * @param crop_share - desired portion to be cropped
    * @return - index to be used to break the subband waveform apart for separate time domain and frequency domain compression
    */
-    size_t mix_index(size_t length, float time_freq_balance);
+    size_t crop_index(size_t length, float crop_share);
 
 
     /**

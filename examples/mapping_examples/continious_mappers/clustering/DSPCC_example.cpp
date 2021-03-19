@@ -1,37 +1,10 @@
 
-#include <iostream>
-//#include <stack>
 
 #include "../../../../modules/mapping/DSPCC.hpp"
-
-#include "examples/mapping_examples/assets/helpers.cpp" // for .csv reader
-
-#include "../../../../modules/utils/visualizer.hpp"
 #include "../../../../modules/utils/metric_err.hpp"
-
 #include "../../../../modules/distance/k-related/Standards.hpp" // we use Euclidean metric for mean squared error evaluation
 
-
-
-
-
-template <template <class, class> class Container, class ValueType, class A1, class A2>
-Container<Container<ValueType, A1>, A2> transpose_timeseries(
-        Container<Container<ValueType, A1>, A2> ts) // the workaround thing. TODO remove and update csv reader this way
-{
-    auto output = Container<Container<ValueType, A1>, A2>();
-    size_t n_values = ts[0].size();
-    for (size_t j=0; j<n_values; ++j) // loop of timeseries
-    {
-        output.push_back(Container<ValueType, A1>());
-    }
-    for (size_t i=0; i<ts.size(); ++i) // loop of values in original timeseries
-    {
-        for (size_t j=0; j<n_values; ++j) // loop of timeseries
-            output[j].push_back(ts[i][j]);
-    }
-    return output;
-}
+#include <iostream>
 
 
 
@@ -93,9 +66,6 @@ void print_stats(std::tuple<double, double, double, double, double, double> stat
 int main()
 {
 
-    // small dataset
-    //*
-
     using RecType = std::deque<double>;
 
     RecType d0 {0, 1, 2, 3, 4, 5, 6, 100, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23};
@@ -125,9 +95,6 @@ int main()
     print_stats(err_full_1);
     std::cout << "average RMSE = " << mean_square_error(d, decoded) << "\n";
 
-    //return 0;
-
-    //*/
 
 
     // test Blaze vector input
@@ -148,160 +115,6 @@ int main()
         std::cout << decodedBlaze[i];
     }
 
-
-
-
-    //*/
-
-
-    // RMSE and metric error check
-    /*
-
-    using RecType = std::vector<double>;
-
-    RecType d0 {0, 1, 2, 3};
-    RecType d1 {0, 1, 2, 3};
-    std::vector<RecType> d = {d0, d1};
-
-    auto d_upd = d;
-    d_upd[0][3] = 5;
-
-    std::cout << "\nd:\n";
-    print_table(d); // some normalization issue when using DCT persists..
-
-    std::cout << "\nd_upd:\n";
-    print_table(d_upd); // some normalization issue when using DCT persists..
-
-    print_stats(normalized_err_stats<metric::Euclidean<double>>(d, d_upd));
-
-    std::cout << "average RMSE = " << mean_square_error(d, d_upd) << "\n";
-
-    //return 0;
-
-    // */
-
-
-
-
-
-    // vibration example
-    //*
-
-    float magnitude = 15;
-
-    auto raw_vdata = read_csv_num<double>("assets/vibration_smaller_3.csv", ",");
-    //auto raw_vdata = read_csv_num<double>("assets/vibration.csv", ",");
-//    auto raw_vdata = read_csv_num<double>("assets/vibration_smaller_3_no_peaks.csv", ",");
-//    auto raw_vdata = read_csv_num<double>("assets/vibration_smaller_3_added_peaks.csv", ",");
-    auto vdata =  transpose_timeseries(raw_vdata);
-
-    mat2bmp::blaze2bmp_norm(vdata, "input.bmp", magnitude);
-
-//    std::stack<size_t> length_stack;
-//    auto decomposed = metric::sequential_DWT(vdata[0], length_stack, 5, 8);
-//    auto restored = metric::sequential_iDWT(decomposed, length_stack, 5);
-
-//    return 0;
-
-
-    std::vector<double> errs_pre, errs_tf, errs_full;
-
-    bool visualize = false;
-
-    for (float mix = 0; mix<=1; mix+=0.25) {
-    //float mix  = 0.5; {
-
-
-
-        if (mix == 0.5)
-            visualize = true;
-        else
-            visualize = false;
-
-
-        auto vDSPCC = metric::DSPCC<std::vector<double>, void>(vdata, 10, 16, mix, 10);
-        // dataset,
-        // number of features of freq and time PCFAs,
-        // DWT subbands, share of freq features in the mixed code,
-        // top PCFA features
-
-
-
-        auto v_encoded = vDSPCC.time_freq_PCFA_encode(vdata);
-        auto v_decoded = vDSPCC.time_freq_PCFA_decode(v_encoded);
-
-        if (visualize) {
-            mat2bmp::blaze2bmp_norm(v_decoded, "decoded.bmp", magnitude);
-            write_csv(transpose_timeseries(v_decoded), "decoded.csv", ";");
-        }
-
-        std::cout << "\n        subband_length:  " << vDSPCC.get_subband_size() << "\n";
-        std::cout << "original record length:  " << vdata[0].size() << "\n";
-        std::cout << " decoded record length:  " << v_decoded[0].size() << "\n";
-
-        std::cout << "\ndecompression with only time-freq PSFAs done, decoded data saved\n";
-        auto err_tf = normalized_err_stats<metric::Euclidean<double>>(vdata, v_decoded);
-        print_stats(err_tf);
-        errs_tf.push_back(std::get<4>(err_tf));
-
-
-
-        //std::cout << "\ncomputing pre-encoded and pre_decoded vibration data...\n";
-
-        auto v_pre_encoded = vDSPCC.test_public_wrapper_encode(vdata);
-        auto v_pre_decoded = vDSPCC.test_public_wrapper_decode(v_pre_encoded);
-
-        if (visualize) {
-            write_csv(transpose_timeseries(v_pre_decoded), "pre_decoded.csv", ";");
-            mat2bmp::blaze2bmp_norm(v_pre_decoded, "pre_decoded.bmp", magnitude);
-        }
-
-        std::cout << "\ntest of pre-compression done, pre-decoded data saved\n";
-        auto err_pre = normalized_err_stats<metric::Euclidean<double>>(vdata, v_pre_decoded);
-        print_stats(err_pre);
-        errs_pre.push_back(std::get<4>(err_pre));
-
-
-
-
-        auto v_encoded2 = vDSPCC.encode(vdata);
-        auto v_decoded2 = vDSPCC.decode(v_encoded2);
-
-        if (visualize) {
-            mat2bmp::blaze2bmp_norm(v_encoded2, "encoded2.bmp", magnitude);
-            write_csv(transpose_timeseries(v_encoded2), "encoded2.csv", ";");
-            mat2bmp::blaze2bmp_norm(v_decoded2, "decoded2.bmp", magnitude);
-            write_csv(transpose_timeseries(v_decoded2), "decoded2.csv", ";");
-        }
-
-
-        std::cout << "\ncompletely encoded data saved\n";
-        auto err_full = normalized_err_stats<metric::Euclidean<double>>(vdata, v_decoded2);
-        print_stats(err_full);
-        errs_full.push_back(std::get<4>(err_full));
-
-        std::cout << "average RMSE = " << mean_square_error(v_decoded2, vdata) << "\n";
-
-
-//        auto errors2 = normalized_errors<metric::Euclidean<double>>(vdata, v_decoded2);
-//        std::cout << "err/norm per record:\n";
-//        for (size_t i = 0; i< errors2.size(); ++i) {
-//            std::cout << errors2[i] << "\n";
-//        }
-
-        std::cout << "\n";
-
-    }
-
-    std::cout << "\nOverall results:\n      pre\t      tf\t      full\n";
-    for (size_t i = 0; i<errs_full.size(); ++i) {
-        std::cout << errs_pre[i] << "\t" << errs_tf[i] << "\t" << errs_full[i] << "\n";
-    }
-
-
-
-
-    //*/
 
 
     return 0;

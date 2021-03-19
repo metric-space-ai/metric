@@ -23,6 +23,7 @@ add_executable(SOM_2_example continious_mappers/clustering/SOM_2_example.cpp)
 add_executable(SOM_3_example continious_mappers/clustering/SOM_3_example.cpp)
 add_executable(PCFA_example continious_mappers/clustering/PCFA_example.cpp)
 add_executable(SOM_and_MNIST_example continious_mappers/clustering/SOM_and_MNIST_example.cpp)
+add_executable(DSPCC_example continious_mappers/clustering/DSPCC_example.cpp)
 
 # continious_mappers / classification
 add_executable(ESN_example continious_mappers/classification/ESN_example.cpp)
@@ -51,6 +52,7 @@ target_link_libraries(auto_detect_metric_example PRIVATE ${LAPACK_LIBRARIES})
 target_link_libraries(kohonen_outliers_clustering_example PRIVATE ${LAPACK_LIBRARIES})
 target_link_libraries(KOC_MNIST_example PRIVATE ${LAPACK_LIBRARIES})
 target_link_libraries(reverse_diffusion_example PRIVATE ${LAPACK_LIBRARIES})
+target_link_libraries(DSPCC_example PRIVATE ${LAPACK_LIBRARIES})
 
 
 target_link_libraries(C45_example PRIVATE Threads::Threads)
