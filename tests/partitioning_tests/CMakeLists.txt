@@ -1,0 +1,4 @@
+add_executable(partitioning_tests partitioning_tests.cpp)
+target_link_libraries(partitioning_tests PRIVATE Catch2::Catch2)
+
+catch_discover_tests(partitioning_tests)
