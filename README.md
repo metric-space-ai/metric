@@ -5,6 +5,12 @@
 
 **PANDA | METRIC** is a framework for machine learning based on the concept of metric spaces, which makes it possible to use and combine arbitrary data to build models. METRIC is written in modern C++ to provide the best performance. However, due to Python bindings, you can use it direktly in Python.
 
+Here is an anomaly detecion example:
+ <img src="/4_nyc_redif.png" alt="PCB" width="1000"> 
+  <p align="center">
+</p>
+
+
 # Intro example
 
 ```cpp
