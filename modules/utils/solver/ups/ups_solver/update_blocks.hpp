@@ -25,11 +25,11 @@ updateAlbedo(
         const std::vector<std::vector<blaze::DynamicVector<T>>> & s,
         const std::vector<std::vector<blaze::DynamicVector<T>>> & reweight,
         const blaze::CompressedMatrix<T> & G,
-        T huber,
         T mu,
-        bool regular,
-        float tol,
-        float maxit
+        T huber = 0.1,
+        bool regular = 1,
+        float pcg_tol = 1e-5,
+        float pcg_maxit = 100
         )
 {
 
@@ -71,7 +71,7 @@ updateAlbedo(
         //std::cout << "b" << std::endl << b << std::endl << std::endl;
         std::vector<size_t> pcgIts = {};
         auto Pre = blaze::IdentityMatrix<T>(A.rows());
-        blaze::DynamicVector<T> X = metric::pcg<T>(A, b, Pre, pcgIts, tol, maxit);  // TODO debug, add tolerance and maxit
+        blaze::DynamicVector<T> X = metric::pcg<T>(A, b, Pre, pcgIts, pcg_tol, pcg_maxit);  // TODO debug, add tolerance and maxit
         //std::cout << "X:" << std::endl << X << std::endl << std::endl;
         rho_out.push_back(X);
     }

@@ -127,7 +127,7 @@ int main()
     float pcg_maxit = 100;
     float pcg_tol = 1e-5;
 
-    auto rho_upd = updateAlbedo(std::get<0>(i_rho), std::get<1>(i_rho), sh, s, weights, G, huber, mu, regular, pcg_tol, pcg_maxit);
+    auto rho_upd = updateAlbedo(std::get<0>(i_rho), std::get<1>(i_rho), sh, s, weights, G, mu, huber, regular, pcg_tol, pcg_maxit);
 
     std::cout << std::endl << "rho updated:" << std::endl << rho_upd << std::endl << std::endl;
 
