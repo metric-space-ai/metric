@@ -44,12 +44,15 @@ ups_solver(
         s = initS<T>(I[0].size(), I.size(), {0, 0, -1, 0.2});
     else
         s = initS<T>(I[0].size(), I.size(), {0, 0, -1, 0.2, 0, 0, 0, 0, 0});
+    std::cout << std::endl << "s:" << std::endl << s << std::endl;  // TODO remove
 
     std::vector<blaze::DynamicMatrix<T, blaze::columnMajor>> rho_init = initRho(I);
+    std::cout << std::endl << "rho_init:" << std::endl << rho_init << std::endl;  // TODO remove
 
     auto i_rho = VariablesInitialization(I, Mask, rho_init);
     std::vector<std::vector<blaze::DynamicVector<T>>> flat_imgs = std::get<0>(i_rho);
     std::vector<blaze::DynamicVector<T>> rho = std::get<1>(i_rho);
+    std::cout << std::endl << "rho:" << std::endl << rho << std::endl;  // TODO remove
 
     size_t nimages = flat_imgs.size();
     size_t nchannels = flat_imgs[0].size();
@@ -61,15 +64,23 @@ ups_solver(
     for (size_t im = 0; im < nimages; ++im) {
         for (size_t ch = 0; ch < nchannels; ++ch) {
             blaze::subvector(allpixels, pos, npix) = flat_imgs[im][ch];
+            pos += npix;
         }
     }
+    std::cout << std::endl << "allpixels:" << std::endl << allpixels << std::endl << std::endl;  // TODO remove
     std::nth_element(allpixels.begin(), allpixels.begin() + allpixels.size()/2, allpixels.end());
     T pix_median = allpixels[allpixels.size()/2 - 1];
     if (allpixels.size() % 2 == 0) {
         pix_median = (pix_median + allpixels[allpixels.size()/2]) / 2;
     }
+    allpixels = blaze::abs(allpixels - pix_median);
+    pix_median = allpixels[allpixels.size()/2 - 1];
+        if (allpixels.size() % 2 == 0) {
+            pix_median = (pix_median + allpixels[allpixels.size()/2]) / 2;
+        }
     T div_lambda = delta*pix_median / (nchannels*nimages);
     mu = mu / (div_lambda*nchannels);
+    std::cout << std::endl << "mu:" << std::endl << mu << std::endl;  // TODO remove
     // TODO check median!
 
 
@@ -79,7 +90,7 @@ ups_solver(
     auto view1 = blaze::submatrix(G, std::get<0>(nablaOp).rows(), 0, std::get<1>(nablaOp).rows(), std::get<1>(nablaOp).columns());
     view0 = std::get<0>(nablaOp);
     view1 = std::get<1>(nablaOp);  // G written
-    //std::cout << std::endl << "G:" << std::endl << G << std::endl << std::endl;
+    std::cout << std::endl << "G:" << std::endl << G << std::endl << std::endl;  // TODO remove
 
 
     /*  // TODO remove
@@ -127,6 +138,7 @@ ups_solver(
         blaze::column(normals_theta, c) = blaze::column(N_unnormalized, c) / theta; // TODO check if we can use normalized here
     }
     blaze::DynamicMatrix<T> sh = normalsToSh(normals_theta, sh_order);
+    std::cout << std::endl << "sh:" << std::endl << sh << std::endl;  // TODO remove
 
     // TODO add initial energy computation if needed
 
@@ -138,6 +150,8 @@ ups_solver(
 
     for (size_t it = 0; it < maxit; ++it) {
 
+        std::cout << std::endl << std::endl << "---- iter " << it << std::endl << std::endl;  // TODO remove
+
         if (it == c2f_lighting && sh_order == ho_low) {  // switch lighting scheme sph harm order
             sh_order = ho_high;
             s = initS<T>(I[0].size(), I.size(), {0, 0, -1, 0.2, 0, 0, 0, 0, 0});
@@ -146,6 +160,7 @@ ups_solver(
             }
             sh = normalsToSh(normals_theta, sh_order);
         }
+        std::cout << std::endl << "sh:" << std::endl << sh << std::endl;  // TODO remove
 
         /*  // TODO debug rho update
         // albedo
@@ -162,6 +177,7 @@ ups_solver(
         weights = calcReweighting(rho, sh, s, flat_imgs, lambda);
         auto s_upd = updateLighting(flat_imgs, rho, sh, s, weights);
         s = std::get<0>(s_upd);
+        std::cout << std::endl << "s:" << std::endl << s << std::endl;  // TODO remove
 
         /*  // TODO enable
         //depth

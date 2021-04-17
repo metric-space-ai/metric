@@ -5,6 +5,8 @@
 #include "../ups_solver/calc_reweighting.hpp"
 #include "../ups_solver/update_blocks.hpp"
 
+#include "../helpers/console_output.hpp"
+
 #include "../../../../../3rdparty/blaze/Blaze.h"
 
 #include <tuple>

@@ -140,10 +140,10 @@ updateLighting(
             s_out[im].push_back(s_ch);
             res_s += blaze::norm(A * s_ch - b);
 
-            std::cout << std::endl << "A:" << std::endl << A << std::endl;
-            std::cout << std::endl << "b:" << std::endl << b << std::endl;
+            //std::cout << std::endl << "A:" << std::endl << A << std::endl;
+            //std::cout << std::endl << "b:" << std::endl << b << std::endl;
             //std::cout << std::endl << "PInv:" << std::endl << PInv << std::endl;
-            std::cout << std::endl << "updated s:" << std::endl << s_ch << std::endl;
+            //std::cout << std::endl << "updated s:" << std::endl << s_ch << std::endl;
         }
     }
 
