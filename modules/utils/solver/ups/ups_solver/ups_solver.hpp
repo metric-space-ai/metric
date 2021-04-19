@@ -80,8 +80,7 @@ ups_solver(
         }
     T div_lambda = delta*pix_median / (nchannels*nimages);
     mu = mu / (div_lambda*nchannels);
-    std::cout << std::endl << "mu:" << std::endl << mu << std::endl;  // TODO remove
-    // TODO check median!
+    //std::cout << std::endl << "mu:" << std::endl << mu << std::endl;  // TODO remove
 
 
     auto nablaOp = getNabla<T>(Mask);
@@ -162,7 +161,7 @@ ups_solver(
         }
         std::cout << std::endl << "sh:" << std::endl << sh << std::endl;  // TODO remove
 
-        /*  // TODO debug rho update
+        //*  // TODO debug rho update
         // albedo
         weights = calcReweighting(rho, sh, s, flat_imgs, lambda);
         rho = updateAlbedo(flat_imgs, rho, sh, s, weights, G, mu, huber, regular, pcg_tol, pcg_maxit);
@@ -171,6 +170,7 @@ ups_solver(
             blaze::DynamicVector<T> drho_ch = G * rho[ch];
             drho.push_back(drho_ch);
         }
+        std::cout << std::endl << "rho:" << std::endl << rho << std::endl;  // TODO remove
         // */
 
         // lighting
@@ -179,9 +179,24 @@ ups_solver(
         s = std::get<0>(s_upd);
         std::cout << std::endl << "s:" << std::endl << s << std::endl;  // TODO remove
 
-        /*  // TODO enable
+        //*  // TODO enable
         //depth
         weights = calcReweighting(rho, sh, s, flat_imgs, lambda);
+        std::cout << std::endl << "before updating z:" << std::endl;
+        std::cout << std::endl << "flat_imgs:" << std::endl << flat_imgs << std::endl;  // TODO remove
+        std::cout << std::endl << "rho:" << std::endl << rho << std::endl;  // TODO remove
+        std::cout << std::endl << "s:" << std::endl << s << std::endl;  // TODO remove
+        std::cout << std::endl << "theta:" << std::endl << theta << std::endl;  // TODO remove
+        std::cout << std::endl << "z:" << std::endl << z << std::endl;  // TODO remove
+        std::cout << std::endl << "zx:" << std::endl << zx << std::endl;  // TODO remove
+        std::cout << std::endl << "zy:" << std::endl << zy << std::endl;  // TODO remove
+        std::cout << std::endl << "u:" << std::endl << u << std::endl;  // TODO remove
+        std::cout << std::endl << "weights:" << std::endl << weights << std::endl;  // TODO remove
+        std::cout << std::endl << "drho:" << std::endl << drho << std::endl;  // TODO remove
+        std::cout << std::endl << "xx:" << std::endl << xx << std::endl;  // TODO remove
+        std::cout << std::endl << "yy:" << std::endl << yy << std::endl;  // TODO remove
+        std::cout << std::endl << "Dx:" << std::endl << Dx << std::endl;  // TODO remove
+        std::cout << std::endl << "Dy:" << std::endl << Dy << std::endl;  // TODO remove
         auto z_upd = updateDepth<T>(flat_imgs, rho, s, theta, z, zx, zy, u, weights, drho, K, xx, yy, Dx, Dy, lins_maxit, beta);
         // z, zx, zy, dz, N_unnormalized, sh, J_dz, res_z
         z = std::get<0>(z_upd);  // TOSO consider in-place update of z, zx, zy
@@ -192,6 +207,8 @@ ups_solver(
         sh = std::get<5>(z_upd);
         blaze::CompressedMatrix<T> J_dz = std::get<6>(z_upd);
         T res_z = std::get<7>(z_upd);
+        std::cout << std::endl << "after updating z:" << std::endl;
+        std::cout << std::endl << "z:" << std::endl << z << std::endl;  // TODO remove
         // */
 
 

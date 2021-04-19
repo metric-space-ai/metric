@@ -222,9 +222,9 @@ calcEnergyPhotometricTerm(
 
     blaze::CompressedMatrix<T> J_cauchy (nimages*nchannels*npix, npix);
 
-    blaze::DynamicVector<size_t> row_vec (nimages*nchannels*npix, 0);
-    blaze::DynamicVector<size_t> col_vec (nimages*nchannels*npix, 0);
-    blaze::DynamicVector<T> val_vec (nimages*nchannels*npix, 0);
+    //blaze::DynamicVector<size_t> row_vec (nimages*nchannels*npix, 0);
+    //blaze::DynamicVector<size_t> col_vec (nimages*nchannels*npix, 0);
+    //blaze::DynamicVector<T> val_vec (nimages*nchannels*npix, 0);
     size_t idx = 0;
     //std::vector<std::vector<blaze::DynamicVector<T>>> cost_cauchy_mat = {};
     blaze::DynamicVector<T> cost_cauchy (nimages*nchannels*npix, 0);
@@ -237,6 +237,7 @@ calcEnergyPhotometricTerm(
              //cost_im.push_back(cost_im_ch);
              //std::cout << std::endl << "cost_im_ch:" << std::endl << cost_im_ch << std::endl;
              blaze::subvector(cost_cauchy, idx, npix) = rho_w[im][ch]*(sh * s[im][ch]) - I_w[im][ch]; // = cost_im_ch;
+             idx += npix;
 
              //Jacobian of photometric term
              blaze::CompressedMatrix<T> J_sh_ =
@@ -264,9 +265,9 @@ calcEnergyPhotometricTerm(
              //std::cout << std::endl << "rho_w_J_sh_:" << std::endl << rho_w_J_sh_ << std::endl;
 
              size_t cnt = 0;
-             blaze::DynamicVector<size_t> row_vec_temp (npix, 0);
-             blaze::DynamicVector<size_t> col_vec_temp (npix, 0);
-             blaze::DynamicVector<T> val_vec_temp (npix, 0);
+             blaze::DynamicVector<size_t> row_vec_temp (rho_w_J_sh_.nonZeros(), 0);
+             blaze::DynamicVector<size_t> col_vec_temp (rho_w_J_sh_.nonZeros(), 0);
+             blaze::DynamicVector<T> val_vec_temp (rho_w_J_sh_.nonZeros(), 0);
              for (size_t c = 0; c < rho_w_J_sh_.columns(); ++c) {
                  for (typename blaze::CompressedMatrix<T, blaze::columnMajor>::Iterator it=rho_w_J_sh_.begin(c); it!=rho_w_J_sh_.end(c); ++it) {
                      row_vec_temp[cnt] = it->index();
@@ -276,25 +277,30 @@ calcEnergyPhotometricTerm(
                  }
              }
 
-             //std::cout << std::endl << "row_vec_temp:" << std::endl << row_vec_temp << std::endl;
-             //std::cout << std::endl << "col_vec_temp:" << std::endl << col_vec_temp << std::endl;
-             //std::cout << std::endl << "val_vec_temp:" << std::endl << val_vec_temp << std::endl;
+             std::cout << std::endl << "row_vec_temp:" << std::endl << row_vec_temp << std::endl;
+             std::cout << std::endl << "col_vec_temp:" << std::endl << col_vec_temp << std::endl;
+             std::cout << std::endl << "val_vec_temp:" << std::endl << val_vec_temp << std::endl;
 
-             blaze::subvector(row_vec, idx, npix) = row_vec_temp + (3*im + ch)*npix;
-             blaze::subvector(col_vec, idx, npix) = col_vec_temp;
-             blaze::subvector(val_vec, idx, npix) = val_vec_temp;
-             idx += npix;  // TODO test if length is always equsl to npix
+             row_vec_temp = row_vec_temp + (3*im + ch)*npix;
+             for (size_t el = 0; el < row_vec_temp.size(); el++) {
+                 J_cauchy(row_vec_temp[el], col_vec_temp[el]) = val_vec_temp[el];
+             }
+
+             //blaze::subvector(row_vec, idx, rho_w_J_sh_.nonZeros()) = row_vec_temp + (3*im + ch)*npix;
+             //blaze::subvector(col_vec, idx, rho_w_J_sh_.nonZeros()) = col_vec_temp;
+             //blaze::subvector(val_vec, idx, rho_w_J_sh_.nonZeros()) = val_vec_temp;
+             //idx += rho_w_J_sh_.nonZeros();
         }
         //cost_cauchy_mat.push_back(cost_im);
     }
 
-    //std::cout << std::endl << "row_vec:" << std::endl << row_vec << std::endl;
+    //std::cout << std::endl << "row_vec:" << std::endl << row_vec << std::endl;  // TODO remove
     //std::cout << std::endl << "col_vec:" << std::endl << col_vec << std::endl;
     //std::cout << std::endl << "val_vec:" << std::endl << val_vec << std::endl;
 
-    for (size_t el = 0; el < row_vec.size(); el++) {
-        J_cauchy(row_vec[el], col_vec[el]) = val_vec[el];
-    }
+    //for (size_t el = 0; el < idx; el++) {
+    //    J_cauchy(row_vec[el], col_vec[el]) = val_vec[el];
+    //}
 
     //std::cout << std::endl << "J_cauchy:" << std::endl << J_cauchy << std::endl;
 
@@ -424,6 +430,16 @@ updateDepth(
             }
         }
 
+        std::cout << std::endl << "before calcEnergyPhotometricTerm:" << std::endl;  // TODO remove
+        std::cout << std::endl << "reweighted_rho:" << std::endl << reweighted_rho << std::endl;  // TODO remove
+        std::cout << std::endl << "reweighted_img:" << std::endl << reweighted_img << std::endl;
+        std::cout << std::endl << "s:" << std::endl << s << std::endl;
+        std::cout << std::endl << "theta:" << std::endl << theta << std::endl;
+        std::cout << std::endl << "dz:" << std::endl << dz << std::endl;
+        std::cout << std::endl << "N_unnormalized:" << std::endl << N_unnormalized << std::endl;
+        std::cout << std::endl << "u:" << std::endl << u << std::endl;
+        std::cout << std::endl << "J_n_un:" << std::endl << J_n_un << std::endl;
+        std::cout << std::endl << "J_dz:" << std::endl << J_dz << std::endl;
         auto ept = calcEnergyPhotometricTerm(reweighted_rho, reweighted_img, s, theta, dz, N_unnormalized, u, J_n_un, J_dz, beta);
         //std::vector<std::vector<blaze::DynamicVector<T>>> cost_cauchy = std::get<0>(ept);
         blaze::DynamicVector<T> cost_cauchy = std::get<0>(ept);
