@@ -14,7 +14,7 @@
 TEST_CASE("bad_chunk_size")
 {
 
-    blaze::DynamicMatrix<double> distance_matrix(10, 10, 0);
+    auto distance_matrix = blaze::zero<double>(10, 10);
     blaze::DynamicMatrix<int> partition_matrix;
 
     int error = metric::perform_graph_partition(distance_matrix, partition_matrix, 5, 50, 0);

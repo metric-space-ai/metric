@@ -4,32 +4,11 @@
         file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 */
+
 #ifndef _METRIC_UTILS_GRAPH_PARTITION_CPP
 #define _METRIC_UTILS_GRAPH_PARTITION_CPP
 
 namespace metric {
-
-    bool distance_matrix_is_valid(blaze::DynamicMatrix<double> matrix)
-    {
-        if (matrix.rows() != matrix.columns()) return false;
-
-        for (int i = 0; i < matrix.rows(); i++)
-        {
-            for (int j = i; j < matrix.columns(); j++)
-            {
-                if (i == j && matrix(i, j) != 0)
-                {
-                    return false;
-                }
-                else if (matrix(i, j) != matrix(j, i))
-                {
-                    return false;
-                }
-            }
-        }
-
-        return true;
-    };
 
     int random_int_in_range(int left, int right) { return left + (std::rand() % (right - left + 1)); }
 
@@ -41,20 +20,19 @@ namespace metric {
     }
 
     template <typename Tv>
-    blaze::DynamicMatrix<Tv> extract_random_matrix_rows(blaze::DynamicMatrix<Tv> source, int rows_count)
+    blaze::DynamicMatrix<Tv> extract_random_matrix_rows(const blaze::SymmetricMatrix<blaze::DynamicMatrix<Tv>> source,
+														const int rows_count)
     {
         int length = source.rows();
-
-        std::random_device rd;
-        std::mt19937 g(rd());
 
         // ra is list random sample of processing_chunk_size columns
         blaze::DynamicVector<int> random_rows_index(length);
         for (int i = 0; i < length; i++) {
             random_rows_index[i] = i;
         }
-        
-        //std::random_shuffle(random_rows_index.begin(), random_rows_index.end());
+
+	    std::random_device rd;
+	    std::mt19937 g(rd());
         std::shuffle(random_rows_index.begin(), random_rows_index.end(), g);
 
         random_rows_index.resize(rows_count, true);
@@ -130,24 +108,18 @@ namespace metric {
         }
     }
 
-    int perform_graph_partition(blaze::DynamicMatrix<double> distance_matrix, blaze::DynamicMatrix<int>& partition_matrix,
-        int global_optimum_attempts, int processing_chunk_size, __int64_t random_seed)
+    int perform_graph_partition(const blaze::SymmetricMatrix<blaze::DynamicMatrix<double>>& distance_matrix, blaze::DynamicMatrix<int>& partition_matrix,
+                                const int global_optimum_attempts, const int processing_chunk_size, const __int64_t random_seed)
     {
         if (random_seed < 0) {
-            random_seed = time(NULL);
+	        srand(time(nullptr));
         }
-        srand(random_seed);
+	    srand(random_seed);
 
         int length = distance_matrix.rows();
 
-        if (processing_chunk_size > length)
-        {
+        if (processing_chunk_size > length) {
             return 1;
-        }
-
-        if (!distance_matrix_is_valid(distance_matrix))
-        {
-            return 3;
         }
 
         blaze::DynamicMatrix<double> dd = extract_random_matrix_rows(distance_matrix, processing_chunk_size);

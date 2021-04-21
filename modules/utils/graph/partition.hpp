@@ -27,11 +27,11 @@ namespace metric {
  * @return 0 = no error, 1 = bad input, 2 = unknown error, 3 = distance matrix is corrupted
  */
     int perform_graph_partition(
-        blaze::DynamicMatrix<double> distance_matrix,
-        blaze::DynamicMatrix<int>& partition_matrix,
-        int global_optimum_attempts = 100,
-        int processing_chunk_size = 100,
-        __int64_t random_seed = -1);
+			const blaze::SymmetricMatrix<blaze::DynamicMatrix<double>>& distance_matrix,
+			blaze::DynamicMatrix<int>& partition_matrix,
+			const int global_optimum_attempts = 100,
+			const int processing_chunk_size = 100,
+			const __int64_t random_seed = -1);
 }
 
 
