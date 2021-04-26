@@ -42,7 +42,7 @@ template <typename T> T convert_to(const std::string & str)
 
 
 template <class ContainerType>
-ContainerType read_csv(std::string filename, std::string sep=",")
+ContainerType read_csv(std::string filename, std::string sep=",", size_t lines = 0)
 {  // works with string, does not convert to numbers
     typedef typename ContainerType::value_type LINE;
     std::string line;
@@ -53,6 +53,7 @@ ContainerType read_csv(std::string filename, std::string sep=",")
         std::cout << "Failed to open file: " << filename << std::endl;
         return array;
     }
+    size_t cnt = 0;
     while (getline(in, line)) {
         LINE ln;
         while( (pos = line.find(sep)) >= 0)	{
@@ -62,6 +63,9 @@ ContainerType read_csv(std::string filename, std::string sep=",")
         }
         ln.push_back(line);
         array.push_back(ln);
+        if (lines > 0 && cnt >= lines-1)
+            break;
+        ++cnt;
     }
     return array;
 }
@@ -69,9 +73,9 @@ ContainerType read_csv(std::string filename, std::string sep=",")
 
 
 template <class ValueType>
-blaze::DynamicMatrix<ValueType, blaze::rowMajor> read_csv_blaze(const std::string & filename, std::string sep = ",")
+blaze::DynamicMatrix<ValueType, blaze::rowMajor> read_csv_blaze(const std::string & filename, std::string sep = ",", size_t lines = 0)
 {
-    auto array = read_csv<std::vector<std::vector<std::string>>>(filename, sep);
+    auto array = read_csv<std::vector<std::vector<std::string>>>(filename, sep, lines);
     auto m = blaze::DynamicMatrix<ValueType, blaze::rowMajor>(array.size(), array[0].size());
     for (size_t i=0; i<array.size(); ++i)
         for (size_t j=0; j<array[0].size(); ++j)
@@ -91,6 +95,9 @@ int main()
 {
 
 
+    size_t wnd_size = 15;
+
+
     std::cout << "started" << std::endl << std::endl;
 
     bool visualize = false;  // only for small datasets that can be represented in an image point to point
@@ -104,18 +111,62 @@ int main()
 
 //    blaze::DynamicMatrix<value_type> ds = blaze::trans(read_csv_blaze<value_type>("rgblog_fragm_labeled.csv"));
 //    blaze::DynamicMatrix<value_type> ds = blaze::trans(read_csv_blaze<value_type>("rgblog_labeled_short.csv"));
-    blaze::DynamicMatrix<value_type> ds = blaze::trans(read_csv_blaze<value_type>("training_ds_1.csv"));
+    //blaze::DynamicMatrix<value_type> ds = blaze::trans(read_csv_blaze<value_type>("training_ds_1.csv"));
+    //blaze::DynamicMatrix<value_type> ds = blaze::trans(read_csv_blaze<value_type>("training_ds_1_fragm.csv"));
+    //blaze::DynamicMatrix<value_type> ds = blaze::trans(read_csv_blaze<value_type>("training_ds_1_fragm_shift.csv"));
+//    blaze::DynamicMatrix<value_type> ds = blaze::trans(read_csv_blaze<value_type>("training_ds_1_fragm_shift_30.csv"));
+    //blaze::DynamicMatrix<value_type> ds = blaze::trans(read_csv_blaze<value_type>("training_ds_1_fragm_binary_labels.csv"));
+    //blaze::DynamicMatrix<value_type> ds = blaze::trans(read_csv_blaze<value_type>("training_ds_1_fragm_feature_diff.csv"));
+//    blaze::DynamicMatrix<value_type> ds = blaze::trans(read_csv_blaze<value_type>("training_ds_1_fragm_feature_stddev.csv"));
 
-    std::cout << "training dataset read & transposed" << std::endl << std::endl;
+    //std::cout << "training dataset read & transposed" << std::endl << std::endl;
 
+    //*
+    // preprocessing
+
+    blaze::DynamicMatrix<value_type> ds_in = read_csv_blaze<value_type>("training_ds_1_fragm.csv");
+
+    blaze::DynamicVector<value_type> feature_stddev (ds_in.rows(), 0);
+    int new_label = 0;
+    for (size_t i = wnd_size; i < feature_stddev.size(); ++i) {
+        auto wnd1 = blaze::submatrix(ds_in, i - wnd_size, 1, wnd_size, 1);
+        auto wnd2 = blaze::submatrix(ds_in, i - wnd_size, 2, wnd_size, 1);
+        auto wnd3 = blaze::submatrix(ds_in, i - wnd_size, 3, wnd_size, 1);
+        feature_stddev[i] = stddev(wnd1) + stddev(wnd2) + stddev(wnd3);
+        if (ds_in(i, 4) >= 1)
+            new_label = 1;
+        if (ds_in(i, 4) <= -1)
+            new_label = 0;
+        ds_in(i, 4) = new_label;
+    }
+
+    blaze::DynamicMatrix<value_type> ds_all (ds_in.rows(), 4, 0);
+    blaze::submatrix(ds_all, 0, 0, ds_in.rows(), 3) = blaze::submatrix(ds_in, 0, 1, ds_in.rows(), 3);
+    blaze::column(ds_all, 3) = feature_stddev;
+    //blaze::submatrix(ds_all, 0, 4, ds_in.rows(), 0) =
+    blaze::DynamicMatrix<value_type, blaze::rowMajor> data = blaze::trans(ds_all);
+
+    blaze::DynamicMatrix<value_type, blaze::rowMajor> target = blaze::trans(blaze::submatrix(ds_in, 0, 4, ds_in.rows(), 1));
+
+    blaze::DynamicMatrix<value_type, blaze::rowMajor>  test_data = data;
+
+    blaze_dm_to_csv(ds_all, "data.csv");
+    blaze_dm_to_csv<value_type>(blaze::trans(target), "target.csv");
+
+    // */
+
+
+    /*
     //blaze::DynamicMatrix<value_type, blaze::rowMajor> data = blaze::submatrix(ds, 0, 0, 3, ds.columns());
-    blaze::DynamicMatrix<value_type, blaze::rowMajor> data = blaze::submatrix(ds, 1, 0, 3, ds.columns());
+    //blaze::DynamicMatrix<value_type, blaze::rowMajor> data = blaze::submatrix(ds, 1, 0, 3, ds.columns()); // 3 features
+    blaze::DynamicMatrix<value_type, blaze::rowMajor> data = blaze::submatrix(ds, 1, 0, 4, ds.columns()); // 4 features
     // first COLUMN represents zero time moment, second represents time = 1, etc
 
     std::cout << "data selected" << std::endl << std::endl;
 
     //blaze::DynamicMatrix<value_type, blaze::rowMajor> target = blaze::submatrix(ds, 3, 0, 1, ds.columns());
-    blaze::DynamicMatrix<value_type, blaze::rowMajor> target = blaze::submatrix(ds, 4, 0, 1, ds.columns());
+    //blaze::DynamicMatrix<value_type, blaze::rowMajor> target = blaze::submatrix(ds, 4, 0, 1, ds.columns()); // 3 features
+    blaze::DynamicMatrix<value_type, blaze::rowMajor> target = blaze::submatrix(ds, 5, 0, 1, ds.columns()); // 4 features
 
     std::cout << "label selected" << std::endl << std::endl;
 
@@ -126,8 +177,10 @@ int main()
 
     std::cout << "test dataset read & transposed" << std::endl << std::endl;
 
+    // */
+
     auto end_time = std::chrono::steady_clock::now();
-    std::cout << "data parepared in " <<
+    std::cout << "data prepared in " <<
                  double(std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count()) / 1000000 << " s" <<
                  std::endl << std::endl;
 
@@ -140,9 +193,10 @@ int main()
 
     start_time = std::chrono::steady_clock::now();
 
-    auto esn = metric::ESN<std::vector<value_type>, void>(500, 10, 0.99, 0.1, 2500, 0.5); // echo
-    //auto esn = metric::ESN<std::vector<value_type>, void>(500, 4, 0.99, 1, 0, 0.9); // no echo (alpha=1 and no washout)
+    auto esn = metric::ESN<std::vector<value_type>, void>(500, 5, 0.99, 0.1, 2500, 0.5); // echo
     // w_size, w_connections, w_sr, alpha, washout, beta
+    // currently best for old labels: (500, 10, 0.99, 0.9, 2500, 0.5)
+    // and (500, 5, 0.99, 0.1, 2500, 0.5) for binary state labels
     esn.train(data, target);
 
     end_time = std::chrono::steady_clock::now();
