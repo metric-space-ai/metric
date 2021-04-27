@@ -1,6 +1,7 @@
 
 
 #include "../../../../modules/mapping/ESN.hpp"
+//#include "../../../../modules/correlation/entropy.hpp"
 
 #include "../../../../modules/utils/visualizer.hpp"
 
@@ -86,6 +87,21 @@ blaze::DynamicMatrix<ValueType, blaze::rowMajor> read_csv_blaze(const std::strin
 
 
 
+template <class ValueType>
+ValueType class_entropy(blaze::DynamicVector<ValueType> data, ValueType threshold) {
+    int sum = 0;
+    ValueType sz = data.size();
+    for (size_t i = 0; i<sz; ++i) {
+        if (data[i] > threshold)
+            ++sum;
+    }
+    ValueType p1 = sum/sz;
+    if (sum == 0 || sum == sz)
+        return 0;
+    else
+        return -p1*log2(p1) - (1 - p1)*log2(1 - p1);
+}
+
 
 
 
@@ -124,7 +140,12 @@ int main()
     //*
     // preprocessing
 
-    blaze::DynamicMatrix<value_type> ds_in = read_csv_blaze<value_type>("training_ds_1_fragm.csv");
+    blaze::DynamicMatrix<value_type> ds_in = read_csv_blaze<value_type>("training_ds_1_fragm.csv"); //, ",", 10000);
+//    blaze::DynamicMatrix<value_type> ds_in = read_csv_blaze<value_type>("training_ds_1_fragm.csv");
+
+    blaze::DynamicMatrix<value_type> raw_labels (ds_in.rows(), 1);
+    blaze::column(raw_labels, 0) = blaze::column(ds_in, 4);
+    blaze_dm_to_csv(raw_labels, "raw_labels.csv");
 
     blaze::DynamicVector<value_type> feature_stddev (ds_in.rows(), 0);
     int new_label = 0;
@@ -143,7 +164,6 @@ int main()
     blaze::DynamicMatrix<value_type> ds_all (ds_in.rows(), 4, 0);
     blaze::submatrix(ds_all, 0, 0, ds_in.rows(), 3) = blaze::submatrix(ds_in, 0, 1, ds_in.rows(), 3);
     blaze::column(ds_all, 3) = feature_stddev;
-    //blaze::submatrix(ds_all, 0, 4, ds_in.rows(), 0) =
     blaze::DynamicMatrix<value_type, blaze::rowMajor> data = blaze::trans(ds_all);
 
     blaze::DynamicMatrix<value_type, blaze::rowMajor> target = blaze::trans(blaze::submatrix(ds_in, 0, 4, ds_in.rows(), 1));
@@ -227,7 +247,8 @@ int main()
 
     start_time = std::chrono::steady_clock::now();
 
-    blaze::DynamicMatrix<value_type, blaze::rowMajor> out = blaze::trans(prediction);
+    blaze::DynamicMatrix<value_type, blaze::rowMajor> out = blaze::trans(prediction);  // columnMajor does not comfort csv writer
+    //blaze::DynamicMatrix<value_type, blaze::columnMajor> out = blaze::trans(prediction);
     blaze_dm_to_csv(out, "prediction.csv");
 
     end_time = std::chrono::steady_clock::now();
@@ -237,6 +258,21 @@ int main()
 
     if (visualize)
         mat2bmp::blaze2bmp_norm(prediction, "ESN_prediction.bmp");
+
+    //*
+    //postprocessing
+    //auto ekpn_eucl = metric::Entropy<void, metric::Euclidean<value_type>>(metric::Euclidean<value_type>(), 3, 10);
+    blaze::DynamicMatrix<value_type> sl_entropy (out.rows(), 1, 0);
+    for (size_t i = wnd_size; i < out.rows(); ++i) {
+        blaze::DynamicMatrix<value_type> wnd_row = blaze::submatrix(out, i - wnd_size, 0, wnd_size, 1);
+        blaze::DynamicVector<value_type> wnd = blaze::column(wnd_row, 0); //blaze::trans(blaze::column(wnd_row, 0));
+        // TODO convert to std::vector
+        //sl_entropy(i, 0) = ekpn_eucl(wnd);
+        sl_entropy(i, 0) = class_entropy(wnd, 0.5);
+    }
+
+    blaze_dm_to_csv(sl_entropy, "entropy.csv");
+    // */
 
 
     std::cout << "all done" << std::endl;
