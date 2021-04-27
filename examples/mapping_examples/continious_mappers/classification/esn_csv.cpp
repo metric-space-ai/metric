@@ -113,31 +113,21 @@ int main()
 
     size_t wnd_size = 15;
 
+    using value_type = double;
+
+
+    //*
 
     std::cout << "started" << std::endl << std::endl;
 
     bool visualize = false;  // only for small datasets that can be represented in an image point to point
-
-    using value_type = double;
 
 
     // dataset passed as Blaze matrix, data points in COLUMNS
 
     auto start_time = std::chrono::steady_clock::now();
 
-//    blaze::DynamicMatrix<value_type> ds = blaze::trans(read_csv_blaze<value_type>("rgblog_fragm_labeled.csv"));
-//    blaze::DynamicMatrix<value_type> ds = blaze::trans(read_csv_blaze<value_type>("rgblog_labeled_short.csv"));
-    //blaze::DynamicMatrix<value_type> ds = blaze::trans(read_csv_blaze<value_type>("training_ds_1.csv"));
-    //blaze::DynamicMatrix<value_type> ds = blaze::trans(read_csv_blaze<value_type>("training_ds_1_fragm.csv"));
-    //blaze::DynamicMatrix<value_type> ds = blaze::trans(read_csv_blaze<value_type>("training_ds_1_fragm_shift.csv"));
-//    blaze::DynamicMatrix<value_type> ds = blaze::trans(read_csv_blaze<value_type>("training_ds_1_fragm_shift_30.csv"));
-    //blaze::DynamicMatrix<value_type> ds = blaze::trans(read_csv_blaze<value_type>("training_ds_1_fragm_binary_labels.csv"));
-    //blaze::DynamicMatrix<value_type> ds = blaze::trans(read_csv_blaze<value_type>("training_ds_1_fragm_feature_diff.csv"));
-//    blaze::DynamicMatrix<value_type> ds = blaze::trans(read_csv_blaze<value_type>("training_ds_1_fragm_feature_stddev.csv"));
 
-    //std::cout << "training dataset read & transposed" << std::endl << std::endl;
-
-    //*
     // preprocessing
 
     blaze::DynamicMatrix<value_type> ds_in = read_csv_blaze<value_type>("training_ds_1_fragm.csv"); //, ",", 10000);
@@ -173,31 +163,8 @@ int main()
     blaze_dm_to_csv(ds_all, "data.csv");
     blaze_dm_to_csv<value_type>(blaze::trans(target), "target.csv");
 
-    // */
 
 
-    /*
-    //blaze::DynamicMatrix<value_type, blaze::rowMajor> data = blaze::submatrix(ds, 0, 0, 3, ds.columns());
-    //blaze::DynamicMatrix<value_type, blaze::rowMajor> data = blaze::submatrix(ds, 1, 0, 3, ds.columns()); // 3 features
-    blaze::DynamicMatrix<value_type, blaze::rowMajor> data = blaze::submatrix(ds, 1, 0, 4, ds.columns()); // 4 features
-    // first COLUMN represents zero time moment, second represents time = 1, etc
-
-    std::cout << "data selected" << std::endl << std::endl;
-
-    //blaze::DynamicMatrix<value_type, blaze::rowMajor> target = blaze::submatrix(ds, 3, 0, 1, ds.columns());
-    //blaze::DynamicMatrix<value_type, blaze::rowMajor> target = blaze::submatrix(ds, 4, 0, 1, ds.columns()); // 3 features
-    blaze::DynamicMatrix<value_type, blaze::rowMajor> target = blaze::submatrix(ds, 5, 0, 1, ds.columns()); // 4 features
-
-    std::cout << "label selected" << std::endl << std::endl;
-
-    //blaze::DynamicMatrix<value_type, blaze::rowMajor>  test_data =
-    //        blaze::trans(read_csv_blaze<value_type>("rgblog_test.csv"));
-    blaze::DynamicMatrix<value_type, blaze::rowMajor>  test_data = data;
-
-
-    std::cout << "test dataset read & transposed" << std::endl << std::endl;
-
-    // */
 
     auto end_time = std::chrono::steady_clock::now();
     std::cout << "data prepared in " <<
@@ -259,6 +226,18 @@ int main()
     if (visualize)
         mat2bmp::blaze2bmp_norm(prediction, "ESN_prediction.bmp");
 
+    // */
+
+    /*
+
+    // read instead of running ESN, TODO remove
+    //blaze::DynamicMatrix<value_type> prediction_read = read_csv_blaze<value_type>("prediction.csv");
+    blaze::DynamicMatrix<value_type> out = read_csv_blaze<value_type>("prediction.csv");
+    //blaze::DynamicMatrix<value_type, blaze::rowMajor> out = blaze::trans(prediction_read);
+
+    // */
+
+
     //*
     //postprocessing
     //auto ekpn_eucl = metric::Entropy<void, metric::Euclidean<value_type>>(metric::Euclidean<value_type>(), 3, 10);
@@ -272,6 +251,41 @@ int main()
     }
 
     blaze_dm_to_csv(sl_entropy, "entropy.csv");
+    //blaze_dm_to_csv(sl_entropy, "entropy_tmp.csv");
+    // */
+
+    //*
+
+    std::cout << std::endl << "postprocessing started" << std::endl;
+
+    size_t cmp_wnd_sz = 150;
+
+    value_type contrast_threshold = 0.3;
+    blaze::DynamicMatrix<value_type> postproc_pred (out.rows(), 1, 0);
+    bool prev_l_flag = false;
+    for (size_t i = cmp_wnd_sz; i < out.rows() - cmp_wnd_sz; ++i) {
+        bool l_flag = false;
+        if (sl_entropy(i, 0) > 0.4) {
+            blaze::DynamicMatrix<value_type> wnd_past = blaze::submatrix(out, i - cmp_wnd_sz, 0, cmp_wnd_sz, 1);
+            blaze::DynamicMatrix<value_type> wnd_fut  = blaze::submatrix(out, i, 0, cmp_wnd_sz, 1);
+            int label = 0;
+            if (blaze::mean(wnd_past) - blaze::mean(wnd_fut) < -contrast_threshold) {  // TODO determine!!
+                label = 1;
+                l_flag = true;
+            }
+            if (blaze::mean(wnd_past) - blaze::mean(wnd_fut) > contrast_threshold) {  // TODO determine!!
+                label = -1;
+                l_flag = true;
+            }
+            if (!prev_l_flag)
+                postproc_pred(i, 0) = label;
+            //std::cout << i << std::endl;
+        }
+        prev_l_flag = l_flag;
+    }
+
+    blaze_dm_to_csv(postproc_pred, "postproc.csv");
+
     // */
 
 
