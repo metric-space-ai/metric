@@ -158,10 +158,40 @@ int main()
 
     blaze::DynamicMatrix<value_type, blaze::rowMajor> target = blaze::trans(blaze::submatrix(ds_in, 0, 4, ds_in.rows(), 1));
 
-    blaze::DynamicMatrix<value_type, blaze::rowMajor>  test_data = data;
-
     blaze_dm_to_csv(ds_all, "data.csv");
     blaze_dm_to_csv<value_type>(blaze::trans(target), "target.csv");
+
+
+    //blaze::DynamicMatrix<value_type, blaze::rowMajor>  test_data = data;
+
+
+    // prediction dataset
+    blaze::DynamicMatrix<value_type> ds_pred = read_csv_blaze<value_type>("training_ds_2_fragm.csv"); //, ",", 10000);
+    blaze::DynamicMatrix<value_type> raw_labels_pred (ds_pred.rows(), 1);
+    blaze::column(raw_labels_pred, 0) = blaze::column(ds_pred, 4);
+    blaze_dm_to_csv(raw_labels_pred, "raw_labels_pred.csv");
+
+    blaze::DynamicVector<value_type> feature_stddev_pred (ds_pred.rows(), 0);
+    new_label = 0;
+    for (size_t i = wnd_size; i < feature_stddev_pred.size(); ++i) {
+        auto wnd1 = blaze::submatrix(ds_pred, i - wnd_size, 1, wnd_size, 1);
+        auto wnd2 = blaze::submatrix(ds_pred, i - wnd_size, 2, wnd_size, 1);
+        auto wnd3 = blaze::submatrix(ds_pred, i - wnd_size, 3, wnd_size, 1);
+        feature_stddev_pred[i] = stddev(wnd1) + stddev(wnd2) + stddev(wnd3);
+        if (ds_pred(i, 4) >= 1)
+            new_label = 1;
+        if (ds_pred(i, 4) <= -1)
+            new_label = 0;
+        ds_pred(i, 4) = new_label;
+    }
+
+    blaze::DynamicMatrix<value_type> ds_all_pred (ds_pred.rows(), 4, 0);
+    blaze::submatrix(ds_all_pred, 0, 0, ds_pred.rows(), 3) = blaze::submatrix(ds_pred, 0, 1, ds_pred.rows(), 3);
+    blaze::column(ds_all_pred, 3) = feature_stddev_pred;
+    blaze::DynamicMatrix<value_type, blaze::rowMajor> data_pred = blaze::trans(ds_all_pred);
+    blaze_dm_to_csv(ds_all_pred, "data_pred.csv");
+
+
 
 
 
@@ -171,12 +201,12 @@ int main()
                  double(std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count()) / 1000000 << " s" <<
                  std::endl << std::endl;
 
-    if (visualize)
-    {
-        mat2bmp::blaze2bmp_norm(data, "ESN_SlicesR.bmp");
-        mat2bmp::blaze2bmp_norm(target, "ESN_TargetR.bmp");
-        mat2bmp::blaze2bmp_norm(test_data, "ESN_SlicesTestR.bmp");
-    }
+//    if (visualize)
+//    {
+//        mat2bmp::blaze2bmp_norm(data, "ESN_SlicesR.bmp");
+//        mat2bmp::blaze2bmp_norm(target, "ESN_TargetR.bmp");
+//        mat2bmp::blaze2bmp_norm(test_data, "ESN_SlicesTestR.bmp");
+//    }
 
     start_time = std::chrono::steady_clock::now();
 
@@ -204,7 +234,8 @@ int main()
 
     start_time = std::chrono::steady_clock::now();
 
-    auto prediction = esn.predict(test_data);
+    //auto prediction = esn.predict(test_data);
+    auto prediction = esn.predict(data_pred);
 
     end_time = std::chrono::steady_clock::now();
     std::cout << "prediction completed in " <<
@@ -216,7 +247,7 @@ int main()
 
     blaze::DynamicMatrix<value_type, blaze::rowMajor> out = blaze::trans(prediction);  // columnMajor does not comfort csv writer
     //blaze::DynamicMatrix<value_type, blaze::columnMajor> out = blaze::trans(prediction);
-    blaze_dm_to_csv(out, "prediction.csv");
+    blaze_dm_to_csv(out, "prediction_pred.csv");
 
     end_time = std::chrono::steady_clock::now();
     std::cout << "prediction written in " <<
@@ -250,8 +281,9 @@ int main()
         sl_entropy(i, 0) = class_entropy(wnd, 0.5);
     }
 
-    blaze_dm_to_csv(sl_entropy, "entropy.csv");
-    //blaze_dm_to_csv(sl_entropy, "entropy_tmp.csv");
+    //blaze_dm_to_csv(sl_entropy, "entropy.csv");
+    blaze_dm_to_csv(sl_entropy, "entropy_pred.csv");
+
     // */
 
     //*
@@ -284,7 +316,8 @@ int main()
         prev_l_flag = l_flag;
     }
 
-    blaze_dm_to_csv(postproc_pred, "postproc.csv");
+    //blaze_dm_to_csv(postproc_pred, "postproc.csv");
+    blaze_dm_to_csv(postproc_pred, "postproc_pred.csv");
 
     // */
 
