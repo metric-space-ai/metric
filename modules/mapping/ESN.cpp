@@ -172,12 +172,17 @@ ESN<RecType, Metric>::ESN(size_t w_size,  // = 500, // number of elements in res
 template <typename RecType, typename Metric>
 ESN<RecType, Metric>::ESN(const std::string & filename)
 {
+    //blaze::DynamicMatrix<value_type> W_in;
+    //blaze::CompressedMatrix<value_type> W;
+    //blaze::DynamicMatrix<value_type> W_out;
     blaze::DynamicVector<value_type> params;
-    blaze::Archive<std::ofstream> archive (filename);
-    archive << params;
-    archive << W_out;
-    archive << W;
-    archive << W_in;
+    // saved as: archive << W_in << W << W_out << params;
+
+    blaze::Archive<std::ifstream> archive (filename);
+    archive >> W_in;
+    archive >> W;
+    archive >> W_out;
+    archive >> params;
     alpha = params[0];
     beta = params[1];
     washout = params[2];

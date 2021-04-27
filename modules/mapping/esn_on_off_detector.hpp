@@ -35,6 +35,16 @@ public:
     }
 
 
+    SwitchPredictor(const std::string & filename) {
+
+        wnd_size = 15;
+        cmp_wnd_sz = 150;
+        contrast_threshold = 0.3;
+
+        esn = metric::ESN<std::vector<value_type>, void>(filename);
+    }
+
+
     blaze::DynamicMatrix<value_type> estimate(const blaze::DynamicMatrix<value_type> & dataset) {
 
         auto data = preprocess(dataset);
@@ -72,6 +82,12 @@ public:
         }
 
         return postproc;
+    }
+
+
+    void save(const std::string & filename) {
+
+        esn.save(filename);
     }
 
 
