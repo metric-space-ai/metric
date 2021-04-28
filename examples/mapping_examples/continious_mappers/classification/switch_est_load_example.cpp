@@ -100,8 +100,8 @@ int main()
 
     auto start_time = std::chrono::steady_clock::now();
 
-    //auto model = SwitchPredictor<value_type>("model.blaze");
-    auto model = SwitchPredictor<value_type>("esn_image.blaze");
+    auto model = SwitchPredictor<value_type>("model.blaze");
+    //auto model = SwitchPredictor<value_type>("esn_image.blaze");
 
     auto end_time = std::chrono::steady_clock::now();
     std::cout << "model loaded in " <<
