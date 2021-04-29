@@ -47,8 +47,8 @@ public:
 
         auto data = preprocess(training_data);
 
-        std::vector<RecType> target;
-        target.reserve(labels.size());
+        std::vector<RecType> target (labels.size(), {0});
+        //target.reserve(labels.size());
         int new_label = 0;
         for (size_t i = wnd_size; i < labels.size(); ++i) {
             if (labels[i][0] >= 1)
