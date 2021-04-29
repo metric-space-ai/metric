@@ -148,24 +148,80 @@ int main()
                  std::endl << std::endl;
 
 
-
     start_time = std::chrono::steady_clock::now();
 
     std::vector<std::vector<value_type>> ds = read_csv_num<value_type>("training_ds_2_fragm.csv"); //, ",", 10000);
+    std::vector<std::tuple<size_t, value_type>> pairs = {};
+    std::vector<size_t> slice_n = {};
+    std::vector<size_t> n_pairs = {};
     for (size_t i = 0; i < ds.size(); ++i) {
-        std::vector<value_type> el = ds[i];
-        ds[i] = {el[1], el[2], el[3]}; // remove 1st and last columns
+        std::vector<value_type> sample = {ds[i][1], ds[i][2], ds[i][2]};
+        std::vector<std::tuple<size_t, value_type>> pair_result = model.estimate_online(sample);
+        if (pair_result.size() > 0) {
+            pairs.insert(pairs.end(), pair_result.begin(), pair_result.end());
+            slice_n.push_back(i);
+            n_pairs.push_back(pair_result.size());
+        }
     }
 
-    auto est = model.estimate(ds);
+    std::cout << std::endl << "all pairs:" << std::endl;
+    size_t pair_cnt = 0;
+    for (size_t i = 0; i < slice_n.size(); ++i) {
+        std::cout << "slice " << slice_n[i] << ", number of pairs: " << n_pairs[i] << ": " << std::endl;
+        for (size_t j = 0; j < n_pairs[i]; ++j) {
+            std::cout << "    pair: " << std::get<0>(pairs[pair_cnt]) << ", " << std::get<1>(pairs[pair_cnt]) << std::endl;
+            ++pair_cnt;
+        }
+    }
 
-    v_to_csv(est, "estimation.csv");
+//    std::vector<value_type> timeline = {};
+//    size_t prev_idx = 151;
+//    size_t i = 0;
+//    while (i < pairs.size()) {
+//        size_t idx = std::get<0>(pairs[i]);
+//        value_type v = std::get<1>(pairs[i]);
+//        // TODO
+//        if (prev_idx > idx)
+//            prev_idx = 0;
+//        for (size_t j = 0; j < idx - prev_idx - 1; ++j)
+//            timeline.push_back(0);
+//        timeline.push_back(v);
+//        prev_idx = idx;
+//    }
+
+
+
+//    v_to_csv(timeline, "online_estimation_pairs.csv");
 
     end_time = std::chrono::steady_clock::now();
-    std::cout << "estimation completed in " <<
+    std::cout << "online estimation with pair output completed in " <<
                  double(std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count()) / 1000000 << " s" <<
                  std::endl << std::endl;
 
+
+
+
+    //*
+    // raw prediction output, may be enabled
+    start_time = std::chrono::steady_clock::now();
+
+    //std::vector<std::vector<value_type>> ds = read_csv_num<value_type>("training_ds_2_fragm.csv"); //, ",", 10000);
+    std::vector<value_type> predictions = {};
+    for (size_t i = 0; i < ds.size(); ++i) {
+        std::vector<value_type> sample = {ds[i][1], ds[i][2], ds[i][2]};
+        std::vector<value_type> result = model.estimate_online_raw(sample);
+        if (result.size() > 0) {
+            predictions.insert(predictions.end(), result.begin(), result.end());
+        }
+    }
+
+    v_to_csv(predictions, "online_estimation.csv");
+
+    end_time = std::chrono::steady_clock::now();
+    std::cout << "raw online estimation completed in " <<
+                 double(std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count()) / 1000000 << " s" <<
+                 std::endl << std::endl;
+    // */
 
     return 0;
 }

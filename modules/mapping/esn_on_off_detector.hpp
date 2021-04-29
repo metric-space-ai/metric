@@ -15,6 +15,7 @@ public:
         wnd_size = 15; // TODO pass
         cmp_wnd_sz = 150;
         contrast_threshold = 0.3;
+        washout = 2500;
 
         assert(training_data.rows() == labels.rows());
         assert(training_data.columns() == 3);  // TODO relax
@@ -31,7 +32,7 @@ public:
             target(i, 0) = new_label;
         }
 
-        esn = metric::ESN<std::vector<value_type>, void>(500, 5, 0.99, 0.1, 2500, 0.5); // TODO pass
+        esn = metric::ESN<std::vector<value_type>, void>(500, 5, 0.99, 0.1, washout, 0.5); // TODO pass
         esn.train(data, blaze::trans(target));
     }
 
@@ -41,6 +42,7 @@ public:
         wnd_size = 15; // TODO pass
         cmp_wnd_sz = 150;
         contrast_threshold = 0.3;
+        washout = 2500;
 
         assert(training_data.size() == labels.size());
         assert(training_data[0].size() == 3);  // TODO relax
@@ -58,7 +60,7 @@ public:
             target[i] = {new_label};
         }
 
-        esn = metric::ESN<std::vector<value_type>, void>(500, 5, 0.99, 0.1, 2500, 0.5); // TODO pass
+        esn = metric::ESN<std::vector<value_type>, void>(500, 5, 0.99, 0.1, washout, 0.5); // TODO pass
         esn.train(data, target);
     }
 
@@ -68,6 +70,7 @@ public:
         wnd_size = 15; // TODO pass
         cmp_wnd_sz = 150;
         contrast_threshold = 0.3;
+        washout = 2500;  // TODO update depending on loaded model
 
         esn = metric::ESN<std::vector<value_type>, void>(filename);
     }
@@ -165,6 +168,43 @@ public:
 
 
 
+    std::vector<value_type> estimate_online_raw(const std::vector<value_type> & sample) {
+
+        std::vector<value_type> result = {}; // TODO update
+
+        buffer.push_back(sample);
+        if (buffer.size() >= washout + 3*cmp_wnd_sz) { // warmup finished
+            if (online_cnt < cmp_wnd_sz - 1) { // no estimation
+                ++online_cnt;
+            } else { // estimation
+                online_cnt = 0;
+                std::vector<value_type> all_result = estimate(buffer);
+                result.insert(result.begin(), all_result.end() - 2*cmp_wnd_sz, all_result.end() - cmp_wnd_sz);
+            }
+            buffer.erase(buffer.begin()); // pop_front
+        }
+
+        return result;
+    }
+
+
+
+    std::vector<std::tuple<size_t, value_type>> estimate_online(const std::vector<value_type> & sample) {
+
+        auto raw_result = estimate_online_raw(sample);
+
+        std::vector<std::tuple<size_t, value_type>> result = {};
+        for (size_t i = 0; i < raw_result.size(); ++i) {
+            if (raw_result[i] != 0) {
+                auto sw = std::make_tuple(i, raw_result[i]);
+                result.push_back(sw);
+            }
+        }
+        return result;
+    }
+
+
+
     void save(const std::string & filename) {
 
         esn.save(filename);
@@ -177,7 +217,10 @@ private:
     metric::ESN<std::vector<value_type>, void> esn;
     size_t wnd_size;
     size_t cmp_wnd_sz;
+    size_t washout;
     value_type contrast_threshold;
+    std::vector<std::vector<value_type>> buffer = {};
+    size_t online_cnt = 0;
 
 
     value_type v_stddev(std::vector<value_type> const & v) {
