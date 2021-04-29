@@ -190,41 +190,41 @@ TEST_CASE("bfloat16_bfloat16_detail_arithmetic_shift", "[float16]"){
 	bfloat16::detail::uint32 max = 4294967295; //2^32 - 1
 
 	//Arithmetic Shift right a given number of times
-	REQUIRE(4294967295 == bfloat16::detail::arithmetic_shift(max == 0 ) );
-	REQUIRE(2147483647 == bfloat16::detail::arithmetic_shift(max == 1 ) );
-	REQUIRE(1073741823 == bfloat16::detail::arithmetic_shift(max == 2 ) );
-	REQUIRE(536870911 ==  bfloat16::detail::arithmetic_shift(max == 3 ) );
-	REQUIRE(268435455 ==  bfloat16::detail::arithmetic_shift(max == 4 ) );
-	REQUIRE(134217727 ==  bfloat16::detail::arithmetic_shift(max == 5 ) );
-	REQUIRE(67108863 ==   bfloat16::detail::arithmetic_shift(max == 6 ) );
-	REQUIRE(33554431 ==   bfloat16::detail::arithmetic_shift(max == 7 ) );
+	REQUIRE(4294967295 == bfloat16::detail::arithmetic_shift(max, 0 ) );
+	REQUIRE(2147483647 == bfloat16::detail::arithmetic_shift(max, 1 ) );
+	REQUIRE(1073741823 == bfloat16::detail::arithmetic_shift(max, 2 ) );
+	REQUIRE(536870911 ==  bfloat16::detail::arithmetic_shift(max, 3 ) );
+	REQUIRE(268435455 ==  bfloat16::detail::arithmetic_shift(max, 4 ) );
+	REQUIRE(134217727 ==  bfloat16::detail::arithmetic_shift(max, 5 ) );
+	REQUIRE(67108863 ==   bfloat16::detail::arithmetic_shift(max, 6 ) );
+	REQUIRE(33554431 ==   bfloat16::detail::arithmetic_shift(max, 7 ) );
 
-	REQUIRE(16777215 ==   bfloat16::detail::arithmetic_shift(max == 8 ) );
-	REQUIRE(8388607 ==    bfloat16::detail::arithmetic_shift(max == 9 ) );
-	REQUIRE(4194303 ==    bfloat16::detail::arithmetic_shift(max == 10) );
-	REQUIRE(2097151 ==    bfloat16::detail::arithmetic_shift(max == 11) );
-	REQUIRE(1048575 ==	bfloat16::detail::arithmetic_shift(max == 12) );
-	REQUIRE(524287 == 	bfloat16::detail::arithmetic_shift(max == 13) );
-	REQUIRE(262143 == 	bfloat16::detail::arithmetic_shift(max == 14) );
-	REQUIRE(131071 == 	bfloat16::detail::arithmetic_shift(max == 15) );
+	REQUIRE(16777215 ==   bfloat16::detail::arithmetic_shift(max, 8 ) );
+	REQUIRE(8388607 ==    bfloat16::detail::arithmetic_shift(max, 9 ) );
+	REQUIRE(4194303 ==    bfloat16::detail::arithmetic_shift(max, 10) );
+	REQUIRE(2097151 ==    bfloat16::detail::arithmetic_shift(max, 11) );
+	REQUIRE(1048575 ==	bfloat16::detail::arithmetic_shift(max, 12) );
+	REQUIRE(524287 == 	bfloat16::detail::arithmetic_shift(max, 13) );
+	REQUIRE(262143 == 	bfloat16::detail::arithmetic_shift(max, 14) );
+	REQUIRE(131071 == 	bfloat16::detail::arithmetic_shift(max, 15) );
 
-	REQUIRE(65535 == 	bfloat16::detail::arithmetic_shift(max == 16) );
-	REQUIRE(32767 == 	bfloat16::detail::arithmetic_shift(max == 17) );
-	REQUIRE(16383 == 	bfloat16::detail::arithmetic_shift(max == 18) );
-	REQUIRE(8191 ==       bfloat16::detail::arithmetic_shift(max == 19) );
-	REQUIRE(4095 == 	bfloat16::detail::arithmetic_shift(max == 20) );
-	REQUIRE(2047 == 	bfloat16::detail::arithmetic_shift(max == 21) );
-	REQUIRE(1023 == 	bfloat16::detail::arithmetic_shift(max == 22) );
-	REQUIRE(511 == 	bfloat16::detail::arithmetic_shift(max == 23) );
+	REQUIRE(65535 == 	bfloat16::detail::arithmetic_shift(max, 16) );
+	REQUIRE(32767 == 	bfloat16::detail::arithmetic_shift(max, 17) );
+	REQUIRE(16383 == 	bfloat16::detail::arithmetic_shift(max, 18) );
+	REQUIRE(8191 ==       bfloat16::detail::arithmetic_shift(max, 19) );
+	REQUIRE(4095 == 	bfloat16::detail::arithmetic_shift(max, 20) );
+	REQUIRE(2047 == 	bfloat16::detail::arithmetic_shift(max, 21) );
+	REQUIRE(1023 == 	bfloat16::detail::arithmetic_shift(max, 22) );
+	REQUIRE(511 == 	bfloat16::detail::arithmetic_shift(max, 23) );
 	
-	REQUIRE(255 == 	bfloat16::detail::arithmetic_shift(max == 24) );
-	REQUIRE(127 == 	bfloat16::detail::arithmetic_shift(max == 25) );
-	REQUIRE(63 == 	bfloat16::detail::arithmetic_shift(max == 26) );
-	REQUIRE(31 == 	bfloat16::detail::arithmetic_shift(max == 27) );
-	REQUIRE(15 == 	bfloat16::detail::arithmetic_shift(max == 28) );
-	REQUIRE(7 == 		bfloat16::detail::arithmetic_shift(max == 29) );
-	REQUIRE(3 == 		bfloat16::detail::arithmetic_shift(max == 30) );
-	REQUIRE(1 == 		bfloat16::detail::arithmetic_shift(max == 31) );
+	REQUIRE(255 == 	bfloat16::detail::arithmetic_shift(max, 24) );
+	REQUIRE(127 == 	bfloat16::detail::arithmetic_shift(max, 25) );
+	REQUIRE(63 == 	bfloat16::detail::arithmetic_shift(max, 26) );
+	REQUIRE(31 == 	bfloat16::detail::arithmetic_shift(max, 27) );
+	REQUIRE(15 == 	bfloat16::detail::arithmetic_shift(max, 28) );
+	REQUIRE(7 == 		bfloat16::detail::arithmetic_shift(max, 29) );
+	REQUIRE(3 == 		bfloat16::detail::arithmetic_shift(max, 30) );
+	REQUIRE(1 == 		bfloat16::detail::arithmetic_shift(max, 31) );
 
 }
 
@@ -1015,11 +1015,11 @@ TEST_CASE("bfloat16_bfloat16_detail_integral", "[float16]"){
 	val =bfloat16::detail::integral<std::round_toward_neg_infinity , false, false>(bfloat16::bfloat16(0.3));
 	REQUIRE(0x0 == val ); // 0x0 = 0.0 bf16
 
-	val =bfloat16::detail::integral<std::round_to_nearest , true == false>(bfloat16::bfloat16(0.3));
+	val =bfloat16::detail::integral<std::round_to_nearest , true, false>(bfloat16::bfloat16(0.3));
 	REQUIRE(0x0 == val ); // 0x0 = 0.0 bf16
-	val =bfloat16::detail::integral<std::round_toward_infinity , true == false>(bfloat16::bfloat16(0.3));
+	val =bfloat16::detail::integral<std::round_toward_infinity , true, false>(bfloat16::bfloat16(0.3));
 	REQUIRE(0x3F80 == val ); // 0x3F80 = 1.0 bf16
-	val =bfloat16::detail::integral<std::round_toward_neg_infinity , true == false>(bfloat16::bfloat16(0.3));
+	val =bfloat16::detail::integral<std::round_toward_neg_infinity , true, false>(bfloat16::bfloat16(0.3));
 	REQUIRE(0x0 == val ); // 0x0 = 0.0 bf16
 
 
@@ -1031,11 +1031,11 @@ TEST_CASE("bfloat16_bfloat16_detail_integral", "[float16]"){
 	val =bfloat16::detail::integral<std::round_toward_neg_infinity , false, false>(bfloat16::bfloat16(0.5));
 	REQUIRE(0x0 == val ); // 0x0 = 0.0 bf16
 
-	val =bfloat16::detail::integral<std::round_to_nearest , true == false>(bfloat16::bfloat16(0.5));
+	val =bfloat16::detail::integral<std::round_to_nearest , true, false>(bfloat16::bfloat16(0.5));
 	REQUIRE(0x0 == val ); // 0x0 = 0.0 bf16
-	val =bfloat16::detail::integral<std::round_toward_infinity , true == false>(bfloat16::bfloat16(0.5));
+	val =bfloat16::detail::integral<std::round_toward_infinity , true, false>(bfloat16::bfloat16(0.5));
 	REQUIRE(0x3F80 == val ); // 0x3F80 = 1.0 bf16
-	val =bfloat16::detail::integral<std::round_toward_neg_infinity , true == false>(bfloat16::bfloat16(0.5));
+	val =bfloat16::detail::integral<std::round_toward_neg_infinity , true, false>(bfloat16::bfloat16(0.5));
 	REQUIRE(0x0 == val ); // 0x0 = 0.0 bf16
 
 
@@ -1047,11 +1047,11 @@ TEST_CASE("bfloat16_bfloat16_detail_integral", "[float16]"){
 	val =bfloat16::detail::integral<std::round_toward_neg_infinity , false, false>(bfloat16::bfloat16(0.8));
 	REQUIRE(0x0 == val ); // 0x0 = 0.0 bf16
 
-	val =bfloat16::detail::integral<std::round_to_nearest , true == false>(bfloat16::bfloat16(0.8));
+	val =bfloat16::detail::integral<std::round_to_nearest , true, false>(bfloat16::bfloat16(0.8));
 	REQUIRE(0x3F80 == val ); // 0x3F80 = 1.0 bf16
-	val =bfloat16::detail::integral<std::round_toward_infinity , true == false>(bfloat16::bfloat16(0.8));
+	val =bfloat16::detail::integral<std::round_toward_infinity , true, false>(bfloat16::bfloat16(0.8));
 	REQUIRE(0x3F80 == val ); // 0x3F80 = 1.0 bf16
-	val =bfloat16::detail::integral<std::round_toward_neg_infinity , true == false>(bfloat16::bfloat16(0.8));
+	val =bfloat16::detail::integral<std::round_toward_neg_infinity , true, false>(bfloat16::bfloat16(0.8));
 	REQUIRE(0x0 == val ); // 0x0 = 0.0 bf16
 
 
@@ -1064,11 +1064,11 @@ TEST_CASE("bfloat16_bfloat16_detail_integral", "[float16]"){
 	val =bfloat16::detail::integral<std::round_toward_neg_infinity , false, false>(bfloat16::bfloat16(6.3));
 	REQUIRE(0x40C0 == val ); // 0x40C0 = 6.0 bf16
 
-	val =bfloat16::detail::integral<std::round_to_nearest , true == false>(bfloat16::bfloat16(6.3));
+	val =bfloat16::detail::integral<std::round_to_nearest , true, false>(bfloat16::bfloat16(6.3));
 	REQUIRE(0x40C0 == val ); // 0x40C0 = 6.0 bf16
-	val =bfloat16::detail::integral<std::round_toward_infinity , true == false>(bfloat16::bfloat16(6.3));
+	val =bfloat16::detail::integral<std::round_toward_infinity , true, false>(bfloat16::bfloat16(6.3));
 	REQUIRE(0x40E0 == val ); // 0x40E0 = 7.0 bf16
-	val =bfloat16::detail::integral<std::round_toward_neg_infinity , true == false>(bfloat16::bfloat16(6.3));
+	val =bfloat16::detail::integral<std::round_toward_neg_infinity , true, false>(bfloat16::bfloat16(6.3));
 	REQUIRE(0x40C0 == val ); // 0x40C0 = 6.0 bf16
 
 
@@ -1080,11 +1080,11 @@ TEST_CASE("bfloat16_bfloat16_detail_integral", "[float16]"){
 	val =bfloat16::detail::integral<std::round_toward_neg_infinity , false, false>(bfloat16::bfloat16(6.5));
 	REQUIRE(0x40C0 == val ); // 0x40C0 = 6.0 bf16
 
-	val =bfloat16::detail::integral<std::round_to_nearest , true == false>(bfloat16::bfloat16(6.5));
+	val =bfloat16::detail::integral<std::round_to_nearest , true, false>(bfloat16::bfloat16(6.5));
 	REQUIRE(0x40E0 == val ); // 0x40E0 = 7.0 bf16
-	val =bfloat16::detail::integral<std::round_toward_infinity , true == false>(bfloat16::bfloat16(6.5));
+	val =bfloat16::detail::integral<std::round_toward_infinity , true, false>(bfloat16::bfloat16(6.5));
 	REQUIRE(0x40E0 == val ); // 0x40E0 = 7.0 bf16
-	val =bfloat16::detail::integral<std::round_toward_neg_infinity , true == false>(bfloat16::bfloat16(6.5));
+	val =bfloat16::detail::integral<std::round_toward_neg_infinity , true, false>(bfloat16::bfloat16(6.5));
 	REQUIRE(0x40C0 == val ); // 0x40C0 = 6.0 bf16
 
 
@@ -1096,11 +1096,11 @@ TEST_CASE("bfloat16_bfloat16_detail_integral", "[float16]"){
 	val =bfloat16::detail::integral<std::round_toward_neg_infinity , false, false>(bfloat16::bfloat16(6.8));
 	REQUIRE(0x40C0 == val ); // 0x40C0 = 6.0 bf16
 
-	val =bfloat16::detail::integral<std::round_to_nearest , true == false>(bfloat16::bfloat16(6.8));
+	val =bfloat16::detail::integral<std::round_to_nearest , true, false>(bfloat16::bfloat16(6.8));
 	REQUIRE(0x40E0 == val ); // 0x40E0 = 7.0 bf16
-	val =bfloat16::detail::integral<std::round_toward_infinity , true == false>(bfloat16::bfloat16(6.8));
+	val =bfloat16::detail::integral<std::round_toward_infinity , true, false>(bfloat16::bfloat16(6.8));
 	REQUIRE(0x40E0 == val ); // 0x40E0 = 7.0 bf16
-	val =bfloat16::detail::integral<std::round_toward_neg_infinity , true == false>(bfloat16::bfloat16(6.8));
+	val =bfloat16::detail::integral<std::round_toward_neg_infinity , true, false>(bfloat16::bfloat16(6.8));
 	REQUIRE(0x40C0 == val ); // 0x40C0 = 6.0 bf16
 
 
@@ -1115,11 +1115,11 @@ TEST_CASE("bfloat16_bfloat16_detail_integral", "[float16]"){
 	val =bfloat16::detail::integral<std::round_toward_neg_infinity , false, false>(bfloat16::bfloat16(-0.3));
 	REQUIRE(0xBF80 == val ); // 0xBF80 = -1.0 bf16
 
-	val =bfloat16::detail::integral<std::round_to_nearest , true == false>(bfloat16::bfloat16(-0.3));
+	val =bfloat16::detail::integral<std::round_to_nearest , true, false>(bfloat16::bfloat16(-0.3));
 	REQUIRE(0x8000 == val ); // 0x8000 = -0.0 bf16
-	val =bfloat16::detail::integral<std::round_toward_infinity , true == false>(bfloat16::bfloat16(-0.3));
+	val =bfloat16::detail::integral<std::round_toward_infinity , true, false>(bfloat16::bfloat16(-0.3));
 	REQUIRE(0x8000 == val ); // 0x8000 = -0.0 bf16
-	val =bfloat16::detail::integral<std::round_toward_neg_infinity , true == false>(bfloat16::bfloat16(-0.3));
+	val =bfloat16::detail::integral<std::round_toward_neg_infinity , true, false>(bfloat16::bfloat16(-0.3));
 	REQUIRE(0xBF80 == val ); // 0xBF80 = -1.0 bf16
 
 
@@ -1131,11 +1131,11 @@ TEST_CASE("bfloat16_bfloat16_detail_integral", "[float16]"){
 	val =bfloat16::detail::integral<std::round_toward_neg_infinity , false, false>(bfloat16::bfloat16(-0.5));
 	REQUIRE(0xBF80 == val ); // 0xBF80 = -1.0 bf16
 
-	val =bfloat16::detail::integral<std::round_to_nearest , true == false>(bfloat16::bfloat16(-0.5));
+	val =bfloat16::detail::integral<std::round_to_nearest , true, false>(bfloat16::bfloat16(-0.5));
 	REQUIRE(0x8000 == val ); // 0x8000 = -0.0 bf16
-	val =bfloat16::detail::integral<std::round_toward_infinity , true == false>(bfloat16::bfloat16(-0.5));
+	val =bfloat16::detail::integral<std::round_toward_infinity , true, false>(bfloat16::bfloat16(-0.5));
 	REQUIRE(0x8000 == val ); // 0x8000 = -0.0 bf16
-	val =bfloat16::detail::integral<std::round_toward_neg_infinity , true == false>(bfloat16::bfloat16(-0.5));
+	val =bfloat16::detail::integral<std::round_toward_neg_infinity , true, false>(bfloat16::bfloat16(-0.5));
 	REQUIRE(0xBF80 == val ); // 0xBF80 = -1.0 bf16
 
 
@@ -1147,11 +1147,11 @@ TEST_CASE("bfloat16_bfloat16_detail_integral", "[float16]"){
 	val =bfloat16::detail::integral<std::round_toward_neg_infinity , false, false>(bfloat16::bfloat16(-0.8));
 	REQUIRE(0xBF80 == val ); // 0xBF80 = -1.0 bf16
 
-	val =bfloat16::detail::integral<std::round_to_nearest , true == false>(bfloat16::bfloat16(-0.8));
+	val =bfloat16::detail::integral<std::round_to_nearest , true, false>(bfloat16::bfloat16(-0.8));
 	REQUIRE(0xBF80 == val ); // 0xBF80 = -1.0 bf16
-	val =bfloat16::detail::integral<std::round_toward_infinity , true == false>(bfloat16::bfloat16(-0.8));
+	val =bfloat16::detail::integral<std::round_toward_infinity , true, false>(bfloat16::bfloat16(-0.8));
 	REQUIRE(0x8000 == val ); // 0x8000 = -0.0 bf16
-	val =bfloat16::detail::integral<std::round_toward_neg_infinity , true == false>(bfloat16::bfloat16(-0.8));
+	val =bfloat16::detail::integral<std::round_toward_neg_infinity , true, false>(bfloat16::bfloat16(-0.8));
 	REQUIRE(0xBF80 == val ); // 0xBF80 = -1.0 bf16
 
 
@@ -1163,11 +1163,11 @@ TEST_CASE("bfloat16_bfloat16_detail_integral", "[float16]"){
 	val =bfloat16::detail::integral<std::round_toward_neg_infinity , false, false>(bfloat16::bfloat16(-6.3));
 	REQUIRE(0xC0E0 == val ); // 0xC0E0 = -7.0 bf16
 
-	val =bfloat16::detail::integral<std::round_to_nearest , true == false>(bfloat16::bfloat16(-6.3));
+	val =bfloat16::detail::integral<std::round_to_nearest , true, false>(bfloat16::bfloat16(-6.3));
 	REQUIRE(0xC0C0 == val ); // 0xC0C0 = -6.0 bf16
-	val =bfloat16::detail::integral<std::round_toward_infinity , true == false>(bfloat16::bfloat16(-6.3));
+	val =bfloat16::detail::integral<std::round_toward_infinity , true, false>(bfloat16::bfloat16(-6.3));
 	REQUIRE(0xC0C0 == val ); // 0xC0C0 = -6.0 bf16
-	val =bfloat16::detail::integral<std::round_toward_neg_infinity , true == false>(bfloat16::bfloat16(-6.3));
+	val =bfloat16::detail::integral<std::round_toward_neg_infinity , true, false>(bfloat16::bfloat16(-6.3));
 	REQUIRE(0xC0E0 == val ); // 0xC0E0 = -7.0 bf16
 
 
@@ -1179,11 +1179,11 @@ TEST_CASE("bfloat16_bfloat16_detail_integral", "[float16]"){
 	val =bfloat16::detail::integral<std::round_toward_neg_infinity , false, false>(bfloat16::bfloat16(-6.5));
 	REQUIRE(0xC0E0 == val ); // 0xC0E0 = -7.0 bf16
 
-	val =bfloat16::detail::integral<std::round_to_nearest , true == false>(bfloat16::bfloat16(-6.5));
+	val =bfloat16::detail::integral<std::round_to_nearest , true, false>(bfloat16::bfloat16(-6.5));
 	REQUIRE(0xC0E0 == val ); // 0xC0E0 = -7.0 bf16
-	val =bfloat16::detail::integral<std::round_toward_infinity , true == false>(bfloat16::bfloat16(-6.5));
+	val =bfloat16::detail::integral<std::round_toward_infinity , true, false>(bfloat16::bfloat16(-6.5));
 	REQUIRE(0xC0C0 == val ); // 0xC0C0 = -6.0 bf16
-	val =bfloat16::detail::integral<std::round_toward_neg_infinity , true == false>(bfloat16::bfloat16(-6.5));
+	val =bfloat16::detail::integral<std::round_toward_neg_infinity , true, false>(bfloat16::bfloat16(-6.5));
 	REQUIRE(0xC0E0 == val ); // 0xC0E0 = -7.0 bf16
 
 
@@ -1195,11 +1195,11 @@ TEST_CASE("bfloat16_bfloat16_detail_integral", "[float16]"){
 	val =bfloat16::detail::integral<std::round_toward_neg_infinity , false, false>(bfloat16::bfloat16(-6.8));
 	REQUIRE(0xC0E0 == val ); // 0xC0E0 = -7.0 bf16
 
-	val =bfloat16::detail::integral<std::round_to_nearest , true == false>(bfloat16::bfloat16(-6.8));
+	val =bfloat16::detail::integral<std::round_to_nearest , true, false>(bfloat16::bfloat16(-6.8));
 	REQUIRE(0xC0E0 == val ); // 0xC0E0 = -7.0 bf16
-	val =bfloat16::detail::integral<std::round_toward_infinity , true == false>(bfloat16::bfloat16(-6.8));
+	val =bfloat16::detail::integral<std::round_toward_infinity , true, false>(bfloat16::bfloat16(-6.8));
 	REQUIRE(0xC0C0 == val ); // 0xC0C0 = -6.0 bf16
-	val =bfloat16::detail::integral<std::round_toward_neg_infinity , true == false>(bfloat16::bfloat16(-6.8));
+	val =bfloat16::detail::integral<std::round_toward_neg_infinity , true, false>(bfloat16::bfloat16(-6.8));
 	REQUIRE(0xC0E0 == val ); // 0xC0E0 = -7.0 bf16
 
 }
@@ -1236,133 +1236,133 @@ TEST_CASE("bfloat16_bfloat16_detail_fixed2bfloat16", "[float16]"){
 
 	//positive fixed point test
 	//tests for (0.10)
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(pointten.m, pointten.exp+14, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(pointten.m, pointten.exp+14, possign);
 	REQUIRE(0x3DCC == val ); // 0x3DCC = 0.099609375 bf16
-	val = bfloat16::detail::fixed2bfloat16<std::round_toward_infinity,31,false ==false ==true>(pointten.m, pointten.exp+14, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_toward_infinity,31,false, false, true>(pointten.m, pointten.exp+14, possign);
 	REQUIRE(0x3DCC == val ); // 0x3DCC = 0.099609375 bf16
-	val = bfloat16::detail::fixed2bfloat16<std::round_toward_neg_infinity,31,false ==false ==true>(pointten.m, pointten.exp+14, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_toward_neg_infinity,31,false, false, true>(pointten.m, pointten.exp+14, possign);
 	REQUIRE(0x3DCC == val ); // 0x3DCC = 0.099609375 bf16
 
 	//tests for (0.5)
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(pointfive.m, pointfive.exp+14, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(pointfive.m, pointfive.exp+14, possign);
 	REQUIRE(0x3F00 == val ); // 0x3F00 = 0.5 bf16
-	val = bfloat16::detail::fixed2bfloat16<std::round_toward_infinity,31,false ==false ==true>(pointfive.m, pointfive.exp+14, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_toward_infinity,31,false, false, true>(pointfive.m, pointfive.exp+14, possign);
 	REQUIRE(0x3F00 == val ); // 0x3F00 = 0.5 bf16
-	val = bfloat16::detail::fixed2bfloat16<std::round_toward_neg_infinity,31,false ==false ==true>(pointfive.m, pointfive.exp+14, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_toward_neg_infinity,31,false, false, true>(pointfive.m, pointfive.exp+14, possign);
 	REQUIRE(0x3F00 == val ); // 0x3F00 = 0.5 bf16
 
 	//tests for (1.0)
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(one.m, one.exp+14, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(one.m, one.exp+14, possign);
 	REQUIRE(0x3F80 == val ); // 0x3F80 = 1.0 bf16
-	val = bfloat16::detail::fixed2bfloat16<std::round_toward_infinity,31,false ==false ==true>(one.m, one.exp+14, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_toward_infinity,31,false, false, true>(one.m, one.exp+14, possign);
 	REQUIRE(0x3F80 == val ); // 0x3F80 = 1.0 bf16
-	val = bfloat16::detail::fixed2bfloat16<std::round_toward_neg_infinity,31,false ==false ==true>(one.m, one.exp+14, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_toward_neg_infinity,31,false, false, true>(one.m, one.exp+14, possign);
 	REQUIRE(0x3F80 == val ); // 0x3F80 = 1.0 bf16
 
 	//tests for (1.6)
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(onepointsix.m, onepointsix.exp+14, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(onepointsix.m, onepointsix.exp+14, possign);
 	REQUIRE(0x3FCC == val ); // 0x3FCC = 1.59375 bf16
-	val = bfloat16::detail::fixed2bfloat16<std::round_toward_infinity,31,false ==false ==true>(onepointsix.m, onepointsix.exp+14, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_toward_infinity,31,false, false, true>(onepointsix.m, onepointsix.exp+14, possign);
 	REQUIRE(0x3FCC == val ); // 0x3FCC = 1.59375 bf16
-	val = bfloat16::detail::fixed2bfloat16<std::round_toward_neg_infinity,31,false ==false ==true>(onepointsix.m, onepointsix.exp+14, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_toward_neg_infinity,31,false, false, true>(onepointsix.m, onepointsix.exp+14, possign);
 	REQUIRE(0x3FCC == val ); // 0x3FCC = 1.59375 bf16
 
 	//tests for (2.4)
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(twopointfour.m, twopointfour.exp+14, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(twopointfour.m, twopointfour.exp+14, possign);
 	REQUIRE(0x4019 == val ); // 0x4019 = 2.390625 bf16
-	val = bfloat16::detail::fixed2bfloat16<std::round_toward_infinity,31,false ==false ==true>(twopointfour.m, twopointfour.exp+14, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_toward_infinity,31,false, false, true>(twopointfour.m, twopointfour.exp+14, possign);
 	REQUIRE(0x4019 == val ); // 0x4019 = 2.390625 bf16
-	val = bfloat16::detail::fixed2bfloat16<std::round_toward_neg_infinity,31,false ==false ==true>(twopointfour.m, twopointfour.exp+14, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_toward_neg_infinity,31,false, false, true>(twopointfour.m, twopointfour.exp+14, possign);
 	REQUIRE(0x4019 == val ); // 0x4019 = 2.390625 bf16
 
 	//tests for (10.8)
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(tenpointeight.m, tenpointeight.exp+14, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(tenpointeight.m, tenpointeight.exp+14, possign);
 	REQUIRE(0x412C == val ); // 0x412C = 10.75 bf16
-	val = bfloat16::detail::fixed2bfloat16<std::round_toward_infinity,31,false ==false ==true>(tenpointeight.m, tenpointeight.exp+14, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_toward_infinity,31,false, false, true>(tenpointeight.m, tenpointeight.exp+14, possign);
 	REQUIRE(0x412C == val ); // 0x412C = 10.75 bf16
-	val = bfloat16::detail::fixed2bfloat16<std::round_toward_neg_infinity,31,false ==false ==true>(tenpointeight.m, tenpointeight.exp+14, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_toward_neg_infinity,31,false, false, true>(tenpointeight.m, tenpointeight.exp+14, possign);
 	REQUIRE(0x412C == val ); // 0x412C = 10.75 bf16
 
 	//tests for (50.5)
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(fiftypointfive.m, fiftypointfive.exp+14, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(fiftypointfive.m, fiftypointfive.exp+14, possign);
 	REQUIRE(0x424A == val ); // 0x424A = 50.5 bf16
-	val = bfloat16::detail::fixed2bfloat16<std::round_toward_infinity,31,false ==false ==true>(fiftypointfive.m, fiftypointfive.exp+14, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_toward_infinity,31,false, false, true>(fiftypointfive.m, fiftypointfive.exp+14, possign);
 	REQUIRE(0x424A == val ); // 0x424A = 50.5 bf16
-	val = bfloat16::detail::fixed2bfloat16<std::round_toward_neg_infinity,31,false ==false ==true>(fiftypointfive.m, fiftypointfive.exp+14, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_toward_neg_infinity,31,false, false, true>(fiftypointfive.m, fiftypointfive.exp+14, possign);
 	REQUIRE(0x424A == val ); // 0x424A = 50.5 bf16
 
 	//tests for (586.3)
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(fivehundred.m, fivehundred.exp+14, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(fivehundred.m, fivehundred.exp+14, possign);
 	REQUIRE(0x4412 == val ); // 0x4412 = 584.0 bf16
-	val = bfloat16::detail::fixed2bfloat16<std::round_toward_infinity,31,false ==false ==true>(fivehundred.m, fivehundred.exp+14, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_toward_infinity,31,false, false, true>(fivehundred.m, fivehundred.exp+14, possign);
 	REQUIRE(0x4412 == val ); // 0x4412 = 584.0 bf16
-	val = bfloat16::detail::fixed2bfloat16<std::round_toward_neg_infinity,31,false ==false ==true>(fivehundred.m, fivehundred.exp+14, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_toward_neg_infinity,31,false, false, true>(fivehundred.m, fivehundred.exp+14, possign);
 	REQUIRE(0x4412 == val ); // 0x4412 = 584.0 bf16
 
 
 	//negative fixed Point Test
 	//tests for (-0.10)
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,true ==false ==true>(negpointten.m, negpointten.exp+14, negsign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,true, false, true>(negpointten.m, negpointten.exp+14, negsign);
 	REQUIRE(0xBDCC == val ); // 0xBDCC = -0.099609375 bf16
-	val = bfloat16::detail::fixed2bfloat16<std::round_toward_infinity,31,true ==false ==true>(negpointten.m, negpointten.exp+14, negsign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_toward_infinity,31,true, false, true>(negpointten.m, negpointten.exp+14, negsign);
 	REQUIRE(0xBDCC == val ); // 0xBDCC = -0.099609375 bf16
-	val = bfloat16::detail::fixed2bfloat16<std::round_toward_neg_infinity,31,true ==false ==true>(negpointten.m, negpointten.exp+14, negsign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_toward_neg_infinity,31,true, false, true>(negpointten.m, negpointten.exp+14, negsign);
 	REQUIRE(0xBDCC == val ); // 0xBDCC = -0.099609375 bf16
 
 	//tests for (-0.5)
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,true ==false ==true>(negpointfive.m, negpointfive.exp+14, negsign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,true, false, true>(negpointfive.m, negpointfive.exp+14, negsign);
 	REQUIRE(0xBF00 == val ); // 0xBF00 = -0.5 bf16
-	val = bfloat16::detail::fixed2bfloat16<std::round_toward_infinity,31,true ==false ==true>(negpointfive.m, negpointfive.exp+14, negsign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_toward_infinity,31,true, false, true>(negpointfive.m, negpointfive.exp+14, negsign);
 	REQUIRE(0xBF00 == val ); // 0xBF00 = -0.5 bf16
-	val = bfloat16::detail::fixed2bfloat16<std::round_toward_neg_infinity,31,true ==false ==true>(negpointfive.m, negpointfive.exp+14, negsign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_toward_neg_infinity,31,true, false, true>(negpointfive.m, negpointfive.exp+14, negsign);
 	REQUIRE(0xBF00 == val ); // 0xBF00 = -0.5 bf16
 
 	//tests for (-1.0)
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,true ==false ==true>(negone.m, negone.exp+14, negsign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,true, false, true>(negone.m, negone.exp+14, negsign);
 	REQUIRE(0xBF80 == val ); // 0xBF80 = -1.0 bf16
-	val = bfloat16::detail::fixed2bfloat16<std::round_toward_infinity,31,true ==false ==true>(negone.m, negone.exp+14, negsign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_toward_infinity,31,true, false, true>(negone.m, negone.exp+14, negsign);
 	REQUIRE(0xBF80 == val ); // 0xBF80 = -1.0 bf16
-	val = bfloat16::detail::fixed2bfloat16<std::round_toward_neg_infinity,31,true ==false ==true>(negone.m, negone.exp+14, negsign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_toward_neg_infinity,31,true, false, true>(negone.m, negone.exp+14, negsign);
 	REQUIRE(0xBF80 == val ); // 0xBF80 = -1.0 bf16
 
 	//tests for (-1.6)
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,true ==false ==true>(negonepointsix.m, negonepointsix.exp+14, negsign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,true, false, true>(negonepointsix.m, negonepointsix.exp+14, negsign);
 	REQUIRE(0xBFCC == val ); // 0xBFCC = -1.59375 bf16
-	val = bfloat16::detail::fixed2bfloat16<std::round_toward_infinity,31,true ==false ==true>(negonepointsix.m, negonepointsix.exp+14, negsign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_toward_infinity,31,true, false, true>(negonepointsix.m, negonepointsix.exp+14, negsign);
 	REQUIRE(0xBFCC == val ); // 0xBFCC = -1.59375 bf16
-	val = bfloat16::detail::fixed2bfloat16<std::round_toward_neg_infinity,31,true ==false ==true>(negonepointsix.m, negonepointsix.exp+14, negsign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_toward_neg_infinity,31,true, false, true>(negonepointsix.m, negonepointsix.exp+14, negsign);
 	REQUIRE(0xBFCC == val ); // 0xBFCC = -1.59375 bf16
 
 	//tests for (-2.4)
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,true ==false ==true>(negtwopointfour.m, negtwopointfour.exp+14, negsign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,true, false, true>(negtwopointfour.m, negtwopointfour.exp+14, negsign);
 	REQUIRE(0xC019 == val ); // 0xC019 = -2.390625 bf16
-	val = bfloat16::detail::fixed2bfloat16<std::round_toward_infinity,31,true ==false ==true>(negtwopointfour.m, negtwopointfour.exp+14, negsign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_toward_infinity,31,true, false, true>(negtwopointfour.m, negtwopointfour.exp+14, negsign);
 	REQUIRE(0xC019 == val ); // 0xC019 = -2.390625 bf16
-	val = bfloat16::detail::fixed2bfloat16<std::round_toward_neg_infinity,31,true ==false ==true>(negtwopointfour.m, negtwopointfour.exp+14, negsign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_toward_neg_infinity,31,true, false, true>(negtwopointfour.m, negtwopointfour.exp+14, negsign);
 	REQUIRE(0xC019 == val ); // 0xC019 = -2.390625 bf16
 
 	//tests for (-10.8)
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,true ==false ==true>(negtenpointeight.m, negtenpointeight.exp+14, negsign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,true, false, true>(negtenpointeight.m, negtenpointeight.exp+14, negsign);
 	REQUIRE(0xC12C == val ); // 0xC12C = -10.75 bf16
-	val = bfloat16::detail::fixed2bfloat16<std::round_toward_infinity,31,true ==false ==true>(negtenpointeight.m, negtenpointeight.exp+14, negsign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_toward_infinity,31,true, false, true>(negtenpointeight.m, negtenpointeight.exp+14, negsign);
 	REQUIRE(0xC12C == val ); // 0xC12C = -10.75 bf16
-	val = bfloat16::detail::fixed2bfloat16<std::round_toward_neg_infinity,31,true ==false ==true>(negtenpointeight.m, negtenpointeight.exp+14, negsign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_toward_neg_infinity,31,true, false, true>(negtenpointeight.m, negtenpointeight.exp+14, negsign);
 	REQUIRE(0xC12C == val ); // 0xC12C = -10.75 bf16
 
 	//tests for (-50.5)
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,true ==false ==true>(negfiftypointfive.m, negfiftypointfive.exp+14, negsign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,true, false, true>(negfiftypointfive.m, negfiftypointfive.exp+14, negsign);
 	REQUIRE(0xC24A == val ); // 0xC24A = -50.5 bf16
-	val = bfloat16::detail::fixed2bfloat16<std::round_toward_infinity,31,true ==false ==true>(negfiftypointfive.m, negfiftypointfive.exp+14, negsign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_toward_infinity,31,true, false, true>(negfiftypointfive.m, negfiftypointfive.exp+14, negsign);
 	REQUIRE(0xC24A == val ); // 0xC24A = -50.5 bf16
-	val = bfloat16::detail::fixed2bfloat16<std::round_toward_neg_infinity,31,true ==false ==true>(negfiftypointfive.m, negfiftypointfive.exp+14, negsign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_toward_neg_infinity,31,true, false, true>(negfiftypointfive.m, negfiftypointfive.exp+14, negsign);
 	REQUIRE(0xC24A == val ); // 0xC24A = -50.5 bf16
 
 	//tests for (-586.3)
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,true ==false ==true>(negfivehundred.m, negfivehundred.exp+14, negsign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,true, false, true>(negfivehundred.m, negfivehundred.exp+14, negsign);
 	REQUIRE(0xC412 == val ); // 0xC412 = -584.0 bf16
-	val = bfloat16::detail::fixed2bfloat16<std::round_toward_infinity,31,true ==false ==true>(negfivehundred.m, negfivehundred.exp+14, negsign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_toward_infinity,31,true, false, true>(negfivehundred.m, negfivehundred.exp+14, negsign);
 	REQUIRE(0xC412 == val ); // 0xC412 = -584.0 bf16
-	val = bfloat16::detail::fixed2bfloat16<std::round_toward_neg_infinity,31,true ==false ==true>(negfivehundred.m, negfivehundred.exp+14, negsign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_toward_neg_infinity,31,true, false, true>(negfivehundred.m, negfivehundred.exp+14, negsign);
 	REQUIRE(0xC412 == val ); // 0xC412 = -584.0 bf16
 
 }
@@ -1637,34 +1637,34 @@ TEST_CASE("bfloat16_bfloat16_detail_int2bfloat16_bfloat162int", "[floa16]"){
 	//bfloat162int
 	int result;
 	
-	result = bfloat16::detail::bfloat162int<std::round_to_nearest, true == false == int>(bfloat16::bfloat16(0.1));
+	result = bfloat16::detail::bfloat162int<std::round_to_nearest, true, false, int>(bfloat16::bfloat16(0.1));
 	REQUIRE(0 == result );
-	result = bfloat16::detail::bfloat162int<std::round_to_nearest, false, false == int>(bfloat16::bfloat16(0.1));
+	result = bfloat16::detail::bfloat162int<std::round_to_nearest, false, false, int>(bfloat16::bfloat16(0.1));
 	REQUIRE(0 == result );
 
-	result = bfloat16::detail::bfloat162int<std::round_to_nearest, true == false == int>(bfloat16::bfloat16(0.5));
+	result = bfloat16::detail::bfloat162int<std::round_to_nearest, true, false, int>(bfloat16::bfloat16(0.5));
 	REQUIRE(0 == result );
-	result = bfloat16::detail::bfloat162int<std::round_to_nearest, false, false == int>(bfloat16::bfloat16(0.5));
+	result = bfloat16::detail::bfloat162int<std::round_to_nearest, false, false, int>(bfloat16::bfloat16(0.5));
 	REQUIRE(1 == result );
 
-	result = bfloat16::detail::bfloat162int<std::round_to_nearest, true == false == int>(bfloat16::bfloat16(1.0));
+	result = bfloat16::detail::bfloat162int<std::round_to_nearest, true, false, int>(bfloat16::bfloat16(1.0));
 	REQUIRE(1 == result );
-	result = bfloat16::detail::bfloat162int<std::round_to_nearest, false, false == int>(bfloat16::bfloat16(1.0));
-	REQUIRE(1 == result );
-
-	result = bfloat16::detail::bfloat162int<std::round_to_nearest, true == false == int>(bfloat16::bfloat16(1.4));
-	REQUIRE(1 == result );
-	result = bfloat16::detail::bfloat162int<std::round_to_nearest, false, false == int>(bfloat16::bfloat16(1.4));
+	result = bfloat16::detail::bfloat162int<std::round_to_nearest, false, false, int>(bfloat16::bfloat16(1.0));
 	REQUIRE(1 == result );
 
-	result = bfloat16::detail::bfloat162int<std::round_to_nearest, true == false == int>(bfloat16::bfloat16(2.1));
+	result = bfloat16::detail::bfloat162int<std::round_to_nearest, true, false, int>(bfloat16::bfloat16(1.4));
+	REQUIRE(1 == result );
+	result = bfloat16::detail::bfloat162int<std::round_to_nearest, false, false, int>(bfloat16::bfloat16(1.4));
+	REQUIRE(1 == result );
+
+	result = bfloat16::detail::bfloat162int<std::round_to_nearest, true, false, int>(bfloat16::bfloat16(2.1));
 	REQUIRE(2 == result );
-	result = bfloat16::detail::bfloat162int<std::round_to_nearest, true == false == int>(bfloat16::bfloat16(2.1));
+	result = bfloat16::detail::bfloat162int<std::round_to_nearest, true, false, int>(bfloat16::bfloat16(2.1));
 	REQUIRE(2 == result );
 
-	result = bfloat16::detail::bfloat162int<std::round_to_nearest, true == false == int>(bfloat16::bfloat16(10.8));
+	result = bfloat16::detail::bfloat162int<std::round_to_nearest, true, false, int>(bfloat16::bfloat16(10.8));
 	REQUIRE(11 == result );
-	result = bfloat16::detail::bfloat162int<std::round_to_nearest, true == false == int>(bfloat16::bfloat16(10.8));
+	result = bfloat16::detail::bfloat162int<std::round_to_nearest, true, false, int>(bfloat16::bfloat16(10.8));
 	REQUIRE(11 == result );
 
 }
@@ -1695,100 +1695,100 @@ TEST_CASE("bfloat16_bfloat16_detail_f31", "[float16]"){
 	//add
 	//0.1
 	result = pointone + pointone;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp+14, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp+14, possign);
 	REQUIRE(0x3E4C == val ); // 0x3e4c = 0.19921875 bf16
 	result = pointone + pointfive;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp+14, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp+14, possign);
 	REQUIRE(0x3F1A == val ); // 0x3f1a = 0.6015625 bf16
 	result = pointone + five;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp+14, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp+14, possign);
 	REQUIRE(0x40A3 == val ); // 0x40a3 = 5.09375 bf16
 	result = pointone + ten;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp+14, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp+14, possign);
 	REQUIRE(0x4122 == val ); // 0x4122 = 10.125 bf16
 	result = pointone + tenone;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp+14, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp+14, possign);
 	REQUIRE(0x4123 == val ); // 0x4123 = 10.1875 bf16
 	result = pointone + tenfive;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp+14, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp+14, possign);
 	REQUIRE(0x412A == val ); // 0x412A = 10.625 bf16
 	result = pointone + twentyfive;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp+14, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp+14, possign);
 	REQUIRE(0x41A5 == val ); // 0x41A5 = 20.625 bf16
 	
 	//0.5
 	result = pointfive + pointfive;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp+14, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp+14, possign);
 	REQUIRE(0x3F80 == val ); // 0x3F80 = 1.0 bf16
 	result = pointfive + five;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp+14, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp+14, possign);
 	REQUIRE(0x40B0 == val ); // 0x40B8 = 5.75 bf16
 	result = pointfive + ten;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp+14, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp+14, possign);
 	REQUIRE(0x4128 == val ); // 0x4128 = 10.5 bf16
 	result = pointfive + tenone;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp+14, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp+14, possign);
 	REQUIRE(0x4129 == val ); // 0x4129 = 10.5625 bf16
 	result = pointfive + tenfive;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp+14, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp+14, possign);
 	REQUIRE(0x4130 == val ); // 0x4130 = 11.0 bf16
 	result = pointfive + twentyfive;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp+14, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp+14, possign);
 	REQUIRE(0x41A8 == val ); // 0x41A8 = 21.0 bf16
 
 	//5
 	result = five + five;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp+14, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp+14, possign);
 	REQUIRE(0x4120 == val ); // 0x4120 = 10.0 bf16
 	result = five + ten;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp+14, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp+14, possign);
 	REQUIRE(0x4170 == val ); // 0x4170 = 15.0 bf16
 	result = five + tenone;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp+14, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp+14, possign);
 	REQUIRE(0x4171 == val ); // 0x4171 = 15.0625 bf16
 	result = five + tenfive;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp+14, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp+14, possign);
 	REQUIRE(0x4178 == val ); // 0x4178 = 15.5 bf16
 	result = five + twentyfive;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp+14, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp+14, possign);
 	REQUIRE(0x41CC == val ); // 0x41CC = 25.5 bf16
 
 	//10
 	result = ten + ten;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp+14, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp+14, possign);
 	REQUIRE(0x41A0 == val ); // 0x41A0 = 20.0 bf16
 	result = ten + tenone;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp+14, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp+14, possign);
 	REQUIRE(0x41A0 == val ); // 0x41A0 = 20.0 bf16
 	result = ten + tenfive;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp+14, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp+14, possign);
 	REQUIRE(0x41A4 == val ); // 0x41A4 = 20.5 bf16
 	result = ten + twentyfive;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp+14, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp+14, possign);
 	REQUIRE(0x41F4 == val ); // 0x41F4 = 30.5 bf16
 
 	//10.1
 	result = tenone + tenone;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp+14, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp+14, possign);
 	REQUIRE(0x41A1 == val ); // 0x41A1 = 20.125 bf16
 	result = tenone + tenfive;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp+14, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp+14, possign);
 	REQUIRE(0x41A4 == val ); // 0x41A4 = 20.5 bf16
 	result = tenone + twentyfive;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp+14, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp+14, possign);
 	REQUIRE(0x41F4 == val ); // 0x41F4 = 30.5 bf16
 
 	//10.5
 	result = tenfive + tenfive;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp+14, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp+14, possign);
 	REQUIRE(0x41A8 == val ); // 0x41A8 = 21.0 bf16
 	result = tenfive + twentyfive;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp+14, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp+14, possign);
 	REQUIRE(0x41F8 == val ); // 0x41F8 = 31.0 bf16
  
 	//20.5
 	result = twentyfive + twentyfive;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp+14, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp+14, possign);
 	REQUIRE(0x4224 == val ); // 0x4224 = 41.0 bf16
 
 
@@ -1796,100 +1796,100 @@ TEST_CASE("bfloat16_bfloat16_detail_f31", "[float16]"){
 	//sub
 	//0.1
 	result = pointone - pointone;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp+14, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp+14, possign);
 	REQUIRE(0x0 == val ); // 0x0 = 0.0 bf16
 	result = pointfive - pointone;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp+14, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp+14, possign);
 	REQUIRE(0x3ECD == val ); // 0x3ECD = 0.400390625 bf16
 	result = five - pointone;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp+14, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp+14, possign);
 	REQUIRE(0x409D == val ); // 0x409D = 4.90625 bf16
 	result = ten - pointone;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp+14, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp+14, possign);
 	REQUIRE(0x411E == val ); // 0x411E = 9.875 bf16
 	result = tenone - pointone;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp+14, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp+14, possign);
 	REQUIRE(0x411F == val ); // 0x411F = 9.9375 bf16
 	result = tenfive - pointone;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp+14, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp+14, possign);
 	REQUIRE(0x4126 == val ); // 0x4126 = 10.375 bf16
 	result = twentyfive - pointone;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp+14, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp+14, possign);
 	REQUIRE(0x41A3 == val ); // 0x41A3 = 20.375 bf16
 	
 	//0.5
 	result = pointfive - pointfive;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp+14, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp+14, possign);
 	REQUIRE(0x0 == val ); // 0x0 = 0.0 bf16
 	result = five - pointfive;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp+14, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp+14, possign);
 	REQUIRE(0x4090 == val ); // 0x4090 = 4.5 bf16
 	result = ten - pointfive;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp+14, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp+14, possign);
 	REQUIRE(0x4118 == val ); // 0x4118 = 9.5 bf16
 	result = tenone - pointfive;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp+14, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp+14, possign);
 	REQUIRE(0x4119 == val ); // 0x4119 = 9.5625 bf16
 	result = tenfive - pointfive;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp+14, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp+14, possign);
 	REQUIRE(0x4120 == val ); // 0x4120 = 10.0 bf16
 	result = twentyfive - pointfive;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp+14, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp+14, possign);
 	REQUIRE(0x41A0 == val ); // 0x41A0 = 20.0 bf16
 
 	//5
 	result = five - five;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp+14, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp+14, possign);
 	REQUIRE(0x0 == val ); // 0x0 = 0.0 bf16
 	result = ten - five;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp+14, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp+14, possign);
 	REQUIRE(0x40A0 == val ); // 0x40A0 = 5.0 bf16
 	result = tenone - five;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp+14, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp+14, possign);
 	REQUIRE(0x40A2 == val ); // 0x40A2 = 5.0625 bf16
 	result = tenfive - five;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp+14, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp+14, possign);
 	REQUIRE(0x40B0 == val ); // 0x40B0 = 5.5 bf16
 	result = twentyfive - five;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp+14, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp+14, possign);
 	REQUIRE(0x4178 == val ); // 0x4178 = 15.5 bf16
 
 	//10
 	result = ten - ten;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp+14, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp+14, possign);
 	REQUIRE(0x0 == val ); // 0x0 = 0.0 bf16
 	result = tenone - ten;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp+14, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp+14, possign);
 	REQUIRE(0x3D80 == val ); // 0x3D80 = 0.0625 bf16
 	result = tenfive - ten;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp+14, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp+14, possign);
 	REQUIRE(0x3F00 == val ); // 0x3F00 = 0.5 bf16
 	result = twentyfive - ten;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp+14, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp+14, possign);
 	REQUIRE(0x4128 == val ); // 0x4128 = 10.5 bf16
 
 	//10.1
 	result = tenone - tenone;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp+14, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp+14, possign);
 	REQUIRE(0x0 == val ); // 0x0 = 0.0 bf16
 	result = tenfive - tenone;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp+14, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp+14, possign);
 	REQUIRE(0x3EE0 == val ); // 0x3EE0 = 0.4375 bf16
 	result = twentyfive - tenone;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp+14, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp+14, possign);
 	REQUIRE(0x4127 == val ); // 0x4127 = 10.4375 bf16
 
 	//10.5
 	result = tenfive - tenfive;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp+14, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp+14, possign);
 	REQUIRE(0x0 == val ); // 0x0 = 0.0 bf16
 	result = twentyfive - tenfive;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp+14, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp+14, possign);
 	REQUIRE(0x4120 == val ); // 0x4120 = 10.0 bf16
 
 	//20.5
 	result = twentyfive - twentyfive;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp+14, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp+14, possign);
 	REQUIRE(0x0 == val ); // 0x0 = 0.0 bf16
 	
 
@@ -1897,100 +1897,100 @@ TEST_CASE("bfloat16_bfloat16_detail_f31", "[float16]"){
 	//mult
 	//0.1
 	result = pointone * pointone;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp-98, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp-98, possign);
 	REQUIRE(0x3C23 == val ); // 0x3C23 = 0.00994873046875 bf16
 	result = pointfive * pointone;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp-98, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp-98, possign);
 	REQUIRE(0x3D4C == val ); // 0x3D4C = 0.0498046875 bf16
 	result = five * pointone;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp-98, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp-98, possign);
 	REQUIRE(0x3EFF == val ); // 0x3EFF = 0.498046875 bf16
 	result = ten * pointone;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp-98, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp-98, possign);
 	REQUIRE(0x3F7F == val ); // 0x3F7F = 0.99609375 bf16
 	result = tenone * pointone;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp-98, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp-98, possign);
 	REQUIRE(0x3F80 == val ); // 0x3F80 = 1.0 bf16
 	result = tenfive * pointone;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp-98, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp-98, possign);
 	REQUIRE(0x3F86 == val ); // 0x3F86 = 1.046875 bf16
 	result = twentyfive * pointone;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp-98, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp-98, possign);
 	REQUIRE(0x4003 == val ); // 0x4003 = 2.046875 bf16
 
 	//0.5
 	result = pointfive * pointfive;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp-98, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp-98, possign);
 	REQUIRE(0x3E80 == val ); // 0x3E80 = 0.25 bf16
 	result = five * pointfive;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp-98, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp-98, possign);
 	REQUIRE(0x4020 == val ); // 0x4020 = 2.5 bf16
 	result = ten * pointfive;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp-98, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp-98, possign);
 	REQUIRE(0x40A0 == val ); // 0x40A0 = 5.0 bf16
 	result = tenone * pointfive;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp-98, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp-98, possign);
 	REQUIRE(0x40A1 == val ); // 0x40A1 = 5.03125 bf16
 	result = tenfive * pointfive;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp-98, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp-98, possign);
 	REQUIRE(0x40A8 == val ); // 0x40A8 = 5.25 bf16
 	result = twentyfive * pointfive; 
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp-98, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp-98, possign);
 	REQUIRE(0x4124 == val ); // 0x4124 = 10.25 bf16
 
 	//5
 	result = five * five;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp-98, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp-98, possign);
 	REQUIRE(0x41C8 == val ); // 0x41C8 = 25.0 bf16
 	result = ten * five;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp-98, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp-98, possign);
 	REQUIRE(0x4248 == val ); // 0x4248 = 50.0 bf16
 	result = tenone * five;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp-98, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp-98, possign);
 	REQUIRE(0x4249 == val ); // 0x4249 = 50.25 bf16
 	result = tenfive * five;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp-98, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp-98, possign);
 	REQUIRE(0x4252 == val ); // 0x4252 = 52.5 bf16
 	result = twentyfive * five;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp-98, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp-98, possign);
 	REQUIRE(0x42CD == val ); // 0x42CD = 102.5 bf16
 
 	//10
 	result = ten * ten;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp-98, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp-98, possign);
 	REQUIRE(0x42C8 == val ); // 0x42C8 = 100.0 bf16
 	result = tenone * ten;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp-98, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp-98, possign);
 	REQUIRE(0x42C9 == val ); // 0x42C9 = 100.5 bf16
 	result = tenfive * ten;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp-98, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp-98, possign);
 	REQUIRE(0x42D2 == val ); // 0x42D2 = 105.0 bf16
 	result = twentyfive * ten;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp-98, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp-98, possign);
 	REQUIRE(0x434D == val ); // 0x434D = 205.0 bf16
 
 	//10.1
 	result = tenone * tenone;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp-98, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp-98, possign);
 	REQUIRE(0x42CB == val ); // 0x42CB = 101.5 bf16
 	result = tenfive * tenone;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp-98, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp-98, possign);
 	REQUIRE(0x42D3 == val ); // 0x42D3 = 105.5 bf16
 	result = twentyfive * tenone;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp-98, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp-98, possign);
 	REQUIRE(0x434E == val ); // 0x434E = 206.0 bf16
 
 	//10.5
 	result = tenfive * tenfive;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp-98, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp-98, possign);
 	REQUIRE(0x42DC == val ); // 0x42DC = 110.0 bf16
 	result = twentyfive * tenfive;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp-98, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp-98, possign);
 	REQUIRE(0x4357 == val ); // 0x4357 = 215.0 bf16
 
 	//20.5
 	result = twentyfive * twentyfive;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp-98, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp-98, possign);
 	REQUIRE(0x43D2 == val ); // 0x43D2 = 420.0 bf16
 
 
@@ -1998,100 +1998,100 @@ TEST_CASE("bfloat16_bfloat16_detail_f31", "[float16]"){
 	//Div
 	//0.1
 	result = pointone / pointone;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp+126, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp+126, possign);
 	REQUIRE(0x3F80 == val ); // 0x3F80 = 1.0 bf16
 	result = pointfive / pointone;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp+126, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp+126, possign);
 	REQUIRE(0x40A1 == val ); // 0x40A1 = 5.03125 bf16
 	result = five / pointone;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp+126, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp+126, possign);
 	REQUIRE(0x4249 == val ); // 0x4249 = 50.25 bf16
 	result = ten / pointone;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp+126, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp+126, possign);
 	REQUIRE(0x42C9 == val ); // 0x42C9 = 100.5 bf16
 	result = tenone / pointone;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp+126, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp+126, possign);
 	REQUIRE(0x42CA == val ); // 0x42CA = 101.0 bf16
 	result = tenfive / pointone;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp+126, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp+126, possign);
 	REQUIRE(0x42D3 == val ); // 0x42D3 = 105.5 bf16
 	result = twentyfive / pointone;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp+126, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp+126, possign);
 	REQUIRE(0x434E == val ); // 0x434E = 206.0 bf16
 
 	//0.5
 	result = pointfive / pointfive;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp+126, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp+126, possign);
 	REQUIRE(0x3F80 == val ); // 0x3F80 = 1.0 bf16
 	result = five / pointfive;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp+126, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp+126, possign);
 	REQUIRE(0x4120 == val ); // 0x4120 = 10.0 bf16
 	result = ten / pointfive;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp+126, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp+126, possign);
 	REQUIRE(0x41A0 == val ); // 0x41A0 = 20.0 bf16
 	result = tenone / pointfive;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp+126, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp+126, possign);
 	REQUIRE(0x41A1 == val ); // 0x41A1 = 20.125 bf16
 	result = tenfive / pointfive;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp+126, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp+126, possign);
 	REQUIRE(0x41A8 == val ); // 0x41A8 = 21.0 bf16
 	result = twentyfive / pointfive;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp+126, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp+126, possign);
 	REQUIRE(0x4224 == val ); // 0x4224 = 41.0 bf16
 
 	//5
 	result = five / five;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp+126, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp+126, possign);
 	REQUIRE(0x3F80 == val ); // 0x3F80 = 1.0 bf16
 	result = ten / five;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp+126, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp+126, possign);
 	REQUIRE(0x4000 == val ); // 0x4000 = 2.0 bf16
 	result = tenone / five;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp+126, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp+126, possign);
 	REQUIRE(0x4001 == val ); // 0x4001 = 2.015625 bf16
 	result = tenfive / five;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp+126, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp+126, possign);
 	REQUIRE(0x4006 == val ); // 0x4006 = 2.09375 bf16
 	result = twentyfive / five;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp+126, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp+126, possign);
 	REQUIRE(0x4083 == val ); // 0x4083 = 4.09375 bf16
 
 	//10
 	result = ten / ten;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp+126, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp+126, possign);
 	REQUIRE(0x3F80 == val ); // 0x3F80 = 1.0 bf16
 	result = tenone / ten;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp+126, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp+126, possign);
 	REQUIRE(0x3F81 == val ); // 0x3F81 = 1.0078125 bf16
 	result = tenfive / ten;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp+126, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp+126, possign);
 	REQUIRE(0x3F86 == val ); // 0x3F86 = 1.046875 bf16
 	result = twentyfive / ten;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp+126, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp+126, possign);
 	REQUIRE(0x4003 == val ); // 0x4003 = 2.046875 bf16
 
 	//10.1
 	result = tenone / tenone;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp+126, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp+126, possign);
 	REQUIRE(0x3F80 == val ); // 0x3F80 = 1.0 bf16
 	result = tenfive / tenone;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp+126, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp+126, possign);
 	REQUIRE(0x3F86 == val ); // 0x3F86 = 1.046875 bf16
 	result = twentyfive / tenone;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp+126, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp+126, possign);
 	REQUIRE(0x4002 == val ); // 0x4002 = 2.03125 bf16
 
 	//10.5
 	result = tenfive / tenfive;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp+126, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp+126, possign);
 	REQUIRE(0x3F80 == val ); // 0x3F80 = 1.0 bf16
 	result = twentyfive / tenfive;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp+126, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp+126, possign);
 	REQUIRE(0x3FFA == val ); // 0x3FFA = 1.953125 bf16
 
 	//20.5
 	result = twentyfive / twentyfive;
-	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false ==false ==true>(result.m, result.exp+126, possign);
+	val = bfloat16::detail::fixed2bfloat16<std::round_to_nearest,31,false, false, true>(result.m, result.exp+126, possign);
 	REQUIRE(0x3F80 == val ); // 0x3F80 = 1.0 bf16
 
 }
@@ -2123,51 +2123,51 @@ TEST_CASE("bfloat16_operator_equal", "[float16]"){
 	//works
 
 	//numeric Limits
-	REQUIRE(true == 0x7F80 == std::numeric_limits<bfloat16::bfloat16>::infinity());
-	REQUIRE(true == 0x7FFF == std::numeric_limits<bfloat16::bfloat16>::quiet_NaN());
-	REQUIRE(true == 0x0080 == std::numeric_limits<bfloat16::bfloat16>::min());
-	REQUIRE(true == 0xFF7F == std::numeric_limits<bfloat16::bfloat16>::lowest());
-	REQUIRE(true == 0x7F7F == std::numeric_limits<bfloat16::bfloat16>::max());
-	REQUIRE(true == 0x0280 == std::numeric_limits<bfloat16::bfloat16>::epsilon());
-	REQUIRE(true == 0x3F00 == std::numeric_limits<bfloat16::bfloat16>::round_error());
-	REQUIRE(true == 0x7FBF == std::numeric_limits<bfloat16::bfloat16>::signaling_NaN());
-	REQUIRE(true == 0x0001 == std::numeric_limits<bfloat16::bfloat16>::denorm_min());
+	REQUIRE(0x7F80 == std::numeric_limits<bfloat16::bfloat16>::infinity());
+	REQUIRE(0x7FFF == std::numeric_limits<bfloat16::bfloat16>::quiet_NaN());
+	REQUIRE(0x0080 == std::numeric_limits<bfloat16::bfloat16>::min());
+	REQUIRE(0xFF7F == std::numeric_limits<bfloat16::bfloat16>::lowest());
+	REQUIRE(0x7F7F == std::numeric_limits<bfloat16::bfloat16>::max());
+	REQUIRE(0x0280 == std::numeric_limits<bfloat16::bfloat16>::epsilon());
+	REQUIRE(0x3F00 == std::numeric_limits<bfloat16::bfloat16>::round_error());
+	REQUIRE(0x7FBF == std::numeric_limits<bfloat16::bfloat16>::signaling_NaN());
+	REQUIRE(0x0001 == std::numeric_limits<bfloat16::bfloat16>::denorm_min());
 
 
 	//positive
-	REQUIRE(true == bfloat16::bfloat16(0.5) == bfloat16::bfloat16(0.5) );
-	REQUIRE(false == bfloat16::bfloat16(0.1) == bfloat16::bfloat16(0.5) );
-	REQUIRE(false == bfloat16::bfloat16(0.5) == bfloat16::bfloat16(0.1) );
+	REQUIRE(bfloat16::bfloat16(0.5) == bfloat16::bfloat16(0.5) );
+	REQUIRE_FALSE(bfloat16::bfloat16(0.1) == bfloat16::bfloat16(0.5) );
+	REQUIRE_FALSE(bfloat16::bfloat16(0.5) == bfloat16::bfloat16(0.1) );
 
-	REQUIRE(true == bfloat16::bfloat16(10) == bfloat16::bfloat16(10) );
-	REQUIRE(false == bfloat16::bfloat16(20) == bfloat16::bfloat16(10) );
-	REQUIRE(false == bfloat16::bfloat16(10) == bfloat16::bfloat16(20) );
+	REQUIRE(bfloat16::bfloat16(10) == bfloat16::bfloat16(10) );
+	REQUIRE_FALSE(bfloat16::bfloat16(20) == bfloat16::bfloat16(10) );
+	REQUIRE_FALSE(bfloat16::bfloat16(10) == bfloat16::bfloat16(20) );
 
-	REQUIRE(true == bfloat16::bfloat16(10.1) == bfloat16::bfloat16(10.1) );
-	REQUIRE(false == bfloat16::bfloat16(20.1) == bfloat16::bfloat16(10.1) );
-	REQUIRE(false == bfloat16::bfloat16(10.1) == bfloat16::bfloat16(20.1) );
+	REQUIRE(bfloat16::bfloat16(10.1) == bfloat16::bfloat16(10.1) );
+	REQUIRE_FALSE(bfloat16::bfloat16(20.1) == bfloat16::bfloat16(10.1) );
+	REQUIRE_FALSE(bfloat16::bfloat16(10.1) == bfloat16::bfloat16(20.1) );
 
-	REQUIRE(true == bfloat16::bfloat16(10.5) == bfloat16::bfloat16(10.5) );
-	REQUIRE(false == bfloat16::bfloat16(20.5) == bfloat16::bfloat16(10.5) );
-	REQUIRE(false == bfloat16::bfloat16(10.5) == bfloat16::bfloat16(20.5) );
+	REQUIRE(bfloat16::bfloat16(10.5) == bfloat16::bfloat16(10.5) );
+	REQUIRE_FALSE(bfloat16::bfloat16(20.5) == bfloat16::bfloat16(10.5) );
+	REQUIRE_FALSE(bfloat16::bfloat16(10.5) == bfloat16::bfloat16(20.5) );
 
 	
 	//negative
-	REQUIRE(true == bfloat16::bfloat16(-0.5) == bfloat16::bfloat16(-0.5) );
-	REQUIRE(false == bfloat16::bfloat16(-0.1) == bfloat16::bfloat16(-0.5) );
-	REQUIRE(false == bfloat16::bfloat16(-0.5) == bfloat16::bfloat16(-0.1) );
+	REQUIRE(bfloat16::bfloat16(-0.5) == bfloat16::bfloat16(-0.5) );
+	REQUIRE_FALSE(bfloat16::bfloat16(-0.1) == bfloat16::bfloat16(-0.5) );
+	REQUIRE_FALSE(bfloat16::bfloat16(-0.5) == bfloat16::bfloat16(-0.1) );
 
-	REQUIRE(true == bfloat16::bfloat16(-10) == bfloat16::bfloat16(-10) );
-	REQUIRE(false == bfloat16::bfloat16(-20) == bfloat16::bfloat16(-10) );
-	REQUIRE(false == bfloat16::bfloat16(-10) == bfloat16::bfloat16(-20) );
+	REQUIRE(bfloat16::bfloat16(-10) == bfloat16::bfloat16(-10) );
+	REQUIRE_FALSE(bfloat16::bfloat16(-20) == bfloat16::bfloat16(-10) );
+	REQUIRE_FALSE(bfloat16::bfloat16(-10) == bfloat16::bfloat16(-20) );
 
-	REQUIRE(true == bfloat16::bfloat16(-10.1) == bfloat16::bfloat16(-10.1) );
-	REQUIRE(false == bfloat16::bfloat16(-20.1) == bfloat16::bfloat16(-10.1) );
-	REQUIRE(false == bfloat16::bfloat16(-10.1) == bfloat16::bfloat16(-20.1) );
+	REQUIRE(bfloat16::bfloat16(-10.1) == bfloat16::bfloat16(-10.1) );
+	REQUIRE_FALSE(bfloat16::bfloat16(-20.1) == bfloat16::bfloat16(-10.1) );
+	REQUIRE_FALSE(bfloat16::bfloat16(-10.1) == bfloat16::bfloat16(-20.1) );
 
-	REQUIRE(true == bfloat16::bfloat16(-10.5) == bfloat16::bfloat16(-10.5) );
-	REQUIRE(false == bfloat16::bfloat16(-20.5) == bfloat16::bfloat16(-10.5) );
-	REQUIRE(false == bfloat16::bfloat16(-10.5) == bfloat16::bfloat16(-20.5) );
+	REQUIRE(bfloat16::bfloat16(-10.5) == bfloat16::bfloat16(-10.5) );
+	REQUIRE_FALSE(bfloat16::bfloat16(-20.5) == bfloat16::bfloat16(-10.5) );
+	REQUIRE_FALSE(bfloat16::bfloat16(-10.5) == bfloat16::bfloat16(-20.5) );
 
 }
 
@@ -2178,51 +2178,51 @@ TEST_CASE("bfloat16_operator_notequal", "[float16]"){
 	//works
 
 	//numeric Limits
-	REQUIRE(false == 0x7F80 != std::numeric_limits<bfloat16::bfloat16>::infinity());
-	REQUIRE(false == 0x7FFF != std::numeric_limits<bfloat16::bfloat16>::quiet_NaN());
-	REQUIRE(false == 0x0080 != std::numeric_limits<bfloat16::bfloat16>::min());
-	REQUIRE(false == 0xFF7F != std::numeric_limits<bfloat16::bfloat16>::lowest());
-	REQUIRE(false == 0x7F7F != std::numeric_limits<bfloat16::bfloat16>::max());
-	REQUIRE(false == 0x0280 != std::numeric_limits<bfloat16::bfloat16>::epsilon());
-	REQUIRE(false == 0x3F00 != std::numeric_limits<bfloat16::bfloat16>::round_error());
-	REQUIRE(false == 0x7FBF != std::numeric_limits<bfloat16::bfloat16>::signaling_NaN());
-	REQUIRE(false == 0x0001 != std::numeric_limits<bfloat16::bfloat16>::denorm_min());
+	REQUIRE(0x7F80 == std::numeric_limits<bfloat16::bfloat16>::infinity());
+	REQUIRE(0x7FFF == std::numeric_limits<bfloat16::bfloat16>::quiet_NaN());
+	REQUIRE(0x0080 == std::numeric_limits<bfloat16::bfloat16>::min());
+	REQUIRE(0xFF7F == std::numeric_limits<bfloat16::bfloat16>::lowest());
+	REQUIRE(0x7F7F == std::numeric_limits<bfloat16::bfloat16>::max());
+	REQUIRE(0x0280 == std::numeric_limits<bfloat16::bfloat16>::epsilon());
+	REQUIRE(0x3F00 == std::numeric_limits<bfloat16::bfloat16>::round_error());
+	REQUIRE(0x7FBF == std::numeric_limits<bfloat16::bfloat16>::signaling_NaN());
+	REQUIRE(0x0001 == std::numeric_limits<bfloat16::bfloat16>::denorm_min());
 
 
 	//positive
-	REQUIRE(false == bfloat16::bfloat16(0.5) != bfloat16::bfloat16(0.5) );
-	REQUIRE(true == bfloat16::bfloat16(0.1) != bfloat16::bfloat16(0.5) );
-	REQUIRE(true == bfloat16::bfloat16(0.5) != bfloat16::bfloat16(0.1) );
+	REQUIRE(bfloat16::bfloat16(0.5) == bfloat16::bfloat16(0.5) );
+	REQUIRE_FALSE(bfloat16::bfloat16(0.1) == bfloat16::bfloat16(0.5) );
+	REQUIRE_FALSE(bfloat16::bfloat16(0.5) == bfloat16::bfloat16(0.1) );
 
-	REQUIRE(false == bfloat16::bfloat16(10) != bfloat16::bfloat16(10) );
-	REQUIRE(true == bfloat16::bfloat16(20) != bfloat16::bfloat16(10) );
-	REQUIRE(true == bfloat16::bfloat16(10) != bfloat16::bfloat16(20) );
+	REQUIRE(bfloat16::bfloat16(10) == bfloat16::bfloat16(10) );
+	REQUIRE_FALSE(bfloat16::bfloat16(20) == bfloat16::bfloat16(10) );
+	REQUIRE_FALSE(bfloat16::bfloat16(10) == bfloat16::bfloat16(20) );
 
-	REQUIRE(false == bfloat16::bfloat16(10.1) != bfloat16::bfloat16(10.1) );
-	REQUIRE(true == bfloat16::bfloat16(20.1) != bfloat16::bfloat16(10.1) );
-	REQUIRE(true == bfloat16::bfloat16(10.1) != bfloat16::bfloat16(20.1) );
+	REQUIRE(bfloat16::bfloat16(10.1) == bfloat16::bfloat16(10.1) );
+	REQUIRE_FALSE(bfloat16::bfloat16(20.1) == bfloat16::bfloat16(10.1) );
+	REQUIRE_FALSE(bfloat16::bfloat16(10.1) == bfloat16::bfloat16(20.1) );
 
-	REQUIRE(false == bfloat16::bfloat16(10.5) != bfloat16::bfloat16(10.5) );
-	REQUIRE(true == bfloat16::bfloat16(20.5) != bfloat16::bfloat16(10.5) );
-	REQUIRE(true == bfloat16::bfloat16(10.5) != bfloat16::bfloat16(20.5) );
+	REQUIRE(bfloat16::bfloat16(10.5) == bfloat16::bfloat16(10.5) );
+	REQUIRE_FALSE(bfloat16::bfloat16(20.5) == bfloat16::bfloat16(10.5) );
+	REQUIRE_FALSE(bfloat16::bfloat16(10.5) == bfloat16::bfloat16(20.5) );
 
 
 	//negative
-	REQUIRE(false == bfloat16::bfloat16(-0.5) != bfloat16::bfloat16(-0.5) );
-	REQUIRE(true == bfloat16::bfloat16(-0.1) != bfloat16::bfloat16(-0.5) );
-	REQUIRE(true == bfloat16::bfloat16(-0.5) != bfloat16::bfloat16(-0.1) );
+	REQUIRE(bfloat16::bfloat16(-0.5) == bfloat16::bfloat16(-0.5) );
+	REQUIRE_FALSE(bfloat16::bfloat16(-0.1) == bfloat16::bfloat16(-0.5) );
+	REQUIRE_FALSE(bfloat16::bfloat16(-0.5) == bfloat16::bfloat16(-0.1) );
 
-	REQUIRE(false == bfloat16::bfloat16(-10) != bfloat16::bfloat16(-10) );
-	REQUIRE(true == bfloat16::bfloat16(20) != bfloat16::bfloat16(10) );
-	REQUIRE(true == bfloat16::bfloat16(10) != bfloat16::bfloat16(20) );
+	REQUIRE(bfloat16::bfloat16(-10) == bfloat16::bfloat16(-10) );
+	REQUIRE_FALSE(bfloat16::bfloat16(20) == bfloat16::bfloat16(10) );
+	REQUIRE_FALSE(bfloat16::bfloat16(10) == bfloat16::bfloat16(20) );
 
-	REQUIRE(false == bfloat16::bfloat16(-10.1) != bfloat16::bfloat16(-10.1) );
-	REQUIRE(true == bfloat16::bfloat16(-20.1) != bfloat16::bfloat16(-10.1) );
-	REQUIRE(true == bfloat16::bfloat16(-10.1) != bfloat16::bfloat16(-20.1) );
+	REQUIRE(bfloat16::bfloat16(-10.1) == bfloat16::bfloat16(-10.1) );
+	REQUIRE_FALSE(bfloat16::bfloat16(-20.1) == bfloat16::bfloat16(-10.1) );
+	REQUIRE_FALSE(bfloat16::bfloat16(-10.1) == bfloat16::bfloat16(-20.1) );
 
-	REQUIRE(false == bfloat16::bfloat16(-10.5) != bfloat16::bfloat16(-10.5) );
-	REQUIRE(true == bfloat16::bfloat16(-20.5) != bfloat16::bfloat16(-10.5) );
-	REQUIRE(true == bfloat16::bfloat16(-10.5) != bfloat16::bfloat16(-20.5) );
+	REQUIRE(bfloat16::bfloat16(-10.5) == bfloat16::bfloat16(-10.5) );
+	REQUIRE_FALSE(bfloat16::bfloat16(-20.5) == bfloat16::bfloat16(-10.5) );
+	REQUIRE_FALSE(bfloat16::bfloat16(-10.5) == bfloat16::bfloat16(-20.5) );
 
 }
 
@@ -2822,17 +2822,17 @@ TEST_CASE("bfloat16_fmod", "[float16]"){
 	REQUIRE(0x0 == bfloat16::fmod(bfloat16::bfloat16(0), bfloat16::bfloat16(2)) );
 	REQUIRE(0x0 == bfloat16::fmod(bfloat16::bfloat16(-0), bfloat16::bfloat16(2)) ); // should be -0
 
-	REQUIRE(std::nan("h") == bfloat16::fmod(std::numeric_limits<bfloat16::bfloat16>::infinity(), bfloat16::bfloat16(2)) );
-	REQUIRE(std::nan("h") == bfloat16::fmod(-std::numeric_limits<bfloat16::bfloat16>::infinity(), bfloat16::bfloat16(2)) );
+	REQUIRE(NAN == bfloat16::fmod(std::numeric_limits<bfloat16::bfloat16>::infinity(), bfloat16::bfloat16(2)) );
+	REQUIRE(NAN == bfloat16::fmod(-std::numeric_limits<bfloat16::bfloat16>::infinity(), bfloat16::bfloat16(2)) );
 
-	REQUIRE(std::nan("h") == bfloat16::fmod(bfloat16::bfloat16(2), bfloat16::bfloat16(0)) );
-	REQUIRE(std::nan("h") == bfloat16::fmod(bfloat16::bfloat16(2), bfloat16::bfloat16(-2)) );
+	REQUIRE(NAN == bfloat16::fmod(bfloat16::bfloat16(2), bfloat16::bfloat16(0)) );
+	REQUIRE(NAN == bfloat16::fmod(bfloat16::bfloat16(2), bfloat16::bfloat16(-2)) );
 
 	REQUIRE(0x4000 == bfloat16::fmod(bfloat16::bfloat16(2), std::numeric_limits<bfloat16::bfloat16>::infinity()) );
 	REQUIRE(0x4000 == bfloat16::fmod(bfloat16::bfloat16(2), -std::numeric_limits<bfloat16::bfloat16>::infinity()) );
 
-	REQUIRE(std::nan("h") == bfloat16::fmod(bfloat16::bfloat16(2), std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
-	REQUIRE(std::nan("h") == bfloat16::fmod(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN(),bfloat16::bfloat16(2)) );
+	REQUIRE(NAN == bfloat16::fmod(bfloat16::bfloat16(2), std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
+	REQUIRE(NAN == bfloat16::fmod(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN(),bfloat16::bfloat16(2)) );
 
 
 
@@ -2886,14 +2886,14 @@ TEST_CASE("bfloat16_remainder", "[float16]"){
 	//works
 
 	//ERRhandling / numeric Limits
-	REQUIRE(std::nan("h") == bfloat16::remainder(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN(), bfloat16::bfloat16(2)) );
-	REQUIRE(std::nan("h") == bfloat16::remainder(bfloat16::bfloat16(2), std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
+	REQUIRE(NAN == bfloat16::remainder(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN(), bfloat16::bfloat16(2)) );
+	REQUIRE(NAN == bfloat16::remainder(bfloat16::bfloat16(2), std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
 
-	REQUIRE(std::nan("h") == bfloat16::remainder(bfloat16::bfloat16(2), bfloat16::bfloat16(0)) );
-	REQUIRE(std::nan("h") == bfloat16::remainder(bfloat16::bfloat16(2), bfloat16::bfloat16(-0)) );
+	REQUIRE(NAN == bfloat16::remainder(bfloat16::bfloat16(2), bfloat16::bfloat16(0)) );
+	REQUIRE(NAN == bfloat16::remainder(bfloat16::bfloat16(2), bfloat16::bfloat16(-0)) );
 
-	REQUIRE(std::nan("h") == bfloat16::remainder(std::numeric_limits<bfloat16::bfloat16>::infinity(), bfloat16::bfloat16(2)) );
-	REQUIRE(std::nan("h") == bfloat16::remainder(-std::numeric_limits<bfloat16::bfloat16>::infinity(), bfloat16::bfloat16(2)) );
+	REQUIRE(NAN == bfloat16::remainder(std::numeric_limits<bfloat16::bfloat16>::infinity(), bfloat16::bfloat16(2)) );
+	REQUIRE(NAN == bfloat16::remainder(-std::numeric_limits<bfloat16::bfloat16>::infinity(), bfloat16::bfloat16(2)) );
 
 
 	//positive
@@ -2997,80 +2997,80 @@ TEST_CASE("bfloat16_fma", "[float16]"){
 	//calculated with the temporary solution
 
 	//ERRhandling / numeric Limits
-	REQUIRE(std::nan("h") == bfloat16::fma(bfloat16::bfloat16(0), std::numeric_limits<bfloat16::bfloat16>::infinity(), bfloat16::bfloat16(2)) );
-	REQUIRE(std::nan("h") == bfloat16::fma(std::numeric_limits<bfloat16::bfloat16>::infinity(), bfloat16::bfloat16(0), bfloat16::bfloat16(2)) );
+	REQUIRE(NAN == bfloat16::fma(bfloat16::bfloat16(0), std::numeric_limits<bfloat16::bfloat16>::infinity(), bfloat16::bfloat16(2)) );
+	REQUIRE(NAN == bfloat16::fma(std::numeric_limits<bfloat16::bfloat16>::infinity(), bfloat16::bfloat16(0), bfloat16::bfloat16(2)) );
 
-	REQUIRE(std::nan("h") == bfloat16::fma(bfloat16::bfloat16(0), std::numeric_limits<bfloat16::bfloat16>::infinity(), std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
-	REQUIRE(std::nan("h") == bfloat16::fma(std::numeric_limits<bfloat16::bfloat16>::infinity(), bfloat16::bfloat16(0), std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
+	REQUIRE(NAN == bfloat16::fma(bfloat16::bfloat16(0), std::numeric_limits<bfloat16::bfloat16>::infinity(), std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
+	REQUIRE(NAN == bfloat16::fma(std::numeric_limits<bfloat16::bfloat16>::infinity(), bfloat16::bfloat16(0), std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
 
-	REQUIRE(std::nan("h") == bfloat16::fma(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN(), bfloat16::bfloat16(2), bfloat16::bfloat16(2)) );
-	REQUIRE(std::nan("h") == bfloat16::fma(bfloat16::bfloat16(2), std::numeric_limits<bfloat16::bfloat16>::quiet_NaN(), bfloat16::bfloat16(2)) );
+	REQUIRE(NAN == bfloat16::fma(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN(), bfloat16::bfloat16(2), bfloat16::bfloat16(2)) );
+	REQUIRE(NAN == bfloat16::fma(bfloat16::bfloat16(2), std::numeric_limits<bfloat16::bfloat16>::quiet_NaN(), bfloat16::bfloat16(2)) );
 
-	REQUIRE(std::nan("h") == bfloat16::fma(bfloat16::bfloat16(2), bfloat16::bfloat16(2), std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
-	REQUIRE(std::nan("h") == bfloat16::fma(bfloat16::bfloat16(2), bfloat16::bfloat16(2), std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
+	REQUIRE(NAN == bfloat16::fma(bfloat16::bfloat16(2), bfloat16::bfloat16(2), std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
+	REQUIRE(NAN == bfloat16::fma(bfloat16::bfloat16(2), bfloat16::bfloat16(2), std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
 
 
 	//positive 3x negative 0x
-	REQUIRE( 0x4250, bfloat16::fma(bfloat16::bfloat16(10), bfloat16::bfloat16(5), bfloat16::bfloat16(2)) ); // 0x4250 = 52.0 bf16
-	REQUIRE( 0x41C8, bfloat16::fma(bfloat16::bfloat16(10), bfloat16::bfloat16(2), bfloat16::bfloat16(5)) ); // 0x41C8 = 25.0 bf16
-	REQUIRE( 0x4250, bfloat16::fma(bfloat16::bfloat16(5), bfloat16::bfloat16(10), bfloat16::bfloat16(2)) ); // 0x4250 = 52.0 bf16
-	REQUIRE( 0x41A0, bfloat16::fma(bfloat16::bfloat16(5), bfloat16::bfloat16(2), bfloat16::bfloat16(10)) ); // 0x41A0 = 20.0 bf16
-	REQUIRE( 0x41C8, bfloat16::fma(bfloat16::bfloat16(2), bfloat16::bfloat16(10), bfloat16::bfloat16(5)) ); // 0x41C8 = 25.0 bf16
-	REQUIRE( 0x41A0, bfloat16::fma(bfloat16::bfloat16(2), bfloat16::bfloat16(5), bfloat16::bfloat16(10)) ); // 0x41A0 = 20.0 bf16
+	REQUIRE(0x4250 == bfloat16::fma(bfloat16::bfloat16(10), bfloat16::bfloat16(5), bfloat16::bfloat16(2)) ); // 0x4250 = 52.0 bf16
+	REQUIRE(0x41C8 == bfloat16::fma(bfloat16::bfloat16(10), bfloat16::bfloat16(2), bfloat16::bfloat16(5)) ); // 0x41C8 = 25.0 bf16
+	REQUIRE(0x4250 == bfloat16::fma(bfloat16::bfloat16(5), bfloat16::bfloat16(10), bfloat16::bfloat16(2)) ); // 0x4250 = 52.0 bf16
+	REQUIRE(0x41A0 == bfloat16::fma(bfloat16::bfloat16(5), bfloat16::bfloat16(2), bfloat16::bfloat16(10)) ); // 0x41A0 = 20.0 bf16
+	REQUIRE(0x41C8 == bfloat16::fma(bfloat16::bfloat16(2), bfloat16::bfloat16(10), bfloat16::bfloat16(5)) ); // 0x41C8 = 25.0 bf16
+	REQUIRE(0x41A0 == bfloat16::fma(bfloat16::bfloat16(2), bfloat16::bfloat16(5), bfloat16::bfloat16(10)) ); // 0x41A0 = 20.0 bf16
 
 
 	//positive 2x negative 1x
-	REQUIRE( 0x4240, bfloat16::fma(bfloat16::bfloat16(10), bfloat16::bfloat16(5), bfloat16::bfloat16(-2)) ); // 0x4240 = 48.0 bf16
-	REQUIRE( 0x4170, bfloat16::fma(bfloat16::bfloat16(10), bfloat16::bfloat16(2), bfloat16::bfloat16(-5)) ); // 0x4170 = 15.0 bf16
-	REQUIRE( 0x4240, bfloat16::fma(bfloat16::bfloat16(5), bfloat16::bfloat16(10), bfloat16::bfloat16(-2)) ); // 0x4240 = 48.0 bf16
-	REQUIRE( 0x0, bfloat16::fma(bfloat16::bfloat16(5), bfloat16::bfloat16(2), bfloat16::bfloat16(-10)) ); // 0x0 = 0.0 bf16
-	REQUIRE( 0x4170, bfloat16::fma(bfloat16::bfloat16(2), bfloat16::bfloat16(10), bfloat16::bfloat16(-5)) ); // 0x4170 = 15.0 bf16
-	REQUIRE( 0x0, bfloat16::fma(bfloat16::bfloat16(2), bfloat16::bfloat16(5), bfloat16::bfloat16(-10)) ); // 0x0 = 0.0 bf16
+	REQUIRE(0x4240 == bfloat16::fma(bfloat16::bfloat16(10), bfloat16::bfloat16(5), bfloat16::bfloat16(-2)) ); // 0x4240 = 48.0 bf16
+	REQUIRE(0x4170 == bfloat16::fma(bfloat16::bfloat16(10), bfloat16::bfloat16(2), bfloat16::bfloat16(-5)) ); // 0x4170 = 15.0 bf16
+	REQUIRE(0x4240 == bfloat16::fma(bfloat16::bfloat16(5), bfloat16::bfloat16(10), bfloat16::bfloat16(-2)) ); // 0x4240 = 48.0 bf16
+	REQUIRE(0x0 == bfloat16::fma(bfloat16::bfloat16(5), bfloat16::bfloat16(2), bfloat16::bfloat16(-10)) ); // 0x0 = 0.0 bf16
+	REQUIRE(0x4170 == bfloat16::fma(bfloat16::bfloat16(2), bfloat16::bfloat16(10), bfloat16::bfloat16(-5)) ); // 0x4170 = 15.0 bf16
+	REQUIRE(0x0 == bfloat16::fma(bfloat16::bfloat16(2), bfloat16::bfloat16(5), bfloat16::bfloat16(-10)) ); // 0x0 = 0.0 bf16
 
 
 	//positive 2x negative 1x
-	REQUIRE( 0xC240, bfloat16::fma(bfloat16::bfloat16(10), bfloat16::bfloat16(-5), bfloat16::bfloat16(2)) ); // 0xC240 = -48.0 bf16
-	REQUIRE( 0xC170, bfloat16::fma(bfloat16::bfloat16(10), bfloat16::bfloat16(-2), bfloat16::bfloat16(5)) ); // 0xC170 = -15.0 bf16
-	REQUIRE( 0xC240, bfloat16::fma(bfloat16::bfloat16(5), bfloat16::bfloat16(-10), bfloat16::bfloat16(2)) ); // 0xC240 = -48.0 bf16
-	REQUIRE( 0x0, bfloat16::fma(bfloat16::bfloat16(5), bfloat16::bfloat16(-2), bfloat16::bfloat16(10)) ); // 0x0 = 0.0 bf16
-	REQUIRE( 0xC170, bfloat16::fma(bfloat16::bfloat16(2), bfloat16::bfloat16(-10), bfloat16::bfloat16(5)) ); // 0xC170 = -15.0 bf16
-	REQUIRE( 0x0, bfloat16::fma(bfloat16::bfloat16(2), bfloat16::bfloat16(-5), bfloat16::bfloat16(10)) ); // 0x0 = 0.0 bf16
+	REQUIRE(0xC240 == bfloat16::fma(bfloat16::bfloat16(10), bfloat16::bfloat16(-5), bfloat16::bfloat16(2)) ); // 0xC240 = -48.0 bf16
+	REQUIRE(0xC170 == bfloat16::fma(bfloat16::bfloat16(10), bfloat16::bfloat16(-2), bfloat16::bfloat16(5)) ); // 0xC170 = -15.0 bf16
+	REQUIRE(0xC240 == bfloat16::fma(bfloat16::bfloat16(5), bfloat16::bfloat16(-10), bfloat16::bfloat16(2)) ); // 0xC240 = -48.0 bf16
+	REQUIRE(0x0 == bfloat16::fma(bfloat16::bfloat16(5), bfloat16::bfloat16(-2), bfloat16::bfloat16(10)) ); // 0x0 = 0.0 bf16
+	REQUIRE(0xC170 == bfloat16::fma(bfloat16::bfloat16(2), bfloat16::bfloat16(-10), bfloat16::bfloat16(5)) ); // 0xC170 = -15.0 bf16
+	REQUIRE(0x0 == bfloat16::fma(bfloat16::bfloat16(2), bfloat16::bfloat16(-5), bfloat16::bfloat16(10)) ); // 0x0 = 0.0 bf16
 
 
 	//positive 2x negative 1x
-	REQUIRE( 0xC240, bfloat16::fma(bfloat16::bfloat16(-10), bfloat16::bfloat16(5), bfloat16::bfloat16(2)) ); // 0xC240 = -48.0 bf16
-	REQUIRE( 0xC170, bfloat16::fma(bfloat16::bfloat16(-10), bfloat16::bfloat16(2), bfloat16::bfloat16(5)) ); // 0xC170 = -15.0 bf16
-	REQUIRE( 0xC240, bfloat16::fma(bfloat16::bfloat16(-5), bfloat16::bfloat16(10), bfloat16::bfloat16(2)) ); // 0xC240 = -48.0 bf16
-	REQUIRE( 0x0, bfloat16::fma(bfloat16::bfloat16(-5), bfloat16::bfloat16(2), bfloat16::bfloat16(10)) ); // 0x0 = 0.0 bf16
-	REQUIRE( 0xC170, bfloat16::fma(bfloat16::bfloat16(-2), bfloat16::bfloat16(10), bfloat16::bfloat16(5)) ); // 0xC170 = -15.0 bf16
-	REQUIRE( 0x0, bfloat16::fma(bfloat16::bfloat16(-2), bfloat16::bfloat16(5), bfloat16::bfloat16(10)) ); // 0x0 = 0.0 bf16
+	REQUIRE(0xC240 == bfloat16::fma(bfloat16::bfloat16(-10), bfloat16::bfloat16(5), bfloat16::bfloat16(2)) ); // 0xC240 = -48.0 bf16
+	REQUIRE(0xC170 == bfloat16::fma(bfloat16::bfloat16(-10), bfloat16::bfloat16(2), bfloat16::bfloat16(5)) ); // 0xC170 = -15.0 bf16
+	REQUIRE(0xC240 == bfloat16::fma(bfloat16::bfloat16(-5), bfloat16::bfloat16(10), bfloat16::bfloat16(2)) ); // 0xC240 = -48.0 bf16
+	REQUIRE(0x0 == bfloat16::fma(bfloat16::bfloat16(-5), bfloat16::bfloat16(2), bfloat16::bfloat16(10)) ); // 0x0 = 0.0 bf16
+	REQUIRE(0xC170 == bfloat16::fma(bfloat16::bfloat16(-2), bfloat16::bfloat16(10), bfloat16::bfloat16(5)) ); // 0xC170 = -15.0 bf16
+	REQUIRE(0x0 == bfloat16::fma(bfloat16::bfloat16(-2), bfloat16::bfloat16(5), bfloat16::bfloat16(10)) ); // 0x0 = 0.0 bf16
 
 
 	//positive 1x negative x2
-	REQUIRE( 0xC250, bfloat16::fma(bfloat16::bfloat16(10), bfloat16::bfloat16(-5), bfloat16::bfloat16(-2)) ); // 0xC250 = -52.0 bf16
-	REQUIRE( 0xC1C8, bfloat16::fma(bfloat16::bfloat16(10), bfloat16::bfloat16(-2), bfloat16::bfloat16(-5)) ); // 0xC1C8 = -25.0 bf16
-	REQUIRE( 0xC250, bfloat16::fma(bfloat16::bfloat16(5), bfloat16::bfloat16(-10), bfloat16::bfloat16(-2)) ); // 0xC250 = -52.0 bf16
-	REQUIRE( 0xC1A0, bfloat16::fma(bfloat16::bfloat16(5), bfloat16::bfloat16(-2), bfloat16::bfloat16(-10)) ); // 0xC1A0 = -20.0 bf16
-	REQUIRE( 0xC1C8, bfloat16::fma(bfloat16::bfloat16(2), bfloat16::bfloat16(-10), bfloat16::bfloat16(-5)) ); // 0xC1C8 = -25.0 bf16
-	REQUIRE( 0xC1A0, bfloat16::fma(bfloat16::bfloat16(2), bfloat16::bfloat16(-5), bfloat16::bfloat16(-10)) ); // 0xC1A0 = -20.0 bf16
+	REQUIRE(0xC250 == bfloat16::fma(bfloat16::bfloat16(10), bfloat16::bfloat16(-5), bfloat16::bfloat16(-2)) ); // 0xC250 = -52.0 bf16
+	REQUIRE(0xC1C8 == bfloat16::fma(bfloat16::bfloat16(10), bfloat16::bfloat16(-2), bfloat16::bfloat16(-5)) ); // 0xC1C8 = -25.0 bf16
+	REQUIRE(0xC250 == bfloat16::fma(bfloat16::bfloat16(5), bfloat16::bfloat16(-10), bfloat16::bfloat16(-2)) ); // 0xC250 = -52.0 bf16
+	REQUIRE(0xC1A0 == bfloat16::fma(bfloat16::bfloat16(5), bfloat16::bfloat16(-2), bfloat16::bfloat16(-10)) ); // 0xC1A0 = -20.0 bf16
+	REQUIRE(0xC1C8 == bfloat16::fma(bfloat16::bfloat16(2), bfloat16::bfloat16(-10), bfloat16::bfloat16(-5)) ); // 0xC1C8 = -25.0 bf16
+	REQUIRE(0xC1A0 == bfloat16::fma(bfloat16::bfloat16(2), bfloat16::bfloat16(-5), bfloat16::bfloat16(-10)) ); // 0xC1A0 = -20.0 bf16
 
 
 	//positive 1x negative x2
-	REQUIRE( 0x4250, bfloat16::fma(bfloat16::bfloat16(-10), bfloat16::bfloat16(-5), bfloat16::bfloat16(2)) ); // 0x4250 = 52.0 bf16
-	REQUIRE( 0x41C8, bfloat16::fma(bfloat16::bfloat16(-10), bfloat16::bfloat16(-2), bfloat16::bfloat16(5)) ); // 0x41C8 = 25.0 bf16
-	REQUIRE( 0x4250, bfloat16::fma(bfloat16::bfloat16(-5), bfloat16::bfloat16(-10), bfloat16::bfloat16(2)) ); // 0x4250 = 52.0 bf16
-	REQUIRE( 0x41A0, bfloat16::fma(bfloat16::bfloat16(-5), bfloat16::bfloat16(-2), bfloat16::bfloat16(10)) ); // 0x41A0 = 20.0 bf16
-	REQUIRE( 0x41C8, bfloat16::fma(bfloat16::bfloat16(-2), bfloat16::bfloat16(-10), bfloat16::bfloat16(5)) ); // 0x41C8 = 25.0 bf16
-	REQUIRE( 0x41A0, bfloat16::fma(bfloat16::bfloat16(-2), bfloat16::bfloat16(-5), bfloat16::bfloat16(10)) ); // 0x41A0 = 20.0 bf16
+	REQUIRE(0x4250 == bfloat16::fma(bfloat16::bfloat16(-10), bfloat16::bfloat16(-5), bfloat16::bfloat16(2)) ); // 0x4250 = 52.0 bf16
+	REQUIRE(0x41C8 == bfloat16::fma(bfloat16::bfloat16(-10), bfloat16::bfloat16(-2), bfloat16::bfloat16(5)) ); // 0x41C8 = 25.0 bf16
+	REQUIRE(0x4250 == bfloat16::fma(bfloat16::bfloat16(-5), bfloat16::bfloat16(-10), bfloat16::bfloat16(2)) ); // 0x4250 = 52.0 bf16
+	REQUIRE(0x41A0 == bfloat16::fma(bfloat16::bfloat16(-5), bfloat16::bfloat16(-2), bfloat16::bfloat16(10)) ); // 0x41A0 = 20.0 bf16
+	REQUIRE(0x41C8 == bfloat16::fma(bfloat16::bfloat16(-2), bfloat16::bfloat16(-10), bfloat16::bfloat16(5)) ); // 0x41C8 = 25.0 bf16
+	REQUIRE(0x41A0 == bfloat16::fma(bfloat16::bfloat16(-2), bfloat16::bfloat16(-5), bfloat16::bfloat16(10)) ); // 0x41A0 = 20.0 bf16
 
 
 	//positive 0x negative x3
-	REQUIRE( 0x4240, bfloat16::fma(bfloat16::bfloat16(-10), bfloat16::bfloat16(-5), bfloat16::bfloat16(-2)) ); // 0x4240 = 48.0 bf16
-	REQUIRE( 0x4170, bfloat16::fma(bfloat16::bfloat16(-10), bfloat16::bfloat16(-2), bfloat16::bfloat16(-5)) ); // 0x4170 = 15.0 bf16
-	REQUIRE( 0x4240, bfloat16::fma(bfloat16::bfloat16(-5), bfloat16::bfloat16(-10), bfloat16::bfloat16(-2)) ); // 0x4240 = 48.0 bf16
-	REQUIRE( 0x0, bfloat16::fma(bfloat16::bfloat16(-5), bfloat16::bfloat16(-2), bfloat16::bfloat16(-10)) ); // 0x0 = 0.0 bf16
-	REQUIRE( 0x4170, bfloat16::fma(bfloat16::bfloat16(-2), bfloat16::bfloat16(-10), bfloat16::bfloat16(-5)) ); // 0x4170 = 15.0 bf16
-	REQUIRE( 0x0, bfloat16::fma(bfloat16::bfloat16(-2), bfloat16::bfloat16(-5), bfloat16::bfloat16(-10)) ); // 0x0 = 0.0 bf16
+	REQUIRE(0x4240 == bfloat16::fma(bfloat16::bfloat16(-10), bfloat16::bfloat16(-5), bfloat16::bfloat16(-2)) ); // 0x4240 = 48.0 bf16
+	REQUIRE(0x4170 == bfloat16::fma(bfloat16::bfloat16(-10), bfloat16::bfloat16(-2), bfloat16::bfloat16(-5)) ); // 0x4170 = 15.0 bf16
+	REQUIRE(0x4240 == bfloat16::fma(bfloat16::bfloat16(-5), bfloat16::bfloat16(-10), bfloat16::bfloat16(-2)) ); // 0x4240 = 48.0 bf16
+	REQUIRE(0x0 == bfloat16::fma(bfloat16::bfloat16(-5), bfloat16::bfloat16(-2), bfloat16::bfloat16(-10)) ); // 0x0 = 0.0 bf16
+	REQUIRE(0x4170 == bfloat16::fma(bfloat16::bfloat16(-2), bfloat16::bfloat16(-10), bfloat16::bfloat16(-5)) ); // 0x4170 = 15.0 bf16
+	REQUIRE(0x0 == bfloat16::fma(bfloat16::bfloat16(-2), bfloat16::bfloat16(-5), bfloat16::bfloat16(-10)) ); // 0x0 = 0.0 bf16
 
 }
 
@@ -3084,7 +3084,7 @@ TEST_CASE("bfloat16_fmax", "[float16]"){
 	REQUIRE(0x4000 == bfloat16::fmax(bfloat16::bfloat16(2), std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
 	REQUIRE(0x4000 == bfloat16::fmax(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN(), bfloat16::bfloat16(2)) );
 
-	REQUIRE(std::nan("h") == bfloat16::fmax(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN(), std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
+	REQUIRE(NAN == bfloat16::fmax(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN(), std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
 
 
 	//numeric values
@@ -3115,7 +3115,7 @@ TEST_CASE("bfloat16_fmin", "[float16]"){
 	REQUIRE(0x4000 == bfloat16::fmin(bfloat16::bfloat16(2), std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
 	REQUIRE(0x4000 == bfloat16::fmin(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN(), bfloat16::bfloat16(2)) );
 
-	REQUIRE(std::nan("h") == bfloat16::fmin(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN(), std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
+	REQUIRE(NAN == bfloat16::fmin(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN(), std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
 
 
 	//numeric values
@@ -3143,8 +3143,8 @@ TEST_CASE("bfloat16_fdim", "[float16]"){
 	//works
 
 	//ERRhandling / numeric Limits
-	REQUIRE(std::nan("h") == bfloat16::fdim(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN(), bfloat16::bfloat16()));
-	REQUIRE(std::nan("h") == bfloat16::fdim(bfloat16::bfloat16(), std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()));
+	REQUIRE(NAN == bfloat16::fdim(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN(), bfloat16::bfloat16()));
+	REQUIRE(NAN == bfloat16::fdim(bfloat16::bfloat16(), std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()));
 
 
 	//numeric values
@@ -3166,7 +3166,7 @@ TEST_CASE("bfloat16_nanh", "[float16]"){
 
 	//works
 	
-	REQUIRE(std::nan("h") == bfloat16::nanh("h") );
+	REQUIRE(NAN == bfloat16::nanh("h") );
 
 }
 
@@ -3180,7 +3180,7 @@ TEST_CASE("bfloat16_exp", "[float16]"){
 	REQUIRE(0x3F80 == bfloat16::exp(bfloat16::bfloat16(-0)) );
 	REQUIRE(0x0 == bfloat16::exp(-std::numeric_limits<bfloat16::bfloat16>::infinity()) );
 	REQUIRE(0x7F80 == bfloat16::exp(std::numeric_limits<bfloat16::bfloat16>::infinity()) );
-	REQUIRE(std::nan("h") == bfloat16::exp(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
+	REQUIRE(NAN == bfloat16::exp(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
 
 
 	//positive
@@ -3241,7 +3241,7 @@ TEST_CASE("bfloat16_exp2", "[float16]"){
 	REQUIRE(0x3F80 == bfloat16::exp2(bfloat16::bfloat16(-0)) );
 	REQUIRE(0x0 == bfloat16::exp2(-std::numeric_limits<bfloat16::bfloat16>::infinity()) );
 	REQUIRE(0x7F80 == bfloat16::exp2(std::numeric_limits<bfloat16::bfloat16>::infinity()) );
-	REQUIRE(std::nan("h") == bfloat16::exp2(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
+	REQUIRE(NAN == bfloat16::exp2(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
 
 
 	//positive
@@ -3302,7 +3302,7 @@ TEST_CASE("bfloat16_expm1", "[float16]"){
 	REQUIRE(0x0 == bfloat16::expm1(bfloat16::bfloat16(0)) );
 	REQUIRE(0xBF80 == bfloat16::expm1(-std::numeric_limits<bfloat16::bfloat16>::infinity()) );
 	REQUIRE(0x7F80 == bfloat16::expm1(std::numeric_limits<bfloat16::bfloat16>::infinity()) );
-	REQUIRE(std::nan("h") == bfloat16::expm1(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
+	REQUIRE(NAN == bfloat16::expm1(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
 
 
 	//positive
@@ -3361,7 +3361,7 @@ TEST_CASE("bfloat16_log", "[float16]"){
 
 	//ERRhandling / numeric Limits
 	REQUIRE(0x7F80 == bfloat16::log(std::numeric_limits<bfloat16::bfloat16>::infinity()) );
-	REQUIRE(std::nan("h") == bfloat16::log(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
+	REQUIRE(NAN == bfloat16::log(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
 
 
 	//positive
@@ -3420,7 +3420,7 @@ TEST_CASE("bfloat16_log10", "[float16]"){
 
 	//ERRhandling / numeric Limits
 	REQUIRE(0x7F80 == bfloat16::log10(std::numeric_limits<bfloat16::bfloat16>::infinity()) );
-	REQUIRE(std::nan("h") == bfloat16::log10(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
+	REQUIRE(NAN == bfloat16::log10(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
 
 
 	//positive
@@ -3480,7 +3480,7 @@ TEST_CASE("bfloat16_log2", "[float16]"){
 
 	//ERRhandling / numeric Limits
 	REQUIRE(0x7F80 == bfloat16::log2(std::numeric_limits<bfloat16::bfloat16>::infinity()) );
-	REQUIRE(std::nan("h") == bfloat16::log2(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
+	REQUIRE(NAN == bfloat16::log2(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
 
 
 	//positive
@@ -3550,7 +3550,7 @@ TEST_CASE("bfloat16_log1p", "[float16]"){
 
 	//ERRhandling // numeric Limits
 	REQUIRE(0x7F80 == bfloat16::log(std::numeric_limits<bfloat16::bfloat16>::infinity()) );
-	REQUIRE(std::nan("h") == bfloat16::log(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
+	REQUIRE(NAN == bfloat16::log(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
 
 
 	//positive
@@ -3608,7 +3608,7 @@ TEST_CASE("bfloat16_sqrt_temp", "[float16]"){
 	//calculated with the temporary solution
 
 	//ERRhandling / numeric Limits
-	REQUIRE(std::nan("h") == bfloat16::sqrt(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
+	REQUIRE(NAN == bfloat16::sqrt(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
 
 
 	//positive
@@ -3694,7 +3694,7 @@ TEST_CASE("bfloat16_cbrt", "[float16]"){
 	//calculated with the temporary solution
 
 	//ERRhandling / numeric Limits
-	REQUIRE(std::nan("h") == bfloat16::cbrt(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
+	REQUIRE(NAN == bfloat16::cbrt(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
 
 
 	//positive
@@ -3763,9 +3763,9 @@ TEST_CASE("bfloat16_hypot2", "[float16]"){
 	//calculated with the temporary solution
 
 	//ERRhandling / numeric Limits
-	REQUIRE(std::nan("h") == bfloat16::hypot(bfloat16::bfloat16(2), std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
-	REQUIRE(std::nan("h") == bfloat16::hypot(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN(), bfloat16::bfloat16(2)) );
-	REQUIRE(std::nan("h") == bfloat16::hypot(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN(), std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()));
+	REQUIRE(NAN == bfloat16::hypot(bfloat16::bfloat16(2), std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
+	REQUIRE(NAN == bfloat16::hypot(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN(), bfloat16::bfloat16(2)) );
+	REQUIRE(NAN == bfloat16::hypot(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN(), std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()));
 
 
 	//positive
@@ -3833,13 +3833,13 @@ TEST_CASE("bfloat16_hypot3", "[float16]"){
 	//calculated with the temporary solution
 
 	//ERRhandling / numeric Limits
-	REQUIRE(std::nan("h") == bfloat16::hypot(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN(), bfloat16::bfloat16(2), bfloat16::bfloat16(2)) );
-	REQUIRE(std::nan("h") == bfloat16::hypot(bfloat16::bfloat16(2), std::numeric_limits<bfloat16::bfloat16>::quiet_NaN(), bfloat16::bfloat16(2)) );
-	REQUIRE(std::nan("h") == bfloat16::hypot(bfloat16::bfloat16(2), bfloat16::bfloat16(2), std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
-	REQUIRE(std::nan("h") == bfloat16::hypot(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN(), std::numeric_limits<bfloat16::bfloat16>::quiet_NaN(), bfloat16::bfloat16(2)) );
-	REQUIRE(std::nan("h") == bfloat16::hypot(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN(), bfloat16::bfloat16(2), std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
-	REQUIRE(std::nan("h") == bfloat16::hypot(bfloat16::bfloat16(2), std::numeric_limits<bfloat16::bfloat16>::quiet_NaN(), std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
-	REQUIRE(std::nan("h") == bfloat16::hypot(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN(), std::numeric_limits<bfloat16::bfloat16>::quiet_NaN(), std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
+	REQUIRE(NAN == bfloat16::hypot(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN(), bfloat16::bfloat16(2), bfloat16::bfloat16(2)) );
+	REQUIRE(NAN == bfloat16::hypot(bfloat16::bfloat16(2), std::numeric_limits<bfloat16::bfloat16>::quiet_NaN(), bfloat16::bfloat16(2)) );
+	REQUIRE(NAN == bfloat16::hypot(bfloat16::bfloat16(2), bfloat16::bfloat16(2), std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
+	REQUIRE(NAN == bfloat16::hypot(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN(), std::numeric_limits<bfloat16::bfloat16>::quiet_NaN(), bfloat16::bfloat16(2)) );
+	REQUIRE(NAN == bfloat16::hypot(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN(), bfloat16::bfloat16(2), std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
+	REQUIRE(NAN == bfloat16::hypot(bfloat16::bfloat16(2), std::numeric_limits<bfloat16::bfloat16>::quiet_NaN(), std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
+	REQUIRE(NAN == bfloat16::hypot(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN(), std::numeric_limits<bfloat16::bfloat16>::quiet_NaN(), std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
 
 
 	//positive 3x
@@ -3932,15 +3932,15 @@ TEST_CASE("bfloat16_pow", "[float16]"){
 
 	REQUIRE(0x3F80 == bfloat16::pow(bfloat16::bfloat16(1), std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
 	REQUIRE(0x3F80 == bfloat16::pow(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN(), bfloat16::bfloat16(0)) );
-	REQUIRE(std::nan("h") == bfloat16::pow(bfloat16::bfloat16(-2), bfloat16::bfloat16(1.5)) );
+	REQUIRE(NAN == bfloat16::pow(bfloat16::bfloat16(-2), bfloat16::bfloat16(1.5)) );
 	REQUIRE(0x3F80 == bfloat16::pow(bfloat16::bfloat16(-1), -std::numeric_limits<bfloat16::bfloat16>::infinity()) );
 	REQUIRE(0x0 == bfloat16::pow(bfloat16::bfloat16(2), -std::numeric_limits<bfloat16::bfloat16>::infinity()) );
 	REQUIRE(0x3F80 == bfloat16::pow(bfloat16::bfloat16(-1), std::numeric_limits<bfloat16::bfloat16>::infinity()) );
 
 	REQUIRE(0x7F80 == bfloat16::pow(bfloat16::bfloat16(2), std::numeric_limits<bfloat16::bfloat16>::infinity()) );
-	REQUIRE(std::nan("h") == bfloat16::pow(bfloat16::bfloat16(2), std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
-	REQUIRE(std::nan("h") == bfloat16::pow(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN(), bfloat16::bfloat16(2)) );
-	REQUIRE(std::nan("h") == bfloat16::pow(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN(), std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
+	REQUIRE(NAN == bfloat16::pow(bfloat16::bfloat16(2), std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
+	REQUIRE(NAN == bfloat16::pow(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN(), bfloat16::bfloat16(2)) );
+	REQUIRE(NAN == bfloat16::pow(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN(), std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
 
 	REQUIRE(0x8000 == bfloat16::pow(-std::numeric_limits<bfloat16::bfloat16>::infinity(), bfloat16::bfloat16(-3)) );
 	REQUIRE(0x0 == bfloat16::pow(-std::numeric_limits<bfloat16::bfloat16>::infinity(), bfloat16::bfloat16(-1.5)) );
@@ -4001,9 +4001,9 @@ TEST_CASE("bfloat16_sin", "[float16]"){
 	//calculated with the temporary solution
 
 	//ERRhandling / numeric Limits
-	REQUIRE(std::nan("h") == bfloat16::sin(std::numeric_limits<bfloat16::bfloat16>::infinity()) );
-	REQUIRE(std::nan("h") == bfloat16::sin(-std::numeric_limits<bfloat16::bfloat16>::infinity()) );
-	REQUIRE(std::nan("h") == bfloat16::sin(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
+	REQUIRE(NAN == bfloat16::sin(std::numeric_limits<bfloat16::bfloat16>::infinity()) );
+	REQUIRE(NAN == bfloat16::sin(-std::numeric_limits<bfloat16::bfloat16>::infinity()) );
+	REQUIRE(NAN == bfloat16::sin(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
 	
 
 	//solution in rad
@@ -4040,9 +4040,9 @@ TEST_CASE("bfloat16_cos", "[float16]"){
 	//calculated with the temporary solution
 
 	//ERRhandling / numeric Limits
-	REQUIRE(std::nan("h") == bfloat16::cos(std::numeric_limits<bfloat16::bfloat16>::infinity()) );
-	REQUIRE(std::nan("h") == bfloat16::cos(-std::numeric_limits<bfloat16::bfloat16>::infinity()) );
-	REQUIRE(std::nan("h") == bfloat16::cos(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
+	REQUIRE(NAN == bfloat16::cos(std::numeric_limits<bfloat16::bfloat16>::infinity()) );
+	REQUIRE(NAN == bfloat16::cos(-std::numeric_limits<bfloat16::bfloat16>::infinity()) );
+	REQUIRE(NAN == bfloat16::cos(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
 
 
 	//solution in rad
@@ -4079,9 +4079,9 @@ TEST_CASE("bfloat16_tan", "[float16]"){
 	//calculated with the temporary solution
 
 	//ERRhandling / numeric Limits
-	REQUIRE(std::nan("h") == bfloat16::tan(std::numeric_limits<bfloat16::bfloat16>::infinity()) );
-	REQUIRE(std::nan("h") == bfloat16::tan(-std::numeric_limits<bfloat16::bfloat16>::infinity()) );
-	REQUIRE(std::nan("h") == bfloat16::tan(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
+	REQUIRE(NAN == bfloat16::tan(std::numeric_limits<bfloat16::bfloat16>::infinity()) );
+	REQUIRE(NAN == bfloat16::tan(-std::numeric_limits<bfloat16::bfloat16>::infinity()) );
+	REQUIRE(NAN == bfloat16::tan(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
 
 	//solution in rad
 	//positive
@@ -4116,9 +4116,9 @@ TEST_CASE("bfloat16_asin", "[float16]"){
 	//calculated with the temporary solution
 
 	//ERRhandling / numeric Limits
-	REQUIRE(std::nan("h") == bfloat16::asin(bfloat16::bfloat16(2)) );
-	REQUIRE(std::nan("h") == bfloat16::asin(bfloat16::bfloat16(-2)) );
-	REQUIRE(std::nan("h") == bfloat16::asin(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
+	REQUIRE(NAN == bfloat16::asin(bfloat16::bfloat16(2)) );
+	REQUIRE(NAN == bfloat16::asin(bfloat16::bfloat16(-2)) );
+	REQUIRE(NAN == bfloat16::asin(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
 
 
 	//solution in rad
@@ -4157,9 +4157,9 @@ TEST_CASE("bfloat16_acos", "[float16]"){
 	//calculated with the temporary solution
 
 	//ERRhandling / numeric Limits
-	REQUIRE(std::nan("h") == bfloat16::acos(bfloat16::bfloat16(2)) );
-	REQUIRE(std::nan("h") == bfloat16::acos(bfloat16::bfloat16(-2)) );
-	REQUIRE(std::nan("h") == bfloat16::acos(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
+	REQUIRE(NAN == bfloat16::acos(bfloat16::bfloat16(2)) );
+	REQUIRE(NAN == bfloat16::acos(bfloat16::bfloat16(-2)) );
+	REQUIRE(NAN == bfloat16::acos(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
 
 
 	//solution in rad
@@ -4200,7 +4200,7 @@ TEST_CASE("bfloat16_atan", "[float16]"){
 	//ERRhandling / numeric Limits
 	REQUIRE(0x3FC9 == bfloat16::atan(std::numeric_limits<bfloat16::bfloat16>::infinity()) );
 	REQUIRE(0xBFC9 == bfloat16::atan(-std::numeric_limits<bfloat16::bfloat16>::infinity()) );
-	REQUIRE(std::nan("h") == bfloat16::sin(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
+	REQUIRE(NAN == bfloat16::sin(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
 
 
 	//solution in rad
@@ -4272,9 +4272,9 @@ TEST_CASE("bfloat16_atan2", "[float16]"){
 	REQUIRE(0x0 == bfloat16::atan2(bfloat16::bfloat16(3), std::numeric_limits<bfloat16::bfloat16>::infinity()) );
 	REQUIRE(0x8000 == bfloat16::atan2(bfloat16::bfloat16(-3), std::numeric_limits<bfloat16::bfloat16>::infinity()) );
 
-	REQUIRE(std::nan("h") == bfloat16::atan2(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN(), bfloat16::bfloat16(3)) );
-	REQUIRE(std::nan("h") == bfloat16::atan2(bfloat16::bfloat16(3), std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
-	REQUIRE(std::nan("h") == bfloat16::atan2(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN(), std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
+	REQUIRE(NAN == bfloat16::atan2(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN(), bfloat16::bfloat16(3)) );
+	REQUIRE(NAN == bfloat16::atan2(bfloat16::bfloat16(3), std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
+	REQUIRE(NAN == bfloat16::atan2(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN(), std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
 
 
 	//solution in rad
@@ -4316,7 +4316,7 @@ TEST_CASE("bfloat16_sinh", "[float16]"){
 	REQUIRE(0x0 == bfloat16::sinh(bfloat16::bfloat16(-0)) );
 	REQUIRE(0x7F80 == bfloat16::sinh(std::numeric_limits<bfloat16::bfloat16>::infinity()) );
 	REQUIRE(0xFF80 == bfloat16::sinh(-std::numeric_limits<bfloat16::bfloat16>::infinity()) );
-	REQUIRE(std::nan("h") == bfloat16::sinh(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
+	REQUIRE(NAN == bfloat16::sinh(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
 
 
 	//solution in rad
@@ -4357,7 +4357,7 @@ TEST_CASE("bfloat16_cosh", "[float16]"){
 	//ERRhandling / numeric Limits
 	REQUIRE(0x7F80 == bfloat16::cosh(std::numeric_limits<bfloat16::bfloat16>::infinity()) );
 	REQUIRE(0x7F80 == bfloat16::cosh(-std::numeric_limits<bfloat16::bfloat16>::infinity()) );
-	REQUIRE(std::nan("h") == bfloat16::cosh(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
+	REQUIRE(NAN == bfloat16::cosh(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
 
 
 	//solution in rad
@@ -4398,7 +4398,7 @@ TEST_CASE("bfloat16_tanh", "[float16]"){
 	//ERRhandling / numeric Limits
 	REQUIRE(0x3F80 == bfloat16::tanh(std::numeric_limits<bfloat16::bfloat16>::infinity()) );
 	REQUIRE(0xBF80 == bfloat16::tanh(-std::numeric_limits<bfloat16::bfloat16>::infinity()) );
-	REQUIRE(std::nan("h") == bfloat16::tanh(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
+	REQUIRE(NAN == bfloat16::tanh(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
 
 
 	//solution in rad
@@ -4440,7 +4440,7 @@ TEST_CASE("bfloat16_asinh", "[float16]"){
 	REQUIRE(0x0 == bfloat16::asinh(bfloat16::bfloat16(-0)) );
 	REQUIRE(0x7F80 == bfloat16::asinh(std::numeric_limits<bfloat16::bfloat16>::infinity()) );
 	REQUIRE(0xFF80 == bfloat16::asinh(-std::numeric_limits<bfloat16::bfloat16>::infinity()) );
-	REQUIRE(std::nan("h") == bfloat16::asinh(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
+	REQUIRE(NAN == bfloat16::asinh(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
 
 
 	//solution in rad
@@ -4480,7 +4480,7 @@ TEST_CASE("bfloat16_acosh", "[float16]"){
 
 	//ERRhandling / numeric Limits
 	REQUIRE(0x7F80 == bfloat16::acosh(std::numeric_limits<bfloat16::bfloat16>::infinity()) );
-	REQUIRE(std::nan("h") == bfloat16::acosh(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
+	REQUIRE(NAN == bfloat16::acosh(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
 
 
 	//solution in rad
@@ -4511,9 +4511,9 @@ TEST_CASE("bfloat16_atanh", "[float16]"){
 	//ERRhandling / numeric Limits
 	REQUIRE(std::numeric_limits<bfloat16::bfloat16>::infinity() == bfloat16::atanh(bfloat16::bfloat16(1)) );
 	REQUIRE(-std::numeric_limits<bfloat16::bfloat16>::infinity() == bfloat16::atanh(bfloat16::bfloat16(-1)) );
-	REQUIRE(std::nan("h") == bfloat16::atanh(bfloat16::bfloat16(3)) );
-	REQUIRE(std::nan("h") == bfloat16::atanh(bfloat16::bfloat16(-3)) );
-	REQUIRE(std::nan("h") == bfloat16::atanh(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
+	REQUIRE(NAN == bfloat16::atanh(bfloat16::bfloat16(3)) );
+	REQUIRE(NAN == bfloat16::atanh(bfloat16::bfloat16(-3)) );
+	REQUIRE(NAN == bfloat16::atanh(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
 
 
 	//solution in rad
@@ -4552,7 +4552,7 @@ TEST_CASE("bfloat16_erf", "[float16]"){
 	//ERRhandling / numeric Limits
 	REQUIRE(0x3F80 == bfloat16::erf(std::numeric_limits<bfloat16::bfloat16>::infinity()) );
 	REQUIRE(0xBF80 == bfloat16::erf(-std::numeric_limits<bfloat16::bfloat16>::infinity()) );
-	REQUIRE(std::nan("h") == bfloat16::erf(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
+	REQUIRE(NAN == bfloat16::erf(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
 
 
 	//positive
@@ -4591,7 +4591,7 @@ TEST_CASE("bfloat16_erfc", "[float16]"){
 	//ERRhandling / numeric Limits
 	REQUIRE(0x0 == bfloat16::erfc(std::numeric_limits<bfloat16::bfloat16>::infinity()) );
 	REQUIRE(0x4000 == bfloat16::erfc(-std::numeric_limits<bfloat16::bfloat16>::infinity()) );
-	REQUIRE(std::nan("h") == bfloat16::erfc(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
+	REQUIRE(NAN == bfloat16::erfc(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
 
 	
 	//positive
@@ -4633,7 +4633,7 @@ TEST_CASE("bfloat16_lgamma", "[float16]"){
 	REQUIRE(0x7F80 == bfloat16::lgamma(bfloat16::bfloat16(0)) );
 	REQUIRE(0x7F80 == bfloat16::lgamma(std::numeric_limits<bfloat16::bfloat16>::infinity()) );
 	REQUIRE(0x7F80 == bfloat16::lgamma(std::numeric_limits<bfloat16::bfloat16>::infinity()) );
-	REQUIRE(std::nan("h") == bfloat16::lgamma(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
+	REQUIRE(NAN == bfloat16::lgamma(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
 
 
 	//positive
@@ -4666,8 +4666,8 @@ TEST_CASE("bfloat16_tgamma", "[float16]"){
 	REQUIRE(0x7F80 == bfloat16::tgamma(bfloat16::bfloat16(-0)) );
 	REQUIRE(0x7F80 == bfloat16::tgamma(bfloat16::bfloat16(0)) );
 	REQUIRE(0x7F80 == bfloat16::tgamma(std::numeric_limits<bfloat16::bfloat16>::infinity()) );
-	REQUIRE(std::nan("h") == bfloat16::tgamma(-std::numeric_limits<bfloat16::bfloat16>::infinity()) );
-	REQUIRE(std::nan("h") == bfloat16::tgamma(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
+	REQUIRE(NAN == bfloat16::tgamma(-std::numeric_limits<bfloat16::bfloat16>::infinity()) );
+	REQUIRE(NAN == bfloat16::tgamma(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
 	
 
 	//positive
@@ -4701,7 +4701,7 @@ TEST_CASE("bfloat16_ceil", "[floa16]"){
 	REQUIRE(0x7F80 == bfloat16::ceil(std::numeric_limits<bfloat16::bfloat16>::infinity()) );
 	REQUIRE(0x0 == bfloat16::ceil(bfloat16::bfloat16(0)) );
 	REQUIRE(0x0 == bfloat16::ceil(bfloat16::bfloat16(-0)) );
-	REQUIRE(std::nan("h") == bfloat16::ceil(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
+	REQUIRE(NAN == bfloat16::ceil(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
 
 
 	//positive
@@ -4736,7 +4736,7 @@ TEST_CASE("bfloat16_floor", "[floa16]"){
 	REQUIRE(0x7F80 == bfloat16::floor(std::numeric_limits<bfloat16::bfloat16>::infinity()) );
 	REQUIRE(0x0 == bfloat16::floor(bfloat16::bfloat16(0)) );
 	REQUIRE(0x0 == bfloat16::floor(bfloat16::bfloat16(-0)) );
-	REQUIRE(std::nan("h") == bfloat16::floor(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
+	REQUIRE(NAN == bfloat16::floor(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
 
 
 	//positive
@@ -4771,7 +4771,7 @@ TEST_CASE("bfloat16_trunc", "[floa16]"){
 	REQUIRE(0x7F80 == bfloat16::trunc(std::numeric_limits<bfloat16::bfloat16>::infinity()) );
 	REQUIRE(0x0 == bfloat16::trunc(bfloat16::bfloat16(0)) );
 	REQUIRE(0x0 == bfloat16::trunc(bfloat16::bfloat16(-0)) );
-	REQUIRE(std::nan("h") == bfloat16::trunc(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
+	REQUIRE(NAN == bfloat16::trunc(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
 
 
 	//positive
@@ -4806,7 +4806,7 @@ TEST_CASE("bfloat16_round", "[float16]"){
 	REQUIRE(0x7F80 == bfloat16::round(std::numeric_limits<bfloat16::bfloat16>::infinity()) );
 	REQUIRE(0x0 == bfloat16::round(bfloat16::bfloat16(0)) );
 	REQUIRE(0x0 == bfloat16::round(bfloat16::bfloat16(-0)) );
-	REQUIRE(std::nan("h") == bfloat16::round(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
+	REQUIRE(NAN == bfloat16::round(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
 
 
 	//positive
@@ -4895,7 +4895,7 @@ TEST_CASE("bfloat16_nearbyint", "[floa16]"){
 	REQUIRE(0x7F80 == bfloat16::nearbyint(std::numeric_limits<bfloat16::bfloat16>::infinity()) );
 	REQUIRE(0x0 == bfloat16::nearbyint(bfloat16::bfloat16(0)) );
 	REQUIRE(0x0 == bfloat16::nearbyint(bfloat16::bfloat16(-0)) );
-	REQUIRE(std::nan("h") == bfloat16::nearbyint(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
+	REQUIRE(NAN == bfloat16::nearbyint(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
 
 
 	//positive
@@ -4990,7 +4990,7 @@ TEST_CASE("bfloat16_scalbln", "[float16]"){
 	REQUIRE(0x0 == bfloat16::scalbln(bfloat16::bfloat16(-0), 1) );
 	REQUIRE(0x7F80 == bfloat16::scalbln(std::numeric_limits<bfloat16::bfloat16>::infinity(), 1) );
 	REQUIRE(0xFF80 == bfloat16::scalbln(-std::numeric_limits<bfloat16::bfloat16>::infinity(), 1) );
-	REQUIRE(std::nan("h") == bfloat16::scalbln(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN(), 1) );
+	REQUIRE(NAN == bfloat16::scalbln(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN(), 1) );
 
 	
 	//positive
@@ -5016,7 +5016,7 @@ TEST_CASE("bfloat16_scalbln2", "[float16]"){
 	REQUIRE(0x0 == bfloat16::scalbn(bfloat16::bfloat16(-0), 1) );
 	REQUIRE(0x7F80 == bfloat16::scalbn(std::numeric_limits<bfloat16::bfloat16>::infinity(), 1) );
 	REQUIRE(0xFF80 == bfloat16::scalbn(-std::numeric_limits<bfloat16::bfloat16>::infinity(), 1) );
-	REQUIRE(std::nan("h") == bfloat16::scalbn(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN(), 1) );
+	REQUIRE(NAN == bfloat16::scalbn(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN(), 1) );
 
 
 
@@ -5044,7 +5044,7 @@ TEST_CASE("bfloat16_ldexp", "[float16]"){
 	REQUIRE(0x0 == bfloat16::ldexp(bfloat16::bfloat16(-0), 1) );
 	REQUIRE(0x7F80 == bfloat16::ldexp(std::numeric_limits<bfloat16::bfloat16>::infinity(), 1) );
 	REQUIRE(0xFF80 == bfloat16::ldexp(-std::numeric_limits<bfloat16::bfloat16>::infinity(), 1) );
-	REQUIRE(std::nan("h") == bfloat16::ldexp(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN(), 1) );
+	REQUIRE(NAN == bfloat16::ldexp(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN(), 1) );
 
 	//depends on scalbln
 	//positive
@@ -5108,7 +5108,7 @@ TEST_CASE("bfloat16_logb", "[float16]"){
 	REQUIRE(0xFF80 == bfloat16::logb(bfloat16::bfloat16(0)) );
 	REQUIRE(0x7F80 == bfloat16::logb(std::numeric_limits<bfloat16::bfloat16>::infinity()) );
 	REQUIRE(0x7F80 == bfloat16::logb(-std::numeric_limits<bfloat16::bfloat16>::infinity()) );
-	REQUIRE(std::nan("h") == bfloat16::logb(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
+	REQUIRE(NAN == bfloat16::logb(std::numeric_limits<bfloat16::bfloat16>::quiet_NaN()) );
 
 
 	//positive
