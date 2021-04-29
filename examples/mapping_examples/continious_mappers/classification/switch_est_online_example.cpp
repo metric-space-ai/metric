@@ -37,49 +37,6 @@ template <typename T> T convert_to(const std::string & str)
 
 
 
-//template <class ContainerType>
-//ContainerType read_csv(std::string filename, std::string sep=",", size_t lines = 0)
-//{  // works with string, does not convert to numbers
-//    typedef typename ContainerType::value_type LINE;
-//    std::string line;
-//    int pos;
-//    ContainerType array = {};
-//    std::ifstream in(filename);
-//    if (!in.is_open()) {
-//        std::cout << "Failed to open file: " << filename << std::endl;
-//        return array;
-//    }
-//    size_t cnt = 0;
-//    while (getline(in, line)) {
-//        LINE ln;
-//        while( (pos = line.find(sep)) >= 0)	{
-//            std::string field = line.substr(0, pos);
-//            line = line.substr(pos+1);
-//            ln.push_back(field);
-//        }
-//        ln.push_back(line);
-//        array.push_back(ln);
-//        if (lines > 0 && cnt >= lines-1)
-//            break;
-//        ++cnt;
-//    }
-//    return array;
-//}
-
-
-
-//template <class ValueType>
-//blaze::DynamicMatrix<ValueType, blaze::rowMajor> read_csv_blaze(const std::string & filename, std::string sep = ",", size_t lines = 0)
-//{
-//    auto array = read_csv<std::vector<std::vector<std::string>>>(filename, sep, lines);
-//    auto m = blaze::DynamicMatrix<ValueType, blaze::rowMajor>(array.size(), array[0].size());
-//    for (size_t i=0; i<array.size(); ++i)
-//        for (size_t j=0; j<array[0].size(); ++j)
-//            m(i, j) = convert_to<ValueType>(array[i][j]);
-//    return m;
-//}
-
-
 
 template <class ContainerType>
 void v_to_csv(ContainerType data, std::string filename)  // single column
@@ -134,9 +91,6 @@ int main()
     std::cout << "started" << std::endl << std::endl;
 
 
-
-    // dataset passed as Blaze matrix, data points in COLUMNS
-
     auto start_time = std::chrono::steady_clock::now();
 
     auto model = SwitchPredictor<value_type>("model2.blaze");
@@ -152,28 +106,29 @@ int main()
 
     std::vector<std::vector<value_type>> ds = read_csv_num<value_type>("training_ds_2_fragm.csv"); //, ",", 10000);
     std::vector<std::tuple<size_t, value_type>> pairs = {};
-    std::vector<size_t> slice_n = {};
+    std::vector<size_t> response_pos = {};
     std::vector<size_t> n_pairs = {};
     for (size_t i = 0; i < ds.size(); ++i) {
         std::vector<value_type> sample = {ds[i][1], ds[i][2], ds[i][2]};
         std::vector<std::tuple<size_t, value_type>> pair_result = model.estimate_online(sample);
         if (pair_result.size() > 0) {
             pairs.insert(pairs.end(), pair_result.begin(), pair_result.end());
-            slice_n.push_back(i);
+            response_pos.push_back(i);
             n_pairs.push_back(pair_result.size());
         }
     }
 
     std::cout << std::endl << "all pairs:" << std::endl;
     size_t pair_cnt = 0;
-    for (size_t i = 0; i < slice_n.size(); ++i) {
-        std::cout << "slice " << slice_n[i] << ", number of pairs: " << n_pairs[i] << ": " << std::endl;
+    for (size_t i = 0; i < response_pos.size(); ++i) {
+        std::cout << "response " << i << " at " << response_pos[i] << ", number of pairs: " << n_pairs[i] << ": " << std::endl;
         for (size_t j = 0; j < n_pairs[i]; ++j) {
             std::cout << "    pair: " << std::get<0>(pairs[pair_cnt]) << ", " << std::get<1>(pairs[pair_cnt]) << std::endl;
             ++pair_cnt;
         }
     }
 
+//    // TODO restore timeline from pairs
 //    std::vector<value_type> timeline = {};
 //    size_t prev_idx = 151;
 //    size_t i = 0;
@@ -189,9 +144,8 @@ int main()
 //        prev_idx = idx;
 //    }
 
-
-
 //    v_to_csv(timeline, "online_estimation_pairs.csv");
+
 
     end_time = std::chrono::steady_clock::now();
     std::cout << "online estimation with pair output completed in " <<
@@ -202,7 +156,7 @@ int main()
 
 
     //*
-    // raw prediction output, may be enabled
+    // raw prediction output, uses same model with filled buffer, thus no warmup
     start_time = std::chrono::steady_clock::now();
 
     //std::vector<std::vector<value_type>> ds = read_csv_num<value_type>("training_ds_2_fragm.csv"); //, ",", 10000);

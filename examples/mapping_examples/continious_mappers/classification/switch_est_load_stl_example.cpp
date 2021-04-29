@@ -37,49 +37,6 @@ template <typename T> T convert_to(const std::string & str)
 
 
 
-//template <class ContainerType>
-//ContainerType read_csv(std::string filename, std::string sep=",", size_t lines = 0)
-//{  // works with string, does not convert to numbers
-//    typedef typename ContainerType::value_type LINE;
-//    std::string line;
-//    int pos;
-//    ContainerType array = {};
-//    std::ifstream in(filename);
-//    if (!in.is_open()) {
-//        std::cout << "Failed to open file: " << filename << std::endl;
-//        return array;
-//    }
-//    size_t cnt = 0;
-//    while (getline(in, line)) {
-//        LINE ln;
-//        while( (pos = line.find(sep)) >= 0)	{
-//            std::string field = line.substr(0, pos);
-//            line = line.substr(pos+1);
-//            ln.push_back(field);
-//        }
-//        ln.push_back(line);
-//        array.push_back(ln);
-//        if (lines > 0 && cnt >= lines-1)
-//            break;
-//        ++cnt;
-//    }
-//    return array;
-//}
-
-
-
-//template <class ValueType>
-//blaze::DynamicMatrix<ValueType, blaze::rowMajor> read_csv_blaze(const std::string & filename, std::string sep = ",", size_t lines = 0)
-//{
-//    auto array = read_csv<std::vector<std::vector<std::string>>>(filename, sep, lines);
-//    auto m = blaze::DynamicMatrix<ValueType, blaze::rowMajor>(array.size(), array[0].size());
-//    for (size_t i=0; i<array.size(); ++i)
-//        for (size_t j=0; j<array[0].size(); ++j)
-//            m(i, j) = convert_to<ValueType>(array[i][j]);
-//    return m;
-//}
-
-
 
 template <class ContainerType>
 void v_to_csv(ContainerType data, std::string filename)  // single column
@@ -134,8 +91,6 @@ int main()
     std::cout << "started" << std::endl << std::endl;
 
 
-
-    // dataset passed as Blaze matrix, data points in COLUMNS
 
     auto start_time = std::chrono::steady_clock::now();
 
