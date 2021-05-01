@@ -116,7 +116,7 @@ int main()
     blaze::DynamicMatrix<value_type> ds (ds_pred.rows(), 3, 0);
     blaze::submatrix(ds, 0, 0, ds_pred.rows(), 3) = blaze::submatrix(ds_pred, 0, 1, ds_pred.rows(), 3);
 
-    auto est = model.estimate(ds);
+    auto est = model.encode(ds);
 
     blaze_dm_to_csv(est, "estimation.csv");
 

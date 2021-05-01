@@ -110,7 +110,7 @@ int main()
     std::vector<size_t> n_pairs = {};
     for (size_t i = 0; i < ds.size(); ++i) {
         std::vector<value_type> sample = {ds[i][1], ds[i][2], ds[i][2]};
-        std::vector<std::tuple<size_t, value_type>> pair_result = model.estimate_online(sample);
+        std::vector<std::tuple<size_t, value_type>> pair_result = model.encode(sample);
         if (pair_result.size() > 0) {
             pairs.insert(pairs.end(), pair_result.begin(), pair_result.end());
             response_pos.push_back(i);
@@ -163,7 +163,7 @@ int main()
     std::vector<value_type> predictions = {};
     for (size_t i = 0; i < ds.size(); ++i) {
         std::vector<value_type> sample = {ds[i][1], ds[i][2], ds[i][2]};
-        std::vector<value_type> result = model.estimate_online_raw(sample);
+        std::vector<value_type> result = model.encode_raw(sample);
         if (result.size() > 0) {
             predictions.insert(predictions.end(), result.begin(), result.end());
         }

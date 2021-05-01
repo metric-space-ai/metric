@@ -6,77 +6,32 @@
 
 //#include <iostream> // TODO remove
 
+
+
 template <typename value_type>
 class SwitchPredictor {
 
 public:
+
     SwitchPredictor(const blaze::DynamicMatrix<value_type> & training_data, const blaze::DynamicMatrix<value_type> & labels) {
-
-        wnd_size = 15; // TODO pass
-        cmp_wnd_sz = 150;
-        contrast_threshold = 0.3;
-        washout = 2500;
-
-        assert(training_data.rows() == labels.rows());
-        assert(training_data.columns() == 3);  // TODO relax
-
-        auto data = preprocess(training_data);
-
-        blaze::DynamicMatrix<value_type> target (labels.rows(), 1, 0);
-        int new_label = 0;
-        for (size_t i = wnd_size; i < labels.rows(); ++i) {
-            if (labels(i, 0) >= 1)
-                new_label = 1;
-            if (labels(i, 0) <= -1)
-                new_label = 0;
-            target(i, 0) = new_label;
-        }
-
-        esn = metric::ESN<std::vector<value_type>, void>(500, 5, 0.99, 0.1, washout, 0.5); // TODO pass
-        esn.train(data, blaze::trans(target));
+        init();
+        train(training_data, labels);
     }
 
     template <typename RecType>  // to be deduced
     SwitchPredictor(const std::vector<RecType> & training_data, const std::vector<RecType> & labels) {
-
-        wnd_size = 15; // TODO pass
-        cmp_wnd_sz = 150;
-        contrast_threshold = 0.3;
-        washout = 2500;
-
-        assert(training_data.size() == labels.size());
-        assert(training_data[0].size() == 3);  // TODO relax
-
-        auto data = preprocess(training_data);
-
-        std::vector<RecType> target (labels.size(), {0});
-        //target.reserve(labels.size());
-        int new_label = 0;
-        for (size_t i = wnd_size; i < labels.size(); ++i) {
-            if (labels[i][0] >= 1)
-                new_label = 1;
-            if (labels[i][0] <= -1)
-                new_label = 0;
-            target[i] = {new_label};
-        }
-
-        esn = metric::ESN<std::vector<value_type>, void>(500, 5, 0.99, 0.1, washout, 0.5); // TODO pass
-        esn.train(data, target);
+        init();
+        train(training_data, labels);
     }
 
 
     SwitchPredictor(const std::string & filename) {
-
-        wnd_size = 15; // TODO pass
-        cmp_wnd_sz = 150;
-        contrast_threshold = 0.3;
-        washout = 2500;  // TODO update depending on loaded model
-
+        init();
         esn = metric::ESN<std::vector<value_type>, void>(filename);
     }
 
 
-    blaze::DynamicMatrix<value_type> estimate(const blaze::DynamicMatrix<value_type> & dataset) {
+    blaze::DynamicMatrix<value_type> encode(const blaze::DynamicMatrix<value_type> & dataset) {
 
         auto data = preprocess(dataset);
 
@@ -117,7 +72,7 @@ public:
 
 
     template <typename RecType>
-    std::vector<value_type> estimate(const std::vector<RecType> & dataset) {
+    std::vector<value_type> encode(const std::vector<RecType> & dataset) {
 
         auto data = preprocess(dataset);
 
@@ -168,7 +123,7 @@ public:
 
 
 
-    std::vector<value_type> estimate_online_raw(const std::vector<value_type> & sample) {
+    std::vector<value_type> encode_raw(const std::vector<value_type> & sample) {
 
         std::vector<value_type> result = {}; // TODO update
 
@@ -178,7 +133,7 @@ public:
                 ++online_cnt;
             } else { // estimation
                 online_cnt = 0;
-                std::vector<value_type> all_result = estimate(buffer);
+                std::vector<value_type> all_result = encode(buffer);
                 result.insert(result.begin(), all_result.end() - 2*cmp_wnd_sz, all_result.end() - cmp_wnd_sz);
             }
             buffer.erase(buffer.begin()); // pop_front
@@ -189,9 +144,9 @@ public:
 
 
 
-    std::vector<std::tuple<size_t, value_type>> estimate_online(const std::vector<value_type> & sample) {
+    std::vector<std::tuple<size_t, value_type>> encode(const std::vector<value_type> & sample) {
 
-        auto raw_result = estimate_online_raw(sample);
+        auto raw_result = encode_raw(sample);
 
         std::vector<std::tuple<size_t, value_type>> result = {};
         for (size_t i = 0; i < raw_result.size(); ++i) {
@@ -291,6 +246,62 @@ private:
             return 0;
         else
             return -p1*log2(p1) - (1 - p1)*log2(1 - p1);
+    }
+
+
+
+    void init() {  // TODO get parameters from user
+        wnd_size = 15;
+        cmp_wnd_sz = 150;
+        contrast_threshold = 0.3;
+        washout = 2500;  // TODO update depending on loaded model
+    }
+
+
+
+    void train(const blaze::DynamicMatrix<value_type> & training_data, const blaze::DynamicMatrix<value_type> & labels) {
+
+        assert(training_data.rows() == labels.rows());
+        assert(training_data.columns() == 3);  // TODO relax
+
+        auto data = preprocess(training_data);
+
+        blaze::DynamicMatrix<value_type> target (labels.rows(), 1, 0);
+        int new_label = 0;
+        for (size_t i = wnd_size; i < labels.rows(); ++i) {
+            if (labels(i, 0) >= 1)
+                new_label = 1;
+            if (labels(i, 0) <= -1)
+                new_label = 0;
+            target(i, 0) = new_label;
+        }
+
+        esn = metric::ESN<std::vector<value_type>, void>(500, 5, 0.99, 0.1, washout, 0.5); // TODO pass
+        esn.train(data, blaze::trans(target));
+    }
+
+
+
+    template <typename RecType>  // to be deduced
+    void train(const std::vector<RecType> & training_data, const std::vector<RecType> & labels) {
+
+        assert(training_data.size() == labels.size());
+        assert(training_data[0].size() == 3);  // TODO relax
+
+        auto data = preprocess(training_data);
+
+        std::vector<RecType> target (labels.size(), {0});
+        int new_label = 0;
+        for (size_t i = wnd_size; i < labels.size(); ++i) {
+            if (labels[i][0] >= 1)
+                new_label = 1;
+            if (labels[i][0] <= -1)
+                new_label = 0;
+            target[i] = {new_label};
+        }
+
+        esn = metric::ESN<std::vector<value_type>, void>(500, 5, 0.99, 0.1, washout, 0.5); // TODO pass
+        esn.train(data, target);
     }
 
 };
