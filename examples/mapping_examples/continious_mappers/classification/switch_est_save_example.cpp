@@ -1,6 +1,6 @@
 
 
-#include "../../../../modules/mapping/esn_on_off_detector.hpp"
+#include "../../../../modules/mapping/esn_switch_detector.hpp"
 
 
 #include <iostream>
