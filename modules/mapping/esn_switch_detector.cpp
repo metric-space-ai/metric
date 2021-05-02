@@ -10,9 +10,9 @@ Copyright (c) 2021 Panda Team
 #include "esn_switch_detector.hpp"
 
 
-//#include <iostream> // TODO remove
+// class SwitchPredictor
 
-
+// ---- public
 
 template <typename value_type>
 SwitchPredictor<value_type>::SwitchPredictor(const blaze::DynamicMatrix<value_type> & training_data, const blaze::DynamicMatrix<value_type> & labels) {
@@ -47,7 +47,7 @@ SwitchPredictor<value_type>::encode(const blaze::DynamicMatrix<value_type> & dat
     blaze::DynamicMatrix<value_type> sl_entropy (out.rows(), 1, 0);
     for (size_t i = wnd_size; i < out.rows(); ++i) {
         blaze::DynamicMatrix<value_type> wnd_row = blaze::submatrix(out, i - wnd_size, 0, wnd_size, 1);
-        blaze::DynamicVector<value_type> wnd = blaze::column(wnd_row, 0); //blaze::trans(blaze::column(wnd_row, 0));
+        blaze::DynamicVector<value_type> wnd = blaze::column(wnd_row, 0);
         sl_entropy(i, 0) = class_entropy(wnd, 0.5);
     }
 
@@ -86,18 +86,15 @@ SwitchPredictor<value_type>::encode(const std::vector<RecType> & dataset) {
     auto out = esn.predict(data);
 
     std::vector<value_type> sl_entropy (out.size(), 0);
-    //sl_entropy.reserve(out.size());
     for (size_t i = wnd_size; i < out.size(); ++i) {
         blaze::DynamicVector<value_type> wnd (wnd_size);
         for (size_t j = 0; j < wnd_size; ++j) {
             wnd[j] = out[i - wnd_size + j][0];  // TODO remove ugly inner containers or update for multidimensional labels
         }
-        //std::cout << std::endl << wnd << std::endl; TODO remove
         sl_entropy[i] = class_entropy(wnd, 0.5);
     }
 
     std::vector<value_type> postproc (out.size(), 0);
-    //postproc.reserve(out.size());
     bool prev_l_flag = false;
     for (size_t i = cmp_wnd_sz; i < out.size() - cmp_wnd_sz; ++i) {
         bool l_flag = false;
@@ -176,6 +173,8 @@ SwitchPredictor<value_type>::save(const std::string & filename) {
 }
 
 
+// ---- private
+
 template <typename value_type>
 value_type
 SwitchPredictor<value_type>::v_stddev(std::vector<value_type> const & v) {
@@ -230,10 +229,8 @@ SwitchPredictor<value_type>::preprocess(const std::vector<RecType> & input) {
                 wnd3[j] = output[i - j][2];
             }
             output[i].push_back(v_stddev(wnd1) + v_stddev(wnd2) + v_stddev(wnd3));
-            //auto n = output[i];  // TODO remove
         }
     }
-    //auto nn = output[0];  // TODO remove
     return output;
 }
 
