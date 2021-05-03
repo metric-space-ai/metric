@@ -22,7 +22,7 @@ TEMPLATE_TEST_CASE("basic_use", "[distance]", float, double)
 
     auto result = distance(samples_1, samples_2);
 
-    //TestType t = 5.0; // 5.0%
+    //TestType t = 5.0; // 5.0  %
     REQUIRE(result == 0.305698_a);
 }
 
