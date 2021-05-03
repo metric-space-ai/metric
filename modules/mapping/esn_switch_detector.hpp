@@ -53,7 +53,18 @@ public:
      * @param dataset - 3-dimensional timeseries with sample in rows
      * @return column of -1, 0 or 1 values, where -1 and 1 represent On-Off and Off-On switches respectively
      */
-    blaze::DynamicMatrix<value_type> encode(const blaze::DynamicMatrix<value_type> & dataset);
+    blaze::DynamicMatrix<value_type> encode_raw(const blaze::DynamicMatrix<value_type> & dataset);
+
+    ///**
+    // * @brief estimates switches in offline timeseries
+    // *
+    // * @param dataset - 3-dimensional timeseries with sample in rows
+    // * @return estimation for pre-previous 150 samples. Every 150th call the vector of found switches is returned (if any),
+    // * otherwise empty vector.
+    // * Switch is represented by tuple: first value is index of a switch found in the processed fragment of length 150,
+    // * secong value is class (direction) of the switch (-1 or 1).
+    // */
+    //std::vector<std::tuple<size_t, value_type>> encode(const blaze::DynamicMatrix<value_type> & dataset);  // TODO implement
 
     /**
      * @brief estimates switches in offline timeseries
@@ -62,7 +73,19 @@ public:
      * @return column of -1, 0 or 1 values, where -1 and 1 represent On-Off and Off-On switches respectively
      */
     template <typename RecType>
-    std::vector<value_type> encode(const std::vector<RecType> & dataset);
+    std::vector<value_type> encode_raw(const std::vector<RecType> & dataset);
+
+    ///**
+    // * @brief estimates switches in offline timeseries
+    // *
+    // * @param dataset - vector of 3-dimensional samples
+    // * @return estimation for samples. Every 150th call the vector of found switches is returned (if any),
+    // * otherwise empty vector.
+    // * Switch is represented by tuple: first value is index of a switch found in the processed fragment of length 150,
+    // * secong value is class (direction) of the switch (-1 or 1).
+    // */
+    //template <typename RecType>
+    //std::vector<std::tuple<size_t, value_type>> encode(const std::vector<RecType> & dataset);
 
     /**
      * @brief eestimates switches online. Output describes samples passed by 150 calls made before last 150 calls
@@ -70,9 +93,9 @@ public:
      * @param sample - single sample, vector of 3 values
      * @return estimation for pre-previous 150 samples. Every 150th call the vector of found switches is returned (if any),
      * otherwise empty vector.
-     * THe returned vector is of length 150 filled by  0, -1 or 1 values (no switch, On-Off switch, Off-On switch, respectively
+     * The returned vector is of length 150 filled by  0, -1 or 1 values (no switch, On-Off switch, Off-On switch, respectively
      */
-    std::vector<value_type> encode_raw(const std::vector<value_type> & sample);
+    std::vector<value_type> encode_raw(const std::vector<value_type> & sample, size_t output_size = 0);
 
     /**
      * @brief estimates switches online. Output describes samples passed by 150 calls made before last 150 calls
@@ -84,6 +107,23 @@ public:
      * secong value is class (direction) of the switch (-1 or 1).
      */
     std::vector<std::tuple<size_t, value_type>> encode(const std::vector<value_type> & sample);
+
+    /**
+     * @brief encode_buf - addes the assed slice to buffer and encodes slice of the same size at 150 in the past
+     * @param dataset
+     * @return estimation for samples before 150 last ones, as column of -1, 0 or 1 values.
+     */
+    std::vector<value_type> encode_buf_raw(const std::vector<std::vector<value_type>> & dataset);
+
+    /**
+     * @brief encode_buf - addes the assed slice to buffer and encodes slice of the same size at 150 in the past
+     * @param dataset
+     * @return estimation for samples before 150 last ones.
+     * Switch is represented by tuple: first value is index of a switch found in the processed fragment of length 150,
+     * secong value is class (direction) of the switch (-1 or 1).
+
+     */
+    std::vector<std::tuple<size_t, value_type>> encode_buf(const std::vector<std::vector<value_type>> & dataset);
 
     /**
      * @brief saves the model into the Blaze image
@@ -153,6 +193,9 @@ private:
      */
     template <typename RecType>  // to be deduced
     void train(const std::vector<RecType> & training_data, const std::vector<RecType> & labels);
+
+    template <typename RecType>
+    std::vector<std::tuple<size_t, value_type>> make_indices(const std::vector<RecType> & raw_result);
 
 };
 
