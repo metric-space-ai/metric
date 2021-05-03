@@ -22,7 +22,7 @@ extern "C" {
 
 namespace metric {
 
-    void dsygv(int itype, char jobz, char uplo, int n, double* A, int lda, double* B, int ldb, double* W, double* work,
+    inline void dsygv(int itype, char jobz, char uplo, int n, double* A, int lda, double* B, int ldb, double* W, double* work,
                     int lwork, int info)
     {
         dsygv_(&itype, &jobz, &uplo, &n, A, &lda, B, &ldb, W, work, &lwork, &info);

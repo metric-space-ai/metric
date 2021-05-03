@@ -14,29 +14,29 @@
 
 namespace metric {
 
-Normal::Normal()
+inline Normal::Normal()
     : _generator(std::random_device {}())
 {
 }
 
 /*** random sampling ***/
-float Normal::rnd()
+inline float Normal::rnd()
 {
     std::normal_distribution<float> norm_dist(_p1, _p2);
     return norm_dist(_generator);
 }
 
-float Normal::median() { return _p1; }
+inline float Normal::median() { return _p1; }
 
-float Normal::quantil(float p) { return icdf(p); }
+inline float Normal::quantil(float p) { return icdf(p); }
 
-float Normal::mean() { return _p1; }
+inline float Normal::mean() { return _p1; }
 
-float Normal::variance() { return _p2; }
+inline float Normal::variance() { return _p2; }
 
 /*** pdf ***/
 
-float Normal::pdf(const float x)
+inline float Normal::pdf(const float x)
 {
     float z = (x - _p1) / _p2;
     return -0.9189385332 - std::log(_p2) - z * z / float(2);
@@ -44,13 +44,13 @@ float Normal::pdf(const float x)
 
 /*** cdf ***/
 
-float Normal::cdf(const float x) { return (float(0.5) * (float(1) + (x - _p1) / (_p2 * 1.41421356237309504880))); }
+inline float Normal::cdf(const float x) { return (float(0.5) * (float(1) + (x - _p1) / (_p2 * 1.41421356237309504880))); }
 
 /*** icdf ***/
 template <typename T>
 T erfcinv(T z);
 
-float Normal::icdf(const float x) { return _p1 + -1.41421356237309504880 * erfcinv(2 * x) * _p2; }
+inline float Normal::icdf(const float x) { return _p1 + -1.41421356237309504880 * erfcinv(2 * x) * _p2; }
 
 template <class T>
 T polyeval(const std::vector<T>& poly, const T& z)

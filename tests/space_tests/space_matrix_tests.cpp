@@ -6,7 +6,6 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 Copyright (c) 2020 Panda Team
 */
 
-#define CATCH_CONFIG_MAIN
 #include <catch2/catch.hpp>
 
 #include <stdexcept>
