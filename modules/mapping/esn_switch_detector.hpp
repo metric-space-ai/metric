@@ -53,7 +53,7 @@ public:
      * @param dataset - 3-dimensional timeseries with sample in rows
      * @return column of -1, 0 or 1 values, where -1 and 1 represent On-Off and Off-On switches respectively
      */
-    blaze::DynamicMatrix<value_type> encode_raw(const blaze::DynamicMatrix<value_type> & dataset);
+    blaze::DynamicMatrix<value_type> encode(const blaze::DynamicMatrix<value_type> & dataset);
 
     ///**
     // * @brief estimates switches in offline timeseries
@@ -73,7 +73,7 @@ public:
      * @return column of -1, 0 or 1 values, where -1 and 1 represent On-Off and Off-On switches respectively
      */
     template <typename RecType>
-    std::vector<value_type> encode_raw(const std::vector<RecType> & dataset);
+    std::vector<value_type> encode(const std::vector<RecType> & dataset);
 
     ///**
     // * @brief estimates switches in offline timeseries
@@ -87,15 +87,15 @@ public:
     //template <typename RecType>
     //std::vector<std::tuple<size_t, value_type>> encode(const std::vector<RecType> & dataset);
 
-    /**
-     * @brief eestimates switches online. Output describes samples passed by 150 calls made before last 150 calls
-     *
-     * @param sample - single sample, vector of 3 values
-     * @return estimation for pre-previous 150 samples. Every 150th call the vector of found switches is returned (if any),
-     * otherwise empty vector.
-     * The returned vector is of length 150 filled by  0, -1 or 1 values (no switch, On-Off switch, Off-On switch, respectively
-     */
-    std::vector<value_type> encode_raw(const std::vector<value_type> & sample, size_t output_size = 0);
+//    /**
+//     * @brief eestimates switches online. Output describes samples passed by 150 calls made before last 150 calls
+//     *
+//     * @param sample - single sample, vector of 3 values
+//     * @return estimation for pre-previous 150 samples. Every 150th call the vector of found switches is returned (if any),
+//     * otherwise empty vector.
+//     * The returned vector is of length 150 filled by  0, -1 or 1 values (no switch, On-Off switch, Off-On switch, respectively
+//     */
+//    std::vector<value_type> encode(const std::vector<value_type> & sample, size_t output_size = 0);
 
 //    /**
 //     * @brief estimates switches online. Output describes samples passed by 150 calls made before last 150 calls
@@ -125,12 +125,12 @@ public:
 //    std::vector<std::tuple<size_t, value_type>> encode_buf(const std::vector<std::vector<value_type>> & dataset);
 
 
-    std::tuple<std::vector<unsigned long long int>, std::vector<value_type>> encode_buf_raw(
+    std::tuple<std::vector<unsigned long long int>, std::vector<value_type>> encode_raw(
             const std::vector<unsigned long long int> & indices,
             const std::vector<std::vector<value_type>> & dataset
             );
 
-    std::vector<std::tuple<unsigned long long int, value_type>> encode_buf(
+    std::vector<std::tuple<unsigned long long int, value_type>> encode(
             const std::vector<unsigned long long int> & indices,
             const std::vector<std::vector<value_type>> & dataset
             );

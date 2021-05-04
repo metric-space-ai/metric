@@ -112,7 +112,7 @@ int main()
         ds[i] = {el[1], el[2], el[3]}; // remove 1st and last columns
     }
 
-    auto est = model.encode_raw(ds);
+    auto est = model.encode(ds);
 
     v_to_csv(est, "estimation.csv");
 

@@ -140,22 +140,16 @@ int main()
     {
         size_t passed = 0;
         size_t s_idx = 0;
-        //std::vector<value_type> predictions = {};
         all_pairs = {};
         while (passed + sizes[s_idx] < ds.size()) {  // we still can fetch the slice of given size
             std::vector<std::vector<value_type>> slice = {};
             std::vector<unsigned long long int> slice_indices = {};
             for (size_t i = passed; i < passed + sizes[s_idx]; ++i) {
                 std::vector<value_type> sample = {ds[i][1], ds[i][2], ds[i][2]};
-                //unsigned long long int index = ds[i][0];
                 slice.push_back(sample);
                 slice_indices.push_back(ds[i][0]);
             }
-            auto pairs = model.encode_buf(slice_indices, slice);
-            //std::vector<unsigned long long int> switch_indices = std::get<0>(raw_res);
-            //std::vector<value_type> switches = std::get<1>(raw_res);
-            //predictions.insert(predictions.end(), switches.begin(), switches.end());
-            //auto pairs = model.make_pairs(switch_indices, switches);
+            auto pairs = model.encode(slice_indices, slice);
             all_pairs.insert(all_pairs.end(), pairs.begin(), pairs.end());
 
             passed += sizes[s_idx];
@@ -163,7 +157,6 @@ int main()
             if (s_idx >= sizes.size())
                 s_idx = 0;
         }
-        //v_to_csv(predictions, "online_estimation.csv");
     }
 
 
@@ -199,7 +192,7 @@ int main()
                 slice.push_back(sample);
                 slice_indices.push_back(ds[i][0]);
             }
-            auto raw_res = model.encode_buf_raw(slice_indices, slice);
+            auto raw_res = model.encode_raw(slice_indices, slice);
             std::vector<unsigned long long int> switch_indices = std::get<0>(raw_res);
             std::vector<value_type> switches = std::get<1>(raw_res);
             predictions.insert(predictions.end(), switches.begin(), switches.end());
@@ -215,7 +208,7 @@ int main()
     }
 
     end_time = std::chrono::steady_clock::now();
-    std::cout << "online estimation with pair and raw output completed in " <<
+    std::cout << std::endl << std::endl << "online estimation with pair and raw output completed in " <<
                  double(std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count()) / 1000000 << " s" <<
                  std::endl << std::endl;
 

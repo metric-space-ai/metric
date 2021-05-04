@@ -37,7 +37,7 @@ SwitchPredictor<value_type>::SwitchPredictor(const std::string & filename) {
 
 template <typename value_type>
 blaze::DynamicMatrix<value_type>
-SwitchPredictor<value_type>::encode_raw(const blaze::DynamicMatrix<value_type> & dataset) {
+SwitchPredictor<value_type>::encode(const blaze::DynamicMatrix<value_type> & dataset) {
 
     auto data = preprocess(dataset);
 
@@ -79,7 +79,7 @@ SwitchPredictor<value_type>::encode_raw(const blaze::DynamicMatrix<value_type> &
 template <typename value_type>
 template <typename RecType>
 std::vector<value_type>
-SwitchPredictor<value_type>::encode_raw(const std::vector<RecType> & dataset) {
+SwitchPredictor<value_type>::encode(const std::vector<RecType> & dataset) {
 
     auto data = preprocess(dataset);
 
@@ -136,29 +136,29 @@ SwitchPredictor<value_type>::encode_raw(const std::vector<RecType> & dataset) {
 //}
 
 
-template <typename value_type>
-std::vector<value_type>
-SwitchPredictor<value_type>::encode_raw(const std::vector<value_type> & sample, size_t output_size) {
+//template <typename value_type>
+//std::vector<value_type>
+//SwitchPredictor<value_type>::encode(const std::vector<value_type> & sample, size_t output_size) {
 
-    if (output_size == 0)  // default value
-        output_size = cmp_wnd_sz;
+//    if (output_size == 0)  // default value
+//        output_size = cmp_wnd_sz;
 
-    std::vector<value_type> result = {}; // TODO update
+//    std::vector<value_type> result = {}; // TODO update
 
-    buffer.push_back(sample);
-    if (buffer.size() >= washout + 2*cmp_wnd_sz + output_size) { // warmup finished
-        if (online_cnt < cmp_wnd_sz - 1) { // no estimation
-            ++online_cnt;
-        } else { // estimation
-            online_cnt = 0;
-            std::vector<value_type> all_result = encode_raw(buffer);
-            result.insert(result.begin(), all_result.end() - 2*cmp_wnd_sz, all_result.end() - cmp_wnd_sz);
-        }
-        buffer.erase(buffer.begin()); // pop_front
-    }
+//    buffer.push_back(sample);
+//    if (buffer.size() >= washout + 2*cmp_wnd_sz + output_size) { // warmup finished
+//        if (online_cnt < cmp_wnd_sz - 1) { // no estimation
+//            ++online_cnt;
+//        } else { // estimation
+//            online_cnt = 0;
+//            std::vector<value_type> all_result = encode(buffer);
+//            result.insert(result.begin(), all_result.end() - 2*cmp_wnd_sz, all_result.end() - cmp_wnd_sz);
+//        }
+//        buffer.erase(buffer.begin()); // pop_front
+//    }
 
-    return result;
-}
+//    return result;
+//}
 
 
 //template <typename value_type>
@@ -202,7 +202,7 @@ SwitchPredictor<value_type>::encode_raw(const std::vector<value_type> & sample, 
 
 template <typename value_type>
 std::tuple<std::vector<unsigned long long int>, std::vector<value_type>>
-SwitchPredictor<value_type>::encode_buf_raw(
+SwitchPredictor<value_type>::encode_raw(
         const std::vector<unsigned long long int> & indices,
         const std::vector<std::vector<value_type>> & dataset
         )
@@ -218,7 +218,7 @@ SwitchPredictor<value_type>::encode_buf_raw(
     int overbuf = buffer.size() - washout - 2*cmp_wnd_sz;
 
     if (overbuf > 0) { // warmup finished
-        std::vector<value_type> all_result = encode_raw(buffer);
+        std::vector<value_type> all_result = encode(buffer);
         result.insert(result.begin(), all_result.end() - cmp_wnd_sz - overbuf, all_result.end() - cmp_wnd_sz);
         result_indices.insert(result_indices.begin(), buffer_idx.end() - cmp_wnd_sz - overbuf, buffer_idx.end() - cmp_wnd_sz);
         buffer.erase(buffer.begin(), buffer.begin() + overbuf);
@@ -233,12 +233,12 @@ SwitchPredictor<value_type>::encode_buf_raw(
 
 template <typename value_type>
 std::vector<std::tuple<unsigned long long int, value_type>>
-SwitchPredictor<value_type>::encode_buf(
+SwitchPredictor<value_type>::encode(
         const std::vector<unsigned long long int> & indices,
         const std::vector<std::vector<value_type>> & dataset
         )
 {
-    auto raw_results = encode_buf_raw(indices, dataset);
+    auto raw_results = encode_raw(indices, dataset);
     std::vector<unsigned long long int> result_idx = std::get<0>(raw_results);
     std::vector<value_type> result = std::get<1>(raw_results);
 
