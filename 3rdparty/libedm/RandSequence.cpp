@@ -36,7 +36,7 @@ using namespace libedm;
 
 //return a pseudorandom number, between 0 and Max-1
 //Max: should no larger than INT_MAX
-int libedm::IntRand(int Max)
+inline int libedm::IntRand(int Max)
 {
 	int Value=0;
 
@@ -54,13 +54,13 @@ int libedm::IntRand(int Max)
 	return Value;
 }
 
-CRandSequence::CRandSequence(int UMax)
+inline CRandSequence::CRandSequence(int UMax)
 :Max(UMax)
 {
 	Reset();
 }
 
-int CRandSequence::Poll()
+inline int CRandSequence::Poll()
 {
 	int Left=(int)OldIds.size();
 	if(Left==0)
@@ -74,7 +74,7 @@ int CRandSequence::Poll()
 	return Ret;
 }
 
-void CRandSequence::Reset()
+inline void CRandSequence::Reset()
 {
 	OldIds.clear();
 	for(int i=0;i<Max;i++)

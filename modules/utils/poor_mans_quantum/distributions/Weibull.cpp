@@ -15,13 +15,13 @@
 
 namespace metric {
 
-Weibull::Weibull()
+inline Weibull::Weibull()
     : _generator(std::random_device {}())
 {
 }
 
 /*** random sampling ***/
-float Weibull::rnd()
+inline float Weibull::rnd()
 {
     std::weibull_distribution<float> weibull_dist(_p1, _p2);
     return weibull_dist(_generator);
@@ -30,12 +30,12 @@ float Weibull::rnd()
 template <typename T>
 T gamma(T z);
 
-float Weibull::mean() { return float(1) / _p1 * gamma(float(1) + float(1) / _p2); }
+inline float Weibull::mean() { return float(1) / _p1 * gamma(float(1) + float(1) / _p2); }
 
-float Weibull::quantil(float p) { return icdf(p); }
+inline float Weibull::quantil(float p) { return icdf(p); }
 
 /*** pdf ***/
-float Weibull::pdf(const float x)
+inline float Weibull::pdf(const float x)
 {
     float z = x / _p1;
     float w = std::exp(-(std::pow(z, _p2)));
@@ -48,7 +48,7 @@ float Weibull::pdf(const float x)
 }
 
 /*** cdf ***/
-float Weibull::cdf(const float x)
+inline float Weibull::cdf(const float x)
 {
     float z = -std::pow(x / _p1, _p2);
 
@@ -63,7 +63,7 @@ float Weibull::cdf(const float x)
 }
 
 /*** icdf ***/
-float Weibull::icdf(const float x) { return _p1 * std::pow(-std::log(1 - x), 1 / _p2); }
+inline float Weibull::icdf(const float x) { return _p1 * std::pow(-std::log(1 - x), 1 / _p2); }
 
 template <typename T>
 T ln_gamma(T z)
@@ -242,7 +242,7 @@ static void wdfzero(float* sigmahat, float* likelihood_value, float* err, float*
     return;
 }
 
-std::tuple<float, float> weibull_fit(const std::vector<float>& inputData)
+inline std::tuple<float, float> weibull_fit(const std::vector<float>& inputData)
 {
     size_t size = inputData.size();
     std::vector<float> data(size);

@@ -249,6 +249,8 @@
 #endif
 #if BFLOAT_ENABLE_CPP11_HASH
         #include <functional>
+#include <iostream>
+
 #endif
 
 

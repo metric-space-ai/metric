@@ -101,6 +101,7 @@ namespace libedm
 			std::vector<double>	ClassFreq;//appearance frequency of each value to each class label
 			double			Freq;//frequency of each value
 		}ValueInfoStr;
+
 		//info of attribute
 		typedef struct AttrInfoStr
 		{
@@ -111,12 +112,14 @@ namespace libedm
 
 			bool	MVals;//for a discrete, dos it have too many values?
 		}AttrInfoStr;
+
 		typedef struct DataInfoStr
 		{
 			double	Weight;//used for unknown instances, now it's 1
 			double	SplitGain;
 			double	SplitInfo;
 		}DataInfoStr;
+
 		//for continuous attributes
 		typedef struct ContValueStr
 		{
@@ -127,6 +130,7 @@ namespace libedm
 			double	SplitGain;
 			double	SplitInfo;
 		}ContValueStr;
+
 		static bool ValueAscOrder(const ContValueStr &a,const ContValueStr &b)
 		{
 			return (a.Value<b.Value);
@@ -180,8 +184,10 @@ namespace libedm
 
 		//create a tree on partial of ordered instances set
 		int FormTree(int First,int Last,NodeStr *Root);
+
 		//prune the tree
 		double Prune(NodeStr *Root,int Fp,int Lp,bool Update);
+
 		//
 		void DelTree(NodeStr *Root);
 

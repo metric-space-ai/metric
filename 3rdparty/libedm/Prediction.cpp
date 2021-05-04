@@ -38,7 +38,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 using namespace libedm;
 
  
-CPrediction::~CPrediction()
+inline CPrediction::~CPrediction()
 {
 
 }
@@ -46,7 +46,7 @@ CPrediction::~CPrediction()
 //Dataset: data set be predicted
 //Probabilities: Probabilities of each instance belong to each class label
 //start: start time of predicting
-CPrediction::CPrediction(const CDataset &Dataset,const std::vector<std::vector<double>> &Probabilities,clock_t PredictTime)
+inline CPrediction::CPrediction(const CDataset &Dataset,const std::vector<std::vector<double>> &Probabilities,clock_t PredictTime)
 {
 	const MATRIX &Data=Dataset.GetData();
 	const CASE_INFO &Info=Dataset.GetInfo();
@@ -85,22 +85,22 @@ CPrediction::CPrediction(const CDataset &Dataset,const std::vector<std::vector<d
 	//CreatingTime = (double)PredictTime/CLOCKS_PER_SEC;
 }
 
-const std::vector<std::vector<double>>& CPrediction::GetProbs() const
+inline const std::vector<std::vector<double>>& CPrediction::GetProbs() const
 {
 	return Probs;
 }
 
-const std::vector<int>& CPrediction::GetPredictedLabelIndices() const
+inline const std::vector<int>& CPrediction::GetPredictedLabelIndices() const
 {
 	return PredLabelIndices;
 }
 
-const std::vector<bool>& CPrediction::GetCorrectness() const
+inline const std::vector<bool>& CPrediction::GetCorrectness() const
 {
 	return IsCorrect;
 }
 
-double CPrediction::GetAccuracy() const
+inline double CPrediction::GetAccuracy() const
 {
 	return Accuracy;
 }

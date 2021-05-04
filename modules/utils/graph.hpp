@@ -6,10 +6,12 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 Copyright (c) 2019 Michael Welsch
 */
 
+#pragma once
+
 #ifndef _METRIC_UTILS_GRAPH_HPP
 #define _METRIC_UTILS_GRAPH_HPP
 
-#include "../../3rdparty/blaze/Blaze.h"
+#include "3rdparty/blaze/Blaze.h"
 #include "type_traits.hpp"
 
 #include <stack>

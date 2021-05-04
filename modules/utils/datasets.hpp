@@ -31,7 +31,7 @@ namespace metric {
 
 
 	std::tuple<std::vector<uint8_t>, std::vector<uint32_t>, std::vector<uint8_t>>
-	Datasets::getMnist(const std::string filename)
+	inline Datasets::getMnist(const std::string filename)
 	{
 		std::ifstream dataFile(filename, std::ifstream::binary);
 
@@ -53,7 +53,7 @@ namespace metric {
 
 	}
 
-	std::regex Datasets::getDelimiterAndSetDecimal(std::string &string)
+	inline std::regex Datasets::getDelimiterAndSetDecimal(std::string &string)
 	{
 		std::regex delimiter;
 		std::regex decimal;
@@ -140,7 +140,7 @@ namespace metric {
 		return row;
 	}
 
-	std::tuple<std::vector<uint32_t>, std::vector<uint8_t>> Datasets::loadImages(const std::string imagesListFilename)
+	inline std::tuple<std::vector<uint32_t>, std::vector<uint8_t>> Datasets::loadImages(const std::string imagesListFilename)
 	{
 		/* Open imagesList file */
 		std::ifstream imagesListFile(imagesListFilename);

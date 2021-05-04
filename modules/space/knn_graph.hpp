@@ -10,8 +10,8 @@ Copyright (c) 2020 Panda Team
 #ifndef _METRIC_SPACE_KNN_GRAPH_HPP
 #define _METRIC_SPACE_KNN_GRAPH_HPP
 
-#include "../utils/graph.hpp"
-#include "../utils/type_traits.hpp"
+#include "modules/utils/graph.hpp"
+#include "modules/utils/type_traits.hpp"
 
 #include <type_traits>
 #include <vector>
