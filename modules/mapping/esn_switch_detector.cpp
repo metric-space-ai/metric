@@ -238,11 +238,11 @@ SwitchPredictor<value_type>::encode_buf(
         const std::vector<std::vector<value_type>> & dataset
         )
 {
-    auto raw_results = encode_buf_raw(dataset, indices);
+    auto raw_results = encode_buf_raw(indices, dataset);
     std::vector<unsigned long long int> result_idx = std::get<0>(raw_results);
     std::vector<value_type> result = std::get<1>(raw_results);
 
-    return make_pairs(result_idx, raw_results);
+    return make_pairs(result_idx, result);
 }
 
 

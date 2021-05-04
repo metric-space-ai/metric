@@ -101,10 +101,10 @@ int main()
                  double(std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count()) / 1000000 << " s" <<
                  std::endl << std::endl;
 
+    std::vector<std::vector<value_type>> ds = read_csv_num<value_type>("training_ds_2_fragm.csv"); //, ",", 10000);
+
 
     start_time = std::chrono::steady_clock::now();
-
-    std::vector<std::vector<value_type>> ds = read_csv_num<value_type>("training_ds_2_fragm.csv"); //, ",", 10000);
 
     /*
     // old 1-sample version
@@ -134,32 +134,38 @@ int main()
 
 
     std::vector<size_t> sizes = {12, 350, 145};
-    size_t passed = 0;
-    size_t s_idx = 0;
-    std::vector<value_type> predictions = {};
-    std::vector<std::tuple<unsigned long long int, value_type>> all_pairs = {};
-    while (passed + sizes[s_idx] < ds.size()) {  // we still can fetch the slice of given size
-        std::vector<std::vector<value_type>> slice = {};
-        std::vector<unsigned long long int> slice_indices = {};
-        for (size_t i = passed; i < passed + sizes[s_idx]; ++i) {
-            std::vector<value_type> sample = {ds[i][1], ds[i][2], ds[i][2]};
-            //unsigned long long int index = ds[i][0];
-            slice.push_back(sample);
-            slice_indices.push_back(ds[i][0]);
-        }
-        auto raw_res = model.encode_buf_raw(slice_indices, slice);
-        std::vector<unsigned long long int> switch_indices = std::get<0>(raw_res);
-        std::vector<value_type> switches = std::get<1>(raw_res);
-        predictions.insert(predictions.end(), switches.begin(), switches.end());
-        auto pairs = model.make_pairs(switch_indices, switches);
-        all_pairs.insert(all_pairs.end(), pairs.begin(), pairs.end());
 
-        passed += sizes[s_idx];
-        s_idx++;
-        if (s_idx >= sizes.size())
-            s_idx = 0;
+    std::vector<std::tuple<unsigned long long int, value_type>> all_pairs;
+
+    {
+        size_t passed = 0;
+        size_t s_idx = 0;
+        //std::vector<value_type> predictions = {};
+        all_pairs = {};
+        while (passed + sizes[s_idx] < ds.size()) {  // we still can fetch the slice of given size
+            std::vector<std::vector<value_type>> slice = {};
+            std::vector<unsigned long long int> slice_indices = {};
+            for (size_t i = passed; i < passed + sizes[s_idx]; ++i) {
+                std::vector<value_type> sample = {ds[i][1], ds[i][2], ds[i][2]};
+                //unsigned long long int index = ds[i][0];
+                slice.push_back(sample);
+                slice_indices.push_back(ds[i][0]);
+            }
+            auto pairs = model.encode_buf(slice_indices, slice);
+            //std::vector<unsigned long long int> switch_indices = std::get<0>(raw_res);
+            //std::vector<value_type> switches = std::get<1>(raw_res);
+            //predictions.insert(predictions.end(), switches.begin(), switches.end());
+            //auto pairs = model.make_pairs(switch_indices, switches);
+            all_pairs.insert(all_pairs.end(), pairs.begin(), pairs.end());
+
+            passed += sizes[s_idx];
+            s_idx++;
+            if (s_idx >= sizes.size())
+                s_idx = 0;
+        }
+        //v_to_csv(predictions, "online_estimation.csv");
     }
-    v_to_csv(predictions, "online_estimation.csv");
+
 
     end_time = std::chrono::steady_clock::now();
     std::cout << "online estimation with pair output completed in " <<
@@ -172,6 +178,52 @@ int main()
         std::cout << "pair: " << std::get<0>(all_pairs[j]) << ", " << std::get<1>(all_pairs[j]) << std::endl;
     }
 
+
+
+    // the same but with raw output
+
+    start_time = std::chrono::steady_clock::now();
+
+    {
+        model = SwitchPredictor<value_type>("model2.blaze");  // reset
+        size_t passed = 0;
+        size_t s_idx = 0;
+        std::vector<value_type> predictions = {};
+        all_pairs = {};
+        while (passed + sizes[s_idx] < ds.size()) {  // we still can fetch the slice of given size
+            std::vector<std::vector<value_type>> slice = {};
+            std::vector<unsigned long long int> slice_indices = {};
+            for (size_t i = passed; i < passed + sizes[s_idx]; ++i) {
+                std::vector<value_type> sample = {ds[i][1], ds[i][2], ds[i][2]};
+                //unsigned long long int index = ds[i][0];
+                slice.push_back(sample);
+                slice_indices.push_back(ds[i][0]);
+            }
+            auto raw_res = model.encode_buf_raw(slice_indices, slice);
+            std::vector<unsigned long long int> switch_indices = std::get<0>(raw_res);
+            std::vector<value_type> switches = std::get<1>(raw_res);
+            predictions.insert(predictions.end(), switches.begin(), switches.end());
+            auto pairs = model.make_pairs(switch_indices, switches);
+            all_pairs.insert(all_pairs.end(), pairs.begin(), pairs.end());
+
+            passed += sizes[s_idx];
+            s_idx++;
+            if (s_idx >= sizes.size())
+                s_idx = 0;
+        }
+        v_to_csv(predictions, "online_estimation.csv");
+    }
+
+    end_time = std::chrono::steady_clock::now();
+    std::cout << "online estimation with pair and raw output completed in " <<
+                 double(std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count()) / 1000000 << " s" <<
+                 std::endl << std::endl;
+
+    std::cout << std::endl << "all pairs:" << std::endl;
+
+    for (size_t j = 0; j < all_pairs.size(); ++j) {
+        std::cout << "pair: " << std::get<0>(all_pairs[j]) << ", " << std::get<1>(all_pairs[j]) << std::endl;
+    }
 
     /*
     // raw prediction output, uses same model with filled buffer, thus no warmup
