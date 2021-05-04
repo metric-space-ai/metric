@@ -840,7 +840,7 @@ namespace bfloat16
                                 return (abs>0x7F80) ? signal(value) : value;
                         unsigned int exp = 70 - (abs>>7), mask = (1<<exp) - 1 ;
                         raise(FE_INEXACT, I && (value&mask));
-			std::cout<<std::endl; //without it, for some reason it does not calculate it
+			//std::cout<<std::endl; //without it, for some reason it does not calculate it
                         return ~((( (R==std::round_to_nearest) ? ((1<<(exp-1))-(~(value>>exp)&E)) :
                           (R==std::round_toward_neg_infinity) ? (mask&((value>>15)-1)) :
                           (R==std::round_toward_infinity) ? (mask&-(value>>15)) :
