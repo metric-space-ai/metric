@@ -97,33 +97,48 @@ public:
      */
     std::vector<value_type> encode_raw(const std::vector<value_type> & sample, size_t output_size = 0);
 
-    /**
-     * @brief estimates switches online. Output describes samples passed by 150 calls made before last 150 calls
-     *
-     * @param sample - single sample, vector of 3 values
-     * @return estimation for pre-previous 150 samples. Every 150th call the vector of found switches is returned (if any),
-     * otherwise empty vector.
-     * Switch is represented by tuple: first value is index of a switch found in the processed fragment of length 150,
-     * secong value is class (direction) of the switch (-1 or 1).
-     */
-    std::vector<std::tuple<size_t, value_type>> encode(const std::vector<value_type> & sample);
+//    /**
+//     * @brief estimates switches online. Output describes samples passed by 150 calls made before last 150 calls
+//     *
+//     * @param sample - single sample, vector of 3 values
+//     * @return estimation for pre-previous 150 samples. Every 150th call the vector of found switches is returned (if any),
+//     * otherwise empty vector.
+//     * Switch is represented by tuple: first value is index of a switch found in the processed fragment of length 150,
+//     * secong value is class (direction) of the switch (-1 or 1).
+//     */
+//    std::vector<std::tuple<size_t, value_type>> encode(const std::vector<value_type> & sample);
 
-    /**
-     * @brief encode_buf - addes the assed slice to buffer and encodes slice of the same size at 150 in the past
-     * @param dataset
-     * @return estimation for samples before 150 last ones, as column of -1, 0 or 1 values.
-     */
-    std::vector<value_type> encode_buf_raw(const std::vector<std::vector<value_type>> & dataset);
+//    /**
+//     * @brief encode_buf - addes the assed slice to buffer and encodes slice of the same size at 150 in the past
+//     * @param dataset
+//     * @return estimation for samples before 150 last ones, as column of -1, 0 or 1 values.
+//     */
+//    std::vector<value_type> encode_buf_raw(const std::vector<std::vector<value_type>> & dataset);
 
-    /**
-     * @brief encode_buf - addes the assed slice to buffer and encodes slice of the same size at 150 in the past
-     * @param dataset
-     * @return estimation for samples before 150 last ones.
-     * Switch is represented by tuple: first value is index of a switch found in the processed fragment of length 150,
-     * secong value is class (direction) of the switch (-1 or 1).
+//    /**
+//     * @brief encode_buf - addes the assed slice to buffer and encodes slice of the same size at 150 in the past
+//     * @param dataset
+//     * @return estimation for samples before 150 last ones.
+//     * Switch is represented by tuple: first value is index of a switch found in the processed fragment of length 150,
+//     * secong value is class (direction) of the switch (-1 or 1).
+//     */
+//    std::vector<std::tuple<size_t, value_type>> encode_buf(const std::vector<std::vector<value_type>> & dataset);
 
-     */
-    std::vector<std::tuple<size_t, value_type>> encode_buf(const std::vector<std::vector<value_type>> & dataset);
+
+    std::tuple<std::vector<unsigned long long int>, std::vector<value_type>> encode_buf_raw(
+            const std::vector<unsigned long long int> & indices,
+            const std::vector<std::vector<value_type>> & dataset
+            );
+
+    std::vector<std::tuple<unsigned long long int, value_type>> encode_buf(
+            const std::vector<unsigned long long int> & indices,
+            const std::vector<std::vector<value_type>> & dataset
+            );
+
+    std::vector<std::tuple<unsigned long long int, value_type>> make_pairs(
+            const std::vector<unsigned long long int> & indices,
+            const std::vector<value_type> & raw_switches
+            );
 
     /**
      * @brief saves the model into the Blaze image
@@ -142,6 +157,7 @@ private:
     value_type contrast_threshold; // rate of contrast between averages in the cmp_wnd_size to the left and to the right,
     // needed to consider that current point contains a switch
     std::vector<std::vector<value_type>> buffer = {};  // buffer for accumulation of samples passed online
+    std::vector<unsigned long long int> buffer_idx = {};  // indices
     size_t online_cnt = 0; // online sample counter
 
     /**
@@ -194,8 +210,8 @@ private:
     template <typename RecType>  // to be deduced
     void train(const std::vector<RecType> & training_data, const std::vector<RecType> & labels);
 
-    template <typename RecType>
-    std::vector<std::tuple<size_t, value_type>> make_indices(const std::vector<RecType> & raw_result);
+    //template <typename RecType>
+    //std::vector<std::tuple<size_t, value_type>> make_indices(const std::vector<RecType> & raw_result);
 
 };
 
