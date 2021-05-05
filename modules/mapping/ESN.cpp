@@ -168,6 +168,28 @@ ESN<RecType, Metric>::ESN(size_t w_size,  // = 500, // number of elements in res
     create_W(w_size, w_connections, w_sr);
 }
 
+
+template <typename RecType, typename Metric>
+ESN<RecType, Metric>::ESN(const std::string & filename)
+{
+    //blaze::DynamicMatrix<value_type> W_in;
+    //blaze::CompressedMatrix<value_type> W;
+    //blaze::DynamicMatrix<value_type> W_out;
+    blaze::DynamicVector<value_type> params;
+    // saved as: archive << W_in << W << W_out << params;
+
+    blaze::Archive<std::ifstream> archive (filename);
+    archive >> W_in;
+    archive >> W;
+    archive >> W_out;
+    archive >> params;
+    alpha = params[0];
+    beta = params[1];
+    washout = params[2];
+    trained = true;
+}
+
+
 template <typename RecType, typename Metric>
 void ESN<RecType, Metric>::train(const blaze::DynamicMatrix<value_type>& Slices, const blaze::DynamicMatrix<value_type>& Target)
 {
@@ -273,6 +295,17 @@ ESN<RecType, Metric>::blaze2RecType(const blaze::DynamicMatrix<typename ESN<R, M
     return Out;
 }
 
+
+template <typename RecType, typename Metric>
+void ESN<RecType, Metric>::save(const std::string & filename) {
+    if (trained) {
+        blaze::DynamicVector<value_type> params = {alpha, beta, washout};
+        blaze::Archive<std::ofstream> archive (filename);
+        archive << W_in << W << W_out << params;
+    } //else {
+    //    std::cout << "Attempt to save untrained model" << std::endl;
+    //}
+}
 
 
 

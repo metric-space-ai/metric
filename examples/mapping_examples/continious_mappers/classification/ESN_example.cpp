@@ -6,15 +6,16 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 Copyright (c) 2019 Panda Team
 */
 
+
+#define _USE_MATH_DEFINES
+#include <cmath>
+
+#include "modules/mapping.hpp"
+#include "modules/utils/visualizer.hpp"
+
 #include <iostream>
-#ifndef M_PI
-	// MSVC does not define M_PI
-    #define M_PI 3.14159265358979323846
-#endif
 
-#include "../../../../modules/mapping.hpp"
 
-#include "../../../../modules/utils/visualizer.hpp"
 
 int main()
 {

@@ -49,6 +49,13 @@ public:
     );
 
     /**
+     * @brief load trained model from file
+     *
+     * @param filename
+     */
+    ESN(const std::string & filename);
+
+    /**
      * @brief 
      * 
      * @param Slices 
@@ -80,6 +87,13 @@ public:
      * @return
      */
     std::vector<RecType> predict(const std::vector<RecType> & Slices);
+
+    /**
+     * @brief
+     *
+     * @param filename
+     */
+    void save(const std::string & filename);
 
 
 private:
