@@ -31,10 +31,11 @@ Copyright (c) 2018 M.Welsch
 #include <cassert>
 #include <algorithm>
 #include "../distance/k-related/Standards.hpp"
+
 namespace metric {
 
 namespace kmeans_details {
-    std::string default_measure(void) { return "Euclidean"; }
+    inline std::string default_measure(void) { return "Euclidean"; }
     template <typename T>
     T distance(const std::vector<T>& a, const std::vector<T>& b, std::string distance_measure)
     {
@@ -181,7 +182,7 @@ namespace kmeans_details {
         return { count, updated };
     }
 
-    void rearrange_assignments(std::vector<int>& assignments)
+    inline void rearrange_assignments(std::vector<int>& assignments)
     {
         std::vector<int> from_list;
         std::vector<int> to_list;

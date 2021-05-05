@@ -1,7 +1,6 @@
-#define CATCH_CONFIG_MAIN
 #include <catch2/catch.hpp>
 
-#include "../../modules/utils/types/BFloat16.h"
+#include "modules/utils/types/BFloat16.h"
 #include <limits>
 #include <cmath>
 

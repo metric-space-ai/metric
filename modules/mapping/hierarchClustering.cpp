@@ -14,7 +14,7 @@
 
 namespace metric {
 
-std::tuple<int, int> getMinPosition(std::vector<std::vector<double>>& distanceMatrix)
+inline std::tuple<int, int> getMinPosition(std::vector<std::vector<double>>& distanceMatrix)
 {
     int minX = 0;
     int minY = 1;

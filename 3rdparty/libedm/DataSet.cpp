@@ -54,7 +54,7 @@ using namespace libedm;
 #include <time.h>
 
 
-CDataset &CDataset::operator +=(const CDataset &b)
+inline CDataset &CDataset::operator +=(const CDataset &b)
 {
 	//same object
 	if(this==&b)  
@@ -76,7 +76,7 @@ CDataset &CDataset::operator +=(const CDataset &b)
 	return *this;
 }
 
-CDataset &CDataset::operator =(const CDataset &b)
+inline CDataset &CDataset::operator =(const CDataset &b)
 {
 	if(this==&b)  
 		return *this;  
@@ -87,7 +87,7 @@ CDataset &CDataset::operator =(const CDataset &b)
 	return *this;
 }
 
-CDataset::CDataset()
+inline CDataset::CDataset()
 {
 	//CreatingTime=0;
 
@@ -95,10 +95,10 @@ CDataset::CDataset()
 }
 
 
-const int CDataset::LINE_OK=0;
-const int CDataset::SKIP_LINE=1;
+inline const int CDataset::LINE_OK=0;
+inline const int CDataset::SKIP_LINE=1;
 //remove all control chars and reserve only space and comma
-int CDataset::FormatLine(std::string &Line) const
+inline int CDataset::FormatLine(std::string &Line) const
 {
 	int Dot=0;
 	bool PeriodisLast=false;
@@ -200,7 +200,7 @@ int CDataset::FormatLine(std::string &Line) const
 
 
 //if the first word of the first line is the name of any attribute, this file has a head line
-bool CDataset::HasHeading(std::string &Line) const
+inline bool CDataset::HasHeading(std::string &Line) const
 {
 	//read a value
 	char *DataLine=new char[Line.length()+1];
@@ -445,7 +445,7 @@ bool libedm::operator ==(const DiscValueStr &a,const DiscValueStr &b)
 }
 
 //from string to class label
-bool CDataset::Which(ValueData &Item,const std::string &Name) const
+inline bool CDataset::Which(ValueData &Item,const std::string &Name) const
 {
 	//unknown label
 	if(Name=="?")
@@ -470,7 +470,7 @@ bool CDataset::Which(ValueData &Item,const std::string &Name) const
 }
 
 //from string to a discrete attribute value
-bool CDataset::Which(ValueData &Item,int ValueNum,const std::string &Name) const
+inline bool CDataset::Which(ValueData &Item,int ValueNum,const std::string &Name) const
 {
 	//unknown value
 	if(Name=="?")
@@ -498,7 +498,7 @@ bool CDataset::Which(ValueData &Item,int ValueNum,const std::string &Name) const
 //random select (no duplication)
 //IN:	DataNum- size of target dataset
 //OUT:	TrainSet- target dataset
-bool CDataset::SubSet(int DataNum, CDataset &TrainSet) const
+inline bool CDataset::SubSet(int DataNum, CDataset &TrainSet) const
 {
 	//sub set of a data set
 	int FinalSize=DataNum;
@@ -525,7 +525,7 @@ bool CDataset::SubSet(int DataNum, CDataset &TrainSet) const
 //bootstrap re-sampling
 //IN:	DataNum- size of target dataset
 //OUT:	TrainSet- target dataset
-bool CDataset::BootStrap(int DataNum, CDataset &TrainSet) const
+inline bool CDataset::BootStrap(int DataNum, CDataset &TrainSet) const
 {
 	TrainSet.Matrix.clear();
 	for(int i=0;i<DataNum;i++)
@@ -545,7 +545,7 @@ bool CDataset::BootStrap(int DataNum, CDataset &TrainSet) const
 //		DataNum- size of target dataset
 //OUT:	TrainSet- target dataset
 //		OrginalPos- original position for instances of new-created dataset
-bool CDataset::BootStrap(const std::vector<double> &Weights,int DataNum,std::vector<int> &OrginalPos,CDataset &TrainSet) const
+inline bool CDataset::BootStrap(const std::vector<double> &Weights,int DataNum,std::vector<int> &OrginalPos,CDataset &TrainSet) const
 {
 	if((int)Weights.size()!=CaseInfo.Height)
 		return false;
@@ -577,7 +577,7 @@ bool CDataset::BootStrap(const std::vector<double> &Weights,int DataNum,std::vec
 //IN:	DataNum- size of target dataset
 //OUT:	TrainSet- target dataset
 //		TestSet- rest instances
-bool CDataset::SplitData(int DataNum,CDataset &TrainSet,CDataset &TestSet) const
+inline bool CDataset::SplitData(int DataNum,CDataset &TrainSet,CDataset &TestSet) const
 {
 	const int CaseNum=CaseInfo.Height;
 	if(DataNum>=CaseNum || DataNum<=0)
@@ -631,7 +631,7 @@ bool CDataset::SplitData(int DataNum,CDataset &TrainSet,CDataset &TestSet) const
 //		SetNum- number of target datasets
 //OUT:	TrainSet- target dataset
 //		TestSet- rest instances
-bool CDataset::SplitData(int DataNum,int SetNum,std::vector<CDataset> &TrainSets,CDataset &TestSet) const
+inline bool CDataset::SplitData(int DataNum,int SetNum,std::vector<CDataset> &TrainSets,CDataset &TestSet) const
 {
 	//Test set is allowed to be null
 	assert(DataNum*SetNum>=CaseInfo.Height);
@@ -691,7 +691,7 @@ bool CDataset::SplitData(int DataNum,int SetNum,std::vector<CDataset> &TrainSets
 //sampling- the input dataset is split into several new sets, from beginning to end
 //IN:	SetNum- number of target datasets
 //OUT:	TrainSets- target dataset
-bool CDataset::DevideBySetNum(int SetNum,std::vector<CDataset> &TrainSets) const
+inline bool CDataset::DevideBySetNum(int SetNum,std::vector<CDataset> &TrainSets) const
 {
 	//Parameters
 	const int CaseNum=CaseInfo.Height;
@@ -723,7 +723,7 @@ bool CDataset::DevideBySetNum(int SetNum,std::vector<CDataset> &TrainSets) const
 //sampling- the input dataset is split into several new sets, from beginning to end
 //IN:	DataNum- number of data in each target dataset
 //OUT:	TrainSets- target dataset
-bool CDataset::DevideByDataNum(int DataNum,std::vector<CDataset> &TrainSets) const
+inline bool CDataset::DevideByDataNum(int DataNum,std::vector<CDataset> &TrainSets) const
 {
 	//Parameters
 	const int CaseNum=CaseInfo.Height;
@@ -751,7 +751,7 @@ bool CDataset::DevideByDataNum(int DataNum,std::vector<CDataset> &TrainSets) con
 
 //IN: a,b- position of two instances to be swapped
 //		nothing is done for invalid input
-bool CDataset::SwapInstance(int a,int b)
+inline bool CDataset::SwapInstance(int a,int b)
 {
 	int DataNum=(int)CaseInfo.Height;
 	if(a==b)
@@ -770,7 +770,7 @@ bool CDataset::SwapInstance(int a,int b)
 
 //insert instances in the end
 //should remove all ignored attributes, transform discrete values and labels into number (start from 0)
-void CDataset::Insert(const InstanceStr &Instance)
+inline void CDataset::Insert(const InstanceStr &Instance)
 {
 	assert((int)Instance.size()==CaseInfo.ValidWidth);
 		// throw(CError("Invalid data!",601,0));
@@ -821,14 +821,14 @@ void CDataset::Insert(const InstanceStr &Instance)
 }
 
 //remove an instance
-void CDataset::Remove(int Pos)
+inline void CDataset::Remove(int Pos)
 {
 	if(CaseInfo.Height>0&&Pos>=0&&Pos<CaseInfo.Height)
 		Matrix.erase(Matrix.begin()+Pos);
 }
 
 //remove all instances
-void CDataset::ClearData()
+inline void CDataset::ClearData()
 {
 	CaseInfo.Height=0;
 	Matrix.clear();
@@ -838,7 +838,7 @@ void CDataset::ClearData()
 //IN:	Att- number of attribute in ValidAttrs 
 //		t- test value
 //OUT:	the greatest value of Att-th attribute which is no larger than t
-double CDataset::GreatestValBelow(int Att, const double &t) const
+inline double CDataset::GreatestValBelow(int Att, const double &t) const
 {
 	if(t<CaseInfo.ValidAttrs[Att].Min)
 		return CaseInfo.ValidAttrs[Att].Min;
@@ -865,7 +865,7 @@ double CDataset::GreatestValBelow(int Att, const double &t) const
 }
 
 //copy
-CDataset::CDataset(const CDataset &Dataset)
+inline CDataset::CDataset(const CDataset &Dataset)
 {
 	//CreatingTime=0;
 	*this=Dataset;
@@ -873,7 +873,7 @@ CDataset::CDataset(const CDataset &Dataset)
 
 //create a new dataset, by extending every multi-valued discrete attribute into multi boolean attributes(needed by BPNN and/or SVM)
 //notice: new data set don't correspond to any file
-CDataset *CDataset::ExpandDiscrete() const
+inline CDataset *CDataset::ExpandDiscrete() const
 {
 	clock_t start=clock();
 	//prepare
@@ -979,7 +979,7 @@ CDataset *CDataset::ExpandDiscrete() const
 }
 
 //A training set must not contain instances with unknown label
-void CDataset::RemoveUnknownInstance()
+inline void CDataset::RemoveUnknownInstance()
 {
 	for(int i=CaseInfo.Height-1;i>=0;i--)
 	{
@@ -993,7 +993,7 @@ void CDataset::RemoveUnknownInstance()
 
 //remove the attribute which has only a value
 //don't use it on a expanded data set
-void CDataset::RemoveNullAttribute()
+inline void CDataset::RemoveNullAttribute()
 {
 	//skip the labels
 	bool Changed=false;
@@ -1021,16 +1021,16 @@ void CDataset::RemoveNullAttribute()
 	}
 }
 
-const MATRIX &CDataset::GetData() const
+inline const MATRIX &CDataset::GetData() const
 {
 	return Matrix;
 }
-const CASE_INFO &CDataset::GetInfo() const
+inline const CASE_INFO &CDataset::GetInfo() const
 {
 	return CaseInfo;
 }
 
-bool CDataset::AllContinuous() const
+inline bool CDataset::AllContinuous() const
 {
 	for(int i=0;i<CaseInfo.ValidWidth-1;i++)
 		if(CaseInfo.ValidAttrs[i].AttType==ATT_DISCRETE)

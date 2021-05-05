@@ -5,7 +5,7 @@
 
   Copyright (c) 2019 Michael Welsch
 */
-#include "../graph.hpp"
+#include "modules/utils/graph.hpp"
 #include <unordered_map>
 #include <algorithm>
 
@@ -268,7 +268,7 @@ auto Graph<WeightType, isDense, isSymmetric>::get_matrix() const
 
 // Grid4_blaze
 
-Grid4::Grid4(size_t nodesNumber)
+inline Grid4::Grid4(size_t nodesNumber)
     : Graph<>(nodesNumber)
 {
     size_t s = sqrt(nodesNumber);
@@ -279,13 +279,13 @@ Grid4::Grid4(size_t nodesNumber)
     }
 }
 
-Grid4::Grid4(size_t width, size_t height)
+inline Grid4::Grid4(size_t width, size_t height)
     : Graph<>(width * height)
 {
     construct(width, height);
 }
 
-void Grid4::construct(size_t width, size_t height)
+inline void Grid4::construct(size_t width, size_t height)
 {
     unsigned long n_nodes = width * height;
     matrix.resize(n_nodes, n_nodes);
@@ -329,7 +329,7 @@ void Grid4::construct(size_t width, size_t height)
 
 // Grig6_blaze
 
-Grid6::Grid6(size_t nodesNumber)
+inline Grid6::Grid6(size_t nodesNumber)
     : Graph<>(nodesNumber)
 {
     size_t s = sqrt(nodesNumber);
@@ -340,13 +340,13 @@ Grid6::Grid6(size_t nodesNumber)
     }
 }
 
-Grid6::Grid6(size_t width, size_t height)
+inline Grid6::Grid6(size_t width, size_t height)
     : Graph<>(width * height)
 {
     construct(width, height);
 }
 
-void Grid6::construct(size_t width, size_t height)
+inline void Grid6::construct(size_t width, size_t height)
 {
     unsigned long n_nodes = width * height;
     matrix.resize(n_nodes, n_nodes);
@@ -418,7 +418,7 @@ void Grid6::construct(size_t width, size_t height)
 
 // Grid8_blaze
 
-Grid8::Grid8(size_t nodesNumber)
+inline Grid8::Grid8(size_t nodesNumber)
     : Graph<>(nodesNumber)
 {
     size_t s = sqrt(nodesNumber);
@@ -429,13 +429,13 @@ Grid8::Grid8(size_t nodesNumber)
     }
 }
 
-Grid8::Grid8(size_t width, size_t height)
+inline Grid8::Grid8(size_t width, size_t height)
     : Graph<>(width * height)
 {
     construct(width, height);
 }
 
-void Grid8::construct(size_t width, size_t height)
+inline void Grid8::construct(size_t width, size_t height)
 {
     unsigned long n_nodes = width * height;
     matrix.resize(n_nodes, n_nodes);
@@ -479,7 +479,7 @@ void Grid8::construct(size_t width, size_t height)
 
 // Paley_blaze
 
-Paley::Paley(size_t nodesNumber)
+inline Paley::Paley(size_t nodesNumber)
     : Graph<>(nodesNumber)
 {
     if (nodesNumber % 4 != 1) {
@@ -510,7 +510,7 @@ Paley::Paley(size_t nodesNumber)
 
 // LPS_blaze
 
-LPS::LPS(size_t nodesNumber)
+inline LPS::LPS(size_t nodesNumber)
     : Graph<>(nodesNumber)
 {
     if (!millerRabin(nodesNumber)) {
@@ -535,7 +535,7 @@ LPS::LPS(size_t nodesNumber)
     valid = true;
 }
 
-bool LPS::millerRabin(const size_t nodesNumber)
+inline bool LPS::millerRabin(const size_t nodesNumber)
 {
     srand(time(NULL));
 
@@ -560,7 +560,7 @@ bool LPS::millerRabin(const size_t nodesNumber)
     return true;
 }
 
-bool LPS::miller_rabin_pass(const size_t a, const size_t s, const size_t d, const size_t nodesNumber)
+inline bool LPS::miller_rabin_pass(const size_t a, const size_t s, const size_t d, const size_t nodesNumber)
 {
     auto p = size_t(std::pow(a, d)) % nodesNumber;
     if (p == 1) {
@@ -579,7 +579,7 @@ bool LPS::miller_rabin_pass(const size_t a, const size_t s, const size_t d, cons
 
 // Margulis_blaze
 
-Margulis::Margulis(size_t nodesNumber)
+inline Margulis::Margulis(size_t nodesNumber)
     : Graph<>(nodesNumber)
 {
     size_t s = sqrt(nodesNumber);

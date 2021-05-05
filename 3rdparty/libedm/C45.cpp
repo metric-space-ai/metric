@@ -41,6 +41,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "Classifier.h"
 #include "Prediction.h"
 #include "C45.h"
+
 using namespace libedm;
 
 //reimplementation of Quilan's C45 except processing of unknow values
@@ -57,12 +58,12 @@ inline T Log(T x) {
     return x <= 0 ? 0.0 : log((double)x)/Log2;
 }
 
-CC45::~CC45()
+inline CC45::~CC45()
 {
 	DelTree(&TheRoot);
 }
 
-void CC45::DelTree(NodeStr *Root)
+inline void CC45::DelTree(NodeStr *Root)
 {
 	delete [] Root->ClassDist;
 
@@ -78,7 +79,7 @@ void CC45::DelTree(NodeStr *Root)
 }
 
 //parameters- see definition
-CC45::CC45(const CDataset &UTrainSet,int UMINOBJS,double UEpsilon,double UCF,double WillPrune)
+inline CC45::CC45(const CDataset &UTrainSet,int UMINOBJS,double UEpsilon,double UCF,double WillPrune)
 :TrainSet(UTrainSet)
 {
 	//Name=MyName;
@@ -145,7 +146,7 @@ CC45::CC45(const CDataset &UTrainSet,int UMINOBJS,double UEpsilon,double UCF,dou
 }
 
 //build a tree on the First to the Last instances of original training set
-int CC45::FormTree(int Fp,int Lp,NodeStr *Root)
+inline int CC45::FormTree(int Fp,int Lp,NodeStr *Root)
 {
 	//training data
 	const MATRIX &TrainData=TrainSet.GetData();
@@ -330,7 +331,7 @@ int CC45::FormTree(int Fp,int Lp,NodeStr *Root)
 	return 0;
 }
 
-double CC45::Prune(NodeStr *Root,int Fp,int Lp,bool Update)
+inline double CC45::Prune(NodeStr *Root,int Fp,int Lp,bool Update)
 {
 	//training data
 	const MATRIX &TrainData=TrainSet.GetData();
@@ -439,7 +440,7 @@ double CC45::Prune(NodeStr *Root,int Fp,int Lp,bool Update)
 }
 
 //entropy for a discrete attribute
-double CC45::TotalInfo(const std::vector<ValueInfoStr> &V)
+inline double CC45::TotalInfo(const std::vector<ValueInfoStr> &V)
 {
 	double Sum=0,TotalItems=0;
 
@@ -455,7 +456,7 @@ double CC45::TotalInfo(const std::vector<ValueInfoStr> &V)
 }
 
 //entropy for a continuous attribute
-double CC45::TotalInfo(const std::vector<double> &V)
+inline double CC45::TotalInfo(const std::vector<double> &V)
 {
 	double Sum=0,TotalItems=0;
 
@@ -470,7 +471,7 @@ double CC45::TotalInfo(const std::vector<double> &V)
 }
 
 //evaluate a discrete attribute (calculate its entropy and gain)
-void CC45::EvalDiscreteAtt(int Att,int First,int Last)
+inline void CC45::EvalDiscreteAtt(int Att,int First,int Last)
 {
 	//training data
 	const MATRIX &TrainData=TrainSet.GetData();
@@ -543,7 +544,7 @@ void CC45::EvalDiscreteAtt(int Att,int First,int Last)
 
 //evaluate a continuous attribute 
 //default value for info and gain has been set before enter this function
-void CC45::EvalContinuousAtt(int Att,int Fp,int Lp)
+inline void CC45::EvalContinuousAtt(int Att,int Fp,int Lp)
 {
 	//training data
 	const MATRIX &TrainData=TrainSet.GetData();
@@ -676,7 +677,7 @@ void CC45::EvalContinuousAtt(int Att,int Fp,int Lp)
 }
 
 //sum of instance weights
-double CC45::CountItems(int Fp,int Lp)
+inline double CC45::CountItems(int Fp,int Lp)
 {
 	double Sum=0;
 	for(int i=Fp;i<=Lp;i++)
@@ -686,7 +687,7 @@ double CC45::CountItems(int Fp,int Lp)
 
 //sort instances from fp to lp by the criterion denoted by the node
 //return-last instance satisfy this node
-int CC45::Group(int V,int Fp,int Lp,NodeStr *TestNode)
+inline int CC45::Group(int V,int Fp,int Lp,NodeStr *TestNode)
 {
 	//training data
 	const MATRIX &TrainData=TrainSet.GetData();
@@ -723,7 +724,7 @@ int CC45::Group(int V,int Fp,int Lp,NodeStr *TestNode)
 /*************************************************************************/
 static const double Val[]={  0, 0.001,0.005,0.01,0.05,0.10,0.20,0.40,1.00};
 static const double Dev[]={4.0, 3.09, 2.58, 2.33,1.65,1.28,0.84,0.25,0.00};
-double CC45::AddErrs(double N,double e)
+inline double CC45::AddErrs(double N,double e)
 {
 	static double Coeff=0;
 
@@ -916,7 +917,7 @@ double CC45::AddErrs(double N,double e)
 // }
 
 //classify an instance, output the probabilities that this instance belongs to each class label
-void CC45::ClassOneCase(const CDataset &DataSet,int i,const NodeStr *Root,double Weight,std::vector<double> &Prob) const
+inline void CC45::ClassOneCase(const CDataset &DataSet,int i,const NodeStr *Root,double Weight,std::vector<double> &Prob) const
 {
 	//training data
 	const MATRIX &TrainData=DataSet.GetData();
@@ -957,7 +958,7 @@ void CC45::ClassOneCase(const CDataset &DataSet,int i,const NodeStr *Root,double
 }
 
 //classify a data set
-CPrediction *CC45::Classify(const CDataset &TestSet) const
+inline CPrediction *CC45::Classify(const CDataset &TestSet) const
 {
 	//start time for training
 	clock_t Start=clock();
@@ -981,7 +982,7 @@ CPrediction *CC45::Classify(const CDataset &TestSet) const
 	return (new CPrediction(TestSet,Probs,clock() - Start));
 }
 
-CClassifier *CC45::Clone() const
+inline CClassifier *CC45::Clone() const
 {
 	CC45 *Cls=new CC45(*this);
 

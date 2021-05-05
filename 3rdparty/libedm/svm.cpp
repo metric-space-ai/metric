@@ -7,21 +7,28 @@
 #include <stdarg.h>
 #include <limits.h>
 #include "svm.h" // path modified by Max Filippov, 2018
-int libsvm_version = LIBSVM_VERSION;
+
+
+inline int libsvm_version = LIBSVM_VERSION;
 typedef float Qfloat;
 typedef signed char schar;
+
 #ifndef min
 template <class T> static inline T min(T x,T y) { return (x<y)?x:y; }
 #endif
+
 #ifndef max
 template <class T> static inline T max(T x,T y) { return (x>y)?x:y; }
 #endif
+
 template <class T> static inline void swap(T& x, T& y) { T t=x; x=y; y=t; }
+
 template <class S, class T> static inline void clone(T*& dst, S* src, int n)
 {
 	dst = new T[n];
 	memcpy((void *)dst,(void *)src,sizeof(T)*n);
 }
+
 static inline double powi(double base, int times)
 {
 	double tmp = base, ret = 1.0;
@@ -43,6 +50,7 @@ static void print_string_stdout(const char *s)
 	fflush(stdout);
 }
 static void (*svm_print_string) (const char *) = &print_string_stdout;
+
 #if 0
 static void info(const char *fmt,...)
 {
@@ -90,7 +98,7 @@ private:
 	void lru_insert(head_t *h);
 };
 
-Cache::Cache(int l_,long int size_):l(l_),size(size_)
+inline Cache::Cache(int l_,long int size_):l(l_),size(size_)
 {
 	head = (head_t *)calloc(l,sizeof(head_t));	// initialized to 0
 	size /= sizeof(Qfloat);
@@ -99,21 +107,21 @@ Cache::Cache(int l_,long int size_):l(l_),size(size_)
 	lru_head.next = lru_head.prev = &lru_head;
 }
 
-Cache::~Cache()
+inline Cache::~Cache()
 {
 	for(head_t *h = lru_head.next; h != &lru_head; h=h->next)
 		free(h->data);
 	free(head);
 }
 
-void Cache::lru_delete(head_t *h)
+inline void Cache::lru_delete(head_t *h)
 {
 	// delete from current location
 	h->prev->next = h->next;
 	h->next->prev = h->prev;
 }
 
-void Cache::lru_insert(head_t *h)
+inline void Cache::lru_insert(head_t *h)
 {
 	// insert to last position
 	h->next = &lru_head;
@@ -122,7 +130,7 @@ void Cache::lru_insert(head_t *h)
 	h->next->prev = h;
 }
 
-int Cache::get_data(const int index, Qfloat **data, int len)
+inline int Cache::get_data(const int index, Qfloat **data, int len)
 {
 	head_t *h = &head[index];
 	if(h->len) lru_delete(h);
@@ -152,7 +160,7 @@ int Cache::get_data(const int index, Qfloat **data, int len)
 	return len;
 }
 
-void Cache::swap_index(int i, int j)
+inline void Cache::swap_index(int i, int j)
 {
 	if(i==j) return;
 
@@ -249,7 +257,7 @@ private:
 	}
 };
 
-Kernel::Kernel(int l, svm_node * const * x_, const svm_parameter& param)
+inline Kernel::Kernel(int l, svm_node * const * x_, const svm_parameter& param)
 :kernel_type(param.kernel_type), degree(param.degree),
  gamma(param.gamma), coef0(param.coef0)
 {
@@ -284,13 +292,13 @@ Kernel::Kernel(int l, svm_node * const * x_, const svm_parameter& param)
 		x_square = 0;
 }
 
-Kernel::~Kernel()
+inline Kernel::~Kernel()
 {
 	delete[] x;
 	delete[] x_square;
 }
 
-double Kernel::dot(const svm_node *px, const svm_node *py)
+inline double Kernel::dot(const svm_node *px, const svm_node *py)
 {
 	double sum = 0;
 	while(px->index != -1 && py->index != -1)
@@ -312,7 +320,7 @@ double Kernel::dot(const svm_node *px, const svm_node *py)
 	return sum;
 }
 
-double Kernel::k_function(const svm_node *x, const svm_node *y,
+inline double Kernel::k_function(const svm_node *x, const svm_node *y,
 			  const svm_parameter& param)
 {
 	switch(param.kernel_type)
@@ -446,7 +454,7 @@ private:
 	bool be_shrunk(int i, double Gmax1, double Gmax2);	
 };
 
-void Solver::swap_index(int i, int j)
+inline void Solver::swap_index(int i, int j)
 {
 	Q->swap_index(i,j);
 	swap(y[i],y[j]);
@@ -458,7 +466,7 @@ void Solver::swap_index(int i, int j)
 	swap(G_bar[i],G_bar[j]);
 }
 
-void Solver::reconstruct_gradient()
+inline void Solver::reconstruct_gradient()
 {
 	// reconstruct inactive elements of G from G_bar and free variables
 
@@ -500,7 +508,7 @@ void Solver::reconstruct_gradient()
 	}
 }
 
-void Solver::Solve(int l, const QMatrix& Q, const double *p_, const schar *y_,
+inline void Solver::Solve(int l, const QMatrix& Q, const double *p_, const schar *y_,
 		   double *alpha_, double Cp, double Cn, double eps,
 		   SolutionInfo* si, int shrinking)
 {
@@ -782,7 +790,7 @@ void Solver::Solve(int l, const QMatrix& Q, const double *p_, const schar *y_,
 }
 
 // return 1 if already optimal, return 0 otherwise
-int Solver::select_working_set(int &out_i, int &out_j)
+inline int Solver::select_working_set(int &out_i, int &out_j)
 {
 	// return i,j such that
 	// i: maximizes -y_i * grad(f)_i, i in I_up(\alpha)
@@ -881,7 +889,7 @@ int Solver::select_working_set(int &out_i, int &out_j)
 	return 0;
 }
 
-bool Solver::be_shrunk(int i, double Gmax1, double Gmax2)
+inline bool Solver::be_shrunk(int i, double Gmax1, double Gmax2)
 {
 	if(is_upper_bound(i))
 	{
@@ -901,7 +909,7 @@ bool Solver::be_shrunk(int i, double Gmax1, double Gmax2)
 		return(false);
 }
 
-void Solver::do_shrinking()
+inline void Solver::do_shrinking()
 {
 	int i;
 	double Gmax1 = -INF;		// max { -y_i * grad(f)_i | i in I_up(\alpha) }
@@ -962,7 +970,7 @@ void Solver::do_shrinking()
 		}
 }
 
-double Solver::calculate_rho()
+inline double Solver::calculate_rho()
 {
 	double r;
 	int nr_free = 0;
@@ -1025,7 +1033,7 @@ private:
 };
 
 // return 1 if already optimal, return 0 otherwise
-int Solver_NU::select_working_set(int &out_i, int &out_j)
+inline int Solver_NU::select_working_set(int &out_i, int &out_j)
 {
 	// return i,j such that y_i = y_j and
 	// i: maximizes -y_i * grad(f)_i, i in I_up(\alpha)
@@ -1137,7 +1145,7 @@ int Solver_NU::select_working_set(int &out_i, int &out_j)
 	return 0;
 }
 
-bool Solver_NU::be_shrunk(int i, double Gmax1, double Gmax2, double Gmax3, double Gmax4)
+inline bool Solver_NU::be_shrunk(int i, double Gmax1, double Gmax2, double Gmax3, double Gmax4)
 {
 	if(is_upper_bound(i))
 	{
@@ -1157,7 +1165,7 @@ bool Solver_NU::be_shrunk(int i, double Gmax1, double Gmax2, double Gmax3, doubl
 		return(false);
 }
 
-void Solver_NU::do_shrinking()
+inline void Solver_NU::do_shrinking()
 {
 	double Gmax1 = -INF;	// max { -y_i * grad(f)_i | y_i = +1, i in I_up(\alpha) }
 	double Gmax2 = -INF;	// max { y_i * grad(f)_i | y_i = +1, i in I_low(\alpha) }
@@ -1209,7 +1217,7 @@ void Solver_NU::do_shrinking()
 		}
 }
 
-double Solver_NU::calculate_rho()
+inline double Solver_NU::calculate_rho()
 {
 	int nr_free1 = 0,nr_free2 = 0;
 	double ub1 = INF, ub2 = INF;
@@ -2070,7 +2078,7 @@ static void svm_group_classes(const svm_problem *prob, int *nr_class_ret, int **
 //
 // Interface functions
 //
-svm_model *svm_train(const svm_problem *prob, const svm_parameter *param)
+inline svm_model *svm_train(const svm_problem *prob, const svm_parameter *param)
 {
 	svm_model *model = MallocSVM(svm_model,1);
 	model->param = *param;
@@ -2310,7 +2318,7 @@ svm_model *svm_train(const svm_problem *prob, const svm_parameter *param)
 }
 
 // Stratified cross validation
-void svm_cross_validation(const svm_problem *prob, const svm_parameter *param, int nr_fold, double *target)
+inline void svm_cross_validation(const svm_problem *prob, const svm_parameter *param, int nr_fold, double *target)
 {
 	int i;
 	int *fold_start = MallocSVM(int,nr_fold+1);
@@ -2426,12 +2434,12 @@ void svm_cross_validation(const svm_problem *prob, const svm_parameter *param, i
 }
 
 
-int svm_get_svm_type(const svm_model *model)
+inline int svm_get_svm_type(const svm_model *model)
 {
 	return model->param.svm_type;
 }
 
-int svm_get_nr_class(const svm_model *model)
+inline int svm_get_nr_class(const svm_model *model)
 {
 	return model->nr_class;
 }
@@ -2443,7 +2451,7 @@ void svm_get_labels(const svm_model *model, int* label)
 			label[i] = model->label[i];
 }
 
-double svm_get_svr_probability(const svm_model *model)
+inline double svm_get_svr_probability(const svm_model *model)
 {
 	if ((model->param.svm_type == EPSILON_SVR || model->param.svm_type == NU_SVR) &&
 	    model->probA!=NULL)
@@ -2455,7 +2463,7 @@ double svm_get_svr_probability(const svm_model *model)
 	}
 }
 
-double svm_predict_values(const svm_model *model, const svm_node *x, double* dec_values)
+inline double svm_predict_values(const svm_model *model, const svm_node *x, double* dec_values)
 {
 	int i;
 	if(model->param.svm_type == ONE_CLASS ||
@@ -2546,7 +2554,7 @@ double svm_predict(const svm_model *model, const svm_node *x)
 	return pred_result;
 }
 
-double svm_predict_probability(
+inline double svm_predict_probability(
 	const svm_model *model, const svm_node *x, double *prob_estimates)
 {
 	if ((model->param.svm_type == C_SVC || model->param.svm_type == NU_SVC) &&
@@ -2904,7 +2912,7 @@ svm_model *svm_load_model(const char *model_file_name)
 	return model;
 }
 
-void svm_free_model_content(svm_model* model_ptr)
+inline void svm_free_model_content(svm_model* model_ptr)
 {
 	if(model_ptr->free_sv && model_ptr->l > 0 && model_ptr->SV != NULL)
 		free((void *)(model_ptr->SV[0]));

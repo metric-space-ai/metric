@@ -133,7 +133,7 @@ namespace libedm
 			return *this;  
 		}
 	}CASE_INFO;
-	bool operator ==(const DiscValueStr &a,const DiscValueStr &b);
+	inline bool operator ==(const DiscValueStr &a,const DiscValueStr &b);
 
 	//class CObj;
 	class CDataset //: public CObj

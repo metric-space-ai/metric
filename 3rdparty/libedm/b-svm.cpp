@@ -47,13 +47,13 @@ using namespace libedm;
 //const char	MyName[MAX_OBJECT_NAME_LENGTH]="SVM";
 //const string CSVM::StaticName=MyName;
 
-CSVM::~CSVM()
+inline CSVM::~CSVM()
 {
 	if(svm!=NULL)
 		svm_free_and_destroy_model(&svm);
 }
 
-CSVM::CSVM(const CDataset &OrgSet,
+inline CSVM::CSVM(const CDataset &OrgSet,
 		   int usvm_type,
 		   int ukernel_type,
 		   int udegree,
@@ -115,7 +115,7 @@ CSVM::CSVM(const CDataset &OrgSet,
 	//CreatingTime = (double)(clock() - start) / CLOCKS_PER_SEC;
 }
 
-void CSVM::PrepareData(const CDataset &OrgSet,struct svm_problem &DataDesc)
+inline void CSVM::PrepareData(const CDataset &OrgSet,struct svm_problem &DataDesc)
 {
 	//for SVM, we need to expand all multivalued discrete attributes of the training data into multi continuous attributes.
 	//expand discrete attribute
@@ -168,13 +168,13 @@ void CSVM::PrepareData(const CDataset &OrgSet,struct svm_problem &DataDesc)
 	return;
 }
 
-bool CSVM::Dump(const std::string &FileName)const
+inline bool CSVM::Dump(const std::string &FileName)const
 {
 	svm_save_model(FileName.c_str(),svm);
 	return true;
 }
 
-CPrediction *CSVM::Classify(const CDataset &OrgSet) const
+inline CPrediction *CSVM::Classify(const CDataset &OrgSet) const
 {
 	//start time for training
 	clock_t Start=clock();
