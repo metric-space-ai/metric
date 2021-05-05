@@ -1,21 +1,15 @@
 
-
-#include "../../../../modules/mapping/ESN.hpp"
-//#include "../../../../modules/correlation/entropy.hpp"
-
-#include "../../../../modules/utils/visualizer.hpp"
+#include "modules/mapping/ESN.hpp"
+#include "modules/utils/visualizer.hpp"
 
 #include <iostream>
 #include <fstream>
 
-#ifndef M_PI
-        // MSVC does not define M_PI
-    #define M_PI 3.14159265358979323846
-#endif
+
 
 
 template <class ValueType>
-void blaze_dm_to_csv(blaze::DynamicMatrix<ValueType> data, std::string filename, std::string sep=",")
+void blaze_dm_to_csv(const blaze::DynamicMatrix<ValueType> & data, std::string filename, std::string sep=",")
 {
     std::ofstream outputFile;
     outputFile.open(filename);
@@ -88,7 +82,7 @@ blaze::DynamicMatrix<ValueType, blaze::rowMajor> read_csv_blaze(const std::strin
 
 
 template <class ValueType>
-ValueType class_entropy(blaze::DynamicVector<ValueType> data, ValueType threshold) {
+ValueType class_entropy(const blaze::DynamicVector<ValueType> & data, ValueType threshold) {
     int sum = 0;
     ValueType sz = data.size();
     for (size_t i = 0; i<sz; ++i) {
@@ -116,7 +110,6 @@ int main()
     using value_type = double;
 
 
-    //*
 
     std::cout << "started" << std::endl << std::endl;
 
@@ -131,7 +124,6 @@ int main()
     // preprocessing
 
     blaze::DynamicMatrix<value_type> ds_in = read_csv_blaze<value_type>("training_ds_1_fragm.csv"); //, ",", 10000);
-//    blaze::DynamicMatrix<value_type> ds_in = read_csv_blaze<value_type>("training_ds_1_fragm.csv");
 
     blaze::DynamicMatrix<value_type> raw_labels (ds_in.rows(), 1);
     blaze::column(raw_labels, 0) = blaze::column(ds_in, 4);
@@ -162,9 +154,6 @@ int main()
     blaze_dm_to_csv<value_type>(blaze::trans(target), "target.csv");
 
 
-    //blaze::DynamicMatrix<value_type, blaze::rowMajor>  test_data = data;
-
-
     // prediction dataset
     blaze::DynamicMatrix<value_type> ds_pred = read_csv_blaze<value_type>("training_ds_2_fragm.csv"); //, ",", 10000);
     blaze::DynamicMatrix<value_type> raw_labels_pred (ds_pred.rows(), 1);
@@ -192,21 +181,12 @@ int main()
     blaze_dm_to_csv(ds_all_pred, "data_pred.csv");
 
 
-
-
-
-
     auto end_time = std::chrono::steady_clock::now();
     std::cout << "data prepared in " <<
                  double(std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count()) / 1000000 << " s" <<
                  std::endl << std::endl;
 
-//    if (visualize)
-//    {
-//        mat2bmp::blaze2bmp_norm(data, "ESN_SlicesR.bmp");
-//        mat2bmp::blaze2bmp_norm(target, "ESN_TargetR.bmp");
-//        mat2bmp::blaze2bmp_norm(test_data, "ESN_SlicesTestR.bmp");
-//    }
+
 
     start_time = std::chrono::steady_clock::now();
 
@@ -257,36 +237,18 @@ int main()
     if (visualize)
         mat2bmp::blaze2bmp_norm(prediction, "ESN_prediction.bmp");
 
-    // */
-
-    /*
-
-    // read instead of running ESN, TODO remove
-    //blaze::DynamicMatrix<value_type> prediction_read = read_csv_blaze<value_type>("prediction.csv");
-    blaze::DynamicMatrix<value_type> out = read_csv_blaze<value_type>("prediction.csv");
-    //blaze::DynamicMatrix<value_type, blaze::rowMajor> out = blaze::trans(prediction_read);
-
-    // */
 
 
-    //*
-    //postprocessing
-    //auto ekpn_eucl = metric::Entropy<void, metric::Euclidean<value_type>>(metric::Euclidean<value_type>(), 3, 10);
     blaze::DynamicMatrix<value_type> sl_entropy (out.rows(), 1, 0);
     for (size_t i = wnd_size; i < out.rows(); ++i) {
         blaze::DynamicMatrix<value_type> wnd_row = blaze::submatrix(out, i - wnd_size, 0, wnd_size, 1);
         blaze::DynamicVector<value_type> wnd = blaze::column(wnd_row, 0); //blaze::trans(blaze::column(wnd_row, 0));
-        // TODO convert to std::vector
-        //sl_entropy(i, 0) = ekpn_eucl(wnd);
         sl_entropy(i, 0) = class_entropy(wnd, 0.5);
     }
 
-    //blaze_dm_to_csv(sl_entropy, "entropy.csv");
     blaze_dm_to_csv(sl_entropy, "entropy_pred.csv");
 
-    // */
 
-    //*
 
     std::cout << std::endl << "postprocessing started" << std::endl;
 
@@ -311,15 +273,12 @@ int main()
             }
             if (!prev_l_flag)
                 postproc_pred(i, 0) = label;
-            //std::cout << i << std::endl;
         }
         prev_l_flag = l_flag;
     }
 
-    //blaze_dm_to_csv(postproc_pred, "postproc.csv");
     blaze_dm_to_csv(postproc_pred, "postproc_pred.csv");
 
-    // */
 
 
     std::cout << "all done" << std::endl;

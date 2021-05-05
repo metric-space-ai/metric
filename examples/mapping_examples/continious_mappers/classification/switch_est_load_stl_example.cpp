@@ -10,7 +10,7 @@
 
 
 template <class ValueType>
-void blaze_dm_to_csv(blaze::DynamicMatrix<ValueType> data, std::string filename, std::string sep=",")
+void blaze_dm_to_csv(const blaze::DynamicMatrix<ValueType> & data, std::string filename, std::string sep=",")
 {
     std::ofstream outputFile;
     outputFile.open(filename);
