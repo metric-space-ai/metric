@@ -126,79 +126,6 @@ SwitchPredictor<value_type>::encode(const std::vector<RecType> & dataset) {
 }
 
 
-//template <typename value_type>
-//template <typename RecType>
-//std::vector<std::tuple<size_t, value_type>>
-//SwitchPredictor<value_type>::encode(const std::vector<RecType> & dataset) {
-
-//    auto raw_result = encode_raw(dataset);
-//    return make_indices(raw_result);
-//}
-
-
-//template <typename value_type>
-//std::vector<value_type>
-//SwitchPredictor<value_type>::encode(const std::vector<value_type> & sample, size_t output_size) {
-
-//    if (output_size == 0)  // default value
-//        output_size = cmp_wnd_sz;
-
-//    std::vector<value_type> result = {}; // TODO update
-
-//    buffer.push_back(sample);
-//    if (buffer.size() >= washout + 2*cmp_wnd_sz + output_size) { // warmup finished
-//        if (online_cnt < cmp_wnd_sz - 1) { // no estimation
-//            ++online_cnt;
-//        } else { // estimation
-//            online_cnt = 0;
-//            std::vector<value_type> all_result = encode(buffer);
-//            result.insert(result.begin(), all_result.end() - 2*cmp_wnd_sz, all_result.end() - cmp_wnd_sz);
-//        }
-//        buffer.erase(buffer.begin()); // pop_front
-//    }
-
-//    return result;
-//}
-
-
-//template <typename value_type>
-//std::vector<std::tuple<size_t, value_type>>
-//SwitchPredictor<value_type>::encode(const std::vector<value_type> & sample) {
-
-//    auto raw_result = encode_raw(sample);
-
-//    //std::vector<std::tuple<size_t, value_type>> result = {};
-//    //for (size_t i = 0; i < raw_result.size(); ++i) {
-//    //    if (raw_result[i] != 0) {
-//    //        auto sw = std::make_tuple(i, raw_result[i]);
-//    //        result.push_back(sw);
-//    //    }
-//    //}
-//    //return result;
-//    return make_indices(raw_result);
-//}
-
-
-//template <typename value_type>
-//std::vector<std::tuple<size_t, value_type>>
-//SwitchPredictor<value_type>::encode_buf(const std::vector<std::vector<value_type>> & dataset) {
-
-//    std::vector<value_type> raw_result = {};
-
-//    for (size_t i = 0; i < dataset.size(); ++i) {
-//        raw_result = encode_raw(dataset, dataset.size());  // last iteration will return prediction
-//    }
-//    return raw_result;
-//}
-
-
-//template <typename value_type>
-//std::vector<value_type>
-//SwitchPredictor<value_type>::encode_buf_raw(const std::vector<std::vector<value_type>> & dataset) {
-
-//    std::vector<value_type> raw_result = encode_buf(dataset);
-//    return make_indices(raw_result);
-//}
 
 template <typename value_type>
 std::tuple<std::vector<unsigned long long int>, std::vector<value_type>>
@@ -410,20 +337,5 @@ SwitchPredictor<value_type>::train(const std::vector<RecType> & training_data, c
     esn.train(data, target);
 }
 
-
-//template <typename value_type>
-//template <typename RecType>
-//std::vector<std::tuple<size_t, value_type>>
-//SwitchPredictor<value_type>::make_indices(const std::vector<RecType> & raw_result) {
-
-//    std::vector<std::tuple<size_t, value_type>> result = {};
-//    for (size_t i = 0; i < raw_result.size(); ++i) {
-//        if (raw_result[i] != 0) {
-//            auto sw = std::make_tuple(i, raw_result[i]);
-//            result.push_back(sw);
-//        }
-//    }
-//    return result;
-//}
 
 

@@ -87,54 +87,27 @@ int main()
 
     using value_type = double;
 
-
     std::cout << "started" << std::endl << std::endl;
 
 
+
+    // run 1
+
     auto start_time = std::chrono::steady_clock::now();
 
-    auto model = SwitchPredictor<value_type>("model2.blaze");
-    //auto model = SwitchPredictor<value_type>("esn_image.blaze");
+    auto model = SwitchPredictor<value_type>("model.blaze");
 
     auto end_time = std::chrono::steady_clock::now();
     std::cout << "model loaded in " <<
                  double(std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count()) / 1000000 << " s" <<
-                 std::endl << std::endl;
+                 std::endl;
 
     std::vector<std::vector<value_type>> ds = read_csv_num<value_type>("training_ds_2_fragm.csv"); //, ",", 10000);
 
 
     start_time = std::chrono::steady_clock::now();
 
-    /*
-    // old 1-sample version
-    std::vector<std::tuple<size_t, value_type>> pairs = {};
-    std::vector<size_t> response_pos = {};
-    std::vector<size_t> n_pairs = {};
-    for (size_t i = 0; i < ds.size(); ++i) {
-        std::vector<value_type> sample = {ds[i][1], ds[i][2], ds[i][2]};
-        std::vector<std::tuple<size_t, value_type>> pair_result = model.encode(sample);
-        if (pair_result.size() > 0) {
-            pairs.insert(pairs.end(), pair_result.begin(), pair_result.end());
-            response_pos.push_back(i);
-            n_pairs.push_back(pair_result.size());
-        }
-    }
-
-    std::cout << std::endl << "all pairs:" << std::endl;
-    size_t pair_cnt = 0;
-    for (size_t i = 0; i < response_pos.size(); ++i) {
-        std::cout << "response " << i << " at " << response_pos[i] << ", number of pairs: " << n_pairs[i] << ": " << std::endl;
-        for (size_t j = 0; j < n_pairs[i]; ++j) {
-            std::cout << "    pair: " << std::get<0>(pairs[pair_cnt]) << ", " << std::get<1>(pairs[pair_cnt]) << std::endl;
-            ++pair_cnt;
-        }
-    }
-    // */
-
-
-    std::vector<size_t> sizes = {12, 350, 145};
-
+    std::vector<size_t> sizes = {12, 350, 145}; // sizes of slices we sequentiallt pass
     std::vector<std::tuple<unsigned long long int, value_type>> all_pairs;
 
     {
@@ -149,7 +122,9 @@ int main()
                 slice.push_back(sample);
                 slice_indices.push_back(ds[i][0]);
             }
-            auto pairs = model.encode(slice_indices, slice);
+
+            auto pairs = model.encode(slice_indices, slice); // adds to buffer and gets output once the buffer is fulfilled
+
             all_pairs.insert(all_pairs.end(), pairs.begin(), pairs.end());
 
             passed += sizes[s_idx];
@@ -159,13 +134,12 @@ int main()
         }
     }
 
-
     end_time = std::chrono::steady_clock::now();
-    std::cout << "online estimation with pair output completed in " <<
+    std::cout << std::endl << std::endl << "online estimation with pair output completed in " <<
                  double(std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count()) / 1000000 << " s" <<
-                 std::endl << std::endl;
+                 std::endl;
 
-    std::cout << std::endl << "all pairs:" << std::endl;
+    std::cout << "all pairs:" << std::endl;
 
     for (size_t j = 0; j < all_pairs.size(); ++j) {
         std::cout << "pair: " << std::get<0>(all_pairs[j]) << ", " << std::get<1>(all_pairs[j]) << std::endl;
@@ -173,12 +147,14 @@ int main()
 
 
 
-    // the same but with raw output
+
+    // run 2, same again but with raw output, console output of estimation should be exactly the same
+
+    model = SwitchPredictor<value_type>("model.blaze");  // reset the model in order to empty the buffer
 
     start_time = std::chrono::steady_clock::now();
 
     {
-        model = SwitchPredictor<value_type>("model2.blaze");  // reset
         size_t passed = 0;
         size_t s_idx = 0;
         std::vector<value_type> predictions = {};
@@ -188,15 +164,19 @@ int main()
             std::vector<unsigned long long int> slice_indices = {};
             for (size_t i = passed; i < passed + sizes[s_idx]; ++i) {
                 std::vector<value_type> sample = {ds[i][1], ds[i][2], ds[i][2]};
-                //unsigned long long int index = ds[i][0];
                 slice.push_back(sample);
                 slice_indices.push_back(ds[i][0]);
             }
-            auto raw_res = model.encode_raw(slice_indices, slice);
+
+            auto raw_res = model.encode_raw(slice_indices, slice);  // adds to buffer and gets output once the buffer is fulfilled
+            // returns "raw" estimations used for making the full output .csv that contains all samples and is easy to plot
+
             std::vector<unsigned long long int> switch_indices = std::get<0>(raw_res);
             std::vector<value_type> switches = std::get<1>(raw_res);
-            predictions.insert(predictions.end(), switches.begin(), switches.end());
-            auto pairs = model.make_pairs(switch_indices, switches);
+            predictions.insert(predictions.end(), switches.begin(), switches.end()); // collecting raw results
+
+            auto pairs = model.make_pairs(switch_indices, switches);  // converts result from raw to paired form
+
             all_pairs.insert(all_pairs.end(), pairs.begin(), pairs.end());
 
             passed += sizes[s_idx];
@@ -210,35 +190,14 @@ int main()
     end_time = std::chrono::steady_clock::now();
     std::cout << std::endl << std::endl << "online estimation with pair and raw output completed in " <<
                  double(std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count()) / 1000000 << " s" <<
-                 std::endl << std::endl;
+                 std::endl;
 
-    std::cout << std::endl << "all pairs:" << std::endl;
+    std::cout << "all pairs:" << std::endl;
 
     for (size_t j = 0; j < all_pairs.size(); ++j) {
         std::cout << "pair: " << std::get<0>(all_pairs[j]) << ", " << std::get<1>(all_pairs[j]) << std::endl;
     }
 
-    /*
-    // raw prediction output, uses same model with filled buffer, thus no warmup
-    start_time = std::chrono::steady_clock::now();
-
-    //std::vector<std::vector<value_type>> ds = read_csv_num<value_type>("training_ds_2_fragm.csv"); //, ",", 10000);
-    std::vector<value_type> predictions = {};
-    for (size_t i = 0; i < ds.size(); ++i) {
-        std::vector<value_type> sample = {ds[i][1], ds[i][2], ds[i][2]};
-        std::vector<value_type> result = model.encode_raw(sample);
-        if (result.size() > 0) {
-            predictions.insert(predictions.end(), result.begin(), result.end());
-        }
-    }
-
-    v_to_csv(predictions, "online_estimation.csv");
-
-    end_time = std::chrono::steady_clock::now();
-    std::cout << "raw online estimation completed in " <<
-                 double(std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count()) / 1000000 << " s" <<
-                 std::endl << std::endl;
-    // */
 
     return 0;
 }

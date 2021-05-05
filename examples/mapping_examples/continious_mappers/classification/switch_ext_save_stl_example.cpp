@@ -104,7 +104,7 @@ int main()
 
     auto model = SwitchPredictor<value_type>(ds, labels);
 
-    model.save("model2.blaze");
+    model.save("model.blaze");
 
     auto end_time = std::chrono::steady_clock::now();
     std::cout << "training completed in " <<
