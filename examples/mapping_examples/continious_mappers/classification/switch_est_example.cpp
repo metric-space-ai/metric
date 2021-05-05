@@ -1,11 +1,10 @@
 
 
-#include "../../../../modules/mapping/esn_switch_detector.hpp"
+#include "modules/mapping/esn_switch_detector.hpp"
 
 
 #include <iostream>
 #include <fstream>
-
 
 
 
