@@ -204,7 +204,7 @@ SwitchPredictor<value_type>::save(const std::string & filename) {
 
 template <typename value_type>
 value_type
-SwitchPredictor<value_type>::v_stddev(std::vector<value_type> const & v) {
+SwitchPredictor<value_type>::v_stddev(const std::vector<value_type> & v) {
     value_type mean = std::accumulate(v.begin(), v.end(), 0.0) / v.size();
     value_type sq_sum = std::inner_product(v.begin(), v.end(), v.begin(), 0.0,
         [](value_type const & x, value_type const & y) { return x + y; },
@@ -264,7 +264,7 @@ SwitchPredictor<value_type>::preprocess(const std::vector<RecType> & input) {
 
 template <typename value_type>
 value_type
-SwitchPredictor<value_type>::class_entropy(const blaze::DynamicVector<value_type> & data, value_type threshold) {
+SwitchPredictor<value_type>::class_entropy(const blaze::DynamicVector<value_type> & data, const value_type threshold) {
     int sum = 0;
     value_type sz = data.size();
     for (size_t i = 0; i<sz; ++i) {

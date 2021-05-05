@@ -10,7 +10,7 @@
 
 
 template <class ValueType>
-void blaze_dm_to_csv(const blaze::DynamicMatrix<ValueType> & data, std::string filename, std::string sep=",")
+void blaze_dm_to_csv(const blaze::DynamicMatrix<ValueType> & data, const std::string filename, const std::string sep=",")
 {
     std::ofstream outputFile;
     outputFile.open(filename);
@@ -39,7 +39,7 @@ template <typename T> T convert_to(const std::string & str)
 
 
 template <class ContainerType>
-void v_to_csv(const ContainerType & data, std::string filename)  // single column
+void v_to_csv(const ContainerType & data, const std::string filename)  // single column
 {
     std::ofstream outputFile;
     outputFile.open(filename);
@@ -53,7 +53,7 @@ void v_to_csv(const ContainerType & data, std::string filename)  // single colum
 
 
 template <class ValueType>
-std::vector<std::vector<ValueType>> read_csv_num(std::string filename, std::string sep=",")
+std::vector<std::vector<ValueType>> read_csv_num(const std::string filename, const std::string sep=",")
 { // code dubbing with read_csv, TODO unify and remove one of these functions
     typedef typename std::vector<ValueType> LINE;
     std::string line;

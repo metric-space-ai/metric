@@ -10,7 +10,7 @@
 
 
 template <class ValueType>
-void blaze_dm_to_csv(const blaze::DynamicMatrix<ValueType> & data, std::string filename, std::string sep=",")
+void blaze_dm_to_csv(const blaze::DynamicMatrix<ValueType> & data, const std::string filename, const std::string sep=",")
 {
     std::ofstream outputFile;
     outputFile.open(filename);
@@ -38,7 +38,7 @@ template <typename T> T convert_to(const std::string & str)
 
 
 template <class ContainerType>
-ContainerType read_csv(std::string filename, std::string sep=",", size_t lines = 0)
+ContainerType read_csv(const std::string filename, const std::string sep=",", const size_t lines = 0)
 {  // works with string, does not convert to numbers
     typedef typename ContainerType::value_type LINE;
     std::string line;
@@ -69,7 +69,7 @@ ContainerType read_csv(std::string filename, std::string sep=",", size_t lines =
 
 
 template <class ValueType>
-blaze::DynamicMatrix<ValueType, blaze::rowMajor> read_csv_blaze(const std::string & filename, std::string sep = ",", size_t lines = 0)
+blaze::DynamicMatrix<ValueType, blaze::rowMajor> read_csv_blaze(const std::string & filename, const std::string sep = ",", const size_t lines = 0)
 {
     auto array = read_csv<std::vector<std::vector<std::string>>>(filename, sep, lines);
     auto m = blaze::DynamicMatrix<ValueType, blaze::rowMajor>(array.size(), array[0].size());

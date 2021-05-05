@@ -137,7 +137,7 @@ private:
      * @param v
      * @return standard deviation
      */
-    value_type v_stddev(std::vector<value_type> const & v);
+    value_type v_stddev(const std::vector<value_type> & v);
 
     /**
      * @brief preprocess - adds sliding window wtddev feature to the input dataset given as Blaze matrix
@@ -160,7 +160,7 @@ private:
      * @param threshold - bound that separate classes, typically 0.5
      * @return entropy value
      */
-    value_type class_entropy(const blaze::DynamicVector<value_type> & data, value_type threshold);
+    value_type class_entropy(const blaze::DynamicVector<value_type> & data, const value_type threshold);
 
     /**
      * @brief train - trains model using dataset and labels passed as Blaze matrices
