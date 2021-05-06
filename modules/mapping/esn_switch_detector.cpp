@@ -202,6 +202,7 @@ SwitchPredictor<value_type>::save(const std::string & filename) {
 
 // ---- private
 
+
 //template <typename value_type>
 //value_type
 //SwitchPredictor<value_type>::v_stddev(const std::vector<value_type> & v) {
