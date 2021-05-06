@@ -135,9 +135,12 @@ private:
     /**
      * @brief v_stddev - compute standard deviation of the vector v
      * @param v
+     * @param population - flag, determines wheter to compute
+     * biased ("population", divided by N) or unbuased ("sample", divide by N-1) standard deviation
      * @return standard deviation
      */
-    value_type v_stddev(const std::vector<value_type> & v);
+    //value_type v_stddev(const std::vector<value_type> & v);
+    value_type v_stddev(const std::vector<value_type> & v, const bool population = false);
 
     /**
      * @brief preprocess - adds sliding window wtddev feature to the input dataset given as Blaze matrix

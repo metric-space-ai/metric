@@ -202,14 +202,29 @@ SwitchPredictor<value_type>::save(const std::string & filename) {
 
 // ---- private
 
+//template <typename value_type>
+//value_type
+//SwitchPredictor<value_type>::v_stddev(const std::vector<value_type> & v) {
+//    value_type mean = std::accumulate(v.begin(), v.end(), 0.0) / v.size();
+//    value_type sq_sum = std::inner_product(v.begin(), v.end(), v.begin(), 0.0,
+//        [](value_type const & x, value_type const & y) { return x + y; },
+//        [mean](value_type const & x, value_type const & y) { return (x - mean)*(y - mean); });
+//    return std::sqrt(sq_sum / v.size());
+//}
+
 template <typename value_type>
 value_type
-SwitchPredictor<value_type>::v_stddev(const std::vector<value_type> & v) {
+SwitchPredictor<value_type>::v_stddev(const std::vector<value_type> & v, const bool population) {
+
     value_type mean = std::accumulate(v.begin(), v.end(), 0.0) / v.size();
     value_type sq_sum = std::inner_product(v.begin(), v.end(), v.begin(), 0.0,
         [](value_type const & x, value_type const & y) { return x + y; },
         [mean](value_type const & x, value_type const & y) { return (x - mean)*(y - mean); });
-    return std::sqrt(sq_sum / v.size());
+
+    if (population)
+        return std::sqrt(sq_sum / v.size());
+    else
+        return std::sqrt(sq_sum / (v.size() - 1));
 }
 
 
