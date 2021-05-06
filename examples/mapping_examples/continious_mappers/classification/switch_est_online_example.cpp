@@ -118,7 +118,7 @@ int main()
             std::vector<std::vector<value_type>> slice = {};
             std::vector<unsigned long long int> slice_indices = {};
             for (size_t i = passed; i < passed + sizes[s_idx]; ++i) {
-                std::vector<value_type> sample = {ds[i][1], ds[i][2], ds[i][2]};
+                std::vector<value_type> sample = {ds[i][1], ds[i][2], ds[i][3]};
                 slice.push_back(sample);
                 slice_indices.push_back(ds[i][0]);
             }
@@ -163,7 +163,7 @@ int main()
             std::vector<std::vector<value_type>> slice = {};
             std::vector<unsigned long long int> slice_indices = {};
             for (size_t i = passed; i < passed + sizes[s_idx]; ++i) {
-                std::vector<value_type> sample = {ds[i][1], ds[i][2], ds[i][2]};
+                std::vector<value_type> sample = {ds[i][1], ds[i][2], ds[i][3]};
                 slice.push_back(sample);
                 slice_indices.push_back(ds[i][0]);
             }
