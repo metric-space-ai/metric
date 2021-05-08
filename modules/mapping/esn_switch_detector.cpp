@@ -10,9 +10,12 @@ Copyright (c) 2021 Panda Team
 #include "esn_switch_detector.hpp"
 
 
+
 // class SwitchPredictor
 
+
 // ---- public
+
 
 template <typename value_type>
 SwitchPredictor<value_type>::SwitchPredictor(const blaze::DynamicMatrix<value_type> & training_data, const blaze::DynamicMatrix<value_type> & labels) {
@@ -75,6 +78,7 @@ SwitchPredictor<value_type>::encode(const blaze::DynamicMatrix<value_type> & dat
 
     return postproc;
 }
+
 
 template <typename value_type>
 template <typename RecType>
@@ -158,6 +162,7 @@ SwitchPredictor<value_type>::encode_raw(
 }
 
 
+
 template <typename value_type>
 std::vector<std::tuple<unsigned long long int, value_type>>
 SwitchPredictor<value_type>::encode(
@@ -171,6 +176,7 @@ SwitchPredictor<value_type>::encode(
 
     return make_pairs(result_idx, result);
 }
+
 
 
 template <typename value_type>
@@ -192,6 +198,7 @@ SwitchPredictor<value_type>::make_pairs(
 }
 
 
+
 template <typename value_type>
 void
 SwitchPredictor<value_type>::save(const std::string & filename) {
@@ -200,18 +207,9 @@ SwitchPredictor<value_type>::save(const std::string & filename) {
 }
 
 
+
 // ---- private
 
-
-//template <typename value_type>
-//value_type
-//SwitchPredictor<value_type>::v_stddev(const std::vector<value_type> & v) {
-//    value_type mean = std::accumulate(v.begin(), v.end(), 0.0) / v.size();
-//    value_type sq_sum = std::inner_product(v.begin(), v.end(), v.begin(), 0.0,
-//        [](value_type const & x, value_type const & y) { return x + y; },
-//        [mean](value_type const & x, value_type const & y) { return (x - mean)*(y - mean); });
-//    return std::sqrt(sq_sum / v.size());
-//}
 
 template <typename value_type>
 value_type
@@ -227,6 +225,7 @@ SwitchPredictor<value_type>::v_stddev(const std::vector<value_type> & v, const b
     else
         return std::sqrt(sq_sum / (v.size() - 1));
 }
+
 
 
 template <typename value_type>
@@ -266,16 +265,17 @@ SwitchPredictor<value_type>::preprocess(const std::vector<RecType> & input) {
             std::vector<value_type> wnd1 (wnd_size, 0);
             std::vector<value_type> wnd2 (wnd_size, 0);
             std::vector<value_type> wnd3 (wnd_size, 0);
-            for (size_t j = 0; j < wnd_size; ++j) {
-                wnd1[j] = output[i - j][0];
-                wnd2[j] = output[i - j][1];
-                wnd3[j] = output[i - j][2];
+            for (size_t j = wnd_size; j > 0; --j) {
+                wnd1[wnd_size - j] = output[i - j][0];
+                wnd2[wnd_size - j] = output[i - j][1];
+                wnd3[wnd_size - j] = output[i - j][2];
             }
             output[i].push_back(v_stddev(wnd1) + v_stddev(wnd2) + v_stddev(wnd3));
         }
     }
     return output;
 }
+
 
 
 template <typename value_type>
@@ -295,6 +295,7 @@ SwitchPredictor<value_type>::class_entropy(const blaze::DynamicVector<value_type
 }
 
 
+
 template <typename value_type>
 void
 SwitchPredictor<value_type>::init() {  // TODO get parameters from user
@@ -303,6 +304,7 @@ SwitchPredictor<value_type>::init() {  // TODO get parameters from user
     contrast_threshold = 0.3;
     washout = 2500;  // TODO update depending on loaded model
 }
+
 
 
 template <typename value_type>
