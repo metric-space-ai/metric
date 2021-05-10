@@ -62,7 +62,7 @@ int main()
 
 METRIC is header-only and can be used without installation. just include the metric.hpp into your file and compile with a C++17 compiler. However, you have to link a BLAS and LAPLACK library like OpenBLAS or MKL.
 ```
-clang++ -std=c++17 -lopenblas file.cpp
+clang++ -std=c++17 -lopenblas file.cpp -I .
 ```
 You can install it as Pyhton lib with pip.
 ```
