@@ -273,11 +273,7 @@ auto Graph<WeightType, isDense, isSymmetric>::get_matrix() const
 inline Grid4::Grid4(size_t nodesNumber)
     : Graph<>(nodesNumber)
 {
-    double intPart;
-    double root = std::sqrt(nodesNumber);
-    assert(std::modf(root, &intPart) == 0.0);
-
-    auto s = static_cast<size_t>(root);
+    auto s = static_cast<size_t>(std::sqrt(nodesNumber));
     if ((s * s) != nodesNumber) {
         valid = false;
     } else {
@@ -338,7 +334,7 @@ inline void Grid4::construct(size_t width, size_t height)
 inline Grid6::Grid6(size_t nodesNumber)
     : Graph<>(nodesNumber)
 {
-    size_t s = sqrt(nodesNumber);
+	auto s = static_cast<size_t>(std::sqrt(nodesNumber));
     if ((s * s) != nodesNumber) {
         valid = false;
     } else {
@@ -354,7 +350,7 @@ inline Grid6::Grid6(size_t width, size_t height)
 
 inline void Grid6::construct(size_t width, size_t height)
 {
-    unsigned long n_nodes = width * height;
+    size_t n_nodes = width * height;
     matrix.resize(n_nodes, n_nodes);
 
     std::vector<std::pair<size_t, size_t>> edgesPairs;
@@ -427,7 +423,7 @@ inline void Grid6::construct(size_t width, size_t height)
 inline Grid8::Grid8(size_t nodesNumber)
     : Graph<>(nodesNumber)
 {
-    size_t s = sqrt(nodesNumber);
+    auto s = static_cast<size_t>(sqrt(nodesNumber));
     if ((s * s) != nodesNumber) {
         valid = false;
     } else {
@@ -443,7 +439,7 @@ inline Grid8::Grid8(size_t width, size_t height)
 
 inline void Grid8::construct(size_t width, size_t height)
 {
-    unsigned long n_nodes = width * height;
+    size_t n_nodes = width * height;
     matrix.resize(n_nodes, n_nodes);
 
     std::vector<std::pair<size_t, size_t>> edgesPairs;
