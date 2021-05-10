@@ -293,7 +293,7 @@ inline Grid4::Grid4(size_t width, size_t height)
 
 inline void Grid4::construct(size_t width, size_t height)
 {
-    unsigned long n_nodes = width * height;
+    size_t n_nodes = width * height;
     matrix.resize(n_nodes, n_nodes);
 
     std::vector<std::pair<size_t, size_t>> edgesPairs;
