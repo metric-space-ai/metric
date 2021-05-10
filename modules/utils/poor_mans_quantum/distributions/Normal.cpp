@@ -39,12 +39,12 @@ inline float Normal::variance() { return _p2; }
 inline float Normal::pdf(const float x)
 {
     float z = (x - _p1) / _p2;
-    return -0.9189385332 - std::log(_p2) - z * z / float(2);
+    return -0.9189385332 - std::log(_p2) - z * z / 2.f;
 }
 
 /*** cdf ***/
 
-inline float Normal::cdf(const float x) { return (float(0.5) * (float(1) + (x - _p1) / (_p2 * 1.41421356237309504880))); }
+inline float Normal::cdf(const float x) { return (0.5f * (1.f + (x - _p1) / (_p2 * 1.41421356237309504880))); }
 
 /*** icdf ***/
 template <typename T>
