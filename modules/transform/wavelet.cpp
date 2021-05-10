@@ -28,15 +28,15 @@ Container conv_valid(Container const& f, Container const& g)
 {
     using El = types::index_value_type_t<Container>;
 
-    int const nf = f.size();
-    int const ng = g.size();
+    size_t const nf = f.size();
+    size_t const ng = g.size();
     Container const& min_v = (nf < ng) ? f : g;
     Container const& max_v = (nf < ng) ? g : f;
-    int const n = std::max(nf, ng) - std::min(nf, ng) + 1;
+    size_t const n = std::max(nf, ng) - std::min(nf, ng) + 1;
     //Container out(n, typename Container::value_type());
     Container out(n, El());
-    for (auto i(0); i < n; ++i) {
-        for (int j(min_v.size() - 1), k(i); j >= 0; --j) {
+    for (size_t i = 0; i < n; ++i) {
+        for (size_t j = min_v.size() - 1, k(i); j >= 0; --j) {
             out[i] += min_v[j] * max_v[k];
             ++k;
         }
@@ -50,18 +50,19 @@ Container conv(Container const& f, Container const& g)
 {
     using El = types::index_value_type_t<Container>;
 
-    int const nf = f.size();
-    int const ng = g.size();
-    int const n = nf + ng - 1;
+    size_t const nf = f.size();
+    size_t const ng = g.size();
+    size_t const n = nf + ng - 1;
     //Container out(n, typename Container::value_type());
     Container out(n, El());
-    for (auto i(0); i < n; ++i) {
-        int const jmn = (i >= ng - 1) ? i - (ng - 1) : 0;
-        int const jmx = (i < nf - 1) ? i : nf - 1;
-        for (auto j(jmn); j <= jmx; ++j) {
+    for (size_t i = 0; i < n; ++i) {
+        size_t const jmn = (i >= ng - 1) ? i - (ng - 1) : 0;
+        size_t const jmx = (i < nf - 1) ? i : nf - 1;
+        for (auto j = jmn; j <= jmx; ++j) {
             out[i] += (f[j] * g[i - j]);
         }
     }
+
     return out;
 }
 
@@ -93,23 +94,24 @@ Container upsconv(Container const& x, Container const& f, int len)
     //Container dyay(x.size() * 2);
     Container dyay(x.size() * 2 - 1);
 
-    for (int i = 0, j = 0; i < x.size(); ++i, j = j + 2) {
+    for (size_t i = 0, j = 0; i < x.size(); ++i, j = j + 2) {
         dyay[j] = x[i];
-        if (j + 1 < dyay.size())
-            dyay[j + 1] = 0.0;
+        if (j + 1 < dyay.size()) {
+	        dyay[j + 1] = 0.0;
+        }
     }
     //dyay.pop_back();
 
     Container cnv = conv(dyay, f);
 
-    int d = (cnv.size() - len) / 2;
-    int first = 1 + (cnv.size() - len) / 2;  //floor inclucded
-    int last = first + len;
+    size_t d = (cnv.size() - len) / 2;
+    size_t first = 1 + (cnv.size() - len) / 2;  //floor inclucded
+    size_t last = first + len;
 
     //cnv.erase(cnv.begin() + last - 1, cnv.end());
     //cnv.erase(cnv.begin(), cnv.begin() + first - 1);
     Container out(len);
-    for (int i = first - 1; i < last; ++i)
+    for (size_t i = first - 1; i < last; ++i)
         out[i - first + 1] = cnv[i];
     //return cnv;
     return out;
@@ -192,31 +194,35 @@ std::tuple<Container, Container, Container, Container> orthfilt(Container const&
     auto qmf = [](Container const& x) {
         //Container y(x.rbegin(), x.rend());
         Container y(x.size());
-        for (size_t i = 0; i < x.size(); ++i)
-            y[i] = x[x.size() - 1 - i];
+        for (size_t i = 0; i < x.size(); ++i) {
+	        y[i] = x[x.size() - 1 - i];
+        }
 
-        auto isEven = [](int n) {
-            if (n % 2 == 0)
-                return true;
-            else
-                return false;
+        auto isEven = [](size_t n) {
+            if (n % 2 == 0) {
+	            return true;
+            } else {
+	            return false;
+            }
         };
-        int first;
+
+        size_t first;
         if (isEven(y.size())) {
             first = 1;
         } else {
             first = 2;
         }
-        for (int i = first; i < y.size(); i = i + 2) {
+        for (size_t i = first; i < y.size(); i = i + 2) {
             y[i] = -y[i];
         }
         return y;
     };
+
     auto sqrt = [](Container const& x) {
         //Container out;
         //out.reserve(x.size());
         Container out(x.size());
-        for (int i = 0; i < x.size(); ++i) {
+        for (size_t i = 0; i < x.size(); ++i) {
             //out.push_back(std::sqrt(2) * (x[i]));
             out[i] = std::sqrt(2) * (x[i]);
         }
@@ -254,24 +260,24 @@ std::tuple<Container, Container> dwt(Container const& x, int waveletType)
 
     auto [Lo_D, Hi_D, Lo_R, Hi_R] = orthfilt(F);
 
-    int lf = Lo_D.size();
-    int lx = x.size();
+    size_t lf = Lo_D.size();
+    size_t lx = x.size();
 
-    int first = 2;
-    int lenEXT = lf - 1;
-    int last = lx + lf - 1;
+    size_t first = 2;
+    size_t lenEXT = lf - 1;
+    size_t last = lx + lf - 1;
 
     //Container x_ext;
     //x_ext.reserve(lx + 2 * lenEXT);  // preallocate memory
     Container x_ext(lx + 2 * lenEXT);
     //x_ext.insert(x_ext.end(), x.rbegin() + (lx - lenEXT), x.rend());
-    for (int i = 0; i < lenEXT; ++i)
+    for (size_t i = 0; i < lenEXT; ++i)
         x_ext[i] = x[lenEXT - 1 - i];
     //x_ext.insert(x_ext.end(), x.begin(), x.end());
-    for (int i = 0; i < lx; ++i)
+    for (size_t i = 0; i < lx; ++i)
         x_ext[lenEXT + i] = x[i];
     //x_ext.insert(x_ext.end(), x.rbegin(), x.rend() - (lx - lenEXT));
-    for (int i = 0; i < lenEXT; ++i)
+    for (size_t i = 0; i < lenEXT; ++i)
         x_ext[lenEXT + lx + i] = x[lx - 1 - i];
 
     Container z1 = conv_valid(x_ext, Lo_D);
@@ -285,7 +291,7 @@ std::tuple<Container, Container> dwt(Container const& x, int waveletType)
     Container d(len);
 
     size_t cnt = 0;
-    for (int i = first - 1; i < last; i = i + 2) {
+    for (size_t i = first - 1; i < last; i = i + 2) {
         //a.push_back(z1[i]);
         //d.push_back(z2[i]);
         a[cnt] = z1[i];
@@ -311,6 +317,7 @@ Container idwt(Container a, Container d, int waveletType, int lx)
     //std::transform(out1.begin(), out1.end(), result.begin(), std::bind(std::plus<typename Container::value_type>(), out2));
     for (size_t i = 0; i < out1.size(); ++i)
         result[i] = out1[i] + out2[i];
+
     return result;
 }
 
