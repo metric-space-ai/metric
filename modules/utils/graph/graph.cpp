@@ -6,6 +6,8 @@
   Copyright (c) 2019 Michael Welsch
 */
 #include "modules/utils/graph.hpp"
+
+#include <assert.h>
 #include <unordered_map>
 #include <algorithm>
 
@@ -271,7 +273,11 @@ auto Graph<WeightType, isDense, isSymmetric>::get_matrix() const
 inline Grid4::Grid4(size_t nodesNumber)
     : Graph<>(nodesNumber)
 {
-    size_t s = sqrt(nodesNumber);
+    double intPart;
+    double root = std::sqrt(nodesNumber);
+    assert(std::modf(root, &intPart) == 0.0);
+
+    auto s = static_cast<size_t>(root);
     if ((s * s) != nodesNumber) {
         valid = false;
     } else {
