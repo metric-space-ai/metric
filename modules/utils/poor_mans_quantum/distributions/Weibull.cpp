@@ -98,7 +98,7 @@ T gamma(T z)
     return std::exp(ln_gamma(z));
 }
 
-static float weibull_scale_likelihood(float sigma, std::vector<float>& x, std::vector<float>& w, float xbar, int size)
+static float weibull_scale_likelihood(float sigma, std::vector<float>& x, std::vector<float>& w, float xbar, size_t size)
 {
     float v;
     std::vector<float> wLocal(size);
@@ -120,7 +120,7 @@ static float weibull_scale_likelihood(float sigma, std::vector<float>& x, std::v
 
 /* based on dfzero from fortan, it finxs the zero in the given search bands, and stops if it is within tolerance. */
 static void wdfzero(float* sigmahat, float* likelihood_value, float* err, float* search_bands, float tol,
-    std::vector<float>& x0, std::vector<float>& frequency, float meanUncensored, int size)
+                    std::vector<float>& x0, std::vector<float>& frequency, float meanUncensored, size_t size)
 {
     float exitflag;
     float a, b, c = 0.0, d = 0.0, e = 0.0, m, p, q, r, s;
@@ -350,7 +350,7 @@ inline std::tuple<float, float> weibull_fit(const std::vector<float>& inputData)
         upper = 2.0f * lower;
         while ((tempVal = weibull_scale_likelihood(upper, x0, frequency, meanUncensored, size)) < 0) {
             lower = upper;
-            upper = 2 * lower;
+            upper = 2.0f * lower;
             /* check for overflow, no finite root */
         }
     }
