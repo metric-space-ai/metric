@@ -1,4 +1,4 @@
-name: Test C++ code
+name: Linux C++ build and tests
 on:
   push:
     branches:
@@ -57,11 +57,10 @@ jobs:
 
     - name: Build tests and examples
       run: |
-        export MAKE='make -j1'
         mkdir build
         cd build
         cmake -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} ../
-        cmake --build .
+        cmake --build . -j
 
     - name: Run tests
       run: |

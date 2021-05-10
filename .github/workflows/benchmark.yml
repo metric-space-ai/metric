@@ -48,7 +48,7 @@ jobs:
         mkdir build
         cd build
         cmake -DCMAKE_BUILD_TYPE=Release ..
-        cmake --build . --target convolution_benchmarks
+        cmake --build . --target convolution_benchmarks -j
 
     - name: Run benchmark
       run: |
