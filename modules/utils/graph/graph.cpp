@@ -584,7 +584,7 @@ inline bool LPS::miller_rabin_pass(const size_t a, const size_t s, const size_t 
 inline Margulis::Margulis(size_t nodesNumber)
     : Graph<>(nodesNumber)
 {
-    size_t s = sqrt(nodesNumber);
+    auto s = static_cast<size_t>(sqrt(nodesNumber));
     if ((s * s) != nodesNumber) {
         valid = false;
     } else {
