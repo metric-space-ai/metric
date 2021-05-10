@@ -30,16 +30,16 @@ inline float Weibull::rnd()
 template <typename T>
 T gamma(T z);
 
-inline float Weibull::mean() { return float(1) / _p1 * gamma(float(1) + float(1) / _p2); }
+inline float Weibull::mean() { return 1.f / _p1 * gamma(1.f + 1.f / _p2); }
 
 inline float Weibull::quantil(float p) { return icdf(p); }
 
 /*** pdf ***/
 inline float Weibull::pdf(const float x)
 {
-    float z = x / _p1;
-    float w = std::exp(-(std::pow(z, _p2)));
-    float y = std::pow(z, (_p2 - 1)) * w * _p2 / _p1;
+    const float z = x / _p1;
+    const float w = std::exp(-(std::pow(z, _p2)));
+    const float y = std::pow(z, (_p2 - 1)) * w * _p2 / _p1;
 
     if (w == 0)
         return 0;
@@ -50,14 +50,15 @@ inline float Weibull::pdf(const float x)
 /*** cdf ***/
 inline float Weibull::cdf(const float x)
 {
-    float z = -std::pow(x / _p1, _p2);
+    const float z = -std::pow(x / _p1, _p2);
 
     float p;
 
-    if (std::abs(z) < float(1e-5))
-        p = z + float(0.5) * z * z;
-    else
-        p = -(std::exp(z) - float(1.0));
+    if (std::abs(z) < 1e-5f) {
+	    p = z + 0.5f * z * z;
+    } else {
+	    p = -(std::exp(z) - 1.0f);
+    }
 
     return p;
 }
@@ -87,6 +88,7 @@ T ln_gamma(T z)
         sum += lct[i] / (z + ((T)i));
     }
     sum += lct[0];
+
     return ((ln_sqrt_2_pi + std::log(sum)) - base) + std::log(base) * (z + 0.5);
 }
 
@@ -112,6 +114,7 @@ static float weibull_scale_likelihood(float sigma, std::vector<float>& x, std::v
         sumw += wLocal[i];
     }
     v = (sigma + xbar - sumxw / sumw);
+
     return v;
 }
 
@@ -172,7 +175,7 @@ static void wdfzero(float* sigmahat, float* likelihood_value, float* err, float*
         }
 
         /*set up for test of Convergence, is the interval small enough? */
-        m = 0.5 * (c - b);
+        m = 0.5f * (c - b);
 
         float absB, absM, absFA, absE;  //, absFB
         absB = std::abs(b);
@@ -181,9 +184,11 @@ static void wdfzero(float* sigmahat, float* likelihood_value, float* err, float*
         absFB = std::abs(fb);
         absE = std::abs(e);
 
-        tolerance = 2.0 * tol * ((absB > 1.0) ? absB : 1.0);
-        if ((absM <= tolerance) | (fb == 0.0))
-            break;
+        tolerance = 2.0f * tol * ((absB > 1.0f) ? absB : 1.0f);
+        if ((absM <= tolerance) | (fb == 0.0f)) {
+	        break;
+        }
+
         /*Choose bisection or interpolation */
         if ((absE < tolerance) | (absFA <= absFB)) {
             /*Bisection */
@@ -194,29 +199,29 @@ static void wdfzero(float* sigmahat, float* likelihood_value, float* err, float*
             s = fb / fa;
             if (a == c) {
                 /*Linear interpolation */
-                p = 2.0 * m * s;
-                q = 1.0 - s;
+                p = 2.0f * m * s;
+                q = 1.0f - s;
             } else {
                 /*Inverse quadratic interpolation */
                 q = fa / fc;
                 r = fb / fc;
-                p = s * (2.0 * m * q * (q - r) - (b - a) * (r - 1.0));
-                q = (q - 1.0) * (r - 1.0) * (s - 1.0);
+                p = s * (2.0f * m * q * (q - r) - (b - a) * (r - 1.0f));
+                q = (q - 1.0f) * (r - 1.0f) * (s - 1.0f);
             }
             if (p > 0)
-                q = -1.0 * q;
+                q = -1.0f * q;
             else
-                p = -1.0 * p;
+                p = -1.0f * p;
         }
 
         float tempTolerance = tolerance * q;
         float absToleranceQ;
         float absEQ;
-        float tempEQ = (0.5 * e * q);
+        float tempEQ = (0.5f * e * q);
         absToleranceQ = std::abs(tempTolerance);
         absEQ = std::abs(tempEQ);
         /*Is interpolated point acceptable */
-        if ((2.0 * p < 3.0 * m * q - absToleranceQ) & (p < absEQ)) {
+        if ((2.0f * p < 3.0f * m * q - absToleranceQ) & (p < absEQ)) {
             e = d;
             d = p / q;
         } else {
@@ -248,8 +253,8 @@ inline std::tuple<float, float> weibull_fit(const std::vector<float>& inputData)
     std::vector<float> data(size);
     float alpha = 10;
 
-    float PI = 3.141592653589793238462;
-    float tol = 1e-6; /* this impacts the non-linear estimation..
+    float PI = 3.141592653589793238462f;
+    float tol = 1e-6f; /* this impacts the non-linear estimation..
                        if your problem is highly unstable (small scale) this might be made larger
                        but we never recommend anything greater than 10e-5.
                        Also if larger it will converge faster, so if yo can live with lower accuracy, you can change it */
@@ -328,21 +333,21 @@ inline std::tuple<float, float> weibull_fit(const std::vector<float>& inputData)
     }
     myStd /= (n - 1);
     myStd = std::sqrt(myStd);
-    sigmahat = (std::sqrt((float)(6.0)) * myStd) / PI;
+    sigmahat = (std::sqrt(6.0f) * myStd) / PI;
     meanUncensored = 0;
     for (size_t i = 0; i < size; i++) {
         meanUncensored += (frequency[i] * x0[i]) / n;
     }
     if ((tempVal = weibull_scale_likelihood(sigmahat, x0, frequency, meanUncensored, size)) > 0) {
         upper = sigmahat;
-        lower = 0.5 * upper;
+        lower = 0.5f * upper;
         while ((tempVal = weibull_scale_likelihood(lower, x0, frequency, meanUncensored, size)) > 0) {
             upper = lower;
-            lower = 0.5 * upper;
+            lower = 0.5f * upper;
         }
     } else {
         lower = sigmahat;
-        upper = 2.0 * lower;
+        upper = 2.0f * lower;
         while ((tempVal = weibull_scale_likelihood(upper, x0, frequency, meanUncensored, size)) < 0) {
             lower = upper;
             upper = 2 * lower;
