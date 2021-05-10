@@ -182,7 +182,7 @@ namespace kmeans_details {
         return { count, updated };
     }
 
-    inline void rearrange_assignments(std::vector<int>& assignments)
+   /* inline void rearrange_assignments(std::vector<int>& assignments)
     {
         std::vector<int> from_list;
         std::vector<int> to_list;
@@ -210,7 +210,7 @@ namespace kmeans_details {
             }
             assignment = to_list[old_indx];
         }
-    }
+    }*/
 
 }  // end namespace kmeans_details
 
