@@ -39,18 +39,18 @@ inline float Normal::variance() { return _p2; }
 inline float Normal::pdf(const float x)
 {
     float z = (x - _p1) / _p2;
-    return -0.9189385332 - std::log(_p2) - z * z / 2.f;
+    return -0.9189385332f - std::log(_p2) - z * z / 2.f;
 }
 
 /*** cdf ***/
 
-inline float Normal::cdf(const float x) { return (0.5f * (1.f + (x - _p1) / (_p2 * 1.41421356237309504880))); }
+inline float Normal::cdf(const float x) { return (0.5f * (1.f + (x - _p1) / (_p2 * 1.41421356237309504880f))); }
 
 /*** icdf ***/
 template <typename T>
 T erfcinv(T z);
 
-inline float Normal::icdf(const float x) { return _p1 + -1.41421356237309504880 * erfcinv(2 * x) * _p2; }
+inline float Normal::icdf(const float x) { return _p1 + -1.41421356237309504880f * erfcinv(2 * x) * _p2; }
 
 template <class T>
 T polyeval(const std::vector<T>& poly, const T& z)
