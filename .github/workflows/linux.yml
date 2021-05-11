@@ -55,6 +55,15 @@ jobs:
         echo "CC=gcc-9" >> $GITHUB_ENV
         echo "CXX=g++-9" >> $GITHUB_ENV
 
+    - name: Create and use swap file
+      run: |
+        sudo swapon --show
+        sudo fallocate -l 4G /swapfile
+        sudo chmod 600 /swapfile
+        sudo mkswap /swapfile
+        sudo swapon /swapfile
+        sudo swapon --show
+
     - name: Build tests and examples
       run: |
         mkdir build
