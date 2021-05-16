@@ -25,11 +25,11 @@ namespace ESN_details {
     blaze::DynamicMatrix<T> get_readout(  // echo mode
         const blaze::DynamicMatrix<T>& Slices, const blaze::DynamicMatrix<T>& W_in,
         const blaze::CompressedMatrix<T>& W,  // TODO make sparse
-        T alpha = 0.5, size_t washout = 0);
+        const T alpha = 0.5, const size_t washout = 0);
 
     template <typename T>
     blaze::DynamicMatrix<T> ridge(
-        const blaze::DynamicMatrix<T>& Target, const blaze::DynamicMatrix<T>& Readout, T beta = 0.5);
+        const blaze::DynamicMatrix<T>& Target, const blaze::DynamicMatrix<T>& Readout, const T beta = 0.5);
 
     // ---------------------------------  math functions:
 
@@ -54,8 +54,8 @@ namespace ESN_details {
     blaze::DynamicMatrix<T> get_readout(  // echo mode
         const blaze::DynamicMatrix<T>& Slices, const blaze::DynamicMatrix<T>& W_in,
         const blaze::CompressedMatrix<T>& W,  // TODO make sparse
-        T alpha,
-        size_t washout
+        const T alpha,
+        const size_t washout
     )
     {
 
@@ -105,7 +105,7 @@ namespace ESN_details {
     template <typename T>
     blaze::DynamicMatrix<T> ridge(
         const blaze::DynamicMatrix<T>& Target, const blaze::DynamicMatrix<T>& Readout,
-        T beta  // = 0.5
+        const T beta  // = 0.5
     )
     {
         auto I = blaze::IdentityMatrix<T>(Readout.rows());
@@ -116,7 +116,7 @@ namespace ESN_details {
 }  // namespace ESN_details
 
 template <typename RecType, typename Metric>
-void ESN<RecType, Metric>::create_W(size_t w_size, value_type w_connections, value_type w_sr)
+void ESN<RecType, Metric>::create_W(const size_t w_size, const value_type w_connections, const value_type w_sr)
 {
     W = blaze::CompressedMatrix<value_type>(w_size, w_size, 0.0);  // TODO make sparse
 
@@ -152,12 +152,13 @@ void ESN<RecType, Metric>::create_W(size_t w_size, value_type w_connections, val
 }
 
 template <typename RecType, typename Metric>
-ESN<RecType, Metric>::ESN(size_t w_size,  // = 500, // number of elements in reservoir
-    value_type w_connections,  // = 10, // number of interconnections (for each reservoir element)
-    value_type w_sr,  // = 0.6, // desired spectral radius of the reservoir
-    value_type alpha_,  // = 0.5, // leak rate
-    size_t washout_,  // = 1, // number of slices excluded from output for washout
-    value_type beta_  // = 0.5, // ridge solver metaparameter
+ESN<RecType, Metric>::ESN(
+    const size_t w_size,  // = 500, // number of elements in reservoir
+    const value_type w_connections,  // = 10, // number of interconnections (for each reservoir element)
+    const value_type w_sr,  // = 0.6, // desired spectral radius of the reservoir
+    const value_type alpha_,  // = 0.5, // leak rate
+    const size_t washout_,  // = 1, // number of slices excluded from output for washout
+    const value_type beta_  // = 0.5, // ridge solver metaparameter
     )
     : alpha(alpha_)
     , beta(beta_)
@@ -168,13 +169,30 @@ ESN<RecType, Metric>::ESN(size_t w_size,  // = 500, // number of elements in res
     create_W(w_size, w_connections, w_sr);
 }
 
+template <typename RecType, typename Metric>
+ESN<RecType, Metric>::ESN(
+    const blaze::DynamicMatrix<value_type> & W_in_,
+    const blaze::CompressedMatrix<value_type> & W_,
+    const blaze::DynamicMatrix<value_type> & W_out_,
+    const value_type alpha_,  // = 0.5, // leak rate
+    const size_t washout_,  // = 1, // number of slices excluded from output for washout
+    const value_type beta_  // = 0.5, // ridge solver metaparameter
+    )
+    : W_in(W_in_)
+    , W(W_)
+    , W_out(W_out_)
+    , alpha(alpha_)
+    , beta(beta_)
+    , washout(washout_)
+{
+    trained = true;
+    rgen.seed(std::random_device{}());
+}
+
 
 template <typename RecType, typename Metric>
 ESN<RecType, Metric>::ESN(const std::string & filename)
 {
-    //blaze::DynamicMatrix<value_type> W_in;
-    //blaze::CompressedMatrix<value_type> W;
-    //blaze::DynamicMatrix<value_type> W_out;
     blaze::DynamicVector<value_type> params;
     // saved as: archive << W_in << W << W_out << params;
 
@@ -187,6 +205,8 @@ ESN<RecType, Metric>::ESN(const std::string & filename)
     beta = params[1];
     washout = params[2];
     trained = true;
+
+    rgen.seed(std::random_device{}());
 }
 
 
@@ -307,6 +327,20 @@ void ESN<RecType, Metric>::save(const std::string & filename) {
     //}
 }
 
+
+template <typename RecType, typename Metric>
+std::tuple<
+  blaze::DynamicMatrix<typename ESN<RecType, Metric>::value_type>,
+  blaze::CompressedMatrix<typename ESN<RecType, Metric>::value_type>,
+  blaze::DynamicMatrix<typename ESN<RecType, Metric>::value_type>,
+  typename ESN<RecType, Metric>::value_type,
+  size_t,
+  typename ESN<RecType, Metric>::value_type
+>
+ESN<RecType, Metric>::get_components() {
+    assert(trained);
+    return std::make_tuple(W_in, W, W_out, alpha, washout, beta);
+}
 
 
 

@@ -33,7 +33,24 @@ SwitchPredictor<value_type>::SwitchPredictor(const std::vector<RecType> & traini
 template <typename value_type>
 SwitchPredictor<value_type>::SwitchPredictor(const std::string & filename) {
     init();
-    esn = metric::ESN<std::vector<value_type>, void>(filename);
+    //esn = metric::ESN<std::vector<value_type>, void>(filename);
+
+    blaze::DynamicMatrix<value_type> W_in;
+    blaze::CompressedMatrix<value_type> W;
+    blaze::DynamicMatrix<value_type> W_out;
+    blaze::DynamicVector<value_type> params;
+    // saved as: archive << W_in << W << W_out << params;
+
+    blaze::Archive<std::ifstream> archive (filename);
+    archive >> W_in;
+    archive >> W;
+    archive >> W_out;
+    archive >> params;
+    value_type alpha = params[0];
+    value_type beta = params[1];
+    size_t washout = params[2];
+    esn = metric::ESN<std::vector<value_type>, void>(W_in, W, W_out, alpha, washout, beta);
+    // TODO read own parameters
 }
 
 
@@ -203,7 +220,18 @@ template <typename value_type>
 void
 SwitchPredictor<value_type>::save(const std::string & filename) {
 
-    esn.save(filename);
+    //esn.save(filename);
+    // write own parameters to the end
+    auto components = esn.export_components();
+    auto W_in = std::get<0>(components);
+    auto W = std::get<1>(components);
+    auto W_out = std::get<2>(components);
+    auto alpha = std::get<3>(components);
+    auto washout = std::get<4>(components);
+    auto beta = std::get<5>(components);
+    blaze::DynamicVector<value_type> params = {alpha, beta, washout};
+    blaze::Archive<std::ofstream> archive (filename);
+    archive << W_in << W << W_out << params;
 }
 
 
