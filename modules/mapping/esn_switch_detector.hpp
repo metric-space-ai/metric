@@ -28,7 +28,14 @@ public:
      * @param labels - matrix with single column of label values: -1, 0 or 1.
      * Number of rows should be the same as in training_dataset
      */
-    SwitchPredictor(const blaze::DynamicMatrix<value_type> & training_data, const blaze::DynamicMatrix<value_type> & labels);
+    SwitchPredictor(
+            const blaze::DynamicMatrix<value_type> & training_data,
+            const blaze::DynamicMatrix<value_type> & labels,
+            const size_t wnd_size_ = 15,
+            const size_t cmp_wnd_sz_ = 150,
+            const size_t washout_ = 0.3,
+            const value_type contrast_threshold_ = 2500
+            );
 
     /**
      * @brief create & train model using vectors of STL containers
@@ -123,6 +130,8 @@ private:
     size_t washout;  // amount of samples to be excluded from training and prediction due to reservoir washout, currently 2500
     value_type contrast_threshold; // rate of contrast between averages in the cmp_wnd_size to the left and to the right,
     // needed to consider that current point contains a switch
+    value_type alpha; // ESN metaparameter
+    value_type beta; // ESN metaparameter
     std::vector<std::vector<value_type>> buffer = {};  // buffer for accumulation of samples passed online
     std::vector<unsigned long long int> buffer_idx = {};  // indices
     size_t online_cnt = 0; // online sample counter

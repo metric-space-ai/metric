@@ -18,21 +18,37 @@ Copyright (c) 2021 Panda Team
 
 
 template <typename value_type>
-SwitchPredictor<value_type>::SwitchPredictor(const blaze::DynamicMatrix<value_type> & training_data, const blaze::DynamicMatrix<value_type> & labels) {
+SwitchPredictor<value_type>::SwitchPredictor(
+        const blaze::DynamicMatrix<value_type> & training_data,
+        const blaze::DynamicMatrix<value_type> & labels,
+        const size_t wnd_size_,
+        const size_t cmp_wnd_sz_,
+        const size_t washout_,
+        const value_type contrast_threshold_
+    )
+    : wnd_size(wnd_size_)
+    , cmp_wnd_sz(cmp_wnd_sz_)
+    , washout(washout_)
+    , contrast_threshold(contrast_threshold_)
+{
     init();
     train(training_data, labels);
 }
 
 template <typename value_type>
 template <typename RecType>  // to be deduced
-SwitchPredictor<value_type>::SwitchPredictor(const std::vector<RecType> & training_data, const std::vector<RecType> & labels) {
+SwitchPredictor<value_type>::SwitchPredictor(
+        const std::vector<RecType> & training_data,
+        const std::vector<RecType> & labels
+        )
+{
     init();
     train(training_data, labels);
 }
 
 template <typename value_type>
 SwitchPredictor<value_type>::SwitchPredictor(const std::string & filename) {
-    init();
+    //init();
     //esn = metric::ESN<std::vector<value_type>, void>(filename);
 
     blaze::DynamicMatrix<value_type> W_in;
@@ -48,9 +64,16 @@ SwitchPredictor<value_type>::SwitchPredictor(const std::string & filename) {
     archive >> params;
     value_type alpha = params[0];
     value_type beta = params[1];
-    size_t washout = params[2];
+    washout = params[2]; // property
+    if (params.size() > 3) {
+        wnd_size = params[3];
+        cmp_wnd_sz = params[4];
+        contrast_threshold = params[5];
+    } else {
+        init();
+        washout = params[2];
+    }
     esn = metric::ESN<std::vector<value_type>, void>(W_in, W, W_out, alpha, washout, beta);
-    // TODO read own parameters
 }
 
 
@@ -229,7 +252,7 @@ SwitchPredictor<value_type>::save(const std::string & filename) {
     auto alpha = std::get<3>(components);
     auto washout = std::get<4>(components);
     auto beta = std::get<5>(components);
-    blaze::DynamicVector<value_type> params = {alpha, beta, washout};
+    blaze::DynamicVector<value_type> params = {alpha, beta, washout, wnd_size, cmp_wnd_sz, contrast_threshold};
     blaze::Archive<std::ofstream> archive (filename);
     archive << W_in << W << W_out << params;
 }
@@ -331,6 +354,8 @@ SwitchPredictor<value_type>::init() {  // TODO get parameters from user
     cmp_wnd_sz = 150;
     contrast_threshold = 0.3;
     washout = 2500;  // TODO update depending on loaded model
+    alpha = 0.1;
+    beta = 0.5;
 }
 
 
@@ -354,7 +379,7 @@ SwitchPredictor<value_type>::train(const blaze::DynamicMatrix<value_type> & trai
         target(i, 0) = new_label;
     }
 
-    esn = metric::ESN<std::vector<value_type>, void>(500, 5, 0.99, 0.1, washout, 0.5); // TODO pass
+    esn = metric::ESN<std::vector<value_type>, void>(500, 5, 0.99, alpha, washout, beta);
     esn.train(data, blaze::trans(target));
 }
 
@@ -379,7 +404,7 @@ SwitchPredictor<value_type>::train(const std::vector<RecType> & training_data, c
         target[i] = {new_label};
     }
 
-    esn = metric::ESN<std::vector<value_type>, void>(500, 5, 0.99, 0.1, washout, 0.5); // TODO pass
+    esn = metric::ESN<std::vector<value_type>, void>(500, 5, 0.99, alpha, washout, beta);
     esn.train(data, target);
 }
 
