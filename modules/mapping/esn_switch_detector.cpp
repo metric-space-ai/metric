@@ -24,14 +24,18 @@ SwitchPredictor<value_type>::SwitchPredictor(
         const size_t wnd_size_,
         const size_t cmp_wnd_sz_,
         const size_t washout_,
-        const value_type contrast_threshold_
+        const value_type contrast_threshold_,
+        const value_type alpha_,
+        const value_type beta_
     )
     : wnd_size(wnd_size_)
     , cmp_wnd_sz(cmp_wnd_sz_)
     , washout(washout_)
     , contrast_threshold(contrast_threshold_)
+    , alpha(alpha_)
+    , beta(beta_)
 {
-    init();
+    //init();
     train(training_data, labels);
 }
 
@@ -39,10 +43,22 @@ template <typename value_type>
 template <typename RecType>  // to be deduced
 SwitchPredictor<value_type>::SwitchPredictor(
         const std::vector<RecType> & training_data,
-        const std::vector<RecType> & labels
-        )
+        const std::vector<RecType> & labels,
+        const size_t wnd_size_,
+        const size_t cmp_wnd_sz_,
+        const size_t washout_,
+        const value_type contrast_threshold_,
+        const value_type alpha_,
+        const value_type beta_
+    )
+    : wnd_size(wnd_size_)
+    , cmp_wnd_sz(cmp_wnd_sz_)
+    , washout(washout_)
+    , contrast_threshold(contrast_threshold_)
+    , alpha(alpha_)
+    , beta(beta_)
 {
-    init();
+    //init();
     train(training_data, labels);
 }
 
@@ -62,16 +78,19 @@ SwitchPredictor<value_type>::SwitchPredictor(const std::string & filename) {
     archive >> W;
     archive >> W_out;
     archive >> params;
-    value_type alpha = params[0];
-    value_type beta = params[1];
+    alpha = params[0];
+    beta = params[1];
     washout = params[2]; // property
-    if (params.size() > 3) {
+    if (params.size() > 3) { // new model format
         wnd_size = params[3];
         cmp_wnd_sz = params[4];
         contrast_threshold = params[5];
-    } else {
-        init();
-        washout = params[2];
+    } else { // compatibility with old model format: new paramaters set to defaults
+        //init();
+        //washout = params[2];
+        wnd_size = 15;
+        cmp_wnd_sz = 150;
+        contrast_threshold = 0.3;
     }
     esn = metric::ESN<std::vector<value_type>, void>(W_in, W, W_out, alpha, washout, beta);
 }
@@ -347,16 +366,16 @@ SwitchPredictor<value_type>::class_entropy(const blaze::DynamicVector<value_type
 
 
 
-template <typename value_type>
-void
-SwitchPredictor<value_type>::init() {  // TODO get parameters from user
-    wnd_size = 15;
-    cmp_wnd_sz = 150;
-    contrast_threshold = 0.3;
-    washout = 2500;  // TODO update depending on loaded model
-    alpha = 0.1;
-    beta = 0.5;
-}
+//template <typename value_type>
+//void
+//SwitchPredictor<value_type>::init() {  // TODO get parameters from user
+//    wnd_size = 15;
+//    cmp_wnd_sz = 150;
+//    contrast_threshold = 0.3;
+//    washout = 2500;  // TODO update depending on loaded model
+//    alpha = 0.1;
+//    beta = 0.5;
+//}
 
 
 

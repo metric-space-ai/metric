@@ -34,7 +34,9 @@ public:
             const size_t wnd_size_ = 15,
             const size_t cmp_wnd_sz_ = 150,
             const size_t washout_ = 0.3,
-            const value_type contrast_threshold_ = 2500
+            const value_type contrast_threshold_ = 2500,
+            const value_type alpha_ = 0.1,
+            const value_type beta_ = 0.5
             );
 
     /**
@@ -45,7 +47,16 @@ public:
      * Length should be equal to the length of training_dataset
      */
     template <typename RecType>  // to be deduced
-    SwitchPredictor(const std::vector<RecType> & training_data, const std::vector<RecType> & labels);
+    SwitchPredictor(
+            const std::vector<RecType> & training_data,
+            const std::vector<RecType> & labels,
+            const size_t wnd_size_ = 15,
+            const size_t cmp_wnd_sz_ = 150,
+            const size_t washout_ = 0.3,
+            const value_type contrast_threshold_ = 2500,
+            const value_type alpha_ = 0.1,
+            const value_type beta_ = 0.5
+            );
 
     /**
      * @brief load trained model from file
@@ -139,7 +150,7 @@ private:
     /**
      * @brief init - initializes parameters
      */
-    void init();
+    //void init();
 
     /**
      * @brief v_stddev - compute standard deviation of the vector v
