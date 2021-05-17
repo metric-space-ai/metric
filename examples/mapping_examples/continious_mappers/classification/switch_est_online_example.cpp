@@ -107,7 +107,7 @@ int main()
 
     start_time = std::chrono::steady_clock::now();
 
-    std::vector<size_t> sizes = {12, 1, 145}; // sizes of slices we sequential pass
+    std::vector<size_t> sizes = {12, 3, 50}; // sizes of slices we sequential pass
     std::vector<std::tuple<unsigned long long int, value_type>> all_pairs;
 
     {

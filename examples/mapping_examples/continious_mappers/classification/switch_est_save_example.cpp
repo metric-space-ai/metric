@@ -106,7 +106,8 @@ int main()
     blaze::DynamicMatrix<value_type> labels (ds_in.rows(), 1);
     blaze::column(labels, 0) = blaze::column(ds_in, 4);
 
-    auto model = SwitchPredictor<value_type>(training_ds, labels);
+    //auto model = SwitchPredictor<value_type>(training_ds, labels);
+    auto model = SwitchPredictor<value_type>(training_ds, labels, 15, 100, 500, 0.2, 0.4);
 
     model.save("model.blaze");
 

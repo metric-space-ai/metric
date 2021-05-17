@@ -106,7 +106,9 @@ int main()
     blaze::DynamicMatrix<value_type> labels (ds_in.rows(), 1);
     blaze::column(labels, 0) = blaze::column(ds_in, 4);
 
-    auto model = SwitchPredictor<value_type>(training_ds, labels);
+    //auto model = SwitchPredictor<value_type>(training_ds, labels);
+    auto model = SwitchPredictor<value_type>(training_ds, labels, 15, 80, 500, 0.2, 0.4);
+    // training_data, labels, wnd_size, cmp_wnd_sz, washout, contrast_threshold, alpha, beta
 
     auto end_time = std::chrono::steady_clock::now();
     std::cout << "training completed in " <<

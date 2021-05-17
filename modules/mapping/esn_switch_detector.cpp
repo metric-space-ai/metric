@@ -264,7 +264,7 @@ SwitchPredictor<value_type>::save(const std::string & filename) {
 
     //esn.save(filename);
     // write own parameters to the end
-    auto components = esn.export_components();
+    auto components = esn.get_components();
     auto W_in = std::get<0>(components);
     auto W = std::get<1>(components);
     auto W_out = std::get<2>(components);
