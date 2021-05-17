@@ -97,40 +97,49 @@ int main()
 
     // dataset passed as Blaze matrix, data points in COLUMNS
 
-    auto start_time = std::chrono::steady_clock::now();
+    {
+        auto start_time = std::chrono::steady_clock::now();
 
-    blaze::DynamicMatrix<value_type> ds_in = read_csv_blaze<value_type>("training_ds_1_fragm.csv"); //, ",", 10000);
-    blaze::DynamicMatrix<value_type> training_ds (ds_in.rows(), 3, 0);
-    blaze::submatrix(training_ds, 0, 0, ds_in.rows(), 3) = blaze::submatrix(ds_in, 0, 1, ds_in.rows(), 3);
+        blaze::DynamicMatrix<value_type> ds_in = read_csv_blaze<value_type>("training_ds_1_fragm.csv"); //, ",", 10000);
+        blaze::DynamicMatrix<value_type> training_ds (ds_in.rows(), 3, 0);
+        blaze::submatrix(training_ds, 0, 0, ds_in.rows(), 3) = blaze::submatrix(ds_in, 0, 1, ds_in.rows(), 3);
 
-    blaze::DynamicMatrix<value_type> labels (ds_in.rows(), 1);
-    blaze::column(labels, 0) = blaze::column(ds_in, 4);
+        blaze::DynamicMatrix<value_type> labels (ds_in.rows(), 1);
+        blaze::column(labels, 0) = blaze::column(ds_in, 4);
 
-    //auto model = SwitchPredictor<value_type>(training_ds, labels);
-    auto model = SwitchPredictor<value_type>(training_ds, labels, 15, 80, 500, 0.2, 0.4);
-    // training_data, labels, wnd_size, cmp_wnd_sz, washout, contrast_threshold, alpha, beta
+        //auto model = SwitchPredictor<value_type>(training_ds, labels);
+        auto model = SwitchPredictor<value_type>(training_ds, labels, 15, 150, 100, 0.2, 0.4, 0.5);
+        // training_data, labels, wnd_size, cmp_wnd_sz, washout, contrast_threshold, alpha, beta
 
-    auto end_time = std::chrono::steady_clock::now();
-    std::cout << "training completed in " <<
-                 double(std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count()) / 1000000 << " s" <<
-                 std::endl << std::endl;
+        auto end_time = std::chrono::steady_clock::now();
+        std::cout << "training completed in " <<
+                     double(std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count()) / 1000000 << " s" <<
+                     std::endl << std::endl;
+
+        model.save("tmp.blaze");
+    }
 
 
+    {
+        auto model = SwitchPredictor<value_type>("tmp.blaze");
 
-    start_time = std::chrono::steady_clock::now();
+        auto start_time = std::chrono::steady_clock::now();
 
-    blaze::DynamicMatrix<value_type> ds_pred = read_csv_blaze<value_type>("training_ds_2_fragm.csv"); //, ",", 10000);
-    blaze::DynamicMatrix<value_type> ds (ds_pred.rows(), 3, 0);
-    blaze::submatrix(ds, 0, 0, ds_pred.rows(), 3) = blaze::submatrix(ds_pred, 0, 1, ds_pred.rows(), 3);
+        blaze::DynamicMatrix<value_type> ds_pred = read_csv_blaze<value_type>("training_ds_2_fragm.csv"); //, ",", 10000);
+        blaze::DynamicMatrix<value_type> ds (ds_pred.rows(), 3, 0);
+        blaze::submatrix(ds, 0, 0, ds_pred.rows(), 3) = blaze::submatrix(ds_pred, 0, 1, ds_pred.rows(), 3);
 
-    auto est = model.encode(ds);
+        auto est = model.encode(ds);
 
-    blaze_dm_to_csv(est, "estimation.csv");
+        blaze_dm_to_csv(est, "estimation.csv");
 
-    end_time = std::chrono::steady_clock::now();
-    std::cout << "estimation completed in " <<
-                 double(std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count()) / 1000000 << " s" <<
-                 std::endl << std::endl;
+        auto end_time = std::chrono::steady_clock::now();
+        std::cout << "estimation completed in " <<
+                     double(std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count()) / 1000000 << " s" <<
+                     std::endl << std::endl;
+
+    }
+
 
 
     return 0;

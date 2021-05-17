@@ -32,10 +32,10 @@ public:
             const blaze::DynamicMatrix<value_type> & training_data,
             const blaze::DynamicMatrix<value_type> & labels,
             const size_t wnd_size_ = 15,
-            const size_t cmp_wnd_sz_ = 150,
-            const size_t washout_ = 2500,
-            const value_type contrast_threshold_ =  0.3,
-            const value_type alpha_ = 0.1,
+            const size_t cmp_wnd_sz_ = 80, //150,
+            const size_t washout_ = 500, //2500,
+            const value_type contrast_threshold_ = 0.2, //0.3,
+            const value_type alpha_ = 0.4, //0.1,
             const value_type beta_ = 0.5
             );
 
@@ -51,10 +51,10 @@ public:
             const std::vector<RecType> & training_data,
             const std::vector<RecType> & labels,
             const size_t wnd_size_ = 15,
-            const size_t cmp_wnd_sz_ = 150,
-            const size_t washout_ = 2500,
-            const value_type contrast_threshold_ =  0.3,
-            const value_type alpha_ = 0.1,
+            const size_t cmp_wnd_sz_ = 80, //150,
+            const size_t washout_ = 500, //2500,
+            const value_type contrast_threshold_ = 0.2, //0.3,
+            const value_type alpha_ = 0.4, //0.1,
             const value_type beta_ = 0.5
             );
 

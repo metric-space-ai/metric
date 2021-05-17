@@ -108,12 +108,20 @@ ValueType class_entropy(const blaze::DynamicVector<ValueType> & data, const Valu
 int main()
 {
 
-
-    size_t wnd_size = 15;
-
     using value_type = double;
 
+    //// first set
+    //size_t wnd_size = 15;
+    //size_t cmp_wnd_sz = 150;
+    //size_t washout = 2500;
+    //value_type contrast_threshold = 0.3;
+    //value_type alpha = 0.1;
 
+    size_t wnd_size = 15;
+    size_t cmp_wnd_sz = 80;
+    size_t washout = 100;
+    value_type contrast_threshold = 0.2;
+    value_type alpha = 0.4;
 
     std::cout << "started" << std::endl << std::endl;
 
@@ -194,7 +202,7 @@ int main()
 
     start_time = std::chrono::steady_clock::now();
 
-    auto esn = metric::ESN<std::vector<value_type>, void>(500, 5, 0.99, 0.1, 2500, 0.5); // echo
+    auto esn = metric::ESN<std::vector<value_type>, void>(500, 5, 0.99, alpha, washout, 0.5); // echo
     // w_size, w_connections, w_sr, alpha, washout, beta
     // currently best for old labels: (500, 10, 0.99, 0.9, 2500, 0.5)
     // and (500, 5, 0.99, 0.1, 2500, 0.5) for binary state labels
@@ -256,9 +264,7 @@ int main()
 
     std::cout << std::endl << "postprocessing started" << std::endl;
 
-    size_t cmp_wnd_sz = 150;
-
-    value_type contrast_threshold = 0.3;
+    //value_type contrast_threshold = 0.3;
     blaze::DynamicMatrix<value_type> postproc_pred (out.rows(), 1, 0);
     bool prev_l_flag = false;
     for (size_t i = cmp_wnd_sz; i < out.rows() - cmp_wnd_sz; ++i) {
