@@ -48,7 +48,7 @@ public:
         const value_type w_connections = 10,  // number of interconnections (for each reservoir element)
         const value_type w_sr = 0.6,  // desired spectral radius of the reservoir
         const value_type alpha_ = 0.5,  // leak rate
-        const size_t washout_ = 1,  // number of slices excluded from output for washout
+        const size_t washout_ = 1,  // number of samples excluded from output for washout
         const value_type beta_ = 0.5  // ridge solver metaparameter
     );
 
@@ -72,42 +72,42 @@ public:
         const blaze::CompressedMatrix<value_type> & W_,
         const blaze::DynamicMatrix<value_type> & W_out_,
         const value_type alpha_= 0.5, // leak rate
-        const size_t washout_ = 1, // number of slices excluded from output for washout
+        const size_t washout_ = 1, // number of samples excluded from output for washout
         const value_type beta_ = 0.5 // ridge solver metaparameter
     );
 
     /**
      * @brief 
      * 
-     * @param Slices 
+     * @param Samples
      * @param Target 
      */
-    void train(const blaze::DynamicMatrix<value_type>& Slices, const blaze::DynamicMatrix<value_type>& Target);
+    void train(const blaze::DynamicMatrix<value_type>& Samples, const blaze::DynamicMatrix<value_type>& Target);
 
     /**
      * @brief
      *
-     * @param Slices
+     * @param Samples
      * @param Target
      */
-    void train(const std::vector<RecType> & Slices, const std::vector<RecType> & Target);
+    void train(const std::vector<RecType> & Samples, const std::vector<RecType> & Target);
 
 
     /**
      * @brief 
      * 
-     * @param Slices 
+     * @param Samples
      * @return 
      */
-    blaze::DynamicMatrix<value_type> predict(const blaze::DynamicMatrix<value_type>& Slices);
+    blaze::DynamicMatrix<value_type> predict(const blaze::DynamicMatrix<value_type>& Samples);
 
     /**
      * @brief
      *
-     * @param Slices
+     * @param Samples
      * @return
      */
-    std::vector<RecType> predict(const std::vector<RecType> & Slices);
+    std::vector<RecType> predict(const std::vector<RecType> & Samples);
 
     /**
      * @brief

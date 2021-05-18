@@ -27,6 +27,14 @@ public:
      * @param training_data - 3-dimensional timeseries, samples in rows
      * @param labels - matrix with single column of label values: -1, 0 or 1.
      * Number of rows should be the same as in training_dataset
+     * @param wnd_size_ - size of the window used to compute additional sliding stddev feature in preprocessing
+     * and entropy in postprocessing
+     * @param cmp_wnd_sz - size of window used to ensure detected entropy peak really switches the state
+     * @param washout_ - amount of samples to be excluded from training and prediction due to reservoir washout
+     * @param contrast_threshold_ - rate of contrast between averages in the windows of size cmp_wnd_size
+     * to the left and to the right, needed to check if current point contains a switch
+     * @param alpha - ESN parameter
+     * @param beta - ESN parameter
      */
     SwitchPredictor(
             const blaze::DynamicMatrix<value_type> & training_data,
@@ -45,6 +53,14 @@ public:
      * @param training_data - timeseries, each RecType contains 3 values and represents a sample
      * @param labels - vector of containers with single label value in each: -1, 0 or 1.
      * Length should be equal to the length of training_dataset
+     * @param wnd_size_ - size of the window used to compute additional sliding stddev feature in preprocessing
+     * and entropy in postprocessing
+     * @param cmp_wnd_sz - size of window used to ensure detected entropy peak really switches the state
+     * @param washout_ - amount of samples to be excluded from training and prediction due to reservoir washout
+     * @param contrast_threshold_ - rate of contrast between averages in the windows of size cmp_wnd_size
+     * to the left and to the right, needed to check if current point contains a switch
+     * @param alpha - ESN parameter
+     * @param beta - ESN parameter
      */
     template <typename RecType>  // to be deduced
     SwitchPredictor(
@@ -61,7 +77,7 @@ public:
     /**
      * @brief load trained model from file
      *
-     * @param filename - file with Blaze image of the NN, saved by ::save(...) method.
+     * @param filename - file with Blaze image of the model
      */
     SwitchPredictor(const std::string & filename);
 
@@ -90,7 +106,7 @@ public:
      * @return - estimation for samples before 150 last ones,
      * tuple: vector of indices related to the output extimations, and vector of estimated switches,
      * encoded as: 0 - no switch. -1 - On-Off switch, 1 - Off-On switch
-     * If buffer size is not enough for estimation, the output is empty of of less size than input
+     * If buffer size is not enough for estimation, the output is empty or of less size than input
      */
     std::tuple<std::vector<unsigned long long int>, std::vector<value_type>> encode_raw(
             const std::vector<unsigned long long int> & indices,
@@ -105,7 +121,7 @@ public:
      * @return - estimation for samples before 150 last ones,
      * vector of tuples, where 1st value is index of the sample, 2nd is nonzero estimated switch encoded as
      * -1 - On-Off switch, 1 - Off-On switch. Zero (non-switch) samples are omitted.
-     * If buffer size is not enough for estimation, the output is empty of of less size than input
+     * If buffer size is not enough for estimation, the output is empty or of less size than input
      */
     std::vector<std::tuple<unsigned long long int, value_type>> encode(
             const std::vector<unsigned long long int> & indices,
@@ -135,22 +151,17 @@ public:
 private:
 
     metric::ESN<std::vector<value_type>, void> esn;
-    size_t wnd_size; // size of the window used to compute additional window stddev feature
+    size_t wnd_size; // size of the window used to compute additional sliding stddev feature
     // and postprocessing entropy filter, currently hardcoded to 15
-    size_t cmp_wnd_sz; // size of window used to ensure detected switch really turns state, currently hardcoded to 150
-    size_t washout;  // amount of samples to be excluded from training and prediction due to reservoir washout, currently 2500
+    size_t cmp_wnd_sz; // size of window used to ensure detected entropy peak really turns state (i.e is a switch)
+    size_t washout;  // ESN parameter, amount of samples to be excluded from training and prediction due to reservoir washout
     value_type contrast_threshold; // rate of contrast between averages in the cmp_wnd_size to the left and to the right,
-    // needed to consider that current point contains a switch
-    value_type alpha; // ESN metaparameter
-    value_type beta; // ESN metaparameter
+    // needed to ensure that current point contains a switch
+    value_type alpha; // ESN parameter
+    value_type beta; // ESN parameter
     std::vector<std::vector<value_type>> buffer = {};  // buffer for accumulation of samples passed online
     std::vector<unsigned long long int> buffer_idx = {};  // indices
     size_t online_cnt = 0; // online sample counter
-
-    /**
-     * @brief init - initializes parameters
-     */
-    //void init();
 
     /**
      * @brief v_stddev - compute standard deviation of the vector v
@@ -159,7 +170,6 @@ private:
      * biased ("population", divided by N) or unbuased ("sample", divide by N-1) standard deviation
      * @return standard deviation
      */
-    //value_type v_stddev(const std::vector<value_type> & v);
     value_type v_stddev(const std::vector<value_type> & v, const bool population = false);
 
     /**
