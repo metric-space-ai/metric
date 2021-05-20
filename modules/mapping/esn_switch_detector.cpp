@@ -270,6 +270,14 @@ SwitchPredictor<value_type>::save(const std::string & filename) {
 
 
 
+template <typename value_type>
+std::tuple<size_t, size_t, size_t, value_type, value_type, value_type>
+SwitchPredictor<value_type>::get_parameters() {
+    return std::make_tuple(wnd_size, cmp_wnd_sz, washout, contrast_threshold, alpha, beta);
+}
+
+
+
 // ---- private
 
 

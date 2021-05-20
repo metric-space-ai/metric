@@ -138,6 +138,14 @@ int main()
                      double(std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count()) / 1000000 << " s" <<
                      std::endl << std::endl;
 
+        auto params = model.get_parameters();
+        std::cout << std::endl << "used parameters: " << std::endl <<
+                     "wnd_size: " << std::get<0>(params) << std::endl <<
+                     "cmp_wnd_sz: " << std::get<1>(params) << std::endl <<
+                     "washout: " << std::get<2>(params) << std::endl <<
+                     "contrast_threshold: " << std::get<3>(params) << std::endl <<
+                     "alpha: " << std::get<4>(params) << std::endl <<
+                     "beta: " << std::get<5>(params) << std::endl;
     }
 
 

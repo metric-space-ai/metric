@@ -147,6 +147,13 @@ public:
      */
     void save(const std::string & filename);
 
+    /**
+     * @brief get_parameters
+     * @return tuple of parameters the model was created with
+     */
+    std::tuple<size_t, size_t, size_t, value_type, value_type, value_type>
+    get_parameters();
+
 
 private:
 
