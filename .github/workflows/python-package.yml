@@ -15,19 +15,6 @@ jobs:
       uses: actions/setup-python@v1
       with:
         python-version: 3.8
-    - name: Install system dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install cmake
-        sudo apt-get install libboost-date-time-dev
-        sudo apt-get install libboost-test-dev
-        sudo apt-get install libboost-serialization-dev
-        sudo apt-get install libboost-iostreams-dev
-        sudo apt-get install libopenblas-dev
-        sudo apt-get install ccache
-        sudo apt-get install -y g++-9 g++-9-multilib
-        echo "CC=gcc-9" >> $GITHUB_ENV
-        echo "CXX=g++-9" >> $GITHUB_ENV
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
@@ -44,10 +31,6 @@ jobs:
         system-packages: 'cmake3 openblas-devel boost-devel devtoolset-9'
         build-requirements: 'auditwheel==3.1.0'
         package-path: './python/'
-#    - name: Build pyhton package
-#      run: |
-#        cd ./python
-#        MAKE='make -j1' python setup.py bdist_wheel
 
     - name: Publish wheels to PyPI
       env:
