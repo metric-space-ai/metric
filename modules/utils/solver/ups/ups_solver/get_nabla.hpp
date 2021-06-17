@@ -1,9 +1,9 @@
 #ifndef _UPS_GET_NABLA_HPP
 #define _UPS_GET_NABLA_HPP
 
-#include "../helpers/indexing.hpp"
+#include "modules/utils/solver/ups/helpers/indexing.hpp"
 
-#include "../../../../../3rdparty/blaze/Blaze.h"
+#include "3rdparty/blaze/Blaze.h"
 
 #include <tuple>
 //#include <iostream>  // TODO remove
@@ -17,8 +17,9 @@ enum nabla_boundary_condition {DirichletHomogeneous, NeumannHomogeneous}; //, Ne
 
 template <typename T>
 std::tuple<blaze::CompressedMatrix<T>, blaze::CompressedMatrix<T>>
+//std::tuple<blaze::DynamicMatrix<T>, blaze::DynamicMatrix<T>>
 getNabla(
-        const blaze::DynamicMatrix<unsigned char, blaze::columnMajor> & mask,
+        const blaze::DynamicMatrix<bool, blaze::columnMajor> & mask,
         nabla_approximation approx = Central,
         nabla_boundary_condition boundary = NeumannHomogeneous
         )
@@ -26,8 +27,11 @@ getNabla(
 
     //size_t out_size = mask.columns()*mask.rows();
 
-    blaze::CompressedMatrix<T> Dx;
-    blaze::CompressedMatrix<T> Dy;
+    //blaze::CompressedMatrix<T> Dx;
+    //blaze::CompressedMatrix<T> Dy;
+    blaze::DynamicMatrix<T> Dx;  // TODO rey columnMajor
+    blaze::DynamicMatrix<T> Dy;
+
     switch (approx) {
     case Forward:
         Dx = blaze::IdentityMatrix<T>(mask.columns()) * -1;
@@ -50,8 +54,10 @@ getNabla(
         }
         break;
     default:  // Central
-        Dx = blaze::CompressedMatrix<T>(mask.columns(), mask.columns(), 0);
-        Dy = blaze::CompressedMatrix<T>(mask.rows(), mask.rows(), 0);
+        //Dx = blaze::CompressedMatrix<T>(mask.columns(), mask.columns(), 0);
+        //Dy = blaze::CompressedMatrix<T>(mask.rows(), mask.rows(), 0);
+        Dx = blaze::DynamicMatrix<T>(mask.columns(), mask.columns(), 0);
+        Dy = blaze::DynamicMatrix<T>(mask.rows(), mask.rows(), 0);
         for (size_t i = 0; i < mask.columns() - 1; ++i) {
             Dx(i, i+1) = 0.5;
             Dx(i+1, i) = -0.5;
@@ -63,8 +69,16 @@ getNabla(
         break;
     }
 
-    blaze::CompressedMatrix<T> nx = blaze::kron(Dx, blaze::IdentityMatrix<T>(mask.rows()));
-    blaze::CompressedMatrix<T> ny = blaze::kron(blaze::IdentityMatrix<T>(mask.columns()), Dy);
+    //blaze::CompressedMatrix<T> nx = blaze::kron(Dx, blaze::IdentityMatrix<T>(mask.rows()));
+    //blaze::CompressedMatrix<T> ny = blaze::kron(blaze::IdentityMatrix<T>(mask.columns()), Dy);
+    //blaze::DynamicMatrix<T> nx = blaze::kron(Dx, blaze::IdentityMatrix<T>(mask.rows()));
+    //blaze::DynamicMatrix<T> ny = blaze::kron(blaze::IdentityMatrix<T>(mask.columns()), Dy);
+    blaze::CompressedMatrix<T, blaze::columnMajor> Ir = blaze::IdentityMatrix<T>(mask.rows());
+    blaze::CompressedMatrix<T, blaze::columnMajor> Ic = blaze::IdentityMatrix<T>(mask.columns());
+    blaze::CompressedMatrix<T, blaze::columnMajor> nx = blaze::kron(Dx, Ir);
+    blaze::CompressedMatrix<T, blaze::columnMajor> ny = blaze::kron(Ic, Dy); // TODO optimize!!
+    //blaze::DynamicMatrix<T> nx = nx_sp;
+    //blaze::DynamicMatrix<T> ny = ny_sp;
 
 //    std::cout << "Dx:\n" << Dx << "\n"; // TODO remove
 //    std::cout << "Dy:\n" << Dy << "\n";
@@ -73,12 +87,16 @@ getNabla(
 
     // apply NeumannHomogeneous
 
+    /*  // old code
     auto idx = indicesCw(mask);
 
-    size_t s = blaze::sum(mask);  // should be equal to length of idx and height and width of nabla_x, nabla_y
+    size_t s = blaze::nonZeros(mask);  // should be equal to length of idx and height and width of nabla_x, nabla_y
 
-    blaze::CompressedMatrix<T> nabla_x (s, s);
-    blaze::CompressedMatrix<T> nabla_y (s, s);
+    //blaze::CompressedMatrix<T> nabla_x (s, s);
+    //blaze::CompressedMatrix<T> nabla_y (s, s);
+    blaze::DynamicMatrix<T> nabla_x (s, s, 0);
+    blaze::DynamicMatrix<T> nabla_y (s, s, 0);
+
     size_t r = 0;
     size_t c;
     for (blaze::DynamicVector<size_t>::Iterator it=idx.begin(); it!=idx.end(); ++it) {
@@ -90,6 +108,21 @@ getNabla(
         }
         ++r;
     }
+    // */
+
+    auto idx = indicesCwStd(mask);
+
+    size_t s = blaze::nonZeros(mask);  // should be equal to length of idx and height and width of nabla_x, nabla_y
+
+    blaze::CompressedMatrix<T> nx_filtering (s, mask.columns());
+    blaze::CompressedMatrix<T> ny_filtering (s, mask.columns());
+    nx_filtering = blaze::columns(nx, idx);
+    ny_filtering = blaze::columns(ny, idx);
+
+    blaze::CompressedMatrix<T> nabla_x (s, s);
+    blaze::CompressedMatrix<T> nabla_y (s, s);
+    nabla_x = blaze::rows(nx_filtering, idx);
+    nabla_y = blaze::rows(ny_filtering, idx);
 
     //std::cout << "nabla_x:\n" << nabla_x << "\n"; // TODO remove
     //std::cout << "nabla_y:\n" << nabla_y << "\n";

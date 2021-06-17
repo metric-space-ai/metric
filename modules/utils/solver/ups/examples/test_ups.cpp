@@ -1,8 +1,8 @@
 
-#include "../ups_solver/ups_solver.hpp"
+#include "modules/utils/solver/ups/ups_solver/ups_solver.hpp"
 //#include "../helpers/console_output.hpp"
 
-#include "../../../../../3rdparty/blaze/Blaze.h"
+#include "3rdparty/blaze/Blaze.h"
 
 #include <tuple>
 #include <vector>
@@ -54,7 +54,13 @@ int main()
     std::vector<std::vector<blaze::DynamicMatrix<float, blaze::columnMajor>>> I {I1, I2};
 
 
-    ups_solver(Z, M, K, I);
+    auto r = ups_solver(Z, M, K, I);
+
+    std::cout << std::endl
+              << "z: " << std::endl << std::get<0>(r) << std::endl
+              << "rho1: " << std::endl << std::get<1>(r)[0] << std::endl
+              << "rho2: " << std::endl << std::get<1>(r)[1] << std::endl
+              << "rho3: " << std::endl << std::get<1>(r)[2] << std::endl;
 
 
     return 0;

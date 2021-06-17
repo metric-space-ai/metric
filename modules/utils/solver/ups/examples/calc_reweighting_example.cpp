@@ -1,10 +1,10 @@
 
-#include "../ups_solver/init.hpp"
-#include "../ups_solver/depth_to_normals.hpp"
-#include "../ups_solver/normals_to_sh.hpp"
-#include "../ups_solver/calc_reweighting.hpp"
+#include "modules/utils/solver/ups/ups_solver/init.hpp"
+#include "modules/utils/solver/ups/ups_solver/depth_to_normals.hpp"
+#include "modules/utils/solver/ups/ups_solver/normals_to_sh.hpp"
+#include "modules/utils/solver/ups/ups_solver/calc_reweighting.hpp"
 
-#include "../../../../../3rdparty/blaze/Blaze.h"
+#include "3rdparty/blaze/Blaze.h"
 
 #include <tuple>
 #include <vector>

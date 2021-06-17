@@ -1,7 +1,7 @@
 #ifndef _UPS_CALC_ENERGY_CAUCHY_HPP
 #define _UPS_CALC_ENERGY_CAUCHY_HPP
 
-#include "../../../../../3rdparty/blaze/Blaze.h"
+#include "3rdparty/blaze/Blaze.h"
 
 #include <tuple>
 #include <iostream>  // TODO remove

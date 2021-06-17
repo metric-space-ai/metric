@@ -2,14 +2,14 @@
 #define _UPS_INIT_HPP
 
 
-#include "../helpers/indexing.hpp"
-#include "../helpers/console_output.hpp"
+#include "modules/utils/solver/ups/helpers/indexing.hpp"
+#include "modules/utils/solver/ups/helpers/console_output.hpp"
 
-#include "../../../../../3rdparty/blaze/Blaze.h"
+#include "3rdparty/blaze/Blaze.h"
 
 #include <tuple>
 #include <vector>
-#include <iostream>  // TODO remove
+//#include <iostream>  // TODO remove
 
 
 template <typename T>
@@ -64,7 +64,8 @@ template <typename T>
 std::tuple<std::vector<std::vector<blaze::DynamicVector<T>>>, std::vector<blaze::DynamicVector<T>>>
 VariablesInitialization(
         const std::vector<std::vector<blaze::DynamicMatrix<T, blaze::columnMajor>>> & I,
-        const blaze::CompressedMatrix<unsigned char, blaze::columnMajor> & M,
+        //const blaze::CompressedMatrix<bool, blaze::columnMajor> & M,
+        const blaze::DynamicMatrix<bool, blaze::columnMajor> & M,
         const std::vector<blaze::DynamicMatrix<T, blaze::columnMajor>> & rho//,
         //std::vector<blaze::DynamicMatrix<T, blaze::columnMajor>> s,
         //blaze::DynamicVector<T> z
@@ -77,7 +78,7 @@ VariablesInitialization(
 
     auto idc = indicesCwStd(M);
 
-    std::cout << "idc:\n" << idc << "\n\n";  // TODO remove
+    //std::cout << "idc:\n" << idc << "\n\n";  // TODO remove
 
     // I
     std::vector<std::vector<blaze::DynamicVector<T>>> images;

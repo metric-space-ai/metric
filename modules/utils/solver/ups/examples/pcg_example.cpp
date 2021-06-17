@@ -1,7 +1,7 @@
 
 //#include "../../modules/utils/solver/solver.hpp"
-#include "../../helper/lapwrappers.hpp"
-#include "../../pcg.hpp"
+#include "modules/utils/solver/helper/lapwrappers.hpp"
+#include "modules/utils/solver/pcg.hpp"
 
 #include <iostream>
 

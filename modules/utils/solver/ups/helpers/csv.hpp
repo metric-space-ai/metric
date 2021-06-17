@@ -1,7 +1,7 @@
 #ifndef _UPS_HELPERS_HPP
 #define _UPS_HELPERS_HPP
 
-#include "../../../../../3rdparty/blaze/Blaze.h"
+#include "../3rdparty/metric/3rdparty/blaze/Blaze.h"
 
 #include <string>
 #include <fstream>

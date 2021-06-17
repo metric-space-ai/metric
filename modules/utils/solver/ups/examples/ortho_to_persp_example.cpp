@@ -1,8 +1,8 @@
 
-#include "../helpers/csv.hpp"
-#include "../ortho_to_persp/ortho_to_persp.hpp"
+#include "modules/utils/solver/ups/helpers/csv.hpp"
+#include "modules/utils/solver/ups/ortho_to_persp/ortho_to_persp.hpp"
 
-#include "../../../../../3rdparty/blaze/Blaze.h"
+#include "3rdparty/blaze/Blaze.h"
 
 #include <iostream>
 

@@ -1,7 +1,7 @@
 
-#include "../ups_solver/normals_to_sh.hpp"
+#include "modules/utils/solver/ups/ups_solver/normals_to_sh.hpp"
 
-#include "../../../../../3rdparty/blaze/Blaze.h"
+#include "3rdparty/blaze/Blaze.h"
 
 #include <tuple>
 #include <iostream>

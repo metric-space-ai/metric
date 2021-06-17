@@ -1,9 +1,9 @@
 #ifndef _UPS_GET_NORMAL_MAP_HPP
 #define _UPS_GET_NORMAL_MAP_HPP
 
-#include "../helpers/indexing.hpp"
+#include "modules/utils/solver/ups/helpers/indexing.hpp"
 
-#include "../../../../../3rdparty/blaze/Blaze.h"
+#include "3rdparty/blaze/Blaze.h"
 
 #include <tuple>
 //#include <iostream>  // TODO remove

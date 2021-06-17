@@ -2,9 +2,9 @@
 #define _UPS_CALC_REWEIGHTING_HPP
 
 
-#include "../../../../../3rdparty/blaze/Blaze.h"
+#include "3rdparty/blaze/Blaze.h"
 
-#include <iostream>  // TODO remove
+//#include <iostream>  // TODO remove
 
 
 

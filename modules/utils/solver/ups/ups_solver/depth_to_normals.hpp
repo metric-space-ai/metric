@@ -1,13 +1,13 @@
 #ifndef _UPS_DEPTH_TO_NORMALS_HPP
 #define _UPS_DEPTH_TO_NORMALS_HPP
 
-#include "../helpers/indexing.hpp"
-#include "../ups_solver/get_normal_map.hpp"
-#include "../ups_solver/get_nabla.hpp"
+#include "modules/utils/solver/ups/helpers/indexing.hpp"
+#include "modules/utils/solver/ups/ups_solver/get_normal_map.hpp"
+#include "modules/utils/solver/ups/ups_solver/get_nabla.hpp"
 
-#include "../../../../../3rdparty/blaze/Blaze.h"
+#include "3rdparty/blaze/Blaze.h"
 
-#include <iostream>  // TODO remove
+//#include <iostream>  // TODO remove
 
 
 
@@ -21,10 +21,13 @@ std::tuple<
            blaze::DynamicVector<T>,  // yy
            blaze::CompressedMatrix<T>,  // Dx
            blaze::CompressedMatrix<T>   // Dy
+           //blaze::DynamicMatrix<T>,  // Dx
+           //blaze::DynamicMatrix<T>   // Dy
           >
 getMaskedGradients(
                  const blaze::DynamicMatrix<T, B> & Z,
-                 const blaze::CompressedMatrix<unsigned char, blaze::columnMajor> & M,
+                 //const blaze::CompressedMatrix<bool, blaze::columnMajor> & M,
+                 const blaze::DynamicMatrix<bool, blaze::columnMajor> & M,
                  const blaze::DynamicMatrix<T> & K
                 )
 {
@@ -32,7 +35,8 @@ getMaskedGradients(
     auto nM = getNabla<T>(M, Forward, DirichletHomogeneous);
     blaze::CompressedMatrix<T> Dx = std::get<0>(nM);
     blaze::CompressedMatrix<T> Dy = std::get<1>(nM);
-
+    //blaze::DynamicMatrix<T> Dx = std::get<0>(nM);
+    //blaze::DynamicMatrix<T> Dy = std::get<1>(nM);
 
     std::vector<size_t> z_idc = indicesCwStd(M);
     blaze::DynamicVector<T> z_vector = flattenToCol(Z);
@@ -71,7 +75,7 @@ std::tuple<
           >
 depthToNormals(
                  blaze::DynamicMatrix<T, B> Z,
-                 blaze::CompressedMatrix<unsigned char, blaze::columnMajor> M,
+                 blaze::CompressedMatrix<bool, blaze::columnMajor> M,
                  blaze::DynamicMatrix<T> K
                 )
 {
@@ -115,12 +119,15 @@ std::tuple<
            blaze::DynamicVector<T>,  // zy
            blaze::DynamicVector<T>,  // xx
            blaze::DynamicVector<T>,  // yy
-           blaze::CompressedMatrix<T>,  // Dx
-           blaze::CompressedMatrix<T>   // Dy
+           //blaze::CompressedMatrix<T>,  // Dx
+           //blaze::CompressedMatrix<T>   // Dy
+           blaze::DynamicMatrix<T>,  // Dx
+           blaze::DynamicMatrix<T>   // Dy
           >
 depthToNormals(
                  const blaze::DynamicMatrix<T, B> & Z,
-                 const blaze::CompressedMatrix<unsigned char, blaze::columnMajor> & M,
+                 //const blaze::CompressedMatrix<bool, blaze::columnMajor> & M,
+                 const blaze::DynamicMatrix<bool, blaze::columnMajor> & M,
                  const blaze::DynamicMatrix<T> & K
                 )
 {
@@ -131,8 +138,11 @@ depthToNormals(
     blaze::DynamicVector<T> zy = std::get<2>(gradients);
     blaze::DynamicVector<T> xx = std::get<3>(gradients);
     blaze::DynamicVector<T> yy = std::get<4>(gradients);
-    blaze::CompressedMatrix<T> Dx = std::get<5>(gradients);
-    blaze::CompressedMatrix<T> Dy = std::get<6>(gradients);
+    //blaze::CompressedMatrix<T> Dx = std::get<5>(gradients);
+    //blaze::CompressedMatrix<T> Dy = std::get<6>(gradients);
+    blaze::DynamicMatrix<T> Dx = std::get<5>(gradients);
+    blaze::DynamicMatrix<T> Dy = std::get<6>(gradients);
+
 
     auto res = getNormalMap(z_vector_masked, zx, zy, K, xx, yy);
 
@@ -146,7 +156,8 @@ depthToNormals(
 
 
 template <typename T>
-std::tuple<std::vector<blaze::CompressedMatrix<T>>, blaze::CompressedMatrix<T>>
+//std::tuple<std::vector<blaze::CompressedMatrix<T>>, blaze::CompressedMatrix<T>>
+std::tuple<std::vector<blaze::DynamicMatrix<T>>, blaze::DynamicMatrix<T>>
 calcJacobian(
         const blaze::DynamicMatrix<T> & normals,
         const blaze::DynamicVector<T> & z_vector_masked,
@@ -155,6 +166,8 @@ calcJacobian(
         const blaze::DynamicVector<T> & yy,
         const blaze::CompressedMatrix<T> & Dx,
         const blaze::CompressedMatrix<T> & Dy
+        //const blaze::DynamicMatrix<T> & Dx,
+        //const blaze::DynamicMatrix<T> & Dy
         )
 {
     size_t npix = z_vector_masked.size();
@@ -162,8 +175,11 @@ calcJacobian(
     auto J_n_un_2 = K(1, 1) * Dy;
     auto eye = blaze::IdentityMatrix<T, blaze::columnMajor>(npix);
 
-    blaze::CompressedMatrix<T> xx_diag (xx.size(), xx.size());
-    blaze::CompressedMatrix<T> yy_diag (xx.size(), xx.size());
+    //blaze::CompressedMatrix<T> xx_diag (xx.size(), xx.size());
+    //blaze::CompressedMatrix<T> yy_diag (xx.size(), xx.size());
+    blaze::DynamicMatrix<T> xx_diag (xx.size(), xx.size(), 0);
+    blaze::DynamicMatrix<T> yy_diag (xx.size(), xx.size(), 0);
+
     {
         auto diag = blaze::diagonal(xx_diag);
         diag = xx;
@@ -181,9 +197,13 @@ calcJacobian(
     //std::cout << std::endl << "term2:" << std::endl << term2 << std::endl;
     //std::cout << std::endl << "J_n_un_3:" << std::endl << J_n_un_3 << std::endl;
 
-    blaze::CompressedMatrix<T> x_scale (npix, npix);
-    blaze::CompressedMatrix<T> y_scale (npix, npix);
-    blaze::CompressedMatrix<T> z_scale (npix, npix);
+    //blaze::CompressedMatrix<T> x_scale (npix, npix);
+    //blaze::CompressedMatrix<T> y_scale (npix, npix);
+    //blaze::CompressedMatrix<T> z_scale (npix, npix);
+    blaze::DynamicMatrix<T> x_scale (npix, npix, 0);
+    blaze::DynamicMatrix<T> y_scale (npix, npix, 0);
+    blaze::DynamicMatrix<T> z_scale (npix, npix, 0);
+
     {
         auto diag = blaze::diagonal(x_scale);
         diag = blaze::column(normals, 0);
@@ -197,12 +217,14 @@ calcJacobian(
         diag = blaze::column(normals, 2);
     }
 
-    blaze::CompressedMatrix<T> J_dz =
+    //blaze::CompressedMatrix<T> J_dz =
+    blaze::DynamicMatrix<T> J_dz =
             x_scale * J_n_un_1 +
             y_scale * J_n_un_2 +
             z_scale * J_n_un_3;
 
-    std::vector<blaze::CompressedMatrix<T>> J_n_un (3);
+    //std::vector<blaze::CompressedMatrix<T>> J_n_un (3);
+    std::vector<blaze::DynamicMatrix<T>> J_n_un (3);
     J_n_un[0] = J_n_un_1;
     J_n_un[1] = J_n_un_2;
     J_n_un[2] = J_n_un_3;

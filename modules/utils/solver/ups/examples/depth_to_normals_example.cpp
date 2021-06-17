@@ -1,7 +1,7 @@
 
-#include "../ups_solver/depth_to_normals.hpp"
+#include "modules/utils/solver/ups/ups_solver/depth_to_normals.hpp"
 
-#include "../../../../../3rdparty/blaze/Blaze.h"
+#include "3rdparty/blaze/Blaze.h"
 
 #include <iostream>
 

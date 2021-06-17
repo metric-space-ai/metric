@@ -1,13 +1,11 @@
 
-#include "../ups_solver/init.hpp"
-#include "../ups_solver/depth_to_normals.hpp"
-#include "../ups_solver/normals_to_sh.hpp"
-#include "../ups_solver/calc_reweighting.hpp"
-#include "../ups_solver/update_blocks.hpp"
+#include "modules/utils/solver/ups/ups_solver/init.hpp"
+#include "modules/utils/solver/ups/ups_solver/depth_to_normals.hpp"
+#include "modules/utils/solver/ups/ups_solver/normals_to_sh.hpp"
+#include "modules/utils/solver/ups/ups_solver/calc_reweighting.hpp"
+#include "modules/utils/solver/ups/ups_solver/update_blocks.hpp"
 
-#include "../helpers/console_output.hpp"
-
-#include "../../../../../3rdparty/blaze/Blaze.h"
+#include "3rdparty/blaze/Blaze.h"
 
 #include <tuple>
 #include <vector>
@@ -129,7 +127,7 @@ int main()
     float pcg_maxit = 100;
     float pcg_tol = 1e-5;
 
-    auto rho_upd = updateAlbedo(std::get<0>(i_rho), std::get<1>(i_rho), sh, s, weights, G, mu, huber, regular, pcg_tol, pcg_maxit);
+    auto rho_upd = updateAlbedo(std::get<0>(i_rho), std::get<1>(i_rho), sh, s, weights, G, huber, mu, regular, pcg_tol, pcg_maxit);
 
     std::cout << std::endl << "rho updated:" << std::endl << rho_upd << std::endl << std::endl;
 

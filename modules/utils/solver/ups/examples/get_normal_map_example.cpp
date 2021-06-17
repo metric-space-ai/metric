@@ -1,9 +1,9 @@
 
-#include "../ups_solver/get_normal_map.hpp"
-#include "../ups_solver/get_nabla.hpp"
-#include "../helpers/indexing.hpp"
+#include "modules/utils/solver/ups/ups_solver/get_normal_map.hpp"
+#include "modules/utils/solver/ups/ups_solver/get_nabla.hpp"
+#include "modules/utils/solver/ups/helpers/indexing.hpp"
 
-#include "../../../../../3rdparty/blaze/Blaze.h"
+#include "3rdparty/blaze/Blaze.h"
 
 #include <iostream>
 #include <vector>

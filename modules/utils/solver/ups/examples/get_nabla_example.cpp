@@ -1,8 +1,8 @@
 
 
-#include "../ups_solver/get_nabla.hpp"
+#include "modules/utils/solver/ups/ups_solver/get_nabla.hpp"
 
-#include "../../../../../3rdparty/blaze/Blaze.h"
+#include "3rdparty/blaze/Blaze.h"
 
 #include <iostream>
 
@@ -22,11 +22,24 @@ int main()
 //        {0, 1, 1}
 //    };
 
+//    blaze::DynamicMatrix<unsigned char, blaze::columnMajor> m {
+//        {0, 0, 1},
+//        {0, 1, 1},
+//        {1, 1, 1},
+//        {0, 0, 1}
+//    };
+
+//    blaze::DynamicMatrix<unsigned char, blaze::columnMajor> m {
+//        {0, 0, 1, 0, 1},
+//        {0, 1, 1, 0, 1},
+//        {1, 1, 1, 0, 1},
+//        {0, 0, 1, 0, 1}
+//    };
     blaze::DynamicMatrix<unsigned char, blaze::columnMajor> m {
-        {0, 0, 1},
-        {0, 1, 1},
-        {1, 1, 1},
-        {0, 0, 1}
+        {0, 0, 1, 1, 0},
+        {0, 1, 1, 1, 1},
+        {0, 1, 1, 0, 0},
+        {0, 0, 1, 0, 0}
     };
 
     auto res = getNabla<double>(m);

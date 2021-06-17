@@ -1,7 +1,7 @@
 #ifndef _UPS_INDEXING_HPP
 #define _UPS_INDEXING_HPP
 
-#include "../../../../../3rdparty/blaze/Blaze.h"
+#include "3rdparty/blaze/Blaze.h"
 
 //#include <iostream>  // TODO remove
 
@@ -15,7 +15,8 @@ template <typename R, typename C>
 R indicesCwImpl(const C & m) {
 // returns vector of 1d indices of all nonzero elements in column-major order
 
-    size_t s = blaze::sum(m);
+    //size_t s = blaze::sum(m);
+    size_t s = blaze::nonZeros(m);
     size_t el_n = m.columns()*m.rows();
     R indices (s);
     size_t idx = 0;
@@ -30,8 +31,8 @@ R indicesCwImpl(const C & m) {
 }
 
 
-blaze::DynamicVector<size_t> indicesCw(const blaze::DynamicMatrix<unsigned char, blaze::columnMajor> & m) {
-    return indicesCwImpl<blaze::DynamicVector<size_t>, blaze::DynamicMatrix<unsigned char, blaze::columnMajor>>(m);
+blaze::DynamicVector<size_t> indicesCw(const blaze::DynamicMatrix<bool, blaze::columnMajor> & m) {
+    return indicesCwImpl<blaze::DynamicVector<size_t>, blaze::DynamicMatrix<bool, blaze::columnMajor>>(m);
 }
 
 template <typename T>
@@ -39,6 +40,10 @@ std::vector<size_t> indicesCwStd(const blaze::CompressedMatrix<T, blaze::columnM
     return indicesCwImpl<std::vector<size_t>, blaze::CompressedMatrix<T, blaze::columnMajor>>(m);
 }
 
+template <typename T>
+std::vector<size_t> indicesCwStd(const blaze::DynamicMatrix<T, blaze::columnMajor> & m) {
+    return indicesCwImpl<std::vector<size_t>, blaze::DynamicMatrix<T, blaze::columnMajor>>(m);
+}
 
 
 
@@ -46,10 +51,12 @@ std::vector<size_t> indicesCwStd(const blaze::CompressedMatrix<T, blaze::columnM
 // indices2d_cw
 
 std::tuple<blaze::DynamicVector<size_t>, blaze::DynamicVector<size_t>>
-indices2dCw(const blaze::DynamicMatrix<unsigned char, blaze::columnMajor> & m) {
+indices2dCw(const blaze::DynamicMatrix<bool, blaze::columnMajor> & m) {
 // returns vectos of row and column indices of all nonzero elements in column-major order  // TODO debug
 
-    size_t s = blaze::sum(m);
+    //size_t s = blaze::sum(m);
+    //int s = blaze::sum(m);
+    size_t s = blaze::nonZeros(m);
     //size_t el_n = m.columns()*m.rows();
     blaze::DynamicVector<size_t> xx (s);
     blaze::DynamicVector<size_t> yy (s);
