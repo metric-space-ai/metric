@@ -186,7 +186,7 @@ int main()
 
     auto r = ups_solver(Z, M, K, I);
 
-//    std::cout << std::endl
+//    std::cout << std::endl << "final result:" << std::endl
 //              << "z: " << std::endl << std::get<0>(r) << std::endl
 //              << "rho1: " << std::endl << std::get<1>(r)[0] << std::endl
 //              << "rho2: " << std::endl << std::get<1>(r)[1] << std::endl

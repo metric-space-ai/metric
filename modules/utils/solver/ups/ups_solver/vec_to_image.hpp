@@ -15,8 +15,8 @@ blaze::DynamicMatrix<T> vecToImage(
 {
     blaze::DynamicMatrix<T> image (h, w, 0);
     size_t mask_idx = 0;
-    for (size_t c = 0; c < h; ++c) {
-        for (size_t r = 0; r < w; ++r) {
+    for (size_t c = 0; c < w; ++c) {
+        for (size_t r = 0; r < h; ++r) {
             if (M(r, c) != 0) {
                 image(r, c) = vec[mask_idx];
                 ++mask_idx;

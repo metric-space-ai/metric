@@ -43,7 +43,7 @@ ups_solver(
         )
 {
 
-    bool console_debug_output = false; //true;  // TODO remove
+    bool console_debug_output = true;//false; //true;  // TODO remove
 
     size_t img_h = Z_init.rows();
     size_t img_w = Z_init.columns();
