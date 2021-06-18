@@ -32,7 +32,8 @@ calcReweighting(
 
     blaze::DynamicMatrix<T, blaze::columnMajor> s_mat (s[0][0].size(), nimages*nchannels);
     for (size_t i = 0; i < nimages*nchannels; ++i) {
-        blaze::column(s_mat, i) = s[i%nimages][i/nimages];
+        //blaze::column(s_mat, i) = s[i%nimages][i/nimages];
+        blaze::column(s_mat, i) = s[i/nchannels][i%nchannels];
     }
 
     //std::cout << "s_mat:\n" << s_mat << "\n"; // TODO remove

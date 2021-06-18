@@ -165,7 +165,9 @@ ups_solver(
         }
 
         // albedo update
+        weights = calcReweighting(rho, sh, s, flat_imgs, lambda);
         if (console_debug_output) {  // TODO remove
+            std::cout << std::endl << "before albedo update, iter " << it << ":" << std::endl;
             std::cout << std::endl << "flat_imgs:" << std::endl << flat_imgs << std::endl;
             std::cout << std::endl << "rho:" << std::endl << rho << std::endl;
             std::cout << std::endl << "sh:" << std::endl << sh << std::endl;
@@ -175,7 +177,6 @@ ups_solver(
             std::cout << std::endl << "huber:" << std::endl << huber << std::endl;
             std::cout << std::endl << "mu:" << std::endl << mu << std::endl;
         }
-        weights = calcReweighting(rho, sh, s, flat_imgs, lambda);
         rho = updateAlbedo(flat_imgs, rho, sh, s, weights, G, huber, mu, regular, tol, pcg_maxit);
         drho = {};
         for (size_t ch = 0; ch < rho.size(); ++ch) {
@@ -184,17 +185,48 @@ ups_solver(
         }
         //drho = drho_upd;
         if (console_debug_output) {
-            std::cout << "rho: " << std::endl << rho << std::endl << std::endl;
+            std::cout << "rho updated: " << std::endl << rho << std::endl << std::endl;
         }
 
         // lighting update
         weights = calcReweighting(rho, sh, s, flat_imgs, lambda);
+        if (console_debug_output) {  // TODO remove
+            std::cout << std::endl << "before lighting update, iter " << it << ":" << std::endl;
+            std::cout << std::endl << "flat_imgs:" << std::endl << flat_imgs << std::endl;
+            std::cout << std::endl << "rho:" << std::endl << rho << std::endl;
+            std::cout << std::endl << "sh:" << std::endl << sh << std::endl;
+            std::cout << std::endl << "s:" << std::endl << s << std::endl;
+            std::cout << std::endl << "weights:" << std::endl << weights << std::endl;
+            std::cout << std::endl << "tol:" << std::endl << tol << std::endl;
+            std::cout << std::endl << "pcg_maxit:" << std::endl << pcg_maxit << std::endl;
+        }
         auto s_upd = updateLighting(flat_imgs, rho, sh, s, weights, tol, pcg_maxit);
         s = std::get<0>(s_upd);
-        auto res_s = std::get<1>(s_upd);
+        //auto res_s = std::get<1>(s_upd);
+        if (console_debug_output) {
+            std::cout << "s updated: " << std::endl << s << std::endl << std::endl;
+        }
 
         // depth update
         weights = calcReweighting(rho, sh, s, flat_imgs, lambda);
+        if (console_debug_output) {  // TODO remove
+            std::cout << std::endl << "before depth update, iter " << it << ":" << std::endl;
+            std::cout << std::endl << "flat_imgs:" << std::endl << flat_imgs << std::endl;
+            std::cout << std::endl << "rho:" << std::endl << rho << std::endl;
+            std::cout << std::endl << "sh:" << std::endl << sh << std::endl;
+            std::cout << std::endl << "s:" << std::endl << s << std::endl;
+            std::cout << std::endl << "weights:" << std::endl << weights << std::endl;
+            std::cout << std::endl << "z_vector_masked:" << std::endl << z_vector_masked << std::endl;
+            std::cout << std::endl << "zx:" << std::endl << zx << std::endl;
+            std::cout << std::endl << "zy:" << std::endl << zy << std::endl;
+            std::cout << std::endl << "u:" << std::endl << u << std::endl;
+            std::cout << std::endl << "drho:" << std::endl << drho << std::endl;
+            std::cout << std::endl << "xx:" << std::endl << xx << std::endl;
+            std::cout << std::endl << "yy:" << std::endl << yy << std::endl;
+            std::cout << std::endl << "Dx:" << std::endl << Dx << std::endl;
+            std::cout << std::endl << "Dy:" << std::endl << Dy << std::endl;
+            std::cout << std::endl << "beta:" << std::endl << beta << std::endl;
+        }
         auto depth_upd = updateDepth<T>(flat_imgs, rho, s, theta, z_vector_masked, zx, zy, u, weights, drho, K, xx, yy, Dx, Dy,
                                      3, beta, 10, 1000, 1e-10, 1000, sh_order);  // TODO pass
         z_vector_masked = std::get<0>(depth_upd);
@@ -202,9 +234,17 @@ ups_solver(
         zy = std::get<2>(depth_upd);
         dz = std::get<3>(depth_upd);
         N_unnormalized = std::get<4>(depth_upd);
-        sh = std::get<5>(depth_upd);
+        sh = std::get<5>(depth_upd);  // TODO remove
         //blaze::CompressedMatrix<T> J_dz = std::get<6>(depth_upd);
         //T res_z = std::get<7>(depth_upd);
+        if (console_debug_output) {
+            std::cout << "z_vector_masked updated: " << std::endl << z_vector_masked << std::endl << std::endl;
+            std::cout << "zx updated: " << std::endl << zx << std::endl << std::endl;
+            std::cout << "zy updated: " << std::endl << zy << std::endl << std::endl;
+            std::cout << "dz updated: " << std::endl << dz << std::endl << std::endl;
+            std::cout << "N_unnormalized updated: " << std::endl << N_unnormalized << std::endl << std::endl;
+            std::cout << "sh updated: " << std::endl << sh << std::endl << std::endl;
+        }
 
         // aux update
         theta = dz;
