@@ -193,11 +193,11 @@ updateLighting(
             //auto PInv = blaze::inv(blaze::trans(A) * A) * blaze::trans(A);  // no, we need pinv since matrix can be singular!
             //blaze::DynamicVector<T> s_ch = PInv * b;
 
-            blaze::DynamicVector<T> s_ch = blaze::solve(A, b);  // TODO disable
+            //blaze::DynamicVector<T> s_ch = blaze::solve(A, b);  // TODO disable
 
-//            std::vector<size_t> pcgIts = {};  // TODO enable
-//            auto Pre = blaze::IdentityMatrix<T>(A.rows());
-//            blaze::DynamicVector<T> s_ch = metric::pcg<T>(A, b, Pre, pcgIts, tol, maxit);  // TODO enable
+            std::vector<size_t> pcgIts = {};  // TODO enable
+            auto Pre = blaze::IdentityMatrix<T>(A.rows());
+            blaze::DynamicVector<T> s_ch = metric::pcg<T>(A, b, Pre, pcgIts, tol, maxit);  // TODO enable
 
 
             s_out[im].push_back(s_ch);

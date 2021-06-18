@@ -28,7 +28,7 @@ ups_solver(
         blaze::DynamicMatrix<T> K,
         std::vector<std::vector<blaze::DynamicMatrix<T, blaze::columnMajor>>> I,
         harmo_order sh_order = ho_low,
-        size_t maxit = 6, //20,  // main loop max iteration number
+        size_t maxit = 20,  // main loop max iteration number
         size_t c2f_lighting = 8,  // iter number where we switch to high sh_order
         T mu = 2e-6,
         T delta = 0.00045,
@@ -155,9 +155,16 @@ ups_solver(
 
     for (size_t it = 0; it < maxit; ++it) {
 
-        if (it == c2f_lighting && sh_order == ho_low) {  // switch lighting scheme sph harmо order
+        if (it == c2f_lighting - 1 && sh_order == ho_low) {  // switch lighting scheme sph harmо order
             sh_order = ho_high;
-            s = initS<T>(I[0].size(), I.size(), {0, 0, -1, 0.2, 0, 0, 0, 0, 0});
+            for (size_t i = 0; i < nimages; ++i) {
+                for (size_t c = 0; c < nchannels; ++c) {
+                    blaze::DynamicVector<T> v (9, 0);
+                    blaze::subvector(v, 0, s[i][c].size()) = s[i][c];
+                    s[i][c] = v;
+                }
+            }
+            //s = initS<T>(I[0].size(), I.size(), {0, 0, -1, 0.2, 0, 0, 0, 0, 0});
             for (size_t c = 0; c < N_unnormalized.columns(); ++c) {
                 blaze::column(normals_theta, c) = blaze::column(N_unnormalized, c) / theta;
             }
