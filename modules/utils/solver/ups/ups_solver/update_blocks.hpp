@@ -67,7 +67,9 @@ updateAlbedo(
         for (size_t im = 0; im < nimages; ++im) {
             // reweight[i][ch]
             auto Ns = N * s[im][ch];
+            //std::cout << "Ns:" << std::endl << Ns << std::endl << std::endl;
             blaze::DynamicVector<T> nnNs = map( Ns, [](T el) { return el > 0 ? el : 0; } );
+            //std::cout << "nnNs:" << std::endl << nnNs << std::endl << std::endl;
             blaze::DynamicVector<T> diag_values = blaze::sqrt(2*reweight[im][ch])*nnNs;
             //std::cout << "diag_values:" << std::endl << diag_values << std::endl << std::endl;
             blaze::CompressedMatrix<T> Ai (npix, npix);
@@ -86,13 +88,13 @@ updateAlbedo(
 
         //* // TODO debug and enable
         std::vector<size_t> pcgIts = {};
-        //auto Pre = blaze::IdentityMatrix<T>(A.rows());
-        blaze::CompressedMatrix<T> Pre (A.rows(), A.rows());
-        for (size_t p = 0; p<npix; ++p) {
-            T d_val = A(p, p);
-            d_val = d_val > 0 ? d_val : 1;
-            Pre(p, p) = d_val; // > 0 ? d_val : 1;
-        }
+        auto Pre = blaze::IdentityMatrix<T>(A.rows());
+//        blaze::CompressedMatrix<T> Pre (A.rows(), A.rows());
+//        for (size_t p = 0; p<npix; ++p) {
+//            T d_val = A(p, p);
+//            d_val = d_val > 0 ? d_val : 1;
+//            Pre(p, p) = d_val; // > 0 ? d_val : 1;
+//        }
         //std::cout << "Pre" << std::endl << Pre << std::endl << std::endl;
         //std::cout << std::endl << "starting PCG for albedo..." << std::endl;
 
@@ -109,7 +111,7 @@ updateAlbedo(
         auto end_time = std::chrono::steady_clock::now();
         std::cout << "PCG for albedo completed in " <<
                      double(std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count()) / 1000000 << " s" <<
-                     std::endl << std::endl;
+                     std::endl;
         // */
 
         /*
@@ -197,8 +199,12 @@ updateLighting(
 
             std::vector<size_t> pcgIts = {};  // TODO enable
             auto Pre = blaze::IdentityMatrix<T>(A.rows());
+            auto start_time = std::chrono::steady_clock::now(); // TODO disable
             blaze::DynamicVector<T> s_ch = metric::pcg<T>(A, b, Pre, pcgIts, tol, maxit);  // TODO enable
-
+            auto end_time = std::chrono::steady_clock::now();
+            std::cout << "PCG for lighting completed in " <<
+                         double(std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count()) / 1000000 << " s" <<
+                         std::endl;
 
             s_out[im].push_back(s_ch);
             res_s += blaze::norm(A * s_ch - b);
@@ -545,7 +551,13 @@ updateDepth(
 
         std::vector<size_t> pcgIts = {};
         auto L = blaze::IdentityMatrix<T>(F.rows());  // TODO replace with good preconditioner
+        auto start_time = std::chrono::steady_clock::now(); // TODO disable
         blaze::DynamicVector<T> z_step = metric::pcg<T>(F, b, L, pcgIts, pcg_tol, pcg_maxit);  // TODO debug, add tolerance and maxit
+        auto end_time = std::chrono::steady_clock::now();
+        std::cout << "PCG for depth completed in " <<
+                     double(std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count()) / 1000000 << " s" <<
+                     std::endl;
+
         //std::cout << "z_step:" << std::endl << z_step << std::endl << std::endl;    // TODO remove
 
         //z_step = {

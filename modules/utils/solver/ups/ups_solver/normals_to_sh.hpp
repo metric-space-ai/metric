@@ -61,7 +61,7 @@ normalsToSh(const blaze::DynamicMatrix<T> & normals, int harmo_order = ho_low) {
 
     T w0 = sqrt(3/(4*M_PI));
     T w3 = sqrt(1/(4*M_PI));
-    // normals * w1  // write to view, then write repeater w4 to the last col
+    // normals * w1  // write to view, then write repeated w4 to the last col
     auto c0 = blaze::column<0>(spherical_harmonics);
     auto c1 = blaze::column<1>(spherical_harmonics);
     auto c2 = blaze::column<2>(spherical_harmonics);
@@ -79,13 +79,13 @@ normalsToSh(const blaze::DynamicMatrix<T> & normals, int harmo_order = ho_low) {
         auto c8 = blaze::column<8>(spherical_harmonics);
         T w4 = 3*sqrt(5/(12*M_PI));
         T w5 = 3*sqrt(5/(12*M_PI));
-        T w7 = 3/2*sqrt(5/(12*M_PI));
+        T w7 = 0.5*w5; // 3/2.0*sqrt(5/(12*M_PI));
         T w8 = 0.5*sqrt(5/(4*M_PI));
-        c4 = w4 * blaze::column<0>(spherical_harmonics) * blaze::column<1>(spherical_harmonics); // elementwise multiplication
-        c5 = w5 * blaze::column<0>(spherical_harmonics) * blaze::column<2>(spherical_harmonics);
-        c6 = w5 * blaze::column<1>(spherical_harmonics) * blaze::column<2>(spherical_harmonics);
-        c7 = w7 * blaze::pow(blaze::column<0>(spherical_harmonics), 2) - blaze::pow(blaze::column<1>(spherical_harmonics), 2);
-        c8 = w8 * (blaze::pow(3 * blaze::column<2>(spherical_harmonics), 2) - 1);
+        c4 = w4 * blaze::column<0>(normals) * blaze::column<1>(normals); // elementwise multiplication
+        c5 = w5 * blaze::column<0>(normals) * blaze::column<2>(normals);
+        c6 = w5 * blaze::column<1>(normals) * blaze::column<2>(normals);
+        c7 = w7 * (blaze::pow(blaze::column<0>(normals), 2) - blaze::pow(blaze::column<1>(normals), 2));
+        c8 = w8 * (3 * blaze::pow(blaze::column<2>(normals), 2) - 1);
     }
 
     //std::cout << "sph harm:\n" << spherical_harmonics << "\n\n";

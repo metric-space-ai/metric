@@ -41,7 +41,7 @@ int main()
     std::cout << "normals multiplied:\n" << normals << "\n\n";
     std::cout << "unnormalized:\n" << std::get<2>(res) << "\n\n";
 
-    blaze::DynamicMatrix<float> sph_harm = normalsToSh(normals);
+    blaze::DynamicMatrix<float> sph_harm = normalsToSh(normals, ho_high);
 
     std::cout << "sph harmonics:\n" << sph_harm << "\n\n";
 

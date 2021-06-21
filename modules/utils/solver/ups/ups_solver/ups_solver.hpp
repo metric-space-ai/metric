@@ -43,7 +43,7 @@ ups_solver(
         )
 {
 
-    bool console_debug_output = true;//false; //true;  // TODO remove
+    bool console_debug_output = false; //true;  // TODO remove
 
     size_t img_h = Z_init.rows();
     size_t img_w = Z_init.columns();
@@ -276,6 +276,14 @@ ups_solver(
     }  // for (size_t it = 0; it < maxit; ++it) // end main loop
 
     // output
+    if (console_debug_output) {  // TODO remove
+        std::cout << std::endl << "final:" << std::endl;
+        std::cout << std::endl << "z_vector_masked:" << std::endl << z_vector_masked << std::endl;
+        std::cout << std::endl << "rho:" << std::endl << rho << std::endl;
+        //std::cout << std::endl << "sh:" << std::endl << sh << std::endl;
+        //std::cout << std::endl << "s:" << std::endl << s << std::endl;
+    }
+
     auto z_out = vecToImage<T>(z_vector_masked, Mask, img_h, img_w);
     std::vector<blaze::DynamicMatrix<T>> rho_out = {};
     for (size_t ch = 0; ch < rho.size(); ++ch) {
