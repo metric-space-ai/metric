@@ -156,8 +156,8 @@ depthToNormals(
 
 
 template <typename T>
-//std::tuple<std::vector<blaze::CompressedMatrix<T>>, blaze::CompressedMatrix<T>>
-std::tuple<std::vector<blaze::DynamicMatrix<T>>, blaze::DynamicMatrix<T>>
+std::tuple<std::vector<blaze::CompressedMatrix<T>>, blaze::CompressedMatrix<T>>
+//std::tuple<std::vector<blaze::DynamicMatrix<T>>, blaze::DynamicMatrix<T>>
 calcJacobian(
         const blaze::DynamicMatrix<T> & normals,
         const blaze::DynamicVector<T> & z_vector_masked,
@@ -175,10 +175,10 @@ calcJacobian(
     auto J_n_un_2 = K(1, 1) * Dy;
     auto eye = blaze::IdentityMatrix<T, blaze::columnMajor>(npix);
 
-    //blaze::CompressedMatrix<T> xx_diag (xx.size(), xx.size());
-    //blaze::CompressedMatrix<T> yy_diag (xx.size(), xx.size());
-    blaze::DynamicMatrix<T> xx_diag (xx.size(), xx.size(), 0);
-    blaze::DynamicMatrix<T> yy_diag (xx.size(), xx.size(), 0);
+    blaze::CompressedMatrix<T> xx_diag (xx.size(), xx.size());
+    blaze::CompressedMatrix<T> yy_diag (xx.size(), xx.size());
+    //blaze::DynamicMatrix<T> xx_diag (xx.size(), xx.size(), 0);
+    //blaze::DynamicMatrix<T> yy_diag (xx.size(), xx.size(), 0);
 
     {
         auto diag = blaze::diagonal(xx_diag);
@@ -197,12 +197,12 @@ calcJacobian(
     //std::cout << std::endl << "term2:" << std::endl << term2 << std::endl;
     //std::cout << std::endl << "J_n_un_3:" << std::endl << J_n_un_3 << std::endl;
 
-    //blaze::CompressedMatrix<T> x_scale (npix, npix);
-    //blaze::CompressedMatrix<T> y_scale (npix, npix);
-    //blaze::CompressedMatrix<T> z_scale (npix, npix);
-    blaze::DynamicMatrix<T> x_scale (npix, npix, 0);
-    blaze::DynamicMatrix<T> y_scale (npix, npix, 0);
-    blaze::DynamicMatrix<T> z_scale (npix, npix, 0);
+    blaze::CompressedMatrix<T> x_scale (npix, npix);
+    blaze::CompressedMatrix<T> y_scale (npix, npix);
+    blaze::CompressedMatrix<T> z_scale (npix, npix);
+    //blaze::DynamicMatrix<T> x_scale (npix, npix, 0);
+    //blaze::DynamicMatrix<T> y_scale (npix, npix, 0);
+    //blaze::DynamicMatrix<T> z_scale (npix, npix, 0);
 
     {
         auto diag = blaze::diagonal(x_scale);
@@ -217,14 +217,14 @@ calcJacobian(
         diag = blaze::column(normals, 2);
     }
 
-    //blaze::CompressedMatrix<T> J_dz =
-    blaze::DynamicMatrix<T> J_dz =
+    blaze::CompressedMatrix<T> J_dz =
+    //blaze::DynamicMatrix<T> J_dz =
             x_scale * J_n_un_1 +
             y_scale * J_n_un_2 +
             z_scale * J_n_un_3;
 
-    //std::vector<blaze::CompressedMatrix<T>> J_n_un (3);
-    std::vector<blaze::DynamicMatrix<T>> J_n_un (3);
+    std::vector<blaze::CompressedMatrix<T>> J_n_un (3);
+    //std::vector<blaze::DynamicMatrix<T>> J_n_un (3);
     J_n_un[0] = J_n_un_1;
     J_n_un[1] = J_n_un_2;
     J_n_un[2] = J_n_un_3;

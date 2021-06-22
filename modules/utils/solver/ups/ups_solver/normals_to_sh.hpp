@@ -95,17 +95,17 @@ normalsToSh(const blaze::DynamicMatrix<T> & normals, int harmo_order = ho_low) {
 // */
 
 template <typename T>
-//std::vector<blaze::CompressedMatrix<T>>
-std::vector<blaze::DynamicMatrix<T>>
+std::vector<blaze::CompressedMatrix<T>>
+//std::vector<blaze::DynamicMatrix<T>>
 calcJacobianWrtNormals(
         const blaze::DynamicMatrix<T> normals,
         int harmo_order,
-        //const blaze::CompressedMatrix<T> & J_n_0,
-        //const blaze::CompressedMatrix<T> & J_n_1,
-        //const blaze::CompressedMatrix<T> & J_n_2
-        const blaze::DynamicMatrix<T> & J_n_0,
-        const blaze::DynamicMatrix<T> & J_n_1,
-        const blaze::DynamicMatrix<T> & J_n_2
+        const blaze::CompressedMatrix<T> & J_n_0,
+        const blaze::CompressedMatrix<T> & J_n_1,
+        const blaze::CompressedMatrix<T> & J_n_2
+        //const blaze::DynamicMatrix<T> & J_n_0,
+        //const blaze::DynamicMatrix<T> & J_n_1,
+        //const blaze::DynamicMatrix<T> & J_n_2
         )
 {
     int nb_harmo = 9;
@@ -115,17 +115,17 @@ calcJacobianWrtNormals(
     T w0 = sqrt(3/(4*M_PI));
     T w3 = sqrt(1/(4*M_PI));
 
-    //blaze::CompressedMatrix<T> J_sh_0 = w0 * J_n_0;
-    //blaze::CompressedMatrix<T> J_sh_1 = w0 * J_n_1;
-    //blaze::CompressedMatrix<T> J_sh_2 = w0 * J_n_2;
-    //blaze::CompressedMatrix<T> J_sh_3 (J_n_0.rows(), J_n_0.columns());
-    blaze::DynamicMatrix<T> J_sh_0 = w0 * J_n_0;
-    blaze::DynamicMatrix<T> J_sh_1 = w0 * J_n_1;
-    blaze::DynamicMatrix<T> J_sh_2 = w0 * J_n_2;
-    blaze::DynamicMatrix<T> J_sh_3 (J_n_0.rows(), J_n_0.columns(), 0);
+    blaze::CompressedMatrix<T> J_sh_0 = w0 * J_n_0;
+    blaze::CompressedMatrix<T> J_sh_1 = w0 * J_n_1;
+    blaze::CompressedMatrix<T> J_sh_2 = w0 * J_n_2;
+    blaze::CompressedMatrix<T> J_sh_3 (J_n_0.rows(), J_n_0.columns());
+    //blaze::DynamicMatrix<T> J_sh_0 = w0 * J_n_0;
+    //blaze::DynamicMatrix<T> J_sh_1 = w0 * J_n_1;
+    //blaze::DynamicMatrix<T> J_sh_2 = w0 * J_n_2;
+    //blaze::DynamicMatrix<T> J_sh_3 (J_n_0.rows(), J_n_0.columns(), 0);
 
-    //std::vector<blaze::CompressedMatrix<T>> J = {J_sh_0, J_sh_1, J_sh_2, J_sh_3};
-    std::vector<blaze::DynamicMatrix<T>> J = {J_sh_0, J_sh_1, J_sh_2, J_sh_3};
+    std::vector<blaze::CompressedMatrix<T>> J = {J_sh_0, J_sh_1, J_sh_2, J_sh_3};
+    //std::vector<blaze::DynamicMatrix<T>> J = {J_sh_0, J_sh_1, J_sh_2, J_sh_3};
 
     if (harmo_order != ho_low) {
         T w4 = 3*sqrt(5/(12*M_PI));
@@ -134,25 +134,25 @@ calcJacobianWrtNormals(
         T w8 = 0.5*sqrt(5/(4*M_PI));
 
         // add diag
-        //blaze::CompressedMatrix<T> N0 (normals.rows(), normals.rows());
-        //blaze::CompressedMatrix<T> N1 (normals.rows(), normals.rows());
-        //blaze::CompressedMatrix<T> N2 (normals.rows(), normals.rows());
-        blaze::DynamicMatrix<T> N0 (normals.rows(), normals.rows(), 0);
-        blaze::DynamicMatrix<T> N1 (normals.rows(), normals.rows(), 0);
-        blaze::DynamicMatrix<T> N2 (normals.rows(), normals.rows(), 0);
+        blaze::CompressedMatrix<T> N0 (normals.rows(), normals.rows());
+        blaze::CompressedMatrix<T> N1 (normals.rows(), normals.rows());
+        blaze::CompressedMatrix<T> N2 (normals.rows(), normals.rows());
+        //blaze::DynamicMatrix<T> N0 (normals.rows(), normals.rows(), 0);
+        //blaze::DynamicMatrix<T> N1 (normals.rows(), normals.rows(), 0);
+        //blaze::DynamicMatrix<T> N2 (normals.rows(), normals.rows(), 0);
         blaze::diagonal(N0) = blaze::column(normals, 0);
         blaze::diagonal(N1) = blaze::column(normals, 1);
         blaze::diagonal(N2) = blaze::column(normals, 2);
-        //blaze::CompressedMatrix<T> J_sh_4 = w4 * (N1 * J_n_0 + N0 * J_n_1);
-        //blaze::CompressedMatrix<T> J_sh_5 = w4 * (N2 * J_n_0 + N0 * J_n_2);
-        //blaze::CompressedMatrix<T> J_sh_6 = w5 * (N2 * J_n_1 + N1 * J_n_2);
-        //blaze::CompressedMatrix<T> J_sh_7 = 2 * w7 * (N0 * J_n_0 - N1 * J_n_1);
-        //blaze::CompressedMatrix<T> J_sh_8 = 6 * w8 * N2 * J_n_2;
-        blaze::DynamicMatrix<T> J_sh_4 = w4 * (N1 * J_n_0 + N0 * J_n_1);
-        blaze::DynamicMatrix<T> J_sh_5 = w4 * (N2 * J_n_0 + N0 * J_n_2);
-        blaze::DynamicMatrix<T> J_sh_6 = w5 * (N2 * J_n_1 + N1 * J_n_2);
-        blaze::DynamicMatrix<T> J_sh_7 = 2 * w7 * (N0 * J_n_0 - N1 * J_n_1);
-        blaze::DynamicMatrix<T> J_sh_8 = 6 * w8 * N2 * J_n_2;
+        blaze::CompressedMatrix<T> J_sh_4 = w4 * (N1 * J_n_0 + N0 * J_n_1);
+        blaze::CompressedMatrix<T> J_sh_5 = w4 * (N2 * J_n_0 + N0 * J_n_2);
+        blaze::CompressedMatrix<T> J_sh_6 = w5 * (N2 * J_n_1 + N1 * J_n_2);
+        blaze::CompressedMatrix<T> J_sh_7 = 2 * w7 * (N0 * J_n_0 - N1 * J_n_1);
+        blaze::CompressedMatrix<T> J_sh_8 = 6 * w8 * N2 * J_n_2;
+        //blaze::DynamicMatrix<T> J_sh_4 = w4 * (N1 * J_n_0 + N0 * J_n_1);
+        //blaze::DynamicMatrix<T> J_sh_5 = w4 * (N2 * J_n_0 + N0 * J_n_2);
+        //blaze::DynamicMatrix<T> J_sh_6 = w5 * (N2 * J_n_1 + N1 * J_n_2);
+        //blaze::DynamicMatrix<T> J_sh_7 = 2 * w7 * (N0 * J_n_0 - N1 * J_n_1);
+        //blaze::DynamicMatrix<T> J_sh_8 = 6 * w8 * N2 * J_n_2;
         J.push_back(J_sh_4);
         J.push_back(J_sh_5);
         J.push_back(J_sh_6);

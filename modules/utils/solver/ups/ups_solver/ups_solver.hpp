@@ -213,6 +213,7 @@ ups_solver(
         if (console_debug_output) {
             std::cout << "s updated: " << std::endl << s << std::endl << std::endl;
         }
+        //std::cout << "s updated" << std::endl;  // TODO remove
 
         // depth update
         weights = calcReweighting(rho, sh, s, flat_imgs, lambda);
@@ -234,6 +235,7 @@ ups_solver(
             std::cout << std::endl << "Dy:" << std::endl << Dy << std::endl;
             std::cout << std::endl << "beta:" << std::endl << beta << std::endl;
         }
+        //std::cout << "weights updated" << std::endl;  // TODO remove
         auto depth_upd = updateDepth<T>(flat_imgs, rho, s, theta, z_vector_masked, zx, zy, u, weights, drho, K, xx, yy, Dx, Dy,
                                      3, beta, 10, 1000, 1e-10, 1000, sh_order);  // TODO pass
         z_vector_masked = std::get<0>(depth_upd);
