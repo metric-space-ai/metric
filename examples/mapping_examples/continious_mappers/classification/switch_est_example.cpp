@@ -81,6 +81,47 @@ blaze::DynamicMatrix<ValueType, blaze::rowMajor> read_csv_blaze(const std::strin
 
 
 
+template <class ContainerType>
+void v_to_csv(const ContainerType data, const std::string filename)  // single column
+{
+    std::ofstream outputFile;
+    outputFile.open(filename);
+        for (auto i = 0; i < data.size(); ++i) {
+            outputFile << std::to_string(data[i]);
+            outputFile << std::endl;
+        }
+        outputFile.close();
+}
+
+
+
+template <class ValueType>
+std::vector<std::vector<ValueType>> read_csv_num(const std::string filename, const std::string sep=",")
+{ // code dubbing with read_csv, TODO unify and remove one of these functions
+    typedef typename std::vector<ValueType> LINE;
+    std::string line;
+    int pos;
+    std::vector<std::vector<ValueType>> array = {};
+    std::ifstream in(filename);
+    if(!in.is_open()) {
+        std::cout << "Failed to open file" << std::endl;
+        return array;
+    }
+    while( getline(in,line) ) {
+        LINE ln;
+        while( (pos = line.find(sep)) >= 0) {
+            std::string field = line.substr(0, pos);
+            line = line.substr(pos+1);
+            ln.push_back(convert_to<ValueType>(field));
+        }
+        ln.push_back(convert_to<ValueType>(line));
+        array.push_back(ln);
+    }
+    return array;
+}
+
+
+
 
 
 
@@ -88,15 +129,13 @@ blaze::DynamicMatrix<ValueType, blaze::rowMajor> read_csv_blaze(const std::strin
 int main()
 {
 
-    using value_type = double;
-
-
-    std::cout << "started" << std::endl << std::endl;
+    using value_type = float; //double;
 
 
 
-    // dataset passed as Blaze matrix, data points in COLUMNS
+    // Blaze example: dataset passed as Blaze matrix, data points in COLUMNS
 
+    // read dataset and save model
     {
         auto start_time = std::chrono::steady_clock::now();
 
@@ -108,7 +147,8 @@ int main()
         blaze::column(labels, 0) = blaze::column(ds_in, 4);
 
         //auto model = SwitchPredictor<value_type>(training_ds, labels);
-        auto model = SwitchPredictor<value_type>(training_ds, labels, 15, 150, 100, 0.2, 0.4, 0.5);
+        //auto model = SwitchPredictor<value_type>(training_ds, labels, 15, 150, 100, 0.2, 0.4, 0.5);
+        auto model = SwitchPredictor<value_type>(training_ds, labels, 15, 80, 100, 0.2, 0.4);
         // training_data, labels, wnd_size, cmp_wnd_sz, washout, contrast_threshold, alpha, beta
 
         auto end_time = std::chrono::steady_clock::now();
@@ -119,7 +159,7 @@ int main()
         model.save("tmp.blaze");
     }
 
-
+    // load and apply the model
     {
         auto model = SwitchPredictor<value_type>("tmp.blaze");
 
@@ -131,7 +171,7 @@ int main()
 
         auto est = model.encode(ds);
 
-        blaze_dm_to_csv(est, "estimation.csv");
+        blaze_dm_to_csv(est, "estimation1.csv");
 
         auto end_time = std::chrono::steady_clock::now();
         std::cout << "estimation completed in " <<
@@ -148,6 +188,76 @@ int main()
                      "beta: " << std::get<5>(params) << std::endl;
     }
 
+
+
+
+    // STL example, same with data sored in STL container
+    std::cout << std::endl << std::endl << std::endl << " ---- the same with STL vectors: " << std::endl << std::endl;
+
+    // read dataset and save model
+    {
+        auto start_time = std::chrono::steady_clock::now();
+
+        std::vector<std::vector<value_type>> ds = read_csv_num<value_type>("training_ds_1_fragm.csv"); //, ",", 10000);
+        std::vector<std::vector<value_type>> labels = {};
+        for (size_t i = 0; i < ds.size(); ++i) {
+            std::vector<value_type> el = ds[i];
+            std::vector<value_type> l = {el[4]};
+            labels.push_back(l);
+            ds[i] = {el[1], el[2], el[3]}; // remove 1st and last columns
+        }
+
+        auto model = SwitchPredictor<value_type>(ds, labels);
+
+        model.save("tmp2.blaze");
+
+        auto end_time = std::chrono::steady_clock::now();
+        std::cout << "training completed in " <<
+                     double(std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count()) / 1000000 << " s" <<
+                     std::endl << std::endl;
+
+
+    }
+
+    // load and apply the model
+    {
+        auto start_time = std::chrono::steady_clock::now();
+
+        auto model = SwitchPredictor<value_type>("tmp2.blaze");
+
+        auto end_time = std::chrono::steady_clock::now();
+        std::cout << "model loaded in " <<
+                     double(std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count()) / 1000000 << " s" <<
+                     std::endl << std::endl;
+
+
+
+        start_time = std::chrono::steady_clock::now();
+
+        std::vector<std::vector<value_type>> ds = read_csv_num<value_type>("training_ds_2_fragm.csv"); //, ",", 10000);
+        for (size_t i = 0; i < ds.size(); ++i) {
+            std::vector<value_type> el = ds[i];
+            ds[i] = {el[1], el[2], el[3]}; // remove 1st and last columns
+        }
+
+        auto est = model.encode(ds);
+
+        v_to_csv(est, "estimation2.csv");
+
+        end_time = std::chrono::steady_clock::now();
+        std::cout << "estimation completed in " <<
+                     double(std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count()) / 1000000 << " s" <<
+                     std::endl << std::endl;
+
+        auto params = model.get_parameters();
+        std::cout << std::endl << "used parameters: " << std::endl <<
+                     "wnd_size: " << std::get<0>(params) << std::endl <<
+                     "cmp_wnd_sz: " << std::get<1>(params) << std::endl <<
+                     "washout: " << std::get<2>(params) << std::endl <<
+                     "contrast_threshold: " << std::get<3>(params) << std::endl <<
+                     "alpha: " << std::get<4>(params) << std::endl <<
+                     "beta: " << std::get<5>(params) << std::endl;
+    }
 
 
     return 0;
