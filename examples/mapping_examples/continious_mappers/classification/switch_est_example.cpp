@@ -132,6 +132,14 @@ int main()
     using value_type = float; //double;
 
 
+    // In all examples the input files must be comma-separated .scv of the following format:
+    // timestamp,r,g,b,label
+    // e.g.:
+    // 1618830448306,1089,1396,1400,0
+    // no header is expected in the file
+    // When files are used for prediction, labels are ignored.
+
+
 
     // Blaze example: dataset passed as Blaze matrix, data points in COLUMNS
 
