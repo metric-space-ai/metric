@@ -28,11 +28,11 @@ updateAlbedo(
         const std::vector<std::vector<blaze::DynamicVector<T>>> & reweight,
         const blaze::CompressedMatrix<T> & G,
         //const blaze::DynamicMatrix<T> & G,
-        T huber,
-        T mu,
-        bool regular,
-        float tol,  // TODO check type!!
-        float maxit    // TODO check type!!
+        const T huber,
+        const T mu,
+        const bool regular,
+        const float tol,  // TODO check type!!
+        const float maxit    // TODO check type!!
         )
 {
 
@@ -88,13 +88,13 @@ updateAlbedo(
 
         //* // TODO debug and enable
         std::vector<size_t> pcgIts = {};
-        auto Pre = blaze::IdentityMatrix<T>(A.rows());
-//        blaze::CompressedMatrix<T> Pre (A.rows(), A.rows());
-//        for (size_t p = 0; p<npix; ++p) {
-//            T d_val = A(p, p);
-//            d_val = d_val > 0 ? d_val : 1;
-//            Pre(p, p) = d_val; // > 0 ? d_val : 1;
-//        }
+//        auto Pre = blaze::IdentityMatrix<T>(A.rows());
+        blaze::CompressedMatrix<T> Pre (A.rows(), A.rows());
+        for (size_t p = 0; p<npix; ++p) {
+            T d_val = A(p, p);
+            d_val = d_val > 0 ? d_val : 1;
+            Pre(p, p) = d_val; // > 0 ? d_val : 1;
+        }
         //std::cout << "Pre" << std::endl << Pre << std::endl << std::endl;
         //std::cout << std::endl << "starting PCG for albedo..." << std::endl;
 
@@ -144,8 +144,8 @@ updateLighting(
         const blaze::DynamicMatrix<T> & N,  // sh
         const std::vector<std::vector<blaze::DynamicVector<T>>> & s,
         const std::vector<std::vector<blaze::DynamicVector<T>>> & reweight,
-        float tol,  //T nb_nonsingular  // TODO check type!!
-        float maxit    // TODO check type!!
+        const float tol,  //T nb_nonsingular  // TODO check type!!
+        const float maxit    // TODO check type!!
 
         )
 {
@@ -199,6 +199,13 @@ updateLighting(
 
             std::vector<size_t> pcgIts = {};  // TODO enable
             auto Pre = blaze::IdentityMatrix<T>(A.rows());
+//            blaze::CompressedMatrix<T> Pre (A.rows(), A.rows());
+//            for (size_t p = 0; p<A.rows(); ++p) {
+//                T d_val = A(p, p);
+//                d_val = d_val > 0 ? d_val : 1;
+//                Pre(p, p) = d_val; // > 0 ? d_val : 1;
+//            }
+
             auto start_time = std::chrono::steady_clock::now(); // TODO disable
             blaze::DynamicVector<T> s_ch = metric::pcg<T>(A, b, Pre, pcgIts, tol, maxit);  // TODO enable
             auto end_time = std::chrono::steady_clock::now();
@@ -251,8 +258,8 @@ calcEnergyPhotometricTerm(
         //const std::vector<blaze::DynamicMatrix<T>> & J_n_un,
         //const blaze::DynamicMatrix<T> & J_dz,
         // params, options
-        T beta, // = 5e-4
-        harmo_order ho = ho_low
+        const T beta, // = 5e-4
+        const harmo_order ho = ho_low
         )
 {
     //std::cout << std::endl << "entered calcEnergyPhotometricTerm" << std::endl;  // TODO remove
@@ -449,13 +456,13 @@ updateDepth(
         const blaze::CompressedMatrix<T> & Dy,
         //const blaze::DynamicMatrix<T> & Dx,
         //const blaze::DynamicMatrix<T> & Dy,
-        size_t maxit = 3,  // option options.LinS.maxit,
-        T beta = 5e-4,
-        T t = 10,
-        size_t maxit_linesearch = 1000,
-        float pcg_tol = 1e-10,
-        float pcg_maxit = 1000,
-        harmo_order sh_order = ho_low
+        const size_t maxit = 3,  // option options.LinS.maxit,
+        const T beta = 5e-4,
+        const T t_ = 10,
+        const size_t maxit_linesearch = 1000,
+        const float pcg_tol = 1e-10,
+        const float pcg_maxit = 1000,
+        const harmo_order sh_order = ho_low
         )
 {
 
@@ -464,6 +471,8 @@ updateDepth(
     size_t nimages = flat_imgs.size();
     size_t nchannels = flat_imgs[0].size();
     //size_t npix = flat_imgs[0][0].size();
+
+    T t = t_;
 
     blaze::DynamicVector<T> z0 = z_vector_masked;
     blaze::DynamicVector<T> z_last;
@@ -478,15 +487,23 @@ updateDepth(
 //    blaze::CompressedMatrix<T> Dx = std::get<5>(gradients);
 //    blaze::CompressedMatrix<T> Dy = std::get<6>(gradients);
 
-    auto normals = getNormalMap<T>(z_vector_masked, zx, zy, K, xx, yy);
-    auto N_unnormalized = std::get<2>(normals);
-    auto dz = std::get<1>(normals);
+//    auto normals = getNormalMap<T>(z_vector_masked, zx, zy, K, xx, yy);
+//    auto N_unnormalized = std::get<2>(normals);
+//    auto dz = std::get<1>(normals);
+//    blaze::DynamicMatrix<T> N_normalized = std::get<0>(normals);
+    //blaze::DynamicMatrix<T, blaze::columnMajor> N_unnormalized = pix_normals(z_vector_masked, zx, zy, xx, yy, K);
+    blaze::DynamicMatrix<T> N_unnormalized = pix_normals(z_vector_masked, zx, zy, xx, yy, K);
+    blaze::DynamicVector<T> dz = blaze::sqrt(blaze::sum<blaze::rowwise>(N_unnormalized % N_unnormalized)); // TODO compare to Eps if needed
+    blaze::DynamicMatrix<T> N_normalized = normalize_normals(N_unnormalized, dz);
 
     //std::cout << std::endl << "N_unnormalized:" << std::endl << N_unnormalized << std::endl;
     //std::cout << std::endl << "theta:" << std::endl << theta << std::endl;
     //std::cout << "dz computed" << std::endl;  // TODO remove
 
-    auto Jac = calcJacobian<float>(std::get<0>(normals), z_vector_masked, K, xx, yy, Dx, Dy);
+
+
+    //auto Jac = calcJacobian<float>(normalize_normals(N_unnormalized, dz), z_vector_masked, K, xx, yy, Dx, Dy);
+    auto Jac = calcJacobian<float>(N_normalized, z_vector_masked, K, xx, yy, Dx, Dy);
     auto J_dz = std::get<1>(Jac);
     auto J_n_un = std::get<0>(Jac);
     //std::cout << "J_dz computed" << std::endl;  // TODO remove
@@ -578,9 +595,15 @@ updateDepth(
         //std::cout << std::endl << "L:" << std::endl << L << std::endl;
 
         std::vector<size_t> pcgIts = {};
-        auto L = blaze::IdentityMatrix<T>(F.rows());  // TODO replace with good preconditioner
+//        auto Pre = blaze::IdentityMatrix<T>(F.rows());  // TODO replace with good preconditioner
+        blaze::CompressedMatrix<T> Pre (F.rows(), F.rows());
+        for (size_t p = 0; p<F.rows(); ++p) {
+            T d_val = F(p, p);
+            d_val = d_val > 0 ? d_val : 1;
+            Pre(p, p) = d_val; // > 0 ? d_val : 1;
+        }
         auto start_time = std::chrono::steady_clock::now(); // TODO disable
-        blaze::DynamicVector<T> z_step = metric::pcg<T>(F, b, L, pcgIts, pcg_tol, pcg_maxit);  // TODO debug, add tolerance and maxit
+        blaze::DynamicVector<T> z_step = metric::pcg<T>(F, b, Pre, pcgIts, pcg_tol, pcg_maxit);  // TODO debug, add tolerance and maxit
         auto end_time = std::chrono::steady_clock::now();
         std::cout << "PCG for depth completed in " <<
                      double(std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count()) / 1000000 << " s" <<
@@ -610,9 +633,12 @@ updateDepth(
             //depthToNormals
             blaze::DynamicVector<T> zx_ = Dx*z;
             blaze::DynamicVector<T> zy_ = Dy*z;
-            auto nm = getNormalMap(z, zx_, zy_, K, xx, yy);
-            auto dz = std::get<1>(nm);
-            N_unnormalized = std::get<2>(nm);
+//            auto nm = getNormalMap(z, zx_, zy_, K, xx, yy);
+//            auto dz = std::get<1>(nm);
+//            N_unnormalized = std::get<2>(nm);
+            N_unnormalized = pix_normals(z, zx, zy, xx, yy, K);
+            blaze::DynamicVector<T> dz = blaze::sqrt(blaze::sum<blaze::rowwise>(N_unnormalized % N_unnormalized)); // TODO compare to Eps if needed
+
             //normals_theta  = blaze::DynamicMatrix<T>(N_unnormalized.rows(), N_unnormalized.columns());
             for (size_t c = 0; c < N_unnormalized.columns(); ++c) {
                 blaze::column(normals_theta, c) = blaze::column(N_unnormalized, c) / theta;
@@ -657,9 +683,22 @@ updateDepth(
                 //depthToNormals
                 zx = Dx*z0; // updated zx, zy will be returned
                 zy = Dy*z0;
-                nm = getNormalMap(z0, zx, zy, K, xx, yy);
-                dz = std::get<1>(nm);
-                N_unnormalized = std::get<2>(nm);
+//                auto nm = getNormalMap(z0, zx, zy, K, xx, yy);
+//                dz = std::get<1>(nm);
+//                N_unnormalized = std::get<2>(nm);
+//                blaze::DynamicMatrix<T> N_normalized = std::get<0>(nm);
+                N_unnormalized = pix_normals(z0, zx, zy, xx, yy, K);
+                dz = blaze::sqrt(blaze::sum<blaze::rowwise>(N_unnormalized % N_unnormalized)); // TODO compare to Eps if needed
+                blaze::DynamicMatrix<T> N_normalized = normalize_normals(N_unnormalized, dz);
+//                auto N_unnormalized2 = pix_normals(z0, zx, zy, xx, yy, K);
+//                blaze::DynamicVector<T> dz2 = blaze::sqrt(blaze::sum<blaze::rowwise>(N_unnormalized % N_unnormalized)); // TODO compare to Eps if needed
+//                blaze::DynamicMatrix<T> N_normalized2 = normalize_normals(N_unnormalized, dz);
+//                std::cout << "N_unnormalized diff: " << std::endl << N_unnormalized - N_unnormalized2 << std::endl;  // TODO remove
+//                std::cout << "dz diff: " << std::endl << dz - dz2 << std::endl;  // TODO remove
+//                std::cout << "N_normalized diff: " << std::endl << N_normalized - N_normalized2 << std::endl;  // TODO remove
+
+
+
                 //normals_theta = blaze::DynamicMatrix<T>(N_unnormalized.rows(), N_unnormalized.columns()); // TODO remove
                 for (size_t c = 0; c < N_unnormalized.columns(); ++c) {
                     blaze::column(normals_theta, c) = blaze::column(N_unnormalized, c) / theta;
@@ -673,7 +712,8 @@ updateDepth(
                 //std::cout << "N_unnormalized iter:" << std::endl << N_unnormalized << std::endl << std::endl;
                 //std::cout << "normals_theta iter:" << std::endl << normals_theta << std::endl << std::endl;
 
-                Jac = calcJacobian<float>(std::get<0>(nm), z0, K, xx, yy, Dx, Dy);
+                //Jac = calcJacobian<float>(normalize_normals(N_unnormalized, dz), z0, K, xx, yy, Dx, Dy);
+                Jac = calcJacobian<float>(N_normalized, z0, K, xx, yy, Dx, Dy);
                 J_dz = std::get<1>(Jac);
                 J_n_un = std::get<0>(Jac);  // for next iter
 

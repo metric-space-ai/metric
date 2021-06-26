@@ -45,7 +45,7 @@ initRho(const std::vector<std::vector<blaze::DynamicMatrix<T, blaze::columnMajor
 
 template <typename T>
 std::vector<std::vector<blaze::DynamicVector<T>>>
-initS(size_t nchannels, size_t nimages, blaze::DynamicVector<T> v = {0, 0, -1, 0.2}) {
+initS(const size_t nchannels, const size_t nimages, const blaze::DynamicVector<T> v = {0, 0, -1, 0.2}) {
 
     std::vector<std::vector<blaze::DynamicVector<T>>> s = {};
     for (size_t i = 0; i < nimages; ++i) {

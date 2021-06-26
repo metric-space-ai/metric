@@ -24,21 +24,21 @@ std::tuple<blaze::DynamicMatrix<T>, std::vector<blaze::DynamicMatrix<T>>, std::v
 ups_solver(
         const blaze::DynamicMatrix<T, blaze::columnMajor> & Z_init,
         //blaze::CompressedMatrix<bool, blaze::columnMajor> Mask,
-        blaze::DynamicMatrix<bool, blaze::columnMajor> Mask,
-        blaze::DynamicMatrix<T> K,
-        std::vector<std::vector<blaze::DynamicMatrix<T, blaze::columnMajor>>> I,
-        harmo_order sh_order = ho_low,
-        size_t maxit = 20,  // main loop max iteration number
-        size_t c2f_lighting = 8,  // iter number where we switch to high sh_order
-        T mu = 2e-6,
-        T delta = 0.00045,
-        T huber = 0.1,
-        bool regular = true,
-        T tol = 1e-5, // 1e-10,
-        size_t pcg_maxit = 50, //1000, //1e3,
-        T beta = 5e-4, // TODO trace, make structure!!!
-        T kappa = 1.5,
-        T lambda = 1
+        const blaze::DynamicMatrix<bool, blaze::columnMajor> & Mask,
+        const blaze::DynamicMatrix<T> & K,
+        const std::vector<std::vector<blaze::DynamicMatrix<T, blaze::columnMajor>>> & I,
+        const harmo_order sh_order_ = ho_low,
+        const size_t maxit = 20,  // main loop max iteration number
+        const size_t c2f_lighting = 8,  // iter number where we switch to high sh_order
+        const T mu_ = 2e-6,
+        const T delta = 0.00045,
+        const T huber = 0.1,
+        const bool regular = true,
+        const T tol = 1e-5, // 1e-10,
+        const size_t pcg_maxit = 50, //1000, //1e3,
+        const T beta_ = 5e-4, // TODO trace, make structure!!!
+        const T kappa_ = 1.5,
+        const T lambda = 1
         //T delta = 4.5e-4 // parameter for computing  the weight for cauchy estimator.
         )
 {
@@ -48,24 +48,83 @@ ups_solver(
     size_t img_h = Z_init.rows();
     size_t img_w = Z_init.columns();
 
+    harmo_order sh_order = sh_order_;
+    T mu = mu_;
+    T beta = beta_;
+    T kappa = kappa_;
+
     std::vector<std::vector<blaze::DynamicVector<T>>> s;
     if (sh_order == ho_low)
         s = initS<T>(I[0].size(), I.size(), {0, 0, -1, 0.2});
     else
         s = initS<T>(I[0].size(), I.size(), {0, 0, -1, 0.2, 0, 0, 0, 0, 0});
 
-    std::vector<blaze::DynamicMatrix<T, blaze::columnMajor>> rho_init = initRho(I);
+    //std::vector<blaze::DynamicMatrix<T, blaze::columnMajor>> rho_init = initRho(I);
+    // ----
+    // rho as median of I over images for each channel
+    std::vector<blaze::DynamicMatrix<T, blaze::columnMajor>> rho_init = {};
+    for (size_t ch_idx=0; ch_idx<I[0].size(); ++ch_idx) {
+        auto rho_ch = blaze::DynamicMatrix<T, blaze::columnMajor>(I[0][0].rows(), I[0][0].columns(), 0);
+        rho_init.push_back(rho_ch);
+    }
+    for (size_t i = 0; i<I[0][0].rows(); ++i) {
+        for (size_t j = 0; j<I[0][0].columns(); ++j) {
+            for (size_t ch_idx=0; ch_idx<I[0].size(); ++ch_idx) {
+                std::vector<T> p = {};
+                for (size_t img_idx=0; img_idx<I.size(); ++img_idx) {
+                    p.push_back(I[img_idx][ch_idx](i, j));
+                }
+                std::nth_element(p.begin(), p.begin() + p.size()/2, p.end());
+                T median = p[p.size()/2 - 1];
+                if (p.size() % 2 == 0) {
+                    median = (median + p[p.size()/2]) / 2;
+                }
+                rho_init[ch_idx](i, j) = median;
+            }
+        }
+    }
+    // ----
 
-    auto i_rho = VariablesInitialization(I, Mask, rho_init);
-    std::vector<std::vector<blaze::DynamicVector<T>>> flat_imgs = std::get<0>(i_rho);
-    std::vector<blaze::DynamicVector<T>> rho = std::get<1>(i_rho);
-    if (console_debug_output) {
-        std::cout << "rho_init: " << std::endl << rho << std::endl << std::endl;
+    //auto i_rho = VariablesInitialization(I, Mask, rho_init);
+    //std::vector<std::vector<blaze::DynamicVector<T>>> flat_imgs = std::get<0>(i_rho);
+    //std::vector<blaze::DynamicVector<T>> rho = std::get<1>(i_rho);
+    // ----
 
+    size_t nimages = size(I);
+    size_t nchannels = size(I[0]);  // we assume each image has equal number of channeks and resolution
+    size_t nrows = I[0][0].rows();
+    size_t ncols = I[0][0].columns();
+
+    auto idc = indicesCwStd(Mask);
+
+    //std::cout << "idc:\n" << idc << "\n\n";  // TODO remove
+
+    // I -> flat_imga
+    std::vector<std::vector<blaze::DynamicVector<T>>> flat_imgs;
+    for (size_t i = 0; i < nimages; ++i) {
+        std::vector<blaze::DynamicVector<T>> I_out = {};
+        for (size_t c = 0; c<nchannels; ++c) {
+            blaze::DynamicVector<T> flat_img = flattenToCol(I[i][c]);
+            I_out.push_back(blaze::elements(flat_img, idc));  // apply mask and save
+        }
+        flat_imgs.push_back(I_out);
     }
 
-    size_t nimages = flat_imgs.size();
-    size_t nchannels = flat_imgs[0].size();
+    // rho_init -> rho
+    std::vector<blaze::DynamicVector<T>> rho = {};
+    for (size_t c = 0; c<nchannels; ++c) {
+        blaze::DynamicVector<T> flat_rho = flattenToCol(rho_init[c]);
+        rho.push_back(blaze::elements(flat_rho, idc));  // apply mask and save
+    }
+
+    // ----
+
+    if (console_debug_output) {
+        std::cout << "rho_init: " << std::endl << rho << std::endl << std::endl;
+    }
+
+    //nimages = flat_imgs.size();
+    //nchannels = flat_imgs[0].size();
     size_t npix = flat_imgs[0][0].size();
 
 
@@ -113,23 +172,54 @@ ups_solver(
         std::cout << std::endl << "G:" << std::endl << G << std::endl << std::endl;
     }
 
-    //auto normals = depthToNormals(Z_init, Mask, K);
-    auto gradients = getMaskedGradients(Z_init, Mask, K);
-    blaze::DynamicVector<T> z_vector_masked = std::get<0>(gradients);  // Matlab z = z(mask);
-    blaze::DynamicVector<T> zx = std::get<1>(gradients);
-    blaze::DynamicVector<T> zy = std::get<2>(gradients);
-    blaze::DynamicVector<T> xx = std::get<3>(gradients);
-    blaze::DynamicVector<T> yy = std::get<4>(gradients);
-    blaze::CompressedMatrix<T> Dx = std::get<5>(gradients);
-    blaze::CompressedMatrix<T> Dy = std::get<6>(gradients);
-    //blaze::DynamicMatrix<T> Dx = std::get<5>(gradients);
-    //blaze::DynamicMatrix<T> Dy = std::get<6>(gradients);
+//    //auto normals = depthToNormals(Z_init, Mask, K);
+//    auto gradients = getMaskedGradients(Z_init, Mask, K);
+//    blaze::DynamicVector<T> z_vector_masked = std::get<0>(gradients);  // Matlab z = z(mask);
+//    blaze::DynamicVector<T> zx = std::get<1>(gradients);
+//    blaze::DynamicVector<T> zy = std::get<2>(gradients);
+//    blaze::DynamicVector<T> xx = std::get<3>(gradients);
+//    blaze::DynamicVector<T> yy = std::get<4>(gradients);
+//    blaze::CompressedMatrix<T> Dx = std::get<5>(gradients);
+//    blaze::CompressedMatrix<T> Dy = std::get<6>(gradients);
+//    //blaze::DynamicMatrix<T> Dx = std::get<5>(gradients);
+//    //blaze::DynamicMatrix<T> Dy = std::get<6>(gradients);
+
+    // ----
+    auto nM = getNabla<T>(Mask, Forward, DirichletHomogeneous);
+    blaze::CompressedMatrix<T> Dx = std::get<0>(nM);
+    blaze::CompressedMatrix<T> Dy = std::get<1>(nM);
+
+    std::vector<size_t> z_idc = indicesCwStd(Mask);
+    blaze::DynamicVector<T> z_vector = flattenToCol(Z_init);
+    blaze::DynamicVector<T> z_vector_masked = blaze::elements(z_vector, z_idc);  // Matlab z = z(mask);
+
+    blaze::DynamicVector<T> zx = Dx * z_vector_masked;  // matrix multiplication
+    blaze::DynamicVector<T> zy = Dy * z_vector_masked;
+
+    auto xxyy = indices2dCw(Mask);
+    blaze::DynamicVector<T> xx = std::get<0>(xxyy) - K(0, 2);
+    blaze::DynamicVector<T> yy = std::get<1>(xxyy) - K(1, 2);
+    // ----
 
 
-    auto normals_map = getNormalMap(z_vector_masked, zx, zy, K, xx, yy);
-    blaze::DynamicMatrix<T> N_normalized = std::get<0>(normals_map);
-    blaze::DynamicVector<T> dz = std::get<1>(normals_map);
-    blaze::DynamicMatrix<T> N_unnormalized = std::get<2>(normals_map);
+//    auto normals_map = getNormalMap(z_vector_masked, zx, zy, K, xx, yy);
+//    blaze::DynamicMatrix<T> N_normalized = std::get<0>(normals_map);
+//    blaze::DynamicMatrix<T> N_unnormalized = std::get<2>(normals_map);
+    blaze::DynamicMatrix<T> N_unnormalized = pix_normals(z_vector_masked, zx, zy, xx, yy, K);
+//    blaze::DynamicVector<T> dz = std::get<1>(normals_map);
+    blaze::DynamicVector<T> dz = blaze::sqrt(blaze::sum<blaze::rowwise>(N_unnormalized % N_unnormalized)); // TODO compare to Eps if needed
+
+    blaze::DynamicMatrix<T> N_normalized = normalize_normals(N_unnormalized, dz);
+
+//    std::cout << "N_unnormalized: " << std::endl << N_unnormalized << std::endl;  // TODO remove
+//    std::cout << "N_unnormalized2: " << std::endl << N_unnormalized2 << std::endl;
+//    std::cout << "dz: " << std::endl << dz << std::endl;
+//    std::cout << "dz2: " << std::endl << dz2 << std::endl;
+//    std::cout << "N_normalized: " << std::endl << N_normalized << std::endl;  // TODO remove
+//    std::cout << "N_normalized2: " << std::endl << N_normalized2 << std::endl;
+//    std::cout << "N_unnormalized diff: " << std::endl << N_unnormalized - N_unnormalized2 << std::endl;  // TODO remove
+//    std::cout << "dz diff: " << std::endl << dz - dz2 << std::endl;  // TODO remove
+//    std::cout << "N_normalized diff: " << std::endl << N_normalized - N_normalized2 << std::endl;  // TODO remove
 
     blaze::DynamicVector<T> theta = dz;
 

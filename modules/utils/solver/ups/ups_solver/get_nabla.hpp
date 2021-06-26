@@ -20,8 +20,8 @@ std::tuple<blaze::CompressedMatrix<T>, blaze::CompressedMatrix<T>>
 //std::tuple<blaze::DynamicMatrix<T>, blaze::DynamicMatrix<T>>
 getNabla(
         const blaze::DynamicMatrix<bool, blaze::columnMajor> & mask,
-        nabla_approximation approx = Central,
-        nabla_boundary_condition boundary = NeumannHomogeneous
+        const nabla_approximation approx = Central,
+        const nabla_boundary_condition boundary = NeumannHomogeneous
         )
 {
 

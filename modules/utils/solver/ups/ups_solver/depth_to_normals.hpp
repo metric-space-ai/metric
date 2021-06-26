@@ -109,7 +109,7 @@ depthToNormals(
 // */
 
 
-
+/*  // last ver, but never called
 template <typename T, bool B>
 std::tuple<
            blaze::DynamicMatrix<T>,  // N_normalized
@@ -152,7 +152,7 @@ depthToNormals(
                 xx, yy,
                 Dx, Dy);
 }
-
+// */
 
 
 template <typename T>

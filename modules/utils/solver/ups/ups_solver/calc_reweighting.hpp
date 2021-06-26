@@ -15,7 +15,7 @@ calcReweighting(
         const blaze::DynamicMatrix<float> & sh,
         const std::vector<std::vector<blaze::DynamicVector<T>>> & s,
         const std::vector<std::vector<blaze::DynamicVector<T>>> & flat_imgs,
-        T lambda = 1
+        const T lambda = 1
         )
 {
     //std::cout << "calcReweighting started\n";
