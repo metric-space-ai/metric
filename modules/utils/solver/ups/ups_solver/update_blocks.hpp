@@ -492,9 +492,9 @@ updateDepth(
 //    auto dz = std::get<1>(normals);
 //    blaze::DynamicMatrix<T> N_normalized = std::get<0>(normals);
     //blaze::DynamicMatrix<T, blaze::columnMajor> N_unnormalized = pix_normals(z_vector_masked, zx, zy, xx, yy, K);
-    blaze::DynamicMatrix<T> N_unnormalized = pix_normals(z_vector_masked, zx, zy, xx, yy, K);
+    blaze::DynamicMatrix<T> N_unnormalized = pixNormals(z_vector_masked, zx, zy, xx, yy, K);
     blaze::DynamicVector<T> dz = blaze::sqrt(blaze::sum<blaze::rowwise>(N_unnormalized % N_unnormalized)); // TODO compare to Eps if needed
-    blaze::DynamicMatrix<T> N_normalized = normalize_normals(N_unnormalized, dz);
+    blaze::DynamicMatrix<T> N_normalized = normalizePixNormals(N_unnormalized, dz);
 
     //std::cout << std::endl << "N_unnormalized:" << std::endl << N_unnormalized << std::endl;
     //std::cout << std::endl << "theta:" << std::endl << theta << std::endl;
@@ -636,7 +636,7 @@ updateDepth(
 //            auto nm = getNormalMap(z, zx_, zy_, K, xx, yy);
 //            auto dz = std::get<1>(nm);
 //            N_unnormalized = std::get<2>(nm);
-            N_unnormalized = pix_normals(z, zx, zy, xx, yy, K);
+            N_unnormalized = pixNormals(z, zx, zy, xx, yy, K);
             blaze::DynamicVector<T> dz = blaze::sqrt(blaze::sum<blaze::rowwise>(N_unnormalized % N_unnormalized)); // TODO compare to Eps if needed
 
             //normals_theta  = blaze::DynamicMatrix<T>(N_unnormalized.rows(), N_unnormalized.columns());
@@ -687,9 +687,9 @@ updateDepth(
 //                dz = std::get<1>(nm);
 //                N_unnormalized = std::get<2>(nm);
 //                blaze::DynamicMatrix<T> N_normalized = std::get<0>(nm);
-                N_unnormalized = pix_normals(z0, zx, zy, xx, yy, K);
+                N_unnormalized = pixNormals(z0, zx, zy, xx, yy, K);
                 dz = blaze::sqrt(blaze::sum<blaze::rowwise>(N_unnormalized % N_unnormalized)); // TODO compare to Eps if needed
-                blaze::DynamicMatrix<T> N_normalized = normalize_normals(N_unnormalized, dz);
+                blaze::DynamicMatrix<T> N_normalized = normalizePixNormals(N_unnormalized, dz);
 //                auto N_unnormalized2 = pix_normals(z0, zx, zy, xx, yy, K);
 //                blaze::DynamicVector<T> dz2 = blaze::sqrt(blaze::sum<blaze::rowwise>(N_unnormalized % N_unnormalized)); // TODO compare to Eps if needed
 //                blaze::DynamicMatrix<T> N_normalized2 = normalize_normals(N_unnormalized, dz);

@@ -11,6 +11,7 @@
 
 
 
+/*
 
 template <typename T, bool B>
 std::tuple<
@@ -57,7 +58,7 @@ getMaskedGradients(
                 Dx, Dy);
 }
 
-
+// */
 
 
 /*

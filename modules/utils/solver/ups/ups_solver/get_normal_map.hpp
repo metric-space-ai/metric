@@ -57,7 +57,7 @@ getNormalMap(
 
 template <typename T>
 blaze::DynamicMatrix<T>
-pix_normals(
+pixNormals(
         const blaze::DynamicVector<T> & z,  // we assume that blaze::defaultTransposeFlag is ColumnVector by default
         const blaze::DynamicVector<T> & zx,
         const blaze::DynamicVector<T> & zy,
@@ -85,7 +85,7 @@ pix_normals(
 
 template <typename T>
 blaze::DynamicMatrix<T>
-normalize_normals(
+normalizePixNormals(
         const blaze::DynamicMatrix<T> & N_unnormalized,
         const blaze::DynamicVector<T> & dz
         )
