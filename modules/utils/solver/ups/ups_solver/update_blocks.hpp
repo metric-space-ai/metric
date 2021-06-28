@@ -2,7 +2,7 @@
 #ifndef _UPS_UPDATE_ALBEDO_HPP
 #define _UPS_UPDATE_ALBEDO_HPP
 
-#include "normals_to_sh.hpp"
+//#include "normals_to_sh.hpp"
 //#include "depth_to_normals.hpp"
 //#include "calc_energy_cauchy.hpp"
 #include "modules/utils/solver/ups/ups_solver/normals.hpp"
@@ -223,10 +223,11 @@ reweight(
 
 
 template <typename T>
-std::vector<blaze::DynamicVector<T>>
+//std::vector<blaze::DynamicVector<T>>
+void
 updateAlbedo(
+        std::vector<blaze::DynamicVector<T>> & rho, // in & out
         const std::vector<std::vector<blaze::DynamicVector<T>>> & flat_imgs,
-        const std::vector<blaze::DynamicVector<T>> & rho,
         const blaze::DynamicMatrix<T> & N,  // sh
         const std::vector<std::vector<blaze::DynamicVector<T>>> & s,
         const std::vector<std::vector<blaze::DynamicVector<T>>> & reweight,
@@ -244,7 +245,7 @@ updateAlbedo(
     size_t nchannels = flat_imgs[0].size();
     size_t npix = flat_imgs[0][0].size();
 
-    std::vector<blaze::DynamicVector<T>> rho_out = {};
+    //std::vector<blaze::DynamicVector<T>> rho_out = {};
 
     for (size_t ch = 0; ch < nchannels; ++ch) {
         //blaze::CompressedMatrix<T> A (npix, npix);
@@ -331,22 +332,24 @@ updateAlbedo(
         // */
 
         //std::cout << "X:" << std::endl << X << std::endl << std::endl;
-        rho_out.push_back(X);
+        //rho_out.push_back(X);
+        rho[ch] = X;
     }
 
-    return rho_out;
+    //return rho_out;
 }
 
 
 
 
 template <typename T>
-std::tuple<std::vector<std::vector<blaze::DynamicVector<T>>>, T>
+//std::tuple<std::vector<std::vector<blaze::DynamicVector<T>>>, T>
+void
 updateLighting(
+        std::vector<std::vector<blaze::DynamicVector<T>>> & s,  // in & out
         const std::vector<std::vector<blaze::DynamicVector<T>>> & flat_imgs,
         const std::vector<blaze::DynamicVector<T>> & rho,
         const blaze::DynamicMatrix<T> & N,  // sh
-        const std::vector<std::vector<blaze::DynamicVector<T>>> & s,
         const std::vector<std::vector<blaze::DynamicVector<T>>> & reweight,
         const float tol,  //T nb_nonsingular  // TODO check type!!
         const float maxit    // TODO check type!!
@@ -358,15 +361,15 @@ updateLighting(
     size_t nchannels = flat_imgs[0].size();
     size_t npix = flat_imgs[0][0].size();
 
-    std::vector<std::vector<blaze::DynamicVector<T>>> s_out = {};
-    T res_s = 0;
+    //std::vector<std::vector<blaze::DynamicVector<T>>> s_out = {};
+    //T res_s = 0;
     //std::vector<std::vector<blaze::DynamicVector<T>>> reweighted_rho = {};
     //std::vector<std::vector<blaze::DynamicVector<T>>> reweighted_img = {};
 
     for (size_t im = 0; im < nimages; ++im) {
         //reweighted_rho.push_back(std::vector<blaze::DynamicVector<T>>());  // TODO consider removal
         //reweighted_img.push_back(std::vector<blaze::DynamicVector<T>>());
-        s_out.push_back(std::vector<blaze::DynamicVector<T>>());
+        //s_out.push_back(std::vector<blaze::DynamicVector<T>>());
         for (size_t ch = 0; ch < nchannels; ++ch) {
             auto r_sq = blaze::sqrt(reweight[im][ch]);
             blaze::DynamicVector<T> rho_i_c = r_sq * rho[ch];
@@ -417,7 +420,8 @@ updateLighting(
                          double(std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count()) / 1000000 << " s" <<
                          std::endl;
 
-            s_out[im].push_back(s_ch);
+            //s_out[im].push_back(s_ch);
+            s[im][ch] = s_ch;
             //res_s += blaze::norm(A * s_ch - b);  // TODO enable or remove res_s from output
 
             //std::cout << std::endl << "PInv:" << std::endl << PInv << std::endl;
@@ -427,7 +431,7 @@ updateLighting(
 
     //std::cout << std::endl << "updated lighting" << std::endl;
 
-    return std::make_tuple(s_out, res_s);
+    //return std::make_tuple(s_out, res_s);
 
 }
 

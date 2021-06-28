@@ -4,7 +4,7 @@
 //#include "modules/utils/solver/ups/ups_solver/init.hpp"
 //#include "modules/utils/solver/ups/ups_solver/depth_to_normals.hpp"
 #include "modules/utils/solver/ups/ups_solver/update_blocks.hpp"
-#include "modules/utils/solver/ups/ups_solver/normals_to_sh.hpp"
+//#include "modules/utils/solver/ups/ups_solver/normals_to_sh.hpp"
 //#include "modules/utils/solver/ups/ups_solver/calc_reweighting.hpp"
 #include "modules/utils/solver/ups/ups_solver/normals.hpp"
 #include "modules/utils/solver/ups/ups_solver/nabla_mat.hpp"
@@ -297,7 +297,8 @@ ups_solver(
             std::cout << std::endl << "huber:" << std::endl << huber << std::endl;
             std::cout << std::endl << "mu:" << std::endl << mu << std::endl;
         }
-        rho = updateAlbedo(flat_imgs, rho, sh, s, weights, G, huber, mu, regular, tol, pcg_maxit);
+        //rho = updateAlbedo(flat_imgs, rho, sh, s, weights, G, huber, mu, regular, tol, pcg_maxit);
+        updateAlbedo(rho, flat_imgs, sh, s, weights, G, huber, mu, regular, tol, pcg_maxit);
         drho = {};
         for (size_t ch = 0; ch < rho.size(); ++ch) {
             blaze::DynamicVector<T> drho_ch = G * rho[ch];
@@ -320,8 +321,9 @@ ups_solver(
             std::cout << std::endl << "tol:" << std::endl << tol << std::endl;
             std::cout << std::endl << "pcg_maxit:" << std::endl << pcg_maxit << std::endl;
         }
-        auto s_upd = updateLighting(flat_imgs, rho, sh, s, weights, tol, pcg_maxit);
-        s = std::get<0>(s_upd);
+        //auto s_upd = updateLighting(flat_imgs, rho, sh, s, weights, tol, pcg_maxit);
+        updateLighting(s, flat_imgs, rho, sh, weights, tol, pcg_maxit);
+        //s = std::get<0>(s_upd);
         //auto res_s = std::get<1>(s_upd);
         if (console_debug_output) {
             std::cout << "s updated: " << std::endl << s << std::endl << std::endl;

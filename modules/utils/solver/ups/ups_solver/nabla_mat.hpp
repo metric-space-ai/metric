@@ -137,7 +137,6 @@ nablaMat(
         }
     }
 
-
     return std::make_tuple(nabla_x, nabla_y);
 }
 
