@@ -3,8 +3,9 @@
 #define _UPS_UPDATE_ALBEDO_HPP
 
 #include "normals_to_sh.hpp"
-#include "depth_to_normals.hpp"
-#include "calc_energy_cauchy.hpp"
+//#include "depth_to_normals.hpp"
+//#include "calc_energy_cauchy.hpp"
+#include "modules/utils/solver/ups/ups_solver/normals.hpp"
 
 #include "modules/utils/solver/helper/lapwrappers.hpp"
 #include "modules/utils/solver/pcg.hpp"
@@ -15,6 +16,209 @@
 
 #include <tuple>
 #include <iostream>  // TODO remove
+
+
+
+// ---------- service functions
+
+
+
+template <typename T>
+std::tuple<std::vector<blaze::CompressedMatrix<T>>, blaze::CompressedMatrix<T>>
+//std::tuple<std::vector<blaze::DynamicMatrix<T>>, blaze::DynamicMatrix<T>>
+normalJacByDepth(
+        const blaze::DynamicMatrix<T> & normals,
+        const blaze::DynamicVector<T> & z_vector_masked,
+        const blaze::DynamicMatrix<T> & K,
+        const blaze::DynamicVector<T> & xx,
+        const blaze::DynamicVector<T> & yy,
+        const blaze::CompressedMatrix<T> & Dx,
+        const blaze::CompressedMatrix<T> & Dy
+        //const blaze::DynamicMatrix<T> & Dx,
+        //const blaze::DynamicMatrix<T> & Dy
+        )
+{
+    size_t npix = z_vector_masked.size();
+    auto J_n_un_1 = K(0, 0) * Dx;
+    auto J_n_un_2 = K(1, 1) * Dy;
+    auto eye = blaze::IdentityMatrix<T, blaze::columnMajor>(npix);
+
+    blaze::CompressedMatrix<T> xx_diag (xx.size(), xx.size());
+    blaze::CompressedMatrix<T> yy_diag (xx.size(), xx.size());
+    //blaze::DynamicMatrix<T> xx_diag (xx.size(), xx.size(), 0);
+    //blaze::DynamicMatrix<T> yy_diag (xx.size(), xx.size(), 0);
+
+    {
+        auto diag = blaze::diagonal(xx_diag);
+        diag = xx;
+    }
+    {
+        auto diag = blaze::diagonal(yy_diag);
+        diag = yy;
+    }
+    auto J_n_un_3 = -eye - xx_diag*Dx - yy_diag*Dy;
+
+    //std::cout << std::endl << "xx:" << std::endl << xx << std::endl;
+    //std::cout << std::endl << "yy:" << std::endl << yy << std::endl;
+    //std::cout << std::endl << "eye:" << std::endl << eye << std::endl;
+    //std::cout << std::endl << "term1:" << std::endl << term1 << std::endl;
+    //std::cout << std::endl << "term2:" << std::endl << term2 << std::endl;
+    //std::cout << std::endl << "J_n_un_3:" << std::endl << J_n_un_3 << std::endl;
+
+    blaze::CompressedMatrix<T> x_scale (npix, npix);
+    blaze::CompressedMatrix<T> y_scale (npix, npix);
+    blaze::CompressedMatrix<T> z_scale (npix, npix);
+    //blaze::DynamicMatrix<T> x_scale (npix, npix, 0);
+    //blaze::DynamicMatrix<T> y_scale (npix, npix, 0);
+    //blaze::DynamicMatrix<T> z_scale (npix, npix, 0);
+
+    {
+        auto diag = blaze::diagonal(x_scale);
+        diag = blaze::column(normals, 0);
+    }
+    {
+        auto diag = blaze::diagonal(y_scale);
+        diag = blaze::column(normals, 1);
+    }
+    {
+        auto diag = blaze::diagonal(z_scale);
+        diag = blaze::column(normals, 2);
+    }
+
+    blaze::CompressedMatrix<T> J_dz =
+    //blaze::DynamicMatrix<T> J_dz =
+            x_scale * J_n_un_1 +
+            y_scale * J_n_un_2 +
+            z_scale * J_n_un_3;
+
+    std::vector<blaze::CompressedMatrix<T>> J_n_un (3);
+    //std::vector<blaze::DynamicMatrix<T>> J_n_un (3);
+    J_n_un[0] = J_n_un_1;
+    J_n_un[1] = J_n_un_2;
+    J_n_un[2] = J_n_un_3;
+
+    return std::make_tuple(J_n_un, J_dz);
+}
+
+
+
+template <typename T>
+std::tuple<T, T, T>
+energyCauchy(
+        const std::vector<std::vector<blaze::DynamicVector<T>>> & flat_imgs,
+        const std::vector<blaze::DynamicVector<T>> & rho,
+        const std::vector<std::vector<blaze::DynamicVector<T>>> & s,
+        const blaze::DynamicMatrix<T> & sh,
+        const blaze::DynamicVector<T> & theta,
+        const std::vector<blaze::DynamicVector<T>> & drho,
+        const blaze::DynamicVector<T> & dz,
+        const blaze::DynamicVector<T> & u,
+        T lambda = 1.0,
+        T huber = 0.1,
+        T mu = 0.000002,
+        T beta = 0.0005
+        )
+{
+    size_t nimages = flat_imgs.size();
+    size_t nchannels = flat_imgs[0].size();
+    size_t npix = flat_imgs[0][0].size();
+
+    T energy = 0;
+    for (size_t im = 0; im < s.size(); ++im) {
+        for (size_t ch = 0; ch < s[0].size(); ++ch) {
+            blaze::DynamicVector<T> tmp = (sh * s[im][ch])*rho[ch];
+            energy += blaze::sum(blaze::pow(tmp - flat_imgs[im][ch], 2));
+        }
+    }
+    energy = lambda/2*energy;
+    T energy_no_smooth = energy;
+
+    //std::cout << std::endl << "energy_no_smooth: " << energy << std::endl;  // TODO remove
+
+    // if(options.regular==1)
+    T huber_summand = 0;
+    for (size_t ch = 0; ch < drho.size(); ++ch) {
+        for (size_t el = 0; el < drho[ch].size(); el++) {
+            if (drho[ch][el] >= huber) {
+                huber_summand += blaze::abs(drho[ch][el]) - huber*0.5;
+            } else {
+                huber_summand += 0.5*blaze::pow(drho[ch][el], 2) / huber;
+            }
+        }
+    }
+    energy += mu*huber_summand;
+
+    //std::cout << std::endl << "energy: " << energy << std::endl;  // TODO remove
+
+    T objective = energy + 0.5*beta * blaze::sum(blaze::pow(theta - dz + u, 2));
+
+    //std::cout << std::endl << "objective: " << objective << std::endl;  // TODO remove
+
+    return std::make_tuple(energy, objective, energy_no_smooth);
+
+}
+
+
+
+template <typename T>
+std::vector<std::vector<blaze::DynamicVector<T>>>
+reweight(
+        const std::vector<blaze::DynamicVector<T>> & rho,
+        const blaze::DynamicMatrix<float> & sh,
+        const std::vector<std::vector<blaze::DynamicVector<T>>> & s,
+        const std::vector<std::vector<blaze::DynamicVector<T>>> & flat_imgs,
+        const T lambda = 1
+        )
+{
+    //std::cout << "calcReweighting started\n";
+
+    size_t nimages = flat_imgs.size();
+    size_t nchannels = flat_imgs[0].size();
+    //size_t npix = flat_imgs[0][0].size();
+
+    //auto rho_avg = blaze::DynamicVector<T>(rho[0].size(), 0);
+    //for (size_t i = 0; i<rho.size(); ++i) {
+    //    rho_avg += rho[i];
+    //}
+    //rho_avg /= rho.size();
+
+    blaze::DynamicMatrix<T, blaze::columnMajor> s_mat (s[0][0].size(), nimages*nchannels);
+    for (size_t i = 0; i < nimages*nchannels; ++i) {
+        //blaze::column(s_mat, i) = s[i%nimages][i/nimages];
+        blaze::column(s_mat, i) = s[i/nchannels][i%nchannels];
+    }
+
+    //std::cout << "s_mat:\n" << s_mat << "\n"; // TODO remove
+
+    auto rk_mat = sh * s_mat;
+
+    //std::cout << "rk_mat:\n" << rk_mat << "\n"; // TODO remove
+
+    std::vector<std::vector<blaze::DynamicVector<T>>> weights = {};
+    size_t w_idx = 0;
+    for (size_t i = 0; i < nimages; ++i) {
+        std::vector<blaze::DynamicVector<T>> rk_ch = {};
+        for (size_t c = 0; c<nchannels; ++c) {
+            blaze::DynamicVector<T> v = blaze::column(rk_mat, w_idx);
+            v = v * rho[c];  // elementwize
+            v = v - flat_imgs[i][c];
+            v = blaze::pow(v, 2) / (lambda*lambda) + 1;
+            v = 1 / v;
+            rk_ch.push_back(v);
+            ++w_idx;
+        }
+        weights.push_back(rk_ch);
+    }
+
+    //std::cout << "rk:\n" << rk << "\n"; // TODO remove
+
+    return weights;
+}
+
+
+
+
+// ----------- block updaters
 
 
 
@@ -290,8 +494,61 @@ calcEnergyPhotometricTerm(
     //std::cout << std::endl << "J_n_1:" << std::endl << J_n_1 << std::endl;
     //std::cout << std::endl << "J_n_2:" << std::endl << J_n_2 << std::endl;
 
-    //std::cout << std::endl << "start computing J_sh" << std::endl;  // TODO remove
-    auto J_sh = calcJacobianWrtNormals(normals_theta, ho, J_n_0, J_n_1, J_n_2);
+    //auto J_sh = calcJacobianWrtNormals(normals_theta, ho, J_n_0, J_n_1, J_n_2);
+    // ----
+    //int hnum = 9;
+    //if (ho == ho_low)
+    //    hnum = 4;
+
+    T w0 = sqrt(3/(4*M_PI));
+    T w3 = sqrt(1/(4*M_PI));
+
+    blaze::CompressedMatrix<T> J_sh_0 = w0 * J_n_0;
+    blaze::CompressedMatrix<T> J_sh_1 = w0 * J_n_1;
+    blaze::CompressedMatrix<T> J_sh_2 = w0 * J_n_2;
+    blaze::CompressedMatrix<T> J_sh_3 (J_n_0.rows(), J_n_0.columns());
+    //blaze::DynamicMatrix<T> J_sh_0 = w0 * J_n_0;
+    //blaze::DynamicMatrix<T> J_sh_1 = w0 * J_n_1;
+    //blaze::DynamicMatrix<T> J_sh_2 = w0 * J_n_2;
+    //blaze::DynamicMatrix<T> J_sh_3 (J_n_0.rows(), J_n_0.columns(), 0);
+
+    std::vector<blaze::CompressedMatrix<T>> J_sh = {J_sh_0, J_sh_1, J_sh_2, J_sh_3};
+    //std::vector<blaze::DynamicMatrix<T>> J = {J_sh_0, J_sh_1, J_sh_2, J_sh_3};
+
+    if (ho != ho_low) {
+        T w4 = 3*sqrt(5/(12*M_PI));
+        T w5 = 3*sqrt(5/(12*M_PI));
+        T w7 = 3/2*sqrt(5/(12*M_PI));
+        T w8 = 0.5*sqrt(5/(4*M_PI));
+
+        // add diag
+        blaze::CompressedMatrix<T> N0 (normals_theta.rows(), normals_theta.rows());
+        blaze::CompressedMatrix<T> N1 (normals_theta.rows(), normals_theta.rows());
+        blaze::CompressedMatrix<T> N2 (normals_theta.rows(), normals_theta.rows());
+        //blaze::DynamicMatrix<T> N0 (normals_theta.rows(), normals_theta.rows(), 0);
+        //blaze::DynamicMatrix<T> N1 (normals_theta.rows(), normals_theta.rows(), 0);
+        //blaze::DynamicMatrix<T> N2 (normals_theta.rows(), normals_theta.rows(), 0);
+        blaze::diagonal(N0) = blaze::column(normals_theta, 0);
+        blaze::diagonal(N1) = blaze::column(normals_theta, 1);
+        blaze::diagonal(N2) = blaze::column(normals_theta, 2);
+        blaze::CompressedMatrix<T> J_sh_4 = w4 * (N1 * J_n_0 + N0 * J_n_1);
+        blaze::CompressedMatrix<T> J_sh_5 = w4 * (N2 * J_n_0 + N0 * J_n_2);
+        blaze::CompressedMatrix<T> J_sh_6 = w5 * (N2 * J_n_1 + N1 * J_n_2);
+        blaze::CompressedMatrix<T> J_sh_7 = 2 * w7 * (N0 * J_n_0 - N1 * J_n_1);
+        blaze::CompressedMatrix<T> J_sh_8 = 6 * w8 * N2 * J_n_2;
+        //blaze::DynamicMatrix<T> J_sh_4 = w4 * (N1 * J_n_0 + N0 * J_n_1);
+        //blaze::DynamicMatrix<T> J_sh_5 = w4 * (N2 * J_n_0 + N0 * J_n_2);
+        //blaze::DynamicMatrix<T> J_sh_6 = w5 * (N2 * J_n_1 + N1 * J_n_2);
+        //blaze::DynamicMatrix<T> J_sh_7 = 2 * w7 * (N0 * J_n_0 - N1 * J_n_1);
+        //blaze::DynamicMatrix<T> J_sh_8 = 6 * w8 * N2 * J_n_2;
+        J_sh.push_back(J_sh_4);
+        J_sh.push_back(J_sh_5);
+        J_sh.push_back(J_sh_6);
+        J_sh.push_back(J_sh_7);
+        J_sh.push_back(J_sh_8);
+    }
+    // ----
+
     //std::cout << std::endl << "J_sh computed" << std::endl;  // TODO remove
 
     //std::cout << std::endl << "J_sh:" << std::endl << J_sh << std::endl;
@@ -503,7 +760,7 @@ updateDepth(
 
 
     //auto Jac = calcJacobian<float>(normalize_normals(N_unnormalized, dz), z_vector_masked, K, xx, yy, Dx, Dy);
-    auto Jac = calcJacobian<float>(N_normalized, z_vector_masked, K, xx, yy, Dx, Dy);
+    auto Jac = normalJacByDepth<float>(N_normalized, z_vector_masked, K, xx, yy, Dx, Dy);
     auto J_dz = std::get<1>(Jac);
     auto J_n_un = std::get<0>(Jac);
     //std::cout << "J_dz computed" << std::endl;  // TODO remove
@@ -521,7 +778,7 @@ updateDepth(
     //std::cout << std::endl << "sh:" << std::endl << sh << std::endl;
     //std::cout << "sh computed" << std::endl;  // TODO remove
 
-    auto tab_ec = calcEnergyCauchy(flat_imgs, rho, s, sh, theta, drho, dz, u);
+    auto tab_ec = energyCauchy(flat_imgs, rho, s, sh, theta, drho, dz, u);
     T tab_objective = std::get<1>(tab_ec);
     //std::cout << "energy computed" << std::endl;  // TODO remove
 
@@ -661,7 +918,7 @@ updateDepth(
             //std::cout << "yy:" << std::endl << yy << std::endl << std::endl;
             //std::cout << "sh:" << std::endl << sh << std::endl << std::endl;
 
-            auto ec = calcEnergyCauchy(flat_imgs, rho, s, sh, theta, drho, dz, u);
+            auto ec = energyCauchy(flat_imgs, rho, s, sh, theta, drho, dz, u);
             T objective = std::get<1>(ec);
 
             //std::cout << std::endl << "objective: " << objective << std::endl;  // TODO remove
@@ -713,7 +970,7 @@ updateDepth(
                 //std::cout << "normals_theta iter:" << std::endl << normals_theta << std::endl << std::endl;
 
                 //Jac = calcJacobian<float>(normalize_normals(N_unnormalized, dz), z0, K, xx, yy, Dx, Dy);
-                Jac = calcJacobian<float>(N_normalized, z0, K, xx, yy, Dx, Dy);
+                Jac = normalJacByDepth<float>(N_normalized, z0, K, xx, yy, Dx, Dy);
                 J_dz = std::get<1>(Jac);
                 J_n_un = std::get<0>(Jac);  // for next iter
 

@@ -1,13 +1,16 @@
 #ifndef _UPS_SOLVER_HPP
 #define _UPS_SOLVER_HPP
 
-#include "modules/utils/solver/ups/ups_solver/init.hpp"
-#include "modules/utils/solver/ups/ups_solver/depth_to_normals.hpp"
-#include "modules/utils/solver/ups/ups_solver/normals_to_sh.hpp"
-#include "modules/utils/solver/ups/ups_solver/calc_reweighting.hpp"
+//#include "modules/utils/solver/ups/ups_solver/init.hpp"
+//#include "modules/utils/solver/ups/ups_solver/depth_to_normals.hpp"
 #include "modules/utils/solver/ups/ups_solver/update_blocks.hpp"
-#include "modules/utils/solver/ups/ups_solver/vec_to_image.hpp"
+#include "modules/utils/solver/ups/ups_solver/normals_to_sh.hpp"
+//#include "modules/utils/solver/ups/ups_solver/calc_reweighting.hpp"
+#include "modules/utils/solver/ups/ups_solver/normals.hpp"
+#include "modules/utils/solver/ups/ups_solver/nabla_mat.hpp"
+#include "modules/utils/solver/ups/helpers/indexing.hpp"
 #include "modules/utils/solver/ups/helpers/console_output.hpp"
+//#include "modules/utils/solver/ups/ups_solver/vec_to_image.hpp"
 
 
 #include "3rdparty/blaze/Blaze.h"
@@ -173,7 +176,7 @@ ups_solver(
 
 
     // computing gradients
-    auto nablaOp = getNabla<T>(Mask);
+    auto nablaOp = nablaMat<T>(Mask);
     if (console_debug_output) {
         std::cout << std::endl << "mask, nabla operator matrices: "  // TODO remove
                   << std::endl << Mask << std::endl << std::endl
@@ -205,7 +208,7 @@ ups_solver(
 //    //blaze::DynamicMatrix<T> Dy = std::get<6>(gradients);
 
     // ----
-    auto nM = getNabla<T>(Mask, Forward, DirichletHomogeneous);
+    auto nM = nablaMat<T>(Mask, Forward, DirichletHomogeneous);
     blaze::CompressedMatrix<T> Dx = std::get<0>(nM);
     blaze::CompressedMatrix<T> Dy = std::get<1>(nM);
 
@@ -282,7 +285,7 @@ ups_solver(
         }
 
         // albedo update
-        weights = calcReweighting(rho, sh, s, flat_imgs, lambda);
+        weights = reweight(rho, sh, s, flat_imgs, lambda);
         if (console_debug_output) {  // TODO remove
             std::cout << std::endl << "before albedo update, iter " << it << ":" << std::endl;
             std::cout << std::endl << "flat_imgs:" << std::endl << flat_imgs << std::endl;
@@ -306,7 +309,7 @@ ups_solver(
         }
 
         // lighting update
-        weights = calcReweighting(rho, sh, s, flat_imgs, lambda);
+        weights = reweight(rho, sh, s, flat_imgs, lambda);
         if (console_debug_output) {  // TODO remove
             std::cout << std::endl << "before lighting update, iter " << it << ":" << std::endl;
             std::cout << std::endl << "flat_imgs:" << std::endl << flat_imgs << std::endl;
@@ -326,7 +329,7 @@ ups_solver(
         //std::cout << "s updated" << std::endl;  // TODO remove
 
         // depth update
-        weights = calcReweighting(rho, sh, s, flat_imgs, lambda);
+        weights = reweight(rho, sh, s, flat_imgs, lambda);
         if (console_debug_output) {  // TODO remove
             std::cout << std::endl << "before depth update, iter " << it << ":" << std::endl;
             std::cout << std::endl << "flat_imgs:" << std::endl << flat_imgs << std::endl;

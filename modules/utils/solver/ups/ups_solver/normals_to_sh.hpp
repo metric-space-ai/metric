@@ -94,6 +94,9 @@ normalsToSh(const blaze::DynamicMatrix<T> & normals, const int harmo_order = ho_
 
 // */
 
+
+/*
+
 template <typename T>
 std::vector<blaze::CompressedMatrix<T>>
 //std::vector<blaze::DynamicMatrix<T>>
@@ -163,5 +166,6 @@ calcJacobianWrtNormals(
     return J;
 }
 
+// */
 
 #endif // _UPS_NORMALS_TO_SH_HPP

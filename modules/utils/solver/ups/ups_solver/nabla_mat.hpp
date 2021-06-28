@@ -18,7 +18,7 @@ enum nabla_boundary_condition {DirichletHomogeneous, NeumannHomogeneous}; //, Ne
 template <typename T>
 std::tuple<blaze::CompressedMatrix<T>, blaze::CompressedMatrix<T>>
 //std::tuple<blaze::DynamicMatrix<T>, blaze::DynamicMatrix<T>>
-getNabla(
+nablaMat(
         const blaze::DynamicMatrix<bool, blaze::columnMajor> & mask,
         const nabla_approximation approx = Central,
         const nabla_boundary_condition boundary = NeumannHomogeneous
