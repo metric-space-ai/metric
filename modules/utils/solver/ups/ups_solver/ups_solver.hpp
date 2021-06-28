@@ -351,14 +351,19 @@ ups_solver(
             std::cout << std::endl << "beta:" << std::endl << beta << std::endl;
         }
         //std::cout << "weights updated" << std::endl;  // TODO remove
-        auto depth_upd = updateDepth<T>(flat_imgs, rho, s, theta, z_vector_masked, zx, zy, u, weights, drho, K, xx, yy, Dx, Dy,
-                                     3, beta, 10, 1000, 1e-10, 1000, sh_order);  // TODO pass
-        z_vector_masked = std::get<0>(depth_upd);
-        zx = std::get<1>(depth_upd);
-        zy = std::get<2>(depth_upd);
-        dz = std::get<3>(depth_upd);
-        N_unnormalized = std::get<4>(depth_upd);
-        sh = std::get<5>(depth_upd);  // TODO remove
+//        auto depth_upd = updateDepth<T>(flat_imgs, rho, s, theta, z_vector_masked, zx, zy, u, weights, drho, K, xx, yy, Dx, Dy,
+//                                     3, beta, 10, 1000, 1e-10, 1000, sh_order);  // TODO pass
+//        z_vector_masked = std::get<0>(depth_upd);
+//        zx = std::get<1>(depth_upd);
+//        zy = std::get<2>(depth_upd);
+//        dz = std::get<3>(depth_upd);
+//        N_unnormalized = std::get<4>(depth_upd);
+//        sh = std::get<5>(depth_upd);  // TODO remove
+
+        //blaze::DynamicMatrix<T> N_unnormalized;
+        updateDepth<T>(N_unnormalized, theta, z_vector_masked, zx, zy, flat_imgs, rho, s, u, weights, drho, K, xx, yy, Dx, Dy,
+                                             3, beta, 10, 1000, 1e-10, 1000, sh_order);
+
         //blaze::CompressedMatrix<T> J_dz = std::get<6>(depth_upd);
         //T res_z = std::get<7>(depth_upd);
         if (console_debug_output) {
@@ -371,22 +376,22 @@ ups_solver(
         }
 
         // aux update
-        theta = dz;
+//        theta = dz; // inside new updateDepth
         for (size_t c = 0; c < N_unnormalized.columns(); ++c) {
             blaze::column(normals_theta, c) = blaze::column(N_unnormalized, c) / theta;
         }
         sh = normalsToSh(normals_theta, sh_order);
 
         // dual update
-        if (beta > 10) {  // TODO pass beta_thres = 10
-            u = u + (theta - dz);
-        }
+        //if (beta > 10) {  // TODO pass beta_thres = 10
+        //    u = u + (theta - dz);
+        //}
 
         // increment of stepsize
         beta *= kappa;
-        if (beta > 10) {  // TODO pass beta_thres = 10
-            u = u / kappa; // TODO trace MAtlab code and update beta, kappa
-        }
+        //if (beta > 10) {  // TODO pass beta_thres = 10
+        //    u = u / kappa; // TODO trace MAtlab code and update beta, kappa
+        //}
 
         std::cout << "iter " << it << " completed" << std::endl;
 
