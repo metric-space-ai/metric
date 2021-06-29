@@ -1,5 +1,5 @@
-#ifndef _UPS_GET_NABLA_HPP
-#define _UPS_GET_NABLA_HPP
+#ifndef _UPS_NABLA_HPP
+#define _UPS_NABLA_HPP
 
 #include "modules/utils/solver/ups/helpers/indexing.hpp"
 
@@ -144,4 +144,4 @@ nablaMat(
 
 
 
-#endif // _UPS_GET_NABLA_HPP
+#endif // _UPS_NABLA_HPP

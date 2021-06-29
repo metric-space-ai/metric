@@ -1,5 +1,5 @@
-#ifndef _UPS_HELPERS_HPP
-#define _UPS_HELPERS_HPP
+#ifndef _UPS_CSV_HELPERS_HPP
+#define _UPS_CSV_HELPERS_HPP
 
 #include "../3rdparty/metric/3rdparty/blaze/Blaze.h"
 
@@ -68,4 +68,4 @@ void writeCsvBlaze(std::string filename, const blaze::DynamicMatrix<ValueType> &
 
 
 
-#endif  // _UPS_HELPERS_HPP
+#endif  // _UPS_CSV_HELPERS_HPP

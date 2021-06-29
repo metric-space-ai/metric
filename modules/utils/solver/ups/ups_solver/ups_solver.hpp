@@ -1,17 +1,12 @@
 #ifndef _UPS_SOLVER_HPP
 #define _UPS_SOLVER_HPP
 
-//#include "modules/utils/solver/ups/ups_solver/init.hpp"
-//#include "modules/utils/solver/ups/ups_solver/depth_to_normals.hpp"
+
 #include "modules/utils/solver/ups/ups_solver/update_blocks.hpp"
-//#include "modules/utils/solver/ups/ups_solver/normals_to_sh.hpp"
-//#include "modules/utils/solver/ups/ups_solver/calc_reweighting.hpp"
 #include "modules/utils/solver/ups/ups_solver/normals.hpp"
 #include "modules/utils/solver/ups/ups_solver/nabla_mat.hpp"
 #include "modules/utils/solver/ups/helpers/indexing.hpp"
 #include "modules/utils/solver/ups/helpers/console_output.hpp"
-//#include "modules/utils/solver/ups/ups_solver/vec_to_image.hpp"
-
 
 #include "3rdparty/blaze/Blaze.h"
 
@@ -63,11 +58,6 @@ ups_solver(
 
 
     // init s (VariablesInitialization in Matlab)
-//    std::vector<std::vector<blaze::DynamicVector<T>>> s;
-//    if (sh_order == ho_low)
-//        s = initS<T>(I[0].size(), I.size(), {0, 0, -1, 0.2});
-//    else
-//        s = initS<T>(I[0].size(), I.size(), {0, 0, -1, 0.2, 0, 0, 0, 0, 0});
     blaze::DynamicVector<T> v;
     if (sh_order == ho_low)
         v = {0, 0, -1, 0.2};
@@ -83,7 +73,6 @@ ups_solver(
     }
 
     // init rho (albedo) with median brightness value
-    //std::vector<blaze::DynamicMatrix<T, blaze::columnMajor>> rho_init = initRho(I);
     // ----
     // rho as median of I over images for each channel
     std::vector<blaze::DynamicMatrix<T, blaze::columnMajor>> rho_init = {};
@@ -109,16 +98,12 @@ ups_solver(
     }
     // ----
 
-    //auto i_rho = VariablesInitialization(I, Mask, rho_init);
-    //std::vector<std::vector<blaze::DynamicVector<T>>> flat_imgs = std::get<0>(i_rho);
-    //std::vector<blaze::DynamicVector<T>> rho = std::get<1>(i_rho);
-    // ----
 
+    // flatten images I into vectors of pixels selected by mask
     auto idc = indicesCwStd(Mask);
 
     //std::cout << "idc:\n" << idc << "\n\n";  // TODO remove
 
-    // flatten images I into vectors of pixels selected by mask
     std::vector<std::vector<blaze::DynamicVector<T>>> flat_imgs;
     for (size_t i = 0; i < nimages; ++i) {
         std::vector<blaze::DynamicVector<T>> I_out = {};
@@ -137,14 +122,10 @@ ups_solver(
         rho.push_back(blaze::elements(flat_rho, idc));  // apply mask and save
     }
 
-    // ----
-
     if (console_debug_output) {
         std::cout << "rho_init: " << std::endl << rho << std::endl << std::endl;
     }
 
-    //nimages = flat_imgs.size();
-    //nchannels = flat_imgs[0].size();
     size_t npix = flat_imgs[0][0].size();
 
 
@@ -195,18 +176,6 @@ ups_solver(
     }
 
     // computing normals and those derivatives (Depth2Normals in Matlab)
-//    //auto normals = depthToNormals(Z_init, Mask, K);
-//    auto gradients = getMaskedGradients(Z_init, Mask, K);
-//    blaze::DynamicVector<T> z_vector_masked = std::get<0>(gradients);  // Matlab z = z(mask);
-//    blaze::DynamicVector<T> zx = std::get<1>(gradients);
-//    blaze::DynamicVector<T> zy = std::get<2>(gradients);
-//    blaze::DynamicVector<T> xx = std::get<3>(gradients);
-//    blaze::DynamicVector<T> yy = std::get<4>(gradients);
-//    blaze::CompressedMatrix<T> Dx = std::get<5>(gradients);
-//    blaze::CompressedMatrix<T> Dy = std::get<6>(gradients);
-//    //blaze::DynamicMatrix<T> Dx = std::get<5>(gradients);
-//    //blaze::DynamicMatrix<T> Dy = std::get<6>(gradients);
-
     // ----
     auto nM = nablaMat<T>(Mask, Forward, DirichletHomogeneous);
     blaze::CompressedMatrix<T> Dx = std::get<0>(nM);
@@ -224,13 +193,8 @@ ups_solver(
     blaze::DynamicVector<T> yy = std::get<1>(xxyy) - K(1, 2);
     // ----
 
-//    auto normals_map = getNormalMap(z_vector_masked, zx, zy, K, xx, yy);
-//    blaze::DynamicMatrix<T> N_normalized = std::get<0>(normals_map);
-//    blaze::DynamicMatrix<T> N_unnormalized = std::get<2>(normals_map);
     blaze::DynamicMatrix<T> N_unnormalized = pixNormals(z_vector_masked, zx, zy, xx, yy, K);
-//    blaze::DynamicVector<T> dz = std::get<1>(normals_map);
     blaze::DynamicVector<T> dz = blaze::sqrt(blaze::sum<blaze::rowwise>(N_unnormalized % N_unnormalized)); // TODO compare to Eps if needed
-
     blaze::DynamicMatrix<T> N_normalized = normalizePixNormals(N_unnormalized, dz);
 
 //    std::cout << "N_unnormalized: " << std::endl << N_unnormalized << std::endl;  // TODO remove
@@ -251,7 +215,7 @@ ups_solver(
     //for (size_t ch = 0; ch < std::get<0>(i_rho)[0].size(); ++ch) {
     //    blaze::DynamicVector<T> drho_ch = G * std::get<1>(i_rho)[ch];
     //    drho.push_back(drho_ch);
-    //}
+    //} // updated inside the loop
 
     // computinig lighted normals (Normals2SphericalHarmonicsJac in Matlab, but without Jacobian)
     blaze::DynamicMatrix<T> normals_theta (N_unnormalized.rows(), N_unnormalized.columns());
@@ -262,7 +226,6 @@ ups_solver(
     sh = normalsToSh(normals_theta, sh_order);
 
     // TODO add initial energy computation if needed
-
 
     std::vector<std::vector<blaze::DynamicVector<T>>> weights;
 
@@ -277,7 +240,6 @@ ups_solver(
                     s[i][c] = v;
                 }
             }
-            //s = initS<T>(I[0].size(), I.size(), {0, 0, -1, 0.2, 0, 0, 0, 0, 0});
             for (size_t c = 0; c < N_unnormalized.columns(); ++c) {
                 blaze::column(normals_theta, c) = blaze::column(N_unnormalized, c) / theta;
             }
@@ -297,14 +259,13 @@ ups_solver(
             std::cout << std::endl << "huber:" << std::endl << huber << std::endl;
             std::cout << std::endl << "mu:" << std::endl << mu << std::endl;
         }
-        //rho = updateAlbedo(flat_imgs, rho, sh, s, weights, G, huber, mu, regular, tol, pcg_maxit);
         updateAlbedo(rho, flat_imgs, sh, s, weights, G, huber, mu, regular, tol, pcg_maxit);
         drho = {};
         for (size_t ch = 0; ch < rho.size(); ++ch) {
             blaze::DynamicVector<T> drho_ch = G * rho[ch];
             drho.push_back(drho_ch);
         }
-        //drho = drho_upd;
+
         if (console_debug_output) {
             std::cout << "rho updated: " << std::endl << rho << std::endl << std::endl;
         }
@@ -321,10 +282,8 @@ ups_solver(
             std::cout << std::endl << "tol:" << std::endl << tol << std::endl;
             std::cout << std::endl << "pcg_maxit:" << std::endl << pcg_maxit << std::endl;
         }
-        //auto s_upd = updateLighting(flat_imgs, rho, sh, s, weights, tol, pcg_maxit);
         updateLighting(s, flat_imgs, rho, sh, weights, tol, pcg_maxit);
-        //s = std::get<0>(s_upd);
-        //auto res_s = std::get<1>(s_upd);
+
         if (console_debug_output) {
             std::cout << "s updated: " << std::endl << s << std::endl << std::endl;
         }
@@ -351,21 +310,10 @@ ups_solver(
             std::cout << std::endl << "beta:" << std::endl << beta << std::endl;
         }
         //std::cout << "weights updated" << std::endl;  // TODO remove
-//        auto depth_upd = updateDepth<T>(flat_imgs, rho, s, theta, z_vector_masked, zx, zy, u, weights, drho, K, xx, yy, Dx, Dy,
-//                                     3, beta, 10, 1000, 1e-10, 1000, sh_order);  // TODO pass
-//        z_vector_masked = std::get<0>(depth_upd);
-//        zx = std::get<1>(depth_upd);
-//        zy = std::get<2>(depth_upd);
-//        dz = std::get<3>(depth_upd);
-//        N_unnormalized = std::get<4>(depth_upd);
-//        sh = std::get<5>(depth_upd);  // TODO remove
 
-        //blaze::DynamicMatrix<T> N_unnormalized;
         updateDepth<T>(N_unnormalized, theta, z_vector_masked, zx, zy, flat_imgs, rho, s, weights, drho, K, xx, yy, Dx, Dy,
                                              3, beta, 10, 1000, 1e-10, 1000, sh_order);
 
-        //blaze::CompressedMatrix<T> J_dz = std::get<6>(depth_upd);
-        //T res_z = std::get<7>(depth_upd);
         if (console_debug_output) {
             std::cout << "z_vector_masked updated: " << std::endl << z_vector_masked << std::endl << std::endl;
             std::cout << "zx updated: " << std::endl << zx << std::endl << std::endl;
@@ -376,28 +324,27 @@ ups_solver(
         }
 
         // aux update
-//        theta = dz; // inside new updateDepth
+//        theta = dz; // moved inside updateDepth
         for (size_t c = 0; c < N_unnormalized.columns(); ++c) {
             blaze::column(normals_theta, c) = blaze::column(N_unnormalized, c) / theta;
         }
         sh = normalsToSh(normals_theta, sh_order);
 
-        // dual update
-        //if (beta > 10) {  // TODO pass beta_thres = 10
+        // dual update, found incomplete in original code. so removed
+        //if (beta > 10) {
         //    u = u + (theta - dz);
         //}
 
         // increment of stepsize
         beta *= kappa;
-        //if (beta > 10) {  // TODO pass beta_thres = 10
-        //    u = u / kappa; // TODO trace MAtlab code and update beta, kappa
+        //if (beta > 10) {
+        //    u = u / kappa; // TODO trace MAtlab code for beta, kappa update
         //}
 
         std::cout << "iter " << it << " completed" << std::endl;
 
     }  // for (size_t it = 0; it < maxit; ++it) // end main loop
 
-    // output
     if (console_debug_output) {  // TODO remove
         std::cout << std::endl << "final:" << std::endl;
         std::cout << std::endl << "z_vector_masked:" << std::endl << z_vector_masked << std::endl;

@@ -1,5 +1,5 @@
-#ifndef _UPS_GET_NORMAL_MAP_HPP
-#define _UPS_GET_NORMAL_MAP_HPP
+#ifndef _UPS_NORMALS_HPP
+#define _UPS_NORMALS_HPP
 
 #include "modules/utils/solver/ups/helpers/indexing.hpp"
 
@@ -123,4 +123,4 @@ normalsToSh(const blaze::DynamicMatrix<T> & normals, const int harmo_order = ho_
 
 
 
-#endif // _UPS_GET_NORMAL_MAP_HPP
+#endif // _UPS_NORMALS_HPP
