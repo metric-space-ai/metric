@@ -245,7 +245,7 @@ ups_solver(
 
     blaze::DynamicVector<T> theta = dz;
 
-    blaze::DynamicVector<T> u = blaze::DynamicVector<T>(theta.size(), 0);
+    //blaze::DynamicVector<T> u = blaze::DynamicVector<T>(theta.size(), 0);
 
     std::vector<blaze::DynamicVector<T>> drho = {};
     //for (size_t ch = 0; ch < std::get<0>(i_rho)[0].size(); ++ch) {
@@ -342,7 +342,7 @@ ups_solver(
             std::cout << std::endl << "z_vector_masked:" << std::endl << z_vector_masked << std::endl;
             std::cout << std::endl << "zx:" << std::endl << zx << std::endl;
             std::cout << std::endl << "zy:" << std::endl << zy << std::endl;
-            std::cout << std::endl << "u:" << std::endl << u << std::endl;
+            //std::cout << std::endl << "u:" << std::endl << u << std::endl;
             std::cout << std::endl << "drho:" << std::endl << drho << std::endl;
             std::cout << std::endl << "xx:" << std::endl << xx << std::endl;
             std::cout << std::endl << "yy:" << std::endl << yy << std::endl;
@@ -361,7 +361,7 @@ ups_solver(
 //        sh = std::get<5>(depth_upd);  // TODO remove
 
         //blaze::DynamicMatrix<T> N_unnormalized;
-        updateDepth<T>(N_unnormalized, theta, z_vector_masked, zx, zy, flat_imgs, rho, s, u, weights, drho, K, xx, yy, Dx, Dy,
+        updateDepth<T>(N_unnormalized, theta, z_vector_masked, zx, zy, flat_imgs, rho, s, weights, drho, K, xx, yy, Dx, Dy,
                                              3, beta, 10, 1000, 1e-10, 1000, sh_order);
 
         //blaze::CompressedMatrix<T> J_dz = std::get<6>(depth_upd);

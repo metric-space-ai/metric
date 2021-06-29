@@ -112,7 +112,7 @@ energyCauchy(
         const blaze::DynamicVector<T> & theta,
         const std::vector<blaze::DynamicVector<T>> & drho,
         const blaze::DynamicVector<T> & dz,
-        const blaze::DynamicVector<T> & u,
+        //const blaze::DynamicVector<T> & u,
         T lambda = 1.0,
         T huber = 0.1,
         T mu = 0.000002,
@@ -150,7 +150,8 @@ energyCauchy(
 
     //std::cout << std::endl << "energy: " << energy << std::endl;  // TODO remove
 
-    T objective = energy + 0.5*beta * blaze::sum(blaze::pow(theta - dz + u, 2));
+    //T objective = energy + 0.5*beta * blaze::sum(blaze::pow(theta - dz + u, 2));
+    T objective = energy + 0.5*beta * blaze::sum(blaze::pow(theta - dz, 2));
 
     //std::cout << std::endl << "objective: " << objective << std::endl;  // TODO remove
 
@@ -359,7 +360,7 @@ updateLighting(
 
     size_t nimages = flat_imgs.size();
     size_t nchannels = flat_imgs[0].size();
-    size_t npix = flat_imgs[0][0].size();
+    //size_t npix = flat_imgs[0][0].size();
 
     //std::vector<std::vector<blaze::DynamicVector<T>>> s_out = {};
     //T res_s = 0;
@@ -439,7 +440,7 @@ updateLighting(
 
 
 
-
+/*
 
 // calcEnergyPhotometricTerm(rho_w, I_w, s, N_unnormalized, params, u, dz, theta, options, J_n_un, J_dz)
 
@@ -454,8 +455,8 @@ std::tuple<
         //blaze::DynamicMatrix<T>
         >
 calcEnergyPhotometricTerm(
-        const std::vector<std::vector<blaze::DynamicVector<T>>> & rho_w,
-        const std::vector<std::vector<blaze::DynamicVector<T>>> & I_w,
+        const std::vector<std::vector<blaze::DynamicVector<T>>> & reweighted_rho,
+        const std::vector<std::vector<blaze::DynamicVector<T>>> & reweighted_img,
         const std::vector<std::vector<blaze::DynamicVector<T>>> & s,
         const blaze::DynamicVector<T> & theta,
         const blaze::DynamicVector<T> & dz,
@@ -467,14 +468,14 @@ calcEnergyPhotometricTerm(
         //const blaze::DynamicMatrix<T> & J_dz,
         // params, options
         const T beta, // = 5e-4
-        const harmo_order ho = ho_low
+        const harmo_order sh_order = ho_low
         )
 {
     //std::cout << std::endl << "entered calcEnergyPhotometricTerm" << std::endl;  // TODO remove
 
-    size_t nimages = I_w.size();
-    size_t nchannels = I_w[0].size();
-    size_t npix = I_w[0][0].size();
+    size_t nimages = reweighted_img.size();
+    size_t nchannels = reweighted_img[0].size();
+    size_t npix = reweighted_img[0][0].size();
 
     blaze::DynamicMatrix<T> normals_theta (N_unnormalized.rows(), N_unnormalized.columns());
     for (size_t c = 0; c < N_unnormalized.columns(); ++c) {
@@ -519,7 +520,7 @@ calcEnergyPhotometricTerm(
     std::vector<blaze::CompressedMatrix<T>> J_sh = {J_sh_0, J_sh_1, J_sh_2, J_sh_3};
     //std::vector<blaze::DynamicMatrix<T>> J = {J_sh_0, J_sh_1, J_sh_2, J_sh_3};
 
-    if (ho != ho_low) {
+    if (sh_order != ho_low) {
         T w4 = 3*sqrt(5/(12*M_PI));
         T w5 = 3*sqrt(5/(12*M_PI));
         T w7 = 3/2*sqrt(5/(12*M_PI));
@@ -557,7 +558,7 @@ calcEnergyPhotometricTerm(
 
     //std::cout << std::endl << "J_sh:" << std::endl << J_sh << std::endl;
 
-    auto sh = normalsToSh(normals_theta, ho);
+    auto sh = normalsToSh(normals_theta, sh_order);
     //std::cout << std::endl << "sh computed" << std::endl;  // TODO remove
 
     blaze::DynamicVector<T> cost_aug = sqrt(0.5*beta) * (theta - dz + u);
@@ -588,7 +589,7 @@ calcEnergyPhotometricTerm(
 
         //std::vector<blaze::DynamicVector<T>> cost_im = {};
         for (size_t ch = 0; ch < nchannels; ++ch) {
-             blaze::DynamicVector<T> cost_im_ch = rho_w[im][ch]*(sh * s[im][ch]) - I_w[im][ch];
+             blaze::DynamicVector<T> cost_im_ch = reweighted_rho[im][ch]*(sh * s[im][ch]) - reweighted_img[im][ch];
              //cost_im.push_back(cost_im_ch);
              //std::cout << std::endl << "cost_im_ch:" << std::endl << cost_im_ch << std::endl;
              blaze::subvector(cost_cauchy, idx, npix) = cost_im_ch;
@@ -601,7 +602,7 @@ calcEnergyPhotometricTerm(
                      J_sh[1] * s[im][ch][1] +
                      J_sh[2] * s[im][ch][2] +
                      J_sh[3] * s[im][ch][3];
-             if (ho != ho_low) {
+             if (sh_order != ho_low) {
                  J_sh_ = J_sh_ +
                          J_sh[4] * s[im][ch][4] +
                          J_sh[5] * s[im][ch][5] +
@@ -616,7 +617,7 @@ calcEnergyPhotometricTerm(
              //}
              blaze::CompressedMatrix<T> rho_w_diag (npix, npix);
              //blaze::DynamicMatrix<T> rho_w_diag (npix, npix, 0);
-             blaze::diagonal(rho_w_diag) = rho_w[im][ch];
+             blaze::diagonal(rho_w_diag) = reweighted_rho[im][ch];
              blaze::CompressedMatrix<T, blaze::columnMajor> rho_w_J_sh_ = rho_w_diag * J_sh_;
              //blaze::DynamicMatrix<T, blaze::columnMajor> rho_w_J_sh_ = rho_w_diag * J_sh_;
 
@@ -681,7 +682,7 @@ calcEnergyPhotometricTerm(
 
 }
 
-
+// */
 
 
 /*  // old version, TODO trace difference
@@ -1033,7 +1034,7 @@ updateDepth(
         const std::vector<std::vector<blaze::DynamicVector<T>>> & flat_imgs,
         const std::vector<blaze::DynamicVector<T>> & rho,
         const std::vector<std::vector<blaze::DynamicVector<T>>> & s,
-        const blaze::DynamicVector<T> & u,
+        //const blaze::DynamicVector<T> & u,
         const std::vector<std::vector<blaze::DynamicVector<T>>> & reweight,
         const std::vector<blaze::DynamicVector<T>> & drho,
         const blaze::DynamicMatrix<T> & K,
@@ -1057,7 +1058,7 @@ updateDepth(
 
     size_t nimages = flat_imgs.size();
     size_t nchannels = flat_imgs[0].size();
-    //size_t npix = flat_imgs[0][0].size();
+    size_t npix = flat_imgs[0][0].size();
 
     T t = t_;
 
@@ -1109,7 +1110,8 @@ updateDepth(
     //std::cout << std::endl << "sh:" << std::endl << sh << std::endl;
     //std::cout << "sh computed" << std::endl;  // TODO remove
 
-    auto tab_ec = energyCauchy(flat_imgs, rho, s, sh, theta, drho, dz, u);
+    //auto tab_ec = energyCauchy(flat_imgs, rho, s, sh, theta, drho, dz, u);
+    auto tab_ec = energyCauchy(flat_imgs, rho, s, sh, theta, drho, dz);
     T tab_objective = std::get<1>(tab_ec);
     //std::cout << "energy computed" << std::endl;  // TODO remove
 
@@ -1150,14 +1152,216 @@ updateDepth(
             }
         }
 
-        auto ept = calcEnergyPhotometricTerm(reweighted_rho, reweighted_img, s, theta, dz, N_unnormalized, u, J_n_un, J_dz, beta, sh_order);
-        //std::vector<std::vector<blaze::DynamicVector<T>>> cost_cauchy = std::get<0>(ept);
-        blaze::DynamicVector<T> cost_cauchy = std::get<0>(ept);
-        blaze::DynamicVector<T> cost_aug = std::get<1>(ept);
-        blaze::CompressedMatrix<T> J_cauchy = std::get<2>(ept);
-        blaze::CompressedMatrix<T> J_aug = std::get<3>(ept);
-        //blaze::DynamicMatrix<T> J_cauchy = std::get<2>(ept);
-        //blaze::DynamicMatrix<T> J_aug = std::get<3>(ept);
+//        auto ept = calcEnergyPhotometricTerm(reweighted_rho, reweighted_img, s, theta, dz, N_unnormalized, u, J_n_un, J_dz, beta, sh_order);
+//        //std::vector<std::vector<blaze::DynamicVector<T>>> cost_cauchy = std::get<0>(ept);
+//        blaze::DynamicVector<T> cost_cauchy = std::get<0>(ept);
+//        blaze::DynamicVector<T> cost_aug = std::get<1>(ept);
+//        blaze::CompressedMatrix<T> J_cauchy = std::get<2>(ept);
+//        blaze::CompressedMatrix<T> J_aug = std::get<3>(ept);
+//        //blaze::DynamicMatrix<T> J_cauchy = std::get<2>(ept);
+//        //blaze::DynamicMatrix<T> J_aug = std::get<3>(ept);
+
+        // ------
+        // photometric term
+
+        blaze::DynamicMatrix<T> normals_theta (N_unnormalized.rows(), N_unnormalized.columns());
+        for (size_t c = 0; c < N_unnormalized.columns(); ++c) {
+            blaze::column(normals_theta, c) = blaze::column(N_unnormalized, c) / theta;
+        }
+        //std::cout << std::endl << "updated normals_theta" << std::endl;  // TODO remove
+
+        blaze::CompressedMatrix<T> theta_1_diag (theta.size(), theta.size());
+        //blaze::DynamicMatrix<T> theta_1_diag (theta.size(), theta.size(), 0);
+        blaze::diagonal(theta_1_diag) = 1/theta;
+        //std::cout << std::endl << "theta_1_diag:" << std::endl << theta_1_diag << std::endl;
+
+        blaze::CompressedMatrix<T> J_n_0 = theta_1_diag * J_n_un[0];
+        blaze::CompressedMatrix<T> J_n_1 = theta_1_diag * J_n_un[1];
+        blaze::CompressedMatrix<T> J_n_2 = theta_1_diag * J_n_un[2];
+        //blaze::DynamicMatrix<T> J_n_0 = theta_1_diag * J_n_un[0];
+        //blaze::DynamicMatrix<T> J_n_1 = theta_1_diag * J_n_un[1];
+        //blaze::DynamicMatrix<T> J_n_2 = theta_1_diag * J_n_un[2];
+
+        //std::cout << std::endl << "J_n_0:" << std::endl << J_n_0 << std::endl;
+        //std::cout << std::endl << "J_n_1:" << std::endl << J_n_1 << std::endl;
+        //std::cout << std::endl << "J_n_2:" << std::endl << J_n_2 << std::endl;
+
+        //auto J_sh = calcJacobianWrtNormals(normals_theta, ho, J_n_0, J_n_1, J_n_2);
+        // ----
+        //int hnum = 9;
+        //if (ho == ho_low)
+        //    hnum = 4;
+
+        T w0 = sqrt(3/(4*M_PI));
+        T w3 = sqrt(1/(4*M_PI));  // TODO fix!!!!
+
+        blaze::CompressedMatrix<T> J_sh_0 = w0 * J_n_0;
+        blaze::CompressedMatrix<T> J_sh_1 = w0 * J_n_1;
+        blaze::CompressedMatrix<T> J_sh_2 = w0 * J_n_2;
+        blaze::CompressedMatrix<T> J_sh_3 (J_n_0.rows(), J_n_0.columns());
+        //blaze::DynamicMatrix<T> J_sh_0 = w0 * J_n_0;
+        //blaze::DynamicMatrix<T> J_sh_1 = w0 * J_n_1;
+        //blaze::DynamicMatrix<T> J_sh_2 = w0 * J_n_2;
+        //blaze::DynamicMatrix<T> J_sh_3 (J_n_0.rows(), J_n_0.columns(), 0);
+
+        std::vector<blaze::CompressedMatrix<T>> J_sh = {J_sh_0, J_sh_1, J_sh_2, J_sh_3};
+        //std::vector<blaze::DynamicMatrix<T>> J = {J_sh_0, J_sh_1, J_sh_2, J_sh_3};
+
+        if (sh_order != ho_low) {
+            T w4 = 3*sqrt(5/(12*M_PI));
+            T w5 = 3*sqrt(5/(12*M_PI));
+            T w7 = 3/2*sqrt(5/(12*M_PI));
+            T w8 = 0.5*sqrt(5/(4*M_PI));
+
+            // add diag
+            blaze::CompressedMatrix<T> N0 (normals_theta.rows(), normals_theta.rows());
+            blaze::CompressedMatrix<T> N1 (normals_theta.rows(), normals_theta.rows());
+            blaze::CompressedMatrix<T> N2 (normals_theta.rows(), normals_theta.rows());
+            //blaze::DynamicMatrix<T> N0 (normals_theta.rows(), normals_theta.rows(), 0);
+            //blaze::DynamicMatrix<T> N1 (normals_theta.rows(), normals_theta.rows(), 0);
+            //blaze::DynamicMatrix<T> N2 (normals_theta.rows(), normals_theta.rows(), 0);
+            blaze::diagonal(N0) = blaze::column(normals_theta, 0);
+            blaze::diagonal(N1) = blaze::column(normals_theta, 1);
+            blaze::diagonal(N2) = blaze::column(normals_theta, 2);
+            blaze::CompressedMatrix<T> J_sh_4 = w4 * (N1 * J_n_0 + N0 * J_n_1);
+            blaze::CompressedMatrix<T> J_sh_5 = w4 * (N2 * J_n_0 + N0 * J_n_2);
+            blaze::CompressedMatrix<T> J_sh_6 = w5 * (N2 * J_n_1 + N1 * J_n_2);
+            blaze::CompressedMatrix<T> J_sh_7 = 2 * w7 * (N0 * J_n_0 - N1 * J_n_1);
+            blaze::CompressedMatrix<T> J_sh_8 = 6 * w8 * N2 * J_n_2;
+            //blaze::DynamicMatrix<T> J_sh_4 = w4 * (N1 * J_n_0 + N0 * J_n_1);
+            //blaze::DynamicMatrix<T> J_sh_5 = w4 * (N2 * J_n_0 + N0 * J_n_2);
+            //blaze::DynamicMatrix<T> J_sh_6 = w5 * (N2 * J_n_1 + N1 * J_n_2);
+            //blaze::DynamicMatrix<T> J_sh_7 = 2 * w7 * (N0 * J_n_0 - N1 * J_n_1);
+            //blaze::DynamicMatrix<T> J_sh_8 = 6 * w8 * N2 * J_n_2;
+            J_sh.push_back(J_sh_4);
+            J_sh.push_back(J_sh_5);
+            J_sh.push_back(J_sh_6);
+            J_sh.push_back(J_sh_7);
+            J_sh.push_back(J_sh_8);
+        }
+        // ----
+
+        //std::cout << std::endl << "J_sh computed" << std::endl;  // TODO remove
+
+        //std::cout << std::endl << "J_sh:" << std::endl << J_sh << std::endl;
+
+        auto sh = normalsToSh(normals_theta, sh_order);
+        //std::cout << std::endl << "sh computed" << std::endl;  // TODO remove
+
+        //blaze::DynamicVector<T> cost_aug = sqrt(0.5*beta) * (theta - dz + u);
+        blaze::DynamicVector<T> cost_aug = sqrt(0.5*beta) * (theta - dz);
+
+        //std::cout << std::endl << "cost_aug:" << std::endl << cost_aug << std::endl;
+
+        //Matlab code: J_aug = -spdiags(repmat(sqrt(0.5*params.beta),size(theta,1),1), 0, size(theta,1), size(theta,1)) * J_dz;  % jacobian of lagrangian
+        blaze::CompressedMatrix<T> J_aug = -J_dz * sqrt(0.5*beta);  // TODO check simplification by tests!
+        //blaze::DynamicMatrix<T> J_aug = -J_dz * sqrt(0.5*beta);  // TODO check simplification by tests!
+
+        blaze::CompressedMatrix<T> J_cauchy (nimages*nchannels*npix, npix);
+        //blaze::DynamicMatrix<T> J_cauchy (nimages*nchannels*npix, npix, 0);
+
+        //blaze::DynamicVector<size_t> row_vec (nimages*nchannels*npix, 0);
+        //blaze::DynamicVector<size_t> col_vec (nimages*nchannels*npix, 0);
+        //blaze::DynamicVector<T> val_vec (nimages*nchannels*npix, 0);
+        std::vector<size_t> row_vec; // = {};
+        std::vector<size_t> col_vec; // = {};
+        std::vector<T> val_vec; // = {};
+        row_vec.reserve(nimages*nchannels*npix);
+        col_vec.reserve(nimages*nchannels*npix);
+        val_vec.reserve(nimages*nchannels*npix);
+        size_t idx = 0;
+        //std::vector<std::vector<blaze::DynamicVector<T>>> cost_cauchy_mat = {};
+        blaze::DynamicVector<T> cost_cauchy (nimages*nchannels*npix, 0);
+
+        for (size_t im = 0; im < nimages; ++im) {
+
+            //std::vector<blaze::DynamicVector<T>> cost_im = {};
+            for (size_t ch = 0; ch < nchannels; ++ch) {
+                 blaze::DynamicVector<T> cost_im_ch = reweighted_rho[im][ch]*(sh * s[im][ch]) - reweighted_img[im][ch];
+                 //cost_im.push_back(cost_im_ch);
+                 //std::cout << std::endl << "cost_im_ch:" << std::endl << cost_im_ch << std::endl;
+                 blaze::subvector(cost_cauchy, idx, npix) = cost_im_ch;
+                 idx += cost_im_ch.size();
+
+                 //Jacobian of photometric term
+                 blaze::CompressedMatrix<T> J_sh_ =
+                 //blaze::DynamicMatrix<T> J_sh_ =
+                         J_sh[0] * s[im][ch][0] +
+                         J_sh[1] * s[im][ch][1] +
+                         J_sh[2] * s[im][ch][2] +
+                         J_sh[3] * s[im][ch][3];
+                 if (sh_order != ho_low) {
+                     J_sh_ = J_sh_ +
+                             J_sh[4] * s[im][ch][4] +
+                             J_sh[5] * s[im][ch][5] +
+                             J_sh[6] * s[im][ch][6] +
+                             J_sh[7] * s[im][ch][7] +
+                             J_sh[8] * s[im][ch][8];
+                 }
+                 //std::cout << std::endl << "J_sh_:" << std::endl << J_sh_ << std::endl;
+
+                 //if (im*nchannels + ch == 0) { // consider simply moving out of ch loop
+                     // TODO
+                 //}
+                 blaze::CompressedMatrix<T> rho_w_diag (npix, npix);
+                 //blaze::DynamicMatrix<T> rho_w_diag (npix, npix, 0);
+                 blaze::diagonal(rho_w_diag) = reweighted_rho[im][ch];
+                 blaze::CompressedMatrix<T, blaze::columnMajor> rho_w_J_sh_ = rho_w_diag * J_sh_;
+                 //blaze::DynamicMatrix<T, blaze::columnMajor> rho_w_J_sh_ = rho_w_diag * J_sh_;
+
+                 //std::cout << std::endl << "rho_w_J_sh_:" << std::endl << rho_w_J_sh_ << std::endl;  // TODO remove
+
+                 size_t cnt = 0;
+                 //blaze::DynamicVector<size_t> row_vec_temp (rho_w_J_sh_.nonZeros(), 0);
+                 //blaze::DynamicVector<size_t> col_vec_temp (rho_w_J_sh_.nonZeros(), 0);
+                 //blaze::DynamicVector<T> val_vec_temp (rho_w_J_sh_.nonZeros(), 0);
+                 //std::vector<size_t> row_vec_temp = {};
+                 //std::vector<size_t> col_vec_temp = {};
+                 //std::vector<T> val_vec_temp = {};
+                 for (size_t c = 0; c < rho_w_J_sh_.columns(); ++c) {
+                     for (typename blaze::CompressedMatrix<T, blaze::columnMajor>::Iterator it=rho_w_J_sh_.begin(c); it!=rho_w_J_sh_.end(c); ++it) {
+                     //for (typename blaze::DynamicMatrix<T, blaze::columnMajor>::Iterator it=rho_w_J_sh_.begin(c); it!=rho_w_J_sh_.end(c); ++it) {
+                         //row_vec_temp[cnt] = it->index();
+                         //col_vec_temp[cnt] = c;
+                         //val_vec_temp[cnt] = it->value();
+                         row_vec.push_back(it->index() + (3*im + ch)*npix);
+                         col_vec.push_back(c);
+                         val_vec.push_back(it->value());
+                         ++cnt;
+                         //std::cout << c << ", " << it->index() << ", " << it->value() << std::endl;  // TODO remove
+                     }
+                 }
+
+                 //std::cout << std::endl << "row_vec_temp:" << std::endl << row_vec_temp << std::endl;
+                 //std::cout << std::endl << "col_vec_temp:" << std::endl << col_vec_temp << std::endl;
+                 //std::cout << std::endl << "val_vec_temp:" << std::endl << val_vec_temp << std::endl;
+                 //std::cout << "val_vec size:" << val_vec.size() << std::endl;
+                 //std::cout << std::endl << "processed J_cauchy for img " << im << ", channel " << ch << std::endl;  // TODO remove
+
+                 //blaze::subvector(row_vec, idx, row_vec_temp.size()) = row_vec_temp + (3*im + ch)*npix;
+                 //blaze::subvector(col_vec, idx, row_vec_temp.size()) = col_vec_temp;
+                 //blaze::subvector(val_vec, idx, row_vec_temp.size()) = val_vec_temp;
+                 //idx += row_vec_temp.size();
+            }
+            //cost_cauchy_mat.push_back(cost_im);
+        }
+
+        //std::cout << std::endl << "row_vec:" << std::endl << row_vec << std::endl;
+        //std::cout << std::endl << "col_vec:" << std::endl << col_vec << std::endl;
+        //std::cout << std::endl << "val_vec:" << std::endl << val_vec << std::endl;
+        //std::cout << std::endl << "row_vec size: " << std::endl << row_vec.size() << std::endl;
+        //std::cout << std::endl << "col_vec size: " << std::endl << col_vec.size() << std::endl;
+        //std::cout << std::endl << "val_vec size: " << std::endl << val_vec.size() << std::endl;
+
+
+        for (size_t el = 0; el < row_vec.size(); el++) {
+            //if (row_vec[el] < J_cauchy.rows() && col_vec[el] < J_cauchy.columns())
+                J_cauchy(row_vec[el], col_vec[el]) = val_vec[el];
+            //else
+                //std::cout << "element " << el << ": " << row_vec[el] << " | " << col_vec[el] << " out of J_cauchy size" << std::endl;
+        }
+
+        // ------
 
         //std::cout << std::endl << "cost_cauchy:" << std::endl << cost_cauchy << std::endl;
         //std::cout << std::endl << "cost_aug:" << std::endl << cost_aug << std::endl;
@@ -1255,7 +1459,8 @@ updateDepth(
             //std::cout << "yy:" << std::endl << yy << std::endl << std::endl;
             //std::cout << "sh:" << std::endl << sh << std::endl << std::endl;
 
-            auto ec = energyCauchy(flat_imgs, rho, s, sh, theta, drho, dz, u);
+            //auto ec = energyCauchy(flat_imgs, rho, s, sh, theta, drho, dz, u);
+            auto ec = energyCauchy(flat_imgs, rho, s, sh, theta, drho, dz);
             T objective = std::get<1>(ec);
 
             //std::cout << std::endl << "objective: " << objective << std::endl;  // TODO remove
