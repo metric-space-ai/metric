@@ -33,9 +33,9 @@ ups_solver(
         const T huber = 0.1,
         const bool regular = true,
         const T tol = 1e-5, // 1e-10,removing getNormalMap
-        const size_t pcg_maxit = 50, //1000, //1e3,
+        const size_t pcg_maxit = 50, //1000,
         const T beta_ = 5e-4,
-        const T kappa_ = 1.5,
+        const T kappa = 1.5,
         const T lambda = 1
         //T delta = 4.5e-4 // parameter for computing  the weight for cauchy estimator.
         )
@@ -43,10 +43,8 @@ ups_solver(
 
     bool console_debug_output = false; //true;  // TODO remove debug output
 
-    size_t nimages = size(I);
-    size_t nchannels = size(I[0]);  // we assume each image has equal number of channeks and resolution
-    size_t nrows = I[0][0].rows();
-    size_t ncols = I[0][0].columns();
+    size_t nimages = std::size(I);
+    size_t nchannels = std::size(I[0]);  // we assume each image has equal number of channeks and resolution
 
     size_t img_h = Z_init.rows();
     size_t img_w = Z_init.columns();
@@ -54,7 +52,6 @@ ups_solver(
     harmo_order sh_order = sh_order_;
     T mu = mu_;
     T beta = beta_;
-    T kappa = kappa_;
 
 
     // init s (VariablesInitialization in Matlab)
@@ -113,6 +110,7 @@ ups_solver(
         }
         flat_imgs.push_back(I_out);
     }
+
 
     // flatten albedo the same way
     // rho_init -> rho
@@ -175,6 +173,7 @@ ups_solver(
         std::cout << std::endl << "G:" << std::endl << G << std::endl << std::endl;
     }
 
+
     // computing normals and those derivatives (Depth2Normals in Matlab)
     // ----
     auto nM = nablaMat<T>(Mask, Forward, DirichletHomogeneous);
@@ -226,6 +225,9 @@ ups_solver(
     sh = normalsToSh(normals_theta, sh_order);
 
     // TODO check if initial energy computation is needed
+
+
+    // main loop
 
     std::vector<std::vector<blaze::DynamicVector<T>>> weights;
 
@@ -321,8 +323,8 @@ ups_solver(
             std::cout << "sh updated: " << std::endl << sh << std::endl << std::endl;
         }
 
-        // aux update
-//        theta = dz; // moved inside updateDepth
+        // update of aux-dependent variables (unluke original Matlab code, theta itself is updated in updateDepth)
+//        theta = dz; // moved into updateDepth
         for (size_t c = 0; c < N_unnormalized.columns(); ++c) {
             blaze::column(normals_theta, c) = blaze::column(N_unnormalized, c) / theta;
         }

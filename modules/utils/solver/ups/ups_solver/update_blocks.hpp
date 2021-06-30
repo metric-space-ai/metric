@@ -247,9 +247,7 @@ void updateAlbedo(
             //blaze::DynamicMatrix<T> Dk (G.rows(), G.rows(), 0);
             auto c = blaze::abs(G * rho[ch]);
             blaze::DynamicVector<T>  diag_values = map( c, [huber](T el) { return 1.0/(el > huber ? el : huber); } );
-            for (size_t i = 0; i < G.rows(); ++i) {
-                Dk(i, i) = diag_values[i];
-            }
+            blaze::diagonal(Dk) = diag_values;
             //std::cout << "Dk:" << std::endl << Dk << std::endl << std::endl;
             //std::cout << "Dk max:" << std::endl << blaze::max(Dk) << std::endl << std::endl;
             A = A + mu * blaze::trans(G) * Dk * G;
@@ -269,9 +267,7 @@ void updateAlbedo(
             //std::cout << "diag_values:" << std::endl << diag_values << std::endl << std::endl;
             blaze::CompressedMatrix<T> Ai (npix, npix);
             //blaze::DynamicMatrix<T> Ai (npix, npix, 0);
-            for (size_t i = 0; i < npix; ++i) {
-                Ai(i, i) = diag_values[i];
-            }
+            blaze::diagonal(Ai) = diag_values;
             //std::cout << "Ai:" << std::endl << Ai << std::endl << std::endl;
             //std::cout << "Ai max:" << std::endl << blaze::max(Ai) << std::endl << std::endl; // slightly differs from reference, TODO debug
             A = A + blaze::trans(Ai) * Ai;
@@ -285,7 +281,7 @@ void updateAlbedo(
         std::vector<size_t> pcgIts = {};
 //        auto Pre = blaze::IdentityMatrix<T>(A.rows());
         blaze::CompressedMatrix<T> Pre (A.rows(), A.rows());
-        for (size_t p = 0; p<npix; ++p) {
+        for (size_t p = 0; p<npix; ++p) { // temporary code
             T d_val = A(p, p);
             d_val = d_val > 0 ? d_val : 1;
             Pre(p, p) = d_val; // > 0 ? d_val : 1;
@@ -345,7 +341,6 @@ void updateLighting(
 
     size_t nimages = flat_imgs.size();
     size_t nchannels = flat_imgs[0].size();
-    //size_t npix = flat_imgs[0][0].size();
 
     for (size_t im = 0; im < nimages; ++im) {
         for (size_t ch = 0; ch < nchannels; ++ch) {
@@ -379,7 +374,7 @@ void updateLighting(
             std::vector<size_t> pcgIts = {};
             auto Pre = blaze::IdentityMatrix<T>(A.rows());
 //            blaze::CompressedMatrix<T> Pre (A.rows(), A.rows());
-//            for (size_t p = 0; p<A.rows(); ++p) {
+//            for (size_t p = 0; p<A.rows(); ++p) {  // temporary code
 //                T d_val = A(p, p);
 //                d_val = d_val > 0 ? d_val : 1;
 //                Pre(p, p) = d_val; // > 0 ? d_val : 1;
@@ -473,16 +468,13 @@ void updateDepth(
     //std::cout << std::endl << "sh:" << std::endl << sh << std::endl;
     //std::cout << "sh computed" << std::endl;
 
-    //auto tab_ec = energyCauchy(flat_imgs, rho, s, sh, theta, drho, dz, u);
-    //auto tab_ec = energyCauchy(flat_imgs, rho, s, sh, theta, drho, dz);  // removed u
-    //T tab_objective = std::get<1>(tab_ec);
     T tab_objective = energyCauchy(flat_imgs, rho, s, sh, theta, drho, dz);  // removed u
     //std::cout << "energy computed" << std::endl;
 
     //std::cout << std::endl << "tab_objective: " << tab_objective << std::endl;
 
     blaze::DynamicVector<T> z;
-    T res_z;
+    //T res_z;
 
     for (size_t it = 0; it < maxit; ++it) {
 
@@ -655,13 +647,13 @@ void updateDepth(
 
                  //std::cout << std::endl << "rho_w_J_sh_:" << std::endl << rho_w_J_sh_ << std::endl;
 
-                 size_t cnt = 0;
+                 //size_t cnt = 0;
                  for (size_t c = 0; c < rho_w_J_sh_.columns(); ++c) {
                      for (typename blaze::CompressedMatrix<T, blaze::columnMajor>::Iterator it=rho_w_J_sh_.begin(c); it!=rho_w_J_sh_.end(c); ++it) {
-                         row_vec.push_back(it->index() + (3*im + ch)*npix);
+                         row_vec.push_back(it->index() + (3*im + ch)*npix); // TODO optimize J_cauchy filling
                          col_vec.push_back(c);
                          val_vec.push_back(it->value());
-                         ++cnt;
+                         //++cnt;
                          //std::cout << c << ", " << it->index() << ", " << it->value() << std::endl;
                      }
                  }
@@ -684,7 +676,7 @@ void updateDepth(
 
         for (size_t el = 0; el < row_vec.size(); el++) {
             //if (row_vec[el] < J_cauchy.rows() && col_vec[el] < J_cauchy.columns())
-                J_cauchy(row_vec[el], col_vec[el]) = val_vec[el];
+                J_cauchy(row_vec[el], col_vec[el]) = val_vec[el];  // TODO optimize!!
             //else
                 //std::cout << "element " << el << ": " << row_vec[el] << " | " << col_vec[el] << " out of J_cauchy size" << std::endl;
         }
@@ -719,7 +711,7 @@ void updateDepth(
         std::vector<size_t> pcgIts = {};
 //        auto Pre = blaze::IdentityMatrix<T>(F.rows());  // TODO replace with good preconditioner
         blaze::CompressedMatrix<T> Pre (F.rows(), F.rows());
-        for (size_t p = 0; p<F.rows(); ++p) {
+        for (size_t p = 0; p<F.rows(); ++p) {  // temporary code
             T d_val = F(p, p);
             d_val = d_val > 0 ? d_val : 1;
             Pre(p, p) = d_val; // > 0 ? d_val : 1;
@@ -838,8 +830,8 @@ void updateDepth(
             } // else (objective > tab_objective && count < maxit_linesearch)
         } // while (true)
 
-        res_z = blaze::norm(1/t_step* F * (z0 - z_last) - b);
-        res_z = res_z > std::numeric_limits<T>::epsilon() ? res_z : std::numeric_limits<T>::epsilon();  // drop negative?
+        //res_z = blaze::norm(1/t_step* F * (z0 - z_last) - b);
+        //res_z = res_z > std::numeric_limits<T>::epsilon() ? res_z : std::numeric_limits<T>::epsilon();  // drop negative?
 
         //std::cout << "res_z: " << res_z << std::endl << std::endl;
         //std::cout << "z: " << z << std::endl << std::endl;
