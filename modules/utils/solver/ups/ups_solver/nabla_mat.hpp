@@ -29,7 +29,7 @@ nablaMat(
 
     //blaze::CompressedMatrix<T> Dx;
     //blaze::CompressedMatrix<T> Dy;
-    blaze::DynamicMatrix<T> Dx;  // TODO rey columnMajor
+    blaze::DynamicMatrix<T> Dx;  // TODO check row/columnMajor
     blaze::DynamicMatrix<T> Dy;
 
     switch (approx) {
@@ -76,11 +76,11 @@ nablaMat(
     blaze::CompressedMatrix<T, blaze::columnMajor> Ir = blaze::IdentityMatrix<T>(mask.rows());
     blaze::CompressedMatrix<T, blaze::columnMajor> Ic = blaze::IdentityMatrix<T>(mask.columns());
     blaze::CompressedMatrix<T, blaze::columnMajor> nx = blaze::kron(Dx, Ir);
-    blaze::CompressedMatrix<T, blaze::columnMajor> ny = blaze::kron(Ic, Dy); // TODO optimize!!
+    blaze::CompressedMatrix<T, blaze::columnMajor> ny = blaze::kron(Ic, Dy); // TODO optimize
     //blaze::DynamicMatrix<T> nx = nx_sp;
     //blaze::DynamicMatrix<T> ny = ny_sp;
 
-//    std::cout << "Dx:\n" << Dx << "\n"; // TODO remove
+//    std::cout << "Dx:\n" << Dx << "\n";
 //    std::cout << "Dy:\n" << Dy << "\n";
 //    std::cout << "nx:\n" << nx << "\n";
 //    std::cout << "ny:\n" << ny << "\n";
@@ -124,7 +124,7 @@ nablaMat(
     nabla_x = blaze::rows(nx_filtering, idx);
     nabla_y = blaze::rows(ny_filtering, idx);
 
-    //std::cout << "nabla_x:\n" << nabla_x << "\n"; // TODO remove
+    //std::cout << "nabla_x:\n" << nabla_x << "\n";
     //std::cout << "nabla_y:\n" << nabla_y << "\n";
     //std::cout << "idx:\n" << idx << "\n";
 

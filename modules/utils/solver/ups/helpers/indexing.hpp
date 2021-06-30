@@ -63,11 +63,11 @@ indices2dCw(const blaze::DynamicMatrix<bool, blaze::columnMajor> & m) {
     size_t idx = 0;
     for (size_t j = 0; j < m.columns(); ++j) {  // we use column-major order, as in Matlab
         for (size_t i = 0; i < m.rows(); ++i) {
-            //std::cout << i << ", " << j << ": " << idx << "\n"; // TODO remove
+            //std::cout << i << ", " << j << ": " << idx << "\n";
             if (m(i, j)) {
                 xx[idx] = i;
                 yy[idx] = j;
-                //std::cout << i << ", " << j << ": " << idx << "\n"; // TODO remove
+                //std::cout << i << ", " << j << ": " << idx << "\n";
                 ++idx;
             }
         }

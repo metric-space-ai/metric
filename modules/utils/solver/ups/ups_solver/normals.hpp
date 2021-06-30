@@ -79,7 +79,7 @@ enum harmo_order {ho_low, ho_high};
 
 template <typename T>
 blaze::DynamicMatrix<T>
-normalsToSh(const blaze::DynamicMatrix<T> & normals, const int harmo_order = ho_low) {  //, int harmo_order = 1) {  // TODO generalize!!!!
+normalsToSh(const blaze::DynamicMatrix<T> & normals, const int harmo_order = ho_low) {  //, int harmo_order = 1) {
 
     //int nb_harmo = (harmo_order+1)*(harmo_order+1);
     int nb_harmo = 9;

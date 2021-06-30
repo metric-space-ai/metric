@@ -118,9 +118,6 @@ energyCauchy(
         T beta = 0.0005
         )
 {
-    //size_t nimages = flat_imgs.size();
-    //size_t nchannels = flat_imgs[0].size();
-    //size_t npix = flat_imgs[0][0].size();
 
     T energy = 0;
     for (size_t im = 0; im < s.size(); ++im) {
@@ -132,7 +129,7 @@ energyCauchy(
     energy = lambda/2*energy;
     //T energy_no_smooth = energy;
 
-    //std::cout << std::endl << "energy_no_smooth: " << energy << std::endl;  // TODO remove
+    //std::cout << std::endl << "energy_no_smooth: " << energy << std::endl;
 
     // if(options.regular==1)
     T huber_summand = 0;
@@ -147,12 +144,12 @@ energyCauchy(
     }
     energy += mu*huber_summand;
 
-    //std::cout << std::endl << "energy: " << energy << std::endl;  // TODO remove
+    //std::cout << std::endl << "energy: " << energy << std::endl;
 
     //T objective = energy + 0.5*beta * blaze::sum(blaze::pow(theta - dz + u, 2));
     T objective = energy + 0.5*beta * blaze::sum(blaze::pow(theta - dz, 2));  // removed u
 
-    //std::cout << std::endl << "objective: " << objective << std::endl;  // TODO remove
+    //std::cout << std::endl << "objective: " << objective << std::endl;
 
     //return std::make_tuple(energy, objective, energy_no_smooth);  // no need since we do not show per-iter progress output
     return objective;
@@ -187,11 +184,11 @@ reweight(
         blaze::column(s_mat, i) = s[i/nchannels][i%nchannels];
     }
 
-    //std::cout << "s_mat:\n" << s_mat << "\n"; // TODO remove
+    //std::cout << "s_mat:\n" << s_mat << "\n";
 
     auto rk_mat = sh * s_mat;
 
-    //std::cout << "rk_mat:\n" << rk_mat << "\n"; // TODO remove
+    //std::cout << "rk_mat:\n" << rk_mat << "\n";
 
     std::vector<std::vector<blaze::DynamicVector<T>>> weights = {};
     size_t w_idx = 0;
@@ -209,7 +206,7 @@ reweight(
         weights.push_back(rk_ch);
     }
 
-    //std::cout << "rk:\n" << rk << "\n"; // TODO remove
+    //std::cout << "rk:\n" << rk << "\n";
 
     return weights;
 }
@@ -340,8 +337,8 @@ void updateLighting(
         const std::vector<blaze::DynamicVector<T>> & rho,
         const blaze::DynamicMatrix<T> & N,  // sh
         const std::vector<std::vector<blaze::DynamicVector<T>>> & reweight,
-        const float tol,  //T nb_nonsingular  // TODO check type!!
-        const float maxit    // TODO check type!!
+        const float tol,  //T nb_nonsingular
+        const float maxit    // TODO check type!! PCG requires double for some reason
 
         )
 {
@@ -377,9 +374,9 @@ void updateLighting(
             //auto PInv = blaze::inv(blaze::trans(A) * A) * blaze::trans(A);  // no, we need pinv since matrix can be singular!
             //blaze::DynamicVector<T> s_ch = PInv * b;
 
-            //blaze::DynamicVector<T> s_ch = blaze::solve(A, b);  // TODO disable
+            //blaze::DynamicVector<T> s_ch = blaze::solve(A, b);
 
-            std::vector<size_t> pcgIts = {};  // TODO enable
+            std::vector<size_t> pcgIts = {};
             auto Pre = blaze::IdentityMatrix<T>(A.rows());
 //            blaze::CompressedMatrix<T> Pre (A.rows(), A.rows());
 //            for (size_t p = 0; p<A.rows(); ++p) {
@@ -439,7 +436,7 @@ void updateDepth(
         )
 {
 
-    //std::cout << "updateDepth entered" << std::endl;  // TODO remove
+    //std::cout << "updateDepth entered" << std::endl;
 
     size_t nimages = flat_imgs.size();
     size_t nchannels = flat_imgs[0].size();
@@ -449,7 +446,7 @@ void updateDepth(
 
     blaze::DynamicVector<T> z0 = z_vector_masked;
     blaze::DynamicVector<T> z_last;
-    //std::cout << "z copied" << std::endl;  // TODO remove
+    //std::cout << "z copied" << std::endl;
 
     N_unnormalized = pixNormals(z_vector_masked, zx, zy, xx, yy, K);
     blaze::DynamicVector<T> dz = blaze::sqrt(blaze::sum<blaze::rowwise>(N_unnormalized % N_unnormalized)); // TODO compare to Eps if needed
@@ -457,7 +454,7 @@ void updateDepth(
 
     //std::cout << std::endl << "N_unnormalized:" << std::endl << N_unnormalized << std::endl;
     //std::cout << std::endl << "theta:" << std::endl << theta << std::endl;
-    //std::cout << "dz computed" << std::endl;  // TODO remove
+    //std::cout << "dz computed" << std::endl;
 
     auto Jac = normalJacByDepth<float>(N_normalized, z_vector_masked, K, xx, yy, Dx, Dy);
     auto J_dz = std::get<1>(Jac);
@@ -474,22 +471,22 @@ void updateDepth(
     auto sh = normalsToSh(normals_theta, sh_order);
 
     //std::cout << std::endl << "sh:" << std::endl << sh << std::endl;
-    //std::cout << "sh computed" << std::endl;  // TODO remove
+    //std::cout << "sh computed" << std::endl;
 
     //auto tab_ec = energyCauchy(flat_imgs, rho, s, sh, theta, drho, dz, u);
     //auto tab_ec = energyCauchy(flat_imgs, rho, s, sh, theta, drho, dz);  // removed u
     //T tab_objective = std::get<1>(tab_ec);
     T tab_objective = energyCauchy(flat_imgs, rho, s, sh, theta, drho, dz);  // removed u
-    //std::cout << "energy computed" << std::endl;  // TODO remove
+    //std::cout << "energy computed" << std::endl;
 
-    //std::cout << std::endl << "tab_objective: " << tab_objective << std::endl;   // TODO remove
+    //std::cout << std::endl << "tab_objective: " << tab_objective << std::endl;
 
     blaze::DynamicVector<T> z;
     T res_z;
 
     for (size_t it = 0; it < maxit; ++it) {
 
-        std::cout << "started z update (inner) iteration " << it << std::endl;  // TODO remove
+        std::cout << "started z update (inner) iteration " << it << std::endl;
         std::vector<std::vector<blaze::DynamicVector<T>>> reweighted_rho = {};  // input for calcEnergyPhotometricTerm computation
         std::vector<std::vector<blaze::DynamicVector<T>>> reweighted_img = {};
         for (size_t im = 0; im < nimages; ++im) {
@@ -509,7 +506,7 @@ void updateDepth(
                 reweighted_rho[im].push_back(rho_i_c);
                 reweighted_img[im].push_back(img_i_c);
 
-                //std::cout << std::endl << "rho:" << std::endl << rho[ch] << std::endl;  // TODO remove
+                //std::cout << std::endl << "rho:" << std::endl << rho[ch] << std::endl;
                 //std::cout << std::endl << "img:" << std::endl << flat_imgs[im][ch] << std::endl;
                 //std::cout << std::endl << "weighted_rho:" << std::endl << rho_i_c << std::endl;
                 //std::cout << std::endl << "weighted_img:" << std::endl << img_i_c << std::endl;
@@ -526,7 +523,7 @@ void updateDepth(
         for (size_t c = 0; c < N_unnormalized.columns(); ++c) {
             blaze::column(normals_theta, c) = blaze::column(N_unnormalized, c) / theta;
         }
-        //std::cout << std::endl << "updated normals_theta" << std::endl;  // TODO remove
+        //std::cout << std::endl << "updated normals_theta" << std::endl;
 
         blaze::CompressedMatrix<T> theta_1_diag (theta.size(), theta.size());
         //blaze::DynamicMatrix<T> theta_1_diag (theta.size(), theta.size(), 0);
@@ -547,7 +544,7 @@ void updateDepth(
         // ---- calcJacobianWrtNormals Matlab function call ----
 
         T w0 = sqrt(3/(4*M_PI));
-        T w3 = sqrt(1/(4*M_PI));  // TODO fix!!!!
+        //T w3 = sqrt(1/(4*M_PI));  // not used in the reference code, TODO check again
 
         blaze::CompressedMatrix<T> J_sh_0 = w0 * J_n_0;
         blaze::CompressedMatrix<T> J_sh_1 = w0 * J_n_1;
@@ -595,11 +592,11 @@ void updateDepth(
         }
         // ---- end of calcJacobianWrtNormals Matlab function ----
 
-        //std::cout << std::endl << "J_sh computed" << std::endl;  // TODO remove
+        //std::cout << std::endl << "J_sh computed" << std::endl;
         //std::cout << std::endl << "J_sh:" << std::endl << J_sh << std::endl;
 
         auto sh = normalsToSh(normals_theta, sh_order);
-        //std::cout << std::endl << "sh computed" << std::endl;  // TODO remove
+        //std::cout << std::endl << "sh computed" << std::endl;
 
         //blaze::DynamicVector<T> cost_aug = sqrt(0.5*beta) * (theta - dz + u);
         blaze::DynamicVector<T> cost_aug = sqrt(0.5*beta) * (theta - dz);  // no u anymore
@@ -650,16 +647,13 @@ void updateDepth(
                  }
                  //std::cout << std::endl << "J_sh_:" << std::endl << J_sh_ << std::endl;
 
-                 //if (im*nchannels + ch == 0) { // consider simply moving out of ch loop
-                     // TODO
-                 //}
                  blaze::CompressedMatrix<T> rho_w_diag (npix, npix);
                  //blaze::DynamicMatrix<T> rho_w_diag (npix, npix, 0);
                  blaze::diagonal(rho_w_diag) = reweighted_rho[im][ch];
                  blaze::CompressedMatrix<T, blaze::columnMajor> rho_w_J_sh_ = rho_w_diag * J_sh_;
                  //blaze::DynamicMatrix<T, blaze::columnMajor> rho_w_J_sh_ = rho_w_diag * J_sh_;
 
-                 //std::cout << std::endl << "rho_w_J_sh_:" << std::endl << rho_w_J_sh_ << std::endl;  // TODO remove
+                 //std::cout << std::endl << "rho_w_J_sh_:" << std::endl << rho_w_J_sh_ << std::endl;
 
                  size_t cnt = 0;
                  for (size_t c = 0; c < rho_w_J_sh_.columns(); ++c) {
@@ -668,7 +662,7 @@ void updateDepth(
                          col_vec.push_back(c);
                          val_vec.push_back(it->value());
                          ++cnt;
-                         //std::cout << c << ", " << it->index() << ", " << it->value() << std::endl;  // TODO remove
+                         //std::cout << c << ", " << it->index() << ", " << it->value() << std::endl;
                      }
                  }
 
@@ -676,7 +670,7 @@ void updateDepth(
                  //std::cout << std::endl << "col_vec_temp:" << std::endl << col_vec_temp << std::endl;
                  //std::cout << std::endl << "val_vec_temp:" << std::endl << val_vec_temp << std::endl;
                  //std::cout << "val_vec size:" << val_vec.size() << std::endl;
-                 //std::cout << std::endl << "processed J_cauchy for img " << im << ", channel " << ch << std::endl;  // TODO remove
+                 //std::cout << std::endl << "processed J_cauchy for img " << im << ", channel " << ch << std::endl;
             }
         }
 
@@ -711,9 +705,9 @@ void updateDepth(
         auto F = blaze::trans(J_aug)*J_aug + blaze::trans(J_cauchy) * J_cauchy;
         auto b = -blaze::trans(J_aug)*cost_aug - blaze::trans(J_cauchy) * cost_cauchy;
 
-        //std::cout << std::endl << "F:" << std::endl << F << std::endl;   // TODO remove
+        //std::cout << std::endl << "F:" << std::endl << F << std::endl;
         //std::cout << std::endl << "b:" << std::endl << b << std::endl;
-        //std::cout << std::endl << "F size:" << std::endl << F.columns() << ", " << F.rows() << std::endl;   // TODO remove
+        //std::cout << std::endl << "F size:" << std::endl << F.columns() << ", " << F.rows() << std::endl;
         //std::cout << std::endl << "b size:" << std::endl << b.size() << std::endl;
 
         //blaze::DynamicMatrix<T> L;  // TODO debug and enable
@@ -731,13 +725,13 @@ void updateDepth(
             Pre(p, p) = d_val; // > 0 ? d_val : 1;
         }
         auto start_time = std::chrono::steady_clock::now(); // TODO disable
-        blaze::DynamicVector<T> z_step = metric::pcg<T>(F, b, Pre, pcgIts, pcg_tol, pcg_maxit);  // TODO debug, add tolerance and maxit
+        blaze::DynamicVector<T> z_step = metric::pcg<T>(F, b, Pre, pcgIts, pcg_tol, pcg_maxit);
         auto end_time = std::chrono::steady_clock::now();
         std::cout << "PCG for depth completed in " <<
                      double(std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count()) / 1000000 << " s" <<
                      std::endl;
 
-        //std::cout << "z_step:" << std::endl << z_step << std::endl << std::endl;    // TODO remove
+        //std::cout << "z_step:" << std::endl << z_step << std::endl << std::endl;
 
         //z_step = {
         //    0.79248,
@@ -754,7 +748,7 @@ void updateDepth(
 
         while (true) {
 
-            //std::cout << std::endl << std::endl << "---- iter " << it << " | "  << count << std::endl << std::endl;  // TODO remove
+            //std::cout << std::endl << std::endl << "---- iter " << it << " | "  << count << std::endl << std::endl;
 
             z_vector_masked = z0 + t_step*z_step;
 
@@ -771,7 +765,7 @@ void updateDepth(
             sh = normalsToSh(normals_theta, sh_order);
 
             //std::cout << "N_unnormalized:" << std::endl << N_unnormalized << std::endl << std::endl;
-            //std::cout << "N_norm_th:" << std::endl << normals_theta << std::endl << std::endl;   // TODO remove
+            //std::cout << "N_norm_th:" << std::endl << normals_theta << std::endl << std::endl;
             //std::cout << "z0:" << std::endl << z0 << std::endl << std::endl;
             //std::cout << "z:" << std::endl << z << std::endl << std::endl;
             //std::cout << "dz:" << std::endl << dz << std::endl << std::endl;
@@ -791,7 +785,7 @@ void updateDepth(
             //T objective = std::get<1>(ec);
             T objective = energyCauchy(flat_imgs, rho, s, sh, theta, drho, dz);  // removed u
 
-            //std::cout << std::endl << "objective: " << objective << std::endl;  // TODO remove
+            //std::cout << std::endl << "objective: " << objective << std::endl;
 
             ++count;
 
@@ -813,19 +807,19 @@ void updateDepth(
                 N_unnormalized = pixNormals(z0, zx, zy, xx, yy, K);
                 dz = blaze::sqrt(blaze::sum<blaze::rowwise>(N_unnormalized % N_unnormalized)); // TODO compare to Eps if needed
                 blaze::DynamicMatrix<T> N_normalized = normalizePixNormals(N_unnormalized, dz);
-//                std::cout << "N_unnormalized diff: " << std::endl << N_unnormalized - N_unnormalized2 << std::endl;  // TODO remove
-//                std::cout << "dz diff: " << std::endl << dz - dz2 << std::endl;  // TODO remove
-//                std::cout << "N_normalized diff: " << std::endl << N_normalized - N_normalized2 << std::endl;  // TODO remove
+//                std::cout << "N_unnormalized diff: " << std::endl << N_unnormalized - N_unnormalized2 << std::endl;
+//                std::cout << "dz diff: " << std::endl << dz - dz2 << std::endl;
+//                std::cout << "N_normalized diff: " << std::endl << N_normalized - N_normalized2 << std::endl;
 
                 for (size_t c = 0; c < N_unnormalized.columns(); ++c) {
                     blaze::column(normals_theta, c) = blaze::column(N_unnormalized, c) / theta;
                 }
 
-                //std::cout << "N_norm_th iter:" << std::endl << normals_theta << std::endl << std::endl;   // TODO remove
-                //std::cout << "z0 iter:" << std::endl << z0 << std::endl << std::endl;   // TODO remove
-                //std::cout << "zx iter:" << std::endl << zx << std::endl << std::endl;   // TODO remove
-                //std::cout << "zy iter:" << std::endl << zy << std::endl << std::endl;   // TODO remove
-                //std::cout << "dz iter:" << std::endl << dz << std::endl << std::endl;   // TODO remove
+                //std::cout << "N_norm_th iter:" << std::endl << normals_theta << std::endl << std::endl;
+                //std::cout << "z0 iter:" << std::endl << z0 << std::endl << std::endl;
+                //std::cout << "zx iter:" << std::endl << zx << std::endl << std::endl;
+                //std::cout << "zy iter:" << std::endl << zy << std::endl << std::endl;
+                //std::cout << "dz iter:" << std::endl << dz << std::endl << std::endl;
                 //std::cout << "N_unnormalized iter:" << std::endl << N_unnormalized << std::endl << std::endl;
                 //std::cout << "normals_theta iter:" << std::endl << normals_theta << std::endl << std::endl;
 
@@ -850,14 +844,14 @@ void updateDepth(
         //std::cout << "res_z: " << res_z << std::endl << std::endl;
         //std::cout << "z: " << z << std::endl << std::endl;
 
-        //std::cout << "F:" << std::endl << F << std::endl << std::endl;   // TODO remove
-        //std::cout << "b:" << std::endl << b << std::endl << std::endl;   // TODO remove
-        //std::cout << "z0 - z_last:" << std::endl << z0 - z_last << std::endl << std::endl;   // TODO remove
-        //std::cout << "1/t_step* F * (z0 - z_last) - b:" << std::endl << 1/t_step* F * (z0 - z_last) - b << std::endl << std::endl;   // TODO remove
-        //std::cout << "F * (z0 - z_last) - b:" << std::endl << F * (z0 - z_last) - b << std::endl << std::endl;   // TODO remove
-        //std::cout << "F * (z0 - z_last):" << std::endl << F * (z0 - z_last) << std::endl << std::endl;   // TODO remove
-        //std::cout << "(F * (z0 - z_last)) / t_step:" << std::endl << (F * (z0 - z_last)) / t_step << std::endl << std::endl;   // TODO remove
-        //std::cout << "1/t_step:" << std::endl << 1/t_step << std::endl << std::endl;   // TODO remove
+        //std::cout << "F:" << std::endl << F << std::endl << std::endl;
+        //std::cout << "b:" << std::endl << b << std::endl << std::endl;
+        //std::cout << "z0 - z_last:" << std::endl << z0 - z_last << std::endl << std::endl;
+        //std::cout << "1/t_step* F * (z0 - z_last) - b:" << std::endl << 1/t_step* F * (z0 - z_last) - b << std::endl << std::endl;
+        //std::cout << "F * (z0 - z_last) - b:" << std::endl << F * (z0 - z_last) - b << std::endl << std::endl;
+        //std::cout << "F * (z0 - z_last):" << std::endl << F * (z0 - z_last) << std::endl << std::endl;
+        //std::cout << "(F * (z0 - z_last)) / t_step:" << std::endl << (F * (z0 - z_last)) / t_step << std::endl << std::endl;
+        //std::cout << "1/t_step:" << std::endl << 1/t_step << std::endl << std::endl;
         //std::cout << std::endl << "end of outer iter" << std::endl;
 
     } // for (size_t it = 0; it < maxit; ++it)

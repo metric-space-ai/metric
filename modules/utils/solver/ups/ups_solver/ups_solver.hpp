@@ -12,7 +12,7 @@
 
 #include <tuple>
 #include <vector>
-#include <iostream>
+#include <iostream>  // TODO remove debug output
 
 
 
@@ -34,14 +34,14 @@ ups_solver(
         const bool regular = true,
         const T tol = 1e-5, // 1e-10,removing getNormalMap
         const size_t pcg_maxit = 50, //1000, //1e3,
-        const T beta_ = 5e-4, // TODO trace, make structure!!!
+        const T beta_ = 5e-4,
         const T kappa_ = 1.5,
         const T lambda = 1
         //T delta = 4.5e-4 // parameter for computing  the weight for cauchy estimator.
         )
 {
 
-    bool console_debug_output = false; //true;  // TODO remove
+    bool console_debug_output = false; //true;  // TODO remove debug output
 
     size_t nimages = size(I);
     size_t nchannels = size(I[0]);  // we assume each image has equal number of channeks and resolution
@@ -102,7 +102,7 @@ ups_solver(
     // flatten images I into vectors of pixels selected by mask
     auto idc = indicesCwStd(Mask);
 
-    //std::cout << "idc:\n" << idc << "\n\n";  // TODO remove
+    //std::cout << "idc:\n" << idc << "\n\n";
 
     std::vector<std::vector<blaze::DynamicVector<T>>> flat_imgs;
     for (size_t i = 0; i < nimages; ++i) {
@@ -159,7 +159,7 @@ ups_solver(
     // computing gradients
     auto nablaOp = nablaMat<T>(Mask);
     if (console_debug_output) {
-        std::cout << std::endl << "mask, nabla operator matrices: "  // TODO remove
+        std::cout << std::endl << "mask, nabla operator matrices: "
                   << std::endl << Mask << std::endl << std::endl
                   << std::get<0>(nablaOp) << std::endl
                   << std::get<1>(nablaOp) << std::endl;
@@ -197,15 +197,15 @@ ups_solver(
     blaze::DynamicVector<T> dz = blaze::sqrt(blaze::sum<blaze::rowwise>(N_unnormalized % N_unnormalized)); // TODO compare to Eps if needed
     blaze::DynamicMatrix<T> N_normalized = normalizePixNormals(N_unnormalized, dz);
 
-//    std::cout << "N_unnormalized: " << std::endl << N_unnormalized << std::endl;  // TODO remove
+//    std::cout << "N_unnormalized: " << std::endl << N_unnormalized << std::endl;
 //    std::cout << "N_unnormalized2: " << std::endl << N_unnormalized2 << std::endl;
 //    std::cout << "dz: " << std::endl << dz << std::endl;
 //    std::cout << "dz2: " << std::endl << dz2 << std::endl;
-//    std::cout << "N_normalized: " << std::endl << N_normalized << std::endl;  // TODO remove
+//    std::cout << "N_normalized: " << std::endl << N_normalized << std::endl;
 //    std::cout << "N_normalized2: " << std::endl << N_normalized2 << std::endl;
-//    std::cout << "N_unnormalized diff: " << std::endl << N_unnormalized - N_unnormalized2 << std::endl;  // TODO remove
-//    std::cout << "dz diff: " << std::endl << dz - dz2 << std::endl;  // TODO remove
-//    std::cout << "N_normalized diff: " << std::endl << N_normalized - N_normalized2 << std::endl;  // TODO remove
+//    std::cout << "N_unnormalized diff: " << std::endl << N_unnormalized - N_unnormalized2 << std::endl;
+//    std::cout << "dz diff: " << std::endl << dz - dz2 << std::endl;
+//    std::cout << "N_normalized diff: " << std::endl << N_normalized - N_normalized2 << std::endl;
 
     blaze::DynamicVector<T> theta = dz;
 
@@ -225,7 +225,7 @@ ups_solver(
     blaze::DynamicMatrix<T> sh;
     sh = normalsToSh(normals_theta, sh_order);
 
-    // TODO add initial energy computation if needed
+    // TODO check if initial energy computation is needed
 
     std::vector<std::vector<blaze::DynamicVector<T>>> weights;
 
@@ -248,7 +248,7 @@ ups_solver(
 
         // albedo update
         weights = reweight(rho, sh, s, flat_imgs, lambda);
-        if (console_debug_output) {  // TODO remove
+        if (console_debug_output) {
             std::cout << std::endl << "before albedo update, iter " << it << ":" << std::endl;
             std::cout << std::endl << "flat_imgs:" << std::endl << flat_imgs << std::endl;
             std::cout << std::endl << "rho:" << std::endl << rho << std::endl;
@@ -272,7 +272,7 @@ ups_solver(
 
         // lighting update
         weights = reweight(rho, sh, s, flat_imgs, lambda);
-        if (console_debug_output) {  // TODO remove
+        if (console_debug_output) {
             std::cout << std::endl << "before lighting update, iter " << it << ":" << std::endl;
             std::cout << std::endl << "flat_imgs:" << std::endl << flat_imgs << std::endl;
             std::cout << std::endl << "rho:" << std::endl << rho << std::endl;
@@ -287,11 +287,10 @@ ups_solver(
         if (console_debug_output) {
             std::cout << "s updated: " << std::endl << s << std::endl << std::endl;
         }
-        //std::cout << "s updated" << std::endl;  // TODO remove
 
         // depth update
         weights = reweight(rho, sh, s, flat_imgs, lambda);
-        if (console_debug_output) {  // TODO remove
+        if (console_debug_output) {
             std::cout << std::endl << "before depth update, iter " << it << ":" << std::endl;
             std::cout << std::endl << "flat_imgs:" << std::endl << flat_imgs << std::endl;
             std::cout << std::endl << "rho:" << std::endl << rho << std::endl;
@@ -309,7 +308,6 @@ ups_solver(
             std::cout << std::endl << "Dy:" << std::endl << Dy << std::endl;
             std::cout << std::endl << "beta:" << std::endl << beta << std::endl;
         }
-        //std::cout << "weights updated" << std::endl;  // TODO remove
 
         updateDepth<T>(N_unnormalized, theta, z_vector_masked, zx, zy, flat_imgs, rho, s, weights, drho, K, xx, yy, Dx, Dy,
                                              3, beta, 10, 1000, 1e-10, 1000, sh_order);
@@ -345,7 +343,7 @@ ups_solver(
 
     }  // for (size_t it = 0; it < maxit; ++it) // end main loop
 
-    if (console_debug_output) {  // TODO remove
+    if (console_debug_output) {
         std::cout << std::endl << "final:" << std::endl;
         std::cout << std::endl << "z_vector_masked:" << std::endl << z_vector_masked << std::endl;
         std::cout << std::endl << "rho:" << std::endl << rho << std::endl;
