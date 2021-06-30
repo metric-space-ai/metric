@@ -101,7 +101,8 @@ normalJacByDepth(
 
 
 template <typename T>
-std::tuple<T, T, T>
+//std::tuple<T, T, T>
+T
 energyCauchy(
         const std::vector<std::vector<blaze::DynamicVector<T>>> & flat_imgs,
         const std::vector<blaze::DynamicVector<T>> & rho,
@@ -117,9 +118,9 @@ energyCauchy(
         T beta = 0.0005
         )
 {
-    size_t nimages = flat_imgs.size();
-    size_t nchannels = flat_imgs[0].size();
-    size_t npix = flat_imgs[0][0].size();
+    //size_t nimages = flat_imgs.size();
+    //size_t nchannels = flat_imgs[0].size();
+    //size_t npix = flat_imgs[0][0].size();
 
     T energy = 0;
     for (size_t im = 0; im < s.size(); ++im) {
@@ -129,7 +130,7 @@ energyCauchy(
         }
     }
     energy = lambda/2*energy;
-    T energy_no_smooth = energy;
+    //T energy_no_smooth = energy;
 
     //std::cout << std::endl << "energy_no_smooth: " << energy << std::endl;  // TODO remove
 
@@ -153,8 +154,8 @@ energyCauchy(
 
     //std::cout << std::endl << "objective: " << objective << std::endl;  // TODO remove
 
-    return std::make_tuple(energy, objective, energy_no_smooth);
-
+    //return std::make_tuple(energy, objective, energy_no_smooth);  // no need since we do not show per-iter progress output
+    return objective;
 }
 
 
@@ -476,8 +477,9 @@ void updateDepth(
     //std::cout << "sh computed" << std::endl;  // TODO remove
 
     //auto tab_ec = energyCauchy(flat_imgs, rho, s, sh, theta, drho, dz, u);
-    auto tab_ec = energyCauchy(flat_imgs, rho, s, sh, theta, drho, dz);  // removed u
-    T tab_objective = std::get<1>(tab_ec);
+    //auto tab_ec = energyCauchy(flat_imgs, rho, s, sh, theta, drho, dz);  // removed u
+    //T tab_objective = std::get<1>(tab_ec);
+    T tab_objective = energyCauchy(flat_imgs, rho, s, sh, theta, drho, dz);  // removed u
     //std::cout << "energy computed" << std::endl;  // TODO remove
 
     //std::cout << std::endl << "tab_objective: " << tab_objective << std::endl;   // TODO remove
@@ -785,8 +787,9 @@ void updateDepth(
             //std::cout << "sh:" << std::endl << sh << std::endl << std::endl;
 
             //auto ec = energyCauchy(flat_imgs, rho, s, sh, theta, drho, dz, u);
-            auto ec = energyCauchy(flat_imgs, rho, s, sh, theta, drho, dz);
-            T objective = std::get<1>(ec);
+            //auto ec = energyCauchy(flat_imgs, rho, s, sh, theta, drho, dz);
+            //T objective = std::get<1>(ec);
+            T objective = energyCauchy(flat_imgs, rho, s, sh, theta, drho, dz);  // removed u
 
             //std::cout << std::endl << "objective: " << objective << std::endl;  // TODO remove
 
