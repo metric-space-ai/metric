@@ -108,7 +108,7 @@ ValueType class_entropy(const blaze::DynamicVector<ValueType> & data, const Valu
 int main()
 {
 
-    using value_type = double;
+    using value_type = float; //double;
 
     //// first set
     //size_t wnd_size = 15;
@@ -136,6 +136,7 @@ int main()
     // preprocessing
 
     blaze::DynamicMatrix<value_type> ds_in = read_csv_blaze<value_type>("training_ds_1_fragm.csv"); //, ",", 10000);
+//    blaze::DynamicMatrix<value_type> ds_in = read_csv_blaze<value_type>("slice.csv"); //, ",", 10000);
 
     blaze::DynamicMatrix<value_type> raw_labels (ds_in.rows(), 1);
     blaze::column(raw_labels, 0) = blaze::column(ds_in, 4);
@@ -156,7 +157,10 @@ int main()
     }
 
     blaze::DynamicMatrix<value_type> ds_all (ds_in.rows(), 4, 0);
-    blaze::submatrix(ds_all, 0, 0, ds_in.rows(), 3) = blaze::submatrix(ds_in, 0, 1, ds_in.rows(), 3);
+    //blaze::submatrix(ds_all, 0, 0, ds_in.rows(), 3) = blaze::submatrix(ds_in, 0, 1, ds_in.rows(), 3);  // fails starting from size near 100000 lines
+    blaze::column(ds_all, 0) = blaze::column(ds_in, 1);
+    blaze::column(ds_all, 1) = blaze::column(ds_in, 2);
+    blaze::column(ds_all, 2) = blaze::column(ds_in, 3);
     blaze::column(ds_all, 3) = feature_stddev;
     blaze::DynamicMatrix<value_type, blaze::rowMajor> data = blaze::trans(ds_all);
 
@@ -164,6 +168,9 @@ int main()
 
     blaze_dm_to_csv(ds_all, "data.csv");
     blaze_dm_to_csv<value_type>(blaze::trans(target), "target.csv");
+
+    std::cout << std::endl << "ds_in: " << std::endl << blaze::submatrix(ds_in, 0, 0, 10, ds_in.columns()) << std::endl;  // TODO remove
+    std::cout << std::endl << "ds_all: " << std::endl << blaze::submatrix(ds_all, 0, 0, 10, ds_all.columns()) << std::endl;  // TODO remove
 
 
     // prediction dataset
@@ -255,7 +262,7 @@ int main()
     for (size_t i = wnd_size; i < out.rows(); ++i) {
         blaze::DynamicMatrix<value_type> wnd_row = blaze::submatrix(out, i - wnd_size, 0, wnd_size, 1);
         blaze::DynamicVector<value_type> wnd = blaze::column(wnd_row, 0); //blaze::trans(blaze::column(wnd_row, 0));
-        sl_entropy(i, 0) = class_entropy(wnd, 0.5);
+        sl_entropy(i, 0) = class_entropy<value_type>(wnd, 0.5);
     }
 
     blaze_dm_to_csv(sl_entropy, "entropy_pred.csv");
