@@ -47,7 +47,7 @@ std::vector<double> linspace(double a, double b, int n)
 
 
 
-double polyeval(const std::vector<double>& poly, const double z)
+inline double polyeval(const std::vector<double>& poly, const double z)
 {
     const int n = poly.size();
     double sum = poly[n - 1];
@@ -60,7 +60,7 @@ double polyeval(const std::vector<double>& poly, const double z)
 
 
 
-double erfinv_imp(const double p, const double q)
+inline double erfinv_imp(const double p, const double q)
 {
     double result = 0;
 
@@ -155,7 +155,7 @@ double erfinv_imp(const double p, const double q)
 
 
 
-double erfcinv(const double z)
+inline double erfcinv(const double z)
 {
     if ((z < 0) || (z > 2))
         std::cout << "Argument outside range [0,2] in inverse erfc function (got p=%1%)." << std::endl;

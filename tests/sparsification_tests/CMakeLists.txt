@@ -1,3 +1,1 @@
-add_executable(sparsification_tests sparsification_tests.cpp)
-target_link_libraries(sparsification_tests PRIVATE Catch2::Catch2)
-catch_discover_tests(sparsification_tests)
+target_sources(unit_tests PRIVATE sparsification_tests.cpp)

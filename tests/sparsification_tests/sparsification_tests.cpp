@@ -6,7 +6,6 @@
   Copyright (c) 2019 Panda Team
 */
 
-#define CATCH_CONFIG_MAIN
 #include <catch2/catch.hpp>
 
 #include "modules/utils/graph/sparsify.hpp"

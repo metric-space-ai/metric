@@ -1,11 +1,3 @@
-add_executable(knn_graph_tests knn_graph_tests.cpp)
-add_executable(space_matrix_tests space_matrix_tests.cpp)
-add_executable(space_tree_tests space_tree_tests.cpp)
-
-target_link_libraries(knn_graph_tests Catch2::Catch2)
-target_link_libraries(space_matrix_tests Catch2::Catch2)
-target_link_libraries(space_tree_tests Catch2::Catch2)
-
-catch_discover_tests(knn_graph_tests)
-catch_discover_tests(space_matrix_tests)
-catch_discover_tests(space_tree_tests)
+target_sources(unit_tests PRIVATE knn_graph_tests.cpp)
+target_sources(unit_tests PRIVATE space_matrix_tests.cpp)
+target_sources(unit_tests PRIVATE space_tree_tests.cpp)

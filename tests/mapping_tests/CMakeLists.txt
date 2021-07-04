@@ -1,11 +1,5 @@
-add_executable(kohonen_outliers_clustering_tests kohonen_outliers_clustering_tests.cpp)
-add_executable(mapping_tests mapping_tests.cpp)
-add_executable(dspcc_tests dspcc_tests.cpp)
+target_sources(unit_tests PRIVATE kohonen_outliers_clustering_tests.cpp)
+target_sources(unit_tests PRIVATE mapping_tests.cpp)
+target_sources(unit_tests PRIVATE dspcc_tests.cpp)
 
-target_link_libraries(kohonen_outliers_clustering_tests PRIVATE Catch2::Catch2)
-target_link_libraries(mapping_tests PRIVATE Catch2::Catch2)
-target_link_libraries(dspcc_tests PRIVATE Catch2::Catch2 ${LAPACK_LIBRARIES})
-
-catch_discover_tests(kohonen_outliers_clustering_tests)
-catch_discover_tests(mapping_tests)
-catch_discover_tests(dspcc_tests)
+target_link_libraries(unit_tests PRIVATE ${LAPACK_LIBRARIES})
