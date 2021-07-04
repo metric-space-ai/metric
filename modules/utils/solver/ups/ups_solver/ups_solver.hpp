@@ -41,8 +41,6 @@ ups_solver(
         )
 {
 
-    bool console_debug_output = false; //true;  // TODO remove debug output
-
     size_t nimages = std::size(I);
     size_t nchannels = std::size(I[0]);  // we assume each image has equal number of channeks and resolution
 
@@ -120,9 +118,6 @@ ups_solver(
         rho.push_back(blaze::elements(flat_rho, idc));  // apply mask and save
     }
 
-    if (console_debug_output) {
-        std::cout << "rho_init: " << std::endl << rho << std::endl << std::endl;
-    }
 
     size_t npix = flat_imgs[0][0].size();
 
@@ -136,10 +131,7 @@ ups_solver(
             pos += npix;
         }
     }
-    //std::cout << "max pixel value: " << blaze::max(allpixels) << std::endl;
-    //std::cout << "1st pixel value: " << allpixels[0] << std::endl;
     std::nth_element(allpixels.begin(), allpixels.begin() + allpixels.size()/2, allpixels.end());
-    //std::cout << "1st pixel value after partial sort: " << allpixels[0] << std::endl;
     T pix_median = allpixels[allpixels.size()/2 - 1];
     if (allpixels.size() % 2 == 0) {
         pix_median = (pix_median + allpixels[allpixels.size()/2]) / 2;
@@ -156,23 +148,11 @@ ups_solver(
 
     // computing gradients
     auto nablaOp = nablaMat<T>(Mask);
-    if (console_debug_output) {
-        std::cout << std::endl << "mask, nabla operator matrices: "
-                  << std::endl << Mask << std::endl << std::endl
-                  << std::get<0>(nablaOp) << std::endl
-                  << std::get<1>(nablaOp) << std::endl;
-    }
-
     blaze::CompressedMatrix<T> G (std::get<0>(nablaOp).rows() + std::get<1>(nablaOp).rows(), std::get<0>(nablaOp).columns());
-    //blaze::DynamicMatrix<T> G (std::get<0>(nablaOp).rows() + std::get<1>(nablaOp).rows(), std::get<0>(nablaOp).columns(), 0);
     auto view0 = blaze::submatrix(G, 0, 0, std::get<0>(nablaOp).rows(), std::get<0>(nablaOp).columns());
     auto view1 = blaze::submatrix(G, std::get<0>(nablaOp).rows(), 0, std::get<1>(nablaOp).rows(), std::get<1>(nablaOp).columns());
     view0 = std::get<0>(nablaOp);
     view1 = std::get<1>(nablaOp);  // G written
-    if (console_debug_output) {
-        std::cout << std::endl << "G:" << std::endl << G << std::endl << std::endl;
-    }
-
 
     // computing normals and those derivatives (Depth2Normals in Matlab)
     // ----
@@ -195,16 +175,6 @@ ups_solver(
     blaze::DynamicMatrix<T> N_unnormalized = pixNormals(z_vector_masked, zx, zy, xx, yy, K);
     blaze::DynamicVector<T> dz = blaze::sqrt(blaze::sum<blaze::rowwise>(N_unnormalized % N_unnormalized)); // TODO compare to Eps if needed
     blaze::DynamicMatrix<T> N_normalized = normalizePixNormals(N_unnormalized, dz);
-
-//    std::cout << "N_unnormalized: " << std::endl << N_unnormalized << std::endl;
-//    std::cout << "N_unnormalized2: " << std::endl << N_unnormalized2 << std::endl;
-//    std::cout << "dz: " << std::endl << dz << std::endl;
-//    std::cout << "dz2: " << std::endl << dz2 << std::endl;
-//    std::cout << "N_normalized: " << std::endl << N_normalized << std::endl;
-//    std::cout << "N_normalized2: " << std::endl << N_normalized2 << std::endl;
-//    std::cout << "N_unnormalized diff: " << std::endl << N_unnormalized - N_unnormalized2 << std::endl;
-//    std::cout << "dz diff: " << std::endl << dz - dz2 << std::endl;
-//    std::cout << "N_normalized diff: " << std::endl << N_normalized - N_normalized2 << std::endl;
 
     blaze::DynamicVector<T> theta = dz;
 
@@ -250,17 +220,6 @@ ups_solver(
 
         // albedo update
         weights = reweight(rho, sh, s, flat_imgs, lambda);
-        if (console_debug_output) {
-            std::cout << std::endl << "before albedo update, iter " << it << ":" << std::endl;
-            std::cout << std::endl << "flat_imgs:" << std::endl << flat_imgs << std::endl;
-            std::cout << std::endl << "rho:" << std::endl << rho << std::endl;
-            std::cout << std::endl << "sh:" << std::endl << sh << std::endl;
-            std::cout << std::endl << "s:" << std::endl << s << std::endl;
-            std::cout << std::endl << "weights:" << std::endl << weights << std::endl;
-            std::cout << std::endl << "G:" << std::endl << G << std::endl;
-            std::cout << std::endl << "huber:" << std::endl << huber << std::endl;
-            std::cout << std::endl << "mu:" << std::endl << mu << std::endl;
-        }
         updateAlbedo(rho, flat_imgs, sh, s, weights, G, huber, mu, regular, tol, pcg_maxit);
         drho = {};
         for (size_t ch = 0; ch < rho.size(); ++ch) {
@@ -268,60 +227,14 @@ ups_solver(
             drho.push_back(drho_ch);
         }
 
-        if (console_debug_output) {
-            std::cout << "rho updated: " << std::endl << rho << std::endl << std::endl;
-        }
-
         // lighting update
         weights = reweight(rho, sh, s, flat_imgs, lambda);
-        if (console_debug_output) {
-            std::cout << std::endl << "before lighting update, iter " << it << ":" << std::endl;
-            std::cout << std::endl << "flat_imgs:" << std::endl << flat_imgs << std::endl;
-            std::cout << std::endl << "rho:" << std::endl << rho << std::endl;
-            std::cout << std::endl << "sh:" << std::endl << sh << std::endl;
-            std::cout << std::endl << "s:" << std::endl << s << std::endl;
-            std::cout << std::endl << "weights:" << std::endl << weights << std::endl;
-            std::cout << std::endl << "tol:" << std::endl << tol << std::endl;
-            std::cout << std::endl << "pcg_maxit:" << std::endl << pcg_maxit << std::endl;
-        }
         updateLighting(s, flat_imgs, rho, sh, weights, tol, pcg_maxit);
-
-        if (console_debug_output) {
-            std::cout << "s updated: " << std::endl << s << std::endl << std::endl;
-        }
 
         // depth update
         weights = reweight(rho, sh, s, flat_imgs, lambda);
-        if (console_debug_output) {
-            std::cout << std::endl << "before depth update, iter " << it << ":" << std::endl;
-            std::cout << std::endl << "flat_imgs:" << std::endl << flat_imgs << std::endl;
-            std::cout << std::endl << "rho:" << std::endl << rho << std::endl;
-            std::cout << std::endl << "sh:" << std::endl << sh << std::endl;
-            std::cout << std::endl << "s:" << std::endl << s << std::endl;
-            std::cout << std::endl << "weights:" << std::endl << weights << std::endl;
-            std::cout << std::endl << "z_vector_masked:" << std::endl << z_vector_masked << std::endl;
-            std::cout << std::endl << "zx:" << std::endl << zx << std::endl;
-            std::cout << std::endl << "zy:" << std::endl << zy << std::endl;
-            //std::cout << std::endl << "u:" << std::endl << u << std::endl;
-            std::cout << std::endl << "drho:" << std::endl << drho << std::endl;
-            std::cout << std::endl << "xx:" << std::endl << xx << std::endl;
-            std::cout << std::endl << "yy:" << std::endl << yy << std::endl;
-            std::cout << std::endl << "Dx:" << std::endl << Dx << std::endl;
-            std::cout << std::endl << "Dy:" << std::endl << Dy << std::endl;
-            std::cout << std::endl << "beta:" << std::endl << beta << std::endl;
-        }
-
         updateDepth<T>(N_unnormalized, theta, z_vector_masked, zx, zy, flat_imgs, rho, s, weights, drho, K, xx, yy, Dx, Dy,
                                              3, beta, 10, 1000, 1e-10, 1000, sh_order);
-
-        if (console_debug_output) {
-            std::cout << "z_vector_masked updated: " << std::endl << z_vector_masked << std::endl << std::endl;
-            std::cout << "zx updated: " << std::endl << zx << std::endl << std::endl;
-            std::cout << "zy updated: " << std::endl << zy << std::endl << std::endl;
-            std::cout << "dz updated: " << std::endl << dz << std::endl << std::endl;
-            std::cout << "N_unnormalized updated: " << std::endl << N_unnormalized << std::endl << std::endl;
-            std::cout << "sh updated: " << std::endl << sh << std::endl << std::endl;
-        }
 
         // update of aux-dependent variables (unluke original Matlab code, theta itself is updated in updateDepth)
 //        theta = dz; // moved into updateDepth
@@ -341,17 +254,7 @@ ups_solver(
         //    u = u / kappa; // TODO trace MAtlab code for beta, kappa update
         //}
 
-        std::cout << "iter " << it << " completed" << std::endl;
-
     }  // for (size_t it = 0; it < maxit; ++it) // end main loop
-
-    if (console_debug_output) {
-        std::cout << std::endl << "final:" << std::endl;
-        std::cout << std::endl << "z_vector_masked:" << std::endl << z_vector_masked << std::endl;
-        std::cout << std::endl << "rho:" << std::endl << rho << std::endl;
-        //std::cout << std::endl << "sh:" << std::endl << sh << std::endl;
-        //std::cout << std::endl << "s:" << std::endl << s << std::endl;
-    }
 
     auto z_out = vecToImage<T>(z_vector_masked, Mask, img_h, img_w);
     std::vector<blaze::DynamicMatrix<T>> rho_out = {};
