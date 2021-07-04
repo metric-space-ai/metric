@@ -12,11 +12,30 @@
 
 #include <tuple>
 #include <vector>
-#include <iostream>  // TODO remove debug output
+//#include <iostream>
 
 
 
-
+/**
+ * @brief C++ transcoding of https://github.com/zhenzhangye/general_ups
+ * @param Z_init - initial surface, should be convex and smooth
+ * @param Mask - binary mask that selects the pixels being processed
+ * @param K - camera intrinsic matrix
+ * @param I - vector of RGB images, each represented by vector of 3 color channels
+ * @param sh_order_ - lighting approximation scheme: 4 components for ho_low, 9 components for ho_high
+ * @param maxit - the maximum number of iterations for lagged block coordinate descent (main loop)
+ * @param c2f_lighting - number of main loop iterations before lighting scheme is extended from 4 to 9 components (if ho_high is passed)
+ * @param mu_ - the weight of smuthness on albedos
+ * @param delta - Cauchy estimator weighting parameter
+ * @param huber - Huber regularization factor in albedo update
+ * @param regular - Huber regularization switch flag
+ * @param tol - PCG tolerance used in albedo and lighting update
+ * @param pcg_maxit - maximum number of iterations for PCG in albedo and lighting update
+ * @param beta_ - initial stepsize on theta update
+ * @param kappa - increment of beta
+ * @param lambda - the weight of shape from shading term
+ * @return resulting estimations of depth, albedo and lighting, respectively
+ */
 template <typename T>
 std::tuple<blaze::DynamicMatrix<T>, std::vector<blaze::DynamicMatrix<T>>, std::vector<std::vector<blaze::DynamicVector<T>>>>
 ups_solver(

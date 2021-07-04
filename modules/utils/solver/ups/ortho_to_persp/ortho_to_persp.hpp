@@ -1,12 +1,17 @@
 #ifndef _UPS_ORTHO_TO_PERSP_HPP
 #define _UPS_ORTHO_TO_PERSP_HPP
 
-#include "../3rdparty/metric/3rdparty/blaze/Blaze.h"
+#include "3rdparty/blaze/Blaze.h"
 
 #include <tuple>
 
 
-
+/**
+ * @brief converts depth representation to perspective one
+ * @param Z - depth map per pixel, obtained from UPS
+ * @param K - camera intrinsic mareix used by UPS
+ * @return x and y coordinates per pixel updated with respect to depth, that can be used together with Z to plot true 3d surface
+ */
 template <typename T>
 std::tuple<blaze::DynamicMatrix<T>, blaze::DynamicMatrix<T>>
 orthoToPersp(const blaze::DynamicMatrix<T> & Z, const blaze::DynamicMatrix<T> & K)

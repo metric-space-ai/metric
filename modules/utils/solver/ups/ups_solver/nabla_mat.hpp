@@ -6,7 +6,6 @@
 #include "3rdparty/blaze/Blaze.h"
 
 #include <tuple>
-//#include <iostream>  // TODO remove
 
 
 
@@ -14,7 +13,13 @@ enum nabla_approximation {Forward, Backward, Central};
 enum nabla_boundary_condition {DirichletHomogeneous, NeumannHomogeneous}; //, NeumannConstant};
 
 
-
+/**
+ * @brief computes nabla operator matrix for given pixel mask
+ * @param mask - bool pixel mask of same size as image
+ * @param approx - approximation mode
+ * @param boundary - the way boundaries are processed
+ * @return nabla operators by x and by y (as matrices the vectorized image should be multiplied by in order to obtain gradients)
+ */
 template <typename T>
 std::tuple<blaze::CompressedMatrix<T>, blaze::CompressedMatrix<T>>
 //std::tuple<blaze::DynamicMatrix<T>, blaze::DynamicMatrix<T>>
@@ -29,7 +34,7 @@ nablaMat(
 
     //blaze::CompressedMatrix<T> Dx;
     //blaze::CompressedMatrix<T> Dy;
-    blaze::DynamicMatrix<T> Dx;  // TODO check row/columnMajor
+    blaze::DynamicMatrix<T> Dx;
     blaze::DynamicMatrix<T> Dy;
 
     switch (approx) {
@@ -80,14 +85,9 @@ nablaMat(
     //blaze::DynamicMatrix<T> nx = nx_sp;
     //blaze::DynamicMatrix<T> ny = ny_sp;
 
-//    std::cout << "Dx:\n" << Dx << "\n";
-//    std::cout << "Dy:\n" << Dy << "\n";
-//    std::cout << "nx:\n" << nx << "\n";
-//    std::cout << "ny:\n" << ny << "\n";
 
-    // apply NeumannHomogeneous
+    /*  // old code  // apply NeumannHomogeneous
 
-    /*  // old code
     auto idx = indicesCw(mask);
 
     size_t s = blaze::nonZeros(mask);  // should be equal to length of idx and height and width of nabla_x, nabla_y
@@ -124,9 +124,6 @@ nablaMat(
     nabla_x = blaze::rows(nx_filtering, idx);
     nabla_y = blaze::rows(ny_filtering, idx);
 
-    //std::cout << "nabla_x:\n" << nabla_x << "\n";
-    //std::cout << "nabla_y:\n" << nabla_y << "\n";
-    //std::cout << "idx:\n" << idx << "\n";
 
     if (boundary == NeumannHomogeneous) {  // here nabla matches the DirichletHomogeneous option
         for (size_t i = 0; i < s; ++i) {  // set rows where at least one neighbour does not exist to 0.

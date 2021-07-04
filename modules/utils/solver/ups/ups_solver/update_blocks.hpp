@@ -20,7 +20,17 @@
 // ---------- service functions
 
 
-
+/**
+ * @brief computes Jacobian of normals by depth
+ * @param normals - x, y, z components (in columns) of normals per (masked) pixel
+ * @param z_vector_masked - depth per (masked) pixel
+ * @param K - camera intrinsic matrix
+ * @param xx - indices of masked pixels by x with respect to point where camera axis crosses the image
+ * @param yy - same by y
+ * @param Dx - gradient of z in x direction
+ * @param Dy - same in y direction
+ * @return Jacobian matrix of unnormalized normal on z and Jacobian matrix of norm of the normal (dz), respectively
+ */
 template <typename T>
 std::tuple<std::vector<blaze::CompressedMatrix<T>>, blaze::CompressedMatrix<T>>
 //std::tuple<std::vector<blaze::DynamicMatrix<T>>, blaze::DynamicMatrix<T>>
@@ -92,7 +102,23 @@ normalJacByDepth(
 }
 
 
-
+/**
+ * @brief computes energy (being minimized)
+ * @param flat_imgs - vector of vectorized masked images represented by vector of 3 color channels,
+ * where each channel is DynamicVector of masked pixels
+ * @param rho - albedo per color channels, vectorized by mask the same way as images
+ * @param s - lighting coefficients per image, than per channel (4 or 9 depending on current lightig scheme)
+ * @param sh - augmented lightig data, brightness share of oriented normal (of unit albedo) regardong given lighting source coefficient
+ * (in columns, horizontally arranged first by image, than by channel)
+ * @param theta - (lagged) norm of normals, used as lagged block descend method auxiliary vatiable
+ * @param drho - gradients of rho by x and y, concatenated into single matrix, stored in vector by channels
+ * @param dz - updated norm of normals, to be compared with theta
+ * @param lambda - weight of shape from shading term
+ * @param huber - Huber regularization factor
+ * @param mu - the weight of smuthness on albedos
+ * @param beta - stepsize on theta update
+ * @return energy value
+ */
 template <typename T>
 T energyCauchy(
         const std::vector<std::vector<blaze::DynamicVector<T>>> & flat_imgs,
@@ -103,10 +129,10 @@ T energyCauchy(
         const std::vector<blaze::DynamicVector<T>> & drho,
         const blaze::DynamicVector<T> & dz,
         //const blaze::DynamicVector<T> & u,
-        T lambda = 1.0,
-        T huber = 0.1,
-        T mu = 0.000002,
-        T beta = 0.0005
+        const T lambda = 1.0,
+        const T huber = 0.1,
+        const T mu = 0.000002,
+        const T beta = 0.0005
         )
 {
 
@@ -141,7 +167,17 @@ T energyCauchy(
 }
 
 
-
+/**
+ * @brief weight updater
+ * @param rho - albedo per color channels, vectorized by mask the same way as images
+ * @param sh - augmented lightig data, brightness of oriented normal (of unit albedo) under current lighting (in columns,
+ * horizontally arranged first by image, than by channel)
+ * @param s - lightong coefficients per image, than per channel (4 or 9 depending on current lightig scheme)
+ * @param flat_imgs - vector of vectorized masked images represented by vector of 3 color channels,
+ * where each channel is DynamicVector of (masked) pixels
+ * @param lambda - the weight of shape from shading term
+ * @return updated weights used in Lagged Block Descent Method
+ */
 template <typename T>
 std::vector<std::vector<blaze::DynamicVector<T>>>
 reweight(
@@ -193,7 +229,20 @@ reweight(
 // ----------- block updaters
 
 
-
+/**
+ * @brief albedo updater
+ * @param rho - albedo, in&out parameter being updated
+ * @param flat_imgs - vectorized images
+ * @param N - augmented lighting, same as sh (refer to energyCauche for details)
+ * @param s - lighting coefficients per image, than per channel (4 or 9 depending on current lightig scheme)
+ * @param reweight - updated weights
+ * @param G - gradients of albedo per x and per y, concatenated in single matrix
+ * @param huber - Huber regularization factor
+ * @param mu - the weight of smuthness on albedos
+ * @param tol - PCG tolerance
+ * @param maxit - maximum number of iterations for PCG
+ * for more details on most parameters see energyCauchy or reweight functions above
+ */
 template <typename T>
 void updateAlbedo(
         std::vector<blaze::DynamicVector<T>> & rho, // in & out
@@ -284,7 +333,18 @@ void updateAlbedo(
 
 
 
-
+/**
+ * @brief lighting per image updater
+ * @param s - lighting coefficients per image, than per channel (4 or 9 depending on current lightig scheme),
+ * being updated (in&out parameter)
+ * @param flat_imgs - vectorized images
+ * @param rho - albedo, in&out parameter being updated
+ * @param N - augmented lighting, same as sh (refer to energyCauche for details)
+ * @param reweight - updated weights
+ * @param tol - PCG tolerance
+ * @param maxit - maximum number of iterations for PCG
+ * for more details on most parameters see energyCauchy or reweight functions above
+ */
 template <typename T>
 void updateLighting(
         std::vector<std::vector<blaze::DynamicVector<T>>> & s,  // in & out
@@ -353,7 +413,34 @@ void updateLighting(
 
 
 
-
+/**
+ * @brief z map updater
+ * @param N_unnormalized - map of unnormalized normals (x, y, z components (in columns) of normals per (masked) pixel)
+ * (in&out parameter being updated)
+ * @param theta - (lagged) norm of normals, used as lagged block descend method auxiliary vatiable (in%out)
+ * @param z_vector_masked - depth map per (masked) pixel (in&out)
+ * @param zx - equals to Dx * z_vector_masked (in&out)
+ * @param zy - same by y (in&out)
+ * @param flat_imgs - vector of vectorized masked images represented by vector of 3 color channels,
+ * where each channel is DynamicVector of (masked) pixels
+ * @param rho - albedo per color channels, vectorized by mask the same way as images
+ * @param s - lighting coefficients per image, than per channel (4 or 9 depending on current lightig scheme)
+ * @param reweight - updated weights
+ * @param drho - gradients of rho by x and y, concatenated into single matrix, stored in vector by channels
+ * @param K - camera intrinsic matrix
+ * @param xx - indices of masked pixels by x with respect to point where camera axis crosses the image
+ * @param yy - same by y
+ * @param Dx - gradient of z in x direction
+ * @param Dy - same in y direction
+ * @param maxit - maximum number of iterations of inner loop
+ * @param beta - stepsize on theta update
+ * @param t_ - initial step size for line search
+ * @param maxit_linesearch - maximum number of line search
+ * @param pcg_tol - PCG tolerance
+ * @param pcg_maxit - maximum number of iterations for PCG
+ * @param sh_order - current lighting approximation scheme: 4 components for ho_low, 9 components for ho_high
+ * for more details on some parameters see energyCauchy or reweight functions above
+ */
 template <typename T>
 void updateDepth(
         blaze::DynamicMatrix<T> & N_unnormalized,  // out

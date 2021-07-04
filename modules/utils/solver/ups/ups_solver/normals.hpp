@@ -10,7 +10,16 @@
 
 
 
-
+/**
+ * @brief computes unnormalized normals per pixel
+ * @param z - depth map per (masked) pixel
+ * @param zx - equals to Dx * z
+ * @param zy - same by y
+ * @param xx - indices of masked pixels by x with respect to point where camera axis crosses the image
+ * @param yy - same by y
+ * @param K - camera intrinsic matrix
+ * @return unnormalized normals
+ */
 template <typename T>
 blaze::DynamicMatrix<T>
 pixNormals(
@@ -38,7 +47,9 @@ pixNormals(
     return N_unnormalized;  // TODO avoid implicit conversion to row-major!!
 }
 
-
+/**
+ * @brief normalizes normals obtained from pixNormals by dz
+ */
 template <typename T>
 blaze::DynamicMatrix<T>
 normalizePixNormals(
@@ -76,7 +87,12 @@ normalizePixNormals(
 
 enum harmo_order {ho_low, ho_high};
 
-
+/**
+ * @brief computes augmented normals - brightness share of oriented normal (of unit albedo) regardong given lighting source coefficient
+ * @param normals - map of normals, x, y, z components are represented by columns
+ * @param harmo_order - lighting scheme selector (ho_low for 4 components, ho_high for 9)
+ * @return augmented normals with respect to lighting components, each raw represents given lighting component
+ */
 template <typename T>
 blaze::DynamicMatrix<T>
 normalsToSh(const blaze::DynamicMatrix<T> & normals, const int harmo_order = ho_low) {  //, int harmo_order = 1) {
