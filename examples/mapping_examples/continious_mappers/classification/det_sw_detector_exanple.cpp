@@ -96,6 +96,19 @@ int main()
     //blaze::DynamicMatrix<value_type> ds = read_csv_blaze<value_type>("slice.csv"); //, ",", 10000);
     //blaze::DynamicMatrix<value_type> ds = read_csv_blaze<value_type>("slice_small.csv"); //, ",", 10000);
 
+    // expected format of (comma separated) csv: unused_field, r, g, b, optional_other_fields
+    // e.g.:
+    // 1618831933393,53,49,28
+    // 1618831933395,53,50,28
+    // 1618831933397,53,50,27
+    // ...
+    // or
+    // 1618831933393,53,49,28,0.0
+    // 1618831933395,53,50,28,0.0
+    // 1618831933397,53,50,27,0.0
+    // ...
+
+
     //blaze_dm_to_csv(ds, "input.csv"); // resave with fixed name for ploting script
 
     auto d = DetSwitchDetector<value_type>();
