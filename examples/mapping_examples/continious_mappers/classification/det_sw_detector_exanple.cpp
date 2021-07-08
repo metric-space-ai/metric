@@ -96,7 +96,7 @@ int main()
     //blaze::DynamicMatrix<value_type> ds = read_csv_blaze<value_type>("slice.csv"); //, ",", 10000);
     //blaze::DynamicMatrix<value_type> ds = read_csv_blaze<value_type>("slice_small.csv"); //, ",", 10000);
 
-    //blaze_dm_to_csv(ds, "input.csv"); // resave with fixed name for ploting script
+    blaze_dm_to_csv(ds, "input.csv"); // resave with fixed name for ploting script
 
     auto d = DetSwitchDetector<value_type>();
 
