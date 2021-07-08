@@ -135,8 +135,9 @@ int main()
 
     // preprocessing
 
-    blaze::DynamicMatrix<value_type> ds_in = read_csv_blaze<value_type>("training_ds_1_fragm.csv"); //, ",", 10000);
-//    blaze::DynamicMatrix<value_type> ds_in = read_csv_blaze<value_type>("slice.csv"); //, ",", 10000);
+    //blaze::DynamicMatrix<value_type> ds_in = read_csv_blaze<value_type>("training_ds_1_fragm.csv"); //, ",", 10000);
+    //blaze::DynamicMatrix<value_type> ds_in = read_csv_blaze<value_type>("slice.csv"); //, ",", 10000);
+    blaze::DynamicMatrix<value_type> ds_in = read_csv_blaze<value_type>("slice_small.csv"); //, ",", 10000);
 
     blaze::DynamicMatrix<value_type> raw_labels (ds_in.rows(), 1);
     blaze::column(raw_labels, 0) = blaze::column(ds_in, 4);
@@ -174,7 +175,8 @@ int main()
 
 
     // prediction dataset
-    blaze::DynamicMatrix<value_type> ds_pred = read_csv_blaze<value_type>("training_ds_2_fragm.csv"); //, ",", 10000);
+    //blaze::DynamicMatrix<value_type> ds_pred = read_csv_blaze<value_type>("training_ds_2_fragm.csv"); //, ",", 10000);
+    blaze::DynamicMatrix<value_type> ds_pred = read_csv_blaze<value_type>("slice_small.csv"); //, ",", 10000);
     blaze::DynamicMatrix<value_type> raw_labels_pred (ds_pred.rows(), 1);
     blaze::column(raw_labels_pred, 0) = blaze::column(ds_pred, 4);
     blaze_dm_to_csv(raw_labels_pred, "raw_labels_pred.csv");

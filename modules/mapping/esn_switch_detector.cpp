@@ -312,7 +312,10 @@ SwitchPredictor<value_type>::preprocess(const blaze::DynamicMatrix<value_type, b
     }
 
     blaze::DynamicMatrix<value_type> ds_all (input.rows(), 4, 0);
-    blaze::submatrix(ds_all, 0, 0, input.rows(), 3) = blaze::submatrix(input, 0, 0, input.rows(), 3);
+    //blaze::submatrix(ds_all, 0, 0, input.rows(), 3) = blaze::submatrix(input, 0, 0, input.rows(), 3);
+    blaze::column(ds_all, 0) = blaze::column(input, 0);
+    blaze::column(ds_all, 1) = blaze::column(input, 1);
+    blaze::column(ds_all, 2) = blaze::column(input, 2);
     blaze::column(ds_all, 3) = feature_stddev;
     blaze::DynamicMatrix<value_type, blaze::rowMajor> output = blaze::trans(ds_all);
 
