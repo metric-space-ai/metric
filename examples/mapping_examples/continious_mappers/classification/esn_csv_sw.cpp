@@ -104,7 +104,7 @@ ValueType class_entropy(const blaze::DynamicVector<ValueType> & data, const Valu
 
 
 
-int main()
+int main()  // DetSwitchDetector internals reproduced with intermediate output added
 {
 
     using value_type = float; //double;
@@ -142,9 +142,9 @@ int main()
 
     auto start_time = std::chrono::steady_clock::now();
 
-//    blaze::DynamicMatrix<value_type> ds_in = read_csv_blaze<value_type>("training_ds_2_fragm.csv"); //, ",", 10000);
+    blaze::DynamicMatrix<value_type> ds_in = read_csv_blaze<value_type>("training_ds_2_fragm.csv"); //, ",", 10000);
 //    blaze::DynamicMatrix<value_type> ds_in = read_csv_blaze<value_type>("slice.csv"); //, ",", 10000);
-    blaze::DynamicMatrix<value_type> ds_in = read_csv_blaze<value_type>("slice_small.csv"); //, ",", 10000);
+//    blaze::DynamicMatrix<value_type> ds_in = read_csv_blaze<value_type>("slice_small.csv"); //, ",", 10000);
     blaze::DynamicMatrix<value_type> raw_labels (ds_in.rows(), 1);
     blaze::column(raw_labels, 0) = blaze::column(ds_in, 4);
     blaze_dm_to_csv(raw_labels, "raw_labels_2.csv");
@@ -164,7 +164,10 @@ int main()
     }
 
     blaze::DynamicMatrix<value_type> ds_all (ds_in.rows(), 4, 0);
-    blaze::submatrix(ds_all, 0, 0, ds_in.rows(), 3) = blaze::submatrix(ds_in, 0, 1, ds_in.rows(), 3);
+    //blaze::submatrix(ds_all, 0, 0, ds_in.rows(), 3) = blaze::submatrix(ds_in, 0, 1, ds_in.rows(), 3);
+    blaze::column(ds_all, 0) = blaze::column(ds_in, 1);
+    blaze::column(ds_all, 1) = blaze::column(ds_in, 2);
+    blaze::column(ds_all, 2) = blaze::column(ds_in, 3);
     blaze::column(ds_all, 3) = feature_stddev;
     blaze_dm_to_csv(ds_all, "data_2.csv");
 

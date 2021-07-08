@@ -57,7 +57,7 @@ DetSwitchDetector<value_type>::encode(const blaze::DynamicMatrix<value_type> & d
 
     // additional feature: sliding window stddev
 
-    blaze::DynamicVector<value_type> feature_stddev (dataset.rows(), 0);
+    blaze::DynamicVector<value_type> feature_stddev (dataset.rows(), 0);  // TODO remove saving, stddev can be computed on the fly
     for (size_t i = wnd_size; i < feature_stddev.size(); ++i) {
         auto wnd1 = blaze::submatrix(dataset, i - wnd_size, 1, wnd_size, 1);
         auto wnd2 = blaze::submatrix(dataset, i - wnd_size, 2, wnd_size, 1);
@@ -86,15 +86,14 @@ DetSwitchDetector<value_type>::encode(const blaze::DynamicMatrix<value_type> & d
         blaze::subvector(in1, 0, ds_all.columns()) = blaze::trans(blaze::row(ds_all, i));
         in1[ds_all.columns()] = 1;  // offset element
         auto layer1 = blaze::tanh(W1 * in1);
-        //blaze::row(layer1, i) = blaze::trans(W1 * in1);  // TODO remove
 
         value_type mixed_out = blaze::sum(Wo*layer1) / blaze::sum(Wo);
         value_type latency_out;
-        if (mixed_out > 0.5) {
+        if (mixed_out > 0.5) { // switching on immediately
             latency_out = 1;
-        } else { // off latency
+        } else { // switch off latency
             value_type upd = ( mixed_out*update_rate + sliding_prev*(1 - update_rate) );
-            latency_out = mixed_out > upd ? mixed_out : upd;
+            latency_out = mixed_out > upd ? mixed_out : upd;  // reset latency
         }
         sliding_prev = latency_out;
 
