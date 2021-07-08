@@ -116,6 +116,7 @@ int main()
     auto switches = d.encode(ds);
 
     blaze_dm_to_csv(switches, "switches.csv");
+    // single column of switch flags: 1 - on, -1 - off, 0 - no switch
 
 
     return 0;
