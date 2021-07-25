@@ -435,7 +435,7 @@ int main() {
     int h_grid_size = 30;
     double start_learn_rate = 0.8;
     double final_learn_rate = 0.2;
-    unsigned int iterations = 10000;
+    unsigned int iterations = 1000; //10000;
     double initial_neighbour_size = 5;
     double neigbour_range_decay = 2;
     long long random_seed = 0;
@@ -479,7 +479,7 @@ int main() {
     std::vector<std::vector<std::vector<double>>> clustered_energies (
         counts.size(),
         std::vector<std::vector<double>>(num_levels)
-        );
+    );
 
     for (auto record : ds)
     {
@@ -488,32 +488,53 @@ int main() {
         auto cluster_index = assignments[bmu];
         for (int j = 0; j < num_levels; j++)
         {
-            clustered_energies[cluster_index][j].push_back(record[j]);
+            clustered_energies[cluster_index][j].push_back(record[j]);  // TODO check if it's faster to kove all the vector at once
         }
     }
 
+    std::vector<std::vector<std::vector<std::vector<std::vector<double>>>>> conf_bounds (
+        counts.size(),
+        std::vector<std::vector<std::vector<std::vector<double>>>> (
+            num_levels,
+            std::vector<std::vector<std::vector<double>>> (
+                windowSizes.size(),
+                std::vector<std::vector<double>> (
+                    3
+                )
+            )
+        )
+    );
 
+    size_t cl_idx = 0;
     for (auto cluster_data : clustered_energies) {
 
-        for (int ci = 0; ci < cluster_data.size(); ci++)
-        {
-            auto energy_subband_data = cluster_data[ci];
+        size_t sb_idx = 0;
+        for (auto energy_subband_data : cluster_data) {
 
             // returns quants for a single subbund
             std::vector<std::vector<std::vector<T>>> multiquants = set2multiconf(energy_subband_data, windowSizes, samples, confidencelevel);
 
             std::cout << "----" << std::endl;
-            for (auto window : multiquants)
-            {
+
+            size_t w_idx = 0;
+            for (auto window : multiquants) {
+
+                conf_bounds[cl_idx][sb_idx][w_idx][0] = window[0];
+                conf_bounds[cl_idx][sb_idx][w_idx][1] = window[1];
+                conf_bounds[cl_idx][sb_idx][w_idx][2] = window[2];
+
                 std::cout << "conf_l: " << std::endl;
                 vector_print(window[0]);
                 std::cout << "conf_m: " << std::endl;
                 vector_print(window[1]);
                 std::cout << "conf_r: " << std::endl;
                 vector_print(window[2]);
-            }
-        }
 
+                ++w_idx;
+            }
+            ++sb_idx;
+        }
+        ++cl_idx;
     }
 
 
