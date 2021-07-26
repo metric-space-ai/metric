@@ -2,11 +2,12 @@
 #include "modules/mapping/SOM.hpp"
 #include "modules/mapping/kmeans.hpp"
 
+#include "assets/json.hpp"
+
 #include <vector>
 #include <iostream>
 #include <fstream>
 #include <sstream>
-
 
 
 
@@ -505,9 +506,12 @@ int main() {
         )
     );
 
+
+    nlohmann::json reference_data;
     size_t cl_idx = 0;
     for (auto cluster_data : clustered_energies) {
 
+        nlohmann::json all_subbands_json;
         size_t sb_idx = 0;
         for (auto energy_subband_data : cluster_data) {
 
@@ -516,12 +520,22 @@ int main() {
 
             std::cout << "----" << std::endl;
 
+            nlohmann::json all_windows_json;
             size_t w_idx = 0;
             for (auto window : multiquants) {
 
                 conf_bounds[cl_idx][sb_idx][w_idx][0] = window[0];
                 conf_bounds[cl_idx][sb_idx][w_idx][1] = window[1];
                 conf_bounds[cl_idx][sb_idx][w_idx][2] = window[2];
+
+                nlohmann::json window_json = {
+                    {"_window_length_index", std::to_string(windowSizes[w_idx])},
+                    {"_window_length", std::to_string(w_idx)},
+                    {"conf_l", window[0]},
+                    {"conf_m", window[1]},
+                    {"conf_r", window[2]}
+                };
+                all_windows_json.push_back(window_json);
 
                 std::cout << "conf_l: " << std::endl;
                 vector_print(window[0]);
@@ -532,12 +546,27 @@ int main() {
 
                 ++w_idx;
             }
+            nlohmann::json subband_json = {
+                {"_subband", std::to_string(sb_idx)},
+                {"data", all_windows_json}
+            };
+            all_subbands_json.push_back(subband_json);
             ++sb_idx;
         }
+        nlohmann::json cluster_json  = {
+            {"_cluster", std::to_string(cl_idx)},
+            //{"border", borders[cl_idx]},
+            //{"position", positions[cl_idx]},
+            {"data", all_subbands_json}
+        };
+        reference_data.push_back(cluster_json);
         ++cl_idx;
     }
 
 
+    std::ofstream outputFile("reference_data.json");
+    outputFile << std::setw(4) << reference_data << std::endl;
+    outputFile.close();
 
 
 
