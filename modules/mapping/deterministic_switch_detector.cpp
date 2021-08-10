@@ -75,8 +75,9 @@ DetSwitchDetector<value_type>::encode(const blaze::DynamicMatrix<value_type> & d
 
     // filtering
 
-    value_type sliding_prev = 0;
-    unsigned int bin_out;
+    //value_type sliding_prev = 0;
+    value_type sliding_prev = lat; // we keep latency value between calls
+    //unsigned int bin_out;
     unsigned int bin_prev = 0;
     blaze::DynamicMatrix<value_type> out (ds_all.rows(), 1, 0);
 
@@ -108,6 +109,8 @@ DetSwitchDetector<value_type>::encode(const blaze::DynamicMatrix<value_type> & d
 
         bin_prev = bin_out;
     }
+
+    lat = sliding_prev; // we keep latency value between calls
 
     return out;
 }

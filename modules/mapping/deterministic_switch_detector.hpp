@@ -70,12 +70,14 @@ public:
     blaze::DynamicMatrix<value_type> encode(const blaze::DynamicMatrix<value_type> & dataset);
 
 
+
 private:
 
     blaze::DynamicMatrix<value_type> W1;  // hodden layer weights (4 rows)
     blaze::DynamicMatrix<value_type> Wo;  // output neuron weights (single row)
     size_t wnd_size;  // stddev sliding window size
     value_type update_rate;  // update rate between between 0 and 1, the greater, the lower is latency
+    value_type lat = 0; // we keep latency value between calls
 
 };
 
