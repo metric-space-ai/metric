@@ -50,7 +50,21 @@ std::vector<std::vector<ValueType>> read_csv_num(std::string filename, std::stri
 }
 
 
-
+template <class ContainerType>
+void vv_to_csv(ContainerType data, std::string filename, std::string sep=",")  // container
+{
+    std::ofstream outputFile;
+    outputFile.open(filename);
+        for (auto i = 0; i < data.size(); ++i) {
+            for (auto j = 0; j < data[i].size(); j++) {
+                outputFile << std::to_string(data[i][j]);
+                if (j < data[i].size() - 1)
+                    outputFile << sep;
+            }
+            outputFile << std::endl;
+        }
+        outputFile.close();
+}
 
 
 // ------ helper functions (copied from energies_example.cpp)
@@ -758,6 +772,8 @@ int main() {
 
         assert(buf_size <= ds.size());
 
+        std::vector<std::vector<T>> cl_probs = {};
+
         std::vector<std::vector<std::vector<T>>> buffer;  // subbands, windows, data
         buffer.reserve(num_subbands);
         size_t pos_idx = buf_size;
@@ -822,16 +838,20 @@ int main() {
             for (size_t cl_idx = 0; cl_idx < model.size(); ++cl_idx) {
                 avg_prob[cl_idx] /= (T)num_subbands;
             }
-            std::cout << "buffer filled" << std::endl;
+            //std::cout << "buffer filled" << std::endl;
             // here we have probs for all clusters computed for the current input data window
-            // TODO compute anomaly score
+
+            cl_probs.push_back(avg_prob);
+
+            // TODO compute final anomaly score
+
 
             buffer = {};   // TODO optimize with sliding (via push-pop) ring buffer, maybe based on deque
             ++pos_idx;
         }
 
 
-
+        vv_to_csv(cl_probs, "anomaly_detector_data_1/script/cl_probs.csv");
 
 
 
