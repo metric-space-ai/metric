@@ -10,7 +10,7 @@
 #include <sstream>
 
 
-//*
+
 
 // ----- csv reader
 
@@ -430,84 +430,7 @@ set2multiconf(std::vector<T> set_0, std::vector<uint32_t> windowSizes, size_t sa
 }
 
 
-// */
 
-
-/*
-
-// Euclidean for compressed vectors
-
-
-template <typename T>
-T sparse_euclidean(const blaze::CompressedVector<T> & a, const blaze::CompressedVector<T> & b) {
-
-//    typename blaze::CompressedVector<T>::Iterator it_a = a.begin();
-//    typename blaze::CompressedVector<T>::Iterator it_b = b.begin();
-
-    T dist = 0;
-
-//    // working ver
-//    typename blaze::CompressedVector<T> subtr = b - a;
-//    for (typename blaze::CompressedVector<T>::Iterator it = subtr.begin(); it < subtr.end(); ++it) {
-//        dist += it->value()*it->value();
-//    }
-
-    // 2nd ver, fixed
-    typename blaze::CompressedVector<T>::ConstIterator it_long;
-    typename blaze::CompressedVector<T>::ConstIterator it_short;
-    typename blaze::CompressedVector<T>::ConstIterator end_long;
-    typename blaze::CompressedVector<T>::ConstIterator end_short;
-    blaze::CompressedVector<T> long_operand, short_operand;
-    if (a.nonZeros() >= b.nonZeros()) {
-        it_long = a.cbegin();
-        end_long = a.cend();
-        it_short = b.cbegin();
-        end_short = b.cend();
-        long_operand = std::move(a);
-        short_operand = std::move(b);
-    } else {
-        it_long = b.cbegin();
-        end_long = b.cend();
-        it_short = a.cbegin();
-        end_short = a.cend();
-        long_operand = std::move(b);
-        short_operand = std::move(a);
-    }
-
-    while (it_long < end_long) {
-        dist += pow(it_long->value() - short_operand[it_long->index()], 2);
-        //std::cout << "long dist upd,  " << dist <<  ", " << it_long->value() << ", " << it_long->index() << ", " << short_operand[it_long->index()] << std::endl;  // TODO remove
-        ++it_long;
-    }
-    while (it_short < end_short) {
-        //std::cout << "short dist chk, " << dist << ", " << it_short->value() << ", " << it_short->index() << ", " << long_operand[it_short->index()] << std::endl;  // TODO remove
-        if (long_operand.find(it_short->index()) == long_operand.cend()) { // zero
-        //if (long_operand[it_short->index()] == 0) {
-            dist += pow(it_short->value(), 2);  // with zero
-            //std::cout << "short dist upd, " << dist << ", " << it_short->value() << ", " << it_short->index() << ", " << long_operand[it_short->index()] << std::endl;  // TODO remove
-        }
-        ++it_short;
-    }
-
-
-    // old ver
-
-//    while ( (it_a != a.end()) && (it_b != b.end()) ) {
-
-//        if (it_a->index() < it_b->index()) {
-//            ++it_a;
-//        } else if (it_a->index() > it_b->index()) {
-//            ++it_b;
-//        } else {
-//            dist += pow(it_a->value() - it_b->value(), 2);
-//        }
-//    }
-
-    return sqrt(dist);
-}
-
-
-// */
 
 
 
@@ -524,7 +447,7 @@ int main() {
 
     std::vector<uint32_t> window_sizes = {12, 24, 48, 96, 192, 384};
 
-    /*
+    //*
     // saving the model
     {
 
@@ -538,13 +461,24 @@ int main() {
         double som_neigbour_range_decay = 2;
         long long som_random_seed = 0;
 
-        size_t num_clusters = 5;
+        size_t num_clusters = 10;
 
         //std::vector<uint32_t> window_sizes = {12, 24, 48, 96, 192, 384};
         uint32_t samples = 1000;
         double confidence_level = 0.99;
 
-        auto ds = read_csv_num<T>("anomaly_detector_data_1/script/energies01_short.csv");
+        //auto ds = read_csv_num<T>("anomaly_detector_data_1/script/energies01_short.csv");
+        //auto ds = read_csv_num<T>("anomaly_detector_data_1/script/energies01.csv");
+        auto ds = read_csv_num<T>("anomaly_detector_data_1/script/energies.csv");
+//        auto ds_raw = read_csv_num<T>("anomaly_detector_data_1/script/real_energies.csv");
+//        std::vector<std::vector<T>> ds;
+//        for (auto el : ds_raw) {
+//            std::vector<T> line;
+//            for (size_t idx = 0; idx < 4; ++idx) {
+//                line.push_back(el[idx]);
+//            }
+//            ds.push_back(line);
+//        }
         // -----------
 
 
@@ -763,7 +697,17 @@ int main() {
         size_t num_subbands = conf_bounds[0].size();
         size_t num_windows = window_sizes.size();  // TODO save window sizes to JSON
 
-        auto ds = read_csv_num<T>("anomaly_detector_data_1/script/energies01_short.csv");
+        //auto ds = read_csv_num<T>("anomaly_detector_data_1/script/energies01_short.csv");
+        auto ds = read_csv_num<T>("anomaly_detector_data_1/script/energies.csv");
+//        auto ds_raw = read_csv_num<T>("anomaly_detector_data_1/script/real_energies.csv");
+//        std::vector<std::vector<T>> ds;
+//        for (auto el : ds_raw) {
+//            std::vector<T> line;
+//            for (size_t idx = 0; idx < 4; ++idx) {
+//                line.push_back(el[idx]);
+//            }
+//            ds.push_back(line);
+//        }
 
         assert(num_subbands == ds[0].size());
         assert(num_subbands == model[0]["subbands"].size());  // TODO remove
@@ -851,6 +795,7 @@ int main() {
         }
 
 
+        vv_to_csv(ds,       "anomaly_detector_data_1/script/input.csv");
         vv_to_csv(cl_probs, "anomaly_detector_data_1/script/cl_probs.csv");
 
 
@@ -862,268 +807,6 @@ int main() {
 
     // */
 
-
-
-    /*
-
-    // measurement
-
-    std::vector<double> sparsities = {-0.01, 0.02, 0.04, 0.06, 0.08, 0.1, 0.2, 0.4, 0.6, 0.8, 1.1};
-    //std::vector<double> overreserves = { 0.1, 0.3,  0.3,  0.3,  0.3, 0.3, 0.4, 0.5, 0.4, 0.2, 0};  // l = 30
-    std::vector<double> overreserves = { 0.1, 0.1,  0.1,  0.1,  0.1, 0.1, 0.3, 0.2, 0.1, 0.1, 0}; // l = 500
-
-    for (size_t i = 0; i<sparsities.size(); ++i) {
-    ////
-
-
-    size_t n = 50000;
-    size_t l = 500;
-    double val_range = 1000;
-    //double sparsity = 0.08;
-    //double overreserve = 0.1;
-    double sparsity = sparsities[i];
-    double overreserve = overreserves[i];
-
-
-    std::vector<blaze::DynamicVector<double>> A;
-    std::vector<blaze::DynamicVector<double>> B;
-    std::vector<blaze::CompressedVector<double>> Ac;
-    std::vector<blaze::CompressedVector<double>> Bc;
-    std::vector<blaze::CompressedVector<double>> Ac2;
-    std::vector<blaze::CompressedVector<double>> Bc2;
-
-    double t_sum_1 = 0;
-    double t_sum_2 = 0;
-    double t_sum_1_c = 0;
-    double t_sum_2_c = 0;
-    double t_sum_custom = 0;
-
-    int capacity_1 = 0;
-    int capacity_2 = 0;
-
-    auto eng = std::mt19937();
-    auto randDouble = std::uniform_real_distribution<> {0, 1};
-
-    auto t1 = std::chrono::steady_clock::now();
-    auto t2 = std::chrono::steady_clock::now();
-
-    double dist;
-
-    double dist1 = 0;
-    double dist2 = 0;
-    double dist3 = 0;
-    double dist4 = 0;
-    double dist5 = 0;
-
-
-    for (size_t n_idx = 0; n_idx < n; ++n_idx) {
-
-        blaze::DynamicVector<double> a (l, 0);
-        blaze::DynamicVector<double> b (l, 0);
-        blaze::CompressedVector<double> ac (l);
-        blaze::CompressedVector<double> bc (l);
-//        blaze::CompressedVector<double> ac;
-//        blaze::CompressedVector<double> bc;
-        ac.reserve(l*(sparsity + overreserve));  // risky
-        bc.reserve(l*(sparsity + overreserve));
-//        ac.reserve(l);
-//        bc.reserve(l);
-
-        for (size_t l_idx = 0; l_idx < l; ++l_idx) {
-            //double x1 = (double)l_idx - l/2;
-            //double x2 = (double)l_idx + l/2;
-
-            if (randDouble(eng) < sparsity) {
-                //a[l_idx] = x1 + randDouble(eng)*l;
-                //b[l_idx] = x2 + randDouble(eng)*l;
-
-                a[l_idx] = randDouble(eng)*val_range - val_range/2;
-                //b[l_idx] = randDouble(eng)*val_range - val_range/2;
-
-//                ac[l_idx] = a[l_idx];
-//                bc[l_idx] = b[l_idx];
-
-//                a.append(l_idx, randDouble(eng)*val_range - val_range/2);
-//                b.append(l_idx, randDouble(eng)*val_range - val_range/2);
-
-                ac.append(l_idx, a[l_idx]);
-                //bc.append(l_idx, b[l_idx]);
-            }
-
-            if (randDouble(eng) < sparsity) {
-                b[l_idx] = randDouble(eng)*val_range - val_range/2;
-                bc.append(l_idx, b[l_idx]);
-//                bc[l_idx] = b[l_idx];
-            }
-
-//            if (n_idx > n - 500)
-//                std::cout << a[l_idx] << ", " << b[l_idx] << std::endl;
-        }
-
-        capacity_1 += ac.capacity();
-        capacity_2 += bc.capacity();
-
-//        if (n_idx > n - 500)
-//            std::cout << std::endl;
-
-        A.push_back(a);
-        B.push_back(b);
-        Ac.push_back(ac);
-        Bc.push_back(bc);
-
-
-        t1 = std::chrono::steady_clock::now();
-        dist = blaze::norm(b - a);
-        t2 = std::chrono::steady_clock::now();
-        t_sum_1 += double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000;
-        dist1 += dist;
-
-        t1 = std::chrono::steady_clock::now();
-        dist = blaze::l2Norm(b - a);
-        t2 = std::chrono::steady_clock::now();
-        t_sum_2 += double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000;
-        dist2 += dist;
-
-        t1 = std::chrono::steady_clock::now();
-        dist = blaze::norm(bc - ac);
-        t2 = std::chrono::steady_clock::now();
-        t_sum_1_c += double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000;
-        dist3 += dist;
-
-        t1 = std::chrono::steady_clock::now();
-        dist = blaze::l2Norm(bc - ac);
-        t2 = std::chrono::steady_clock::now();
-        t_sum_2_c += double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000;
-        dist4 += dist;
-
-        t1 = std::chrono::steady_clock::now();
-        dist = sparse_euclidean(bc, ac);
-        t2 = std::chrono::steady_clock::now();
-        t_sum_custom += double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000;
-        dist5 += dist;
-
-        if ( abs(dist1 - dist2) + abs(dist1 - dist3) + abs(dist1 - dist4) + abs(dist1 - dist5) > 1e-07) {
-            std::cout << std::endl << dist1 << ", " << dist2 << ", " << dist3 << ", " << dist4 << ", " << dist5 << std::endl;
-            return 0;
-        }
-        //std::cout << abs(dist1 - dist2) + abs(dist1 - dist3) + abs(dist1 - dist4) << std::endl;
-
-
-    }
-
-    std::cout << std::endl;
-    std::cout << "vectors: " << n << ", vec length: " << l << ", nonzero elements share: " << sparsity << std::endl;
-
-    std::cout << std::endl;
-    std::cout << "sum of times of all calls:" << std::endl;
-
-
-    std::cout << "     norm, Dynamic: " << t_sum_1 << std::endl;
-    std::cout << "   l2norm, Dynamic: " << t_sum_2 << std::endl;
-    std::cout << "  norm, Compressed: " << t_sum_1_c << std::endl;
-    std::cout << "l2norm, Compressed: " << t_sum_2_c << std::endl;
-    std::cout << "custom, Compressed: " << t_sum_custom << std::endl;
-
-    std::cout << "    norm, speed-up: " << t_sum_1 / t_sum_1_c << std::endl;
-    std::cout << "  l2norm, speed-up: " << t_sum_2 / t_sum_2_c << std::endl;
-    std::cout << "  custom, speed-up: " << t_sum_2 / t_sum_custom << std::endl;
-
-    std::cout << "sums of distances: " << dist1 << ", " << dist2 << ", " << dist3 << ", " << dist4 << ", " << dist5 << std::endl;
-
-
-
-
-    // loop
-
-    dist1 = 0;
-    dist2 = 0;
-    dist3 = 0;
-    dist4 = 0;
-    dist5 = 0;
-
-    t1 = std::chrono::steady_clock::now();
-    for (size_t idx = 0; idx < n; ++idx) {
-        dist = blaze::norm(B[idx] - A[idx]);
-        dist1 += dist;
-    }
-    t2 = std::chrono::steady_clock::now();
-    t_sum_1 = double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000;
-
-    t1 = std::chrono::steady_clock::now();
-    for (size_t idx = 0; idx < n; ++idx) {
-        dist = blaze::l2Norm(B[idx] - A[idx]);
-        dist2 += dist;
-    }
-    t2 = std::chrono::steady_clock::now();
-    t_sum_2 = double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000;
-
-    t1 = std::chrono::steady_clock::now();
-    for (size_t idx = 0; idx < n; ++idx) {
-        dist = blaze::norm(Bc[idx] - Ac[idx]);
-        dist3 += dist;
-    }
-    t2 = std::chrono::steady_clock::now();
-    t_sum_1_c = double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000;
-
-    t1 = std::chrono::steady_clock::now();
-    for (size_t idx = 0; idx < n; ++idx) {
-        dist = blaze::l2Norm(Bc[idx] - Ac[idx]);
-        dist4 += dist;
-    }
-    t2 = std::chrono::steady_clock::now();
-    t_sum_2_c = double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000;
-
-    t1 = std::chrono::steady_clock::now();
-    for (size_t idx = 0; idx < n; ++idx) {
-        dist = sparse_euclidean(Bc[idx], Ac[idx]);
-        dist5 += dist;
-    }
-    t2 = std::chrono::steady_clock::now();
-    t_sum_custom = double(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) / 1000000;
-
-
-    std::cout << std::endl;
-    std::cout << "time of execution in for loop:" << std::endl;
-
-    std::cout << "     norm, Dynamic: " << t_sum_1 << std::endl;
-    std::cout << "   l2norm, Dynamic: " << t_sum_2 << std::endl;
-    std::cout << "  norm, Compressed: " << t_sum_1_c << std::endl;
-    std::cout << "l2norm, Compressed: " << t_sum_2_c << std::endl;
-    std::cout << "custom, Compressed: " << t_sum_custom << std::endl;
-
-    std::cout << "    norm, speed-up: " << t_sum_1 / t_sum_1_c << std::endl;
-    std::cout << "  l2norm, speed-up: " << t_sum_2 / t_sum_2_c << std::endl;
-    std::cout << "  custom, speed-up: " << t_sum_2 / t_sum_custom << std::endl;
-
-    std::cout << "sums of distances: " << dist1 << ", " << dist2 << ", " << dist3 << ", " << dist4 << ", " << dist5 << std::endl;
-
-    std::cout << "avg capacities: " << capacity_1/(double)n << ", " << capacity_2/(double)n << std::endl;
-
-
-    ////
-    }  // for i
-
-    // */
-
-
-    /*
-    // sparse_euclidean test
-
-    blaze::CompressedVector<double> ac (10);
-    blaze::CompressedVector<double> bc (10);
-    ac[2] = 1;
-    ac[8] = 1;
-    bc[5] = 1;
-    bc[8] = 1;
-    bc[10] = 1;
-
-    double d = sparse_euclidean(ac, bc);
-
-    std::cout << d << ", " << blaze::l2Norm(ac - bc) << std::endl;
-
-
-
-    // */
 
 
 

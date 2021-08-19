@@ -134,15 +134,16 @@ auto EnergyEncoder::operator () (Container<ValueType, Allocator> & in) const -> 
 
     for (std::size_t i = 0; i<n_subbands.size(); ++i) { // computing one energy value per subband
         ValueType sum = 0;
-        for (std::size_t j = 0; j<n_subbands[i].size(); ++j)
-            sum += n_subbands[i][j]; // finding mean
-        ValueType mean = sum/n_subbands[i].size();
-        sum = 0;
-        ValueType normalized;
+        //for (std::size_t j = 0; j<n_subbands[i].size(); ++j)
+        //    sum += n_subbands[i][j]; // finding mean
+        //ValueType mean = sum/n_subbands[i].size();
+        //sum = 0;
+        //ValueType normalized;
         for (std::size_t j = 0; j<n_subbands[i].size(); ++j) {
-            normalized = n_subbands[i][j] - mean;
-            //sum += n_subbands[i][j] * n_subbands[i][j];
-            sum += normalized * normalized;
+            //normalized = n_subbands[i][j] - mean; // shift to average, wrong
+            //normalized = n_subbands[i][j];
+            sum += n_subbands[i][j] * n_subbands[i][j];
+            //sum += normalized * normalized;
         }
         sum = sum / n_subbands[i].size();
         out.push_back(sum);
