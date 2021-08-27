@@ -469,16 +469,12 @@ int main() {
 
         //auto ds = read_csv_num<T>("anomaly_detector_data_1/script/energies01_short.csv");
         //auto ds = read_csv_num<T>("anomaly_detector_data_1/script/energies01.csv");
-        auto ds = read_csv_num<T>("anomaly_detector_data_1/script/energies.csv");
-//        auto ds_raw = read_csv_num<T>("anomaly_detector_data_1/script/real_energies.csv");
-//        std::vector<std::vector<T>> ds;
-//        for (auto el : ds_raw) {
-//            std::vector<T> line;
-//            for (size_t idx = 0; idx < 4; ++idx) {
-//                line.push_back(el[idx]);
-//            }
-//            ds.push_back(line);
-//        }
+        //auto ds = read_csv_num<T>("anomaly_detector_data_1/script/energies.csv");
+        //auto ds = read_csv_num<T>("anomaly_detector_data_1/script/real_energies_a_50000.csv");
+        //auto ds = read_csv_num<T>("anomaly_detector_data_1/script/real_energies_a.csv");
+        //auto ds = read_csv_num<T>("anomaly_detector_data_1/script/real_energies_250ms.csv");
+        //auto ds = read_csv_num<T>("anomaly_detector_data_1/script/cat_energies_100ms.csv");
+        auto ds = read_csv_num<T>("anomaly_detector_data_1/script/cat_energies_100ms_sp8.csv");
         // -----------
 
 
@@ -550,12 +546,14 @@ int main() {
         size_t cl_idx = 0;
         for (auto cluster_data : clustered_energies) {
 
+            // skip small clusters
             if (cluster_data[0].size() < 3) {  // set2multiconf needs at least 3 points
                 ++cl_idx;
                 std::cout << "small cluster" << std::endl;
                 continue;
             }
 
+            // add subband confidence intervals per window size
             nlohmann::json all_subbands_json;
             size_t sb_idx = 0;
             for (auto energy_subband_data : cluster_data) {
@@ -605,10 +603,21 @@ int main() {
                 all_subbands_json.push_back(subband_json);
                 ++sb_idx;
             }
+
+            // add nodes that fall into cluster
+            std::vector<std::vector<T>> nodes = {};
+            for (size_t node_idx = 0; node_idx < assignments.size(); ++node_idx) {
+                if (assignments[node_idx] == cl_idx) {
+                    nodes.push_back(nodes_data[node_idx]);
+                }
+            }
+
+            // write cluster json
             nlohmann::json cluster_json  = {
                 {"_cluster", std::to_string(cl_idx)},
                 {"subbands", all_subbands_json},
                 {"centroid", means[cl_idx]},
+                {"som_units", nodes}
 
             };
             model.push_back(cluster_json);
@@ -650,25 +659,20 @@ int main() {
             return 0;
         }
 
-        std::vector<std::vector<T>> means;
+        metric::Euclidean<T> som_distance;
 
-//        std::vector<std::vector<std::vector<std::vector<std::vector<T>>>>> conf_bounds (
-//            model.size(),
-//            std::vector<std::vector<std::vector<std::vector<T>>>> (
-//                model[0]["subbands"].size(),
-//                std::vector<std::vector<std::vector<T>>> (
-//                    model[0]["subbands"][0]["conf_windows"].size(),
-//                    std::vector<std::vector<T>> (
-//                        3  // left, middle, right
-//                    )
-//                )
-//            )
-//        );
+        std::vector<std::vector<T>> means;
+        std::vector<std::vector<std::vector<T>>> nodes;  // clusters, nodes, subband energies
+
         std::vector<std::vector<std::vector<std::vector<std::vector<T>>>>> conf_bounds = {};
 
         for (auto cluster : model) {
+
+            // read centroid
             means.push_back(cluster["centroid"]);
-            std::vector<std::vector<std::vector<std::vector<T>>>> cluster_vec = {};
+
+            // read conf levels
+            std::vector<std::vector<std::vector<std::vector<T>>>> cluster_conf_vec = {};
             for (auto subband : cluster["subbands"]) {
                 std::vector<std::vector<std::vector<T>>> subband_vec = {};
                 for (auto window : subband["conf_windows"]) {
@@ -686,9 +690,14 @@ int main() {
                     //}
                     subband_vec.push_back(window_vec);
                 }
-                cluster_vec.push_back(subband_vec);
+                cluster_conf_vec.push_back(subband_vec);
             }
-            conf_bounds.push_back(cluster_vec);
+            conf_bounds.push_back(cluster_conf_vec);
+
+            // read SOM units that belong to cluster
+            std::vector<std::vector<T>> cluster_nodes = cluster["som_units"];
+            nodes.push_back(cluster_nodes);
+
         }
         // model loaded
 
@@ -698,16 +707,12 @@ int main() {
         size_t num_windows = window_sizes.size();  // TODO save window sizes to JSON
 
         //auto ds = read_csv_num<T>("anomaly_detector_data_1/script/energies01_short.csv");
-        auto ds = read_csv_num<T>("anomaly_detector_data_1/script/energies.csv");
-//        auto ds_raw = read_csv_num<T>("anomaly_detector_data_1/script/real_energies.csv");
-//        std::vector<std::vector<T>> ds;
-//        for (auto el : ds_raw) {
-//            std::vector<T> line;
-//            for (size_t idx = 0; idx < 4; ++idx) {
-//                line.push_back(el[idx]);
-//            }
-//            ds.push_back(line);
-//        }
+        //auto ds = read_csv_num<T>("anomaly_detector_data_1/script/energies.csv");
+        //auto ds = read_csv_num<T>("anomaly_detector_data_1/script/real_energies_a_50000.csv");
+        //auto ds = read_csv_num<T>("anomaly_detector_data_1/script/real_energies_a.csv");
+        //auto ds = read_csv_num<T>("anomaly_detector_data_1/script/real_energies_250ms.csv");
+        //auto ds = read_csv_num<T>("anomaly_detector_data_1/script/cat_energies_100ms.csv");
+        auto ds = read_csv_num<T>("anomaly_detector_data_1/script/cat_energies_100ms_sp8.csv");
 
         assert(num_subbands == ds[0].size());
         assert(num_subbands == model[0]["subbands"].size());  // TODO remove
@@ -716,25 +721,15 @@ int main() {
 
         assert(buf_size <= ds.size());
 
-        std::vector<std::vector<T>> cl_probs = {};
+        std::vector<std::vector<T>> cl_probs = {};  // probability of distribution match for every position of sliding window against each cluster
+        std::vector<std::vector<T>> cl_n_by_BMUs = {}; // number sliding window points that fall into each cluster by BMUs
 
-        std::vector<std::vector<std::vector<T>>> buffer;  // subbands, windows, data
-        buffer.reserve(num_subbands);
+        //std::vector<std::vector<std::vector<T>>> buffer;  // subbands, windows, data
+        //buffer.reserve(num_subbands);
         size_t pos_idx = buf_size;
         while (ds.begin() + pos_idx < ds.end()) {  // sliding along timeseries
 
-//            //std::vector<std::vector<T>> buffer (ds.begin(), ds.begin() + buf_size);
-//            std::vector<std::vector<std::vector<T>>> buffer (num_subbands, std::vector<std::vector<T>>(num_windows, std::vector<T>()));
-
-//            //std::vector<T> w = {};
-//            for (size_t w_sz_idx = 0; w_sz_idx < window_sizes; ++w_sz_idx) { // we assume window sizes are sorted so first we take the smallest
-//                //w.puch_back
-//                for (size_t sb_idx = 0; sb_idx < num_subbands; ++sb_idx) {
-//                    //for (size_t rec_idx = 0; )
-//                    //buffer[sb][w_sz].push_back
-//                }
-//            }
-
+            // compute probabilities of distribution match
             std::vector<T> avg_prob (model.size(), 0);
             for (size_t sb_idx = 0; sb_idx < num_subbands; ++sb_idx) {
 
@@ -775,7 +770,7 @@ int main() {
                     avg_prob[cl_idx] += avg_subband_prob[cl_idx];  // adding each subband's summand to overall prob, per cluster
                 }
                 // here we have average subband probability for each cluster
-                buffer.push_back(subband);
+                //buffer.push_back(subband);
             }
             // here buffer is filled for the current pos_idx
             // and overall cluster belonging probabilities are summed over al subbands
@@ -787,16 +782,44 @@ int main() {
 
             cl_probs.push_back(avg_prob);
 
+
+            // compute number of points that fall into each cluster by BMUs
+            std::vector<T> cl_BMU_matches (model.size(), 0);
+            for (auto val_idx = pos_idx - buf_size; val_idx < pos_idx; ++val_idx) { // reading the sliging window
+                T min_dist = std::numeric_limits<T>::max();
+                size_t nearest_cluster = model.size(); // should cause assertion failure if not updated
+                for (size_t cl_idx = 0; cl_idx < model.size(); ++cl_idx) {
+                    for (size_t node_idx = 0; node_idx < nodes[cl_idx].size(); ++node_idx) {
+                        T dist = som_distance(nodes[cl_idx][node_idx], ds[val_idx]);
+                        if (dist < min_dist) {
+                            min_dist = dist;
+                            nearest_cluster = cl_idx;
+                        }
+                    }
+                }
+                assert(nearest_cluster < model.size());
+                ++cl_BMU_matches[nearest_cluster];
+            }
+            for (size_t cl_idx = 0; cl_idx < model.size(); ++cl_idx) {
+                cl_BMU_matches[cl_idx] /= (T)buf_size;  // normalize
+            }
+            cl_n_by_BMUs.push_back(cl_BMU_matches);
+
+
+
+
+
             // TODO compute final anomaly score
 
 
-            buffer = {};   // TODO optimize with sliding (via push-pop) ring buffer, maybe based on deque
+            //buffer = {};   // TODO optimize with sliding (via push-pop) ring buffer, maybe based on deque
             ++pos_idx;
         }
 
 
-        vv_to_csv(ds,       "anomaly_detector_data_1/script/input.csv");
-        vv_to_csv(cl_probs, "anomaly_detector_data_1/script/cl_probs.csv");
+        vv_to_csv(ds,           "anomaly_detector_data_1/script/input.csv");
+        vv_to_csv(cl_probs,     "anomaly_detector_data_1/script/cl_probs.csv");
+        vv_to_csv(cl_n_by_BMUs, "anomaly_detector_data_1/script/cl_matches.csv");
 
 
 

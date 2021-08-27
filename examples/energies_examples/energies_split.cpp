@@ -76,10 +76,19 @@ using T = double;
 int main() {
 
 
-    size_t split_wnd_sz = 384; //128;
+    std::cout << "computing energies..." << std::endl;
+
+    size_t split_wnd_sz = 48000/10; //384; // max window size of anomaly detector //128;
 
 
-    auto ds_raw = read_csv_num<T>("anomaly_detector_data_1/script/Versuch_1.6.5.a.csv");
+    //auto ds_raw = read_csv_num<T>("anomaly_detector_data_1/script/Versuch_1.6.5.a.csv");
+    //auto ds_raw = read_csv_num<T>("anomaly_detector_data_1/script/sound50000.csv");
+    //auto ds_raw = read_csv_num<T>("anomaly_detector_data_1/script/sound40000.csv");
+
+//    auto ds_raw = read_csv_num<T>("anomaly_detector_data_1/script/sound1.csv");
+//    auto ds_raw = read_csv_num<T>("anomaly_detector_data_1/script/sound2.csv");
+//    auto ds_raw = read_csv_num<T>("anomaly_detector_data_1/script/sound3.csv");
+    auto ds_raw = read_csv_num<T>("anomaly_detector_data_1/script//sound4.csv");
 
     std::vector<T> ts;
     ts.reserve(ds_raw.size());
@@ -90,11 +99,12 @@ int main() {
     std::vector<std::vector<T>> out;
     out.reserve(ts.size());
 
-    auto e = metric::EnergyEncoder(4, 5);
+    auto e = metric::EnergyEncoder(4, 8);
 
-    for (size_t wnd_pos = split_wnd_sz; wnd_pos < ts.size(); ++wnd_pos) { // slide over dataset
+    //for (size_t wnd_pos = split_wnd_sz; wnd_pos < ts.size(); ++wnd_pos) { // slide over dataset
+    for (size_t wnd_pos = split_wnd_sz; wnd_pos < ts.size(); wnd_pos += split_wnd_sz) { // slide over dataset
 
-        std::vector<T> wnd = std::vector<T>(ts.begin() + wnd_pos, ts.begin() + split_wnd_sz + wnd_pos);
+        std::vector<T> wnd = std::vector<T>(ts.begin() + wnd_pos - split_wnd_sz, ts.begin() + wnd_pos);
 
         T sum = 0;
         for (size_t idx = 0; idx < wnd.size(); ++idx) {
@@ -110,7 +120,10 @@ int main() {
         out.push_back(subbands);
     }
 
-    vv_to_csv(out, "anomaly_detector_data_1/script/real_energies_a.csv");
+//    vv_to_csv(out, "anomaly_detector_data_1/script/real_energies_100ms_sp8_1.csv");
+//    vv_to_csv(out, "anomaly_detector_data_1/script/real_energies_100ms_sp8_2.csv");
+//    vv_to_csv(out, "anomaly_detector_data_1/script/real_energies_100ms_sp8_3.csv");
+    vv_to_csv(out, "anomaly_detector_data_1/script/real_energies_100ms_sp8_4.csv");
 
 
     return 0;
