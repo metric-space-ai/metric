@@ -2,6 +2,8 @@
 #include "modules/mapping/SOM.hpp"
 #include "modules/mapping/kmeans.hpp"
 
+#include "modules/mapping/PCFA.hpp"
+
 #include "assets/json.hpp"
 
 #include <vector>
@@ -469,14 +471,26 @@ int main() {
 
         //auto ds = read_csv_num<T>("anomaly_detector_data_1/script/energies01_short.csv");
         //auto ds = read_csv_num<T>("anomaly_detector_data_1/script/energies01.csv");
-        //auto ds = read_csv_num<T>("anomaly_detector_data_1/script/energies.csv");
+        //auto ds_raw = read_csv_num<T>("anomaly_detector_data_1/script/energies.csv");
         //auto ds = read_csv_num<T>("anomaly_detector_data_1/script/real_energies_a_50000.csv");
         //auto ds = read_csv_num<T>("anomaly_detector_data_1/script/real_energies_a.csv");
         //auto ds = read_csv_num<T>("anomaly_detector_data_1/script/real_energies_250ms.csv");
         //auto ds = read_csv_num<T>("anomaly_detector_data_1/script/cat_energies_100ms.csv");
-        auto ds = read_csv_num<T>("anomaly_detector_data_1/script/cat_energies_100ms_sp8.csv");
+        auto ds_raw = read_csv_num<T>("anomaly_detector_data_1/script/cat_energies_100ms_sp8.csv");
         // -----------
 
+
+        // PCA
+        auto pcfa = metric::PCFA<std::vector<T>, void>(ds_raw, 30);
+
+        auto ds = pcfa.encode(ds_raw);
+
+        // save PCFA model
+        auto eigenmodes = pcfa.eigenmodes();
+        nlohmann::json pcfa_model = eigenmodes;
+        std::ofstream pcfa_model_f("pcfa_model.json");
+        pcfa_model_f << std::setw(4) << pcfa_model << std::endl;
+        pcfa_model_f.close();
 
         size_t num_subbands = ds[0].size();
 
@@ -508,6 +522,10 @@ int main() {
     //    for (auto mean : means) {
     //        centroids.push_back(mean);
     //    };
+
+        // debug output
+        vv_to_csv(nodes_data, "anomaly_detector_data_1/script/som_nodes.csv");
+        vv_to_csv(std::vector<std::vector<int>> {assignments}, "anomaly_detector_data_1/script/som_nodes_clusters.csv");
 
 
         std::vector<std::vector<std::vector<T>>> clustered_energies (
@@ -650,9 +668,11 @@ int main() {
     // applying the model
     {
 
-        std::ifstream f("model.json");
         nlohmann::json model;
-        f >> model;
+        {
+            std::ifstream f("model.json");
+            f >> model;
+        }
 
         if (model.size() < 1) {
             std::cout << "empty model" << std::endl;
@@ -702,17 +722,33 @@ int main() {
         // model loaded
 
 
+        // loading PCFA
+        std::vector<T> averages;
+        std::vector<std::vector<T>> output_weights;
+        {
+            nlohmann::json pcfa_model;
+            std::ifstream f("pcfa_model.json");
+            f >> pcfa_model;
+            std::vector<std::vector<T>> eigenmodes = pcfa_model;
+            averages = eigenmodes[0];
+            output_weights = std::vector<std::vector<T>>(eigenmodes.begin() + 1, eigenmodes.end());
+        }
+        auto pcfa = metric::PCFA<std::vector<T>, void>(output_weights, averages);
+
+
 
         size_t num_subbands = conf_bounds[0].size();
         size_t num_windows = window_sizes.size();  // TODO save window sizes to JSON
 
         //auto ds = read_csv_num<T>("anomaly_detector_data_1/script/energies01_short.csv");
-        //auto ds = read_csv_num<T>("anomaly_detector_data_1/script/energies.csv");
+//        auto ds_raw = read_csv_num<T>("anomaly_detector_data_1/script/energies.csv");
         //auto ds = read_csv_num<T>("anomaly_detector_data_1/script/real_energies_a_50000.csv");
         //auto ds = read_csv_num<T>("anomaly_detector_data_1/script/real_energies_a.csv");
         //auto ds = read_csv_num<T>("anomaly_detector_data_1/script/real_energies_250ms.csv");
         //auto ds = read_csv_num<T>("anomaly_detector_data_1/script/cat_energies_100ms.csv");
-        auto ds = read_csv_num<T>("anomaly_detector_data_1/script/cat_energies_100ms_sp8.csv");
+        auto ds_raw = read_csv_num<T>("anomaly_detector_data_1/script/cat_energies_100ms_sp8.csv");
+
+        auto ds = pcfa.encode(ds_raw);
 
         assert(num_subbands == ds[0].size());
         assert(num_subbands == model[0]["subbands"].size());  // TODO remove

@@ -222,6 +222,12 @@ public:
    */
     PCFA(std::vector<RecType> & TrainingData, size_t n_features = 1);
 
+    /**
+     * @brief load PCFA model
+     * @param decode_weights
+     * @param average_vector
+     */
+    PCFA(const std::vector<RecType> & decode_weights, const std::vector<value_type> & average_vector);
 
     /**
    * @brief

@@ -168,6 +168,19 @@ PCFA<RecType, Metric>::PCFA(std::vector<RecType> & TrainingData, size_t n_featur
     W_encode = trans(W_decode); // computed once and saved
 }
 
+// load PCFA model
+template <typename RecType, typename Metric>
+PCFA<RecType, Metric>::PCFA(const std::vector<RecType> & decode_weights, const std::vector<value_type> & average_vector)
+{
+    W_decode = vector_to_blaze(decode_weights);
+    W_encode = trans(W_decode);
+    averages = blaze::DynamicVector<PCFA<RecType, Metric>::value_type, blaze::rowVector>(average_vector.size());
+    for (size_t i = 0; i < average_vector.size(); ++i) {
+        averages[i] = average_vector[i];
+    }
+}
+
+
 
 template <typename RecType, typename Metric>
 blaze::DynamicMatrix<typename PCFA<RecType, Metric>::value_type>
