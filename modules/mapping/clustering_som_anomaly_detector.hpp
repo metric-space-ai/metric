@@ -1,16 +1,24 @@
 
 #include "modules/mapping/SOM.hpp"
-//#include "modules/mapping/kmeans.hpp"
 #include "modules/mapping/kmedoids.hpp"
 
 //#include "modules/mapping/PCFA.hpp"
 
-#include "assets/json.hpp"
+//#include "assets/json.hpp"
 
 #include <vector>
-#include <iostream>
+#include <iostream>  // TODO remove debug output
 #include <fstream>
 #include <sstream>
+
+//#include <string>
+
+
+
+
+namespace metric {
+
+namespace clustering_som_anomaly_detector_details {
 
 
 
@@ -68,6 +76,8 @@ void vv_to_csv(ContainerType data, std::string filename, std::string sep=",")  /
         }
         outputFile.close();
 }
+
+
 
 
 // ------ helper functions (copied from energies_example.cpp)
@@ -590,26 +600,25 @@ getPositionsAndBorders(std::vector<int> assignments, int clusters_num, int row_l
 
 
 
+} // namespace
 
 
-// ------ main
 
 
-using T = double;
+template <typename T>
+class ClusteringSomAnomalyDetector {
 
+public:
 
-int main() {
+    ClusteringSomAnomalyDetector(const std::string & filename) {
+        // TODO
+    }
 
+    ClusteringSomAnomalyDetector(const std::vector<std::vector<T>> & ds) {  // train using features
 
-    //std::vector<std::vector<std::vector<T>>> clustered_energies;
+        std::vector<uint32_t> window_sizes = {12, 24, 48, 96, 192, 384};
 
-    std::vector<uint32_t> window_sizes = {12, 24, 48, 96, 192, 384};
-
-    //*
-    // saving the model
-    {
-
-        // setup ----
+        // setup ----  // TODO pass
         int som_w_grid_size = 30;
         int som_h_grid_size = 30;
         double som_start_learn_rate = 0.8;
@@ -625,21 +634,8 @@ int main() {
         uint32_t samples = 1000;
         double confidence_level = 0.99;
 
-        auto ds = read_csv_num<T>("anomaly_detector_data_1/script/energies01_short.csv");
-        //auto ds = read_csv_num<T>("anomaly_detector_data_1/script/energies01.csv");
-        //auto ds_raw = read_csv_num<T>("anomaly_detector_data_1/script/energies.csv");
-        //auto ds = read_csv_num<T>("anomaly_detector_data_1/script/real_energies_a_50000.csv");
-        //auto ds = read_csv_num<T>("anomaly_detector_data_1/script/real_energies_a.csv");
-        //auto ds = read_csv_num<T>("anomaly_detector_data_1/script/real_energies_250ms.csv");
-        //auto ds = read_csv_num<T>("anomaly_detector_data_1/script/cat_energies_100ms.csv");
-        //auto ds_raw = read_csv_num<T>("anomaly_detector_data_1/script/cat_energies_100ms_sp8.csv");
-//        auto ds     = read_csv_num<T>("anomaly_detector_data_1/script/cat_energies_100ms_sp8.csv");
-        // -----------
 
-        std::cout << "dataset read" << std::endl;
-
-
-        // PCA
+        // PCA  // TODO add flag
 //        auto pcfa = metric::PCFA<std::vector<T>, void>(ds_raw, 30);
 //        auto ds = pcfa.encode(ds_raw);
 
@@ -680,14 +676,14 @@ int main() {
         auto [assignments, means, counts] = metric::kmedoids(matrix, num_clusters);
         std::cout << "clustering completed" << std::endl;
 
-    //    nlohmann::json centroids;
-    //    for (auto mean : means) {
-    //        centroids.push_back(mean);
-    //    };
+//        nlohmann::json centroids;
+//        for (auto mean : means) {
+//            centroids.push_back(mean);
+//        };
 
         // debug output
-        vv_to_csv(nodes_data, "anomaly_detector_data_1/script/som_nodes.csv");
-        vv_to_csv(std::vector<std::vector<int>> {assignments}, "anomaly_detector_data_1/script/som_nodes_clusters.csv");
+        clustering_som_anomaly_detector_details::vv_to_csv(nodes_data, "anomaly_detector_data_1/script/som_nodes.csv");
+        clustering_som_anomaly_detector_details::vv_to_csv(std::vector<std::vector<int>> {assignments}, "anomaly_detector_data_1/script/som_nodes_clusters.csv");
 
 
         std::vector<std::vector<std::vector<T>>> clustered_energies (
@@ -708,21 +704,22 @@ int main() {
 
         }
 
-    //    std::vector<std::vector<std::vector<std::vector<std::vector<T>>>>> conf_bounds (
-    //        counts.size(),
-    //        std::vector<std::vector<std::vector<std::vector<T>>>> (
-    //            num_subbands,
-    //            std::vector<std::vector<std::vector<T>>> (
-    //                window_sizes.size(),
-    //                std::vector<std::vector<T>> (
-    //                    3  // left, middle, right
-    //                )
-    //            )
-    //        )
-    //    );
+        conf_bounds = std::vector<std::vector<std::vector<std::vector<std::vector<T>>>>>(
+            counts.size(),
+            std::vector<std::vector<std::vector<std::vector<T>>>> (
+                num_subbands,
+                std::vector<std::vector<std::vector<T>>> (
+                    window_sizes.size(),
+                    std::vector<std::vector<T>> (
+                        3  // left, middle, right
+                    )
+                )
+            )
+        );
 
+        nodes = std::vector<std::vector<std::vector<T>>>(counts.size());
 
-        nlohmann::json model;
+        //nlohmann::json model;
         size_t cl_idx = 0;
         for (auto cluster_data : clustered_energies) {
 
@@ -734,73 +731,65 @@ int main() {
             }
 
             // add subband confidence intervals per window size
-            nlohmann::json all_subbands_json;
+            //nlohmann::json all_subbands_json;
             size_t sb_idx = 0;
             for (auto energy_subband_data : cluster_data) {
 
-//                if (energy_subband_data.size() < 5) {
-                    //++sb_idx;
-                    //continue;
-//                    std::cout << "small cluster" << std::endl;
-//                    if (energy_subband_data.size() == 2) {   // TODO remove
-//                        energy_subband_data.push_back(100.5);
-//                    }
-//                }
-
                 // returns quants for a single subbund
-                std::vector<std::vector<std::vector<T>>> multiquants = set2multiconf(energy_subband_data, window_sizes, samples, confidence_level);
+                std::vector<std::vector<std::vector<T>>> multiquants = clustering_som_anomaly_detector_details::set2multiconf(energy_subband_data, window_sizes, samples, confidence_level);
 
-                nlohmann::json all_windows_json;
+                //nlohmann::json all_windows_json;
                 size_t w_idx = 0;
                 for (auto window : multiquants) {
 
-    //                conf_bounds[cl_idx][sb_idx][w_idx][0] = window[0];
-    //                conf_bounds[cl_idx][sb_idx][w_idx][1] = window[1];
-    //                conf_bounds[cl_idx][sb_idx][w_idx][2] = window[2];
+                    conf_bounds[cl_idx][sb_idx][w_idx][0] = window[0];
+                    conf_bounds[cl_idx][sb_idx][w_idx][1] = window[1];
+                    conf_bounds[cl_idx][sb_idx][w_idx][2] = window[2];
 
-                    nlohmann::json window_json = {
-                        {"_window_length_index", std::to_string(window_sizes[w_idx])},
-                        {"_window_length", std::to_string(w_idx)},
-                        {"conf_l", window[0]},
-                        {"conf_m", window[1]},
-                        {"conf_r", window[2]}
-                    };
-                    all_windows_json.push_back(window_json);
+//                    nlohmann::json window_json = {
+//                        {"_window_length_index", std::to_string(window_sizes[w_idx])},
+//                        {"_window_length", std::to_string(w_idx)},
+//                        {"conf_l", window[0]},
+//                        {"conf_m", window[1]},
+//                        {"conf_r", window[2]}
+//                    };
+//                    all_windows_json.push_back(window_json);
 
-    //                std::cout << "conf_l: " << std::endl;
-    //                vector_print(window[0]);
-    //                std::cout << "conf_m: " << std::endl;
-    //                vector_print(window[1]);
-    //                std::cout << "conf_r: " << std::endl;
-    //                vector_print(window[2]);
+//                    std::cout << "conf_l: " << std::endl;
+//                    vector_print(window[0]);
+//                    std::cout << "conf_m: " << std::endl;
+//                    vector_print(window[1]);
+//                    std::cout << "conf_r: " << std::endl;
+//                    vector_print(window[2]);
 
                     ++w_idx;
                 }
-                nlohmann::json subband_json = {
-                    {"_subband", std::to_string(sb_idx)},
-                    {"conf_windows", all_windows_json}
-                };
-                all_subbands_json.push_back(subband_json);
+//                nlohmann::json subband_json = {
+//                    {"_subband", std::to_string(sb_idx)},
+//                    {"conf_windows", all_windows_json}
+//                };
+//                all_subbands_json.push_back(subband_json);
                 ++sb_idx;
             }
 
             // add nodes that fall into cluster
-            std::vector<std::vector<T>> nodes = {};
+            std::vector<std::vector<T>> cluster_nodes = {};
             for (size_t node_idx = 0; node_idx < assignments.size(); ++node_idx) {
                 if (assignments[node_idx] == cl_idx) {
-                    nodes.push_back(nodes_data[node_idx]);
+                    cluster_nodes.push_back(nodes_data[node_idx]);
                 }
             }
+            nodes.push_back(cluster_nodes);
 
-            // write cluster json
-            nlohmann::json cluster_json  = {
-                {"_cluster", std::to_string(cl_idx)},
-                {"subbands", all_subbands_json},
-                //{"centroid", means[cl_idx]},
-                {"som_units", nodes}
+//            // write cluster json
+//            nlohmann::json cluster_json  = {
+//                {"_cluster", std::to_string(cl_idx)},
+//                {"subbands", all_subbands_json},
+//                //{"centroid", means[cl_idx]},
+//                {"som_units", nodes}
 
-            };
-            model.push_back(cluster_json);
+//            };
+//            model.push_back(cluster_json);
             ++cl_idx;
         }
 
@@ -810,243 +799,59 @@ int main() {
     //        {"conf_windows", conf_wnds}
     //    };
 
-        std::ofstream outputFile("model.json");
-        outputFile << std::setw(4) << model << std::endl;
-        outputFile.close();
+//        std::ofstream outputFile("model.json");
+//        outputFile << std::setw(4) << model << std::endl;
+//        outputFile.close();
 
-        std::cout << "model written" << std::endl;
-
-
-        // positions and boundaries
-        auto [positions, borders] = getPositionsAndBorders(assignments, counts.size(), som_w_grid_size);
-        nlohmann::json bounds = {
-            {"positions", positions},
-            {"borders", borders}
-        };
-        std::ofstream bounds_f("cluster_boundaries.json");
-        bounds_f << std::setw(4) << bounds << std::endl;
-        bounds_f.close();
-
-
-        std::cout << "training done" << std::endl;
-
-
-
+//        std::cout << "model written" << std::endl;
 
     }
-    //*/
+
+    void save(const std::string & filename) {
+        // TODO
+    }
+
+    std::vector<T> encode(const std::vector<std::vector<T>> & dataset) {
+        // TODO
+    }
 
 
+private:
 
-    //*
-
-    // applying the model
+    std::vector<T>  // numbers of sliding window points that fall into each cluster (by BMUs)
+    cluster_entries(
+        const std::vector<std::vector<std::vector<T>>> & nodes,
+        const std::vector<std::vector<T>> & dataset,
+        const size_t pos_idx, // where to start from
+        const size_t wnd_size
+        // and maybe metric type as template parameter
+        )
     {
+        // TODO
+    }
 
-        nlohmann::json model;
-        {
-            std::ifstream f("model.json");
-            f >> model;
-        }
-
-        if (model.size() < 1) {
-            std::cout << "empty model" << std::endl;
-            return 0;
-        }
-
-        metric::Euclidean<T> som_distance;
-
-        //std::vector<std::vector<T>> means;
-        std::vector<std::vector<std::vector<T>>> nodes;  // clusters, nodes, subband energies
-
-        std::vector<std::vector<std::vector<std::vector<std::vector<T>>>>> conf_bounds = {};
-        // clusters, subbands, window sizes, (left, med, right), quant values
-
-        for (auto cluster : model) {
-
-            // read centroid
-            //means.push_back(cluster["centroid"]);
-
-            // read conf levels
-            std::vector<std::vector<std::vector<std::vector<T>>>> cluster_conf_vec = {};
-            for (auto subband : cluster["subbands"]) {
-                std::vector<std::vector<std::vector<T>>> subband_vec = {};
-                for (auto window : subband["conf_windows"]) {
-                    std::vector<std::vector<T>> window_vec = {};
-                    window_vec.push_back(window["conf_l"]);
-                    window_vec.push_back(window["conf_m"]);
-                    window_vec.push_back(window["conf_r"]);
-                    //auto w = window["conf_l"];  // TODO remove
-                    //if (window["conf_m"].m_type != nlohmann::detail::value_t::null) {
-                    //    window_vec.push_back(window["conf_l"]);
-                    //    window_vec.push_back(window["conf_m"]);
-                    //    window_vec.push_back(window["conf_r"]);
-                    //} else {
-                    //    std::cout << "empty cluster found" << std::endl;
-                    //}
-                    subband_vec.push_back(window_vec);
-                }
-                cluster_conf_vec.push_back(subband_vec);
-            }
-            conf_bounds.push_back(cluster_conf_vec);
-
-            // read SOM units that belong to cluster
-            std::vector<std::vector<T>> cluster_nodes = cluster["som_units"];
-            nodes.push_back(cluster_nodes);
-
-        }
-        // model loaded
-
-
-        // loading PCFA
-//        std::vector<T> averages;
-//        std::vector<std::vector<T>> output_weights;
-//        {
-//            nlohmann::json pcfa_model;
-//            std::ifstream f("pcfa_model.json");
-//            f >> pcfa_model;
-//            std::vector<std::vector<T>> eigenmodes = pcfa_model;
-//            averages = eigenmodes[0];
-//            output_weights = std::vector<std::vector<T>>(eigenmodes.begin() + 1, eigenmodes.end());
-//        }
-//        auto pcfa = metric::PCFA<std::vector<T>, void>(output_weights, averages);
-
-
-
-        size_t num_subbands = conf_bounds[0].size();
-        size_t num_windows = window_sizes.size();  // TODO save window sizes to JSON
-
-        auto ds = read_csv_num<T>("anomaly_detector_data_1/script/energies01_short.csv");
-//        auto ds_raw = read_csv_num<T>("anomaly_detector_data_1/script/energies.csv");
-        //auto ds = read_csv_num<T>("anomaly_detector_data_1/script/real_energies_a_50000.csv");
-        //auto ds = read_csv_num<T>("anomaly_detector_data_1/script/real_energies_a.csv");
-        //auto ds = read_csv_num<T>("anomaly_detector_data_1/script/real_energies_250ms.csv");
-        //auto ds = read_csv_num<T>("anomaly_detector_data_1/script/cat_energies_100ms.csv");
-        //auto ds_raw = read_csv_num<T>("anomaly_detector_data_1/script/cat_energies_100ms_sp8.csv");
-//        auto ds     = read_csv_num<T>("anomaly_detector_data_1/script/cat_energies_100ms_sp8.csv");
-
-//        auto ds = pcfa.encode(ds_raw);
-
-        assert(num_subbands == ds[0].size());
-        assert(num_subbands == model[0]["subbands"].size());  // TODO remove
-
-        size_t buf_size = window_sizes[num_windows - 1];
-
-        assert(buf_size <= ds.size());
-
-        std::vector<std::vector<T>> cl_probs = {};  // probability of distribution match for every position of sliding window against each cluster
-        std::vector<std::vector<T>> cl_n_by_BMUs = {}; // numbers of sliding window points that fall into each cluster (by BMUs)
-
-        //std::vector<std::vector<std::vector<T>>> buffer;  // subbands, windows, data
-        //buffer.reserve(num_subbands);
-        size_t pos_idx = buf_size;
-        while (ds.begin() + pos_idx < ds.end()) {  // sliding along timeseries
-
-            // compute probabilities of distribution match
-            std::vector<T> avg_prob (model.size(), 0);
-            for (size_t sb_idx = 0; sb_idx < num_subbands; ++sb_idx) {
-
-                std::vector<T> avg_subband_prob (model.size(), 0);
-                std::vector<std::vector<T>> subband = {};
-                //for (auto wnd_size : window_sizes) {
-                for (auto ws_idx = 0; ws_idx < window_sizes.size(); ++ws_idx) {
-                    auto wnd_size = window_sizes[ws_idx];
-                    std::vector<T> wnd;
-                    wnd.reserve(wnd_size);
-                    for (auto val_idx = pos_idx - wnd_size; val_idx < pos_idx; ++val_idx) { // reading window
-                        wnd.push_back(ds[val_idx][sb_idx]);
-                    }
-                    //std::vector<T> avg_wnd_prob (model.size(), 0);
-                    std::sort(wnd.begin(), wnd.end());
-                    // here we have window filled
-                    // loop clusters, compare each sorted element to respective bounds, save for current wndsize
-                    for (size_t cl_idx = 0; cl_idx < model.size(); ++cl_idx) {
-                        T wnd_prob = 0;
-                        for (size_t el_idx = 0; el_idx < wnd.size(); el_idx++) {
-                            // compare element to bounds
-                            auto lb = conf_bounds[cl_idx][sb_idx][ws_idx][0][el_idx];
-                            auto rb = conf_bounds[cl_idx][sb_idx][ws_idx][2][el_idx];
-                            if ( (wnd[el_idx] >= lb) && (wnd[el_idx] <= rb) ) {
-                                wnd_prob++;
-                            }
-                        }
-                        wnd_prob /= (T)wnd.size();
-                        avg_subband_prob[cl_idx] += wnd_prob;
-                    }
-                    // here we have avg window probability evaluated for each cluster (stored in avg_wnd_prob)
-                    // avg_subband_prob[cl_idx] += wnd_prob[cl_idx];
-                    subband.push_back(wnd);
-                }
-                // subband filled
-                for (size_t cl_idx = 0; cl_idx < model.size(); ++cl_idx) {
-                    avg_subband_prob[cl_idx] /= (T)num_windows;
-                    avg_prob[cl_idx] += avg_subband_prob[cl_idx];  // adding each subband's summand to overall prob, per cluster
-                }
-                // here we have average subband probability for each cluster
-                //buffer.push_back(subband);
-            }
-            // here buffer is filled for the current pos_idx
-            // and overall cluster belonging probabilities are summed over al subbands
-            for (size_t cl_idx = 0; cl_idx < model.size(); ++cl_idx) {
-                avg_prob[cl_idx] /= (T)num_subbands;
-            }
-            //std::cout << "buffer filled" << std::endl;
-            // here we have probs for all clusters computed for the current input data window
-
-            cl_probs.push_back(avg_prob);
-
-
-            // compute number of points that fall into each cluster by BMUs
-            std::vector<T> cl_BMU_matches (model.size(), 0);
-            for (auto val_idx = pos_idx - buf_size; val_idx < pos_idx; ++val_idx) { // reading the sliging window
-                T min_dist = std::numeric_limits<T>::max();
-                size_t nearest_cluster = model.size(); // should cause assertion failure if not updated
-                for (size_t cl_idx = 0; cl_idx < model.size(); ++cl_idx) {
-                    for (size_t node_idx = 0; node_idx < nodes[cl_idx].size(); ++node_idx) {
-                        T dist = som_distance(nodes[cl_idx][node_idx], ds[val_idx]);
-                        if (dist < min_dist) {
-                            min_dist = dist;
-                            nearest_cluster = cl_idx;
-                        }
-                    }
-                }
-                assert(nearest_cluster < model.size());
-                ++cl_BMU_matches[nearest_cluster];
-            }
-            for (size_t cl_idx = 0; cl_idx < model.size(); ++cl_idx) {
-                cl_BMU_matches[cl_idx] /= (T)buf_size;  // normalize
-            }
-            cl_n_by_BMUs.push_back(cl_BMU_matches);
-
-
-
-
-
-            // TODO compute final anomaly score
-
-
-            //buffer = {};   // TODO optimize with sliding (via push-pop) ring buffer, maybe based on deque
-            ++pos_idx;
-        }
-
-
-        vv_to_csv(ds,           "anomaly_detector_data_1/script/input.csv");
-        vv_to_csv(cl_probs,     "anomaly_detector_data_1/script/cl_probs.csv");
-        vv_to_csv(cl_n_by_BMUs, "anomaly_detector_data_1/script/cl_matches.csv");
-
-
-
-        std::cout << "done" << std::endl;
-
+    T // single anomaly estimation value
+    estimate_anomaly(
+        const std::vector<std::vector<T>> & data,  // general window (slice of timeseries of features), passed the entropy check
+        const std::vector<std::vector<std::vector<std::vector<T>>>> cluster_conf_bounds // cluster from model, confidence bounds for all window sizes
+        //...
+        )
+    {
+        // TODO
     }
 
 
-    // */
+    std::vector<std::vector<std::vector<std::vector<std::vector<T>>>>> conf_bounds;
+    // clusters, subbands, window sizes, bound types (left, med, right), quant values
+
+    std::vector<std::vector<std::vector<T>>> nodes;  // clusters, nodes, node features
+
+
+}; // class clustering_som_anomaly_detector
 
 
 
 
 
 
-    return 0;
-}
+}  // namespace metric
