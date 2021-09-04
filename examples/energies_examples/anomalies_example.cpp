@@ -75,5 +75,7 @@ int main() {
     auto csad = metric::ClusteringSomAnomalyDetector(ds);
     csad.save("class_model.json");
 
+    auto csad2 = metric::ClusteringSomAnomalyDetector<T>("class_model.json");
+
     std::cout << "done" << std::endl;
 }

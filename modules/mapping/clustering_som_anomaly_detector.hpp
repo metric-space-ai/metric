@@ -611,8 +611,58 @@ class ClusteringSomAnomalyDetector {
 public:
 
     ClusteringSomAnomalyDetector(const std::string & filename) {
-        // TODO
+
+        nlohmann::json model;
+        {
+            std::ifstream f(filename);
+            f >> model;
+        }
+
+        if (model.size() < 1) {
+            std::cout << "empty model" << std::endl;
+            return;
+        }
+
+        metric::Euclidean<T> som_distance;
+
+        //std::vector<std::vector<T>> means;
+
+        for (auto cluster : model) {
+
+            // read centroid
+            //means.push_back(cluster["centroid"]);
+
+            // read conf levels
+            std::vector<std::vector<std::vector<std::vector<T>>>> cluster_conf_vec = {};
+            for (auto subband : cluster["subbands"]) {
+                std::vector<std::vector<std::vector<T>>> subband_vec = {};
+                for (auto window : subband["conf_windows"]) {
+                    std::vector<std::vector<T>> window_vec = {};
+                    window_vec.push_back(window["conf_l"]);
+                    window_vec.push_back(window["conf_m"]);
+                    window_vec.push_back(window["conf_r"]);
+                    //auto w = window["conf_l"];  // TODO remove
+                    //if (window["conf_m"].m_type != nlohmann::detail::value_t::null) {
+                    //    window_vec.push_back(window["conf_l"]);
+                    //    window_vec.push_back(window["conf_m"]);
+                    //    window_vec.push_back(window["conf_r"]);
+                    //} else {
+                    //    std::cout << "empty cluster found" << std::endl;
+                    //}
+                    subband_vec.push_back(window_vec);
+                }
+                cluster_conf_vec.push_back(subband_vec);
+            }
+            conf_bounds.push_back(cluster_conf_vec);
+
+            // read SOM units that belong to cluster
+            std::vector<std::vector<T>> cluster_nodes = cluster["som_units"];
+            nodes.push_back(cluster_nodes);
+
+        }
+        // model loaded
     }
+
 
     ClusteringSomAnomalyDetector(const std::vector<std::vector<T>> & ds) {  // train using features
 
