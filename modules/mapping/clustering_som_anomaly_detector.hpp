@@ -4,7 +4,7 @@
 
 //#include "modules/mapping/PCFA.hpp"
 
-//#include "assets/json.hpp"
+#include "3rdparty/nlohmann/json.hpp"
 
 #include <vector>
 #include <iostream>  // TODO remove debug output
@@ -616,14 +616,12 @@ public:
 
     ClusteringSomAnomalyDetector(const std::vector<std::vector<T>> & ds) {  // train using features
 
-        std::vector<uint32_t> window_sizes = {12, 24, 48, 96, 192, 384};
-
         // setup ----  // TODO pass
         int som_w_grid_size = 30;
         int som_h_grid_size = 30;
         double som_start_learn_rate = 0.8;
         double som_final_learn_rate = 0.2;
-        unsigned int som_iterations = 10000;
+        unsigned int som_iterations = 100; //10000;
         double som_initial_neighbour_size = 5;
         double som_neigbour_range_decay = 2;
         long long som_random_seed = 0;
@@ -704,20 +702,21 @@ public:
 
         }
 
-        conf_bounds = std::vector<std::vector<std::vector<std::vector<std::vector<T>>>>>(
-            counts.size(),
-            std::vector<std::vector<std::vector<std::vector<T>>>> (
-                num_subbands,
-                std::vector<std::vector<std::vector<T>>> (
-                    window_sizes.size(),
-                    std::vector<std::vector<T>> (
-                        3  // left, middle, right
-                    )
-                )
-            )
-        );
+//        conf_bounds = std::vector<std::vector<std::vector<std::vector<std::vector<T>>>>>(
+//            counts.size(),
+//            std::vector<std::vector<std::vector<std::vector<T>>>> (
+//                num_subbands,
+//                std::vector<std::vector<std::vector<T>>> (
+//                    window_sizes.size(),
+//                    std::vector<std::vector<T>> (
+//                        3  // left, middle, right
+//                    )
+//                )
+//            )
+//        );
 
-        nodes = std::vector<std::vector<std::vector<T>>>(counts.size());
+        conf_bounds.reserve(counts.size());
+        nodes.reserve(counts.size());
 
         //nlohmann::json model;
         size_t cl_idx = 0;
@@ -727,9 +726,19 @@ public:
             if (cluster_data[0].size() < 3) {  // set2multiconf needs at least 3 points
                 ++cl_idx;
                 std::cout << "small cluster" << std::endl;
+                // TODO remove small cluster from model in memory
                 continue;
             }
 
+            std::vector<std::vector<std::vector<std::vector<T>>>> cluster_bounds (
+                num_subbands,
+                std::vector<std::vector<std::vector<T>>> (
+                    window_sizes.size(),
+                    std::vector<std::vector<T>> (
+                        3  // left, middle, right
+                    )
+                )
+            );
             // add subband confidence intervals per window size
             //nlohmann::json all_subbands_json;
             size_t sb_idx = 0;
@@ -742,9 +751,12 @@ public:
                 size_t w_idx = 0;
                 for (auto window : multiquants) {
 
-                    conf_bounds[cl_idx][sb_idx][w_idx][0] = window[0];
-                    conf_bounds[cl_idx][sb_idx][w_idx][1] = window[1];
-                    conf_bounds[cl_idx][sb_idx][w_idx][2] = window[2];
+//                    conf_bounds[cl_idx][sb_idx][w_idx][0] = window[0];
+//                    conf_bounds[cl_idx][sb_idx][w_idx][1] = window[1];
+//                    conf_bounds[cl_idx][sb_idx][w_idx][2] = window[2];
+                    cluster_bounds[sb_idx][w_idx][0] = window[0];
+                    cluster_bounds[sb_idx][w_idx][1] = window[1];
+                    cluster_bounds[sb_idx][w_idx][2] = window[2];
 
 //                    nlohmann::json window_json = {
 //                        {"_window_length_index", std::to_string(window_sizes[w_idx])},
@@ -771,6 +783,7 @@ public:
 //                all_subbands_json.push_back(subband_json);
                 ++sb_idx;
             }
+            conf_bounds.push_back(cluster_bounds);
 
             // add nodes that fall into cluster
             std::vector<std::vector<T>> cluster_nodes = {};
@@ -808,10 +821,84 @@ public:
     }
 
     void save(const std::string & filename) {
-        // TODO
+
+
+        nlohmann::json model;
+        size_t cl_idx = 0;
+        for (auto cluster_data : conf_bounds) {
+
+            // add subband confidence intervals per window size
+            nlohmann::json all_subbands_json;
+            size_t sb_idx = 0;
+            for (auto energy_subband_data : cluster_data) {
+
+                nlohmann::json all_windows_json;
+                size_t w_idx = 0;
+                for (auto window : energy_subband_data) {
+
+                    nlohmann::json window_json = {
+                        {"_window_length_index", std::to_string(window_sizes[w_idx])},
+                        {"_window_length", std::to_string(w_idx)},
+                        {"conf_l", window[0]},
+                        {"conf_m", window[1]},
+                        {"conf_r", window[2]}
+                    };
+                    all_windows_json.push_back(window_json);
+
+    //                std::cout << "conf_l: " << std::endl;
+    //                vector_print(window[0]);
+    //                std::cout << "conf_m: " << std::endl;
+    //                vector_print(window[1]);
+    //                std::cout << "conf_r: " << std::endl;
+    //                vector_print(window[2]);
+
+                    ++w_idx;
+                }
+                nlohmann::json subband_json = {
+                    {"_subband", std::to_string(sb_idx)},
+                    {"conf_windows", all_windows_json}
+                };
+                all_subbands_json.push_back(subband_json);
+                ++sb_idx;
+            }
+
+//            // add nodes that fall into cluster
+//            //std::vector<std::vector<T>> nodes = {};
+//            for (size_t node_idx = 0; node_idx < nodes[cl_idx].size(); ++node_idx) {
+//                if (nodes[cl_idx][node_idx] == cl_idx) {
+//                    nodes.push_back(nodes_data[node_idx]);
+//                }
+//            }
+
+            // write cluster json
+            nlohmann::json cluster_json  = {
+                {"_cluster", std::to_string(cl_idx)},
+                {"subbands", all_subbands_json},
+                //{"centroid", means[cl_idx]},
+                {"som_units", nodes[cl_idx]}
+
+            };
+            model.push_back(cluster_json);
+            ++cl_idx;
+        }
+
+
+    //    nlohmann::json model = {
+    //        {"centroids", centroids},
+    //        {"conf_windows", conf_wnds}
+    //    };
+
+        std::ofstream outputFile(filename);
+        outputFile << std::setw(4) << model << std::endl;
+        outputFile.close();
+
+        std::cout << "model written" << std::endl;
     }
 
+
+
     std::vector<T> encode(const std::vector<std::vector<T>> & dataset) {
+
         // TODO
     }
 
@@ -840,6 +927,8 @@ private:
         // TODO
     }
 
+
+    std::vector<uint32_t> window_sizes = {12, 24, 48, 96, 192, 384};
 
     std::vector<std::vector<std::vector<std::vector<std::vector<T>>>>> conf_bounds;
     // clusters, subbands, window sizes, bound types (left, med, right), quant values

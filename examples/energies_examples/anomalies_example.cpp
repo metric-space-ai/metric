@@ -73,6 +73,7 @@ int main() {
     auto ds = read_csv_num<T>("anomaly_detector_data_1/script/energies01_short.csv");
 
     auto csad = metric::ClusteringSomAnomalyDetector(ds);
+    csad.save("class_model.json");
 
     std::cout << "done" << std::endl;
 }
