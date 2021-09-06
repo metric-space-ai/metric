@@ -64,6 +64,34 @@ void vv_to_csv(ContainerType data, std::string filename, std::string sep=",")  /
 // ------ helper functions (copied from energies_example.cpp)
 
 
+// ------ vector to console
+
+
+template<typename T>
+std::ostream & operator<<(std::ostream & out, std::vector<T> const & a) {
+    out << "[ " << "\n";
+    for(auto x : a) {
+        out << x << "\n";
+    }
+    out << "]";
+    return out;
+}
+
+
+template<typename T>
+std::ostream & operator<<(std::ostream & out, std::vector<std::vector<T>> const & a) {
+    out << "[ " << "\n";
+    for(auto x : a) {
+        out << x << "\n";
+    }
+    out << "]";
+    return out;
+}
+
+
+
+
+// ------
 
 
 int main() {
@@ -72,10 +100,19 @@ int main() {
 
     auto ds = read_csv_num<T>("anomaly_detector_data_1/script/energies01_short.csv");
 
-    auto csad = metric::ClusteringSomAnomalyDetector(ds);
-    csad.save("class_model.json");
+//    auto csad = metric::ClusteringSomAnomalyDetector(ds);
+//    csad.save("class_model.json");
 
     auto csad2 = metric::ClusteringSomAnomalyDetector<T>("class_model.json");
+
+//    auto out1 = csad.encode(ds);
+    auto out2 = csad2.encode(ds);
+
+//    std::cout << "out1:" << std::endl;
+//    std::cout << out1 << std::endl;
+    std::cout << "out2:" << std::endl;
+    std::cout << out2 << std::endl;
+
 
     std::cout << "done" << std::endl;
 }

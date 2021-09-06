@@ -600,7 +600,7 @@ getPositionsAndBorders(std::vector<int> assignments, int clusters_num, int row_l
 
 
 
-} // namespace
+} // namespace clustering_som_anomaly_detector_details
 
 
 
@@ -660,6 +660,8 @@ public:
             nodes.push_back(cluster_nodes);
 
         }
+
+        assert(nodes.size() == conf_bounds.size());
         // model loaded
     }
 
@@ -867,6 +869,7 @@ public:
 //        outputFile.close();
 
 //        std::cout << "model written" << std::endl;
+        assert(nodes.size() == conf_bounds.size());
 
     }
 
@@ -949,31 +952,194 @@ public:
 
     std::vector<T> encode(const std::vector<std::vector<T>> & dataset) {
 
-        // TODO
+        auto entries = cluster_entries(dataset, 400, 400);  // debug code, TODO replace
+
+        // entropy
+        T entropy = 0;
+        for (auto el : entries) {
+            if (el != 0)
+                entropy -= el * std::log2(el);
+        }
+
+
+        T distr_similarity = 0; // TODO check behaviour!
+
+        if (entropy < 0.2) {  // locked in cluster  // TODO pass threshold!!
+
+            // select best matching cluster
+            T max_share = -1;
+            size_t bestcl_idx = entries.size();
+            for (size_t cl_idx = 0; cl_idx < entries.size(); ++cl_idx) {
+                if (entries[cl_idx] > max_share) {
+                    max_share = entries[cl_idx];
+                    bestcl_idx = cl_idx;
+                }
+            }
+            assert(bestcl_idx < entries.size());
+
+            // distribution similarity & distance
+            distr_similarity = estimate_anomaly(dataset, 400, 400, bestcl_idx);
+
+
+
+            // TODO
+
+        }
+
+
+        return {distr_similarity};  // TODO replace
     }
 
 
 private:
 
-    std::vector<T>  // numbers of sliding window points that fall into each cluster (by BMUs)
+    std::vector<T>  // numbers of points that fall into each cluster (by BMUs)
     cluster_entries(
-        const std::vector<std::vector<std::vector<T>>> & nodes,
         const std::vector<std::vector<T>> & dataset,
-        const size_t pos_idx, // where to start from
+        const size_t pos_idx, // position just after window
         const size_t wnd_size
         // and maybe metric type as template parameter
         )
     {
-        // TODO
+        //assert(buf_size <= wnd_size);
+        assert(wnd_size <= dataset.size());
+
+        size_t num_subbands = conf_bounds[0].size();
+        size_t num_windows = window_sizes.size();  // TODO save window sizes to JSON
+        size_t num_clusters = nodes.size();
+
+        assert(num_subbands == dataset[pos_idx].size());
+
+        size_t buf_size = window_sizes[num_windows - 1];
+
+        assert(wnd_size >= buf_size);
+
+        metric::Euclidean<T> som_distance;
+
+//        size_t pos_idx = start_idx;
+
+//        std::vector<std::vector<T>> cl_probs = {};  // probability of distribution match for every position of sliding window against each cluster
+//        std::vector<std::vector<T>> cl_n_by_BMUs = {}; // numbers of sliding window points that fall into each cluster (by BMUs)
+
+        //std::vector<std::vector<std::vector<T>>> buffer;  // subbands, windows, data
+        //buffer.reserve(num_subbands);
+
+//        while ( ( dataset.begin() + start_idx + pos_idx < dataset.end() ) && pos_idx < wnd_size ) {  // slice loop
+//        }
+
+        // compute number of points that fall into each cluster by BMUs
+        std::vector<T> cl_BMU_matches (num_clusters, 0);
+        for (auto val_idx = pos_idx - buf_size; val_idx < pos_idx; ++val_idx) { // reading the sliging window
+            T min_dist = std::numeric_limits<T>::max();
+            size_t nearest_cluster = num_clusters; // should cause assertion failure if not updated
+            for (size_t cl_idx = 0; cl_idx < num_clusters; ++cl_idx) {
+                for (size_t node_idx = 0; node_idx < nodes[cl_idx].size(); ++node_idx) {
+                    T dist = som_distance(nodes[cl_idx][node_idx], dataset[val_idx]);
+                    if (dist < min_dist) {
+                        min_dist = dist;
+                        nearest_cluster = cl_idx;
+                    }
+                }
+            }
+            assert(nearest_cluster < num_clusters);
+            ++cl_BMU_matches[nearest_cluster];
+        }
+        for (size_t cl_idx = 0; cl_idx < num_clusters; ++cl_idx) {
+            cl_BMU_matches[cl_idx] /= (T)buf_size;  // normalize
+        }
+
+        return cl_BMU_matches;
     }
+
+
 
     T // single anomaly estimation value
     estimate_anomaly(
-        const std::vector<std::vector<T>> & data,  // general window (slice of timeseries of features), passed the entropy check
-        const std::vector<std::vector<std::vector<std::vector<T>>>> cluster_conf_bounds // cluster from model, confidence bounds for all window sizes
+        const std::vector<std::vector<T>> & dataset,  // general window (slice of timeseries of features), passed the entropy check
+        const size_t pos_idx, // position just after window
+        const size_t wnd_size,
+        const size_t cl_idx
         //...
         )
     {
+
+        assert(wnd_size <= dataset.size());
+
+        size_t num_subbands = conf_bounds[0].size();
+        size_t num_windows = window_sizes.size();
+
+        assert(num_subbands == dataset[pos_idx].size());
+
+        // compute probabilities of distribution match
+        //std::vector<T> avg_prob (model.size(), 0);
+        T avg_prob = 0;
+        for (size_t sb_idx = 0; sb_idx < num_subbands; ++sb_idx) {
+
+            //std::vector<T> avg_subband_prob (model.size(), 0);
+            T avg_subband_prob = 0;
+            std::vector<std::vector<T>> subband = {};
+            //for (auto wnd_size : window_sizes) {
+            for (auto ws_idx = 0; ws_idx < window_sizes.size(); ++ws_idx) {
+                auto wnd_size = window_sizes[ws_idx];
+                std::vector<T> wnd;
+                wnd.reserve(wnd_size);
+                for (auto val_idx = pos_idx - wnd_size; val_idx < pos_idx; ++val_idx) { // reading window
+                    wnd.push_back(dataset[val_idx][sb_idx]);
+                }
+                //std::vector<T> avg_wnd_prob (model.size(), 0);
+                std::sort(wnd.begin(), wnd.end());
+                // here we have window filled
+                // loop clusters, compare each sorted element to respective bounds, save for current wndsize
+//                for (size_t cl_idx = 0; cl_idx < model.size(); ++cl_idx) {
+//                    T wnd_prob = 0;
+//                    for (size_t el_idx = 0; el_idx < wnd.size(); el_idx++) {
+//                        // compare element to bounds
+//                        auto lb = conf_bounds[cl_idx][sb_idx][ws_idx][0][el_idx];
+//                        auto rb = conf_bounds[cl_idx][sb_idx][ws_idx][2][el_idx];
+//                        if ( (wnd[el_idx] >= lb) && (wnd[el_idx] <= rb) ) {
+//                            wnd_prob++;
+//                        }
+//                    }
+//                    wnd_prob /= (T)wnd.size();
+//                    avg_subband_prob[cl_idx] += wnd_prob;
+//                }
+                T wnd_prob = 0;
+                for (size_t el_idx = 0; el_idx < wnd.size(); el_idx++) {
+                    // compare element to bounds
+                    auto lb = conf_bounds[cl_idx][sb_idx][ws_idx][0][el_idx];
+                    auto rb = conf_bounds[cl_idx][sb_idx][ws_idx][2][el_idx];
+                    if ( (wnd[el_idx] >= lb) && (wnd[el_idx] <= rb) ) {
+                        wnd_prob++;
+                    }
+                }
+                wnd_prob /= (T)wnd.size();
+                avg_subband_prob += wnd_prob;
+                // here we have avg window probability evaluated for each cluster (stored in avg_wnd_prob)
+                // avg_subband_prob[cl_idx] += wnd_prob[cl_idx];
+                subband.push_back(wnd);
+            }
+            // subband filled
+//            for (size_t cl_idx = 0; cl_idx < model.size(); ++cl_idx) {
+//                avg_subband_prob[cl_idx] /= (T)num_windows;
+//                avg_prob[cl_idx] += avg_subband_prob[cl_idx];  // adding each subband's summand to overall prob, per cluster
+//            }
+            avg_subband_prob /= (T)num_windows;
+            avg_prob += avg_subband_prob;  // adding each subband's summand to overall prob, per cluster
+
+            // here we have average subband probability for each cluster
+            //buffer.push_back(subband);
+        }
+        // here buffer is filled for the current pos_idx
+        // and overall cluster belonging probabilities are summed over al subbands
+//        for (size_t cl_idx = 0; cl_idx < model.size(); ++cl_idx) {
+//            avg_prob[cl_idx] /= (T)num_subbands;
+//        }
+        return avg_prob / (T)num_subbands;
+        //std::cout << "buffer filled" << std::endl;
+        // here we have probs for all clusters computed for the current input data window
+
+//        cl_probs.push_back(avg_prob);
+
         // TODO
     }
 
