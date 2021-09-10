@@ -1212,11 +1212,13 @@ private:
         // compute probabilities of distribution match
         //std::vector<T> avg_prob (model.size(), 0);
         T avg_prob = 0;
+        T avg_dist = 0;
         for (size_t sb_idx = 0; sb_idx < num_subbands; ++sb_idx) {
 
             //std::vector<T> avg_subband_prob (model.size(), 0);
             T avg_subband_prob = 0;
-            std::vector<std::vector<T>> subband = {};
+            T avg_subband_dist = 0;
+            //std::vector<std::vector<T>> subband = {};
             //for (auto wnd_size : window_sizes) {
             for (auto ws_idx = 0; ws_idx < window_sizes.size(); ++ws_idx) {
                 auto wnd_size = window_sizes[ws_idx];
@@ -1242,6 +1244,8 @@ private:
 //                    wnd_prob /= (T)wnd.size();
 //                    avg_subband_prob[cl_idx] += wnd_prob;
 //                }
+
+                // estimate by conf bounds
                 T wnd_prob = 0;
                 for (size_t el_idx = 0; el_idx < wnd.size(); el_idx++) {
                     // compare element to bounds
@@ -1255,7 +1259,14 @@ private:
                 avg_subband_prob += wnd_prob;  // 1 - wnd_prob  // if we need significance of difference, not similarity
                 // here we have avg window probability evaluated for each cluster (stored in avg_wnd_prob)
                 // avg_subband_prob[cl_idx] += wnd_prob[cl_idx];
-                subband.push_back(wnd);
+                //subband.push_back(wnd);
+
+                // estimate by metric
+                auto wnd_cdf = metric::clustering_som_anomaly_detector_details::discrete_cdf(wnd);
+                auto ref_cdf = std::make_tuple(cdfs[cl_idx][sb_idx][0], cdfs[cl_idx][sb_idx][1]);
+                T dist = metric::clustering_som_anomaly_detector_details::discrete_randomEMD(wnd_cdf, ref_cdf);
+                avg_subband_dist += dist;
+
             }
             // subband filled
 //            for (size_t cl_idx = 0; cl_idx < model.size(); ++cl_idx) {
@@ -1265,6 +1276,10 @@ private:
             avg_subband_prob /= (T)num_windows;
             avg_prob += avg_subband_prob;  // adding each subband's summand to overall prob, per cluster
 
+            avg_subband_dist /= (T)num_windows;
+            avg_dist += avg_subband_dist;  // adding to overall dist
+
+
             // here we have average subband probability for each cluster
             //buffer.push_back(subband);
         }
@@ -1273,7 +1288,7 @@ private:
 //        for (size_t cl_idx = 0; cl_idx < model.size(); ++cl_idx) {
 //            avg_prob[cl_idx] /= (T)num_subbands;
 //        }
-        return avg_prob / (T)num_subbands;
+        return (1 - avg_prob / (T)num_subbands) * avg_dist;
         //std::cout << "buffer filled" << std::endl;
         // here we have probs for all clusters computed for the current input data window
 
