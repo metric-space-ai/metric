@@ -1,4 +1,4 @@
-
+﻿
 #include "modules/mapping/SOM.hpp"
 #include "modules/mapping/kmedoids.hpp"
 
@@ -525,7 +525,7 @@ set2conf(std::vector<T> set_0, size_t windowSize, size_t samples, T confidencele
 }
 
 template <typename T>
-std::vector<std::vector<std::vector<T>>>
+std::tuple<std::vector<std::vector<std::vector<T>>>, std::vector<T>, std::vector<T>>
 set2multiconf(std::vector<T> set_0, std::vector<uint32_t> windowSizes, size_t samples, T confidencelevel)
 {
   std::vector<std::vector<std::vector<T>>> multiquants;
@@ -534,14 +534,13 @@ set2multiconf(std::vector<T> set_0, std::vector<uint32_t> windowSizes, size_t sa
     multiquants.push_back(set2conf(set_0, windowSizes[i], samples, confidencelevel));
   }
 
-  auto dcdf = discrete_cdf(set_0, 100);
+  auto dcdf = discrete_cdf(set_0, 500);
   std::cout << std::endl << "-------" << std::endl;  // TODO remove
   std::cout << set_0;
   std::cout << std::get<0>(dcdf) << std::endl;
   std::cout << std::get<1>(dcdf) << std::endl;
-  // TODO save CDF(100)
 
-  return multiquants;
+  return std::make_tuple(multiquants, std::get<0>(dcdf), std::get<1>(dcdf));
 }
 
 
@@ -737,7 +736,10 @@ public:
 
             // read conf levels
             std::vector<std::vector<std::vector<std::vector<T>>>> cluster_conf_vec = {};
+            std::vector<std::vector<std::vector<T>>> cluster_cdfs = {};
+
             for (auto subband : cluster["subbands"]) {
+
                 std::vector<std::vector<std::vector<T>>> subband_vec = {};
                 for (auto window : subband["conf_windows"]) {
                     std::vector<std::vector<T>> window_vec = {};
@@ -755,16 +757,25 @@ public:
                     subband_vec.push_back(window_vec);
                 }
                 cluster_conf_vec.push_back(subband_vec);
+
+                std::vector<std::vector<T>> subband_cdfs = {};
+                subband_cdfs.push_back(subband["cdf_rv_levels"]);
+                subband_cdfs.push_back(subband["cdf_probs"]);
+                cluster_cdfs.push_back(subband_cdfs);
             }
+
             conf_bounds.push_back(cluster_conf_vec);
 
             // read SOM units that belong to cluster
             std::vector<std::vector<T>> cluster_nodes = cluster["som_units"];
             nodes.push_back(cluster_nodes);
 
+            cdfs.push_back(cluster_cdfs);
+
         }
 
         assert(nodes.size() == conf_bounds.size());
+        assert(cdfs.size() == conf_bounds.size());
         // model loaded
     }
 
@@ -872,6 +883,7 @@ public:
 
         conf_bounds.reserve(counts.size());
         nodes.reserve(counts.size());
+        cdfs.reserve(counts.size());
 
         //nlohmann::json model;
         size_t cl_idx = 0;
@@ -894,6 +906,8 @@ public:
                     )
                 )
             );
+            std::vector<std::vector<std::vector<T>>> cluster_cdfs;
+            cluster_cdfs.reserve(num_subbands);
             // add subband confidence intervals per window size
             //nlohmann::json all_subbands_json;
             size_t sb_idx = 0;
@@ -902,7 +916,8 @@ public:
                 std::sort(energy_subband_data.begin(), energy_subband_data.end());  // once instead repeated sorting inside function
 
                 // returns quants for a single subbund
-                std::vector<std::vector<std::vector<T>>> multiquants = clustering_som_anomaly_detector_details::set2multiconf(energy_subband_data, window_sizes, samples, confidence_level);
+                auto conf = clustering_som_anomaly_detector_details::set2multiconf(energy_subband_data, window_sizes, samples, confidence_level);
+                std::vector<std::vector<std::vector<T>>> multiquants = std::get<0>(conf);
 
                 //nlohmann::json all_windows_json;
                 size_t w_idx = 0;
@@ -936,6 +951,10 @@ public:
 
                     ++w_idx;
                 }
+
+                std::vector<std::vector<T>> cdf = {std::get<1>(conf), std::get<2>(conf)};
+                cluster_cdfs.push_back(cdf);
+
 //                nlohmann::json subband_json = {
 //                    {"_subband", std::to_string(sb_idx)},
 //                    {"conf_windows", all_windows_json}
@@ -953,6 +972,8 @@ public:
                 }
             }
             nodes.push_back(cluster_nodes);
+
+            cdfs.push_back(cluster_cdfs);
 
 //            // write cluster json
 //            nlohmann::json cluster_json  = {
@@ -980,6 +1001,8 @@ public:
         assert(nodes.size() == conf_bounds.size());
 
     }
+
+
 
     void save(const std::string & filename) {
 
@@ -1017,7 +1040,9 @@ public:
                 }
                 nlohmann::json subband_json = {
                     {"_subband", std::to_string(sb_idx)},
-                    {"conf_windows", all_windows_json}
+                    {"conf_windows", all_windows_json},
+                    {"cdf_rv_levels", cdfs[cl_idx][sb_idx][0]},
+                    {"cdf_probs",     cdfs[cl_idx][sb_idx][1]}
                 };
                 all_subbands_json.push_back(subband_json);
                 ++sb_idx;
@@ -1265,6 +1290,8 @@ private:
 
     std::vector<std::vector<std::vector<T>>> nodes;  // clusters, nodes, node features
 
+    std::vector<std::vector<std::vector<std::vector<T>>>> cdfs;
+    // clusters, subbands, CDF vectors (values, probabilities), CDF vector values
 
 }; // class clustering_som_anomaly_detector
 
