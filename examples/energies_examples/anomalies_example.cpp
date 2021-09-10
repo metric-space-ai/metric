@@ -69,22 +69,22 @@ void vv_to_csv(ContainerType data, std::string filename, std::string sep=",")  /
 
 template<typename T>
 std::ostream & operator<<(std::ostream & out, std::vector<T> const & a) {
-    out << "[ " << "\n";
+    out << "[ " << std::endl;
     for(auto x : a) {
-        out << x << "\n";
+        out << x << std::endl;
     }
-    out << "]";
+    out << "]" << std::endl;
     return out;
 }
 
 
 template<typename T>
 std::ostream & operator<<(std::ostream & out, std::vector<std::vector<T>> const & a) {
-    out << "[ " << "\n";
+    out << "[ " << std::endl;
     for(auto x : a) {
-        out << x << "\n";
+        out << x << std::endl;
     }
-    out << "]";
+    out << "]" << std::endl;
     return out;
 }
 
@@ -93,26 +93,82 @@ std::ostream & operator<<(std::ostream & out, std::vector<std::vector<T>> const 
 
 // ------
 
-
+/*
 int main() {
 
     using T = double;
 
     auto ds = read_csv_num<T>("anomaly_detector_data_1/script/energies01_short.csv");
 
-//    auto csad = metric::ClusteringSomAnomalyDetector(ds);
-//    csad.save("class_model.json");
+    auto csad = metric::ClusteringSomAnomalyDetector(ds);
+    csad.save("class_model.json");
 
     auto csad2 = metric::ClusteringSomAnomalyDetector<T>("class_model.json");
 
-//    auto out1 = csad.encode(ds);
+    auto out1 = csad.encode(ds);
     auto out2 = csad2.encode(ds);
 
-//    std::cout << "out1:" << std::endl;
-//    std::cout << out1 << std::endl;
+    std::cout << "out1:" << std::endl;
+    std::cout << out1 << std::endl;
     std::cout << "out2:" << std::endl;
     std::cout << out2 << std::endl;
 
 
     std::cout << "done" << std::endl;
 }
+// */
+
+
+/*
+int main() {
+
+    using T = double;
+
+    std::vector<T> sample = {0, 1, 2, 3, 3, 4, 4.5, 5, 8, 9};  // {7,1,2,2,7,4,4,4,5.5,7}; //
+    std::sort(sample.begin(), sample.end());
+
+    auto dcdf = metric::clustering_som_anomaly_detector_details::discrete_cdf(sample, 6);
+
+    std::cout << sample << std::endl;
+    std::cout << std::get<0>(dcdf) << std::endl;
+    std::cout << std::get<1>(dcdf) << std::endl;
+
+
+}
+// */
+
+
+//*
+int main() {
+
+    using T = double;
+
+    std::vector<T> sample1 = {1, 2, 2, 5};
+    std::vector<T> sample2 = {3, 4, 4, 7};
+
+    std::sort(sample1.begin(), sample1.end());
+    std::sort(sample2.begin(), sample2.end());
+
+    auto dcdf1 = metric::clustering_som_anomaly_detector_details::discrete_cdf(sample1);
+    auto dcdf2 = metric::clustering_som_anomaly_detector_details::discrete_cdf(sample2);
+
+    std::cout << std::endl;
+    std::cout << sample1 << std::endl;
+    std::cout << std::get<0>(dcdf1) << std::endl;
+    std::cout << std::get<1>(dcdf1) << std::endl;
+
+    std::cout << std::endl;
+    std::cout << sample2 << std::endl;
+    std::cout << std::get<0>(dcdf2) << std::endl;
+    std::cout << std::get<1>(dcdf2) << std::endl;
+
+    auto d = metric::clustering_som_anomaly_detector_details::discrete_randomEMD(dcdf1, dcdf2);
+
+    std::cout << std::endl;
+    std::cout << d << std::endl;
+
+}
+// */
+
+
+

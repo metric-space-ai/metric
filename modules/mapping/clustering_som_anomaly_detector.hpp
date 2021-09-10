@@ -2,6 +2,8 @@
 #include "modules/mapping/SOM.hpp"
 #include "modules/mapping/kmedoids.hpp"
 
+#include "modules/distance/k-random/RandomEMD.hpp"
+
 //#include "modules/mapping/PCFA.hpp"
 
 #include "3rdparty/nlohmann/json.hpp"
@@ -299,6 +301,99 @@ void vector_print(const std::vector<T> &vec)
 
 
 
+// discrete CDF for updated RandomEMD
+
+template <typename T>
+std::tuple<std::vector<T>, std::vector<T>> discrete_cdf(const std::vector<T> & sorted_sample, size_t steps = 0) {
+
+//    T min_value =  std::numeric_limits<T>::max();
+//    T max_value = -std::numeric_limits<T>::max();
+
+//    for (const auto & val : sorted_sample) {
+//        if (val < min_value)
+//            min_value = val;
+//        if (val > max_value)
+//            max_value = val;
+//    }
+
+    if (steps == 0)
+        steps = sorted_sample.size() + 1;
+
+    std::vector<T> cdf_arg;
+    std::vector<T> cdf_prob;
+    cdf_arg.reserve(steps + 1);
+    cdf_prob.reserve(steps + 1);
+    T step = (sorted_sample[sorted_sample.size() - 1] - sorted_sample[0]) / (T)steps;
+    T current_val = sorted_sample[0];
+    T prev_val = current_val - 1;
+    T count = 0;
+    //T prob_step = 1/(T)steps;
+    for (const auto & val : sorted_sample) {
+        ++count;
+        if (val <= prev_val) {
+            //current_prob += prob_step;
+            //++current_prob;
+            cdf_prob[cdf_prob.size() - 1] = count;
+            continue;
+        }
+        if (val >= current_val) {
+            //current_prob += prob_step;
+            //++current_prob;
+            cdf_arg.push_back(val);
+            cdf_prob.push_back(count);
+            prev_val = val;
+            current_val += step;
+        }
+    }
+    for (auto & prob : cdf_prob)
+        prob /= cdf_prob[cdf_prob.size() - 1];
+
+    return std::make_tuple(cdf_arg, cdf_prob);
+}
+
+
+
+// updated RandomEMD (of degree 1)
+
+template <typename T>
+T discrete_randomEMD(
+        const std::tuple<std::vector<T>, std::vector<T>> & cdf1,
+        const std::tuple<std::vector<T>, std::vector<T>> & cdf2
+        )
+{
+
+    std::vector<T> rv1 = std::get<0>(cdf1);
+    std::vector<T> rv2 = std::get<0>(cdf2);
+    std::vector<T> probs1 = std::get<1>(cdf1);
+    std::vector<T> probs2 = std::get<1>(cdf2);
+
+    std::vector<T> rv_concat = {-std::numeric_limits<T>::max()};
+    rv_concat.insert(rv_concat.end(), rv1.begin(), rv1.end());
+    rv_concat.insert(rv_concat.end(), rv2.begin(), rv2.end());
+    sort(rv_concat.begin(), rv_concat.end());
+
+    size_t rv1_idx = 0;
+    size_t rv2_idx = 0;
+    T prob1 = 0;
+    T prob2 = 0;
+    T area = 0;
+    for (size_t idx = 0; idx < rv_concat.size() - 1; ++idx) {
+        while ( (rv_concat[idx] >= rv1[rv1_idx]) && (rv1_idx < rv1.size()) ) {
+            prob1 = probs1[rv1_idx];
+            ++rv1_idx;
+        }
+        while ( (rv_concat[idx] >= rv2[rv2_idx]) && (rv2_idx < rv2.size()) ) {
+            prob2 = probs2[rv2_idx];
+            ++rv2_idx;
+        }
+        area += abs(prob2 - prob1) * (rv_concat[idx + 1] - rv_concat[idx]);
+    }
+
+    return area;
+}
+
+
+
 // ----------
 
 
@@ -438,6 +533,13 @@ set2multiconf(std::vector<T> set_0, std::vector<uint32_t> windowSizes, size_t sa
   {
     multiquants.push_back(set2conf(set_0, windowSizes[i], samples, confidencelevel));
   }
+
+  auto dcdf = discrete_cdf(set_0, 100);
+  std::cout << std::endl << "-------" << std::endl;  // TODO remove
+  std::cout << set_0;
+  std::cout << std::get<0>(dcdf) << std::endl;
+  std::cout << std::get<1>(dcdf) << std::endl;
+  // TODO save CDF(100)
 
   return multiquants;
 }
@@ -597,6 +699,7 @@ getPositionsAndBorders(std::vector<int> assignments, int clusters_num, int row_l
 
     return {positions, borders};
 }
+
 
 
 
@@ -772,7 +875,7 @@ public:
 
         //nlohmann::json model;
         size_t cl_idx = 0;
-        for (auto cluster_data : clustered_energies) {
+        for (auto & cluster_data : clustered_energies) {
 
             // skip small clusters
             if (cluster_data[0].size() < 3) {  // set2multiconf needs at least 3 points
@@ -794,14 +897,19 @@ public:
             // add subband confidence intervals per window size
             //nlohmann::json all_subbands_json;
             size_t sb_idx = 0;
-            for (auto energy_subband_data : cluster_data) {
+            for (auto & energy_subband_data : cluster_data) {
+
+                std::sort(energy_subband_data.begin(), energy_subband_data.end());  // once instead repeated sorting inside function
 
                 // returns quants for a single subbund
                 std::vector<std::vector<std::vector<T>>> multiquants = clustering_som_anomaly_detector_details::set2multiconf(energy_subband_data, window_sizes, samples, confidence_level);
 
                 //nlohmann::json all_windows_json;
                 size_t w_idx = 0;
-                for (auto window : multiquants) {
+                for (const auto & window : multiquants) {
+
+
+                    // TODO compute CDFs per window size
 
 //                    conf_bounds[cl_idx][sb_idx][w_idx][0] = window[0];
 //                    conf_bounds[cl_idx][sb_idx][w_idx][1] = window[1];
@@ -878,20 +986,20 @@ public:
 
         nlohmann::json model;
         size_t cl_idx = 0;
-        for (auto cluster_data : conf_bounds) {
+        for (const auto & cluster_data : conf_bounds) {
 
             // add subband confidence intervals per window size
             nlohmann::json all_subbands_json;
             size_t sb_idx = 0;
-            for (auto energy_subband_data : cluster_data) {
+            for (const auto & energy_subband_data : cluster_data) {
 
                 nlohmann::json all_windows_json;
                 size_t w_idx = 0;
-                for (auto window : energy_subband_data) {
+                for (const auto & window : energy_subband_data) {
 
                     nlohmann::json window_json = {
-                        {"_window_length_index", std::to_string(window_sizes[w_idx])},
-                        {"_window_length", std::to_string(w_idx)},
+                        {"_window_length", std::to_string(window_sizes[w_idx])},
+                        {"_window_length_index", std::to_string(w_idx)},
                         {"conf_l", window[0]},
                         {"conf_m", window[1]},
                         {"conf_r", window[2]}
@@ -952,17 +1060,18 @@ public:
 
     std::vector<T> encode(const std::vector<std::vector<T>> & dataset) {
 
-        auto entries = cluster_entries(dataset, 400, 400);  // debug code, TODO replace
+        auto entries = cluster_entries(dataset, 400, 400);  // debug code, TODO replace with sliding window
 
         // entropy
         T entropy = 0;
-        for (auto el : entries) {
+        for (const auto & el : entries) {
             if (el != 0)
                 entropy -= el * std::log2(el);
         }
 
 
-        T distr_similarity = 0; // TODO check behaviour!
+        T similarity = 0; // TODO check behaviour!
+        T emd_distance = -1;
 
         if (entropy < 0.2) {  // locked in cluster  // TODO pass threshold!!
 
@@ -977,9 +1086,14 @@ public:
             }
             assert(bestcl_idx < entries.size());
 
-            // distribution similarity & distance
-            distr_similarity = estimate_anomaly(dataset, 400, 400, bestcl_idx);
 
+            // distribution similarity & distance
+            similarity = anomaly_score(dataset, 400, 400, bestcl_idx);
+
+            // EMD
+            //auto emd = metric::RandomEMD();
+
+            //distr_emd_distance = emd()
 
 
             // TODO
@@ -987,7 +1101,7 @@ public:
         }
 
 
-        return {distr_similarity};  // TODO replace
+        return {similarity};  // TODO replace
     }
 
 
@@ -1053,9 +1167,9 @@ private:
 
 
 
-    T // single anomaly estimation value
-    estimate_anomaly(
-        const std::vector<std::vector<T>> & dataset,  // general window (slice of timeseries of features), passed the entropy check
+    T
+    anomaly_score(
+        const std::vector<std::vector<T>> & dataset,
         const size_t pos_idx, // position just after window
         const size_t wnd_size,
         const size_t cl_idx
@@ -1113,7 +1227,7 @@ private:
                     }
                 }
                 wnd_prob /= (T)wnd.size();
-                avg_subband_prob += wnd_prob;
+                avg_subband_prob += wnd_prob;  // 1 - wnd_prob  // if we need significance of difference, not similarity
                 // here we have avg window probability evaluated for each cluster (stored in avg_wnd_prob)
                 // avg_subband_prob[cl_idx] += wnd_prob[cl_idx];
                 subband.push_back(wnd);
