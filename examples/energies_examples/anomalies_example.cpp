@@ -1,5 +1,7 @@
 
 #include "modules/mapping/clustering_som_anomaly_detector.hpp"
+#include "modules/mapping/PCFA.hpp"
+
 
 #include <iostream>
 
@@ -41,6 +43,18 @@ std::vector<std::vector<ValueType>> read_csv_num(std::string filename, std::stri
         array.push_back(ln);
     }
     return array;
+}
+
+
+template <class ContainerType>
+void v_to_csv(ContainerType data, std::string filename, std::string sep=",")  // container
+{
+    std::ofstream outputFile;
+    outputFile.open(filename);
+        for (auto i = 0; i < data.size(); ++i) {
+            outputFile << std::to_string(data[i]) << std::endl;
+        }
+        outputFile.close();
 }
 
 
@@ -98,20 +112,28 @@ int main() {
 
     using T = double;
 
-    auto ds = read_csv_num<T>("anomaly_detector_data_1/script/energies01_short.csv");
+    //auto ds = read_csv_num<T>("anomaly_detector_data_1/script/energies01_short.csv");
+    auto ds_raw = read_csv_num<T>("anomaly_detector_data_1/script/cat_energies_100ms_sp8.csv");
+
+    // PCA
+    auto pcfa = metric::PCFA<std::vector<T>, void>(ds_raw, 30);
+    auto ds = pcfa.encode(ds_raw);
 
     auto csad = metric::ClusteringSomAnomalyDetector(ds);
     csad.save("class_model.json");
 
-    auto csad2 = metric::ClusteringSomAnomalyDetector<T>("class_model.json");
+//    auto csad2 = metric::ClusteringSomAnomalyDetector<T>("class_model.json");
 
     auto out1 = csad.encode(ds);
-    auto out2 = csad2.encode(ds);
+//    auto out2 = csad2.encode(ds);
 
-    std::cout << "out1:" << std::endl;
-    std::cout << out1 << std::endl;
-    std::cout << "out2:" << std::endl;
-    std::cout << out2 << std::endl;
+//    std::cout << "out1:" << std::endl;
+//    std::cout << out1 << std::endl;
+//    std::cout << "out2:" << std::endl;
+//    std::cout << out2 << std::endl;
+
+    //std::vector<std::vector<T>> out = {out1, out2};
+    v_to_csv(out1, "anomaly_detector_data_1/script/class_out_score.csv");
 
 
     std::cout << "done" << std::endl;

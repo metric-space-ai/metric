@@ -1083,7 +1083,7 @@ public:
 
 
 
-    std::vector<T> encode(const std::vector<std::vector<T>> & dataset) {  // TODO add test version with intermediate output
+    std::vector<T> encode(const std::vector<std::vector<T>> & dataset, T entropy_hreshold = 0.2) {  // TODO add test version with intermediate output
 
         size_t num_subbands = conf_bounds[0].size();
         //size_t num_clusters = nodes.size();
@@ -1108,7 +1108,7 @@ public:
             T similarity = 0; // TODO check behaviour!
             T emd_distance = -1;
 
-            if (entropy < 0.2) {  // locked in cluster  // TODO pass threshold!!
+            if (entropy < entropy_hreshold) {  // locked in cluster
 
                 // select best matching cluster
                 T max_share = -1;
@@ -1125,6 +1125,8 @@ public:
                 similarity = anomaly_score(dataset, pos_idx, wnd_size, bestcl_idx);
 
                 scores.push_back(similarity);
+            } else {
+                scores.push_back(-1);
             }
         }
 
