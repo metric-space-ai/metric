@@ -535,10 +535,10 @@ set2multiconf(std::vector<T> set_0, std::vector<uint32_t> windowSizes, size_t sa
   }
 
   auto dcdf = discrete_cdf(set_0, 500);
-  std::cout << std::endl << "-------" << std::endl;  // TODO remove
-  std::cout << set_0;
-  std::cout << std::get<0>(dcdf) << std::endl;
-  std::cout << std::get<1>(dcdf) << std::endl;
+//  std::cout << std::endl << "-------" << std::endl;  // TODO remove
+//  std::cout << set_0;
+//  std::cout << std::get<0>(dcdf) << std::endl;
+//  std::cout << std::get<1>(dcdf) << std::endl;
 
   return std::make_tuple(multiquants, std::get<0>(dcdf), std::get<1>(dcdf));
 }
@@ -1083,50 +1083,94 @@ public:
 
 
 
-    std::vector<T> encode(const std::vector<std::vector<T>> & dataset) {
+    std::vector<T> encode(const std::vector<std::vector<T>> & dataset) {  // TODO add test version with intermediate output
 
-        auto entries = cluster_entries(dataset, 400, 400);  // debug code, TODO replace with sliding window
+        size_t num_subbands = conf_bounds[0].size();
+        //size_t num_clusters = nodes.size();
+        size_t wnd_size = window_sizes[window_sizes.size() - 1];
 
-        // entropy
-        T entropy = 0;
-        for (const auto & el : entries) {
-            if (el != 0)
-                entropy -= el * std::log2(el);
-        }
+        assert(num_subbands == dataset[0].size());
 
+        std::vector<T> scores;
+        scores.reserve(dataset.size() - wnd_size);
 
-        T similarity = 0; // TODO check behaviour!
-        T emd_distance = -1;
+        for (auto pos_idx = wnd_size; pos_idx < dataset.size(); ++pos_idx) { // sliging window  // TODO check if last value is reached
 
-        if (entropy < 0.2) {  // locked in cluster  // TODO pass threshold!!
+            auto entries = cluster_entries(dataset, pos_idx, wnd_size);  // debug code, TODO replace with sliding window
 
-            // select best matching cluster
-            T max_share = -1;
-            size_t bestcl_idx = entries.size();
-            for (size_t cl_idx = 0; cl_idx < entries.size(); ++cl_idx) {
-                if (entries[cl_idx] > max_share) {
-                    max_share = entries[cl_idx];
-                    bestcl_idx = cl_idx;
-                }
+            // entropy
+            T entropy = 0;
+            for (const auto & el : entries) {
+                if (el != 0)
+                    entropy -= el * std::log2(el);
             }
-            assert(bestcl_idx < entries.size());
 
+            T similarity = 0; // TODO check behaviour!
+            T emd_distance = -1;
 
-            // distribution similarity & distance
-            similarity = anomaly_score(dataset, 400, 400, bestcl_idx);
+            if (entropy < 0.2) {  // locked in cluster  // TODO pass threshold!!
 
-            // EMD
-            //auto emd = metric::RandomEMD();
+                // select best matching cluster
+                T max_share = -1;
+                size_t bestcl_idx = entries.size();
+                for (size_t cl_idx = 0; cl_idx < entries.size(); ++cl_idx) {
+                    if (entries[cl_idx] > max_share) {
+                        max_share = entries[cl_idx];
+                        bestcl_idx = cl_idx;
+                    }
+                }
+                assert(bestcl_idx < entries.size());
 
-            //distr_emd_distance = emd()
+                // distribution similarity & distance
+                similarity = anomaly_score(dataset, pos_idx, wnd_size, bestcl_idx);
 
-
-            // TODO
-
+                scores.push_back(similarity);
+            }
         }
 
 
-        return {similarity};  // TODO replace
+
+
+//        auto entries = cluster_entries(dataset, 400, 400);  // debug code, TODO replace with sliding window
+
+//        // entropy
+//        T entropy = 0;
+//        for (const auto & el : entries) {
+//            if (el != 0)
+//                entropy -= el * std::log2(el);
+//        }
+
+
+//        T similarity = 0; // TODO check behaviour!
+//        T emd_distance = -1;
+
+//        if (entropy < 0.2) {  // locked in cluster  // TODO pass threshold!!
+
+//            // select best matching cluster
+//            T max_share = -1;
+//            size_t bestcl_idx = entries.size();
+//            for (size_t cl_idx = 0; cl_idx < entries.size(); ++cl_idx) {
+//                if (entries[cl_idx] > max_share) {
+//                    max_share = entries[cl_idx];
+//                    bestcl_idx = cl_idx;
+//                }
+//            }
+//            assert(bestcl_idx < entries.size());
+
+
+//            // distribution similarity & distance
+//            similarity = anomaly_score(dataset, 400, 400, bestcl_idx);
+
+
+
+
+//            // TODO
+
+//        }
+
+
+        //return {similarity};  // TODO replace
+        return scores;
     }
 
 
