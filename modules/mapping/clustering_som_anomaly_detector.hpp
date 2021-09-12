@@ -1083,10 +1083,10 @@ public:
 
 
 
-    std::vector<T> encode(const std::vector<std::vector<T>> & dataset, T entropy_hreshold = 0.2) {  // TODO add test version with intermediate output
+    std::vector<T> encode(const std::vector<std::vector<T>> & dataset, T entropy_threshold = 0.8) {  // TODO add test version with intermediate output
 
         size_t num_subbands = conf_bounds[0].size();
-        //size_t num_clusters = nodes.size();
+        size_t num_clusters = nodes.size();
         size_t wnd_size = window_sizes[window_sizes.size() - 1];
 
         assert(num_subbands == dataset[0].size());
@@ -1108,7 +1108,7 @@ public:
             T similarity = 0; // TODO check behaviour!
             T emd_distance = -1;
 
-            if (entropy < entropy_hreshold) {  // locked in cluster
+            if (entropy < entropy_threshold * std::log2((T)num_clusters)) {  // locked in cluster
 
                 // select best matching cluster
                 T max_share = -1;
@@ -1122,7 +1122,9 @@ public:
                 assert(bestcl_idx < entries.size());
 
                 // distribution similarity & distance
-                similarity = anomaly_score(dataset, pos_idx, wnd_size, bestcl_idx);
+                auto sc = anomaly_score(dataset, pos_idx, wnd_size, bestcl_idx);
+                similarity = std::get<0>(sc);
+                //similarity = anomaly_score(dataset, pos_idx, wnd_size, bestcl_idx);
 
                 scores.push_back(similarity);
             } else {
@@ -1174,6 +1176,76 @@ public:
         //return {similarity};  // TODO replace
         return scores;
     }
+
+
+
+
+    std::vector<std::vector<T>> encode_debug(const std::vector<std::vector<T>> & dataset, T entropy_threshold = 0.8) {  // TODO add test version with intermediate output
+
+        size_t num_subbands = conf_bounds[0].size();
+        size_t num_clusters = nodes.size();
+        size_t wnd_size = window_sizes[window_sizes.size() - 1];
+
+        assert(num_subbands == dataset[0].size());
+
+        std::vector<std::vector<T>> scores;
+        scores.reserve(dataset.size() - wnd_size);
+
+        for (auto pos_idx = wnd_size; pos_idx < dataset.size(); ++pos_idx) { // sliging window  // TODO check if last value is reached
+
+            auto entries = cluster_entries(dataset, pos_idx, wnd_size);  // debug code, TODO replace with sliding window
+
+            // entropy
+            T entropy = 0;
+            for (const auto & el : entries) {
+                if (el != 0)
+                    entropy -= el * std::log2(el);
+            }
+
+            //T similarity = 0; // TODO check behaviour!
+            //T emd_distance = -1;
+
+            std::vector<T> score = {};
+            T lock = 0;
+
+            if (entropy < entropy_threshold * std::log2((T)num_clusters)) {  // locked in cluster
+                lock = 1;
+            }
+
+            // select best matching cluster
+            T max_share = -1;
+            size_t bestcl_idx = entries.size();
+            for (size_t cl_idx = 0; cl_idx < entries.size(); ++cl_idx) {
+                if (entries[cl_idx] > max_share) {
+                    max_share = entries[cl_idx];
+                    bestcl_idx = cl_idx;
+                }
+            }
+            assert(bestcl_idx < entries.size());
+
+            // distribution similarity & distance
+            //similarity = anomaly_score(dataset, pos_idx, wnd_size, bestcl_idx);
+            auto sc = anomaly_score(dataset, pos_idx, wnd_size, bestcl_idx);
+            //similarity = std::get<0>(sc);
+            //similarity = anomaly_score(dataset, pos_idx, wnd_size, bestcl_idx);
+            //scores.push_back(similarity);
+            score.push_back(std::get<0>(sc));
+            score.push_back(std::get<1>(sc));
+            score.push_back(std::get<2>(sc));
+            score.push_back(entropy);
+            score.push_back(bestcl_idx);
+            score.push_back(lock);
+
+            score.insert(score.end(), entries.begin(), entries.end());
+
+            scores.push_back(score);
+        }
+
+
+        return scores;
+    }
+
+
 
 
 private:
@@ -1238,7 +1310,8 @@ private:
 
 
 
-    T
+    //T
+    std::tuple<T, T, T>
     anomaly_score(
         const std::vector<std::vector<T>> & dataset,
         const size_t pos_idx, // position just after window
@@ -1334,7 +1407,7 @@ private:
 //        for (size_t cl_idx = 0; cl_idx < model.size(); ++cl_idx) {
 //            avg_prob[cl_idx] /= (T)num_subbands;
 //        }
-        return (1 - avg_prob / (T)num_subbands) * avg_dist;
+        return std::make_tuple( (1 - avg_prob / (T)num_subbands) * avg_dist, avg_prob, avg_dist);
         //std::cout << "buffer filled" << std::endl;
         // here we have probs for all clusters computed for the current input data window
 

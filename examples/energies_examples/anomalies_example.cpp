@@ -119,21 +119,20 @@ int main() {
     auto pcfa = metric::PCFA<std::vector<T>, void>(ds_raw, 30);
     auto ds = pcfa.encode(ds_raw);
 
-    auto csad = metric::ClusteringSomAnomalyDetector(ds);
-    csad.save("class_model.json");
+//    auto csad = metric::ClusteringSomAnomalyDetector(ds);
+//    csad.save("class_model.json");
 
-//    auto csad2 = metric::ClusteringSomAnomalyDetector<T>("class_model.json");
+    auto csad2 = metric::ClusteringSomAnomalyDetector<T>("class_model.json");
 
-    auto out1 = csad.encode(ds);
+//    auto out1 = csad.encode(ds);
 //    auto out2 = csad2.encode(ds);
-
-//    std::cout << "out1:" << std::endl;
-//    std::cout << out1 << std::endl;
-//    std::cout << "out2:" << std::endl;
-//    std::cout << out2 << std::endl;
+    auto out = csad2.encode_debug(ds);
 
     //std::vector<std::vector<T>> out = {out1, out2};
-    v_to_csv(out1, "anomaly_detector_data_1/script/class_out_score.csv");
+//    v_to_csv(out1, "anomaly_detector_data_1/script/class_out_score.csv");
+    vv_to_csv(out, "anomaly_detector_data_1/script/class_out_score.csv");
+
+    vv_to_csv(ds, "anomaly_detector_data_1/script/factors.csv");
 
 
     std::cout << "done" << std::endl;
