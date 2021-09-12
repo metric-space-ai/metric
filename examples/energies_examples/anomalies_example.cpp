@@ -119,8 +119,8 @@ int main() {
     auto pcfa = metric::PCFA<std::vector<T>, void>(ds_raw, 30);
     auto ds = pcfa.encode(ds_raw);
 
-//    auto csad = metric::ClusteringSomAnomalyDetector(ds);
-//    csad.save("class_model.json");
+    auto csad = metric::ClusteringSomAnomalyDetector(ds);
+    csad.save("class_model.json");
 
     auto csad2 = metric::ClusteringSomAnomalyDetector<T>("class_model.json");
 
