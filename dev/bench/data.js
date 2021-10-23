@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1620630722703,
+  "lastUpdate": 1635026680183,
   "repoUrl": "https://github.com/panda-official/metric",
   "entries": {
     "Convolution": [
@@ -4025,6 +4025,219 @@ window.BENCHMARK_DATA = {
             "name": "operator() [1920x1080 7x7]",
             "value": 239.58,
             "range": "± 1.72801",
+            "unit": "ms",
+            "extra": "10 samples\n1 iterations"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "44258878+maxfilippov@users.noreply.github.com",
+            "name": "maxfilippov",
+            "username": "maxfilippov"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "43733cd22b354b7cec6c528a23897f1b2f29d5bb",
+          "message": "Switch semi online (#287)\n\n* added save & load methods to ESN, added new timeseries example\r\n\r\n* added preprocessing\r\n\r\n* addded discrete entropy\r\n\r\n* added postprocessing\r\n\r\n* added class\r\n\r\n* added save & load with examples\r\n\r\n* fixed path in load example\r\n\r\n* added STL overloads\r\n\r\n* bugfixes in STL overloads\r\n\r\n* added online method with pair output\r\n\r\n* fixed naming & output in example\r\n\r\n* renamed, overloaded\r\n\r\n* splitted into .hpp, .cpp\r\n\r\n* splitted into .hpp, .cpp\r\n\r\n* added descriptions\r\n\r\n* started adding semi-online methods\r\n\r\n* updated api, added seni-online method & example\r\n\r\n* bugfixes\r\n\r\n* updated examples\r\n\r\n* added descriptions, code cleaned\r\n\r\n* minor updates due to code review\r\n\r\n* updated #include in examples\r\n\r\n* added const to all readonly parameters in switch detector and related examples\r\n\r\n* stddev bugfix in stl overload\r\n\r\n* fixed online example\r\n\r\n* fixed stddev used in STL overload, fixed indexing bug in STL overload\r\n\r\n* adding saving with detector's own parameters\r\n\r\n* adding saving with detector's own parameters\r\n\r\n* added detector's own parameters, allowed user to set them up\r\n\r\n* bugfix in save mathod, tuned parameters\r\n\r\n* updated defaults\r\n\r\n* updated internal naming in ESN, added descriptions to new parameters\r\n\r\n* before PR\r\n\r\n* added getter for  parameters\r\n\r\n* removed excess switch_est examples, all snippets moved to one file\r\n\r\n* removed excess switch_est examples, all snippets moved to one file\r\n\r\n* added (possible) Blaze issue workaround for large datasets\r\n\r\n* added deterministic switch detector mockup\r\n\r\n* added deterministic switch detector mockup\r\n\r\n* adding deterministic switch detector class\r\n\r\n* tested\r\n\r\n* added descriptions\r\n\r\n* added descriptions\r\n\r\n* added descriptions\r\n\r\n* added descriptions\r\n\r\n* added minimal det_sw test\r\n\r\n* added minimal det_sw test\r\n\r\n* fix compilation error\r\n\r\n* added latency saving between calls, but there is no stddev buffer saving, so the next call must have in its beginning wnd_size values from the previous dataset in order to continue seamless\r\n\r\nCo-authored-by: Aleksey Timin <atimin@gmail.com>",
+          "timestamp": "2021-10-24T00:00:00+02:00",
+          "tree_id": "abc38efe28c8ca60dcce9992459816ebbb5634ad",
+          "url": "https://github.com/panda-official/metric/commit/43733cd22b354b7cec6c528a23897f1b2f29d5bb"
+        },
+        "date": 1635026679357,
+        "tool": "catch2",
+        "benches": [
+          {
+            "name": "Convolution2d() [320x240 3x3]",
+            "value": 11.1151,
+            "range": "± 388.54",
+            "unit": "ms",
+            "extra": "10 samples\n1 iterations"
+          },
+          {
+            "name": "setKernel() [320x240 3x3]",
+            "value": 924.302,
+            "range": "± 47.7706",
+            "unit": "us",
+            "extra": "10 samples\n1 iterations"
+          },
+          {
+            "name": "operator() [320x240 3x3]",
+            "value": 1.42778,
+            "range": "± 63.0403",
+            "unit": "ms",
+            "extra": "10 samples\n1 iterations"
+          },
+          {
+            "name": "Convolution2d() [320x240 5x5]",
+            "value": 44.8586,
+            "range": "± 435.893",
+            "unit": "ms",
+            "extra": "10 samples\n1 iterations"
+          },
+          {
+            "name": "setKernel() [320x240 5x5]",
+            "value": 3.31178,
+            "range": "± 105.651",
+            "unit": "ms",
+            "extra": "10 samples\n1 iterations"
+          },
+          {
+            "name": "operator() [320x240 5x5]",
+            "value": 4.34552,
+            "range": "± 81.456",
+            "unit": "ms",
+            "extra": "10 samples\n1 iterations"
+          },
+          {
+            "name": "Convolution2d() [320x240 7x7]",
+            "value": 78.9131,
+            "range": "± 754.85",
+            "unit": "ms",
+            "extra": "10 samples\n1 iterations"
+          },
+          {
+            "name": "setKernel() [320x240 7x7]",
+            "value": 7.29332,
+            "range": "± 88.5139",
+            "unit": "ms",
+            "extra": "10 samples\n1 iterations"
+          },
+          {
+            "name": "operator() [320x240 7x7]",
+            "value": 8.44616,
+            "range": "± 128.217",
+            "unit": "ms",
+            "extra": "10 samples\n1 iterations"
+          },
+          {
+            "name": "Convolution2d() [640x480 3x3]",
+            "value": 67.9457,
+            "range": "± 259.976",
+            "unit": "ms",
+            "extra": "10 samples\n1 iterations"
+          },
+          {
+            "name": "setKernel() [640x480 3x3]",
+            "value": 5.58075,
+            "range": "± 110.616",
+            "unit": "ms",
+            "extra": "10 samples\n1 iterations"
+          },
+          {
+            "name": "operator() [640x480 3x3]",
+            "value": 9.58027,
+            "range": "± 133.232",
+            "unit": "ms",
+            "extra": "10 samples\n1 iterations"
+          },
+          {
+            "name": "Convolution2d() [640x480 5x5]",
+            "value": 165.58,
+            "range": "± 884.684",
+            "unit": "ms",
+            "extra": "10 samples\n1 iterations"
+          },
+          {
+            "name": "setKernel() [640x480 5x5]",
+            "value": 15.0829,
+            "range": "± 171.347",
+            "unit": "ms",
+            "extra": "10 samples\n1 iterations"
+          },
+          {
+            "name": "operator() [640x480 5x5]",
+            "value": 18.6863,
+            "range": "± 336.873",
+            "unit": "ms",
+            "extra": "10 samples\n1 iterations"
+          },
+          {
+            "name": "Convolution2d() [640x480 7x7]",
+            "value": 308.191,
+            "range": "± 774.027",
+            "unit": "ms",
+            "extra": "10 samples\n1 iterations"
+          },
+          {
+            "name": "setKernel() [640x480 7x7]",
+            "value": 29.0484,
+            "range": "± 285.569",
+            "unit": "ms",
+            "extra": "10 samples\n1 iterations"
+          },
+          {
+            "name": "operator() [640x480 7x7]",
+            "value": 32.8684,
+            "range": "± 426.493",
+            "unit": "ms",
+            "extra": "10 samples\n1 iterations"
+          },
+          {
+            "name": "Convolution2d() [1920x1080 3x3]",
+            "value": 483.798,
+            "range": "± 1.09187",
+            "unit": "ms",
+            "extra": "10 samples\n1 iterations"
+          },
+          {
+            "name": "setKernel() [1920x1080 3x3]",
+            "value": 39.2428,
+            "range": "± 151.231",
+            "unit": "ms",
+            "extra": "10 samples\n1 iterations"
+          },
+          {
+            "name": "operator() [1920x1080 3x3]",
+            "value": 84.3621,
+            "range": "± 733.452",
+            "unit": "ms",
+            "extra": "10 samples\n1 iterations"
+          },
+          {
+            "name": "Convolution2d() [1920x1080 5x5]",
+            "value": 1.14756,
+            "range": "± 14.791",
+            "unit": "s",
+            "extra": "10 samples\n1 iterations"
+          },
+          {
+            "name": "setKernel() [1920x1080 5x5]",
+            "value": 102.807,
+            "range": "± 610.395",
+            "unit": "ms",
+            "extra": "10 samples\n1 iterations"
+          },
+          {
+            "name": "operator() [1920x1080 5x5]",
+            "value": 147.694,
+            "range": "± 2.35483",
+            "unit": "ms",
+            "extra": "10 samples\n1 iterations"
+          },
+          {
+            "name": "Convolution2d() [1920x1080 7x7]",
+            "value": 2.10602,
+            "range": "± 3.37478",
+            "unit": "s",
+            "extra": "10 samples\n1 iterations"
+          },
+          {
+            "name": "setKernel() [1920x1080 7x7]",
+            "value": 195.735,
+            "range": "± 639.673",
+            "unit": "ms",
+            "extra": "10 samples\n1 iterations"
+          },
+          {
+            "name": "operator() [1920x1080 7x7]",
+            "value": 245.079,
+            "range": "± 3.51074",
             "unit": "ms",
             "extra": "10 samples\n1 iterations"
           }
