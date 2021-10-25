@@ -1,4 +1,3 @@
-
 add_executable(unit_tests unit-tests.cpp)
 
 set(test_bin_dir ${CMAKE_CURRENT_BINARY_DIR})
@@ -9,7 +8,7 @@ add_subdirectory(ensembles_tests)
 add_subdirectory(mapping_tests)
 add_subdirectory(space_tests)
 add_subdirectory(sparsification_tests)
-#add_subdirectory(transform_test) bye bye error
+add_subdirectory(transform_test)
 add_subdirectory(utils)
 add_subdirectory(wrapper_tests)
 add_subdirectory(distance_tests)
