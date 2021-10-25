@@ -6,13 +6,6 @@ on:
     paths-ignore:
       - 'python/**'
       - '.github/workflows/cmake.yml'
-  pull_request:
-    branches:
-      - master
-    paths-ignore:
-      - 'python/**'
-      - '.github/workflows/cmake.yml'
-
 jobs:
   deploy:
     runs-on: ubuntu-latest
