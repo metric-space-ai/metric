@@ -677,23 +677,60 @@ blaze::CompressedMatrix<T> DaubechiesMat(size_t size, int order = 4)
         c[i] = c[i] * coeff;
     }
 
-    auto mat = blaze::CompressedMatrix<T>(size, size, 0);
+    auto mat = blaze::CompressedMatrix<T>(size, size);
     mat.reserve(size * c.size());
     for (size_t i = 0; i < size / 2; ++i) {
-        for (size_t ci = 0; ci < c.size(); ++ci) {
-            mat.append(i, (i * 2 + ci) % size, c[ci]);
+
+        size_t ci = mat.columns() - 2 * i;
+        if (ci > c.size()) {
+          ci = 0;
+        }
+        std::cout << "ci" << ci << std::endl;
+        for (size_t a = 0; a < c.size(); ++a) {
+          if (ci >= c.size()) {
+            ci = ci % c.size();
+          } 
+
+          size_t j = i * 2 + ci;
+          if (j >= mat.columns()) {
+            j = j % mat.columns();
+          }
+
+          mat.append(i, j, c[ci]);
+          std::cout << i << " " << j << " " << ci << " " << c[ci] << std::endl;
+          
+          ++ci;
         }
         mat.finalize(i);
+
     }
 
-    for (size_t i = size / 2; i < size; ++i) {
+    for (size_t i = 0; i < size / 2; ++i) {
         int sign = 1;
 
-        for (size_t ci = 0; ci < c.size(); ++ci) {
-            mat.append(i, (i * 2 + ci) % size, c[order - 1 - ci] * sign);
-            sign *= -1;
+
+        size_t ci = mat.columns() - 2 * i;
+        if (ci > c.size()) {
+          ci = 0;
         }
-        mat.finalize(i);
+        std::cout << "ci" << ci << std::endl;
+        for (size_t a = 0; a < c.size(); ++a) {
+          if (ci >= c.size()) {
+            ci = ci % c.size();
+          } 
+
+          size_t j = i * 2 + ci;
+          if (j >= mat.columns()) {
+            j = j % mat.columns();
+          }
+
+          mat.append(size / 2 + i, j, c[order - 1 - ci]);
+          std::cout << i << " " << j << " " << ci << " " << c[ci] << std::endl;
+          
+          ++ci;
+          sign *= -1;
+        }
+        mat.finalize(size / 2 + i);
     }
 
     return mat;
