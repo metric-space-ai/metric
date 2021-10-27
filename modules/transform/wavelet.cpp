@@ -671,10 +671,10 @@ blaze::CompressedMatrix<T> DaubechiesMat(size_t size, int order = 4)
     assert(order % 2 == 0);
 
     std::vector<T> c(order);
-    T coeff = 2 / sqrt(2);
+    constexpr T coeff = 2 / sqrt(2);
     c = dbwavf<std::vector<T>>(order / 2, coeff);
     for (size_t i = 0; i < c.size(); ++i) {
-        c[i] = c[i] * coeff;
+        c[i] *= coeff;
     }
 
     auto mat = blaze::CompressedMatrix<T>(size, size);
@@ -685,7 +685,6 @@ blaze::CompressedMatrix<T> DaubechiesMat(size_t size, int order = 4)
         if (ci > c.size()) {
           ci = 0;
         }
-        std::cout << "ci" << ci << std::endl;
         for (size_t a = 0; a < c.size(); ++a) {
           if (ci >= c.size()) {
             ci = ci % c.size();
@@ -697,7 +696,6 @@ blaze::CompressedMatrix<T> DaubechiesMat(size_t size, int order = 4)
           }
 
           mat.append(i, j, c[ci]);
-          std::cout << i << " " << j << " " << ci << " " << c[ci] << std::endl;
           
           ++ci;
         }
@@ -713,7 +711,6 @@ blaze::CompressedMatrix<T> DaubechiesMat(size_t size, int order = 4)
         if (ci > c.size()) {
           ci = 0;
         }
-        std::cout << "ci" << ci << std::endl;
         for (size_t a = 0; a < c.size(); ++a) {
           if (ci >= c.size()) {
             ci = ci % c.size();
@@ -725,7 +722,6 @@ blaze::CompressedMatrix<T> DaubechiesMat(size_t size, int order = 4)
           }
 
           mat.append(size / 2 + i, j, c[order - 1 - ci]);
-          std::cout << i << " " << j << " " << ci << " " << c[ci] << std::endl;
           
           ++ci;
           sign *= -1;

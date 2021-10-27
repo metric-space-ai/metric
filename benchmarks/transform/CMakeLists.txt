@@ -1,0 +1,2 @@
+add_executable(wavelet_benchmarks wavelet_benchmarks)
+target_link_libraries(wavelet_benchmarks Catch2::Catch2)
