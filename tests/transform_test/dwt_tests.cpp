@@ -101,5 +101,18 @@ TEMPLATE_TEST_CASE("dwt_d", "[transform]", BV/*, SV*/)
         if (diff > maxdiff)
             maxdiff = diff;
     }
+    std::cout << "md: " << maxdiff << std::endl;
     REQUIRE( maxdiff <= std::numeric_limits<double>::epsilon()*1e6 );
+}
+
+TEST_CASE("1d")
+{
+  using V = blaze::DynamicVector<double>;
+
+  V data = {1, 2, 3, 4};
+  auto [cA, cD] = wavelet::dwt(data, 1);
+
+  std::cout << cA << std::endl;
+  std::cout << cD << std::endl;
+
 }
