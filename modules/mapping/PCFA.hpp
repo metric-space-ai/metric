@@ -221,8 +221,28 @@ public:
    * @param n_features - desired length of compressed code
    */
     PCFA(std::vector<RecType> & TrainingData, size_t n_features = 1);
+    
+    /**
+     * @brief Construct PCFA from trained decode weight matrix and vector of averages
+     * @param Weights
+     * @param averages
+     */
+    PCFA(
+            const blaze::DynamicMatrix<value_type> & Weights, 
+            const blaze::DynamicVector<value_type, blaze::rowVector> & avgs
+            );
 
+    /**
+     * @brief Construct PCFA from trained decode weight matrix and vector of averages given as vector containers
+     * @param Weights
+     * @param avgs
+     */
+    PCFA(
+            const std::vector<RecType> & Weights,
+            const RecType & avgs
+            );
 
+    
     /**
    * @brief
    *
@@ -270,7 +290,7 @@ public:
    *
    * @return blaze::DynamicMatrix<value_type>
    */
-    std::vector<RecType> average();
+    RecType average();
 
     /**
    * @brief returns the encoder matrix concatenated with the average curve of training dataset, used for center shift

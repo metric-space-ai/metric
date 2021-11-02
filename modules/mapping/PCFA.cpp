@@ -168,6 +168,33 @@ PCFA<RecType, Metric>::PCFA(std::vector<RecType> & TrainingData, size_t n_featur
     W_encode = trans(W_decode); // computed once and saved
 }
 
+template <typename RecType, typename Metric>
+PCFA<RecType, Metric>::PCFA(
+        const blaze::DynamicMatrix<value_type> & Weights, 
+        const blaze::DynamicVector<value_type, blaze::rowVector> & avgs
+        )
+{
+    W_decode = Weights;
+    W_encode = trans(W_decode); // computed once and saved
+    averages = avgs;
+}
+
+template <typename RecType, typename Metric>
+PCFA<RecType, Metric>::PCFA(
+        const std::vector<RecType> & Weights, 
+        const RecType & avgs
+        )
+{
+    W_decode = blaze::DynamicMatrix<value_type>(Weights.size(), Weights[0].size(), 0);
+    for (size_t i = 0; i < Weights.size(); ++i)
+        for (size_t j = 0; j < Weights[0].size(); ++j)
+             W_decode(i, j) = Weights[i][j];
+    W_encode = trans(W_decode); // computed once and saved
+    averages = blaze::DynamicVector<value_type, blaze::rowVector>(avgs.size(), 0);
+    for (size_t i = 0; i < avgs.size(); ++i) {
+        averages[i] = avgs[i];
+    }
+}
 
 template <typename RecType, typename Metric>
 blaze::DynamicMatrix<typename PCFA<RecType, Metric>::value_type>
@@ -240,6 +267,15 @@ PCFA<RecType, Metric>::average_mat() {
 }
 
 template <typename RecType, typename Metric>
+RecType
+PCFA<RecType, Metric>::average() {
+    //blaze::DynamicMatrix<value_type> result (averages.size(), 1);
+    blaze::DynamicMatrix<value_type> result (averages.size(), 1);
+    blaze::column(result, 0) = blaze::trans(averages);
+    return blaze2RecType<RecType>(result)[0];
+}
+
+template <typename RecType, typename Metric>
 blaze::DynamicMatrix<typename PCFA<RecType, Metric>::value_type>
 PCFA<RecType, Metric>::eigenmodes_mat() {
     auto Eigenmodes = blaze::DynamicMatrix<typename PCFA<RecType, Metric>::value_type>(W_decode.rows() + 1, W_decode.columns());
@@ -248,6 +284,11 @@ PCFA<RecType, Metric>::eigenmodes_mat() {
     return Eigenmodes;
 }
 
+//template <typename RecType, typename Metric>
+//std::vector<RecType>
+//PCFA<RecType, Metric>::eigenmodes() {
+//    return blaze2RecType<RecType>(Eigenmodes);
+//}
 
 template <typename RecType, typename Metric>
 std::vector<RecType>
