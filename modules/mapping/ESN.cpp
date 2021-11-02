@@ -19,48 +19,48 @@ namespace ESN_details {
 
     template <typename T>
     blaze::DynamicMatrix<T> get_readout_no_echo(  // for networks with disabled echo
-        const blaze::DynamicMatrix<T>& Slices, const blaze::DynamicMatrix<T>& W_in);
+        const blaze::DynamicMatrix<T>& Samples, const blaze::DynamicMatrix<T>& W_in);
 
     template <typename T>
     blaze::DynamicMatrix<T> get_readout(  // echo mode
-        const blaze::DynamicMatrix<T>& Slices, const blaze::DynamicMatrix<T>& W_in,
+        const blaze::DynamicMatrix<T>& Samples, const blaze::DynamicMatrix<T>& W_in,
         const blaze::CompressedMatrix<T>& W,  // TODO make sparse
-        T alpha = 0.5, size_t washout = 0);
+        const T alpha = 0.5, const size_t washout = 0);
 
     template <typename T>
     blaze::DynamicMatrix<T> ridge(
-        const blaze::DynamicMatrix<T>& Target, const blaze::DynamicMatrix<T>& Readout, T beta = 0.5);
+        const blaze::DynamicMatrix<T>& Target, const blaze::DynamicMatrix<T>& Readout, const T beta = 0.5);
 
     // ---------------------------------  math functions:
 
     template <typename T>
     blaze::DynamicMatrix<T> get_readout_no_echo(  // for networks with disabled echo
-        const blaze::DynamicMatrix<T>& Slices, const blaze::DynamicMatrix<T>& W_in)
+        const blaze::DynamicMatrix<T>& Samples, const blaze::DynamicMatrix<T>& W_in)
     {
         size_t slice_size = W_in.columns();
         assert(slice_size > 0);
         slice_size = slice_size - 1;  // size of input vector. first column is for offset and will be used separately
 
-        assert(Slices.rows() == slice_size);
+        assert(Samples.rows() == slice_size);
 
         auto W_in_submatrix = submatrix(W_in, 0UL, 1UL, W_in.rows(), slice_size);  // all except first column
         auto w_in_offset = submatrix(W_in, 0UL, 0UL, W_in.rows(), 1UL);  // first column
-        auto Ones = blaze::DynamicMatrix<T>(w_in_offset.columns(), Slices.columns(), 1);
+        auto Ones = blaze::DynamicMatrix<T>(w_in_offset.columns(), Samples.columns(), 1);
 
-        return evaluate(tanh(W_in_submatrix * Slices + w_in_offset * Ones));
+        return evaluate(tanh(W_in_submatrix * Samples + w_in_offset * Ones));
     }
 
     template <typename T>
     blaze::DynamicMatrix<T> get_readout(  // echo mode
-        const blaze::DynamicMatrix<T>& Slices, const blaze::DynamicMatrix<T>& W_in,
+        const blaze::DynamicMatrix<T>& Samples, const blaze::DynamicMatrix<T>& W_in,
         const blaze::CompressedMatrix<T>& W,  // TODO make sparse
-        T alpha,
-        size_t washout
+        const T alpha,
+        const size_t washout
     )
     {
 
         if (washout == 0 && alpha == 1)  // if echo disabled, we run faster overload without sample loop
-            return get_readout_no_echo(Slices, W_in);
+            return get_readout_no_echo(Samples, W_in);
 
         size_t x_size = W.rows();  // size of inter-step echo buffer
         assert(x_size == W.columns());  // W must be square
@@ -69,7 +69,7 @@ namespace ESN_details {
         assert(slice_size > 0);
         slice_size = slice_size - 1;  // size of input vector. first column is for offset and will be used separately
 
-        assert(Slices.rows() == slice_size);
+        assert(Samples.rows() == slice_size);
 
         auto x = blaze::DynamicMatrix<T>(
             x_size, 1UL, 0.0);  // matrix type is due to impossibility of addition of matrix and vector
@@ -81,18 +81,18 @@ namespace ESN_details {
 
         size_t n = 0;
         blaze::DynamicMatrix<T> current_slice
-            = columns(Slices, { n });  // will be updated inside loop. Type is set in order to force evaluation
+            = columns(Samples, { n });  // will be updated inside loop. Type is set in order to force evaluation
         // TODO refactor: try n of vector type
         auto input_summand = W_in_submatrix * current_slice
             + w_in_offset;  // define all symbolic expressions out of loop (but dependent on n ones must be updated)
         auto x_prev_summand = W * x;
 
-        assert(Slices.columns() > washout);  // TODO consider >= x_size in order to avoid undetermined system
-        auto Output = blaze::DynamicMatrix<T>(x_size, Slices.columns() - washout);
+        assert(Samples.columns() > washout);  // TODO consider >= x_size in order to avoid undetermined system
+        auto Output = blaze::DynamicMatrix<T>(x_size, Samples.columns() - washout);
 
-        for (n = 0; n < Slices.columns(); n++) {
+        for (n = 0; n < Samples.columns(); n++) {
             current_slice
-                = columns(Slices, { n });  // update for each n // TODO consider making n also Blaze expression?
+                = columns(Samples, { n });  // update for each n // TODO consider making n also Blaze expression?
             x = evaluate(tanh(input_summand + x_prev_summand) * alpha + x * (1 - alpha));
 
             if (n >= washout)
@@ -105,7 +105,7 @@ namespace ESN_details {
     template <typename T>
     blaze::DynamicMatrix<T> ridge(
         const blaze::DynamicMatrix<T>& Target, const blaze::DynamicMatrix<T>& Readout,
-        T beta  // = 0.5
+        const T beta  // = 0.5
     )
     {
         auto I = blaze::IdentityMatrix<T>(Readout.rows());
@@ -116,7 +116,7 @@ namespace ESN_details {
 }  // namespace ESN_details
 
 template <typename RecType, typename Metric>
-void ESN<RecType, Metric>::create_W(size_t w_size, value_type w_connections, value_type w_sr)
+void ESN<RecType, Metric>::create_W(const size_t w_size, const value_type w_connections, const value_type w_sr)
 {
     W = blaze::CompressedMatrix<value_type>(w_size, w_size, 0.0);  // TODO make sparse
 
@@ -152,12 +152,13 @@ void ESN<RecType, Metric>::create_W(size_t w_size, value_type w_connections, val
 }
 
 template <typename RecType, typename Metric>
-ESN<RecType, Metric>::ESN(size_t w_size,  // = 500, // number of elements in reservoir
-    value_type w_connections,  // = 10, // number of interconnections (for each reservoir element)
-    value_type w_sr,  // = 0.6, // desired spectral radius of the reservoir
-    value_type alpha_,  // = 0.5, // leak rate
-    size_t washout_,  // = 1, // number of slices excluded from output for washout
-    value_type beta_  // = 0.5, // ridge solver metaparameter
+ESN<RecType, Metric>::ESN(
+    const size_t w_size,  // = 500, // number of elements in reservoir
+    const value_type w_connections,  // = 10, // number of interconnections (for each reservoir element)
+    const value_type w_sr,  // = 0.6, // desired spectral radius of the reservoir
+    const value_type alpha_,  // = 0.5, // leak rate
+    const size_t washout_,  // = 1, // number of samples excluded from output for washout
+    const value_type beta_  // = 0.5, // ridge solver metaparameter
     )
     : alpha(alpha_)
     , beta(beta_)
@@ -168,13 +169,30 @@ ESN<RecType, Metric>::ESN(size_t w_size,  // = 500, // number of elements in res
     create_W(w_size, w_connections, w_sr);
 }
 
+template <typename RecType, typename Metric>
+ESN<RecType, Metric>::ESN(
+    const blaze::DynamicMatrix<value_type> & W_in_,
+    const blaze::CompressedMatrix<value_type> & W_,
+    const blaze::DynamicMatrix<value_type> & W_out_,
+    const value_type alpha_,  // = 0.5, // leak rate
+    const size_t washout_,  // = 1, // number of samples excluded from output for washout
+    const value_type beta_  // = 0.5, // ridge solver metaparameter
+    )
+    : W_in(W_in_)
+    , W(W_)
+    , W_out(W_out_)
+    , alpha(alpha_)
+    , beta(beta_)
+    , washout(washout_)
+{
+    trained = true;
+    rgen.seed(std::random_device{}());
+}
+
 
 template <typename RecType, typename Metric>
 ESN<RecType, Metric>::ESN(const std::string & filename)
 {
-    //blaze::DynamicMatrix<value_type> W_in;
-    //blaze::CompressedMatrix<value_type> W;
-    //blaze::DynamicMatrix<value_type> W_out;
     blaze::DynamicVector<value_type> params;
     // saved as: archive << W_in << W << W_out << params;
 
@@ -187,14 +205,16 @@ ESN<RecType, Metric>::ESN(const std::string & filename)
     beta = params[1];
     washout = params[2];
     trained = true;
+
+    rgen.seed(std::random_device{}());
 }
 
 
 template <typename RecType, typename Metric>
-void ESN<RecType, Metric>::train(const blaze::DynamicMatrix<value_type>& Slices, const blaze::DynamicMatrix<value_type>& Target)
+void ESN<RecType, Metric>::train(const blaze::DynamicMatrix<value_type>& Samples, const blaze::DynamicMatrix<value_type>& Target)
 {
 
-    size_t in_size = Slices.rows();
+    size_t in_size = Samples.rows();
 
     auto uniform_double = std::uniform_real_distribution<value_type>(-1, 1);
     size_t r_row, r_col;
@@ -205,10 +225,10 @@ void ESN<RecType, Metric>::train(const blaze::DynamicMatrix<value_type>& Slices,
             W_in(r_row, r_col) = uniform_double(rgen);
         }
 
-    blaze::DynamicMatrix<value_type> Readout = ESN_details::get_readout(Slices,  // input signal
+    blaze::DynamicMatrix<value_type> Readout = ESN_details::get_readout(Samples,  // input signal
         W_in,  // input weights
         W,  // reservoir internal weights (square matrix)
-        alpha, washout  // leak rate, number of slices excluded from output for washout
+        alpha, washout  // leak rate, number of Samples excluded from output for washout
     );
 
     blaze::DynamicMatrix<value_type> target_submat = submatrix(Target, 0UL, washout, Target.rows(), Target.columns() - washout);
@@ -217,34 +237,34 @@ void ESN<RecType, Metric>::train(const blaze::DynamicMatrix<value_type>& Slices,
 }
 
 template <typename RecType, typename Metric>
-void ESN<RecType, Metric>::train(const std::vector<RecType> & Slices, const std::vector<RecType> & Target)
+void ESN<RecType, Metric>::train(const std::vector<RecType> & Samples, const std::vector<RecType> & Target)
 {
-    auto SlicesMat = vector_to_blaze(Slices);
+    auto SamplesMat = vector_to_blaze(Samples);
     auto TargetMat = vector_to_blaze(Target);
-    train(SlicesMat, TargetMat);
+    train(SamplesMat, TargetMat);
 }
 
 
 
 template <typename RecType, typename Metric>
-blaze::DynamicMatrix<typename ESN<RecType, Metric>::value_type> ESN<RecType, Metric>::predict(const blaze::DynamicMatrix<value_type>& Slices)
+blaze::DynamicMatrix<typename ESN<RecType, Metric>::value_type> ESN<RecType, Metric>::predict(const blaze::DynamicMatrix<value_type>& Samples)
 {
     assert(trained);
 
-    blaze::DynamicMatrix<value_type> Readout = ESN_details::get_readout(Slices,  // input signal
+    blaze::DynamicMatrix<value_type> Readout = ESN_details::get_readout(Samples,  // input signal
         W_in,  // input weights
         W,  // reservoir internal weights (square matrix)
-        alpha, washout  // leak rate, number of slices excluded from output for washout
+        alpha, washout  // leak rate, number of samples excluded from output for washout
     );
 
     return W_out * Readout;
 }
 
 template <typename RecType, typename Metric>
-std::vector<RecType> ESN<RecType, Metric>::predict(const std::vector<RecType>& Slices)
+std::vector<RecType> ESN<RecType, Metric>::predict(const std::vector<RecType>& Samples)
 {
-    auto SlicesMat = vector_to_blaze(Slices);
-    auto PredictionMat = predict(SlicesMat);
+    auto SamplesMat = vector_to_blaze(Samples);
+    auto PredictionMat = predict(SamplesMat);
     return blaze2RecType<RecType>(PredictionMat);
 }
 
@@ -307,6 +327,20 @@ void ESN<RecType, Metric>::save(const std::string & filename) {
     //}
 }
 
+
+template <typename RecType, typename Metric>
+std::tuple<
+  blaze::DynamicMatrix<typename ESN<RecType, Metric>::value_type>,
+  blaze::CompressedMatrix<typename ESN<RecType, Metric>::value_type>,
+  blaze::DynamicMatrix<typename ESN<RecType, Metric>::value_type>,
+  typename ESN<RecType, Metric>::value_type,
+  size_t,
+  typename ESN<RecType, Metric>::value_type
+>
+ESN<RecType, Metric>::get_components() {
+    assert(trained);
+    return std::make_tuple(W_in, W, W_out, alpha, washout, beta);
+}
 
 
 
