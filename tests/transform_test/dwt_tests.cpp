@@ -2,6 +2,8 @@
 
 #include "modules/transform/wavelet.hpp"
 
+#include <random>
+
 
 
 using DM = blaze::DynamicMatrix<double>;
@@ -102,7 +104,42 @@ TEMPLATE_TEST_CASE("dwt_d", "[transform]", BV/*, SV*/)
             maxdiff = diff;
     }
     std::cout << "md: " << maxdiff << std::endl;
+    std::cout << std::numeric_limits<double>::epsilon() << std::endl;
     REQUIRE( maxdiff <= std::numeric_limits<double>::epsilon()*1e6 );
+}
+
+TEST_CASE("Wavelet reconstruction")
+{
+  std::random_device rd;
+  std::mt19937 me{rd()};
+  std::uniform_real_distribution<double> d(-10, 10);
+
+  using Data = blaze::DynamicVector<double>;
+
+  auto l = GENERATE(100, 1000, 10000, 100000);
+  Data v(l);
+  for (size_t i = 0; i < l; ++i) {
+    v[i] = d(me);
+  }
+
+
+  std::tuple<Data, Data> splitted;
+  Data restored;
+  int wavelet = GENERATE(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+
+  REQUIRE_NOTHROW(splitted = wavelet::dwt(v, wavelet));
+  REQUIRE_NOTHROW(restored = wavelet::idwt(std::get<0>(splitted),
+                                          std::get<1>(splitted),
+                                                  wavelet, v.size()));
+
+  double maxdiff = 0;
+  for (size_t i = 0; i < restored.size(); ++i) {
+      double diff = std::abs(restored[i] - v[i]);
+      if (diff > maxdiff)
+          maxdiff = diff;
+  }
+  REQUIRE( maxdiff <= std::numeric_limits<double>::epsilon()*1e7 );
+
 }
 
 TEST_CASE("1d")
