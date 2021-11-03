@@ -34,7 +34,7 @@ TEMPLATE_TEST_CASE("Metric", "[mapping]", float, double)
 
 TEST_CASE("Grid4", "[mapping]")
 {
-    metric::Grid4 grid5(5);  // replaced everywhere mapping::SOM_details with graph by Max F, 2019-05-16
+    metric::Grid4 grid5(5);
     REQUIRE_FALSE(grid5.isValid());
 
     metric::Grid4 grid25(25);

@@ -1,7 +1,5 @@
 
-
-#include "modules/mapping/esn_switch_detector.hpp"
-
+#include "modules/mapping/deterministic_switch_detector.hpp"
 
 #include <iostream>
 #include <fstream>
@@ -69,7 +67,11 @@ ContainerType read_csv(const std::string filename, const std::string sep=",", co
 
 
 template <class ValueType>
-blaze::DynamicMatrix<ValueType, blaze::rowMajor> read_csv_blaze(const std::string & filename, const std::string sep = ",", const size_t lines = 0)
+blaze::DynamicMatrix<ValueType, blaze::rowMajor> read_csv_blaze(
+        const std::string & filename,
+        const std::string sep = ",",
+        const size_t lines = 0
+        )
 {
     auto array = read_csv<std::vector<std::vector<std::string>>>(filename, sep, lines);
     auto m = blaze::DynamicMatrix<ValueType, blaze::rowMajor>(array.size(), array[0].size());
@@ -88,42 +90,35 @@ blaze::DynamicMatrix<ValueType, blaze::rowMajor> read_csv_blaze(const std::strin
 int main()
 {
 
-    using value_type = double;
+    using value_type = float; //double;
+
+    blaze::DynamicMatrix<value_type> ds = read_csv_blaze<value_type>("training_ds_2_fragm.csv"); //, ",", 10000);
+    //blaze::DynamicMatrix<value_type> ds = read_csv_blaze<value_type>("slice.csv"); //, ",", 10000);
+    //blaze::DynamicMatrix<value_type> ds = read_csv_blaze<value_type>("slice_small.csv"); //, ",", 10000);
+
+    // expected format of (comma separated) csv: unused_field, r, g, b, optional_other_fields
+    // e.g.:
+    // 1618831933393,53,49,28
+    // 1618831933395,53,50,28
+    // 1618831933397,53,50,27
+    // ...
+    // or
+    // 1618831933393,53,49,28,0.0
+    // 1618831933395,53,50,28,0.0
+    // 1618831933397,53,50,27,0.0
+    // ...
 
 
-    std::cout << "started" << std::endl << std::endl;
+    //blaze_dm_to_csv(ds, "input.csv"); // resave with fixed name for ploting script
 
+    auto d = DetSwitchDetector<value_type>();
 
+    auto switches = d.encode(ds);
 
-    // dataset passed as Blaze matrix, data points in COLUMNS
-
-    auto start_time = std::chrono::steady_clock::now();
-
-    auto model = SwitchPredictor<value_type>("model.blaze");
-    //auto model = SwitchPredictor<value_type>("esn_image.blaze");
-
-    auto end_time = std::chrono::steady_clock::now();
-    std::cout << "model loaded in " <<
-                 double(std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count()) / 1000000 << " s" <<
-                 std::endl << std::endl;
-
-
-
-    start_time = std::chrono::steady_clock::now();
-
-    blaze::DynamicMatrix<value_type> ds_pred = read_csv_blaze<value_type>("training_ds_2_fragm.csv"); //, ",", 10000);
-    blaze::DynamicMatrix<value_type> ds (ds_pred.rows(), 3, 0);
-    blaze::submatrix(ds, 0, 0, ds_pred.rows(), 3) = blaze::submatrix(ds_pred, 0, 1, ds_pred.rows(), 3);
-
-    auto est = model.encode(ds);
-
-    blaze_dm_to_csv(est, "estimation.csv");
-
-    end_time = std::chrono::steady_clock::now();
-    std::cout << "estimation completed in " <<
-                 double(std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count()) / 1000000 << " s" <<
-                 std::endl << std::endl;
+    blaze_dm_to_csv(switches, "switches.csv");
+    // single column of switch flags: 1 - on, -1 - off, 0 - no switch
 
 
     return 0;
 }
+
