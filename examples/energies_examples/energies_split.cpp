@@ -88,7 +88,11 @@ int main() {
 //    auto ds_raw = read_csv_num<T>("anomaly_detector_data_1/script/sound1.csv");
 //    auto ds_raw = read_csv_num<T>("anomaly_detector_data_1/script/sound2.csv");
 //    auto ds_raw = read_csv_num<T>("anomaly_detector_data_1/script/sound3.csv");
-    auto ds_raw = read_csv_num<T>("anomaly_detector_data_1/script//sound4.csv");
+//    auto ds_raw = read_csv_num<T>("anomaly_detector_data_1/script//sound4.csv");
+    auto ds_raw = read_csv_num<T>("anomaly_detector_data_1/script/realsnd/sound_crop_TS1_Norm_10rpm_60min.wav.csv");
+//    auto ds_raw = read_csv_num<T>("anomaly_detector_data_1/script/realsnd/sound_crop_TS1_Norm_30rpm_60min.wav.csv");
+//    auto ds_raw = read_csv_num<T>("anomaly_detector_data_1/script/realsnd/sound_crop_TS1_Norm_60rpm_60min.wav.csv");
+//    auto ds_raw = read_csv_num<T>("anomaly_detector_data_1/script/realsnd/sound_crop_TS1_Ruhe.wav.csv");
 
     std::vector<T> ts;
     ts.reserve(ds_raw.size());
@@ -99,7 +103,8 @@ int main() {
     std::vector<std::vector<T>> out;
     out.reserve(ts.size());
 
-    auto e = metric::EnergyEncoder(4, 8);
+    //auto e = metric::EnergyEncoder(4, 8);
+    auto e = metric::EnergyEncoder(4, 4, false);
 
     //for (size_t wnd_pos = split_wnd_sz; wnd_pos < ts.size(); ++wnd_pos) { // slide over dataset
     for (size_t wnd_pos = split_wnd_sz; wnd_pos < ts.size(); wnd_pos += split_wnd_sz) { // slide over dataset
@@ -123,7 +128,11 @@ int main() {
 //    vv_to_csv(out, "anomaly_detector_data_1/script/real_energies_100ms_sp8_1.csv");
 //    vv_to_csv(out, "anomaly_detector_data_1/script/real_energies_100ms_sp8_2.csv");
 //    vv_to_csv(out, "anomaly_detector_data_1/script/real_energies_100ms_sp8_3.csv");
-    vv_to_csv(out, "anomaly_detector_data_1/script/real_energies_100ms_sp8_4.csv");
+//    vv_to_csv(out, "anomaly_detector_data_1/script/real_energies_100ms_sp8_4.csv");
+    vv_to_csv(out, "anomaly_detector_data_1/script/realsnd/energies_TS1_Norm_10rpm_60min.wav.csv");
+//    vv_to_csv(out, "anomaly_detector_data_1/script/realsnd/energies_TS1_Norm_30rpm_60min.wav.csv");
+//    vv_to_csv(out, "anomaly_detector_data_1/script/realsnd/energies_TS1_Norm_60rpm_60min.wav.csv");
+//    vv_to_csv(out, "anomaly_detector_data_1/script/realsnd/energies_TS1_Ruhe.wav.csv");
 
 
     return 0;

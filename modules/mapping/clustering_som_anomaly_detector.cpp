@@ -79,6 +79,33 @@ void vv_to_csv(ContainerType data, std::string filename, std::string sep=",")  /
 
 
 
+// ------ vector to console
+
+
+template<typename T>
+std::ostream & operator<<(std::ostream & out, std::vector<T> const & a) {
+    out << "[ " << std::endl;
+    for(auto x : a) {
+        out << x << std::endl;
+    }
+    out << "]" << std::endl;
+    return out;
+}
+
+
+template<typename T>
+std::ostream & operator<<(std::ostream & out, std::vector<std::vector<T>> const & a) {
+    out << "[ " << std::endl;
+    for(auto x : a) {
+        out << x << std::endl;
+    }
+    out << "]" << std::endl;
+    return out;
+}
+
+
+
+
 
 // ------ helper functions (copied from energies_example.cpp)
 
