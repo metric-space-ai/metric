@@ -12,7 +12,7 @@ TEMPLATE_TEST_CASE("DaubechiesMat", "[transform][wavelet]", float)
   for (size_t i = 0; i < dmat.rows() / 2; ++i) {
     REQUIRE(Approx(sumLow) == blaze::sum(blaze::row(dmat, i)));
   }
-  const auto sumHigh = blaze::sum(blaze::row(dmat, 0));
+  const auto sumHigh = blaze::sum(blaze::row(dmat, dmat.rows() / 2));
   for (size_t i = dmat.rows() / 2; i < dmat.rows(); ++i) {
     REQUIRE(Approx(sumHigh) == blaze::sum(blaze::row(dmat, i)));
   }
