@@ -721,7 +721,7 @@ blaze::CompressedMatrix<T> DaubechiesMat(size_t size, int order = 4)
             j = j % mat.columns();
           }
 
-          mat.append(size / 2 + i, j, c[order - 1 - ci]);
+          mat.append(size / 2 + i, j, c[order - 1 - ci] * sign);
           
           ++ci;
           sign *= -1;
