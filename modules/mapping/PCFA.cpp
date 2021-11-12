@@ -151,14 +151,14 @@ blaze::DynamicMatrix<typename PCFA_col<V>::value_type> PCFA_col<V>::eigenmodes()
 // simple linear encoder based on PCA, accepts curves in rows
 
 template <typename RecType, typename Metric>
-PCFA<RecType, Metric>::PCFA(const blaze::DynamicMatrix<value_type> & TrainingData, size_t n_features)
+PCFA<RecType, Metric>::PCFA(const blaze::DynamicMatrix<value_type> & TrainingData, const size_t n_features)
 {
     W_decode = metric::PCA(TrainingData, n_features, averages);
     W_encode = trans(W_decode); // computed once and saved
 }
 
 template <typename RecType, typename Metric>
-PCFA<RecType, Metric>::PCFA(std::vector<RecType> & TrainingData, size_t n_features)
+PCFA<RecType, Metric>::PCFA(const std::vector<RecType> & TrainingData, const size_t n_features)
 {
     blaze::DynamicMatrix<value_type> blaze_in(TrainingData.size(), TrainingData[0].size(), 0);
     for (size_t i = 0; i < TrainingData.size(); ++i) // TODO optimize using iterators!! // TODO replace with call of converter
@@ -224,7 +224,7 @@ template <typename RecType, typename Metric>
 blaze::DynamicMatrix<typename PCFA<RecType, Metric>::value_type>
 PCFA<RecType, Metric>::decode(
         const blaze::DynamicMatrix<PCFA<RecType, Metric>::value_type>& Codes,
-        bool unshift) {
+        const bool unshift) {
     if (unshift) {
         auto Noncentered = Codes * W_decode;
         auto Centered = blaze::DynamicMatrix<typename PCFA<RecType, Metric>::value_type>(Noncentered.rows(), Noncentered.columns());
@@ -243,7 +243,7 @@ template <typename RecType, typename Metric>
 std::vector<RecType>
 PCFA<RecType, Metric>::decode(
         const std::vector<RecType> & Codes,
-        bool unshift) {
+        const bool unshift) {
     auto CodesBlaze = vector_to_blaze(Codes);
     if (unshift) {
         auto Noncentered = CodesBlaze * W_decode;
