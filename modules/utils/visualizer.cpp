@@ -16,14 +16,14 @@ template <class BlazeMatrix>
 void blaze2bmp(BlazeMatrix m, std::string filename)
 {
 
-    int w = m.columns();
-    int h = m.rows();
+    size_t w = m.columns();
+    size_t h = m.rows();
 
     int x, y, r, g, b;
 
     FILE *f;
-    unsigned char *img = NULL;
-    int filesize = 54 + 3*w*h;
+    unsigned char *img = nullptr;
+    size_t filesize = 54 + 3 * w * h;
 
     img = (unsigned char *)malloc(3*w*h);
     std::memset(img,0,3*w*h);

@@ -182,7 +182,7 @@ namespace kmeans_details {
         return { count, updated };
     }
 
-    inline void rearrange_assignments(std::vector<int>& assignments)
+   /* inline void rearrange_assignments(std::vector<int>& assignments)
     {
         std::vector<int> from_list;
         std::vector<int> to_list;
@@ -191,8 +191,8 @@ namespace kmeans_details {
 
         for (int i = 1; i < assignments.size(); ++i) {
             bool hit = false;
-            for (int j = 0; j < from_list.size(); ++j) {
-                if (from_list[j] == assignments[i]) {
+            for (const int j: from_list) {
+                if (j == assignments[i]) {
                     hit = true;
                 }
             }
@@ -202,15 +202,15 @@ namespace kmeans_details {
             }
         }
 
-        for (int i = 0; i < assignments.size(); ++i) {
+        for (int &assignment: assignments) {
             int old_indx;
             for (int j = 0; j < to_list.size(); ++j) {
-                if (from_list[j] == assignments[i])
+                if (from_list[j] == assignment)
                     old_indx = j;
             }
-            assignments[i] = to_list[old_indx];
+            assignment = to_list[old_indx];
         }
-    }
+    }*/
 
 }  // end namespace kmeans_details
 

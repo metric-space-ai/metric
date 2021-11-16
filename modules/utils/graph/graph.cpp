@@ -6,6 +6,8 @@
   Copyright (c) 2019 Michael Welsch
 */
 #include "modules/utils/graph.hpp"
+
+#include <assert.h>
 #include <unordered_map>
 #include <algorithm>
 
@@ -271,7 +273,7 @@ auto Graph<WeightType, isDense, isSymmetric>::get_matrix() const
 inline Grid4::Grid4(size_t nodesNumber)
     : Graph<>(nodesNumber)
 {
-    size_t s = sqrt(nodesNumber);
+    auto s = static_cast<size_t>(std::sqrt(nodesNumber));
     if ((s * s) != nodesNumber) {
         valid = false;
     } else {
@@ -287,7 +289,7 @@ inline Grid4::Grid4(size_t width, size_t height)
 
 inline void Grid4::construct(size_t width, size_t height)
 {
-    unsigned long n_nodes = width * height;
+    size_t n_nodes = width * height;
     matrix.resize(n_nodes, n_nodes);
 
     std::vector<std::pair<size_t, size_t>> edgesPairs;
@@ -332,7 +334,7 @@ inline void Grid4::construct(size_t width, size_t height)
 inline Grid6::Grid6(size_t nodesNumber)
     : Graph<>(nodesNumber)
 {
-    size_t s = sqrt(nodesNumber);
+	auto s = static_cast<size_t>(std::sqrt(nodesNumber));
     if ((s * s) != nodesNumber) {
         valid = false;
     } else {
@@ -348,7 +350,7 @@ inline Grid6::Grid6(size_t width, size_t height)
 
 inline void Grid6::construct(size_t width, size_t height)
 {
-    unsigned long n_nodes = width * height;
+    size_t n_nodes = width * height;
     matrix.resize(n_nodes, n_nodes);
 
     std::vector<std::pair<size_t, size_t>> edgesPairs;
@@ -421,7 +423,7 @@ inline void Grid6::construct(size_t width, size_t height)
 inline Grid8::Grid8(size_t nodesNumber)
     : Graph<>(nodesNumber)
 {
-    size_t s = sqrt(nodesNumber);
+    auto s = static_cast<size_t>(sqrt(nodesNumber));
     if ((s * s) != nodesNumber) {
         valid = false;
     } else {
@@ -437,7 +439,7 @@ inline Grid8::Grid8(size_t width, size_t height)
 
 inline void Grid8::construct(size_t width, size_t height)
 {
-    unsigned long n_nodes = width * height;
+    size_t n_nodes = width * height;
     matrix.resize(n_nodes, n_nodes);
 
     std::vector<std::pair<size_t, size_t>> edgesPairs;
@@ -582,7 +584,7 @@ inline bool LPS::miller_rabin_pass(const size_t a, const size_t s, const size_t 
 inline Margulis::Margulis(size_t nodesNumber)
     : Graph<>(nodesNumber)
 {
-    size_t s = sqrt(nodesNumber);
+    auto s = static_cast<size_t>(sqrt(nodesNumber));
     if ((s * s) != nodesNumber) {
         valid = false;
     } else {
