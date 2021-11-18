@@ -40,3 +40,15 @@ TEMPLATE_TEST_CASE("dbwavf", "[transform][wavelet]", float, double)
 	const auto r = wavelet::dbwavf<Vector>(wnum, 1);
 	REQUIRE(r == coeffs[wnum]);
 }
+
+TEST_CASE("wtest")
+{
+  auto w = wavelet::dbwavf<blaze::DynamicVector<double>>(3, 1);
+  auto [Lo_D, Hi_D, Lo_R, Hi_R] = wavelet::orthfilt(w);
+  std::cout << Lo_D << std::endl;
+
+  blaze::DynamicVector<double> d = {1, 2, 3, 4};
+  auto [a, b] = wavelet::dwt(d, 3);
+  std::cout << a << std::endl;
+  std::cout << b << std::endl;
+}

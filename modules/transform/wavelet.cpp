@@ -670,24 +670,26 @@ blaze::CompressedMatrix<T> DaubechiesMat(size_t size, int order = 4)
 
     assert(order % 2 == 0);
 
-    std::vector<T> c(order);
+    /*std::vector<T> c(order);
     constexpr T coeff = 2 / sqrt(2);
     c = dbwavf<std::vector<T>>(order / 2, coeff);
     for (size_t i = 0; i < c.size(); ++i) {
         c[i] *= coeff;
-    }
+    }*/
+
+	const auto [Lo_D, Hi_D, Lo_R, Hi_R] = orthfilt(dbwavf<std::vector<T>>(order / 2, T()));
 
     auto mat = blaze::CompressedMatrix<T>(size, size);
-    mat.reserve(size * c.size());
+    mat.reserve(size * Lo_D.size());
     for (size_t i = 0; i < size / 2; ++i) {
 
         size_t ci = mat.columns() - 2 * i;
-        if (ci > c.size()) {
+        if (ci > Lo_D.size()) {
           ci = 0;
         }
-        for (size_t a = 0; a < c.size(); ++a) {
-          if (ci >= c.size()) {
-            ci = ci % c.size();
+        for (size_t a = 0; a < Lo_D.size(); ++a) {
+          if (ci >= Lo_D.size()) {
+            ci = ci % Lo_D.size();
           } 
 
           size_t j = i * 2 + ci;
@@ -695,7 +697,7 @@ blaze::CompressedMatrix<T> DaubechiesMat(size_t size, int order = 4)
             j = j % mat.columns();
           }
 
-          mat.append(i, j, c[ci]);
+          mat.append(i, j, Lo_D[ci]);
           
           ++ci;
         }
@@ -708,12 +710,12 @@ blaze::CompressedMatrix<T> DaubechiesMat(size_t size, int order = 4)
 
 
         size_t ci = mat.columns() - 2 * i;
-        if (ci > c.size()) {
+        if (ci > Hi_D.size()) {
           ci = 0;
         }
-        for (size_t a = 0; a < c.size(); ++a) {
-          if (ci >= c.size()) {
-            ci = ci % c.size();
+        for (size_t a = 0; a < Hi_D.size(); ++a) {
+          if (ci >= Hi_D.size()) {
+            ci = ci % Hi_D.size();
           } 
 
           size_t j = i * 2 + ci;
@@ -721,7 +723,7 @@ blaze::CompressedMatrix<T> DaubechiesMat(size_t size, int order = 4)
             j = j % mat.columns();
           }
 
-          mat.append(size / 2 + i, j, c[order - 1 - ci] * sign);
+          mat.append(size / 2 + i, j, Hi_D[ci] * sign);
           
           ++ci;
           sign *= -1;
