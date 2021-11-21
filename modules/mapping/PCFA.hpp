@@ -293,6 +293,12 @@ public:
     RecType average();
 
     /**
+     * @brief returns weights
+     * @return matrix of decode weights
+     */
+    std::vector<RecType> weights();
+
+    /**
    * @brief returns the encoder matrix concatenated with the average curve of training dataset, used for center shift
    *
    * @return blaze::DynamicMatrix<value_type>

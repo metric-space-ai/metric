@@ -270,9 +270,16 @@ template <typename RecType, typename Metric>
 RecType
 PCFA<RecType, Metric>::average() {
     //blaze::DynamicMatrix<value_type> result (averages.size(), 1);
-    blaze::DynamicMatrix<value_type> result (averages.size(), 1);
-    blaze::column(result, 0) = blaze::trans(averages);
+    //blaze::column(result, 0) = blaze::trans(averages);
+    blaze::DynamicMatrix<value_type> result (1, averages.size());
+    blaze::row(result, 0) = averages;
     return blaze2RecType<RecType>(result)[0];
+}
+
+template <typename RecType, typename Metric>
+std::vector<RecType>
+PCFA<RecType, Metric>::weights() {
+    return blaze2RecType<RecType>(W_decode);
 }
 
 template <typename RecType, typename Metric>
