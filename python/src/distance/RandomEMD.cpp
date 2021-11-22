@@ -26,7 +26,7 @@ void wrap_metric_RandomEMD(py::module& m) {
 	emd.def(py::init<double>(),
 			py::arg("precision")
 	);
-	D (Class::*call)(const Sample&, const Sample&) const = &Class::template operator()<Sample>;
+	D (Class::*call)(const Sample&, const Sample&) const = &Class::operator();
     emd.def("__call__", call);
 }
 
