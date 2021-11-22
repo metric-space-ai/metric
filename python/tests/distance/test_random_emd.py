@@ -8,4 +8,5 @@ def test__constructor():
     d2 = np.array(range(1, 12))
     remd = RandomEMD()
 
-    assert(math.isclose(remd(d1, d2), 1, 0.01))
+    print(remd(d1, d2))
+    assert(math.isclose(remd(d1, d2), 1, rel_tol=0.01))
