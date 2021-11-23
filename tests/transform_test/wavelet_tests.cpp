@@ -2,21 +2,30 @@
 
 #include "modules/transform/wavelet.hpp"
 
-TEMPLATE_TEST_CASE("DaubechiesMat", "[transform][wavelet]", float)
+TEMPLATE_TEST_CASE("DaubechiesMat", "[transform][wavelet]", float, double)
 {
-  const auto dmat = wavelet::DaubechiesMat<TestType>(12, 6);
-  std::cout << dmat << std::endl;
+  auto wnum = GENERATE(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+  const auto w = wavelet::dbwavf<blaze::DynamicVector<double>>(wnum, 1);
+  const auto [Lo_D, Hi_D, Lo_R, Hi_R] = wavelet::orthfilt(w);
+
+  const size_t signalLength = 24;
+  const auto dmat = wavelet::DaubechiesMat<TestType>(signalLength, wnum * 2);
+
+  const size_t fl = wnum * 2;
+  REQUIRE(blaze::subvector(blaze::row(dmat, 0), 0, fl) == Lo_D);
+  REQUIRE(blaze::subvector(blaze::row(dmat, dmat.rows() / 2), 0, fl) == Hi_D);
+
 
   const auto sumLow = blaze::sum(blaze::row(dmat, 0));
-
   for (size_t i = 0; i < dmat.rows() / 2; ++i) {
     REQUIRE(Approx(sumLow) == blaze::sum(blaze::row(dmat, i)));
   }
 
-  //const auto sumHigh = blaze::sum(blaze::row(dmat, dmat.rows() / 2));
-  //for (size_t i = dmat.rows() / 2; i < dmat.rows(); ++i) {
-  //  REQUIRE(Approx(sumHigh) == blaze::sum(blaze::row(dmat, i)));
-  //}
+  const auto sumHigh = blaze::sum(blaze::row(dmat, dmat.rows() / 2));
+  for (size_t i = dmat.rows() / 2; i < dmat.rows(); ++i) {
+    /* Set scale = 1 due problem with Approx(0.0) comparation */
+    REQUIRE(Approx(sumHigh).scale(1.) == blaze::sum(blaze::row(dmat, i)));
+  }
 }
 
 TEMPLATE_TEST_CASE("dbwavf", "[transform][wavelet]", float, double)
