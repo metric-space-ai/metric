@@ -119,6 +119,8 @@ template <typename Container>
 //Container dbwavf(int const wnum, typename Container::value_type returnTypeExample)
 Container dbwavf(int const wnum, types::index_value_type_t<Container> returnTypeExample)
 {
+	assert(order <= 10);
+
     static const std::vector<std::function<Container()>> F { []() {
                                                                 Container F0 = {};
                                                                 return F0;
@@ -669,13 +671,7 @@ blaze::CompressedMatrix<T> DaubechiesMat(size_t size, int order = 4)
 {  // Daubechies Transform matrix generator
 
     assert(order % 2 == 0);
-
-    /*std::vector<T> c(order);
-    constexpr T coeff = 2 / sqrt(2);
-    c = dbwavf<std::vector<T>>(order / 2, coeff);
-    for (size_t i = 0; i < c.size(); ++i) {
-        c[i] *= coeff;
-    }*/
+	assert(size > order);
 
 	const auto [Lo_D, Hi_D, Lo_R, Hi_R] = orthfilt(dbwavf<std::vector<T>>(order / 2, T()));
 
