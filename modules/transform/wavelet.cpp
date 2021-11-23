@@ -706,7 +706,6 @@ blaze::CompressedMatrix<T> DaubechiesMat(size_t size, int order = 4)
     }
 
     for (size_t i = 0; i < size / 2; ++i) {
-        int sign = 1;
 
 
         size_t ci = mat.columns() - 2 * i;
@@ -723,10 +722,9 @@ blaze::CompressedMatrix<T> DaubechiesMat(size_t size, int order = 4)
             j = j % mat.columns();
           }
 
-          mat.append(size / 2 + i, j, Hi_D[ci] * sign);
+          mat.append(size / 2 + i, j, Hi_D[ci]);
           
           ++ci;
-          sign *= -1;
         }
         mat.finalize(size / 2 + i);
     }
