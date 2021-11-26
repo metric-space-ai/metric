@@ -675,6 +675,10 @@ blaze::CompressedMatrix<T> DaubechiesMat(size_t size, int order = 4)
 
 	const auto [Lo_D, Hi_D, Lo_R, Hi_R] = orthfilt(dbwavf<std::vector<T>>(order / 2, T()));
 
+/* Reverse filters for convolution */
+	std::reverse(Lo_D.begin(), Lo_D.end());
+	std::reverse(Hi_D.begin(), Hi_D.end());
+
     auto mat = blaze::CompressedMatrix<T>(size, size);
     mat.reserve(size * Lo_D.size());
     for (size_t i = 0; i < size / 2; ++i) {
