@@ -12,15 +12,15 @@ Copyright (c) 2019 Panda Team
 #define M_PI 3.14159265358979323846
 #endif
 
-#include "../../../../modules/mapping.hpp"
+#include "modules/mapping.hpp"
 
-#include "../../../../modules/utils/visualizer.hpp"
+#include "modules/utils/visualizer.hpp"
 
-#include "../../../../modules/transform/discrete_cosine.hpp"
+#include "modules/transform/discrete_cosine.hpp"
 
 #include "../../assets/helpers.cpp"
 
-#include "../../../../3rdparty/blaze/Blaze.h"
+#include "blaze/Blaze.h"
 
 
 

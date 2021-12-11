@@ -10,7 +10,7 @@ Copyright (c) 2019 Panda Team
 #include <functional>
 #include <node_api.h>
 #include <cassert>
-#include "../../modules/space/tree.hpp"
+#include "modules/space/tree.hpp"
 #include "convert.hpp"
 
 #define NAPI_CALL(x) assert((x) == napi_ok)

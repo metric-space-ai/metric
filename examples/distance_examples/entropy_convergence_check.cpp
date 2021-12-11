@@ -3,7 +3,7 @@
 #include <random>
 #include <iostream>
 
-#include "../../modules/correlation/entropy.hpp"
+#include "modules/correlation/entropy.hpp"
 
 template <typename T>
 void print_entropies(size_t step, size_t dim, size_t k) {

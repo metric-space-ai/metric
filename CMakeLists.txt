@@ -39,12 +39,16 @@ endif()
 find_package(LAPACK REQUIRED)
 
 
-include_directories(
-    ${PROJECT_SOURCE_DIR}
-)
+#include_directories(
+#    ${PROJECT_SOURCE_DIR}
+#)
+
+add_library(metric INTERFACE)
+target_include_directories(metric INTERFACE ${PROJECT_SOURCE_DIR})
+target_include_directories(metric INTERFACE ${PROJECT_SOURCE_DIR}/3rdparty)
 
 
-# Catch2 installtion
+# Catch2 installation
 Include(FetchContent)
 
 FetchContent_Declare(

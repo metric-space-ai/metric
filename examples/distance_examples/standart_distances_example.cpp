@@ -10,10 +10,10 @@ Copyright (c) 2019 Panda Team
 #include <iostream>
 #include <chrono>
 
-//#include "../../3rdparty/blaze/math/CompressedVector.h"  // for Blaze Euclidean overload
-//#include "../../3rdparty/blaze/math/CompressedMatrix.h"  // for Blaze Euclidean overload
+//#include "blaze/math/CompressedVector.h"  // for Blaze Euclidean overload
+//#include "blaze/math/CompressedMatrix.h"  // for Blaze Euclidean overload
 
-#include "../../modules/distance.hpp"
+#include "modules/distance.hpp"
 
 
 int main()

@@ -10,7 +10,7 @@
 //#define DEBUG_OUTPUT
 
 #include "distance_potential_minimization.hpp"
-#include "../../modules/transform/wavelet2d.hpp" // for only Convolution2dCustom
+#include "modules/transform/wavelet2d.hpp" // for only Convolution2dCustom
 
 #include <iostream>
 #include <tuple>

@@ -7,7 +7,7 @@ Copyright (c) 2018 M.Welsch
 */
 #include "affprop.hpp"
 
-#include "../../3rdparty/blaze/Math.h"
+#include "blaze/Math.h"
 #include "../distance/k-related/Standards.hpp"
 
 #include <vector>

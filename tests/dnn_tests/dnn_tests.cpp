@@ -4,7 +4,7 @@
 
 #include <iostream>
 #include "modules/utils/dnn.hpp"
-#include "3rdparty/blaze/math/blas/gemm.h"
+#include "blaze/math/blas/gemm.h"
 
 
 using namespace metric::dnn;

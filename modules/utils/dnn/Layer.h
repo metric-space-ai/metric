@@ -4,8 +4,8 @@
 #include <vector>
 #include <random>
 
-#include "../../../3rdparty/blaze/Math.h"
-#include "../../../3rdparty/nlohmann/json.hpp"
+#include "blaze/Math.h"
+#include "nlohmann/json.hpp"
 
 #include "Initializer.h"
 

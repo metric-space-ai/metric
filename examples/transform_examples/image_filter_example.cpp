@@ -1,9 +1,9 @@
 
-//#include "../../modules/utils/image_processing/image_filter.hpp"
-//#include "../../modules/utils/image_processing/convolution.hpp"
-//#include "../../modules/transform/wavelet2d.hpp"
+//#include "modules/utils/image_processing/image_filter.hpp"
+//#include "modules/utils/image_processing/convolution.hpp"
+//#include "modules/transform/wavelet2d.hpp"
 
-#include "../../modules/transform/distance_potential_minimization.hpp"
+#include "modules/transform/distance_potential_minimization.hpp"
 
 #include "donuts.hpp" // for only png reader
 

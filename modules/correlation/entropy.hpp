@@ -9,9 +9,9 @@ Copyright (c) 2020 Panda Team
 #ifndef _METRIC_DISTANCE_K_RANDOM_ENTROPY_HPP
 #define _METRIC_DISTANCE_K_RANDOM_ENTROPY_HPP
 
-#include "../../3rdparty/blaze/Blaze.h"
+#include <blaze/Blaze.h>
 #include "../distance/k-related/Standards.hpp"
-#include "../../modules/utils/type_traits.hpp"
+#include "modules/utils/type_traits.hpp"
 
 namespace metric {
 

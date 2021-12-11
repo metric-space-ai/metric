@@ -10,9 +10,9 @@ Copyright (c) 2018, Michael Welsch
 #ifndef _METRIC_SPACE_TREE_HPP
 #define _METRIC_SPACE_TREE_HPP
 
-#include "../../3rdparty/blaze/Math.h"
-#include "../../3rdparty/blaze/math/Matrix.h"
-#include "../../3rdparty/blaze/math/adaptors/SymmetricMatrix.h"
+#include "blaze/Math.h"
+#include "blaze/math/Matrix.h"
+#include "blaze/math/adaptors/SymmetricMatrix.h"
 
 #include <atomic>
 #include <cmath>

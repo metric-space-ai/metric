@@ -6,7 +6,7 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 Copyright (c) 2019 Panda Team
 */
 #include "feature_cast.hpp"
-#include "../../modules/utils/crossfilter.hpp"
+#include "modules/utils/crossfilter.hpp"
 #include <node_api.h>
 
 // #define DEFINE_CAST_FEATURE(key_type, value_type, dim_type, is_group_all, is_iterable)

@@ -10,7 +10,7 @@ Copyright (c) 2018 Michael Welsch
 #ifndef _METRIC_SPACE_MATRIX_HPP
 #define _METRIC_SPACE_MATRIX_HPP
 
-#include "../../3rdparty/blaze/Blaze.h"
+#include "blaze/Blaze.h"
 
 #include <type_traits>
 #include <unordered_map>

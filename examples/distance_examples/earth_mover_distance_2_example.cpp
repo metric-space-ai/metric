@@ -10,8 +10,8 @@ Copyright (c) 2019 Panda Team
 #include <iostream>
 #include <chrono>
 #include "assets/test_data.cpp"
-#include "../../modules/distance.hpp"
-#include "../../modules/space.hpp"
+#include "modules/distance.hpp"
+#include "modules/space.hpp"
 //#include <boost/gil/gil_all.hpp> 
 //#include <boost/gil/extension/io/jpeg_io.hpp>
 #include <boost/gil.hpp> 

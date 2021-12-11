@@ -11,7 +11,7 @@ Copyright (c) 2019 Panda Team
 #include <fstream>
 
 #include <chrono>
-#include "../../modules/distance.hpp"
+#include "modules/distance.hpp"
 
 
 std::tuple<std::vector<std::vector<double>>, std::vector<double>> readData(std::string filename)

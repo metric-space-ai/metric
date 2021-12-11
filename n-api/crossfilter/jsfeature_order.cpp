@@ -7,7 +7,7 @@ Copyright (c) 2019 Panda Team
 */
 #include <functional>
 #include "jsfeature.hpp"
-#include "../../modules/utils/crossfilter.hpp"
+#include "modules/utils/crossfilter.hpp"
 #include "utils.hpp"
 #include "ext/jsfeature_order_bool_ext.hpp"
 #include "ext/jsfeature_order_double_ext.hpp"

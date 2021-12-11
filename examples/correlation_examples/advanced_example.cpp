@@ -15,8 +15,8 @@
 
 #include <chrono>
 
-#include "../../modules/correlation.hpp"
-#include "../../3rdparty/blaze/Math.h"
+#include "modules/correlation.hpp"
+#include "blaze/Math.h"
 
 template <typename T>
 void matrix_print(const std::vector<std::vector<T>>& mat)

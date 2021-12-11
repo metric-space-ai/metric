@@ -1,5 +1,5 @@
 // #define USE_VECTOR_SORT 1
-#include "../../modules/utils/poor_mans_quantum.hpp"
+#include "modules/utils/poor_mans_quantum.hpp"
 #include <vector>
 
 #include <iostream>

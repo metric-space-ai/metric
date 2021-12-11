@@ -17,8 +17,8 @@ Copyright (c) 2020 Panda Team
 #include <chrono>
 
 #include "assets/json.hpp"
-#include "../../modules/mapping.hpp"
-#include "../../modules/mapping/Redif.hpp"
+#include "modules/mapping.hpp"
+#include "modules/mapping/Redif.hpp"
 
 
 using json = nlohmann::json;

@@ -11,7 +11,7 @@ Copyright (c) 2018 Panda Team
 #include <string>
 #include <sstream>
 
-#include "../../3rdparty/blaze/Blaze.h"
+#include "blaze/Blaze.h"
 
 
 template <typename T> T convert_to(const std::string & str)

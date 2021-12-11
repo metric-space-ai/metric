@@ -1,7 +1,7 @@
 #ifndef PANDA_METRIC_LAPACK_HPP
 #define PANDA_METRIC_LAPACK_HPP
 
-#include "../../../3rdparty/blaze/Math.h"
+#include "blaze/Math.h"
 
 
 extern "C" {

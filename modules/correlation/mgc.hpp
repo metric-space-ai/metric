@@ -20,7 +20,7 @@ Copyright (c) 2018, Michael Welsch
 #ifndef _METRIC_CORRELATION_DETAILS_MGC_HPP
 #define _METRIC_CORRELATION_DETAILS_MGC_HPP
 
-#include "../../3rdparty/blaze/Math.h"
+#include <blaze/Math.h>
 
 namespace metric {
 

@@ -2,7 +2,7 @@
 #define _METRIC_DETERMINISTIC_SWITCH_DETECTOR_HPP
 
 
-#include "../../3rdparty/blaze/Blaze.h"
+#include "blaze/Blaze.h"
 
 
 /**

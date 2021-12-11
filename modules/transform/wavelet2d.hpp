@@ -10,9 +10,9 @@
 #define _METRIC_TRANSFORM_WAVELET2D_HPP
 
 
-#include "../../modules/utils/image_processing/convolution.hpp"
+#include "modules/utils/image_processing/convolution.hpp"
 #include "wavelet.hpp"
-//#include "../../3rdparty/blaze/Blaze.h"
+//#include "blaze/Blaze.h"
 
 #include <cmath> // for only sqrt
 

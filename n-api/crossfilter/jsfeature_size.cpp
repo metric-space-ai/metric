@@ -7,7 +7,7 @@ Copyright (c) 2019 Panda Team
 */
 #include "jsfeature.hpp"
 //#include "feature_export.hpp"
-#include "../../modules/utils/crossfilter.hpp"
+#include "modules/utils/crossfilter.hpp"
 #include "utils.hpp"
 #include "feature_cast_extern.hpp"
 

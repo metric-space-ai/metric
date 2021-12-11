@@ -12,7 +12,7 @@
 
 #include <algorithm>
 #include <cmath>
-#include "../../../3rdparty/blaze/Math.h"
+#include "blaze/Math.h"
 
 
 /**

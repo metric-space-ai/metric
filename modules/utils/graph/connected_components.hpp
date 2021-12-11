@@ -22,7 +22,7 @@ https://doi.org/10.1109/TPDS.2016.2591038
 #include <vector>
 #include <list>
 
-#include "../../../3rdparty/blaze/Math.h"
+#include "blaze/Math.h"
 
 namespace metric {
 namespace graph {
