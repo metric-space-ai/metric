@@ -1,7 +1,7 @@
 #ifndef ACTIVATION_RELU_H_
 #define ACTIVATION_RELU_H_
 
-#include "blaze/Math.h"
+#include <blaze/Math.h>
 
 namespace metric
 {

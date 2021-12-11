@@ -10,7 +10,7 @@
 #define _METRIC_UTILS_POOR_MANS_QUANTUM_POOR_MANS_QUANTUM_CPP
 #include "../poor_mans_quantum.hpp"
 
-#include "blaze/Math.h"
+#include <blaze/Math.h>
 
 #include <limits>
 #include <random>

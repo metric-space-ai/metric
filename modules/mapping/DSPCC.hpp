@@ -13,7 +13,7 @@ Copyright (c) 2019 Panda Team
 #include <tuple>
 #include <cmath> // for log2
 
-#include "blaze/Blaze.h"
+#include <blaze/Blaze.h>
 #include "modules/mapping/PCFA.hpp"
 
 namespace metric {

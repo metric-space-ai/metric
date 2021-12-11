@@ -10,7 +10,7 @@
 #define _METRIC_DISTANCE_POTENTIAL_MINIMIZATION_CPP
 
 #include <tuple>
-#include "blaze/Blaze.h"
+#include <blaze/Blaze.h>
 
 namespace metric {
 

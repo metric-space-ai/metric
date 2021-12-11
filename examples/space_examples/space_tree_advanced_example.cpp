@@ -10,7 +10,7 @@ Copyright (c) 2018 Michael Welsch
 #include <vector>
 #include <random>
 #include <thread>
-#include "blaze/Math.h"
+#include <blaze/Math.h>
 #include "assets/assets.cpp"
 #include "modules/space.hpp"
 

@@ -4,7 +4,7 @@
 #include <vector>
 #include <random>
 
-#include "blaze/Math.h"
+#include <blaze/Math.h>
 #include "nlohmann/json.hpp"
 
 #include "Initializer.h"

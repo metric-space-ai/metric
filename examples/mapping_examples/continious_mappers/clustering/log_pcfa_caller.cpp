@@ -11,7 +11,7 @@
 
 #include "../../assets/helpers.cpp"
 
-#include "blaze/Blaze.h"
+#include <blaze/Blaze.h>
 
 
 int main() {

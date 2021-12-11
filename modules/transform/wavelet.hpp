@@ -16,7 +16,7 @@
 #include <algorithm>
 #include <functional>
 #include <deque>
-#include "blaze/Blaze.h"
+#include <blaze/Blaze.h>
 
 namespace wavelet {
 

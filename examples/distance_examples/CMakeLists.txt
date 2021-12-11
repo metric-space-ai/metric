@@ -14,6 +14,6 @@ foreach(exampleSrc ${EXAMPLE_SRCS})
 	add_executable(${exampleName} ${exampleSrc}) 
  
 	#link to Boost libraries AND your targets and dependencies 
-	target_link_libraries(${exampleName} ${LAPACK_LIBRARIES})
+	target_link_libraries(${exampleName} metric)
 
 endforeach(exampleSrc)

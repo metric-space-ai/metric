@@ -23,9 +23,7 @@ https://github.com/danspielman/Laplacians.jl
 #define _METRIC_UTILS_SOLVER_GRAPHGALS_HPP
 
 #include <iostream>
-#include "blaze/Math.h"
-#include "blaze/math/Submatrix.h"
-#include "blaze/math/Subvector.h"
+#include <blaze/Math.h>
 #include <vector>
 #include <functional>
 #include <random>

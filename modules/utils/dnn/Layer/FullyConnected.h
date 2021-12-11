@@ -6,7 +6,7 @@
 #include <stdexcept>
 #include <random>
 
-#include "blaze/Math.h"
+#include <blaze/Math.h>
 
 #include "../Layer.h"
 #include "../Utils/Random.h"

@@ -11,7 +11,7 @@ Copyright (c) 2019 Michael Welsch
 #ifndef _METRIC_UTILS_GRAPH_HPP
 #define _METRIC_UTILS_GRAPH_HPP
 
-#include "blaze/Blaze.h"
+#include <blaze/Blaze.h>
 #include "type_traits.hpp"
 
 #include <stack>

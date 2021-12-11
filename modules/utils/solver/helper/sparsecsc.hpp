@@ -22,7 +22,7 @@ https://github.com/danspielman/Laplacians.jl
 #ifndef _METRIC_UTILS_SOLVER_HELPER_SPARSECSC_HPP
 #define _METRIC_UTILS_SOLVER_HELPER_SPARSECSC_HPP
 
-#include "blaze/Math.h"
+#include <blaze/Math.h>
 #include <vector>
 
 namespace metric {

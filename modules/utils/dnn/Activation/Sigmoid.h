@@ -1,7 +1,7 @@
 #ifndef ACTIVATION_SIGMOID_H_
 #define ACTIVATION_SIGMOID_H_
 
-#include "blaze/Math.h"
+#include <blaze/Math.h>
 
 namespace metric
 {

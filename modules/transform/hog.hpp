@@ -1,7 +1,7 @@
 #ifndef PANDA_METRIC_HOG_HPP
 #define PANDA_METRIC_HOG_HPP
 
-#include "blaze/Math.h"
+#include <blaze/Math.h>
 
 
 namespace metric {

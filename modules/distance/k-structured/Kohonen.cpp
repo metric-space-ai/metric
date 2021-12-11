@@ -7,7 +7,7 @@ Copyright (c) 2019 PANDA Team
 */
 
 #include "Kohonen.hpp"
-#include "blaze/Blaze.h"
+#include <blaze/Blaze.h>
 #include "modules/utils/poor_mans_quantum.hpp"
 #include <cmath>
 #include <vector>

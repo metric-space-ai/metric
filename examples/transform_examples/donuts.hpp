@@ -1,7 +1,7 @@
 #ifndef DONUTS_HPP
 #define DONUTS_HPP
 
-#include "blaze/Blaze.h"
+#include <blaze/Blaze.h>
 
 #include <cmath>
 #include <iostream>

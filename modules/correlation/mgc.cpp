@@ -46,7 +46,7 @@
 
 #include <chrono>
 
-#include "blaze/Math.h"
+#include <blaze/Math.h>
 
 #include "../utils/graph/connected_components.hpp"
 #include "../distance.hpp"

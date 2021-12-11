@@ -1,7 +1,7 @@
 
 #include "modules/transform/wavelet.hpp"
 
-#include "blaze/Blaze.h"
+#include <blaze/Blaze.h>
 
 #include <vector>
 #include <iostream>

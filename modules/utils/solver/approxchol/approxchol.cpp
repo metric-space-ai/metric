@@ -21,9 +21,7 @@ https://github.com/danspielman/Laplacians.jl
 #ifndef _METRIC_UTILS_SOLVER_APPROXCHOL_CPP
 #define _METRIC_UTILS_SOLVER_APPROXCHOL_CPP
 #include "../approxchol.hpp"
-#include "blaze/Math.h"
-#include "blaze/math/Submatrix.h"
-#include "blaze/math/Subvector.h"
+#include <blaze/Math.h>
 #include <vector>
 
 namespace metric {

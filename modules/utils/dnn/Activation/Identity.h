@@ -1,7 +1,7 @@
 #ifndef ACTIVATION_IDENTITY_H_
 #define ACTIVATION_IDENTITY_H_
 
-#include "blaze/Math.h"
+#include <blaze/Math.h>
 
 namespace metric
 {
