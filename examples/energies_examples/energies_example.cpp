@@ -25,7 +25,7 @@ Copyright (c) 2019 Panda Team
 #include "modules/utils/ThreadPool.hpp"
 #include "modules/utils/Semaphore.h"
 
-#include "assets/json.hpp"
+#include <nlohmann/json.hpp>
 #include "modules/mapping.hpp"
 #include "modules/utils/poor_mans_quantum.hpp"
 

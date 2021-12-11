@@ -4,8 +4,8 @@
 #include <tuple>
 #include <regex>
 
-#include "cereal/types/vector.hpp"
-#include "cereal/archives/binary.hpp"
+#include <cereal/types/vector.hpp>
+#include <cereal/archives/binary.hpp>
 
 #include <blaze/Math.h>
 
