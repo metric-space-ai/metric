@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.13)
+cmake_minimum_required(VERSION 3.14)
 
 if (POLICY CMP0025)
   cmake_policy(SET CMP0025 NEW)
@@ -46,12 +46,18 @@ find_package(LAPACK REQUIRED)
 FetchContent_Declare(json
         GIT_REPOSITORY https://github.com/ArthurSonzogni/nlohmann_json_cmake_fetchcontent
         GIT_TAG v3.7.3)
-
 FetchContent_GetProperties(json)
 if(NOT json_POPULATED)
     FetchContent_Populate(json)
     add_subdirectory(${json_SOURCE_DIR} ${json_BINARY_DIR} EXCLUDE_FROM_ALL)
 endif()
+
+# Blaze
+FetchContent_Declare(blaze
+        GIT_REPOSITORY https://bitbucket.org/blaze-lib/blaze.git
+        GIT_TAG v3.8)
+FetchContent_MakeAvailable(blaze)
+find_package(blaze REQUIRED)
 
 
 # Create metric target
@@ -60,6 +66,7 @@ target_include_directories(metric INTERFACE ${PROJECT_SOURCE_DIR})
 target_include_directories(metric INTERFACE ${PROJECT_SOURCE_DIR}/3rdparty)
 target_link_libraries(metric INTERFACE LAPACK::LAPACK)
 target_link_libraries(metric INTERFACE nlohmann_json::nlohmann_json)
+target_link_libraries(metric INTERFACE blaze::blaze)
 
 
 # Catch2 installation
