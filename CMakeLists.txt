@@ -36,18 +36,33 @@ if(CMAKE_SYSTEM_NAME MATCHES Windows)
 endif()
 
 
+# Dependencies
+include(FetchContent)
+
+# LAPACK
 find_package(LAPACK REQUIRED)
 
+# Json
+FetchContent_Declare(json
+        GIT_REPOSITORY https://github.com/ArthurSonzogni/nlohmann_json_cmake_fetchcontent
+        GIT_TAG v3.7.3)
 
+FetchContent_GetProperties(json)
+if(NOT json_POPULATED)
+    FetchContent_Populate(json)
+    add_subdirectory(${json_SOURCE_DIR} ${json_BINARY_DIR} EXCLUDE_FROM_ALL)
+endif()
+
+
+# Create metric target
 add_library(metric INTERFACE)
 target_include_directories(metric INTERFACE ${PROJECT_SOURCE_DIR})
 target_include_directories(metric INTERFACE ${PROJECT_SOURCE_DIR}/3rdparty)
 target_link_libraries(metric INTERFACE LAPACK::LAPACK)
+target_link_libraries(metric INTERFACE nlohmann_json::nlohmann_json)
 
 
 # Catch2 installation
-Include(FetchContent)
-
 FetchContent_Declare(
 		Catch2
 		GIT_REPOSITORY https://github.com/catchorg/Catch2.git
