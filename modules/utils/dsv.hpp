@@ -2,7 +2,7 @@
 #define PANDA_METRIC_DSV_HPP
 
 
-#include "../../3rdparty/blaze/Math.h"
+#include <blaze/Math.h>
 
 
 namespace metric {

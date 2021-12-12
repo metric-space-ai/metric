@@ -22,11 +22,11 @@ Copyright (c) 2019 Panda Team
 
 #include <chrono>
 
-#include "../../modules/utils/ThreadPool.hpp"
-#include "../../modules/utils/Semaphore.h"
+#include "modules/utils/ThreadPool.hpp"
+#include "modules/utils/Semaphore.h"
 
-#include "assets/json.hpp"
-#include "../../modules/mapping.hpp"
+#include <nlohmann/json.hpp>
+#include "modules/mapping.hpp"
 
 
 using json = nlohmann::json;

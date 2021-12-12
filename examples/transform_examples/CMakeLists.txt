@@ -13,7 +13,7 @@ foreach(exampleSrc ${EXAMPLE_SRCS})
 	#Add compile target
 	add_executable(${exampleName} ${exampleSrc}) 
  
-	target_link_libraries(${exampleName} ${LAPACK_LIBRARIES})
+	target_link_libraries(${exampleName} metric)
 
 	if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS 8.0)
 	    target_link_libraries(${exampleName} stdc++fs)

@@ -2,14 +2,14 @@
 #include <iostream>
 //#include <stack>
 
-#include "../../../../modules/mapping/DSPCC.hpp"
+#include "modules/mapping/DSPCC.hpp"
 
 #include "examples/mapping_examples/assets/helpers.cpp" // for .csv reader
 
-#include "../../../../modules/utils/visualizer.hpp"
-#include "../../../../modules/utils/metric_err.hpp"
+#include "modules/utils/visualizer.hpp"
+#include "modules/utils/metric_err.hpp"
 
-#include "../../../../modules/distance/k-related/Standards.hpp" // we use Euclidean metric for mean squared error evaluation
+#include "modules/distance/k-related/Standards.hpp" // we use Euclidean metric for mean squared error evaluation
 
 
 

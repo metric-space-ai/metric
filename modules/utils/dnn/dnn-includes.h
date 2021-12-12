@@ -1,7 +1,7 @@
 #ifndef DNN_INCLUDES_H_
 #define DNN_INCLUDES_H_
 
-#include "../../../3rdparty/blaze/Math.h"
+#include <blaze/Math.h>
 
 #include "Layer.h"
 #include "Layer/FullyConnected.h"

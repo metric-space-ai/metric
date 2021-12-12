@@ -9,10 +9,10 @@ Copyright (c) 2019 Panda Team
 #include <vector>
 #include <random>
 
-//#include "../../modules/distance.hpp"
-#include "../../modules/correlation/entropy.hpp"
+//#include "modules/distance.hpp"
+#include "modules/correlation/entropy.hpp"
 
-#include "../../modules/distance/k-structured/Edit.hpp"
+#include "modules/distance/k-structured/Edit.hpp"
 
 
 

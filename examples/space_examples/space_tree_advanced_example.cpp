@@ -10,9 +10,9 @@ Copyright (c) 2018 Michael Welsch
 #include <vector>
 #include <random>
 #include <thread>
-#include "../../3rdparty/blaze/Math.h"
+#include <blaze/Math.h>
 #include "assets/assets.cpp"
-#include "../../modules/space.hpp"
+#include "modules/space.hpp"
 
 /*** define custom metric ***/
 template <typename T>

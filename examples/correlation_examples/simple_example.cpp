@@ -11,7 +11,7 @@
 #include <iostream>
 #include <chrono>
 
-#include "../../modules/correlation.hpp"
+#include "modules/correlation.hpp"
 
 
 struct simple_user_Euclidean {

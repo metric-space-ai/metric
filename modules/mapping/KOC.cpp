@@ -8,7 +8,7 @@ Copyright (c) 2019 Panda Team
 
 #include "KOC.hpp"
 #include "kmedoids.hpp"
-#include "../../modules/space/matrix.hpp"
+#include "modules/space/matrix.hpp"
 
 namespace metric {
 	

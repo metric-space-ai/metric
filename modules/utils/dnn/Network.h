@@ -8,11 +8,11 @@
 #include <fstream>
 #include <chrono>
 
-#include "../../../3rdparty/blaze/Math.h"
-#include "../../../3rdparty/cereal/archives/binary.hpp"
-#include "../../../3rdparty/cereal/types/string.hpp"
-#include "../../../3rdparty/cereal/types/vector.hpp"
-#include "../../../3rdparty/cereal/types/map.hpp"
+#include <blaze/Math.h>
+#include <cereal/archives/binary.hpp>
+#include <cereal/types/string.hpp>
+#include <cereal/types/vector.hpp>
+#include <cereal/types/map.hpp>
 
 
 #include "Layer.h"

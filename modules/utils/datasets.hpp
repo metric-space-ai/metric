@@ -4,10 +4,10 @@
 #include <tuple>
 #include <regex>
 
-#include "../../3rdparty/cereal/types/vector.hpp"
-#include "../../3rdparty/cereal/archives/binary.hpp"
+#include <cereal/types/vector.hpp>
+#include <cereal/archives/binary.hpp>
 
-#include "../../3rdparty/blaze/Math.h"
+#include <blaze/Math.h>
 
 
 namespace metric {

@@ -1,7 +1,7 @@
 
-#include "../../modules/utils/datasets.hpp"
-#include "../../modules/distance/d-spaced/Riemannian.hpp"
-#include "../../modules/mapping/PCFA.hpp"
+#include "modules/utils/datasets.hpp"
+#include "modules/distance/d-spaced/Riemannian.hpp"
+#include "modules/mapping/PCFA.hpp"
 
 #include <iostream>
 

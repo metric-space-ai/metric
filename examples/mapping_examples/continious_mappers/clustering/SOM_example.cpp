@@ -12,7 +12,7 @@ Copyright (c) 2019 Panda Team
 
 #include <chrono>
 
-#include "../../assets/json.hpp"
+#include <nlohmann/json.hpp>
 #include "modules/mapping.hpp"
 
 

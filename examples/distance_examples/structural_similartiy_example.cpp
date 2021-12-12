@@ -10,7 +10,7 @@ Copyright (c) 2019 Panda Team
 #include <iostream>
 #include <chrono>
 #include "assets/test_data.cpp"
-#include "../../modules/distance.hpp"
+#include "modules/distance.hpp"
 
 int main()
 {

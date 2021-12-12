@@ -1,5 +1,5 @@
 
-#include "../../modules/transform/distance_potential_minimization.hpp"
+#include "modules/transform/distance_potential_minimization.hpp"
 
 //#include "donuts_test_io.hpp"
 #include "assets/helpers.cpp"

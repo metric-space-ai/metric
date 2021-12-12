@@ -25,9 +25,7 @@ https://github.com/danspielman/Laplacians.jl
 #define _METRIC_UTILS_SOLVER_APPROXCOL_HPP
 #include <iostream>
 #include <stdint.h>
-#include "../../../3rdparty/blaze/Math.h"
-#include "../../../3rdparty/blaze/math/Submatrix.h"
-#include "../../../3rdparty/blaze/math/Subvector.h"
+#include <blaze/Math.h>
 #include <vector>
 #include <chrono>
 #include <functional>

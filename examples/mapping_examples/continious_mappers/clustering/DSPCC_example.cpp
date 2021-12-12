@@ -1,8 +1,8 @@
 
 
-#include "../../../../modules/mapping/DSPCC.hpp"
-#include "../../../../modules/utils/metric_err.hpp"
-#include "../../../../modules/distance/k-related/Standards.hpp" // we use Euclidean metric for mean squared error evaluation
+#include "modules/mapping/DSPCC.hpp"
+#include "modules/utils/metric_err.hpp"
+#include "modules/distance/k-related/Standards.hpp" // we use Euclidean metric for mean squared error evaluation
 
 #include <iostream>
 

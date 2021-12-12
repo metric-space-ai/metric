@@ -23,7 +23,7 @@ https://github.com/danspielman/Laplacians.jl
 #define _METRIC_UTILS_GRAPH_SPRSIFY_HPP
 
 #include <cmath>
-#include "../../../3rdparty/blaze/Math.h"
+#include <blaze/Math.h>
 #include <vector>
 #include <algorithm>
 #include <chrono>

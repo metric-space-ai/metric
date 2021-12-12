@@ -9,7 +9,7 @@ Copyright (c) 2019 Panda Team
 #define UTILS_N_API_H_GUARD
 #include <functional>
 #include <node_api.h>
-#include "../../modules/utils/crossfilter.hpp"
+#include "modules/utils/crossfilter.hpp"
 #include "convert.hpp"
 
 #define NAPI_CALL(x) assert((x) == napi_ok)

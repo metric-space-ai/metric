@@ -1,4 +1,4 @@
-#include "3rdparty/blaze/Blaze.h"
+#include <blaze/Blaze.h>
 
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>

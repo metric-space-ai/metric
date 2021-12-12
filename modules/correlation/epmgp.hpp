@@ -13,7 +13,7 @@ Copyright (c) 2019 Panda Team
 #ifndef _EPMGP_HPP
 #define _EPMGP_HPP
 
-#include "../../3rdparty/blaze/Blaze.h"
+#include <blaze/Blaze.h>
 
 #include <vector>
 #include <tuple>

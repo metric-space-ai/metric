@@ -7,7 +7,7 @@ Copyright (c) 2019 Panda Team
 */
 #ifndef BINDING_FILTER_H_GUARD
 #define BINDING_FILTER_H_GUARD
-#include "../../modules/utils/crossfilter.hpp"
+#include "modules/utils/crossfilter.hpp"
 //#include "jsdimension.hpp"
 #include "utils.hpp"
 

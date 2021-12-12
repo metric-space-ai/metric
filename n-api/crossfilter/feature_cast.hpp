@@ -7,7 +7,7 @@ Copyright (c) 2019 Panda Team
 */
 #ifndef FEATURE_CAST_H_GUARD
 #define FEATURE_CAST_H_GUARD
-#include "../../modules/utils/crossfilter.hpp"
+#include "modules/utils/crossfilter.hpp"
 #include "utils.hpp"
 #include <type_traits>
 

@@ -1,7 +1,7 @@
 #ifndef OUTPUT_BINARYCLASSENTROPY_H_
 #define OUTPUT_BINARYCLASSENTROPY_H_
 
-#include "../../../../3rdparty/blaze/Math.h"
+#include <blaze/Math.h>
 #include <stdexcept>
 #include "../Config.h"
 

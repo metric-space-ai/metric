@@ -8,7 +8,7 @@ Copyright (c) 2018 Michael Welsch
 
 #include "Standards.hpp"
 
-#include "../../../3rdparty/blaze/Blaze.h"
+#include <blaze/Blaze.h>
 
 #include <cmath>
 #include <algorithm>

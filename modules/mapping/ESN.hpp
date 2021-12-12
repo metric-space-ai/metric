@@ -9,7 +9,7 @@ Copyright (c) 2019 Panda Team
 #ifndef _METRIC_MAPPING_ESN_HPP
 #define _METRIC_MAPPING_ESN_HPP
 
-#include "../../3rdparty/blaze/Blaze.h"
+#include <blaze/Blaze.h>
 
 #include  "PCFA.hpp" // this is for metafunctions determine_container_type and determine_container_type
 // TODO move them to some single common unit and include it instead of PCFA.hpp !!

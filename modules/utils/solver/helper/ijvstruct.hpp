@@ -21,7 +21,7 @@ https://github.com/danspielman/Laplacians.jl
 
 #ifndef _METRIC_UTILS_SOLVER_IJVSTRUCT_HPP
 #define _METRIC_UTILS_SOLVER_IJVSTRUCT_HPP
-#include "../../../../3rdparty/blaze/Math.h"
+#include <blaze/Math.h>
 #include "sparsecsc.hpp"
 #include "graphalgs.hpp"
 

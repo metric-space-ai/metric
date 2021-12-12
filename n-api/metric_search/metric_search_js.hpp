@@ -11,7 +11,7 @@ Copyright (c) 2019 Panda Team
 #include <variant>
 #include <vector>
 #include <string>
-#include "../../modules/distance.hpp"
+#include "modules/distance.hpp"
 enum {
     is_Euclidean,
     is_manhatten,

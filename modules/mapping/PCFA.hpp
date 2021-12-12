@@ -10,7 +10,7 @@ Copyright (c) 2019 Panda Team
 #define _METRIC_MAPPING_PCFA_HPP
 
 #include <type_traits>
-#include "../../3rdparty/blaze/Blaze.h"
+#include <blaze/Blaze.h>
 
 namespace metric {
 

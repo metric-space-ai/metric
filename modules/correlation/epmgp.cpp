@@ -11,7 +11,7 @@ Copyright (c) 2019 Panda Team
 // based on local_gaussian.m Matlab code
 #include "epmgp.hpp"
 
-#include "../../3rdparty/blaze/Blaze.h"
+#include <blaze/Blaze.h>
 
 #include <vector>
 #include <tuple>

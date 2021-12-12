@@ -1,7 +1,7 @@
 #ifndef OPTIMIZER_H_
 #define OPTIMIZER_H_
 
-#include "../../../3rdparty/blaze/Math.h"
+#include <blaze/Math.h>
 
 namespace metric
 {

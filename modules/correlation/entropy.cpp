@@ -8,8 +8,8 @@ Copyright (c) 2019 Panda Team
 #ifndef _METRIC_DISTANCE_K_RANDOM_ENTROPY_CPP
 #define _METRIC_DISTANCE_K_RANDOM_ENTROPY_CPP
 
-//#include "../../modules/utils/type_traits.hpp"
-#include "../../modules/space/tree.hpp"
+//#include "modules/utils/type_traits.hpp"
+#include "modules/space/tree.hpp"
 #include "estimator_helpers.hpp"
 #include "epmgp.hpp"
 

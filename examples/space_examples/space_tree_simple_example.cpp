@@ -8,8 +8,8 @@ Copyright (c) 2018 Panda Team
 
 #include <vector>
 #include <iostream>
-#include "../../modules/space.hpp"
-#include "../../modules/distance.hpp"
+#include "modules/space.hpp"
+#include "modules/distance.hpp"
 int main()
 {
 	std::cout << "Simple space example have started" << std::endl;

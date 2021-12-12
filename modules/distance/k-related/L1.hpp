@@ -9,7 +9,7 @@ Copyright (c) 2019 Panda Team
 #ifndef _METRIC_DISTANCE_K_RELATED_L1_HPP
 #define _METRIC_DISTANCE_K_RELATED_L1_HPP
 
-#include "../../../3rdparty/blaze/Blaze.h"
+#include <blaze/Blaze.h>
 
 namespace metric {
 

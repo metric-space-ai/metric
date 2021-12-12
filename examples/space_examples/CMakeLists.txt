@@ -11,5 +11,5 @@ foreach(exampleSrc ${EXAMPLE_SRCS})
   #Add compile target
   add_executable(${exampleName} ${exampleSrc}) 
   
-  target_link_libraries(${exampleName} ${LAPACK_LIBRARIES} Threads::Threads)
+  target_link_libraries(${exampleName} metric Threads::Threads)
 endforeach(exampleSrc)

@@ -1,4 +1,5 @@
 add_executable(unit_tests unit-tests.cpp)
+target_link_libraries(unit_tests PRIVATE metric)
 
 set(test_bin_dir ${CMAKE_CURRENT_BINARY_DIR})
 
@@ -30,4 +31,6 @@ if (CODE_COVERAGE AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
   endif (CMAKE_BUILD_TYPE STREQUAL Debug)
 endif (CODE_COVERAGE AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
 
+
+# Discover tests
 catch_discover_tests(unit_tests)

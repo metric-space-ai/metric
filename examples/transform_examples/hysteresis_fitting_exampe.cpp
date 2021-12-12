@@ -1,4 +1,4 @@
-#include "../../modules/transform/distance_potential_minimization.hpp"
+#include "modules/transform/distance_potential_minimization.hpp"
 #include <iostream>
 #include <chrono>
 

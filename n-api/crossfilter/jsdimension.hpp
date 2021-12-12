@@ -9,7 +9,7 @@ Copyright (c) 2019 Panda Team
 #define JS_DIMENSION_H_GUARD
 #include <type_traits>
 
-#include "../../modules/utils/crossfilter.hpp"
+#include "modules/utils/crossfilter.hpp"
 #include "utils.hpp"
 //#include "jsfeature.hpp"
 
