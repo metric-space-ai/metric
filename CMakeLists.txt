@@ -55,7 +55,7 @@ endif()
 # Blaze
 FetchContent_Declare(blaze
         GIT_REPOSITORY https://bitbucket.org/blaze-lib/blaze.git
-        GIT_TAG v3.8)
+        GIT_TAG v3.6)
 FetchContent_MakeAvailable(blaze)
 find_package(blaze REQUIRED)
 
@@ -64,7 +64,7 @@ find_package(blaze REQUIRED)
 add_library(metric INTERFACE)
 target_include_directories(metric INTERFACE ${PROJECT_SOURCE_DIR})
 target_include_directories(metric INTERFACE ${PROJECT_SOURCE_DIR}/3rdparty)
-target_link_libraries(metric INTERFACE LAPACK::LAPACK)
+target_link_libraries(metric INTERFACE ${LAPACK_LIBRARIES})
 target_link_libraries(metric INTERFACE nlohmann_json::nlohmann_json)
 target_link_libraries(metric INTERFACE blaze::blaze)
 
