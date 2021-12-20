@@ -1,18 +1,17 @@
-name: Test C++ code
+name: Compile project and run C++ tests [Linux]
 on:
-  push:
-    branches:
-      - master
-    paths-ignore:
-      - 'python/**'
-      - '.github/workflows/cmake.yml'
   pull_request:
     branches:
       - master
-    paths-ignore:
-      - 'python/**'
-      - '.github/workflows/cmake.yml'
-
+    paths:
+      - '.github/workflows/test-cpp-linux.yml'
+      - '3rdparty/**'
+      - 'benchmarks/**'
+      - 'examples/**'
+      - 'modules/**'
+      - 'tests/**'
+      - 'CMakeLists.txt'
+      - 'metric.hpp'
 jobs:
   deploy:
     runs-on: ubuntu-latest

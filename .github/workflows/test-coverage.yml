@@ -1,16 +1,15 @@
 name: Test coverage
 on:
-  push:
-    branches:
-      - master
-    paths-ignore:
-      - 'python/**'
-      - '.github/workflows/cmake.yml'
   pull_request:
     branches:
       - master
-    paths-ignore:
-      - 'python/**'
+    paths:
+      - '.github/workflows/test-coverage.yml'
+      - '3rdparty/**'
+      - 'modules/**'
+      - 'tests/**'
+      - 'CMakeLists.txt'
+      - 'metric.hpp'
 jobs:
   deploy:
     runs-on: ubuntu-latest
