@@ -1,11 +1,12 @@
 cmake_minimum_required(VERSION 3.14)
 
-if (POLICY CMP0025)
-  cmake_policy(SET CMP0025 NEW)
-endif ()
-if (POLICY CMP0074)
-    cmake_policy(SET CMP0074 NEW)
-endif()
+#if (POLICY CMP0025)
+#  cmake_policy(SET CMP0025 NEW)
+#endif ()
+#if (POLICY CMP0074)
+#    cmake_policy(SET CMP0074 NEW)
+#endif()
+#cmake_policy(SET CMP0076 NEW)
 
 project(panda_metric)
 
@@ -55,8 +56,11 @@ endif()
 # Blaze
 FetchContent_Declare(blaze
         GIT_REPOSITORY https://bitbucket.org/blaze-lib/blaze.git
-        GIT_TAG v3.6)
+        GIT_TAG v3.8)
 FetchContent_MakeAvailable(blaze)
+#list(APPEND CMAKE_MODULE_PATH ${blaze_SOURCE_DIR}/cmake)
+#include(Blaze_Import)
+#Blaze_Import(DEFAULT_INITIALIZATION)
 find_package(blaze REQUIRED)
 
 
