@@ -12,7 +12,6 @@ on:
       - 'tests/**'
       - 'CMakeLists.txt'
       - 'metric.hpp'
-
 jobs:
   deploy:
     runs-on: ubuntu-latest

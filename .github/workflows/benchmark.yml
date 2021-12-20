@@ -3,10 +3,13 @@ on:
   push:
     branches:
       - master
-    paths-ignore:
-      - 'python/**'
-      - '.github/workflows/cmake.yml'
-
+    paths:
+      - '.github/workflows/benchmark.yml'
+      - '3rdparty/**'
+      - 'benchmarks/**'
+      - 'modules/**'
+      - 'CMakeLists.txt'
+      - 'metric.hpp'
 jobs:
   benchmark:
     name: Performance check
