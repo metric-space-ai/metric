@@ -1,10 +1,10 @@
-name: Test C++ code
+name: Compile project and run C++ tests [Linux]
 on:
   pull_request:
     branches:
       - master
     paths:
-      - '.github/workflows/test.yml'
+      - '.github/workflows/test-cpp-linux.yml'
       - '3rdparty/**'
       - 'benchmarks/**'
       - 'examples/**'
