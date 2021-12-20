@@ -1,17 +1,17 @@
 name: Test C++ code
 on:
-  push:
-    branches:
-      - master
-    paths-ignore:
-      - 'python/**'
-      - '.github/workflows/cmake.yml'
   pull_request:
     branches:
       - master
-    paths-ignore:
-      - 'python/**'
-      - '.github/workflows/cmake.yml'
+    paths:
+      - '.github/workflows/test.yml'
+      - '3rdparty/**'
+      - 'benchmarks/**'
+      - 'examples/**'
+      - 'modules/**'
+      - 'tests/**'
+      - 'CMakeLists.txt'
+      - 'metric.hpp'
 
 jobs:
   deploy:
