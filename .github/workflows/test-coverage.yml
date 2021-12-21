@@ -1,5 +1,15 @@
 name: Test coverage
 on:
+  push:
+    branches:
+      - master
+    paths:
+      - '.github/workflows/test-coverage.yml'
+      - '3rdparty/**'
+      - 'modules/**'
+      - 'tests/**'
+      - 'CMakeLists.txt'
+      - 'metric.hpp'
   pull_request:
     branches:
       - master
