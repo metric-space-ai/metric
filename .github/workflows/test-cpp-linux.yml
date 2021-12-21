@@ -1,5 +1,17 @@
 name: Compile project and run C++ tests [Linux]
 on:
+  push:
+    branches:
+      - master
+    paths:
+      - '.github/workflows/test-cpp-linux.yml'
+      - '3rdparty/**'
+      - 'benchmarks/**'
+      - 'examples/**'
+      - 'modules/**'
+      - 'tests/**'
+      - 'CMakeLists.txt'
+      - 'metric.hpp'
   pull_request:
     branches:
       - master
