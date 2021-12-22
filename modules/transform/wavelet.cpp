@@ -675,7 +675,7 @@ typename std::enable_if<blaze::IsMatrix<Container2d>::value, Container2d>::type 
  * @return
  */
 template <typename T>
-blaze::CompressedMatrix<T> DaubechiesMat(size_t size, int order = 4, Padding padding = Padding::ZeroDerivative)
+blaze::CompressedMatrix<T> DaubechiesMat(size_t size, int order = 4, Padding padding = Padding::Periodized)
 {
     assert(order % 2 == 0);
     assert(size >= order);
