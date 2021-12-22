@@ -666,67 +666,141 @@ typename std::enable_if<blaze::IsMatrix<Container2d>::value, Container2d>::type 
 
 // ------------------------------ DWT based on matrix multiplication
 
+/**
+ * Construct convolutional matrix for wavelet transform
+ * @tparam T float type
+ * @param size
+ * @param order
+ * @param padding padding type
+ * @return
+ */
 template <typename T>
-blaze::CompressedMatrix<T> DaubechiesMat(size_t size, int order = 4)
-{  // Daubechies Transform matrix generator
-
+blaze::CompressedMatrix<T> DaubechiesMat(size_t size, int order = 4, Padding padding = Padding::ZeroDerivative)
+{
     assert(order % 2 == 0);
-	assert(size >= order);
+    assert(size >= order);
 
-	auto [Lo_D, Hi_D, Lo_R, Hi_R] = orthfilt(dbwavf<std::vector<T>>(order / 2, T()));
+    auto [Lo_D, Hi_D, Lo_R, Hi_R] = orthfilt(dbwavf<std::vector<T>>(order / 2, T()));
 
-/* Reverse filters for convolution */
-	std::reverse(Lo_D.begin(), Lo_D.end());
-	std::reverse(Hi_D.begin(), Hi_D.end());
+    /* Reverse filters for convolution */
+    std::reverse(Lo_D.begin(), Lo_D.end());
+    std::reverse(Hi_D.begin(), Hi_D.end());
 
+    /* Low filter part */
     auto mat = blaze::CompressedMatrix<T>(size, size);
     mat.reserve(size * Lo_D.size());
-    for (size_t i = 0; i < size / 2; ++i) {
+    if (padding == Padding::Periodized) {
+        for (size_t i = 0; i < size / 2; ++i) {
 
-        size_t ci = mat.columns() - 2 * i;
-        if (ci > Lo_D.size()) {
-          ci = 0;
+            size_t ci = mat.columns() - 2 * i;
+            if (ci > Lo_D.size()) {
+                ci = 0;
+            }
+            for (size_t a = 0; a < Lo_D.size(); ++a) {
+                if (ci >= Lo_D.size()) {
+                    ci = ci % Lo_D.size();
+                }
+
+                size_t j = i * 2 + ci;
+                if (j >= mat.columns()) {
+                    j = j % mat.columns();
+                }
+
+                mat.append(i, j, Lo_D[ci]);
+                ++ci;
+            }
+            mat.finalize(i);
         }
-        for (size_t a = 0; a < Lo_D.size(); ++a) {
-          if (ci >= Lo_D.size()) {
-            ci = ci % Lo_D.size();
-          } 
 
-          size_t j = i * 2 + ci;
-          if (j >= mat.columns()) {
-            j = j % mat.columns();
-          }
+        /* Hi filter part */
+        for (size_t i = 0; i < size / 2; ++i) {
+            size_t ci = mat.columns() - 2 * i;
+            if (ci > Hi_D.size()) {
+                ci = 0;
+            }
+            for (size_t a = 0; a < Hi_D.size(); ++a) {
+                if (ci >= Hi_D.size()) {
+                    ci = ci % Hi_D.size();
+                }
 
-          mat.append(i, j, Lo_D[ci]);
-          
-          ++ci;
+                size_t j = i * 2 + ci;
+                if (j >= mat.columns()) {
+                    j = j % mat.columns();
+                }
+
+                mat.append(size / 2 + i, j, Hi_D[ci]);
+                ++ci;
+            }
+            mat.finalize(size / 2 + i);
         }
-        mat.finalize(i);
+    } else if (padding == Padding::ZeroDerivative) {
 
-    }
+        /* Calculate padding size */
+        int paddingSize = Lo_D.size() - 1;
 
-    for (size_t i = 0; i < size / 2; ++i) {
+        /* Low filter part */
+        for (size_t i = 0; i < size / 2; ++i) {
+            int leftPadding = paddingSize / 2;
+            int j0 = -leftPadding + 2 * static_cast<int>(i);
 
+            /* Left padding */
+            T lp = 0;
+            for (int k = 0; k < -j0; ++k) {
+                lp += Lo_D[k];
+            }
 
-        size_t ci = mat.columns() - 2 * i;
-        if (ci > Hi_D.size()) {
-          ci = 0;
+            /* Right padding */
+            T rp = 0;
+            int l = j0 + Lo_D.size() - size;
+            for (int k = 0; k < l; ++k) {
+                rp += Lo_D[Lo_D.size() - 1 - k];
+            }
+
+            for (int k = 0; k < Lo_D.size(); ++k) {
+                const int j = j0 + k;
+                if (j == 0) {
+                    mat.append(i, j, lp + Lo_D[k]);
+                } else if (j == size - 1) {
+                    mat.append(i, j, rp + Lo_D[k]);
+                } else if (j > 0 and j < size - 1) {
+                    mat.append(i, j, Lo_D[k]);
+                } else {}
+            }
+            mat.finalize(i);
         }
-        for (size_t a = 0; a < Hi_D.size(); ++a) {
-          if (ci >= Hi_D.size()) {
-            ci = ci % Hi_D.size();
-          } 
 
-          size_t j = i * 2 + ci;
-          if (j >= mat.columns()) {
-            j = j % mat.columns();
-          }
+        /* Hi filter part */
+        for (size_t i = 0; i < size / 2; ++i) {
+            int leftPadding = paddingSize / 2;
+            int j0 = -leftPadding + 2 * static_cast<int>(i);
 
-          mat.append(size / 2 + i, j, Hi_D[ci]);
-          
-          ++ci;
+            /* Left padding */
+            T lp = 0;
+            for (int k = 0; k < -j0; ++k) {
+                lp += Hi_D[k];
+            }
+
+            /* Right padding */
+            T rp = 0;
+            int l = j0 + Hi_D.size() - size;
+            for (int k = 0; k < l; ++k) {
+                rp += Hi_D[Hi_D.size() - 1 - k];
+            }
+
+            for (int k = 0; k < Hi_D.size(); ++k) {
+                const int j = j0 + k;
+                if (j == 0) {
+                    mat.append(size / 2 + i, j, lp + Hi_D[k]);
+                } else if (j == size - 1) {
+                    mat.append(size / 2 + i, j, rp + Hi_D[k]);
+                } else if (j > 0 and j < size - 1) {
+                    mat.append(size / 2 + i, j, Hi_D[k]);
+                } else {}
+            }
+            mat.finalize(size / 2 + i);
         }
-        mat.finalize(size / 2 + i);
+    } else {
+        return mat;
     }
 
     return mat;

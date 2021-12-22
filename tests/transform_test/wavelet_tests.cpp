@@ -30,6 +30,26 @@ TEMPLATE_TEST_CASE("DaubechiesMat", "[transform][wavelet]", float, double)
   }
 }
 
+TEMPLATE_TEST_CASE("DaubechiesMat()_ZeroDerivative", "[transform][wavelet]", float, double)
+{
+   const blaze::DynamicVector<TestType> data = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+
+   const auto dmat = wavelet::DaubechiesMat<TestType>(data.size(), 4, wavelet::Padding::ZeroDerivative);
+   const auto result = dmat * data;
+
+   const blaze::DynamicVector<TestType> expected = {{1.379538}, {3.725003}, {6.553430}, {9.381957}, {12.339693},
+                                                    {-0.129410}, {-9.901802e-13}, {-9.9e-13}, {-9.9e-13}, {0.482963}};
+
+   REQUIRE(result.size() == expected.size());
+   for (size_t i = 0; i < expected.size(); ++i) {
+       if (result[i] > 1e-10) {
+           REQUIRE(expected[i] == Approx(result[i]));
+       }
+   }
+
+
+}
+
 TEMPLATE_TEST_CASE("dbwavf", "[transform][wavelet]", float, double)
 {
 	using Vector = blaze::DynamicVector<TestType>;
