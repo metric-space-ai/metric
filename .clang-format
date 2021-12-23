@@ -1,23 +1,4 @@
-BasedOnStyle: WebKit
 ColumnLimit: 120
 IndentWidth: 4
-
-UseTab: Never
-SortIncludes: false
-ReflowComments: false
-
-SpaceBeforeAssignmentOperators: true
-SpaceBeforeParens: ControlStatements
-SpaceBeforeRangeBasedForLoopColon: true
-SpacesBeforeTrailingComments: 2
-
-AlwaysBreakTemplateDeclarations: true
-BraceWrapping:
-    AfterEnum: false
-    AfterClass: false
-    AfterFunction: true
-    AfterControlStatement: false
-    AfterNamespace: false
-    BeforeCatch: false
-    BeforeElse: false
-BreakBeforeBraces: WebKit
+TabWidth: 4
+UseTab: Always
