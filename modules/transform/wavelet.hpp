@@ -90,6 +90,13 @@ using InternalBlazeMatT = typename InternalBlazeType<Container2d, SO>::matrix_ty
 
 // wavelet functions
 
+/**
+ * Padding type
+ */
+enum class Padding {
+    ZeroDerivative,
+    Periodized
+};
 
 ///**
 // * @brief valid convolution
