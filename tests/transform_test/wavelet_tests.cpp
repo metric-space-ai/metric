@@ -46,8 +46,13 @@ TEMPLATE_TEST_CASE("DaubechiesMat()_ZeroDerivative", "[transform][wavelet]", flo
            REQUIRE(expected[i] == Approx(result[i]));
        }
    }
+}
 
-
+TEMPLATE_TEST_CASE("DaubechiesMatInv()_ZeroDerivative", "[transform][wavelet]", double)
+{
+    const blaze::DynamicVector<TestType> data = {1, 2, 3, 4, 5};
+    const auto dmat = wavelet::DaubechiesMatInv<TestType>(data.size(), 4, wavelet::Padding::ZeroDerivative);
+    std::cout << dmat << std::endl;
 }
 
 TEMPLATE_TEST_CASE("dbwavf", "[transform][wavelet]", float, double)

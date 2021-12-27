@@ -677,6 +677,7 @@ typename std::enable_if<blaze::IsMatrix<Container2d>::value, Container2d>::type 
 template <typename T>
 blaze::CompressedMatrix<T> DaubechiesMat(size_t size, int order = 4, Padding padding = Padding::Periodized)
 {
+    assert(order > 0);
     assert(order % 2 == 0);
     assert(size >= order);
 
@@ -804,6 +805,45 @@ blaze::CompressedMatrix<T> DaubechiesMat(size_t size, int order = 4, Padding pad
     }
 
     return mat;
+}
+
+template <typename T>
+blaze::CompressedMatrix<T> DaubechiesMatInv(size_t size, int order = 4, Padding padding = Padding::Periodized)
+{
+    const size_t outputSize = 2 * size;
+
+    auto [Lo_D, Hi_D, Lo_R, Hi_R] = orthfilt(dbwavf<std::vector<T>>(order / 2, T()));
+
+    /* Reverse filters for convolution */
+    std::reverse(Lo_R.begin(), Lo_R.end());
+    std::reverse(Hi_R.begin(), Hi_R.end());
+
+    /* For periodized padding matrix is orthogonal and inv() == trans() */
+    if (padding == Padding::Periodized) {
+        return blaze::trans(DaubechiesMat<T>(outputSize, order, padding));
+    } else if (padding == Padding::ZeroDerivative) {
+        blaze::CompressedMatrix<T> dmat(outputSize, outputSize);
+        for (size_t i = 0; i < outputSize; ++i) {
+            const size_t jl0 = i / 2;
+            const size_t jh0 = i / 2 + size;
+
+            dmat.reserve(i, Lo_R.size() / 2);
+            size_t j = jl0;
+            size_t k0 = (i % 2 == 1) ? 1:0;
+            for (size_t k = k0; k < Lo_R.size(); k += 2) {
+                dmat.append(i, j++, Lo_R[k]);
+            }
+            //j = jh0;
+            //for (size_t k = k0; k < Hi_R.size(); k += 2) {
+            //    dmat.append(i, j++, Hi_R[k]);
+            //}
+            dmat.finalize(i);
+        }
+        return dmat;
+
+    } else {
+        return {};
+    }
 }
 
 template <typename T>
