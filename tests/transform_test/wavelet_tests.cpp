@@ -2,7 +2,8 @@
 
 #include "modules/transform/wavelet.hpp"
 
-TEMPLATE_TEST_CASE("DaubechiesMat", "[transform][wavelet]", float, double) {
+TEMPLATE_TEST_CASE("DaubechiesMat", "[transform][wavelet]", float, double)
+{
 	auto wnum = GENERATE(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
 	const auto w = wavelet::dbwavf<blaze::DynamicVector<double>>(wnum, 1);
 	auto [Lo_D, Hi_D, Lo_R, Hi_R] = wavelet::orthfilt(w);
@@ -28,7 +29,8 @@ TEMPLATE_TEST_CASE("DaubechiesMat", "[transform][wavelet]", float, double) {
 	}
 }
 
-TEMPLATE_TEST_CASE("DaubechiesMat()_ZeroDerivative", "[transform][wavelet]", float, double) {
+TEMPLATE_TEST_CASE("DaubechiesMat()_ZeroDerivative", "[transform][wavelet]", float, double)
+{
 	const blaze::DynamicVector<TestType> data = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
 
 	const auto dmat = wavelet::DaubechiesMat<TestType>(data.size(), 4, wavelet::Padding::ZeroDerivative);
@@ -44,9 +46,9 @@ TEMPLATE_TEST_CASE("DaubechiesMat()_ZeroDerivative", "[transform][wavelet]", flo
 		}
 	}
 }
-int f() {}
 
-TEMPLATE_TEST_CASE("dbwavf", "[transform][wavelet]", float, double) {
+TEMPLATE_TEST_CASE("dbwavf", "[transform][wavelet]", float, double)
+{
 	using Vector = blaze::DynamicVector<TestType>;
 
 	std::array<Vector, 11> coeffs;
