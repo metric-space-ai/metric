@@ -15,7 +15,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 
 # CCache
-#set(METRIC_USE_CCACHE ON)
+# set(METRIC_USE_CCACHE ON)
 
 find_program(CCACHE_PATH ccache)
 if(CCACHE_PATH)
@@ -44,30 +44,37 @@ include(FetchContent)
 find_package(LAPACK REQUIRED)
 
 # Json
-FetchContent_Declare(json
-        GIT_REPOSITORY https://github.com/ArthurSonzogni/nlohmann_json_cmake_fetchcontent
-        GIT_TAG v3.7.3)
-FetchContent_GetProperties(json)
-if(NOT json_POPULATED)
-    FetchContent_Populate(json)
-    add_subdirectory(${json_SOURCE_DIR} ${json_BINARY_DIR} EXCLUDE_FROM_ALL)
-endif()
+#FetchContent_Declare(json
+#        GIT_REPOSITORY https://github.com/ArthurSonzogni/nlohmann_json_cmake_fetchcontent
+#        GIT_TAG v3.7.3)
+#FetchContent_GetProperties(json)
+#if(NOT json_POPULATED)
+#    FetchContent_Populate(json)
+#    add_subdirectory(${json_SOURCE_DIR} ${json_BINARY_DIR} EXCLUDE_FROM_ALL)
+#endif()
+find_package(nlohmann_json REQUIRED)
 
 # Blaze
-FetchContent_Declare(blaze
-        GIT_REPOSITORY https://bitbucket.org/blaze-lib/blaze.git
-        GIT_TAG v3.8)
-FetchContent_MakeAvailable(blaze)
+#FetchContent_Declare(blaze
+#        GIT_REPOSITORY https://bitbucket.org/blaze-lib/blaze.git
+#        GIT_TAG v3.8)
+#FetchContent_MakeAvailable(blaze)
 #list(APPEND CMAKE_MODULE_PATH ${blaze_SOURCE_DIR}/cmake)
 #include(Blaze_Import)
 #Blaze_Import(DEFAULT_INITIALIZATION)
-find_package(blaze REQUIRED)
+find_package(blaze 3.8 REQUIRED)
+
+# find_package(cereal REQUIRED)
 
 
 # Create metric target
 add_library(metric INTERFACE)
+
+# Include paths
 target_include_directories(metric INTERFACE ${PROJECT_SOURCE_DIR})
 target_include_directories(metric INTERFACE ${PROJECT_SOURCE_DIR}/3rdparty)
+
+# Link libraries
 target_link_libraries(metric INTERFACE ${LAPACK_LIBRARIES})
 target_link_libraries(metric INTERFACE nlohmann_json::nlohmann_json)
 target_link_libraries(metric INTERFACE blaze::blaze)
