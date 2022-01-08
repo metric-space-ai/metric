@@ -29,53 +29,54 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        build_type: [Debug, Release]
+        build_type: [ Debug, Release ]
     steps:
-    - uses: actions/checkout@v2
-      with:
-        submodules: recursive
-    - name: Set up Python
-      uses: actions/setup-python@v1
-      with:
-        python-version: 3.6
+      - uses: actions/checkout@v2
+        with:
+          submodules: recursive
+      - name: Set up Python
+        uses: actions/setup-python@v1
+        with:
+          python-version: 3.6
 
-    - name: Cache apt
-      uses: actions/cache@v2
-      env:
-        cache-name: cache-apt
-      with:
-        path: /var/cache/apt/archives
-        key: ${{ runner.os }}-build-${{ env.cache-name }}
+      - name: Cache apt
+        uses: actions/cache@v2
+        env:
+          cache-name: cache-apt
+        with:
+          path: /var/cache/apt/archives
+          key: ${{ runner.os }}-build-${{ env.cache-name }}
 
-    - name: Cache ccache
-      uses: actions/cache@v2
-      env:
-        cache-name: cache-ccache
-      with:
-        path: ~/.ccache
-        key: ${{ runner.os }}-${{ env.cache-name }}-bulid-${{ matrix.build_type }}
+      - name: Cache ccache
+        uses: actions/cache@v2
+        env:
+          cache-name: cache-ccache
+        with:
+          path: ~/.ccache
+          key: ${{ runner.os }}-${{ env.cache-name }}-bulid-${{ matrix.build_type }}
 
-    - name: Install system packages
-      run: |
-        sudo apt-get update
-        sudo apt-get install cmake
-        sudo apt-get install libopenblas-dev
-        sudo apt-get install libjpeg-dev
-        sudo apt-get install nlohmann-json3-dev
-        sudo apt-get install -y g++-9 g++-9-multilib
-        sudo apt-get install ccache
-        echo "CC=gcc-9" >> $GITHUB_ENV
-        echo "CXX=g++-9" >> $GITHUB_ENV
+      - name: Install system packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install cmake
+          sudo apt-get install libopenblas-dev
+          sudo apt-get install libjpeg-dev
+          sudo apt-get install nlohmann-json3-dev
+          git clone https://bitbucket.org/blaze-lib/blaze.git --depth=1 --branch=v3.8 && cd blaze && cmake -DCMAKE_INSTALL_PREFIX=/usr/local/ . && sudo make install
+          sudo apt-get install -y g++-9 g++-9-multilib
+          sudo apt-get install ccache
+          echo "CC=gcc-9" >> $GITHUB_ENV
+          echo "CXX=g++-9" >> $GITHUB_ENV
 
-    - name: Build tests and examples
-      run: |
-        export MAKE='make -j1'
-        mkdir build
-        cd build
-        cmake -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} ../
-        cmake --build .
+      - name: Build tests and examples
+        run: |
+          export MAKE='make -j1'
+          mkdir build
+          cd build
+          cmake -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} ../
+          cmake --build .
 
-    - name: Run tests
-      run: |
-        cd build
-        ctest --output-on-failure
+      - name: Run tests
+        run: |
+          cd build
+          ctest --output-on-failure
