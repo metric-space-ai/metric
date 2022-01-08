@@ -215,7 +215,7 @@ blaze::DynamicMatrix<bool> MGC_direct::significant_local_correlation(const blaze
 
     /* Threshold R = (localCorr > thres) */
     blaze::DynamicMatrix<bool> R;
-    R = blaze::map(localCorr, [thres](T e) { return e > thres ? true : false; });
+    R = blaze::map(localCorr, [thres](T e) { return e > thres; });
 
     auto components = metric::graph::largest_connected_component(R);
 
