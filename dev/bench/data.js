@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1640249237775,
+  "lastUpdate": 1641754150992,
   "repoUrl": "https://github.com/panda-official/metric",
   "entries": {
     "Convolution": [
@@ -5303,6 +5303,219 @@ window.BENCHMARK_DATA = {
             "name": "operator() [1920x1080 7x7]",
             "value": 223.165,
             "range": "± 3.28059",
+            "unit": "ms",
+            "extra": "10 samples\n1 iterations"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "kataev.victor.1234@gmail.com",
+            "name": "Victor",
+            "username": "victor1234"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "cd602f2f04d666b92182ce4d9b3e6ca6de76cac3",
+          "message": "Issue-265 init (#315)\n\nmove json to external dependency\r\nmove blaze to external dependency\r\nmove cereal to external dependency\r\nremove crossfilter\r\nremove n-api\r\nturn off dnn tests\r\nturn off dnn and correlation examples\r\nrefactor cmake scripts",
+          "timestamp": "2022-01-09T21:43:55+03:00",
+          "tree_id": "e199350c86b78037c6134fc9ff30839cc8fd50fc",
+          "url": "https://github.com/panda-official/metric/commit/cd602f2f04d666b92182ce4d9b3e6ca6de76cac3"
+        },
+        "date": 1641754150115,
+        "tool": "catch2",
+        "benches": [
+          {
+            "name": "Convolution2d() [320x240 3x3]",
+            "value": 11.72,
+            "range": "± 677.071",
+            "unit": "ms",
+            "extra": "10 samples\n1 iterations"
+          },
+          {
+            "name": "setKernel() [320x240 3x3]",
+            "value": 988.197,
+            "range": "± 147.788",
+            "unit": "us",
+            "extra": "10 samples\n1 iterations"
+          },
+          {
+            "name": "operator() [320x240 3x3]",
+            "value": 1.30257,
+            "range": "± 118.994",
+            "unit": "ms",
+            "extra": "10 samples\n1 iterations"
+          },
+          {
+            "name": "Convolution2d() [320x240 5x5]",
+            "value": 46.9629,
+            "range": "± 660.047",
+            "unit": "ms",
+            "extra": "10 samples\n1 iterations"
+          },
+          {
+            "name": "setKernel() [320x240 5x5]",
+            "value": 3.54521,
+            "range": "± 363.227",
+            "unit": "ms",
+            "extra": "10 samples\n1 iterations"
+          },
+          {
+            "name": "operator() [320x240 5x5]",
+            "value": 2.79427,
+            "range": "± 176.331",
+            "unit": "ms",
+            "extra": "10 samples\n1 iterations"
+          },
+          {
+            "name": "Convolution2d() [320x240 7x7]",
+            "value": 79.5864,
+            "range": "± 405.662",
+            "unit": "ms",
+            "extra": "10 samples\n1 iterations"
+          },
+          {
+            "name": "setKernel() [320x240 7x7]",
+            "value": 6.34544,
+            "range": "± 183.109",
+            "unit": "ms",
+            "extra": "10 samples\n1 iterations"
+          },
+          {
+            "name": "operator() [320x240 7x7]",
+            "value": 4.58293,
+            "range": "± 241.549",
+            "unit": "ms",
+            "extra": "10 samples\n1 iterations"
+          },
+          {
+            "name": "Convolution2d() [640x480 3x3]",
+            "value": 69.4194,
+            "range": "± 607.853",
+            "unit": "ms",
+            "extra": "10 samples\n1 iterations"
+          },
+          {
+            "name": "setKernel() [640x480 3x3]",
+            "value": 5.09703,
+            "range": "± 248.8",
+            "unit": "ms",
+            "extra": "10 samples\n1 iterations"
+          },
+          {
+            "name": "operator() [640x480 3x3]",
+            "value": 6.03442,
+            "range": "± 138",
+            "unit": "ms",
+            "extra": "10 samples\n1 iterations"
+          },
+          {
+            "name": "Convolution2d() [640x480 5x5]",
+            "value": 170.61,
+            "range": "± 798.497",
+            "unit": "ms",
+            "extra": "10 samples\n1 iterations"
+          },
+          {
+            "name": "setKernel() [640x480 5x5]",
+            "value": 15.0856,
+            "range": "± 309.026",
+            "unit": "ms",
+            "extra": "10 samples\n1 iterations"
+          },
+          {
+            "name": "operator() [640x480 5x5]",
+            "value": 10.6537,
+            "range": "± 277.09",
+            "unit": "ms",
+            "extra": "10 samples\n1 iterations"
+          },
+          {
+            "name": "Convolution2d() [640x480 7x7]",
+            "value": 320.285,
+            "range": "± 655.385",
+            "unit": "ms",
+            "extra": "10 samples\n1 iterations"
+          },
+          {
+            "name": "setKernel() [640x480 7x7]",
+            "value": 28.4474,
+            "range": "± 493.996",
+            "unit": "ms",
+            "extra": "10 samples\n1 iterations"
+          },
+          {
+            "name": "operator() [640x480 7x7]",
+            "value": 17.6223,
+            "range": "± 498.477",
+            "unit": "ms",
+            "extra": "10 samples\n1 iterations"
+          },
+          {
+            "name": "Convolution2d() [1920x1080 3x3]",
+            "value": 503.63,
+            "range": "± 2.76508",
+            "unit": "ms",
+            "extra": "10 samples\n1 iterations"
+          },
+          {
+            "name": "setKernel() [1920x1080 3x3]",
+            "value": 39.9217,
+            "range": "± 278.114",
+            "unit": "ms",
+            "extra": "10 samples\n1 iterations"
+          },
+          {
+            "name": "operator() [1920x1080 3x3]",
+            "value": 51.3495,
+            "range": "± 1.24209",
+            "unit": "ms",
+            "extra": "10 samples\n1 iterations"
+          },
+          {
+            "name": "Convolution2d() [1920x1080 5x5]",
+            "value": 1.17332,
+            "range": "± 2.41711",
+            "unit": "s",
+            "extra": "10 samples\n1 iterations"
+          },
+          {
+            "name": "setKernel() [1920x1080 5x5]",
+            "value": 103.223,
+            "range": "± 1.66468",
+            "unit": "ms",
+            "extra": "10 samples\n1 iterations"
+          },
+          {
+            "name": "operator() [1920x1080 5x5]",
+            "value": 82.5031,
+            "range": "± 1.59483",
+            "unit": "ms",
+            "extra": "10 samples\n1 iterations"
+          },
+          {
+            "name": "Convolution2d() [1920x1080 7x7]",
+            "value": 2.16141,
+            "range": "± 6.03349",
+            "unit": "s",
+            "extra": "10 samples\n1 iterations"
+          },
+          {
+            "name": "setKernel() [1920x1080 7x7]",
+            "value": 183.605,
+            "range": "± 5.29914",
+            "unit": "ms",
+            "extra": "10 samples\n1 iterations"
+          },
+          {
+            "name": "operator() [1920x1080 7x7]",
+            "value": 143.384,
+            "range": "± 31.8089",
             "unit": "ms",
             "extra": "10 samples\n1 iterations"
           }
