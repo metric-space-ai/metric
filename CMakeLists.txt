@@ -64,7 +64,7 @@ find_package(nlohmann_json REQUIRED)
 #Blaze_Import(DEFAULT_INITIALIZATION)
 find_package(blaze 3.8 REQUIRED)
 
-# find_package(cereal REQUIRED)
+find_package(cereal REQUIRED)
 
 
 # Create metric target
