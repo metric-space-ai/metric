@@ -4,7 +4,7 @@ target_link_libraries(unit_tests PRIVATE metric)
 set(test_bin_dir ${CMAKE_CURRENT_BINARY_DIR})
 
 add_subdirectory(correlation_tests)
-add_subdirectory(dnn_tests)
+# add_subdirectory(dnn_tests)
 add_subdirectory(ensembles_tests)
 add_subdirectory(mapping_tests)
 add_subdirectory(space_tests)

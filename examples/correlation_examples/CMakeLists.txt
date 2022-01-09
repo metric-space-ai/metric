@@ -1,16 +1,10 @@
-file(GLOB EXAMPLE_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.cpp)
-
 file(COPY "assets" DESTINATION ".")
 
-#Run through each source
-foreach(exampleSrc ${EXAMPLE_SRCS})
+add_executable(advanced_example advanced_example.cpp)
+target_link_libraries(advanced_example metric)
 
-	#Extract the filename without an extension (NAME_WE)
-	get_filename_component(exampleName ${exampleSrc} NAME_WE)
+add_executable(intro_example intro_example.cpp)
+target_link_libraries(intro_example metric)
 
-	#Add compile target
-	add_executable(${exampleName} ${exampleSrc})
- 
-	target_link_libraries(${exampleName} metric)
-
-endforeach(exampleSrc)
+add_executable(simple_example simple_example.cpp)
+target_link_libraries(simple_example metric)
