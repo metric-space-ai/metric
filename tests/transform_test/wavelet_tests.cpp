@@ -5,7 +5,7 @@
 TEMPLATE_TEST_CASE("DaubechiesMat", "[transform][wavelet]", float, double)
 {
 	auto wnum = GENERATE(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
-	const auto w = wavelet::dbwavf<blaze::DynamicVector<double>>(wnum, 1);
+	const auto w = wavelet::dbwavf<TestType>(wnum);
 	auto [Lo_D, Hi_D, Lo_R, Hi_R] = wavelet::orthfilt(w);
 	std::reverse(Lo_D.begin(), Lo_D.end());
 	std::reverse(Hi_D.begin(), Hi_D.end());
