@@ -5,7 +5,7 @@
 TEMPLATE_TEST_CASE("DaubechiesMat", "[transform][wavelet]", float, double)
 {
 	auto wnum = GENERATE(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
-	const auto w = wavelet::dbwavf<blaze::DynamicVector<double>>(wnum, 1);
+	const auto w = wavelet::dbwavf<blaze::DynamicVector<TestType>>(wnum);
 	auto [Lo_D, Hi_D, Lo_R, Hi_R] = wavelet::orthfilt(w);
 	std::reverse(Lo_D.begin(), Lo_D.end());
 	std::reverse(Hi_D.begin(), Hi_D.end());
@@ -47,12 +47,12 @@ TEMPLATE_TEST_CASE("DaubechiesMat()_ZeroDerivative", "[transform][wavelet]", flo
 	}
 }
 
-TEMPLATE_TEST_CASE("dbwavf", "[transform][wavelet]", float, double)
+TEMPLATE_TEST_CASE("dbwavf", "[transform][wavelet]", std::vector<float>, std::vector<double>,
+				   blaze::DynamicVector<float>, blaze::DynamicVector<double>, blaze::CompressedVector<float>,
+				   blaze::CompressedVector<double>)
 {
-	using Vector = blaze::DynamicVector<TestType>;
-
-	std::array<Vector, 11> coeffs;
-	coeffs[1] = {0.5000000000000001, 0.5000000000000001};
+	std::array<TestType, 11> coeffs;
+	coeffs[1] = {0.5000000000000000, 0.5000000000000000};
 	coeffs[2] = {0.3415063509461097, 0.5915063509461097, 0.15849364905389035, -0.09150635094610966};
 	coeffs[3] = {0.23523360389208187,  0.5705584579157218,	 0.3251825002631163,
 				 -0.09546720778416369, -0.06041610415519811, 0.024908749868441868};
@@ -85,6 +85,9 @@ TEMPLATE_TEST_CASE("dbwavf", "[transform][wavelet]", float, double)
 
 	const int wnum = GENERATE(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
 
-	const auto r = wavelet::dbwavf<Vector>(wnum, 1);
-	REQUIRE(r == coeffs[wnum]);
+	const auto r = wavelet::dbwavf<TestType>(wnum);
+	REQUIRE(r.size() == coeffs[wnum].size());
+	for (size_t i = 0; i < r.size(); ++i) {
+		REQUIRE(Approx(r[i]) == coeffs[wnum][i]);
+	}
 }
