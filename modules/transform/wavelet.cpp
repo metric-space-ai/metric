@@ -112,11 +112,10 @@ template <typename Container> Container upsconv(Container const &x, Container co
 	return out;
 }
 
-template <typename T>
-// Container dbwavf(int const wnum, typename Container::value_type returnTypeExample)
-std::vector<T> dbwavf(const int wnum)
+template <typename Container> Container dbwavf(const int wnum)
 {
 	assert(wnum <= 10);
+	assert(wnum > 0);
 
 	switch (wnum) {
 	case 1:
@@ -225,7 +224,7 @@ template <typename Container> std::tuple<Container, Container> dwt(Container con
 	using El = types::index_value_type_t<Container>;
 
 	// Container F = dbwavf<Container>(waveletType, typename Container::value_type(1.0));
-	Container F = dbwavf<Container>(waveletType, El(1.0));
+	Container F = dbwavf<Container>(waveletType);
 
 	auto [Lo_D, Hi_D, Lo_R, Hi_R] = orthfilt(F);
 
@@ -276,7 +275,7 @@ template <typename Container> Container idwt(Container a, Container d, int wavel
 	using El = types::index_value_type_t<Container>;
 
 	// Container F = dbwavf<Container>(waveletType, typename Container::value_type(1.0));
-	Container F = dbwavf<Container>(waveletType, El(1.0));
+	Container F = dbwavf<Container>(waveletType);
 	auto [Lo_D, Hi_D, Lo_R, Hi_R] = orthfilt(F);
 
 	Container out1 = upsconv(a, Lo_R, lx);
@@ -291,7 +290,7 @@ template <typename Container> Container idwt(Container a, Container d, int wavel
 
 static int wmaxlev(int sizeX, int waveletType)
 {
-	std::vector<double> F = dbwavf<double>(waveletType);
+	const auto F = dbwavf<std::vector<double>>(waveletType);
 	auto [Lo_D, Hi_D, Lo_R, Hi_R] = orthfilt(F);
 
 	int lev = (int)(std::log2((double)sizeX / ((double)Lo_D.size() - 1.0)));
@@ -655,7 +654,7 @@ blaze::CompressedMatrix<T> DaubechiesMat(size_t size, int order = 4, Padding pad
 	assert(order % 2 == 0);
 	assert(size >= order);
 
-	auto [Lo_D, Hi_D, Lo_R, Hi_R] = orthfilt(dbwavf<std::vector<T>>(order / 2, T()));
+	auto [Lo_D, Hi_D, Lo_R, Hi_R] = orthfilt(dbwavf<std::vector<T>>(order / 2));
 
 	/* Reverse filters for convolution */
 	std::reverse(Lo_D.begin(), Lo_D.end());

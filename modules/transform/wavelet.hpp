@@ -151,26 +151,13 @@ Container linspace(typename Container::value_type a, typename Container::value_t
 template <typename Container>
 Container upsconv(Container const &x, Container const &f, int len); // overload added by Max F
 
-///**
-// * @brief
-// *
-// * @param wnum
-// * @param dings
-// * @return
-// */
-// template <typename T>
-// std::vector<T> dbwavf(int const wnum, T dings);
-
 /**
- * @brief
+ * @brief returns the scaling filter associated with the Daubechies wavelet.
  *
- * @param wnum
- * @param dings
+ * @param wnum Daubechies wavelet vanishing moment, a positive integer in the closed interval [1, 10]
  * @return
  */
-template <typename T>
-// Container dbwavf(int const wnum, typename Container::value_type dings); // overload added by Max F
-std::vector<T> dbwavf(const int wnum);
+template <typename Container> Container dbwavf(const int wnum);
 
 ///**
 // * @brief
