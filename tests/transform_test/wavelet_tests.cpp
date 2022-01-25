@@ -47,11 +47,11 @@ TEMPLATE_TEST_CASE("DaubechiesMat()_ZeroDerivative", "[transform][wavelet]", flo
 	}
 }
 
-TEMPLATE_TEST_CASE("dbwavf", "[transform][wavelet]", float, double)
+TEMPLATE_TEST_CASE("dbwavf", "[transform][wavelet]", std::vector<float>, std::vector<double>,
+				   blaze::DynamicVector<float>, blaze::DynamicVector<double>, blaze::CompressedVector<float>,
+				   blaze::CompressedVector<double>)
 {
-	using Vector = blaze::DynamicVector<TestType>;
-
-	std::array<Vector, 11> coeffs;
+	std::array<TestType, 11> coeffs;
 	coeffs[1] = {0.5000000000000001, 0.5000000000000001};
 	coeffs[2] = {0.3415063509461097, 0.5915063509461097, 0.15849364905389035, -0.09150635094610966};
 	coeffs[3] = {0.23523360389208187,  0.5705584579157218,	 0.3251825002631163,
@@ -85,6 +85,6 @@ TEMPLATE_TEST_CASE("dbwavf", "[transform][wavelet]", float, double)
 
 	const int wnum = GENERATE(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
 
-	const auto r = wavelet::dbwavf<Vector>(wnum);
+	const auto r = wavelet::dbwavf<TestType>(wnum);
 	REQUIRE(r == coeffs[wnum]);
 }

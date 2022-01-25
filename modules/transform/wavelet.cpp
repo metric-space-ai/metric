@@ -1079,7 +1079,7 @@ typename std::enable_if<blaze::IsMatrix<Container2d>::value, Container2d>::type 
 	// c[2] = (3-sqrt(3))/(4*sqrt(2));
 	// c[3] = (1-sqrt(3))/(4*sqrt(2));
 	El coeff = 2 / sqrt(2);
-	c = dbwavf<std::vector<El>>(order / 2, coeff);
+	c = dbwavf<std::vector<El>>(order / 2);
 	for (size_t i = 0; i < c.size(); ++i) {
 		c[i] = c[i] * coeff;
 	}
