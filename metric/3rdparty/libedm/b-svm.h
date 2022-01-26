@@ -32,6 +32,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef SVM_Head_File
 #define SVM_Head_File
 
+#include "svm.h"
+
 #define pure_fill(vt, h, w, a)                                                                                         \
 	for (int i = 0; i < h; i++) {                                                                                      \
 		vector<double> tmp;                                                                                            \

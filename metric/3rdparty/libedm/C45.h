@@ -33,6 +33,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define C45_Head_File
 
 #include <fstream>
+#include "Classifier.h"
+#include "DataSet.h"
 
 namespace libedm {
 
@@ -82,7 +84,7 @@ class CC45 : public CClassifier {
 				for (int i = 0; i < Forks; i++)
 					SubNodes[i] = a.SubNodes[i];
 			} else
-				SubNodes = NULL;
+				SubNodes = nullptr;
 
 			return *this;
 		};

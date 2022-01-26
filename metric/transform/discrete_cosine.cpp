@@ -12,7 +12,7 @@ Copyright (c) 2019 Panda Team
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
-#include "DCT/fast-dct-lee.c"
+#include "metric/3rdparty/DCT/fast-dct-lee.c"
 
 namespace metric {
 

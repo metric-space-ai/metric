@@ -73,8 +73,6 @@ add_library(metric INTERFACE)
 # Include paths
 target_include_directories(metric INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
                                             $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
-target_include_directories(metric INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/metric/3rdparty>
-                                            $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/metric/3rdparty>)
 
 # Link libraries
 target_link_libraries(metric INTERFACE ${LAPACK_LIBRARIES})

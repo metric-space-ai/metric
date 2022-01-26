@@ -12,13 +12,13 @@
 #include <memory>
 #include <vector>
 
-#include "libedm/C45.h"
-#include "libedm/Classifier.h"
-#include "libedm/DataSet.h"
-#include "libedm/Prediction.h"
-#include "libedm/RandSequence.h"
-#include "libedm/b-svm.h"
-#include "libedm/svm.h"
+#include "metric/3rdparty/libedm/C45.h"
+#include "metric/3rdparty/libedm/Classifier.h"
+#include "metric/3rdparty/libedm/DataSet.h"
+#include "metric/3rdparty/libedm/Prediction.h"
+#include "metric/3rdparty/libedm/RandSequence.h"
+#include "metric/3rdparty/libedm/b-svm.h"
+#include "metric/3rdparty/libedm/svm.h"
 
 namespace metric {
 
