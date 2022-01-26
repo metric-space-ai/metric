@@ -10,10 +10,6 @@ cmake_minimum_required(VERSION 3.14)
 
 project(panda_metric)
 
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
-
 # CCache
 # set(METRIC_USE_CCACHE ON)
 
@@ -70,9 +66,11 @@ find_package(cereal REQUIRED)
 # Create metric target
 add_library(metric INTERFACE)
 
+target_compile_features(metric INTERFACE cxx_std_17)
+
 # Include paths
 target_include_directories(metric INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-                                            $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
+        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
 
 # Link libraries
 target_link_libraries(metric INTERFACE ${LAPACK_LIBRARIES})
@@ -99,3 +97,9 @@ include(Catch)
 add_subdirectory(tests)
 add_subdirectory(benchmarks)
 add_subdirectory(examples)
+
+
+# Install rules
+include(GNUInstallDirs)
+install(DIRECTORY ${PROJECT_SOURCE_DIR}/metric TYPE INCLUDE
+        PATTERN "*.md" EXCLUDE)
