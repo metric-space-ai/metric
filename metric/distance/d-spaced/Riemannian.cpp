@@ -1,7 +1,7 @@
 
-//#include "modules/distance/k-related/Standards.hpp"
+//#include "metric/distance/k-related/Standards.hpp"
 #include "../../utils/wrappers/lapack.hpp"
-#include "modules/utils/type_traits.hpp"
+#include "metric/utils/type_traits.hpp"
 
 namespace metric {
 

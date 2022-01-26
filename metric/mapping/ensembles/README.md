@@ -369,13 +369,13 @@ model.predict(test_sample, dims, prediction);
 METRIC | MAPPING works headonly. Just include the header into your project.
 
 ```cpp
-#include "modules/mapping.hpp"
+#include "metric/mapping.hpp"
 ```
 
 or directly include one of specified distance from the following:
 
 ```cpp
-#include "modules/mapping/ensembles.hpp"
+#include "metric/mapping/ensembles.hpp"
 ```
 
 #### Using CMake

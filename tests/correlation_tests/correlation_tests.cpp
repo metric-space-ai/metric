@@ -9,9 +9,9 @@
 
 #include <algorithm>
 #include <deque>
-#include "modules/correlation.hpp"
-#include "modules/distance.hpp"
-#include "modules/utils/graph/connected_components.hpp"
+#include "metric/correlation.hpp"
+#include "metric/distance.hpp"
+#include "metric/utils/graph/connected_components.hpp"
 
 #include <random>
 #include <limits>

@@ -889,21 +889,21 @@ model.predict(test_sample, dims, prediction);
 METRIC | MAPPING works headonly. Just include the header into your project.
 
 ```cpp
-#include "modules/mapping.hpp"
+#include "metric/mapping.hpp"
 ```
 
 or directly include one of specified distance from the following:
 
 ```cpp
-#include "modules/mapping/SOM.hpp"
-#include "modules/mapping/PCFA.hpp"
-#include "modules/mapping/ESN.hpp"
-#include "modules/mapping/ensembles.hpp"
-#include "modules/mapping/affprop.hpp"
-#include "modules/mapping/dbscan.hpp"
-#include "modules/mapping/kmeans.hpp"
-#include "modules/mapping/kmedoids.hpp"
-#include "modules/mapping/hierarchClustering.hpp"
+#include "metric/mapping/SOM.hpp"
+#include "metric/mapping/PCFA.hpp"
+#include "metric/mapping/ESN.hpp"
+#include "metric/mapping/ensembles.hpp"
+#include "metric/mapping/affprop.hpp"
+#include "metric/mapping/dbscan.hpp"
+#include "metric/mapping/kmeans.hpp"
+#include "metric/mapping/kmedoids.hpp"
+#include "metric/mapping/hierarchClustering.hpp"
 ```
 
 #### Using CMake

@@ -16,8 +16,8 @@ International Journal of Modeling and Optimization, Vol. 6, No. 1, February 2016
 W. Natita, W. Wiboonsak, and S. Dusadee
 */
 
-#include "modules/distance/k-related/Standards.hpp"
-#include "modules/utils/graph.hpp"
+#include "metric/distance/k-related/Standards.hpp"
+#include "metric/utils/graph.hpp"
 
 #include <assert.h>
 

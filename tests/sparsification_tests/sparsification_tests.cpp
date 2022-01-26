@@ -8,7 +8,7 @@
 
 #include <catch2/catch.hpp>
 
-#include "modules/utils/graph/sparsify.hpp"
+#include "metric/utils/graph/sparsify.hpp"
 
 
 TEMPLATE_TEST_CASE("kruskal_empty_graph", "[sparsification]", float, double)

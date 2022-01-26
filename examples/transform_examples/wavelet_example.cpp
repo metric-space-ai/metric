@@ -2,12 +2,12 @@
 #include <vector>
 #include <iostream>
 
-//#include "modules/transform.hpp"
+//#include "metric/transform.hpp"
 //#include "transform/wavelet.hpp"
-#include "modules/transform/wavelet.hpp"
+#include "metric/transform/wavelet.hpp"
 
 #include "assets/helpers.cpp"
-#include "modules/utils/visualizer.hpp"
+#include "metric/utils/visualizer.hpp"
 
 //#include "transform/helper_functions.cpp" // TODO remove
 

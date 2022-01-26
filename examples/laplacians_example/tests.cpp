@@ -21,10 +21,10 @@ https://github.com/danspielman/Laplacians.jl
 */
 
 //#include <blaze/Math.h>
-#include "modules/utils/solver/approxchol.hpp"
-#include "modules//utils/solver/helper/ijvstruct.hpp"
-#include "modules/utils/solver/helper/lapwrappers.hpp"
-#include "modules/utils/solver/pcg.hpp"
+#include "metric/utils/solver/approxchol.hpp"
+#include "metric//utils/solver/helper/ijvstruct.hpp"
+#include "metric/utils/solver/helper/lapwrappers.hpp"
+#include "metric/utils/solver/pcg.hpp"
 #include <cassert>
 #include <functional>
 #include <iostream>

@@ -8,7 +8,7 @@ Copyright (c) 2020 Panda Team
 #include <catch2/catch.hpp>
 
 #include <vector>
-#include "modules/distance.hpp"
+#include "metric/distance.hpp"
 
 
 TEMPLATE_TEST_CASE("Kolmogorov_Smirnov_basic_use", "[distance][kolmogorov-smirnov]", float, double)

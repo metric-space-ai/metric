@@ -1,6 +1,6 @@
 #include <catch2/catch.hpp>
 
-#include "modules/utils/types/BFloat16.h"
+#include "metric/utils/types/BFloat16.h"
 #include <limits>
 #include <cmath>
 

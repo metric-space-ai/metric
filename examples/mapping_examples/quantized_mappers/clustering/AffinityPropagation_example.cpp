@@ -6,9 +6,9 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 Copyright (c) 2019 Panda Team
 */
 
-#include "modules/mapping.hpp"
-#include "modules/space/matrix.hpp"
-#include "modules/distance.hpp"
+#include "metric/mapping.hpp"
+#include "metric/space/matrix.hpp"
+#include "metric/distance.hpp"
 
 
 

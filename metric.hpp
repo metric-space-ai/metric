@@ -28,10 +28,10 @@ clang++ -std=c++17 main.cpp -o run.o -Ofast -L/usr/local/Cellar/openblas/0.3.5/l
 #ifndef _PANDA_METRIC_HPP
 #define _PANDA_METRIC_HPP
 
-#include "modules/distance.hpp"
-#include "modules/space.hpp"
-#include "modules/correlation.hpp"
-#include "modules/transform.hpp"
-#include "modules/mapping.hpp"
+#include "metric/distance.hpp"
+#include "metric/space.hpp"
+#include "metric/correlation.hpp"
+#include "metric/transform.hpp"
+#include "metric/mapping.hpp"
 
 #endif

@@ -9,9 +9,9 @@ Copyright (c) 2018 Panda Team
 #ifndef _METRIC_DISTANCE_K_STRUCTURED_KOHONEN_HPP
 #define _METRIC_DISTANCE_K_STRUCTURED_KOHONEN_HPP
 
-#include "modules/mapping/Redif.hpp"
-#include "modules/mapping/SOM.hpp"
-#include "modules/utils/graph.hpp"
+#include "metric/mapping/Redif.hpp"
+#include "metric/mapping/SOM.hpp"
+#include "metric/utils/graph.hpp"
 
 namespace metric {
 

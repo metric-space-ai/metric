@@ -15,7 +15,7 @@
 
 #include <chrono>
 
-#include "modules/correlation.hpp"
+#include "metric/correlation.hpp"
 #include <blaze/Math.h>
 
 template <typename T>

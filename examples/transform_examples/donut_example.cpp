@@ -1,5 +1,5 @@
 
-#include "modules/transform/distance_potential_minimization.hpp"
+#include "metric/transform/distance_potential_minimization.hpp"
 
 //#include "donuts_test_io.hpp"
 #include "assets/helpers.cpp"
@@ -9,7 +9,7 @@
 #include <filesystem>
 
 //#include "assets/helpers.cpp" // only for csv reader called in debug f() function
-//#include "modules/utils/visualizer.hpp" // for only blaze2bmp_norm
+//#include "metric/utils/visualizer.hpp" // for only blaze2bmp_norm
 
 
 

@@ -1,7 +1,7 @@
 #ifndef PANDA_METRIC_RIEMANNIAN_HPP
 #define PANDA_METRIC_RIEMANNIAN_HPP
 
-#include "modules/distance/k-related/Standards.hpp"
+#include "metric/distance/k-related/Standards.hpp"
 
 namespace metric {
 

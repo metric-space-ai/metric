@@ -6,7 +6,7 @@
   Copyright (c) 2020 Panda Team
 */
 
-#include "modules/distance/k-structured/EMD.hpp"
+#include "metric/distance/k-structured/EMD.hpp"
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <pybind11/numpy.h>

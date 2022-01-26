@@ -3,11 +3,11 @@
 #include <iostream>
 
 
-#include "modules/mapping.hpp"
+#include "metric/mapping.hpp"
 
-#include "modules/utils/visualizer.hpp"
+#include "metric/utils/visualizer.hpp"
 
-#include "modules/transform/discrete_cosine.hpp"
+#include "metric/transform/discrete_cosine.hpp"
 
 #include "../../assets/helpers.cpp"
 

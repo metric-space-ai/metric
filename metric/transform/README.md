@@ -72,7 +72,7 @@ auto result = extract_energies(x);
 METRIC | TRANSFORM works headonly. Just include the header into your project.
 
 ```cpp
-#include "modules/transform.hpp"
+#include "metric/transform.hpp"
 ```
 
 or directly include one of specified distance from the following:

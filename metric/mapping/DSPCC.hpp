@@ -13,7 +13,7 @@ Copyright (c) 2019 Panda Team
 #include <stack>
 #include <tuple>
 
-#include "modules/mapping/PCFA.hpp"
+#include "metric/mapping/PCFA.hpp"
 #include <blaze/Blaze.h>
 
 namespace metric {

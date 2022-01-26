@@ -1,4 +1,4 @@
-#include "modules/mapping/kmedoids.hpp"
+#include "metric/mapping/kmedoids.hpp"
 
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>

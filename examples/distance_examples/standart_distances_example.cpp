@@ -13,7 +13,7 @@ Copyright (c) 2019 Panda Team
 //#include "blaze/math/CompressedVector.h"  // for Blaze Euclidean overload
 //#include "blaze/math/CompressedMatrix.h"  // for Blaze Euclidean overload
 
-#include "modules/distance.hpp"
+#include "metric/distance.hpp"
 
 
 int main()

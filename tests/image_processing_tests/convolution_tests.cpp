@@ -2,7 +2,7 @@
 
 
 #include <iostream>
-#include "modules/utils/image_processing/convolution.hpp"
+#include "metric/utils/image_processing/convolution.hpp"
 
 
 using namespace metric;

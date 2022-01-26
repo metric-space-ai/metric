@@ -6,7 +6,7 @@
   Copyright (c) 2020 Panda Team
 */
 
-#include "modules/distance/k-structured/Edit.hpp"
+#include "metric/distance/k-structured/Edit.hpp"
 
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>

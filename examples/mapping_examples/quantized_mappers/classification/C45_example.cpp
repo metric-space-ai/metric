@@ -11,7 +11,7 @@ Copyright (c) 2019 Panda Team
 #include <deque> // for Record test
 
 #include "../../assets/helpers.cpp" // csv reader
-#include "modules/mapping.hpp"
+#include "metric/mapping.hpp"
 
 
 template <typename T>

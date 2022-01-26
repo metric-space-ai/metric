@@ -1,5 +1,5 @@
-#include "modules/distance/k-related/Standards.hpp"
-#include "modules/mapping/ESN.hpp"
+#include "metric/distance/k-related/Standards.hpp"
+#include "metric/mapping/ESN.hpp"
 
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>

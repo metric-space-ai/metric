@@ -13,8 +13,8 @@ Copyright (c) 2019 Panda Team
 #include <chrono>
 
 #include <nlohmann/json.hpp>
-#include "modules/mapping.hpp"
-#include "modules/utils/auto_detect_metric.hpp"
+#include "metric/mapping.hpp"
+#include "metric/utils/auto_detect_metric.hpp"
 
 
 using json = nlohmann::json;

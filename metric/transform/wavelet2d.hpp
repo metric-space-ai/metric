@@ -9,7 +9,7 @@
 #ifndef _METRIC_TRANSFORM_WAVELET2D_HPP
 #define _METRIC_TRANSFORM_WAVELET2D_HPP
 
-#include "modules/utils/image_processing/convolution.hpp"
+#include "metric/utils/image_processing/convolution.hpp"
 #include "wavelet.hpp"
 //#include <blaze/Blaze.h>
 

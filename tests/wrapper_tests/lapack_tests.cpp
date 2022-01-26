@@ -2,7 +2,7 @@
 
 #include <limits>
 
-#include "modules/distance/d-spaced/Riemannian.hpp"
+#include "metric/distance/d-spaced/Riemannian.hpp"
 
 #include <iostream>
 

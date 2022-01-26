@@ -332,14 +332,14 @@ std::cout << g_custom.get_matrix() << std::endl;
 METRIC | SPACE works headonly. Just include the header into your project.
 
 ```cpp
-#include "modules/space.hpp"
+#include "metric/space.hpp"
 ```
 
 or directly include one of specified distance from the following:
 
 ```cpp
-#include "modules/space/tree.hpp"
-#include "modules/space/matrix.hpp"
+#include "metric/space/tree.hpp"
+#include "metric/space/matrix.hpp"
 ```
 
 #### CMake compilation

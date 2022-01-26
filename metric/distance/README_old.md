@@ -496,21 +496,21 @@ std::cout << "result: " << result << std::endl;
 METRIC | DISTANCE works headonly. Just include the header into your project.
 
 ```cpp
-#include "modules/distance.hpp"
+#include "metric/distance.hpp"
 ```
 
 or directly include one of specified distance from the following:
 
 ```cpp
-#include "modules/distance/k-related/Standards.hpp"
-#include "modules/distance/k-related/L1.hpp"
+#include "metric/distance/k-related/Standards.hpp"
+#include "metric/distance/k-related/L1.hpp"
 
-#include "modules/distance/k-structured/SSIM.hpp"
-#include "modules/distance/k-structured/TWED.hpp"
-#include "modules/distance/k-structured/EMD.hpp"
-#include "modules/distance/k-structured/Edit.hpp"
+#include "metric/distance/k-structured/SSIM.hpp"
+#include "metric/distance/k-structured/TWED.hpp"
+#include "metric/distance/k-structured/EMD.hpp"
+#include "metric/distance/k-structured/Edit.hpp"
 
-#include "modules/distance/k-random/VOI.hpp"
+#include "metric/distance/k-random/VOI.hpp"
 ```
 
 #### CMake compilation

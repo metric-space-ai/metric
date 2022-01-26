@@ -1,4 +1,4 @@
-#include "modules/distance/k-related/Standards.hpp"
+#include "metric/distance/k-related/Standards.hpp"
 #include "stl_wrappers.hpp"
 #include "metric_types.hpp"
 

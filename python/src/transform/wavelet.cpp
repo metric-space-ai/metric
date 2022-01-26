@@ -1,4 +1,4 @@
-#include "modules/transform/wavelet.hpp"
+#include "metric/transform/wavelet.hpp"
 
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>

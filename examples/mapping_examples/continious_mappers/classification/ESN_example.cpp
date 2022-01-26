@@ -10,8 +10,8 @@ Copyright (c) 2019 Panda Team
 #define _USE_MATH_DEFINES
 #include <cmath>
 
-#include "modules/mapping.hpp"
-#include "modules/utils/visualizer.hpp"
+#include "metric/mapping.hpp"
+#include "metric/utils/visualizer.hpp"
 
 #include <iostream>
 

@@ -12,7 +12,7 @@ Copyright (c) 2019 Panda Team
 #include <iostream>
 
 #include <chrono>
-#include "modules/distance.hpp"
+#include "metric/distance.hpp"
 
 
 TEMPLATE_TEST_CASE("kohonen", "[distance]", float, double)

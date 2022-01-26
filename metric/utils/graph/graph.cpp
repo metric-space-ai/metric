@@ -5,7 +5,7 @@
 
   Copyright (c) 2019 Michael Welsch
 */
-#include "modules/utils/graph.hpp"
+#include "metric/utils/graph.hpp"
 #include <algorithm>
 #include <unordered_map>
 

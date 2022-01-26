@@ -10,7 +10,7 @@ Copyright (c) 2020 Panda Team
 #define _METRIC_DISTANCE_K_RANDOM_ENTROPY_HPP
 
 #include "../distance/k-related/Standards.hpp"
-#include "modules/utils/type_traits.hpp"
+#include "metric/utils/type_traits.hpp"
 #include <blaze/Blaze.h>
 
 namespace metric {

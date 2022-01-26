@@ -11,7 +11,7 @@ Copyright (c) 2019 Panda Team
 #include <vector>
 #include <chrono>
 
-#include "modules/mapping.hpp"
+#include "metric/mapping.hpp"
 
 
 TEMPLATE_TEST_CASE("Main", "[mapping]", float, double) {

@@ -105,13 +105,13 @@ must have same sizes.
 METRIC | CORRELATION works headonly. Just include the header into your project.
 
 ```cpp
-#include "modules/correlation.hpp"
+#include "metric/correlation.hpp"
 ```
 
 or directly include one of specified distance from the following:
 
 ```cpp
-#include "modules/correlation/mgc.hpp"
+#include "metric/correlation/mgc.hpp"
 ```
 
 #### CMake compilation

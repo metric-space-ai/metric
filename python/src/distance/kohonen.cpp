@@ -1,4 +1,4 @@
-#include "modules/distance/k-structured/Kohonen.hpp"
+#include "metric/distance/k-structured/Kohonen.hpp"
 
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>

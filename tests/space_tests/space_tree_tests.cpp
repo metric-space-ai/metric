@@ -11,7 +11,7 @@ Copyright (c) 2018 Panda Team
 #include <stdexcept>
 #include <vector>
 
-#include "modules/space.hpp"
+#include "metric/space.hpp"
 
 
 using namespace Catch::literals;

@@ -1,5 +1,5 @@
 
-#include "modules/transform/wavelet.hpp"
+#include "metric/transform/wavelet.hpp"
 
 #include <blaze/Blaze.h>
 

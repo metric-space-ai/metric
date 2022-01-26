@@ -9,8 +9,8 @@ Copyright (c) 2019 Panda Team
 #include <catch2/catch.hpp>
 
 #include <iostream>
-#include "modules/space/knn_graph.hpp"
-#include "modules/distance.hpp"
+#include <metric/space/knn_graph.hpp>
+#include <metric/distance.hpp>
 
 
 TEMPLATE_TEST_CASE("valid_params", "[space]", float, double)

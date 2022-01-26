@@ -9,7 +9,7 @@ Copyright (c) 2020 Panda Team
 #include <catch2/catch.hpp>
 
 #include <vector>
-#include "modules/distance.hpp"
+#include "metric/distance.hpp"
 
 using namespace Catch::literals;
 

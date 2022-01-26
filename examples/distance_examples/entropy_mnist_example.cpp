@@ -1,7 +1,7 @@
 
-#include "modules/utils/datasets.hpp"
-#include "modules/correlation/entropy.hpp"
-#include "modules/mapping/PCFA.hpp"
+#include "metric/utils/datasets.hpp"
+#include "metric/correlation/entropy.hpp"
+#include "metric/mapping/PCFA.hpp"
 
 
 #include <iostream>

@@ -12,8 +12,8 @@ Copyright (c) 2019 Panda Team
 #include <stdlib.h>
 
 #include <chrono>
-#include "modules/distance.hpp"
-#include "modules/mapping/Redif.hpp"
+#include "metric/distance.hpp"
+#include "metric/mapping/Redif.hpp"
 
 
 

@@ -2,11 +2,11 @@
 #include <iostream>
 //#include <stack>
 
-#include "modules/mapping/DSPCC.hpp"
+#include "metric/mapping/DSPCC.hpp"
 
 #include "examples/mapping_examples/assets/helpers.cpp" // for .csv reader
 
-#include "modules/utils/visualizer.hpp"
+#include "metric/utils/visualizer.hpp"
 
 
 

@@ -9,9 +9,8 @@ Copyright (c) 2019 Panda Team
 #include <vector>
 #include <iostream>
 #include <chrono>
-#include "modules/distance.hpp"
+#include "metric/distance.hpp"
 #include "assets/test_data.cpp"
-
 
 int main()
 {

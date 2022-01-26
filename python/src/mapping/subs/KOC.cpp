@@ -1,7 +1,7 @@
 #include "metric_types.hpp"
 #include "distance/custom.hpp"
 
-#include "modules/mapping/KOC.hpp"
+#include "metric/mapping/KOC.hpp"
 
 #include <boost/mpl/for_each.hpp>
 #include <boost/mpl/vector.hpp>

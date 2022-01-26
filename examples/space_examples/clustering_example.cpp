@@ -9,7 +9,7 @@ Copyright (c) 2019 Dmitry Vinokurov
 #include <vector>
 #include <iostream>
 #include <algorithm>
-#include "modules/space.hpp"
+#include "metric/space.hpp"
 
 template <typename T>
 struct distance {
