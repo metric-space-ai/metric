@@ -8,7 +8,7 @@ cmake_minimum_required(VERSION 3.14)
 #endif()
 #cmake_policy(SET CMP0076 NEW)
 
-project(panda_metric)
+project(panda_metric VERSION 0.2.0)
 
 # CCache
 # set(METRIC_USE_CCACHE ON)
@@ -62,27 +62,29 @@ find_package(blaze 3.8 REQUIRED)
 
 find_package(cereal REQUIRED)
 
+set(METRIC_TARGET_NAME ${PROJECT_NAME})
 
 # Create metric target
-add_library(metric INTERFACE)
+add_library(${METRIC_TARGET_NAME} INTERFACE)
 
-target_compile_features(metric INTERFACE cxx_std_17)
+target_compile_features(${METRIC_TARGET_NAME} INTERFACE cxx_std_17)
 
 # Include paths
-target_include_directories(metric INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+target_include_directories(${METRIC_TARGET_NAME} INTERFACE
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
         $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
 
 # Link libraries
-target_link_libraries(metric INTERFACE ${LAPACK_LIBRARIES})
-target_link_libraries(metric INTERFACE nlohmann_json::nlohmann_json)
-target_link_libraries(metric INTERFACE blaze::blaze)
+target_link_libraries(${METRIC_TARGET_NAME} INTERFACE ${LAPACK_LIBRARIES})
+target_link_libraries(${METRIC_TARGET_NAME} INTERFACE nlohmann_json::nlohmann_json)
+target_link_libraries(${METRIC_TARGET_NAME} INTERFACE blaze::blaze)
 
 
 # Catch2 installation
 FetchContent_Declare(
-		Catch2
-		GIT_REPOSITORY https://github.com/catchorg/Catch2.git
-		GIT_TAG        v2.13.7)
+        Catch2
+        GIT_REPOSITORY https://github.com/catchorg/Catch2.git
+        GIT_TAG v2.13.7)
 
 FetchContent_MakeAvailable(Catch2)
 
@@ -101,5 +103,31 @@ add_subdirectory(examples)
 
 # Install rules
 include(GNUInstallDirs)
+
+# Create package targets file
+install(TARGETS ${METRIC_TARGET_NAME} EXPORT metric-target)
+install(EXPORT metric-target
+        FILE ${PROJECT_NAME}-targets.cmake
+        NAMESPACE ${PROJECT_NAME}::
+        DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/${PROJECT_NAME}/cmake)
+
+include(CMakePackageConfigHelpers)
+
+# Create package config file
+configure_package_config_file(
+        "${PROJECT_SOURCE_DIR}/cmake/${PROJECT_NAME}-config.cmake.in"
+        "${PROJECT_NAME}-config.cmake"
+        INSTALL_DESTINATION
+        ${CMAKE_INSTALL_DATAROOTDIR}/${PROJECT_NAME}/cmake
+)
+# Create package version file
+write_basic_package_version_file(${PROJECT_NAME}-config-version.cmake COMPATIBILITY ExactVersion)
+
+# Install cmake files
+install(FILES "${PROJECT_BINARY_DIR}/${PROJECT_NAME}-config.cmake"
+        "${PROJECT_BINARY_DIR}/${PROJECT_NAME}-config-version.cmake"
+        DESTINATION
+        ${CMAKE_INSTALL_DATAROOTDIR}/${PROJECT_NAME}/cmake)
+
 install(DIRECTORY ${PROJECT_SOURCE_DIR}/metric TYPE INCLUDE
         PATTERN "*.md" EXCLUDE)
