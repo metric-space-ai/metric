@@ -107,27 +107,28 @@ include(GNUInstallDirs)
 # Create package targets file
 install(TARGETS ${METRIC_TARGET_NAME} EXPORT metric-target)
 install(EXPORT metric-target
-        FILE ${PROJECT_NAME}-targets.cmake
-        NAMESPACE ${PROJECT_NAME}::
+        FILE ${METRIC_TARGET_NAME}-targets.cmake
+        NAMESPACE ${METRIC_TARGET_NAME}::
         DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/${PROJECT_NAME}/cmake)
 
 include(CMakePackageConfigHelpers)
 
 # Create package config file
 configure_package_config_file(
-        "${PROJECT_SOURCE_DIR}/cmake/${PROJECT_NAME}-config.cmake.in"
-        "${PROJECT_NAME}-config.cmake"
+        "${PROJECT_SOURCE_DIR}/cmake/${METRIC_TARGET_NAME}-config.cmake.in"
+        "${METRIC_TARGET_NAME}-config.cmake"
         INSTALL_DESTINATION
         ${CMAKE_INSTALL_DATAROOTDIR}/${PROJECT_NAME}/cmake
 )
 # Create package version file
-write_basic_package_version_file(${PROJECT_NAME}-config-version.cmake COMPATIBILITY ExactVersion)
+write_basic_package_version_file(${METRIC_TARGET_NAME}-config-version.cmake COMPATIBILITY ExactVersion)
 
 # Install cmake files
-install(FILES "${PROJECT_BINARY_DIR}/${PROJECT_NAME}-config.cmake"
-        "${PROJECT_BINARY_DIR}/${PROJECT_NAME}-config-version.cmake"
+install(FILES "${PROJECT_BINARY_DIR}/${METRIC_TARGET_NAME}-config.cmake"
+        "${PROJECT_BINARY_DIR}/${METRIC_TARGET_NAME}-config-version.cmake"
         DESTINATION
         ${CMAKE_INSTALL_DATAROOTDIR}/${PROJECT_NAME}/cmake)
 
+# Install headers
 install(DIRECTORY ${PROJECT_SOURCE_DIR}/metric TYPE INCLUDE
         PATTERN "*.md" EXCLUDE)
