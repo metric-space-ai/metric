@@ -1,5 +1,5 @@
 add_executable(unit_tests unit-tests.cpp)
-target_link_libraries(unit_tests PRIVATE metric)
+target_link_libraries(unit_tests PRIVATE ${METRIC_TARGET_NAME})
 
 set(test_bin_dir ${CMAKE_CURRENT_BINARY_DIR})
 

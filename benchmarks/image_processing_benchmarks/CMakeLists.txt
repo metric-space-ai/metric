@@ -1,2 +1,2 @@
 add_executable(convolution_benchmarks convolution_benchmarks.cpp)
-target_link_libraries(convolution_benchmarks metric Catch2::Catch2)
+target_link_libraries(convolution_benchmarks ${METRIC_TARGET_NAME} Catch2::Catch2)
