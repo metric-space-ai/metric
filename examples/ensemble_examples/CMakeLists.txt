@@ -10,6 +10,6 @@ foreach(exampleSrc ${EXAMPLE_SRCS})
 	#Add compile target
 	add_executable(${exampleName} ${exampleSrc})
  
-	target_link_libraries(${exampleName} metric)
+	target_link_libraries(${exampleName} ${METRIC_TARGET_NAME})
 
 endforeach(exampleSrc)

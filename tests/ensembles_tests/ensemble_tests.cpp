@@ -8,7 +8,7 @@ Copyright (c) 2018 Panda Team
 
 #include <catch2/catch.hpp>
 
-#include "modules/mapping.hpp"
+#include "metric/mapping.hpp"
 
 #include "assets/helpers.cpp"  // csv reader
 

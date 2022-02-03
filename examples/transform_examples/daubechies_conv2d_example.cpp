@@ -2,11 +2,11 @@
 #include <iostream>
 #include <chrono>
 
-#include "modules/transform/wavelet.hpp"
-#include "modules/transform/wavelet2d.hpp"
+#include "metric/transform/wavelet.hpp"
+#include "metric/transform/wavelet2d.hpp"
 
 #include "assets/helpers.cpp"
-#include "modules/utils/visualizer.hpp"
+#include "metric/utils/visualizer.hpp"
 
 
 int main() {

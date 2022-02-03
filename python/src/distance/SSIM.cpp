@@ -1,4 +1,4 @@
-#include "modules/distance/k-structured/SSIM.hpp"
+#include "metric/distance/k-structured/SSIM.hpp"
 
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>

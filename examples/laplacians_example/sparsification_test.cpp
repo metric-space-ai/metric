@@ -21,9 +21,9 @@ https://github.com/danspielman/Laplacians.jl
 */
 
 //#include <blaze/Math.h>
-#include "modules/utils/graph/sparsify.hpp"
-#include "modules/utils/solver/helper/graphalgs.hpp"
-#include "modules/distance.hpp"
+#include "metric/utils/graph/sparsify.hpp"
+#include "metric/utils/solver/helper/graphalgs.hpp"
+#include "metric/distance.hpp"
 #include <chrono>
 #include <iostream>
 

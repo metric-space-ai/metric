@@ -1,4 +1,4 @@
-#include "modules/utils/graph/sparsify.hpp"
+#include "metric/utils/graph/sparsify.hpp"
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <pybind11/numpy.h>

@@ -8,7 +8,7 @@ Copyright (c) 2020 Panda Team
 
 #include <catch2/catch.hpp>
 
-#include "modules/distance/d-spaced/Riemannian.hpp"
+#include "metric/distance/d-spaced/Riemannian.hpp"
 
 #include <numeric>
 #include <stdexcept>

@@ -1,7 +1,7 @@
 #include <catch2/catch.hpp>
 
 #include <iostream>
-#include "modules/utils/datasets.hpp"
+#include "metric/utils/datasets.hpp"
 
 using namespace metric;
 

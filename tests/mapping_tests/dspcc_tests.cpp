@@ -13,9 +13,9 @@ Copyright (c) 2019 Panda Team
 #include <cmath>
 //#include <chrono>
 
-#include "modules/mapping/DSPCC.hpp"
-#include "modules/utils/metric_err.hpp"
-#include "modules/distance/k-related/Standards.hpp" // we use Euclidean metric for mean squared error evaluation
+#include "metric/mapping/DSPCC.hpp"
+#include "metric/utils/metric_err.hpp"
+#include "metric/distance/k-related/Standards.hpp" // we use Euclidean metric for mean squared error evaluation
 
 
 

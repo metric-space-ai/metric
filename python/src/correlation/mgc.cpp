@@ -6,7 +6,7 @@
   Copyright (c) 2020 Panda Team
 */
 
-#include "modules/correlation/mgc.hpp"
+#include "metric/correlation/mgc.hpp"
 #include "metric_types.hpp"
 
 #include <pybind11/pybind11.h>

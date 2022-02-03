@@ -1,5 +1,5 @@
 
-#include "modules/transform/energy_encoder.hpp"
+#include "metric/transform/energy_encoder.hpp"
 
 #include <iostream>
 

@@ -1,6 +1,6 @@
 
-#include "modules/mapping/ESN.hpp"
-#include "modules/utils/visualizer.hpp"
+#include "metric/mapping/ESN.hpp"
+#include "metric/utils/visualizer.hpp"
 
 #include <iostream>
 #include <fstream>

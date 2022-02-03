@@ -1,4 +1,4 @@
-#include "modules/mapping/autoencoder.hpp"
+#include "metric/mapping/autoencoder.hpp"
 
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>

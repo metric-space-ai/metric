@@ -1,6 +1,6 @@
 #include <catch2/catch.hpp>
 
-#include "modules/transform/wavelet.hpp"
+#include "metric/transform/wavelet.hpp"
 
 #include <random>
 

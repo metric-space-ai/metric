@@ -1,5 +1,5 @@
 #include <chrono>  // FIXME
-#include "modules/mapping/kmeans.hpp"
+#include "metric/mapping/kmeans.hpp"
 
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>

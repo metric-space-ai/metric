@@ -1,5 +1,5 @@
-#include "modules/space/matrix.hpp"
-#include "modules/distance/k-related/Standards.hpp"
+#include "metric/space/matrix.hpp"
+#include "metric/distance/k-related/Standards.hpp"
 
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>

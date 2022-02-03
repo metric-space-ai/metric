@@ -22,12 +22,12 @@ Copyright (c) 2020 Panda Team
 
 #include <chrono>
 
-#include "modules/utils/ThreadPool.hpp"
-#include "modules/utils/Semaphore.h"
+#include "metric/utils/ThreadPool.hpp"
+#include "metric/utils/Semaphore.h"
 
 #include <nlohmann/json.hpp>
-#include "modules/mapping.hpp"
-#include "modules/utils/poor_mans_quantum.hpp"
+#include "metric/mapping.hpp"
+#include "metric/utils/poor_mans_quantum.hpp"
 
 
 using json = nlohmann::json;

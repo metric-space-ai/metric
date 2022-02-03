@@ -7,7 +7,7 @@
 */
 #include "metric_types.hpp"
 
-#include "modules/correlation/entropy.hpp"
+#include "metric/correlation/entropy.hpp"
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <pybind11/numpy.h>

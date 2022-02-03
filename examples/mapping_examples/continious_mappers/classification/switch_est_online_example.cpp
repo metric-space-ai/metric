@@ -1,6 +1,6 @@
 
 
-#include "modules/mapping/esn_switch_detector.hpp"
+#include "metric/mapping/esn_switch_detector.hpp"
 
 
 #include <iostream>

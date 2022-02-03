@@ -1,14 +1,14 @@
 
-//#include "modules/utils/image_processing/image_filter.hpp"
-//#include "modules/utils/image_processing/convolution.hpp"
-//#include "modules/transform/wavelet2d.hpp"
+//#include "metric/utils/image_processing/image_filter.hpp"
+//#include "metric/utils/image_processing/convolution.hpp"
+//#include "metric/transform/wavelet2d.hpp"
 
-#include "modules/transform/distance_potential_minimization.hpp"
+#include "metric/transform/distance_potential_minimization.hpp"
 
 #include "donuts.hpp" // for only png reader
 
 #include "assets/helpers.cpp"
-#include "modules/utils/visualizer.hpp"
+#include "metric/utils/visualizer.hpp"
 
 int main() {
 

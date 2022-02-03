@@ -11,8 +11,8 @@ Copyright (c) 2019 Panda Team
 
 #include <catch2/catch.hpp>
 
-//#include "modules/mapping.hpp"
-#include "modules/mapping/deterministic_switch_detector.hpp"
+//#include "metric/mapping.hpp"
+#include "metric/mapping/deterministic_switch_detector.hpp"
 
 //#include <iostream>
 

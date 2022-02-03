@@ -1,4 +1,4 @@
-#include "modules/mapping/dbscan.hpp"
+#include "metric/mapping/dbscan.hpp"
 
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>

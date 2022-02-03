@@ -1,4 +1,4 @@
-#include "modules/mapping/affprop.hpp"
+#include "metric/mapping/affprop.hpp"
 #include "metric_types.hpp"
 
 #include <pybind11/pybind11.h>

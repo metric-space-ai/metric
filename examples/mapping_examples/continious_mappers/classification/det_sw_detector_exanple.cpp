@@ -1,5 +1,5 @@
 
-#include "modules/mapping/deterministic_switch_detector.hpp"
+#include "metric/mapping/deterministic_switch_detector.hpp"
 
 #include <iostream>
 #include <fstream>

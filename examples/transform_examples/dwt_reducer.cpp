@@ -4,9 +4,9 @@
 #define M_PI 3.14159265358979323846
 #endif
 
-#include "modules/transform.hpp"
+#include "metric/transform.hpp"
 
-#include "modules/utils/visualizer.hpp"
+#include "metric/utils/visualizer.hpp"
 
 #include "assets/helpers.cpp"
 

@@ -8,8 +8,8 @@ Copyright (c) 2018 Panda Team
 
 #include <vector>
 #include <iostream>
-#include "modules/space.hpp"
-#include "modules/distance.hpp"
+#include "metric/space.hpp"
+#include "metric/distance.hpp"
 int main()
 {
 	std::cout << "Search and access example have started" << std::endl;

@@ -10,9 +10,9 @@
 
 #include <algorithm>
 
-#include "modules/distance.hpp"
+#include "metric/distance.hpp"
 
-#include "modules/utils/graph.hpp"
+#include "metric/utils/graph.hpp"
 
 using namespace Catch::literals;
 

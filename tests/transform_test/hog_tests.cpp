@@ -3,8 +3,8 @@
 #include <limits>
 #include <iostream>
 
-#include "modules/utils/datasets.hpp"
-#include "modules/transform/hog.hpp"
+#include "metric/utils/datasets.hpp"
+#include "metric/transform/hog.hpp"
 
 
 using namespace metric;

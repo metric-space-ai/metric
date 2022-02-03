@@ -8,10 +8,10 @@ Copyright (c) 2020 Panda Team
 
 #include <catch2/catch.hpp>
 
-#include "modules/utils/type_traits.hpp"
-#include "modules/correlation/entropy.hpp"
-#include "modules/distance/k-structured/Edit.hpp"
-#include "modules/distance/k-related/Standards.hpp"
+#include "metric/utils/type_traits.hpp"
+#include "metric/correlation/entropy.hpp"
+#include "metric/distance/k-structured/Edit.hpp"
+#include "metric/distance/k-related/Standards.hpp"
 
 #include <vector>
 #include <deque>

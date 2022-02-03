@@ -7,7 +7,7 @@ Copyright (c) 2019 Panda Team
 */
 
 #include <iostream>
-#include "modules/utils/graph.hpp"
+#include "metric/utils/graph.hpp"
 
 std::vector<std::pair<size_t, size_t>> createGrid4(size_t width, size_t height)
 {

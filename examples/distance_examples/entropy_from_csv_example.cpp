@@ -1,4 +1,4 @@
-#include "modules/correlation/entropy.hpp"
+#include "metric/correlation/entropy.hpp"
 
 //#include <iostream>
 //#include <fstream>

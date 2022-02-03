@@ -1,8 +1,8 @@
 #include <vector>
 #include <iostream>
 #include <tuple>
-//#include "modules/correlation/epmgp.cpp"
-#include "modules/correlation/entropy.hpp"
+//#include "metric/correlation/epmgp.cpp"
+#include "metric/correlation/entropy.hpp"
 
 #include <limits>
 

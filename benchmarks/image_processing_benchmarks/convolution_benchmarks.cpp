@@ -3,8 +3,7 @@
 #include <catch2/catch.hpp>
 
 #include <iostream>
-#include "modules/utils/image_processing/convolution.hpp"
-
+#include "metric/utils/image_processing/convolution.hpp"
 
 using namespace metric;
 

@@ -11,7 +11,7 @@ foreach(exampleSrc ${EXAMPLE_SRCS})
 	
 	add_executable(${exampleName} ${exampleSrc})
 
-	target_link_libraries(${exampleName} PRIVATE metric Threads::Threads)
+	target_link_libraries(${exampleName} PRIVATE ${METRIC_TARGET_NAME} Threads::Threads)
 
 endforeach(exampleSrc)
 

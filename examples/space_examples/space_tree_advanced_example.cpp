@@ -12,7 +12,7 @@ Copyright (c) 2018 Michael Welsch
 #include <thread>
 #include <blaze/Math.h>
 #include "assets/assets.cpp"
-#include "modules/space.hpp"
+#include "metric/space.hpp"
 
 /*** define custom metric ***/
 template <typename T>

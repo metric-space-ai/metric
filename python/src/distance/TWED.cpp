@@ -1,4 +1,4 @@
-#include "modules/distance/k-structured/TWED.hpp"
+#include "metric/distance/k-structured/TWED.hpp"
 
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
