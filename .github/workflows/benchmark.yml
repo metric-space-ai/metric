@@ -47,11 +47,11 @@ jobs:
           echo "CC=gcc-9" >> $GITHUB_ENV
           echo "CXX=g++-9" >> $GITHUB_ENV
 
-      - name: Build benchmark
+      - name: Build benchmarks
         run: |
           mkdir build
           cd build
-          cmake -DCMAKE_BUILD_TYPE=Release ..
+          cmake -DCMAKE_BUILD_TYPE=Release -DMETRIC_BUILD_BENCHMARKS=ON ..
           cmake --build . --target convolution_benchmarks
 
       - name: Run benchmark

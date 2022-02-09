@@ -59,7 +59,7 @@ jobs:
           echo "CC=gcc-9" >> $GITHUB_ENV
           echo "CXX=g++-9" >> $GITHUB_ENV
 
-      - name: Build tests and examples
+      - name: Build tests
         run: |
           export MAKE='make -j1'
           mkdir build
