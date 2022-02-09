@@ -1,4 +1,4 @@
-#include "../metric.hpp"
+#include "metric/metric.hpp"
 
 void distance_example()
 {
