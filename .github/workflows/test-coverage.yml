@@ -64,7 +64,7 @@ jobs:
           export MAKE='make -j1'
           mkdir build
           cd build
-          cmake -DCMAKE_BUILD_TYPE=Debug -DCODE_COVERAGE=ON ../
+          cmake -DCMAKE_BUILD_TYPE=Debug -DMETRIC_BUILD_TESTS=ON -DCODE_COVERAGE=ON ../
           cmake --build .
 
       - name: Run tests
