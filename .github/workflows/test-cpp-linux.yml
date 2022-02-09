@@ -70,7 +70,7 @@ jobs:
           export MAKE='make -j1'
           mkdir build
           cd build
-          cmake -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DMETRIC_BUILD_TESTS=ON -DMETRIC_BUILD_BENCMARKS=ON -DMETRIC_BUILD_EXAMPLES=ON../
+          cmake -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DMETRIC_BUILD_TESTS=ON -DMETRIC_BUILD_BENCMARKS=ON -DMETRIC_BUILD_EXAMPLES=ON ../
           cmake --build .
 
       - name: Run tests
