@@ -5,11 +5,9 @@ on:
       - master
     paths:
       - '.github/workflows/benchmark.yml'
-      - '3rdparty/**'
       - 'benchmarks/**'
-      - 'modules/**'
+      - 'metric/**'
       - 'CMakeLists.txt'
-      - 'metric.hpp'
 jobs:
   benchmark:
     name: Performance check

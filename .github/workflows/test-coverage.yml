@@ -3,14 +3,19 @@ on:
   push:
     branches:
       - master
-    paths-ignore:
-      - 'python/**'
-      - '.github/workflows/cmake.yml'
+    paths:
+      - '.github/workflows/test-coverage.yml'
+      - 'metric/**'
+      - 'tests/**'
+      - 'CMakeLists.txt'
   pull_request:
     branches:
       - master
-    paths-ignore:
-      - 'python/**'
+    paths:
+      - '.github/workflows/test-coverage.yml'
+      - 'metric/**'
+      - 'tests/**'
+      - 'CMakeLists.txt'
 jobs:
   deploy:
     runs-on: ubuntu-latest

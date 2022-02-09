@@ -5,25 +5,21 @@ on:
       - master
     paths:
       - '.github/workflows/test-cpp-linux.yml'
-      - '3rdparty/**'
       - 'benchmarks/**'
       - 'examples/**'
-      - 'modules/**'
+      - 'metric/**'
       - 'tests/**'
       - 'CMakeLists.txt'
-      - 'metric.hpp'
   pull_request:
     branches:
       - master
     paths:
       - '.github/workflows/test-cpp-linux.yml'
-      - '3rdparty/**'
       - 'benchmarks/**'
       - 'examples/**'
-      - 'modules/**'
+      - 'metric/**'
       - 'tests/**'
       - 'CMakeLists.txt'
-      - 'metric.hpp'
 jobs:
   deploy:
     runs-on: ubuntu-latest
