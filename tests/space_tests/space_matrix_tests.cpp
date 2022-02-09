@@ -10,7 +10,7 @@ Copyright (c) 2020 Panda Team
 
 #include <stdexcept>
 
-#include "metric.hpp"
+#include "metric/metric.hpp"
 
 
 TEMPLATE_TEST_CASE("matrix_constructor", "[space]", float, double) {

@@ -14,23 +14,23 @@ project(panda_metric VERSION 0.2.0)
 # set(METRIC_USE_CCACHE ON)
 
 find_program(CCACHE_PATH ccache)
-if(CCACHE_PATH)
-	message(STATUS "CCache found in ${CCACHE_PATH}")
-	set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ccache)
-endif(CCACHE_PATH)
+if (CCACHE_PATH)
+    message(STATUS "CCache found in ${CCACHE_PATH}")
+    set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ccache)
+endif (CCACHE_PATH)
 
 
 option(BUILD_TESTS "build tests" ON)
 
-if(CMAKE_SYSTEM_NAME MATCHES Windows)
-    if(CMAKE_SYSTEM_PROCESSOR MATCHES ".*64$")
+if (CMAKE_SYSTEM_NAME MATCHES Windows)
+    if (CMAKE_SYSTEM_PROCESSOR MATCHES ".*64$")
         message("Build architecture: x64")
         set(CMAKE_GENERATOR_PLATFORM x64)
-    else()
+    else ()
         message("Build architecture: x86")
         set(CMAKE_GENERATOR_PLATFORM Win32)
-    endif()
-endif()
+    endif ()
+endif ()
 
 
 # Dependencies
@@ -81,24 +81,36 @@ target_link_libraries(${METRIC_TARGET_NAME} INTERFACE blaze::blaze)
 
 
 # Catch2 installation
-FetchContent_Declare(
-        Catch2
-        GIT_REPOSITORY https://github.com/catchorg/Catch2.git
-        GIT_TAG v2.13.7)
+if (METRIC_BUILD_TESTS OR METRIC_BUILD_BENCHMARKS)
+    FetchContent_Declare(
+            Catch2
+            GIT_REPOSITORY https://github.com/catchorg/Catch2.git
+            GIT_TAG v2.13.7)
 
-FetchContent_MakeAvailable(Catch2)
+    FetchContent_MakeAvailable(Catch2)
 
-list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/contrib)
+    list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/contrib)
+
+    enable_testing()
+    include(CTest)
+    include(Catch)
+endif ()
 
 
-enable_testing()
-include(CTest)
-include(Catch)
+if (METRIC_BUILD_TESTS)
+    message(STATUS "Unit tests enabled")
+    add_subdirectory(tests)
+endif ()
 
+if (METRIC_BUILD_BENCHMARKS)
+    message(STATUS "Benchmarks enabled")
+    add_subdirectory(benchmarks)
+endif ()
 
-add_subdirectory(tests)
-add_subdirectory(benchmarks)
-add_subdirectory(examples)
+if (METRIC_BUILD_EXAMPLES)
+    message(STATUS "Examples enabled")
+    add_subdirectory(examples)
+endif ()
 
 
 # Install rules

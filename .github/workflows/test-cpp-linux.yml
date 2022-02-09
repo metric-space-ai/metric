@@ -5,25 +5,21 @@ on:
       - master
     paths:
       - '.github/workflows/test-cpp-linux.yml'
-      - '3rdparty/**'
       - 'benchmarks/**'
       - 'examples/**'
-      - 'modules/**'
+      - 'metric/**'
       - 'tests/**'
       - 'CMakeLists.txt'
-      - 'metric.hpp'
   pull_request:
     branches:
       - master
     paths:
       - '.github/workflows/test-cpp-linux.yml'
-      - '3rdparty/**'
       - 'benchmarks/**'
       - 'examples/**'
-      - 'modules/**'
+      - 'metric/**'
       - 'tests/**'
       - 'CMakeLists.txt'
-      - 'metric.hpp'
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -53,7 +49,7 @@ jobs:
           cache-name: cache-ccache
         with:
           path: ~/.ccache
-          key: ${{ runner.os }}-${{ env.cache-name }}-bulid-${{ matrix.build_type }}
+          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ matrix.build_type }}
 
       - name: Install system packages
         run: |
@@ -69,12 +65,12 @@ jobs:
           echo "CC=gcc-9" >> $GITHUB_ENV
           echo "CXX=g++-9" >> $GITHUB_ENV
 
-      - name: Build tests and examples
+      - name: Build tests, benchmarks and examples
         run: |
           export MAKE='make -j1'
           mkdir build
           cd build
-          cmake -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} ../
+          cmake -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DMETRIC_BUILD_TESTS=ON -DMETRIC_BUILD_BENCHMARKS=ON -DMETRIC_BUILD_EXAMPLES=ON ..
           cmake --build .
 
       - name: Run tests
