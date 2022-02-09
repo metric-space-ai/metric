@@ -98,14 +98,17 @@ endif ()
 
 
 if (METRIC_BUILD_TESTS)
+    message(STATUS "Unit tests enabled")
     add_subdirectory(tests)
 endif ()
 
 if (METRIC_BUILD_BENCHMARKS)
+    message(STATUS "Benchmarks enabled")
     add_subdirectory(benchmarks)
 endif ()
 
 if (METRIC_BUILD_EXAMPLES)
+    message(STATUS "Examples enabled")
     add_subdirectory(examples)
 endif ()
 
