@@ -1,4 +1,9 @@
 @PACKAGE_INIT@
 
+include(CMakeFindDependencyMacro)
+find_dependency(blaze 3.8)
+find_dependency(nlohmann_json)
+find_dependency(cereal)
+
 include("${CMAKE_CURRENT_LIST_DIR}/@PROJECT_NAME@-targets.cmake")
 check_required_components("@PROJECT_NAME@")
