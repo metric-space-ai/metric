@@ -12,7 +12,7 @@ Here is an anomaly detection example:
 # Intro example
 
 ```cpp
-#include "metric.hpp"
+#include <metric/metric.hpp>
 
 
 int main()
@@ -77,6 +77,15 @@ target_link_libraries(program panda_metric::panda_metric)
 # (it will still work without LAPACK and will not be reduced in functionality, but performance may be limited)
 find_package(LAPACK REQUIRED)
 target_link_libraries(program ${LAPACK_LIBRARIES})
+```
+## Include headers
+Main header for whole metric library:
+```cpp
+#include <metric/metric.hpp>
+```
+You also could use module specific header:
+```cpp
+#include <metric/mapping.hpp>
 ```
 ## Python bindings
 You can install it as Python lib with `pip`.
