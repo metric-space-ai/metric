@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [0.2.0] - 2022-02-10
 
 ### Added
 - Zero derivative padding with tests [#313](https://github.com/panda-official/metric/pull/313)
