@@ -23,7 +23,7 @@ jobs:
           cache-name: cache-apt
         with:
           path: /var/cache/apt/archives
-          key: ${{ runner.os }}-build-${{ env.cache-name }}
+          key: ${{ runner.os }}-benchmark-${{ env.cache-name }}
 
       - name: Cache ccache
         uses: actions/cache@v2

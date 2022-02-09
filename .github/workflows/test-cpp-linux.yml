@@ -49,7 +49,7 @@ jobs:
           cache-name: cache-ccache
         with:
           path: ~/.ccache
-          key: ${{ runner.os }}-${{ env.cache-name }}-bulid-${{ matrix.build_type }}
+          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ matrix.build_type }}
 
       - name: Install system packages
         run: |
