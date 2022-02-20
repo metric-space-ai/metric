@@ -4,7 +4,7 @@
 
 ### Changed
 
-- Fix tests and add success code to dsgv [#321](https://github.com/panda-official/metric/pull/321)
+- Fix tests and add success code to dsygv [#321](https://github.com/panda-official/metric/pull/321)
 
 ### Removed
 

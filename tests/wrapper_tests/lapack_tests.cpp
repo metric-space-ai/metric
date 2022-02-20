@@ -47,7 +47,7 @@ TEST_CASE("riemannian_distance")
 	Matrix B{{5, 6}, {6, 8}};
 
 	auto rd = metric::RiemannianDistance<void, metric::Euclidean<double>>();
-	std::cout << rd.matDistance(A, B) << std::endl;
+	rd.matDistance(A, B);
 
 	std::vector<std::vector<double>> ds1{{0, 1}, {0, 0}, {1, 1}, {1, 0}};
 	std::vector<std::vector<double>> ds2{{0, 0}, {1, 1}, {2, 2}, {2, 1}};
