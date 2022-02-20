@@ -7,6 +7,7 @@
 #include <iostream>
 
 
+using namespace Catch::literals;
 using namespace metric;
 
 using Matrix = blaze::DynamicMatrix<double>;
@@ -24,7 +25,9 @@ TEST_CASE("sygv_c")
     int info;
     dsygv(1, 'N', 'U', 2, A.data(), 2, B.data(), 2, W.data(), work.data(), 5, info);
 
-    //std::cout << W[0] << " " << W[1] << std::endl;
+	REQUIRE(info == 0);
+	REQUIRE(W[0] == -1.66533454e-16_a);
+	REQUIRE(W[1] == 1._a);
 }
 
 TEST_CASE("sygv_blaze")
@@ -33,9 +36,11 @@ TEST_CASE("sygv_blaze")
     Matrix B{{5, 6}, {6, 8}};
     Vector w{0, 0};
 
-    sygv<double, double>(A, B, w);
+    bool success = sygv<double, double>(A, B, w);
 
-    //std::cout << w[0] << " " << w[1] << std::endl;
+	REQUIRE(success);
+	REQUIRE(w[0] == -1.66533454e-16_a);
+	REQUIRE(w[1] == 1._a);
 }
 
 TEST_CASE("riemannian_distance")
