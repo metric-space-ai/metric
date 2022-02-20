@@ -443,7 +443,7 @@ template <typename T>
 T RiemannianDistance<RecType, Metric>::matDistance(blaze::DynamicMatrix<T> A, blaze::DynamicMatrix<T> B) const
 {
 	blaze::DynamicVector<T> eigenValues;
-	sygv(A, B, eigenValues);
+	sygv(A, B, eigenValues); // TODO(@victor1234): use success status
 
 	for (T &e : eigenValues) {
 		if (e <= std::numeric_limits<T>::epsilon()) {

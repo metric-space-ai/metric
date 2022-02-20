@@ -1,8 +1,19 @@
 # Changelog
 
+## [Unreleased]
+
+### Changed
+
+- Fix tests and add success code to dsygv [#321](https://github.com/panda-official/metric/pull/321)
+
+### Removed
+
+- Remove utils readme [#321](https://github.com/panda-official/metric/pull/321)
+
 ## [0.2.0] - 2022-02-10
 
 ### Added
+
 - Zero derivative padding with tests [#313](https://github.com/panda-official/metric/pull/313)
 - Cmake `metric` target [#308](https://github.com/panda-official/metric/pull/308)
 - Cmake variables for benchmarks, examples and tests [#319](https://github.com/panda-official/metric/pull/319)
