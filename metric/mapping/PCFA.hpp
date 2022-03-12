@@ -173,7 +173,7 @@ template <typename RecType, typename Metric> class PCFA {
 	 * @param TrainingData - training dataset with curves in rows
 	 * @param n_features - desired length of compressed code
 	 */
-	PCFA(const blaze::DynamicMatrix<value_type> &TrainingData, size_t n_features = 1);
+	PCFA(const blaze::DynamicMatrix<value_type> &TrainingData, const size_t n_features = 1);
 
 	/**
 	 * @brief Construct a new PCFA object vrom vector of records
@@ -181,7 +181,22 @@ template <typename RecType, typename Metric> class PCFA {
 	 * @param TrainingData - training dataset, vector of records
 	 * @param n_features - desired length of compressed code
 	 */
-	PCFA(std::vector<RecType> &TrainingData, size_t n_features = 1);
+	PCFA(const std::vector<RecType> &TrainingData, const size_t n_features = 1);
+
+	/**
+	 * @brief Construct PCFA from trained decode weight matrix and vector of averages
+	 * @param Weights
+	 * @param averages
+	 */
+	PCFA(const blaze::DynamicMatrix<value_type> &Weights,
+		 const blaze::DynamicVector<value_type, blaze::rowVector> &avgs);
+
+	/**
+	 * @brief Construct PCFA from trained decode weight matrix and vector of averages given as vector containers
+	 * @param Weights
+	 * @param avgs
+	 */
+	PCFA(const std::vector<RecType> &Weights, const RecType &avgs);
 
 	/**
 	 * @brief
@@ -206,7 +221,7 @@ template <typename RecType, typename Metric> class PCFA {
 	 * @param unshift - flag for adding average curve to each decoded one
 	 * @return blaze::DynamicMatrix<value_type>
 	 */
-	blaze::DynamicMatrix<value_type> decode(const blaze::DynamicMatrix<value_type> &Codes, bool unshift = true);
+	blaze::DynamicMatrix<value_type> decode(const blaze::DynamicMatrix<value_type> &Codes, const bool unshift = true);
 
 	/**
 	 * @brief
@@ -214,7 +229,7 @@ template <typename RecType, typename Metric> class PCFA {
 	 * @param Data
 	 * @return
 	 */
-	std::vector<RecType> decode(const std::vector<RecType> &Data, bool unshift = true);
+	std::vector<RecType> decode(const std::vector<RecType> &Data, const bool unshift = true);
 
 	/**
 	 * @brief returns the average curve of training dataset, used for center shift
@@ -228,7 +243,13 @@ template <typename RecType, typename Metric> class PCFA {
 	 *
 	 * @return blaze::DynamicMatrix<value_type>
 	 */
-	std::vector<RecType> average();
+	RecType average();
+
+	/**
+	 * @brief returns weights
+	 * @return matrix of decode weights
+	 */
+	std::vector<RecType> weights();
 
 	/**
 	 * @brief returns the encoder matrix concatenated with the average curve of training dataset, used for center shift
