@@ -13,43 +13,6 @@ Copyright (c) 2019 Panda Team
 
 namespace metric {
 
-template <class BlazeMatrix>
-blaze::DynamicMatrix<typename BlazeMatrix::ElementType>
-PCA_col(const BlazeMatrix &In, int n_components, blaze::DynamicVector<typename BlazeMatrix::ElementType> &averages)
-{
-	auto Result = blaze::DynamicMatrix<typename BlazeMatrix::ElementType>(n_components, In.rows(), 0);
-
-	averages = blaze::sum<blaze::rowwise>(In) / In.columns();
-	auto CenteredInput = blaze::DynamicMatrix<typename BlazeMatrix::ElementType>(In.rows(), In.columns(), 0);
-	for (size_t col = 0; col < In.columns(); col++)
-		column(CenteredInput, col) = column(In, col) - averages;
-
-	blaze::SymmetricMatrix<blaze::DynamicMatrix<typename BlazeMatrix::ElementType>> CovMat =
-		blaze::evaluate(CenteredInput * trans(CenteredInput));
-
-	blaze::DynamicVector<typename BlazeMatrix::ElementType, blaze::columnVector> w(In.rows()); // for eigenvalues
-	blaze::DynamicMatrix<typename BlazeMatrix::ElementType, blaze::rowMajor> V(In.rows(),
-																			   In.rows()); // for eigenvectors
-
-	eigen(CovMat, w, V);
-
-	// sort and select
-	size_t lower_idx = 0;
-	size_t upper_idx = w.size() - 1;
-	int count = 0;
-	while (count < n_components && upper_idx > lower_idx) {
-		if (-w[lower_idx] > w[upper_idx]) {
-			blaze::row(Result, count) = blaze::row(V, lower_idx); // add eigenpair
-			lower_idx++;
-		} else {
-			blaze::row(Result, count) = blaze::row(V, upper_idx); // add eigenpair
-			upper_idx--;
-		}
-		count++;
-	}
-
-	return Result;
-}
 
 template <class BlazeMatrix>
 blaze::DynamicMatrix<typename BlazeMatrix::ElementType>
@@ -92,54 +55,6 @@ PCA(const BlazeMatrix &In, int n_components,
 	}
 
 	return Result; // eigenvectors in rows
-}
-
-// simple linear encoder based on PCA_col, accepts curves in columns
-template <typename V> PCFA_col<V>::PCFA_col(const blaze::DynamicMatrix<value_type> &TrainingData, size_t n_features)
-{
-	W_encode = metric::PCA_col(TrainingData, n_features, averages);
-	W_decode = trans(W_encode); // computed once and saved
-}
-
-template <typename V>
-blaze::DynamicMatrix<typename PCFA_col<V>::value_type>
-PCFA_col<V>::encode(const blaze::DynamicMatrix<PCFA_col<V>::value_type> &Data)
-{
-	auto CenteredInput = blaze::DynamicMatrix<PCFA_col<V>::value_type>(Data.rows(), Data.columns(), 0);
-	for (size_t col = 0; col < Data.columns(); col++)
-		column(CenteredInput, col) = column(Data, col) - averages;
-	return W_encode * CenteredInput;
-}
-
-template <typename V>
-blaze::DynamicMatrix<typename PCFA_col<V>::value_type>
-PCFA_col<V>::decode(const blaze::DynamicMatrix<PCFA_col<V>::value_type> &Codes, bool unshift)
-{
-	if (unshift) {
-		auto Noncentered = W_decode * Codes;
-		auto Centered =
-			blaze::DynamicMatrix<typename PCFA_col<V>::value_type>(Noncentered.rows(), Noncentered.columns());
-		for (size_t col = 0; col < Noncentered.columns(); col++)
-			column(Centered, col) = column(Noncentered, col) + averages;
-		return Centered;
-	} else {
-		return W_decode * Codes;
-	}
-}
-
-template <typename V> blaze::DynamicMatrix<typename PCFA_col<V>::value_type> PCFA_col<V>::average()
-{
-	auto avg = blaze::DynamicMatrix<typename PCFA_col<V>::value_type>(averages.size(), 1);
-	column(avg, 0) = averages;
-	return avg;
-}
-
-template <typename V> blaze::DynamicMatrix<typename PCFA_col<V>::value_type> PCFA_col<V>::eigenmodes()
-{
-	auto Eigenmodes = blaze::DynamicMatrix<typename PCFA_col<V>::value_type>(W_decode.rows(), W_decode.columns() + 1);
-	column(Eigenmodes, 0) = averages;
-	submatrix(Eigenmodes, 0, 1, W_decode.rows(), W_decode.columns()) = W_decode;
-	return Eigenmodes;
 }
 
 // simple linear encoder based on PCA, accepts curves in rows
@@ -316,12 +231,6 @@ PCFA<RecType, Metric>::blaze2RecType(const blaze::DynamicMatrix<typename PCFA<R,
 		Out.push_back(rec);
 	}
 	return Out;
-}
-
-template <typename BlazeMatrix>
-PCFA_col<typename BlazeMatrix::ElementType> PCFA_col_factory(const BlazeMatrix &TrainingData, size_t n_features)
-{
-	return PCFA_col<typename BlazeMatrix::ElementType>(TrainingData, n_features);
 }
 
 template <typename ElementType>
