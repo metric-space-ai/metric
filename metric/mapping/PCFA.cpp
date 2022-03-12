@@ -5,6 +5,7 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 Copyright (c) 2019 Panda Team
 */
+
 #ifndef _METRIC_MAPPING_PCFA_CPP
 #define _METRIC_MAPPING_PCFA_CPP
 
@@ -12,43 +13,6 @@ Copyright (c) 2019 Panda Team
 
 namespace metric {
 
-template <class BlazeMatrix>
-blaze::DynamicMatrix<typename BlazeMatrix::ElementType>
-PCA_col(const BlazeMatrix &In, int n_components, blaze::DynamicVector<typename BlazeMatrix::ElementType> &averages)
-{
-	auto Result = blaze::DynamicMatrix<typename BlazeMatrix::ElementType>(n_components, In.rows(), 0);
-
-	averages = blaze::sum<blaze::rowwise>(In) / In.columns();
-	auto CenteredInput = blaze::DynamicMatrix<typename BlazeMatrix::ElementType>(In.rows(), In.columns(), 0);
-	for (size_t col = 0; col < In.columns(); col++)
-		column(CenteredInput, col) = column(In, col) - averages;
-
-	blaze::SymmetricMatrix<blaze::DynamicMatrix<typename BlazeMatrix::ElementType>> CovMat =
-		blaze::evaluate(CenteredInput * trans(CenteredInput));
-
-	blaze::DynamicVector<typename BlazeMatrix::ElementType, blaze::columnVector> w(In.rows()); // for eigenvalues
-	blaze::DynamicMatrix<typename BlazeMatrix::ElementType, blaze::rowMajor> V(In.rows(),
-																			   In.rows()); // for eigenvectors
-
-	eigen(CovMat, w, V);
-
-	// sort and select
-	size_t lower_idx = 0;
-	size_t upper_idx = w.size() - 1;
-	int count = 0;
-	while (count < n_components && upper_idx > lower_idx) {
-		if (-w[lower_idx] > w[upper_idx]) {
-			blaze::row(Result, count) = blaze::row(V, lower_idx); // add eigenpair
-			lower_idx++;
-		} else {
-			blaze::row(Result, count) = blaze::row(V, upper_idx); // add eigenpair
-			upper_idx--;
-		}
-		count++;
-	}
-
-	return Result;
-}
 
 template <class BlazeMatrix>
 blaze::DynamicMatrix<typename BlazeMatrix::ElementType>
@@ -93,67 +57,17 @@ PCA(const BlazeMatrix &In, int n_components,
 	return Result; // eigenvectors in rows
 }
 
-// simple linear encoder based on PCA_col, accepts curves in columns
-template <typename V> PCFA_col<V>::PCFA_col(const blaze::DynamicMatrix<value_type> &TrainingData, size_t n_features)
-{
-	W_encode = metric::PCA_col(TrainingData, n_features, averages);
-	W_decode = trans(W_encode); // computed once and saved
-}
-
-template <typename V>
-blaze::DynamicMatrix<typename PCFA_col<V>::value_type>
-PCFA_col<V>::encode(const blaze::DynamicMatrix<PCFA_col<V>::value_type> &Data)
-{
-	auto CenteredInput = blaze::DynamicMatrix<PCFA_col<V>::value_type>(Data.rows(), Data.columns(), 0);
-	for (size_t col = 0; col < Data.columns(); col++)
-		column(CenteredInput, col) = column(Data, col) - averages;
-	return W_encode * CenteredInput;
-	// return W_encode * Data;
-}
-
-template <typename V>
-blaze::DynamicMatrix<typename PCFA_col<V>::value_type>
-PCFA_col<V>::decode(const blaze::DynamicMatrix<PCFA_col<V>::value_type> &Codes, bool unshift)
-{
-	if (unshift) {
-		auto Noncentered = W_decode * Codes;
-		auto Centered =
-			blaze::DynamicMatrix<typename PCFA_col<V>::value_type>(Noncentered.rows(), Noncentered.columns());
-		for (size_t col = 0; col < Noncentered.columns(); col++)
-			column(Centered, col) = column(Noncentered, col) + averages;
-		return Centered;
-	} else {
-		return W_decode * Codes;
-	}
-}
-
-template <typename V> blaze::DynamicMatrix<typename PCFA_col<V>::value_type> PCFA_col<V>::average()
-{
-	auto avg = blaze::DynamicMatrix<typename PCFA_col<V>::value_type>(averages.size(), 1);
-	column(avg, 0) = averages;
-	return avg;
-	// return expand(averages, 1);  // expand absents in local version of Blaze-lib
-}
-
-template <typename V> blaze::DynamicMatrix<typename PCFA_col<V>::value_type> PCFA_col<V>::eigenmodes()
-{
-	auto Eigenmodes = blaze::DynamicMatrix<typename PCFA_col<V>::value_type>(W_decode.rows(), W_decode.columns() + 1);
-	column(Eigenmodes, 0) = averages;
-	submatrix(Eigenmodes, 0, 1, W_decode.rows(), W_decode.columns()) = W_decode;
-	return Eigenmodes;
-}
-
 // simple linear encoder based on PCA, accepts curves in rows
 
 template <typename RecType, typename Metric>
-PCFA<RecType, Metric>::PCFA(const blaze::DynamicMatrix<value_type> &TrainingData, size_t n_features)
+PCFA<RecType, Metric>::PCFA(const blaze::DynamicMatrix<value_type> &TrainingData, const size_t n_features)
 {
 	W_decode = metric::PCA(TrainingData, n_features, averages);
 	W_encode = trans(W_decode); // computed once and saved
 }
 
 template <typename RecType, typename Metric>
-PCFA<RecType, Metric>::PCFA(std::vector<RecType> &TrainingData, size_t n_features)
+PCFA<RecType, Metric>::PCFA(const std::vector<RecType> &TrainingData, const size_t n_features)
 {
 	blaze::DynamicMatrix<value_type> blaze_in(TrainingData.size(), TrainingData[0].size(), 0);
 	for (size_t i = 0; i < TrainingData.size();
@@ -162,6 +76,29 @@ PCFA<RecType, Metric>::PCFA(std::vector<RecType> &TrainingData, size_t n_feature
 			blaze_in(i, j) = TrainingData[i][j];
 	W_decode = metric::PCA(blaze_in, n_features, averages);
 	W_encode = trans(W_decode); // computed once and saved
+}
+
+template <typename RecType, typename Metric>
+PCFA<RecType, Metric>::PCFA(const blaze::DynamicMatrix<value_type> &Weights,
+							const blaze::DynamicVector<value_type, blaze::rowVector> &avgs)
+{
+	W_decode = Weights;
+	W_encode = trans(W_decode); // computed once and saved
+	averages = avgs;
+}
+
+template <typename RecType, typename Metric>
+PCFA<RecType, Metric>::PCFA(const std::vector<RecType> &Weights, const RecType &avgs)
+{
+	W_decode = blaze::DynamicMatrix<value_type>(Weights.size(), Weights[0].size(), 0);
+	for (size_t i = 0; i < Weights.size(); ++i)
+		for (size_t j = 0; j < Weights[0].size(); ++j)
+			W_decode(i, j) = Weights[i][j];
+	W_encode = trans(W_decode); // computed once and saved
+	averages = blaze::DynamicVector<value_type, blaze::rowVector>(avgs.size(), 0);
+	for (size_t i = 0; i < avgs.size(); ++i) {
+		averages[i] = avgs[i];
+	}
 }
 
 template <typename RecType, typename Metric>
@@ -188,7 +125,7 @@ std::vector<RecType> PCFA<RecType, Metric>::encode(const std::vector<RecType> &D
 
 template <typename RecType, typename Metric>
 blaze::DynamicMatrix<typename PCFA<RecType, Metric>::value_type>
-PCFA<RecType, Metric>::decode(const blaze::DynamicMatrix<PCFA<RecType, Metric>::value_type> &Codes, bool unshift)
+PCFA<RecType, Metric>::decode(const blaze::DynamicMatrix<PCFA<RecType, Metric>::value_type> &Codes, const bool unshift)
 {
 	if (unshift) {
 		auto Noncentered = Codes * W_decode;
@@ -203,7 +140,7 @@ PCFA<RecType, Metric>::decode(const blaze::DynamicMatrix<PCFA<RecType, Metric>::
 }
 
 template <typename RecType, typename Metric>
-std::vector<RecType> PCFA<RecType, Metric>::decode(const std::vector<RecType> &Codes, bool unshift)
+std::vector<RecType> PCFA<RecType, Metric>::decode(const std::vector<RecType> &Codes, const bool unshift)
 {
 	auto CodesBlaze = vector_to_blaze(Codes);
 	if (unshift) {
@@ -224,7 +161,18 @@ blaze::DynamicMatrix<typename PCFA<RecType, Metric>::value_type> PCFA<RecType, M
 	auto avg = blaze::DynamicMatrix<typename PCFA<RecType, Metric>::value_type>(1, averages.size());
 	blaze::row(avg, 0) = averages;
 	return avg;
-	// return expand(averages, 0);  // expand absents in local version of Blaze-lib
+}
+
+template <typename RecType, typename Metric> RecType PCFA<RecType, Metric>::average()
+{
+	blaze::DynamicMatrix<value_type> result(1, averages.size());
+	blaze::row(result, 0) = averages;
+	return blaze2RecType<RecType>(result)[0];
+}
+
+template <typename RecType, typename Metric> std::vector<RecType> PCFA<RecType, Metric>::weights()
+{
+	return blaze2RecType<RecType>(W_decode);
 }
 
 template <typename RecType, typename Metric>
@@ -236,6 +184,7 @@ blaze::DynamicMatrix<typename PCFA<RecType, Metric>::value_type> PCFA<RecType, M
 	submatrix(Eigenmodes, 1, 0, W_decode.rows(), W_decode.columns()) = W_decode;
 	return Eigenmodes;
 }
+
 
 template <typename RecType, typename Metric> std::vector<RecType> PCFA<RecType, Metric>::eigenmodes()
 {
@@ -282,12 +231,6 @@ PCFA<RecType, Metric>::blaze2RecType(const blaze::DynamicMatrix<typename PCFA<R,
 		Out.push_back(rec);
 	}
 	return Out;
-}
-
-template <typename BlazeMatrix>
-PCFA_col<typename BlazeMatrix::ElementType> PCFA_col_factory(const BlazeMatrix &TrainingData, size_t n_features)
-{
-	return PCFA_col<typename BlazeMatrix::ElementType>(TrainingData, n_features);
 }
 
 template <typename ElementType>
