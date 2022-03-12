@@ -109,7 +109,6 @@ PCFA_col<V>::encode(const blaze::DynamicMatrix<PCFA_col<V>::value_type> &Data)
 	for (size_t col = 0; col < Data.columns(); col++)
 		column(CenteredInput, col) = column(Data, col) - averages;
 	return W_encode * CenteredInput;
-	// return W_encode * Data;
 }
 
 template <typename V>
@@ -133,7 +132,6 @@ template <typename V> blaze::DynamicMatrix<typename PCFA_col<V>::value_type> PCF
 	auto avg = blaze::DynamicMatrix<typename PCFA_col<V>::value_type>(averages.size(), 1);
 	column(avg, 0) = averages;
 	return avg;
-	// return expand(averages, 1);  // expand absents in local version of Blaze-lib
 }
 
 template <typename V> blaze::DynamicMatrix<typename PCFA_col<V>::value_type> PCFA_col<V>::eigenmodes()
@@ -248,13 +246,10 @@ blaze::DynamicMatrix<typename PCFA<RecType, Metric>::value_type> PCFA<RecType, M
 	auto avg = blaze::DynamicMatrix<typename PCFA<RecType, Metric>::value_type>(1, averages.size());
 	blaze::row(avg, 0) = averages;
 	return avg;
-	// return expand(averages, 0);  // expand absents in local version of Blaze-lib
 }
 
 template <typename RecType, typename Metric> RecType PCFA<RecType, Metric>::average()
 {
-	// blaze::DynamicMatrix<value_type> result (averages.size(), 1);
-	// blaze::column(result, 0) = blaze::trans(averages);
 	blaze::DynamicMatrix<value_type> result(1, averages.size());
 	blaze::row(result, 0) = averages;
 	return blaze2RecType<RecType>(result)[0];
@@ -275,11 +270,6 @@ blaze::DynamicMatrix<typename PCFA<RecType, Metric>::value_type> PCFA<RecType, M
 	return Eigenmodes;
 }
 
-// template <typename RecType, typename Metric>
-// std::vector<RecType>
-// PCFA<RecType, Metric>::eigenmodes() {
-//     return blaze2RecType<RecType>(Eigenmodes);
-// }
 
 template <typename RecType, typename Metric> std::vector<RecType> PCFA<RecType, Metric>::eigenmodes()
 {

@@ -114,29 +114,6 @@ struct determine_container_type<Container<ValueType, F>> {
 	constexpr static int code = 2;
 };
 
-//    template<typename>
-//    struct determine_element_type  // old version, replaced with value_type/ElementType field detector!
-//    {
-//        using type = void;
-//    };
-
-//    template <typename ValueType, typename Allocator>
-//    struct determine_element_type<std::vector<ValueType, Allocator>>
-//    {
-//        using type = typename std::vector<ValueType, Allocator>::value_type;
-//    };
-
-//    template <typename ValueType, bool F>
-//    struct determine_element_type<blaze::DynamicVector<ValueType, F>>
-//    {
-//        using type = typename blaze::DynamicVector<ValueType, F>::ElementType;
-//    };
-
-//    template <typename ValueType, bool F>
-//    struct determine_element_type<blaze::DynamicMatrix<ValueType, F>>
-//    {
-//        using type = typename blaze::DynamicMatrix<ValueType, F>::ElementType;
-//    };
 
 template <typename C, int = determine_container_type<C>::code>
 struct determine_element_type // determines type of element both for STL containers and Blaze vectors
@@ -160,12 +137,8 @@ template <typename C> struct determine_element_type<C, 2> {
  */
 template <typename RecType, typename Metric> class PCFA {
 
-	// private:
-
   public:
 	using value_type = typename determine_element_type<RecType>::type;
-
-	// constexpr static int ContainerCode = determine_container_type<RecType>::code;
 
 	/**
 	 * @brief Construct a new PCFA object from dataset in blaze DynamicMatrix
