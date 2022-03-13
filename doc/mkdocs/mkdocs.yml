@@ -1,0 +1,24 @@
+site_name: Metric library
+site_url: https://panda-official.github.io/metric
+
+# Repository
+repo_name: panda-official/metric
+repo_url: https://github.com/panda-official/metric
+
+theme:
+  name: readthedocs
+  locale: en
+
+nav:
+  - Home: index.md
+  - Installation: installation.md
+  - Features: features.md
+  - Modules: modules.md
+  - Examples: examples.md
+#
+## Extras
+#extra:
+#  social:
+#    - icon: fontawesome/brands/github
+#      link: https://github.com/panda-official/metric
+#  generator: false
