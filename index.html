@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="None">
+  
+  <link rel="shortcut icon" href="img/favicon.ico">
+  <title>Home - Metric library</title>
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+
+  <link rel="stylesheet" href="css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="css/theme_extra.css" type="text/css" />
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
+  
+  <script>
+    // Current page data
+    var mkdocs_page_name = "Home";
+    var mkdocs_page_input_path = "index.md";
+    var mkdocs_page_url = "/metric/";
+  </script>
+  
+  <script src="js/jquery-2.1.1.min.js" defer></script>
+  <script src="js/modernizr-2.8.3.min.js" defer></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script> 
+  
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+      <div class="wy-side-nav-search">
+        <a href="." class="icon icon-home"> Metric library</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="./search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+	<ul class="current">
+	  
+          
+            <li class="toctree-l1 current">
+		
+    <a class="current" href=".">Home</a>
+    <ul class="subnav">
+            
+    <li class="toctree-l2"><a href="#metric-library">Metric library</a></li>
+    
+
+    <li class="toctree-l2"><a href="#intro-example">Intro example</a></li>
+    
+        <ul>
+        
+            <li><a class="toctree-l3" href="#anomaly-detection">Anomaly detection</a></li>
+        
+        </ul>
+    
+
+    <li class="toctree-l2"><a href="#short-introduction">Short introduction</a></li>
+    
+        <ul>
+        
+            <li><a class="toctree-l3" href="#general-concept">General Concept</a></li>
+        
+            <li><a class="toctree-l3" href="#explicit-metric-spaces">Explicit metric spaces</a></li>
+        
+            <li><a class="toctree-l3" href="#distance-functions">Distance functions</a></li>
+        
+            <li><a class="toctree-l3" href="#computing-with-metric-spaces">Computing with metric spaces</a></li>
+        
+        </ul>
+    
+
+    <li class="toctree-l2"><a href="#why-panda-metric-is-awesome">Why PANDA | METRIC is awesome</a></li>
+    
+
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="installation/">Installation</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="features.md">Features</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="modules/">Modules</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="examples/">Examples</a>
+	    </li>
+          
+        </ul>
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href=".">Metric library</a>
+      </nav>
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href=".">Docs</a> &raquo;</li>
+    
+      
+    
+    <li>Home</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        <a href="https://github.com/panda-official/metric/edit/master/docs/index.md"> Edit on panda-official/metric</a>
+      
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main">
+            <div class="section">
+              
+                <p><img alt="C++" src="https://github.com/panda-official/metric/workflows/Test%20C++%20code/badge.svg" />
+<img alt="Python" src="https://github.com/panda-official/metric/workflows/Test%20Python%20package/badge.svg" /></p>
+<h1 id="metric-library">Metric library</h1>
+<p><strong>PANDA | METRIC</strong> is a framework for machine learning based on the concept of metric spaces, which makes it possible to
+use and combine arbitrary data to build models. METRIC is written in modern C++ to provide the best performance.
+However, due to Python bindings, you can use it directly in Python.</p>
+<p><img alt="PCB" src="4_nyc_redif.png" /></p>
+<h1 id="intro-example">Intro example</h1>
+<h2 id="anomaly-detection">Anomaly detection</h2>
+<pre><code class="cpp">#include &lt;metric/metric.hpp&gt;
+
+
+int main()
+{   
+    using namespace metric;
+    using namespace std;
+    // some data
+    vector&lt;vector&lt;int&gt;&gt; A = {
+        { 0, 1, 1, 1, 1, 1, 2, 3 },
+        { 1, 1, 1, 1, 1, 2, 3, 4 },
+        { 2, 2, 2, 1, 1, 2, 0, 0 },
+        { 3, 3, 2, 2, 1, 1, 0, 0 },
+        { 4, 3, 2, 1, 0, 0, 0, 0 },
+        { 5, 3, 2, 1, 0, 0, 0, 0 },
+        { 4, 6, 2, 2, 1, 1, 0, 0 },
+    };
+
+    // some other data
+    deque&lt;string&gt; B = {
+        &quot;this&quot;,
+        &quot;test&quot;,
+        &quot;tests&quot;,
+        &quot;correlation&quot;,
+        &quot;of&quot;,
+        &quot;arbitrary&quot;,
+        &quot;data&quot;,
+    };
+
+
+    // bind the types and corresponding metrics with a constructor
+    auto mgc_corr = MGC&lt;Euclidean&lt;vector&lt;int&gt;&gt;, Edit&lt;string&gt;&gt;();
+
+    // compute the correlation
+    double result = mgc_corr(A, B);
+
+    cout &lt;&lt; &quot;Multi-scale graph correlation: &quot; &lt;&lt; result &lt;&lt; endl;
+    // 0.0791671 (Time = 7.8e-05s)
+    // Rows 2 and 3 are similar in both data sets, so that there is a minimal correlation.
+
+    return 0;
+}
+</code></pre>
+
+<h1 id="short-introduction">Short introduction</h1>
+<h2 id="general-concept">General Concept</h2>
+<p>A metric space is defined by a set of records (aka elements, observations, points etc.) and a corresponding metric,
+which is a distance function with special requirements that can compares records pair-wise about similarity.</p>
+<p>Almost all algorithms of this framework operate on metric spaces. However, in most situations, it is not necessary to
+build such a metric space explicit.</p>
+<p>You just need to configure the algorithm implicitly with the metric for your data.</p>
+<p>All algorithms in the METRIC framework are designed to be used in a two-phase approach. First, the algorithm must be
+configured with the metric and - if also required - training data or additional parameters. After the construction, the
+object can be used.</p>
+<pre><code class="cpp">using namespace metric;
+
+using rec_t = std::vector&lt;double&gt;;
+
+std::vector&lt;rec_t&gt; A = {
+        { 0, 1, 1, 1, 1, 1, 2, 3 },
+        { 1, 1, 1, 1, 1, 2, 3, 4 },
+        { 2, 2, 2, 1, 1, 2, 0, 0 },
+        { 3, 3, 2, 2, 1, 1, 0, 0 },
+        { 4, 3, 2, 1, 0, 0, 0, 0 },
+        { 5, 3, 2, 1, 0, 0, 0, 0 },
+        { 4, 6, 2, 2, 1, 1, 0, 0 }}; // a set with seven records
+
+rec_t b = { 2, 8, 2, 1, 0, 0, 0, 0 }; // a single record.
+
+Algorithm&lt;Euclidean&lt;rec_t&gt;&gt; algo(A,2); // configure an algorithm with euclidean metric, training data and an additional parameter
+
+auto result1 = algo(b); // apply the default method
+auto result2 = algo.estimate(b); // apply a special method
+</code></pre>
+
+<h2 id="explicit-metric-spaces">Explicit metric spaces</h2>
+<p>METRIC provides three classes to build explicit metric space (DistanceMatrix, KNNGraph and SearchTree). All classes
+provide the same methods, but they have different computational advantages.</p>
+<pre><code class="cpp">DistanceMatrix&lt;Manhatten&lt;rec_t&gt;&gt; dMat(A); // build a full pair-wise representation
+KNNGraph&lt;Manhatten&lt;rec_t&gt; knnG(A); // build a local and sparse representation
+SearchTree&lt;Manhatten&lt;rec_t&gt;&gt; sTree(A); // build a hierarchical organized tree representation
+
+auto distance = dMat(0,3) // accessing the distance value by IDs.
+auto nn_ID = sTree.nn(b); //searching for the best matching record of b in the metric space (aka next neighbor)
+</code></pre>
+
+<p>There are two main scenarios, where it makes sense to use explict metric spaces.</p>
+<p>1) When you want to find the best matching record or subsets
+2) when you want to update your metric space in realtime and want to keep the distance computations updated
+   incrementally.</p>
+<h2 id="distance-functions">Distance functions</h2>
+<p>There is a hugh collection of distance function in METRIC available, but you can also use your own functions. The
+Distance functions library is organized in three groups (random, related and structured). This framework provides only
+real metric and pseudo-metric, (also known as semi-metrics), that fulfill the triangle inequality.</p>
+<p>https://en.wikipedia.org/wiki/Metric_(mathematics)</p>
+<h3 id="random-metrics">Random metrics</h3>
+<p>The corresponding indices of two records are not related to each other. Also, the records can have a different sizes.
+This is normally the case, when the values of a record represent random observations of one dimension.</p>
+<pre><code>Record 1    [1.3, 7.2, 5.8, 7.3, 2.7, 5.5 ...]
+Record 2    [2.1, 6.2, 1.2, 6.2, 2.5  ...]
+</code></pre>
+
+<h3 id="related-metrics">related metrics</h3>
+<p>The values of two records are related, when the order of the indices can be changed without effecting the result of the
+distance computation. This is normally the case, when each index of a record represents a dimension and the value
+represents one observation. The dimensions are regarded as independent to each other in principle. In comparison to the
+random metrics, different samples are provided by the records and not by the values in one record.</p>
+<pre><code>Record 1    [1.3, 7.2, 5.8, 7.3, 2.7, 5.5, ...]
+              |    |    |    |    |    |   
+Record 2    [2.1, 6.2, 1.2, 6.2, 2.5, 4.2, ...]
+</code></pre>
+
+<h3 id="k-structured-metrics">k-structured metrics</h3>
+<p>When the indices in a record have a structural meaning like the bin position in a histogram or the pixel position in a
+picture, you normally use a structured metric. Here the known dependency of the dimension is used for better results.</p>
+<pre><code>Record 1    [1.3, 7.2, 5.8, 7.3, 2.7, 5.5, ...]
+             |  X |  X |  X |  X | |  X |
+Record 2    [2.1, 6.2, 1.2, 6.2, 2.5, 4.2, ...]
+</code></pre>
+
+<p>In the most case, you will configure an algorithm with a distance function, but of course you can construct and use a
+distance function manually.</p>
+<pre><code class="cpp">rec_t a = { 1, 2, 5, 3, 1 };
+rec_t b = { 2, 2, 1, 3, 2 };
+
+auto distance_function = P_norm&lt;rec_t&gt;(1.5); //configure a Minkowski metric with p=1.5
+
+double result = distance_function(a, b); //apply the metric
+</code></pre>
+
+<p>It's easy to provide and use your own metric. To do so, you have to define a struct with a methods that overloads the ()
+-operator, and you have to provide the inner value type as Val_T.</p>
+<pre><code class="cpp">struct user_euclidean {
+    using Val_T = double; // necessary template line.
+    double operator()(std::vector&lt;double&gt; a, std::vector&lt;double&gt; b) // overload the ()-operator 
+        {
+        /* start of implementation */
+        double sum=0;
+        for (int i =0; i&lt; a.size(); i++){
+                sum += std::pow(a[i]-b[i],2);
+        }
+        return std::sqrt(sum);
+        /* end of implementation*/
+    }
+};
+</code></pre>
+
+<h2 id="computing-with-metric-spaces">Computing with metric spaces</h2>
+<p>Each data set to which a matching metric is assigned, is already a metric space by definition. So you don't have to
+compute metric spaces explicitly, and normally you can use the algorithms with common data input.</p>
+<pre><code class="cpp">std::vector&lt;std::string&gt; B = {
+        &quot;this&quot;,
+        &quot;is&quot;,
+        &quot;a&quot;,
+        &quot;vector&quot;,
+        &quot;of&quot;,
+        &quot;strings&quot;}; // a set with six records
+auto entropy = Entropy&lt;Edit&lt;std::string&gt;&gt;(); //configure the entropy computation
+
+double result = entropy(B); // compute the entropy
+
+</code></pre>
+
+<p>The meaning of entropy for a metric spaces is different from the classical shannon entropy, that is discrete. The
+entropy in METRIC is based on the concept of differential entropy and has the meaning of a local degree of freedom in
+the dataset. It can be regarded alternatively as mean intrinsic dimensionality over the space, no matter how many real
+dimensions are provided.</p>
+<p>Anyway, like correlation in the intro example the entropy gives only an information about the existence of a
+dependencies in the data. To model this dependency you have to apply one of the provided feature extractors mechanisms.</p>
+<p>Imaging a setting, where you take a colored 400x300 photos of a scene at random time. In this scene only a door is
+opened and closed in some intermediate states. All pixels can change from photo to photo, but there are actually only
+two independent things happening, the door opening angle and the lighting setup show variations. We call this kind of
+intrinsic dimensionality "features". While the original record has 400<em>300</em>3 = 360000 dimension, it has only 2 intrinsic
+dimension.</p>
+<p>It is important to understand, that the concept of metrics space is only applicable, when the amount of recorded
+dimensions are highly correlated to each other and the intrinsic dimensions are not increasing with the number of
+records. If this is the case, the curse of dimensionality will prevent any analysis or insights. But that is not a limit
+of the metric space concept. It is a limit at all.</p>
+<p>The methods to extract features are also known as dimension reduction techniques. But this name is a little misguiding,
+because we are not changing the recorded dimension, we are extracting only the underlying features that lead to the
+recorded dimensions and put them in a new metric space. Or in other word, we filter out the most important information
+to make further processing easier and to break down complicated dependencies to a human understanding like a
+2d-information.</p>
+<p>The most aggressive feature extractor is called clustering. Here a metric space is split into several similar groups and
+only a categorical liable is mapped as feature.</p>
+<pre><code class="cpp">auto [data, lables] = loadDataSet(&quot;NYC_taxi&quot;)
+auto cluster = KOC&lt;TWED&lt;rec_t&gt;&gt;(data); //configure the clustering
+
+auto lable = cluster(data[0]); // apply the clustering to first sample
+</code></pre>
+
+<p>A less aggressive feature extraction is archived with a continuous mapper.</p>
+<pre><code class="cpp">auto [data, lables] = loadDataSet(&quot;MNIST&quot;);
+auto f_extractor = Autoencoder&lt;SSIM&lt;rec_t&gt;&gt;(data); //configure the clustering
+
+auto features = f_extractor(data[0]); // apply the feature extraction to the first sample
+</code></pre>
+
+<p>When you find correlations between metric spaces, you can model them with continuous mappers. For example, you first
+extract deterministic features of a picture, then map this space to its denoised manifold and measure the distance to
+the manifold as outliner distance and then approximate the solution with a neural network for faster computation.</p>
+<pre><code class="cpp">using namespace metric;
+using namespace std;
+using Container = std::vector;
+Container&lt;Image&gt; data = loadDataSet(&quot;Donuts&quot;);
+
+auto hog_extractor = HOG(data[0].width, data[0].hight); // setup histogram of oriented gradients feature extractor
+
+Container&lt;vector&lt;double&gt;&gt; histograms = hog_extractor(data); // compute the histograms
+
+auto outliner_model = Rediff&lt;Euclidean&lt;vector&lt;double&gt;&gt;&gt;(histograms); // compute the manifold of the histogram space
+
+Container&lt;double&gt; outliners = outliner_model(histograms); // compute the outline distance for all images
+
+auto model = ESN&lt;Image,double&gt; (data, outliners); // train an approximation model
+
+model.save(&quot;myModel.cereal&quot;)
+</code></pre>
+
+<p>then load and apply the model:</p>
+<pre><code class="cpp">auto model = ESN&lt;Image,double&gt;(&quot;myModel.cereal&quot;);
+double outliner_score = model(Img1); // compute the outline score for an image
+</code></pre>
+
+<h1 id="why-panda-metric-is-awesome">Why PANDA | METRIC is awesome</h1>
+<p><strong>PANDA | METRIC</strong> extends the capabilities of machine learning algorithms for variable structured data types and
+enables statements to be made about the relationships between the data in the context of artificial intelligence. For
+this purpose, the recorded data is first modeled using a metric in a metric space. These spaces can now be related to
+each other and simplified without loss of information. This allows essential information to be extracted and accessible
+to the user. In various modules, the framework offers a collection of algorithms that are optimized for metric spaces
+and accessible via a standardized API.</p>
+<p><strong>PANDA | METRIC</strong> is located in the area of machine learning and artificial intelligence, but offers more than a loose
+collection of optimized and high class algorithms, because PANDA | METRIC combines these different algorithms seamless.
+Data Science is no magic, it is all about information theory, statistics and optimization methods and PANDA | METRIC
+provides all you need to generate data-driven added values. All algorithms in data science seems like a huge loosely
+connected family. This framework provides a universal approach that makes it easy to combine these techniques. This
+framework brings all these algorithms under the theory of metric spaces together and guides, how to combine them.</p>
+<p><strong>PANDA | METRIC</strong> is programmed in modern and template based C++, which allows a comfortable use with optimal
+performance at the same time. Compared to the approach of neural networks, the concept of metric spaces offers
+considerable advantages especially for industrial applications.</p>
+              
+            </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="installation/" class="btn btn-neutral float-right" title="Installation">Next <span class="icon icon-circle-arrow-right"></span></a>
+      
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+    
+  </div>
+
+  Built with <a href="http://www.mkdocs.org">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+      
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" style="cursor: pointer">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      
+      
+      
+        <span style="margin-left: 15px"><a href="installation/" style="color: #fcfcfc">Next &raquo;</a></span>
+      
+    </span>
+</div>
+    <script>var base_url = '.';</script>
+    <script src="js/theme.js" defer></script>
+      <script src="search/main.js" defer></script>
+
+</body>
+</html>
+
+<!--
+MkDocs version : 1.0.4
+Build Date UTC : 2022-03-13 22:31:12
+-->

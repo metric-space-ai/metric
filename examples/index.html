@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  
+  <link rel="shortcut icon" href="../img/favicon.ico">
+  <title>Examples - Metric library</title>
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+
+  <link rel="stylesheet" href="../css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../css/theme_extra.css" type="text/css" />
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
+  
+  <script>
+    // Current page data
+    var mkdocs_page_name = "Examples";
+    var mkdocs_page_input_path = "examples.md";
+    var mkdocs_page_url = "/metric/examples/";
+  </script>
+  
+  <script src="../js/jquery-2.1.1.min.js" defer></script>
+  <script src="../js/modernizr-2.8.3.min.js" defer></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script> 
+  
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+      <div class="wy-side-nav-search">
+        <a href=".." class="icon icon-home"> Metric library</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+	<ul class="current">
+	  
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="..">Home</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../installation/">Installation</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../features.md">Features</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../modules/">Modules</a>
+	    </li>
+          
+            <li class="toctree-l1 current">
+		
+    <a class="current" href="./">Examples</a>
+    <ul class="subnav">
+            
+    <li class="toctree-l2"><a href="#build-of-examples">Build of examples</a></li>
+    
+        <ul>
+        
+            <li><a class="toctree-l3" href="#ubuntu">Ubuntu</a></li>
+        
+            <li><a class="toctree-l3" href="#macos">macOS</a></li>
+        
+            <li><a class="toctree-l3" href="#windows">Windows</a></li>
+        
+        </ul>
+    
+
+    </ul>
+	    </li>
+          
+        </ul>
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="..">Metric library</a>
+      </nav>
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="..">Docs</a> &raquo;</li>
+    
+      
+    
+    <li>Examples</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        <a href="https://github.com/panda-official/metric/edit/master/docs/examples.md"> Edit on panda-official/metric</a>
+      
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main">
+            <div class="section">
+              
+                <h1 id="build-of-examples">Build of examples</h1>
+<p>The following dependencies are required additionally for building examples and tests in the example folder</p>
+<ol>
+<li>C++ compiler supported C++17</li>
+<li>Cmake 3.10+ (https://www.cmake.org)</li>
+<li>Boost libraries (https://www.boost.org)</li>
+<li>BLAS and LAPACK libraries</li>
+<li>Libpqxx (for SensorExample)</li>
+</ol>
+<h2 id="ubuntu">Ubuntu</h2>
+<h3 id="install-dependencies">Install dependencies</h3>
+<p>On Ubuntu one can install dependencies from Ubuntu repositories.</p>
+<p>Note that CMake 3.10+ is available in default repositories since Ubuntu 18.04 LTS. If you are using an earlier version
+of Ubuntu, you may need to build CMake from <a href="https://gitlab.kitware.com/cmake/cmake">source code</a>.</p>
+<pre><code>$ sudo apt install cmake
+$ sudo apt install libboost-all-dev
+$ sudo apt install libopenblas-dev
+$ sudo apt install libpqxx-dev postgresql-server-dev-all
+</code></pre>
+
+<h3 id="build">Build</h3>
+<p>If you are building it from inside a virtual machine, make sure to provision at least <strong>2 GiB of virtual memory</strong> for
+the build process to succeed.</p>
+<pre><code>  $ mkdir build
+  $ cd build
+  $ cmake -DCMAKE_BUILD_TYPE=Release ../
+  $ make
+</code></pre>
+
+<h2 id="macos">macOS</h2>
+<h3 id="install-dependencies_1">Install dependencies</h3>
+<p>Use Homebrew tool to install dependencies</p>
+<pre><code>$ brew install cmake
+$ brew install boost
+$ brew install openblas
+$ brew install libpqxx
+</code></pre>
+
+<h3 id="build_1">Build</h3>
+<pre><code>  $ mkdir build
+  $ cd build
+  $ cmake -DCMAKE_BUILD_TYPE=Release ../
+  $ make
+</code></pre>
+
+<h2 id="windows">Windows</h2>
+<h3 id="install-dependencies_2">Install dependencies</h3>
+<p>On Windows one can install some dependencies using vcpkg (https://github.com/microsoft/vcpkg)</p>
+<pre><code>&gt; vcpkg install --triplet=x64-windows-static libpqxx
+&gt; vcpkg install --triplet=x64-windows-static boost
+</code></pre>
+
+<p>Install Intel MKL Library (https://software.intel.com/en-us/mkl/choose-download/windows)</p>
+<h3 id="build_2">Build</h3>
+<pre><code>&gt; mkdir build
+&gt; cd build
+&gt; cmake -DCMAKE_TOOLCHAIN_FILE=[path_to_vcpkg_root]\scripts\buildsystems\vcpkg.cmake ../
+&gt; cmake --build .
+</code></pre>
+              
+            </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+      
+        <a href="../modules/" class="btn btn-neutral" title="Modules"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+    
+  </div>
+
+  Built with <a href="http://www.mkdocs.org">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+      
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" style="cursor: pointer">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      
+      
+        <span><a href="../modules/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+      
+      
+    </span>
+</div>
+    <script>var base_url = '..';</script>
+    <script src="../js/theme.js" defer></script>
+      <script src="../search/main.js" defer></script>
+
+</body>
+</html>

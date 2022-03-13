@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+    <url>
+     <loc>https://panda-official.github.io/metric/</loc>
+     <lastmod>2022-03-13</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+    <url>
+     <loc>https://panda-official.github.io/metric/installation/</loc>
+     <lastmod>2022-03-13</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+    <url>
+     <loc></loc>
+     
+     <changefreq>daily</changefreq>
+    </url>
+    <url>
+     <loc>https://panda-official.github.io/metric/modules/</loc>
+     <lastmod>2022-03-13</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+    <url>
+     <loc>https://panda-official.github.io/metric/examples/</loc>
+     <lastmod>2022-03-13</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+</urlset>

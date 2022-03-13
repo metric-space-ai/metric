@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  
+  <link rel="shortcut icon" href="../img/favicon.ico">
+  <title>Modules - Metric library</title>
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+
+  <link rel="stylesheet" href="../css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../css/theme_extra.css" type="text/css" />
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
+  
+  <script>
+    // Current page data
+    var mkdocs_page_name = "Modules";
+    var mkdocs_page_input_path = "modules.md";
+    var mkdocs_page_url = "/metric/modules/";
+  </script>
+  
+  <script src="../js/jquery-2.1.1.min.js" defer></script>
+  <script src="../js/modernizr-2.8.3.min.js" defer></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script> 
+  
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+      <div class="wy-side-nav-search">
+        <a href=".." class="icon icon-home"> Metric library</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+	<ul class="current">
+	  
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="..">Home</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../installation/">Installation</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../features.md">Features</a>
+	    </li>
+          
+            <li class="toctree-l1 current">
+		
+    <a class="current" href="./">Modules</a>
+    <ul class="subnav">
+            
+    <li class="toctree-l2"><a href="#full-documentation">Full documentation</a></li>
+    
+
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../examples/">Examples</a>
+	    </li>
+          
+        </ul>
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="..">Metric library</a>
+      </nav>
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="..">Docs</a> &raquo;</li>
+    
+      
+    
+    <li>Modules</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        <a href="https://github.com/panda-official/metric/edit/master/docs/modules.md"> Edit on panda-official/metric</a>
+      
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main">
+            <div class="section">
+              
+                <h1 id="full-documentation">Full documentation</h1>
+<p><strong><a href="metric/README.md">Modules Overview</a></strong></p>
+<ul>
+<li>
+<p><strong><a href="metric/distance/README.md">METRIC | DISTANCE</a></strong></p>
+</li>
+<li>
+<p><strong><a href="metric/space/README.md">METRIC | SPACE</a></strong></p>
+</li>
+<li>
+<p><strong><a href="metric/correlation/README.md">METRIC | CORRELATION</a></strong></p>
+</li>
+<li>
+<p><strong><a href="metric/mapping/README.md">METRIC | MAPPING</a></strong></p>
+</li>
+<li>
+<p><strong><a href="metric/transform/README.md">METRIC | TRANSFORM</a></strong></p>
+</li>
+<li>
+<p><strong><a href="metric/utils/README.md">METRIC | UTILS</a></strong></p>
+</li>
+</ul>
+<p><strong>PANDA | METRIC</strong> is organized in several submodules.</p>
+<p><strong>METRIC | DISTANCE</strong> provide an extensive collection of metrics, including factory functions for configuring complex
+metrics.<br />
+They are organized into several's levels of complexity and a prior knowledge about the data. Basically the user give a
+priori information, how the data should be connected for reason, like a picture is a 2d array of pixels. A metric type
+is basically a function, which compares two samples of data and gives back the numeric distance between them.</p>
+<p><strong>METRIC | SPACE</strong> stores and organizes distances. It provides classes to connect and relate data that are kind of the
+same observations in principle. And it includes basic operations such as the search for neighboring elements. If you can
+compare two entries all entries are automatically related through the distance-representations in a metric space.</p>
+<p><strong>METRIC | MAPPING</strong> contains various algorithms that can ‘calculate’ metric spaces or map them into equivalent metric
+spaces. In general, you can regard all the algorithms in METRIC | MAPPING as mapper from one metric space into a new
+one, usually with the goal to reduce complexity (like clustering or classifying) or to fill missing information (like
+predicting). Also values can be bidirectionally reconstructed from reduced space using reverse decoder. In addition,
+unwanted features can be removed from the space for further evaluation. In this way, the user brings in his a priori
+knowledge and understandings. on the other hand his a priori influence is visible and not causing a loss of information
+by an incidental programming of this knowledge.</p>
+<p><strong>METRIC | TRANSFORM</strong> provides deterministic algorithms that transfer data element by element into another metric
+space, e.g. from the time to the frequency domain. This is often useful for complexity reduction as preprocessing step.
+A distinction can be made between lossy compression and completely reversible methods. In general, however, these are
+proven, deterministic methods such as wavelets or physical motivated fittings.</p>
+<p><strong>METRIC | CORRELATION</strong> offers functions to calculate metric entropy, which gives a measure of intrinsic local
+dimensionality and the correlation of two metric spaces and thus to determine the dependency of two arbitrary data sets.
+When METRIC | MAPPING is used to quantify and measure relations in data, METRIC | CORRELATION is used to find relations
+between metric spaces at all.</p>
+<p><strong>METRIC | UTILS</strong> contains algorithms which are not metric either, but which can be easily combined. On the one hand,
+there is a high-performance in-memory crossfilter. This allows a combined filtering of the patterns from the results of
+the operations in quasi real time. On the other hand, the METRIC | UTILS module also contains a nonlinear and
+nonparametric significance test for independent features (PMQ) of a metric space that were obtained by mapping and more.</p>
+<p><strong>FUNCTION CALLS</strong></p>
+<p><strong>Calls METRIC | DISTANCE</strong></p>
+<table>
+<thead>
+<tr>
+<th>Class Description</th>
+<th>Language</th>
+<th>Constructor</th>
+<th>()-Operator</th>
+<th>Default Parameters</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Sorensen Distance</td>
+<td>Python</td>
+<td>f = distance.Sorensen()</td>
+<td>result = f(dataA, dataB)</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>C++</td>
+<td>auto f = metric::Sorensen()</td>
+<td>auto result = f(dataA, dataB)</td>
+<td></td>
+</tr>
+<tr>
+<td>Euclidean Distance Metric</td>
+<td>Python</td>
+<td>f = distance.Euclidean()</td>
+<td>result = f(dataA, dataB)</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>C++</td>
+<td>auto f = metric::Euclidean<double>()</td>
+<td>auto result = f(dataA, dataB)</td>
+<td></td>
+</tr>
+<tr>
+<td>Manhattan Distance Metric</td>
+<td>Python</td>
+<td>f = distance.Manhatten()</td>
+<td>result = f(dataA, dataB)</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>C++</td>
+<td>auto f = metric::Manhatten<double>()</td>
+<td>auto result = f(dataA, dataB)</td>
+<td></td>
+</tr>
+<tr>
+<td>Minkowski (L general) Metric (P_norm)</td>
+<td>Python</td>
+<td>f = distance.P_norm(p=1)</td>
+<td>result = f(dataA, dataB)</td>
+<td>defaults: p=1</td>
+</tr>
+<tr>
+<td></td>
+<td>C++</td>
+<td>auto f = metric::P_norm<double>(1)</td>
+<td>auto result = f(dataA, dataB)</td>
+<td>defaults: p=1</td>
+</tr>
+<tr>
+<td>Euclidean Metric Threshold</td>
+<td>Python</td>
+<td>f = distance.Euclidean_thresholded(thres=1, factor=3)</td>
+<td>result = f(dataA, dataB)</td>
+<td>defaults: thres=1000, factor=3000</td>
+</tr>
+<tr>
+<td></td>
+<td>C++</td>
+<td>auto f = metric::Euclidean_thresholded<double>(1, 3)</td>
+<td>auto result = f(dataA, dataB)</td>
+<td>defaults: thres=1000, factor=3000</td>
+</tr>
+<tr>
+<td>Cosine Metric</td>
+<td>Python</td>
+<td>f = distance.Cosine()</td>
+<td>result = f(dataA, dataB)</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>C++</td>
+<td>auto f = metric::Cosine<double>()</td>
+<td>auto result = f(dataA, dataB)</td>
+<td></td>
+</tr>
+<tr>
+<td>Chebyshev Distance Metric (Maximum value distance)</td>
+<td>Python</td>
+<td>f = distance.Chebyshev()</td>
+<td>result = f(dataA, dataB)</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>C++</td>
+<td>auto f = metric::Chebyshev<double>()</td>
+<td>auto result = f(dataA, dataB)</td>
+<td></td>
+</tr>
+<tr>
+<td>Earth Mover's Distance Metric (EMD)</td>
+<td>Python</td>
+<td>f = distance.EMD(cost_mat, extra_mass_penalty)</td>
+<td>result = f(dataA, dataB)</td>
+<td>defaults: cost_mat={}, extra_mass_penalty=-1</td>
+</tr>
+<tr>
+<td></td>
+<td>C++</td>
+<td>auto f = metric::EMD<double>(cost_mat, max_cost)</td>
+<td>auto result = f(dataA, dataB)</td>
+<td>defaults: extra_mass_penalty=-1</td>
+</tr>
+<tr>
+<td>Edit Distance Metric</td>
+<td>Python</td>
+<td>f = distance.Edit()</td>
+<td>result = f("asdsd", "dffdf")</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>C++</td>
+<td>auto f = metric::Edit<char></td>
+<td>auto result = f("asdsd", "dffdf")</td>
+<td></td>
+</tr>
+<tr>
+<td>Structural Similarity Index (SSIM)</td>
+<td>Python</td>
+<td>f = distance.SSIM(dynamic_range=100, masking=1)</td>
+<td>result = f(img1, img2)</td>
+<td>defaults: dynamic_range=255, masking=2</td>
+</tr>
+<tr>
+<td></td>
+<td>C++</td>
+<td>auto f = metric::SSIM<double, std::vector<double>&gt;(100, 1)</td>
+<td>auto result = f(img1, img2)</td>
+<td></td>
+</tr>
+<tr>
+<td>Time Warp Edit Distance (TWED)</td>
+<td>Python</td>
+<td>f = distance.TWED(penalty=1, elastic=2)</td>
+<td>result = f(dataA, dataB)</td>
+<td>defaults: penalty=0, elastic=1</td>
+</tr>
+<tr>
+<td></td>
+<td>C++</td>
+<td>auto f = metric::TWED<double>(1, 2)</td>
+<td>auto result = f(dataA, dataB)</td>
+<td></td>
+</tr>
+<tr>
+<td>Kohonen Distance Metric</td>
+<td>Python</td>
+<td>f = distance.Kohonen(train_data, w, h)</td>
+<td>result = f(sample1, sample2)</td>
+<td>defaults: start_learn_rate=0.8, finish_learn_rate=0.0, iterations=20</td>
+</tr>
+<tr>
+<td></td>
+<td>C++</td>
+<td>auto f = metric::Kohonen<double>(train_data, w, h)</td>
+<td>auto result = f(sample1, sample2)</td>
+<td>defaults: start_learn_rate=0.8, finish_learn_rate=0.0, iterations=20</td>
+</tr>
+<tr>
+<td>Riemannian Distance Metric</td>
+<td>C++</td>
+<td>auto rd = metric::RiemannianDistance<void, metric::Euclidean<double>&gt;()</td>
+<td>auto result = rd(ds1, ds2)</td>
+<td>defaults: metric=metric::Euclidean<T></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Calls METRIC | SPACE</strong></p>
+<table>
+<thead>
+<tr>
+<th>Class Description</th>
+<th>Language</th>
+<th>Constructor</th>
+<th>()-Operator</th>
+<th>Parameters</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Distance matrix</td>
+<td>Python</td>
+<td>f = space.Matrix(data, Euclidean())</td>
+<td>result = f(i, j)</td>
+<td>Default Parameters: data = {}, metric=Euclidean()</td>
+</tr>
+<tr>
+<td>Distance matrix</td>
+<td>C++</td>
+<td>auto f = metric::Matrix<std::vector<double>&gt;(data)</td>
+<td>auto result = f(i, j)</td>
+<td>constructor defaults: d = Metric() /*</td>
+</tr>
+<tr>
+<td>template argument*/</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>A Search Tree works like a std-container to store data of some structure. Basically a Metric Search Tree has the same principle as a binary search tree or a kd-tree, but it works for arbitrary data structures. This Metric Search Tree is basically a Cover Tree Implementation. Additionally to the distance (or similarity) between the data, a covering distance from level to level decides how the tree grows.</td>
+<td>Python</td>
+<td>f = space.Tree()</td>
+<td>auto result = f(i, j)</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>C++</td>
+<td>auto f = metric::Tree<std::vector<double>&gt;()</td>
+<td>auto result = f(i, j)</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Calls METRIC | MAPPING</strong></p>
+<table>
+<thead>
+<tr>
+<th>Class Description</th>
+<th>Language</th>
+<th>Constructor</th>
+<th>()-Operator</th>
+<th>Encode</th>
+<th>Decode</th>
+<th>Default Parameters</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Domain split principle components compressor</td>
+<td>Python</td>
+<td>f = mapping.DSPCC(dataset, n_features=1)</td>
+<td>-</td>
+<td>f.encode(data)</td>
+<td>result = f.decode(codes)</td>
+<td>defaults: n_features=1, n_subbands=4, time_freq_balance=0.5, n_top_features=16</td>
+</tr>
+<tr>
+<td></td>
+<td>C++</td>
+<td>auto f = metric::DSPCC<vector<double>, void&gt;(dataset, 1)</td>
+<td></td>
+<td></td>
+<td></td>
+<td>defaults: n_features=1, n_subbands=4, time_freq_balance=0.5, n_top_features=16</td>
+</tr>
+<tr>
+<td>Kohonen Distance Clustering is one of the Neural Network unsupervised learning algorithms. This algorithm is used in solving problems in various areas, especially in clustering complex data sets.</td>
+<td>Python</td>
+<td>f = mapping.KOC_factory(w, h)</td>
+<td>koc = f(samples, num_clusters)</td>
+<td>-</td>
+<td>-</td>
+<td>defaults: nodes_width=5, nodes_height=4, anomaly_sigma=1.0, start_learn_rate=0.8, finish_learn_rate=0, iterations=20, distribution_min=-1, distribution_max=1, min_cluster_size=1, metric=distance.Euclidean()</td>
+</tr>
+<tr>
+<td></td>
+<td>C++</td>
+<td>auto f = mapping::KOC_factory<std::vector<double>, metric::Grid6, metric::Euclidean<double>&gt;(w, h)</td>
+<td>auto koc = f(samples, num_clusters)</td>
+<td>-</td>
+<td>-</td>
+<td>defaults: nodes_width=5, nodes_height=4, anomaly_sigma=1.0, start_learn_rate=0.8, finish_learn_rate=0, iterations=20, distribution_min=-1, distribution_max=1, min_cluster_size=1</td>
+</tr>
+<tr>
+<td>Autoencoder  is an unsupervised artificial neural network that learns how to efficiently compress and encode data then learns how to reconstruct the data back from the reduced encoded representation to a representation that is as close to the original input as possible. It reduces data dimensions by learning how to ignore the noise in the data.</td>
+<td>Python</td>
+<td>f = mapping.Autoencoder()</td>
+<td>-</td>
+<td>result = f.encode(sample)</td>
+<td>result = f.decode(sample)</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>C++</td>
+<td>auto f = metric::Autoencoder<uint8_t, double>()</td>
+<td>-</td>
+<td>auto result = f.encode(sample)</td>
+<td>result = f.decode(sample)</td>
+<td></td>
+</tr>
+<tr>
+<td>dbscan (Density-based spatial clustering of applications with noise) is a data clustering  non-parametric algorithm. Given a set of points in some space, it groups together points that are closely packed together (points with many nearby neighbors), marking as outliers points that lie alone in low-density regions (whose nearest neighbors are too far away). DBSCAN is one of the most common clustering algorithms and also most cited in scientific literature.</td>
+<td>Python</td>
+<td>f = mapping.dbscan</td>
+<td>assignments, seeds, counts = f(matrix, eps, minpts)</td>
+<td>-</td>
+<td>-</td>
+<td></td>
+</tr>
+<tr>
+<td>dbscan</td>
+<td>C++</td>
+<td>auto f = mapping::dbscan<std::vector<double>&gt;</td>
+<td>auto result = f(matrix, eps, minpts)</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>ESN  (echo state network) is a recurrent neural network with a sparsely connected hidden layer (with typically 1% connectivity). The connectivity and weights of hidden neurons are fixed and randomly assigned</td>
+<td>Python</td>
+<td>f = partial(mapping.ESN(w_size=400).train(slices, target).predict)</td>
+<td>result = f(slices)</td>
+<td>-</td>
+<td>-</td>
+<td>defaults: w_size=500, w_connections=10, w_sr=0.6, alpha=0.5, washout=1, beta=0.5</td>
+</tr>
+<tr>
+<td>ESN</td>
+<td>C++</td>
+<td>auto f = metric::ESN<std::vector<double>, Euclidean<double>&gt;()</td>
+<td>-</td>
+<td>-</td>
+<td></td>
+<td>defaults: w_size=500, w_connections=10, w_sr=0.6, alpha=0.5, washout=1, beta=0.5</td>
+</tr>
+<tr>
+<td>AffProp (Affinity propagation) is a clustering algorithm based on message passing between data points. Similar to K-medoids, it looks at the (dis)similarities in the data, picks one exemplar data point for each cluster, and assigns every point in the data set to the cluster with the closest exemplar.</td>
+<td>Python</td>
+<td>f = mapping.AffProp(preference=1.0, maxiter=100)</td>
+<td>result = f(data)</td>
+<td>-</td>
+<td>-</td>
+<td>defaults: preference=0.5, maxiter=200, tol=1.0e-6, damp=0.5</td>
+</tr>
+<tr>
+<td>AffProp</td>
+<td>C++</td>
+<td>auto f = mapping::AffProp<std::vector<double>&gt;()</td>
+<td>auto result = f(data)</td>
+<td></td>
+<td></td>
+<td>defaults: preference=0.5, maxiter=200, tol=1.0e-6, damp=0.5</td>
+</tr>
+<tr>
+<td>kmeans  clustering is a method of vector quantization, that aims to partition n observations into k clusters in which each observation belongs to the cluster with the nearest mean (cluster centers or cluster centroid), serving as a prototype of the cluster.</td>
+<td>Python</td>
+<td>f = partial(mapping.kmeans, maxiter=100, distance_measure='manhatten')</td>
+<td>result = f(data, k)</td>
+<td>-</td>
+<td>-</td>
+<td>defaults: maxiter=200, distance_measure='euclidean', random_seed=-1</td>
+</tr>
+<tr>
+<td>kmeans</td>
+<td>C++</td>
+<td>auto f = metric::kmeans</td>
+<td>auto result = f(data, k)</td>
+<td></td>
+<td></td>
+<td>defaults: maxiter=200, distance_measure='euclidean', random_seed=-1</td>
+</tr>
+<tr>
+<td>kmedoids is a classical partitioning technique of clustering, which clusters the data set of n objects into k clusters, with the number k of clusters assumed known a priori (which implies that the programmer must specify k before the execution of the algorithm).</td>
+<td>Python</td>
+<td>f = mapping.kmedoids</td>
+<td>result = f(data, k)</td>
+<td>-</td>
+<td>-</td>
+<td></td>
+</tr>
+<tr>
+<td>kmedoids</td>
+<td>C++</td>
+<td>auto f = metric::kmedoids<std::vector<double>&gt;</td>
+<td>auto result = f(data, k)</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Calls METRIC | TRANSFORM</strong></p>
+<table>
+<thead>
+<tr>
+<th>Class Description</th>
+<th>Language</th>
+<th>Constructor</th>
+<th>()-Operator</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Discrete wavelet transform(DWT) is any wavelet transform for which the wavelets are discretely sampled. As with other wavelet transforms, a key advantage it has over Fourier transforms is temporal resolution: it captures both frequency and location information.</td>
+<td>Python</td>
+<td>f = partial(transform.dwt, wavelet_type=3)</td>
+<td>result = f(a)</td>
+</tr>
+<tr>
+<td></td>
+<td>C++</td>
+<td>auto f = metric::dwt<std::vector<double>&gt;</td>
+<td>auto result = f(a)</td>
+</tr>
+<tr>
+<td>The idwt command performs a single-level one-dimensional wavelet reconstruction.</td>
+<td>Python</td>
+<td>f = partial(transform.idwt, wavelet_type=1, lx=3)</td>
+<td>result = f(a, b)</td>
+</tr>
+<tr>
+<td></td>
+<td>C++</td>
+<td>auto f =metric::idwt<std::vector<double>&gt;</td>
+<td>auto result = f(a, b)</td>
+</tr>
+<tr>
+<td>wmaxlev returns the maximum level L possible for a wavelet decomposition of a signal or image of size size_x. The maximum level is the last level for which at least one coefficient is correct.</td>
+<td>Python</td>
+<td>f = partial(transform.wmaxlev, wavelet_type=t)</td>
+<td>result = f(size_x)</td>
+</tr>
+<tr>
+<td></td>
+<td>C++</td>
+<td>auto f = metric::wmaxlev</td>
+<td>auto result = f(size_x)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Calls METRIC | CORRELATION</strong></p>
+<table>
+<thead>
+<tr>
+<th>Class Description</th>
+<th>Language</th>
+<th>Constructor</th>
+<th>()-Operator</th>
+<th>Estimate</th>
+<th>Parameters</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Use MGC (Multi-scale Graph Correlation) as correlation coefficient to find nonlinear dependencies in data sets. It is optimized for small data set sizes.</td>
+<td>C++</td>
+<td>auto f = metric::MGC<void, Euclidean<double>,void, Manhattan<float>&gt;()</td>
+<td>auto result = f(dataA, dataB)</td>
+<td>auto result= f.estimate(dataA, dataB)</td>
+<td>Defaults: constructor: metric1=Euclidean(), metric2=Euclidean(); Default parameters estimate: b_sample_size=250, threshold=0.05, max_iterations=1000</td>
+</tr>
+<tr>
+<td></td>
+<td>Python</td>
+<td>f = correlation.MGC()</td>
+<td>auto result = f(dataA, dataB)</td>
+<td>auto result= f.estimate(dataA, dataB)</td>
+<td>Defaults: constructor: metric1=Euclidean(), metric2=Euclidean(); Default parameters estimate: b_sample_size=250, threshold=0.05, max_iterations=1000</td>
+</tr>
+<tr>
+<td>Calculate metric entropy, which gives a measure of intrinsic local dimensionality</td>
+<td>C++</td>
+<td>auto f = metric::Entropy<void, Manhattan<double>&gt;(metric, k, p, exp)</td>
+<td>auto result = f(dataA)</td>
+<td>auto result= f.estimate(data)</td>
+<td>Defaults: constructor: metric=Euclidean(), k=7, p=25, exp=False; Default parameters estimate: samples_size=250, threshold=0.05, max_iterations=1000</td>
+</tr>
+<tr>
+<td></td>
+<td>Python</td>
+<td>f = distance.Entropy(metric=Manhattan(), k=3, p=30)</td>
+<td>auto result = f(dataA)</td>
+<td>result = f.estimate(data)</td>
+<td>Defaults: constructor: metric=Euclidean(), k=7, p=25, exp=False; Default parameters estimate: samples_size=250, threshold=0.05, max_iterations=1000</td>
+</tr>
+<tr>
+<td>VMixing</td>
+<td>C++</td>
+<td>auto f = metric::VMixing<void, metric::Euclidean<double>&gt;(metric::Euclidean<double>(), 7, 50)</td>
+<td>auto result = f(dataA, dataB)</td>
+<td>auto result = f.estimate(dataA, dataB)</td>
+<td>defaults: constructor: metric=metric::Euclidean<T>(), k=3, p=25; .estimate: sampleSize = 250, threshold = 0.05, maxIterations = 1000</td>
+</tr>
+<tr>
+<td>VMixing_simple</td>
+<td>C++</td>
+<td>auto f = metric::VMixing_simple<void, metric::Euclidean<double>&gt;(metric::Euclidean<double>(), 7)</td>
+<td>auto result = f(dataA, dataB)</td>
+<td>auto result = f.estimate(dataA, dataB)</td>
+<td>defaults: constructor: metric=metric::Euclidean<T>(), k=3; .estimate: sampleSize = 250, threshold = 0.05, maxIterations = 1000</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Calls METRIC | UTILS</strong></p>
+<table>
+<thead>
+<tr>
+<th>Class Description</th>
+<th>Language</th>
+<th>Constructor</th>
+<th>()-Operator</th>
+<th>Parameters</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>The goal of resistance specification of graphs  is to find a sparse subgraph (with reweighed edges) that approximately preserves the effective resistances between every pair of nodes.</td>
+<td>C++</td>
+<td>auto f = metric::sparsify_effective_resistance</td>
+<td>auto result = f(data)</td>
+<td>Default params: ep=0.3, max_conc_const=4.0, jl_fac=4.0</td>
+</tr>
+<tr>
+<td></td>
+<td>Python</td>
+<td>f = partial(utils.sparsify_effective_resistance, ep=0.1)</td>
+<td>result = f(data)</td>
+<td>Default params: ep=0.3, max_conc_const=4.0, jl_fac=4.0</td>
+</tr>
+<tr>
+<td>A minimum spanning tree is a graph consisting of the subset of edges which together connect all connected nodes, while minimizing the total sum of weights on the edges. This is computed using the Kruskal algorithm.</td>
+<td>C++</td>
+<td>auto f = metric::sparsify_spanning_tree</td>
+<td>auto result = f(data)</td>
+<td>Default params: minimum=true</td>
+</tr>
+<tr>
+<td></td>
+<td>Python</td>
+<td>f = partial(utils.sparsify_spanning_tree, minimum=False)</td>
+<td>result = f(data)</td>
+<td>Default params: minimum=True</td>
+</tr>
+</tbody>
+</table>
+              
+            </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../examples/" class="btn btn-neutral float-right" title="Examples">Next <span class="icon icon-circle-arrow-right"></span></a>
+      
+      
+        <a href="../installation/" class="btn btn-neutral" title="Installation"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+    
+  </div>
+
+  Built with <a href="http://www.mkdocs.org">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+      
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" style="cursor: pointer">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      
+      
+        <span><a href="../installation/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+      
+      
+        <span style="margin-left: 15px"><a href="../examples/" style="color: #fcfcfc">Next &raquo;</a></span>
+      
+    </span>
+</div>
+    <script>var base_url = '..';</script>
+    <script src="../js/theme.js" defer></script>
+      <script src="../search/main.js" defer></script>
+
+</body>
+</html>
