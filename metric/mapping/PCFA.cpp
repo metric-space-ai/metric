@@ -153,15 +153,38 @@ PCFA<RecType, Metric>::PCFA(const blaze::DynamicMatrix<value_type> &TrainingData
 }
 
 template <typename RecType, typename Metric>
-PCFA<RecType, Metric>::PCFA(std::vector<RecType> &TrainingData, size_t n_features)
+PCFA<RecType, Metric>::PCFA(const std::vector<RecType> &TrainingData, const size_t n_features)
 {
 	blaze::DynamicMatrix<value_type> blaze_in(TrainingData.size(), TrainingData[0].size(), 0);
 	for (size_t i = 0; i < TrainingData.size();
-		 ++i) // TODO optimize using iterators!! // TODO replace with call of converter
+                 ++i) // TODO optimize using iterators!! // TODO replace with call of converter
 		for (size_t j = 0; j < TrainingData[0].size(); ++j)
 			blaze_in(i, j) = TrainingData[i][j];
 	W_decode = metric::PCA(blaze_in, n_features, averages);
 	W_encode = trans(W_decode); // computed once and saved
+}
+
+template <typename RecType, typename Metric>
+PCFA<RecType, Metric>::PCFA(const blaze::DynamicMatrix<value_type> &Weights,
+                                                        const blaze::DynamicVector<value_type, blaze::rowVector> &avgs)
+{
+        W_decode = Weights;
+        W_encode = trans(W_decode); // computed once and saved
+        averages = avgs;
+}
+
+template <typename RecType, typename Metric>
+PCFA<RecType, Metric>::PCFA(const std::vector<RecType> &Weights, const RecType &avgs)
+{
+        W_decode = blaze::DynamicMatrix<value_type>(Weights.size(), Weights[0].size(), 0);
+        for (size_t i = 0; i < Weights.size(); ++i)
+                for (size_t j = 0; j < Weights[0].size(); ++j)
+                        W_decode(i, j) = Weights[i][j];
+        W_encode = trans(W_decode); // computed once and saved
+        averages = blaze::DynamicVector<value_type, blaze::rowVector>(avgs.size(), 0);
+        for (size_t i = 0; i < avgs.size(); ++i) {
+                averages[i] = avgs[i];
+        }
 }
 
 template <typename RecType, typename Metric>
@@ -227,6 +250,18 @@ blaze::DynamicMatrix<typename PCFA<RecType, Metric>::value_type> PCFA<RecType, M
 	// return expand(averages, 0);  // expand absents in local version of Blaze-lib
 }
 
+template <typename RecType, typename Metric> RecType PCFA<RecType, Metric>::average()
+{
+        blaze::DynamicMatrix<value_type> result(1, averages.size());
+        blaze::row(result, 0) = averages;
+        return blaze2RecType<RecType>(result)[0];
+}
+
+template <typename RecType, typename Metric> std::vector<RecType> PCFA<RecType, Metric>::weights()
+{
+        return blaze2RecType<RecType>(W_decode);
+}
+
 template <typename RecType, typename Metric>
 blaze::DynamicMatrix<typename PCFA<RecType, Metric>::value_type> PCFA<RecType, Metric>::eigenmodes_mat()
 {
@@ -280,7 +315,7 @@ PCFA<RecType, Metric>::blaze2RecType(const blaze::DynamicMatrix<typename PCFA<R,
 		for (size_t j = 0; j < In.columns(); ++j)
 			rec[j] = In(i, j); // blaze specific
 		Out.push_back(rec);
-	}
+        }
 	return Out;
 }
 
