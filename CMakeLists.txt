@@ -80,6 +80,7 @@ if (LAPACK_FOUND)
 endif()
 target_link_libraries(${METRIC_TARGET_NAME} INTERFACE nlohmann_json::nlohmann_json)
 target_link_libraries(${METRIC_TARGET_NAME} INTERFACE blaze::blaze)
+target_link_libraries(${METRIC_TARGET_NAME} INTERFACE cereal:cereal)
 
 
 # Catch2 installation
