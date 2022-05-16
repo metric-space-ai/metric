@@ -37,7 +37,7 @@ endif ()
 include(FetchContent)
 
 # LAPACK
-find_package(LAPACK REQUIRED)
+find_package(LAPACK)
 
 # Json
 #FetchContent_Declare(json
@@ -75,9 +75,12 @@ target_include_directories(${METRIC_TARGET_NAME} INTERFACE
         $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
 
 # Link libraries
-target_link_libraries(${METRIC_TARGET_NAME} INTERFACE ${LAPACK_LIBRARIES})
+if (LAPACK_FOUND)
+    target_link_libraries(${METRIC_TARGET_NAME} INTERFACE ${LAPACK_LIBRARIES})
+endif()
 target_link_libraries(${METRIC_TARGET_NAME} INTERFACE nlohmann_json::nlohmann_json)
 target_link_libraries(${METRIC_TARGET_NAME} INTERFACE blaze::blaze)
+target_link_libraries(${METRIC_TARGET_NAME} INTERFACE cereal::cereal)
 
 
 # Catch2 installation
