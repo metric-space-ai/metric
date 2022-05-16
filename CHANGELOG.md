@@ -1,11 +1,17 @@
 # Changelog
 
-## [unreleased] - 2022-04-13
+## [0.2.1] - 2022-05-16
 
 ### Added
 - PCFA average() and weights() getter methods and constructor that uses what they return, so as user in enabled to export and re-create the PCFA model [#324](https://github.com/panda-official/metric/pull/324)
 - Minimal test for PCFA [#324](https://github.com/panda-official/metric/pull/324)
 - Save and load example lines at `PCFA_example.cpp` [#324](https://github.com/panda-official/metric/pull/324)
+
+### Changed
+- Add build ability without LAPACK [#325](https://github.com/panda-official/metric/pull/325)
+- Add link to cereal::cereal target [#325](https://github.com/panda-official/metric/pull/325)
+- Change cereal version to 1.3.2 in CI [#325](https://github.com/panda-official/metric/pull/325)
+
 
 ## [0.2.0] - 2022-02-10
 
