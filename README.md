@@ -8,9 +8,9 @@
 Here is an anomaly detection example:
 ![PCB](4_nyc_redif.png)
 
-Here are two visualizations, how to computation in and with metric spaces work.
-![PCB](kohonen.png)
-![PCB](reverse_diffusion.png)
+Here are two examplary visualizations, how the computation in and with metric spaces works.
+![PCB](kohonen.gif)
+![PCB](reverse_diffusion.gif)
 
 
 # Intro example
