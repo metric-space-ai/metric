@@ -8,7 +8,7 @@
 Here is an anomaly detection example:
 ![PCB](4_nyc_redif.png)
 
-Here are two examplary visualizations, how the computation in and with metric spaces works.
+Here are two examplary, low-dimenensional visualizations, how the computation of anomaly works in metric spaces. However, normally you are dealing with high dimensional spaces.
 ![PCB](kohonen.gif)
 ![PCB](reverse_diffusion.gif)
 
