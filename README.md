@@ -1,9 +1,9 @@
 ![C++](https://github.com/panda-official/metric/workflows/Test%20C++%20code/badge.svg)
 ![Python](https://github.com/panda-official/metric/workflows/Test%20Python%20package/badge.svg)
 
-# PANDA | METRIC
+# METRIC
 
-**PANDA | METRIC** is a framework for machine learning based on the concept of metric spaces, which makes it possible to use and combine arbitrary data to build models. METRIC is written in modern C++ to provide the best performance. However, due to Python bindings, you can use it directly in Python.
+**METRIC** is a framework for machine learning based on the concept of metric spaces, which makes it possible to combine arbitrary data types. METRIC is written in modern C++ to provide the best performance and provides Python bindings.
 
 Here is an anomaly detection example:
 ![PCB](4_nyc_redif.png)
@@ -271,9 +271,9 @@ double outliner_score = model(Img1); // compute the outline score for an image
 ```
 
 
-# Why PANDA | METRIC is awesome
+# Why METRIC is awesome
 
-**PANDA | METRIC** extends the capabilities of machine
+** METRIC** extends the capabilities of machine
 learning algorithms for variable structured data
 types and enables statements to be made about the
 relationships between the data in the context of
@@ -295,7 +295,7 @@ all you need to generate data-driven added values. All algorithms in data scienc
 connected family. This framework provides a universal approach that makes it easy to combine these techniques. 
 This framework brings all these algorithms under the theory of metric spaces together and guides, how to combine them.  
 
-**PANDA | METRIC** is programmed in modern and template based C++, which allows a comfortable use with
+**METRIC** is programmed in modern and template based C++, which allows a comfortable use with
 optimal performance at the same time. Compared
 to the approach of neural networks, the concept of metric spaces offers considerable advantages especially for industrial applications.
 
@@ -314,7 +314,7 @@ to the approach of neural networks, the concept of metric spaces offers consider
 
 * **[METRIC | UTILS](metric/utils/README.md)** 
 
-**PANDA | METRIC** is organized in several submodules. 
+**METRIC** is organized in several submodules. 
  
 **METRIC | DISTANCE** provide an extensive collection of metrics,
 including factory functions for configuring complex metrics.  
