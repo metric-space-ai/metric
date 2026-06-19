@@ -588,6 +588,11 @@ class RevivalApiTest(unittest.TestCase):
         self.assertEqual(representatives_result.strategy, "farthest_first")
         self.assertEqual(representatives_result.representation, "metric_space")
 
+        self.assertEqual(space.representatives(count=3), representatives_result)
+        self.assertEqual(
+            find_representatives([0, 1, 2, 3, 4], lambda lhs, rhs: abs(lhs - rhs), count=3),
+            representatives_result,
+        )
         seeded = space.representatives(2, strategy=FarthestFirst(seed_index=2))
         self.assertEqual(seeded.representatives, (2, 0))
 
@@ -767,6 +772,12 @@ class RevivalApiTest(unittest.TestCase):
             space.reduce(0)
         with self.assertRaises(ValueError):
             space.reduce(6)
+        with self.assertRaisesRegex(TypeError, "count is required"):
+            space.representatives()
+        with self.assertRaisesRegex(ValueError, "either k or count"):
+            space.representatives(2, count=2)
+        with self.assertRaisesRegex(ValueError, "either k or count"):
+            find_representatives([0, 1], lambda lhs, rhs: abs(lhs - rhs), 1, count=1)
         with self.assertRaises(TypeError):
             space.reduce(strategy=FarthestFirst())
         with self.assertRaises(ValueError):

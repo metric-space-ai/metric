@@ -41,6 +41,7 @@ from metric.strategies import ClassicMDS
 
 space = Space(records, metric)
 groups = space.groups(count=2)
+representatives = space.representatives(count=2)
 outliers = space.outliers(count=2)
 denoised = space.denoise(count=2)
 embedding = space.embed(strategy=ClassicMDS(dimensions=2))
