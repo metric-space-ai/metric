@@ -304,14 +304,13 @@ class Space(FiniteMetricSpace):
         runtime=None,
     ):
         require_exact_runtime(runtime)
-        if representation is not None:
-            representation.ensure_fresh()
+        representation_name = self._representation_name(representation)
         from metric.operators import find_outliers
 
         if strategy is not None:
             if count is not None or threshold is not None or fraction != 0.05:
                 raise ValueError("use either strategy or count/fraction/threshold, not both")
-            return find_outliers(self.records, self.metric, strategy)
+            return find_outliers(self.records, self.metric, strategy, representation=representation_name)
 
         from metric.operators import Outlier, OutlierResult
 
@@ -335,7 +334,7 @@ class Space(FiniteMetricSpace):
             exact=True,
             operator_name="find_outliers",
             strategy="nearest_neighbor_distance",
-            representation="metric_space",
+            representation=representation_name,
         )
 
     def denoise(
@@ -350,14 +349,13 @@ class Space(FiniteMetricSpace):
         runtime=None,
     ):
         require_exact_runtime(runtime)
-        if representation is not None:
-            representation.ensure_fresh()
+        representation_name = self._representation_name(representation)
         from metric.operators import denoise_space
 
         if strategy is not None:
             if count is not None or threshold is not None or fraction != 0.05 or strength != "auto":
                 raise ValueError("use either strategy or count/fraction/threshold/strength, not both")
-            return denoise_space(self.records, self.metric, strategy)
+            return denoise_space(self.records, self.metric, strategy, representation=representation_name)
 
         if strength != "auto":
             if count is not None or threshold is not None or fraction != 0.05:
@@ -389,7 +387,7 @@ class Space(FiniteMetricSpace):
             operator_name="denoise",
             mapping="nearest_neighbor_outlier_filter",
             strategy="nearest_neighbor_distance",
-            representation="metric_space",
+            representation=representation_name,
             inverse_supported=False,
         )
 

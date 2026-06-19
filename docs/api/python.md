@@ -67,11 +67,11 @@ space.groups(strategy=DBSCAN(radius=1, min_points=2))
 space.embed(dimensions=2)
 space.embed(strategy=ClassicMDS(dimensions=2))
 space.embed(dimensions=2, representation=space.to_matrix())
-space.outliers(count=2)
+space.outliers(count=2, representation=space.to_matrix())
 space.outliers(threshold=10)
 space.outliers(strategy=DBSCAN(radius=1, min_points=2))
 space.denoise()
-space.denoise(count=2)
+space.denoise(count=2, representation=space.to_matrix())
 space.denoise(strategy=DBSCAN(radius=1, min_points=2))
 space.compare(other_space, strategy=DistanceProfileCorrelation())
 space.compare(other_space, align="ids")
@@ -208,9 +208,9 @@ structure = describe_structure(records, Edit())
 
 `find_groups` returns a `ClusteringResult` with source-record assignments, medoid record IDs, cluster sizes, optional DBSCAN core/noise records, iteration metadata, algorithm metadata, and representation metadata. `Space.groups(...)` exposes the same result from the `Space` facade. Passing an integer group count selects deterministic `KMedoids`; passing `KMedoids` or `DBSCAN` makes the strategy explicit.
 
-`find_outliers` returns an `OutlierResult` backed by DBSCAN-noise detection. Each `Outlier` contains the source record ID and a deterministic isolation score based on distance to the nearest non-noise record. `Space.outliers(count=...)` also supports a strategy-free exact default that scores records by distance to the nearest other record; pass a DBSCAN strategy for the density-noise path.
+`find_outliers` returns an `OutlierResult` backed by DBSCAN-noise detection. Each `Outlier` contains the source record ID and a deterministic isolation score based on distance to the nearest non-noise record. `Space.outliers(count=...)` also supports a strategy-free exact default that scores records by distance to the nearest other record; pass a DBSCAN strategy for the density-noise path. Pass a fresh `representation=` to record representation metadata; stale representations raise `metric.StaleRepresentationError`.
 
-`denoise_space` returns a `MappingResult` backed by DBSCAN-noise filtering. The derived `Space` contains only non-noise source records, `source_record_ids` preserves the original record lineage, and inverse reconstruction is explicitly unsupported. `Space.denoise()` also supports a strategy-free exact default that removes records selected by `Space.outliers(...)`.
+`denoise_space` returns a `MappingResult` backed by DBSCAN-noise filtering. The derived `Space` contains only non-noise source records, `source_record_ids` preserves the original record lineage, and inverse reconstruction is explicitly unsupported. `Space.denoise()` also supports a strategy-free exact default that removes records selected by `Space.outliers(...)`, and it records fresh `representation=` metadata the same way as `Space.outliers(...)`.
 
 `embed_space` returns an `EmbeddingResult` backed by deterministic classical MDS over the exact finite distance matrix. The result includes NumPy `coordinates`, an `embedded_space` over coordinate records with a Euclidean metric, the original `source_space`, source-record IDs, exact/operator/representation metadata, a small `EmbeddingModel`, normalized stress, local-neighbor trustworthiness, distance-profile correlation, and finite-coordinate diagnostics. `Space.embed(...)` exposes the same derived coordinate view from the `Space` facade. Pass `representation=space.to_matrix()` or another fresh representation when the result should record the execution representation; stale representations raise `metric.StaleRepresentationError`.
 

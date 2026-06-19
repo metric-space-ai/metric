@@ -521,6 +521,15 @@ class RevivalApiTest(unittest.TestCase):
         self.assertEqual(nearest_outliers.outliers, (Outlier(record_id=4, score=19),))
         self.assertEqual(nearest_outliers.strategy, "nearest_neighbor_distance")
         self.assertEqual(nearest_outliers.noise_count, 1)
+        matrix_outliers = outlier_space.outliers(count=1, representation=outlier_space.to_matrix())
+        self.assertEqual(matrix_outliers.representation, "matrix")
+        self.assertEqual(matrix_outliers.outliers, nearest_outliers.outliers)
+        matrix_strategy_outliers = outlier_space.outliers(
+            DBSCAN(radius=2, min_points=2),
+            representation=outlier_space.to_matrix(),
+        )
+        self.assertEqual(matrix_strategy_outliers.representation, "matrix")
+        self.assertEqual(matrix_strategy_outliers.outliers, outliers.outliers)
         self.assertEqual(outlier_space.outliers(fraction=0.2).outliers, nearest_outliers.outliers)
         self.assertEqual(outlier_space.outliers(threshold=10).outliers, nearest_outliers.outliers)
         self.assertEqual(outlier_space.outliers(count=0).outliers, ())
@@ -564,6 +573,9 @@ class RevivalApiTest(unittest.TestCase):
         self.assertEqual(nearest_denoised.mapping, "nearest_neighbor_outlier_filter")
         self.assertEqual(nearest_denoised.strategy, "nearest_neighbor_distance")
         self.assertFalse(nearest_denoised.inverse_supported)
+        matrix_denoised = outlier_space.denoise(count=1, representation=outlier_space.to_matrix())
+        self.assertEqual(matrix_denoised.representation, "matrix")
+        self.assertEqual(matrix_denoised.source_record_ids, nearest_denoised.source_record_ids)
         self.assertEqual(outlier_space.denoise(strength=0.2).source_record_ids, (0, 1, 2, 3))
         self.assertEqual(outlier_space.denoise(threshold=100).source_record_ids, (0, 1, 2, 3, 4))
         with self.assertRaises(ValueError):
@@ -826,6 +838,10 @@ class RevivalApiTest(unittest.TestCase):
             space.reduce(count=2, representation=stale_matrix)
         with self.assertRaises(StaleRepresentationError):
             space.compress(count=2, representation=stale_matrix)
+        with self.assertRaises(StaleRepresentationError):
+            space.outliers(count=1, representation=stale_matrix)
+        with self.assertRaises(StaleRepresentationError):
+            space.denoise(count=1, representation=stale_matrix)
 
     def test_intrinsic_dimension_estimates_distance_growth(self):
         records = [0, 1, 2, 3, 4]
