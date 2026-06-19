@@ -33,13 +33,15 @@ The core tests cover:
 - matrix, graph, and tree consistency
 - MGC regression values
 - entropy regression values when LAPACK is available
-- promoted examples for strings, custom metrics, explicit representations, TWED, EMD, MGC, and entropy when LAPACK is available
+- intrinsic-dimension regression values
+- promoted examples for strings, custom metrics, explicit representations, TWED, EMD, MGC, intrinsic dimension, and entropy when LAPACK is available
 
 The Python core wheel path covers:
 
 - importability of the revived Python facade modules
 - `Space`, `FiniteMetricSpace`, and operator helper behavior
 - metric contract checks for built-in edit distance, NumPy record callables, and structured record callables
+- intrinsic-dimension regression values
 - promoted Python examples for strings and structured records
 
 ## Extended and Historical Tests

@@ -114,6 +114,7 @@ The lower-level C++ representations remain available for expert control and comp
 - `metric::operators::pairwise_distance_matrix`
 - `metric::operators::nearest_neighbors`
 - `metric::operators::range_neighbors`
+- `metric::operators::intrinsic_dimension`
 - `metric::MatrixSpace`
 - `metric::GraphSpace`
 - `metric::TreeSpace`
@@ -178,6 +179,7 @@ Examples:
 - [Time-Series Space With TWED](docs/examples/time-series-twed.md)
 - [Histogram Space With EMD](docs/examples/histogram-emd.md)
 - [Entropy Diagnostics](docs/examples/entropy-diagnostics.md)
+- [Intrinsic Dimension Diagnostic](docs/examples/intrinsic-dimension.md)
 - [Correlation Between Metric Spaces](docs/examples/correlation-between-spaces.md)
 - [Industrial Anomaly Workflow](docs/examples/industrial-anomaly-workflow.md)
 

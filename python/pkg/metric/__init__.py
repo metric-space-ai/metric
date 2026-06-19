@@ -19,7 +19,7 @@ except ModuleNotFoundError:
 
 from . import mappings, metrics, operators, spaces, transforms
 from .metrics import Edit
-from .operators import nearest_neighbors, pairwise_distance_matrix, range_neighbors
+from .operators import intrinsic_dimension, nearest_neighbors, pairwise_distance_matrix, range_neighbors
 from .spaces import FiniteMetricSpace, MatrixSpace, Space
 
 __all__ = sorted(

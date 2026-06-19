@@ -1,10 +1,18 @@
 #include <cassert>
+#include <cmath>
 #include <string>
 #include <vector>
 
 #include "metric/distance.hpp"
 #include "metric/operators.hpp"
 #include "metric/space.hpp"
+
+struct AbsoluteDistance {
+    auto operator()(int lhs, int rhs) const -> int
+    {
+        return lhs > rhs ? lhs - rhs : rhs - lhs;
+    }
+};
 
 int main()
 {
@@ -41,6 +49,10 @@ int main()
     const auto operator_range =
         metric::operators::range_neighbors(records, metric::Edit<std::string>{}, std::string("cut"), 1);
     assert(operator_range.size() == 2);
+
+    const std::vector<int> line = {0, 1, 2, 3, 4};
+    const double dimension = metric::operators::intrinsic_dimension(line, AbsoluteDistance{});
+    assert(std::abs(dimension - (std::log(5.0 / 3.0) / std::log(2.0))) < 1e-12);
 
     return 0;
 }

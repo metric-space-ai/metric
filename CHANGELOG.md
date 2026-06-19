@@ -4,11 +4,12 @@
 
 ### API Changes
 
-- Keep the Python core API surface unchanged while expanding its contract coverage.
+- Add `metric::operators::intrinsic_dimension` and `metric.intrinsic_dimension` as expansion-dimension diagnostics for finite metric spaces.
 
 ### Algorithm Changes
 
 - Add Python core metric-contract checks for non-negativity, identity, symmetry, and triangle inequality across built-in edit distance, NumPy record callables, and structured-record callables.
+- Add C++ and Python regression coverage for intrinsic-dimension estimates.
 
 ### Packaging and Build
 
@@ -20,6 +21,7 @@
 ### Documentation and Examples
 
 - Add a promoted Python structured-record metric-space example using dictionaries and a domain metric callable.
+- Add a promoted C++ intrinsic-dimension example and documentation.
 - Document the promoted Python examples in the structured-data examples guide.
 - Update testing and release-gate docs to describe Python core metric-contract coverage and multiple promoted Python examples.
 

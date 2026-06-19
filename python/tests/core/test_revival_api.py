@@ -4,7 +4,7 @@ import metric
 import numpy as np
 from metric.metrics import Edit, available
 from metric import mappings, transforms
-from metric.operators import nearest_neighbors, pairwise_distance_matrix, range_neighbors
+from metric.operators import intrinsic_dimension, nearest_neighbors, pairwise_distance_matrix, range_neighbors
 from metric.spaces import FiniteMetricSpace, MatrixSpace, Space
 
 
@@ -37,9 +37,11 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIs(metric.spaces.FiniteMetricSpace, FiniteMetricSpace)
         self.assertIs(metric.operators.nearest_neighbors, nearest_neighbors)
         self.assertIs(metric.operators.range_neighbors, range_neighbors)
+        self.assertIs(metric.operators.intrinsic_dimension, intrinsic_dimension)
         self.assertIs(metric.mappings, mappings)
         self.assertIs(metric.transforms, transforms)
         self.assertIs(metric.Edit, Edit)
+        self.assertIs(metric.intrinsic_dimension, intrinsic_dimension)
         self.assertIs(metric.range_neighbors, range_neighbors)
         self.assertIs(metric.FiniteMetricSpace, FiniteMetricSpace)
         self.assertIs(metric.Space, Space)
@@ -73,6 +75,14 @@ class RevivalApiTest(unittest.TestCase):
         self.assertEqual(nearest_neighbors(self.records, self.metric, "cut", 2), [(0, 1), (1, 1)])
         self.assertEqual(range_neighbors(self.records, self.metric, "cut", 1), [(0, 1), (1, 1)])
         self.assertEqual(pairwise_distance_matrix(self.records, self.metric)[0][1], 1)
+
+    def test_intrinsic_dimension_estimates_distance_growth(self):
+        records = [0, 1, 2, 3, 4]
+
+        def absolute_distance(lhs, rhs):
+            return abs(lhs - rhs)
+
+        self.assertAlmostEqual(intrinsic_dimension(records, absolute_distance), np.log2(5.0 / 3.0))
 
     def test_edit_metric_satisfies_metric_contracts(self):
         self.assertMetricContracts(self.records, self.metric)

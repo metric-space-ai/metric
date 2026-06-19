@@ -12,6 +12,7 @@ Promoted examples that currently run in the core CI path:
 - [histogram_emd_space.cpp](../../examples/core/histogram_emd_space.cpp): histograms compared with Earth mover distance
 - [explicit_space_representations.cpp](../../examples/core/explicit_space_representations.cpp): one finite metric space represented as matrix, tree, and graph structures
 - [metric_space_entropy.cpp](../../examples/core/metric_space_entropy.cpp): entropy diagnostics over numeric and string records
+- [metric_space_intrinsic_dimension.cpp](../../examples/core/metric_space_intrinsic_dimension.cpp): expansion-dimension diagnostic over a finite line metric
 - [metric_space_correlation.cpp](../../examples/core/metric_space_correlation.cpp): MGC correlation between paired records with different metric types
 
 ## Pattern
@@ -19,7 +20,7 @@ Promoted examples that currently run in the core CI path:
 1. Choose the record type.
 2. Choose or implement the metric.
 3. Build an implicit or explicit finite metric space.
-4. Run operators such as nearest-neighbor search, entropy, correlation, or graph construction.
+4. Run operators such as nearest-neighbor search, entropy, intrinsic dimension, correlation, or graph construction.
 5. Promote only examples that run in CI as stable examples.
 
 For a concrete custom callable example, see [Custom Metric Example](custom-metric.md).

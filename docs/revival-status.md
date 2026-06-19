@@ -21,6 +21,7 @@ The current local tree implements the first revival slice:
 - promoted Python examples under `python/examples/metric_space/`
 - C++ smoke and contract tests under `tests/core_smoke/`
 - Python core API and metric-contract tests under `python/tests/core/`
+- intrinsic-dimension diagnostics in C++ and Python core operator helpers
 - documentation for concepts, APIs, examples, stability, testing, and release gates
 - CI workflows for C++ core, Python wheels, docs/formatting, revived-source formatting, and GitHub Pages artifacts
 - release artifact workflow for source archive, Python sdist, Python wheel built from that sdist, and C++ core/downstream evidence

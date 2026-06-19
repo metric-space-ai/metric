@@ -7,6 +7,9 @@
 
 #include "space.hpp"
 
+#include <algorithm>
+#include <cmath>
+#include <cstddef>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -41,6 +44,35 @@ auto range_neighbors(const Container &records, Metric distance, const detail::re
 					 typename detail::finite_space_t<Container, Metric>::distance_type radius)
 {
 	return ::metric::Space::from_records(records, std::move(distance)).within_radius(query, radius);
+}
+
+template <typename Container, typename Metric>
+auto intrinsic_dimension(const Container &records, Metric distance) -> double
+{
+	using distance_type = typename detail::finite_space_t<Container, Metric>::distance_type;
+
+	const auto distances = pairwise_distance_matrix(records, std::move(distance));
+
+	double maximum_dimension = 0.0;
+	for (const auto &row : distances) {
+		for (const auto &radius : row) {
+			if (radius <= distance_type{}) {
+				continue;
+			}
+
+			const auto outer_radius = radius + radius;
+			const auto inner_count = static_cast<double>(
+				std::count_if(row.begin(), row.end(), [&](const auto &value) { return value <= radius; }));
+			const auto outer_count = static_cast<double>(
+				std::count_if(row.begin(), row.end(), [&](const auto &value) { return value <= outer_radius; }));
+
+			if (inner_count > 0.0 && outer_count >= inner_count) {
+				maximum_dimension = std::max(maximum_dimension, std::log(outer_count / inner_count) / std::log(2.0));
+			}
+		}
+	}
+
+	return maximum_dimension;
 }
 
 } // namespace metric::operators
