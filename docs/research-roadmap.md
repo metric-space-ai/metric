@@ -84,11 +84,11 @@ Current promoted base:
 - C++ and Python `prune_graph_out_degree` promotes deterministic out-degree sparsification for directed graph construction results.
 - C++ and Python `graph_degree_diagnostics` promotes deterministic degree diagnostics for directed and undirected graph construction results.
 - C++ and Python `graph_connectivity_diagnostics` promotes deterministic connectivity diagnostics for directed and undirected graph construction results.
+- C++ and Python `graph_stretch_diagnostics` promotes deterministic shortest-path stretch diagnostics for directed and undirected graph construction results.
 
 Candidate strategies:
 
 - additional sparsification primitives with documented connectivity or stretch assumptions
-- graph diagnostics such as edge stretch
 
 Promotion evidence:
 
@@ -186,6 +186,6 @@ The revival should not:
 Near-term branches should stay small and evidence-driven:
 
 - add k-medoids or compression-summary representative fixtures now that farthest-first, medoid, separated, and radius-coverage fixtures exist
-- add graph diagnostics such as edge stretch
+- add additional graph sparsification primitives with documented connectivity or stretch assumptions
 - add MGC interpretation docs for paired metric spaces
 - add an industrial-record fixture that combines strings, process curves, histograms, and numeric penalties

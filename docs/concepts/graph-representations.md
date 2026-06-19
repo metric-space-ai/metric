@@ -4,7 +4,7 @@ Graph representations are derived structures over a finite metric space. They ke
 
 This page defines the terms METRIC docs use before graph construction becomes a first-page operator API.
 
-The promoted core result helpers are `exact_knn_graph` and `exact_radius_graph`. They return `GraphConstructionResult` values with directed `(source_index, target_index, distance)` edges plus construction metadata. The edge-list helpers `exact_knn_graph_edges` and `exact_radius_graph_edges` remain available when callers only need the directed edge tuples. `graph_connectivity_diagnostics` and `graph_degree_diagnostics` report deterministic diagnostics for graph construction results. `prune_graph_out_degree` applies deterministic out-degree sparsification to directed graph results. `symmetrize_graph` converts a graph construction result into deterministic undirected edges with documented symmetrization and reciprocal weighting policies. See [Exact Graph Edge Fixtures](../examples/graph-construction.md) for the fixture shape. Normalized weights remain a roadmap item.
+The promoted core result helpers are `exact_knn_graph` and `exact_radius_graph`. They return `GraphConstructionResult` values with directed `(source_index, target_index, distance)` edges plus construction metadata. The edge-list helpers `exact_knn_graph_edges` and `exact_radius_graph_edges` remain available when callers only need the directed edge tuples. `graph_connectivity_diagnostics`, `graph_degree_diagnostics`, and `graph_stretch_diagnostics` report deterministic diagnostics for graph construction results. `prune_graph_out_degree` applies deterministic out-degree sparsification to directed graph results. `symmetrize_graph` converts a graph construction result into deterministic undirected edges with documented symmetrization and reciprocal weighting policies. See [Exact Graph Edge Fixtures](../examples/graph-construction.md) for the fixture shape. Normalized weights remain a roadmap item.
 
 ## Required Metadata
 
@@ -73,6 +73,16 @@ For directed graph results, connectivity is weak connectivity over the stored ed
 For undirected graph results, each stored edge contributes one endpoint relationship between its source and target. The connectivity policy is `undirected_reachability`.
 
 Component labels are assigned by scanning source record IDs in order. A record with no incident stored edge is counted as isolated. The helper validates that every edge endpoint is within `metadata.record_count`.
+
+## Stretch Diagnostics
+
+Graph stretch diagnostics compare shortest paths through an existing graph with direct metric distances in the source finite metric space. They help detect whether a sparse graph preserves pairwise distances for the evaluated records, but they do not prove approximate-neighbor recall or quality outside the supplied record set.
+
+`graph_stretch_diagnostics` accepts source records, the metric callable, and a graph construction result. It returns record count, edge count, direction policy, evaluated pair count, reachable pair count, unreachable pair count, zero-metric pair count, max stretch, average stretch over reachable pairs, and a named stretch policy.
+
+For directed graph results, shortest paths follow stored edge direction and the stretch policy is `directed_shortest_path`. For undirected graph results, each stored edge is evaluated as a bidirectional endpoint relationship and the stretch policy is `undirected_shortest_path`.
+
+Pairs whose direct metric distance is zero are not divided into stretch ratios; they are counted as zero-metric pairs. Pairs that have nonzero metric distance but no graph path are counted as unreachable. The helper validates that `metadata.record_count` matches the supplied records and that every edge endpoint is within that count.
 
 ## Degree Sparsification
 
