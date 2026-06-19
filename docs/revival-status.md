@@ -23,6 +23,7 @@ The current local tree implements the first revival slice:
 - promoted C++ examples under `examples/core/`
 - promoted Python examples under `python/examples/metric_space/`
 - CI-tested C++ and Python engine flagship examples for strings, process curves, histograms, and cross-space dependency
+- engine documentation chapters for metric spaces, representations, intents, strategies, operators, mappings, runtime policies, and migration
 - C++ smoke and contract tests under `tests/core_smoke/`
 - Python core API and metric-contract tests under `python/tests/core/`
 - intrinsic-dimension diagnostics in C++ and Python core operator helpers
@@ -229,6 +230,7 @@ The following revival improvements landed on `master` after the `v0.3.2` tag and
 - Python engine-style Space intent facade methods for representatives and structure diagnostics with named result objects and core test coverage, merged as `1849c29a25122b31605945295c91710cfc6a126f`
 - Python engine-style Space grouping intent with KMedoids and DBSCAN strategies, named `ClusteringResult` objects, and core test coverage, merged as `fe2641f8f14e660a994c94ca18d9f5feb426fb2b`
 - Python engine-style Space compare/correlate intent with named `CorrelationResult` objects and distance-profile strategy coverage, merged as `103d680a395ddd748017a1619be0580ffd5607cc`
+- engine documentation chapters for metric spaces, representations, intents, strategies, operators, mappings, runtime policies, and migration, merged as `48d19a98315da2132d756ce032cba62eab46f12d`
 
 ## Historical Code Policy
 
