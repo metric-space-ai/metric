@@ -10,6 +10,7 @@
 #include <vector>
 
 #include <blaze/Math.h>
+#include <nlohmann/json.hpp>
 
 #include "metric/core/record_id.hpp"
 
@@ -113,6 +114,10 @@ template <class InputDataType, class Scalar> class FlatVectorCodec {
 
 	auto feature_count() const -> std::size_t { return feature_count_; }
 	auto norm_value() const -> InputDataType { return norm_value_; }
+	auto to_json() const -> nlohmann::json
+	{
+		return {{"type", "FlatVectorCodec"}, {"feature_count", feature_count_}, {"norm_value", norm_value_}};
+	}
 
 	auto encode_flat(const std::vector<InputDataType> &input) const -> matrix_type
 	{
@@ -175,6 +180,10 @@ template <class Record, class Scalar> class VectorRecordCodec {
 
 	auto feature_count() const -> std::size_t { return feature_count_; }
 	auto inverse_supported() const -> bool { return true; }
+	auto to_json() const -> nlohmann::json
+	{
+		return {{"type", "VectorRecordCodec"}, {"feature_count", feature_count_}, {"inverse_supported", true}};
+	}
 
 	auto encode_batch(const std::vector<Record> &records) const -> matrix_type
 	{

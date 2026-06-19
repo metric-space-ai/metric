@@ -32,5 +32,6 @@
 
 #include "Network.h"
 #include "AutoencoderModel.h"
+#include "AutoencoderArtifact.h"
 
 #endif /* dnn_H_ */
