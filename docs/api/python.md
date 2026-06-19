@@ -175,11 +175,11 @@ structure = describe_structure(records, Edit())
 
 `find_representatives` returns a `RepresentativeSet` with selected source indices, nearest-representative distances for every record, coverage radius, average nearest-representative distance, strategy metadata, and representation metadata. `Space.representatives(...)` exposes the same result from the `Space` facade.
 
-`reduce_space` returns a `ReductionResult` with a reduced `Space`, selected source-record IDs, source-to-reduced assignments, nearest-representative distances, strategy metadata, and explicit `inverse_supported=False` metadata. `Space.reduce(count=..., strategy=...)` exposes the same result. The first Python-core strategies are `FarthestFirst` and `KMedoids`, so reduction works for arbitrary records plus a metric rather than only vector records.
+`reduce_space` returns a `ReductionResult` with a reduced `Space`, selected source-record IDs, source-to-reduced assignments, nearest-representative distances, strategy metadata, and explicit `inverse_supported=False` metadata. Calling `inverse_transform()` on this result raises `metric.UnsupportedOperationError`. `Space.reduce(count=..., strategy=...)` exposes the same result. The first Python-core strategies are `FarthestFirst` and `KMedoids`, so reduction works for arbitrary records plus a metric rather than only vector records.
 
-`compress_space` returns a `CompressionResult` with a compressed representative `Space`, selected source-record IDs, source-to-compressed assignments, nearest-representative distances, `compression="representatives"`, a compressed/source record-count `compression_ratio`, and explicit `lossy=True` / `inverse_supported=False` metadata. `Space.compress(count=..., strategy=...)` exposes the same result. The first Python-core compression path uses the same deterministic `FarthestFirst` and `KMedoids` representative strategies as `reduce_space`.
+`compress_space` returns a `CompressionResult` with a compressed representative `Space`, selected source-record IDs, source-to-compressed assignments, nearest-representative distances, `compression="representatives"`, a compressed/source record-count `compression_ratio`, and explicit `lossy=True` / `inverse_supported=False` metadata. Calling `inverse_transform()` raises `metric.UnsupportedOperationError` until a strategy with explicit reconstruction support is promoted. `Space.compress(count=..., strategy=...)` exposes the same result. The first Python-core compression path uses the same deterministic `FarthestFirst` and `KMedoids` representative strategies as `reduce_space`.
 
-`map_space` returns a `MappingResult` with a new `Space`, source-record lineage, target record count, mapping metadata, strategy metadata, and explicit `inverse_supported=False` metadata. `Space.map(transform, metric=...)` exposes the same deterministic transform path from an existing space. This is the first Python-core mapping intent; broader learned or inverse mappings remain in the beta mapping surface until they have stable result contracts and CI fixtures.
+`map_space` returns a `MappingResult` with a new `Space`, source-record lineage, target record count, mapping metadata, strategy metadata, and explicit `inverse_supported=False` metadata. Calling `inverse_transform()` raises `metric.UnsupportedOperationError`; denoise results include guidance to use the filtered `result.space`, `space.embed(...)`, or a strategy that declares inverse support. `Space.map(transform, metric=...)` exposes the same deterministic transform path from an existing space. This is the first Python-core mapping intent; broader learned or inverse mappings remain in the beta mapping surface until they have stable result contracts and CI fixtures.
 
 `medoid_index` and `medoid` select the existing record with the smallest total distance to all records. Equal total-distance ties are resolved by record order.
 
@@ -247,6 +247,10 @@ print(space.distance(0, 1))
 ## Engine Roadmap
 
 The implemented facade currently covers matrix/tree/graph representation views, neighbor access, grouping, classical-MDS embedding, outlier detection, DBSCAN-backed denoising, deterministic mapping, cross-space comparison, representative selection, representative reduction, and structure diagnostics. Additional embedding strategies and learned mappings should be promoted only when they are backed by stable strategies, result objects, examples, and CI.
+
+## Error Model
+
+Public Python error classes live in `metric.exceptions` and are re-exported from `metric`, starting with `MetricError` and `UnsupportedOperationError`. Core result objects use these errors for explicit unsupported operations such as inverse reconstruction on lossy reductions, compression, deterministic maps, and denoise filters.
 
 ## Compatibility
 

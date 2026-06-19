@@ -6,8 +6,9 @@ from pathlib import Path
 
 import metric
 import numpy as np
+from metric import exceptions, intent, mappings, representations, transforms
+from metric.exceptions import MetricError, UnsupportedOperationError
 from metric.metrics import Edit, available
-from metric import intent, mappings, representations, transforms
 from metric.operators import (
     ClusteringResult,
     CompressionResult,
@@ -98,6 +99,9 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIs(metric.intent.denoise, denoise_space)
         self.assertIs(metric.intent.embed, embed_space)
         self.assertIs(metric.intent.compress, compress_space)
+        self.assertIs(metric.exceptions, exceptions)
+        self.assertIs(metric.exceptions.UnsupportedOperationError, UnsupportedOperationError)
+        self.assertTrue(issubclass(UnsupportedOperationError, MetricError))
         self.assertIs(metric.representations.MatrixSpace, MatrixSpace)
         self.assertIs(metric.representations.GraphIndex, GraphIndex)
         self.assertIs(metric.representations.TreeIndex, TreeIndex)
@@ -213,8 +217,13 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIs(metric.coverage_representatives, coverage_representatives)
         self.assertIs(metric.FiniteMetricSpace, FiniteMetricSpace)
         self.assertIs(metric.Space, Space)
+        self.assertIs(metric.MetricError, MetricError)
+        self.assertIs(metric.UnsupportedOperationError, UnsupportedOperationError)
         self.assertIn("FiniteMetricSpace", metric.__all__)
         self.assertIn("Space", metric.__all__)
+        self.assertIn("exceptions", metric.__all__)
+        self.assertIn("MetricError", metric.__all__)
+        self.assertIn("UnsupportedOperationError", metric.__all__)
         self.assertIn("intent", metric.__all__)
         self.assertIn("mappings", metric.__all__)
         self.assertIn("representations", metric.__all__)
@@ -412,6 +421,8 @@ class RevivalApiTest(unittest.TestCase):
         self.assertEqual(denoised.strategy, "dbscan_noise_filter")
         self.assertEqual(denoised.representation, "metric_space")
         self.assertFalse(denoised.inverse_supported)
+        with self.assertRaisesRegex(UnsupportedOperationError, "space\\.embed"):
+            denoised.inverse_transform()
         self.assertEqual(denoised.space.distance(0, 3), 11)
         self.assertEqual(
             denoise_space(
@@ -458,6 +469,8 @@ class RevivalApiTest(unittest.TestCase):
         self.assertEqual(reduction.strategy, "farthest_first")
         self.assertEqual(reduction.representation, "metric_space")
         self.assertFalse(reduction.inverse_supported)
+        with self.assertRaisesRegex(UnsupportedOperationError, "inverse_supported=False"):
+            reduction.inverse_transform()
         self.assertEqual(
             reduce_space([0, 1, 2, 3, 4], lambda lhs, rhs: abs(lhs - rhs), 3).source_record_ids,
             reduction.source_record_ids,
@@ -487,6 +500,8 @@ class RevivalApiTest(unittest.TestCase):
         self.assertEqual(compression.representation, "metric_space")
         self.assertTrue(compression.lossy)
         self.assertFalse(compression.inverse_supported)
+        with self.assertRaisesRegex(UnsupportedOperationError, "inverse_supported=False"):
+            compression.inverse_transform()
         self.assertEqual(
             compress_space([0, 1, 2, 3, 4], lambda lhs, rhs: abs(lhs - rhs), 3).source_record_ids,
             compression.source_record_ids,
@@ -511,6 +526,8 @@ class RevivalApiTest(unittest.TestCase):
         self.assertEqual(mapped.strategy, "deterministic_transform")
         self.assertEqual(mapped.representation, "metric_space")
         self.assertFalse(mapped.inverse_supported)
+        with self.assertRaisesRegex(UnsupportedOperationError, "inverse_supported=False"):
+            mapped.inverse_transform()
         self.assertEqual(mapped.space.distance(0, 4), 4)
         self.assertEqual(
             map_space([0, 1, 2], lambda record: record * record, lambda lhs, rhs: abs(lhs - rhs)).space.records,
