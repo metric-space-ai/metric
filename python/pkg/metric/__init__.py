@@ -10,7 +10,7 @@ The revived core API is organized around explicit finite metric spaces:
 Legacy compiled extension names remain available when their modules are present.
 """
 
-__version__ = "0.3.1"
+__version__ = "0.3.2"
 
 try:
     from metric._impl.metric import *
