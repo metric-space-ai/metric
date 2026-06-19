@@ -196,6 +196,17 @@ int main()
     assert(std::abs(directed_degrees.average_degree - 2.0) < 1e-12);
     assert(directed_degrees.degree_policy == "directed_in_out");
 
+    const auto directed_connectivity = metric::operators::graph_connectivity_diagnostics(one_neighbor_graph);
+    assert(directed_connectivity.record_count == line.size());
+    assert(directed_connectivity.edge_count == one_neighbor_graph.edges.size());
+    assert(directed_connectivity.directed);
+    assert((directed_connectivity.component_labels == std::vector<std::size_t>{0, 0, 0, 0, 0}));
+    assert(directed_connectivity.component_count == 1);
+    assert(directed_connectivity.isolated_count == 0);
+    assert(directed_connectivity.largest_component_size == 5);
+    assert(directed_connectivity.connected);
+    assert(directed_connectivity.connectivity_policy == "weak_undirected_reachability");
+
     const auto union_graph = metric::operators::symmetrize_graph(one_neighbor_graph, "union", "minimum_distance");
     const std::vector<std::tuple<std::size_t, std::size_t, int>> expected_union_edges = {
         {0, 1, 1},
@@ -221,6 +232,15 @@ int main()
     assert(undirected_degrees.max_degree == 2);
     assert(std::abs(undirected_degrees.average_degree - 1.6) < 1e-12);
     assert(undirected_degrees.degree_policy == "undirected_endpoint");
+
+    const auto undirected_connectivity = metric::operators::graph_connectivity_diagnostics(union_graph);
+    assert(!undirected_connectivity.directed);
+    assert((undirected_connectivity.component_labels == std::vector<std::size_t>{0, 0, 0, 0, 0}));
+    assert(undirected_connectivity.component_count == 1);
+    assert(undirected_connectivity.isolated_count == 0);
+    assert(undirected_connectivity.largest_component_size == 5);
+    assert(undirected_connectivity.connected);
+    assert(undirected_connectivity.connectivity_policy == "undirected_reachability");
 
     bool rejected_undirected_pruning = false;
     try {
@@ -270,6 +290,14 @@ int main()
         rejected_invalid_degree_graph = true;
     }
     assert(rejected_invalid_degree_graph);
+
+    bool rejected_invalid_connectivity_graph = false;
+    try {
+        metric::operators::graph_connectivity_diagnostics(invalid_graph);
+    } catch (const std::invalid_argument &) {
+        rejected_invalid_connectivity_graph = true;
+    }
+    assert(rejected_invalid_connectivity_graph);
 
     const auto minimum_weighted_graph =
         metric::operators::symmetrize_graph(asymmetric_graph, "union", "minimum_distance");
@@ -334,6 +362,15 @@ int main()
     assert(radius_graph.metadata.symmetrization == "none");
     assert(radius_graph.metadata.normalization == "none");
     assert(radius_graph.metadata.tie_break == "source_then_target_index");
+
+    const std::vector<int> separated_line = {0, 1, 10};
+    const auto disconnected_graph = metric::operators::exact_radius_graph(separated_line, AbsoluteDistance{}, 1);
+    const auto disconnected_connectivity = metric::operators::graph_connectivity_diagnostics(disconnected_graph);
+    assert((disconnected_connectivity.component_labels == std::vector<std::size_t>{0, 0, 1}));
+    assert(disconnected_connectivity.component_count == 2);
+    assert(disconnected_connectivity.isolated_count == 1);
+    assert(disconnected_connectivity.largest_component_size == 2);
+    assert(!disconnected_connectivity.connected);
 
     bool rejected_large_graph_k = false;
     try {

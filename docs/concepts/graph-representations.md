@@ -4,7 +4,7 @@ Graph representations are derived structures over a finite metric space. They ke
 
 This page defines the terms METRIC docs use before graph construction becomes a first-page operator API.
 
-The promoted core result helpers are `exact_knn_graph` and `exact_radius_graph`. They return `GraphConstructionResult` values with directed `(source_index, target_index, distance)` edges plus construction metadata. The edge-list helpers `exact_knn_graph_edges` and `exact_radius_graph_edges` remain available when callers only need the directed edge tuples. `graph_degree_diagnostics` reports deterministic degree diagnostics for graph construction results. `prune_graph_out_degree` applies deterministic out-degree sparsification to directed graph results. `symmetrize_graph` converts a graph construction result into deterministic undirected edges with documented symmetrization and reciprocal weighting policies. See [Exact Graph Edge Fixtures](../examples/graph-construction.md) for the fixture shape. Normalized weights remain a roadmap item.
+The promoted core result helpers are `exact_knn_graph` and `exact_radius_graph`. They return `GraphConstructionResult` values with directed `(source_index, target_index, distance)` edges plus construction metadata. The edge-list helpers `exact_knn_graph_edges` and `exact_radius_graph_edges` remain available when callers only need the directed edge tuples. `graph_connectivity_diagnostics` and `graph_degree_diagnostics` report deterministic diagnostics for graph construction results. `prune_graph_out_degree` applies deterministic out-degree sparsification to directed graph results. `symmetrize_graph` converts a graph construction result into deterministic undirected edges with documented symmetrization and reciprocal weighting policies. See [Exact Graph Edge Fixtures](../examples/graph-construction.md) for the fixture shape. Normalized weights remain a roadmap item.
 
 ## Required Metadata
 
@@ -61,6 +61,18 @@ For directed graph results, out-degree counts stored edges from each source, in-
 For undirected graph results, each stored edge contributes one endpoint count to each endpoint. The in/out vectors are zero-filled because the stored source and target are orientation conventions, not directed neighbor contracts. The degree policy is `undirected_endpoint`.
 
 The helper validates that every edge endpoint is within `metadata.record_count`. Invalid endpoint IDs are rejected because degree diagnostics must be tied to the source record set.
+
+## Connectivity Diagnostics
+
+Graph connectivity diagnostics describe connected components in an existing graph result. They do not prove neighbor recall, edge-stretch quality, or metric preservation by themselves.
+
+`graph_connectivity_diagnostics` returns record count, edge count, direction policy, deterministic per-record component labels, component count, isolated-record count, largest component size, connected status, and a named connectivity policy.
+
+For directed graph results, connectivity is weak connectivity over the stored edges. Direction is ignored for component membership because exact kNN and radius graph helpers emit directed edges even when the user wants to know whether the representation covers one connected record set. The connectivity policy is `weak_undirected_reachability`.
+
+For undirected graph results, each stored edge contributes one endpoint relationship between its source and target. The connectivity policy is `undirected_reachability`.
+
+Component labels are assigned by scanning source record IDs in order. A record with no incident stored edge is counted as isolated. The helper validates that every edge endpoint is within `metadata.record_count`.
 
 ## Degree Sparsification
 

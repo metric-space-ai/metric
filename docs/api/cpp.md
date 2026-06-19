@@ -69,6 +69,7 @@ auto knn_graph = metric::operators::exact_knn_graph(records, metric::Edit<std::s
 auto knn_edges = metric::operators::exact_knn_graph_edges(records, metric::Edit<std::string>{}, 1);
 auto radius_graph = metric::operators::exact_radius_graph(records, metric::Edit<std::string>{}, 1);
 auto radius_edges = metric::operators::exact_radius_graph_edges(records, metric::Edit<std::string>{}, 1);
+auto connectivity_info = metric::operators::graph_connectivity_diagnostics(knn_graph);
 auto degree_info = metric::operators::graph_degree_diagnostics(knn_graph);
 auto undirected = metric::operators::symmetrize_graph(knn_graph, "union", "minimum_distance");
 auto pruned = metric::operators::prune_graph_out_degree(
@@ -85,7 +86,7 @@ auto covered_records = metric::operators::coverage_representatives(records, metr
 auto dimension = metric::operators::intrinsic_dimension(records, metric::Edit<std::string>{});
 ```
 
-The promoted C++ operator helpers are `pairwise_distance_matrix`, `nearest_neighbors`, `range_neighbors`, `GraphDegreeDiagnostics`, `graph_degree_diagnostics`, `exact_knn_graph`, `exact_knn_graph_edges`, `exact_radius_graph`, `exact_radius_graph_edges`, `symmetrize_graph`, `prune_graph_out_degree`, `representative_indices`, `representatives`, `medoid_index`, `medoid`, `separated_representative_indices`, `separated_representatives`, `coverage_representative_indices`, `coverage_representatives`, and `intrinsic_dimension`.
+The promoted C++ operator helpers are `pairwise_distance_matrix`, `nearest_neighbors`, `range_neighbors`, `GraphConnectivityDiagnostics`, `graph_connectivity_diagnostics`, `GraphDegreeDiagnostics`, `graph_degree_diagnostics`, `exact_knn_graph`, `exact_knn_graph_edges`, `exact_radius_graph`, `exact_radius_graph_edges`, `symmetrize_graph`, `prune_graph_out_degree`, `representative_indices`, `representatives`, `medoid_index`, `medoid`, `separated_representative_indices`, `separated_representatives`, `coverage_representative_indices`, `coverage_representatives`, and `intrinsic_dimension`.
 
 `representative_indices` and `representatives` use deterministic farthest-first traversal over the finite metric space. They select existing records rather than vector centroids, start from `seed_index=0` by default, and resolve equal-distance ties by record order.
 
@@ -94,6 +95,8 @@ The promoted C++ operator helpers are `pairwise_distance_matrix`, `nearest_neigh
 `separated_representative_indices` and `separated_representatives` scan records in order and keep a candidate when it is at least `minimum_distance` from every selected representative. This is deterministic redundancy-threshold reduction, not an optimal packing proof.
 
 `exact_knn_graph` and `exact_radius_graph` return `GraphConstructionResult` values with `.edges` and `.metadata`. The metadata records the construction strategy, record count, edge count, directed/self-loop/exact policy, the active `k` or `radius` parameter, edge payload meaning, sparsification policy, symmetrization policy, normalization policy, and the tie-breaking rule. `exact_knn_graph_edges` and `exact_radius_graph_edges` remain convenience helpers that return only directed edge tuples shaped as `(source_index, target_index, distance)`. Exact graph helpers exclude self-loops, preserve source-record order, and resolve equal kNN distances by target record order.
+
+`graph_connectivity_diagnostics` returns `GraphConnectivityDiagnostics` for a graph construction result. It reports deterministic component labels, component count, isolated-record count, largest component size, connected status, and connectivity policy. Directed graph results use weak undirected reachability over stored edges; undirected graph results use endpoint reachability.
 
 `graph_degree_diagnostics` returns `GraphDegreeDiagnostics` for a graph construction result. Directed graphs report `out_degrees`, `in_degrees`, combined endpoint `degrees`, isolated count, max degree, average degree, and degree policy `directed_in_out`. Undirected graph results report endpoint `degrees` with zero-filled in/out vectors and degree policy `undirected_endpoint`.
 

@@ -24,7 +24,7 @@ The records are strings. Edit distance defines the geometry without an embedding
 - `Space`: minimal intent-first finite metric space facade
 - `FiniteMetricSpace`: finite metric space over records
 - `MatrixSpace`: compatibility alias for `FiniteMetricSpace`
-- `operators`: small helpers for pairwise distances, nearest neighbors, range neighbors, exact graph results and edges, graph degree diagnostics, graph pruning, representative selection, medoids, separated representatives, and intrinsic-dimension diagnostics
+- `operators`: small helpers for pairwise distances, nearest neighbors, range neighbors, exact graph results and edges, graph connectivity diagnostics, graph degree diagnostics, graph pruning, representative selection, medoids, separated representatives, and intrinsic-dimension diagnostics
 - `mappings`: beta compatibility bridge for installed mapping bindings
 - `transforms`: beta compatibility bridge for installed transform bindings
 
@@ -49,6 +49,7 @@ space.rnn(query, radius=1)
 from metric.operators import (
     GraphConstructionMetadata,
     GraphConstructionResult,
+    GraphConnectivityDiagnostics,
     GraphDegreeDiagnostics,
     coverage_representative_indices,
     coverage_representatives,
@@ -56,6 +57,7 @@ from metric.operators import (
     exact_knn_graph_edges,
     exact_radius_graph,
     exact_radius_graph_edges,
+    graph_connectivity_diagnostics,
     graph_degree_diagnostics,
     intrinsic_dimension,
     medoid,
@@ -78,6 +80,7 @@ knn_graph = exact_knn_graph(records, Edit(), k=1)
 knn_edges = exact_knn_graph_edges(records, Edit(), k=1)
 radius_graph = exact_radius_graph(records, Edit(), radius=1)
 radius_edges = exact_radius_graph_edges(records, Edit(), radius=1)
+connectivity_info = graph_connectivity_diagnostics(knn_graph)
 degree_info = graph_degree_diagnostics(knn_graph)
 undirected = symmetrize_graph(knn_graph, policy="union", weighting="minimum_distance")
 pruned = prune_graph_out_degree(exact_knn_graph(records, Edit(), k=2), max_out_degree=1)
@@ -99,6 +102,8 @@ dimension = intrinsic_dimension(records, Edit())
 `separated_representative_indices` and `separated_representatives` scan records in order and keep a candidate when it is at least `minimum_distance` from every selected representative. This is deterministic redundancy-threshold reduction, not an optimal packing proof.
 
 `exact_knn_graph` and `exact_radius_graph` return `GraphConstructionResult` objects with `.edges` and `.metadata`. The metadata records the construction strategy, record count, edge count, directed/self-loop/exact policy, the active `k` or `radius` parameter, edge payload meaning, sparsification policy, symmetrization policy, normalization policy, and the tie-breaking rule. `exact_knn_graph_edges` and `exact_radius_graph_edges` remain convenience helpers that return only directed edge tuples shaped as `(source_index, target_index, distance)`. Exact graph helpers exclude self-loops, preserve source-record order, and resolve equal kNN distances by target record order.
+
+`graph_connectivity_diagnostics` returns `GraphConnectivityDiagnostics` for a graph construction result. It reports deterministic component labels, component count, isolated-record count, largest component size, connected status, and connectivity policy. Directed graph results use weak undirected reachability over stored edges; undirected graph results use endpoint reachability.
 
 `graph_degree_diagnostics` returns `GraphDegreeDiagnostics` for a graph construction result. Directed graphs report `out_degrees`, `in_degrees`, combined endpoint `degrees`, isolated count, max degree, average degree, and degree policy `directed_in_out`. Undirected graph results report endpoint `degrees` with zero-filled in/out vectors and degree policy `undirected_endpoint`.
 

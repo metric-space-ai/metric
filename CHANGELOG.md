@@ -7,6 +7,7 @@
 - Run every promoted Python metric-space example from the core Python API tests so wheel and PyPI build gates share the same example coverage.
 - Add C++ and Python `exact_knn_graph_edges` and `exact_radius_graph_edges` helpers using exhaustive pairwise distances and deterministic edge ordering.
 - Add C++ and Python `exact_knn_graph` and `exact_radius_graph` result objects with construction metadata for exact graph helpers.
+- Add C++ and Python `graph_connectivity_diagnostics` helpers for deterministic graph connectivity diagnostics.
 - Add C++ and Python `graph_degree_diagnostics` helpers for deterministic graph degree diagnostics.
 - Add C++ and Python `symmetrize_graph` helpers for deterministic graph `union` and `mutual` policies with reciprocal distance weighting.
 - Add C++ and Python `prune_graph_out_degree` helpers for deterministic directed graph sparsification.
