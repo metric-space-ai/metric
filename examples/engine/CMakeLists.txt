@@ -10,9 +10,13 @@ target_link_libraries(engine_histogram_transport_space PRIVATE ${METRIC_TARGET_N
 add_executable(engine_cross_space_mgc cross_space_mgc.cpp)
 target_link_libraries(engine_cross_space_mgc PRIVATE ${METRIC_TARGET_NAME})
 
+add_executable(engine_representation_swap representation_swap.cpp)
+target_link_libraries(engine_representation_swap PRIVATE ${METRIC_TARGET_NAME})
+
 if (BUILD_TESTING)
     add_test(NAME example_engine_strings_edit_space COMMAND engine_strings_edit_space)
     add_test(NAME example_engine_process_curves_space COMMAND engine_process_curves_space)
     add_test(NAME example_engine_histogram_transport_space COMMAND engine_histogram_transport_space)
     add_test(NAME example_engine_cross_space_mgc COMMAND engine_cross_space_mgc)
+    add_test(NAME example_engine_representation_swap COMMAND engine_representation_swap)
 endif ()
