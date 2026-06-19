@@ -12,6 +12,7 @@
 #include <vector>
 
 #include <blaze/Math.h>
+#include <nlohmann/json.hpp>
 
 #include "Loss.h"
 #include "Network.h"
@@ -48,6 +49,26 @@ inline auto infer_autoencoder_topology(std::size_t layer_count) -> AutoencoderTo
 	return topology;
 }
 
+inline auto autoencoder_topology_to_json(const AutoencoderTopology &topology) -> nlohmann::json
+{
+	return {{"input_layer", topology.input_layer},
+			{"bottleneck_layer", topology.bottleneck_layer},
+			{"output_layer", topology.output_layer},
+			{"encoder_layers", topology.encoder_layers},
+			{"decoder_layers", topology.decoder_layers}};
+}
+
+inline auto autoencoder_topology_from_json(const nlohmann::json &json) -> AutoencoderTopology
+{
+	AutoencoderTopology topology;
+	topology.input_layer = json.at("input_layer").get<std::size_t>();
+	topology.bottleneck_layer = json.at("bottleneck_layer").get<std::size_t>();
+	topology.output_layer = json.at("output_layer").get<std::size_t>();
+	topology.encoder_layers = json.at("encoder_layers").get<std::vector<std::size_t>>();
+	topology.decoder_layers = json.at("decoder_layers").get<std::vector<std::size_t>>();
+	return topology;
+}
+
 template <class Scalar> struct EpochReport {
 	std::size_t epoch{0};
 	Scalar total_loss{0};
@@ -70,6 +91,50 @@ template <class Scalar> struct TrainingSpec {
 	Scalar early_stop_min_delta{0};
 	std::size_t early_stop_patience{0};
 };
+
+template <class Scalar> auto training_spec_to_json(const TrainingSpec<Scalar> &spec) -> nlohmann::json
+{
+	return {{"epochs", spec.epochs},
+			{"batch_size", spec.batch_size},
+			{"seed", spec.seed},
+			{"shuffle", spec.shuffle},
+			{"gradient_clip_norm", spec.gradient_clip_norm},
+			{"early_stop_min_delta", spec.early_stop_min_delta},
+			{"early_stop_patience", spec.early_stop_patience}};
+}
+
+template <class Scalar> auto loss_term_report_to_json(const LossTermReport<Scalar> &term) -> nlohmann::json
+{
+	return {{"name", term.name},
+			{"weight", term.weight},
+			{"value", term.value},
+			{"weighted_value", term.weighted_value},
+			{"anchor", loss_anchor_to_json(term.anchor)}};
+}
+
+template <class Scalar> auto epoch_report_to_json(const EpochReport<Scalar> &epoch) -> nlohmann::json
+{
+	nlohmann::json terms = nlohmann::json::array();
+	for (const auto &term : epoch.terms) {
+		terms.push_back(loss_term_report_to_json(term));
+	}
+	return {{"epoch", epoch.epoch},
+			{"total_loss", epoch.total_loss},
+			{"batch_count", epoch.batch_count},
+			{"terms", std::move(terms)}};
+}
+
+template <class Scalar> auto training_report_to_json(const TrainingReport<Scalar> &report) -> nlohmann::json
+{
+	nlohmann::json epochs = nlohmann::json::array();
+	for (const auto &epoch : report.epochs) {
+		epochs.push_back(epoch_report_to_json(epoch));
+	}
+	return {{"epochs", std::move(epochs)},
+			{"epoch_count", report.epochs.size()},
+			{"stopped_early", report.stopped_early},
+			{"stop_reason", report.stop_reason}};
+}
 
 template <class Scalar> class AutoencoderModel {
   public:

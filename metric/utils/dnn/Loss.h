@@ -27,6 +27,11 @@ inline auto loss_anchor_kind_name(LossAnchorKind kind) -> std::string
 	return kind == LossAnchorKind::final_output ? "final_output" : "layer_output";
 }
 
+inline auto loss_anchor_to_json(LossAnchor anchor) -> nlohmann::json
+{
+	return {{"kind", loss_anchor_kind_name(anchor.kind)}, {"layer_index", anchor.layer_index}};
+}
+
 template <class Scalar> struct LossEvaluation {
 	Scalar value{0};
 	blaze::DynamicMatrix<Scalar> gradient;
@@ -72,6 +77,14 @@ template <class Scalar> class CompositeLoss {
 	}
 
 	auto size() const -> std::size_t { return terms_.size(); }
+	auto to_json() const -> nlohmann::json
+	{
+		nlohmann::json terms = nlohmann::json::array();
+		for (const auto &weighted_term : terms_) {
+			terms.push_back({{"weight", weighted_term.weight}, {"term", weighted_term.term->to_json()}});
+		}
+		return {{"type", "CompositeLoss"}, {"terms", std::move(terms)}};
+	}
 
 	auto evaluate(const DnnBatch<Scalar> &batch, const std::vector<matrix_type> &activations) const
 		-> CompositeLossEvaluation<Scalar>
