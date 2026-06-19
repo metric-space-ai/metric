@@ -63,6 +63,11 @@ class Space(FiniteMetricSpace):
     def within_radius(self, query, radius):
         return self.rnn(query, radius)
 
+    def groups(self, strategy):
+        from metric.operators import find_groups
+
+        return find_groups(self.records, self.metric, strategy)
+
     def representatives(self, k, strategy=None):
         from metric.operators import find_representatives
 

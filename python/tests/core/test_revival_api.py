@@ -9,6 +9,7 @@ import numpy as np
 from metric.metrics import Edit, available
 from metric import mappings, transforms
 from metric.operators import (
+    ClusteringResult,
     GraphConnectivityDiagnostics,
     GraphDegreeDiagnostics,
     GraphStretchDiagnostics,
@@ -18,16 +19,19 @@ from metric.operators import (
     StructureDescription,
     coverage_representative_indices,
     coverage_representatives,
+    dbscan,
     describe_structure,
     exact_knn_graph,
     exact_knn_graph_edges,
     exact_radius_graph,
     exact_radius_graph_edges,
+    find_groups,
     find_representatives,
     graph_connectivity_diagnostics,
     graph_degree_diagnostics,
     graph_stretch_diagnostics,
     intrinsic_dimension,
+    kmedoids,
     medoid,
     medoid_index,
     nearest_neighbors,
@@ -41,7 +45,7 @@ from metric.operators import (
     symmetrize_graph,
 )
 from metric.spaces import FiniteMetricSpace, MatrixSpace, Space
-from metric.strategies import FarthestFirst
+from metric.strategies import DBSCAN, FarthestFirst, KMedoids
 
 
 class RevivalApiTest(unittest.TestCase):
@@ -78,10 +82,14 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIs(metric.operators.GraphStretchDiagnostics, GraphStretchDiagnostics)
         self.assertIs(metric.operators.GraphConstructionMetadata, GraphConstructionMetadata)
         self.assertIs(metric.operators.GraphConstructionResult, GraphConstructionResult)
+        self.assertIs(metric.operators.ClusteringResult, ClusteringResult)
         self.assertIs(metric.operators.RepresentativeSet, RepresentativeSet)
         self.assertIs(metric.operators.StructureDescription, StructureDescription)
+        self.assertIs(metric.operators.find_groups, find_groups)
         self.assertIs(metric.operators.describe_structure, describe_structure)
         self.assertIs(metric.operators.find_representatives, find_representatives)
+        self.assertIs(metric.operators.kmedoids, kmedoids)
+        self.assertIs(metric.operators.dbscan, dbscan)
         self.assertIs(metric.operators.exact_knn_graph, exact_knn_graph)
         self.assertIs(metric.operators.exact_knn_graph_edges, exact_knn_graph_edges)
         self.assertIs(metric.operators.exact_radius_graph, exact_radius_graph)
@@ -109,10 +117,16 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIs(metric.GraphStretchDiagnostics, GraphStretchDiagnostics)
         self.assertIs(metric.GraphConstructionMetadata, GraphConstructionMetadata)
         self.assertIs(metric.GraphConstructionResult, GraphConstructionResult)
+        self.assertIs(metric.ClusteringResult, ClusteringResult)
         self.assertIs(metric.RepresentativeSet, RepresentativeSet)
         self.assertIs(metric.StructureDescription, StructureDescription)
+        self.assertIs(metric.find_groups, find_groups)
         self.assertIs(metric.describe_structure, describe_structure)
         self.assertIs(metric.find_representatives, find_representatives)
+        self.assertIs(metric.kmedoids, kmedoids)
+        self.assertIs(metric.dbscan, dbscan)
+        self.assertIs(metric.KMedoids, KMedoids)
+        self.assertIs(metric.DBSCAN, DBSCAN)
         self.assertIs(metric.FarthestFirst, FarthestFirst)
         self.assertIs(metric.exact_knn_graph, exact_knn_graph)
         self.assertIs(metric.exact_knn_graph_edges, exact_knn_graph_edges)
@@ -144,10 +158,16 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIn("GraphStretchDiagnostics", metric.__all__)
         self.assertIn("GraphConstructionMetadata", metric.__all__)
         self.assertIn("GraphConstructionResult", metric.__all__)
+        self.assertIn("ClusteringResult", metric.__all__)
         self.assertIn("RepresentativeSet", metric.__all__)
         self.assertIn("StructureDescription", metric.__all__)
+        self.assertIn("find_groups", metric.__all__)
         self.assertIn("describe_structure", metric.__all__)
         self.assertIn("find_representatives", metric.__all__)
+        self.assertIn("kmedoids", metric.__all__)
+        self.assertIn("dbscan", metric.__all__)
+        self.assertIn("KMedoids", metric.__all__)
+        self.assertIn("DBSCAN", metric.__all__)
         self.assertIn("FarthestFirst", metric.__all__)
         self.assertIn("exact_knn_graph", metric.__all__)
         self.assertIn("exact_knn_graph_edges", metric.__all__)
@@ -212,6 +232,32 @@ class RevivalApiTest(unittest.TestCase):
 
     def test_space_intent_methods_return_named_results(self):
         space = Space([0, 1, 2, 3, 4], metric=lambda lhs, rhs: abs(lhs - rhs))
+        group_space = Space([0, 1, 2, 10, 11], metric=lambda lhs, rhs: abs(lhs - rhs))
+
+        groups = group_space.groups(KMedoids(groups=2))
+        self.assertIsInstance(groups, ClusteringResult)
+        self.assertEqual(groups.assignments, (0, 0, 0, 1, 1))
+        self.assertEqual(groups.medoids, (1, 3))
+        self.assertEqual(groups.cluster_sizes, (3, 2))
+        self.assertEqual(groups.record_count, 5)
+        self.assertEqual(groups.cluster_count, 2)
+        self.assertEqual(groups.noise_count, 0)
+        self.assertEqual(groups.iterations, 2)
+        self.assertTrue(groups.converged)
+        self.assertEqual(groups.algorithm, "kmedoids")
+        self.assertEqual(groups.representation, "metric_space")
+        self.assertEqual(find_groups([0, 1, 2, 10, 11], lambda lhs, rhs: abs(lhs - rhs), 2), groups)
+
+        density_groups = group_space.groups(DBSCAN(radius=1, min_points=2))
+        self.assertIsInstance(density_groups, ClusteringResult)
+        self.assertEqual(density_groups.assignments, (0, 0, 0, 1, 1))
+        self.assertEqual(density_groups.medoids, (1, 3))
+        self.assertEqual(density_groups.core_records, (0, 1, 2, 3, 4))
+        self.assertEqual(density_groups.noise_records, ())
+        self.assertEqual(density_groups.cluster_sizes, (3, 2))
+        self.assertEqual(density_groups.cluster_count, 2)
+        self.assertEqual(density_groups.noise_count, 0)
+        self.assertEqual(density_groups.algorithm, "dbscan")
 
         representatives_result = space.representatives(3)
         self.assertIsInstance(representatives_result, RepresentativeSet)

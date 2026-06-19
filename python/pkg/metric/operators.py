@@ -3,9 +3,10 @@
 from dataclasses import dataclass
 import math
 import operator
+from typing import ClassVar
 
 from metric.spaces import FiniteMetricSpace
-from metric.strategies import FarthestFirst
+from metric.strategies import DBSCAN, FarthestFirst, KMedoids
 
 
 @dataclass(frozen=True)
@@ -82,6 +83,26 @@ class GraphStretchDiagnostics:
     max_stretch: float
     average_stretch: float
     stretch_policy: str
+
+
+@dataclass(frozen=True)
+class ClusteringResult:
+    """Engine-style grouping result with assignments and cluster metadata."""
+
+    noise_label: ClassVar[int] = -1
+
+    assignments: tuple
+    medoids: tuple
+    core_records: tuple
+    noise_records: tuple
+    cluster_sizes: tuple
+    record_count: int
+    cluster_count: int
+    noise_count: int
+    iterations: int
+    converged: bool
+    algorithm: str
+    representation: str
 
 
 @dataclass(frozen=True)
@@ -588,6 +609,330 @@ def graph_stretch_diagnostics(records, metric, graph):
     )
 
 
+def _coerce_positive_integer(value, name):
+    try:
+        value = operator.index(value)
+    except TypeError:
+        raise TypeError(f"{name} must be an integer") from None
+    if value <= 0:
+        raise ValueError(f"{name} must be positive")
+    return value
+
+
+def _coerce_non_negative_integer(value, name):
+    try:
+        value = operator.index(value)
+    except TypeError:
+        raise TypeError(f"{name} must be an integer") from None
+    if value < 0:
+        raise ValueError(f"{name} must be non-negative")
+    return value
+
+
+def _total_distance_to_all(space, candidate_index):
+    return sum(
+        space.distance(candidate_index, other_index)
+        for other_index in range(len(space.records))
+    )
+
+
+def _nearest_medoid_distance(space, medoids, record_index):
+    best_distance = None
+    for medoid_index in medoids:
+        distance = space.distance(record_index, medoid_index)
+        if best_distance is None or distance < best_distance:
+            best_distance = distance
+    return best_distance
+
+
+def _initialize_medoids(space, group_count):
+    medoids = []
+    best_index = 0
+    best_total = None
+    for candidate_index in range(len(space.records)):
+        total = _total_distance_to_all(space, candidate_index)
+        if best_total is None or total < best_total:
+            best_index = candidate_index
+            best_total = total
+
+    medoids.append(best_index)
+    selected = {best_index}
+
+    while len(medoids) < group_count:
+        next_index = None
+        next_distance = None
+        for candidate_index in range(len(space.records)):
+            if candidate_index in selected:
+                continue
+            distance = _nearest_medoid_distance(space, medoids, candidate_index)
+            if (
+                next_distance is None
+                or distance > next_distance
+                or (distance == next_distance and candidate_index < next_index)
+            ):
+                next_index = candidate_index
+                next_distance = distance
+
+        if next_index is None:
+            raise RuntimeError("failed to initialize k-medoids")
+
+        medoids.append(next_index)
+        selected.add(next_index)
+
+    return sorted(medoids)
+
+
+def _assign_to_medoids(space, medoids):
+    assignments = [0] * len(space.records)
+    cluster_sizes = [0] * len(medoids)
+
+    for record_index in range(len(space.records)):
+        best_cluster = 0
+        best_distance = None
+        for cluster_index, medoid_index in enumerate(medoids):
+            distance = space.distance(record_index, medoid_index)
+            if (
+                best_distance is None
+                or distance < best_distance
+                or (distance == best_distance and medoid_index < medoids[best_cluster])
+            ):
+                best_cluster = cluster_index
+                best_distance = distance
+
+        assignments[record_index] = best_cluster
+        cluster_sizes[best_cluster] += 1
+
+    return assignments, cluster_sizes
+
+
+def _recompute_medoids(space, assignments, cluster_sizes, current_medoids):
+    medoids = []
+    for cluster_index, cluster_size in enumerate(cluster_sizes):
+        if cluster_size == 0:
+            medoids.append(current_medoids[cluster_index])
+            continue
+
+        best_index = None
+        best_total = None
+        for candidate_index, assignment in enumerate(assignments):
+            if assignment != cluster_index:
+                continue
+            total = sum(
+                space.distance(candidate_index, other_index)
+                for other_index, other_assignment in enumerate(assignments)
+                if other_assignment == cluster_index
+            )
+            if best_total is None or total < best_total or (total == best_total and candidate_index < best_index):
+                best_index = candidate_index
+                best_total = total
+
+        medoids.append(best_index)
+
+    return sorted(medoids)
+
+
+def _compute_cluster_medoids(space, assignments, cluster_count):
+    medoids = []
+    for cluster_index in range(cluster_count):
+        best_index = None
+        best_total = None
+        for candidate_index, assignment in enumerate(assignments):
+            if assignment != cluster_index:
+                continue
+            total = sum(
+                space.distance(candidate_index, other_index)
+                for other_index, other_assignment in enumerate(assignments)
+                if other_assignment == cluster_index
+            )
+            if best_total is None or total < best_total or (total == best_total and candidate_index < best_index):
+                best_index = candidate_index
+                best_total = total
+        if best_index is not None:
+            medoids.append(best_index)
+    return medoids
+
+
+def kmedoids(records, metric, groups, max_iterations=100):
+    """Group records with deterministic k-medoids over exact pairwise distances."""
+    records = list(records)
+    if not records:
+        raise ValueError("cannot cluster an empty record set")
+
+    group_count = _coerce_positive_integer(groups, "groups")
+    max_iterations = _coerce_non_negative_integer(max_iterations, "max_iterations")
+    if group_count > len(records):
+        raise ValueError("groups cannot exceed the number of records")
+
+    space = FiniteMetricSpace(records, metric)
+    medoids = _initialize_medoids(space, group_count)
+    assignments, cluster_sizes = _assign_to_medoids(space, medoids)
+
+    iterations = 0
+    converged = False
+    for iteration in range(max_iterations):
+        updated_medoids = _recompute_medoids(space, assignments, cluster_sizes, medoids)
+        updated_assignments, updated_cluster_sizes = _assign_to_medoids(space, updated_medoids)
+        if updated_medoids == medoids and updated_assignments == assignments:
+            medoids = updated_medoids
+            assignments = updated_assignments
+            cluster_sizes = updated_cluster_sizes
+            iterations = iteration + 1
+            converged = True
+            break
+
+        medoids = updated_medoids
+        assignments = updated_assignments
+        cluster_sizes = updated_cluster_sizes
+        iterations = iteration + 1
+
+    return ClusteringResult(
+        assignments=tuple(assignments),
+        medoids=tuple(medoids),
+        core_records=(),
+        noise_records=(),
+        cluster_sizes=tuple(cluster_sizes),
+        record_count=len(records),
+        cluster_count=group_count,
+        noise_count=0,
+        iterations=iterations,
+        converged=converged,
+        algorithm="kmedoids",
+        representation="metric_space",
+    )
+
+
+def _validate_dbscan_parameters(radius, min_points):
+    if radius < 0:
+        raise ValueError("radius must be non-negative")
+    return _coerce_positive_integer(min_points, "min_points")
+
+
+def _dbscan_region_query(space, record_index, radius):
+    return [
+        candidate_index
+        for candidate_index in range(len(space.records))
+        if space.distance(record_index, candidate_index) <= radius
+    ]
+
+
+def _expand_dbscan_cluster(space, seed_neighbors, radius, min_points, cluster, visited, assigned, assignments, core_flags):
+    queue = list(seed_neighbors)
+    queued = [False] * len(space.records)
+    for neighbor_index in seed_neighbors:
+        queued[neighbor_index] = True
+
+    cursor = 0
+    while cursor < len(queue):
+        candidate_index = queue[cursor]
+        cursor += 1
+
+        if not visited[candidate_index]:
+            visited[candidate_index] = True
+            neighbors = _dbscan_region_query(space, candidate_index, radius)
+            if len(neighbors) >= min_points:
+                core_flags[candidate_index] = True
+                for neighbor_index in neighbors:
+                    if not queued[neighbor_index]:
+                        queue.append(neighbor_index)
+                        queued[neighbor_index] = True
+
+        if not assigned[candidate_index]:
+            assignments[candidate_index] = cluster
+            assigned[candidate_index] = True
+
+
+def dbscan(records, metric, radius, min_points):
+    """Group records with deterministic DBSCAN over exact pairwise distances."""
+    records = list(records)
+    if not records:
+        raise ValueError("cannot cluster an empty record set")
+
+    min_points = _validate_dbscan_parameters(radius, min_points)
+    space = FiniteMetricSpace(records, metric)
+    assignments = [ClusteringResult.noise_label] * len(records)
+    assigned = [False] * len(records)
+    visited = [False] * len(records)
+    core_flags = [False] * len(records)
+
+    cluster_count = 0
+    for record_index in range(len(records)):
+        if visited[record_index]:
+            continue
+
+        visited[record_index] = True
+        neighbors = _dbscan_region_query(space, record_index, radius)
+        if len(neighbors) < min_points:
+            continue
+
+        core_flags[record_index] = True
+        _expand_dbscan_cluster(
+            space,
+            neighbors,
+            radius,
+            min_points,
+            cluster_count,
+            visited,
+            assigned,
+            assignments,
+            core_flags,
+        )
+        cluster_count += 1
+
+    cluster_sizes = [0] * cluster_count
+    noise_records = []
+    noise_count = 0
+    for record_index in range(len(records)):
+        if assigned[record_index]:
+            cluster_sizes[assignments[record_index]] += 1
+        else:
+            assignments[record_index] = ClusteringResult.noise_label
+            noise_records.append(record_index)
+            noise_count += 1
+
+    return ClusteringResult(
+        assignments=tuple(assignments),
+        medoids=tuple(_compute_cluster_medoids(space, assignments, cluster_count)),
+        core_records=tuple(index for index, is_core in enumerate(core_flags) if is_core),
+        noise_records=tuple(noise_records),
+        cluster_sizes=tuple(cluster_sizes),
+        record_count=len(records),
+        cluster_count=cluster_count,
+        noise_count=noise_count,
+        iterations=1,
+        converged=True,
+        algorithm="dbscan",
+        representation="metric_space",
+    )
+
+
+def _coerce_grouping_strategy(strategy):
+    if isinstance(strategy, KMedoids):
+        return strategy
+    if isinstance(strategy, DBSCAN):
+        return strategy
+    if hasattr(strategy, "groups"):
+        return KMedoids(
+            groups=strategy.groups,
+            max_iterations=getattr(strategy, "max_iterations", 100),
+        )
+    if hasattr(strategy, "radius") and hasattr(strategy, "min_points"):
+        return DBSCAN(radius=strategy.radius, min_points=strategy.min_points)
+    try:
+        return KMedoids(groups=operator.index(strategy))
+    except TypeError:
+        raise TypeError("strategy must be a KMedoids, DBSCAN, or integer group count") from None
+
+
+def find_groups(records, metric, strategy):
+    """Group records and return an engine-style result object."""
+    strategy = _coerce_grouping_strategy(strategy)
+    if isinstance(strategy, KMedoids):
+        return kmedoids(records, metric, strategy.groups, strategy.max_iterations)
+    if isinstance(strategy, DBSCAN):
+        return dbscan(records, metric, strategy.radius, strategy.min_points)
+    raise TypeError("unsupported grouping strategy")
+
+
 def representative_indices(records, metric, k, seed_index=0):
     """Select representative record IDs with deterministic farthest-first traversal."""
     selected, _nearest_selected_distances, _records = _farthest_first_selection(records, metric, k, seed_index)
@@ -841,6 +1186,7 @@ def intrinsic_dimension_from_distances(distances):
 
 
 __all__ = [
+    "ClusteringResult",
     "GraphConnectivityDiagnostics",
     "GraphDegreeDiagnostics",
     "GraphStretchDiagnostics",
@@ -848,7 +1194,9 @@ __all__ = [
     "GraphConstructionResult",
     "RepresentativeSet",
     "StructureDescription",
+    "dbscan",
     "describe_structure",
+    "find_groups",
     "find_representatives",
     "graph_connectivity_diagnostics",
     "graph_degree_diagnostics",
@@ -861,6 +1209,7 @@ __all__ = [
     "exact_knn_graph_edges",
     "exact_radius_graph",
     "exact_radius_graph_edges",
+    "kmedoids",
     "medoid",
     "medoid_index",
     "pairwise_distance_matrix",

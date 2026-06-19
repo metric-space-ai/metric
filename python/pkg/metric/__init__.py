@@ -20,6 +20,7 @@ except ModuleNotFoundError:
 from . import mappings, metrics, operators, spaces, strategies, transforms
 from .metrics import Edit
 from .operators import (
+    ClusteringResult,
     GraphConnectivityDiagnostics,
     GraphDegreeDiagnostics,
     GraphStretchDiagnostics,
@@ -29,16 +30,19 @@ from .operators import (
     StructureDescription,
     coverage_representative_indices,
     coverage_representatives,
+    dbscan,
     describe_structure,
     exact_knn_graph,
     exact_knn_graph_edges,
     exact_radius_graph,
     exact_radius_graph_edges,
+    find_groups,
     find_representatives,
     graph_connectivity_diagnostics,
     graph_degree_diagnostics,
     graph_stretch_diagnostics,
     intrinsic_dimension,
+    kmedoids,
     medoid,
     medoid_index,
     nearest_neighbors,
@@ -52,7 +56,7 @@ from .operators import (
     symmetrize_graph,
 )
 from .spaces import FiniteMetricSpace, MatrixSpace, Space
-from .strategies import FarthestFirst
+from .strategies import DBSCAN, FarthestFirst, KMedoids
 
 __all__ = sorted(
     name
