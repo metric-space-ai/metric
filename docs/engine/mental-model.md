@@ -36,6 +36,20 @@ They are views or materialized execution structures over the same `MetricSpace`;
 
 `CoverTreeIndex` and `KnnGraphIndex` currently provide exact deterministic neighbor ordering over the finite space while preserving the intended engine vocabulary. The implementation can be replaced by specialized tree or graph algorithms later without changing the representation role.
 
+## Phase 3 Surface
+
+The first engine operators live under `metric::operators` and return named result objects:
+
+- `metric::NeighborSet<Distance>`
+- `metric::operators::knn(space, query, count)`
+- `metric::operators::knn(space, query_id, count)`
+- `metric::operators::knn(distance_provider, query_id, count)`
+- `metric::operators::knn(neighbor_index, query, count)`
+- `metric::operators::range(space, query, radius)`
+- `metric::operators::range(distance_provider, query_id, radius)`
+
+This is still the implementation layer, not the final intent API. It lets the same nearest-neighbor operation run against an implicit `MetricSpace`, a materialized `MatrixCache`, or a neighbor index while returning stable `RecordId` values.
+
 ## Current Contract
 
 The initial `MetricSpace` owns records by value. `RecordId` is an opaque wrapper over dense internal storage. `version()` exists and starts at `0`; later representation adapters can use it for stale-cache checks when mutating space operations are introduced.
@@ -61,6 +75,9 @@ auto cached_distance = matrix.distance(lhs, rhs);
 
 metric::representations::CoverTreeIndex<decltype(space)> tree(space);
 auto neighbors = tree.knn(std::string("metricks"), 2);
+
+auto exact_neighbors = metric::operators::knn(space, std::string("metricks"), 2);
+auto indexed_neighbors = metric::operators::knn(tree, std::string("metricks"), 2);
 ```
 
 The important shift is vocabulary: engine code starts from a metric space and stable record IDs. Algorithm names and representation choices come later as strategies and execution structures. A representation reports stale state when the source space version changes:
