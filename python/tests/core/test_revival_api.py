@@ -8,6 +8,7 @@ import metric
 import numpy as np
 from metric import exceptions, intent, mappings, representations, runtime, transforms
 from metric.exceptions import (
+    AmbiguousIntentError,
     MetricError,
     MissingMetricError,
     StaleRepresentationError,
@@ -667,6 +668,10 @@ class RevivalApiTest(unittest.TestCase):
             map_space([0, 1, 2], lambda record: record * record, lambda lhs, rhs: abs(lhs - rhs)).space.records,
             [0, 1, 4],
         )
+        keyword_mapped = space.map(transform=lambda record: record * record)
+        self.assertEqual(keyword_mapped.space.records, [0, 1, 4, 9, 16])
+        self.assertEqual(keyword_mapped.source_record_ids, (0, 1, 2, 3, 4))
+        self.assertEqual(keyword_mapped.strategy, "deterministic_transform")
 
         embedding = space.embed(dimensions=1)
         self.assertIsInstance(embedding, EmbeddingResult)
@@ -748,6 +753,14 @@ class RevivalApiTest(unittest.TestCase):
             space.reduce(3, strategy=KMedoids(groups=2))
         with self.assertRaises(TypeError):
             space.map(3)
+        with self.assertRaisesRegex(AmbiguousIntentError, "requires transform=... or target=..."):
+            space.map()
+        with self.assertRaisesRegex(AmbiguousIntentError, "either transform or target"):
+            space.map(transform=lambda record: record, target=space)
+        with self.assertRaisesRegex(StrategyUnavailableError, "strategy mappings are not promoted"):
+            space.map(transform=lambda record: record, strategy=KMedoids(groups=2))
+        with self.assertRaisesRegex(StrategyUnavailableError, "target mappings are not promoted"):
+            space.map(target=space)
         with self.assertRaises(TypeError):
             map_space([0, 1], lambda record: record, metric=3)
         with self.assertRaises(TypeError):
