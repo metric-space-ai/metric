@@ -1067,12 +1067,14 @@ class RevivalApiTest(unittest.TestCase):
         self.assertEqual(space.neighbors("cut", 2), [(0, 1), (1, 1)])
         self.assertEqual(space.neighbors("cut", count=2), [(0, 1), (1, 1)])
         self.assertEqual(space.neighbors("cut", radius=1), [(0, 1), (1, 1)])
+        self.assertEqual(space.neighbors("cut", count=1, radius=1), [(0, 1)])
+        self.assertEqual(space.neighbors(count=1), [[(1, 1)], [(0, 1)], [(0, 1)], [(1, 2)]])
+        self.assertEqual(space.neighbors(count=1, include_self=True)[0], [(0, 0)])
+        self.assertEqual(space.neighbors(radius=1)[0], [(1, 1), (2, 1)])
         self.assertEqual(space.nearest("cut"), (0, 1))
         self.assertEqual(space.within_radius("cut", 1), [(0, 1), (1, 1)])
         with self.assertRaises(ValueError):
             space.neighbors("cut", k=1, count=2)
-        with self.assertRaises(ValueError):
-            space.neighbors("cut", count=2, radius=1)
         self.assertTrue(callable(space.compare))
         self.assertTrue(callable(space.correlate))
         self.assertTrue(callable(space.embed))
