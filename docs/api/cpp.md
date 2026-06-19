@@ -90,6 +90,8 @@ auto dimension = metric::operators::intrinsic_dimension(records, metric::Edit<st
 
 The promoted C++ operator helpers are `pairwise_distance_matrix`, `nearest_neighbors`, `range_neighbors`, `GraphConnectivityDiagnostics`, `graph_connectivity_diagnostics`, `GraphDegreeDiagnostics`, `graph_degree_diagnostics`, `GraphStretchDiagnostics`, `graph_stretch_diagnostics`, `exact_knn_graph`, `exact_knn_graph_edges`, `exact_radius_graph`, `exact_radius_graph_edges`, `symmetrize_graph`, `prune_graph_out_degree`, `representative_indices`, `representatives`, `medoid_index`, `medoid`, `separated_representative_indices`, `separated_representatives`, `coverage_representative_indices`, `coverage_representatives`, and `intrinsic_dimension`.
 
+The engine operator layer also exposes `metric::operators::knn` and `metric::operators::range` through `<metric/engine.hpp>` or `<metric/operators/nearest.hpp>`. These overloads accept `metric::MetricSpace`, engine distance providers such as `MatrixCache`, and neighbor indexes such as `CoverTreeIndex`; they return `metric::NeighborSet<Distance>` with stable `RecordId` neighbors.
+
 `representative_indices` and `representatives` use deterministic farthest-first traversal over the finite metric space. They select existing records rather than vector centroids, start from `seed_index=0` by default, and resolve equal-distance ties by record order.
 
 `medoid_index` and `medoid` select the existing record with the smallest total distance to all records. Equal total-distance ties are resolved by record order.

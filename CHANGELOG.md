@@ -6,6 +6,7 @@
 
 - Add the first C++ engine core skeleton with `metric::MetricSpace`, `RecordId`, `Neighbor`, metric traits, engine concept traits, and `make_space`.
 - Add first C++ engine representation adapters for implicit distance lookup, matrix caching, exact neighbor-index scaffolds, kNN graph adjacency, and graph topology edges over `MetricSpace`.
+- Add first C++ engine nearest operators with `NeighborSet`, `operators::knn`, and `operators::range` overloads for spaces, distance providers, and neighbor indexes.
 
 ### Algorithm Changes
 

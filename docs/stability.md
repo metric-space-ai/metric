@@ -14,6 +14,7 @@ The Core Revival API is the currently promoted, CI-tested entry point.
 - C++ metric adapter: `metric::Metric<Record, Callable>` and `metric::make_metric<Record>(callable)`
 - C++ engine skeleton: `metric::MetricSpace`, `metric::RecordId`, `metric::Neighbor`, `metric::metric_traits`, `metric::MetricCallable`, `metric::MetricSpaceLike`, `metric::DistanceProvider`, `metric::NeighborSearchIndex`, `metric::GraphTopology`, and `metric::make_space`
 - C++ engine representation adapters: `metric::representations::ImplicitDistanceProvider`, `MatrixCache`, `CoverTreeIndex`, `KnnGraphIndex`, and `GraphTopology`
+- C++ engine nearest operators: `metric::NeighborSet`, `metric::operators::knn`, and `metric::operators::range`
 - C++ facade: `metric::Space::from_records` returning `metric::FiniteSpace`
 - C++ helpers: `metric::operators::pairwise_distance_matrix`, `nearest_neighbors`, `range_neighbors`, `GraphConnectivityDiagnostics`, `graph_connectivity_diagnostics`, `GraphDegreeDiagnostics`, `graph_degree_diagnostics`, `GraphStretchDiagnostics`, `graph_stretch_diagnostics`, `GraphConstructionResult`, `GraphConstructionMetadata`, `exact_knn_graph`, `exact_knn_graph_edges`, `exact_radius_graph`, `exact_radius_graph_edges`, `symmetrize_graph`, `prune_graph_out_degree`, `representative_indices`, `representatives`, `medoid_index`, `medoid`, `separated_representative_indices`, `separated_representatives`, `coverage_representative_indices`, `coverage_representatives`, and `intrinsic_dimension`
 - explicit C++ representations: `metric::MatrixSpace`, `metric::GraphSpace`, `metric::TreeSpace`
@@ -29,6 +30,7 @@ Stable revival surface:
 - distance metrics used by promoted examples
 - typed C++ metric callable adapter under `metric::Metric`
 - initial C++ engine skeleton under `metric/engine.hpp`, `metric/core/`, and `metric/representations/`
+- initial C++ engine nearest operators under `metric/operators/nearest.hpp`
 - minimal C++ `Space` facade for `from_records`, `neighbors`, `nearest`, and `within_radius`
 - C++ operator helpers under `metric::operators`
 - explicit finite-space representations: matrix, graph, and tree
@@ -63,7 +65,7 @@ This matrix labels the current tree by support status. It is deliberately path-b
 | Area | Representative paths | Status | Release meaning |
 |---|---|---|---|
 | Core C++ facade | `metric/concepts.hpp`, `metric/space.hpp`, `metric/operators.hpp`, `metric/metric.hpp` | Core Revival | Promoted API, covered by core CI, safe for new examples. |
-| C++ engine skeleton | `metric/engine.hpp`, `metric/core/`, `metric/representations/` | Core Revival | Initial engine object model for `MetricSpace`, stable record IDs, metric traits, concept traits, and representation adapters, covered by core CI. |
+| C++ engine skeleton | `metric/engine.hpp`, `metric/core/`, `metric/representations/`, `metric/operators/nearest.hpp` | Core Revival | Initial engine object model for `MetricSpace`, stable record IDs, metric traits, concept traits, representation adapters, and nearest operators, covered by core CI. |
 | Core C++ spaces | `metric/space/matrix.hpp`, `metric/space/knn_graph.hpp`, `metric/space/tree.hpp` | Core Revival / Expert | Stable as explicit representations; lower-level names remain compatibility APIs. |
 | Promoted C++ metrics | `metric/distance/k-related/Standards.hpp`, `metric/distance/k-structured/Edit.hpp`, `metric/distance/k-structured/TWED.hpp`, `metric/distance/k-structured/EMD.hpp` | Core Revival | Covered by promoted examples or smoke tests. Broader distance modules need their own fixtures before promotion. |
 | Core diagnostics | `metric/operators.hpp`, `metric/correlation/entropy.hpp`, `metric/correlation/mgc.hpp` | Core Revival | Covered by deterministic smoke tests and examples. |
