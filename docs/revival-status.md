@@ -16,6 +16,7 @@ The current local tree implements the first revival slice:
 - a downstream CMake consumer under `tests/downstream_consumer/`
 - core C++ `Metric`, `Space`, `FiniteSpace`, explicit representation aliases, and `metric::operators`
 - Python core facade modules under `metric.metrics`, `metric.spaces`, and `metric.operators`
+- Python core facade exposes a runtime-checkable `metric.Metric` protocol and explicit missing-metric errors
 - Python engine facade modules under `metric.intent` and `metric.representations`
 - Python representation facade exposes `Space.to_matrix()`, `Space.to_tree()`, and `Space.to_graph(count=...)`
 - Python matrix/tree/graph representations expose version freshness checks and deterministic stale errors

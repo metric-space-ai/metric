@@ -36,7 +36,7 @@ from .exceptions import (
     StrategyUnavailableError,
     UnsupportedOperationError,
 )
-from .metrics import Edit
+from .metrics import Edit, Metric
 from .operators import (
     ClusteringResult,
     CompressionResult,

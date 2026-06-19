@@ -7,8 +7,8 @@ from pathlib import Path
 import metric
 import numpy as np
 from metric import exceptions, intent, mappings, representations, transforms
-from metric.exceptions import MetricError, StaleRepresentationError, UnsupportedOperationError
-from metric.metrics import Edit, available
+from metric.exceptions import MetricError, MissingMetricError, StaleRepresentationError, UnsupportedOperationError
+from metric.metrics import Edit, Metric, available
 from metric.operators import (
     ClusteringResult,
     CompressionResult,
@@ -93,6 +93,7 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIn("Edit", available())
         self.assertIs(MatrixSpace, FiniteMetricSpace)
         self.assertIs(metric.metrics.Edit, Edit)
+        self.assertIs(metric.metrics.Metric, Metric)
         self.assertIs(metric.spaces.FiniteMetricSpace, FiniteMetricSpace)
         self.assertIs(metric.intent.find_groups, find_groups)
         self.assertIs(metric.intent.find_neighbors, nearest_neighbors)
@@ -164,6 +165,7 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIs(metric.strategies.FarthestFirst, FarthestFirst)
         self.assertIs(metric.transforms, transforms)
         self.assertIs(metric.Edit, Edit)
+        self.assertIs(metric.Metric, Metric)
         self.assertIs(metric.GraphConnectivityDiagnostics, GraphConnectivityDiagnostics)
         self.assertIs(metric.GraphDegreeDiagnostics, GraphDegreeDiagnostics)
         self.assertIs(metric.GraphStretchDiagnostics, GraphStretchDiagnostics)
@@ -219,12 +221,15 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIs(metric.FiniteMetricSpace, FiniteMetricSpace)
         self.assertIs(metric.Space, Space)
         self.assertIs(metric.MetricError, MetricError)
+        self.assertIs(metric.MissingMetricError, MissingMetricError)
         self.assertIs(metric.StaleRepresentationError, StaleRepresentationError)
         self.assertIs(metric.UnsupportedOperationError, UnsupportedOperationError)
         self.assertIn("FiniteMetricSpace", metric.__all__)
         self.assertIn("Space", metric.__all__)
         self.assertIn("exceptions", metric.__all__)
         self.assertIn("MetricError", metric.__all__)
+        self.assertIn("Metric", metric.__all__)
+        self.assertIn("MissingMetricError", metric.__all__)
         self.assertIn("StaleRepresentationError", metric.__all__)
         self.assertIn("UnsupportedOperationError", metric.__all__)
         self.assertIn("intent", metric.__all__)
@@ -379,6 +384,14 @@ class RevivalApiTest(unittest.TestCase):
         fresh_matrix = space.to_matrix()
         self.assertFalse(fresh_matrix.is_stale())
         self.assertEqual(fresh_matrix.distance(0, 1), 1)
+
+        class CallableMetric:
+            def __call__(self, lhs, rhs):
+                return 0 if lhs == rhs else 1
+
+        self.assertIsInstance(CallableMetric(), Metric)
+        with self.assertRaisesRegex(MissingMetricError, "explicit metric"):
+            Space(self.records)
 
     def test_nearest_neighbor_helpers_use_record_ids(self):
         space = FiniteMetricSpace(self.records, self.metric)

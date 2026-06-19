@@ -40,6 +40,7 @@
 - Add Python `Space.to_tree()` / `Space.to_graph(count=...)` representation views and matching `metric.representations.tree` / `graph` helpers.
 - Add Python `metric.exceptions` with `UnsupportedOperationError` for unsupported inverse reconstruction on lossy result objects.
 - Add Python representation version checks with deterministic `StaleRepresentationError` failures for stale matrix, tree, and graph views.
+- Add Python `metric.Metric` protocol and explicit `MissingMetricError` when constructing `Space` without a metric.
 
 ### Algorithm Changes
 

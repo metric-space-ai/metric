@@ -2,7 +2,7 @@
 
 import operator
 
-from metric.exceptions import StaleRepresentationError
+from metric.exceptions import MissingMetricError, StaleRepresentationError
 
 
 def _coerce_non_negative_integer(value, name):
@@ -18,7 +18,12 @@ def _coerce_non_negative_integer(value, name):
 class FiniteMetricSpace:
     """Explicit finite metric space backed by a pairwise distance matrix."""
 
-    def __init__(self, records, metric, source_space=None, representation="metric_space"):
+    def __init__(self, records, metric=None, source_space=None, representation="metric_space"):
+        if metric is None:
+            raise MissingMetricError(
+                "Space requires an explicit metric for arbitrary records. "
+                "Use Space(records, metric=Edit()) or another callable metric."
+            )
         self.records = list(records)
         self.metric = metric
         self.source_space = source_space
