@@ -706,6 +706,10 @@ class RevivalApiTest(unittest.TestCase):
         self.assertAlmostEqual(embedding.embedded_space.distance(0, 4), 4.0)
         self.assertTrue(np.isfinite(embedding.coordinates).all())
 
+        matrix_embedding = space.embed(dimensions=1, representation=space.to_matrix())
+        self.assertEqual(matrix_embedding.representation, "matrix")
+        self.assertLess(matrix_embedding.stress, 1e-12)
+
         strategy_embedding = embed_space(
             [0, 1, 2],
             lambda lhs, rhs: abs(lhs - rhs),
@@ -802,6 +806,10 @@ class RevivalApiTest(unittest.TestCase):
             space.embed(strategy=KMedoids(groups=2))
         with self.assertRaises(TypeError):
             embed_space([0, 1], metric=3)
+        stale_matrix = space.to_matrix()
+        space.touch()
+        with self.assertRaises(StaleRepresentationError):
+            space.embed(representation=stale_matrix)
 
     def test_intrinsic_dimension_estimates_distance_growth(self):
         records = [0, 1, 2, 3, 4]

@@ -1526,7 +1526,7 @@ def _embedding_distance_correlation(source_profile, embedded_profile, raw_stress
         return 1.0 if raw_stress <= 1e-12 else 0.0
 
 
-def embed_space(records, metric, dimensions=2, strategy=None):
+def embed_space(records, metric, dimensions=2, strategy=None, *, representation="metric_space"):
     """Embed a finite metric space into deterministic Euclidean coordinates."""
     if not callable(metric):
         raise TypeError("metric must be callable")
@@ -1606,7 +1606,7 @@ def embed_space(records, metric, dimensions=2, strategy=None):
         exact=True,
         operator_name="embed",
         strategy="classic_mds",
-        representation="metric_space",
+        representation=representation,
         diagnostics=diagnostics,
     )
 
