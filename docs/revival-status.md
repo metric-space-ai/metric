@@ -262,6 +262,7 @@ The following revival improvements landed on `master` after the `v0.3.2` tag and
 - Python engine-style Space compress intent backed by representative and medoid compression with named `CompressionResult` objects, merged as `e7029d80c0b2e37bae9078a75408c8b45ae14b91`
 - C++ engine compress intent backed by deterministic farthest-first representative compression with named `CompressionResult` objects, merged as `d6abef83b61d9e68f5d156884d09c525e8792bf6`
 - Python neighbor facade support for target `count` and `radius` intent arguments, merged as `e9dd23e217b12aeb8e6e85df612c55d78c66da50`
+- Python representation facade support for `Space.to_tree()` and `Space.to_graph(count=...)`, merged as `adb6222c2f311662678694fb3a92ee25052b89bd`
 
 ## Historical Code Policy
 
