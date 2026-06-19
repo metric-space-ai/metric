@@ -83,7 +83,7 @@ PyPI publishing workflow:
 ```shell
 gh workflow run publish-python.yml \
   --repo metric-space-ai/metric \
-  -f ref=v0.3.0 \
+  -f ref=v0.3.1 \
   -f publish=false
 ```
 

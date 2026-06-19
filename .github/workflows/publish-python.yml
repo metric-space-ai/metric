@@ -6,7 +6,7 @@ on:
       ref:
         description: Git ref to publish from, usually a release tag.
         required: true
-        default: v0.3.0
+        default: v0.3.1
       publish:
         description: Upload checked distributions to the configured package index.
         required: true
@@ -79,7 +79,7 @@ jobs:
           CIBW_ARCHS_MACOS: auto
           CIBW_ARCHS_WINDOWS: AMD64
           CIBW_ENVIRONMENT: CMAKE_COMMON_VARIABLES="-DMETRIC_PYTHON_USE_BLAS=OFF"
-          CIBW_TEST_COMMAND: "python {project}/examples/metric_space/string_edit_space.py && python -B -m unittest discover -s {project}/tests/core -v"
+          CIBW_TEST_COMMAND: "python {project}/python/examples/metric_space/string_edit_space.py && python -B -m unittest discover -s {project}/python/tests/core -v"
         with:
           package-dir: ./python
           output-dir: wheelhouse

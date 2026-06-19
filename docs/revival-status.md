@@ -114,7 +114,7 @@ The final release tag and GitHub release were checked on 2026-06-19:
 - tag CI runs for docs/formatting, C++ core smoke, and Python core wheels completed successfully
 - the release assets include `metric-v0.3.0.tar.gz`, `metric_space-0.3.0.tar.gz`, and `metric_space-0.3.0-cp312-cp312-linux_x86_64.whl`
 
-The remaining external release action is to publish the `metric-space` Python source distribution and wheels to PyPI after confirming package ownership or Trusted Publishing. The repository has a manual PyPI publishing workflow backed by repository PyPI credentials; no local Twine credentials were present during the 2026-06-19 release check.
+The remaining external release action is to publish the `metric-space` Python source distribution and wheels to PyPI after confirming package ownership or Trusted Publishing. The repository has a manual PyPI publishing workflow backed by repository PyPI credentials, with the PyPI publishing path moving to the `v0.3.1` packaging patch release so Linux wheels are built with extension-module Python discovery rather than embedded-Python library discovery. No local Twine credentials were present during the 2026-06-19 release check.
 
 ## Historical Code Policy
 
