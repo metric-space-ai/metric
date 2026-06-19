@@ -39,6 +39,7 @@
 - Add Python `Space.neighbors(..., count=...)`, `Space.neighbors(..., radius=...)`, and `nearest_neighbors(..., count=...)` intent-compatible neighbor arguments.
 - Add Python `Space.to_tree()` / `Space.to_graph(count=...)` representation views and matching `metric.representations.tree` / `graph` helpers.
 - Add Python `metric.exceptions` with `UnsupportedOperationError` for unsupported inverse reconstruction on lossy result objects.
+- Add Python representation version checks with deterministic `StaleRepresentationError` failures for stale matrix, tree, and graph views.
 
 ### Algorithm Changes
 

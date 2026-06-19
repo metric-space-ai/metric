@@ -18,6 +18,7 @@ The current local tree implements the first revival slice:
 - Python core facade modules under `metric.metrics`, `metric.spaces`, and `metric.operators`
 - Python engine facade modules under `metric.intent` and `metric.representations`
 - Python representation facade exposes `Space.to_matrix()`, `Space.to_tree()`, and `Space.to_graph(count=...)`
+- Python matrix/tree/graph representations expose version freshness checks and deterministic stale errors
 - Python public exception facade includes `metric.exceptions` and deterministic `UnsupportedOperationError` for unsupported inverse reconstruction
 - Python neighbor facade accepts the target `count` and `radius` intent arguments
 - Python engine-style Space grouping intent with KMedoids and DBSCAN strategies

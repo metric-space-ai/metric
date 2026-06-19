@@ -2,6 +2,8 @@
 
 import operator
 
+from metric.exceptions import StaleRepresentationError
+
 
 def _coerce_non_negative_integer(value, name):
     try:
@@ -16,9 +18,13 @@ def _coerce_non_negative_integer(value, name):
 class FiniteMetricSpace:
     """Explicit finite metric space backed by a pairwise distance matrix."""
 
-    def __init__(self, records, metric):
+    def __init__(self, records, metric, source_space=None, representation="metric_space"):
         self.records = list(records)
         self.metric = metric
+        self.source_space = source_space
+        self.source_version = source_space.version() if source_space is not None else None
+        self.representation = representation
+        self._version = 0
         self._distances = [
             [metric(lhs, rhs) for rhs in self.records]
             for lhs in self.records
@@ -33,14 +39,35 @@ class FiniteMetricSpace:
     def __call__(self, lhs_index, rhs_index):
         return self.distance(lhs_index, rhs_index)
 
+    def version(self):
+        return self._version
+
+    def touch(self):
+        self._version += 1
+        return self._version
+
+    def is_stale(self):
+        return self.source_space is not None and self.source_space.version() != self.source_version
+
+    def ensure_fresh(self):
+        if self.is_stale():
+            raise StaleRepresentationError(
+                f"{self.representation} representation is stale: source version {self.source_space.version()} "
+                f"does not match representation version {self.source_version}. "
+                "Rebuild the representation from the source space."
+            )
+        return self
+
     def distance(self, lhs_index, rhs_index):
+        self.ensure_fresh()
         return self._distances[lhs_index][rhs_index]
 
     def pairwise_distances(self):
+        self.ensure_fresh()
         return [row[:] for row in self._distances]
 
     def to_matrix(self):
-        return FiniteMetricSpace(self.records, self.metric)
+        return FiniteMetricSpace(self.records, self.metric, source_space=self, representation="matrix")
 
     def to_tree(self):
         from metric.representations import TreeIndex
@@ -53,6 +80,7 @@ class FiniteMetricSpace:
         return GraphIndex(self, count)
 
     def knn(self, query, k=1):
+        self.ensure_fresh()
         k = _coerce_non_negative_integer(k, "k")
         distances = [
             (index, self.metric(record, query))
