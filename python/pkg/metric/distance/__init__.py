@@ -4,3 +4,17 @@ try:
     from metric._impl.standards import *
 except ModuleNotFoundError:
     pass
+
+
+def _install_compatibility_aliases(namespace):
+    aliases = {
+        "Manhattan": "Manhatten",
+        "Minkowski": "P_norm",
+        "ThresholdedEuclidean": "Euclidean_thresholded",
+    }
+    for alias, historical_name in aliases.items():
+        if alias not in namespace and historical_name in namespace:
+            namespace[alias] = namespace[historical_name]
+
+
+_install_compatibility_aliases(globals())
