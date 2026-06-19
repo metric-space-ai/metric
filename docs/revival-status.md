@@ -44,6 +44,7 @@ The current local tree implements the first revival slice:
 - Python reduce and compress facades accept fresh explicit representations and record representation metadata
 - Python engine-style Space map intent for deterministic transforms into derived metric spaces
 - Python map facade accepts `transform=` and reports ambiguous or unavailable mapping forms deterministically
+- Python map facade accepts fresh explicit representations and records representation metadata
 - Python engine-style Space denoise intent with DBSCAN-noise filtering and mapping-result lineage
 - Python describe facade accepts fresh explicit representations and records representation metadata
 - Python beta compatibility bridge modules under `metric.mappings` and `metric.transforms`
@@ -277,6 +278,7 @@ The following revival improvements landed on `master` after the `v0.3.2` tag and
 - Python engine-style Space reduce intent with named `ReductionResult` objects, representative/medoid strategy coverage, and API/stability docs, merged as `c24069575071a228363220a00ff1fb0299307f29`
 - Python engine-style Space map intent with named `MappingResult` objects, deterministic transform coverage, and API/stability docs, merged as `e5d2f796c8eb842a5e784160acdf9b87baef10de`
 - Python `Space.map(transform=...)` keyword intent plus deterministic ambiguity and unavailable-strategy errors, merged as `77bb3665ee9a3b8401440e3cbf0f8b066f1102bc`
+- Python `Space.map(..., representation=...)` freshness checks and representation metadata, merged as `0a6146ae79cb348741e4794037296239c24855fb`
 - C++ engine map intent with `MappingResult` lineage metadata, deterministic transform smoke coverage, and API/stability docs, merged as `4cd6144e25761225fd1362dd3f5ae9e501f4859a`
 - C++ engine denoise intent backed by DBSCAN-noise filtering with `MappingResult` lineage metadata and core smoke coverage, merged as `998d1bc1d357f982c30b0eeb9a8ccce196fddb56`
 - Python engine-style Space denoise intent with named `MappingResult` objects, DBSCAN-noise filtering coverage, and API/stability docs, merged as `74054a493909b35af65034f21c944d057a600f91`
