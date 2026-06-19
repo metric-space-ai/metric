@@ -32,6 +32,7 @@ The current local tree implements the first revival slice:
 - Python engine-style Space compare/correlate intent with a deterministic distance-profile correlation strategy
 - Python compare/correlate facade supports `align="ids"` over stable Space IDs
 - Python engine-style Space embed intent with deterministic classical MDS and embedding diagnostics
+- Python embed facade accepts fresh explicit representations and records representation metadata
 - Python outlier facade supports strategy-free `Space.outliers(count=...)`, `fraction`, and `threshold`
 - Python denoise facade supports strategy-free outlier-removal `Space.denoise(...)` controls
 - Python engine-style Space outlier intent with DBSCAN-noise strategy
@@ -274,6 +275,7 @@ The following revival improvements landed on `master` after the `v0.3.2` tag and
 - Python engine-style Space denoise intent with named `MappingResult` objects, DBSCAN-noise filtering coverage, and API/stability docs, merged as `74054a493909b35af65034f21c944d057a600f91`
 - Python engine facade modules for semantic intent aliases and matrix representation materialization, merged as `b94c97c564d0cd9a2ae795e796662d152c678b86`
 - Python engine-style Space embed intent backed by deterministic classical MDS with named `EmbeddingResult` diagnostics, merged as `9fbd39d0890bfd64d8b65cc091334d0975e03d87`
+- Python `Space.embed(..., representation=...)` freshness checks and representation metadata, merged as `3e223d49300b98d3042385cf9d6d6c0cde71f069`
 - C++ engine embed intent backed by the PCFA strategy with LAPACK-gated core smoke, downstream, and include-smoke coverage, merged as `dc44030e5155608dfeaebbdeb48ab367f595cd0f`
 - Python engine-style Space compress intent backed by representative and medoid compression with named `CompressionResult` objects, merged as `e7029d80c0b2e37bae9078a75408c8b45ae14b91`
 - C++ engine compress intent backed by deterministic farthest-first representative compression with named `CompressionResult` objects, merged as `d6abef83b61d9e68f5d156884d09c525e8792bf6`
