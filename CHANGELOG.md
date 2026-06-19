@@ -21,6 +21,7 @@
 - Add initial C++ runtime policy objects for exact lazy/materialized neighbor execution and representation-cache staleness checks.
 - Add a C++ engine `describe_structure` intent with exact finite-space diagnostics and intrinsic-dimension metadata.
 - Add a C++ engine `find_representatives` intent backed by deterministic farthest-first selection.
+- Add a C++ engine `compress` intent backed by deterministic farthest-first representative compression.
 - Add a C++ engine `find_outliers` intent backed by DBSCAN noise detection with named `OutlierResult` objects.
 - Add a C++ engine `denoise` intent backed by DBSCAN noise filtering with mapping-result lineage.
 - Add Python `Space.to_matrix()` for an explicit finite matrix representation view.

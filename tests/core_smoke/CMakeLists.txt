@@ -59,6 +59,9 @@ target_link_libraries(engine_describe_intent_smoke PRIVATE ${METRIC_TARGET_NAME}
 add_executable(engine_representatives_intent_smoke engine_representatives_intent_smoke.cpp)
 target_link_libraries(engine_representatives_intent_smoke PRIVATE ${METRIC_TARGET_NAME})
 
+add_executable(engine_compress_intent_smoke engine_compress_intent_smoke.cpp)
+target_link_libraries(engine_compress_intent_smoke PRIVATE ${METRIC_TARGET_NAME})
+
 add_executable(engine_outliers_intent_smoke engine_outliers_intent_smoke.cpp)
 target_link_libraries(engine_outliers_intent_smoke PRIVATE ${METRIC_TARGET_NAME})
 
@@ -88,5 +91,6 @@ add_test(NAME engine_denoise_intent_smoke COMMAND engine_denoise_intent_smoke)
 add_test(NAME engine_compare_intent_smoke COMMAND engine_compare_intent_smoke)
 add_test(NAME engine_describe_intent_smoke COMMAND engine_describe_intent_smoke)
 add_test(NAME engine_representatives_intent_smoke COMMAND engine_representatives_intent_smoke)
+add_test(NAME engine_compress_intent_smoke COMMAND engine_compress_intent_smoke)
 add_test(NAME engine_outliers_intent_smoke COMMAND engine_outliers_intent_smoke)
 add_test(NAME engine_runtime_policy_smoke COMMAND engine_runtime_policy_smoke)
