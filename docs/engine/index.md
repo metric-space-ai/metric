@@ -10,6 +10,17 @@ This model is the public architecture of the engine.
 
 The first implementation slices are documented in [Engine Mental Model](mental-model.md).
 
+## Engine Guides
+
+- [Metric Space](metric-space.md)
+- [Representations](representations.md)
+- [Intent API](intent-api.md)
+- [Strategies](strategies.md)
+- [Operators](operators.md)
+- [Mappings](mappings.md)
+- [Runtime Policies](runtime.md)
+- [Migration](migration.md)
+
 ## Flagship Examples
 
 The first CI-tested engine demos live under `examples/engine/` and `python/examples/engine/`.
