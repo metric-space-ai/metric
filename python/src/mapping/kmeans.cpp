@@ -15,7 +15,7 @@ void register_wrapper_kmeans(py::module& m) {
         py::arg("k") = 0.5,
         py::arg("maxiter") = 200,
         py::arg("metric") = "Euclidean",   // TODO: fix typo
-        py::arg("random_see") = -1
+        py::arg("random_seed") = -1
     );
 }
 
