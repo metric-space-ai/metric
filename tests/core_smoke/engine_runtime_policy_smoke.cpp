@@ -20,6 +20,15 @@ int main()
 	const auto lazy_policy = metric::runtime::exact();
 	assert(lazy_policy.name() == "exact_lazy_serial");
 	assert(lazy_policy.representation_preference() == "implicit");
+	const auto lazy_diagnostics = metric::runtime::diagnostics(lazy_policy, {}, "neighbors");
+	assert(lazy_diagnostics.policy_name == "exact_lazy_serial");
+	assert(lazy_diagnostics.exact);
+	assert(!lazy_diagnostics.parallel);
+	assert(!lazy_diagnostics.materialized);
+	assert(lazy_diagnostics.representation == "metric_space");
+	assert(lazy_diagnostics.intent == "neighbors");
+	assert(lazy_diagnostics.supported);
+	assert(lazy_diagnostics.reason.empty());
 
 	const auto lazy_neighbors = metric::find_neighbors(space, space.id(0), 2, lazy_policy);
 	assert(lazy_neighbors.exact);
@@ -30,6 +39,10 @@ int main()
 	const auto materialized_policy = metric::runtime::materialized(metric::runtime::exact());
 	assert(materialized_policy.name() == "exact_materialized_serial");
 	assert(materialized_policy.representation_preference() == "matrix_cache");
+	const auto materialized_diagnostics = metric::runtime::diagnostics(materialized_policy, {}, "neighbors");
+	assert(materialized_diagnostics.policy_name == "exact_materialized_serial");
+	assert(materialized_diagnostics.materialized);
+	assert(materialized_diagnostics.representation == "matrix_cache");
 
 	const auto materialized_neighbors = metric::find_neighbors(space, space.id(0), 2, materialized_policy);
 	assert(materialized_neighbors.exact);
@@ -46,6 +59,10 @@ int main()
 	const auto parallel_policy = metric::runtime::parallel(materialized_policy);
 	assert(parallel_policy.name() == "exact_materialized_parallel");
 	assert(parallel_policy.uses_parallel_execution());
+	const auto explicit_diagnostics = metric::runtime::diagnostics(parallel_policy, "cover_tree_index", "neighbors");
+	assert(explicit_diagnostics.parallel);
+	assert(explicit_diagnostics.materialized);
+	assert(explicit_diagnostics.representation == "cover_tree_index");
 	const auto parallel_neighbors = metric::find_neighbors(space, space.id(0), 2, parallel_policy);
 	assert(parallel_neighbors.representation == "matrix_cache");
 
@@ -62,6 +79,10 @@ int main()
 		rejected_approximate = true;
 	}
 	assert(rejected_approximate);
+	const auto approximate_diagnostics = metric::runtime::diagnostics(metric::runtime::approximate(), {}, "neighbors");
+	assert(!approximate_diagnostics.exact);
+	assert(!approximate_diagnostics.supported);
+	assert(!approximate_diagnostics.reason.empty());
 
 	bool rejected_materialized_record_query = false;
 	try {

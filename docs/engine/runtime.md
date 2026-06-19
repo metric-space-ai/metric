@@ -11,6 +11,14 @@ The first C++ runtime policy surface lives under `metric::runtime`:
 - `serial`
 - `parallel`
 - `cache`
+- `diagnostics`
+
+`runtime::diagnostics(...)` returns a `RuntimeDiagnostics` value with the normalized policy name, exact/materialized/parallel flags, selected representation, optional intent label, support status, and reason text for unsupported policies.
+
+```cpp
+auto policy = metric::runtime::materialized(metric::runtime::exact());
+auto info = metric::runtime::diagnostics(policy, {}, "neighbors");
+```
 
 ## Neighbor Execution
 
@@ -52,6 +60,6 @@ auto after = matrix.is_stale();
 
 - Approximate policies are explicit placeholders until backed by real approximate execution paths.
 - Parallel policy metadata is exposed before broad parallel execution is implemented.
-- Python runtime diagnostics report policy and representation metadata; they do not yet switch execution to approximate or broadly parallel implementations.
+- C++ and Python runtime diagnostics report policy and representation metadata; they do not yet switch execution to approximate or broadly parallel implementations.
 
 This conservative behavior is intentional: no hidden all-pairs materialization or approximate search should happen without an explicit policy or documented default.
