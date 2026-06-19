@@ -50,6 +50,7 @@ The current local tree implements the first revival slice:
 - Python engine-style Space denoise intent with DBSCAN-noise filtering and mapping-result lineage
 - Python describe facade accepts fresh explicit representations and records representation metadata
 - Python distance compatibility aliases expose `Manhattan`, `Minkowski`, and `ThresholdedEuclidean` when optional historical standard bindings are installed
+- Python top-level package hides legacy native debug exports such as `LongVector`, `DoubleVector`, and `test`
 - Python beta compatibility bridge modules under `metric.mappings` and `metric.transforms`
 - promoted C++ examples under `examples/core/`
 - promoted Python examples under `python/examples/metric_space/`
@@ -313,6 +314,7 @@ The following revival improvements landed on `master` after the `v0.3.2` tag and
 - Python strategy-free `Space.denoise(...)`, `count`, `fraction`, `threshold`, and `strength` facade, merged as `8b2fd745d4e2ed343d678ffdb7423cae5c1e3e71`
 - Python `Space.outliers(..., representation=...)` and `Space.denoise(..., representation=...)` freshness checks and representation metadata, merged as `215185307b04ef167fa2723e38b3266a17e71853`
 - Python distance compatibility aliases for optional historical standard bindings, merged as `3b210fec8ffcc49e767065d829f830d74447fa38`
+- Python top-level debug extension exports hidden from the public package API, merged as `66d7c07933c6cfd08b3dea8184741fc3ede41a47`
 
 ## Historical Code Policy
 
