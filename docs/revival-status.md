@@ -35,6 +35,7 @@ The current local tree implements the first revival slice:
 - Python embed facade accepts fresh explicit representations and records representation metadata
 - Python outlier facade supports strategy-free `Space.outliers(count=...)`, `fraction`, and `threshold`
 - Python denoise facade supports strategy-free outlier-removal `Space.denoise(...)` controls
+- Python outlier and denoise facades record fresh explicit representation metadata
 - Python engine-style Space outlier intent with DBSCAN-noise strategy
 - Python engine-style Space reduce intent with representative and medoid reduction strategies
 - Python engine-style Space compress intent with representative and medoid compression strategies
@@ -295,6 +296,7 @@ The following revival improvements landed on `master` after the `v0.3.2` tag and
 - Python queryless `Space.neighbors(...)`, `include_self`, and radius/count capped neighbor results, merged as `6acbf2357d0071d5d7fe4bc87e8020ccc3d4718b`
 - Python strategy-free `Space.outliers(count=...)`, `fraction`, and `threshold` facade, merged as `376e45480dcdb3abaaab6aa972d32f4373b0744c`
 - Python strategy-free `Space.denoise(...)`, `count`, `fraction`, `threshold`, and `strength` facade, merged as `8b2fd745d4e2ed343d678ffdb7423cae5c1e3e71`
+- Python `Space.outliers(..., representation=...)` and `Space.denoise(..., representation=...)` freshness checks and representation metadata, merged as `215185307b04ef167fa2723e38b3266a17e71853`
 
 ## Historical Code Policy
 
