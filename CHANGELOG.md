@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-06-19
+
 ### API Changes
 
 - Add `metric::operators::intrinsic_dimension` and `metric.intrinsic_dimension` as expansion-dimension diagnostics for finite metric spaces.

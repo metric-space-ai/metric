@@ -128,7 +128,7 @@ PyPI publishing moved to the `v0.3.1` packaging patch release so Linux wheels us
 - publish run `27801491154` rebuilt and checked the same distribution set successfully, but the final Twine upload failed with `HTTPError: 403 Forbidden` from `https://upload.pypi.org/legacy/`
 - PyPI still returned 404 for `https://pypi.org/pypi/metric-space/json` after the failed upload, so no visible `metric-space` release was published
 
-The remaining external release action is to update or replace the repository PyPI credentials, or configure PyPI Trusted Publishing for owner `metric-space-ai`, repository `metric`, workflow `publish-python.yml`, and environment `pypi`. The workflow supports both repository-secret password uploads and Trusted Publishing uploads; after PyPI access is fixed, rerun `.github/workflows/publish-python.yml` with `ref=v0.3.1`, `publish=true`, and the appropriate `auth_method`. No local Twine credentials were present during the 2026-06-19 release check.
+The remaining external release action is to update or replace the repository PyPI credentials, or configure PyPI Trusted Publishing for owner `metric-space-ai`, repository `metric`, workflow `publish-python.yml`, and environment `pypi`. The workflow supports both repository-secret password uploads and Trusted Publishing uploads; after PyPI access is fixed, rerun `.github/workflows/publish-python.yml` with the current release tag, `publish=true`, and the appropriate `auth_method`. No local Twine credentials were present during the 2026-06-19 release check.
 
 ## Post-v0.3.1 Master Progress
 
@@ -138,6 +138,10 @@ The following revival improvements landed on `master` after the `v0.3.1` tag:
 - promoted Python structured-record example, merged as `0417dd113f2452ec4772e7835cbf86a33e572e81`
 - release and PyPI build gates running both promoted Python examples, merged as `3d7b1a6e4cfeb37708615e2eb795a1d66bd8450d`
 - Python core metric-contract checks for edit distance, NumPy record callables, and structured-record callables, merged as `3073280344ef66831fbcfcf9197df7d01050b82c`
+- revival source-format checks for promoted source and docs files, merged as `cf35266ba5e18b6113f8eb3aa8715ac500050710`
+- intrinsic-dimension diagnostics in C++ and Python, merged as `d510e0ceb78a307a4e91545837ee4e6ff81eccc3`
+
+The current source tree targets `0.3.2` for the next GitHub release and Python distribution metadata so those post-`v0.3.1` changes can be tagged and published together.
 
 ## Historical Code Policy
 
