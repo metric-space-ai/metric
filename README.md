@@ -117,10 +117,12 @@ The lower-level C++ representations remain available for expert control and comp
 - `metric::operators::range_neighbors`
 - `metric::operators::GraphConnectivityDiagnostics`
 - `metric::operators::GraphDegreeDiagnostics`
+- `metric::operators::GraphStretchDiagnostics`
 - `metric::operators::GraphConstructionResult`
 - `metric::operators::GraphConstructionMetadata`
 - `metric::operators::graph_connectivity_diagnostics`
 - `metric::operators::graph_degree_diagnostics`
+- `metric::operators::graph_stretch_diagnostics`
 - `metric::operators::exact_knn_graph`
 - `metric::operators::exact_knn_graph_edges`
 - `metric::operators::exact_radius_graph`

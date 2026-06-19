@@ -24,7 +24,7 @@ The records are strings. Edit distance defines the geometry without an embedding
 - `Space`: minimal intent-first finite metric space facade
 - `FiniteMetricSpace`: finite metric space over records
 - `MatrixSpace`: compatibility alias for `FiniteMetricSpace`
-- `operators`: small helpers for pairwise distances, nearest neighbors, range neighbors, exact graph results and edges, graph connectivity diagnostics, graph degree diagnostics, graph pruning, representative selection, medoids, separated representatives, and intrinsic-dimension diagnostics
+- `operators`: small helpers for pairwise distances, nearest neighbors, range neighbors, exact graph results and edges, graph connectivity diagnostics, graph degree diagnostics, graph stretch diagnostics, graph pruning, representative selection, medoids, separated representatives, and intrinsic-dimension diagnostics
 - `mappings`: beta compatibility bridge for installed mapping bindings
 - `transforms`: beta compatibility bridge for installed transform bindings
 
@@ -51,6 +51,7 @@ from metric.operators import (
     GraphConstructionResult,
     GraphConnectivityDiagnostics,
     GraphDegreeDiagnostics,
+    GraphStretchDiagnostics,
     coverage_representative_indices,
     coverage_representatives,
     exact_knn_graph,
@@ -59,6 +60,7 @@ from metric.operators import (
     exact_radius_graph_edges,
     graph_connectivity_diagnostics,
     graph_degree_diagnostics,
+    graph_stretch_diagnostics,
     intrinsic_dimension,
     medoid,
     medoid_index,
@@ -82,6 +84,7 @@ radius_graph = exact_radius_graph(records, Edit(), radius=1)
 radius_edges = exact_radius_graph_edges(records, Edit(), radius=1)
 connectivity_info = graph_connectivity_diagnostics(knn_graph)
 degree_info = graph_degree_diagnostics(knn_graph)
+stretch_info = graph_stretch_diagnostics(records, Edit(), radius_graph)
 undirected = symmetrize_graph(knn_graph, policy="union", weighting="minimum_distance")
 pruned = prune_graph_out_degree(exact_knn_graph(records, Edit(), k=2), max_out_degree=1)
 selected_ids = representative_indices(records, Edit(), k=2)
@@ -106,6 +109,8 @@ dimension = intrinsic_dimension(records, Edit())
 `graph_connectivity_diagnostics` returns `GraphConnectivityDiagnostics` for a graph construction result. It reports deterministic component labels, component count, isolated-record count, largest component size, connected status, and connectivity policy. Directed graph results use weak undirected reachability over stored edges; undirected graph results use endpoint reachability.
 
 `graph_degree_diagnostics` returns `GraphDegreeDiagnostics` for a graph construction result. Directed graphs report `out_degrees`, `in_degrees`, combined endpoint `degrees`, isolated count, max degree, average degree, and degree policy `directed_in_out`. Undirected graph results report endpoint `degrees` with zero-filled in/out vectors and degree policy `undirected_endpoint`.
+
+`graph_stretch_diagnostics` returns `GraphStretchDiagnostics` for a graph construction result plus the source records and metric. It computes shortest-path distances over the stored graph, compares them to the metric distance, and reports evaluated pairs, reachable pairs, unreachable pairs, zero-metric pairs, max stretch, average stretch over reachable pairs, and stretch policy. Directed graph results use directed shortest paths; undirected graph results use bidirectional endpoint paths.
 
 `symmetrize_graph` converts a graph construction result to undirected `source_index < target_index` edges. The supported symmetrization policies are `union` and `mutual`; the supported reciprocal weighting policies are `minimum_distance` and `maximum_distance`. The returned metadata records the selected symmetrization and weighting policies.
 

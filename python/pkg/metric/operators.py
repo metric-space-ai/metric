@@ -67,6 +67,22 @@ class GraphConnectivityDiagnostics:
     connectivity_policy: str
 
 
+@dataclass(frozen=True)
+class GraphStretchDiagnostics:
+    """Shortest-path stretch diagnostics for a graph construction result."""
+
+    record_count: int
+    edge_count: int
+    directed: bool
+    pair_count: int
+    reachable_pair_count: int
+    unreachable_pair_count: int
+    zero_metric_pair_count: int
+    max_stretch: float
+    average_stretch: float
+    stretch_policy: str
+
+
 def pairwise_distance_matrix(records, metric):
     return FiniteMetricSpace(records, metric).pairwise_distances()
 
@@ -430,6 +446,115 @@ def graph_connectivity_diagnostics(graph):
     )
 
 
+def graph_stretch_diagnostics(records, metric, graph):
+    """Compute deterministic shortest-path stretch diagnostics for a graph result."""
+    records = list(records)
+    record_count = graph.metadata.record_count
+    if len(records) != record_count:
+        raise ValueError("graph metadata record_count must match records size")
+
+    shortest_paths = [
+        [math.inf] * record_count
+        for _index in range(record_count)
+    ]
+    for index in range(record_count):
+        shortest_paths[index][index] = 0.0
+
+    for source_index, target_index, edge_distance in graph.edges:
+        if (
+            source_index < 0
+            or target_index < 0
+            or source_index >= record_count
+            or target_index >= record_count
+        ):
+            raise ValueError("graph edge index exceeds metadata record_count")
+
+        edge_distance = float(edge_distance)
+        shortest_paths[source_index][target_index] = min(
+            shortest_paths[source_index][target_index],
+            edge_distance,
+        )
+        if not graph.metadata.directed:
+            shortest_paths[target_index][source_index] = min(
+                shortest_paths[target_index][source_index],
+                edge_distance,
+            )
+
+    for through in range(record_count):
+        for source_index in range(record_count):
+            if math.isinf(shortest_paths[source_index][through]):
+                continue
+            for target_index in range(record_count):
+                if math.isinf(shortest_paths[through][target_index]):
+                    continue
+                shortest_paths[source_index][target_index] = min(
+                    shortest_paths[source_index][target_index],
+                    shortest_paths[source_index][through] + shortest_paths[through][target_index],
+                )
+
+    space = FiniteMetricSpace(records, metric)
+    pair_count = 0
+    reachable_pair_count = 0
+    unreachable_pair_count = 0
+    zero_metric_pair_count = 0
+    max_stretch = 0.0
+    total_stretch = 0.0
+
+    def evaluate_pair(source_index, target_index):
+        nonlocal pair_count
+        nonlocal reachable_pair_count
+        nonlocal unreachable_pair_count
+        nonlocal zero_metric_pair_count
+        nonlocal max_stretch
+        nonlocal total_stretch
+
+        metric_distance = float(space.distance(source_index, target_index))
+        if metric_distance == 0.0:
+            zero_metric_pair_count += 1
+            return
+
+        pair_count += 1
+        path_distance = shortest_paths[source_index][target_index]
+        if math.isinf(path_distance):
+            unreachable_pair_count += 1
+            return
+
+        stretch = path_distance / metric_distance
+        reachable_pair_count += 1
+        total_stretch += stretch
+        max_stretch = max(max_stretch, stretch)
+
+    if graph.metadata.directed:
+        for source_index in range(record_count):
+            for target_index in range(record_count):
+                if source_index != target_index:
+                    evaluate_pair(source_index, target_index)
+    else:
+        for source_index in range(record_count):
+            for target_index in range(source_index + 1, record_count):
+                evaluate_pair(source_index, target_index)
+
+    stretch_policy = (
+        "directed_shortest_path"
+        if graph.metadata.directed
+        else "undirected_shortest_path"
+    )
+    average_stretch = total_stretch / reachable_pair_count if reachable_pair_count else 0.0
+
+    return GraphStretchDiagnostics(
+        record_count=record_count,
+        edge_count=len(graph.edges),
+        directed=graph.metadata.directed,
+        pair_count=pair_count,
+        reachable_pair_count=reachable_pair_count,
+        unreachable_pair_count=unreachable_pair_count,
+        zero_metric_pair_count=zero_metric_pair_count,
+        max_stretch=max_stretch,
+        average_stretch=average_stretch,
+        stretch_policy=stretch_policy,
+    )
+
+
 def representative_indices(records, metric, k, seed_index=0):
     """Select representative record IDs with deterministic farthest-first traversal."""
     records = list(records)
@@ -603,10 +728,12 @@ def intrinsic_dimension_from_distances(distances):
 __all__ = [
     "GraphConnectivityDiagnostics",
     "GraphDegreeDiagnostics",
+    "GraphStretchDiagnostics",
     "GraphConstructionMetadata",
     "GraphConstructionResult",
     "graph_connectivity_diagnostics",
     "graph_degree_diagnostics",
+    "graph_stretch_diagnostics",
     "intrinsic_dimension",
     "intrinsic_dimension_from_distances",
     "coverage_representative_indices",

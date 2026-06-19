@@ -242,6 +242,18 @@ int main()
     assert(undirected_connectivity.connected);
     assert(undirected_connectivity.connectivity_policy == "undirected_reachability");
 
+    const auto undirected_stretch = metric::operators::graph_stretch_diagnostics(line, AbsoluteDistance{}, union_graph);
+    assert(!undirected_stretch.directed);
+    assert(undirected_stretch.record_count == line.size());
+    assert(undirected_stretch.edge_count == union_graph.edges.size());
+    assert(undirected_stretch.pair_count == 10);
+    assert(undirected_stretch.reachable_pair_count == 10);
+    assert(undirected_stretch.unreachable_pair_count == 0);
+    assert(undirected_stretch.zero_metric_pair_count == 0);
+    assert(std::abs(undirected_stretch.max_stretch - 1.0) < 1e-12);
+    assert(std::abs(undirected_stretch.average_stretch - 1.0) < 1e-12);
+    assert(undirected_stretch.stretch_policy == "undirected_shortest_path");
+
     bool rejected_undirected_pruning = false;
     try {
         metric::operators::prune_graph_out_degree(union_graph, 1);
@@ -298,6 +310,23 @@ int main()
         rejected_invalid_connectivity_graph = true;
     }
     assert(rejected_invalid_connectivity_graph);
+
+    const std::vector<int> two_record_line = {0, 1};
+    bool rejected_invalid_stretch_graph = false;
+    try {
+        metric::operators::graph_stretch_diagnostics(two_record_line, AbsoluteDistance{}, invalid_graph);
+    } catch (const std::invalid_argument &) {
+        rejected_invalid_stretch_graph = true;
+    }
+    assert(rejected_invalid_stretch_graph);
+
+    bool rejected_stretch_record_mismatch = false;
+    try {
+        metric::operators::graph_stretch_diagnostics(line, AbsoluteDistance{}, invalid_graph);
+    } catch (const std::invalid_argument &) {
+        rejected_stretch_record_mismatch = true;
+    }
+    assert(rejected_stretch_record_mismatch);
 
     const auto minimum_weighted_graph =
         metric::operators::symmetrize_graph(asymmetric_graph, "union", "minimum_distance");
@@ -363,6 +392,18 @@ int main()
     assert(radius_graph.metadata.normalization == "none");
     assert(radius_graph.metadata.tie_break == "source_then_target_index");
 
+    const auto directed_stretch = metric::operators::graph_stretch_diagnostics(line, AbsoluteDistance{}, radius_graph);
+    assert(directed_stretch.directed);
+    assert(directed_stretch.record_count == line.size());
+    assert(directed_stretch.edge_count == radius_graph.edges.size());
+    assert(directed_stretch.pair_count == 20);
+    assert(directed_stretch.reachable_pair_count == 20);
+    assert(directed_stretch.unreachable_pair_count == 0);
+    assert(directed_stretch.zero_metric_pair_count == 0);
+    assert(std::abs(directed_stretch.max_stretch - 1.0) < 1e-12);
+    assert(std::abs(directed_stretch.average_stretch - 1.0) < 1e-12);
+    assert(directed_stretch.stretch_policy == "directed_shortest_path");
+
     const std::vector<int> separated_line = {0, 1, 10};
     const auto disconnected_graph = metric::operators::exact_radius_graph(separated_line, AbsoluteDistance{}, 1);
     const auto disconnected_connectivity = metric::operators::graph_connectivity_diagnostics(disconnected_graph);
@@ -371,6 +412,15 @@ int main()
     assert(disconnected_connectivity.isolated_count == 1);
     assert(disconnected_connectivity.largest_component_size == 2);
     assert(!disconnected_connectivity.connected);
+
+    const auto disconnected_stretch =
+        metric::operators::graph_stretch_diagnostics(separated_line, AbsoluteDistance{}, disconnected_graph);
+    assert(disconnected_stretch.pair_count == 6);
+    assert(disconnected_stretch.reachable_pair_count == 2);
+    assert(disconnected_stretch.unreachable_pair_count == 4);
+    assert(disconnected_stretch.zero_metric_pair_count == 0);
+    assert(std::abs(disconnected_stretch.max_stretch - 1.0) < 1e-12);
+    assert(std::abs(disconnected_stretch.average_stretch - 1.0) < 1e-12);
 
     bool rejected_large_graph_k = false;
     try {

@@ -22,6 +22,7 @@ from .metrics import Edit
 from .operators import (
     GraphConnectivityDiagnostics,
     GraphDegreeDiagnostics,
+    GraphStretchDiagnostics,
     GraphConstructionMetadata,
     GraphConstructionResult,
     coverage_representative_indices,
@@ -32,6 +33,7 @@ from .operators import (
     exact_radius_graph_edges,
     graph_connectivity_diagnostics,
     graph_degree_diagnostics,
+    graph_stretch_diagnostics,
     intrinsic_dimension,
     medoid,
     medoid_index,

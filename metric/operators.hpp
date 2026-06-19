@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
+#include <limits>
 #include <map>
 #include <optional>
 #include <stdexcept>
@@ -80,6 +81,19 @@ struct GraphConnectivityDiagnostics {
 	std::size_t largest_component_size{};
 	bool connected{true};
 	std::string connectivity_policy;
+};
+
+struct GraphStretchDiagnostics {
+	std::size_t record_count{};
+	std::size_t edge_count{};
+	bool directed{true};
+	std::size_t pair_count{};
+	std::size_t reachable_pair_count{};
+	std::size_t unreachable_pair_count{};
+	std::size_t zero_metric_pair_count{};
+	double max_stretch{};
+	double average_stretch{};
+	std::string stretch_policy;
 };
 
 template <typename Container, typename Metric>
@@ -481,6 +495,104 @@ auto graph_connectivity_diagnostics(const GraphConstructionResult<Distance, Radi
 		result.largest_component_size = std::max(result.largest_component_size, component_size);
 	}
 	result.connected = result.component_count <= 1;
+
+	return result;
+}
+
+template <typename Container, typename Metric, typename Distance, typename RadiusValue>
+auto graph_stretch_diagnostics(const Container &records, Metric distance,
+							   const GraphConstructionResult<Distance, RadiusValue> &graph)
+	-> GraphStretchDiagnostics
+{
+	GraphStretchDiagnostics result;
+	result.record_count = graph.metadata.record_count;
+	result.edge_count = graph.edges.size();
+	result.directed = graph.metadata.directed;
+	result.stretch_policy = graph.metadata.directed ? "directed_shortest_path" : "undirected_shortest_path";
+
+	if (records.size() != result.record_count) {
+		throw std::invalid_argument("graph metadata record_count must match records size");
+	}
+
+	const auto infinity = std::numeric_limits<double>::infinity();
+	std::vector<std::vector<double>> shortest_paths(result.record_count,
+												   std::vector<double>(result.record_count, infinity));
+	for (std::size_t index = 0; index < result.record_count; ++index) {
+		shortest_paths[index][index] = 0.0;
+	}
+
+	for (const auto &edge : graph.edges) {
+		const auto source_index = std::get<0>(edge);
+		const auto target_index = std::get<1>(edge);
+		if (source_index >= result.record_count || target_index >= result.record_count) {
+			throw std::invalid_argument("graph edge index exceeds metadata record_count");
+		}
+
+		const auto edge_distance = static_cast<double>(std::get<2>(edge));
+		shortest_paths[source_index][target_index] = std::min(shortest_paths[source_index][target_index], edge_distance);
+		if (!graph.metadata.directed) {
+			shortest_paths[target_index][source_index] =
+				std::min(shortest_paths[target_index][source_index], edge_distance);
+		}
+	}
+
+	for (std::size_t through = 0; through < result.record_count; ++through) {
+		for (std::size_t source_index = 0; source_index < result.record_count; ++source_index) {
+			if (shortest_paths[source_index][through] == infinity) {
+				continue;
+			}
+			for (std::size_t target_index = 0; target_index < result.record_count; ++target_index) {
+				if (shortest_paths[through][target_index] == infinity) {
+					continue;
+				}
+				shortest_paths[source_index][target_index] =
+					std::min(shortest_paths[source_index][target_index],
+							 shortest_paths[source_index][through] + shortest_paths[through][target_index]);
+			}
+		}
+	}
+
+	const auto space = ::metric::Space::from_records(records, std::move(distance));
+	double total_stretch = 0.0;
+	auto evaluate_pair = [&](std::size_t source_index, std::size_t target_index) {
+		const auto metric_distance = static_cast<double>(space.distance(source_index, target_index));
+		if (metric_distance == 0.0) {
+			++result.zero_metric_pair_count;
+			return;
+		}
+
+		++result.pair_count;
+		const auto path_distance = shortest_paths[source_index][target_index];
+		if (path_distance == infinity) {
+			++result.unreachable_pair_count;
+			return;
+		}
+
+		const auto stretch = path_distance / metric_distance;
+		++result.reachable_pair_count;
+		total_stretch += stretch;
+		result.max_stretch = std::max(result.max_stretch, stretch);
+	};
+
+	if (graph.metadata.directed) {
+		for (std::size_t source_index = 0; source_index < result.record_count; ++source_index) {
+			for (std::size_t target_index = 0; target_index < result.record_count; ++target_index) {
+				if (source_index != target_index) {
+					evaluate_pair(source_index, target_index);
+				}
+			}
+		}
+	} else {
+		for (std::size_t source_index = 0; source_index < result.record_count; ++source_index) {
+			for (std::size_t target_index = source_index + 1; target_index < result.record_count; ++target_index) {
+				evaluate_pair(source_index, target_index);
+			}
+		}
+	}
+
+	if (result.reachable_pair_count != 0) {
+		result.average_stretch = total_stretch / static_cast<double>(result.reachable_pair_count);
+	}
 
 	return result;
 }
