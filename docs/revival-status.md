@@ -39,6 +39,7 @@ The current local tree implements the first revival slice:
 - initial C++ engine nearest operators with `NeighborSet`, `operators::knn`, and `operators::range` over spaces, distance providers, and neighbor indexes
 - initial C++ engine clustering operators with `ClusteringResult`, deterministic `operators::kmedoids`, and deterministic `operators::dbscan` over spaces and distance providers
 - initial C++ engine intent helpers and strategies with semantic `find_neighbors` and `find_groups` entry points over implemented search and clustering paths
+- initial C++ engine entropy and MGC operators with named result objects over records and metric spaces
 - documentation for concepts, APIs, examples, stability, testing, and release gates
 - CI workflows for C++ core, Python wheels, docs/formatting, revived-source formatting, and GitHub Pages artifacts
 - release artifact workflow for source archive, Python sdist, Python wheel built from that sdist, and C++ core/downstream evidence
@@ -203,6 +204,7 @@ The following revival improvements landed on `master` after the `v0.3.2` tag and
 - initial C++ engine clustering operator with `ClusteringResult`, deterministic k-medoids over spaces and distance providers, and core smoke coverage, merged as `0bb5a0b695c88ef91dd997d4f59275e04908462f`
 - deterministic C++ engine DBSCAN clustering over spaces and distance providers with noise/core record metadata and core smoke coverage, merged as `d523f18a34383206f17b1a699d6a4e819da0d801`
 - initial C++ engine intent helpers and strategy objects for semantic neighbor and grouping workflows, merged as `d3620cc63a4375ed248575d5a02114d778eb70a6`
+- initial C++ engine entropy and MGC operator wrappers with named result objects and core smoke coverage, merged as `68199bcf7443056b1ebed32fd00b57ca5fea676e`
 
 ## Historical Code Policy
 
