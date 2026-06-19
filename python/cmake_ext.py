@@ -15,6 +15,25 @@ def check_for_cmake():
         sys.exit(1)
 
 
+def pybind11_cmake_dir():
+    try:
+        import pybind11
+    except ImportError:
+        return None
+
+    get_cmake_dir = getattr(pybind11, 'get_cmake_dir', None)
+    if get_cmake_dir:
+        return get_cmake_dir()
+
+    try:
+        return subprocess.check_output(
+            [sys.executable, '-m', 'pybind11', '--cmakedir'],
+            text=True
+        ).strip()
+    except (subprocess.CalledProcessError, OSError):
+        return None
+
+
 class CMakeExtension(Extension):
     """
     setuptools.Extension for cmake
@@ -42,10 +61,15 @@ class CMakeBuildExt(build_ext):
             cmake_args = [CMAKE_EXE,
                           ext.source_dir,
                           '-DPYTHON_EXECUTABLE:FILEPATH=' + sys.executable,
+                          '-DPython_EXECUTABLE:FILEPATH=' + sys.executable,
+                          '-DPython3_EXECUTABLE:FILEPATH=' + sys.executable,
                           '-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=' + os.path.join(output_dir, ext.output_dir),
                           '-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_DEBUG=' + os.path.join(output_dir, ext.output_dir),
                           '-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE=' + os.path.join(output_dir, ext.output_dir),
                           '-DCMAKE_BUILD_TYPE=' + build_type]
+            pybind11_dir = pybind11_cmake_dir()
+            if pybind11_dir:
+                cmake_args.append('-Dpybind11_DIR:PATH=' + pybind11_dir)
             cmake_args.extend(
                 [x for x in
                  os.environ.get('CMAKE_COMMON_VARIABLES', '').split(' ')
@@ -58,15 +82,9 @@ class CMakeBuildExt(build_ext):
             subprocess.check_call(cmake_args,
                                   cwd=self.build_temp,
                                   env=env)
-            if sys.platform == 'win32':
-                subprocess.check_call(' '.join([CMAKE_EXE, '--build', '.', '--config', build_type]),
-                                      cwd=self.build_temp,
-                                      env=env)
-
-            else:
-                subprocess.check_call(['make', '-j', ext.name],
-                                      cwd=self.build_temp,
-                                      env=env)
+            subprocess.check_call([CMAKE_EXE, '--build', '.', '--config', build_type, '--target', ext.name],
+                                  cwd=self.build_temp,
+                                  env=env)
         else:
             super().build_extension(ext)
 

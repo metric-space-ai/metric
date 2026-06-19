@@ -1,0 +1,107 @@
+name: Docs and formatting
+
+on:
+  push:
+    branches:
+      - master
+    tags:
+      - "v*"
+    paths:
+      - ".github/workflows/*.yml"
+      - ".github/workflows/docs-and-format.yml"
+      - ".github/workflows/release-artifacts.yml"
+      - "BUILD.md"
+      - "CHANGELOG.md"
+      - "CMakeLists.txt"
+      - "CMakePresets.json"
+      - "cmake/**"
+      - "README.md"
+      - "docs/**"
+      - "examples/README.md"
+      - "examples/core/**"
+      - "metric/concepts.hpp"
+      - "metric/metric.hpp"
+      - "metric/operators.hpp"
+      - "metric/space.hpp"
+      - "python/README.md"
+      - "python/CMakeLists.txt"
+      - "python/MANIFEST.in"
+      - "python/cmake_ext.py"
+      - "python/examples/metric_space/**"
+      - "python/pkg/metric/__init__.py"
+      - "python/pkg/metric/distance/__init__.py"
+      - "python/pkg/metric/mappings.py"
+      - "python/pkg/metric/metrics.py"
+      - "python/pkg/metric/operators.py"
+      - "python/pkg/metric/space/**"
+      - "python/pkg/metric/spaces.py"
+      - "python/pkg/metric/transforms.py"
+      - "python/pyproject.toml"
+      - "python/setup.py"
+      - "python/src/CMakeLists.txt"
+      - "python/src/distance/**"
+      - "python/tests/core/**"
+      - "scripts/check_markdown_links.rb"
+      - "scripts/check_revival_whitespace.rb"
+      - "tests/README.md"
+      - "tests/core_smoke/**"
+      - "tests/downstream_consumer/**"
+  pull_request:
+    branches:
+      - master
+    paths:
+      - ".github/workflows/*.yml"
+      - ".github/workflows/docs-and-format.yml"
+      - ".github/workflows/release-artifacts.yml"
+      - "BUILD.md"
+      - "CHANGELOG.md"
+      - "CMakeLists.txt"
+      - "CMakePresets.json"
+      - "cmake/**"
+      - "README.md"
+      - "docs/**"
+      - "examples/README.md"
+      - "examples/core/**"
+      - "metric/concepts.hpp"
+      - "metric/metric.hpp"
+      - "metric/operators.hpp"
+      - "metric/space.hpp"
+      - "python/README.md"
+      - "python/CMakeLists.txt"
+      - "python/MANIFEST.in"
+      - "python/cmake_ext.py"
+      - "python/examples/metric_space/**"
+      - "python/pkg/metric/__init__.py"
+      - "python/pkg/metric/distance/__init__.py"
+      - "python/pkg/metric/mappings.py"
+      - "python/pkg/metric/metrics.py"
+      - "python/pkg/metric/operators.py"
+      - "python/pkg/metric/space/**"
+      - "python/pkg/metric/spaces.py"
+      - "python/pkg/metric/transforms.py"
+      - "python/pyproject.toml"
+      - "python/setup.py"
+      - "python/src/CMakeLists.txt"
+      - "python/src/distance/**"
+      - "python/tests/core/**"
+      - "scripts/check_markdown_links.rb"
+      - "scripts/check_revival_whitespace.rb"
+      - "tests/README.md"
+      - "tests/core_smoke/**"
+      - "tests/downstream_consumer/**"
+
+jobs:
+  docs:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check revival whitespace
+        run: ruby scripts/check_revival_whitespace.rb
+
+      - name: Check Markdown links
+        run: ruby scripts/check_markdown_links.rb
+
+      - name: Check workflow YAML
+        run: ruby -ryaml -e 'Dir[".github/workflows/*.yml"].each { |path| YAML.load_file(path) }; puts "workflow YAML parsed"'

@@ -35,6 +35,7 @@ void register_wrapper_manhatten(py::module& m) {
         .def("__call__", &Metric::template operator()<Container>)
         .def("__call__", &Metric::template operator()<std::vector<Value>>)
         .def("__repr__", &python__str__<Metric>);
+    m.attr("Manhattan") = m.attr("Manhatten");
 }
 
 template<typename Value, typename Container>

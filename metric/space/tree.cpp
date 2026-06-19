@@ -230,13 +230,12 @@ typename Node<RecType, Metric>::Distance Node<RecType, Metric>::dist(Node_ptr n)
 
 /*** insert a new child of current node with point p ***/
 template <class RecType, class Metric>
-Node<RecType, Metric> *Node<RecType, Metric>::setChild(const RecType &p, int new_id)
+Node<RecType, Metric> *Node<RecType, Metric>::setChild(const RecType &p, int /*new_id*/)
 {
 	Node_ptr temp(new Node<RecType, Metric>(tree_ptr));
 	temp->level = level - 1;
 	temp->parent_dist = 0;
-	temp->ID = new_id;
-	temp->set_data(p);
+	temp->ID = tree_ptr->add_data(p, temp);
 	temp->parent = this;
 	children.push_back(temp);
 	return temp;
@@ -1235,7 +1234,7 @@ inline std::vector<std::vector<std::size_t>> Tree<RecType, Metric>::clustering(c
 {
 	is_distribution_ok(distribution);
 	double radius = find_neighbour_radius(IDS);
-	Node_ptr center = this->get(IDS[0]);
+	Node_ptr center = this->data[this->index_map[IDS[0]]].second;
 	return clustering_impl(distribution, center, radius);
 }
 

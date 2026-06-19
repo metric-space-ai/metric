@@ -1,62 +1,30 @@
 import setuptools
 from os import path
-import re
-from cmake_ext import CMakeExtension, CMakeBuildExt
+import shutil
+import sys
+from setuptools.command.sdist import sdist
 
 
 HERE = path.abspath(path.dirname(__file__))
+sys.path.insert(0, HERE)
+
+from cmake_ext import CMakeExtension, CMakeBuildExt
 
 
-def get_file_content(*paths):
-    with open(path.join(HERE, *paths), 'r', encoding='utf-8') as fp:
-        return fp.read()
+class MetricSdist(sdist):
+    def make_release_tree(self, base_dir, files):
+        super().make_release_tree(base_dir, files)
 
-
-def find_version(*file_paths):
-    version_file = get_file_content(*file_paths)
-    version_match = re.search(r"^__version__ = ['\"]([^'\"]*)['\"]",
-                              version_file, re.M)
-    if version_match:
-        return version_match.group(1)
-    raise RuntimeError("Unable to find version string.")
+        source_metric = path.abspath(path.join(HERE, '..', 'metric'))
+        target_metric = path.join(base_dir, 'metric_cpp', 'metric')
+        shutil.copytree(
+            source_metric,
+            target_metric,
+            ignore=shutil.ignore_patterns('*.md', 'README_old.md')
+        )
 
 
 setuptools.setup(
-    name='metric-py',
-    version=find_version('pkg', 'metric', '__init__.py'),
     ext_modules=[CMakeExtension('all', output_dir=path.join('metric', '_impl'))],
-    cmdclass={'build_ext': CMakeBuildExt},
-    author="Eugene Kulak",
-    author_email="kulak.eugene@gmail.com",
-    description="Metric python3 module",
-    long_description=get_file_content('README.md'),
-    long_description_content_type="text/markdown",
-    url="https://github.com/panda-official/metric",
-    packages=setuptools.find_packages(where='pkg'),
-    package_dir={
-        '': 'pkg',
-    },
-    python_requires='>=3.6',
-    install_requires=[],
-    license='MPL v2.0',
-    classifiers=[
-        "Development Status :: 3 - Alpha",
-        "Intended Audience :: Science/Research",
-        "Intended Audience :: Developers",
-        "License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)",
-        "Operating System :: Unix",
-        "Operating System :: MacOS",
-        "Operating System :: MacOS :: MacOS X",
-        "Operating System :: Microsoft :: Windows",
-        "Operating System :: Microsoft :: Windows :: Windows 10",
-        "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.6",
-        "Programming Language :: Python :: 3.7",
-        "Programming Language :: Python :: 3.8",
-        "Programming Language :: Python :: 3 :: Only",
-        "Programming Language :: Python :: Implementation :: CPython",
-        "Topic :: Software Development",
-        "Topic :: Scientific/Engineering"
-    ],
-    keywords=''
+    cmdclass={'build_ext': CMakeBuildExt, 'sdist': MetricSdist}
 )

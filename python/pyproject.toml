@@ -1,0 +1,58 @@
+[build-system]
+requires = [
+  "setuptools>=77",
+  "wheel",
+  "cmake>=3.19",
+  "pybind11>=3.0.0",
+  "numpy>=1.23"
+]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "metric-py"
+version = "0.0.6"
+description = "Python bindings and helpers for finite metric-space numerics"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MPL-2.0"
+authors = [
+  { name = "METRIC contributors" }
+]
+keywords = [
+  "distance-metrics",
+  "finite-metric-space",
+  "metric-space",
+  "numerical-computing"
+]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Science/Research",
+  "Operating System :: MacOS",
+  "Operating System :: Microsoft :: Windows",
+  "Operating System :: Unix",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Programming Language :: Python :: Implementation :: CPython",
+  "Topic :: Scientific/Engineering",
+  "Topic :: Software Development"
+]
+dependencies = [
+  "numpy>=1.23"
+]
+
+[project.urls]
+Documentation = "https://metric-space-ai.github.io/metric/docs.html"
+Source = "https://github.com/metric-space-ai/metric"
+"Release checklist" = "https://github.com/metric-space-ai/metric/blob/master/docs/release-checklist.md"
+
+[tool.setuptools]
+package-dir = { "" = "pkg" }
+
+[tool.setuptools.packages.find]
+where = ["pkg"]

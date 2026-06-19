@@ -1,0 +1,38 @@
+# Industrial Anomaly Workflow
+
+Industrial records are often mixed objects rather than clean vectors. A single observation may contain time-series windows, categorical events, image-derived histograms, maintenance text, and numeric sensor summaries. METRIC models each part with its own metric, then computes directly on the resulting finite metric spaces.
+
+## Pattern
+
+1. Define the observation boundary.
+2. Choose a domain metric for each record family.
+3. Build one or more finite metric spaces.
+4. Use neighbor search, grouping, outlier, and comparison operators to inspect local and cross-modal structure.
+5. Use embedding or mapping strategies when a downstream workflow needs coordinates, visualization, or a learned embedding function.
+6. Use result diagnostics to inspect metric assumptions, runtime choices, and source-to-target lineage.
+
+Possible metric choices:
+
+- process curves: TWED or another time-series metric
+- event streams: edit distance or a custom symbolic metric
+- histograms: EMD or another distributional metric
+- image patches: SSIM-derived or task-specific structured metric
+- numeric summaries: Euclidean, Manhattan, Chebyshev, or a standardized variant
+
+## Target Workflow Shape
+
+```python
+from metric import Space, metrics
+
+curves = Space(curve_windows, metric=metrics.TWED())
+events = Space(event_sequences, metric=metrics.Edit())
+
+curve_outliers = curves.outliers(method="local_density")
+event_groups = events.groups(method="density")
+cross_modal = curves.compare(events, method="mgc")
+
+mapper = curves.map(preserve="diffusion_geometry", learn_mapping=True)
+latent = mapper.transform(new_curve_windows)
+```
+
+This target shape describes the revived engine facade, not the current minimal Python core. The embedding step is optional. The primary model is the metric space; learned maps and vector coordinates are downstream representations.

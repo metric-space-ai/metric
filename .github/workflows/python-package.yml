@@ -1,10 +1,9 @@
 name: Python package build
+
+# Legacy TestPyPI publishing workflow. It is manual-only while python-core.yml
+# produces current wheel artifacts for revival releases.
 on:
-  push:
-#    branches:
-#      - issue_35
-    branches-ignore:
-      - '**'
+  workflow_dispatch:
 
 jobs:
   deploy:

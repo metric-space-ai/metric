@@ -80,6 +80,8 @@ template <typename V = double> struct Manhatten {
 	template <typename Container> distance_type operator()(const Container &a, const Container &b) const;
 };
 
+template <typename V = double> using Manhattan = Manhatten<V>;
+
 /**
  * @class P_norm
  *
@@ -263,6 +265,8 @@ template <typename V = double> struct Manhatten_standardized {
 	 */
 	template <typename Container> auto operator()(const Container &a, const Container &b) const -> distance_type;
 };
+
+template <typename V = double> using Manhattan_standardized = Manhatten_standardized<V>;
 
 /**
  * @class Cosine

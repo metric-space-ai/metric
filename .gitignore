@@ -1,0 +1,4 @@
+build/
+CMakeUserPresets.json
+__pycache__/
+*.py[cod]
