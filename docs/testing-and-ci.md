@@ -34,7 +34,7 @@ The core tests cover:
 - MGC regression values
 - entropy regression values when LAPACK is available
 - intrinsic-dimension regression values
-- representative-selection and radius-coverage regression values
+- representative-selection, medoid, and radius-coverage regression values
 - promoted examples for strings, custom metrics, explicit representations, TWED, EMD, MGC, intrinsic dimension, representative selection, and entropy when LAPACK is available
 
 The Python core wheel path covers:
@@ -43,7 +43,7 @@ The Python core wheel path covers:
 - `Space`, `FiniteMetricSpace`, and operator helper behavior
 - metric contract checks for built-in edit distance, NumPy record callables, structured record callables, time-series alignment callables, and histogram transport callables
 - intrinsic-dimension regression values
-- deterministic representative-selection and radius-coverage regression values for histogram transport, time-series alignment, and structured mixed-record callables
+- deterministic representative-selection, medoid, and radius-coverage regression values for histogram transport, time-series alignment, and structured mixed-record callables
 - promoted Python examples for strings, structured records, time-series alignment, histogram transport, and representative selection
 - subprocess execution of every `python/examples/metric_space/*.py` example from the core Python API tests, so PyPI cibuildwheel tests cover the same promoted examples even when the workflow invokes only the core test suite directly
 

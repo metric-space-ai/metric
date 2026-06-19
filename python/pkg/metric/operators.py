@@ -79,6 +79,34 @@ def representatives(records, metric, k, seed_index=0):
     ]
 
 
+def medoid_index(records, metric):
+    """Select the record ID with the smallest total distance to all records."""
+    records = list(records)
+    if not records:
+        raise ValueError("cannot select a medoid from an empty record set")
+
+    space = FiniteMetricSpace(records, metric)
+    best_index = 0
+    best_total_distance = None
+
+    for candidate_index in range(len(records)):
+        total_distance = sum(
+            space.distance(candidate_index, other_index)
+            for other_index in range(len(records))
+        )
+        if best_total_distance is None or total_distance < best_total_distance:
+            best_index = candidate_index
+            best_total_distance = total_distance
+
+    return best_index
+
+
+def medoid(records, metric):
+    """Select the record with the smallest total distance to all records."""
+    records = list(records)
+    return records[medoid_index(records, metric)]
+
+
 def coverage_representative_indices(records, metric, radius):
     """Select representatives that greedily cover records within a radius."""
     records = list(records)
@@ -135,6 +163,8 @@ __all__ = [
     "intrinsic_dimension_from_distances",
     "coverage_representative_indices",
     "coverage_representatives",
+    "medoid",
+    "medoid_index",
     "pairwise_distance_matrix",
     "nearest_neighbors",
     "range_neighbors",
