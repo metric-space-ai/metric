@@ -7,6 +7,9 @@ This docs tree is the canonical home for concepts, API references, engine archit
 ## Start Here
 
 - [Engine Overview](engine/index.md)
+- [Engine Metric Space](engine/metric-space.md)
+- [Engine Intent API](engine/intent-api.md)
+- [Engine Runtime Policies](engine/runtime.md)
 - [Metric-Space Numerics Manifesto](manifesto.md)
 - [API Surface](stability.md)
 - [Testing and CI Scope](testing-and-ci.md)
@@ -22,18 +25,27 @@ This docs tree is the canonical home for concepts, API references, engine archit
 1. Read the root [README.md](../README.md) for the product framing.
 2. Read [Metric-Space Numerics Manifesto](manifesto.md) for the technical distinction from vector-search and embedding-only workflows.
 3. Read [Engine Overview](engine/index.md) to understand the engine model.
-4. Read [Metric Spaces](concepts/metric-space.md) and [Finite Metric Spaces](concepts/finite-metric-space.md).
-5. Read [Explicit Representations](concepts/explicit-representations.md) to understand matrix, graph, and tree execution forms.
-6. Read [Graph Representation Terminology](concepts/graph-representations.md) before promoting sparse graph construction.
-7. Use the [Python API](api/python.md) or [C++ API](api/cpp.md) for implementation.
-8. Use [API Surface](stability.md) to understand core, expert, compatibility, extension APIs, and the module status matrix.
-9. Use [Testing and CI Scope](testing-and-ci.md) to understand release gates versus historical coverage.
-10. Use [Research Roadmap](research-roadmap.md) to understand which research directions can be promoted after deterministic fixtures and release gates exist.
-11. Use [Revival Status](revival-status.md) to distinguish local revival completion from external release actions.
+4. Read [Engine Metric Space](engine/metric-space.md), [Representations](engine/representations.md), and [Intent API](engine/intent-api.md) for the engine-specific model.
+5. Read [Metric Spaces](concepts/metric-space.md) and [Finite Metric Spaces](concepts/finite-metric-space.md).
+6. Read [Explicit Representations](concepts/explicit-representations.md) to understand matrix, graph, and tree execution forms.
+7. Read [Graph Representation Terminology](concepts/graph-representations.md) before promoting sparse graph construction.
+8. Use the [Python API](api/python.md) or [C++ API](api/cpp.md) for implementation.
+9. Use [API Surface](stability.md) to understand core, expert, compatibility, extension APIs, and the module status matrix.
+10. Use [Testing and CI Scope](testing-and-ci.md) to understand release gates versus historical coverage.
+11. Use [Research Roadmap](research-roadmap.md) to understand which research directions can be promoted after deterministic fixtures and release gates exist.
+12. Use [Revival Status](revival-status.md) to distinguish local revival completion from external release actions.
 
 ## Concepts
 
 - [Metric-Space Numerics Manifesto](manifesto.md)
+- [Engine Metric Space](engine/metric-space.md)
+- [Engine Representations](engine/representations.md)
+- [Engine Intent API](engine/intent-api.md)
+- [Engine Strategies](engine/strategies.md)
+- [Engine Operators](engine/operators.md)
+- [Engine Mappings](engine/mappings.md)
+- [Engine Runtime Policies](engine/runtime.md)
+- [Engine Migration](engine/migration.md)
 - [Metric Spaces](concepts/metric-space.md)
 - [Finite Metric Spaces](concepts/finite-metric-space.md)
 - [Metrics as Recoding Costs](concepts/metrics-as-recoding-costs.md)

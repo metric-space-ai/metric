@@ -53,6 +53,7 @@
 - Add graph representation terminology for exact, approximate, directed, symmetrized, weighted, and normalized graph construction.
 - Add exact graph edge fixture documentation for k-nearest-neighbor and radius edge lists.
 - Add CI-tested C++ and Python engine flagship examples for strings, process curves, histograms, and cross-space dependency.
+- Add engine documentation chapters for metric spaces, representations, intents, strategies, operators, mappings, runtime policies, and migration.
 
 ## [0.3.2] - 2026-06-19
 
