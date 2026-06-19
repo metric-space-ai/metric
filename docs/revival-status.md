@@ -266,6 +266,7 @@ The following revival improvements landed on `master` after the `v0.3.2` tag and
 - Python neighbor facade support for target `count` and `radius` intent arguments, merged as `e9dd23e217b12aeb8e6e85df612c55d78c66da50`
 - Python representation facade support for `Space.to_tree()` and `Space.to_graph(count=...)`, merged as `adb6222c2f311662678694fb3a92ee25052b89bd`
 - Python public exception facade with `UnsupportedOperationError` for unsupported inverse reconstruction, merged as `ec94ef66017733624e52465fb96bccbed13ae9c2`
+- C++ semantic `metric::count{...}` target argument support for `find_neighbors`, merged as `806eb4628770e89811a9c27205161d371a325c99`
 
 ## Historical Code Policy
 
