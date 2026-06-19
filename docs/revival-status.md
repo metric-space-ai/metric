@@ -34,6 +34,7 @@ The current local tree implements the first revival slice:
 - C++ and Python graph degree diagnostics with deterministic degree-policy metadata
 - C++ and Python graph connectivity diagnostics with deterministic component metadata
 - C++ and Python graph stretch diagnostics with deterministic shortest-path metadata
+- initial C++ engine skeleton with `MetricSpace`, stable `RecordId`s, metric traits, and engine concept traits
 - documentation for concepts, APIs, examples, stability, testing, and release gates
 - CI workflows for C++ core, Python wheels, docs/formatting, revived-source formatting, and GitHub Pages artifacts
 - release artifact workflow for source archive, Python sdist, Python wheel built from that sdist, and C++ core/downstream evidence
@@ -192,6 +193,7 @@ The following revival improvements landed on `master` after the `v0.3.2` tag and
 - C++ and Python graph degree diagnostics with deterministic degree-policy fixtures and CI coverage, merged as `2947be9ec6faf2ffa1f1c3428598ea77e18bdbd5`
 - C++ and Python graph connectivity diagnostics with deterministic component fixtures and CI coverage, merged as `6e37b20f2c5ec73501c2c66321719f617609001f`
 - C++ and Python graph stretch diagnostics with deterministic shortest-path fixtures and CI coverage, merged as `31e2ed52041712427edc9b9bce20b055ed68c345`
+- initial C++ engine skeleton with `MetricSpace`, stable `RecordId`s, metric traits, engine concept traits, and core smoke coverage, merged as `8592d1e636e27227ca083220d3d7e3abf4e04bcf`
 
 ## Historical Code Policy
 
