@@ -4,7 +4,7 @@ Graph representations are derived structures over a finite metric space. They ke
 
 This page defines the terms METRIC docs use before graph construction becomes a first-page operator API.
 
-The promoted core result helpers are `exact_knn_graph` and `exact_radius_graph`. They return `GraphConstructionResult` values with directed `(source_index, target_index, distance)` edges plus construction metadata. The edge-list helpers `exact_knn_graph_edges` and `exact_radius_graph_edges` remain available when callers only need the directed edge tuples. `prune_graph_out_degree` applies deterministic out-degree sparsification to directed graph results. `symmetrize_graph` converts a graph construction result into deterministic undirected edges with documented symmetrization and reciprocal weighting policies. See [Exact Graph Edge Fixtures](../examples/graph-construction.md) for the fixture shape. Normalized weights remain a roadmap item.
+The promoted core result helpers are `exact_knn_graph` and `exact_radius_graph`. They return `GraphConstructionResult` values with directed `(source_index, target_index, distance)` edges plus construction metadata. The edge-list helpers `exact_knn_graph_edges` and `exact_radius_graph_edges` remain available when callers only need the directed edge tuples. `graph_degree_diagnostics` reports deterministic degree diagnostics for graph construction results. `prune_graph_out_degree` applies deterministic out-degree sparsification to directed graph results. `symmetrize_graph` converts a graph construction result into deterministic undirected edges with documented symmetrization and reciprocal weighting policies. See [Exact Graph Edge Fixtures](../examples/graph-construction.md) for the fixture shape. Normalized weights remain a roadmap item.
 
 ## Required Metadata
 
@@ -49,6 +49,18 @@ A radius graph connects records whose metric distance is within a threshold.
 An exact directed radius graph has edge `i -> j` when `distance(i, j) <= radius`, subject to a documented self-loop policy. An exact undirected radius graph uses the same threshold but stores one undirected relationship for each qualifying pair.
 
 A radius graph is approximate when it is built from candidate pruning, approximate neighbors, or any method that may miss qualifying pairs.
+
+## Degree Diagnostics
+
+Graph degree diagnostics are descriptive checks over an existing graph result. They do not prove connectivity, quality, recall, or metric preservation by themselves.
+
+`graph_degree_diagnostics` returns record count, edge count, direction policy, per-record endpoint degrees, per-record out-degrees, per-record in-degrees, isolated-record count, max degree, average degree, and a named degree policy.
+
+For directed graph results, out-degree counts stored edges from each source, in-degree counts stored edges into each target, and endpoint degree is `out + in`. The degree policy is `directed_in_out`.
+
+For undirected graph results, each stored edge contributes one endpoint count to each endpoint. The in/out vectors are zero-filled because the stored source and target are orientation conventions, not directed neighbor contracts. The degree policy is `undirected_endpoint`.
+
+The helper validates that every edge endpoint is within `metadata.record_count`. Invalid endpoint IDs are rejected because degree diagnostics must be tied to the source record set.
 
 ## Degree Sparsification
 

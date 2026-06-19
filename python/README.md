@@ -10,7 +10,7 @@ The revived core package exposes the project concepts explicitly:
 - `metric.metrics`: metric constructors such as `Edit`
 - `metric.Space`: minimal intent-first finite metric space facade
 - `metric.spaces`: finite metric-space helpers such as `FiniteMetricSpace`
-- `metric.operators`: pairwise-distance, nearest-neighbor, range-neighbor, exact graph-result, graph-symmetrization, graph-out-degree-pruning, exact graph-edge, representative-selection, medoid, separated-representative, and radius-coverage helpers
+- `metric.operators`: pairwise-distance, nearest-neighbor, range-neighbor, exact graph-result, graph-degree-diagnostics, graph-symmetrization, graph-out-degree-pruning, exact graph-edge, representative-selection, medoid, separated-representative, and radius-coverage helpers
 - `metric.mappings`: beta compatibility bridge for installed mapping bindings
 - `metric.transforms`: beta compatibility bridge for installed transform bindings
 

@@ -9,6 +9,7 @@ import numpy as np
 from metric.metrics import Edit, available
 from metric import mappings, transforms
 from metric.operators import (
+    GraphDegreeDiagnostics,
     GraphConstructionMetadata,
     GraphConstructionResult,
     coverage_representative_indices,
@@ -17,6 +18,7 @@ from metric.operators import (
     exact_knn_graph_edges,
     exact_radius_graph,
     exact_radius_graph_edges,
+    graph_degree_diagnostics,
     intrinsic_dimension,
     medoid,
     medoid_index,
@@ -62,12 +64,14 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIs(metric.spaces.FiniteMetricSpace, FiniteMetricSpace)
         self.assertIs(metric.operators.nearest_neighbors, nearest_neighbors)
         self.assertIs(metric.operators.range_neighbors, range_neighbors)
+        self.assertIs(metric.operators.GraphDegreeDiagnostics, GraphDegreeDiagnostics)
         self.assertIs(metric.operators.GraphConstructionMetadata, GraphConstructionMetadata)
         self.assertIs(metric.operators.GraphConstructionResult, GraphConstructionResult)
         self.assertIs(metric.operators.exact_knn_graph, exact_knn_graph)
         self.assertIs(metric.operators.exact_knn_graph_edges, exact_knn_graph_edges)
         self.assertIs(metric.operators.exact_radius_graph, exact_radius_graph)
         self.assertIs(metric.operators.exact_radius_graph_edges, exact_radius_graph_edges)
+        self.assertIs(metric.operators.graph_degree_diagnostics, graph_degree_diagnostics)
         self.assertIs(metric.operators.intrinsic_dimension, intrinsic_dimension)
         self.assertIs(metric.operators.prune_graph_out_degree, prune_graph_out_degree)
         self.assertIs(metric.operators.medoid_index, medoid_index)
@@ -82,12 +86,14 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIs(metric.mappings, mappings)
         self.assertIs(metric.transforms, transforms)
         self.assertIs(metric.Edit, Edit)
+        self.assertIs(metric.GraphDegreeDiagnostics, GraphDegreeDiagnostics)
         self.assertIs(metric.GraphConstructionMetadata, GraphConstructionMetadata)
         self.assertIs(metric.GraphConstructionResult, GraphConstructionResult)
         self.assertIs(metric.exact_knn_graph, exact_knn_graph)
         self.assertIs(metric.exact_knn_graph_edges, exact_knn_graph_edges)
         self.assertIs(metric.exact_radius_graph, exact_radius_graph)
         self.assertIs(metric.exact_radius_graph_edges, exact_radius_graph_edges)
+        self.assertIs(metric.graph_degree_diagnostics, graph_degree_diagnostics)
         self.assertIs(metric.intrinsic_dimension, intrinsic_dimension)
         self.assertIs(metric.prune_graph_out_degree, prune_graph_out_degree)
         self.assertIs(metric.medoid_index, medoid_index)
@@ -106,12 +112,14 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIn("Space", metric.__all__)
         self.assertIn("mappings", metric.__all__)
         self.assertIn("transforms", metric.__all__)
+        self.assertIn("GraphDegreeDiagnostics", metric.__all__)
         self.assertIn("GraphConstructionMetadata", metric.__all__)
         self.assertIn("GraphConstructionResult", metric.__all__)
         self.assertIn("exact_knn_graph", metric.__all__)
         self.assertIn("exact_knn_graph_edges", metric.__all__)
         self.assertIn("exact_radius_graph", metric.__all__)
         self.assertIn("exact_radius_graph_edges", metric.__all__)
+        self.assertIn("graph_degree_diagnostics", metric.__all__)
         self.assertIn("prune_graph_out_degree", metric.__all__)
         self.assertIn("medoid_index", metric.__all__)
         self.assertIn("medoid", metric.__all__)
@@ -242,6 +250,19 @@ class RevivalApiTest(unittest.TestCase):
         self.assertEqual(pruned_graph.metadata.tie_break, "source_index_then_distance_then_target_index")
         self.assertEqual(prune_graph_out_degree(wide_knn_graph, 0).edges, ())
 
+        degree_diagnostics = graph_degree_diagnostics(knn_graph)
+        self.assertIsInstance(degree_diagnostics, GraphDegreeDiagnostics)
+        self.assertEqual(degree_diagnostics.record_count, len(records))
+        self.assertEqual(degree_diagnostics.edge_count, len(knn_graph.edges))
+        self.assertTrue(degree_diagnostics.directed)
+        self.assertEqual(degree_diagnostics.out_degrees, (1, 1, 1, 1, 1))
+        self.assertEqual(degree_diagnostics.in_degrees, (1, 1, 0, 2, 1))
+        self.assertEqual(degree_diagnostics.degrees, (2, 2, 1, 3, 2))
+        self.assertEqual(degree_diagnostics.isolated_count, 0)
+        self.assertEqual(degree_diagnostics.max_degree, 3)
+        self.assertAlmostEqual(degree_diagnostics.average_degree, 2.0)
+        self.assertEqual(degree_diagnostics.degree_policy, "directed_in_out")
+
         union_graph = symmetrize_graph(knn_graph, policy="union", weighting="minimum_distance")
         self.assertEqual(
             list(union_graph.edges),
@@ -255,6 +276,17 @@ class RevivalApiTest(unittest.TestCase):
         self.assertEqual(union_graph.metadata.tie_break, "source_index_then_target_index")
         with self.assertRaises(ValueError):
             prune_graph_out_degree(union_graph, 1)
+
+        undirected_diagnostics = graph_degree_diagnostics(union_graph)
+        self.assertFalse(undirected_diagnostics.directed)
+        self.assertEqual(undirected_diagnostics.degrees, (1, 2, 1, 2, 2))
+        self.assertEqual(undirected_diagnostics.out_degrees, (0, 0, 0, 0, 0))
+        self.assertEqual(undirected_diagnostics.in_degrees, (0, 0, 0, 0, 0))
+        self.assertEqual(undirected_diagnostics.edge_count, len(union_graph.edges))
+        self.assertEqual(undirected_diagnostics.isolated_count, 0)
+        self.assertEqual(undirected_diagnostics.max_degree, 2)
+        self.assertAlmostEqual(undirected_diagnostics.average_degree, 1.6)
+        self.assertEqual(undirected_diagnostics.degree_policy, "undirected_endpoint")
 
         mutual_graph = symmetrize_graph(knn_graph, policy="mutual", weighting="minimum_distance")
         self.assertEqual(list(mutual_graph.edges), [(0, 3, 0.5)])
@@ -288,6 +320,20 @@ class RevivalApiTest(unittest.TestCase):
             symmetrize_graph(asymmetric_graph, policy="invalid", weighting="minimum_distance")
         with self.assertRaises(ValueError):
             symmetrize_graph(asymmetric_graph, policy="union", weighting="average_distance")
+
+        invalid_graph = GraphConstructionResult(
+            edges=((0, 3, 1),),
+            metadata=GraphConstructionMetadata(
+                strategy="synthetic",
+                record_count=2,
+                edge_count=1,
+                directed=True,
+                self_loops=False,
+                exact=True,
+            ),
+        )
+        with self.assertRaises(ValueError):
+            graph_degree_diagnostics(invalid_graph)
 
         self.assertEqual(
             exact_radius_graph_edges(records, cumulative_transport_distance, 0.5),

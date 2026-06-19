@@ -57,6 +57,19 @@ template <typename Distance, typename RadiusValue = Distance> struct GraphConstr
 	GraphConstructionMetadata<Distance, RadiusValue> metadata;
 };
 
+struct GraphDegreeDiagnostics {
+	std::size_t record_count{};
+	std::size_t edge_count{};
+	bool directed{true};
+	std::vector<std::size_t> degrees;
+	std::vector<std::size_t> out_degrees;
+	std::vector<std::size_t> in_degrees;
+	std::size_t isolated_count{};
+	std::size_t max_degree{};
+	double average_degree{};
+	std::string degree_policy;
+};
+
 template <typename Container, typename Metric>
 auto pairwise_distance_matrix(const Container &records, Metric distance)
 	-> std::vector<std::vector<typename detail::finite_space_t<Container, Metric>::distance_type>>
@@ -334,6 +347,51 @@ auto prune_graph_out_degree(const GraphConstructionResult<Distance, RadiusValue>
 	}
 
 	result.metadata.edge_count = result.edges.size();
+	return result;
+}
+
+template <typename Distance, typename RadiusValue>
+auto graph_degree_diagnostics(const GraphConstructionResult<Distance, RadiusValue> &graph) -> GraphDegreeDiagnostics
+{
+	GraphDegreeDiagnostics result;
+	result.record_count = graph.metadata.record_count;
+	result.edge_count = graph.edges.size();
+	result.directed = graph.metadata.directed;
+	result.degrees.assign(result.record_count, 0);
+	result.out_degrees.assign(result.record_count, 0);
+	result.in_degrees.assign(result.record_count, 0);
+	result.degree_policy = graph.metadata.directed ? "directed_in_out" : "undirected_endpoint";
+
+	for (const auto &edge : graph.edges) {
+		const auto source_index = std::get<0>(edge);
+		const auto target_index = std::get<1>(edge);
+		if (source_index >= result.record_count || target_index >= result.record_count) {
+			throw std::invalid_argument("graph edge index exceeds metadata record_count");
+		}
+
+		if (graph.metadata.directed) {
+			++result.out_degrees[source_index];
+			++result.in_degrees[target_index];
+			++result.degrees[source_index];
+			++result.degrees[target_index];
+		} else {
+			++result.degrees[source_index];
+			++result.degrees[target_index];
+		}
+	}
+
+	std::size_t total_degree = 0;
+	for (const auto degree : result.degrees) {
+		total_degree += degree;
+		result.max_degree = std::max(result.max_degree, degree);
+		if (degree == 0) {
+			++result.isolated_count;
+		}
+	}
+	if (result.record_count != 0) {
+		result.average_degree = static_cast<double>(total_degree) / static_cast<double>(result.record_count);
+	}
+
 	return result;
 }
 

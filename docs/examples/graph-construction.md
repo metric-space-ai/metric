@@ -26,6 +26,7 @@ auto radius_graph = metric::operators::exact_radius_graph(records, AbsoluteDista
 
 auto knn_edges = knn_graph.edges;
 auto radius_edges = radius_graph.edges;
+auto degree_info = metric::operators::graph_degree_diagnostics(knn_graph);
 auto undirected = metric::operators::symmetrize_graph(knn_graph, "union", "minimum_distance");
 auto pruned = metric::operators::prune_graph_out_degree(
     metric::operators::exact_knn_graph(records, AbsoluteDistance{}, 2),
@@ -35,7 +36,7 @@ auto pruned = metric::operators::prune_graph_out_degree(
 Python shape:
 
 ```python
-from metric import exact_knn_graph, exact_radius_graph, prune_graph_out_degree, symmetrize_graph
+from metric import exact_knn_graph, exact_radius_graph, graph_degree_diagnostics, prune_graph_out_degree, symmetrize_graph
 
 records = [0, 1, 2, 3, 4]
 
@@ -47,6 +48,7 @@ radius_graph = exact_radius_graph(records, absolute_distance, radius=1)
 
 knn_edges = knn_graph.edges
 radius_edges = radius_graph.edges
+degree_info = graph_degree_diagnostics(knn_graph)
 undirected = symmetrize_graph(knn_graph, policy="union", weighting="minimum_distance")
 pruned = prune_graph_out_degree(exact_knn_graph(records, absolute_distance, k=2), max_out_degree=1)
 ```
@@ -76,6 +78,8 @@ For `records = [0, 1, 2, 3, 4]`, symmetrizing the exact kNN graph with `k=1` and
 (2, 3, 1)
 (3, 4, 1)
 ```
+
+The directed `k=1` graph has out-degrees `(1, 1, 1, 1, 1)`, in-degrees `(1, 2, 1, 1, 0)`, endpoint degrees `(2, 3, 2, 2, 1)`, max degree `3`, average degree `2.0`, and degree policy `directed_in_out`.
 
 For the same records, pruning the exact kNN graph from `k=2` to `max_out_degree=1` produces directed edges:
 
