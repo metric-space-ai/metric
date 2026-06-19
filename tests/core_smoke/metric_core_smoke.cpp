@@ -57,6 +57,20 @@ int main()
     const auto representative_records = metric::operators::representatives(records, metric::Edit<std::string>{}, 3);
     assert((representative_records == std::vector<std::string>{"cat", "dog", "cot"}));
 
+    const auto coverage_ids = metric::operators::coverage_representative_indices(records, metric::Edit<std::string>{}, 1);
+    assert((coverage_ids == std::vector<std::size_t>{0, 3}));
+
+    const auto coverage_records = metric::operators::coverage_representatives(records, metric::Edit<std::string>{}, 1);
+    assert((coverage_records == std::vector<std::string>{"cat", "dog"}));
+
+    bool rejected_edit_negative_radius = false;
+    try {
+        metric::operators::coverage_representative_indices(records, metric::Edit<std::string>{}, -1);
+    } catch (const std::invalid_argument &) {
+        rejected_edit_negative_radius = true;
+    }
+    assert(rejected_edit_negative_radius);
+
     bool rejected_empty_records = false;
     try {
         metric::operators::representative_indices(std::vector<std::string>{}, metric::Edit<std::string>{}, 1);
@@ -82,6 +96,18 @@ int main()
     assert(rejected_seed);
 
     const std::vector<int> line = {0, 1, 2, 3, 4};
+    assert((metric::operators::coverage_representative_indices(line, AbsoluteDistance{}, 2) ==
+            std::vector<std::size_t>{0, 3}));
+    assert((metric::operators::coverage_representatives(line, AbsoluteDistance{}, 2) == std::vector<int>{0, 3}));
+
+    bool rejected_negative_radius = false;
+    try {
+        metric::operators::coverage_representative_indices(line, AbsoluteDistance{}, -1);
+    } catch (const std::invalid_argument &) {
+        rejected_negative_radius = true;
+    }
+    assert(rejected_negative_radius);
+
     const double dimension = metric::operators::intrinsic_dimension(line, AbsoluteDistance{});
     assert(std::abs(dimension - (std::log(5.0 / 3.0) / std::log(2.0))) < 1e-12);
 

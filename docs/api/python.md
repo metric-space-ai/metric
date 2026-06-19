@@ -47,6 +47,8 @@ space.rnn(query, radius=1)
 
 ```python
 from metric.operators import (
+    coverage_representative_indices,
+    coverage_representatives,
     intrinsic_dimension,
     nearest_neighbors,
     pairwise_distance_matrix,
@@ -60,10 +62,14 @@ neighbors = nearest_neighbors(records, Edit(), "cut", k=2)
 close = range_neighbors(records, Edit(), "cut", radius=1)
 selected_ids = representative_indices(records, Edit(), k=2)
 selected_records = representatives(records, Edit(), k=2)
+covered_ids = coverage_representative_indices(records, Edit(), radius=1)
+covered_records = coverage_representatives(records, Edit(), radius=1)
 dimension = intrinsic_dimension(records, Edit())
 ```
 
 `representative_indices` and `representatives` use deterministic farthest-first traversal over the finite metric space. They select existing records rather than vector centroids, start from `seed_index=0` by default, and resolve equal-distance ties by record order.
+
+`coverage_representative_indices` and `coverage_representatives` use deterministic greedy radius coverage. They scan records in order, choose the first uncovered record as a representative, and mark every record within `radius` as covered.
 
 `intrinsic_dimension` returns an expansion-dimension estimate based on finite-space neighborhood growth. Treat it as a diagnostic that depends on the metric, sample density, duplicates, and available radii.
 

@@ -67,12 +67,16 @@ auto nearest = metric::operators::nearest_neighbors(records, metric::Edit<std::s
 auto close = metric::operators::range_neighbors(records, metric::Edit<std::string>{}, std::string("cut"), 1);
 auto selected_ids = metric::operators::representative_indices(records, metric::Edit<std::string>{}, 2);
 auto selected_records = metric::operators::representatives(records, metric::Edit<std::string>{}, 2);
+auto covered_ids = metric::operators::coverage_representative_indices(records, metric::Edit<std::string>{}, 1);
+auto covered_records = metric::operators::coverage_representatives(records, metric::Edit<std::string>{}, 1);
 auto dimension = metric::operators::intrinsic_dimension(records, metric::Edit<std::string>{});
 ```
 
-The promoted C++ operator helpers are `pairwise_distance_matrix`, `nearest_neighbors`, `range_neighbors`, `representative_indices`, `representatives`, and `intrinsic_dimension`.
+The promoted C++ operator helpers are `pairwise_distance_matrix`, `nearest_neighbors`, `range_neighbors`, `representative_indices`, `representatives`, `coverage_representative_indices`, `coverage_representatives`, and `intrinsic_dimension`.
 
 `representative_indices` and `representatives` use deterministic farthest-first traversal over the finite metric space. They select existing records rather than vector centroids, start from `seed_index=0` by default, and resolve equal-distance ties by record order.
+
+`coverage_representative_indices` and `coverage_representatives` use deterministic greedy radius coverage. They scan records in order, choose the first uncovered record as a representative, and mark every record within `radius` as covered.
 
 `intrinsic_dimension` returns an expansion-dimension estimate based on neighborhood growth. It is a finite-space diagnostic, not an exact manifold dimension.
 

@@ -7,6 +7,7 @@
 - Run every promoted Python metric-space example from the core Python API tests so wheel and PyPI build gates share the same example coverage.
 - Add Python `representative_indices` and `representatives` helpers using deterministic farthest-first traversal over finite metric spaces.
 - Add C++ `metric::operators::representative_indices` and `representatives` helpers using the same deterministic farthest-first traversal.
+- Add C++ and Python `coverage_representative_indices` and `coverage_representatives` helpers using deterministic greedy radius coverage.
 - Add deterministic Python representative-selection fixtures for time-series alignment and structured mixed records.
 
 ### Documentation and Examples
