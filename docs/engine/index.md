@@ -68,7 +68,7 @@ Strategies select algorithms:
 
 Algorithm names live here. A normal user can use the engine without learning the algorithm catalog first; an expert can choose strategies explicitly.
 
-The first C++ strategy objects are available under `metric::strategies` for implemented engine paths: `brute_force`, `matrix_cache`, `cover_tree`, `knn_graph`, `k_medoids`, and `dbscan`.
+The first C++ strategy objects are available under `metric::strategies` for implemented engine paths: `brute_force`, `matrix_cache`, `cover_tree`, `knn_graph`, `k_medoids`, `dbscan`, and `farthest_first`.
 
 ### Representation
 
@@ -110,9 +110,9 @@ Result objects preserve:
 - metric assumptions
 - source-to-target lineage when a derived space or mapping is produced
 
-The first engine operator results are `metric::NeighborSet<Distance>`, returned by nearest-neighbor operators over spaces, distance providers, and neighbor indexes; `metric::ClusteringResult<Distance>`, returned by k-medoids and DBSCAN grouping operators; `metric::StructureDescription<Distance>`, returned by exact structure diagnostics; `metric::EntropyResult<double>`, returned by entropy diagnostics; `metric::CorrelationResult<double>`, returned by MGC cross-space statistics; and `metric::MappingResult<DerivedSpace>`, returned by mapping adapters that produce derived metric spaces.
+The first engine result objects are `metric::NeighborSet<Distance>`, returned by nearest-neighbor operators over spaces, distance providers, and neighbor indexes; `metric::ClusteringResult<Distance>`, returned by k-medoids and DBSCAN grouping operators; `metric::RepresentativeSet<Distance>`, returned by representative-selection intents; `metric::StructureDescription<Distance>`, returned by exact structure diagnostics; `metric::EntropyResult<double>`, returned by entropy diagnostics; `metric::CorrelationResult<double>`, returned by MGC cross-space statistics; and `metric::MappingResult<DerivedSpace>`, returned by mapping adapters that produce derived metric spaces.
 
-The first C++ intent helpers are `metric::find_neighbors`, `metric::find_groups`, `metric::describe_structure`, `metric::compare`, `metric::correlate`, and the PCFA-backed `metric::reduce` helper in `<metric/intent/reduce.hpp>`. They keep the user-facing vocabulary semantic while routing to explicit strategy objects such as `metric::strategies::cover_tree`, `metric::strategies::matrix_cache`, `metric::strategies::k_medoids`, `metric::strategies::dbscan`, `metric::strategies::mgc`, and `metric::strategies::pcfa`.
+The first C++ intent helpers are `metric::find_neighbors`, `metric::find_groups`, `metric::find_representatives`, `metric::describe_structure`, `metric::compare`, `metric::correlate`, and the PCFA-backed `metric::reduce` helper in `<metric/intent/reduce.hpp>`. They keep the user-facing vocabulary semantic while routing to explicit strategy objects such as `metric::strategies::cover_tree`, `metric::strategies::matrix_cache`, `metric::strategies::k_medoids`, `metric::strategies::dbscan`, `metric::strategies::farthest_first`, `metric::strategies::mgc`, and `metric::strategies::pcfa`.
 
 The first C++ mapping adapters are `metric::mappings::make_clustered_space_mapping` and the PCFA adapter in `<metric/mappings/pcfa.hpp>`. They fit source spaces to mapping models and transform them into derived metric spaces while preserving source `RecordId` lineage.
 

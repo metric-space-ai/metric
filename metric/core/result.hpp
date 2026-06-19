@@ -52,6 +52,27 @@ template <typename Distance> struct ClusteringResult {
 	auto empty() const -> bool { return assignments.empty(); }
 };
 
+template <typename Distance> struct RepresentativeSet {
+	using distance_type = Distance;
+
+	std::vector<RecordId> representatives;
+	std::vector<Distance> nearest_representative_distances;
+	std::size_t record_count{};
+	std::size_t requested_count{};
+	Distance coverage_radius{};
+	double average_nearest_distance{};
+	bool exact{true};
+	std::string operator_name;
+	std::string strategy;
+	std::string representation;
+
+	auto size() const -> std::size_t { return representatives.size(); }
+	auto empty() const -> bool { return representatives.empty(); }
+	auto begin() const -> typename std::vector<RecordId>::const_iterator { return representatives.begin(); }
+	auto end() const -> typename std::vector<RecordId>::const_iterator { return representatives.end(); }
+	auto operator[](std::size_t index) const -> RecordId { return representatives[index]; }
+};
+
 template <typename Value = double> struct EntropyResult {
 	using value_type = Value;
 
@@ -116,6 +137,7 @@ template <typename Space> struct MappingResult {
 namespace metric {
 template <typename Distance> using NeighborSet = core::NeighborSet<Distance>;
 template <typename Distance> using ClusteringResult = core::ClusteringResult<Distance>;
+template <typename Distance> using RepresentativeSet = core::RepresentativeSet<Distance>;
 template <typename Value = double> using EntropyResult = core::EntropyResult<Value>;
 template <typename Value = double> using CorrelationResult = core::CorrelationResult<Value>;
 template <typename Distance, typename Value = double>
