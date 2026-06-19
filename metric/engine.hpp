@@ -14,6 +14,7 @@
 #include "intent/compare.hpp"
 #include "intent/describe.hpp"
 #include "intent/denoise.hpp"
+#include "intent/embed.hpp"
 #include "intent/groups.hpp"
 #include "intent/map.hpp"
 #include "intent/neighbors.hpp"

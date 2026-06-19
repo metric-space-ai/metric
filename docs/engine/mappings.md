@@ -24,12 +24,13 @@ The current engine mapping layer includes:
 - `metric::mappings::transform`
 - clustered-space mapping from `ClusteringResult`
 - LAPACK-backed PCFA mapping
+- PCFA-backed `metric::embed`
 - PCFA-backed `metric::reduce`
 - DBSCAN-noise-filtered `metric::denoise`
 - deterministic Python `Space.map`
 - DBSCAN-noise-filtered Python `Space.denoise`
 
-`MappingResult` stores the derived space plus source-record lineage. Inverse reconstruction is explicit and optional. The C++ `metric::denoise` and Python `Space.denoise` intents also return `MappingResult` values, preserving one-to-one lineage for non-noise records kept after DBSCAN noise filtering.
+`MappingResult` stores the derived space plus source-record lineage. Inverse reconstruction is explicit and optional. The C++ `metric::embed` intent returns a PCFA-derived coordinate space with one-to-one lineage and `mapping == "pcfa_embedding"`. The C++ `metric::denoise` and Python `Space.denoise` intents also return `MappingResult` values, preserving one-to-one lineage for non-noise records kept after DBSCAN noise filtering.
 
 ## Python Status
 
