@@ -17,6 +17,7 @@ METRIC is not another vector database and not a loose algorithm catalog. It prov
 - Docs source: [docs/index.md](docs/index.md)
 - Engine overview: [docs/engine/index.md](docs/engine/index.md)
 - API surface: [docs/stability.md](docs/stability.md)
+- Research roadmap: [docs/research-roadmap.md](docs/research-roadmap.md)
 - Revival status: [docs/revival-status.md](docs/revival-status.md)
 - Changelog: [CHANGELOG.md](CHANGELOG.md)
 

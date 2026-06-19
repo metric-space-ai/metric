@@ -10,6 +10,7 @@ This docs tree is the canonical home for concepts, API references, engine archit
 - [Metric-Space Numerics Manifesto](manifesto.md)
 - [API Surface](stability.md)
 - [Testing and CI Scope](testing-and-ci.md)
+- [Research Roadmap](research-roadmap.md)
 - [Revival Status](revival-status.md)
 - [C++ API](api/cpp.md)
 - [Python API](api/python.md)
@@ -26,7 +27,8 @@ This docs tree is the canonical home for concepts, API references, engine archit
 6. Use the [Python API](api/python.md) or [C++ API](api/cpp.md) for implementation.
 7. Use [API Surface](stability.md) to understand core, expert, compatibility, extension APIs, and the module status matrix.
 8. Use [Testing and CI Scope](testing-and-ci.md) to understand release gates versus historical coverage.
-9. Use [Revival Status](revival-status.md) to distinguish local revival completion from external release actions.
+9. Use [Research Roadmap](research-roadmap.md) to understand which research directions can be promoted after deterministic fixtures and release gates exist.
+10. Use [Revival Status](revival-status.md) to distinguish local revival completion from external release actions.
 
 ## Concepts
 
@@ -52,6 +54,7 @@ This docs tree is the canonical home for concepts, API references, engine archit
 
 The project keeps the design records that shaped the engine in the repository root. They are useful when extending the engine or reviewing why the API is organized around intent names, strategies, representations, and runtime policies.
 
+- [Research Roadmap](research-roadmap.md)
 - [Engine Implementation Plan](../ENGINE_IMPLEMENTATION_PLAN.md)
 - [Capability Roadmap](../CAPABILITY_ROADMAP.md)
 - [Algorithmic Gap Analysis](../ALGORITHMIC_GAP_ANALYSIS.md)

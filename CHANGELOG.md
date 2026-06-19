@@ -8,6 +8,7 @@
 
 ### Documentation and Examples
 
+- Add a promotion-gated research roadmap for diagnostics, representative selection, sparse graphs, cross-space dependency discovery, denoising, vector-database adapters, and benchmarks.
 - Add a promoted Python time-series metric-space example using an alignment-aware callable on the core wheel path.
 - Add a promoted Python histogram metric-space example using a one-dimensional transport callable on the core wheel path.
 
