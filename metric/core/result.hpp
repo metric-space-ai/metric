@@ -34,12 +34,16 @@ template <typename Distance> struct NeighborSet {
 
 template <typename Distance> struct ClusteringResult {
 	using distance_type = Distance;
+	static constexpr std::size_t noise_label = static_cast<std::size_t>(-1);
 
 	std::vector<std::size_t> assignments;
 	std::vector<RecordId> medoids;
+	std::vector<RecordId> core_records;
+	std::vector<RecordId> noise_records;
 	std::vector<std::size_t> cluster_sizes;
 	std::size_t record_count{};
 	std::size_t cluster_count{};
+	std::size_t noise_count{};
 	std::size_t iterations{};
 	bool converged{false};
 	std::string algorithm;
