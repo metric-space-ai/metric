@@ -12,6 +12,8 @@ from metric.operators import (
     coverage_representative_indices,
     coverage_representatives,
     intrinsic_dimension,
+    medoid,
+    medoid_index,
     nearest_neighbors,
     pairwise_distance_matrix,
     range_neighbors,
@@ -51,6 +53,8 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIs(metric.operators.nearest_neighbors, nearest_neighbors)
         self.assertIs(metric.operators.range_neighbors, range_neighbors)
         self.assertIs(metric.operators.intrinsic_dimension, intrinsic_dimension)
+        self.assertIs(metric.operators.medoid_index, medoid_index)
+        self.assertIs(metric.operators.medoid, medoid)
         self.assertIs(metric.operators.representative_indices, representative_indices)
         self.assertIs(metric.operators.representatives, representatives)
         self.assertIs(metric.operators.coverage_representative_indices, coverage_representative_indices)
@@ -59,6 +63,8 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIs(metric.transforms, transforms)
         self.assertIs(metric.Edit, Edit)
         self.assertIs(metric.intrinsic_dimension, intrinsic_dimension)
+        self.assertIs(metric.medoid_index, medoid_index)
+        self.assertIs(metric.medoid, medoid)
         self.assertIs(metric.range_neighbors, range_neighbors)
         self.assertIs(metric.representative_indices, representative_indices)
         self.assertIs(metric.representatives, representatives)
@@ -70,6 +76,8 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIn("Space", metric.__all__)
         self.assertIn("mappings", metric.__all__)
         self.assertIn("transforms", metric.__all__)
+        self.assertIn("medoid_index", metric.__all__)
+        self.assertIn("medoid", metric.__all__)
         self.assertIn("representative_indices", metric.__all__)
         self.assertIn("representatives", metric.__all__)
         self.assertIn("coverage_representative_indices", metric.__all__)
@@ -149,6 +157,8 @@ class RevivalApiTest(unittest.TestCase):
             representatives(records, cumulative_transport_distance, 3),
             [records[0], records[2], records[4]],
         )
+        self.assertEqual(medoid_index(records, cumulative_transport_distance), 1)
+        self.assertEqual(medoid(records, cumulative_transport_distance), records[1])
         self.assertEqual(coverage_representative_indices(records, cumulative_transport_distance, 1.5), [0, 2])
         self.assertEqual(
             coverage_representatives(records, cumulative_transport_distance, 1.5),
@@ -164,6 +174,8 @@ class RevivalApiTest(unittest.TestCase):
 
         self.assertEqual(representative_indices(records, absolute_distance, 3), [0, 3, 2])
         self.assertEqual(representative_indices(records, absolute_distance, 2, seed_index=1), [1, 3])
+        self.assertEqual(medoid_index(records, absolute_distance), 1)
+        self.assertEqual(medoid(records, absolute_distance), 1)
         self.assertEqual(coverage_representative_indices(records, absolute_distance, 2), [0, 3])
         self.assertEqual(coverage_representatives(records, absolute_distance, 2), [0, 10])
         self.assertEqual(coverage_representative_indices(records, absolute_distance, 20), [0])
@@ -179,6 +191,10 @@ class RevivalApiTest(unittest.TestCase):
             representative_indices([], absolute_distance, 1)
         with self.assertRaises(ValueError):
             representative_indices(records, absolute_distance, 5)
+        with self.assertRaises(ValueError):
+            medoid_index([], absolute_distance)
+        with self.assertRaises(ValueError):
+            medoid([], absolute_distance)
         with self.assertRaises(IndexError):
             representative_indices(records, absolute_distance, 1, seed_index=-1)
         with self.assertRaises(IndexError):

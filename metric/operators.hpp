@@ -120,6 +120,42 @@ auto representatives(const Container &records, Metric distance, std::size_t k, s
 	return result;
 }
 
+template <typename Container, typename Metric>
+auto medoid_index(const Container &records, Metric distance) -> std::size_t
+{
+	if (records.empty()) {
+		throw std::invalid_argument("cannot select a medoid from an empty record set");
+	}
+
+	using distance_type = typename detail::finite_space_t<Container, Metric>::distance_type;
+
+	const auto space = ::metric::Space::from_records(records, std::move(distance));
+	std::size_t best_index = 0;
+	distance_type best_total_distance{};
+	bool has_best = false;
+
+	for (std::size_t candidate_index = 0; candidate_index < records.size(); ++candidate_index) {
+		distance_type total_distance{};
+		for (std::size_t other_index = 0; other_index < records.size(); ++other_index) {
+			total_distance += space.distance(candidate_index, other_index);
+		}
+
+		if (!has_best || total_distance < best_total_distance) {
+			best_index = candidate_index;
+			best_total_distance = total_distance;
+			has_best = true;
+		}
+	}
+
+	return best_index;
+}
+
+template <typename Container, typename Metric>
+auto medoid(const Container &records, Metric distance) -> detail::record_type_t<Container>
+{
+	return records[medoid_index(records, std::move(distance))];
+}
+
 template <typename Container, typename Metric, typename Radius>
 auto coverage_representative_indices(const Container &records, Metric distance, Radius radius)
 	-> std::vector<std::size_t>

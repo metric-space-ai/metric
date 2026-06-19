@@ -23,6 +23,8 @@ from .operators import (
     coverage_representative_indices,
     coverage_representatives,
     intrinsic_dimension,
+    medoid,
+    medoid_index,
     nearest_neighbors,
     pairwise_distance_matrix,
     range_neighbors,

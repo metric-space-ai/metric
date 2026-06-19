@@ -7,6 +7,7 @@
 - Run every promoted Python metric-space example from the core Python API tests so wheel and PyPI build gates share the same example coverage.
 - Add Python `representative_indices` and `representatives` helpers using deterministic farthest-first traversal over finite metric spaces.
 - Add C++ `metric::operators::representative_indices` and `representatives` helpers using the same deterministic farthest-first traversal.
+- Add C++ and Python `medoid_index` and `medoid` helpers using deterministic minimum-total-distance selection.
 - Add C++ and Python `coverage_representative_indices` and `coverage_representatives` helpers using deterministic greedy radius coverage.
 - Add deterministic Python representative-selection fixtures for time-series alignment and structured mixed records.
 
@@ -17,6 +18,7 @@
 - Add a promoted Python histogram metric-space example using a one-dimensional transport callable on the core wheel path.
 - Add a promoted Python representative-selection example using histogram records and transport distance on the core wheel path.
 - Add a promoted C++ representative-selection example using string records and edit distance on the core CTest path.
+- Extend promoted representative-selection examples with medoid representatives.
 
 ## [0.3.2] - 2026-06-19
 

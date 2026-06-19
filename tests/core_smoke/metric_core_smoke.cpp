@@ -57,6 +57,9 @@ int main()
     const auto representative_records = metric::operators::representatives(records, metric::Edit<std::string>{}, 3);
     assert((representative_records == std::vector<std::string>{"cat", "dog", "cot"}));
 
+    assert(metric::operators::medoid_index(records, metric::Edit<std::string>{}) == 1);
+    assert(metric::operators::medoid(records, metric::Edit<std::string>{}) == "cot");
+
     const auto coverage_ids = metric::operators::coverage_representative_indices(records, metric::Edit<std::string>{}, 1);
     assert((coverage_ids == std::vector<std::size_t>{0, 3}));
 
@@ -79,6 +82,14 @@ int main()
     }
     assert(rejected_empty_records);
 
+    bool rejected_empty_medoid = false;
+    try {
+        metric::operators::medoid_index(std::vector<std::string>{}, metric::Edit<std::string>{});
+    } catch (const std::invalid_argument &) {
+        rejected_empty_medoid = true;
+    }
+    assert(rejected_empty_medoid);
+
     bool rejected_large_k = false;
     try {
         metric::operators::representative_indices(records, metric::Edit<std::string>{}, records.size() + 1);
@@ -99,6 +110,8 @@ int main()
     assert((metric::operators::coverage_representative_indices(line, AbsoluteDistance{}, 2) ==
             std::vector<std::size_t>{0, 3}));
     assert((metric::operators::coverage_representatives(line, AbsoluteDistance{}, 2) == std::vector<int>{0, 3}));
+    assert(metric::operators::medoid_index(line, AbsoluteDistance{}) == 2);
+    assert(metric::operators::medoid(line, AbsoluteDistance{}) == 2);
 
     bool rejected_negative_radius = false;
     try {
