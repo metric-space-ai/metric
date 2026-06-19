@@ -85,7 +85,7 @@ auto knn(const Space &space, const typename Space::record_type &query, std::size
 	std::vector<Neighbor<distance_type>> candidates;
 	candidates.reserve(space.size());
 	for (std::size_t index = 0; index < space.size(); ++index) {
-		const auto id = RecordId::from_index(index);
+		const auto id = space.id(index);
 		candidates.push_back(Neighbor<distance_type>{id, space.metric()(query, space.record(id))});
 	}
 
@@ -101,7 +101,7 @@ auto knn(const Space &space, RecordId query_id, std::size_t k) -> NeighborSet<ty
 	std::vector<Neighbor<distance_type>> candidates;
 	candidates.reserve(space.size() > 0 ? space.size() - 1 : 0);
 	for (std::size_t index = 0; index < space.size(); ++index) {
-		const auto id = RecordId::from_index(index);
+		const auto id = space.id(index);
 		if (id == query_id) {
 			continue;
 		}
@@ -116,14 +116,14 @@ auto knn(const Provider &provider, RecordId query_id, std::size_t k) -> Neighbor
 {
 	using distance_type = typename Provider::distance_type;
 
-	if (query_id.index() >= provider.record_count()) {
+	if (!provider.contains(query_id)) {
 		throw std::out_of_range("query record id is outside the distance provider");
 	}
 
 	std::vector<Neighbor<distance_type>> candidates;
 	candidates.reserve(provider.record_count() > 0 ? provider.record_count() - 1 : 0);
 	for (std::size_t index = 0; index < provider.record_count(); ++index) {
-		const auto id = RecordId::from_index(index);
+		const auto id = provider.id(index);
 		if (id == query_id) {
 			continue;
 		}
@@ -159,7 +159,7 @@ auto range(const Space &space, const typename Space::record_type &query, Radius 
 
 	std::vector<Neighbor<distance_type>> candidates;
 	for (std::size_t index = 0; index < space.size(); ++index) {
-		const auto id = RecordId::from_index(index);
+		const auto id = space.id(index);
 		const auto distance = space.metric()(query, space.record(id));
 		if (static_cast<comparison_type>(distance) <= threshold) {
 			candidates.push_back(Neighbor<distance_type>{id, distance});
@@ -176,14 +176,14 @@ auto range(const Provider &provider, RecordId query_id, Radius radius) -> Neighb
 	using comparison_type = typename std::common_type<distance_type, Radius>::type;
 
 	engine_detail::validate_radius(radius);
-	if (query_id.index() >= provider.record_count()) {
+	if (!provider.contains(query_id)) {
 		throw std::out_of_range("query record id is outside the distance provider");
 	}
 	const auto threshold = static_cast<comparison_type>(radius);
 
 	std::vector<Neighbor<distance_type>> candidates;
 	for (std::size_t index = 0; index < provider.record_count(); ++index) {
-		const auto id = RecordId::from_index(index);
+		const auto id = provider.id(index);
 		if (id == query_id) {
 			continue;
 		}

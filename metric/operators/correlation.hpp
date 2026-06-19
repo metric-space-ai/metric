@@ -23,8 +23,7 @@ auto provider_distance_matrix(const Provider &provider) -> DistanceMatrix<double
 	for (std::size_t row = 0; row < matrix.rows(); ++row) {
 		matrix(row, row) = 0.0;
 		for (std::size_t column = row + 1; column < matrix.columns(); ++column) {
-			matrix(row, column) = static_cast<double>(
-				provider.distance(RecordId::from_index(row), RecordId::from_index(column)));
+			matrix(row, column) = static_cast<double>(provider.distance(provider.id(row), provider.id(column)));
 		}
 	}
 	return matrix;

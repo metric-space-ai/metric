@@ -41,7 +41,7 @@ auto nearest_reference_distance(const Provider &provider, RecordId id, const std
 	}
 
 	for (std::size_t index = 0; index < provider.record_count(); ++index) {
-		const auto reference = RecordId::from_index(index);
+		const auto reference = provider.id(index);
 		if (reference == id) {
 			continue;
 		}
@@ -67,7 +67,7 @@ auto outlier_result_from_groups(const Provider &provider,
 	references.reserve(provider.record_count() - groups.noise_count);
 	for (std::size_t index = 0; index < groups.assignments.size(); ++index) {
 		if (groups.assignments[index] != noise_label) {
-			references.push_back(RecordId::from_index(index));
+			references.push_back(provider.id(index));
 		}
 	}
 

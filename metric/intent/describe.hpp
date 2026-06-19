@@ -64,7 +64,7 @@ auto describe_structure(const Provider &provider) -> StructureDescription<typena
 
 	for (std::size_t row = 0; row < provider.record_count(); ++row) {
 		for (std::size_t column = row + 1; column < provider.record_count(); ++column) {
-			const auto distance = provider.distance(RecordId::from_index(row), RecordId::from_index(column));
+			const auto distance = provider.distance(provider.id(row), provider.id(column));
 			distances[row][column] = distance;
 			distances[column][row] = distance;
 			++result.pair_count;

@@ -30,6 +30,7 @@
 #include "operators/correlation.hpp"
 #include "operators/nearest.hpp"
 #include "representations/cover_tree_index.hpp"
+#include "representations/diagnostics.hpp"
 #include "representations/graph_topology.hpp"
 #include "representations/implicit.hpp"
 #include "representations/knn_graph_index.hpp"
