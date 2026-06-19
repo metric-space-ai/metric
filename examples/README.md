@@ -12,6 +12,7 @@ The current core examples cover:
 - custom metric callables
 - explicit matrix, graph, and tree representations
 - entropy diagnostics
+- intrinsic-dimension diagnostics
 - MGC correlation between metric spaces
 - TWED for time-series records
 - EMD for histogram records

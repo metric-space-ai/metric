@@ -11,6 +11,7 @@ The tests tree separates the revived core gate from broader historical coverage.
 - matrix, graph, and tree consistency
 - MGC regression values
 - entropy regression values
+- intrinsic-dimension regression values
 - promoted core examples through CTest
 
 `tests/downstream_consumer/` verifies the installed CMake package with `find_package(panda_metric)`. It is part of the C++ core CI gate.
