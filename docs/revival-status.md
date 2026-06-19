@@ -57,6 +57,7 @@ The current local tree implements the first revival slice:
 - promoted C++ examples under `examples/core/`
 - promoted Python examples under `python/examples/metric_space/`
 - CI-tested C++ and Python engine flagship examples for strings, process curves, histograms, and cross-space dependency
+- CI-tested C++ engine representation-swap example covering implicit search, matrix cache, cover-tree index, kNN graph index, and stale representation diagnostics
 - CI-tested Python engine flagship example for mixed structured records with a custom composite metric
 - native C++ DNN baseline smoke coverage for RegressionMSE, RMSProp, row-as-observation network training, dense Autoencoder train/encode/decode/save/load, and fully connected parameter serialization round trips
 - native C++ DNN `Network` training hooks for forward activation capture, anchored layer-output backpropagation, and explicit optimizer updates
@@ -346,6 +347,7 @@ The following revival improvements landed on `master` after the `v0.3.2` tag and
 - Python top-level debug extension exports hidden from the public package API, merged as `66d7c07933c6cfd08b3dea8184741fc3ede41a47`
 - Python legacy Tree binding fixes for boolean `empty()`, explicit `size()`, and named `insert_if(...)`, merged as `b11d339fe9c0867d76aee20ff8ed02762fe67a12`
 - Python legacy kmeans binding keyword corrected from `random_see` to `random_seed`, merged as `e8faf336ffc9a7087eec95213593bf339d2f52e4`
+- CI-tested C++ engine representation-swap example covering implicit search, matrix cache, cover-tree index, kNN graph index, and stale representation diagnostics, merged as `6692769a33300ba316da4720b4064307a4060e3d`
 
 ## Historical Code Policy
 
