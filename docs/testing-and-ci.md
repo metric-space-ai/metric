@@ -35,6 +35,13 @@ The core tests cover:
 - entropy regression values when LAPACK is available
 - promoted examples for strings, custom metrics, explicit representations, TWED, EMD, MGC, and entropy when LAPACK is available
 
+The Python core wheel path covers:
+
+- importability of the revived Python facade modules
+- `Space`, `FiniteMetricSpace`, and operator helper behavior
+- metric contract checks for built-in edit distance, NumPy record callables, and structured record callables
+- promoted Python examples for strings and structured records
+
 ## Extended and Historical Tests
 
 The full historical suite is still in-tree and can be explored with `METRIC_BUILD_TESTS=ON`, but it is not a revival release gate yet. It contains broad mapping, transform, DNN, image-processing, wrapper, and legacy utility coverage that requires additional restoration work before it can be treated as a supported signal.
