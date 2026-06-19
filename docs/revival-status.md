@@ -80,7 +80,7 @@ The current local tree implements the first revival slice:
 - initial C++ engine representation adapters for implicit distance lookup, matrix caching, exact neighbor-index scaffolds, kNN graph adjacency, graph topology edges, and stale detection
 - initial C++ engine nearest operators with `NeighborSet`, `operators::knn`, and `operators::range` over spaces, distance providers, and neighbor indexes
 - initial C++ engine clustering operators with `ClusteringResult`, deterministic `operators::kmedoids`, and deterministic `operators::dbscan` over spaces and distance providers
-- C++ engine affinity-propagation clustering strategy with named `ClusteringResult` metadata
+- C++ engine affinity-propagation clustering strategy with named `ClusteringResult` metadata and distance-provider execution
 - initial C++ engine intent helpers and strategies with semantic `find_neighbors` and `find_groups` entry points over implemented search and clustering paths
 - C++ engine `find_neighbors` accepts the semantic `metric::count{...}` target argument
 - initial C++ engine representative-selection intent with deterministic farthest-first strategy
@@ -262,6 +262,7 @@ The following revival improvements landed on `master` after the `v0.3.2` tag and
 - initial C++ engine clustering operator with `ClusteringResult`, deterministic k-medoids over spaces and distance providers, and core smoke coverage, merged as `0bb5a0b695c88ef91dd997d4f59275e04908462f`
 - deterministic C++ engine DBSCAN clustering over spaces and distance providers with noise/core record metadata and core smoke coverage, merged as `d523f18a34383206f17b1a699d6a4e819da0d801`
 - C++ engine affinity-propagation clustering operator and strategy with core smoke coverage, merged as `bbd50050c1986822159296df6d3279f90e44d630`
+- C++ engine affinity-propagation distance-provider execution with MatrixCache smoke coverage, merged as `79b085993e938e7c23fec9093a6fea179d679f42`
 - initial C++ engine intent helpers and strategy objects for semantic neighbor and grouping workflows, merged as `d3620cc63a4375ed248575d5a02114d778eb70a6`
 - C++ engine representative-selection intent with deterministic farthest-first strategy and core smoke coverage, merged as `936f25fa59055a35a8f9fc5155513bee7990ba5e`
 - initial C++ engine entropy and MGC operator wrappers with named result objects and core smoke coverage, merged as `68199bcf7443056b1ebed32fd00b57ca5fea676e`
