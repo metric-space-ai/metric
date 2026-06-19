@@ -1,6 +1,9 @@
-# METRIC-PY
+# METRIC Python Package
 
 Python bindings for METRIC metric-space numerics.
+
+The public Python distribution name is `metric-space`. The import package remains
+`metric`.
 
 The revived core package exposes the project concepts explicitly:
 
@@ -16,6 +19,12 @@ The same objects are also available as convenience imports from `metric` for sho
 # Installation
 
 The Python package is in revival. The current supported CPython targets for the core wheel are 3.10, 3.11, 3.12, 3.13, and 3.14.
+
+After the release is published, install the core package with:
+
+```shell
+python -m pip install metric-space
+```
 
 Packaging now uses `pyproject.toml` with isolated PEP 517 builds and PEP 621 project metadata. `setup.py` provides the CMake extension build hook and the source-distribution hook that carries the required C++ headers into the Python sdist. The build prefers the `pybind11` package from the build environment (`pybind11>=3.0.0`) and falls back to a current FetchContent copy when no CMake package is available.
 

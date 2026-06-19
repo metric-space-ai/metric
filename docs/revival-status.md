@@ -1,6 +1,6 @@
 # Revival Status
 
-This page tracks the current execution status of [REVIVAL_PLAN.md](../REVIVAL_PLAN.md). It is not a replacement for the plan; it records which revival requirements are locally implemented and which release actions still require external repository or package-index state.
+This page tracks the current execution status of [REVIVAL_PLAN.md](../REVIVAL_PLAN.md). It is not a replacement for the plan; it records which revival requirements are implemented on `master` and which release actions still require package-index or release publication state.
 
 ## Local Revival Scope
 
@@ -65,19 +65,21 @@ git diff --check
 
 The Python package currently uses `pyproject.toml` for the PEP 517 build-system declaration and PEP 621 project metadata. `setup.py` registers the CMake extension build hook and the source-distribution hook that includes the required C++ metric headers in the Python sdist. `scikit-build-core` remains a candidate for a later packaging simplification, but it is not adopted in this revival slice because the current bridge already builds the core wheel and preserves the existing extension layout.
 
-The package name is currently `metric-py`. A public relaunch still needs an explicit package-name decision before publishing to PyPI.
+The public Python distribution name is `metric-space`. The import package remains `metric`.
 
-PyPI name availability was checked on 2026-06-19 with `python -m pip index versions`:
+PyPI name availability was checked on 2026-06-19 with the official PyPI JSON API:
 
 - `metric` exists on PyPI and should not be used for this relaunch.
-- `metric-py` had no matching visible distribution.
+- `metric-py` exists on PyPI as version `0.0.6`, points at the historical `panda-official/metric` repository, and should not be reused unless package ownership and continuity are deliberately restored.
 - `metric-space` had no matching visible distribution.
 - `metric-space-numerics` had no matching visible distribution.
 - `panda-metric` and `panda_metric` had no matching visible distribution.
 
-The current local package metadata stays on `metric-py` until the release owner chooses whether continuity or clearer public naming is more important.
+The release metadata therefore uses `metric-space` to avoid colliding with both the unrelated `metric` project and the historical `metric-py` distribution.
 
 ## External State Checked
+
+The revival branch landed through [pull request #326](https://github.com/metric-space-ai/metric/pull/326), merged into `master` as commit `c1bc86f035e132617a111bbf91577f92070ff22e`.
 
 The GitHub repository metadata was checked on 2026-06-19 with `gh repo view metric-space-ai/metric`.
 
@@ -85,21 +87,29 @@ The GitHub repository metadata was checked on 2026-06-19 with `gh repo view metr
 - homepage: <https://metric-space-ai.github.io/metric/>
 - topics: `algorithms`, `cpp`, `finite-metric-spaces`, `metric-space`, `numerical-computing`, `python`
 
-GitHub Pages was checked on 2026-06-19 with `gh api repos/metric-space-ai/metric/pages`. Pages is public and built at <https://metric-space-ai.github.io/metric/>, currently from the legacy `gh-pages` source branch. The new checked-in Pages workflow remains local until the revival branch is committed and pushed.
+GitHub Pages was checked on 2026-06-19 with `gh api repos/metric-space-ai/metric/pages`. Pages is public, uses `build_type: workflow`, and is built at <https://metric-space-ai.github.io/metric/>.
 
-GitHub Actions workflows were checked on 2026-06-19 with `gh api repos/metric-space-ai/metric/actions/workflows`. The remote repository currently exposes only the pre-revival workflows. The new revival workflows become remote release evidence only after these local workflow files are committed and pushed.
+GitHub Actions was checked on 2026-06-19 with `gh run list --repo metric-space-ai/metric --branch master`. The following `master` runs completed successfully on commit `c1bc86f035e132617a111bbf91577f92070ff22e`:
+
+- Core C++ smoke
+- Python core wheel
+- Docs and formatting
+- Pages
+- Dependency Graph
+
+The manual release-artifact rehearsal was checked on 2026-06-19 with `gh run view 27798350044`. It completed successfully on `master` and uploaded:
+
+- `metric-source-archive`
+- `metric-python-artifacts`
 
 ## External Release Work
 
 These plan items cannot be proven by local files alone and remain external release actions:
 
-- keep the GitHub repository description, homepage, and topics aligned with the finite metric-space framing
-- switch or confirm GitHub Pages publishing for the checked-in `docs/site/` artifact after the revival branch lands
-- run the new GitHub Actions matrix on Linux, macOS, and Windows in the repository
-- run `.github/workflows/release-artifacts.yml` from the final release tag
-- choose the final public Python package name from the checked candidates or another owner-approved name
-- publish release wheels to PyPI
-- finalize the [CHANGELOG.md](../CHANGELOG.md) revival draft into release notes using the template in [release-checklist.md](release-checklist.md)
+- create the final `v0.3.0` release tag from `master`
+- run `.github/workflows/release-artifacts.yml` from that final release tag
+- publish the GitHub release using the [CHANGELOG.md](../CHANGELOG.md) `0.3.0` entry as release notes
+- publish the `metric-space` Python source distribution and wheel to PyPI after confirming package ownership or Trusted Publishing
 
 ## Historical Code Policy
 

@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased] - Revival draft
+## [0.3.0] - 2026-06-19
 
 ### API Changes
 
@@ -30,6 +30,7 @@
 - Add optional `METRIC_FETCH_DEPS` FetchContent fallback for core dependencies.
 - Add install/export support verified by a downstream `find_package(panda_metric)` consumer.
 - Add `python/pyproject.toml` with PEP 621 project metadata, modern Python version metadata, and core-wheel CI for CPython 3.10 through 3.14.
+- Rename the public Python distribution to `metric-space`; the import package remains `metric`.
 - Add release artifact workflow for source archive, Python sdist, Python wheel built from that sdist, C++ core checks, and downstream CMake consumer evidence.
 
 ### Documentation and Examples
@@ -54,7 +55,7 @@
 - The target intent facade for `groups`, `embed`, `map`, `reduce`, `denoise`, `outliers`, and `compare` remains roadmap API until backed by stable strategies, result contracts, examples, and CI.
 - Mapping and transform algorithms remain beta or compatibility surfaces; `metric.mappings` and `metric.transforms` only expose installed legacy names.
 - The default Python core wheel intentionally exposes a narrow revived surface; broader legacy bindings require separate restoration.
-- Public relaunch still requires external actions: repository metadata update, remote CI matrix evidence, Pages activation, release artifact workflow run from the final tag, final package-name decision, PyPI publishing, a release tag, and final release notes.
+- Public relaunch still requires external actions: release tag creation, release artifact workflow run from that final tag, GitHub release publication, and PyPI publishing for `metric-space`.
 
 ## [0.2.1] - 2022-05-16
 
