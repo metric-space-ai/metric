@@ -67,8 +67,8 @@ void register_wrapper_Tree(py::module& m) {
     tree.def("clustering", clustering3);
     tree.def("insert", insert1);
     tree.def("insert", insert2);
-    tree.def("insert", insert_if1);
-    tree.def("insert", insert_if2);
+    tree.def("insert_if", insert_if1);
+    tree.def("insert_if", insert_if2);
 
     tree.def("erase", &Tree::erase);
     tree.def("__getitem__", &Tree::operator[]);
@@ -76,7 +76,8 @@ void register_wrapper_Tree(py::module& m) {
     tree.def("knn", &Tree::knn);
     tree.def("rnn", &Tree::rnn);
     tree.def("__len__", &Tree::size);
-    tree.def("empty", &Tree::size);
+    tree.def("size", &Tree::size);
+    tree.def("empty", &Tree::empty);
     tree.def("to_vector", &Tree::toVector);
     tree.def("check_covering", &Tree::check_covering);
     tree.def("distance_by_id", &Tree::distance_by_id);
