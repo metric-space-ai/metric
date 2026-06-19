@@ -56,6 +56,7 @@ The current local tree implements the first revival slice:
 - initial C++ engine entropy and MGC operators with named result objects over records and metric spaces
 - initial C++ engine compare/correlate intent helpers with explicit MGC strategy
 - initial C++ engine describe intent with exact finite-space structure diagnostics
+- initial C++ engine embed intent backed by the PCFA strategy
 - initial C++ engine reduce intent backed by the PCFA strategy
 - initial C++ engine outlier intent backed by DBSCAN-noise detection with named result objects
 - initial C++ engine map intent for deterministic transforms into derived metric spaces
