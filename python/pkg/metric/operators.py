@@ -6,7 +6,7 @@ import operator
 from typing import ClassVar
 
 from metric.spaces import FiniteMetricSpace
-from metric.strategies import DBSCAN, FarthestFirst, KMedoids
+from metric.strategies import DBSCAN, DistanceProfileCorrelation, FarthestFirst, KMedoids
 
 
 @dataclass(frozen=True)
@@ -135,6 +135,21 @@ class StructureDescription:
     exact: bool
     strategy: str
     representation: str
+
+
+@dataclass(frozen=True)
+class CorrelationResult:
+    """Cross-space dependency result with explicit strategy metadata."""
+
+    value: float
+    left_record_count: int
+    right_record_count: int
+    pair_count: int
+    exact: bool
+    algorithm: str
+    strategy: str
+    left_representation: str
+    right_representation: str
 
 
 def pairwise_distance_matrix(records, metric):
@@ -1127,6 +1142,76 @@ def coverage_representatives(records, metric, radius):
     ]
 
 
+def _upper_triangle(distances):
+    values = []
+    for row_index, row in enumerate(distances):
+        if len(row) != len(distances):
+            raise ValueError("distance matrix must be square")
+        for column_index in range(row_index + 1, len(row)):
+            values.append(float(row[column_index]))
+    return values
+
+
+def _pearson_correlation(lhs, rhs):
+    if len(lhs) != len(rhs):
+        raise ValueError("distance profiles must have equal length")
+    if not lhs:
+        raise ValueError("distance profiles must contain at least one pair")
+
+    lhs_mean = sum(lhs) / len(lhs)
+    rhs_mean = sum(rhs) / len(rhs)
+    numerator = sum((left - lhs_mean) * (right - rhs_mean) for left, right in zip(lhs, rhs))
+    lhs_scale = sum((left - lhs_mean) ** 2 for left in lhs) ** 0.5
+    rhs_scale = sum((right - rhs_mean) ** 2 for right in rhs) ** 0.5
+    if lhs_scale == 0 or rhs_scale == 0:
+        raise ValueError("distance profiles must have non-zero variance")
+    return numerator / (lhs_scale * rhs_scale)
+
+
+def compare_spaces(
+    left_records,
+    left_metric,
+    right_records,
+    right_metric,
+    strategy=None,
+    *,
+    left_representation="records",
+    right_representation="records",
+):
+    """Compare aligned finite metric spaces through pairwise distance profiles."""
+    if strategy is None:
+        strategy = DistanceProfileCorrelation()
+    if not isinstance(strategy, DistanceProfileCorrelation):
+        raise TypeError("strategy must be a DistanceProfileCorrelation instance")
+    if strategy.method != "pearson":
+        raise ValueError("DistanceProfileCorrelation currently supports method='pearson'")
+
+    left_records = list(left_records)
+    right_records = list(right_records)
+    if len(left_records) != len(right_records):
+        raise ValueError("space comparison requires aligned record sets of equal size")
+
+    left_profile = _upper_triangle(pairwise_distance_matrix(left_records, left_metric))
+    right_profile = _upper_triangle(pairwise_distance_matrix(right_records, right_metric))
+
+    return CorrelationResult(
+        value=_pearson_correlation(left_profile, right_profile),
+        left_record_count=len(left_records),
+        right_record_count=len(right_records),
+        pair_count=len(left_profile),
+        exact=True,
+        algorithm="distance_profile_correlation",
+        strategy="distance_profile_correlation",
+        left_representation=left_representation,
+        right_representation=right_representation,
+    )
+
+
+def correlate_spaces(left_records, left_metric, right_records, right_metric, strategy=None):
+    """Alias for compare_spaces for correlation-oriented workflows."""
+    return compare_spaces(left_records, left_metric, right_records, right_metric, strategy)
+
+
 def intrinsic_dimension(records, metric):
     """Estimate expansion dimension from finite metric-space distance growth."""
     return intrinsic_dimension_from_distances(pairwise_distance_matrix(records, metric))
@@ -1187,6 +1272,7 @@ def intrinsic_dimension_from_distances(distances):
 
 __all__ = [
     "ClusteringResult",
+    "CorrelationResult",
     "GraphConnectivityDiagnostics",
     "GraphDegreeDiagnostics",
     "GraphStretchDiagnostics",
@@ -1194,6 +1280,8 @@ __all__ = [
     "GraphConstructionResult",
     "RepresentativeSet",
     "StructureDescription",
+    "compare_spaces",
+    "correlate_spaces",
     "dbscan",
     "describe_structure",
     "find_groups",

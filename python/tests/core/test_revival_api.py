@@ -10,6 +10,7 @@ from metric.metrics import Edit, available
 from metric import mappings, transforms
 from metric.operators import (
     ClusteringResult,
+    CorrelationResult,
     GraphConnectivityDiagnostics,
     GraphDegreeDiagnostics,
     GraphStretchDiagnostics,
@@ -19,6 +20,8 @@ from metric.operators import (
     StructureDescription,
     coverage_representative_indices,
     coverage_representatives,
+    compare_spaces,
+    correlate_spaces,
     dbscan,
     describe_structure,
     exact_knn_graph,
@@ -45,7 +48,7 @@ from metric.operators import (
     symmetrize_graph,
 )
 from metric.spaces import FiniteMetricSpace, MatrixSpace, Space
-from metric.strategies import DBSCAN, FarthestFirst, KMedoids
+from metric.strategies import DBSCAN, DistanceProfileCorrelation, FarthestFirst, KMedoids
 
 
 class RevivalApiTest(unittest.TestCase):
@@ -83,9 +86,12 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIs(metric.operators.GraphConstructionMetadata, GraphConstructionMetadata)
         self.assertIs(metric.operators.GraphConstructionResult, GraphConstructionResult)
         self.assertIs(metric.operators.ClusteringResult, ClusteringResult)
+        self.assertIs(metric.operators.CorrelationResult, CorrelationResult)
         self.assertIs(metric.operators.RepresentativeSet, RepresentativeSet)
         self.assertIs(metric.operators.StructureDescription, StructureDescription)
         self.assertIs(metric.operators.find_groups, find_groups)
+        self.assertIs(metric.operators.compare_spaces, compare_spaces)
+        self.assertIs(metric.operators.correlate_spaces, correlate_spaces)
         self.assertIs(metric.operators.describe_structure, describe_structure)
         self.assertIs(metric.operators.find_representatives, find_representatives)
         self.assertIs(metric.operators.kmedoids, kmedoids)
@@ -127,7 +133,11 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIs(metric.dbscan, dbscan)
         self.assertIs(metric.KMedoids, KMedoids)
         self.assertIs(metric.DBSCAN, DBSCAN)
+        self.assertIs(metric.DistanceProfileCorrelation, DistanceProfileCorrelation)
         self.assertIs(metric.FarthestFirst, FarthestFirst)
+        self.assertIs(metric.CorrelationResult, CorrelationResult)
+        self.assertIs(metric.compare_spaces, compare_spaces)
+        self.assertIs(metric.correlate_spaces, correlate_spaces)
         self.assertIs(metric.exact_knn_graph, exact_knn_graph)
         self.assertIs(metric.exact_knn_graph_edges, exact_knn_graph_edges)
         self.assertIs(metric.exact_radius_graph, exact_radius_graph)
@@ -159,15 +169,19 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIn("GraphConstructionMetadata", metric.__all__)
         self.assertIn("GraphConstructionResult", metric.__all__)
         self.assertIn("ClusteringResult", metric.__all__)
+        self.assertIn("CorrelationResult", metric.__all__)
         self.assertIn("RepresentativeSet", metric.__all__)
         self.assertIn("StructureDescription", metric.__all__)
         self.assertIn("find_groups", metric.__all__)
+        self.assertIn("compare_spaces", metric.__all__)
+        self.assertIn("correlate_spaces", metric.__all__)
         self.assertIn("describe_structure", metric.__all__)
         self.assertIn("find_representatives", metric.__all__)
         self.assertIn("kmedoids", metric.__all__)
         self.assertIn("dbscan", metric.__all__)
         self.assertIn("KMedoids", metric.__all__)
         self.assertIn("DBSCAN", metric.__all__)
+        self.assertIn("DistanceProfileCorrelation", metric.__all__)
         self.assertIn("FarthestFirst", metric.__all__)
         self.assertIn("exact_knn_graph", metric.__all__)
         self.assertIn("exact_knn_graph_edges", metric.__all__)
@@ -289,6 +303,31 @@ class RevivalApiTest(unittest.TestCase):
         self.assertAlmostEqual(description.average_distance, 2.0)
         self.assertAlmostEqual(description.intrinsic_dimension, np.log2(5.0 / 3.0))
         self.assertEqual(space.describe_structure(), description)
+
+        process_space = Space([0, 1, 2, 3, 4, 5], metric=lambda lhs, rhs: abs(lhs - rhs))
+        quality_space = Space([0, 1, 4, 9, 16, 25], metric=lambda lhs, rhs: abs(lhs - rhs))
+        dependency = process_space.compare(quality_space)
+        self.assertIsInstance(dependency, CorrelationResult)
+        self.assertAlmostEqual(dependency.value, 0.8500255011475573)
+        self.assertEqual(dependency.left_record_count, 6)
+        self.assertEqual(dependency.right_record_count, 6)
+        self.assertEqual(dependency.pair_count, 15)
+        self.assertTrue(dependency.exact)
+        self.assertEqual(dependency.algorithm, "distance_profile_correlation")
+        self.assertEqual(dependency.strategy, "distance_profile_correlation")
+        self.assertEqual(dependency.left_representation, "metric_space")
+        self.assertEqual(dependency.right_representation, "metric_space")
+        self.assertEqual(process_space.correlate(quality_space), dependency)
+        self.assertEqual(
+            compare_spaces(process_space.records, process_space.metric, quality_space.records, quality_space.metric),
+            correlate_spaces(process_space.records, process_space.metric, quality_space.records, quality_space.metric),
+        )
+        with self.assertRaises(ValueError):
+            process_space.compare(Space([0, 1, 2], metric=lambda lhs, rhs: abs(lhs - rhs)))
+        with self.assertRaises(TypeError):
+            process_space.compare(quality_space, strategy=KMedoids(groups=2))
+        with self.assertRaises(ValueError):
+            process_space.compare(quality_space, strategy=DistanceProfileCorrelation(method="spearman"))
 
     def test_intrinsic_dimension_estimates_distance_growth(self):
         records = [0, 1, 2, 3, 4]
@@ -625,6 +664,8 @@ class RevivalApiTest(unittest.TestCase):
         self.assertEqual(space.neighbors("cut", 2), [(0, 1), (1, 1)])
         self.assertEqual(space.nearest("cut"), (0, 1))
         self.assertEqual(space.within_radius("cut", 1), [(0, 1), (1, 1)])
+        self.assertTrue(callable(space.compare))
+        self.assertTrue(callable(space.correlate))
 
     def test_numpy_record_arrays_use_custom_metric_callable(self):
         records = np.array([[0.0, 0.0], [3.0, 4.0], [6.0, 8.0]])
