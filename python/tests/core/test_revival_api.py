@@ -317,20 +317,24 @@ class RevivalApiTest(unittest.TestCase):
         space = FiniteMetricSpace(self.records, self.metric)
 
         self.assertEqual(len(space), len(self.records))
+        self.assertEqual(space.ids, [0, 1, 2, 3])
         self.assertEqual(space.version(), 0)
         self.assertFalse(space.is_stale())
         self.assertIs(space.ensure_fresh(), space)
         self.assertEqual(space[0], "cat")
+        self.assertEqual(space.record(0), "cat")
         self.assertEqual(space(0, 1), 1)
         self.assertEqual(space.distance(0, 2), 1)
 
         distances = space.pairwise_distances()
         distances[0][1] = 999
         self.assertEqual(space(0, 1), 1)
+        self.assertEqual(space.pairwise(ids=[0, 2]), [[0, 1], [1, 0]])
 
         matrix = space.to_matrix()
         self.assertIsInstance(matrix, MatrixSpace)
         self.assertIsNot(matrix, space)
+        self.assertEqual(matrix.ids, space.ids)
         self.assertIs(matrix.source_space, space)
         self.assertEqual(matrix.source_version, space.version())
         self.assertEqual(matrix.representation, "matrix")
@@ -392,6 +396,43 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIsInstance(CallableMetric(), Metric)
         with self.assertRaisesRegex(MissingMetricError, "explicit metric"):
             Space(self.records)
+
+    def test_space_from_dataframe_uses_metric_and_id_column(self):
+        class DataFrameLike:
+            def __init__(self, rows):
+                self._rows = rows
+
+            def to_dict(self, orient):
+                if orient != "records":
+                    raise AssertionError(orient)
+                return list(self._rows)
+
+        rows = [
+            {"sample_id": "pump-a", "temperature": 62.0, "events": ("start", "idle")},
+            {"sample_id": "pump-b", "temperature": 65.0, "events": ("start", "idle")},
+            {"sample_id": "valve-c", "temperature": 82.0, "events": ("start", "alarm")},
+        ]
+
+        def row_distance(lhs, rhs):
+            event_penalty = 0.0 if lhs["events"] == rhs["events"] else 10.0
+            return abs(lhs["temperature"] - rhs["temperature"]) + event_penalty
+
+        dataframe = DataFrameLike(rows)
+        space = Space.from_dataframe(dataframe, metric=row_distance, id_column="sample_id", name="equipment")
+
+        self.assertEqual(space.ids, ["pump-a", "pump-b", "valve-c"])
+        self.assertEqual(space.name, "equipment")
+        self.assertEqual(space.record("pump-a"), {"temperature": 62.0, "events": ("start", "idle")})
+        self.assertAlmostEqual(space.distance(0, 1), 3.0)
+        self.assertEqual(space.pairwise(ids=["pump-a", "valve-c"]), [[0.0, 30.0], [30.0, 0.0]])
+        self.assertNotIn("sample_id", space.records[0])
+
+        with self.assertRaisesRegex(MissingMetricError, "explicit metric"):
+            Space.from_dataframe(dataframe)
+        with self.assertRaises(ValueError):
+            Space.from_dataframe(dataframe, metric=row_distance, id_column="sample_id", ids=["a", "b", "c"])
+        with self.assertRaises(KeyError):
+            Space.from_dataframe(DataFrameLike([{"sample_id": "a"}, {"other": "b"}]), metric=row_distance, id_column="sample_id")
 
     def test_nearest_neighbor_helpers_use_record_ids(self):
         space = FiniteMetricSpace(self.records, self.metric)

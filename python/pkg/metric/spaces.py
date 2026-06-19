@@ -1,5 +1,6 @@
 """Finite metric-space helpers for the revived Python API."""
 
+from collections.abc import Mapping
 import operator
 
 from metric.exceptions import MissingMetricError, StaleRepresentationError
@@ -18,14 +19,31 @@ def _coerce_non_negative_integer(value, name):
 class FiniteMetricSpace:
     """Explicit finite metric space backed by a pairwise distance matrix."""
 
-    def __init__(self, records, metric=None, source_space=None, representation="metric_space"):
+    def __init__(
+        self,
+        records,
+        metric=None,
+        source_space=None,
+        representation="metric_space",
+        ids=None,
+        name=None,
+        metadata=None,
+    ):
         if metric is None:
             raise MissingMetricError(
                 "Space requires an explicit metric for arbitrary records. "
                 "Use Space(records, metric=Edit()) or another callable metric."
             )
         self.records = list(records)
+        self.ids = list(range(len(self.records))) if ids is None else list(ids)
+        if len(self.ids) != len(self.records):
+            raise ValueError("ids must have the same length as records")
+        if len(set(self.ids)) != len(self.ids):
+            raise ValueError("ids must be unique")
+        self._id_to_index = {record_id: index for index, record_id in enumerate(self.ids)}
         self.metric = metric
+        self.name = name
+        self.metadata = {} if metadata is None else dict(metadata)
         self.source_space = source_space
         self.source_version = source_space.version() if source_space is not None else None
         self.representation = representation
@@ -43,6 +61,43 @@ class FiniteMetricSpace:
 
     def __call__(self, lhs_index, rhs_index):
         return self.distance(lhs_index, rhs_index)
+
+    @classmethod
+    def from_dataframe(cls, dataframe, metric=None, id_column=None, **kwargs):
+        if metric is None:
+            raise MissingMetricError(
+                "Space.from_dataframe requires an explicit metric. "
+                "Use Space.from_dataframe(df, metric=callable)."
+            )
+        if id_column is not None and "ids" in kwargs:
+            raise ValueError("use either id_column or ids, not both")
+        if not hasattr(dataframe, "to_dict"):
+            raise TypeError("dataframe must provide to_dict('records')")
+
+        try:
+            rows = dataframe.to_dict("records")
+        except TypeError:
+            rows = dataframe.to_dict(orient="records")
+
+        ids = None
+        records = list(rows)
+        if id_column is not None:
+            ids = []
+            feature_records = []
+            for row in records:
+                if not isinstance(row, Mapping):
+                    raise TypeError("dataframe records must be mappings when id_column is used")
+                if id_column not in row:
+                    raise KeyError(f"id_column {id_column!r} is not present in every row")
+                ids.append(row[id_column])
+                feature_records.append({
+                    column: value
+                    for column, value in row.items()
+                    if column != id_column
+                })
+            records = feature_records
+
+        return cls(records, metric=metric, ids=ids, **kwargs)
 
     def version(self):
         return self._version
@@ -67,12 +122,34 @@ class FiniteMetricSpace:
         self.ensure_fresh()
         return self._distances[lhs_index][rhs_index]
 
+    def record(self, record_id):
+        return self.records[self._id_to_index[record_id]]
+
     def pairwise_distances(self):
         self.ensure_fresh()
         return [row[:] for row in self._distances]
 
+    def pairwise(self, ids=None):
+        self.ensure_fresh()
+        if ids is None:
+            return self.pairwise_distances()
+
+        positions = [self._id_to_index[record_id] for record_id in ids]
+        return [
+            [self._distances[lhs][rhs] for rhs in positions]
+            for lhs in positions
+        ]
+
     def to_matrix(self):
-        return FiniteMetricSpace(self.records, self.metric, source_space=self, representation="matrix")
+        return FiniteMetricSpace(
+            self.records,
+            self.metric,
+            source_space=self,
+            representation="matrix",
+            ids=self.ids,
+            name=self.name,
+            metadata=self.metadata,
+        )
 
     def to_tree(self):
         from metric.representations import TreeIndex
