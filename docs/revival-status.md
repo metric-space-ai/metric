@@ -33,6 +33,7 @@ The current local tree implements the first revival slice:
 - Python representatives facade accepts fresh explicit representations and records representation metadata
 - Python engine-style Space compare/correlate intent with a deterministic distance-profile correlation strategy
 - Python compare/correlate facade supports `align="ids"` over stable Space IDs
+- Python compare/correlate facade records fresh explicit left/right representation metadata
 - Python engine-style Space embed intent with deterministic classical MDS and embedding diagnostics
 - Python embed facade accepts fresh explicit representations and records representation metadata
 - Python outlier facade supports strategy-free `Space.outliers(count=...)`, `fraction`, and `threshold`
@@ -270,6 +271,7 @@ The following revival improvements landed on `master` after the `v0.3.2` tag and
 - Python `Space.groups(..., representation=...)` freshness checks and representation metadata for KMedoids and DBSCAN grouping, merged as `3a2a5cf1db2f54b04f55602f27e7e98409e3c27f`
 - Python engine-style Space compare/correlate intent with named `CorrelationResult` objects and distance-profile strategy coverage, merged as `103d680a395ddd748017a1619be0580ffd5607cc`
 - Python `Space.compare(..., align="ids")` and `Space.correlate(..., align="ids")` support over stable Space IDs, merged as `3e6777c5b4bb63355bb2c49c0c15a6f55ef83692`
+- Python `Space.compare(..., representation=..., other_representation=...)` and `Space.correlate(...)` freshness checks and left/right representation metadata, merged as `224855fe4516c0fee0a0c597f487d0b051442a29`
 - engine documentation chapters for metric spaces, representations, intents, strategies, operators, mappings, runtime policies, and migration, merged as `48d19a98315da2132d756ce032cba62eab46f12d`
 - C++ engine outlier intent backed by DBSCAN-noise detection with named `OutlierResult` objects and core smoke coverage, merged as `178c635e331b5acee8f1c868ba48dafe834443a3`
 - Python engine-style Space outlier intent with named `OutlierResult` objects and DBSCAN-noise strategy coverage, merged as `3974b358beb5dbe23b181126fe2915e2f065bcba`
