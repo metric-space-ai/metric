@@ -4,7 +4,12 @@ from collections.abc import Mapping
 import math
 import operator
 
-from metric.exceptions import MissingMetricError, StaleRepresentationError
+from metric.exceptions import (
+    AmbiguousIntentError,
+    MissingMetricError,
+    StaleRepresentationError,
+    StrategyUnavailableError,
+)
 from metric.runtime import require_exact_runtime
 
 
@@ -405,8 +410,23 @@ class Space(FiniteMetricSpace):
 
         return compress_space(self.records, self.metric, count, strategy=strategy)
 
-    def map(self, transform, metric=None, *, runtime=None):
+    def map(self, transform=None, metric=None, *, target=None, strategy=None, runtime=None):
         require_exact_runtime(runtime)
+        if transform is None and target is None:
+            raise AmbiguousIntentError("Space.map requires transform=... or target=...")
+        if transform is not None and target is not None:
+            raise AmbiguousIntentError("Space.map uses either transform or target, not both")
+        if strategy is not None:
+            raise StrategyUnavailableError(
+                "Space.map strategy mappings are not promoted yet. "
+                "Use transform=... with metric=... for deterministic maps."
+            )
+        if target is not None:
+            raise StrategyUnavailableError(
+                "Space.map target mappings are not promoted yet. "
+                "Use transform=... with metric=... for deterministic maps."
+            )
+
         from metric.operators import map_space
 
         return map_space(self.records, transform, self.metric if metric is None else metric)

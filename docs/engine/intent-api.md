@@ -47,7 +47,7 @@ embedding = space.embed(strategy=ClassicMDS(dimensions=2))
 dependency = space.compare(other_space, DistanceProfileCorrelation())
 reduction = space.reduce(count=2)
 compression = space.compress(count=2)
-mapped = space.map(transform, metric=target_metric)
+mapped = space.map(transform=transform, metric=target_metric)
 structure = space.describe()
 ```
 

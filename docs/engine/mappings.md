@@ -34,7 +34,7 @@ The current engine mapping layer includes:
 
 ## Python Status
 
-Python exposes `Space.map` and `metric.operators.map_space` for deterministic transforms into derived `Space` objects. It also exposes `Space.denoise` and `metric.operators.denoise_space` for DBSCAN-noise filtering into derived `Space` objects. Python also exposes `metric.mappings` as a beta compatibility bridge for installed legacy names; learned or inverse mapping facades should be promoted only when they have named result contracts, examples, and wheel CI coverage.
+Python exposes `Space.map(transform=..., metric=...)` and `metric.operators.map_space` for deterministic transforms into derived `Space` objects. The positional compatibility form `Space.map(transform, metric)` remains valid, but no-argument map calls raise `metric.AmbiguousIntentError` and target/strategy mapping forms raise `metric.StrategyUnavailableError` until learned or fitted mapping contracts are promoted. Python also exposes `Space.denoise` and `metric.operators.denoise_space` for DBSCAN-noise filtering into derived `Space` objects. Python also exposes `metric.mappings` as a beta compatibility bridge for installed legacy names; learned or inverse mapping facades should be promoted only when they have named result contracts, examples, and wheel CI coverage.
 
 ## Promotion Rule
 
