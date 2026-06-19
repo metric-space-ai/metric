@@ -89,6 +89,23 @@ gh workflow run publish-python.yml \
 
 Use `publish=true` only after confirming the target package index, credentials, and package ownership. If PyPI returns `403 Forbidden`, rotate the repository PyPI credentials or configure PyPI Trusted Publishing, confirm the package name is still available, and rerun the same workflow with `ref=v0.3.1` and `publish=true`.
 
+For Trusted Publishing, configure PyPI with:
+
+- owner: `metric-space-ai`
+- repository: `metric`
+- workflow: `publish-python.yml`
+- environment: `pypi`
+
+Then run:
+
+```shell
+gh workflow run publish-python.yml \
+  --repo metric-space-ai/metric \
+  -f ref=v0.3.1 \
+  -f publish=true \
+  -f auth_method=trusted-publishing
+```
+
 ## Artifacts
 
 - source archive from the release tag, produced by `.github/workflows/release-artifacts.yml`
