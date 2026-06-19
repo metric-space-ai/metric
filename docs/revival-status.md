@@ -19,6 +19,7 @@ The current local tree implements the first revival slice:
 - Python engine-style Space grouping intent with KMedoids and DBSCAN strategies
 - Python engine-style Space intent facade methods for representatives and structure diagnostics
 - Python engine-style Space compare/correlate intent with a deterministic distance-profile correlation strategy
+- Python engine-style Space outlier intent with DBSCAN-noise strategy
 - Python beta compatibility bridge modules under `metric.mappings` and `metric.transforms`
 - promoted C++ examples under `examples/core/`
 - promoted Python examples under `python/examples/metric_space/`
@@ -233,6 +234,7 @@ The following revival improvements landed on `master` after the `v0.3.2` tag and
 - Python engine-style Space compare/correlate intent with named `CorrelationResult` objects and distance-profile strategy coverage, merged as `103d680a395ddd748017a1619be0580ffd5607cc`
 - engine documentation chapters for metric spaces, representations, intents, strategies, operators, mappings, runtime policies, and migration, merged as `48d19a98315da2132d756ce032cba62eab46f12d`
 - C++ engine outlier intent backed by DBSCAN-noise detection with named `OutlierResult` objects and core smoke coverage, merged as `178c635e331b5acee8f1c868ba48dafe834443a3`
+- Python engine-style Space outlier intent with named `OutlierResult` objects and DBSCAN-noise strategy coverage, merged as `3974b358beb5dbe23b181126fe2915e2f065bcba`
 
 ## Historical Code Policy
 
