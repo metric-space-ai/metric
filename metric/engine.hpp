@@ -11,6 +11,7 @@
 #include "core/neighbor.hpp"
 #include "core/record_id.hpp"
 #include "core/result.hpp"
+#include "intent/compress.hpp"
 #include "intent/compare.hpp"
 #include "intent/describe.hpp"
 #include "intent/denoise.hpp"

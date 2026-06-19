@@ -73,6 +73,29 @@ template <typename Distance> struct RepresentativeSet {
 	auto operator[](std::size_t index) const -> RecordId { return representatives[index]; }
 };
 
+template <typename Space> struct CompressionResult {
+	using space_type = Space;
+	using distance_type = typename Space::distance_type;
+
+	Space space;
+	std::vector<RecordId> source_record_ids;
+	std::vector<std::size_t> assignments;
+	std::vector<distance_type> nearest_representative_distances;
+	std::size_t source_record_count{};
+	std::size_t compressed_record_count{};
+	double compression_ratio{};
+	bool exact{true};
+	std::string operator_name;
+	std::string compression;
+	std::string strategy;
+	std::string representation;
+	bool lossy{true};
+	bool inverse_supported{false};
+
+	auto size() const -> std::size_t { return space.size(); }
+	auto empty() const -> bool { return space.empty(); }
+};
+
 template <typename Score> struct Outlier {
 	using score_type = Score;
 
@@ -165,6 +188,7 @@ namespace metric {
 template <typename Distance> using NeighborSet = core::NeighborSet<Distance>;
 template <typename Distance> using ClusteringResult = core::ClusteringResult<Distance>;
 template <typename Distance> using RepresentativeSet = core::RepresentativeSet<Distance>;
+template <typename Space> using CompressionResult = core::CompressionResult<Space>;
 template <typename Score> using Outlier = core::Outlier<Score>;
 template <typename Score> using OutlierResult = core::OutlierResult<Score>;
 template <typename Value = double> using EntropyResult = core::EntropyResult<Value>;

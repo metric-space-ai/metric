@@ -12,7 +12,7 @@ Intent APIs are named by what users want to do, not by the algorithm used to do 
 | Show coordinates | `embed` | `Space.embed` | C++ PCFA path; Python ClassicMDS path |
 | Find outliers | `find_outliers` | `Space.outliers` | C++ and Python DBSCAN-noise path |
 | Reduce complexity | `reduce` | `Space.reduce` | C++ PCFA-backed path; Python representative/medoid reduction path |
-| Compress a space | `compress` (roadmap) | `Space.compress` | Python representative/medoid compression path |
+| Compress a space | `compress` | `Space.compress` | C++ farthest-first representative path; Python representative/medoid path |
 | Map to another space | `map`, `metric::mappings::*` | `Space.map` | C++ and Python deterministic transform paths; C++ mapping conventions |
 | Denoise a space | `denoise` | `Space.denoise` | C++ and Python DBSCAN-noise filter paths |
 
@@ -27,6 +27,7 @@ auto representatives = metric::find_representatives(space, 2);
 auto outliers = metric::find_outliers(space, metric::strategies::dbscan(2.0, 2));
 auto dependency = metric::compare(space_a, space_b, metric::strategies::mgc{});
 auto embedding = metric::embed(space, metric::strategies::pcfa(2));
+auto compression = metric::compress(space, 2, metric::strategies::farthest_first{});
 auto mapped = metric::map(space, transform, target_metric);
 auto denoised = metric::denoise(space, metric::strategies::dbscan(2.0, 2));
 auto structure = metric::describe_structure(space);
