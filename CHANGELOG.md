@@ -56,6 +56,7 @@
 - Add exact graph edge fixture documentation for k-nearest-neighbor and radius edge lists.
 - Add CI-tested C++ and Python engine flagship examples for strings, process curves, histograms, and cross-space dependency.
 - Add engine documentation chapters for metric spaces, representations, intents, strategies, operators, mappings, runtime policies, and migration.
+- Update the README quickstart to show the C++ engine path, strategy selection, representation swap, and mapping-derived spaces.
 
 ## [0.3.2] - 2026-06-19
 
