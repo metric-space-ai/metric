@@ -76,8 +76,8 @@ space.compare(other_space, strategy=DistanceProfileCorrelation())
 space.compare(other_space, align="ids")
 space.compare(other_space, runtime=RuntimePolicy(exact=True))
 space.correlate(other_space, align="ids")
-space.representatives(k=3)
-space.representatives(k=3, strategy=FarthestFirst(seed_index=1))
+space.representatives(count=3)
+space.representatives(count=3, strategy=FarthestFirst(seed_index=1))
 space.reduce(count=3)
 space.reduce(strategy=KMedoids(groups=3))
 space.compress(count=3)
@@ -196,7 +196,7 @@ separated_records = separated_representatives(records, Edit(), minimum_distance=
 covered_ids = coverage_representative_indices(records, Edit(), radius=1)
 covered_records = coverage_representatives(records, Edit(), radius=1)
 dimension = intrinsic_dimension(records, Edit())
-representative_result = find_representatives(records, Edit(), k=2, strategy=FarthestFirst(seed_index=0))
+representative_result = find_representatives(records, Edit(), count=2, strategy=FarthestFirst(seed_index=0))
 reduction = reduce_space(records, Edit(), count=2, strategy=FarthestFirst(seed_index=0))
 compression = compress_space(records, Edit(), count=2, strategy=FarthestFirst(seed_index=0))
 mapped = map_space(records, transform, target_metric)
@@ -217,7 +217,7 @@ structure = describe_structure(records, Edit())
 
 `representative_indices` and `representatives` use deterministic farthest-first traversal over the finite metric space. They select existing records rather than vector centroids, start from `seed_index=0` by default, and resolve equal-distance ties by record order.
 
-`find_representatives` returns a `RepresentativeSet` with selected source indices, nearest-representative distances for every record, coverage radius, average nearest-representative distance, strategy metadata, and representation metadata. `Space.representatives(...)` exposes the same result from the `Space` facade.
+`find_representatives` returns a `RepresentativeSet` with selected source indices, nearest-representative distances for every record, coverage radius, average nearest-representative distance, strategy metadata, and representation metadata. Use `count=` for the semantic target size; the older `k` name remains accepted for compatibility. `Space.representatives(...)` exposes the same result from the `Space` facade.
 
 `reduce_space` returns a `ReductionResult` with a reduced `Space`, selected source-record IDs, source-to-reduced assignments, nearest-representative distances, strategy metadata, and explicit `inverse_supported=False` metadata. Calling `inverse_transform()` on this result raises `metric.UnsupportedOperationError`. `Space.reduce(count=..., strategy=...)` exposes the same result. The first Python-core strategies are `FarthestFirst` and `KMedoids`, so reduction works for arbitrary records plus a metric rather than only vector records.
 

@@ -1256,9 +1256,18 @@ def _coerce_farthest_first(strategy):
     raise TypeError("strategy must be a FarthestFirst strategy")
 
 
-def find_representatives(records, metric, k, strategy=None):
+def _coerce_representative_request(k=None, count=None):
+    if k is None and count is None:
+        raise TypeError("count is required")
+    if k is not None and count is not None:
+        raise ValueError("use either k or count, not both")
+    return count if count is not None else k
+
+
+def find_representatives(records, metric, k=None, strategy=None, *, count=None):
     """Select representatives and return an engine-style result object."""
     strategy = _coerce_farthest_first(strategy)
+    k = _coerce_representative_request(k, count)
     selected, nearest_selected_distances, records = _farthest_first_selection(
         records,
         metric,

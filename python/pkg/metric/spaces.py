@@ -393,11 +393,11 @@ class Space(FiniteMetricSpace):
             inverse_supported=False,
         )
 
-    def representatives(self, k, strategy=None, *, runtime=None):
+    def representatives(self, k=None, strategy=None, *, count=None, runtime=None):
         require_exact_runtime(runtime)
         from metric.operators import find_representatives
 
-        return find_representatives(self.records, self.metric, k, strategy=strategy)
+        return find_representatives(self.records, self.metric, k, strategy=strategy, count=count)
 
     def reduce(self, count=None, strategy=None, *, runtime=None):
         require_exact_runtime(runtime)
