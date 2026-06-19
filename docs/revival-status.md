@@ -26,6 +26,7 @@ The current local tree implements the first revival slice:
 - CI workflows for C++ core, Python wheels, docs/formatting, revived-source formatting, and GitHub Pages artifacts
 - release artifact workflow for source archive, Python sdist, Python wheel built from that sdist, and C++ core/downstream evidence
 - manual PyPI publishing workflow for checked sdist and cibuildwheel wheel artifacts, with repository-secret and Trusted Publishing authentication paths
+- promoted Python examples for strings, structured records, time-series alignment, and histogram transport, with subprocess execution from the core Python API tests
 - manual-only legacy workflows for broad historical coverage
 
 ## Current Local Verification
@@ -54,8 +55,9 @@ python -m pip install --upgrade build
 python -m build ./python --sdist --outdir build/wheelhouse-revival
 METRIC_PYTHON_USE_BLAS=OFF python -m pip wheel build/wheelhouse-revival/*.tar.gz --no-deps -w build/wheelhouse-revival
 python -m pip install --force-reinstall build/wheelhouse-revival/*.whl
-PYTHONDONTWRITEBYTECODE=1 python python/examples/metric_space/string_edit_space.py
-PYTHONDONTWRITEBYTECODE=1 python python/examples/metric_space/structured_record_space.py
+for example in python/examples/metric_space/*.py; do
+  PYTHONDONTWRITEBYTECODE=1 python "$example"
+done
 PYTHONDONTWRITEBYTECODE=1 python -m unittest discover -s python/tests/core -v
 
 ruby scripts/check_revival_whitespace.rb
@@ -150,6 +152,15 @@ The `v0.3.2` release includes the following revival improvements that landed on 
 - Python core metric-contract checks for edit distance, NumPy record callables, and structured-record callables, merged as `3073280344ef66831fbcfcf9197df7d01050b82c`
 - revival source-format checks for promoted source and docs files, merged as `cf35266ba5e18b6113f8eb3aa8715ac500050710`
 - intrinsic-dimension diagnostics in C++ and Python, merged as `d510e0ceb78a307a4e91545837ee4e6ff81eccc3`
+
+## Post-v0.3.2 Master Progress
+
+The following revival improvements landed on `master` after the `v0.3.2` tag and are unreleased until the next tag:
+
+- promoted Python time-series metric-space example using an alignment-aware callable, merged as `30b75635dfc26010d2f400539dd69952fc787f41`
+- promoted Python histogram metric-space example using a one-dimensional transport callable, merged as `dbed0eba25455e420baba79f49d134c126dd6c14`
+- Python core API tests now subprocess-run every `python/examples/metric_space/*.py` example, merged as `dbed0eba25455e420baba79f49d134c126dd6c14`
+- testing and release-checklist docs now describe the expanded promoted Python example gate, merged as `dbed0eba25455e420baba79f49d134c126dd6c14`
 
 ## Historical Code Policy
 
