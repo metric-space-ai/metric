@@ -350,6 +350,10 @@ class RevivalApiTest(unittest.TestCase):
             if historical is not None:
                 self.assertIs(getattr(distance_module, alias), historical)
 
+    def test_top_level_hides_debug_extension_exports(self):
+        for name in ("DoubleVector", "LongVector", "test"):
+            self.assertFalse(hasattr(metric, name), name)
+
     def test_promoted_metric_space_examples_run(self):
         examples_root = Path(__file__).resolve().parents[2] / "examples"
         examples = sorted((examples_root / "metric_space").glob("*.py"))
