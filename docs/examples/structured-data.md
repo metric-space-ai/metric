@@ -4,6 +4,8 @@ Structured records often have a more meaningful native distance than a vector em
 
 Promoted examples that currently run in the core CI path:
 
+- [string_edit_space.py](../../python/examples/metric_space/string_edit_space.py): Python strings compared with edit distance
+- [structured_record_space.py](../../python/examples/metric_space/structured_record_space.py): Python structured records compared with a domain metric callable
 - [metric_space_strings.cpp](../../examples/core/metric_space_strings.cpp): strings compared with edit distance
 - [custom_metric_space.cpp](../../examples/core/custom_metric_space.cpp): strings compared with a custom padded Hamming metric
 - [time_series_twed_space.cpp](../../examples/core/time_series_twed_space.cpp): process curves compared with TWED

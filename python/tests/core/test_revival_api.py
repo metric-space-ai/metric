@@ -79,6 +79,36 @@ class RevivalApiTest(unittest.TestCase):
         self.assertEqual(range_neighbors(records, euclidean, np.array([3.0, 4.0]), 0.0), [(1, 0.0)])
         self.assertAlmostEqual(pairwise_distance_matrix(records, euclidean)[1][2], 5.0)
 
+    def test_structured_records_use_domain_metric_callable(self):
+        records = [
+            {"id": "pump-a", "status": "ok", "temperature_c": 62.0, "events": ("start", "load", "idle")},
+            {"id": "pump-b", "status": "ok", "temperature_c": 64.5, "events": ("start", "load", "idle")},
+            {"id": "valve-c", "status": "warn", "temperature_c": 82.0, "events": ("start", "alarm", "manual")},
+            {"id": "pump-d", "status": "ok", "temperature_c": 61.0, "events": ("start", "load", "stop")},
+        ]
+        query = {"status": "ok", "temperature_c": 63.0, "events": ("start", "load", "idle")}
+
+        def padded_hamming(lhs, rhs):
+            width = max(len(lhs), len(rhs))
+            padded_lhs = tuple(lhs) + (None,) * (width - len(lhs))
+            padded_rhs = tuple(rhs) + (None,) * (width - len(rhs))
+            return sum(left != right for left, right in zip(padded_lhs, padded_rhs))
+
+        def structured_record_distance(lhs, rhs):
+            status_penalty = 0.0 if lhs["status"] == rhs["status"] else 10.0
+            temperature_penalty = abs(lhs["temperature_c"] - rhs["temperature_c"]) / 10.0
+            event_penalty = padded_hamming(lhs["events"], rhs["events"])
+            return status_penalty + temperature_penalty + event_penalty
+
+        space = Space(records, structured_record_distance)
+
+        nearest_id, nearest_distance = space.nearest(query)
+        self.assertEqual(records[nearest_id]["id"], "pump-a")
+        self.assertAlmostEqual(nearest_distance, 0.1)
+        self.assertGreater(space.distance(0, 2), 10.0)
+        self.assertEqual(space.neighbors(query, 2)[0][0], 0)
+        self.assertAlmostEqual(pairwise_distance_matrix(records, structured_record_distance)[0][1], 0.25)
+
 
 if __name__ == "__main__":
     unittest.main()
