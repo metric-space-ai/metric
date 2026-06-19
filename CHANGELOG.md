@@ -14,6 +14,7 @@
 - Add the first C++ engine mapping model conventions with `MappingResult` and a clustered-space mapping adapter.
 - Add a C++ engine PCFA mapping adapter with explicit fit, transform, and inverse-transform support.
 - Add C++ engine compare/correlate intent helpers with an explicit MGC strategy.
+- Add a C++ engine reduce intent backed by the PCFA strategy.
 
 ### Algorithm Changes
 

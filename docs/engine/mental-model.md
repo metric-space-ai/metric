@@ -77,6 +77,7 @@ The first semantic intent helpers live at the `metric::find_*` layer:
 - `metric::compare(space_a, space_b)`
 - `metric::compare(space_a, space_b, metric::strategies::mgc{})`
 - `metric::correlate(space_a, space_b)`
+- `metric::reduce(space, metric::strategies::pcfa(components))`
 
 These are the first user-facing names that describe intent before algorithm. Strategy objects select implementation details while preserving the same result types returned by the operator layer.
 
@@ -97,6 +98,8 @@ The first mapping convention lives under `metric::mappings`:
 Clustered-space mapping turns a `ClusteringResult` into a derived `MetricSpace`. Each derived record represents one non-noise cluster, stores the source `RecordId`s that formed it, and uses the source-space distance between cluster representatives as the derived metric. Inverse reconstruction is explicit and currently marked unsupported.
 
 PCFA mapping lives in `<metric/mappings/pcfa.hpp>` because it wraps the LAPACK-backed legacy PCFA implementation. It fits a linear encoder to vector-like records, transforms a source space into an encoded metric space, stores one-to-one source lineage, and exposes explicit inverse reconstruction through the fitted model.
+
+The PCFA-backed reduce intent lives in `<metric/intent/reduce.hpp>` for the same reason. It keeps the user-facing operation semantic while selecting PCFA as an explicit reduction strategy.
 
 ## Current Contract
 
