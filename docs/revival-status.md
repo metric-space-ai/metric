@@ -59,6 +59,7 @@ The current local tree implements the first revival slice:
 - CI-tested C++ and Python engine flagship examples for strings, process curves, histograms, and cross-space dependency
 - CI-tested Python engine flagship example for mixed structured records with a custom composite metric
 - native C++ DNN baseline smoke coverage for RegressionMSE, RMSProp, row-as-observation network training, dense Autoencoder train/encode/decode/save/load, and fully connected parameter serialization round trips
+- native C++ DNN `Network` training hooks for forward activation capture, anchored layer-output backpropagation, and explicit optimizer updates
 - direct Python smoke gates run promoted metric-space and engine examples together
 - engine documentation chapters for metric spaces, representations, intents, strategies, operators, mappings, runtime policies, and migration
 - README engine quickstart for C++ engine intents, strategy selection, representation swaps, and mapping-derived spaces
@@ -290,6 +291,7 @@ The following revival improvements landed on `master` after the `v0.3.2` tag and
 - CI-tested C++ and Python engine flagship examples for strings, process curves, histograms, and cross-space dependency, merged as `9d9d89dad779c836fe2f1334b68000938d76c9c6`
 - CI-tested Python engine demo for mixed structured records with a custom composite metric, merged as `558e9f6ce2dfad3f7df8fc1d2a79dc907ffba21b`
 - native C++ DNN baseline smoke coverage and fully connected logical parameter serialization round trips, merged as `e7b520c5d62a9a8a6589d76a14789e3d100d16a2`
+- native C++ DNN `Network` training hooks for forward activation capture, anchored layer-output backpropagation, and explicit optimizer updates, merged as `d9398ffb2d6aaeee08097c8517f36a060a89d30d`
 - direct Python smoke gates now run promoted metric-space and engine examples together, merged as `06f22b20e7d44c7f2058b81d43f513fc157f36b0`
 - Python engine-style Space intent facade methods for representatives and structure diagnostics with named result objects and core test coverage, merged as `1849c29a25122b31605945295c91710cfc6a126f`
 - Python `Space.representatives(count=...)` and `find_representatives(..., count=...)` semantic target aliases, merged as `5e2986bc788a758cccdcd8cbb2e122c77d2796d7`
