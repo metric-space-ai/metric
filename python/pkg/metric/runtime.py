@@ -48,6 +48,20 @@ class RuntimePolicy:
         return f"{accuracy}_{self.cache_mode}_{execution}"
 
 
+@dataclass(frozen=True)
+class RuntimeDiagnostics:
+    """Inspectable runtime policy and representation decision metadata."""
+
+    policy_name: str
+    exact: bool
+    parallel: bool
+    cache_mode: str
+    representation: str
+    intent: str | None = None
+    supported: bool = True
+    reason: str = ""
+
+
 def runtime_policy(runtime=None):
     """Return a RuntimePolicy from None, a RuntimePolicy, or a mapping."""
 
@@ -70,6 +84,26 @@ def require_exact_runtime(runtime=None):
             "Use RuntimePolicy(exact=True) or omit runtime=."
         )
     return policy
+
+
+def runtime_diagnostics(runtime=None, *, representation="metric_space", intent=None):
+    """Describe the normalized runtime policy and chosen representation."""
+
+    policy = runtime_policy(runtime)
+    supported = policy.exact
+    reason = ""
+    if not supported:
+        reason = "approximate runtime policies are not promoted in the Python facade yet"
+    return RuntimeDiagnostics(
+        policy_name=policy.name,
+        exact=policy.exact,
+        parallel=policy.parallel,
+        cache_mode=policy.cache_mode,
+        representation="metric_space" if representation is None else representation,
+        intent=intent,
+        supported=supported,
+        reason=reason,
+    )
 
 
 def exact(cache="auto", parallel=False):
@@ -102,6 +136,7 @@ def serial(policy=None):
 
 __all__ = [
     "CachePolicy",
+    "RuntimeDiagnostics",
     "RuntimePolicy",
     "approximate",
     "exact",
@@ -109,6 +144,7 @@ __all__ = [
     "materialized",
     "parallel",
     "require_exact_runtime",
+    "runtime_diagnostics",
     "runtime_policy",
     "serial",
 ]

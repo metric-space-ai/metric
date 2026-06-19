@@ -91,7 +91,7 @@ from .operators import (
     separated_representatives,
     symmetrize_graph,
 )
-from .runtime import CachePolicy, RuntimePolicy
+from .runtime import CachePolicy, RuntimeDiagnostics, RuntimePolicy, runtime_diagnostics
 from .spaces import FiniteMetricSpace, MatrixSpace, Space
 from .strategies import ClassicMDS, DBSCAN, DistanceProfileCorrelation, FarthestFirst, KMedoids
 

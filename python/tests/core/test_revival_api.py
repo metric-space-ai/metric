@@ -72,7 +72,7 @@ from metric.operators import (
     symmetrize_graph,
 )
 from metric.representations import GraphIndex, TreeIndex, graph, tree
-from metric.runtime import CachePolicy, RuntimePolicy
+from metric.runtime import CachePolicy, RuntimeDiagnostics, RuntimePolicy, runtime_diagnostics
 from metric.spaces import FiniteMetricSpace, MatrixSpace, Space
 from metric.strategies import ClassicMDS, DBSCAN, DistanceProfileCorrelation, FarthestFirst, KMedoids
 
@@ -116,6 +116,8 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIs(metric.runtime, runtime)
         self.assertIs(metric.runtime.RuntimePolicy, RuntimePolicy)
         self.assertIs(metric.runtime.CachePolicy, CachePolicy)
+        self.assertIs(metric.runtime.RuntimeDiagnostics, RuntimeDiagnostics)
+        self.assertIs(metric.runtime.runtime_diagnostics, runtime_diagnostics)
         self.assertTrue(issubclass(UnsupportedOperationError, MetricError))
         self.assertTrue(issubclass(StrategyUnavailableError, MetricError))
         self.assertTrue(issubclass(StrategyParameterError, MetricError))
@@ -305,6 +307,8 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIn("coverage_representatives", metric.__all__)
         self.assertIn("RuntimePolicy", metric.__all__)
         self.assertIn("CachePolicy", metric.__all__)
+        self.assertIn("RuntimeDiagnostics", metric.__all__)
+        self.assertIn("runtime_diagnostics", metric.__all__)
         self.assertEqual(mappings.STABILITY, "beta")
         self.assertEqual(transforms.STABILITY, "beta")
         self.assertIsInstance(representations.matrix(Space(self.records, self.metric)), MatrixSpace)
@@ -900,6 +904,8 @@ class RevivalApiTest(unittest.TestCase):
             space.map(transform=lambda record: record, representation=stale_matrix)
         with self.assertRaises(StaleRepresentationError):
             space.compare(space, representation=stale_matrix)
+        with self.assertRaises(StaleRepresentationError):
+            space.runtime_diagnostics(representation=stale_matrix)
 
     def test_intrinsic_dimension_estimates_distance_growth(self):
         records = [0, 1, 2, 3, 4]
@@ -1252,6 +1258,7 @@ class RevivalApiTest(unittest.TestCase):
         self.assertTrue(callable(space.reduce))
         self.assertTrue(callable(space.compress))
         self.assertTrue(callable(space.map))
+        self.assertTrue(callable(space.runtime_diagnostics))
 
     def test_runtime_policy_is_explicit_and_exact(self):
         space = Space(self.records, self.metric)
@@ -1260,6 +1267,26 @@ class RevivalApiTest(unittest.TestCase):
         self.assertEqual(policy.cache_mode, "materialized")
         self.assertEqual(policy.name, "exact_materialized_parallel")
         self.assertEqual(runtime.materialized(runtime.parallel()).name, "exact_materialized_parallel")
+        diagnostics = runtime_diagnostics(policy, representation="matrix", intent="neighbors")
+        self.assertIsInstance(diagnostics, RuntimeDiagnostics)
+        self.assertEqual(diagnostics.policy_name, "exact_materialized_parallel")
+        self.assertTrue(diagnostics.exact)
+        self.assertTrue(diagnostics.parallel)
+        self.assertEqual(diagnostics.cache_mode, "materialized")
+        self.assertEqual(diagnostics.representation, "matrix")
+        self.assertEqual(diagnostics.intent, "neighbors")
+        self.assertTrue(diagnostics.supported)
+        self.assertEqual(diagnostics.reason, "")
+        space_diagnostics = space.runtime_diagnostics(
+            representation=space.to_matrix(),
+            runtime=policy,
+            intent="neighbors",
+        )
+        self.assertEqual(space_diagnostics.representation, "matrix")
+        self.assertEqual(space_diagnostics.policy_name, policy.name)
+        approximate_diagnostics = runtime_diagnostics(RuntimePolicy(exact=False), representation="tree")
+        self.assertFalse(approximate_diagnostics.supported)
+        self.assertIn("approximate", approximate_diagnostics.reason)
         self.assertEqual(space.neighbors("cut", count=2, runtime=policy), [(0, 1), (1, 1)])
         self.assertEqual(space.neighbors("cut", count=2, representation=space.to_tree(), runtime=policy), [(0, 1), (1, 1)])
         self.assertEqual(space.describe(runtime=policy).record_count, len(self.records))

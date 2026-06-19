@@ -20,6 +20,23 @@ The first C++ runtime policy surface lives under `metric::runtime`:
 
 `runtime::approximate()` is reserved. It currently throws for neighbor lookup instead of silently selecting an approximate algorithm.
 
+## Python Runtime Facade
+
+Python exposes `RuntimePolicy`, `CachePolicy`, `RuntimeDiagnostics`, and `runtime_diagnostics(...)` through `metric.runtime` and the top-level `metric` package. Promoted `Space` intent methods accept `runtime=` and currently execute exact deterministic paths only; approximate policies are explicit placeholders.
+
+```python
+from metric import RuntimePolicy
+
+policy = RuntimePolicy(exact=True, parallel=True, cache="materialized")
+diagnostics = space.runtime_diagnostics(
+    runtime=policy,
+    representation=space.to_matrix(),
+    intent="neighbors",
+)
+```
+
+`diagnostics.representation` records the selected execution representation, while `supported` and `reason` explain whether the normalized policy is promoted by the current Python facade.
+
 ## Cache Staleness
 
 Representations capture `space.version()` at construction. `runtime::cache(...)` wraps a representation and delegates `is_stale()` to that version check.
@@ -35,6 +52,6 @@ auto after = matrix.is_stale();
 
 - Approximate policies are explicit placeholders until backed by real approximate execution paths.
 - Parallel policy metadata is exposed before broad parallel execution is implemented.
-- Python does not yet expose runtime policies as first-class objects.
+- Python runtime diagnostics report policy and representation metadata; they do not yet switch execution to approximate or broadly parallel implementations.
 
 This conservative behavior is intentional: no hidden all-pairs materialization or approximate search should happen without an explicit policy or documented default.
