@@ -8,6 +8,8 @@ RecordSet + Metric -> MetricSpace -> Intent -> Strategy -> Representation -> Run
 
 This model is the public architecture of the engine.
 
+The first implementation slice is documented in [Engine Mental Model](mental-model.md).
+
 ## Core Idea
 
 A metric space is not a vector matrix. It is a set of records with a distance function.
