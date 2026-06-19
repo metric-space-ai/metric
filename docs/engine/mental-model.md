@@ -41,14 +41,17 @@ They are views or materialized execution structures over the same `MetricSpace`;
 The first engine operators live under `metric::operators` and return named result objects:
 
 - `metric::NeighborSet<Distance>`
+- `metric::ClusteringResult<Distance>`
 - `metric::operators::knn(space, query, count)`
 - `metric::operators::knn(space, query_id, count)`
 - `metric::operators::knn(distance_provider, query_id, count)`
 - `metric::operators::knn(neighbor_index, query, count)`
 - `metric::operators::range(space, query, radius)`
 - `metric::operators::range(distance_provider, query_id, radius)`
+- `metric::operators::kmedoids(space, cluster_count)`
+- `metric::operators::kmedoids(distance_provider, cluster_count)`
 
-This is still the implementation layer, not the final intent API. It lets the same nearest-neighbor operation run against an implicit `MetricSpace`, a materialized `MatrixCache`, or a neighbor index while returning stable `RecordId` values.
+This is still the implementation layer, not the final intent API. It lets the same nearest-neighbor operation run against an implicit `MetricSpace`, a materialized `MatrixCache`, or a neighbor index while returning stable `RecordId` values. It also lets the first grouping operator run against either a space or distance provider while returning medoids as `RecordId`s.
 
 ## Current Contract
 
@@ -78,6 +81,8 @@ auto neighbors = tree.knn(std::string("metricks"), 2);
 
 auto exact_neighbors = metric::operators::knn(space, std::string("metricks"), 2);
 auto indexed_neighbors = metric::operators::knn(tree, std::string("metricks"), 2);
+
+auto groups = metric::operators::kmedoids(matrix, 2);
 ```
 
 The important shift is vocabulary: engine code starts from a metric space and stable record IDs. Algorithm names and representation choices come later as strategies and execution structures. A representation reports stale state when the source space version changes:

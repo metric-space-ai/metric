@@ -108,7 +108,7 @@ Result objects preserve:
 - metric assumptions
 - source-to-target lineage when a derived space or mapping is produced
 
-The first engine operator result is `metric::NeighborSet<Distance>`, returned by nearest-neighbor operators over spaces, distance providers, and neighbor indexes.
+The first engine operator results are `metric::NeighborSet<Distance>`, returned by nearest-neighbor operators over spaces, distance providers, and neighbor indexes, and `metric::ClusteringResult<Distance>`, returned by the first k-medoids grouping operator.
 
 ## Capabilities
 
