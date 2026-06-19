@@ -5,12 +5,14 @@
 ### Algorithm Changes
 
 - Run every promoted Python metric-space example from the core Python API tests so wheel and PyPI build gates share the same example coverage.
+- Add Python `representative_indices` and `representatives` helpers using deterministic farthest-first traversal over finite metric spaces.
 
 ### Documentation and Examples
 
 - Add a promotion-gated research roadmap for diagnostics, representative selection, sparse graphs, cross-space dependency discovery, denoising, vector-database adapters, and benchmarks.
 - Add a promoted Python time-series metric-space example using an alignment-aware callable on the core wheel path.
 - Add a promoted Python histogram metric-space example using a one-dimensional transport callable on the core wheel path.
+- Add a promoted Python representative-selection example using histogram records and transport distance on the core wheel path.
 
 ## [0.3.2] - 2026-06-19
 

@@ -24,7 +24,7 @@ The records are strings. Edit distance defines the geometry without an embedding
 - `Space`: minimal intent-first finite metric space facade
 - `FiniteMetricSpace`: finite metric space over records
 - `MatrixSpace`: compatibility alias for `FiniteMetricSpace`
-- `operators`: small helpers for pairwise distances, nearest neighbors, range neighbors, and intrinsic-dimension diagnostics
+- `operators`: small helpers for pairwise distances, nearest neighbors, range neighbors, representative selection, and intrinsic-dimension diagnostics
 - `mappings`: beta compatibility bridge for installed mapping bindings
 - `transforms`: beta compatibility bridge for installed transform bindings
 
@@ -46,13 +46,24 @@ space.rnn(query, radius=1)
 ## Operators
 
 ```python
-from metric.operators import intrinsic_dimension, nearest_neighbors, pairwise_distance_matrix, range_neighbors
+from metric.operators import (
+    intrinsic_dimension,
+    nearest_neighbors,
+    pairwise_distance_matrix,
+    range_neighbors,
+    representative_indices,
+    representatives,
+)
 
 distances = pairwise_distance_matrix(records, Edit())
 neighbors = nearest_neighbors(records, Edit(), "cut", k=2)
 close = range_neighbors(records, Edit(), "cut", radius=1)
+selected_ids = representative_indices(records, Edit(), k=2)
+selected_records = representatives(records, Edit(), k=2)
 dimension = intrinsic_dimension(records, Edit())
 ```
+
+`representative_indices` and `representatives` use deterministic farthest-first traversal over the finite metric space. They select existing records rather than vector centroids, start from `seed_index=0` by default, and resolve equal-distance ties by record order.
 
 `intrinsic_dimension` returns an expansion-dimension estimate based on finite-space neighborhood growth. Treat it as a diagnostic that depends on the metric, sample density, duplicates, and available radii.
 
