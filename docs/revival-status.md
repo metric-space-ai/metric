@@ -61,6 +61,7 @@ The current local tree implements the first revival slice:
 - native C++ DNN baseline smoke coverage for RegressionMSE, RMSProp, row-as-observation network training, dense Autoencoder train/encode/decode/save/load, and fully connected parameter serialization round trips
 - native C++ DNN `Network` training hooks for forward activation capture, anchored layer-output backpropagation, and explicit optimizer updates
 - native C++ DNN `SampleId`, `DnnBatch`, `EncodedDataset`, ID-preserving shuffled batches, and `FlatVectorCodec` with Autoencoder-backed conversion
+- native C++ DNN trainer-level `CompositeLoss` with reconstruction MSE, bottleneck coordinate MSE, anchored gradients, and per-term loss reports
 - direct Python smoke gates run promoted metric-space and engine examples together
 - engine documentation chapters for metric spaces, representations, intents, strategies, operators, mappings, runtime policies, and migration
 - README engine quickstart for C++ engine intents, strategy selection, representation swaps, and mapping-derived spaces
@@ -294,6 +295,7 @@ The following revival improvements landed on `master` after the `v0.3.2` tag and
 - native C++ DNN baseline smoke coverage and fully connected logical parameter serialization round trips, merged as `e7b520c5d62a9a8a6589d76a14789e3d100d16a2`
 - native C++ DNN `Network` training hooks for forward activation capture, anchored layer-output backpropagation, and explicit optimizer updates, merged as `d9398ffb2d6aaeee08097c8517f36a060a89d30d`
 - native C++ DNN `SampleId`, `DnnBatch`, `EncodedDataset`, ID-preserving shuffled batches, and `FlatVectorCodec` with Autoencoder-backed conversion, merged as `0fcf652c36b9141cc3c80e51e2388d6cd51f5cf3`
+- native C++ DNN trainer-level `CompositeLoss` with reconstruction MSE, bottleneck coordinate MSE, anchored gradients, and per-term loss reports, merged as `2c03b29590e0df0718894ac88d75efcac8fc2f65`
 - direct Python smoke gates now run promoted metric-space and engine examples together, merged as `06f22b20e7d44c7f2058b81d43f513fc157f36b0`
 - Python engine-style Space intent facade methods for representatives and structure diagnostics with named result objects and core test coverage, merged as `1849c29a25122b31605945295c91710cfc6a126f`
 - Python `Space.representatives(count=...)` and `find_representatives(..., count=...)` semantic target aliases, merged as `5e2986bc788a758cccdcd8cbb2e122c77d2796d7`
