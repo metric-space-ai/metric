@@ -29,6 +29,7 @@ The current local tree implements the first revival slice:
 - Python engine-style Space grouping intent with KMedoids and DBSCAN strategies
 - Python engine-style Space intent facade methods for representatives and structure diagnostics
 - Python engine-style Space compare/correlate intent with a deterministic distance-profile correlation strategy
+- Python compare/correlate facade supports `align="ids"` over stable Space IDs
 - Python engine-style Space embed intent with deterministic classical MDS and embedding diagnostics
 - Python outlier facade supports strategy-free `Space.outliers(count=...)`, `fraction`, and `threshold`
 - Python denoise facade supports strategy-free outlier-removal `Space.denoise(...)` controls
@@ -257,6 +258,7 @@ The following revival improvements landed on `master` after the `v0.3.2` tag and
 - Python engine-style Space intent facade methods for representatives and structure diagnostics with named result objects and core test coverage, merged as `1849c29a25122b31605945295c91710cfc6a126f`
 - Python engine-style Space grouping intent with KMedoids and DBSCAN strategies, named `ClusteringResult` objects, and core test coverage, merged as `fe2641f8f14e660a994c94ca18d9f5feb426fb2b`
 - Python engine-style Space compare/correlate intent with named `CorrelationResult` objects and distance-profile strategy coverage, merged as `103d680a395ddd748017a1619be0580ffd5607cc`
+- Python `Space.compare(..., align="ids")` and `Space.correlate(..., align="ids")` support over stable Space IDs, merged as `3e6777c5b4bb63355bb2c49c0c15a6f55ef83692`
 - engine documentation chapters for metric spaces, representations, intents, strategies, operators, mappings, runtime policies, and migration, merged as `48d19a98315da2132d756ce032cba62eab46f12d`
 - C++ engine outlier intent backed by DBSCAN-noise detection with named `OutlierResult` objects and core smoke coverage, merged as `178c635e331b5acee8f1c868ba48dafe834443a3`
 - Python engine-style Space outlier intent with named `OutlierResult` objects and DBSCAN-noise strategy coverage, merged as `3974b358beb5dbe23b181126fe2915e2f065bcba`
