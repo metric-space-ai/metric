@@ -8,7 +8,7 @@ cmake_minimum_required(VERSION 3.19)
 #endif()
 #cmake_policy(SET CMP0076 NEW)
 
-project(panda_metric VERSION 0.3.0 LANGUAGES CXX)
+project(panda_metric VERSION 0.3.1 LANGUAGES CXX)
 
 # CCache
 # set(METRIC_USE_CCACHE ON)

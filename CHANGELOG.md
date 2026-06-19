@@ -2,9 +2,13 @@
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-06-19
+
 ### Packaging and Build
 
 - Add a manual PyPI publishing workflow that builds a checked source distribution and cibuildwheel-generated CPython 3.10 through 3.14 wheels before uploading with repository PyPI credentials.
+- Use Python's `Development.Module` CMake component for extension-module builds when available, avoiding an unnecessary embedded-Python library requirement in manylinux wheel builds.
+- Run cibuildwheel smoke tests from the repository `python/` subtree when the package directory is scoped to `./python`.
 
 ## [0.3.0] - 2026-06-19
 
