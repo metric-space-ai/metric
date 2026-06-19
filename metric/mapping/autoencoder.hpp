@@ -79,18 +79,9 @@ Autoencoder<InputDataType, Scalar>::convertData(const std::vector<InputDataType>
 {
 	assert(this->num_layers() > 0);
 
-	/* Convert features to scalar type */
-	std::vector<Scalar> dataScalar(inputData.begin(), inputData.end());
-
-	auto featuresLength = this->layers[0]->inputSize;
-	Matrix data(dataScalar.size() / featuresLength, featuresLength, dataScalar.data());
-
-	/* Norm features [0..1] */
-	if (normValue != 0) {
-		data /= Scalar(normValue);
-	}
-
-	return data;
+	const auto feature_count = this->layers[0]->inputSize;
+	const dnn::FlatVectorCodec<InputDataType, Scalar> codec(feature_count, normValue);
+	return codec.encode_flat(inputData);
 }
 
 template <typename InputDataType, typename Scalar>
@@ -103,20 +94,8 @@ template <typename InputDataType, typename Scalar>
 std::vector<InputDataType> Autoencoder<InputDataType, Scalar>::convertToOutput(const Matrix &data,
 																			   bool doDenormalization)
 {
-	Matrix temp(data);
-	if (doDenormalization && (normValue != 0)) {
-		temp *= normValue;
-	}
-
-	std::vector<InputDataType> output;
-	for (auto i = 0; i < temp.rows(); ++i) {
-		auto dataPointer = blaze::row(temp, i).data();
-		std::vector<Scalar> vectorScalar(dataPointer, dataPointer + temp.columns());
-
-		output.insert(output.end(), vectorScalar.begin(), vectorScalar.end());
-	}
-
-	return output;
+	const dnn::FlatVectorCodec<InputDataType, Scalar> codec(data.columns(), normValue);
+	return codec.decode_flat(data, doDenormalization);
 }
 
 template <typename InputDataType, typename Scalar>

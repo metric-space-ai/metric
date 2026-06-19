@@ -3,6 +3,8 @@
 
 #include <blaze/Blaze.h>
 
+#include "Dataset.h"
+
 #include "Layer.h"
 #include "Layer/Conv2d-transpose.h"
 #include "Layer/Conv2d.h"
