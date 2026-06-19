@@ -57,6 +57,8 @@ space.neighbors(query, count=10, runtime=RuntimePolicy(exact=True, cache="materi
 space.neighbors(query, radius=1)
 space.nearest(query)
 space.within_radius(query, radius=1)
+space.groups(count=2)
+space.groups(radius=1, min_size=2)
 space.groups(strategy=KMedoids(groups=2))
 space.groups(strategy=DBSCAN(radius=1, min_points=2))
 space.embed(dimensions=2)

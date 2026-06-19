@@ -213,11 +213,23 @@ class Space(FiniteMetricSpace):
     def within_radius(self, query, radius):
         return self.rnn(query, radius)
 
-    def groups(self, strategy, *, representation=None, runtime=None):
+    def groups(self, strategy=None, *, count="auto", radius=None, min_size=1, representation=None, runtime=None):
         require_exact_runtime(runtime)
         if representation is not None:
             representation.ensure_fresh()
+        if strategy is not None and (count != "auto" or radius is not None):
+            raise ValueError("use either strategy or count/radius, not both")
+
         from metric.operators import find_groups
+        from metric.strategies import DBSCAN, KMedoids
+
+        if strategy is None:
+            if radius is not None:
+                strategy = DBSCAN(radius=radius, min_points=min_size)
+            else:
+                if count == "auto":
+                    count = 1 if len(self.records) <= 2 else 2
+                strategy = KMedoids(groups=count)
 
         return find_groups(self.records, self.metric, strategy)
 
