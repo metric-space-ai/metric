@@ -28,6 +28,14 @@ auto info = metric::runtime::diagnostics(policy, {}, "neighbors");
 
 `runtime::approximate()` is reserved. It currently throws for neighbor lookup instead of silently selecting an approximate algorithm.
 
+## Grouping Execution
+
+`find_groups(..., runtime::exact())` uses the lazy metric-space path for promoted grouping strategies.
+
+`find_groups(..., runtime::materialized(runtime::exact()))` uses a `MatrixCache` for promoted k-medoids, DBSCAN, and affinity-propagation grouping strategies and reports `representation == "matrix_cache"` in the returned `ClusteringResult`.
+
+`runtime::approximate()` is reserved for grouping as well. It throws instead of silently selecting an approximate clustering path.
+
 ## Python Runtime Facade
 
 Python exposes `RuntimePolicy`, `CachePolicy`, `RuntimeDiagnostics`, and `runtime_diagnostics(...)` through `metric.runtime` and the top-level `metric` package. Promoted `Space` intent methods accept `runtime=` and currently execute exact deterministic paths only; approximate policies are explicit placeholders.
