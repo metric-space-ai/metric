@@ -184,6 +184,18 @@ int main()
     assert(empty_pruned_graph.metadata.max_out_degree.value() == 0);
 
     const auto one_neighbor_graph = metric::operators::exact_knn_graph(line, AbsoluteDistance{}, 1);
+    const auto directed_degrees = metric::operators::graph_degree_diagnostics(one_neighbor_graph);
+    assert(directed_degrees.record_count == line.size());
+    assert(directed_degrees.edge_count == one_neighbor_graph.edges.size());
+    assert(directed_degrees.directed);
+    assert((directed_degrees.out_degrees == std::vector<std::size_t>{1, 1, 1, 1, 1}));
+    assert((directed_degrees.in_degrees == std::vector<std::size_t>{1, 2, 1, 1, 0}));
+    assert((directed_degrees.degrees == std::vector<std::size_t>{2, 3, 2, 2, 1}));
+    assert(directed_degrees.isolated_count == 0);
+    assert(directed_degrees.max_degree == 3);
+    assert(std::abs(directed_degrees.average_degree - 2.0) < 1e-12);
+    assert(directed_degrees.degree_policy == "directed_in_out");
+
     const auto union_graph = metric::operators::symmetrize_graph(one_neighbor_graph, "union", "minimum_distance");
     const std::vector<std::tuple<std::size_t, std::size_t, int>> expected_union_edges = {
         {0, 1, 1},
@@ -198,6 +210,17 @@ int main()
     assert(union_graph.metadata.sparsification == "none");
     assert(union_graph.metadata.symmetrization == "union");
     assert(union_graph.metadata.tie_break == "source_index_then_target_index");
+
+    const auto undirected_degrees = metric::operators::graph_degree_diagnostics(union_graph);
+    assert(!undirected_degrees.directed);
+    assert((undirected_degrees.degrees == std::vector<std::size_t>{1, 2, 2, 2, 1}));
+    assert((undirected_degrees.out_degrees == std::vector<std::size_t>{0, 0, 0, 0, 0}));
+    assert((undirected_degrees.in_degrees == std::vector<std::size_t>{0, 0, 0, 0, 0}));
+    assert(undirected_degrees.edge_count == expected_union_edges.size());
+    assert(undirected_degrees.isolated_count == 0);
+    assert(undirected_degrees.max_degree == 2);
+    assert(std::abs(undirected_degrees.average_degree - 1.6) < 1e-12);
+    assert(undirected_degrees.degree_policy == "undirected_endpoint");
 
     bool rejected_undirected_pruning = false;
     try {
@@ -231,6 +254,22 @@ int main()
     asymmetric_graph.metadata.sparsification = "none";
     asymmetric_graph.metadata.symmetrization = "none";
     asymmetric_graph.metadata.normalization = "none";
+
+    metric::operators::GraphConstructionResult<int> invalid_graph;
+    invalid_graph.edges = {
+        {0, 3, 1},
+    };
+    invalid_graph.metadata.record_count = 2;
+    invalid_graph.metadata.edge_count = invalid_graph.edges.size();
+    invalid_graph.metadata.directed = true;
+
+    bool rejected_invalid_degree_graph = false;
+    try {
+        metric::operators::graph_degree_diagnostics(invalid_graph);
+    } catch (const std::invalid_argument &) {
+        rejected_invalid_degree_graph = true;
+    }
+    assert(rejected_invalid_degree_graph);
 
     const auto minimum_weighted_graph =
         metric::operators::symmetrize_graph(asymmetric_graph, "union", "minimum_distance");

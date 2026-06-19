@@ -36,6 +36,22 @@ class GraphConstructionResult:
     metadata: GraphConstructionMetadata
 
 
+@dataclass(frozen=True)
+class GraphDegreeDiagnostics:
+    """Degree diagnostics for a graph construction result."""
+
+    record_count: int
+    edge_count: int
+    directed: bool
+    degrees: tuple
+    out_degrees: tuple
+    in_degrees: tuple
+    isolated_count: int
+    max_degree: int
+    average_degree: float
+    degree_policy: str
+
+
 def pairwise_distance_matrix(records, metric):
     return FiniteMetricSpace(records, metric).pairwise_distances()
 
@@ -284,6 +300,50 @@ def prune_graph_out_degree(graph, max_out_degree):
     )
 
 
+def graph_degree_diagnostics(graph):
+    """Compute deterministic degree diagnostics for a graph construction result."""
+    record_count = graph.metadata.record_count
+    degrees = [0] * record_count
+    out_degrees = [0] * record_count
+    in_degrees = [0] * record_count
+
+    for source_index, target_index, _distance in graph.edges:
+        if (
+            source_index < 0
+            or target_index < 0
+            or source_index >= record_count
+            or target_index >= record_count
+        ):
+            raise ValueError("graph edge index exceeds metadata record_count")
+
+        if graph.metadata.directed:
+            out_degrees[source_index] += 1
+            in_degrees[target_index] += 1
+            degrees[source_index] += 1
+            degrees[target_index] += 1
+        else:
+            degrees[source_index] += 1
+            degrees[target_index] += 1
+
+    isolated_count = sum(1 for degree in degrees if degree == 0)
+    max_degree = max(degrees, default=0)
+    average_degree = sum(degrees) / record_count if record_count else 0.0
+    degree_policy = "directed_in_out" if graph.metadata.directed else "undirected_endpoint"
+
+    return GraphDegreeDiagnostics(
+        record_count=record_count,
+        edge_count=len(graph.edges),
+        directed=graph.metadata.directed,
+        degrees=tuple(degrees),
+        out_degrees=tuple(out_degrees),
+        in_degrees=tuple(in_degrees),
+        isolated_count=isolated_count,
+        max_degree=max_degree,
+        average_degree=average_degree,
+        degree_policy=degree_policy,
+    )
+
+
 def representative_indices(records, metric, k, seed_index=0):
     """Select representative record IDs with deterministic farthest-first traversal."""
     records = list(records)
@@ -455,8 +515,10 @@ def intrinsic_dimension_from_distances(distances):
 
 
 __all__ = [
+    "GraphDegreeDiagnostics",
     "GraphConstructionMetadata",
     "GraphConstructionResult",
+    "graph_degree_diagnostics",
     "intrinsic_dimension",
     "intrinsic_dimension_from_distances",
     "coverage_representative_indices",
