@@ -27,6 +27,9 @@ class FiniteMetricSpace:
     def pairwise_distances(self):
         return [row[:] for row in self._distances]
 
+    def to_matrix(self):
+        return FiniteMetricSpace(self.records, self.metric)
+
     def knn(self, query, k=1):
         distances = [
             (index, self.metric(record, query))

@@ -58,7 +58,7 @@ The stable revived surface currently exposes metric constructors, explicit finit
 - `outliers`
 - `compare`
 
-Concrete algorithms are strategies. A user should be able to ask to `embed`; MDS, diffusion embedding, PCFA, and PHATE-style strategies are execution choices. A user should be able to ask to `map`; deterministic transforms, neural mappers, and autoencoder-based strategies are interchangeable implementations behind the same intent. Until that facade is complete, the promoted examples below use the CI-tested core API directly.
+Concrete algorithms are strategies. A user should be able to ask to `embed`; MDS, diffusion embedding, PCFA, and PHATE-style strategies are execution choices. A user should be able to ask to `map`; deterministic transforms, neural mappers, and autoencoder-based strategies are interchangeable implementations behind the same intent. The promoted examples include the stable core API and the first CI-tested engine demos for strings, process curves, histograms, and cross-space dependency.
 
 ## Python Example
 

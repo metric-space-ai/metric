@@ -26,8 +26,9 @@ The Core Revival API is the currently promoted, CI-tested entry point.
 - explicit C++ representations: `metric::MatrixSpace`, `metric::GraphSpace`, `metric::TreeSpace`
 - Python helpers: `metric.Space`, `metric.metrics`, `metric.spaces.FiniteMetricSpace`, `metric.operators`, `metric.strategies.KMedoids`, `metric.strategies.DBSCAN`, and `metric.strategies.FarthestFirst`
 - Python beta bridges: `metric.mappings`, `metric.transforms`
-- nearest-neighbor, range-neighbor, pairwise-distance, exact graph-result, graph-connectivity-diagnostics, graph-degree-diagnostics, graph-stretch-diagnostics, graph-symmetrization, graph-out-degree-pruning, exact graph-edge, intrinsic-dimension, grouping, representative-selection, and Python `Space.groups()` / `Space.describe()` / `Space.representatives()` helpers
+- nearest-neighbor, range-neighbor, pairwise-distance, exact graph-result, graph-connectivity-diagnostics, graph-degree-diagnostics, graph-stretch-diagnostics, graph-symmetrization, graph-out-degree-pruning, exact graph-edge, intrinsic-dimension, grouping, representative-selection, and Python `Space.to_matrix()` / `Space.groups()` / `Space.describe()` / `Space.representatives()` helpers
 - entropy and MGC core examples
+- engine flagship examples for strings, process curves, histograms, and cross-space dependency
 
 ## Stability Tiers
 
@@ -45,7 +46,7 @@ Stable revival surface:
 - C++ operator helpers under `metric::operators`
 - explicit finite-space representations: matrix, graph, and tree
 - nearest-neighbor, range-neighbor, pairwise-distance, exact graph-result, graph-connectivity-diagnostics, graph-degree-diagnostics, graph-stretch-diagnostics, graph-symmetrization, graph-out-degree-pruning, exact graph-edge, intrinsic-dimension, and representative-selection helpers
-- minimal Python `Space` facade for `neighbors`, `nearest`, and `within_radius`
+- minimal Python `Space` facade for `to_matrix`, `neighbors`, `nearest`, and `within_radius`
 - entropy and MGC regression examples
 - Python core helpers under `metric.metrics`, `metric.spaces`, `metric.strategies`, and `metric.operators`
 - Python beta compatibility bridges under `metric.mappings` and `metric.transforms`
@@ -79,8 +80,8 @@ This matrix labels the current tree by support status. It is deliberately path-b
 | Core C++ spaces | `metric/space/matrix.hpp`, `metric/space/knn_graph.hpp`, `metric/space/tree.hpp` | Core Revival / Expert | Stable as explicit representations; lower-level names remain compatibility APIs. |
 | Promoted C++ metrics | `metric/distance/k-related/Standards.hpp`, `metric/distance/k-structured/Edit.hpp`, `metric/distance/k-structured/TWED.hpp`, `metric/distance/k-structured/EMD.hpp` | Core Revival | Covered by promoted examples or smoke tests. Broader distance modules need their own fixtures before promotion. |
 | Core diagnostics | `metric/operators.hpp`, `metric/correlation/entropy.hpp`, `metric/correlation/mgc.hpp` | Core Revival | Covered by deterministic smoke tests and examples. |
-| Core C++ examples and tests | `examples/core/`, `tests/core_smoke/`, `tests/downstream_consumer/` | Core Revival | Required release gates. Every promoted example here is executed by CTest. |
-| Python core facade | `python/pkg/metric/metrics.py`, `python/pkg/metric/spaces.py`, `python/pkg/metric/strategies.py`, `python/pkg/metric/operators.py`, `python/pkg/metric/__init__.py` | Core Revival | Promoted Python API, including deterministic graph-result, graph-connectivity-diagnostics, graph-degree-diagnostics, graph-stretch-diagnostics, graph-symmetrization, graph-out-degree-pruning, graph-edge, grouping, representative-selection, medoid, separated-representative, and radius-coverage helpers, covered by wheel CI and core Python tests. |
+| Core C++ examples and tests | `examples/core/`, `examples/engine/`, `tests/core_smoke/`, `tests/downstream_consumer/` | Core Revival | Required release gates. Every promoted example here is executed by CTest. |
+| Python core facade | `python/pkg/metric/metrics.py`, `python/pkg/metric/spaces.py`, `python/pkg/metric/strategies.py`, `python/pkg/metric/operators.py`, `python/pkg/metric/__init__.py`, `python/examples/engine/` | Core Revival | Promoted Python API and examples, including deterministic graph-result, graph-connectivity-diagnostics, graph-degree-diagnostics, graph-stretch-diagnostics, graph-symmetrization, graph-out-degree-pruning, graph-edge, grouping, representative-selection, medoid, separated-representative, radius-coverage helpers, and `Space.to_matrix()`, covered by wheel CI and core Python tests. |
 | Python beta bridges | `python/pkg/metric/mappings.py`, `python/pkg/metric/transforms.py` | Beta / Compatibility | Stable import locations that expose installed legacy names without promoting those algorithms into the core-wheel contract. |
 | Python compatibility bindings | `python/pkg/metric/distance/`, `python/pkg/metric/correlation/`, `python/pkg/metric/mapping/`, `python/pkg/metric/space/`, `python/pkg/metric/transform/`, `python/pkg/metric/utils/` | Compatibility | Import-compatible surface for existing users; new examples should prefer the revived facade. |
 | Mapping algorithms | `metric/mapping/`, `examples/mapping_examples/`, `tests/mapping_tests/` | Beta | Useful research code, not a default release gate until deterministic fixtures and public result contracts are added. |

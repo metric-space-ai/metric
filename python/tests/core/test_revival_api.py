@@ -192,8 +192,9 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIsInstance(transforms.available(), tuple)
 
     def test_promoted_metric_space_examples_run(self):
-        examples_dir = Path(__file__).resolve().parents[2] / "examples" / "metric_space"
-        examples = sorted(examples_dir.glob("*.py"))
+        examples_root = Path(__file__).resolve().parents[2] / "examples"
+        examples = sorted((examples_root / "metric_space").glob("*.py"))
+        examples.extend(sorted((examples_root / "engine").glob("*.py")))
 
         self.assertGreaterEqual(len(examples), 1)
         for example in examples:
@@ -219,6 +220,11 @@ class RevivalApiTest(unittest.TestCase):
         distances = space.pairwise_distances()
         distances[0][1] = 999
         self.assertEqual(space(0, 1), 1)
+
+        matrix = space.to_matrix()
+        self.assertIsInstance(matrix, MatrixSpace)
+        self.assertIsNot(matrix, space)
+        self.assertEqual(matrix.pairwise_distances(), space.pairwise_distances())
 
     def test_nearest_neighbor_helpers_use_record_ids(self):
         space = FiniteMetricSpace(self.records, self.metric)

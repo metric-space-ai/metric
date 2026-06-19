@@ -2,7 +2,7 @@
 
 The current Python core API exposes metric constructors, a minimal `Space` facade, finite-space helpers, and small operator helpers. It is intentionally small while the broader engine facade is restored.
 
-The stable entry point is `Space`: a finite record set plus a metric with cached pairwise distances and intent-named helpers for neighbors, groups, representatives, and structure diagnostics. `FiniteMetricSpace` and `MatrixSpace` remain available for explicit representation vocabulary.
+The stable entry point is `Space`: a finite record set plus a metric with cached pairwise distances and intent-named helpers for neighbors, groups, representatives, and structure diagnostics. `FiniteMetricSpace` and `MatrixSpace` remain available for explicit representation vocabulary, and `Space.to_matrix()` returns an explicit finite matrix-space view.
 
 ## Basic Use
 
@@ -36,6 +36,7 @@ len(space)
 space[index]
 space.distance(lhs_index, rhs_index)
 space.pairwise_distances()
+space.to_matrix()
 space.neighbors(query, k=10)
 space.nearest(query)
 space.within_radius(query, radius=1)
@@ -178,6 +179,8 @@ print(space.distance(0, 1))
 ```
 
 `pairwise_distances()` and `metric.operators.pairwise_distance_matrix()` currently return Python lists of lists. Use `np.asarray(...)` in user code when an ndarray result is needed.
+
+`to_matrix()` returns an independent `FiniteMetricSpace` / `MatrixSpace` view with its own cached pairwise distances. It is useful when code wants to make materialization explicit while keeping the same records and metric callable.
 
 ## Engine Roadmap
 
