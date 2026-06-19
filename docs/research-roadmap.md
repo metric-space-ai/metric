@@ -78,11 +78,11 @@ Goal: make graph representations a first-class runtime choice for finite metric 
 Current promoted base:
 
 - Graph construction terminology documents exact versus approximate graph construction, directed versus symmetrized edges, edge payload meanings, normalization policies, and promotion requirements.
+- C++ and Python `exact_knn_graph_edges` / `exact_radius_graph_edges` expose deterministic directed edge-list fixtures backed by exhaustive pairwise distances.
 
 Candidate strategies:
 
-- exact k-nearest-neighbor graph construction
-- radius graph construction
+- graph result objects that carry construction metadata
 - symmetrization and weighting policies
 - sparsification primitives with documented assumptions
 - graph diagnostics such as connectivity, degree distribution, and edge stretch
@@ -183,6 +183,6 @@ The revival should not:
 Near-term branches should stay small and evidence-driven:
 
 - add k-medoids or compression-summary representative fixtures now that farthest-first, medoid, separated, and radius-coverage fixtures exist
-- add deterministic graph fixtures with expected edge sets
+- add graph result objects with construction metadata
 - add MGC interpretation docs for paired metric spaces
 - add an industrial-record fixture that combines strings, process curves, histograms, and numeric penalties

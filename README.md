@@ -115,6 +115,8 @@ The lower-level C++ representations remain available for expert control and comp
 - `metric::operators::pairwise_distance_matrix`
 - `metric::operators::nearest_neighbors`
 - `metric::operators::range_neighbors`
+- `metric::operators::exact_knn_graph_edges`
+- `metric::operators::exact_radius_graph_edges`
 - `metric::operators::representative_indices`
 - `metric::operators::representatives`
 - `metric::operators::medoid_index`

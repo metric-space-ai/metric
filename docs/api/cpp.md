@@ -65,6 +65,8 @@ std::vector<std::string> records = {"cat", "cot", "coat", "dog"};
 auto distances = metric::operators::pairwise_distance_matrix(records, metric::Edit<std::string>{});
 auto nearest = metric::operators::nearest_neighbors(records, metric::Edit<std::string>{}, std::string("cut"), 2);
 auto close = metric::operators::range_neighbors(records, metric::Edit<std::string>{}, std::string("cut"), 1);
+auto knn_edges = metric::operators::exact_knn_graph_edges(records, metric::Edit<std::string>{}, 1);
+auto radius_edges = metric::operators::exact_radius_graph_edges(records, metric::Edit<std::string>{}, 1);
 auto selected_ids = metric::operators::representative_indices(records, metric::Edit<std::string>{}, 2);
 auto selected_records = metric::operators::representatives(records, metric::Edit<std::string>{}, 2);
 auto center_id = metric::operators::medoid_index(records, metric::Edit<std::string>{});
@@ -76,13 +78,15 @@ auto covered_records = metric::operators::coverage_representatives(records, metr
 auto dimension = metric::operators::intrinsic_dimension(records, metric::Edit<std::string>{});
 ```
 
-The promoted C++ operator helpers are `pairwise_distance_matrix`, `nearest_neighbors`, `range_neighbors`, `representative_indices`, `representatives`, `medoid_index`, `medoid`, `separated_representative_indices`, `separated_representatives`, `coverage_representative_indices`, `coverage_representatives`, and `intrinsic_dimension`.
+The promoted C++ operator helpers are `pairwise_distance_matrix`, `nearest_neighbors`, `range_neighbors`, `exact_knn_graph_edges`, `exact_radius_graph_edges`, `representative_indices`, `representatives`, `medoid_index`, `medoid`, `separated_representative_indices`, `separated_representatives`, `coverage_representative_indices`, `coverage_representatives`, and `intrinsic_dimension`.
 
 `representative_indices` and `representatives` use deterministic farthest-first traversal over the finite metric space. They select existing records rather than vector centroids, start from `seed_index=0` by default, and resolve equal-distance ties by record order.
 
 `medoid_index` and `medoid` select the existing record with the smallest total distance to all records. Equal total-distance ties are resolved by record order.
 
 `separated_representative_indices` and `separated_representatives` scan records in order and keep a candidate when it is at least `minimum_distance` from every selected representative. This is deterministic redundancy-threshold reduction, not an optimal packing proof.
+
+`exact_knn_graph_edges` and `exact_radius_graph_edges` return directed edge tuples shaped as `(source_index, target_index, distance)`. They exclude self-loops, preserve source-record order, and resolve equal kNN distances by target record order.
 
 `coverage_representative_indices` and `coverage_representatives` use deterministic greedy radius coverage. They scan records in order, choose the first uncovered record as a representative, and mark every record within `radius` as covered.
 

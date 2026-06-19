@@ -5,6 +5,7 @@
 ### Algorithm Changes
 
 - Run every promoted Python metric-space example from the core Python API tests so wheel and PyPI build gates share the same example coverage.
+- Add C++ and Python `exact_knn_graph_edges` and `exact_radius_graph_edges` helpers using exhaustive pairwise distances and deterministic edge ordering.
 - Add Python `representative_indices` and `representatives` helpers using deterministic farthest-first traversal over finite metric spaces.
 - Add C++ `metric::operators::representative_indices` and `representatives` helpers using the same deterministic farthest-first traversal.
 - Add C++ and Python `medoid_index` and `medoid` helpers using deterministic minimum-total-distance selection.
@@ -22,6 +23,7 @@
 - Extend promoted representative-selection examples with medoid representatives.
 - Extend promoted representative-selection examples with separated representatives.
 - Add graph representation terminology for exact, approximate, directed, symmetrized, weighted, and normalized graph construction.
+- Add exact graph edge fixture documentation for k-nearest-neighbor and radius edge lists.
 
 ## [0.3.2] - 2026-06-19
 
