@@ -17,6 +17,7 @@ The current local tree implements the first revival slice:
 - core C++ `Metric`, `Space`, `FiniteSpace`, explicit representation aliases, and `metric::operators`
 - Python core facade modules under `metric.metrics`, `metric.spaces`, and `metric.operators`
 - Python core facade exposes a runtime-checkable `metric.Metric` protocol and explicit missing-metric errors
+- Python Space facade exposes stable `ids`, `record(...)`, `pairwise(...)`, and DataFrame-like construction
 - Python engine facade modules under `metric.intent` and `metric.representations`
 - Python representation facade exposes `Space.to_matrix()`, `Space.to_tree()`, and `Space.to_graph(count=...)`
 - Python matrix/tree/graph representations expose version freshness checks and deterministic stale errors
@@ -271,6 +272,7 @@ The following revival improvements landed on `master` after the `v0.3.2` tag and
 - C++ semantic `metric::count{...}` target argument support for `find_neighbors`, merged as `806eb4628770e89811a9c27205161d371a325c99`
 - Python representation freshness checks with deterministic stale representation errors, merged as `da591dcbd98d04a5541925170726429e17f836d0`
 - Python runtime-checkable `metric.Metric` protocol and explicit missing-metric errors, merged as `b7512721308d03940b0127f021260e1cee92d65f`
+- Python `Space.from_dataframe(...)`, stable `Space.ids`, `Space.record(...)`, and `Space.pairwise(...)` helpers, merged as `327259e5fc4b1ee1c3e1d6b724ee38021bae434e`
 
 ## Historical Code Policy
 
