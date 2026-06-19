@@ -7,9 +7,19 @@ from typing import ClassVar
 
 import numpy as np
 
-from metric.exceptions import UnsupportedOperationError
+from metric.exceptions import StrategyUnavailableError, UnsupportedOperationError
 from metric.spaces import FiniteMetricSpace
-from metric.strategies import ClassicMDS, DBSCAN, DistanceProfileCorrelation, FarthestFirst, KMedoids
+from metric.strategies import (
+    ClassicMDS,
+    DBSCAN,
+    DiffusionEmbedding,
+    DistanceProfileCorrelation,
+    FarthestFirst,
+    KMedoids,
+    PCFA,
+    PhateAE,
+    SOM,
+)
 
 
 def _raise_unsupported_inverse(result):
@@ -1301,7 +1311,7 @@ def find_representatives(records, metric, k=None, strategy=None, *, count=None, 
 
 def _is_strategy_like(value):
     return (
-        isinstance(value, (FarthestFirst, KMedoids))
+        isinstance(value, (FarthestFirst, KMedoids, PCFA, SOM))
         or hasattr(value, "seed_index")
         or hasattr(value, "groups")
     )
@@ -1318,6 +1328,11 @@ def _coerce_reduction_request(count, strategy):
         pass
     elif isinstance(strategy, KMedoids):
         pass
+    elif isinstance(strategy, (PCFA, SOM)):
+        raise StrategyUnavailableError(
+            f"{type(strategy).__name__} reduction is not promoted yet. "
+            "Use FarthestFirst or KMedoids until a reconstruction or quantization contract is CI-backed."
+        )
     elif hasattr(strategy, "seed_index"):
         strategy = FarthestFirst(seed_index=strategy.seed_index)
     elif hasattr(strategy, "groups"):
@@ -1469,8 +1484,16 @@ def _coerce_embedding_strategy(dimensions, strategy):
         return ClassicMDS(dimensions=dimensions)
     if isinstance(strategy, ClassicMDS):
         return strategy
-    if hasattr(strategy, "dimensions"):
-        return ClassicMDS(dimensions=strategy.dimensions)
+    if isinstance(strategy, DiffusionEmbedding):
+        raise StrategyUnavailableError(
+            "DiffusionEmbedding is not promoted yet. "
+            "Use MDS or ClassicMDS until diffusion embedding has deterministic fixtures and CI-backed diagnostics."
+        )
+    if isinstance(strategy, PhateAE):
+        raise StrategyUnavailableError(
+            "PhateAE is a learnable mapping strategy, not a promoted embedding strategy yet. "
+            "Use Space.map(transform=..., metric=...) or MDS for the current Python core facade."
+        )
     raise TypeError("strategy must be a ClassicMDS strategy")
 
 

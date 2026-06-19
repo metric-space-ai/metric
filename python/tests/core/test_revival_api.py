@@ -75,7 +75,18 @@ from metric.operators import (
 from metric.representations import GraphIndex, TreeIndex, graph, tree
 from metric.runtime import CachePolicy, RuntimeDiagnostics, RuntimePolicy, runtime_diagnostics
 from metric.spaces import FiniteMetricSpace, MatrixSpace, Space
-from metric.strategies import ClassicMDS, DBSCAN, DistanceProfileCorrelation, FarthestFirst, KMedoids
+from metric.strategies import (
+    ClassicMDS,
+    DBSCAN,
+    DiffusionEmbedding,
+    DistanceProfileCorrelation,
+    FarthestFirst,
+    KMedoids,
+    MDS,
+    PCFA,
+    PhateAE,
+    SOM,
+)
 
 
 class RevivalApiTest(unittest.TestCase):
@@ -184,6 +195,11 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIs(metric.intent, intent)
         self.assertIs(metric.representations, representations)
         self.assertIs(metric.strategies.FarthestFirst, FarthestFirst)
+        self.assertIs(metric.strategies.MDS, MDS)
+        self.assertIs(metric.strategies.DiffusionEmbedding, DiffusionEmbedding)
+        self.assertIs(metric.strategies.PCFA, PCFA)
+        self.assertIs(metric.strategies.SOM, SOM)
+        self.assertIs(metric.strategies.PhateAE, PhateAE)
         self.assertIs(metric.transforms, transforms)
         self.assertIs(metric.Edit, Edit)
         self.assertIs(metric.Metric, Metric)
@@ -216,6 +232,11 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIs(metric.DistanceProfileCorrelation, DistanceProfileCorrelation)
         self.assertIs(metric.FarthestFirst, FarthestFirst)
         self.assertIs(metric.ClassicMDS, ClassicMDS)
+        self.assertIs(metric.MDS, MDS)
+        self.assertIs(metric.DiffusionEmbedding, DiffusionEmbedding)
+        self.assertIs(metric.PCFA, PCFA)
+        self.assertIs(metric.SOM, SOM)
+        self.assertIs(metric.PhateAE, PhateAE)
         self.assertIs(metric.CorrelationResult, CorrelationResult)
         self.assertIs(metric.compare_spaces, compare_spaces)
         self.assertIs(metric.correlate_spaces, correlate_spaces)
@@ -291,6 +312,11 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIn("DistanceProfileCorrelation", metric.__all__)
         self.assertIn("FarthestFirst", metric.__all__)
         self.assertIn("ClassicMDS", metric.__all__)
+        self.assertIn("MDS", metric.__all__)
+        self.assertIn("DiffusionEmbedding", metric.__all__)
+        self.assertIn("PCFA", metric.__all__)
+        self.assertIn("SOM", metric.__all__)
+        self.assertIn("PhateAE", metric.__all__)
         self.assertIn("exact_knn_graph", metric.__all__)
         self.assertIn("exact_knn_graph_edges", metric.__all__)
         self.assertIn("exact_radius_graph", metric.__all__)
@@ -818,6 +844,9 @@ class RevivalApiTest(unittest.TestCase):
         )
         self.assertEqual(strategy_embedding.coordinates.shape, (3, 1))
         self.assertLess(strategy_embedding.stress, 1e-12)
+        mds_embedding = space.embed(strategy=MDS(dimensions=1))
+        self.assertEqual(mds_embedding.coordinates.shape, (5, 1))
+        self.assertEqual(mds_embedding.strategy, "classic_mds")
 
         description = space.describe()
         self.assertIsInstance(description, StructureDescription)
@@ -915,6 +944,10 @@ class RevivalApiTest(unittest.TestCase):
             space.reduce(0)
         with self.assertRaises(ValueError):
             space.reduce(6)
+        with self.assertRaisesRegex(StrategyUnavailableError, "PCFA reduction is not promoted"):
+            space.reduce(strategy=PCFA(dimensions=2))
+        with self.assertRaisesRegex(StrategyUnavailableError, "SOM reduction is not promoted"):
+            space.reduce(strategy=SOM(grid=(2, 2)))
         with self.assertRaisesRegex(TypeError, "count is required"):
             space.representatives()
         with self.assertRaisesRegex(ValueError, "either k or count"):
@@ -933,6 +966,8 @@ class RevivalApiTest(unittest.TestCase):
             space.map(transform=lambda record: record, target=space)
         with self.assertRaisesRegex(StrategyUnavailableError, "strategy mappings are not promoted"):
             space.map(transform=lambda record: record, strategy=KMedoids(groups=2))
+        with self.assertRaisesRegex(StrategyUnavailableError, "strategy mappings are not promoted"):
+            space.map(transform=lambda record: record, strategy=PhateAE(dimensions=2))
         with self.assertRaisesRegex(StrategyUnavailableError, "target mappings are not promoted"):
             space.map(target=space)
         with self.assertRaises(TypeError):
@@ -943,6 +978,10 @@ class RevivalApiTest(unittest.TestCase):
             space.embed(dimensions=0)
         with self.assertRaises(TypeError):
             space.embed(strategy=KMedoids(groups=2))
+        with self.assertRaisesRegex(StrategyUnavailableError, "DiffusionEmbedding is not promoted"):
+            space.embed(strategy=DiffusionEmbedding(dimensions=2))
+        with self.assertRaisesRegex(StrategyUnavailableError, "learnable mapping strategy"):
+            space.embed(strategy=PhateAE(dimensions=2))
         with self.assertRaises(TypeError):
             embed_space([0, 1], metric=3)
         stale_matrix = space.to_matrix()

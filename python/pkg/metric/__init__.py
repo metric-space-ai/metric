@@ -93,7 +93,18 @@ from .operators import (
 )
 from .runtime import CachePolicy, RuntimeDiagnostics, RuntimePolicy, runtime_diagnostics
 from .spaces import FiniteMetricSpace, MatrixSpace, Space
-from .strategies import ClassicMDS, DBSCAN, DistanceProfileCorrelation, FarthestFirst, KMedoids
+from .strategies import (
+    ClassicMDS,
+    DBSCAN,
+    DiffusionEmbedding,
+    DistanceProfileCorrelation,
+    FarthestFirst,
+    KMedoids,
+    MDS,
+    PCFA,
+    PhateAE,
+    SOM,
+)
 
 __all__ = sorted(
     name
