@@ -38,6 +38,14 @@ Metrics are treated as thread-safe by default. A metric can specialize `metric::
 
 `runtime::approximate()` is reserved for grouping as well. It throws instead of silently selecting an approximate clustering path.
 
+## Outlier And Denoise Execution
+
+`find_outliers(..., runtime::materialized(runtime::exact()))` uses a `MatrixCache` for DBSCAN-noise detection and nearest-reference scoring, then reports `representation == "matrix_cache"` in the returned `OutlierResult`.
+
+`denoise(..., runtime::materialized(runtime::exact()))` uses a `MatrixCache` for the DBSCAN-noise filtering step while deriving the output space from the original records. The returned `MappingResult` reports `representation == "matrix_cache"`.
+
+Approximate runtime policies throw for these promoted paths until backed by explicit approximate implementations.
+
 ## Python Runtime Facade
 
 Python exposes `RuntimePolicy`, `CachePolicy`, `RuntimeDiagnostics`, and `runtime_diagnostics(...)` through `metric.runtime` and the top-level `metric` package. Promoted `Space` intent methods accept `runtime=` and currently execute exact deterministic paths only; approximate policies are explicit placeholders. `Space.groups(..., runtime=RuntimePolicy(cache="materialized"))` records `representation == "matrix"` when no explicit representation override is supplied.

@@ -40,9 +40,28 @@ int main()
 	assert(direct[0].id == outliers[0].id);
 	assert(direct[0].score == outliers[0].score);
 
+	const auto materialized_policy = metric::runtime::materialized(metric::runtime::exact());
+	const auto materialized = metric::find_outliers(space, metric::strategies::dbscan(2.0, 2), materialized_policy);
+	assert(materialized.representation == "matrix_cache");
+	assert(materialized.size() == outliers.size());
+	assert(materialized[0].id == outliers[0].id);
+	assert(materialized[0].score == outliers[0].score);
+
+	const auto materialized_direct = metric::find_outliers(space, 2.0, 2, materialized_policy);
+	assert(materialized_direct.representation == "matrix_cache");
+	assert(materialized_direct[0].id == outliers[0].id);
+
 	const auto dense = metric::find_outliers(space, metric::strategies::dbscan(100.0, 2));
 	assert(dense.empty());
 	assert(dense.noise_count == 0);
+
+	bool rejected_approximate_runtime = false;
+	try {
+		(void)metric::find_outliers(space, metric::strategies::dbscan(2.0, 2), metric::runtime::approximate());
+	} catch (const std::invalid_argument &) {
+		rejected_approximate_runtime = true;
+	}
+	assert(rejected_approximate_runtime);
 
 	bool rejected_empty_space = false;
 	try {

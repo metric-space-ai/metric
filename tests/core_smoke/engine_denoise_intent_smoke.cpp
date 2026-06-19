@@ -41,9 +41,28 @@ int main()
 	assert(direct.space.size() == denoised.space.size());
 	assert(direct.source_record_count == denoised.source_record_count);
 
+	const auto materialized_policy = metric::runtime::materialized(metric::runtime::exact());
+	const auto materialized = metric::denoise(space, metric::strategies::dbscan(2.0, 2), materialized_policy);
+	assert(materialized.representation == "matrix_cache");
+	assert(materialized.space.size() == denoised.space.size());
+	assert(materialized.source_records == denoised.source_records);
+	assert(materialized.representative_records == denoised.representative_records);
+
+	const auto materialized_direct = metric::denoise(space, 2.0, 2, materialized_policy);
+	assert(materialized_direct.representation == "matrix_cache");
+	assert(materialized_direct.space.size() == denoised.space.size());
+
 	const auto dense = metric::denoise(space, metric::strategies::dbscan(100.0, 2));
 	assert(dense.space.size() == space.size());
 	assert(dense.source_records.size() == space.size());
+
+	bool rejected_approximate_runtime = false;
+	try {
+		(void)metric::denoise(space, metric::strategies::dbscan(2.0, 2), metric::runtime::approximate());
+	} catch (const std::invalid_argument &) {
+		rejected_approximate_runtime = true;
+	}
+	assert(rejected_approximate_runtime);
 
 	auto sparse = metric::make_space(std::vector<int>{0, 10}, AbsoluteDistance{});
 	const auto empty = metric::denoise(sparse, metric::strategies::dbscan(1.0, 2));
