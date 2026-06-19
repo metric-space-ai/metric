@@ -18,6 +18,7 @@
 - Add a C++ engine `describe_structure` intent with exact finite-space diagnostics and intrinsic-dimension metadata.
 - Add a C++ engine `find_representatives` intent backed by deterministic farthest-first selection.
 - Add Python `Space.describe()` and `Space.representatives()` intent methods with named result objects and a `FarthestFirst` strategy.
+- Add Python `Space.groups()` and `find_groups` intent methods with named `ClusteringResult` objects and `KMedoids` / `DBSCAN` strategies.
 
 ### Algorithm Changes
 

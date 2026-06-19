@@ -2,7 +2,7 @@
 
 The current Python core API exposes metric constructors, a minimal `Space` facade, finite-space helpers, and small operator helpers. It is intentionally small while the broader engine facade is restored.
 
-The stable entry point is `Space`: a finite record set plus a metric with cached pairwise distances and intent-named helpers for neighbors, representatives, and structure diagnostics. `FiniteMetricSpace` and `MatrixSpace` remain available for explicit representation vocabulary.
+The stable entry point is `Space`: a finite record set plus a metric with cached pairwise distances and intent-named helpers for neighbors, groups, representatives, and structure diagnostics. `FiniteMetricSpace` and `MatrixSpace` remain available for explicit representation vocabulary.
 
 ## Basic Use
 
@@ -24,8 +24,8 @@ The records are strings. Edit distance defines the geometry without an embedding
 - `Space`: minimal intent-first finite metric space facade
 - `FiniteMetricSpace`: finite metric space over records
 - `MatrixSpace`: compatibility alias for `FiniteMetricSpace`
-- `operators`: small helpers for pairwise distances, nearest neighbors, range neighbors, exact graph results and edges, graph connectivity diagnostics, graph degree diagnostics, graph stretch diagnostics, graph pruning, representative selection, medoids, separated representatives, and intrinsic-dimension diagnostics
-- `strategies`: strategy objects for intent methods, starting with `FarthestFirst`
+- `operators`: small helpers for pairwise distances, nearest neighbors, range neighbors, exact graph results and edges, graph connectivity diagnostics, graph degree diagnostics, graph stretch diagnostics, graph pruning, grouping, representative selection, medoids, separated representatives, and intrinsic-dimension diagnostics
+- `strategies`: strategy objects for intent methods, starting with `KMedoids`, `DBSCAN`, and `FarthestFirst`
 - `mappings`: beta compatibility bridge for installed mapping bindings
 - `transforms`: beta compatibility bridge for installed transform bindings
 
@@ -39,6 +39,8 @@ space.pairwise_distances()
 space.neighbors(query, k=10)
 space.nearest(query)
 space.within_radius(query, radius=1)
+space.groups(strategy=KMedoids(groups=2))
+space.groups(strategy=DBSCAN(radius=1, min_points=2))
 space.representatives(k=3)
 space.representatives(k=3, strategy=FarthestFirst(seed_index=1))
 space.describe()
@@ -52,6 +54,7 @@ space.rnn(query, radius=1)
 
 ```python
 from metric.operators import (
+    ClusteringResult,
     GraphConstructionMetadata,
     GraphConstructionResult,
     GraphConnectivityDiagnostics,
@@ -61,16 +64,19 @@ from metric.operators import (
     StructureDescription,
     coverage_representative_indices,
     coverage_representatives,
+    dbscan,
     describe_structure,
     exact_knn_graph,
     exact_knn_graph_edges,
     exact_radius_graph,
     exact_radius_graph_edges,
+    find_groups,
     find_representatives,
     graph_connectivity_diagnostics,
     graph_degree_diagnostics,
     graph_stretch_diagnostics,
     intrinsic_dimension,
+    kmedoids,
     medoid,
     medoid_index,
     nearest_neighbors,
@@ -83,7 +89,7 @@ from metric.operators import (
     separated_representatives,
     symmetrize_graph,
 )
-from metric.strategies import FarthestFirst
+from metric.strategies import DBSCAN, FarthestFirst, KMedoids
 
 distances = pairwise_distance_matrix(records, Edit())
 neighbors = nearest_neighbors(records, Edit(), "cut", k=2)
@@ -97,6 +103,8 @@ degree_info = graph_degree_diagnostics(knn_graph)
 stretch_info = graph_stretch_diagnostics(records, Edit(), radius_graph)
 undirected = symmetrize_graph(knn_graph, policy="union", weighting="minimum_distance")
 pruned = prune_graph_out_degree(exact_knn_graph(records, Edit(), k=2), max_out_degree=1)
+groups = find_groups(records, Edit(), KMedoids(groups=2))
+density_groups = find_groups(records, Edit(), DBSCAN(radius=1, min_points=2))
 selected_ids = representative_indices(records, Edit(), k=2)
 selected_records = representatives(records, Edit(), k=2)
 center_id = medoid_index(records, Edit())
@@ -109,6 +117,8 @@ dimension = intrinsic_dimension(records, Edit())
 representative_result = find_representatives(records, Edit(), k=2, strategy=FarthestFirst(seed_index=0))
 structure = describe_structure(records, Edit())
 ```
+
+`find_groups` returns a `ClusteringResult` with source-record assignments, medoid record IDs, cluster sizes, optional DBSCAN core/noise records, iteration metadata, algorithm metadata, and representation metadata. `Space.groups(...)` exposes the same result from the `Space` facade. Passing an integer group count selects deterministic `KMedoids`; passing `KMedoids` or `DBSCAN` makes the strategy explicit.
 
 `representative_indices` and `representatives` use deterministic farthest-first traversal over the finite metric space. They select existing records rather than vector centroids, start from `seed_index=0` by default, and resolve equal-distance ties by record order.
 
@@ -171,7 +181,7 @@ print(space.distance(0, 1))
 
 ## Engine Roadmap
 
-The implemented facade currently covers neighbor access, representative selection, and structure diagnostics. Additional intent names such as `groups`, `embed`, `map`, `reduce`, `denoise`, `outliers`, and `compare` describe the public direction and should be promoted only when they are backed by stable strategies, result objects, examples, and CI.
+The implemented facade currently covers neighbor access, grouping, representative selection, and structure diagnostics. Additional intent names such as `embed`, `map`, `reduce`, `denoise`, `outliers`, and `compare` describe the public direction and should be promoted only when they are backed by stable strategies, result objects, examples, and CI.
 
 ## Compatibility
 

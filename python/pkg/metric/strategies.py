@@ -10,4 +10,20 @@ class FarthestFirst:
     seed_index: int = 0
 
 
-__all__ = ["FarthestFirst"]
+@dataclass(frozen=True)
+class KMedoids:
+    """Deterministic k-medoids grouping strategy."""
+
+    groups: int
+    max_iterations: int = 100
+
+
+@dataclass(frozen=True)
+class DBSCAN:
+    """Deterministic DBSCAN grouping strategy over a finite metric space."""
+
+    radius: float
+    min_points: int
+
+
+__all__ = ["DBSCAN", "FarthestFirst", "KMedoids"]
