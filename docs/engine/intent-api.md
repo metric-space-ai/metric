@@ -23,6 +23,7 @@ The operator layer may still use algorithm names because it is the implementatio
 ```cpp
 auto neighbors = metric::find_neighbors(space, query, 2);
 auto groups = metric::find_groups(space, metric::strategies::k_medoids(2));
+auto message_groups = metric::find_groups(space, metric::strategies::affinity_propagation(0.7));
 auto representatives = metric::find_representatives(space, 2);
 auto outliers = metric::find_outliers(space, metric::strategies::dbscan(2.0, 2));
 auto dependency = metric::compare(space_a, space_b, metric::strategies::mgc{});

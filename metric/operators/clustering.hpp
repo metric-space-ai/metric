@@ -15,6 +15,7 @@
 #include "../core/concepts.hpp"
 #include "../core/record_id.hpp"
 #include "../core/result.hpp"
+#include "../mapping/affprop.hpp"
 #include "../representations/implicit.hpp"
 
 namespace metric::operators {
@@ -230,6 +231,23 @@ template <typename Radius> auto validate_dbscan_parameters(Radius radius, std::s
 	}
 }
 
+inline auto validate_affinity_propagation_parameters(double preference, int max_iterations, double tolerance,
+													 double damping) -> void
+{
+	if (preference < 0.0 || preference >= 1.0) {
+		throw std::invalid_argument("preference must be in the range [0, 1)");
+	}
+	if (max_iterations <= 0) {
+		throw std::invalid_argument("max_iterations must be positive");
+	}
+	if (tolerance <= 0.0) {
+		throw std::invalid_argument("tolerance must be positive");
+	}
+	if (damping < 0.0 || damping >= 1.0) {
+		throw std::invalid_argument("damping must be in the range [0, 1)");
+	}
+}
+
 template <typename Provider, typename Radius>
 auto dbscan_region_query(const Provider &provider, RecordId id, Radius radius) -> std::vector<RecordId>
 {
@@ -429,6 +447,71 @@ auto dbscan(const Space &space, Radius radius, std::size_t min_points) -> Cluste
 {
 	representations::ImplicitDistanceProvider<Space> provider(space);
 	auto result = dbscan(provider, radius, min_points);
+	result.representation = "metric_space";
+	return result;
+}
+
+template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
+auto affinity_propagation(const Space &space, double preference = 0.5, int max_iterations = 200,
+						  double tolerance = 1.0e-6, double damping = 0.5)
+	-> ClusteringResult<typename Space::distance_type>
+{
+	using distance_type = typename Space::distance_type;
+	using matrix_type = Matrix<typename Space::record_type, typename Space::metric_type>;
+
+	static_assert(std::is_floating_point<distance_type>::value,
+				  "metric::operators::affinity_propagation requires a floating-point distance type");
+
+	if (space.size() < 2) {
+		throw std::invalid_argument("affinity propagation requires at least two records");
+	}
+	engine_detail::validate_affinity_propagation_parameters(preference, max_iterations, tolerance, damping);
+
+	matrix_type matrix(space.records(), space.metric());
+	const auto preference_value = static_cast<distance_type>(preference);
+	const auto tolerance_value = static_cast<distance_type>(tolerance);
+	const auto damping_value = static_cast<distance_type>(damping);
+
+	auto similarity = affprop_details::similarity_matrix(matrix, preference_value);
+	blaze::DynamicMatrix<distance_type, blaze::rowMajor> responsibilities(space.size(), space.size());
+	blaze::DynamicMatrix<distance_type, blaze::rowMajor> availabilities(space.size(), space.size());
+	responsibilities = distance_type{};
+	availabilities = distance_type{};
+
+	int iterations = 0;
+	bool converged = false;
+	while (!converged && iterations < max_iterations) {
+		++iterations;
+		const auto responsibility_delta =
+			affprop_details::update_responsibilities(responsibilities, similarity, availabilities, damping_value);
+		const auto availability_delta =
+			affprop_details::update_availabilities(availabilities, responsibilities, damping_value);
+		const auto change = std::max(availability_delta, responsibility_delta) / (distance_type{1} - damping_value);
+		converged = change < tolerance_value;
+	}
+
+	const auto exemplars = affprop_details::extract_exemplars<distance_type>(availabilities, responsibilities);
+	if (exemplars.empty()) {
+		throw std::runtime_error("affinity propagation produced no exemplars; adjust preference or damping");
+	}
+
+	auto [assignments, cluster_sizes] = affprop_details::get_assignments<distance_type>(similarity, exemplars);
+
+	std::vector<RecordId> medoids;
+	medoids.reserve(exemplars.size());
+	for (const auto exemplar : exemplars) {
+		medoids.push_back(RecordId::from_index(exemplar));
+	}
+
+	ClusteringResult<distance_type> result;
+	result.assignments = std::move(assignments);
+	result.medoids = std::move(medoids);
+	result.cluster_sizes = std::move(cluster_sizes);
+	result.record_count = space.size();
+	result.cluster_count = result.medoids.size();
+	result.iterations = static_cast<std::size_t>(iterations);
+	result.converged = converged;
+	result.algorithm = "affinity_propagation";
 	result.representation = "metric_space";
 	return result;
 }

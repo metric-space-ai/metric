@@ -24,6 +24,14 @@ struct AbsoluteDistance {
 	}
 };
 
+struct DoubleAbsoluteDistance {
+	auto operator()(double lhs, double rhs) const -> double
+	{
+		const auto difference = lhs - rhs;
+		return difference < 0.0 ? -difference : difference;
+	}
+};
+
 int main()
 {
 	auto strings = metric::make_space(std::vector<std::string>{"a", "bb", "ccc", "dddd"}, StringLengthDistance{});
@@ -94,6 +102,13 @@ int main()
 	assert(density_groups.cluster_count == 2);
 	assert(density_groups.noise_count == 1);
 	assert(density_groups.noise_records[0] == numbers.id(4));
+
+	auto continuous = metric::make_space(std::vector<double>{0.0, 0.1, 10.0, 10.1}, DoubleAbsoluteDistance{});
+	const auto affinity_groups = metric::find_groups(continuous, metric::strategies::affinity_propagation(0.7));
+	assert(affinity_groups.algorithm == "affinity_propagation");
+	assert(affinity_groups.representation == "metric_space");
+	assert(affinity_groups.record_count == continuous.size());
+	assert(affinity_groups.cluster_count == affinity_groups.medoids.size());
 
 	return 0;
 }
