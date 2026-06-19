@@ -40,7 +40,7 @@ from metric import DistanceProfileCorrelation, Space
 from metric.strategies import ClassicMDS
 
 space = Space(records, metric)
-groups = space.groups(count=2)
+groups = space.groups(count=2, representation=space.to_matrix())
 representatives = space.representatives(count=2, representation=space.to_matrix())
 outliers = space.outliers(count=2, representation=space.to_matrix())
 denoised = space.denoise(count=2, representation=space.to_matrix())

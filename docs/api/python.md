@@ -60,7 +60,7 @@ space.neighbors(query, radius=1)
 space.neighbors(query, count=2, radius=1)
 space.nearest(query)
 space.within_radius(query, radius=1)
-space.groups(count=2)
+space.groups(count=2, representation=space.to_matrix())
 space.groups(radius=1, min_size=2)
 space.groups(strategy=KMedoids(groups=2))
 space.groups(strategy=DBSCAN(radius=1, min_points=2))
@@ -206,7 +206,7 @@ structure = describe_structure(records, Edit())
 
 `Space.neighbors(query, count=...)` returns nearest `(record_id, distance)` tuples. `Space.neighbors(query, radius=...)` returns range-neighbor tuples through the same exact metric path as `Space.within_radius(...)`. The older `k` name remains a compatibility alias for count-based nearest-neighbor calls, but new examples should prefer `count`.
 
-`find_groups` returns a `ClusteringResult` with source-record assignments, medoid record IDs, cluster sizes, optional DBSCAN core/noise records, iteration metadata, algorithm metadata, and representation metadata. `Space.groups(...)` exposes the same result from the `Space` facade. Passing an integer group count selects deterministic `KMedoids`; passing `KMedoids` or `DBSCAN` makes the strategy explicit.
+`find_groups` returns a `ClusteringResult` with source-record assignments, medoid record IDs, cluster sizes, optional DBSCAN core/noise records, iteration metadata, algorithm metadata, and representation metadata. `Space.groups(...)` exposes the same result from the `Space` facade. Passing an integer group count selects deterministic `KMedoids`; passing `KMedoids` or `DBSCAN` makes the strategy explicit. Pass a fresh `representation=` to record representation metadata; stale representations raise `metric.StaleRepresentationError`.
 
 `find_outliers` returns an `OutlierResult` backed by DBSCAN-noise detection. Each `Outlier` contains the source record ID and a deterministic isolation score based on distance to the nearest non-noise record. `Space.outliers(count=...)` also supports a strategy-free exact default that scores records by distance to the nearest other record; pass a DBSCAN strategy for the density-noise path. Pass a fresh `representation=` to record representation metadata; stale representations raise `metric.StaleRepresentationError`.
 
