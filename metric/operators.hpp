@@ -10,7 +10,9 @@
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
+#include <optional>
 #include <stdexcept>
+#include <string>
 #include <type_traits>
 #include <tuple>
 #include <utility>
@@ -26,6 +28,30 @@ template <typename Container, typename Metric>
 using finite_space_t = ::metric::FiniteSpace<record_type_t<Container>, Metric>;
 
 } // namespace detail
+
+template <typename Distance, typename RadiusValue = Distance> struct GraphConstructionMetadata {
+	std::string strategy;
+	std::size_t record_count{};
+	std::size_t edge_count{};
+	bool directed{true};
+	bool self_loops{false};
+	bool exact{true};
+	std::optional<std::size_t> k;
+	std::optional<RadiusValue> radius;
+	std::string edge_payload;
+	std::string symmetrization;
+	std::string normalization;
+	std::string tie_break;
+};
+
+template <typename Distance, typename RadiusValue = Distance> struct GraphConstructionResult {
+	using distance_type = Distance;
+	using radius_type = RadiusValue;
+	using edge_type = std::tuple<std::size_t, std::size_t, Distance>;
+
+	std::vector<edge_type> edges;
+	GraphConstructionMetadata<Distance, RadiusValue> metadata;
+};
 
 template <typename Container, typename Metric>
 auto pairwise_distance_matrix(const Container &records, Metric distance)
@@ -49,15 +75,25 @@ auto range_neighbors(const Container &records, Metric distance, const detail::re
 }
 
 template <typename Container, typename Metric>
-auto exact_knn_graph_edges(const Container &records, Metric distance, std::size_t k)
-	-> std::vector<
-		std::tuple<std::size_t, std::size_t, typename detail::finite_space_t<Container, Metric>::distance_type>>
+auto exact_knn_graph(const Container &records, Metric distance, std::size_t k)
+	-> GraphConstructionResult<typename detail::finite_space_t<Container, Metric>::distance_type>
 {
 	using distance_type = typename detail::finite_space_t<Container, Metric>::distance_type;
-	using edge_type = std::tuple<std::size_t, std::size_t, distance_type>;
+
+	GraphConstructionResult<distance_type> result;
+	result.metadata.strategy = "exact_knn";
+	result.metadata.record_count = records.size();
+	result.metadata.directed = true;
+	result.metadata.self_loops = false;
+	result.metadata.exact = true;
+	result.metadata.k = k;
+	result.metadata.edge_payload = "metric_distance";
+	result.metadata.symmetrization = "none";
+	result.metadata.normalization = "none";
+	result.metadata.tie_break = "distance_then_target_index";
 
 	if (k == 0) {
-		return {};
+		return result;
 	}
 
 	const auto max_neighbors = records.empty() ? std::size_t{0} : records.size() - 1;
@@ -66,8 +102,7 @@ auto exact_knn_graph_edges(const Container &records, Metric distance, std::size_
 	}
 
 	const auto space = ::metric::Space::from_records(records, std::move(distance));
-	std::vector<edge_type> edges;
-	edges.reserve(records.size() * k);
+	result.edges.reserve(records.size() * k);
 
 	for (std::size_t source_index = 0; source_index < records.size(); ++source_index) {
 		std::vector<std::pair<distance_type, std::size_t>> candidates;
@@ -92,29 +127,49 @@ auto exact_knn_graph_edges(const Container &records, Metric distance, std::size_
 				  });
 
 		for (std::size_t neighbor_index = 0; neighbor_index < k; ++neighbor_index) {
-			edges.emplace_back(source_index, candidates[neighbor_index].second, candidates[neighbor_index].first);
+			result.edges.emplace_back(source_index, candidates[neighbor_index].second, candidates[neighbor_index].first);
 		}
 	}
 
-	return edges;
+	result.metadata.edge_count = result.edges.size();
+	return result;
 }
 
-template <typename Container, typename Metric, typename Radius>
-auto exact_radius_graph_edges(const Container &records, Metric distance, Radius radius)
+template <typename Container, typename Metric>
+auto exact_knn_graph_edges(const Container &records, Metric distance, std::size_t k)
 	-> std::vector<
 		std::tuple<std::size_t, std::size_t, typename detail::finite_space_t<Container, Metric>::distance_type>>
 {
+	return exact_knn_graph(records, std::move(distance), k).edges;
+}
+
+template <typename Container, typename Metric, typename Radius>
+auto exact_radius_graph(const Container &records, Metric distance, Radius radius)
+	-> GraphConstructionResult<typename detail::finite_space_t<Container, Metric>::distance_type,
+							   typename std::common_type<
+								   typename detail::finite_space_t<Container, Metric>::distance_type, Radius>::type>
+{
 	using distance_type = typename detail::finite_space_t<Container, Metric>::distance_type;
 	using comparison_type = typename std::common_type<distance_type, Radius>::type;
-	using edge_type = std::tuple<std::size_t, std::size_t, distance_type>;
 
 	if (radius < Radius{}) {
 		throw std::invalid_argument("radius must be non-negative");
 	}
 
+	GraphConstructionResult<distance_type, comparison_type> result;
+	result.metadata.strategy = "exact_radius";
+	result.metadata.record_count = records.size();
+	result.metadata.directed = true;
+	result.metadata.self_loops = false;
+	result.metadata.exact = true;
+	result.metadata.radius = static_cast<comparison_type>(radius);
+	result.metadata.edge_payload = "metric_distance";
+	result.metadata.symmetrization = "none";
+	result.metadata.normalization = "none";
+	result.metadata.tie_break = "source_then_target_index";
+
 	const auto threshold = static_cast<comparison_type>(radius);
 	const auto space = ::metric::Space::from_records(records, std::move(distance));
-	std::vector<edge_type> edges;
 
 	for (std::size_t source_index = 0; source_index < records.size(); ++source_index) {
 		for (std::size_t target_index = 0; target_index < records.size(); ++target_index) {
@@ -123,12 +178,21 @@ auto exact_radius_graph_edges(const Container &records, Metric distance, Radius 
 			}
 			const auto edge_distance = space.distance(source_index, target_index);
 			if (static_cast<comparison_type>(edge_distance) <= threshold) {
-				edges.emplace_back(source_index, target_index, edge_distance);
+				result.edges.emplace_back(source_index, target_index, edge_distance);
 			}
 		}
 	}
 
-	return edges;
+	result.metadata.edge_count = result.edges.size();
+	return result;
+}
+
+template <typename Container, typename Metric, typename Radius>
+auto exact_radius_graph_edges(const Container &records, Metric distance, Radius radius)
+	-> std::vector<
+		std::tuple<std::size_t, std::size_t, typename detail::finite_space_t<Container, Metric>::distance_type>>
+{
+	return exact_radius_graph(records, std::move(distance), radius).edges;
 }
 
 template <typename Container, typename Metric>
