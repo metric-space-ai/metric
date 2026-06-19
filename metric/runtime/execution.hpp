@@ -7,10 +7,22 @@
 
 #include <stdexcept>
 #include <string>
+#include <utility>
 
 #include "policy.hpp"
 
 namespace metric::runtime {
+
+struct RuntimeDiagnostics {
+	std::string policy_name;
+	bool exact{true};
+	bool parallel{false};
+	bool materialized{false};
+	std::string representation;
+	std::string intent;
+	bool supported{true};
+	std::string reason;
+};
 
 inline auto require_exact_neighbors(policy runtime_policy) -> void
 {
@@ -22,6 +34,24 @@ inline auto require_exact_neighbors(policy runtime_policy) -> void
 inline auto neighbor_representation(policy runtime_policy) -> std::string
 {
 	return runtime_policy.uses_materialization() ? "matrix_cache" : "metric_space";
+}
+
+inline auto diagnostics(policy runtime_policy = exact(), std::string representation = {}, std::string intent = {})
+	-> RuntimeDiagnostics
+{
+	const auto supported = runtime_policy.is_exact();
+	RuntimeDiagnostics result;
+	result.policy_name = runtime_policy.name();
+	result.exact = runtime_policy.is_exact();
+	result.parallel = runtime_policy.uses_parallel_execution();
+	result.materialized = runtime_policy.uses_materialization();
+	result.representation = representation.empty() ? neighbor_representation(runtime_policy) : std::move(representation);
+	result.intent = std::move(intent);
+	result.supported = supported;
+	if (!supported) {
+		result.reason = "approximate runtime policies are not implemented for promoted C++ execution yet";
+	}
+	return result;
 }
 
 } // namespace metric::runtime
