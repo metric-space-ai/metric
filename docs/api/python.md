@@ -38,6 +38,8 @@ len(space)
 space[index]
 space.distance(lhs_index, rhs_index)
 space.pairwise_distances()
+space.version()
+space.touch()
 space.to_matrix()
 space.to_tree()
 space.to_graph(count=8)
@@ -236,11 +238,13 @@ print(space.distance(0, 1))
 
 `pairwise_distances()` and `metric.operators.pairwise_distance_matrix()` currently return Python lists of lists. Use `np.asarray(...)` in user code when an ndarray result is needed.
 
-`to_matrix()` returns an independent `FiniteMetricSpace` / `MatrixSpace` view with its own cached pairwise distances. It is useful when code wants to make materialization explicit while keeping the same records and metric callable.
+`to_matrix()` returns a `FiniteMetricSpace` / `MatrixSpace` view with its own cached pairwise distances and the source space version captured at construction. It is useful when code wants to make materialization explicit while keeping the same records and metric callable.
 
 `to_tree()` returns a `metric.representations.TreeIndex` over the same records and metric. The first Python implementation preserves the tree/index vocabulary while using exact deterministic neighbor scans, so it is safe for correctness-oriented workflows before a specialized Python cover-tree backend is promoted.
 
 `to_graph(count=...)` returns a `metric.representations.GraphIndex` backed by the exact kNN graph construction result. It exposes `.graph`, `.edges`, `.metadata`, and `neighbors(source_index)` for sparse local-structure workflows.
+
+Spaces expose `version()` and `touch()` so representation users can invalidate cached views deliberately. Matrix, tree, and graph representations expose `source_version`, `is_stale()`, and `ensure_fresh()`. Operations on stale representations raise `metric.StaleRepresentationError` with the source and representation versions in the message.
 
 `metric.representations.matrix(space)`, `metric.representations.tree(space)`, and `metric.representations.graph(space, count=...)` expose the same materialization paths through the representation facade. `metric.intent` provides semantic aliases such as `find_neighbors`, `groups`, `embed`, `denoise`, `reduce`, `compress`, `map`, `compare`, and `describe` over the promoted operator functions for workflows that prefer module-level intent names.
 

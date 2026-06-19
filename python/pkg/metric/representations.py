@@ -2,6 +2,7 @@
 
 import operator
 
+from metric.exceptions import StaleRepresentationError
 from .spaces import FiniteMetricSpace, MatrixSpace, Space
 
 
@@ -21,6 +22,20 @@ def _resolve_neighbor_count(k=None, count=None):
     return _coerce_count(1 if k is None and count is None else count if count is not None else k, "count")
 
 
+def _source_version(space):
+    return space.version() if hasattr(space, "version") else None
+
+
+def _raise_if_stale(representation):
+    if representation.is_stale():
+        raise StaleRepresentationError(
+            f"{representation.representation} representation is stale: "
+            f"source version {representation.source_space.version()} does not match "
+            f"representation version {representation.source_version}. "
+            "Rebuild the representation from the source space."
+        )
+
+
 class TreeIndex:
     """Exact tree-style neighbor index over a Space-like source."""
 
@@ -30,6 +45,7 @@ class TreeIndex:
 
     def __init__(self, space):
         self.source_space = space
+        self.source_version = _source_version(space)
         self.records = list(space.records)
         self.metric = space.metric
         self.record_count = len(self.records)
@@ -40,10 +56,19 @@ class TreeIndex:
     def __getitem__(self, index):
         return self.records[index]
 
+    def is_stale(self):
+        return self.source_version is not None and self.source_space.version() != self.source_version
+
+    def ensure_fresh(self):
+        _raise_if_stale(self)
+        return self
+
     def distance(self, lhs_index, rhs_index):
+        self.ensure_fresh()
         return self.source_space.distance(lhs_index, rhs_index)
 
     def knn(self, query, k=None, count=None):
+        self.ensure_fresh()
         return self.source_space.knn(query, _resolve_neighbor_count(k, count))
 
     def neighbors(self, query, k=None, count=None, radius=None):
@@ -54,6 +79,7 @@ class TreeIndex:
         return self.knn(query, k=k, count=count)
 
     def rnn(self, query, radius):
+        self.ensure_fresh()
         return self.source_space.rnn(query, radius)
 
 
@@ -67,6 +93,7 @@ class GraphIndex:
         from metric.operators import exact_knn_graph
 
         self.source_space = space
+        self.source_version = _source_version(space)
         self.records = list(space.records)
         self.metric = space.metric
         self.count = _coerce_count(count, "count")
@@ -83,10 +110,19 @@ class GraphIndex:
     def __getitem__(self, index):
         return self.records[index]
 
+    def is_stale(self):
+        return self.source_version is not None and self.source_space.version() != self.source_version
+
+    def ensure_fresh(self):
+        _raise_if_stale(self)
+        return self
+
     def distance(self, lhs_index, rhs_index):
+        self.ensure_fresh()
         return self.source_space.distance(lhs_index, rhs_index)
 
     def neighbors(self, source_index):
+        self.ensure_fresh()
         source_index = _coerce_count(source_index, "source_index")
         if source_index >= self.record_count:
             raise IndexError("source_index is outside the graph")

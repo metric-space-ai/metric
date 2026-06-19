@@ -7,7 +7,7 @@ from pathlib import Path
 import metric
 import numpy as np
 from metric import exceptions, intent, mappings, representations, transforms
-from metric.exceptions import MetricError, UnsupportedOperationError
+from metric.exceptions import MetricError, StaleRepresentationError, UnsupportedOperationError
 from metric.metrics import Edit, available
 from metric.operators import (
     ClusteringResult,
@@ -101,6 +101,7 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIs(metric.intent.compress, compress_space)
         self.assertIs(metric.exceptions, exceptions)
         self.assertIs(metric.exceptions.UnsupportedOperationError, UnsupportedOperationError)
+        self.assertIs(metric.exceptions.StaleRepresentationError, StaleRepresentationError)
         self.assertTrue(issubclass(UnsupportedOperationError, MetricError))
         self.assertIs(metric.representations.MatrixSpace, MatrixSpace)
         self.assertIs(metric.representations.GraphIndex, GraphIndex)
@@ -218,11 +219,13 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIs(metric.FiniteMetricSpace, FiniteMetricSpace)
         self.assertIs(metric.Space, Space)
         self.assertIs(metric.MetricError, MetricError)
+        self.assertIs(metric.StaleRepresentationError, StaleRepresentationError)
         self.assertIs(metric.UnsupportedOperationError, UnsupportedOperationError)
         self.assertIn("FiniteMetricSpace", metric.__all__)
         self.assertIn("Space", metric.__all__)
         self.assertIn("exceptions", metric.__all__)
         self.assertIn("MetricError", metric.__all__)
+        self.assertIn("StaleRepresentationError", metric.__all__)
         self.assertIn("UnsupportedOperationError", metric.__all__)
         self.assertIn("intent", metric.__all__)
         self.assertIn("mappings", metric.__all__)
@@ -309,6 +312,9 @@ class RevivalApiTest(unittest.TestCase):
         space = FiniteMetricSpace(self.records, self.metric)
 
         self.assertEqual(len(space), len(self.records))
+        self.assertEqual(space.version(), 0)
+        self.assertFalse(space.is_stale())
+        self.assertIs(space.ensure_fresh(), space)
         self.assertEqual(space[0], "cat")
         self.assertEqual(space(0, 1), 1)
         self.assertEqual(space.distance(0, 2), 1)
@@ -320,14 +326,22 @@ class RevivalApiTest(unittest.TestCase):
         matrix = space.to_matrix()
         self.assertIsInstance(matrix, MatrixSpace)
         self.assertIsNot(matrix, space)
+        self.assertIs(matrix.source_space, space)
+        self.assertEqual(matrix.source_version, space.version())
+        self.assertEqual(matrix.representation, "matrix")
+        self.assertFalse(matrix.is_stale())
+        self.assertIs(matrix.ensure_fresh(), matrix)
         self.assertEqual(matrix.pairwise_distances(), space.pairwise_distances())
 
         tree_index = space.to_tree()
         self.assertIsInstance(tree_index, TreeIndex)
         self.assertIs(tree_index.source_space, space)
+        self.assertEqual(tree_index.source_version, space.version())
         self.assertEqual(tree_index.record_count, len(space))
         self.assertTrue(tree_index.exact)
         self.assertEqual(tree_index.representation, "exact_tree_index")
+        self.assertFalse(tree_index.is_stale())
+        self.assertIs(tree_index.ensure_fresh(), tree_index)
         self.assertEqual(tree_index.knn("cut", count=2), [(0, 1), (1, 1)])
         self.assertEqual(tree_index.neighbors("cut", radius=1), [(0, 1), (1, 1)])
         self.assertIs(tree(space).source_space, space)
@@ -335,8 +349,11 @@ class RevivalApiTest(unittest.TestCase):
         graph_index = space.to_graph(count=1)
         self.assertIsInstance(graph_index, GraphIndex)
         self.assertIs(graph_index.source_space, space)
+        self.assertEqual(graph_index.source_version, space.version())
         self.assertTrue(graph_index.exact)
         self.assertEqual(graph_index.representation, "exact_knn_graph")
+        self.assertFalse(graph_index.is_stale())
+        self.assertIs(graph_index.ensure_fresh(), graph_index)
         self.assertEqual(graph_index.count, 1)
         self.assertEqual(graph_index.metadata.strategy, "exact_knn")
         self.assertEqual(graph_index.metadata.k, 1)
@@ -346,6 +363,22 @@ class RevivalApiTest(unittest.TestCase):
             space.to_graph(count=-1)
         with self.assertRaises(IndexError):
             graph_index.neighbors(len(space))
+
+        self.assertEqual(space.touch(), 1)
+        self.assertEqual(space.version(), 1)
+        self.assertTrue(matrix.is_stale())
+        self.assertTrue(tree_index.is_stale())
+        self.assertTrue(graph_index.is_stale())
+        with self.assertRaisesRegex(StaleRepresentationError, "source version 1"):
+            matrix.distance(0, 1)
+        with self.assertRaisesRegex(StaleRepresentationError, "source version 1"):
+            tree_index.neighbors("cut", count=1)
+        with self.assertRaisesRegex(StaleRepresentationError, "source version 1"):
+            graph_index.neighbors(0)
+
+        fresh_matrix = space.to_matrix()
+        self.assertFalse(fresh_matrix.is_stale())
+        self.assertEqual(fresh_matrix.distance(0, 1), 1)
 
     def test_nearest_neighbor_helpers_use_record_ids(self):
         space = FiniteMetricSpace(self.records, self.metric)
