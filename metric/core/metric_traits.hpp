@@ -25,12 +25,17 @@ enum class record_kind {
 template <typename Metric> struct metric_traits {
 	static constexpr auto law = metric_law::distance;
 	static constexpr auto records = record_kind::custom;
+	static constexpr bool thread_safe = true;
 };
+
+template <typename Metric>
+constexpr bool metric_thread_safe_v = metric_traits<Metric>::thread_safe;
 
 } // namespace metric::core
 
 namespace metric {
 using core::metric_law;
+using core::metric_thread_safe_v;
 using core::metric_traits;
 using core::record_kind;
 } // namespace metric

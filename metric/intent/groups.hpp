@@ -28,6 +28,7 @@ auto find_groups(const Space &space, strategies::k_medoids strategy, runtime::po
 	-> ClusteringResult<typename Space::distance_type>
 {
 	runtime::require_exact_groups(runtime_policy);
+	runtime::require_parallel_metric<typename Space::metric_type>(runtime_policy);
 	if (runtime_policy.uses_materialization()) {
 		representations::MatrixCache<Space> matrix(space);
 		auto result = operators::kmedoids(matrix, strategy.groups, strategy.max_iterations);
@@ -64,6 +65,7 @@ auto find_groups(const Space &space, strategies::dbscan strategy, runtime::polic
 	-> ClusteringResult<typename Space::distance_type>
 {
 	runtime::require_exact_groups(runtime_policy);
+	runtime::require_parallel_metric<typename Space::metric_type>(runtime_policy);
 	if (runtime_policy.uses_materialization()) {
 		representations::MatrixCache<Space> matrix(space);
 		auto result = operators::dbscan(matrix, strategy.radius, strategy.min_points);
@@ -89,6 +91,7 @@ auto find_groups(const Space &space, strategies::affinity_propagation strategy, 
 	-> ClusteringResult<typename Space::distance_type>
 {
 	runtime::require_exact_groups(runtime_policy);
+	runtime::require_parallel_metric<typename Space::metric_type>(runtime_policy);
 	if (runtime_policy.uses_materialization()) {
 		representations::MatrixCache<Space> matrix(space);
 		auto result = operators::affinity_propagation(matrix, strategy.preference, strategy.max_iterations,

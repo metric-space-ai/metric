@@ -9,6 +9,7 @@
 #include <string>
 #include <utility>
 
+#include "../core/metric_traits.hpp"
 #include "policy.hpp"
 
 namespace metric::runtime {
@@ -35,6 +36,20 @@ inline auto require_exact_groups(policy runtime_policy) -> void
 {
 	if (!runtime_policy.is_exact()) {
 		throw std::invalid_argument("approximate grouping runtime policy is not implemented");
+	}
+}
+
+template <typename Metric>
+constexpr auto supports_parallel_metric(policy runtime_policy) noexcept -> bool
+{
+	return !runtime_policy.uses_parallel_execution() || core::metric_thread_safe_v<Metric>;
+}
+
+template <typename Metric>
+inline auto require_parallel_metric(policy runtime_policy) -> void
+{
+	if (!supports_parallel_metric<Metric>(runtime_policy)) {
+		throw std::invalid_argument("parallel runtime policy requires a thread-safe metric");
 	}
 }
 
@@ -69,6 +84,26 @@ inline auto diagnostics(policy runtime_policy = exact(), std::string representat
 		result.reason = "approximate runtime policies are not implemented for promoted C++ execution yet";
 	}
 	return result;
+}
+
+template <typename Metric>
+inline auto diagnostics_for_metric(policy runtime_policy = exact(), std::string representation = {},
+								   std::string intent = {}) -> RuntimeDiagnostics
+{
+	auto result = diagnostics(runtime_policy, std::move(representation), std::move(intent));
+	if (result.supported && !supports_parallel_metric<Metric>(runtime_policy)) {
+		result.supported = false;
+		result.reason = "parallel runtime policy requires a thread-safe metric";
+	}
+	return result;
+}
+
+template <typename Space>
+inline auto diagnostics_for_space(const Space &, policy runtime_policy = exact(), std::string representation = {},
+								  std::string intent = {}) -> RuntimeDiagnostics
+{
+	return diagnostics_for_metric<typename Space::metric_type>(runtime_policy, std::move(representation),
+															   std::move(intent));
 }
 
 } // namespace metric::runtime

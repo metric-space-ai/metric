@@ -21,6 +21,24 @@ struct DoubleAbsoluteDistance {
 	}
 };
 
+struct StatefulLengthDistance {
+	auto operator()(const std::string &lhs, const std::string &rhs) const -> int
+	{
+		const auto difference = static_cast<int>(lhs.size()) - static_cast<int>(rhs.size());
+		return difference < 0 ? -difference : difference;
+	}
+};
+
+namespace metric::core {
+
+template <> struct metric_traits<StatefulLengthDistance> {
+	static constexpr auto law = metric_law::distance;
+	static constexpr auto records = record_kind::string;
+	static constexpr bool thread_safe = false;
+};
+
+} // namespace metric::core
+
 int main()
 {
 	auto space = metric::make_space(std::vector<std::string>{"a", "bb", "ccc", "dddd"}, StringLengthDistance{});
@@ -73,6 +91,35 @@ int main()
 	assert(explicit_diagnostics.representation == "cover_tree_index");
 	const auto parallel_neighbors = metric::find_neighbors(space, space.id(0), 2, parallel_policy);
 	assert(parallel_neighbors.representation == "matrix_cache");
+
+	auto stateful_space =
+		metric::make_space(std::vector<std::string>{"a", "bb", "ccc", "dddd"}, StatefulLengthDistance{});
+	const auto stateful_policy = metric::runtime::parallel(metric::runtime::exact());
+	static_assert(!metric::metric_thread_safe_v<StatefulLengthDistance>);
+	const auto stateful_diagnostics =
+		metric::runtime::diagnostics_for_metric<StatefulLengthDistance>(stateful_policy, {}, "neighbors");
+	assert(stateful_diagnostics.parallel);
+	assert(!stateful_diagnostics.supported);
+	assert(stateful_diagnostics.reason.find("thread-safe") != std::string::npos);
+	const auto stateful_space_diagnostics =
+		metric::runtime::diagnostics_for_space(stateful_space, stateful_policy, {}, "neighbors");
+	assert(!stateful_space_diagnostics.supported);
+
+	bool rejected_stateful_parallel_neighbors = false;
+	try {
+		(void)metric::find_neighbors(stateful_space, stateful_space.id(0), 2, stateful_policy);
+	} catch (const std::invalid_argument &) {
+		rejected_stateful_parallel_neighbors = true;
+	}
+	assert(rejected_stateful_parallel_neighbors);
+
+	bool rejected_stateful_parallel_groups = false;
+	try {
+		(void)metric::find_groups(stateful_space, metric::strategies::k_medoids(2), stateful_policy);
+	} catch (const std::invalid_argument &) {
+		rejected_stateful_parallel_groups = true;
+	}
+	assert(rejected_stateful_parallel_groups);
 
 	const auto lazy_groups = metric::find_groups(space, metric::strategies::k_medoids(2), lazy_policy);
 	assert(lazy_groups.algorithm == "kmedoids");

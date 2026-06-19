@@ -137,6 +137,7 @@ auto find_neighbors(const Space &space, const typename Space::record_type &query
 					runtime::policy runtime_policy) -> NeighborSet<typename Space::distance_type>
 {
 	runtime::require_exact_neighbors(runtime_policy);
+	runtime::require_parallel_metric<typename Space::metric_type>(runtime_policy);
 	if (runtime_policy.uses_materialization()) {
 		throw std::invalid_argument("materialized neighbor runtime policy requires a RecordId query");
 	}
@@ -155,6 +156,7 @@ auto find_neighbors(const Space &space, RecordId query_id, std::size_t count, ru
 	-> NeighborSet<typename Space::distance_type>
 {
 	runtime::require_exact_neighbors(runtime_policy);
+	runtime::require_parallel_metric<typename Space::metric_type>(runtime_policy);
 	if (runtime_policy.uses_materialization()) {
 		representations::MatrixCache<Space> matrix(space);
 		auto result = operators::knn(matrix, query_id, count);
