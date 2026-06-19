@@ -10,6 +10,7 @@ from metric.metrics import Edit, available
 from metric import intent, mappings, representations, transforms
 from metric.operators import (
     ClusteringResult,
+    CompressionResult,
     CorrelationResult,
     EmbeddingDiagnostics,
     EmbeddingModel,
@@ -27,6 +28,7 @@ from metric.operators import (
     StructureDescription,
     coverage_representative_indices,
     coverage_representatives,
+    compress_space,
     compare_spaces,
     correlate_spaces,
     dbscan,
@@ -94,6 +96,7 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIs(metric.intent.find_neighbors, nearest_neighbors)
         self.assertIs(metric.intent.denoise, denoise_space)
         self.assertIs(metric.intent.embed, embed_space)
+        self.assertIs(metric.intent.compress, compress_space)
         self.assertIs(metric.representations.MatrixSpace, MatrixSpace)
         self.assertIs(metric.operators.nearest_neighbors, nearest_neighbors)
         self.assertIs(metric.operators.range_neighbors, range_neighbors)
@@ -102,6 +105,7 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIs(metric.operators.GraphStretchDiagnostics, GraphStretchDiagnostics)
         self.assertIs(metric.operators.GraphConstructionMetadata, GraphConstructionMetadata)
         self.assertIs(metric.operators.GraphConstructionResult, GraphConstructionResult)
+        self.assertIs(metric.operators.CompressionResult, CompressionResult)
         self.assertIs(metric.operators.MappingResult, MappingResult)
         self.assertIs(metric.operators.EmbeddingDiagnostics, EmbeddingDiagnostics)
         self.assertIs(metric.operators.EmbeddingModel, EmbeddingModel)
@@ -122,6 +126,7 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIs(metric.operators.describe_structure, describe_structure)
         self.assertIs(metric.operators.find_representatives, find_representatives)
         self.assertIs(metric.operators.reduce_space, reduce_space)
+        self.assertIs(metric.operators.compress_space, compress_space)
         self.assertIs(metric.operators.kmedoids, kmedoids)
         self.assertIs(metric.operators.dbscan, dbscan)
         self.assertIs(metric.operators.exact_knn_graph, exact_knn_graph)
@@ -214,6 +219,7 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIn("GraphStretchDiagnostics", metric.__all__)
         self.assertIn("GraphConstructionMetadata", metric.__all__)
         self.assertIn("GraphConstructionResult", metric.__all__)
+        self.assertIn("CompressionResult", metric.__all__)
         self.assertIn("MappingResult", metric.__all__)
         self.assertIn("EmbeddingDiagnostics", metric.__all__)
         self.assertIn("EmbeddingModel", metric.__all__)
@@ -234,6 +240,7 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIn("describe_structure", metric.__all__)
         self.assertIn("find_representatives", metric.__all__)
         self.assertIn("reduce_space", metric.__all__)
+        self.assertIn("compress_space", metric.__all__)
         self.assertIn("kmedoids", metric.__all__)
         self.assertIn("dbscan", metric.__all__)
         self.assertIn("KMedoids", metric.__all__)
@@ -427,6 +434,34 @@ class RevivalApiTest(unittest.TestCase):
         self.assertEqual(medoid_reduction.nearest_representative_distances, (1, 0, 1, 0, 1))
         self.assertEqual(medoid_reduction.strategy, "kmedoids")
         self.assertEqual(medoid_reduction.space.records, [1, 10])
+
+        compression = space.compress(3)
+        self.assertIsInstance(compression, CompressionResult)
+        self.assertIsInstance(compression.space, Space)
+        self.assertEqual(compression.source_record_ids, (0, 4, 2))
+        self.assertEqual(compression.assignments, (0, 0, 2, 2, 1))
+        self.assertEqual(compression.nearest_representative_distances, (0, 1, 0, 1, 0))
+        self.assertEqual(compression.source_record_count, 5)
+        self.assertEqual(compression.compressed_record_count, 3)
+        self.assertAlmostEqual(compression.compression_ratio, 0.6)
+        self.assertEqual(compression.space.records, [0, 4, 2])
+        self.assertTrue(compression.exact)
+        self.assertEqual(compression.operator_name, "compress")
+        self.assertEqual(compression.compression, "representatives")
+        self.assertEqual(compression.strategy, "farthest_first")
+        self.assertEqual(compression.representation, "metric_space")
+        self.assertTrue(compression.lossy)
+        self.assertFalse(compression.inverse_supported)
+        self.assertEqual(
+            compress_space([0, 1, 2, 3, 4], lambda lhs, rhs: abs(lhs - rhs), 3).source_record_ids,
+            compression.source_record_ids,
+        )
+
+        medoid_compression = group_space.compress(strategy=KMedoids(groups=2))
+        self.assertEqual(medoid_compression.source_record_ids, (1, 3))
+        self.assertEqual(medoid_compression.assignments, (0, 0, 0, 1, 1))
+        self.assertEqual(medoid_compression.strategy, "kmedoids")
+        self.assertEqual(medoid_compression.space.records, [1, 10])
 
         mapped = space.map(lambda record: {"value": record}, metric=lambda lhs, rhs: abs(lhs["value"] - rhs["value"]))
         self.assertIsInstance(mapped, MappingResult)
@@ -879,6 +914,7 @@ class RevivalApiTest(unittest.TestCase):
         self.assertTrue(callable(space.outliers))
         self.assertTrue(callable(space.denoise))
         self.assertTrue(callable(space.reduce))
+        self.assertTrue(callable(space.compress))
         self.assertTrue(callable(space.map))
 
     def test_numpy_record_arrays_use_custom_metric_callable(self):

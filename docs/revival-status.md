@@ -23,6 +23,7 @@ The current local tree implements the first revival slice:
 - Python engine-style Space embed intent with deterministic classical MDS and embedding diagnostics
 - Python engine-style Space outlier intent with DBSCAN-noise strategy
 - Python engine-style Space reduce intent with representative and medoid reduction strategies
+- Python engine-style Space compress intent with representative and medoid compression strategies
 - Python engine-style Space map intent for deterministic transforms into derived metric spaces
 - Python engine-style Space denoise intent with DBSCAN-noise filtering and mapping-result lineage
 - Python beta compatibility bridge modules under `metric.mappings` and `metric.transforms`

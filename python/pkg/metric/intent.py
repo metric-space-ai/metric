@@ -1,6 +1,7 @@
 """Semantic intent facade for the revived Python engine API."""
 
 from .operators import (
+    compress_space,
     compare_spaces,
     correlate_spaces,
     denoise_space,
@@ -17,6 +18,7 @@ from .operators import (
 
 find_neighbors = nearest_neighbors
 within_radius = range_neighbors
+compress = compress_space
 compare = compare_spaces
 correlate = correlate_spaces
 denoise = denoise_space
@@ -29,6 +31,8 @@ reduce = reduce_space
 representatives = find_representatives
 
 __all__ = [
+    "compress",
+    "compress_space",
     "compare",
     "compare_spaces",
     "correlate",

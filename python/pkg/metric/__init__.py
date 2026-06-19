@@ -21,6 +21,7 @@ from . import intent, mappings, metrics, operators, representations, spaces, str
 from .metrics import Edit
 from .operators import (
     ClusteringResult,
+    CompressionResult,
     CorrelationResult,
     EmbeddingDiagnostics,
     EmbeddingModel,
@@ -38,6 +39,7 @@ from .operators import (
     StructureDescription,
     coverage_representative_indices,
     coverage_representatives,
+    compress_space,
     compare_spaces,
     correlate_spaces,
     dbscan,

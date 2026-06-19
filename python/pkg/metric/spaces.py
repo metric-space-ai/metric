@@ -90,6 +90,11 @@ class Space(FiniteMetricSpace):
 
         return reduce_space(self.records, self.metric, count, strategy=strategy)
 
+    def compress(self, count=None, strategy=None):
+        from metric.operators import compress_space
+
+        return compress_space(self.records, self.metric, count, strategy=strategy)
+
     def map(self, transform, metric=None):
         from metric.operators import map_space
 
