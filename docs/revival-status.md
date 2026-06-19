@@ -22,6 +22,7 @@ The current local tree implements the first revival slice:
 - C++ smoke and contract tests under `tests/core_smoke/`
 - Python core API and metric-contract tests under `python/tests/core/`
 - intrinsic-dimension diagnostics in C++ and Python core operator helpers
+- deterministic C++ representative-selection helpers in `metric::operators`
 - deterministic Python representative-selection helpers in `metric.operators`
 - documentation for concepts, APIs, examples, stability, testing, and release gates
 - CI workflows for C++ core, Python wheels, docs/formatting, revived-source formatting, and GitHub Pages artifacts
@@ -167,6 +168,8 @@ The following revival improvements landed on `master` after the `v0.3.2` tag and
 - promotion-gated research roadmap for diagnostics, representative selection, sparse graphs, cross-space dependency discovery, denoising, vector-database adapters, and benchmarks, merged as `b80eaba438a6a45f327951c87f74d88c4af37ed3`
 - Python representative-selection helpers using deterministic farthest-first traversal, merged as `78d9d4cdb065555541e10131698452c6d713a257`
 - promoted Python representative-selection example and wheel-gate coverage, merged as `78d9d4cdb065555541e10131698452c6d713a257`
+- C++ representative-selection helpers using deterministic farthest-first traversal, merged as `2aa8cfbc7cddcb642896de64cdf2d00a6031504f`
+- promoted C++ representative-selection example and CTest coverage, merged as `2aa8cfbc7cddcb642896de64cdf2d00a6031504f`
 
 ## Historical Code Policy
 
