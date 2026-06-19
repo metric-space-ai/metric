@@ -61,6 +61,7 @@ from metric.operators import (
     separated_representatives,
     symmetrize_graph,
 )
+from metric.representations import GraphIndex, TreeIndex, graph, tree
 from metric.spaces import FiniteMetricSpace, MatrixSpace, Space
 from metric.strategies import ClassicMDS, DBSCAN, DistanceProfileCorrelation, FarthestFirst, KMedoids
 
@@ -98,6 +99,10 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIs(metric.intent.embed, embed_space)
         self.assertIs(metric.intent.compress, compress_space)
         self.assertIs(metric.representations.MatrixSpace, MatrixSpace)
+        self.assertIs(metric.representations.GraphIndex, GraphIndex)
+        self.assertIs(metric.representations.TreeIndex, TreeIndex)
+        self.assertIs(metric.representations.graph, graph)
+        self.assertIs(metric.representations.tree, tree)
         self.assertIs(metric.operators.nearest_neighbors, nearest_neighbors)
         self.assertIs(metric.operators.range_neighbors, range_neighbors)
         self.assertIs(metric.operators.GraphConnectivityDiagnostics, GraphConnectivityDiagnostics)
@@ -307,6 +312,31 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIsInstance(matrix, MatrixSpace)
         self.assertIsNot(matrix, space)
         self.assertEqual(matrix.pairwise_distances(), space.pairwise_distances())
+
+        tree_index = space.to_tree()
+        self.assertIsInstance(tree_index, TreeIndex)
+        self.assertIs(tree_index.source_space, space)
+        self.assertEqual(tree_index.record_count, len(space))
+        self.assertTrue(tree_index.exact)
+        self.assertEqual(tree_index.representation, "exact_tree_index")
+        self.assertEqual(tree_index.knn("cut", count=2), [(0, 1), (1, 1)])
+        self.assertEqual(tree_index.neighbors("cut", radius=1), [(0, 1), (1, 1)])
+        self.assertIs(tree(space).source_space, space)
+
+        graph_index = space.to_graph(count=1)
+        self.assertIsInstance(graph_index, GraphIndex)
+        self.assertIs(graph_index.source_space, space)
+        self.assertTrue(graph_index.exact)
+        self.assertEqual(graph_index.representation, "exact_knn_graph")
+        self.assertEqual(graph_index.count, 1)
+        self.assertEqual(graph_index.metadata.strategy, "exact_knn")
+        self.assertEqual(graph_index.metadata.k, 1)
+        self.assertEqual(graph_index.neighbors(0), ((1, 1),))
+        self.assertEqual(graph(space, count=1).neighbors(0), graph_index.neighbors(0))
+        with self.assertRaises(ValueError):
+            space.to_graph(count=-1)
+        with self.assertRaises(IndexError):
+            graph_index.neighbors(len(space))
 
     def test_nearest_neighbor_helpers_use_record_ids(self):
         space = FiniteMetricSpace(self.records, self.metric)
