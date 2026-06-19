@@ -514,6 +514,18 @@ class RevivalApiTest(unittest.TestCase):
             outliers,
         )
         self.assertEqual(outlier_space.outliers(DBSCAN(radius=100, min_points=2)).outliers, ())
+        nearest_outliers = outlier_space.outliers(count=1)
+        self.assertIsInstance(nearest_outliers, OutlierResult)
+        self.assertEqual(nearest_outliers.outliers, (Outlier(record_id=4, score=19),))
+        self.assertEqual(nearest_outliers.strategy, "nearest_neighbor_distance")
+        self.assertEqual(nearest_outliers.noise_count, 1)
+        self.assertEqual(outlier_space.outliers(fraction=0.2).outliers, nearest_outliers.outliers)
+        self.assertEqual(outlier_space.outliers(threshold=10).outliers, nearest_outliers.outliers)
+        self.assertEqual(outlier_space.outliers(count=0).outliers, ())
+        with self.assertRaises(ValueError):
+            outlier_space.outliers(fraction=-0.1)
+        with self.assertRaises(ValueError):
+            outlier_space.outliers(DBSCAN(radius=2, min_points=2), count=1)
 
         denoised = outlier_space.denoise(DBSCAN(radius=2, min_points=2))
         self.assertIsInstance(denoised, MappingResult)

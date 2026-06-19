@@ -66,6 +66,8 @@ space.groups(strategy=KMedoids(groups=2))
 space.groups(strategy=DBSCAN(radius=1, min_points=2))
 space.embed(dimensions=2)
 space.embed(strategy=ClassicMDS(dimensions=2))
+space.outliers(count=2)
+space.outliers(threshold=10)
 space.outliers(strategy=DBSCAN(radius=1, min_points=2))
 space.denoise(strategy=DBSCAN(radius=1, min_points=2))
 space.compare(other_space, strategy=DistanceProfileCorrelation())
@@ -201,7 +203,7 @@ structure = describe_structure(records, Edit())
 
 `find_groups` returns a `ClusteringResult` with source-record assignments, medoid record IDs, cluster sizes, optional DBSCAN core/noise records, iteration metadata, algorithm metadata, and representation metadata. `Space.groups(...)` exposes the same result from the `Space` facade. Passing an integer group count selects deterministic `KMedoids`; passing `KMedoids` or `DBSCAN` makes the strategy explicit.
 
-`find_outliers` returns an `OutlierResult` backed by DBSCAN-noise detection. Each `Outlier` contains the source record ID and a deterministic isolation score based on distance to the nearest non-noise record. `Space.outliers(...)` exposes the same result from the `Space` facade.
+`find_outliers` returns an `OutlierResult` backed by DBSCAN-noise detection. Each `Outlier` contains the source record ID and a deterministic isolation score based on distance to the nearest non-noise record. `Space.outliers(count=...)` also supports a strategy-free exact default that scores records by distance to the nearest other record; pass a DBSCAN strategy for the density-noise path.
 
 `denoise_space` returns a `MappingResult` backed by DBSCAN-noise filtering. The derived `Space` contains only non-noise source records, `source_record_ids` preserves the original record lineage, and inverse reconstruction is explicitly unsupported. `Space.denoise(...)` exposes the same result from the `Space` facade.
 

@@ -41,7 +41,7 @@ from metric.strategies import ClassicMDS, DBSCAN
 
 space = Space(records, metric)
 groups = space.groups(count=2)
-outliers = space.outliers(DBSCAN(radius=2.0, min_points=2))
+outliers = space.outliers(count=2)
 denoised = space.denoise(DBSCAN(radius=2.0, min_points=2))
 embedding = space.embed(strategy=ClassicMDS(dimensions=2))
 dependency = space.compare(other_space, DistanceProfileCorrelation())

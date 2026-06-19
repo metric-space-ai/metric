@@ -1,6 +1,7 @@
 """Finite metric-space helpers for the revived Python API."""
 
 from collections.abc import Mapping
+import math
 import operator
 
 from metric.exceptions import MissingMetricError, StaleRepresentationError
@@ -269,13 +270,67 @@ class Space(FiniteMetricSpace):
 
         return find_groups(self.records, self.metric, strategy)
 
-    def outliers(self, strategy, *, representation=None, runtime=None):
+    def _nearest_other_distance(self, source_index):
+        candidates = [
+            self.distance(source_index, candidate_index)
+            for candidate_index in range(len(self.records))
+            if candidate_index != source_index
+        ]
+        return min(candidates) if candidates else 0
+
+    def _outlier_count(self, count=None, fraction=0.05):
+        if count is not None:
+            return _coerce_non_negative_integer(count, "count")
+        if fraction < 0 or fraction > 1:
+            raise ValueError("fraction must be between 0 and 1")
+        if not self.records or fraction == 0:
+            return 0
+        return max(1, math.ceil(len(self.records) * fraction))
+
+    def outliers(
+        self,
+        strategy=None,
+        *,
+        count=None,
+        fraction=0.05,
+        threshold=None,
+        representation=None,
+        runtime=None,
+    ):
         require_exact_runtime(runtime)
         if representation is not None:
             representation.ensure_fresh()
         from metric.operators import find_outliers
 
-        return find_outliers(self.records, self.metric, strategy)
+        if strategy is not None:
+            if count is not None or threshold is not None or fraction != 0.05:
+                raise ValueError("use either strategy or count/fraction/threshold, not both")
+            return find_outliers(self.records, self.metric, strategy)
+
+        from metric.operators import Outlier, OutlierResult
+
+        self.ensure_fresh()
+        scored = [
+            Outlier(record_id=record_index, score=self._nearest_other_distance(record_index))
+            for record_index in range(len(self.records))
+        ]
+        if threshold is not None:
+            scored = [outlier for outlier in scored if outlier.score >= threshold]
+        scored.sort(key=lambda outlier: outlier.record_id)
+        scored.sort(key=lambda outlier: outlier.score, reverse=True)
+        if threshold is None:
+            scored = scored[:self._outlier_count(count=count, fraction=fraction)]
+
+        return OutlierResult(
+            outliers=tuple(scored),
+            record_count=len(self.records),
+            cluster_count=0,
+            noise_count=len(scored),
+            exact=True,
+            operator_name="find_outliers",
+            strategy="nearest_neighbor_distance",
+            representation="metric_space",
+        )
 
     def denoise(self, strategy, *, representation=None, runtime=None):
         require_exact_runtime(runtime)
