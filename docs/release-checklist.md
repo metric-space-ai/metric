@@ -25,7 +25,7 @@ This checklist defines the minimum release gates for METRIC.
 - promoted C++ and Python examples run in CI
 - docs and formatting CI passes
 - target engine API examples are either backed by CI or explicitly labeled as roadmap/target API
-- representative strategy tests pass for neighbors, groups, embed, map, compare, and outliers before those target intents are promoted from roadmap to release API
+- representative strategy tests pass for any target intent before it is promoted from roadmap to release API
 - `git diff --check` reports no whitespace errors for local changes
 - release notes distinguish API, algorithm, packaging, docs, and compatibility changes
 - `CHANGELOG.md` includes known limitations and external release actions that are not yet complete

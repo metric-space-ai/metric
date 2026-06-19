@@ -2,7 +2,7 @@
 
 The current Python core API exposes metric constructors, a minimal `Space` facade, finite-space helpers, and small operator helpers. It is intentionally small while the broader engine facade is restored.
 
-The stable entry point is `Space`: a finite record set plus a metric with cached pairwise distances and intent-named helpers for neighbors, groups, outliers, representatives, cross-space comparison, and structure diagnostics. `FiniteMetricSpace` and `MatrixSpace` remain available for explicit representation vocabulary, and `Space.to_matrix()` returns an explicit finite matrix-space view.
+The stable entry point is `Space`: a finite record set plus a metric with cached pairwise distances and intent-named helpers for neighbors, groups, outliers, representatives, reduction, cross-space comparison, and structure diagnostics. `FiniteMetricSpace` and `MatrixSpace` remain available for explicit representation vocabulary, and `Space.to_matrix()` returns an explicit finite matrix-space view.
 
 ## Basic Use
 
@@ -24,7 +24,7 @@ The records are strings. Edit distance defines the geometry without an embedding
 - `Space`: minimal intent-first finite metric space facade
 - `FiniteMetricSpace`: finite metric space over records
 - `MatrixSpace`: compatibility alias for `FiniteMetricSpace`
-- `operators`: small helpers for pairwise distances, nearest neighbors, range neighbors, exact graph results and edges, graph connectivity diagnostics, graph degree diagnostics, graph stretch diagnostics, graph pruning, grouping, outlier detection, representative selection, cross-space comparison, medoids, separated representatives, and intrinsic-dimension diagnostics
+- `operators`: small helpers for pairwise distances, nearest neighbors, range neighbors, exact graph results and edges, graph connectivity diagnostics, graph degree diagnostics, graph stretch diagnostics, graph pruning, grouping, outlier detection, representative selection, representative reduction, cross-space comparison, medoids, separated representatives, and intrinsic-dimension diagnostics
 - `strategies`: strategy objects for intent methods, starting with `KMedoids`, `DBSCAN`, `FarthestFirst`, and `DistanceProfileCorrelation`
 - `mappings`: beta compatibility bridge for installed mapping bindings
 - `transforms`: beta compatibility bridge for installed transform bindings
@@ -47,6 +47,8 @@ space.compare(other_space, strategy=DistanceProfileCorrelation())
 space.correlate(other_space)
 space.representatives(k=3)
 space.representatives(k=3, strategy=FarthestFirst(seed_index=1))
+space.reduce(count=3)
+space.reduce(strategy=KMedoids(groups=3))
 space.describe()
 space.describe_structure()
 space.knn(query, k=10)
@@ -68,6 +70,7 @@ from metric.operators import (
     Outlier,
     OutlierResult,
     RepresentativeSet,
+    ReductionResult,
     StructureDescription,
     coverage_representative_indices,
     coverage_representatives,
@@ -93,6 +96,7 @@ from metric.operators import (
     pairwise_distance_matrix,
     prune_graph_out_degree,
     range_neighbors,
+    reduce_space,
     representative_indices,
     representatives,
     separated_representative_indices,
@@ -127,6 +131,7 @@ covered_ids = coverage_representative_indices(records, Edit(), radius=1)
 covered_records = coverage_representatives(records, Edit(), radius=1)
 dimension = intrinsic_dimension(records, Edit())
 representative_result = find_representatives(records, Edit(), k=2, strategy=FarthestFirst(seed_index=0))
+reduction = reduce_space(records, Edit(), count=2, strategy=FarthestFirst(seed_index=0))
 structure = describe_structure(records, Edit())
 ```
 
@@ -139,6 +144,8 @@ structure = describe_structure(records, Edit())
 `representative_indices` and `representatives` use deterministic farthest-first traversal over the finite metric space. They select existing records rather than vector centroids, start from `seed_index=0` by default, and resolve equal-distance ties by record order.
 
 `find_representatives` returns a `RepresentativeSet` with selected source indices, nearest-representative distances for every record, coverage radius, average nearest-representative distance, strategy metadata, and representation metadata. `Space.representatives(...)` exposes the same result from the `Space` facade.
+
+`reduce_space` returns a `ReductionResult` with a reduced `Space`, selected source-record IDs, source-to-reduced assignments, nearest-representative distances, strategy metadata, and explicit `inverse_supported=False` metadata. `Space.reduce(count=..., strategy=...)` exposes the same result. The first Python-core strategies are `FarthestFirst` and `KMedoids`, so reduction works for arbitrary records plus a metric rather than only vector records.
 
 `medoid_index` and `medoid` select the existing record with the smallest total distance to all records. Equal total-distance ties are resolved by record order.
 
@@ -199,7 +206,7 @@ print(space.distance(0, 1))
 
 ## Engine Roadmap
 
-The implemented facade currently covers neighbor access, grouping, outlier detection, cross-space comparison, representative selection, and structure diagnostics. Additional intent names such as `embed`, `map`, `reduce`, and `denoise` describe the public direction and should be promoted only when they are backed by stable strategies, result objects, examples, and CI.
+The implemented facade currently covers neighbor access, grouping, outlier detection, cross-space comparison, representative selection, representative reduction, and structure diagnostics. Additional intent names such as `embed`, `map`, and `denoise` describe the public direction and should be promoted only when they are backed by stable strategies, result objects, examples, and CI.
 
 ## Compatibility
 

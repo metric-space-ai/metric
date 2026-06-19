@@ -81,6 +81,11 @@ class Space(FiniteMetricSpace):
 
         return find_representatives(self.records, self.metric, k, strategy=strategy)
 
+    def reduce(self, count=None, strategy=None):
+        from metric.operators import reduce_space
+
+        return reduce_space(self.records, self.metric, count, strategy=strategy)
+
     def describe(self):
         from metric.operators import describe_structure
 

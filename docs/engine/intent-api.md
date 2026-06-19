@@ -10,7 +10,7 @@ Intent APIs are named by what users want to do, not by the algorithm used to do 
 | Compare spaces | `compare`, `correlate` | `Space.compare`, `Space.correlate` | Core Revival |
 | Describe a space | `describe_structure` | `Space.describe` | Core Revival |
 | Find outliers | `find_outliers` | `Space.outliers` | C++ and Python DBSCAN-noise path |
-| Reduce complexity | `reduce` | roadmap | C++ PCFA-backed path |
+| Reduce complexity | `reduce` | `Space.reduce` | C++ PCFA-backed path; Python representative/medoid reduction path |
 | Map to another space | `metric::mappings::*` | roadmap | C++ initial mapping conventions |
 | Denoise a space | roadmap | roadmap | Target Engine API |
 
@@ -37,6 +37,7 @@ space = Space(records, metric)
 groups = space.groups(KMedoids(groups=2))
 outliers = space.outliers(DBSCAN(radius=2.0, min_points=2))
 dependency = space.compare(other_space, DistanceProfileCorrelation())
+reduction = space.reduce(count=2)
 structure = space.describe()
 ```
 
