@@ -119,6 +119,8 @@ The lower-level C++ representations remain available for expert control and comp
 - `metric::operators::representatives`
 - `metric::operators::medoid_index`
 - `metric::operators::medoid`
+- `metric::operators::separated_representative_indices`
+- `metric::operators::separated_representatives`
 - `metric::operators::coverage_representative_indices`
 - `metric::operators::coverage_representatives`
 - `metric::operators::intrinsic_dimension`

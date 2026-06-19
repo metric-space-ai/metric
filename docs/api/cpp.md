@@ -69,16 +69,20 @@ auto selected_ids = metric::operators::representative_indices(records, metric::E
 auto selected_records = metric::operators::representatives(records, metric::Edit<std::string>{}, 2);
 auto center_id = metric::operators::medoid_index(records, metric::Edit<std::string>{});
 auto center_record = metric::operators::medoid(records, metric::Edit<std::string>{});
+auto separated_ids = metric::operators::separated_representative_indices(records, metric::Edit<std::string>{}, 2);
+auto separated_records = metric::operators::separated_representatives(records, metric::Edit<std::string>{}, 2);
 auto covered_ids = metric::operators::coverage_representative_indices(records, metric::Edit<std::string>{}, 1);
 auto covered_records = metric::operators::coverage_representatives(records, metric::Edit<std::string>{}, 1);
 auto dimension = metric::operators::intrinsic_dimension(records, metric::Edit<std::string>{});
 ```
 
-The promoted C++ operator helpers are `pairwise_distance_matrix`, `nearest_neighbors`, `range_neighbors`, `representative_indices`, `representatives`, `medoid_index`, `medoid`, `coverage_representative_indices`, `coverage_representatives`, and `intrinsic_dimension`.
+The promoted C++ operator helpers are `pairwise_distance_matrix`, `nearest_neighbors`, `range_neighbors`, `representative_indices`, `representatives`, `medoid_index`, `medoid`, `separated_representative_indices`, `separated_representatives`, `coverage_representative_indices`, `coverage_representatives`, and `intrinsic_dimension`.
 
 `representative_indices` and `representatives` use deterministic farthest-first traversal over the finite metric space. They select existing records rather than vector centroids, start from `seed_index=0` by default, and resolve equal-distance ties by record order.
 
 `medoid_index` and `medoid` select the existing record with the smallest total distance to all records. Equal total-distance ties are resolved by record order.
+
+`separated_representative_indices` and `separated_representatives` scan records in order and keep a candidate when it is at least `minimum_distance` from every selected representative. This is deterministic redundancy-threshold reduction, not an optimal packing proof.
 
 `coverage_representative_indices` and `coverage_representatives` use deterministic greedy radius coverage. They scan records in order, choose the first uncovered record as a representative, and mark every record within `radius` as covered.
 

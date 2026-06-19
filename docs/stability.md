@@ -13,7 +13,7 @@ The Core Revival API is the currently promoted, CI-tested entry point.
 - custom metric callables
 - C++ metric adapter: `metric::Metric<Record, Callable>` and `metric::make_metric<Record>(callable)`
 - C++ facade: `metric::Space::from_records` returning `metric::FiniteSpace`
-- C++ helpers: `metric::operators::pairwise_distance_matrix`, `nearest_neighbors`, `range_neighbors`, `representative_indices`, `representatives`, `medoid_index`, `medoid`, `coverage_representative_indices`, `coverage_representatives`, and `intrinsic_dimension`
+- C++ helpers: `metric::operators::pairwise_distance_matrix`, `nearest_neighbors`, `range_neighbors`, `representative_indices`, `representatives`, `medoid_index`, `medoid`, `separated_representative_indices`, `separated_representatives`, `coverage_representative_indices`, `coverage_representatives`, and `intrinsic_dimension`
 - explicit C++ representations: `metric::MatrixSpace`, `metric::GraphSpace`, `metric::TreeSpace`
 - Python helpers: `metric.Space`, `metric.metrics`, `metric.spaces.FiniteMetricSpace`, `metric.operators`
 - Python beta bridges: `metric.mappings`, `metric.transforms`
@@ -64,7 +64,7 @@ This matrix labels the current tree by support status. It is deliberately path-b
 | Promoted C++ metrics | `metric/distance/k-related/Standards.hpp`, `metric/distance/k-structured/Edit.hpp`, `metric/distance/k-structured/TWED.hpp`, `metric/distance/k-structured/EMD.hpp` | Core Revival | Covered by promoted examples or smoke tests. Broader distance modules need their own fixtures before promotion. |
 | Core diagnostics | `metric/operators.hpp`, `metric/correlation/entropy.hpp`, `metric/correlation/mgc.hpp` | Core Revival | Covered by deterministic smoke tests and examples. |
 | Core C++ examples and tests | `examples/core/`, `tests/core_smoke/`, `tests/downstream_consumer/` | Core Revival | Required release gates. Every promoted example here is executed by CTest. |
-| Python core facade | `python/pkg/metric/metrics.py`, `python/pkg/metric/spaces.py`, `python/pkg/metric/operators.py`, `python/pkg/metric/__init__.py` | Core Revival | Promoted Python API, including deterministic representative-selection, medoid, and radius-coverage helpers, covered by wheel CI and core Python tests. |
+| Python core facade | `python/pkg/metric/metrics.py`, `python/pkg/metric/spaces.py`, `python/pkg/metric/operators.py`, `python/pkg/metric/__init__.py` | Core Revival | Promoted Python API, including deterministic representative-selection, medoid, separated-representative, and radius-coverage helpers, covered by wheel CI and core Python tests. |
 | Python beta bridges | `python/pkg/metric/mappings.py`, `python/pkg/metric/transforms.py` | Beta / Compatibility | Stable import locations that expose installed legacy names without promoting those algorithms into the core-wheel contract. |
 | Python compatibility bindings | `python/pkg/metric/distance/`, `python/pkg/metric/correlation/`, `python/pkg/metric/mapping/`, `python/pkg/metric/space/`, `python/pkg/metric/transform/`, `python/pkg/metric/utils/` | Compatibility | Import-compatible surface for existing users; new examples should prefer the revived facade. |
 | Mapping algorithms | `metric/mapping/`, `examples/mapping_examples/`, `tests/mapping_tests/` | Beta | Useful research code, not a default release gate until deterministic fixtures and public result contracts are added. |

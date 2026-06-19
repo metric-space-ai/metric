@@ -24,7 +24,7 @@ The records are strings. Edit distance defines the geometry without an embedding
 - `Space`: minimal intent-first finite metric space facade
 - `FiniteMetricSpace`: finite metric space over records
 - `MatrixSpace`: compatibility alias for `FiniteMetricSpace`
-- `operators`: small helpers for pairwise distances, nearest neighbors, range neighbors, representative selection, medoids, and intrinsic-dimension diagnostics
+- `operators`: small helpers for pairwise distances, nearest neighbors, range neighbors, representative selection, medoids, separated representatives, and intrinsic-dimension diagnostics
 - `mappings`: beta compatibility bridge for installed mapping bindings
 - `transforms`: beta compatibility bridge for installed transform bindings
 
@@ -57,6 +57,8 @@ from metric.operators import (
     range_neighbors,
     representative_indices,
     representatives,
+    separated_representative_indices,
+    separated_representatives,
 )
 
 distances = pairwise_distance_matrix(records, Edit())
@@ -66,6 +68,8 @@ selected_ids = representative_indices(records, Edit(), k=2)
 selected_records = representatives(records, Edit(), k=2)
 center_id = medoid_index(records, Edit())
 center_record = medoid(records, Edit())
+separated_ids = separated_representative_indices(records, Edit(), minimum_distance=2)
+separated_records = separated_representatives(records, Edit(), minimum_distance=2)
 covered_ids = coverage_representative_indices(records, Edit(), radius=1)
 covered_records = coverage_representatives(records, Edit(), radius=1)
 dimension = intrinsic_dimension(records, Edit())
@@ -74,6 +78,8 @@ dimension = intrinsic_dimension(records, Edit())
 `representative_indices` and `representatives` use deterministic farthest-first traversal over the finite metric space. They select existing records rather than vector centroids, start from `seed_index=0` by default, and resolve equal-distance ties by record order.
 
 `medoid_index` and `medoid` select the existing record with the smallest total distance to all records. Equal total-distance ties are resolved by record order.
+
+`separated_representative_indices` and `separated_representatives` scan records in order and keep a candidate when it is at least `minimum_distance` from every selected representative. This is deterministic redundancy-threshold reduction, not an optimal packing proof.
 
 `coverage_representative_indices` and `coverage_representatives` use deterministic greedy radius coverage. They scan records in order, choose the first uncovered record as a representative, and mark every record within `radius` as covered.
 
