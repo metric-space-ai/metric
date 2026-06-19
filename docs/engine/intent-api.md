@@ -49,7 +49,7 @@ dependency = space.compare(other_space, DistanceProfileCorrelation(), align="ids
 reduction = space.reduce(count=2)
 compression = space.compress(count=2)
 mapped = space.map(transform=transform, metric=target_metric)
-structure = space.describe()
+structure = space.describe(representation=space.to_matrix())
 ```
 
 Intent results are named dataclasses or structs. They carry selected records, source IDs, diagnostics, strategy names, and representation metadata.

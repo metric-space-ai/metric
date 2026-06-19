@@ -85,8 +85,8 @@ space.compress(count=3)
 space.compress(strategy=KMedoids(groups=3))
 space.map(transform=lambda record: record["value"], metric=lambda lhs, rhs: abs(lhs - rhs))
 space.map(lambda record: record["value"], lambda lhs, rhs: abs(lhs - rhs))
-space.describe()
-space.describe_structure()
+space.describe(representation=space.to_matrix())
+space.describe_structure(representation=space.to_matrix())
 space.knn(query, k=10)
 space.nn(query)
 space.rnn(query, radius=1)
@@ -246,7 +246,7 @@ structure = describe_structure(records, Edit())
 
 `intrinsic_dimension` returns an expansion-dimension estimate based on finite-space neighborhood growth. Treat it as a diagnostic that depends on the metric, sample density, duplicates, and available radii.
 
-`describe_structure` returns a `StructureDescription` with record count, evaluated pair count, zero-distance pair count, minimum nonzero distance, maximum distance, average distance, and intrinsic-dimension estimate. `Space.describe()` and `Space.describe_structure()` expose the same diagnostics from the `Space` facade.
+`describe_structure` returns a `StructureDescription` with record count, evaluated pair count, zero-distance pair count, minimum nonzero distance, maximum distance, average distance, and intrinsic-dimension estimate. `Space.describe()` and `Space.describe_structure()` expose the same diagnostics from the `Space` facade. Pass a fresh `representation=` to record representation metadata; stale representations raise `metric.StaleRepresentationError`.
 
 ## Custom Metrics
 

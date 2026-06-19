@@ -728,6 +728,10 @@ class RevivalApiTest(unittest.TestCase):
         self.assertAlmostEqual(description.average_distance, 2.0)
         self.assertAlmostEqual(description.intrinsic_dimension, np.log2(5.0 / 3.0))
         self.assertEqual(space.describe_structure(), description)
+        matrix_description = space.describe(representation=space.to_matrix())
+        self.assertEqual(matrix_description.representation, "matrix")
+        self.assertEqual(matrix_description.record_count, description.record_count)
+        self.assertEqual(space.describe_structure(representation=space.to_matrix()).representation, "matrix")
 
         process_space = Space([0, 1, 2, 3, 4, 5], metric=lambda lhs, rhs: abs(lhs - rhs))
         quality_space = Space([0, 1, 4, 9, 16, 25], metric=lambda lhs, rhs: abs(lhs - rhs))
@@ -810,6 +814,8 @@ class RevivalApiTest(unittest.TestCase):
         space.touch()
         with self.assertRaises(StaleRepresentationError):
             space.embed(representation=stale_matrix)
+        with self.assertRaises(StaleRepresentationError):
+            space.describe(representation=stale_matrix)
 
     def test_intrinsic_dimension_estimates_distance_growth(self):
         records = [0, 1, 2, 3, 4]

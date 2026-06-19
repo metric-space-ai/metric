@@ -1785,7 +1785,7 @@ def intrinsic_dimension(records, metric):
     return intrinsic_dimension_from_distances(pairwise_distance_matrix(records, metric))
 
 
-def describe_structure(records, metric):
+def describe_structure(records, metric, *, representation="metric_space"):
     """Describe exact finite-space structure with all-pairs diagnostics."""
     records = list(records)
     distances = pairwise_distance_matrix(records, metric)
@@ -1820,7 +1820,7 @@ def describe_structure(records, metric):
         has_nonzero_distances=has_nonzero_distances,
         exact=True,
         strategy="exact_all_pairs",
-        representation="metric_space",
+        representation=representation,
     )
 
 
