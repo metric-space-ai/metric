@@ -12,6 +12,7 @@
 
 #include "../core/neighbor.hpp"
 #include "../core/record_id.hpp"
+#include "diagnostics.hpp"
 
 namespace metric::representations {
 
@@ -28,16 +29,23 @@ template <typename Space> class KnnGraphIndex {
 		, record_count_(space.size())
 		, version_(space.version())
 	{
+		ids_.reserve(record_count_);
+		records_.reserve(record_count_);
+		for (std::size_t index = 0; index < record_count_; ++index) {
+			const auto id = space.id(index);
+			ids_.push_back(id);
+			records_.push_back(space.record(id));
+		}
+
 		adjacency_.reserve(record_count_);
 		for (std::size_t source = 0; source < record_count_; ++source) {
-			adjacency_.push_back(build_neighbors(RecordId::from_index(source)));
+			adjacency_.push_back(build_neighbors(source));
 		}
 	}
 
 	auto neighbors(RecordId source) const -> const std::vector<neighbor_type> &
 	{
-		validate(source);
-		return adjacency_[source.index()];
+		return adjacency_[position_of(source)];
 	}
 
 	auto knn(const record_type &query, std::size_t k) const -> std::vector<neighbor_type>
@@ -45,8 +53,7 @@ template <typename Space> class KnnGraphIndex {
 		std::vector<neighbor_type> candidates;
 		candidates.reserve(record_count_);
 		for (std::size_t index = 0; index < record_count_; ++index) {
-			const auto id = RecordId::from_index(index);
-			candidates.push_back(neighbor_type{id, space_->metric()(query, space_->record(id))});
+			candidates.push_back(neighbor_type{ids_[index], space_->metric()(query, records_[index])});
 		}
 		sort_neighbors(candidates);
 		if (candidates.size() > k) {
@@ -57,21 +64,82 @@ template <typename Space> class KnnGraphIndex {
 
 	auto k() const -> std::size_t { return k_; }
 	auto record_count() const -> std::size_t { return record_count_; }
+	auto id(std::size_t position) const -> RecordId
+	{
+		validate_position(position);
+		return ids_[position];
+	}
+	auto position_of(RecordId id) const -> std::size_t
+	{
+		for (std::size_t position = 0; position < ids_.size(); ++position) {
+			if (ids_[position] == id) {
+				return position;
+			}
+		}
+		throw std::out_of_range("record id is outside the kNN graph index");
+	}
+	auto contains(RecordId id) const -> bool
+	{
+		for (const auto current : ids_) {
+			if (current == id) {
+				return true;
+			}
+		}
+		return false;
+	}
 	auto version() const -> std::size_t { return version_; }
 	auto is_stale() const -> bool { return space_->version() != version_; }
+	auto edge_count() const -> std::size_t
+	{
+		std::size_t count = 0;
+		for (const auto &neighbors : adjacency_) {
+			count += neighbors.size();
+		}
+		return count;
+	}
+	auto stats() const -> knn_graph_stats
+	{
+		knn_graph_stats result;
+		result.nodes = record_count_;
+		result.edges = edge_count();
+		result.neighbors_requested = k_;
+		return result;
+	}
+
+	auto diagnostics() const -> representation_diagnostics
+	{
+		representation_diagnostics result{representation_kind::knn_graph_index,
+										  exactness::approximate,
+										  materialization::materialized,
+										  update_mode::snapshot};
+		result.space_version = space_->version();
+		result.built_for_version = version_;
+		result.stale = is_stale();
+		result.records = record_count_;
+		result.distance_evaluations = record_count_ * (record_count_ > 0 ? record_count_ - 1 : 0);
+		result.cached_distances = edge_count();
+		result.memory_bytes_estimate = ids_.size() * sizeof(RecordId) + records_.size() * sizeof(record_type);
+		for (const auto &neighbors : adjacency_) {
+			result.memory_bytes_estimate += neighbors.size() * sizeof(neighbor_type);
+		}
+		if (result.stale) {
+			result.warnings.push_back("kNN graph index was built for an older metric-space version");
+		}
+		return result;
+	}
 
   private:
-	auto build_neighbors(RecordId source) const -> std::vector<neighbor_type>
+	auto build_neighbors(std::size_t source_position) const -> std::vector<neighbor_type>
 	{
 		std::vector<neighbor_type> candidates;
 		candidates.reserve(record_count_ > 0 ? record_count_ - 1 : 0);
 
 		for (std::size_t target = 0; target < record_count_; ++target) {
-			const auto target_id = RecordId::from_index(target);
-			if (target_id == source) {
+			if (target == source_position) {
 				continue;
 			}
-			candidates.push_back(neighbor_type{target_id, space_->distance(source, target_id)});
+			candidates.push_back(neighbor_type{ids_[target],
+											   space_->metric()(records_[source_position], records_[target])});
 		}
 
 		sort_neighbors(candidates);
@@ -91,10 +159,10 @@ template <typename Space> class KnnGraphIndex {
 		});
 	}
 
-	auto validate(RecordId id) const -> void
+	auto validate_position(std::size_t position) const -> void
 	{
-		if (id.index() >= record_count_) {
-			throw std::out_of_range("record id is outside the kNN graph index");
+		if (position >= record_count_) {
+			throw std::out_of_range("record position is outside the kNN graph index");
 		}
 	}
 
@@ -102,6 +170,8 @@ template <typename Space> class KnnGraphIndex {
 	std::size_t k_;
 	std::size_t record_count_;
 	std::size_t version_;
+	std::vector<RecordId> ids_;
+	std::vector<record_type> records_;
 	std::vector<std::vector<neighbor_type>> adjacency_;
 };
 

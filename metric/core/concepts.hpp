@@ -53,6 +53,9 @@ struct DistanceProvider<Provider,
 									decltype(std::declval<const Provider &>().distance(std::declval<RecordId>(),
 																					   std::declval<RecordId>())),
 									decltype(std::declval<const Provider &>().record_count()),
+									decltype(std::declval<const Provider &>().id(std::declval<std::size_t>())),
+									decltype(std::declval<const Provider &>().position_of(std::declval<RecordId>())),
+									decltype(std::declval<const Provider &>().contains(std::declval<RecordId>())),
 									decltype(std::declval<const Provider &>().version()),
 									decltype(std::declval<const Provider &>().is_stale())>> : std::true_type {
 };

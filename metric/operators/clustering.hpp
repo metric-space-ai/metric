@@ -29,7 +29,7 @@ auto total_distance_to_all(const Provider &provider, RecordId candidate) -> type
 
 	distance_type total{};
 	for (std::size_t index = 0; index < provider.record_count(); ++index) {
-		total += provider.distance(candidate, RecordId::from_index(index));
+		total += provider.distance(candidate, provider.id(index));
 	}
 	return total;
 }
@@ -69,7 +69,7 @@ auto initialize_medoids(const Provider &provider, std::size_t cluster_count) -> 
 	distance_type best_total{};
 	bool has_best = false;
 	for (std::size_t index = 0; index < provider.record_count(); ++index) {
-		const auto candidate = RecordId::from_index(index);
+		const auto candidate = provider.id(index);
 		const auto total = total_distance_to_all(provider, candidate);
 		if (!has_best || total < best_total) {
 			first_medoid = candidate;
@@ -84,7 +84,7 @@ auto initialize_medoids(const Provider &provider, std::size_t cluster_count) -> 
 		distance_type best_distance{};
 		bool has_next = false;
 		for (std::size_t index = 0; index < provider.record_count(); ++index) {
-			const auto candidate = RecordId::from_index(index);
+			const auto candidate = provider.id(index);
 			if (contains_medoid(medoids, candidate)) {
 				continue;
 			}
@@ -116,7 +116,7 @@ auto assign_to_medoids(const Provider &provider, const std::vector<RecordId> &me
 	std::vector<std::size_t> cluster_sizes(medoids.size(), 0);
 
 	for (std::size_t index = 0; index < provider.record_count(); ++index) {
-		const auto id = RecordId::from_index(index);
+		const auto id = provider.id(index);
 		std::size_t best_cluster = 0;
 		distance_type best_distance{};
 		bool has_best = false;
@@ -159,11 +159,11 @@ auto recompute_medoids(const Provider &provider, const std::vector<std::size_t> 
 			if (assignments[candidate_index] != cluster) {
 				continue;
 			}
-			const auto candidate = RecordId::from_index(candidate_index);
+			const auto candidate = provider.id(candidate_index);
 			distance_type total{};
 			for (std::size_t other_index = 0; other_index < assignments.size(); ++other_index) {
 				if (assignments[other_index] == cluster) {
-					total += provider.distance(candidate, RecordId::from_index(other_index));
+					total += provider.distance(candidate, provider.id(other_index));
 				}
 			}
 			if (!has_best || total < best_total ||
@@ -198,11 +198,11 @@ auto compute_cluster_medoids(const Provider &provider, const std::vector<std::si
 			if (assignments[candidate_index] != cluster) {
 				continue;
 			}
-			const auto candidate = RecordId::from_index(candidate_index);
+			const auto candidate = provider.id(candidate_index);
 			distance_type total{};
 			for (std::size_t other_index = 0; other_index < assignments.size(); ++other_index) {
 				if (assignments[other_index] == cluster) {
-					total += provider.distance(candidate, RecordId::from_index(other_index));
+					total += provider.distance(candidate, provider.id(other_index));
 				}
 			}
 			if (!has_best || total < best_total ||
@@ -261,7 +261,7 @@ auto affinity_similarity_matrix(const Provider &provider, typename Provider::dis
 
 	for (std::size_t lhs = 0; lhs < provider.record_count(); ++lhs) {
 		for (std::size_t rhs = lhs; rhs < provider.record_count(); ++rhs) {
-			const auto distance = provider.distance(RecordId::from_index(lhs), RecordId::from_index(rhs));
+			const auto distance = provider.distance(provider.id(lhs), provider.id(rhs));
 			const auto current_similarity = -distance;
 			if (!has_similarity || current_similarity < minimum_similarity) {
 				minimum_similarity = current_similarity;
@@ -289,7 +289,7 @@ auto dbscan_region_query(const Provider &provider, RecordId id, Radius radius) -
 	neighbors.reserve(provider.record_count());
 
 	for (std::size_t index = 0; index < provider.record_count(); ++index) {
-		const auto candidate = RecordId::from_index(index);
+		const auto candidate = provider.id(index);
 		if (provider.distance(id, candidate) <= radius) {
 			neighbors.push_back(candidate);
 		}
@@ -310,12 +310,12 @@ auto expand_dbscan_cluster(const Provider &provider, const std::vector<RecordId>
 
 	for (const auto neighbor : seed_neighbors) {
 		queue.push_back(neighbor);
-		queued[neighbor.index()] = true;
+		queued[provider.position_of(neighbor)] = true;
 	}
 
 	for (std::size_t cursor = 0; cursor < queue.size(); ++cursor) {
 		const auto candidate = queue[cursor];
-		const auto candidate_index = candidate.index();
+		const auto candidate_index = provider.position_of(candidate);
 
 		if (!visited[candidate_index]) {
 			visited[candidate_index] = true;
@@ -323,9 +323,10 @@ auto expand_dbscan_cluster(const Provider &provider, const std::vector<RecordId>
 			if (neighbors.size() >= min_points) {
 				core_records[candidate_index] = true;
 				for (const auto neighbor : neighbors) {
-					if (!queued[neighbor.index()]) {
+					const auto neighbor_position = provider.position_of(neighbor);
+					if (!queued[neighbor_position]) {
 						queue.push_back(neighbor);
-						queued[neighbor.index()] = true;
+						queued[neighbor_position] = true;
 					}
 				}
 			}
@@ -429,7 +430,7 @@ auto dbscan(const Provider &provider, Radius radius, std::size_t min_points)
 			continue;
 		}
 
-		const auto id = RecordId::from_index(index);
+		const auto id = provider.id(index);
 		visited[index] = true;
 		auto neighbors = engine_detail::dbscan_region_query(provider, id, radius);
 		if (neighbors.size() < min_points) {
@@ -451,12 +452,12 @@ auto dbscan(const Provider &provider, Radius radius, std::size_t min_points)
 			++cluster_sizes[assignments[index]];
 		} else {
 			assignments[index] = noise_label;
-			noise_records.push_back(RecordId::from_index(index));
+			noise_records.push_back(provider.id(index));
 			++noise_count;
 		}
 
 		if (core_record_flags[index]) {
-			core_records.push_back(RecordId::from_index(index));
+			core_records.push_back(provider.id(index));
 		}
 	}
 
@@ -534,7 +535,7 @@ auto affinity_propagation(const Provider &provider, double preference = 0.5, int
 	std::vector<RecordId> medoids;
 	medoids.reserve(exemplars.size());
 	for (const auto exemplar : exemplars) {
-		medoids.push_back(RecordId::from_index(exemplar));
+		medoids.push_back(provider.id(exemplar));
 	}
 
 	ClusteringResult<distance_type> result;

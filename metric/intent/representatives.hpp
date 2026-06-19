@@ -47,7 +47,7 @@ auto find_representatives(const Provider &provider, std::size_t count, strategie
 		throw std::out_of_range("seed_index is outside the metric space");
 	}
 
-	result.representatives.push_back(RecordId::from_index(strategy.seed_index));
+	result.representatives.push_back(provider.id(strategy.seed_index));
 
 	std::vector<bool> is_selected(provider.record_count(), false);
 	is_selected[strategy.seed_index] = true;
@@ -55,7 +55,7 @@ auto find_representatives(const Provider &provider, std::size_t count, strategie
 	result.nearest_representative_distances.resize(provider.record_count());
 	for (std::size_t index = 0; index < provider.record_count(); ++index) {
 		result.nearest_representative_distances[index] =
-			provider.distance(RecordId::from_index(index), result.representatives.front());
+			provider.distance(provider.id(index), result.representatives.front());
 	}
 
 	while (result.representatives.size() < count) {
@@ -78,13 +78,13 @@ auto find_representatives(const Provider &provider, std::size_t count, strategie
 			throw std::logic_error("failed to select the next representative");
 		}
 
-		const auto next_id = RecordId::from_index(next_index);
+		const auto next_id = provider.id(next_index);
 		result.representatives.push_back(next_id);
 		is_selected[next_index] = true;
 		for (std::size_t index = 0; index < result.nearest_representative_distances.size(); ++index) {
 			result.nearest_representative_distances[index] =
 				std::min(result.nearest_representative_distances[index],
-						 provider.distance(RecordId::from_index(index), next_id));
+						 provider.distance(provider.id(index), next_id));
 		}
 	}
 

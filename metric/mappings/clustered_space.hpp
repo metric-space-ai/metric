@@ -147,7 +147,7 @@ template <typename Distance> class ClusteredSpaceMapping {
 			if (label >= clustering.cluster_count) {
 				throw std::invalid_argument("clustering assignment references an unknown cluster");
 			}
-			source_records[label].push_back(RecordId::from_index(index));
+			source_records[label].push_back(provider.id(index));
 		}
 
 		std::vector<RecordId> representative_records;

@@ -30,9 +30,37 @@ int main()
 	assert(typed_space.size() == records.size());
 	assert(!typed_space.empty());
 	assert(typed_space.version() == 0);
+	assert(typed_space.id_at(0) == metric_id);
+	assert(typed_space.contains(metric_id));
+	assert(typed_space.position_of(metrics_id) == 1);
 	assert(typed_space[metric_id] == "metric");
 	assert(typed_space.distance(metric_id, metrics_id) == 1);
 	assert(typed_space(metric_id, metrics_id) == 1);
+
+	const auto inserted_id = typed_space.insert("metrician");
+	assert(typed_space.version() == 1);
+	assert(typed_space.size() == records.size() + 1);
+	assert(typed_space.contains(inserted_id));
+	assert(typed_space.position_of(inserted_id) == records.size());
+	assert(typed_space.record(inserted_id) == "metrician");
+
+	typed_space.replace(inserted_id, "forest");
+	assert(typed_space.version() == 2);
+	assert(typed_space.record(inserted_id) == "forest");
+
+	assert(typed_space.erase(metrics_id));
+	assert(typed_space.version() == 3);
+	assert(!typed_space.contains(metrics_id));
+	assert(typed_space.position_of(inserted_id) == records.size() - 1);
+	assert(typed_space.id_at(0) == metric_id);
+	bool rejected_erased_id = false;
+	try {
+		(void)typed_space.position_of(metrics_id);
+	} catch (const std::out_of_range &) {
+		rejected_erased_id = true;
+	}
+	assert(rejected_erased_id);
+	assert(!typed_space.erase(metrics_id));
 
 	const auto made_space = metric::make_space(records, metric::Edit<char>{});
 	static_assert(metric::MetricSpaceLike_v<decltype(made_space)>);
