@@ -16,6 +16,7 @@ The current local tree implements the first revival slice:
 - a downstream CMake consumer under `tests/downstream_consumer/`
 - core C++ `Metric`, `Space`, `FiniteSpace`, explicit representation aliases, and `metric::operators`
 - Python core facade modules under `metric.metrics`, `metric.spaces`, and `metric.operators`
+- Python engine-style Space intent facade methods for representatives and structure diagnostics
 - Python beta compatibility bridge modules under `metric.mappings` and `metric.transforms`
 - promoted C++ examples under `examples/core/`
 - promoted Python examples under `python/examples/metric_space/`
@@ -217,6 +218,7 @@ The following revival improvements landed on `master` after the `v0.3.2` tag and
 - initial C++ engine mapping conventions with clustered-space derivation, `MappingResult` lineage metadata, and core smoke coverage, merged as `9e4b2d1a349d4b43e76e06ec7374f1d43a919296`
 - C++ engine PCFA mapping adapter with explicit inverse reconstruction and LAPACK-gated core smoke coverage, merged as `0aff5aea43433b4fe1b20dbc84cedf71b0e4559e`
 - C++ engine reduce intent backed by the PCFA strategy with LAPACK-gated core smoke coverage, merged as `cf1ceef290f73fac95943f0b7132953fe9d0c698`
+- Python engine-style Space intent facade methods for representatives and structure diagnostics with named result objects and core test coverage, merged as `1849c29a25122b31605945295c91710cfc6a126f`
 
 ## Historical Code Policy
 
