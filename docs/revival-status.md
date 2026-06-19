@@ -58,6 +58,7 @@ The current local tree implements the first revival slice:
 - promoted Python examples under `python/examples/metric_space/`
 - CI-tested C++ and Python engine flagship examples for strings, process curves, histograms, and cross-space dependency
 - CI-tested C++ engine representation-swap example covering implicit search, matrix cache, cover-tree index, kNN graph index, and stale representation diagnostics
+- CI-tested Python engine representation-swap example covering implicit search, matrix materialization, exact tree-style lookup, exact kNN graph adjacency, runtime diagnostics, and stale representation checks
 - CI-tested Python engine flagship example for mixed structured records with a custom composite metric
 - native C++ DNN baseline smoke coverage for RegressionMSE, RMSProp, row-as-observation network training, dense Autoencoder train/encode/decode/save/load, and fully connected parameter serialization round trips
 - native C++ DNN `Network` training hooks for forward activation capture, anchored layer-output backpropagation, and explicit optimizer updates
@@ -89,6 +90,8 @@ The current local tree implements the first revival slice:
 - C++ `MetricSpace` supports stable ID lookup, insertion, replacement, erase, and ID-to-position mapping
 - initial C++ engine representation adapters for implicit distance lookup, matrix caching, exact neighbor-index scaffolds, kNN graph adjacency, graph topology edges, and stale detection
 - C++ representation adapters expose common diagnostics and preserve provider IDs across materialized snapshots
+- C++ `MatrixCache` supports eager and lazy fill modes with hit/miss/fill diagnostics and deterministic stale-state reporting
+- C++ `KnnGraphIndex` exposes explicit sampled-recall validation against an exact distance provider
 - initial C++ engine nearest operators with `NeighborSet`, `operators::knn`, and `operators::range` over spaces, distance providers, and neighbor indexes
 - initial C++ engine clustering operators with `ClusteringResult`, deterministic `operators::kmedoids`, and deterministic `operators::dbscan` over spaces and distance providers
 - C++ engine affinity-propagation clustering strategy with named `ClusteringResult` metadata and distance-provider execution
@@ -283,6 +286,7 @@ The following revival improvements landed on `master` after the `v0.3.2` tag and
 - initial C++ engine mapping conventions with clustered-space derivation, `MappingResult` lineage metadata, and core smoke coverage, merged as `9e4b2d1a349d4b43e76e06ec7374f1d43a919296`
 - C++ engine PCFA mapping adapter with explicit inverse reconstruction and LAPACK-gated core smoke coverage, merged as `0aff5aea43433b4fe1b20dbc84cedf71b0e4559e`
 - C++ engine reduce intent backed by the PCFA strategy with LAPACK-gated core smoke coverage, merged as `cf1ceef290f73fac95943f0b7132953fe9d0c698`
+- C++ representation-layer follow-ups for lazy `MatrixCache` diagnostics, explicit kNN graph sampled-recall validation, and the promoted Python engine representation-swap example, merged as `8e38a8c5ba1f11e879d66a8cd00b77ee47e67bf9`
 - C++ engine umbrella header exposure for the PCFA-backed reduce intent with core, downstream, and include-smoke coverage, merged as `82457b5368e49cfbb6a0f3c417fef0fc56c4f5fb`
 - initial C++ engine runtime policy scaffolding for exact lazy/materialized neighbor execution, representation diagnostics, and cache staleness coverage, merged as `c9217ec01bc06578dc050a06605df22c44fd62eb`
 - C++ `RuntimeDiagnostics` and `runtime::diagnostics(...)` policy metadata with core smoke coverage, merged as `140d065b4e92b28095056a27aef6c28cce2b2353`
