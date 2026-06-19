@@ -1352,12 +1352,15 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIn("approximate", approximate_diagnostics.reason)
         self.assertEqual(space.neighbors("cut", count=2, runtime=policy), [(0, 1), (1, 1)])
         self.assertEqual(space.neighbors("cut", count=2, representation=space.to_tree(), runtime=policy), [(0, 1), (1, 1)])
+        self.assertEqual(space.groups(count=2, runtime=policy).representation, "matrix")
         self.assertEqual(space.describe(runtime=policy).record_count, len(self.records))
         self.assertEqual(space.describe_structure(runtime=policy).record_count, len(self.records))
         self.assertEqual(space.compare(space, runtime=policy).left_record_count, len(self.records))
 
         with self.assertRaises(StrategyUnavailableError):
             space.neighbors("cut", count=2, runtime=RuntimePolicy(exact=False))
+        with self.assertRaises(StrategyUnavailableError):
+            space.groups(count=2, runtime=RuntimePolicy(exact=False))
         with self.assertRaises(StrategyParameterError):
             RuntimePolicy(cache="unknown")
         with self.assertRaises(StrategyParameterError):

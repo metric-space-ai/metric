@@ -38,7 +38,7 @@ auto info = metric::runtime::diagnostics(policy, {}, "neighbors");
 
 ## Python Runtime Facade
 
-Python exposes `RuntimePolicy`, `CachePolicy`, `RuntimeDiagnostics`, and `runtime_diagnostics(...)` through `metric.runtime` and the top-level `metric` package. Promoted `Space` intent methods accept `runtime=` and currently execute exact deterministic paths only; approximate policies are explicit placeholders.
+Python exposes `RuntimePolicy`, `CachePolicy`, `RuntimeDiagnostics`, and `runtime_diagnostics(...)` through `metric.runtime` and the top-level `metric` package. Promoted `Space` intent methods accept `runtime=` and currently execute exact deterministic paths only; approximate policies are explicit placeholders. `Space.groups(..., runtime=RuntimePolicy(cache="materialized"))` records `representation == "matrix"` when no explicit representation override is supplied.
 
 ```python
 from metric import RuntimePolicy

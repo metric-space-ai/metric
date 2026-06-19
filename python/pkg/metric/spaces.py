@@ -257,8 +257,10 @@ class Space(FiniteMetricSpace):
         return self.rnn(query, radius)
 
     def groups(self, strategy=None, *, count="auto", radius=None, min_size=1, representation=None, runtime=None):
-        require_exact_runtime(runtime)
+        runtime_policy = require_exact_runtime(runtime)
         representation_name = self._representation_name(representation)
+        if representation is None and runtime_policy.cache_mode == "materialized":
+            representation_name = "matrix"
         if strategy is not None and (count != "auto" or radius is not None):
             raise ValueError("use either strategy or count/radius, not both")
 
