@@ -36,7 +36,7 @@ namespace metric::dnn {
 /// network building, model fitting, and prediction, etc.
 ///
 template <typename Scalar> class Network {
-  protected:
+  public:
 	using Matrix = blaze::DynamicMatrix<Scalar>;
 
   private:
@@ -84,6 +84,16 @@ template <typename Scalar> class Network {
 		// The following layers
 		for (int i = 1; i < nlayer; i++) {
 			layers[i]->forward(layers[i - 1]->output());
+		}
+	}
+
+	void validate_layer_gradient_shape(const Matrix &gradient, size_t layer_index, size_t row_count) const
+	{
+		if (blaze::size(gradient) == 0) {
+			return;
+		}
+		if (gradient.rows() != row_count || gradient.columns() != layers[layer_index]->getOutputSize()) {
+			throw std::invalid_argument("Layer gradient shape does not match layer output");
 		}
 	}
 
@@ -152,6 +162,65 @@ template <typename Scalar> class Network {
 	}
 
 	Network(const std::string &jsonString) : Network() { constructFromJsonString(jsonString); }
+
+	void forward_all(const Matrix &input, std::vector<Matrix> *activations)
+	{
+		forward(input);
+
+		if (activations == nullptr) {
+			return;
+		}
+
+		activations->clear();
+		activations->reserve(layers.size());
+		for (const auto &layer : layers) {
+			activations->push_back(layer->output());
+		}
+	}
+
+	void backprop_from_layer_gradients(const Matrix &input, const std::vector<Matrix> &output_gradients_by_layer)
+	{
+		const size_t nlayer = layers.size();
+		if (nlayer == 0) {
+			return;
+		}
+		if (output_gradients_by_layer.size() != nlayer) {
+			throw std::invalid_argument("Expected one output-gradient slot per layer");
+		}
+
+		std::vector<Matrix> activations;
+		forward_all(input, &activations);
+
+		Matrix upstream_gradient;
+		for (size_t reverse_index = nlayer; reverse_index > 0; --reverse_index) {
+			const size_t layer_index = reverse_index - 1;
+			const auto row_count = input.rows();
+			Matrix layer_gradient(row_count, layers[layer_index]->getOutputSize());
+			layer_gradient = Scalar(0);
+
+			const auto &local_gradient = output_gradients_by_layer[layer_index];
+			validate_layer_gradient_shape(local_gradient, layer_index, row_count);
+			if (blaze::size(local_gradient) != 0) {
+				layer_gradient += local_gradient;
+			}
+			validate_layer_gradient_shape(upstream_gradient, layer_index, row_count);
+			if (blaze::size(upstream_gradient) != 0) {
+				layer_gradient += upstream_gradient;
+			}
+
+			const auto &previous_output = layer_index == 0 ? input : activations[layer_index - 1];
+			layers[layer_index]->backprop(previous_output, layer_gradient);
+			upstream_gradient = layers[layer_index]->backprop_data();
+		}
+	}
+
+	void apply_optimizer()
+	{
+		if (!opt) {
+			throw std::invalid_argument("Optimizer is not set");
+		}
+		update();
+	}
 
 	void constructFromJsonString(const std::string &jsonString)
 	{
