@@ -2,9 +2,14 @@
 
 ## [Unreleased]
 
+### Algorithm Changes
+
+- Run every promoted Python metric-space example from the core Python API tests so wheel and PyPI build gates share the same example coverage.
+
 ### Documentation and Examples
 
 - Add a promoted Python time-series metric-space example using an alignment-aware callable on the core wheel path.
+- Add a promoted Python histogram metric-space example using a one-dimensional transport callable on the core wheel path.
 
 ## [0.3.2] - 2026-06-19
 

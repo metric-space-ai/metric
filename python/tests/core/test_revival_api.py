@@ -1,4 +1,8 @@
+import os
+import subprocess
+import sys
 import unittest
+from pathlib import Path
 
 import metric
 import numpy as np
@@ -53,6 +57,23 @@ class RevivalApiTest(unittest.TestCase):
         self.assertEqual(transforms.STABILITY, "beta")
         self.assertIsInstance(mappings.available(), tuple)
         self.assertIsInstance(transforms.available(), tuple)
+
+    def test_promoted_metric_space_examples_run(self):
+        examples_dir = Path(__file__).resolve().parents[2] / "examples" / "metric_space"
+        examples = sorted(examples_dir.glob("*.py"))
+
+        self.assertGreaterEqual(len(examples), 1)
+        for example in examples:
+            with self.subTest(example=example.name):
+                result = subprocess.run(
+                    [sys.executable, str(example)],
+                    check=False,
+                    env={**os.environ, "PYTHONDONTWRITEBYTECODE": "1"},
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    text=True,
+                )
+                self.assertEqual(result.returncode, 0, result.stdout)
 
     def test_finite_metric_space_caches_pairwise_distances(self):
         space = FiniteMetricSpace(self.records, self.metric)
@@ -175,6 +196,38 @@ class RevivalApiTest(unittest.TestCase):
         self.assertEqual(pairwise_distance_matrix(records, aligned_curve_distance)[3][2], 9.0)
         self.assertGreater(intrinsic_dimension(records, aligned_curve_distance), 0.0)
         self.assertMetricContracts(records, aligned_curve_distance)
+
+    def test_histogram_records_use_transport_metric_callable(self):
+        records = [
+            (1.0, 0.0, 0.0, 0.0),
+            (0.0, 1.0, 0.0, 0.0),
+            (0.0, 0.0, 0.0, 1.0),
+            (0.5, 0.5, 0.0, 0.0),
+            (0.0, 0.5, 0.5, 0.0),
+        ]
+        query = (0.25, 0.75, 0.0, 0.0)
+
+        def cumulative_transport_distance(lhs, rhs):
+            if len(lhs) != len(rhs):
+                raise ValueError("histograms must have the same number of bins")
+
+            cumulative_delta = 0.0
+            distance = 0.0
+            for lhs_mass, rhs_mass in zip(lhs, rhs):
+                cumulative_delta += lhs_mass - rhs_mass
+                distance += abs(cumulative_delta)
+
+            return distance
+
+        space = Space(records, cumulative_transport_distance)
+
+        self.assertEqual(space.nearest(query), (1, 0.25))
+        self.assertEqual(space.distance(0, 1), 1.0)
+        self.assertEqual(space.distance(0, 2), 3.0)
+        self.assertEqual(space.distance(3, 4), 1.0)
+        self.assertEqual(pairwise_distance_matrix(records, cumulative_transport_distance)[1][4], 0.5)
+        self.assertGreater(intrinsic_dimension(records, cumulative_transport_distance), 0.0)
+        self.assertMetricContracts(records, cumulative_transport_distance)
 
 
 if __name__ == "__main__":

@@ -57,8 +57,10 @@ Python wheel verification:
 ```shell
 python -m pip wheel ./python --no-deps -w wheelhouse
 python -m pip install --force-reinstall wheelhouse/*.whl
-python python/examples/metric_space/string_edit_space.py
-python python/examples/metric_space/structured_record_space.py
+for example in python/examples/metric_space/*.py; do
+  python "$example"
+done
+PYTHONDONTWRITEBYTECODE=1 python -m unittest discover -s python/tests/core -v
 ```
 
 Docs and formatting verification:
