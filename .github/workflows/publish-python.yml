@@ -12,6 +12,14 @@ on:
         required: true
         type: boolean
         default: false
+      auth_method:
+        description: Authentication method for publish=true uploads.
+        required: true
+        type: choice
+        default: password
+        options:
+          - password
+          - trusted-publishing
       repository_url:
         description: Python package index upload endpoint.
         required: true
@@ -110,6 +118,9 @@ jobs:
     if: ${{ inputs.publish }}
     runs-on: ubuntu-latest
     environment: pypi
+    permissions:
+      contents: read
+      id-token: write
 
     steps:
       - name: Download distributions
@@ -136,7 +147,8 @@ jobs:
           python -m pip install --upgrade twine
           python -m twine check dist/*
 
-      - name: Upload to package index
+      - name: Upload to package index with password credentials
+        if: ${{ inputs.auth_method == 'password' }}
         shell: bash
         env:
           TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
@@ -154,3 +166,11 @@ jobs:
           fi
 
           python -m twine "${upload_args[@]}" dist/*
+
+      - name: Upload to package index with Trusted Publishing
+        if: ${{ inputs.auth_method == 'trusted-publishing' }}
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist/
+          repository-url: ${{ inputs.repository_url }}
+          skip-existing: ${{ inputs.skip_existing }}

@@ -125,7 +125,7 @@ PyPI publishing moved to the `v0.3.1` packaging patch release so Linux wheels us
 - publish run `27801491154` rebuilt and checked the same distribution set successfully, but the final Twine upload failed with `HTTPError: 403 Forbidden` from `https://upload.pypi.org/legacy/`
 - PyPI still returned 404 for `https://pypi.org/pypi/metric-space/json` after the failed upload, so no visible `metric-space` release was published
 
-The remaining external release action is to update or replace the repository PyPI credentials, or switch the workflow to PyPI Trusted Publishing, then rerun `.github/workflows/publish-python.yml` with `ref=v0.3.1` and `publish=true`. No local Twine credentials were present during the 2026-06-19 release check.
+The remaining external release action is to update or replace the repository PyPI credentials, or configure PyPI Trusted Publishing for owner `metric-space-ai`, repository `metric`, workflow `publish-python.yml`, and environment `pypi`. The workflow supports both repository-secret password uploads and Trusted Publishing uploads; after PyPI access is fixed, rerun `.github/workflows/publish-python.yml` with `ref=v0.3.1`, `publish=true`, and the appropriate `auth_method`. No local Twine credentials were present during the 2026-06-19 release check.
 
 ## Historical Code Policy
 
