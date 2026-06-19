@@ -16,6 +16,7 @@
 #include "../representations/cover_tree_index.hpp"
 #include "../representations/knn_graph_index.hpp"
 #include "../representations/matrix_cache.hpp"
+#include "../runtime/execution.hpp"
 #include "../strategies/search.hpp"
 
 namespace metric::intent {
@@ -85,6 +86,34 @@ auto find_neighbors(const Space &space, RecordId query_id, std::size_t count, st
 	result.exact = true;
 	result.operator_name = "knn";
 	result.representation = "knn_graph_index";
+	return result;
+}
+
+template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
+auto find_neighbors(const Space &space, const typename Space::record_type &query, std::size_t count,
+					runtime::policy runtime_policy) -> NeighborSet<typename Space::distance_type>
+{
+	runtime::require_exact_neighbors(runtime_policy);
+	if (runtime_policy.uses_materialization()) {
+		throw std::invalid_argument("materialized neighbor runtime policy requires a RecordId query");
+	}
+	return find_neighbors(space, query, count, strategies::brute_force{});
+}
+
+template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
+auto find_neighbors(const Space &space, RecordId query_id, std::size_t count, runtime::policy runtime_policy)
+	-> NeighborSet<typename Space::distance_type>
+{
+	runtime::require_exact_neighbors(runtime_policy);
+	if (runtime_policy.uses_materialization()) {
+		representations::MatrixCache<Space> matrix(space);
+		auto result = operators::knn(matrix, query_id, count);
+		result.representation = runtime::neighbor_representation(runtime_policy);
+		return result;
+	}
+
+	auto result = operators::knn(space, query_id, count);
+	result.representation = runtime::neighbor_representation(runtime_policy);
 	return result;
 }
 

@@ -16,6 +16,7 @@
 - Add C++ engine compare/correlate intent helpers with an explicit MGC strategy.
 - Add a C++ engine reduce intent backed by the PCFA strategy.
 - Expose the C++ engine reduce intent and PCFA reduction strategy through the `<metric/engine.hpp>` umbrella header.
+- Add initial C++ runtime policy objects for exact lazy/materialized neighbor execution and representation-cache staleness checks.
 - Add a C++ engine `describe_structure` intent with exact finite-space diagnostics and intrinsic-dimension metadata.
 - Add a C++ engine `find_representatives` intent backed by deterministic farthest-first selection.
 - Add Python `Space.describe()` and `Space.representatives()` intent methods with named result objects and a `FarthestFirst` strategy.
