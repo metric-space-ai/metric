@@ -1362,7 +1362,7 @@ def _assign_to_representatives(space, representative_ids):
     return assignments, nearest_distances
 
 
-def reduce_space(records, metric, count=None, strategy=None):
+def reduce_space(records, metric, count=None, strategy=None, *, representation="metric_space"):
     """Reduce a finite metric space to representative records with lineage."""
     count, strategy = _coerce_reduction_request(count, strategy)
     records = list(records)
@@ -1398,14 +1398,14 @@ def reduce_space(records, metric, count=None, strategy=None):
         exact=True,
         operator_name="reduce",
         strategy=strategy_name,
-        representation="metric_space",
+        representation=representation,
         inverse_supported=False,
     )
 
 
-def compress_space(records, metric, count=None, strategy=None):
+def compress_space(records, metric, count=None, strategy=None, *, representation="metric_space"):
     """Compress a finite metric space by retaining representative records."""
-    reduction = reduce_space(records, metric, count, strategy=strategy)
+    reduction = reduce_space(records, metric, count, strategy=strategy, representation=representation)
     compression_ratio = reduction.reduced_record_count / reduction.source_record_count
 
     return CompressionResult(

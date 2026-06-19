@@ -612,6 +612,9 @@ class RevivalApiTest(unittest.TestCase):
         self.assertFalse(reduction.inverse_supported)
         with self.assertRaisesRegex(UnsupportedOperationError, "inverse_supported=False"):
             reduction.inverse_transform()
+        matrix_reduction = space.reduce(count=3, representation=space.to_matrix())
+        self.assertEqual(matrix_reduction.representation, "matrix")
+        self.assertEqual(matrix_reduction.source_record_ids, reduction.source_record_ids)
         self.assertEqual(
             reduce_space([0, 1, 2, 3, 4], lambda lhs, rhs: abs(lhs - rhs), 3).source_record_ids,
             reduction.source_record_ids,
@@ -643,6 +646,9 @@ class RevivalApiTest(unittest.TestCase):
         self.assertFalse(compression.inverse_supported)
         with self.assertRaisesRegex(UnsupportedOperationError, "inverse_supported=False"):
             compression.inverse_transform()
+        matrix_compression = space.compress(count=3, representation=space.to_matrix())
+        self.assertEqual(matrix_compression.representation, "matrix")
+        self.assertEqual(matrix_compression.source_record_ids, compression.source_record_ids)
         self.assertEqual(
             compress_space([0, 1, 2, 3, 4], lambda lhs, rhs: abs(lhs - rhs), 3).source_record_ids,
             compression.source_record_ids,
@@ -816,6 +822,10 @@ class RevivalApiTest(unittest.TestCase):
             space.embed(representation=stale_matrix)
         with self.assertRaises(StaleRepresentationError):
             space.describe(representation=stale_matrix)
+        with self.assertRaises(StaleRepresentationError):
+            space.reduce(count=2, representation=stale_matrix)
+        with self.assertRaises(StaleRepresentationError):
+            space.compress(count=2, representation=stale_matrix)
 
     def test_intrinsic_dimension_estimates_distance_growth(self):
         records = [0, 1, 2, 3, 4]

@@ -399,17 +399,36 @@ class Space(FiniteMetricSpace):
 
         return find_representatives(self.records, self.metric, k, strategy=strategy, count=count)
 
-    def reduce(self, count=None, strategy=None, *, runtime=None):
+    def _representation_name(self, representation):
+        representation_name = "metric_space"
+        if representation is not None:
+            representation.ensure_fresh()
+            representation_name = getattr(representation, "representation", representation_name)
+        return representation_name
+
+    def reduce(self, count=None, strategy=None, *, representation=None, runtime=None):
         require_exact_runtime(runtime)
         from metric.operators import reduce_space
 
-        return reduce_space(self.records, self.metric, count, strategy=strategy)
+        return reduce_space(
+            self.records,
+            self.metric,
+            count,
+            strategy=strategy,
+            representation=self._representation_name(representation),
+        )
 
-    def compress(self, count=None, strategy=None, *, runtime=None):
+    def compress(self, count=None, strategy=None, *, representation=None, runtime=None):
         require_exact_runtime(runtime)
         from metric.operators import compress_space
 
-        return compress_space(self.records, self.metric, count, strategy=strategy)
+        return compress_space(
+            self.records,
+            self.metric,
+            count,
+            strategy=strategy,
+            representation=self._representation_name(representation),
+        )
 
     def map(self, transform=None, metric=None, *, target=None, strategy=None, runtime=None):
         require_exact_runtime(runtime)
@@ -434,10 +453,7 @@ class Space(FiniteMetricSpace):
 
     def embed(self, dimensions=2, strategy=None, *, representation=None, runtime=None):
         require_exact_runtime(runtime)
-        representation_name = "metric_space"
-        if representation is not None:
-            representation.ensure_fresh()
-            representation_name = getattr(representation, "representation", representation_name)
+        representation_name = self._representation_name(representation)
 
         from metric.operators import embed_space
 
@@ -451,10 +467,7 @@ class Space(FiniteMetricSpace):
 
     def describe(self, *, representation=None, runtime=None):
         require_exact_runtime(runtime)
-        representation_name = "metric_space"
-        if representation is not None:
-            representation.ensure_fresh()
-            representation_name = getattr(representation, "representation", representation_name)
+        representation_name = self._representation_name(representation)
 
         from metric.operators import describe_structure
 
