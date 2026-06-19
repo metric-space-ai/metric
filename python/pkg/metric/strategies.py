@@ -26,4 +26,11 @@ class DBSCAN:
     min_points: int
 
 
-__all__ = ["DBSCAN", "FarthestFirst", "KMedoids"]
+@dataclass(frozen=True)
+class DistanceProfileCorrelation:
+    """Compare two spaces by Pearson correlation of pairwise distance profiles."""
+
+    method: str = "pearson"
+
+
+__all__ = ["DBSCAN", "DistanceProfileCorrelation", "FarthestFirst", "KMedoids"]

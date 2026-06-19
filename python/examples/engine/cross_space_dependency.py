@@ -1,27 +1,8 @@
-from metric import Space
+from metric import DistanceProfileCorrelation, Space
 
 
 def absolute_distance(lhs, rhs):
     return abs(lhs - rhs)
-
-
-def upper_triangle(matrix):
-    values = []
-    for row_index, row in enumerate(matrix):
-        for column_index in range(row_index + 1, len(row)):
-            values.append(row[column_index])
-    return values
-
-
-def pearson(lhs, rhs):
-    lhs_mean = sum(lhs) / len(lhs)
-    rhs_mean = sum(rhs) / len(rhs)
-    numerator = sum((left - lhs_mean) * (right - rhs_mean) for left, right in zip(lhs, rhs))
-    lhs_scale = sum((left - lhs_mean) ** 2 for left in lhs) ** 0.5
-    rhs_scale = sum((right - rhs_mean) ** 2 for right in rhs) ** 0.5
-    if lhs_scale == 0 or rhs_scale == 0:
-        raise ValueError("distance profiles must have non-zero variance")
-    return numerator / (lhs_scale * rhs_scale)
 
 
 def main():
@@ -31,13 +12,14 @@ def main():
     process_space = Space(process_records, absolute_distance)
     quality_space = Space(quality_records, absolute_distance)
 
-    dependency = pearson(
-        upper_triangle(process_space.to_matrix().pairwise_distances()),
-        upper_triangle(quality_space.to_matrix().pairwise_distances()),
+    dependency = process_space.compare(
+        quality_space,
+        strategy=DistanceProfileCorrelation(),
     )
-    assert dependency > 0.8
+    assert dependency.value > 0.8
+    assert dependency.algorithm == "distance_profile_correlation"
 
-    print("cross-space distance-profile correlation =", round(dependency, 3))
+    print("cross-space distance-profile correlation =", round(dependency.value, 3))
 
 
 if __name__ == "__main__":

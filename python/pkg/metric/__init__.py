@@ -21,6 +21,7 @@ from . import mappings, metrics, operators, spaces, strategies, transforms
 from .metrics import Edit
 from .operators import (
     ClusteringResult,
+    CorrelationResult,
     GraphConnectivityDiagnostics,
     GraphDegreeDiagnostics,
     GraphStretchDiagnostics,
@@ -30,6 +31,8 @@ from .operators import (
     StructureDescription,
     coverage_representative_indices,
     coverage_representatives,
+    compare_spaces,
+    correlate_spaces,
     dbscan,
     describe_structure,
     exact_knn_graph,
@@ -56,7 +59,7 @@ from .operators import (
     symmetrize_graph,
 )
 from .spaces import FiniteMetricSpace, MatrixSpace, Space
-from .strategies import DBSCAN, FarthestFirst, KMedoids
+from .strategies import DBSCAN, DistanceProfileCorrelation, FarthestFirst, KMedoids
 
 __all__ = sorted(
     name

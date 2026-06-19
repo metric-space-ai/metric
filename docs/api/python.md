@@ -2,7 +2,7 @@
 
 The current Python core API exposes metric constructors, a minimal `Space` facade, finite-space helpers, and small operator helpers. It is intentionally small while the broader engine facade is restored.
 
-The stable entry point is `Space`: a finite record set plus a metric with cached pairwise distances and intent-named helpers for neighbors, groups, representatives, and structure diagnostics. `FiniteMetricSpace` and `MatrixSpace` remain available for explicit representation vocabulary, and `Space.to_matrix()` returns an explicit finite matrix-space view.
+The stable entry point is `Space`: a finite record set plus a metric with cached pairwise distances and intent-named helpers for neighbors, groups, representatives, cross-space comparison, and structure diagnostics. `FiniteMetricSpace` and `MatrixSpace` remain available for explicit representation vocabulary, and `Space.to_matrix()` returns an explicit finite matrix-space view.
 
 ## Basic Use
 
@@ -24,8 +24,8 @@ The records are strings. Edit distance defines the geometry without an embedding
 - `Space`: minimal intent-first finite metric space facade
 - `FiniteMetricSpace`: finite metric space over records
 - `MatrixSpace`: compatibility alias for `FiniteMetricSpace`
-- `operators`: small helpers for pairwise distances, nearest neighbors, range neighbors, exact graph results and edges, graph connectivity diagnostics, graph degree diagnostics, graph stretch diagnostics, graph pruning, grouping, representative selection, medoids, separated representatives, and intrinsic-dimension diagnostics
-- `strategies`: strategy objects for intent methods, starting with `KMedoids`, `DBSCAN`, and `FarthestFirst`
+- `operators`: small helpers for pairwise distances, nearest neighbors, range neighbors, exact graph results and edges, graph connectivity diagnostics, graph degree diagnostics, graph stretch diagnostics, graph pruning, grouping, representative selection, cross-space comparison, medoids, separated representatives, and intrinsic-dimension diagnostics
+- `strategies`: strategy objects for intent methods, starting with `KMedoids`, `DBSCAN`, `FarthestFirst`, and `DistanceProfileCorrelation`
 - `mappings`: beta compatibility bridge for installed mapping bindings
 - `transforms`: beta compatibility bridge for installed transform bindings
 
@@ -42,6 +42,8 @@ space.nearest(query)
 space.within_radius(query, radius=1)
 space.groups(strategy=KMedoids(groups=2))
 space.groups(strategy=DBSCAN(radius=1, min_points=2))
+space.compare(other_space, strategy=DistanceProfileCorrelation())
+space.correlate(other_space)
 space.representatives(k=3)
 space.representatives(k=3, strategy=FarthestFirst(seed_index=1))
 space.describe()
@@ -56,6 +58,7 @@ space.rnn(query, radius=1)
 ```python
 from metric.operators import (
     ClusteringResult,
+    CorrelationResult,
     GraphConstructionMetadata,
     GraphConstructionResult,
     GraphConnectivityDiagnostics,
@@ -65,6 +68,8 @@ from metric.operators import (
     StructureDescription,
     coverage_representative_indices,
     coverage_representatives,
+    compare_spaces,
+    correlate_spaces,
     dbscan,
     describe_structure,
     exact_knn_graph,
@@ -90,7 +95,7 @@ from metric.operators import (
     separated_representatives,
     symmetrize_graph,
 )
-from metric.strategies import DBSCAN, FarthestFirst, KMedoids
+from metric.strategies import DBSCAN, DistanceProfileCorrelation, FarthestFirst, KMedoids
 
 distances = pairwise_distance_matrix(records, Edit())
 neighbors = nearest_neighbors(records, Edit(), "cut", k=2)
@@ -106,6 +111,7 @@ undirected = symmetrize_graph(knn_graph, policy="union", weighting="minimum_dist
 pruned = prune_graph_out_degree(exact_knn_graph(records, Edit(), k=2), max_out_degree=1)
 groups = find_groups(records, Edit(), KMedoids(groups=2))
 density_groups = find_groups(records, Edit(), DBSCAN(radius=1, min_points=2))
+dependency = compare_spaces(records, Edit(), other_records, other_metric, DistanceProfileCorrelation())
 selected_ids = representative_indices(records, Edit(), k=2)
 selected_records = representatives(records, Edit(), k=2)
 center_id = medoid_index(records, Edit())
@@ -120,6 +126,8 @@ structure = describe_structure(records, Edit())
 ```
 
 `find_groups` returns a `ClusteringResult` with source-record assignments, medoid record IDs, cluster sizes, optional DBSCAN core/noise records, iteration metadata, algorithm metadata, and representation metadata. `Space.groups(...)` exposes the same result from the `Space` facade. Passing an integer group count selects deterministic `KMedoids`; passing `KMedoids` or `DBSCAN` makes the strategy explicit.
+
+`compare_spaces` returns a `CorrelationResult` for two aligned finite metric spaces with the same record count. The first Python-core strategy is `DistanceProfileCorrelation`, which computes the Pearson correlation of upper-triangular pairwise distance profiles. `Space.compare(...)` and `Space.correlate(...)` expose the same result with metric-space representation metadata.
 
 `representative_indices` and `representatives` use deterministic farthest-first traversal over the finite metric space. They select existing records rather than vector centroids, start from `seed_index=0` by default, and resolve equal-distance ties by record order.
 
@@ -184,7 +192,7 @@ print(space.distance(0, 1))
 
 ## Engine Roadmap
 
-The implemented facade currently covers neighbor access, grouping, representative selection, and structure diagnostics. Additional intent names such as `embed`, `map`, `reduce`, `denoise`, `outliers`, and `compare` describe the public direction and should be promoted only when they are backed by stable strategies, result objects, examples, and CI.
+The implemented facade currently covers neighbor access, grouping, cross-space comparison, representative selection, and structure diagnostics. Additional intent names such as `embed`, `map`, `reduce`, `denoise`, and `outliers` describe the public direction and should be promoted only when they are backed by stable strategies, result objects, examples, and CI.
 
 ## Compatibility
 

@@ -84,6 +84,22 @@ class Space(FiniteMetricSpace):
     def describe_structure(self):
         return self.describe()
 
+    def compare(self, other, strategy=None):
+        from metric.operators import compare_spaces
+
+        return compare_spaces(
+            self.records,
+            self.metric,
+            other.records,
+            other.metric,
+            strategy,
+            left_representation="metric_space",
+            right_representation="metric_space",
+        )
+
+    def correlate(self, other, strategy=None):
+        return self.compare(other, strategy=strategy)
+
 
 MatrixSpace = FiniteMetricSpace
 
