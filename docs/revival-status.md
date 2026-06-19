@@ -163,6 +163,7 @@ The following revival improvements landed on `master` after the `v0.3.2` tag and
 - testing and release-checklist docs now describe the expanded promoted Python example gate, merged as `dbed0eba25455e420baba79f49d134c126dd6c14`
 - PyPI publish dry-run `27804901826` completed successfully on `master` commit `1ab3ada019f0460f4ba418291bd2146342ef8064` with one source distribution artifact and checked wheel artifact sets for CPython 3.10 through 3.14 on Linux, macOS, and Windows
 - PyPI still returned 404 for `https://pypi.org/pypi/metric-space/json` after the master dry-run, so no visible `metric-space` release has been published
+- promotion-gated research roadmap for diagnostics, representative selection, sparse graphs, cross-space dependency discovery, denoising, vector-database adapters, and benchmarks, merged as `b80eaba438a6a45f327951c87f74d88c4af37ed3`
 
 ## Historical Code Policy
 
