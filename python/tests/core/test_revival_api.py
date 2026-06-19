@@ -5,6 +5,7 @@ import unittest
 from pathlib import Path
 
 import metric
+import metric.distance as distance_module
 import numpy as np
 from metric import exceptions, intent, mappings, representations, runtime, transforms
 from metric.exceptions import (
@@ -101,9 +102,12 @@ class RevivalApiTest(unittest.TestCase):
 
     def test_metric_concepts_are_importable(self):
         self.assertIn("Edit", available())
+        self.assertTrue(hasattr(distance_module, "_install_compatibility_aliases"))
         self.assertIs(MatrixSpace, FiniteMetricSpace)
         self.assertIs(metric.metrics.Edit, Edit)
         self.assertIs(metric.metrics.Metric, Metric)
+        for name in ("Manhattan", "Minkowski", "ThresholdedEuclidean"):
+            self.assertTrue(hasattr(metric.metrics, name))
         self.assertIs(metric.spaces.FiniteMetricSpace, FiniteMetricSpace)
         self.assertIs(metric.intent.find_groups, find_groups)
         self.assertIs(metric.intent.find_neighbors, nearest_neighbors)
@@ -315,6 +319,36 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIsInstance(representations.matrix_space(self.records, self.metric), MatrixSpace)
         self.assertIsInstance(mappings.available(), tuple)
         self.assertIsInstance(transforms.available(), tuple)
+
+    def test_distance_compatibility_aliases_are_lazy(self):
+        manhatten = object()
+        p_norm = object()
+        thresholded = object()
+        namespace = {
+            "Manhatten": manhatten,
+            "P_norm": p_norm,
+            "Euclidean_thresholded": thresholded,
+        }
+
+        distance_module._install_compatibility_aliases(namespace)
+
+        self.assertIs(namespace["Manhattan"], manhatten)
+        self.assertIs(namespace["Minkowski"], p_norm)
+        self.assertIs(namespace["ThresholdedEuclidean"], thresholded)
+
+        explicit = object()
+        namespace["Manhattan"] = explicit
+        distance_module._install_compatibility_aliases(namespace)
+        self.assertIs(namespace["Manhattan"], explicit)
+
+        for alias, historical_name in (
+            ("Manhattan", "Manhatten"),
+            ("Minkowski", "P_norm"),
+            ("ThresholdedEuclidean", "Euclidean_thresholded"),
+        ):
+            historical = getattr(distance_module, historical_name, None)
+            if historical is not None:
+                self.assertIs(getattr(distance_module, alias), historical)
 
     def test_promoted_metric_space_examples_run(self):
         examples_root = Path(__file__).resolve().parents[2] / "examples"

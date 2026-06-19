@@ -1,7 +1,8 @@
 """Metric constructors exposed by the revived Python API.
 
 The core wheel currently guarantees the edit-distance binding. Legacy standard
-distance bindings are re-exported when the full extension set is available.
+distance bindings and their compatibility aliases are re-exported when the full
+extension set is available.
 """
 
 from typing import Protocol, runtime_checkable
@@ -17,24 +18,34 @@ class Metric(Protocol):
         ...
 
 
-try:
-    from metric.distance import Chebyshev, Euclidean, Manhattan, Manhatten, P_norm
-except ImportError:
-    Chebyshev = None
-    Euclidean = None
-    Manhattan = None
-    Manhatten = None
-    P_norm = None
+import metric.distance as _distance
+
+
+def _optional_metric(name):
+    return getattr(_distance, name, None)
+
+
+Chebyshev = _optional_metric("Chebyshev")
+Euclidean = _optional_metric("Euclidean")
+Euclidean_thresholded = _optional_metric("Euclidean_thresholded")
+Manhattan = _optional_metric("Manhattan")
+Manhatten = _optional_metric("Manhatten")
+Minkowski = _optional_metric("Minkowski")
+P_norm = _optional_metric("P_norm")
+ThresholdedEuclidean = _optional_metric("ThresholdedEuclidean")
 
 
 def available():
     names = ["Edit"]
     for name, value in {
         "Euclidean": Euclidean,
+        "Euclidean_thresholded": Euclidean_thresholded,
         "Manhattan": Manhattan,
         "Manhatten": Manhatten,
+        "Minkowski": Minkowski,
         "Chebyshev": Chebyshev,
         "P_norm": P_norm,
+        "ThresholdedEuclidean": ThresholdedEuclidean,
     }.items():
         if value is not None:
             names.append(name)
@@ -46,11 +57,14 @@ default = frozenset(name.lower() for name in available())
 __all__ = [
     "Edit",
     "Euclidean",
+    "Euclidean_thresholded",
     "Metric",
     "Manhattan",
     "Manhatten",
+    "Minkowski",
     "Chebyshev",
     "P_norm",
+    "ThresholdedEuclidean",
     "available",
     "default",
 ]

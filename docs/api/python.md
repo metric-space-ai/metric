@@ -22,7 +22,7 @@ The records are strings. Edit distance defines the geometry without an embedding
 ## Core Objects
 
 - `Metric`: runtime-checkable protocol for Python metric callables
-- `metrics`: standard metric constructors
+- `metrics`: metric constructors, including lazy compatibility aliases for installed legacy standard distances
 - `Space`: minimal intent-first finite metric space facade
 - `FiniteMetricSpace`: finite metric space over records
 - `MatrixSpace`: compatibility alias for `FiniteMetricSpace`
@@ -33,6 +33,12 @@ The records are strings. Edit distance defines the geometry without an embedding
 - `strategies`: strategy objects for intent methods, starting with `ClassicMDS`, `KMedoids`, `DBSCAN`, `FarthestFirst`, and `DistanceProfileCorrelation`
 - `mappings`: beta compatibility bridge for installed mapping bindings
 - `transforms`: beta compatibility bridge for installed transform bindings
+
+When the optional standard distance bindings are installed, `metric.distance`
+and `metric.metrics` expose compatibility aliases for historical names:
+`Manhattan` mirrors `Manhatten`, `Minkowski` mirrors `P_norm`, and
+`ThresholdedEuclidean` mirrors `Euclidean_thresholded`. The core wheel remains
+importable when those optional bindings are absent.
 
 ## Core Methods
 
