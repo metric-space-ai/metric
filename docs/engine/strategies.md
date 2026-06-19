@@ -27,10 +27,18 @@ The current C++ strategy objects include:
 
 The current Python strategy objects include:
 
+- `MDS`
+- `ClassicMDS`
 - `KMedoids`
 - `DBSCAN`
 - `FarthestFirst`
 - `DistanceProfileCorrelation`
+
+`MDS` and `ClassicMDS` execute the promoted classical-MDS embedding path.
+`DiffusionEmbedding`, `PCFA`, `SOM`, and `PhateAE` are also importable from
+`metric.strategies` as roadmap vocabulary, but Python intent methods raise
+`StrategyUnavailableError` for those strategies until deterministic fixtures,
+diagnostics, and CI-backed result contracts are promoted.
 
 ## Promotion Rule
 

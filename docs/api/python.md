@@ -30,7 +30,7 @@ The records are strings. Edit distance defines the geometry without an embedding
 - `representations`: explicit representation helpers for matrix materialization, exact tree-style neighbor indexing, and exact kNN graph indexing
 - `operators`: small helpers for pairwise distances, nearest neighbors, range neighbors, exact graph results and edges, graph connectivity diagnostics, graph degree diagnostics, graph stretch diagnostics, graph pruning, grouping, embedding, outlier detection, DBSCAN-noise filtering, representative selection, representative reduction, representative compression, deterministic mapping, cross-space comparison, medoids, separated representatives, and intrinsic-dimension diagnostics
 - `runtime`: runtime policy objects for exactness, cache materialization preferences, and serial/parallel execution preferences
-- `strategies`: strategy objects for intent methods, starting with `ClassicMDS`, `KMedoids`, `DBSCAN`, `FarthestFirst`, and `DistanceProfileCorrelation`
+- `strategies`: strategy objects for intent methods, starting with executable `MDS`/`ClassicMDS`, `KMedoids`, `DBSCAN`, `FarthestFirst`, and `DistanceProfileCorrelation`, plus roadmap-only `DiffusionEmbedding`, `PCFA`, `SOM`, and `PhateAE` objects that fail explicitly until their result contracts are promoted
 - `mappings`: beta compatibility bridge for installed mapping bindings
 - `transforms`: beta compatibility bridge for installed transform bindings
 
@@ -182,7 +182,7 @@ from metric.operators import (
     separated_representatives,
     symmetrize_graph,
 )
-from metric.strategies import ClassicMDS, DBSCAN, DistanceProfileCorrelation, FarthestFirst, KMedoids
+from metric.strategies import ClassicMDS, DBSCAN, DistanceProfileCorrelation, FarthestFirst, KMedoids, MDS
 
 distances = pairwise_distance_matrix(records, Edit())
 neighbors = nearest_neighbors(records, Edit(), "cut", count=2)
@@ -201,6 +201,7 @@ density_groups = find_groups(records, Edit(), DBSCAN(radius=1, min_points=2))
 outliers = find_outliers(records, Edit(), DBSCAN(radius=1, min_points=2))
 denoised = denoise_space(records, Edit(), DBSCAN(radius=1, min_points=2))
 embedding = embed_space(records, Edit(), dimensions=2)
+mds_embedding = embed_space(records, Edit(), strategy=MDS(dimensions=2))
 dependency = compare_spaces(records, Edit(), other_records, other_metric, DistanceProfileCorrelation())
 selected_ids = representative_indices(records, Edit(), k=2)
 selected_records = representatives(records, Edit(), k=2)
@@ -226,7 +227,7 @@ structure = describe_structure(records, Edit())
 
 `denoise_space` returns a `MappingResult` backed by DBSCAN-noise filtering. The derived `Space` contains only non-noise source records, `source_record_ids` preserves the original record lineage, and inverse reconstruction is explicitly unsupported. `Space.denoise()` also supports a strategy-free exact default that removes records selected by `Space.outliers(...)`, and it records fresh `representation=` metadata the same way as `Space.outliers(...)`.
 
-`embed_space` returns an `EmbeddingResult` backed by deterministic classical MDS over the exact finite distance matrix. The result includes NumPy `coordinates`, an `embedded_space` over coordinate records with a Euclidean metric, the original `source_space`, source-record IDs, exact/operator/representation metadata, a small `EmbeddingModel`, normalized stress, local-neighbor trustworthiness, distance-profile correlation, and finite-coordinate diagnostics. `Space.embed(...)` exposes the same derived coordinate view from the `Space` facade. Pass `representation=space.to_matrix()` or another fresh representation when the result should record the execution representation; stale representations raise `metric.StaleRepresentationError`.
+`embed_space` returns an `EmbeddingResult` backed by deterministic classical MDS over the exact finite distance matrix. `MDS` is the preferred strategy name and `ClassicMDS` remains a compatibility name for the same promoted path. The result includes NumPy `coordinates`, an `embedded_space` over coordinate records with a Euclidean metric, the original `source_space`, source-record IDs, exact/operator/representation metadata, a small `EmbeddingModel`, normalized stress, local-neighbor trustworthiness, distance-profile correlation, and finite-coordinate diagnostics. `Space.embed(...)` exposes the same derived coordinate view from the `Space` facade. Pass `representation=space.to_matrix()` or another fresh representation when the result should record the execution representation; stale representations raise `metric.StaleRepresentationError`. Roadmap strategy objects such as `DiffusionEmbedding` and `PhateAE` are importable from `metric.strategies`, but they raise `StrategyUnavailableError` until their deterministic fixtures and diagnostics are CI-backed.
 
 `compare_spaces` returns a `CorrelationResult` for two aligned finite metric spaces with the same record count. The first Python-core strategy is `DistanceProfileCorrelation`, which computes the Pearson correlation of upper-triangular pairwise distance profiles. `Space.compare(...)` and `Space.correlate(...)` expose the same result with metric-space representation metadata. The facade defaults to `align="position"` for compatibility. Pass fresh `representation=` and `other_representation=` values to record left/right representation metadata; stale representations raise `metric.StaleRepresentationError`. Pass `align="ids"` to compare spaces with the same stable IDs even when the right-hand space is in a different order; mismatched ID sets raise `metric.IncompatibleSpaceError`.
 
@@ -234,7 +235,7 @@ structure = describe_structure(records, Edit())
 
 `find_representatives` returns a `RepresentativeSet` with selected source indices, nearest-representative distances for every record, coverage radius, average nearest-representative distance, strategy metadata, and representation metadata. Use `count=` for the semantic target size; the older `k` name remains accepted for compatibility. `Space.representatives(...)` exposes the same result from the `Space` facade. Pass a fresh `representation=` to record representation metadata; stale representations raise `metric.StaleRepresentationError`.
 
-`reduce_space` returns a `ReductionResult` with a reduced `Space`, selected source-record IDs, source-to-reduced assignments, nearest-representative distances, strategy metadata, and explicit `inverse_supported=False` metadata. Calling `inverse_transform()` on this result raises `metric.UnsupportedOperationError`. `Space.reduce(count=..., strategy=...)` exposes the same result. Pass a fresh `representation=` to record representation metadata; stale representations raise `metric.StaleRepresentationError`. The first Python-core strategies are `FarthestFirst` and `KMedoids`, so reduction works for arbitrary records plus a metric rather than only vector records.
+`reduce_space` returns a `ReductionResult` with a reduced `Space`, selected source-record IDs, source-to-reduced assignments, nearest-representative distances, strategy metadata, and explicit `inverse_supported=False` metadata. Calling `inverse_transform()` on this result raises `metric.UnsupportedOperationError`. `Space.reduce(count=..., strategy=...)` exposes the same result. Pass a fresh `representation=` to record representation metadata; stale representations raise `metric.StaleRepresentationError`. The first Python-core strategies are `FarthestFirst` and `KMedoids`, so reduction works for arbitrary records plus a metric rather than only vector records. Roadmap reduction strategies such as `PCFA` and `SOM` are importable but raise `StrategyUnavailableError` until their reconstruction or quantization diagnostics are promoted.
 
 `compress_space` returns a `CompressionResult` with a compressed representative `Space`, selected source-record IDs, source-to-compressed assignments, nearest-representative distances, `compression="representatives"`, a compressed/source record-count `compression_ratio`, and explicit `lossy=True` / `inverse_supported=False` metadata. Calling `inverse_transform()` raises `metric.UnsupportedOperationError` until a strategy with explicit reconstruction support is promoted. `Space.compress(count=..., strategy=...)` exposes the same result and accepts fresh `representation=` metadata the same way as `Space.reduce(...)`. The first Python-core compression path uses the same deterministic `FarthestFirst` and `KMedoids` representative strategies as `reduce_space`.
 
