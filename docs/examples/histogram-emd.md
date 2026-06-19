@@ -4,6 +4,9 @@ Histograms and empirical distributions are often better compared by transport co
 
 The promoted C++ example [histogram_emd_space.cpp](../../examples/core/histogram_emd_space.cpp) uses a small one-dimensional ground-cost matrix, then builds a `metric::MatrixSpace` over histogram records.
 
+The promoted Python example [histogram_transport_space.py](../../python/examples/metric_space/histogram_transport_space.py)
+uses the same metric-space pattern with a deterministic one-dimensional transport callable. It covers the core wheel path without requiring the broader compiled EMD binding.
+
 Core shape:
 
 ```cpp
