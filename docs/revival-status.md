@@ -106,7 +106,7 @@ The manual release-artifact rehearsal was checked on 2026-06-19 with `gh run vie
 
 ## External Release State
 
-The final release tag and GitHub release were checked on 2026-06-19:
+The initial release tag and GitHub release were checked on 2026-06-19:
 
 - tag `v0.3.0` points at commit `84e87eaf45ef8726f2248f0da761b9d8b59695d6`
 - [GitHub release `v0.3.0`](https://github.com/metric-space-ai/metric/releases/tag/v0.3.0) is published as a non-draft, non-prerelease release
@@ -114,7 +114,18 @@ The final release tag and GitHub release were checked on 2026-06-19:
 - tag CI runs for docs/formatting, C++ core smoke, and Python core wheels completed successfully
 - the release assets include `metric-v0.3.0.tar.gz`, `metric_space-0.3.0.tar.gz`, and `metric_space-0.3.0-cp312-cp312-linux_x86_64.whl`
 
-The remaining external release action is to publish the `metric-space` Python source distribution and wheels to PyPI after confirming package ownership or Trusted Publishing. The repository has a manual PyPI publishing workflow backed by repository PyPI credentials, with the PyPI publishing path moving to the `v0.3.1` packaging patch release so Linux wheels are built with extension-module Python discovery rather than embedded-Python library discovery. No local Twine credentials were present during the 2026-06-19 release check.
+PyPI publishing moved to the `v0.3.1` packaging patch release so Linux wheels use extension-module Python discovery rather than embedded-Python library discovery:
+
+- tag `v0.3.1` points at commit `9d59505b799b5b91ae24b0994173b0df4f336c3b`
+- [GitHub release `v0.3.1`](https://github.com/metric-space-ai/metric/releases/tag/v0.3.1) is published as a non-draft, non-prerelease release
+- release artifact workflow run `27800464584` completed successfully from tag `v0.3.1`
+- tag CI runs for docs/formatting, C++ core smoke, and Python core wheels completed successfully
+- the manual PyPI publishing workflow was repaired on `master` through commit `a26ac42abbcfc72550420f868107719beadeec25`
+- PyPI publish dry-run `27801076045` completed successfully with one source distribution and 15 checked wheels for CPython 3.10 through 3.14 on Linux, macOS, and Windows
+- publish run `27801491154` rebuilt and checked the same distribution set successfully, but the final Twine upload failed with `HTTPError: 403 Forbidden` from `https://upload.pypi.org/legacy/`
+- PyPI still returned 404 for `https://pypi.org/pypi/metric-space/json` after the failed upload, so no visible `metric-space` release was published
+
+The remaining external release action is to update or replace the repository PyPI credentials, or switch the workflow to PyPI Trusted Publishing, then rerun `.github/workflows/publish-python.yml` with `ref=v0.3.1` and `publish=true`. No local Twine credentials were present during the 2026-06-19 release check.
 
 ## Historical Code Policy
 
