@@ -74,12 +74,15 @@ The first semantic intent helpers live at the `metric::find_*` layer:
 - `metric::find_groups(space, group_count)`
 - `metric::find_groups(space, metric::strategies::k_medoids(group_count))`
 - `metric::find_groups(space, metric::strategies::dbscan(radius, min_points))`
+- `metric::describe_structure(space)`
 - `metric::compare(space_a, space_b)`
 - `metric::compare(space_a, space_b, metric::strategies::mgc{})`
 - `metric::correlate(space_a, space_b)`
 - `metric::reduce(space, metric::strategies::pcfa(components))`
 
 These are the first user-facing names that describe intent before algorithm. Strategy objects select implementation details while preserving the same result types returned by the operator layer.
+
+`metric::describe_structure(space)` returns exact finite-space diagnostics, including record and pair counts, zero-distance pairs, distance summary values, and the expansion intrinsic-dimension estimate. Entropy remains a separate specific operator because it depends on the LAPACK-backed entropy implementation.
 
 ## Phase 4 Surface
 

@@ -77,6 +77,24 @@ template <typename Value = double> struct CorrelationResult {
 	std::string right_representation;
 };
 
+template <typename Distance, typename Value = double> struct StructureDescription {
+	using distance_type = Distance;
+	using value_type = Value;
+
+	std::size_t record_count{};
+	std::size_t pair_count{};
+	std::size_t zero_distance_pair_count{};
+	Distance minimum_nonzero_distance{};
+	Distance maximum_distance{};
+	Value average_distance{};
+	Value intrinsic_dimension{};
+	bool has_nonzero_distances{false};
+	bool exact{true};
+	std::string operator_name;
+	std::string strategy;
+	std::string representation;
+};
+
 template <typename Space> struct MappingResult {
 	using space_type = Space;
 
@@ -100,6 +118,8 @@ template <typename Distance> using NeighborSet = core::NeighborSet<Distance>;
 template <typename Distance> using ClusteringResult = core::ClusteringResult<Distance>;
 template <typename Value = double> using EntropyResult = core::EntropyResult<Value>;
 template <typename Value = double> using CorrelationResult = core::CorrelationResult<Value>;
+template <typename Distance, typename Value = double>
+using StructureDescription = core::StructureDescription<Distance, Value>;
 template <typename Space> using MappingResult = core::MappingResult<Space>;
 } // namespace metric
 

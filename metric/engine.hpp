@@ -12,6 +12,7 @@
 #include "core/record_id.hpp"
 #include "core/result.hpp"
 #include "intent/compare.hpp"
+#include "intent/describe.hpp"
 #include "intent/groups.hpp"
 #include "intent/neighbors.hpp"
 #include "mappings/clustered_space.hpp"

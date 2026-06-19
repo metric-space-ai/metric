@@ -100,9 +100,12 @@ auto indexed = metric::find_neighbors(space, std::string("cut"), 2, metric::stra
 auto groups = metric::find_groups(space, metric::strategies::k_medoids(2));
 auto density_groups = metric::find_groups(space, metric::strategies::dbscan(1.0, 2));
 auto dependency = metric::compare(space, space, metric::strategies::mgc{});
+auto structure = metric::describe_structure(space);
 ```
 
 These helpers keep algorithm names in `metric::strategies` while returning the same engine result objects as the lower-level operator layer.
+
+`describe_structure` returns `metric::StructureDescription<Distance>` from `<metric/engine.hpp>` with exact all-pairs metadata: record count, evaluated pair count, zero-distance pair count, minimum nonzero distance, maximum distance, average distance, and intrinsic-dimension estimate.
 
 The first engine mapping adapters live under `metric::mappings`. `make_clustered_space_mapping(clustering)` follows the `fit(space) -> model` and `model.transform(space) -> MappingResult<DerivedSpace>` convention. The derived clustered space stores one record per non-noise cluster, keeps the source `RecordId` lineage in `source_records`, uses the cluster representative distance as the derived metric, and marks inverse reconstruction as unsupported. The PCFA adapter is available through `<metric/mappings/pcfa.hpp>` as `metric::mappings::pcfa(components)`; it produces encoded records, preserves one-to-one source lineage, and exposes explicit `model.inverse_transform(...)` reconstruction when the LAPACK-backed PCFA implementation is available. The semantic reduce helper is available through `<metric/intent/reduce.hpp>` as `metric::reduce(space, metric::strategies::pcfa(components))`.
 
