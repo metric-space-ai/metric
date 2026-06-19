@@ -162,6 +162,26 @@ class ReductionResult:
 
 
 @dataclass(frozen=True)
+class CompressionResult:
+    """Compressed metric-space result with source-record lineage."""
+
+    space: object
+    source_record_ids: tuple
+    assignments: tuple
+    nearest_representative_distances: tuple
+    source_record_count: int
+    compressed_record_count: int
+    compression_ratio: float
+    exact: bool
+    operator_name: str
+    compression: str
+    strategy: str
+    representation: str
+    lossy: bool
+    inverse_supported: bool
+
+
+@dataclass(frozen=True)
 class MappingResult:
     """Mapped metric-space result with source-to-target lineage."""
 
@@ -1344,6 +1364,29 @@ def reduce_space(records, metric, count=None, strategy=None):
     )
 
 
+def compress_space(records, metric, count=None, strategy=None):
+    """Compress a finite metric space by retaining representative records."""
+    reduction = reduce_space(records, metric, count, strategy=strategy)
+    compression_ratio = reduction.reduced_record_count / reduction.source_record_count
+
+    return CompressionResult(
+        space=reduction.space,
+        source_record_ids=reduction.source_record_ids,
+        assignments=reduction.assignments,
+        nearest_representative_distances=reduction.nearest_representative_distances,
+        source_record_count=reduction.source_record_count,
+        compressed_record_count=reduction.reduced_record_count,
+        compression_ratio=compression_ratio,
+        exact=reduction.exact,
+        operator_name="compress",
+        compression="representatives",
+        strategy=reduction.strategy,
+        representation=reduction.representation,
+        lossy=True,
+        inverse_supported=False,
+    )
+
+
 def map_space(records, transform, metric):
     """Map records through a deterministic transform and return a new Space."""
     if not callable(transform):
@@ -1758,6 +1801,7 @@ def intrinsic_dimension_from_distances(distances):
 
 __all__ = [
     "ClusteringResult",
+    "CompressionResult",
     "CorrelationResult",
     "EmbeddingDiagnostics",
     "EmbeddingModel",
@@ -1775,6 +1819,7 @@ __all__ = [
     "StructureDescription",
     "compare_spaces",
     "correlate_spaces",
+    "compress_space",
     "dbscan",
     "denoise_space",
     "describe_structure",

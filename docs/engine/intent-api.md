@@ -12,6 +12,7 @@ Intent APIs are named by what users want to do, not by the algorithm used to do 
 | Show coordinates | `embed` | `Space.embed` | C++ PCFA path; Python ClassicMDS path |
 | Find outliers | `find_outliers` | `Space.outliers` | C++ and Python DBSCAN-noise path |
 | Reduce complexity | `reduce` | `Space.reduce` | C++ PCFA-backed path; Python representative/medoid reduction path |
+| Compress a space | `compress` (roadmap) | `Space.compress` | Python representative/medoid compression path |
 | Map to another space | `map`, `metric::mappings::*` | `Space.map` | C++ and Python deterministic transform paths; C++ mapping conventions |
 | Denoise a space | `denoise` | `Space.denoise` | C++ and Python DBSCAN-noise filter paths |
 
@@ -44,6 +45,7 @@ denoised = space.denoise(DBSCAN(radius=2.0, min_points=2))
 embedding = space.embed(strategy=ClassicMDS(dimensions=2))
 dependency = space.compare(other_space, DistanceProfileCorrelation())
 reduction = space.reduce(count=2)
+compression = space.compress(count=2)
 mapped = space.map(transform, metric=target_metric)
 structure = space.describe()
 ```

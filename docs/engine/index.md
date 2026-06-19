@@ -146,6 +146,7 @@ The first C++ mapping adapters are `metric::mappings::make_clustered_space_mappi
 | `embed` | Show this space in coordinates. | MDS, diffusion embedding, PCFA |
 | `map` | Learn or apply a transformation to another space. | deterministic transforms, PCFA, PHATE-AE-style mapping |
 | `reduce` | Make the space smaller or cheaper while preserving structure. | representatives, medoids, PCFA, SOM |
+| `compress` | Retain a smaller representative space with explicit loss metadata. | representatives, medoids, sparse graph |
 | `denoise` | Remove local noise or manifold artifacts. | DBSCAN noise filter, graph smoothing, reverse diffusion |
 | `outliers` | Which records are unusual? | local density, DBSCAN noise, KOC/manifold distance |
 | `compare` | Are two metric spaces related? | MGC, distance correlation |
