@@ -86,6 +86,11 @@ class Space(FiniteMetricSpace):
 
         return reduce_space(self.records, self.metric, count, strategy=strategy)
 
+    def map(self, transform, metric=None):
+        from metric.operators import map_space
+
+        return map_space(self.records, transform, self.metric if metric is None else metric)
+
     def describe(self):
         from metric.operators import describe_structure
 

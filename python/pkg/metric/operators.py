@@ -160,6 +160,22 @@ class ReductionResult:
 
 
 @dataclass(frozen=True)
+class MappingResult:
+    """Mapped metric-space result with source-to-target lineage."""
+
+    space: object
+    source_record_ids: tuple
+    source_record_count: int
+    target_record_count: int
+    exact: bool
+    operator_name: str
+    mapping: str
+    strategy: str
+    representation: str
+    inverse_supported: bool
+
+
+@dataclass(frozen=True)
 class StructureDescription:
     """Exact finite-space structure diagnostics."""
 
@@ -1248,6 +1264,32 @@ def reduce_space(records, metric, count=None, strategy=None):
     )
 
 
+def map_space(records, transform, metric):
+    """Map records through a deterministic transform and return a new Space."""
+    if not callable(transform):
+        raise TypeError("transform must be callable")
+    if not callable(metric):
+        raise TypeError("metric must be callable")
+
+    records = list(records)
+    mapped_records = [transform(record) for record in records]
+
+    from metric.spaces import Space
+
+    return MappingResult(
+        space=Space(mapped_records, metric),
+        source_record_ids=tuple(range(len(records))),
+        source_record_count=len(records),
+        target_record_count=len(mapped_records),
+        exact=True,
+        operator_name="map",
+        mapping="deterministic_transform",
+        strategy="deterministic_transform",
+        representation="metric_space",
+        inverse_supported=False,
+    )
+
+
 def representatives(records, metric, k, seed_index=0):
     """Select representative records with deterministic farthest-first traversal."""
     records = list(records)
@@ -1483,6 +1525,7 @@ __all__ = [
     "GraphStretchDiagnostics",
     "GraphConstructionMetadata",
     "GraphConstructionResult",
+    "MappingResult",
     "Outlier",
     "OutlierResult",
     "RepresentativeSet",
@@ -1507,6 +1550,7 @@ __all__ = [
     "exact_radius_graph",
     "exact_radius_graph_edges",
     "kmedoids",
+    "map_space",
     "medoid",
     "medoid_index",
     "pairwise_distance_matrix",
