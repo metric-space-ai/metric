@@ -77,7 +77,9 @@ The current local tree implements the first revival slice:
 - C++ and Python graph connectivity diagnostics with deterministic component metadata
 - C++ and Python graph stretch diagnostics with deterministic shortest-path metadata
 - initial C++ engine skeleton with `MetricSpace`, stable `RecordId`s, metric traits, and engine concept traits
+- C++ `MetricSpace` supports stable ID lookup, insertion, replacement, erase, and ID-to-position mapping
 - initial C++ engine representation adapters for implicit distance lookup, matrix caching, exact neighbor-index scaffolds, kNN graph adjacency, graph topology edges, and stale detection
+- C++ representation adapters expose common diagnostics and preserve provider IDs across materialized snapshots
 - initial C++ engine nearest operators with `NeighborSet`, `operators::knn`, and `operators::range` over spaces, distance providers, and neighbor indexes
 - initial C++ engine clustering operators with `ClusteringResult`, deterministic `operators::kmedoids`, and deterministic `operators::dbscan` over spaces and distance providers
 - C++ engine affinity-propagation clustering strategy with named `ClusteringResult` metadata and distance-provider execution
@@ -282,6 +284,7 @@ The following revival improvements landed on `master` after the `v0.3.2` tag and
 - C++ structure diagnostics accept exact lazy/materialized runtime policies for all-pairs execution, merged as `cdaab96f990a8ca49e1cb6b16462f3ee3898fd8b`
 - C++ cross-space comparison accepts exact lazy/materialized runtime policies for MGC execution, merged as `2c12c9fb609d7fa04107b13d994f0e69cf89628f`
 - C++ record-space embed, reduce, and map intents accept exact lazy runtime policies with explicit materialized-policy rejection, merged as `fcee9927eadb902b6590a7df05da8de031bb3f60`
+- stable C++ `MetricSpace` mutation IDs and common representation diagnostics, merged as `1235940adafafac0de588f3a93ba0f09a09d7935`
 - CI-tested C++ and Python engine flagship examples for strings, process curves, histograms, and cross-space dependency, merged as `9d9d89dad779c836fe2f1334b68000938d76c9c6`
 - direct Python smoke gates now run promoted metric-space and engine examples together, merged as `06f22b20e7d44c7f2058b81d43f513fc157f36b0`
 - Python engine-style Space intent facade methods for representatives and structure diagnostics with named result objects and core test coverage, merged as `1849c29a25122b31605945295c91710cfc6a126f`
