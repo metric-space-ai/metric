@@ -222,6 +222,11 @@ class RevivalApiTest(unittest.TestCase):
         self.assertGreater(space.distance(0, 2), 10.0)
         self.assertEqual(space.neighbors(query, 2)[0][0], 0)
         self.assertAlmostEqual(pairwise_distance_matrix(records, structured_record_distance)[0][1], 0.25)
+        self.assertEqual(representative_indices(records, structured_record_distance, 3), [0, 2, 3])
+        self.assertEqual(
+            [record["id"] for record in representatives(records, structured_record_distance, 3)],
+            ["pump-a", "valve-c", "pump-d"],
+        )
         self.assertMetricContracts(records, structured_record_distance)
 
     def test_time_series_records_use_alignment_metric_callable(self):
@@ -256,6 +261,11 @@ class RevivalApiTest(unittest.TestCase):
         self.assertEqual(space.distance(0, 1), 2.0)
         self.assertEqual(space.distance(0, 2), 6.0)
         self.assertEqual(pairwise_distance_matrix(records, aligned_curve_distance)[3][2], 9.0)
+        self.assertEqual(representative_indices(records, aligned_curve_distance, 3), [0, 2, 3])
+        self.assertEqual(
+            representatives(records, aligned_curve_distance, 3),
+            [records[0], records[2], records[3]],
+        )
         self.assertGreater(intrinsic_dimension(records, aligned_curve_distance), 0.0)
         self.assertMetricContracts(records, aligned_curve_distance)
 
