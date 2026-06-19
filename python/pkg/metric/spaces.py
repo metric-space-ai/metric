@@ -4,6 +4,7 @@ from collections.abc import Mapping
 import operator
 
 from metric.exceptions import MissingMetricError, StaleRepresentationError
+from metric.runtime import require_exact_runtime
 
 
 def _coerce_non_negative_integer(value, name):
@@ -189,7 +190,13 @@ class Space(FiniteMetricSpace):
     facade until they have deterministic coverage.
     """
 
-    def neighbors(self, query, k=None, count=None, radius=None):
+    def neighbors(self, query, k=None, count=None, radius=None, *, strategy=None, representation=None, runtime=None):
+        require_exact_runtime(runtime)
+        if strategy is not None:
+            raise ValueError("strategy overrides are not promoted for Python neighbors yet")
+        if representation is not None:
+            return representation.neighbors(query, k=k, count=count, radius=radius)
+
         if radius is not None:
             if k is not None or count is not None:
                 raise ValueError("radius cannot be combined with k or count")
@@ -206,55 +213,71 @@ class Space(FiniteMetricSpace):
     def within_radius(self, query, radius):
         return self.rnn(query, radius)
 
-    def groups(self, strategy):
+    def groups(self, strategy, *, representation=None, runtime=None):
+        require_exact_runtime(runtime)
+        if representation is not None:
+            representation.ensure_fresh()
         from metric.operators import find_groups
 
         return find_groups(self.records, self.metric, strategy)
 
-    def outliers(self, strategy):
+    def outliers(self, strategy, *, representation=None, runtime=None):
+        require_exact_runtime(runtime)
+        if representation is not None:
+            representation.ensure_fresh()
         from metric.operators import find_outliers
 
         return find_outliers(self.records, self.metric, strategy)
 
-    def denoise(self, strategy):
+    def denoise(self, strategy, *, representation=None, runtime=None):
+        require_exact_runtime(runtime)
+        if representation is not None:
+            representation.ensure_fresh()
         from metric.operators import denoise_space
 
         return denoise_space(self.records, self.metric, strategy)
 
-    def representatives(self, k, strategy=None):
+    def representatives(self, k, strategy=None, *, runtime=None):
+        require_exact_runtime(runtime)
         from metric.operators import find_representatives
 
         return find_representatives(self.records, self.metric, k, strategy=strategy)
 
-    def reduce(self, count=None, strategy=None):
+    def reduce(self, count=None, strategy=None, *, runtime=None):
+        require_exact_runtime(runtime)
         from metric.operators import reduce_space
 
         return reduce_space(self.records, self.metric, count, strategy=strategy)
 
-    def compress(self, count=None, strategy=None):
+    def compress(self, count=None, strategy=None, *, runtime=None):
+        require_exact_runtime(runtime)
         from metric.operators import compress_space
 
         return compress_space(self.records, self.metric, count, strategy=strategy)
 
-    def map(self, transform, metric=None):
+    def map(self, transform, metric=None, *, runtime=None):
+        require_exact_runtime(runtime)
         from metric.operators import map_space
 
         return map_space(self.records, transform, self.metric if metric is None else metric)
 
-    def embed(self, dimensions=2, strategy=None):
+    def embed(self, dimensions=2, strategy=None, *, runtime=None):
+        require_exact_runtime(runtime)
         from metric.operators import embed_space
 
         return embed_space(self.records, self.metric, dimensions=dimensions, strategy=strategy)
 
-    def describe(self):
+    def describe(self, *, runtime=None):
+        require_exact_runtime(runtime)
         from metric.operators import describe_structure
 
         return describe_structure(self.records, self.metric)
 
-    def describe_structure(self):
-        return self.describe()
+    def describe_structure(self, *, runtime=None):
+        return self.describe(runtime=runtime)
 
-    def compare(self, other, strategy=None):
+    def compare(self, other, strategy=None, *, runtime=None):
+        require_exact_runtime(runtime)
         from metric.operators import compare_spaces
 
         return compare_spaces(
@@ -267,8 +290,8 @@ class Space(FiniteMetricSpace):
             right_representation="metric_space",
         )
 
-    def correlate(self, other, strategy=None):
-        return self.compare(other, strategy=strategy)
+    def correlate(self, other, strategy=None, *, runtime=None):
+        return self.compare(other, strategy=strategy, runtime=runtime)
 
 
 MatrixSpace = FiniteMetricSpace
