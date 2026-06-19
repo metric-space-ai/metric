@@ -120,6 +120,62 @@ auto representatives(const Container &records, Metric distance, std::size_t k, s
 	return result;
 }
 
+template <typename Container, typename Metric, typename Radius>
+auto coverage_representative_indices(const Container &records, Metric distance, Radius radius)
+	-> std::vector<std::size_t>
+{
+	using distance_type = typename detail::finite_space_t<Container, Metric>::distance_type;
+
+	if (radius < Radius{}) {
+		throw std::invalid_argument("radius must be non-negative");
+	}
+	if (records.empty()) {
+		return {};
+	}
+
+	const auto cover_radius = static_cast<distance_type>(radius);
+	const auto space = ::metric::Space::from_records(records, std::move(distance));
+	std::vector<std::size_t> selected;
+	std::vector<bool> covered(records.size(), false);
+	std::size_t covered_count = 0;
+
+	while (covered_count < records.size()) {
+		auto seed_index = records.size();
+		for (std::size_t index = 0; index < covered.size(); ++index) {
+			if (!covered[index]) {
+				seed_index = index;
+				break;
+			}
+		}
+		if (seed_index == records.size()) {
+			throw std::logic_error("failed to select the next coverage representative");
+		}
+
+		selected.push_back(seed_index);
+		for (std::size_t index = 0; index < covered.size(); ++index) {
+			if (!covered[index] && space.distance(seed_index, index) <= cover_radius) {
+				covered[index] = true;
+				++covered_count;
+			}
+		}
+	}
+
+	return selected;
+}
+
+template <typename Container, typename Metric, typename Radius>
+auto coverage_representatives(const Container &records, Metric distance, Radius radius)
+	-> std::vector<detail::record_type_t<Container>>
+{
+	const auto selected = coverage_representative_indices(records, std::move(distance), radius);
+	std::vector<detail::record_type_t<Container>> result;
+	result.reserve(selected.size());
+	for (const auto index : selected) {
+		result.push_back(records[index]);
+	}
+	return result;
+}
+
 template <typename Container, typename Metric>
 auto intrinsic_dimension(const Container &records, Metric distance) -> double
 {

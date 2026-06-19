@@ -20,6 +20,8 @@ except ModuleNotFoundError:
 from . import mappings, metrics, operators, spaces, transforms
 from .metrics import Edit
 from .operators import (
+    coverage_representative_indices,
+    coverage_representatives,
     intrinsic_dimension,
     nearest_neighbors,
     pairwise_distance_matrix,

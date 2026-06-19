@@ -79,6 +79,38 @@ def representatives(records, metric, k, seed_index=0):
     ]
 
 
+def coverage_representative_indices(records, metric, radius):
+    """Select representatives that greedily cover records within a radius."""
+    records = list(records)
+    if radius < 0:
+        raise ValueError("radius must be non-negative")
+    if not records:
+        return []
+
+    space = FiniteMetricSpace(records, metric)
+    selected = []
+    covered = [False] * len(records)
+
+    while not all(covered):
+        seed_index = next(index for index, is_covered in enumerate(covered) if not is_covered)
+        selected.append(seed_index)
+
+        for index in range(len(records)):
+            if space.distance(seed_index, index) <= radius:
+                covered[index] = True
+
+    return selected
+
+
+def coverage_representatives(records, metric, radius):
+    """Select representative records that greedily cover records within a radius."""
+    records = list(records)
+    return [
+        records[index]
+        for index in coverage_representative_indices(records, metric, radius)
+    ]
+
+
 def intrinsic_dimension(records, metric):
     """Estimate expansion dimension from finite metric-space distance growth."""
     return intrinsic_dimension_from_distances(pairwise_distance_matrix(records, metric))
@@ -101,6 +133,8 @@ def intrinsic_dimension_from_distances(distances):
 __all__ = [
     "intrinsic_dimension",
     "intrinsic_dimension_from_distances",
+    "coverage_representative_indices",
+    "coverage_representatives",
     "pairwise_distance_matrix",
     "nearest_neighbors",
     "range_neighbors",

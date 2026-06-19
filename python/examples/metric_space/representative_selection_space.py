@@ -1,4 +1,10 @@
-from metric import Space, representative_indices, representatives
+from metric import (
+    Space,
+    coverage_representative_indices,
+    coverage_representatives,
+    representative_indices,
+    representatives,
+)
 
 
 def cumulative_transport_distance(lhs, rhs):
@@ -28,13 +34,18 @@ def main():
     space = Space(records, cumulative_transport_distance)
     selected = representative_indices(records, cumulative_transport_distance, k=3)
     selected_records = representatives(records, cumulative_transport_distance, k=3)
+    covered = coverage_representative_indices(records, cumulative_transport_distance, radius=1.5)
+    covered_records = coverage_representatives(records, cumulative_transport_distance, radius=1.5)
 
     assert selected == [0, 2, 4]
     assert selected_records == [records[0], records[2], records[4]]
+    assert covered == [0, 2]
+    assert covered_records == [records[0], records[2]]
     assert space.distance(selected[0], selected[1]) == 3.0
 
     print("representative histograms =", ", ".join(names[index] for index in selected))
-    print("coverage seed distance =", space.distance(selected[0], selected[1]))
+    print("radius-cover histograms =", ", ".join(names[index] for index in covered))
+    print("farthest seed distance =", space.distance(selected[0], selected[1]))
 
 
 if __name__ == "__main__":

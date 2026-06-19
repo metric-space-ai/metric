@@ -117,6 +117,8 @@ The lower-level C++ representations remain available for expert control and comp
 - `metric::operators::range_neighbors`
 - `metric::operators::representative_indices`
 - `metric::operators::representatives`
+- `metric::operators::coverage_representative_indices`
+- `metric::operators::coverage_representatives`
 - `metric::operators::intrinsic_dimension`
 - `metric::MatrixSpace`
 - `metric::GraphSpace`
