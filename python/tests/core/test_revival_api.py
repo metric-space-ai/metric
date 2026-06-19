@@ -481,6 +481,8 @@ class RevivalApiTest(unittest.TestCase):
         self.assertEqual(groups.algorithm, "kmedoids")
         self.assertEqual(groups.representation, "metric_space")
         self.assertEqual(find_groups([0, 1, 2, 10, 11], lambda lhs, rhs: abs(lhs - rhs), 2), groups)
+        self.assertEqual(group_space.groups(count=2), groups)
+        self.assertEqual(group_space.groups(), groups)
 
         density_groups = group_space.groups(DBSCAN(radius=1, min_points=2))
         self.assertIsInstance(density_groups, ClusteringResult)
@@ -492,6 +494,9 @@ class RevivalApiTest(unittest.TestCase):
         self.assertEqual(density_groups.cluster_count, 2)
         self.assertEqual(density_groups.noise_count, 0)
         self.assertEqual(density_groups.algorithm, "dbscan")
+        self.assertEqual(group_space.groups(radius=1, min_size=2), density_groups)
+        with self.assertRaises(ValueError):
+            group_space.groups(KMedoids(groups=2), count=2)
 
         outlier_space = Space([0, 1, 10, 11, 30], metric=lambda lhs, rhs: abs(lhs - rhs))
         outliers = outlier_space.outliers(DBSCAN(radius=2, min_points=2))
