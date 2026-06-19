@@ -49,6 +49,7 @@ The current local tree implements the first revival slice:
 - initial C++ engine compare/correlate intent helpers with explicit MGC strategy
 - initial C++ engine describe intent with exact finite-space structure diagnostics
 - initial C++ engine reduce intent backed by the PCFA strategy
+- initial C++ engine outlier intent backed by DBSCAN-noise detection with named result objects
 - C++ engine umbrella header exposure for the PCFA-backed reduce intent
 - initial C++ engine runtime policy scaffolding for exact lazy/materialized neighbor execution and representation-cache staleness
 - initial C++ engine mapping conventions with `MappingResult` lineage metadata and clustered-space derivation
@@ -231,6 +232,7 @@ The following revival improvements landed on `master` after the `v0.3.2` tag and
 - Python engine-style Space grouping intent with KMedoids and DBSCAN strategies, named `ClusteringResult` objects, and core test coverage, merged as `fe2641f8f14e660a994c94ca18d9f5feb426fb2b`
 - Python engine-style Space compare/correlate intent with named `CorrelationResult` objects and distance-profile strategy coverage, merged as `103d680a395ddd748017a1619be0580ffd5607cc`
 - engine documentation chapters for metric spaces, representations, intents, strategies, operators, mappings, runtime policies, and migration, merged as `48d19a98315da2132d756ce032cba62eab46f12d`
+- C++ engine outlier intent backed by DBSCAN-noise detection with named `OutlierResult` objects and core smoke coverage, merged as `178c635e331b5acee8f1c868ba48dafe834443a3`
 
 ## Historical Code Policy
 
