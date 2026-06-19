@@ -88,8 +88,12 @@ The first mapping convention lives under `metric::mappings`:
 - `metric::mappings::transform(model, space)`
 - `metric::mappings::make_clustered_space_mapping(clustering)`
 - `metric::mappings::clustered_space(space, clustering)`
+- `metric::mappings::pcfa(components)`
+- `metric::mappings::pcfa_space(space, components)`
 
 Clustered-space mapping turns a `ClusteringResult` into a derived `MetricSpace`. Each derived record represents one non-noise cluster, stores the source `RecordId`s that formed it, and uses the source-space distance between cluster representatives as the derived metric. Inverse reconstruction is explicit and currently marked unsupported.
+
+PCFA mapping lives in `<metric/mappings/pcfa.hpp>` because it wraps the LAPACK-backed legacy PCFA implementation. It fits a linear encoder to vector-like records, transforms a source space into an encoded metric space, stores one-to-one source lineage, and exposes explicit inverse reconstruction through the fitted model.
 
 ## Current Contract
 

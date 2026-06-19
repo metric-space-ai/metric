@@ -103,7 +103,7 @@ auto density_groups = metric::find_groups(space, metric::strategies::dbscan(1.0,
 
 These helpers keep algorithm names in `metric::strategies` while returning the same engine result objects as the lower-level operator layer.
 
-The first engine mapping adapter lives under `metric::mappings`. `make_clustered_space_mapping(clustering)` follows the `fit(space) -> model` and `model.transform(space) -> MappingResult<DerivedSpace>` convention. The derived clustered space stores one record per non-noise cluster, keeps the source `RecordId` lineage in `source_records`, uses the cluster representative distance as the derived metric, and marks inverse reconstruction as unsupported.
+The first engine mapping adapters live under `metric::mappings`. `make_clustered_space_mapping(clustering)` follows the `fit(space) -> model` and `model.transform(space) -> MappingResult<DerivedSpace>` convention. The derived clustered space stores one record per non-noise cluster, keeps the source `RecordId` lineage in `source_records`, uses the cluster representative distance as the derived metric, and marks inverse reconstruction as unsupported. The PCFA adapter is available through `<metric/mappings/pcfa.hpp>` as `metric::mappings::pcfa(components)`; it produces encoded records, preserves one-to-one source lineage, and exposes explicit `model.inverse_transform(...)` reconstruction when the LAPACK-backed PCFA implementation is available.
 
 `representative_indices` and `representatives` use deterministic farthest-first traversal over the finite metric space. They select existing records rather than vector centroids, start from `seed_index=0` by default, and resolve equal-distance ties by record order.
 

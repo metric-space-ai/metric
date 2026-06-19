@@ -12,6 +12,7 @@
 - Add first C++ engine intent helpers and strategy objects for semantic neighbor and grouping workflows.
 - Add C++ engine entropy and MGC operator wrappers with named `EntropyResult` and `CorrelationResult` objects.
 - Add the first C++ engine mapping model conventions with `MappingResult` and a clustered-space mapping adapter.
+- Add a C++ engine PCFA mapping adapter with explicit fit, transform, and inverse-transform support.
 
 ### Algorithm Changes
 
