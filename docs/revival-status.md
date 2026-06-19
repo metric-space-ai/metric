@@ -22,6 +22,7 @@ The current local tree implements the first revival slice:
 - Python engine-style Space outlier intent with DBSCAN-noise strategy
 - Python engine-style Space reduce intent with representative and medoid reduction strategies
 - Python engine-style Space map intent for deterministic transforms into derived metric spaces
+- Python engine-style Space denoise intent with DBSCAN-noise filtering and mapping-result lineage
 - Python beta compatibility bridge modules under `metric.mappings` and `metric.transforms`
 - promoted C++ examples under `examples/core/`
 - promoted Python examples under `python/examples/metric_space/`
@@ -247,6 +248,7 @@ The following revival improvements landed on `master` after the `v0.3.2` tag and
 - Python engine-style Space map intent with named `MappingResult` objects, deterministic transform coverage, and API/stability docs, merged as `e5d2f796c8eb842a5e784160acdf9b87baef10de`
 - C++ engine map intent with `MappingResult` lineage metadata, deterministic transform smoke coverage, and API/stability docs, merged as `4cd6144e25761225fd1362dd3f5ae9e501f4859a`
 - C++ engine denoise intent backed by DBSCAN-noise filtering with `MappingResult` lineage metadata and core smoke coverage, merged as `998d1bc1d357f982c30b0eeb9a8ccce196fddb56`
+- Python engine-style Space denoise intent with named `MappingResult` objects, DBSCAN-noise filtering coverage, and API/stability docs, merged as `74054a493909b35af65034f21c944d057a600f91`
 
 ## Historical Code Policy
 
