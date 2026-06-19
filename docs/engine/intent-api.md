@@ -11,7 +11,7 @@ Intent APIs are named by what users want to do, not by the algorithm used to do 
 | Describe a space | `describe_structure` | `Space.describe` | Core Revival |
 | Find outliers | `find_outliers` | `Space.outliers` | C++ and Python DBSCAN-noise path |
 | Reduce complexity | `reduce` | `Space.reduce` | C++ PCFA-backed path; Python representative/medoid reduction path |
-| Map to another space | `metric::mappings::*` | `Space.map` | C++ initial mapping conventions; Python deterministic transform path |
+| Map to another space | `map`, `metric::mappings::*` | `Space.map` | C++ and Python deterministic transform paths; C++ mapping conventions |
 | Denoise a space | roadmap | roadmap | Target Engine API |
 
 The operator layer may still use algorithm names because it is the implementation layer. The intent layer is the recommended user-facing vocabulary.
@@ -24,6 +24,7 @@ auto groups = metric::find_groups(space, metric::strategies::k_medoids(2));
 auto representatives = metric::find_representatives(space, 2);
 auto outliers = metric::find_outliers(space, metric::strategies::dbscan(2.0, 2));
 auto dependency = metric::compare(space_a, space_b, metric::strategies::mgc{});
+auto mapped = metric::map(space, transform, target_metric);
 auto structure = metric::describe_structure(space);
 ```
 

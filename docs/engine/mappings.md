@@ -19,17 +19,19 @@ model.inverse_transform(derived_space) -> reconstructed records, if supported
 The current engine mapping layer includes:
 
 - `metric::MappingResult`
+- deterministic C++ `metric::map`
 - `metric::mappings::fit`
 - `metric::mappings::transform`
 - clustered-space mapping from `ClusteringResult`
 - LAPACK-backed PCFA mapping
 - PCFA-backed `metric::reduce`
+- deterministic Python `Space.map`
 
 `MappingResult` stores the derived space plus source-record lineage. Inverse reconstruction is explicit and optional.
 
 ## Python Status
 
-Python exposes `metric.mappings` as a beta compatibility bridge for installed legacy names. A Python engine mapping facade should be promoted only when it has named result contracts, examples, and wheel CI coverage.
+Python exposes `Space.map` and `metric.operators.map_space` for deterministic transforms into derived `Space` objects. Python also exposes `metric.mappings` as a beta compatibility bridge for installed legacy names; learned or inverse mapping facades should be promoted only when they have named result contracts, examples, and wheel CI coverage.
 
 ## Promotion Rule
 
