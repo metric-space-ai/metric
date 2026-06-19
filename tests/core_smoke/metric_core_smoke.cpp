@@ -153,9 +153,35 @@ int main()
     assert(!knn_graph.metadata.radius.has_value());
     assert(knn_graph.metadata.edge_payload == "metric_distance");
     assert(knn_graph.metadata.weighting == "none");
+    assert(!knn_graph.metadata.max_out_degree.has_value());
+    assert(knn_graph.metadata.sparsification == "none");
     assert(knn_graph.metadata.symmetrization == "none");
     assert(knn_graph.metadata.normalization == "none");
     assert(knn_graph.metadata.tie_break == "distance_then_target_index");
+
+    const auto pruned_knn_graph = metric::operators::prune_graph_out_degree(knn_graph, 1);
+    const std::vector<std::tuple<std::size_t, std::size_t, int>> expected_pruned_knn_edges = {
+        {0, 1, 1},
+        {1, 0, 1},
+        {2, 1, 1},
+        {3, 2, 1},
+        {4, 3, 1},
+    };
+    assert(pruned_knn_graph.edges == expected_pruned_knn_edges);
+    assert(pruned_knn_graph.metadata.directed);
+    assert(pruned_knn_graph.metadata.edge_count == expected_pruned_knn_edges.size());
+    assert(pruned_knn_graph.metadata.k.has_value());
+    assert(pruned_knn_graph.metadata.k.value() == 2);
+    assert(pruned_knn_graph.metadata.max_out_degree.has_value());
+    assert(pruned_knn_graph.metadata.max_out_degree.value() == 1);
+    assert(pruned_knn_graph.metadata.sparsification == "out_degree");
+    assert(pruned_knn_graph.metadata.tie_break == "source_index_then_distance_then_target_index");
+
+    const auto empty_pruned_graph = metric::operators::prune_graph_out_degree(knn_graph, 0);
+    assert(empty_pruned_graph.edges.empty());
+    assert(empty_pruned_graph.metadata.edge_count == 0);
+    assert(empty_pruned_graph.metadata.max_out_degree.has_value());
+    assert(empty_pruned_graph.metadata.max_out_degree.value() == 0);
 
     const auto one_neighbor_graph = metric::operators::exact_knn_graph(line, AbsoluteDistance{}, 1);
     const auto union_graph = metric::operators::symmetrize_graph(one_neighbor_graph, "union", "minimum_distance");
@@ -169,8 +195,17 @@ int main()
     assert(!union_graph.metadata.directed);
     assert(union_graph.metadata.edge_count == expected_union_edges.size());
     assert(union_graph.metadata.weighting == "minimum_distance");
+    assert(union_graph.metadata.sparsification == "none");
     assert(union_graph.metadata.symmetrization == "union");
     assert(union_graph.metadata.tie_break == "source_index_then_target_index");
+
+    bool rejected_undirected_pruning = false;
+    try {
+        metric::operators::prune_graph_out_degree(union_graph, 1);
+    } catch (const std::invalid_argument &) {
+        rejected_undirected_pruning = true;
+    }
+    assert(rejected_undirected_pruning);
 
     const auto mutual_graph = metric::operators::symmetrize_graph(one_neighbor_graph, "mutual", "minimum_distance");
     const std::vector<std::tuple<std::size_t, std::size_t, int>> expected_mutual_edges = {
@@ -193,6 +228,7 @@ int main()
     asymmetric_graph.metadata.exact = true;
     asymmetric_graph.metadata.edge_payload = "metric_distance";
     asymmetric_graph.metadata.weighting = "none";
+    asymmetric_graph.metadata.sparsification = "none";
     asymmetric_graph.metadata.symmetrization = "none";
     asymmetric_graph.metadata.normalization = "none";
 
@@ -254,6 +290,8 @@ int main()
     assert(radius_graph.metadata.radius.value() == 1);
     assert(radius_graph.metadata.edge_payload == "metric_distance");
     assert(radius_graph.metadata.weighting == "none");
+    assert(!radius_graph.metadata.max_out_degree.has_value());
+    assert(radius_graph.metadata.sparsification == "none");
     assert(radius_graph.metadata.symmetrization == "none");
     assert(radius_graph.metadata.normalization == "none");
     assert(radius_graph.metadata.tie_break == "source_then_target_index");

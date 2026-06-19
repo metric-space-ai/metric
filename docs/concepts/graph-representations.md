@@ -4,7 +4,7 @@ Graph representations are derived structures over a finite metric space. They ke
 
 This page defines the terms METRIC docs use before graph construction becomes a first-page operator API.
 
-The promoted core result helpers are `exact_knn_graph` and `exact_radius_graph`. They return `GraphConstructionResult` values with directed `(source_index, target_index, distance)` edges plus construction metadata. The edge-list helpers `exact_knn_graph_edges` and `exact_radius_graph_edges` remain available when callers only need the directed edge tuples. `symmetrize_graph` converts a graph construction result into deterministic undirected edges with documented symmetrization and reciprocal weighting policies. See [Exact Graph Edge Fixtures](../examples/graph-construction.md) for the fixture shape. Normalized weights remain a roadmap item.
+The promoted core result helpers are `exact_knn_graph` and `exact_radius_graph`. They return `GraphConstructionResult` values with directed `(source_index, target_index, distance)` edges plus construction metadata. The edge-list helpers `exact_knn_graph_edges` and `exact_radius_graph_edges` remain available when callers only need the directed edge tuples. `prune_graph_out_degree` applies deterministic out-degree sparsification to directed graph results. `symmetrize_graph` converts a graph construction result into deterministic undirected edges with documented symmetrization and reciprocal weighting policies. See [Exact Graph Edge Fixtures](../examples/graph-construction.md) for the fixture shape. Normalized weights remain a roadmap item.
 
 ## Required Metadata
 
@@ -16,6 +16,7 @@ Every promoted graph-construction result should state:
 - whether the edge set is exact or approximate
 - whether edges are directed, undirected, or symmetrized
 - whether edge payloads are metric distances, affinities, booleans, or normalized weights
+- any sparsification policy and degree cap applied after construction
 - tie-breaking rule for equal distances
 - deterministic seed or stochastic build policy when approximation is used
 
@@ -25,7 +26,7 @@ Without this metadata, a graph is an expert representation, not a promoted resul
 
 An exact k-nearest-neighbor graph has one outgoing neighbor set per source record. For each record, the selected neighbors are the `k` nearest other records under the metric, after applying a documented tie-breaking rule.
 
-`exact_knn_graph` and `exact_knn_graph_edges` use exhaustive pairwise distances, exclude self-loops, preserve source-record order, and resolve equal distances by target record order. The result metadata records strategy `exact_knn`, the record count, edge count, exact/directed policy, `k`, metric-distance payloads, no weighting, no symmetrization, no normalization, and the tie-breaking rule.
+`exact_knn_graph` and `exact_knn_graph_edges` use exhaustive pairwise distances, exclude self-loops, preserve source-record order, and resolve equal distances by target record order. The result metadata records strategy `exact_knn`, the record count, edge count, exact/directed policy, `k`, metric-distance payloads, no weighting, no sparsification, no symmetrization, no normalization, and the tie-breaking rule.
 
 Exactness must be supported by exhaustive pairwise distances, a proved exact algorithm, or deterministic tests that compare against dense pairwise distances on small fixtures.
 
@@ -43,11 +44,19 @@ Approximate graphs must not be documented as exact unless their edge sets are ve
 
 A radius graph connects records whose metric distance is within a threshold.
 
-`exact_radius_graph` and `exact_radius_graph_edges` use exhaustive pairwise distances, exclude self-loops, preserve source-record order, and emit every directed edge whose distance is within `radius`. The result metadata records strategy `exact_radius`, the record count, edge count, exact/directed policy, `radius`, metric-distance payloads, no weighting, no symmetrization, no normalization, and the source/target scan rule.
+`exact_radius_graph` and `exact_radius_graph_edges` use exhaustive pairwise distances, exclude self-loops, preserve source-record order, and emit every directed edge whose distance is within `radius`. The result metadata records strategy `exact_radius`, the record count, edge count, exact/directed policy, `radius`, metric-distance payloads, no weighting, no sparsification, no symmetrization, no normalization, and the source/target scan rule.
 
 An exact directed radius graph has edge `i -> j` when `distance(i, j) <= radius`, subject to a documented self-loop policy. An exact undirected radius graph uses the same threshold but stores one undirected relationship for each qualifying pair.
 
 A radius graph is approximate when it is built from candidate pruning, approximate neighbors, or any method that may miss qualifying pairs.
+
+## Degree Sparsification
+
+Sparsification removes edges from an existing graph result. It does not make a graph exact by itself and it must report the rule used to remove edges.
+
+`prune_graph_out_degree` is the promoted deterministic sparsification primitive. It accepts a directed `GraphConstructionResult`, groups existing edges by `source_index`, sorts each group by `(distance, target_index)`, and keeps at most `max_out_degree` edges for each source. It preserves the source graph's construction metadata such as `strategy`, `k`, `radius`, edge payload, weighting, and exactness, then records `sparsification="out_degree"`, `max_out_degree`, the new edge count, and tie-break rule `source_index_then_distance_then_target_index`.
+
+Out-degree pruning is only defined for directed graph results. It rejects already-undirected or symmetrized graph results because `source_index` in an undirected stored edge is an orientation convention, not an outgoing-neighbor contract. Symmetrize after pruning when the workflow needs a smaller undirected graph.
 
 ## Direction And Symmetrization
 

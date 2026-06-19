@@ -33,6 +33,7 @@ from .operators import (
     medoid_index,
     nearest_neighbors,
     pairwise_distance_matrix,
+    prune_graph_out_degree,
     range_neighbors,
     representative_indices,
     representatives,

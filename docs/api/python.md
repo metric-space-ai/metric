@@ -24,7 +24,7 @@ The records are strings. Edit distance defines the geometry without an embedding
 - `Space`: minimal intent-first finite metric space facade
 - `FiniteMetricSpace`: finite metric space over records
 - `MatrixSpace`: compatibility alias for `FiniteMetricSpace`
-- `operators`: small helpers for pairwise distances, nearest neighbors, range neighbors, exact graph results and edges, representative selection, medoids, separated representatives, and intrinsic-dimension diagnostics
+- `operators`: small helpers for pairwise distances, nearest neighbors, range neighbors, exact graph results and edges, graph pruning, representative selection, medoids, separated representatives, and intrinsic-dimension diagnostics
 - `mappings`: beta compatibility bridge for installed mapping bindings
 - `transforms`: beta compatibility bridge for installed transform bindings
 
@@ -60,6 +60,7 @@ from metric.operators import (
     medoid_index,
     nearest_neighbors,
     pairwise_distance_matrix,
+    prune_graph_out_degree,
     range_neighbors,
     representative_indices,
     representatives,
@@ -76,6 +77,7 @@ knn_edges = exact_knn_graph_edges(records, Edit(), k=1)
 radius_graph = exact_radius_graph(records, Edit(), radius=1)
 radius_edges = exact_radius_graph_edges(records, Edit(), radius=1)
 undirected = symmetrize_graph(knn_graph, policy="union", weighting="minimum_distance")
+pruned = prune_graph_out_degree(exact_knn_graph(records, Edit(), k=2), max_out_degree=1)
 selected_ids = representative_indices(records, Edit(), k=2)
 selected_records = representatives(records, Edit(), k=2)
 center_id = medoid_index(records, Edit())
@@ -93,9 +95,11 @@ dimension = intrinsic_dimension(records, Edit())
 
 `separated_representative_indices` and `separated_representatives` scan records in order and keep a candidate when it is at least `minimum_distance` from every selected representative. This is deterministic redundancy-threshold reduction, not an optimal packing proof.
 
-`exact_knn_graph` and `exact_radius_graph` return `GraphConstructionResult` objects with `.edges` and `.metadata`. The metadata records the construction strategy, record count, edge count, directed/self-loop/exact policy, the active `k` or `radius` parameter, edge payload meaning, symmetrization policy, normalization policy, and the tie-breaking rule. `exact_knn_graph_edges` and `exact_radius_graph_edges` remain convenience helpers that return only directed edge tuples shaped as `(source_index, target_index, distance)`. Exact graph helpers exclude self-loops, preserve source-record order, and resolve equal kNN distances by target record order.
+`exact_knn_graph` and `exact_radius_graph` return `GraphConstructionResult` objects with `.edges` and `.metadata`. The metadata records the construction strategy, record count, edge count, directed/self-loop/exact policy, the active `k` or `radius` parameter, edge payload meaning, sparsification policy, symmetrization policy, normalization policy, and the tie-breaking rule. `exact_knn_graph_edges` and `exact_radius_graph_edges` remain convenience helpers that return only directed edge tuples shaped as `(source_index, target_index, distance)`. Exact graph helpers exclude self-loops, preserve source-record order, and resolve equal kNN distances by target record order.
 
 `symmetrize_graph` converts a graph construction result to undirected `source_index < target_index` edges. The supported symmetrization policies are `union` and `mutual`; the supported reciprocal weighting policies are `minimum_distance` and `maximum_distance`. The returned metadata records the selected symmetrization and weighting policies.
+
+`prune_graph_out_degree` keeps at most `max_out_degree` existing directed edges per source record. It sorts each source's candidate edges by `(distance, target_index)`, keeps the first entries, and records `sparsification="out_degree"` plus `max_out_degree` in the returned metadata. It does not compute new distances and rejects already-undirected graph results because their stored source index is not an out-degree contract.
 
 `coverage_representative_indices` and `coverage_representatives` use deterministic greedy radius coverage. They scan records in order, choose the first uncovered record as a representative, and mark every record within `radius` as covered.
 

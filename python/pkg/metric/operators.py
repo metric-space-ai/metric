@@ -24,6 +24,8 @@ class GraphConstructionMetadata:
     symmetrization: str = ""
     normalization: str = ""
     tie_break: str = ""
+    max_out_degree: object = None
+    sparsification: str = ""
 
 
 @dataclass(frozen=True)
@@ -107,6 +109,7 @@ def exact_knn_graph(records, metric, k):
             k=k,
             edge_payload="metric_distance",
             weighting="none",
+            sparsification="none",
             symmetrization="none",
             normalization="none",
             tie_break="distance_then_target_index",
@@ -154,6 +157,7 @@ def exact_radius_graph(records, metric, radius):
             radius=radius,
             edge_payload="metric_distance",
             weighting="none",
+            sparsification="none",
             symmetrization="none",
             normalization="none",
             tie_break="source_then_target_index",
@@ -221,11 +225,61 @@ def symmetrize_graph(graph, policy="union", weighting="minimum_distance"):
             exact=graph.metadata.exact,
             k=graph.metadata.k,
             radius=graph.metadata.radius,
+            max_out_degree=graph.metadata.max_out_degree,
             edge_payload=graph.metadata.edge_payload,
             weighting=weighting,
+            sparsification=graph.metadata.sparsification,
             symmetrization=policy,
             normalization=graph.metadata.normalization,
             tie_break="source_index_then_target_index",
+        ),
+    )
+
+
+def prune_graph_out_degree(graph, max_out_degree):
+    """Prune a directed graph result to at most max_out_degree edges per source."""
+    try:
+        max_out_degree = operator.index(max_out_degree)
+    except TypeError:
+        raise TypeError("max_out_degree must be an integer") from None
+
+    if max_out_degree < 0:
+        raise ValueError("max_out_degree must be non-negative")
+    if not graph.metadata.directed:
+        raise ValueError("out-degree pruning requires a directed graph result")
+
+    if max_out_degree == 0:
+        edges = ()
+    else:
+        edges_by_source = {}
+        for edge in graph.edges:
+            source_index, _target_index, _distance = edge
+            edges_by_source.setdefault(source_index, []).append(edge)
+
+        selected_edges = []
+        for source_index in sorted(edges_by_source):
+            source_edges = sorted(edges_by_source[source_index], key=lambda edge: (edge[2], edge[1]))
+            selected_edges.extend(source_edges[:max_out_degree])
+        edges = tuple(selected_edges)
+
+    return GraphConstructionResult(
+        edges=edges,
+        metadata=GraphConstructionMetadata(
+            strategy=graph.metadata.strategy,
+            record_count=graph.metadata.record_count,
+            edge_count=len(edges),
+            directed=graph.metadata.directed,
+            self_loops=graph.metadata.self_loops,
+            exact=graph.metadata.exact,
+            k=graph.metadata.k,
+            radius=graph.metadata.radius,
+            max_out_degree=max_out_degree,
+            edge_payload=graph.metadata.edge_payload,
+            weighting=graph.metadata.weighting,
+            sparsification="out_degree",
+            symmetrization=graph.metadata.symmetrization,
+            normalization=graph.metadata.normalization,
+            tie_break="source_index_then_distance_then_target_index",
         ),
     )
 
@@ -414,6 +468,7 @@ __all__ = [
     "medoid",
     "medoid_index",
     "pairwise_distance_matrix",
+    "prune_graph_out_degree",
     "nearest_neighbors",
     "range_neighbors",
     "representative_indices",
