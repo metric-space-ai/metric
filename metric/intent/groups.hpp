@@ -1,0 +1,42 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+#ifndef _METRIC_INTENT_GROUPS_HPP
+#define _METRIC_INTENT_GROUPS_HPP
+
+#include <cstddef>
+#include <type_traits>
+
+#include "../core/concepts.hpp"
+#include "../core/result.hpp"
+#include "../operators/clustering.hpp"
+#include "../strategies/clustering.hpp"
+
+namespace metric::intent {
+
+template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
+auto find_groups(const Space &space, strategies::k_medoids strategy) -> ClusteringResult<typename Space::distance_type>
+{
+	return operators::kmedoids(space, strategy.groups, strategy.max_iterations);
+}
+
+template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
+auto find_groups(const Space &space, std::size_t groups) -> ClusteringResult<typename Space::distance_type>
+{
+	return find_groups(space, strategies::k_medoids(groups));
+}
+
+template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
+auto find_groups(const Space &space, strategies::dbscan strategy) -> ClusteringResult<typename Space::distance_type>
+{
+	return operators::dbscan(space, strategy.radius, strategy.min_points);
+}
+
+} // namespace metric::intent
+
+namespace metric {
+using intent::find_groups;
+} // namespace metric
+
+#endif

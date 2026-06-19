@@ -56,6 +56,21 @@ The first engine operators live under `metric::operators` and return named resul
 This is still the implementation layer, not the final intent API. It lets the same nearest-neighbor operation run against an implicit `MetricSpace`, a materialized `MatrixCache`, or a neighbor index while returning stable `RecordId` values. It also lets the first grouping operators run against either a space or distance provider while returning stable `RecordId` payloads.
 Density clustering uses the same `ClusteringResult` contract and marks noise records with `ClusteringResult<Distance>::noise_label`.
 
+## Phase 3b Surface
+
+The first semantic intent helpers live at the `metric::find_*` layer:
+
+- `metric::find_neighbors(space, query, count)`
+- `metric::find_neighbors(space, query_id, count)`
+- `metric::find_neighbors(space, query, count, metric::strategies::cover_tree{})`
+- `metric::find_neighbors(space, query, count, metric::strategies::knn_graph(graph_neighbors))`
+- `metric::find_neighbors(space, query_id, count, metric::strategies::matrix_cache{})`
+- `metric::find_groups(space, group_count)`
+- `metric::find_groups(space, metric::strategies::k_medoids(group_count))`
+- `metric::find_groups(space, metric::strategies::dbscan(radius, min_points))`
+
+These are the first user-facing names that describe intent before algorithm. Strategy objects select implementation details while preserving the same result types returned by the operator layer.
+
 ## Current Contract
 
 The initial `MetricSpace` owns records by value. `RecordId` is an opaque wrapper over dense internal storage. `version()` exists and starts at `0`; later representation adapters can use it for stale-cache checks when mutating space operations are introduced.
@@ -87,6 +102,9 @@ auto indexed_neighbors = metric::operators::knn(tree, std::string("metricks"), 2
 
 auto groups = metric::operators::kmedoids(matrix, 2);
 auto dense_groups = metric::operators::dbscan(matrix, 1, 2);
+
+auto user_neighbors = metric::find_neighbors(space, std::string("metricks"), 2);
+auto user_groups = metric::find_groups(space, metric::strategies::k_medoids(2));
 ```
 
 The important shift is vocabulary: engine code starts from a metric space and stable record IDs. Algorithm names and representation choices come later as strategies and execution structures. A representation reports stale state when the source space version changes:

@@ -1,0 +1,97 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+#ifndef _METRIC_INTENT_NEIGHBORS_HPP
+#define _METRIC_INTENT_NEIGHBORS_HPP
+
+#include <cstddef>
+#include <stdexcept>
+#include <type_traits>
+
+#include "../core/concepts.hpp"
+#include "../core/record_id.hpp"
+#include "../core/result.hpp"
+#include "../operators/nearest.hpp"
+#include "../representations/cover_tree_index.hpp"
+#include "../representations/knn_graph_index.hpp"
+#include "../representations/matrix_cache.hpp"
+#include "../strategies/search.hpp"
+
+namespace metric::intent {
+
+template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
+auto find_neighbors(const Space &space, const typename Space::record_type &query, std::size_t count,
+					strategies::brute_force = {}) -> NeighborSet<typename Space::distance_type>
+{
+	return operators::knn(space, query, count);
+}
+
+template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
+auto find_neighbors(const Space &space, RecordId query_id, std::size_t count, strategies::brute_force = {})
+	-> NeighborSet<typename Space::distance_type>
+{
+	return operators::knn(space, query_id, count);
+}
+
+template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
+auto find_neighbors(const Space &space, RecordId query_id, std::size_t count, strategies::matrix_cache)
+	-> NeighborSet<typename Space::distance_type>
+{
+	representations::MatrixCache<Space> matrix(space);
+	auto result = operators::knn(matrix, query_id, count);
+	result.representation = "matrix_cache";
+	return result;
+}
+
+template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
+auto find_neighbors(const Space &space, const typename Space::record_type &query, std::size_t count,
+					strategies::cover_tree) -> NeighborSet<typename Space::distance_type>
+{
+	representations::CoverTreeIndex<Space> index(space);
+	auto result = operators::knn(index, query, count);
+	result.representation = "cover_tree_index";
+	return result;
+}
+
+template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
+auto find_neighbors(const Space &space, const typename Space::record_type &query, std::size_t count,
+					strategies::knn_graph strategy) -> NeighborSet<typename Space::distance_type>
+{
+	const auto graph_neighbors = strategy.graph_neighbors == 0 ? count : strategy.graph_neighbors;
+	representations::KnnGraphIndex<Space> index(space, graph_neighbors);
+	auto result = operators::knn(index, query, count);
+	result.representation = "knn_graph_index";
+	return result;
+}
+
+template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
+auto find_neighbors(const Space &space, RecordId query_id, std::size_t count, strategies::knn_graph strategy)
+	-> NeighborSet<typename Space::distance_type>
+{
+	if (query_id.index() >= space.size()) {
+		throw std::out_of_range("query record id is outside the metric space");
+	}
+	const auto graph_neighbors = strategy.graph_neighbors == 0 ? count : strategy.graph_neighbors;
+	representations::KnnGraphIndex<Space> index(space, graph_neighbors);
+
+	NeighborSet<typename Space::distance_type> result;
+	result.neighbors = index.neighbors(query_id);
+	if (result.neighbors.size() > count) {
+		result.neighbors.resize(count);
+	}
+	result.record_count = index.record_count();
+	result.requested_count = count;
+	result.exact = true;
+	result.operator_name = "knn";
+	result.representation = "knn_graph_index";
+	return result;
+}
+
+} // namespace metric::intent
+
+namespace metric {
+using intent::find_neighbors;
+} // namespace metric
+
+#endif
