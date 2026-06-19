@@ -143,6 +143,23 @@ class RepresentativeSet:
 
 
 @dataclass(frozen=True)
+class ReductionResult:
+    """Reduced metric-space result with source-record lineage."""
+
+    space: object
+    source_record_ids: tuple
+    assignments: tuple
+    nearest_representative_distances: tuple
+    source_record_count: int
+    reduced_record_count: int
+    exact: bool
+    operator_name: str
+    strategy: str
+    representation: str
+    inverse_supported: bool
+
+
+@dataclass(frozen=True)
 class StructureDescription:
     """Exact finite-space structure diagnostics."""
 
@@ -1121,6 +1138,116 @@ def find_representatives(records, metric, k, strategy=None):
     )
 
 
+def _is_strategy_like(value):
+    return (
+        isinstance(value, (FarthestFirst, KMedoids))
+        or hasattr(value, "seed_index")
+        or hasattr(value, "groups")
+    )
+
+
+def _coerce_reduction_request(count, strategy):
+    if strategy is None and _is_strategy_like(count):
+        strategy = count
+        count = None
+
+    if strategy is None:
+        strategy = FarthestFirst()
+    elif isinstance(strategy, FarthestFirst):
+        pass
+    elif isinstance(strategy, KMedoids):
+        pass
+    elif hasattr(strategy, "seed_index"):
+        strategy = FarthestFirst(seed_index=strategy.seed_index)
+    elif hasattr(strategy, "groups"):
+        strategy = KMedoids(
+            groups=strategy.groups,
+            max_iterations=getattr(strategy, "max_iterations", 100),
+        )
+    else:
+        raise TypeError("strategy must be a FarthestFirst or KMedoids strategy")
+
+    if count is None:
+        if isinstance(strategy, KMedoids):
+            count = strategy.groups
+        else:
+            raise TypeError("count is required for FarthestFirst reduction")
+    else:
+        count = _coerce_positive_integer(count, "count")
+
+    if isinstance(strategy, KMedoids) and count != strategy.groups:
+        raise ValueError("count must match strategy.groups for KMedoids reduction")
+
+    return count, strategy
+
+
+def _assign_to_representatives(space, representative_ids):
+    assignments = []
+    nearest_distances = []
+
+    for record_index in range(len(space.records)):
+        best_reduced_index = 0
+        best_distance = None
+        for reduced_index, representative_id in enumerate(representative_ids):
+            distance = space.distance(record_index, representative_id)
+            if (
+                best_distance is None
+                or distance < best_distance
+                or (
+                    distance == best_distance
+                    and representative_id < representative_ids[best_reduced_index]
+                )
+            ):
+                best_reduced_index = reduced_index
+                best_distance = distance
+
+        assignments.append(best_reduced_index)
+        nearest_distances.append(best_distance)
+
+    return assignments, nearest_distances
+
+
+def reduce_space(records, metric, count=None, strategy=None):
+    """Reduce a finite metric space to representative records with lineage."""
+    count, strategy = _coerce_reduction_request(count, strategy)
+    records = list(records)
+    if not records:
+        raise ValueError("cannot reduce an empty record set")
+    if count > len(records):
+        raise ValueError("count cannot exceed the number of records")
+
+    if isinstance(strategy, FarthestFirst):
+        representatives_result = find_representatives(records, metric, count, strategy=strategy)
+        source_record_ids = representatives_result.representatives
+        strategy_name = "farthest_first"
+    elif isinstance(strategy, KMedoids):
+        groups = find_groups(records, metric, strategy)
+        source_record_ids = groups.medoids
+        strategy_name = "kmedoids"
+    else:
+        raise TypeError("unsupported reduction strategy")
+
+    source_space = FiniteMetricSpace(records, metric)
+    assignments, nearest_distances = _assign_to_representatives(source_space, source_record_ids)
+
+    from metric.spaces import Space
+
+    reduced_records = [records[index] for index in source_record_ids]
+    return ReductionResult(
+        space=Space(reduced_records, metric),
+        source_record_ids=tuple(source_record_ids),
+        assignments=tuple(assignments),
+        nearest_representative_distances=tuple(nearest_distances),
+        source_record_count=len(records),
+        reduced_record_count=len(reduced_records),
+        exact=True,
+        operator_name="reduce",
+        strategy=strategy_name,
+        representation="metric_space",
+        inverse_supported=False,
+    )
+
+
 def representatives(records, metric, k, seed_index=0):
     """Select representative records with deterministic farthest-first traversal."""
     records = list(records)
@@ -1359,6 +1486,7 @@ __all__ = [
     "Outlier",
     "OutlierResult",
     "RepresentativeSet",
+    "ReductionResult",
     "StructureDescription",
     "compare_spaces",
     "correlate_spaces",
@@ -1385,6 +1513,7 @@ __all__ = [
     "prune_graph_out_degree",
     "nearest_neighbors",
     "range_neighbors",
+    "reduce_space",
     "representative_indices",
     "representatives",
     "separated_representative_indices",

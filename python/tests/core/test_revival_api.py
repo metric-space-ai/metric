@@ -19,6 +19,7 @@ from metric.operators import (
     Outlier,
     OutlierResult,
     RepresentativeSet,
+    ReductionResult,
     StructureDescription,
     coverage_representative_indices,
     coverage_representatives,
@@ -44,6 +45,7 @@ from metric.operators import (
     pairwise_distance_matrix,
     prune_graph_out_degree,
     range_neighbors,
+    reduce_space,
     representative_indices,
     representatives,
     separated_representative_indices,
@@ -93,6 +95,7 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIs(metric.operators.OutlierResult, OutlierResult)
         self.assertIs(metric.operators.CorrelationResult, CorrelationResult)
         self.assertIs(metric.operators.RepresentativeSet, RepresentativeSet)
+        self.assertIs(metric.operators.ReductionResult, ReductionResult)
         self.assertIs(metric.operators.StructureDescription, StructureDescription)
         self.assertIs(metric.operators.find_groups, find_groups)
         self.assertIs(metric.operators.find_outliers, find_outliers)
@@ -100,6 +103,7 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIs(metric.operators.correlate_spaces, correlate_spaces)
         self.assertIs(metric.operators.describe_structure, describe_structure)
         self.assertIs(metric.operators.find_representatives, find_representatives)
+        self.assertIs(metric.operators.reduce_space, reduce_space)
         self.assertIs(metric.operators.kmedoids, kmedoids)
         self.assertIs(metric.operators.dbscan, dbscan)
         self.assertIs(metric.operators.exact_knn_graph, exact_knn_graph)
@@ -133,11 +137,13 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIs(metric.Outlier, Outlier)
         self.assertIs(metric.OutlierResult, OutlierResult)
         self.assertIs(metric.RepresentativeSet, RepresentativeSet)
+        self.assertIs(metric.ReductionResult, ReductionResult)
         self.assertIs(metric.StructureDescription, StructureDescription)
         self.assertIs(metric.find_groups, find_groups)
         self.assertIs(metric.find_outliers, find_outliers)
         self.assertIs(metric.describe_structure, describe_structure)
         self.assertIs(metric.find_representatives, find_representatives)
+        self.assertIs(metric.reduce_space, reduce_space)
         self.assertIs(metric.kmedoids, kmedoids)
         self.assertIs(metric.dbscan, dbscan)
         self.assertIs(metric.KMedoids, KMedoids)
@@ -182,6 +188,7 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIn("OutlierResult", metric.__all__)
         self.assertIn("CorrelationResult", metric.__all__)
         self.assertIn("RepresentativeSet", metric.__all__)
+        self.assertIn("ReductionResult", metric.__all__)
         self.assertIn("StructureDescription", metric.__all__)
         self.assertIn("find_groups", metric.__all__)
         self.assertIn("find_outliers", metric.__all__)
@@ -189,6 +196,7 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIn("correlate_spaces", metric.__all__)
         self.assertIn("describe_structure", metric.__all__)
         self.assertIn("find_representatives", metric.__all__)
+        self.assertIn("reduce_space", metric.__all__)
         self.assertIn("kmedoids", metric.__all__)
         self.assertIn("dbscan", metric.__all__)
         self.assertIn("KMedoids", metric.__all__)
@@ -322,6 +330,32 @@ class RevivalApiTest(unittest.TestCase):
         seeded = space.representatives(2, strategy=FarthestFirst(seed_index=2))
         self.assertEqual(seeded.representatives, (2, 0))
 
+        reduction = space.reduce(3)
+        self.assertIsInstance(reduction, ReductionResult)
+        self.assertIsInstance(reduction.space, Space)
+        self.assertEqual(reduction.source_record_ids, (0, 4, 2))
+        self.assertEqual(reduction.assignments, (0, 0, 2, 2, 1))
+        self.assertEqual(reduction.nearest_representative_distances, (0, 1, 0, 1, 0))
+        self.assertEqual(reduction.source_record_count, 5)
+        self.assertEqual(reduction.reduced_record_count, 3)
+        self.assertEqual(reduction.space.records, [0, 4, 2])
+        self.assertTrue(reduction.exact)
+        self.assertEqual(reduction.operator_name, "reduce")
+        self.assertEqual(reduction.strategy, "farthest_first")
+        self.assertEqual(reduction.representation, "metric_space")
+        self.assertFalse(reduction.inverse_supported)
+        self.assertEqual(
+            reduce_space([0, 1, 2, 3, 4], lambda lhs, rhs: abs(lhs - rhs), 3).source_record_ids,
+            reduction.source_record_ids,
+        )
+
+        medoid_reduction = group_space.reduce(strategy=KMedoids(groups=2))
+        self.assertEqual(medoid_reduction.source_record_ids, (1, 3))
+        self.assertEqual(medoid_reduction.assignments, (0, 0, 0, 1, 1))
+        self.assertEqual(medoid_reduction.nearest_representative_distances, (1, 0, 1, 0, 1))
+        self.assertEqual(medoid_reduction.strategy, "kmedoids")
+        self.assertEqual(medoid_reduction.space.records, [1, 10])
+
         description = space.describe()
         self.assertIsInstance(description, StructureDescription)
         self.assertEqual(description.record_count, 5)
@@ -357,6 +391,14 @@ class RevivalApiTest(unittest.TestCase):
             process_space.compare(quality_space, strategy=KMedoids(groups=2))
         with self.assertRaises(ValueError):
             process_space.compare(quality_space, strategy=DistanceProfileCorrelation(method="spearman"))
+        with self.assertRaises(ValueError):
+            space.reduce(0)
+        with self.assertRaises(ValueError):
+            space.reduce(6)
+        with self.assertRaises(TypeError):
+            space.reduce(strategy=FarthestFirst())
+        with self.assertRaises(ValueError):
+            space.reduce(3, strategy=KMedoids(groups=2))
 
     def test_intrinsic_dimension_estimates_distance_growth(self):
         records = [0, 1, 2, 3, 4]
@@ -696,6 +738,7 @@ class RevivalApiTest(unittest.TestCase):
         self.assertTrue(callable(space.compare))
         self.assertTrue(callable(space.correlate))
         self.assertTrue(callable(space.outliers))
+        self.assertTrue(callable(space.reduce))
 
     def test_numpy_record_arrays_use_custom_metric_callable(self):
         records = np.array([[0.0, 0.0], [3.0, 4.0], [6.0, 8.0]])
