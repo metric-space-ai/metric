@@ -13,11 +13,11 @@ The Core Revival API is the currently promoted, CI-tested entry point.
 - custom metric callables
 - C++ metric adapter: `metric::Metric<Record, Callable>` and `metric::make_metric<Record>(callable)`
 - C++ facade: `metric::Space::from_records` returning `metric::FiniteSpace`
-- C++ helpers: `metric::operators::pairwise_distance_matrix`, `nearest_neighbors`, `range_neighbors`, and `intrinsic_dimension`
+- C++ helpers: `metric::operators::pairwise_distance_matrix`, `nearest_neighbors`, `range_neighbors`, `representative_indices`, `representatives`, and `intrinsic_dimension`
 - explicit C++ representations: `metric::MatrixSpace`, `metric::GraphSpace`, `metric::TreeSpace`
 - Python helpers: `metric.Space`, `metric.metrics`, `metric.spaces.FiniteMetricSpace`, `metric.operators`
 - Python beta bridges: `metric.mappings`, `metric.transforms`
-- nearest-neighbor, range-neighbor, pairwise-distance, intrinsic-dimension, and Python representative-selection helpers
+- nearest-neighbor, range-neighbor, pairwise-distance, intrinsic-dimension, and representative-selection helpers
 - entropy and MGC core examples
 
 ## Stability Tiers
@@ -29,7 +29,7 @@ Stable revival surface:
 - minimal C++ `Space` facade for `from_records`, `neighbors`, `nearest`, and `within_radius`
 - C++ operator helpers under `metric::operators`
 - explicit finite-space representations: matrix, graph, and tree
-- nearest-neighbor, range-neighbor, pairwise-distance, intrinsic-dimension, and Python representative-selection helpers
+- nearest-neighbor, range-neighbor, pairwise-distance, intrinsic-dimension, and representative-selection helpers
 - minimal Python `Space` facade for `neighbors`, `nearest`, and `within_radius`
 - entropy and MGC regression examples
 - Python core helpers under `metric.metrics`, `metric.spaces`, and `metric.operators`

@@ -46,13 +46,14 @@ Goal: choose small, meaningful subsets of a finite metric space without assuming
 
 Current promoted base:
 
-- Python `metric.operators.representative_indices` and `representatives` expose deterministic farthest-first traversal over finite metric spaces.
-- The promoted fixture uses histogram records with a one-dimensional transport callable and exact expected representative IDs.
+- C++ `metric::operators::representative_indices` and `representatives` expose deterministic farthest-first traversal over finite metric spaces.
+- Python `metric.operators.representative_indices` and `representatives` expose the same traversal rule.
+- Promoted fixtures use string records with edit distance and histogram records with a one-dimensional transport callable.
 
 Candidate strategies:
 
 - medoid or k-medoids representatives
-- C++ parity for farthest-first traversal
+- additional farthest-first fixtures for process curves and mixed records
 - coverage-based representatives under a radius
 - redundancy reduction by distance threshold
 - compression summaries that preserve nearest-neighbor behavior
@@ -177,8 +178,8 @@ The revival should not:
 
 Near-term branches should stay small and evidence-driven:
 
-- add one C++ representative-selection smoke test for string records
-- add medoid or radius-coverage representative fixtures after the farthest-first helper has C++ parity
+- add process-curve and mixed-record representative fixtures
+- add medoid or radius-coverage representative fixtures after farthest-first coverage spans more record types
 - add graph construction documentation with exact versus approximate terminology
 - add MGC interpretation docs for paired metric spaces
 - add an industrial-record fixture that combines strings, process curves, histograms, and numeric penalties

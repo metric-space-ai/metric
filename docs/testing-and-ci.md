@@ -34,7 +34,8 @@ The core tests cover:
 - MGC regression values
 - entropy regression values when LAPACK is available
 - intrinsic-dimension regression values
-- promoted examples for strings, custom metrics, explicit representations, TWED, EMD, MGC, intrinsic dimension, and entropy when LAPACK is available
+- representative-selection regression values
+- promoted examples for strings, custom metrics, explicit representations, TWED, EMD, MGC, intrinsic dimension, representative selection, and entropy when LAPACK is available
 
 The Python core wheel path covers:
 

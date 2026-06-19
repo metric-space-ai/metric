@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
+#include <stdexcept>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -44,6 +45,79 @@ auto range_neighbors(const Container &records, Metric distance, const detail::re
 					 typename detail::finite_space_t<Container, Metric>::distance_type radius)
 {
 	return ::metric::Space::from_records(records, std::move(distance)).within_radius(query, radius);
+}
+
+template <typename Container, typename Metric>
+auto representative_indices(const Container &records, Metric distance, std::size_t k, std::size_t seed_index = 0)
+	-> std::vector<std::size_t>
+{
+	if (k == 0) {
+		return {};
+	}
+	if (records.empty()) {
+		throw std::invalid_argument("cannot select representatives from an empty record set");
+	}
+	if (k > records.size()) {
+		throw std::invalid_argument("k cannot exceed the number of records");
+	}
+	if (seed_index >= records.size()) {
+		throw std::out_of_range("seed_index is outside the record set");
+	}
+
+	using distance_type = typename detail::finite_space_t<Container, Metric>::distance_type;
+
+	const auto space = ::metric::Space::from_records(records, std::move(distance));
+	std::vector<std::size_t> selected = {seed_index};
+	std::vector<bool> is_selected(records.size(), false);
+	is_selected[seed_index] = true;
+
+	std::vector<distance_type> nearest_selected_distances(records.size());
+	for (std::size_t index = 0; index < records.size(); ++index) {
+		nearest_selected_distances[index] = space.distance(index, seed_index);
+	}
+
+	while (selected.size() < k) {
+		std::size_t next_index = records.size();
+		distance_type next_distance{};
+		bool has_next = false;
+
+		for (std::size_t index = 0; index < nearest_selected_distances.size(); ++index) {
+			if (is_selected[index]) {
+				continue;
+			}
+			if (!has_next || nearest_selected_distances[index] > next_distance) {
+				next_index = index;
+				next_distance = nearest_selected_distances[index];
+				has_next = true;
+			}
+		}
+
+		if (!has_next) {
+			throw std::logic_error("failed to select the next representative");
+		}
+
+		selected.push_back(next_index);
+		is_selected[next_index] = true;
+		for (std::size_t index = 0; index < nearest_selected_distances.size(); ++index) {
+			nearest_selected_distances[index] =
+				std::min(nearest_selected_distances[index], space.distance(index, next_index));
+		}
+	}
+
+	return selected;
+}
+
+template <typename Container, typename Metric>
+auto representatives(const Container &records, Metric distance, std::size_t k, std::size_t seed_index = 0)
+	-> std::vector<detail::record_type_t<Container>>
+{
+	const auto selected = representative_indices(records, std::move(distance), k, seed_index);
+	std::vector<detail::record_type_t<Container>> result;
+	result.reserve(selected.size());
+	for (const auto index : selected) {
+		result.push_back(records[index]);
+	}
+	return result;
 }
 
 template <typename Container, typename Metric>

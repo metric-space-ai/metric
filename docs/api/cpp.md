@@ -65,10 +65,16 @@ std::vector<std::string> records = {"cat", "cot", "coat", "dog"};
 auto distances = metric::operators::pairwise_distance_matrix(records, metric::Edit<std::string>{});
 auto nearest = metric::operators::nearest_neighbors(records, metric::Edit<std::string>{}, std::string("cut"), 2);
 auto close = metric::operators::range_neighbors(records, metric::Edit<std::string>{}, std::string("cut"), 1);
+auto selected_ids = metric::operators::representative_indices(records, metric::Edit<std::string>{}, 2);
+auto selected_records = metric::operators::representatives(records, metric::Edit<std::string>{}, 2);
 auto dimension = metric::operators::intrinsic_dimension(records, metric::Edit<std::string>{});
 ```
 
-The promoted C++ operator helpers are `pairwise_distance_matrix`, `nearest_neighbors`, `range_neighbors`, and `intrinsic_dimension`. `intrinsic_dimension` returns an expansion-dimension estimate based on neighborhood growth; it is a finite-space diagnostic, not an exact manifold dimension.
+The promoted C++ operator helpers are `pairwise_distance_matrix`, `nearest_neighbors`, `range_neighbors`, `representative_indices`, `representatives`, and `intrinsic_dimension`.
+
+`representative_indices` and `representatives` use deterministic farthest-first traversal over the finite metric space. They select existing records rather than vector centroids, start from `seed_index=0` by default, and resolve equal-distance ties by record order.
+
+`intrinsic_dimension` returns an expansion-dimension estimate based on neighborhood growth. It is a finite-space diagnostic, not an exact manifold dimension.
 
 ## Custom Metrics
 

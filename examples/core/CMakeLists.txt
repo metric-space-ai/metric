@@ -18,6 +18,9 @@ target_link_libraries(metric_space_correlation PRIVATE ${METRIC_TARGET_NAME})
 add_executable(metric_space_intrinsic_dimension metric_space_intrinsic_dimension.cpp)
 target_link_libraries(metric_space_intrinsic_dimension PRIVATE ${METRIC_TARGET_NAME})
 
+add_executable(representative_selection_space representative_selection_space.cpp)
+target_link_libraries(representative_selection_space PRIVATE ${METRIC_TARGET_NAME})
+
 add_executable(time_series_twed_space time_series_twed_space.cpp)
 target_link_libraries(time_series_twed_space PRIVATE ${METRIC_TARGET_NAME})
 
@@ -33,6 +36,7 @@ if (BUILD_TESTING)
     endif ()
     add_test(NAME example_metric_space_correlation COMMAND metric_space_correlation)
     add_test(NAME example_metric_space_intrinsic_dimension COMMAND metric_space_intrinsic_dimension)
+    add_test(NAME example_representative_selection_space COMMAND representative_selection_space)
     add_test(NAME example_time_series_twed_space COMMAND time_series_twed_space)
     add_test(NAME example_histogram_emd_space COMMAND histogram_emd_space)
 endif ()
