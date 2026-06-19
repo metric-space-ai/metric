@@ -94,7 +94,7 @@ The current local tree implements the first revival slice:
 - initial C++ engine map intent for deterministic transforms into derived metric spaces
 - initial C++ engine denoise intent backed by DBSCAN-noise filtering with mapping-result lineage
 - C++ engine umbrella header exposure for the PCFA-backed reduce intent
-- initial C++ engine runtime policy scaffolding for exact lazy/materialized neighbor, grouping, representative, compression, structure-diagnostic, cross-space comparison, outlier, and denoise execution with representation-cache staleness
+- initial C++ engine runtime policy scaffolding for exact lazy/materialized neighbor, grouping, representative, compression, structure-diagnostic, cross-space comparison, outlier, denoise, and record-space embed/reduce/map execution with representation-cache staleness
 - C++ engine runtime diagnostics with policy, representation, support, and reason metadata
 - C++ engine runtime policies account for `metric_traits<Metric>::thread_safe` when parallel execution is requested
 - initial C++ engine mapping conventions with `MappingResult` lineage metadata and clustered-space derivation
@@ -281,6 +281,7 @@ The following revival improvements landed on `master` after the `v0.3.2` tag and
 - C++ representatives and compression intents accept exact lazy/materialized runtime policies for farthest-first execution, merged as `bfa7c02583c041b928d3a7c8e6ffff077d429c0f`
 - C++ structure diagnostics accept exact lazy/materialized runtime policies for all-pairs execution, merged as `cdaab96f990a8ca49e1cb6b16462f3ee3898fd8b`
 - C++ cross-space comparison accepts exact lazy/materialized runtime policies for MGC execution, merged as `2c12c9fb609d7fa04107b13d994f0e69cf89628f`
+- C++ record-space embed, reduce, and map intents accept exact lazy runtime policies with explicit materialized-policy rejection, merged as `fcee9927eadb902b6590a7df05da8de031bb3f60`
 - CI-tested C++ and Python engine flagship examples for strings, process curves, histograms, and cross-space dependency, merged as `9d9d89dad779c836fe2f1334b68000938d76c9c6`
 - direct Python smoke gates now run promoted metric-space and engine examples together, merged as `06f22b20e7d44c7f2058b81d43f513fc157f36b0`
 - Python engine-style Space intent facade methods for representatives and structure diagnostics with named result objects and core test coverage, merged as `1849c29a25122b31605945295c91710cfc6a126f`
