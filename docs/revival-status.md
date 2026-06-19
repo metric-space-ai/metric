@@ -18,7 +18,7 @@ The current local tree implements the first revival slice:
 - Python core facade modules under `metric.metrics`, `metric.spaces`, and `metric.operators`
 - Python beta compatibility bridge modules under `metric.mappings` and `metric.transforms`
 - promoted C++ examples under `examples/core/`
-- promoted Python example under `python/examples/metric_space/`
+- promoted Python examples under `python/examples/metric_space/`
 - C++ smoke and contract tests under `tests/core_smoke/`
 - Python core API tests under `python/tests/core/`
 - documentation for concepts, APIs, examples, stability, testing, and release gates
@@ -54,6 +54,7 @@ python -m build ./python --sdist --outdir build/wheelhouse-revival
 METRIC_PYTHON_USE_BLAS=OFF python -m pip wheel build/wheelhouse-revival/*.tar.gz --no-deps -w build/wheelhouse-revival
 python -m pip install --force-reinstall build/wheelhouse-revival/*.whl
 PYTHONDONTWRITEBYTECODE=1 python python/examples/metric_space/string_edit_space.py
+PYTHONDONTWRITEBYTECODE=1 python python/examples/metric_space/structured_record_space.py
 PYTHONDONTWRITEBYTECODE=1 python -m unittest discover -s python/tests/core -v
 
 ruby scripts/check_revival_whitespace.rb

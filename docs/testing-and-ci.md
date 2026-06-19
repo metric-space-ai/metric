@@ -7,7 +7,7 @@ This page defines which checks are release gates during the revival and which ch
 The required PR and release gates are intentionally small, reproducible, and cross-platform:
 
 - `.github/workflows/core-cpp.yml`: C++ core configure, build, core tests, promoted examples, install, and downstream `find_package(panda_metric)` consumer on Linux, macOS, and Windows.
-- `.github/workflows/python-core.yml`: Python core wheel build on Linux, macOS, and Windows for supported CPython versions, followed by the metric-space example and core Python API tests.
+- `.github/workflows/python-core.yml`: Python core wheel build on Linux, macOS, and Windows for supported CPython versions, followed by the promoted metric-space examples and core Python API tests.
 - `.github/workflows/docs-and-format.yml`: revived-file whitespace checks, Markdown local-link checks, and workflow YAML parsing.
 - `.github/workflows/pages.yml`: static Pages artifact for `docs/site/`.
 - `.github/workflows/release-artifacts.yml`: tag/manual artifact build for source archive, Python sdist, Python wheel built from that sdist, C++ core test, and downstream CMake consumer evidence.
