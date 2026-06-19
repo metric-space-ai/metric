@@ -43,7 +43,7 @@ The Python core wheel path covers:
 - `Space`, `FiniteMetricSpace`, and operator helper behavior
 - metric contract checks for built-in edit distance, NumPy record callables, structured record callables, time-series alignment callables, and histogram transport callables
 - intrinsic-dimension regression values
-- deterministic representative-selection regression values
+- deterministic representative-selection regression values for histogram transport, time-series alignment, and structured mixed-record callables
 - promoted Python examples for strings, structured records, time-series alignment, histogram transport, and representative selection
 - subprocess execution of every `python/examples/metric_space/*.py` example from the core Python API tests, so PyPI cibuildwheel tests cover the same promoted examples even when the workflow invokes only the core test suite directly
 
