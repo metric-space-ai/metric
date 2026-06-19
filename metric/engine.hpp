@@ -9,6 +9,7 @@
 #include "core/metric_space.hpp"
 #include "core/metric_traits.hpp"
 #include "core/neighbor.hpp"
+#include "core/parameters.hpp"
 #include "core/record_id.hpp"
 #include "core/result.hpp"
 #include "intent/compress.hpp"

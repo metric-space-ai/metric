@@ -95,8 +95,8 @@ The engine operator layer also exposes `metric::operators::knn`, `metric::operat
 The engine intent layer exposes semantic helpers for the same building blocks:
 
 ```cpp
-auto neighbors = metric::find_neighbors(space, std::string("cut"), 2);
-auto indexed = metric::find_neighbors(space, std::string("cut"), 2, metric::strategies::cover_tree{});
+auto neighbors = metric::find_neighbors(space, std::string("cut"), metric::count{2});
+auto indexed = metric::find_neighbors(space, std::string("cut"), metric::count{2}, metric::strategies::cover_tree{});
 auto groups = metric::find_groups(space, metric::strategies::k_medoids(2));
 auto density_groups = metric::find_groups(space, metric::strategies::dbscan(1.0, 2));
 auto outliers = metric::find_outliers(space, metric::strategies::dbscan(1.0, 2));
@@ -107,6 +107,8 @@ auto mapped = metric::map(space, transform, target_metric);
 auto denoised = metric::denoise(space, metric::strategies::dbscan(1.0, 2));
 auto structure = metric::describe_structure(space);
 ```
+
+`metric::count{...}` is the semantic count parameter for `find_neighbors`; existing `std::size_t` count overloads remain available for compatibility and lower-level operator code.
 
 These helpers keep algorithm names in `metric::strategies` while returning the same engine result objects as the lower-level operator layer.
 

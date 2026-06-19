@@ -38,6 +38,11 @@ int main()
 	assert(materialized_neighbors[0].id == lazy_neighbors[0].id);
 	assert(materialized_neighbors[0].distance == lazy_neighbors[0].distance);
 
+	const auto counted_materialized_neighbors =
+		metric::find_neighbors(space, space.id(0), metric::count{2}, materialized_policy);
+	assert(counted_materialized_neighbors.representation == "matrix_cache");
+	assert(counted_materialized_neighbors[0].id == materialized_neighbors[0].id);
+
 	const auto parallel_policy = metric::runtime::parallel(materialized_policy);
 	assert(parallel_policy.name() == "exact_materialized_parallel");
 	assert(parallel_policy.uses_parallel_execution());

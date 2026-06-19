@@ -10,6 +10,7 @@
 #include <type_traits>
 
 #include "../core/concepts.hpp"
+#include "../core/parameters.hpp"
 #include "../core/record_id.hpp"
 #include "../core/result.hpp"
 #include "../operators/nearest.hpp"
@@ -29,10 +30,24 @@ auto find_neighbors(const Space &space, const typename Space::record_type &query
 }
 
 template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
+auto find_neighbors(const Space &space, const typename Space::record_type &query, ::metric::count requested,
+					strategies::brute_force strategy = {}) -> NeighborSet<typename Space::distance_type>
+{
+	return find_neighbors(space, query, requested.value, strategy);
+}
+
+template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
 auto find_neighbors(const Space &space, RecordId query_id, std::size_t count, strategies::brute_force = {})
 	-> NeighborSet<typename Space::distance_type>
 {
 	return operators::knn(space, query_id, count);
+}
+
+template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
+auto find_neighbors(const Space &space, RecordId query_id, ::metric::count requested,
+					strategies::brute_force strategy = {}) -> NeighborSet<typename Space::distance_type>
+{
+	return find_neighbors(space, query_id, requested.value, strategy);
 }
 
 template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
@@ -46,6 +61,13 @@ auto find_neighbors(const Space &space, RecordId query_id, std::size_t count, st
 }
 
 template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
+auto find_neighbors(const Space &space, RecordId query_id, ::metric::count requested, strategies::matrix_cache strategy)
+	-> NeighborSet<typename Space::distance_type>
+{
+	return find_neighbors(space, query_id, requested.value, strategy);
+}
+
+template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
 auto find_neighbors(const Space &space, const typename Space::record_type &query, std::size_t count,
 					strategies::cover_tree) -> NeighborSet<typename Space::distance_type>
 {
@@ -53,6 +75,13 @@ auto find_neighbors(const Space &space, const typename Space::record_type &query
 	auto result = operators::knn(index, query, count);
 	result.representation = "cover_tree_index";
 	return result;
+}
+
+template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
+auto find_neighbors(const Space &space, const typename Space::record_type &query, ::metric::count requested,
+					strategies::cover_tree strategy) -> NeighborSet<typename Space::distance_type>
+{
+	return find_neighbors(space, query, requested.value, strategy);
 }
 
 template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
@@ -64,6 +93,13 @@ auto find_neighbors(const Space &space, const typename Space::record_type &query
 	auto result = operators::knn(index, query, count);
 	result.representation = "knn_graph_index";
 	return result;
+}
+
+template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
+auto find_neighbors(const Space &space, const typename Space::record_type &query, ::metric::count requested,
+					strategies::knn_graph strategy) -> NeighborSet<typename Space::distance_type>
+{
+	return find_neighbors(space, query, requested.value, strategy);
 }
 
 template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
@@ -90,6 +126,13 @@ auto find_neighbors(const Space &space, RecordId query_id, std::size_t count, st
 }
 
 template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
+auto find_neighbors(const Space &space, RecordId query_id, ::metric::count requested, strategies::knn_graph strategy)
+	-> NeighborSet<typename Space::distance_type>
+{
+	return find_neighbors(space, query_id, requested.value, strategy);
+}
+
+template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
 auto find_neighbors(const Space &space, const typename Space::record_type &query, std::size_t count,
 					runtime::policy runtime_policy) -> NeighborSet<typename Space::distance_type>
 {
@@ -98,6 +141,13 @@ auto find_neighbors(const Space &space, const typename Space::record_type &query
 		throw std::invalid_argument("materialized neighbor runtime policy requires a RecordId query");
 	}
 	return find_neighbors(space, query, count, strategies::brute_force{});
+}
+
+template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
+auto find_neighbors(const Space &space, const typename Space::record_type &query, ::metric::count requested,
+					runtime::policy runtime_policy) -> NeighborSet<typename Space::distance_type>
+{
+	return find_neighbors(space, query, requested.value, runtime_policy);
 }
 
 template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
@@ -115,6 +165,13 @@ auto find_neighbors(const Space &space, RecordId query_id, std::size_t count, ru
 	auto result = operators::knn(space, query_id, count);
 	result.representation = runtime::neighbor_representation(runtime_policy);
 	return result;
+}
+
+template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
+auto find_neighbors(const Space &space, RecordId query_id, ::metric::count requested, runtime::policy runtime_policy)
+	-> NeighborSet<typename Space::distance_type>
+{
+	return find_neighbors(space, query_id, requested.value, runtime_policy);
 }
 
 } // namespace metric::intent

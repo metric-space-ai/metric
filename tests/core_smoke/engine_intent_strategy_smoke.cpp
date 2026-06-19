@@ -34,11 +34,22 @@ int main()
 	assert(direct_neighbors.size() == 2);
 	assert(direct_neighbors[0].id == strings.id(1));
 
+	const auto counted_neighbors = metric::find_neighbors(strings, std::string("ee"), metric::count{2});
+	assert(counted_neighbors.requested_count == metric::count{2}.size());
+	assert(counted_neighbors.size() == direct_neighbors.size());
+	assert(counted_neighbors[0].id == direct_neighbors[0].id);
+	assert(counted_neighbors[1].id == direct_neighbors[1].id);
+
 	const auto cached_neighbors =
 		metric::find_neighbors(strings, strings.id(0), 2, metric::strategies::matrix_cache{});
 	assert(cached_neighbors.representation == "matrix_cache");
 	assert(cached_neighbors.size() == 2);
 	assert(cached_neighbors[0].id == strings.id(1));
+
+	const auto counted_cached_neighbors =
+		metric::find_neighbors(strings, strings.id(0), metric::count{2}, metric::strategies::matrix_cache{});
+	assert(counted_cached_neighbors.representation == "matrix_cache");
+	assert(counted_cached_neighbors[0].id == cached_neighbors[0].id);
 
 	const auto tree_neighbors =
 		metric::find_neighbors(strings, std::string("ee"), 2, metric::strategies::cover_tree{});
@@ -49,6 +60,11 @@ int main()
 	assert(tree_neighbors[1].id == direct_neighbors[1].id);
 	assert(tree_neighbors[1].distance == direct_neighbors[1].distance);
 
+	const auto counted_tree_neighbors =
+		metric::find_neighbors(strings, std::string("ee"), metric::count{2}, metric::strategies::cover_tree{});
+	assert(counted_tree_neighbors.representation == "cover_tree_index");
+	assert(counted_tree_neighbors[0].id == tree_neighbors[0].id);
+
 	const auto graph_neighbors =
 		metric::find_neighbors(strings, strings.id(0), 2, metric::strategies::knn_graph(2));
 	assert(graph_neighbors.representation == "knn_graph_index");
@@ -57,6 +73,11 @@ int main()
 	assert(graph_neighbors[0].distance == cached_neighbors[0].distance);
 	assert(graph_neighbors[1].id == cached_neighbors[1].id);
 	assert(graph_neighbors[1].distance == cached_neighbors[1].distance);
+
+	const auto counted_graph_neighbors =
+		metric::find_neighbors(strings, strings.id(0), metric::count{2}, metric::strategies::knn_graph(2));
+	assert(counted_graph_neighbors.representation == "knn_graph_index");
+	assert(counted_graph_neighbors[0].id == graph_neighbors[0].id);
 
 	auto numbers = metric::make_space(std::vector<int>{0, 1, 10, 11, 30}, AbsoluteDistance{});
 	const auto medoid_groups = metric::find_groups(numbers, metric::strategies::k_medoids(2));
