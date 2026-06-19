@@ -67,6 +67,8 @@ struct knn_graph_stats {
 	std::size_t nodes{};
 	std::size_t edges{};
 	std::size_t neighbors_requested{};
+	bool recall_validated{};
+	double sampled_recall{};
 };
 
 } // namespace metric::representations
