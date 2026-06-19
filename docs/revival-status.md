@@ -46,6 +46,7 @@ The current local tree implements the first revival slice:
 - initial C++ engine compare/correlate intent helpers with explicit MGC strategy
 - initial C++ engine describe intent with exact finite-space structure diagnostics
 - initial C++ engine reduce intent backed by the PCFA strategy
+- C++ engine umbrella header exposure for the PCFA-backed reduce intent
 - initial C++ engine mapping conventions with `MappingResult` lineage metadata and clustered-space derivation
 - initial C++ engine PCFA mapping adapter with explicit fit, transform, and inverse-transform support
 - documentation for concepts, APIs, examples, stability, testing, and release gates
@@ -219,6 +220,7 @@ The following revival improvements landed on `master` after the `v0.3.2` tag and
 - initial C++ engine mapping conventions with clustered-space derivation, `MappingResult` lineage metadata, and core smoke coverage, merged as `9e4b2d1a349d4b43e76e06ec7374f1d43a919296`
 - C++ engine PCFA mapping adapter with explicit inverse reconstruction and LAPACK-gated core smoke coverage, merged as `0aff5aea43433b4fe1b20dbc84cedf71b0e4559e`
 - C++ engine reduce intent backed by the PCFA strategy with LAPACK-gated core smoke coverage, merged as `cf1ceef290f73fac95943f0b7132953fe9d0c698`
+- C++ engine umbrella header exposure for the PCFA-backed reduce intent with core, downstream, and include-smoke coverage, merged as `82457b5368e49cfbb6a0f3c417fef0fc56c4f5fb`
 - Python engine-style Space intent facade methods for representatives and structure diagnostics with named result objects and core test coverage, merged as `1849c29a25122b31605945295c91710cfc6a126f`
 - Python engine-style Space grouping intent with KMedoids and DBSCAN strategies, named `ClusteringResult` objects, and core test coverage, merged as `fe2641f8f14e660a994c94ca18d9f5feb426fb2b`
 
