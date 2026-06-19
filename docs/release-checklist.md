@@ -58,6 +58,7 @@ Python wheel verification:
 python -m pip wheel ./python --no-deps -w wheelhouse
 python -m pip install --force-reinstall wheelhouse/*.whl
 python python/examples/metric_space/string_edit_space.py
+python python/examples/metric_space/structured_record_space.py
 ```
 
 Docs and formatting verification:
