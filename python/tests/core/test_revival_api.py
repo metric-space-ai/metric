@@ -697,6 +697,13 @@ class RevivalApiTest(unittest.TestCase):
         with self.assertRaisesRegex(UnsupportedOperationError, "inverse_supported=False"):
             mapped.inverse_transform()
         self.assertEqual(mapped.space.distance(0, 4), 4)
+        matrix_mapped = space.map(
+            transform=lambda record: {"value": record},
+            metric=lambda lhs, rhs: abs(lhs["value"] - rhs["value"]),
+            representation=space.to_matrix(),
+        )
+        self.assertEqual(matrix_mapped.representation, "matrix")
+        self.assertEqual(matrix_mapped.source_record_ids, mapped.source_record_ids)
         self.assertEqual(
             map_space([0, 1, 2], lambda record: record * record, lambda lhs, rhs: abs(lhs - rhs)).space.records,
             [0, 1, 4],
@@ -855,6 +862,8 @@ class RevivalApiTest(unittest.TestCase):
             space.outliers(count=1, representation=stale_matrix)
         with self.assertRaises(StaleRepresentationError):
             space.denoise(count=1, representation=stale_matrix)
+        with self.assertRaises(StaleRepresentationError):
+            space.map(transform=lambda record: record, representation=stale_matrix)
 
     def test_intrinsic_dimension_estimates_distance_growth(self):
         records = [0, 1, 2, 3, 4]

@@ -434,7 +434,7 @@ class Space(FiniteMetricSpace):
             representation=self._representation_name(representation),
         )
 
-    def map(self, transform=None, metric=None, *, target=None, strategy=None, runtime=None):
+    def map(self, transform=None, metric=None, *, target=None, strategy=None, representation=None, runtime=None):
         require_exact_runtime(runtime)
         if transform is None and target is None:
             raise AmbiguousIntentError("Space.map requires transform=... or target=...")
@@ -453,7 +453,12 @@ class Space(FiniteMetricSpace):
 
         from metric.operators import map_space
 
-        return map_space(self.records, transform, self.metric if metric is None else metric)
+        return map_space(
+            self.records,
+            transform,
+            self.metric if metric is None else metric,
+            representation=self._representation_name(representation),
+        )
 
     def embed(self, dimensions=2, strategy=None, *, representation=None, runtime=None):
         require_exact_runtime(runtime)
