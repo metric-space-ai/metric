@@ -15,18 +15,20 @@
 #include "../core/record_id.hpp"
 #include "../core/result.hpp"
 #include "../operators/clustering.hpp"
+#include "../representations/matrix_cache.hpp"
+#include "../runtime/execution.hpp"
 #include "../strategies/clustering.hpp"
 
 namespace metric::intent {
+namespace detail {
 
 template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
-auto denoise(const Space &space, strategies::dbscan strategy)
+auto denoise_from_groups(const Space &space, const ClusteringResult<typename Space::distance_type> &groups)
 	-> MappingResult<MetricSpace<typename Space::record_type, typename Space::metric_type>>
 {
 	using target_space_type = MetricSpace<typename Space::record_type, typename Space::metric_type>;
 	using result_type = MappingResult<target_space_type>;
 
-	const auto groups = operators::dbscan(space, strategy.radius, strategy.min_points);
 	using clustering_type = typename std::decay<decltype(groups)>::type;
 	std::vector<typename Space::record_type> records;
 	std::vector<std::vector<RecordId>> source_records;
@@ -51,11 +53,46 @@ auto denoise(const Space &space, strategies::dbscan strategy)
 					   space.size(), false, "density_denoise", "dbscan_noise_filter", groups.representation};
 }
 
+} // namespace detail
+
+template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
+auto denoise(const Space &space, strategies::dbscan strategy)
+	-> MappingResult<MetricSpace<typename Space::record_type, typename Space::metric_type>>
+{
+	const auto groups = operators::dbscan(space, strategy.radius, strategy.min_points);
+	return detail::denoise_from_groups(space, groups);
+}
+
+template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
+auto denoise(const Space &space, strategies::dbscan strategy, runtime::policy runtime_policy)
+	-> MappingResult<MetricSpace<typename Space::record_type, typename Space::metric_type>>
+{
+	runtime::require_exact_denoise(runtime_policy);
+	runtime::require_parallel_metric<typename Space::metric_type>(runtime_policy);
+	if (runtime_policy.uses_materialization()) {
+		representations::MatrixCache<Space> matrix(space);
+		auto groups = operators::dbscan(matrix, strategy.radius, strategy.min_points);
+		groups.representation = runtime::denoise_representation(runtime_policy);
+		return detail::denoise_from_groups(space, groups);
+	}
+
+	auto result = denoise(space, strategy);
+	result.representation = runtime::denoise_representation(runtime_policy);
+	return result;
+}
+
 template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
 auto denoise(const Space &space, double radius, std::size_t min_points) -> decltype(denoise(
 	space, strategies::dbscan(radius, min_points)))
 {
 	return denoise(space, strategies::dbscan(radius, min_points));
+}
+
+template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
+auto denoise(const Space &space, double radius, std::size_t min_points, runtime::policy runtime_policy) -> decltype(
+	denoise(space, strategies::dbscan(radius, min_points), runtime_policy))
+{
+	return denoise(space, strategies::dbscan(radius, min_points), runtime_policy);
 }
 
 } // namespace metric::intent

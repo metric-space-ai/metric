@@ -39,6 +39,20 @@ inline auto require_exact_groups(policy runtime_policy) -> void
 	}
 }
 
+inline auto require_exact_outliers(policy runtime_policy) -> void
+{
+	if (!runtime_policy.is_exact()) {
+		throw std::invalid_argument("approximate outlier runtime policy is not implemented");
+	}
+}
+
+inline auto require_exact_denoise(policy runtime_policy) -> void
+{
+	if (!runtime_policy.is_exact()) {
+		throw std::invalid_argument("approximate denoise runtime policy is not implemented");
+	}
+}
+
 template <typename Metric>
 constexpr auto supports_parallel_metric(policy runtime_policy) noexcept -> bool
 {
@@ -64,6 +78,16 @@ inline auto neighbor_representation(policy runtime_policy) -> std::string
 }
 
 inline auto group_representation(policy runtime_policy) -> std::string
+{
+	return execution_representation(runtime_policy);
+}
+
+inline auto outlier_representation(policy runtime_policy) -> std::string
+{
+	return execution_representation(runtime_policy);
+}
+
+inline auto denoise_representation(policy runtime_policy) -> std::string
 {
 	return execution_representation(runtime_policy);
 }
