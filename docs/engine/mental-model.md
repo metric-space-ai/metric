@@ -77,6 +77,20 @@ The first semantic intent helpers live at the `metric::find_*` layer:
 
 These are the first user-facing names that describe intent before algorithm. Strategy objects select implementation details while preserving the same result types returned by the operator layer.
 
+## Phase 4 Surface
+
+The first mapping convention lives under `metric::mappings`:
+
+- `metric::MappingResult<DerivedSpace>`
+- `metric::Mapping<Mapping, Space>`
+- `metric::MappingModel<Model, Space>`
+- `metric::mappings::fit(mapping, space)`
+- `metric::mappings::transform(model, space)`
+- `metric::mappings::make_clustered_space_mapping(clustering)`
+- `metric::mappings::clustered_space(space, clustering)`
+
+Clustered-space mapping turns a `ClusteringResult` into a derived `MetricSpace`. Each derived record represents one non-noise cluster, stores the source `RecordId`s that formed it, and uses the source-space distance between cluster representatives as the derived metric. Inverse reconstruction is explicit and currently marked unsupported.
+
 ## Current Contract
 
 The initial `MetricSpace` owns records by value. `RecordId` is an opaque wrapper over dense internal storage. `version()` exists and starts at `0`; later representation adapters can use it for stale-cache checks when mutating space operations are introduced.
@@ -111,6 +125,7 @@ auto groups = metric::operators::kmedoids(matrix, 2);
 auto dense_groups = metric::operators::dbscan(matrix, 1, 2);
 auto structure_entropy = metric::operators::entropy(space);
 auto dependency = metric::operators::mgc(space, space);
+auto clustered = metric::mappings::clustered_space(space, groups);
 
 auto user_neighbors = metric::find_neighbors(space, std::string("metricks"), 2);
 auto user_groups = metric::find_groups(space, metric::strategies::k_medoids(2));

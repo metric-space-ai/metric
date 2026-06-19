@@ -110,9 +110,11 @@ Result objects preserve:
 - metric assumptions
 - source-to-target lineage when a derived space or mapping is produced
 
-The first engine operator results are `metric::NeighborSet<Distance>`, returned by nearest-neighbor operators over spaces, distance providers, and neighbor indexes; `metric::ClusteringResult<Distance>`, returned by k-medoids and DBSCAN grouping operators; `metric::EntropyResult<double>`, returned by entropy diagnostics; and `metric::CorrelationResult<double>`, returned by MGC cross-space statistics.
+The first engine operator results are `metric::NeighborSet<Distance>`, returned by nearest-neighbor operators over spaces, distance providers, and neighbor indexes; `metric::ClusteringResult<Distance>`, returned by k-medoids and DBSCAN grouping operators; `metric::EntropyResult<double>`, returned by entropy diagnostics; `metric::CorrelationResult<double>`, returned by MGC cross-space statistics; and `metric::MappingResult<DerivedSpace>`, returned by mapping adapters that produce derived metric spaces.
 
 The first C++ intent helpers are `metric::find_neighbors` and `metric::find_groups`. They keep the user-facing vocabulary semantic while routing to explicit strategy objects such as `metric::strategies::cover_tree`, `metric::strategies::matrix_cache`, `metric::strategies::k_medoids`, and `metric::strategies::dbscan`.
+
+The first C++ mapping adapter is `metric::mappings::make_clustered_space_mapping`. It fits a clustering result to a source space and transforms it into a derived clustered metric space while preserving source `RecordId` lineage.
 
 ## Capabilities
 

@@ -13,6 +13,8 @@
 #include "core/result.hpp"
 #include "intent/groups.hpp"
 #include "intent/neighbors.hpp"
+#include "mappings/clustered_space.hpp"
+#include "mappings/mapping.hpp"
 #include "operators/clustering.hpp"
 #include "operators/correlation.hpp"
 #include "operators/nearest.hpp"
