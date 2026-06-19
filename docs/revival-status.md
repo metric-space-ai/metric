@@ -256,6 +256,7 @@ The following revival improvements landed on `master` after the `v0.3.2` tag and
 - Python engine facade modules for semantic intent aliases and matrix representation materialization, merged as `b94c97c564d0cd9a2ae795e796662d152c678b86`
 - Python engine-style Space embed intent backed by deterministic classical MDS with named `EmbeddingResult` diagnostics, merged as `9fbd39d0890bfd64d8b65cc091334d0975e03d87`
 - C++ engine embed intent backed by the PCFA strategy with LAPACK-gated core smoke, downstream, and include-smoke coverage, merged as `dc44030e5155608dfeaebbdeb48ab367f595cd0f`
+- Python engine-style Space compress intent backed by representative and medoid compression with named `CompressionResult` objects, merged as `e7029d80c0b2e37bae9078a75408c8b45ae14b91`
 
 ## Historical Code Policy
 
