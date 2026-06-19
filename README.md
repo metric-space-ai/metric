@@ -179,6 +179,7 @@ Examples:
 - [Structured Data](docs/examples/structured-data.md)
 - [Time-Series Space With TWED](docs/examples/time-series-twed.md)
 - [Histogram Space With EMD](docs/examples/histogram-emd.md)
+- [Representative Selection](docs/examples/representative-selection.md)
 - [Entropy Diagnostics](docs/examples/entropy-diagnostics.md)
 - [Intrinsic Dimension Diagnostic](docs/examples/intrinsic-dimension.md)
 - [Correlation Between Metric Spaces](docs/examples/correlation-between-spaces.md)

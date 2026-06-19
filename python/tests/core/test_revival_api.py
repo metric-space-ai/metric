@@ -8,7 +8,14 @@ import metric
 import numpy as np
 from metric.metrics import Edit, available
 from metric import mappings, transforms
-from metric.operators import intrinsic_dimension, nearest_neighbors, pairwise_distance_matrix, range_neighbors
+from metric.operators import (
+    intrinsic_dimension,
+    nearest_neighbors,
+    pairwise_distance_matrix,
+    range_neighbors,
+    representative_indices,
+    representatives,
+)
 from metric.spaces import FiniteMetricSpace, MatrixSpace, Space
 
 
@@ -42,17 +49,23 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIs(metric.operators.nearest_neighbors, nearest_neighbors)
         self.assertIs(metric.operators.range_neighbors, range_neighbors)
         self.assertIs(metric.operators.intrinsic_dimension, intrinsic_dimension)
+        self.assertIs(metric.operators.representative_indices, representative_indices)
+        self.assertIs(metric.operators.representatives, representatives)
         self.assertIs(metric.mappings, mappings)
         self.assertIs(metric.transforms, transforms)
         self.assertIs(metric.Edit, Edit)
         self.assertIs(metric.intrinsic_dimension, intrinsic_dimension)
         self.assertIs(metric.range_neighbors, range_neighbors)
+        self.assertIs(metric.representative_indices, representative_indices)
+        self.assertIs(metric.representatives, representatives)
         self.assertIs(metric.FiniteMetricSpace, FiniteMetricSpace)
         self.assertIs(metric.Space, Space)
         self.assertIn("FiniteMetricSpace", metric.__all__)
         self.assertIn("Space", metric.__all__)
         self.assertIn("mappings", metric.__all__)
         self.assertIn("transforms", metric.__all__)
+        self.assertIn("representative_indices", metric.__all__)
+        self.assertIn("representatives", metric.__all__)
         self.assertEqual(mappings.STABILITY, "beta")
         self.assertEqual(transforms.STABILITY, "beta")
         self.assertIsInstance(mappings.available(), tuple)
@@ -104,6 +117,55 @@ class RevivalApiTest(unittest.TestCase):
             return abs(lhs - rhs)
 
         self.assertAlmostEqual(intrinsic_dimension(records, absolute_distance), np.log2(5.0 / 3.0))
+
+    def test_representative_selection_uses_farthest_first_traversal(self):
+        records = [
+            (1.0, 0.0, 0.0, 0.0),
+            (0.0, 1.0, 0.0, 0.0),
+            (0.0, 0.0, 0.0, 1.0),
+            (0.5, 0.5, 0.0, 0.0),
+            (0.0, 0.5, 0.5, 0.0),
+        ]
+
+        def cumulative_transport_distance(lhs, rhs):
+            cumulative_delta = 0.0
+            distance = 0.0
+            for lhs_mass, rhs_mass in zip(lhs, rhs):
+                cumulative_delta += lhs_mass - rhs_mass
+                distance += abs(cumulative_delta)
+
+            return distance
+
+        self.assertEqual(representative_indices(records, cumulative_transport_distance, 3), [0, 2, 4])
+        self.assertEqual(
+            representatives(records, cumulative_transport_distance, 3),
+            [records[0], records[2], records[4]],
+        )
+        self.assertEqual(representative_indices(records, cumulative_transport_distance, 0), [])
+
+    def test_representative_selection_validates_inputs_and_ties(self):
+        records = [0, 1, 2, 10]
+
+        def absolute_distance(lhs, rhs):
+            return abs(lhs - rhs)
+
+        self.assertEqual(representative_indices(records, absolute_distance, 3), [0, 3, 2])
+        self.assertEqual(representative_indices(records, absolute_distance, 2, seed_index=1), [1, 3])
+
+        with self.assertRaises(TypeError):
+            representative_indices(records, absolute_distance, 1.5)
+        with self.assertRaises(TypeError):
+            representative_indices(records, absolute_distance, 1, seed_index=0.5)
+        with self.assertRaises(ValueError):
+            representative_indices(records, absolute_distance, -1)
+        with self.assertRaises(ValueError):
+            representative_indices([], absolute_distance, 1)
+        with self.assertRaises(ValueError):
+            representative_indices(records, absolute_distance, 5)
+        with self.assertRaises(IndexError):
+            representative_indices(records, absolute_distance, 1, seed_index=-1)
+        with self.assertRaises(IndexError):
+            representative_indices(records, absolute_distance, 1, seed_index=len(records))
 
     def test_edit_metric_satisfies_metric_contracts(self):
         self.assertMetricContracts(self.records, self.metric)

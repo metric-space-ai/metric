@@ -44,10 +44,15 @@ Promotion evidence:
 
 Goal: choose small, meaningful subsets of a finite metric space without assuming vector centroids.
 
+Current promoted base:
+
+- Python `metric.operators.representative_indices` and `representatives` expose deterministic farthest-first traversal over finite metric spaces.
+- The promoted fixture uses histogram records with a one-dimensional transport callable and exact expected representative IDs.
+
 Candidate strategies:
 
 - medoid or k-medoids representatives
-- farthest-first traversal
+- C++ parity for farthest-first traversal
 - coverage-based representatives under a radius
 - redundancy reduction by distance threshold
 - compression summaries that preserve nearest-neighbor behavior
@@ -173,7 +178,7 @@ The revival should not:
 Near-term branches should stay small and evidence-driven:
 
 - add one C++ representative-selection smoke test for string records
-- add one Python representative-selection prototype behind `metric.operators` only if it has deterministic fixtures
+- add medoid or radius-coverage representative fixtures after the farthest-first helper has C++ parity
 - add graph construction documentation with exact versus approximate terminology
 - add MGC interpretation docs for paired metric spaces
 - add an industrial-record fixture that combines strings, process curves, histograms, and numeric penalties
