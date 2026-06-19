@@ -42,6 +42,16 @@ class FiniteMetricSpace:
     def to_matrix(self):
         return FiniteMetricSpace(self.records, self.metric)
 
+    def to_tree(self):
+        from metric.representations import TreeIndex
+
+        return TreeIndex(self)
+
+    def to_graph(self, count):
+        from metric.representations import GraphIndex
+
+        return GraphIndex(self, count)
+
     def knn(self, query, k=1):
         k = _coerce_non_negative_integer(k, "k")
         distances = [

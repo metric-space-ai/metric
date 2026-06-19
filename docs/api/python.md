@@ -25,7 +25,7 @@ The records are strings. Edit distance defines the geometry without an embedding
 - `FiniteMetricSpace`: finite metric space over records
 - `MatrixSpace`: compatibility alias for `FiniteMetricSpace`
 - `intent`: semantic helper aliases for promoted intent operations
-- `representations`: explicit representation helpers, starting with matrix materialization
+- `representations`: explicit representation helpers for matrix materialization, exact tree-style neighbor indexing, and exact kNN graph indexing
 - `operators`: small helpers for pairwise distances, nearest neighbors, range neighbors, exact graph results and edges, graph connectivity diagnostics, graph degree diagnostics, graph stretch diagnostics, graph pruning, grouping, embedding, outlier detection, DBSCAN-noise filtering, representative selection, representative reduction, representative compression, deterministic mapping, cross-space comparison, medoids, separated representatives, and intrinsic-dimension diagnostics
 - `strategies`: strategy objects for intent methods, starting with `ClassicMDS`, `KMedoids`, `DBSCAN`, `FarthestFirst`, and `DistanceProfileCorrelation`
 - `mappings`: beta compatibility bridge for installed mapping bindings
@@ -39,6 +39,8 @@ space[index]
 space.distance(lhs_index, rhs_index)
 space.pairwise_distances()
 space.to_matrix()
+space.to_tree()
+space.to_graph(count=8)
 space.neighbors(query, count=10)
 space.neighbors(query, radius=1)
 space.nearest(query)
@@ -236,11 +238,15 @@ print(space.distance(0, 1))
 
 `to_matrix()` returns an independent `FiniteMetricSpace` / `MatrixSpace` view with its own cached pairwise distances. It is useful when code wants to make materialization explicit while keeping the same records and metric callable.
 
-`metric.representations.matrix(space)` exposes the same explicit matrix materialization through the representation facade. `metric.intent` provides semantic aliases such as `find_neighbors`, `groups`, `embed`, `denoise`, `reduce`, `compress`, `map`, `compare`, and `describe` over the promoted operator functions for workflows that prefer module-level intent names.
+`to_tree()` returns a `metric.representations.TreeIndex` over the same records and metric. The first Python implementation preserves the tree/index vocabulary while using exact deterministic neighbor scans, so it is safe for correctness-oriented workflows before a specialized Python cover-tree backend is promoted.
+
+`to_graph(count=...)` returns a `metric.representations.GraphIndex` backed by the exact kNN graph construction result. It exposes `.graph`, `.edges`, `.metadata`, and `neighbors(source_index)` for sparse local-structure workflows.
+
+`metric.representations.matrix(space)`, `metric.representations.tree(space)`, and `metric.representations.graph(space, count=...)` expose the same materialization paths through the representation facade. `metric.intent` provides semantic aliases such as `find_neighbors`, `groups`, `embed`, `denoise`, `reduce`, `compress`, `map`, `compare`, and `describe` over the promoted operator functions for workflows that prefer module-level intent names.
 
 ## Engine Roadmap
 
-The implemented facade currently covers neighbor access, grouping, classical-MDS embedding, outlier detection, DBSCAN-backed denoising, deterministic mapping, cross-space comparison, representative selection, representative reduction, and structure diagnostics. Additional embedding strategies and learned mappings should be promoted only when they are backed by stable strategies, result objects, examples, and CI.
+The implemented facade currently covers matrix/tree/graph representation views, neighbor access, grouping, classical-MDS embedding, outlier detection, DBSCAN-backed denoising, deterministic mapping, cross-space comparison, representative selection, representative reduction, and structure diagnostics. Additional embedding strategies and learned mappings should be promoted only when they are backed by stable strategies, result objects, examples, and CI.
 
 ## Compatibility
 

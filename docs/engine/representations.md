@@ -35,4 +35,10 @@ auto distance = matrix.distance(space.id(0), space.id(1));
 
 ## Python
 
-The stable Python facade currently exposes `Space.to_matrix()` and `metric.representations.matrix(space)` for explicit matrix materialization. Graph helpers in `metric.operators` return named graph-construction result objects rather than persistent graph representation classes.
+The stable Python facade exposes:
+
+- `Space.to_matrix()` and `metric.representations.matrix(space)` for explicit matrix materialization
+- `Space.to_tree()` and `metric.representations.tree(space)` for an exact tree-style neighbor index over the same records and metric
+- `Space.to_graph(count=...)` and `metric.representations.graph(space, count=...)` for an exact kNN graph index with construction metadata
+
+The first Python `TreeIndex` preserves the representation vocabulary and deterministic neighbor semantics while using exact scans internally. The first Python `GraphIndex` wraps the promoted exact kNN graph construction result so sparse local-structure workflows can share the same edge metadata as `metric.operators.exact_knn_graph(...)`.
