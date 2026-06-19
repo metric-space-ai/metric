@@ -106,6 +106,43 @@ template <typename Space> class KnnGraphIndex {
 		return result;
 	}
 
+	template <typename Provider> auto stats_against(const Provider &provider, std::size_t sample_count = 0) const
+		-> knn_graph_stats
+	{
+		auto result = stats();
+		result.recall_validated = true;
+		result.sampled_recall = sampled_recall(provider, sample_count);
+		return result;
+	}
+
+	template <typename Provider> auto sampled_recall(const Provider &provider, std::size_t sample_count = 0) const -> double
+	{
+		if (k_ == 0 || record_count_ <= 1) {
+			return 1.0;
+		}
+
+		const auto samples = sample_count == 0 || sample_count > record_count_ ? record_count_ : sample_count;
+		double total_recall = 0.0;
+		for (std::size_t source = 0; source < samples; ++source) {
+			const auto source_id = ids_[source];
+			auto exact_neighbors = exact_provider_neighbors(provider, source_id);
+			const auto &graph_neighbors = adjacency_[source];
+			std::size_t hits = 0;
+			for (const auto &graph_neighbor : graph_neighbors) {
+				const auto found =
+					std::find_if(exact_neighbors.begin(), exact_neighbors.end(), [&](const neighbor_type &exact) {
+						return exact.id == graph_neighbor.id;
+					});
+				if (found != exact_neighbors.end()) {
+					++hits;
+				}
+			}
+			const auto denominator = exact_neighbors.empty() ? 1.0 : static_cast<double>(exact_neighbors.size());
+			total_recall += static_cast<double>(hits) / denominator;
+		}
+		return total_recall / static_cast<double>(samples);
+	}
+
 	auto diagnostics() const -> representation_diagnostics
 	{
 		representation_diagnostics result{representation_kind::knn_graph_index,
@@ -129,6 +166,25 @@ template <typename Space> class KnnGraphIndex {
 	}
 
   private:
+	template <typename Provider>
+	auto exact_provider_neighbors(const Provider &provider, RecordId source_id) const -> std::vector<neighbor_type>
+	{
+		std::vector<neighbor_type> candidates;
+		candidates.reserve(record_count_ > 0 ? record_count_ - 1 : 0);
+		for (std::size_t target = 0; target < provider.record_count(); ++target) {
+			const auto target_id = provider.id(target);
+			if (target_id == source_id) {
+				continue;
+			}
+			candidates.push_back(neighbor_type{target_id, provider.distance(source_id, target_id)});
+		}
+		sort_neighbors(candidates);
+		if (candidates.size() > k_) {
+			candidates.resize(k_);
+		}
+		return candidates;
+	}
+
 	auto build_neighbors(std::size_t source_position) const -> std::vector<neighbor_type>
 	{
 		std::vector<neighbor_type> candidates;

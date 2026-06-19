@@ -45,6 +45,25 @@ int main()
 	assert(matrix_diagnostics.built_for_version == space.version());
 	assert(!matrix_diagnostics.stale);
 	assert(matrix.stats().fill_ratio == 1.0);
+	assert(matrix.stats().hits == 2);
+
+	metric::representations::MatrixCache<decltype(space)> lazy_matrix(
+		space, metric::representations::matrix_cache_mode::lazy);
+	assert(lazy_matrix.cached_distances() == 0);
+	const auto lazy_initial_diagnostics = lazy_matrix.diagnostics();
+	assert(lazy_initial_diagnostics.materialized == metric::representations::materialization::lazy);
+	assert(lazy_initial_diagnostics.cached_distances == 0);
+	assert(lazy_matrix.distance(id0, id2) == 5);
+	assert(lazy_matrix.cached_distances() == 1);
+	assert(lazy_matrix.distance(id0, id2) == 5);
+	assert(lazy_matrix.distance(id1, id3) == space.distance(id1, id3));
+	const auto lazy_stats = lazy_matrix.stats();
+	assert(lazy_stats.hits == 1);
+	assert(lazy_stats.misses == 2);
+	assert(lazy_stats.fill_ratio == 2.0 / static_cast<double>(space.size() * space.size()));
+	const auto lazy_diagnostics = lazy_matrix.diagnostics();
+	assert(lazy_diagnostics.cached_distances == 2);
+	assert(lazy_diagnostics.distance_evaluations == 2);
 
 	metric::representations::CoverTreeIndex<decltype(space)> tree(space);
 	static_assert(metric::NeighborSearchIndex_v<decltype(tree)>);
@@ -74,6 +93,10 @@ int main()
 	assert(graph_diagnostics.kind == metric::representations::representation_kind::knn_graph_index);
 	assert(graph_diagnostics.exact == metric::representations::exactness::approximate);
 	assert(graph.stats().edges == space.size());
+	const auto graph_recall_stats = graph.stats_against(matrix);
+	assert(graph_recall_stats.recall_validated);
+	assert(graph_recall_stats.sampled_recall == 1.0);
+	assert(graph.sampled_recall(matrix, 2) == 1.0);
 
 	metric::representations::GraphTopology<decltype(space)> topology(space);
 	static_assert(metric::GraphTopology_v<decltype(topology)>);
@@ -91,6 +114,7 @@ int main()
 
 	assert(!implicit.is_stale());
 	assert(!matrix.is_stale());
+	assert(!lazy_matrix.is_stale());
 	assert(!tree.is_stale());
 	assert(!graph.is_stale());
 	assert(!topology.is_stale());
@@ -100,11 +124,14 @@ int main()
 	assert(implicit.contains(inserted_id));
 	assert(implicit.position_of(inserted_id) == 4);
 	assert(matrix.is_stale());
+	assert(lazy_matrix.is_stale());
 	assert(tree.is_stale());
 	assert(graph.is_stale());
 	assert(topology.is_stale());
 	assert(matrix.diagnostics().stale);
+	assert(lazy_matrix.diagnostics().stale);
 	assert(!matrix.diagnostics().warnings.empty());
+	assert(!lazy_matrix.diagnostics().warnings.empty());
 
 	assert(matrix.distance(id1, id3) == 7);
 	assert(space.erase(id1));
