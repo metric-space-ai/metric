@@ -129,6 +129,14 @@ int main()
 	}
 	assert(rejected_stateful_parallel_describe);
 
+	bool rejected_stateful_parallel_compare = false;
+	try {
+		(void)metric::compare(stateful_space, stateful_space, stateful_policy);
+	} catch (const std::invalid_argument &) {
+		rejected_stateful_parallel_compare = true;
+	}
+	assert(rejected_stateful_parallel_compare);
+
 	const auto lazy_groups = metric::find_groups(space, metric::strategies::k_medoids(2), lazy_policy);
 	assert(lazy_groups.algorithm == "kmedoids");
 	assert(lazy_groups.representation == "metric_space");
