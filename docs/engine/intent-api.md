@@ -45,7 +45,13 @@ representatives = space.representatives(count=2, representation=space.to_matrix(
 outliers = space.outliers(count=2, representation=space.to_matrix())
 denoised = space.denoise(count=2, representation=space.to_matrix())
 embedding = space.embed(strategy=ClassicMDS(dimensions=2), representation=space.to_matrix())
-dependency = space.compare(other_space, DistanceProfileCorrelation(), align="ids")
+dependency = space.compare(
+    other_space,
+    DistanceProfileCorrelation(),
+    align="ids",
+    representation=space.to_matrix(),
+    other_representation=other_space.to_matrix(),
+)
 reduction = space.reduce(count=2, representation=space.to_matrix())
 compression = space.compress(count=2, representation=space.to_matrix())
 mapped = space.map(transform=transform, metric=target_metric, representation=space.to_matrix())

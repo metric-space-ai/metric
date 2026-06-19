@@ -494,7 +494,16 @@ class Space(FiniteMetricSpace):
             raise IncompatibleSpaceError("align='ids' requires both spaces to have the same ids")
         return self.records, [other.record(record_id) for record_id in self.ids]
 
-    def compare(self, other, strategy=None, *, align="position", runtime=None):
+    def compare(
+        self,
+        other,
+        strategy=None,
+        *,
+        align="position",
+        representation=None,
+        other_representation=None,
+        runtime=None,
+    ):
         require_exact_runtime(runtime)
         from metric.operators import compare_spaces
 
@@ -505,12 +514,28 @@ class Space(FiniteMetricSpace):
             right_records,
             other.metric,
             strategy,
-            left_representation="metric_space",
-            right_representation="metric_space",
+            left_representation=self._representation_name(representation),
+            right_representation=self._representation_name(other_representation),
         )
 
-    def correlate(self, other, strategy=None, *, align="position", runtime=None):
-        return self.compare(other, strategy=strategy, align=align, runtime=runtime)
+    def correlate(
+        self,
+        other,
+        strategy=None,
+        *,
+        align="position",
+        representation=None,
+        other_representation=None,
+        runtime=None,
+    ):
+        return self.compare(
+            other,
+            strategy=strategy,
+            align=align,
+            representation=representation,
+            other_representation=other_representation,
+            runtime=runtime,
+        )
 
 
 MatrixSpace = FiniteMetricSpace

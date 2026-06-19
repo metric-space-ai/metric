@@ -781,9 +781,43 @@ class RevivalApiTest(unittest.TestCase):
         self.assertEqual(dependency.left_representation, "metric_space")
         self.assertEqual(dependency.right_representation, "metric_space")
         self.assertEqual(process_space.correlate(quality_space), dependency)
+        matrix_dependency = process_space.compare(
+            quality_space,
+            representation=process_space.to_matrix(),
+            other_representation=quality_space.to_matrix(),
+        )
+        self.assertAlmostEqual(matrix_dependency.value, dependency.value)
+        self.assertEqual(matrix_dependency.left_representation, "matrix")
+        self.assertEqual(matrix_dependency.right_representation, "matrix")
+        self.assertEqual(
+            process_space.correlate(
+                quality_space,
+                representation=process_space.to_matrix(),
+                other_representation=quality_space.to_matrix(),
+            ),
+            matrix_dependency,
+        )
         self.assertEqual(
             compare_spaces(process_space.records, process_space.metric, quality_space.records, quality_space.metric),
             correlate_spaces(process_space.records, process_space.metric, quality_space.records, quality_space.metric),
+        )
+        self.assertEqual(
+            compare_spaces(
+                process_space.records,
+                process_space.metric,
+                quality_space.records,
+                quality_space.metric,
+                left_representation="matrix",
+                right_representation="matrix",
+            ),
+            correlate_spaces(
+                process_space.records,
+                process_space.metric,
+                quality_space.records,
+                quality_space.metric,
+                left_representation="matrix",
+                right_representation="matrix",
+            ),
         )
         shuffled_quality_space = Space(
             [25, 0, 16, 1, 9, 4],
@@ -864,6 +898,8 @@ class RevivalApiTest(unittest.TestCase):
             space.denoise(count=1, representation=stale_matrix)
         with self.assertRaises(StaleRepresentationError):
             space.map(transform=lambda record: record, representation=stale_matrix)
+        with self.assertRaises(StaleRepresentationError):
+            space.compare(space, representation=stale_matrix)
 
     def test_intrinsic_dimension_estimates_distance_growth(self):
         records = [0, 1, 2, 3, 4]
