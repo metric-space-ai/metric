@@ -28,6 +28,7 @@ The current local tree implements the first revival slice:
 - Python grouping facade accepts strategy-free `Space.groups(count=...)` and `Space.groups(radius=...)` intent arguments
 - Python engine-style Space grouping intent with KMedoids and DBSCAN strategies
 - Python engine-style Space intent facade methods for representatives and structure diagnostics
+- Python representatives facade accepts semantic `count=` target arguments
 - Python engine-style Space compare/correlate intent with a deterministic distance-profile correlation strategy
 - Python compare/correlate facade supports `align="ids"` over stable Space IDs
 - Python engine-style Space embed intent with deterministic classical MDS and embedding diagnostics
@@ -256,6 +257,7 @@ The following revival improvements landed on `master` after the `v0.3.2` tag and
 - initial C++ engine runtime policy scaffolding for exact lazy/materialized neighbor execution, representation diagnostics, and cache staleness coverage, merged as `c9217ec01bc06578dc050a06605df22c44fd62eb`
 - CI-tested C++ and Python engine flagship examples for strings, process curves, histograms, and cross-space dependency, merged as `9d9d89dad779c836fe2f1334b68000938d76c9c6`
 - Python engine-style Space intent facade methods for representatives and structure diagnostics with named result objects and core test coverage, merged as `1849c29a25122b31605945295c91710cfc6a126f`
+- Python `Space.representatives(count=...)` and `find_representatives(..., count=...)` semantic target aliases, merged as `5e2986bc788a758cccdcd8cbb2e122c77d2796d7`
 - Python engine-style Space grouping intent with KMedoids and DBSCAN strategies, named `ClusteringResult` objects, and core test coverage, merged as `fe2641f8f14e660a994c94ca18d9f5feb426fb2b`
 - Python engine-style Space compare/correlate intent with named `CorrelationResult` objects and distance-profile strategy coverage, merged as `103d680a395ddd748017a1619be0580ffd5607cc`
 - Python `Space.compare(..., align="ids")` and `Space.correlate(..., align="ids")` support over stable Space IDs, merged as `3e6777c5b4bb63355bb2c49c0c15a6f55ef83692`
