@@ -7,7 +7,7 @@ This page defines which checks are release gates during the revival and which ch
 The required PR and release gates are intentionally small, reproducible, and cross-platform:
 
 - `.github/workflows/core-cpp.yml`: C++ core configure, build, core tests, promoted examples, install, and downstream `find_package(panda_metric)` consumer on Linux, macOS, and Windows.
-- `.github/workflows/python-core.yml`: Python core wheel build on Linux, macOS, and Windows for supported CPython versions, followed by the promoted metric-space examples and core Python API tests.
+- `.github/workflows/python-core.yml`: Python core wheel build on Linux, macOS, and Windows for supported CPython versions, followed by the promoted metric-space and engine examples and core Python API tests.
 - `.github/workflows/docs-and-format.yml`: revived-file whitespace checks, revived-source formatting checks, Markdown local-link checks, and workflow YAML parsing.
 - `.github/workflows/pages.yml`: static Pages artifact for `docs/site/`.
 - `.github/workflows/release-artifacts.yml`: tag/manual artifact build for source archive, Python sdist, Python wheel built from that sdist, C++ core test, and downstream CMake consumer evidence.
@@ -46,8 +46,8 @@ The Python core wheel path covers:
 - intrinsic-dimension regression values
 - exact graph edge fixtures for k-nearest-neighbor and radius construction
 - deterministic representative-selection, medoid, separated-representative, and radius-coverage regression values for histogram transport, time-series alignment, and structured mixed-record callables
-- promoted Python examples for strings, structured records, time-series alignment, histogram transport, and representative selection
-- subprocess execution of every `python/examples/metric_space/*.py` example from the core Python API tests, so PyPI cibuildwheel tests cover the same promoted examples even when the workflow invokes only the core test suite directly
+- promoted Python examples for strings, structured records, time-series alignment, histogram transport, representative selection, and engine flagship workflows
+- subprocess execution of every `python/examples/metric_space/*.py` and `python/examples/engine/*.py` example from the core Python API tests, so PyPI cibuildwheel tests cover the same promoted examples even when the workflow invokes only the core test suite directly
 
 ## Extended and Historical Tests
 
