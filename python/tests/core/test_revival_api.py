@@ -27,6 +27,7 @@ from metric.operators import (
     compare_spaces,
     correlate_spaces,
     dbscan,
+    denoise_space,
     describe_structure,
     exact_knn_graph,
     exact_knn_graph_edges,
@@ -102,6 +103,7 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIs(metric.operators.StructureDescription, StructureDescription)
         self.assertIs(metric.operators.find_groups, find_groups)
         self.assertIs(metric.operators.find_outliers, find_outliers)
+        self.assertIs(metric.operators.denoise_space, denoise_space)
         self.assertIs(metric.operators.compare_spaces, compare_spaces)
         self.assertIs(metric.operators.correlate_spaces, correlate_spaces)
         self.assertIs(metric.operators.describe_structure, describe_structure)
@@ -146,6 +148,7 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIs(metric.StructureDescription, StructureDescription)
         self.assertIs(metric.find_groups, find_groups)
         self.assertIs(metric.find_outliers, find_outliers)
+        self.assertIs(metric.denoise_space, denoise_space)
         self.assertIs(metric.describe_structure, describe_structure)
         self.assertIs(metric.find_representatives, find_representatives)
         self.assertIs(metric.reduce_space, reduce_space)
@@ -199,6 +202,7 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIn("StructureDescription", metric.__all__)
         self.assertIn("find_groups", metric.__all__)
         self.assertIn("find_outliers", metric.__all__)
+        self.assertIn("denoise_space", metric.__all__)
         self.assertIn("compare_spaces", metric.__all__)
         self.assertIn("correlate_spaces", metric.__all__)
         self.assertIn("describe_structure", metric.__all__)
@@ -324,6 +328,37 @@ class RevivalApiTest(unittest.TestCase):
         )
         self.assertEqual(outlier_space.outliers(DBSCAN(radius=100, min_points=2)).outliers, ())
 
+        denoised = outlier_space.denoise(DBSCAN(radius=2, min_points=2))
+        self.assertIsInstance(denoised, MappingResult)
+        self.assertIsInstance(denoised.space, Space)
+        self.assertEqual(denoised.space.records, [0, 1, 10, 11])
+        self.assertEqual(denoised.source_record_ids, (0, 1, 2, 3))
+        self.assertEqual(denoised.source_record_count, 5)
+        self.assertEqual(denoised.target_record_count, 4)
+        self.assertTrue(denoised.exact)
+        self.assertEqual(denoised.operator_name, "denoise")
+        self.assertEqual(denoised.mapping, "density_denoise")
+        self.assertEqual(denoised.strategy, "dbscan_noise_filter")
+        self.assertEqual(denoised.representation, "metric_space")
+        self.assertFalse(denoised.inverse_supported)
+        self.assertEqual(denoised.space.distance(0, 3), 11)
+        self.assertEqual(
+            denoise_space(
+                [0, 1, 10, 11, 30],
+                lambda lhs, rhs: abs(lhs - rhs),
+                DBSCAN(radius=2, min_points=2),
+            ).source_record_ids,
+            denoised.source_record_ids,
+        )
+        self.assertEqual(
+            outlier_space.denoise(DBSCAN(radius=100, min_points=2)).source_record_ids,
+            (0, 1, 2, 3, 4),
+        )
+        self.assertEqual(
+            Space([0, 10], metric=lambda lhs, rhs: abs(lhs - rhs)).denoise(DBSCAN(radius=1, min_points=2)).space.records,
+            [],
+        )
+
         representatives_result = space.representatives(3)
         self.assertIsInstance(representatives_result, RepresentativeSet)
         self.assertEqual(representatives_result.representatives, (0, 4, 2))
@@ -430,6 +465,8 @@ class RevivalApiTest(unittest.TestCase):
             space.map(3)
         with self.assertRaises(TypeError):
             map_space([0, 1], lambda record: record, metric=3)
+        with self.assertRaises(TypeError):
+            space.denoise(KMedoids(groups=2))
 
     def test_intrinsic_dimension_estimates_distance_growth(self):
         records = [0, 1, 2, 3, 4]
@@ -769,6 +806,7 @@ class RevivalApiTest(unittest.TestCase):
         self.assertTrue(callable(space.compare))
         self.assertTrue(callable(space.correlate))
         self.assertTrue(callable(space.outliers))
+        self.assertTrue(callable(space.denoise))
         self.assertTrue(callable(space.reduce))
         self.assertTrue(callable(space.map))
 

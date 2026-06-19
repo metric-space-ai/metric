@@ -27,12 +27,13 @@ The current engine mapping layer includes:
 - PCFA-backed `metric::reduce`
 - DBSCAN-noise-filtered `metric::denoise`
 - deterministic Python `Space.map`
+- DBSCAN-noise-filtered Python `Space.denoise`
 
-`MappingResult` stores the derived space plus source-record lineage. Inverse reconstruction is explicit and optional. The C++ `metric::denoise` intent also returns a `MappingResult`, preserving one-to-one lineage for non-noise records kept after DBSCAN noise filtering.
+`MappingResult` stores the derived space plus source-record lineage. Inverse reconstruction is explicit and optional. The C++ `metric::denoise` and Python `Space.denoise` intents also return `MappingResult` values, preserving one-to-one lineage for non-noise records kept after DBSCAN noise filtering.
 
 ## Python Status
 
-Python exposes `Space.map` and `metric.operators.map_space` for deterministic transforms into derived `Space` objects. Python also exposes `metric.mappings` as a beta compatibility bridge for installed legacy names; learned or inverse mapping facades should be promoted only when they have named result contracts, examples, and wheel CI coverage.
+Python exposes `Space.map` and `metric.operators.map_space` for deterministic transforms into derived `Space` objects. It also exposes `Space.denoise` and `metric.operators.denoise_space` for DBSCAN-noise filtering into derived `Space` objects. Python also exposes `metric.mappings` as a beta compatibility bridge for installed legacy names; learned or inverse mapping facades should be promoted only when they have named result contracts, examples, and wheel CI coverage.
 
 ## Promotion Rule
 

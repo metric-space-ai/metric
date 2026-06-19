@@ -38,6 +38,7 @@ from .operators import (
     compare_spaces,
     correlate_spaces,
     dbscan,
+    denoise_space,
     describe_structure,
     exact_knn_graph,
     exact_knn_graph_edges,
