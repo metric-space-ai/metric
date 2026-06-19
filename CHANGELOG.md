@@ -24,6 +24,7 @@
 - Add Python `Space.compare()` / `Space.correlate()` with a named `CorrelationResult` and `DistanceProfileCorrelation` strategy.
 - Add Python `Space.describe()` and `Space.representatives()` intent methods with named result objects and a `FarthestFirst` strategy.
 - Add Python `Space.groups()` and `find_groups` intent methods with named `ClusteringResult` objects and `KMedoids` / `DBSCAN` strategies.
+- Add Python `Space.outliers()` and `find_outliers` intent methods backed by DBSCAN noise detection with named `OutlierResult` objects.
 
 ### Algorithm Changes
 
