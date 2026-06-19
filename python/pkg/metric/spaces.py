@@ -432,11 +432,22 @@ class Space(FiniteMetricSpace):
 
         return map_space(self.records, transform, self.metric if metric is None else metric)
 
-    def embed(self, dimensions=2, strategy=None, *, runtime=None):
+    def embed(self, dimensions=2, strategy=None, *, representation=None, runtime=None):
         require_exact_runtime(runtime)
+        representation_name = "metric_space"
+        if representation is not None:
+            representation.ensure_fresh()
+            representation_name = getattr(representation, "representation", representation_name)
+
         from metric.operators import embed_space
 
-        return embed_space(self.records, self.metric, dimensions=dimensions, strategy=strategy)
+        return embed_space(
+            self.records,
+            self.metric,
+            dimensions=dimensions,
+            strategy=strategy,
+            representation=representation_name,
+        )
 
     def describe(self, *, runtime=None):
         require_exact_runtime(runtime)

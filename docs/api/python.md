@@ -66,6 +66,7 @@ space.groups(strategy=KMedoids(groups=2))
 space.groups(strategy=DBSCAN(radius=1, min_points=2))
 space.embed(dimensions=2)
 space.embed(strategy=ClassicMDS(dimensions=2))
+space.embed(dimensions=2, representation=space.to_matrix())
 space.outliers(count=2)
 space.outliers(threshold=10)
 space.outliers(strategy=DBSCAN(radius=1, min_points=2))
@@ -211,7 +212,7 @@ structure = describe_structure(records, Edit())
 
 `denoise_space` returns a `MappingResult` backed by DBSCAN-noise filtering. The derived `Space` contains only non-noise source records, `source_record_ids` preserves the original record lineage, and inverse reconstruction is explicitly unsupported. `Space.denoise()` also supports a strategy-free exact default that removes records selected by `Space.outliers(...)`.
 
-`embed_space` returns an `EmbeddingResult` backed by deterministic classical MDS over the exact finite distance matrix. The result includes NumPy `coordinates`, an `embedded_space` over coordinate records with a Euclidean metric, the original `source_space`, source-record IDs, exact/operator/representation metadata, a small `EmbeddingModel`, normalized stress, local-neighbor trustworthiness, distance-profile correlation, and finite-coordinate diagnostics. `Space.embed(...)` exposes the same derived coordinate view from the `Space` facade.
+`embed_space` returns an `EmbeddingResult` backed by deterministic classical MDS over the exact finite distance matrix. The result includes NumPy `coordinates`, an `embedded_space` over coordinate records with a Euclidean metric, the original `source_space`, source-record IDs, exact/operator/representation metadata, a small `EmbeddingModel`, normalized stress, local-neighbor trustworthiness, distance-profile correlation, and finite-coordinate diagnostics. `Space.embed(...)` exposes the same derived coordinate view from the `Space` facade. Pass `representation=space.to_matrix()` or another fresh representation when the result should record the execution representation; stale representations raise `metric.StaleRepresentationError`.
 
 `compare_spaces` returns a `CorrelationResult` for two aligned finite metric spaces with the same record count. The first Python-core strategy is `DistanceProfileCorrelation`, which computes the Pearson correlation of upper-triangular pairwise distance profiles. `Space.compare(...)` and `Space.correlate(...)` expose the same result with metric-space representation metadata. The facade defaults to `align="position"` for compatibility. Pass `align="ids"` to compare spaces with the same stable IDs even when the right-hand space is in a different order; mismatched ID sets raise `metric.IncompatibleSpaceError`.
 
