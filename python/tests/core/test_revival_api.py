@@ -315,8 +315,13 @@ class RevivalApiTest(unittest.TestCase):
         self.assertEqual(space.nn("cut"), (0, 1))
         self.assertEqual(space.rnn("cut", 1), [(0, 1), (1, 1)])
         self.assertEqual(nearest_neighbors(self.records, self.metric, "cut", 2), [(0, 1), (1, 1)])
+        self.assertEqual(nearest_neighbors(self.records, self.metric, "cut", count=2), [(0, 1), (1, 1)])
         self.assertEqual(range_neighbors(self.records, self.metric, "cut", 1), [(0, 1), (1, 1)])
         self.assertEqual(pairwise_distance_matrix(self.records, self.metric)[0][1], 1)
+        with self.assertRaises(ValueError):
+            space.knn("cut", -1)
+        with self.assertRaises(ValueError):
+            nearest_neighbors(self.records, self.metric, "cut", k=1, count=2)
 
     def test_space_intent_methods_return_named_results(self):
         space = Space([0, 1, 2, 3, 4], metric=lambda lhs, rhs: abs(lhs - rhs))
@@ -906,8 +911,14 @@ class RevivalApiTest(unittest.TestCase):
 
         self.assertIsInstance(space, FiniteMetricSpace)
         self.assertEqual(space.neighbors("cut", 2), [(0, 1), (1, 1)])
+        self.assertEqual(space.neighbors("cut", count=2), [(0, 1), (1, 1)])
+        self.assertEqual(space.neighbors("cut", radius=1), [(0, 1), (1, 1)])
         self.assertEqual(space.nearest("cut"), (0, 1))
         self.assertEqual(space.within_radius("cut", 1), [(0, 1), (1, 1)])
+        with self.assertRaises(ValueError):
+            space.neighbors("cut", k=1, count=2)
+        with self.assertRaises(ValueError):
+            space.neighbors("cut", count=2, radius=1)
         self.assertTrue(callable(space.compare))
         self.assertTrue(callable(space.correlate))
         self.assertTrue(callable(space.embed))

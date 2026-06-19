@@ -13,7 +13,7 @@ records = ["cat", "cot", "coat", "dog"]
 space = Space(records, Edit())
 
 print(space.distance(0, 1))
-print(space.neighbors("cut", k=2))
+print(space.neighbors("cut", count=2))
 ```
 
 The records are strings. Edit distance defines the geometry without an embedding step.
@@ -39,7 +39,8 @@ space[index]
 space.distance(lhs_index, rhs_index)
 space.pairwise_distances()
 space.to_matrix()
-space.neighbors(query, k=10)
+space.neighbors(query, count=10)
+space.neighbors(query, radius=1)
 space.nearest(query)
 space.within_radius(query, radius=1)
 space.groups(strategy=KMedoids(groups=2))
@@ -123,7 +124,7 @@ from metric.operators import (
 from metric.strategies import ClassicMDS, DBSCAN, DistanceProfileCorrelation, FarthestFirst, KMedoids
 
 distances = pairwise_distance_matrix(records, Edit())
-neighbors = nearest_neighbors(records, Edit(), "cut", k=2)
+neighbors = nearest_neighbors(records, Edit(), "cut", count=2)
 close = range_neighbors(records, Edit(), "cut", radius=1)
 knn_graph = exact_knn_graph(records, Edit(), k=1)
 knn_edges = exact_knn_graph_edges(records, Edit(), k=1)
@@ -155,6 +156,8 @@ compression = compress_space(records, Edit(), count=2, strategy=FarthestFirst(se
 mapped = map_space(records, transform, target_metric)
 structure = describe_structure(records, Edit())
 ```
+
+`Space.neighbors(query, count=...)` returns nearest `(record_id, distance)` tuples. `Space.neighbors(query, radius=...)` returns range-neighbor tuples through the same exact metric path as `Space.within_radius(...)`. The older `k` name remains a compatibility alias for count-based nearest-neighbor calls, but new examples should prefer `count`.
 
 `find_groups` returns a `ClusteringResult` with source-record assignments, medoid record IDs, cluster sizes, optional DBSCAN core/noise records, iteration metadata, algorithm metadata, and representation metadata. `Space.groups(...)` exposes the same result from the `Space` facade. Passing an integer group count selects deterministic `KMedoids`; passing `KMedoids` or `DBSCAN` makes the strategy explicit.
 
@@ -209,7 +212,7 @@ def padded_hamming(lhs: str, rhs: str) -> int:
     )
 
 space = Space(["red", "reed", "road", "blue"], padded_hamming)
-print(space.neighbors("read", k=2))
+print(space.neighbors("read", count=2))
 ```
 
 ## NumPy Records

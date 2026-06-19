@@ -35,6 +35,7 @@
 - Add Python `Space.denoise()` and `denoise_space` intent methods backed by DBSCAN noise filtering with named `MappingResult` objects.
 - Add Python `Space.embed()` and `embed_space` intent methods backed by deterministic classical MDS with named `EmbeddingResult` diagnostics.
 - Add Python `metric.intent` and `metric.representations` facade modules over the promoted semantic intents and matrix representation path.
+- Add Python `Space.neighbors(..., count=...)`, `Space.neighbors(..., radius=...)`, and `nearest_neighbors(..., count=...)` intent-compatible neighbor arguments.
 
 ### Algorithm Changes
 

@@ -17,6 +17,7 @@ The current local tree implements the first revival slice:
 - core C++ `Metric`, `Space`, `FiniteSpace`, explicit representation aliases, and `metric::operators`
 - Python core facade modules under `metric.metrics`, `metric.spaces`, and `metric.operators`
 - Python engine facade modules under `metric.intent` and `metric.representations`
+- Python neighbor facade accepts the target `count` and `radius` intent arguments
 - Python engine-style Space grouping intent with KMedoids and DBSCAN strategies
 - Python engine-style Space intent facade methods for representatives and structure diagnostics
 - Python engine-style Space compare/correlate intent with a deterministic distance-profile correlation strategy
