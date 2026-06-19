@@ -42,6 +42,8 @@ The first engine operators live under `metric::operators` and return named resul
 
 - `metric::NeighborSet<Distance>`
 - `metric::ClusteringResult<Distance>`
+- `metric::EntropyResult<double>`
+- `metric::CorrelationResult<double>`
 - `metric::operators::knn(space, query, count)`
 - `metric::operators::knn(space, query_id, count)`
 - `metric::operators::knn(distance_provider, query_id, count)`
@@ -52,6 +54,10 @@ The first engine operators live under `metric::operators` and return named resul
 - `metric::operators::kmedoids(distance_provider, cluster_count)`
 - `metric::operators::dbscan(space, radius, min_points)`
 - `metric::operators::dbscan(distance_provider, radius, min_points)`
+- `metric::operators::entropy(space)`
+- `metric::operators::entropy(records, metric)`
+- `metric::operators::mgc(space_a, space_b)`
+- `metric::operators::mgc(records_a, metric_a, records_b, metric_b)`
 
 This is still the implementation layer, not the final intent API. It lets the same nearest-neighbor operation run against an implicit `MetricSpace`, a materialized `MatrixCache`, or a neighbor index while returning stable `RecordId` values. It also lets the first grouping operators run against either a space or distance provider while returning stable `RecordId` payloads.
 Density clustering uses the same `ClusteringResult` contract and marks noise records with `ClusteringResult<Distance>::noise_label`.
@@ -80,6 +86,7 @@ Distance evaluation stays direct:
 ```cpp
 #include <metric/distance.hpp>
 #include <metric/engine.hpp>
+#include <metric/operators/entropy.hpp>
 
 #include <string>
 #include <vector>
@@ -102,6 +109,8 @@ auto indexed_neighbors = metric::operators::knn(tree, std::string("metricks"), 2
 
 auto groups = metric::operators::kmedoids(matrix, 2);
 auto dense_groups = metric::operators::dbscan(matrix, 1, 2);
+auto structure_entropy = metric::operators::entropy(space);
+auto dependency = metric::operators::mgc(space, space);
 
 auto user_neighbors = metric::find_neighbors(space, std::string("metricks"), 2);
 auto user_groups = metric::find_groups(space, metric::strategies::k_medoids(2));
