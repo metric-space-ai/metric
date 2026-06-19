@@ -53,6 +53,7 @@ The current local tree implements the first revival slice:
 - promoted C++ examples under `examples/core/`
 - promoted Python examples under `python/examples/metric_space/`
 - CI-tested C++ and Python engine flagship examples for strings, process curves, histograms, and cross-space dependency
+- direct Python smoke gates run promoted metric-space and engine examples together
 - engine documentation chapters for metric spaces, representations, intents, strategies, operators, mappings, runtime policies, and migration
 - README engine quickstart for C++ engine intents, strategy selection, representation swaps, and mapping-derived spaces
 - API and stability docs for the promoted C++ and Python outlier intent surface
@@ -265,6 +266,7 @@ The following revival improvements landed on `master` after the `v0.3.2` tag and
 - C++ engine umbrella header exposure for the PCFA-backed reduce intent with core, downstream, and include-smoke coverage, merged as `82457b5368e49cfbb6a0f3c417fef0fc56c4f5fb`
 - initial C++ engine runtime policy scaffolding for exact lazy/materialized neighbor execution, representation diagnostics, and cache staleness coverage, merged as `c9217ec01bc06578dc050a06605df22c44fd62eb`
 - CI-tested C++ and Python engine flagship examples for strings, process curves, histograms, and cross-space dependency, merged as `9d9d89dad779c836fe2f1334b68000938d76c9c6`
+- direct Python smoke gates now run promoted metric-space and engine examples together, merged as `06f22b20e7d44c7f2058b81d43f513fc157f36b0`
 - Python engine-style Space intent facade methods for representatives and structure diagnostics with named result objects and core test coverage, merged as `1849c29a25122b31605945295c91710cfc6a126f`
 - Python `Space.representatives(count=...)` and `find_representatives(..., count=...)` semantic target aliases, merged as `5e2986bc788a758cccdcd8cbb2e122c77d2796d7`
 - Python `Space.representatives(..., representation=...)` freshness checks and representation metadata, merged as `ecf17bf1b4c557730906568b2ca7860329160293`
