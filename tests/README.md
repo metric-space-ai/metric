@@ -15,6 +15,8 @@ The tests tree separates the revived core gate from broader historical coverage.
 
 `tests/downstream_consumer/` verifies the installed CMake package with `find_package(panda_metric)`. It is part of the C++ core CI gate.
 
+The Python core CI gate under `python/tests/core/` covers the revived Python facade, promoted Python examples, custom metric callables, and metric contract checks for built-in, NumPy, and structured-record metrics.
+
 ## Historical and Extended Tests
 
 The other test folders preserve broader historical coverage:

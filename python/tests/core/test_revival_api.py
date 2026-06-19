@@ -13,6 +13,23 @@ class RevivalApiTest(unittest.TestCase):
         self.records = ["cat", "cot", "coat", "dog"]
         self.metric = Edit()
 
+    def assertMetricContracts(self, records, metric, places=7):
+        for lhs in records:
+            self.assertAlmostEqual(metric(lhs, lhs), 0.0, places=places)
+
+            for rhs in records:
+                lhs_rhs = metric(lhs, rhs)
+                rhs_lhs = metric(rhs, lhs)
+
+                self.assertGreaterEqual(lhs_rhs, 0.0)
+                self.assertAlmostEqual(lhs_rhs, rhs_lhs, places=places)
+
+                for through in records:
+                    self.assertLessEqual(
+                        metric(lhs, through),
+                        lhs_rhs + metric(rhs, through) + 10 ** -places,
+                    )
+
     def test_metric_concepts_are_importable(self):
         self.assertIn("Edit", available())
         self.assertIs(MatrixSpace, FiniteMetricSpace)
@@ -57,6 +74,9 @@ class RevivalApiTest(unittest.TestCase):
         self.assertEqual(range_neighbors(self.records, self.metric, "cut", 1), [(0, 1), (1, 1)])
         self.assertEqual(pairwise_distance_matrix(self.records, self.metric)[0][1], 1)
 
+    def test_edit_metric_satisfies_metric_contracts(self):
+        self.assertMetricContracts(self.records, self.metric)
+
     def test_space_facade_exposes_intent_names(self):
         space = Space(self.records, self.metric)
 
@@ -78,6 +98,7 @@ class RevivalApiTest(unittest.TestCase):
         self.assertEqual(space.nearest(np.array([3.0, 4.0])), (1, 0.0))
         self.assertEqual(range_neighbors(records, euclidean, np.array([3.0, 4.0]), 0.0), [(1, 0.0)])
         self.assertAlmostEqual(pairwise_distance_matrix(records, euclidean)[1][2], 5.0)
+        self.assertMetricContracts(records, euclidean)
 
     def test_structured_records_use_domain_metric_callable(self):
         records = [
@@ -108,6 +129,7 @@ class RevivalApiTest(unittest.TestCase):
         self.assertGreater(space.distance(0, 2), 10.0)
         self.assertEqual(space.neighbors(query, 2)[0][0], 0)
         self.assertAlmostEqual(pairwise_distance_matrix(records, structured_record_distance)[0][1], 0.25)
+        self.assertMetricContracts(records, structured_record_distance)
 
 
 if __name__ == "__main__":
