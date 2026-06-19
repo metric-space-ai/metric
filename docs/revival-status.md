@@ -37,6 +37,7 @@ The current local tree implements the first revival slice:
 - initial C++ engine skeleton with `MetricSpace`, stable `RecordId`s, metric traits, and engine concept traits
 - initial C++ engine representation adapters for implicit distance lookup, matrix caching, exact neighbor-index scaffolds, kNN graph adjacency, graph topology edges, and stale detection
 - initial C++ engine nearest operators with `NeighborSet`, `operators::knn`, and `operators::range` over spaces, distance providers, and neighbor indexes
+- initial C++ engine clustering operator with `ClusteringResult` and deterministic `operators::kmedoids` over spaces and distance providers
 - documentation for concepts, APIs, examples, stability, testing, and release gates
 - CI workflows for C++ core, Python wheels, docs/formatting, revived-source formatting, and GitHub Pages artifacts
 - release artifact workflow for source archive, Python sdist, Python wheel built from that sdist, and C++ core/downstream evidence
@@ -198,6 +199,7 @@ The following revival improvements landed on `master` after the `v0.3.2` tag and
 - initial C++ engine skeleton with `MetricSpace`, stable `RecordId`s, metric traits, engine concept traits, and core smoke coverage, merged as `8592d1e636e27227ca083220d3d7e3abf4e04bcf`
 - initial C++ engine representation adapters with core smoke coverage for matrix caching, exact neighbor-index scaffolds, kNN graph adjacency, graph topology edges, and stale detection, merged as `f5eebadea22e7b4f312632c3a4c10e731fffbdf1`
 - initial C++ engine nearest operators with `NeighborSet`, space/provider/index overloads, and core smoke coverage, merged as `9819d89fded5f0947c21de974410c0b9c56393fd`
+- initial C++ engine clustering operator with `ClusteringResult`, deterministic k-medoids over spaces and distance providers, and core smoke coverage, merged as `0bb5a0b695c88ef91dd997d4f59275e04908462f`
 
 ## Historical Code Policy
 
