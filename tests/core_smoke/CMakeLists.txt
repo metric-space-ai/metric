@@ -77,6 +77,9 @@ target_link_libraries(native_dnn_training_hooks_smoke PRIVATE ${METRIC_TARGET_NA
 add_executable(native_dnn_dataset_codec_smoke native_dnn_dataset_codec_smoke.cpp)
 target_link_libraries(native_dnn_dataset_codec_smoke PRIVATE ${METRIC_TARGET_NAME})
 
+add_executable(native_dnn_composite_loss_smoke native_dnn_composite_loss_smoke.cpp)
+target_link_libraries(native_dnn_composite_loss_smoke PRIVATE ${METRIC_TARGET_NAME})
+
 add_test(NAME metric_core_smoke COMMAND metric_core_smoke)
 add_test(NAME metric_mgc_smoke COMMAND metric_mgc_smoke)
 if (METRIC_BUILD_CORE_ENTROPY)
@@ -106,3 +109,4 @@ add_test(NAME engine_runtime_policy_smoke COMMAND engine_runtime_policy_smoke)
 add_test(NAME native_dnn_baseline_smoke COMMAND native_dnn_baseline_smoke)
 add_test(NAME native_dnn_training_hooks_smoke COMMAND native_dnn_training_hooks_smoke)
 add_test(NAME native_dnn_dataset_codec_smoke COMMAND native_dnn_dataset_codec_smoke)
+add_test(NAME native_dnn_composite_loss_smoke COMMAND native_dnn_composite_loss_smoke)
