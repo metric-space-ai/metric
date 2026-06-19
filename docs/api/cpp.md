@@ -99,6 +99,7 @@ auto neighbors = metric::find_neighbors(space, std::string("cut"), 2);
 auto indexed = metric::find_neighbors(space, std::string("cut"), 2, metric::strategies::cover_tree{});
 auto groups = metric::find_groups(space, metric::strategies::k_medoids(2));
 auto density_groups = metric::find_groups(space, metric::strategies::dbscan(1.0, 2));
+auto outliers = metric::find_outliers(space, metric::strategies::dbscan(1.0, 2));
 auto representatives = metric::find_representatives(space, 2, metric::strategies::farthest_first{});
 auto dependency = metric::compare(space, space, metric::strategies::mgc{});
 auto structure = metric::describe_structure(space);
@@ -111,6 +112,8 @@ The first runtime policy surface is available through `<metric/engine.hpp>` unde
 `describe_structure` returns `metric::StructureDescription<Distance>` from `<metric/engine.hpp>` with exact all-pairs metadata: record count, evaluated pair count, zero-distance pair count, minimum nonzero distance, maximum distance, average distance, and intrinsic-dimension estimate.
 
 `find_representatives` returns `metric::RepresentativeSet<Distance>` from `<metric/engine.hpp>` with selected source `RecordId`s, nearest-representative distances for every record, coverage radius, and average nearest-representative distance. The first promoted strategy is `metric::strategies::farthest_first`.
+
+`find_outliers` returns `metric::OutlierResult<Score>` from `<metric/engine.hpp>` with source `RecordId`s and deterministic isolation scores. The first promoted strategy is DBSCAN-noise detection through `metric::strategies::dbscan`.
 
 The first engine mapping adapters live under `metric::mappings`. `make_clustered_space_mapping(clustering)` follows the `fit(space) -> model` and `model.transform(space) -> MappingResult<DerivedSpace>` convention. The derived clustered space stores one record per non-noise cluster, keeps the source `RecordId` lineage in `source_records`, uses the cluster representative distance as the derived metric, and marks inverse reconstruction as unsupported. The PCFA adapter is available through `<metric/mappings/pcfa.hpp>` as `metric::mappings::pcfa(components)`; it produces encoded records, preserves one-to-one source lineage, and exposes explicit `model.inverse_transform(...)` reconstruction when the LAPACK-backed PCFA implementation is available. The semantic reduce helper is available through `<metric/engine.hpp>` or `<metric/intent/reduce.hpp>` as `metric::reduce(space, metric::strategies::pcfa(components))`.
 
@@ -174,7 +177,7 @@ Graph construction terminology for exact, approximate, directed, symmetrized, we
 
 ## Engine Roadmap
 
-The implemented C++ facade currently covers finite-space construction, neighbor access through `metric::Space::from_records` and `neighbors`, and free operator helpers for pairwise distances and neighbor queries. Additional intent names such as `groups`, `embed`, `map`, `reduce`, `denoise`, `outliers`, and `compare` describe the public direction and should be promoted only when they are backed by stable strategies, result objects, examples, and CI.
+The implemented C++ engine facade currently covers `MetricSpace` construction, representation adapters, neighbors, groups, representatives, outliers, compare/correlate, describe, PCFA-backed reduce, clustered-space mapping, and runtime policy scaffolding. Additional intent names such as `embed`, `map`, and `denoise` describe the public direction and should be promoted only when they are backed by stable strategies, result objects, examples, and CI.
 
 ## Compatibility Names
 
