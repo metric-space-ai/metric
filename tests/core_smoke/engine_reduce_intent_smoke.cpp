@@ -4,7 +4,7 @@
 #include <vector>
 
 #include "metric/distance.hpp"
-#include "metric/intent/reduce.hpp"
+#include "metric/engine.hpp"
 
 namespace {
 
