@@ -1438,7 +1438,7 @@ def compress_space(records, metric, count=None, strategy=None, *, representation
     )
 
 
-def map_space(records, transform, metric):
+def map_space(records, transform, metric, *, representation="metric_space"):
     """Map records through a deterministic transform and return a new Space."""
     if not callable(transform):
         raise TypeError("transform must be callable")
@@ -1459,7 +1459,7 @@ def map_space(records, transform, metric):
         operator_name="map",
         mapping="deterministic_transform",
         strategy="deterministic_transform",
-        representation="metric_space",
+        representation=representation,
         inverse_supported=False,
     )
 
