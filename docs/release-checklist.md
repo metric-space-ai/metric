@@ -20,6 +20,7 @@ This checklist defines the minimum release gates for METRIC.
 - core C++ CI passes on Linux, macOS, and Windows
 - C++ install/export consumer passes with `find_package(panda_metric)`
 - Python wheel CI passes on supported CPython versions
+- PyPI publishing workflow builds and checks supported wheels before upload
 - release artifact workflow passes for the release tag
 - promoted C++ and Python examples run in CI
 - docs and formatting CI passes
@@ -77,11 +78,23 @@ python -m build ./python --sdist --outdir wheelhouse
 METRIC_PYTHON_USE_BLAS=OFF python -m pip wheel wheelhouse/*.tar.gz --no-deps -w wheelhouse
 ```
 
+PyPI publishing workflow:
+
+```shell
+gh workflow run publish-python.yml \
+  --repo metric-space-ai/metric \
+  -f ref=v0.3.0 \
+  -f publish=false
+```
+
+Use `publish=true` only after confirming the target package index, credentials, and package ownership.
+
 ## Artifacts
 
 - source archive from the release tag, produced by `.github/workflows/release-artifacts.yml`
 - C++ install/export smoke evidence from CI
 - Python wheel artifacts for supported CPython versions
+- PyPI-compatible wheels from `.github/workflows/publish-python.yml`
 - Python source distribution artifact
 - public Pages artifact from `docs/site/`
 - release notes

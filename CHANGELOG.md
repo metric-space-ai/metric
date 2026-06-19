@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### Packaging and Build
+
+- Add a manual PyPI publishing workflow that builds a checked source distribution and cibuildwheel-generated CPython 3.10 through 3.14 wheels before uploading with repository PyPI credentials.
+
 ## [0.3.0] - 2026-06-19
 
 ### API Changes

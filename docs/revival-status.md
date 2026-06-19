@@ -24,6 +24,7 @@ The current local tree implements the first revival slice:
 - documentation for concepts, APIs, examples, stability, testing, and release gates
 - CI workflows for C++ core, Python wheels, docs/formatting, and GitHub Pages artifacts
 - release artifact workflow for source archive, Python sdist, Python wheel built from that sdist, and C++ core/downstream evidence
+- manual PyPI publishing workflow for checked sdist and cibuildwheel wheel artifacts
 - manual-only legacy workflows for broad historical coverage
 
 ## Current Local Verification
@@ -113,7 +114,7 @@ The final release tag and GitHub release were checked on 2026-06-19:
 - tag CI runs for docs/formatting, C++ core smoke, and Python core wheels completed successfully
 - the release assets include `metric-v0.3.0.tar.gz`, `metric_space-0.3.0.tar.gz`, and `metric_space-0.3.0-cp312-cp312-linux_x86_64.whl`
 
-The remaining external release action is to publish the `metric-space` Python source distribution and wheel to PyPI after confirming package ownership or Trusted Publishing. The repository still contains only a legacy manual TestPyPI workflow, and no local Twine credentials were present during the 2026-06-19 release check.
+The remaining external release action is to publish the `metric-space` Python source distribution and wheels to PyPI after confirming package ownership or Trusted Publishing. The repository has a manual PyPI publishing workflow backed by repository PyPI credentials; no local Twine credentials were present during the 2026-06-19 release check.
 
 ## Historical Code Policy
 
