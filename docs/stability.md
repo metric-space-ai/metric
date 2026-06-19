@@ -14,7 +14,7 @@ The Core Revival API is the currently promoted, CI-tested entry point.
 - C++ metric adapter: `metric::Metric<Record, Callable>` and `metric::make_metric<Record>(callable)`
 - C++ engine skeleton: `metric::MetricSpace`, `metric::RecordId`, `metric::Neighbor`, `metric::metric_traits`, `metric::MetricCallable`, `metric::MetricSpaceLike`, `metric::DistanceProvider`, `metric::NeighborSearchIndex`, `metric::GraphTopology`, and `metric::make_space`
 - C++ engine representation adapters: `metric::representations::ImplicitDistanceProvider`, `MatrixCache`, `CoverTreeIndex`, `KnnGraphIndex`, and `GraphTopology`
-- C++ engine runtime policy scaffolding: `metric::runtime::policy`, `RuntimeDiagnostics`, `exact`, `approximate`, `lazy`, `materialized`, `serial`, `parallel`, `diagnostics`, and `cache`
+- C++ engine runtime policy scaffolding: `metric::runtime::policy`, `RuntimeDiagnostics`, `exact`, `approximate`, `lazy`, `materialized`, `serial`, `parallel`, `diagnostics`, `diagnostics_for_metric`, `diagnostics_for_space`, and `cache`
 - C++ engine nearest operators: `metric::NeighborSet`, `metric::operators::knn`, and `metric::operators::range`
 - C++ engine clustering operators: `metric::ClusteringResult`, `metric::operators::kmedoids`, `metric::operators::dbscan`, and `metric::operators::affinity_propagation`
 - C++ engine diagnostic/statistical operators: `metric::StructureDescription`, `metric::EntropyResult`, `metric::CorrelationResult`, `metric::describe_structure`, `metric::operators::entropy`, and `metric::operators::mgc`

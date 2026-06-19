@@ -20,6 +20,8 @@ auto policy = metric::runtime::materialized(metric::runtime::exact());
 auto info = metric::runtime::diagnostics(policy, {}, "neighbors");
 ```
 
+Metrics are treated as thread-safe by default. A metric can specialize `metric::metric_traits<Metric>` with `thread_safe = false` to reject `runtime::parallel(...)` execution until it provides a safe implementation. `runtime::diagnostics_for_metric<Metric>(...)` and `runtime::diagnostics_for_space(space, ...)` report the unsupported state with a reason.
+
 ## Neighbor Execution
 
 `runtime::exact()` uses the lazy metric-space path for neighbor lookup.
@@ -67,7 +69,7 @@ auto after = matrix.is_stale();
 ## Current Limits
 
 - Approximate policies are explicit placeholders until backed by real approximate execution paths.
-- Parallel policy metadata is exposed before broad parallel execution is implemented.
+- Parallel policy metadata is exposed before broad parallel execution is implemented, and non-thread-safe metric traits reject parallel runtime policies.
 - C++ and Python runtime diagnostics report policy and representation metadata; they do not yet switch execution to approximate or broadly parallel implementations.
 
 This conservative behavior is intentional: no hidden all-pairs materialization or approximate search should happen without an explicit policy or documented default.
