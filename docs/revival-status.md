@@ -96,7 +96,7 @@ The current local tree implements the first revival slice:
 - CI workflows for C++ core, Python wheels, docs/formatting, revived-source formatting, and GitHub Pages artifacts
 - release artifact workflow for source archive, Python sdist, Python wheel built from that sdist, and C++ core/downstream evidence
 - manual PyPI publishing workflow for checked sdist and cibuildwheel wheel artifacts, with repository-secret and Trusted Publishing authentication paths
-- promoted Python examples for strings, structured records, time-series alignment, and histogram transport, with subprocess execution from the core Python API tests
+- promoted Python examples for strings, structured records, time-series alignment, histogram transport, representative selection, and engine workflows, with subprocess execution from the core Python API tests
 - manual-only legacy workflows for broad historical coverage
 
 ## Current Local Verification
@@ -125,7 +125,7 @@ python -m pip install --upgrade build
 python -m build ./python --sdist --outdir build/wheelhouse-revival
 METRIC_PYTHON_USE_BLAS=OFF python -m pip wheel build/wheelhouse-revival/*.tar.gz --no-deps -w build/wheelhouse-revival
 python -m pip install --force-reinstall build/wheelhouse-revival/*.whl
-for example in python/examples/metric_space/*.py; do
+for example in python/examples/metric_space/*.py python/examples/engine/*.py; do
   PYTHONDONTWRITEBYTECODE=1 python "$example"
 done
 PYTHONDONTWRITEBYTECODE=1 python -m unittest discover -s python/tests/core -v
