@@ -55,6 +55,7 @@ The current local tree implements the first revival slice:
 - initial C++ engine describe intent with exact finite-space structure diagnostics
 - initial C++ engine reduce intent backed by the PCFA strategy
 - initial C++ engine outlier intent backed by DBSCAN-noise detection with named result objects
+- initial C++ engine map intent for deterministic transforms into derived metric spaces
 - C++ engine umbrella header exposure for the PCFA-backed reduce intent
 - initial C++ engine runtime policy scaffolding for exact lazy/materialized neighbor execution and representation-cache staleness
 - initial C++ engine mapping conventions with `MappingResult` lineage metadata and clustered-space derivation
@@ -243,6 +244,7 @@ The following revival improvements landed on `master` after the `v0.3.2` tag and
 - API and stability documentation for the promoted C++ and Python outlier intent surface, merged as `ce1beaf44f9b3319cccceb4273d2823b20affce5`
 - Python engine-style Space reduce intent with named `ReductionResult` objects, representative/medoid strategy coverage, and API/stability docs, merged as `c24069575071a228363220a00ff1fb0299307f29`
 - Python engine-style Space map intent with named `MappingResult` objects, deterministic transform coverage, and API/stability docs, merged as `e5d2f796c8eb842a5e784160acdf9b87baef10de`
+- C++ engine map intent with `MappingResult` lineage metadata, deterministic transform smoke coverage, and API/stability docs, merged as `4cd6144e25761225fd1362dd3f5ae9e501f4859a`
 
 ## Historical Code Policy
 
