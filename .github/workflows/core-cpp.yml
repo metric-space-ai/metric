@@ -43,6 +43,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install Linux LAPACK dependencies
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libblas-dev liblapack-dev
+
       - name: Configure
         run: cmake --preset core
 

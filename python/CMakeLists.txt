@@ -99,11 +99,6 @@ if (METRIC_PYTHON_BUILD_FULL)
     find_package(Boost REQUIRED)
 endif ()
 
-if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-else ()
-    find_package(PkgConfig REQUIRED)
-endif ()
-
 add_library(base_python_module INTERFACE)
 target_include_directories(base_python_module INTERFACE
     ${SOURCE_PATH}

@@ -12,6 +12,7 @@ Copyright (c) 2018 Michael Welsch
 #include <algorithm>
 #include <cmath>
 #include <functional>
+#include <mutex>
 #include <sstream>
 #include <stdexcept>
 #include <type_traits>

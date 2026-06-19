@@ -33,6 +33,7 @@ option(METRIC_BUILD_EXAMPLES "Build C++ examples" OFF)
 option(METRIC_BUILD_BENCHMARKS "Build C++ benchmarks" OFF)
 option(METRIC_BUILD_PYTHON "Build Python bindings from the top-level CMake project" OFF)
 option(METRIC_FETCH_DEPS "Fetch missing C++ dependencies with CMake FetchContent" OFF)
+option(METRIC_BUILD_LAPACK_CORE "Build LAPACK-dependent core smoke targets when LAPACK is available" ON)
 
 if (CMAKE_SYSTEM_NAME MATCHES Windows)
     if (CMAKE_SYSTEM_PROCESSOR MATCHES ".*64$")
@@ -55,6 +56,12 @@ set(METRIC_INSTALL_BUNDLED_CEREAL OFF)
 
 # LAPACK
 find_package(LAPACK QUIET)
+set(METRIC_BUILD_CORE_ENTROPY OFF)
+if (METRIC_BUILD_LAPACK_CORE AND LAPACK_FOUND)
+    set(METRIC_BUILD_CORE_ENTROPY ON)
+elseif (METRIC_BUILD_LAPACK_CORE)
+    message(STATUS "LAPACK not found; skipping LAPACK-dependent entropy core targets")
+endif ()
 
 # Json
 find_package(nlohmann_json QUIET)

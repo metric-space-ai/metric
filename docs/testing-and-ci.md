@@ -31,8 +31,8 @@ The core tests cover:
 - metric contract checks
 - matrix, graph, and tree consistency
 - MGC regression values
-- entropy regression values
-- promoted examples for strings, custom metrics, explicit representations, TWED, EMD, entropy, and MGC
+- entropy regression values when LAPACK is available
+- promoted examples for strings, custom metrics, explicit representations, TWED, EMD, MGC, and entropy when LAPACK is available
 
 ## Extended and Historical Tests
 

@@ -81,6 +81,7 @@ ctest --test-dir build/core --output-on-failure
 - `METRIC_BUILD_BENCHMARKS`: build benchmarks. Default: `OFF`.
 - `METRIC_BUILD_PYTHON`: build the Python bindings from the top-level CMake project. Default: `OFF`.
 - `METRIC_FETCH_DEPS`: fetch missing C++ dependencies with `FetchContent`. Default: `OFF`.
+- `METRIC_BUILD_LAPACK_CORE`: build LAPACK-dependent core entropy smoke targets when LAPACK is available. Default: `ON`.
 
 The recommended Python package path remains:
 
