@@ -4,7 +4,18 @@ The core wheel currently guarantees the edit-distance binding. Legacy standard
 distance bindings are re-exported when the full extension set is available.
 """
 
+from typing import Protocol, runtime_checkable
+
 from metric.distance import Edit
+
+
+@runtime_checkable
+class Metric(Protocol):
+    """Protocol for Python metric callables accepted by Space."""
+
+    def __call__(self, lhs: object, rhs: object):
+        ...
+
 
 try:
     from metric.distance import Chebyshev, Euclidean, Manhattan, Manhatten, P_norm
@@ -35,6 +46,7 @@ default = frozenset(name.lower() for name in available())
 __all__ = [
     "Edit",
     "Euclidean",
+    "Metric",
     "Manhattan",
     "Manhatten",
     "Chebyshev",

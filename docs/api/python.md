@@ -20,6 +20,7 @@ The records are strings. Edit distance defines the geometry without an embedding
 
 ## Core Objects
 
+- `Metric`: runtime-checkable protocol for Python metric callables
 - `metrics`: standard metric constructors
 - `Space`: minimal intent-first finite metric space facade
 - `FiniteMetricSpace`: finite metric space over records
@@ -254,7 +255,7 @@ The implemented facade currently covers matrix/tree/graph representation views, 
 
 ## Error Model
 
-Public Python error classes live in `metric.exceptions` and are re-exported from `metric`, starting with `MetricError` and `UnsupportedOperationError`. Core result objects use these errors for explicit unsupported operations such as inverse reconstruction on lossy reductions, compression, deterministic maps, and denoise filters.
+Public Python error classes live in `metric.exceptions` and are re-exported from `metric`, starting with `MetricError`, `MissingMetricError`, and `UnsupportedOperationError`. `Space(records)` without a metric raises `MissingMetricError` with an explicit construction example. Core result objects use these errors for explicit unsupported operations such as inverse reconstruction on lossy reductions, compression, deterministic maps, and denoise filters.
 
 ## Compatibility
 
