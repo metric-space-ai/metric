@@ -141,6 +141,41 @@ class RevivalApiTest(unittest.TestCase):
         self.assertAlmostEqual(pairwise_distance_matrix(records, structured_record_distance)[0][1], 0.25)
         self.assertMetricContracts(records, structured_record_distance)
 
+    def test_time_series_records_use_alignment_metric_callable(self):
+        gap_cost = 2.0
+        records = [
+            (0, 1, 1, 1, 2, 3),
+            (0, 0, 1, 1, 1, 2, 3),
+            (2, 2, 2, 2, 2, 2),
+            (0, 1, 6, 1, 2, 3),
+        ]
+        query = (0, 1, 1, 1, 2, 4)
+
+        def aligned_curve_distance(lhs, rhs):
+            previous = [index * gap_cost for index in range(len(rhs) + 1)]
+            for lhs_index, lhs_value in enumerate(lhs, start=1):
+                current = [lhs_index * gap_cost] + [0.0] * len(rhs)
+                for rhs_index, rhs_value in enumerate(rhs, start=1):
+                    substitute = previous[rhs_index - 1] + min(
+                        abs(lhs_value - rhs_value),
+                        2 * gap_cost,
+                    )
+                    delete = previous[rhs_index] + gap_cost
+                    insert = current[rhs_index - 1] + gap_cost
+                    current[rhs_index] = min(substitute, delete, insert)
+                previous = current
+
+            return previous[-1]
+
+        space = Space(records, aligned_curve_distance)
+
+        self.assertEqual(space.nearest(query), (0, 1.0))
+        self.assertEqual(space.distance(0, 1), 2.0)
+        self.assertEqual(space.distance(0, 2), 6.0)
+        self.assertEqual(pairwise_distance_matrix(records, aligned_curve_distance)[3][2], 9.0)
+        self.assertGreater(intrinsic_dimension(records, aligned_curve_distance), 0.0)
+        self.assertMetricContracts(records, aligned_curve_distance)
+
 
 if __name__ == "__main__":
     unittest.main()
