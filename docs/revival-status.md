@@ -18,7 +18,7 @@ The current local tree implements the first revival slice:
 - Python core facade modules under `metric.metrics`, `metric.spaces`, and `metric.operators`
 - Python core facade exposes a runtime-checkable `metric.Metric` protocol and explicit missing-metric errors
 - Python Space facade exposes stable `ids`, `record(...)`, `pairwise(...)`, and DataFrame-like construction
-- Python runtime facade exposes `RuntimePolicy`, `CachePolicy`, and `runtime=` on promoted Space intent methods
+- Python runtime facade exposes `RuntimePolicy`, `CachePolicy`, and `runtime=` on promoted Space intent methods with materialized grouping representation metadata
 - Python runtime facade exposes `RuntimeDiagnostics` with policy, support, and representation metadata
 - Python engine facade modules under `metric.intent` and `metric.representations`
 - Python representation facade exposes `Space.to_matrix()`, `Space.to_tree()`, and `Space.to_graph(count=...)`
@@ -314,6 +314,7 @@ The following revival improvements landed on `master` after the `v0.3.2` tag and
 - Python `Space.from_dataframe(...)`, stable `Space.ids`, `Space.record(...)`, and `Space.pairwise(...)` helpers, merged as `327259e5fc4b1ee1c3e1d6b724ee38021bae434e`
 - Python `metric.runtime` facade with `RuntimePolicy`, `CachePolicy`, and `runtime=` intent parameters, merged as `f111cb27ce950759bfbcbc13004ad9420e54da25`
 - Python `RuntimeDiagnostics`, `runtime_diagnostics(...)`, and `Space.runtime_diagnostics(...)` support and representation metadata, merged as `2822c80957fcdd54cf402db47fd0d015becd72c9`
+- Python `Space.groups(..., runtime=RuntimePolicy(cache="materialized"))` materialized representation metadata and approximate-runtime rejection, merged as `139dbd72e8af4a4a7e9127738e46db63cb34021e`
 - Python `Space.groups(count=...)` and `Space.groups(radius=...)` strategy-free grouping facade, merged as `457c74257fc908ff86ac0e7262f2957159cf9459`
 - Python queryless `Space.neighbors(...)`, `include_self`, and radius/count capped neighbor results, merged as `6acbf2357d0071d5d7fe4bc87e8020ccc3d4718b`
 - Python strategy-free `Space.outliers(count=...)`, `fraction`, and `threshold` facade, merged as `376e45480dcdb3abaaab6aa972d32f4373b0744c`
