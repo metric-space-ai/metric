@@ -25,9 +25,10 @@ The current engine mapping layer includes:
 - clustered-space mapping from `ClusteringResult`
 - LAPACK-backed PCFA mapping
 - PCFA-backed `metric::reduce`
+- DBSCAN-noise-filtered `metric::denoise`
 - deterministic Python `Space.map`
 
-`MappingResult` stores the derived space plus source-record lineage. Inverse reconstruction is explicit and optional.
+`MappingResult` stores the derived space plus source-record lineage. Inverse reconstruction is explicit and optional. The C++ `metric::denoise` intent also returns a `MappingResult`, preserving one-to-one lineage for non-noise records kept after DBSCAN noise filtering.
 
 ## Python Status
 

@@ -133,7 +133,7 @@ Result objects preserve:
 
 The first engine result objects are `metric::NeighborSet<Distance>`, returned by nearest-neighbor operators over spaces, distance providers, and neighbor indexes; `metric::ClusteringResult<Distance>`, returned by k-medoids and DBSCAN grouping operators; `metric::RepresentativeSet<Distance>`, returned by representative-selection intents; `metric::OutlierResult<Score>`, returned by outlier-detection intents; `metric::StructureDescription<Distance>`, returned by exact structure diagnostics; `metric::EntropyResult<double>`, returned by entropy diagnostics; `metric::CorrelationResult<double>`, returned by MGC cross-space statistics; and `metric::MappingResult<DerivedSpace>`, returned by mapping adapters that produce derived metric spaces.
 
-The first C++ intent helpers are `metric::find_neighbors`, `metric::find_groups`, `metric::find_representatives`, `metric::find_outliers`, `metric::describe_structure`, `metric::compare`, `metric::correlate`, deterministic `metric::map`, and the PCFA-backed `metric::reduce` helper in `<metric/intent/reduce.hpp>`. They keep the user-facing vocabulary semantic while routing to explicit strategy objects such as `metric::strategies::cover_tree`, `metric::strategies::matrix_cache`, `metric::strategies::k_medoids`, `metric::strategies::dbscan`, `metric::strategies::farthest_first`, `metric::strategies::mgc`, and `metric::strategies::pcfa`.
+The first C++ intent helpers are `metric::find_neighbors`, `metric::find_groups`, `metric::find_representatives`, `metric::find_outliers`, `metric::describe_structure`, `metric::compare`, `metric::correlate`, deterministic `metric::map`, DBSCAN-backed `metric::denoise`, and the PCFA-backed `metric::reduce` helper in `<metric/intent/reduce.hpp>`. They keep the user-facing vocabulary semantic while routing to explicit strategy objects such as `metric::strategies::cover_tree`, `metric::strategies::matrix_cache`, `metric::strategies::k_medoids`, `metric::strategies::dbscan`, `metric::strategies::farthest_first`, `metric::strategies::mgc`, and `metric::strategies::pcfa`.
 
 The first C++ mapping adapters are `metric::mappings::make_clustered_space_mapping`, deterministic `metric::map`, and the PCFA adapter in `<metric/mappings/pcfa.hpp>`. They fit or transform source spaces into derived metric spaces while preserving source `RecordId` lineage.
 
@@ -146,7 +146,7 @@ The first C++ mapping adapters are `metric::mappings::make_clustered_space_mappi
 | `embed` | Show this space in coordinates. | MDS, diffusion embedding, PCFA |
 | `map` | Learn or apply a transformation to another space. | deterministic transforms, PCFA, PHATE-AE-style mapping |
 | `reduce` | Make the space smaller or cheaper while preserving structure. | representatives, medoids, PCFA, SOM |
-| `denoise` | Remove local noise or manifold artifacts. | graph smoothing, reverse diffusion |
+| `denoise` | Remove local noise or manifold artifacts. | DBSCAN noise filter, graph smoothing, reverse diffusion |
 | `outliers` | Which records are unusual? | local density, DBSCAN noise, KOC/manifold distance |
 | `compare` | Are two metric spaces related? | MGC, distance correlation |
 
