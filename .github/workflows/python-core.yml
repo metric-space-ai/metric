@@ -54,9 +54,12 @@ jobs:
         shell: bash
         run: python -m pip install wheelhouse/*.whl
 
-      - name: Run metric-space smoke example
+      - name: Run metric-space smoke examples
         shell: bash
-        run: python python/examples/metric_space/string_edit_space.py
+        run: |
+          for example in python/examples/metric_space/*.py; do
+            python "$example"
+          done
 
       - name: Run core Python API tests
         shell: bash
