@@ -65,6 +65,7 @@ from metric.operators import (
     representatives,
     separated_representative_indices,
     separated_representatives,
+    symmetrize_graph,
 )
 
 distances = pairwise_distance_matrix(records, Edit())
@@ -74,6 +75,7 @@ knn_graph = exact_knn_graph(records, Edit(), k=1)
 knn_edges = exact_knn_graph_edges(records, Edit(), k=1)
 radius_graph = exact_radius_graph(records, Edit(), radius=1)
 radius_edges = exact_radius_graph_edges(records, Edit(), radius=1)
+undirected = symmetrize_graph(knn_graph, policy="union", weighting="minimum_distance")
 selected_ids = representative_indices(records, Edit(), k=2)
 selected_records = representatives(records, Edit(), k=2)
 center_id = medoid_index(records, Edit())
@@ -92,6 +94,8 @@ dimension = intrinsic_dimension(records, Edit())
 `separated_representative_indices` and `separated_representatives` scan records in order and keep a candidate when it is at least `minimum_distance` from every selected representative. This is deterministic redundancy-threshold reduction, not an optimal packing proof.
 
 `exact_knn_graph` and `exact_radius_graph` return `GraphConstructionResult` objects with `.edges` and `.metadata`. The metadata records the construction strategy, record count, edge count, directed/self-loop/exact policy, the active `k` or `radius` parameter, edge payload meaning, symmetrization policy, normalization policy, and the tie-breaking rule. `exact_knn_graph_edges` and `exact_radius_graph_edges` remain convenience helpers that return only directed edge tuples shaped as `(source_index, target_index, distance)`. Exact graph helpers exclude self-loops, preserve source-record order, and resolve equal kNN distances by target record order.
+
+`symmetrize_graph` converts a graph construction result to undirected `source_index < target_index` edges. The supported symmetrization policies are `union` and `mutual`; the supported reciprocal weighting policies are `minimum_distance` and `maximum_distance`. The returned metadata records the selected symmetrization and weighting policies.
 
 `coverage_representative_indices` and `coverage_representatives` use deterministic greedy radius coverage. They scan records in order, choose the first uncovered record as a representative, and mark every record within `radius` as covered.
 

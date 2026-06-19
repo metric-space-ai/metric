@@ -27,6 +27,7 @@ from metric.operators import (
     representatives,
     separated_representative_indices,
     separated_representatives,
+    symmetrize_graph,
 )
 from metric.spaces import FiniteMetricSpace, MatrixSpace, Space
 
@@ -73,6 +74,7 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIs(metric.operators.representatives, representatives)
         self.assertIs(metric.operators.separated_representative_indices, separated_representative_indices)
         self.assertIs(metric.operators.separated_representatives, separated_representatives)
+        self.assertIs(metric.operators.symmetrize_graph, symmetrize_graph)
         self.assertIs(metric.operators.coverage_representative_indices, coverage_representative_indices)
         self.assertIs(metric.operators.coverage_representatives, coverage_representatives)
         self.assertIs(metric.mappings, mappings)
@@ -92,6 +94,7 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIs(metric.representatives, representatives)
         self.assertIs(metric.separated_representative_indices, separated_representative_indices)
         self.assertIs(metric.separated_representatives, separated_representatives)
+        self.assertIs(metric.symmetrize_graph, symmetrize_graph)
         self.assertIs(metric.coverage_representative_indices, coverage_representative_indices)
         self.assertIs(metric.coverage_representatives, coverage_representatives)
         self.assertIs(metric.FiniteMetricSpace, FiniteMetricSpace)
@@ -112,6 +115,7 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIn("representatives", metric.__all__)
         self.assertIn("separated_representative_indices", metric.__all__)
         self.assertIn("separated_representatives", metric.__all__)
+        self.assertIn("symmetrize_graph", metric.__all__)
         self.assertIn("coverage_representative_indices", metric.__all__)
         self.assertIn("coverage_representatives", metric.__all__)
         self.assertEqual(mappings.STABILITY, "beta")
@@ -213,9 +217,54 @@ class RevivalApiTest(unittest.TestCase):
         self.assertEqual(knn_graph.metadata.k, 1)
         self.assertIsNone(knn_graph.metadata.radius)
         self.assertEqual(knn_graph.metadata.edge_payload, "metric_distance")
+        self.assertEqual(knn_graph.metadata.weighting, "none")
         self.assertEqual(knn_graph.metadata.symmetrization, "none")
         self.assertEqual(knn_graph.metadata.normalization, "none")
         self.assertEqual(knn_graph.metadata.tie_break, "distance_then_target_index")
+
+        union_graph = symmetrize_graph(knn_graph, policy="union", weighting="minimum_distance")
+        self.assertEqual(
+            list(union_graph.edges),
+            [(0, 3, 0.5), (1, 3, 0.5), (1, 4, 0.5), (2, 4, 1.5)],
+        )
+        self.assertFalse(union_graph.metadata.directed)
+        self.assertEqual(union_graph.metadata.edge_count, len(union_graph.edges))
+        self.assertEqual(union_graph.metadata.weighting, "minimum_distance")
+        self.assertEqual(union_graph.metadata.symmetrization, "union")
+        self.assertEqual(union_graph.metadata.tie_break, "source_index_then_target_index")
+
+        mutual_graph = symmetrize_graph(knn_graph, policy="mutual", weighting="minimum_distance")
+        self.assertEqual(list(mutual_graph.edges), [(0, 3, 0.5)])
+        self.assertEqual(mutual_graph.metadata.symmetrization, "mutual")
+
+        asymmetric_graph = GraphConstructionResult(
+            edges=((0, 1, 5), (1, 0, 3), (1, 2, 4)),
+            metadata=GraphConstructionMetadata(
+                strategy="synthetic",
+                record_count=3,
+                edge_count=3,
+                directed=True,
+                self_loops=False,
+                exact=True,
+                edge_payload="metric_distance",
+                weighting="none",
+                symmetrization="none",
+                normalization="none",
+            ),
+        )
+        self.assertEqual(
+            list(symmetrize_graph(asymmetric_graph, policy="union", weighting="minimum_distance").edges),
+            [(0, 1, 3), (1, 2, 4)],
+        )
+        self.assertEqual(
+            list(symmetrize_graph(asymmetric_graph, policy="union", weighting="maximum_distance").edges),
+            [(0, 1, 5), (1, 2, 4)],
+        )
+        with self.assertRaises(ValueError):
+            symmetrize_graph(asymmetric_graph, policy="invalid", weighting="minimum_distance")
+        with self.assertRaises(ValueError):
+            symmetrize_graph(asymmetric_graph, policy="union", weighting="average_distance")
+
         self.assertEqual(
             exact_radius_graph_edges(records, cumulative_transport_distance, 0.5),
             [(0, 3, 0.5), (1, 3, 0.5), (1, 4, 0.5), (3, 0, 0.5), (3, 1, 0.5), (4, 1, 0.5)],
@@ -232,6 +281,7 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIsNone(radius_graph.metadata.k)
         self.assertEqual(radius_graph.metadata.radius, 0.5)
         self.assertEqual(radius_graph.metadata.edge_payload, "metric_distance")
+        self.assertEqual(radius_graph.metadata.weighting, "none")
         self.assertEqual(radius_graph.metadata.symmetrization, "none")
         self.assertEqual(radius_graph.metadata.normalization, "none")
         self.assertEqual(radius_graph.metadata.tie_break, "source_then_target_index")

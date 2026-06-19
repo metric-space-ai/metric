@@ -80,10 +80,10 @@ Current promoted base:
 - Graph construction terminology documents exact versus approximate graph construction, directed versus symmetrized edges, edge payload meanings, normalization policies, and promotion requirements.
 - C++ and Python `exact_knn_graph_edges` / `exact_radius_graph_edges` expose deterministic directed edge-list fixtures backed by exhaustive pairwise distances.
 - C++ and Python `exact_knn_graph` / `exact_radius_graph` return graph construction result objects with directed edge lists and construction metadata.
+- C++ and Python `symmetrize_graph` promotes deterministic `union` and `mutual` policies with minimum-distance and maximum-distance reciprocal weighting.
 
 Candidate strategies:
 
-- symmetrization and weighting policies
 - sparsification primitives with documented assumptions
 - graph diagnostics such as connectivity, degree distribution, and edge stretch
 
@@ -183,6 +183,6 @@ The revival should not:
 Near-term branches should stay small and evidence-driven:
 
 - add k-medoids or compression-summary representative fixtures now that farthest-first, medoid, separated, and radius-coverage fixtures exist
-- add graph symmetrization and weighting policies
+- add graph sparsification primitives with documented assumptions
 - add MGC interpretation docs for paired metric spaces
 - add an industrial-record fixture that combines strings, process curves, histograms, and numeric penalties

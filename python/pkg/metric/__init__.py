@@ -38,6 +38,7 @@ from .operators import (
     representatives,
     separated_representative_indices,
     separated_representatives,
+    symmetrize_graph,
 )
 from .spaces import FiniteMetricSpace, MatrixSpace, Space
 

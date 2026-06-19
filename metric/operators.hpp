@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
+#include <map>
 #include <optional>
 #include <stdexcept>
 #include <string>
@@ -39,6 +40,7 @@ template <typename Distance, typename RadiusValue = Distance> struct GraphConstr
 	std::optional<std::size_t> k;
 	std::optional<RadiusValue> radius;
 	std::string edge_payload;
+	std::string weighting;
 	std::string symmetrization;
 	std::string normalization;
 	std::string tie_break;
@@ -88,6 +90,7 @@ auto exact_knn_graph(const Container &records, Metric distance, std::size_t k)
 	result.metadata.exact = true;
 	result.metadata.k = k;
 	result.metadata.edge_payload = "metric_distance";
+	result.metadata.weighting = "none";
 	result.metadata.symmetrization = "none";
 	result.metadata.normalization = "none";
 	result.metadata.tie_break = "distance_then_target_index";
@@ -164,6 +167,7 @@ auto exact_radius_graph(const Container &records, Metric distance, Radius radius
 	result.metadata.exact = true;
 	result.metadata.radius = static_cast<comparison_type>(radius);
 	result.metadata.edge_payload = "metric_distance";
+	result.metadata.weighting = "none";
 	result.metadata.symmetrization = "none";
 	result.metadata.normalization = "none";
 	result.metadata.tie_break = "source_then_target_index";
@@ -193,6 +197,91 @@ auto exact_radius_graph_edges(const Container &records, Metric distance, Radius 
 		std::tuple<std::size_t, std::size_t, typename detail::finite_space_t<Container, Metric>::distance_type>>
 {
 	return exact_radius_graph(records, std::move(distance), radius).edges;
+}
+
+template <typename Distance, typename RadiusValue>
+auto symmetrize_graph(const GraphConstructionResult<Distance, RadiusValue> &graph,
+					  const std::string &policy = "union",
+					  const std::string &weighting = "minimum_distance")
+	-> GraphConstructionResult<Distance, RadiusValue>
+{
+	if (policy != "union" && policy != "mutual") {
+		throw std::invalid_argument("symmetrization policy must be 'union' or 'mutual'");
+	}
+	if (weighting != "minimum_distance" && weighting != "maximum_distance") {
+		throw std::invalid_argument("weighting policy must be 'minimum_distance' or 'maximum_distance'");
+	}
+
+	struct Accumulator {
+		std::optional<Distance> forward;
+		std::optional<Distance> reverse;
+	};
+
+	auto merge_weight = [&weighting](Distance lhs, Distance rhs) {
+		if (weighting == "minimum_distance") {
+			return std::min(lhs, rhs);
+		}
+		return std::max(lhs, rhs);
+	};
+
+	auto assign_weight = [&merge_weight](std::optional<Distance> &slot, Distance value) {
+		if (slot.has_value()) {
+			slot = merge_weight(slot.value(), value);
+		} else {
+			slot = value;
+		}
+	};
+
+	std::map<std::pair<std::size_t, std::size_t>, Accumulator> edge_accumulators;
+	for (const auto &edge : graph.edges) {
+		const auto source_index = std::get<0>(edge);
+		const auto target_index = std::get<1>(edge);
+		const auto distance = std::get<2>(edge);
+
+		if (source_index == target_index) {
+			continue;
+		}
+
+		const auto lower_index = std::min(source_index, target_index);
+		const auto upper_index = std::max(source_index, target_index);
+		auto &accumulator = edge_accumulators[{lower_index, upper_index}];
+		if (source_index == lower_index) {
+			assign_weight(accumulator.forward, distance);
+		} else {
+			assign_weight(accumulator.reverse, distance);
+		}
+	}
+
+	GraphConstructionResult<Distance, RadiusValue> result;
+	result.metadata = graph.metadata;
+	result.metadata.directed = false;
+	result.metadata.self_loops = false;
+	result.metadata.symmetrization = policy;
+	result.metadata.weighting = weighting;
+	result.metadata.tie_break = "source_index_then_target_index";
+
+	for (const auto &entry : edge_accumulators) {
+		const auto &key = entry.first;
+		const auto &accumulator = entry.second;
+		const auto has_forward = accumulator.forward.has_value();
+		const auto has_reverse = accumulator.reverse.has_value();
+
+		if (policy == "mutual" && !(has_forward && has_reverse)) {
+			continue;
+		}
+
+		if (has_forward && has_reverse) {
+			result.edges.emplace_back(key.first, key.second,
+									  merge_weight(accumulator.forward.value(), accumulator.reverse.value()));
+		} else if (has_forward) {
+			result.edges.emplace_back(key.first, key.second, accumulator.forward.value());
+		} else {
+			result.edges.emplace_back(key.first, key.second, accumulator.reverse.value());
+		}
+	}
+
+	result.metadata.edge_count = result.edges.size();
+	return result;
 }
 
 template <typename Container, typename Metric>
