@@ -57,7 +57,7 @@ Python wheel verification:
 ```shell
 python -m pip wheel ./python --no-deps -w wheelhouse
 python -m pip install --force-reinstall wheelhouse/*.whl
-for example in python/examples/metric_space/*.py; do
+for example in python/examples/metric_space/*.py python/examples/engine/*.py; do
   python "$example"
 done
 PYTHONDONTWRITEBYTECODE=1 python -m unittest discover -s python/tests/core -v

@@ -54,10 +54,10 @@ jobs:
         shell: bash
         run: python -m pip install wheelhouse/*.whl
 
-      - name: Run metric-space smoke examples
+      - name: Run Python smoke examples
         shell: bash
         run: |
-          for example in python/examples/metric_space/*.py; do
+          for example in python/examples/metric_space/*.py python/examples/engine/*.py; do
             python "$example"
           done
 
