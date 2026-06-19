@@ -9,8 +9,8 @@ requires = [
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "metric-py"
-version = "0.0.6"
+name = "metric-space"
+version = "0.3.0"
 description = "Python bindings and helpers for finite metric-space numerics"
 readme = "README.md"
 requires-python = ">=3.10"
