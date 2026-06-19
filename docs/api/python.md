@@ -13,6 +13,7 @@ records = ["cat", "cot", "coat", "dog"]
 space = Space(records, Edit())
 
 print(space.distance(0, 1))
+print(space.pairwise())
 print(space.neighbors("cut", count=2))
 ```
 
@@ -37,7 +38,13 @@ The records are strings. Edit distance defines the geometry without an embedding
 ```python
 len(space)
 space[index]
+space.ids
+space.records
+space.metric
+space.record(record_id)
 space.distance(lhs_index, rhs_index)
+space.pairwise()
+space.pairwise(ids=[0, 2])
 space.pairwise_distances()
 space.version()
 space.touch()
@@ -69,6 +76,12 @@ space.knn(query, k=10)
 space.nn(query)
 space.rnn(query, radius=1)
 ```
+
+Use `Space.from_dataframe(df, metric=row_metric, id_column="sample_id")` for
+DataFrame-like tabular records. The constructor reads rows through
+`to_dict("records")`, uses `id_column` as stable record IDs, and removes that ID
+column from the row dictionaries passed to the metric. It does not require pandas
+at import time.
 
 ## Operators
 
@@ -237,7 +250,9 @@ space = Space(records, euclidean)
 print(space.distance(0, 1))
 ```
 
-`pairwise_distances()` and `metric.operators.pairwise_distance_matrix()` currently return Python lists of lists. Use `np.asarray(...)` in user code when an ndarray result is needed.
+`pairwise()` and `pairwise_distances()` currently return Python lists of lists.
+Use `np.asarray(...)` in user code when an ndarray result is needed. `pairwise()`
+accepts optional stable record IDs for submatrix extraction.
 
 `to_matrix()` returns a `FiniteMetricSpace` / `MatrixSpace` view with its own cached pairwise distances and the source space version captured at construction. It is useful when code wants to make materialization explicit while keeping the same records and metric callable.
 
