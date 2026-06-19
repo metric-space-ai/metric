@@ -106,11 +106,19 @@ from metric import RuntimePolicy
 
 policy = RuntimePolicy(exact=True, parallel=True, cache="materialized")
 neighbors = space.neighbors("cut", count=2, runtime=policy)
+diagnostics = space.runtime_diagnostics(
+    runtime=policy,
+    representation=space.to_matrix(),
+    intent="neighbors",
+)
 ```
 
 The promoted Python facade currently executes exact deterministic operators. A
 policy with `exact=False` raises `StrategyUnavailableError` instead of silently
-returning approximate results.
+returning approximate results. `RuntimeDiagnostics` and
+`runtime_diagnostics(...)` expose normalized policy metadata, support status,
+cache mode, serial/parallel selection, and the representation used for an
+intent.
 
 ## Operators
 

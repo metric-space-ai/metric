@@ -485,6 +485,15 @@ class Space(FiniteMetricSpace):
     def describe_structure(self, *, representation=None, runtime=None):
         return self.describe(representation=representation, runtime=runtime)
 
+    def runtime_diagnostics(self, *, representation=None, runtime=None, intent=None):
+        from metric.runtime import runtime_diagnostics
+
+        return runtime_diagnostics(
+            runtime,
+            representation=self._representation_name(representation),
+            intent=intent,
+        )
+
     def _compare_records(self, other, align):
         if align == "position":
             return self.records, other.records
