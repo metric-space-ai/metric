@@ -53,6 +53,20 @@ inline auto require_exact_denoise(policy runtime_policy) -> void
 	}
 }
 
+inline auto require_exact_representatives(policy runtime_policy) -> void
+{
+	if (!runtime_policy.is_exact()) {
+		throw std::invalid_argument("approximate representative runtime policy is not implemented");
+	}
+}
+
+inline auto require_exact_compress(policy runtime_policy) -> void
+{
+	if (!runtime_policy.is_exact()) {
+		throw std::invalid_argument("approximate compression runtime policy is not implemented");
+	}
+}
+
 template <typename Metric>
 constexpr auto supports_parallel_metric(policy runtime_policy) noexcept -> bool
 {
@@ -88,6 +102,16 @@ inline auto outlier_representation(policy runtime_policy) -> std::string
 }
 
 inline auto denoise_representation(policy runtime_policy) -> std::string
+{
+	return execution_representation(runtime_policy);
+}
+
+inline auto representative_representation(policy runtime_policy) -> std::string
+{
+	return execution_representation(runtime_policy);
+}
+
+inline auto compression_representation(policy runtime_policy) -> std::string
 {
 	return execution_representation(runtime_policy);
 }

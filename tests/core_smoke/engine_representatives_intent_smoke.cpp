@@ -31,6 +31,18 @@ int main()
 	assert(representatives.strategy == "farthest_first");
 	assert(representatives.representation == "metric_space");
 
+	const auto materialized_policy = metric::runtime::materialized(metric::runtime::exact());
+	const auto materialized = metric::find_representatives(line, 3, materialized_policy);
+	assert(materialized.representation == "matrix_cache");
+	assert(materialized.representatives == representatives.representatives);
+	assert(materialized.nearest_representative_distances == representatives.nearest_representative_distances);
+
+	const auto materialized_seeded =
+		metric::find_representatives(line, 2, metric::strategies::farthest_first(2), materialized_policy);
+	assert(materialized_seeded.representation == "matrix_cache");
+	assert(materialized_seeded[0] == line.id(2));
+	assert(materialized_seeded[1] == line.id(0));
+
 	const auto seeded = metric::find_representatives(line, 2, metric::strategies::farthest_first(2));
 	assert(seeded[0] == line.id(2));
 	assert(seeded[1] == line.id(0));
@@ -55,6 +67,14 @@ int main()
 		rejected_too_many = true;
 	}
 	assert(rejected_too_many);
+
+	bool rejected_approximate_runtime = false;
+	try {
+		(void)metric::find_representatives(line, 2, metric::runtime::approximate());
+	} catch (const std::invalid_argument &) {
+		rejected_approximate_runtime = true;
+	}
+	assert(rejected_approximate_runtime);
 
 	bool rejected_seed = false;
 	try {

@@ -14,23 +14,23 @@
 #include "../core/concepts.hpp"
 #include "../core/metric_space.hpp"
 #include "../core/result.hpp"
+#include "../representations/implicit.hpp"
+#include "../representations/matrix_cache.hpp"
+#include "../runtime/execution.hpp"
 #include "../strategies/representatives.hpp"
 #include "representatives.hpp"
 
 namespace metric::intent {
+namespace detail {
 
-template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
-auto compress(const Space &space, std::size_t count, strategies::farthest_first strategy = {})
+template <typename Space, typename Provider>
+auto compress_from_representatives(const Space &space, const Provider &provider,
+								   const RepresentativeSet<typename Space::distance_type> &representatives)
 	-> CompressionResult<MetricSpace<typename Space::record_type, typename Space::metric_type>>
 {
-	if (count == 0) {
-		throw std::invalid_argument("compression count must be positive");
-	}
-
 	using target_space_type = MetricSpace<typename Space::record_type, typename Space::metric_type>;
 	using result_type = CompressionResult<target_space_type>;
 
-	const auto representatives = find_representatives(space, count, strategy);
 	std::vector<typename Space::record_type> records;
 	records.reserve(representatives.representatives.size());
 	for (const auto id : representatives.representatives) {
@@ -51,7 +51,7 @@ auto compress(const Space &space, std::size_t count, strategies::farthest_first 
 		for (std::size_t representative_index = 0; representative_index < representatives.representatives.size();
 			 ++representative_index) {
 			const auto representative_id = representatives.representatives[representative_index];
-			const auto distance = space.distance(source_id, representative_id);
+			const auto distance = provider.distance(source_id, representative_id);
 			if (!has_best || distance < best_distance ||
 				(distance == best_distance &&
 				 representative_id.index() < representatives.representatives[best_representative_index].index())) {
@@ -81,6 +81,51 @@ auto compress(const Space &space, std::size_t count, strategies::farthest_first 
 					   representatives.representation,
 					   true,
 					   false};
+}
+
+} // namespace detail
+
+template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
+auto compress(const Space &space, std::size_t count, strategies::farthest_first strategy = {})
+	-> CompressionResult<MetricSpace<typename Space::record_type, typename Space::metric_type>>
+{
+	if (count == 0) {
+		throw std::invalid_argument("compression count must be positive");
+	}
+
+	representations::ImplicitDistanceProvider<Space> provider(space);
+	const auto representatives = find_representatives(space, count, strategy);
+	return detail::compress_from_representatives(space, provider, representatives);
+}
+
+template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
+auto compress(const Space &space, std::size_t count, strategies::farthest_first strategy,
+			  runtime::policy runtime_policy)
+	-> CompressionResult<MetricSpace<typename Space::record_type, typename Space::metric_type>>
+{
+	if (count == 0) {
+		throw std::invalid_argument("compression count must be positive");
+	}
+
+	runtime::require_exact_compress(runtime_policy);
+	runtime::require_parallel_metric<typename Space::metric_type>(runtime_policy);
+	if (runtime_policy.uses_materialization()) {
+		representations::MatrixCache<Space> matrix(space);
+		auto representatives = find_representatives(matrix, count, strategy);
+		representatives.representation = runtime::compression_representation(runtime_policy);
+		return detail::compress_from_representatives(space, matrix, representatives);
+	}
+
+	auto result = compress(space, count, strategy);
+	result.representation = runtime::compression_representation(runtime_policy);
+	return result;
+}
+
+template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
+auto compress(const Space &space, std::size_t count, runtime::policy runtime_policy)
+	-> CompressionResult<MetricSpace<typename Space::record_type, typename Space::metric_type>>
+{
+	return compress(space, count, strategies::farthest_first{}, runtime_policy);
 }
 
 } // namespace metric::intent
