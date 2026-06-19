@@ -20,7 +20,7 @@ Use it when the dataset is small to medium sized, the metric is expensive enough
 
 `metric::GraphSpace` stores local neighbor structure. It is useful when sparse local geometry drives the workflow.
 
-Graph representations document whether edges are exact, approximate, directed, symmetrized, weighted, or normalized.
+Graph representations document whether edges are exact, approximate, directed, symmetrized, weighted, or normalized. The promoted terminology is defined in [Graph Representation Terminology](graph-representations.md).
 
 ## Tree
 

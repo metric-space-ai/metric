@@ -21,6 +21,7 @@
 - Add a promoted C++ representative-selection example using string records and edit distance on the core CTest path.
 - Extend promoted representative-selection examples with medoid representatives.
 - Extend promoted representative-selection examples with separated representatives.
+- Add graph representation terminology for exact, approximate, directed, symmetrized, weighted, and normalized graph construction.
 
 ## [0.3.2] - 2026-06-19
 

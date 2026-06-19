@@ -112,6 +112,8 @@ The core can materialize explicit representations when a workflow needs control 
 
 `metric::MatrixSpace` stores the full pairwise matrix. `metric::GraphSpace` stores a sparse nearest-neighbor graph. `metric::TreeSpace` provides tree-based neighbor access.
 
+Graph construction terminology for exact, approximate, directed, symmetrized, weighted, and normalized graphs is documented in [Graph Representation Terminology](../concepts/graph-representations.md).
+
 ## Engine Roadmap
 
 The implemented C++ facade currently covers finite-space construction, neighbor access through `metric::Space::from_records` and `neighbors`, and free operator helpers for pairwise distances and neighbor queries. Additional intent names such as `groups`, `embed`, `map`, `reduce`, `denoise`, `outliers`, and `compare` describe the public direction and should be promoted only when they are backed by stable strategies, result objects, examples, and CI.

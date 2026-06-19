@@ -75,6 +75,10 @@ Promotion evidence:
 
 Goal: make graph representations a first-class runtime choice for finite metric spaces.
 
+Current promoted base:
+
+- Graph construction terminology documents exact versus approximate graph construction, directed versus symmetrized edges, edge payload meanings, normalization policies, and promotion requirements.
+
 Candidate strategies:
 
 - exact k-nearest-neighbor graph construction
@@ -179,6 +183,6 @@ The revival should not:
 Near-term branches should stay small and evidence-driven:
 
 - add k-medoids or compression-summary representative fixtures now that farthest-first, medoid, separated, and radius-coverage fixtures exist
-- add graph construction documentation with exact versus approximate terminology
+- add deterministic graph fixtures with expected edge sets
 - add MGC interpretation docs for paired metric spaces
 - add an industrial-record fixture that combines strings, process curves, histograms, and numeric penalties
