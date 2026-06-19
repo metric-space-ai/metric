@@ -6,8 +6,15 @@ from pathlib import Path
 
 import metric
 import numpy as np
-from metric import exceptions, intent, mappings, representations, transforms
-from metric.exceptions import MetricError, MissingMetricError, StaleRepresentationError, UnsupportedOperationError
+from metric import exceptions, intent, mappings, representations, runtime, transforms
+from metric.exceptions import (
+    MetricError,
+    MissingMetricError,
+    StaleRepresentationError,
+    StrategyParameterError,
+    StrategyUnavailableError,
+    UnsupportedOperationError,
+)
 from metric.metrics import Edit, Metric, available
 from metric.operators import (
     ClusteringResult,
@@ -63,6 +70,7 @@ from metric.operators import (
     symmetrize_graph,
 )
 from metric.representations import GraphIndex, TreeIndex, graph, tree
+from metric.runtime import CachePolicy, RuntimePolicy
 from metric.spaces import FiniteMetricSpace, MatrixSpace, Space
 from metric.strategies import ClassicMDS, DBSCAN, DistanceProfileCorrelation, FarthestFirst, KMedoids
 
@@ -103,7 +111,12 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIs(metric.exceptions, exceptions)
         self.assertIs(metric.exceptions.UnsupportedOperationError, UnsupportedOperationError)
         self.assertIs(metric.exceptions.StaleRepresentationError, StaleRepresentationError)
+        self.assertIs(metric.runtime, runtime)
+        self.assertIs(metric.runtime.RuntimePolicy, RuntimePolicy)
+        self.assertIs(metric.runtime.CachePolicy, CachePolicy)
         self.assertTrue(issubclass(UnsupportedOperationError, MetricError))
+        self.assertTrue(issubclass(StrategyUnavailableError, MetricError))
+        self.assertTrue(issubclass(StrategyParameterError, MetricError))
         self.assertIs(metric.representations.MatrixSpace, MatrixSpace)
         self.assertIs(metric.representations.GraphIndex, GraphIndex)
         self.assertIs(metric.representations.TreeIndex, TreeIndex)
@@ -288,6 +301,8 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIn("symmetrize_graph", metric.__all__)
         self.assertIn("coverage_representative_indices", metric.__all__)
         self.assertIn("coverage_representatives", metric.__all__)
+        self.assertIn("RuntimePolicy", metric.__all__)
+        self.assertIn("CachePolicy", metric.__all__)
         self.assertEqual(mappings.STABILITY, "beta")
         self.assertEqual(transforms.STABILITY, "beta")
         self.assertIsInstance(representations.matrix(Space(self.records, self.metric)), MatrixSpace)
@@ -1061,6 +1076,26 @@ class RevivalApiTest(unittest.TestCase):
         self.assertTrue(callable(space.reduce))
         self.assertTrue(callable(space.compress))
         self.assertTrue(callable(space.map))
+
+    def test_runtime_policy_is_explicit_and_exact(self):
+        space = Space(self.records, self.metric)
+        policy = RuntimePolicy(exact=True, parallel=True, cache="materialized")
+
+        self.assertEqual(policy.cache_mode, "materialized")
+        self.assertEqual(policy.name, "exact_materialized_parallel")
+        self.assertEqual(runtime.materialized(runtime.parallel()).name, "exact_materialized_parallel")
+        self.assertEqual(space.neighbors("cut", count=2, runtime=policy), [(0, 1), (1, 1)])
+        self.assertEqual(space.neighbors("cut", count=2, representation=space.to_tree(), runtime=policy), [(0, 1), (1, 1)])
+        self.assertEqual(space.describe(runtime=policy).record_count, len(self.records))
+        self.assertEqual(space.describe_structure(runtime=policy).record_count, len(self.records))
+        self.assertEqual(space.compare(space, runtime=policy).left_record_count, len(self.records))
+
+        with self.assertRaises(StrategyUnavailableError):
+            space.neighbors("cut", count=2, runtime=RuntimePolicy(exact=False))
+        with self.assertRaises(StrategyParameterError):
+            RuntimePolicy(cache="unknown")
+        with self.assertRaises(StrategyParameterError):
+            RuntimePolicy(parallel="yes")
 
     def test_numpy_record_arrays_use_custom_metric_callable(self):
         records = np.array([[0.0, 0.0], [3.0, 4.0], [6.0, 8.0]])

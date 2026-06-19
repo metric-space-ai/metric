@@ -4,8 +4,9 @@ The revived core API is organized around explicit finite metric spaces:
 
 - ``metric.metrics`` for metric constructors
 - ``metric.spaces`` for finite metric-space helpers
-- ``metric.operators`` for small metric-space operators
 - ``metric.exceptions`` for public METRIC error types
+- ``metric.operators`` for small metric-space operators
+- ``metric.runtime`` for runtime policy objects
 - ``metric.mappings`` and ``metric.transforms`` for beta compatibility bridges
 
 Legacy compiled extension names remain available when their modules are present.
@@ -18,7 +19,7 @@ try:
 except ModuleNotFoundError:
     pass
 
-from . import exceptions, intent, mappings, metrics, operators, representations, spaces, strategies, transforms
+from . import exceptions, intent, mappings, metrics, operators, representations, runtime, spaces, strategies, transforms
 from .exceptions import (
     AmbiguousIntentError,
     IncompatibleSpaceError,
@@ -90,6 +91,7 @@ from .operators import (
     separated_representatives,
     symmetrize_graph,
 )
+from .runtime import CachePolicy, RuntimePolicy
 from .spaces import FiniteMetricSpace, MatrixSpace, Space
 from .strategies import ClassicMDS, DBSCAN, DistanceProfileCorrelation, FarthestFirst, KMedoids
 

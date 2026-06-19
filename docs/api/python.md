@@ -29,6 +29,7 @@ The records are strings. Edit distance defines the geometry without an embedding
 - `intent`: semantic helper aliases for promoted intent operations
 - `representations`: explicit representation helpers for matrix materialization, exact tree-style neighbor indexing, and exact kNN graph indexing
 - `operators`: small helpers for pairwise distances, nearest neighbors, range neighbors, exact graph results and edges, graph connectivity diagnostics, graph degree diagnostics, graph stretch diagnostics, graph pruning, grouping, embedding, outlier detection, DBSCAN-noise filtering, representative selection, representative reduction, representative compression, deterministic mapping, cross-space comparison, medoids, separated representatives, and intrinsic-dimension diagnostics
+- `runtime`: runtime policy objects for exactness, cache materialization preferences, and serial/parallel execution preferences
 - `strategies`: strategy objects for intent methods, starting with `ClassicMDS`, `KMedoids`, `DBSCAN`, `FarthestFirst`, and `DistanceProfileCorrelation`
 - `mappings`: beta compatibility bridge for installed mapping bindings
 - `transforms`: beta compatibility bridge for installed transform bindings
@@ -52,6 +53,7 @@ space.to_matrix()
 space.to_tree()
 space.to_graph(count=8)
 space.neighbors(query, count=10)
+space.neighbors(query, count=10, runtime=RuntimePolicy(exact=True, cache="materialized"))
 space.neighbors(query, radius=1)
 space.nearest(query)
 space.within_radius(query, radius=1)
@@ -62,6 +64,7 @@ space.embed(strategy=ClassicMDS(dimensions=2))
 space.outliers(strategy=DBSCAN(radius=1, min_points=2))
 space.denoise(strategy=DBSCAN(radius=1, min_points=2))
 space.compare(other_space, strategy=DistanceProfileCorrelation())
+space.compare(other_space, runtime=RuntimePolicy(exact=True))
 space.correlate(other_space)
 space.representatives(k=3)
 space.representatives(k=3, strategy=FarthestFirst(seed_index=1))
@@ -82,6 +85,20 @@ DataFrame-like tabular records. The constructor reads rows through
 `to_dict("records")`, uses `id_column` as stable record IDs, and removes that ID
 column from the row dictionaries passed to the metric. It does not require pandas
 at import time.
+
+Runtime policy objects live in `metric.runtime` and are re-exported from
+`metric`:
+
+```python
+from metric import RuntimePolicy
+
+policy = RuntimePolicy(exact=True, parallel=True, cache="materialized")
+neighbors = space.neighbors("cut", count=2, runtime=policy)
+```
+
+The promoted Python facade currently executes exact deterministic operators. A
+policy with `exact=False` raises `StrategyUnavailableError` instead of silently
+returning approximate results.
 
 ## Operators
 
