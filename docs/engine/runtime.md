@@ -58,6 +58,12 @@ Approximate runtime policies throw for structure diagnostics until backed by exp
 
 Approximate runtime policies throw for cross-space comparison until backed by explicit approximate correlation implementations.
 
+## Record-Space Pipeline Execution
+
+`embed(..., runtime::exact())`, `reduce(..., runtime::exact())`, and `map(..., runtime::exact())` use the record-space implementation path and report `representation == "metric_space"` in their `MappingResult` values.
+
+`runtime::materialized(...)` throws for these paths because the current PCFA and deterministic transform implementations consume records directly instead of a distance-provider representation. Approximate runtime policies also throw until backed by explicit approximate pipeline implementations.
+
 ## Outlier And Denoise Execution
 
 `find_outliers(..., runtime::materialized(runtime::exact()))` uses a `MatrixCache` for DBSCAN-noise detection and nearest-reference scoring, then reports `representation == "matrix_cache"` in the returned `OutlierResult`.

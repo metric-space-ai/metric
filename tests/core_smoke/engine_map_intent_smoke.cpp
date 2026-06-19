@@ -3,6 +3,7 @@
 
 #include <cassert>
 #include <cstddef>
+#include <stdexcept>
 #include <string>
 #include <type_traits>
 #include <vector>
@@ -39,6 +40,33 @@ int main()
 		assert(mapped.source_records[index][0] == space.id(index));
 		assert(mapped.representative_records[index] == space.id(index));
 	}
+
+	const auto runtime_mapped = metric::map(
+		space, [](const std::string &record) -> std::size_t { return record.size(); }, length_distance,
+		metric::runtime::exact());
+	assert(runtime_mapped.representation == "metric_space");
+	assert(runtime_mapped.source_records == mapped.source_records);
+	assert(runtime_mapped.space.record(runtime_mapped.space.id(0)) == 6);
+
+	bool rejected_materialized_runtime = false;
+	try {
+		(void)metric::map(
+			space, [](const std::string &record) -> std::size_t { return record.size(); }, length_distance,
+			metric::runtime::materialized(metric::runtime::exact()));
+	} catch (const std::invalid_argument &) {
+		rejected_materialized_runtime = true;
+	}
+	assert(rejected_materialized_runtime);
+
+	bool rejected_approximate_runtime = false;
+	try {
+		(void)metric::map(
+			space, [](const std::string &record) -> std::size_t { return record.size(); }, length_distance,
+			metric::runtime::approximate());
+	} catch (const std::invalid_argument &) {
+		rejected_approximate_runtime = true;
+	}
+	assert(rejected_approximate_runtime);
 
 	return 0;
 }

@@ -35,6 +35,17 @@ int main()
 	assert(direct.source_records == reduced.source_records);
 	assert(close(direct.space.record(direct.space.id(0))[0], reduced.space.record(reduced.space.id(0))[0]));
 
+	const auto lazy_policy = metric::runtime::exact();
+	const auto runtime_reduced = metric::reduce(space, metric::strategies::pcfa(2), lazy_policy);
+	assert(runtime_reduced.representation == "metric_space");
+	assert(runtime_reduced.source_records == reduced.source_records);
+	assert(close(runtime_reduced.space.record(runtime_reduced.space.id(0))[0],
+				 reduced.space.record(reduced.space.id(0))[0]));
+
+	const auto runtime_direct = metric::reduce(space, 2, lazy_policy);
+	assert(runtime_direct.representation == "metric_space");
+	assert(runtime_direct.source_records == reduced.source_records);
+
 	bool rejected_zero_components = false;
 	try {
 		(void)metric::reduce(space, 0);
@@ -42,6 +53,22 @@ int main()
 		rejected_zero_components = true;
 	}
 	assert(rejected_zero_components);
+
+	bool rejected_materialized_runtime = false;
+	try {
+		(void)metric::reduce(space, 2, metric::runtime::materialized(metric::runtime::exact()));
+	} catch (const std::invalid_argument &) {
+		rejected_materialized_runtime = true;
+	}
+	assert(rejected_materialized_runtime);
+
+	bool rejected_approximate_runtime = false;
+	try {
+		(void)metric::reduce(space, 2, metric::runtime::approximate());
+	} catch (const std::invalid_argument &) {
+		rejected_approximate_runtime = true;
+	}
+	assert(rejected_approximate_runtime);
 
 	return 0;
 }

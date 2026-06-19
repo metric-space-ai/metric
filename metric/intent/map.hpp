@@ -13,6 +13,7 @@
 #include "../core/metric_space.hpp"
 #include "../core/record_id.hpp"
 #include "../core/result.hpp"
+#include "../runtime/execution.hpp"
 
 namespace metric::intent {
 
@@ -46,6 +47,19 @@ auto map(const Space &space, Transform transform, TargetMetric metric)
 	target_space_type derived_space(std::move(records), std::move(metric));
 	return result_type{std::move(derived_space), std::move(source_records), std::move(representative_records),
 					   space.size(), false, "deterministic_transform", "deterministic_transform", "metric_space"};
+}
+
+template <typename Space, typename Transform, typename TargetMetric,
+		  typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
+auto map(const Space &space, Transform transform, TargetMetric metric, runtime::policy runtime_policy)
+	-> decltype(map(space, transform, metric))
+{
+	runtime::require_exact_map(runtime_policy);
+	runtime::require_lazy_map(runtime_policy);
+	runtime::require_parallel_metric<typename Space::metric_type>(runtime_policy);
+	auto result = map(space, std::move(transform), std::move(metric));
+	result.representation = runtime::map_representation(runtime_policy);
+	return result;
 }
 
 } // namespace metric::intent
