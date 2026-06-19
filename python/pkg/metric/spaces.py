@@ -332,13 +332,60 @@ class Space(FiniteMetricSpace):
             representation="metric_space",
         )
 
-    def denoise(self, strategy, *, representation=None, runtime=None):
+    def denoise(
+        self,
+        strategy=None,
+        *,
+        count=None,
+        fraction=0.05,
+        threshold=None,
+        strength="auto",
+        representation=None,
+        runtime=None,
+    ):
         require_exact_runtime(runtime)
         if representation is not None:
             representation.ensure_fresh()
         from metric.operators import denoise_space
 
-        return denoise_space(self.records, self.metric, strategy)
+        if strategy is not None:
+            if count is not None or threshold is not None or fraction != 0.05 or strength != "auto":
+                raise ValueError("use either strategy or count/fraction/threshold/strength, not both")
+            return denoise_space(self.records, self.metric, strategy)
+
+        if strength != "auto":
+            if count is not None or threshold is not None or fraction != 0.05:
+                raise ValueError("strength cannot be combined with count, fraction, or threshold")
+            try:
+                fraction = float(strength)
+            except (TypeError, ValueError):
+                raise ValueError("strength must be 'auto' or a fraction between 0 and 1") from None
+
+        from metric.operators import MappingResult
+
+        outlier_ids = {
+            outlier.record_id
+            for outlier in self.outliers(count=count, fraction=fraction, threshold=threshold).outliers
+        }
+        kept_record_ids = tuple(
+            record_index
+            for record_index in range(len(self.records))
+            if record_index not in outlier_ids
+        )
+        denoised_records = [self.records[index] for index in kept_record_ids]
+
+        return MappingResult(
+            space=Space(denoised_records, self.metric),
+            source_record_ids=kept_record_ids,
+            source_record_count=len(self.records),
+            target_record_count=len(denoised_records),
+            exact=True,
+            operator_name="denoise",
+            mapping="nearest_neighbor_outlier_filter",
+            strategy="nearest_neighbor_distance",
+            representation="metric_space",
+            inverse_supported=False,
+        )
 
     def representatives(self, k, strategy=None, *, runtime=None):
         require_exact_runtime(runtime)

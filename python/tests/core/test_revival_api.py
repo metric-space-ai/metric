@@ -555,6 +555,21 @@ class RevivalApiTest(unittest.TestCase):
             outlier_space.denoise(DBSCAN(radius=100, min_points=2)).source_record_ids,
             (0, 1, 2, 3, 4),
         )
+        nearest_denoised = outlier_space.denoise(count=1)
+        self.assertIsInstance(nearest_denoised, MappingResult)
+        self.assertEqual(nearest_denoised.space.records, [0, 1, 10, 11])
+        self.assertEqual(nearest_denoised.source_record_ids, (0, 1, 2, 3))
+        self.assertEqual(nearest_denoised.mapping, "nearest_neighbor_outlier_filter")
+        self.assertEqual(nearest_denoised.strategy, "nearest_neighbor_distance")
+        self.assertFalse(nearest_denoised.inverse_supported)
+        self.assertEqual(outlier_space.denoise(strength=0.2).source_record_ids, (0, 1, 2, 3))
+        self.assertEqual(outlier_space.denoise(threshold=100).source_record_ids, (0, 1, 2, 3, 4))
+        with self.assertRaises(ValueError):
+            outlier_space.denoise(DBSCAN(radius=2, min_points=2), count=1)
+        with self.assertRaises(ValueError):
+            outlier_space.denoise(count=1, strength=0.2)
+        with self.assertRaises(ValueError):
+            outlier_space.denoise(strength="strong")
         self.assertEqual(
             Space([0, 10], metric=lambda lhs, rhs: abs(lhs - rhs)).denoise(DBSCAN(radius=1, min_points=2)).space.records,
             [],

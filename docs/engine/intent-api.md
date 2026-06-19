@@ -37,12 +37,12 @@ auto structure = metric::describe_structure(space);
 
 ```python
 from metric import DistanceProfileCorrelation, Space
-from metric.strategies import ClassicMDS, DBSCAN
+from metric.strategies import ClassicMDS
 
 space = Space(records, metric)
 groups = space.groups(count=2)
 outliers = space.outliers(count=2)
-denoised = space.denoise(DBSCAN(radius=2.0, min_points=2))
+denoised = space.denoise(count=2)
 embedding = space.embed(strategy=ClassicMDS(dimensions=2))
 dependency = space.compare(other_space, DistanceProfileCorrelation())
 reduction = space.reduce(count=2)
