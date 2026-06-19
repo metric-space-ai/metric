@@ -18,6 +18,63 @@ def range_neighbors(records, metric, query, radius):
     return FiniteMetricSpace(records, metric).rnn(query, radius)
 
 
+def exact_knn_graph_edges(records, metric, k):
+    """Build exact directed kNN graph edges as source, target, distance tuples."""
+    records = list(records)
+    try:
+        k = operator.index(k)
+    except TypeError:
+        raise TypeError("k must be an integer") from None
+
+    if k < 0:
+        raise ValueError("k must be non-negative")
+    if k == 0:
+        return []
+
+    max_neighbors = max(0, len(records) - 1)
+    if k > max_neighbors:
+        raise ValueError("k cannot exceed the number of non-self neighbors")
+
+    space = FiniteMetricSpace(records, metric)
+    edges = []
+
+    for source_index in range(len(records)):
+        candidates = []
+        for target_index in range(len(records)):
+            if source_index == target_index:
+                continue
+            candidates.append((
+                space.distance(source_index, target_index),
+                target_index,
+            ))
+
+        candidates.sort()
+        for distance, target_index in candidates[:k]:
+            edges.append((source_index, target_index, distance))
+
+    return edges
+
+
+def exact_radius_graph_edges(records, metric, radius):
+    """Build exact directed radius graph edges as source, target, distance tuples."""
+    records = list(records)
+    if radius < 0:
+        raise ValueError("radius must be non-negative")
+
+    space = FiniteMetricSpace(records, metric)
+    edges = []
+
+    for source_index in range(len(records)):
+        for target_index in range(len(records)):
+            if source_index == target_index:
+                continue
+            distance = space.distance(source_index, target_index)
+            if distance <= radius:
+                edges.append((source_index, target_index, distance))
+
+    return edges
+
+
 def representative_indices(records, metric, k, seed_index=0):
     """Select representative record IDs with deterministic farthest-first traversal."""
     records = list(records)
@@ -193,6 +250,8 @@ __all__ = [
     "intrinsic_dimension_from_distances",
     "coverage_representative_indices",
     "coverage_representatives",
+    "exact_knn_graph_edges",
+    "exact_radius_graph_edges",
     "medoid",
     "medoid_index",
     "pairwise_distance_matrix",

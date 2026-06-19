@@ -12,6 +12,7 @@
 #include <cstddef>
 #include <stdexcept>
 #include <type_traits>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -45,6 +46,89 @@ auto range_neighbors(const Container &records, Metric distance, const detail::re
 					 typename detail::finite_space_t<Container, Metric>::distance_type radius)
 {
 	return ::metric::Space::from_records(records, std::move(distance)).within_radius(query, radius);
+}
+
+template <typename Container, typename Metric>
+auto exact_knn_graph_edges(const Container &records, Metric distance, std::size_t k)
+	-> std::vector<
+		std::tuple<std::size_t, std::size_t, typename detail::finite_space_t<Container, Metric>::distance_type>>
+{
+	using distance_type = typename detail::finite_space_t<Container, Metric>::distance_type;
+	using edge_type = std::tuple<std::size_t, std::size_t, distance_type>;
+
+	if (k == 0) {
+		return {};
+	}
+
+	const auto max_neighbors = records.empty() ? std::size_t{0} : records.size() - 1;
+	if (k > max_neighbors) {
+		throw std::invalid_argument("k cannot exceed the number of non-self neighbors");
+	}
+
+	const auto space = ::metric::Space::from_records(records, std::move(distance));
+	std::vector<edge_type> edges;
+	edges.reserve(records.size() * k);
+
+	for (std::size_t source_index = 0; source_index < records.size(); ++source_index) {
+		std::vector<std::pair<distance_type, std::size_t>> candidates;
+		candidates.reserve(records.size() - 1);
+
+		for (std::size_t target_index = 0; target_index < records.size(); ++target_index) {
+			if (source_index == target_index) {
+				continue;
+			}
+			candidates.emplace_back(space.distance(source_index, target_index), target_index);
+		}
+
+		std::sort(candidates.begin(), candidates.end(),
+				  [](const auto &lhs, const auto &rhs) {
+					  if (lhs.first < rhs.first) {
+						  return true;
+					  }
+					  if (rhs.first < lhs.first) {
+						  return false;
+					  }
+					  return lhs.second < rhs.second;
+				  });
+
+		for (std::size_t neighbor_index = 0; neighbor_index < k; ++neighbor_index) {
+			edges.emplace_back(source_index, candidates[neighbor_index].second, candidates[neighbor_index].first);
+		}
+	}
+
+	return edges;
+}
+
+template <typename Container, typename Metric, typename Radius>
+auto exact_radius_graph_edges(const Container &records, Metric distance, Radius radius)
+	-> std::vector<
+		std::tuple<std::size_t, std::size_t, typename detail::finite_space_t<Container, Metric>::distance_type>>
+{
+	using distance_type = typename detail::finite_space_t<Container, Metric>::distance_type;
+	using comparison_type = typename std::common_type<distance_type, Radius>::type;
+	using edge_type = std::tuple<std::size_t, std::size_t, distance_type>;
+
+	if (radius < Radius{}) {
+		throw std::invalid_argument("radius must be non-negative");
+	}
+
+	const auto threshold = static_cast<comparison_type>(radius);
+	const auto space = ::metric::Space::from_records(records, std::move(distance));
+	std::vector<edge_type> edges;
+
+	for (std::size_t source_index = 0; source_index < records.size(); ++source_index) {
+		for (std::size_t target_index = 0; target_index < records.size(); ++target_index) {
+			if (source_index == target_index) {
+				continue;
+			}
+			const auto edge_distance = space.distance(source_index, target_index);
+			if (static_cast<comparison_type>(edge_distance) <= threshold) {
+				edges.emplace_back(source_index, target_index, edge_distance);
+			}
+		}
+	}
+
+	return edges;
 }
 
 template <typename Container, typename Metric>

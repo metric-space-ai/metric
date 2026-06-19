@@ -11,6 +11,8 @@ from metric import mappings, transforms
 from metric.operators import (
     coverage_representative_indices,
     coverage_representatives,
+    exact_knn_graph_edges,
+    exact_radius_graph_edges,
     intrinsic_dimension,
     medoid,
     medoid_index,
@@ -54,6 +56,8 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIs(metric.spaces.FiniteMetricSpace, FiniteMetricSpace)
         self.assertIs(metric.operators.nearest_neighbors, nearest_neighbors)
         self.assertIs(metric.operators.range_neighbors, range_neighbors)
+        self.assertIs(metric.operators.exact_knn_graph_edges, exact_knn_graph_edges)
+        self.assertIs(metric.operators.exact_radius_graph_edges, exact_radius_graph_edges)
         self.assertIs(metric.operators.intrinsic_dimension, intrinsic_dimension)
         self.assertIs(metric.operators.medoid_index, medoid_index)
         self.assertIs(metric.operators.medoid, medoid)
@@ -66,6 +70,8 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIs(metric.mappings, mappings)
         self.assertIs(metric.transforms, transforms)
         self.assertIs(metric.Edit, Edit)
+        self.assertIs(metric.exact_knn_graph_edges, exact_knn_graph_edges)
+        self.assertIs(metric.exact_radius_graph_edges, exact_radius_graph_edges)
         self.assertIs(metric.intrinsic_dimension, intrinsic_dimension)
         self.assertIs(metric.medoid_index, medoid_index)
         self.assertIs(metric.medoid, medoid)
@@ -82,6 +88,8 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIn("Space", metric.__all__)
         self.assertIn("mappings", metric.__all__)
         self.assertIn("transforms", metric.__all__)
+        self.assertIn("exact_knn_graph_edges", metric.__all__)
+        self.assertIn("exact_radius_graph_edges", metric.__all__)
         self.assertIn("medoid_index", metric.__all__)
         self.assertIn("medoid", metric.__all__)
         self.assertIn("representative_indices", metric.__all__)
@@ -172,6 +180,14 @@ class RevivalApiTest(unittest.TestCase):
             separated_representatives(records, cumulative_transport_distance, 1.5),
             [records[0], records[2], records[4]],
         )
+        self.assertEqual(
+            exact_knn_graph_edges(records, cumulative_transport_distance, 1),
+            [(0, 3, 0.5), (1, 3, 0.5), (2, 4, 1.5), (3, 0, 0.5), (4, 1, 0.5)],
+        )
+        self.assertEqual(
+            exact_radius_graph_edges(records, cumulative_transport_distance, 0.5),
+            [(0, 3, 0.5), (1, 3, 0.5), (1, 4, 0.5), (3, 0, 0.5), (3, 1, 0.5), (4, 1, 0.5)],
+        )
         self.assertEqual(coverage_representative_indices(records, cumulative_transport_distance, 1.5), [0, 2])
         self.assertEqual(
             coverage_representatives(records, cumulative_transport_distance, 1.5),
@@ -192,6 +208,24 @@ class RevivalApiTest(unittest.TestCase):
         self.assertEqual(separated_representative_indices(records, absolute_distance, 2), [0, 2, 3])
         self.assertEqual(separated_representatives(records, absolute_distance, 2), [0, 2, 10])
         self.assertEqual(separated_representative_indices([], absolute_distance, 2), [])
+        self.assertEqual(
+            exact_knn_graph_edges(records, absolute_distance, 2),
+            [
+                (0, 1, 1),
+                (0, 2, 2),
+                (1, 0, 1),
+                (1, 2, 1),
+                (2, 1, 1),
+                (2, 0, 2),
+                (3, 2, 8),
+                (3, 1, 9),
+            ],
+        )
+        self.assertEqual(
+            exact_radius_graph_edges(records, absolute_distance, 2),
+            [(0, 1, 1), (0, 2, 2), (1, 0, 1), (1, 2, 1), (2, 0, 2), (2, 1, 1)],
+        )
+        self.assertEqual(exact_knn_graph_edges(records, absolute_distance, 0), [])
         self.assertEqual(coverage_representative_indices(records, absolute_distance, 2), [0, 3])
         self.assertEqual(coverage_representatives(records, absolute_distance, 2), [0, 10])
         self.assertEqual(coverage_representative_indices(records, absolute_distance, 20), [0])
@@ -213,6 +247,12 @@ class RevivalApiTest(unittest.TestCase):
             medoid([], absolute_distance)
         with self.assertRaises(ValueError):
             separated_representative_indices(records, absolute_distance, -1)
+        with self.assertRaises(ValueError):
+            exact_knn_graph_edges(records, absolute_distance, 4)
+        with self.assertRaises(TypeError):
+            exact_knn_graph_edges(records, absolute_distance, 1.5)
+        with self.assertRaises(ValueError):
+            exact_radius_graph_edges(records, absolute_distance, -1)
         with self.assertRaises(IndexError):
             representative_indices(records, absolute_distance, 1, seed_index=-1)
         with self.assertRaises(IndexError):

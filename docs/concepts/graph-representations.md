@@ -4,6 +4,8 @@ Graph representations are derived structures over a finite metric space. They ke
 
 This page defines the terms METRIC docs use before graph construction becomes a first-page operator API.
 
+The promoted core edge-list helpers are `exact_knn_graph_edges` and `exact_radius_graph_edges`. They return directed `(source_index, target_index, distance)` edges, exclude self-loops, and are tested against deterministic fixtures. See [Exact Graph Edge Fixtures](../examples/graph-construction.md) for the fixture shape. Higher-level graph result objects, symmetrization policies, and normalized weights remain roadmap items.
+
 ## Required Metadata
 
 Every promoted graph-construction result should state:
@@ -23,6 +25,8 @@ Without this metadata, a graph is an expert representation, not a promoted resul
 
 An exact k-nearest-neighbor graph has one outgoing neighbor set per source record. For each record, the selected neighbors are the `k` nearest other records under the metric, after applying a documented tie-breaking rule.
 
+`exact_knn_graph_edges` uses exhaustive pairwise distances, excludes self-loops, preserves source-record order, and resolves equal distances by target record order.
+
 Exactness must be supported by exhaustive pairwise distances, a proved exact algorithm, or deterministic tests that compare against dense pairwise distances on small fixtures.
 
 kNN graphs are naturally directed. If record `a` includes record `b` among its nearest neighbors, `b` does not necessarily include `a`.
@@ -38,6 +42,8 @@ Approximate graphs must not be documented as exact unless their edge sets are ve
 ## Radius Graph
 
 A radius graph connects records whose metric distance is within a threshold.
+
+`exact_radius_graph_edges` uses exhaustive pairwise distances, excludes self-loops, preserves source-record order, and emits every directed edge whose distance is within `radius`.
 
 An exact directed radius graph has edge `i -> j` when `distance(i, j) <= radius`, subject to a documented self-loop policy. An exact undirected radius graph uses the same threshold but stores one undirected relationship for each qualifying pair.
 

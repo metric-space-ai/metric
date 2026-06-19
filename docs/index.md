@@ -47,6 +47,7 @@ This docs tree is the canonical home for concepts, API references, engine archit
 - [Structured Data](examples/structured-data.md)
 - [Time-Series Space With TWED](examples/time-series-twed.md)
 - [Histogram Space With EMD](examples/histogram-emd.md)
+- [Exact Graph Edge Fixtures](examples/graph-construction.md)
 - [Representative Selection](examples/representative-selection.md)
 - [Entropy Diagnostics](examples/entropy-diagnostics.md)
 - [Intrinsic Dimension Diagnostic](examples/intrinsic-dimension.md)

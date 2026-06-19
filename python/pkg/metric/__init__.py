@@ -22,6 +22,8 @@ from .metrics import Edit
 from .operators import (
     coverage_representative_indices,
     coverage_representatives,
+    exact_knn_graph_edges,
+    exact_radius_graph_edges,
     intrinsic_dimension,
     medoid,
     medoid_index,

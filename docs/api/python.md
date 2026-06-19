@@ -24,7 +24,7 @@ The records are strings. Edit distance defines the geometry without an embedding
 - `Space`: minimal intent-first finite metric space facade
 - `FiniteMetricSpace`: finite metric space over records
 - `MatrixSpace`: compatibility alias for `FiniteMetricSpace`
-- `operators`: small helpers for pairwise distances, nearest neighbors, range neighbors, representative selection, medoids, separated representatives, and intrinsic-dimension diagnostics
+- `operators`: small helpers for pairwise distances, nearest neighbors, range neighbors, exact graph edges, representative selection, medoids, separated representatives, and intrinsic-dimension diagnostics
 - `mappings`: beta compatibility bridge for installed mapping bindings
 - `transforms`: beta compatibility bridge for installed transform bindings
 
@@ -49,6 +49,8 @@ space.rnn(query, radius=1)
 from metric.operators import (
     coverage_representative_indices,
     coverage_representatives,
+    exact_knn_graph_edges,
+    exact_radius_graph_edges,
     intrinsic_dimension,
     medoid,
     medoid_index,
@@ -64,6 +66,8 @@ from metric.operators import (
 distances = pairwise_distance_matrix(records, Edit())
 neighbors = nearest_neighbors(records, Edit(), "cut", k=2)
 close = range_neighbors(records, Edit(), "cut", radius=1)
+knn_edges = exact_knn_graph_edges(records, Edit(), k=1)
+radius_edges = exact_radius_graph_edges(records, Edit(), radius=1)
 selected_ids = representative_indices(records, Edit(), k=2)
 selected_records = representatives(records, Edit(), k=2)
 center_id = medoid_index(records, Edit())
@@ -80,6 +84,8 @@ dimension = intrinsic_dimension(records, Edit())
 `medoid_index` and `medoid` select the existing record with the smallest total distance to all records. Equal total-distance ties are resolved by record order.
 
 `separated_representative_indices` and `separated_representatives` scan records in order and keep a candidate when it is at least `minimum_distance` from every selected representative. This is deterministic redundancy-threshold reduction, not an optimal packing proof.
+
+`exact_knn_graph_edges` and `exact_radius_graph_edges` return directed edge tuples shaped as `(source_index, target_index, distance)`. They exclude self-loops, preserve source-record order, and resolve equal kNN distances by target record order.
 
 `coverage_representative_indices` and `coverage_representatives` use deterministic greedy radius coverage. They scan records in order, choose the first uncovered record as a representative, and mark every record within `radius` as covered.
 

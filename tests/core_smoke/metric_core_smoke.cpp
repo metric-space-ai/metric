@@ -2,6 +2,7 @@
 #include <cmath>
 #include <stdexcept>
 #include <string>
+#include <tuple>
 #include <vector>
 
 #include "metric/distance.hpp"
@@ -124,6 +125,42 @@ int main()
             std::vector<std::size_t>{0, 2, 4}));
     assert((metric::operators::separated_representatives(line, AbsoluteDistance{}, 2) == std::vector<int>{0, 2, 4}));
 
+    const auto exact_knn_edges = metric::operators::exact_knn_graph_edges(line, AbsoluteDistance{}, 2);
+    const std::vector<std::tuple<std::size_t, std::size_t, int>> expected_knn_edges = {
+        {0, 1, 1},
+        {0, 2, 2},
+        {1, 0, 1},
+        {1, 2, 1},
+        {2, 1, 1},
+        {2, 3, 1},
+        {3, 2, 1},
+        {3, 4, 1},
+        {4, 3, 1},
+        {4, 2, 2},
+    };
+    assert(exact_knn_edges == expected_knn_edges);
+
+    const auto exact_radius_edges = metric::operators::exact_radius_graph_edges(line, AbsoluteDistance{}, 1);
+    const std::vector<std::tuple<std::size_t, std::size_t, int>> expected_radius_edges = {
+        {0, 1, 1},
+        {1, 0, 1},
+        {1, 2, 1},
+        {2, 1, 1},
+        {2, 3, 1},
+        {3, 2, 1},
+        {3, 4, 1},
+        {4, 3, 1},
+    };
+    assert(exact_radius_edges == expected_radius_edges);
+
+    bool rejected_large_graph_k = false;
+    try {
+        metric::operators::exact_knn_graph_edges(line, AbsoluteDistance{}, line.size());
+    } catch (const std::invalid_argument &) {
+        rejected_large_graph_k = true;
+    }
+    assert(rejected_large_graph_k);
+
     bool rejected_negative_radius = false;
     try {
         metric::operators::coverage_representative_indices(line, AbsoluteDistance{}, -1);
@@ -131,6 +168,14 @@ int main()
         rejected_negative_radius = true;
     }
     assert(rejected_negative_radius);
+
+    bool rejected_negative_graph_radius = false;
+    try {
+        metric::operators::exact_radius_graph_edges(line, AbsoluteDistance{}, -1);
+    } catch (const std::invalid_argument &) {
+        rejected_negative_graph_radius = true;
+    }
+    assert(rejected_negative_graph_radius);
 
     bool rejected_negative_minimum_distance = false;
     try {
