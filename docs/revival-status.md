@@ -27,6 +27,7 @@ The current local tree implements the first revival slice:
 - Python neighbor facade supports queryless neighbor rows, `include_self`, and radius results capped by `count`
 - Python grouping facade accepts strategy-free `Space.groups(count=...)` and `Space.groups(radius=...)` intent arguments
 - Python engine-style Space grouping intent with KMedoids and DBSCAN strategies
+- Python grouping facade accepts fresh explicit representations and records representation metadata
 - Python engine-style Space intent facade methods for representatives and structure diagnostics
 - Python representatives facade accepts semantic `count=` target arguments
 - Python representatives facade accepts fresh explicit representations and records representation metadata
@@ -265,6 +266,7 @@ The following revival improvements landed on `master` after the `v0.3.2` tag and
 - Python `Space.representatives(count=...)` and `find_representatives(..., count=...)` semantic target aliases, merged as `5e2986bc788a758cccdcd8cbb2e122c77d2796d7`
 - Python `Space.representatives(..., representation=...)` freshness checks and representation metadata, merged as `ecf17bf1b4c557730906568b2ca7860329160293`
 - Python engine-style Space grouping intent with KMedoids and DBSCAN strategies, named `ClusteringResult` objects, and core test coverage, merged as `fe2641f8f14e660a994c94ca18d9f5feb426fb2b`
+- Python `Space.groups(..., representation=...)` freshness checks and representation metadata for KMedoids and DBSCAN grouping, merged as `3a2a5cf1db2f54b04f55602f27e7e98409e3c27f`
 - Python engine-style Space compare/correlate intent with named `CorrelationResult` objects and distance-profile strategy coverage, merged as `103d680a395ddd748017a1619be0580ffd5607cc`
 - Python `Space.compare(..., align="ids")` and `Space.correlate(..., align="ids")` support over stable Space IDs, merged as `3e6777c5b4bb63355bb2c49c0c15a6f55ef83692`
 - engine documentation chapters for metric spaces, representations, intents, strategies, operators, mappings, runtime policies, and migration, merged as `48d19a98315da2132d756ce032cba62eab46f12d`
