@@ -7,8 +7,24 @@ from typing import ClassVar
 
 import numpy as np
 
+from metric.exceptions import UnsupportedOperationError
 from metric.spaces import FiniteMetricSpace
 from metric.strategies import ClassicMDS, DBSCAN, DistanceProfileCorrelation, FarthestFirst, KMedoids
+
+
+def _raise_unsupported_inverse(result):
+    if getattr(result, "operator_name", None) == "denoise":
+        raise UnsupportedOperationError(
+            "denoise results do not support inverse_transform() because density filtering drops source records. "
+            "Use result.space for the filtered metric space, space.embed(...) for a derived coordinate view, "
+            "or a strategy that declares inverse_supported=True when available."
+        )
+
+    raise UnsupportedOperationError(
+        f"{type(result).__name__} does not support inverse_transform(); "
+        "the result declares inverse_supported=False. Use result.space for the derived metric space "
+        "or choose a strategy that declares inverse_supported=True when available."
+    )
 
 
 @dataclass(frozen=True)
@@ -160,6 +176,9 @@ class ReductionResult:
     representation: str
     inverse_supported: bool
 
+    def inverse_transform(self, *args, **kwargs):
+        _raise_unsupported_inverse(self)
+
 
 @dataclass(frozen=True)
 class CompressionResult:
@@ -180,6 +199,9 @@ class CompressionResult:
     lossy: bool
     inverse_supported: bool
 
+    def inverse_transform(self, *args, **kwargs):
+        _raise_unsupported_inverse(self)
+
 
 @dataclass(frozen=True)
 class MappingResult:
@@ -195,6 +217,9 @@ class MappingResult:
     strategy: str
     representation: str
     inverse_supported: bool
+
+    def inverse_transform(self, *args, **kwargs):
+        _raise_unsupported_inverse(self)
 
 
 @dataclass(frozen=True)

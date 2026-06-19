@@ -5,6 +5,7 @@ The revived core API is organized around explicit finite metric spaces:
 - ``metric.metrics`` for metric constructors
 - ``metric.spaces`` for finite metric-space helpers
 - ``metric.operators`` for small metric-space operators
+- ``metric.exceptions`` for public METRIC error types
 - ``metric.mappings`` and ``metric.transforms`` for beta compatibility bridges
 
 Legacy compiled extension names remain available when their modules are present.
@@ -17,7 +18,24 @@ try:
 except ModuleNotFoundError:
     pass
 
-from . import intent, mappings, metrics, operators, representations, spaces, strategies, transforms
+from . import exceptions, intent, mappings, metrics, operators, representations, spaces, strategies, transforms
+from .exceptions import (
+    AmbiguousIntentError,
+    IncompatibleSpaceError,
+    MetricComputationError,
+    MetricContractError,
+    MetricError,
+    MetricInputError,
+    MissingMetricError,
+    NotFittedError,
+    OptionalDependencyError,
+    RepresentationError,
+    StaleRepresentationError,
+    StrategyError,
+    StrategyParameterError,
+    StrategyUnavailableError,
+    UnsupportedOperationError,
+)
 from .metrics import Edit
 from .operators import (
     ClusteringResult,
