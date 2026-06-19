@@ -38,6 +38,14 @@ Metrics are treated as thread-safe by default. A metric can specialize `metric::
 
 `runtime::approximate()` is reserved for grouping as well. It throws instead of silently selecting an approximate clustering path.
 
+## Representative And Compression Execution
+
+`find_representatives(..., runtime::materialized(runtime::exact()))` uses a `MatrixCache` for farthest-first representative selection and reports `representation == "matrix_cache"` in the returned `RepresentativeSet`.
+
+`compress(..., runtime::materialized(runtime::exact()))` uses a `MatrixCache` for both representative selection and source-to-representative assignment. The returned `CompressionResult` reports `representation == "matrix_cache"` while the compressed space still contains records from the original metric space.
+
+Approximate runtime policies throw for these promoted paths until backed by explicit approximate implementations.
+
 ## Outlier And Denoise Execution
 
 `find_outliers(..., runtime::materialized(runtime::exact()))` uses a `MatrixCache` for DBSCAN-noise detection and nearest-reference scoring, then reports `representation == "matrix_cache"` in the returned `OutlierResult`.
