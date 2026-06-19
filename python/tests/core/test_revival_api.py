@@ -354,6 +354,31 @@ class RevivalApiTest(unittest.TestCase):
         for name in ("DoubleVector", "LongVector", "test"):
             self.assertFalse(hasattr(metric, name), name)
 
+    def test_legacy_tree_binding_uses_boolean_empty_and_named_insert_if(self):
+        from metric.space import Tree
+
+        tree = Tree()
+        self.assertIs(tree.empty(), True)
+        self.assertEqual(tree.size(), 0)
+        self.assertEqual(len(tree), 0)
+
+        first_id = tree.insert([1.0, 2.0])
+        self.assertEqual(first_id, 0)
+        self.assertIs(tree.empty(), False)
+        self.assertEqual(tree.size(), 1)
+        self.assertEqual(len(tree), 1)
+
+        second_id, inserted = tree.insert_if([2.0, 3.0], 0.1)
+        self.assertEqual(second_id, 1)
+        self.assertIs(inserted, True)
+
+        duplicate_id, inserted = tree.insert_if([2.0, 3.0], 10.0)
+        self.assertEqual(duplicate_id, 1)
+        self.assertIs(inserted, False)
+
+        with self.assertRaises(TypeError):
+            tree.insert([3.0, 4.0], 0.1)
+
     def test_promoted_metric_space_examples_run(self):
         examples_root = Path(__file__).resolve().parents[2] / "examples"
         examples = sorted((examples_root / "metric_space").glob("*.py"))
