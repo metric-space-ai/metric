@@ -16,8 +16,10 @@
 #include "intent/groups.hpp"
 #include "intent/neighbors.hpp"
 #include "intent/representatives.hpp"
+#include "intent/reduce.hpp"
 #include "mappings/clustered_space.hpp"
 #include "mappings/mapping.hpp"
+#include "mappings/pcfa.hpp"
 #include "operators/clustering.hpp"
 #include "operators/correlation.hpp"
 #include "operators/nearest.hpp"
@@ -29,6 +31,7 @@
 #include "strategies/clustering.hpp"
 #include "strategies/correlation.hpp"
 #include "strategies/representatives.hpp"
+#include "strategies/reduction.hpp"
 #include "strategies/search.hpp"
 
 #endif
