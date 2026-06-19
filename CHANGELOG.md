@@ -10,6 +10,7 @@
 - Add first C++ engine clustering operator with `ClusteringResult` and `operators::kmedoids` overloads for spaces and distance providers.
 - Add deterministic C++ engine density clustering with `operators::dbscan` overloads for spaces and distance providers.
 - Add first C++ engine intent helpers and strategy objects for semantic neighbor and grouping workflows.
+- Add C++ engine entropy and MGC operator wrappers with named `EntropyResult` and `CorrelationResult` objects.
 
 ### Algorithm Changes
 

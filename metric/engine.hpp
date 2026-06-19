@@ -14,6 +14,7 @@
 #include "intent/groups.hpp"
 #include "intent/neighbors.hpp"
 #include "operators/clustering.hpp"
+#include "operators/correlation.hpp"
 #include "operators/nearest.hpp"
 #include "representations/cover_tree_index.hpp"
 #include "representations/graph_topology.hpp"

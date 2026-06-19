@@ -52,11 +52,38 @@ template <typename Distance> struct ClusteringResult {
 	auto empty() const -> bool { return assignments.empty(); }
 };
 
+template <typename Value = double> struct EntropyResult {
+	using value_type = Value;
+
+	Value value{};
+	std::size_t record_count{};
+	std::size_t neighbor_count{};
+	std::size_t approximation_order{};
+	bool exponentiated{false};
+	bool exact{true};
+	std::string algorithm;
+	std::string representation;
+};
+
+template <typename Value = double> struct CorrelationResult {
+	using value_type = Value;
+
+	Value value{};
+	std::size_t left_record_count{};
+	std::size_t right_record_count{};
+	bool exact{true};
+	std::string algorithm;
+	std::string left_representation;
+	std::string right_representation;
+};
+
 } // namespace metric::core
 
 namespace metric {
 template <typename Distance> using NeighborSet = core::NeighborSet<Distance>;
 template <typename Distance> using ClusteringResult = core::ClusteringResult<Distance>;
+template <typename Value = double> using EntropyResult = core::EntropyResult<Value>;
+template <typename Value = double> using CorrelationResult = core::CorrelationResult<Value>;
 } // namespace metric
 
 #endif
