@@ -46,7 +46,12 @@ template <typename Scalar> class RMSProp : public Optimizer<Scalar> {
 		return json;
 	}
 
-	void reset() { m_history.clear(); }
+	void reset()
+	{
+		m_history.clear();
+		historyVectors.clear();
+		historyMatrices.clear();
+	}
 
 	void update(ConstAlignedMapVec &dvec, AlignedMapVec &vec)
 	{

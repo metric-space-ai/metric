@@ -25,6 +25,7 @@
 #include "intent/reduce.hpp"
 #include "mappings/clustered_space.hpp"
 #include "mappings/mapping.hpp"
+#include "mappings/native_autoencoder.hpp"
 #include "mappings/pcfa.hpp"
 #include "operators/clustering.hpp"
 #include "operators/correlation.hpp"

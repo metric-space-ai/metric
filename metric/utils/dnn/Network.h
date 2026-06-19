@@ -222,6 +222,14 @@ template <typename Scalar> class Network {
 		update();
 	}
 
+	void reset_optimizer()
+	{
+		if (!opt) {
+			throw std::invalid_argument("Optimizer is not set");
+		}
+		opt->reset();
+	}
+
 	void constructFromJsonString(const std::string &jsonString)
 	{
 		/* Parse json */
