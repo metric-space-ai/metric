@@ -11,6 +11,7 @@
 - Add deterministic C++ engine density clustering with `operators::dbscan` overloads for spaces and distance providers.
 - Add first C++ engine intent helpers and strategy objects for semantic neighbor and grouping workflows.
 - Add C++ engine entropy and MGC operator wrappers with named `EntropyResult` and `CorrelationResult` objects.
+- Add the first C++ engine mapping model conventions with `MappingResult` and a clustered-space mapping adapter.
 
 ### Algorithm Changes
 

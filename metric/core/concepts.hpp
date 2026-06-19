@@ -91,6 +91,30 @@ struct GraphTopology<Topology,
 template <typename Topology>
 constexpr bool GraphTopology_v = GraphTopology<Topology>::value;
 
+template <typename MappingT, typename Space, typename = void> struct Mapping : std::false_type {
+};
+
+template <typename MappingT, typename Space>
+struct Mapping<MappingT, Space,
+			   std::void_t<decltype(std::declval<const MappingT &>().fit(std::declval<const Space &>()))>>
+	: std::true_type {
+};
+
+template <typename MappingT, typename Space>
+constexpr bool Mapping_v = Mapping<MappingT, Space>::value;
+
+template <typename ModelT, typename Space, typename = void> struct MappingModel : std::false_type {
+};
+
+template <typename ModelT, typename Space>
+struct MappingModel<ModelT, Space,
+					std::void_t<decltype(std::declval<const ModelT &>().transform(std::declval<const Space &>()))>>
+	: std::true_type {
+};
+
+template <typename ModelT, typename Space>
+constexpr bool MappingModel_v = MappingModel<ModelT, Space>::value;
+
 } // namespace metric::core
 
 namespace metric {
@@ -99,6 +123,10 @@ using core::DistanceProvider_v;
 using core::GraphTopology;
 using core::GraphTopology_v;
 using core::metric_result_t;
+using core::Mapping;
+using core::Mapping_v;
+using core::MappingModel;
+using core::MappingModel_v;
 using core::MetricCallable;
 using core::MetricCallable_v;
 using core::MetricSpaceLike;
