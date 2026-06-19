@@ -79,10 +79,7 @@ template <typename Record, typename Scalar = typename Record::value_type> class 
 
 	auto training_report() const -> const dnn::TrainingReport<scalar_type> & { return model_.training_report(); }
 	auto source_record_count() const -> std::size_t { return source_record_count_; }
-	auto latent_dimension() const -> std::size_t
-	{
-		return model_.network().layers.at(model_.topology().bottleneck_layer)->getOutputSize();
-	}
+	auto latent_dimension() const -> std::size_t { return model_.latent_dimension(); }
 	auto native_model() const -> const dnn::AutoencoderModel<scalar_type> & { return model_; }
 
   private:

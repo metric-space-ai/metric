@@ -118,6 +118,10 @@ template <class Scalar> class AutoencoderModel {
 	auto backend_name() const -> const std::string & { return backend_name_; }
 	auto training_report() const -> const TrainingReport<Scalar> & { return report_; }
 	auto set_training_report(TrainingReport<Scalar> report) -> void { report_ = std::move(report); }
+	auto latent_dimension() const -> std::size_t
+	{
+		return network_.layers.at(topology_.bottleneck_layer)->getOutputSize();
+	}
 
 	auto clone() const -> AutoencoderModel { return AutoencoderModel(*this); }
 
