@@ -152,9 +152,81 @@ int main()
     assert(knn_graph.metadata.k.value() == 2);
     assert(!knn_graph.metadata.radius.has_value());
     assert(knn_graph.metadata.edge_payload == "metric_distance");
+    assert(knn_graph.metadata.weighting == "none");
     assert(knn_graph.metadata.symmetrization == "none");
     assert(knn_graph.metadata.normalization == "none");
     assert(knn_graph.metadata.tie_break == "distance_then_target_index");
+
+    const auto one_neighbor_graph = metric::operators::exact_knn_graph(line, AbsoluteDistance{}, 1);
+    const auto union_graph = metric::operators::symmetrize_graph(one_neighbor_graph, "union", "minimum_distance");
+    const std::vector<std::tuple<std::size_t, std::size_t, int>> expected_union_edges = {
+        {0, 1, 1},
+        {1, 2, 1},
+        {2, 3, 1},
+        {3, 4, 1},
+    };
+    assert(union_graph.edges == expected_union_edges);
+    assert(!union_graph.metadata.directed);
+    assert(union_graph.metadata.edge_count == expected_union_edges.size());
+    assert(union_graph.metadata.weighting == "minimum_distance");
+    assert(union_graph.metadata.symmetrization == "union");
+    assert(union_graph.metadata.tie_break == "source_index_then_target_index");
+
+    const auto mutual_graph = metric::operators::symmetrize_graph(one_neighbor_graph, "mutual", "minimum_distance");
+    const std::vector<std::tuple<std::size_t, std::size_t, int>> expected_mutual_edges = {
+        {0, 1, 1},
+    };
+    assert(mutual_graph.edges == expected_mutual_edges);
+    assert(mutual_graph.metadata.symmetrization == "mutual");
+
+    metric::operators::GraphConstructionResult<int> asymmetric_graph;
+    asymmetric_graph.edges = {
+        {0, 1, 5},
+        {1, 0, 3},
+        {1, 2, 4},
+    };
+    asymmetric_graph.metadata.strategy = "synthetic";
+    asymmetric_graph.metadata.record_count = 3;
+    asymmetric_graph.metadata.edge_count = asymmetric_graph.edges.size();
+    asymmetric_graph.metadata.directed = true;
+    asymmetric_graph.metadata.self_loops = false;
+    asymmetric_graph.metadata.exact = true;
+    asymmetric_graph.metadata.edge_payload = "metric_distance";
+    asymmetric_graph.metadata.weighting = "none";
+    asymmetric_graph.metadata.symmetrization = "none";
+    asymmetric_graph.metadata.normalization = "none";
+
+    const auto minimum_weighted_graph =
+        metric::operators::symmetrize_graph(asymmetric_graph, "union", "minimum_distance");
+    const std::vector<std::tuple<std::size_t, std::size_t, int>> expected_minimum_edges = {
+        {0, 1, 3},
+        {1, 2, 4},
+    };
+    assert(minimum_weighted_graph.edges == expected_minimum_edges);
+
+    const auto maximum_weighted_graph =
+        metric::operators::symmetrize_graph(asymmetric_graph, "union", "maximum_distance");
+    const std::vector<std::tuple<std::size_t, std::size_t, int>> expected_maximum_edges = {
+        {0, 1, 5},
+        {1, 2, 4},
+    };
+    assert(maximum_weighted_graph.edges == expected_maximum_edges);
+
+    bool rejected_symmetrization_policy = false;
+    try {
+        metric::operators::symmetrize_graph(asymmetric_graph, "invalid", "minimum_distance");
+    } catch (const std::invalid_argument &) {
+        rejected_symmetrization_policy = true;
+    }
+    assert(rejected_symmetrization_policy);
+
+    bool rejected_weighting_policy = false;
+    try {
+        metric::operators::symmetrize_graph(asymmetric_graph, "union", "average_distance");
+    } catch (const std::invalid_argument &) {
+        rejected_weighting_policy = true;
+    }
+    assert(rejected_weighting_policy);
 
     const auto exact_radius_edges = metric::operators::exact_radius_graph_edges(line, AbsoluteDistance{}, 1);
     const std::vector<std::tuple<std::size_t, std::size_t, int>> expected_radius_edges = {
@@ -181,6 +253,7 @@ int main()
     assert(radius_graph.metadata.radius.has_value());
     assert(radius_graph.metadata.radius.value() == 1);
     assert(radius_graph.metadata.edge_payload == "metric_distance");
+    assert(radius_graph.metadata.weighting == "none");
     assert(radius_graph.metadata.symmetrization == "none");
     assert(radius_graph.metadata.normalization == "none");
     assert(radius_graph.metadata.tie_break == "source_then_target_index");

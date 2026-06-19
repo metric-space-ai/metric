@@ -7,6 +7,7 @@
 - Run every promoted Python metric-space example from the core Python API tests so wheel and PyPI build gates share the same example coverage.
 - Add C++ and Python `exact_knn_graph_edges` and `exact_radius_graph_edges` helpers using exhaustive pairwise distances and deterministic edge ordering.
 - Add C++ and Python `exact_knn_graph` and `exact_radius_graph` result objects with construction metadata for exact graph helpers.
+- Add C++ and Python `symmetrize_graph` helpers for deterministic graph `union` and `mutual` policies with reciprocal distance weighting.
 - Add Python `representative_indices` and `representatives` helpers using deterministic farthest-first traversal over finite metric spaces.
 - Add C++ `metric::operators::representative_indices` and `representatives` helpers using the same deterministic farthest-first traversal.
 - Add C++ and Python `medoid_index` and `medoid` helpers using deterministic minimum-total-distance selection.

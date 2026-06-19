@@ -20,6 +20,7 @@ class GraphConstructionMetadata:
     k: object = None
     radius: object = None
     edge_payload: str = ""
+    weighting: str = ""
     symmetrization: str = ""
     normalization: str = ""
     tie_break: str = ""
@@ -105,6 +106,7 @@ def exact_knn_graph(records, metric, k):
             exact=True,
             k=k,
             edge_payload="metric_distance",
+            weighting="none",
             symmetrization="none",
             normalization="none",
             tie_break="distance_then_target_index",
@@ -151,6 +153,7 @@ def exact_radius_graph(records, metric, radius):
             exact=True,
             radius=radius,
             edge_payload="metric_distance",
+            weighting="none",
             symmetrization="none",
             normalization="none",
             tie_break="source_then_target_index",
@@ -161,6 +164,70 @@ def exact_radius_graph(records, metric, radius):
 def exact_radius_graph_edges(records, metric, radius):
     """Build exact directed radius graph edges as source, target, distance tuples."""
     return list(exact_radius_graph(records, metric, radius).edges)
+
+
+def _merge_graph_weight(lhs, rhs, weighting):
+    if weighting == "minimum_distance":
+        return min(lhs, rhs)
+    if weighting == "maximum_distance":
+        return max(lhs, rhs)
+    raise ValueError("weighting policy must be 'minimum_distance' or 'maximum_distance'")
+
+
+def symmetrize_graph(graph, policy="union", weighting="minimum_distance"):
+    """Symmetrize a graph construction result with a documented merge policy."""
+    if policy not in {"union", "mutual"}:
+        raise ValueError("symmetrization policy must be 'union' or 'mutual'")
+    if weighting not in {"minimum_distance", "maximum_distance"}:
+        raise ValueError("weighting policy must be 'minimum_distance' or 'maximum_distance'")
+
+    edge_accumulators = {}
+    for source_index, target_index, distance in graph.edges:
+        if source_index == target_index:
+            continue
+
+        lower_index = min(source_index, target_index)
+        upper_index = max(source_index, target_index)
+        accumulator = edge_accumulators.setdefault((lower_index, upper_index), [None, None])
+        slot = 0 if source_index == lower_index else 1
+        if accumulator[slot] is None:
+            accumulator[slot] = distance
+        else:
+            accumulator[slot] = _merge_graph_weight(accumulator[slot], distance, weighting)
+
+    edges = []
+    for (source_index, target_index), (forward_distance, reverse_distance) in sorted(edge_accumulators.items()):
+        has_forward = forward_distance is not None
+        has_reverse = reverse_distance is not None
+        if policy == "mutual" and not (has_forward and has_reverse):
+            continue
+
+        if has_forward and has_reverse:
+            distance = _merge_graph_weight(forward_distance, reverse_distance, weighting)
+        elif has_forward:
+            distance = forward_distance
+        else:
+            distance = reverse_distance
+        edges.append((source_index, target_index, distance))
+
+    return GraphConstructionResult(
+        edges=tuple(edges),
+        metadata=GraphConstructionMetadata(
+            strategy=graph.metadata.strategy,
+            record_count=graph.metadata.record_count,
+            edge_count=len(edges),
+            directed=False,
+            self_loops=False,
+            exact=graph.metadata.exact,
+            k=graph.metadata.k,
+            radius=graph.metadata.radius,
+            edge_payload=graph.metadata.edge_payload,
+            weighting=weighting,
+            symmetrization=policy,
+            normalization=graph.metadata.normalization,
+            tie_break="source_index_then_target_index",
+        ),
+    )
 
 
 def representative_indices(records, metric, k, seed_index=0):
@@ -353,4 +420,5 @@ __all__ = [
     "representatives",
     "separated_representative_indices",
     "separated_representatives",
+    "symmetrize_graph",
 ]
