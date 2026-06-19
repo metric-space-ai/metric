@@ -17,7 +17,7 @@ try:
 except ModuleNotFoundError:
     pass
 
-from . import mappings, metrics, operators, spaces, transforms
+from . import mappings, metrics, operators, spaces, strategies, transforms
 from .metrics import Edit
 from .operators import (
     GraphConnectivityDiagnostics,
@@ -25,12 +25,16 @@ from .operators import (
     GraphStretchDiagnostics,
     GraphConstructionMetadata,
     GraphConstructionResult,
+    RepresentativeSet,
+    StructureDescription,
     coverage_representative_indices,
     coverage_representatives,
+    describe_structure,
     exact_knn_graph,
     exact_knn_graph_edges,
     exact_radius_graph,
     exact_radius_graph_edges,
+    find_representatives,
     graph_connectivity_diagnostics,
     graph_degree_diagnostics,
     graph_stretch_diagnostics,
@@ -48,6 +52,7 @@ from .operators import (
     symmetrize_graph,
 )
 from .spaces import FiniteMetricSpace, MatrixSpace, Space
+from .strategies import FarthestFirst
 
 __all__ = sorted(
     name

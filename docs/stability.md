@@ -23,9 +23,9 @@ The Core Revival API is the currently promoted, CI-tested entry point.
 - C++ facade: `metric::Space::from_records` returning `metric::FiniteSpace`
 - C++ helpers: `metric::operators::pairwise_distance_matrix`, `nearest_neighbors`, `range_neighbors`, `GraphConnectivityDiagnostics`, `graph_connectivity_diagnostics`, `GraphDegreeDiagnostics`, `graph_degree_diagnostics`, `GraphStretchDiagnostics`, `graph_stretch_diagnostics`, `GraphConstructionResult`, `GraphConstructionMetadata`, `exact_knn_graph`, `exact_knn_graph_edges`, `exact_radius_graph`, `exact_radius_graph_edges`, `symmetrize_graph`, `prune_graph_out_degree`, `representative_indices`, `representatives`, `medoid_index`, `medoid`, `separated_representative_indices`, `separated_representatives`, `coverage_representative_indices`, `coverage_representatives`, and `intrinsic_dimension`
 - explicit C++ representations: `metric::MatrixSpace`, `metric::GraphSpace`, `metric::TreeSpace`
-- Python helpers: `metric.Space`, `metric.metrics`, `metric.spaces.FiniteMetricSpace`, `metric.operators`
+- Python helpers: `metric.Space`, `metric.metrics`, `metric.spaces.FiniteMetricSpace`, `metric.operators`, and `metric.strategies.FarthestFirst`
 - Python beta bridges: `metric.mappings`, `metric.transforms`
-- nearest-neighbor, range-neighbor, pairwise-distance, exact graph-result, graph-connectivity-diagnostics, graph-degree-diagnostics, graph-stretch-diagnostics, graph-symmetrization, graph-out-degree-pruning, exact graph-edge, intrinsic-dimension, and representative-selection helpers
+- nearest-neighbor, range-neighbor, pairwise-distance, exact graph-result, graph-connectivity-diagnostics, graph-degree-diagnostics, graph-stretch-diagnostics, graph-symmetrization, graph-out-degree-pruning, exact graph-edge, intrinsic-dimension, representative-selection, and Python `Space.describe()` / `Space.representatives()` helpers
 - entropy and MGC core examples
 
 ## Stability Tiers
