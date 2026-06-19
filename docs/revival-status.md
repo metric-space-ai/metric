@@ -32,6 +32,7 @@ The current local tree implements the first revival slice:
 - C++ and Python graph symmetrization helpers with deterministic weighting policies
 - C++ and Python graph out-degree pruning helpers with deterministic sparsification metadata
 - C++ and Python graph degree diagnostics with deterministic degree-policy metadata
+- C++ and Python graph connectivity diagnostics with deterministic component metadata
 - documentation for concepts, APIs, examples, stability, testing, and release gates
 - CI workflows for C++ core, Python wheels, docs/formatting, revived-source formatting, and GitHub Pages artifacts
 - release artifact workflow for source archive, Python sdist, Python wheel built from that sdist, and C++ core/downstream evidence
@@ -188,6 +189,7 @@ The following revival improvements landed on `master` after the `v0.3.2` tag and
 - C++ and Python graph symmetrization helpers with deterministic weighting-policy fixtures and CI coverage, merged as `ab09ce4662f0de46c86396752f7d22c8de42c7c9`
 - C++ and Python graph out-degree pruning helpers with deterministic sparsification fixtures and CI coverage, merged as `1bcbc7f818efea4014f54f6e8738436fe9d7c25d`
 - C++ and Python graph degree diagnostics with deterministic degree-policy fixtures and CI coverage, merged as `2947be9ec6faf2ffa1f1c3428598ea77e18bdbd5`
+- C++ and Python graph connectivity diagnostics with deterministic component fixtures and CI coverage, merged as `6e37b20f2c5ec73501c2c66321719f617609001f`
 
 ## Historical Code Policy
 
