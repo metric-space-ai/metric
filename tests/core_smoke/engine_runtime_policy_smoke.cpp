@@ -1,4 +1,5 @@
 #include <cassert>
+#include <cstddef>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -136,6 +137,19 @@ int main()
 		rejected_stateful_parallel_compare = true;
 	}
 	assert(rejected_stateful_parallel_compare);
+
+	auto size_distance = [](std::size_t lhs, std::size_t rhs) -> std::size_t {
+		return lhs > rhs ? lhs - rhs : rhs - lhs;
+	};
+	bool rejected_stateful_parallel_map = false;
+	try {
+		(void)metric::map(
+			stateful_space, [](const std::string &record) -> std::size_t { return record.size(); }, size_distance,
+			stateful_policy);
+	} catch (const std::invalid_argument &) {
+		rejected_stateful_parallel_map = true;
+	}
+	assert(rejected_stateful_parallel_map);
 
 	const auto lazy_groups = metric::find_groups(space, metric::strategies::k_medoids(2), lazy_policy);
 	assert(lazy_groups.algorithm == "kmedoids");

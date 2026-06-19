@@ -81,6 +81,48 @@ inline auto require_exact_compare(policy runtime_policy) -> void
 	}
 }
 
+inline auto require_exact_embed(policy runtime_policy) -> void
+{
+	if (!runtime_policy.is_exact()) {
+		throw std::invalid_argument("approximate embedding runtime policy is not implemented");
+	}
+}
+
+inline auto require_exact_reduce(policy runtime_policy) -> void
+{
+	if (!runtime_policy.is_exact()) {
+		throw std::invalid_argument("approximate reduction runtime policy is not implemented");
+	}
+}
+
+inline auto require_exact_map(policy runtime_policy) -> void
+{
+	if (!runtime_policy.is_exact()) {
+		throw std::invalid_argument("approximate mapping runtime policy is not implemented");
+	}
+}
+
+inline auto require_lazy_embed(policy runtime_policy) -> void
+{
+	if (runtime_policy.uses_materialization()) {
+		throw std::invalid_argument("materialized embedding runtime policy is not implemented");
+	}
+}
+
+inline auto require_lazy_reduce(policy runtime_policy) -> void
+{
+	if (runtime_policy.uses_materialization()) {
+		throw std::invalid_argument("materialized reduction runtime policy is not implemented");
+	}
+}
+
+inline auto require_lazy_map(policy runtime_policy) -> void
+{
+	if (runtime_policy.uses_materialization()) {
+		throw std::invalid_argument("materialized mapping runtime policy is not implemented");
+	}
+}
+
 template <typename Metric>
 constexpr auto supports_parallel_metric(policy runtime_policy) noexcept -> bool
 {
@@ -136,6 +178,21 @@ inline auto describe_representation(policy runtime_policy) -> std::string
 }
 
 inline auto compare_representation(policy runtime_policy) -> std::string
+{
+	return execution_representation(runtime_policy);
+}
+
+inline auto embed_representation(policy runtime_policy) -> std::string
+{
+	return execution_representation(runtime_policy);
+}
+
+inline auto reduce_representation(policy runtime_policy) -> std::string
+{
+	return execution_representation(runtime_policy);
+}
+
+inline auto map_representation(policy runtime_policy) -> std::string
 {
 	return execution_representation(runtime_policy);
 }

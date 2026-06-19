@@ -39,6 +39,18 @@ int main()
 	assert(direct.source_records == embedding.source_records);
 	assert(close(direct.space.record(direct.space.id(0))[0], embedding.space.record(embedding.space.id(0))[0]));
 
+	const auto lazy_policy = metric::runtime::exact();
+	const auto runtime_embedding = metric::embed(space, metric::strategies::pcfa(2), lazy_policy);
+	assert(runtime_embedding.mapping == "pcfa_embedding");
+	assert(runtime_embedding.representation == "metric_space");
+	assert(runtime_embedding.source_records == embedding.source_records);
+	assert(close(runtime_embedding.space.record(runtime_embedding.space.id(0))[0],
+				 embedding.space.record(embedding.space.id(0))[0]));
+
+	const auto runtime_direct = metric::embed(space, 2, lazy_policy);
+	assert(runtime_direct.representation == "metric_space");
+	assert(runtime_direct.source_records == embedding.source_records);
+
 	bool rejected_zero_components = false;
 	try {
 		(void)metric::embed(space, 0);
@@ -46,6 +58,22 @@ int main()
 		rejected_zero_components = true;
 	}
 	assert(rejected_zero_components);
+
+	bool rejected_materialized_runtime = false;
+	try {
+		(void)metric::embed(space, 2, metric::runtime::materialized(metric::runtime::exact()));
+	} catch (const std::invalid_argument &) {
+		rejected_materialized_runtime = true;
+	}
+	assert(rejected_materialized_runtime);
+
+	bool rejected_approximate_runtime = false;
+	try {
+		(void)metric::embed(space, 2, metric::runtime::approximate());
+	} catch (const std::invalid_argument &) {
+		rejected_approximate_runtime = true;
+	}
+	assert(rejected_approximate_runtime);
 
 	return 0;
 }

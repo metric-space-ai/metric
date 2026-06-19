@@ -10,6 +10,7 @@
 
 #include "../core/concepts.hpp"
 #include "../mappings/pcfa.hpp"
+#include "../runtime/execution.hpp"
 #include "../strategies/reduction.hpp"
 
 namespace metric {
@@ -22,10 +23,29 @@ auto reduce(const Space &space, strategies::pcfa strategy)
 }
 
 template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
+auto reduce(const Space &space, strategies::pcfa strategy, runtime::policy runtime_policy)
+	-> decltype(reduce(space, strategy))
+{
+	runtime::require_exact_reduce(runtime_policy);
+	runtime::require_lazy_reduce(runtime_policy);
+	runtime::require_parallel_metric<typename Space::metric_type>(runtime_policy);
+	auto result = reduce(space, strategy);
+	result.representation = runtime::reduce_representation(runtime_policy);
+	return result;
+}
+
+template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
 auto reduce(const Space &space, std::size_t components)
 	-> decltype(reduce(space, strategies::pcfa(components)))
 {
 	return reduce(space, strategies::pcfa(components));
+}
+
+template <typename Space, typename std::enable_if<MetricSpaceLike_v<Space>, int>::type = 0>
+auto reduce(const Space &space, std::size_t components, runtime::policy runtime_policy)
+	-> decltype(reduce(space, strategies::pcfa(components), runtime_policy))
+{
+	return reduce(space, strategies::pcfa(components), runtime_policy);
 }
 
 } // namespace metric
