@@ -16,6 +16,7 @@ The current local tree implements the first revival slice:
 - a downstream CMake consumer under `tests/downstream_consumer/`
 - core C++ `Metric`, `Space`, `FiniteSpace`, explicit representation aliases, and `metric::operators`
 - Python core facade modules under `metric.metrics`, `metric.spaces`, and `metric.operators`
+- Python engine facade modules under `metric.intent` and `metric.representations`
 - Python engine-style Space grouping intent with KMedoids and DBSCAN strategies
 - Python engine-style Space intent facade methods for representatives and structure diagnostics
 - Python engine-style Space compare/correlate intent with a deterministic distance-profile correlation strategy
@@ -249,6 +250,7 @@ The following revival improvements landed on `master` after the `v0.3.2` tag and
 - C++ engine map intent with `MappingResult` lineage metadata, deterministic transform smoke coverage, and API/stability docs, merged as `4cd6144e25761225fd1362dd3f5ae9e501f4859a`
 - C++ engine denoise intent backed by DBSCAN-noise filtering with `MappingResult` lineage metadata and core smoke coverage, merged as `998d1bc1d357f982c30b0eeb9a8ccce196fddb56`
 - Python engine-style Space denoise intent with named `MappingResult` objects, DBSCAN-noise filtering coverage, and API/stability docs, merged as `74054a493909b35af65034f21c944d057a600f91`
+- Python engine facade modules for semantic intent aliases and matrix representation materialization, merged as `b94c97c564d0cd9a2ae795e796662d152c678b86`
 
 ## Historical Code Policy
 
