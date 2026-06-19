@@ -46,6 +46,12 @@ Metrics are treated as thread-safe by default. A metric can specialize `metric::
 
 Approximate runtime policies throw for these promoted paths until backed by explicit approximate implementations.
 
+## Structure Diagnostics Execution
+
+`describe_structure(..., runtime::materialized(runtime::exact()))` uses a `MatrixCache` for exact all-pairs distance evaluation and reports `representation == "matrix_cache"` in the returned `StructureDescription`.
+
+Approximate runtime policies throw for structure diagnostics until backed by explicit approximate diagnostic implementations.
+
 ## Outlier And Denoise Execution
 
 `find_outliers(..., runtime::materialized(runtime::exact()))` uses a `MatrixCache` for DBSCAN-noise detection and nearest-reference scoring, then reports `representation == "matrix_cache"` in the returned `OutlierResult`.

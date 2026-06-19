@@ -67,6 +67,13 @@ inline auto require_exact_compress(policy runtime_policy) -> void
 	}
 }
 
+inline auto require_exact_describe(policy runtime_policy) -> void
+{
+	if (!runtime_policy.is_exact()) {
+		throw std::invalid_argument("approximate structure-description runtime policy is not implemented");
+	}
+}
+
 template <typename Metric>
 constexpr auto supports_parallel_metric(policy runtime_policy) noexcept -> bool
 {
@@ -112,6 +119,11 @@ inline auto representative_representation(policy runtime_policy) -> std::string
 }
 
 inline auto compression_representation(policy runtime_policy) -> std::string
+{
+	return execution_representation(runtime_policy);
+}
+
+inline auto describe_representation(policy runtime_policy) -> std::string
 {
 	return execution_representation(runtime_policy);
 }
