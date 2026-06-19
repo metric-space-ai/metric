@@ -1059,6 +1059,42 @@ def find_outliers(records, metric, strategy):
     )
 
 
+def _coerce_denoise_strategy(strategy):
+    if isinstance(strategy, DBSCAN):
+        return strategy
+    if hasattr(strategy, "radius") and hasattr(strategy, "min_points"):
+        return DBSCAN(radius=strategy.radius, min_points=strategy.min_points)
+    raise TypeError("strategy must be a DBSCAN strategy")
+
+
+def denoise_space(records, metric, strategy):
+    """Filter DBSCAN noise records and return a derived metric space."""
+    strategy = _coerce_denoise_strategy(strategy)
+    records = list(records)
+    groups = dbscan(records, metric, strategy.radius, strategy.min_points)
+    kept_record_ids = tuple(
+        record_index
+        for record_index, assignment in enumerate(groups.assignments)
+        if assignment != ClusteringResult.noise_label
+    )
+    denoised_records = [records[index] for index in kept_record_ids]
+
+    from metric.spaces import Space
+
+    return MappingResult(
+        space=Space(denoised_records, metric),
+        source_record_ids=kept_record_ids,
+        source_record_count=len(records),
+        target_record_count=len(denoised_records),
+        exact=True,
+        operator_name="denoise",
+        mapping="density_denoise",
+        strategy="dbscan_noise_filter",
+        representation=groups.representation,
+        inverse_supported=False,
+    )
+
+
 def representative_indices(records, metric, k, seed_index=0):
     """Select representative record IDs with deterministic farthest-first traversal."""
     selected, _nearest_selected_distances, _records = _farthest_first_selection(records, metric, k, seed_index)
@@ -1534,6 +1570,7 @@ __all__ = [
     "compare_spaces",
     "correlate_spaces",
     "dbscan",
+    "denoise_space",
     "describe_structure",
     "find_groups",
     "find_outliers",

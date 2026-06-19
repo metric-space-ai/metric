@@ -51,10 +51,9 @@ class FiniteMetricSpace:
 class Space(FiniteMetricSpace):
     """Intent-first facade for a finite metric space.
 
-    The revived Python engine facade starts with neighbor access because it is
-    backed by the current core representation. Higher-level intents such as
-    embedding and mapping are added only after they have stable strategy and
-    result contracts.
+    The revived Python engine facade starts from operations backed by stable
+    strategy and result contracts. Learned embedding paths stay out of the core
+    facade until they have deterministic coverage.
     """
 
     def neighbors(self, query, k=1):
@@ -75,6 +74,11 @@ class Space(FiniteMetricSpace):
         from metric.operators import find_outliers
 
         return find_outliers(self.records, self.metric, strategy)
+
+    def denoise(self, strategy):
+        from metric.operators import denoise_space
+
+        return denoise_space(self.records, self.metric, strategy)
 
     def representatives(self, k, strategy=None):
         from metric.operators import find_representatives

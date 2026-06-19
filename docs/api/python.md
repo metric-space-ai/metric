@@ -2,7 +2,7 @@
 
 The current Python core API exposes metric constructors, a minimal `Space` facade, finite-space helpers, and small operator helpers. It is intentionally small while the broader engine facade is restored.
 
-The stable entry point is `Space`: a finite record set plus a metric with cached pairwise distances and intent-named helpers for neighbors, groups, outliers, representatives, reduction, deterministic mapping, cross-space comparison, and structure diagnostics. `FiniteMetricSpace` and `MatrixSpace` remain available for explicit representation vocabulary, and `Space.to_matrix()` returns an explicit finite matrix-space view.
+The stable entry point is `Space`: a finite record set plus a metric with cached pairwise distances and intent-named helpers for neighbors, groups, outliers, denoising, representatives, reduction, deterministic mapping, cross-space comparison, and structure diagnostics. `FiniteMetricSpace` and `MatrixSpace` remain available for explicit representation vocabulary, and `Space.to_matrix()` returns an explicit finite matrix-space view.
 
 ## Basic Use
 
@@ -24,7 +24,7 @@ The records are strings. Edit distance defines the geometry without an embedding
 - `Space`: minimal intent-first finite metric space facade
 - `FiniteMetricSpace`: finite metric space over records
 - `MatrixSpace`: compatibility alias for `FiniteMetricSpace`
-- `operators`: small helpers for pairwise distances, nearest neighbors, range neighbors, exact graph results and edges, graph connectivity diagnostics, graph degree diagnostics, graph stretch diagnostics, graph pruning, grouping, outlier detection, representative selection, representative reduction, deterministic mapping, cross-space comparison, medoids, separated representatives, and intrinsic-dimension diagnostics
+- `operators`: small helpers for pairwise distances, nearest neighbors, range neighbors, exact graph results and edges, graph connectivity diagnostics, graph degree diagnostics, graph stretch diagnostics, graph pruning, grouping, outlier detection, DBSCAN-noise filtering, representative selection, representative reduction, deterministic mapping, cross-space comparison, medoids, separated representatives, and intrinsic-dimension diagnostics
 - `strategies`: strategy objects for intent methods, starting with `KMedoids`, `DBSCAN`, `FarthestFirst`, and `DistanceProfileCorrelation`
 - `mappings`: beta compatibility bridge for installed mapping bindings
 - `transforms`: beta compatibility bridge for installed transform bindings
@@ -43,6 +43,7 @@ space.within_radius(query, radius=1)
 space.groups(strategy=KMedoids(groups=2))
 space.groups(strategy=DBSCAN(radius=1, min_points=2))
 space.outliers(strategy=DBSCAN(radius=1, min_points=2))
+space.denoise(strategy=DBSCAN(radius=1, min_points=2))
 space.compare(other_space, strategy=DistanceProfileCorrelation())
 space.correlate(other_space)
 space.representatives(k=3)
@@ -79,6 +80,7 @@ from metric.operators import (
     compare_spaces,
     correlate_spaces,
     dbscan,
+    denoise_space,
     describe_structure,
     exact_knn_graph,
     exact_knn_graph_edges,
@@ -123,6 +125,7 @@ pruned = prune_graph_out_degree(exact_knn_graph(records, Edit(), k=2), max_out_d
 groups = find_groups(records, Edit(), KMedoids(groups=2))
 density_groups = find_groups(records, Edit(), DBSCAN(radius=1, min_points=2))
 outliers = find_outliers(records, Edit(), DBSCAN(radius=1, min_points=2))
+denoised = denoise_space(records, Edit(), DBSCAN(radius=1, min_points=2))
 dependency = compare_spaces(records, Edit(), other_records, other_metric, DistanceProfileCorrelation())
 selected_ids = representative_indices(records, Edit(), k=2)
 selected_records = representatives(records, Edit(), k=2)
@@ -142,6 +145,8 @@ structure = describe_structure(records, Edit())
 `find_groups` returns a `ClusteringResult` with source-record assignments, medoid record IDs, cluster sizes, optional DBSCAN core/noise records, iteration metadata, algorithm metadata, and representation metadata. `Space.groups(...)` exposes the same result from the `Space` facade. Passing an integer group count selects deterministic `KMedoids`; passing `KMedoids` or `DBSCAN` makes the strategy explicit.
 
 `find_outliers` returns an `OutlierResult` backed by DBSCAN-noise detection. Each `Outlier` contains the source record ID and a deterministic isolation score based on distance to the nearest non-noise record. `Space.outliers(...)` exposes the same result from the `Space` facade.
+
+`denoise_space` returns a `MappingResult` backed by DBSCAN-noise filtering. The derived `Space` contains only non-noise source records, `source_record_ids` preserves the original record lineage, and inverse reconstruction is explicitly unsupported. `Space.denoise(...)` exposes the same result from the `Space` facade.
 
 `compare_spaces` returns a `CorrelationResult` for two aligned finite metric spaces with the same record count. The first Python-core strategy is `DistanceProfileCorrelation`, which computes the Pearson correlation of upper-triangular pairwise distance profiles. `Space.compare(...)` and `Space.correlate(...)` expose the same result with metric-space representation metadata.
 
@@ -212,7 +217,7 @@ print(space.distance(0, 1))
 
 ## Engine Roadmap
 
-The implemented facade currently covers neighbor access, grouping, outlier detection, deterministic mapping, cross-space comparison, representative selection, representative reduction, and structure diagnostics. Additional intent names such as `embed` and `denoise` describe the public direction and should be promoted only when they are backed by stable strategies, result objects, examples, and CI.
+The implemented facade currently covers neighbor access, grouping, outlier detection, DBSCAN-backed denoising, deterministic mapping, cross-space comparison, representative selection, representative reduction, and structure diagnostics. Additional intent names such as `embed` describe the public direction and should be promoted only when they are backed by stable strategies, result objects, examples, and CI.
 
 ## Compatibility
 
