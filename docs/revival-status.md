@@ -51,6 +51,7 @@ The current local tree implements the first revival slice:
 - Python describe facade accepts fresh explicit representations and records representation metadata
 - Python distance compatibility aliases expose `Manhattan`, `Minkowski`, and `ThresholdedEuclidean` when optional historical standard bindings are installed
 - Python top-level package hides legacy native debug exports such as `LongVector`, `DoubleVector`, and `test`
+- Python legacy Tree bindings expose boolean `empty()`, explicit `size()`, and named `insert_if(...)` threshold insertion
 - Python beta compatibility bridge modules under `metric.mappings` and `metric.transforms`
 - promoted C++ examples under `examples/core/`
 - promoted Python examples under `python/examples/metric_space/`
@@ -315,6 +316,7 @@ The following revival improvements landed on `master` after the `v0.3.2` tag and
 - Python `Space.outliers(..., representation=...)` and `Space.denoise(..., representation=...)` freshness checks and representation metadata, merged as `215185307b04ef167fa2723e38b3266a17e71853`
 - Python distance compatibility aliases for optional historical standard bindings, merged as `3b210fec8ffcc49e767065d829f830d74447fa38`
 - Python top-level debug extension exports hidden from the public package API, merged as `66d7c07933c6cfd08b3dea8184741fc3ede41a47`
+- Python legacy Tree binding fixes for boolean `empty()`, explicit `size()`, and named `insert_if(...)`, merged as `b11d339fe9c0867d76aee20ff8ed02762fe67a12`
 
 ## Historical Code Policy
 
