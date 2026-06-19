@@ -112,7 +112,7 @@ Result objects preserve:
 
 The first engine operator results are `metric::NeighborSet<Distance>`, returned by nearest-neighbor operators over spaces, distance providers, and neighbor indexes; `metric::ClusteringResult<Distance>`, returned by k-medoids and DBSCAN grouping operators; `metric::EntropyResult<double>`, returned by entropy diagnostics; `metric::CorrelationResult<double>`, returned by MGC cross-space statistics; and `metric::MappingResult<DerivedSpace>`, returned by mapping adapters that produce derived metric spaces.
 
-The first C++ intent helpers are `metric::find_neighbors` and `metric::find_groups`. They keep the user-facing vocabulary semantic while routing to explicit strategy objects such as `metric::strategies::cover_tree`, `metric::strategies::matrix_cache`, `metric::strategies::k_medoids`, and `metric::strategies::dbscan`.
+The first C++ intent helpers are `metric::find_neighbors`, `metric::find_groups`, `metric::compare`, and `metric::correlate`. They keep the user-facing vocabulary semantic while routing to explicit strategy objects such as `metric::strategies::cover_tree`, `metric::strategies::matrix_cache`, `metric::strategies::k_medoids`, `metric::strategies::dbscan`, and `metric::strategies::mgc`.
 
 The first C++ mapping adapters are `metric::mappings::make_clustered_space_mapping` and the PCFA adapter in `<metric/mappings/pcfa.hpp>`. They fit source spaces to mapping models and transform them into derived metric spaces while preserving source `RecordId` lineage.
 

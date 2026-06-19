@@ -11,6 +11,7 @@
 #include "core/neighbor.hpp"
 #include "core/record_id.hpp"
 #include "core/result.hpp"
+#include "intent/compare.hpp"
 #include "intent/groups.hpp"
 #include "intent/neighbors.hpp"
 #include "mappings/clustered_space.hpp"
@@ -24,6 +25,7 @@
 #include "representations/knn_graph_index.hpp"
 #include "representations/matrix_cache.hpp"
 #include "strategies/clustering.hpp"
+#include "strategies/correlation.hpp"
 #include "strategies/search.hpp"
 
 #endif
