@@ -391,11 +391,18 @@ class Space(FiniteMetricSpace):
             inverse_supported=False,
         )
 
-    def representatives(self, k=None, strategy=None, *, count=None, runtime=None):
+    def representatives(self, k=None, strategy=None, *, count=None, representation=None, runtime=None):
         require_exact_runtime(runtime)
         from metric.operators import find_representatives
 
-        return find_representatives(self.records, self.metric, k, strategy=strategy, count=count)
+        return find_representatives(
+            self.records,
+            self.metric,
+            k,
+            strategy=strategy,
+            count=count,
+            representation=self._representation_name(representation),
+        )
 
     def _representation_name(self, representation):
         representation_name = "metric_space"

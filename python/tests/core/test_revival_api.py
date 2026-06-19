@@ -599,6 +599,9 @@ class RevivalApiTest(unittest.TestCase):
         self.assertAlmostEqual(representatives_result.average_nearest_distance, 0.4)
         self.assertEqual(representatives_result.strategy, "farthest_first")
         self.assertEqual(representatives_result.representation, "metric_space")
+        matrix_representatives = space.representatives(count=3, representation=space.to_matrix())
+        self.assertEqual(matrix_representatives.representation, "matrix")
+        self.assertEqual(matrix_representatives.representatives, representatives_result.representatives)
 
         self.assertEqual(space.representatives(count=3), representatives_result)
         self.assertEqual(
@@ -838,6 +841,8 @@ class RevivalApiTest(unittest.TestCase):
             space.reduce(count=2, representation=stale_matrix)
         with self.assertRaises(StaleRepresentationError):
             space.compress(count=2, representation=stale_matrix)
+        with self.assertRaises(StaleRepresentationError):
+            space.representatives(count=2, representation=stale_matrix)
         with self.assertRaises(StaleRepresentationError):
             space.outliers(count=1, representation=stale_matrix)
         with self.assertRaises(StaleRepresentationError):

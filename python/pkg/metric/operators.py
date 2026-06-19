@@ -1264,7 +1264,7 @@ def _coerce_representative_request(k=None, count=None):
     return count if count is not None else k
 
 
-def find_representatives(records, metric, k=None, strategy=None, *, count=None):
+def find_representatives(records, metric, k=None, strategy=None, *, count=None, representation="metric_space"):
     """Select representatives and return an engine-style result object."""
     strategy = _coerce_farthest_first(strategy)
     k = _coerce_representative_request(k, count)
@@ -1289,7 +1289,7 @@ def find_representatives(records, metric, k=None, strategy=None, *, count=None):
         average_nearest_distance=average_nearest_distance,
         exact=True,
         strategy="farthest_first",
-        representation="metric_space",
+        representation=representation,
     )
 
 
@@ -1372,7 +1372,13 @@ def reduce_space(records, metric, count=None, strategy=None, *, representation="
         raise ValueError("count cannot exceed the number of records")
 
     if isinstance(strategy, FarthestFirst):
-        representatives_result = find_representatives(records, metric, count, strategy=strategy)
+        representatives_result = find_representatives(
+            records,
+            metric,
+            count,
+            strategy=strategy,
+            representation=representation,
+        )
         source_record_ids = representatives_result.representatives
         strategy_name = "farthest_first"
     elif isinstance(strategy, KMedoids):
