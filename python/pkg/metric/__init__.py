@@ -22,6 +22,9 @@ from .metrics import Edit
 from .operators import (
     ClusteringResult,
     CorrelationResult,
+    EmbeddingDiagnostics,
+    EmbeddingModel,
+    EmbeddingResult,
     GraphConnectivityDiagnostics,
     GraphDegreeDiagnostics,
     GraphStretchDiagnostics,
@@ -40,6 +43,7 @@ from .operators import (
     dbscan,
     denoise_space,
     describe_structure,
+    embed_space,
     exact_knn_graph,
     exact_knn_graph_edges,
     exact_radius_graph,
@@ -67,7 +71,7 @@ from .operators import (
     symmetrize_graph,
 )
 from .spaces import FiniteMetricSpace, MatrixSpace, Space
-from .strategies import DBSCAN, DistanceProfileCorrelation, FarthestFirst, KMedoids
+from .strategies import ClassicMDS, DBSCAN, DistanceProfileCorrelation, FarthestFirst, KMedoids
 
 __all__ = sorted(
     name

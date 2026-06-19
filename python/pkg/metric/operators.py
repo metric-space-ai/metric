@@ -5,8 +5,10 @@ import math
 import operator
 from typing import ClassVar
 
+import numpy as np
+
 from metric.spaces import FiniteMetricSpace
-from metric.strategies import DBSCAN, DistanceProfileCorrelation, FarthestFirst, KMedoids
+from metric.strategies import ClassicMDS, DBSCAN, DistanceProfileCorrelation, FarthestFirst, KMedoids
 
 
 @dataclass(frozen=True)
@@ -205,6 +207,48 @@ class CorrelationResult:
     strategy: str
     left_representation: str
     right_representation: str
+
+
+@dataclass(frozen=True)
+class EmbeddingDiagnostics:
+    """Quality diagnostics for a metric-space embedding."""
+
+    raw_stress: float
+    normalized_stress: float
+    distance_correlation: float
+    trustworthiness: float
+    neighbor_k: int
+    finite_coordinates: bool
+    coordinate_scale: float
+
+
+@dataclass(frozen=True)
+class EmbeddingModel:
+    """Metadata for a deterministic embedding model."""
+
+    method: str
+    dimensions: int
+    source_record_ids: tuple
+
+
+@dataclass(frozen=True)
+class EmbeddingResult:
+    """Derived coordinate view of a finite metric space."""
+
+    coordinates: object
+    embedded_space: object
+    source_space: object
+    model: EmbeddingModel
+    source_record_ids: tuple
+    source_record_count: int
+    dimensions: int
+    stress: float
+    trustworthiness: float
+    exact: bool
+    operator_name: str
+    strategy: str
+    representation: str
+    diagnostics: EmbeddingDiagnostics
 
 
 def pairwise_distance_matrix(records, metric):
@@ -1326,6 +1370,165 @@ def map_space(records, transform, metric):
     )
 
 
+def _coerce_embedding_strategy(dimensions, strategy):
+    if strategy is None:
+        return ClassicMDS(dimensions=dimensions)
+    if isinstance(strategy, ClassicMDS):
+        return strategy
+    if hasattr(strategy, "dimensions"):
+        return ClassicMDS(dimensions=strategy.dimensions)
+    raise TypeError("strategy must be a ClassicMDS strategy")
+
+
+def _coerce_embedding_dimensions(dimensions):
+    try:
+        dimensions = operator.index(dimensions)
+    except TypeError:
+        raise TypeError("dimensions must be an integer") from None
+    if dimensions <= 0:
+        raise ValueError("dimensions must be positive")
+    return dimensions
+
+
+def _embedding_distance(lhs, rhs):
+    return float(np.linalg.norm(np.asarray(lhs, dtype=float) - np.asarray(rhs, dtype=float)))
+
+
+def _embedded_distance_matrix(coordinates):
+    record_count = coordinates.shape[0]
+    distances = [[0.0] * record_count for _index in range(record_count)]
+    for lhs_index in range(record_count):
+        for rhs_index in range(lhs_index + 1, record_count):
+            distance = _embedding_distance(coordinates[lhs_index], coordinates[rhs_index])
+            distances[lhs_index][rhs_index] = distance
+            distances[rhs_index][lhs_index] = distance
+    return distances
+
+
+def _local_neighbor_overlap(source_distances, embedded_distances):
+    record_count = len(source_distances)
+    if record_count <= 1:
+        return 1.0, 0
+
+    neighbor_k = min(2, record_count - 1)
+    overlap_sum = 0
+    for record_index in range(record_count):
+        source_neighbors = sorted(
+            (
+                (source_distances[record_index][candidate_index], candidate_index)
+                for candidate_index in range(record_count)
+                if candidate_index != record_index
+            )
+        )[:neighbor_k]
+        embedded_neighbors = sorted(
+            (
+                (embedded_distances[record_index][candidate_index], candidate_index)
+                for candidate_index in range(record_count)
+                if candidate_index != record_index
+            )
+        )[:neighbor_k]
+        overlap_sum += len(
+            {candidate_index for _distance, candidate_index in source_neighbors}
+            & {candidate_index for _distance, candidate_index in embedded_neighbors}
+        )
+
+    return overlap_sum / (record_count * neighbor_k), neighbor_k
+
+
+def _embedding_distance_correlation(source_profile, embedded_profile, raw_stress):
+    if len(source_profile) < 2:
+        return 1.0 if raw_stress <= 1e-12 else 0.0
+    try:
+        return _pearson_correlation(source_profile, embedded_profile)
+    except ValueError:
+        return 1.0 if raw_stress <= 1e-12 else 0.0
+
+
+def embed_space(records, metric, dimensions=2, strategy=None):
+    """Embed a finite metric space into deterministic Euclidean coordinates."""
+    if not callable(metric):
+        raise TypeError("metric must be callable")
+
+    strategy = _coerce_embedding_strategy(dimensions, strategy)
+    dimensions = _coerce_embedding_dimensions(strategy.dimensions)
+    records = list(records)
+    source_distances = np.asarray(pairwise_distance_matrix(records, metric), dtype=float)
+
+    if np.any(source_distances < 0):
+        raise ValueError("distance matrix contains negative distances")
+
+    record_count = len(records)
+    if record_count == 0:
+        coordinates = np.zeros((0, dimensions), dtype=float)
+    else:
+        squared_distances = source_distances ** 2
+        centering = np.eye(record_count) - np.full((record_count, record_count), 1.0 / record_count)
+        gram = -0.5 * centering @ squared_distances @ centering
+        gram = (gram + gram.T) * 0.5
+        eigenvalues, eigenvectors = np.linalg.eigh(gram)
+        order = np.argsort(eigenvalues)[::-1]
+
+        coordinates = np.zeros((record_count, dimensions), dtype=float)
+        for coordinate_index, eigen_index in enumerate(order[:dimensions]):
+            eigenvalue = max(float(eigenvalues[eigen_index]), 0.0)
+            if eigenvalue <= 0:
+                continue
+            vector = eigenvectors[:, eigen_index]
+            anchor_index = int(np.argmax(np.abs(vector)))
+            if vector[anchor_index] < 0:
+                vector = -vector
+            coordinates[:, coordinate_index] = vector * math.sqrt(eigenvalue)
+
+    embedded_records = [tuple(float(value) for value in row) for row in coordinates.tolist()]
+    embedded_distances = _embedded_distance_matrix(coordinates)
+    source_profile = _upper_triangle(source_distances.tolist())
+    embedded_profile = _upper_triangle(embedded_distances)
+    raw_stress = math.sqrt(
+        sum(
+            (source_distance - embedded_distance) ** 2
+            for source_distance, embedded_distance in zip(source_profile, embedded_profile)
+        )
+    )
+    source_norm = math.sqrt(sum(distance ** 2 for distance in source_profile))
+    normalized_stress = raw_stress / source_norm if source_norm else 0.0
+    trustworthiness, neighbor_k = _local_neighbor_overlap(source_distances.tolist(), embedded_distances)
+    distance_correlation = _embedding_distance_correlation(source_profile, embedded_profile, raw_stress)
+    coordinate_scale = float(np.max(np.abs(coordinates))) if coordinates.size else 0.0
+
+    from metric.spaces import Space
+
+    diagnostics = EmbeddingDiagnostics(
+        raw_stress=raw_stress,
+        normalized_stress=normalized_stress,
+        distance_correlation=distance_correlation,
+        trustworthiness=trustworthiness,
+        neighbor_k=neighbor_k,
+        finite_coordinates=bool(np.isfinite(coordinates).all()),
+        coordinate_scale=coordinate_scale,
+    )
+
+    return EmbeddingResult(
+        coordinates=coordinates,
+        embedded_space=Space(embedded_records, _embedding_distance),
+        source_space=Space(records, metric),
+        model=EmbeddingModel(
+            method="classic_mds",
+            dimensions=dimensions,
+            source_record_ids=tuple(range(record_count)),
+        ),
+        source_record_ids=tuple(range(record_count)),
+        source_record_count=record_count,
+        dimensions=dimensions,
+        stress=normalized_stress,
+        trustworthiness=trustworthiness,
+        exact=True,
+        operator_name="embed",
+        strategy="classic_mds",
+        representation="metric_space",
+        diagnostics=diagnostics,
+    )
+
+
 def representatives(records, metric, k, seed_index=0):
     """Select representative records with deterministic farthest-first traversal."""
     records = list(records)
@@ -1556,6 +1759,9 @@ def intrinsic_dimension_from_distances(distances):
 __all__ = [
     "ClusteringResult",
     "CorrelationResult",
+    "EmbeddingDiagnostics",
+    "EmbeddingModel",
+    "EmbeddingResult",
     "GraphConnectivityDiagnostics",
     "GraphDegreeDiagnostics",
     "GraphStretchDiagnostics",
@@ -1572,6 +1778,7 @@ __all__ = [
     "dbscan",
     "denoise_space",
     "describe_structure",
+    "embed_space",
     "find_groups",
     "find_outliers",
     "find_representatives",

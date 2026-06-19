@@ -95,6 +95,11 @@ class Space(FiniteMetricSpace):
 
         return map_space(self.records, transform, self.metric if metric is None else metric)
 
+    def embed(self, dimensions=2, strategy=None):
+        from metric.operators import embed_space
+
+        return embed_space(self.records, self.metric, dimensions=dimensions, strategy=strategy)
+
     def describe(self):
         from metric.operators import describe_structure
 

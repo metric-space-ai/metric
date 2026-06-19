@@ -2,7 +2,7 @@
 
 The current Python core API exposes metric constructors, a minimal `Space` facade, finite-space helpers, and small operator helpers. It is intentionally small while the broader engine facade is restored.
 
-The stable entry point is `Space`: a finite record set plus a metric with cached pairwise distances and intent-named helpers for neighbors, groups, outliers, denoising, representatives, reduction, deterministic mapping, cross-space comparison, and structure diagnostics. `FiniteMetricSpace` and `MatrixSpace` remain available for explicit representation vocabulary, and `Space.to_matrix()` returns an explicit finite matrix-space view.
+The stable entry point is `Space`: a finite record set plus a metric with cached pairwise distances and intent-named helpers for neighbors, groups, embedding, outliers, denoising, representatives, reduction, deterministic mapping, cross-space comparison, and structure diagnostics. `FiniteMetricSpace` and `MatrixSpace` remain available for explicit representation vocabulary, and `Space.to_matrix()` returns an explicit finite matrix-space view.
 
 ## Basic Use
 
@@ -26,8 +26,8 @@ The records are strings. Edit distance defines the geometry without an embedding
 - `MatrixSpace`: compatibility alias for `FiniteMetricSpace`
 - `intent`: semantic helper aliases for promoted intent operations
 - `representations`: explicit representation helpers, starting with matrix materialization
-- `operators`: small helpers for pairwise distances, nearest neighbors, range neighbors, exact graph results and edges, graph connectivity diagnostics, graph degree diagnostics, graph stretch diagnostics, graph pruning, grouping, outlier detection, DBSCAN-noise filtering, representative selection, representative reduction, deterministic mapping, cross-space comparison, medoids, separated representatives, and intrinsic-dimension diagnostics
-- `strategies`: strategy objects for intent methods, starting with `KMedoids`, `DBSCAN`, `FarthestFirst`, and `DistanceProfileCorrelation`
+- `operators`: small helpers for pairwise distances, nearest neighbors, range neighbors, exact graph results and edges, graph connectivity diagnostics, graph degree diagnostics, graph stretch diagnostics, graph pruning, grouping, embedding, outlier detection, DBSCAN-noise filtering, representative selection, representative reduction, deterministic mapping, cross-space comparison, medoids, separated representatives, and intrinsic-dimension diagnostics
+- `strategies`: strategy objects for intent methods, starting with `ClassicMDS`, `KMedoids`, `DBSCAN`, `FarthestFirst`, and `DistanceProfileCorrelation`
 - `mappings`: beta compatibility bridge for installed mapping bindings
 - `transforms`: beta compatibility bridge for installed transform bindings
 
@@ -44,6 +44,8 @@ space.nearest(query)
 space.within_radius(query, radius=1)
 space.groups(strategy=KMedoids(groups=2))
 space.groups(strategy=DBSCAN(radius=1, min_points=2))
+space.embed(dimensions=2)
+space.embed(strategy=ClassicMDS(dimensions=2))
 space.outliers(strategy=DBSCAN(radius=1, min_points=2))
 space.denoise(strategy=DBSCAN(radius=1, min_points=2))
 space.compare(other_space, strategy=DistanceProfileCorrelation())
@@ -66,6 +68,9 @@ space.rnn(query, radius=1)
 from metric.operators import (
     ClusteringResult,
     CorrelationResult,
+    EmbeddingDiagnostics,
+    EmbeddingModel,
+    EmbeddingResult,
     GraphConstructionMetadata,
     GraphConstructionResult,
     GraphConnectivityDiagnostics,
@@ -84,6 +89,7 @@ from metric.operators import (
     dbscan,
     denoise_space,
     describe_structure,
+    embed_space,
     exact_knn_graph,
     exact_knn_graph_edges,
     exact_radius_graph,
@@ -110,7 +116,7 @@ from metric.operators import (
     separated_representatives,
     symmetrize_graph,
 )
-from metric.strategies import DBSCAN, DistanceProfileCorrelation, FarthestFirst, KMedoids
+from metric.strategies import ClassicMDS, DBSCAN, DistanceProfileCorrelation, FarthestFirst, KMedoids
 
 distances = pairwise_distance_matrix(records, Edit())
 neighbors = nearest_neighbors(records, Edit(), "cut", k=2)
@@ -128,6 +134,7 @@ groups = find_groups(records, Edit(), KMedoids(groups=2))
 density_groups = find_groups(records, Edit(), DBSCAN(radius=1, min_points=2))
 outliers = find_outliers(records, Edit(), DBSCAN(radius=1, min_points=2))
 denoised = denoise_space(records, Edit(), DBSCAN(radius=1, min_points=2))
+embedding = embed_space(records, Edit(), dimensions=2)
 dependency = compare_spaces(records, Edit(), other_records, other_metric, DistanceProfileCorrelation())
 selected_ids = representative_indices(records, Edit(), k=2)
 selected_records = representatives(records, Edit(), k=2)
@@ -149,6 +156,8 @@ structure = describe_structure(records, Edit())
 `find_outliers` returns an `OutlierResult` backed by DBSCAN-noise detection. Each `Outlier` contains the source record ID and a deterministic isolation score based on distance to the nearest non-noise record. `Space.outliers(...)` exposes the same result from the `Space` facade.
 
 `denoise_space` returns a `MappingResult` backed by DBSCAN-noise filtering. The derived `Space` contains only non-noise source records, `source_record_ids` preserves the original record lineage, and inverse reconstruction is explicitly unsupported. `Space.denoise(...)` exposes the same result from the `Space` facade.
+
+`embed_space` returns an `EmbeddingResult` backed by deterministic classical MDS over the exact finite distance matrix. The result includes NumPy `coordinates`, an `embedded_space` over coordinate records with a Euclidean metric, the original `source_space`, source-record IDs, exact/operator/representation metadata, a small `EmbeddingModel`, normalized stress, local-neighbor trustworthiness, distance-profile correlation, and finite-coordinate diagnostics. `Space.embed(...)` exposes the same derived coordinate view from the `Space` facade.
 
 `compare_spaces` returns a `CorrelationResult` for two aligned finite metric spaces with the same record count. The first Python-core strategy is `DistanceProfileCorrelation`, which computes the Pearson correlation of upper-triangular pairwise distance profiles. `Space.compare(...)` and `Space.correlate(...)` expose the same result with metric-space representation metadata.
 
@@ -217,11 +226,11 @@ print(space.distance(0, 1))
 
 `to_matrix()` returns an independent `FiniteMetricSpace` / `MatrixSpace` view with its own cached pairwise distances. It is useful when code wants to make materialization explicit while keeping the same records and metric callable.
 
-`metric.representations.matrix(space)` exposes the same explicit matrix materialization through the representation facade. `metric.intent` provides semantic aliases such as `find_neighbors`, `groups`, `denoise`, `reduce`, `map`, `compare`, and `describe` over the promoted operator functions for workflows that prefer module-level intent names.
+`metric.representations.matrix(space)` exposes the same explicit matrix materialization through the representation facade. `metric.intent` provides semantic aliases such as `find_neighbors`, `groups`, `embed`, `denoise`, `reduce`, `map`, `compare`, and `describe` over the promoted operator functions for workflows that prefer module-level intent names.
 
 ## Engine Roadmap
 
-The implemented facade currently covers neighbor access, grouping, outlier detection, DBSCAN-backed denoising, deterministic mapping, cross-space comparison, representative selection, representative reduction, and structure diagnostics. Additional intent names such as `embed` describe the public direction and should be promoted only when they are backed by stable strategies, result objects, examples, and CI.
+The implemented facade currently covers neighbor access, grouping, classical-MDS embedding, outlier detection, DBSCAN-backed denoising, deterministic mapping, cross-space comparison, representative selection, representative reduction, and structure diagnostics. Additional embedding strategies and learned mappings should be promoted only when they are backed by stable strategies, result objects, examples, and CI.
 
 ## Compatibility
 
