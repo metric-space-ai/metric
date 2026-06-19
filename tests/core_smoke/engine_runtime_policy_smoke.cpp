@@ -13,6 +13,14 @@ struct StringLengthDistance {
 	}
 };
 
+struct DoubleAbsoluteDistance {
+	auto operator()(double lhs, double rhs) const -> double
+	{
+		const auto difference = lhs - rhs;
+		return difference < 0.0 ? -difference : difference;
+	}
+};
+
 int main()
 {
 	auto space = metric::make_space(std::vector<std::string>{"a", "bb", "ccc", "dddd"}, StringLengthDistance{});
@@ -66,6 +74,34 @@ int main()
 	const auto parallel_neighbors = metric::find_neighbors(space, space.id(0), 2, parallel_policy);
 	assert(parallel_neighbors.representation == "matrix_cache");
 
+	const auto lazy_groups = metric::find_groups(space, metric::strategies::k_medoids(2), lazy_policy);
+	assert(lazy_groups.algorithm == "kmedoids");
+	assert(lazy_groups.representation == "metric_space");
+	assert(lazy_groups.cluster_count == 2);
+
+	const auto materialized_groups = metric::find_groups(space, metric::strategies::k_medoids(2), materialized_policy);
+	assert(materialized_groups.algorithm == "kmedoids");
+	assert(materialized_groups.representation == "matrix_cache");
+	assert(materialized_groups.assignments == lazy_groups.assignments);
+	assert(materialized_groups.medoids == lazy_groups.medoids);
+
+	const auto counted_materialized_groups = metric::find_groups(space, 2, materialized_policy);
+	assert(counted_materialized_groups.representation == "matrix_cache");
+	assert(counted_materialized_groups.assignments == materialized_groups.assignments);
+
+	const auto density_groups = metric::find_groups(space, metric::strategies::dbscan(1.0, 2), materialized_policy);
+	assert(density_groups.algorithm == "dbscan");
+	assert(density_groups.representation == "matrix_cache");
+	assert(density_groups.record_count == space.size());
+
+	auto continuous_space = metric::make_space(std::vector<double>{0.0, 0.1, 10.0, 10.1}, DoubleAbsoluteDistance{});
+	const auto affinity_groups =
+		metric::find_groups(continuous_space, metric::strategies::affinity_propagation(0.7), materialized_policy);
+	assert(affinity_groups.algorithm == "affinity_propagation");
+	assert(affinity_groups.representation == "matrix_cache");
+	assert(affinity_groups.record_count == continuous_space.size());
+	assert(affinity_groups.cluster_count == affinity_groups.medoids.size());
+
 	auto cached_matrix = metric::runtime::cache(metric::representations::MatrixCache<decltype(space)>(space));
 	assert(!cached_matrix.is_stale());
 	assert(cached_matrix.version() == space.version());
@@ -83,6 +119,17 @@ int main()
 	assert(!approximate_diagnostics.exact);
 	assert(!approximate_diagnostics.supported);
 	assert(!approximate_diagnostics.reason.empty());
+
+	bool rejected_approximate_groups = false;
+	try {
+		(void)metric::find_groups(space, metric::strategies::k_medoids(2), metric::runtime::approximate());
+	} catch (const std::invalid_argument &) {
+		rejected_approximate_groups = true;
+	}
+	assert(rejected_approximate_groups);
+	const auto group_diagnostics = metric::runtime::diagnostics(materialized_policy, {}, "groups");
+	assert(group_diagnostics.representation == "matrix_cache");
+	assert(group_diagnostics.intent == "groups");
 
 	bool rejected_materialized_record_query = false;
 	try {

@@ -31,9 +31,26 @@ inline auto require_exact_neighbors(policy runtime_policy) -> void
 	}
 }
 
-inline auto neighbor_representation(policy runtime_policy) -> std::string
+inline auto require_exact_groups(policy runtime_policy) -> void
+{
+	if (!runtime_policy.is_exact()) {
+		throw std::invalid_argument("approximate grouping runtime policy is not implemented");
+	}
+}
+
+inline auto execution_representation(policy runtime_policy) -> std::string
 {
 	return runtime_policy.uses_materialization() ? "matrix_cache" : "metric_space";
+}
+
+inline auto neighbor_representation(policy runtime_policy) -> std::string
+{
+	return execution_representation(runtime_policy);
+}
+
+inline auto group_representation(policy runtime_policy) -> std::string
+{
+	return execution_representation(runtime_policy);
 }
 
 inline auto diagnostics(policy runtime_policy = exact(), std::string representation = {}, std::string intent = {})
@@ -45,7 +62,7 @@ inline auto diagnostics(policy runtime_policy = exact(), std::string representat
 	result.exact = runtime_policy.is_exact();
 	result.parallel = runtime_policy.uses_parallel_execution();
 	result.materialized = runtime_policy.uses_materialization();
-	result.representation = representation.empty() ? neighbor_representation(runtime_policy) : std::move(representation);
+	result.representation = representation.empty() ? execution_representation(runtime_policy) : std::move(representation);
 	result.intent = std::move(intent);
 	result.supported = supported;
 	if (!supported) {
