@@ -48,6 +48,7 @@ The Python core wheel path covers:
 - deterministic representative-selection, medoid, separated-representative, and radius-coverage regression values for histogram transport, time-series alignment, and structured mixed-record callables
 - promoted Python examples for strings, structured records, time-series alignment, histogram transport, representative selection, and engine flagship workflows
 - subprocess execution of every `python/examples/metric_space/*.py` and `python/examples/engine/*.py` example from the core Python API tests, so PyPI cibuildwheel tests cover the same promoted examples even when the workflow invokes only the core test suite directly
+- promoted Python notebooks under `python/notebooks/`, executed by `python/notebooks/smoke_notebooks.py` from the core Python API tests without requiring Jupyter in CI
 
 ## Extended and Historical Tests
 
