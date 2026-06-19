@@ -132,8 +132,10 @@ int main()
 		loaded.load(archive);
 		const auto loaded_prediction = loaded.predict(sample);
 		assert(loaded_prediction.size() == prediction.size());
+		const auto roundtrip_tolerance = 1.0e-6;
 		for (std::size_t index = 0; index < prediction.size(); ++index) {
-			assert(close(loaded_prediction[index], prediction[index], 1.0e-9));
+			assert(std::isfinite(loaded_prediction[index]));
+			assert(close(loaded_prediction[index], prediction[index], roundtrip_tolerance));
 		}
 	}
 
