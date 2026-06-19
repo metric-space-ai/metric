@@ -22,7 +22,7 @@ The current local tree implements the first revival slice:
 - C++ smoke and contract tests under `tests/core_smoke/`
 - Python core API and metric-contract tests under `python/tests/core/`
 - documentation for concepts, APIs, examples, stability, testing, and release gates
-- CI workflows for C++ core, Python wheels, docs/formatting, and GitHub Pages artifacts
+- CI workflows for C++ core, Python wheels, docs/formatting, revived-source formatting, and GitHub Pages artifacts
 - release artifact workflow for source archive, Python sdist, Python wheel built from that sdist, and C++ core/downstream evidence
 - manual PyPI publishing workflow for checked sdist and cibuildwheel wheel artifacts, with repository-secret and Trusted Publishing authentication paths
 - manual-only legacy workflows for broad historical coverage
@@ -58,6 +58,7 @@ PYTHONDONTWRITEBYTECODE=1 python python/examples/metric_space/structured_record_
 PYTHONDONTWRITEBYTECODE=1 python -m unittest discover -s python/tests/core -v
 
 ruby scripts/check_revival_whitespace.rb
+ruby scripts/check_revival_format.rb
 ruby scripts/check_markdown_links.rb
 ruby -ryaml -e 'Dir[".github/workflows/*.yml"].each { |path| YAML.load_file(path) }; puts "workflow YAML parsed"'
 git diff --check

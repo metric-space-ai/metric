@@ -15,6 +15,7 @@
 - Add a Trusted Publishing option to the manual PyPI publishing workflow while preserving the repository-secret password path.
 - Run every promoted Python metric-space example in the Python release-artifact gate.
 - Include both promoted Python examples in cibuildwheel tests for PyPI publish builds.
+- Add a revived-source formatting check to the docs and formatting gate.
 
 ### Documentation and Examples
 

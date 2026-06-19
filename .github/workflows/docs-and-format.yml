@@ -42,6 +42,7 @@ on:
       - "python/src/distance/**"
       - "python/tests/core/**"
       - "scripts/check_markdown_links.rb"
+      - "scripts/check_revival_format.rb"
       - "scripts/check_revival_whitespace.rb"
       - "tests/README.md"
       - "tests/core_smoke/**"
@@ -85,6 +86,7 @@ on:
       - "python/src/distance/**"
       - "python/tests/core/**"
       - "scripts/check_markdown_links.rb"
+      - "scripts/check_revival_format.rb"
       - "scripts/check_revival_whitespace.rb"
       - "tests/README.md"
       - "tests/core_smoke/**"
@@ -99,6 +101,9 @@ jobs:
 
       - name: Check revival whitespace
         run: ruby scripts/check_revival_whitespace.rb
+
+      - name: Check revival format
+        run: ruby scripts/check_revival_format.rb
 
       - name: Check Markdown links
         run: ruby scripts/check_markdown_links.rb
