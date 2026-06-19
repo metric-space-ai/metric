@@ -11,6 +11,7 @@ The required PR and release gates are intentionally small, reproducible, and cro
 - `.github/workflows/docs-and-format.yml`: revived-file whitespace checks, Markdown local-link checks, and workflow YAML parsing.
 - `.github/workflows/pages.yml`: static Pages artifact for `docs/site/`.
 - `.github/workflows/release-artifacts.yml`: tag/manual artifact build for source archive, Python sdist, Python wheel built from that sdist, C++ core test, and downstream CMake consumer evidence.
+- `.github/workflows/publish-python.yml`: manual PyPI publishing path that builds a checked sdist and cibuildwheel wheels for CPython 3.10 through 3.14 before upload.
 
 The corresponding local commands are listed in [release-checklist.md](release-checklist.md).
 
