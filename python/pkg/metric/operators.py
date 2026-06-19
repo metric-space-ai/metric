@@ -5,6 +5,7 @@ import math
 import operator
 
 from metric.spaces import FiniteMetricSpace
+from metric.strategies import FarthestFirst
 
 
 @dataclass(frozen=True)
@@ -81,6 +82,38 @@ class GraphStretchDiagnostics:
     max_stretch: float
     average_stretch: float
     stretch_policy: str
+
+
+@dataclass(frozen=True)
+class RepresentativeSet:
+    """Representative-selection result with coverage diagnostics."""
+
+    representatives: tuple
+    nearest_representative_distances: tuple
+    record_count: int
+    requested_count: int
+    coverage_radius: object
+    average_nearest_distance: float
+    exact: bool
+    strategy: str
+    representation: str
+
+
+@dataclass(frozen=True)
+class StructureDescription:
+    """Exact finite-space structure diagnostics."""
+
+    record_count: int
+    pair_count: int
+    zero_distance_pair_count: int
+    minimum_nonzero_distance: object
+    maximum_distance: object
+    average_distance: float
+    intrinsic_dimension: float
+    has_nonzero_distances: bool
+    exact: bool
+    strategy: str
+    representation: str
 
 
 def pairwise_distance_matrix(records, metric):
@@ -557,6 +590,11 @@ def graph_stretch_diagnostics(records, metric, graph):
 
 def representative_indices(records, metric, k, seed_index=0):
     """Select representative record IDs with deterministic farthest-first traversal."""
+    selected, _nearest_selected_distances, _records = _farthest_first_selection(records, metric, k, seed_index)
+    return selected
+
+
+def _farthest_first_selection(records, metric, k, seed_index=0):
     records = list(records)
     try:
         k = operator.index(k)
@@ -567,7 +605,7 @@ def representative_indices(records, metric, k, seed_index=0):
     if k < 0:
         raise ValueError("k must be non-negative")
     if k == 0:
-        return []
+        return [], [], records
     if not records:
         raise ValueError("cannot select representatives from an empty record set")
     if k > len(records):
@@ -604,7 +642,45 @@ def representative_indices(records, metric, k, seed_index=0):
                 space.distance(index, next_index),
             )
 
-    return selected
+    return selected, nearest_selected_distances, records
+
+
+def _coerce_farthest_first(strategy):
+    if strategy is None:
+        return FarthestFirst()
+    if isinstance(strategy, FarthestFirst):
+        return strategy
+    if hasattr(strategy, "seed_index"):
+        return FarthestFirst(seed_index=strategy.seed_index)
+    raise TypeError("strategy must be a FarthestFirst strategy")
+
+
+def find_representatives(records, metric, k, strategy=None):
+    """Select representatives and return an engine-style result object."""
+    strategy = _coerce_farthest_first(strategy)
+    selected, nearest_selected_distances, records = _farthest_first_selection(
+        records,
+        metric,
+        k,
+        strategy.seed_index,
+    )
+    coverage_radius = max(nearest_selected_distances, default=0)
+    average_nearest_distance = (
+        sum(float(distance) for distance in nearest_selected_distances) / len(nearest_selected_distances)
+        if nearest_selected_distances
+        else 0.0
+    )
+    return RepresentativeSet(
+        representatives=tuple(selected),
+        nearest_representative_distances=tuple(nearest_selected_distances),
+        record_count=len(records),
+        requested_count=operator.index(k),
+        coverage_radius=coverage_radius,
+        average_nearest_distance=average_nearest_distance,
+        exact=True,
+        strategy="farthest_first",
+        representation="metric_space",
+    )
 
 
 def representatives(records, metric, k, seed_index=0):
@@ -711,6 +787,45 @@ def intrinsic_dimension(records, metric):
     return intrinsic_dimension_from_distances(pairwise_distance_matrix(records, metric))
 
 
+def describe_structure(records, metric):
+    """Describe exact finite-space structure with all-pairs diagnostics."""
+    records = list(records)
+    distances = pairwise_distance_matrix(records, metric)
+    pair_count = 0
+    zero_distance_pair_count = 0
+    minimum_nonzero_distance = 0
+    maximum_distance = 0
+    distance_sum = 0.0
+    has_nonzero_distances = False
+
+    for lhs_index in range(len(records)):
+        for rhs_index in range(lhs_index + 1, len(records)):
+            distance = distances[lhs_index][rhs_index]
+            pair_count += 1
+            distance_sum += float(distance)
+            if distance <= 0:
+                zero_distance_pair_count += 1
+            elif not has_nonzero_distances or distance < minimum_nonzero_distance:
+                minimum_nonzero_distance = distance
+                has_nonzero_distances = True
+            if pair_count == 1 or maximum_distance < distance:
+                maximum_distance = distance
+
+    return StructureDescription(
+        record_count=len(records),
+        pair_count=pair_count,
+        zero_distance_pair_count=zero_distance_pair_count,
+        minimum_nonzero_distance=minimum_nonzero_distance,
+        maximum_distance=maximum_distance,
+        average_distance=distance_sum / pair_count if pair_count else 0.0,
+        intrinsic_dimension=intrinsic_dimension_from_distances(distances),
+        has_nonzero_distances=has_nonzero_distances,
+        exact=True,
+        strategy="exact_all_pairs",
+        representation="metric_space",
+    )
+
+
 def intrinsic_dimension_from_distances(distances):
     maximum_dimension = 0.0
     for row in distances:
@@ -731,6 +846,10 @@ __all__ = [
     "GraphStretchDiagnostics",
     "GraphConstructionMetadata",
     "GraphConstructionResult",
+    "RepresentativeSet",
+    "StructureDescription",
+    "describe_structure",
+    "find_representatives",
     "graph_connectivity_diagnostics",
     "graph_degree_diagnostics",
     "graph_stretch_diagnostics",

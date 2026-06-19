@@ -63,6 +63,19 @@ class Space(FiniteMetricSpace):
     def within_radius(self, query, radius):
         return self.rnn(query, radius)
 
+    def representatives(self, k, strategy=None):
+        from metric.operators import find_representatives
+
+        return find_representatives(self.records, self.metric, k, strategy=strategy)
+
+    def describe(self):
+        from metric.operators import describe_structure
+
+        return describe_structure(self.records, self.metric)
+
+    def describe_structure(self):
+        return self.describe()
+
 
 MatrixSpace = FiniteMetricSpace
 

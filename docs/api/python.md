@@ -2,7 +2,7 @@
 
 The current Python core API exposes metric constructors, a minimal `Space` facade, finite-space helpers, and small operator helpers. It is intentionally small while the broader engine facade is restored.
 
-The stable entry point is `Space`: a finite record set plus a metric with cached pairwise distances and intent-named neighbor helpers. `FiniteMetricSpace` and `MatrixSpace` remain available for explicit representation vocabulary.
+The stable entry point is `Space`: a finite record set plus a metric with cached pairwise distances and intent-named helpers for neighbors, representatives, and structure diagnostics. `FiniteMetricSpace` and `MatrixSpace` remain available for explicit representation vocabulary.
 
 ## Basic Use
 
@@ -25,6 +25,7 @@ The records are strings. Edit distance defines the geometry without an embedding
 - `FiniteMetricSpace`: finite metric space over records
 - `MatrixSpace`: compatibility alias for `FiniteMetricSpace`
 - `operators`: small helpers for pairwise distances, nearest neighbors, range neighbors, exact graph results and edges, graph connectivity diagnostics, graph degree diagnostics, graph stretch diagnostics, graph pruning, representative selection, medoids, separated representatives, and intrinsic-dimension diagnostics
+- `strategies`: strategy objects for intent methods, starting with `FarthestFirst`
 - `mappings`: beta compatibility bridge for installed mapping bindings
 - `transforms`: beta compatibility bridge for installed transform bindings
 
@@ -38,6 +39,10 @@ space.pairwise_distances()
 space.neighbors(query, k=10)
 space.nearest(query)
 space.within_radius(query, radius=1)
+space.representatives(k=3)
+space.representatives(k=3, strategy=FarthestFirst(seed_index=1))
+space.describe()
+space.describe_structure()
 space.knn(query, k=10)
 space.nn(query)
 space.rnn(query, radius=1)
@@ -52,12 +57,16 @@ from metric.operators import (
     GraphConnectivityDiagnostics,
     GraphDegreeDiagnostics,
     GraphStretchDiagnostics,
+    RepresentativeSet,
+    StructureDescription,
     coverage_representative_indices,
     coverage_representatives,
+    describe_structure,
     exact_knn_graph,
     exact_knn_graph_edges,
     exact_radius_graph,
     exact_radius_graph_edges,
+    find_representatives,
     graph_connectivity_diagnostics,
     graph_degree_diagnostics,
     graph_stretch_diagnostics,
@@ -74,6 +83,7 @@ from metric.operators import (
     separated_representatives,
     symmetrize_graph,
 )
+from metric.strategies import FarthestFirst
 
 distances = pairwise_distance_matrix(records, Edit())
 neighbors = nearest_neighbors(records, Edit(), "cut", k=2)
@@ -96,9 +106,13 @@ separated_records = separated_representatives(records, Edit(), minimum_distance=
 covered_ids = coverage_representative_indices(records, Edit(), radius=1)
 covered_records = coverage_representatives(records, Edit(), radius=1)
 dimension = intrinsic_dimension(records, Edit())
+representative_result = find_representatives(records, Edit(), k=2, strategy=FarthestFirst(seed_index=0))
+structure = describe_structure(records, Edit())
 ```
 
 `representative_indices` and `representatives` use deterministic farthest-first traversal over the finite metric space. They select existing records rather than vector centroids, start from `seed_index=0` by default, and resolve equal-distance ties by record order.
+
+`find_representatives` returns a `RepresentativeSet` with selected source indices, nearest-representative distances for every record, coverage radius, average nearest-representative distance, strategy metadata, and representation metadata. `Space.representatives(...)` exposes the same result from the `Space` facade.
 
 `medoid_index` and `medoid` select the existing record with the smallest total distance to all records. Equal total-distance ties are resolved by record order.
 
@@ -119,6 +133,8 @@ dimension = intrinsic_dimension(records, Edit())
 `coverage_representative_indices` and `coverage_representatives` use deterministic greedy radius coverage. They scan records in order, choose the first uncovered record as a representative, and mark every record within `radius` as covered.
 
 `intrinsic_dimension` returns an expansion-dimension estimate based on finite-space neighborhood growth. Treat it as a diagnostic that depends on the metric, sample density, duplicates, and available radii.
+
+`describe_structure` returns a `StructureDescription` with record count, evaluated pair count, zero-distance pair count, minimum nonzero distance, maximum distance, average distance, and intrinsic-dimension estimate. `Space.describe()` and `Space.describe_structure()` expose the same diagnostics from the `Space` facade.
 
 ## Custom Metrics
 
@@ -155,7 +171,7 @@ print(space.distance(0, 1))
 
 ## Engine Roadmap
 
-The implemented facade currently covers neighbor access. Additional intent names such as `groups`, `embed`, `map`, `reduce`, `denoise`, `outliers`, and `compare` describe the public direction and should be promoted only when they are backed by stable strategies, result objects, examples, and CI.
+The implemented facade currently covers neighbor access, representative selection, and structure diagnostics. Additional intent names such as `groups`, `embed`, `map`, `reduce`, `denoise`, `outliers`, and `compare` describe the public direction and should be promoted only when they are backed by stable strategies, result objects, examples, and CI.
 
 ## Compatibility
 

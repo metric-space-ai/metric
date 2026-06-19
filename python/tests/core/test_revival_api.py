@@ -14,12 +14,16 @@ from metric.operators import (
     GraphStretchDiagnostics,
     GraphConstructionMetadata,
     GraphConstructionResult,
+    RepresentativeSet,
+    StructureDescription,
     coverage_representative_indices,
     coverage_representatives,
+    describe_structure,
     exact_knn_graph,
     exact_knn_graph_edges,
     exact_radius_graph,
     exact_radius_graph_edges,
+    find_representatives,
     graph_connectivity_diagnostics,
     graph_degree_diagnostics,
     graph_stretch_diagnostics,
@@ -37,6 +41,7 @@ from metric.operators import (
     symmetrize_graph,
 )
 from metric.spaces import FiniteMetricSpace, MatrixSpace, Space
+from metric.strategies import FarthestFirst
 
 
 class RevivalApiTest(unittest.TestCase):
@@ -73,6 +78,10 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIs(metric.operators.GraphStretchDiagnostics, GraphStretchDiagnostics)
         self.assertIs(metric.operators.GraphConstructionMetadata, GraphConstructionMetadata)
         self.assertIs(metric.operators.GraphConstructionResult, GraphConstructionResult)
+        self.assertIs(metric.operators.RepresentativeSet, RepresentativeSet)
+        self.assertIs(metric.operators.StructureDescription, StructureDescription)
+        self.assertIs(metric.operators.describe_structure, describe_structure)
+        self.assertIs(metric.operators.find_representatives, find_representatives)
         self.assertIs(metric.operators.exact_knn_graph, exact_knn_graph)
         self.assertIs(metric.operators.exact_knn_graph_edges, exact_knn_graph_edges)
         self.assertIs(metric.operators.exact_radius_graph, exact_radius_graph)
@@ -92,6 +101,7 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIs(metric.operators.coverage_representative_indices, coverage_representative_indices)
         self.assertIs(metric.operators.coverage_representatives, coverage_representatives)
         self.assertIs(metric.mappings, mappings)
+        self.assertIs(metric.strategies.FarthestFirst, FarthestFirst)
         self.assertIs(metric.transforms, transforms)
         self.assertIs(metric.Edit, Edit)
         self.assertIs(metric.GraphConnectivityDiagnostics, GraphConnectivityDiagnostics)
@@ -99,6 +109,11 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIs(metric.GraphStretchDiagnostics, GraphStretchDiagnostics)
         self.assertIs(metric.GraphConstructionMetadata, GraphConstructionMetadata)
         self.assertIs(metric.GraphConstructionResult, GraphConstructionResult)
+        self.assertIs(metric.RepresentativeSet, RepresentativeSet)
+        self.assertIs(metric.StructureDescription, StructureDescription)
+        self.assertIs(metric.describe_structure, describe_structure)
+        self.assertIs(metric.find_representatives, find_representatives)
+        self.assertIs(metric.FarthestFirst, FarthestFirst)
         self.assertIs(metric.exact_knn_graph, exact_knn_graph)
         self.assertIs(metric.exact_knn_graph_edges, exact_knn_graph_edges)
         self.assertIs(metric.exact_radius_graph, exact_radius_graph)
@@ -129,6 +144,11 @@ class RevivalApiTest(unittest.TestCase):
         self.assertIn("GraphStretchDiagnostics", metric.__all__)
         self.assertIn("GraphConstructionMetadata", metric.__all__)
         self.assertIn("GraphConstructionResult", metric.__all__)
+        self.assertIn("RepresentativeSet", metric.__all__)
+        self.assertIn("StructureDescription", metric.__all__)
+        self.assertIn("describe_structure", metric.__all__)
+        self.assertIn("find_representatives", metric.__all__)
+        self.assertIn("FarthestFirst", metric.__all__)
         self.assertIn("exact_knn_graph", metric.__all__)
         self.assertIn("exact_knn_graph_edges", metric.__all__)
         self.assertIn("exact_radius_graph", metric.__all__)
@@ -189,6 +209,34 @@ class RevivalApiTest(unittest.TestCase):
         self.assertEqual(nearest_neighbors(self.records, self.metric, "cut", 2), [(0, 1), (1, 1)])
         self.assertEqual(range_neighbors(self.records, self.metric, "cut", 1), [(0, 1), (1, 1)])
         self.assertEqual(pairwise_distance_matrix(self.records, self.metric)[0][1], 1)
+
+    def test_space_intent_methods_return_named_results(self):
+        space = Space([0, 1, 2, 3, 4], metric=lambda lhs, rhs: abs(lhs - rhs))
+
+        representatives_result = space.representatives(3)
+        self.assertIsInstance(representatives_result, RepresentativeSet)
+        self.assertEqual(representatives_result.representatives, (0, 4, 2))
+        self.assertEqual(representatives_result.nearest_representative_distances, (0, 1, 0, 1, 0))
+        self.assertEqual(representatives_result.record_count, 5)
+        self.assertEqual(representatives_result.requested_count, 3)
+        self.assertEqual(representatives_result.coverage_radius, 1)
+        self.assertAlmostEqual(representatives_result.average_nearest_distance, 0.4)
+        self.assertEqual(representatives_result.strategy, "farthest_first")
+        self.assertEqual(representatives_result.representation, "metric_space")
+
+        seeded = space.representatives(2, strategy=FarthestFirst(seed_index=2))
+        self.assertEqual(seeded.representatives, (2, 0))
+
+        description = space.describe()
+        self.assertIsInstance(description, StructureDescription)
+        self.assertEqual(description.record_count, 5)
+        self.assertEqual(description.pair_count, 10)
+        self.assertEqual(description.zero_distance_pair_count, 0)
+        self.assertEqual(description.minimum_nonzero_distance, 1)
+        self.assertEqual(description.maximum_distance, 4)
+        self.assertAlmostEqual(description.average_distance, 2.0)
+        self.assertAlmostEqual(description.intrinsic_dimension, np.log2(5.0 / 3.0))
+        self.assertEqual(space.describe_structure(), description)
 
     def test_intrinsic_dimension_estimates_distance_growth(self):
         records = [0, 1, 2, 3, 4]
