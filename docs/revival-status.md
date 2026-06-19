@@ -94,7 +94,7 @@ The current local tree implements the first revival slice:
 - initial C++ engine map intent for deterministic transforms into derived metric spaces
 - initial C++ engine denoise intent backed by DBSCAN-noise filtering with mapping-result lineage
 - C++ engine umbrella header exposure for the PCFA-backed reduce intent
-- initial C++ engine runtime policy scaffolding for exact lazy/materialized neighbor execution and representation-cache staleness
+- initial C++ engine runtime policy scaffolding for exact lazy/materialized neighbor and grouping execution with representation-cache staleness
 - C++ engine runtime diagnostics with policy, representation, support, and reason metadata
 - initial C++ engine mapping conventions with `MappingResult` lineage metadata and clustered-space derivation
 - initial C++ engine PCFA mapping adapter with explicit fit, transform, and inverse-transform support
@@ -274,6 +274,7 @@ The following revival improvements landed on `master` after the `v0.3.2` tag and
 - C++ engine umbrella header exposure for the PCFA-backed reduce intent with core, downstream, and include-smoke coverage, merged as `82457b5368e49cfbb6a0f3c417fef0fc56c4f5fb`
 - initial C++ engine runtime policy scaffolding for exact lazy/materialized neighbor execution, representation diagnostics, and cache staleness coverage, merged as `c9217ec01bc06578dc050a06605df22c44fd62eb`
 - C++ `RuntimeDiagnostics` and `runtime::diagnostics(...)` policy metadata with core smoke coverage, merged as `140d065b4e92b28095056a27aef6c28cce2b2353`
+- C++ grouping intents accept exact lazy/materialized runtime policies for k-medoids, DBSCAN, and affinity propagation, merged as `dbadf01ae3f9ce18863dae0e8b4f3d8d33f4c4b9`
 - CI-tested C++ and Python engine flagship examples for strings, process curves, histograms, and cross-space dependency, merged as `9d9d89dad779c836fe2f1334b68000938d76c9c6`
 - direct Python smoke gates now run promoted metric-space and engine examples together, merged as `06f22b20e7d44c7f2058b81d43f513fc157f36b0`
 - Python engine-style Space intent facade methods for representatives and structure diagnostics with named result objects and core test coverage, merged as `1849c29a25122b31605945295c91710cfc6a126f`
