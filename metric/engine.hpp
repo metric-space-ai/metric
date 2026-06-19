@@ -15,6 +15,7 @@
 #include "intent/describe.hpp"
 #include "intent/groups.hpp"
 #include "intent/neighbors.hpp"
+#include "intent/representatives.hpp"
 #include "mappings/clustered_space.hpp"
 #include "mappings/mapping.hpp"
 #include "operators/clustering.hpp"
@@ -27,6 +28,7 @@
 #include "representations/matrix_cache.hpp"
 #include "strategies/clustering.hpp"
 #include "strategies/correlation.hpp"
+#include "strategies/representatives.hpp"
 #include "strategies/search.hpp"
 
 #endif
