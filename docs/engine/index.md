@@ -114,7 +114,7 @@ The first engine operator results are `metric::NeighborSet<Distance>`, returned 
 
 The first C++ intent helpers are `metric::find_neighbors` and `metric::find_groups`. They keep the user-facing vocabulary semantic while routing to explicit strategy objects such as `metric::strategies::cover_tree`, `metric::strategies::matrix_cache`, `metric::strategies::k_medoids`, and `metric::strategies::dbscan`.
 
-The first C++ mapping adapter is `metric::mappings::make_clustered_space_mapping`. It fits a clustering result to a source space and transforms it into a derived clustered metric space while preserving source `RecordId` lineage.
+The first C++ mapping adapters are `metric::mappings::make_clustered_space_mapping` and the PCFA adapter in `<metric/mappings/pcfa.hpp>`. They fit source spaces to mapping models and transform them into derived metric spaces while preserving source `RecordId` lineage.
 
 ## Capabilities
 
