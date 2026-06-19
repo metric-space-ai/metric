@@ -74,6 +74,9 @@ The first semantic intent helpers live at the `metric::find_*` layer:
 - `metric::find_groups(space, group_count)`
 - `metric::find_groups(space, metric::strategies::k_medoids(group_count))`
 - `metric::find_groups(space, metric::strategies::dbscan(radius, min_points))`
+- `metric::compare(space_a, space_b)`
+- `metric::compare(space_a, space_b, metric::strategies::mgc{})`
+- `metric::correlate(space_a, space_b)`
 
 These are the first user-facing names that describe intent before algorithm. Strategy objects select implementation details while preserving the same result types returned by the operator layer.
 
@@ -133,6 +136,7 @@ auto clustered = metric::mappings::clustered_space(space, groups);
 
 auto user_neighbors = metric::find_neighbors(space, std::string("metricks"), 2);
 auto user_groups = metric::find_groups(space, metric::strategies::k_medoids(2));
+auto user_dependency = metric::compare(space, space, metric::strategies::mgc{});
 ```
 
 The important shift is vocabulary: engine code starts from a metric space and stable record IDs. Algorithm names and representation choices come later as strategies and execution structures. A representation reports stale state when the source space version changes:

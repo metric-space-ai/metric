@@ -99,6 +99,7 @@ auto neighbors = metric::find_neighbors(space, std::string("cut"), 2);
 auto indexed = metric::find_neighbors(space, std::string("cut"), 2, metric::strategies::cover_tree{});
 auto groups = metric::find_groups(space, metric::strategies::k_medoids(2));
 auto density_groups = metric::find_groups(space, metric::strategies::dbscan(1.0, 2));
+auto dependency = metric::compare(space, space, metric::strategies::mgc{});
 ```
 
 These helpers keep algorithm names in `metric::strategies` while returning the same engine result objects as the lower-level operator layer.
