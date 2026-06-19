@@ -190,22 +190,58 @@ class Space(FiniteMetricSpace):
     facade until they have deterministic coverage.
     """
 
-    def neighbors(self, query, k=None, count=None, radius=None, *, strategy=None, representation=None, runtime=None):
+    def _neighbor_count(self, k=None, count=None):
+        if k is not None and count is not None:
+            raise ValueError("use either k or count, not both")
+        value = 1 if k is None and count is None else count if count is not None else k
+        return _coerce_non_negative_integer(value, "count")
+
+    def _neighbor_row(self, source_index, count=None, radius=None, include_self=False):
+        self.ensure_fresh()
+        neighbors = []
+        for candidate_index in range(len(self.records)):
+            if not include_self and candidate_index == source_index:
+                continue
+            distance = self.distance(candidate_index, source_index)
+            if radius is None or distance <= radius:
+                neighbors.append((candidate_index, distance))
+        neighbors.sort(key=lambda item: item[1])
+        if count is not None:
+            neighbors = neighbors[:count]
+        return neighbors
+
+    def neighbors(
+        self,
+        query=None,
+        k=None,
+        count=None,
+        radius=None,
+        *,
+        include_self=False,
+        strategy=None,
+        representation=None,
+        runtime=None,
+    ):
         require_exact_runtime(runtime)
         if strategy is not None:
             raise ValueError("strategy overrides are not promoted for Python neighbors yet")
-        if representation is not None:
+        if query is not None and representation is not None:
             return representation.neighbors(query, k=k, count=count, radius=radius)
+        if representation is not None:
+            representation.ensure_fresh()
+
+        has_explicit_count = k is not None or count is not None
+        neighbor_count = self._neighbor_count(k, count) if has_explicit_count or radius is None else None
+        if query is None:
+            return [
+                self._neighbor_row(source_index, neighbor_count, radius=radius, include_self=include_self)
+                for source_index in range(len(self.records))
+            ]
 
         if radius is not None:
-            if k is not None or count is not None:
-                raise ValueError("radius cannot be combined with k or count")
-            return self.rnn(query, radius)
-
-        if k is not None and count is not None:
-            raise ValueError("use either k or count, not both")
-
-        return self.knn(query, 1 if k is None and count is None else count if count is not None else k)
+            neighbors = self.rnn(query, radius)
+            return neighbors if neighbor_count is None else neighbors[:neighbor_count]
+        return self.knn(query, neighbor_count)
 
     def nearest(self, query):
         return self.nn(query)
