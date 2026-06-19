@@ -2,6 +2,7 @@
 #include <cassert>
 #include <cmath>
 #include <deque>
+#include <stdexcept>
 #include <vector>
 
 #include "metric/distance.hpp"
@@ -56,6 +57,28 @@ int main()
 
 	const auto correlated = metric::correlate(first_space, second_space);
 	assert(close(correlated.value, compared.value));
+
+	const auto materialized_policy = metric::runtime::materialized(metric::runtime::exact());
+	const auto materialized = metric::compare(first_space, second_space, materialized_policy);
+	assert(materialized.left_representation == "matrix_cache");
+	assert(materialized.right_representation == "matrix_cache");
+	assert(materialized.left_record_count == compared.left_record_count);
+	assert(materialized.right_record_count == compared.right_record_count);
+	assert(close(materialized.value, compared.value));
+
+	const auto materialized_correlated =
+		metric::correlate(first_space, second_space, metric::strategies::mgc{}, materialized_policy);
+	assert(materialized_correlated.left_representation == "matrix_cache");
+	assert(materialized_correlated.right_representation == "matrix_cache");
+	assert(close(materialized_correlated.value, compared.value));
+
+	bool rejected_approximate_runtime = false;
+	try {
+		(void)metric::compare(first_space, second_space, metric::runtime::approximate());
+	} catch (const std::invalid_argument &) {
+		rejected_approximate_runtime = true;
+	}
+	assert(rejected_approximate_runtime);
 
 	return 0;
 }

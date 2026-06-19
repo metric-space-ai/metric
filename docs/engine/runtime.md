@@ -52,6 +52,12 @@ Approximate runtime policies throw for these promoted paths until backed by expl
 
 Approximate runtime policies throw for structure diagnostics until backed by explicit approximate diagnostic implementations.
 
+## Cross-Space Comparison Execution
+
+`compare(..., runtime::materialized(runtime::exact()))` and `correlate(..., runtime::materialized(runtime::exact()))` use separate `MatrixCache` representations for the left and right spaces before running exact MGC over the materialized distance matrices. The returned `CorrelationResult` reports `left_representation == "matrix_cache"` and `right_representation == "matrix_cache"`.
+
+Approximate runtime policies throw for cross-space comparison until backed by explicit approximate correlation implementations.
+
 ## Outlier And Denoise Execution
 
 `find_outliers(..., runtime::materialized(runtime::exact()))` uses a `MatrixCache` for DBSCAN-noise detection and nearest-reference scoring, then reports `representation == "matrix_cache"` in the returned `OutlierResult`.
