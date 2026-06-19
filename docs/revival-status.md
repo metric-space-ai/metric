@@ -21,6 +21,7 @@ The current local tree implements the first revival slice:
 - Python engine-style Space compare/correlate intent with a deterministic distance-profile correlation strategy
 - Python engine-style Space outlier intent with DBSCAN-noise strategy
 - Python engine-style Space reduce intent with representative and medoid reduction strategies
+- Python engine-style Space map intent for deterministic transforms into derived metric spaces
 - Python beta compatibility bridge modules under `metric.mappings` and `metric.transforms`
 - promoted C++ examples under `examples/core/`
 - promoted Python examples under `python/examples/metric_space/`
@@ -241,6 +242,7 @@ The following revival improvements landed on `master` after the `v0.3.2` tag and
 - README engine quickstart covering the C++ engine path, strategy selection, representation swaps, and mapping-derived spaces, merged as `7f01e1084e3fb177a93b3ebb1fdfa4f38f1be895`
 - API and stability documentation for the promoted C++ and Python outlier intent surface, merged as `ce1beaf44f9b3319cccceb4273d2823b20affce5`
 - Python engine-style Space reduce intent with named `ReductionResult` objects, representative/medoid strategy coverage, and API/stability docs, merged as `c24069575071a228363220a00ff1fb0299307f29`
+- Python engine-style Space map intent with named `MappingResult` objects, deterministic transform coverage, and API/stability docs, merged as `e5d2f796c8eb842a5e784160acdf9b87baef10de`
 
 ## Historical Code Policy
 
