@@ -270,6 +270,7 @@ The following revival improvements landed on `master` after the `v0.3.2` tag and
 - Python public exception facade with `UnsupportedOperationError` for unsupported inverse reconstruction, merged as `ec94ef66017733624e52465fb96bccbed13ae9c2`
 - C++ semantic `metric::count{...}` target argument support for `find_neighbors`, merged as `806eb4628770e89811a9c27205161d371a325c99`
 - Python representation freshness checks with deterministic stale representation errors, merged as `da591dcbd98d04a5541925170726429e17f836d0`
+- Python runtime-checkable `metric.Metric` protocol and explicit missing-metric errors, merged as `b7512721308d03940b0127f021260e1cee92d65f`
 
 ## Historical Code Policy
 
