@@ -47,7 +47,7 @@ That difference matters when the native distance is more meaningful than a vecto
 RecordSet + Metric -> MetricSpace -> Intent -> Strategy -> Representation -> Runtime -> Result
 ```
 
-The stable revived surface currently exposes metric constructors, explicit finite-space representations, minimal C++ and Python `Space` facades, and small operator helpers. The broader engine facade is being organized around user intent:
+The revived engine surface exposes metric constructors, finite metric spaces, representation adapters, semantic intents, explicit strategies, mapping results, and runtime policies. The default vocabulary is user intent:
 
 - `neighbors`
 - `groups`
@@ -58,7 +58,38 @@ The stable revived surface currently exposes metric constructors, explicit finit
 - `outliers`
 - `compare`
 
-Concrete algorithms are strategies. A user should be able to ask to `embed`; MDS, diffusion embedding, PCFA, and PHATE-style strategies are execution choices. A user should be able to ask to `map`; deterministic transforms, neural mappers, and autoencoder-based strategies are interchangeable implementations behind the same intent. The promoted examples include the stable core API and the first CI-tested engine demos for strings, process curves, histograms, and cross-space dependency.
+Concrete algorithms are strategies. A user asks for `groups` or `outliers`; k-medoids, DBSCAN, KOC, and future density methods are execution choices. A user asks to `map`; clustered-space mappings, PCFA, deterministic transforms, neural mappers, and autoencoder-based strategies are interchangeable implementations behind the same intent. The promoted examples include the stable core API and the first CI-tested engine demos for strings, process curves, histograms, and cross-space dependency.
+
+## Engine Quickstart Shape
+
+The first engine path starts from non-vector records and keeps representation, strategy, and result metadata explicit:
+
+```cpp
+#include <metric/distance.hpp>
+#include <metric/engine.hpp>
+
+#include <string>
+#include <vector>
+
+std::vector<std::string> records = {"metric", "metrics", "matrix", "tree"};
+auto space = metric::make_space(records, metric::Edit<char>{});
+
+metric::representations::MatrixCache<decltype(space)> matrix(space);
+auto neighbors = metric::find_neighbors(space, std::string("metricks"), 2, metric::strategies::cover_tree{});
+auto groups = metric::find_groups(space, metric::strategies::k_medoids(2));
+```
+
+The same `MetricSpace` can be queried lazily, through a materialized matrix, or through an index strategy. Algorithms are named at the strategy layer; the user-facing calls remain `find_neighbors`, `find_groups`, `find_representatives`, `find_outliers`, `compare`, `reduce`, and `describe_structure`.
+
+Mappings produce explicit derived spaces:
+
+```cpp
+auto mapping = metric::mappings::make_clustered_space_mapping(groups);
+auto model = metric::mappings::fit(mapping, space);
+auto clustered = metric::mappings::transform(model, space);
+```
+
+`clustered.space` is a new finite metric space. The `MappingResult` keeps source `RecordId` lineage, representative records, strategy metadata, and whether inverse reconstruction is supported.
 
 ## Python Example
 
@@ -79,29 +110,34 @@ The records are strings. They are not embedded into vectors first. Edit distance
 ## C++ Example
 
 ```cpp
-#include <metric/distance.hpp>
-#include <metric/operators.hpp>
-#include <metric/space.hpp>
-
 #include <iostream>
 #include <string>
 #include <vector>
 
+#include <metric/distance.hpp>
+#include <metric/engine.hpp>
+
 int main()
 {
-    std::vector<std::string> records = {"cat", "cot", "coat", "dog"};
+    std::vector<std::string> records = {"metric", "metrics", "matrix", "tree"};
 
-    auto space = metric::Space::from_records(records, metric::Edit<std::string>{});
+    auto space = metric::make_space(records, metric::Edit<char>{});
+    metric::representations::MatrixCache<decltype(space)> matrix(space);
 
-    std::cout << "distance(cat, cot) = " << space(0, 1) << "\n";
+    std::cout << "distance(metric, metrics) = "
+              << matrix.distance(space.id(0), space.id(1)) << "\n";
 
-    const auto neighbors = space.neighbors(std::string("cut"), 2);
+    const auto neighbors = metric::find_neighbors(
+        space,
+        std::string("metricks"),
+        2,
+        metric::strategies::cover_tree{});
     for (const auto &neighbor : neighbors) {
-        std::cout << records[neighbor.first] << ": " << neighbor.second << "\n";
+        std::cout << records[neighbor.id.index()] << ": " << neighbor.distance << "\n";
     }
 
-    const auto distances = metric::operators::pairwise_distance_matrix(records, metric::Edit<std::string>{});
-    std::cout << "distance matrix size = " << distances.size() << "\n";
+    const auto groups = metric::find_groups(space, metric::strategies::k_medoids(2));
+    std::cout << "string groups = " << groups.cluster_count << "\n";
 
     return neighbors.size() == 2 ? 0 : 1;
 }
