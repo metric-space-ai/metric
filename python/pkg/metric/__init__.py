@@ -30,6 +30,8 @@ from .operators import (
     range_neighbors,
     representative_indices,
     representatives,
+    separated_representative_indices,
+    separated_representatives,
 )
 from .spaces import FiniteMetricSpace, MatrixSpace, Space
 

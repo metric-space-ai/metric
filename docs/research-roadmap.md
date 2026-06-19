@@ -49,13 +49,13 @@ Current promoted base:
 - C++ `metric::operators::representative_indices` and `representatives` expose deterministic farthest-first traversal over finite metric spaces.
 - Python `metric.operators.representative_indices` and `representatives` expose the same traversal rule.
 - C++ and Python `medoid_index` / `medoid` expose deterministic single-medoid selection by minimum total distance.
+- C++ and Python `separated_representative_indices` / `separated_representatives` expose deterministic redundancy-threshold selection by minimum distance.
 - C++ and Python `coverage_representative_indices` / `coverage_representatives` expose deterministic greedy radius coverage.
 - Promoted fixtures use string records with edit distance, histogram records with a one-dimensional transport callable, process curves with alignment distance, and structured records with mixed categorical and numeric penalties.
 
 Candidate strategies:
 
 - k-medoids representatives
-- redundancy reduction by distance threshold
 - compression summaries that preserve nearest-neighbor behavior
 
 Required fixtures:
@@ -178,7 +178,7 @@ The revival should not:
 
 Near-term branches should stay small and evidence-driven:
 
-- add k-medoids or redundancy-threshold representative fixtures now that farthest-first, medoid, and radius-coverage fixtures exist
+- add k-medoids or compression-summary representative fixtures now that farthest-first, medoid, separated, and radius-coverage fixtures exist
 - add graph construction documentation with exact versus approximate terminology
 - add MGC interpretation docs for paired metric spaces
 - add an industrial-record fixture that combines strings, process curves, histograms, and numeric penalties

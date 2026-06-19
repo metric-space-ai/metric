@@ -107,6 +107,36 @@ def medoid(records, metric):
     return records[medoid_index(records, metric)]
 
 
+def separated_representative_indices(records, metric, minimum_distance):
+    """Select representatives greedily separated by a minimum distance."""
+    records = list(records)
+    if minimum_distance < 0:
+        raise ValueError("minimum_distance must be non-negative")
+    if not records:
+        return []
+
+    space = FiniteMetricSpace(records, metric)
+    selected = []
+
+    for candidate_index in range(len(records)):
+        if all(
+            space.distance(candidate_index, selected_index) >= minimum_distance
+            for selected_index in selected
+        ):
+            selected.append(candidate_index)
+
+    return selected
+
+
+def separated_representatives(records, metric, minimum_distance):
+    """Select representative records greedily separated by a minimum distance."""
+    records = list(records)
+    return [
+        records[index]
+        for index in separated_representative_indices(records, metric, minimum_distance)
+    ]
+
+
 def coverage_representative_indices(records, metric, radius):
     """Select representatives that greedily cover records within a radius."""
     records = list(records)
@@ -170,4 +200,6 @@ __all__ = [
     "range_neighbors",
     "representative_indices",
     "representatives",
+    "separated_representative_indices",
+    "separated_representatives",
 ]

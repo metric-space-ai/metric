@@ -156,6 +156,53 @@ auto medoid(const Container &records, Metric distance) -> detail::record_type_t<
 	return records[medoid_index(records, std::move(distance))];
 }
 
+template <typename Container, typename Metric, typename MinimumDistance>
+auto separated_representative_indices(const Container &records, Metric distance, MinimumDistance minimum_distance)
+	-> std::vector<std::size_t>
+{
+	using distance_type = typename detail::finite_space_t<Container, Metric>::distance_type;
+	using comparison_type = typename std::common_type<distance_type, MinimumDistance>::type;
+
+	if (minimum_distance < MinimumDistance{}) {
+		throw std::invalid_argument("minimum_distance must be non-negative");
+	}
+	if (records.empty()) {
+		return {};
+	}
+
+	const auto threshold = static_cast<comparison_type>(minimum_distance);
+	const auto space = ::metric::Space::from_records(records, std::move(distance));
+	std::vector<std::size_t> selected;
+
+	for (std::size_t candidate_index = 0; candidate_index < records.size(); ++candidate_index) {
+		bool is_separated = true;
+		for (const auto selected_index : selected) {
+			if (static_cast<comparison_type>(space.distance(candidate_index, selected_index)) < threshold) {
+				is_separated = false;
+				break;
+			}
+		}
+		if (is_separated) {
+			selected.push_back(candidate_index);
+		}
+	}
+
+	return selected;
+}
+
+template <typename Container, typename Metric, typename MinimumDistance>
+auto separated_representatives(const Container &records, Metric distance, MinimumDistance minimum_distance)
+	-> std::vector<detail::record_type_t<Container>>
+{
+	const auto selected = separated_representative_indices(records, std::move(distance), minimum_distance);
+	std::vector<detail::record_type_t<Container>> result;
+	result.reserve(selected.size());
+	for (const auto index : selected) {
+		result.push_back(records[index]);
+	}
+	return result;
+}
+
 template <typename Container, typename Metric, typename Radius>
 auto coverage_representative_indices(const Container &records, Metric distance, Radius radius)
 	-> std::vector<std::size_t>

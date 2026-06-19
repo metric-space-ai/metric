@@ -60,6 +60,14 @@ int main()
     assert(metric::operators::medoid_index(records, metric::Edit<std::string>{}) == 1);
     assert(metric::operators::medoid(records, metric::Edit<std::string>{}) == "cot");
 
+    const auto separated_ids =
+        metric::operators::separated_representative_indices(records, metric::Edit<std::string>{}, 2);
+    assert((separated_ids == std::vector<std::size_t>{0, 3}));
+
+    const auto separated_records =
+        metric::operators::separated_representatives(records, metric::Edit<std::string>{}, 2);
+    assert((separated_records == std::vector<std::string>{"cat", "dog"}));
+
     const auto coverage_ids = metric::operators::coverage_representative_indices(records, metric::Edit<std::string>{}, 1);
     assert((coverage_ids == std::vector<std::size_t>{0, 3}));
 
@@ -112,6 +120,9 @@ int main()
     assert((metric::operators::coverage_representatives(line, AbsoluteDistance{}, 2) == std::vector<int>{0, 3}));
     assert(metric::operators::medoid_index(line, AbsoluteDistance{}) == 2);
     assert(metric::operators::medoid(line, AbsoluteDistance{}) == 2);
+    assert((metric::operators::separated_representative_indices(line, AbsoluteDistance{}, 2) ==
+            std::vector<std::size_t>{0, 2, 4}));
+    assert((metric::operators::separated_representatives(line, AbsoluteDistance{}, 2) == std::vector<int>{0, 2, 4}));
 
     bool rejected_negative_radius = false;
     try {
@@ -120,6 +131,14 @@ int main()
         rejected_negative_radius = true;
     }
     assert(rejected_negative_radius);
+
+    bool rejected_negative_minimum_distance = false;
+    try {
+        metric::operators::separated_representative_indices(line, AbsoluteDistance{}, -1);
+    } catch (const std::invalid_argument &) {
+        rejected_negative_minimum_distance = true;
+    }
+    assert(rejected_negative_minimum_distance);
 
     const double dimension = metric::operators::intrinsic_dimension(line, AbsoluteDistance{});
     assert(std::abs(dimension - (std::log(5.0 / 3.0) / std::log(2.0))) < 1e-12);
