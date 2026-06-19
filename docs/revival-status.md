@@ -29,6 +29,7 @@ The current local tree implements the first revival slice:
 - graph representation terminology for exact, approximate, directed, symmetrized, weighted, and normalized graph construction
 - deterministic C++ and Python exact graph edge helpers
 - C++ and Python exact graph result objects with construction metadata
+- C++ and Python graph symmetrization helpers with deterministic weighting policies
 - documentation for concepts, APIs, examples, stability, testing, and release gates
 - CI workflows for C++ core, Python wheels, docs/formatting, revived-source formatting, and GitHub Pages artifacts
 - release artifact workflow for source archive, Python sdist, Python wheel built from that sdist, and C++ core/downstream evidence
@@ -182,6 +183,7 @@ The following revival improvements landed on `master` after the `v0.3.2` tag and
 - graph representation terminology for exact and approximate graph construction, merged as `5b002c216a437c44c47b252b429268d13b679951`
 - C++ and Python exact graph edge helpers with deterministic edge fixtures and CI coverage, merged as `5d20828c09faafb4fc9d623443f3e5421cf64e13`
 - C++ and Python exact graph result objects with construction metadata and CI coverage, merged as `d1fcdb4243101d316df707b2e658657390bea42c`
+- C++ and Python graph symmetrization helpers with deterministic weighting-policy fixtures and CI coverage, merged as `ab09ce4662f0de46c86396752f7d22c8de42c7c9`
 
 ## Historical Code Policy
 
